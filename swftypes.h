@@ -1,9 +1,41 @@
 #include <stdint.h>
-#include <stdio.h>
 #include <iostream>
+#include <fstream>
 typedef uint8_t UI8;
-typedef uint16_t UI16;
-typedef uint32_t UI32;
+
+class UI16
+{
+private:
+	uint16_t val;
+public:
+	UI16():val(0){}
+	UI16(uint16_t v):val(v){}
+	operator uint16_t(){ return val; }
+};
+
+class UI32
+{
+private:
+	uint32_t val;
+public:
+	UI32():val(0){}
+	UI32(uint32_t v):val(v){}
+	operator uint32_t(){ return val; }
+};
+
+typedef uint16_t RECORDHEADER;
+
+inline std::istream& operator>>(std::istream& s, UI16& v)
+{
+	s.read((char*)&v,2);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, UI32& v)
+{
+	s.read((char*)&v,4);
+	return s;
+}
 
 inline int min(int a,int b)
 {
@@ -13,11 +45,11 @@ inline int min(int a,int b)
 class BitStream
 {
 private:
-	FILE* f;
+	std::istream& f;
 	unsigned char buffer;
 	unsigned char pos;
 public:
-	BitStream(FILE* in):f(in),pos(0){};
+	BitStream(std::istream& in):f(in),pos(0){};
 	unsigned int readBits(unsigned int num)
 	{
 		unsigned int ret=0;
@@ -26,10 +58,10 @@ public:
 			if(!pos)
 			{
 				pos=8;
-				fread(&buffer,1,1,f);
+				f.read((char*)&buffer,1);
 			}
-			ret|=(buffer>>(pos-1))&1;
 			ret<<=1;
+			ret|=(buffer>>(pos-1))&1;
 			pos--;
 			num--;
 		}
@@ -92,6 +124,7 @@ public:
 class RECT
 {
 	friend std::ostream& operator<<(const std::ostream& s, const RECT& r);
+	friend std::istream& operator>>(std::istream& stream, RECT& v);
 private:
 	UB NBits;
 	SB Xmin;
@@ -100,7 +133,8 @@ private:
 	SB Ymax;
 public:
 	RECT();
-	RECT(FILE* in);
+//	RECT(FILE* in);
 };
 
 std::ostream& operator<<(const std::ostream& s, const RECT& r);
+std::istream& operator>>(std::istream& s, RECT& v);

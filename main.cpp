@@ -1,12 +1,12 @@
 #include "swf.h"
 #include <iostream>
-#include <stdio.h>
+#include <fstream>
 
 using namespace std;
 
 int main()
 {
-	FILE* f=fopen("flash.swf","r");
+	ifstream f("flash.swf",ifstream::in);
 	SWF_HEADER h(f);
 	cout << h.getFrameSize() << endl;
 }

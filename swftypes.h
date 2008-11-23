@@ -1,3 +1,6 @@
+#ifndef SWFTYPES_H
+#define SWFTYPES_H
+
 #include <stdint.h>
 #include <iostream>
 #include <fstream>
@@ -23,7 +26,19 @@ public:
 	operator uint32_t(){ return val; }
 };
 
-typedef uint16_t RECORDHEADER;
+typedef UI16 RECORDHEADER;
+
+class RGB
+{
+public:
+	UI8 Red;
+	UI8 Green;
+	UI8 Blue;
+};
+
+typedef UI32 SI32;
+
+std::istream& operator>>(std::istream& s, RGB& v);
 
 inline std::istream& operator>>(std::istream& s, UI16& v)
 {
@@ -136,5 +151,49 @@ public:
 //	RECT(FILE* in);
 };
 
+class FILLSTYLE
+{
+public:
+	UI8 FillStyleType;
+	RGB Color;
+};
+
+class LINESTYLE
+{
+public:
+	UI16 Width;
+	RGB Color;
+};
+
+class LINESTYLEARRAY
+{
+public:
+	UI8 LineStyleCount;
+	LINESTYLE* LineStyles;
+};
+
+class FILLSTYLEARRAY
+{
+public:
+	UI8 FillStyleCount;
+	FILLSTYLE* FillStyles;
+};
+
+class SHAPEWITHSTYLE
+{
+	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
+private:
+	FILLSTYLEARRAY FillStyles;
+	LINESTYLEARRAY LineStyles;
+};
+
 std::ostream& operator<<(const std::ostream& s, const RECT& r);
+std::ostream& operator<<(const std::ostream& s, const RGB& r);
 std::istream& operator>>(std::istream& s, RECT& v);
+
+std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
+std::istream& operator>>(std::istream& stream, FILLSTYLEARRAY& v);
+std::istream& operator>>(std::istream& stream, LINESTYLEARRAY& v);
+std::istream& operator>>(std::istream& stream, LINESTYLE& v);
+std::istream& operator>>(std::istream& stream, FILLSTYLE& v);
+#endif

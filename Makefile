@@ -1,4 +1,4 @@
-clash: main.o swf.o swftypes.o
+clash: main.o swf.o swftypes.o tags.o
 	g++ -g -o $@ $^
 
 %.o: %.cpp

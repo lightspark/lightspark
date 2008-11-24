@@ -85,6 +85,24 @@ public:
 	}
 };
 
+class FB
+{
+	uint32_t buf;
+	int size;
+public:
+	FB() { buf=0; }
+	FB(int s,BitStream& stream):size(s)
+	{
+		if(s>32)
+			throw "FB too big\n";
+		buf=stream.readBits(s);
+	}
+	operator float()
+	{
+		return (buf>>16)+(buf&0xffff)/65535.0f; //TODO: Oppure 65536?
+	}
+};
+
 class UB
 {
 	uint32_t buf;
@@ -232,14 +250,50 @@ public:
 //	SHAPEWITHSTYLE(){}
 };
 
+class CXFORMWITHALPHA
+{
+	friend std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
+private:
+	UB HasAddTerms;
+	UB HasMultTerms;
+	UB NBits;
+	SB RedMultTerm;
+	SB GreenMultTerm;
+	SB BlueMultTerm;
+	SB AlphaMultTerm;
+	SB RedAddTerm;
+	SB GreenAddTerm;
+	SB BlueAddTerm;
+	SB AlphaAddTerm;
+};
+
+class STRING
+{
+};
+
+class CLIPACTIONS
+{
+};
+
 class MATRIX
 {
+	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
 private:
 	int size;
-
+	UB HasScale;
+	UB NScaleBits;
+	FB ScaleX;
+	FB ScaleY;
+	UB HasRotate;
+	UB NRotateBits;
+	FB RotateSkew0;
+	FB RotateSkew1;
+	UB NTranslateBits;
+	SB TranslateX;
+	SB TranslateY;
 public:
 	MATRIX():size(0){}
-	int getSize(){return size;}
+	//int getSize(){return size;}
 };
 
 class CXFORM
@@ -257,4 +311,5 @@ std::istream& operator>>(std::istream& stream, LINESTYLE& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLE& v);
 std::istream& operator>>(std::istream& stream, SHAPERECORD& v);
 std::istream& operator>>(std::istream& stream, MATRIX& v);
+std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
 #endif

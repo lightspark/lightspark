@@ -177,6 +177,45 @@ SHAPERECORD::SHAPERECORD(SHAPEWITHSTYLE* p,BitStream& bs):parent(p),next(0)
 	}
 }
 
+std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v)
+{
+	BitStream bs(stream);
+	v.HasAddTerms=UB(1,bs);
+	v.HasMultTerms=UB(1,bs);
+	v.NBits=UB(4,bs);
+	if(v.HasAddTerms)
+	{
+		v.RedAddTerm=SB(v.NBits,bs);
+		v.GreenAddTerm=SB(v.NBits,bs);
+		v.BlueAddTerm=SB(v.NBits,bs);
+		v.AlphaAddTerm=SB(v.NBits,bs);
+		std::cout << v.AlphaAddTerm << std::endl;
+	}
+	if(v.HasMultTerms)
+		throw "help5";
+}
+
+std::istream& operator>>(std::istream& stream, MATRIX& v)
+{
+	BitStream bs(stream);
+	v.HasScale=UB(1,bs);
+	if(v.HasScale)
+	{
+		v.NScaleBits=UB(5,bs);
+		v.ScaleX=FB(v.NScaleBits,bs);
+		v.ScaleY=FB(v.NScaleBits,bs);
+	}
+	v.HasRotate=UB(1,bs);
+	if(v.HasRotate)
+	{
+		throw "unsupported rotate";
+	}
+	v.NTranslateBits=UB(5,bs);
+	v.TranslateX=SB(0,bs);
+	v.TranslateY=SB(0,bs);
+	return stream;
+}
+
 /*std::istream& operator>>(std::istream& stream, SHAPERECORD& v)
 {
 	std::cout << "start shaperecord" << std::endl;

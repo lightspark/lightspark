@@ -37,7 +37,13 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 };
 
-class PlaceObjectTag: public Tag
+class ShowFrameTag: public Tag
+{
+public:
+	ShowFrameTag(RECORDHEADER h, std::istream& in);
+};
+
+/*class PlaceObjectTag: public Tag
 {
 private:
 	UI16 CharacterId;
@@ -46,6 +52,31 @@ private:
 	CXFORM ColorTransform;
 public:
 	PlaceObjectTag(RECORDHEADER h, std::istream& in);
+};*/
+
+
+class PlaceObject2Tag: public Tag
+{
+private:
+	UB PlaceFlagHasClipAction;
+	UB PlaceFlagHasClipDepth;
+	UB PlaceFlagHasName;
+	UB PlaceFlagHasRatio;
+	UB PlaceFlagHasColorTransform;
+	UB PlaceFlagHasMatrix;
+	UB PlaceFlagHasCharacter;
+	UB PlaceFlagMove;
+	UI16 Depth;
+	UI16 CharacterId;
+	MATRIX Matrix;
+	CXFORMWITHALPHA ColorTransform;
+	UI16 Ratio;
+	STRING Name;
+	UI16 ClipDepth;
+	CLIPACTIONS ClipActions;
+
+public:
+	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
 };
 
 class SetBackgroundColorTag: public Tag
@@ -60,6 +91,24 @@ class SoundStreamHead2Tag: public Tag
 {
 public:
 	SoundStreamHead2Tag(RECORDHEADER h, std::istream& in);
+};
+
+class DefineFont2Tag: public Tag
+{
+public:
+	DefineFont2Tag(RECORDHEADER h, std::istream& in);
+};
+
+class DefineTextTag: public Tag
+{
+public:
+	DefineTextTag(RECORDHEADER h, std::istream& in);
+};
+
+class DefineSpriteTag: public Tag
+{
+public:
+	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 };
 
 

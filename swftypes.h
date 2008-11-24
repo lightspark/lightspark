@@ -59,7 +59,7 @@ inline int min(int a,int b)
 
 class BitStream
 {
-private:
+public:
 	std::istream& f;
 	unsigned char buffer;
 	unsigned char pos;
@@ -72,6 +72,7 @@ public:
 		{
 			if(!pos)
 			{
+				std::cout << "read byte  @" << this << std::endl;
 				pos=8;
 				f.read((char*)&buffer,1);
 			}
@@ -179,12 +180,70 @@ public:
 	FILLSTYLE* FillStyles;
 };
 
+class SHAPEWITHSTYLE;
+
+class SHAPERECORD
+{
+public:
+	SHAPEWITHSTYLE* parent;
+	UB TypeFlag;
+	UB StateNewStyles;
+	UB StateLineStyle;
+	UB StateFillStyle1;
+	UB StateFillStyle0;
+	UB StateMoveTo;
+
+	UB MoveBits;
+	UB MoveDeltaX;
+	UB MoveDeltaY;
+
+	UB FillStyle1;
+
+	//Edge record
+	UB StraightFlag;
+	UB NumBits;
+	UB GeneralLineFlag;
+	UB VertLineFlag;
+	SB DeltaX;
+	SB DeltaY;
+
+	SB ControlDeltaX;
+	SB ControlDeltaY;
+	SB AnchorDeltaX;
+	SB AnchorDeltaY;
+
+	SHAPERECORD* next;
+
+	SHAPERECORD():next(0){};
+	SHAPERECORD(SHAPEWITHSTYLE* p,BitStream& bs);
+};
+
 class SHAPEWITHSTYLE
 {
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
+	friend class SHAPERECORD;
 private:
 	FILLSTYLEARRAY FillStyles;
 	LINESTYLEARRAY LineStyles;
+	UB NumFillBits;
+	UB NumLineBits;
+	SHAPERECORD ShapeRecords;
+public:
+//	SHAPEWITHSTYLE(){}
+};
+
+class MATRIX
+{
+private:
+	int size;
+
+public:
+	MATRIX():size(0){}
+	int getSize(){return size;}
+};
+
+class CXFORM
+{
 };
 
 std::ostream& operator<<(const std::ostream& s, const RECT& r);
@@ -196,4 +255,6 @@ std::istream& operator>>(std::istream& stream, FILLSTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, LINESTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, LINESTYLE& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLE& v);
+std::istream& operator>>(std::istream& stream, SHAPERECORD& v);
+std::istream& operator>>(std::istream& stream, MATRIX& v);
 #endif

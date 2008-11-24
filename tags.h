@@ -13,7 +13,17 @@ public:
 	Tag(RECORDHEADER h, std::istream& s):Header(h)
 	{
 		if((Header&0x3f)==0x3f)
+		{
+			std::cout << "long tag" << std::endl;
 			s >> Length;
+		}
+	}
+	SI32 getSize()
+	{
+		if((Header&0x3f)==0x3f)
+			return Length;
+		else
+			return Header&0x3f;
 	}
 };
 
@@ -25,6 +35,17 @@ private:
 	SHAPEWITHSTYLE Shapes;
 public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
+};
+
+class PlaceObjectTag: public Tag
+{
+private:
+	UI16 CharacterId;
+	UI16 Depth;
+	MATRIX Matrix;
+	CXFORM ColorTransform;
+public:
+	PlaceObjectTag(RECORDHEADER h, std::istream& in);
 };
 
 class SetBackgroundColorTag: public Tag

@@ -1,5 +1,5 @@
 #include "swftypes.h"
-
+#include "tags.h"
 RECT::RECT()
 {
 }
@@ -14,14 +14,30 @@ RECT::RECT()
 	Ymax=SB(NBits,s);
 }*/
 
-std::ostream& operator<<(const std::ostream& s, const RECT& r)
+std::ostream& operator<<(std::ostream& s, const RECT& r)
 {
 	std::cout << '{' << (int)r.Xmin << ',' << r.Xmax << ',' << r.Ymin << ',' << r.Ymax << '}';
+	return s;
 }
 
-std::ostream& operator<<(const std::ostream& s, const RGB& r)
+std::ostream& operator<<(std::ostream& s, const RGB& r)
 {
 	std::cout << "RGB <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << '>';
+	return s;
+}
+
+std::ostream& operator<<(std::ostream& s, const MATRIX& r)
+{
+	float scaleX=1,scaleY=1;
+	if(r.HasScale)
+	{
+		scaleX=r.ScaleX;
+		scaleY=r.ScaleY;
+	}
+	std::cout << "| " << scaleX << ' ' << (int)r.RotateSkew0 << " |" << std::endl;
+	std::cout << "| " << (int)r.RotateSkew1 << ' ' << scaleY << " |" << std::endl;
+	std::cout << "| " << (int)r.TranslateX << ' ' << (int)r.TranslateY << " |" << std::endl;
+	return s;
 }
 
 std::istream& operator>>(std::istream& stream, RECT& v)
@@ -69,6 +85,25 @@ std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	return s;
 }
 
+std::istream& operator>>(std::istream& s, SHAPE& v)
+{
+	BitStream bs(s);
+	v.NumFillBits=UB(4,bs);
+	v.NumLineBits=UB(4,bs);
+	v.ShapeRecords=SHAPERECORD(&v,bs);
+	if(v.ShapeRecords.StateNewStyles+v.ShapeRecords.StateLineStyle+v.ShapeRecords.StateFillStyle1+v.ShapeRecords.StateFillStyle0+v.ShapeRecords.StateMoveTo)
+	{
+		SHAPERECORD* cur=&(v.ShapeRecords);
+		while(1)
+		{
+			cur->next=new SHAPERECORD(&v,bs);
+			cur=cur->next;
+			if(cur->TypeFlag+cur->StateNewStyles+cur->StateLineStyle+cur->StateFillStyle1+cur->StateFillStyle0+cur->StateMoveTo==0)
+				break;
+		}
+	}
+}
+
 std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 {
 	s >> v.FillStyles >> v.LineStyles;
@@ -98,6 +133,43 @@ std::istream& operator>>(std::istream& s, LINESTYLE& v)
 	return s;
 }
 
+std::istream& operator>>(std::istream& in, TEXTRECORD& v)
+{
+	BitStream bs(in);
+	v.TextRecordType=UB(1,bs);
+	v.StyleFlagsReserved=UB(3,bs);
+	if(v.StyleFlagsReserved)
+		throw "reserved";
+	v.StyleFlagsHasFont=UB(1,bs);
+	v.StyleFlagsHasColor=UB(1,bs);
+	v.StyleFlagsHasYOffset=UB(1,bs);
+	v.StyleFlagsHasXOffset=UB(1,bs);
+	if(!v.TextRecordType)
+		return in;
+	if(v.StyleFlagsHasFont)
+		in >> v.FontID;
+	if(v.StyleFlagsHasColor)
+	{
+		RGB t;
+		in >> t;
+		v.TextColor=t;
+	}
+	if(v.StyleFlagsHasXOffset)
+		in >> v.XOffset;
+	if(v.StyleFlagsHasYOffset)
+		in >> v.YOffset;
+	if(v.StyleFlagsHasFont)
+		in >> v.TextHeight;
+	in >> v.GlyphCount;
+	for(int i=0;i<v.GlyphCount;i++)
+	{
+		v.GlyphEntries.push_back(GLYPHENTRY(&v,bs));
+		std::cout << "reading glyph " << i << "current size " << v.GlyphEntries.size() << std::endl;
+	}
+
+	return in;
+}
+
 std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 {
 	s >> v.FillStyleType;
@@ -108,7 +180,23 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 	return s;
 }
 
-SHAPERECORD::SHAPERECORD(SHAPEWITHSTYLE* p,BitStream& bs):parent(p),next(0)
+/*std::istream& operator>>(std::istream& in, GLYPHENTRY& v)
+{
+	BitStream bs(in);
+	v.GlyphIndex = UB(v.parent->parent->GlyphBits,bs);
+	v.GlyphAdvance = SB(v.parent->parent->AdvanceBits,bs);
+	std::cout << "\tglyph " << v.GlyphAdvance << std::endl;
+	return in;
+}*/
+
+GLYPHENTRY::GLYPHENTRY(TEXTRECORD* p,BitStream& bs):parent(p)
+{
+	GlyphIndex = UB(parent->parent->GlyphBits,bs);
+	GlyphAdvance = SB(parent->parent->AdvanceBits,bs);
+	std::cout << "\tglyph " << GlyphAdvance << std::endl;
+}
+
+SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 {
 	std::cout << "start shaperecord" << std::endl;
 	TypeFlag = UB(1,bs);
@@ -122,9 +210,7 @@ SHAPERECORD::SHAPERECORD(SHAPEWITHSTYLE* p,BitStream& bs):parent(p),next(0)
 			std::cout << "\tstraight line bits " << NumBits+2<< std::endl;
 
 			GeneralLineFlag=UB(1,bs);
-			if(GeneralLineFlag)
-				throw "general line";
-			else
+			if(!GeneralLineFlag)
 				VertLineFlag=UB(1,bs);
 
 			if(GeneralLineFlag || !VertLineFlag)
@@ -157,7 +243,7 @@ SHAPERECORD::SHAPERECORD(SHAPEWITHSTYLE* p,BitStream& bs):parent(p),next(0)
 		StateFillStyle1 = UB(1,bs);
 		StateFillStyle0 = UB(1,bs);
 		StateMoveTo = UB(1,bs);
-		if(StateNewStyles || StateLineStyle || StateFillStyle0 )
+		if(StateNewStyles)
 		{
 			throw "unsupported States in shaperecord";
 		}
@@ -169,10 +255,20 @@ SHAPERECORD::SHAPERECORD(SHAPEWITHSTYLE* p,BitStream& bs):parent(p),next(0)
 			MoveDeltaX = UB(MoveBits,bs);
 			MoveDeltaY = UB(MoveBits,bs);
 		}
+		if(StateFillStyle0)
+		{
+			std::cout << "fill style 0 bits " << parent->NumFillBits << std::endl;
+			FillStyle0=UB(parent->NumFillBits,bs);
+		}
 		if(StateFillStyle1)
 		{
 			std::cout << "fill style 1 bits " << parent->NumFillBits << std::endl;
 			FillStyle1=UB(parent->NumFillBits,bs);
+		}
+		if(StateLineStyle)
+		{
+			std::cout << "line style bits " << parent->NumLineBits << std::endl;
+			LineStyle=UB(parent->NumLineBits,bs);
 		}
 	}
 }
@@ -183,6 +279,13 @@ std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 	v.HasAddTerms=UB(1,bs);
 	v.HasMultTerms=UB(1,bs);
 	v.NBits=UB(4,bs);
+	if(v.HasMultTerms)
+	{
+		v.RedMultTerm=SB(v.NBits,bs);
+		v.GreenMultTerm=SB(v.NBits,bs);
+		v.BlueMultTerm=SB(v.NBits,bs);
+		v.AlphaMultTerm=SB(v.NBits,bs);
+	}
 	if(v.HasAddTerms)
 	{
 		v.RedAddTerm=SB(v.NBits,bs);
@@ -191,8 +294,6 @@ std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 		v.AlphaAddTerm=SB(v.NBits,bs);
 		std::cout << v.AlphaAddTerm << std::endl;
 	}
-	if(v.HasMultTerms)
-		throw "help5";
 }
 
 std::istream& operator>>(std::istream& stream, MATRIX& v)
@@ -211,88 +312,8 @@ std::istream& operator>>(std::istream& stream, MATRIX& v)
 		throw "unsupported rotate";
 	}
 	v.NTranslateBits=UB(5,bs);
-	v.TranslateX=SB(0,bs);
-	v.TranslateY=SB(0,bs);
+	v.TranslateX=SB(v.NTranslateBits,bs);
+	v.TranslateY=SB(v.NTranslateBits,bs);
 	return stream;
 }
 
-/*std::istream& operator>>(std::istream& stream, SHAPERECORD& v)
-{
-	std::cout << "start shaperecord" << std::endl;
-	BitStream bs(stream);
-	v.TypeFlag = UB(1,bs);
-	if(v.TypeFlag)
-	{
-		std::cout << "edge shaperecord" << std::endl;
-		v.StraightFlag=UB(1,bs);
-		v.NumBits=UB(4,bs);
-		if(v.StraightFlag)
-		{
-			std::cout << "\tstraight line bits " << v.NumBits+2<< std::endl;
-
-			v.GeneralLineFlag=UB(1,bs);
-			if(v.GeneralLineFlag)
-				throw "general line";
-			else
-				v.VertLineFlag=UB(1,bs);
-
-			if(v.GeneralLineFlag || !v.VertLineFlag)
-				throw "deltax";
-			if(v.GeneralLineFlag || v.VertLineFlag)
-			{
-				v.DeltaY=SB(v.NumBits+2,bs);
-				std::cout << "DeltaY " << v.DeltaY << std::endl;
-			}
-		}
-		else
-		{
-			std::cout << "\tcurve line bits " << v.NumBits+2 << std::endl;
-			
-			v.ControlDeltaX=SB(v.NumBits+2,bs);
-			v.ControlDeltaY=SB(v.NumBits+2,bs);
-			v.AnchorDeltaX=SB(v.NumBits+2,bs);
-			v.AnchorDeltaY=SB(v.NumBits+2,bs);
-			
-		}
-
-		std::cout << "\t avanzano " << (int)bs.pos << std::endl;
-		v.next=new SHAPERECORD(v.parent);
-		stream >> *v.next;
-	}
-	else
-	{
-		std::cout << "non edge shaperecord" << std::endl;
-		v.StateNewStyles = UB(1,bs);
-		v.StateLineStyle = UB(1,bs);
-		v.StateFillStyle1 = UB(1,bs);
-		v.StateFillStyle0 = UB(1,bs);
-		v.StateMoveTo = UB(1,bs);
-		if(v.StateNewStyles || v.StateLineStyle || v.StateFillStyle0 )
-		{
-			throw "unsupported States in shaperecord";
-		}
-		if(v.StateMoveTo)
-		{
-			std::cout << "move to" << std::endl;
-			v.MoveBits = UB(5,bs);
-			std::cout <<"\tbits " << v.MoveBits << std::endl;
-			v.MoveDeltaX = UB(v.MoveBits,bs);
-			v.MoveDeltaY = UB(v.MoveBits,bs);
-		}
-		if(v.StateFillStyle1)
-		{
-			std::cout << "fill style 1 bits " << v.parent->NumFillBits << std::endl;
-			v.FillStyle1=UB(v.parent->NumFillBits,bs);
-		}
-
-		if(v.StateNewStyles+v.StateLineStyle+v.StateFillStyle1+v.StateFillStyle0+v.StateMoveTo)
-		{
-			v.next=new SHAPERECORD(v.parent);
-			stream >> *v.next;
-		}
-		else
-			std::cout <<  "end shape" << std::endl;
-	}
-
-	return stream;
-}*/

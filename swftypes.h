@@ -4,17 +4,7 @@
 #include <stdint.h>
 #include <iostream>
 #include <fstream>
-typedef uint8_t UI8;
-
-class UI16
-{
-private:
-	uint16_t val;
-public:
-	UI16():val(0){}
-	UI16(uint16_t v):val(v){}
-	operator uint16_t(){ return val; }
-};
+#include <vector>
 
 class UI32
 {
@@ -24,6 +14,39 @@ public:
 	UI32():val(0){}
 	UI32(uint32_t v):val(v){}
 	operator uint32_t(){ return val; }
+};
+
+
+class UI16
+{
+private:
+	uint16_t val;
+public:
+	UI16():val(0){}
+	UI16(uint16_t v):val(v){}
+	operator uint16_t(){ return val; }
+	operator UI32(){ return val; }
+};
+
+class UI8
+{
+private:
+	uint8_t val;
+public:
+	UI8():val(0){}
+	UI8(uint8_t v):val(v){}
+	operator uint8_t() const { return val; }
+	operator UI16(){ return val; }
+};
+
+class SI16
+{
+private:
+	int16_t val;
+public:
+	SI16():val(0){}
+	SI16(int16_t v):val(v){}
+	operator int16_t(){ return val; }
 };
 
 typedef UI16 RECORDHEADER;
@@ -36,9 +59,39 @@ public:
 	UI8 Blue;
 };
 
+class RGBA
+{
+public:
+	UI8 Red;
+	UI8 Green;
+	UI8 Blue;
+	UI8 Alpha;
+	RGBA& operator=(const RGB& r)
+	{
+		Red=r.Red;
+		Green=r.Green;
+		Blue=r.Blue;
+		Alpha=0;
+	}
+};
+
 typedef UI32 SI32;
 
+typedef UI8 LANGCODE;
+
 std::istream& operator>>(std::istream& s, RGB& v);
+
+inline std::istream& operator>>(std::istream& s, UI8& v)
+{
+	s.read((char*)&v,1);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, SI16& v)
+{
+	s.read((char*)&v,2);
+	return s;
+}
 
 inline std::istream& operator>>(std::istream& s, UI16& v)
 {
@@ -72,7 +125,6 @@ public:
 		{
 			if(!pos)
 			{
-				std::cout << "read byte  @" << this << std::endl;
 				pos=8;
 				f.read((char*)&buffer,1);
 			}
@@ -97,7 +149,7 @@ public:
 			throw "FB too big\n";
 		buf=stream.readBits(s);
 	}
-	operator float()
+	operator float() const
 	{
 		return (buf>>16)+(buf&0xffff)/65535.0f; //TODO: Oppure 65536?
 	}
@@ -126,7 +178,7 @@ public:
 			throw "UB too big\n";
 		buf=stream.readBits(s);
 	}
-	operator int()
+	operator int() const
 	{
 		return buf;
 	}
@@ -157,9 +209,9 @@ public:
 
 class RECT
 {
-	friend std::ostream& operator<<(const std::ostream& s, const RECT& r);
+	friend std::ostream& operator<<(std::ostream& s, const RECT& r);
 	friend std::istream& operator>>(std::istream& stream, RECT& v);
-private:
+public:
 	UB NBits;
 	SB Xmin;
 	SB Xmax;
@@ -198,12 +250,13 @@ public:
 	FILLSTYLE* FillStyles;
 };
 
+class SHAPE;
 class SHAPEWITHSTYLE;
 
 class SHAPERECORD
 {
 public:
-	SHAPEWITHSTYLE* parent;
+	SHAPE* parent;
 	UB TypeFlag;
 	UB StateNewStyles;
 	UB StateLineStyle;
@@ -216,6 +269,8 @@ public:
 	UB MoveDeltaY;
 
 	UB FillStyle1;
+	UB FillStyle0;
+	UB LineStyle;
 
 	//Edge record
 	UB StraightFlag;
@@ -233,19 +288,60 @@ public:
 	SHAPERECORD* next;
 
 	SHAPERECORD():next(0){};
-	SHAPERECORD(SHAPEWITHSTYLE* p,BitStream& bs);
+	SHAPERECORD(SHAPE* p,BitStream& bs);
 };
 
-class SHAPEWITHSTYLE
+class TEXTRECORD;
+
+class GLYPHENTRY
 {
+public:
+	UB GlyphIndex;
+	SB GlyphAdvance;
+	TEXTRECORD* parent;
+	GLYPHENTRY(TEXTRECORD* p,BitStream& bs);
+};
+
+class DefineTextTag;
+
+class TEXTRECORD
+{
+public:
+	UB TextRecordType;
+	UB StyleFlagsReserved;
+	UB StyleFlagsHasFont;
+	UB StyleFlagsHasColor;
+	UB StyleFlagsHasYOffset;
+	UB StyleFlagsHasXOffset;
+	UI16 FontID;
+	RGBA TextColor;
+	SI16 XOffset;
+	SI16 YOffset;
+	UI16 TextHeight;
+	UI8 GlyphCount;
+	std::vector <GLYPHENTRY> GlyphEntries;
+	DefineTextTag* parent;
+	TEXTRECORD(DefineTextTag* p):parent(p){}
+};
+
+class SHAPE
+{
+	friend std::istream& operator>>(std::istream& stream, SHAPE& v);
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 	friend class SHAPERECORD;
+	friend class DefineShapeTag;
 private:
-	FILLSTYLEARRAY FillStyles;
-	LINESTYLEARRAY LineStyles;
 	UB NumFillBits;
 	UB NumLineBits;
 	SHAPERECORD ShapeRecords;
+};
+
+class SHAPEWITHSTYLE : public SHAPE
+{
+	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
+public:
+	FILLSTYLEARRAY FillStyles;
+	LINESTYLEARRAY LineStyles;
 public:
 //	SHAPEWITHSTYLE(){}
 };
@@ -278,6 +374,7 @@ class CLIPACTIONS
 class MATRIX
 {
 	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
+	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
 private:
 	int size;
 	UB HasScale;
@@ -300,16 +397,19 @@ class CXFORM
 {
 };
 
-std::ostream& operator<<(const std::ostream& s, const RECT& r);
-std::ostream& operator<<(const std::ostream& s, const RGB& r);
+std::ostream& operator<<(std::ostream& s, const RECT& r);
+std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::istream& operator>>(std::istream& s, RECT& v);
 
 std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
+std::istream& operator>>(std::istream& stream, SHAPE& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, LINESTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, LINESTYLE& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLE& v);
 std::istream& operator>>(std::istream& stream, SHAPERECORD& v);
+std::istream& operator>>(std::istream& stream, TEXTRECORD& v);
 std::istream& operator>>(std::istream& stream, MATRIX& v);
 std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
+std::istream& operator>>(std::istream& stream, GLYPHENTRY& v);
 #endif

@@ -265,8 +265,8 @@ public:
 	UB StateMoveTo;
 
 	UB MoveBits;
-	UB MoveDeltaX;
-	UB MoveDeltaY;
+	SB MoveDeltaX;
+	SB MoveDeltaY;
 
 	UB FillStyle1;
 	UB FillStyle0;
@@ -330,6 +330,7 @@ class SHAPE
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 	friend class SHAPERECORD;
 	friend class DefineShapeTag;
+	friend class DefineTextTag;
 private:
 	UB NumFillBits;
 	UB NumLineBits;

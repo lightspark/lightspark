@@ -252,8 +252,8 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 			std::cout << "move to" << std::endl;
 			MoveBits = UB(5,bs);
 			std::cout <<"\tbits " << MoveBits << std::endl;
-			MoveDeltaX = UB(MoveBits,bs);
-			MoveDeltaY = UB(MoveBits,bs);
+			MoveDeltaX = SB(MoveBits,bs);
+			MoveDeltaY = SB(MoveBits,bs);
 		}
 		if(StateFillStyle0)
 		{

@@ -8,7 +8,7 @@
 
 using namespace std;
 
-list < Tag* > dictionary;
+list < RenderTag* > dictionary;
 
 int main()
 {
@@ -38,13 +38,13 @@ int main()
 			std::cout << "end readTag" << std::endl;
 			switch(tag->getType())
 			{
-				case TAG:
+			//	case TAG:
 				case RENDER_TAG:
 					std::cout << "add to dict" << std::endl;
-					dictionary.push_back(tag);
+					dictionary.push_back(dynamic_cast<RenderTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
-					displayList.push_back(dynamic_cast<DisplayListTag*>(tag)->Render(dictionary));
+					displayList.push_back(dynamic_cast<DisplayListTag*>(tag)->Render());
 					break;
 				case SHOW_TAG:
 				{

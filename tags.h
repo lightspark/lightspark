@@ -31,7 +31,7 @@ public:
 			return Header&0x3f;
 	}
 	virtual TAGTYPE getType(){ return TAG; }
-	virtual int getId(){return 0;} 
+	//virtual int getId(){return 0;} 
 };
 
 class EndTag:public Tag
@@ -46,7 +46,7 @@ class DisplayListTag: public Tag
 public:
 	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
-	virtual GLObject* Render(std::list< Tag* >& dictionary ){ return NULL; }
+	virtual GLObject* Render(){ return NULL; }
 };
 
 class ControlTag: public Tag
@@ -62,6 +62,7 @@ class RenderTag: public Tag
 public:
 	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){}
 	virtual TAGTYPE getType(){ return RENDER_TAG; }
+	virtual int getId(){return 0;} 
 	virtual void Render(){std::cout << "default render" << std::endl; };
 };
 
@@ -118,7 +119,7 @@ private:
 
 public:
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
-	GLObject* Render(std::list< Tag* >& dictionary );
+	GLObject* Render( );
 };
 
 class SetBackgroundColorTag: public ControlTag
@@ -140,8 +141,9 @@ class KERNINGRECORD
 {
 };
 
-class DefineFont2Tag: public Tag
+class DefineFont2Tag: public RenderTag
 {
+	friend class DefineTextTag; 
 private:
 	UI16 FontID;
 	UB FontFlagsHasLayout;
@@ -170,6 +172,7 @@ private:
 
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
+	virtual int getId(){ return FontID; }
 };
 
 class DefineTextTag: public RenderTag

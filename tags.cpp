@@ -357,10 +357,6 @@ void DefineTextTag::Render()
 		int done=0;
 		x2+=(*it).XOffset;
 		y2+=(*it).YOffset;
-		glPointSize(10);
-		glBegin(GL_POINTS);
-			glVertex2i(0,0);
-		glEnd();
 		for(it2;it2!=(it->GlyphEntries.end());it2++)
 		{
 			SHAPE& shape=font->GlyphShapeTable[it2->GlyphIndex];
@@ -372,14 +368,14 @@ void DefineTextTag::Render()
 			for(it;it!=paths.end();it++)
 			{
 				glPushMatrix();
-				glTtranslate(x2,y2);
+				glTranslatef(x2,y2,0);
 				glScalef(0.351562,0.351562,1);
 				std::vector < Vector2 >::iterator it2=(*it).points.begin();
 				if(status.validFill && (*it).closed)
 				{
 					glBegin(GL_TRIANGLE_FAN);
 					for(it2;it2!=(*it).points.end();it2++)
-						glVertex2i(x2+(*it2).x,y2+(*it2).y);
+						glVertex2i((*it2).x,(*it2).y);
 					glEnd();
 				}
 				it2=(*it).points.begin();
@@ -390,7 +386,7 @@ void DefineTextTag::Render()
 					else
 						glBegin(GL_LINE_STRIP);
 					for(it2;it2!=(*it).points.end();it2++)
-						glVertex2i(x2+(*it2).x,y2+(*it2).y);
+						glVertex2i((*it2).x,(*it2).y);
 					glEnd();
 				}
 				glPopMatrix();

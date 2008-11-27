@@ -28,7 +28,9 @@ int main()
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0,640,480,0,-10,10);
-
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glScalef(0.05,0.05,0.05);
 	try
 	{
 		TagFactory factory(f);
@@ -55,13 +57,15 @@ int main()
 					{
 						if(*i!=NULL)
 						{
+							glLoadIdentity();
+							glScalef(0.05,0.05,0.05);
 							glCallList((*i)->list);
 							std::cout << "call list" << std::endl;
 						}
 					}
 					SDL_GL_SwapBuffers( );
 					std::cout << "end render" << std::endl;
-					sleep(10);
+					sleep(20);
 					break;
 				}
 				case CONTROL_TAG:

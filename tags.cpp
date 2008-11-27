@@ -197,6 +197,7 @@ public:
 
 void DefineSpriteTag::Render()
 {
+	std::cout << "Render Sprite" << std::endl;
 	std::list < DisplayListTag* >::iterator it=displayList.begin();
 	for(it;it!=displayList.end();it++)
 	{
@@ -214,37 +215,90 @@ public:
 	GraphicStatus():validFill(false),validStroke(false){}
 };
 
+void TessellateShaperecordList(SHAPERECORD* cur, std::vector< Path >& paths, GraphicStatus& status);
+
 void DefineShapeTag::Render()
 {
+	std::cout << "Render Shape" << std::endl;
 	int startX=0,startY=0;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
 	std::vector< Path > paths;
 	GraphicStatus status;
+	TessellateShaperecordList(cur,paths,status);
+	std::vector < Path >::iterator it=paths.begin();
+	for(it;it!=paths.end();it++)
+	{
+		std::vector < Vector2 >::iterator it2=(*it).points.begin();
+		if(status.validFill && (*it).closed)
+		{
+			glBegin(GL_TRIANGLE_FAN);
+			for(it2;it2!=(*it).points.end();it2++)
+				glVertex2i((*it2).x,(*it2).y);
+			glEnd();
+		}
+		it2=(*it).points.begin();
+		if(status.validStroke)
+		{
+			if((*it).closed)
+				glBegin(GL_LINE_LOOP);
+			else
+				glBegin(GL_LINE_STRIP);
+			for(it2;it2!=(*it).points.end();it2++)
+				glVertex2i((*it2).x,(*it2).y);
+			glEnd();
+		}
+	}
+}
+
+void TessellateShaperecordList(SHAPERECORD* cur, std::vector< Path >& paths, GraphicStatus& status)
+{
+	int start2X=0,start2Y=0;
+//#define startX (start2X*0.351562)
+//#define startY (start2Y*0.351562)
+	#define startX start2X
+	#define startY start2Y
 	while(cur)
 	{
 		if(cur->TypeFlag)
 		{
-			if(!cur->StraightFlag)
-				throw "morte linea";
-			startX+=cur->DeltaX;
-			startY+=cur->DeltaY;
-			if(Vector2(startX,startY)==paths.back().points.front())
-				paths.back().closed=true;
+			if(cur->StraightFlag)
+			{
+				start2X+=cur->DeltaX;
+				start2Y+=cur->DeltaY;
+				if(Vector2(startX,startY)==paths.back().points.front())
+					paths.back().closed=true;
+				else
+					paths.back().points.push_back(Vector2(startX,startY));
+			}
 			else
-				paths.back().points.push_back(Vector2(startX,startY));
+			{
+				start2X+=cur->ControlDeltaX;
+				start2Y+=cur->ControlDeltaY;
+				if(Vector2(startX,startY)==paths.back().points.front())
+					paths.back().closed=true;
+				else
+					paths.back().points.push_back(Vector2(startX,startY));
+
+				start2X+=cur->AnchorDeltaX;
+				start2Y+=cur->AnchorDeltaY;
+				if(Vector2(startX,startY)==paths.back().points.front())
+					paths.back().closed=true;
+				else
+					paths.back().points.push_back(Vector2(startX,startY));
+			}
 		}
 		else
 		{
 			if(cur->StateMoveTo)
 			{
 				paths.push_back(Path());
-				startX+=cur->MoveDeltaX;
-				startY+=cur->MoveDeltaY;
+				start2X=cur->MoveDeltaX;
+				start2Y=cur->MoveDeltaY;
 				paths.back().points.push_back(Vector2(startX,startY));
 			}
 			if(cur->StateLineStyle)
 			{
-/*				glLineWidth(Shapes.LineStyles.LineStyles[cur->LineStyle].Width/20);
+/*				glLineWidth(Shapes.LineStyles.LineStyles[cur->LineStyle].Width);
 				glColor3ub(Shapes.LineStyles.LineStyles[cur->LineStyle].Color.Red,
 						Shapes.LineStyles.LineStyles[cur->LineStyle].Color.Green,
 						Shapes.LineStyles.LineStyles[cur->LineStyle].Color.Blue);
@@ -261,52 +315,30 @@ void DefineShapeTag::Render()
 						Shapes.FillStyles.FillStyles[cur->FillStyle1].Color.Blue);*/
 			}
 			if(cur->StateFillStyle0)
-				throw "fill style0";
+			{
+				if(cur->FillStyle0!=1)
+					throw "fill style0";
+				status.validStroke=true;
+			}
 		}
 		cur=cur->next;
 	}
-	std::vector < Path >::iterator it=paths.begin();
-	for(it;it!=paths.end();it++)
-	{
-		std::vector < Vector2 >::iterator it2=(*it).points.begin();
-		if(status.validFill && (*it).closed)
-		{
-			glBegin(GL_TRIANGLE_FAN);
-			for(it2;it2!=(*it).points.end();it2++)
-				glVertex2i((*it2).x/20,(*it2).y/20);
-			glEnd();
-		}
-		it2=(*it).points.begin();
-		if(status.validStroke)
-		{
-			if((*it).closed)
-				glBegin(GL_LINE_LOOP);
-			else
-				glBegin(GL_LINE_STRIP);
-			for(it2;it2!=(*it).points.end();it2++)
-				glVertex2i((*it2).x/20,(*it2).y/20);
-			glEnd();
-		}
-	}
 }
 
-/*PlaceObjectTag::PlaceObjectTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	std::cout << std::hex << Header << std::endl;
-	in >> CharacterId;
-	std::cout << CharacterId << std::endl;
-	throw "help3";
-}*/
 
 void DefineTextTag::Render()
 {
+	std::cout << "Render Text" << std::endl;
+	std::cout << TextMatrix << std::endl;
 	glColor3f(0,0,0);
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
-	int x=0,y=0;
+	int x=0,y=0;//1024;
 	std::vector < GLYPHENTRY >::iterator it2;
 	DefineFont2Tag* font=NULL;
+	//glScalef(0.351562,0.351562,1);
 	for(it;it!=TextRecords.end();it++)
 	{
+		std::cout << "Text height " << it->TextHeight << std::endl;
 		if(it->StyleFlagsHasFont)
 		{
 			std::list< RenderTag*>::iterator it3 = dictionary.begin();
@@ -320,93 +352,34 @@ void DefineTextTag::Render()
 			}
 			font=dynamic_cast<DefineFont2Tag*>(*it3);
 		}
-		x+=(*it).XOffset/20;
-		y+=(*it).YOffset/20;
 		it2 = it->GlyphEntries.begin();
 		int x2=x,y2=y;
 		int done=0;
+		x2+=(*it).XOffset;
+		y2+=(*it).YOffset;
+		glPointSize(10);
+		glBegin(GL_POINTS);
+			glVertex2i(0,0);
+		glEnd();
 		for(it2;it2!=(it->GlyphEntries.end());it2++)
 		{
 			SHAPE& shape=font->GlyphShapeTable[it2->GlyphIndex];
-			int startX=0,startY=0;
 			SHAPERECORD* cur=&(shape.ShapeRecords);
 			std::vector< Path > paths;
 			GraphicStatus status;
-			while(cur)
-			{
-				if(cur->TypeFlag)
-				{
-					if(cur->StraightFlag)
-					{
-						startX+=cur->DeltaX;
-						startY+=cur->DeltaY;
-						if(Vector2(startX,startY)==paths.back().points.front())
-							paths.back().closed=true;
-						else
-							paths.back().points.push_back(Vector2(startX,startY));
-					}
-					else
-					{
-						startX+=cur->ControlDeltaX;
-						startY+=cur->ControlDeltaY;
-						if(Vector2(startX,startY)==paths.back().points.front())
-							paths.back().closed=true;
-						else
-							paths.back().points.push_back(Vector2(startX,startY));
-
-						startX+=cur->AnchorDeltaX;
-						startY+=cur->AnchorDeltaY;
-						if(Vector2(startX,startY)==paths.back().points.front())
-							paths.back().closed=true;
-						else
-							paths.back().points.push_back(Vector2(startX,startY));
-					}
-				}
-				else
-				{
-					if(cur->StateMoveTo)
-					{
-						paths.push_back(Path());
-						startX=cur->MoveDeltaX;
-						startY=cur->MoveDeltaY;
-						paths.back().points.push_back(Vector2(startX,startY));
-					}
-					if(cur->StateLineStyle)
-					{
-		/*				glLineWidth(Shapes.LineStyles.LineStyles[cur->LineStyle].Width/20);
-						glColor3ub(Shapes.LineStyles.LineStyles[cur->LineStyle].Color.Red,
-								Shapes.LineStyles.LineStyles[cur->LineStyle].Color.Green,
-								Shapes.LineStyles.LineStyles[cur->LineStyle].Color.Blue);
-		*/
-						if(cur->LineStyle)
-							status.validStroke=true;
-						else
-							status.validStroke=false;
-					}
-					if(cur->StateFillStyle1)
-					{
-				/*		glColor4ub(Shapes.FillStyles.FillStyles[cur->FillStyle1].Color.Red,
-								Shapes.FillStyles.FillStyles[cur->FillStyle1].Color.Green,
-								Shapes.FillStyles.FillStyles[cur->FillStyle1].Color.Blue);*/
-					}
-					if(cur->StateFillStyle0)
-					{
-						if(cur->FillStyle0!=1)
-							throw "fill style0";
-						status.validStroke=true;
-					}
-				}
-				cur=cur->next;
-			}
+			TessellateShaperecordList(cur,paths,status);
 			std::vector < Path >::iterator it=paths.begin();
 			for(it;it!=paths.end();it++)
 			{
+				glPushMatrix();
+				glTtranslate(x2,y2);
+				glScalef(0.351562,0.351562,1);
 				std::vector < Vector2 >::iterator it2=(*it).points.begin();
 				if(status.validFill && (*it).closed)
 				{
 					glBegin(GL_TRIANGLE_FAN);
 					for(it2;it2!=(*it).points.end();it2++)
-						glVertex2i(x2+(*it2).x/20,y2+(*it2).y/20);
+						glVertex2i(x2+(*it2).x,y2+(*it2).y);
 					glEnd();
 				}
 				it2=(*it).points.begin();
@@ -417,18 +390,13 @@ void DefineTextTag::Render()
 					else
 						glBegin(GL_LINE_STRIP);
 					for(it2;it2!=(*it).points.end();it2++)
-						glVertex2i(x2+(*it2).x/20,y2+(*it2).y/20);
+						glVertex2i(x2+(*it2).x,y2+(*it2).y);
 					glEnd();
 				}
+				glPopMatrix();
 			}
-/*			glBegin(GL_QUADS);
-				glVertex2i(x2,y2);
-				glVertex2i(x2+5,y2);
-				glVertex2i(x2+5,y2+10);
-				glVertex2i(x2,y2+10);
-			glEnd();*/
 			std::cout << "Character " << it2->GlyphIndex << std::endl;
-			x2+=it2->GlyphAdvance/20;
+			x2+=it2->GlyphAdvance;
 		}
 	}
 }
@@ -471,6 +439,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 GLObject* PlaceObject2Tag::Render()
 {
 	std::cout << "Render Place object 2 ChaID " << CharacterId <<  std::endl;
+	std::cout << Matrix << std::endl;
 	if(!PlaceFlagHasCharacter)
 		throw "modify not supported";
 	std::list< RenderTag* >::iterator it=dictionary.begin();
@@ -488,8 +457,11 @@ GLObject* PlaceObject2Tag::Render()
 	if((*it)->getType()!=RENDER_TAG)
 		throw "cazzo renderi";
 	GLObject* ret=new GLObject();
-	std::cout << Matrix << std::endl;
+	
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
 	ret->start();
+	glMultMatrixf(matrix);
 	{
 		dynamic_cast<RenderTag*>(*it)->Render();
 	}

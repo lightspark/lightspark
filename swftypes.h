@@ -391,6 +391,7 @@ private:
 	SB TranslateY;
 public:
 	MATRIX():size(0){}
+	void get4DMatrix(float matrix[16]);
 	//int getSize(){return size;}
 };
 

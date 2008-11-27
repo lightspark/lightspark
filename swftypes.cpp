@@ -1,5 +1,6 @@
 #include "swftypes.h"
 #include "tags.h"
+#include <string.h>
 RECT::RECT()
 {
 }
@@ -24,6 +25,28 @@ std::ostream& operator<<(std::ostream& s, const RGB& r)
 {
 	std::cout << "RGB <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << '>';
 	return s;
+}
+
+void MATRIX::get4DMatrix(float matrix[16])
+{
+	memset(matrix,0,sizeof(float)*16);
+	if(HasScale)
+		matrix[0]=ScaleX;
+	else
+		matrix[0]=1;
+	matrix[1]=RotateSkew0;
+
+	matrix[4]=RotateSkew1;
+	if(HasScale)
+		matrix[5]=ScaleY;
+	else
+		matrix[5]=1;
+
+	matrix[10]=1;
+
+	matrix[12]=TranslateX;
+	matrix[13]=TranslateY;
+	matrix[15]=1;
 }
 
 std::ostream& operator<<(std::ostream& s, const MATRIX& r)

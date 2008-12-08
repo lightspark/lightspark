@@ -29,8 +29,8 @@ int main()
 	glLoadIdentity();
 	glOrtho(0,640,480,0,-10,10);
 	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glScalef(0.05,0.05,0.05);
+//	glLoadIdentity();
+//	glScalef(0.1,0.1,0.1);
 	try
 	{
 		TagFactory factory(f);
@@ -58,7 +58,7 @@ int main()
 						if(*i!=NULL)
 						{
 							glLoadIdentity();
-							glScalef(0.05,0.05,0.05);
+							glScalef(0.1,0.1,0.1);
 							glCallList((*i)->list);
 							std::cout << "call list" << std::endl;
 						}

@@ -1,5 +1,5 @@
-clash: main.o swf.o swftypes.o tags.o gltags.o
-	g++ -g -o $@ $^ -lSDL -lGL
+clash: main.o swf.o swftypes.o tags.o 
+	g++ -g -o $@ $^ -lSDL -lGL -pg
 
 %.o: %.cpp
-	g++ -g -c -o $@ $^
+	g++ -g -c -o $@ $^ -pg

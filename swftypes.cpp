@@ -221,16 +221,15 @@ GLYPHENTRY::GLYPHENTRY(TEXTRECORD* p,BitStream& bs):parent(p)
 
 SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 {
-	std::cout << "start shaperecord" << std::endl;
 	TypeFlag = UB(1,bs);
 	if(TypeFlag)
 	{
-		std::cout << "edge shaperecord" << std::endl;
+	//	std::cout << "edge shaperecord" << std::endl;
 		StraightFlag=UB(1,bs);
 		NumBits=UB(4,bs);
 		if(StraightFlag)
 		{
-			std::cout << "\tstraight line bits " << NumBits+2<< std::endl;
+//			std::cout << "\tstraight line bits " << NumBits+2<< std::endl;
 
 			GeneralLineFlag=UB(1,bs);
 			if(!GeneralLineFlag)
@@ -239,17 +238,17 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 			if(GeneralLineFlag || !VertLineFlag)
 			{
 				DeltaX=SB(NumBits+2,bs);
-				std::cout << "DeltaX " << DeltaX << std::endl;
+//				std::cout << "DeltaX " << DeltaX << std::endl;
 			}
 			if(GeneralLineFlag || VertLineFlag)
 			{
 				DeltaY=SB(NumBits+2,bs);
-				std::cout << "DeltaY " << DeltaY << std::endl;
+//				std::cout << "DeltaY " << DeltaY << std::endl;
 			}
 		}
 		else
 		{
-			std::cout << "\tcurve line bits " << NumBits+2 << std::endl;
+//			std::cout << "\tcurve line bits " << NumBits+2 << std::endl;
 			
 			ControlDeltaX=SB(NumBits+2,bs);
 			ControlDeltaY=SB(NumBits+2,bs);

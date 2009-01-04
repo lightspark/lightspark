@@ -44,9 +44,11 @@ public:
 class DisplayListTag: public Tag
 {
 public:
-	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
+	bool add_to_list;
+	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s),add_to_list(true){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
-	virtual GLObject* Render(){ return NULL; }
+	virtual UI16 getDepth()=0;
+	virtual void Render()=0;
 };
 
 class ControlTag: public Tag
@@ -76,6 +78,18 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
+};
+
+class DefineSoundTag: public Tag
+{
+public:
+	DefineSoundTag(RECORDHEADER h, std::istream& s);
+};
+
+class StartSoundTag: public Tag
+{
+public:
+	StartSoundTag(RECORDHEADER h, std::istream& s);
 };
 
 class ShowFrameTag: public Tag
@@ -119,7 +133,11 @@ private:
 
 public:
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
-	GLObject* Render( );
+	void Render( );
+	UI16 getDepth()
+	{
+		return Depth;
+	}
 };
 
 class SetBackgroundColorTag: public ControlTag
@@ -141,11 +159,41 @@ class KERNINGRECORD
 {
 };
 
-class DefineFont2Tag: public RenderTag
+class FontTag: public RenderTag
+{
+protected:
+	UI16 FontID;
+public:
+	FontTag(RECORDHEADER h,std::istream& s):RenderTag(h,s){}
+	virtual void Render(int glyph)=0;
+};
+
+class DefineFontTag: public FontTag
+{
+	friend class DefineTextTag; 
+protected:
+	std::vector<UI16> OffsetTable;
+	std::vector < SHAPE > GlyphShapeTable;
+
+public:
+	DefineFontTag(RECORDHEADER h, std::istream& in);
+	virtual int getId(){ return FontID; }
+	void Render(int glyph);
+};
+
+class DefineFontInfoTag: public Tag
+{
+public:
+	DefineFontInfoTag(RECORDHEADER h, std::istream& in);
+};
+
+
+class DefineFont2Tag: public FontTag
 {
 	friend class DefineTextTag; 
 private:
-	UI16 FontID;
+	std::vector<UI32> OffsetTable;
+	std::vector < SHAPE > GlyphShapeTable;
 	UB FontFlagsHasLayout;
 	UB FontFlagsShiftJIS;
 	UB FontFlagsSmallText;
@@ -158,9 +206,7 @@ private:
 	UI8 FontNameLen;
 	std::vector <UI8> FontName;
 	UI16 NumGlyphs;
-	std::vector<UI32> OffsetTable;
 	UI32 CodeTableOffset;
-	std::vector < SHAPE > GlyphShapeTable;
 	std::vector <UI16> CodeTable;
 	SI16 FontAscent;
 	SI16 FontDescent;
@@ -173,6 +219,7 @@ private:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
+	void Render(int);
 };
 
 class DefineTextTag: public RenderTag

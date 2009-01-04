@@ -110,6 +110,11 @@ inline int min(int a,int b)
 	return (a<b)?a:b;
 }
 
+inline int max(int a,int b)
+{
+	return (a>b)?a:b;
+}
+
 class BitStream
 {
 public:
@@ -331,6 +336,8 @@ class SHAPE
 	friend class SHAPERECORD;
 	friend class DefineShapeTag;
 	friend class DefineTextTag;
+	friend class DefineFontTag;
+	friend class DefineFont2Tag;
 private:
 	UB NumFillBits;
 	UB NumLineBits;

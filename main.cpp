@@ -4,18 +4,17 @@
 #include <fstream>
 #include <list>
 #include <SDL/SDL.h>
-#include "gltags.h"
 
 using namespace std;
 
 list < RenderTag* > dictionary;
+list < DisplayListTag* > displayList;
 
 int main()
 {
 	ifstream f("flash.swf",ifstream::in);
 	SWF_HEADER h(f);
 	cout << h.getFrameSize() << endl;
-	list < GLObject* > displayList;
 
 	SDL_Init ( SDL_INIT_VIDEO );
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
@@ -31,6 +30,7 @@ int main()
 	glMatrixMode(GL_MODELVIEW);
 //	glLoadIdentity();
 //	glScalef(0.1,0.1,0.1);
+	int done=0;
 	try
 	{
 		TagFactory factory(f);
@@ -46,12 +46,13 @@ int main()
 					dictionary.push_back(dynamic_cast<RenderTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
-					displayList.push_back(dynamic_cast<DisplayListTag*>(tag)->Render());
+					if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)
+						displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
 					break;
 				case SHOW_TAG:
 				{
 					glClear(GL_COLOR_BUFFER_BIT); 
-					list < GLObject* >::iterator i=displayList.begin();
+					list < DisplayListTag* >::iterator i=displayList.begin();
 					glColor3f(0,1,0);
 					for(i;i!=displayList.end();i++)
 					{
@@ -59,13 +60,18 @@ int main()
 						{
 							glLoadIdentity();
 							glScalef(0.1,0.1,0.1);
-							glCallList((*i)->list);
+							(*i)->Render();
 							std::cout << "call list" << std::endl;
 						}
 					}
 					SDL_GL_SwapBuffers( );
 					std::cout << "end render" << std::endl;
-					sleep(20);
+					if(done>1)
+					{
+						sleep(5);
+						goto exit;
+					}
+					done++;
 					break;
 				}
 				case CONTROL_TAG:
@@ -78,7 +84,7 @@ int main()
 	{
 		cout << s << endl;
 	}
-
+exit:
 	SDL_Quit();
 }
 

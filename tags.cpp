@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <GL/gl.h>
 
 extern std::list < RenderTag* > dictionary;
 extern std::list < DisplayListTag* > displayList;
@@ -257,92 +258,6 @@ void DefineSpriteTag::Render()
 	}
 }
 
-class Vector2
-{
-public:
-	int x,y;
-	int index;
-	int chain;
-	Vector2(int a, int b, int i):x(a),y(b),index(i){}
-	Vector2(int a, int b):x(a),y(b),index(-1){}
-	bool operator==(const Vector2& v){return v.x==x && v.y==y;}
-	bool operator==(int i){return index==i;}
-	bool operator<(const Vector2& v) const {return (y==v.y)?(x < v.x):(y < v.y);}
-	const Vector2 operator-(const Vector2& v)const { return Vector2(x-v.x,y-v.y);}
-	const Vector2 operator+(const Vector2& v)const { return Vector2(x+v.x,y+v.y);}
-	const Vector2 operator*(int p)const { return Vector2(x*p,y*p);}
-	Vector2& operator/=(int v) { x/=v; y/=v; return *this;}
-
-};
-
-class Edge
-{
-	friend class Shape;
-private:
-	int x1,x2;
-	int y1,y2;
-public:
-	int index;
-	Edge(const Vector2& a,const Vector2& b, int i):index(i)
-	{
-		if(a.y<b.y)
-		{
-			y1=a.y;
-			y2=b.y;
-			x1=a.x;
-			x2=b.x;
-		}
-		else
-		{
-			y1=b.y;
-			y2=a.y;
-			x1=b.x;
-			x2=a.x;
-		}
-	}
-	bool yIntersect(int y,int32_t& d)
-	{
-		if((y>=y1) && (y<y2))
-		{
-			float m=(x2-x1);
-			m/=(y2-y1);
-			d=m*(y-y1);
-			d+=x1;
-			return true;
-		}
-		else
-			return false;
-	}
-	bool xIntersect(int x,int32_t& d)
-	{
-		int u1,u2;
-		u1=min(x1,x2);
-		u2=max(x1,x2);
-		if((x>=u1) && (x<=u2))
-		{
-			if(x2==x1)
-			{
-				d=y1;
-			}
-			else
-			{
-				float m=(y2-y1);
-				m/=(x2-x1);
-				d=m*(x-x1);
-				d+=y1;
-			}
-			return true;
-		}
-		else
-			return false;
-	}
-	bool operator==(int a)
-	{
-		return index==a;
-	}
-
-};
-
 int crossProd(const Vector2& a, const Vector2& b)
 {
 	return a.x*b.y-a.y*b.x;
@@ -393,14 +308,27 @@ VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 
 	Vector2 center=points[a]+points[b]+v;
 
+	std::vector<Vector2> new_points(points);
+
+	new_points.erase(find(new_points.begin(),new_points.end(),v));
+	fixIndex(new_points);
+
 	if(points[a].y <= v.y &&
+		points[b].y <= v.y)
+	{
+		if(!pointInPolygon(new_points,v))
+			return START_VERTEX;
+		else
+			return SPLIT_VERTEX;
+	}
+/*	if(points[a].y <= v.y &&
 		points[b].y <= v.y)
 	{
 		if(pointInPolygon(points,center))
 			return START_VERTEX;
 		else
 			return SPLIT_VERTEX;
-	}
+	}*/
 	else if(points[a].y >= v.y &&
 		points[b].y <= v.y)
 	{
@@ -414,6 +342,14 @@ VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 	else if(points[a].y >= v.y &&
 		points[b].y >= v.y)
 	{
+		if(!pointInPolygon(new_points,v))
+			return END_VERTEX;
+		else
+			return MERGE_VERTEX;
+	}
+/*	else if(points[a].y >= v.y &&
+		points[b].y >= v.y)
+	{
 		if(pointInPolygon(points,center))
 		{
 			return END_VERTEX;
@@ -422,7 +358,7 @@ VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 		{
 			return MERGE_VERTEX;
 		}
-	}
+	}*/
 	else
 	{
 		throw "unknown type";
@@ -435,8 +371,6 @@ std::ostream& operator<<(std::ostream& s, const GraphicStatus& p)
 	std::cout << "ValidStroke "<< p.validStroke << std::endl;
 }
 
-class Shape;
-
 void TessellateShaperecordList(SHAPERECORD* cur, std::vector< Shape >& shapes);
 
 void DefineShapeTag::Render()
@@ -444,31 +378,15 @@ void DefineShapeTag::Render()
 	std::cout << "Render Shape" << std::endl;
 	int startX=0,startY=0;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
-/*	std::vector< Path > paths;
-	TessellateShaperecordList(cur,paths);
-	std::vector < Path >::iterator it=paths.begin();
-	for(it;it!=paths.end();it++)
+	std::vector< Shape > shapes;
+	TessellateShaperecordList(cur,shapes);
+	std::vector < Shape >::iterator it=shapes.begin();
+	for(it;it!=shapes.end();it++)
 	{
-		std::vector < Vector2 >::iterator it2=(*it).points.begin();
-		if((*it).state->validFill && (*it).closed)
-		{
-			glBegin(GL_TRIANGLE_FAN);
-			for(it2;it2!=(*it).points.end();it2++)
-				glVertex2i((*it2).x,(*it2).y);
-			glEnd();
-		}
-		it2=(*it).points.begin();
-		//if((*it).state->validStroke)
-		{
-			if((*it).closed)
-				glBegin(GL_LINE_LOOP);
-			else
-				glBegin(GL_LINE_STRIP);
-			for(it2;it2!=(*it).points.end();it2++)
-				glVertex2i((*it2).x,(*it2).y);
-			glEnd();
-		}
-	}*/
+		it->Render();
+		//std::cout << it->_state << std::endl;
+	}
+	std::cout << "fine Render Shape" << std::endl;
 }
 
 void SplitPath(std::vector<Path>& paths,int a, int b)
@@ -505,12 +423,6 @@ void SplitPath(std::vector<Path>& paths,int a, int b)
 	paths.push_back(p);
 }
 
-class Triangle
-{
-	Vector2 v1,v2,v3;
-	Triangle(Vector2 a,Vector2 b, Vector2 c):v1(a),v2(b),v3(c){}
-};
-
 bool pointInPolygon(const std::vector<Vector2>& poly, const Vector2& point)
 {
 	int count=0;
@@ -518,7 +430,7 @@ bool pointInPolygon(const std::vector<Vector2>& poly, const Vector2& point)
 	int dist;
 	for(jj=0;jj<poly.size()-1;jj++)
 	{
-		Edge e(poly[jj]*3,poly[jj+1]*3,-1);
+		Edge e(poly[jj],poly[jj+1],-1);
 		if(e.yIntersect(point.y,dist))
 		{
 			if(dist-point.x>0)
@@ -528,7 +440,7 @@ bool pointInPolygon(const std::vector<Vector2>& poly, const Vector2& point)
 			}
 		}
 	}
-	Edge e(poly[jj]*3,poly[0]*3,-1);
+	Edge e(poly[jj],poly[0],-1);
 	if(e.yIntersect(point.y,dist))
 	{
 		if(dist-point.x>0)
@@ -537,42 +449,6 @@ bool pointInPolygon(const std::vector<Vector2>& poly, const Vector2& point)
 	//std::cout << "count " << count << std::endl;
 	return count%2;
 }
-
-class Shape
-{
-	public:
-		std::vector<Vector2> outline;
-		std::vector<Triangle> interior;
-		bool closed;
-
-		//DEBUG
-		std::vector<Edge> edges;
-		void Render() const
-		{
-			std::vector<Vector2>::const_iterator it=outline.begin();
-			if(closed)
-				glBegin(GL_LINE_LOOP);
-			else
-				glBegin(GL_LINE_STRIP);
-			for(it;it!=outline.end();it++)
-			{
-				glVertex2i(it->x,it->y);
-				std::cout << *it;
-			}
-				
-			glEnd();
-
-			//DEBUG
-			std::vector<Edge>::const_iterator it2=edges.begin();
-			glBegin(GL_LINES);
-			for(it2;it2!=edges.end();it2++)
-			{
-				glVertex2i(it2->x1,it2->y1);
-				glVertex2i(it2->x2,it2->y2);
-			}
-			glEnd();
-		}
-};
 
 void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape);
 
@@ -622,7 +498,7 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 			{
 				if(paths.size())
 				{
-					std::cout << "2 path" << std::endl;
+					//std::cout << "2 path" << std::endl;
 					GraphicStatus* old_status=paths.back().state;
 					paths.push_back(Path());
 					cur_state=paths.back().state;
@@ -631,7 +507,7 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 				}
 				else
 				{
-					std::cout << "1 path" << std::endl;
+					//std::cout << "1 path" << std::endl;
 					paths.push_back(Path());
 					cur_state=paths.back().state;
 				}
@@ -651,7 +527,7 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 				if(cur->LineStyle)
 				{
 					cur_state->validStroke=true;
-					std::cout << "line style" << std::endl;
+					//std::cout << "line style" << std::endl;
 				}
 				else
 					cur_state->validStroke=false;
@@ -661,20 +537,19 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 				/*		glColor4ub(Shapes.FillStyles.FillStyles[cur->FillStyle1].Color.Red,
 						Shapes.FillStyles.FillStyles[cur->FillStyle1].Color.Green,
 						Shapes.FillStyles.FillStyles[cur->FillStyle1].Color.Blue);*/
-				std::cout << "fill style1" << std::endl;
+				//std::cout << "fill style1" << std::endl;
 			}
 			if(cur->StateFillStyle0)
 			{
 				if(cur->FillStyle0!=1)
 					throw "fill style0";
 				cur_state->validFill=true;
-				std::cout << "fill style0" << std::endl;
+				//std::cout << "fill style0" << std::endl;
 			}
 		}
 		cur=cur->next;
 	}
 	std::vector < Path >::iterator i=paths.begin();
-	//for(i;i==paths.begin();i++)
 	for(i;i!=paths.end();i++)
 	{
 		shapes.push_back(Shape());
@@ -683,7 +558,19 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 		if(!i->closed)
 			continue;
 
+			//Debug
+			std::vector<Vector2> debug;
+			debug.push_back(Vector2(200,-400));
+			debug.push_back(Vector2(0,-200));
+			debug.push_back(Vector2(200,0));
+			debug.push_back(Vector2(400,-200));
+/*			debug.push_back(Vector2(-400,-400));
+			debug.push_back(Vector2(0,-400));
+			debug.push_back(Vector2(0,0));
+			debug.push_back(Vector2(-400,0));*/
+			//Debug
 		std::vector<Vector2> unsorted(i->points);
+//		std::vector<Vector2> unsorted(debug);
 		int size=unsorted.size();
 
 		fixIndex(unsorted);
@@ -753,6 +640,8 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 						int jj;
 						for(jj=0;jj<unsorted.size()-1;jj++)
 						{
+							if(jj==v->index || jj+1==v->index)
+								continue;
 							Edge e(unsorted[jj],unsorted[jj+1],-1);
 							if(e.yIntersect(v->y,dist))
 							{
@@ -882,21 +771,11 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 					throw "Unsupported type";
 			}
 		}
-		/*		std::vector<Path> monotone;
-				monotone.push_back(*i);
-				monotone.front().closed=true;
-		//DEBUG
-		monotone.front()._state.validStroke=true;
-		monotone.front()._state.validFill=false;
-		for(int j=0;j<D.size();j++)
-		{
-		SplitPath(monotone,D[j].a, D[j].b);
-		}
-		paths.insert(paths.end(),monotone.begin(),monotone.end());*/
 		sort(D.begin(),D.end());
 		for(int j=0;j<D.size();j++)
-		{
 			shapes.back().edges.push_back(Edge(unsorted[D[j].a],unsorted[D[j].b],-1));
+		for(int j=0;j<D.size();j++)
+		{
 			std::vector<Vector2> monotone;
 			if(D[j].a<D[j].b)
 			{
@@ -916,6 +795,7 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 				unsorted.erase(unsorted.begin(),b);
 			}
 			fixIndex(monotone);
+
 			TriangulateMonotone(monotone,shapes.back());
 		}
 	}
@@ -1036,11 +916,13 @@ void DefineTextTag::Render()
 	std::vector < GLYPHENTRY >::iterator it2;
 	FontTag* font=NULL;
 	int done=0;
+	int cur_height;
 	for(it;it!=TextRecords.end();it++)
 	{
-		//std::cout << "Text height " << it->TextHeight << std::endl;
+		std::cout << "Text height " << it->TextHeight << std::endl;
 		if(it->StyleFlagsHasFont)
 		{
+			cur_height=it->TextHeight;
 			std::list< RenderTag*>::iterator it3 = dictionary.begin();
 			for(it3;it3!=dictionary.end();it3++)
 			{
@@ -1060,18 +942,16 @@ void DefineTextTag::Render()
 		y2+=(*it).YOffset;
 		for(it2;it2!=(it->GlyphEntries.end());it2++)
 		{
-			//if(done>3)
-			//	break;
-			//done++;
 			glPushMatrix();
 			glTranslatef(x2,y2,0);
-			glScalef(0.351562,0.351562,1);
+			float scale=cur_height;
+			scale/=1024;
+			glScalef(scale,scale,1);
 			font->Render(it2->GlyphIndex);
 			glPopMatrix();
 			
 			//std::cout << "Character " << it2->GlyphIndex << std::endl;
 			x2+=it2->GlyphAdvance;
-
 		}
 	}
 }

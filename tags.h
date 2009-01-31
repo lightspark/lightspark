@@ -5,7 +5,6 @@
 #include <vector>
 #include <iostream>
 #include "swftypes.h"
-#include "gltags.h"
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,RENDER_TAG,END_TAG};
 

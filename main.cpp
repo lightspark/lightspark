@@ -4,6 +4,7 @@
 #include <fstream>
 #include <list>
 #include <SDL/SDL.h>
+#include <GL/gl.h>
 
 using namespace std;
 
@@ -66,7 +67,7 @@ int main()
 					}
 					SDL_GL_SwapBuffers( );
 					std::cout << "end render" << std::endl;
-					if(done>1)
+					if(done>30)
 					{
 						sleep(5);
 						goto exit;

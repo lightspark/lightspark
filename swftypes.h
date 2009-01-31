@@ -165,7 +165,7 @@ class UB
 	uint32_t buf;
 	int size;
 public:
-	UB() { buf=NULL; }
+	UB() { buf=0; }
 	UB(int s,BitStream& stream):size(s)
 	{
 /*		if(s%8)
@@ -194,7 +194,7 @@ class SB
 	int32_t buf;
 	int size;
 public:
-	SB() { buf=NULL; }
+	SB() { buf=0; }
 	SB(int s,BitStream& stream):size(s)
 	{
 		if(s>32)

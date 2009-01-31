@@ -1,5 +1,5 @@
 clash: main.o swf.o swftypes.o tags.o 
-	g++ -g -o $@ $^ -lSDL -lGL -pg
-
+	g++ -g -o $@ $^ -lSDL -lGL  
 %.o: %.cpp
-	g++ -g -c -o $@ $^ -pg
+	g++ -g -O0 -c -o $@ $^ -pg -D_GLIBCXX_DEBUG
+

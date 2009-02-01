@@ -45,6 +45,7 @@ public:
 
 class Triangle
 {
+public:
 	Vector2 v1,v2,v3;
 	Triangle(Vector2 a,Vector2 b, Vector2 c):v1(a),v2(b),v3(c){}
 };
@@ -123,15 +124,16 @@ public:
 class Shape
 {
 	public:
-		std::vector<Vector2> outline;
 		std::vector<Triangle> interior;
+		std::vector<Vector2> outline;
 		bool closed;
+		bool filled;
 
 		//DEBUG
 		std::vector<Edge> edges;
 		void Render() const
 		{
-			std::vector<Vector2>::const_iterator it=outline.begin();
+		/*	std::vector<Vector2>::const_iterator it=outline.begin();
 			if(closed)
 				glBegin(GL_LINE_LOOP);
 			else
@@ -142,15 +144,24 @@ class Shape
 				//std::cout << *it;
 			}
 				
-			glEnd();
+			glEnd();*/
 
 			//DEBUG
-			std::vector<Edge>::const_iterator it2=edges.begin();
+	/*		std::vector<Edge>::const_iterator it2=edges.begin();
 			glBegin(GL_LINES);
 			for(it2;it2!=edges.end();it2++)
 			{
 				glVertex2i(it2->x1,it2->y1);
 				glVertex2i(it2->x2,it2->y2);
+			}
+			glEnd();*/
+			std::vector<Triangle>::const_iterator it2=interior.begin();
+			glBegin(GL_TRIANGLES);
+			for(it2;it2!=interior.end();it2++)
+			{
+				glVertex2i(it2->v1.x,it2->v1.y);
+				glVertex2i(it2->v2.x,it2->v2.y);
+				glVertex2i(it2->v3.x,it2->v3.y);
 			}
 			glEnd();
 		}

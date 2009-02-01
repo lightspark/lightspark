@@ -383,8 +383,9 @@ void DefineShapeTag::Render()
 	std::vector < Shape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 	{
-		it->Render();
-		//std::cout << it->_state << std::endl;
+		if(it->filled)
+			it->Render();
+	//	std::cout << "state" << std::endl;
 	}
 	std::cout << "fine Render Shape" << std::endl;
 }
@@ -555,6 +556,7 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 		shapes.push_back(Shape());
 		shapes.back().outline=i->points;
 		shapes.back().closed=i->closed;
+		shapes.back().filled=i->state->validFill;
 		if(!i->closed)
 			continue;
 
@@ -798,6 +800,8 @@ void TessellateShaperecordList(SHAPERECORD* cur, std::vector<Shape>& shapes)
 
 			TriangulateMonotone(monotone,shapes.back());
 		}
+		fixIndex(unsorted);
+		TriangulateMonotone(unsorted,shapes.back());
 	}
 }
 
@@ -805,6 +809,7 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 {
 	std::vector<int> S;
 	std::vector<Vector2> sorted(monotone);
+	std::vector<Vector2> unsorted(monotone);
 	int size=monotone.size();
 	std::vector<Vector2>::const_iterator first=max_element(monotone.begin(),monotone.end());
 	int cur_index=first->index;
@@ -827,6 +832,8 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 	}
 	sort(sorted.begin(),sorted.end());
 
+	std::vector < Numeric_Edge > edges;
+
 	S.push_back(size-1);
 	S.push_back(size-2);
 	for(int i=size-3;i>0;i--)
@@ -835,7 +842,8 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 		{
 			for(int j=1;j<S.size();j++)
 			{
-				shape.edges.push_back(Edge(sorted[S[j]],sorted[i],-1));
+				//shape.edges.push_back(Edge(sorted[S[j]],sorted[i],-1));
+				edges.push_back(Numeric_Edge(S[j],i,monotone.size()));
 			}
 			S.clear();
 			S.push_back(sorted[i+1].index);
@@ -846,7 +854,8 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 			S.pop_back();
 			for(int j=0;j<S.size();j++)
 			{
-				shape.edges.push_back(Edge(sorted[S[j]],sorted[i],-1));
+				//shape.edges.push_back(Edge(sorted[S[j]],sorted[i],-1));
+				edges.push_back(Numeric_Edge(S[j],i,monotone.size()));
 			}
 			S.erase(S.begin()+1,S.end());
 			S.push_back(sorted[i].index);
@@ -854,10 +863,28 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 	}
 	for(int j=1;j<S.size()-1;j++)
 	{
-		shape.edges.push_back(Edge(sorted[S[j]],sorted[0],-1));
+		//shape.edges.push_back(Edge(sorted[S[j]],sorted[0],-1));
+		edges.push_back(Numeric_Edge(S[j],0,monotone.size()));
 	}
+	sort(edges.begin(),edges.end());
 
+	int third;
+	for(int i=0;i<edges.size();i++)
+	{
+		std::vector< Vector2 >::iterator first=find(unsorted.begin(),unsorted.end(),edges[i].a);
+		std::vector< Vector2 >::iterator second=find(unsorted.begin(),unsorted.end(),edges[i].b);
 
+		std::vector < Vector2 >::iterator third;
+		if(first!=unsorted.end()-1)
+			third=first+1;
+		else
+			third=unsorted.begin();
+			
+		if(third==second)
+			throw "Internal error while triangulating";
+		shape.interior.push_back(Triangle(*first,*second,*third));
+		unsorted.erase(third);
+	}
 }
 
 void DefineFont2Tag::Render(int glyph)

@@ -67,7 +67,7 @@ int main()
 					}
 					SDL_GL_SwapBuffers( );
 					std::cout << "end render" << std::endl;
-					if(done>30)
+					if(done>1)
 					{
 						sleep(5);
 						goto exit;

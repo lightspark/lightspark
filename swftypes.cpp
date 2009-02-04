@@ -21,6 +21,12 @@ std::ostream& operator<<(std::ostream& s, const RECT& r)
 	return s;
 }
 
+std::ostream& operator<<(std::ostream& s, const RGBA& r)
+{
+	std::cout << "RGBA <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << ',' << (int)r.Alpha << '>';
+	return s;
+}
+
 std::ostream& operator<<(std::ostream& s, const RGB& r)
 {
 	std::cout << "RGB <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << '>';

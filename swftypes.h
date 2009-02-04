@@ -54,6 +54,8 @@ typedef UI16 RECORDHEADER;
 class RGB
 {
 public:
+	RGB(){};
+	RGB(int r,int g, int b):Red(r),Green(g),Blue(b){};
 	UI8 Red;
 	UI8 Green;
 	UI8 Blue;
@@ -71,7 +73,7 @@ public:
 		Red=r.Red;
 		Green=r.Green;
 		Blue=r.Blue;
-		Alpha=0;
+		Alpha=255;
 	}
 };
 
@@ -329,6 +331,8 @@ public:
 	TEXTRECORD(DefineTextTag* p):parent(p){}
 };
 
+class Shape;
+
 class SHAPE
 {
 	friend std::istream& operator>>(std::istream& stream, SHAPE& v);
@@ -408,6 +412,7 @@ class CXFORM
 
 std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);
+std::ostream& operator<<(std::ostream& s, const RGBA& r);
 std::istream& operator>>(std::istream& s, RECT& v);
 
 std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);

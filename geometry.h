@@ -60,20 +60,10 @@ public:
 	int index;
 	Edge(const Vector2& a,const Vector2& b, int i):index(i)
 	{
-	//	if(a.y<b.y)
-		{
-			y1=a.y;
-			y2=b.y;
-			x1=a.x;
-			x2=b.x;
-		}
-	/*	else
-		{
-			y1=b.y;
-			y2=a.y;
-			x1=b.x;
-			x2=a.x;
-		}*/
+		y1=a.y;
+		y2=b.y;
+		x1=a.x;
+		x2=b.x;
 	}
 	bool yIntersect(int y,int32_t& d)
 	{
@@ -121,49 +111,27 @@ public:
 
 };
 
+class Graphic
+{
+public:
+	bool filled0;
+	bool filled1;
+	bool stroked;
+	RGBA color0;
+	RGBA color1;
+	RGBA stroke_color;
+};
+
 class Shape
 {
-	public:
-		std::vector<Triangle> interior;
-		std::vector<Vector2> outline;
-		bool closed;
-		bool filled;
+public:
+	std::vector<Triangle> interior;
+	std::vector<Vector2> outline;
+	Graphic graphic;
+	bool closed;
 
-		//DEBUG
-		std::vector<Edge> edges;
-		void Render() const
-		{
-		/*	std::vector<Vector2>::const_iterator it=outline.begin();
-			if(closed)
-				glBegin(GL_LINE_LOOP);
-			else
-				glBegin(GL_LINE_STRIP);
-			for(it;it!=outline.end();it++)
-			{
-				glVertex2i(it->x,it->y);
-				//std::cout << *it;
-			}
-				
-			glEnd();*/
-
-			//DEBUG
-	/*		std::vector<Edge>::const_iterator it2=edges.begin();
-			glBegin(GL_LINES);
-			for(it2;it2!=edges.end();it2++)
-			{
-				glVertex2i(it2->x1,it2->y1);
-				glVertex2i(it2->x2,it2->y2);
-			}
-			glEnd();*/
-			std::vector<Triangle>::const_iterator it2=interior.begin();
-			glBegin(GL_TRIANGLES);
-			for(it2;it2!=interior.end();it2++)
-			{
-				glVertex2i(it2->v1.x,it2->v1.y);
-				glVertex2i(it2->v2.x,it2->v2.y);
-				glVertex2i(it2->v3.x,it2->v3.y);
-			}
-			glEnd();
-		}
+	//DEBUG
+	std::vector<Edge> edges;
+	void Render() const;
 };
 

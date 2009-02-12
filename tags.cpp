@@ -311,59 +311,37 @@ VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 	int a=(v.index+1)%points.size();
 	int b=(v.index-1+points.size())%points.size();
 
-	Vector2 center=points[a]+points[b]+v;
-
 	std::vector<Vector2> new_points(points);
 
 	new_points.erase(find(new_points.begin(),new_points.end(),v));
 	fixIndex(new_points);
 
-	if(points[a].y <= v.y &&
-		points[b].y <= v.y)
+	if(points[a] < v &&
+		points[b] < v)
 	{
 		if(!pointInPolygon(new_points,v))
 			return START_VERTEX;
 		else
 			return SPLIT_VERTEX;
 	}
-/*	if(points[a].y <= v.y &&
-		points[b].y <= v.y)
-	{
-		if(pointInPolygon(points,center))
-			return START_VERTEX;
-		else
-			return SPLIT_VERTEX;
-	}*/
-	else if(points[a].y >= v.y &&
-		points[b].y <= v.y)
+	else if(v < points[a] &&
+		points[b] < v)
 	{
 		return NORMAL_VERTEX;
 	}
-	else if(points[a].y <= v.y &&
-		points[b].y >= v.y)
+	else if(points[a] < v &&
+		v < points[b])
 	{
 		return NORMAL_VERTEX;
 	}
-	else if(points[a].y >= v.y &&
-		points[b].y >= v.y)
+	else if(v < points[a]&&
+		v < points[b])
 	{
 		if(!pointInPolygon(new_points,v))
 			return END_VERTEX;
 		else
 			return MERGE_VERTEX;
 	}
-/*	else if(points[a].y >= v.y &&
-		points[b].y >= v.y)
-	{
-		if(pointInPolygon(points,center))
-		{
-			return END_VERTEX;
-		}
-		else
-		{
-			return MERGE_VERTEX;
-		}
-	}*/
 	else
 	{
 		throw "unknown type";
@@ -618,7 +596,7 @@ void TessellatePath(Path& path, Shape& shape)
 
 	fixIndex(unsorted);
 	//Parity break
-	for(int j=0;j<size;j++)
+/*	for(int j=0;j<size;j++)
 	{
 		if(unsorted[j].y==unsorted[(j+1)%unsorted.size()].y)
 		{
@@ -627,7 +605,7 @@ void TessellatePath(Path& path, Shape& shape)
 			else
 				unsorted[(j+1)%unsorted.size()].y++;
 		}
-	}
+	}*/
 
 	std::vector<Vector2> sorted(unsorted);
 	sort(sorted.begin(),sorted.end());
@@ -650,6 +628,8 @@ void TessellatePath(Path& path, Shape& shape)
 	for(int j=size-1;j>=0;j--)
 	{
 		Vector2* v=&(sorted[j]);
+		if(v->index==28)
+			char a=0;
 		//std::cout << *v;
 		VTYPE type=getVertexType(*v,unsorted);
 		//std::cout << "Type: " << type << std::endl;
@@ -683,10 +663,10 @@ void TessellatePath(Path& path, Shape& shape)
 					int jj;
 					for(jj=0;jj<unsorted.size()-1;jj++)
 					{
-						if(jj==v->index || jj+1==v->index)
-							continue;
+					//	if(jj==v->index || jj+1==v->index)
+					//		continue;
 						Edge e(unsorted[jj],unsorted[jj+1],-1);
-						if(e.yIntersect(v->y,dist))
+						if(e.yIntersect(v->y,dist,v->x))
 						{
 							if(dist-v->x>0)
 							{
@@ -696,7 +676,7 @@ void TessellatePath(Path& path, Shape& shape)
 						}
 					}
 					Edge e(unsorted[jj],unsorted[0],-1);
-					if(e.yIntersect(v->y,dist))
+					if(e.yIntersect(v->y,dist,v->x))
 					{
 						if(dist-v->x>0)
 							count++;
@@ -822,22 +802,24 @@ void TessellatePath(Path& path, Shape& shape)
 		std::vector<Vector2> monotone;
 		if(D[j].a<D[j].b)
 		{
-			std::vector< Vector2 >::iterator a=find(unsorted.begin(),unsorted.end(),D[j].a);
-			std::vector< Vector2 >::iterator b=find(unsorted.begin(),unsorted.end(),D[j].b);
+			std::vector< Vector2 >::iterator a=lower_bound(unsorted.begin(),unsorted.end(),D[j].a);
+			std::vector< Vector2 >::iterator b=lower_bound(unsorted.begin(),unsorted.end(),D[j].b);
 			std::vector< Vector2 > temp(a,b+1);
 			monotone.swap(temp);
 			unsorted.erase(a+1,b);
 		}
 		else
 		{
-			std::vector< Vector2 >::iterator a=find(unsorted.begin(),unsorted.end(),D[j].a);
+			std::vector< Vector2 >::iterator a=lower_bound(unsorted.begin(),unsorted.end(),D[j].a);
 			monotone.insert(monotone.end(),a,unsorted.end());
 			unsorted.erase(a+1,unsorted.end());
-			std::vector< Vector2 >::iterator b=find(unsorted.begin(),unsorted.end(),D[j].b);
+			std::vector< Vector2 >::iterator b=lower_bound(unsorted.begin(),unsorted.end(),D[j].b);
 			monotone.insert(monotone.end(),unsorted.begin(),b+1);
 			unsorted.erase(unsorted.begin(),b);
 		}
 		fixIndex(monotone);
+		if(monotone.size()==2)
+			abort();
 
 		TriangulateMonotone(monotone,shape);
 	}
@@ -860,7 +842,7 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 		sorted[i].chain=1;
 	while(1)
 	{
-		if(cur_y>sorted[cur_index].y)
+		if(cur_y>=sorted[cur_index].y)
 		{
 			sorted[cur_index].chain=2;
 			cur_y=sorted[cur_index].y;
@@ -927,9 +909,7 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 		unsorted.erase(third);
 	}
 	if(unsorted.size()!=3)
-	{
 		throw "Internal error after triangulating";
-	}
 	else
 	{
 		shape.interior.push_back(Triangle(unsorted[0],unsorted[1],unsorted[2]));
@@ -938,6 +918,7 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 
 void DefineFont2Tag::Render(int glyph)
 {
+	std::cout << "char" << std::endl;
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
@@ -1048,7 +1029,7 @@ void DefineFontTag::Render(int glyph)
 void DefineTextTag::Render()
 {
 	std::cout << "Render Text" << std::endl;
-	std::cout << TextMatrix << std::endl;
+	//std::cout << TextMatrix << std::endl;
 	glColor3f(0,0,0);
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	int x=0,y=0;//1024;
@@ -1165,7 +1146,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 void PlaceObject2Tag::Render()
 {
 	std::cout << "Render Place object 2 ChaID " << CharacterId <<  std::endl;
-	std::cout << Matrix << std::endl;
+	//std::cout << Matrix << std::endl;
 	if(!PlaceFlagHasCharacter)
 		throw "modify not supported";
 	std::list< RenderTag* >::iterator it=dictionary.begin();

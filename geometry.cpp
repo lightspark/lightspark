@@ -81,8 +81,6 @@ bool Edge::xIntersect(int x,int32_t& d)
 
 bool Edge::yIntersect(int y,int32_t& d, int x)
 {
-	static std::ofstream log("intersectlog");
-
 	int u1,u2;
 	u1=min(y1,y2);
 	u2=max(y1,y2);
@@ -93,7 +91,6 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 		m/=(y2-y1);
 		d=m*(y-y1);
 		d+=x1;
-		log << "{ (" << x1 << ',' << y1 << ") (" << x2 << ',' << y2 << ") } = (" << y << ")true d=" << d << std::endl;
 		return true;
 	}
 	else if(y==y1 || y==y2)
@@ -105,14 +102,12 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 			v2=max(x1,x2);
 			if(!(x>=v1 && x<=v2))
 			{
-				log << "{ (" << x1 << ',' << y1 << ") (" << x2 << ',' << y2 << ") } = (" << y << ")false d=" << d << std::endl;
 				return false;
 			}
 			if(x1==x)
 				d=x2;
 			else
 				d=x1;
-			log << "{ (" << x1 << ',' << y1 << ") (" << x2 << ',' << y2 << ") } = (" << y << ")true d=" << d << std::endl;
 			return true;
 		}
 		else if(y==u1)
@@ -121,7 +116,6 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 				d=x1;
 			else
 				d=x2;
-			log << "{ (" << x1 << ',' << y1 << ") (" << x2 << ',' << y2 << ") } = (" << y << ")true d=" << d << std::endl;
 			return true;
 		}
 		else
@@ -130,19 +124,16 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 				d=x2;
 			else
 				d=x1;
-			log << "{ (" << x1 << ',' << y1 << ") (" << x2 << ',' << y2 << ") } = (" << y << ")false d=" << d << std::endl;*/
 			return false;
 		}
 	}
 /*	else if(y==y1 && y==y2)
 	{
 		d=x1;
-		log << "{ (" << x1 << ',' << y1 << ") (" << x2 << ',' << y2 << ") } => (" << y << ")true" << std::endl;
 		return true;
 	}*/
 	else
 	{
-		log << "{ (" << x1 << ',' << y1 << ") (" << x2 << ',' << y2 << ") } = (" << y << ")false d="<< d << std::endl;
 		return false;
 	}
 }

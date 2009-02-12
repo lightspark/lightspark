@@ -18,6 +18,10 @@ struct Numeric_Edge
 			b=y;
 			len=((y-x+num)%num);
 		}
+		if(len<2)
+		{
+			abort();
+		}
 	}
 	bool operator<(const Numeric_Edge& e) const
 	{
@@ -25,10 +29,19 @@ struct Numeric_Edge
 	}
 };
 
+class Path;
+
 class Vector2
 {
-public:
+	friend class Edge;
+	friend class Shape;
+	friend int crossProd(const Vector2& a, const Vector2& b);
+	friend std::ostream& operator<<(std::ostream& s, const Vector2& p);
+	friend bool pointInPolygon(const std::vector<Vector2>& poly, const Vector2& point);
+	friend void TessellatePath(Path& path, Shape& shape);
+	friend void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape);
 	int x,y;
+public:
 	int index;
 	int chain;
 	Vector2(int a, int b, int i):x(a),y(b),index(i){}
@@ -36,6 +49,9 @@ public:
 	bool operator==(const Vector2& v){return v.x==x && v.y==y;}
 	bool operator==(int i){return index==i;}
 	bool operator<(const Vector2& v) const {return (y==v.y)?(x < v.x):(y < v.y);}
+	bool operator<=(const Vector2& v) const {return y<=v.y;}
+	bool operator>=(const Vector2& v) const {return y>=v.y;}
+	bool operator<(int i) const {return index<i;}
 	const Vector2 operator-(const Vector2& v)const { return Vector2(x-v.x,y-v.y);}
 	const Vector2 operator+(const Vector2& v)const { return Vector2(x+v.x,y+v.y);}
 	const Vector2 operator*(int p)const { return Vector2(x*p,y*p);}
@@ -65,45 +81,8 @@ public:
 		x1=a.x;
 		x2=b.x;
 	}
-	bool yIntersect(int y,int32_t& d)
-	{
-		int u1,u2;
-		u1=min(y1,y2);
-		u2=max(y1,y2);
-		if((y>=u1) && (y<u2))
-		{
-			float m=(x2-x1);
-			m/=(y2-y1);
-			d=m*(y-y1);
-			d+=x1;
-			return true;
-		}
-		else
-			return false;
-	}
-	bool xIntersect(int x,int32_t& d)
-	{
-		int u1,u2;
-		u1=min(x1,x2);
-		u2=max(x1,x2);
-		if((x>=u1) && (x<=u2))
-		{
-			if(x2==x1)
-			{
-				d=y1;
-			}
-			else
-			{
-				float m=(y2-y1);
-				m/=(x2-x1);
-				d=m*(x-x1);
-				d+=y1;
-			}
-			return true;
-		}
-		else
-			return false;
-	}
+	bool yIntersect(int y,int32_t& d,int x=0);
+	bool xIntersect(int x,int32_t& d);
 	bool operator==(int a)
 	{
 		return index==a;

@@ -22,7 +22,7 @@ int main()
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 16 );
-	glEnable( GL_DEPTH_TEST );
+	//glEnable( GL_DEPTH_TEST );
 //	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
 	glViewport(0,0,640,480);
@@ -72,7 +72,7 @@ int main()
 					}
 					SDL_GL_SwapBuffers( );
 					std::cout << "end render" << std::endl;
-					if(done>10)
+					if(done>30)
 					{
 						sleep(5);
 						goto exit;

@@ -303,7 +303,7 @@ std::ostream& operator<<(std::ostream& s, const Vector2& p)
 	std::cout << "{ "<< p.x << ',' << p.y << " } [" << p.index  << ']' << std::endl;
 }
 
-bool pointInPolygon(const std::vector<Vector2>& poly, const Vector2& point);
+bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point);
 
 VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 {
@@ -311,15 +311,13 @@ VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 	int a=(v.index+1)%points.size();
 	int b=(v.index-1+points.size())%points.size();
 
-	std::vector<Vector2> new_points(points);
-
-	new_points.erase(find(new_points.begin(),new_points.end(),v));
-	fixIndex(new_points);
+	FilterIterator ai(points.begin(),points.end(),v.index);
+	FilterIterator bi(points.end(),points.end(),v.index);
 
 	if(points[a] < v &&
 		points[b] < v)
 	{
-		if(!pointInPolygon(new_points,v))
+		if(!pointInPolygon(ai,bi,v))
 			return START_VERTEX;
 		else
 			return SPLIT_VERTEX;
@@ -337,7 +335,7 @@ VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 	else if(v < points[a]&&
 		v < points[b])
 	{
-		if(!pointInPolygon(new_points,v))
+		if(!pointInPolygon(ai,bi,v))
 			return END_VERTEX;
 		else
 			return MERGE_VERTEX;
@@ -471,14 +469,18 @@ void SplitPath(std::vector<Path>& paths,int a, int b)
 	paths.push_back(p);
 }
 
-bool pointInPolygon(const std::vector<Vector2>& poly, const Vector2& point)
+bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)
 {
+	FilterIterator jj=start;
+	FilterIterator jj2=start;
+	jj2++;
+
 	int count=0;
-	int jj;
 	int dist;
-	for(jj=0;jj<poly.size()-1;jj++)
+
+	while(jj2!=end)
 	{
-		Edge e(poly[jj],poly[jj+1],-1);
+		Edge e(*jj,*jj2,-1);
 		if(e.yIntersect(point.y,dist))
 		{
 			if(dist-point.x>0)
@@ -487,8 +489,9 @@ bool pointInPolygon(const std::vector<Vector2>& poly, const Vector2& point)
 				//std::cout << "Impact edge (" << jj << ',' << jj+1 <<')'<< std::endl;
 			}
 		}
+		jj=jj2++;
 	}
-	Edge e(poly[jj],poly[0],-1);
+	Edge e(*start,*jj,-1);
 	if(e.yIntersect(point.y,dist))
 	{
 		if(dist-point.x>0)
@@ -918,7 +921,6 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 
 void DefineFont2Tag::Render(int glyph)
 {
-	std::cout << "char" << std::endl;
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;

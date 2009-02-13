@@ -137,3 +137,32 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 		return false;
 	}
 }
+
+FilterIterator::FilterIterator(const std::vector<Vector2>::const_iterator& i, const std::vector<Vector2>::const_iterator& e, int f):it(i),end(e),filter(f)
+{
+	if(it!=end && it->index==filter)
+		it++;
+}
+FilterIterator FilterIterator::operator++(int)
+{
+	FilterIterator copy(*this);
+	it++;
+	if(it!=end && it->index==filter)
+		it++;
+	return copy;
+}
+
+const Vector2& FilterIterator::operator*()
+{
+	return *it;
+}
+
+bool FilterIterator::operator==(FilterIterator& i)
+{
+	return i.it==it;
+}
+
+bool FilterIterator::operator!=(FilterIterator& i)
+{
+	return i.it!=it;
+}

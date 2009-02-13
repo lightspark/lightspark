@@ -30,6 +30,21 @@ struct Numeric_Edge
 };
 
 class Path;
+class Vector2;
+
+class FilterIterator
+{
+private:
+	std::vector<Vector2>::const_iterator it;
+	std::vector<Vector2>::const_iterator end;
+	int filter;
+public:
+	FilterIterator(const std::vector<Vector2>::const_iterator& i, const std::vector<Vector2>::const_iterator& e, int f);
+	FilterIterator operator++(int);
+	bool operator==(FilterIterator& i);
+	bool operator!=(FilterIterator& i);
+	const Vector2& operator*();
+};
 
 class Vector2
 {
@@ -37,7 +52,7 @@ class Vector2
 	friend class Shape;
 	friend int crossProd(const Vector2& a, const Vector2& b);
 	friend std::ostream& operator<<(std::ostream& s, const Vector2& p);
-	friend bool pointInPolygon(const std::vector<Vector2>& poly, const Vector2& point);
+	friend bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point);
 	friend void TessellatePath(Path& path, Shape& shape);
 	friend void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape);
 	int x,y;

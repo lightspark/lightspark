@@ -20,7 +20,7 @@ struct Numeric_Edge
 		}
 		if(len<2)
 		{
-			abort();
+			throw "len < 2";
 		}
 	}
 	bool operator<(const Numeric_Edge& e) const

@@ -123,7 +123,7 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 /*			if(u1==y1)
 				d=x2;
 			else
-				d=x1;
+				d=x1;*/
 			return false;
 		}
 	}

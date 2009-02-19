@@ -3,17 +3,24 @@
 
 void Shape::Render() const
 {
-	//DEBUG
-	/*		std::vector<Edge>::const_iterator it2=edges.begin();
-	glBegin(GL_LINES);
-	for(it2;it2!=edges.end();it2++)
+	std::cout << "winding " << winding << std::endl;
+	std::cout << "graphic.filled0 " << graphic.filled0 << std::endl;
+	std::cout << "graphic.color0 " << graphic.color0 << std::endl;
+	std::cout << "graphic.filled1 " << graphic.filled1 << std::endl;
+	std::cout << "graphic.color1 " << graphic.color1 << std::endl;
+
+	if(graphic.color1.Green==51)
 	{
-	glVertex2i(it2->x1,it2->y1);
-	glVertex2i(it2->x2,it2->y2);
+		std::vector<Vector2>::const_iterator it=outline.begin();
+		for(it;it!=outline.end();it++)
+		{
+			std::cout << *it << std::endl;
+		}
 	}
-	glEnd();*/
-	if(graphic.filled0)
+
+	if(graphic.filled0 && winding==1)
 	{
+		std::cout << "fill0 " << graphic.color0 << std::endl;
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glColor3ub(graphic.color0.Red,graphic.color0.Green,graphic.color0.Blue);
 		glBegin(GL_TRIANGLES);
@@ -26,9 +33,10 @@ void Shape::Render() const
 		glEnd();
 	}
 
-	if(graphic.filled1)
+	if(graphic.filled1 && winding==0)
 	{
 		std::cout << "BIG WARNING: fill1" << std::endl;
+		std::cout << "fill1 " << graphic.color1 << std::endl;
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glColor3ub(graphic.color1.Red,graphic.color1.Green,graphic.color1.Blue);
 		glBegin(GL_TRIANGLES);

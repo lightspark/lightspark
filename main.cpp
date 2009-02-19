@@ -67,12 +67,12 @@ int main()
 							glScalef(0.1,0.1,0.1);
 							(*i)->Render();
 						}
-						//if(count>3)
-						//	break;
+						if(count>0)
+							break;
 					}
 					SDL_GL_SwapBuffers( );
 					std::cout << "end render" << std::endl;
-					if(done>30)
+					if(done>0)
 					{
 						sleep(5);
 						goto exit;

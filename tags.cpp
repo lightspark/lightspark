@@ -598,24 +598,12 @@ void TessellatePath(Path& path, Shape& shape)
 	int size=unsorted.size();
 
 	fixIndex(unsorted);
-	//Parity break
-/*	for(int j=0;j<size;j++)
-	{
-		if(unsorted[j].y==unsorted[(j+1)%unsorted.size()].y)
-		{
-			if(j==0)
-				unsorted[(j+1)%unsorted.size()].y+=2;
-			else
-				unsorted[(j+1)%unsorted.size()].y++;
-		}
-	}*/
-
 	std::vector<Vector2> sorted(unsorted);
 	sort(sorted.begin(),sorted.end());
 	int primo=sorted[size-1].index;
 
 	int prod=crossProd(unsorted[primo]-unsorted[(primo-1+size)%size],unsorted[(primo+1)%size]-unsorted[(primo-1+size)%size]);
-	//std::cout << "prod2 " << prod << std::endl;
+	std::cout << "prod2 " << prod << std::endl;
 	if(prod>0)
 	{
 		//std::cout << "reversing" << std::endl;
@@ -624,7 +612,10 @@ void TessellatePath(Path& path, Shape& shape)
 			sorted[i].index=size2-sorted[i].index;
 		reverse(unsorted.begin(),unsorted.end());
 		fixIndex(unsorted);
+		shape.winding=1;
 	}
+	else
+		shape.winding=0;
 	std::list<Edge> T;
 	std::vector<Numeric_Edge> D;
 	std::vector<int> helper(sorted.size(),-1);
@@ -936,9 +927,10 @@ void DefineFont2Tag::Render(int glyph)
 
 		//Fill graphic data
 		shapes.back().graphic.filled0=true;
-		shapes.back().graphic.filled1=false;
+		shapes.back().graphic.filled1=true;
 		shapes.back().graphic.stroked=false;
-		shapes.back().graphic.color0=RGB(0,0,0);
+		shapes.back().graphic.color0=RGB(255,255,255);
+		shapes.back().graphic.color1=RGB(0,0,0);
 
 		if(i->state->validFill0)
 		{

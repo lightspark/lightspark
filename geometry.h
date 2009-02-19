@@ -123,6 +123,7 @@ public:
 	std::vector<Vector2> outline;
 	Graphic graphic;
 	bool closed;
+	int winding;
 
 	//DEBUG
 	std::vector<Edge> edges;

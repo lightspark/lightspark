@@ -127,6 +127,8 @@ public:
 
 	//DEBUG
 	std::vector<Edge> edges;
+	int id;
+
 	void Render() const;
 };
 

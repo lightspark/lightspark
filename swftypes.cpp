@@ -92,10 +92,12 @@ std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
 	if(v.LineStyleCount==0xff)
 		throw "Line array extended not supported\n";
 	std::cout << "Reading " << (int)v.LineStyleCount << " Line styles" << std::endl;
+	std::cout << "@ " << s.tellg() << std::endl;
 	v.LineStyles=new LINESTYLE[v.LineStyleCount];
 	for(int i=0;i<v.LineStyleCount;i++)
 	{
 		s >> v.LineStyles[i];
+		std::cout << "@ " << s.tellg() << std::endl;
 	}
 	return s;
 }
@@ -158,7 +160,7 @@ std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 std::istream& operator>>(std::istream& s, LINESTYLE& v)
 {
 	s >> v.Width >> v.Color;
-	std::cout << "Line " << v.Width/20 << v.Color;
+	std::cout << "Line " << v.Width/20 << ' ' << v.Color << std::endl;
 	return s;
 }
 
@@ -202,6 +204,7 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 {
 	s >> v.FillStyleType;
+	std::cout << (uint16_t)v.FillStyleType << std::endl;
 	if(v.FillStyleType!=0)
 		throw "unsupported fill type";
 	s >> v.Color;
@@ -271,10 +274,6 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 		StateFillStyle1 = UB(1,bs);
 		StateFillStyle0 = UB(1,bs);
 		StateMoveTo = UB(1,bs);
-		if(StateNewStyles)
-		{
-			throw "unsupported States in shaperecord";
-		}
 		if(StateMoveTo)
 		{
 			std::cout << "move to" << std::endl;
@@ -297,6 +296,18 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 		{
 			std::cout << "line style bits " << parent->NumLineBits << std::endl;
 			LineStyle=UB(parent->NumLineBits,bs);
+		}
+		if(StateNewStyles)
+		{
+			SHAPEWITHSTYLE* ps=static_cast<SHAPEWITHSTYLE*>(parent);
+			bs.pos=0;
+			FILLSTYLEARRAY a;
+			bs.f >> ps->FillStyles;
+			LINESTYLEARRAY b;
+			bs.f >> ps->LineStyles;
+			parent->NumFillBits=UB(4,bs);
+			parent->NumLineBits=UB(4,bs);
+			//throw "unsupported States in shaperecord";
 		}
 	}
 }

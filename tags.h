@@ -79,6 +79,18 @@ public:
 	virtual void Render();
 };
 
+class DefineShape2Tag: public RenderTag
+{
+private:
+	UI16 ShapeId;
+	RECT ShapeBounds;
+	SHAPEWITHSTYLE Shapes;
+public:
+	DefineShape2Tag(RECORDHEADER h, std::istream& in);
+	virtual int getId(){ return ShapeId; }
+	virtual void Render();
+};
+
 class DefineSoundTag: public Tag
 {
 public:

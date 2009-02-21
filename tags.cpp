@@ -44,6 +44,9 @@ Tag* TagFactory::readTag()
 		case 15:
 			std::cout << "position " << f.tellg() << std::endl;
 			return new StartSoundTag(h,f);
+		case 22:
+			std::cout << "position " << f.tellg() << std::endl;
+			return new DefineShape2Tag(h,f);
 		case 26:
 			std::cout << "position " << f.tellg() << std::endl;
 			return new PlaceObject2Tag(h,f);
@@ -245,6 +248,14 @@ SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h
 
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
+	Shapes.version=1;
+	in >> ShapeId >> ShapeBounds >> Shapes;
+}
+
+DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+{
+	std::cout << "DefineShape2Tag" << std::endl;
+	Shapes.version=2;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
@@ -282,6 +293,8 @@ enum VTYPE {START_VERTEX=0,END_VERTEX,NORMAL_VERTEX,SPLIT_VERTEX,MERGE_VERTEX};
 class Path
 {
 public:
+	int id;
+
 	std::vector< Vector2 > points;
 	VTYPE getVertexType(const Vector2& v);
 	bool closed;
@@ -369,6 +382,7 @@ void FromShaperecordListToPaths(SHAPERECORD* cur, std::vector<Path>& paths);
 
 void DefineShapeTag::Render()
 {
+
 	std::cout << "Render Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
@@ -390,6 +404,7 @@ void DefineShapeTag::Render()
 				shapes.back().graphic.filled0=true;
 				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
 				std::cout << shapes.back().graphic.color0 << std::endl;
+				std::cout << "puppa" << std::endl;
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -405,6 +420,7 @@ void DefineShapeTag::Render()
 				shapes.back().graphic.filled1=true;
 				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
 				std::cout << shapes.back().graphic.color1 << std::endl;
+				std::cout << "puppa2" << std::endl;
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -419,6 +435,7 @@ void DefineShapeTag::Render()
 				shapes.back().graphic.stroked=true;
 				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
 				std::cout << shapes.back().graphic.stroke_color << std::endl;
+				std::cout << "puppa3" << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -433,6 +450,77 @@ void DefineShapeTag::Render()
 			it->Render();
 	}
 	std::cout << "fine Render Shape" << std::endl;
+}
+
+void DefineShape2Tag::Render()
+{
+	std::cout << "Render Shape2" << std::endl;
+	std::vector < Path > paths;
+	std::vector < Shape > shapes;
+	SHAPERECORD* cur=&(Shapes.ShapeRecords);
+
+	FromShaperecordListToPaths(cur,paths);
+	std::vector < Path >::iterator i=paths.begin();
+	for(i;i!=paths.end();i++)
+	{
+		//TODO: Shape construtor from path
+		shapes.push_back(Shape());
+		FromPathToShape(*i,shapes.back());
+
+		//Fill graphic data
+		if(i->state->validFill0)
+		{
+			if(i->state->fill0)
+			{
+				shapes.back().graphic.filled0=true;
+				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+				std::cout << shapes.back().graphic.color0 << std::endl;
+				std::cout << "puppa" << std::endl;
+			}
+			else
+				shapes.back().graphic.filled0=false;
+		}
+		else
+			shapes.back().graphic.filled0=false;
+
+
+		if(i->state->validFill1)
+		{
+			if(i->state->fill1)
+			{
+				shapes.back().graphic.filled1=true;
+				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+				std::cout << shapes.back().graphic.color1 << std::endl;
+				std::cout << "puppa2" << std::endl;
+			}
+			else
+				shapes.back().graphic.filled1=false;
+		}
+		else
+			shapes.back().graphic.filled1=false;
+
+		if(i->state->validStroke)
+		{
+			if(i->state->stroke)
+			{
+				shapes.back().graphic.stroked=true;
+				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
+				std::cout << shapes.back().graphic.stroke_color << std::endl;
+				std::cout << "puppa3" << std::endl;
+			}
+			else
+				shapes.back().graphic.stroked=false;
+		}
+		else
+			shapes.back().graphic.stroked=false;
+	}
+	std::vector < Shape >::iterator it=shapes.begin();
+	for(it;it!=shapes.end();it++)
+	{
+//		if(it->filled)
+			it->Render();
+	}
+	std::cout << "fine Render Shape2" << std::endl;
 }
 
 void SplitPath(std::vector<Path>& paths,int a, int b)
@@ -578,8 +666,8 @@ void FromShaperecordListToPaths(SHAPERECORD* cur, std::vector<Path>& paths)
 			}
 			if(cur->StateFillStyle0)
 			{
-				if(cur->FillStyle0!=1)
-					throw "fill style0";
+				//if(cur->FillStyle0!=1)
+				//	throw "fill style0";
 				cur_state->validFill0=true;
 				cur_state->fill0=cur->FillStyle0;
 				
@@ -603,9 +691,21 @@ void TessellatePath(Path& path, Shape& shape)
 	int primo=sorted[size-1].index;
 
 	int prod=crossProd(unsorted[primo]-unsorted[(primo-1+size)%size],unsorted[(primo+1)%size]-unsorted[(primo-1+size)%size]);
-	std::cout << "prod2 " << prod << std::endl;
+//	std::cout << "prod2 " << prod << std::endl;
+
+	int area=0;
+	int i;
+	for(i=0; i<size-1;i++)
+	{
+		area+=(unsorted[i].y+unsorted[i+1].y)*(unsorted[i+1].x-unsorted[i].x)/2;
+	}
+	area+=(unsorted[i].y+unsorted[0].y)*(unsorted[0].x-unsorted[i].x)/2;
+//	std::cout << "area " << area << std::endl;
+
 	if(prod>0)
 	{
+		if(area>=0)
+			throw "area>0";
 		//std::cout << "reversing" << std::endl;
 		int size2=size-1;
 		for(int i=0;i<size;i++)
@@ -615,7 +715,11 @@ void TessellatePath(Path& path, Shape& shape)
 		shape.winding=1;
 	}
 	else
+	{
+		if(area<=0)
+			throw "area<0";
 		shape.winding=0;
+	}
 	std::list<Edge> T;
 	std::vector<Numeric_Edge> D;
 	std::vector<int> helper(sorted.size(),-1);
@@ -1111,7 +1215,10 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		std::cout << "Ratio " << Ratio << std::endl;
 	}
 	if(PlaceFlagHasClipDepth)
+	{
 		in >> ClipDepth;
+		std::cout << "Clip Depth " << ClipDepth << std::endl;
+	}
 	if(PlaceFlagMove)
 	{
 		std::list < DisplayListTag*>::const_iterator it=displayList.begin();
@@ -1140,6 +1247,11 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 void PlaceObject2Tag::Render()
 {
 	std::cout << "Render Place object 2 ChaID " << CharacterId <<  std::endl;
+
+	//TODO: support clipping
+	if(ClipDepth!=0)
+		return;
+
 	//std::cout << Matrix << std::endl;
 	if(!PlaceFlagHasCharacter)
 		throw "modify not supported";

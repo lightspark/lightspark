@@ -339,6 +339,7 @@ class SHAPE
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 	friend class SHAPERECORD;
 	friend class DefineShapeTag;
+	friend class DefineShape2Tag;
 	friend class DefineTextTag;
 	friend class DefineFontTag;
 	friend class DefineFont2Tag;
@@ -352,6 +353,7 @@ class SHAPEWITHSTYLE : public SHAPE
 {
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 public:
+	int version;
 	FILLSTYLEARRAY FillStyles;
 	LINESTYLEARRAY LineStyles;
 public:

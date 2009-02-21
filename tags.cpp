@@ -259,7 +259,7 @@ DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-void DefineSpriteTag::Render()
+void DefineSpriteTag::Render(int layer)
 {
 	std::cout << "Render Sprite" << std::endl;
 	std::list < DisplayListTag* >::iterator it=displayList.begin();
@@ -380,7 +380,7 @@ void FromPathToShape(Path& path, Shape& shape)
 
 void FromShaperecordListToPaths(SHAPERECORD* cur, std::vector<Path>& paths);
 
-void DefineShapeTag::Render()
+void DefineShapeTag::Render(int layer)
 {
 
 	std::cout << "Render Shape" << std::endl;
@@ -404,7 +404,6 @@ void DefineShapeTag::Render()
 				shapes.back().graphic.filled0=true;
 				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
 				std::cout << shapes.back().graphic.color0 << std::endl;
-				std::cout << "puppa" << std::endl;
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -420,7 +419,6 @@ void DefineShapeTag::Render()
 				shapes.back().graphic.filled1=true;
 				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
 				std::cout << shapes.back().graphic.color1 << std::endl;
-				std::cout << "puppa2" << std::endl;
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -435,7 +433,6 @@ void DefineShapeTag::Render()
 				shapes.back().graphic.stroked=true;
 				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
 				std::cout << shapes.back().graphic.stroke_color << std::endl;
-				std::cout << "puppa3" << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -447,12 +444,12 @@ void DefineShapeTag::Render()
 	for(it;it!=shapes.end();it++)
 	{
 //		if(it->filled)
-			it->Render();
+			it->Render(layer);
 	}
 	std::cout << "fine Render Shape" << std::endl;
 }
 
-void DefineShape2Tag::Render()
+void DefineShape2Tag::Render(int layer)
 {
 	std::cout << "Render Shape2" << std::endl;
 	std::vector < Path > paths;
@@ -475,7 +472,6 @@ void DefineShape2Tag::Render()
 				shapes.back().graphic.filled0=true;
 				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
 				std::cout << shapes.back().graphic.color0 << std::endl;
-				std::cout << "puppa" << std::endl;
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -491,7 +487,6 @@ void DefineShape2Tag::Render()
 				shapes.back().graphic.filled1=true;
 				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
 				std::cout << shapes.back().graphic.color1 << std::endl;
-				std::cout << "puppa2" << std::endl;
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -506,7 +501,6 @@ void DefineShape2Tag::Render()
 				shapes.back().graphic.stroked=true;
 				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
 				std::cout << shapes.back().graphic.stroke_color << std::endl;
-				std::cout << "puppa3" << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -518,7 +512,7 @@ void DefineShape2Tag::Render()
 	for(it;it!=shapes.end();it++)
 	{
 //		if(it->filled)
-			it->Render();
+			it->Render(layer);
 	}
 	std::cout << "fine Render Shape2" << std::endl;
 }
@@ -1014,7 +1008,7 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 	}
 }
 
-void DefineFont2Tag::Render(int glyph)
+void DefineFont2Tag::Render(int glyph,const RGBA& color,int layer)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
@@ -1031,10 +1025,10 @@ void DefineFont2Tag::Render(int glyph)
 
 		//Fill graphic data
 		shapes.back().graphic.filled0=true;
-		shapes.back().graphic.filled1=true;
+		shapes.back().graphic.filled1=false;
 		shapes.back().graphic.stroked=false;
-		shapes.back().graphic.color0=RGB(255,255,255);
-		shapes.back().graphic.color1=RGB(0,0,0);
+		shapes.back().graphic.color0=color;
+		shapes.back().graphic.color1=RGB(0,255,0);
 
 		if(i->state->validFill0)
 		{
@@ -1066,11 +1060,11 @@ void DefineFont2Tag::Render(int glyph)
 	for(it;it!=shapes.end();it++)
 	{
 //		if(it->filled)
-			it->Render();
+			it->Render(layer);
 	}
 }
 
-void DefineFontTag::Render(int glyph)
+void DefineFontTag::Render(int glyph,const RGBA& color, int layer)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
@@ -1086,10 +1080,10 @@ void DefineFontTag::Render(int glyph)
 		FromPathToShape(*i,shapes.back());
 
 		//Fill graphic data
-		shapes.back().graphic.filled0=true;
+/*		shapes.back().graphic.filled0=true;
 		shapes.back().graphic.filled1=false;
 		shapes.back().graphic.stroked=false;
-		shapes.back().graphic.color0=RGB(0,0,0);
+		shapes.back().graphic.color0=RGB(0,0,0);*/
 
 		if(i->state->validFill0)
 		{
@@ -1120,11 +1114,11 @@ void DefineFontTag::Render(int glyph)
 	std::vector < Shape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 	{
-		it->Render();
+		it->Render(layer);
 	}
 }
 
-void DefineTextTag::Render()
+void DefineTextTag::Render(int layer)
 {
 	std::cout << "Render Text" << std::endl;
 	//std::cout << TextMatrix << std::endl;
@@ -1165,7 +1159,7 @@ void DefineTextTag::Render()
 			float scale=cur_height;
 			scale/=1024;
 			glScalef(scale,scale,1);
-			font->Render(it2->GlyphIndex);
+			font->Render(it2->GlyphIndex, it->TextColor,layer);
 			glPopMatrix();
 			
 			//std::cout << "Character " << it2->GlyphIndex << std::endl;
@@ -1273,7 +1267,7 @@ void PlaceObject2Tag::Render()
 	Matrix.get4DMatrix(matrix);
 	glMultMatrixf(matrix);
 	{
-		dynamic_cast<RenderTag*>(*it)->Render();
+		dynamic_cast<RenderTag*>(*it)->Render(Depth);
 	}
 }
 

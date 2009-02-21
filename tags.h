@@ -64,7 +64,7 @@ public:
 	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){}
 	virtual TAGTYPE getType(){ return RENDER_TAG; }
 	virtual int getId(){return 0;} 
-	virtual void Render(){std::cout << "default render" << std::endl; };
+	virtual void Render(int layer){std::cout << "default render" << std::endl; };
 };
 
 class DefineShapeTag: public RenderTag
@@ -76,7 +76,7 @@ private:
 public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual void Render();
+	virtual void Render(int layer);
 };
 
 class DefineShape2Tag: public RenderTag
@@ -88,7 +88,7 @@ private:
 public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual void Render();
+	virtual void Render(int layer);
 };
 
 class DefineSoundTag: public Tag
@@ -176,7 +176,7 @@ protected:
 	UI16 FontID;
 public:
 	FontTag(RECORDHEADER h,std::istream& s):RenderTag(h,s){}
-	virtual void Render(int glyph)=0;
+	virtual void Render(int glyph,const RGBA& color,int layer)=0;
 };
 
 class DefineFontTag: public FontTag
@@ -189,7 +189,7 @@ protected:
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	void Render(int glyph);
+	void Render(int glyph,const RGBA& color,int layer);
 };
 
 class DefineFontInfoTag: public Tag
@@ -230,7 +230,7 @@ private:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	void Render(int);
+	void Render(int glyph ,const RGBA& color,int layer);
 };
 
 class DefineTextTag: public RenderTag
@@ -246,7 +246,7 @@ private:
 public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
-	virtual void Render();
+	virtual void Render(int layer);
 };
 
 class DefineSpriteTag: public RenderTag
@@ -259,7 +259,7 @@ private:
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
-	virtual void Render();
+	virtual void Render(int layer);
 };
 
 class TagFactory

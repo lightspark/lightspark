@@ -129,6 +129,6 @@ public:
 	std::vector<Edge> edges;
 	int id;
 
-	void Render() const;
+	void Render(int layer) const;
 };
 

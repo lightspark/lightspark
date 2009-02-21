@@ -22,7 +22,8 @@ int main()
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 16 );
-	glDisable( GL_DEPTH_TEST );
+	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 4 );
+	//glDisable( GL_DEPTH_TEST );
 //	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
 	glViewport(0,0,640,480);
@@ -59,10 +60,14 @@ int main()
 					glClear(GL_COLOR_BUFFER_BIT); 
 					list < DisplayListTag* >::iterator i=displayList.begin();
 					glColor3f(0,1,0);
+					int count=0;
 					for(i;i!=displayList.end();i++)
 					{
+						count++;
 						if(*i!=NULL)
 						{
+							if(count!=2 && count!=4)
+								continue;
 							glLoadIdentity();
 							std::cout << "Depth " << (*i)->getDepth() <<std::endl;
 							//glTranslatef(0,0,float(count)/10);

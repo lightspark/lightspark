@@ -1,15 +1,69 @@
 #include "swftypes.h"
 #include "geometry.h"
 
-void Shape::Render() const
+void Shape::Render(int layer) const
 {
-/*	std::cout << "winding " << winding << std::endl;
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	static int last_layer=-1;
+	static bool accum=false;
+
+	std::cout << "winding " << winding << std::endl;
 	std::cout << "graphic.filled0 " << graphic.filled0 << std::endl;
 	std::cout << "graphic.color0 " << graphic.color0 << std::endl;
 	std::cout << "graphic.filled1 " << graphic.filled1 << std::endl;
-	std::cout << "graphic.color1 " << graphic.color1 << std::endl;*/
+	std::cout << "graphic.color1 " << graphic.color1 << std::endl;
+	std::cout << "graphic.stroked " << graphic.stroked << std::endl;
+	std::cout << "graphic.stroke_color " << graphic.stroke_color << std::endl;
 
-	if(graphic.filled0/* && winding==0*/)
+	std::cout << "layer " << layer << std::endl;
+
+	if(last_layer!=layer && accum)
+	{
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glPushMatrix();
+		glLoadIdentity();
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_EQUAL,2,0xf);
+		glBegin(GL_QUADS);
+			glVertex2i(100,100);
+			glVertex2i(100,3000);
+			glVertex2i(3000,3000);
+			glVertex2i(3000,100);
+		glEnd();
+		glPopMatrix();
+		glDisable(GL_STENCIL_TEST);
+		accum=false;
+	}
+
+	if(graphic.filled0 && graphic.filled1)
+	{
+		if(!accum)
+		{
+			glClearStencil(0);
+			glClear(GL_STENCIL_BUFFER_BIT);
+			glEnable(GL_STENCIL_TEST);
+		}
+		std::cout << "accumulating" << std::endl;
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		glStencilOp(GL_KEEP,GL_KEEP,GL_INCR);
+		glDepthFunc(GL_ALWAYS);
+		glStencilFunc(GL_ALWAYS,1,1);
+		std::vector<Triangle>::const_iterator it2=interior.begin();
+		glBegin(GL_TRIANGLES);
+		for(it2;it2!=interior.end();it2++)
+		{
+			glVertex2i(it2->v1.x,it2->v1.y);
+			glVertex2i(it2->v2.x,it2->v2.y);
+			glVertex2i(it2->v3.x,it2->v3.y);
+		}
+		glEnd();
+		accum=true;
+
+	/*glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	glStencilFunc(GL_ALWAYS,1,1);
+	glStencilOp(GL_ZERO,GL_KEEP,GL_KEEP);
+	if(graphic.filled0)
 	{
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glColor3ub(graphic.color0.Red,graphic.color0.Green,graphic.color0.Blue);
@@ -23,7 +77,8 @@ void Shape::Render() const
 		glEnd();
 	}
 
-	if(graphic.filled1/* && winding==1*/)
+	glStencilOp(GL_ZERO,GL_KEEP,GL_INVERT);
+	if(graphic.filled1)
 	{
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glColor3ub(graphic.color1.Red,graphic.color1.Green,graphic.color1.Blue);
@@ -36,6 +91,47 @@ void Shape::Render() const
 		}
 		glEnd();
 	}
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glStencilFunc(GL_EQUAL,0,1);
+
+		std::vector<Triangle>::const_iterator it2=interior.begin();
+		glColor3ub(graphic.color0.Red,graphic.color0.Green,graphic.color0.Blue);
+		glBegin(GL_TRIANGLES);
+		for(it2;it2!=interior.end();it2++)
+		{
+			glVertex2i(it2->v1.x,it2->v1.y);
+			glVertex2i(it2->v2.x,it2->v2.y);
+			glVertex2i(it2->v3.x,it2->v3.y);
+		}
+		glEnd();*/
+	}
+	else if(graphic.filled0)
+	{
+		std::vector<Triangle>::const_iterator it2=interior.begin();
+		glColor3ub(graphic.color0.Red,graphic.color0.Green,graphic.color0.Blue);
+		glBegin(GL_TRIANGLES);
+		for(it2;it2!=interior.end();it2++)
+		{
+			glVertex2i(it2->v1.x,it2->v1.y);
+			glVertex2i(it2->v2.x,it2->v2.y);
+			glVertex2i(it2->v3.x,it2->v3.y);
+		}
+		glEnd();
+	}
+	else if(graphic.filled1)
+	{
+		std::vector<Triangle>::const_iterator it2=interior.begin();
+		glColor3ub(graphic.color1.Red,graphic.color1.Green,graphic.color1.Blue);
+		glBegin(GL_TRIANGLES);
+		for(it2;it2!=interior.end();it2++)
+		{
+			glVertex2i(it2->v1.x,it2->v1.y);
+			glVertex2i(it2->v2.x,it2->v2.y);
+			glVertex2i(it2->v3.x,it2->v3.y);
+		}
+		glEnd();
+	}
+
 
 	if(graphic.stroked)
 	{
@@ -51,6 +147,7 @@ void Shape::Render() const
 		}
 		glEnd();
 	}
+	last_layer=layer;
 }
 
 bool Edge::xIntersect(int x,int32_t& d)

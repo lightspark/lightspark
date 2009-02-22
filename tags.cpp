@@ -443,8 +443,39 @@ void DefineShapeTag::Render(int layer)
 	std::vector < Shape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 	{
-//		if(it->filled)
-			it->Render(layer);
+		glClearStencil(0);
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glEnable(GL_STENCIL_TEST);
+
+		it->Render(layer);
+
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glPushMatrix();
+		glLoadIdentity();
+		if(it->graphic.filled0)
+		{
+			glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
+			glStencilFunc(GL_EQUAL,1,0xf);
+			glBegin(GL_QUADS);
+				glVertex2i(0,0);
+				glVertex2i(0,3000);
+				glVertex2i(3000,3000);
+				glVertex2i(3000,0);
+			glEnd();
+		}
+		if(it->graphic.filled1)
+		{
+			glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
+			glStencilFunc(GL_EQUAL,2,0xf);
+			glBegin(GL_QUADS);
+				glVertex2i(0,0);
+				glVertex2i(0,3000);
+				glVertex2i(3000,3000);
+				glVertex2i(3000,0);
+			glEnd();
+		}
+		glPopMatrix();
+		glDisable(GL_STENCIL_TEST);
 	}
 	std::cout << "fine Render Shape" << std::endl;
 }
@@ -511,8 +542,25 @@ void DefineShape2Tag::Render(int layer)
 	std::vector < Shape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 	{
-//		if(it->filled)
-			it->Render(layer);
+		glClearStencil(0);
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glEnable(GL_STENCIL_TEST);
+		abort();
+		it->Render(layer);
+
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glPushMatrix();
+		glLoadIdentity();
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_EQUAL,1,0x1);
+		glBegin(GL_QUADS);
+			glVertex2i(0,0);
+			glVertex2i(0,3000);
+			glVertex2i(3000,3000);
+			glVertex2i(3000,0);
+		glEnd();
+		glPopMatrix();
+		glDisable(GL_STENCIL_TEST);
 	}
 	std::cout << "fine Render Shape2" << std::endl;
 }
@@ -1193,6 +1241,7 @@ void DefineTextTag::Render(int layer)
 			//std::cout << "Character " << it2->GlyphIndex << std::endl;
 			x2+=it2->GlyphAdvance;
 		}
+
 	}
 }
 

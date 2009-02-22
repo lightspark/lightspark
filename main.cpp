@@ -1,5 +1,6 @@
 #include "swf.h"
 #include "tags.h"
+#include "geometry.h"
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -22,7 +23,7 @@ int main()
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 16 );
-	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 4 );
+	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
 	//glDisable( GL_DEPTH_TEST );
 //	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
@@ -66,7 +67,7 @@ int main()
 						count++;
 						if(*i!=NULL)
 						{
-							if(count!=5 && count!=4)
+							if(count!=4 && count!=5)
 								continue;
 							glLoadIdentity();
 							std::cout << "Depth " << (*i)->getDepth() <<std::endl;

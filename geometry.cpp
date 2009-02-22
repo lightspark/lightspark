@@ -3,7 +3,6 @@
 
 void Shape::Render(int layer) const
 {
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	static int last_layer=-1;
 	static bool accum=false;
 
@@ -23,12 +22,12 @@ void Shape::Render(int layer) const
 		glPushMatrix();
 		glLoadIdentity();
 		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_EQUAL,2,0xf);
+		glStencilFunc(GL_EQUAL,1,0x1);
 		glBegin(GL_QUADS);
-			glVertex2i(100,100);
-			glVertex2i(100,3000);
+			glVertex2i(0,0);
+			glVertex2i(0,3000);
 			glVertex2i(3000,3000);
-			glVertex2i(3000,100);
+			glVertex2i(3000,0);
 		glEnd();
 		glPopMatrix();
 		glDisable(GL_STENCIL_TEST);
@@ -229,6 +228,20 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 	{
 		return false;
 	}
+}
+
+bool Edge::edgeIntersect(const Edge& e)
+{
+	float ua=(e.x2-e.x1)*(y1-e.y1)-(e.y2-e.y1)*(x1-e.x1);
+	float ub=(x2-x1)*(y1-e.y1)-(y2-y1)*(x1-e.x1);
+
+	ua/=(e.y2-e.y1)*(x2-x1)-(e.x2-e.x1)*(y2-y1);
+	ub/=(e.y2-e.y1)*(x2-x1)-(e.x2-e.x1)*(y2-y1);
+
+	if(ua>0 && ua<1 && ub>0 && ub<1)
+		return true;
+	else
+		return false;
 }
 
 FilterIterator::FilterIterator(const std::vector<Vector2>::const_iterator& i, const std::vector<Vector2>::const_iterator& e, int f):it(i),end(e),filter(f)

@@ -948,6 +948,13 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 
 	std::vector < Numeric_Edge > edges;
 
+	std::vector < Edge > border;
+	for(int i=0;i<size-1;i++)
+	{
+		border.push_back(Edge(unsorted[i],unsorted[i+1],-1));
+	}
+	border.push_back(Edge(unsorted[size-1],unsorted[0],-1));
+
 	S.push_back(size-1);
 	S.push_back(size-2);
 	for(int i=size-3;i>0;i--)
@@ -965,13 +972,31 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 		}
 		else
 		{
+			int last_vertex=S.back();
 			S.pop_back();
-			for(int j=0;j<S.size();j++)
+			while(!S.empty())
 			{
 				//shape.edges.push_back(Edge(sorted[S[j]],sorted[i],-1));
-				edges.push_back(Numeric_Edge(sorted[S[j]].index,sorted[i].index,size));
+				Edge e(sorted[S.back()],sorted[i],-1);
+				bool stop=false;
+				for(int k=0;k<border.size();k++)
+				{
+					if(border[k].edgeIntersect(e))
+					{
+						stop=true;
+						break;
+					}
+				}
+				if(stop)
+					break;
+				else
+				{
+					last_vertex=S.back();
+					S.pop_back();
+					edges.push_back(Numeric_Edge(sorted[last_vertex].index,sorted[i].index,size));
+				}
 			}
-			S.erase(S.begin()+1,S.end());
+			S.push_back(last_vertex);
 			S.push_back(i);
 		}
 	}
@@ -1025,7 +1050,7 @@ void DefineFont2Tag::Render(int glyph,const RGBA& color,int layer)
 
 		//Fill graphic data
 		shapes.back().graphic.filled0=true;
-		shapes.back().graphic.filled1=false;
+		shapes.back().graphic.filled1=true;
 		shapes.back().graphic.stroked=false;
 		shapes.back().graphic.color0=color;
 		shapes.back().graphic.color1=RGB(0,255,0);
@@ -1079,11 +1104,14 @@ void DefineFontTag::Render(int glyph,const RGBA& color, int layer)
 		shapes.push_back(Shape());
 		FromPathToShape(*i,shapes.back());
 
+		std::cout << "PUPPA" << std::endl;
+
 		//Fill graphic data
-/*		shapes.back().graphic.filled0=true;
-		shapes.back().graphic.filled1=false;
+		shapes.back().graphic.filled0=true;
+		shapes.back().graphic.filled1=true;
 		shapes.back().graphic.stroked=false;
-		shapes.back().graphic.color0=RGB(0,0,0);*/
+		shapes.back().graphic.color0=color;
+		shapes.back().graphic.color1=RGB(0,255,0);
 
 		if(i->state->validFill0)
 		{

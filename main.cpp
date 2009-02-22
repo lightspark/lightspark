@@ -66,7 +66,7 @@ int main()
 						count++;
 						if(*i!=NULL)
 						{
-							if(count!=2 && count!=4)
+							if(count!=5 && count!=4)
 								continue;
 							glLoadIdentity();
 							std::cout << "Depth " << (*i)->getDepth() <<std::endl;

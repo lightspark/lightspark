@@ -1,4 +1,6 @@
 #include <GL/gl.h>
+#include <vector>
+#include <iostream>
 
 struct Numeric_Edge
 {
@@ -31,6 +33,7 @@ struct Numeric_Edge
 
 class Path;
 class Vector2;
+class Shape;
 
 class FilterIterator
 {
@@ -98,6 +101,7 @@ public:
 	}
 	bool yIntersect(int y,int32_t& d,int x=0);
 	bool xIntersect(int x,int32_t& d);
+	bool edgeIntersect(const Edge& e);
 	bool operator==(int a)
 	{
 		return index==a;

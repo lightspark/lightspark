@@ -440,6 +440,16 @@ void DefineShapeTag::Render(int layer)
 		else
 			shapes.back().graphic.stroked=false;
 	}
+	if(shapes.size()==1)
+	{
+		if(shapes[0].graphic.filled1 && !shapes[0].graphic.filled0)
+		{
+			shapes[0].graphic.filled0=shapes[0].graphic.filled1;
+			shapes[0].graphic.filled1=0;
+			shapes[0].graphic.color0=shapes[0].graphic.color1;
+		}
+	}
+
 	std::vector < Shape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 	{
@@ -447,7 +457,7 @@ void DefineShapeTag::Render(int layer)
 		glClear(GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_STENCIL_TEST);
 
-		it->Render(layer);
+		it->Render();
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glPushMatrix();
@@ -546,7 +556,7 @@ void DefineShape2Tag::Render(int layer)
 		glClear(GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_STENCIL_TEST);
 		abort();
-		it->Render(layer);
+		it->Render();
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glPushMatrix();
@@ -1098,7 +1108,7 @@ void DefineFont2Tag::Render(int glyph,const RGBA& color,int layer)
 
 		//Fill graphic data
 		shapes.back().graphic.filled0=true;
-		shapes.back().graphic.filled1=true;
+		shapes.back().graphic.filled1=false;
 		shapes.back().graphic.stroked=false;
 		shapes.back().graphic.color0=color;
 		shapes.back().graphic.color1=RGB(0,255,0);
@@ -1132,8 +1142,39 @@ void DefineFont2Tag::Render(int glyph,const RGBA& color,int layer)
 	std::vector < Shape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 	{
-//		if(it->filled)
-			it->Render(layer);
+		glClearStencil(0);
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glEnable(GL_STENCIL_TEST);
+
+		it->Render();
+
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glPushMatrix();
+		glLoadIdentity();
+		if(it->graphic.filled0)
+		{
+			glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
+			glStencilFunc(GL_EQUAL,1,0xf);
+			glBegin(GL_QUADS);
+				glVertex2i(0,0);
+				glVertex2i(0,3000);
+				glVertex2i(3000,3000);
+				glVertex2i(3000,0);
+			glEnd();
+		}
+		if(it->graphic.filled1)
+		{
+			glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
+			glStencilFunc(GL_EQUAL,2,0xf);
+			glBegin(GL_QUADS);
+				glVertex2i(0,0);
+				glVertex2i(0,3000);
+				glVertex2i(3000,3000);
+				glVertex2i(3000,0);
+			glEnd();
+		}
+		glPopMatrix();
+		glDisable(GL_STENCIL_TEST);
 	}
 }
 
@@ -1190,7 +1231,7 @@ void DefineFontTag::Render(int glyph,const RGBA& color, int layer)
 	std::vector < Shape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 	{
-		it->Render(layer);
+		it->Render();
 	}
 }
 

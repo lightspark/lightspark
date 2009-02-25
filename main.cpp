@@ -67,8 +67,6 @@ int main()
 						count++;
 						if(*i!=NULL)
 						{
-							if(count!=4 && count!=5)
-								continue;
 							glLoadIdentity();
 							std::cout << "Depth " << (*i)->getDepth() <<std::endl;
 							//glTranslatef(0,0,float(count)/10);

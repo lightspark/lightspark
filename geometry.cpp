@@ -1,7 +1,7 @@
 #include "swftypes.h"
 #include "geometry.h"
 
-void Shape::Render(int layer) const
+void Shape::Render() const
 {
 	std::cout << "winding " << winding << std::endl;
 	std::cout << "graphic.filled0 " << graphic.filled0 << std::endl;
@@ -11,9 +11,7 @@ void Shape::Render(int layer) const
 	std::cout << "graphic.stroked " << graphic.stroked << std::endl;
 	std::cout << "graphic.stroke_color " << graphic.stroke_color << std::endl;
 
-	std::cout << "layer " << layer << std::endl;
-
-	if(winding==1)
+	if(winding==0)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthFunc(GL_ALWAYS);
@@ -32,7 +30,7 @@ void Shape::Render(int layer) const
 		}
 		glEnd();
 	}
-	else if(winding==0)
+	else if(winding==1)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glDepthFunc(GL_ALWAYS);

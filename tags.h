@@ -176,7 +176,7 @@ protected:
 	UI16 FontID;
 public:
 	FontTag(RECORDHEADER h,std::istream& s):RenderTag(h,s){}
-	virtual void Render(int glyph,const RGBA& color,int layer)=0;
+	virtual void Render(int glyph)=0;
 };
 
 class DefineFontTag: public FontTag
@@ -189,7 +189,7 @@ protected:
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	void Render(int glyph,const RGBA& color,int layer);
+	void Render(int glyph);
 };
 
 class DefineFontInfoTag: public Tag
@@ -230,7 +230,7 @@ private:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	void Render(int glyph ,const RGBA& color,int layer);
+	void Render(int glyph);
 };
 
 class DefineTextTag: public RenderTag

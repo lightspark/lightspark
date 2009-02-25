@@ -460,17 +460,15 @@ void DefineShapeTag::Render(int layer)
 		it->Render();
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glPushMatrix();
-		glLoadIdentity();
 		if(it->graphic.filled0)
 		{
 			glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
 			glStencilFunc(GL_EQUAL,1,0xf);
 			glBegin(GL_QUADS);
-				glVertex2i(0,0);
-				glVertex2i(0,3000);
-				glVertex2i(3000,3000);
-				glVertex2i(3000,0);
+				glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
+				glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
+				glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymax);
+				glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymin);
 			glEnd();
 		}
 		if(it->graphic.filled1)
@@ -478,13 +476,12 @@ void DefineShapeTag::Render(int layer)
 			glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
 			glStencilFunc(GL_EQUAL,2,0xf);
 			glBegin(GL_QUADS);
-				glVertex2i(0,0);
-				glVertex2i(0,3000);
-				glVertex2i(3000,3000);
-				glVertex2i(3000,0);
+				glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
+				glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
+				glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymax);
+				glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymin);
 			glEnd();
 		}
-		glPopMatrix();
 		glDisable(GL_STENCIL_TEST);
 	}
 	std::cout << "fine Render Shape" << std::endl;
@@ -1091,7 +1088,7 @@ void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
 	}
 }
 
-void DefineFont2Tag::Render(int glyph,const RGBA& color,int layer)
+void DefineFont2Tag::Render(int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
@@ -1110,8 +1107,6 @@ void DefineFont2Tag::Render(int glyph,const RGBA& color,int layer)
 		shapes.back().graphic.filled0=true;
 		shapes.back().graphic.filled1=false;
 		shapes.back().graphic.stroked=false;
-		shapes.back().graphic.color0=color;
-		shapes.back().graphic.color1=RGB(0,255,0);
 
 		if(i->state->validFill0)
 		{
@@ -1142,43 +1137,11 @@ void DefineFont2Tag::Render(int glyph,const RGBA& color,int layer)
 	std::vector < Shape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 	{
-		glClearStencil(0);
-		glClear(GL_STENCIL_BUFFER_BIT);
-		glEnable(GL_STENCIL_TEST);
-
 		it->Render();
-
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glPushMatrix();
-		glLoadIdentity();
-		if(it->graphic.filled0)
-		{
-			glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
-			glStencilFunc(GL_EQUAL,1,0xf);
-			glBegin(GL_QUADS);
-				glVertex2i(0,0);
-				glVertex2i(0,3000);
-				glVertex2i(3000,3000);
-				glVertex2i(3000,0);
-			glEnd();
-		}
-		if(it->graphic.filled1)
-		{
-			glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
-			glStencilFunc(GL_EQUAL,2,0xf);
-			glBegin(GL_QUADS);
-				glVertex2i(0,0);
-				glVertex2i(0,3000);
-				glVertex2i(3000,3000);
-				glVertex2i(3000,0);
-			glEnd();
-		}
-		glPopMatrix();
-		glDisable(GL_STENCIL_TEST);
 	}
 }
 
-void DefineFontTag::Render(int glyph,const RGBA& color, int layer)
+void DefineFontTag::Render(int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
@@ -1193,14 +1156,10 @@ void DefineFontTag::Render(int glyph,const RGBA& color, int layer)
 		shapes.push_back(Shape());
 		FromPathToShape(*i,shapes.back());
 
-		std::cout << "PUPPA" << std::endl;
-
 		//Fill graphic data
 		shapes.back().graphic.filled0=true;
 		shapes.back().graphic.filled1=true;
 		shapes.back().graphic.stroked=false;
-		shapes.back().graphic.color0=color;
-		shapes.back().graphic.color1=RGB(0,255,0);
 
 		if(i->state->validFill0)
 		{
@@ -1269,6 +1228,9 @@ void DefineTextTag::Render(int layer)
 		int x2=x,y2=y;
 		x2+=(*it).XOffset;
 		y2+=(*it).YOffset;
+		glClearStencil(0);
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glEnable(GL_STENCIL_TEST);
 		for(it2;it2!=(it->GlyphEntries.end());it2++)
 		{
 			glPushMatrix();
@@ -1276,12 +1238,22 @@ void DefineTextTag::Render(int layer)
 			float scale=cur_height;
 			scale/=1024;
 			glScalef(scale,scale,1);
-			font->Render(it2->GlyphIndex, it->TextColor,layer);
+			font->Render(it2->GlyphIndex);
 			glPopMatrix();
 			
 			//std::cout << "Character " << it2->GlyphIndex << std::endl;
 			x2+=it2->GlyphAdvance;
 		}
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glColor3ub(it->TextColor.Red,it->TextColor.Green,it->TextColor.Blue);
+		glStencilFunc(GL_EQUAL,1,0xf);
+		glBegin(GL_QUADS);
+			glVertex2i(TextBounds.Xmin,TextBounds.Ymin);
+			glVertex2i(TextBounds.Xmin,TextBounds.Ymax);
+			glVertex2i(TextBounds.Xmax,TextBounds.Ymax);
+			glVertex2i(TextBounds.Xmax,TextBounds.Ymin);
+		glEnd();
+		glDisable(GL_STENCIL_TEST);
 
 	}
 }

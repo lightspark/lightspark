@@ -1,4 +1,5 @@
 #include "tags.h"
+#include "actions.h"
 #include "geometry.h"
 #include "swftypes.h"
 #include <vector>
@@ -35,6 +36,9 @@ Tag* TagFactory::readTag()
 		case 11:
 			std::cout << "position " << f.tellg() << std::endl;
 			return new DefineTextTag(h,f);
+		case 12:
+			std::cout << "position " << f.tellg() << std::endl;
+			return new DoActionTag(h,f);
 		case 13:
 			std::cout << "position " << f.tellg() << std::endl;
 			return new DefineFontInfoTag(h,f);

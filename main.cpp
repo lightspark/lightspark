@@ -12,6 +12,9 @@ using namespace std;
 list < RenderTag* > dictionary;
 list < DisplayListTag* > displayList;
 
+vector<Frame> frames;
+int FP=0;
+
 int main()
 {
 	ifstream f("flash.swf",ifstream::in);
@@ -35,6 +38,7 @@ int main()
 //	glLoadIdentity();
 //	glScalef(0.1,0.1,0.1);
 	int done=0;
+
 	try
 	{
 		TagFactory factory(f);
@@ -61,10 +65,8 @@ int main()
 					glClear(GL_COLOR_BUFFER_BIT); 
 					list < DisplayListTag* >::iterator i=displayList.begin();
 					glColor3f(0,1,0);
-					int count=0;
 					for(i;i!=displayList.end();i++)
 					{
-						count++;
 						if(*i!=NULL)
 						{
 							glLoadIdentity();
@@ -76,11 +78,11 @@ int main()
 					}
 					SDL_GL_SwapBuffers( );
 					std::cout << "end render" << std::endl;
-					if(done>30)
+					/*if(done>30)
 					{
 						//sleep(5);
 						goto exit;
-					}
+					}*/
 					done++;
 					break;
 				}

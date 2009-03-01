@@ -50,6 +50,9 @@ Tag* TagFactory::readTag()
 		case 26:
 			std::cout << "position " << f.tellg() << std::endl;
 			return new PlaceObject2Tag(h,f);
+		case 28:
+			std::cout << "position " << f.tellg() << std::endl;
+			return new RemoveObject2Tag(h,f);
 		case 39:
 			std::cout << "position " << f.tellg() << std::endl;
 			return new DefineSpriteTag(h,f);
@@ -67,6 +70,23 @@ Tag* TagFactory::readTag()
 	}
 }
 
+RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	in >> Depth;
+
+	std::cout << "Remove " << Depth << std::endl;
+
+	std::list<DisplayListTag*>::iterator it=displayList.begin();
+
+	for(it;it!=displayList.end();it++)
+	{
+		if((*it)->getDepth()==Depth)
+		{
+			displayList.erase(it);
+			break;
+		}
+	}
+}
 
 SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 {

@@ -121,6 +121,14 @@ public:
 	PlaceObjectTag(RECORDHEADER h, std::istream& in);
 };*/
 
+class RemoveObject2Tag: public Tag
+{
+private:
+	UI16 Depth;
+
+public:
+	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
+};
 
 class PlaceObject2Tag: public DisplayListTag
 {

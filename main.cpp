@@ -78,7 +78,7 @@ int main()
 					std::cout << "end render" << std::endl;
 					if(done>30)
 					{
-						sleep(5);
+						//sleep(5);
 						goto exit;
 					}
 					done++;

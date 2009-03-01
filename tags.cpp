@@ -451,39 +451,38 @@ void DefineShapeTag::Render(int layer)
 	}
 
 	std::vector < Shape >::iterator it=shapes.begin();
+	glClearStencil(5);
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glEnable(GL_STENCIL_TEST);
 	for(it;it!=shapes.end();it++)
 	{
-		glClearStencil(0);
-		glClear(GL_STENCIL_BUFFER_BIT);
-		glEnable(GL_STENCIL_TEST);
-
 		it->Render();
-
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		if(it->graphic.filled0)
-		{
-			glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
-			glStencilFunc(GL_EQUAL,1,0xf);
-			glBegin(GL_QUADS);
-				glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
-				glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
-				glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymax);
-				glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymin);
-			glEnd();
-		}
-		if(it->graphic.filled1)
-		{
-			glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
-			glStencilFunc(GL_EQUAL,2,0xf);
-			glBegin(GL_QUADS);
-				glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
-				glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
-				glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymax);
-				glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymin);
-			glEnd();
-		}
-		glDisable(GL_STENCIL_TEST);
 	}
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	it=shapes.begin();
+	if(it->graphic.filled0)
+	{
+		glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
+		glStencilFunc(GL_EQUAL,2,0xf);
+		glBegin(GL_QUADS);
+			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
+			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
+			glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymax);
+			glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymin);
+		glEnd();
+	}
+	if(it->graphic.filled1)
+	{
+		glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
+		glStencilFunc(GL_EQUAL,3,0xf);
+		glBegin(GL_QUADS);
+			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
+			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
+			glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymax);
+			glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymin);
+		glEnd();
+	}
+	glDisable(GL_STENCIL_TEST);
 	std::cout << "fine Render Shape" << std::endl;
 }
 
@@ -549,7 +548,7 @@ void DefineShape2Tag::Render(int layer)
 	std::vector < Shape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 	{
-		glClearStencil(0);
+		glClearStencil(5);
 		glClear(GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_STENCIL_TEST);
 		abort();
@@ -559,7 +558,7 @@ void DefineShape2Tag::Render(int layer)
 		glPushMatrix();
 		glLoadIdentity();
 		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_EQUAL,1,0x1);
+		glStencilFunc(GL_EQUAL,2,0xf);
 		glBegin(GL_QUADS);
 			glVertex2i(0,0);
 			glVertex2i(0,3000);
@@ -1228,7 +1227,7 @@ void DefineTextTag::Render(int layer)
 		int x2=x,y2=y;
 		x2+=(*it).XOffset;
 		y2+=(*it).YOffset;
-		glClearStencil(0);
+		glClearStencil(5);
 		glClear(GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_STENCIL_TEST);
 		for(it2;it2!=(it->GlyphEntries.end());it2++)
@@ -1246,7 +1245,7 @@ void DefineTextTag::Render(int layer)
 		}
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glColor3ub(it->TextColor.Red,it->TextColor.Green,it->TextColor.Blue);
-		glStencilFunc(GL_EQUAL,1,0xf);
+		glStencilFunc(GL_EQUAL,2,0xf);
 		glBegin(GL_QUADS);
 			glVertex2i(TextBounds.Xmin,TextBounds.Ymin);
 			glVertex2i(TextBounds.Xmin,TextBounds.Ymax);

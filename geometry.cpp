@@ -3,13 +3,13 @@
 
 void Shape::Render() const
 {
-	std::cout << "winding " << winding << std::endl;
+	/*std::cout << "winding " << winding << std::endl;
 	std::cout << "graphic.filled0 " << graphic.filled0 << std::endl;
 	std::cout << "graphic.color0 " << graphic.color0 << std::endl;
 	std::cout << "graphic.filled1 " << graphic.filled1 << std::endl;
 	std::cout << "graphic.color1 " << graphic.color1 << std::endl;
 	std::cout << "graphic.stroked " << graphic.stroked << std::endl;
-	std::cout << "graphic.stroke_color " << graphic.stroke_color << std::endl;
+	std::cout << "graphic.stroke_color " << graphic.stroke_color << std::endl;*/
 
 	if(winding==0)
 	{
@@ -17,9 +17,9 @@ void Shape::Render() const
 		glDepthFunc(GL_ALWAYS);
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
 		if(graphic.filled0)
-			glStencilFunc(GL_ALWAYS,1,1);
+			glStencilFunc(GL_LESS,2,7);
 		else
-			glStencilFunc(GL_ALWAYS,0,1);
+			glStencilFunc(GL_LESS,1,7);
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)
@@ -36,9 +36,9 @@ void Shape::Render() const
 		glDepthFunc(GL_ALWAYS);
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
 		if(graphic.filled1)
-			glStencilFunc(GL_ALWAYS,2,1);
+			glStencilFunc(GL_LESS,3,7);
 		else
-			glStencilFunc(GL_ALWAYS,0,1);
+			glStencilFunc(GL_LESS,1,7);
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)

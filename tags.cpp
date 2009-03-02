@@ -61,6 +61,9 @@ Tag* TagFactory::readTag()
 		case 28:
 			cout << "position " << f.tellg() << endl;
 			return new RemoveObject2Tag(h,f);
+		case 34:
+			cout << "position " << f.tellg() << endl;
+			return new DefineButton2Tag(h,f);
 		case 39:
 			cout << "position " << f.tellg() << endl;
 			return new DefineSpriteTag(h,f);
@@ -1414,3 +1417,34 @@ void FrameLabelTag::Render()
 	throw "WIP2";
 }
 
+DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):ActiveTag(h,in)
+{
+	in >> ButtonId;
+	BitStream bs(in);
+	UB(7,bs);
+	TrackAsMenu=UB(1,bs);
+	in >> ActionOffset;
+
+	BUTTONRECORD br;
+
+	do
+	{
+		in >> br;
+		Characters.push_back(br);
+	}
+	while(!br.isNull());
+
+	BUTTONCONDACTION bca;
+	do
+	{
+		in >> bca;
+		Actions.push_back(bca);
+	}
+	while(!bca.isLast());
+
+}
+
+void DefineButton2Tag::Render(int layer)
+{
+	throw "button render";
+}

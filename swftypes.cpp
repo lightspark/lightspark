@@ -368,3 +368,26 @@ std::istream& operator>>(std::istream& stream, MATRIX& v)
 	return stream;
 }
 
+std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
+{
+	BitStream bs(stream);
+
+	UB(2,bs);
+	v.ButtonHasBlendMode=UB(1,bs);
+	v.ButtonHasFilterList=UB(1,bs);
+	v.ButtonStateHitTest=UB(1,bs);
+	v.ButtonStateDown=UB(1,bs);
+	v.ButtonStateOver=UB(1,bs);
+	v.ButtonStateUp=UB(1,bs);
+
+	if(v.isNull())
+		return stream;
+
+	stream >> v.CharacterID >> v.PlaceDepth >> v.PlaceMatrix >> v.ColorTransform;
+
+	if(v.ButtonHasFilterList | v.ButtonHasBlendMode)
+		throw "not supported button record data";
+
+	return stream;
+}
+

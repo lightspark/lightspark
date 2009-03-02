@@ -187,6 +187,29 @@ public:
 	SoundStreamHead2Tag(RECORDHEADER h, std::istream& in);
 };
 
+class ActiveTag: public RenderTag
+{
+public:
+	ActiveTag(RECORDHEADER h,std::istream& s):RenderTag(h,s){}
+};
+
+class BUTTONCONDACTION;
+
+class DefineButton2Tag: public ActiveTag
+{
+private:
+	UI16 ButtonId;
+	UB ReservedFlags;
+	UB TrackAsMenu;
+	UI16 ActionOffset;
+	std::vector<BUTTONRECORD> Characters;
+	std::vector<BUTTONCONDACTION> Actions;
+public:
+	DefineButton2Tag(RECORDHEADER h, std::istream& in);
+	virtual int getId(){ return ButtonId; }
+	virtual void Render(int layer);
+};
+
 class KERNINGRECORD
 {
 };

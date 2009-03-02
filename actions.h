@@ -32,6 +32,7 @@ public:
 	UI8 ActionCode;
 	UI16 Length;
 	ACTIONRECORDHEADER(std::istream& in);
+	ActionTag* createTag(std::istream& in);
 };
 
 class ActionStop:public ActionTag
@@ -39,3 +40,36 @@ class ActionStop:public ActionTag
 public:
 	void Execute();
 };
+
+class ActionGotoFrame:public ActionTag
+{
+private:
+	UI16 Frame;
+public:
+	ActionGotoFrame(std::istream& in);
+	void Execute();
+};
+
+class BUTTONCONDACTION
+{
+public:
+	UI16 CondActionSize;
+	UB CondIdleToOverDown;
+	UB CondOutDownToIdle;
+	UB CondOutDownToOverDown;
+	UB CondOverDownToOutDown;
+	UB CondOverDownToOverUp;
+	UB CondOverUpToOverDown;
+	UB CondOverUpToIdle;
+	UB CondIdleToOverUp;
+	UB CondKeyPress;
+	UB CondOverDownToIdle;
+	std::vector<ActionTag*> Actions;
+	
+	bool isLast()
+	{
+		return !CondActionSize;
+	}
+};
+
+std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v);

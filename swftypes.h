@@ -414,6 +414,33 @@ class CXFORM
 {
 };
 
+class FILTERLIST
+{
+};
+
+class BUTTONRECORD
+{
+public:
+	UB ButtonReserved;
+	UB ButtonHasBlendMode;
+	UB ButtonHasFilterList;
+	UB ButtonStateHitTest;
+	UB ButtonStateDown;
+	UB ButtonStateOver;
+	UB ButtonStateUp;
+	UI16 CharacterID;
+	UI16 PlaceDepth;
+	MATRIX PlaceMatrix;
+	CXFORMWITHALPHA	ColorTransform;
+	FILTERLIST FilterList;
+	UI8 BlendMode;
+
+	bool isNull() const
+	{
+		return !(ButtonReserved | ButtonHasBlendMode | ButtonHasFilterList | ButtonStateHitTest | ButtonStateDown | ButtonStateOver | ButtonStateUp);
+	}
+};
+
 std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::ostream& operator<<(std::ostream& s, const RGBA& r);
@@ -431,4 +458,5 @@ std::istream& operator>>(std::istream& stream, MATRIX& v);
 std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
 std::istream& operator>>(std::istream& stream, GLYPHENTRY& v);
 std::istream& operator>>(std::istream& stream, STRING& v);
+std::istream& operator>>(std::istream& stream, BUTTONRECORD& v);
 #endif

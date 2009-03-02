@@ -159,6 +159,19 @@ public:
 	}
 };
 
+class FrameLabelTag: public DisplayListTag
+{
+private:
+	STRING Name;
+public:
+	FrameLabelTag(RECORDHEADER h, std::istream& in);
+	void Render( );
+	UI16 getDepth()
+	{
+		return 0;
+	}
+};
+
 class SetBackgroundColorTag: public ControlTag
 {
 private:

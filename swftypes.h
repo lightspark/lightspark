@@ -379,6 +379,8 @@ private:
 
 class STRING
 {
+public:
+	std::vector<UI8> String;
 };
 
 class CLIPACTIONS
@@ -428,4 +430,5 @@ std::istream& operator>>(std::istream& stream, TEXTRECORD& v);
 std::istream& operator>>(std::istream& stream, MATRIX& v);
 std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
 std::istream& operator>>(std::istream& stream, GLYPHENTRY& v);
+std::istream& operator>>(std::istream& stream, STRING& v);
 #endif

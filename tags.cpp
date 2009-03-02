@@ -1,3 +1,4 @@
+#include <GL/gl.h>
 #include "tags.h"
 #include "actions.h"
 #include "geometry.h"
@@ -5,10 +6,13 @@
 #include <vector>
 #include <list>
 #include <algorithm>
-#include <GL/gl.h>
 
-extern std::list < RenderTag* > dictionary;
-extern std::list < DisplayListTag* > displayList;
+using namespace std;
+
+extern list < RenderTag* > dictionary;
+extern list < DisplayListTag* > displayList;
+
+extern State state;
 
 Tag* TagFactory::readTag()
 {
@@ -17,58 +21,61 @@ Tag* TagFactory::readTag()
 	switch(h>>6)
 	{
 		case 0:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new EndTag(h,f);
 		case 1:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new ShowFrameTag(h,f);
 		case 2:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new DefineShapeTag(h,f);
 	//	case 4:
 	//		return new PlaceObjectTag(h,f);
 		case 9:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new SetBackgroundColorTag(h,f);
 		case 10:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new DefineFontTag(h,f);
 		case 11:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new DefineTextTag(h,f);
 		case 12:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new DoActionTag(h,f);
 		case 13:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new DefineFontInfoTag(h,f);
 		case 14:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new DefineSoundTag(h,f);
 		case 15:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new StartSoundTag(h,f);
 		case 22:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new DefineShape2Tag(h,f);
 		case 26:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new PlaceObject2Tag(h,f);
 		case 28:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new RemoveObject2Tag(h,f);
 		case 39:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new DefineSpriteTag(h,f);
+		case 43:
+			cout << "position " << f.tellg() << endl;
+			return new FrameLabelTag(h,f);
 		case 45:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new SoundStreamHead2Tag(h,f);
 		case 48:
-			std::cout << "position " << f.tellg() << std::endl;
+			cout << "position " << f.tellg() << endl;
 			return new DefineFont2Tag(h,f);
 		default:
-			std::cout << "position " << f.tellg() << std::endl;
-			std::cout << (h>>6) << std::endl;
+			cout << "position " << f.tellg() << endl;
+			cout << (h>>6) << endl;
 			throw "unsupported tag";
 			break;
 	}
@@ -1386,6 +1393,24 @@ void PlaceObject2Tag::Render()
 
 void SetBackgroundColorTag::execute()
 {
-	std::cout << "execute SetBG" <<  std::endl;
+	cout << "execute SetBG" <<  endl;
 	glClearColor(BackgroundColor.Red/255.0F,BackgroundColor.Green/255.0F,BackgroundColor.Blue/255.0F,0);
 }
+
+FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+{
+	in >> Name;
+	cout << "label ";
+	for(int i=0;i<Name.String.size();i++)
+		cout << Name.String[i];
+
+	cout << endl;
+}
+
+void FrameLabelTag::Render()
+{
+	cout << "execute FrameLabel" <<  endl;
+	state.frames[state.FP].setLabel(Name);
+	throw "WIP2";
+}
+

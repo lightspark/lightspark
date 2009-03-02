@@ -1,5 +1,7 @@
 #include "swf.h"
 #include "tags.h"
+#include "actions.h"
+#include "frame.h"
 #include "geometry.h"
 #include <iostream>
 #include <fstream>
@@ -12,8 +14,7 @@ using namespace std;
 list < RenderTag* > dictionary;
 list < DisplayListTag* > displayList;
 
-vector<Frame> frames;
-int FP=0;
+State state;
 
 int main()
 {
@@ -63,21 +64,11 @@ int main()
 				case SHOW_TAG:
 				{
 					glClear(GL_COLOR_BUFFER_BIT); 
-					list < DisplayListTag* >::iterator i=displayList.begin();
-					glColor3f(0,1,0);
-					for(i;i!=displayList.end();i++)
-					{
-						if(*i!=NULL)
-						{
-							glLoadIdentity();
-							std::cout << "Depth " << (*i)->getDepth() <<std::endl;
-							//glTranslatef(0,0,float(count)/10);
-							glScalef(0.1,0.1,0.1);
-							(*i)->Render();
-						}
-					}
+					state.frames.push_back(Frame(displayList));
+					state.frames[state.FP].Render();
 					SDL_GL_SwapBuffers( );
 					std::cout << "end render" << std::endl;
+					state.FP++;
 					/*if(done>30)
 					{
 						//sleep(5);

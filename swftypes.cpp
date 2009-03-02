@@ -69,6 +69,18 @@ std::ostream& operator<<(std::ostream& s, const MATRIX& r)
 	return s;
 }
 
+std::istream& operator>>(std::istream& stream, STRING& v)
+{
+	UI8 c;
+	do
+	{
+		stream >> c;
+		v.String.push_back(c);
+	}
+	while(c!=0);
+	return stream;
+}
+
 std::istream& operator>>(std::istream& stream, RECT& v)
 {
 	BitStream s(stream);

@@ -3,6 +3,7 @@
 #include "actions.h"
 #include "frame.h"
 #include "geometry.h"
+#include <time.h>
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -11,10 +12,15 @@
 
 using namespace std;
 
-list < RenderTag* > dictionary;
-list < DisplayListTag* > displayList;
+RunState state;
+SystemState sys;
 
-State state;
+int thread_debug(char* msg)
+{
+	timespec ts;
+	clock_gettime(CLOCK_REALTIME,&ts);
+	fprintf(stderr,"%u.%010u %s\n",ts.tv_sec,ts.tv_nsec,msg);
+}
 
 int main()
 {
@@ -38,56 +44,47 @@ int main()
 	glMatrixMode(GL_MODELVIEW);
 //	glLoadIdentity();
 //	glScalef(0.1,0.1,0.1);
-	int done=0;
+
+	ParseThread pt(f);
 
 	try
 	{
-		TagFactory factory(f);
-		while(1)
+		while(state.FP!=-1)
 		{
-			Tag* tag=factory.readTag();
-			std::cout << "end readTag" << std::endl;
-			switch(tag->getType())
+			while(1)
 			{
-			//	case TAG:
-				case END_TAG:
-					sleep(5);
-					return 0;
-				case RENDER_TAG:
-					std::cout << "add to dict" << std::endl;
-					dictionary.push_back(dynamic_cast<RenderTag*>(tag));
+				//thread_debug( "RENDER: frames mutex lock");
+				sem_wait(&sys.sem_frames);
+
+				if(state.FP<sys.frames.size())
 					break;
-				case DISPLAY_LIST_TAG:
-					if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)
-						displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
-					break;
-				case SHOW_TAG:
-				{
-					glClear(GL_COLOR_BUFFER_BIT); 
-					state.frames.push_back(Frame(displayList));
-					state.frames[state.FP].Render();
-					SDL_GL_SwapBuffers( );
-					std::cout << "end render" << std::endl;
-					state.FP++;
-					/*if(done>30)
-					{
-						//sleep(5);
-						goto exit;
-					}*/
-					done++;
-					break;
-				}
-				case CONTROL_TAG:
-					dynamic_cast<ControlTag*>(tag)->execute();
-					break;
+
+				//thread_debug( "RENDER: frames mutex unlock");
+				sem_post(&sys.sem_frames);
+				thread_debug("RENDER: new frame wait");
+				sem_wait(&sys.new_frame);
 			}
+			//Aquired lock on frames list
+
+			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
+			glClear(GL_COLOR_BUFFER_BIT);
+			sys.frames[state.FP].Render();
+			SDL_GL_SwapBuffers( );
+			state.FP++;
+
+			if(state.FP==30)
+				break;
+
+			//thread_debug( "RENDER: frames mutex unlock");
+			sem_post(&sys.sem_frames);
 		}
 	}
-	catch(const char* s)
+	catch(const char* e)
 	{
-		cout << s << endl;
+		cout << e << endl;
 	}
-exit:
+	sleep(2);
+//	pt.wait();
 	SDL_Quit();
 }
 

@@ -2,12 +2,11 @@
 #include "frame.h"
 #include <vector>
 
-class State
+class RunState
 {
 public:
 	int FP;
-	State();
-	std::vector<Frame> frames;
+	RunState();
 };
 
 class ActionTag

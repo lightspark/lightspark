@@ -3,81 +3,62 @@
 #include "actions.h"
 #include "geometry.h"
 #include "swftypes.h"
+#include "swf.h"
 #include <vector>
 #include <list>
 #include <algorithm>
 
 using namespace std;
 
-extern list < RenderTag* > dictionary;
-extern list < DisplayListTag* > displayList;
-
-extern State state;
+extern RunState state;
+extern SystemState sys;
 
 Tag* TagFactory::readTag()
 {
 	RECORDHEADER h;
 	f >> h;
+//	cout << "position " << f.tellg() << endl;
 	switch(h>>6)
 	{
 		case 0:
-			cout << "position " << f.tellg() << endl;
 			return new EndTag(h,f);
 		case 1:
-			cout << "position " << f.tellg() << endl;
 			return new ShowFrameTag(h,f);
 		case 2:
-			cout << "position " << f.tellg() << endl;
 			return new DefineShapeTag(h,f);
 	//	case 4:
 	//		return new PlaceObjectTag(h,f);
 		case 9:
-			cout << "position " << f.tellg() << endl;
 			return new SetBackgroundColorTag(h,f);
 		case 10:
-			cout << "position " << f.tellg() << endl;
 			return new DefineFontTag(h,f);
 		case 11:
-			cout << "position " << f.tellg() << endl;
 			return new DefineTextTag(h,f);
 		case 12:
-			cout << "position " << f.tellg() << endl;
 			return new DoActionTag(h,f);
 		case 13:
-			cout << "position " << f.tellg() << endl;
 			return new DefineFontInfoTag(h,f);
 		case 14:
-			cout << "position " << f.tellg() << endl;
 			return new DefineSoundTag(h,f);
 		case 15:
-			cout << "position " << f.tellg() << endl;
 			return new StartSoundTag(h,f);
 		case 22:
-			cout << "position " << f.tellg() << endl;
 			return new DefineShape2Tag(h,f);
 		case 26:
-			cout << "position " << f.tellg() << endl;
 			return new PlaceObject2Tag(h,f);
 		case 28:
-			cout << "position " << f.tellg() << endl;
 			return new RemoveObject2Tag(h,f);
 		case 34:
-			cout << "position " << f.tellg() << endl;
 			return new DefineButton2Tag(h,f);
 		case 39:
-			cout << "position " << f.tellg() << endl;
 			return new DefineSpriteTag(h,f);
 		case 43:
-			cout << "position " << f.tellg() << endl;
 			return new FrameLabelTag(h,f);
 		case 45:
-			cout << "position " << f.tellg() << endl;
 			return new SoundStreamHead2Tag(h,f);
 		case 48:
-			cout << "position " << f.tellg() << endl;
 			return new DefineFont2Tag(h,f);
 		default:
-			cout << "position " << f.tellg() << endl;
 			cout << (h>>6) << endl;
 			throw "unsupported tag";
 			break;
@@ -90,13 +71,13 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 
 	std::cout << "Remove " << Depth << std::endl;
 
-	std::list<DisplayListTag*>::iterator it=displayList.begin();
+	std::list<DisplayListTag*>::iterator it=ParseThread::displayList.begin();
 
-	for(it;it!=displayList.end();it++)
+	for(it;it!=ParseThread::displayList.end();it++)
 	{
 		if((*it)->getDepth()==Depth)
 		{
-			displayList.erase(it);
+			ParseThread::displayList.erase(it);
 			break;
 		}
 	}
@@ -119,7 +100,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	do
 	{
 		tag=factory.readTag();	
-		std::cout << "\tsprite tag type "<< tag->getType() <<std::endl;
+//		std::cout << "\tsprite tag type "<< tag->getType() <<std::endl;
 		if(tag->getType()==DISPLAY_LIST_TAG)
 			displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
 	}
@@ -145,7 +126,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 
 	for(int i=0;i<NumGlyphs;i++)
 	{
-		std::cout << "font read " << i << std::endl;
+//		std::cout << "font read " << i << std::endl;
 		SHAPE t;
 		in >> t;
 		GlyphShapeTable.push_back(t);
@@ -190,7 +171,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	}
 	for(int i=0;i<NumGlyphs;i++)
 	{
-		std::cout << "font read " << i << std::endl;
+	//	std::cout << "font read " << i << std::endl;
 		SHAPE t;
 		in >> t;
 		GlyphShapeTable.push_back(t);
@@ -437,7 +418,7 @@ void DefineShapeTag::Render(int layer)
 			{
 				shapes.back().graphic.filled0=true;
 				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
-				std::cout << shapes.back().graphic.color0 << std::endl;
+				//std::cout << shapes.back().graphic.color0 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -452,7 +433,7 @@ void DefineShapeTag::Render(int layer)
 			{
 				shapes.back().graphic.filled1=true;
 				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
-				std::cout << shapes.back().graphic.color1 << std::endl;
+				//std::cout << shapes.back().graphic.color1 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -466,7 +447,7 @@ void DefineShapeTag::Render(int layer)
 			{
 				shapes.back().graphic.stroked=true;
 				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
-				std::cout << shapes.back().graphic.stroke_color << std::endl;
+				//std::cout << shapes.back().graphic.stroke_color << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -1244,8 +1225,8 @@ void DefineTextTag::Render(int layer)
 		if(it->StyleFlagsHasFont)
 		{
 			cur_height=it->TextHeight;
-			std::list< RenderTag*>::iterator it3 = dictionary.begin();
-			for(it3;it3!=dictionary.end();it3++)
+			std::list< RenderTag*>::iterator it3 = sys.dictionary.begin();
+			for(it3;it3!=sys.dictionary.end();it3++)
 			{
 				if((*it3)->getId()==it->FontID)
 				{
@@ -1338,24 +1319,48 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	}
 	if(PlaceFlagMove)
 	{
-		std::list < DisplayListTag*>::const_iterator it=displayList.begin();
+		std::list < DisplayListTag*>::iterator it=ParseThread::displayList.begin();
 		std::cout << "find depth " << Depth << std::endl;
-		for(it;it!=displayList.end();it++)
+		for(it;it!=ParseThread::displayList.end();it++)
 		{
 			if((*it)->getDepth()==Depth)
 			{
-				add_to_list=false;
+				add_to_list=true;
 				PlaceObject2Tag* it2=dynamic_cast<PlaceObject2Tag*>(*it);
-				if(PlaceFlagHasMatrix)
-					it2->Matrix=Matrix;
-				if(PlaceFlagHasClipDepth)
-					it2->ClipDepth=ClipDepth;
-				if(PlaceFlagHasColorTransform)
-					it2->ColorTransform=ColorTransform;
+
+				//if(it2->PlaceFlagHasClipAction)
+				//if(it2->PlaceFlagHasName)
+				if(!PlaceFlagHasCharacter && it2->PlaceFlagHasCharacter)
+				{
+					PlaceFlagHasCharacter=it2->PlaceFlagHasCharacter;
+					CharacterId=it2->CharacterId;
+				}
+				if(!PlaceFlagHasMatrix && it2->PlaceFlagHasMatrix)
+				{
+					PlaceFlagHasMatrix=it2->PlaceFlagHasMatrix;
+					Matrix=it2->Matrix;
+				}
+				if(!PlaceFlagHasColorTransform && it2->PlaceFlagHasColorTransform)
+				{
+					PlaceFlagHasColorTransform=it2->PlaceFlagHasColorTransform;
+					ColorTransform=it2->ColorTransform;
+				}
+				if(!PlaceFlagHasRatio && it2->PlaceFlagHasRatio)
+				{
+					PlaceFlagHasRatio=it2->PlaceFlagHasRatio;
+					Ratio=it2->Ratio;
+				}
+				if(!PlaceFlagHasClipDepth && it2->PlaceFlagHasClipDepth)
+				{
+					PlaceFlagHasClipDepth=it2->PlaceFlagHasClipDepth;
+					ClipDepth=it2->ClipDepth;
+				}
+				ParseThread::displayList.erase(it);
+
 				break;
 			}
 		}
-		if(it==displayList.end())
+		if(it==ParseThread::displayList.end())
 			throw "has move";
 	}
 }
@@ -1372,14 +1377,14 @@ void PlaceObject2Tag::Render()
 	//std::cout << Matrix << std::endl;
 	if(!PlaceFlagHasCharacter)
 		throw "modify not supported";
-	std::list< RenderTag* >::iterator it=dictionary.begin();
-	for(it;it!=dictionary.end();it++)
+	std::list< RenderTag* >::iterator it=sys.dictionary.begin();
+	for(it;it!=sys.dictionary.end();it++)
 	{
 		//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
 		if(dynamic_cast<RenderTag*>(*it)->getId()==CharacterId)
 			break;
 	}
-	if(it==dictionary.end())
+	if(it==sys.dictionary.end())
 	{
 		throw "Object does not exist";
 	}
@@ -1397,7 +1402,7 @@ void PlaceObject2Tag::Render()
 void SetBackgroundColorTag::execute()
 {
 	cout << "execute SetBG" <<  endl;
-	glClearColor(BackgroundColor.Red/255.0F,BackgroundColor.Green/255.0F,BackgroundColor.Blue/255.0F,0);
+	sys.Background=BackgroundColor;
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
@@ -1413,7 +1418,7 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,
 void FrameLabelTag::Render()
 {
 	cout << "execute FrameLabel" <<  endl;
-	state.frames[state.FP].setLabel(Name);
+	sys.frames[state.FP].setLabel(Name);
 	throw "WIP2";
 }
 

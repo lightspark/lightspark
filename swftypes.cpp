@@ -207,7 +207,7 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 	for(int i=0;i<v.GlyphCount;i++)
 	{
 		v.GlyphEntries.push_back(GLYPHENTRY(&v,bs));
-		std::cout << "reading glyph " << i << "current size " << v.GlyphEntries.size() << std::endl;
+//		std::cout << "reading glyph " << i << "current size " << v.GlyphEntries.size() << std::endl;
 	}
 
 	return in;
@@ -237,7 +237,7 @@ GLYPHENTRY::GLYPHENTRY(TEXTRECORD* p,BitStream& bs):parent(p)
 {
 	GlyphIndex = UB(parent->parent->GlyphBits,bs);
 	GlyphAdvance = SB(parent->parent->AdvanceBits,bs);
-	std::cout << "\tglyph " << GlyphAdvance << std::endl;
+	//std::cout << "\tglyph " << GlyphAdvance << std::endl;
 }
 
 SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
@@ -280,7 +280,7 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 	}
 	else
 	{
-		std::cout << "non edge shaperecord" << std::endl;
+//		std::cout << "non edge shaperecord" << std::endl;
 		StateNewStyles = UB(1,bs);
 		StateLineStyle = UB(1,bs);
 		StateFillStyle1 = UB(1,bs);
@@ -288,25 +288,25 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 		StateMoveTo = UB(1,bs);
 		if(StateMoveTo)
 		{
-			std::cout << "move to" << std::endl;
+//			std::cout << "move to" << std::endl;
 			MoveBits = UB(5,bs);
-			std::cout <<"\tbits " << MoveBits << std::endl;
+//			std::cout <<"\tbits " << MoveBits << std::endl;
 			MoveDeltaX = SB(MoveBits,bs);
 			MoveDeltaY = SB(MoveBits,bs);
 		}
 		if(StateFillStyle0)
 		{
-			std::cout << "fill style 0 bits " << parent->NumFillBits << std::endl;
+//			std::cout << "fill style 0 bits " << parent->NumFillBits << std::endl;
 			FillStyle0=UB(parent->NumFillBits,bs);
 		}
 		if(StateFillStyle1)
 		{
-			std::cout << "fill style 1 bits " << parent->NumFillBits << std::endl;
+//			std::cout << "fill style 1 bits " << parent->NumFillBits << std::endl;
 			FillStyle1=UB(parent->NumFillBits,bs);
 		}
 		if(StateLineStyle)
 		{
-			std::cout << "line style bits " << parent->NumLineBits << std::endl;
+//			std::cout << "line style bits " << parent->NumLineBits << std::endl;
 			LineStyle=UB(parent->NumLineBits,bs);
 		}
 		if(StateNewStyles)

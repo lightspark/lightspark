@@ -2,7 +2,7 @@
 
 using namespace std;
 
-extern State state;
+extern RunState state;
 
 DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
@@ -51,7 +51,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 	}
 }
 
-State::State():FP(0)
+RunState::RunState():FP(0)
 {
 }
 

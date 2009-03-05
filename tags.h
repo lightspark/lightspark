@@ -17,10 +17,7 @@ public:
 	Tag(RECORDHEADER h, std::istream& s):Header(h)
 	{
 		if((Header&0x3f)==0x3f)
-		{
-			std::cout << "long tag" << std::endl;
 			s >> Length;
-		}
 	}
 	SI32 getSize()
 	{
@@ -178,7 +175,7 @@ private:
 	RGB BackgroundColor;
 public:
 	SetBackgroundColorTag(RECORDHEADER h, std::istream& in);
-	virtual void execute();
+	void execute( );
 };
 
 class SoundStreamHead2Tag: public Tag

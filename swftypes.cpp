@@ -1,6 +1,9 @@
 #include "swftypes.h"
 #include "tags.h"
 #include <string.h>
+
+using namespace std;
+
 RECT::RECT()
 {
 }
@@ -19,6 +22,13 @@ std::ostream& operator<<(std::ostream& s, const RECT& r)
 {
 	std::cout << '{' << (int)r.Xmin << ',' << r.Xmax << ',' << r.Ymin << ',' << r.Ymax << '}';
 	return s;
+}
+
+ostream& operator<<(ostream& s, const STRING& t)
+{
+	for(int i=0;i<t.String.size();i++)
+		cout << t.String[i];
+	cout << endl;
 }
 
 std::ostream& operator<<(std::ostream& s, const RGBA& r)
@@ -98,6 +108,12 @@ std::istream& operator>>(std::istream& s, RGB& v)
 	return s;
 }
 
+std::istream& operator>>(std::istream& s, RGBA& v)
+{
+	s >> v.Red >> v.Green >> v.Blue >> v.Alpha;
+	return s;
+}
+
 std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
 {
 	s >> v.LineStyleCount;
@@ -110,6 +126,19 @@ std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
 	{
 		s >> v.LineStyles[i];
 //		std::cout << "@ " << s.tellg() << std::endl;
+	}
+	return s;
+}
+
+std::istream& operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
+{
+	s >> v.LineStyleCount;
+	if(v.LineStyleCount==0xff)
+		throw "Line array extended not supported\n";
+	v.LineStyles=new MORPHLINESTYLE[v.LineStyleCount];
+	for(int i=0;i<v.LineStyleCount;i++)
+	{
+		s >> v.LineStyles[i];
 	}
 	return s;
 }
@@ -128,13 +157,28 @@ std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	return s;
 }
 
+std::istream& operator>>(std::istream& s, MORPHFILLSTYLEARRAY& v)
+{
+	s >> v.FillStyleCount;
+	if(v.FillStyleCount==0xff)
+		throw "Fill array extended not supported\n";
+//	std::cout << "Reading " << (int)v.FillStyleCount << " Fill styles" << std::endl;
+	v.FillStyles=new MORPHFILLSTYLE[v.FillStyleCount];
+	for(int i=0;i<v.FillStyleCount;i++)
+	{
+		s >> v.FillStyles[i];
+	}
+	return s;
+}
+
 std::istream& operator>>(std::istream& s, SHAPE& v)
 {
 	BitStream bs(s);
 	v.NumFillBits=UB(4,bs);
 	v.NumLineBits=UB(4,bs);
 	v.ShapeRecords=SHAPERECORD(&v,bs);
-	if(v.ShapeRecords.StateNewStyles+v.ShapeRecords.StateLineStyle+v.ShapeRecords.StateFillStyle1+v.ShapeRecords.StateFillStyle0+v.ShapeRecords.StateMoveTo)
+	if(v.ShapeRecords.TypeFlag + v.ShapeRecords.StateNewStyles+v.ShapeRecords.StateLineStyle+v.ShapeRecords.StateFillStyle1+
+			v.ShapeRecords.StateFillStyle0+v.ShapeRecords.StateMoveTo)
 	{
 		SHAPERECORD* cur=&(v.ShapeRecords);
 		while(1)
@@ -145,6 +189,7 @@ std::istream& operator>>(std::istream& s, SHAPE& v)
 				break;
 		}
 	}
+	return s;
 }
 
 std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
@@ -154,7 +199,8 @@ std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 	v.NumFillBits=UB(4,bs);
 	v.NumLineBits=UB(4,bs);
 	v.ShapeRecords=SHAPERECORD(&v,bs);
-	if(v.ShapeRecords.StateNewStyles+v.ShapeRecords.StateLineStyle+v.ShapeRecords.StateFillStyle1+v.ShapeRecords.StateFillStyle0+v.ShapeRecords.StateMoveTo)
+	if(v.ShapeRecords.TypeFlag+v.ShapeRecords.StateNewStyles+v.ShapeRecords.StateLineStyle+v.ShapeRecords.StateFillStyle1+
+			v.ShapeRecords.StateFillStyle0+v.ShapeRecords.StateMoveTo)
 	{
 		SHAPERECORD* cur=&(v.ShapeRecords);
 		while(1)
@@ -165,14 +211,18 @@ std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 				break;
 		}
 	}
-
-	//s >> v.ShapeRecords;
 }
 
 std::istream& operator>>(std::istream& s, LINESTYLE& v)
 {
 	s >> v.Width >> v.Color;
 //	std::cout << "Line " << v.Width/20 << ' ' << v.Color << std::endl;
+	return s;
+}
+
+std::istream& operator>>(std::istream& s, MORPHLINESTYLE& v)
+{
+	s >> v.StartWidth >> v.EndWidth >> v.StartColor >> v.EndColor;
 	return s;
 }
 
@@ -216,11 +266,24 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 {
 	s >> v.FillStyleType;
-//	std::cout << (uint16_t)v.FillStyleType << std::endl;
 	if(v.FillStyleType!=0)
+	{
+		cout << (int)v.FillStyleType << "@ " << s.tellg() << endl;
 		throw "unsupported fill type";
+	}
 	s >> v.Color;
-//	std::cout << "Fill color " << v.Color << std::endl;
+	return s;
+}
+
+std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v)
+{
+	s >> v.FillStyleType;
+	if(v.FillStyleType!=0)
+	{
+		cout << (int)v.FillStyleType << endl;
+		throw "unsupported fill type";
+	}
+	s >> v.StartColor >> v.EndColor;
 	return s;
 }
 

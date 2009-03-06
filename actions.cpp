@@ -41,8 +41,11 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 7:
 			return new ActionStop;
 			break;
-		case 129:
+		case 0x81:
 			return new ActionGotoFrame(in);
+			break;
+		case 0x83:
+			return new ActionGetURL(in);
 			break;
 		default:
 			cout << (int)ActionCode << endl;
@@ -64,6 +67,18 @@ void ActionStop::Execute()
 ActionGotoFrame::ActionGotoFrame(std::istream& in)
 {
 	in >> Frame;
+}
+
+ActionGetURL::ActionGetURL(std::istream& in)
+{
+	in >> UrlString >> TargetString;
+
+	cout << UrlString<< endl;
+}
+
+void ActionGetURL::Execute()
+{
+	cout << "Prelevo " << UrlString << endl;
 }
 
 void ActionGotoFrame::Execute()

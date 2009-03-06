@@ -57,6 +57,8 @@ Tag* TagFactory::readTag()
 			return new FrameLabelTag(h,f);
 		case 45:
 			return new SoundStreamHead2Tag(h,f);
+		case 46:
+			return new DefineMorphShapeTag(h,f);
 		case 48:
 			return new DefineFont2Tag(h,f);
 		default:
@@ -94,8 +96,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 {
 //	std::cout << "DefineSprite" << std::endl;
 	in >> SpriteID >> FrameCount;
-	if(FrameCount!=1)
-		throw "unsopported long sprites";
+	//if(FrameCount!=1)
+	//	throw "unsopported long sprites";
 	TagFactory factory(in);
 	Tag* tag;
 	do
@@ -290,6 +292,11 @@ int crossProd(const Vector2& a, const Vector2& b)
 	return a.x*b.y-a.y*b.x;
 }
 
+DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+{
+	in >> CharacterId >> StartBounds >> EndBounds >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
+}
+
 class GraphicStatus
 {
 public:
@@ -407,6 +414,118 @@ void FromPathToShape(Path& path, Shape& shape)
 
 void FromShaperecordListToPaths(SHAPERECORD* cur, std::vector<Path>& paths);
 
+void DefineMorphShapeTag::Render(int layer)
+{
+
+//	std::cout << "Render Shape" << std::endl;
+	std::vector < Path > paths;
+	std::vector < Shape > shapes;
+	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
+
+	FromShaperecordListToPaths(cur,paths);
+	std::vector < Path >::iterator i=paths.begin();
+	for(i;i!=paths.end();i++)
+	{
+		//TODO: Shape construtor from path
+		shapes.push_back(Shape());
+		FromPathToShape(*i,shapes.back());
+
+		//Fill graphic data
+		if(i->state->validFill0)
+		{
+			if(i->state->fill0)
+			{
+				shapes.back().graphic.filled0=true;
+				shapes.back().graphic.color0=MorphFillStyles.FillStyles[i->state->fill0-1].EndColor;
+				//std::cout << shapes.back().graphic.color0 << std::endl;
+			}
+			else
+				shapes.back().graphic.filled0=false;
+		}
+		else
+			shapes.back().graphic.filled0=false;
+
+
+		if(i->state->validFill1)
+		{
+			if(i->state->fill1)
+			{
+				shapes.back().graphic.filled1=true;
+				shapes.back().graphic.color1=MorphFillStyles.FillStyles[i->state->fill1-1].EndColor;
+				//std::cout << shapes.back().graphic.color1 << std::endl;
+			}
+			else
+				shapes.back().graphic.filled1=false;
+		}
+		else
+			shapes.back().graphic.filled1=false;
+
+		if(i->state->validStroke)
+		{
+			if(i->state->stroke)
+			{
+				shapes.back().graphic.stroked=true;
+				shapes.back().graphic.stroke_color=MorphLineStyles.LineStyles[i->state->stroke-1].StartColor;
+				//std::cout << shapes.back().graphic.stroke_color << std::endl;
+			}
+			else
+				shapes.back().graphic.stroked=false;
+		}
+		else
+			shapes.back().graphic.stroked=false;
+	}
+	if(shapes.size()==1)
+	{
+		if(shapes[0].graphic.filled1 && !shapes[0].graphic.filled0)
+		{
+			shapes[0].graphic.filled0=shapes[0].graphic.filled1;
+			shapes[0].graphic.filled1=0;
+			shapes[0].graphic.color0=shapes[0].graphic.color1;
+		}
+	}
+
+	for(int i=0;i<shapes.size();i++)
+	{
+		shapes[i].graphic.filled0=1;
+		shapes[i].graphic.filled1=0;
+		shapes[i].graphic.color0=RGB(0,255,0);
+	}
+
+	std::vector < Shape >::iterator it=shapes.begin();
+	glClearStencil(5);
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glEnable(GL_STENCIL_TEST);
+	for(it;it!=shapes.end();it++)
+	{
+		it->Render();
+	}
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	it=shapes.begin();
+	if(it->graphic.filled0)
+	{
+		glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
+		glStencilFunc(GL_EQUAL,2,0xf);
+		glBegin(GL_QUADS);
+			glVertex2i(EndBounds.Xmin,EndBounds.Ymin);
+			glVertex2i(EndBounds.Xmin,EndBounds.Ymax);
+			glVertex2i(EndBounds.Xmax,EndBounds.Ymax);
+			glVertex2i(EndBounds.Xmax,EndBounds.Ymin);
+		glEnd();
+	}
+	if(it->graphic.filled1)
+	{
+		glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
+		glStencilFunc(GL_EQUAL,3,0xf);
+		glBegin(GL_QUADS);
+			glVertex2i(EndBounds.Xmin,EndBounds.Ymin);
+			glVertex2i(EndBounds.Xmin,EndBounds.Ymax);
+			glVertex2i(EndBounds.Xmax,EndBounds.Ymax);
+			glVertex2i(EndBounds.Xmax,EndBounds.Ymin);
+		glEnd();
+	}
+	glDisable(GL_STENCIL_TEST);
+//	std::cout << "fine Render Shape" << std::endl;
+}
 void DefineShapeTag::Render(int layer)
 {
 
@@ -578,7 +697,7 @@ void DefineShape2Tag::Render(int layer)
 		glClearStencil(5);
 		glClear(GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_STENCIL_TEST);
-		abort();
+		throw "shape2";
 		it->Render();
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -1005,7 +1124,7 @@ void TessellatePath(Path& path, Shape& shape)
 		}
 		fixIndex(monotone);
 		if(monotone.size()==2)
-			abort();
+			throw "tess problem";
 
 		TriangulateMonotone(monotone,shape);
 	}

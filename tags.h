@@ -88,6 +88,24 @@ public:
 	virtual void Render(int layer);
 };
 
+class DefineMorphShapeTag: public RenderTag
+{
+private:
+	UI16 CharacterId;
+	RECT StartBounds;
+	RECT EndBounds;
+	UI32 Offset;
+	MORPHFILLSTYLEARRAY MorphFillStyles;
+	MORPHLINESTYLEARRAY MorphLineStyles;
+	SHAPE StartEdges;
+	SHAPE EndEdges;
+public:
+	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
+	virtual int getId(){ return CharacterId; }
+	virtual void Render(int layer);
+};
+
+
 class DefineSoundTag: public Tag
 {
 public:

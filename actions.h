@@ -50,6 +50,16 @@ public:
 	void Execute();
 };
 
+class ActionGetURL:public ActionTag
+{
+private:
+	STRING UrlString;
+	STRING TargetString;
+public:
+	ActionGetURL(std::istream& in);
+	void Execute();
+};
+
 class BUTTONCONDACTION
 {
 public:

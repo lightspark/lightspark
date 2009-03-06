@@ -236,11 +236,28 @@ public:
 	RGB Color;
 };
 
+class MORPHFILLSTYLE
+{
+public:
+	UI8 FillStyleType;
+	RGBA StartColor;
+	RGBA EndColor;
+};
+
 class LINESTYLE
 {
 public:
 	UI16 Width;
 	RGB Color;
+};
+
+class MORPHLINESTYLE
+{
+public:
+	UI16 StartWidth;
+	UI16 EndWidth;
+	RGBA StartColor;
+	RGBA EndColor;
 };
 
 class LINESTYLEARRAY
@@ -250,11 +267,25 @@ public:
 	LINESTYLE* LineStyles;
 };
 
+class MORPHLINESTYLEARRAY
+{
+public:
+	UI8 LineStyleCount;
+	MORPHLINESTYLE* LineStyles;
+};
+
 class FILLSTYLEARRAY
 {
 public:
 	UI8 FillStyleCount;
 	FILLSTYLE* FillStyles;
+};
+
+class MORPHFILLSTYLEARRAY
+{
+public:
+	UI8 FillStyleCount;
+	MORPHFILLSTYLE* FillStyles;
 };
 
 class SHAPE;
@@ -340,6 +371,7 @@ class SHAPE
 	friend class SHAPERECORD;
 	friend class DefineShapeTag;
 	friend class DefineShape2Tag;
+	friend class DefineMorphShapeTag;
 	friend class DefineTextTag;
 	friend class DefineFontTag;
 	friend class DefineFont2Tag;
@@ -444,14 +476,19 @@ public:
 std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::ostream& operator<<(std::ostream& s, const RGBA& r);
+std::ostream& operator<<(std::ostream& s, const STRING& r);
 std::istream& operator>>(std::istream& s, RECT& v);
 
 std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 std::istream& operator>>(std::istream& stream, SHAPE& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLEARRAY& v);
+std::istream& operator>>(std::istream& stream, MORPHFILLSTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, LINESTYLEARRAY& v);
+std::istream& operator>>(std::istream& stream, MORPHLINESTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, LINESTYLE& v);
+std::istream& operator>>(std::istream& stream, MORPHLINESTYLE& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLE& v);
+std::istream& operator>>(std::istream& stream, MORPHFILLSTYLE& v);
 std::istream& operator>>(std::istream& stream, SHAPERECORD& v);
 std::istream& operator>>(std::istream& stream, TEXTRECORD& v);
 std::istream& operator>>(std::istream& stream, MATRIX& v);

@@ -1,5 +1,4 @@
-#include <GL/gl.h>
-#include <vector>
+#include <list>
 #include <iostream>
 
 struct Numeric_Edge
@@ -57,7 +56,7 @@ class Vector2
 	friend std::ostream& operator<<(std::ostream& s, const Vector2& p);
 	friend bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point);
 	friend void TessellatePath(Path& path, Shape& shape);
-	friend void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape);
+	friend void TriangulateMonotone(const std::list<Vector2>& monotone, Shape& shape);
 	int x,y;
 public:
 	int index;

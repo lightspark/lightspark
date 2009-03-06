@@ -46,7 +46,7 @@ void* ParseThread::worker(void* in_ptr)
 			{
 			//	case TAG:
 				case END_TAG:
-					sleep(5);
+					//sleep(5);
 					return 0;
 				case RENDER_TAG:
 				//	std::cout << "add to dict" << std::endl;

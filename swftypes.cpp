@@ -103,13 +103,13 @@ std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
 		throw "Line array extended not supported\n";
-	std::cout << "Reading " << (int)v.LineStyleCount << " Line styles" << std::endl;
-	std::cout << "@ " << s.tellg() << std::endl;
+//	std::cout << "Reading " << (int)v.LineStyleCount << " Line styles" << std::endl;
+//	std::cout << "@ " << s.tellg() << std::endl;
 	v.LineStyles=new LINESTYLE[v.LineStyleCount];
 	for(int i=0;i<v.LineStyleCount;i++)
 	{
 		s >> v.LineStyles[i];
-		std::cout << "@ " << s.tellg() << std::endl;
+//		std::cout << "@ " << s.tellg() << std::endl;
 	}
 	return s;
 }
@@ -119,7 +119,7 @@ std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
 		throw "Fill array extended not supported\n";
-	std::cout << "Reading " << (int)v.FillStyleCount << " Fill styles" << std::endl;
+//	std::cout << "Reading " << (int)v.FillStyleCount << " Fill styles" << std::endl;
 	v.FillStyles=new FILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
@@ -172,7 +172,7 @@ std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 std::istream& operator>>(std::istream& s, LINESTYLE& v)
 {
 	s >> v.Width >> v.Color;
-	std::cout << "Line " << v.Width/20 << ' ' << v.Color << std::endl;
+//	std::cout << "Line " << v.Width/20 << ' ' << v.Color << std::endl;
 	return s;
 }
 
@@ -216,11 +216,11 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 {
 	s >> v.FillStyleType;
-	std::cout << (uint16_t)v.FillStyleType << std::endl;
+//	std::cout << (uint16_t)v.FillStyleType << std::endl;
 	if(v.FillStyleType!=0)
 		throw "unsupported fill type";
 	s >> v.Color;
-	std::cout << "Fill color " << v.Color << std::endl;
+//	std::cout << "Fill color " << v.Color << std::endl;
 	return s;
 }
 
@@ -343,7 +343,7 @@ std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 		v.GreenAddTerm=SB(v.NBits,bs);
 		v.BlueAddTerm=SB(v.NBits,bs);
 		v.AlphaAddTerm=SB(v.NBits,bs);
-		std::cout << v.AlphaAddTerm << std::endl;
+//		std::cout << v.AlphaAddTerm << std::endl;
 	}
 }
 

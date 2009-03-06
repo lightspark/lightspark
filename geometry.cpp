@@ -1,3 +1,4 @@
+#include <GL/gl.h>
 #include "swftypes.h"
 #include "geometry.h"
 

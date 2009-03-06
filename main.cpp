@@ -83,7 +83,7 @@ int main()
 	{
 		cout << e << endl;
 	}
-	sleep(2);
+	//sleep(2);
 //	pt.wait();
 	SDL_Quit();
 }

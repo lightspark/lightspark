@@ -69,7 +69,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	in >> Depth;
 
-	std::cout << "Remove " << Depth << std::endl;
+//	std::cout << "Remove " << Depth << std::endl;
 
 	std::list<DisplayListTag*>::iterator it=ParseThread::displayList.begin();
 
@@ -86,12 +86,12 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 {
 	in >> BackgroundColor;
-	std::cout << BackgroundColor << std::endl;
+//	std::cout << BackgroundColor << std::endl;
 }
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-	std::cout << "DefineSprite" << std::endl;
+//	std::cout << "DefineSprite" << std::endl;
 	in >> SpriteID >> FrameCount;
 	if(FrameCount!=1)
 		throw "unsopported long sprites";
@@ -109,7 +109,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 {
-	std::cout << "DefineFont" << std::endl;
+//	std::cout << "DefineFont" << std::endl;
 	in >> FontID;
 
 	UI16 t;
@@ -135,7 +135,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 {
-	std::cout << "DefineFont2" << std::endl;
+//	std::cout << "DefineFont2" << std::endl;
 	in >> FontID;
 	BitStream bs(in);
 	FontFlagsHasLayout = UB(1,bs);
@@ -276,7 +276,7 @@ DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 
 void DefineSpriteTag::Render(int layer)
 {
-	std::cout << "Render Sprite" << std::endl;
+//	std::cout << "Render Sprite" << std::endl;
 	std::list < DisplayListTag* >::iterator it=displayList.begin();
 	for(it;it!=displayList.end();it++)
 	{
@@ -316,8 +316,19 @@ public:
 	GraphicStatus _state;
 	GraphicStatus* state;
 	Path():closed(false){ state=&_state;};
-	Path(const Path& p):closed(p.closed){state=&_state;points=p.points;_state=p._state;}
+	Path(const Path& p):closed(p.closed),points(p.points){state=&_state;_state=p._state;}
 };
+
+void fixIndex(list<Vector2>& points)
+{
+	list<Vector2>::iterator it=points.begin();
+	int i=0;
+	for(it;it!=points.end();it++)
+	{
+		it->index=i;
+		i++;
+	}
+}
 
 void fixIndex(std::vector<Vector2>& points)
 {
@@ -398,7 +409,7 @@ void FromShaperecordListToPaths(SHAPERECORD* cur, std::vector<Path>& paths);
 void DefineShapeTag::Render(int layer)
 {
 
-	std::cout << "Render Shape" << std::endl;
+//	std::cout << "Render Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -498,12 +509,12 @@ void DefineShapeTag::Render(int layer)
 		glEnd();
 	}
 	glDisable(GL_STENCIL_TEST);
-	std::cout << "fine Render Shape" << std::endl;
+//	std::cout << "fine Render Shape" << std::endl;
 }
 
 void DefineShape2Tag::Render(int layer)
 {
-	std::cout << "Render Shape2" << std::endl;
+//	std::cout << "Render Shape2" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -523,7 +534,7 @@ void DefineShape2Tag::Render(int layer)
 			{
 				shapes.back().graphic.filled0=true;
 				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
-				std::cout << shapes.back().graphic.color0 << std::endl;
+//				std::cout << shapes.back().graphic.color0 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -538,7 +549,7 @@ void DefineShape2Tag::Render(int layer)
 			{
 				shapes.back().graphic.filled1=true;
 				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
-				std::cout << shapes.back().graphic.color1 << std::endl;
+//				std::cout << shapes.back().graphic.color1 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -552,7 +563,7 @@ void DefineShape2Tag::Render(int layer)
 			{
 				shapes.back().graphic.stroked=true;
 				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
-				std::cout << shapes.back().graphic.stroke_color << std::endl;
+//				std::cout << shapes.back().graphic.stroke_color << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -583,7 +594,7 @@ void DefineShape2Tag::Render(int layer)
 		glPopMatrix();
 		glDisable(GL_STENCIL_TEST);
 	}
-	std::cout << "fine Render Shape2" << std::endl;
+//	std::cout << "fine Render Shape2" << std::endl;
 }
 
 void SplitPath(std::vector<Path>& paths,int a, int b)
@@ -741,11 +752,11 @@ void FromShaperecordListToPaths(SHAPERECORD* cur, std::vector<Path>& paths)
 	}
 }
 
-void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape);
+void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape);
 
 void TessellatePath(Path& path, Shape& shape)
 {
-	std::vector<Vector2> unsorted(path.points);
+	std::vector<Vector2>& unsorted =(path.points);
 	int size=unsorted.size();
 
 	fixIndex(unsorted);
@@ -807,7 +818,6 @@ void TessellatePath(Path& path, Shape& shape)
 				{
 					if(getVertexType(unsorted[helper[(v->index+1)%size]],unsorted)==MERGE_VERTEX)
 						throw "merge1";
-					//std::cout << "End helper " << helper[(v->index+1)%size] << "at index" << (v->index+1)%size<< std::endl;
 					std::list<Edge>::iterator d=std::find(T.begin(),T.end(),(v->index+1)%size);
 					T.erase(d);
 					break;
@@ -958,25 +968,39 @@ void TessellatePath(Path& path, Shape& shape)
 	sort(D.begin(),D.end());
 	for(int j=0;j<D.size();j++)
 		shape.edges.push_back(Edge(unsorted[D[j].a],unsorted[D[j].b],-1));
+	list<Vector2> unsorted_list(unsorted.begin(),unsorted.end());
 	for(int j=0;j<D.size();j++)
 	{
-		std::vector<Vector2> monotone;
+		//std::vector<Vector2> monotone;
+		list<Vector2> monotone;
 		if(D[j].a<D[j].b)
 		{
-			std::vector< Vector2 >::iterator a=lower_bound(unsorted.begin(),unsorted.end(),D[j].a);
+			/*std::vector< Vector2 >::iterator a=lower_bound(unsorted.begin(),unsorted.end(),D[j].a);
 			std::vector< Vector2 >::iterator b=lower_bound(unsorted.begin(),unsorted.end(),D[j].b);
 			std::vector< Vector2 > temp(a,b+1);
 			monotone.swap(temp);
-			unsorted.erase(a+1,b);
+			unsorted.erase(a+1,b);*/
+			list<Vector2>::iterator a=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].a);
+			list<Vector2>::iterator b=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].b);
+			monotone.push_back(*a);
+			monotone.splice(monotone.end(),unsorted_list,++a,b);
+			monotone.push_back(*b);
 		}
 		else
 		{
-			std::vector< Vector2 >::iterator a=lower_bound(unsorted.begin(),unsorted.end(),D[j].a);
+			/*std::vector< Vector2 >::iterator a=lower_bound(unsorted.begin(),unsorted.end(),D[j].a);
 			monotone.insert(monotone.end(),a,unsorted.end());
 			unsorted.erase(a+1,unsorted.end());
 			std::vector< Vector2 >::iterator b=lower_bound(unsorted.begin(),unsorted.end(),D[j].b);
 			monotone.insert(monotone.end(),unsorted.begin(),b+1);
-			unsorted.erase(unsorted.begin(),b);
+			unsorted.erase(unsorted.begin(),b);*/
+			list<Vector2>::iterator a=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].a);
+			monotone.push_back(*a);
+			monotone.splice(monotone.end(),unsorted_list,++a,unsorted_list.end());
+			list<Vector2>::iterator b=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].b);
+			monotone.splice(monotone.end(),unsorted_list,unsorted_list.begin(),b);
+			monotone.push_back(*b);
+
 		}
 		fixIndex(monotone);
 		if(monotone.size()==2)
@@ -984,17 +1008,17 @@ void TessellatePath(Path& path, Shape& shape)
 
 		TriangulateMonotone(monotone,shape);
 	}
-	fixIndex(unsorted);
-	TriangulateMonotone(unsorted,shape);
+	fixIndex(unsorted_list);
+	TriangulateMonotone(unsorted_list,shape);
 }
 
-void TriangulateMonotone(const std::vector<Vector2>& monotone, Shape& shape)
+void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 {
 	std::vector<int> S;
-	std::vector<Vector2> sorted(monotone);
-	std::vector<Vector2> unsorted(monotone);
+	std::vector<Vector2> sorted(monotone.begin(),monotone.end());
+	std::vector<Vector2> unsorted(sorted);
 	int size=monotone.size();
-	std::vector<Vector2>::const_iterator first=max_element(monotone.begin(),monotone.end());
+	list<Vector2>::const_iterator first=max_element(monotone.begin(),monotone.end());
 	int cur_index=first->index;
 	int cur_y=first->y;
 	cur_index++;
@@ -1210,7 +1234,7 @@ void DefineFontTag::Render(int glyph)
 
 void DefineTextTag::Render(int layer)
 {
-	std::cout << "Render Text" << std::endl;
+//	std::cout << "Render Text" << std::endl;
 	//std::cout << TextMatrix << std::endl;
 	glColor3f(0,0,0);
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
@@ -1221,7 +1245,7 @@ void DefineTextTag::Render(int layer)
 	int cur_height;
 	for(it;it!=TextRecords.end();it++)
 	{
-		std::cout << "Text height " << it->TextHeight << std::endl;
+//		std::cout << "Text height " << it->TextHeight << std::endl;
 		if(it->StyleFlagsHasFont)
 		{
 			cur_height=it->TextHeight;
@@ -1274,12 +1298,12 @@ void DefineTextTag::Render(int layer)
 
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	std::cout <<"ShowFrame" << std::endl;
+//	std::cout <<"ShowFrame" << std::endl;
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
-	std::cout << "PlaceObject2" << std::endl;
+//	std::cout << "PlaceObject2" << std::endl;
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
 	PlaceFlagHasClipDepth=UB(1,bs);
@@ -1301,7 +1325,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
-		std::cout << "new character ID " << CharacterId << std::endl;
+//		std::cout << "new character ID " << CharacterId << std::endl;
 	}
 	if(PlaceFlagHasMatrix)
 		in >> Matrix;
@@ -1310,17 +1334,17 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasRatio)
 	{
 		in >> Ratio;
-		std::cout << "Ratio " << Ratio << std::endl;
+//		std::cout << "Ratio " << Ratio << std::endl;
 	}
 	if(PlaceFlagHasClipDepth)
 	{
 		in >> ClipDepth;
-		std::cout << "Clip Depth " << ClipDepth << std::endl;
+//		std::cout << "Clip Depth " << ClipDepth << std::endl;
 	}
 	if(PlaceFlagMove)
 	{
 		std::list < DisplayListTag*>::iterator it=ParseThread::displayList.begin();
-		std::cout << "find depth " << Depth << std::endl;
+//		std::cout << "find depth " << Depth << std::endl;
 		for(it;it!=ParseThread::displayList.end();it++)
 		{
 			if((*it)->getDepth()==Depth)
@@ -1368,7 +1392,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 
 void PlaceObject2Tag::Render()
 {
-	std::cout << "Render Place object 2 ChaID " << CharacterId <<  std::endl;
+//	std::cout << "Render Place object 2 ChaID " << CharacterId <<  std::endl;
 
 	//TODO: support clipping
 	if(ClipDepth!=0)
@@ -1401,7 +1425,7 @@ void PlaceObject2Tag::Render()
 
 void SetBackgroundColorTag::execute()
 {
-	cout << "execute SetBG" <<  endl;
+//	cout << "execute SetBG" <<  endl;
 	sys.Background=BackgroundColor;
 }
 

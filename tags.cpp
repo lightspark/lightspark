@@ -1249,6 +1249,7 @@ void DefineTextTag::Render(int layer)
 		if(it->StyleFlagsHasFont)
 		{
 			cur_height=it->TextHeight;
+			sem_wait(&sys.sem_dict);
 			std::list< RenderTag*>::iterator it3 = sys.dictionary.begin();
 			for(it3;it3!=sys.dictionary.end();it3++)
 			{
@@ -1258,6 +1259,7 @@ void DefineTextTag::Render(int layer)
 					break;
 				}
 			}
+			sem_post(&sys.sem_dict);
 			font=dynamic_cast<FontTag*>(*it3);
 			if(font==NULL)
 				throw "danni";
@@ -1401,26 +1403,26 @@ void PlaceObject2Tag::Render()
 	//std::cout << Matrix << std::endl;
 	if(!PlaceFlagHasCharacter)
 		throw "modify not supported";
+	sem_wait(&sys.sem_dict);
 	std::list< RenderTag* >::iterator it=sys.dictionary.begin();
 	for(it;it!=sys.dictionary.end();it++)
 	{
 		//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
-		if(dynamic_cast<RenderTag*>(*it)->getId()==CharacterId)
+		if((*it)->getId()==CharacterId)
 			break;
 	}
 	if(it==sys.dictionary.end())
 	{
 		throw "Object does not exist";
 	}
+	sem_post(&sys.sem_dict);
 	if((*it)->getType()!=RENDER_TAG)
 		throw "cazzo renderi";
 	
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glMultMatrixf(matrix);
-	{
-		dynamic_cast<RenderTag*>(*it)->Render(Depth);
-	}
+	(*it)->Render(Depth);
 }
 
 void SetBackgroundColorTag::execute()
@@ -1443,7 +1445,6 @@ void FrameLabelTag::Render()
 {
 	cout << "execute FrameLabel" <<  endl;
 	sys.frames[state.FP].setLabel(Name);
-	throw "WIP2";
 }
 
 DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):ActiveTag(h,in)
@@ -1475,5 +1476,21 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):ActiveTag(h
 
 void DefineButton2Tag::Render(int layer)
 {
-	throw "button render";
+	sem_wait(&sys.sem_dict);
+	std::list< RenderTag* >::iterator it=sys.dictionary.begin();
+	for(it;it!=sys.dictionary.end();it++)
+	{
+		//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
+		if((*it)->getId()==Characters[0].CharacterID)
+			break;
+	}
+	if(it==sys.dictionary.end())
+	{
+		throw "Object does not exist";
+	}
+	sem_post(&sys.sem_dict);
+	float matrix[16];
+	Characters[0].PlaceMatrix.get4DMatrix(matrix);
+	glMultMatrixf(matrix);
+	(*it)->Render(Characters[0].PlaceDepth);
 }

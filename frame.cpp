@@ -13,8 +13,8 @@ void Frame::Render()
 		if(*i!=NULL)
 		{
 			//std::cout << "Depth " << (*i)->getDepth() <<std::endl;
-			//glTranslatef(0,0,float(count)/10);
 			glLoadIdentity();
+			glTranslatef(0,0,(*i)->getDepth());
 			glScalef(0.1,0.1,0.1);
 			(*i)->Render();
 		}

@@ -6,6 +6,7 @@ class RunState
 {
 public:
 	int FP;
+	int next_FP;
 	RunState();
 };
 

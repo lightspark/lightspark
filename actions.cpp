@@ -24,7 +24,8 @@ UI16 DoActionTag::getDepth()
 
 void DoActionTag::Render()
 {
-	throw "Action render";
+	for(int i=0;i<actions.size();i++)
+		actions[i]->Execute();
 }
 
 ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)
@@ -57,7 +58,8 @@ RunState::RunState():FP(0)
 
 void ActionStop::Execute()
 {
-	state.FP=-1;
+	cout << "Stop" << endl;
+	state.next_FP=-1;
 }
 
 ActionGotoFrame::ActionGotoFrame(std::istream& in)
@@ -68,7 +70,8 @@ ActionGotoFrame::ActionGotoFrame(std::istream& in)
 
 void ActionGotoFrame::Execute()
 {
-	state.FP=Frame-1;
+	cout << "Goto " << Frame<< endl;
+	state.next_FP=Frame;
 }
 
 std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v)

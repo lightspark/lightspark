@@ -15,7 +15,7 @@ void Shape::Render() const
 	if(winding==0)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDepthFunc(GL_ALWAYS);
+//		glDepthFunc(GL_ALWAYS);
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
 		if(graphic.filled0)
 			glStencilFunc(GL_LESS,2,7);
@@ -34,7 +34,7 @@ void Shape::Render() const
 	else if(winding==1)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glDepthFunc(GL_ALWAYS);
+//		glDepthFunc(GL_ALWAYS);
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
 		if(graphic.filled1)
 			glStencilFunc(GL_LESS,3,7);

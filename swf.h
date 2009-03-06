@@ -26,6 +26,7 @@ public:
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
 
+	sem_t sem_dict;
 	std::list < RenderTag* > dictionary;
 
 	//Frames mutex (shared with drawing thread)

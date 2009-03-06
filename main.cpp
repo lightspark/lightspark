@@ -34,13 +34,13 @@ int main()
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 16 );
 	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
-	//glDisable( GL_DEPTH_TEST );
+	glDisable( GL_DEPTH_TEST );
 //	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
 	glViewport(0,0,640,480);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0,640,480,0,-10,10);
+	glOrtho(0,640,480,0,-65536,0);
 	glMatrixMode(GL_MODELVIEW);
 //	glLoadIdentity();
 //	glScalef(0.1,0.1,0.1);
@@ -66,14 +66,12 @@ int main()
 			}
 			//Aquired lock on frames list
 
+			state.next_FP=state.FP+1;
 			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
 			glClear(GL_COLOR_BUFFER_BIT);
 			sys.frames[state.FP].Render();
 			SDL_GL_SwapBuffers( );
-			state.FP++;
-
-			if(state.FP==30)
-				break;
+			state.FP=state.next_FP;
 
 			//thread_debug( "RENDER: frames mutex unlock");
 			sem_post(&sys.sem_frames);
@@ -83,7 +81,8 @@ int main()
 	{
 		cout << e << endl;
 	}
-	//sleep(2);
+	cout << "the end" << endl;
+	sleep(2);
 //	pt.wait();
 	SDL_Quit();
 }

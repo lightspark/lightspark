@@ -28,6 +28,7 @@ SWF_HEADER::SWF_HEADER(ifstream& in)
 SystemState::SystemState()
 {
 	sem_init(&sem_frames,0,1);
+	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
 }
 
@@ -50,7 +51,9 @@ void* ParseThread::worker(void* in_ptr)
 					return 0;
 				case RENDER_TAG:
 				//	std::cout << "add to dict" << std::endl;
+					sem_wait(&sys.sem_dict);
 					sys.dictionary.push_back(dynamic_cast<RenderTag*>(tag));
+					sem_post(&sys.sem_dict);
 					break;
 				case DISPLAY_LIST_TAG:
 					if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)

@@ -14,7 +14,7 @@ void Frame::Render()
 		{
 			//std::cout << "Depth " << (*i)->getDepth() <<std::endl;
 			glLoadIdentity();
-			glTranslatef(0,0,(*i)->getDepth());
+			//glTranslatef(0,0,(*i)->getDepth());
 			glScalef(0.1,0.1,0.1);
 			(*i)->Render();
 		}

@@ -18,7 +18,6 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 
 UI16 DoActionTag::getDepth()
 {
-	throw "Action getdepth";
 	return 0;
 }
 
@@ -65,7 +64,6 @@ void ActionStop::Execute()
 ActionGotoFrame::ActionGotoFrame(std::istream& in)
 {
 	in >> Frame;
-	cout << "dest " << Frame << endl;
 }
 
 void ActionGotoFrame::Execute()

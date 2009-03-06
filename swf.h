@@ -48,3 +48,17 @@ public:
 	void wait();
 	static std::list < DisplayListTag* > displayList;
 };
+
+class InputThread
+{
+private:
+	static pthread_t t;
+	static void* worker(void*);
+	static std::list< ActiveTag* > activeList;
+	static sem_t sem_active;
+
+public:
+	InputThread();
+	void wait();
+	static void addListener(ActiveTag* tag);
+};

@@ -13,6 +13,7 @@ using namespace std;
 extern RunState state;
 extern SystemState sys;
 
+int thread_debug(char* msg);
 Tag* TagFactory::readTag()
 {
 	RECORDHEADER h;
@@ -1249,6 +1250,7 @@ void DefineTextTag::Render(int layer)
 		if(it->StyleFlagsHasFont)
 		{
 			cur_height=it->TextHeight;
+			//thread_debug( "RENDER: dict mutex lock");
 			sem_wait(&sys.sem_dict);
 			std::list< RenderTag*>::iterator it3 = sys.dictionary.begin();
 			for(it3;it3!=sys.dictionary.end();it3++)
@@ -1259,6 +1261,7 @@ void DefineTextTag::Render(int layer)
 					break;
 				}
 			}
+			//thread_debug( "RENDER: dict mutex unlock");
 			sem_post(&sys.sem_dict);
 			font=dynamic_cast<FontTag*>(*it3);
 			if(font==NULL)
@@ -1403,6 +1406,7 @@ void PlaceObject2Tag::Render()
 	//std::cout << Matrix << std::endl;
 	if(!PlaceFlagHasCharacter)
 		throw "modify not supported";
+	//thread_debug( "RENDER: dict mutex lock 2");
 	sem_wait(&sys.sem_dict);
 	std::list< RenderTag* >::iterator it=sys.dictionary.begin();
 	for(it;it!=sys.dictionary.end();it++)
@@ -1415,6 +1419,7 @@ void PlaceObject2Tag::Render()
 	{
 		throw "Object does not exist";
 	}
+	//thread_debug( "RENDER: dict mutex unlock 2");
 	sem_post(&sys.sem_dict);
 	if((*it)->getType()!=RENDER_TAG)
 		throw "cazzo renderi";
@@ -1471,26 +1476,42 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):ActiveTag(h
 		Actions.push_back(bca);
 	}
 	while(!bca.isLast());
-
 }
 
 void DefineButton2Tag::Render(int layer)
 {
-	sem_wait(&sys.sem_dict);
-	std::list< RenderTag* >::iterator it=sys.dictionary.begin();
-	for(it;it!=sys.dictionary.end();it++)
+	cout << "render button" << endl;
+	for(int i=0;i<Characters.size();i++)
 	{
-		//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
-		if((*it)->getId()==Characters[0].CharacterID)
-			break;
+//		if(Characters[i].ButtonStateOver==0)
+//			continue;
+		//thread_debug( "RENDER: dict mutex lock 3");
+		sem_wait(&sys.sem_dict);
+		std::list< RenderTag* >::iterator it=sys.dictionary.begin();
+		for(it;it!=sys.dictionary.end();it++)
+		{
+			//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
+			if((*it)->getId()==Characters[i].CharacterID)
+				break;
+		}
+		if(it==sys.dictionary.end())
+		{
+			throw "Object does not exist";
+		}
+		RenderTag* c=*it;
+		//thread_debug( "RENDER: dict mutex unlock 3");
+		sem_post(&sys.sem_dict);
+		float matrix[16];
+		Characters[i].PlaceMatrix.get4DMatrix(matrix);
+		glPushMatrix();
+		glMultMatrixf(matrix);
+		c->Render(Characters[i].PlaceDepth);
+		glPopMatrix();
 	}
-	if(it==sys.dictionary.end())
+	for(int i=0;i<Actions.size();i++)
 	{
-		throw "Object does not exist";
+		for(int j=0;j<Actions[i].Actions.size();j++)
+			Actions[i].Actions[j]->Execute();
 	}
-	sem_post(&sys.sem_dict);
-	float matrix[16];
-	Characters[0].PlaceMatrix.get4DMatrix(matrix);
-	glMultMatrixf(matrix);
-	(*it)->Render(Characters[0].PlaceDepth);
+	cout << "end button" << endl;
 }

@@ -28,7 +28,7 @@ int main()
 	SWF_HEADER h(f);
 	cout << h.getFrameSize() << endl;
 
-	SDL_Init ( SDL_INIT_VIDEO );
+	SDL_Init ( SDL_INIT_VIDEO|SDL_INIT_EVENTTHREAD );
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
@@ -46,6 +46,7 @@ int main()
 //	glScalef(0.1,0.1,0.1);
 
 	ParseThread pt(f);
+	InputThread it;
 
 	try
 	{
@@ -61,7 +62,7 @@ int main()
 
 				//thread_debug( "RENDER: frames mutex unlock");
 				sem_post(&sys.sem_frames);
-				thread_debug("RENDER: new frame wait");
+				//thread_debug("RENDER: new frame wait");
 				sem_wait(&sys.new_frame);
 			}
 			//Aquired lock on frames list
@@ -82,8 +83,8 @@ int main()
 		cout << e << endl;
 	}
 	cout << "the end" << endl;
-	sleep(2);
-//	pt.wait();
+	//sleep(20);
+	it.wait();
 	SDL_Quit();
 }
 

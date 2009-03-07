@@ -84,7 +84,7 @@ int main()
 	}
 	cout << "the end" << endl;
 	//sleep(20);
-	it.wait();
+	pt.wait();
 	SDL_Quit();
 }
 

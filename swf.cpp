@@ -53,7 +53,6 @@ void* ParseThread::worker(void* in_ptr)
 			//	case TAG:
 				case END_TAG:
 					//sleep(5);
-					throw "end";
 					return 0;
 				case RENDER_TAG:
 				//	std::cout << "add to dict" << std::endl;
@@ -66,6 +65,7 @@ void* ParseThread::worker(void* in_ptr)
 				case DISPLAY_LIST_TAG:
 					if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)
 						displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
+					cout << "puppa " << dynamic_cast<DisplayListTag*>(tag)->getDepth() << endl;
 					break;
 				case SHOW_TAG:
 				{
@@ -92,7 +92,9 @@ void* ParseThread::worker(void* in_ptr)
 	}
 	catch(const char* s)
 	{
+		cout << "CATCH!!!!" << endl;
 		cout << s << endl;
+		cout << "ERRORE!!!!" << endl;
 		exit(-1);
 	}
 

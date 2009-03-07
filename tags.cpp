@@ -51,6 +51,8 @@ Tag* TagFactory::readTag()
 			return new RemoveObject2Tag(h,f);
 		case 34:
 			return new DefineButton2Tag(h,f);
+		case 37:
+			return new DefineEditTextTag(h,f);
 		case 39:
 			return new DefineSpriteTag(h,f);
 		case 43:
@@ -62,6 +64,7 @@ Tag* TagFactory::readTag()
 		case 48:
 			return new DefineFont2Tag(h,f);
 		default:
+			cout << "position " << f.tellg() << endl;
 			cout << (h>>6) << endl;
 			throw "unsupported tag";
 			break;
@@ -94,7 +97,7 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-//	std::cout << "DefineSprite" << std::endl;
+	std::cout << "DefineSprite" << std::endl;
 	in >> SpriteID >> FrameCount;
 	//if(FrameCount!=1)
 	//	throw "unsopported long sprites";
@@ -108,6 +111,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 			displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
 	}
 	while(tag->getType()!=END_TAG);
+	std::cout << "end DefineSprite" << std::endl;
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
@@ -226,6 +230,15 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 			break;
 		TextRecords.push_back(t);
 	}
+}
+
+DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	std::cout << "STUB DefineEditText" << std::endl;
+	if((h&0x3f)==0x3f)
+		in.ignore(Length);
+	else
+		in.ignore(h&0x3f);
 }
 
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
@@ -1442,10 +1455,6 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		throw "clip action";
 	if(PlaceFlagHasName)
 		throw "has name";
-	if(PlaceFlagMove && PlaceFlagHasCharacter)
-	{
-		throw "unsupported has";
-	}
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
@@ -1476,32 +1485,30 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 				add_to_list=true;
 				PlaceObject2Tag* it2=dynamic_cast<PlaceObject2Tag*>(*it);
 
-				//if(it2->PlaceFlagHasClipAction)
-				//if(it2->PlaceFlagHasName)
-				if(!PlaceFlagHasCharacter && it2->PlaceFlagHasCharacter)
+				if(!PlaceFlagHasCharacter)
 				{
-					PlaceFlagHasCharacter=it2->PlaceFlagHasCharacter;
-					CharacterId=it2->CharacterId;
-				}
-				if(!PlaceFlagHasMatrix && it2->PlaceFlagHasMatrix)
-				{
-					PlaceFlagHasMatrix=it2->PlaceFlagHasMatrix;
-					Matrix=it2->Matrix;
-				}
-				if(!PlaceFlagHasColorTransform && it2->PlaceFlagHasColorTransform)
-				{
-					PlaceFlagHasColorTransform=it2->PlaceFlagHasColorTransform;
-					ColorTransform=it2->ColorTransform;
-				}
-				if(!PlaceFlagHasRatio && it2->PlaceFlagHasRatio)
-				{
-					PlaceFlagHasRatio=it2->PlaceFlagHasRatio;
-					Ratio=it2->Ratio;
-				}
-				if(!PlaceFlagHasClipDepth && it2->PlaceFlagHasClipDepth)
-				{
-					PlaceFlagHasClipDepth=it2->PlaceFlagHasClipDepth;
-					ClipDepth=it2->ClipDepth;
+					//if(it2->PlaceFlagHasClipAction)
+					//if(it2->PlaceFlagHasName)
+					if(!PlaceFlagHasMatrix && it2->PlaceFlagHasMatrix)
+					{
+						PlaceFlagHasMatrix=it2->PlaceFlagHasMatrix;
+						Matrix=it2->Matrix;
+					}
+					if(!PlaceFlagHasColorTransform && it2->PlaceFlagHasColorTransform)
+					{
+						PlaceFlagHasColorTransform=it2->PlaceFlagHasColorTransform;
+						ColorTransform=it2->ColorTransform;
+					}
+					if(!PlaceFlagHasRatio && it2->PlaceFlagHasRatio)
+					{
+						PlaceFlagHasRatio=it2->PlaceFlagHasRatio;
+						Ratio=it2->Ratio;
+					}
+					if(!PlaceFlagHasClipDepth && it2->PlaceFlagHasClipDepth)
+					{
+						PlaceFlagHasClipDepth=it2->PlaceFlagHasClipDepth;
+						ClipDepth=it2->ClipDepth;
+					}
 				}
 				ParseThread::displayList.erase(it);
 
@@ -1509,7 +1516,9 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 			}
 		}
 		if(it==ParseThread::displayList.end())
-			throw "has move";
+		{
+			cout << "no char to move at depth " << Depth << endl;
+		}
 	}
 }
 

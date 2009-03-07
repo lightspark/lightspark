@@ -106,6 +106,12 @@ public:
 };
 
 
+class DefineEditTextTag: public Tag
+{
+public:
+	DefineEditTextTag(RECORDHEADER h, std::istream& s);
+};
+
 class DefineSoundTag: public Tag
 {
 public:

@@ -38,8 +38,26 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 {
 	switch(ActionCode)
 	{
-		case 7:
+		case 0x07:
 			return new ActionStop;
+			break;
+		case 0x12:
+			return new ActionNot;
+			break;
+		case 0x13:
+			return new ActionStringEquals;
+			break;
+		case 0x15:
+			return new ActionStringExtract;
+			break;
+		case 0x1c:
+			return new ActionGetVariable;
+			break;
+		case 0x1d:
+			return new ActionSetVariable;
+			break;
+		case 0x21:
+			return new ActionStringAdd;
 			break;
 		case 0x81:
 			return new ActionGotoFrame(in);
@@ -47,8 +65,21 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x83:
 			return new ActionGetURL(in);
 			break;
+		case 0x88:
+			return new ActionConstantPool(in);
+			break;
+		case 0x96:
+			return new ActionPush(in,this);
+			break;
+		case 0x99:
+			return new ActionJump(in);
+			break;
+		case 0x9d:
+			return new ActionIf(in);
+			break;
 		default:
 			cout << (int)ActionCode << endl;
+			cout << "@ " << in.tellg() << endl;
 			throw "Unsopported actioncode";
 			return NULL;
 	}
@@ -64,9 +95,97 @@ void ActionStop::Execute()
 	state.next_FP=-1;
 }
 
+void ActionJump::Execute()
+{
+	throw "WIP11";
+}
+
+void ActionStringAdd::Execute()
+{
+	throw "WIP11";
+}
+
+void ActionStringExtract::Execute()
+{
+	throw "WIP10";
+}
+
+void ActionIf::Execute()
+{
+	throw "WIP9";
+}
+
+void ActionNot::Execute()
+{
+	throw "WIP8";
+}
+
+void ActionStringEquals::Execute()
+{
+	throw "WIP7";
+}
+
+void ActionSetVariable::Execute()
+{
+	throw "WIP6";
+}
+
+void ActionGetVariable::Execute()
+{
+	throw "WIP5";
+}
+
+void ActionToggleQuality::Execute()
+{
+	throw "WIP4";
+}
+
 ActionGotoFrame::ActionGotoFrame(std::istream& in)
 {
 	in >> Frame;
+}
+
+ActionJump::ActionJump(std::istream& in)
+{
+	in >> BranchOffset;
+}
+
+ActionIf::ActionIf(std::istream& in)
+{
+	in >> Offset;
+}
+
+ActionConstantPool::ActionConstantPool(std::istream& in)
+{
+	in >> Count;
+
+	STRING s;
+	for(int i=0;i<Count;i++)
+	{
+		in >> s;
+		ConstantPool.push_back(s);
+	}
+}
+
+ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
+{
+	cout << "TODO: ActionPush" << endl;
+	in.ignore(h->Length);
+	/*in >> Type;
+
+	switch(Type)
+	{
+		case 8:
+			in >> Constant8;
+			break;
+		default:
+			throw "unsupported push";
+	}*/
+}
+
+void ActionPush::Execute()
+{
+	throw "WIP3";
 }
 
 ActionGetURL::ActionGetURL(std::istream& in)
@@ -85,6 +204,11 @@ void ActionGotoFrame::Execute()
 {
 	cout << "Goto " << Frame<< endl;
 	state.next_FP=Frame;
+}
+
+void ActionConstantPool::Execute()
+{
+	throw "WIP2";
 }
 
 std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v)

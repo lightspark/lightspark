@@ -41,6 +41,24 @@ public:
 	void Execute();
 };
 
+class ActionJump:public ActionTag
+{
+private:
+	SI16 BranchOffset;
+public:
+	ActionJump(std::istream& in);
+	void Execute();
+};
+
+class ActionIf:public ActionTag
+{
+private:
+	SI16 Offset;
+public:
+	ActionIf(std::istream& in);
+	void Execute();
+};
+
 class ActionGotoFrame:public ActionTag
 {
 private:
@@ -57,6 +75,75 @@ private:
 	STRING TargetString;
 public:
 	ActionGetURL(std::istream& in);
+	void Execute();
+};
+
+class ActionConstantPool : public ActionTag
+{
+private:
+	UI16 Count;
+	std::vector<STRING> ConstantPool;
+public:
+	ActionConstantPool(std::istream& in);
+	void Execute();
+};
+
+class ActionStringAdd: public ActionTag
+{
+public:
+	void Execute();
+};
+
+class ActionStringExtract: public ActionTag
+{
+public:
+	void Execute();
+};
+
+class ActionNot: public ActionTag
+{
+public:
+	void Execute();
+};
+
+class ActionStringEquals: public ActionTag
+{
+public:
+	void Execute();
+};
+
+class ActionSetVariable: public ActionTag
+{
+public:
+	void Execute();
+};
+
+class ActionGetVariable: public ActionTag
+{
+public:
+	void Execute();
+};
+
+class ActionToggleQuality: public ActionTag
+{
+public:
+	void Execute();
+};
+
+class ActionPush : public ActionTag
+{
+private:
+	UI8 Type;
+	STRING String;
+	//FLOAT Float;
+	UI8 RegisterNumber;
+	UI8 Boolean;
+	//DOUBLE Double;
+	UI32 Integer;
+	UI8 Constant8;
+	UI16 Constant16;
+public:
+	ActionPush(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 };
 

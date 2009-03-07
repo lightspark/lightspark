@@ -11,7 +11,7 @@ private:
 public:
 	std::list<DisplayListTag*> displayList;
 	
-	Frame(const std::list<DisplayListTag*>& d):displayList(d){}
+	Frame(const std::list<DisplayListTag*>& d):displayList(d){ }
 	void Render();
 	void setLabel(STRING l);
 };

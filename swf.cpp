@@ -65,7 +65,6 @@ void* ParseThread::worker(void* in_ptr)
 				case DISPLAY_LIST_TAG:
 					if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)
 						displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
-					cout << "puppa " << dynamic_cast<DisplayListTag*>(tag)->getDepth() << endl;
 					break;
 				case SHOW_TAG:
 				{
@@ -76,12 +75,6 @@ void* ParseThread::worker(void* in_ptr)
 					sem_post(&sys.new_frame);
 				//\	thread_debug("PARSER: new frame signal");
 					sem_post(&sys.sem_frames);
-					/*if(done>30)
-					{
-						//sleep(5);
-						goto exit;
-					}*/
-					done++;
 					break;
 				}
 				case CONTROL_TAG:

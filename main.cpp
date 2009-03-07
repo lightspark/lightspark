@@ -34,7 +34,7 @@ int main()
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 16 );
 	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
-	glDisable( GL_DEPTH_TEST );
+	glEnable( GL_DEPTH_TEST );
 //	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
 	glViewport(0,0,640,480);
@@ -81,10 +81,12 @@ int main()
 	catch(const char* e)
 	{
 		cout << e << endl;
+		cout << "ERRORE main" << endl;
+		exit(-1);
 	}
 	cout << "the end" << endl;
 	//sleep(20);
-	pt.wait();
+	it.wait();
 	SDL_Quit();
 }
 

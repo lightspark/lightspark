@@ -419,13 +419,13 @@ void FromPathToShape(Path& path, Shape& shape)
 	shape.outline=path.points;
 	shape.closed=path.closed;
 
-	if(!shape.closed)
+	if(!shape.closed || (!path.state->validFill0 && !path.state->validFill1))
 		return;
 
 	TessellatePath(path,shape);
 }
 
-void FromShaperecordListToPaths(SHAPERECORD* cur, std::vector<Path>& paths);
+void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths);
 
 void DefineMorphShapeTag::Render(int layer)
 {
@@ -433,7 +433,7 @@ void DefineMorphShapeTag::Render(int layer)
 //	std::cout << "Render Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
-	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
+	SHAPERECORD* cur=&(StartEdges.ShapeRecords);
 
 	FromShaperecordListToPaths(cur,paths);
 	std::vector < Path >::iterator i=paths.begin();
@@ -537,7 +537,6 @@ void DefineMorphShapeTag::Render(int layer)
 		glEnd();
 	}
 	glDisable(GL_STENCIL_TEST);
-//	std::cout << "fine Render Shape" << std::endl;
 }
 void DefineShapeTag::Render(int layer)
 {
@@ -704,29 +703,49 @@ void DefineShape2Tag::Render(int layer)
 		else
 			shapes.back().graphic.stroked=false;
 	}
+	if(shapes.size()==1)
+	{
+		if(shapes[0].graphic.filled1 && !shapes[0].graphic.filled0)
+		{
+			shapes[0].graphic.filled0=shapes[0].graphic.filled1;
+			shapes[0].graphic.filled1=0;
+			shapes[0].graphic.color0=shapes[0].graphic.color1;
+		}
+	}
+
 	std::vector < Shape >::iterator it=shapes.begin();
+	glClearStencil(5);
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glEnable(GL_STENCIL_TEST);
 	for(it;it!=shapes.end();it++)
 	{
-		glClearStencil(5);
-		glClear(GL_STENCIL_BUFFER_BIT);
-		glEnable(GL_STENCIL_TEST);
-		throw "shape2";
 		it->Render();
-
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glPushMatrix();
-		glLoadIdentity();
-		glEnable(GL_STENCIL_TEST);
+	}
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	it=shapes.begin();
+	if(it->graphic.filled0)
+	{
+		glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
 		glStencilFunc(GL_EQUAL,2,0xf);
 		glBegin(GL_QUADS);
-			glVertex2i(0,0);
-			glVertex2i(0,3000);
-			glVertex2i(3000,3000);
-			glVertex2i(3000,0);
+			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
+			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
+			glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymax);
+			glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymin);
 		glEnd();
-		glPopMatrix();
-		glDisable(GL_STENCIL_TEST);
 	}
+	if(it->graphic.filled1)
+	{
+		glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
+		glStencilFunc(GL_EQUAL,3,0xf);
+		glBegin(GL_QUADS);
+			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
+			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
+			glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymax);
+			glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymin);
+		glEnd();
+	}
+	glDisable(GL_STENCIL_TEST);
 //	std::cout << "fine Render Shape2" << std::endl;
 }
 
@@ -796,7 +815,7 @@ bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& poi
 	return count%2;
 }
 
-void FromShaperecordListToPaths(SHAPERECORD* cur, std::vector<Path>& paths)
+void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths)
 {
 	int vindex=0;
 	int startX=0,startY=0;
@@ -1489,6 +1508,11 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 				{
 					//if(it2->PlaceFlagHasClipAction)
 					//if(it2->PlaceFlagHasName)
+					if(!PlaceFlagHasCharacter && it2->PlaceFlagHasCharacter)
+					{
+						PlaceFlagHasCharacter=it2->PlaceFlagHasCharacter;
+						CharacterId=it2->CharacterId;
+					}
 					if(!PlaceFlagHasMatrix && it2->PlaceFlagHasMatrix)
 					{
 						PlaceFlagHasMatrix=it2->PlaceFlagHasMatrix;
@@ -1533,7 +1557,8 @@ void PlaceObject2Tag::Render()
 
 	//std::cout << Matrix << std::endl;
 	if(!PlaceFlagHasCharacter)
-		throw "modify not supported";
+//		throw "modify not supported";
+		return;
 	//thread_debug( "RENDER: dict mutex lock 2");
 	sem_wait(&sys.sem_dict);
 	std::list< RenderTag* >::iterator it=sys.dictionary.begin();
@@ -1611,8 +1636,8 @@ void DefineButton2Tag::Render(int layer)
 	cout << "render button" << endl;
 	for(int i=0;i<Characters.size();i++)
 	{
-//		if(Characters[i].ButtonStateOver==0)
-//			continue;
+		if(Characters[i].ButtonStateOver==0)
+			continue;
 		//thread_debug( "RENDER: dict mutex lock 3");
 		sem_wait(&sys.sem_dict);
 		std::list< RenderTag* >::iterator it=sys.dictionary.begin();

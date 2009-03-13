@@ -54,6 +54,9 @@ void Shape::Render() const
 
 	if(graphic.stroked)
 	{
+		glDisable(GL_STENCIL_TEST);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glStencilFunc(GL_NEVER,0,0);
 		std::vector<Vector2>::const_iterator it=outline.begin();
 		glColor3ub(graphic.stroke_color.Red,graphic.stroke_color.Green,graphic.stroke_color.Blue);
 		if(closed)
@@ -65,6 +68,7 @@ void Shape::Render() const
 			glVertex2i(it->x,it->y);
 		}
 		glEnd();
+		glEnable(GL_STENCIL_TEST);
 	}
 }
 

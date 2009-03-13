@@ -37,7 +37,7 @@ Tag* TagFactory::readTag()
 		case 11:
 			return new DefineTextTag(h,f);
 		case 12:
-			return new DoActionTag(h,f);
+			return new DoActionTag(h,f,displayList);
 		case 13:
 			return new DefineFontInfoTag(h,f);
 		case 14:
@@ -47,9 +47,9 @@ Tag* TagFactory::readTag()
 		case 22:
 			return new DefineShape2Tag(h,f);
 		case 26:
-			return new PlaceObject2Tag(h,f);
+			return new PlaceObject2Tag(h,f,displayList);
 		case 28:
-			return new RemoveObject2Tag(h,f);
+			return new RemoveObject2Tag(h,f,displayList);
 		case 34:
 			return new DefineButton2Tag(h,f);
 		case 37:
@@ -57,7 +57,7 @@ Tag* TagFactory::readTag()
 		case 39:
 			return new DefineSpriteTag(h,f);
 		case 43:
-			return new FrameLabelTag(h,f);
+			return new FrameLabelTag(h,f,displayList);
 		case 45:
 			return new SoundStreamHead2Tag(h,f);
 		case 46:
@@ -72,19 +72,19 @@ Tag* TagFactory::readTag()
 	}
 }
 
-RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
+RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in,list < DisplayListTag* > * d):Tag(h,in),displayList(d)
 {
 	in >> Depth;
 
-	std::cout << "Remove " << Depth << std::endl;
+	cout << "Remove " << Depth << endl;
 
-	std::list<DisplayListTag*>::iterator it=ParseThread::displayList.begin();
+	list<DisplayListTag*>::iterator it=displayList->begin();
 
-	for(it;it!=ParseThread::displayList.end();it++)
+	for(it;it!=displayList->end();it++)
 	{
 		if((*it)->getDepth()==Depth)
 		{
-			ParseThread::displayList.erase(it);
+			displayList->erase(it);
 			break;
 		}
 	}
@@ -100,16 +100,16 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 {
 	std::cout << "DefineSprite" << std::endl;
 	in >> SpriteID >> FrameCount;
-	//if(FrameCount!=1)
-	//	throw "unsopported long sprites";
-	TagFactory factory(in);
+	if(FrameCount!=1)
+		cout << "unsopported long sprites" << endl;
+	TagFactory factory(in,&displayList);
 	Tag* tag;
 	bool skip=false;
 	do
 	{
 		tag=factory.readTag();
-		if(skip)
-			continue;
+//		if(skip)
+//			continue;
 //		std::cout << "\tsprite tag type "<< tag->getType() <<std::endl;
 		if(tag->getType()==DISPLAY_LIST_TAG)
 			displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
@@ -121,6 +121,9 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 		{
 			skip=true;
 		}
+		else if(tag->getType()==END_TAG)
+		{
+		}
 		else
 		{
 			cout << tag->getType() << endl;
@@ -129,6 +132,11 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	}
 	while(tag->getType()!=END_TAG);
 	std::cout << "end DefineSprite" << std::endl;
+}
+
+void DefineSpriteTag::printInfo()
+{
+	cout << "DefineSprite Info" << endl;
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
@@ -249,6 +257,79 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 	}
 }
 
+void DefineTextTag::Render(int layer)
+{
+//	std::cout << "Render Text" << std::endl;
+	//std::cout << TextMatrix << std::endl;
+	glColor3f(0,0,0);
+	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
+	int x=0,y=0;//1024;
+	std::vector < GLYPHENTRY >::iterator it2;
+	FontTag* font=NULL;
+	int done=0;
+	int cur_height;
+	for(it;it!=TextRecords.end();it++)
+	{
+//		std::cout << "Text height " << it->TextHeight << std::endl;
+		if(it->StyleFlagsHasFont)
+		{
+			cur_height=it->TextHeight;
+			//thread_debug( "RENDER: dict mutex lock");
+			sem_wait(&sys.sem_dict);
+			std::list< RenderTag*>::iterator it3 = sys.dictionary.begin();
+			for(it3;it3!=sys.dictionary.end();it3++)
+			{
+				if((*it3)->getId()==it->FontID)
+				{
+					//std::cout << "Looking for Font " << it->FontID << std::endl;
+					break;
+				}
+			}
+			//thread_debug( "RENDER: dict mutex unlock");
+			sem_post(&sys.sem_dict);
+			font=dynamic_cast<FontTag*>(*it3);
+			if(font==NULL)
+				throw "danni";
+		}
+		it2 = it->GlyphEntries.begin();
+		int x2=x,y2=y;
+		x2+=(*it).XOffset;
+		y2+=(*it).YOffset;
+		glClearStencil(5);
+		glClear(GL_STENCIL_BUFFER_BIT);
+		glEnable(GL_STENCIL_TEST);
+		for(it2;it2!=(it->GlyphEntries.end());it2++)
+		{
+			glPushMatrix();
+			glTranslatef(x2,y2,0);
+			float scale=cur_height;
+			scale/=1024;
+			glScalef(scale,scale,1);
+			font->Render(it2->GlyphIndex);
+			glPopMatrix();
+			
+			//std::cout << "Character " << it2->GlyphIndex << std::endl;
+			x2+=it2->GlyphAdvance;
+		}
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glColor3ub(it->TextColor.Red,it->TextColor.Green,it->TextColor.Blue);
+		glStencilFunc(GL_EQUAL,2,0xf);
+		glBegin(GL_QUADS);
+			glVertex2i(TextBounds.Xmin,TextBounds.Ymin);
+			glVertex2i(TextBounds.Xmin,TextBounds.Ymax);
+			glVertex2i(TextBounds.Xmax,TextBounds.Ymax);
+			glVertex2i(TextBounds.Xmax,TextBounds.Ymin);
+		glEnd();
+		glDisable(GL_STENCIL_TEST);
+
+	}
+}
+
+void DefineTextTag::printInfo()
+{
+	cout << "DefineText Info" << endl;
+}
+
 DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	std::cout << "STUB DefineEditText" << std::endl;
@@ -300,6 +381,11 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
+void DefineShapeTag::printInfo()
+{
+	cout << "DefineShape Info" << endl;
+}
+
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
 	std::cout << "DefineShape2Tag" << std::endl;
@@ -307,15 +393,21 @@ DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
+void DefineShape2Tag::printInfo()
+{
+	cout << "DefineShape2 Info" << endl;
+}
+
 void DefineSpriteTag::Render(int layer)
 {
-	std::cout << "Render Sprite" << std::endl;
+	std::cout << "==> Render Sprite" << std::endl;
 	std::list < DisplayListTag* >::iterator it=displayList.begin();
 	for(it;it!=displayList.end();it++)
 	{
+		(*it)->printInfo();
 		(*it)->Render();
 	}
-	std::cout << "end render Sprite" << std::endl;
+	std::cout << "==> end render Sprite" << std::endl;
 }
 
 int crossProd(const Vector2& a, const Vector2& b)
@@ -326,6 +418,11 @@ int crossProd(const Vector2& a, const Vector2& b)
 DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
 	in >> CharacterId >> StartBounds >> EndBounds >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
+}
+
+void DefineMorphShapeTag::printInfo()
+{
+	cout << "DefineMorphShape Info" << endl;
 }
 
 class GraphicStatus
@@ -1402,80 +1499,12 @@ void DefineFontTag::Render(int glyph)
 	}
 }
 
-void DefineTextTag::Render(int layer)
-{
-//	std::cout << "Render Text" << std::endl;
-	//std::cout << TextMatrix << std::endl;
-	glColor3f(0,0,0);
-	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
-	int x=0,y=0;//1024;
-	std::vector < GLYPHENTRY >::iterator it2;
-	FontTag* font=NULL;
-	int done=0;
-	int cur_height;
-	for(it;it!=TextRecords.end();it++)
-	{
-//		std::cout << "Text height " << it->TextHeight << std::endl;
-		if(it->StyleFlagsHasFont)
-		{
-			cur_height=it->TextHeight;
-			//thread_debug( "RENDER: dict mutex lock");
-			sem_wait(&sys.sem_dict);
-			std::list< RenderTag*>::iterator it3 = sys.dictionary.begin();
-			for(it3;it3!=sys.dictionary.end();it3++)
-			{
-				if((*it3)->getId()==it->FontID)
-				{
-					//std::cout << "Looking for Font " << it->FontID << std::endl;
-					break;
-				}
-			}
-			//thread_debug( "RENDER: dict mutex unlock");
-			sem_post(&sys.sem_dict);
-			font=dynamic_cast<FontTag*>(*it3);
-			if(font==NULL)
-				throw "danni";
-		}
-		it2 = it->GlyphEntries.begin();
-		int x2=x,y2=y;
-		x2+=(*it).XOffset;
-		y2+=(*it).YOffset;
-		glClearStencil(5);
-		glClear(GL_STENCIL_BUFFER_BIT);
-		glEnable(GL_STENCIL_TEST);
-		for(it2;it2!=(it->GlyphEntries.end());it2++)
-		{
-			glPushMatrix();
-			glTranslatef(x2,y2,0);
-			float scale=cur_height;
-			scale/=1024;
-			glScalef(scale,scale,1);
-			font->Render(it2->GlyphIndex);
-			glPopMatrix();
-			
-			//std::cout << "Character " << it2->GlyphIndex << std::endl;
-			x2+=it2->GlyphAdvance;
-		}
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glColor3ub(it->TextColor.Red,it->TextColor.Green,it->TextColor.Blue);
-		glStencilFunc(GL_EQUAL,2,0xf);
-		glBegin(GL_QUADS);
-			glVertex2i(TextBounds.Xmin,TextBounds.Ymin);
-			glVertex2i(TextBounds.Xmin,TextBounds.Ymax);
-			glVertex2i(TextBounds.Xmax,TextBounds.Ymax);
-			glVertex2i(TextBounds.Xmax,TextBounds.Ymin);
-		glEnd();
-		glDisable(GL_STENCIL_TEST);
-
-	}
-}
-
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 //	std::cout <<"ShowFrame" << std::endl;
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, list<DisplayListTag* >* d):DisplayListTag(h,in,d)
 {
 //	std::cout << "PlaceObject2" << std::endl;
 	BitStream bs(in);
@@ -1513,9 +1542,9 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	}
 	if(PlaceFlagMove)
 	{
-		std::list < DisplayListTag*>::iterator it=ParseThread::displayList.begin();
+		list < DisplayListTag*>::iterator it=displayList->begin();
 //		std::cout << "find depth " << Depth << std::endl;
-		for(it;it!=ParseThread::displayList.end();it++)
+		for(it;it!=displayList->end();it++)
 		{
 			if((*it)->getDepth()==Depth)
 			{
@@ -1552,12 +1581,12 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 						ClipDepth=it2->ClipDepth;
 					}
 				}
-				ParseThread::displayList.erase(it);
+				displayList->erase(it);
 
 				break;
 			}
 		}
-		if(it==ParseThread::displayList.end())
+		if(it==displayList->end())
 		{
 			cout << "no char to move at depth " << Depth << endl;
 		}
@@ -1597,8 +1626,36 @@ void PlaceObject2Tag::Render()
 	
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
+	glPushMatrix();
 	glMultMatrixf(matrix);
 	(*it)->Render(Depth);
+	glPopMatrix();
+}
+
+void PlaceObject2Tag::printInfo()
+{
+	cout << "PlaceObject2 Info" << endl;
+	cout << "vvvvvvvvvvvvv" << endl;
+
+	sem_wait(&sys.sem_dict);
+	std::list< RenderTag* >::iterator it=sys.dictionary.begin();
+	for(it;it!=sys.dictionary.end();it++)
+	{
+		//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
+		if((*it)->getId()==CharacterId)
+			break;
+	}
+	if(it==sys.dictionary.end())
+	{
+		throw "Object does not exist";
+	}
+	//thread_debug( "RENDER: dict mutex unlock 2");
+	sem_post(&sys.sem_dict);
+
+	(*it)->printInfo();
+
+	cout << "^^^^^^^^^^^^^" << endl;
+
 }
 
 void SetBackgroundColorTag::execute()
@@ -1607,7 +1664,7 @@ void SetBackgroundColorTag::execute()
 	sys.Background=BackgroundColor;
 }
 
-FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in, list<DisplayListTag*>* d):DisplayListTag(h,in,d)
 {
 	in >> Name;
 	cout << "label ";
@@ -1706,4 +1763,9 @@ void DefineButton2Tag::Render(int layer)
 			Actions[i].Actions[j]->Execute();
 	}
 	cout << "end button" << endl;
+}
+
+void DefineButton2Tag::printInfo()
+{
+	cout << "DefineButton2 Info" << endl;
 }

@@ -16,6 +16,7 @@ class ActionTag
 {
 public:
 	virtual void Execute()=0;
+	virtual void print()=0;
 };
 
 class DoActionTag: public DisplayListTag
@@ -23,9 +24,10 @@ class DoActionTag: public DisplayListTag
 private:
 	std::vector<ActionTag*> actions;
 public:
-	DoActionTag(RECORDHEADER h, std::istream& in);
+	DoActionTag(RECORDHEADER h, std::istream& in, std::list<DisplayListTag*>* d);
 	void Render( );
 	UI16 getDepth();
+	void printInfo();
 };
 
 class ACTIONRECORDHEADER
@@ -41,6 +43,7 @@ class ActionStop:public ActionTag
 {
 public:
 	void Execute();
+	void print(){ std::cout  << "ActionStop" << std::endl;}
 };
 
 class ActionJump:public ActionTag
@@ -50,6 +53,7 @@ private:
 public:
 	ActionJump(std::istream& in);
 	void Execute();
+	void print(){ std::cout  << "ActionJump" << std::endl;}
 };
 
 class ActionIf:public ActionTag
@@ -59,6 +63,7 @@ private:
 public:
 	ActionIf(std::istream& in);
 	void Execute();
+	void print(){ std::cout  << "ActionIf" << std::endl;}
 };
 
 class ActionGotoFrame:public ActionTag
@@ -68,6 +73,7 @@ private:
 public:
 	ActionGotoFrame(std::istream& in);
 	void Execute();
+	void print(){ std::cout  << "ActionGotoFrame" << std::endl;}
 };
 
 class ActionGetURL:public ActionTag
@@ -78,6 +84,7 @@ private:
 public:
 	ActionGetURL(std::istream& in);
 	void Execute();
+	void print(){ std::cout  << "ActionGetURL" << std::endl;}
 };
 
 class ActionConstantPool : public ActionTag
@@ -88,42 +95,49 @@ private:
 public:
 	ActionConstantPool(std::istream& in);
 	void Execute();
+	void print(){ std::cout  << "ActionConstantPool" << std::endl;}
 };
 
 class ActionStringAdd: public ActionTag
 {
 public:
 	void Execute();
+	void print(){ std::cout  << "ActionStringAdd" << std::endl;}
 };
 
 class ActionStringExtract: public ActionTag
 {
 public:
 	void Execute();
+	void print(){ std::cout  << "ActionStringExtract" << std::endl;}
 };
 
 class ActionNot: public ActionTag
 {
 public:
 	void Execute();
+	void print(){ std::cout  << "ActionNot" << std::endl;}
 };
 
 class ActionStringEquals: public ActionTag
 {
 public:
 	void Execute();
+	void print(){ std::cout  << "ActionStringEquals" << std::endl;}
 };
 
 class ActionSetVariable: public ActionTag
 {
 public:
 	void Execute();
+	void print(){ std::cout  << "ActionSetVariable" << std::endl;}
 };
 
 class ActionGetVariable: public ActionTag
 {
 public:
 	void Execute();
+	void print(){ std::cout  << "ActionGetVariable" << std::endl;}
 };
 
 class ActionToggleQuality: public ActionTag
@@ -147,6 +161,7 @@ private:
 public:
 	ActionPush(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
+	void print(){ std::cout  << "ActionPush" << std::endl;}
 };
 
 class BUTTONCONDACTION

@@ -8,7 +8,7 @@ using namespace std;
 
 void Frame::Render()
 {
-	cout << "Start Frame" << endl;
+	cout << "Start Frame" << endl << endl;
 	list < DisplayListTag* >::iterator i=displayList.begin();
 	for(i;i!=displayList.end();i++)
 	{

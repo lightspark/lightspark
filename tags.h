@@ -28,7 +28,7 @@ public:
 			return Header&0x3f;
 	}
 	virtual TAGTYPE getType(){ return TAG; }
-	//virtual int getId(){return 0;} 
+	virtual void printInfo(){ std::cout << (Header>>6) << std::endl; throw "No Info"; }
 };
 
 class EndTag:public Tag
@@ -40,9 +40,11 @@ public:
 
 class DisplayListTag: public Tag
 {
+protected:
+	std::list< DisplayListTag* >* displayList;
 public:
 	bool add_to_list;
-	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s),add_to_list(true){}
+	DisplayListTag(RECORDHEADER h, std::istream& s, std::list< DisplayListTag* >* d):displayList(d),Tag(h,s),add_to_list(true){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
 	virtual UI16 getDepth()=0;
 	virtual void Render()=0;
@@ -75,6 +77,7 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render(int layer);
+	void printInfo();
 };
 
 class DefineShape2Tag: public RenderTag
@@ -87,6 +90,7 @@ public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render(int layer);
+	void printInfo();
 };
 
 class DefineMorphShapeTag: public RenderTag
@@ -104,6 +108,7 @@ public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render(int layer);
+	void printInfo();
 };
 
 
@@ -147,9 +152,10 @@ class RemoveObject2Tag: public Tag
 {
 private:
 	UI16 Depth;
+	std::list < DisplayListTag* >* displayList;
 
 public:
-	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
+	RemoveObject2Tag(RECORDHEADER h, std::istream& in, std::list < DisplayListTag* >* d);
 };
 
 class PlaceObject2Tag: public DisplayListTag
@@ -173,12 +179,14 @@ private:
 	CLIPACTIONS ClipActions;
 
 public:
-	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
+	PlaceObject2Tag(RECORDHEADER h, std::istream& in, std::list<DisplayListTag* >* d);
 	void Render( );
 	UI16 getDepth()
 	{
 		return Depth;
 	}
+
+	void printInfo();
 };
 
 class FrameLabelTag: public DisplayListTag
@@ -186,7 +194,7 @@ class FrameLabelTag: public DisplayListTag
 private:
 	STRING Name;
 public:
-	FrameLabelTag(RECORDHEADER h, std::istream& in);
+	FrameLabelTag(RECORDHEADER h, std::istream& in, std::list<DisplayListTag* >* d);
 	void Render( );
 	UI16 getDepth()
 	{
@@ -230,6 +238,8 @@ public:
 	virtual int getId(){ return ButtonId; }
 	virtual void Render(int layer);
 	virtual void MouseEvent(int x, int y);
+
+	void printInfo();
 };
 
 class KERNINGRECORD
@@ -313,6 +323,7 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render(int layer);
+	void printInfo();
 };
 
 class DefineSpriteTag: public RenderTag
@@ -326,14 +337,16 @@ public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
 	virtual void Render(int layer);
+	void printInfo();
 };
 
 class TagFactory
 {
 private:
 	std::istream& f;
+	std::list< DisplayListTag*>* displayList;
 public:
-	TagFactory(std::istream& in):f(in){}
+	TagFactory(std::istream& in,std::list< DisplayListTag* >* d ):f(in),displayList(d){}
 	Tag* readTag();
 };
 

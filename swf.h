@@ -49,10 +49,10 @@ class ParseThread
 private:
 	static pthread_t t;
 	static void* worker(void*);
+	static std::list < DisplayListTag* > displayList;
 public:
 	ParseThread(std::ifstream& in);
 	void wait();
-	static std::list < DisplayListTag* > displayList;
 };
 
 class InputThread

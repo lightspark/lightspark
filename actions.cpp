@@ -4,7 +4,7 @@ using namespace std;
 
 extern RunState state;
 
-DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in, list<DisplayListTag*>* d):DisplayListTag(h,in,d)
 {
 	while(1)
 	{
@@ -21,10 +21,19 @@ UI16 DoActionTag::getDepth()
 	return 0;
 }
 
+void DoActionTag::printInfo()
+{
+	cout << "DoAction Info" << endl;
+	for(int i=0;i<actions.size();i++)
+		actions[i]->print();
+}
+
 void DoActionTag::Render()
 {
 	for(int i=0;i<actions.size();i++)
 		actions[i]->Execute();
+	for(int i=0;i<actions.size();i++)
+		actions[i]->print();
 }
 
 ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)

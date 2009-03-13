@@ -44,7 +44,7 @@ void* ParseThread::worker(void* in_ptr)
 
 	try
 	{
-		TagFactory factory(f);
+		TagFactory factory(f,&displayList);
 		while(1)
 		{
 			Tag* tag=factory.readTag();

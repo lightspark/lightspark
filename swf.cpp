@@ -10,14 +10,12 @@
 using namespace std;
 
 pthread_t ParseThread::t;
-std::list < DisplayListTag* > ParseThread::displayList;
 
 pthread_t InputThread::t;
 std::list < IActiveObject* > InputThread::listeners;
 sem_t InputThread::sem_listeners;
 
 extern SystemState sys;
-extern RunState state;
 
 int thread_debug(char* msg);
 SWF_HEADER::SWF_HEADER(ifstream& in)
@@ -30,11 +28,16 @@ SWF_HEADER::SWF_HEADER(ifstream& in)
 	in >> Version >> FileLenght >> FrameSize >> FrameRate >> FrameCount;
 }
 
-SystemState::SystemState()
+MovieClip::MovieClip()
 {
 	sem_init(&sem_frames,0,1);
+}
+
+SystemState::SystemState()
+{
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
+	sem_init(&sem_run,0,0);
 }
 
 void* ParseThread::worker(void* in_ptr)
@@ -44,7 +47,7 @@ void* ParseThread::worker(void* in_ptr)
 
 	try
 	{
-		TagFactory factory(f,&displayList);
+		TagFactory factory(f,&sys.clip);
 		while(1)
 		{
 			Tag* tag=factory.readTag();
@@ -64,17 +67,17 @@ void* ParseThread::worker(void* in_ptr)
 					break;
 				case DISPLAY_LIST_TAG:
 					if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)
-						displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
+						sys.clip.displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
 					break;
 				case SHOW_TAG:
 				{
 				//	thread_debug( "PARSER: frames mutex lock");
-					sem_wait(&sys.sem_frames);
-					sys.frames.push_back(Frame(displayList));
+					sem_wait(&sys.clip.sem_frames);
+					sys.clip.frames.push_back(Frame(sys.clip.displayList));
 				//	thread_debug( "PARSER: frames mutex unlock" );
 					sem_post(&sys.new_frame);
 				//\	thread_debug("PARSER: new frame signal");
-					sem_post(&sys.sem_frames);
+					sem_post(&sys.clip.sem_frames);
 					break;
 				}
 				case CONTROL_TAG:
@@ -141,7 +144,7 @@ void* InputThread::worker(void* in_ptr)
 								(*it)->MouseEvent(0,0);
 							c++;
 						}
-						sem_post(&state.sem_run);
+						sem_post(&sys.sem_run);
 						break;
 				}
 				break;

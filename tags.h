@@ -41,10 +41,10 @@ public:
 class DisplayListTag: public Tag
 {
 protected:
-	std::list< DisplayListTag* >* displayList;
+	MovieClip* clip;
 public:
 	bool add_to_list;
-	DisplayListTag(RECORDHEADER h, std::istream& s, std::list< DisplayListTag* >* d):displayList(d),Tag(h,s),add_to_list(true){}
+	DisplayListTag(RECORDHEADER h, std::istream& s, MovieClip* m):clip(m),Tag(h,s),add_to_list(true){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
 	virtual UI16 getDepth()=0;
 	virtual void Render()=0;
@@ -152,10 +152,10 @@ class RemoveObject2Tag: public Tag
 {
 private:
 	UI16 Depth;
-	std::list < DisplayListTag* >* displayList;
+	MovieClip* clip;
 
 public:
-	RemoveObject2Tag(RECORDHEADER h, std::istream& in, std::list < DisplayListTag* >* d);
+	RemoveObject2Tag(RECORDHEADER h, std::istream& in, MovieClip* m);
 };
 
 class PlaceObject2Tag: public DisplayListTag
@@ -179,7 +179,7 @@ private:
 	CLIPACTIONS ClipActions;
 
 public:
-	PlaceObject2Tag(RECORDHEADER h, std::istream& in, std::list<DisplayListTag* >* d);
+	PlaceObject2Tag(RECORDHEADER h, std::istream& in, MovieClip* m);
 	void Render( );
 	UI16 getDepth()
 	{
@@ -194,7 +194,7 @@ class FrameLabelTag: public DisplayListTag
 private:
 	STRING Name;
 public:
-	FrameLabelTag(RECORDHEADER h, std::istream& in, std::list<DisplayListTag* >* d);
+	FrameLabelTag(RECORDHEADER h, std::istream& in, MovieClip* m);
 	void Render( );
 	UI16 getDepth()
 	{
@@ -332,7 +332,7 @@ private:
 	UI16 SpriteID;
 	UI16 FrameCount;
 	//std::vector < Tag* > ControlTags;
-	std::list < DisplayListTag* > displayList;
+	MovieClip clip;
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
@@ -344,9 +344,9 @@ class TagFactory
 {
 private:
 	std::istream& f;
-	std::list< DisplayListTag*>* displayList;
+	MovieClip* clip;
 public:
-	TagFactory(std::istream& in,std::list< DisplayListTag* >* d ):f(in),displayList(d){}
+	TagFactory(std::istream& in,MovieClip* m ):f(in),clip(m){}
 	Tag* readTag();
 };
 

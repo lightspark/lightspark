@@ -2,13 +2,11 @@
 
 using namespace std;
 
-extern RunState state;
-
-DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in, list<DisplayListTag*>* d):DisplayListTag(h,in,d)
+DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in, MovieClip* m):DisplayListTag(h,in,m)
 {
 	while(1)
 	{
-		ACTIONRECORDHEADER ah(in);
+		ACTIONRECORDHEADER ah(in,clip);
 		if(ah.ActionCode==0)
 			break;
 		else
@@ -36,7 +34,7 @@ void DoActionTag::Render()
 		actions[i]->print();
 }
 
-ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)
+ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in, MovieClip* m):clip(m)
 {
 	in >> ActionCode;
 	if(ActionCode>=0x80)
@@ -48,7 +46,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 	switch(ActionCode)
 	{
 		case 0x07:
-			return new ActionStop;
+			return new ActionStop(clip);
 			break;
 		case 0x12:
 			return new ActionNot;
@@ -69,7 +67,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			return new ActionStringAdd;
 			break;
 		case 0x81:
-			return new ActionGotoFrame(in);
+			return new ActionGotoFrame(in,clip);
 			break;
 		case 0x83:
 			return new ActionGetURL(in);
@@ -96,14 +94,13 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 
 RunState::RunState():FP(0),stop_FP(0)
 {
-	sem_init(&sem_run,0,0);
 }
 
 void ActionStop::Execute()
 {
 	cout << "Stop" << endl;
-	state.next_FP=state.FP;
-	state.stop_FP=true;
+	clip->state.next_FP=clip->state.FP;
+	clip->state.stop_FP=true;
 }
 
 void ActionJump::Execute()
@@ -151,7 +148,7 @@ void ActionToggleQuality::Execute()
 	throw "WIP4";
 }
 
-ActionGotoFrame::ActionGotoFrame(std::istream& in)
+ActionGotoFrame::ActionGotoFrame(std::istream& in, MovieClip* m):clip(m)
 {
 	in >> Frame;
 }
@@ -214,8 +211,8 @@ void ActionGetURL::Execute()
 void ActionGotoFrame::Execute()
 {
 	cout << "Goto " << Frame<< endl;
-	state.next_FP=Frame;
-	state.stop_FP=false;
+	clip->state.next_FP=Frame;
+	clip->state.stop_FP=false;
 }
 
 void ActionConstantPool::Execute()
@@ -243,7 +240,7 @@ std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v)
 
 	while(1)
 	{
-		ACTIONRECORDHEADER ah(stream);
+		ACTIONRECORDHEADER ah(stream,v.clip);
 		if(ah.ActionCode==0)
 			break;
 		else

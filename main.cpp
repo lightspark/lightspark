@@ -12,7 +12,7 @@
 
 using namespace std;
 
-RunState state;
+//RunState state;
 SystemState sys;
 
 int thread_debug(char* msg)
@@ -52,33 +52,33 @@ int main()
 	{
 		while(1)
 		{
-			if(state.stop_FP)
-				sem_wait(&state.sem_run);
+			if(sys.clip.state.stop_FP)
+				sem_wait(&sys.sem_run);
 			while(1)
 			{
 				//thread_debug( "RENDER: frames mutex lock");
-				sem_wait(&sys.sem_frames);
+				sem_wait(&sys.clip.sem_frames);
 
-				if(state.FP<sys.frames.size())
+				if(sys.clip.state.FP<sys.clip.frames.size())
 					break;
 
 				//thread_debug( "RENDER: frames mutex unlock");
-				sem_post(&sys.sem_frames);
+				sem_post(&sys.clip.sem_frames);
 				//thread_debug("RENDER: new frame wait");
 				sem_wait(&sys.new_frame);
 			}
 			//Aquired lock on frames list
 
-			state.next_FP=state.FP+1;
+			sys.clip.state.next_FP=sys.clip.state.FP+1;
 			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
 			glClear(GL_COLOR_BUFFER_BIT);
-			sys.frames[state.FP].Render();
+			sys.clip.frames[sys.clip.state.FP].Render();
 			SDL_GL_SwapBuffers( );
-			state.FP=state.next_FP;
+			sys.clip.state.FP=sys.clip.state.next_FP;
 
 			//thread_debug( "RENDER: frames mutex unlock");
-			sem_post(&sys.sem_frames);
-			cout << "Frame " << state.FP << endl;
+			sem_post(&sys.clip.sem_frames);
+			cout << "Frame " << sys.clip.state.FP << endl;
 		}
 	}
 	catch(const char* e)

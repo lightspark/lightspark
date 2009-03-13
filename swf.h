@@ -26,6 +26,27 @@ public:
 	const RECT& getFrameSize(){ return FrameSize; }
 };
 
+class RunState
+{
+public:
+	int FP;
+	int next_FP;
+	bool stop_FP;
+	RunState();
+};
+
+class MovieClip
+{
+public:
+	std::list < DisplayListTag* > displayList;
+	//Frames mutex (shared with drawing thread)
+	sem_t sem_frames;
+	std::vector<Frame> frames;
+	RunState state;
+
+	MovieClip();
+};
+
 class SystemState
 {
 public:
@@ -35,13 +56,12 @@ public:
 	sem_t sem_dict;
 	std::list < RenderTag* > dictionary;
 
-	//Frames mutex (shared with drawing thread)
-	sem_t sem_frames;
-	std::vector<Frame> frames;
-
 	RGBA Background;
 
 	SystemState();
+
+	MovieClip clip;
+	sem_t sem_run;
 };
 
 class ParseThread
@@ -49,7 +69,6 @@ class ParseThread
 private:
 	static pthread_t t;
 	static void* worker(void*);
-	static std::list < DisplayListTag* > displayList;
 public:
 	ParseThread(std::ifstream& in);
 	void wait();

@@ -76,7 +76,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	in >> Depth;
 
-//	std::cout << "Remove " << Depth << std::endl;
+	std::cout << "Remove " << Depth << std::endl;
 
 	std::list<DisplayListTag*>::iterator it=ParseThread::displayList.begin();
 
@@ -104,12 +104,28 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	//	throw "unsopported long sprites";
 	TagFactory factory(in);
 	Tag* tag;
+	bool skip=false;
 	do
 	{
-		tag=factory.readTag();	
+		tag=factory.readTag();
+		if(skip)
+			continue;
 //		std::cout << "\tsprite tag type "<< tag->getType() <<std::endl;
 		if(tag->getType()==DISPLAY_LIST_TAG)
 			displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
+		else if(tag->getType()==TAG)
+		{
+			cout << "STUB check TAGs" << endl;
+		}
+		else if(tag->getType()==SHOW_TAG)
+		{
+			skip=true;
+		}
+		else
+		{
+			cout << tag->getType() << endl;
+			throw "tagtype";
+		}
 	}
 	while(tag->getType()!=END_TAG);
 	std::cout << "end DefineSprite" << std::endl;
@@ -293,12 +309,13 @@ DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 
 void DefineSpriteTag::Render(int layer)
 {
-//	std::cout << "Render Sprite" << std::endl;
+	std::cout << "Render Sprite" << std::endl;
 	std::list < DisplayListTag* >::iterator it=displayList.begin();
 	for(it;it!=displayList.end();it++)
 	{
 		(*it)->Render();
 	}
+	std::cout << "end render Sprite" << std::endl;
 }
 
 int crossProd(const Vector2& a, const Vector2& b)
@@ -1550,7 +1567,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 
 void PlaceObject2Tag::Render()
 {
-//	std::cout << "Render Place object 2 ChaID " << CharacterId <<  std::endl;
+	std::cout << "Render Place object 2 ChaID " << CharacterId <<  std::endl;
 
 	//TODO: support clipping
 	if(ClipDepth!=0)
@@ -1606,7 +1623,7 @@ void FrameLabelTag::Render()
 	sys.frames[state.FP].setLabel(Name);
 }
 
-DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in),IdleToOverUp(false)
 {
 	state=BUTTON_UP;
 	in >> ButtonId;
@@ -1636,6 +1653,7 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):RenderTag(h
 void DefineButton2Tag::MouseEvent(int x, int y)
 {
 	state=BUTTON_OVER;
+	IdleToOverUp=true;
 }
 
 void DefineButton2Tag::Render(int layer)
@@ -1676,10 +1694,16 @@ void DefineButton2Tag::Render(int layer)
 		c->Render(Characters[i].PlaceDepth);
 		glPopMatrix();
 	}
-/*	for(int i=0;i<Actions.size();i++)
+	for(int i=0;i<Actions.size();i++)
 	{
+		if(IdleToOverUp && Actions[i].CondIdleToOverUp)
+		{
+		}
+		else
+			continue;
+
 		for(int j=0;j<Actions[i].Actions.size();j++)
 			Actions[i].Actions[j]->Execute();
-	}*/
+	}
 	cout << "end button" << endl;
 }

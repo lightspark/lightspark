@@ -223,6 +223,8 @@ private:
 	enum BUTTON_STATE { BUTTON_UP=0, BUTTON_OVER};
 	BUTTON_STATE state;
 
+	//Transition flags
+	bool IdleToOverUp;
 public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }

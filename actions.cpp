@@ -206,6 +206,7 @@ void ActionGotoFrame::Execute()
 {
 	cout << "Goto " << Frame<< endl;
 	state.next_FP=Frame;
+	state.stop_FP=false;
 }
 
 void ActionConstantPool::Execute()

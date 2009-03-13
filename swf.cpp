@@ -134,9 +134,12 @@ void* InputThread::worker(void* in_ptr)
 					case SDLK_n:
 						list<IActiveObject*>::const_iterator it=listeners.begin();
 						cout << "Fake mouse event" << endl;
+						int c=0;
 						for(it;it!=listeners.end();it++)
 						{
-							(*it)->MouseEvent(0,0);
+							if(c==2)
+								(*it)->MouseEvent(0,0);
+							c++;
 						}
 						sem_post(&state.sem_run);
 						break;

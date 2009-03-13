@@ -85,14 +85,16 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 	}
 }
 
-RunState::RunState():FP(0)
+RunState::RunState():FP(0),stop_FP(0)
 {
+	sem_init(&sem_run,0,0);
 }
 
 void ActionStop::Execute()
 {
 	cout << "Stop" << endl;
-	state.next_FP=-1;
+	state.next_FP=state.FP;
+	state.stop_FP=true;
 }
 
 void ActionJump::Execute()

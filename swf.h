@@ -1,10 +1,16 @@
+#ifndef SWF_H
+#define SWF_H
+
 #include <iostream>
 #include <fstream>
 #include <list>
 #include <semaphore.h>
 #include "swftypes.h"
-#include "tags.h"
 #include "frame.h"
+
+class DisplayListTag;
+class RenderTag;
+class IActiveObject;
 
 class SWF_HEADER
 {
@@ -54,11 +60,13 @@ class InputThread
 private:
 	static pthread_t t;
 	static void* worker(void*);
-	static std::list< ActiveTag* > activeList;
-	static sem_t sem_active;
+	static std::list< IActiveObject* > listeners;
+	static sem_t sem_listeners;
 
 public:
 	InputThread();
 	void wait();
-	static void addListener(ActiveTag* tag);
+	static void addListener(IActiveObject* tag);
 };
+
+#endif

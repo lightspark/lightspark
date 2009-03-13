@@ -2,7 +2,9 @@
 #define _FRAME_H
 
 #include <list>
-#include "tags.h"
+#include "swftypes.h"
+
+class DisplayListTag;
 
 class Frame
 {

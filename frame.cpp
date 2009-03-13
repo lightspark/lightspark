@@ -1,4 +1,5 @@
 #include "frame.h"
+#include "tags.h"
 #include <list>
 #include <GL/gl.h>
 

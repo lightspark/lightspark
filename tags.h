@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include "swftypes.h"
+#include "input.h"
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,RENDER_TAG,END_TAG};
 
@@ -208,15 +209,9 @@ public:
 	SoundStreamHead2Tag(RECORDHEADER h, std::istream& in);
 };
 
-class ActiveTag: public RenderTag
-{
-public:
-	ActiveTag(RECORDHEADER h,std::istream& s):RenderTag(h,s){}
-};
-
 class BUTTONCONDACTION;
 
-class DefineButton2Tag: public ActiveTag
+class DefineButton2Tag: public RenderTag, public IActiveObject
 {
 private:
 	UI16 ButtonId;
@@ -225,10 +220,14 @@ private:
 	UI16 ActionOffset;
 	std::vector<BUTTONRECORD> Characters;
 	std::vector<BUTTONCONDACTION> Actions;
+	enum BUTTON_STATE { BUTTON_UP=0, BUTTON_OVER};
+	BUTTON_STATE state;
+
 public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
 	virtual void Render(int layer);
+	virtual void MouseEvent(int x, int y);
 };
 
 class KERNINGRECORD

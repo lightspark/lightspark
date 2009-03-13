@@ -13,8 +13,8 @@ pthread_t ParseThread::t;
 std::list < DisplayListTag* > ParseThread::displayList;
 
 pthread_t InputThread::t;
-std::list < ActiveTag* > InputThread::activeList;
-sem_t InputThread::sem_active;
+std::list < IActiveObject* > InputThread::listeners;
+sem_t InputThread::sem_listeners;
 
 extern SystemState sys;
 extern RunState state;
@@ -107,8 +107,8 @@ void ParseThread::wait()
 InputThread::InputThread()
 {
 	cout << "creating input" << endl;
+	sem_init(&sem_listeners,0,1);
 	pthread_create(&t,NULL,worker,NULL);
-	sem_init(&sem_active,0,1);
 }
 
 void InputThread::wait()
@@ -125,21 +125,38 @@ void* InputThread::worker(void* in_ptr)
 		switch(event.type)
 		{
 			case SDL_KEYDOWN:
-				if(event.key.keysym.sym==SDLK_q)
-					pthread_exit(NULL);
+			{
+				switch(event.key.keysym.sym)
+				{
+					case SDLK_q:
+						exit(0);
+						break;
+					case SDLK_n:
+						list<IActiveObject*>::const_iterator it=listeners.begin();
+						cout << "Fake mouse event" << endl;
+						for(it;it!=listeners.end();it++)
+						{
+							(*it)->MouseEvent(0,0);
+						}
+						sem_post(&state.sem_run);
+						break;
+				}
 				break;
-			      case SDL_MOUSEMOTION:
-		            printf("Oh! mouse\n");
+			}
+			case SDL_MOUSEMOTION:
+			{
+				printf("Oh! mouse\n");
 				break;
+			}
 		}
 	}
 }
 
-void InputThread::addListener(ActiveTag* tag)
+void InputThread::addListener(IActiveObject* ob)
 {
-	sem_wait(&sem_active);
+	sem_wait(&sem_listeners);
 
-	activeList.push_back(tag);
+	listeners.push_back(ob);
 
-	sem_post(&sem_active);
+	sem_post(&sem_listeners);
 }

@@ -7,6 +7,8 @@ class RunState
 public:
 	int FP;
 	int next_FP;
+	bool stop_FP;
+	sem_t sem_run;
 	RunState();
 };
 

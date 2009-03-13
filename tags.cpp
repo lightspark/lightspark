@@ -4,6 +4,7 @@
 #include "geometry.h"
 #include "swftypes.h"
 #include "swf.h"
+#include "input.h"
 #include <vector>
 #include <list>
 #include <algorithm>
@@ -1605,8 +1606,9 @@ void FrameLabelTag::Render()
 	sys.frames[state.FP].setLabel(Name);
 }
 
-DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):ActiveTag(h,in)
+DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
+	state=BUTTON_UP;
 	in >> ButtonId;
 	BitStream bs(in);
 	UB(7,bs);
@@ -1631,12 +1633,25 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):ActiveTag(h
 	while(!bca.isLast());
 }
 
+void DefineButton2Tag::MouseEvent(int x, int y)
+{
+	state=BUTTON_OVER;
+}
+
 void DefineButton2Tag::Render(int layer)
 {
 	cout << "render button" << endl;
 	for(int i=0;i<Characters.size();i++)
 	{
-		if(Characters[i].ButtonStateOver==0)
+		if(Characters[i].ButtonStateUp && state==BUTTON_UP)
+		{
+			cout << "Button UP" << endl;
+		}
+		else if(Characters[i].ButtonStateOver && state==BUTTON_OVER)
+		{
+			cout << "Button Over" << endl;
+		}
+		else
 			continue;
 		//thread_debug( "RENDER: dict mutex lock 3");
 		sem_wait(&sys.sem_dict);
@@ -1661,10 +1676,10 @@ void DefineButton2Tag::Render(int layer)
 		c->Render(Characters[i].PlaceDepth);
 		glPopMatrix();
 	}
-	for(int i=0;i<Actions.size();i++)
+/*	for(int i=0;i<Actions.size();i++)
 	{
 		for(int j=0;j<Actions[i].Actions.size();j++)
 			Actions[i].Actions[j]->Execute();
-	}
+	}*/
 	cout << "end button" << endl;
 }

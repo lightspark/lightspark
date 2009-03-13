@@ -45,13 +45,15 @@ int main()
 //	glLoadIdentity();
 //	glScalef(0.1,0.1,0.1);
 
-	ParseThread pt(f);
 	InputThread it;
+	ParseThread pt(f);
 
 	try
 	{
-		while(state.FP!=-1)
+		while(1)
 		{
+			if(state.stop_FP)
+				sem_wait(&state.sem_run);
 			while(1)
 			{
 				//thread_debug( "RENDER: frames mutex lock");
@@ -76,6 +78,7 @@ int main()
 
 			//thread_debug( "RENDER: frames mutex unlock");
 			sem_post(&sys.sem_frames);
+			cout << "Frame " << state.FP << endl;
 		}
 	}
 	catch(const char* e)

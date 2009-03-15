@@ -4,13 +4,13 @@
 
 void Shape::Render() const
 {
-	/*std::cout << "winding " << winding << std::endl;
-	std::cout << "graphic.filled0 " << graphic.filled0 << std::endl;
-	std::cout << "graphic.color0 " << graphic.color0 << std::endl;
-	std::cout << "graphic.filled1 " << graphic.filled1 << std::endl;
-	std::cout << "graphic.color1 " << graphic.color1 << std::endl;
-	std::cout << "graphic.stroked " << graphic.stroked << std::endl;
-	std::cout << "graphic.stroke_color " << graphic.stroke_color << std::endl;*/
+	/*std::cerr << "winding " << winding << std::endl;
+	std::cerr << "graphic.filled0 " << graphic.filled0 << std::endl;
+	std::cerr << "graphic.color0 " << graphic.color0 << std::endl;
+	std::cerr << "graphic.filled1 " << graphic.filled1 << std::endl;
+	std::cerr << "graphic.color1 " << graphic.color1 << std::endl;
+	std::cerr << "graphic.stroked " << graphic.stroked << std::endl;
+	std::cerr << "graphic.stroke_color " << graphic.stroke_color << std::endl;*/
 
 	if(winding==0)
 	{

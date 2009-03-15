@@ -121,6 +121,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 			{
 				sem_wait(&clip.sem_frames);
 				clip.frames.push_back(Frame(clip.displayList));
+				clip.frames.back().hack=1;
+
 			//	sem_post(&sys.new_frame);
 				sem_post(&clip.sem_frames);
 				break;
@@ -148,7 +150,8 @@ void DefineSpriteTag::Render(int layer)
 	sys.currentClip=&clip;
 	std::cout << "==> Render Sprite" << std::endl;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
-	clip.frames[clip.state.FP].Render();
+//	clip.frames[clip.state.FP].Render();
+	clip.frames.back().Render();
 	if(clip.state.FP!=clip.state.next_FP)
 	{
 		clip.state.FP=clip.state.next_FP;
@@ -281,6 +284,7 @@ void DefineTextTag::Render(int layer)
 {
 //	std::cout << "Render Text" << std::endl;
 	//std::cout << TextMatrix << std::endl;
+	cerr << endl;
 	glColor3f(0,0,0);
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	int x=0,y=0;//1024;
@@ -1481,7 +1485,7 @@ void DefineFontTag::Render(int glyph)
 
 		//Fill graphic data
 		shapes.back().graphic.filled0=true;
-		shapes.back().graphic.filled1=true;
+		shapes.back().graphic.filled1=false;
 		shapes.back().graphic.stroked=false;
 
 		if(i->state->validFill0)
@@ -1619,8 +1623,8 @@ void PlaceObject2Tag::Render()
 	std::cout << "Render Place object 2 ChaID " << CharacterId <<  std::endl;
 
 	//TODO: support clipping
-	if(ClipDepth!=0)
-		return;
+//	if(ClipDepth!=0)
+//		return;
 
 	//std::cout << Matrix << std::endl;
 	if(!PlaceFlagHasCharacter)

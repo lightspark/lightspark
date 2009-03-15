@@ -33,13 +33,13 @@ ostream& operator<<(ostream& s, const STRING& t)
 
 std::ostream& operator<<(std::ostream& s, const RGBA& r)
 {
-	std::cout << "RGBA <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << ',' << (int)r.Alpha << '>';
+	s << "RGBA <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << ',' << (int)r.Alpha << '>';
 	return s;
 }
 
 std::ostream& operator<<(std::ostream& s, const RGB& r)
 {
-	std::cout << "RGB <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << '>';
+	s << "RGB <" << (int)r.Red << ',' << (int)r.Green << ',' << (int)r.Blue << '>';
 	return s;
 }
 

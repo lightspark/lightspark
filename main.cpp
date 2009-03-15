@@ -75,6 +75,9 @@ int main()
 			glClear(GL_COLOR_BUFFER_BIT);
 			glLoadIdentity();
 			glScalef(0.1,0.1,0.1);
+
+			//if(sys.clip.state.FP>=43)
+			//	sys.clip.frames[sys.clip.state.FP].hack=1;
 			sys.clip.frames[sys.clip.state.FP].Render();
 			SDL_GL_SwapBuffers( );
 			sys.clip.state.FP=sys.clip.state.next_FP;

@@ -40,11 +40,9 @@ public:
 
 class DisplayListTag: public Tag
 {
-protected:
-	MovieClip* clip;
 public:
 	bool add_to_list;
-	DisplayListTag(RECORDHEADER h, std::istream& s, MovieClip* m):clip(m),Tag(h,s),add_to_list(true){}
+	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s),add_to_list(true){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
 	virtual UI16 getDepth()=0;
 	virtual void Render()=0;
@@ -152,10 +150,9 @@ class RemoveObject2Tag: public Tag
 {
 private:
 	UI16 Depth;
-	MovieClip* clip;
 
 public:
-	RemoveObject2Tag(RECORDHEADER h, std::istream& in, MovieClip* m);
+	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
 };
 
 class PlaceObject2Tag: public DisplayListTag
@@ -179,7 +176,7 @@ private:
 	CLIPACTIONS ClipActions;
 
 public:
-	PlaceObject2Tag(RECORDHEADER h, std::istream& in, MovieClip* m);
+	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
 	void Render( );
 	UI16 getDepth()
 	{
@@ -194,7 +191,7 @@ class FrameLabelTag: public DisplayListTag
 private:
 	STRING Name;
 public:
-	FrameLabelTag(RECORDHEADER h, std::istream& in, MovieClip* m);
+	FrameLabelTag(RECORDHEADER h, std::istream& in);
 	void Render( );
 	UI16 getDepth()
 	{
@@ -344,9 +341,8 @@ class TagFactory
 {
 private:
 	std::istream& f;
-	MovieClip* clip;
 public:
-	TagFactory(std::istream& in,MovieClip* m ):f(in),clip(m){}
+	TagFactory(std::istream& in):f(in){}
 	Tag* readTag();
 };
 

@@ -14,7 +14,7 @@ class DoActionTag: public DisplayListTag
 private:
 	std::vector<ActionTag*> actions;
 public:
-	DoActionTag(RECORDHEADER h, std::istream& in, MovieClip* m);
+	DoActionTag(RECORDHEADER h, std::istream& in);
 	void Render( );
 	UI16 getDepth();
 	void printInfo();
@@ -22,21 +22,16 @@ public:
 
 class ACTIONRECORDHEADER
 {
-private:
-	MovieClip* clip;
 public:
 	UI8 ActionCode;
 	UI16 Length;
-	ACTIONRECORDHEADER(std::istream& in,MovieClip* m);
+	ACTIONRECORDHEADER(std::istream& in);
 	ActionTag* createTag(std::istream& in);
 };
 
 class ActionStop:public ActionTag
 {
-private:
-	MovieClip* clip;
 public:
-	ActionStop(MovieClip* m):clip(m){}
 	void Execute();
 	void print(){ std::cout  << "ActionStop" << std::endl;}
 };
@@ -65,9 +60,8 @@ class ActionGotoFrame:public ActionTag
 {
 private:
 	UI16 Frame;
-	MovieClip* clip;
 public:
-	ActionGotoFrame(std::istream& in,MovieClip* m);
+	ActionGotoFrame(std::istream& in);
 	void Execute();
 	void print(){ std::cout  << "ActionGotoFrame" << std::endl;}
 };
@@ -175,7 +169,6 @@ public:
 	UB CondKeyPress;
 	UB CondOverDownToIdle;
 	std::vector<ActionTag*> Actions;
-	MovieClip* clip;
 	
 	bool isLast()
 	{

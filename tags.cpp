@@ -37,7 +37,7 @@ Tag* TagFactory::readTag()
 		case 11:
 			return new DefineTextTag(h,f);
 		case 12:
-			return new DoActionTag(h,f,clip);
+			return new DoActionTag(h,f);
 		case 13:
 			return new DefineFontInfoTag(h,f);
 		case 14:
@@ -47,9 +47,9 @@ Tag* TagFactory::readTag()
 		case 22:
 			return new DefineShape2Tag(h,f);
 		case 26:
-			return new PlaceObject2Tag(h,f,clip);
+			return new PlaceObject2Tag(h,f);
 		case 28:
-			return new RemoveObject2Tag(h,f,clip);
+			return new RemoveObject2Tag(h,f);
 		case 34:
 			return new DefineButton2Tag(h,f);
 		case 37:
@@ -57,7 +57,7 @@ Tag* TagFactory::readTag()
 		case 39:
 			return new DefineSpriteTag(h,f);
 		case 43:
-			return new FrameLabelTag(h,f,clip);
+			return new FrameLabelTag(h,f);
 		case 45:
 			return new SoundStreamHead2Tag(h,f);
 		case 46:
@@ -72,19 +72,19 @@ Tag* TagFactory::readTag()
 	}
 }
 
-RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in,MovieClip* m):Tag(h,in),clip(m)
+RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	in >> Depth;
 
 	cout << "Remove " << Depth << endl;
 
-	list<DisplayListTag*>::iterator it=clip->displayList.begin();
+	list<DisplayListTag*>::iterator it=sys.currentClip->displayList.begin();
 
-	for(it;it!=clip->displayList.end();it++)
+	for(it;it!=sys.currentClip->displayList.end();it++)
 	{
 		if((*it)->getDepth()==Depth)
 		{
-			clip->displayList.erase(it);
+			sys.currentClip->displayList.erase(it);
 			break;
 		}
 	}
@@ -98,11 +98,13 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
+	MovieClip* bak=sys.currentClip;
+	sys.currentClip=&clip;
 	std::cout << "DefineSprite" << std::endl;
 	in >> SpriteID >> FrameCount;
 	if(FrameCount!=1)
 		cout << "unsopported long sprites" << endl;
-	TagFactory factory(in,&clip);
+	TagFactory factory(in);
 	Tag* tag;
 	do
 	{
@@ -129,11 +131,32 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	}
 	while(tag->getType()!=END_TAG);
 	std::cout << "end DefineSprite" << std::endl;
+	sys.currentClip=bak;
 }
 
 void DefineSpriteTag::printInfo()
 {
+	MovieClip* bak=sys.currentClip;
+	sys.currentClip=&clip;
 	cout << "DefineSprite Info" << endl;
+	sys.currentClip=bak;
+}
+
+void DefineSpriteTag::Render(int layer)
+{
+	MovieClip* bak=sys.currentClip;
+	sys.currentClip=&clip;
+	std::cout << "==> Render Sprite" << std::endl;
+	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
+	clip.frames[clip.state.FP].Render();
+	if(clip.state.FP!=clip.state.next_FP)
+	{
+		clip.state.FP=clip.state.next_FP;
+		sys.update_request=true;
+	}
+	cout << "Sprite Frame " << clip.state.FP << endl;
+	std::cout << "==> end render Sprite" << std::endl;
+	sys.currentClip=bak;
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
@@ -265,6 +288,8 @@ void DefineTextTag::Render(int layer)
 	FontTag* font=NULL;
 	int done=0;
 	int cur_height;
+	float matrix[16];
+	TextMatrix.get4DMatrix(matrix);
 	for(it;it!=TextRecords.end();it++)
 	{
 //		std::cout << "Text height " << it->TextHeight << std::endl;
@@ -273,7 +298,7 @@ void DefineTextTag::Render(int layer)
 			cur_height=it->TextHeight;
 			//thread_debug( "RENDER: dict mutex lock");
 			sem_wait(&sys.sem_dict);
-			std::list< RenderTag*>::iterator it3 = sys.dictionary.begin();
+			std::vector< RenderTag*>::iterator it3 = sys.dictionary.begin();
 			for(it3;it3!=sys.dictionary.end();it3++)
 			{
 				if((*it3)->getId()==it->FontID)
@@ -298,6 +323,7 @@ void DefineTextTag::Render(int layer)
 		for(it2;it2!=(it->GlyphEntries.end());it2++)
 		{
 			glPushMatrix();
+			glMultMatrixf(matrix);
 			glTranslatef(x2,y2,0);
 			float scale=cur_height;
 			scale/=1024;
@@ -316,9 +342,16 @@ void DefineTextTag::Render(int layer)
 			glVertex2i(TextBounds.Xmin,TextBounds.Ymax);
 			glVertex2i(TextBounds.Xmax,TextBounds.Ymax);
 			glVertex2i(TextBounds.Xmax,TextBounds.Ymin);
+	/*	glPushMatrix();
+		glLoadIdentity();
+			glVertex2i(0,0);
+			glVertex2i(0,3000);
+			glVertex2i(3000,3000);
+			glVertex2i(3000,0);
+
+		glPopMatrix();*/
 		glEnd();
 		glDisable(GL_STENCIL_TEST);
-
 	}
 }
 
@@ -393,21 +426,6 @@ DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 void DefineShape2Tag::printInfo()
 {
 	cout << "DefineShape2 Info" << endl;
-}
-
-void DefineSpriteTag::Render(int layer)
-{
-	std::cout << "==> Render Sprite" << std::endl;
-	int c=0;
-	if(clip.frames.size()>2)
-		c=2;
-	std::list < DisplayListTag* >::iterator it=clip.frames[c].displayList.begin();
-	for(it;it!=clip.frames[c].displayList.end();it++)
-	{
-		(*it)->printInfo();
-		(*it)->Render();
-	}
-	std::cout << "==> end render Sprite" << std::endl;
 }
 
 int crossProd(const Vector2& a, const Vector2& b)
@@ -1504,7 +1522,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 //	std::cout <<"ShowFrame" << std::endl;
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, MovieClip* m):DisplayListTag(h,in,m)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 //	std::cout << "PlaceObject2" << std::endl;
 	BitStream bs(in);
@@ -1542,9 +1560,9 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, MovieClip* m)
 	}
 	if(PlaceFlagMove)
 	{
-		list < DisplayListTag*>::iterator it=clip->displayList.begin();
+		list < DisplayListTag*>::iterator it=sys.currentClip->displayList.begin();
 //		std::cout << "find depth " << Depth << std::endl;
-		for(it;it!=clip->displayList.end();it++)
+		for(it;it!=sys.currentClip->displayList.end();it++)
 		{
 			if((*it)->getDepth()==Depth)
 			{
@@ -1581,16 +1599,18 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, MovieClip* m)
 						ClipDepth=it2->ClipDepth;
 					}
 				}
-				clip->displayList.erase(it);
+				sys.currentClip->displayList.erase(it);
 
 				break;
 			}
 		}
-		if(it==clip->displayList.end())
+		if(it==sys.currentClip->displayList.end())
 		{
 			cout << "no char to move at depth " << Depth << endl;
 		}
 	}
+	if(CharacterId==0)
+		abort();
 }
 
 
@@ -1608,7 +1628,7 @@ void PlaceObject2Tag::Render()
 		return;
 	//thread_debug( "RENDER: dict mutex lock 2");
 	sem_wait(&sys.sem_dict);
-	std::list< RenderTag* >::iterator it=sys.dictionary.begin();
+	std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
 	for(it;it!=sys.dictionary.end();it++)
 	{
 		//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
@@ -1638,7 +1658,7 @@ void PlaceObject2Tag::printInfo()
 	cout << "vvvvvvvvvvvvv" << endl;
 
 	sem_wait(&sys.sem_dict);
-	std::list< RenderTag* >::iterator it=sys.dictionary.begin();
+	std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
 	for(it;it!=sys.dictionary.end();it++)
 	{
 		//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
@@ -1664,7 +1684,7 @@ void SetBackgroundColorTag::execute()
 	sys.Background=BackgroundColor;
 }
 
-FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in, MovieClip* m):DisplayListTag(h,in,m)
+FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	in >> Name;
 	cout << "label ";
@@ -1677,7 +1697,7 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in, MovieClip* m):Dis
 void FrameLabelTag::Render()
 {
 	cout << "execute FrameLabel" <<  endl;
-	clip->frames[clip->state.FP].setLabel(Name);
+	sys.currentClip->frames[sys.currentClip->state.FP].setLabel(Name);
 }
 
 DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in),IdleToOverUp(false)
@@ -1730,7 +1750,7 @@ void DefineButton2Tag::Render(int layer)
 			continue;
 		//thread_debug( "RENDER: dict mutex lock 3");
 		sem_wait(&sys.sem_dict);
-		std::list< RenderTag* >::iterator it=sys.dictionary.begin();
+		std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
 		for(it;it!=sys.dictionary.end();it++)
 		{
 			//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;

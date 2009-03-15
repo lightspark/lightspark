@@ -49,19 +49,26 @@ public:
 
 class SystemState
 {
+friend int main();
+friend class ParseThread;
+private:
+	MovieClip clip;
+
 public:
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
 
 	sem_t sem_dict;
-	std::list < RenderTag* > dictionary;
+	std::vector < RenderTag* > dictionary;
 
 	RGBA Background;
 
 	SystemState();
-
-	MovieClip clip;
 	sem_t sem_run;
+
+	MovieClip* currentClip;
+
+	bool update_request;
 };
 
 class ParseThread

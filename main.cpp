@@ -52,7 +52,7 @@ int main()
 	{
 		while(1)
 		{
-			if(sys.clip.state.stop_FP)
+			if(sys.clip.state.stop_FP && !sys.update_request)
 				sem_wait(&sys.sem_run);
 			while(1)
 			{
@@ -69,9 +69,12 @@ int main()
 			}
 			//Aquired lock on frames list
 
+			sys.update_request=false;
 			sys.clip.state.next_FP=sys.clip.state.FP+1;
 			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
 			glClear(GL_COLOR_BUFFER_BIT);
+			glLoadIdentity();
+			glScalef(0.1,0.1,0.1);
 			sys.clip.frames[sys.clip.state.FP].Render();
 			SDL_GL_SwapBuffers( );
 			sys.clip.state.FP=sys.clip.state.next_FP;

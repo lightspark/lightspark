@@ -1,12 +1,14 @@
 #include "actions.h"
 
+extern SystemState sys;
+
 using namespace std;
 
-DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in, MovieClip* m):DisplayListTag(h,in,m)
+DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	while(1)
 	{
-		ACTIONRECORDHEADER ah(in,clip);
+		ACTIONRECORDHEADER ah(in);
 		if(ah.ActionCode==0)
 			break;
 		else
@@ -34,7 +36,7 @@ void DoActionTag::Render()
 		actions[i]->print();
 }
 
-ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in, MovieClip* m):clip(m)
+ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)
 {
 	in >> ActionCode;
 	if(ActionCode>=0x80)
@@ -46,7 +48,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 	switch(ActionCode)
 	{
 		case 0x07:
-			return new ActionStop(clip);
+			return new ActionStop;
 			break;
 		case 0x12:
 			return new ActionNot;
@@ -67,7 +69,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			return new ActionStringAdd;
 			break;
 		case 0x81:
-			return new ActionGotoFrame(in,clip);
+			return new ActionGotoFrame(in);
 			break;
 		case 0x83:
 			return new ActionGetURL(in);
@@ -99,8 +101,8 @@ RunState::RunState():FP(0),stop_FP(0)
 void ActionStop::Execute()
 {
 	cout << "Stop" << endl;
-	clip->state.next_FP=clip->state.FP;
-	clip->state.stop_FP=true;
+	sys.currentClip->state.next_FP=sys.currentClip->state.FP;
+	sys.currentClip->state.stop_FP=true;
 }
 
 void ActionJump::Execute()
@@ -148,7 +150,7 @@ void ActionToggleQuality::Execute()
 	throw "WIP4";
 }
 
-ActionGotoFrame::ActionGotoFrame(std::istream& in, MovieClip* m):clip(m)
+ActionGotoFrame::ActionGotoFrame(std::istream& in)
 {
 	in >> Frame;
 }
@@ -211,8 +213,8 @@ void ActionGetURL::Execute()
 void ActionGotoFrame::Execute()
 {
 	cout << "Goto " << Frame<< endl;
-	clip->state.next_FP=Frame;
-	clip->state.stop_FP=false;
+	sys.currentClip->state.next_FP=Frame;
+	sys.currentClip->state.stop_FP=false;
 }
 
 void ActionConstantPool::Execute()
@@ -240,7 +242,7 @@ std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v)
 
 	while(1)
 	{
-		ACTIONRECORDHEADER ah(stream,v.clip);
+		ACTIONRECORDHEADER ah(stream);
 		if(ah.ActionCode==0)
 			break;
 		else

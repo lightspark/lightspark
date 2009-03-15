@@ -33,7 +33,7 @@ MovieClip::MovieClip()
 	sem_init(&sem_frames,0,1);
 }
 
-SystemState::SystemState()
+SystemState::SystemState():currentClip(&clip)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
@@ -47,7 +47,7 @@ void* ParseThread::worker(void* in_ptr)
 
 	try
 	{
-		TagFactory factory(f,&sys.clip);
+		TagFactory factory(f);
 		while(1)
 		{
 			Tag* tag=factory.readTag();

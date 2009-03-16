@@ -151,6 +151,7 @@ void DefineSpriteTag::Render(int layer)
 	std::cout << "==> Render Sprite" << std::endl;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
 //	clip.frames[clip.state.FP].Render();
+//	clip.frames.back().hack=layer;
 	clip.frames.back().Render();
 	if(clip.state.FP!=clip.state.next_FP)
 	{
@@ -282,9 +283,8 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 
 void DefineTextTag::Render(int layer)
 {
-//	std::cout << "Render Text" << std::endl;
+	std::cerr << "DefineText Render" << std::endl;
 	//std::cout << TextMatrix << std::endl;
-	cerr << endl;
 	glColor3f(0,0,0);
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	int x=0,y=0;//1024;
@@ -567,7 +567,7 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 void DefineMorphShapeTag::Render(int layer)
 {
 
-//	std::cout << "Render Shape" << std::endl;
+	std::cerr << "Render Morph Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(StartEdges.ShapeRecords);
@@ -678,7 +678,7 @@ void DefineMorphShapeTag::Render(int layer)
 void DefineShapeTag::Render(int layer)
 {
 
-//	std::cout << "Render Shape" << std::endl;
+	std::cerr << "Render Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -783,7 +783,7 @@ void DefineShapeTag::Render(int layer)
 
 void DefineShape2Tag::Render(int layer)
 {
-//	std::cout << "Render Shape2" << std::endl;
+	std::cerr << "Render Shape2" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -847,6 +847,18 @@ void DefineShape2Tag::Render(int layer)
 			shapes[0].graphic.filled0=shapes[0].graphic.filled1;
 			shapes[0].graphic.filled1=0;
 			shapes[0].graphic.color0=shapes[0].graphic.color1;
+			shapes[0].winding=0;
+		}
+	}
+
+	for(int i=0;i<shapes.size();i++)
+	{
+		if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
+		{
+			shapes[i].graphic.filled0=1;
+			shapes[i].graphic.filled1=0;
+			shapes[i].graphic.color0=shapes[i].graphic.color1;
+			shapes[i].winding=0;
 		}
 	}
 
@@ -875,6 +887,7 @@ void DefineShape2Tag::Render(int layer)
 	{
 		glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
 		glStencilFunc(GL_EQUAL,3,0xf);
+		//glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
 		glBegin(GL_QUADS);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
@@ -1417,6 +1430,7 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 
 void DefineFont2Tag::Render(int glyph)
 {
+	cerr << "Font2 Render" << endl;
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
@@ -1470,6 +1484,7 @@ void DefineFont2Tag::Render(int glyph)
 
 void DefineFontTag::Render(int glyph)
 {
+	cerr << "Font Render" << endl;
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
@@ -1620,11 +1635,11 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 
 void PlaceObject2Tag::Render()
 {
-	std::cout << "Render Place object 2 ChaID " << CharacterId <<  std::endl;
+	std::cout << "Render Place object 2 ChaID  " << CharacterId << " @ depth " << Depth <<  std::endl;
 
 	//TODO: support clipping
-//	if(ClipDepth!=0)
-//		return;
+	if(ClipDepth!=0)
+		return;
 
 	//std::cout << Matrix << std::endl;
 	if(!PlaceFlagHasCharacter)
@@ -1739,7 +1754,7 @@ void DefineButton2Tag::MouseEvent(int x, int y)
 
 void DefineButton2Tag::Render(int layer)
 {
-	cout << "render button" << endl;
+	cerr << "render button" << endl;
 	for(int i=0;i<Characters.size();i++)
 	{
 		if(Characters[i].ButtonStateUp && state==BUTTON_UP)
@@ -1772,13 +1787,17 @@ void DefineButton2Tag::Render(int layer)
 		Characters[i].PlaceMatrix.get4DMatrix(matrix);
 		glPushMatrix();
 		glMultMatrixf(matrix);
+		glDepthFunc(GL_ALWAYS);
+		//glTranslatef(0,0,Characters[i].PlaceDepth-layer);
 		c->Render(Characters[i].PlaceDepth);
+		//glDepthFunc(GL_LEQUAL);
 		glPopMatrix();
 	}
 	for(int i=0;i<Actions.size();i++)
 	{
 		if(IdleToOverUp && Actions[i].CondIdleToOverUp)
 		{
+			IdleToOverUp=false;
 		}
 		else
 			continue;
@@ -1786,7 +1805,7 @@ void DefineButton2Tag::Render(int layer)
 		for(int j=0;j<Actions[i].Actions.size();j++)
 			Actions[i].Actions[j]->Execute();
 	}
-	cout << "end button" << endl;
+	cerr << "end button render" << endl;
 }
 
 void DefineButton2Tag::printInfo()

@@ -142,7 +142,7 @@ void DefineSpriteTag::printInfo(int t)
 	sys.currentClip=&clip;
 	for(int i=0;i<t;i++)
 		cerr << '\t';
-	cerr << "DefineSprite Info" << endl;
+	cerr << "DefineSprite Info ID " << SpriteID << endl;
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "\tFrame Count " << FrameCount << " real " << clip.frames.size() << endl;
@@ -439,7 +439,7 @@ void DefineShapeTag::printInfo(int t)
 {
 	for(int i=0;i<t;i++)
 		cerr << '\t';
-	cerr << "DefineShape Info" << endl;
+	cerr << "DefineShape Info ID " << ShapeId << endl;
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
@@ -453,7 +453,7 @@ void DefineShape2Tag::printInfo(int t)
 {
 	for(int i=0;i<t;i++)
 		cerr << '\t';
-	cerr << "DefineShape2 Info" << endl;
+	cerr << "DefineShape2 Info ID " << ShapeId << endl;
 }
 
 int crossProd(const Vector2& a, const Vector2& b)

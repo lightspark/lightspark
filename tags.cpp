@@ -168,9 +168,9 @@ void DefineSpriteTag::Render(int layer)
 	sys.currentClip=&clip;
 	std::cout << "==> Render Sprite" << std::endl;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
-//	clip.frames[clip.state.FP].Render();
+	clip.frames[clip.state.FP].Render();
 //	clip.frames.back().hack=layer;
-	clip.frames.back().Render();
+//	clip.frames.back().Render();
 	if(clip.state.FP!=clip.state.next_FP)
 	{
 		clip.state.FP=clip.state.next_FP;
@@ -358,20 +358,12 @@ void DefineTextTag::Render(int layer)
 		}
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glColor3ub(it->TextColor.Red,it->TextColor.Green,it->TextColor.Blue);
-		glStencilFunc(GL_EQUAL,2,0xf);
+		glStencilFunc(GL_EQUAL,6,0xf);
 		glBegin(GL_QUADS);
 			glVertex2i(TextBounds.Xmin,TextBounds.Ymin);
 			glVertex2i(TextBounds.Xmin,TextBounds.Ymax);
 			glVertex2i(TextBounds.Xmax,TextBounds.Ymax);
 			glVertex2i(TextBounds.Xmax,TextBounds.Ymin);
-	/*	glPushMatrix();
-		glLoadIdentity();
-			glVertex2i(0,0);
-			glVertex2i(0,3000);
-			glVertex2i(3000,3000);
-			glVertex2i(3000,0);
-
-		glPopMatrix();*/
 		glEnd();
 		glDisable(GL_STENCIL_TEST);
 	}
@@ -678,7 +670,7 @@ void DefineMorphShapeTag::Render(int layer)
 	if(it->graphic.filled0)
 	{
 		glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
-		glStencilFunc(GL_EQUAL,2,0xf);
+		glStencilFunc(GL_EQUAL,6,0xf);
 		glBegin(GL_QUADS);
 			glVertex2i(EndBounds.Xmin,EndBounds.Ymin);
 			glVertex2i(EndBounds.Xmin,EndBounds.Ymax);
@@ -689,7 +681,7 @@ void DefineMorphShapeTag::Render(int layer)
 	if(it->graphic.filled1)
 	{
 		glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
-		glStencilFunc(GL_EQUAL,3,0xf);
+		glStencilFunc(GL_EQUAL,6,0xf);
 		glBegin(GL_QUADS);
 			glVertex2i(EndBounds.Xmin,EndBounds.Ymin);
 			glVertex2i(EndBounds.Xmin,EndBounds.Ymax);
@@ -793,7 +785,7 @@ void DefineShapeTag::Render(int layer)
 	if(it->graphic.filled0)
 	{
 		glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
-		glStencilFunc(GL_EQUAL,2,0xf);
+		glStencilFunc(GL_EQUAL,6,0xf);
 		glBegin(GL_QUADS);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
@@ -804,7 +796,7 @@ void DefineShapeTag::Render(int layer)
 	if(it->graphic.filled1)
 	{
 		glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
-		glStencilFunc(GL_EQUAL,3,0xf);
+		glStencilFunc(GL_EQUAL,6,0xf);
 		glBegin(GL_QUADS);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
@@ -910,7 +902,7 @@ void DefineShape2Tag::Render(int layer)
 	if(it->graphic.filled0)
 	{
 		glColor3ub(it->graphic.color0.Red,it->graphic.color0.Green,it->graphic.color0.Blue);
-		glStencilFunc(GL_EQUAL,2,0xf);
+		glStencilFunc(GL_EQUAL,6,0xf);
 		glBegin(GL_QUADS);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
@@ -921,8 +913,7 @@ void DefineShape2Tag::Render(int layer)
 	if(it->graphic.filled1)
 	{
 		glColor3ub(it->graphic.color1.Red,it->graphic.color1.Green,it->graphic.color1.Blue);
-		glStencilFunc(GL_EQUAL,3,0xf);
-		//glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
+		glStencilFunc(GL_EQUAL,6,0xf);
 		glBegin(GL_QUADS);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
 			glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);

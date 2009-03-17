@@ -15,11 +15,16 @@ void Shape::Render() const
 	if(winding==0)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
+		glStencilFunc(GL_ALWAYS,0,0);
 		if(graphic.filled0)
-			glStencilFunc(GL_LESS,2,7);
+			glStencilOp(GL_KEEP,GL_KEEP,GL_INCR);
 		else
-			glStencilFunc(GL_LESS,1,7);
+			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);
+/*		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
+		if(graphic.filled0)
+			glStencilFunc(GL_ALWAYS,2,7);
+		else
+			glStencilFunc(GL_LESS,1,7);*/
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)
@@ -33,11 +38,16 @@ void Shape::Render() const
 	else if(winding==1)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
+		glStencilFunc(GL_ALWAYS,0,0);
 		if(graphic.filled1)
-			glStencilFunc(GL_LESS,3,7);
+			glStencilOp(GL_KEEP,GL_KEEP,GL_INCR);
 		else
-			glStencilFunc(GL_LESS,1,7);
+			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);
+		/*glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
+		if(graphic.filled1)
+			glStencilFunc(GL_ALWAYS,3,7);
+		else
+			glStencilFunc(GL_LESS,1,7);*/
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)

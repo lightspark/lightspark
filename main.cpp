@@ -90,7 +90,7 @@ int main()
 			//glReadPixels(0,240,640,240,GL_DEPTH_COMPONENT,GL_FLOAT,buffer);
 			glReadPixels(0,240,640,240,GL_STENCIL_INDEX,GL_FLOAT,buffer);
 			for(int i=0;i<240*640;i++)
-				buffer[i]/=5;
+				buffer[i]/=10;
 			glDrawPixels(640,240,GL_LUMINANCE,GL_FLOAT,buffer);
 			}
 			SDL_GL_SwapBuffers( );

@@ -19,12 +19,12 @@ void Frame::Render()
 			//std::cout << "Depth " << (*i)->getDepth() <<std::endl;
 			glPushMatrix();
 			glTranslatef(0,0,(*i)->getDepth());
-			(*i)->Render();
 			(*i)->printInfo();
+			(*i)->Render();
 			glPopMatrix();
 
-			if(count>5 && hack)
-				break;
+			//if(count>5 && hack)
+			//	break;
 		}
 	}
 }

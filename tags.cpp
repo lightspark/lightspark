@@ -767,7 +767,18 @@ void DefineShapeTag::Render(int layer)
 			shapes[0].graphic.filled1=0;
 			shapes[0].graphic.color0=shapes[0].graphic.color1;
 		}
+		shapes[0].winding=0;
 	}
+	/*for(int i=0;i<shapes.size();i++)
+	{
+		if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
+		{
+			shapes[i].graphic.filled0=1;
+			shapes[i].graphic.filled1=0;
+			shapes[i].graphic.color0=shapes[i].graphic.color1;
+			shapes[i].winding=0;
+		}
+	}*/
 
 	std::vector < Shape >::iterator it=shapes.begin();
 	glClearStencil(5);
@@ -864,7 +875,7 @@ void DefineShape2Tag::Render(int layer)
 		else
 			shapes.back().graphic.stroked=false;
 	}
-	if(shapes.size()==1)
+/*	if(shapes.size()==1)
 	{
 		if(shapes[0].graphic.filled1 && !shapes[0].graphic.filled0)
 		{
@@ -873,7 +884,7 @@ void DefineShape2Tag::Render(int layer)
 			shapes[0].graphic.color0=shapes[0].graphic.color1;
 			shapes[0].winding=0;
 		}
-	}
+	}*/
 
 	for(int i=0;i<shapes.size();i++)
 	{

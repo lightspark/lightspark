@@ -12,6 +12,9 @@ void Shape::Render() const
 	std::cerr << "graphic.stroked " << graphic.stroked << std::endl;
 	std::cerr << "graphic.stroke_color " << graphic.stroke_color << std::endl;*/
 
+	if(graphic.filled0 && graphic.filled1)
+		throw "both fills";
+
 	if(winding==0)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);

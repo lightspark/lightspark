@@ -136,11 +136,29 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	sys.currentClip=bak;
 }
 
-void DefineSpriteTag::printInfo()
+void DefineSpriteTag::printInfo(int t)
 {
 	MovieClip* bak=sys.currentClip;
 	sys.currentClip=&clip;
-	cout << "DefineSprite Info" << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "DefineSprite Info" << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "\tFrame Count " << FrameCount << " real " << clip.frames.size() << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "\tDisplay List Size " << clip.frames.back().displayList.size() << endl;
+	
+	list<DisplayListTag*>::iterator it=clip.frames.back().displayList.begin();
+	int count=0;
+	for(it;it!=clip.frames.back().displayList.end();it++)
+	{
+		count++;
+		(*it)->printInfo(t+1);
+		if(count>5 && clip.frames.back().hack)
+			break;
+	}
 	sys.currentClip=bak;
 }
 
@@ -283,7 +301,7 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 
 void DefineTextTag::Render(int layer)
 {
-	std::cerr << "DefineText Render" << std::endl;
+//	std::cerr << "DefineText Render" << std::endl;
 	//std::cout << TextMatrix << std::endl;
 	glColor3f(0,0,0);
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
@@ -359,9 +377,11 @@ void DefineTextTag::Render(int layer)
 	}
 }
 
-void DefineTextTag::printInfo()
+void DefineTextTag::printInfo(int t)
 {
-	cout << "DefineText Info" << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "DefineText Info" << endl;
 }
 
 DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Tag(h,in)
@@ -415,9 +435,11 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-void DefineShapeTag::printInfo()
+void DefineShapeTag::printInfo(int t)
 {
-	cout << "DefineShape Info" << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "DefineShape Info" << endl;
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
@@ -427,9 +449,11 @@ DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-void DefineShape2Tag::printInfo()
+void DefineShape2Tag::printInfo(int t)
 {
-	cout << "DefineShape2 Info" << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "DefineShape2 Info" << endl;
 }
 
 int crossProd(const Vector2& a, const Vector2& b)
@@ -442,9 +466,9 @@ DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):Rende
 	in >> CharacterId >> StartBounds >> EndBounds >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
 }
 
-void DefineMorphShapeTag::printInfo()
+void DefineMorphShapeTag::printInfo(int t)
 {
-	cout << "DefineMorphShape Info" << endl;
+	cerr << "DefineMorphShape Info" << endl;
 }
 
 class GraphicStatus
@@ -678,7 +702,7 @@ void DefineMorphShapeTag::Render(int layer)
 void DefineShapeTag::Render(int layer)
 {
 
-	std::cerr << "Render Shape" << std::endl;
+//	std::cerr << "Render Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -783,7 +807,7 @@ void DefineShapeTag::Render(int layer)
 
 void DefineShape2Tag::Render(int layer)
 {
-	std::cerr << "Render Shape2" << std::endl;
+//	std::cerr << "Render Shape2" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -1430,7 +1454,7 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 
 void DefineFont2Tag::Render(int glyph)
 {
-	cerr << "Font2 Render" << endl;
+//	cerr << "Font2 Render" << endl;
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
@@ -1484,7 +1508,7 @@ void DefineFont2Tag::Render(int glyph)
 
 void DefineFontTag::Render(int glyph)
 {
-	cerr << "Font Render" << endl;
+//	cerr << "Font Render" << endl;
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
@@ -1671,10 +1695,14 @@ void PlaceObject2Tag::Render()
 	glPopMatrix();
 }
 
-void PlaceObject2Tag::printInfo()
+void PlaceObject2Tag::printInfo(int t)
 {
-	cout << "PlaceObject2 Info" << endl;
-	cout << "vvvvvvvvvvvvv" << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "PlaceObject2 Info ID " << CharacterId << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "vvvvvvvvvvvvv" << endl;
 
 	sem_wait(&sys.sem_dict);
 	std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
@@ -1691,9 +1719,11 @@ void PlaceObject2Tag::printInfo()
 	//thread_debug( "RENDER: dict mutex unlock 2");
 	sem_post(&sys.sem_dict);
 
-	(*it)->printInfo();
+	(*it)->printInfo(t+1);
 
-	cout << "^^^^^^^^^^^^^" << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "^^^^^^^^^^^^^" << endl;
 
 }
 
@@ -1754,7 +1784,7 @@ void DefineButton2Tag::MouseEvent(int x, int y)
 
 void DefineButton2Tag::Render(int layer)
 {
-	cerr << "render button" << endl;
+//	cerr << "render button" << endl;
 	for(int i=0;i<Characters.size();i++)
 	{
 		if(Characters[i].ButtonStateUp && state==BUTTON_UP)
@@ -1805,10 +1835,31 @@ void DefineButton2Tag::Render(int layer)
 		for(int j=0;j<Actions[i].Actions.size();j++)
 			Actions[i].Actions[j]->Execute();
 	}
-	cerr << "end button render" << endl;
+//	cerr << "end button render" << endl;
 }
 
-void DefineButton2Tag::printInfo()
+void DefineButton2Tag::printInfo(int t)
 {
-	cout << "DefineButton2 Info" << endl;
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "DefineButton2 Info" << endl;
+	for(int i=0;i<Characters.size();i++)
+	{
+		sem_wait(&sys.sem_dict);
+		std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
+		for(it;it!=sys.dictionary.end();it++)
+		{
+			if((*it)->getId()==Characters[i].CharacterID)
+				break;
+		}
+		if(it==sys.dictionary.end())
+		{
+			throw "Object does not exist";
+		}
+		RenderTag* c=*it;
+		
+		sem_post(&sys.sem_dict);
+		c->printInfo(t+1);
+
+	}
 }

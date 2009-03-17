@@ -23,7 +23,7 @@ void Frame::Render()
 			(*i)->printInfo();
 			glPopMatrix();
 
-			if(count>9 && hack)
+			if(count>5 && hack)
 				break;
 		}
 	}

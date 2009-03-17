@@ -28,7 +28,7 @@ public:
 			return Header&0x3f;
 	}
 	virtual TAGTYPE getType(){ return TAG; }
-	virtual void printInfo(){ std::cout << (Header>>6) << std::endl; throw "No Info"; }
+	virtual void printInfo(int t=0){ std::cerr << (Header>>6) << std::endl; throw "No Info"; }
 };
 
 class EndTag:public Tag
@@ -75,7 +75,7 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render(int layer);
-	void printInfo();
+	void printInfo(int t=0);
 };
 
 class DefineShape2Tag: public RenderTag
@@ -88,7 +88,7 @@ public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render(int layer);
-	void printInfo();
+	void printInfo(int t=0);
 };
 
 class DefineMorphShapeTag: public RenderTag
@@ -106,7 +106,7 @@ public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render(int layer);
-	void printInfo();
+	void printInfo(int t=0);
 };
 
 
@@ -183,7 +183,7 @@ public:
 		return Depth;
 	}
 
-	void printInfo();
+	void printInfo(int t=0);
 };
 
 class FrameLabelTag: public DisplayListTag
@@ -197,6 +197,8 @@ public:
 	{
 		return 0;
 	}
+
+	void printInfo(int t=0){ std::cerr << "FrameLabel Info" << std::endl; }
 };
 
 class SetBackgroundColorTag: public ControlTag
@@ -236,7 +238,7 @@ public:
 	virtual void Render(int layer);
 	virtual void MouseEvent(int x, int y);
 
-	void printInfo();
+	void printInfo(int t=0);
 };
 
 class KERNINGRECORD
@@ -320,7 +322,7 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render(int layer);
-	void printInfo();
+	void printInfo(int t=0);
 };
 
 class DefineSpriteTag: public RenderTag
@@ -334,7 +336,7 @@ public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
 	virtual void Render(int layer);
-	void printInfo();
+	void printInfo(int t=0);
 };
 
 class TagFactory

@@ -21,9 +21,9 @@ UI16 DoActionTag::getDepth()
 	return 0;
 }
 
-void DoActionTag::printInfo()
+void DoActionTag::printInfo(int t)
 {
-	cout << "DoAction Info" << endl;
+	cerr << "DoAction Info" << endl;
 	for(int i=0;i<actions.size();i++)
 		actions[i]->print();
 }

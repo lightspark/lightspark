@@ -78,13 +78,13 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 
 	cout << "Remove " << Depth << endl;
 
-	list<DisplayListTag*>::iterator it=sys.currentClip->displayList.begin();
+	list<DisplayListTag*>::iterator it=sys.currentDisplayList->begin();
 
-	for(it;it!=sys.currentClip->displayList.end();it++)
+	for(it;it!=sys.currentDisplayList->end();it++)
 	{
 		if((*it)->getDepth()==Depth)
 		{
-			sys.currentClip->displayList.erase(it);
+			sys.currentDisplayList->erase(it);
 			break;
 		}
 	}
@@ -98,8 +98,8 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-	MovieClip* bak=sys.currentClip;
-	sys.currentClip=&clip;
+	list < DisplayListTag* >* bak=sys.currentDisplayList;
+	sys.currentDisplayList=&clip.displayList;
 	std::cout << "DefineSprite" << std::endl;
 	in >> SpriteID >> FrameCount;
 	if(FrameCount!=1)
@@ -133,20 +133,20 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	}
 	while(tag->getType()!=END_TAG);
 	std::cout << "end DefineSprite" << std::endl;
-	sys.currentClip=bak;
+	sys.currentDisplayList=bak;
 }
 
 void DefineSpriteTag::printInfo(int t)
 {
-	MovieClip* bak=sys.currentClip;
-	sys.currentClip=&clip;
+/*	MovieClip* bak=sys.currentClip;
+	sys.currentClip=&clip;*/
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "DefineSprite Info ID " << SpriteID << endl;
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "\tFrame Count " << FrameCount << " real " << clip.frames.size() << endl;
-	for(int i=0;i<t;i++)
+/*	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "\tDisplay List Size " << clip.frames.back().displayList.size() << endl;
 	
@@ -159,18 +159,29 @@ void DefineSpriteTag::printInfo(int t)
 		if(count>5 && clip.frames.back().hack)
 			break;
 	}
-	sys.currentClip=bak;
+	sys.currentClip=bak;*/
 }
 
 void DefineSpriteTag::Render(int layer)
 {
-	MovieClip* bak=sys.currentClip;
-	sys.currentClip=&clip;
+	RunState* bak=sys.currentState;
+	sys.currentState=&clip.state;
 	std::cout << "==> Render Sprite" << std::endl;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
+	clip.state.next_FP=min(clip.state.next_FP,4);
+
+	list<DisplayListTag*>::iterator it=clip.frames[clip.state.FP].displayList.begin();
+	cerr << "Inizio DEBUG frame " << clip.state.FP << endl;
+	for(it;it!=clip.frames[clip.state.FP].displayList.end();it++)
+	{
+		(*it)->printInfo(1);
+	}
+	cerr << "Fine DEBUG" << endl;
+
 	clip.frames[clip.state.FP].Render();
 //	clip.frames.back().hack=layer;
 //	clip.frames.back().Render();
+
 	if(clip.state.FP!=clip.state.next_FP)
 	{
 		clip.state.FP=clip.state.next_FP;
@@ -178,7 +189,7 @@ void DefineSpriteTag::Render(int layer)
 	}
 	cout << "Sprite Frame " << clip.state.FP << endl;
 	std::cout << "==> end render Sprite" << std::endl;
-	sys.currentClip=bak;
+	sys.currentState=bak;
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
@@ -365,6 +376,7 @@ void DefineTextTag::Render(int layer)
 			glVertex2i(TextBounds.Xmax,TextBounds.Ymax);
 			glVertex2i(TextBounds.Xmax,TextBounds.Ymin);
 		glEnd();
+
 		glDisable(GL_STENCIL_TEST);
 	}
 }
@@ -460,6 +472,8 @@ DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):Rende
 
 void DefineMorphShapeTag::printInfo(int t)
 {
+	for(int i=0;i<t;i++)
+		cerr << '\t';
 	cerr << "DefineMorphShape Info" << endl;
 }
 
@@ -1605,9 +1619,9 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	}
 	if(PlaceFlagMove)
 	{
-		list < DisplayListTag*>::iterator it=sys.currentClip->displayList.begin();
+		list < DisplayListTag*>::iterator it=sys.currentDisplayList->begin();
 //		std::cout << "find depth " << Depth << std::endl;
-		for(it;it!=sys.currentClip->displayList.end();it++)
+		for(it;it!=sys.currentDisplayList->end();it++)
 		{
 			if((*it)->getDepth()==Depth)
 			{
@@ -1644,12 +1658,12 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 						ClipDepth=it2->ClipDepth;
 					}
 				}
-				sys.currentClip->displayList.erase(it);
+				sys.currentDisplayList->erase(it);
 
 				break;
 			}
 		}
-		if(it==sys.currentClip->displayList.end())
+		if(it==sys.currentDisplayList->end())
 		{
 			cout << "no char to move at depth " << Depth << endl;
 		}
@@ -1747,8 +1761,8 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,
 
 void FrameLabelTag::Render()
 {
-	cout << "execute FrameLabel" <<  endl;
-	sys.currentClip->frames[sys.currentClip->state.FP].setLabel(Name);
+	cout << "execute FrameLabel TODO" <<  endl;
+	//sys.currentClip->frames[sys.currentClip->state.FP].setLabel(Name);
 }
 
 DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in),IdleToOverUp(false)

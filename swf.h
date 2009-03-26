@@ -66,7 +66,8 @@ public:
 	SystemState();
 	sem_t sem_run;
 
-	MovieClip* currentClip;
+	std::list < DisplayListTag* >* currentDisplayList;
+	RunState* currentState;
 
 	bool update_request;
 };

@@ -10,6 +10,7 @@ class Frame
 {
 private:
 	STRING Label;
+	int baseLayer;
 public:
 	std::list<DisplayListTag*> displayList;
 	

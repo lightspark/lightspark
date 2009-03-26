@@ -33,7 +33,7 @@ MovieClip::MovieClip()
 	sem_init(&sem_frames,0,1);
 }
 
-SystemState::SystemState():currentClip(&clip)
+SystemState::SystemState():currentDisplayList(&clip.displayList),currentState(&clip.state)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);

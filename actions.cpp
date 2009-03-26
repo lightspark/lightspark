@@ -101,8 +101,8 @@ RunState::RunState():FP(0),stop_FP(0)
 void ActionStop::Execute()
 {
 	cout << "Stop" << endl;
-	sys.currentClip->state.next_FP=sys.currentClip->state.FP;
-	sys.currentClip->state.stop_FP=true;
+	sys.currentState->next_FP=sys.currentState->FP;
+	sys.currentState->stop_FP=true;
 }
 
 void ActionJump::Execute()
@@ -213,8 +213,8 @@ void ActionGetURL::Execute()
 void ActionGotoFrame::Execute()
 {
 	cout << "Goto " << Frame<< endl;
-	sys.currentClip->state.next_FP=Frame;
-	sys.currentClip->state.stop_FP=false;
+	sys.currentState->next_FP=Frame;
+	sys.currentState->stop_FP=false;
 }
 
 void ActionConstantPool::Execute()

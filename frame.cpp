@@ -18,8 +18,8 @@ void Frame::Render()
 			count++;
 			//std::cout << "Depth " << (*i)->getDepth() <<std::endl;
 			glPushMatrix();
-			glTranslatef(0,0,(*i)->getDepth());
-			(*i)->printInfo();
+			glTranslatef(0,0,(*i)->getDepth()-baseLayer);
+			//(*i)->printInfo();
 			(*i)->Render();
 			glPopMatrix();
 

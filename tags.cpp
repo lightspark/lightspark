@@ -337,9 +337,10 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
 	std::cout << "DefineText" << std::endl;
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
+
+	TEXTRECORD t(this);
 	while(1)
 	{
-		TEXTRECORD t(this);
 		in >> t;
 		if(t.TextRecordType+t.StyleFlagsHasFont+t.StyleFlagsHasColor+t.StyleFlagsHasYOffset+t.StyleFlagsHasXOffset==0)
 			break;
@@ -351,7 +352,6 @@ void DefineTextTag::Render(int layer)
 {
 //	std::cerr << "DefineText Render" << std::endl;
 	//std::cout << TextMatrix << std::endl;
-	glColor3f(0,0,0);
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	int x=0,y=0;//1024;
 	std::vector < GLYPHENTRY >::iterator it2;
@@ -627,7 +627,7 @@ void DefineMorphShapeTag::Render(int layer)
 	std::cerr << "Render Morph Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
-	SHAPERECORD* cur=&(StartEdges.ShapeRecords);
+	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
 
 	FromShaperecordListToPaths(cur,paths);
 	std::vector < Path >::iterator i=paths.begin();
@@ -672,7 +672,7 @@ void DefineMorphShapeTag::Render(int layer)
 			if(i->state->stroke)
 			{
 				shapes.back().graphic.stroked=true;
-				shapes.back().graphic.stroke_color=MorphLineStyles.LineStyles[i->state->stroke-1].StartColor;
+				shapes.back().graphic.stroke_color=MorphLineStyles.LineStyles[i->state->stroke-1].EndColor;
 				//std::cout << shapes.back().graphic.stroke_color << std::endl;
 			}
 			else
@@ -681,7 +681,7 @@ void DefineMorphShapeTag::Render(int layer)
 		else
 			shapes.back().graphic.stroked=false;
 	}
-	if(shapes.size()==1)
+/*	if(shapes.size()==1)
 	{
 		if(shapes[0].graphic.filled1 && !shapes[0].graphic.filled0)
 		{
@@ -689,15 +689,17 @@ void DefineMorphShapeTag::Render(int layer)
 			shapes[0].graphic.filled1=0;
 			shapes[0].graphic.color0=shapes[0].graphic.color1;
 		}
-	}
-
+	}*/
 	for(int i=0;i<shapes.size();i++)
 	{
-		shapes[i].graphic.filled0=1;
-		shapes[i].graphic.filled1=0;
-		shapes[i].graphic.color0=RGB(0,255,0);
+		if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
+		{
+			shapes[i].graphic.filled0=1;
+			shapes[i].graphic.filled1=0;
+			shapes[i].graphic.color0=shapes[i].graphic.color1;
+			shapes[i].winding=0;
+		}
 	}
-
 	std::vector < Shape >::iterator it=shapes.begin();
 	glEnable(GL_STENCIL_TEST);
 	for(it;it!=shapes.end();it++)
@@ -705,9 +707,10 @@ void DefineMorphShapeTag::Render(int layer)
 		it->Render();
 	}
 	it=shapes.begin();
-	drawStenciled(StartBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	drawStenciled(EndBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glDisable(GL_STENCIL_TEST);
 }
+
 void DefineShapeTag::Render(int layer)
 {
 
@@ -768,17 +771,7 @@ void DefineShapeTag::Render(int layer)
 		else
 			shapes.back().graphic.stroked=false;
 	}
-	if(shapes.size()==1)
-	{
-		if(shapes[0].graphic.filled1 && !shapes[0].graphic.filled0)
-		{
-			shapes[0].graphic.filled0=shapes[0].graphic.filled1;
-			shapes[0].graphic.filled1=0;
-			shapes[0].graphic.color0=shapes[0].graphic.color1;
-		}
-		shapes[0].winding=0;
-	}
-	/*for(int i=0;i<shapes.size();i++)
+	for(int i=0;i<shapes.size();i++)
 	{
 		if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
 		{
@@ -787,7 +780,7 @@ void DefineShapeTag::Render(int layer)
 			shapes[i].graphic.color0=shapes[i].graphic.color1;
 			shapes[i].winding=0;
 		}
-	}*/
+	}
 
 	std::vector < Shape >::iterator it=shapes.begin();
 	glEnable(GL_STENCIL_TEST);
@@ -982,8 +975,8 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 					cur_state=paths.back().state;
 					*cur_state=*old_status;
 					vindex=0;
-					paths.back().points.push_back(Vector2(startX,startY,vindex));
-					vindex=1;
+					/*paths.back().points.push_back(Vector2(startX,startY,vindex));
+					vindex=1;*/
 				}
 				else
 					paths.back().points.push_back(Vector2(startX,startY,vindex));
@@ -1012,8 +1005,8 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 					cur_state=paths.back().state;
 					*cur_state=*old_status;
 					vindex=0;
-					paths.back().points.push_back(Vector2(startX,startY,vindex));
-					vindex=1;
+					/*paths.back().points.push_back(Vector2(startX,startY,vindex));
+					vindex=1;*/
 				}
 				else
 					paths.back().points.push_back(Vector2(startX,startY,vindex));

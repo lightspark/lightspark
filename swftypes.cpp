@@ -228,6 +228,7 @@ std::istream& operator>>(std::istream& s, MORPHLINESTYLE& v)
 
 std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 {
+	static RGB last_color;
 	BitStream bs(in);
 	v.TextRecordType=UB(1,bs);
 	v.StyleFlagsReserved=UB(3,bs);
@@ -246,7 +247,10 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 		RGB t;
 		in >> t;
 		v.TextColor=t;
+		//last_color=t;
 	}
+/*	else
+		v.TextColor=last_color;*/
 	if(v.StyleFlagsHasXOffset)
 		in >> v.XOffset;
 	if(v.StyleFlagsHasYOffset)

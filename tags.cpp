@@ -975,7 +975,16 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 				startX+=cur->DeltaX;
 				startY+=cur->DeltaY;
 				if(Vector2(startX,startY,vindex)==paths.back().points.front())
+				{
 					paths.back().closed=true;
+					GraphicStatus* old_status=paths.back().state;
+					paths.push_back(Path());
+					cur_state=paths.back().state;
+					*cur_state=*old_status;
+					vindex=0;
+					paths.back().points.push_back(Vector2(startX,startY,vindex));
+					vindex=1;
+				}
 				else
 					paths.back().points.push_back(Vector2(startX,startY,vindex));
 				vindex++;
@@ -985,7 +994,10 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 				startX+=cur->ControlDeltaX;
 				startY+=cur->ControlDeltaY;
 				if(Vector2(startX,startY,vindex)==paths.back().points.front())
+				{
+					throw "should not happen";
 					paths.back().closed=true;
+				}
 				else
 					paths.back().points.push_back(Vector2(startX,startY,vindex));
 				vindex++;
@@ -993,7 +1005,16 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 				startX+=cur->AnchorDeltaX;
 				startY+=cur->AnchorDeltaY;
 				if(Vector2(startX,startY,vindex)==paths.back().points.front())
+				{
 					paths.back().closed=true;
+					GraphicStatus* old_status=paths.back().state;
+					paths.push_back(Path());
+					cur_state=paths.back().state;
+					*cur_state=*old_status;
+					vindex=0;
+					paths.back().points.push_back(Vector2(startX,startY,vindex));
+					vindex=1;
+				}
 				else
 					paths.back().points.push_back(Vector2(startX,startY,vindex));
 				vindex++;

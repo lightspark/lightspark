@@ -29,12 +29,12 @@ int main()
 	cout << h.getFrameSize() << endl;
 
 	SDL_Init ( SDL_INIT_VIDEO|SDL_INIT_EVENTTHREAD );
-	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
+	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc(GL_LEQUAL);
 

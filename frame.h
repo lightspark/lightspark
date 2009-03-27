@@ -10,12 +10,11 @@ class Frame
 {
 private:
 	STRING Label;
-	int baseLayer;
 public:
 	std::list<DisplayListTag*> displayList;
 	
 	Frame(const std::list<DisplayListTag*>& d):displayList(d),hack(0){ }
-	void Render();
+	void Render(int baseLayer);
 	void setLabel(STRING l);
 
 	int hack;

@@ -96,6 +96,8 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 //	std::cout << BackgroundColor << std::endl;
 }
 
+bool list_orderer(const DisplayListTag* a, int d);
+
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
 	list < DisplayListTag* >* bak=sys.currentDisplayList;
@@ -115,7 +117,13 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 				throw "Sprite Render";
 			case DISPLAY_LIST_TAG:
 				if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)
-					clip.displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
+				{
+						list<DisplayListTag*>::iterator it=lower_bound(clip.displayList.begin(),
+								clip.displayList.end(),
+								dynamic_cast<DisplayListTag*>(tag)->getDepth(),
+								list_orderer);
+						clip.displayList.insert(it,dynamic_cast<DisplayListTag*>(tag));
+				}
 				break;
 			case SHOW_TAG:
 			{
@@ -196,17 +204,18 @@ void DefineSpriteTag::Render(int layer)
 	sys.currentState=&clip.state;
 	std::cout << "==> Render Sprite" << std::endl;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
-	clip.state.next_FP=min(clip.state.next_FP,4);
+//	clip.state.next_FP=min(clip.state.next_FP,4);
 
 	list<DisplayListTag*>::iterator it=clip.frames[clip.state.FP].displayList.begin();
-	cerr << "Inizio DEBUG frame " << clip.state.FP << endl;
+	cerr << "Inizio DEBUG frame " << clip.state.FP << " layer " << layer << endl;
 	for(it;it!=clip.frames[clip.state.FP].displayList.end();it++)
 	{
 		(*it)->printInfo(1);
+		cerr << "Depth " << (*it)->getDepth() << endl;
 	}
 	cerr << "Fine DEBUG" << endl;
 
-	clip.frames[clip.state.FP].Render();
+	clip.frames[clip.state.FP].Render(layer);
 //	clip.frames.back().hack=layer;
 //	clip.frames.back().Render();
 

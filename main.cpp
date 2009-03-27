@@ -82,9 +82,9 @@ int main()
 
 			//if(sys.clip.state.FP>=43)
 			//	sys.clip.frames[sys.clip.state.FP].hack=1;
-			sys.clip.frames[sys.clip.state.FP].Render();
+			sys.clip.frames[sys.clip.state.FP].Render(0);
 
-			if(1)
+			if(0)
 			{
 
 			glReadPixels(0,240,640,240,GL_DEPTH_COMPONENT,GL_FLOAT,buffer);

@@ -16,7 +16,7 @@ private:
 public:
 	DoActionTag(RECORDHEADER h, std::istream& in);
 	void Render( );
-	UI16 getDepth();
+	UI16 getDepth() const;
 	void printInfo(int t=0);
 };
 

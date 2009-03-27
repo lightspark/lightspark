@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void Frame::Render()
+void Frame::Render(int baseLayer)
 {
 	cout << "Start Frame" << endl << endl;
 	list < DisplayListTag* >::iterator i=displayList.begin();

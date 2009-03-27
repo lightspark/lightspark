@@ -16,7 +16,7 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 	}
 }
 
-UI16 DoActionTag::getDepth()
+UI16 DoActionTag::getDepth() const
 {
 	return 0;
 }

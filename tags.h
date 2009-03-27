@@ -44,7 +44,7 @@ public:
 	bool add_to_list;
 	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s),add_to_list(true){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
-	virtual UI16 getDepth()=0;
+	virtual UI16 getDepth() const=0;
 	virtual void Render()=0;
 };
 
@@ -178,7 +178,7 @@ private:
 public:
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
 	void Render( );
-	UI16 getDepth()
+	UI16 getDepth() const
 	{
 		return Depth;
 	}
@@ -193,7 +193,7 @@ private:
 public:
 	FrameLabelTag(RECORDHEADER h, std::istream& in);
 	void Render( );
-	UI16 getDepth()
+	UI16 getDepth() const
 	{
 		return 0;
 	}

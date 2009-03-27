@@ -24,8 +24,8 @@ private:
 public:
 	UI16():val(0){}
 	UI16(uint16_t v):val(v){}
-	operator uint16_t(){ return val; }
-	operator UI32(){ return val; }
+	operator uint16_t() const { return val; }
+	operator UI32() const { return val; }
 };
 
 class UI8

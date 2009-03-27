@@ -40,6 +40,11 @@ SystemState::SystemState():currentDisplayList(&clip.displayList),currentState(&c
 	sem_init(&sem_run,0,0);
 }
 
+bool list_orderer(const DisplayListTag* a, int d)
+{
+	return a->getDepth()<d;
+}
+
 void* ParseThread::worker(void* in_ptr)
 {
 	ifstream& f=*(ifstream*)in_ptr;
@@ -67,7 +72,13 @@ void* ParseThread::worker(void* in_ptr)
 					break;
 				case DISPLAY_LIST_TAG:
 					if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)
-						sys.clip.displayList.push_back(dynamic_cast<DisplayListTag*>(tag));
+					{
+						list<DisplayListTag*>::iterator it=lower_bound(sys.clip.displayList.begin(),
+								sys.clip.displayList.end(),
+								dynamic_cast<DisplayListTag*>(tag)->getDepth(),
+								list_orderer);
+						sys.clip.displayList.insert(it,dynamic_cast<DisplayListTag*>(tag));
+					}
 					break;
 				case SHOW_TAG:
 				{

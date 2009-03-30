@@ -61,7 +61,7 @@ public:
 class RenderTag: public Tag
 {
 public:
-	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){ std::cout << "rendertag create" << std::endl;  }
+	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
 	virtual TAGTYPE getType(){ return RENDER_TAG; }
 	virtual int getId(){return 0;} 
 	virtual void Render(int layer){std::cout << "default render" << std::endl; };

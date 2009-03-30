@@ -214,6 +214,7 @@ void ActionGotoFrame::Execute()
 {
 	cout << "Goto " << Frame<< endl;
 	sys.currentState->next_FP=Frame;
+	throw "goto";
 	sys.currentState->stop_FP=false;
 }
 

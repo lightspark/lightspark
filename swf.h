@@ -82,6 +82,8 @@ public:
 	void wait();
 };
 
+enum ENGINE { SDL=0, NPAPI};
+
 class InputThread
 {
 private:
@@ -100,10 +102,15 @@ class RenderThread
 {
 private:
 	static pthread_t t;
-	static void* worker(void*);
+	static void* sdl_worker(void*);
+	static void* npapi_worker(void*);
+	static sem_t render;
+	static sem_t end_render;
+	static Frame* cur_frame;
 
 public:
-	RenderThread();
+	RenderThread(ENGINE e, void* param=NULL);
+	void draw(Frame* f);
 	void wait();
 };
 #endif

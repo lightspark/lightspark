@@ -76,7 +76,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	in >> Depth;
 
-	cout << "Remove " << Depth << endl;
+//	cout << "Remove " << Depth << endl;
 
 	list<DisplayListTag*>::iterator it=sys.currentDisplayList->begin();
 
@@ -211,30 +211,19 @@ void DefineSpriteTag::Render(int layer)
 {
 	RunState* bak=sys.currentState;
 	sys.currentState=&clip.state;
-	std::cout << "==> Render Sprite" << std::endl;
+//	std::cout << "==> Render Sprite" << std::endl;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
-//	clip.state.next_FP=min(clip.state.next_FP,4);
 
 	list<DisplayListTag*>::iterator it=clip.frames[clip.state.FP].displayList.begin();
-	cerr << "Inizio DEBUG frame " << clip.state.FP << " layer " << layer << endl;
-	for(it;it!=clip.frames[clip.state.FP].displayList.end();it++)
-	{
-		(*it)->printInfo(1);
-		cerr << "Depth " << (*it)->getDepth() << endl;
-	}
-	cerr << "Fine DEBUG" << endl;
-
 	clip.frames[clip.state.FP].Render(layer);
-//	clip.frames.back().hack=layer;
-//	clip.frames.back().Render();
 
 	if(clip.state.FP!=clip.state.next_FP)
 	{
 		clip.state.FP=clip.state.next_FP;
 		sys.update_request=true;
 	}
-	cout << "Sprite Frame " << clip.state.FP << endl;
-	std::cout << "==> end render Sprite" << std::endl;
+//	cout << "Sprite Frame " << clip.state.FP << endl;
+//	std::cout << "==> end render Sprite" << std::endl;
 	sys.currentState=bak;
 }
 
@@ -412,10 +401,10 @@ void DefineTextTag::Render(int layer)
 			//std::cout << "Character " << it2->GlyphIndex << std::endl;
 			x2+=it2->GlyphAdvance;
 		}
-		glPushMatrix();
-		glMultMatrixf(matrix);
+//		glPushMatrix();
+//		glMultMatrixf(matrix);
 		drawStenciled(TextBounds,true,false,it->TextColor,RGBA());
-		glPopMatrix();
+//		glPopMatrix();
 		glDisable(GL_STENCIL_TEST);
 	}
 }
@@ -636,7 +625,7 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 void DefineMorphShapeTag::Render(int layer)
 {
 
-	std::cerr << "Render Morph Shape" << std::endl;
+//	std::cerr << "Render Morph Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
@@ -1560,12 +1549,12 @@ void DefineFontTag::Render(int glyph)
 
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	std::cout <<"ShowFrame" << std::endl;
+//	std::cout <<"ShowFrame" << std::endl;
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
-	std::cout << "PlaceObject2" << std::endl;
+//	std::cout << "PlaceObject2" << std::endl;
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
 	PlaceFlagHasClipDepth=UB(1,bs);
@@ -1657,7 +1646,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 
 void PlaceObject2Tag::Render()
 {
-	std::cout << "Render Place object 2 ChaID  " << CharacterId << " @ depth " << Depth <<  std::endl;
+//	std::cout << "Render Place object 2 ChaID  " << CharacterId << " @ depth " << Depth <<  std::endl;
 
 	//TODO: support clipping
 	if(ClipDepth!=0)
@@ -1787,11 +1776,11 @@ void DefineButton2Tag::Render(int layer)
 	{
 		if(Characters[i].ButtonStateUp && state==BUTTON_UP)
 		{
-			cout << "Button UP" << endl;
+//			cout << "Button UP" << endl;
 		}
 		else if(Characters[i].ButtonStateOver && state==BUTTON_OVER)
 		{
-			cout << "Button Over" << endl;
+//			cout << "Button Over" << endl;
 		}
 		else
 			continue;

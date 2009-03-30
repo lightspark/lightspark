@@ -2,6 +2,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <SDL/SDL.h>
+#include <GL/gl.h>
 
 
 #include "swf.h"
@@ -14,6 +15,11 @@ pthread_t ParseThread::t;
 pthread_t InputThread::t;
 std::list < IActiveObject* > InputThread::listeners;
 sem_t InputThread::sem_listeners;
+
+pthread_t RenderThread::t;
+sem_t RenderThread::render;
+sem_t RenderThread::end_render;
+Frame* RenderThread::cur_frame=NULL;
 
 extern SystemState sys;
 
@@ -126,7 +132,7 @@ InputThread::InputThread()
 {
 	cout << "creating input" << endl;
 	sem_init(&sem_listeners,0,1);
-//	pthread_create(&t,NULL,worker,NULL);
+	pthread_create(&t,NULL,worker,NULL);
 }
 
 void InputThread::wait()
@@ -180,4 +186,69 @@ void InputThread::addListener(IActiveObject* ob)
 	listeners.push_back(ob);
 
 	sem_post(&sem_listeners);
+}
+
+RenderThread::RenderThread(ENGINE e,void* param)
+{
+	sem_init(&render,0,0);
+	sem_init(&end_render,0,0);
+	if(e==SDL)
+		pthread_create(&t,NULL,sdl_worker,0);
+}
+
+void* RenderThread::sdl_worker(void*)
+{
+	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
+	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
+	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
+	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
+	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
+	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
+	glEnable( GL_DEPTH_TEST );
+	glDepthFunc(GL_LEQUAL);
+
+//	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+	glViewport(0,0,640,480);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0,640,480,0,-100,0);
+	glMatrixMode(GL_MODELVIEW);
+
+	try
+	{
+		while(1)
+		{
+			if(cur_frame==NULL)
+				continue;
+			sem_wait(&render);
+			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
+			glClearDepth(0xffff);
+			glClearStencil(5);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+			glLoadIdentity();
+
+			glScalef(0.1,0.1,1);
+
+			cur_frame->Render(0);
+
+			SDL_GL_SwapBuffers( );
+			sys.clip.state.FP=sys.clip.state.next_FP;
+			sem_post(&end_render);
+		}
+	}
+	catch(const char* e)
+	{
+		cout << e << endl;
+		cout << "ERRORE main" << endl;
+		exit(-1);
+	}
+}
+
+void RenderThread::draw(Frame* f)
+{
+	//TODO: sync (by copy)
+	cur_frame=f;
+	sem_post(&render);
+	sem_wait(&end_render);
+
 }

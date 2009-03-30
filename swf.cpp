@@ -18,7 +18,7 @@ sem_t InputThread::sem_listeners;
 extern SystemState sys;
 
 int thread_debug(char* msg);
-SWF_HEADER::SWF_HEADER(ifstream& in)
+SWF_HEADER::SWF_HEADER(istream& in)
 {
 	//Valid only on little endian platforms
 	in >> Signature[0] >> Signature[1] >> Signature[2];
@@ -47,7 +47,10 @@ bool list_orderer(const DisplayListTag* a, int d)
 
 void* ParseThread::worker(void* in_ptr)
 {
-	ifstream& f=*(ifstream*)in_ptr;
+	istream& f=*(istream*)in_ptr;
+	SWF_HEADER h(f);
+	cout << h.getFrameSize() << endl;
+
 	int done=0;
 
 	try
@@ -61,6 +64,7 @@ void* ParseThread::worker(void* in_ptr)
 			//	case TAG:
 				case END_TAG:
 					//sleep(5);
+					cout << "End of File" << endl;
 					return 0;
 				case RENDER_TAG:
 				//	std::cout << "add to dict" << std::endl;
@@ -108,7 +112,7 @@ void* ParseThread::worker(void* in_ptr)
 
 }
 
-ParseThread::ParseThread(ifstream& in)
+ParseThread::ParseThread(istream& in)
 {
 	pthread_create(&t,NULL,worker,&in);
 }
@@ -122,7 +126,7 @@ InputThread::InputThread()
 {
 	cout << "creating input" << endl;
 	sem_init(&sem_listeners,0,1);
-	pthread_create(&t,NULL,worker,NULL);
+//	pthread_create(&t,NULL,worker,NULL);
 }
 
 void InputThread::wait()

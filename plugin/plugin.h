@@ -42,9 +42,14 @@
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include <X11/cursorfont.h>
-#include "GL/glx.h"
+#include <GL/glx.h>
+
+#include <iostream>
+#include <sstream>
 
 #include "pluginbase.h"
+#include "swf.h"
+#include "streams.h"
 
 class nsPluginInstance : public nsPluginInstanceBase
 {
@@ -57,6 +62,8 @@ public:
   NPBool isInitialized() {return mInitialized;}
   NPError GetValue(NPPVariable variable, void *value);
   NPError SetWindow(NPWindow* aWindow);
+  NPError NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype); 
+  int32   Write(NPStream *stream, int32 offset, int32 len, void *buffer);
 
   // locals
   const char * getVersion();
@@ -79,6 +86,13 @@ private:
 
   GLXFBConfig mFBConfig;
   GLXContext mContext;
+
+  std::istream swf_stream;
+  sync_stream swf_buf;
+
+  ParseThread pt;
+  InputThread it;
+
 };
 
 #endif // __PLUGIN_H__

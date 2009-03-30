@@ -18,7 +18,9 @@ public:
 	Tag(RECORDHEADER h, std::istream& s):Header(h)
 	{
 		if((Header&0x3f)==0x3f)
+		{
 			s >> Length;
+		}
 	}
 	SI32 getSize()
 	{
@@ -59,7 +61,7 @@ public:
 class RenderTag: public Tag
 {
 public:
-	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){}
+	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){ std::cout << "rendertag create" << std::endl;  }
 	virtual TAGTYPE getType(){ return RENDER_TAG; }
 	virtual int getId(){return 0;} 
 	virtual void Render(int layer){std::cout << "default render" << std::endl; };

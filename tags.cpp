@@ -198,6 +198,15 @@ void drawStenciled(const RECT& bounds, bool filled0, bool filled1, const RGBA& c
 	glClear(GL_STENCIL_BUFFER_BIT);
 }
 
+void ignore(istream& i, int count)
+{
+	char* buf=new char[count];
+
+	i.read(buf,count);
+
+	delete[] buf;
+}
+
 void DefineSpriteTag::Render(int layer)
 {
 	RunState* bak=sys.currentState;
@@ -231,7 +240,7 @@ void DefineSpriteTag::Render(int layer)
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 {
-//	std::cout << "DefineFont" << std::endl;
+	std::cout << "DefineFont" << std::endl;
 	in >> FontID;
 
 	UI16 t;
@@ -257,7 +266,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 {
-//	std::cout << "DefineFont2" << std::endl;
+	std::cout << "DefineFont2" << std::endl;
 	in >> FontID;
 	BitStream bs(in);
 	FontFlagsHasLayout = UB(1,bs);
@@ -330,7 +339,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 		in >> KerningCount;
 	}
 	//Stub implement kerninfo merda merda
-	in.ignore(KerningCount*4);
+	ignore(in,KerningCount*4);
 }
 
 DefineTextTag::DefineTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
@@ -403,7 +412,10 @@ void DefineTextTag::Render(int layer)
 			//std::cout << "Character " << it2->GlyphIndex << std::endl;
 			x2+=it2->GlyphAdvance;
 		}
+		glPushMatrix();
+		glMultMatrixf(matrix);
 		drawStenciled(TextBounds,true,false,it->TextColor,RGBA());
+		glPopMatrix();
 		glDisable(GL_STENCIL_TEST);
 	}
 }
@@ -428,36 +440,36 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	std::cout << "STUB DefineSound" << std::endl;
 	if((h&0x3f)==0x3f)
-		in.ignore(Length);
+		ignore(in,Length);
 	else
-		in.ignore(h&0x3f);
+		ignore(in,h&0x3f);
 }
 
 DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	std::cout << "STUB DefineFontInfo" << std::endl;
 	if((h&0x3f)==0x3f)
-		in.ignore(Length);
+		ignore(in,Length);
 	else
-		in.ignore(h&0x3f);
+		ignore(in,h&0x3f);
 }
 
 StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	std::cout << "STUB DefineSound" << std::endl;
 	if((h&0x3f)==0x3f)
-		in.ignore(Length);
+		ignore(in,Length);
 	else
-		in.ignore(h&0x3f);
+		ignore(in,h&0x3f);
 }
 
 SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	std::cout << "STUB SoundStreamHead2" << std::endl;
 	if((h&0x3f)==0x3f)
-		in.ignore(Length);
+		ignore(in,Length);
 	else
-		in.ignore(h&0x3f);
+		ignore(in,h&0x3f);
 }
 
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
@@ -1548,12 +1560,12 @@ void DefineFontTag::Render(int glyph)
 
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-//	std::cout <<"ShowFrame" << std::endl;
+	std::cout <<"ShowFrame" << std::endl;
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
-//	std::cout << "PlaceObject2" << std::endl;
+	std::cout << "PlaceObject2" << std::endl;
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
 	PlaceFlagHasClipDepth=UB(1,bs);

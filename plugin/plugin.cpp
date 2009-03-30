@@ -41,6 +41,7 @@
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":sw2:"PLUGIN_NAME
 #define PLUGIN_DESCRIPTION  PLUGIN_NAME " Lightspark Netscape plugin"
 
+using namespace std;
 
 char* NPP_GetMIMEDescription(void)
 {
@@ -107,7 +108,9 @@ nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
   mXtwidget(0),
   mFontInfo(0),
   mFBConfig(0),
-  mContext(0)
+  mContext(0),
+  swf_stream(&swf_buf),
+  pt(swf_stream)
 {
 }
 
@@ -130,6 +133,8 @@ xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent, Bool
   }
 }
 
+extern SystemState sys;
+
 void nsPluginInstance::draw()
 {
 	glViewport(0,0,640,480);
@@ -137,7 +142,7 @@ void nsPluginInstance::draw()
 	glLoadIdentity();
 	glOrtho(0,640,480,0,-100,0);
 	glMatrixMode(GL_MODELVIEW);
-	glClearColor(0,0,0,0);
+/*	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glColor3f(0,1,0);
 	glBegin(GL_QUADS);
@@ -146,7 +151,36 @@ void nsPluginInstance::draw()
 		glVertex2i(250,250);
 		glVertex2i(250,50);
 	glEnd();
-	glFlush();
+	glFlush();*/
+			cout << "FP: " << sys.clip.state.FP << endl;
+			if(sys.clip.state.FP>=sys.clip.frames.size())
+			{
+				cout << "not yet" << endl;
+				return;
+			}
+			else
+				cout << "render" << endl;
+			//Aquired lock on frames list
+
+			sys.update_request=false;
+			sys.clip.state.next_FP=sys.clip.state.FP+1;
+			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
+			glClearDepth(0xffff);
+			glClearStencil(5);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+			glLoadIdentity();
+
+			glScalef(0.1,0.1,1);
+
+			//if(sys.clip.state.FP>=43)
+			//	sys.clip.frames[sys.clip.state.FP].hack=1;
+			sys.clip.frames[sys.clip.state.FP].Render(0);
+
+			sys.clip.state.FP=sys.clip.state.next_FP;
+
+			//thread_debug( "RENDER: frames mutex unlock");
+			sem_post(&sys.clip.sem_frames);
+			cout << "Frame " << sys.clip.state.FP << endl;
 }
 
 NPBool nsPluginInstance::init(NPWindow* aWindow)
@@ -232,8 +266,12 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	attrib[1]=24;
 	attrib[2]=GLX_VISUAL_ID;
 	attrib[3]=XVisualIDFromVisual(mVisual);
+	attrib[4]=GLX_DEPTH_SIZE;
+	attrib[5]=24;
+	attrib[6]=GLX_STENCIL_SIZE;
+	attrib[7]=8;
 
-	attrib[4]=None;
+	attrib[8]=None;
 	GLXFBConfig* fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
 	printf("returned %x pointer and %u elements\n",fb, a);
 	int i;
@@ -271,4 +309,17 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
   }
   draw();
   return TRUE;
+}
+
+NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype)
+{
+	*stype=NP_NORMAL;
+	return NPERR_NO_ERROR; 
+}
+
+SystemState sys;
+
+int32 nsPluginInstance::Write(NPStream *stream, int32 offset, int32 len, void *buffer)
+{
+	return swf_buf.sputn((char*)buffer,len);
 }

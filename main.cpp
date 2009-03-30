@@ -22,12 +22,10 @@ int thread_debug(char* msg)
 	fprintf(stderr,"%u.%010u %s\n",ts.tv_sec,ts.tv_nsec,msg);
 }
 
-int main()
-{
-	ifstream f("flash.swf",ifstream::in);
-	SWF_HEADER h(f);
-	cout << h.getFrameSize() << endl;
+pthread_t render;
 
+void* render_worker(void*)
+{
 	SDL_Init ( SDL_INIT_VIDEO|SDL_INIT_EVENTTHREAD );
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
@@ -44,9 +42,6 @@ int main()
 	glLoadIdentity();
 	glOrtho(0,640,480,0,-100,0);
 	glMatrixMode(GL_MODELVIEW);
-
-	InputThread it;
-	ParseThread pt(f);
 
 			float* buffer=new float[640*240];
 	try
@@ -108,9 +103,20 @@ int main()
 		exit(-1);
 	}
 			delete[] buffer;
-	cout << "the end" << endl;
-	//sleep(20);
-	it.wait();
 	SDL_Quit();
+}
+
+int main()
+{
+	ifstream f("flash.swf",ifstream::in);
+	pthread_create(&render, NULL, render_worker,NULL);
+	InputThread it;
+	ParseThread pt(f);
+
+
+
+	cout << "the end" << endl;
+	sleep(20);
+	it.wait();
 }
 

@@ -22,7 +22,7 @@ private:
 	UI16 FrameRate;
 	UI16 FrameCount;
 public:
-	SWF_HEADER(std::ifstream& in);
+	SWF_HEADER(std::istream& in);
 	const RECT& getFrameSize(){ return FrameSize; }
 };
 
@@ -51,7 +51,7 @@ class SystemState
 {
 friend int main();
 friend class ParseThread;
-private:
+public:
 	MovieClip clip;
 
 public:
@@ -78,7 +78,7 @@ private:
 	static pthread_t t;
 	static void* worker(void*);
 public:
-	ParseThread(std::ifstream& in);
+	ParseThread(std::istream& in);
 	void wait();
 };
 
@@ -96,4 +96,14 @@ public:
 	static void addListener(IActiveObject* tag);
 };
 
+class RenderThread
+{
+private:
+	static pthread_t t;
+	static void* worker(void*);
+
+public:
+	RenderThread();
+	void wait();
+};
 #endif

@@ -8,15 +8,16 @@ using namespace std;
 
 void Frame::Render(int baseLayer)
 {
-	cout << "Start Frame" << endl << endl;
+	cout << "Start Frame" << endl;
 	list < DisplayListTag* >::iterator i=displayList.begin();
+	cout << "Start Frame2" << endl; 
 	int count=0;
 	for(i;i!=displayList.end();i++)
 	{
 		if(*i!=NULL)
 		{
 			count++;
-			//std::cout << "Depth " << (*i)->getDepth() <<std::endl;
+			std::cout << "Depth " << (*i)->getDepth() <<std::endl;
 			glPushMatrix();
 			glTranslatef(0,0,(*i)->getDepth()-baseLayer);
 			//(*i)->printInfo();

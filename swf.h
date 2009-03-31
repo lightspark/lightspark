@@ -8,6 +8,9 @@
 #include "swftypes.h"
 #include "frame.h"
 
+#include <X11/Xlib.h>
+#include <GL/glx.h>
+
 class DisplayListTag;
 class RenderTag;
 class IActiveObject;
@@ -98,19 +101,28 @@ public:
 	static void addListener(IActiveObject* tag);
 };
 
+struct NPAPI_params
+{
+	VisualID visual;
+	Window window;
+};
+
 class RenderThread
 {
 private:
 	static pthread_t t;
 	static void* sdl_worker(void*);
 	static void* npapi_worker(void*);
+	static sem_t mutex;
 	static sem_t render;
 	static sem_t end_render;
 	static Frame* cur_frame;
 
+	static GLXFBConfig mFBConfig;
+	static GLXContext mContext;
 public:
 	RenderThread(ENGINE e, void* param=NULL);
-	void draw(Frame* f);
+	static void draw(Frame* f);
 	void wait();
 };
 #endif

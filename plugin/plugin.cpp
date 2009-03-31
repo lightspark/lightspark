@@ -107,10 +107,9 @@ nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
   mWindow(0),
   mXtwidget(0),
   mFontInfo(0),
-  mFBConfig(0),
-  mContext(0),
   swf_stream(&swf_buf),
-  pt(swf_stream)
+  pt(swf_stream),
+  rt(NULL)
 {
 }
 
@@ -137,50 +136,10 @@ extern SystemState sys;
 
 void nsPluginInstance::draw()
 {
-	glViewport(0,0,640,480);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0,640,480,0,-100,0);
-	glMatrixMode(GL_MODELVIEW);
-/*	glClearColor(0,0,0,0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glColor3f(0,1,0);
-	glBegin(GL_QUADS);
-		glVertex2i(0,50);
-		glVertex2i(0,250);
-		glVertex2i(250,250);
-		glVertex2i(250,50);
-	glEnd();
-	glFlush();*/
-			cout << "FP: " << sys.clip.state.FP << endl;
-			if(sys.clip.state.FP>=sys.clip.frames.size())
-			{
-				cout << "not yet" << endl;
-				return;
-			}
-			else
-				cout << "render" << endl;
-			//Aquired lock on frames list
-
-			sys.update_request=false;
-			sys.clip.state.next_FP=sys.clip.state.FP+1;
-			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
-			glClearDepth(0xffff);
-			glClearStencil(5);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-			glLoadIdentity();
-
-			glScalef(0.1,0.1,1);
-
-			//if(sys.clip.state.FP>=43)
-			//	sys.clip.frames[sys.clip.state.FP].hack=1;
-			sys.clip.frames[sys.clip.state.FP].Render(0);
-
-			sys.clip.state.FP=sys.clip.state.next_FP;
-
-			//thread_debug( "RENDER: frames mutex unlock");
-			sem_post(&sys.clip.sem_frames);
-			cout << "Frame " << sys.clip.state.FP << endl;
+	if(rt==NULL)
+		return;
+	if(sys.clip.frames.size()>10)
+		rt->draw(&sys.clip.frames[9]);
 }
 
 NPBool nsPluginInstance::init(NPWindow* aWindow)
@@ -197,8 +156,6 @@ NPBool nsPluginInstance::init(NPWindow* aWindow)
 void nsPluginInstance::shut()
 {
   mInitialized = FALSE;
-  if(mContext)
-	  glXDestroyContext(mDisplay,mContext);
 }
 
 const char * nsPluginInstance::getVersion()
@@ -238,9 +195,6 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
   }
   else
   {
-    if(mContext)
- 	  glXDestroyContext(mDisplay,mContext);
-
     mWindow = (Window) aWindow->window;
     NPSetWindowCallbackStruct *ws_info = (NPSetWindowCallbackStruct *)aWindow->ws_info;
     mDisplay = ws_info->display;
@@ -254,49 +208,18 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
       if (!(mFontInfo = XLoadQueryFont(mDisplay, "9x15")))
         printf("Cannot open 9X15 font\n");
     }
-    	int a,b;
-    	Bool glx_present=glXQueryVersion(mDisplay,&a,&b);
-	if(!glx_present)
-	{
-		printf("glX not present\n");
-		return FALSE;
-	}
-	int attrib[10];
-	attrib[0]=GLX_BUFFER_SIZE;
-	attrib[1]=24;
-	attrib[2]=GLX_VISUAL_ID;
-	attrib[3]=XVisualIDFromVisual(mVisual);
-	attrib[4]=GLX_DEPTH_SIZE;
-	attrib[5]=24;
-	attrib[6]=GLX_STENCIL_SIZE;
-	attrib[7]=8;
 
-	attrib[8]=None;
-	GLXFBConfig* fb=glXChooseFBConfig(mDisplay, 0, attrib, &a);
-	printf("returned %x pointer and %u elements\n",fb, a);
-	int i;
-	for(i=0;i<a;i++)
-	{
-		int id,v;
-		glXGetFBConfigAttrib(mDisplay,fb[i],GLX_BUFFER_SIZE,&v);
-		glXGetFBConfigAttrib(mDisplay,fb[i],GLX_VISUAL_ID,&id);
-		printf("ID 0x%x size %u\n",id,v);
-		if(id==XVisualIDFromVisual(mVisual))
-			break;
-	}
-	mFBConfig=fb[i];
-	XFree(fb);
+    NPAPI_params* p=new NPAPI_params;
 
-	mContext = glXCreateNewContext(mDisplay,mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	glXMakeContextCurrent(mDisplay, mWindow, mWindow, mContext);
-	if(!glXIsDirect(mDisplay,mContext))
-		printf("Indirect!!\n");
-	/*GLXWindow glx_window=glXCreateWindow(mDisplay,fb[i],mWindow,NULL);
-	printf("glx window ID %x\n",glx_window);
-	char buffer[100];
-	XGetErrorText(mDisplay,glx_window,buffer,100);
-	glXDestroyWindow(mDisplay,glx_window);
-	printf("error %s\n",buffer);*/
+    p->visual=XVisualIDFromVisual(mVisual);
+    p->window=mWindow;
+
+    if(rt!=NULL)
+    {
+	    cout << "destroy old context" << endl;
+	    abort();
+    }
+    rt=new RenderThread(NPAPI,p);
 
     // add xt event handler
     Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);

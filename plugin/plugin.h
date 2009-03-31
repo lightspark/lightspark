@@ -84,14 +84,12 @@ private:
   XFontStruct *mFontInfo;
   GC mGC;
 
-  GLXFBConfig mFBConfig;
-  GLXContext mContext;
-
   std::istream swf_stream;
   sync_stream swf_buf;
 
   ParseThread pt;
   InputThread it;
+  RenderThread* rt;
 
 };
 

@@ -47,7 +47,7 @@ int main()
 				//thread_debug("RENDER: new frame wait");
 				sem_wait(&sys.new_frame);
 			}
-			//Aquired lock on frames list*/
+			//Aquired lock on frames list
 			sys.update_request=false;
 			sys.clip.state.next_FP=sys.clip.state.FP+1;
 			rt.draw(&sys.clip.frames[sys.clip.state.FP]);

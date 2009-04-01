@@ -52,10 +52,11 @@ public:
 
 class SystemState
 {
-friend int main();
+//friend int main();
 friend class ParseThread;
 public:
 	MovieClip clip;
+	RECT frame_size;
 
 public:
 	//Semaphore to wait for new frames to be available
@@ -105,6 +106,8 @@ struct NPAPI_params
 {
 	VisualID visual;
 	Window window;
+	int width;
+	int height;
 };
 
 class RenderThread

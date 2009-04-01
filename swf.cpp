@@ -59,7 +59,7 @@ void* ParseThread::worker(void* in_ptr)
 {
 	istream& f=*(istream*)in_ptr;
 	SWF_HEADER h(f);
-	cout << h.getFrameSize() << endl;
+	sys.frame_size=h.getFrameSize();
 
 	int done=0;
 
@@ -262,12 +262,11 @@ void* RenderThread::npapi_worker(void* param)
 	if(!glXIsDirect(d,mContext))
 		printf("Indirect!!\n");
 
-	delete p;
 
-	glViewport(0,0,640,480);
+	glViewport(0,0,p->width,p->height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0,640,480,0,-100,0);
+	glOrtho(0,p->width,p->height,0,-100,0);
 	glMatrixMode(GL_MODELVIEW);
 
 	try
@@ -288,9 +287,15 @@ void* RenderThread::npapi_worker(void* param)
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 			glLoadIdentity();
 
-			glScalef(0.1,0.1,1);
+			float scalex=p->width;
+			scalex/=sys.frame_size.Xmax;
+			float scaley=p->height;
+			scaley/=sys.frame_size.Ymax;
+			glScalef(scalex,scaley,1);
 
 			cur_frame->Render(0);
+			glFlush();
+			glXSwapBuffers(d,p->window);
 			sem_post(&mutex);
 
 			sys.clip.state.FP=sys.clip.state.next_FP;
@@ -303,6 +308,7 @@ void* RenderThread::npapi_worker(void* param)
 		cout << "ERRORE main" << endl;
 		exit(-1);
 	}
+	delete p;
 }
 
 void* RenderThread::sdl_worker(void*)

@@ -51,15 +51,6 @@
 #include "swf.h"
 #include "streams.h"
 
-class MovieTimer
-{
-private
-	static pthread_t t;
-	RenderThread* rt;
-public:
-	MovieTimer(RenderThread* r);
-};
-
 class nsPluginInstance : public nsPluginInstanceBase
 {
 public:

@@ -44,13 +44,6 @@
 
 using namespace std;
 
-pthread_t MovieTimer::t;
-
-MovieTimer::MovieTimer(RenderThread* r):rt(r)
-{
-	pthread_create(&t,0,NULL,timer_worker);
-}
-
 char* NPP_GetMIMEDescription(void)
 {
   return(MIME_TYPES_DESCRIPTION);
@@ -221,7 +214,8 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
     p->visual=XVisualIDFromVisual(mVisual);
     p->window=mWindow;
-
+    p->width=mWidth;
+    p->height=mHeight;
     if(rt!=NULL)
     {
 	    cout << "destroy old context" << endl;

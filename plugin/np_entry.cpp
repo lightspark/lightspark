@@ -173,6 +173,7 @@ NPError OSCALL NP_GetEntryPoints(NPPluginFuncs* aNPPFuncs)
 
 NPError NP_Initialize(NPNetscapeFuncs* aNPNFuncs, NPPluginFuncs* aNPPFuncs)
 {
+	printf("puppa\n");
   NPError rv = fillNetscapeFunctionTable(aNPNFuncs);
   if(rv != NPERR_NO_ERROR)
     return rv;

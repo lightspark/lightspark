@@ -254,6 +254,7 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 	if(v.StyleFlagsHasFont)
 		in >> v.TextHeight;
 	in >> v.GlyphCount;
+	v.GlyphEntries.clear();
 	for(int i=0;i<v.GlyphCount;i++)
 	{
 		v.GlyphEntries.push_back(GLYPHENTRY(&v,bs));

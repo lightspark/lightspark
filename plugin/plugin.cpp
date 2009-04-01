@@ -36,10 +36,11 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "plugin.h"
+//#define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define MIME_TYPES_HANDLED  "application/x-lightspark"
-#define PLUGIN_NAME         "Lightspark Netscape plugin"
-#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":sw2:"PLUGIN_NAME
-#define PLUGIN_DESCRIPTION  PLUGIN_NAME " Lightspark Netscape plugin"
+#define PLUGIN_NAME    "Shockwave Flash"
+#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
+#define PLUGIN_DESCRIPTION "Shockwave Flash 9.0 r31"
 
 using namespace std;
 

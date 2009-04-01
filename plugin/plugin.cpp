@@ -43,6 +43,13 @@
 
 using namespace std;
 
+pthread_t MovieTimer::t;
+
+MovieTimer::MovieTimer(RenderThread* r):rt(r)
+{
+	pthread_create(&t,0,NULL,timer_worker);
+}
+
 char* NPP_GetMIMEDescription(void)
 {
   return(MIME_TYPES_DESCRIPTION);

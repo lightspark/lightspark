@@ -1,0 +1,29 @@
+Lightspark Technical demo README
+
+First of all I'd like to thank you for testing the lightspatk project,
+the current status is really primitive, but I'd like to show that something
+already works.
+
+This demo should be able to render correctly the flash test page at
+http://www.adobe.com/shockwave/welcome/
+
+Be aware that the following feature are not yet supported or stable enough to be include in the demo
+
+-) Sound support
+-) Input support
+-) Antialiasing
+
+To build the software please follow those steps
+
+1) cd plugin/
+2) make
+3) make install
+
+The installation copy the plugin to $HOME/.mozilla/plugins/lightspark.so
+
+Now from firefox add-on configuration disable any other flash compatible plugins such as the adobe player or gnash
+
+Open http://www.adobe.com/shockwave/welcome/
+
+You're warmly invited to send feedback and error report on the project mailing list (lighspark-devel@lists.sourceforge.net)
+or bug trakcer on sourceforge

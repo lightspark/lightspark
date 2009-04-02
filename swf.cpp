@@ -23,7 +23,7 @@
 #include <SDL/SDL.h>
 #include <GL/gl.h>
 #include <GL/glx.h>
-
+#include <algorithm>
 
 #include "swf.h"
 #include "actions.h"

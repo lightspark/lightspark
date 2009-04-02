@@ -45,9 +45,10 @@ std::ostream& operator<<(std::ostream& s, const RECT& r)
 
 ostream& operator<<(ostream& s, const STRING& t)
 {
-	for(int i=0;i<t.String.size();i++)
+	for(unsigned int i=0;i<t.String.size();i++)
 		cout << t.String[i];
 	cout << endl;
+	return s;
 }
 
 std::ostream& operator<<(std::ostream& s, const RGBA& r)
@@ -230,6 +231,7 @@ std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 				break;
 		}
 	}
+	return s;
 }
 
 std::istream& operator>>(std::istream& s, LINESTYLE& v)
@@ -428,6 +430,7 @@ std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 		v.AlphaAddTerm=SB(v.NBits,bs);
 //		std::cout << v.AlphaAddTerm << std::endl;
 	}
+	return stream;
 }
 
 std::istream& operator>>(std::istream& stream, MATRIX& v)

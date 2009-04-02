@@ -43,15 +43,15 @@ UI16 DoActionTag::getDepth() const
 void DoActionTag::printInfo(int t)
 {
 	cerr << "DoAction Info" << endl;
-	for(int i=0;i<actions.size();i++)
+	for(unsigned int i=0;i<actions.size();i++)
 		actions[i]->print();
 }
 
 void DoActionTag::Render()
 {
-	for(int i=0;i<actions.size();i++)
+	for(unsigned int i=0;i<actions.size();i++)
 		actions[i]->Execute();
-	for(int i=0;i<actions.size();i++)
+	for(unsigned int i=0;i<actions.size();i++)
 		actions[i]->print();
 }
 

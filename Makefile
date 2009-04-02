@@ -1,9 +1,14 @@
-lightspark: main.o swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o 
-	g++ -g -o $@ $^ -lSDL -pg -lrt -lGL 
+LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o
 
-libls.so: swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o 
-	g++ -shared -g -o $@ $^ -lSDL -pg -lrt -lGL 
+lightspark: main.o $(LIBOBJS) 
+	g++ -pthread -g -o $@ $^ -lSDL -pg -lrt -lGL 
+
+libls.so: $(LIBOBJS) 
+	g++ -pthread -shared -g -o $@ $^ -lSDL -pg -lrt -lGL 
 
 %.o: %.cpp
-	g++ -pg -g -O0 -c -o $@ $^ -D_GLIBCXX_NO_DEBUG
+	g++ -pthread -pg -g -O0 -c -o $@ $^ -D_GLIBCXX_NO_DEBUG
 
+.PHONY: clean
+clean:
+	-rm -f main.o $(LIBOBJS) lightspark libls.so

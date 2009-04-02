@@ -18,6 +18,8 @@
 **************************************************************************/
 
 #include "streams.h"
+#include <cstdlib>
+#include <cstring>
 
 using namespace std;
 

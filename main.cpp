@@ -34,7 +34,7 @@ using namespace std;
 //RunState state;
 SystemState sys;
 
-int thread_debug(char* msg)
+void thread_debug(char* msg)
 {
 	timespec ts;
 	clock_gettime(CLOCK_REALTIME,&ts);

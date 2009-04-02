@@ -575,6 +575,7 @@ void fixIndex(std::vector<Vector2>& points)
 std::ostream& operator<<(std::ostream& s, const Vector2& p)
 {
 	std::cout << "{ "<< p.x << ',' << p.y << " } [" << p.index  << ']' << std::endl;
+	return s;
 }
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point);
@@ -625,6 +626,7 @@ std::ostream& operator<<(std::ostream& s, const GraphicStatus& p)
 	std::cout << "ValidFill0 "<< p.validFill0 << std::endl;
 	std::cout << "ValidFill1 "<< p.validFill1 << std::endl;
 	std::cout << "ValidStroke "<< p.validStroke << std::endl;
+	return s;
 }
 
 void TessellatePath(Path& path, Shape& shape);
@@ -710,7 +712,7 @@ void DefineMorphShapeTag::Render(int layer)
 			shapes[0].graphic.color0=shapes[0].graphic.color1;
 		}
 	}*/
-	for(int i=0;i<shapes.size();i++)
+	for(unsigned int i=0;i<shapes.size();i++)
 	{
 		if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
 		{
@@ -791,7 +793,7 @@ void DefineShapeTag::Render(int layer)
 		else
 			shapes.back().graphic.stroked=false;
 	}
-	for(int i=0;i<shapes.size();i++)
+	for(unsigned int i=0;i<shapes.size();i++)
 	{
 		if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
 		{
@@ -885,7 +887,7 @@ void DefineShape2Tag::Render(int layer)
 		}
 	}*/
 
-	for(int i=0;i<shapes.size();i++)
+	for(unsigned int i=0;i<shapes.size();i++)
 	{
 		if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
 		{
@@ -923,7 +925,7 @@ void SplitPath(std::vector<Path>& paths,int a, int b)
 
 	std::vector<Vector2>::iterator first,end;
 	Path* cur_path;
-	for(int i=0;i<paths.size();i++)
+	for(unsigned int i=0;i<paths.size();i++)
 	{
 		first=find(paths[i].points.begin(),paths[i].points.end(),a);
 		end=find(paths[i].points.begin(),paths[i].points.end(),b);
@@ -1386,7 +1388,7 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 	{
 		if(sorted[i].chain!=sorted[S.back()].chain)
 		{
-			for(int j=1;j<S.size();j++)
+			for(unsigned int j=1;j<S.size();j++)
 			{
 				//shape.edges.push_back(Edge(sorted[S[j]],sorted[i],-1));
 				edges.push_back(Numeric_Edge(sorted[S[j]].index,sorted[i].index,size));
@@ -1404,7 +1406,7 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 				//shape.edges.push_back(Edge(sorted[S[j]],sorted[i],-1));
 				Edge e(sorted[S.back()],sorted[i],-1);
 				bool stop=false;
-				for(int k=0;k<border.size();k++)
+				for(unsigned int k=0;k<border.size();k++)
 				{
 					if(border[k].edgeIntersect(e))
 					{
@@ -1425,7 +1427,7 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 			S.push_back(i);
 		}
 	}
-	for(int j=1;j<S.size()-1;j++)
+	for(unsigned int j=1;j<S.size()-1;j++)
 	{
 		//shape.edges.push_back(Edge(sorted[S[j]],sorted[0],-1));
 		edges.push_back(Numeric_Edge(sorted[S[j]].index,sorted[0].index,size));
@@ -1434,7 +1436,7 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 
 	std::vector< Vector2 > backup(unsorted);
 	int third;
-	for(int i=0;i<edges.size();i++)
+	for(unsigned int i=0;i<edges.size();i++)
 	{
 		std::vector< Vector2 >::iterator first=find(unsorted.begin(),unsorted.end(),edges[i].a);
 		std::vector< Vector2 >::iterator second=find(unsorted.begin(),unsorted.end(),edges[i].b);
@@ -1743,7 +1745,7 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,
 {
 	in >> Name;
 	cout << "label ";
-	for(int i=0;i<Name.String.size();i++)
+	for(unsigned int i=0;i<Name.String.size();i++)
 		cout << Name.String[i];
 
 	cout << endl;
@@ -1791,7 +1793,7 @@ void DefineButton2Tag::MouseEvent(int x, int y)
 void DefineButton2Tag::Render(int layer)
 {
 //	cerr << "render button" << endl;
-	for(int i=0;i<Characters.size();i++)
+	for(unsigned int i=0;i<Characters.size();i++)
 	{
 		if(Characters[i].ButtonStateUp && state==BUTTON_UP)
 		{
@@ -1829,7 +1831,7 @@ void DefineButton2Tag::Render(int layer)
 		//glDepthFunc(GL_LEQUAL);
 		glPopMatrix();
 	}
-	for(int i=0;i<Actions.size();i++)
+	for(unsigned int i=0;i<Actions.size();i++)
 	{
 		if(IdleToOverUp && Actions[i].CondIdleToOverUp)
 		{
@@ -1838,7 +1840,7 @@ void DefineButton2Tag::Render(int layer)
 		else
 			continue;
 
-		for(int j=0;j<Actions[i].Actions.size();j++)
+		for(unsigned int j=0;j<Actions[i].Actions.size();j++)
 			Actions[i].Actions[j]->Execute();
 	}
 //	cerr << "end button render" << endl;
@@ -1849,7 +1851,7 @@ void DefineButton2Tag::printInfo(int t)
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "DefineButton2 Info" << endl;
-	for(int i=0;i<Characters.size();i++)
+	for(unsigned int i=0;i<Characters.size();i++)
 	{
 		sem_wait(&sys.sem_dict);
 		std::vector< RenderTag* >::iterator it=sys.dictionary.begin();

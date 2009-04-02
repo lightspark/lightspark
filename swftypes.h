@@ -93,6 +93,7 @@ public:
 		Green=r.Green;
 		Blue=r.Blue;
 		Alpha=255;
+		return *this;
 	}
 };
 

@@ -365,9 +365,14 @@ void* RenderThread::sdl_worker(void*)
 void RenderThread::draw(Frame* f)
 {
 	//TODO: sync (by copy)
-	sem_wait(&mutex);
-	cur_frame=f;
-	sem_post(&mutex);
+	if(f!=NULL)
+	{
+		sem_wait(&mutex);
+		cur_frame=f;
+		sem_post(&mutex);
+	}
+	else
+		return;
 	sem_post(&render);
 	sem_wait(&end_render);
 

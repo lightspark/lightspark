@@ -42,11 +42,53 @@
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
 #define PLUGIN_DESCRIPTION "Shockwave Flash 9.0 r31"
 
+
+SystemState sys;
+pthread_t MovieTimer::t;
+RenderThread* MovieTimer::rt(NULL);
+
+MovieTimer::MovieTimer(RenderThread* r)
+{
+	pthread_create(&t,0,timer_worker,NULL);
+}
+
+void* MovieTimer::timer_worker(void*)
+{
+	while(1)
+	{
+		if(sys.clip.state.stop_FP && !sys.update_request)
+			sem_wait(&sys.sem_run);
+		while(1)
+		{
+			//thread_debug( "RENDER: frames mutex lock");
+			sem_wait(&sys.clip.sem_frames);
+
+			if(sys.clip.state.FP<sys.clip.frames.size())
+				break;
+
+			//thread_debug( "RENDER: frames mutex unlock");
+			sem_post(&sys.clip.sem_frames);
+			//thread_debug("RENDER: new frame wait");
+			sem_wait(&sys.new_frame);
+		}
+		//Aquired lock on frames list
+		sys.update_request=false;
+		sys.clip.state.next_FP=sys.clip.state.FP+1;
+		if(rt!=NULL)
+			rt->draw(&sys.clip.frames[sys.clip.state.FP]);
+		else
+			throw "rt null";
+		sys.clip.state.FP=sys.clip.state.next_FP;
+
+		sem_post(&sys.clip.sem_frames);
+	}
+}
+
 using namespace std;
 
 char* NPP_GetMIMEDescription(void)
 {
-  return(MIME_TYPES_DESCRIPTION);
+	return(MIME_TYPES_DESCRIPTION);
 }
 
 /////////////////////////////////////
@@ -54,7 +96,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-  return NPERR_NO_ERROR;
+	return NPERR_NO_ERROR;
 }
 
 void NS_PluginShutdown()
@@ -64,19 +106,20 @@ void NS_PluginShutdown()
 // get values per plugin
 NPError NS_PluginGetValue(NPPVariable aVariable, void *aValue)
 {
-  NPError err = NPERR_NO_ERROR;
-  switch (aVariable) {
-    case NPPVpluginNameString:
-      *((char **)aValue) = PLUGIN_NAME;
-      break;
-    case NPPVpluginDescriptionString:
-      *((char **)aValue) = PLUGIN_DESCRIPTION;
-      break;
-    default:
-      err = NPERR_INVALID_PARAM;
-      break;
-  }
-  return err;
+	NPError err = NPERR_NO_ERROR;
+	switch (aVariable)
+	{
+		case NPPVpluginNameString:
+			*((char **)aValue) = PLUGIN_NAME;
+			break;
+		case NPPVpluginDescriptionString:
+			*((char **)aValue) = PLUGIN_DESCRIPTION;
+			break;
+		default:
+			err = NPERR_INVALID_PARAM;
+			break;
+	}
+	return err;
 }
 
 /////////////////////////////////////////////////////////////
@@ -103,14 +146,8 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
-  mInstance(aInstance),
-  mInitialized(FALSE),
-  mWindow(0),
-  mXtwidget(0),
-  mFontInfo(0),
-  swf_stream(&swf_buf),
-  pt(swf_stream),
-  rt(NULL)
+	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),mFontInfo(0),swf_stream(&swf_buf),
+	pt(swf_stream),rt(NULL),mt(NULL)
 {
 }
 
@@ -139,8 +176,7 @@ void nsPluginInstance::draw()
 {
 	if(rt==NULL)
 		return;
-	if(sys.clip.frames.size()>10)
-		rt->draw(&sys.clip.frames[9]);
+	rt->draw(NULL);
 }
 
 NPBool nsPluginInstance::init(NPWindow* aWindow)
@@ -182,58 +218,62 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 {
-  if(aWindow == NULL)
-    return FALSE;
+	if(aWindow == NULL)
+		return FALSE;
 
-  mX = aWindow->x;
-  mY = aWindow->y;
-  mWidth = aWindow->width;
-  mHeight = aWindow->height;
-  if (mWindow == (Window) aWindow->window) {
-    // The page with the plugin is being resized.
-    // Save any UI information because the next time
-    // around expect a SetWindow with a new window id.
-  }
-  else
-  {
-    mWindow = (Window) aWindow->window;
-    NPSetWindowCallbackStruct *ws_info = (NPSetWindowCallbackStruct *)aWindow->ws_info;
-    mDisplay = ws_info->display;
-    mVisual = ws_info->visual;
-    mDepth = ws_info->depth;
-    mColormap = ws_info->colormap;
+	mX = aWindow->x;
+	mY = aWindow->y;
+	mWidth = aWindow->width;
+	mHeight = aWindow->height;
+	if (mWindow == (Window) aWindow->window)
+	{
+		// The page with the plugin is being resized.
+		// Save any UI information because the next time
+		// around expect a SetWindow with a new window id.
+	}
+	else
+	{
+		mWindow = (Window) aWindow->window;
+		NPSetWindowCallbackStruct *ws_info = (NPSetWindowCallbackStruct *)aWindow->ws_info;
+		mDisplay = ws_info->display;
+		mVisual = ws_info->visual;
+		mDepth = ws_info->depth;
+		mColormap = ws_info->colormap;
 
-    printf("Window visual 0x%x\n",XVisualIDFromVisual(mVisual));
+		printf("Window visual 0x%x\n",XVisualIDFromVisual(mVisual));
 
-    if (!mFontInfo) {
-      if (!(mFontInfo = XLoadQueryFont(mDisplay, "9x15")))
-        printf("Cannot open 9X15 font\n");
-    }
+		if (!mFontInfo)
+		{
+			if (!(mFontInfo = XLoadQueryFont(mDisplay, "9x15")))
+				printf("Cannot open 9X15 font\n");
+		}
 
-    NPAPI_params* p=new NPAPI_params;
+		NPAPI_params* p=new NPAPI_params;
 
-    p->visual=XVisualIDFromVisual(mVisual);
-    p->window=mWindow;
-    p->width=mWidth;
-    p->height=mHeight;
-    if(rt!=NULL)
-    {
-	    cout << "destroy old context" << endl;
-	    abort();
-    }
-    rt=new RenderThread(NPAPI,p);
+		p->visual=XVisualIDFromVisual(mVisual);
+		p->window=mWindow;
+		p->width=mWidth;
+		p->height=mHeight;
+		if(rt!=NULL)
+		{
+			cout << "destroy old context" << endl;
+			abort();
+		}
+		rt=new RenderThread(NPAPI,p);
+		mt.rt=rt;
 
-    // add xt event handler
-    Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);
-    if (xtwidget && mXtwidget != xtwidget) {
-      mXtwidget = xtwidget;
-      long event_mask = ExposureMask;
-      XSelectInput(mDisplay, mWindow, event_mask);
-      XtAddEventHandler(xtwidget, event_mask, False, (XtEventHandler)xt_event_handler, this);
-    }
-  }
-  draw();
-  return TRUE;
+		// add xt event handler
+		Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);
+		if (xtwidget && mXtwidget != xtwidget)
+		{
+			mXtwidget = xtwidget;
+			long event_mask = ExposureMask;
+			XSelectInput(mDisplay, mWindow, event_mask);
+			XtAddEventHandler(xtwidget, event_mask, False, (XtEventHandler)xt_event_handler, this);
+		}
+	}
+	draw();
+	return TRUE;
 }
 
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype)
@@ -241,8 +281,6 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	*stype=NP_NORMAL;
 	return NPERR_NO_ERROR; 
 }
-
-SystemState sys;
 
 int32 nsPluginInstance::Write(NPStream *stream, int32 offset, int32 len, void *buffer)
 {

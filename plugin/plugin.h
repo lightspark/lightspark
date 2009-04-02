@@ -51,46 +51,56 @@
 #include "swf.h"
 #include "streams.h"
 
+class MovieTimer
+{
+private:
+	static pthread_t t;
+	static void* timer_worker(void*);
+public:
+	MovieTimer(RenderThread* r);
+	static RenderThread* rt;
+};
+
 class nsPluginInstance : public nsPluginInstanceBase
 {
 public:
-  nsPluginInstance(NPP aInstance);
-  virtual ~nsPluginInstance();
+	nsPluginInstance(NPP aInstance);
+	virtual ~nsPluginInstance();
 
-  NPBool init(NPWindow* aWindow);
-  void shut();
-  NPBool isInitialized() {return mInitialized;}
-  NPError GetValue(NPPVariable variable, void *value);
-  NPError SetWindow(NPWindow* aWindow);
-  NPError NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype); 
-  int32   Write(NPStream *stream, int32 offset, int32 len, void *buffer);
+	NPBool init(NPWindow* aWindow);
+	void shut();
+	NPBool isInitialized() {return mInitialized;}
+	NPError GetValue(NPPVariable variable, void *value);
+	NPError SetWindow(NPWindow* aWindow);
+	NPError NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype); 
+	int32   Write(NPStream *stream, int32 offset, int32 len, void *buffer);
 
-  // locals
-  const char * getVersion();
-  void draw();
+	// locals
+	const char * getVersion();
+	void draw();
 
 private:
-  NPP mInstance;
-  NPBool mInitialized;
+	NPP mInstance;
+	NPBool mInitialized;
 
-  Window mWindow;
-  Display *mDisplay;
-  Widget mXtwidget;
-  int mX, mY;
-  int mWidth, mHeight;
-  Visual* mVisual;
-  Colormap mColormap;
-  unsigned int mDepth;
-  XFontStruct *mFontInfo;
-  GC mGC;
+	Window mWindow;
+	Display *mDisplay;
+	Widget mXtwidget;
+	int mX, mY;
+	int mWidth, mHeight;
+	Visual* mVisual;
+	Colormap mColormap;
+	unsigned int mDepth;
+	XFontStruct *mFontInfo;
+	GC mGC;
 
-  std::istream swf_stream;
-  sync_stream swf_buf;
+	std::istream swf_stream;
+	sync_stream swf_buf;
 
-  ParseThread pt;
-  InputThread it;
-  RenderThread* rt;
-
+	ParseThread pt;
+	InputThread it;
+	RenderThread* rt;
+	MovieTimer mt;
 };
 
 #endif // __PLUGIN_H__

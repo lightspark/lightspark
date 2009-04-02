@@ -41,6 +41,9 @@ sem_t RenderThread::mutex;
 sem_t RenderThread::render;
 sem_t RenderThread::end_render;
 Frame* RenderThread::cur_frame=NULL;
+list<DisplayListTag*> null_list;
+Frame RenderThread::bak_frame(null_list);
+int RenderThread::bak(0);
 GLXFBConfig RenderThread::mFBConfig;
 GLXContext RenderThread::mContext;
 
@@ -229,16 +232,6 @@ void* RenderThread::npapi_worker(void* param)
 	NPAPI_params* p=(NPAPI_params*)param;
 	
 	Display* d=XOpenDisplay(NULL);
-/*	XSetWindowBackground(d,p->window,BlackPixel(d, DefaultScreen(d)));
-	XClearWindow(d,p->window);
-
-	while(1)
-	{
-		sem_wait(&render);
-		XClearWindow(d,p->window);
-		XFlush(d);
-		sem_post(&end_render);
-	}*/
 
     	int a,b;
     	Bool glx_present=glXQueryVersion(d,&a,&b);
@@ -300,6 +293,8 @@ void* RenderThread::npapi_worker(void* param)
 				sem_post(&end_render);
 				continue;
 			}
+			if(!bak)
+				bak_frame=*cur_frame;
 			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
 			glClearDepth(0xffff);
 			glClearStencil(5);
@@ -312,7 +307,13 @@ void* RenderThread::npapi_worker(void* param)
 			scaley/=sys.frame_size.Ymax;
 			glScalef(scalex,scaley,1);
 
-			cur_frame->Render(0);
+			if(bak)
+			{
+				bak_frame.Render(0);
+				bak=0;
+			}
+			else
+				cur_frame->Render(0);
 			glFlush();
 			glXSwapBuffers(d,p->window);
 			sem_post(&mutex);
@@ -391,7 +392,7 @@ void RenderThread::draw(Frame* f)
 		sem_post(&mutex);
 	}
 	else
-		return;
+		bak=1;
 	sem_post(&render);
 	sem_wait(&end_render);
 

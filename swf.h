@@ -139,6 +139,8 @@ private:
 	static sem_t render;
 	static sem_t end_render;
 	static Frame* cur_frame;
+	static Frame bak_frame;
+	static int bak;
 
 	static GLXFBConfig mFBConfig;
 	static GLXContext mContext;

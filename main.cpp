@@ -49,31 +49,12 @@ int main()
 	RenderThread rt(SDL,NULL);
 	InputThread it;
 
-		while(1)
-		{
-			if(sys.clip.state.stop_FP && !sys.update_request)
-				sem_wait(&sys.sem_run);
-			while(1)
-			{
-				//thread_debug( "RENDER: frames mutex lock");
-				sem_wait(&sys.clip.sem_frames);
-
-				if(sys.clip.state.FP<sys.clip.frames.size())
-					break;
-
-				//thread_debug( "RENDER: frames mutex unlock");
-				sem_post(&sys.clip.sem_frames);
-				//thread_debug("RENDER: new frame wait");
-				sem_wait(&sys.new_frame);
-			}
-			//Aquired lock on frames list
-			sys.update_request=false;
-			sys.clip.state.next_FP=sys.clip.state.FP+1;
-			rt.draw(&sys.clip.frames[sys.clip.state.FP]);
-			sys.clip.state.FP=sys.clip.state.next_FP;
-
-			sem_post(&sys.clip.sem_frames);
-		}
+	while(1)
+	{
+		sys.waitToRun();
+		rt.draw(&sys.getFrameAtFP());
+		sys.advanceFP();
+	}
 
 
 	cout << "the end" << endl;

@@ -54,7 +54,9 @@ public:
 	int FP;
 	int next_FP;
 	bool stop_FP;
+public:
 	RunState();
+	void prepareNextFP();
 };
 
 class MovieClip
@@ -63,36 +65,52 @@ public:
 	std::list < DisplayListTag* > displayList;
 	//Frames mutex (shared with drawing thread)
 	sem_t sem_frames;
-	std::vector<Frame> frames;
+	std::list<Frame> frames;
 	RunState state;
-
+public:
 	MovieClip();
+	void addToDisplayList(DisplayListTag* r);
 };
 
 class SystemState
 {
-//friend int main();
-friend class ParseThread;
-public:
+private:
 	MovieClip clip;
 	RECT frame_size;
 
-public:
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
 
 	sem_t sem_dict;
-	std::vector < RenderTag* > dictionary;
+	std::list < RenderTag* > dictionary;
 
-	RGBA Background;
+	RGB Background;
 
-	SystemState();
 	sem_t sem_run;
 
-	std::list < DisplayListTag* >* currentDisplayList;
+	bool update_request;
+
+	sem_t mutex;
+public:
+	//Used only in ParseThread context
+	std::list < DisplayListTag* >* parsingDisplayList;
+
+	//Used only in RenderThread context
 	RunState* currentState;
 
-	bool update_request;
+	SystemState();
+	void waitToRun();
+	Frame& getFrameAtFP();
+	void advanceFP();
+	void setFrameSize(const RECT& f);
+	RECT getFrameSize();
+	void addToDictionary(RenderTag* r);
+	void addToDisplayList(DisplayListTag* r);
+	void commitFrame();
+	RGB getBackground();
+	void setBackground(const RGB& bg);
+	void setUpdateRequest(bool s);
+	RenderTag* dictionaryLookup(UI16 id);
 };
 
 class ParseThread

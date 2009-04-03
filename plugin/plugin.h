@@ -38,9 +38,11 @@ class MovieTimer
 private:
 	static pthread_t t;
 	static void* timer_worker(void*);
+	static RenderThread* rt;
+	static sem_t mutex;
 public:
 	MovieTimer(RenderThread* r);
-	static RenderThread* rt;
+	void setRenderThread(RenderThread* r);
 };
 
 class nsPluginInstance : public nsPluginInstanceBase

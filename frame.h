@@ -31,12 +31,9 @@ private:
 	STRING Label;
 public:
 	std::list<DisplayListTag*> displayList;
-	
-	Frame(const std::list<DisplayListTag*>& d):displayList(d),hack(0){ }
+	Frame(const std::list<DisplayListTag*>& d):displayList(d){ }
 	void Render(int baseLayer);
 	void setLabel(STRING l);
-
-	int hack;
 };
 
 #endif

@@ -62,8 +62,7 @@ public:
 class DisplayListTag: public Tag
 {
 public:
-	bool add_to_list;
-	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s),add_to_list(true){}
+	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
 	virtual UI16 getDepth() const=0;
 	virtual void Render()=0;

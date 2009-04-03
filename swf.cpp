@@ -65,23 +65,31 @@ MovieClip::MovieClip()
 	sem_init(&sem_frames,0,1);
 }
 
-SystemState::SystemState():currentDisplayList(&clip.displayList),currentState(&clip.state)
+bool list_orderer(const DisplayListTag* a, int d)
+{
+	return a->getDepth()<d;
+}
+
+void MovieClip::addToDisplayList(DisplayListTag* t)
+{
+	list<DisplayListTag*>::iterator it=lower_bound(displayList.begin(),displayList.end(),t->getDepth(),list_orderer);
+	displayList.insert(it,t);
+}
+
+SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.displayList)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
 	sem_init(&sem_run,0,0);
-}
 
-bool list_orderer(const DisplayListTag* a, int d)
-{
-	return a->getDepth()<d;
+	sem_init(&mutex,0,1);
 }
 
 void* ParseThread::worker(void* in_ptr)
 {
 	istream& f=*(istream*)in_ptr;
 	SWF_HEADER h(f);
-	sys.frame_size=h.getFrameSize();
+	sys.setFrameSize(h.getFrameSize());
 
 	int done=0;
 
@@ -96,35 +104,17 @@ void* ParseThread::worker(void* in_ptr)
 			//	case TAG:
 				case END_TAG:
 					//sleep(5);
-					cout << "End of File" << endl;
+					//cout << "End of File" << endl;
 					return 0;
 				case RENDER_TAG:
-				//	std::cout << "add to dict" << std::endl;
-				//	thread_debug( "PARSER: dict mutex lock");
-					sem_wait(&sys.sem_dict);
-					sys.dictionary.push_back(dynamic_cast<RenderTag*>(tag));
-				//	thread_debug( "PARSER: dict mutex unlock");
-					sem_post(&sys.sem_dict);
+					sys.addToDictionary(dynamic_cast<RenderTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
-					if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)
-					{
-						list<DisplayListTag*>::iterator it=lower_bound(sys.clip.displayList.begin(),
-								sys.clip.displayList.end(),
-								dynamic_cast<DisplayListTag*>(tag)->getDepth(),
-								list_orderer);
-						sys.clip.displayList.insert(it,dynamic_cast<DisplayListTag*>(tag));
-					}
+					sys.addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
 					break;
 				case SHOW_TAG:
 				{
-				//	thread_debug( "PARSER: frames mutex lock");
-					sem_wait(&sys.clip.sem_frames);
-					sys.clip.frames.push_back(Frame(sys.clip.displayList));
-				//	thread_debug( "PARSER: frames mutex unlock" );
-					sem_post(&sys.new_frame);
-				//\	thread_debug("PARSER: new frame signal");
-					sem_post(&sys.clip.sem_frames);
+					sys.commitFrame();
 					break;
 				}
 				case CONTROL_TAG:
@@ -135,9 +125,9 @@ void* ParseThread::worker(void* in_ptr)
 	}
 	catch(const char* s)
 	{
-		cout << "CATCH!!!!" << endl;
+/*		cout << "CATCH!!!!" << endl;
 		cout << s << endl;
-		cout << "ERRORE!!!!" << endl;
+		cout << "ERRORE!!!!" << endl;*/
 		exit(-1);
 	}
 
@@ -168,8 +158,8 @@ void InputThread::wait()
 
 void* InputThread::worker(void* in_ptr)
 {
-	SDL_Event event;
-	cout << "waiting for input" << endl;
+/*	SDL_Event event;
+//	cout << "waiting for input" << endl;
 	while(SDL_WaitEvent(&event))
 	{
 		switch(event.type)
@@ -183,7 +173,7 @@ void* InputThread::worker(void* in_ptr)
 						break;
 					case SDLK_n:
 						list<IActiveObject*>::const_iterator it=listeners.begin();
-						cout << "Fake mouse event" << endl;
+						//cout << "Fake mouse event" << endl;
 						int c=0;
 						for(it;it!=listeners.end();it++)
 						{
@@ -198,11 +188,11 @@ void* InputThread::worker(void* in_ptr)
 			}
 			case SDL_MOUSEMOTION:
 			{
-				printf("Oh! mouse\n");
+				//printf("Oh! mouse\n");
 				break;
 			}
 		}
-	}
+	}*/
 }
 
 void InputThread::addListener(IActiveObject* ob)
@@ -252,17 +242,17 @@ void* RenderThread::npapi_worker(void* param)
 
 	attrib[8]=None;
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
-	printf("returned %x pointer and %u elements\n",fb, a);
+//	printf("returned %x pointer and %u elements\n",fb, a);
 	int i;
 	for(i=0;i<a;i++)
 	{
 		int id,v;
 		glXGetFBConfigAttrib(d,fb[i],GLX_BUFFER_SIZE,&v);
 		glXGetFBConfigAttrib(d,fb[i],GLX_VISUAL_ID,&id);
-		printf("ID 0x%x size %u\n",id,v);
+//		printf("ID 0x%x size %u\n",id,v);
 		if(id==p->visual)
 		{
-			printf("good id %x\n",id);
+//			printf("good id %x\n",id);
 			break;
 		}
 	}
@@ -295,16 +285,17 @@ void* RenderThread::npapi_worker(void* param)
 			}
 			if(!bak)
 				bak_frame=*cur_frame;
-			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
+			RGB bg=sys.getBackground();
+			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 			glClearDepth(0xffff);
 			glClearStencil(5);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 			glLoadIdentity();
 
 			float scalex=p->width;
-			scalex/=sys.frame_size.Xmax;
+			scalex/=sys.getFrameSize().Xmax;
 			float scaley=p->height;
-			scaley/=sys.frame_size.Ymax;
+			scaley/=sys.getFrameSize().Ymax;
 			glScalef(scalex,scaley,1);
 
 			if(bak)
@@ -318,14 +309,13 @@ void* RenderThread::npapi_worker(void* param)
 			glXSwapBuffers(d,p->window);
 			sem_post(&mutex);
 
-			sys.clip.state.FP=sys.clip.state.next_FP;
 			sem_post(&end_render);
 		}
 	}
 	catch(const char* e)
 	{
-		cout << e << endl;
-		cout << "ERRORE main" << endl;
+		//cout << e << endl;
+		//cout << "ERRORE main" << endl;
 		exit(-1);
 	}
 	delete p;
@@ -359,7 +349,8 @@ void* RenderThread::sdl_worker(void*)
 				sem_post(&end_render);
 				continue;
 			}
-			glClearColor(sys.Background.Red/255.0F,sys.Background.Green/255.0F,sys.Background.Blue/255.0F,0);
+			RGB bg=sys.getBackground();
+			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 			glClearDepth(0xffff);
 			glClearStencil(5);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
@@ -370,7 +361,6 @@ void* RenderThread::sdl_worker(void*)
 			cur_frame->Render(0);
 
 			SDL_GL_SwapBuffers( );
-			sys.clip.state.FP=sys.clip.state.next_FP;
 			sem_post(&end_render);
 		}
 	}
@@ -396,4 +386,120 @@ void RenderThread::draw(Frame* f)
 	sem_post(&render);
 	sem_wait(&end_render);
 
+}
+
+void SystemState::waitToRun()
+{
+	sem_wait(&mutex);
+
+	if(clip.state.stop_FP && !update_request)
+	{
+		sem_post(&mutex);
+		sem_wait(&sem_run);
+	}
+	while(1)
+	{
+		if(clip.state.FP<clip.frames.size())
+			break;
+
+		sem_post(&mutex);
+		sem_wait(&new_frame);
+		sem_wait(&mutex);
+	}
+	update_request=false;
+	clip.state.next_FP=clip.state.FP+1;
+	sem_post(&mutex);
+}
+
+Frame& SystemState::getFrameAtFP() 
+{
+	sem_wait(&mutex);
+	list<Frame>::iterator it=clip.frames.begin();
+	for(int i=0;i<clip.state.FP;i++)
+		it++;
+	sem_post(&mutex);
+
+	return *it;
+}
+
+void SystemState::advanceFP()
+{
+	sem_wait(&mutex);
+	clip.state.FP=clip.state.next_FP; 
+	sem_post(&mutex);
+}
+
+void SystemState::setFrameSize(const RECT& f)
+{
+	sem_wait(&mutex);
+	frame_size=f; 
+	sem_post(&mutex);
+}
+
+RECT SystemState::getFrameSize()
+{
+/*	sem_wait(&mutex);
+	frame_size=f; 
+	sem_post(&mutex);*/
+	return frame_size;
+}
+
+void SystemState::addToDictionary(RenderTag* r)
+{
+	sem_wait(&mutex);
+	//sem_wait(&sys.sem_dict);
+	dictionary.push_back(r);
+	//sem_post(&sys.sem_dict);
+	sem_post(&mutex);
+}
+
+void SystemState::addToDisplayList(DisplayListTag* t)
+{
+	sem_wait(&mutex);
+	clip.addToDisplayList(t);
+	sem_post(&mutex);
+}
+
+void SystemState::commitFrame()
+{
+	sem_wait(&mutex);
+	//sem_wait(&clip.sem_frames);
+	clip.frames.push_back(Frame(clip.displayList));
+	sem_post(&new_frame);
+	sem_post(&mutex);
+	//sem_post(&clip.sem_frames);
+}
+
+RGB SystemState::getBackground()
+{
+	return Background;
+}
+
+void SystemState::setBackground(const RGB& bg)
+{
+	Background=bg;
+}
+
+void SystemState::setUpdateRequest(bool s)
+{
+	sem_wait(&mutex);
+	update_request=s;
+	sem_post(&mutex);
+}
+
+RenderTag* SystemState::dictionaryLookup(UI16 id)
+{
+	sem_wait(&mutex);
+	//sem_wait(&sem_dict);
+	list< RenderTag*>::iterator it = dictionary.begin();
+	for(it;it!=dictionary.end();it++)
+	{
+		if((*it)->getId()==id)
+			break;
+	}
+	if(it==dictionary.end())
+		throw "No such ID";
+	//sem_post(&sem_dict);
+	sem_post(&mutex);
+	return *it;
 }

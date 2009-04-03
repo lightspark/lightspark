@@ -27,42 +27,36 @@
 
 SystemState sys;
 pthread_t MovieTimer::t;
-RenderThread* MovieTimer::rt(NULL);
+sem_t MovieTimer::mutex;
+RenderThread* MovieTimer::rt=NULL;
 
 MovieTimer::MovieTimer(RenderThread* r)
 {
+	sem_init(&mutex,0,1);
 	pthread_create(&t,0,timer_worker,NULL);
+}
+
+void MovieTimer::setRenderThread(RenderThread* r)
+{
+	sem_wait(&mutex);
+
+	rt=r;
+
+	sem_post(&mutex);
 }
 
 void* MovieTimer::timer_worker(void*)
 {
 	while(1)
 	{
-		if(sys.clip.state.stop_FP && !sys.update_request)
-			sem_wait(&sys.sem_run);
-		while(1)
-		{
-			//thread_debug( "RENDER: frames mutex lock");
-			sem_wait(&sys.clip.sem_frames);
-
-			if(sys.clip.state.FP<sys.clip.frames.size())
-				break;
-
-			//thread_debug( "RENDER: frames mutex unlock");
-			sem_post(&sys.clip.sem_frames);
-			//thread_debug("RENDER: new frame wait");
-			sem_wait(&sys.new_frame);
-		}
-		//Aquired lock on frames list
-		sys.update_request=false;
-		sys.clip.state.next_FP=sys.clip.state.FP+1;
+		sys.waitToRun();
+		sem_wait(&mutex);
 		if(rt!=NULL)
-			rt->draw(&sys.clip.frames[sys.clip.state.FP]);
+			rt->draw(&sys.getFrameAtFP());
 		else
 			throw "rt null";
-		sys.clip.state.FP=sys.clip.state.next_FP;
-
-		sem_post(&sys.clip.sem_frames);
+		sem_post(&mutex);
+		sys.advanceFP();
 	}
 }
 
@@ -70,7 +64,7 @@ using namespace std;
 
 char* NPP_GetMIMEDescription(void)
 {
-	return(MIME_TYPES_DESCRIPTION);
+	return (char*)(MIME_TYPES_DESCRIPTION);
 }
 
 /////////////////////////////////////
@@ -92,10 +86,10 @@ NPError NS_PluginGetValue(NPPVariable aVariable, void *aValue)
 	switch (aVariable)
 	{
 		case NPPVpluginNameString:
-			*((char **)aValue) = PLUGIN_NAME;
+			*((char **)aValue) = (char*)PLUGIN_NAME;
 			break;
 		case NPPVpluginDescriptionString:
-			*((char **)aValue) = PLUGIN_DESCRIPTION;
+			*((char **)aValue) = (char*)PLUGIN_DESCRIPTION;
 			break;
 		default:
 			err = NPERR_INVALID_PARAM;
@@ -242,7 +236,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			abort();
 		}
 		rt=new RenderThread(NPAPI,p);
-		mt.rt=rt;
+		mt.setRenderThread(rt);
 
 		// add xt event handler
 		Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);

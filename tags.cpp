@@ -95,15 +95,13 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	in >> Depth;
 
-//	cout << "Remove " << Depth << endl;
+	list<DisplayListTag*>::iterator it=sys.parsingDisplayList->begin();
 
-	list<DisplayListTag*>::iterator it=sys.currentDisplayList->begin();
-
-	for(it;it!=sys.currentDisplayList->end();it++)
+	for(it;it!=sys.parsingDisplayList->end();it++)
 	{
 		if((*it)->getDepth()==Depth)
 		{
-			sys.currentDisplayList->erase(it);
+			sys.parsingDisplayList->erase(it);
 			break;
 		}
 	}
@@ -119,8 +117,8 @@ bool list_orderer(const DisplayListTag* a, int d);
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-	list < DisplayListTag* >* bak=sys.currentDisplayList;
-	sys.currentDisplayList=&clip.displayList;
+	list < DisplayListTag* >* bak=sys.parsingDisplayList;
+	sys.parsingDisplayList=&clip.displayList;
 	std::cout << "DefineSprite" << std::endl;
 	in >> SpriteID >> FrameCount;
 	if(FrameCount!=1)
@@ -135,22 +133,13 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 			case RENDER_TAG:
 				throw "Sprite Render";
 			case DISPLAY_LIST_TAG:
-				if(dynamic_cast<DisplayListTag*>(tag)->add_to_list)
-				{
-						list<DisplayListTag*>::iterator it=lower_bound(clip.displayList.begin(),
-								clip.displayList.end(),
-								dynamic_cast<DisplayListTag*>(tag)->getDepth(),
-								list_orderer);
-						clip.displayList.insert(it,dynamic_cast<DisplayListTag*>(tag));
-				}
+				clip.addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
 				break;
 			case SHOW_TAG:
 			{
+				//TODO: sync maybe not needed
 				sem_wait(&clip.sem_frames);
 				clip.frames.push_back(Frame(clip.displayList));
-				clip.frames.back().hack=1;
-
-			//	sem_post(&sys.new_frame);
 				sem_post(&clip.sem_frames);
 				break;
 			}
@@ -160,7 +149,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	}
 	while(tag->getType()!=END_TAG);
 	std::cout << "end DefineSprite" << std::endl;
-	sys.currentDisplayList=bak;
+	sys.parsingDisplayList=bak;
 }
 
 void DefineSpriteTag::printInfo(int t)
@@ -233,13 +222,16 @@ void DefineSpriteTag::Render(int layer)
 //	std::cout << "==> Render Sprite" << std::endl;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
 
-	list<DisplayListTag*>::iterator it=clip.frames[clip.state.FP].displayList.begin();
-	clip.frames[clip.state.FP].Render(layer);
+	list<Frame>::iterator frame=clip.frames.begin();
+	for(int i=0;i<clip.state.FP;i++)
+		frame++;
+//	list<DisplayListTag*>::iterator it=frame->displayList.begin();
+	frame->Render(layer);
 
 	if(clip.state.FP!=clip.state.next_FP)
 	{
 		clip.state.FP=clip.state.next_FP;
-		sys.update_request=true;
+		sys.setUpdateRequest(true);
 	}
 //	cout << "Sprite Frame " << clip.state.FP << endl;
 //	std::cout << "==> end render Sprite" << std::endl;
@@ -383,22 +375,10 @@ void DefineTextTag::Render(int layer)
 		if(it->StyleFlagsHasFont)
 		{
 			cur_height=it->TextHeight;
-			//thread_debug( "RENDER: dict mutex lock");
-			sem_wait(&sys.sem_dict);
-			std::vector< RenderTag*>::iterator it3 = sys.dictionary.begin();
-			for(it3;it3!=sys.dictionary.end();it3++)
-			{
-				if((*it3)->getId()==it->FontID)
-				{
-					//std::cout << "Looking for Font " << it->FontID << std::endl;
-					break;
-				}
-			}
-			//thread_debug( "RENDER: dict mutex unlock");
-			sem_post(&sys.sem_dict);
-			font=dynamic_cast<FontTag*>(*it3);
+			RenderTag* it3=sys.dictionaryLookup(it->FontID);
+			font=dynamic_cast<FontTag*>(it3);
 			if(font==NULL)
-				throw "danni";
+				throw "Should be a FontTag";
 		}
 		it2 = it->GlyphEntries.begin();
 		int x2=x,y2=y;
@@ -1611,13 +1591,11 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	}
 	if(PlaceFlagMove)
 	{
-		list < DisplayListTag*>::iterator it=sys.currentDisplayList->begin();
-//		std::cout << "find depth " << Depth << std::endl;
-		for(it;it!=sys.currentDisplayList->end();it++)
+		list < DisplayListTag*>::iterator it=sys.parsingDisplayList->begin();
+		for(it;it!=sys.parsingDisplayList->end();it++)
 		{
 			if((*it)->getDepth()==Depth)
 			{
-				add_to_list=true;
 				PlaceObject2Tag* it2=dynamic_cast<PlaceObject2Tag*>(*it);
 
 				if(!PlaceFlagHasCharacter)
@@ -1650,12 +1628,12 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 						ClipDepth=it2->ClipDepth;
 					}
 				}
-				sys.currentDisplayList->erase(it);
+				sys.parsingDisplayList->erase(it);
 
 				break;
 			}
 		}
-		if(it==sys.currentDisplayList->end())
+		if(it==sys.parsingDisplayList->end())
 		{
 			cout << "no char to move at depth " << Depth << endl;
 		}
@@ -1667,39 +1645,22 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 
 void PlaceObject2Tag::Render()
 {
-//	std::cout << "Render Place object 2 ChaID  " << CharacterId << " @ depth " << Depth <<  std::endl;
-
 	//TODO: support clipping
 	if(ClipDepth!=0)
 		return;
 
-	//std::cout << Matrix << std::endl;
-	if(!PlaceFlagHasCharacter)
+/*	if(!PlaceFlagHasCharacter)
 //		throw "modify not supported";
-		return;
-	//thread_debug( "RENDER: dict mutex lock 2");
-	sem_wait(&sys.sem_dict);
-	std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
-	for(it;it!=sys.dictionary.end();it++)
-	{
-		//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
-		if((*it)->getId()==CharacterId)
-			break;
-	}
-	if(it==sys.dictionary.end())
-	{
-		throw "Object does not exist";
-	}
-	//thread_debug( "RENDER: dict mutex unlock 2");
-	sem_post(&sys.sem_dict);
-	if((*it)->getType()!=RENDER_TAG)
+		return;*/
+	RenderTag* it=sys.dictionaryLookup(CharacterId);
+	if(it->getType()!=RENDER_TAG)
 		throw "cazzo renderi";
 	
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
-	(*it)->Render(Depth);
+	it->Render(Depth);
 	glPopMatrix();
 }
 
@@ -1708,7 +1669,7 @@ void PlaceObject2Tag::printInfo(int t)
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "PlaceObject2 Info ID " << CharacterId << endl;
-	for(int i=0;i<t;i++)
+/*	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "vvvvvvvvvvvvv" << endl;
 
@@ -1731,14 +1692,13 @@ void PlaceObject2Tag::printInfo(int t)
 
 	for(int i=0;i<t;i++)
 		cerr << '\t';
-	cerr << "^^^^^^^^^^^^^" << endl;
+	cerr << "^^^^^^^^^^^^^" << endl;*/
 
 }
 
 void SetBackgroundColorTag::execute()
 {
-//	cout << "execute SetBG" <<  endl;
-	sys.Background=BackgroundColor;
+	sys.setBackground(BackgroundColor);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
@@ -1805,22 +1765,7 @@ void DefineButton2Tag::Render(int layer)
 		}
 		else
 			continue;
-		//thread_debug( "RENDER: dict mutex lock 3");
-		sem_wait(&sys.sem_dict);
-		std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
-		for(it;it!=sys.dictionary.end();it++)
-		{
-			//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
-			if((*it)->getId()==Characters[i].CharacterID)
-				break;
-		}
-		if(it==sys.dictionary.end())
-		{
-			throw "Object does not exist";
-		}
-		RenderTag* c=*it;
-		//thread_debug( "RENDER: dict mutex unlock 3");
-		sem_post(&sys.sem_dict);
+		RenderTag* c=sys.dictionaryLookup(Characters[i].CharacterID);
 		float matrix[16];
 		Characters[i].PlaceMatrix.get4DMatrix(matrix);
 		glPushMatrix();
@@ -1851,7 +1796,7 @@ void DefineButton2Tag::printInfo(int t)
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "DefineButton2 Info" << endl;
-	for(unsigned int i=0;i<Characters.size();i++)
+/*	for(unsigned int i=0;i<Characters.size();i++)
 	{
 		sem_wait(&sys.sem_dict);
 		std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
@@ -1869,5 +1814,5 @@ void DefineButton2Tag::printInfo(int t)
 		sem_post(&sys.sem_dict);
 		c->printInfo(t+1);
 
-	}
+	}*/
 }

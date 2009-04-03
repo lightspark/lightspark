@@ -124,27 +124,28 @@ public:
 };
 
 enum ENGINE { SDL=0, NPAPI};
-
-class InputThread
-{
-private:
-	static pthread_t t;
-	static void* worker(void*);
-	static std::list< IActiveObject* > listeners;
-	static sem_t sem_listeners;
-
-public:
-	InputThread();
-	void wait();
-	static void addListener(IActiveObject* tag);
-};
-
 struct NPAPI_params
 {
 	VisualID visual;
 	Window window;
 	int width;
 	int height;
+};
+
+
+class InputThread
+{
+private:
+	static pthread_t t;
+	static void* sdl_worker(void*);
+	static void* npapi_worker(void*);
+	static std::list< IActiveObject* > listeners;
+	static sem_t sem_listeners;
+
+public:
+	InputThread(ENGINE e, void* param=NULL);
+	void wait();
+	static void addListener(IActiveObject* tag);
 };
 
 class RenderThread

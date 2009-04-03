@@ -144,11 +144,14 @@ void ParseThread::wait()
 	pthread_join(t,NULL);
 }
 
-InputThread::InputThread()
+InputThread::InputThread(ENGINE e, void* param)
 {
 	cout << "creating input" << endl;
 	sem_init(&sem_listeners,0,1);
-//	pthread_create(&t,NULL,worker,NULL);
+	if(e==NPAPI)
+		pthread_create(&t,NULL,npapi_worker,param);
+	else
+		throw "Engine not supported";
 }
 
 void InputThread::wait()
@@ -156,7 +159,57 @@ void InputThread::wait()
 	pthread_join(t,NULL);
 }
 
-void* InputThread::worker(void* in_ptr)
+void* InputThread::npapi_worker(void* in_ptr)
+{
+	NPAPI_params* p=(NPAPI_params*)in_ptr;
+	Display* d=XOpenDisplay(NULL);
+	XSelectInput(d,p->window,PointerMotionMask|ExposureMask|ButtonPress);
+
+	XEvent e;
+	while(XNextEvent(d,&e))
+	{
+		exit(-1);
+		cout << "events" << endl;
+	}
+
+/*	SDL_Event event;
+//	cout << "waiting for input" << endl;
+	while(SDL_WaitEvent(&event))
+	{
+		switch(event.type)
+		{
+			case SDL_KEYDOWN:
+			{
+				switch(event.key.keysym.sym)
+				{
+					case SDLK_q:
+						exit(0);
+						break;
+					case SDLK_n:
+						list<IActiveObject*>::const_iterator it=listeners.begin();
+						//cout << "Fake mouse event" << endl;
+						int c=0;
+						for(it;it!=listeners.end();it++)
+						{
+							if(c==2)
+								(*it)->MouseEvent(0,0);
+							c++;
+						}
+						sem_post(&sys.sem_run);
+						break;
+				}
+				break;
+			}
+			case SDL_MOUSEMOTION:
+			{
+				//printf("Oh! mouse\n");
+				break;
+			}
+		}
+	}*/
+}
+
+void* InputThread::sdl_worker(void* in_ptr)
 {
 /*	SDL_Event event;
 //	cout << "waiting for input" << endl;
@@ -243,6 +296,12 @@ void* RenderThread::npapi_worker(void* param)
 	attrib[8]=None;
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 //	printf("returned %x pointer and %u elements\n",fb, a);
+	if(!fb)
+	{
+		attrib[0]=None;
+		fb=glXChooseFBConfig(d, 0, NULL, &a);
+		cout << "Falling back to no depth and no stencil" << endl;
+	}
 	int i;
 	for(i=0;i<a;i++)
 	{

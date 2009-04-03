@@ -123,7 +123,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),mFontInfo(0),swf_stream(&swf_buf),
-	pt(swf_stream),rt(NULL),mt(NULL)
+	pt(swf_stream),rt(NULL),mt(NULL),it(NULL)
 {
 }
 
@@ -237,8 +237,15 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		}
 		rt=new RenderThread(NPAPI,p);
 		mt.setRenderThread(rt);
+		if(it!=NULL)
+		{
+			cout << "destroy old input" << endl;
+			abort();
+		}
+		it=new InputThread(NPAPI,p);
+		
 
-		// add xt event handler
+/*		// add xt event handler
 		Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);
 		if (xtwidget && mXtwidget != xtwidget)
 		{
@@ -246,7 +253,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			long event_mask = ExposureMask;
 			XSelectInput(mDisplay, mWindow, event_mask);
 			XtAddEventHandler(xtwidget, event_mask, False, (XtEventHandler)xt_event_handler, this);
-		}
+		}*/
 	}
 	draw();
 	return TRUE;

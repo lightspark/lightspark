@@ -82,7 +82,7 @@ private:
 	sync_stream swf_buf;
 
 	ParseThread pt;
-	InputThread it;
+	InputThread* it;
 	RenderThread* rt;
 	MovieTimer mt;
 };

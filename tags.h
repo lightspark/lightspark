@@ -111,6 +111,19 @@ public:
 	void printInfo(int t=0);
 };
 
+class DefineShape3Tag: public RenderTag
+{
+private:
+	UI16 ShapeId;
+	RECT ShapeBounds;
+	SHAPEWITHSTYLE Shapes;
+public:
+	DefineShape3Tag(RECORDHEADER h, std::istream& in);
+	virtual int getId(){ return ShapeId; }
+	virtual void Render(int layer);
+	void printInfo(int t=0);
+};
+
 class DefineMorphShapeTag: public RenderTag
 {
 private:
@@ -357,6 +370,13 @@ public:
 	virtual int getId(){ return SpriteID; }
 	virtual void Render(int layer);
 	void printInfo(int t=0);
+};
+
+class ProtectTag: public ControlTag
+{
+public:
+	ProtectTag(RECORDHEADER h, std::istream& in);
+	void execute( ){};
 };
 
 class TagFactory

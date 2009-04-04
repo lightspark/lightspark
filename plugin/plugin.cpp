@@ -131,19 +131,23 @@ nsPluginInstance::~nsPluginInstance()
 {
 }
 
-static void
-xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent, Boolean *b)
+void xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent, Boolean *b)
 {
-  switch (xevent->type) {
-    case Expose:
-      // get rid of all other exposure events
-      if (plugin) {
-        //while(XCheckTypedWindowEvent(plugin->Display(), plugin->Window(), Expose, xevent));
-        plugin->draw();
-      }
-      default:
-        break;
-  }
+	switch (xevent->type)
+	{
+		case Expose:
+			// get rid of all other exposure events
+			if (plugin)
+			{
+				//while(XCheckTypedWindowEvent(plugin->Display(), plugin->Window(), Expose, xevent));
+				plugin->draw();
+			}
+		case MotionNotify:
+			cout << "Motion" << endl;
+			break;
+		default:
+			break;
+	}
 }
 
 extern SystemState sys;
@@ -226,10 +230,12 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
 		NPAPI_params* p=new NPAPI_params;
 
+		p->display=mDisplay;
 		p->visual=XVisualIDFromVisual(mVisual);
 		p->window=mWindow;
 		p->width=mWidth;
 		p->height=mHeight;
+		NPAPI_params* p2=new NPAPI_params(*p);
 		if(rt!=NULL)
 		{
 			cout << "destroy old context" << endl;
@@ -237,23 +243,23 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		}
 		rt=new RenderThread(NPAPI,p);
 		mt.setRenderThread(rt);
-		if(it!=NULL)
+/*		if(it!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		it=new InputThread(NPAPI,p);
+		it=new InputThread(NPAPI,p2);*/
 		
 
-/*		// add xt event handler
+		// add xt event handler
 		Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);
 		if (xtwidget && mXtwidget != xtwidget)
 		{
 			mXtwidget = xtwidget;
-			long event_mask = ExposureMask;
+			long event_mask = ExposureMask|PointerMotionMask;
 			XSelectInput(mDisplay, mWindow, event_mask);
 			XtAddEventHandler(xtwidget, event_mask, False, (XtEventHandler)xt_event_handler, this);
-		}*/
+		}
 	}
 	draw();
 	return TRUE;

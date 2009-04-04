@@ -47,7 +47,7 @@ int main()
 	SDL_Init ( SDL_INIT_VIDEO|SDL_INIT_EVENTTHREAD );
 	ParseThread pt(f);
 	RenderThread rt(SDL,NULL);
-	InputThread it;
+	InputThread it(SDL,NULL);
 
 	while(1)
 	{

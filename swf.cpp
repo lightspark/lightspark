@@ -27,6 +27,7 @@
 
 #include "swf.h"
 #include "actions.h"
+#include "streams.h"
 
 using namespace std;
 
@@ -55,9 +56,16 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	//Valid only on little endian platforms
 	in >> Signature[0] >> Signature[1] >> Signature[2];
 
-	if(Signature[0]!='F' || Signature[1]!='W' || Signature[2]!='S')
-		throw "bad file\n";
-	in >> Version >> FileLenght >> FrameSize >> FrameRate >> FrameCount;
+	in >> Version >> FileLength;
+	if(Signature[0]=='F' && Signature[1]=='W' && Signature[2]=='S')
+		cout << "Uncompressed SWF file: Version " << (int)Version << " Length " << FileLength << endl;
+	else if(Signature[0]=='C' && Signature[1]=='W' && Signature[2]=='S')
+	{
+		cout << "Compressed SWF file: Version " << (int)Version << " Length " << FileLength << endl;
+		sync_stream* ss=dynamic_cast<sync_stream*>(in.rdbuf());
+		ss->setCompressed();
+	}
+	in >> FrameSize >> FrameRate >> FrameCount;
 }
 
 MovieClip::MovieClip()
@@ -87,14 +95,14 @@ SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.di
 
 void* ParseThread::worker(void* in_ptr)
 {
-	istream& f=*(istream*)in_ptr;
-	SWF_HEADER h(f);
-	sys.setFrameSize(h.getFrameSize());
-
-	int done=0;
-
 	try
 	{
+		istream& f=*(istream*)in_ptr;
+		SWF_HEADER h(f);
+		sys.setFrameSize(h.getFrameSize());
+
+		int done=0;
+
 		TagFactory factory(f);
 		while(1)
 		{
@@ -125,9 +133,9 @@ void* ParseThread::worker(void* in_ptr)
 	}
 	catch(const char* s)
 	{
-/*		cout << "CATCH!!!!" << endl;
+		cout << "CATCH!!!!" << endl;
 		cout << s << endl;
-		cout << "ERRORE!!!!" << endl;*/
+		cout << "ERRORE!!!!" << endl;
 		exit(-1);
 	}
 
@@ -148,8 +156,10 @@ InputThread::InputThread(ENGINE e, void* param)
 {
 	cout << "creating input" << endl;
 	sem_init(&sem_listeners,0,1);
-	if(e==NPAPI)
-		pthread_create(&t,NULL,npapi_worker,param);
+	if(e==SDL)
+	{
+		pthread_create(&t,NULL,sdl_worker,param);
+	}
 	else
 		throw "Engine not supported";
 }
@@ -159,59 +169,24 @@ void InputThread::wait()
 	pthread_join(t,NULL);
 }
 
-void* InputThread::npapi_worker(void* in_ptr)
+/*void* InputThread::npapi_worker(void* in_ptr)
 {
 	NPAPI_params* p=(NPAPI_params*)in_ptr;
-	Display* d=XOpenDisplay(NULL);
-	XSelectInput(d,p->window,PointerMotionMask|ExposureMask|ButtonPress);
+//	Display* d=XOpenDisplay(NULL);
+	XSelectInput(p->display,p->window,PointerMotionMask|ExposureMask);
 
 	XEvent e;
-	while(XNextEvent(d,&e))
+	cout << "INPUT: pre event" << endl;
+	while(XWindowEvent(p->display,p->window,PointerMotionMask|ExposureMask, &e))
 	{
-		exit(-1);
 		cout << "events" << endl;
+		exit(-1);
 	}
-
-/*	SDL_Event event;
-//	cout << "waiting for input" << endl;
-	while(SDL_WaitEvent(&event))
-	{
-		switch(event.type)
-		{
-			case SDL_KEYDOWN:
-			{
-				switch(event.key.keysym.sym)
-				{
-					case SDLK_q:
-						exit(0);
-						break;
-					case SDLK_n:
-						list<IActiveObject*>::const_iterator it=listeners.begin();
-						//cout << "Fake mouse event" << endl;
-						int c=0;
-						for(it;it!=listeners.end();it++)
-						{
-							if(c==2)
-								(*it)->MouseEvent(0,0);
-							c++;
-						}
-						sem_post(&sys.sem_run);
-						break;
-				}
-				break;
-			}
-			case SDL_MOUSEMOTION:
-			{
-				//printf("Oh! mouse\n");
-				break;
-			}
-		}
-	}*/
-}
+}*/
 
 void* InputThread::sdl_worker(void* in_ptr)
 {
-/*	SDL_Event event;
+	SDL_Event event;
 //	cout << "waiting for input" << endl;
 	while(SDL_WaitEvent(&event))
 	{
@@ -224,7 +199,7 @@ void* InputThread::sdl_worker(void* in_ptr)
 					case SDLK_q:
 						exit(0);
 						break;
-					case SDLK_n:
+/*					case SDLK_n:
 						list<IActiveObject*>::const_iterator it=listeners.begin();
 						//cout << "Fake mouse event" << endl;
 						int c=0;
@@ -235,7 +210,7 @@ void* InputThread::sdl_worker(void* in_ptr)
 							c++;
 						}
 						sem_post(&sys.sem_run);
-						break;
+						break;*/
 				}
 				break;
 			}
@@ -245,7 +220,7 @@ void* InputThread::sdl_worker(void* in_ptr)
 				break;
 			}
 		}
-	}*/
+	}
 }
 
 void InputThread::addListener(IActiveObject* ob)

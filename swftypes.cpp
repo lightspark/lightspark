@@ -140,12 +140,11 @@ std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
 	if(v.LineStyleCount==0xff)
 		throw "Line array extended not supported\n";
 //	std::cout << "Reading " << (int)v.LineStyleCount << " Line styles" << std::endl;
-//	std::cout << "@ " << s.tellg() << std::endl;
 	v.LineStyles=new LINESTYLE[v.LineStyleCount];
 	for(int i=0;i<v.LineStyleCount;i++)
 	{
+		v.LineStyles[i].version=v.version;
 		s >> v.LineStyles[i];
-//		std::cout << "@ " << s.tellg() << std::endl;
 	}
 	return s;
 }
@@ -172,6 +171,7 @@ std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	v.FillStyles=new FILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
+		v.FillStyles[i].version=v.version;
 		s >> v.FillStyles[i];
 	}
 	return s;
@@ -214,6 +214,8 @@ std::istream& operator>>(std::istream& s, SHAPE& v)
 
 std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 {
+	v.FillStyles.version=v.version;
+	v.LineStyles.version=v.version;
 	s >> v.FillStyles >> v.LineStyles;
 	BitStream bs(s);
 	v.NumFillBits=UB(4,bs);
@@ -236,7 +238,15 @@ std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 
 std::istream& operator>>(std::istream& s, LINESTYLE& v)
 {
-	s >> v.Width >> v.Color;
+	s >> v.Width;
+	if(v.version==2 || v.version==1)
+	{
+		RGB tmp;
+		s >> tmp;
+		v.Color=tmp;
+	}
+	else
+		s >> v.Color;
 //	std::cout << "Line " << v.Width/20 << ' ' << v.Color << std::endl;
 	return s;
 }
@@ -293,7 +303,14 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 		cout << (int)v.FillStyleType << "@ " << s.tellg() << endl;
 		throw "unsupported fill type";
 	}
-	s >> v.Color;
+	if(v.version==1 || v.version==2)
+	{
+		RGB tmp;
+		s >> tmp;
+		v.Color=tmp;
+	}
+	else
+		s >> v.Color;
 	return s;
 }
 

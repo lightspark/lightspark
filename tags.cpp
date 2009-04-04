@@ -65,10 +65,14 @@ Tag* TagFactory::readTag()
 			return new StartSoundTag(h,f);
 		case 22:
 			return new DefineShape2Tag(h,f);
+		case 24:
+			return new ProtectTag(h,f);
 		case 26:
 			return new PlaceObject2Tag(h,f);
 		case 28:
 			return new RemoveObject2Tag(h,f);
+		case 32:
+			return new DefineShape3Tag(h,f);
 		case 34:
 			return new DefineButton2Tag(h,f);
 		case 37:
@@ -462,6 +466,7 @@ SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h
 
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
+//	std::cout << "DefineShapeTag" << std::endl;
 	Shapes.version=1;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
@@ -475,8 +480,15 @@ void DefineShapeTag::printInfo(int t)
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-	std::cout << "DefineShape2Tag" << std::endl;
+//	std::cout << "DefineShape2Tag" << std::endl;
 	Shapes.version=2;
+	in >> ShapeId >> ShapeBounds >> Shapes;
+}
+
+DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+{
+//	std::cout << "DefineShape2Tag" << std::endl;
+	Shapes.version=3;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
@@ -485,6 +497,13 @@ void DefineShape2Tag::printInfo(int t)
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "DefineShape2 Info ID " << ShapeId << endl;
+}
+
+void DefineShape3Tag::printInfo(int t)
+{
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "DefineShape3 Info ID " << ShapeId << endl;
 }
 
 int crossProd(const Vector2& a, const Vector2& b)
@@ -798,6 +817,99 @@ void DefineShapeTag::Render(int layer)
 }
 
 void DefineShape2Tag::Render(int layer)
+{
+//	std::cerr << "Render Shape2" << std::endl;
+	std::vector < Path > paths;
+	std::vector < Shape > shapes;
+	SHAPERECORD* cur=&(Shapes.ShapeRecords);
+
+	FromShaperecordListToPaths(cur,paths);
+	std::vector < Path >::iterator i=paths.begin();
+	for(i;i!=paths.end();i++)
+	{
+		//TODO: Shape construtor from path
+		shapes.push_back(Shape());
+		FromPathToShape(*i,shapes.back());
+
+		//Fill graphic data
+		if(i->state->validFill0)
+		{
+			if(i->state->fill0)
+			{
+				shapes.back().graphic.filled0=true;
+				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+//				std::cout << shapes.back().graphic.color0 << std::endl;
+			}
+			else
+				shapes.back().graphic.filled0=false;
+		}
+		else
+			shapes.back().graphic.filled0=false;
+
+
+		if(i->state->validFill1)
+		{
+			if(i->state->fill1)
+			{
+				shapes.back().graphic.filled1=true;
+				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+//				std::cout << shapes.back().graphic.color1 << std::endl;
+			}
+			else
+				shapes.back().graphic.filled1=false;
+		}
+		else
+			shapes.back().graphic.filled1=false;
+
+		if(i->state->validStroke)
+		{
+			if(i->state->stroke)
+			{
+				shapes.back().graphic.stroked=true;
+				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
+//				std::cout << shapes.back().graphic.stroke_color << std::endl;
+			}
+			else
+				shapes.back().graphic.stroked=false;
+		}
+		else
+			shapes.back().graphic.stroked=false;
+	}
+/*	if(shapes.size()==1)
+	{
+		if(shapes[0].graphic.filled1 && !shapes[0].graphic.filled0)
+		{
+			shapes[0].graphic.filled0=shapes[0].graphic.filled1;
+			shapes[0].graphic.filled1=0;
+			shapes[0].graphic.color0=shapes[0].graphic.color1;
+			shapes[0].winding=0;
+		}
+	}*/
+
+	for(unsigned int i=0;i<shapes.size();i++)
+	{
+		if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
+		{
+			shapes[i].graphic.filled0=1;
+			shapes[i].graphic.filled1=0;
+			shapes[i].graphic.color0=shapes[i].graphic.color1;
+			shapes[i].winding=0;
+		}
+	}
+
+	std::vector < Shape >::iterator it=shapes.begin();
+	glEnable(GL_STENCIL_TEST);
+	for(it;it!=shapes.end();it++)
+	{
+		it->Render();
+	}
+	it=shapes.begin();
+	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	glDisable(GL_STENCIL_TEST);
+//	std::cout << "fine Render Shape2" << std::endl;
+}
+
+void DefineShape3Tag::Render(int layer)
 {
 //	std::cerr << "Render Shape2" << std::endl;
 	std::vector < Path > paths;

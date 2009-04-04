@@ -252,8 +252,9 @@ public:
 class FILLSTYLE
 {
 public:
+	int version;
 	UI8 FillStyleType;
-	RGB Color;
+	RGBA Color;
 };
 
 class MORPHFILLSTYLE
@@ -267,8 +268,9 @@ public:
 class LINESTYLE
 {
 public:
+	int version;
 	UI16 Width;
-	RGB Color;
+	RGBA Color;
 };
 
 class MORPHLINESTYLE
@@ -283,6 +285,7 @@ public:
 class LINESTYLEARRAY
 {
 public:
+	int version;
 	UI8 LineStyleCount;
 	LINESTYLE* LineStyles;
 };
@@ -297,6 +300,7 @@ public:
 class FILLSTYLEARRAY
 {
 public:
+	int version;
 	UI8 FillStyleCount;
 	FILLSTYLE* FillStyles;
 };
@@ -391,6 +395,7 @@ class SHAPE
 	friend class SHAPERECORD;
 	friend class DefineShapeTag;
 	friend class DefineShape2Tag;
+	friend class DefineShape3Tag;
 	friend class DefineMorphShapeTag;
 	friend class DefineTextTag;
 	friend class DefineFontTag;

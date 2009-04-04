@@ -19,6 +19,7 @@
 
 #include <streambuf>
 #include <semaphore.h>
+#include "zlib.h"
 
 class sync_stream: public std::streambuf
 {
@@ -30,6 +31,7 @@ public:
 	std::streampos seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which);/* = 
 			std::ios_base::in | std::ios_base::out );*/
 	std::streamsize showmanyc( );
+	void setCompressed();
 private:
 	char* buffer;
 	int head;
@@ -39,6 +41,9 @@ private:
 	sem_t full;
 	sem_t ready;
 	int wait;
+	int compressed;
+	z_stream strm;
+	int offset;
 
 	const int buf_size;
 };

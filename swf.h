@@ -39,7 +39,7 @@ class SWF_HEADER
 private:
 	UI8 Signature[3];
 	UI8 Version;
-	UI32 FileLenght;
+	UI32 FileLength;
 	RECT FrameSize;
 	UI16 FrameRate;
 	UI16 FrameCount;
@@ -126,6 +126,7 @@ public:
 enum ENGINE { SDL=0, NPAPI};
 struct NPAPI_params
 {
+	Display* display;
 	VisualID visual;
 	Window window;
 	int width;

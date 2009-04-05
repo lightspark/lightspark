@@ -249,12 +249,41 @@ public:
 //	RECT(FILE* in);
 };
 
+class MATRIX
+{
+	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
+	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
+private:
+	int size;
+	UB HasScale;
+	UB NScaleBits;
+	FB ScaleX;
+	FB ScaleY;
+	UB HasRotate;
+	UB NRotateBits;
+	FB RotateSkew0;
+	FB RotateSkew1;
+	UB NTranslateBits;
+	SB TranslateX;
+	SB TranslateY;
+public:
+	MATRIX():size(0){}
+	void get4DMatrix(float matrix[16]);
+	//int getSize(){return size;}
+};
+
+class GRADIENT
+{
+};
+
 class FILLSTYLE
 {
 public:
 	int version;
 	UI8 FillStyleType;
 	RGBA Color;
+	MATRIX GradientMatrix;
+	GRADIENT Gradient;
 };
 
 class MORPHFILLSTYLE
@@ -442,29 +471,6 @@ public:
 
 class CLIPACTIONS
 {
-};
-
-class MATRIX
-{
-	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
-	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
-private:
-	int size;
-	UB HasScale;
-	UB NScaleBits;
-	FB ScaleX;
-	FB ScaleY;
-	UB HasRotate;
-	UB NRotateBits;
-	FB RotateSkew0;
-	FB RotateSkew1;
-	UB NTranslateBits;
-	SB TranslateX;
-	SB TranslateY;
-public:
-	MATRIX():size(0){}
-	void get4DMatrix(float matrix[16]);
-	//int getSize(){return size;}
 };
 
 class CXFORM

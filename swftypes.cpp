@@ -300,26 +300,35 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 	s >> v.FillStyleType;
 	if(v.FillStyleType!=0)
 	{
-		cout << (int)v.FillStyleType << "@ " << s.tellg() << endl;
+		cout << (int)v.FillStyleType <<  endl;
 		throw "unsupported fill type";
 	}
-	if(v.version==1 || v.version==2)
+	if(v.FillStyleType==0x00)
 	{
-		RGB tmp;
-		s >> tmp;
-		v.Color=tmp;
+		if(v.version==1 || v.version==2)
+		{
+			RGB tmp;
+			s >> tmp;
+			v.Color=tmp;
+		}
+		else
+			s >> v.Color;
 	}
-	else
-		s >> v.Color;
+	else if(v.FillStyleType==0x10)
+	{
+	//	s >> GradientMatrix;
+	//	s >> Gradient;
+	}
 	return s;
 }
+
 
 std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v)
 {
 	s >> v.FillStyleType;
 	if(v.FillStyleType!=0)
 	{
-		cout << (int)v.FillStyleType << endl;
+		cout  << endl << (int)v.FillStyleType << endl;
 		throw "unsupported fill type";
 	}
 	s >> v.StartColor >> v.EndColor;

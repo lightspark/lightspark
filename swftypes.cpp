@@ -130,7 +130,7 @@ std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
 {
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
-		throw "Line array extended not supported\n";
+		LOG(ERROR,"Line array extended not supported");
 	v.LineStyles=new LINESTYLE[v.LineStyleCount];
 	for(int i=0;i<v.LineStyleCount;i++)
 	{
@@ -144,7 +144,7 @@ std::istream& operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 {
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
-		throw "Line array extended not supported\n";
+		LOG(ERROR,"Line array extended not supported");
 	v.LineStyles=new MORPHLINESTYLE[v.LineStyleCount];
 	for(int i=0;i<v.LineStyleCount;i++)
 	{
@@ -157,7 +157,7 @@ std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
 {
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
-		throw "Fill array extended not supported\n";
+		LOG(ERROR,"Fill array extended not supported");
 	v.FillStyles=new FILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
@@ -171,7 +171,7 @@ std::istream& operator>>(std::istream& s, MORPHFILLSTYLEARRAY& v)
 {
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
-		throw "Fill array extended not supported\n";
+		LOG(ERROR,"Fill array extended not supported");
 	v.FillStyles=new MORPHFILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
@@ -251,7 +251,7 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 	v.TextRecordType=UB(1,bs);
 	v.StyleFlagsReserved=UB(3,bs);
 	if(v.StyleFlagsReserved)
-		throw "reserved";
+		LOG(ERROR,"Reserved bits not so reserved");
 	v.StyleFlagsHasFont=UB(1,bs);
 	v.StyleFlagsHasColor=UB(1,bs);
 	v.StyleFlagsHasYOffset=UB(1,bs);
@@ -396,7 +396,6 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 			bs.f >> ps->LineStyles;
 			parent->NumFillBits=UB(4,bs);
 			parent->NumLineBits=UB(4,bs);
-			//throw "unsupported States in shaperecord";
 		}
 	}
 }
@@ -437,7 +436,7 @@ std::istream& operator>>(std::istream& stream, MATRIX& v)
 	v.HasRotate=UB(1,bs);
 	if(v.HasRotate)
 	{
-		throw "unsupported rotate";
+		LOG(ERROR,"Matrix rotation not supported");
 	}
 	v.NTranslateBits=UB(5,bs);
 	v.TranslateX=SB(v.NTranslateBits,bs);
@@ -463,7 +462,7 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	stream >> v.CharacterID >> v.PlaceDepth >> v.PlaceMatrix >> v.ColorTransform;
 
 	if(v.ButtonHasFilterList | v.ButtonHasBlendMode)
-		throw "not supported button record data";
+		LOG(ERROR,"Button record not yet totallt supported");
 
 	return stream;
 }

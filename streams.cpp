@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "streams.h"
+#include "logger.h"
 #include <cstdlib>
 #include <cstring>
 
@@ -45,7 +46,7 @@ void sync_stream::setCompressed()
 	strm.next_in = Z_NULL;
 	int ret = inflateInit(&strm);
 	if (ret != Z_OK)
-		throw "Could not initialize zlib";
+		LOG(ERROR,"Failed to initialize ZLib");
 	sem_post(&mutex);
 }
 
@@ -61,7 +62,7 @@ streamsize sync_stream::xsgetn ( char * s, streamsize n )
 			strm.next_in=(unsigned char*)buffer+head;
 		}
 		else
-			throw "wrap around";
+			LOG(ERROR,"Sync stream WIP 1");
 
 		/* run inflate() on input until output buffer not full */
 		strm.avail_out = n;
@@ -74,7 +75,7 @@ streamsize sync_stream::xsgetn ( char * s, streamsize n )
 		//check if output full and wrap around
 		if(strm.avail_out!=0)
 		{
-			throw "more output please";
+			LOG(ERROR,"Sync stream WIP 2");
 	/*		strm.avail_out = (head-tail);
 			strm.next_out = buffer+tail;
 			inflate(&strm, Z_NO_FLUSH);
@@ -114,7 +115,6 @@ streamsize sync_stream::xsputn ( const char * s, streamsize n )
 	sem_wait(&mutex);
 	if((head-tail+buf_size-1)%buf_size<n)
 	{
-		//throw "no space";
 		n=(head-tail+buf_size-1)%buf_size;
 	}
 	if(tail+n>buf_size)

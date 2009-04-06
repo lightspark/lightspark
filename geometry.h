@@ -41,7 +41,7 @@ struct Numeric_Edge
 		}
 		if(len<2)
 		{
-			throw "len < 2";
+			LOG(ERROR,"Edge should be at least of length 2");
 		}
 	}
 	bool operator<(const Numeric_Edge& e) const

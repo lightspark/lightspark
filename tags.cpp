@@ -132,7 +132,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 		switch(tag->getType())
 		{
 			case RENDER_TAG:
-				throw "Sprite Render";
+				LOG(ERROR,"Dictionary tag inside a sprite. Should not happen.");
+				break;
 			case DISPLAY_LIST_TAG:
 				clip.addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
 				break;
@@ -145,7 +146,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 				break;
 			}
 			case CONTROL_TAG:
-				throw "Sprite Control";
+				LOG(ERROR,"Control tag inside a sprite. Should not happen.");
+				break;
 		}
 	}
 	while(tag->getType()!=END_TAG);
@@ -283,7 +285,8 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	UI16 t;
 	if(FontFlagsWideOffsets)
 	{
-		throw "help7";
+		LOG(ERROR,"Not supported wide font offsets...Aborting");
+		exit(-1);
 	}
 	else
 	{
@@ -303,7 +306,8 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	}
 	if(FontFlagsWideCodes)
 	{
-		throw "help8";
+		LOG(ERROR,"Not supported wide font codes...Aborting");
+		exit(-1);
 	}
 	else
 	{
@@ -369,7 +373,7 @@ void DefineTextTag::Render(int layer)
 			RenderTag* it3=sys.dictionaryLookup(it->FontID);
 			font=dynamic_cast<FontTag*>(it3);
 			if(font==NULL)
-				throw "Should be a FontTag";
+				LOG(ERROR,"Should be a FontTag");
 		}
 		it2 = it->GlyphEntries.begin();
 		int x2=x,y2=y;
@@ -553,9 +557,7 @@ VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 			return MERGE_VERTEX;
 	}
 	else
-	{
-		throw "unknown type";
-	}
+		LOG(ERROR,"Impossible vertex type");
 }
 
 std::ostream& operator<<(std::ostream& s, const GraphicStatus& p)
@@ -932,7 +934,7 @@ void SplitPath(std::vector<Path>& paths,int a, int b)
 		b=c;
 	}
 	if(a==b)
-		throw "cazzo fai";
+		LOG(ERROR,"SplitPath, internal error");
 
 	std::vector<Vector2>::iterator first,end;
 	Path* cur_path;
@@ -1017,7 +1019,7 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 				startY+=cur->ControlDeltaY;
 				if(Vector2(startX,startY,vindex)==paths.back().points.front())
 				{
-					throw "should not happen";
+					LOG(ERROR,"Collision during path generation");
 					paths.back().closed=true;
 				}
 				else
@@ -1077,8 +1079,6 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 			}
 			if(cur->StateFillStyle0)
 			{
-				//if(cur->FillStyle0!=1)
-				//	throw "fill style0";
 				cur_state->validFill0=true;
 				cur_state->fill0=cur->FillStyle0;
 				
@@ -1147,7 +1147,9 @@ void TessellatePath(Path& path, Shape& shape)
 			case END_VERTEX:
 				{
 					if(getVertexType(unsorted[helper[(v->index+1)%size]],unsorted)==MERGE_VERTEX)
-						throw "merge1";
+					{
+						LOG(ERROR,"Not yet implemented tesselation corner case");
+					}
 					std::list<Edge>::iterator d=std::find(T.begin(),T.end(),(v->index+1)%size);
 					T.erase(d);
 					break;
@@ -1156,8 +1158,6 @@ void TessellatePath(Path& path, Shape& shape)
 				{
 					//Edge f(unsorted[(v->index-1+size)%size],unsorted[(v->index+1)%size],-1);
 					int32_t dist;
-					//if(!f.yIntersect(v->y,dist))
-					//	throw "not possible";
 
 					int count=0;
 					int jj;
@@ -1275,8 +1275,6 @@ void TessellatePath(Path& path, Shape& shape)
 					T.push_back(Edge(*v,unsorted[(v->index-1+unsorted.size())%unsorted.size()],v->index));
 					break;
 				}
-			default:
-				throw "Unsupported type";
 		}
 	}
 	sort(D.begin(),D.end());
@@ -1318,7 +1316,7 @@ void TessellatePath(Path& path, Shape& shape)
 		}
 		fixIndex(monotone);
 		if(monotone.size()==2)
-			throw "tess problem";
+			LOG(ERROR,"Tesselator: Internal error");
 
 		TriangulateMonotone(monotone,shape);
 	}
@@ -1428,12 +1426,14 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 			third=unsorted.begin();
 			
 		if(third==second)
-			throw "Internal error while triangulating";
+			LOG(ERROR,"Internal error while triangulating");
 		shape.interior.push_back(Triangle(*first,*second,*third));
 		unsorted.erase(third);
 	}
 	if(unsorted.size()!=3)
-		throw "Internal error after triangulating";
+	{
+		LOG(ERROR,"Internal error while triangulating");
+	}
 	else
 	{
 		shape.interior.push_back(Triangle(unsorted[0],unsorted[1],unsorted[2]));
@@ -1463,12 +1463,12 @@ void DefineFont2Tag::Render(int glyph)
 		if(i->state->validFill0)
 		{
 			if(i->state->fill0!=1)
-				throw "Wrong fill0";
+				LOG(ERROR,"Not valid fill style for font");
 		}
 
 		if(i->state->validFill1)
 		{
-			throw "Wrong fill1";
+			LOG(ERROR,"Not valid fill style for font");
 		}
 
 		if(i->state->validStroke)
@@ -1476,7 +1476,7 @@ void DefineFont2Tag::Render(int glyph)
 			if(i->state->stroke)
 			{
 				shapes.back().graphic.stroked=true;
-				throw "Wrong stroke";
+				LOG(ERROR,"Not valid stroke style for font");
 //				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
 			}
 			else
@@ -1515,12 +1515,12 @@ void DefineFontTag::Render(int glyph)
 		if(i->state->validFill0)
 		{
 			if(i->state->fill0!=1)
-				throw "Wrong fill0";
+				LOG(ERROR,"Not valid fill color for font");
 		}
 
 		if(i->state->validFill1)
 		{
-			throw "Wrong fill1";
+			LOG(ERROR,"Not valid fill color for font");
 		}
 
 		if(i->state->validStroke)
@@ -1528,7 +1528,7 @@ void DefineFontTag::Render(int glyph)
 			if(i->state->stroke)
 			{
 				shapes.back().graphic.stroked=true;
-				throw "Wrong stroke";
+				LOG(ERROR,"Not valid stroke color for font");
 //				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
 			}
 			else
@@ -1563,9 +1563,9 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	PlaceFlagMove=UB(1,bs);
 	in >> Depth;
 	if(PlaceFlagHasClipAction)
-		throw "clip action";
+		LOG(ERROR,"Not yet implemented clipaction support");
 	if(PlaceFlagHasName)
-		throw "has name";
+		LOG(ERROR,"Not yet implemented hasname support");
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
@@ -1640,12 +1640,9 @@ void PlaceObject2Tag::Render()
 	if(ClipDepth!=0)
 		return;
 
-/*	if(!PlaceFlagHasCharacter)
-//		throw "modify not supported";
-		return;*/
 	RenderTag* it=sys.dictionaryLookup(CharacterId);
 	if(it->getType()!=RENDER_TAG)
-		throw "cazzo renderi";
+		LOG(ERROR,"Could not find Character in dictionary");
 	
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);

@@ -157,11 +157,9 @@ InputThread::InputThread(ENGINE e, void* param)
 	LOG(NO_INFO,"Creating input thread");
 	sem_init(&sem_listeners,0,1);
 	if(e==SDL)
-	{
 		pthread_create(&t,NULL,sdl_worker,param);
-	}
 	else
-		throw "Engine not supported";
+		LOG(ERROR,"NPAPI input not yet supported");
 }
 
 void InputThread::wait()
@@ -526,7 +524,7 @@ RenderTag* SystemState::dictionaryLookup(UI16 id)
 			break;
 	}
 	if(it==dictionary.end())
-		throw "No such ID";
+		LOG(ERROR,"No such Id on dictionary " << id);
 	//sem_post(&sem_dict);
 	sem_post(&mutex);
 	return *it;

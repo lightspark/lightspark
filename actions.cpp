@@ -136,47 +136,47 @@ void ActionStop::Execute()
 
 void ActionJump::Execute()
 {
-	throw "WIP11";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionJump");
 }
 
 void ActionStringAdd::Execute()
 {
-	throw "WIP11";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionStringAdd");
 }
 
 void ActionStringExtract::Execute()
 {
-	throw "WIP10";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionStringExtract");
 }
 
 void ActionIf::Execute()
 {
-	throw "WIP9";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionIf");
 }
 
 void ActionNot::Execute()
 {
-	throw "WIP8";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionNot");
 }
 
 void ActionStringEquals::Execute()
 {
-	throw "WIP7";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionStringEquals");
 }
 
 void ActionSetVariable::Execute()
 {
-	throw "WIP6";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionSetVariable");
 }
 
 void ActionGetVariable::Execute()
 {
-	throw "WIP5";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionGetVariable");
 }
 
 void ActionToggleQuality::Execute()
 {
-	throw "WIP4";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionToggleQuality");
 }
 
 ActionGotoFrame::ActionGotoFrame(std::istream& in)
@@ -218,13 +218,12 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			in >> Constant8;
 			break;
 		default:
-			throw "unsupported push";
 	}*/
 }
 
 void ActionPush::Execute()
 {
-	throw "WIP3";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionPush");
 }
 
 ActionGetURL::ActionGetURL(std::istream& in)
@@ -245,7 +244,7 @@ void ActionGotoFrame::Execute()
 
 void ActionConstantPool::Execute()
 {
-	throw "WIP2";
+	LOG(NOT_IMPLEMENTED,"Exec: ActionConstantPool");
 }
 
 std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v)

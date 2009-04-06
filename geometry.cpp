@@ -19,12 +19,13 @@
 
 #include <GL/gl.h>
 #include "swftypes.h"
+#include "logger.h"
 #include "geometry.h"
 
 void Shape::Render() const
 {
 	if(graphic.filled0 && graphic.filled1)
-		throw "both fills";
+		LOG(NOT_IMPLEMENTED,"Not supported double fill style");
 
 	if(winding==0)
 	{

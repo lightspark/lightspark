@@ -20,6 +20,8 @@
 #ifndef SWFTYPES_H
 #define SWFTYPES_H
 
+#include "logger.h"
+
 #include <stdint.h>
 #include <iostream>
 #include <fstream>
@@ -173,7 +175,7 @@ public:
 	FB(int s,BitStream& stream):size(s)
 	{
 		if(s>32)
-			throw "FB too big\n";
+			LOG(ERROR,"Fixed point bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
 	}
 	operator float() const
@@ -202,7 +204,7 @@ public:
 			i++;
 		}*/
 		if(s>32)
-			throw "UB too big\n";
+			LOG(ERROR,"Unsigned bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
 	}
 	operator int() const
@@ -220,7 +222,7 @@ public:
 	SB(int s,BitStream& stream):size(s)
 	{
 		if(s>32)
-			throw "SB too big\n";
+			LOG(ERROR,"Signed bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
 		if(buf>>(s-1)&1)
 		{

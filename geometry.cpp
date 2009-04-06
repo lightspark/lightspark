@@ -23,14 +23,6 @@
 
 void Shape::Render() const
 {
-	/*std::cerr << "winding " << winding << std::endl;
-	std::cerr << "graphic.filled0 " << graphic.filled0 << std::endl;
-	std::cerr << "graphic.color0 " << graphic.color0 << std::endl;
-	std::cerr << "graphic.filled1 " << graphic.filled1 << std::endl;
-	std::cerr << "graphic.color1 " << graphic.color1 << std::endl;
-	std::cerr << "graphic.stroked " << graphic.stroked << std::endl;
-	std::cerr << "graphic.stroke_color " << graphic.stroke_color << std::endl;*/
-
 	if(graphic.filled0 && graphic.filled1)
 		throw "both fills";
 

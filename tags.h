@@ -28,6 +28,8 @@
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,RENDER_TAG,END_TAG};
 
+void ignore(std::istream& i, int count);
+
 class Tag
 {
 protected:
@@ -48,6 +50,13 @@ public:
 		else
 			return Header&0x3f;
 	}
+	void skip(std::istream& in)
+	{
+		if((Header&0x3f)==0x3f)
+			ignore(in,Length);
+		else
+			ignore(in,Header&0x3f);
+	}
 	virtual TAGTYPE getType(){ return TAG; }
 	virtual void printInfo(int t=0){ std::cerr << (Header>>6) << std::endl; throw "No Info"; }
 };
@@ -55,7 +64,7 @@ public:
 class EndTag:public Tag
 {
 public:
-	EndTag(RECORDHEADER h, std::istream& s):Tag(h,s){ std::cout <<"endtag" <<std::endl;}
+	EndTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
 	virtual TAGTYPE getType() { return END_TAG; }
 };
 
@@ -82,7 +91,7 @@ public:
 	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
 	virtual TAGTYPE getType(){ return RENDER_TAG; }
 	virtual int getId(){return 0;} 
-	virtual void Render(int layer){std::cout << "default render" << std::endl; };
+	virtual void Render(int layer){ };
 };
 
 class DefineShapeTag: public RenderTag

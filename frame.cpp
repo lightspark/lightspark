@@ -34,7 +34,6 @@ void Frame::Render(int baseLayer)
 		if(*i!=NULL)
 		{
 			count++;
-			//std::cout << "Depth " << (*i)->getDepth() <<std::endl;
 			glPushMatrix();
 			glTranslatef(0,0,(*i)->getDepth()-baseLayer);
 			//(*i)->printInfo();

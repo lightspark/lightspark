@@ -22,6 +22,7 @@
 #include "actions.h"
 #include "frame.h"
 #include "geometry.h"
+#include "logger.h"
 #include <time.h>
 #include <iostream>
 #include <fstream>
@@ -43,6 +44,7 @@ void thread_debug(char* msg)
 
 int main()
 {
+	Log::initLogging(NOT_IMPLEMENTED);
 	ifstream f("flash.swf",ifstream::in);
 	SDL_Init ( SDL_INIT_VIDEO|SDL_INIT_EVENTTHREAD );
 	ParseThread pt(f);

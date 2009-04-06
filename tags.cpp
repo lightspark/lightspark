@@ -24,6 +24,7 @@
 #include "swftypes.h"
 #include "swf.h"
 #include "input.h"
+#include "logger.h"
 #include <vector>
 #include <list>
 #include <algorithm>
@@ -38,7 +39,6 @@ Tag* TagFactory::readTag()
 {
 	RECORDHEADER h;
 	f >> h;
-//	cout << "position " << f.tellg() << endl;
 	switch(h>>6)
 	{
 		case 0:
@@ -88,9 +88,9 @@ Tag* TagFactory::readTag()
 		case 48:
 			return new DefineFont2Tag(h,f);
 		default:
-			cout << "position " << f.tellg() << endl;
-			cout << (h>>6) << endl;
-			throw "unsupported tag";
+			LOG(NOT_IMPLEMENTED,"Unsupported tag type " << (h>>6));
+			Tag t(h,f);
+			t.skip(f);
 			break;
 	}
 }
@@ -114,7 +114,6 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 {
 	in >> BackgroundColor;
-//	std::cout << BackgroundColor << std::endl;
 }
 
 bool list_orderer(const DisplayListTag* a, int d);
@@ -123,10 +122,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 {
 	list < DisplayListTag* >* bak=sys.parsingDisplayList;
 	sys.parsingDisplayList=&clip.displayList;
-	std::cout << "DefineSprite" << std::endl;
+	LOG(TRACE,"DefineSprite");
 	in >> SpriteID >> FrameCount;
-	if(FrameCount!=1)
-		cout << "unsopported long sprites" << endl;
 	TagFactory factory(in);
 	Tag* tag;
 	do
@@ -152,21 +149,20 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 		}
 	}
 	while(tag->getType()!=END_TAG);
-	std::cout << "end DefineSprite" << std::endl;
 	sys.parsingDisplayList=bak;
 }
 
 void DefineSpriteTag::printInfo(int t)
 {
 /*	MovieClip* bak=sys.currentClip;
-	sys.currentClip=&clip;*/
+	sys.currentClip=&clip;
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "DefineSprite Info ID " << SpriteID << endl;
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "\tFrame Count " << FrameCount << " real " << clip.frames.size() << endl;
-/*	for(int i=0;i<t;i++)
+	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "\tDisplay List Size " << clip.frames.back().displayList.size() << endl;
 	
@@ -223,13 +219,11 @@ void DefineSpriteTag::Render(int layer)
 {
 	RunState* bak=sys.currentState;
 	sys.currentState=&clip.state;
-//	std::cout << "==> Render Sprite" << std::endl;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
 
 	list<Frame>::iterator frame=clip.frames.begin();
 	for(int i=0;i<clip.state.FP;i++)
 		frame++;
-//	list<DisplayListTag*>::iterator it=frame->displayList.begin();
 	frame->Render(layer);
 
 	if(clip.state.FP!=clip.state.next_FP)
@@ -237,14 +231,12 @@ void DefineSpriteTag::Render(int layer)
 		clip.state.FP=clip.state.next_FP;
 		sys.setUpdateRequest(true);
 	}
-//	cout << "Sprite Frame " << clip.state.FP << endl;
-//	std::cout << "==> end render Sprite" << std::endl;
 	sys.currentState=bak;
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 {
-	std::cout << "DefineFont" << std::endl;
+	LOG(TRACE,"DefineFont");
 	in >> FontID;
 
 	UI16 t;
@@ -261,7 +253,6 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 
 	for(int i=0;i<NumGlyphs;i++)
 	{
-//		std::cout << "font read " << i << std::endl;
 		SHAPE t;
 		in >> t;
 		GlyphShapeTable.push_back(t);
@@ -270,7 +261,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 {
-	std::cout << "DefineFont2" << std::endl;
+	LOG(TRACE,"DefineFont2");
 	in >> FontID;
 	BitStream bs(in);
 	FontFlagsHasLayout = UB(1,bs);
@@ -306,7 +297,6 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	}
 	for(int i=0;i<NumGlyphs;i++)
 	{
-	//	std::cout << "font read " << i << std::endl;
 		SHAPE t;
 		in >> t;
 		GlyphShapeTable.push_back(t);
@@ -348,7 +338,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 
 DefineTextTag::DefineTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-	std::cout << "DefineText" << std::endl;
+	LOG(TRACE,"DefineText");
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
 
 	TEXTRECORD t(this);
@@ -363,8 +353,6 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 
 void DefineTextTag::Render(int layer)
 {
-//	std::cerr << "DefineText Render" << std::endl;
-	//std::cout << TextMatrix << std::endl;
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	int x=0,y=0;//1024;
 	std::vector < GLYPHENTRY >::iterator it2;
@@ -375,7 +363,6 @@ void DefineTextTag::Render(int layer)
 	TextMatrix.get4DMatrix(matrix);
 	for(it;it!=TextRecords.end();it++)
 	{
-//		std::cout << "Text height " << it->TextHeight << std::endl;
 		if(it->StyleFlagsHasFont)
 		{
 			cur_height=it->TextHeight;
@@ -388,7 +375,6 @@ void DefineTextTag::Render(int layer)
 		int x2=x,y2=y;
 		x2+=(*it).XOffset;
 		y2+=(*it).YOffset;
-		//glClear(GL_STENCIL_BUFFER_BIT);
 		glEnable(GL_STENCIL_TEST);
 		for(it2;it2!=(it->GlyphEntries.end());it2++)
 		{
@@ -401,7 +387,6 @@ void DefineTextTag::Render(int layer)
 			font->Render(it2->GlyphIndex);
 			glPopMatrix();
 			
-			//std::cout << "Character " << it2->GlyphIndex << std::endl;
 			x2+=it2->GlyphAdvance;
 		}
 //		glPushMatrix();
@@ -419,54 +404,9 @@ void DefineTextTag::printInfo(int t)
 	cerr << "DefineText Info" << endl;
 }
 
-DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	std::cout << "STUB DefineEditText" << std::endl;
-	if((h&0x3f)==0x3f)
-		in.ignore(Length);
-	else
-		in.ignore(h&0x3f);
-}
-
-DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	std::cout << "STUB DefineSound" << std::endl;
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
-}
-
-DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	std::cout << "STUB DefineFontInfo" << std::endl;
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
-}
-
-StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	std::cout << "STUB DefineSound" << std::endl;
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
-}
-
-SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	std::cout << "STUB SoundStreamHead2" << std::endl;
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
-}
-
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-//	std::cout << "DefineShapeTag" << std::endl;
+	LOG(TRACE,"DefineShapeTag");
 	Shapes.version=1;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
@@ -475,19 +415,18 @@ void DefineShapeTag::printInfo(int t)
 {
 	for(int i=0;i<t;i++)
 		cerr << '\t';
-	cerr << "DefineShape Info ID " << ShapeId << endl;
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-//	std::cout << "DefineShape2Tag" << std::endl;
+	LOG(TRACE,"DefineShape2Tag");
 	Shapes.version=2;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
 DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-//	std::cout << "DefineShape2Tag" << std::endl;
+	LOG(TRACE,"DefineShape3Tag");
 	Shapes.version=3;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
@@ -573,7 +512,7 @@ void fixIndex(std::vector<Vector2>& points)
 
 std::ostream& operator<<(std::ostream& s, const Vector2& p)
 {
-	std::cout << "{ "<< p.x << ',' << p.y << " } [" << p.index  << ']' << std::endl;
+	s << "{ "<< p.x << ',' << p.y << " } [" << p.index  << ']' << std::endl;
 	return s;
 }
 
@@ -581,7 +520,6 @@ bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& poi
 
 VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 {
-	//std::cout << "get vertex type on " << v << std::endl;
 	int a=(v.index+1)%points.size();
 	int b=(v.index-1+points.size())%points.size();
 
@@ -622,9 +560,9 @@ VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 
 std::ostream& operator<<(std::ostream& s, const GraphicStatus& p)
 {
-	std::cout << "ValidFill0 "<< p.validFill0 << std::endl;
-	std::cout << "ValidFill1 "<< p.validFill1 << std::endl;
-	std::cout << "ValidStroke "<< p.validStroke << std::endl;
+	s << "ValidFill0 "<< p.validFill0 << std::endl;
+	s << "ValidFill1 "<< p.validFill1 << std::endl;
+	s << "ValidStroke "<< p.validStroke << std::endl;
 	return s;
 }
 
@@ -645,7 +583,6 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 void DefineMorphShapeTag::Render(int layer)
 {
 
-//	std::cerr << "Render Morph Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
@@ -665,7 +602,6 @@ void DefineMorphShapeTag::Render(int layer)
 			{
 				shapes.back().graphic.filled0=true;
 				shapes.back().graphic.color0=MorphFillStyles.FillStyles[i->state->fill0-1].EndColor;
-				//std::cout << shapes.back().graphic.color0 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -680,7 +616,6 @@ void DefineMorphShapeTag::Render(int layer)
 			{
 				shapes.back().graphic.filled1=true;
 				shapes.back().graphic.color1=MorphFillStyles.FillStyles[i->state->fill1-1].EndColor;
-				//std::cout << shapes.back().graphic.color1 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -694,7 +629,6 @@ void DefineMorphShapeTag::Render(int layer)
 			{
 				shapes.back().graphic.stroked=true;
 				shapes.back().graphic.stroke_color=MorphLineStyles.LineStyles[i->state->stroke-1].EndColor;
-				//std::cout << shapes.back().graphic.stroke_color << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -735,7 +669,6 @@ void DefineMorphShapeTag::Render(int layer)
 void DefineShapeTag::Render(int layer)
 {
 
-//	std::cerr << "Render Shape" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -755,7 +688,6 @@ void DefineShapeTag::Render(int layer)
 			{
 				shapes.back().graphic.filled0=true;
 				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
-				//std::cout << shapes.back().graphic.color0 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -770,7 +702,6 @@ void DefineShapeTag::Render(int layer)
 			{
 				shapes.back().graphic.filled1=true;
 				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
-				//std::cout << shapes.back().graphic.color1 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -784,7 +715,6 @@ void DefineShapeTag::Render(int layer)
 			{
 				shapes.back().graphic.stroked=true;
 				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
-				//std::cout << shapes.back().graphic.stroke_color << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -813,12 +743,10 @@ void DefineShapeTag::Render(int layer)
 	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 
 	glDisable(GL_STENCIL_TEST);
-//	std::cout << "fine Render Shape" << std::endl;
 }
 
 void DefineShape2Tag::Render(int layer)
 {
-//	std::cerr << "Render Shape2" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -838,7 +766,6 @@ void DefineShape2Tag::Render(int layer)
 			{
 				shapes.back().graphic.filled0=true;
 				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
-//				std::cout << shapes.back().graphic.color0 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -853,7 +780,6 @@ void DefineShape2Tag::Render(int layer)
 			{
 				shapes.back().graphic.filled1=true;
 				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
-//				std::cout << shapes.back().graphic.color1 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -867,7 +793,6 @@ void DefineShape2Tag::Render(int layer)
 			{
 				shapes.back().graphic.stroked=true;
 				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
-//				std::cout << shapes.back().graphic.stroke_color << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -906,12 +831,10 @@ void DefineShape2Tag::Render(int layer)
 	it=shapes.begin();
 	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glDisable(GL_STENCIL_TEST);
-//	std::cout << "fine Render Shape2" << std::endl;
 }
 
 void DefineShape3Tag::Render(int layer)
 {
-//	std::cerr << "Render Shape2" << std::endl;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -931,7 +854,6 @@ void DefineShape3Tag::Render(int layer)
 			{
 				shapes.back().graphic.filled0=true;
 				shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
-//				std::cout << shapes.back().graphic.color0 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -946,7 +868,6 @@ void DefineShape3Tag::Render(int layer)
 			{
 				shapes.back().graphic.filled1=true;
 				shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
-//				std::cout << shapes.back().graphic.color1 << std::endl;
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -960,7 +881,6 @@ void DefineShape3Tag::Render(int layer)
 			{
 				shapes.back().graphic.stroked=true;
 				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
-//				std::cout << shapes.back().graphic.stroke_color << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -999,7 +919,6 @@ void DefineShape3Tag::Render(int layer)
 	it=shapes.begin();
 	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glDisable(GL_STENCIL_TEST);
-//	std::cout << "fine Render Shape2" << std::endl;
 }
 
 void SplitPath(std::vector<Path>& paths,int a, int b)
@@ -1051,10 +970,7 @@ bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& poi
 		if(e.yIntersect(point.y,dist))
 		{
 			if(dist-point.x>0)
-			{
 				count++;
-				//std::cout << "Impact edge (" << jj << ',' << jj+1 <<')'<< std::endl;
-			}
 		}
 		jj=jj2++;
 	}
@@ -1064,7 +980,6 @@ bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& poi
 		if(dist-point.x>0)
 			count++;
 	}
-	//std::cout << "count " << count << std::endl;
 	return count%2;
 }
 
@@ -1133,7 +1048,6 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 			{
 				if(paths.size())
 				{
-					//std::cout << "2 path" << std::endl;
 					GraphicStatus* old_status=paths.back().state;
 					paths.push_back(Path());
 					cur_state=paths.back().state;
@@ -1142,7 +1056,6 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 				}
 				else
 				{
-					//std::cout << "1 path" << std::endl;
 					paths.push_back(Path());
 					cur_state=paths.back().state;
 				}
@@ -1156,13 +1069,11 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 			{
 				cur_state->validStroke=true;
 				cur_state->stroke=cur->LineStyle;
-				//std::cout << "line style" << std::endl;
 			}
 			if(cur->StateFillStyle1)
 			{
 				cur_state->validFill1=true;
 				cur_state->fill1=cur->FillStyle1;
-				//std::cout << "fill style1" << std::endl;
 			}
 			if(cur->StateFillStyle0)
 			{
@@ -1171,7 +1082,6 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 				cur_state->validFill0=true;
 				cur_state->fill0=cur->FillStyle0;
 				
-				//std::cout << "fill style0" << std::endl;
 			}
 		}
 		cur=cur->next;
@@ -1191,7 +1101,6 @@ void TessellatePath(Path& path, Shape& shape)
 	int primo=sorted[size-1].index;
 
 	int prod=crossProd(unsorted[primo]-unsorted[(primo-1+size)%size],unsorted[(primo+1)%size]-unsorted[(primo-1+size)%size]);
-//	std::cout << "prod2 " << prod << std::endl;
 
 	int area=0;
 	int i;
@@ -1200,13 +1109,11 @@ void TessellatePath(Path& path, Shape& shape)
 		area+=(unsorted[i].y+unsorted[i+1].y)*(unsorted[i+1].x-unsorted[i].x)/2;
 	}
 	area+=(unsorted[i].y+unsorted[0].y)*(unsorted[0].x-unsorted[i].x)/2;
-//	std::cout << "area " << area << std::endl;
 
 	if(prod>0)
 	{
 		if(area>=0)
 			throw "area>0";
-		//std::cout << "reversing" << std::endl;
 		int size2=size-1;
 		for(int i=0;i<size;i++)
 			sorted[i].index=size2-sorted[i].index;
@@ -1228,15 +1135,12 @@ void TessellatePath(Path& path, Shape& shape)
 		Vector2* v=&(sorted[j]);
 		if(v->index==28)
 			char a=0;
-		//std::cout << *v;
 		VTYPE type=getVertexType(*v,unsorted);
-		//std::cout << "Type: " << type << std::endl;
 		switch(type)
 		{
 			case START_VERTEX:
 				{
 					T.push_back(Edge(*v,unsorted[(v->index-1+unsorted.size())%unsorted.size()],v->index));
-					//std::cout << "add edge " << v->index << std::endl;
 					helper[v->index]=v->index;
 					break;
 				}
@@ -1254,7 +1158,6 @@ void TessellatePath(Path& path, Shape& shape)
 					int32_t dist;
 					//if(!f.yIntersect(v->y,dist))
 					//	throw "not possible";
-					//std::cout << "dist " << dist-v->x << std::endl;
 
 					int count=0;
 					int jj;
@@ -1268,7 +1171,6 @@ void TessellatePath(Path& path, Shape& shape)
 							if(dist-v->x>0)
 							{
 								count++;
-								//std::cout << "Impact edge (" << jj << ',' << jj+1 <<')'<< std::endl;
 							}
 						}
 					}
@@ -1278,25 +1180,19 @@ void TessellatePath(Path& path, Shape& shape)
 						if(dist-v->x>0)
 							count++;
 					}
-					//std::cout << "count " << count << std::endl;
 					if(count%2)
 					{
-						//std::cout << "right" << std::endl;
 						if(getVertexType(unsorted[helper[(v->index+1)%size]],unsorted)==MERGE_VERTEX)
 						{
-							//std::cout << "Diag4 " << v->index << ' ' << helper[(v->index+1)%size] << std::endl;
 							D.push_back(Numeric_Edge(v->index,helper[(v->index+1)%size],size));
 						}
-						//std::cout << "remove edge " << (v->index+1)%size << std::endl;
 						std::list<Edge>::iterator d=std::find(T.begin(),T.end(),(v->index+1)%size);
 						T.erase(d);
-						//std::cout << "add edge " << v->index << std::endl;
 						T.push_back(Edge(*v,unsorted[(v->index-1+unsorted.size())%unsorted.size()],v->index));
 						helper[v->index]=v->index;
 					}
 					else
 					{
-						//std::cout << "left" << std::endl;
 						std::list<Edge>::iterator e=T.begin();
 						int32_t dist=0x7fffffff;
 						int dist_index=-1;
@@ -1313,10 +1209,8 @@ void TessellatePath(Path& path, Shape& shape)
 								}
 							}
 						}
-						//std::cout << "left index: " << dist_index << std::endl;
 						if(getVertexType(unsorted[helper[dist_index]],unsorted)==MERGE_VERTEX)
 						{
-							//std::cout << "Diag3 " << v->index << ' ' << helper[dist_index] << std::endl;
 							D.push_back(Numeric_Edge(v->index,helper[dist_index],size));
 						}
 						helper[dist_index]=v->index;
@@ -1328,7 +1222,6 @@ void TessellatePath(Path& path, Shape& shape)
 				{
 					if(getVertexType(unsorted[helper[(v->index+1)%size]],unsorted)==MERGE_VERTEX)
 					{
-						//std::cout << "Diag4 " << v->index << ' ' << helper[(v->index+1)%size] << std::endl;
 						D.push_back(Numeric_Edge(v->index,helper[(v->index+1)%size],size));
 					}
 					std::list<Edge>::iterator e=std::find(T.begin(),T.end(),(v->index+1)%size);
@@ -1350,14 +1243,11 @@ void TessellatePath(Path& path, Shape& shape)
 							}
 						}
 					}
-					//std::cout << "left index: " << dist_index << std::endl;
 					if(getVertexType(unsorted[helper[dist_index]],unsorted)==MERGE_VERTEX)
 					{
-						//std::cout << "Diag2 " << v->index << ' ' << helper[dist_index] << std::endl;
 						D.push_back(Numeric_Edge(v->index,helper[dist_index],size));
 					}
 					helper[dist_index]=v->index;
-					//std::cout << "helper(" << dist_index << "):" << v->index << std::endl;
 					break;
 				}
 			case SPLIT_VERTEX:
@@ -1379,8 +1269,6 @@ void TessellatePath(Path& path, Shape& shape)
 							}
 						}
 					}
-					//std::cout << "left index: " << dist_index << std::endl;
-					//std::cout << "Diag1 " << v->index << ' ' << helper[dist_index] << std::endl;
 					D.push_back(Numeric_Edge(v->index,helper[dist_index],size));
 					helper[dist_index]=v->index;
 					helper[v->index]=v->index;
@@ -1554,7 +1442,6 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 
 void DefineFont2Tag::Render(int glyph)
 {
-//	cerr << "Font2 Render" << endl;
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
@@ -1591,7 +1478,6 @@ void DefineFont2Tag::Render(int glyph)
 				shapes.back().graphic.stroked=true;
 				throw "Wrong stroke";
 //				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
-//				std::cout << shapes.back().graphic.stroke_color << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -1608,7 +1494,6 @@ void DefineFont2Tag::Render(int glyph)
 
 void DefineFontTag::Render(int glyph)
 {
-//	cerr << "Font Render" << endl;
 	SHAPE& shape=GlyphShapeTable[glyph];
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
@@ -1645,7 +1530,6 @@ void DefineFontTag::Render(int glyph)
 				shapes.back().graphic.stroked=true;
 				throw "Wrong stroke";
 //				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
-//				std::cout << shapes.back().graphic.stroke_color << std::endl;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -1662,12 +1546,12 @@ void DefineFontTag::Render(int glyph)
 
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-//	std::cout <<"ShowFrame" << std::endl;
+	LOG(TRACE,"ShowFrame");
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
-//	std::cout << "PlaceObject2" << std::endl;
+	LOG(TRACE,"PlaceObject2");
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
 	PlaceFlagHasClipDepth=UB(1,bs);
@@ -1685,7 +1569,6 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
-//		std::cout << "new character ID " << CharacterId << std::endl;
 	}
 	if(PlaceFlagHasMatrix)
 		in >> Matrix;
@@ -1694,12 +1577,10 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasRatio)
 	{
 		in >> Ratio;
-//		std::cout << "Ratio " << Ratio << std::endl;
 	}
 	if(PlaceFlagHasClipDepth)
 	{
 		in >> ClipDepth;
-//		std::cout << "Clip Depth " << ClipDepth << std::endl;
 	}
 	if(PlaceFlagMove)
 	{
@@ -1746,9 +1627,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 			}
 		}
 		if(it==sys.parsingDisplayList->end())
-		{
-			cout << "no char to move at depth " << Depth << endl;
-		}
+			LOG(ERROR,"no char to move at depth " << Depth);
 	}
 	if(CharacterId==0)
 		abort();
@@ -1789,7 +1668,6 @@ void PlaceObject2Tag::printInfo(int t)
 	std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
 	for(it;it!=sys.dictionary.end();it++)
 	{
-		//std::cout << "ID " << dynamic_cast<RenderTag*>(*it)->getId() << std::endl;
 		if((*it)->getId()==CharacterId)
 			break;
 	}
@@ -1816,16 +1694,11 @@ void SetBackgroundColorTag::execute()
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	in >> Name;
-	cout << "label ";
-	for(unsigned int i=0;i<Name.String.size();i++)
-		cout << Name.String[i];
-
-	cout << endl;
 }
 
 void FrameLabelTag::Render()
 {
-	cout << "execute FrameLabel TODO" <<  endl;
+	LOG(NOT_IMPLEMENTED,"TODO: FrameLabel exec");
 	//sys.currentClip->frames[sys.currentClip->state.FP].setLabel(Name);
 }
 
@@ -1864,16 +1737,13 @@ void DefineButton2Tag::MouseEvent(int x, int y)
 
 void DefineButton2Tag::Render(int layer)
 {
-//	cerr << "render button" << endl;
 	for(unsigned int i=0;i<Characters.size();i++)
 	{
 		if(Characters[i].ButtonStateUp && state==BUTTON_UP)
 		{
-//			cout << "Button UP" << endl;
 		}
 		else if(Characters[i].ButtonStateOver && state==BUTTON_OVER)
 		{
-//			cout << "Button Over" << endl;
 		}
 		else
 			continue;
@@ -1900,7 +1770,6 @@ void DefineButton2Tag::Render(int layer)
 		for(unsigned int j=0;j<Actions[i].Actions.size();j++)
 			Actions[i].Actions[j]->Execute();
 	}
-//	cerr << "end button render" << endl;
 }
 
 void DefineButton2Tag::printInfo(int t)

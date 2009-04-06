@@ -19,7 +19,9 @@
 
 #include "swftypes.h"
 #include "tags.h"
+#include "logger.h"
 #include <string.h>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -27,27 +29,17 @@ RECT::RECT()
 {
 }
 
-/*RECT::RECT(FILE* in)
-{
-	BitStream s(in);
-	NBits=UB(5,s);
-	Xmin=SB(NBits,s);
-	Xmax=SB(NBits,s);
-	Ymin=SB(NBits,s);
-	Ymax=SB(NBits,s);
-}*/
-
 std::ostream& operator<<(std::ostream& s, const RECT& r)
 {
-	std::cout << '{' << (int)r.Xmin << ',' << r.Xmax << ',' << r.Ymin << ',' << r.Ymax << '}';
+	s << '{' << (int)r.Xmin << ',' << r.Xmax << ',' << r.Ymin << ',' << r.Ymax << '}';
 	return s;
 }
 
 ostream& operator<<(ostream& s, const STRING& t)
 {
 	for(unsigned int i=0;i<t.String.size();i++)
-		cout << t.String[i];
-	cout << endl;
+		s << t.String[i];
+	s << endl;
 	return s;
 }
 
@@ -93,9 +85,9 @@ std::ostream& operator<<(std::ostream& s, const MATRIX& r)
 		scaleX=r.ScaleX;
 		scaleY=r.ScaleY;
 	}
-	std::cout << "| " << scaleX << ' ' << (int)r.RotateSkew0 << " |" << std::endl;
-	std::cout << "| " << (int)r.RotateSkew1 << ' ' << scaleY << " |" << std::endl;
-	std::cout << "| " << (int)r.TranslateX << ' ' << (int)r.TranslateY << " |" << std::endl;
+	s << "| " << scaleX << ' ' << (int)r.RotateSkew0 << " |" << std::endl;
+	s << "| " << (int)r.RotateSkew1 << ' ' << scaleY << " |" << std::endl;
+	s << "| " << (int)r.TranslateX << ' ' << (int)r.TranslateY << " |" << std::endl;
 	return s;
 }
 
@@ -139,7 +131,6 @@ std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
 		throw "Line array extended not supported\n";
-//	std::cout << "Reading " << (int)v.LineStyleCount << " Line styles" << std::endl;
 	v.LineStyles=new LINESTYLE[v.LineStyleCount];
 	for(int i=0;i<v.LineStyleCount;i++)
 	{
@@ -167,7 +158,6 @@ std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
 		throw "Fill array extended not supported\n";
-//	std::cout << "Reading " << (int)v.FillStyleCount << " Fill styles" << std::endl;
 	v.FillStyles=new FILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
@@ -182,7 +172,6 @@ std::istream& operator>>(std::istream& s, MORPHFILLSTYLEARRAY& v)
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
 		throw "Fill array extended not supported\n";
-//	std::cout << "Reading " << (int)v.FillStyleCount << " Fill styles" << std::endl;
 	v.FillStyles=new MORPHFILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
@@ -247,7 +236,6 @@ std::istream& operator>>(std::istream& s, LINESTYLE& v)
 	}
 	else
 		s >> v.Color;
-//	std::cout << "Line " << v.Width/20 << ' ' << v.Color << std::endl;
 	return s;
 }
 
@@ -289,7 +277,6 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 	for(int i=0;i<v.GlyphCount;i++)
 	{
 		v.GlyphEntries.push_back(GLYPHENTRY(&v,bs));
-//		std::cout << "reading glyph " << i << "current size " << v.GlyphEntries.size() << std::endl;
 	}
 
 	return in;
@@ -300,8 +287,8 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 	s >> v.FillStyleType;
 	if(v.FillStyleType!=0)
 	{
-		cout << (int)v.FillStyleType <<  endl;
-		throw "unsupported fill type";
+		LOG(ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
+		exit(-1);
 	}
 	if(v.FillStyleType==0x00)
 	{
@@ -328,27 +315,17 @@ std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	s >> v.FillStyleType;
 	if(v.FillStyleType!=0)
 	{
-		cout  << endl << (int)v.FillStyleType << endl;
-		throw "unsupported fill type";
+		LOG(ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
+		exit(-1);
 	}
 	s >> v.StartColor >> v.EndColor;
 	return s;
 }
 
-/*std::istream& operator>>(std::istream& in, GLYPHENTRY& v)
-{
-	BitStream bs(in);
-	v.GlyphIndex = UB(v.parent->parent->GlyphBits,bs);
-	v.GlyphAdvance = SB(v.parent->parent->AdvanceBits,bs);
-	std::cout << "\tglyph " << v.GlyphAdvance << std::endl;
-	return in;
-}*/
-
 GLYPHENTRY::GLYPHENTRY(TEXTRECORD* p,BitStream& bs):parent(p)
 {
 	GlyphIndex = UB(parent->parent->GlyphBits,bs);
 	GlyphAdvance = SB(parent->parent->AdvanceBits,bs);
-	//std::cout << "\tglyph " << GlyphAdvance << std::endl;
 }
 
 SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
@@ -356,12 +333,10 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 	TypeFlag = UB(1,bs);
 	if(TypeFlag)
 	{
-	//	std::cout << "edge shaperecord" << std::endl;
 		StraightFlag=UB(1,bs);
 		NumBits=UB(4,bs);
 		if(StraightFlag)
 		{
-//			std::cout << "\tstraight line bits " << NumBits+2<< std::endl;
 
 			GeneralLineFlag=UB(1,bs);
 			if(!GeneralLineFlag)
@@ -370,17 +345,14 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 			if(GeneralLineFlag || !VertLineFlag)
 			{
 				DeltaX=SB(NumBits+2,bs);
-//				std::cout << "DeltaX " << DeltaX << std::endl;
 			}
 			if(GeneralLineFlag || VertLineFlag)
 			{
 				DeltaY=SB(NumBits+2,bs);
-//				std::cout << "DeltaY " << DeltaY << std::endl;
 			}
 		}
 		else
 		{
-//			std::cout << "\tcurve line bits " << NumBits+2 << std::endl;
 			
 			ControlDeltaX=SB(NumBits+2,bs);
 			ControlDeltaY=SB(NumBits+2,bs);
@@ -391,7 +363,6 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 	}
 	else
 	{
-//		std::cout << "non edge shaperecord" << std::endl;
 		StateNewStyles = UB(1,bs);
 		StateLineStyle = UB(1,bs);
 		StateFillStyle1 = UB(1,bs);
@@ -399,25 +370,20 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 		StateMoveTo = UB(1,bs);
 		if(StateMoveTo)
 		{
-//			std::cout << "move to" << std::endl;
 			MoveBits = UB(5,bs);
-//			std::cout <<"\tbits " << MoveBits << std::endl;
 			MoveDeltaX = SB(MoveBits,bs);
 			MoveDeltaY = SB(MoveBits,bs);
 		}
 		if(StateFillStyle0)
 		{
-//			std::cout << "fill style 0 bits " << parent->NumFillBits << std::endl;
 			FillStyle0=UB(parent->NumFillBits,bs);
 		}
 		if(StateFillStyle1)
 		{
-//			std::cout << "fill style 1 bits " << parent->NumFillBits << std::endl;
 			FillStyle1=UB(parent->NumFillBits,bs);
 		}
 		if(StateLineStyle)
 		{
-//			std::cout << "line style bits " << parent->NumLineBits << std::endl;
 			LineStyle=UB(parent->NumLineBits,bs);
 		}
 		if(StateNewStyles)
@@ -454,7 +420,6 @@ std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 		v.GreenAddTerm=SB(v.NBits,bs);
 		v.BlueAddTerm=SB(v.NBits,bs);
 		v.AlphaAddTerm=SB(v.NBits,bs);
-//		std::cout << v.AlphaAddTerm << std::endl;
 	}
 	return stream;
 }

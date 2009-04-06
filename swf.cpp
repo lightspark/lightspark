@@ -26,6 +26,7 @@
 #include <algorithm>
 
 #include "swf.h"
+#include "logger.h"
 #include "actions.h"
 #include "streams.h"
 
@@ -58,10 +59,12 @@ SWF_HEADER::SWF_HEADER(istream& in)
 
 	in >> Version >> FileLength;
 	if(Signature[0]=='F' && Signature[1]=='W' && Signature[2]=='S')
-		cout << "Uncompressed SWF file: Version " << (int)Version << " Length " << FileLength << endl;
+	{
+		LOG(NO_INFO, "Uncompressed SWF file: Version " << (int)Version << " Length " << FileLength);
+	}
 	else if(Signature[0]=='C' && Signature[1]=='W' && Signature[2]=='S')
 	{
-		cout << "Compressed SWF file: Version " << (int)Version << " Length " << FileLength << endl;
+		LOG(NO_INFO, "Compressed SWF file: Version " << (int)Version << " Length " << FileLength);
 		sync_stream* ss=dynamic_cast<sync_stream*>(in.rdbuf());
 		ss->setCompressed();
 	}
@@ -112,7 +115,6 @@ void* ParseThread::worker(void* in_ptr)
 			//	case TAG:
 				case END_TAG:
 					//sleep(5);
-					//cout << "End of File" << endl;
 					return 0;
 				case RENDER_TAG:
 					sys.addToDictionary(dynamic_cast<RenderTag*>(tag));
@@ -133,9 +135,7 @@ void* ParseThread::worker(void* in_ptr)
 	}
 	catch(const char* s)
 	{
-		cout << "CATCH!!!!" << endl;
-		cout << s << endl;
-		cout << "ERRORE!!!!" << endl;
+		LOG(ERROR,"Exception caught: " << s);
 		exit(-1);
 	}
 
@@ -154,7 +154,7 @@ void ParseThread::wait()
 
 InputThread::InputThread(ENGINE e, void* param)
 {
-	cout << "creating input" << endl;
+	LOG(NO_INFO,"Creating input thread");
 	sem_init(&sem_listeners,0,1);
 	if(e==SDL)
 	{
@@ -176,10 +176,8 @@ void InputThread::wait()
 	XSelectInput(p->display,p->window,PointerMotionMask|ExposureMask);
 
 	XEvent e;
-	cout << "INPUT: pre event" << endl;
 	while(XWindowEvent(p->display,p->window,PointerMotionMask|ExposureMask, &e))
 	{
-		cout << "events" << endl;
 		exit(-1);
 	}
 }*/
@@ -187,7 +185,6 @@ void InputThread::wait()
 void* InputThread::sdl_worker(void* in_ptr)
 {
 	SDL_Event event;
-//	cout << "waiting for input" << endl;
 	while(SDL_WaitEvent(&event))
 	{
 		switch(event.type)
@@ -201,7 +198,6 @@ void* InputThread::sdl_worker(void* in_ptr)
 						break;
 /*					case SDLK_n:
 						list<IActiveObject*>::const_iterator it=listeners.begin();
-						//cout << "Fake mouse event" << endl;
 						int c=0;
 						for(it;it!=listeners.end();it++)
 						{
@@ -275,7 +271,7 @@ void* RenderThread::npapi_worker(void* param)
 	{
 		attrib[0]=None;
 		fb=glXChooseFBConfig(d, 0, NULL, &a);
-		cout << "Falling back to no depth and no stencil" << endl;
+		LOG(ERROR,"Falling back to no depth and no stencil");
 	}
 	int i;
 	for(i=0;i<a;i++)
@@ -348,8 +344,7 @@ void* RenderThread::npapi_worker(void* param)
 	}
 	catch(const char* e)
 	{
-		//cout << e << endl;
-		//cout << "ERRORE main" << endl;
+		LOG(ERROR,"Exception caught " << e);
 		exit(-1);
 	}
 	delete p;
@@ -400,8 +395,7 @@ void* RenderThread::sdl_worker(void*)
 	}
 	catch(const char* e)
 	{
-		cout << e << endl;
-		cout << "ERRORE main" << endl;
+		LOG(ERROR, "Exception caught " << e);
 		exit(-1);
 	}
 }

@@ -18,13 +18,22 @@
 **************************************************************************/
 
 #include "actions.h"
+#include "logger.h"
 
 extern SystemState sys;
 
 using namespace std;
 
+void ignore(istream& i, int count);
+
 DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
+	int dest=in.tellg();
+	if((h&0x3f)==0x3f)
+		dest+=Length;
+	else
+		dest+=h&0x3f;
+
 	while(1)
 	{
 		ACTIONRECORDHEADER ah(in);
@@ -32,6 +41,11 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 			break;
 		else
 			actions.push_back(ah.createTag(in));
+		if(actions.back()==NULL)
+		{
+			ignore(in,dest-in.tellg());
+			break;
+		}
 	}
 }
 
@@ -42,7 +56,6 @@ UI16 DoActionTag::getDepth() const
 
 void DoActionTag::printInfo(int t)
 {
-	cerr << "DoAction Info" << endl;
 	for(unsigned int i=0;i<actions.size();i++)
 		actions[i]->print();
 }
@@ -106,9 +119,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			return new ActionIf(in);
 			break;
 		default:
-			cout << (int)ActionCode << endl;
-			cout << "@ " << in.tellg() << endl;
-			throw "Unsopported actioncode";
+			LOG(NOT_IMPLEMENTED,"Unsopported ActionCode");
 			return NULL;
 	}
 }
@@ -119,7 +130,6 @@ RunState::RunState():FP(0),stop_FP(0)
 
 void ActionStop::Execute()
 {
-	cout << "Stop" << endl;
 	sys.currentState->next_FP=sys.currentState->FP;
 	sys.currentState->stop_FP=true;
 }
@@ -198,7 +208,7 @@ ActionConstantPool::ActionConstantPool(std::istream& in)
 
 ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 {
-	cout << "TODO: ActionPush" << endl;
+	LOG(NOT_IMPLEMENTED,"TODO: ActionPush");
 	in.ignore(h->Length);
 	/*in >> Type;
 
@@ -220,20 +230,16 @@ void ActionPush::Execute()
 ActionGetURL::ActionGetURL(std::istream& in)
 {
 	in >> UrlString >> TargetString;
-
-	cout << UrlString<< endl;
 }
 
 void ActionGetURL::Execute()
 {
-	cout << "Prelevo " << UrlString << endl;
+	LOG(NOT_IMPLEMENTED,"GetURL: exec");
 }
 
 void ActionGotoFrame::Execute()
 {
-	cout << "Goto " << Frame<< endl;
 	sys.currentState->next_FP=Frame;
-	throw "goto";
 	sys.currentState->stop_FP=false;
 }
 

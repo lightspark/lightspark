@@ -19,6 +19,7 @@
 
 #include "tags.h"
 #include "frame.h"
+#include "logger.h"
 #include <vector>
 
 class ActionTag
@@ -52,7 +53,7 @@ class ActionStop:public ActionTag
 {
 public:
 	void Execute();
-	void print(){ std::cerr  << "ActionStop" << std::endl;}
+	void print(){ LOG(TRACE,"ActionStop");}
 };
 
 class ActionJump:public ActionTag
@@ -62,7 +63,7 @@ private:
 public:
 	ActionJump(std::istream& in);
 	void Execute();
-	void print(){ std::cerr  << "ActionJump" << std::endl;}
+	void print(){ LOG(TRACE,"ActionJump");}
 };
 
 class ActionIf:public ActionTag
@@ -72,7 +73,7 @@ private:
 public:
 	ActionIf(std::istream& in);
 	void Execute();
-	void print(){ std::cerr  << "ActionIf" << std::endl;}
+	void print(){ LOG(TRACE,"ActionIf");}
 };
 
 class ActionGotoFrame:public ActionTag
@@ -82,7 +83,7 @@ private:
 public:
 	ActionGotoFrame(std::istream& in);
 	void Execute();
-	void print(){ std::cerr  << "ActionGotoFrame" << std::endl;}
+	void print(){ LOG(TRACE,"ActionGotoFrame");}
 };
 
 class ActionGetURL:public ActionTag
@@ -93,7 +94,7 @@ private:
 public:
 	ActionGetURL(std::istream& in);
 	void Execute();
-	void print(){ std::cerr  << "ActionGetURL" << std::endl;}
+	void print(){ LOG(TRACE,"ActionGetURL");}
 };
 
 class ActionConstantPool : public ActionTag
@@ -104,49 +105,49 @@ private:
 public:
 	ActionConstantPool(std::istream& in);
 	void Execute();
-	void print(){ std::cerr  << "ActionConstantPool" << std::endl;}
+	void print(){ LOG(TRACE,"ActionConstantPool");}
 };
 
 class ActionStringAdd: public ActionTag
 {
 public:
 	void Execute();
-	void print(){ std::cerr  << "ActionStringAdd" << std::endl;}
+	void print(){ LOG(TRACE,"ActionStringAdd");}
 };
 
 class ActionStringExtract: public ActionTag
 {
 public:
 	void Execute();
-	void print(){ std::cerr  << "ActionStringExtract" << std::endl;}
+	void print(){ LOG(TRACE,"ActionStringExtract");}
 };
 
 class ActionNot: public ActionTag
 {
 public:
 	void Execute();
-	void print(){ std::cerr  << "ActionNot" << std::endl;}
+	void print(){ LOG(TRACE,"ActionNot");}
 };
 
 class ActionStringEquals: public ActionTag
 {
 public:
 	void Execute();
-	void print(){ std::cerr  << "ActionStringEquals" << std::endl;}
+	void print(){ LOG(TRACE,"ActionStringEquals");}
 };
 
 class ActionSetVariable: public ActionTag
 {
 public:
 	void Execute();
-	void print(){ std::cerr  << "ActionSetVariable" << std::endl;}
+	void print(){ LOG(TRACE,"ActionSetVariable");}
 };
 
 class ActionGetVariable: public ActionTag
 {
 public:
 	void Execute();
-	void print(){ std::cerr  << "ActionGetVariable" << std::endl;}
+	void print(){ LOG(TRACE,"ActionGetVariable");}
 };
 
 class ActionToggleQuality: public ActionTag
@@ -170,7 +171,7 @@ private:
 public:
 	ActionPush(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
-	void print(){ std::cerr  << "ActionPush" << std::endl;}
+	void print(){ LOG(TRACE,"ActionPush");}
 };
 
 class BUTTONCONDACTION

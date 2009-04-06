@@ -32,28 +32,12 @@
 
 using namespace std;
 
-pthread_t ParseThread::t;
 int ParseThread::error(0);
 
-pthread_t InputThread::t;
-std::list < IActiveObject* > InputThread::listeners;
-sem_t InputThread::sem_listeners;
-
-pthread_t RenderThread::t;
-sem_t RenderThread::mutex;
-sem_t RenderThread::render;
-sem_t RenderThread::end_render;
-Frame* RenderThread::cur_frame=NULL;
 list<DisplayListTag*> null_list;
-Frame RenderThread::bak_frame(null_list);
-int RenderThread::bak(0);
 int RenderThread::error(0);
-GLXFBConfig RenderThread::mFBConfig;
-GLXContext RenderThread::mContext;
-XFontStruct* RenderThread::mFontInfo=NULL;
-GC RenderThread::mGC;
 
-extern SystemState sys;
+extern __thread SystemState* sys;
 
 int thread_debug(char* msg);
 SWF_HEADER::SWF_HEADER(istream& in)
@@ -100,37 +84,53 @@ SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.di
 	sem_init(&mutex,0,1);
 }
 
-void* ParseThread::worker(void* in_ptr)
+void SystemState::reset()
 {
+	dictionary.clear();
+
+	clip=MovieClip();
+	sem_init(&sem_dict,0,1);
+	sem_init(&new_frame,0,0);
+	sem_init(&sem_run,0,0);
+
+	sem_init(&mutex,0,1);
+}
+
+void* ParseThread::worker(ParseThread* th)
+{
+	sys=th->m_sys;
 	try
 	{
-		istream& f=*(istream*)in_ptr;
-		SWF_HEADER h(f);
-		sys.setFrameSize(h.getFrameSize());
+		SWF_HEADER h(th->f);
+		sys->setFrameSize(h.getFrameSize());
 
 		int done=0;
 
-		TagFactory factory(f);
+		TagFactory factory(th->f);
 		while(1)
 		{
 			if(error)
-				break;
+			{
+				LOG(NO_INFO,"Terminating parsing thread on error state");
+				pthread_exit(NULL);
+			}
 			Tag* tag=factory.readTag();
 			switch(tag->getType())
 			{
 			//	case TAG:
 				case END_TAG:
-					//sleep(5);
-					return 0;
+				{
+					pthread_exit(NULL);
+				}
 				case RENDER_TAG:
-					sys.addToDictionary(dynamic_cast<RenderTag*>(tag));
+					sys->addToDictionary(dynamic_cast<RenderTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
-					sys.addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
+					sys->addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
 					break;
 				case SHOW_TAG:
 				{
-					sys.commitFrame();
+					sys->commitFrame();
 					break;
 				}
 				case CONTROL_TAG:
@@ -144,13 +144,20 @@ void* ParseThread::worker(void* in_ptr)
 		LOG(ERROR,"Exception caught: " << s);
 		exit(-1);
 	}
-
-
 }
 
-ParseThread::ParseThread(istream& in)
+ParseThread::ParseThread(SystemState* s,istream& in):f(in)
 {
-	pthread_create(&t,NULL,worker,&in);
+	m_sys=s;
+	error=0;
+	pthread_create(&t,NULL,(thread_worker)worker,this);
+}
+
+ParseThread::~ParseThread()
+{
+	void* ret;
+	pthread_cancel(t);
+	pthread_join(t,&ret);
 }
 
 void ParseThread::wait()
@@ -158,14 +165,25 @@ void ParseThread::wait()
 	pthread_join(t,NULL);
 }
 
-InputThread::InputThread(ENGINE e, void* param)
+InputThread::InputThread(SystemState* s,ENGINE e, void* param)
 {
+	m_sys=s;
 	LOG(NO_INFO,"Creating input thread");
 	sem_init(&sem_listeners,0,1);
 	if(e==SDL)
-		pthread_create(&t,NULL,sdl_worker,param);
+		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 	else
-		LOG(ERROR,"NPAPI input not yet supported");
+	{
+		npapi_params=(NPAPI_params*)param;
+		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
+	}
+}
+
+InputThread::~InputThread()
+{
+	void* ret;
+	pthread_cancel(t);
+	pthread_join(t,&ret);
 }
 
 void InputThread::wait()
@@ -173,9 +191,10 @@ void InputThread::wait()
 	pthread_join(t,NULL);
 }
 
-/*void* InputThread::npapi_worker(void* in_ptr)
+void* InputThread::npapi_worker(InputThread* th)
 {
-	NPAPI_params* p=(NPAPI_params*)in_ptr;
+	sys=th->m_sys;
+/*	NPAPI_params* p=(NPAPI_params*)in_ptr;
 //	Display* d=XOpenDisplay(NULL);
 	XSelectInput(p->display,p->window,PointerMotionMask|ExposureMask);
 
@@ -183,11 +202,12 @@ void InputThread::wait()
 	while(XWindowEvent(p->display,p->window,PointerMotionMask|ExposureMask, &e))
 	{
 		exit(-1);
-	}
-}*/
+	}*/
+}
 
-void* InputThread::sdl_worker(void* in_ptr)
+void* InputThread::sdl_worker(InputThread* th)
 {
+	sys=th->m_sys;
 	SDL_Event event;
 	while(SDL_WaitEvent(&event))
 	{
@@ -232,25 +252,39 @@ void InputThread::addListener(IActiveObject* ob)
 	sem_post(&sem_listeners);
 }
 
-RenderThread::RenderThread(ENGINE e,void* params)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):bak_frame(null_list)
 {
+	LOG(NO_INFO,"RenderThread this=" << this);
+	m_sys=s;
 	sem_init(&mutex,0,1);
 	sem_init(&render,0,0);
 	sem_init(&end_render,0,0);
+	error=0;
 	if(e==SDL)
-		pthread_create(&t,NULL,sdl_worker,0);
+		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 	else if(e==NPAPI)
-		pthread_create(&t,NULL,npapi_worker,params);
-
-
+	{
+		npapi_params=(NPAPI_params*)params;
+		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
+	}
 }
 
-void* RenderThread::npapi_worker(void* param)
+RenderThread::~RenderThread()
 {
-	NPAPI_params* p=(NPAPI_params*)param;
+	LOG(NO_INFO,"~RenderThread this=" << this);
+	void* ret;
+	pthread_cancel(t);
+	pthread_join(t,&ret);
+}
+
+void* RenderThread::npapi_worker(RenderThread* th)
+{
+	sys=th->m_sys;
+	NPAPI_params* p=th->npapi_params;
 	
 	Display* d=XOpenDisplay(NULL);
 
+	XFontStruct *mFontInfo;
 	if (!mFontInfo)
 	{
 		if (!(mFontInfo = XLoadQueryFont(d, "9x15")))
@@ -261,7 +295,7 @@ void* RenderThread::npapi_worker(void* param)
 	v.foreground=BlackPixel(d, 0);
 	v.background=WhitePixel(d, 0);
 	v.font=XLoadFont(d,"9x15");
-	mGC=XCreateGC(d,p->window,GCForeground|GCBackground|GCFont,&v);
+	th->mGC=XCreateGC(d,p->window,GCForeground|GCBackground|GCFont,&v);
 
     	int a,b;
     	Bool glx_present=glXQueryVersion(d,&a,&b);
@@ -302,12 +336,12 @@ void* RenderThread::npapi_worker(void* param)
 			break;
 		}
 	}
-	mFBConfig=fb[i];
+	th->mFBConfig=fb[i];
 	XFree(fb);
 
-	mContext = glXCreateNewContext(d,mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	glXMakeContextCurrent(d, p->window, p->window, mContext);
-	if(!glXIsDirect(d,mContext))
+	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
+	glXMakeContextCurrent(d, p->window, p->window, th->mContext);
+	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");
 
 
@@ -321,7 +355,8 @@ void* RenderThread::npapi_worker(void* param)
 	{
 		while(1)
 		{
-			sem_wait(&render);
+			sem_wait(&th->render);
+			LOG(NO_INFO,"Render now");
 			if(error)
 			{
 				glXMakeContextCurrent(d, None, None, NULL);
@@ -342,16 +377,17 @@ void* RenderThread::npapi_worker(void* param)
 			}
 			else
 			{
-				sem_wait(&mutex);
-				if(cur_frame==NULL)
+				sem_wait(&th->mutex);
+				if(th->cur_frame==NULL)
 				{
-					sem_post(&mutex);
-					sem_post(&end_render);
+					LOG(NO_INFO,"null frame?");
+					sem_post(&th->mutex);
+					sem_post(&th->end_render);
 					continue;
 				}
-				if(!bak)
-					bak_frame=*cur_frame;
-				RGB bg=sys.getBackground();
+				if(!th->bak)
+					th->bak_frame=*th->cur_frame;
+				RGB bg=sys->getBackground();
 				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 				glClearDepth(0xffff);
 				glClearStencil(5);
@@ -359,23 +395,27 @@ void* RenderThread::npapi_worker(void* param)
 				glLoadIdentity();
 
 				float scalex=p->width;
-				scalex/=sys.getFrameSize().Xmax;
+				scalex/=sys->getFrameSize().Xmax;
 				float scaley=p->height;
-				scaley/=sys.getFrameSize().Ymax;
+				scaley/=sys->getFrameSize().Ymax;
 				glScalef(scalex,scaley,1);
 
-				if(bak)
+				if(th->bak)
 				{
-					bak_frame.Render(0);
-					bak=0;
+					LOG(NO_INFO,"bak?");
+					th->bak_frame.Render(0);
+					th->bak=0;
 				}
 				else
-					cur_frame->Render(0);
+				{
+					LOG(NO_INFO,"curframe " << th->cur_frame);
+					th->cur_frame->Render(0);
+				}
 				glFlush();
 				glXSwapBuffers(d,p->window);
-				sem_post(&mutex);
+				sem_post(&th->mutex);
 			}
-			sem_post(&end_render);
+			sem_post(&th->end_render);
 		}
 	}
 	catch(const char* e)
@@ -386,8 +426,9 @@ void* RenderThread::npapi_worker(void* param)
 	delete p;
 }
 
-void* RenderThread::sdl_worker(void*)
+void* RenderThread::sdl_worker(RenderThread* th)
 {
+	sys=th->m_sys;
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
@@ -408,13 +449,13 @@ void* RenderThread::sdl_worker(void*)
 	{
 		while(1)
 		{
-			sem_wait(&render);
-			if(cur_frame==NULL)
+			sem_wait(&th->render);
+			if(th->cur_frame==NULL)
 			{
-				sem_post(&end_render);
+				sem_post(&th->end_render);
 				continue;
 			}
-			RGB bg=sys.getBackground();
+			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 			glClearDepth(0xffff);
 			glClearStencil(5);
@@ -423,10 +464,10 @@ void* RenderThread::sdl_worker(void*)
 
 			glScalef(0.1,0.1,1);
 
-			cur_frame->Render(0);
+			th->cur_frame->Render(0);
 
 			SDL_GL_SwapBuffers( );
-			sem_post(&end_render);
+			sem_post(&th->end_render);
 		}
 	}
 	catch(const char* e)
@@ -460,6 +501,7 @@ void SystemState::waitToRun()
 	{
 		sem_post(&mutex);
 		sem_wait(&sem_run);
+		sem_wait(&mutex);
 	}
 	while(1)
 	{

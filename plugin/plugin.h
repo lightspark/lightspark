@@ -36,12 +36,14 @@
 class MovieTimer
 {
 private:
-	static pthread_t t;
-	static void* timer_worker(void*);
-	static RenderThread* rt;
-	static sem_t mutex;
+	pthread_t t;
+	static void* timer_worker(MovieTimer*);
+	RenderThread* rt;
+	sem_t mutex;
+	SystemState* m_sys;
 public:
-	MovieTimer(RenderThread* r);
+	MovieTimer(SystemState* s,RenderThread* r);
+	~MovieTimer();
 	void setRenderThread(RenderThread* r);
 };
 
@@ -79,6 +81,7 @@ private:
 	std::istream swf_stream;
 	sync_stream swf_buf;
 
+	SystemState m_sys;
 	ParseThread pt;
 	InputThread* it;
 	RenderThread* rt;

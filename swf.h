@@ -34,6 +34,8 @@ class DisplayListTag;
 class RenderTag;
 class IActiveObject;
 
+typedef void* (*thread_worker)(void*);
+
 class SWF_HEADER
 {
 private:
@@ -111,16 +113,20 @@ public:
 	void setBackground(const RGB& bg);
 	void setUpdateRequest(bool s);
 	RenderTag* dictionaryLookup(UI16 id);
+	void reset();
 };
 
 class ParseThread
 {
 private:
-	static pthread_t t;
-	static void* worker(void*);
+	SystemState* m_sys;
+	std::istream& f;
+	pthread_t t;
+	static void* worker(ParseThread*);
 	static int error;
 public:
-	ParseThread(std::istream& in);
+	ParseThread(SystemState* s, std::istream& in);
+	~ParseThread();
 	void wait();
 	static void setError(){error=1;}
 };
@@ -139,39 +145,44 @@ struct NPAPI_params
 class InputThread
 {
 private:
-	static pthread_t t;
-	static void* sdl_worker(void*);
-	static void* npapi_worker(void*);
-	static std::list< IActiveObject* > listeners;
-	static sem_t sem_listeners;
+	SystemState* m_sys;
+	NPAPI_params* npapi_params;
+	pthread_t t;
+	static void* sdl_worker(InputThread*);
+	static void* npapi_worker(InputThread*);
+	std::list< IActiveObject* > listeners;
+	sem_t sem_listeners;
 
 public:
-	InputThread(ENGINE e, void* param=NULL);
+	InputThread(SystemState* s,ENGINE e, void* param=NULL);
+	~InputThread();
 	void wait();
-	static void addListener(IActiveObject* tag);
+	void addListener(IActiveObject* tag);
 };
 
 class RenderThread
 {
 private:
-	static pthread_t t;
-	static void* sdl_worker(void*);
-	static void* npapi_worker(void*);
-	static sem_t mutex;
-	static sem_t render;
-	static sem_t end_render;
-	static Frame* cur_frame;
-	static Frame bak_frame;
-	static int bak;
+	SystemState* m_sys;
+	NPAPI_params* npapi_params;
+	pthread_t t;
+	static void* sdl_worker(RenderThread*);
+	static void* npapi_worker(RenderThread*);
+	sem_t mutex;
+	sem_t render;
+	sem_t end_render;
+	Frame* cur_frame;
+	Frame bak_frame;
+	int bak;
 	static int error;
 
-	static GLXFBConfig mFBConfig;
-	static GLXContext mContext;
-	static XFontStruct *mFontInfo;
-	static GC mGC;
+	GLXFBConfig mFBConfig;
+	GLXContext mContext;
+	GC mGC;
 public:
-	RenderThread(ENGINE e, void* param=NULL);
-	static void draw(Frame* f);
+	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
+	~RenderThread();
+	void draw(Frame* f);
 	void wait();
 	static int setError(){error=1;}
 };

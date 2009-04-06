@@ -20,7 +20,7 @@
 #include "actions.h"
 #include "logger.h"
 
-extern SystemState sys;
+extern __thread SystemState* sys;
 
 using namespace std;
 
@@ -130,8 +130,8 @@ RunState::RunState():FP(0),stop_FP(0)
 
 void ActionStop::Execute()
 {
-	sys.currentState->next_FP=sys.currentState->FP;
-	sys.currentState->stop_FP=true;
+	sys->currentState->next_FP=sys->currentState->FP;
+	sys->currentState->stop_FP=true;
 }
 
 void ActionJump::Execute()
@@ -238,8 +238,8 @@ void ActionGetURL::Execute()
 
 void ActionGotoFrame::Execute()
 {
-	sys.currentState->next_FP=Frame;
-	sys.currentState->stop_FP=false;
+	sys->currentState->next_FP=Frame;
+	sys->currentState->stop_FP=false;
 }
 
 void ActionConstantPool::Execute()

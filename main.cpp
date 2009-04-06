@@ -32,8 +32,7 @@
 
 using namespace std;
 
-//RunState state;
-SystemState sys;
+__thread SystemState* sys;
 
 void thread_debug(char* msg)
 {
@@ -44,18 +43,19 @@ void thread_debug(char* msg)
 
 int main()
 {
+	sys=new SystemState;
 	Log::initLogging(NOT_IMPLEMENTED);
 	ifstream f("flash.swf",ifstream::in);
 	SDL_Init ( SDL_INIT_VIDEO|SDL_INIT_EVENTTHREAD );
-	ParseThread pt(f);
-	RenderThread rt(SDL,NULL);
-	InputThread it(SDL,NULL);
+	ParseThread pt(sys,f);
+	RenderThread rt(sys,SDL,NULL);
+	InputThread it(sys,SDL,NULL);
 
 	while(1)
 	{
-		sys.waitToRun();
-		rt.draw(&sys.getFrameAtFP());
-		sys.advanceFP();
+		sys->waitToRun();
+		rt.draw(&sys->getFrameAtFP());
+		sys->advanceFP();
 	}
 
 

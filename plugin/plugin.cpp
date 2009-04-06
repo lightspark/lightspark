@@ -25,16 +25,22 @@
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
 #define PLUGIN_DESCRIPTION "Shockwave Flash 9.0 r31"
 
+using namespace std;
 
-SystemState sys;
-pthread_t MovieTimer::t;
-sem_t MovieTimer::mutex;
-RenderThread* MovieTimer::rt=NULL;
+__thread SystemState* sys;
 
-MovieTimer::MovieTimer(RenderThread* r)
+MovieTimer::MovieTimer(SystemState* s,RenderThread* r):rt(r)
 {
+	m_sys=s;
 	sem_init(&mutex,0,1);
-	pthread_create(&t,0,timer_worker,NULL);
+	pthread_create(&t,0,(thread_worker)timer_worker,this);
+}
+
+MovieTimer::~MovieTimer()
+{
+	void* ret;
+	pthread_cancel(t);
+	pthread_join(t,&ret);
 }
 
 void MovieTimer::setRenderThread(RenderThread* r)
@@ -46,22 +52,21 @@ void MovieTimer::setRenderThread(RenderThread* r)
 	sem_post(&mutex);
 }
 
-void* MovieTimer::timer_worker(void*)
+void* MovieTimer::timer_worker(MovieTimer* th)
 {
+	sys=th->m_sys;
 	while(1)
 	{
-		sys.waitToRun();
-		sem_wait(&mutex);
-		if(rt!=NULL)
-			rt->draw(&sys.getFrameAtFP());
+		sys->waitToRun();
+		sem_wait(&th->mutex);
+		if(th->rt!=NULL)
+			th->rt->draw(&sys->getFrameAtFP());
 		else
 			throw "rt null";
-		sem_post(&mutex);
-		sys.advanceFP();
+		sem_post(&th->mutex);
+		sys->advanceFP();
 	}
 }
-
-using namespace std;
 
 char* NPP_GetMIMEDescription(void)
 {
@@ -73,7 +78,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(NOT_IMPLEMENTED);
+	Log::initLogging(ERROR);
 	return NPERR_NO_ERROR;
 }
 
@@ -125,12 +130,14 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),swf_stream(&swf_buf),
-	pt(swf_stream),rt(NULL),mt(NULL),it(NULL)
+	pt(&m_sys,swf_stream),rt(NULL),mt(&m_sys,NULL),it(NULL)
 {
 }
 
 nsPluginInstance::~nsPluginInstance()
 {
+	delete rt;
+	delete it;
 }
 
 void xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent, Boolean *b)
@@ -151,8 +158,6 @@ void xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent,
 			break;
 	}
 }
-
-extern SystemState sys;
 
 void nsPluginInstance::draw()
 {
@@ -237,14 +242,15 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			cout << "destroy old context" << endl;
 			abort();
 		}
-		rt=new RenderThread(NPAPI,p);
+		rt=new RenderThread(&m_sys,NPAPI,p);
 		mt.setRenderThread(rt);
-/*		if(it!=NULL)
+
+		if(it!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		it=new InputThread(NPAPI,p2);*/
+		it=new InputThread(&m_sys,NPAPI,p2);
 		
 
 		// add xt event handler

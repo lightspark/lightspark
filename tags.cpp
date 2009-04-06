@@ -31,8 +31,8 @@
 
 using namespace std;
 
-extern RunState state;
-extern SystemState sys;
+//extern RunState state;
+extern __thread SystemState* sys;
 
 int thread_debug(char* msg);
 Tag* TagFactory::readTag()
@@ -99,13 +99,13 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	in >> Depth;
 
-	list<DisplayListTag*>::iterator it=sys.parsingDisplayList->begin();
+	list<DisplayListTag*>::iterator it=sys->parsingDisplayList->begin();
 
-	for(it;it!=sys.parsingDisplayList->end();it++)
+	for(it;it!=sys->parsingDisplayList->end();it++)
 	{
 		if((*it)->getDepth()==Depth)
 		{
-			sys.parsingDisplayList->erase(it);
+			sys->parsingDisplayList->erase(it);
 			break;
 		}
 	}
@@ -120,8 +120,8 @@ bool list_orderer(const DisplayListTag* a, int d);
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-	list < DisplayListTag* >* bak=sys.parsingDisplayList;
-	sys.parsingDisplayList=&clip.displayList;
+	list < DisplayListTag* >* bak=sys->parsingDisplayList;
+	sys->parsingDisplayList=&clip.displayList;
 	LOG(TRACE,"DefineSprite");
 	in >> SpriteID >> FrameCount;
 	TagFactory factory(in);
@@ -151,7 +151,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 		}
 	}
 	while(tag->getType()!=END_TAG);
-	sys.parsingDisplayList=bak;
+	sys->parsingDisplayList=bak;
 }
 
 void DefineSpriteTag::printInfo(int t)
@@ -219,8 +219,8 @@ void ignore(istream& i, int count)
 
 void DefineSpriteTag::Render(int layer)
 {
-	RunState* bak=sys.currentState;
-	sys.currentState=&clip.state;
+	RunState* bak=sys->currentState;
+	sys->currentState=&clip.state;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
 
 	list<Frame>::iterator frame=clip.frames.begin();
@@ -231,9 +231,9 @@ void DefineSpriteTag::Render(int layer)
 	if(clip.state.FP!=clip.state.next_FP)
 	{
 		clip.state.FP=clip.state.next_FP;
-		sys.setUpdateRequest(true);
+		sys->setUpdateRequest(true);
 	}
-	sys.currentState=bak;
+	sys->currentState=bak;
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
@@ -368,7 +368,7 @@ void DefineTextTag::Render(int layer)
 		if(it->StyleFlagsHasFont)
 		{
 			cur_height=it->TextHeight;
-			RenderTag* it3=sys.dictionaryLookup(it->FontID);
+			RenderTag* it3=sys->dictionaryLookup(it->FontID);
 			font=dynamic_cast<FontTag*>(it3);
 			if(font==NULL)
 				LOG(ERROR,"Should be a FontTag");
@@ -1582,8 +1582,8 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	}
 	if(PlaceFlagMove)
 	{
-		list < DisplayListTag*>::iterator it=sys.parsingDisplayList->begin();
-		for(it;it!=sys.parsingDisplayList->end();it++)
+		list < DisplayListTag*>::iterator it=sys->parsingDisplayList->begin();
+		for(it;it!=sys->parsingDisplayList->end();it++)
 		{
 			if((*it)->getDepth()==Depth)
 			{
@@ -1619,12 +1619,12 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 						ClipDepth=it2->ClipDepth;
 					}
 				}
-				sys.parsingDisplayList->erase(it);
+				sys->parsingDisplayList->erase(it);
 
 				break;
 			}
 		}
-		if(it==sys.parsingDisplayList->end())
+		if(it==sys->parsingDisplayList->end())
 			LOG(ERROR,"no char to move at depth " << Depth);
 	}
 	if(CharacterId==0)
@@ -1638,7 +1638,7 @@ void PlaceObject2Tag::Render()
 	if(ClipDepth!=0)
 		return;
 
-	RenderTag* it=sys.dictionaryLookup(CharacterId);
+	RenderTag* it=sys->dictionaryLookup(CharacterId);
 	if(it->getType()!=RENDER_TAG)
 		LOG(ERROR,"Could not find Character in dictionary");
 	
@@ -1683,7 +1683,7 @@ void PlaceObject2Tag::printInfo(int t)
 
 void SetBackgroundColorTag::execute()
 {
-	sys.setBackground(BackgroundColor);
+	sys->setBackground(BackgroundColor);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
@@ -1742,7 +1742,7 @@ void DefineButton2Tag::Render(int layer)
 		}
 		else
 			continue;
-		RenderTag* c=sys.dictionaryLookup(Characters[i].CharacterID);
+		RenderTag* c=sys->dictionaryLookup(Characters[i].CharacterID);
 		float matrix[16];
 		Characters[i].PlaceMatrix.get4DMatrix(matrix);
 		glPushMatrix();

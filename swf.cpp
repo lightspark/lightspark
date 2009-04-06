@@ -33,6 +33,7 @@
 using namespace std;
 
 pthread_t ParseThread::t;
+int ParseThread::error(0);
 
 pthread_t InputThread::t;
 std::list < IActiveObject* > InputThread::listeners;
@@ -46,8 +47,11 @@ Frame* RenderThread::cur_frame=NULL;
 list<DisplayListTag*> null_list;
 Frame RenderThread::bak_frame(null_list);
 int RenderThread::bak(0);
+int RenderThread::error(0);
 GLXFBConfig RenderThread::mFBConfig;
 GLXContext RenderThread::mContext;
+XFontStruct* RenderThread::mFontInfo=NULL;
+GC RenderThread::mGC;
 
 extern SystemState sys;
 
@@ -109,6 +113,8 @@ void* ParseThread::worker(void* in_ptr)
 		TagFactory factory(f);
 		while(1)
 		{
+			if(error)
+				break;
 			Tag* tag=factory.readTag();
 			switch(tag->getType())
 			{
@@ -245,6 +251,18 @@ void* RenderThread::npapi_worker(void* param)
 	
 	Display* d=XOpenDisplay(NULL);
 
+	if (!mFontInfo)
+	{
+		if (!(mFontInfo = XLoadQueryFont(d, "9x15")))
+			printf("Cannot open 9X15 font\n");
+	}
+
+	XGCValues v;
+	v.foreground=BlackPixel(d, 0);
+	v.background=WhitePixel(d, 0);
+	v.font=XLoadFont(d,"9x15");
+	mGC=XCreateGC(d,p->window,GCForeground|GCBackground|GCFont,&v);
+
     	int a,b;
     	Bool glx_present=glXQueryVersion(d,&a,&b);
 	if(!glx_present)
@@ -304,39 +322,59 @@ void* RenderThread::npapi_worker(void* param)
 		while(1)
 		{
 			sem_wait(&render);
-			sem_wait(&mutex);
-			if(cur_frame==NULL)
+			if(error)
 			{
-				sem_post(&mutex);
-				sem_post(&end_render);
-				continue;
-			}
-			if(!bak)
-				bak_frame=*cur_frame;
-			RGB bg=sys.getBackground();
-			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
-			glClearDepth(0xffff);
-			glClearStencil(5);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-			glLoadIdentity();
-
-			float scalex=p->width;
-			scalex/=sys.getFrameSize().Xmax;
-			float scaley=p->height;
-			scaley/=sys.getFrameSize().Ymax;
-			glScalef(scalex,scaley,1);
-
-			if(bak)
-			{
-				bak_frame.Render(0);
-				bak=0;
+				glXMakeContextCurrent(d, None, None, NULL);
+				unsigned int h = p->height/2;
+				unsigned int w = 3 * p->width/4;
+				int x = 0;
+				int y = h/2;
+				GC gc = XCreateGC(d, p->window, 0, NULL);
+				const char *string = "ERROR";
+				int l = strlen(string);
+				int fmba = mFontInfo->max_bounds.ascent;
+				int fmbd = mFontInfo->max_bounds.descent;
+				int fh = fmba + fmbd;
+				y += fh;
+				x += 32;
+				XDrawString(d, p->window, gc, x, y, string, l);
+				XFreeGC(d, gc);
 			}
 			else
-				cur_frame->Render(0);
-			glFlush();
-			glXSwapBuffers(d,p->window);
-			sem_post(&mutex);
+			{
+				sem_wait(&mutex);
+				if(cur_frame==NULL)
+				{
+					sem_post(&mutex);
+					sem_post(&end_render);
+					continue;
+				}
+				if(!bak)
+					bak_frame=*cur_frame;
+				RGB bg=sys.getBackground();
+				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
+				glClearDepth(0xffff);
+				glClearStencil(5);
+				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+				glLoadIdentity();
 
+				float scalex=p->width;
+				scalex/=sys.getFrameSize().Xmax;
+				float scaley=p->height;
+				scaley/=sys.getFrameSize().Ymax;
+				glScalef(scalex,scaley,1);
+
+				if(bak)
+				{
+					bak_frame.Render(0);
+					bak=0;
+				}
+				else
+					cur_frame->Render(0);
+				glFlush();
+				glXSwapBuffers(d,p->window);
+				sem_post(&mutex);
+			}
 			sem_post(&end_render);
 		}
 	}

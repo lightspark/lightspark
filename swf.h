@@ -118,9 +118,11 @@ class ParseThread
 private:
 	static pthread_t t;
 	static void* worker(void*);
+	static int error;
 public:
 	ParseThread(std::istream& in);
 	void wait();
+	static void setError(){error=1;}
 };
 
 enum ENGINE { SDL=0, NPAPI};
@@ -161,12 +163,16 @@ private:
 	static Frame* cur_frame;
 	static Frame bak_frame;
 	static int bak;
+	static int error;
 
 	static GLXFBConfig mFBConfig;
 	static GLXContext mContext;
+	static XFontStruct *mFontInfo;
+	static GC mGC;
 public:
 	RenderThread(ENGINE e, void* param=NULL);
 	static void draw(Frame* f);
 	void wait();
+	static int setError(){error=1;}
 };
 #endif

@@ -75,8 +75,6 @@ private:
 	Visual* mVisual;
 	Colormap mColormap;
 	unsigned int mDepth;
-	XFontStruct *mFontInfo;
-	GC mGC;
 
 	std::istream swf_stream;
 	sync_stream swf_buf;

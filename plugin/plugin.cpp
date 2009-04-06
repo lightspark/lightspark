@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "plugin.h"
+#include "logger.h"
 //#define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define MIME_TYPES_HANDLED  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
@@ -72,6 +73,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
+	Log::initLogging(NOT_IMPLEMENTED);
 	return NPERR_NO_ERROR;
 }
 
@@ -122,7 +124,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
-	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),mFontInfo(0),swf_stream(&swf_buf),
+	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),swf_stream(&swf_buf),
 	pt(swf_stream),rt(NULL),mt(NULL),it(NULL)
 {
 }
@@ -221,12 +223,6 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		mColormap = ws_info->colormap;
 
 		printf("Window visual 0x%x\n",XVisualIDFromVisual(mVisual));
-
-		if (!mFontInfo)
-		{
-			if (!(mFontInfo = XLoadQueryFont(mDisplay, "9x15")))
-				printf("Cannot open 9X15 font\n");
-		}
 
 		NPAPI_params* p=new NPAPI_params;
 

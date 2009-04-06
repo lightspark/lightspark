@@ -1,4 +1,5 @@
 #include "logger.h"
+#include "swf.h"
 
 sem_t Log::mutex;
 LOG_LEVEL Log::log_level=NO_INFO;
@@ -6,6 +7,11 @@ const char* Log::level_names[]={"INFO","ERROR","NOT_IMPLEMENTED","TRACE"};
 
 Log::Log(LOG_LEVEL l)
 {
+	if(l==ERROR)
+	{
+		RenderThread::setError();
+		ParseThread::setError();
+	}
 	if(l<=log_level)
 	{
 		cur_level=l;

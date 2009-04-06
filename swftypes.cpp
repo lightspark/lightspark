@@ -288,7 +288,6 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 	if(v.FillStyleType!=0)
 	{
 		LOG(ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
-		exit(-1);
 	}
 	if(v.FillStyleType==0x00)
 	{
@@ -316,7 +315,6 @@ std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	if(v.FillStyleType!=0)
 	{
 		LOG(ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
-		exit(-1);
 	}
 	s >> v.StartColor >> v.EndColor;
 	return s;

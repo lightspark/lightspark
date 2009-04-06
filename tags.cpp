@@ -286,7 +286,6 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	if(FontFlagsWideOffsets)
 	{
 		LOG(ERROR,"Not supported wide font offsets...Aborting");
-		exit(-1);
 	}
 	else
 	{
@@ -307,7 +306,6 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	if(FontFlagsWideCodes)
 	{
 		LOG(ERROR,"Not supported wide font codes...Aborting");
-		exit(-1);
 	}
 	else
 	{

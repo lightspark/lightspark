@@ -282,13 +282,40 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 	return in;
 }
 
+std::istream& operator>>(std::istream& s, GRADRECORD& v)
+{
+	s >> v.Ratio;
+	if(v.version==1 || v.version==2)
+	{
+		RGB tmp;
+		s >> tmp;
+		v.Color=tmp;
+	}
+	else
+		s >> v.Color;
+
+	return s;
+}
+
+std::istream& operator>>(std::istream& s, GRADIENT& v)
+{
+	BitStream bs(s);
+	v.SpreadMode=UB(2,bs);
+	v.InterpolationMode=UB(2,bs);
+	v.NumGradient=UB(4,bs);
+	GRADRECORD gr;
+	gr.version=v.version;
+	for(int i=0;i<v.NumGradient;i++)
+	{
+		s >> gr;
+		v.GradientRecords.push_back(gr);
+	}
+	return s;
+}
+
 std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 {
 	s >> v.FillStyleType;
-	if(v.FillStyleType!=0)
-	{
-		LOG(ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
-	}
 	if(v.FillStyleType==0x00)
 	{
 		if(v.version==1 || v.version==2)
@@ -302,8 +329,17 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 	}
 	else if(v.FillStyleType==0x10)
 	{
-	//	s >> GradientMatrix;
-	//	s >> Gradient;
+		s >> v.GradientMatrix;
+		v.Gradient.version=v.version;
+		s >> v.Gradient;
+	}
+	else if(v.FillStyleType==0x41)
+	{
+		s >> v.BitmapId >> v.BitmapMatrix;
+	}
+	else
+	{
+		LOG(ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
 	}
 	return s;
 }
@@ -434,7 +470,9 @@ std::istream& operator>>(std::istream& stream, MATRIX& v)
 	v.HasRotate=UB(1,bs);
 	if(v.HasRotate)
 	{
-		LOG(ERROR,"Matrix rotation not supported");
+		v.NRotateBits=UB(5,bs);
+		v.RotateSkew0=FB(v.NRotateBits,bs);
+		v.RotateSkew1=FB(v.NRotateBits,bs);
 	}
 	v.NTranslateBits=UB(5,bs);
 	v.TranslateX=SB(v.NTranslateBits,bs);

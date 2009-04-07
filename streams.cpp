@@ -151,6 +151,7 @@ std::streampos sync_stream::seekoff ( std::streamoff off, std::ios_base::seekdir
 		abort();
 	}
 	sem_post(&mutex);
+	cout << "Stream offset: " << ret << endl;
 	return ret;
 }
 

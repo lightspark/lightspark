@@ -39,9 +39,11 @@ Tag* TagFactory::readTag()
 {
 	RECORDHEADER h;
 	f >> h;
+	LOG(TRACE,"Reading tag type: " << (h>>6));
 	switch(h>>6)
 	{
 		case 0:
+			LOG(TRACE, "EndTag at position " << f.tellg());
 			return new EndTag(h,f);
 		case 1:
 			return new ShowFrameTag(h,f);
@@ -75,6 +77,8 @@ Tag* TagFactory::readTag()
 			return new DefineShape3Tag(h,f);
 		case 34:
 			return new DefineButton2Tag(h,f);
+		case 36:
+			return new DefineBitsLossless2Tag(h,f);
 		case 37:
 			return new DefineEditTextTag(h,f);
 		case 39:
@@ -305,7 +309,12 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	}
 	if(FontFlagsWideCodes)
 	{
-		LOG(ERROR,"Not supported wide font codes...Aborting");
+		for(int i=0;i<NumGlyphs;i++)
+		{
+			UI16 t;
+			in >> t;
+			CodeTable.push_back(t);
+		}
 	}
 	else
 	{
@@ -338,7 +347,25 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	ignore(in,KerningCount*4);
 }
 
-DefineTextTag::DefineTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):RenderTag(h,in)
+{
+	int dest=in.tellg();
+	dest+=getSize();
+	in >> CharacterId >> BitmapFormat >> BitmapWidth >> BitmapHeight;
+
+	if(BitmapFormat==3)
+		in >> BitmapColorTableSize;
+
+	//TODO: read bitmap data
+	ignore(in,dest-in.tellg());
+}
+
+void DefineBitsLossless2Tag::Render(int layer)
+{
+	LOG(NOT_IMPLEMENTED,"DefineBitsLossless2Tag Render");
+}
+
+DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):RenderTag(h,in)
 {
 	LOG(TRACE,"DefineText");
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
@@ -1562,8 +1589,6 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	in >> Depth;
 	if(PlaceFlagHasClipAction)
 		LOG(ERROR,"Not yet implemented clipaction support");
-	if(PlaceFlagHasName)
-		LOG(ERROR,"Not yet implemented hasname support");
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
@@ -1575,6 +1600,10 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasRatio)
 	{
 		in >> Ratio;
+	}
+	if(PlaceFlagHasName)
+	{
+		in >> Name;
 	}
 	if(PlaceFlagHasClipDepth)
 	{

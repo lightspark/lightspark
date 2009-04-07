@@ -388,6 +388,21 @@ public:
 	void execute( ){};
 };
 
+class DefineBitsLossless2Tag: public RenderTag
+{
+private:
+	UI16 CharacterId;
+	UI8 BitmapFormat;
+	UI16 BitmapWidth;
+	UI16 BitmapHeight;
+	UI8 BitmapColorTableSize;
+	//ZlibBitmapData;
+public:
+	DefineBitsLossless2Tag(RECORDHEADER h, std::istream& in);
+	virtual int getId(){ return CharacterId; }
+	virtual void Render(int layer);
+};
+
 class TagFactory
 {
 private:

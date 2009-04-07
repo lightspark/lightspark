@@ -356,7 +356,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		while(1)
 		{
 			sem_wait(&th->render);
-			LOG(NO_INFO,"Render now");
 			if(error)
 			{
 				glXMakeContextCurrent(d, None, None, NULL);
@@ -380,7 +379,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				sem_wait(&th->mutex);
 				if(th->cur_frame==NULL)
 				{
-					LOG(NO_INFO,"null frame?");
 					sem_post(&th->mutex);
 					sem_post(&th->end_render);
 					continue;
@@ -408,7 +406,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				}
 				else
 				{
-					LOG(NO_INFO,"curframe " << th->cur_frame);
 					th->cur_frame->Render(0);
 				}
 				glFlush();

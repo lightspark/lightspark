@@ -78,7 +78,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(ERROR);
+	Log::initLogging(TRACE);
 	return NPERR_NO_ERROR;
 }
 

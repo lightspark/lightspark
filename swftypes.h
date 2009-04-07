@@ -274,8 +274,22 @@ public:
 	//int getSize(){return size;}
 };
 
+class GRADRECORD
+{
+public:
+	int version;
+	UI8 Ratio;
+	RGBA Color;
+};
+
 class GRADIENT
 {
+public:
+	int version;
+	UB SpreadMode;
+	UB InterpolationMode;
+	UB NumGradient;
+	std::vector<GRADRECORD> GradientRecords;
 };
 
 class FILLSTYLE
@@ -286,6 +300,8 @@ public:
 	RGBA Color;
 	MATRIX GradientMatrix;
 	GRADIENT Gradient;
+	UI16 BitmapId;
+	MATRIX BitmapMatrix;
 };
 
 class MORPHFILLSTYLE

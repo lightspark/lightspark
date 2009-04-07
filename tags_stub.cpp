@@ -19,9 +19,9 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"DefineEditText Tag");
 	if((h&0x3f)==0x3f)
-		in.ignore(Length);
+		ignore(in,Length);
 	else
-		in.ignore(h&0x3f);
+		ignore(in,h&0x3f);
 }
 
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)

@@ -79,8 +79,20 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 {
 	switch(ActionCode)
 	{
+		case 0x06:
+			return new ActionPlay;
+			break;
 		case 0x07:
 			return new ActionStop;
+			break;
+		case 0x0b:
+			return new ActionSubtract;
+			break;
+		case 0x0c:
+			return new ActionMultiply;
+			break;
+		case 0x0d:
+			return new ActionDivide;
 			break;
 		case 0x12:
 			return new ActionNot;
@@ -91,6 +103,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x15:
 			return new ActionStringExtract;
 			break;
+		case 0x17:
+			return new ActionPop;
+			break;
 		case 0x1c:
 			return new ActionGetVariable;
 			break;
@@ -100,14 +115,65 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x21:
 			return new ActionStringAdd;
 			break;
+		case 0x22:
+			return new ActionGetProperty;
+			break;
+		case 0x3c:
+			return new ActionDefineLocal;
+			break;
+		case 0x3d:
+			return new ActionCallFunction;
+			break;
+		case 0x3e:
+			return new ActionReturn;
+			break;
+		case 0x40:
+			return new ActionNewObject;
+			break;
+		case 0x47:
+			return new ActionAdd2;
+			break;
+		case 0x48:
+			return new ActionLess2;
+			break;
+		case 0x49:
+			return new ActionEquals2;
+			break;
+		case 0x4c:
+			return new ActionPushDuplicate;
+			break;
+		case 0x4e:
+			return new ActionGetMember;
+			break;
+		case 0x4f:
+			return new ActionSetMember;
+			break;
+		case 0x50:
+			return new ActionIncrement;
+			break;
+		case 0x51:
+			return new ActionDecrement;
+			break;
+		case 0x52:
+			return new ActionCallMethod;
+			break;
+		case 0x67:
+			return new ActionGreater;
+			break;
 		case 0x81:
 			return new ActionGotoFrame(in);
 			break;
 		case 0x83:
 			return new ActionGetURL(in);
 			break;
+		case 0x87:
+			return new ActionStoreRegister(in);
+			break;
 		case 0x88:
 			return new ActionConstantPool(in);
+			break;
+		case 0x8e:
+			return new ActionDefineFunction2(in,this);
 			break;
 		case 0x96:
 			return new ActionPush(in,this);
@@ -115,12 +181,18 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x99:
 			return new ActionJump(in);
 			break;
+		case 0x9a:
+			return new ActionGetURL2(in);
+			break;
+		case 0x9b:
+			return new ActionDefineFunction(in,this);
+			break;
 		case 0x9d:
 			return new ActionIf(in);
 			break;
 		default:
-			LOG(NOT_IMPLEMENTED,"Unsopported ActionCode");
-			return NULL;
+			LOG(ERROR,"Unsopported ActionCode " << (int)ActionCode);
+			break;
 	}
 }
 
@@ -132,6 +204,98 @@ void ActionStop::Execute()
 {
 	sys->currentState->next_FP=sys->currentState->FP;
 	sys->currentState->stop_FP=true;
+}
+
+ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
+{
+	LOG(NOT_IMPLEMENTED,"ActionDefineFunction");
+	ignore(in,h->Length);
+}
+
+ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
+{
+	LOG(NOT_IMPLEMENTED,"ActionDefineFunction2");
+	ignore(in,h->Length);
+}
+
+void ActionPushDuplicate::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionPushDuplicate");
+}
+
+void ActionGetProperty::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionGetProperty");
+}
+
+void ActionDecrement::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionDecrement");
+}
+
+void ActionIncrement::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionIncrement");
+}
+
+void ActionGreater::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionGreater");
+}
+
+void ActionAdd2::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionAdd2");
+}
+
+void ActionDefineLocal::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionDefineLocal");
+}
+
+void ActionNewObject::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionNewObject");
+}
+
+void ActionReturn::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionReturn");
+}
+
+void ActionPop::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionPop");
+}
+
+void ActionCallMethod::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionCallMethod");
+}
+
+void ActionCallFunction::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionCallFunction");
+}
+
+void ActionDefineFunction::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionDefineFunction");
+}
+
+void ActionDefineFunction2::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionDefineFunction2");
+}
+
+void ActionLess2::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionLess2");
+}
+
+void ActionEquals2::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionEquals2");
 }
 
 void ActionJump::Execute()
@@ -152,6 +316,21 @@ void ActionStringExtract::Execute()
 void ActionIf::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionIf");
+}
+
+void ActionDivide::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionDivide");
+}
+
+void ActionMultiply::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionSubtract");
+}
+
+void ActionSubtract::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionSubtract");
 }
 
 void ActionNot::Execute()
@@ -206,10 +385,20 @@ ActionConstantPool::ActionConstantPool(std::istream& in)
 	}
 }
 
+ActionStoreRegister::ActionStoreRegister(std::istream& in)
+{
+	in >> RegisterNumber;
+}
+
+void ActionStoreRegister::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionStoreRegister "<<RegisterNumber);
+}
+
 ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 {
 	LOG(NOT_IMPLEMENTED,"TODO: ActionPush");
-	in.ignore(h->Length);
+	ignore(in,h->Length);
 	/*in >> Type;
 
 	switch(Type)
@@ -219,6 +408,16 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			break;
 		default:
 	}*/
+}
+
+void ActionGetMember::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionGetMember");
+}
+
+void ActionSetMember::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionSetMember");
 }
 
 void ActionPush::Execute()
@@ -231,9 +430,26 @@ ActionGetURL::ActionGetURL(std::istream& in)
 	in >> UrlString >> TargetString;
 }
 
+ActionGetURL2::ActionGetURL2(std::istream& in)
+{
+	LOG(NOT_IMPLEMENTED,"GetURL2");
+	in >> Reserved;
+}
+
 void ActionGetURL::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"GetURL: exec");
+}
+
+void ActionGetURL2::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"GetURL2: exec");
+}
+
+void ActionPlay::Execute()
+{
+	sys->currentState->next_FP=sys->currentState->FP;
+	sys->currentState->stop_FP=false;
 }
 
 void ActionGotoFrame::Execute()

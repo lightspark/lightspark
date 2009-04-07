@@ -49,11 +49,48 @@ public:
 	ActionTag* createTag(std::istream& in);
 };
 
+class ActionGetMember:public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionGetMember");}
+};
+
+class ActionSetMember:public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionSetMember");}
+};
+
+class ActionPlay:public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionPlay");}
+};
+
 class ActionStop:public ActionTag
 {
 public:
 	void Execute();
 	void print(){ LOG(TRACE,"ActionStop");}
+};
+
+class ActionDefineFunction:public ActionTag
+{
+public:
+	ActionDefineFunction(std::istream& in,ACTIONRECORDHEADER* h);
+	void Execute();
+	void print(){ LOG(TRACE,"ActionDefineFunction");}
+};
+
+class ActionDefineFunction2:public ActionTag
+{
+public:
+	ActionDefineFunction2(std::istream& in,ACTIONRECORDHEADER* h);
+	void Execute();
+	void print(){ LOG(TRACE,"ActionDefineFunction2");}
 };
 
 class ActionJump:public ActionTag
@@ -84,6 +121,16 @@ public:
 	ActionGotoFrame(std::istream& in);
 	void Execute();
 	void print(){ LOG(TRACE,"ActionGotoFrame");}
+};
+
+class ActionGetURL2:public ActionTag
+{
+private:
+	UI8 Reserved;
+public:
+	ActionGetURL2(std::istream& in);
+	void Execute();
+	void print(){ LOG(TRACE,"ActionGetURL2");}
 };
 
 class ActionGetURL:public ActionTag
@@ -122,11 +169,130 @@ public:
 	void print(){ LOG(TRACE,"ActionStringExtract");}
 };
 
+class ActionNewObject: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionNewObject");}
+};
+
+class ActionAdd2: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionAdd2");}
+};
+
+class ActionDivide: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionDivide");}
+};
+
+class ActionPushDuplicate: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionPushDuplicate");}
+};
+
+class ActionGetProperty: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionGetProperty");}
+};
+
+class ActionReturn: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionReturn");}
+};
+
+class ActionDefineLocal: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionDefineLocal");}
+};
+
+class ActionMultiply: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionMultiply");}
+};
+
+class ActionSubtract: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionSubtract");}
+};
+
+class ActionPop: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionPop");}
+};
+
 class ActionNot: public ActionTag
 {
 public:
 	void Execute();
 	void print(){ LOG(TRACE,"ActionNot");}
+};
+
+class ActionCallMethod: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionCallMethod");}
+};
+
+class ActionCallFunction: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionCallFunction");}
+};
+
+class ActionDecrement: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionDecrement");}
+};
+
+class ActionIncrement: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionIncrement");}
+};
+
+class ActionGreater: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionGreater");}
+};
+
+class ActionLess2: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionLess2");}
+};
+
+class ActionEquals2: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionEquals2");}
 };
 
 class ActionStringEquals: public ActionTag
@@ -154,6 +320,16 @@ class ActionToggleQuality: public ActionTag
 {
 public:
 	void Execute();
+};
+
+class ActionStoreRegister : public ActionTag
+{
+private:
+	UI8 RegisterNumber;
+public:
+	ActionStoreRegister(std::istream& in);
+	void Execute();
+	void print(){ LOG(TRACE,"ActionStoreRegister");}
 };
 
 class ActionPush : public ActionTag

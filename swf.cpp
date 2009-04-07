@@ -400,7 +400,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 				if(th->bak)
 				{
-					LOG(NO_INFO,"bak?");
 					th->bak_frame.Render(0);
 					th->bak=0;
 				}

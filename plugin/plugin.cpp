@@ -64,7 +64,7 @@ void* MovieTimer::timer_worker(MovieTimer* th)
 		else
 			throw "rt null";
 		sem_post(&th->mutex);
-		sys->advanceFP();
+		//sys->advanceFP();
 	}
 }
 
@@ -78,7 +78,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(TRACE);
+	Log::initLogging(NOT_IMPLEMENTED);
 	return NPERR_NO_ERROR;
 }
 

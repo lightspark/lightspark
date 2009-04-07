@@ -73,15 +73,23 @@ streamsize sync_stream::xsgetn ( char * s, streamsize n )
 		head%=buf_size;
 
 		//check if output full and wrap around
-		if(strm.avail_out!=0)
+		while(strm.avail_out!=0)
 		{
-			LOG(ERROR,"Sync stream WIP 2");
-	/*		strm.avail_out = (head-tail);
-			strm.next_out = buffer+tail;
-			inflate(&strm, Z_NO_FLUSH);
-
-			tail+=(buf_size-tail)-strm.avail_out;
-			tail%=buf_size;*/
+			LOG(NO_INFO,"Try code");
+			wait=(head+1)%buf_size;
+			sem_post(&mutex);
+			sem_wait(&ready);
+			wait=-1;
+			if(head<tail)
+			{
+				strm.avail_in=tail-head;
+				strm.next_in=(unsigned char*)buffer+head;
+				inflate(&strm, Z_NO_FLUSH);
+			}
+			else
+				LOG(ERROR,"Sync stream WIP 3");
+			head+=(tail-head)-strm.avail_in;
+			head%=buf_size;
 		}
 	}
 	else
@@ -151,7 +159,6 @@ std::streampos sync_stream::seekoff ( std::streamoff off, std::ios_base::seekdir
 		abort();
 	}
 	sem_post(&mutex);
-	cout << "Stream offset: " << ret << endl;
 	return ret;
 }
 

@@ -152,10 +152,44 @@ public:
 };
 
 
-class DefineEditTextTag: public Tag
+class DefineEditTextTag: public RenderTag
 {
+private:
+	UI16 CharacterID;
+	RECT Bounds;
+	UB HasText;
+	UB WordWrap;
+	UB Multiline;
+	UB Password;
+	UB ReadOnly;
+	UB HasTextColor;
+	UB HasMaxLength;
+	UB HasFont;
+	UB HasFontClass;
+	UB AutoSize;
+	UB HasLayout;
+	UB NoSelect;
+	UB Border;
+	UB WasStatic;
+	UB HTML;
+	UB UseOutlines;
+	UI16 FontID;
+	STRING FontClass;
+	UI16 FontHeight;
+	RGBA TextColor;
+	UI16 MaxLength;
+	UI8 Align;
+	UI16 LeftMargin;
+	UI16 RightMargin;
+	UI16 Indent;
+	SI16 Leading;
+	STRING VariableName;
+	STRING InitialText;
+
 public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
+	virtual int getId(){ return CharacterID; }
+	virtual void Render(int layer);
 };
 
 class DefineSoundTag: public Tag

@@ -103,6 +103,16 @@ public:
 	void print(){ LOG(TRACE,"ActionJump");}
 };
 
+class ActionWith:public ActionTag
+{
+private:
+	UI16 Size;
+public:
+	ActionWith(std::istream& in);
+	void Execute();
+	void print(){ LOG(TRACE,"ActionWith");}
+};
+
 class ActionIf:public ActionTag
 {
 private:
@@ -258,6 +268,13 @@ class ActionCallFunction: public ActionTag
 public:
 	void Execute();
 	void print(){ LOG(TRACE,"ActionCallFunction");}
+};
+
+class ActionCloneSprite: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionCloneSprite");}
 };
 
 class ActionDecrement: public ActionTag

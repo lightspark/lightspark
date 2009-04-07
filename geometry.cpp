@@ -122,6 +122,8 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 	int u1,u2;
 	u1=min(y1,y2);
 	u2=max(y1,y2);
+//	u1=y1;
+//	u2=y2;
 
 	if((y>u1) && (y<u2))
 	{

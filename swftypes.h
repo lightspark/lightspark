@@ -528,6 +528,8 @@ std::ostream& operator<<(std::ostream& s, const RGBA& r);
 std::ostream& operator<<(std::ostream& s, const STRING& r);
 std::istream& operator>>(std::istream& s, RECT& v);
 
+std::istream& operator>>(std::istream& s, RGB& v);
+std::istream& operator>>(std::istream& s, RGBA& v);
 std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 std::istream& operator>>(std::istream& stream, SHAPE& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLEARRAY& v);

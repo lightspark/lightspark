@@ -15,15 +15,6 @@ ProtectTag::ProtectTag(RECORDHEADER h, istream& in):ControlTag(h,in)
 		ignore(in,h&0x3f);
 }
 
-DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	LOG(NOT_IMPLEMENTED,"DefineEditText Tag");
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
-}
-
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"DefineSound Tag");

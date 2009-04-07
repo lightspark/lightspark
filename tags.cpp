@@ -122,6 +122,51 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 
 bool list_orderer(const DisplayListTag* a, int d);
 
+DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+{
+	in >> CharacterID >> Bounds;
+	BitStream bs(in);
+	HasText=UB(1,bs);
+	WordWrap=UB(1,bs);
+	Multiline=UB(1,bs);
+	Password=UB(1,bs);
+	ReadOnly=UB(1,bs);
+	HasTextColor=UB(1,bs);
+	HasMaxLength=UB(1,bs);
+	HasFont=UB(1,bs);
+	HasFontClass=UB(1,bs);
+	AutoSize=UB(1,bs);
+	HasLayout=UB(1,bs);
+	NoSelect=UB(1,bs);
+	Border=UB(1,bs);
+	WasStatic=UB(1,bs);
+	HTML=UB(1,bs);
+	UseOutlines=UB(1,bs);
+	if(HasFont)
+	{
+		in >> FontID;
+		if(HasFontClass)
+			in >> FontClass;
+		in >> FontHeight;
+	}
+	if(HasTextColor)
+		in >> TextColor;
+	if(HasMaxLength)
+		in >> MaxLength;
+	if(HasLayout)
+	{
+		in >> Align >> LeftMargin >> RightMargin >> Indent >> Leading;
+	}
+	in >> VariableName;
+	if(HasText)
+		in >> InitialText;
+}
+
+void DefineEditTextTag::Render(int layer)
+{
+	LOG(NOT_IMPLEMENTED,"DefineEditTextTag: Render");
+}
+
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
 	list < DisplayListTag* >* bak=sys->parsingDisplayList;
@@ -618,6 +663,11 @@ void DefineMorphShapeTag::Render(int layer)
 	std::vector < Path >::iterator i=paths.begin();
 	for(i;i!=paths.end();i++)
 	{
+		if(i->points.size()==0)
+		{
+			LOG(TRACE,"Ignoring empty path");
+			continue;
+		}
 		//TODO: Shape construtor from path
 		shapes.push_back(Shape());
 		FromPathToShape(*i,shapes.back());
@@ -704,6 +754,11 @@ void DefineShapeTag::Render(int layer)
 	std::vector < Path >::iterator i=paths.begin();
 	for(i;i!=paths.end();i++)
 	{
+		if(i->points.size()==0)
+		{
+			LOG(TRACE,"Ignoring empty path");
+			continue;
+		}
 		//TODO: Shape construtor from path
 		shapes.push_back(Shape());
 		FromPathToShape(*i,shapes.back());
@@ -782,6 +837,11 @@ void DefineShape2Tag::Render(int layer)
 	std::vector < Path >::iterator i=paths.begin();
 	for(i;i!=paths.end();i++)
 	{
+		if(i->points.size()==0)
+		{
+			LOG(TRACE,"Ignoring empty path");
+			continue;
+		}
 		//TODO: Shape construtor from path
 		shapes.push_back(Shape());
 		FromPathToShape(*i,shapes.back());
@@ -870,6 +930,11 @@ void DefineShape3Tag::Render(int layer)
 	std::vector < Path >::iterator i=paths.begin();
 	for(i;i!=paths.end();i++)
 	{
+		if(i->points.size()==0)
+		{
+			LOG(TRACE,"Ignoring empty path");
+			continue;
+		}
 		//TODO: Shape construtor from path
 		shapes.push_back(Shape());
 		FromPathToShape(*i,shapes.back());
@@ -1014,11 +1079,17 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 {
 	int vindex=0;
 	int startX=0,startY=0;
-	GraphicStatus* cur_state=NULL;
+	paths.push_back(Path());
+	GraphicStatus* cur_state=paths.back().state;
 	while(cur)
 	{
 		if(cur->TypeFlag)
 		{
+			if(paths.back().points.size()==0)
+			{
+				paths.back().points.push_back(Vector2(startX,startY,vindex));
+				vindex++;
+			}
 			if(cur->StraightFlag)
 			{
 				startX+=cur->DeltaX;
@@ -1073,19 +1144,10 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 		{
 			if(cur->StateMoveTo)
 			{
-				if(paths.size())
-				{
-					GraphicStatus* old_status=paths.back().state;
-					paths.push_back(Path());
-					cur_state=paths.back().state;
-					*cur_state=*old_status;
-
-				}
-				else
-				{
-					paths.push_back(Path());
-					cur_state=paths.back().state;
-				}
+				GraphicStatus* old_status=paths.back().state;
+				paths.push_back(Path());
+				cur_state=paths.back().state;
+				*cur_state=*old_status;
 				startX=cur->MoveDeltaX;
 				startY=cur->MoveDeltaY;
 				vindex=0;
@@ -1476,6 +1538,11 @@ void DefineFont2Tag::Render(int glyph)
 	std::vector < Path >::iterator i=paths.begin();
 	for(i;i!=paths.end();i++)
 	{
+		if(i->points.size()==0)
+		{
+			LOG(TRACE,"Ignoring empty path");
+			continue;
+		}
 		//TODO: Shape construtor from path
 		shapes.push_back(Shape());
 		FromPathToShape(*i,shapes.back());
@@ -1528,6 +1595,11 @@ void DefineFontTag::Render(int glyph)
 	std::vector < Path >::iterator i=paths.begin();
 	for(i;i!=paths.end();i++)
 	{
+		if(i->points.size()==0)
+		{
+			LOG(TRACE,"Ignoring empty path");
+			continue;
+		}
 		//TODO: Shape construtor from path
 		shapes.push_back(Shape());
 		FromPathToShape(*i,shapes.back());
@@ -1612,10 +1684,12 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagMove)
 	{
 		list < DisplayListTag*>::iterator it=sys->parsingDisplayList->begin();
+		bool found=false;
 		for(it;it!=sys->parsingDisplayList->end();it++)
 		{
 			if((*it)->getDepth()==Depth)
 			{
+				found=true;
 				PlaceObject2Tag* it2=dynamic_cast<PlaceObject2Tag*>(*it);
 
 				if(!PlaceFlagHasCharacter)
@@ -1653,7 +1727,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 				break;
 			}
 		}
-		if(it==sys->parsingDisplayList->end())
+		if(!found)
 			LOG(ERROR,"no char to move at depth " << Depth);
 	}
 	if(CharacterId==0)

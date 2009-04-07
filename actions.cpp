@@ -118,6 +118,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x22:
 			return new ActionGetProperty;
 			break;
+		case 0x24:
+			return new ActionCloneSprite;
+			break;
 		case 0x3c:
 			return new ActionDefineLocal;
 			break;
@@ -174,6 +177,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			break;
 		case 0x8e:
 			return new ActionDefineFunction2(in,this);
+			break;
+		case 0x94:
+			return new ActionWith(in);
 			break;
 		case 0x96:
 			return new ActionPush(in,this);
@@ -246,6 +252,11 @@ void ActionGreater::Execute()
 void ActionAdd2::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionAdd2");
+}
+
+void ActionCloneSprite::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionCloneSprite");
 }
 
 void ActionDefineLocal::Execute()
@@ -368,6 +379,11 @@ ActionJump::ActionJump(std::istream& in)
 	in >> BranchOffset;
 }
 
+ActionWith::ActionWith(std::istream& in)
+{
+	in >> Size;
+}
+
 ActionIf::ActionIf(std::istream& in)
 {
 	in >> Offset;
@@ -408,6 +424,11 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			break;
 		default:
 	}*/
+}
+
+void ActionWith::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionWith");
 }
 
 void ActionGetMember::Execute()

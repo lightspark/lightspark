@@ -592,11 +592,10 @@ std::ostream& operator<<(std::ostream& s, const Vector2& p)
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point);
 
-VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
+VTYPE getVertexType(/*const*/ Vector2& v,/*const*/ std::vector<Vector2>& points)
 {
 	int a=(v.index+1)%points.size();
 	int b=(v.index-1+points.size())%points.size();
-
 	FilterIterator ai(points.begin(),points.end(),v.index);
 	FilterIterator bi(points.end(),points.end(),v.index);
 
@@ -1059,15 +1058,15 @@ bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& poi
 	while(jj2!=end)
 	{
 		Edge e(*jj,*jj2,-1);
-		if(e.yIntersect(point.y,dist))
+		if(e.yIntersect(point.y,dist,point.x))
 		{
 			if(dist-point.x>0)
 				count++;
 		}
 		jj=jj2++;
 	}
-	Edge e(*start,*jj,-1);
-	if(e.yIntersect(point.y,dist))
+	Edge e(*jj,*start,-1);
+	if(e.yIntersect(point.y,dist,point.x))
 	{
 		if(dist-point.x>0)
 			count++;
@@ -1227,7 +1226,7 @@ void TessellatePath(Path& path, Shape& shape)
 		{
 			case START_VERTEX:
 				{
-					T.push_back(Edge(*v,unsorted[(v->index-1+unsorted.size())%unsorted.size()],v->index));
+					T.push_back(Edge(unsorted[(v->index-1+unsorted.size())%unsorted.size()],*v,v->index));
 					helper[v->index]=v->index;
 					break;
 				}
@@ -1243,7 +1242,6 @@ void TessellatePath(Path& path, Shape& shape)
 				}
 			case NORMAL_VERTEX:
 				{
-					//Edge f(unsorted[(v->index-1+size)%size],unsorted[(v->index+1)%size],-1);
 					int32_t dist;
 
 					int count=0;
@@ -1275,7 +1273,7 @@ void TessellatePath(Path& path, Shape& shape)
 						}
 						std::list<Edge>::iterator d=std::find(T.begin(),T.end(),(v->index+1)%size);
 						T.erase(d);
-						T.push_back(Edge(*v,unsorted[(v->index-1+unsorted.size())%unsorted.size()],v->index));
+						T.push_back(Edge(unsorted[(v->index-1+unsorted.size())%unsorted.size()],*v,v->index));
 						helper[v->index]=v->index;
 					}
 					else
@@ -1286,7 +1284,7 @@ void TessellatePath(Path& path, Shape& shape)
 						for(e;e!=T.end();e++)
 						{
 							int32_t d2;
-							if(e->yIntersect(v->y,d2))
+							if(e->yIntersect(v->y,d2,v->x))
 							{
 								d2=v->x-d2;
 								if(d2>0 && d2<dist)
@@ -1320,7 +1318,7 @@ void TessellatePath(Path& path, Shape& shape)
 					for(e;e!=T.end();e++)
 					{
 						int32_t d2;
-						if(e->yIntersect(v->y,d2))
+						if(e->yIntersect(v->y,d2,v->x))
 						{
 							d2=v->x-d2;
 							if(d2>0 && d2<dist)
@@ -1346,7 +1344,7 @@ void TessellatePath(Path& path, Shape& shape)
 					for(e;e!=T.end();e++)
 					{
 						int32_t d2;
-						if(e->yIntersect(v->y,d2))
+						if(e->yIntersect(v->y,d2,v->x))
 						{
 							d2=v->x-d2;
 							if(d2>0 && d2<dist)
@@ -1359,26 +1357,18 @@ void TessellatePath(Path& path, Shape& shape)
 					D.push_back(Numeric_Edge(v->index,helper[dist_index],size));
 					helper[dist_index]=v->index;
 					helper[v->index]=v->index;
-					T.push_back(Edge(*v,unsorted[(v->index-1+unsorted.size())%unsorted.size()],v->index));
+					T.push_back(Edge(unsorted[(v->index-1+unsorted.size())%unsorted.size()],*v,v->index));
 					break;
 				}
 		}
 	}
 	sort(D.begin(),D.end());
-	for(int j=0;j<D.size();j++)
-		shape.edges.push_back(Edge(unsorted[D[j].a],unsorted[D[j].b],-1));
 	list<Vector2> unsorted_list(unsorted.begin(),unsorted.end());
 	for(int j=0;j<D.size();j++)
 	{
-		//std::vector<Vector2> monotone;
 		list<Vector2> monotone;
 		if(D[j].a<D[j].b)
 		{
-			/*std::vector< Vector2 >::iterator a=lower_bound(unsorted.begin(),unsorted.end(),D[j].a);
-			std::vector< Vector2 >::iterator b=lower_bound(unsorted.begin(),unsorted.end(),D[j].b);
-			std::vector< Vector2 > temp(a,b+1);
-			monotone.swap(temp);
-			unsorted.erase(a+1,b);*/
 			list<Vector2>::iterator a=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].a);
 			list<Vector2>::iterator b=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].b);
 			monotone.push_back(*a);
@@ -1387,12 +1377,6 @@ void TessellatePath(Path& path, Shape& shape)
 		}
 		else
 		{
-			/*std::vector< Vector2 >::iterator a=lower_bound(unsorted.begin(),unsorted.end(),D[j].a);
-			monotone.insert(monotone.end(),a,unsorted.end());
-			unsorted.erase(a+1,unsorted.end());
-			std::vector< Vector2 >::iterator b=lower_bound(unsorted.begin(),unsorted.end(),D[j].b);
-			monotone.insert(monotone.end(),unsorted.begin(),b+1);
-			unsorted.erase(unsorted.begin(),b);*/
 			list<Vector2>::iterator a=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].a);
 			monotone.push_back(*a);
 			monotone.splice(monotone.end(),unsorted_list,++a,unsorted_list.end());
@@ -1455,7 +1439,6 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 		{
 			for(unsigned int j=1;j<S.size();j++)
 			{
-				//shape.edges.push_back(Edge(sorted[S[j]],sorted[i],-1));
 				edges.push_back(Numeric_Edge(sorted[S[j]].index,sorted[i].index,size));
 			}
 			S.clear();
@@ -1468,7 +1451,6 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 			S.pop_back();
 			while(!S.empty())
 			{
-				//shape.edges.push_back(Edge(sorted[S[j]],sorted[i],-1));
 				Edge e(sorted[S.back()],sorted[i],-1);
 				bool stop=false;
 				for(unsigned int k=0;k<border.size();k++)
@@ -1494,7 +1476,6 @@ void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
 	}
 	for(unsigned int j=1;j<S.size()-1;j++)
 	{
-		//shape.edges.push_back(Edge(sorted[S[j]],sorted[0],-1));
 		edges.push_back(Numeric_Edge(sorted[S[j]].index,sorted[0].index,size));
 	}
 	sort(edges.begin(),edges.end());

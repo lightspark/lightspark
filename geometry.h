@@ -118,7 +118,7 @@ public:
 		x1=a.x;
 		x2=b.x;
 	}
-	bool yIntersect(int y,int32_t& d,int x=0);
+	bool yIntersect(int y,int32_t& d,int x);
 	bool xIntersect(int x,int32_t& d);
 	bool edgeIntersect(const Edge& e);
 	bool operator==(int a)
@@ -149,8 +149,8 @@ public:
 	int winding;
 
 	//DEBUG
-	std::vector<Edge> edges;
-	int id;
+	//std::vector<Edge> edges;
+	//int id;
 
 	void Render() const;
 };

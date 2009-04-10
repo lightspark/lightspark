@@ -25,6 +25,12 @@
 
 using namespace std;
 
+STRING DOUBLE::toString()
+{
+	LOG(ERROR,"Could not cast DOUBLE to STRING");
+	return STRING();
+}
+
 RECT::RECT()
 {
 }
@@ -37,6 +43,7 @@ std::ostream& operator<<(std::ostream& s, const RECT& r)
 
 ostream& operator<<(ostream& s, const STRING& t)
 {
+	t.String.clear();
 	for(unsigned int i=0;i<t.String.size();i++)
 		s << t.String[i];
 	s << endl;

@@ -1,5 +1,5 @@
 lightspark.so: np_entry.o npn_gate.o npp_gate.o plugin.o ../swf.o ../actions.o ../swftypes.o ../streams.o ../frame.o ../tags.o \
-		../input.o ../geometry.o ../tags_stub.o ../logger.o
+		../input.o ../geometry.o ../tags_stub.o ../logger.o ../vm.o
 	g++ -shared -g -o $@ $^ -lGL -lz
 
 %.o: %.cpp

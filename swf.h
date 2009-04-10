@@ -26,6 +26,7 @@
 #include <semaphore.h>
 #include "swftypes.h"
 #include "frame.h"
+#include "vm.h"
 
 #include <X11/Xlib.h>
 #include <GL/glx.h>
@@ -92,8 +93,10 @@ private:
 
 	bool update_request;
 
+
 	sem_t mutex;
 public:
+	VirtualMachine vm;
 	//Used only in ParseThread context
 	std::list < DisplayListTag* >* parsingDisplayList;
 

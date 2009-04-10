@@ -214,14 +214,43 @@ void ActionStop::Execute()
 
 ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 {
-	LOG(NOT_IMPLEMENTED,"ActionDefineFunction");
-	ignore(in,h->Length);
+	in >> FunctionName >> NumParams;
+	LOG(NO_INFO,"Defining function " << FunctionName);
+	params.resize(NumParams);
+	for(int i=0;i<NumParams;i++)
+	{
+		in >> params[i];
+	}
+	in >> CodeSize;
+	LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: read function code");
+	ignore(in,CodeSize);
+	sys->vm.registerFunction(this);
 }
 
 ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 {
-	LOG(NOT_IMPLEMENTED,"ActionDefineFunction2");
-	ignore(in,h->Length);
+	in >> FunctionName >> NumParams >> RegisterCount;
+	LOG(NO_INFO,"Defining function " << FunctionName);
+	BitStream bs(in);
+	PreloadParentFlag=UB(1,bs);
+	PreloadRootFlag=UB(1,bs);
+	SuppressSuperFlag=UB(1,bs);
+	PreloadSuperFlag=UB(1,bs);
+	SuppressArgumentsFlag=UB(1,bs);
+	PreloadArgumentsFlag=UB(1,bs);
+	SuppressThisFlag=UB(1,bs);
+	PreloadThisFlag=UB(1,bs);
+	UB(7,bs);
+	PreloadGlobalFlag=UB(1,bs);
+	Parameters.resize(NumParams);
+	for(int i=0;i<NumParams;i++)
+	{
+		in >> Parameters[i].Register >> Parameters[i].ParamName;
+	}
+	in >> CodeSize;
+	LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: read function code");
+	ignore(in,CodeSize);
+	sys->vm.registerFunction(this);
 }
 
 void ActionPushDuplicate::Execute()
@@ -287,16 +316,18 @@ void ActionCallMethod::Execute()
 void ActionCallFunction::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionCallFunction");
+
+	LOG(NO_INFO,"Func: " << sys->vm.stack.pop()->toString());
 }
 
 void ActionDefineFunction::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionDefineFunction");
+	LOG(TRACE,"ActionDefineFunction: Null Execution");
 }
 
 void ActionDefineFunction2::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionDefineFunction2");
+	LOG(TRACE,"ActionDefineFunction2: Null Execution");
 }
 
 void ActionLess2::Execute()
@@ -393,10 +424,12 @@ ActionConstantPool::ActionConstantPool(std::istream& in)
 {
 	in >> Count;
 
-	STRING s;
+	STRING s
+	LOG(TRACE,"ConstantPool: Reading " << Count <<  " constants");
 	for(int i=0;i<Count;i++)
 	{
 		in >> s;
+		cout << s << endl;
 		ConstantPool.push_back(s);
 	}
 }
@@ -413,17 +446,39 @@ void ActionStoreRegister::Execute()
 
 ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 {
-	LOG(NOT_IMPLEMENTED,"TODO: ActionPush");
-	ignore(in,h->Length);
-	/*in >> Type;
-
-	switch(Type)
+	int r=h->Length;
+	while(r)
 	{
-		case 8:
-			in >> Constant8;
-			break;
-		default:
-	}*/
+		in >> Type;
+		r--;
+		switch(Type)
+		{
+			case 6:
+			{
+				DOUBLE* d=new DOUBLE;
+				in >> *d;
+				Objects.push_back(d);
+				r-=8;
+				LOG(NO_INFO,"Push: Read double " << *d);
+				break;
+			}
+			case 8:
+			{
+				UI8 i;
+				in >> i;
+				ConstantReference* c=new ConstantReference(i);
+				Objects.push_back(c);
+				r--;
+				LOG(NO_INFO,"Push: Read constant index " << (int)i);
+				break;
+			}
+			default:
+				LOG(NOT_IMPLEMENTED,"Push type: " << (int)Type);
+				ignore(in,r);
+				r=0;
+				break;
+		}
+	}
 }
 
 void ActionWith::Execute()
@@ -443,7 +498,8 @@ void ActionSetMember::Execute()
 
 void ActionPush::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionPush");
+	for(int i=0;i<Objects.size();i++)
+		sys->vm.stack.push(Objects[i]);
 }
 
 ActionGetURL::ActionGetURL(std::istream& in)
@@ -481,7 +537,7 @@ void ActionGotoFrame::Execute()
 
 void ActionConstantPool::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionConstantPool");
+	sys->vm.setConstantPool(ConstantPool);	
 }
 
 std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v)
@@ -513,3 +569,4 @@ std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v)
 
 	return stream;
 }
+

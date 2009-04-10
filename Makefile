@@ -1,4 +1,4 @@
-LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o tags_stub.o logger.o
+LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o tags_stub.o logger.o vm.o
 
 lightspark: main.o $(LIBOBJS) 
 	g++ -pthread -g -o $@ $^ -lSDL -lrt -lGL -lz 

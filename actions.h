@@ -77,20 +77,55 @@ public:
 	void print(){ LOG(TRACE,"ActionStop");}
 };
 
-class ActionDefineFunction:public ActionTag
+class FunctionTag:public ActionTag
 {
+public:
+	virtual void call()=0;
+};
+
+class ActionDefineFunction:public FunctionTag
+{
+private:
+	STRING FunctionName;
+	UI16 NumParams;
+	std::vector<STRING> params;
+	UI16 CodeSize;
 public:
 	ActionDefineFunction(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDefineFunction");}
+	void call(){ LOG(NOT_IMPLEMENTED,"ActionDefineFunction: Call");}
 };
 
-class ActionDefineFunction2:public ActionTag
+class REGISTERPARAM
 {
+public:
+	UI8 Register;
+	STRING ParamName;
+};
+
+class ActionDefineFunction2:public FunctionTag
+{
+private:
+	STRING FunctionName;
+	UI16 NumParams;
+	UI8 RegisterCount;
+	UB PreloadParentFlag;
+	UB PreloadRootFlag;
+	UB SuppressSuperFlag;
+	UB PreloadSuperFlag;
+	UB SuppressArgumentsFlag;
+	UB PreloadArgumentsFlag;
+	UB SuppressThisFlag;
+	UB PreloadThisFlag;
+	UB PreloadGlobalFlag;
+	std::vector<REGISTERPARAM> Parameters;
+	UI16 CodeSize;
 public:
 	ActionDefineFunction2(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDefineFunction2");}
+	void call(){ LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: Call");}
 };
 
 class ActionJump:public ActionTag
@@ -353,14 +388,16 @@ class ActionPush : public ActionTag
 {
 private:
 	UI8 Type;
-	STRING String;
+/*	STRING String;
 	//FLOAT Float;
 	UI8 RegisterNumber;
 	UI8 Boolean;
-	//DOUBLE Double;
+	DOUBLE Double;
 	UI32 Integer;
 	UI8 Constant8;
-	UI16 Constant16;
+	UI16 Constant16;*/
+
+	std::vector<STACK_OBJECT*> Objects;
 public:
 	ActionPush(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
@@ -390,3 +427,4 @@ public:
 };
 
 std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v);
+

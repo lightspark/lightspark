@@ -64,6 +64,7 @@ void* MovieTimer::timer_worker(MovieTimer* th)
 		else
 			throw "rt null";
 		sem_post(&th->mutex);
+		sleep(3);
 		//sys->advanceFP();
 	}
 }

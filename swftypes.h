@@ -27,6 +27,34 @@
 #include <fstream>
 #include <vector>
 
+class STRING;
+
+class STACK_OBJECT
+{
+public:
+	virtual STRING toString()=0;
+};
+
+class ConstantReference : public STACK_OBJECT
+{
+private:
+	int index;
+public:
+	ConstantReference(int i):index(i){}
+	STRING toString();
+};
+
+class DOUBLE : public STACK_OBJECT
+{
+private:
+	double val;
+public:
+	DOUBLE():val(0){}
+	DOUBLE(double v):val(v){}
+	operator double(){ return val; }
+	STRING toString();
+};
+
 class UI32
 {
 private:
@@ -36,7 +64,6 @@ public:
 	UI32(uint32_t v):val(v){}
 	operator uint32_t(){ return val; }
 };
-
 
 class UI16
 {
@@ -126,6 +153,12 @@ inline std::istream& operator>>(std::istream& s, UI16& v)
 inline std::istream& operator>>(std::istream& s, UI32& v)
 {
 	s.read((char*)&v,4);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, DOUBLE& v)
+{
+	s.read((char*)&v,8);
 	return s;
 }
 

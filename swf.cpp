@@ -75,7 +75,7 @@ void MovieClip::addToDisplayList(DisplayListTag* t)
 	displayList.insert(it,t);
 }
 
-SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.displayList)
+SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.displayList),performance_profiling(false)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
@@ -493,8 +493,9 @@ void SystemState::waitToRun()
 {
 	sem_wait(&mutex);
 
-	if(clip.state.stop_FP && !update_request)
+	if(clip.state.stop_FP && !(update_request || performance_profiling))
 	{
+		cout << "stop" << endl;
 		sem_post(&mutex);
 		sem_wait(&sem_run);
 		sem_wait(&mutex);
@@ -527,7 +528,7 @@ Frame& SystemState::getFrameAtFP()
 void SystemState::advanceFP()
 {
 	sem_wait(&mutex);
-	clip.state.FP=clip.state.next_FP; 
+	clip.state.tick();
 	sem_post(&mutex);
 }
 

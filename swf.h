@@ -60,6 +60,11 @@ public:
 public:
 	RunState();
 	void prepareNextFP();
+	void tick()
+	{
+		if(!stop_FP)
+			FP=next_FP;
+	}
 };
 
 class MovieClip
@@ -93,9 +98,9 @@ private:
 
 	bool update_request;
 
-
 	sem_t mutex;
 public:
+	bool performance_profiling;
 	VirtualMachine vm;
 	//Used only in ParseThread context
 	std::list < DisplayListTag* >* parsingDisplayList;

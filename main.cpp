@@ -41,21 +41,38 @@ void thread_debug(char* msg)
 	fprintf(stderr,"%u.%010u %s\n",ts.tv_sec,ts.tv_nsec,msg);
 }
 
+inline long timeDiff(timespec& s,timespec& d)
+{
+	return (d.tv_sec-s.tv_sec)*1000+(d.tv_nsec-s.tv_nsec)/1000000;
+}
+
 int main()
 {
 	sys=new SystemState;
-	Log::initLogging(NOT_IMPLEMENTED);
+	Log::initLogging(ERROR);
+	sys->performance_profiling=true;
 	ifstream f("flash.swf",ifstream::in);
 	SDL_Init ( SDL_INIT_VIDEO|SDL_INIT_EVENTTHREAD );
 	ParseThread pt(sys,f);
 	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 
+	timespec ts,td;
+	clock_gettime(CLOCK_REALTIME,&ts);
+	int count=0;
 	while(1)
 	{
 		sys->waitToRun();
 		rt.draw(&sys->getFrameAtFP());
 		sys->advanceFP();
+		count++;
+		clock_gettime(CLOCK_REALTIME,&td);
+		if(timeDiff(ts,td)>1000)
+		{
+			ts=td;
+			LOG(NO_INFO,"FPS: " << count);
+			count=0;
+		}
 	}
 
 

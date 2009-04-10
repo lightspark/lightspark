@@ -16,6 +16,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
+#ifndef GEOMETRY_H
+#define GEOMETRY_H
 
 #include <list>
 #include <iostream>
@@ -147,11 +149,12 @@ public:
 	Graphic graphic;
 	bool closed;
 	int winding;
+	int id;
 
 	//DEBUG
 	//std::vector<Edge> edges;
-	//int id;
 
 	void Render() const;
 };
 
+#endif

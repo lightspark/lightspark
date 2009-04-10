@@ -424,7 +424,7 @@ ActionConstantPool::ActionConstantPool(std::istream& in)
 {
 	in >> Count;
 
-	STRING s
+	STRING s;
 	LOG(TRACE,"ConstantPool: Reading " << Count <<  " constants");
 	for(int i=0;i<Count;i++)
 	{

@@ -35,11 +35,6 @@ void Shape::Render() const
 			glStencilOp(GL_KEEP,GL_KEEP,GL_INCR);
 		else
 			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);
-/*		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
-		if(graphic.filled0)
-			glStencilFunc(GL_ALWAYS,2,7);
-		else
-			glStencilFunc(GL_LESS,1,7);*/
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)
@@ -58,11 +53,6 @@ void Shape::Render() const
 			glStencilOp(GL_KEEP,GL_KEEP,GL_INCR);
 		else
 			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);
-		/*glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
-		if(graphic.filled1)
-			glStencilFunc(GL_ALWAYS,3,7);
-		else
-			glStencilFunc(GL_LESS,1,7);*/
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)

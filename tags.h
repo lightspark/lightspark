@@ -25,6 +25,7 @@
 #include <iostream>
 #include "swftypes.h"
 #include "input.h"
+#include "geometry.h"
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,RENDER_TAG,END_TAG};
 
@@ -87,6 +88,8 @@ public:
 
 class RenderTag: public Tag
 {
+protected:
+	std::vector<Shape> cached;
 public:
 	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
 	virtual TAGTYPE getType(){ return RENDER_TAG; }
@@ -327,7 +330,9 @@ protected:
 	UI16 FontID;
 public:
 	FontTag(RECORDHEADER h,std::istream& s):RenderTag(h,s){}
-	virtual void Render(int glyph)=0;
+	virtual void genGliphShape(std::vector<Shape>& s, int glyph)=0;
+	//virtual void Render(int glyph)=0;
+	virtual TAGTYPE getType(){ return RENDER_TAG; }
 };
 
 class DefineFontTag: public FontTag
@@ -340,7 +345,8 @@ protected:
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	void Render(int glyph);
+	//void Render(int glyph);
+	virtual void genGliphShape(std::vector<Shape>& s, int glyph);
 };
 
 class DefineFontInfoTag: public Tag
@@ -381,7 +387,8 @@ private:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	void Render(int glyph);
+	//void Render(int glyph);
+	virtual void genGliphShape(std::vector<Shape>& s, int glyph);
 };
 
 class DefineTextTag: public RenderTag

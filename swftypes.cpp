@@ -31,6 +31,11 @@ STRING DOUBLE::toString()
 	return STRING();
 }
 
+int DOUBLE::toInt()
+{
+	return val;
+}
+
 RECT::RECT()
 {
 }

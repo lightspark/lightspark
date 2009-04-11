@@ -928,6 +928,7 @@ void DefineShape2Tag::Render(int layer)
 				shapes[i].winding=0;
 			}
 		}
+		cached=shapes;
 	}
 
 	std::vector < Shape >::iterator it=cached.begin();
@@ -1013,6 +1014,7 @@ void DefineShape3Tag::Render(int layer)
 				shapes[i].winding=0;
 			}
 		}
+		cached=shapes;
 	}
 
 	std::vector < Shape >::iterator it=cached.begin();

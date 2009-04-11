@@ -33,6 +33,7 @@ class STACK_OBJECT
 {
 public:
 	virtual STRING toString()=0;
+	virtual int toInt()=0;
 };
 
 class ConstantReference : public STACK_OBJECT
@@ -42,10 +43,12 @@ private:
 public:
 	ConstantReference(int i):index(i){}
 	STRING toString();
+	int toInt();
 };
 
 class DOUBLE : public STACK_OBJECT
 {
+friend std::istream& operator>>(std::istream& s, DOUBLE& v);
 private:
 	double val;
 public:
@@ -53,10 +56,12 @@ public:
 	DOUBLE(double v):val(v){}
 	operator double(){ return val; }
 	STRING toString();
+	int toInt(); 
 };
 
 class UI32
 {
+friend std::istream& operator>>(std::istream& s, UI32& v);
 private:
 	uint32_t val;
 public:
@@ -67,6 +72,7 @@ public:
 
 class UI16
 {
+friend std::istream& operator>>(std::istream& s, UI16& v);
 private:
 	uint16_t val;
 public:
@@ -78,6 +84,7 @@ public:
 
 class UI8
 {
+friend std::istream& operator>>(std::istream& s, UI8& v);
 private:
 	uint8_t val;
 public:
@@ -89,6 +96,7 @@ public:
 
 class SI16
 {
+friend std::istream& operator>>(std::istream& s, SI16& v);
 private:
 	int16_t val;
 public:
@@ -134,31 +142,31 @@ std::istream& operator>>(std::istream& s, RGB& v);
 
 inline std::istream& operator>>(std::istream& s, UI8& v)
 {
-	s.read((char*)&v,1);
+	s.read((char*)&v.val,1);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, SI16& v)
 {
-	s.read((char*)&v,2);
+	s.read((char*)&v.val,2);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI16& v)
 {
-	s.read((char*)&v,2);
+	s.read((char*)&v.val,2);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI32& v)
 {
-	s.read((char*)&v,4);
+	s.read((char*)&v.val,4);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 {
-	s.read((char*)&v,8);
+	s.read((char*)&v.val,8);
 	return s;
 }
 
@@ -518,6 +526,17 @@ class STRING
 {
 public:
 	std::vector<UI8> String;
+	bool operator==(const STRING& s)
+	{
+		if(String.size()!=s.String.size())
+			return false;
+		for(int i=0;i<String.size();i++)
+		{
+			if(String[i]!=s.String[i])
+				return false;
+		}
+		return true;
+	}
 };
 
 class CLIPACTIONS

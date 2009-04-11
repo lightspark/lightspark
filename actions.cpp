@@ -317,7 +317,12 @@ void ActionCallFunction::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionCallFunction");
 
-	LOG(NO_INFO,"Func: " << sys->vm.stack.pop()->toString());
+	STRING funcName=sys->vm.stack.pop()->toString();
+	inr numArgs=sys->vm.stack.pop()->toInt();
+	if(numArgs!=0)
+		LOG(NOT_IMPLEMENTED,"There are args");
+	FunctionTag* f=sys->vm.getFunctionByName(funcName);
+	f->call();
 }
 
 void ActionDefineFunction::Execute()
@@ -429,7 +434,6 @@ ActionConstantPool::ActionConstantPool(std::istream& in)
 	for(int i=0;i<Count;i++)
 	{
 		in >> s;
-		cout << s << endl;
 		ConstantPool.push_back(s);
 	}
 }

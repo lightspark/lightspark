@@ -81,6 +81,7 @@ class FunctionTag:public ActionTag
 {
 public:
 	virtual void call()=0;
+	virtual STRING getName()=0;
 };
 
 class ActionDefineFunction:public FunctionTag
@@ -95,6 +96,7 @@ public:
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDefineFunction");}
 	void call(){ LOG(NOT_IMPLEMENTED,"ActionDefineFunction: Call");}
+	STRING getName(){ return FunctionName; }
 };
 
 class REGISTERPARAM
@@ -126,6 +128,7 @@ public:
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDefineFunction2");}
 	void call(){ LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: Call");}
+	STRING getName(){ return FunctionName; }
 };
 
 class ActionJump:public ActionTag

@@ -18,10 +18,17 @@
 **************************************************************************/
 
 #include <streambuf>
+#include <fstream>
 #include <semaphore.h>
 #include "zlib.h"
 
-class sync_stream: public std::streambuf
+class swf_stream
+{
+public:
+	virtual void setCompressed()=0;
+};
+
+class sync_stream: public std::streambuf, public swf_stream
 {
 public:
 	sync_stream();
@@ -31,8 +38,8 @@ public:
 	std::streampos seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which);/* = 
 			std::ios_base::in | std::ios_base::out );*/
 	std::streamsize showmanyc( );
-	void setCompressed();
 private:
+	void setCompressed();
 	char* buffer;
 	int head;
 	int tail;
@@ -46,4 +53,21 @@ private:
 	int offset;
 
 	const int buf_size;
+};
+
+class zlib_file_filter:public std::filebuf, public swf_stream
+{
+private:
+	bool compressed;
+	int offset;
+	z_stream strm;
+	unsigned char buffer[4096];
+public:
+	std::streamsize xsgetn ( char * s, std::streamsize n );
+	std::streamsize xsputn ( const char * s, std::streamsize n );
+	std::streampos seekpos ( std::streampos sp, std::ios_base::openmode which/* = std::ios_base::in | std::ios_base::out*/ );
+	std::streampos seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which);/* = 
+			std::ios_base::in | std::ios_base::out );*/
+	std::streamsize showmanyc( );
+	void setCompressed();
 };

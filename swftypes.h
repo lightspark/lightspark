@@ -29,24 +29,44 @@
 
 class STRING;
 
-class STACK_OBJECT
+enum SWFOBJECT_TYPE { T_OBJECT=0, T_CONSTREF, T_INTEGER, T_DOUBLE, T_PLACEOBJECT};
+
+class SWFObject
 {
+private:
+	SWFObject* properties[10];
+	//std::vector<SWFOBJECT_TYPE> propertiesType;
+	std::vector<STRING> propertiesName;
 public:
-	virtual STRING toString()=0;
-	virtual int toInt()=0;
+	virtual STRING getName();
+	virtual SWFOBJECT_TYPE getObjectType()=0;
+	virtual STRING toString();
+	virtual int toInt();
+	int getPropertyIndexByName(const STRING& name);
+	void setProperty(STRING name, SWFObject* o);
+	virtual SWFObject* clone()
+	{
+		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
+	}
+
 };
 
-class ConstantReference : public STACK_OBJECT
+class ConstantReference : public SWFObject
 {
 private:
 	int index;
 public:
 	ConstantReference(int i):index(i){}
+	SWFOBJECT_TYPE getObjectType(){return T_CONSTREF;}
 	STRING toString();
 	int toInt();
+	SWFObject* clone()
+	{
+		return new ConstantReference(*this);
+	}
 };
 
-class DOUBLE : public STACK_OBJECT
+class DOUBLE : public SWFObject
 {
 friend std::istream& operator>>(std::istream& s, DOUBLE& v);
 private:
@@ -55,11 +75,16 @@ public:
 	DOUBLE():val(0){}
 	DOUBLE(double v):val(v){}
 	operator double(){ return val; }
+	SWFOBJECT_TYPE getObjectType(){return T_DOUBLE;}
 	STRING toString();
 	int toInt(); 
+	SWFObject* clone()
+	{
+		return new DOUBLE(*this);
+	}
 };
 
-class UI32
+class UI32 : public SWFObject
 {
 friend std::istream& operator>>(std::istream& s, UI32& v);
 private:
@@ -68,6 +93,15 @@ public:
 	UI32():val(0){}
 	UI32(uint32_t v):val(v){}
 	operator uint32_t(){ return val; }
+	SWFOBJECT_TYPE getObjectType(){return T_INTEGER;}
+	int toInt()
+	{
+		return val;
+	}
+	SWFObject* clone()
+	{
+		return new UI32(*this);
+	}
 };
 
 class UI16
@@ -82,7 +116,7 @@ public:
 	operator UI32() const { return val; }
 };
 
-class UI8
+class UI8 
 {
 friend std::istream& operator>>(std::istream& s, UI8& v);
 private:
@@ -525,6 +559,16 @@ private:
 class STRING
 {
 public:
+	STRING(){};
+	STRING(const char* s)
+	{
+		do
+		{
+			String.push_back(*s);
+			s++;
+		}
+		while(*s!=0);
+	}
 	std::vector<UI8> String;
 	bool operator==(const STRING& s)
 	{
@@ -536,6 +580,10 @@ public:
 				return false;
 		}
 		return true;
+	}
+	bool isNull()
+	{
+		return !String.size();
 	}
 };
 

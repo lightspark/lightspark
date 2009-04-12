@@ -80,11 +80,19 @@ public:
 	void addToDisplayList(DisplayListTag* r);
 };
 
-class SystemState
+class ITarget
+{
+public:
+	virtual void registerVariable(SWFObject* o)=0;
+	virtual SWFObject* getVariableByName(const STRING& name)=0;
+};
+
+class SystemState:public ITarget
 {
 private:
 	MovieClip clip;
 	RECT frame_size;
+	std::vector<SWFObject*> Variables;
 
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
@@ -104,9 +112,11 @@ public:
 	VirtualMachine vm;
 	//Used only in ParseThread context
 	std::list < DisplayListTag* >* parsingDisplayList;
+	ITarget* parsingTarget;
 
 	//Used only in RenderThread context
 	RunState* currentState;
+	ITarget* renderTarget;
 
 	SystemState();
 	void waitToRun();
@@ -122,6 +132,8 @@ public:
 	void setUpdateRequest(bool s);
 	RenderTag* dictionaryLookup(UI16 id);
 	void reset();
+	void registerVariable(SWFObject* o);
+	SWFObject* getVariableByName(const STRING& name);
 };
 
 class ParseThread

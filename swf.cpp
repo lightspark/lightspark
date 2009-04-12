@@ -53,10 +53,11 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	else if(Signature[0]=='C' && Signature[1]=='W' && Signature[2]=='S')
 	{
 		LOG(NO_INFO, "Compressed SWF file: Version " << (int)Version << " Length " << FileLength);
-		sync_stream* ss=dynamic_cast<sync_stream*>(in.rdbuf());
+		swf_stream* ss=dynamic_cast<swf_stream*>(in.rdbuf());
 		ss->setCompressed();
 	}
 	in >> FrameSize >> FrameRate >> FrameCount;
+	LOG(NO_INFO,"FrameSize " << FrameSize);
 }
 
 MovieClip::MovieClip()
@@ -75,7 +76,8 @@ void MovieClip::addToDisplayList(DisplayListTag* t)
 	displayList.insert(it,t);
 }
 
-SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.displayList),performance_profiling(false)
+SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.displayList),performance_profiling(false),
+	parsingTarget(this)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
@@ -606,3 +608,32 @@ RenderTag* SystemState::dictionaryLookup(UI16 id)
 	sem_post(&mutex);
 	return *it;
 }
+
+void SystemState::registerVariable(SWFObject* f)
+{
+	if(!f->getName().isNull())
+	{
+		if(getVariableByName(f->getName())!=NULL)
+			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f->getName());
+	}
+	sem_wait(&mutex);
+	Variables.push_back(f);
+	sem_post(&mutex);
+}
+
+SWFObject* SystemState::getVariableByName(const STRING& name)
+{
+	SWFObject* ret=NULL;
+	sem_wait(&mutex);
+	for(int i=0;i<Variables.size();i++)
+	{
+		if(Variables[i]->getName()==name)
+		{
+			ret=Variables[i];
+			break;
+		}
+	}
+	sem_post(&mutex);
+	return ret;
+}
+

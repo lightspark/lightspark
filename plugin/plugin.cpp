@@ -79,7 +79,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(NOT_IMPLEMENTED);
+	Log::initLogging(CALLS);
 	return NPERR_NO_ERROR;
 }
 

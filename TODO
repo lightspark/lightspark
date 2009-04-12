@@ -2,3 +2,5 @@ OpenGL:
 	vertex shader per depth
 	pixel shader (fill styles sicuro, tessellazione boh)
 	clipping (si può fare il test, ma non l'aggiornamento del buffer -> via shader ?);
+
+try to find out perchè c'è aliasing dei nomi, stessi charId?

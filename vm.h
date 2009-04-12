@@ -24,20 +24,17 @@
 #include <vector>
 #include "swftypes.h"
 class FunctionTag;
-class STACK_OBJECT;
-
-enum STACK_TYPE { OBJECT=0 };
-
+class SWFObject;
 class Stack
 {
 private:
-	std::vector<STACK_OBJECT*> data;
+	std::vector<SWFObject*> data;
 public:
-	STACK_OBJECT* operator()(int i){return *(data.rbegin()+i);}
-	void push(STACK_OBJECT* o){ data.push_back(o);}
-	STACK_OBJECT* pop()
+	SWFObject* operator()(int i){return *(data.rbegin()+i);}
+	void push(SWFObject* o){ data.push_back(o);}
+	SWFObject* pop()
 	{
-		STACK_OBJECT* ret=data.back(); data.pop_back(); 
+		SWFObject* ret=data.back(); data.pop_back(); 
 		return ret;
 	}
 };

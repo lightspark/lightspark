@@ -168,3 +168,72 @@ std::streamsize sync_stream::showmanyc( )
 	abort();
 }
 
+std::streamsize zlib_file_filter::xsgetn ( char * s, std::streamsize n )
+{
+	if(!compressed)
+		return filebuf::xsgetn(s,n);
+	else
+	{
+		/* run inflate() on input until output buffer not full */
+		strm.avail_out = n;
+		strm.next_out = (unsigned char*)s;
+		inflate(&strm, Z_NO_FLUSH);
+		//check if output full and wrap around
+		while(strm.avail_out!=0)
+		{
+			filebuf::xsgetn((char*)buffer,4096);
+			strm.next_in=buffer;
+			strm.avail_in=4096;
+			inflate(&strm, Z_NO_FLUSH);
+		}
+		offset+=n;
+	}
+	return n;
+}
+
+std::streamsize zlib_file_filter::xsputn ( const char * s, std::streamsize n )
+{
+	return filebuf::xsputn(s,n);
+}
+
+std::streampos zlib_file_filter::seekpos ( std::streampos sp, std::ios_base::openmode which)
+{
+	printf("puppa1\n");
+	abort();
+}
+
+std::streampos zlib_file_filter::seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which)
+{
+	if(!compressed)
+		return filebuf::seekoff(off,way,which);
+	else
+	{
+		if(off!=0)
+		{
+			printf("puppa2\n");
+			abort();
+		}
+		return offset;
+	}
+}
+
+std::streamsize zlib_file_filter::showmanyc( )
+{
+	printf("puppa3\n");
+	abort();
+}
+
+void zlib_file_filter::setCompressed()
+{
+	compressed=true;
+	offset=filebuf::seekoff(0,ios_base::cur,ios_base::in);
+	/* allocate inflate state */
+	strm.zalloc = Z_NULL;
+	strm.zfree = Z_NULL;
+	strm.opaque = Z_NULL;
+	strm.avail_in = 0;
+	strm.next_in = Z_NULL;
+	int ret = inflateInit(&strm);
+	if (ret != Z_OK)
+		LOG(ERROR,"Failed to initialize ZLib");
+}

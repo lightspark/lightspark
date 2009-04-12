@@ -43,6 +43,7 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 			actions.push_back(ah.createTag(in));
 		if(actions.back()==NULL)
 		{
+			LOG(ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
 		}
@@ -64,8 +65,8 @@ void DoActionTag::Render()
 {
 	for(unsigned int i=0;i<actions.size();i++)
 		actions[i]->Execute();
-	for(unsigned int i=0;i<actions.size();i++)
-		actions[i]->print();
+/*	for(unsigned int i=0;i<actions.size();i++)
+		actions[i]->print();*/
 }
 
 ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)
@@ -208,6 +209,7 @@ RunState::RunState():FP(0),stop_FP(0)
 
 void ActionStop::Execute()
 {
+	LOG(CALLS,"ActionStop");
 	sys->currentState->next_FP=sys->currentState->FP;
 	sys->currentState->stop_FP=true;
 }
@@ -222,15 +224,44 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 		in >> params[i];
 	}
 	in >> CodeSize;
-	LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: read function code");
-	ignore(in,CodeSize);
+	//LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: read function code");
+	//ignore(in,CodeSize);
+	int dest=in.tellg();
+	dest+=CodeSize;
+	while(CodeSize)
+	{
+		ACTIONRECORDHEADER ah(in);
+		if(ah.ActionCode==0)
+			LOG(ERROR,"End action in function")
+		else
+			functionActions.push_back(ah.createTag(in));
+		if(functionActions.back()==NULL)
+		{
+			LOG(ERROR,"Not supported action opcode");
+			ignore(in,dest-in.tellg());
+			break;
+		}
+		if(in.tellg()==dest)
+			break;
+		else if(in.tellg()>dest)
+		{
+			LOG(ERROR,"CodeSize not consistent");
+			break;
+		}
+	}
 	sys->vm.registerFunction(this);
+}
+
+void ActionDefineFunction2::call()
+{
+	for(unsigned int i=0;i<functionActions.size();i++)
+		functionActions[i]->Execute();
 }
 
 ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 {
 	in >> FunctionName >> NumParams >> RegisterCount;
-	LOG(NO_INFO,"Defining function " << FunctionName);
+	LOG(NO_INFO,"Defining function2 " << FunctionName);
 	BitStream bs(in);
 	PreloadParentFlag=UB(1,bs);
 	PreloadRootFlag=UB(1,bs);
@@ -248,8 +279,32 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 		in >> Parameters[i].Register >> Parameters[i].ParamName;
 	}
 	in >> CodeSize;
-	LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: read function code");
-	ignore(in,CodeSize);
+	//LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: read function code");
+	//ignore(in,CodeSize);
+	int dest=in.tellg();
+	dest+=CodeSize;
+	while(CodeSize)
+	{
+		ACTIONRECORDHEADER ah(in);
+		if(ah.ActionCode==0)
+			LOG(ERROR,"End action in function")
+		else
+			functionActions.push_back(ah.createTag(in));
+		functionActions.back()->print();
+		if(functionActions.back()==NULL)
+		{
+			LOG(ERROR,"Not supported action opcode");
+			ignore(in,dest-in.tellg());
+			break;
+		}
+		if(in.tellg()==dest)
+			break;
+		else if(in.tellg()>dest)
+		{
+			LOG(ERROR,"CodeSize not consistent with file offset " << in.tellg());
+			break;
+		}
+	}
 	sys->vm.registerFunction(this);
 }
 
@@ -318,7 +373,7 @@ void ActionCallFunction::Execute()
 	LOG(NOT_IMPLEMENTED,"Exec: ActionCallFunction");
 
 	STRING funcName=sys->vm.stack.pop()->toString();
-	inr numArgs=sys->vm.stack.pop()->toInt();
+	int numArgs=sys->vm.stack.pop()->toInt();
 	if(numArgs!=0)
 		LOG(NOT_IMPLEMENTED,"There are args");
 	FunctionTag* f=sys->vm.getFunctionByName(funcName);
@@ -327,12 +382,12 @@ void ActionCallFunction::Execute()
 
 void ActionDefineFunction::Execute()
 {
-	LOG(TRACE,"ActionDefineFunction: Null Execution");
+	LOG(CALLS,"ActionDefineFunction: Null Execution");
 }
 
 void ActionDefineFunction2::Execute()
 {
-	LOG(TRACE,"ActionDefineFunction2: Null Execution");
+	LOG(CALLS,"ActionDefineFunction2: Null Execution");
 }
 
 void ActionLess2::Execute()
@@ -397,7 +452,10 @@ void ActionSetVariable::Execute()
 
 void ActionGetVariable::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionGetVariable");
+	STRING varName=sys->vm.stack.pop()->toString();
+	LOG(CALLS,"ActionGetVariable: name " << varName);
+	SWFObject* object=sys->parsingTarget->getVariableByName(varName);
+	sys->vm.stack.push(object);
 }
 
 void ActionToggleQuality::Execute()
@@ -485,6 +543,11 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 	}
 }
 
+void ActionPush::print()
+{
+	LOG(TRACE,"ActionPush");
+}
+
 void ActionWith::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionWith");
@@ -497,13 +560,21 @@ void ActionGetMember::Execute()
 
 void ActionSetMember::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionSetMember");
+	LOG(CALLS,"ActionSetMember");
+	SWFObject* value=sys->vm.stack.pop()->clone();
+	STRING memberName=sys->vm.stack.pop()->toString();
+	SWFObject* obj=sys->vm.stack.pop();
+	obj->setProperty(memberName,value);
 }
 
 void ActionPush::Execute()
 {
+	LOG(CALLS,"ActionPush");
 	for(int i=0;i<Objects.size();i++)
+	{
+		LOG(CALLS,"\t " << Objects[i]->toString());
 		sys->vm.stack.push(Objects[i]);
+	}
 }
 
 ActionGetURL::ActionGetURL(std::istream& in)
@@ -529,18 +600,21 @@ void ActionGetURL2::Execute()
 
 void ActionPlay::Execute()
 {
+	LOG(CALLS,"ActionPlay");
 	sys->currentState->next_FP=sys->currentState->FP;
 	sys->currentState->stop_FP=false;
 }
 
 void ActionGotoFrame::Execute()
 {
+	LOG(CALLS,"ActionGoto");
 	sys->currentState->next_FP=Frame;
 	sys->currentState->stop_FP=false;
 }
 
 void ActionConstantPool::Execute()
 {
+	LOG(CALLS,"ActionConstantPool");
 	sys->vm.setConstantPool(ConstantPool);	
 }
 

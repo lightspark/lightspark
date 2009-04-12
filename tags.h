@@ -234,9 +234,11 @@ public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
 };
 
-class PlaceObject2Tag: public DisplayListTag
+class PlaceObject2Tag: public DisplayListTag, public SWFObject
 {
 private:
+	UI32 _visible;
+
 	UB PlaceFlagHasClipAction;
 	UB PlaceFlagHasClipDepth;
 	UB PlaceFlagHasName;
@@ -257,12 +259,12 @@ private:
 public:
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
 	void Render( );
-	UI16 getDepth() const
-	{
-		return Depth;
-	}
-
+	UI16 getDepth() const { return Depth; }
 	void printInfo(int t=0);
+
+	//SWFObject interface
+	STRING getName() { return Name;}
+	SWFOBJECT_TYPE getObjectType(){ return T_PLACEOBJECT;}
 };
 
 class FrameLabelTag: public DisplayListTag
@@ -408,13 +410,16 @@ public:
 	void printInfo(int t=0);
 };
 
-class DefineSpriteTag: public RenderTag
+class DefineSpriteTag: public RenderTag,public ITarget
 {
 private:
+	std::vector<SWFObject*> Variables;
 	UI16 SpriteID;
 	UI16 FrameCount;
 	//std::vector < Tag* > ControlTags;
 	MovieClip clip;
+	void registerVariable(SWFObject* o);
+	SWFObject* getVariableByName(const STRING& name);
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }

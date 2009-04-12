@@ -23,6 +23,7 @@
 #include "frame.h"
 #include "geometry.h"
 #include "logger.h"
+#include "streams.h"
 #include <time.h>
 #include <iostream>
 #include <fstream>
@@ -46,12 +47,20 @@ inline long timeDiff(timespec& s,timespec& d)
 	return (d.tv_sec-s.tv_sec)*1000+(d.tv_nsec-s.tv_nsec)/1000000;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+	if(argc!=2)
+	{
+		cout << "Usage: " << argv[0] << " <file.swf>" << endl;
+		exit(-1);
+	}
 	sys=new SystemState;
-	Log::initLogging(ERROR);
+	Log::initLogging(CALLS);
 	sys->performance_profiling=true;
-	ifstream f("flash.swf",ifstream::in);
+	zlib_file_filter zf;
+	zf.open(argv[1],ios_base::in);
+	istream f(&zf);
+	
 	SDL_Init ( SDL_INIT_VIDEO|SDL_INIT_EVENTTHREAD );
 	ParseThread pt(sys,f);
 	RenderThread rt(sys,SDL,NULL);

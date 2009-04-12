@@ -25,10 +25,58 @@
 
 using namespace std;
 
+STRING SWFObject::getName()
+{
+	return STRING();
+}
+
+STRING SWFObject::toString()
+{
+	return STRING("Cannot convert object to String");
+}
+
+int SWFObject::toInt()
+{
+	return 0;
+}
+
+int SWFObject::getPropertyIndexByName(const STRING& name)
+{
+	int ret=-1;
+	for(int i=0;i<propertiesName.size();i++)
+	{
+		if(propertiesName[i]==name)
+		{
+			if(i>9)
+				LOG(ERROR,"Too many properties");
+			ret=i;
+			break;
+		}
+	}
+	return ret;
+}
+
+void SWFObject::setProperty(STRING name, SWFObject* o)
+{
+	int index=getPropertyIndexByName(name);
+	if(index==-1)
+	{
+		properties[propertiesName.size()]=o;
+		propertiesName.push_back(name);
+		//propertiesType.push_back(o->getType());
+	}
+	else
+	{
+		properties[index]=o;
+		//propertiesType.push_back(o->getType());
+	}
+}
+
 STRING DOUBLE::toString()
 {
-	LOG(ERROR,"Could not cast DOUBLE to STRING");
-	return STRING();
+	char buf[20];
+	snprintf(buf,20,"%g",val);
+	return STRING(buf);
 }
 
 int DOUBLE::toInt()
@@ -50,7 +98,6 @@ ostream& operator<<(ostream& s, const STRING& t)
 {
 	for(unsigned int i=0;i<t.String.size();i++)
 		s << t.String[i];
-	s << endl;
 	return s;
 }
 
@@ -109,6 +156,8 @@ std::istream& operator>>(std::istream& stream, STRING& v)
 	do
 	{
 		stream >> c;
+		if(c==0)
+			break;
 		v.String.push_back(c);
 	}
 	while(c!=0);

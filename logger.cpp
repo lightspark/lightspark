@@ -3,7 +3,7 @@
 
 sem_t Log::mutex;
 LOG_LEVEL Log::log_level=NO_INFO;
-const char* Log::level_names[]={"INFO","ERROR","NOT_IMPLEMENTED","TRACE"};
+const char* Log::level_names[]={"INFO","ERROR","NOT_IMPLEMENTED","CALLS","TRACE"};
 
 Log::Log(LOG_LEVEL l)
 {

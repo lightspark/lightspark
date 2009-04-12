@@ -109,6 +109,9 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	{
 		if((*it)->getDepth()==Depth)
 		{
+			/*SWFObject* t=dynamic_cast<SWFObject*>(*it);
+			if(t!=NULL)
+				LOG(NO_INFO,"Removing " << t->getName());*/
 			sys->parsingDisplayList->erase(it);
 			break;
 		}
@@ -158,6 +161,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):RenderTag
 		in >> Align >> LeftMargin >> RightMargin >> Indent >> Leading;
 	}
 	in >> VariableName;
+	LOG(NOT_IMPLEMENTED,"Sync to variable name " << VariableName);
 	if(HasText)
 		in >> InitialText;
 }
@@ -169,9 +173,12 @@ void DefineEditTextTag::Render(int layer)
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
+	ITarget* target_bak=sys->parsingTarget;
+	sys->parsingTarget=this;
+
 	list < DisplayListTag* >* bak=sys->parsingDisplayList;
 	sys->parsingDisplayList=&clip.displayList;
-	LOG(TRACE,"DefineSprite");
+	LOG(NO_INFO,"DefineSprite");
 	in >> SpriteID >> FrameCount;
 	TagFactory factory(in);
 	Tag* tag;
@@ -201,6 +208,9 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	}
 	while(tag->getType()!=END_TAG);
 	sys->parsingDisplayList=bak;
+
+	sys->parsingTarget=target_bak;
+	LOG(NO_INFO,"EndDefineSprite");
 }
 
 void DefineSpriteTag::printInfo(int t)
@@ -227,6 +237,30 @@ void DefineSpriteTag::printInfo(int t)
 			break;
 	}
 	sys.currentClip=bak;*/
+}
+
+void DefineSpriteTag::registerVariable(SWFObject* f)
+{
+	if(!f->getName().isNull())
+	{
+		if(getVariableByName(f->getName())!=NULL)
+			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f->getName());
+	}
+	Variables.push_back(f);
+}
+
+SWFObject* DefineSpriteTag::getVariableByName(const STRING& name)
+{
+	SWFObject* ret=NULL;
+	for(int i=0;i<Variables.size();i++)
+	{
+		if(Variables[i]->getName()==name)
+		{
+			ret=Variables[i];
+			break;
+		}
+	}
+	return ret;
 }
 
 void drawStenciled(const RECT& bounds, bool filled0, bool filled1, const RGBA& color0, const RGBA& color1)
@@ -1634,6 +1668,12 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	LOG(TRACE,"PlaceObject2");
+
+	SWFObject* properties[10];
+	SWFOBJECT_TYPE propertiesType[10];
+	int used_properties;
+	UI32 _visible;
+
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
 	PlaceFlagHasClipDepth=UB(1,bs);
@@ -1644,6 +1684,18 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	PlaceFlagHasCharacter=UB(1,bs);
 	PlaceFlagMove=UB(1,bs);
 	in >> Depth;
+	list < DisplayListTag*>::iterator it=sys->parsingDisplayList->begin();
+	PlaceObject2Tag* already_on_list=NULL;
+	for(it;it!=sys->parsingDisplayList->end();it++)
+	{
+		if((*it)->getDepth()==Depth)
+		{
+			already_on_list=dynamic_cast<PlaceObject2Tag*>(*it);
+			if(!PlaceFlagMove)
+				LOG(NO_INFO,"PlaceObject: MoveFlag not set, but depth is already used");
+			break;
+		}
+	}
 	if(PlaceFlagHasClipAction)
 		LOG(ERROR,"Not yet implemented clipaction support");
 	if(PlaceFlagHasCharacter)
@@ -1661,6 +1713,11 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasName)
 	{
 		in >> Name;
+		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name << " depth " << Depth);
+		if(!(PlaceFlagMove))
+			sys->parsingTarget->registerVariable(this);
+		else
+			LOG(ERROR, "Moving of registered objects not really supported");
 	}
 	if(PlaceFlagHasClipDepth)
 	{
@@ -1668,52 +1725,47 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	}
 	if(PlaceFlagMove)
 	{
-		list < DisplayListTag*>::iterator it=sys->parsingDisplayList->begin();
-		bool found=false;
-		for(it;it!=sys->parsingDisplayList->end();it++)
+		if(already_on_list)
 		{
-			if((*it)->getDepth()==Depth)
+			PlaceObject2Tag* it2=already_on_list;
+			if(!PlaceFlagHasCharacter)
 			{
-				found=true;
-				PlaceObject2Tag* it2=dynamic_cast<PlaceObject2Tag*>(*it);
-
-				if(!PlaceFlagHasCharacter)
+				//if(it2->PlaceFlagHasClipAction)
+				if(!PlaceFlagHasName && it2->PlaceFlagHasName)
 				{
-					//if(it2->PlaceFlagHasClipAction)
-					//if(it2->PlaceFlagHasName)
-					if(!PlaceFlagHasCharacter && it2->PlaceFlagHasCharacter)
-					{
-						PlaceFlagHasCharacter=it2->PlaceFlagHasCharacter;
-						CharacterId=it2->CharacterId;
-					}
-					if(!PlaceFlagHasMatrix && it2->PlaceFlagHasMatrix)
-					{
-						PlaceFlagHasMatrix=it2->PlaceFlagHasMatrix;
-						Matrix=it2->Matrix;
-					}
-					if(!PlaceFlagHasColorTransform && it2->PlaceFlagHasColorTransform)
-					{
-						PlaceFlagHasColorTransform=it2->PlaceFlagHasColorTransform;
-						ColorTransform=it2->ColorTransform;
-					}
-					if(!PlaceFlagHasRatio && it2->PlaceFlagHasRatio)
-					{
-						PlaceFlagHasRatio=it2->PlaceFlagHasRatio;
-						Ratio=it2->Ratio;
-					}
-					if(!PlaceFlagHasClipDepth && it2->PlaceFlagHasClipDepth)
-					{
-						PlaceFlagHasClipDepth=it2->PlaceFlagHasClipDepth;
-						ClipDepth=it2->ClipDepth;
-					}
+					PlaceFlagHasName=it2->PlaceFlagHasName;
+					Name=it2->Name;
 				}
-				sys->parsingDisplayList->erase(it);
-
-				break;
+				if(!PlaceFlagHasCharacter && it2->PlaceFlagHasCharacter)
+				{
+					PlaceFlagHasCharacter=it2->PlaceFlagHasCharacter;
+					CharacterId=it2->CharacterId;
+				}
+				if(!PlaceFlagHasMatrix && it2->PlaceFlagHasMatrix)
+				{
+					PlaceFlagHasMatrix=it2->PlaceFlagHasMatrix;
+					Matrix=it2->Matrix;
+				}
+				if(!PlaceFlagHasColorTransform && it2->PlaceFlagHasColorTransform)
+				{
+					PlaceFlagHasColorTransform=it2->PlaceFlagHasColorTransform;
+					ColorTransform=it2->ColorTransform;
+				}
+				if(!PlaceFlagHasRatio && it2->PlaceFlagHasRatio)
+				{
+					PlaceFlagHasRatio=it2->PlaceFlagHasRatio;
+					Ratio=it2->Ratio;
+				}
+				if(!PlaceFlagHasClipDepth && it2->PlaceFlagHasClipDepth)
+				{
+					PlaceFlagHasClipDepth=it2->PlaceFlagHasClipDepth;
+					ClipDepth=it2->ClipDepth;
+				}
 			}
+			sys->parsingDisplayList->erase(it);
 		}
-		if(!found)
-			LOG(ERROR,"no char to move at depth " << Depth);
+		else
+			LOG(ERROR,"no char to move at depth " << Depth << " name " << Name);
 	}
 	if(CharacterId==0)
 		abort();

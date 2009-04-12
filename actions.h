@@ -91,6 +91,8 @@ private:
 	UI16 NumParams;
 	std::vector<STRING> params;
 	UI16 CodeSize;
+
+	std::vector<ActionTag*> functionActions;
 public:
 	ActionDefineFunction(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
@@ -123,11 +125,13 @@ private:
 	UB PreloadGlobalFlag;
 	std::vector<REGISTERPARAM> Parameters;
 	UI16 CodeSize;
+
+	std::vector<ActionTag*> functionActions;
 public:
 	ActionDefineFunction2(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDefineFunction2");}
-	void call(){ LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: Call");}
+	void call();
 	STRING getName(){ return FunctionName; }
 };
 
@@ -400,11 +404,11 @@ private:
 	UI8 Constant8;
 	UI16 Constant16;*/
 
-	std::vector<STACK_OBJECT*> Objects;
+	std::vector<SWFObject*> Objects;
 public:
 	ActionPush(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
-	void print(){ LOG(TRACE,"ActionPush");}
+	void print();
 };
 
 class BUTTONCONDACTION

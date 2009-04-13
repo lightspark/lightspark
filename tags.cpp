@@ -173,13 +173,13 @@ void DefineEditTextTag::Render(int layer)
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-	ITarget* target_bak=sys->parsingTarget;
+	ISWFClass* target_bak=sys->parsingTarget;
 	sys->parsingTarget=this;
 
 	list < DisplayListTag* >* bak=sys->parsingDisplayList;
 	sys->parsingDisplayList=&clip.displayList;
-	LOG(NO_INFO,"DefineSprite");
 	in >> SpriteID >> FrameCount;
+	LOG(NO_INFO,"DefineSprite ID: " << SpriteID);
 	TagFactory factory(in);
 	Tag* tag;
 	do
@@ -210,7 +210,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	sys->parsingDisplayList=bak;
 
 	sys->parsingTarget=target_bak;
-	LOG(NO_INFO,"EndDefineSprite");
+	LOG(NO_INFO,"EndDefineSprite ID: " << SpriteID);
 }
 
 void DefineSpriteTag::printInfo(int t)
@@ -237,30 +237,6 @@ void DefineSpriteTag::printInfo(int t)
 			break;
 	}
 	sys.currentClip=bak;*/
-}
-
-void DefineSpriteTag::registerVariable(SWFObject* f)
-{
-	if(!f->getName().isNull())
-	{
-		if(getVariableByName(f->getName())!=NULL)
-			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f->getName());
-	}
-	Variables.push_back(f);
-}
-
-SWFObject* DefineSpriteTag::getVariableByName(const STRING& name)
-{
-	SWFObject* ret=NULL;
-	for(int i=0;i<Variables.size();i++)
-	{
-		if(Variables[i]->getName()==name)
-		{
-			ret=Variables[i];
-			break;
-		}
-	}
-	return ret;
 }
 
 void drawStenciled(const RECT& bounds, bool filled0, bool filled1, const RGBA& color0, const RGBA& color1)
@@ -302,6 +278,7 @@ void ignore(istream& i, int count)
 
 void DefineSpriteTag::Render(int layer)
 {
+	LOG(NO_INFO,"Render DefineSprite ID: " << SpriteID);
 	RunState* bak=sys->currentState;
 	sys->currentState=&clip.state;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
@@ -317,6 +294,7 @@ void DefineSpriteTag::Render(int layer)
 		sys->setUpdateRequest(true);
 	}
 	sys->currentState=bak;
+	LOG(NO_INFO,"End DefineSprite ID: " << SpriteID);
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
@@ -1701,6 +1679,17 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
+		RenderTag* r=sys->dictionaryLookup(CharacterId);
+		//DefineSpriteTag* s=dynamic_cast<DefineSpriteTag*>(r);
+		ISWFClass* s=dynamic_cast<ISWFClass*>(r);
+		if(s==NULL)
+			LOG(NO_INFO,"Giving a name to something that is not a class")
+		else
+		{
+			Variables=s->getVariables();
+			for(int i=0;i<Variables.size();i++)
+				cout << Variables[i]->getName() << endl;
+		}
 	}
 	if(PlaceFlagHasMatrix)
 		in >> Matrix;
@@ -1713,9 +1702,11 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasName)
 	{
 		in >> Name;
-		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name << " depth " << Depth);
+		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
 		if(!(PlaceFlagMove))
-			sys->parsingTarget->registerVariable(this);
+		{
+			sys->parsingTarget->registerVariable(SWFObject(this,true));
+		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");
 	}
@@ -1774,9 +1765,15 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 
 void PlaceObject2Tag::Render()
 {
+	ISWFObject* target_bak=sys->renderTarget;
+	sys->renderTarget=this;
+
 	//TODO: support clipping
 	if(ClipDepth!=0)
+	{
+		sys->renderTarget=target_bak;
 		return;
+	}
 
 	RenderTag* it=sys->dictionaryLookup(CharacterId);
 	if(it->getType()!=RENDER_TAG)
@@ -1788,6 +1785,8 @@ void PlaceObject2Tag::Render()
 	glMultMatrixf(matrix);
 	it->Render(Depth);
 	glPopMatrix();
+
+	sys->renderTarget=target_bak;
 }
 
 void PlaceObject2Tag::printInfo(int t)

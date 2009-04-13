@@ -234,7 +234,7 @@ public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
 };
 
-class PlaceObject2Tag: public DisplayListTag, public SWFObject
+class PlaceObject2Tag: public DisplayListTag, public ISWFObject_impl
 {
 private:
 	UI32 _visible;
@@ -410,16 +410,13 @@ public:
 	void printInfo(int t=0);
 };
 
-class DefineSpriteTag: public RenderTag,public ITarget
+class DefineSpriteTag: public RenderTag, public ISWFClass_impl
 {
 private:
-	std::vector<SWFObject*> Variables;
 	UI16 SpriteID;
 	UI16 FrameCount;
 	//std::vector < Tag* > ControlTags;
 	MovieClip clip;
-	void registerVariable(SWFObject* o);
-	SWFObject* getVariableByName(const STRING& name);
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }

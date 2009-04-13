@@ -25,30 +25,46 @@
 
 using namespace std;
 
-STRING SWFObject::getName()
+SWFObject& SWFObject::operator=(const SWFObject& r)
+{
+	//Delete old data
+	if(r.data)
+	{
+		if(r.binded)
+			data=r.data;
+		else
+			data=r.data->clone();
+	}
+	else
+		data=NULL;
+
+	return *this;
+}
+
+STRING ISWFObject::getName()
 {
 	return STRING();
 }
 
-STRING SWFObject::toString()
+STRING ISWFObject::toString()
 {
+	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
 	return STRING("Cannot convert object to String");
 }
 
-int SWFObject::toInt()
+int ISWFObject::toInt()
 {
+	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
 	return 0;
 }
 
-int SWFObject::getPropertyIndexByName(const STRING& name)
+int ISWFObject_impl::getVariableIndexByName(const STRING& name)
 {
 	int ret=-1;
-	for(int i=0;i<propertiesName.size();i++)
+	for(int i=0;i<Variables.size();i++)
 	{
-		if(propertiesName[i]==name)
+		if(Variables[i]->getName()==name)
 		{
-			if(i>9)
-				LOG(ERROR,"Too many properties");
 			ret=i;
 			break;
 		}
@@ -56,20 +72,60 @@ int SWFObject::getPropertyIndexByName(const STRING& name)
 	return ret;
 }
 
-void SWFObject::setProperty(STRING name, SWFObject* o)
+void ISWFObject_impl::setVariableByName(const STRING& name, const SWFObject& o)
 {
-	int index=getPropertyIndexByName(name);
+	int index=getVariableIndexByName(name);
 	if(index==-1)
 	{
-		properties[propertiesName.size()]=o;
-		propertiesName.push_back(name);
-		//propertiesType.push_back(o->getType());
+		Variables.push_back(o);
+		Variables.back().bind();
 	}
 	else
 	{
-		properties[index]=o;
-		//propertiesType.push_back(o->getType());
+		Variables[index]=o;
+		Variables[index].bind();
 	}
+}
+
+SWFObject ISWFObject_impl::getVariableByName(const STRING& name)
+{
+	int index=getVariableIndexByName(name);
+	if(index==-1)
+	{
+		LOG(ERROR,"Could not find variable " << name);
+	}
+	else
+		return Variables[index];
+}
+
+void ISWFClass_impl::registerVariable(const SWFObject& f)
+{
+/*	if(!f->getName().isNull())
+	{
+		if(!getVariableByName(f->getName())==SWFObject())
+			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f->getName());
+	}*/
+	for(int i=0;i<Variables.size();i++)
+	{
+		if(Variables[i]->getName()==f->getName())
+		{
+			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f->getName());
+			break;
+		}
+	}
+	Variables.push_back(f);
+}
+
+std::vector<SWFObject>& ISWFClass_impl::getVariables()
+{
+	return Variables;
+}
+
+STRING UI32::toString()
+{
+	char buf[20];
+	snprintf(buf,20,"%i",val);
+	return STRING(buf);
 }
 
 STRING DOUBLE::toString()

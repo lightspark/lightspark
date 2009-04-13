@@ -404,7 +404,7 @@ private:
 	UI8 Constant8;
 	UI16 Constant16;*/
 
-	std::vector<SWFObject*> Objects;
+	std::vector<SWFObject> Objects;
 public:
 	ActionPush(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();

@@ -29,29 +29,73 @@
 
 class STRING;
 
-enum SWFOBJECT_TYPE { T_OBJECT=0, T_CONSTREF, T_INTEGER, T_DOUBLE, T_PLACEOBJECT};
+enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_CONSTREF, T_INTEGER, T_DOUBLE, T_PLACEOBJECT};
 
+class ISWFObject;
 class SWFObject
 {
 private:
-	SWFObject* properties[10];
+	ISWFObject* data;
+	bool owner;
+	bool binded;
+public:
+	SWFObject():owner(true),binded(false),data(NULL){}
+	SWFObject(ISWFObject* d, bool b=false):data(d),owner(false),binded(b){}
+	ISWFObject* operator->() const { return data; }
+	bool isDefined() {return data; }
+	SWFObject& operator=(const SWFObject& r);
+	void bind(){ binded=true;}
+};
+
+class ISWFClass
+{
+public:
+	virtual void registerVariable(const SWFObject& o)=0;
+	virtual std::vector<SWFObject>& getVariables()=0;
+};
+
+class ISWFClass_impl:public ISWFClass
+{
+public:
+	std::vector<SWFObject> Variables;
+	void registerVariable(const SWFObject& o);
+	std::vector<SWFObject>& getVariables();
+};
+
+class ISWFObject
+{
+private:
+	//SWFObject properties[10];
 	//std::vector<SWFOBJECT_TYPE> propertiesType;
-	std::vector<STRING> propertiesName;
+	//std::vector<SWFObject> Variables;
 public:
 	virtual STRING getName();
 	virtual SWFOBJECT_TYPE getObjectType()=0;
 	virtual STRING toString();
 	virtual int toInt();
-	int getPropertyIndexByName(const STRING& name);
-	void setProperty(STRING name, SWFObject* o);
-	virtual SWFObject* clone()
+	//int getPropertyIndexByName(const STRING& name);
+	//void setProperty(STRING name, const SWFObject& o);
+	//SWFObject getProperty(STRING name);
+	virtual int getVariableIndexByName(const STRING& name)=0;
+	virtual SWFObject getVariableByName(const STRING& name)=0;
+	virtual void setVariableByName(const STRING& name, const SWFObject& o)=0;
+	virtual ISWFObject* clone()
 	{
 		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
 	}
 
 };
 
-class ConstantReference : public SWFObject
+class ISWFObject_impl:public ISWFObject
+{
+protected:
+	std::vector<SWFObject> Variables;
+	SWFObject getVariableByName(const STRING& name);
+	void setVariableByName(const STRING& name, const SWFObject& o);
+	int getVariableIndexByName(const STRING& name);
+};
+
+class ConstantReference : public ISWFObject_impl
 {
 private:
 	int index;
@@ -60,13 +104,13 @@ public:
 	SWFOBJECT_TYPE getObjectType(){return T_CONSTREF;}
 	STRING toString();
 	int toInt();
-	SWFObject* clone()
+	ISWFObject* clone()
 	{
 		return new ConstantReference(*this);
 	}
 };
 
-class DOUBLE : public SWFObject
+class DOUBLE : public ISWFObject_impl
 {
 friend std::istream& operator>>(std::istream& s, DOUBLE& v);
 private:
@@ -78,13 +122,13 @@ public:
 	SWFOBJECT_TYPE getObjectType(){return T_DOUBLE;}
 	STRING toString();
 	int toInt(); 
-	SWFObject* clone()
+	ISWFObject* clone()
 	{
 		return new DOUBLE(*this);
 	}
 };
 
-class UI32 : public SWFObject
+class UI32 : public ISWFObject_impl
 {
 friend std::istream& operator>>(std::istream& s, UI32& v);
 private:
@@ -98,10 +142,11 @@ public:
 	{
 		return val;
 	}
-	SWFObject* clone()
+	ISWFObject* clone()
 	{
 		return new UI32(*this);
 	}
+	STRING toString();
 };
 
 class UI16

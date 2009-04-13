@@ -447,14 +447,22 @@ void ActionStringEquals::Execute()
 
 void ActionSetVariable::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionSetVariable");
+	SWFObject obj=sys->vm.stack.pop();
+	STRING varName=sys->vm.stack.pop()->toString();
+	LOG(CALLS,"ActionSetVariable: name " << varName);
+	sys->renderTarget->setVariableByName(varName,obj);
 }
 
 void ActionGetVariable::Execute()
 {
 	STRING varName=sys->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetVariable: name " << varName);
-	SWFObject* object=sys->parsingTarget->getVariableByName(varName);
+	SWFObject object=sys->renderTarget->getVariableByName(varName);
+	if(!object.isDefined())
+	{
+		LOG(CALLS,"ActionGetVariable: no such object");
+		sys->dumpVariables();
+	}
 	sys->vm.stack.push(object);
 }
 
@@ -515,13 +523,23 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 		r--;
 		switch(Type)
 		{
+			case 5:
+			{
+				UI8 tmp;
+				in >> tmp;
+				UI32* d=new UI32(tmp);
+				Objects.push_back(d);
+				r--;
+				LOG(TRACE,"Push: Read bool " << *d);
+				break;
+			}
 			case 6:
 			{
 				DOUBLE* d=new DOUBLE;
 				in >> *d;
 				Objects.push_back(d);
 				r-=8;
-				LOG(NO_INFO,"Push: Read double " << *d);
+				LOG(TRACE,"Push: Read double " << *d);
 				break;
 			}
 			case 8:
@@ -531,7 +549,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				ConstantReference* c=new ConstantReference(i);
 				Objects.push_back(c);
 				r--;
-				LOG(NO_INFO,"Push: Read constant index " << (int)i);
+				LOG(TRACE,"Push: Read constant index " << (int)i);
 				break;
 			}
 			default:
@@ -555,16 +573,19 @@ void ActionWith::Execute()
 
 void ActionGetMember::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionGetMember");
+	LOG(CALLS,"ActionGetMember");
+	STRING memberName=sys->vm.stack.pop()->toString();
+	SWFObject obj=sys->vm.stack.pop();
+	sys->vm.stack.push(obj->getVariableByName(memberName));
 }
 
 void ActionSetMember::Execute()
 {
 	LOG(CALLS,"ActionSetMember");
-	SWFObject* value=sys->vm.stack.pop()->clone();
+	SWFObject value=sys->vm.stack.pop();
 	STRING memberName=sys->vm.stack.pop()->toString();
-	SWFObject* obj=sys->vm.stack.pop();
-	obj->setProperty(memberName,value);
+	SWFObject obj=sys->vm.stack.pop();
+	obj->setVariableByName(memberName,value);
 }
 
 void ActionPush::Execute()

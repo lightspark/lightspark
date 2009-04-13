@@ -77,7 +77,7 @@ void MovieClip::addToDisplayList(DisplayListTag* t)
 }
 
 SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.displayList),performance_profiling(false),
-	parsingTarget(this)
+	parsingTarget(this),renderTarget(this)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
@@ -609,11 +609,11 @@ RenderTag* SystemState::dictionaryLookup(UI16 id)
 	return *it;
 }
 
-void SystemState::registerVariable(SWFObject* f)
+void SystemState::registerVariable(const SWFObject& f)
 {
 	if(!f->getName().isNull())
 	{
-		if(getVariableByName(f->getName())!=NULL)
+		if(getVariableByName(f->getName()).isDefined())
 			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f->getName());
 	}
 	sem_wait(&mutex);
@@ -621,9 +621,9 @@ void SystemState::registerVariable(SWFObject* f)
 	sem_post(&mutex);
 }
 
-SWFObject* SystemState::getVariableByName(const STRING& name)
+SWFObject SystemState::getVariableByName(const STRING& name)
 {
-	SWFObject* ret=NULL;
+	SWFObject ret;
 	sem_wait(&mutex);
 	for(int i=0;i<Variables.size();i++)
 	{
@@ -637,3 +637,40 @@ SWFObject* SystemState::getVariableByName(const STRING& name)
 	return ret;
 }
 
+void SystemState::dumpVariables()
+{
+	cout <<"dumping" << endl;
+	for(int i=0;i<Variables.size();i++)
+		cout << Variables[i]->getName() << endl;
+}
+
+void SystemState::setVariableByName(const STRING& name, const SWFObject& o)
+{
+	sem_wait(&mutex);
+	for(int i=0;i<Variables.size();i++)
+	{
+		if(Variables[i]->getName()==name)
+		{
+			Variables[i]=o;
+			break;
+		}
+	}
+	sem_post(&mutex);
+}
+
+std::vector<SWFObject>& SystemState::getVariables()
+{
+	//We should get a mutex, but actually SystemState class should never be instantiated
+	LOG(NO_INFO,"Why are you asking for root movie variables");
+	return Variables;
+}
+
+SWFOBJECT_TYPE SystemState::getObjectType()
+{
+	return T_MOVIE;
+}
+
+STRING SystemState::getName()
+{
+	return STRING("ROOT");
+}

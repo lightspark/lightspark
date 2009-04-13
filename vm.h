@@ -28,13 +28,16 @@ class SWFObject;
 class Stack
 {
 private:
-	std::vector<SWFObject*> data;
+	std::vector<SWFObject> data;
 public:
-	SWFObject* operator()(int i){return *(data.rbegin()+i);}
-	void push(SWFObject* o){ data.push_back(o);}
-	SWFObject* pop()
+	const SWFObject& operator()(int i){return *(data.rbegin()+i);}
+	void push(const SWFObject& o){ data.push_back(o);}
+	SWFObject pop()
 	{
-		SWFObject* ret=data.back(); data.pop_back(); 
+		if(data.size()==0)
+			LOG(ERROR,"Empty stack");
+		SWFObject ret=data.back();
+		data.pop_back(); 
 		return ret;
 	}
 };

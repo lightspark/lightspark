@@ -620,3 +620,38 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	return stream;
 }
 
+ISWFObject_impl::ISWFObject_impl():Name(NULL)
+{
+}
+
+STRING ISWFObject_impl::getName()
+{
+	if(Name!=NULL)
+		return *Name;
+	else
+		return STRING();
+}
+
+void ISWFObject_impl::setName(const STRING& n)
+{
+	if(Name!=NULL)
+		LOG(ERROR,"Resetting variable name");
+	Name=new STRING(n);
+}
+
+STRING RegisterNumber::toString()
+{
+	char buf[20];
+	snprintf(buf,20,"Register %i",index);
+	return STRING(buf);
+}
+
+STRING Undefined::toString()
+{
+	return STRING("undefined");
+}
+
+STRING Null::toString()
+{
+	return STRING("null");
+}

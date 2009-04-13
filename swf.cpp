@@ -674,3 +674,8 @@ STRING SystemState::getName()
 {
 	return STRING("ROOT");
 }
+
+void SystemState::setName(const STRING& n)
+{
+	LOG(ERROR,"Resetting ROOT name");
+}

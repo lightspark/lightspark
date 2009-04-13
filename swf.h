@@ -106,6 +106,7 @@ private:
 	void setVariableByName(const STRING& name, const SWFObject& o);
 	std::vector<SWFObject>& getVariables();
 	STRING getName();
+	void setName(const STRING& n);
 public:
 	void dumpVariables();
 	bool performance_profiling;

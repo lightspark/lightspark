@@ -155,7 +155,7 @@ public:
 };
 
 
-class DefineEditTextTag: public RenderTag
+class DefineEditTextTag: public RenderTag, public ISWFClass_impl
 {
 private:
 	UI16 CharacterID;

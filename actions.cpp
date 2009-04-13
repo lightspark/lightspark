@@ -254,6 +254,24 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 
 void ActionDefineFunction2::call()
 {
+	LOG(CALLS,"Calling Function2 " << FunctionName);
+	for(int i=0;i<NumParams;i++)
+	{
+		cout << "Reg " << Parameters[i].Register << " for " <<  Parameters[i].ParamName;
+	}
+	if(PreloadThisFlag)
+		LOG(NO_INFO,"Preload this");
+	if(PreloadArgumentsFlag)
+		LOG(NO_INFO,"Preload arguments");
+	if(PreloadSuperFlag)
+		LOG(NO_INFO,"Preload super");
+	if(PreloadRootFlag)
+		LOG(NO_INFO,"Preload root");
+	if(PreloadParentFlag)
+		LOG(NO_INFO,"Preload parent");
+	if(PreloadGlobalFlag)
+		LOG(NO_INFO,"Preload global");
+
 	for(unsigned int i=0;i<functionActions.size();i++)
 		functionActions[i]->Execute();
 }
@@ -523,6 +541,28 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 		r--;
 		switch(Type)
 		{
+			case 2:
+			{
+				Objects.push_back(new Null);
+				LOG(TRACE,"Push: null");
+				break;
+			}
+			case 3:
+			{
+				Objects.push_back(new Undefined);
+				LOG(TRACE,"Push: undefined");
+				break;
+			}
+			case 4:
+			{
+				UI8 tmp;
+				in >> tmp;
+				RegisterNumber* n=new RegisterNumber(tmp);
+				Objects.push_back(n);
+				r--;
+				LOG(TRACE,"Push: Read reg number " << (int)tmp);
+				break;
+			}
 			case 5:
 			{
 				UI8 tmp;
@@ -542,6 +582,15 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				LOG(TRACE,"Push: Read double " << *d);
 				break;
 			}
+			case 7:
+			{
+				UI32* d=new UI32;
+				in >> *d;
+				Objects.push_back(d);
+				r-=4;
+				LOG(TRACE,"Push: Read integer " << *d);
+				break;
+			}
 			case 8:
 			{
 				UI8 i;
@@ -553,7 +602,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				break;
 			}
 			default:
-				LOG(NOT_IMPLEMENTED,"Push type: " << (int)Type);
+				LOG(ERROR,"Push type: " << (int)Type);
 				ignore(in,r);
 				r=0;
 				break;

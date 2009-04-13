@@ -29,7 +29,7 @@
 
 class STRING;
 
-enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_CONSTREF, T_INTEGER, T_DOUBLE, T_PLACEOBJECT};
+enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_UNDEFINED, T_NULL, T_PLACEOBJECT};
 
 class ISWFObject;
 class SWFObject
@@ -69,14 +69,14 @@ private:
 	//std::vector<SWFOBJECT_TYPE> propertiesType;
 	//std::vector<SWFObject> Variables;
 public:
-	virtual STRING getName();
+	virtual STRING getName()=0;
+	virtual void setName(const STRING& n)=0;
 	virtual SWFOBJECT_TYPE getObjectType()=0;
 	virtual STRING toString();
 	virtual int toInt();
 	//int getPropertyIndexByName(const STRING& name);
 	//void setProperty(STRING name, const SWFObject& o);
 	//SWFObject getProperty(STRING name);
-	virtual int getVariableIndexByName(const STRING& name)=0;
 	virtual SWFObject getVariableByName(const STRING& name)=0;
 	virtual void setVariableByName(const STRING& name, const SWFObject& o)=0;
 	virtual ISWFObject* clone()
@@ -88,11 +88,17 @@ public:
 
 class ISWFObject_impl:public ISWFObject
 {
+private:
+	int getVariableIndexByName(const STRING& name);
 protected:
+	STRING* Name;
+	ISWFObject_impl();
 	std::vector<SWFObject> Variables;
 	SWFObject getVariableByName(const STRING& name);
 	void setVariableByName(const STRING& name, const SWFObject& o);
-	int getVariableIndexByName(const STRING& name);
+public:
+	virtual STRING getName();
+	virtual void setName(const STRING& n);
 };
 
 class ConstantReference : public ISWFObject_impl
@@ -108,6 +114,35 @@ public:
 	{
 		return new ConstantReference(*this);
 	}
+};
+
+class RegisterNumber : public ISWFObject_impl
+{
+private:
+	int index;
+public:
+	RegisterNumber(int i):index(i){}
+	SWFOBJECT_TYPE getObjectType(){return T_REGNUMBER;}
+	STRING toString();
+	//int toInt();
+	/*ISWFObject* clone()
+	{
+		return new ConstantReference(*this);
+	}*/
+};
+
+class Undefined : public ISWFObject_impl
+{
+public:
+	SWFOBJECT_TYPE getObjectType(){return T_UNDEFINED;}
+	STRING toString();
+};
+
+class Null : public ISWFObject_impl
+{
+public:
+	SWFOBJECT_TYPE getObjectType(){return T_NULL;}
+	STRING toString();
 };
 
 class DOUBLE : public ISWFObject_impl
@@ -171,6 +206,40 @@ public:
 	UI8(uint8_t v):val(v){}
 	operator uint8_t() const { return val; }
 	operator UI16(){ return val; }
+};
+
+class STRING
+{
+friend std::ostream& operator<<(std::ostream& s, const STRING& r);
+friend std::istream& operator>>(std::istream& stream, STRING& v);
+private:
+	std::vector<UI8> String;
+public:
+	STRING(){};
+	STRING(const char* s)
+	{
+		do
+		{
+			String.push_back(*s);
+			s++;
+		}
+		while(*s!=0);
+	}
+	bool operator==(const STRING& s)
+	{
+		if(String.size()!=s.String.size())
+			return false;
+		for(int i=0;i<String.size();i++)
+		{
+			if(String[i]!=s.String[i])
+				return false;
+		}
+		return true;
+	}
+	bool isNull()
+	{
+		return !String.size();
+	}
 };
 
 class SI16
@@ -599,37 +668,6 @@ private:
 	SB GreenAddTerm;
 	SB BlueAddTerm;
 	SB AlphaAddTerm;
-};
-
-class STRING
-{
-public:
-	STRING(){};
-	STRING(const char* s)
-	{
-		do
-		{
-			String.push_back(*s);
-			s++;
-		}
-		while(*s!=0);
-	}
-	std::vector<UI8> String;
-	bool operator==(const STRING& s)
-	{
-		if(String.size()!=s.String.size())
-			return false;
-		for(int i=0;i<String.size();i++)
-		{
-			if(String[i]!=s.String[i])
-				return false;
-		}
-		return true;
-	}
-	bool isNull()
-	{
-		return !String.size();
-	}
 };
 
 class CLIPACTIONS

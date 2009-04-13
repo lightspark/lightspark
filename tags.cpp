@@ -127,6 +127,9 @@ bool list_orderer(const DisplayListTag* a, int d);
 
 DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
+	UI32* fake_text=new UI32;
+	fake_text->setName("text");
+	registerVariable(SWFObject(fake_text));
 	in >> CharacterID >> Bounds;
 	BitStream bs(in);
 	HasText=UB(1,bs);
@@ -1646,11 +1649,6 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	LOG(TRACE,"PlaceObject2");
-
-	SWFObject* properties[10];
-	SWFOBJECT_TYPE propertiesType[10];
-	int used_properties;
-	UI32 _visible;
 
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);

@@ -25,20 +25,42 @@
 
 using namespace std;
 
+SWFObject::SWFObject():owner(true),binded(false)
+{
+	data=new Undefined;
+}
+
 SWFObject& SWFObject::operator=(const SWFObject& r)
 {
 	//Delete old data
-	if(r.data)
+	if(owner)
+		delete data;
+
+	if(r.binded)
 	{
-		if(r.binded)
-			data=r.data;
-		else
-			data=r.data->clone();
+		data=r.data;
+		owner=false;
 	}
 	else
-		data=NULL;
+	{
+		data=r.data->clone();
+		owner=true;
+	}
 
 	return *this;
+}
+
+bool SWFObject::isDefined()
+{
+	return data->getObjectType()!=T_UNDEFINED;
+}
+
+SWFObject::SWFObject(ISWFObject* d, bool b):data(d),binded(b)
+{
+	if(binded)
+		owner=false;
+	else
+		owner=true;
 }
 
 STRING ISWFObject::getName()
@@ -78,12 +100,12 @@ void ISWFObject_impl::setVariableByName(const STRING& name, const SWFObject& o)
 	if(index==-1)
 	{
 		Variables.push_back(o);
-		Variables.back().bind();
+		//Variables.back().bind();
 	}
 	else
 	{
 		Variables[index]=o;
-		Variables[index].bind();
+		//Variables[index].bind();
 	}
 }
 
@@ -121,21 +143,26 @@ std::vector<SWFObject>& ISWFClass_impl::getVariables()
 	return Variables;
 }
 
-STRING UI32::toString()
+STRING Integer::toString()
 {
 	char buf[20];
 	snprintf(buf,20,"%i",val);
 	return STRING(buf);
 }
 
-STRING DOUBLE::toString()
+int Integer::toInt()
+{
+	return val;
+}
+
+STRING Double::toString()
 {
 	char buf[20];
 	snprintf(buf,20,"%g",val);
 	return STRING(buf);
 }
 
-int DOUBLE::toInt()
+int Double::toInt()
 {
 	return val;
 }

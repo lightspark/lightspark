@@ -39,12 +39,12 @@ private:
 	bool owner;
 	bool binded;
 public:
-	SWFObject():owner(true),binded(false),data(NULL){}
-	SWFObject(ISWFObject* d, bool b=false):data(d),owner(false),binded(b){}
+	SWFObject();
+	SWFObject(ISWFObject* d, bool b=false);
 	ISWFObject* operator->() const { return data; }
-	bool isDefined() {return data; }
+	bool isDefined(); 
 	SWFObject& operator=(const SWFObject& r);
-	void bind(){ binded=true;}
+	//void bind(){ binded=true;}
 };
 
 class ISWFClass
@@ -64,19 +64,12 @@ public:
 
 class ISWFObject
 {
-private:
-	//SWFObject properties[10];
-	//std::vector<SWFOBJECT_TYPE> propertiesType;
-	//std::vector<SWFObject> Variables;
 public:
 	virtual STRING getName()=0;
 	virtual void setName(const STRING& n)=0;
 	virtual SWFOBJECT_TYPE getObjectType()=0;
 	virtual STRING toString();
 	virtual int toInt();
-	//int getPropertyIndexByName(const STRING& name);
-	//void setProperty(STRING name, const SWFObject& o);
-	//SWFObject getProperty(STRING name);
 	virtual SWFObject getVariableByName(const STRING& name)=0;
 	virtual void setVariableByName(const STRING& name, const SWFObject& o)=0;
 	virtual ISWFObject* clone()
@@ -145,7 +138,22 @@ public:
 	STRING toString();
 };
 
-class DOUBLE : public ISWFObject_impl
+class Double : public ISWFObject_impl
+{
+private:
+	double val;
+public:
+	Double(double v):val(v){}
+	SWFOBJECT_TYPE getObjectType(){return T_DOUBLE;}
+	STRING toString();
+	int toInt(); 
+	ISWFObject* clone()
+	{
+		return new Double(*this);
+	}
+};
+
+class DOUBLE 
 {
 friend std::istream& operator>>(std::istream& s, DOUBLE& v);
 private:
@@ -154,16 +162,24 @@ public:
 	DOUBLE():val(0){}
 	DOUBLE(double v):val(v){}
 	operator double(){ return val; }
-	SWFOBJECT_TYPE getObjectType(){return T_DOUBLE;}
+};
+
+class Integer : public ISWFObject_impl
+{
+private:
+	int val;
+public:
+	Integer(int v):val(v){}
+	SWFOBJECT_TYPE getObjectType(){return T_INTEGER;}
 	STRING toString();
 	int toInt(); 
 	ISWFObject* clone()
 	{
-		return new DOUBLE(*this);
+		return new Integer(*this);
 	}
 };
 
-class UI32 : public ISWFObject_impl
+class UI32
 {
 friend std::istream& operator>>(std::istream& s, UI32& v);
 private:
@@ -172,16 +188,6 @@ public:
 	UI32():val(0){}
 	UI32(uint32_t v):val(v){}
 	operator uint32_t(){ return val; }
-	SWFOBJECT_TYPE getObjectType(){return T_INTEGER;}
-	int toInt()
-	{
-		return val;
-	}
-	ISWFObject* clone()
-	{
-		return new UI32(*this);
-	}
-	STRING toString();
 };
 
 class UI16

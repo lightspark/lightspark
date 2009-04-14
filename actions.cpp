@@ -567,28 +567,27 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			{
 				UI8 tmp;
 				in >> tmp;
-				UI32* d=new UI32(tmp);
-				Objects.push_back(d);
+				Objects.push_back(new Integer(tmp));
 				r--;
-				LOG(TRACE,"Push: Read bool " << *d);
+				LOG(TRACE,"Push: Read bool " << (int)tmp);
 				break;
 			}
 			case 6:
 			{
-				DOUBLE* d=new DOUBLE;
-				in >> *d;
-				Objects.push_back(d);
+				DOUBLE tmp;
+				in >> tmp;
+				Objects.push_back(new Double(tmp));
 				r-=8;
-				LOG(TRACE,"Push: Read double " << *d);
+				LOG(TRACE,"Push: Read double " << tmp);
 				break;
 			}
 			case 7:
 			{
-				UI32* d=new UI32;
-				in >> *d;
-				Objects.push_back(d);
+				UI32 tmp;
+				in >> tmp;
+				Objects.push_back(new Integer(tmp));
 				r-=4;
-				LOG(TRACE,"Push: Read integer " << *d);
+				LOG(TRACE,"Push: Read integer " << tmp);
 				break;
 			}
 			case 8:

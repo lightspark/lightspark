@@ -127,7 +127,7 @@ bool list_orderer(const DisplayListTag* a, int d);
 
 DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-	UI32* fake_text=new UI32;
+	Integer* fake_text=new Integer(0);
 	fake_text->setName("text");
 	registerVariable(SWFObject(fake_text));
 	in >> CharacterID >> Bounds;

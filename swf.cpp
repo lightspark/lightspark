@@ -646,6 +646,7 @@ void SystemState::dumpVariables()
 
 void SystemState::setVariableByName(const STRING& name, const SWFObject& o)
 {
+	cout << "sys set" << endl;
 	sem_wait(&mutex);
 	for(int i=0;i<Variables.size();i++)
 	{

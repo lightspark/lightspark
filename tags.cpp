@@ -182,7 +182,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	list < DisplayListTag* >* bak=sys->parsingDisplayList;
 	sys->parsingDisplayList=&clip.displayList;
 	in >> SpriteID >> FrameCount;
-	LOG(NO_INFO,"DefineSprite ID: " << SpriteID);
+	LOG(TRACE,"DefineSprite ID: " << SpriteID);
 	TagFactory factory(in);
 	Tag* tag;
 	do
@@ -213,7 +213,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	sys->parsingDisplayList=bak;
 
 	sys->parsingTarget=target_bak;
-	LOG(NO_INFO,"EndDefineSprite ID: " << SpriteID);
+	LOG(TRACE,"EndDefineSprite ID: " << SpriteID);
 }
 
 void DefineSpriteTag::printInfo(int t)
@@ -281,7 +281,7 @@ void ignore(istream& i, int count)
 
 void DefineSpriteTag::Render(int layer)
 {
-	LOG(NO_INFO,"Render DefineSprite ID: " << SpriteID);
+	LOG(TRACE,"Render DefineSprite ID: " << SpriteID);
 	RunState* bak=sys->currentState;
 	sys->currentState=&clip.state;
 	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
@@ -297,7 +297,7 @@ void DefineSpriteTag::Render(int layer)
 		sys->setUpdateRequest(true);
 	}
 	sys->currentState=bak;
-	LOG(NO_INFO,"End DefineSprite ID: " << SpriteID);
+	LOG(TRACE,"End DefineSprite ID: " << SpriteID);
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)

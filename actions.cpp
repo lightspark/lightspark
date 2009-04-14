@@ -63,10 +63,29 @@ void DoActionTag::printInfo(int t)
 
 void DoActionTag::Render()
 {
+	ExecutionContext* exec_bak=sys->execContext;
+	sys->execContext=this;
 	for(unsigned int i=0;i<actions.size();i++)
+	{
 		actions[i]->Execute();
+		if(jumpOffset<0)
+		{
+			LOG(NOT_IMPLEMENTED,"Backward jumps");
+		}
+		else if(jumpOffset>0)
+		{
+			while(jumpOffset>0)
+			{
+				i++;
+				jumpOffset-=actions[i]->Length;
+			}
+			if(jumpOffset<0)
+				LOG(ERROR,"Invalid jump offset");
+		}
+	}
 /*	for(unsigned int i=0;i<actions.size();i++)
 		actions[i]->print();*/
+	sys->execContext=exec_bak;
 }
 
 ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)
@@ -74,133 +93,141 @@ ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)
 	in >> ActionCode;
 	if(ActionCode>=0x80)
 		in >> Length;
+	else
+		Length=0;
 }
 
 ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 {
+	ActionTag* t=NULL;
 	switch(ActionCode)
 	{
 		case 0x06:
-			return new ActionPlay;
+			t=new ActionPlay;
 			break;
 		case 0x07:
-			return new ActionStop;
+			t=new ActionStop;
 			break;
+			return t;
 		case 0x0b:
-			return new ActionSubtract;
-			break;
+			t=new ActionSubtract;
+			return t;
 		case 0x0c:
-			return new ActionMultiply;
+			t=new ActionMultiply;
 			break;
 		case 0x0d:
-			return new ActionDivide;
+			t=new ActionDivide;
 			break;
 		case 0x12:
-			return new ActionNot;
+			t=new ActionNot;
 			break;
 		case 0x13:
-			return new ActionStringEquals;
+			t=new ActionStringEquals;
 			break;
 		case 0x15:
-			return new ActionStringExtract;
+			t=new ActionStringExtract;
 			break;
 		case 0x17:
-			return new ActionPop;
+			t=new ActionPop;
 			break;
 		case 0x1c:
-			return new ActionGetVariable;
+			t=new ActionGetVariable;
 			break;
 		case 0x1d:
-			return new ActionSetVariable;
+			t=new ActionSetVariable;
 			break;
 		case 0x21:
-			return new ActionStringAdd;
+			t=new ActionStringAdd;
 			break;
 		case 0x22:
-			return new ActionGetProperty;
+			t=new ActionGetProperty;
 			break;
 		case 0x24:
-			return new ActionCloneSprite;
+			t=new ActionCloneSprite;
 			break;
 		case 0x3c:
-			return new ActionDefineLocal;
+			t=new ActionDefineLocal;
 			break;
 		case 0x3d:
-			return new ActionCallFunction;
+			t=new ActionCallFunction;
 			break;
 		case 0x3e:
-			return new ActionReturn;
+			t=new ActionReturn;
 			break;
 		case 0x40:
-			return new ActionNewObject;
+			t=new ActionNewObject;
 			break;
 		case 0x47:
-			return new ActionAdd2;
+			t=new ActionAdd2;
 			break;
 		case 0x48:
-			return new ActionLess2;
+			t=new ActionLess2;
 			break;
 		case 0x49:
-			return new ActionEquals2;
+			t=new ActionEquals2;
 			break;
 		case 0x4c:
-			return new ActionPushDuplicate;
+			t=new ActionPushDuplicate;
 			break;
 		case 0x4e:
-			return new ActionGetMember;
+			t=new ActionGetMember;
 			break;
 		case 0x4f:
-			return new ActionSetMember;
+			t=new ActionSetMember;
 			break;
 		case 0x50:
-			return new ActionIncrement;
+			t=new ActionIncrement;
 			break;
 		case 0x51:
-			return new ActionDecrement;
+			t=new ActionDecrement;
 			break;
 		case 0x52:
-			return new ActionCallMethod;
+			t=new ActionCallMethod;
 			break;
 		case 0x67:
-			return new ActionGreater;
+			t=new ActionGreater;
 			break;
 		case 0x81:
-			return new ActionGotoFrame(in);
+			t=new ActionGotoFrame(in);
 			break;
 		case 0x83:
-			return new ActionGetURL(in);
+			t=new ActionGetURL(in);
 			break;
 		case 0x87:
-			return new ActionStoreRegister(in);
+			t=new ActionStoreRegister(in);
 			break;
 		case 0x88:
-			return new ActionConstantPool(in);
+			t=new ActionConstantPool(in);
 			break;
 		case 0x8e:
-			return new ActionDefineFunction2(in,this);
+			t=new ActionDefineFunction2(in,this);
 			break;
 		case 0x94:
-			return new ActionWith(in);
+			t=new ActionWith(in);
 			break;
 		case 0x96:
-			return new ActionPush(in,this);
+			t=new ActionPush(in,this);
 			break;
 		case 0x99:
-			return new ActionJump(in);
+			t=new ActionJump(in);
 			break;
 		case 0x9a:
-			return new ActionGetURL2(in);
+			t=new ActionGetURL2(in);
 			break;
 		case 0x9b:
-			return new ActionDefineFunction(in,this);
+			t=new ActionDefineFunction(in,this);
 			break;
 		case 0x9d:
-			return new ActionIf(in);
+			t=new ActionIf(in);
 			break;
 		default:
 			LOG(ERROR,"Unsopported ActionCode " << (int)ActionCode);
 			break;
 	}
+	t->Length=Length+1;
+	if(ActionCode>=0x80)
+		t->Length+=2;
+	return t;
 }
 
 RunState::RunState():FP(0),stop_FP(0)
@@ -254,6 +281,8 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 
 void ActionDefineFunction2::call()
 {
+	ExecutionContext* exec_bak=sys->execContext;
+	sys->execContext=this;
 	LOG(CALLS,"Calling Function2 " << FunctionName);
 	for(int i=0;i<NumParams;i++)
 	{
@@ -273,7 +302,24 @@ void ActionDefineFunction2::call()
 		LOG(NO_INFO,"Preload global");
 
 	for(unsigned int i=0;i<functionActions.size();i++)
+	{
 		functionActions[i]->Execute();
+		if(jumpOffset<0)
+		{
+			LOG(NOT_IMPLEMENTED,"Backward jumps");
+		}
+		else if(jumpOffset>0)
+		{
+			while(jumpOffset>0)
+			{
+				i++;
+				jumpOffset-=functionActions[i]->Length;
+			}
+			if(jumpOffset<0)
+				LOG(ERROR,"Invalid jump offset");
+		}
+	}
+	sys->execContext=exec_bak;
 }
 
 ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
@@ -415,7 +461,19 @@ void ActionLess2::Execute()
 
 void ActionEquals2::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionEquals2");
+	LOG(CALLS,"ActionEquals2");
+	SWFObject arg1=sys->vm.stack.pop();
+	SWFObject arg2=sys->vm.stack.pop();
+	if(arg1.equals(arg2))
+	{
+		LOG(CALLS,"Equal");
+		sys->vm.stack.push(new Integer(1));
+	}
+	else
+	{
+		LOG(CALLS,"Not Equal");
+		sys->vm.stack.push(new Integer(0));
+	}
 }
 
 void ActionJump::Execute()
@@ -435,7 +493,10 @@ void ActionStringExtract::Execute()
 
 void ActionIf::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionIf");
+	LOG(CALLS,"ActionIf");
+	int cond=sys->vm.stack.pop()->toInt();
+	if(cond)
+		sys->execContext->setJumpOffset(Offset);
 }
 
 void ActionDivide::Execute()

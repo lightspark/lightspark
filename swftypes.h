@@ -38,12 +38,14 @@ private:
 	ISWFObject* data;
 	bool owner;
 	bool binded;
+	//virtual bool xequals(const SWFObject& r);
 public:
 	SWFObject();
 	SWFObject(ISWFObject* d, bool b=false);
 	ISWFObject* operator->() const { return data; }
 	bool isDefined(); 
 	SWFObject& operator=(const SWFObject& r);
+	bool equals(const SWFObject& r);
 	//void bind(){ binded=true;}
 };
 

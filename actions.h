@@ -22,14 +22,27 @@
 #include "logger.h"
 #include <vector>
 
+class ExecutionContext
+{
+protected:
+	int jumpOffset;
+public:
+	ExecutionContext():jumpOffset(0){}
+	void setJumpOffset(int offset)
+	{
+		jumpOffset=offset;
+	}
+};
+
 class ActionTag
 {
 public:
+	int Length;
 	virtual void Execute()=0;
 	virtual void print()=0;
 };
 
-class DoActionTag: public DisplayListTag
+class DoActionTag: public DisplayListTag, public ExecutionContext
 {
 private:
 	std::vector<ActionTag*> actions;
@@ -108,7 +121,7 @@ public:
 	STRING ParamName;
 };
 
-class ActionDefineFunction2:public FunctionTag
+class ActionDefineFunction2:public FunctionTag, public ExecutionContext
 {
 private:
 	STRING FunctionName;

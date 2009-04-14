@@ -80,6 +80,8 @@ public:
 	void addToDisplayList(DisplayListTag* r);
 };
 
+class ExecutionContext;
+
 class SystemState:public ISWFObject,public ISWFClass
 {
 private:
@@ -118,6 +120,7 @@ public:
 	//Used only in RenderThread context
 	RunState* currentState;
 	ISWFObject* renderTarget;
+	ExecutionContext* execContext;
 
 	SystemState();
 	void waitToRun();

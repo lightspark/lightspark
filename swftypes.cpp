@@ -50,6 +50,20 @@ SWFObject& SWFObject::operator=(const SWFObject& r)
 	return *this;
 }
 
+bool SWFObject::equals(const SWFObject& r)
+{
+	//TODO: Implemenent real algorithm
+	if(data->getObjectType()!=r->getObjectType())
+		return false;
+	else
+		return true;
+}
+
+/*bool SWFObject::xequals(const SWFObject& r)
+{
+	LOG(NOT_IMPLEMENTED,"Equality not implemented for type " << data->getType());
+}*/
+
 bool SWFObject::isDefined()
 {
 	return data->getObjectType()!=T_UNDEFINED;
@@ -99,11 +113,13 @@ void ISWFObject_impl::setVariableByName(const STRING& name, const SWFObject& o)
 	int index=getVariableIndexByName(name);
 	if(index==-1)
 	{
+		o->setName(name);
 		Variables.push_back(o);
 		//Variables.back().bind();
 	}
 	else
 	{
+		o->setName(name);
 		Variables[index]=o;
 		//Variables[index].bind();
 	}
@@ -114,7 +130,8 @@ SWFObject ISWFObject_impl::getVariableByName(const STRING& name)
 	int index=getVariableIndexByName(name);
 	if(index==-1)
 	{
-		LOG(ERROR,"Could not find variable " << name);
+		LOG(NO_INFO,"Could not find variable " << name<< ". Returning undefined");
+		return SWFObject();
 	}
 	else
 		return Variables[index];
@@ -662,7 +679,7 @@ STRING ISWFObject_impl::getName()
 void ISWFObject_impl::setName(const STRING& n)
 {
 	if(Name!=NULL)
-		LOG(ERROR,"Resetting variable name");
+		LOG(ERROR,"Resetting variable name actual name " << *Name << " new name " << n);
 	Name=new STRING(n);
 }
 

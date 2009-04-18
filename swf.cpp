@@ -29,6 +29,7 @@
 #include "logger.h"
 #include "actions.h"
 #include "streams.h"
+#include "asobjects.h"
 
 using namespace std;
 
@@ -84,6 +85,11 @@ SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.di
 	sem_init(&sem_run,0,0);
 
 	sem_init(&mutex,0,1);
+
+	//Register default objects
+	SWFObject stage(new Stage,true);
+	stage.setName("Stage");
+	registerVariable(stage);
 }
 
 void SystemState::reset()
@@ -611,10 +617,10 @@ RenderTag* SystemState::dictionaryLookup(UI16 id)
 
 void SystemState::registerVariable(const SWFObject& f)
 {
-	if(!f->getName().isNull())
+	if(!f.getName().isNull())
 	{
-		if(getVariableByName(f->getName()).isDefined())
-			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f->getName());
+		if(getVariableByName(f.getName()).isDefined())
+			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f.getName());
 	}
 	sem_wait(&mutex);
 	Variables.push_back(f);
@@ -625,23 +631,55 @@ SWFObject SystemState::getVariableByName(const STRING& name)
 {
 	SWFObject ret;
 	sem_wait(&mutex);
+	bool found=false;
 	for(int i=0;i<Variables.size();i++)
 	{
-		if(Variables[i]->getName()==name)
+		if(Variables[i].getName()==name)
 		{
 			ret=Variables[i];
+			found=true;
 			break;
 		}
 	}
+	if(!found)
+		LOG(NO_INFO,"Could not find variable " << name<< ". Returning undefined");
 	sem_post(&mutex);
 	return ret;
+}
+
+void SystemState::registerClass(const STRING& name, const SWFObject& o)
+{
+	sem_wait(&mutex);
+	Classes.push_back(o);
+	Classes.back().setName(name);
+	sem_post(&mutex);
+}
+
+SWFObject SystemState::instantiateClass(const STRING& name)
+{
+	ISWFObject* ret=NULL;
+	sem_wait(&mutex);
+	bool found=false;
+	for(int i=0;i<Variables.size();i++)
+	{
+		if(Variables[i].getName()==name)
+		{
+			ret=Variables[i]->clone();
+			found=true;
+			break;
+		}
+	}
+	if(!found)
+		LOG(ERROR,"Could not find class " << name);
+	sem_post(&mutex);
+	return SWFObject(ret,true);
 }
 
 void SystemState::dumpVariables()
 {
 	cout <<"dumping" << endl;
 	for(int i=0;i<Variables.size();i++)
-		cout << Variables[i]->getName() << endl;
+		cout << Variables[i].getName() << endl;
 }
 
 void SystemState::setVariableByName(const STRING& name, const SWFObject& o)
@@ -650,7 +688,7 @@ void SystemState::setVariableByName(const STRING& name, const SWFObject& o)
 	sem_wait(&mutex);
 	for(int i=0;i<Variables.size();i++)
 	{
-		if(Variables[i]->getName()==name)
+		if(Variables[i].getName()==name)
 		{
 			Variables[i]=o;
 			break;
@@ -671,12 +709,3 @@ SWFOBJECT_TYPE SystemState::getObjectType()
 	return T_MOVIE;
 }
 
-STRING SystemState::getName()
-{
-	return STRING("ROOT");
-}
-
-void SystemState::setName(const STRING& n)
-{
-	LOG(ERROR,"Resetting ROOT name");
-}

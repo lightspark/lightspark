@@ -24,10 +24,26 @@
 #include <stdlib.h>
 
 using namespace std;
+extern __thread SystemState* sys;
 
 SWFObject::SWFObject():owner(true),binded(false)
 {
 	data=new Undefined;
+}
+
+SWFObject::SWFObject(const SWFObject& r):name(r.name),binded(r.binded)
+{
+	//Delete old data
+	if(r.binded)
+	{
+		data=r.data;
+		owner=false;
+	}
+	else
+	{
+		data=r.data->clone();
+		owner=true;
+	}
 }
 
 SWFObject& SWFObject::operator=(const SWFObject& r)
@@ -35,6 +51,9 @@ SWFObject& SWFObject::operator=(const SWFObject& r)
 	//Delete old data
 	if(owner)
 		delete data;
+
+	name=r.name;
+	binded=r.binded;
 
 	if(r.binded)
 	{
@@ -77,11 +96,6 @@ SWFObject::SWFObject(ISWFObject* d, bool b):data(d),binded(b)
 		owner=true;
 }
 
-STRING ISWFObject::getName()
-{
-	return STRING();
-}
-
 STRING ISWFObject::toString()
 {
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
@@ -99,7 +113,7 @@ int ISWFObject_impl::getVariableIndexByName(const STRING& name)
 	int ret=-1;
 	for(int i=0;i<Variables.size();i++)
 	{
-		if(Variables[i]->getName()==name)
+		if(Variables[i].getName()==name)
 		{
 			ret=i;
 			break;
@@ -113,14 +127,14 @@ void ISWFObject_impl::setVariableByName(const STRING& name, const SWFObject& o)
 	int index=getVariableIndexByName(name);
 	if(index==-1)
 	{
-		o->setName(name);
 		Variables.push_back(o);
+		Variables.back().setName(name);
 		//Variables.back().bind();
 	}
 	else
 	{
-		o->setName(name);
 		Variables[index]=o;
+		Variables[index].setName(name);
 		//Variables[index].bind();
 	}
 }
@@ -130,8 +144,9 @@ SWFObject ISWFObject_impl::getVariableByName(const STRING& name)
 	int index=getVariableIndexByName(name);
 	if(index==-1)
 	{
-		LOG(NO_INFO,"Could not find variable " << name<< ". Returning undefined");
-		return SWFObject();
+		return sys->getVariableByName(name);
+		//LOG(NO_INFO,"Could not find variable " << name<< ". Returning undefined");
+		//return SWFObject();
 	}
 	else
 		return Variables[index];
@@ -139,16 +154,11 @@ SWFObject ISWFObject_impl::getVariableByName(const STRING& name)
 
 void ISWFClass_impl::registerVariable(const SWFObject& f)
 {
-/*	if(!f->getName().isNull())
-	{
-		if(!getVariableByName(f->getName())==SWFObject())
-			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f->getName());
-	}*/
 	for(int i=0;i<Variables.size();i++)
 	{
-		if(Variables[i]->getName()==f->getName())
+		if(Variables[i].getName()==f.getName())
 		{
-			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f->getName());
+			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f.getName());
 			break;
 		}
 	}
@@ -664,23 +674,13 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	return stream;
 }
 
-ISWFObject_impl::ISWFObject_impl():Name(NULL)
+ISWFObject_impl::ISWFObject_impl():parent(NULL)
 {
 }
 
-STRING ISWFObject_impl::getName()
+ISWFObject* ISWFObject_impl::getParent()
 {
-	if(Name!=NULL)
-		return *Name;
-	else
-		return STRING();
-}
-
-void ISWFObject_impl::setName(const STRING& n)
-{
-	if(Name!=NULL)
-		LOG(ERROR,"Resetting variable name actual name " << *Name << " new name " << n);
-	Name=new STRING(n);
+	return parent;
 }
 
 STRING RegisterNumber::toString()
@@ -698,4 +698,14 @@ STRING Undefined::toString()
 STRING Null::toString()
 {
 	return STRING("null");
+}
+
+STRING SWFObject::getName() const
+{
+	return name;
+}
+
+void SWFObject::setName(const STRING& n)
+{
+	name=n;
 }

@@ -31,24 +31,7 @@ class STRING;
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_UNDEFINED, T_NULL, T_PLACEOBJECT};
 
-class ISWFObject;
-class SWFObject
-{
-private:
-	ISWFObject* data;
-	bool owner;
-	bool binded;
-	//virtual bool xequals(const SWFObject& r);
-public:
-	SWFObject();
-	SWFObject(ISWFObject* d, bool b=false);
-	ISWFObject* operator->() const { return data; }
-	bool isDefined(); 
-	SWFObject& operator=(const SWFObject& r);
-	bool equals(const SWFObject& r);
-	//void bind(){ binded=true;}
-};
-
+class SWFObject;
 class ISWFClass
 {
 public:
@@ -67,8 +50,6 @@ public:
 class ISWFObject
 {
 public:
-	virtual STRING getName()=0;
-	virtual void setName(const STRING& n)=0;
 	virtual SWFOBJECT_TYPE getObjectType()=0;
 	virtual STRING toString();
 	virtual int toInt();
@@ -78,6 +59,7 @@ public:
 	{
 		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
 	}
+	virtual ISWFObject* getParent()=0;
 
 };
 
@@ -86,14 +68,12 @@ class ISWFObject_impl:public ISWFObject
 private:
 	int getVariableIndexByName(const STRING& name);
 protected:
-	STRING* Name;
+	ISWFObject* parent;
 	ISWFObject_impl();
 	std::vector<SWFObject> Variables;
 	SWFObject getVariableByName(const STRING& name);
 	void setVariableByName(const STRING& name, const SWFObject& o);
-public:
-	virtual STRING getName();
-	virtual void setName(const STRING& n);
+	ISWFObject* getParent();
 };
 
 class ConstantReference : public ISWFObject_impl
@@ -120,10 +100,10 @@ public:
 	SWFOBJECT_TYPE getObjectType(){return T_REGNUMBER;}
 	STRING toString();
 	//int toInt();
-	/*ISWFObject* clone()
+	ISWFObject* clone()
 	{
-		return new ConstantReference(*this);
-	}*/
+		return new RegisterNumber(*this);
+	}
 };
 
 class Undefined : public ISWFObject_impl
@@ -131,6 +111,10 @@ class Undefined : public ISWFObject_impl
 public:
 	SWFOBJECT_TYPE getObjectType(){return T_UNDEFINED;}
 	STRING toString();
+	ISWFObject* clone()
+	{
+		return new Undefined;
+	}
 };
 
 class Null : public ISWFObject_impl
@@ -138,6 +122,10 @@ class Null : public ISWFObject_impl
 public:
 	SWFOBJECT_TYPE getObjectType(){return T_NULL;}
 	STRING toString();
+	ISWFObject* clone()
+	{
+		return new Null;
+	}
 };
 
 class Double : public ISWFObject_impl
@@ -248,6 +236,27 @@ public:
 	{
 		return !String.size();
 	}
+};
+
+class SWFObject
+{
+private:
+	ISWFObject* data;
+	bool owner;
+	bool binded;
+	STRING name;
+	//virtual bool xequals(const SWFObject& r);
+public:
+	SWFObject();
+	SWFObject(const SWFObject& o);
+	SWFObject(ISWFObject* d, bool b=false);
+	ISWFObject* operator->() const { return data; }
+	bool isDefined(); 
+	SWFObject& operator=(const SWFObject& r);
+	bool equals(const SWFObject& r);
+	STRING getName() const;
+	void setName(const STRING& n);
+	//void bind(){ binded=true;}
 };
 
 class SI16

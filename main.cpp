@@ -54,8 +54,8 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " <file.swf>" << endl;
 		exit(-1);
 	}
-	sys=new SystemState;
 	Log::initLogging(CALLS);
+	sys=new SystemState;
 	sys->performance_profiling=true;
 	zlib_file_filter zf;
 	zf.open(argv[1],ios_base::in);

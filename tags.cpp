@@ -128,8 +128,9 @@ bool list_orderer(const DisplayListTag* a, int d);
 DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
 	Integer* fake_text=new Integer(0);
-	fake_text->setName("text");
-	registerVariable(SWFObject(fake_text));
+	SWFObject fake_ob(fake_text);
+	fake_ob.setName("text");
+	registerVariable(fake_ob);
 	in >> CharacterID >> Bounds;
 	BitStream bs(in);
 	HasText=UB(1,bs);
@@ -1686,7 +1687,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		{
 			Variables=s->getVariables();
 			for(int i=0;i<Variables.size();i++)
-				cout << Variables[i]->getName() << endl;
+				cout << Variables[i].getName() << endl;
 		}
 	}
 	if(PlaceFlagHasMatrix)
@@ -1703,7 +1704,9 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
 		if(!(PlaceFlagMove))
 		{
-			sys->parsingTarget->registerVariable(SWFObject(this,true));
+			SWFObject w_this(this,true);
+			w_this.setName(Name);
+			sys->parsingTarget->registerVariable(w_this);
 		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");
@@ -1763,13 +1766,13 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 
 void PlaceObject2Tag::Render()
 {
-	ISWFObject* target_bak=sys->renderTarget;
+	parent=sys->renderTarget;
 	sys->renderTarget=this;
 
 	//TODO: support clipping
 	if(ClipDepth!=0)
 	{
-		sys->renderTarget=target_bak;
+		sys->renderTarget=parent;
 		return;
 	}
 
@@ -1784,7 +1787,7 @@ void PlaceObject2Tag::Render()
 	it->Render(Depth);
 	glPopMatrix();
 
-	sys->renderTarget=target_bak;
+	sys->renderTarget=parent;
 }
 
 void PlaceObject2Tag::printInfo(int t)

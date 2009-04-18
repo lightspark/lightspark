@@ -38,6 +38,7 @@ class ActionTag
 {
 public:
 	int Length;
+	ActionTag():Length(1){}
 	virtual void Execute()=0;
 	virtual void print()=0;
 };

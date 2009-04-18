@@ -224,7 +224,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			LOG(ERROR,"Unsopported ActionCode " << (int)ActionCode);
 			break;
 	}
-	t->Length=Length+1;
+	t->Length+=Length;
 	if(ActionCode>=0x80)
 		t->Length+=2;
 	return t;
@@ -255,6 +255,7 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 	//ignore(in,CodeSize);
 	int dest=in.tellg();
 	dest+=CodeSize;
+	Length+=CodeSize;
 	while(CodeSize)
 	{
 		ACTIONRECORDHEADER ah(in);
@@ -343,8 +344,7 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 		in >> Parameters[i].Register >> Parameters[i].ParamName;
 	}
 	in >> CodeSize;
-	//LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: read function code");
-	//ignore(in,CodeSize);
+	Length+=CodeSize;
 	int dest=in.tellg();
 	dest+=CodeSize;
 	while(CodeSize)
@@ -434,7 +434,7 @@ void ActionCallMethod::Execute()
 
 void ActionCallFunction::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionCallFunction");
+	LOG(CALLS,"ActionCallFunction");
 
 	STRING funcName=sys->vm.stack.pop()->toString();
 	int numArgs=sys->vm.stack.pop()->toInt();
@@ -506,12 +506,16 @@ void ActionDivide::Execute()
 
 void ActionMultiply::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionSubtract");
+	LOG(NOT_IMPLEMENTED,"Exec: ActionMultiply");
 }
 
 void ActionSubtract::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionSubtract");
+
+	sys->vm.stack.pop();
+	sys->vm.stack.pop();
+	sys->vm.stack.push(new Integer(10));
 }
 
 void ActionNot::Execute()

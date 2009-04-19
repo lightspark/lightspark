@@ -19,7 +19,17 @@
 
 #include "asobjects.h"
 
-Stage::Stage():width(0)
+Stage::Stage():width(640),height(480)
 {
 	setVariableByName("width",SWFObject(&width,true));
+	setVariableByName("height",SWFObject(&height,true));
+}
+
+void Array::_register()
+{
+	setVariableByName("constructor",SWFObject(new Function((Function::as_function)constructor),true));
+}
+
+void Array::constructor(Array* th, arguments* args)
+{
 }

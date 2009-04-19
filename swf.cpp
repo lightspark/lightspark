@@ -90,6 +90,10 @@ SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.di
 	SWFObject stage(new Stage,true);
 	stage.setName("Stage");
 	registerVariable(stage);
+
+	SWFObject array(new Array,true);
+	array.setName("Array");
+	registerVariable(array);
 }
 
 void SystemState::reset()

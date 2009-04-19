@@ -29,7 +29,8 @@
 
 class STRING;
 
-enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_UNDEFINED, T_NULL, T_PLACEOBJECT};
+enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_FUNCTION,
+	T_UNDEFINED, T_NULL, T_PLACEOBJECT};
 
 class SWFObject;
 class ISWFClass
@@ -53,6 +54,7 @@ public:
 	virtual SWFOBJECT_TYPE getObjectType()=0;
 	virtual STRING toString();
 	virtual int toInt();
+	virtual float toFloat();
 	virtual SWFObject getVariableByName(const STRING& name)=0;
 	virtual void setVariableByName(const STRING& name, const SWFObject& o)=0;
 	virtual ISWFObject* clone()
@@ -137,10 +139,25 @@ public:
 	SWFOBJECT_TYPE getObjectType(){return T_DOUBLE;}
 	STRING toString();
 	int toInt(); 
+	float toFloat();
 	ISWFObject* clone()
 	{
 		return new Double(*this);
 	}
+};
+
+class arguments
+{
+};
+
+class Function : public ISWFObject_impl
+{
+public:
+	typedef void (*as_function)(ISWFObject*, arguments*);
+	Function(as_function v):val(v){}
+	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
+private:
+	as_function val;
 };
 
 class DOUBLE 
@@ -163,6 +180,7 @@ public:
 	SWFOBJECT_TYPE getObjectType(){return T_INTEGER;}
 	STRING toString();
 	int toInt(); 
+	float toFloat();
 	ISWFObject* clone()
 	{
 		return new Integer(*this);

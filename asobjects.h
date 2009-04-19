@@ -25,9 +25,22 @@ class Stage: public ISWFObject_impl
 {
 private:
 	Integer width;
+	Integer height;
 public:
 	Stage();
 	SWFOBJECT_TYPE getObjectType() { return T_OBJECT; }
+};
+
+class Array: public ISWFObject_impl
+{
+public:
+	static void constructor(Array* th, arguments* args);
+	SWFOBJECT_TYPE getObjectType() { return T_OBJECT; }
+	void _register();
+	ISWFObject* clone()
+	{
+		return new Array(*this);
+	}
 };
 
 #endif

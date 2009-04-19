@@ -108,6 +108,12 @@ int ISWFObject::toInt()
 	return 0;
 }
 
+float ISWFObject::toFloat()
+{
+	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to float");
+	return 0;
+}
+
 int ISWFObject_impl::getVariableIndexByName(const STRING& name)
 {
 	int ret=-1;
@@ -182,11 +188,21 @@ int Integer::toInt()
 	return val;
 }
 
+float Integer::toFloat()
+{
+	return val;
+}
+
 STRING Double::toString()
 {
 	char buf[20];
 	snprintf(buf,20,"%g",val);
 	return STRING(buf);
+}
+
+float Double::toFloat()
+{
+	return val;
 }
 
 int Double::toInt()

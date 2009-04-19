@@ -253,7 +253,7 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 	in >> CodeSize;
 	//LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: read function code");
 	//ignore(in,CodeSize);
-	int dest=in.tellg();
+	streampos dest=in.tellg();
 	dest+=CodeSize;
 	Length+=CodeSize;
 	while(CodeSize)
@@ -345,7 +345,7 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 	}
 	in >> CodeSize;
 	Length+=CodeSize;
-	int dest=in.tellg();
+	streampos dest=in.tellg();
 	dest+=CodeSize;
 	while(CodeSize)
 	{
@@ -414,7 +414,13 @@ void ActionDefineLocal::Execute()
 
 void ActionNewObject::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionNewObject");
+	STRING varName=sys->vm.stack.pop()->toString();
+	LOG(CALLS,"ActionNewObject: name " << varName);
+	SWFObject object=sys->getVariableByName(varName);
+	if(!object.isDefined())
+		LOG(CALLS,"ActionNewObject: no such object")
+	else
+		LOG(CALLS,"ActionNewObject: found")
 }
 
 void ActionReturn::Execute()
@@ -501,21 +507,26 @@ void ActionIf::Execute()
 
 void ActionDivide::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionDivide");
+	float a=sys->vm.stack.pop()->toFloat();
+	float b=sys->vm.stack.pop()->toFloat();
+	sys->vm.stack.push(new Double(b/a));
+	LOG(CALLS,"ActionDivide: return " << b/a);
 }
 
 void ActionMultiply::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionMultiply");
+	float a=sys->vm.stack.pop()->toFloat();
+	float b=sys->vm.stack.pop()->toFloat();
+	sys->vm.stack.push(new Double(b*a));
+	LOG(CALLS,"ActionMultiply: return " << b*a);
 }
 
 void ActionSubtract::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionSubtract");
-
-	sys->vm.stack.pop();
-	sys->vm.stack.pop();
-	sys->vm.stack.push(new Integer(10));
+	float a=sys->vm.stack.pop()->toFloat();
+	float b=sys->vm.stack.pop()->toFloat();
+	sys->vm.stack.push(new Double(b-a));
+	LOG(CALLS,"ActionSubtract: return " << b-a);
 }
 
 void ActionNot::Execute()

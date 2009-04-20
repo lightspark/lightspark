@@ -21,26 +21,45 @@
 #define ASOBJECTS_H
 #include "swftypes.h"
 
-class Stage: public ISWFObject_impl
+class ASObject: public ISWFObject_impl
+{
+public:
+	void _register();
+	SWFOBJECT_TYPE getObjectType() { return T_OBJECT; }
+	static void constructor(ASObject* th, arguments* args);
+	ISWFObject* clone()
+	{
+		return new ASObject(*this);
+	}
+};
+
+class ASStage: public ASObject
 {
 private:
 	Integer width;
 	Integer height;
 public:
-	Stage();
-	SWFOBJECT_TYPE getObjectType() { return T_OBJECT; }
+	ASStage();
 };
 
-class Array: public ISWFObject_impl
+class ASArray: public ASObject
 {
 public:
-	static void constructor(Array* th, arguments* args);
-	SWFOBJECT_TYPE getObjectType() { return T_OBJECT; }
+	static void constructor(ASArray* th, arguments* args);
 	void _register();
 	ISWFObject* clone()
 	{
-		return new Array(*this);
+		return new ASArray(*this);
 	}
+};
+
+class ASMovieClip: public ASObject
+{
+private:
+	Integer _visible;
+public:
+	ASMovieClip():_visible(1){}
+	void _register();
 };
 
 #endif

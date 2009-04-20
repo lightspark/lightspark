@@ -114,6 +114,11 @@ float ISWFObject::toFloat()
 	return 0;
 }
 
+void ISWFObject_impl::_register()
+{
+	LOG(CALLS,"default _register called");
+}
+
 int ISWFObject_impl::getVariableIndexByName(const STRING& name)
 {
 	int ret=-1;
@@ -135,6 +140,7 @@ void ISWFObject_impl::setVariableByName(const STRING& name, const SWFObject& o)
 	{
 		Variables.push_back(o);
 		Variables.back().setName(name);
+		LOG(NO_INFO,"Registering variable " << name);
 		//Variables.back().bind();
 	}
 	else
@@ -724,4 +730,14 @@ STRING SWFObject::getName() const
 void SWFObject::setName(const STRING& n)
 {
 	name=n;
+}
+
+ISWFObject* SWFObject::getData()
+{
+	return data;
+}
+
+void Function::call(ISWFObject* obj, arguments* args)
+{
+	val(obj,args);
 }

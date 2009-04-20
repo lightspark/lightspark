@@ -177,7 +177,9 @@ void DefineEditTextTag::Render(int layer)
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
 {
-	ISWFClass* target_bak=sys->parsingTarget;
+	_register();
+
+	ISWFObject* target_bak=sys->parsingTarget;
 	sys->parsingTarget=this;
 
 	list < DisplayListTag* >* bak=sys->parsingDisplayList;
@@ -1647,7 +1649,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	LOG(TRACE,"ShowFrame");
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL)
 {
 	LOG(TRACE,"PlaceObject2");
 
@@ -1680,15 +1682,11 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		in >> CharacterId;
 		RenderTag* r=sys->dictionaryLookup(CharacterId);
 		//DefineSpriteTag* s=dynamic_cast<DefineSpriteTag*>(r);
-		ISWFClass* s=dynamic_cast<ISWFClass*>(r);
+		ISWFObject* s=dynamic_cast<ISWFObject*>(r);
 		if(s==NULL)
-			LOG(NO_INFO,"Giving a name to something that is not a class")
+			wrapped=new ASObject();
 		else
-		{
-			Variables=s->getVariables();
-			for(int i=0;i<Variables.size();i++)
-				cout << Variables[i].getName() << endl;
-		}
+			wrapped=s->clone();
 	}
 	if(PlaceFlagHasMatrix)
 		in >> Matrix;
@@ -1705,8 +1703,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		if(!(PlaceFlagMove))
 		{
 			SWFObject w_this(this,true);
-			w_this.setName(Name);
-			sys->parsingTarget->registerVariable(w_this);
+			sys->parsingTarget->setVariableByName(Name,w_this);
 		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");
@@ -1763,6 +1760,21 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		abort();
 }
 
+SWFObject PlaceObject2Tag::getVariableByName(const STRING& name)
+{
+	if(wrapped)
+		return wrapped->getVariableByName(name);
+	else
+		LOG(ERROR,"No object wrapped");
+}
+
+void PlaceObject2Tag::setVariableByName(const STRING& name, const SWFObject& o)
+{
+	if(wrapped)
+		wrapped->setVariableByName(name,o);
+	else
+		LOG(ERROR,"No object wrapped");
+}
 
 void PlaceObject2Tag::Render()
 {
@@ -1776,7 +1788,9 @@ void PlaceObject2Tag::Render()
 		return;
 	}
 
-	RenderTag* it=sys->dictionaryLookup(CharacterId);
+	RenderTag* it=dynamic_cast<RenderTag*>(wrapped);
+	if(it==NULL)
+		it=sys->dictionaryLookup(CharacterId);
 	if(it->getType()!=RENDER_TAG)
 		LOG(ERROR,"Could not find Character in dictionary");
 	

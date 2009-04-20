@@ -416,11 +416,22 @@ void ActionNewObject::Execute()
 {
 	STRING varName=sys->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionNewObject: name " << varName);
-	SWFObject object=sys->getVariableByName(varName);
-	if(!object.isDefined())
-		LOG(CALLS,"ActionNewObject: no such object")
-	else
-		LOG(CALLS,"ActionNewObject: found")
+	SWFObject type=sys->getVariableByName(varName);
+	if(!type.isDefined())
+		LOG(ERROR,"ActionNewObject: no such object");
+	int numArgs=sys->vm.stack.pop()->toInt();
+	if(numArgs)
+		LOG(ERROR,"There are arguments");
+	SWFObject c=type->getVariableByName("constructor");
+	if(c->getObjectType()!=T_FUNCTION)
+		LOG(ERROR,"Constructor is not a function");
+	Function* f=dynamic_cast<Function*>(c.getData());
+	if(f==NULL)
+		LOG(ERROR,"Not possible error");
+
+	ISWFObject* obj=type->clone();
+	f->call(obj,NULL);
+	sys->vm.stack.push(SWFObject(obj,true));
 }
 
 void ActionReturn::Execute()

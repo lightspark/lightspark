@@ -30,7 +30,7 @@
 class STRING;
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_FUNCTION,
-	T_UNDEFINED, T_NULL, T_PLACEOBJECT};
+	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED};
 
 class SWFObject;
 class ISWFClass
@@ -62,7 +62,7 @@ public:
 		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
 	}
 	virtual ISWFObject* getParent()=0;
-
+	virtual void _register()=0;
 };
 
 class ISWFObject_impl:public ISWFObject
@@ -76,6 +76,7 @@ protected:
 	SWFObject getVariableByName(const STRING& name);
 	void setVariableByName(const STRING& name, const SWFObject& o);
 	ISWFObject* getParent();
+	void _register();
 };
 
 class ConstantReference : public ISWFObject_impl
@@ -156,6 +157,7 @@ public:
 	typedef void (*as_function)(ISWFObject*, arguments*);
 	Function(as_function v):val(v){}
 	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
+	void call(ISWFObject* obj, arguments* args);
 private:
 	as_function val;
 };
@@ -275,6 +277,8 @@ public:
 	STRING getName() const;
 	void setName(const STRING& n);
 	//void bind(){ binded=true;}
+	
+	ISWFObject* getData();
 };
 
 class SI16
@@ -349,7 +353,9 @@ inline std::istream& operator>>(std::istream& s, UI32& v)
 
 inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 {
-	s.read((char*)&v.val,8);
+	// "Wacky format" is 45670123. Thanks to Ghash :-)
+	s.read(((char*)&v.val)+4,4);
+	s.read(((char*)&v.val),4);
 	return s;
 }
 

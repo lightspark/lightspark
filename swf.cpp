@@ -87,13 +87,24 @@ SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.di
 	sem_init(&mutex,0,1);
 
 	//Register default objects
-	SWFObject stage(new Stage,true);
+	SWFObject stage(new ASStage,true);
 	stage.setName("Stage");
 	registerVariable(stage);
 
-	SWFObject array(new Array,true);
+	SWFObject array(new ASArray,true);
 	array.setName("Array");
+	array->_register();
 	registerVariable(array);
+
+	SWFObject object(new ASObject,true);
+	object.setName("Object");
+	object->_register();
+	registerVariable(object);
+
+/*	SWFObject movieclip(new MovieClip,true);
+	movieclip.setName("MovieClip");
+	movieclip->_register();
+	registerVariable(movieclip);*/
 }
 
 void SystemState::reset()

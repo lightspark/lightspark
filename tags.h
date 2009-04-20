@@ -26,6 +26,7 @@
 #include "swftypes.h"
 #include "input.h"
 #include "geometry.h"
+#include "asobjects.h"
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,RENDER_TAG,END_TAG};
 
@@ -237,7 +238,7 @@ public:
 class PlaceObject2Tag: public DisplayListTag, public ISWFObject_impl
 {
 private:
-	UI32 _visible;
+	ISWFObject* wrapped;
 
 	UB PlaceFlagHasClipAction;
 	UB PlaceFlagHasClipDepth;
@@ -265,6 +266,9 @@ public:
 	//SWFObject interface
 	STRING getName() { return Name;}
 	SWFOBJECT_TYPE getObjectType(){ return T_PLACEOBJECT;}
+	//Forwared to placed object, if valid
+	SWFObject getVariableByName(const STRING& name);
+	void setVariableByName(const STRING& name, const SWFObject& o);
 };
 
 class FrameLabelTag: public DisplayListTag
@@ -410,7 +414,7 @@ public:
 	void printInfo(int t=0);
 };
 
-class DefineSpriteTag: public RenderTag, public ISWFClass_impl
+class DefineSpriteTag: public RenderTag, public ASMovieClip
 {
 private:
 	UI16 SpriteID;
@@ -419,9 +423,16 @@ private:
 	MovieClip clip;
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
+	SWFOBJECT_TYPE getObjectType(){ return T_WRAPPED;}
 	virtual int getId(){ return SpriteID; }
 	virtual void Render(int layer);
 	void printInfo(int t=0);
+
+	//ISWFObject interface
+	ISWFObject* clone()
+	{
+		return new DefineSpriteTag(*this);
+	}
 };
 
 class ProtectTag: public ControlTag

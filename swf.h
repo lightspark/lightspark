@@ -121,7 +121,7 @@ public:
 	VirtualMachine vm;
 	//Used only in ParseThread context
 	std::list < DisplayListTag* >* parsingDisplayList;
-	ISWFClass* parsingTarget;
+	ISWFObject* parsingTarget;
 
 	//Used only in RenderThread context
 	RunState* currentState;
@@ -142,6 +142,7 @@ public:
 	void setUpdateRequest(bool s);
 	RenderTag* dictionaryLookup(UI16 id);
 	void reset();
+	void _register(){}
 	SWFOBJECT_TYPE getObjectType();
 };
 

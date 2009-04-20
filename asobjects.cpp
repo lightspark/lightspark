@@ -19,17 +19,33 @@
 
 #include "asobjects.h"
 
-Stage::Stage():width(640),height(480)
+ASStage::ASStage():width(640),height(480)
 {
 	setVariableByName("width",SWFObject(&width,true));
 	setVariableByName("height",SWFObject(&height,true));
 }
 
-void Array::_register()
+void ASArray::_register()
 {
 	setVariableByName("constructor",SWFObject(new Function((Function::as_function)constructor),true));
 }
 
-void Array::constructor(Array* th, arguments* args)
+void ASArray::constructor(ASArray* th, arguments* args)
 {
+	LOG(CALLS,"Called Array constructor");
+}
+
+void ASObject::_register()
+{
+	setVariableByName("constructor",SWFObject(new Function((Function::as_function)constructor),true));
+}
+
+void ASObject::constructor(ASObject* th, arguments* args)
+{
+	LOG(CALLS,"Called Object constructor");
+}
+
+void ASMovieClip::_register()
+{
+	setVariableByName("_visible",SWFObject(&_visible,true));
 }

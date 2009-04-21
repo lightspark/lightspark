@@ -88,23 +88,22 @@ SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.di
 
 	//Register default objects
 	SWFObject stage(new ASStage,true);
-	stage.setName("Stage");
-	registerVariable(stage);
+	registerVariable("Stage",stage);
 
 	SWFObject array(new ASArray,true);
-	array.setName("Array");
 	array->_register();
-	registerVariable(array);
+	registerVariable("Array",array);
 
 	SWFObject object(new ASObject,true);
-	object.setName("Object");
 	object->_register();
-	registerVariable(object);
+	registerVariable("Object",object);
 
-/*	SWFObject movieclip(new MovieClip,true);
-	movieclip.setName("MovieClip");
-	movieclip->_register();
-	registerVariable(movieclip);*/
+	SWFObject mcloader(new ASMovieClipLoader,true);
+	mcloader->_register();
+	registerVariable("MovieClipLoader",mcloader);
+
+	SWFObject xml(new ASXML,true);
+	registerVariable("XML",xml);
 }
 
 void SystemState::reset()
@@ -630,15 +629,16 @@ RenderTag* SystemState::dictionaryLookup(UI16 id)
 	return *it;
 }
 
-void SystemState::registerVariable(const SWFObject& f)
+void SystemState::registerVariable(const STRING& name, const SWFObject& f)
 {
-	if(!f.getName().isNull())
+	if(!name.isNull())
 	{
-		if(getVariableByName(f.getName()).isDefined())
+		if(getVariableByName(name).isDefined())
 			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f.getName());
 	}
 	sem_wait(&mutex);
 	Variables.push_back(f);
+	Variables.back().setName(name);
 	sem_post(&mutex);
 }
 

@@ -399,7 +399,12 @@ void ActionGreater::Execute()
 
 void ActionAdd2::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionAdd2");
+	SWFObject arg1=sys->vm.stack.pop();
+	SWFObject arg2=sys->vm.stack.pop();
+
+	LOG(CALLS,"ActionAdd2 (string concatenation missing): " << arg1->toString() << " + " << arg2->toString());
+	sys->vm.stack.push(SWFObject(new Double(arg1->toFloat()+arg2->toFloat())));
+	LOG(CALLS,"ActionAdd2 returning: " << arg1->toFloat() + arg2->toFloat());
 }
 
 void ActionCloneSprite::Execute()
@@ -446,7 +451,17 @@ void ActionPop::Execute()
 
 void ActionCallMethod::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionCallMethod");
+	STRING methodName=sys->vm.stack.pop()->toString();
+	LOG(CALLS,"ActionCallMethod: " << methodName);
+	SWFObject obj=sys->vm.stack.pop();
+	int numArgs=sys->vm.stack.pop()->toInt();
+	arguments args;
+	for(int i=0;i<numArgs;i++)
+		args.args.push_back(sys->vm.stack.pop());
+	Function* f=obj->getVariableByName(methodName)->toFunction();
+	if(f==0)
+		LOG(ERROR,"No such function");
+	f->call(obj.getData(),&args);
 }
 
 void ActionCallFunction::Execute()

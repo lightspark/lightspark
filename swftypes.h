@@ -33,6 +33,7 @@ enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T
 	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED};
 
 class SWFObject;
+class Function;
 class ISWFClass
 {
 public:
@@ -55,6 +56,7 @@ public:
 	virtual STRING toString();
 	virtual int toInt();
 	virtual float toFloat();
+	virtual Function* toFunction();
 	virtual SWFObject getVariableByName(const STRING& name)=0;
 	virtual void setVariableByName(const STRING& name, const SWFObject& o)=0;
 	virtual ISWFObject* clone()
@@ -147,17 +149,16 @@ public:
 	}
 };
 
-class arguments
-{
-};
+class arguments;
 
 class Function : public ISWFObject_impl
 {
 public:
-	typedef void (*as_function)(ISWFObject*, arguments*);
+	typedef SWFObject (*as_function)(const SWFObject&, arguments*);
 	Function(as_function v):val(v){}
 	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
 	void call(ISWFObject* obj, arguments* args);
+	Function* toFunction();
 private:
 	as_function val;
 };
@@ -252,7 +253,7 @@ public:
 		}
 		return true;
 	}
-	bool isNull()
+	bool isNull() const
 	{
 		return !String.size();
 	}

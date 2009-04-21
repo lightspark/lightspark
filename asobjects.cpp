@@ -27,25 +27,62 @@ ASStage::ASStage():width(640),height(480)
 
 void ASArray::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function((Function::as_function)constructor),true));
+	setVariableByName("constructor",SWFObject(new Function(constructor),true));
 }
 
-void ASArray::constructor(ASArray* th, arguments* args)
+SWFObject ASArray::constructor(const SWFObject& th, arguments* args)
 {
 	LOG(CALLS,"Called Array constructor");
+	return SWFObject();
+}
+
+void ASMovieClipLoader::_register()
+{
+	setVariableByName("constructor",SWFObject(new Function(constructor),true));
+}
+
+SWFObject ASMovieClipLoader::constructor(const SWFObject&, arguments* args)
+{
+	LOG(CALLS,"Called MoviewClipLoader constructor");
+	return SWFObject();
+}
+
+ASXML::ASXML()
+{
+	_register();
+}
+
+void ASXML::_register()
+{
+	setVariableByName("constructor",SWFObject(new Function(constructor),true));
+}
+
+SWFObject ASXML::constructor(const SWFObject&, arguments* args)
+{
+	LOG(CALLS,"Called XML constructor");
+	return SWFObject();
 }
 
 void ASObject::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function((Function::as_function)constructor),true));
+	setVariableByName("constructor",SWFObject(new Function(constructor),true));
 }
 
-void ASObject::constructor(ASObject* th, arguments* args)
+SWFObject ASObject::constructor(const SWFObject&, arguments* args)
 {
 	LOG(CALLS,"Called Object constructor");
+	return SWFObject();
+}
+
+SWFObject ASMovieClip::swapDepths(const SWFObject&, arguments* args)
+{
+	LOG(CALLS,"Called swapDepths");
+	return SWFObject();
 }
 
 void ASMovieClip::_register()
 {
 	setVariableByName("_visible",SWFObject(&_visible,true));
+	setVariableByName("_width",SWFObject(&_width,true));
+	setVariableByName("swapDepths",SWFObject(new Function(swapDepths),true));
 }

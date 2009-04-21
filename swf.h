@@ -82,7 +82,7 @@ public:
 
 class ExecutionContext;
 
-class SystemState:public ISWFObject,public ISWFClass
+class SystemState:public ISWFObject//,public ISWFClass
 {
 private:
 	MovieClip clip;
@@ -105,7 +105,7 @@ private:
 	std::vector<SWFObject> Classes;
 
 	std::vector<SWFObject> Variables;
-	void registerVariable(const SWFObject& o);
+	void registerVariable(const STRING& name, const SWFObject& o);
 	std::vector<SWFObject>& getVariables();
 public:
 	SWFObject getVariableByName(const STRING& name);

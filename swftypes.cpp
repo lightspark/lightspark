@@ -102,6 +102,12 @@ STRING ISWFObject::toString()
 	return STRING("Cannot convert object to String");
 }
 
+Function* ISWFObject::toFunction()
+{
+	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Function");
+	return NULL;
+}
+
 int ISWFObject::toInt()
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
@@ -140,7 +146,6 @@ void ISWFObject_impl::setVariableByName(const STRING& name, const SWFObject& o)
 	{
 		Variables.push_back(o);
 		Variables.back().setName(name);
-		LOG(NO_INFO,"Registering variable " << name);
 		//Variables.back().bind();
 	}
 	else
@@ -735,6 +740,11 @@ void SWFObject::setName(const STRING& n)
 ISWFObject* SWFObject::getData()
 {
 	return data;
+}
+
+Function* Function::toFunction()
+{
+	return this;
 }
 
 void Function::call(ISWFObject* obj, arguments* args)

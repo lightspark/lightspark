@@ -19,6 +19,7 @@
 
 #ifndef ASOBJECTS_H
 #define ASOBJECTS_H
+#include <vector>
 #include "swftypes.h"
 
 class ASObject: public ISWFObject_impl
@@ -26,7 +27,7 @@ class ASObject: public ISWFObject_impl
 public:
 	void _register();
 	SWFOBJECT_TYPE getObjectType() { return T_OBJECT; }
-	static void constructor(ASObject* th, arguments* args);
+	static SWFObject constructor(const SWFObject& , arguments* args);
 	ISWFObject* clone()
 	{
 		return new ASObject(*this);
@@ -45,7 +46,7 @@ public:
 class ASArray: public ASObject
 {
 public:
-	static void constructor(ASArray* th, arguments* args);
+	static SWFObject constructor(const SWFObject&, arguments* args);
 	void _register();
 	ISWFObject* clone()
 	{
@@ -53,13 +54,53 @@ public:
 	}
 };
 
+typedef Integer Number; //TODO: Implement number for real
+
+class arguments: public ASArray
+{
+public:
+	std::vector<SWFObject> args;
+//public:
+//	static SWFObject push(arguments* th, arguments* 
+	ISWFObject* clone()
+	{
+		return new arguments(*this);
+	}
+};
+
 class ASMovieClip: public ASObject
 {
 private:
 	Integer _visible;
+	Integer _width;
+
 public:
-	ASMovieClip():_visible(1){}
+	ASMovieClip():_visible(1),_width(100){}
+	static SWFObject swapDepths(const SWFObject&, arguments* args);
 	void _register();
+};
+
+class ASMovieClipLoader: public ASObject
+{
+public:
+	static SWFObject constructor(const SWFObject&, arguments* args);
+	void _register();
+	ISWFObject* clone()
+	{
+		return new ASMovieClipLoader(*this);
+	}
+};
+
+class ASXML: public ASObject
+{
+public:
+	ASXML();
+	static SWFObject constructor(const SWFObject&, arguments* args);
+	void _register();
+	ISWFObject* clone()
+	{
+		return new ASXML(*this);
+	}
 };
 
 #endif

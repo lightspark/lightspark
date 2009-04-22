@@ -50,6 +50,7 @@ private:
 	std::vector<FunctionTag*> Functions;
 public:
 	Stack stack;
+	std::vector<SWFObject> regs;
 	VirtualMachine();
 	void setConstantPool(std::vector<STRING>& p);
 	STRING getConstantByIndex(int index);

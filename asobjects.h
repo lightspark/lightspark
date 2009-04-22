@@ -28,11 +28,12 @@ class ASObjectWrapper: public IDisplayListElem
 {
 private:
 	IRenderObject* wrapped;
+	UI16 depth;
 public:
-	ASObjectWrapper(IRenderObject* w):wrapped(w){}
-	UI16 getDepth()
+	ASObjectWrapper(IRenderObject* w, UI16 d):wrapped(w),depth(d){}
+	UI16 getDepth() const
 	{
-		return 0;
+		return depth;
 	}
 	void Render()
 	{
@@ -51,6 +52,16 @@ public:
 	{
 		return new ASObject(*this);
 	}
+};
+
+class ASString: public ASObject
+{
+private:
+	std::string data;
+public:
+	ASString(const char* s):data(s){}
+	ASString(const STRING& s);
+	STRING toString();
 };
 
 class ASStage: public ASObject
@@ -120,7 +131,10 @@ public:
 
 public:
 	ASMovieClip();
+	static SWFObject lineStyle(const SWFObject&, arguments* args);
 	static SWFObject swapDepths(const SWFObject&, arguments* args);
+	static SWFObject createEmptyMovieClip(const SWFObject&, arguments* args);
+
 	virtual void addToDisplayList(IDisplayListElem* r);
 
 	//ASObject interface

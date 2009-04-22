@@ -28,6 +28,7 @@ extern __thread SystemState* sys;
 VirtualMachine::VirtualMachine()
 {
 	sem_init(&mutex,0,1);
+	regs.resize(10);
 }
 
 void VirtualMachine::setConstantPool(vector<STRING>& p)
@@ -65,13 +66,3 @@ STRING VirtualMachine::getConstantByIndex(int i)
 	return ConstantPool[i];
 }
 
-STRING ConstantReference::toString()
-{
-	return sys->vm.getConstantByIndex(index);
-}
-
-int ConstantReference::toInt()
-{
-	LOG(ERROR,"Cannot convert ConstRef to Int");
-	return 0;
-}

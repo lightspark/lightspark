@@ -20,12 +20,12 @@
 #ifndef SWFTYPES_H
 #define SWFTYPES_H
 
-#include "logger.h"
-
 #include <stdint.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
+
+#include "logger.h"
 
 class STRING;
 
@@ -49,6 +49,101 @@ public:
 	std::vector<SWFObject>& getVariables();
 };
 
+class UI32
+{
+friend std::istream& operator>>(std::istream& s, UI32& v);
+private:
+	uint32_t val;
+public:
+	UI32():val(0){}
+	UI32(uint32_t v):val(v){}
+	operator uint32_t(){ return val; }
+};
+
+class UI16
+{
+friend std::istream& operator>>(std::istream& s, UI16& v);
+private:
+	uint16_t val;
+public:
+	UI16():val(0){}
+	UI16(uint16_t v):val(v){}
+	operator uint16_t() const { return val; }
+	operator UI32() const { return val; }
+};
+
+class UI8 
+{
+friend std::istream& operator>>(std::istream& s, UI8& v);
+private:
+	uint8_t val;
+public:
+	UI8():val(0){}
+	UI8(uint8_t v):val(v){}
+	operator uint8_t() const { return val; }
+	operator UI16(){ return val; }
+};
+
+class STRING
+{
+friend std::ostream& operator<<(std::ostream& s, const STRING& r);
+friend std::istream& operator>>(std::istream& stream, STRING& v);
+friend class ASString;
+private:
+	std::vector<UI8> String;
+public:
+	STRING(){};
+	STRING(const char* s)
+	{
+		do
+		{
+			String.push_back(*s);
+			s++;
+		}
+		while(*s!=0);
+	}
+	bool operator==(const STRING& s)
+	{
+		if(String.size()!=s.String.size())
+			return false;
+		for(int i=0;i<String.size();i++)
+		{
+			if(String[i]!=s.String[i])
+				return false;
+		}
+		return true;
+	}
+	bool isNull() const
+	{
+		return !String.size();
+	}
+};
+
+class ISWFObject;
+
+class SWFObject
+{
+private:
+	ISWFObject* data;
+	bool owner;
+	bool binded;
+	STRING name;
+	//virtual bool xequals(const SWFObject& r);
+public:
+	SWFObject();
+	SWFObject(const SWFObject& o);
+	SWFObject(ISWFObject* d, bool b=false);
+	ISWFObject* operator->() const { return data; }
+	bool isDefined(); 
+	SWFObject& operator=(const SWFObject& r);
+	bool equals(const SWFObject& r);
+	STRING getName() const;
+	void setName(const STRING& n);
+	//void bind(){ binded=true;}
+	
+	ISWFObject* getData() const;
+};
+
 class ISWFObject
 {
 public:
@@ -63,6 +158,10 @@ public:
 	{
 		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
 	}
+	virtual SWFObject instantiate()
+	{
+		return SWFObject(clone(),true);
+	}
 	virtual ISWFObject* getParent()=0;
 	virtual void _register()=0;
 };
@@ -75,6 +174,7 @@ protected:
 	ISWFObject* parent;
 	ISWFObject_impl();
 	std::vector<SWFObject> Variables;
+public:
 	SWFObject getVariableByName(const STRING& name);
 	void setVariableByName(const STRING& name, const SWFObject& o);
 	ISWFObject* getParent();
@@ -94,6 +194,7 @@ public:
 	{
 		return new ConstantReference(*this);
 	}
+	SWFObject instantiate();
 };
 
 class RegisterNumber : public ISWFObject_impl
@@ -101,7 +202,7 @@ class RegisterNumber : public ISWFObject_impl
 private:
 	int index;
 public:
-	RegisterNumber(int i):index(i){}
+	RegisterNumber(int i):index(i){ if(i>10) LOG(ERROR,"Register number too high"); }
 	SWFOBJECT_TYPE getObjectType(){return T_REGNUMBER;}
 	STRING toString();
 	//int toInt();
@@ -109,6 +210,7 @@ public:
 	{
 		return new RegisterNumber(*this);
 	}
+	SWFObject instantiate();
 };
 
 class Undefined : public ISWFObject_impl
@@ -157,7 +259,7 @@ public:
 	typedef SWFObject (*as_function)(const SWFObject&, arguments*);
 	Function(as_function v):val(v){}
 	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
-	void call(ISWFObject* obj, arguments* args);
+	SWFObject call(ISWFObject* obj, arguments* args);
 	Function* toFunction();
 private:
 	as_function val;
@@ -188,98 +290,6 @@ public:
 	{
 		return new Integer(*this);
 	}
-};
-
-class UI32
-{
-friend std::istream& operator>>(std::istream& s, UI32& v);
-private:
-	uint32_t val;
-public:
-	UI32():val(0){}
-	UI32(uint32_t v):val(v){}
-	operator uint32_t(){ return val; }
-};
-
-class UI16
-{
-friend std::istream& operator>>(std::istream& s, UI16& v);
-private:
-	uint16_t val;
-public:
-	UI16():val(0){}
-	UI16(uint16_t v):val(v){}
-	operator uint16_t() const { return val; }
-	operator UI32() const { return val; }
-};
-
-class UI8 
-{
-friend std::istream& operator>>(std::istream& s, UI8& v);
-private:
-	uint8_t val;
-public:
-	UI8():val(0){}
-	UI8(uint8_t v):val(v){}
-	operator uint8_t() const { return val; }
-	operator UI16(){ return val; }
-};
-
-class STRING
-{
-friend std::ostream& operator<<(std::ostream& s, const STRING& r);
-friend std::istream& operator>>(std::istream& stream, STRING& v);
-private:
-	std::vector<UI8> String;
-public:
-	STRING(){};
-	STRING(const char* s)
-	{
-		do
-		{
-			String.push_back(*s);
-			s++;
-		}
-		while(*s!=0);
-	}
-	bool operator==(const STRING& s)
-	{
-		if(String.size()!=s.String.size())
-			return false;
-		for(int i=0;i<String.size();i++)
-		{
-			if(String[i]!=s.String[i])
-				return false;
-		}
-		return true;
-	}
-	bool isNull() const
-	{
-		return !String.size();
-	}
-};
-
-class SWFObject
-{
-private:
-	ISWFObject* data;
-	bool owner;
-	bool binded;
-	STRING name;
-	//virtual bool xequals(const SWFObject& r);
-public:
-	SWFObject();
-	SWFObject(const SWFObject& o);
-	SWFObject(ISWFObject* d, bool b=false);
-	ISWFObject* operator->() const { return data; }
-	bool isDefined(); 
-	SWFObject& operator=(const SWFObject& r);
-	bool equals(const SWFObject& r);
-	STRING getName() const;
-	void setName(const STRING& n);
-	//void bind(){ binded=true;}
-	
-	ISWFObject* getData();
 };
 
 class SI16

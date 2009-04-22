@@ -60,8 +60,8 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	LOG(NO_INFO,"FrameSize " << FrameSize);
 }
 
-SystemState::SystemState():currentState(&state),parsingDisplayList(&displayList),performance_profiling(false),
-	parsingTarget(this),renderTarget(this)
+SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),performance_profiling(false),
+	parsingTarget(this)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);

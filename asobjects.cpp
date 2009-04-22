@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include <list>
+#include <algorithm>
 
 #include "asobjects.h"
 #include "swf.h"
@@ -81,9 +82,22 @@ SWFObject ASObject::constructor(const SWFObject&, arguments* args)
 	return SWFObject();
 }
 
+ASString::ASString(const STRING& s)
+{
+	data.reserve(s.String.size());
+	for(int i=0;i<s.String.size();i++)
+		data.push_back(s.String[i]);
+}
+
+STRING ASString::toString()
+{
+	return STRING(data.data());
+}
+
 ASMovieClip::ASMovieClip():_visible(1),_width(100)
 {
 	sem_init(&sem_frames,0,1);
+	_register();
 }
 
 bool ASMovieClip::list_orderer(const IDisplayListElem* a, int d)
@@ -97,6 +111,30 @@ void ASMovieClip::addToDisplayList(IDisplayListElem* t)
 	displayList.insert(it,t);
 }
 
+SWFObject ASMovieClip::createEmptyMovieClip(const SWFObject& obj, arguments* args)
+{
+	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj.getData());
+	if(th==NULL)
+		LOG(ERROR,"Not a valid ASMovieClip");
+
+	LOG(CALLS,"Called createEmptyMovieClip: " << args->args[0]->toString() << " " << args->args[1]->toString());
+	ASMovieClip* ret=new ASMovieClip();
+
+	IDisplayListElem* t=new ASObjectWrapper(ret,args->args[1]->toInt());
+	list<IDisplayListElem*>::iterator it=lower_bound(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),t->getDepth(),list_orderer);
+	th->dynamicDisplayList.insert(it,t);
+
+	SWFObject r(ret,true);
+	th->setVariableByName(args->args[0]->toString(),r);
+	return r;
+}
+
+SWFObject ASMovieClip::lineStyle(const SWFObject&, arguments* args)
+{
+	LOG(CALLS,"Called lineStyle");
+	return SWFObject();
+}
+
 SWFObject ASMovieClip::swapDepths(const SWFObject&, arguments* args)
 {
 	LOG(CALLS,"Called swapDepths");
@@ -108,13 +146,17 @@ void ASMovieClip::_register()
 	setVariableByName("_visible",SWFObject(&_visible,true));
 	setVariableByName("_width",SWFObject(&_width,true));
 	setVariableByName("swapDepths",SWFObject(new Function(swapDepths),true));
+	setVariableByName("lineStyle",SWFObject(new Function(lineStyle),true));
+	setVariableByName("createEmptyMovieClip",SWFObject(new Function(createEmptyMovieClip),true));
 }
 
 void ASMovieClip::Render()
 {
+	parent=sys->currentClip;
+	ASMovieClip* clip_bak=sys->currentClip;
+	sys->currentClip=this;
+
 	LOG(TRACE,"Render MovieClip");
-	RunState* bak=sys->currentState;
-	sys->currentState=&state;
 	state.next_FP=min(state.FP+1,frames.size()-1);
 
 	list<Frame>::iterator frame=frames.begin();
@@ -132,7 +174,8 @@ void ASMovieClip::Render()
 		state.FP=state.next_FP;
 		sys->setUpdateRequest(true);
 	}
-	sys->currentState=bak;
 	LOG(TRACE,"End Render MovieClip");
+
+	sys->currentClip=clip_bak;
 }
 

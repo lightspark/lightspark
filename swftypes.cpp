@@ -46,6 +46,24 @@ SWFObject::SWFObject(const SWFObject& r):name(r.name),binded(r.binded)
 	}
 }
 
+SWFObject ConstantReference::instantiate()
+{
+	return SWFObject(new ASString(sys->vm.getConstantByIndex(index)),true);
+}
+
+STRING ConstantReference::toString()
+{
+	char buf[20];
+	snprintf(buf,20,"ConstantReference %i",index);
+	return STRING(buf);
+}
+
+int ConstantReference::toInt()
+{
+	LOG(ERROR,"Cannot convert ConstRef to Int");
+	return 0;
+}
+
 SWFObject& SWFObject::operator=(const SWFObject& r)
 {
 	//Delete old data
@@ -710,6 +728,11 @@ ISWFObject* ISWFObject_impl::getParent()
 	return parent;
 }
 
+SWFObject RegisterNumber::instantiate()
+{
+	return sys->vm.regs[index];
+}
+
 STRING RegisterNumber::toString()
 {
 	char buf[20];
@@ -737,7 +760,7 @@ void SWFObject::setName(const STRING& n)
 	name=n;
 }
 
-ISWFObject* SWFObject::getData()
+ISWFObject* SWFObject::getData() const
 {
 	return data;
 }
@@ -747,7 +770,7 @@ Function* Function::toFunction()
 	return this;
 }
 
-void Function::call(ISWFObject* obj, arguments* args)
+SWFObject Function::call(ISWFObject* obj, arguments* args)
 {
-	val(obj,args);
+	return val(obj,args);
 }

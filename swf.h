@@ -95,8 +95,7 @@ public:
 	ISWFObject* parsingTarget;
 
 	//Used only in RenderThread context
-	RunState* currentState;
-	ISWFObject* renderTarget;
+	ASMovieClip* currentClip;
 	ExecutionContext* execContext;
 
 	SystemState();

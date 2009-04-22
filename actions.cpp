@@ -237,8 +237,8 @@ RunState::RunState():FP(0),stop_FP(0)
 void ActionStop::Execute()
 {
 	LOG(CALLS,"ActionStop");
-	sys->currentState->next_FP=sys->currentState->FP;
-	sys->currentState->stop_FP=true;
+	sys->currentClip->state.next_FP=sys->currentClip->state.FP;
+	sys->currentClip->state.stop_FP=true;
 }
 
 ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
@@ -289,18 +289,23 @@ void ActionDefineFunction2::call()
 	{
 		cout << "Reg " << Parameters[i].Register << " for " <<  Parameters[i].ParamName;
 	}
+	int used_regs=1;
 	if(PreloadThisFlag)
-		LOG(NO_INFO,"Preload this");
+	{
+		LOG(CALLS,"Preload this");
+		sys->vm.regs[used_regs]=SWFObject(sys->currentClip,true);
+		used_regs++;
+	}
 	if(PreloadArgumentsFlag)
-		LOG(NO_INFO,"Preload arguments");
+		LOG(NO_INFO,"Preload arguments "<<used_regs);
 	if(PreloadSuperFlag)
-		LOG(NO_INFO,"Preload super");
+		LOG(NO_INFO,"Preload super "<<used_regs);
 	if(PreloadRootFlag)
-		LOG(NO_INFO,"Preload root");
+		LOG(NO_INFO,"Preload root "<<used_regs);
 	if(PreloadParentFlag)
-		LOG(NO_INFO,"Preload parent");
+		LOG(NO_INFO,"Preload parent "<<used_regs);
 	if(PreloadGlobalFlag)
-		LOG(NO_INFO,"Preload global");
+		LOG(NO_INFO,"Preload global "<<used_regs);
 
 	for(unsigned int i=0;i<functionActions.size();i++)
 	{
@@ -446,7 +451,8 @@ void ActionReturn::Execute()
 
 void ActionPop::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionPop");
+	STRING popped=sys->vm.stack.pop()->toString();
+	LOG(CALLS,"ActionPop: " << popped);
 }
 
 void ActionCallMethod::Execute()
@@ -461,7 +467,8 @@ void ActionCallMethod::Execute()
 	Function* f=obj->getVariableByName(methodName)->toFunction();
 	if(f==0)
 		LOG(ERROR,"No such function");
-	f->call(obj.getData(),&args);
+	SWFObject ret=f->call(obj.getData(),&args);
+	sys->vm.stack.push(ret);
 }
 
 void ActionCallFunction::Execute()
@@ -479,11 +486,15 @@ void ActionCallFunction::Execute()
 void ActionDefineFunction::Execute()
 {
 	LOG(CALLS,"ActionDefineFunction: Null Execution");
+	if(FunctionName.isNull())
+		LOG(ERROR,"Anonymous function");
 }
 
 void ActionDefineFunction2::Execute()
 {
 	LOG(CALLS,"ActionDefineFunction2: Null Execution");
+	if(FunctionName.isNull())
+		LOG(ERROR,"Anonymous function");
 }
 
 void ActionLess2::Execute()
@@ -570,14 +581,14 @@ void ActionSetVariable::Execute()
 	SWFObject obj=sys->vm.stack.pop();
 	STRING varName=sys->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionSetVariable: name " << varName);
-	sys->renderTarget->setVariableByName(varName,obj);
+	sys->currentClip->setVariableByName(varName,obj);
 }
 
 void ActionGetVariable::Execute()
 {
 	STRING varName=sys->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetVariable: name " << varName);
-	SWFObject object=sys->renderTarget->getVariableByName(varName);
+	SWFObject object=sys->currentClip->getVariableByName(varName);
 	if(!object.isDefined())
 	{
 		LOG(CALLS,"ActionGetVariable: no such object");
@@ -631,7 +642,10 @@ ActionStoreRegister::ActionStoreRegister(std::istream& in)
 
 void ActionStoreRegister::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionStoreRegister "<<RegisterNumber);
+	LOG(CALLS,"ActionStoreRegister "<< (int)RegisterNumber);
+	if(RegisterNumber>10)
+		LOG(ERROR,"Register index too big");
+	sys->vm.regs[RegisterNumber]=sys->vm.stack(0);
 }
 
 ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
@@ -744,7 +758,7 @@ void ActionPush::Execute()
 	for(int i=0;i<Objects.size();i++)
 	{
 		LOG(CALLS,"\t " << Objects[i]->toString());
-		sys->vm.stack.push(Objects[i]);
+		sys->vm.stack.push(Objects[i]->instantiate());
 	}
 }
 
@@ -772,15 +786,15 @@ void ActionGetURL2::Execute()
 void ActionPlay::Execute()
 {
 	LOG(CALLS,"ActionPlay");
-	sys->currentState->next_FP=sys->currentState->FP;
-	sys->currentState->stop_FP=false;
+	sys->currentClip->state.next_FP=sys->currentClip->state.FP;
+	sys->currentClip->state.stop_FP=false;
 }
 
 void ActionGotoFrame::Execute()
 {
 	LOG(CALLS,"ActionGoto");
-	sys->currentState->next_FP=Frame;
-	sys->currentState->stop_FP=false;
+	sys->currentClip->state.next_FP=Frame;
+	sys->currentClip->state.stop_FP=false;
 }
 
 void ActionConstantPool::Execute()

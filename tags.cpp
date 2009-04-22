@@ -176,8 +176,6 @@ void DefineEditTextTag::Render()
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
-	_register();
-
 	ISWFObject* target_bak=sys->parsingTarget;
 	sys->parsingTarget=this;
 
@@ -1753,15 +1751,9 @@ void PlaceObject2Tag::setVariableByName(const STRING& name, const SWFObject& o)
 
 void PlaceObject2Tag::Render()
 {
-	parent=sys->renderTarget;
-	sys->renderTarget=this;
-
 	//TODO: support clipping
 	if(ClipDepth!=0)
-	{
-		sys->renderTarget=parent;
 		return;
-	}
 
 	IRenderObject* it=dynamic_cast<IRenderObject*>(wrapped);
 	if(it==NULL)
@@ -1778,8 +1770,6 @@ void PlaceObject2Tag::Render()
 	glMultMatrixf(matrix);
 	it->Render();
 	glPopMatrix();
-
-	sys->renderTarget=parent;
 }
 
 void PlaceObject2Tag::printInfo(int t)

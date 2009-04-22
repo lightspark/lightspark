@@ -20,7 +20,26 @@
 #ifndef ASOBJECTS_H
 #define ASOBJECTS_H
 #include <vector>
+#include <list>
 #include "swftypes.h"
+#include "frame.h"
+
+class ASObjectWrapper: public IDisplayListElem
+{
+private:
+	IRenderObject* wrapped;
+public:
+	ASObjectWrapper(IRenderObject* w):wrapped(w){}
+	UI16 getDepth()
+	{
+		return 0;
+	}
+	void Render()
+	{
+		if(wrapped)
+			wrapped->Render(0);
+	}
+};
 
 class ASObject: public ISWFObject_impl
 {
@@ -68,16 +87,47 @@ public:
 	}
 };
 
-class ASMovieClip: public ASObject
+class RunState
+{
+public:
+	int FP;
+	int next_FP;
+	bool stop_FP;
+public:
+	RunState();
+	void prepareNextFP();
+	void tick()
+	{
+		if(!stop_FP)
+			FP=next_FP;
+	}
+};
+
+class ASMovieClip: public ASObject, public IRenderObject
 {
 private:
+	static bool list_orderer(const IDisplayListElem* a, int d);
+protected:
 	Integer _visible;
 	Integer _width;
+	std::list < IDisplayListElem* > dynamicDisplayList;
+	std::list < IDisplayListElem* > displayList;
+public:
+	//Frames mutex (shared with drawing thread)
+	sem_t sem_frames;
+	std::list<Frame> frames;
+	RunState state;
 
 public:
-	ASMovieClip():_visible(1),_width(100){}
+	ASMovieClip();
 	static SWFObject swapDepths(const SWFObject&, arguments* args);
+	virtual void addToDisplayList(IDisplayListElem* r);
+
+	//ASObject interface
 	void _register();
+
+	//IRenderObject interface
+	void Render(int);
 };
 
 class ASMovieClipLoader: public ASObject

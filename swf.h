@@ -27,6 +27,7 @@
 #include "swftypes.h"
 #include "frame.h"
 #include "vm.h"
+#include "asobjects.h"
 
 #include <X11/Xlib.h>
 #include <GL/glx.h>
@@ -51,41 +52,11 @@ public:
 	const RECT& getFrameSize(){ return FrameSize; }
 };
 
-class RunState
-{
-public:
-	int FP;
-	int next_FP;
-	bool stop_FP;
-public:
-	RunState();
-	void prepareNextFP();
-	void tick()
-	{
-		if(!stop_FP)
-			FP=next_FP;
-	}
-};
-
-class MovieClip
-{
-public:
-	std::list < DisplayListTag* > displayList;
-	//Frames mutex (shared with drawing thread)
-	sem_t sem_frames;
-	std::list<Frame> frames;
-	RunState state;
-public:
-	MovieClip();
-	void addToDisplayList(DisplayListTag* r);
-};
-
 class ExecutionContext;
 
-class SystemState:public ISWFObject//,public ISWFClass
+class SystemState:public ASMovieClip
 {
 private:
-	MovieClip clip;
 	RECT frame_size;
 
 	//Semaphore to wait for new frames to be available
@@ -120,7 +91,7 @@ public:
 	bool performance_profiling;
 	VirtualMachine vm;
 	//Used only in ParseThread context
-	std::list < DisplayListTag* >* parsingDisplayList;
+	std::list < IDisplayListElem* >* parsingDisplayList;
 	ISWFObject* parsingTarget;
 
 	//Used only in RenderThread context
@@ -135,7 +106,7 @@ public:
 	void setFrameSize(const RECT& f);
 	RECT getFrameSize();
 	void addToDictionary(RenderTag* r);
-	void addToDisplayList(DisplayListTag* r);
+	void addToDisplayList(IDisplayListElem* r);
 	void commitFrame();
 	RGB getBackground();
 	void setBackground(const RGB& bg);

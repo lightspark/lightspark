@@ -70,13 +70,22 @@ public:
 	virtual TAGTYPE getType() { return END_TAG; }
 };
 
-class DisplayListTag: public Tag
+class DisplayListTag: public Tag, public IDisplayListElem
 {
 public:
 	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
-	virtual UI16 getDepth() const=0;
-	virtual void Render()=0;
+};
+
+class RenderTag: public Tag//, public IRenderObject
+{
+protected:
+	std::vector<Shape> cached;
+public:
+	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
+	virtual TAGTYPE getType(){ return RENDER_TAG; }
+	virtual int getId(){return 0;} 
+//	virtual void Render(int layer){};
 };
 
 class ControlTag: public Tag
@@ -87,18 +96,7 @@ public:
 	virtual void execute()=0;
 };
 
-class RenderTag: public Tag
-{
-protected:
-	std::vector<Shape> cached;
-public:
-	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
-	virtual TAGTYPE getType(){ return RENDER_TAG; }
-	virtual int getId(){return 0;} 
-	virtual void Render(int layer){ };
-};
-
-class DefineShapeTag: public RenderTag
+class DefineShapeTag: public RenderTag, public IRenderObject
 {
 private:
 	UI16 ShapeId;
@@ -111,7 +109,7 @@ public:
 	void printInfo(int t=0);
 };
 
-class DefineShape2Tag: public RenderTag
+class DefineShape2Tag: public RenderTag, public IRenderObject
 {
 private:
 	UI16 ShapeId;
@@ -124,7 +122,7 @@ public:
 	void printInfo(int t=0);
 };
 
-class DefineShape3Tag: public RenderTag
+class DefineShape3Tag: public RenderTag, public IRenderObject
 {
 private:
 	UI16 ShapeId;
@@ -137,7 +135,7 @@ public:
 	void printInfo(int t=0);
 };
 
-class DefineMorphShapeTag: public RenderTag
+class DefineMorphShapeTag: public RenderTag, public IRenderObject
 {
 private:
 	UI16 CharacterId;
@@ -156,7 +154,7 @@ public:
 };
 
 
-class DefineEditTextTag: public RenderTag, public ISWFClass_impl
+class DefineEditTextTag: public RenderTag, public ISWFClass_impl, public IRenderObject
 {
 private:
 	UI16 CharacterID;
@@ -305,7 +303,7 @@ public:
 
 class BUTTONCONDACTION;
 
-class DefineButton2Tag: public RenderTag, public IActiveObject
+class DefineButton2Tag: public RenderTag, public IActiveObject, public IRenderObject
 {
 private:
 	UI16 ButtonId;
@@ -339,7 +337,6 @@ protected:
 public:
 	FontTag(RECORDHEADER h,std::istream& s):RenderTag(h,s){}
 	virtual void genGliphShape(std::vector<Shape>& s, int glyph)=0;
-	//virtual void Render(int glyph)=0;
 	virtual TAGTYPE getType(){ return RENDER_TAG; }
 };
 
@@ -353,7 +350,6 @@ protected:
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	//void Render(int glyph);
 	virtual void genGliphShape(std::vector<Shape>& s, int glyph);
 };
 
@@ -395,11 +391,10 @@ private:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	//void Render(int glyph);
 	virtual void genGliphShape(std::vector<Shape>& s, int glyph);
 };
 
-class DefineTextTag: public RenderTag
+class DefineTextTag: public RenderTag, public IRenderObject
 {
 	friend class GLYPHENTRY;
 private:
@@ -422,12 +417,10 @@ private:
 	UI16 SpriteID;
 	UI16 FrameCount;
 	//std::vector < Tag* > ControlTags;
-	MovieClip clip;
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	SWFOBJECT_TYPE getObjectType(){ return T_WRAPPED;}
 	virtual int getId(){ return SpriteID; }
-	virtual void Render(int layer);
 	void printInfo(int t=0);
 
 	//ISWFObject interface
@@ -456,7 +449,6 @@ private:
 public:
 	DefineBitsLossless2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
-	virtual void Render(int layer);
 };
 
 class TagFactory

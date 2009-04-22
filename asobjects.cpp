@@ -17,7 +17,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <list>
+
 #include "asobjects.h"
+#include "swf.h"
+
+using namespace std;
+
+extern __thread SystemState* sys;
 
 ASStage::ASStage():width(640),height(480)
 {
@@ -74,6 +81,22 @@ SWFObject ASObject::constructor(const SWFObject&, arguments* args)
 	return SWFObject();
 }
 
+ASMovieClip::ASMovieClip():_visible(1),_width(100)
+{
+	sem_init(&sem_frames,0,1);
+}
+
+bool ASMovieClip::list_orderer(const IDisplayListElem* a, int d)
+{
+	return a->getDepth()<d;
+}
+
+void ASMovieClip::addToDisplayList(IDisplayListElem* t)
+{
+	list<IDisplayListElem*>::iterator it=lower_bound(displayList.begin(),displayList.end(),t->getDepth(),list_orderer);
+	displayList.insert(it,t);
+}
+
 SWFObject ASMovieClip::swapDepths(const SWFObject&, arguments* args)
 {
 	LOG(CALLS,"Called swapDepths");
@@ -86,3 +109,30 @@ void ASMovieClip::_register()
 	setVariableByName("_width",SWFObject(&_width,true));
 	setVariableByName("swapDepths",SWFObject(new Function(swapDepths),true));
 }
+
+void ASMovieClip::Render(int)
+{
+	LOG(TRACE,"Render MovieClip");
+	RunState* bak=sys->currentState;
+	sys->currentState=&state;
+	state.next_FP=min(state.FP+1,frames.size()-1);
+
+	list<Frame>::iterator frame=frames.begin();
+	for(int i=0;i<state.FP;i++)
+		frame++;
+	frame->Render(0);
+
+	//Render objects added at runtime;
+	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
+	for(it;it!=dynamicDisplayList.end();it++)
+		(*it)->Render();
+
+	if(state.FP!=state.next_FP)
+	{
+		state.FP=state.next_FP;
+		sys->setUpdateRequest(true);
+	}
+	sys->currentState=bak;
+	LOG(TRACE,"End Render MovieClip");
+}
+

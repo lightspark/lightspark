@@ -3,4 +3,4 @@ OpenGL:
 	pixel shader (fill styles sicuro, tessellazione boh)
 	clipping (si può fare il test, ma non l'aggiornamento del buffer -> via shader ?);
 
-put the name in the SWFObject and not in the interface
+occhio che crasha in uscita

@@ -35,7 +35,7 @@ using namespace std;
 
 int ParseThread::error(0);
 
-list<DisplayListTag*> null_list;
+list<IDisplayListElem*> null_list;
 int RenderThread::error(0);
 
 extern __thread SystemState* sys;
@@ -61,23 +61,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	LOG(NO_INFO,"FrameSize " << FrameSize);
 }
 
-MovieClip::MovieClip()
-{
-	sem_init(&sem_frames,0,1);
-}
-
-bool list_orderer(const DisplayListTag* a, int d)
-{
-	return a->getDepth()<d;
-}
-
-void MovieClip::addToDisplayList(DisplayListTag* t)
-{
-	list<DisplayListTag*>::iterator it=lower_bound(displayList.begin(),displayList.end(),t->getDepth(),list_orderer);
-	displayList.insert(it,t);
-}
-
-SystemState::SystemState():currentState(&clip.state),parsingDisplayList(&clip.displayList),performance_profiling(false),
+SystemState::SystemState():currentState(&state),parsingDisplayList(&displayList),performance_profiling(false),
 	parsingTarget(this),renderTarget(this)
 {
 	sem_init(&sem_dict,0,1);
@@ -110,7 +94,6 @@ void SystemState::reset()
 {
 	dictionary.clear();
 
-	clip=MovieClip();
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
 	sem_init(&sem_run,0,0);
@@ -515,7 +498,7 @@ void SystemState::waitToRun()
 {
 	sem_wait(&mutex);
 
-	if(clip.state.stop_FP && !(update_request || performance_profiling))
+	if(state.stop_FP && !(update_request || performance_profiling))
 	{
 		cout << "stop" << endl;
 		sem_post(&mutex);
@@ -524,7 +507,7 @@ void SystemState::waitToRun()
 	}
 	while(1)
 	{
-		if(clip.state.FP<clip.frames.size())
+		if(state.FP<frames.size())
 			break;
 
 		sem_post(&mutex);
@@ -532,15 +515,15 @@ void SystemState::waitToRun()
 		sem_wait(&mutex);
 	}
 	update_request=false;
-	clip.state.next_FP=clip.state.FP+1;
+	state.next_FP=state.FP+1;
 	sem_post(&mutex);
 }
 
 Frame& SystemState::getFrameAtFP() 
 {
 	sem_wait(&mutex);
-	list<Frame>::iterator it=clip.frames.begin();
-	for(int i=0;i<clip.state.FP;i++)
+	list<Frame>::iterator it=frames.begin();
+	for(int i=0;i<state.FP;i++)
 		it++;
 	sem_post(&mutex);
 
@@ -550,7 +533,7 @@ Frame& SystemState::getFrameAtFP()
 void SystemState::advanceFP()
 {
 	sem_wait(&mutex);
-	clip.state.tick();
+	state.tick();
 	sem_post(&mutex);
 }
 
@@ -578,10 +561,10 @@ void SystemState::addToDictionary(RenderTag* r)
 	sem_post(&mutex);
 }
 
-void SystemState::addToDisplayList(DisplayListTag* t)
+void SystemState::addToDisplayList(IDisplayListElem* t)
 {
 	sem_wait(&mutex);
-	clip.addToDisplayList(t);
+	ASMovieClip::addToDisplayList(t);
 	sem_post(&mutex);
 }
 
@@ -589,7 +572,7 @@ void SystemState::commitFrame()
 {
 	sem_wait(&mutex);
 	//sem_wait(&clip.sem_frames);
-	clip.frames.push_back(Frame(clip.displayList));
+	frames.push_back(Frame(displayList));
 	sem_post(&new_frame);
 	sem_post(&mutex);
 	//sem_post(&clip.sem_frames);

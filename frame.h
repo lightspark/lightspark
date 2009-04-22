@@ -23,15 +23,26 @@
 #include <list>
 #include "swftypes.h"
 
-class DisplayListTag;
+class IDisplayListElem
+{
+public:
+	virtual UI16 getDepth() const=0;
+	virtual void Render()=0;
+};
+
+class IRenderObject
+{
+public:
+	virtual void Render(int layer)=0;
+};
 
 class Frame
 {
 private:
 	STRING Label;
 public:
-	std::list<DisplayListTag*> displayList;
-	Frame(const std::list<DisplayListTag*>& d):displayList(d){ }
+	std::list<IDisplayListElem*> displayList;
+	Frame(const std::list<IDisplayListElem*>& d):displayList(d){ }
 	void Render(int baseLayer);
 	void setLabel(STRING l);
 };

@@ -103,7 +103,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	in >> Depth;
 
-	list<DisplayListTag*>::iterator it=sys->parsingDisplayList->begin();
+	list<IDisplayListElem*>::iterator it=sys->parsingDisplayList->begin();
 
 	for(it;it!=sys->parsingDisplayList->end();it++)
 	{
@@ -182,8 +182,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 	ISWFObject* target_bak=sys->parsingTarget;
 	sys->parsingTarget=this;
 
-	list < DisplayListTag* >* bak=sys->parsingDisplayList;
-	sys->parsingDisplayList=&clip.displayList;
+	list < IDisplayListElem* >* bak=sys->parsingDisplayList;
+	sys->parsingDisplayList=&displayList;
 	in >> SpriteID >> FrameCount;
 	LOG(TRACE,"DefineSprite ID: " << SpriteID);
 	TagFactory factory(in);
@@ -197,14 +197,14 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 				LOG(ERROR,"Dictionary tag inside a sprite. Should not happen.");
 				break;
 			case DISPLAY_LIST_TAG:
-				clip.addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
+				addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
 				break;
 			case SHOW_TAG:
 			{
 				//TODO: sync maybe not needed
-				sem_wait(&clip.sem_frames);
-				clip.frames.push_back(Frame(clip.displayList));
-				sem_post(&clip.sem_frames);
+				sem_wait(&sem_frames);
+				frames.push_back(Frame(displayList));
+				sem_post(&sem_frames);
 				break;
 			}
 			case CONTROL_TAG:
@@ -280,27 +280,6 @@ void ignore(istream& i, int count)
 	i.read(buf,count);
 
 	delete[] buf;
-}
-
-void DefineSpriteTag::Render(int layer)
-{
-	LOG(TRACE,"Render DefineSprite ID: " << SpriteID);
-	RunState* bak=sys->currentState;
-	sys->currentState=&clip.state;
-	clip.state.next_FP=min(clip.state.FP+1,clip.frames.size()-1);
-
-	list<Frame>::iterator frame=clip.frames.begin();
-	for(int i=0;i<clip.state.FP;i++)
-		frame++;
-	frame->Render(layer);
-
-	if(clip.state.FP!=clip.state.next_FP)
-	{
-		clip.state.FP=clip.state.next_FP;
-		sys->setUpdateRequest(true);
-	}
-	sys->currentState=bak;
-	LOG(TRACE,"End DefineSprite ID: " << SpriteID);
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
@@ -421,11 +400,6 @@ DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):Rend
 
 	//TODO: read bitmap data
 	ignore(in,dest-in.tellg());
-}
-
-void DefineBitsLossless2Tag::Render(int layer)
-{
-	LOG(NOT_IMPLEMENTED,"DefineBitsLossless2Tag Render");
 }
 
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):RenderTag(h,in)
@@ -1663,7 +1637,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	PlaceFlagHasCharacter=UB(1,bs);
 	PlaceFlagMove=UB(1,bs);
 	in >> Depth;
-	list < DisplayListTag*>::iterator it=sys->parsingDisplayList->begin();
+	list < IDisplayListElem*>::iterator it=sys->parsingDisplayList->begin();
 	PlaceObject2Tag* already_on_list=NULL;
 	for(it;it!=sys->parsingDisplayList->end();it++)
 	{
@@ -1790,10 +1764,13 @@ void PlaceObject2Tag::Render()
 		return;
 	}
 
-	RenderTag* it=dynamic_cast<RenderTag*>(wrapped);
+	IRenderObject* it=dynamic_cast<IRenderObject*>(wrapped);
 	if(it==NULL)
-		it=sys->dictionaryLookup(CharacterId);
-	if(it->getType()!=RENDER_TAG)
+	{
+		RenderTag* it2=sys->dictionaryLookup(CharacterId);
+		it=dynamic_cast<IRenderObject*>(it2);
+	}
+	if(it==NULL)
 		LOG(ERROR,"Could not find Character in dictionary");
 	
 	float matrix[16];
@@ -1898,7 +1875,10 @@ void DefineButton2Tag::Render(int layer)
 		}
 		else
 			continue;
-		RenderTag* c=sys->dictionaryLookup(Characters[i].CharacterID);
+		RenderTag* r=sys->dictionaryLookup(Characters[i].CharacterID);
+		IRenderObject* c=dynamic_cast<IRenderObject*>(r);
+		if(c==NULL)
+			LOG(ERROR,"Rendering something strange");
 		float matrix[16];
 		Characters[i].PlaceMatrix.get4DMatrix(matrix);
 		glPushMatrix();

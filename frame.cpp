@@ -27,7 +27,7 @@ using namespace std;
 
 void Frame::Render(int baseLayer)
 {
-	list < DisplayListTag* >::iterator i=displayList.begin();
+	list < IDisplayListElem* >::iterator i=displayList.begin();
 	int count=0;
 	for(i;i!=displayList.end();i++)
 	{

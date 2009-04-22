@@ -110,7 +110,7 @@ void ASMovieClip::_register()
 	setVariableByName("swapDepths",SWFObject(new Function(swapDepths),true));
 }
 
-void ASMovieClip::Render(int)
+void ASMovieClip::Render()
 {
 	LOG(TRACE,"Render MovieClip");
 	RunState* bak=sys->currentState;

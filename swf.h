@@ -33,7 +33,7 @@
 #include <GL/glx.h>
 
 class DisplayListTag;
-class RenderTag;
+class DictionaryTag;
 class IActiveObject;
 
 typedef void* (*thread_worker)(void*);
@@ -63,7 +63,7 @@ private:
 	sem_t new_frame;
 
 	sem_t sem_dict;
-	std::list < RenderTag* > dictionary;
+	std::list < DictionaryTag* > dictionary;
 
 	RGB Background;
 
@@ -105,13 +105,13 @@ public:
 	void advanceFP();
 	void setFrameSize(const RECT& f);
 	RECT getFrameSize();
-	void addToDictionary(RenderTag* r);
+	void addToDictionary(DictionaryTag* r);
 	void addToDisplayList(IDisplayListElem* r);
 	void commitFrame();
 	RGB getBackground();
 	void setBackground(const RGB& bg);
 	void setUpdateRequest(bool s);
-	RenderTag* dictionaryLookup(UI16 id);
+	DictionaryTag* dictionaryLookup(UI16 id);
 	void reset();
 	void _register(){}
 	SWFOBJECT_TYPE getObjectType();

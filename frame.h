@@ -33,7 +33,7 @@ public:
 class IRenderObject
 {
 public:
-	virtual void Render(int layer)=0;
+	virtual void Render()=0;
 };
 
 class Frame

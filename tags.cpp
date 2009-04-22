@@ -34,7 +34,6 @@ using namespace std;
 //extern RunState state;
 extern __thread SystemState* sys;
 
-int thread_debug(char* msg);
 Tag* TagFactory::readTag()
 {
 	RECORDHEADER h;
@@ -125,7 +124,7 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 
 bool list_orderer(const DisplayListTag* a, int d);
 
-DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	Integer* fake_text=new Integer(0);
 	SWFObject fake_ob(fake_text);
@@ -170,12 +169,12 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):RenderTag
 		in >> InitialText;
 }
 
-void DefineEditTextTag::Render(int layer)
+void DefineEditTextTag::Render()
 {
 	LOG(NOT_IMPLEMENTED,"DefineEditTextTag: Render");
 }
 
-DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	_register();
 
@@ -193,7 +192,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):RenderTag(h,i
 		tag=factory.readTag();
 		switch(tag->getType())
 		{
-			case RENDER_TAG:
+			case DICT_TAG:
 				LOG(ERROR,"Dictionary tag inside a sprite. Should not happen.");
 				break;
 			case DISPLAY_LIST_TAG:
@@ -389,7 +388,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	ignore(in,KerningCount*4);
 }
 
-DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):RenderTag(h,in)
+DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 {
 	int dest=in.tellg();
 	dest+=getSize();
@@ -402,7 +401,7 @@ DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):Rend
 	ignore(in,dest-in.tellg());
 }
 
-DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):RenderTag(h,in)
+DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 {
 	LOG(TRACE,"DefineText");
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
@@ -417,7 +416,7 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):RenderTag(h,in)
 	}
 }
 
-void DefineTextTag::Render(int layer)
+void DefineTextTag::Render()
 {
 	if(cached.size()==0)
 	{
@@ -429,7 +428,7 @@ void DefineTextTag::Render(int layer)
 		{
 			if(it->StyleFlagsHasFont)
 			{
-				RenderTag* it3=sys->dictionaryLookup(it->FontID);
+				DictionaryTag* it3=sys->dictionaryLookup(it->FontID);
 				font=dynamic_cast<FontTag*>(it3);
 				if(font==NULL)
 					LOG(ERROR,"Should be a FontTag");
@@ -497,7 +496,7 @@ void DefineTextTag::printInfo(int t)
 	cerr << "DefineText Info" << endl;
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	LOG(TRACE,"DefineShapeTag");
 	Shapes.version=1;
@@ -510,14 +509,14 @@ void DefineShapeTag::printInfo(int t)
 		cerr << '\t';
 }
 
-DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	LOG(TRACE,"DefineShape2Tag");
 	Shapes.version=2;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	LOG(TRACE,"DefineShape3Tag");
 	Shapes.version=3;
@@ -543,7 +542,7 @@ int crossProd(const Vector2& a, const Vector2& b)
 	return a.x*b.y-a.y*b.x;
 }
 
-DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):RenderTag(h,in)
+DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	in >> CharacterId >> StartBounds >> EndBounds >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
 }
@@ -670,7 +669,7 @@ void FromPathToShape(Path& path, Shape& shape)
 
 void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths);
 
-void DefineMorphShapeTag::Render(int layer)
+void DefineMorphShapeTag::Render()
 {
 
 	std::vector < Path > paths;
@@ -761,7 +760,7 @@ void DefineMorphShapeTag::Render(int layer)
 	glDisable(GL_STENCIL_TEST);
 }
 
-void DefineShapeTag::Render(int layer)
+void DefineShapeTag::Render()
 {
 	if(cached.size()==0)
 	{
@@ -848,7 +847,7 @@ void DefineShapeTag::Render(int layer)
 	glDisable(GL_STENCIL_TEST);
 }
 
-void DefineShape2Tag::Render(int layer)
+void DefineShape2Tag::Render()
 {
 	if(cached.size()==0)
 	{
@@ -934,7 +933,7 @@ void DefineShape2Tag::Render(int layer)
 	glDisable(GL_STENCIL_TEST);
 }
 
-void DefineShape3Tag::Render(int layer)
+void DefineShape3Tag::Render()
 {
 	if(cached.size()==0)
 	{
@@ -1654,7 +1653,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
-		RenderTag* r=sys->dictionaryLookup(CharacterId);
+		DictionaryTag* r=sys->dictionaryLookup(CharacterId);
 		//DefineSpriteTag* s=dynamic_cast<DefineSpriteTag*>(r);
 		ISWFObject* s=dynamic_cast<ISWFObject*>(r);
 		if(s==NULL)
@@ -1767,7 +1766,7 @@ void PlaceObject2Tag::Render()
 	IRenderObject* it=dynamic_cast<IRenderObject*>(wrapped);
 	if(it==NULL)
 	{
-		RenderTag* it2=sys->dictionaryLookup(CharacterId);
+		DictionaryTag* it2=sys->dictionaryLookup(CharacterId);
 		it=dynamic_cast<IRenderObject*>(it2);
 	}
 	if(it==NULL)
@@ -1777,7 +1776,7 @@ void PlaceObject2Tag::Render()
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
-	it->Render(Depth);
+	it->Render();
 	glPopMatrix();
 
 	sys->renderTarget=parent;
@@ -1793,7 +1792,7 @@ void PlaceObject2Tag::printInfo(int t)
 	cerr << "vvvvvvvvvvvvv" << endl;
 
 	sem_wait(&sys.sem_dict);
-	std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
+	std::vector< DictionaryTag* >::iterator it=sys.dictionary.begin();
 	for(it;it!=sys.dictionary.end();it++)
 	{
 		if((*it)->getId()==CharacterId)
@@ -1803,7 +1802,6 @@ void PlaceObject2Tag::printInfo(int t)
 	{
 		throw "Object does not exist";
 	}
-	//thread_debug( "RENDER: dict mutex unlock 2");
 	sem_post(&sys.sem_dict);
 
 	(*it)->printInfo(t+1);
@@ -1830,7 +1828,7 @@ void FrameLabelTag::Render()
 	//sys.currentClip->frames[sys.currentClip->state.FP].setLabel(Name);
 }
 
-DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):RenderTag(h,in),IdleToOverUp(false)
+DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in),IdleToOverUp(false)
 {
 	state=BUTTON_UP;
 	in >> ButtonId;
@@ -1863,7 +1861,7 @@ void DefineButton2Tag::MouseEvent(int x, int y)
 	IdleToOverUp=true;
 }
 
-void DefineButton2Tag::Render(int layer)
+void DefineButton2Tag::Render()
 {
 	for(unsigned int i=0;i<Characters.size();i++)
 	{
@@ -1875,7 +1873,7 @@ void DefineButton2Tag::Render(int layer)
 		}
 		else
 			continue;
-		RenderTag* r=sys->dictionaryLookup(Characters[i].CharacterID);
+		DictionaryTag* r=sys->dictionaryLookup(Characters[i].CharacterID);
 		IRenderObject* c=dynamic_cast<IRenderObject*>(r);
 		if(c==NULL)
 			LOG(ERROR,"Rendering something strange");
@@ -1883,10 +1881,7 @@ void DefineButton2Tag::Render(int layer)
 		Characters[i].PlaceMatrix.get4DMatrix(matrix);
 		glPushMatrix();
 		glMultMatrixf(matrix);
-		glDepthFunc(GL_ALWAYS);
-		//glTranslatef(0,0,Characters[i].PlaceDepth-layer);
-		c->Render(Characters[i].PlaceDepth);
-		//glDepthFunc(GL_LEQUAL);
+		c->Render();
 		glPopMatrix();
 	}
 	for(unsigned int i=0;i<Actions.size();i++)
@@ -1911,7 +1906,7 @@ void DefineButton2Tag::printInfo(int t)
 /*	for(unsigned int i=0;i<Characters.size();i++)
 	{
 		sem_wait(&sys.sem_dict);
-		std::vector< RenderTag* >::iterator it=sys.dictionary.begin();
+		std::vector< DictionaryTag* >::iterator it=sys.dictionary.begin();
 		for(it;it!=sys.dictionary.end();it++)
 		{
 			if((*it)->getId()==Characters[i].CharacterID)
@@ -1921,7 +1916,7 @@ void DefineButton2Tag::printInfo(int t)
 		{
 			throw "Object does not exist";
 		}
-		RenderTag* c=*it;
+		DictionaryTag* c=*it;
 		
 		sem_post(&sys.sem_dict);
 		c->printInfo(t+1);

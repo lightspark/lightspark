@@ -34,14 +34,8 @@ void Frame::Render(int baseLayer)
 		if(*i!=NULL)
 		{
 			count++;
-			glPushMatrix();
-			glTranslatef(0,0,(*i)->getDepth()-baseLayer);
 			//(*i)->printInfo();
 			(*i)->Render();
-			glPopMatrix();
-
-			//if(count>5 && hack)
-			//	break;
 		}
 	}
 }

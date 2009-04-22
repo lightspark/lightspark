@@ -37,7 +37,7 @@ public:
 	void Render()
 	{
 		if(wrapped)
-			wrapped->Render(0);
+			wrapped->Render();
 	}
 };
 
@@ -127,7 +127,7 @@ public:
 	void _register();
 
 	//IRenderObject interface
-	void Render(int);
+	void Render();
 };
 
 class ASMovieClipLoader: public ASObject

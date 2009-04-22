@@ -40,7 +40,6 @@ int RenderThread::error(0);
 
 extern __thread SystemState* sys;
 
-int thread_debug(char* msg);
 SWF_HEADER::SWF_HEADER(istream& in)
 {
 	//Valid only on little endian platforms
@@ -127,8 +126,8 @@ void* ParseThread::worker(ParseThread* th)
 				{
 					pthread_exit(NULL);
 				}
-				case RENDER_TAG:
-					sys->addToDictionary(dynamic_cast<RenderTag*>(tag));
+				case DICT_TAG:
+					sys->addToDictionary(dynamic_cast<DictionaryTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
 					sys->addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
@@ -552,7 +551,7 @@ RECT SystemState::getFrameSize()
 	return frame_size;
 }
 
-void SystemState::addToDictionary(RenderTag* r)
+void SystemState::addToDictionary(DictionaryTag* r)
 {
 	sem_wait(&mutex);
 	//sem_wait(&sys.sem_dict);
@@ -595,11 +594,11 @@ void SystemState::setUpdateRequest(bool s)
 	sem_post(&mutex);
 }
 
-RenderTag* SystemState::dictionaryLookup(UI16 id)
+DictionaryTag* SystemState::dictionaryLookup(UI16 id)
 {
 	sem_wait(&mutex);
 	//sem_wait(&sem_dict);
-	list< RenderTag*>::iterator it = dictionary.begin();
+	list< DictionaryTag*>::iterator it = dictionary.begin();
 	for(it;it!=dictionary.end();it++)
 	{
 		if((*it)->getId()==id)

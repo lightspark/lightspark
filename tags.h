@@ -28,7 +28,7 @@
 #include "geometry.h"
 #include "asobjects.h"
 
-enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,RENDER_TAG,END_TAG};
+enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,END_TAG};
 
 void ignore(std::istream& i, int count);
 
@@ -77,15 +77,14 @@ public:
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
 };
 
-class RenderTag: public Tag//, public IRenderObject
+class DictionaryTag: public Tag
 {
 protected:
 	std::vector<Shape> cached;
 public:
-	RenderTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
-	virtual TAGTYPE getType(){ return RENDER_TAG; }
+	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
+	virtual TAGTYPE getType(){ return DICT_TAG; }
 	virtual int getId(){return 0;} 
-//	virtual void Render(int layer){};
 };
 
 class ControlTag: public Tag
@@ -96,7 +95,7 @@ public:
 	virtual void execute()=0;
 };
 
-class DefineShapeTag: public RenderTag, public IRenderObject
+class DefineShapeTag: public DictionaryTag, public IRenderObject
 {
 private:
 	UI16 ShapeId;
@@ -105,11 +104,11 @@ private:
 public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual void Render(int layer);
+	virtual void Render();
 	void printInfo(int t=0);
 };
 
-class DefineShape2Tag: public RenderTag, public IRenderObject
+class DefineShape2Tag: public DictionaryTag, public IRenderObject
 {
 private:
 	UI16 ShapeId;
@@ -118,11 +117,11 @@ private:
 public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual void Render(int layer);
+	virtual void Render();
 	void printInfo(int t=0);
 };
 
-class DefineShape3Tag: public RenderTag, public IRenderObject
+class DefineShape3Tag: public DictionaryTag, public IRenderObject
 {
 private:
 	UI16 ShapeId;
@@ -131,11 +130,11 @@ private:
 public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual void Render(int layer);
+	virtual void Render();
 	void printInfo(int t=0);
 };
 
-class DefineMorphShapeTag: public RenderTag, public IRenderObject
+class DefineMorphShapeTag: public DictionaryTag, public IRenderObject
 {
 private:
 	UI16 CharacterId;
@@ -149,12 +148,12 @@ private:
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
-	virtual void Render(int layer);
+	virtual void Render();
 	void printInfo(int t=0);
 };
 
 
-class DefineEditTextTag: public RenderTag, public ISWFClass_impl, public IRenderObject
+class DefineEditTextTag: public DictionaryTag, public ISWFClass_impl, public IRenderObject
 {
 private:
 	UI16 CharacterID;
@@ -191,7 +190,7 @@ private:
 public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
 	virtual int getId(){ return CharacterID; }
-	virtual void Render(int layer);
+	virtual void Render();
 };
 
 class DefineSoundTag: public Tag
@@ -303,7 +302,7 @@ public:
 
 class BUTTONCONDACTION;
 
-class DefineButton2Tag: public RenderTag, public IActiveObject, public IRenderObject
+class DefineButton2Tag: public DictionaryTag, public IActiveObject, public IRenderObject
 {
 private:
 	UI16 ButtonId;
@@ -320,7 +319,7 @@ private:
 public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
-	virtual void Render(int layer);
+	virtual void Render();
 	virtual void MouseEvent(int x, int y);
 
 	void printInfo(int t=0);
@@ -330,14 +329,14 @@ class KERNINGRECORD
 {
 };
 
-class FontTag: public RenderTag
+class FontTag: public DictionaryTag
 {
 protected:
 	UI16 FontID;
 public:
-	FontTag(RECORDHEADER h,std::istream& s):RenderTag(h,s){}
+	FontTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s){}
 	virtual void genGliphShape(std::vector<Shape>& s, int glyph)=0;
-	virtual TAGTYPE getType(){ return RENDER_TAG; }
+	virtual TAGTYPE getType(){ return DICT_TAG; }
 };
 
 class DefineFontTag: public FontTag
@@ -394,7 +393,7 @@ public:
 	virtual void genGliphShape(std::vector<Shape>& s, int glyph);
 };
 
-class DefineTextTag: public RenderTag, public IRenderObject
+class DefineTextTag: public DictionaryTag, public IRenderObject
 {
 	friend class GLYPHENTRY;
 private:
@@ -407,11 +406,11 @@ private:
 public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
-	virtual void Render(int layer);
+	virtual void Render();
 	void printInfo(int t=0);
 };
 
-class DefineSpriteTag: public RenderTag, public ASMovieClip
+class DefineSpriteTag: public DictionaryTag, public ASMovieClip
 {
 private:
 	UI16 SpriteID;
@@ -437,7 +436,7 @@ public:
 	void execute( ){};
 };
 
-class DefineBitsLossless2Tag: public RenderTag
+class DefineBitsLossless2Tag: public DictionaryTag
 {
 private:
 	UI16 CharacterId;

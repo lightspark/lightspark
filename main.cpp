@@ -35,13 +35,6 @@ using namespace std;
 
 __thread SystemState* sys;
 
-void thread_debug(char* msg)
-{
-	timespec ts;
-	clock_gettime(CLOCK_REALTIME,&ts);
-	fprintf(stderr,"%u.%010u %s\n",ts.tv_sec,ts.tv_nsec,msg);
-}
-
 inline long timeDiff(timespec& s,timespec& d)
 {
 	return (d.tv_sec-s.tv_sec)*1000+(d.tv_nsec-s.tv_nsec)/1000000;

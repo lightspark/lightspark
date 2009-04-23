@@ -70,7 +70,14 @@ void DoActionTag::Render()
 		actions[i]->Execute();
 		if(jumpOffset<0)
 		{
-			LOG(NOT_IMPLEMENTED,"Backward jumps");
+			int off=-jumpOffset;
+			while(off>0)
+			{
+				off-=actions[i]->Length;
+				i--;
+			}
+			if(off<0)
+				LOG(ERROR,"Invalid jump offset");
 		}
 		else if(jumpOffset>0)
 		{
@@ -284,6 +291,8 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 	ExecutionContext* exec_bak=sys->execContext;
 	sys->execContext=this;
 	LOG(CALLS,"Calling Function2 " << FunctionName);
+	for(int i=0;i<args->args.size();i++)
+		LOG(CALLS,"Arg "<<i<<"="<<args->args[i]->toString());
 	for(int i=0;i<NumParams;i++)
 	{
 		cout << "Reg " << (int)Parameters[i].Register << " for " <<  Parameters[i].ParamName << endl;
@@ -317,7 +326,15 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 		functionActions[i]->Execute();
 		if(jumpOffset<0)
 		{
-			LOG(NOT_IMPLEMENTED,"Backward jumps");
+			int off=-jumpOffset;
+			while(off>0)
+			{
+				off-=functionActions[i]->Length;
+				i--;
+			}
+			if(off<0)
+				LOG(ERROR,"Invalid jump offset");
+			jumpOffset=0;
 		}
 		else if(jumpOffset>0)
 		{
@@ -602,7 +619,7 @@ void ActionDivide::Execute()
 	float a=sys->vm.stack.pop()->toFloat();
 	float b=sys->vm.stack.pop()->toFloat();
 	sys->vm.stack.push(new Double(b/a));
-	LOG(CALLS,"ActionDivide: return " << b/a);
+	LOG(CALLS,"ActionDivide: return " << b << "/" << a << "="<< b/a);
 }
 
 void ActionMultiply::Execute()
@@ -797,17 +814,17 @@ void ActionWith::Execute()
 
 void ActionGetMember::Execute()
 {
-	LOG(CALLS,"ActionGetMember");
 	STRING memberName=sys->vm.stack.pop()->toString();
+	LOG(CALLS,"ActionGetMember: " << memberName);
 	SWFObject obj=sys->vm.stack.pop();
 	sys->vm.stack.push(obj->getVariableByName(memberName));
 }
 
 void ActionSetMember::Execute()
 {
-	LOG(CALLS,"ActionSetMember");
 	SWFObject value=sys->vm.stack.pop();
 	STRING memberName=sys->vm.stack.pop()->toString();
+	LOG(CALLS,"ActionSetMember: " << memberName);
 	SWFObject obj=sys->vm.stack.pop();
 	obj->setVariableByName(memberName,value);
 }

@@ -34,21 +34,6 @@ enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T
 
 class SWFObject;
 class IFunction;
-class ISWFClass
-{
-public:
-	virtual void registerVariable(const SWFObject& o)=0;
-	virtual std::vector<SWFObject>& getVariables()=0;
-};
-
-class ISWFClass_impl:public ISWFClass
-{
-public:
-	std::vector<SWFObject> Variables;
-	void registerVariable(const SWFObject& o);
-	std::vector<SWFObject>& getVariables();
-};
-
 class UI32
 {
 friend std::istream& operator>>(std::istream& s, UI32& v);

@@ -153,7 +153,7 @@ public:
 };
 
 
-class DefineEditTextTag: public DictionaryTag, public ISWFClass_impl, public IRenderObject
+class DefineEditTextTag: public DictionaryTag, public ASObject, public IRenderObject
 {
 private:
 	UI16 CharacterID;

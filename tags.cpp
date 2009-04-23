@@ -126,10 +126,7 @@ bool list_orderer(const DisplayListTag* a, int d);
 
 DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
-	Integer* fake_text=new Integer(0);
-	SWFObject fake_ob(fake_text);
-	fake_ob.setName("text");
-	registerVariable(fake_ob);
+	setVariableByName("text",SWFObject(new Integer(0),true));
 	in >> CharacterID >> Bounds;
 	BitStream bs(in);
 	HasText=UB(1,bs);

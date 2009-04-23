@@ -200,24 +200,6 @@ SWFObject ISWFObject_impl::getVariableByName(const STRING& name)
 		return Variables[index];
 }
 
-void ISWFClass_impl::registerVariable(const SWFObject& f)
-{
-	for(int i=0;i<Variables.size();i++)
-	{
-		if(Variables[i].getName()==f.getName())
-		{
-			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f.getName());
-			break;
-		}
-	}
-	Variables.push_back(f);
-}
-
-std::vector<SWFObject>& ISWFClass_impl::getVariables()
-{
-	return Variables;
-}
-
 STRING Integer::toString()
 {
 	char buf[20];

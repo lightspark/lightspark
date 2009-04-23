@@ -40,18 +40,30 @@ void ASArray::_register()
 
 SWFObject ASArray::constructor(const SWFObject& th, arguments* args)
 {
-	LOG(CALLS,"Called Array constructor");
+	LOG(NOT_IMPLEMENTED,"Called Array constructor");
 	return SWFObject();
+}
+
+ASMovieClipLoader::ASMovieClipLoader()
+{
+	_register();
 }
 
 void ASMovieClipLoader::_register()
 {
 	setVariableByName("constructor",SWFObject(new Function(constructor),true));
+	setVariableByName("addListener",SWFObject(new Function(addListener),true));
 }
 
 SWFObject ASMovieClipLoader::constructor(const SWFObject&, arguments* args)
 {
-	LOG(CALLS,"Called MoviewClipLoader constructor");
+	LOG(NOT_IMPLEMENTED,"Called MovieClipLoader constructor");
+	return SWFObject();
+}
+
+SWFObject ASMovieClipLoader::addListener(const SWFObject&, arguments* args)
+{
+	LOG(NOT_IMPLEMENTED,"Called MovieClipLoader::addListener");
 	return SWFObject();
 }
 
@@ -67,7 +79,7 @@ void ASXML::_register()
 
 SWFObject ASXML::constructor(const SWFObject&, arguments* args)
 {
-	LOG(CALLS,"Called XML constructor");
+	LOG(NOT_IMPLEMENTED,"Called XML constructor");
 	return SWFObject();
 }
 
@@ -78,7 +90,7 @@ void ASObject::_register()
 
 SWFObject ASObject::constructor(const SWFObject&, arguments* args)
 {
-	LOG(CALLS,"Called Object constructor");
+	LOG(NOT_IMPLEMENTED,"Called Object constructor");
 	return SWFObject();
 }
 
@@ -131,25 +143,25 @@ SWFObject ASMovieClip::createEmptyMovieClip(const SWFObject& obj, arguments* arg
 
 SWFObject ASMovieClip::moveTo(const SWFObject&, arguments* args)
 {
-	LOG(CALLS,"Called moveTo");
+	LOG(NOT_IMPLEMENTED,"Called moveTo");
 	return SWFObject();
 }
 
 SWFObject ASMovieClip::lineTo(const SWFObject&, arguments* args)
 {
-	LOG(CALLS,"Called lineTo");
+	LOG(NOT_IMPLEMENTED,"Called lineTo");
 	return SWFObject();
 }
 
 SWFObject ASMovieClip::lineStyle(const SWFObject&, arguments* args)
 {
-	LOG(CALLS,"Called lineStyle");
+	LOG(NOT_IMPLEMENTED,"Called lineStyle");
 	return SWFObject();
 }
 
 SWFObject ASMovieClip::swapDepths(const SWFObject&, arguments* args)
 {
-	LOG(CALLS,"Called swapDepths");
+	LOG(NOT_IMPLEMENTED,"Called swapDepths");
 	return SWFObject();
 }
 

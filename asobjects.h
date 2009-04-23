@@ -24,6 +24,9 @@
 #include "swftypes.h"
 #include "frame.h"
 
+#define ASFUNCTION(name) \
+	static SWFObject name(const SWFObject& , arguments* args);
+
 class ASObjectWrapper: public IDisplayListElem
 {
 private:
@@ -63,6 +66,10 @@ public:
 	ASString(const STRING& s);
 	STRING toString();
 	SWFOBJECT_TYPE getObjectType(){return T_STRING;}
+	ISWFObject* clone()
+	{
+		return new ASString(*this);
+	}
 };
 
 class ASStage: public ASObject
@@ -145,11 +152,18 @@ public:
 
 	//IRenderObject interface
 	void Render();
+	ISWFObject* clone()
+	{
+		return new ASMovieClip(*this);
+	}
 };
 
 class ASMovieClipLoader: public ASObject
 {
 public:
+	ASMovieClipLoader();
+	ASFUNCTION(addListener)
+
 	static SWFObject constructor(const SWFObject&, arguments* args);
 	void _register();
 	ISWFObject* clone()

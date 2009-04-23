@@ -130,6 +130,7 @@ public:
 	SWFObject& operator=(const SWFObject& r);
 	bool equals(const SWFObject& r);
 	bool isLess(const SWFObject& r);
+	bool isGreater(const SWFObject& r);
 	STRING getName() const;
 	void setName(const STRING& n);
 	//void bind(){ binded=true;}

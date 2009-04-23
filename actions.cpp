@@ -286,7 +286,13 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 	LOG(CALLS,"Calling Function2 " << FunctionName);
 	for(int i=0;i<NumParams;i++)
 	{
-		cout << "Reg " << Parameters[i].Register << " for " <<  Parameters[i].ParamName;
+		cout << "Reg " << (int)Parameters[i].Register << " for " <<  Parameters[i].ParamName << endl;
+		if(Parameters[i].Register==0)
+			LOG(ERROR,"Parameter not in register")
+		else
+		{
+			sys->vm.regs[Parameters[i].Register]=args->args[i];
+		}
 	}
 	int used_regs=1;
 	if(PreloadThisFlag)
@@ -393,12 +399,26 @@ void ActionDecrement::Execute()
 
 void ActionIncrement::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionIncrement");
+	float a=sys->vm.stack.pop()->toFloat();
+	LOG(CALLS,"ActionIncrement: " << a);
+	sys->vm.stack.push(SWFObject(new Double(a+1)));
 }
 
 void ActionGreater::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionGreater");
+	LOG(CALLS,"ActionGreater");
+	SWFObject arg1=sys->vm.stack.pop();
+	SWFObject arg2=sys->vm.stack.pop();
+	if(arg2.isGreater(arg1))
+	{
+		LOG(CALLS,"Greater");
+		sys->vm.stack.push(new Integer(1));
+	}
+	else
+	{
+		LOG(CALLS,"Not Greater");
+		sys->vm.stack.push(new Integer(0));
+	}
 }
 
 void ActionAdd2::Execute()
@@ -483,12 +503,16 @@ void ActionCallFunction::Execute()
 
 	STRING funcName=sys->vm.stack.pop()->toString();
 	int numArgs=sys->vm.stack.pop()->toInt();
-	if(numArgs!=0)
-		LOG(NOT_IMPLEMENTED,"There are args");
+	arguments args;
+	for(int i=0;i<numArgs;i++)
+		args.args.push_back(sys->vm.stack.pop());
 	IFunction* f=sys->currentClip->getVariableByName(funcName)->toFunction();
 	if(f==0)
 		LOG(ERROR,"No such function");
-	f->call(NULL,NULL);
+	SWFObject ret=f->call(NULL,&args);
+	sys->vm.stack.push(ret);
+
+	LOG(CALLS,"ActionCallFunction: End");
 }
 
 void ActionDefineFunction::Execute()
@@ -551,7 +575,8 @@ void ActionEquals2::Execute()
 
 void ActionJump::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionJump");
+	LOG(CALLS,"ActionJump: " << BranchOffset);
+	sys->execContext->setJumpOffset(BranchOffset);
 }
 
 void ActionStringAdd::Execute()

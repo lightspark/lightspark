@@ -82,7 +82,6 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	registerVariable("Object",object);
 
 	SWFObject mcloader(new ASMovieClipLoader,true);
-	mcloader->_register();
 	registerVariable("MovieClipLoader",mcloader);
 
 	SWFObject xml(new ASXML,true);

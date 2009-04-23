@@ -87,6 +87,19 @@ SWFObject& SWFObject::operator=(const SWFObject& r)
 	return *this;
 }
 
+bool SWFObject::isLess(const SWFObject& r)
+{
+	if(data->getObjectType()==T_STRING && r->getObjectType()==T_STRING)
+		LOG(ERROR,"String comparision not supported")
+	else
+	{
+		int a=data->toInt();
+		int b=r->toInt();
+		return a<b;
+	}
+	return false;
+}
+
 bool SWFObject::equals(const SWFObject& r)
 {
 	//TODO: Implemenent real algorithm
@@ -120,7 +133,7 @@ STRING ISWFObject::toString()
 	return STRING("Cannot convert object to String");
 }
 
-Function* ISWFObject::toFunction()
+IFunction* ISWFObject::toFunction()
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Function");
 	return NULL;
@@ -765,7 +778,7 @@ ISWFObject* SWFObject::getData() const
 	return data;
 }
 
-Function* Function::toFunction()
+IFunction* Function::toFunction()
 {
 	return this;
 }

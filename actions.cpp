@@ -277,10 +277,9 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 			break;
 		}
 	}
-	sys->vm.registerFunction(this);
 }
 
-void ActionDefineFunction2::call()
+SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 {
 	ExecutionContext* exec_bak=sys->execContext;
 	sys->execContext=this;
@@ -326,6 +325,7 @@ void ActionDefineFunction2::call()
 		}
 	}
 	sys->execContext=exec_bak;
+	return SWFObject(sys->vm.stack.pop());
 }
 
 ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
@@ -374,7 +374,6 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 			break;
 		}
 	}
-	sys->vm.registerFunction(this);
 }
 
 void ActionPushDuplicate::Execute()
@@ -407,9 +406,16 @@ void ActionAdd2::Execute()
 	SWFObject arg1=sys->vm.stack.pop();
 	SWFObject arg2=sys->vm.stack.pop();
 
-	LOG(CALLS,"ActionAdd2 (string concatenation missing): " << arg1->toString() << " + " << arg2->toString());
-	sys->vm.stack.push(SWFObject(new Double(arg1->toFloat()+arg2->toFloat())));
-	LOG(CALLS,"ActionAdd2 returning: " << arg1->toFloat() + arg2->toFloat());
+	if(arg1->getObjectType()==T_STRING || arg2->getObjectType()==T_STRING)
+	{
+		sys->vm.stack.push(SWFObject(new ASString(arg2->toString()+arg1->toString())));
+		LOG(CALLS,"ActionAdd2 (string concatenation): " << sys->vm.stack(0)->toString());
+	}
+	else
+	{
+		sys->vm.stack.push(SWFObject(new Double(arg1->toFloat()+arg2->toFloat())));
+		LOG(CALLS,"ActionAdd2 returning: " << arg1->toFloat() + arg2->toFloat());
+	}
 }
 
 void ActionCloneSprite::Execute()
@@ -464,7 +470,7 @@ void ActionCallMethod::Execute()
 	arguments args;
 	for(int i=0;i<numArgs;i++)
 		args.args.push_back(sys->vm.stack.pop());
-	Function* f=obj->getVariableByName(methodName)->toFunction();
+	IFunction* f=obj->getVariableByName(methodName)->toFunction();
 	if(f==0)
 		LOG(ERROR,"No such function");
 	SWFObject ret=f->call(obj.getData(),&args);
@@ -479,27 +485,51 @@ void ActionCallFunction::Execute()
 	int numArgs=sys->vm.stack.pop()->toInt();
 	if(numArgs!=0)
 		LOG(NOT_IMPLEMENTED,"There are args");
-	FunctionTag* f=sys->vm.getFunctionByName(funcName);
-	f->call();
+	IFunction* f=sys->currentClip->getVariableByName(funcName)->toFunction();
+	if(f==0)
+		LOG(ERROR,"No such function");
+	f->call(NULL,NULL);
 }
 
 void ActionDefineFunction::Execute()
 {
-	LOG(CALLS,"ActionDefineFunction: Null Execution");
+	LOG(CALLS,"ActionDefineFunction: " << FunctionName);
 	if(FunctionName.isNull())
-		LOG(ERROR,"Anonymous function");
+		sys->vm.stack.push(SWFObject(this,true));
+	else
+		sys->currentClip->setVariableByName(FunctionName,SWFObject(this,true));
+}
+
+SWFObject ActionDefineFunction::call(ISWFObject* obj, arguments* args)
+{
+	LOG(NOT_IMPLEMENTED,"ActionDefineFunction: Call");
+	return SWFObject();
 }
 
 void ActionDefineFunction2::Execute()
 {
-	LOG(CALLS,"ActionDefineFunction2: Null Execution");
+	LOG(CALLS,"ActionDefineFunction2: " << FunctionName);
 	if(FunctionName.isNull())
-		LOG(ERROR,"Anonymous function");
+		sys->vm.stack.push(SWFObject(this,true));
+	else
+		sys->currentClip->setVariableByName(FunctionName,SWFObject(this,true));
 }
 
 void ActionLess2::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionLess2");
+	LOG(CALLS,"ActionLess2");
+	SWFObject arg1=sys->vm.stack.pop();
+	SWFObject arg2=sys->vm.stack.pop();
+	if(arg2.isLess(arg1))
+	{
+		LOG(CALLS,"Less");
+		sys->vm.stack.push(new Integer(1));
+	}
+	else
+	{
+		LOG(CALLS,"Not Less");
+		sys->vm.stack.push(new Integer(0));
+	}
 }
 
 void ActionEquals2::Execute()
@@ -568,7 +598,12 @@ void ActionSubtract::Execute()
 
 void ActionNot::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionNot");
+	LOG(CALLS,"ActionNot");
+	float a=sys->vm.stack.pop()->toFloat();
+	if(a==0)
+		sys->vm.stack.push(new Integer(1));
+	else
+		sys->vm.stack.push(new Integer(0));
 }
 
 void ActionStringEquals::Execute()

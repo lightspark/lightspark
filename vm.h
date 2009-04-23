@@ -47,15 +47,12 @@ class VirtualMachine
 private:
 	sem_t mutex;
 	std::vector<STRING> ConstantPool;
-	std::vector<FunctionTag*> Functions;
 public:
 	Stack stack;
 	std::vector<SWFObject> regs;
 	VirtualMachine();
 	void setConstantPool(std::vector<STRING>& p);
 	STRING getConstantByIndex(int index);
-	void registerFunction(FunctionTag* f);
-	FunctionTag* getFunctionByName(const STRING& name);
 };
 
 #endif

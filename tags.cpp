@@ -1620,7 +1620,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	LOG(TRACE,"ShowFrame");
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_y(0)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_y(0),_x(0)
 {
 	LOG(TRACE,"PlaceObject2");
 
@@ -1660,6 +1660,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 			wrapped=s->clone();
 
 		wrapped->setVariableByName("_y",&_y);
+		wrapped->setVariableByName("_x",&_x);
 	}
 	if(PlaceFlagHasMatrix)
 		in >> Matrix;

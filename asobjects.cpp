@@ -129,6 +129,18 @@ SWFObject ASMovieClip::createEmptyMovieClip(const SWFObject& obj, arguments* arg
 	return r;
 }
 
+SWFObject ASMovieClip::moveTo(const SWFObject&, arguments* args)
+{
+	LOG(CALLS,"Called moveTo");
+	return SWFObject();
+}
+
+SWFObject ASMovieClip::lineTo(const SWFObject&, arguments* args)
+{
+	LOG(CALLS,"Called lineTo");
+	return SWFObject();
+}
+
 SWFObject ASMovieClip::lineStyle(const SWFObject&, arguments* args)
 {
 	LOG(CALLS,"Called lineStyle");
@@ -147,6 +159,8 @@ void ASMovieClip::_register()
 	setVariableByName("_width",SWFObject(&_width,true));
 	setVariableByName("swapDepths",SWFObject(new Function(swapDepths),true));
 	setVariableByName("lineStyle",SWFObject(new Function(lineStyle),true));
+	setVariableByName("lineTo",SWFObject(new Function(lineTo),true));
+	setVariableByName("moveTo",SWFObject(new Function(moveTo),true));
 	setVariableByName("createEmptyMovieClip",SWFObject(new Function(createEmptyMovieClip),true));
 }
 

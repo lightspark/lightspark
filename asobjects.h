@@ -62,6 +62,7 @@ public:
 	ASString(const char* s):data(s){}
 	ASString(const STRING& s);
 	STRING toString();
+	SWFOBJECT_TYPE getObjectType(){return T_STRING;}
 };
 
 class ASStage: public ASObject
@@ -131,7 +132,9 @@ public:
 
 public:
 	ASMovieClip();
+	static SWFObject moveTo(const SWFObject&, arguments* args);
 	static SWFObject lineStyle(const SWFObject&, arguments* args);
+	static SWFObject lineTo(const SWFObject&, arguments* args);
 	static SWFObject swapDepths(const SWFObject&, arguments* args);
 	static SWFObject createEmptyMovieClip(const SWFObject&, arguments* args);
 

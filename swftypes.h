@@ -30,10 +30,10 @@
 class STRING;
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_FUNCTION,
-	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED};
+	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED, T_STRING};
 
 class SWFObject;
-class Function;
+class IFunction;
 class ISWFClass
 {
 public:
@@ -113,6 +113,13 @@ public:
 		}
 		return true;
 	}
+	STRING operator+(const STRING& s)
+	{
+		STRING ret(*this);
+		for(int i=0;i<s.String.size();i++)
+			ret.String.push_back(s.String[i]);
+		return ret;
+	}
 	bool isNull() const
 	{
 		return !String.size();
@@ -137,6 +144,7 @@ public:
 	bool isDefined(); 
 	SWFObject& operator=(const SWFObject& r);
 	bool equals(const SWFObject& r);
+	bool isLess(const SWFObject& r);
 	STRING getName() const;
 	void setName(const STRING& n);
 	//void bind(){ binded=true;}
@@ -151,7 +159,7 @@ public:
 	virtual STRING toString();
 	virtual int toInt();
 	virtual float toFloat();
-	virtual Function* toFunction();
+	virtual IFunction* toFunction();
 	virtual SWFObject getVariableByName(const STRING& name)=0;
 	virtual void setVariableByName(const STRING& name, const SWFObject& o)=0;
 	virtual ISWFObject* clone()
@@ -253,14 +261,20 @@ public:
 
 class arguments;
 
-class Function : public ISWFObject_impl
+class IFunction: public ISWFObject_impl
+{
+public:
+	virtual SWFObject call(ISWFObject* obj, arguments* args)=0;
+};
+
+class Function : public IFunction
 {
 public:
 	typedef SWFObject (*as_function)(const SWFObject&, arguments*);
 	Function(as_function v):val(v){}
 	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
 	SWFObject call(ISWFObject* obj, arguments* args);
-	Function* toFunction();
+	IFunction* toFunction();
 private:
 	as_function val;
 };

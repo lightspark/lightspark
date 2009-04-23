@@ -38,29 +38,6 @@ void VirtualMachine::setConstantPool(vector<STRING>& p)
 	//sem_post(&mutex);
 }
 
-void VirtualMachine::registerFunction(FunctionTag* f)
-{
-	sem_wait(&mutex);
-	Functions.push_back(f);
-	sem_post(&mutex);
-}
-
-FunctionTag* VirtualMachine::getFunctionByName(const STRING& name)
-{
-	FunctionTag* ret=NULL;
-	sem_wait(&mutex);
-	for(int i=0;i<Functions.size();i++)
-	{
-		if(Functions[i]->getName()==name)
-		{
-			ret=Functions[i];
-			break;
-		}
-	}
-	sem_post(&mutex);
-	return ret;
-}
-
 STRING VirtualMachine::getConstantByIndex(int i)
 {
 	return ConstantPool[i];

@@ -91,14 +91,7 @@ public:
 	void print(){ LOG(TRACE,"ActionStop");}
 };
 
-class FunctionTag:public ActionTag
-{
-public:
-	virtual void call()=0;
-	virtual STRING getName()=0;
-};
-
-class ActionDefineFunction:public FunctionTag
+class ActionDefineFunction:public ActionTag, public IFunction
 {
 private:
 	STRING FunctionName;
@@ -110,8 +103,9 @@ private:
 public:
 	ActionDefineFunction(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
+	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
 	void print(){ LOG(TRACE,"ActionDefineFunction");}
-	void call(){ LOG(NOT_IMPLEMENTED,"ActionDefineFunction: Call");}
+	SWFObject call(ISWFObject* obj, arguments* args);
 	STRING getName(){ return FunctionName; }
 };
 
@@ -122,7 +116,7 @@ public:
 	STRING ParamName;
 };
 
-class ActionDefineFunction2:public FunctionTag, public ExecutionContext
+class ActionDefineFunction2:public ActionTag, public IFunction, public ExecutionContext
 {
 private:
 	STRING FunctionName;
@@ -144,9 +138,11 @@ private:
 public:
 	ActionDefineFunction2(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
+	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
 	void print(){ LOG(TRACE,"ActionDefineFunction2");}
-	void call();
+	SWFObject call(ISWFObject* obj, arguments* args);
 	STRING getName(){ return FunctionName; }
+	IFunction* toFunction(){ return this; }
 };
 
 class ActionJump:public ActionTag

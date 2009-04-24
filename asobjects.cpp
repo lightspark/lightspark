@@ -75,11 +75,18 @@ ASXML::ASXML()
 void ASXML::_register()
 {
 	setVariableByName("constructor",SWFObject(new Function(constructor),true));
+	setVariableByName("load",SWFObject(new Function(load),true));
 }
 
 SWFObject ASXML::constructor(const SWFObject&, arguments* args)
 {
 	LOG(NOT_IMPLEMENTED,"Called XML constructor");
+	return SWFObject();
+}
+
+SWFObject ASXML::load(const SWFObject&, arguments* args)
+{
+	LOG(NOT_IMPLEMENTED,"Called ASXML::load " << args->args[0]->toString());
 	return SWFObject();
 }
 
@@ -106,7 +113,7 @@ STRING ASString::toString()
 	return STRING(data.data());
 }
 
-ASMovieClip::ASMovieClip():_visible(1),_width(100)
+ASMovieClip::ASMovieClip():_visible(1),_width(100),hack(0)
 {
 	sem_init(&sem_frames,0,1);
 	_register();
@@ -131,6 +138,9 @@ SWFObject ASMovieClip::createEmptyMovieClip(const SWFObject& obj, arguments* arg
 
 	LOG(CALLS,"Called createEmptyMovieClip: " << args->args[0]->toString() << " " << args->args[1]->toString());
 	ASMovieClip* ret=new ASMovieClip();
+
+	//HACK
+	ret->hack=1;
 
 	IDisplayListElem* t=new ASObjectWrapper(ret,args->args[1]->toInt());
 	list<IDisplayListElem*>::iterator it=lower_bound(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),t->getDepth(),list_orderer);
@@ -178,11 +188,22 @@ void ASMovieClip::_register()
 
 void ASMovieClip::Render()
 {
+	LOG(TRACE,"Render MovieClip");
+	if(hack)
+	{
+		glColor3f(0,1,0);
+		glBegin(GL_QUADS);
+			glVertex2i(0,0);
+			glVertex2i(100,0);
+			glVertex2i(100,100);
+			glVertex2i(0,100);
+		glEnd();
+		return;
+	}
 	parent=sys->currentClip;
 	ASMovieClip* clip_bak=sys->currentClip;
 	sys->currentClip=this;
 
-	LOG(TRACE,"Render MovieClip");
 	state.next_FP=min(state.FP+1,frames.size()-1);
 
 	list<Frame>::iterator frame=frames.begin();

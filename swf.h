@@ -73,8 +73,6 @@ private:
 
 	sem_t mutex;
 
-	std::vector<SWFObject> Classes;
-
 	std::vector<SWFObject> Variables;
 	void registerVariable(const STRING& name, const SWFObject& o);
 	std::vector<SWFObject>& getVariables();
@@ -83,10 +81,6 @@ public:
 	void setVariableByName(const STRING& name, const SWFObject& o);
 	void dumpVariables();
 	ISWFObject* getParent() { return NULL; }
-
-	//Initial instances
-	void registerClass(const STRING& name, const SWFObject& o);
-	SWFObject instantiateClass(const STRING& name);
 
 	bool performance_profiling;
 	VirtualMachine vm;

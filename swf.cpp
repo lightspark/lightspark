@@ -643,34 +643,6 @@ SWFObject SystemState::getVariableByName(const STRING& name)
 	return ret;
 }
 
-void SystemState::registerClass(const STRING& name, const SWFObject& o)
-{
-	sem_wait(&mutex);
-	Classes.push_back(o);
-	Classes.back().setName(name);
-	sem_post(&mutex);
-}
-
-SWFObject SystemState::instantiateClass(const STRING& name)
-{
-	ISWFObject* ret=NULL;
-	sem_wait(&mutex);
-	bool found=false;
-	for(int i=0;i<Variables.size();i++)
-	{
-		if(Variables[i].getName()==name)
-		{
-			ret=Variables[i]->clone();
-			found=true;
-			break;
-		}
-	}
-	if(!found)
-		LOG(ERROR,"Could not find class " << name);
-	sem_post(&mutex);
-	return SWFObject(ret,true);
-}
-
 void SystemState::dumpVariables()
 {
 	cout <<"dumping" << endl;

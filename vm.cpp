@@ -28,7 +28,6 @@ extern __thread SystemState* sys;
 VirtualMachine::VirtualMachine()
 {
 	sem_init(&mutex,0,1);
-	regs.resize(10);
 }
 
 void VirtualMachine::setConstantPool(vector<STRING>& p)

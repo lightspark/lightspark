@@ -20,6 +20,7 @@
 #include "swftypes.h"
 #include "tags.h"
 #include "logger.h"
+#include "actions.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -738,7 +739,7 @@ ISWFObject* ISWFObject_impl::getParent()
 
 SWFObject RegisterNumber::instantiate()
 {
-	return sys->vm.regs[index];
+	return sys->execContext->regs[index];
 }
 
 STRING RegisterNumber::toString()

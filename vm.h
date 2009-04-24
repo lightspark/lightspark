@@ -49,7 +49,6 @@ private:
 	std::vector<STRING> ConstantPool;
 public:
 	Stack stack;
-	std::vector<SWFObject> regs;
 	VirtualMachine();
 	void setConstantPool(std::vector<STRING>& p);
 	STRING getConstantByIndex(int index);

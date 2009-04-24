@@ -27,7 +27,9 @@ class ExecutionContext
 protected:
 	int jumpOffset;
 public:
-	ExecutionContext():jumpOffset(0){}
+	std::vector<SWFObject> regs;
+	SWFObject retValue;
+	ExecutionContext():jumpOffset(0),regs(10){}
 	void setJumpOffset(int offset)
 	{
 		jumpOffset=offset;

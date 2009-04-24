@@ -288,6 +288,9 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 
 SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 {
+	retValue=SWFObject();
+	if(retValue->getObjectType()!=T_UNDEFINED)
+		LOG(ERROR,"Not valid condition");
 	ExecutionContext* exec_bak=sys->execContext;
 	sys->execContext=this;
 	LOG(CALLS,"Calling Function2 " << FunctionName);
@@ -300,14 +303,14 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 			LOG(ERROR,"Parameter not in register")
 		else
 		{
-			sys->vm.regs[Parameters[i].Register]=args->args[i];
+			sys->execContext->regs[Parameters[i].Register]=args->args[i];
 		}
 	}
 	int used_regs=1;
 	if(PreloadThisFlag)
 	{
 		LOG(CALLS,"Preload this");
-		sys->vm.regs[used_regs]=SWFObject(sys->currentClip,true);
+		sys->execContext->regs[used_regs]=SWFObject(sys->currentClip,true);
 		used_regs++;
 	}
 	if(PreloadArgumentsFlag)
@@ -348,7 +351,7 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 		}
 	}
 	sys->execContext=exec_bak;
-	return SWFObject(sys->vm.stack.pop());
+	return SWFObject(retValue);
 }
 
 ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
@@ -462,7 +465,10 @@ void ActionCloneSprite::Execute()
 
 void ActionDefineLocal::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionDefineLocal");
+	LOG(CALLS,"ActionDefineLocal");
+	SWFObject value=sys->vm.stack.pop();
+	STRING name=sys->vm.stack.pop()->toString();
+	sys->currentClip->setVariableByName(name,value);
 }
 
 void ActionNewObject::Execute()
@@ -489,7 +495,8 @@ void ActionNewObject::Execute()
 
 void ActionReturn::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionReturn");
+	LOG(CALLS,"ActionReturn");
+	sys->execContext->retValue=sys->vm.stack.pop();
 }
 
 void ActionPop::Execute()
@@ -722,7 +729,7 @@ void ActionStoreRegister::Execute()
 	LOG(CALLS,"ActionStoreRegister "<< (int)RegisterNumber);
 	if(RegisterNumber>10)
 		LOG(ERROR,"Register index too big");
-	sys->vm.regs[RegisterNumber]=sys->vm.stack(0);
+	sys->execContext->regs[RegisterNumber]=sys->vm.stack(0);
 }
 
 ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)

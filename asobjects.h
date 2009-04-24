@@ -138,6 +138,7 @@ public:
 	RunState state;
 
 public:
+	int hack;
 	ASMovieClip();
 	static SWFObject moveTo(const SWFObject&, arguments* args);
 	static SWFObject lineStyle(const SWFObject&, arguments* args);
@@ -176,7 +177,8 @@ class ASXML: public ASObject
 {
 public:
 	ASXML();
-	static SWFObject constructor(const SWFObject&, arguments* args);
+	ASFUNCTION(constructor)
+	ASFUNCTION(load)
 	void _register();
 	ISWFObject* clone()
 	{

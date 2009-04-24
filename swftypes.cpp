@@ -27,29 +27,20 @@
 using namespace std;
 extern __thread SystemState* sys;
 
-SWFObject::SWFObject():owner(true),binded(false)
+SWFObject::SWFObject()
 {
 	data=new Undefined;
 }
 
-SWFObject::SWFObject(const SWFObject& r):name(r.name),binded(r.binded)
+SWFObject::SWFObject(const SWFObject& r):name(r.name)
 {
 	//Delete old data
-	if(r.binded)
-	{
-		data=r.data;
-		owner=false;
-	}
-	else
-	{
-		data=r.data->clone();
-		owner=true;
-	}
+	data=r.data;
 }
 
 SWFObject ConstantReference::instantiate()
 {
-	return SWFObject(new ASString(sys->vm.getConstantByIndex(index)),true);
+	return SWFObject(new ASString(sys->vm.getConstantByIndex(index)));
 }
 
 STRING ConstantReference::toString()
@@ -68,22 +59,8 @@ int ConstantReference::toInt()
 SWFObject& SWFObject::operator=(const SWFObject& r)
 {
 	//Delete old data
-	if(owner)
-		delete data;
-
 	name=r.name;
-	binded=r.binded;
-
-	if(r.binded)
-	{
-		data=r.data;
-		owner=false;
-	}
-	else
-	{
-		data=r.data->clone();
-		owner=true;
-	}
+	data=r.data;
 
 	return *this;
 }
@@ -133,12 +110,9 @@ bool SWFObject::isDefined()
 	return data->getObjectType()!=T_UNDEFINED;
 }
 
-SWFObject::SWFObject(ISWFObject* d, bool b):data(d),binded(b)
+SWFObject::SWFObject(ISWFObject* d):data(d)
 {
-	if(binded)
-		owner=false;
-	else
-		owner=true;
+
 }
 
 STRING ISWFObject::toString()

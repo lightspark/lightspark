@@ -310,7 +310,7 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 	if(PreloadThisFlag)
 	{
 		LOG(CALLS,"Preload this");
-		sys->execContext->regs[used_regs]=SWFObject(sys->currentClip,true);
+		sys->execContext->regs[used_regs]=SWFObject(sys->currentClip);
 		used_regs++;
 	}
 	if(PreloadArgumentsFlag)
@@ -432,12 +432,12 @@ void ActionGreater::Execute()
 	if(arg2.isGreater(arg1))
 	{
 		LOG(CALLS,"Greater");
-		sys->vm.stack.push(new Integer(1));
+		sys->vm.stack.push(SWFObject(new Integer(1)));
 	}
 	else
 	{
 		LOG(CALLS,"Not Greater");
-		sys->vm.stack.push(new Integer(0));
+		sys->vm.stack.push(SWFObject(new Integer(0)));
 	}
 }
 
@@ -490,7 +490,7 @@ void ActionNewObject::Execute()
 
 	ISWFObject* obj=type->clone();
 	f->call(obj,NULL);
-	sys->vm.stack.push(SWFObject(obj,true));
+	sys->vm.stack.push(SWFObject(obj));
 }
 
 void ActionReturn::Execute()
@@ -543,9 +543,9 @@ void ActionDefineFunction::Execute()
 {
 	LOG(CALLS,"ActionDefineFunction: " << FunctionName);
 	if(FunctionName.isNull())
-		sys->vm.stack.push(SWFObject(this,true));
+		sys->vm.stack.push(SWFObject(this));
 	else
-		sys->currentClip->setVariableByName(FunctionName,SWFObject(this,true));
+		sys->currentClip->setVariableByName(FunctionName,SWFObject(this));
 }
 
 SWFObject ActionDefineFunction::call(ISWFObject* obj, arguments* args)
@@ -558,9 +558,9 @@ void ActionDefineFunction2::Execute()
 {
 	LOG(CALLS,"ActionDefineFunction2: " << FunctionName);
 	if(FunctionName.isNull())
-		sys->vm.stack.push(SWFObject(this,true));
+		sys->vm.stack.push(SWFObject(this));
 	else
-		sys->currentClip->setVariableByName(FunctionName,SWFObject(this,true));
+		sys->currentClip->setVariableByName(FunctionName,SWFObject(this));
 }
 
 void ActionLess2::Execute()
@@ -571,12 +571,12 @@ void ActionLess2::Execute()
 	if(arg2.isLess(arg1))
 	{
 		LOG(CALLS,"Less");
-		sys->vm.stack.push(new Integer(1));
+		sys->vm.stack.push(SWFObject(new Integer(1)));
 	}
 	else
 	{
 		LOG(CALLS,"Not Less");
-		sys->vm.stack.push(new Integer(0));
+		sys->vm.stack.push(SWFObject(new Integer(0)));
 	}
 }
 
@@ -588,12 +588,12 @@ void ActionEquals2::Execute()
 	if(arg1.equals(arg2))
 	{
 		LOG(CALLS,"Equal");
-		sys->vm.stack.push(new Integer(1));
+		sys->vm.stack.push(SWFObject(new Integer(1)));
 	}
 	else
 	{
 		LOG(CALLS,"Not Equal");
-		sys->vm.stack.push(new Integer(0));
+		sys->vm.stack.push(SWFObject(new Integer(0)));
 	}
 }
 
@@ -625,7 +625,7 @@ void ActionDivide::Execute()
 {
 	float a=sys->vm.stack.pop()->toFloat();
 	float b=sys->vm.stack.pop()->toFloat();
-	sys->vm.stack.push(new Double(b/a));
+	sys->vm.stack.push(SWFObject(new Double(b/a)));
 	LOG(CALLS,"ActionDivide: return " << b << "/" << a << "="<< b/a);
 }
 
@@ -633,7 +633,7 @@ void ActionMultiply::Execute()
 {
 	float a=sys->vm.stack.pop()->toFloat();
 	float b=sys->vm.stack.pop()->toFloat();
-	sys->vm.stack.push(new Double(b*a));
+	sys->vm.stack.push(SWFObject(new Double(b*a)));
 	LOG(CALLS,"ActionMultiply: return " << b*a);
 }
 
@@ -641,7 +641,7 @@ void ActionSubtract::Execute()
 {
 	float a=sys->vm.stack.pop()->toFloat();
 	float b=sys->vm.stack.pop()->toFloat();
-	sys->vm.stack.push(new Double(b-a));
+	sys->vm.stack.push(SWFObject(new Double(b-a)));
 	LOG(CALLS,"ActionSubtract: return " << b-a);
 }
 
@@ -650,9 +650,9 @@ void ActionNot::Execute()
 	LOG(CALLS,"ActionNot");
 	float a=sys->vm.stack.pop()->toFloat();
 	if(a==0)
-		sys->vm.stack.push(new Integer(1));
+		sys->vm.stack.push(SWFObject(new Integer(1)));
 	else
-		sys->vm.stack.push(new Integer(0));
+		sys->vm.stack.push(SWFObject(new Integer(0)));
 }
 
 void ActionStringEquals::Execute()
@@ -740,13 +740,13 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 		{
 			case 2:
 			{
-				Objects.push_back(new Null);
+				Objects.push_back(SWFObject(new Null));
 				LOG(TRACE,"Push: null");
 				break;
 			}
 			case 3:
 			{
-				Objects.push_back(new Undefined);
+				Objects.push_back(SWFObject(new Undefined));
 				LOG(TRACE,"Push: undefined");
 				break;
 			}
@@ -755,7 +755,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				UI8 tmp;
 				in >> tmp;
 				RegisterNumber* n=new RegisterNumber(tmp);
-				Objects.push_back(n);
+				Objects.push_back(SWFObject(n));
 				r--;
 				LOG(TRACE,"Push: Read reg number " << (int)tmp);
 				break;
@@ -764,7 +764,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			{
 				UI8 tmp;
 				in >> tmp;
-				Objects.push_back(new Integer(tmp));
+				Objects.push_back(SWFObject(new Integer(tmp)));
 				r--;
 				LOG(TRACE,"Push: Read bool " << (int)tmp);
 				break;
@@ -773,7 +773,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			{
 				DOUBLE tmp;
 				in >> tmp;
-				Objects.push_back(new Double(tmp));
+				Objects.push_back(SWFObject(new Double(tmp)));
 				r-=8;
 				LOG(TRACE,"Push: Read double " << tmp);
 				break;
@@ -782,7 +782,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			{
 				UI32 tmp;
 				in >> tmp;
-				Objects.push_back(new Integer(tmp));
+				Objects.push_back(SWFObject(new Integer(tmp)));
 				r-=4;
 				LOG(TRACE,"Push: Read integer " << tmp);
 				break;
@@ -792,7 +792,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				UI8 i;
 				in >> i;
 				ConstantReference* c=new ConstantReference(i);
-				Objects.push_back(c);
+				Objects.push_back(SWFObject(c));
 				r--;
 				LOG(TRACE,"Push: Read constant index " << (int)i);
 				break;

@@ -117,14 +117,12 @@ class SWFObject
 {
 private:
 	ISWFObject* data;
-	bool owner;
-	bool binded;
 	STRING name;
 	//virtual bool xequals(const SWFObject& r);
 public:
 	SWFObject();
 	SWFObject(const SWFObject& o);
-	SWFObject(ISWFObject* d, bool b=false);
+	SWFObject(ISWFObject* d);
 	ISWFObject* operator->() const { return data; }
 	bool isDefined(); 
 	SWFObject& operator=(const SWFObject& r);
@@ -154,7 +152,7 @@ public:
 	}
 	virtual SWFObject instantiate()
 	{
-		return SWFObject(clone(),true);
+		return SWFObject(clone());
 	}
 	virtual ISWFObject* getParent()=0;
 	virtual void _register()=0;
@@ -286,6 +284,7 @@ public:
 	STRING toString();
 	int toInt(); 
 	float toFloat();
+	operator int(){return val;}
 	ISWFObject* clone()
 	{
 		return new Integer(*this);

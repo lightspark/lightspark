@@ -29,13 +29,13 @@ extern __thread SystemState* sys;
 
 ASStage::ASStage():width(640),height(480)
 {
-	setVariableByName("width",SWFObject(&width,true));
-	setVariableByName("height",SWFObject(&height,true));
+	setVariableByName("width",SWFObject(&width));
+	setVariableByName("height",SWFObject(&height));
 }
 
 void ASArray::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function(constructor),true));
+	setVariableByName("constructor",SWFObject(new Function(constructor)));
 }
 
 SWFObject ASArray::constructor(const SWFObject& th, arguments* args)
@@ -51,8 +51,8 @@ ASMovieClipLoader::ASMovieClipLoader()
 
 void ASMovieClipLoader::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function(constructor),true));
-	setVariableByName("addListener",SWFObject(new Function(addListener),true));
+	setVariableByName("constructor",SWFObject(new Function(constructor)));
+	setVariableByName("addListener",SWFObject(new Function(addListener)));
 }
 
 SWFObject ASMovieClipLoader::constructor(const SWFObject&, arguments* args)
@@ -74,8 +74,8 @@ ASXML::ASXML()
 
 void ASXML::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function(constructor),true));
-	setVariableByName("load",SWFObject(new Function(load),true));
+	setVariableByName("constructor",SWFObject(new Function(constructor)));
+	setVariableByName("load",SWFObject(new Function(load)));
 }
 
 SWFObject ASXML::constructor(const SWFObject&, arguments* args)
@@ -92,7 +92,7 @@ SWFObject ASXML::load(const SWFObject&, arguments* args)
 
 void ASObject::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function(constructor),true));
+	setVariableByName("constructor",SWFObject(new Function(constructor)));
 }
 
 SWFObject ASObject::constructor(const SWFObject&, arguments* args)
@@ -146,7 +146,7 @@ SWFObject ASMovieClip::createEmptyMovieClip(const SWFObject& obj, arguments* arg
 	list<IDisplayListElem*>::iterator it=lower_bound(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),t->getDepth(),list_orderer);
 	th->dynamicDisplayList.insert(it,t);
 
-	SWFObject r(ret,true);
+	SWFObject r(ret);
 	th->setVariableByName(args->args[0]->toString(),r);
 	return r;
 }
@@ -177,13 +177,13 @@ SWFObject ASMovieClip::swapDepths(const SWFObject&, arguments* args)
 
 void ASMovieClip::_register()
 {
-	setVariableByName("_visible",SWFObject(&_visible,true));
-	setVariableByName("_width",SWFObject(&_width,true));
-	setVariableByName("swapDepths",SWFObject(new Function(swapDepths),true));
-	setVariableByName("lineStyle",SWFObject(new Function(lineStyle),true));
-	setVariableByName("lineTo",SWFObject(new Function(lineTo),true));
-	setVariableByName("moveTo",SWFObject(new Function(moveTo),true));
-	setVariableByName("createEmptyMovieClip",SWFObject(new Function(createEmptyMovieClip),true));
+	setVariableByName("_visible",SWFObject(&_visible));
+	setVariableByName("_width",SWFObject(&_width));
+	setVariableByName("swapDepths",SWFObject(new Function(swapDepths)));
+	setVariableByName("lineStyle",SWFObject(new Function(lineStyle)));
+	setVariableByName("lineTo",SWFObject(new Function(lineTo)));
+	setVariableByName("moveTo",SWFObject(new Function(moveTo)));
+	setVariableByName("createEmptyMovieClip",SWFObject(new Function(createEmptyMovieClip)));
 }
 
 void ASMovieClip::Render()
@@ -194,8 +194,8 @@ void ASMovieClip::Render()
 		glColor3f(0,1,0);
 		glBegin(GL_QUADS);
 			glVertex2i(0,0);
-			glVertex2i(100,0);
-			glVertex2i(100,100);
+			glVertex2i(_width,0);
+			glVertex2i(_width,100);
 			glVertex2i(0,100);
 		glEnd();
 		return;

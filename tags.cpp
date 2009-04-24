@@ -126,7 +126,7 @@ bool list_orderer(const DisplayListTag* a, int d);
 
 DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
-	setVariableByName("text",SWFObject(new Integer(0),true));
+	setVariableByName("text",SWFObject(new Integer(0)));
 	in >> CharacterID >> Bounds;
 	BitStream bs(in);
 	HasText=UB(1,bs);
@@ -1620,6 +1620,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_y(0),_x(0)
 {
 	LOG(TRACE,"PlaceObject2");
+	LOG(NO_INFO,"Should render with offset " << _x << " " << _y);
 
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
@@ -1656,8 +1657,8 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		else
 			wrapped=s->clone();
 
-		wrapped->setVariableByName("_y",&_y);
-		wrapped->setVariableByName("_x",&_x);
+		wrapped->setVariableByName("_y",SWFObject(&_y));
+		wrapped->setVariableByName("_x",SWFObject(&_x));
 	}
 	if(PlaceFlagHasMatrix)
 		in >> Matrix;
@@ -1673,7 +1674,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
 		if(!(PlaceFlagMove))
 		{
-			SWFObject w_this(this,true);
+			SWFObject w_this(this);
 			sys->parsingTarget->setVariableByName(Name,w_this);
 		}
 		else

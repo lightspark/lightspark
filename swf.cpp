@@ -70,21 +70,21 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	sem_init(&mutex,0,1);
 
 	//Register default objects
-	SWFObject stage(new ASStage,true);
+	SWFObject stage(new ASStage);
 	registerVariable("Stage",stage);
 
-	SWFObject array(new ASArray,true);
+	SWFObject array(new ASArray);
 	array->_register();
 	registerVariable("Array",array);
 
-	SWFObject object(new ASObject,true);
+	SWFObject object(new ASObject);
 	object->_register();
 	registerVariable("Object",object);
 
-	SWFObject mcloader(new ASMovieClipLoader,true);
+	SWFObject mcloader(new ASMovieClipLoader);
 	registerVariable("MovieClipLoader",mcloader);
 
-	SWFObject xml(new ASXML,true);
+	SWFObject xml(new ASXML);
 	registerVariable("XML",xml);
 }
 

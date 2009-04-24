@@ -19,6 +19,8 @@
 
 #include <list>
 #include <algorithm>
+#include <curl/curl.h>
+#include <libxml/parser.h>
 
 #include "asobjects.h"
 #include "swf.h"
@@ -70,6 +72,8 @@ SWFObject ASMovieClipLoader::addListener(const SWFObject&, arguments* args)
 ASXML::ASXML()
 {
 	_register();
+	xml_buf=new char[1024*20];
+	xml_index=0;
 }
 
 void ASXML::_register()
@@ -84,10 +88,39 @@ SWFObject ASXML::constructor(const SWFObject&, arguments* args)
 	return SWFObject();
 }
 
-SWFObject ASXML::load(const SWFObject&, arguments* args)
+
+size_t ASXML::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 {
+	ASXML* th=(ASXML*)userp;
+	memcpy(th->xml_buf+th->xml_index,buffer,size*nmemb);
+	th->xml_index+=size*nmemb;
+	return size*nmemb;
+}
+
+SWFObject ASXML::load(const SWFObject& obj, arguments* args)
+{
+	ASXML* th=dynamic_cast<ASXML*>(obj.getData());
 	LOG(NOT_IMPLEMENTED,"Called ASXML::load " << args->args[0]->toString());
-	return SWFObject();
+	CURL *curl;
+	CURLcode res;
+	curl = curl_easy_init();
+	STRING base("www.youtube.com");
+	STRING url=base+args->args[0]->toString();
+	if(curl)
+	{
+		curl_easy_setopt(curl, CURLOPT_URL, (const char*)(url));
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, obj.getData());
+		res = curl_easy_perform(curl);
+		curl_easy_cleanup(curl);
+	}
+	xmlDocPtr doc=xmlReadMemory(th->xml_buf,th->xml_index,url,NULL,0);
+
+	IFunction* on_load=obj->getVariableByName("onLoad")->toFunction();
+	arguments a;
+	a.args.push_back(new Integer(1));
+	on_load->call(NULL,&a);
+	return SWFObject(new Integer(1));
 }
 
 void ASObject::_register()

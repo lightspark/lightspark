@@ -27,8 +27,6 @@
 
 #include "logger.h"
 
-class STRING;
-
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_FUNCTION,
 	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED, T_STRING};
 
@@ -75,7 +73,7 @@ friend std::ostream& operator<<(std::ostream& s, const STRING& r);
 friend std::istream& operator>>(std::istream& stream, STRING& v);
 friend class ASString;
 private:
-	std::vector<UI8> String;
+	std::string String;
 public:
 	STRING(){};
 	STRING(const char* s)
@@ -108,6 +106,10 @@ public:
 	bool isNull() const
 	{
 		return !String.size();
+	}
+	operator const char*() const
+	{
+		return String.data();
 	}
 };
 

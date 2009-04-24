@@ -175,6 +175,10 @@ public:
 
 class ASXML: public ASObject
 {
+private:
+	char* xml_buf;
+	int xml_index;
+	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 public:
 	ASXML();
 	ASFUNCTION(constructor)

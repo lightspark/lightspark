@@ -298,7 +298,7 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 		LOG(CALLS,"Arg "<<i<<"="<<args->args[i]->toString());
 	for(int i=0;i<NumParams;i++)
 	{
-		cout << "Reg " << (int)Parameters[i].Register << " for " <<  Parameters[i].ParamName << endl;
+		//cout << "Reg " << (int)Parameters[i].Register << " for " <<  Parameters[i].ParamName << endl;
 		if(Parameters[i].Register==0)
 			LOG(ERROR,"Parameter not in register")
 		else
@@ -674,10 +674,7 @@ void ActionGetVariable::Execute()
 	LOG(CALLS,"ActionGetVariable: name " << varName);
 	SWFObject object=sys->currentClip->getVariableByName(varName);
 	if(!object.isDefined())
-	{
 		LOG(CALLS,"ActionGetVariable: no such object");
-		sys->dumpVariables();
-	}
 	sys->vm.stack.push(object);
 }
 

@@ -643,13 +643,6 @@ SWFObject SystemState::getVariableByName(const STRING& name)
 	return ret;
 }
 
-void SystemState::dumpVariables()
-{
-	cout <<"dumping" << endl;
-	for(int i=0;i<Variables.size();i++)
-		cout << Variables[i].getName() << endl;
-}
-
 void SystemState::setVariableByName(const STRING& name, const SWFObject& o)
 {
 	cout << "sys set" << endl;

@@ -79,7 +79,6 @@ private:
 public:
 	SWFObject getVariableByName(const STRING& name);
 	void setVariableByName(const STRING& name, const SWFObject& o);
-	void dumpVariables();
 	ISWFObject* getParent() { return NULL; }
 
 	bool performance_profiling;

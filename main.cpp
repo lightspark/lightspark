@@ -35,9 +35,17 @@ using namespace std;
 
 __thread SystemState* sys;
 
-inline long timeDiff(timespec& s,timespec& d)
+inline long timeDiff(timespec& s, timespec& d)
 {
-	return (d.tv_sec-s.tv_sec)*1000+(d.tv_nsec-s.tv_nsec)/1000000;
+	timespec temp;
+	if ((end.tv_nsec-start.tv_nsec)<0) {
+		temp.tv_sec = end.tv_sec-start.tv_sec-1;
+		temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+	} else {
+		temp.tv_sec = end.tv_sec-start.tv_sec;
+		temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+	}
+	return temp.tv_sec*1000+(temp.tv_nsec)/1000000;
 }
 
 int main(int argc, char* argv[])
@@ -47,7 +55,7 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " <file.swf>" << endl;
 		exit(-1);
 	}
-	Log::initLogging(CALLS);
+	Log::initLogging(NOT_IMPLEMENTED);
 	sys=new SystemState;
 	sys->performance_profiling=true;
 	zlib_file_filter zf;

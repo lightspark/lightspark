@@ -111,6 +111,10 @@ public:
 	{
 		return String.data();
 	}
+	int size()
+	{
+		return String.size();
+	}
 };
 
 class ISWFObject;
@@ -162,9 +166,8 @@ public:
 
 class ISWFObject_impl:public ISWFObject
 {
-private:
-	int getVariableIndexByName(const STRING& name);
 protected:
+	int getVariableIndexByName(const STRING& name);
 	ISWFObject* parent;
 	ISWFObject_impl();
 	std::vector<SWFObject> Variables;
@@ -265,6 +268,17 @@ private:
 	as_function val;
 };
 
+class FLOAT 
+{
+friend std::istream& operator>>(std::istream& s, FLOAT& v);
+private:
+	float val;
+public:
+	FLOAT():val(0){}
+	FLOAT(float v):val(v){}
+	operator float(){ return val; }
+};
+
 class DOUBLE 
 {
 friend std::istream& operator>>(std::istream& s, DOUBLE& v);
@@ -358,6 +372,12 @@ inline std::istream& operator>>(std::istream& s, UI16& v)
 }
 
 inline std::istream& operator>>(std::istream& s, UI32& v)
+{
+	s.read((char*)&v.val,4);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, FLOAT& v)
 {
 	s.read((char*)&v.val,4);
 	return s;
@@ -723,10 +743,6 @@ private:
 	SB AlphaAddTerm;
 };
 
-class CLIPACTIONS
-{
-};
-
 class CXFORM
 {
 };
@@ -758,12 +774,38 @@ public:
 	}
 };
 
+class CLIPEVENTFLAGS
+{
+public:
+	UI32 toParse;
+	bool isNull();
+};
+
+class CLIPACTIONRECORD
+{
+public:
+	CLIPEVENTFLAGS EventFlags;
+	UI32 ActionRecordSize;
+	bool isLast();
+};
+
+class CLIPACTIONS
+{
+public:
+	UI16 Reserved;
+	CLIPEVENTFLAGS AllEventFlags;
+	std::vector<CLIPACTIONRECORD> ClipActionRecords;
+};
+
 std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::ostream& operator<<(std::ostream& s, const RGBA& r);
 std::ostream& operator<<(std::ostream& s, const STRING& r);
 std::istream& operator>>(std::istream& s, RECT& v);
 
+std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v);
+std::istream& operator>>(std::istream& s, CLIPACTIONRECORD& v);
+std::istream& operator>>(std::istream& s, CLIPACTIONS& v);
 std::istream& operator>>(std::istream& s, RGB& v);
 std::istream& operator>>(std::istream& s, RGBA& v);
 std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);

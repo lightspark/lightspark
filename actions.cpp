@@ -28,6 +28,7 @@ void ignore(istream& i, int count);
 
 DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
+	LOG(NO_INFO,"DoActionTag");
 	int dest=in.tellg();
 	if((h&0x3f)==0x3f)
 		dest+=Length;
@@ -50,9 +51,10 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 	}
 }
 
-UI16 DoActionTag::getDepth() const
+int DoActionTag::getDepth() const
 {
-	return 0;
+	//The last, fater any other valid depth and initactions
+	return 0x20000;
 }
 
 void DoActionTag::printInfo(int t)
@@ -62,6 +64,71 @@ void DoActionTag::printInfo(int t)
 }
 
 void DoActionTag::Render()
+{
+	ExecutionContext* exec_bak=sys->execContext;
+	sys->execContext=this;
+	for(unsigned int i=0;i<actions.size();i++)
+	{
+		actions[i]->Execute();
+		if(jumpOffset<0)
+		{
+			int off=-jumpOffset;
+			while(off>0)
+			{
+				off-=actions[i]->Length;
+				i--;
+			}
+			if(off<0)
+				LOG(ERROR,"Invalid jump offset");
+		}
+		else if(jumpOffset>0)
+		{
+			while(jumpOffset>0)
+			{
+				i++;
+				jumpOffset-=actions[i]->Length;
+			}
+			if(jumpOffset<0)
+				LOG(ERROR,"Invalid jump offset");
+		}
+	}
+/*	for(unsigned int i=0;i<actions.size();i++)
+		actions[i]->print();*/
+	sys->execContext=exec_bak;
+}
+
+DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+{
+	LOG(NO_INFO,"DoInitActionTag");
+	int dest=in.tellg();
+	if((h&0x3f)==0x3f)
+		dest+=Length;
+	else
+		dest+=h&0x3f;
+	in >> SpriteID;
+	while(1)
+	{
+		ACTIONRECORDHEADER ah(in);
+		if(ah.ActionCode==0)
+			break;
+		else
+			actions.push_back(ah.createTag(in));
+		if(actions.back()==NULL)
+		{
+			LOG(ERROR,"Not supported action opcode");
+			ignore(in,dest-in.tellg());
+			break;
+		}
+	}
+}
+
+int DoInitActionTag::getDepth() const
+{
+	//The first after any other valid depth
+	return 0x10000;
+}
+
+void DoInitActionTag::Render()
 {
 	ExecutionContext* exec_bak=sys->execContext;
 	sys->execContext=this;
@@ -149,8 +216,20 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x22:
 			t=new ActionGetProperty;
 			break;
+		case 0x23:
+			t=new ActionSetProperty;
+			break;
 		case 0x24:
 			t=new ActionCloneSprite;
+			break;
+		case 0x2c:
+			t=new ActionImplementsOp;
+			break;
+		case 0x34:
+			t=new ActionGetTime;
+			break;
+		case 0x3a:
+			t=new ActionDelete;
 			break;
 		case 0x3c:
 			t=new ActionDefineLocal;
@@ -163,6 +242,15 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			break;
 		case 0x40:
 			t=new ActionNewObject;
+			break;
+		case 0x42:
+			t=new ActionInitArray;
+			break;
+		case 0x43:
+			t=new ActionInitObject;
+			break;
+		case 0x44:
+			t=new ActionTypeOf;
 			break;
 		case 0x47:
 			t=new ActionAdd2;
@@ -191,8 +279,17 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x52:
 			t=new ActionCallMethod;
 			break;
+		case 0x53:
+			t=new ActionNewMethod;
+			break;
+		case 0x54:
+			t=new ActionInstanceOf;
+			break;
 		case 0x67:
 			t=new ActionGreater;
+			break;
+		case 0x69:
+			t=new ActionExtends;
 			break;
 		case 0x81:
 			t=new ActionGotoFrame(in);
@@ -407,14 +504,85 @@ void ActionPushDuplicate::Execute()
 	LOG(NOT_IMPLEMENTED,"Exec: ActionPushDuplicate");
 }
 
+void ActionSetProperty::Execute()
+{
+	SWFObject value=sys->vm.stack.pop();
+	int index=sys->vm.stack.pop()->toInt();
+	STRING target=sys->vm.stack.pop()->toString();
+	LOG(CALLS,"ActionSetProperty to: " << target << " index " << index);
+	SWFObject obj=sys->getVariableByName(target);
+	switch(index)
+	{
+		case 2:
+			obj->setVariableByName("_scalex",value);
+			LOG(CALLS,"setting to " << value->toFloat());
+			break;
+/*		case 5:
+			ret=obj->getVariableByName("_totalframes");
+			LOG(NO_INFO,"setting to " << ret->toInt());
+			break;
+		case 12:
+			ret=obj->getVariableByName("_framesloaded");
+			LOG(NO_INFO,"setting to " << ret->toInt());
+			break;*/
+		default:
+			LOG(ERROR,"Not supported property index "<< index);
+			break;
+	}
+}
+
 void ActionGetProperty::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionGetProperty");
+	int index=sys->vm.stack.pop()->toInt();
+	STRING target=sys->vm.stack.pop()->toString();
+	LOG(CALLS,"ActionGetProperty from: " << target << " index " << index);
+	SWFObject obj=sys->getVariableByName(target);
+	SWFObject ret;
+	switch(index)
+	{
+		case 5:
+			ret=obj->getVariableByName("_totalframes");
+			LOG(CALLS,"returning " << ret->toInt());
+			break;
+		case 12:
+			ret=obj->getVariableByName("_framesloaded");
+			LOG(CALLS,"returning " << ret->toInt());
+			break;
+		default:
+			LOG(ERROR,"Not supported property index "<< index);
+			break;
+	}
+	sys->vm.stack.push(ret);
 }
 
 void ActionDecrement::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionDecrement");
+}
+
+void ActionExtends::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionExtends");
+}
+
+void ActionTypeOf::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionTypeOf");
+}
+
+void ActionGetTime::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionGetTime");
+}
+
+void ActionInstanceOf::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionInstanceOf");
+}
+
+void ActionImplementsOp::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionImplementsOp");
 }
 
 void ActionIncrement::Execute()
@@ -603,6 +771,16 @@ void ActionJump::Execute()
 	sys->execContext->setJumpOffset(BranchOffset);
 }
 
+void ActionDelete::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionDelete");
+}
+
+void ActionNewMethod::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionNewMethod");
+}
+
 void ActionStringAdd::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionStringAdd");
@@ -653,6 +831,16 @@ void ActionNot::Execute()
 		sys->vm.stack.push(SWFObject(new Integer(1)));
 	else
 		sys->vm.stack.push(SWFObject(new Integer(0)));
+}
+
+void ActionInitArray::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionInitArray");
+}
+
+void ActionInitObject::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionInitObject");
 }
 
 void ActionStringEquals::Execute()
@@ -738,6 +926,24 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 		r--;
 		switch(Type)
 		{
+			case 0:
+			{
+				STRING tmp;
+				in >> tmp;
+				Objects.push_back(SWFObject(new ASString(tmp)));
+				r-=(tmp.size()+1);
+				LOG(NO_INFO,"Push: Read string " << tmp);
+				break;
+			}
+			case 1:
+			{
+				FLOAT tmp;
+				in >> tmp;
+				Objects.push_back(SWFObject(new Double(tmp)));
+				r-=4;
+				LOG(NO_INFO,"Push: Read float " << tmp);
+				break;
+			}
 			case 2:
 			{
 				Objects.push_back(SWFObject(new Null));

@@ -146,10 +146,16 @@ STRING ASString::toString()
 	return STRING(data.data());
 }
 
-ASMovieClip::ASMovieClip():_visible(1),_width(100),hack(0)
+float ASString::toFloat()
+{
+	LOG(ERROR,"Cannot convert string " << data << " to float");
+	return 0;
+}
+
+ASMovieClip::ASMovieClip():_visible(1),_width(100),hack(0),_framesloaded(0),_totalframes(1)
 {
 	sem_init(&sem_frames,0,1);
-	_register();
+	ASMovieClip::_register();
 }
 
 bool ASMovieClip::list_orderer(const IDisplayListElem* a, int d)
@@ -212,6 +218,8 @@ void ASMovieClip::_register()
 {
 	setVariableByName("_visible",SWFObject(&_visible));
 	setVariableByName("_width",SWFObject(&_width));
+	setVariableByName("_framesloaded",SWFObject(&_framesloaded));
+	setVariableByName("_totalframes",SWFObject(&_totalframes));
 	setVariableByName("swapDepths",SWFObject(new Function(swapDepths)));
 	setVariableByName("lineStyle",SWFObject(new Function(lineStyle)));
 	setVariableByName("lineTo",SWFObject(new Function(lineTo)));

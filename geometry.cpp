@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <math.h>
 #include <GL/gl.h>
 #include "swftypes.h"
 #include "logger.h"
@@ -119,7 +120,7 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 	{
 		float m=(x2-x1);
 		m/=(y2-y1);
-		d=m*(y-y1);
+		d=ceil(m*(y-y1));
 		d+=x1;
 		return true;
 	}
@@ -143,9 +144,21 @@ bool Edge::yIntersect(int y,int32_t& d, int x)
 		else if(y==u1)
 		{
 			if(u1==y1)
+			{
 				d=x1;
+				if(x2<x)
+					d--;
+				else if(x2>x)
+					d++;
+			}
 			else
+			{
 				d=x2;
+				if(x1<x)
+					d--;
+				else if(x1>x)
+					d++;
+			}
 			return true;
 		}
 		else

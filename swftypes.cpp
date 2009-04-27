@@ -757,3 +757,53 @@ SWFObject Function::call(ISWFObject* obj, arguments* args)
 {
 	return val(obj,args);
 }
+
+std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v)
+{
+	if(sys->version<=5)
+	{
+		UI16 t;
+		s >> t;
+		v.toParse=t;
+	}
+	else
+	{
+		s >> v.toParse;
+	}
+	return s;
+}
+
+bool CLIPEVENTFLAGS::isNull()
+{
+	return toParse==0;
+}
+
+std::istream& operator>>(std::istream& s, CLIPACTIONRECORD& v)
+{
+	s >> v.EventFlags;
+	if(v.EventFlags.isNull())
+		return s;
+	s >> v.ActionRecordSize;
+	LOG(NOT_IMPLEMENTED,"Skipping " << v.ActionRecordSize << " of action data");
+	ignore(s,v.ActionRecordSize);
+	return s;
+}
+
+bool CLIPACTIONRECORD::isLast()
+{
+	return EventFlags.isNull();
+}
+
+std::istream& operator>>(std::istream& s, CLIPACTIONS& v)
+{
+	s >> v.Reserved >> v.AllEventFlags;
+	while(1)
+	{
+		CLIPACTIONRECORD t;
+		s >> t;
+		if(t.isLast())
+			break;
+		v.ClipActionRecords.push_back(t);
+	}
+	return s;
+}

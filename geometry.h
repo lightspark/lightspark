@@ -72,13 +72,16 @@ public:
 
 class Vector2
 {
+	friend bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,const Vector2& C);
 	friend class Edge;
 	friend class Shape;
 	friend int crossProd(const Vector2& a, const Vector2& b);
 	friend std::ostream& operator<<(std::ostream& s, const Vector2& p);
 	friend bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point);
 	friend void TessellatePath(Path& path, Shape& shape);
+	friend void TessellatePathSimple(Path& path, Shape& shape);
 	friend void TriangulateMonotone(const std::list<Vector2>& monotone, Shape& shape);
+	friend void SplitIntersectingPaths(std::vector<Path>& paths);
 	int x,y;
 public:
 	int index;
@@ -95,6 +98,7 @@ public:
 	const Vector2 operator+(const Vector2& v)const { return Vector2(x+v.x,y+v.y);}
 	const Vector2 operator*(int p)const { return Vector2(x*p,y*p);}
 	Vector2& operator/=(int v) { x/=v; y/=v; return *this;}
+	int dot(const Vector2& r) const { return x*r.x+y*r.y;}
 
 };
 

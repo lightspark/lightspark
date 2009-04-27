@@ -64,6 +64,8 @@ Tag* TagFactory::readTag()
 			return new DefineSoundTag(h,f);
 		case 15:
 			return new StartSoundTag(h,f);
+		case 19:
+			return new SoundStreamBlockTag(h,f);
 		case 22:
 			return new DefineShape2Tag(h,f);
 		case 24:
@@ -90,6 +92,12 @@ Tag* TagFactory::readTag()
 			return new DefineMorphShapeTag(h,f);
 		case 48:
 			return new DefineFont2Tag(h,f);
+		case 56:
+			return new ExportAssetsTag(h,f);
+		case 59:
+			return new DoInitActionTag(h,f);
+		case 60:
+			return new DefineVideoStreamTag(h,f);
 		default:
 			LOG(NOT_IMPLEMENTED,"Unsupported tag type " << (h>>6));
 			Tag t(h,f);
@@ -569,14 +577,15 @@ class Path
 {
 public:
 	int id;
+	int skip_tess;
 
 	std::vector< Vector2 > points;
 	VTYPE getVertexType(const Vector2& v);
 	bool closed;
 	GraphicStatus _state;
 	GraphicStatus* state;
-	Path():closed(false){ state=&_state;};
-	Path(const Path& p):closed(p.closed),points(p.points){state=&_state;_state=p._state;}
+	Path():closed(false),skip_tess(false){ state=&_state;};
+	Path(const Path& p):closed(p.closed),points(p.points),skip_tess(p.skip_tess){state=&_state;_state=p._state;}
 };
 
 void fixIndex(list<Vector2>& points)
@@ -651,15 +660,17 @@ std::ostream& operator<<(std::ostream& s, const GraphicStatus& p)
 }
 
 void TessellatePath(Path& path, Shape& shape);
+void TessellatePathSimple(Path& path, Shape& shape);
 void FromPathToShape(Path& path, Shape& shape)
 {
 	shape.outline=path.points;
 	shape.closed=path.closed;
 
-	if(!shape.closed || (!path.state->validFill0 && !path.state->validFill1))
+	if(/*path.skip_tess ||*/ !shape.closed || (!path.state->validFill0 && !path.state->validFill1))
 		return;
 
-	TessellatePath(path,shape);
+//	TessellatePath(path,shape);
+	TessellatePathSimple(path,shape);
 }
 
 void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths);
@@ -751,7 +762,8 @@ void DefineMorphShapeTag::Render()
 		it->Render();
 	}
 	it=shapes.begin();
-	drawStenciled(EndBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	if(it!=shapes.end())
+		drawStenciled(EndBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glDisable(GL_STENCIL_TEST);
 }
 
@@ -837,7 +849,8 @@ void DefineShapeTag::Render()
 		it->Render();
 	}
 	it=cached.begin();
-	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	if(it!=cached.end())
+		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 
 	glDisable(GL_STENCIL_TEST);
 }
@@ -924,7 +937,8 @@ void DefineShape2Tag::Render()
 		it->Render();
 	}
 	it=cached.begin();
-	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	if(it!=cached.end())
+		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glDisable(GL_STENCIL_TEST);
 }
 
@@ -1010,7 +1024,8 @@ void DefineShape3Tag::Render()
 		it->Render();
 	}
 	it=cached.begin();
-	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	if(it!=cached.end())
+		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glDisable(GL_STENCIL_TEST);
 }
 
@@ -1076,6 +1091,53 @@ bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& poi
 	return count%2;
 }
 
+void SplitIntersectingPaths(vector<Path>& paths)
+{
+	for(int k=0;k<paths.size();k++)
+	{
+		if(paths[k].points.size()==217)
+			char a=0;
+
+		vector < Edge > edges;
+		bool next_path=false;
+		for(int i=1;i<paths[k].points.size();i++)
+		{
+			Edge t(paths[k].points[i-1],paths[k].points[i],i-1);
+			for(int j=0;j<edges.size();j++)
+			{
+				if(edges[j].edgeIntersect(t))
+				{
+					//LOG(NOT_IMPLEMENTED,"Self intersecting path");
+					//paths[k].points.clear();
+					paths[k].skip_tess=true;
+					next_path=true;
+					break;
+				}
+			}
+			if(next_path)
+				break;
+			edges.push_back(t);
+		}
+
+		//Check for point collisions
+		for(int i=0;i<paths[k].points.size();i++)
+		{
+			for(int j=i;j<paths[k].points.size();j++)
+			{
+				if(paths[k].points[i]==paths[k].points[j])
+				{
+					//LOG(NOT_IMPLEMENTED,"Colliding points in path");
+					//paths[k].points.clear();
+					paths[k].skip_tess=true;
+					next_path=true;
+					break;
+				}
+			}
+		}
+
+	}
+}
+
 void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths)
 {
 	int vindex=0;
@@ -1098,10 +1160,10 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 				if(Vector2(startX,startY,vindex)==paths.back().points.front())
 				{
 					paths.back().closed=true;
-					GraphicStatus* old_status=paths.back().state;
+					GraphicStatus old_status=*paths.back().state;
 					paths.push_back(Path());
 					cur_state=paths.back().state;
-					*cur_state=*old_status;
+					*cur_state=old_status;
 					vindex=0;
 					/*paths.back().points.push_back(Vector2(startX,startY,vindex));
 					vindex=1;*/
@@ -1174,15 +1236,100 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 		}
 		cur=cur->next;
 	}
+	//SplitIntersectingPaths(paths);
 }
 
 void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape);
+
+inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,const Vector2& C)
+{
+	Vector2 v0 = C - A;
+	Vector2 v1 = B - A;
+	Vector2 v2 = P - A;
+
+	long dot00 = v0.dot(v0);
+	long dot01 = v0.dot(v1);
+	long dot02 = v0.dot(v2);
+	long dot11 = v1.dot(v1);
+	long dot12 = v1.dot(v2);
+
+	float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+	float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+	float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+	return (u > 0) && (v > 0) && (u + v < 1);
+}
+
+
+void TessellatePathSimple(Path& path, Shape& shape)
+{
+	std::vector<Vector2> P=path.points;
+	int area=0;
+	int i;
+	for(i=0; i<P.size()-1;i++)
+	{
+		area+=(P[i].y+P[i+1].y)*(P[i+1].x-P[i].x)/2;
+	}
+	area+=(P[i].y+P[0].y)*(P[0].x-P[i].x)/2;
+
+	if(area<0)
+	{
+		//reverse(P.begin(),P.end());
+		shape.winding=1;
+	}
+	else
+		shape.winding=0;
+	i=0;
+	int count=0;
+	while(P.size()>3)
+	{
+		fixIndex(P);
+		int a=(i+1)%P.size();
+		int b=(i-1+P.size())%P.size();
+		FilterIterator ai(P.begin(),P.end(),i);
+		FilterIterator bi(P.end(),P.end(),i);
+		bool not_ear=false;
+		if(!pointInPolygon(ai,bi,P[i]))
+		{
+			for(int j=0;j<P.size();j++)
+			{
+				if(j==i)
+					continue;
+				if(pointInTriangle(P[j],P[a],P[i],P[b]))
+				{
+					not_ear=true;
+					break;
+				}
+			}
+			if(!not_ear)
+			{
+				shape.interior.push_back(Triangle(P[a],P[i],P[b]));
+				P.erase(P.begin()+i);
+				i=0;
+			}
+			else
+			{
+				i++;
+				i%=P.size();
+			}
+		}
+		else
+		{
+			i++;
+			i%=P.size();
+		}
+		count++;
+		if(count>30000)
+			break;
+	}
+	shape.interior.push_back(Triangle(P[0],P[1],P[2]));
+}
 
 void TessellatePath(Path& path, Shape& shape)
 {
 	std::vector<Vector2>& unsorted =(path.points);
 	int size=unsorted.size();
-
+	
 	fixIndex(unsorted);
 	std::vector<Vector2> sorted(unsorted);
 	sort(sorted.begin(),sorted.end());
@@ -1215,14 +1362,23 @@ void TessellatePath(Path& path, Shape& shape)
 			throw "area<0";
 		shape.winding=0;
 	}
+	//DEBUG
+	ofstream dat_dump("prova.dat");
+	for(int i=0;i<unsorted.size();i++)
+		dat_dump << unsorted[i].x << " " << unsorted[i].y << " " << i << endl;
+	dat_dump.close();
+	if(size==16)
+	{
+		cout << "passed" << endl;
+		char a=0;
+	}
+	//DEBUG
 	std::list<Edge> T;
 	std::vector<Numeric_Edge> D;
 	std::vector<int> helper(sorted.size(),-1);
 	for(int j=size-1;j>=0;j--)
 	{
 		Vector2* v=&(sorted[j]);
-		if(v->index==28)
-			char a=0;
 		VTYPE type=getVertexType(*v,unsorted);
 		switch(type)
 		{
@@ -1620,7 +1776,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_y(0),_x(0)
 {
 	LOG(TRACE,"PlaceObject2");
-	LOG(NO_INFO,"Should render with offset " << _x << " " << _y);
+//	LOG(NO_INFO,"Should render with offset " << _x << " " << _y);
 
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
@@ -1644,8 +1800,6 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 			break;
 		}
 	}
-	if(PlaceFlagHasClipAction)
-		LOG(ERROR,"Not yet implemented clipaction support");
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
@@ -1675,7 +1829,8 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		if(!(PlaceFlagMove))
 		{
 			SWFObject w_this(this);
-			sys->parsingTarget->setVariableByName(Name,w_this);
+			//sys->parsingTarget->setVariableByName(Name,w_this);
+			sys->setVariableByName(Name,w_this);
 		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");
@@ -1683,6 +1838,10 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasClipDepth)
 	{
 		in >> ClipDepth;
+	}
+	if(PlaceFlagHasClipAction)
+	{
+		in >> ClipActions;
 	}
 	if(PlaceFlagMove)
 	{
@@ -1809,6 +1968,13 @@ void SetBackgroundColorTag::execute()
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	in >> Name;
+	if(sys->version>=6)
+	{
+		UI8 NamedAnchor;
+		in >> NamedAnchor;
+		if(NamedAnchor==0)
+			LOG(ERROR,"Not a named anchor");
+	}
 }
 
 void FrameLabelTag::Render()
@@ -1911,4 +2077,27 @@ void DefineButton2Tag::printInfo(int t)
 		c->printInfo(t+1);
 
 	}*/
+}
+
+DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+{
+	LOG(NO_INFO,"DefineVideoStreamTag");
+	in >> CharacterID >> NumFrames >> Width >> Height;
+	BitStream bs(in);
+	UB(4,bs);
+	VideoFlagsDeblocking=UB(3,bs);
+	VideoFlagsSmoothing=UB(1,bs);
+	in >> CodecID;
+}
+
+void DefineVideoStreamTag::Render()
+{
+	LOG(NO_INFO,"DefineVideoStreamTag Render");
+	glColor3f(1,0,0);
+	glBegin(GL_QUADS);
+		glVertex2i(0,0);
+		glVertex2i(Width,0);
+		glVertex2i(Width,Height);
+		glVertex2i(0,Height);
+	glEnd();
 }

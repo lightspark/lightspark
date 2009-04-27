@@ -52,8 +52,21 @@ private:
 public:
 	DoActionTag(RECORDHEADER h, std::istream& in);
 	void Render( );
-	UI16 getDepth() const;
+	int getDepth() const;
 	void printInfo(int t=0);
+};
+
+class DoInitActionTag: public DisplayListTag, public ExecutionContext
+{
+private:
+	UI16 SpriteID;
+
+	std::vector<ActionTag*> actions;
+	bool done;
+public:
+	DoInitActionTag(RECORDHEADER h, std::istream& in);
+	void Render( );
+	int getDepth() const;
 };
 
 class ACTIONRECORDHEADER
@@ -331,11 +344,81 @@ public:
 	void print(){ LOG(TRACE,"ActionCloneSprite");}
 };
 
+class ActionImplementsOp: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionImplementsOp");}
+};
+
+class ActionExtends: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionExtends");}
+};
+
 class ActionDecrement: public ActionTag
 {
 public:
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDecrement");}
+};
+
+class ActionInitObject: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionInitObject");}
+};
+
+class ActionNewMethod: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionNewMethod");}
+};
+
+class ActionDelete: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionDelete");}
+};
+
+class ActionInitArray: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionInitArray");}
+};
+
+class ActionTypeOf: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionTypeOf");}
+};
+
+class ActionGetTime: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionGetTime");}
+};
+
+class ActionInstanceOf: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionInstanceOf");}
+};
+
+class ActionSetProperty: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionSetProperty");}
 };
 
 class ActionIncrement: public ActionTag

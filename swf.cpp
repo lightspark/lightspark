@@ -56,6 +56,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 		swf_stream* ss=dynamic_cast<swf_stream*>(in.rdbuf());
 		ss->setCompressed();
 	}
+	sys->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
 	LOG(NO_INFO,"FrameSize " << FrameSize);
 }
@@ -86,6 +87,8 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	SWFObject xml(new ASXML);
 	registerVariable("XML",xml);
+
+	registerVariable("",this);
 }
 
 void SystemState::reset()
@@ -647,13 +650,18 @@ void SystemState::setVariableByName(const STRING& name, const SWFObject& o)
 {
 	cout << "sys set" << endl;
 	sem_wait(&mutex);
-	for(int i=0;i<Variables.size();i++)
+	int index=getVariableIndexByName(name);
+	if(index==-1)
 	{
-		if(Variables[i].getName()==name)
-		{
-			Variables[i]=o;
-			break;
-		}
+		Variables.push_back(o);
+		Variables.back().setName(name);
+		//Variables.back().bind();
+	}
+	else
+	{
+		Variables[index]=o;
+		Variables[index].setName(name);
+		//Variables[index].bind();
 	}
 	sem_post(&mutex);
 }

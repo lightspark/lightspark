@@ -26,7 +26,7 @@
 class IDisplayListElem
 {
 public:
-	virtual UI16 getDepth() const=0;
+	virtual int getDepth() const=0;
 	virtual void Render()=0;
 };
 

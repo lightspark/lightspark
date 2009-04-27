@@ -34,7 +34,7 @@ private:
 	UI16 depth;
 public:
 	ASObjectWrapper(IRenderObject* w, UI16 d):wrapped(w),depth(d){}
-	UI16 getDepth() const
+	int getDepth() const
 	{
 		return depth;
 	}
@@ -65,6 +65,7 @@ public:
 	ASString(const char* s):data(s){}
 	ASString(const STRING& s);
 	STRING toString();
+	float toFloat();
 	SWFOBJECT_TYPE getObjectType(){return T_STRING;}
 	ISWFObject* clone()
 	{
@@ -129,6 +130,8 @@ private:
 protected:
 	Integer _visible;
 	Integer _width;
+	Integer _framesloaded;
+	Integer _totalframes;
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list < IDisplayListElem* > displayList;
 public:

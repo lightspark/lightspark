@@ -70,3 +70,14 @@ SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h
 		ignore(in,h&0x3f);
 }
 
+ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"ExportAssetsTag Tag");
+	skip(in);
+}
+
+SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"SoundStreamBlockTag");
+	skip(in);
+}

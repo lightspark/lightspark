@@ -260,7 +260,7 @@ private:
 public:
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
 	void Render( );
-	UI16 getDepth() const { return Depth; }
+	int getDepth() const { return Depth; }
 	void printInfo(int t=0);
 
 	//SWFObject interface
@@ -278,7 +278,7 @@ private:
 public:
 	FrameLabelTag(RECORDHEADER h, std::istream& in);
 	void Render( );
-	UI16 getDepth() const
+	int getDepth() const
 	{
 		return 0;
 	}
@@ -449,6 +449,35 @@ private:
 public:
 	DefineBitsLossless2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
+};
+
+class ExportAssetsTag: public Tag
+{
+public:
+	ExportAssetsTag(RECORDHEADER h, std::istream& in);
+};
+
+class DefineVideoStreamTag: public DictionaryTag, public IRenderObject
+{
+private:
+	UI16 CharacterID;
+	UI16 NumFrames;
+	UI16 Width;
+	UI16 Height;
+	UB VideoFlagsReserved;
+	UB VideoFlagsDeblocking;
+	UB VideoFlagsSmoothing;
+	UI8 CodecID;
+public:
+	DefineVideoStreamTag(RECORDHEADER h, std::istream& in);
+	int getId(){ return CharacterID; }
+	void Render();
+};
+
+class SoundStreamBlockTag: public Tag
+{
+public:
+	SoundStreamBlockTag(RECORDHEADER h, std::istream& in);
 };
 
 class TagFactory

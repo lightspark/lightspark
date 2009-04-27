@@ -73,10 +73,11 @@ private:
 
 	sem_t mutex;
 
-	std::vector<SWFObject> Variables;
+	//std::vector<SWFObject> Variables;
 	void registerVariable(const STRING& name, const SWFObject& o);
 	std::vector<SWFObject>& getVariables();
 public:
+	int version;
 	SWFObject getVariableByName(const STRING& name);
 	void setVariableByName(const STRING& name, const SWFObject& o);
 	ISWFObject* getParent() { return NULL; }

@@ -67,14 +67,16 @@ int main(int argc, char* argv[])
 	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 
-	timespec ts,td;
+	timespec ts,td,tperf,tperf2;
 	clock_gettime(CLOCK_REALTIME,&ts);
 	int count=0;
+
 	while(1)
 	{
 		sys->waitToRun();
 		rt.draw(&sys->getFrameAtFP());
 		sys->advanceFP();
+
 		count++;
 		clock_gettime(CLOCK_REALTIME,&td);
 		if(timeDiff(ts,td)>1000)
@@ -83,11 +85,15 @@ int main(int argc, char* argv[])
 			LOG(NO_INFO,"FPS: " << count);
 			count=0;
 		}
+		if(sys->shutdown)
+			break;
 	}
 
 
-	cout << "the end" << endl;
 	it.wait();
+	rt.wait();
+	pt.wait();
+
 	SDL_Quit();
 }
 

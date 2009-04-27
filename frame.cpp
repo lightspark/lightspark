@@ -28,15 +28,10 @@ using namespace std;
 void Frame::Render(int baseLayer)
 {
 	list < IDisplayListElem* >::iterator i=displayList.begin();
-	int count=0;
 	for(i;i!=displayList.end();i++)
 	{
 		if(*i!=NULL)
-		{
-			count++;
-			//(*i)->printInfo();
 			(*i)->Render();
-		}
 	}
 }
 

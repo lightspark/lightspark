@@ -677,7 +677,6 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 
 void DefineMorphShapeTag::Render()
 {
-
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);

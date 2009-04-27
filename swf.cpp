@@ -62,7 +62,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 }
 
 SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),performance_profiling(false),
-	parsingTarget(this)
+	parsingTarget(this),shutdown(false)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
@@ -89,6 +89,13 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	registerVariable("XML",xml);
 
 	registerVariable("",this);
+}
+
+void SystemState::setShutdownFlag()
+{
+	sem_wait(&mutex);
+	shutdown=true;
+	sem_post(&mutex);
 }
 
 void SystemState::reset()
@@ -126,6 +133,7 @@ void* ParseThread::worker(ParseThread* th)
 			//	case TAG:
 				case END_TAG:
 				{
+					LOG(NO_INFO,"End of parsing");
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:
@@ -143,6 +151,8 @@ void* ParseThread::worker(ParseThread* th)
 					dynamic_cast<ControlTag*>(tag)->execute();
 					break;
 			}
+			if(sys->shutdown)
+				pthread_exit(0);
 		}
 	}
 	catch(const char* s)
@@ -164,6 +174,11 @@ ParseThread::~ParseThread()
 	void* ret;
 	pthread_cancel(t);
 	pthread_join(t,&ret);
+}
+
+void RenderThread::wait()
+{
+	pthread_join(t,NULL);
 }
 
 void ParseThread::wait()
@@ -224,7 +239,8 @@ void* InputThread::sdl_worker(InputThread* th)
 				switch(event.key.keysym.sym)
 				{
 					case SDLK_q:
-						exit(0);
+						sys->setShutdownFlag();
+						pthread_exit(0);
 						break;
 /*					case SDLK_n:
 						list<IActiveObject*>::const_iterator it=listeners.begin();
@@ -389,8 +405,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 					sem_post(&th->end_render);
 					continue;
 				}
-				if(!th->bak)
-					th->bak_frame=*th->cur_frame;
 				RGB bg=sys->getBackground();
 				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 				glClearDepth(0xffff);
@@ -404,20 +418,14 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				scaley/=sys->getFrameSize().Ymax;
 				glScalef(scalex,scaley,1);
 
-				if(th->bak)
-				{
-					th->bak_frame.Render(0);
-					th->bak=0;
-				}
-				else
-				{
-					th->cur_frame->Render(0);
-				}
+				th->cur_frame->Render(0);
 				glFlush();
 				glXSwapBuffers(d,p->window);
 				sem_post(&th->mutex);
 			}
 			sem_post(&th->end_render);
+			if(sys->shutdown)
+				pthread_exit(0);
 		}
 	}
 	catch(const char* e)
@@ -436,6 +444,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
+	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
+	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1); 
 	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc(GL_LEQUAL);
@@ -457,6 +468,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				sem_post(&th->end_render);
 				continue;
 			}
+			SDL_GL_SwapBuffers( );
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 			glClearDepth(0xffff);
@@ -468,8 +480,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			th->cur_frame->Render(0);
 
-			SDL_GL_SwapBuffers( );
 			sem_post(&th->end_render);
+			if(sys->shutdown)
+				pthread_exit(0);
 		}
 	}
 	catch(const char* e)
@@ -481,15 +494,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 void RenderThread::draw(Frame* f)
 {
-	//TODO: sync (by copy)
-	if(f!=NULL)
-	{
-		sem_wait(&mutex);
-		cur_frame=f;
-		sem_post(&mutex);
-	}
-	else
-		bak=1;
+	cur_frame=f;
+
 	sem_post(&render);
 	sem_wait(&end_render);
 

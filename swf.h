@@ -77,10 +77,12 @@ private:
 	void registerVariable(const STRING& name, const SWFObject& o);
 	std::vector<SWFObject>& getVariables();
 public:
+	bool shutdown;
 	int version;
 	SWFObject getVariableByName(const STRING& name);
 	void setVariableByName(const STRING& name, const SWFObject& o);
 	ISWFObject* getParent() { return NULL; }
+	void setShutdownFlag();
 
 	bool performance_profiling;
 	VirtualMachine vm;

@@ -297,6 +297,7 @@ private:
 	int val;
 public:
 	Integer(int v):val(v){}
+	Integer& operator=(int v){val=v; return *this; }
 	SWFOBJECT_TYPE getObjectType(){return T_INTEGER;}
 	STRING toString();
 	int toInt(); 

@@ -187,6 +187,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	list < IDisplayListElem* >* bak=sys->parsingDisplayList;
 	sys->parsingDisplayList=&displayList;
 	in >> SpriteID >> FrameCount;
+	_totalframes=FrameCount;
 	LOG(TRACE,"DefineSprite ID: " << SpriteID);
 	TagFactory factory(in);
 	Tag* tag;
@@ -215,6 +216,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 		}
 	}
 	while(tag->getType()!=END_TAG);
+	if(frames.size()!=FrameCount)
+		LOG(ERROR,"Inconsistent frame count");
 	sys->parsingDisplayList=bak;
 
 	sys->parsingTarget=target_bak;

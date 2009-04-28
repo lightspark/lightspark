@@ -40,7 +40,7 @@ typedef void* (*thread_worker)(void*);
 
 class SWF_HEADER
 {
-private:
+public:
 	UI8 Signature[3];
 	UI8 Version;
 	UI32 FileLength;
@@ -99,6 +99,7 @@ public:
 	Frame& getFrameAtFP();
 	void advanceFP();
 	void setFrameSize(const RECT& f);
+	void setFrameCount(int f);
 	RECT getFrameSize();
 	void addToDictionary(DictionaryTag* r);
 	void addToDisplayList(IDisplayListElem* r);

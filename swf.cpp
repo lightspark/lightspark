@@ -116,6 +116,7 @@ void* ParseThread::worker(ParseThread* th)
 	{
 		SWF_HEADER h(th->f);
 		sys->setFrameSize(h.getFrameSize());
+		sys->setFrameCount(h.FrameCount);
 
 		int done=0;
 
@@ -133,7 +134,7 @@ void* ParseThread::worker(ParseThread* th)
 			//	case TAG:
 				case END_TAG:
 				{
-					LOG(NO_INFO,"End of parsing");
+					LOG(NO_INFO,"End of parsing @ " << th->f.tellg());
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:
@@ -544,6 +545,13 @@ void SystemState::advanceFP()
 	sem_post(&mutex);
 }
 
+void SystemState::setFrameCount(int f)
+{
+	sem_wait(&mutex);
+	_totalframes=f; 
+	sem_post(&mutex);
+}
+
 void SystemState::setFrameSize(const RECT& f)
 {
 	sem_wait(&mutex);
@@ -580,6 +588,7 @@ void SystemState::commitFrame()
 	sem_wait(&mutex);
 	//sem_wait(&clip.sem_frames);
 	frames.push_back(Frame(displayList));
+	_framesloaded=frames.size();
 	sem_post(&new_frame);
 	sem_post(&mutex);
 	//sem_post(&clip.sem_frames);

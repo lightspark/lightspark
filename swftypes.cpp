@@ -27,12 +27,12 @@
 using namespace std;
 extern __thread SystemState* sys;
 
-SWFObject::SWFObject()
+SWFObject::SWFObject():bind(false)
 {
 	data=new Undefined;
 }
 
-SWFObject::SWFObject(const SWFObject& r):name(r.name)
+SWFObject::SWFObject(const SWFObject& r):name(r.name),bind(r.bind)
 {
 	//Delete old data
 	data=r.data;
@@ -60,7 +60,26 @@ SWFObject& SWFObject::operator=(const SWFObject& r)
 {
 	//Delete old data
 	name=r.name;
-	data=r.data;
+	if(bind)
+	{
+		if(data->getObjectType()!=data->getObjectType())
+			LOG(ERROR,"Cannot copy binded data of different type");
+		switch(data->getObjectType())
+		{
+			case T_DOUBLE:
+			{
+				Double* d1=dynamic_cast<Double*>(data);
+				Double* d2=dynamic_cast<Double*>(r.data);
+				*d1=*d2;
+				break;
+			}
+			default:
+				LOG(ERROR,"Cannot copy object of type " << data->getObjectType());
+				break;
+		}
+	}
+	else
+		data=r.data;
 
 	return *this;
 }
@@ -110,9 +129,8 @@ bool SWFObject::isDefined()
 	return data->getObjectType()!=T_UNDEFINED;
 }
 
-SWFObject::SWFObject(ISWFObject* d):data(d)
+SWFObject::SWFObject(ISWFObject* d, bool b):data(d),bind(b)
 {
-
 }
 
 STRING ISWFObject::toString()
@@ -254,17 +272,11 @@ std::ostream& operator<<(std::ostream& s, const RGB& r)
 void MATRIX::get4DMatrix(float matrix[16])
 {
 	memset(matrix,0,sizeof(float)*16);
-	if(HasScale)
-		matrix[0]=ScaleX;
-	else
-		matrix[0]=1;
+	matrix[0]=ScaleX;
 	matrix[1]=RotateSkew0;
 
 	matrix[4]=RotateSkew1;
-	if(HasScale)
-		matrix[5]=ScaleY;
-	else
-		matrix[5]=1;
+	matrix[5]=ScaleY;
 
 	matrix[10]=1;
 
@@ -665,6 +677,11 @@ std::istream& operator>>(std::istream& stream, MATRIX& v)
 		v.NScaleBits=UB(5,bs);
 		v.ScaleX=FB(v.NScaleBits,bs);
 		v.ScaleY=FB(v.NScaleBits,bs);
+	}
+	else
+	{
+		v.ScaleX=1;
+		v.ScaleY=1;
 	}
 	v.HasRotate=UB(1,bs);
 	if(v.HasRotate)

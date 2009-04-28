@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <curl/curl.h>
 #include <libxml/parser.h>
+#include <string.h>
 
 #include "asobjects.h"
 #include "swf.h"
@@ -216,10 +217,10 @@ SWFObject ASMovieClip::swapDepths(const SWFObject&, arguments* args)
 
 void ASMovieClip::_register()
 {
-	setVariableByName("_visible",SWFObject(&_visible));
-	setVariableByName("_width",SWFObject(&_width));
-	setVariableByName("_framesloaded",SWFObject(&_framesloaded));
-	setVariableByName("_totalframes",SWFObject(&_totalframes));
+	setVariableByName("_visible",SWFObject(&_visible,true));
+	setVariableByName("_width",SWFObject(&_width,true));
+	setVariableByName("_framesloaded",SWFObject(&_framesloaded,true));
+	setVariableByName("_totalframes",SWFObject(&_totalframes,true));
 	setVariableByName("swapDepths",SWFObject(new Function(swapDepths)));
 	setVariableByName("lineStyle",SWFObject(new Function(lineStyle)));
 	setVariableByName("lineTo",SWFObject(new Function(lineTo)));

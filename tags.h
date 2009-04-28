@@ -237,6 +237,7 @@ class PlaceObject2Tag: public DisplayListTag, public ISWFObject_impl
 private:
 	Integer _x;
 	Integer _y;
+	Double _scalex;
 
 	ISWFObject* wrapped;
 

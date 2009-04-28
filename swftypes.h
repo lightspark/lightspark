@@ -124,11 +124,12 @@ class SWFObject
 private:
 	ISWFObject* data;
 	STRING name;
+	bool bind;
 	//virtual bool xequals(const SWFObject& r);
 public:
 	SWFObject();
 	SWFObject(const SWFObject& o);
-	SWFObject(ISWFObject* d);
+	SWFObject(ISWFObject* d, bool b=false);
 	ISWFObject* operator->() const { return data; }
 	bool isDefined(); 
 	SWFObject& operator=(const SWFObject& r);
@@ -137,7 +138,6 @@ public:
 	bool isGreater(const SWFObject& r);
 	STRING getName() const;
 	void setName(const STRING& n);
-	//void bind(){ binded=true;}
 	
 	ISWFObject* getData() const;
 };
@@ -242,6 +242,7 @@ public:
 	STRING toString();
 	int toInt(); 
 	float toFloat();
+	operator double(){return val;}
 	ISWFObject* clone()
 	{
 		return new Double(*this);
@@ -517,12 +518,12 @@ class MATRIX
 {
 	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
 	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
-private:
+public:
 	int size;
 	UB HasScale;
 	UB NScaleBits;
-	FB ScaleX;
-	FB ScaleY;
+	float ScaleX;
+	float ScaleY;
 	UB HasRotate;
 	UB NRotateBits;
 	FB RotateSkew0;

@@ -1772,7 +1772,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	LOG(TRACE,"ShowFrame");
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_y(0),_x(0)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_y(0),_x(0),_scalex(0)
 {
 	LOG(TRACE,"PlaceObject2");
 //	LOG(NO_INFO,"Should render with offset " << _x << " " << _y);
@@ -1810,11 +1810,15 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		else
 			wrapped=s->clone();
 
-		wrapped->setVariableByName("_y",SWFObject(&_y));
-		wrapped->setVariableByName("_x",SWFObject(&_x));
+		wrapped->setVariableByName("_y",SWFObject(&_y,true));
+		wrapped->setVariableByName("_x",SWFObject(&_x,true));
+		wrapped->setVariableByName("_scalex",SWFObject(&_scalex,true));
 	}
 	if(PlaceFlagHasMatrix)
+	{
 		in >> Matrix;
+		_scalex=Matrix.ScaleX;
+	}
 	if(PlaceFlagHasColorTransform)
 		in >> ColorTransform;
 	if(PlaceFlagHasRatio)
@@ -1922,7 +1926,9 @@ void PlaceObject2Tag::Render()
 		LOG(ERROR,"Could not find Character in dictionary");
 	
 	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+	MATRIX m2(Matrix);
+	m2.ScaleX=_scalex;
+	m2.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	it->Render();

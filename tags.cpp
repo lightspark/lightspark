@@ -1775,7 +1775,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	LOG(TRACE,"ShowFrame");
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_y(0),_x(0),_scalex(0)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_y(0),_x(0),_scalex(100)
 {
 	LOG(TRACE,"PlaceObject2");
 //	LOG(NO_INFO,"Should render with offset " << _x << " " << _y);
@@ -1820,7 +1820,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasMatrix)
 	{
 		in >> Matrix;
-		_scalex=Matrix.ScaleX;
+		//_scalex=Matrix.ScaleX;
 	}
 	if(PlaceFlagHasColorTransform)
 		in >> ColorTransform;
@@ -1930,7 +1930,7 @@ void PlaceObject2Tag::Render()
 	
 	float matrix[16];
 	MATRIX m2(Matrix);
-	m2.ScaleX=_scalex;
+	m2.ScaleX*=_scalex/100.0f;
 	m2.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);

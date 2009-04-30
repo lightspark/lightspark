@@ -374,6 +374,7 @@ std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	{
 		v.FillStyles[i].version=v.version;
 		s >> v.FillStyles[i];
+		//cout << "parsed fill " << (int)v.FillStyles[i].FillStyleType << endl;
 	}
 	return s;
 }

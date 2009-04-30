@@ -579,7 +579,7 @@ public:
 	int fill0;
 	int fill1;
 
-	GraphicStatus():validFill0(false),validFill1(false),validStroke(false){}
+	GraphicStatus():validFill0(false),validFill1(false),validStroke(false),fill0(0),fill1(0){}
 };
 
 enum VTYPE {START_VERTEX=0,END_VERTEX,NORMAL_VERTEX,SPLIT_VERTEX,MERGE_VERTEX};
@@ -711,7 +711,10 @@ void DefineMorphShapeTag::Render()
 			if(i->state->fill0)
 			{
 				shapes.back().graphic.filled0=true;
-				shapes.back().graphic.color0=MorphFillStyles.FillStyles[i->state->fill0-1].EndColor;
+				if(MorphFillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
+					shapes.back().graphic.color0=MorphFillStyles.FillStyles[i->state->fill0-1].EndColor;
+				else
+					shapes.back().graphic.color0=RGB(0,255,0);
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -725,7 +728,10 @@ void DefineMorphShapeTag::Render()
 			if(i->state->fill1)
 			{
 				shapes.back().graphic.filled1=true;
-				shapes.back().graphic.color1=MorphFillStyles.FillStyles[i->state->fill1-1].EndColor;
+				if(MorphFillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
+					shapes.back().graphic.color1=MorphFillStyles.FillStyles[i->state->fill1-1].EndColor;
+				else
+					shapes.back().graphic.color1=RGB(0,255,0);
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -779,6 +785,7 @@ void DefineMorphShapeTag::Render()
 
 void DefineShapeTag::Render()
 {
+	LOG(TRACE,"DefineShape Render");
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -799,14 +806,19 @@ void DefineShapeTag::Render()
 			//TODO: Shape construtor from path
 			shapes.push_back(Shape());
 			FromPathToShape(*i,shapes.back());
-
 			//Fill graphic data
 			if(i->state->validFill0)
 			{
 				if(i->state->fill0)
 				{
 					shapes.back().graphic.filled0=true;
-					shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
+						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+					else
+					{
+						shapes.back().graphic.color0=RGB(0,255,0);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType << "not implemented");
+					}
 				}
 				else
 					shapes.back().graphic.filled0=false;
@@ -820,7 +832,13 @@ void DefineShapeTag::Render()
 				if(i->state->fill1)
 				{
 					shapes.back().graphic.filled1=true;
-					shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType==0x0)
+						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+					else
+					{
+						shapes.back().graphic.color1=RGB(0,255,0);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType << "not implemented");
+					}
 				}
 				else
 					shapes.back().graphic.filled1=false;
@@ -871,6 +889,7 @@ void DefineShapeTag::Render()
 
 void DefineShape2Tag::Render()
 {
+	LOG(TRACE,"DefineShape2 Render");
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -891,14 +910,19 @@ void DefineShape2Tag::Render()
 			//TODO: Shape construtor from path
 			shapes.push_back(Shape());
 			FromPathToShape(*i,shapes.back());
-
 			//Fill graphic data
 			if(i->state->validFill0)
 			{
 				if(i->state->fill0)
 				{
 					shapes.back().graphic.filled0=true;
-					shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
+						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+					else
+					{
+						shapes.back().graphic.color0=RGB(0,255,0);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType << "not implemented");
+					}
 				}
 				else
 					shapes.back().graphic.filled0=false;
@@ -912,7 +936,13 @@ void DefineShape2Tag::Render()
 				if(i->state->fill1)
 				{
 					shapes.back().graphic.filled1=true;
-					shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType==0x0)
+						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+					else
+					{
+						shapes.back().graphic.color1=RGB(0,255,0);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType << "not implemented");
+					}
 				}
 				else
 					shapes.back().graphic.filled1=false;
@@ -962,6 +992,7 @@ void DefineShape2Tag::Render()
 
 void DefineShape3Tag::Render()
 {
+	LOG(TRACE,"DefineShape3 Render");
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -982,14 +1013,19 @@ void DefineShape3Tag::Render()
 			//TODO: Shape construtor from path
 			shapes.push_back(Shape());
 			FromPathToShape(*i,shapes.back());
-
 			//Fill graphic data
 			if(i->state->validFill0)
 			{
 				if(i->state->fill0)
 				{
 					shapes.back().graphic.filled0=true;
-					shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
+						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+					else
+					{
+						shapes.back().graphic.color0=RGB(0,255,0);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType << "not implemented");
+					}
 				}
 				else
 					shapes.back().graphic.filled0=false;
@@ -1003,7 +1039,13 @@ void DefineShape3Tag::Render()
 				if(i->state->fill1)
 				{
 					shapes.back().graphic.filled1=true;
-					shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType==0x0)
+						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+					else
+					{
+						shapes.back().graphic.color1=RGB(0,255,0);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType << "not implemented");
+					}
 				}
 				else
 					shapes.back().graphic.filled1=false;

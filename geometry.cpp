@@ -26,7 +26,12 @@
 void Shape::Render() const
 {
 	if(graphic.filled0 && graphic.filled1)
+	{
 		LOG(NOT_IMPLEMENTED,"Not supported double fill style");
+		Shape* th=const_cast<Shape*>(this);
+		th->graphic.color0=RGB(255,0,0);
+		th->graphic.color1=RGB(0,255,0);
+	}
 
 	if(winding==0)
 	{

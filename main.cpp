@@ -48,6 +48,8 @@ inline long timeDiff(timespec& s, timespec& d)
 	return temp.tv_sec*1000+(temp.tv_nsec)/1000000;
 }
 
+std::vector<fps_profiling> fps_profs;
+
 int main(int argc, char* argv[])
 {
 	if(argc!=2)
@@ -55,7 +57,7 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " <file.swf>" << endl;
 		exit(-1);
 	}
-	Log::initLogging(NOT_IMPLEMENTED);
+	Log::initLogging(ERROR);
 	sys=new SystemState;
 	sys->performance_profiling=true;
 	zlib_file_filter zf;
@@ -71,6 +73,9 @@ int main(int argc, char* argv[])
 	clock_gettime(CLOCK_REALTIME,&ts);
 	int count=0;
 
+	fps_profs.push_back(fps_profiling());
+	sys->fps_prof=&fps_profs.back();
+
 	while(1)
 	{
 		sys->waitToRun();
@@ -83,17 +88,23 @@ int main(int argc, char* argv[])
 		{
 			ts=td;
 			LOG(NO_INFO,"FPS: " << count);
+			sys->fps_prof->fps=count;
 			count=0;
+			fps_profs.push_back(fps_profiling());
+			sys->fps_prof=&fps_profs.back();
 		}
 		if(sys->shutdown)
 			break;
-		cout << "frames " << sys->frames.size() << endl;
 	}
-
 
 	it.wait();
 	rt.wait();
 	pt.wait();
+
+	ofstream prof("lightspark.dat");
+	for(int i=0;i<fps_profs.size();i++)
+		prof << i << ' ' << fps_profs[i].render_time << ' ' << fps_profs[i].action_time << ' ' << fps_profs[i].cache_time << ' ' << fps_profs[i].fps*10 << endl;
+	prof.close();
 
 	SDL_Quit();
 }

@@ -538,7 +538,7 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 		else
 			s >> v.Color;
 	}
-	else if(v.FillStyleType==0x10)
+	else if(v.FillStyleType==0x10 || v.FillStyleType==0x12)
 	{
 		s >> v.GradientMatrix;
 		v.Gradient.version=v.version;

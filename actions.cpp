@@ -23,12 +23,13 @@
 extern __thread SystemState* sys;
 
 using namespace std;
+long timeDiff(timespec& s, timespec& d);
 
 void ignore(istream& i, int count);
 
 DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
-	LOG(NO_INFO,"DoActionTag");
+	LOG(CALLS,"DoActionTag");
 	int dest=in.tellg();
 	if((h&0x3f)==0x3f)
 		dest+=Length;
@@ -65,6 +66,8 @@ void DoActionTag::printInfo(int t)
 
 void DoActionTag::Render()
 {
+	timespec ts,td;
+	clock_gettime(CLOCK_REALTIME,&ts);
 	ExecutionContext* exec_bak=sys->execContext;
 	sys->execContext=this;
 	for(unsigned int i=0;i<actions.size();i++)
@@ -92,14 +95,14 @@ void DoActionTag::Render()
 				LOG(ERROR,"Invalid jump offset");
 		}
 	}
-/*	for(unsigned int i=0;i<actions.size();i++)
-		actions[i]->print();*/
 	sys->execContext=exec_bak;
+	clock_gettime(CLOCK_REALTIME,&td);
+	sys->fps_prof->action_time=timeDiff(ts,td);
 }
 
 DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
-	LOG(NO_INFO,"DoInitActionTag");
+	LOG(CALLS,"DoInitActionTag");
 	int dest=in.tellg();
 	if((h&0x3f)==0x3f)
 		dest+=Length;
@@ -130,6 +133,8 @@ int DoInitActionTag::getDepth() const
 
 void DoInitActionTag::Render()
 {
+	timespec ts,td;
+	clock_gettime(CLOCK_REALTIME,&ts);
 	ExecutionContext* exec_bak=sys->execContext;
 	sys->execContext=this;
 	for(unsigned int i=0;i<actions.size();i++)
@@ -157,9 +162,9 @@ void DoInitActionTag::Render()
 				LOG(ERROR,"Invalid jump offset");
 		}
 	}
-/*	for(unsigned int i=0;i<actions.size();i++)
-		actions[i]->print();*/
 	sys->execContext=exec_bak;
+	clock_gettime(CLOCK_REALTIME,&td);
+	sys->fps_prof->action_time=timeDiff(ts,td);
 }
 
 ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)
@@ -348,7 +353,7 @@ void ActionStop::Execute()
 ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 {
 	in >> FunctionName >> NumParams;
-	LOG(NO_INFO,"Defining function " << FunctionName);
+	LOG(CALLS,"Defining function " << FunctionName);
 	params.resize(NumParams);
 	for(int i=0;i<NumParams;i++)
 	{
@@ -411,15 +416,15 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 		used_regs++;
 	}
 	if(PreloadArgumentsFlag)
-		LOG(NO_INFO,"Preload arguments "<<used_regs);
+		LOG(CALLS,"Preload arguments "<<used_regs);
 	if(PreloadSuperFlag)
-		LOG(NO_INFO,"Preload super "<<used_regs);
+		LOG(CALLS,"Preload super "<<used_regs);
 	if(PreloadRootFlag)
-		LOG(NO_INFO,"Preload root "<<used_regs);
+		LOG(CALLS,"Preload root "<<used_regs);
 	if(PreloadParentFlag)
-		LOG(NO_INFO,"Preload parent "<<used_regs);
+		LOG(CALLS,"Preload parent "<<used_regs);
 	if(PreloadGlobalFlag)
-		LOG(NO_INFO,"Preload global "<<used_regs);
+		LOG(CALLS,"Preload global "<<used_regs);
 
 	for(unsigned int i=0;i<functionActions.size();i++)
 	{
@@ -454,7 +459,7 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 {
 	in >> FunctionName >> NumParams >> RegisterCount;
-	LOG(NO_INFO,"Defining function2 " << FunctionName);
+	LOG(CALLS,"Defining function2 " << FunctionName);
 	BitStream bs(in);
 	PreloadParentFlag=UB(1,bs);
 	PreloadRootFlag=UB(1,bs);
@@ -932,7 +937,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				in >> tmp;
 				Objects.push_back(SWFObject(new ASString(tmp)));
 				r-=(tmp.size()+1);
-				LOG(NO_INFO,"Push: Read string " << tmp);
+				LOG(CALLS,"Push: Read string " << tmp);
 				break;
 			}
 			case 1:
@@ -941,7 +946,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				in >> tmp;
 				Objects.push_back(SWFObject(new Double(tmp)));
 				r-=4;
-				LOG(NO_INFO,"Push: Read float " << tmp);
+				LOG(CALLS,"Push: Read float " << tmp);
 				break;
 			}
 			case 2:

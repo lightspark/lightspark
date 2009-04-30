@@ -54,6 +54,15 @@ public:
 
 class ExecutionContext;
 
+struct fps_profiling
+{
+	uint64_t render_time;
+	uint64_t action_time;
+	uint64_t cache_time;
+	uint64_t fps;
+	fps_profiling():render_time(0),action_time(0),cache_time(0),fps(0){}
+};
+
 class SystemState:public ASMovieClip
 {
 private:
@@ -111,6 +120,7 @@ public:
 	void reset();
 	void _register(){}
 	SWFOBJECT_TYPE getObjectType();
+	fps_profiling* fps_prof;
 };
 
 class ParseThread

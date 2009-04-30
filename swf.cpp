@@ -58,7 +58,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	}
 	sys->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
-	LOG(NO_INFO,"FrameSize " << FrameSize);
+	LOG(NO_INFO,"FrameRate " << FrameRate);
 }
 
 SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),performance_profiling(false),

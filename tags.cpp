@@ -31,7 +31,7 @@
 
 using namespace std;
 
-//extern RunState state;
+long timeDiff(timespec& s, timespec& d);
 extern __thread SystemState* sys;
 
 Tag* TagFactory::readTag()
@@ -426,6 +426,8 @@ void DefineTextTag::Render()
 {
 	if(cached.size()==0)
 	{
+		timespec ts,td;
+		clock_gettime(CLOCK_REALTIME,&ts);
 		FontTag* font=NULL;
 		int count=0;
 		std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
@@ -452,6 +454,8 @@ void DefineTextTag::Render()
 				count++;
 			}
 		}
+		clock_gettime(CLOCK_REALTIME,&td);
+		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	std::vector < GLYPHENTRY >::iterator it2;
@@ -550,7 +554,11 @@ int crossProd(const Vector2& a, const Vector2& b)
 
 DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
+	int dest=in.tellg();
+	dest+=getSize();
 	in >> CharacterId >> StartBounds >> EndBounds >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
+	if(in.tellg()<dest)
+		ignore(in,dest-in.tellg());
 }
 
 void DefineMorphShapeTag::printInfo(int t)
@@ -773,6 +781,8 @@ void DefineShapeTag::Render()
 {
 	if(cached.size()==0)
 	{
+		timespec ts,td;
+		clock_gettime(CLOCK_REALTIME,&ts);
 		std::vector < Path > paths;
 		std::vector < Shape > shapes;
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -842,6 +852,8 @@ void DefineShapeTag::Render()
 			}
 		}
 		cached=shapes;
+		clock_gettime(CLOCK_REALTIME,&td);
+		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
 	std::vector < Shape >::iterator it=cached.begin();
@@ -861,6 +873,8 @@ void DefineShape2Tag::Render()
 {
 	if(cached.size()==0)
 	{
+		timespec ts,td;
+		clock_gettime(CLOCK_REALTIME,&ts);
 		std::vector < Path > paths;
 		std::vector < Shape > shapes;
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -930,6 +944,8 @@ void DefineShape2Tag::Render()
 			}
 		}
 		cached=shapes;
+		clock_gettime(CLOCK_REALTIME,&td);
+		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
 	std::vector < Shape >::iterator it=cached.begin();
@@ -948,6 +964,8 @@ void DefineShape3Tag::Render()
 {
 	if(cached.size()==0)
 	{
+		timespec ts,td;
+		clock_gettime(CLOCK_REALTIME,&ts);
 		std::vector < Path > paths;
 		std::vector < Shape > shapes;
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -1017,6 +1035,8 @@ void DefineShape3Tag::Render()
 			}
 		}
 		cached=shapes;
+		clock_gettime(CLOCK_REALTIME,&td);
+		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
 	std::vector < Shape >::iterator it=cached.begin();
@@ -1364,17 +1384,12 @@ void TessellatePath(Path& path, Shape& shape)
 			throw "area<0";
 		shape.winding=0;
 	}
-	//DEBUG
+/*	//DEBUG
 	ofstream dat_dump("prova.dat");
 	for(int i=0;i<unsorted.size();i++)
 		dat_dump << unsorted[i].x << " " << unsorted[i].y << " " << i << endl;
 	dat_dump.close();
-	if(size==16)
-	{
-		cout << "passed" << endl;
-		char a=0;
-	}
-	//DEBUG
+	//DEBUG*/
 	std::list<Edge> T;
 	std::vector<Numeric_Edge> D;
 	std::vector<int> helper(sorted.size(),-1);

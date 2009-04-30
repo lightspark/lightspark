@@ -21,18 +21,24 @@
 #include "tags.h"
 #include <list>
 #include <GL/gl.h>
-
+#include <time.h>
 
 using namespace std;
+long timeDiff(timespec& s, timespec& d);
 
+extern __thread SystemState* sys;
 void Frame::Render(int baseLayer)
 {
+	timespec ts,td;
+	clock_gettime(CLOCK_REALTIME,&ts);
 	list < IDisplayListElem* >::iterator i=displayList.begin();
 	for(i;i!=displayList.end();i++)
 	{
 		if(*i!=NULL)
 			(*i)->Render();
 	}
+	clock_gettime(CLOCK_REALTIME,&td);
+	sys->fps_prof->render_time+=timeDiff(ts,td);
 }
 
 void Frame::setLabel(STRING l)

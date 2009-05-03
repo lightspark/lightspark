@@ -28,12 +28,12 @@ void Shape::Render() const
 	if(graphic.filled0 && graphic.filled1)
 	{
 		LOG(NOT_IMPLEMENTED,"Not supported double fill style");
-		Shape* th=const_cast<Shape*>(this);
-		th->graphic.color0=RGB(255,0,0);
-		th->graphic.color1=RGB(0,255,0);
+		//Shape* th=const_cast<Shape*>(this);
+		//th->graphic.color0=RGB(255,0,0);
+		//th->graphic.color1=RGB(0,0,255);
 	}
 
-/*	if(winding==0)
+	if(winding==0)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glStencilFunc(GL_ALWAYS,0,0);
@@ -68,7 +68,7 @@ void Shape::Render() const
 			glVertex2i(it2->v3.x,it2->v3.y);
 		}
 		glEnd();
-	}*/
+	}
 
 
 //	if(graphic.stroked)
@@ -89,6 +89,9 @@ void Shape::Render() const
 		glEnd();
 		glEnable(GL_STENCIL_TEST);
 	}
+
+	for(int i=0;i<sub_shapes.size();i++)
+		sub_shapes[i].Render();
 }
 
 bool Edge::xIntersect(int x,int32_t& d)

@@ -476,6 +476,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			if(th->cur_frame==NULL)
 			{
 				sem_post(&th->end_render);
+				if(sys->shutdown)
+					pthread_exit(0);
 				continue;
 			}
 			SDL_GL_SwapBuffers( );

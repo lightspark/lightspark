@@ -254,7 +254,7 @@ void drawStenciled(const RECT& bounds, bool filled0, bool filled1, const RGBA& c
 {
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glStencilFunc(GL_EQUAL,6,0xf);
-	glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);
+	glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
 	if(filled0)
 	{
 		glColor3ub(color0.Red,color0.Green,color0.Blue);
@@ -275,7 +275,6 @@ void drawStenciled(const RECT& bounds, bool filled0, bool filled1, const RGBA& c
 			glVertex2i(bounds.Xmax,bounds.Ymin);
 		glEnd();
 	}
-	glClear(GL_STENCIL_BUFFER_BIT);
 }
 
 void ignore(istream& i, int count)
@@ -486,6 +485,8 @@ void DefineTextTag::Render()
 			{
 				cached[shapes_done].Render();
 				shapes_done++;
+				if(shapes_done==cached.size())
+					break;
 			}
 			glPopMatrix();
 			x2+=it2->GlyphAdvance;
@@ -494,6 +495,7 @@ void DefineTextTag::Render()
 //		glPushMatrix();
 //		glMultMatrixf(matrix);
 		drawStenciled(TextBounds,true,false,it->TextColor,RGBA());
+		glClear(GL_STENCIL_BUFFER_BIT);
 //		glPopMatrix();
 		glDisable(GL_STENCIL_TEST);
 	}
@@ -590,13 +592,12 @@ public:
 	int id;
 	int skip_tess;
 
+	std::vector< Path > sub_paths;
 	std::vector< Vector2 > points;
 	VTYPE getVertexType(const Vector2& v);
 	bool closed;
-	GraphicStatus _state;
-	GraphicStatus* state;
-	Path():closed(false),skip_tess(false){ state=&_state;};
-	Path(const Path& p):closed(p.closed),points(p.points),skip_tess(p.skip_tess){state=&_state;_state=p._state;}
+	GraphicStatus state;
+	Path():closed(false),skip_tess(false){};
 };
 
 void fixIndex(list<Vector2>& points)
@@ -677,11 +678,15 @@ void FromPathToShape(Path& path, Shape& shape)
 	shape.outline=path.points;
 	shape.closed=path.closed;
 
-	if(/*path.skip_tess ||*/ !shape.closed || (!path.state->validFill0 && !path.state->validFill1))
+	if(/*path.skip_tess ||*/ !shape.closed || (!path.state.validFill0 && !path.state.validFill1))
 		return;
 
 //	TessellatePath(path,shape);
 	TessellatePathSimple(path,shape);
+
+	shape.sub_shapes.resize(path.sub_paths.size());
+	for(int i=0;i<path.sub_paths.size();i++)
+		FromPathToShape(path.sub_paths[i],shape.sub_shapes[i]);
 }
 
 void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths);
@@ -706,15 +711,15 @@ void DefineMorphShapeTag::Render()
 		FromPathToShape(*i,shapes.back());
 
 		//Fill graphic data
-		if(i->state->validFill0)
+		if(i->state.validFill0)
 		{
-			if(i->state->fill0)
+			if(i->state.fill0)
 			{
 				shapes.back().graphic.filled0=true;
-				if(MorphFillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
-					shapes.back().graphic.color0=MorphFillStyles.FillStyles[i->state->fill0-1].EndColor;
+				if(MorphFillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
+					shapes.back().graphic.color0=MorphFillStyles.FillStyles[i->state.fill0-1].EndColor;
 				else
-					shapes.back().graphic.color0=RGB(0,255,0);
+					shapes.back().graphic.color0=RGB(0,0,255);
 			}
 			else
 				shapes.back().graphic.filled0=false;
@@ -723,15 +728,15 @@ void DefineMorphShapeTag::Render()
 			shapes.back().graphic.filled0=false;
 
 
-		if(i->state->validFill1)
+		if(i->state.validFill1)
 		{
-			if(i->state->fill1)
+			if(i->state.fill1)
 			{
 				shapes.back().graphic.filled1=true;
-				if(MorphFillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
-					shapes.back().graphic.color1=MorphFillStyles.FillStyles[i->state->fill1-1].EndColor;
+				if(MorphFillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
+					shapes.back().graphic.color1=MorphFillStyles.FillStyles[i->state.fill1-1].EndColor;
 				else
-					shapes.back().graphic.color1=RGB(0,255,0);
+					shapes.back().graphic.color1=RGB(0,0,255);
 			}
 			else
 				shapes.back().graphic.filled1=false;
@@ -739,12 +744,12 @@ void DefineMorphShapeTag::Render()
 		else
 			shapes.back().graphic.filled1=false;
 
-		if(i->state->validStroke)
+		if(i->state.validStroke)
 		{
-			if(i->state->stroke)
+			if(i->state.stroke)
 			{
 				shapes.back().graphic.stroked=true;
-				shapes.back().graphic.stroke_color=MorphLineStyles.LineStyles[i->state->stroke-1].EndColor;
+				shapes.back().graphic.stroke_color=MorphLineStyles.LineStyles[i->state.stroke-1].EndColor;
 			}
 			else
 				shapes.back().graphic.stroked=false;
@@ -776,10 +781,12 @@ void DefineMorphShapeTag::Render()
 	for(it;it!=shapes.end();it++)
 	{
 		it->Render();
-	}
-	it=shapes.begin();
-	if(it!=shapes.end())
 		drawStenciled(EndBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	}
+/*	it=shapes.begin();
+	if(it!=shapes.end())
+		drawStenciled(EndBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);*/
+	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
 
@@ -807,17 +814,17 @@ void DefineShapeTag::Render()
 			shapes.push_back(Shape());
 			FromPathToShape(*i,shapes.back());
 			//Fill graphic data
-			if(i->state->validFill0)
+			if(i->state.validFill0)
 			{
-				if(i->state->fill0)
+				if(i->state.fill0)
 				{
 					shapes.back().graphic.filled0=true;
-					if(Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
-						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
+						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state.fill0-1].Color;
 					else
 					{
-						shapes.back().graphic.color0=RGB(0,255,0);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType << "not implemented");
+						shapes.back().graphic.color0=RGB(0,0,255);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType << "not implemented");
 					}
 				}
 				else
@@ -827,17 +834,17 @@ void DefineShapeTag::Render()
 				shapes.back().graphic.filled0=false;
 
 
-			if(i->state->validFill1)
+			if(i->state.validFill1)
 			{
-				if(i->state->fill1)
+				if(i->state.fill1)
 				{
 					shapes.back().graphic.filled1=true;
-					if(Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType==0x0)
-						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType==0x0)
+						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state.fill1-1].Color;
 					else
 					{
-						shapes.back().graphic.color1=RGB(0,255,0);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType << "not implemented");
+						shapes.back().graphic.color1=RGB(0,0,255);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType << "not implemented");
 					}
 				}
 				else
@@ -846,12 +853,12 @@ void DefineShapeTag::Render()
 			else
 				shapes.back().graphic.filled1=false;
 
-			if(i->state->validStroke)
+			if(i->state.validStroke)
 			{
-				if(i->state->stroke)
+				if(i->state.stroke)
 				{
 					shapes.back().graphic.stroked=true;
-					shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
+					shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state.stroke-1].Color;
 				}
 				else
 					shapes.back().graphic.stroked=false;
@@ -879,11 +886,12 @@ void DefineShapeTag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
-	}
-	it=cached.begin();
-	if(it!=cached.end())
 		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
-
+	}
+/*	it=cached.begin();
+	if(it!=cached.end())
+		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);*/
+	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
 
@@ -911,17 +919,17 @@ void DefineShape2Tag::Render()
 			shapes.push_back(Shape());
 			FromPathToShape(*i,shapes.back());
 			//Fill graphic data
-			if(i->state->validFill0)
+			if(i->state.validFill0)
 			{
-				if(i->state->fill0)
+				if(i->state.fill0)
 				{
 					shapes.back().graphic.filled0=true;
-					if(Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
-						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
+						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state.fill0-1].Color;
 					else
 					{
-						shapes.back().graphic.color0=RGB(0,255,0);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType << "not implemented");
+						shapes.back().graphic.color0=RGB(0,0,255);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType << "not implemented");
 					}
 				}
 				else
@@ -931,17 +939,17 @@ void DefineShape2Tag::Render()
 				shapes.back().graphic.filled0=false;
 
 
-			if(i->state->validFill1)
+			if(i->state.validFill1)
 			{
-				if(i->state->fill1)
+				if(i->state.fill1)
 				{
 					shapes.back().graphic.filled1=true;
-					if(Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType==0x0)
-						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType==0x0)
+						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state.fill1-1].Color;
 					else
 					{
-						shapes.back().graphic.color1=RGB(0,255,0);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType << "not implemented");
+						shapes.back().graphic.color1=RGB(0,0,255);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType << "not implemented");
 					}
 				}
 				else
@@ -950,12 +958,12 @@ void DefineShape2Tag::Render()
 			else
 				shapes.back().graphic.filled1=false;
 
-			if(i->state->validStroke)
+			if(i->state.validStroke)
 			{
-				if(i->state->stroke)
+				if(i->state.stroke)
 				{
 					shapes.back().graphic.stroked=true;
-					shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
+					shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state.stroke-1].Color;
 				}
 				else
 					shapes.back().graphic.stroked=false;
@@ -983,10 +991,12 @@ void DefineShape2Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
-	}
-	it=cached.begin();
-	if(it!=cached.end())
 		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	}
+/*	it=cached.begin();
+	if(it!=cached.end())
+		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);*/
+	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
 
@@ -1014,17 +1024,17 @@ void DefineShape3Tag::Render()
 			shapes.push_back(Shape());
 			FromPathToShape(*i,shapes.back());
 			//Fill graphic data
-			if(i->state->validFill0)
+			if(i->state.validFill0)
 			{
-				if(i->state->fill0)
+				if(i->state.fill0)
 				{
 					shapes.back().graphic.filled0=true;
-					if(Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType==0x0)
-						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state->fill0-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
+						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state.fill0-1].Color;
 					else
 					{
-						shapes.back().graphic.color0=RGB(0,255,0);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill0-1].FillStyleType << "not implemented");
+						shapes.back().graphic.color0=RGB(0,0,255);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType << "not implemented");
 					}
 				}
 				else
@@ -1034,17 +1044,17 @@ void DefineShape3Tag::Render()
 				shapes.back().graphic.filled0=false;
 
 
-			if(i->state->validFill1)
+			if(i->state.validFill1)
 			{
-				if(i->state->fill1)
+				if(i->state.fill1)
 				{
 					shapes.back().graphic.filled1=true;
-					if(Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType==0x0)
-						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state->fill1-1].Color;
+					if(Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType==0x0)
+						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state.fill1-1].Color;
 					else
 					{
-						shapes.back().graphic.color1=RGB(0,255,0);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state->fill1-1].FillStyleType << "not implemented");
+						shapes.back().graphic.color1=RGB(0,0,255);
+						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType << "not implemented");
 					}
 				}
 				else
@@ -1053,12 +1063,12 @@ void DefineShape3Tag::Render()
 			else
 				shapes.back().graphic.filled1=false;
 
-			if(i->state->validStroke)
+			if(i->state.validStroke)
 			{
-				if(i->state->stroke)
+				if(i->state.stroke)
 				{
 					shapes.back().graphic.stroked=true;
-					shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
+					shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state.stroke-1].Color;
 				}
 				else
 					shapes.back().graphic.stroked=false;
@@ -1086,14 +1096,16 @@ void DefineShape3Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
-	}
-	it=cached.begin();
-	if(it!=cached.end())
 		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	}
+/*	it=cached.begin();
+	if(it!=cached.end())
+		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);*/
+	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
 
-void SplitPath(std::vector<Path>& paths,int a, int b)
+/*void SplitPath(std::vector<Path>& paths,int a, int b)
 {
 	Path p;
 	p.closed=true;
@@ -1115,7 +1127,7 @@ void SplitPath(std::vector<Path>& paths,int a, int b)
 
 		if(first!=paths[i].points.end() && end!=paths[i].points.end())
 		{
-			p._state=paths[i]._state;
+			p.state=paths[i].state;
 			cur_path=&paths[i];
 			break;
 		}
@@ -1125,10 +1137,12 @@ void SplitPath(std::vector<Path>& paths,int a, int b)
 	
 	cur_path->points.erase(first+1,end);
 	paths.push_back(p);
-}
+}*/
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)
 {
+	if(start==end)
+		return false;
 	FilterIterator jj=start;
 	FilterIterator jj2=start;
 	jj2++;
@@ -1207,63 +1221,61 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 	int vindex=0;
 	int startX=0,startY=0;
 	paths.push_back(Path());
-	GraphicStatus* cur_state=paths.back().state;
+	Path* cur_path=&paths.back();
 	while(cur)
 	{
 		if(cur->TypeFlag)
 		{
-			if(paths.back().points.size()==0)
+			if(cur_path->points.size()==0)
 			{
-				paths.back().points.push_back(Vector2(startX,startY,vindex));
+				cur_path->points.push_back(Vector2(startX,startY,vindex));
 				vindex++;
 			}
 			if(cur->StraightFlag)
 			{
 				startX+=cur->DeltaX;
 				startY+=cur->DeltaY;
-				if(Vector2(startX,startY,vindex)==paths.back().points.front())
+				Vector2 nv(startX,startY,vindex);
+				if(nv==cur_path->points.front())
 				{
-					paths.back().closed=true;
-					GraphicStatus old_status=*paths.back().state;
+					cur_path->closed=true;
+					GraphicStatus old_status=cur_path->state;
 					paths.push_back(Path());
-					cur_state=paths.back().state;
-					*cur_state=old_status;
+					cur_path=&paths.back();
+					cur_path->state=old_status;
 					vindex=0;
-					/*paths.back().points.push_back(Vector2(startX,startY,vindex));
-					vindex=1;*/
 				}
 				else
-					paths.back().points.push_back(Vector2(startX,startY,vindex));
+					cur_path->points.push_back(Vector2(startX,startY,vindex));
 				vindex++;
 			}
 			else
 			{
 				startX+=cur->ControlDeltaX;
 				startY+=cur->ControlDeltaY;
-				if(Vector2(startX,startY,vindex)==paths.back().points.front())
+				if(Vector2(startX,startY,vindex)==cur_path->points.front())
 				{
 					LOG(ERROR,"Collision during path generation");
-					paths.back().closed=true;
+					cur_path->closed=true;
 				}
 				else
-					paths.back().points.push_back(Vector2(startX,startY,vindex));
+					cur_path->points.push_back(Vector2(startX,startY,vindex));
 				vindex++;
 
 				startX+=cur->AnchorDeltaX;
 				startY+=cur->AnchorDeltaY;
-				if(Vector2(startX,startY,vindex)==paths.back().points.front())
+				Vector2 nv(startX,startY,vindex);
+				if(nv==cur_path->points.front())
 				{
-					paths.back().closed=true;
-					GraphicStatus* old_status=paths.back().state;
+					cur_path->closed=true;
+					GraphicStatus old_status=cur_path->state;
 					paths.push_back(Path());
-					cur_state=paths.back().state;
-					*cur_state=*old_status;
+					cur_path=&paths.back();
+					cur_path->state=old_status;
 					vindex=0;
-					/*paths.back().points.push_back(Vector2(startX,startY,vindex));
-					vindex=1;*/
 				}
 				else
-					paths.back().points.push_back(Vector2(startX,startY,vindex));
+					cur_path->points.push_back(nv);
 				vindex++;
 			}
 		}
@@ -1271,30 +1283,52 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 		{
 			if(cur->StateMoveTo)
 			{
-				GraphicStatus* old_status=paths.back().state;
-				paths.push_back(Path());
-				cur_state=paths.back().state;
-				*cur_state=*old_status;
 				startX=cur->MoveDeltaX;
 				startY=cur->MoveDeltaY;
+
+				Vector2 nv(startX,startY,vindex);
+				GraphicStatus old_status=cur_path->state;
+				bool found=false;
+				for(int i=0;i<paths.size();i++)
+				{
+					FilterIterator ai(paths[i].points.begin(),paths[i].points.end(),-1);
+					FilterIterator bi(paths[i].points.end(),paths[i].points.end(),-1);
+					if(pointInPolygon(ai,bi,nv))
+					{
+						paths[i].sub_paths.push_back(Path());
+						cur_path=&paths[i].sub_paths.back();
+						found=true;
+						break;
+					}
+				}
+				if(!found)
+				{
+					if(cur_path->points.size()!=0)
+					{
+						paths.push_back(Path());
+						cur_path=&paths.back();
+					}
+				}
+				cur_path->state=old_status;
 				vindex=0;
-				paths.back().points.push_back(Vector2(startX,startY,vindex));
+				cur_path->points.push_back(nv);
 				vindex=1;
+
 			}
 			if(cur->StateLineStyle)
 			{
-				cur_state->validStroke=true;
-				cur_state->stroke=cur->LineStyle;
+				cur_path->state.validStroke=true;
+				cur_path->state.stroke=cur->LineStyle;
 			}
 			if(cur->StateFillStyle1)
 			{
-				cur_state->validFill1=true;
-				cur_state->fill1=cur->FillStyle1;
+				cur_path->state.validFill1=true;
+				cur_path->state.fill1=cur->FillStyle1;
 			}
 			if(cur->StateFillStyle0)
 			{
-				cur_state->validFill0=true;
-				cur_state->fill0=cur->FillStyle0;
+				cur_path->state.validFill0=true;
+				cur_path->state.fill0=cur->FillStyle0;
 				
 			}
 		}
@@ -1327,6 +1361,11 @@ inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,c
 
 void TessellatePathSimple(Path& path, Shape& shape)
 {
+	if(path.points.size()<3)
+	{
+		LOG(NO_INFO,"Tessellating a degenerate path");
+		return;
+	}
 	std::vector<Vector2> P=path.points;
 	int area=0;
 	int i;
@@ -1749,20 +1788,20 @@ void DefineFont2Tag::genGliphShape(vector<Shape>& s, int glyph)
 		s.back().graphic.filled1=false;
 		s.back().graphic.stroked=false;
 
-		if(i->state->validFill0)
+		if(i->state.validFill0)
 		{
-			if(i->state->fill0!=1)
+			if(i->state.fill0!=1)
 				LOG(ERROR,"Not valid fill style for font");
 		}
 
-		if(i->state->validFill1)
+		if(i->state.validFill1)
 		{
 			LOG(ERROR,"Not valid fill style for font");
 		}
 
-		if(i->state->validStroke)
+		if(i->state.validStroke)
 		{
-			if(i->state->stroke)
+			if(i->state.stroke)
 			{
 				s.back().graphic.stroked=true;
 				LOG(ERROR,"Not valid stroke style for font");
@@ -1800,20 +1839,20 @@ void DefineFontTag::genGliphShape(vector<Shape>& s,int glyph)
 		s.back().graphic.filled1=false;
 		s.back().graphic.stroked=false;
 
-		if(i->state->validFill0)
+		if(i->state.validFill0)
 		{
-			if(i->state->fill0!=1)
+			if(i->state.fill0!=1)
 				LOG(ERROR,"Not valid fill color for font");
 		}
 
-		if(i->state->validFill1)
+		if(i->state.validFill1)
 		{
 			LOG(ERROR,"Not valid fill color for font");
 		}
 
-		if(i->state->validStroke)
+		if(i->state.validStroke)
 		{
-			if(i->state->stroke)
+			if(i->state.stroke)
 			{
 				s.back().graphic.stroked=true;
 				LOG(ERROR,"Not valid stroke color for font");

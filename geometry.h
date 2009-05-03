@@ -150,6 +150,8 @@ class Shape
 public:
 	std::vector<Triangle> interior;
 	std::vector<Vector2> outline;
+	std::vector<Shape> sub_shapes;
+
 	Graphic graphic;
 	bool closed;
 	int winding;

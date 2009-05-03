@@ -243,6 +243,15 @@ void* InputThread::sdl_worker(InputThread* th)
 						sys->setShutdownFlag();
 						pthread_exit(0);
 						break;
+					case SDLK_s:
+						sys->state.stop_FP=true;
+						break;
+					case SDLK_o:
+						sys->displayListLimit--;
+						break;
+					case SDLK_p:
+						sys->displayListLimit++;
+						break;
 /*					case SDLK_n:
 						list<IActiveObject*>::const_iterator it=listeners.begin();
 						int c=0;
@@ -479,7 +488,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			glScalef(0.1,0.1,1);
 
-			th->cur_frame->Render(0);
+			th->cur_frame->Render(sys->displayListLimit);
 
 			sem_post(&th->end_render);
 			if(sys->shutdown)

@@ -153,7 +153,7 @@ float ASString::toFloat()
 	return 0;
 }
 
-ASMovieClip::ASMovieClip():_visible(1),_width(100),hack(0),_framesloaded(0),_totalframes(1)
+ASMovieClip::ASMovieClip():_visible(1),_width(100),hack(0),_framesloaded(0),_totalframes(1),displayListLimit(0)
 {
 	sem_init(&sem_frames,0,1);
 	ASMovieClip::_register();
@@ -168,6 +168,7 @@ void ASMovieClip::addToDisplayList(IDisplayListElem* t)
 {
 	list<IDisplayListElem*>::iterator it=lower_bound(displayList.begin(),displayList.end(),t->getDepth(),list_orderer);
 	displayList.insert(it,t);
+	displayListLimit=displayList.size();
 }
 
 SWFObject ASMovieClip::createEmptyMovieClip(const SWFObject& obj, arguments* args)
@@ -251,7 +252,7 @@ void ASMovieClip::Render()
 	list<Frame>::iterator frame=frames.begin();
 	for(int i=0;i<state.FP;i++)
 		frame++;
-	frame->Render(0);
+	frame->Render(displayListLimit);
 
 	//Render objects added at runtime;
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();

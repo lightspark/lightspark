@@ -142,6 +142,8 @@ public:
 
 public:
 	int hack;
+	int displayListLimit;
+
 	ASMovieClip();
 	static SWFObject moveTo(const SWFObject&, arguments* args);
 	static SWFObject lineStyle(const SWFObject&, arguments* args);

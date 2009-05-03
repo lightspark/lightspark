@@ -32,10 +32,14 @@ void Frame::Render(int baseLayer)
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
 	list < IDisplayListElem* >::iterator i=displayList.begin();
+	int count=0;
 	for(i;i!=displayList.end();i++)
 	{
 		if(*i!=NULL)
 			(*i)->Render();
+		count++;
+		if(count>baseLayer)
+			break;
 	}
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->render_time+=timeDiff(ts,td);

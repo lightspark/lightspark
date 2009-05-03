@@ -33,7 +33,7 @@ void Shape::Render() const
 		th->graphic.color1=RGB(0,255,0);
 	}
 
-	if(winding==0)
+/*	if(winding==0)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glStencilFunc(GL_ALWAYS,0,0);
@@ -68,10 +68,10 @@ void Shape::Render() const
 			glVertex2i(it2->v3.x,it2->v3.y);
 		}
 		glEnd();
-	}
+	}*/
 
 
-	if(graphic.stroked)
+//	if(graphic.stroked)
 	{
 		glDisable(GL_STENCIL_TEST);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);

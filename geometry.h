@@ -23,35 +23,6 @@
 #include <iostream>
 #include <vector>
 
-struct Numeric_Edge
-{
-	int a,b;
-	int len;
-	Numeric_Edge(int x, int y,int num)
-	{
-		if(((x-y+num)%num)<((y-x+num)%num))
-		{
-			a=y;
-			b=x;
-			len=((x-y+num)%num);
-		}
-		else
-		{
-			a=x;
-			b=y;
-			len=((y-x+num)%num);
-		}
-		if(len<2)
-		{
-			LOG(ERROR,"Edge should be at least of length 2");
-		}
-	}
-	bool operator<(const Numeric_Edge& e) const
-	{
-		return len<e.len;
-	}
-};
-
 class Path;
 class Vector2;
 class Shape;
@@ -72,20 +43,9 @@ public:
 
 class Vector2
 {
-	friend bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,const Vector2& C);
-	friend class Edge;
-	friend class Shape;
-	friend int crossProd(const Vector2& a, const Vector2& b);
-	friend std::ostream& operator<<(std::ostream& s, const Vector2& p);
-	friend bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point);
-	friend void TessellatePath(Path& path, Shape& shape);
-	friend void TessellatePathSimple(Path& path, Shape& shape);
-	friend void TriangulateMonotone(const std::list<Vector2>& monotone, Shape& shape);
-	friend void SplitIntersectingPaths(std::vector<Path>& paths);
-	int x,y;
 public:
+	int x,y;
 	int index;
-	int chain;
 	Vector2(int a, int b, int i):x(a),y(b),index(i){}
 	Vector2(int a, int b):x(a),y(b),index(-1){}
 	bool operator==(const Vector2& v){return v.x==x && v.y==y;}
@@ -112,26 +72,54 @@ public:
 class Edge
 {
 	friend class Shape;
-private:
-	int x1,x2;
-	int y1,y2;
 public:
+	Vector2 p1;
+	Vector2 p2;
 	int index;
-	Edge(const Vector2& a,const Vector2& b, int i):index(i)
+	Edge(const Vector2& a,const Vector2& b, int i):index(i),p1(a),p2(b)
 	{
-		y1=a.y;
-		y2=b.y;
-		x1=a.x;
-		x2=b.x;
 	}
-	bool yIntersect(int y,int32_t& d,int x);
-	bool xIntersect(int x,int32_t& d);
-	bool edgeIntersect(const Edge& e);
+	bool yIntersect(const Vector2& p, int& dist);
+//	bool xIntersect(int x,int32_t& d);
+//	bool edgeIntersect(const Edge& e);
 	bool operator==(int a)
 	{
 		return index==a;
 	}
+	bool operator<(const Edge& e) const
+	{
+		//Edges are ordered first by the lowest vertex and then by highest
+		Vector2 l1(p1),l2(p2),r1(e.p1),r2(e.p2);
+		if(p2<p1)
+		{
+			l2=p1;
+			l1=p2;
+		}
+		if(e.p2<e.p1)
+		{
+			r2=e.p1;
+			r1=e.p2;
+		}
 
+		if(l1<r1)
+			return true;
+		else if(r1<l1)
+			return false;
+		else
+		{
+			if(l2<r2)
+				return true;
+			else
+				return false;
+		}
+	}
+	const Vector2& highPoint()
+	{
+		if(p1<p2)
+			return p1;
+		else
+			return p2;
+	}
 };
 
 class Graphic

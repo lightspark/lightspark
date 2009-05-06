@@ -94,7 +94,7 @@ void Shape::Render() const
 		sub_shapes[i].Render();
 }
 
-bool Edge::xIntersect(int x,int32_t& d)
+/*bool Edge::xIntersect(int x,int32_t& d)
 {
 	int u1,u2;
 	u1=min(x1,x2);
@@ -114,82 +114,23 @@ bool Edge::xIntersect(int x,int32_t& d)
 	}
 	else
 		return false;
-}
+}*/
 
-bool Edge::yIntersect(int y,int32_t& d, int x)
+bool Edge::yIntersect(const Vector2& p, int& x)
 {
-	int u1,u2;
-	u1=min(y1,y2);
-	u2=max(y1,y2);
-//	u1=y1;
-//	u2=y2;
-
-	if((y>u1) && (y<u2))
-	{
-		float m=(x2-x1);
-		m/=(y2-y1);
-		d=ceil(m*(y-y1));
-		d+=x1;
-		return true;
-	}
-	else if(y==y1 || y==y2)
-	{
-		if(y1==y2)
-		{
-			int v1,v2;
-			v1=min(x1,x2);
-			v2=max(x1,x2);
-			if(!(x>=v1 && x<=v2))
-			{
-				return false;
-			}
-			if(x1==x)
-				d=x2;
-			else
-				d=x1;
-			return true;
-		}
-		else if(y==u1)
-		{
-			if(u1==y1)
-			{
-				d=x1;
-				if(x2<x)
-					d--;
-				else if(x2>x)
-					d++;
-			}
-			else
-			{
-				d=x2;
-				if(x1<x)
-					d--;
-				else if(x1>x)
-					d++;
-			}
-			return true;
-		}
-		else
-		{
-/*			if(u1==y1)
-				d=x2;
-			else
-				d=x1;*/
-			return false;
-		}
-	}
-/*	else if(y==y1 && y==y2)
-	{
-		d=x1;
-		return true;
-	}*/
+	if(p.y<=p1.y || p.y>=p2.y)
+		return false;
 	else
 	{
-		return false;
+		Vector2 c=p2-p1;
+		Vector2 d=p-p1;
+
+		x=(c.x*d.y)/c.y+p1.x;
+		return true;
 	}
 }
 
-bool Edge::edgeIntersect(const Edge& e)
+/*bool Edge::edgeIntersect(const Edge& e)
 {
 	float ua=(e.x2-e.x1)*(y1-e.y1)-(e.y2-e.y1)*(x1-e.x1);
 	float ub=(x2-x1)*(y1-e.y1)-(y2-y1)*(x1-e.x1);
@@ -201,7 +142,7 @@ bool Edge::edgeIntersect(const Edge& e)
 		return true;
 	else
 		return false;
-}
+}*/
 
 FilterIterator::FilterIterator(const std::vector<Vector2>::const_iterator& i, const std::vector<Vector2>::const_iterator& e, int f):it(i),end(e),filter(f)
 {

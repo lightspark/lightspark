@@ -423,6 +423,7 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 
 void DefineTextTag::Render()
 {
+	return;
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -626,7 +627,7 @@ std::ostream& operator<<(std::ostream& s, const Vector2& p)
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point);
 
-VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
+/*VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 {
 	int a=(v.index+1)%points.size();
 	int b=(v.index-1+points.size())%points.size();
@@ -661,7 +662,7 @@ VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
 	}
 	else
 		LOG(ERROR,"Impossible vertex type");
-}
+}*/
 
 std::ostream& operator<<(std::ostream& s, const GraphicStatus& p)
 {
@@ -671,7 +672,6 @@ std::ostream& operator<<(std::ostream& s, const GraphicStatus& p)
 	return s;
 }
 
-void TessellatePath(Path& path, Shape& shape);
 void TessellatePathSimple(Path& path, Shape& shape);
 void FromPathToShape(Path& path, Shape& shape)
 {
@@ -681,7 +681,6 @@ void FromPathToShape(Path& path, Shape& shape)
 	if(/*path.skip_tess ||*/ !shape.closed || (!path.state.validFill0 && !path.state.validFill1))
 		return;
 
-//	TessellatePath(path,shape);
 	TessellatePathSimple(path,shape);
 
 	shape.sub_shapes.resize(path.sub_paths.size());
@@ -790,6 +789,16 @@ void DefineMorphShapeTag::Render()
 	glDisable(GL_STENCIL_TEST);
 }
 
+void FromShaperecordListToEdgeVector(const SHAPERECORD* cur, vector<Edge>& edges);
+
+bool lex_order(const Edge& a, const Edge& b)
+{
+	if(a.p1.index<b.p1.index)
+		return true;
+	else
+		return false;
+}
+
 void DefineShapeTag::Render()
 {
 	LOG(TRACE,"DefineShape Render");
@@ -797,12 +806,60 @@ void DefineShapeTag::Render()
 	{
 		timespec ts,td;
 		clock_gettime(CLOCK_REALTIME,&ts);
-		std::vector < Path > paths;
-		std::vector < Shape > shapes;
+		vector < Edge > edges;
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
-		FromShaperecordListToPaths(cur,paths);
-		std::vector < Path >::iterator i=paths.begin();
+		FromShaperecordListToEdgeVector(cur,edges);
+
+		ofstream f("edges.dat");
+
+		for(int i=0;i<edges.size();i++)
+			f << edges[i].p1.x << ' ' << edges[i].p1.y << endl;
+
+		f.close();
+
+		sort(edges.begin(),edges.end());
+		list < Edge > active_edges;
+
+		for(int i=0;i<edges.size();i++)
+		{
+			const Vector2& p=edges[i].highPoint();
+			int x;
+			//Find active edges that are intersected on p.y
+			for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
+			{
+				if(j->yIntersect(p,x))
+				{
+					abort();
+				}
+			}
+
+			active_edges.push_back(edges[i]);
+			active_edges.sort(lex_order);
+
+			//check for cycles
+			if(active_edges.front().p1==active_edges.back().p2)
+			{
+				int vindex=active_edges.front().p1.index-1;
+				bool ok=true;
+				Shape t;
+				for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
+				{
+					if(j->p1.index!=vindex+1)
+					{
+						ok=false;
+						break;
+					}
+					else
+						vindex++;
+					t.outline.push_back(j->p1);
+				}
+				if(ok)
+					cached.push_back(t);
+			}
+		}
+
+/*		std::vector < Path >::iterator i=paths.begin();
 		for(i;i!=paths.end();i++)
 		{
 			if(i->points.size()==0)
@@ -875,8 +932,7 @@ void DefineShapeTag::Render()
 				shapes[i].graphic.color0=shapes[i].graphic.color1;
 				shapes[i].winding=0;
 			}
-		}
-		cached=shapes;
+		}*/
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
@@ -1139,7 +1195,7 @@ void DefineShape3Tag::Render()
 	paths.push_back(p);
 }*/
 
-bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)
+/*bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)
 {
 	if(start==end)
 		return false;
@@ -1167,9 +1223,9 @@ bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& poi
 			count++;
 	}
 	return count%2;
-}
+}*/
 
-void SplitIntersectingPaths(vector<Path>& paths)
+/*void SplitIntersectingPaths(vector<Path>& paths)
 {
 	for(int k=0;k<paths.size();k++)
 	{
@@ -1214,11 +1270,73 @@ void SplitIntersectingPaths(vector<Path>& paths)
 		}
 
 	}
+}*/
+
+void FromShaperecordListToEdgeVector(const SHAPERECORD* cur, vector<Edge>& edges)
+{
+	int count=0;
+	int startX=0,startY=0;
+	while(cur)
+	{
+		if(cur->TypeFlag)
+		{
+			if(cur->StraightFlag)
+			{
+				Vector2 p1(startX,startY,count);
+				startX+=cur->DeltaX;
+				startY+=cur->DeltaY;
+				Vector2 p2(startX,startY,count+1);
+				edges.push_back(Edge(p1,p2,count));
+				count++;
+			}
+			else
+			{
+				Vector2 p1(startX,startY,count);
+				startX+=cur->ControlDeltaX;
+				startY+=cur->ControlDeltaY;
+				Vector2 p2(startX,startY,count+1);
+				edges.push_back(Edge(p1,p2,count));
+				count++;
+
+				Vector2 p3(startX,startY,count);
+				startX+=cur->AnchorDeltaX;
+				startY+=cur->AnchorDeltaY;
+				Vector2 p4(startX,startY,count+1);
+				edges.push_back(Edge(p3,p4,count));
+				count++;
+			}
+		}
+		else
+		{
+			if(cur->StateMoveTo)
+			{
+				startX=cur->MoveDeltaX;
+				startY=cur->MoveDeltaY;
+				count++;
+			}
+/*			if(cur->StateLineStyle)
+			{
+				cur_path->state.validStroke=true;
+				cur_path->state.stroke=cur->LineStyle;
+			}
+			if(cur->StateFillStyle1)
+			{
+				cur_path->state.validFill1=true;
+				cur_path->state.fill1=cur->FillStyle1;
+			}
+			if(cur->StateFillStyle0)
+			{
+				cur_path->state.validFill0=true;
+				cur_path->state.fill0=cur->FillStyle0;
+			}*/
+		}
+		cur=cur->next;
+	}
 }
 
 void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths)
 {
-	int vindex=0;
+/*	int vindex=0;
 	int startX=0,startY=0;
 	paths.push_back(Path());
 	Path* cur_path=&paths.back();
@@ -1334,10 +1452,8 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 		}
 		cur=cur->next;
 	}
-	//SplitIntersectingPaths(paths);
+	//SplitIntersectingPaths(paths);*/
 }
-
-void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape);
 
 inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,const Vector2& C)
 {
@@ -1361,7 +1477,7 @@ inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,c
 
 void TessellatePathSimple(Path& path, Shape& shape)
 {
-	if(path.points.size()<3)
+/*	if(path.points.size()<3)
 	{
 		LOG(NO_INFO,"Tessellating a degenerate path");
 		return;
@@ -1425,343 +1541,7 @@ void TessellatePathSimple(Path& path, Shape& shape)
 		if(count>30000)
 			break;
 	}
-	shape.interior.push_back(Triangle(P[0],P[1],P[2]));
-}
-
-void TessellatePath(Path& path, Shape& shape)
-{
-	std::vector<Vector2>& unsorted =(path.points);
-	int size=unsorted.size();
-	
-	fixIndex(unsorted);
-	std::vector<Vector2> sorted(unsorted);
-	sort(sorted.begin(),sorted.end());
-	int primo=sorted[size-1].index;
-
-	int prod=crossProd(unsorted[primo]-unsorted[(primo-1+size)%size],unsorted[(primo+1)%size]-unsorted[(primo-1+size)%size]);
-
-	int area=0;
-	int i;
-	for(i=0; i<size-1;i++)
-	{
-		area+=(unsorted[i].y+unsorted[i+1].y)*(unsorted[i+1].x-unsorted[i].x)/2;
-	}
-	area+=(unsorted[i].y+unsorted[0].y)*(unsorted[0].x-unsorted[i].x)/2;
-
-	if(prod>0)
-	{
-		if(area>=0)
-			throw "area>0";
-		int size2=size-1;
-		for(int i=0;i<size;i++)
-			sorted[i].index=size2-sorted[i].index;
-		reverse(unsorted.begin(),unsorted.end());
-		fixIndex(unsorted);
-		shape.winding=1;
-	}
-	else
-	{
-		if(area<=0)
-			throw "area<0";
-		shape.winding=0;
-	}
-/*	//DEBUG
-	ofstream dat_dump("prova.dat");
-	for(int i=0;i<unsorted.size();i++)
-		dat_dump << unsorted[i].x << " " << unsorted[i].y << " " << i << endl;
-	dat_dump.close();
-	//DEBUG*/
-	std::list<Edge> T;
-	std::vector<Numeric_Edge> D;
-	std::vector<int> helper(sorted.size(),-1);
-	for(int j=size-1;j>=0;j--)
-	{
-		Vector2* v=&(sorted[j]);
-		VTYPE type=getVertexType(*v,unsorted);
-		switch(type)
-		{
-			case START_VERTEX:
-				{
-					T.push_back(Edge(unsorted[(v->index-1+unsorted.size())%unsorted.size()],*v,v->index));
-					helper[v->index]=v->index;
-					break;
-				}
-			case END_VERTEX:
-				{
-					if(getVertexType(unsorted[helper[(v->index+1)%size]],unsorted)==MERGE_VERTEX)
-					{
-						LOG(ERROR,"Not yet implemented tesselation corner case");
-					}
-					std::list<Edge>::iterator d=std::find(T.begin(),T.end(),(v->index+1)%size);
-					T.erase(d);
-					break;
-				}
-			case NORMAL_VERTEX:
-				{
-					int32_t dist;
-
-					int count=0;
-					int jj;
-					for(jj=0;jj<unsorted.size()-1;jj++)
-					{
-					//	if(jj==v->index || jj+1==v->index)
-					//		continue;
-						Edge e(unsorted[jj],unsorted[jj+1],-1);
-						if(e.yIntersect(v->y,dist,v->x))
-						{
-							if(dist-v->x>0)
-							{
-								count++;
-							}
-						}
-					}
-					Edge e(unsorted[jj],unsorted[0],-1);
-					if(e.yIntersect(v->y,dist,v->x))
-					{
-						if(dist-v->x>0)
-							count++;
-					}
-					if(count%2)
-					{
-						if(getVertexType(unsorted[helper[(v->index+1)%size]],unsorted)==MERGE_VERTEX)
-						{
-							D.push_back(Numeric_Edge(v->index,helper[(v->index+1)%size],size));
-						}
-						std::list<Edge>::iterator d=std::find(T.begin(),T.end(),(v->index+1)%size);
-						T.erase(d);
-						T.push_back(Edge(unsorted[(v->index-1+unsorted.size())%unsorted.size()],*v,v->index));
-						helper[v->index]=v->index;
-					}
-					else
-					{
-						std::list<Edge>::iterator e=T.begin();
-						int32_t dist=0x7fffffff;
-						int dist_index=-1;
-						for(e;e!=T.end();e++)
-						{
-							int32_t d2;
-							if(e->yIntersect(v->y,d2,v->x))
-							{
-								d2=v->x-d2;
-								if(d2>0 && d2<dist)
-								{
-									dist=d2;
-									dist_index=e->index;
-								}
-							}
-						}
-						if(getVertexType(unsorted[helper[dist_index]],unsorted)==MERGE_VERTEX)
-						{
-							D.push_back(Numeric_Edge(v->index,helper[dist_index],size));
-						}
-						helper[dist_index]=v->index;
-					}
-
-					break;
-				}
-			case MERGE_VERTEX:
-				{
-					if(getVertexType(unsorted[helper[(v->index+1)%size]],unsorted)==MERGE_VERTEX)
-					{
-						D.push_back(Numeric_Edge(v->index,helper[(v->index+1)%size],size));
-					}
-					std::list<Edge>::iterator e=std::find(T.begin(),T.end(),(v->index+1)%size);
-					T.erase(e);
-
-					e=T.begin();
-					int32_t dist=0x7fffffff;
-					int dist_index=-1;
-					for(e;e!=T.end();e++)
-					{
-						int32_t d2;
-						if(e->yIntersect(v->y,d2,v->x))
-						{
-							d2=v->x-d2;
-							if(d2>0 && d2<dist)
-							{
-								dist=d2;
-								dist_index=e->index;
-							}
-						}
-					}
-					if(getVertexType(unsorted[helper[dist_index]],unsorted)==MERGE_VERTEX)
-					{
-						D.push_back(Numeric_Edge(v->index,helper[dist_index],size));
-					}
-					helper[dist_index]=v->index;
-					break;
-				}
-			case SPLIT_VERTEX:
-				{
-					std::list<Edge>::iterator e=T.begin();
-
-					uint32_t dist=0xffffffff;
-					int dist_index=-1;
-					for(e;e!=T.end();e++)
-					{
-						int32_t d2;
-						if(e->yIntersect(v->y,d2,v->x))
-						{
-							d2=v->x-d2;
-							if(d2>0 && d2<dist)
-							{
-								dist=d2;
-								dist_index=e->index;
-							}
-						}
-					}
-					D.push_back(Numeric_Edge(v->index,helper[dist_index],size));
-					helper[dist_index]=v->index;
-					helper[v->index]=v->index;
-					T.push_back(Edge(unsorted[(v->index-1+unsorted.size())%unsorted.size()],*v,v->index));
-					break;
-				}
-		}
-	}
-	sort(D.begin(),D.end());
-	list<Vector2> unsorted_list(unsorted.begin(),unsorted.end());
-	for(int j=0;j<D.size();j++)
-	{
-		list<Vector2> monotone;
-		if(D[j].a<D[j].b)
-		{
-			list<Vector2>::iterator a=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].a);
-			list<Vector2>::iterator b=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].b);
-			monotone.push_back(*a);
-			monotone.splice(monotone.end(),unsorted_list,++a,b);
-			monotone.push_back(*b);
-		}
-		else
-		{
-			list<Vector2>::iterator a=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].a);
-			monotone.push_back(*a);
-			monotone.splice(monotone.end(),unsorted_list,++a,unsorted_list.end());
-			list<Vector2>::iterator b=lower_bound(unsorted_list.begin(),unsorted_list.end(),D[j].b);
-			monotone.splice(monotone.end(),unsorted_list,unsorted_list.begin(),b);
-			monotone.push_back(*b);
-
-		}
-		fixIndex(monotone);
-		if(monotone.size()==2)
-			LOG(ERROR,"Tesselator: Internal error");
-
-		TriangulateMonotone(monotone,shape);
-	}
-	fixIndex(unsorted_list);
-	TriangulateMonotone(unsorted_list,shape);
-}
-
-void TriangulateMonotone(const list<Vector2>& monotone, Shape& shape)
-{
-	std::vector<int> S;
-	std::vector<Vector2> sorted(monotone.begin(),monotone.end());
-	std::vector<Vector2> unsorted(sorted);
-	int size=monotone.size();
-	list<Vector2>::const_iterator first=max_element(monotone.begin(),monotone.end());
-	int cur_index=first->index;
-	int cur_y=first->y;
-	cur_index++;
-	cur_index%=size;
-	for(int i=0;i<size;i++)
-		sorted[i].chain=1;
-	while(1)
-	{
-		if(cur_y>=sorted[cur_index].y)
-		{
-			sorted[cur_index].chain=2;
-			cur_y=sorted[cur_index].y;
-			cur_index++;
-			cur_index%=size;
-		}
-		else
-			break;
-	}
-	sort(sorted.begin(),sorted.end());
-
-	std::vector < Numeric_Edge > edges;
-
-	std::vector < Edge > border;
-	for(int i=0;i<size-1;i++)
-	{
-		border.push_back(Edge(unsorted[i],unsorted[i+1],-1));
-	}
-	border.push_back(Edge(unsorted[size-1],unsorted[0],-1));
-
-	S.push_back(size-1);
-	S.push_back(size-2);
-	for(int i=size-3;i>0;i--)
-	{
-		if(sorted[i].chain!=sorted[S.back()].chain)
-		{
-			for(unsigned int j=1;j<S.size();j++)
-			{
-				edges.push_back(Numeric_Edge(sorted[S[j]].index,sorted[i].index,size));
-			}
-			S.clear();
-			S.push_back(i+1);
-			S.push_back(i);
-		}
-		else
-		{
-			int last_vertex=S.back();
-			S.pop_back();
-			while(!S.empty())
-			{
-				Edge e(sorted[S.back()],sorted[i],-1);
-				bool stop=false;
-				for(unsigned int k=0;k<border.size();k++)
-				{
-					if(border[k].edgeIntersect(e))
-					{
-						stop=true;
-						break;
-					}
-				}
-				if(stop)
-					break;
-				else
-				{
-					last_vertex=S.back();
-					S.pop_back();
-					edges.push_back(Numeric_Edge(sorted[last_vertex].index,sorted[i].index,size));
-				}
-			}
-			S.push_back(last_vertex);
-			S.push_back(i);
-		}
-	}
-	for(unsigned int j=1;j<S.size()-1;j++)
-	{
-		edges.push_back(Numeric_Edge(sorted[S[j]].index,sorted[0].index,size));
-	}
-	sort(edges.begin(),edges.end());
-
-	std::vector< Vector2 > backup(unsorted);
-	int third;
-	for(unsigned int i=0;i<edges.size();i++)
-	{
-		std::vector< Vector2 >::iterator first=find(unsorted.begin(),unsorted.end(),edges[i].a);
-		std::vector< Vector2 >::iterator second=find(unsorted.begin(),unsorted.end(),edges[i].b);
-
-		std::vector < Vector2 >::iterator third;
-		if(first!=unsorted.end()-1)
-			third=first+1;
-		else
-			third=unsorted.begin();
-			
-		if(third==second)
-			LOG(ERROR,"Internal error while triangulating");
-		shape.interior.push_back(Triangle(*first,*second,*third));
-		unsorted.erase(third);
-	}
-	if(unsorted.size()!=3)
-	{
-		LOG(ERROR,"Internal error while triangulating");
-	}
-	else
-	{
-		shape.interior.push_back(Triangle(unsorted[0],unsorted[1],unsorted[2]));
-	}
+	shape.interior.push_back(Triangle(P[0],P[1],P[2]));*/
 }
 
 void DefineFont2Tag::genGliphShape(vector<Shape>& s, int glyph)

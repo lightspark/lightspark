@@ -48,7 +48,7 @@ public:
 	int index;
 	Vector2(int a, int b, int i):x(a),y(b),index(i){}
 	Vector2(int a, int b):x(a),y(b),index(-1){}
-	bool operator==(const Vector2& v){return v.x==x && v.y==y;}
+	bool operator==(const Vector2& v)const{return v.x==x && v.y==y;}
 	bool operator==(int i){return index==i;}
 	bool operator<(const Vector2& v) const {return (y==v.y)?(x < v.x):(y < v.y);}
 	bool operator<=(const Vector2& v) const {return y<=v.y;}

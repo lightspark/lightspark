@@ -825,114 +825,111 @@ void DefineShapeTag::Render()
 		{
 			const Vector2& p=edges[i].highPoint();
 			int x;
-			//Find active edges that are intersected on p.y
+			int dr=1000000;
+			int dl=1000000;
+			list<Edge>::iterator ir;
+			list<Edge>::iterator il;
+			//Find active edges that are intersected on p.y. We find both the nearest edge on the left and on the right.
+			//If there are no edge on either side, the current edge is simply added to the active_edges list
 			for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
 			{
 				if(j->yIntersect(p,x))
 				{
-					abort();
+					if(x>p.x && dr>(x-p.x))
+					{
+						ir=j;
+						dr=x-p.x;
+					}
+					else if(x<p.x && dl>(p.x-x))
+					{
+						il=j;
+						dl=p.x-x;
+					}
+					else if(x==p.x)
+						LOG(ERROR,"Intersection at distance zero?");
 				}
 			}
-
-			active_edges.push_back(edges[i]);
-			active_edges.sort(lex_order);
-
-			//check for cycles
-			if(active_edges.front().p1==active_edges.back().p2)
+			if(dl==1000000 || dr==1000000)
 			{
-				int vindex=active_edges.front().p1.index-1;
-				bool ok=true;
-				Shape t;
+				//We are an external edge. Add to the active_edge list
+				active_edges.push_back(edges[i]);
+				active_edges.sort(lex_order);
+			}
+			else
+			{
 				for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
 				{
-					if(j->p1.index!=vindex+1)
+					cout << j->p1 << ' ' << j->p2 << ' ' << j->index << endl;
+				}
+
+				//Intersection to handle. We split the nearest intersect edge at (x,p.y) and find
+				//a cycle to in the active_edges list
+				Shape t;
+				t.closed=true;
+				list<Edge>::iterator is;
+				list<Edge>::iterator id;
+				Vector2 last(0,0,-1);
+				if(il->p1.index<ir->p1.index)
+				{
+					is=il;
+					id=ir;
+					t.outline.push_back(Vector2(dl,p.y,-1));
+					last=Vector2(dr,p.y,-1);
+				}
+				else
+				{
+					is=ir;
+					id=il;
+					t.outline.push_back(Vector2(dr,p.y,-1));
+					last=Vector2(dl,p.y,-1);
+				}
+
+				//Split left edge in two sections
+				//active_edges.insert(is,Edge(is->p1,Vector2(dl,p.y,-1),is->index));
+				//active_edges.insert(is,Edge(Vector2(dl,p.y,-1),is->p2,is->index));
+
+				while(is!=id)
+				{
+					t.outline.push_back(is->p2);
+					active_edges.erase(is++);
+				}
+
+				t.outline.push_back(last);
+
+				//Split right edge in two sections
+				list<Edge>::iterator it=id;
+				it++;
+				//active_edges.insert(it,Edge(Vector2(dr,p.y,-1),id->p2,id->index));
+				//active_edges.insert(it,Edge(id->p1,Vector2(dr,p.y,-1),id->index));
+				//active_edges.erase(id);
+			}
+		}
+		//Build shapes from the active_edges list
+		for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
+		{
+			int vindex=j->p1.index-1;
+			Shape t;
+			t.closed=false;
+			while(j!=active_edges.end())
+			{
+				if(j->p1.index!=vindex+1)
+					break;
+				else
+				{
+					vindex++;
+					t.outline.push_back(j->p1);
+					if(j->p2==t.outline.front())
 					{
-						ok=false;
+						t.closed=true;
 						break;
 					}
-					else
-						vindex++;
-					t.outline.push_back(j->p1);
+					j++;
 				}
-				if(ok)
-					cached.push_back(t);
 			}
+			cached.push_back(t);
+			if(j==active_edges.end())
+				break;
 		}
-
-/*		std::vector < Path >::iterator i=paths.begin();
-		for(i;i!=paths.end();i++)
-		{
-			if(i->points.size()==0)
-			{
-				LOG(TRACE,"Ignoring empty path");
-				continue;
-			}
-			//TODO: Shape construtor from path
-			shapes.push_back(Shape());
-			FromPathToShape(*i,shapes.back());
-			//Fill graphic data
-			if(i->state.validFill0)
-			{
-				if(i->state.fill0)
-				{
-					shapes.back().graphic.filled0=true;
-					if(Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
-						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state.fill0-1].Color;
-					else
-					{
-						shapes.back().graphic.color0=RGB(0,0,255);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType << "not implemented");
-					}
-				}
-				else
-					shapes.back().graphic.filled0=false;
-			}
-			else
-				shapes.back().graphic.filled0=false;
-
-
-			if(i->state.validFill1)
-			{
-				if(i->state.fill1)
-				{
-					shapes.back().graphic.filled1=true;
-					if(Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType==0x0)
-						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state.fill1-1].Color;
-					else
-					{
-						shapes.back().graphic.color1=RGB(0,0,255);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType << "not implemented");
-					}
-				}
-				else
-					shapes.back().graphic.filled1=false;
-			}
-			else
-				shapes.back().graphic.filled1=false;
-
-			if(i->state.validStroke)
-			{
-				if(i->state.stroke)
-				{
-					shapes.back().graphic.stroked=true;
-					shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state.stroke-1].Color;
-				}
-				else
-					shapes.back().graphic.stroked=false;
-			}
-			else
-				shapes.back().graphic.stroked=false;
-		}
-		for(unsigned int i=0;i<shapes.size();i++)
-		{
-			if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
-			{
-				shapes[i].graphic.filled0=1;
-				shapes[i].graphic.filled1=0;
-				shapes[i].graphic.color0=shapes[i].graphic.color1;
-				shapes[i].winding=0;
-			}
-		}*/
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}

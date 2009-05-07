@@ -829,6 +829,26 @@ void DefineShapeTag::Render()
 			int dl=1000000;
 			list<Edge>::iterator ir;
 			list<Edge>::iterator il;
+			bool connected_edge=false;
+			//Find if current edge follows one already on active_edge list
+			for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
+			{
+				if(j->p1==edges[i].p2)
+				{
+					active_edges.insert(j,edges[i]);
+					connected_edge=true;
+					break;
+				}
+			}
+			if(!connected_edge && !active_edges.empty() && active_edges.back().p2==edges[i].p1)
+			{
+				active_edges.push_back(edges[i]);
+				active_edges.sort(lex_order);
+				connected_edge=true;
+			}
+			if(connected_edge)
+				continue;
+
 			//Find active edges that are intersected on p.y. We find both the nearest edge on the left and on the right.
 			//If there are no edge on either side, the current edge is simply added to the active_edges list
 			for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
@@ -853,11 +873,10 @@ void DefineShapeTag::Render()
 			{
 				//We are an external edge. Add to the active_edge list
 				active_edges.push_back(edges[i]);
-				active_edges.sort(lex_order);
 			}
 			else
 			{
-				for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
+			/*	for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
 				{
 					cout << j->p1 << ' ' << j->p2 << ' ' << j->index << endl;
 				}
@@ -901,34 +920,36 @@ void DefineShapeTag::Render()
 				it++;
 				//active_edges.insert(it,Edge(Vector2(dr,p.y,-1),id->p2,id->index));
 				//active_edges.insert(it,Edge(id->p1,Vector2(dr,p.y,-1),id->index));
-				//active_edges.erase(id);
+				//active_edges.erase(id);*/
 			}
 		}
 		//Build shapes from the active_edges list
-		for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
+		for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();)
 		{
-			int vindex=j->p1.index-1;
 			Shape t;
 			t.closed=false;
-			while(j!=active_edges.end())
+			t.outline.push_back(j->p1);
+			Vector2 expected=j->p2;
+			while(1)
 			{
-				if(j->p1.index!=vindex+1)
+				j++;
+				if(j==active_edges.end())
 					break;
-				else
+				if(j->p1==expected)
 				{
-					vindex++;
 					t.outline.push_back(j->p1);
 					if(j->p2==t.outline.front())
 					{
 						t.closed=true;
 						break;
 					}
-					j++;
+					expected=j->p2;
 				}
+				else
+					break;
 			}
+
 			cached.push_back(t);
-			if(j==active_edges.end())
-				break;
 		}
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
@@ -936,10 +957,12 @@ void DefineShapeTag::Render()
 
 	std::vector < Shape >::iterator it=cached.begin();
 	glEnable(GL_STENCIL_TEST);
+	int count=0;
 	for(it;it!=cached.end();it++)
 	{
-		it->Render();
+		it->Render(count);
 		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+		count++;
 	}
 /*	it=cached.begin();
 	if(it!=cached.end())

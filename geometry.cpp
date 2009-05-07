@@ -23,7 +23,16 @@
 #include "logger.h"
 #include "geometry.h"
 
-void Shape::Render() const
+float colors[][3] = { { 0 ,0 ,0 },
+			{1, 0, 0},
+			{0, 1, 0},
+			{0 ,0, 1},
+			{1 ,1, 0},
+			{1,0 ,1},
+			{0,1,1},
+			{1,1,1}};
+
+void Shape::Render(int i) const
 {
 	if(graphic.filled0 && graphic.filled1)
 	{
@@ -77,7 +86,8 @@ void Shape::Render() const
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NEVER,0,0);
 		std::vector<Vector2>::const_iterator it=outline.begin();
-		glColor3ub(graphic.stroke_color.Red,graphic.stroke_color.Green,graphic.stroke_color.Blue);
+		//glColor3ub(graphic.stroke_color.Red,graphic.stroke_color.Green,graphic.stroke_color.Blue);
+		glColor3f(colors[i%8][0],colors[i%8][1],colors[i%8][2]);
 		if(closed)
 			glBegin(GL_LINE_LOOP);
 		else

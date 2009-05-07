@@ -7,7 +7,7 @@ libls.so: $(LIBOBJS)
 	g++ -pthread -shared -g -o $@ $^ -lSDL -lrt -lGL 
 
 %.o: %.cpp
-	g++ -pthread -g -O0 -c -o $@ $^ -D_GLIBCXX_DEBUG -I /usr/include/libxml2
+	g++ -pthread -g -O0 -c -o $@ $^ -D_GLIBCXX_NO_DEBUG -I /usr/include/libxml2
 
 .PHONY: clean
 clean:

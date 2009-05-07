@@ -148,7 +148,7 @@ public:
 	//DEBUG
 	//std::vector<Edge> edges;
 
-	void Render() const;
+	void Render(int i=0) const;
 };
 
 #endif

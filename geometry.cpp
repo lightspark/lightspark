@@ -17,11 +17,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <fstream>
 #include <math.h>
 #include <GL/gl.h>
 #include "swftypes.h"
 #include "logger.h"
 #include "geometry.h"
+
+using namespace std;
 
 float colors[][3] = { { 0 ,0 ,0 },
 			{1, 0, 0},
@@ -30,7 +33,7 @@ float colors[][3] = { { 0 ,0 ,0 },
 			{1 ,1, 0},
 			{1,0 ,1},
 			{0,1,1},
-			{1,1,1}};
+			{0,0,0}};
 
 void Shape::Render(int i) const
 {
@@ -128,7 +131,7 @@ void Shape::Render(int i) const
 
 bool Edge::yIntersect(const Vector2& p, int& x)
 {
-	if(p.y<=p1.y || p.y>=p2.y)
+	if(p.y<p1.y || p.y>=p2.y)
 		return false;
 	else
 	{
@@ -181,4 +184,24 @@ bool FilterIterator::operator==(FilterIterator& i)
 bool FilterIterator::operator!=(FilterIterator& i)
 {
 	return i.it!=it;
+}
+
+void Shape::dumpEdges()
+{
+		ofstream f("edges.dat");
+
+		for(int i=0;i<edges.size();i++)
+			f << edges[i].p1.x << ' ' << edges[i].p1.y << endl;
+/*			for(int k=0;k<cached[j].sub_shapes.size();k++)
+		{
+			for(int i=0;i<cached[j].sub_shapes[k].edges.size();i++)
+				f << cached[j].sub_shapes[k].edges[i].p1.x << ' ' << cached[j].sub_shapes[k].edges[i].p1.y << endl;
+		}*/
+		f.close();
+}
+
+void Shape::BuildFromEdges()
+{
+	for(int i=0;i<edges.size();i++)
+		outline.push_back(edges[i].p1);
 }

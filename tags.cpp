@@ -789,15 +789,7 @@ void DefineMorphShapeTag::Render()
 	glDisable(GL_STENCIL_TEST);
 }
 
-void FromShaperecordListToEdgeVector(const SHAPERECORD* cur, vector<Edge>& edges);
-
-bool lex_order(const Edge& a, const Edge& b)
-{
-	if(a.p1.index<b.p1.index)
-		return true;
-	else
-		return false;
-}
+void FromShaperecordListToShapeTree(SHAPERECORD*& cur, vector<Shape>& shapes, int& startX, int& startY);
 
 void DefineShapeTag::Render()
 {
@@ -806,151 +798,15 @@ void DefineShapeTag::Render()
 	{
 		timespec ts,td;
 		clock_gettime(CLOCK_REALTIME,&ts);
-		vector < Edge > edges;
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
-		FromShaperecordListToEdgeVector(cur,edges);
+		int startX=0,startY=0;
+		while(cur!=NULL)
+			FromShaperecordListToShapeTree(cur,cached,startX,startY);
 
-		ofstream f("edges.dat");
+		for(int i=0;i<cached.size();i++)
+			cached[i].BuildFromEdges();
 
-		for(int i=0;i<edges.size();i++)
-			f << edges[i].p1.x << ' ' << edges[i].p1.y << endl;
-
-		f.close();
-
-		sort(edges.begin(),edges.end());
-		list < Edge > active_edges;
-
-		for(int i=0;i<edges.size();i++)
-		{
-			const Vector2& p=edges[i].highPoint();
-			int x;
-			int dr=1000000;
-			int dl=1000000;
-			list<Edge>::iterator ir;
-			list<Edge>::iterator il;
-			bool connected_edge=false;
-			//Find if current edge follows one already on active_edge list
-			for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
-			{
-				if(j->p1==edges[i].p2)
-				{
-					active_edges.insert(j,edges[i]);
-					connected_edge=true;
-					break;
-				}
-			}
-			if(!connected_edge && !active_edges.empty() && active_edges.back().p2==edges[i].p1)
-			{
-				active_edges.push_back(edges[i]);
-				active_edges.sort(lex_order);
-				connected_edge=true;
-			}
-			if(connected_edge)
-				continue;
-
-			//Find active edges that are intersected on p.y. We find both the nearest edge on the left and on the right.
-			//If there are no edge on either side, the current edge is simply added to the active_edges list
-			for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
-			{
-				if(j->yIntersect(p,x))
-				{
-					if(x>p.x && dr>(x-p.x))
-					{
-						ir=j;
-						dr=x-p.x;
-					}
-					else if(x<p.x && dl>(p.x-x))
-					{
-						il=j;
-						dl=p.x-x;
-					}
-					else if(x==p.x)
-						LOG(ERROR,"Intersection at distance zero?");
-				}
-			}
-			if(dl==1000000 || dr==1000000)
-			{
-				//We are an external edge. Add to the active_edge list
-				active_edges.push_back(edges[i]);
-			}
-			else
-			{
-			/*	for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();j++)
-				{
-					cout << j->p1 << ' ' << j->p2 << ' ' << j->index << endl;
-				}
-
-				//Intersection to handle. We split the nearest intersect edge at (x,p.y) and find
-				//a cycle to in the active_edges list
-				Shape t;
-				t.closed=true;
-				list<Edge>::iterator is;
-				list<Edge>::iterator id;
-				Vector2 last(0,0,-1);
-				if(il->p1.index<ir->p1.index)
-				{
-					is=il;
-					id=ir;
-					t.outline.push_back(Vector2(dl,p.y,-1));
-					last=Vector2(dr,p.y,-1);
-				}
-				else
-				{
-					is=ir;
-					id=il;
-					t.outline.push_back(Vector2(dr,p.y,-1));
-					last=Vector2(dl,p.y,-1);
-				}
-
-				//Split left edge in two sections
-				//active_edges.insert(is,Edge(is->p1,Vector2(dl,p.y,-1),is->index));
-				//active_edges.insert(is,Edge(Vector2(dl,p.y,-1),is->p2,is->index));
-
-				while(is!=id)
-				{
-					t.outline.push_back(is->p2);
-					active_edges.erase(is++);
-				}
-
-				t.outline.push_back(last);
-
-				//Split right edge in two sections
-				list<Edge>::iterator it=id;
-				it++;
-				//active_edges.insert(it,Edge(Vector2(dr,p.y,-1),id->p2,id->index));
-				//active_edges.insert(it,Edge(id->p1,Vector2(dr,p.y,-1),id->index));
-				//active_edges.erase(id);*/
-			}
-		}
-		//Build shapes from the active_edges list
-		for(list<Edge>::iterator j=active_edges.begin();j!=active_edges.end();)
-		{
-			Shape t;
-			t.closed=false;
-			t.outline.push_back(j->p1);
-			Vector2 expected=j->p2;
-			while(1)
-			{
-				j++;
-				if(j==active_edges.end())
-					break;
-				if(j->p1==expected)
-				{
-					t.outline.push_back(j->p1);
-					if(j->p2==t.outline.front())
-					{
-						t.closed=true;
-						break;
-					}
-					expected=j->p2;
-				}
-				else
-					break;
-			}
-
-			cached.push_back(t);
-		}
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
@@ -1292,10 +1148,11 @@ void DefineShape3Tag::Render()
 	}
 }*/
 
-void FromShaperecordListToEdgeVector(const SHAPERECORD* cur, vector<Edge>& edges)
+void FromShaperecordListToShapeTree(SHAPERECORD*& cur, vector<Shape>& shapes, int& startX, int& startY)
 {
 	int count=0;
-	int startX=0,startY=0;
+	bool eos=false; //end of shape
+	shapes.push_back(Shape());
 	while(cur)
 	{
 		if(cur->TypeFlag)
@@ -1306,7 +1163,10 @@ void FromShaperecordListToEdgeVector(const SHAPERECORD* cur, vector<Edge>& edges
 				startX+=cur->DeltaX;
 				startY+=cur->DeltaY;
 				Vector2 p2(startX,startY,count+1);
-				edges.push_back(Edge(p1,p2,count));
+				shapes.back().edges.push_back(Edge(p1,p2,count));
+
+				if(p2==shapes.back().edges.front().p1)
+					eos=true;
 				count++;
 			}
 			else
@@ -1315,14 +1175,16 @@ void FromShaperecordListToEdgeVector(const SHAPERECORD* cur, vector<Edge>& edges
 				startX+=cur->ControlDeltaX;
 				startY+=cur->ControlDeltaY;
 				Vector2 p2(startX,startY,count+1);
-				edges.push_back(Edge(p1,p2,count));
+				shapes.back().edges.push_back(Edge(p1,p2,count));
 				count++;
 
 				Vector2 p3(startX,startY,count);
 				startX+=cur->AnchorDeltaX;
 				startY+=cur->AnchorDeltaY;
 				Vector2 p4(startX,startY,count+1);
-				edges.push_back(Edge(p3,p4,count));
+				shapes.back().edges.push_back(Edge(p3,p4,count));
+				if(p4==shapes.back().edges.front().p1)
+					eos=true;
 				count++;
 			}
 		}
@@ -1332,7 +1194,35 @@ void FromShaperecordListToEdgeVector(const SHAPERECORD* cur, vector<Edge>& edges
 			{
 				startX=cur->MoveDeltaX;
 				startY=cur->MoveDeltaY;
-				count++;
+
+				if(!shapes.back().edges.empty() && !eos)
+					abort();
+				//check if new point is inside poligon
+				vector<Edge>::iterator it=shapes.back().edges.begin();
+				int count=0;
+				int x;
+				for(it;it!=shapes.back().edges.end();it++)
+				{
+					if(it->yIntersect(Vector2(startX,startY),x))
+					{
+						if(x>startX)
+							count++;
+					}
+				}
+				if(count%2)
+				{
+					//point inside: start new subshape
+					cur=cur->next;
+					FromShaperecordListToShapeTree(cur,shapes.back().sub_shapes,startX,startY);
+					return;
+				}
+				else
+				{
+					//point outside: add new shape (if current is not empty)
+					if(!shapes.back().edges.empty())
+						return;
+				}
+				
 			}
 /*			if(cur->StateLineStyle)
 			{

@@ -139,6 +139,7 @@ public:
 	std::vector<Triangle> interior;
 	std::vector<Vector2> outline;
 	std::vector<Shape> sub_shapes;
+	std::vector<Edge> edges;
 
 	Graphic graphic;
 	bool closed;
@@ -146,9 +147,11 @@ public:
 	int id;
 
 	//DEBUG
-	//std::vector<Edge> edges;
+	void dumpEdges();
 
 	void Render(int i=0) const;
+	void BuildFromEdges();
+
 };
 
 #endif

@@ -1,6 +1,6 @@
 Lightspark Technical demo README
 
-First of all I'd like to thank you for testing the lightspatk project,
+First of all I'd like to thank you for testing the lightspark project,
 the current status is really primitive, but I'd like to show that something
 already works.
 
@@ -25,5 +25,5 @@ Now from firefox add-on configuration disable any other flash compatible plugins
 
 Open http://www.adobe.com/shockwave/welcome/
 
-You're warmly invited to send feedback and error report on the project mailing list (lighspark-devel@lists.sourceforge.net)
-or bug trakcer on sourceforge
+You're warmly invited to send feedback and error report on the project mailing list (lightspark-devel@lists.sourceforge.net)
+or bug tracker on sourceforge

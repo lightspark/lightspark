@@ -19,6 +19,7 @@
 
 #include <fstream>
 #include <math.h>
+#include <algorithm>
 #include <GL/gl.h>
 #include "swftypes.h"
 #include "logger.h"
@@ -48,11 +49,12 @@ void Shape::Render(int i) const
 	if(winding==0)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilFunc(GL_ALWAYS,0,0);
-		if(graphic.filled0)
+		glStencilFunc(GL_ALWAYS,color0,0xff);
+/*		if(graphic.filled0)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_INCR);
 		else
-			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);
+			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);*/
+		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)
@@ -66,11 +68,12 @@ void Shape::Render(int i) const
 	else if(winding==1)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilFunc(GL_ALWAYS,0,0);
-		if(graphic.filled1)
+		glStencilFunc(GL_ALWAYS,color1,0xff);
+		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
+/*		if(graphic.filled1)
 			glStencilOp(GL_KEEP,GL_KEEP,GL_INCR);
 		else
-			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);
+			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);*/
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)
@@ -83,7 +86,7 @@ void Shape::Render(int i) const
 	}
 
 
-//	if(graphic.stroked)
+	if(graphic.stroked)
 	{
 		glDisable(GL_STENCIL_TEST);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -131,14 +134,19 @@ void Shape::Render(int i) const
 
 bool Edge::yIntersect(const Vector2& p, int& x)
 {
-	if(p.y<p1.y || p.y>=p2.y)
+	if(p1.y!=p2.y && p.y==highPoint().y)
+	{
+		x=highPoint().x;
+		return true;
+	}
+	if(p.y<=highPoint().y || p.y>=lowPoint().y)
 		return false;
 	else
 	{
-		Vector2 c=p2-p1;
-		Vector2 d=p-p1;
+		Vector2 c=lowPoint()-highPoint();
+		Vector2 d=p-highPoint();
 
-		x=(c.x*d.y)/c.y+p1.x;
+		x=(c.x*d.y)/c.y+highPoint().x;
 		return true;
 	}
 }
@@ -188,20 +196,227 @@ bool FilterIterator::operator!=(FilterIterator& i)
 
 void Shape::dumpEdges()
 {
-		ofstream f("edges.dat");
+	ofstream f("edges.dat");
 
-		for(int i=0;i<edges.size();i++)
-			f << edges[i].p1.x << ' ' << edges[i].p1.y << endl;
+	for(int i=0;i<edges.size();i++)
+		f << edges[i].p1.x << ' ' << edges[i].p1.y << endl;
 /*			for(int k=0;k<cached[j].sub_shapes.size();k++)
-		{
-			for(int i=0;i<cached[j].sub_shapes[k].edges.size();i++)
-				f << cached[j].sub_shapes[k].edges[i].p1.x << ' ' << cached[j].sub_shapes[k].edges[i].p1.y << endl;
-		}*/
-		f.close();
+	{
+		for(int i=0;i<cached[j].sub_shapes[k].edges.size();i++)
+			f << cached[j].sub_shapes[k].edges[i].p1.x << ' ' << cached[j].sub_shapes[k].edges[i].p1.y << endl;
+	}*/
+	f.close();
+	ofstream g("interior.dat");
+
+	for(int i=0;i<interior.size();i++)
+	{
+		g << interior[i].v1.x << ' ' << interior[i].v1.y << endl;
+		g << interior[i].v2.x << ' ' << interior[i].v2.y << endl;
+		g << interior[i].v3.x << ' ' << interior[i].v3.y << endl;
+		g << interior[i].v1.x << ' ' << interior[i].v1.y << endl;
+		g << endl;
+	}
+
+	g.close();
+}
+
+void Shape::dumpInterior()
+{
+	ofstream f("interior.dat");
+
+	for(int i=0;i<interior.size();i++)
+	{
+		f << interior[i].v1.x << ' ' << interior[i].v1.y << endl;
+		f << interior[i].v2.x << ' ' << interior[i].v2.y << endl;
+		f << interior[i].v3.x << ' ' << interior[i].v3.y << endl;
+		f << interior[i].v1.x << ' ' << interior[i].v1.y << endl;
+		f << endl;
+	}
+
+	f.close();
 }
 
 void Shape::BuildFromEdges()
 {
+	if(edges.empty())
+		return;
+
+	bool coerent=true;
+	color0=edges[0].color0;
+	color1=edges[0].color1;
+
+	for(int i=1;i<edges.size();i++)
+	{
+		if(edges[i].color0!=color0 || edges[i].color1!=color1)
+		{
+			coerent=false;
+			break;
+		}
+	}
+
+	if(!coerent)
+	{
+		LOG(ERROR,"Not coerent shape");
+		return;
+	}
+
+	outline.reserve(edges.size());
 	for(int i=0;i<edges.size();i++)
 		outline.push_back(edges[i].p1);
+
+	if(edges.back().p2==outline.front())
+		closed=true;
+
+	//Calculate shape winding
+	int area=0;
+	int i;
+	for(i=0; i<outline.size()-1;i++)
+	{
+		area+=(outline[i].y+outline[i+1].y)*(outline[i+1].x-outline[i].x)/2;
+	}
+	area+=(outline[i].y+outline[0].y)*(outline[0].x-outline[i].x)/2;
+
+	if(area<0)
+		winding=1;
+	else
+		winding=0;
+	//If only one side of all edges is colored set the winding to the correct one
+/*	if(color0==0 && color1!=0)
+		winding=1;
+	else if(color0!=0 && color1==0)
+		winding=0;*/
+
+	graphic.stroked=false;
+	//Tessellate the shape using ear removing algorithm
+	if(closed)
+		TessellateSimple();
+
+}
+
+bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)
+{
+	if(start==end)
+		return false;
+	FilterIterator jj=start;
+	FilterIterator jj2=start;
+	jj2++;
+
+	int count=0;
+	int dist;
+
+	while(jj2!=end)
+	{
+		Edge e(*jj,*jj2,-1,-1);
+		if(e.yIntersect(point,dist))
+		{
+			if(dist>point.x)
+				count++;
+		}
+		jj=jj2++;
+	}
+	Edge e(*jj,*start,-1,-1);
+	if(e.yIntersect(point,dist))
+	{
+		if(dist>point.x)
+			count++;
+	}
+	return count%2;
+}
+
+void fixIndex(std::vector<Vector2>& points)
+{
+	int size=points.size();
+	for(int i=0;i<size;i++)
+		points[i].index=i;
+}
+
+inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,const Vector2& C)
+{
+	Vector2 v0 = C - A;
+	Vector2 v1 = B - A;
+	Vector2 v2 = P - A;
+
+	long dot00 = v0.dot(v0);
+	long dot01 = v0.dot(v1);
+	long dot02 = v0.dot(v2);
+	long dot11 = v1.dot(v1);
+	long dot12 = v1.dot(v2);
+
+	float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+	float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+	float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+	return (u >= 0) && (v>= 0) && (u + v <= 1);
+}
+
+void Shape::TessellateSimple()
+{
+	vector<Vector2> P=outline;
+	int i=0;
+	int count=0;
+	while(P.size()>3)
+	{
+		fixIndex(P);
+		int a=(i+1)%P.size();
+		int b=(i-1+P.size())%P.size();
+		FilterIterator ai(P.begin(),P.end(),i);
+		FilterIterator bi(P.end(),P.end(),i);
+		bool not_ear=false;
+
+		//Collinearity test
+		Vector2 t1=P[b]-P[a];
+		Vector2 t2=P[i]-P[a];
+		if(t2.y*t1.x==t2.x*t1.y)
+		{
+			i++;
+			i%=P.size();
+			continue;
+		}
+
+		if(!pointInPolygon(ai,bi,P[i]))
+		{
+			for(int j=0;j<P.size();j++)
+			{
+				if(j==i || j==a || j==b)
+					continue;
+				if(pointInTriangle(P[j],P[a],P[i],P[b]))
+				{
+					not_ear=true;
+					break;
+				}
+			}
+			if(!not_ear)
+			{
+				interior.push_back(Triangle(P[a],P[i],P[b]));
+				P.erase(P.begin()+i);
+				i=0;
+			}
+			else
+			{
+				i++;
+				i%=P.size();
+			}
+		}
+		else
+		{
+			i++;
+			i%=P.size();
+		}
+		count++;
+//		if(count>30000)
+//			break;
+	}
+	interior.push_back(Triangle(P[0],P[1],P[2]));
+}
+
+//Shape are compared using the minimum vertex
+bool Shape::operator<(const Shape& r) const
+{
+	Vector2 vl=*min_element(outline.begin(),outline.end());
+	Vector2 vr=*min_element(r.outline.begin(),r.outline.end());
+
+	if(vl<vr)
+		return true;
+	else
+		return false;
 }

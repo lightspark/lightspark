@@ -75,17 +75,14 @@ class Edge
 public:
 	Vector2 p1;
 	Vector2 p2;
-	int index;
-	Edge(const Vector2& a,const Vector2& b, int i):index(i),p1(a),p2(b)
+	int color0;
+	int color1;
+	Edge(const Vector2& a,const Vector2& b,int c1, int c2):color0(c1),color1(c2),p1(a),p2(b)
 	{
 	}
 	bool yIntersect(const Vector2& p, int& dist);
 //	bool xIntersect(int x,int32_t& d);
 //	bool edgeIntersect(const Edge& e);
-	bool operator==(int a)
-	{
-		return index==a;
-	}
 	bool operator<(const Edge& e) const
 	{
 		//Edges are ordered first by the lowest vertex and then by highest
@@ -120,6 +117,13 @@ public:
 		else
 			return p2;
 	}
+	const Vector2& lowPoint()
+	{
+		if(p1<p2)
+			return p2;
+		else
+			return p1;
+	}
 };
 
 class Graphic
@@ -135,6 +139,8 @@ public:
 
 class Shape
 {
+private:
+	void TessellateSimple();
 public:
 	std::vector<Triangle> interior;
 	std::vector<Vector2> outline;
@@ -145,12 +151,17 @@ public:
 	bool closed;
 	int winding;
 	int id;
+	int color0;
+	int color1;
 
 	//DEBUG
 	void dumpEdges();
+	void dumpInterior();
 
 	void Render(int i=0) const;
 	void BuildFromEdges();
+
+	bool operator<(const Shape& r) const;
 
 };
 

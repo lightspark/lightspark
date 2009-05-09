@@ -253,28 +253,23 @@ void DefineSpriteTag::printInfo(int t)
 void drawStenciled(const RECT& bounds, bool filled0, bool filled1, const RGBA& color0, const RGBA& color1)
 {
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glStencilFunc(GL_EQUAL,6,0xf);
 	glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
-	if(filled0)
-	{
-		glColor3ub(color0.Red,color0.Green,color0.Blue);
-		glBegin(GL_QUADS);
-			glVertex2i(bounds.Xmin,bounds.Ymin);
-			glVertex2i(bounds.Xmin,bounds.Ymax);
-			glVertex2i(bounds.Xmax,bounds.Ymax);
-			glVertex2i(bounds.Xmax,bounds.Ymin);
-		glEnd();
-	}
-	if(filled1)
-	{
-		glColor3ub(color1.Red,color1.Green,color1.Blue);
-		glBegin(GL_QUADS);
-			glVertex2i(bounds.Xmin,bounds.Ymin);
-			glVertex2i(bounds.Xmin,bounds.Ymax);
-			glVertex2i(bounds.Xmax,bounds.Ymax);
-			glVertex2i(bounds.Xmax,bounds.Ymin);
-		glEnd();
-	}
+/*	glStencilFunc(GL_EQUAL,0,0xff);
+	glColor3ub(255,0,0);
+	glBegin(GL_QUADS);
+		glVertex2i(bounds.Xmin,bounds.Ymin);
+		glVertex2i(bounds.Xmin,bounds.Ymax);
+		glVertex2i(bounds.Xmax,bounds.Ymax);
+		glVertex2i(bounds.Xmax,bounds.Ymin);
+	glEnd();*/
+	glStencilFunc(GL_EQUAL,1,0xff);
+	glColor3ub(0,255,0);
+	glBegin(GL_QUADS);
+		glVertex2i(bounds.Xmin,bounds.Ymin);
+		glVertex2i(bounds.Xmin,bounds.Ymax);
+		glVertex2i(bounds.Xmax,bounds.Ymax);
+		glVertex2i(bounds.Xmax,bounds.Ymin);
+	glEnd();
 }
 
 void ignore(istream& i, int count)
@@ -612,13 +607,6 @@ void fixIndex(list<Vector2>& points)
 	}
 }
 
-void fixIndex(std::vector<Vector2>& points)
-{
-	int size=points.size();
-	for(int i=0;i<size;i++)
-		points[i].index=i;
-}
-
 std::ostream& operator<<(std::ostream& s, const Vector2& p)
 {
 	s << "{ "<< p.x << ',' << p.y << " } [" << p.index  << ']' << std::endl;
@@ -672,7 +660,6 @@ std::ostream& operator<<(std::ostream& s, const GraphicStatus& p)
 	return s;
 }
 
-void TessellatePathSimple(Path& path, Shape& shape);
 void FromPathToShape(Path& path, Shape& shape)
 {
 	shape.outline=path.points;
@@ -681,7 +668,7 @@ void FromPathToShape(Path& path, Shape& shape)
 	if(/*path.skip_tess ||*/ !shape.closed || (!path.state.validFill0 && !path.state.validFill1))
 		return;
 
-	TessellatePathSimple(path,shape);
+//	TessellatePathSimple(path,shape);
 
 	shape.sub_shapes.resize(path.sub_paths.size());
 	for(int i=0;i<path.sub_paths.size();i++)
@@ -692,6 +679,7 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 
 void DefineMorphShapeTag::Render()
 {
+	return;
 	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
@@ -789,7 +777,7 @@ void DefineMorphShapeTag::Render()
 	glDisable(GL_STENCIL_TEST);
 }
 
-void FromShaperecordListToShapeTree(SHAPERECORD*& cur, vector<Shape>& shapes, int& startX, int& startY);
+void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes);
 
 void DefineShapeTag::Render()
 {
@@ -801,11 +789,12 @@ void DefineShapeTag::Render()
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
 		int startX=0,startY=0;
-		while(cur!=NULL)
-			FromShaperecordListToShapeTree(cur,cached,startX,startY);
+		FromShaperecordListToShapeVector(cur,cached);
 
 		for(int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges();
+
+		sort(cached.begin(),cached.end());
 
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
@@ -923,7 +912,7 @@ void DefineShape2Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
-		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	//	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	}
 /*	it=cached.begin();
 	if(it!=cached.end())
@@ -1071,36 +1060,6 @@ void DefineShape3Tag::Render()
 	paths.push_back(p);
 }*/
 
-/*bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)
-{
-	if(start==end)
-		return false;
-	FilterIterator jj=start;
-	FilterIterator jj2=start;
-	jj2++;
-
-	int count=0;
-	int dist;
-
-	while(jj2!=end)
-	{
-		Edge e(*jj,*jj2,-1);
-		if(e.yIntersect(point.y,dist,point.x))
-		{
-			if(dist-point.x>0)
-				count++;
-		}
-		jj=jj2++;
-	}
-	Edge e(*jj,*start,-1);
-	if(e.yIntersect(point.y,dist,point.x))
-	{
-		if(dist-point.x>0)
-			count++;
-	}
-	return count%2;
-}*/
-
 /*void SplitIntersectingPaths(vector<Path>& paths)
 {
 	for(int k=0;k<paths.size();k++)
@@ -1148,9 +1107,13 @@ void DefineShape3Tag::Render()
 	}
 }*/
 
-void FromShaperecordListToShapeTree(SHAPERECORD*& cur, vector<Shape>& shapes, int& startX, int& startY)
+void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 {
+	int startX=0;
+	int startY=0;
 	int count=0;
+	int color0=0;
+	int color1=0;
 	bool eos=false; //end of shape
 	shapes.push_back(Shape());
 	while(cur)
@@ -1163,7 +1126,7 @@ void FromShaperecordListToShapeTree(SHAPERECORD*& cur, vector<Shape>& shapes, in
 				startX+=cur->DeltaX;
 				startY+=cur->DeltaY;
 				Vector2 p2(startX,startY,count+1);
-				shapes.back().edges.push_back(Edge(p1,p2,count));
+				shapes.back().edges.push_back(Edge(p1,p2,color0,color1));
 
 				if(p2==shapes.back().edges.front().p1)
 					eos=true;
@@ -1175,14 +1138,14 @@ void FromShaperecordListToShapeTree(SHAPERECORD*& cur, vector<Shape>& shapes, in
 				startX+=cur->ControlDeltaX;
 				startY+=cur->ControlDeltaY;
 				Vector2 p2(startX,startY,count+1);
-				shapes.back().edges.push_back(Edge(p1,p2,count));
+				shapes.back().edges.push_back(Edge(p1,p2,color0,color1));
 				count++;
 
 				Vector2 p3(startX,startY,count);
 				startX+=cur->AnchorDeltaX;
 				startY+=cur->AnchorDeltaY;
 				Vector2 p4(startX,startY,count+1);
-				shapes.back().edges.push_back(Edge(p3,p4,count));
+				shapes.back().edges.push_back(Edge(p3,p4,color0,color1));
 				if(p4==shapes.back().edges.front().p1)
 					eos=true;
 				count++;
@@ -1197,48 +1160,23 @@ void FromShaperecordListToShapeTree(SHAPERECORD*& cur, vector<Shape>& shapes, in
 
 				if(!shapes.back().edges.empty() && !eos)
 					abort();
-				//check if new point is inside poligon
-				vector<Edge>::iterator it=shapes.back().edges.begin();
-				int count=0;
-				int x;
-				for(it;it!=shapes.back().edges.end();it++)
-				{
-					if(it->yIntersect(Vector2(startX,startY),x))
-					{
-						if(x>startX)
-							count++;
-					}
-				}
-				if(count%2)
-				{
-					//point inside: start new subshape
-					cur=cur->next;
-					FromShaperecordListToShapeTree(cur,shapes.back().sub_shapes,startX,startY);
-					return;
-				}
-				else
-				{
-					//point outside: add new shape (if current is not empty)
-					if(!shapes.back().edges.empty())
-						return;
-				}
-				
+				//add new shape (if current is not empty)
+				if(!shapes.back().edges.empty())
+					shapes.push_back(Shape());
 			}
 /*			if(cur->StateLineStyle)
 			{
 				cur_path->state.validStroke=true;
 				cur_path->state.stroke=cur->LineStyle;
-			}
+			}*/
 			if(cur->StateFillStyle1)
 			{
-				cur_path->state.validFill1=true;
-				cur_path->state.fill1=cur->FillStyle1;
+				color1=cur->FillStyle1;
 			}
 			if(cur->StateFillStyle0)
 			{
-				cur_path->state.validFill0=true;
-				cur_path->state.fill0=cur->FillStyle0;
-			}*/
+				color0=cur->FillStyle0;
+			}
 		}
 		cur=cur->next;
 	}
@@ -1363,95 +1301,6 @@ void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths
 		cur=cur->next;
 	}
 	//SplitIntersectingPaths(paths);*/
-}
-
-inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,const Vector2& C)
-{
-	Vector2 v0 = C - A;
-	Vector2 v1 = B - A;
-	Vector2 v2 = P - A;
-
-	long dot00 = v0.dot(v0);
-	long dot01 = v0.dot(v1);
-	long dot02 = v0.dot(v2);
-	long dot11 = v1.dot(v1);
-	long dot12 = v1.dot(v2);
-
-	float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
-	float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-	float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
-
-	return (u > 0) && (v > 0) && (u + v < 1);
-}
-
-
-void TessellatePathSimple(Path& path, Shape& shape)
-{
-/*	if(path.points.size()<3)
-	{
-		LOG(NO_INFO,"Tessellating a degenerate path");
-		return;
-	}
-	std::vector<Vector2> P=path.points;
-	int area=0;
-	int i;
-	for(i=0; i<P.size()-1;i++)
-	{
-		area+=(P[i].y+P[i+1].y)*(P[i+1].x-P[i].x)/2;
-	}
-	area+=(P[i].y+P[0].y)*(P[0].x-P[i].x)/2;
-
-	if(area<0)
-	{
-		//reverse(P.begin(),P.end());
-		shape.winding=1;
-	}
-	else
-		shape.winding=0;
-	i=0;
-	int count=0;
-	while(P.size()>3)
-	{
-		fixIndex(P);
-		int a=(i+1)%P.size();
-		int b=(i-1+P.size())%P.size();
-		FilterIterator ai(P.begin(),P.end(),i);
-		FilterIterator bi(P.end(),P.end(),i);
-		bool not_ear=false;
-		if(!pointInPolygon(ai,bi,P[i]))
-		{
-			for(int j=0;j<P.size();j++)
-			{
-				if(j==i)
-					continue;
-				if(pointInTriangle(P[j],P[a],P[i],P[b]))
-				{
-					not_ear=true;
-					break;
-				}
-			}
-			if(!not_ear)
-			{
-				shape.interior.push_back(Triangle(P[a],P[i],P[b]));
-				P.erase(P.begin()+i);
-				i=0;
-			}
-			else
-			{
-				i++;
-				i%=P.size();
-			}
-		}
-		else
-		{
-			i++;
-			i%=P.size();
-		}
-		count++;
-		if(count>30000)
-			break;
-	}
-	shape.interior.push_back(Triangle(P[0],P[1],P[2]));*/
 }
 
 void DefineFont2Tag::genGliphShape(vector<Shape>& s, int glyph)

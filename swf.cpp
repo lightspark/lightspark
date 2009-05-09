@@ -468,6 +468,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glOrtho(0,640,480,0,-100,0);
 	glMatrixMode(GL_MODELVIEW);
 
+	float* buffer=new float[640*240];
 	try
 	{
 		while(1)
@@ -492,6 +493,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			th->cur_frame->Render(sys->displayListLimit);
 
+			glReadPixels(0,240,640,240,GL_STENCIL_INDEX,GL_FLOAT,buffer);
+			for(int i=0;i<240*640;i++)
+				buffer[i]/=4;
+			glDrawPixels(640,240,GL_LUMINANCE,GL_FLOAT,buffer);
+
 			sem_post(&th->end_render);
 			if(sys->shutdown)
 				pthread_exit(0);
@@ -502,6 +508,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		LOG(ERROR, "Exception caught " << e);
 		exit(-1);
 	}
+	delete[] buffer;
 }
 
 void RenderThread::draw(Frame* f)

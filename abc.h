@@ -132,12 +132,142 @@ private:
 	std::vector<multiname_info> multinames;
 };
 
+struct option_detail
+{
+	u30 val;
+	u8 kind;
+};
+
+class method_info
+{
+friend std::istream& operator>>(std::istream& in, method_info& v);
+private:
+	u30 param_count;
+	u30 return_type;
+	std::vector<u30> param_type;
+	u30 name;
+	u8 flags;
+
+	u30 option_count;
+	std::vector<option_detail> options;
+//	param_info param_names
+};
+
+struct item_info
+{
+	u30 key;
+	u30 value;
+};
+
+class metadata_info
+{
+friend std::istream& operator>>(std::istream& in, metadata_info& v);
+private:
+	u30 name;
+	u30 item_count;
+	std::vector<item_info> items;
+};
+
+class traits_info
+{
+friend std::istream& operator>>(std::istream& in, traits_info& v);
+private:
+	enum { Slot=0,Method=1,Getter=2,Setter=3,Class=4,Function=5,Const=6};
+	enum { Final=0x10, Override=0x20, Metadata=0x40};
+	u30 name;
+	u8 kind;
+
+	u30 slot_id;
+	u30 type_name;
+	u30 vindex;
+	u8 vkind;
+	u30 classi;
+	u30 function;
+	u30 method;
+
+	u30 metadata_count;
+	std::vector<u30> metadata;
+};
+
+class instance_info
+{
+friend std::istream& operator>>(std::istream& in, instance_info& v);
+private:
+	enum { ClassSealed=0x01,ClassFinal=0x02,ClassInterface=0x04,ClassProtectedNs=0x08};
+	u30 name;
+	u30 supername;
+	u8 flags;
+	u30 protectedNs;
+	u30 interface_count;
+	std::vector<u30> interfaces;
+	u30 init;
+	u30 trait_count;
+	std::vector<traits_info> traits;
+};
+
+class class_info
+{
+friend std::istream& operator>>(std::istream& in, class_info& v);
+private:
+	u30 cinit;
+	u30 trait_count;
+	std::vector<traits_info> traits;
+};
+
+class script_info
+{
+friend std::istream& operator>>(std::istream& in, script_info& v);
+private:
+	u30 init;
+	u30 trait_count;
+	std::vector<traits_info> traits;
+};
+
+class exception_info
+{
+friend std::istream& operator>>(std::istream& in, exception_info& v);
+private:
+	u30 from;
+	u30 to;
+	u30 target;
+	u30 exc_type;
+	u30 var_name;
+};
+
+class method_body_info
+{
+friend std::istream& operator>>(std::istream& in, method_body_info& v);
+private:
+	u30 method;
+	u30 max_stack;
+	u30 local_count;
+	u30 init_scope_depth;
+	u30 max_scope_depth;
+	u30 code_length;
+	uint8_t* code;
+	u30 exception_count;
+	std::vector<exception_info> exceptions;
+	u30 trait_count;
+	std::vector<traits_info> traits;
+};
+
 class ABCVm
 {
 private:
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
+	u30 method_count;
+	std::vector<method_info> methods;
+	u30 metadata_count;
+	std::vector<metadata_info> metadata;
+	u30 class_count;
+	std::vector<instance_info> instances;
+	std::vector<class_info> classes;
+	u30 script_count;
+	std::vector<script_info> scripts;
+	u30 method_body_count;
+	std::vector<method_body_info> method_body;
 public:
 	ABCVm(std::istream& in);
 };
@@ -169,4 +299,5 @@ std::istream& operator>>(std::istream& in, namespace_info& v);
 std::istream& operator>>(std::istream& in, ns_set_info& v);
 std::istream& operator>>(std::istream& in, multiname_info& v);
 std::istream& operator>>(std::istream& in, cpool_info& v);
-
+std::istream& operator>>(std::istream& in, method_info& v);
+std::istream& operator>>(std::istream& in, instance_info& v);

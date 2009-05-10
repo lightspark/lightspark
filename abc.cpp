@@ -52,11 +52,33 @@ ABCVm::ABCVm(istream& in)
 	LOG(CALLS,"ABCVm version " << major << '.' << minor);
 	in >> constant_pool;
 
-	char dump[4];
-	in.read(dump,4);
-	printf("ABC dump %x %x %x %x\n",dump[0],dump[1],dump[2],dump[3]);
-	in.read(dump,4);
-	printf("ABC dump %x %x %x %x\n",dump[0],dump[1],dump[2],dump[3]);
+	in >> method_count;
+	methods.resize(method_count);
+	for(int i=0;i<method_count;i++)
+		in >> methods[i];
+
+	in >> metadata_count;
+	metadata.resize(metadata_count);
+	for(int i=0;i<metadata_count;i++)
+		in >> metadata[i];
+
+	in >> class_count;
+	instances.resize(class_count);
+	for(int i=0;i<class_count;i++)
+		in >> instances[i];
+	classes.resize(class_count);
+	for(int i=0;i<class_count;i++)
+		in >> classes[i];
+
+	in >> script_count;
+	scripts.resize(script_count);
+	for(int i=0;i<script_count;i++)
+		in >> scripts[i];
+
+	in >> method_body_count;
+	method_body.resize(method_body_count);
+	for(int i=0;i<method_body_count;i++)
+		in >> method_body[i];
 }
 
 istream& operator>>(istream& in, u32& v)
@@ -181,6 +203,24 @@ istream& operator>>(istream& in, namespace_info& v)
 	return in;
 }
 
+istream& operator>>(istream& in, method_body_info& v)
+{
+	in >> v.method >> v.max_stack >> v.local_count >> v.init_scope_depth >> v.max_scope_depth >> v.code_length;
+	v.code=new uint8_t[v.code_length];
+	in.read((char*)v.code,v.code_length);
+
+	in >> v.exception_count;
+	v.exceptions.resize(v.exception_count);
+	for(int i=0;i<v.exception_count;i++)
+		in >> v.exceptions[i];
+
+	in >> v.trait_count;
+	v.traits.resize(v.trait_count);
+	for(int i=0;i<v.trait_count;i++)
+		in >> v.traits[i];
+	return in;
+}
+
 istream& operator>>(istream& in, ns_set_info& v)
 {
 	in >> v.count;
@@ -224,6 +264,134 @@ istream& operator>>(istream& in, multiname_info& v)
 			LOG(ERROR,"Unexpected multiname kind");
 			break;
 	}
+	return in;
+}
+
+istream& operator>>(istream& in, method_info& v)
+{
+	in >> v.param_count;
+	in >> v.return_type;
+
+	v.param_type.resize(v.param_count);
+	for(int i=0;i<v.param_count;i++)
+		in >> v.param_type[i];
+	
+	in >> v.name >> v.flags;
+	if(v.flags&0x08)
+	{
+		in >> v.option_count;
+		v.options.resize(v.option_count);
+		for(int i=0;i<v.option_count;i++)
+		{
+			in >> v.options[i].val >> v.options[i].kind;
+			if(v.options[i].kind>0x1a)
+				LOG(ERROR,"Unexpected options type");
+		}
+	}
+	if(v.flags&0x80)
+	{
+		LOG(ERROR,"Params names not supported");
+		abort();
+	}
+	return in;
+}
+
+istream& operator>>(istream& in, script_info& v)
+{
+	in >> v.init >> v.trait_count;
+	v.traits.resize(v.trait_count);
+	for(int i=0;i<v.trait_count;i++)
+		in >> v.traits[i];
+	return in;
+}
+
+istream& operator>>(istream& in, class_info& v)
+{
+	in >> v.cinit >> v.trait_count;
+	v.traits.resize(v.trait_count);
+	for(int i=0;i<v.trait_count;i++)
+		in >> v.traits[i];
+	return in;
+}
+
+istream& operator>>(istream& in, metadata_info& v)
+{
+	in >> v.name;
+	in >> v.item_count;
+
+	v.items.resize(v.item_count);
+	for(int i=0;i<v.item_count;i++)
+	{
+		in >> v.items[i].key >> v.items[i].value;
+	}
+	return in;
+}
+
+istream& operator>>(istream& in, traits_info& v)
+{
+	in >> v.name >> v.kind;
+	switch(v.kind&0xf)
+	{
+		case traits_info::Slot:
+		case traits_info::Const:
+			in >> v.slot_id >> v.type_name >> v.vindex;
+			if(v.vindex)
+				in >> v.kind;
+			break;
+		case traits_info::Class:
+			in >> v.slot_id >> v.classi;
+			break;
+		case traits_info::Function:
+			in >> v.slot_id >> v.function;
+			break;
+		case traits_info::Method:
+		case traits_info::Getter:
+		case traits_info::Setter:
+			in >> v.slot_id >> v.method;
+			break;
+		default:
+			LOG(ERROR,"Unexpected kind " << v.kind);
+			break;
+	}
+
+	if(v.kind&traits_info::Metadata)
+	{
+		in >> v.metadata_count;
+		v.metadata.resize(v.metadata_count);
+		for(int i=0;i<v.metadata_count;i++)
+			in >> v.metadata[i];
+	}
+	return in;
+}
+
+istream& operator>>(istream& in, exception_info& v)
+{
+	in >> v.from >> v.to >> v.target >> v.exc_type >> v.var_name;
+	return in;
+}
+
+istream& operator>>(istream& in, instance_info& v)
+{
+	in >> v.name >> v.supername >> v.flags;
+	if(v.flags&instance_info::ClassProtectedNs)
+		in >> v.protectedNs;
+
+	in >> v.interface_count;
+	v.interfaces.resize(v.interface_count);
+	for(int i=0;i<v.interface_count;i++)
+	{
+		in >> v.interfaces[i];
+		if(v.interfaces[i]==0)
+			abort();
+	}
+
+	in >> v.init;
+
+	in >> v.trait_count;
+	v.traits.resize(v.trait_count);
+	for(int i=0;i<v.trait_count;i++)
+		in >> v.traits[i];
+	return in;
 }
 
 istream& operator>>(istream& in, cpool_info& v)

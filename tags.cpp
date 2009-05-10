@@ -263,7 +263,7 @@ void drawStenciled(const RECT& bounds, bool filled0, bool filled1, const RGBA& c
 		glVertex2i(bounds.Xmax,bounds.Ymin);
 	glEnd();*/
 	glStencilFunc(GL_EQUAL,1,0xff);
-	glColor3ub(0,255,0);
+	glColor3ub(0,255,255);
 	glBegin(GL_QUADS);
 		glVertex2i(bounds.Xmin,bounds.Ymin);
 		glVertex2i(bounds.Xmin,bounds.Ymax);
@@ -418,7 +418,6 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 
 void DefineTextTag::Render()
 {
-	return;
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -460,11 +459,11 @@ void DefineTextTag::Render()
 	int cur_height;
 	float matrix[16];
 	TextMatrix.get4DMatrix(matrix);
+	glEnable(GL_STENCIL_TEST);
 	for(it;it!=TextRecords.end();it++)
 	{
 		if(it->StyleFlagsHasFont)
 			cur_height=it->TextHeight;
-		glEnable(GL_STENCIL_TEST);
 		it2 = it->GlyphEntries.begin();
 		int x2=x,y2=y;
 		x2+=(*it).XOffset;
@@ -488,13 +487,10 @@ void DefineTextTag::Render()
 			x2+=it2->GlyphAdvance;
 			count++;
 		}
-//		glPushMatrix();
-//		glMultMatrixf(matrix);
-		drawStenciled(TextBounds,true,false,it->TextColor,RGBA());
-		glClear(GL_STENCIL_BUFFER_BIT);
-//		glPopMatrix();
-		glDisable(GL_STENCIL_TEST);
 	}
+	drawStenciled(TextBounds,true,false,it->TextColor,RGBA());
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glDisable(GL_STENCIL_TEST);
 }
 
 void DefineTextTag::printInfo(int t)
@@ -566,218 +562,37 @@ void DefineMorphShapeTag::printInfo(int t)
 	cerr << "DefineMorphShape Info" << endl;
 }
 
-class GraphicStatus
-{
-public:
-	bool validStroke;
-	int stroke;
-
-	bool validFill0;
-	bool validFill1;
-	int fill0;
-	int fill1;
-
-	GraphicStatus():validFill0(false),validFill1(false),validStroke(false),fill0(0),fill1(0){}
-};
-
-enum VTYPE {START_VERTEX=0,END_VERTEX,NORMAL_VERTEX,SPLIT_VERTEX,MERGE_VERTEX};
-
-class Path
-{
-public:
-	int id;
-	int skip_tess;
-
-	std::vector< Path > sub_paths;
-	std::vector< Vector2 > points;
-	VTYPE getVertexType(const Vector2& v);
-	bool closed;
-	GraphicStatus state;
-	Path():closed(false),skip_tess(false){};
-};
-
-void fixIndex(list<Vector2>& points)
-{
-	list<Vector2>::iterator it=points.begin();
-	int i=0;
-	for(it;it!=points.end();it++)
-	{
-		it->index=i;
-		i++;
-	}
-}
-
 std::ostream& operator<<(std::ostream& s, const Vector2& p)
 {
 	s << "{ "<< p.x << ',' << p.y << " } [" << p.index  << ']' << std::endl;
 	return s;
 }
 
-bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point);
-
-/*VTYPE getVertexType(const Vector2& v,const std::vector<Vector2>& points)
-{
-	int a=(v.index+1)%points.size();
-	int b=(v.index-1+points.size())%points.size();
-	FilterIterator ai(points.begin(),points.end(),v.index);
-	FilterIterator bi(points.end(),points.end(),v.index);
-
-	if(points[a] < v &&
-		points[b] < v)
-	{
-		if(!pointInPolygon(ai,bi,v))
-			return START_VERTEX;
-		else
-			return SPLIT_VERTEX;
-	}
-	else if(v < points[a] &&
-		points[b] < v)
-	{
-		return NORMAL_VERTEX;
-	}
-	else if(points[a] < v &&
-		v < points[b])
-	{
-		return NORMAL_VERTEX;
-	}
-	else if(v < points[a]&&
-		v < points[b])
-	{
-		if(!pointInPolygon(ai,bi,v))
-			return END_VERTEX;
-		else
-			return MERGE_VERTEX;
-	}
-	else
-		LOG(ERROR,"Impossible vertex type");
-}*/
-
-std::ostream& operator<<(std::ostream& s, const GraphicStatus& p)
-{
-	s << "ValidFill0 "<< p.validFill0 << std::endl;
-	s << "ValidFill1 "<< p.validFill1 << std::endl;
-	s << "ValidStroke "<< p.validStroke << std::endl;
-	return s;
-}
-
-void FromPathToShape(Path& path, Shape& shape)
-{
-	shape.outline=path.points;
-	shape.closed=path.closed;
-
-	if(/*path.skip_tess ||*/ !shape.closed || (!path.state.validFill0 && !path.state.validFill1))
-		return;
-
-//	TessellatePathSimple(path,shape);
-
-	shape.sub_shapes.resize(path.sub_paths.size());
-	for(int i=0;i<path.sub_paths.size();i++)
-		FromPathToShape(path.sub_paths[i],shape.sub_shapes[i]);
-}
-
-void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths);
+void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes, bool& def_color0, bool& def_color1);
 
 void DefineMorphShapeTag::Render()
 {
-	return;
-	std::vector < Path > paths;
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
 
-	FromShaperecordListToPaths(cur,paths);
-	std::vector < Path >::iterator i=paths.begin();
-	for(i;i!=paths.end();i++)
-	{
-		if(i->points.size()==0)
-		{
-			LOG(TRACE,"Ignoring empty path");
-			continue;
-		}
-		//TODO: Shape construtor from path
-		shapes.push_back(Shape());
-		FromPathToShape(*i,shapes.back());
+	bool def_color0,def_color1;
+	FromShaperecordListToShapeVector(cur,shapes,def_color0,def_color1);
 
-		//Fill graphic data
-		if(i->state.validFill0)
-		{
-			if(i->state.fill0)
-			{
-				shapes.back().graphic.filled0=true;
-				if(MorphFillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
-					shapes.back().graphic.color0=MorphFillStyles.FillStyles[i->state.fill0-1].EndColor;
-				else
-					shapes.back().graphic.color0=RGB(0,0,255);
-			}
-			else
-				shapes.back().graphic.filled0=false;
-		}
-		else
-			shapes.back().graphic.filled0=false;
+	for(int i=0;i<shapes.size();i++)
+		shapes[i].BuildFromEdges(def_color0^def_color1);
 
+	sort(shapes.begin(),shapes.end());
 
-		if(i->state.validFill1)
-		{
-			if(i->state.fill1)
-			{
-				shapes.back().graphic.filled1=true;
-				if(MorphFillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
-					shapes.back().graphic.color1=MorphFillStyles.FillStyles[i->state.fill1-1].EndColor;
-				else
-					shapes.back().graphic.color1=RGB(0,0,255);
-			}
-			else
-				shapes.back().graphic.filled1=false;
-		}
-		else
-			shapes.back().graphic.filled1=false;
-
-		if(i->state.validStroke)
-		{
-			if(i->state.stroke)
-			{
-				shapes.back().graphic.stroked=true;
-				shapes.back().graphic.stroke_color=MorphLineStyles.LineStyles[i->state.stroke-1].EndColor;
-			}
-			else
-				shapes.back().graphic.stroked=false;
-		}
-		else
-			shapes.back().graphic.stroked=false;
-	}
-/*	if(shapes.size()==1)
-	{
-		if(shapes[0].graphic.filled1 && !shapes[0].graphic.filled0)
-		{
-			shapes[0].graphic.filled0=shapes[0].graphic.filled1;
-			shapes[0].graphic.filled1=0;
-			shapes[0].graphic.color0=shapes[0].graphic.color1;
-		}
-	}*/
-	for(unsigned int i=0;i<shapes.size();i++)
-	{
-		if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
-		{
-			shapes[i].graphic.filled0=1;
-			shapes[i].graphic.filled1=0;
-			shapes[i].graphic.color0=shapes[i].graphic.color1;
-			shapes[i].winding=0;
-		}
-	}
 	std::vector < Shape >::iterator it=shapes.begin();
 	glEnable(GL_STENCIL_TEST);
 	for(it;it!=shapes.end();it++)
 	{
 		it->Render();
-		drawStenciled(EndBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	}
-/*	it=shapes.begin();
-	if(it!=shapes.end())
-		drawStenciled(EndBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);*/
+	drawStenciled(EndBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
-
-void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes);
 
 void DefineShapeTag::Render()
 {
@@ -788,11 +603,11 @@ void DefineShapeTag::Render()
 		clock_gettime(CLOCK_REALTIME,&ts);
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
-		int startX=0,startY=0;
-		FromShaperecordListToShapeVector(cur,cached);
+		bool def_color0,def_color1;
+		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
 
 		for(int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges();
+			cached[i].BuildFromEdges(def_color0^def_color1);
 
 		sort(cached.begin(),cached.end());
 
@@ -806,12 +621,9 @@ void DefineShapeTag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render(count);
-		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 		count++;
 	}
-/*	it=cached.begin();
-	if(it!=cached.end())
-		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);*/
+	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
@@ -823,86 +635,16 @@ void DefineShape2Tag::Render()
 	{
 		timespec ts,td;
 		clock_gettime(CLOCK_REALTIME,&ts);
-		std::vector < Path > paths;
-		std::vector < Shape > shapes;
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
-		FromShaperecordListToPaths(cur,paths);
-		std::vector < Path >::iterator i=paths.begin();
-		for(i;i!=paths.end();i++)
-		{
-			if(i->points.size()==0)
-			{
-				LOG(TRACE,"Ignoring empty path");
-				continue;
-			}
-			//TODO: Shape construtor from path
-			shapes.push_back(Shape());
-			FromPathToShape(*i,shapes.back());
-			//Fill graphic data
-			if(i->state.validFill0)
-			{
-				if(i->state.fill0)
-				{
-					shapes.back().graphic.filled0=true;
-					if(Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
-						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state.fill0-1].Color;
-					else
-					{
-						shapes.back().graphic.color0=RGB(0,0,255);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType << "not implemented");
-					}
-				}
-				else
-					shapes.back().graphic.filled0=false;
-			}
-			else
-				shapes.back().graphic.filled0=false;
+		bool def_color0,def_color1;
+		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
 
+		for(int i=0;i<cached.size();i++)
+			cached[i].BuildFromEdges(def_color0^def_color1);
 
-			if(i->state.validFill1)
-			{
-				if(i->state.fill1)
-				{
-					shapes.back().graphic.filled1=true;
-					if(Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType==0x0)
-						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state.fill1-1].Color;
-					else
-					{
-						shapes.back().graphic.color1=RGB(0,0,255);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType << "not implemented");
-					}
-				}
-				else
-					shapes.back().graphic.filled1=false;
-			}
-			else
-				shapes.back().graphic.filled1=false;
+		sort(cached.begin(),cached.end());
 
-			if(i->state.validStroke)
-			{
-				if(i->state.stroke)
-				{
-					shapes.back().graphic.stroked=true;
-					shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state.stroke-1].Color;
-				}
-				else
-					shapes.back().graphic.stroked=false;
-			}
-			else
-				shapes.back().graphic.stroked=false;
-		}
-		for(unsigned int i=0;i<shapes.size();i++)
-		{
-			if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
-			{
-				shapes[i].graphic.filled0=1;
-				shapes[i].graphic.filled1=0;
-				shapes[i].graphic.color0=shapes[i].graphic.color1;
-				shapes[i].winding=0;
-			}
-		}
-		cached=shapes;
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
@@ -912,11 +654,8 @@ void DefineShape2Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
-	//	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	}
-/*	it=cached.begin();
-	if(it!=cached.end())
-		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);*/
+	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
@@ -928,86 +667,16 @@ void DefineShape3Tag::Render()
 	{
 		timespec ts,td;
 		clock_gettime(CLOCK_REALTIME,&ts);
-		std::vector < Path > paths;
-		std::vector < Shape > shapes;
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
-		FromShaperecordListToPaths(cur,paths);
-		std::vector < Path >::iterator i=paths.begin();
-		for(i;i!=paths.end();i++)
-		{
-			if(i->points.size()==0)
-			{
-				LOG(TRACE,"Ignoring empty path");
-				continue;
-			}
-			//TODO: Shape construtor from path
-			shapes.push_back(Shape());
-			FromPathToShape(*i,shapes.back());
-			//Fill graphic data
-			if(i->state.validFill0)
-			{
-				if(i->state.fill0)
-				{
-					shapes.back().graphic.filled0=true;
-					if(Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType==0x0)
-						shapes.back().graphic.color0=Shapes.FillStyles.FillStyles[i->state.fill0-1].Color;
-					else
-					{
-						shapes.back().graphic.color0=RGB(0,0,255);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill0-1].FillStyleType << "not implemented");
-					}
-				}
-				else
-					shapes.back().graphic.filled0=false;
-			}
-			else
-				shapes.back().graphic.filled0=false;
+		bool def_color0,def_color1;
+		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
 
+		for(int i=0;i<cached.size();i++)
+			cached[i].BuildFromEdges(def_color0^def_color1);
 
-			if(i->state.validFill1)
-			{
-				if(i->state.fill1)
-				{
-					shapes.back().graphic.filled1=true;
-					if(Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType==0x0)
-						shapes.back().graphic.color1=Shapes.FillStyles.FillStyles[i->state.fill1-1].Color;
-					else
-					{
-						shapes.back().graphic.color1=RGB(0,0,255);
-						LOG(NOT_IMPLEMENTED,"Fill style " << Shapes.FillStyles.FillStyles[i->state.fill1-1].FillStyleType << "not implemented");
-					}
-				}
-				else
-					shapes.back().graphic.filled1=false;
-			}
-			else
-				shapes.back().graphic.filled1=false;
+		sort(cached.begin(),cached.end());
 
-			if(i->state.validStroke)
-			{
-				if(i->state.stroke)
-				{
-					shapes.back().graphic.stroked=true;
-					shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state.stroke-1].Color;
-				}
-				else
-					shapes.back().graphic.stroked=false;
-			}
-			else
-				shapes.back().graphic.stroked=false;
-		}
-		for(unsigned int i=0;i<shapes.size();i++)
-		{
-			if(shapes[i].graphic.filled1 && !shapes[i].graphic.filled0)
-			{
-				shapes[i].graphic.filled0=1;
-				shapes[i].graphic.filled1=0;
-				shapes[i].graphic.color0=shapes[i].graphic.color1;
-				shapes[i].winding=0;
-			}
-		}
-		cached=shapes;
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
@@ -1017,103 +686,28 @@ void DefineShape3Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
-		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	}
-/*	it=cached.begin();
-	if(it!=cached.end())
-		drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);*/
+	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
 
-/*void SplitPath(std::vector<Path>& paths,int a, int b)
-{
-	Path p;
-	p.closed=true;
-	if(a>b)
-	{
-		int c=a;
-		a=b;
-		b=c;
-	}
-	if(a==b)
-		LOG(ERROR,"SplitPath, internal error");
+/*! \brief Generate a vector of shapes from a SHAPERECORD list
+* * \param cur SHAPERECORD list head
+* * \param shapes a vector to be populated with the shapes
+* * \param def_color0 this will be set if color0 is set in any of the shapes
+* * \param def_color1 this will be set if color1 is set in any of the shapes */
 
-	std::vector<Vector2>::iterator first,end;
-	Path* cur_path;
-	for(unsigned int i=0;i<paths.size();i++)
-	{
-		first=find(paths[i].points.begin(),paths[i].points.end(),a);
-		end=find(paths[i].points.begin(),paths[i].points.end(),b);
-
-		if(first!=paths[i].points.end() && end!=paths[i].points.end())
-		{
-			p.state=paths[i].state;
-			cur_path=&paths[i];
-			break;
-		}
-	}
-
-	p.points.insert(p.points.begin(),first,end+1);
-	
-	cur_path->points.erase(first+1,end);
-	paths.push_back(p);
-}*/
-
-/*void SplitIntersectingPaths(vector<Path>& paths)
-{
-	for(int k=0;k<paths.size();k++)
-	{
-		if(paths[k].points.size()==217)
-			char a=0;
-
-		vector < Edge > edges;
-		bool next_path=false;
-		for(int i=1;i<paths[k].points.size();i++)
-		{
-			Edge t(paths[k].points[i-1],paths[k].points[i],i-1);
-			for(int j=0;j<edges.size();j++)
-			{
-				if(edges[j].edgeIntersect(t))
-				{
-					//LOG(NOT_IMPLEMENTED,"Self intersecting path");
-					//paths[k].points.clear();
-					paths[k].skip_tess=true;
-					next_path=true;
-					break;
-				}
-			}
-			if(next_path)
-				break;
-			edges.push_back(t);
-		}
-
-		//Check for point collisions
-		for(int i=0;i<paths[k].points.size();i++)
-		{
-			for(int j=i;j<paths[k].points.size();j++)
-			{
-				if(paths[k].points[i]==paths[k].points[j])
-				{
-					//LOG(NOT_IMPLEMENTED,"Colliding points in path");
-					//paths[k].points.clear();
-					paths[k].skip_tess=true;
-					next_path=true;
-					break;
-				}
-			}
-		}
-
-	}
-}*/
-
-void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
+void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bool& def_color0, bool& def_color1)
 {
 	int startX=0;
 	int startY=0;
 	int count=0;
 	int color0=0;
 	int color1=0;
+
+	def_color0=false;
+	def_color1=false;
 	bool eos=false; //end of shape
 	shapes.push_back(Shape());
 	while(cur)
@@ -1172,158 +766,34 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 			if(cur->StateFillStyle1)
 			{
 				color1=cur->FillStyle1;
+				def_color1=true;
 			}
 			if(cur->StateFillStyle0)
 			{
 				color0=cur->FillStyle0;
+				def_color0=true;
 			}
 		}
 		cur=cur->next;
 	}
-}
-
-void FromShaperecordListToPaths(const SHAPERECORD* cur, std::vector<Path>& paths)
-{
-/*	int vindex=0;
-	int startX=0,startY=0;
-	paths.push_back(Path());
-	Path* cur_path=&paths.back();
-	while(cur)
-	{
-		if(cur->TypeFlag)
-		{
-			if(cur_path->points.size()==0)
-			{
-				cur_path->points.push_back(Vector2(startX,startY,vindex));
-				vindex++;
-			}
-			if(cur->StraightFlag)
-			{
-				startX+=cur->DeltaX;
-				startY+=cur->DeltaY;
-				Vector2 nv(startX,startY,vindex);
-				if(nv==cur_path->points.front())
-				{
-					cur_path->closed=true;
-					GraphicStatus old_status=cur_path->state;
-					paths.push_back(Path());
-					cur_path=&paths.back();
-					cur_path->state=old_status;
-					vindex=0;
-				}
-				else
-					cur_path->points.push_back(Vector2(startX,startY,vindex));
-				vindex++;
-			}
-			else
-			{
-				startX+=cur->ControlDeltaX;
-				startY+=cur->ControlDeltaY;
-				if(Vector2(startX,startY,vindex)==cur_path->points.front())
-				{
-					LOG(ERROR,"Collision during path generation");
-					cur_path->closed=true;
-				}
-				else
-					cur_path->points.push_back(Vector2(startX,startY,vindex));
-				vindex++;
-
-				startX+=cur->AnchorDeltaX;
-				startY+=cur->AnchorDeltaY;
-				Vector2 nv(startX,startY,vindex);
-				if(nv==cur_path->points.front())
-				{
-					cur_path->closed=true;
-					GraphicStatus old_status=cur_path->state;
-					paths.push_back(Path());
-					cur_path=&paths.back();
-					cur_path->state=old_status;
-					vindex=0;
-				}
-				else
-					cur_path->points.push_back(nv);
-				vindex++;
-			}
-		}
-		else
-		{
-			if(cur->StateMoveTo)
-			{
-				startX=cur->MoveDeltaX;
-				startY=cur->MoveDeltaY;
-
-				Vector2 nv(startX,startY,vindex);
-				GraphicStatus old_status=cur_path->state;
-				bool found=false;
-				for(int i=0;i<paths.size();i++)
-				{
-					FilterIterator ai(paths[i].points.begin(),paths[i].points.end(),-1);
-					FilterIterator bi(paths[i].points.end(),paths[i].points.end(),-1);
-					if(pointInPolygon(ai,bi,nv))
-					{
-						paths[i].sub_paths.push_back(Path());
-						cur_path=&paths[i].sub_paths.back();
-						found=true;
-						break;
-					}
-				}
-				if(!found)
-				{
-					if(cur_path->points.size()!=0)
-					{
-						paths.push_back(Path());
-						cur_path=&paths.back();
-					}
-				}
-				cur_path->state=old_status;
-				vindex=0;
-				cur_path->points.push_back(nv);
-				vindex=1;
-
-			}
-			if(cur->StateLineStyle)
-			{
-				cur_path->state.validStroke=true;
-				cur_path->state.stroke=cur->LineStyle;
-			}
-			if(cur->StateFillStyle1)
-			{
-				cur_path->state.validFill1=true;
-				cur_path->state.fill1=cur->FillStyle1;
-			}
-			if(cur->StateFillStyle0)
-			{
-				cur_path->state.validFill0=true;
-				cur_path->state.fill0=cur->FillStyle0;
-				
-			}
-		}
-		cur=cur->next;
-	}
-	//SplitIntersectingPaths(paths);*/
 }
 
 void DefineFont2Tag::genGliphShape(vector<Shape>& s, int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
-	std::vector < Path > paths;
 	SHAPERECORD* cur=&(shape.ShapeRecords);
 
-	FromShaperecordListToPaths(cur,paths);
-	std::vector < Path >::iterator i=paths.begin();
-	for(i;i!=paths.end();i++)
-	{
-		if(i->points.size()==0)
-		{
-			LOG(TRACE,"Ignoring empty path");
-			continue;
-		}
-		//TODO: Shape construtor from path
-		s.push_back(Shape());
-		FromPathToShape(*i,s.back());
+	bool def_color0,def_color1;
+	FromShaperecordListToShapeVector(cur,s,def_color0,def_color1);
 
-		//Fill graphic data
-		s.back().graphic.filled0=true;
+	for(int i=0;i<s.size();i++)
+		s[i].BuildFromEdges(def_color0^def_color1);
+
+	sort(s.begin(),s.end());
+
+	//Should check fill state
+
+/*		s.back().graphic.filled0=true;
 		s.back().graphic.filled1=false;
 		s.back().graphic.stroked=false;
 
@@ -1350,59 +820,22 @@ void DefineFont2Tag::genGliphShape(vector<Shape>& s, int glyph)
 				s.back().graphic.stroked=false;
 		}
 		else
-			s.back().graphic.stroked=false;
-	}
+			s.back().graphic.stroked=false;*/
 }
 
 void DefineFontTag::genGliphShape(vector<Shape>& s,int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
-	std::vector < Path > paths;
 	SHAPERECORD* cur=&(shape.ShapeRecords);
 
-	FromShaperecordListToPaths(cur,paths);
-	std::vector < Path >::iterator i=paths.begin();
-	for(i;i!=paths.end();i++)
-	{
-		if(i->points.size()==0)
-		{
-			LOG(TRACE,"Ignoring empty path");
-			continue;
-		}
-		//TODO: Shape construtor from path
-		s.push_back(Shape());
-		FromPathToShape(*i,s.back());
+	bool def_color0,def_color1;
+	FromShaperecordListToShapeVector(cur,s,def_color0,def_color1);
 
-		//Fill graphic data
-		s.back().graphic.filled0=true;
-		s.back().graphic.filled1=false;
-		s.back().graphic.stroked=false;
+	for(int i=0;i<s.size();i++)
+		s[i].BuildFromEdges(def_color0^def_color1);
 
-		if(i->state.validFill0)
-		{
-			if(i->state.fill0!=1)
-				LOG(ERROR,"Not valid fill color for font");
-		}
-
-		if(i->state.validFill1)
-		{
-			LOG(ERROR,"Not valid fill color for font");
-		}
-
-		if(i->state.validStroke)
-		{
-			if(i->state.stroke)
-			{
-				s.back().graphic.stroked=true;
-				LOG(ERROR,"Not valid stroke color for font");
-//				s.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
-			}
-			else
-				s.back().graphic.stroked=false;
-		}
-		else
-			s.back().graphic.stroked=false;
-	}
+	sort(s.begin(),s.end());
+	//Should check fill state
 }
 
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)

@@ -159,7 +159,7 @@ public:
 	void dumpInterior();
 
 	void Render(int i=0) const;
-	void BuildFromEdges();
+	void BuildFromEdges(bool normalize=false);
 
 	bool operator<(const Shape& r) const;
 

@@ -46,14 +46,19 @@ void Shape::Render(int i) const
 		//th->graphic.color1=RGB(0,0,255);
 	}
 
+	if(edges.empty())
+		return;
+
+	if(color0!=0 && color0!=1)
+		LOG(ERROR,"color0 "<<color0);
+	if(color1!=0 && color1!=1)
+		LOG(ERROR,"color1"<<color0);
+
+	bool filled=false;
 	if(winding==0)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glStencilFunc(GL_ALWAYS,color0,0xff);
-/*		if(graphic.filled0)
-			glStencilOp(GL_KEEP,GL_KEEP,GL_INCR);
-		else
-			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);*/
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
@@ -64,16 +69,14 @@ void Shape::Render(int i) const
 			glVertex2i(it2->v3.x,it2->v3.y);
 		}
 		glEnd();
+		if(color0!=0)
+			filled=true;
 	}
 	else if(winding==1)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glStencilFunc(GL_ALWAYS,color1,0xff);
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
-/*		if(graphic.filled1)
-			glStencilOp(GL_KEEP,GL_KEEP,GL_INCR);
-		else
-			glStencilOp(GL_KEEP,GL_KEEP,GL_DECR);*/
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)
@@ -83,10 +86,12 @@ void Shape::Render(int i) const
 			glVertex2i(it2->v3.x,it2->v3.y);
 		}
 		glEnd();
+		if(color1!=0)
+			filled=true;
 	}
 
 
-	if(graphic.stroked)
+	if(graphic.stroked || !filled)
 	{
 		glDisable(GL_STENCIL_TEST);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -110,28 +115,6 @@ void Shape::Render(int i) const
 		sub_shapes[i].Render();
 }
 
-/*bool Edge::xIntersect(int x,int32_t& d)
-{
-	int u1,u2;
-	u1=min(x1,x2);
-	u2=max(x1,x2);
-	if((x>=u1) && (x<=u2))
-	{
-		if(x2==x1)
-			d=y1;
-		else
-		{
-			float m=(y2-y1);
-			m/=(x2-x1);
-			d=m*(x-x1);
-			d+=y1;
-		}
-		return true;
-	}
-	else
-		return false;
-}*/
-
 bool Edge::yIntersect(const Vector2& p, int& x)
 {
 	if(p1.y!=p2.y && p.y==highPoint().y)
@@ -150,20 +133,6 @@ bool Edge::yIntersect(const Vector2& p, int& x)
 		return true;
 	}
 }
-
-/*bool Edge::edgeIntersect(const Edge& e)
-{
-	float ua=(e.x2-e.x1)*(y1-e.y1)-(e.y2-e.y1)*(x1-e.x1);
-	float ub=(x2-x1)*(y1-e.y1)-(y2-y1)*(x1-e.x1);
-
-	ua/=(e.y2-e.y1)*(x2-x1)-(e.x2-e.x1)*(y2-y1);
-	ub/=(e.y2-e.y1)*(x2-x1)-(e.x2-e.x1)*(y2-y1);
-
-	if(ua>0 && ua<1 && ub>0 && ub<1)
-		return true;
-	else
-		return false;
-}*/
 
 FilterIterator::FilterIterator(const std::vector<Vector2>::const_iterator& i, const std::vector<Vector2>::const_iterator& e, int f):it(i),end(e),filter(f)
 {
@@ -236,7 +205,7 @@ void Shape::dumpInterior()
 	f.close();
 }
 
-void Shape::BuildFromEdges()
+void Shape::BuildFromEdges(bool normalize)
 {
 	if(edges.empty())
 		return;
@@ -268,7 +237,7 @@ void Shape::BuildFromEdges()
 		closed=true;
 
 	//Calculate shape winding
-	int area=0;
+	long area=0;
 	int i;
 	for(i=0; i<outline.size()-1;i++)
 	{
@@ -280,11 +249,15 @@ void Shape::BuildFromEdges()
 		winding=1;
 	else
 		winding=0;
-	//If only one side of all edges is colored set the winding to the correct one
-/*	if(color0==0 && color1!=0)
-		winding=1;
-	else if(color0!=0 && color1==0)
-		winding=0;*/
+
+/*	if(normalize)
+	{
+		//If only one side of all edges is colored set the winding to the correct one
+		if(color0==0 && color1!=0)
+			winding=1;
+		else if(color0!=0 && color1==0)
+			winding=0;
+	}*/
 
 	graphic.stroked=false;
 	//Tessellate the shape using ear removing algorithm
@@ -403,8 +376,10 @@ void Shape::TessellateSimple()
 			i%=P.size();
 		}
 		count++;
-//		if(count>30000)
-//			break;
+
+		//Force loop ending after a way too long time.
+		if(count>30000)
+			break;
 	}
 	interior.push_back(Triangle(P[0],P[1],P[2]));
 }

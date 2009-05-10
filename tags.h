@@ -1,5 +1,5 @@
 /**************************************************************************
-    Lighspark, a free flash player implementation
+    Lightspark, a free flash player implementation
 
     Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
 
@@ -479,6 +479,31 @@ class SoundStreamBlockTag: public Tag
 {
 public:
 	SoundStreamBlockTag(RECORDHEADER h, std::istream& in);
+};
+
+class MetadataTag: public Tag
+{
+public:
+	MetadataTag(RECORDHEADER h, std::istream& in);
+};
+
+class ScriptLimitsTag: public Tag
+{
+public:
+	ScriptLimitsTag(RECORDHEADER h, std::istream& in);
+};
+
+//Documented by gnash
+class SerialNumberTag: public Tag
+{
+public:
+	SerialNumberTag(RECORDHEADER h, std::istream& in);
+};
+
+class FileAttributesTag: public Tag
+{
+public:
+	FileAttributesTag(RECORDHEADER h, std::istream& in);
 };
 
 class TagFactory

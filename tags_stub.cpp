@@ -1,5 +1,5 @@
 /**************************************************************************
-    Lighspark, a free flash player implementation
+    Lightspark, a free flash player implementation
 
     Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
 
@@ -64,15 +64,36 @@ StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"SoundStreamHead2 Tag");
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
+	skip(in);
 }
 
 ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"ExportAssetsTag Tag");
+	skip(in);
+}
+
+MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"MetadataTag Tag");
+	skip(in);
+}
+
+ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"ScriptLimitsTag Tag");
+	skip(in);
+}
+
+SerialNumberTag::SerialNumberTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"SerialNumberTag Tag");
+	skip(in);
+}
+
+FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"FileAttributesTag Tag");
 	skip(in);
 }
 

@@ -1,5 +1,5 @@
 /**************************************************************************
-    Lighspark, a free flash player implementation
+    Lightspark, a free flash player implementation
 
     Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
 
@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " <file.swf>" << endl;
 		exit(-1);
 	}
-	Log::initLogging(ERROR);
+	Log::initLogging(TRACE);
 	sys=new SystemState;
 	sys->performance_profiling=true;
 	zlib_file_filter zf;

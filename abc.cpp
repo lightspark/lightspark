@@ -17,41 +17,24 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef VM_H
-#define VM_H
+#include "abc.h"
+#include "logger.h"
 
-#include <semaphore.h>
-#include <vector>
-#include "swftypes.h"
-class FunctionTag;
-class SWFObject;
-class Stack
+extern __thread SystemState* sys;
+
+using namespace std;
+long timeDiff(timespec& s, timespec& d);
+
+void ignore(istream& i, int count);
+
+DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-private:
-	std::vector<SWFObject> data;
-public:
-	const SWFObject& operator()(int i){return *(data.rbegin()+i);}
-	void push(const SWFObject& o){ data.push_back(o);}
-	SWFObject pop()
-	{
-		if(data.size()==0)
-			LOG(ERROR,"Empty stack");
-		SWFObject ret=data.back();
-		data.pop_back(); 
-		return ret;
-	}
-};
+	LOG(NOT_IMPLEMENTED,"DoABCTag");
+	skip(in);
+}
 
-class VirtualMachine
+SymbolClassTag::SymbolClassTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-private:
-	sem_t mutex;
-	std::vector<STRING> ConstantPool;
-public:
-	Stack stack;
-	VirtualMachine();
-	void setConstantPool(std::vector<STRING>& p);
-	STRING getConstantByIndex(int index);
-};
-
-#endif
+	LOG(NOT_IMPLEMENTED,"SymbolClassTag");
+	skip(in);
+}

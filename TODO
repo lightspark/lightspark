@@ -3,6 +3,11 @@ OpenGL:
 	pixel shader (fill styles sicuro, tessellazione boh)
 	clipping (si può fare il test, ma non l'aggiornamento del buffer -> via shader ?);
 
-occhio che crasha in uscita
 implement Bool and Number
 implementa lettura degli header http
+
+Official TODO Queue:
+-) Onor sandboxing
+-) Onor framerate
+-) Adapt to frame size
+-) Onor script limits

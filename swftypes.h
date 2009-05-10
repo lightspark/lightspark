@@ -1,5 +1,5 @@
 /**************************************************************************
-    Lighspark, a free flash player implementation
+    Lightspark, a free flash player implementation
 
     Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
 

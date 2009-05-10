@@ -1,5 +1,5 @@
 /**************************************************************************
-    Lighspark, a free flash player implementation
+    Lightspark, a free flash player implementation
 
     Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
 
@@ -20,6 +20,7 @@
 #include <GL/gl.h>
 #include "tags.h"
 #include "actions.h"
+#include "abc.h"
 #include "geometry.h"
 #include "swftypes.h"
 #include "swf.h"
@@ -84,6 +85,8 @@ Tag* TagFactory::readTag()
 			return new DefineEditTextTag(h,f);
 		case 39:
 			return new DefineSpriteTag(h,f);
+		case 41:
+			return new SerialNumberTag(h,f);
 		case 43:
 			return new FrameLabelTag(h,f);
 		case 45:
@@ -98,6 +101,16 @@ Tag* TagFactory::readTag()
 			return new DoInitActionTag(h,f);
 		case 60:
 			return new DefineVideoStreamTag(h,f);
+		case 65:
+			return new ScriptLimitsTag(h,f);
+		case 69:
+			return new FileAttributesTag(h,f);
+		case 76:
+			return new SymbolClassTag(h,f);
+		case 77:
+			return new MetadataTag(h,f);
+		case 82:
+			return new DoABCTag(h,f);
 		default:
 			LOG(NOT_IMPLEMENTED,"Unsupported tag type " << (h>>6));
 			Tag t(h,f);
@@ -1046,10 +1059,9 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,
 	in >> Name;
 	if(sys->version>=6)
 	{
-		UI8 NamedAnchor;
-		in >> NamedAnchor;
-		if(NamedAnchor==0)
-			LOG(ERROR,"Not a named anchor");
+		UI8 NamedAnchor=in.peek();
+		if(NamedAnchor==1)
+			in >> NamedAnchor;
 	}
 }
 

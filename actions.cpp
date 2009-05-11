@@ -54,7 +54,7 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 
 int DoActionTag::getDepth() const
 {
-	//The last, fater any other valid depth and initactions
+	//The last, after any other valid depth and initactions
 	return 0x20000;
 }
 

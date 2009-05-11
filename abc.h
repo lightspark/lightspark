@@ -37,7 +37,7 @@ friend std::istream& operator>>(std::istream& in, u32& v);
 private:
 	uint32_t val;
 public:
-	operator uint32_t(){return val;}
+	operator uint32_t() const{return val;}
 };
 
 class u30
@@ -46,7 +46,7 @@ friend std::istream& operator>>(std::istream& in, u30& v);
 private:
 	uint32_t val;
 public:
-	operator uint32_t(){return val;}
+	operator uint32_t() const{return val;}
 };
 
 class u16
@@ -55,7 +55,7 @@ friend std::istream& operator>>(std::istream& in, u16& v);
 private:
 	uint32_t val;
 public:
-	operator uint32_t(){return val;}
+	operator uint32_t() const{return val;}
 };
 
 class u8
@@ -64,7 +64,7 @@ friend std::istream& operator>>(std::istream& in, u8& v);
 private:
 	uint32_t val;
 public:
-	operator uint32_t(){return val;}
+	operator uint32_t() const{return val;}
 };
 
 class d64
@@ -83,7 +83,7 @@ private:
 	u30 size;
 	std::string val;
 public:
-	operator std::string(){return val;}
+	operator std::string() const{return val;}
 };
 
 class namespace_info
@@ -115,6 +115,7 @@ private:
 class cpool_info
 {
 friend std::istream& operator>>(std::istream& in, cpool_info& v);
+friend class ABCVm;
 private:
 	u30 int_count;
 	std::vector<s32> integer;
@@ -138,9 +139,12 @@ struct option_detail
 	u8 kind;
 };
 
+class method_body_info;
+
 class method_info
 {
 friend std::istream& operator>>(std::istream& in, method_info& v);
+friend class ABCVm;
 private:
 	u30 param_count;
 	u30 return_type;
@@ -151,6 +155,9 @@ private:
 	u30 option_count;
 	std::vector<option_detail> options;
 //	param_info param_names
+public:
+	method_body_info* body;
+	method_info():body(NULL){}
 };
 
 struct item_info
@@ -217,6 +224,7 @@ private:
 class script_info
 {
 friend std::istream& operator>>(std::istream& in, script_info& v);
+friend class ABCVm;
 private:
 	u30 init;
 	u30 trait_count;
@@ -237,6 +245,7 @@ private:
 class method_body_info
 {
 friend std::istream& operator>>(std::istream& in, method_body_info& v);
+friend class ABCVm;
 private:
 	u30 method;
 	u30 max_stack;
@@ -268,11 +277,14 @@ private:
 	std::vector<script_info> scripts;
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
+	const method_info* get_method(unsigned int m) const;
+	void printMethod(const method_info* m) const;
 public:
 	ABCVm(std::istream& in);
+	void Run();
 };
 
-class DoABCTag: public Tag
+class DoABCTag: public DisplayListTag
 {
 private:
 	UI32 Flags;
@@ -280,6 +292,8 @@ private:
 	ABCVm* vm;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
+	void Render( );
+	int getDepth() const;
 };
 
 class SymbolClassTag: public Tag

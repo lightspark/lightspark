@@ -19,6 +19,12 @@
 
 #include "abc.h"
 #include "logger.h"
+#define __STDC_LIMIT_MACROS
+#include <llvm/Module.h>
+#include <llvm/DerivedTypes.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/Analysis/Verifier.h>
+
 
 extern __thread SystemState* sys;
 
@@ -27,7 +33,12 @@ long timeDiff(timespec& s, timespec& d);
 
 void ignore(istream& i, int count);
 
-DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+void puppa()
+{
+	cout << "poba" << endl;
+}
+
+DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	int dest=in.tellg();
 	dest+=getSize();
@@ -38,6 +49,17 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 
 	if(dest!=in.tellg())
 		LOG(ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
+}
+
+int DoABCTag::getDepth() const
+{
+	return 0x20001;
+}
+
+void DoABCTag::Render()
+{
+	LOG(NOT_IMPLEMENTED,"ABC Exec " << Name);
+	vm->Run();
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, std::istream& in):Tag(h,in)
@@ -78,7 +100,57 @@ ABCVm::ABCVm(istream& in)
 	in >> method_body_count;
 	method_body.resize(method_body_count);
 	for(int i=0;i<method_body_count;i++)
+	{
 		in >> method_body[i];
+		//Link method body with method signature
+		if(methods[method_body[i].method].body!=NULL)
+			LOG(ERROR,"Duplicate body assigment")
+		else
+			methods[method_body[i].method].body=&method_body[i];
+	}
+}
+
+inline const method_info* ABCVm::get_method(unsigned int m) const
+{
+	if(m<method_count)
+		return &methods[m];
+	else
+	{
+		LOG(ERROR,"Requested invalid method");
+		return NULL;
+	}
+}
+
+void ABCVm::Run()
+{
+	//Take last script entry and run it
+	const method_info* m=get_method(scripts.back().init);
+	printMethod(m);
+	llvm::Module module("abc jit");
+	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, vector<const llvm::Type*>(), false);
+	llvm::Function* F=new llvm::Function(FT,llvm::Function::ExternalLinkage,"puppa",&module);
+	module.dump();
+	llvm::ExecutionEngine* ex=llvm::ExecutionEngine::create(&module);
+	ex->addGlobalMapping(F,(void*)puppa);
+	void* f_ptr=ex->getPointerToFunction(F);
+	cout << f_ptr << endl;
+
+}
+
+void ABCVm::printMethod(const method_info* m) const
+{
+	string n;
+	if(m->name>0)
+		n=constant_pool.strings[m->name-1];
+	else
+		n="<Anonymous>";
+	LOG(CALLS, "Method " << n);
+	LOG(CALLS,"Params n: " << m->param_count);
+	LOG(CALLS,"Return " << m->return_type);
+	LOG(CALLS,"Flags " << m->flags);
+
+	cout << "body dump len " << m->body->code_length << endl;
+	printf("%x %x %x %x\n",m->body->code[0],m->body->code[1],m->body->code[2],m->body->code[3]);
 }
 
 istream& operator>>(istream& in, u32& v)

@@ -19,11 +19,14 @@
 
 #include "abc.h"
 #include "logger.h"
-#define __STDC_LIMIT_MACROS
+//#define __STDC_LIMIT_MACROS
 #include <llvm/Module.h>
 #include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Analysis/Verifier.h>
+#include <llvm/Constants.h> 
+#include <llvm/Support/IRBuilder.h> 
+#include <llvm/Target/TargetData.h> 
 
 
 extern __thread SystemState* sys;
@@ -33,9 +36,9 @@ long timeDiff(timespec& s, timespec& d);
 
 void ignore(istream& i, int count);
 
-void puppa()
+void puppa(void* arg)
 {
-	cout << "poba" << endl;
+	cout << "poba " << arg << endl;
 }
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
@@ -127,14 +130,29 @@ void ABCVm::Run()
 	const method_info* m=get_method(scripts.back().init);
 	printMethod(m);
 	llvm::Module module("abc jit");
-	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, vector<const llvm::Type*>(), false);
-	llvm::Function* F=new llvm::Function(FT,llvm::Function::ExternalLinkage,"puppa",&module);
-	module.dump();
 	llvm::ExecutionEngine* ex=llvm::ExecutionEngine::create(&module);
-	ex->addGlobalMapping(F,(void*)puppa);
-	void* f_ptr=ex->getPointerToFunction(F);
-	cout << f_ptr << endl;
+	vector<const llvm::Type*> puppa_sig;
+	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
+	puppa_sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	llvm::FunctionType* WT=llvm::FunctionType::get(llvm::Type::VoidTy, vector<const llvm::Type*>(), false);
+	llvm::Function* W=llvm::Function::Create(WT,llvm::Function::ExternalLinkage,"wrapper",&module);
+	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, puppa_sig, false);
+	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"puppa",&module);
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", W);
+	llvm::IRBuilder<> Builder;
+	Builder.SetInsertPoint(BB);
+	llvm::Constant* constInt = llvm::ConstantInt::get(ptr_type, (uintptr_t)this);
+	llvm::Value* constPtr = llvm::ConstantExpr::getIntToPtr(constInt, llvm::PointerType::getUnqual(ptr_type));
+	Builder.CreateCall(F, constPtr);
+	Builder.CreateRetVoid();
 
+	module.dump();
+	cout << "this: " << this << endl;
+	ex->addGlobalMapping(F,(void*)puppa);
+	void* f_ptr=ex->getPointerToFunction(W);
+	
+	void (*FP)() = (void (*)())f_ptr;
+	FP();
 }
 
 void ABCVm::printMethod(const method_info* m) const

@@ -7,7 +7,7 @@ libls.so: $(LIBOBJS)
 	g++ -pthread -shared -g -o $@ $^ `pkg-config --cflags --libs sdl gl`  -lrt 
 
 %.o: %.cpp
-	g++ -pthread -g -O0 -c -o $@ $^ -D_GLIBCXX_NO_DEBUG `pkg-config --cflags libxml-2.0`
+	g++ -pthread -g -O0 -c -o $@ $^ -D_GLIBCXX_NO_DEBUG `pkg-config --cflags libxml-2.0` `llvm-config --cxxflags core`
 
 .PHONY: clean
 clean:

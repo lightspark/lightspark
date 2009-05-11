@@ -19,6 +19,7 @@
 
 #include "abc.h"
 #include "logger.h"
+#include "swftypes.h"
 //#define __STDC_LIMIT_MACROS
 #include <llvm/Module.h>
 #include <llvm/DerivedTypes.h>
@@ -26,7 +27,8 @@
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Constants.h> 
 #include <llvm/Support/IRBuilder.h> 
-#include <llvm/Target/TargetData.h> 
+#include <llvm/Target/TargetData.h>
+#include <sstream>
 
 
 extern __thread SystemState* sys;
@@ -35,11 +37,6 @@ using namespace std;
 long timeDiff(timespec& s, timespec& d);
 
 void ignore(istream& i, int count);
-
-void puppa(void* arg)
-{
-	cout << "poba " << arg << endl;
-}
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
@@ -71,8 +68,40 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	skip(in);
 }
 
-ABCVm::ABCVm(istream& in)
+void ABCVm::registerFunctions()
 {
+	vector<const llvm::Type*> sig;
+	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
+
+	// (ABCVm*)
+	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushScope",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushScope);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNull",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushNull);
+
+	// (ABCVm*,int)
+	sig.push_back(llvm::IntegerType::get(32));
+	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findPropStrict",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::findPropStrict);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newClass",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::newClass);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"initProperty",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::initProperty);
+}
+
+ABCVm::ABCVm(istream& in):module("abc jit")
+{
+	ex=llvm::ExecutionEngine::create(&module);
+
 	in >> minor >> major;
 	LOG(CALLS,"ABCVm version " << major << '.' << minor);
 	in >> constant_pool;
@@ -111,9 +140,11 @@ ABCVm::ABCVm(istream& in)
 		else
 			methods[method_body[i].method].body=&method_body[i];
 	}
+
+	registerFunctions();
 }
 
-inline const method_info* ABCVm::get_method(unsigned int m) const
+inline method_info* ABCVm::get_method(unsigned int m)
 {
 	if(m<method_count)
 		return &methods[m];
@@ -124,51 +155,269 @@ inline const method_info* ABCVm::get_method(unsigned int m) const
 	}
 }
 
+void ABCVm::pushNull(ABCVm* th)
+{
+	cout << "pushNull" << endl;
+}
+
+void ABCVm::pushScope(ABCVm* th)
+{
+	cout << "pushScope" << endl;
+}
+
+void ABCVm::findPropStrict(ABCVm* th, int n)
+{
+	cout << "findPropStrict " << n << endl;
+	th->printMultiname(n);
+}
+
+void ABCVm::initProperty(ABCVm* th, int n)
+{
+	cout << "initProperty " << n << endl;
+	th->printMultiname(n);
+}
+
+void ABCVm::newClass(ABCVm* th, int n)
+{
+	cout << "newClass " << n << endl;
+	th->printClass(n);
+}
+
+void ABCVm::getLocal(ABCVm* th, int n)
+{
+	cout << "getlocal " << n << endl;
+}
+
+llvm::Function* ABCVm::synt_method(method_info* m)
+{
+	stringstream code(m->body->code);
+
+	//The pointer size compatible int type will be useful
+	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
+
+	//Initialize LLVM representation of method
+	vector<const llvm::Type*> sig;
+	if(m->param_count)
+		LOG(ERROR,"Arguments not supported");
+
+	llvm::FunctionType* method_type=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",&module);
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", m->f);
+	llvm::IRBuilder<> Builder;
+	Builder.SetInsertPoint(BB);
+
+	//We define a couple of variables that will be used a lot
+	llvm::Constant* constant;
+	llvm::Value* value;
+	//let's give access to 'this' pointer to llvm
+	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)this);
+	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(ptr_type));
+
+	//Each case block builds the correct parameters for the interpreter function and call it
+	u8 opcode;
+	while(1)
+	{
+		code >> opcode;
+		if(code.eof())
+			break;
+
+		switch(opcode)
+		{
+			case 0x20:
+			{
+				//pushnull
+				Builder.CreateCall(ex->FindFunctionNamed("pushNull"), th);
+				break;
+			}
+			case 0x30:
+			{
+				//pushscope
+				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), th);
+				break;
+			}
+			case 0x47:
+			{
+				//returnvoid
+				Builder.CreateRetVoid();
+				break;
+			}
+			case 0x58:
+			{
+				//newclass
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("newClass"), th, constant);
+				break;
+			}
+			case 0x5d:
+			{
+				//findpropstrict
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("findPropStrict"), th, constant);
+				break;
+			}
+			case 0x68:
+			{
+				//initproperty
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("initProperty"), th, constant);
+				break;
+			}
+			case 0xd0:
+			{
+				//getlocal_n
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
+				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
+				break;
+			}
+			default:
+				LOG(ERROR,"Not implemented instruction");
+				u8 a,b,c;
+				code >> a >> b >> c;
+				LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
+						<< (unsigned int)b << ' ' << (unsigned int)c);
+				Builder.CreateRetVoid();
+				return m->f;
+		}
+	}
+	return m->f;
+}
+
 void ABCVm::Run()
 {
 	//Take last script entry and run it
-	const method_info* m=get_method(scripts.back().init);
+	method_info* m=get_method(scripts.back().init);
 	printMethod(m);
-	llvm::Module module("abc jit");
-	llvm::ExecutionEngine* ex=llvm::ExecutionEngine::create(&module);
-	vector<const llvm::Type*> puppa_sig;
-	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
-	puppa_sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	llvm::FunctionType* WT=llvm::FunctionType::get(llvm::Type::VoidTy, vector<const llvm::Type*>(), false);
-	llvm::Function* W=llvm::Function::Create(WT,llvm::Function::ExternalLinkage,"wrapper",&module);
-	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, puppa_sig, false);
-	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"puppa",&module);
-	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", W);
-	llvm::IRBuilder<> Builder;
-	Builder.SetInsertPoint(BB);
-	llvm::Constant* constInt = llvm::ConstantInt::get(ptr_type, (uintptr_t)this);
-	llvm::Value* constPtr = llvm::ConstantExpr::getIntToPtr(constInt, llvm::PointerType::getUnqual(ptr_type));
-	Builder.CreateCall(F, constPtr);
-	Builder.CreateRetVoid();
+	synt_method(m);
 
 	module.dump();
-	cout << "this: " << this << endl;
-	ex->addGlobalMapping(F,(void*)puppa);
-	void* f_ptr=ex->getPointerToFunction(W);
+	void* f_ptr=ex->getPointerToFunction(m->f);
 	
 	void (*FP)() = (void (*)())f_ptr;
 	FP();
 }
 
+string ABCVm::getString(unsigned int s) const
+{
+	if(s)
+		return constant_pool.strings[s];
+	else
+		return "<Anonymous>";
+}
+
+void ABCVm::printMultiname(int mi) const
+{
+	if(mi==0)
+	{
+		LOG(CALLS, "Any (*)");
+		return;
+	}
+	const multiname_info* m=&constant_pool.multinames[mi];
+	switch(m->kind)
+	{
+		case 0x07:
+			LOG(CALLS, "QName: " << getString(m->name) );
+			printNamespace(m->ns);
+			break;
+		case 0x0d:
+			LOG(CALLS, "QNameA");
+			break;
+		case 0x0f:
+			LOG(CALLS, "RTQName");
+			break;
+		case 0x10:
+			LOG(CALLS, "RTQNameA");
+			break;
+		case 0x11:
+			LOG(CALLS, "RTQNameL");
+			break;
+		case 0x12:
+			LOG(CALLS, "RTQNameLA");
+			break;
+		case 0x09:
+		{
+			LOG(CALLS, "Multiname: " << getString(m->name));
+			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
+			printNamespaceSet(s);
+			break;
+		}
+		case 0x0e:
+			LOG(CALLS, "MultinameA");
+			break;
+		case 0x1b:
+			LOG(CALLS, "MultinameL");
+			break;
+		case 0x1c:
+			LOG(CALLS, "MultinameLA");
+			break;
+	}
+}
+
+void ABCVm::printNamespace(int n) const
+{
+	if(n==0)
+	{
+		LOG(CALLS,"Any (*)");
+		return;
+	}
+
+	const namespace_info* m=&constant_pool.namespaces[n];
+	switch(m->kind)
+	{
+		case 0x08:
+			LOG(CALLS, "Namespace " << getString(m->name));
+			break;
+		case 0x16:
+			LOG(CALLS, "PackageNamespace " << getString(m->name));
+			break;
+		case 0x17:
+			LOG(CALLS, "PackageInternalNs " << getString(m->name));
+			break;
+		case 0x18:
+			LOG(CALLS, "ProtectedNamespace " << getString(m->name));
+			break;
+		case 0x19:
+			LOG(CALLS, "ExplicitNamespace " << getString(m->name));
+			break;
+		case 0x1a:
+			LOG(CALLS, "StaticProtectedNamespace " << getString(m->name));
+			break;
+		case 0x05:
+			LOG(CALLS, "PrivateNamespace " << getString(m->name));
+			break;
+	}
+}
+
+void ABCVm::printNamespaceSet(const ns_set_info* m) const
+{
+	for(int i=0;i<m->count;i++)
+	{
+		printNamespace(m->ns[i]);
+	}
+}
+
+void ABCVm::printClass(int m) const
+{
+	const instance_info* i=&instances[m];
+	LOG(CALLS,"Class name:");
+	printMultiname(i->name);
+	LOG(CALLS,"Class supername:");
+	printMultiname(i->supername);
+	LOG(CALLS,"Flags " <<hex << i->flags);
+}
+
 void ABCVm::printMethod(const method_info* m) const
 {
-	string n;
-	if(m->name>0)
-		n=constant_pool.strings[m->name-1];
-	else
-		n="<Anonymous>";
+	string n=getString(m->name);
 	LOG(CALLS, "Method " << n);
 	LOG(CALLS,"Params n: " << m->param_count);
 	LOG(CALLS,"Return " << m->return_type);
 	LOG(CALLS,"Flags " << m->flags);
-
-	cout << "body dump len " << m->body->code_length << endl;
-	printf("%x %x %x %x\n",m->body->code[0],m->body->code[1],m->body->code[2],m->body->code[3]);
 }
 
 istream& operator>>(istream& in, u32& v)
@@ -296,8 +545,9 @@ istream& operator>>(istream& in, namespace_info& v)
 istream& operator>>(istream& in, method_body_info& v)
 {
 	in >> v.method >> v.max_stack >> v.local_count >> v.init_scope_depth >> v.max_scope_depth >> v.code_length;
-	v.code=new uint8_t[v.code_length];
-	in.read((char*)v.code,v.code_length);
+	v.code.resize(v.code_length);
+	for(int i=0;i<v.code_length;i++)
+		in.read(&v.code[i],1);
 
 	in >> v.exception_count;
 	v.exceptions.resize(v.exception_count);

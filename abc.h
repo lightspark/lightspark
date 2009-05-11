@@ -21,6 +21,8 @@
 #include "frame.h"
 #include "logger.h"
 #include <vector>
+#include <llvm/Module.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
 
 class s32
 {
@@ -89,6 +91,7 @@ public:
 class namespace_info
 {
 friend std::istream& operator>>(std::istream& in, namespace_info& v);
+friend class ABCVm;
 private:
 	u8 kind;
 	u30 name;
@@ -97,6 +100,7 @@ private:
 class ns_set_info
 {
 friend std::istream& operator>>(std::istream& in, ns_set_info& v);
+friend class ABCVm;
 private:
 	u30 count;
 	std::vector<u30> ns;
@@ -105,6 +109,7 @@ private:
 class multiname_info
 {
 friend std::istream& operator>>(std::istream& in, multiname_info& v);
+friend class ABCVm;
 private:
 	u8 kind;
 	u30 name;
@@ -155,6 +160,8 @@ private:
 	u30 option_count;
 	std::vector<option_detail> options;
 //	param_info param_names
+
+	llvm::Function* f;
 public:
 	method_body_info* body;
 	method_info():body(NULL){}
@@ -199,6 +206,7 @@ private:
 class instance_info
 {
 friend std::istream& operator>>(std::istream& in, instance_info& v);
+friend class ABCVm;
 private:
 	enum { ClassSealed=0x01,ClassFinal=0x02,ClassInterface=0x04,ClassProtectedNs=0x08};
 	u30 name;
@@ -215,6 +223,7 @@ private:
 class class_info
 {
 friend std::istream& operator>>(std::istream& in, class_info& v);
+friend class ABCVm;
 private:
 	u30 cinit;
 	u30 trait_count;
@@ -253,7 +262,7 @@ private:
 	u30 init_scope_depth;
 	u30 max_scope_depth;
 	u30 code_length;
-	uint8_t* code;
+	std::string code;
 	u30 exception_count;
 	std::vector<exception_info> exceptions;
 	u30 trait_count;
@@ -277,8 +286,28 @@ private:
 	std::vector<script_info> scripts;
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
-	const method_info* get_method(unsigned int m) const;
+	method_info* get_method(unsigned int m);
 	void printMethod(const method_info* m) const;
+	void printClass(int m) const;
+	void printMultiname(int m) const;
+	void printNamespace(int n) const;
+	void printNamespaceSet(const ns_set_info* m) const;
+	std::string getString(unsigned int s) const;
+
+	llvm::Function* synt_method(method_info* m);
+
+	std::vector<SWFObject> stack;
+	llvm::Module module;
+	llvm::ExecutionEngine* ex;
+
+	void registerFunctions();
+	//Interpreted AS instructions
+	static void getLocal(ABCVm* th, int n); 
+	static void initProperty(ABCVm* th, int n); 
+	static void newClass(ABCVm* th, int n); 
+	static void findPropStrict(ABCVm* th, int n);
+	static void pushScope(ABCVm* th);
+	static void pushNull(ABCVm* th);
 public:
 	ABCVm(std::istream& in);
 	void Run();

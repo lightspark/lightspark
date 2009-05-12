@@ -35,7 +35,7 @@ using namespace std;
 
 __thread SystemState* sys;
 
-inline long timeDiff(timespec& s, timespec& d)
+long timeDiff(timespec& s, timespec& d)
 {
 	timespec temp;
 	if ((d.tv_nsec-s.tv_nsec)<0) {
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	}
 	Log::initLogging(TRACE);
 	sys=new SystemState;
-	sys->performance_profiling=true;
+	sys->performance_profiling=false;
 	zlib_file_filter zf;
 	zf.open(argv[1],ios_base::in);
 	istream f(&zf);

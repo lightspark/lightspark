@@ -33,6 +33,7 @@
 using namespace std;
 
 long timeDiff(timespec& s, timespec& d);
+
 extern __thread SystemState* sys;
 
 Tag* TagFactory::readTag()
@@ -201,6 +202,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	sys->parsingDisplayList=&displayList;
 	in >> SpriteID >> FrameCount;
 	_totalframes=FrameCount;
+	state.max_FP=FrameCount;
+
 	LOG(TRACE,"DefineSprite ID: " << SpriteID);
 	TagFactory factory(in);
 	Tag* tag;

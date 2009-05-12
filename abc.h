@@ -21,6 +21,7 @@
 #include "frame.h"
 #include "logger.h"
 #include <vector>
+#include <map>
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 
@@ -164,7 +165,7 @@ private:
 	llvm::Function* f;
 public:
 	method_body_info* body;
-	method_info():body(NULL){}
+	method_info():body(NULL),f(NULL){}
 };
 
 struct item_info
@@ -185,6 +186,7 @@ private:
 class traits_info
 {
 friend std::istream& operator>>(std::istream& in, traits_info& v);
+friend class ABCVm;
 private:
 	enum { Slot=0,Method=1,Getter=2,Setter=3,Class=4,Function=5,Const=6};
 	enum { Final=0x10, Override=0x20, Metadata=0x40};
@@ -289,13 +291,19 @@ private:
 	method_info* get_method(unsigned int m);
 	void printMethod(const method_info* m) const;
 	void printClass(int m) const;
+	SWFObject buildClass(int m);
 	void printMultiname(int m) const;
 	void printNamespace(int n) const;
+	void printTrait(const traits_info* t) const;
+	void buildTrait(const traits_info* t);
 	void printNamespaceSet(const ns_set_info* m) const;
 	std::string getString(unsigned int s) const;
 
 	llvm::Function* synt_method(method_info* m);
 
+	std::map<int,SWFObject> registers;
+	std::map<int,SWFObject> valid_classes;
+	ASObject Global;
 	std::vector<SWFObject> stack;
 	llvm::Module module;
 	llvm::ExecutionEngine* ex;
@@ -303,11 +311,14 @@ private:
 	void registerFunctions();
 	//Interpreted AS instructions
 	static void getLocal(ABCVm* th, int n); 
+	static void getLex(ABCVm* th, int n); 
+	static void getScopeObject(ABCVm* th, int n); 
 	static void initProperty(ABCVm* th, int n); 
 	static void newClass(ABCVm* th, int n); 
 	static void findPropStrict(ABCVm* th, int n);
 	static void pushScope(ABCVm* th);
 	static void pushNull(ABCVm* th);
+	static void popScope(ABCVm* th);
 public:
 	ABCVm(std::istream& in);
 	void Run();

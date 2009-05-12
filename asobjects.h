@@ -112,6 +112,7 @@ class RunState
 public:
 	int FP;
 	int next_FP;
+	int max_FP;
 	bool stop_FP;
 public:
 	RunState();

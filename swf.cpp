@@ -59,6 +59,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	sys->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
 	LOG(NO_INFO,"FrameRate " << FrameRate);
+	sys->state.max_FP=FrameCount;
 }
 
 SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),performance_profiling(false),
@@ -95,6 +96,9 @@ void SystemState::setShutdownFlag()
 {
 	sem_wait(&mutex);
 	shutdown=true;
+
+	//Signal blocking semaphore
+	sem_post(&sem_run);
 	sem_post(&mutex);
 }
 
@@ -179,6 +183,7 @@ ParseThread::~ParseThread()
 
 void RenderThread::wait()
 {
+	pthread_cancel(t);
 	pthread_join(t,NULL);
 }
 
@@ -542,6 +547,11 @@ void SystemState::waitToRun()
 	}
 	update_request=false;
 	state.next_FP=state.FP+1;
+	if(state.next_FP>=state.max_FP)
+	{
+		state.next_FP=state.FP;
+		state.stop_FP=true;
+	}
 	sem_post(&mutex);
 }
 

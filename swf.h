@@ -35,6 +35,7 @@
 class DisplayListTag;
 class DictionaryTag;
 class IActiveObject;
+class ABCVm;
 
 typedef void* (*thread_worker)(void*);
 
@@ -121,6 +122,7 @@ public:
 	void _register(){}
 	SWFOBJECT_TYPE getObjectType();
 	fps_profiling* fps_prof;
+	ABCVm* currentVm;
 };
 
 class ParseThread

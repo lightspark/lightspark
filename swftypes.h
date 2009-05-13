@@ -107,9 +107,13 @@ public:
 	{
 		return !String.size();
 	}
-	operator const char*() const
+/*	operator const char*() const
 	{
 		return String.data();
+	}*/
+	operator const std::string&() const
+	{
+		return String;
 	}
 	int size()
 	{

@@ -63,7 +63,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 }
 
 SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),performance_profiling(false),
-	parsingTarget(this),shutdown(false)
+	parsingTarget(this),shutdown(false),currentVm(NULL)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);

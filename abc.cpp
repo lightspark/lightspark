@@ -46,6 +46,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 	LOG(CALLS,"DoABCTag Name: " << Name);
 
 	vm=new ABCVm(in);
+	sys->currentVm=vm;
 
 	if(dest!=in.tellg())
 		LOG(ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
@@ -58,14 +59,39 @@ int DoABCTag::getDepth() const
 
 void DoABCTag::Render()
 {
-	LOG(NOT_IMPLEMENTED,"ABC Exec " << Name);
+	LOG(CALLS,"ABC Exec " << Name);
 	vm->Run();
 }
 
-SymbolClassTag::SymbolClassTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"SymbolClassTag");
-	skip(in);
+	LOG(TRACE,"SymbolClassTag");
+	in >> NumSymbols;
+
+	Tags.resize(NumSymbols);
+	Names.resize(NumSymbols);
+
+	for(int i=0;i<NumSymbols;i++)
+		in >> Tags[i] >> Names[i];
+}
+
+int SymbolClassTag::getDepth() const
+{
+	//After DoABCTag execution
+	return 0x30000;
+}
+
+void SymbolClassTag::Render()
+{
+	LOG(NOT_IMPLEMENTED,"SymbolClassTag Render");
+	cout << "NumSymbols " << NumSymbols << endl;
+
+	for(int i=0;i<NumSymbols;i++)
+	{
+		cout << Tags[i] << ' ' << Names[i] << endl;
+		sys->currentVm->buildNamedClass(Names[i]);
+	}
+
 }
 
 void ABCVm::registerFunctions()
@@ -79,11 +105,17 @@ void ABCVm::registerFunctions()
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushScope",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushScope);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"dup",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::dup);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNull",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushNull);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"popScope",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::popScope);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
 
 	// (ABCVm*,int)
 	sig.push_back(llvm::IntegerType::get(32));
@@ -91,20 +123,88 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setSlot",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::setSlot);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setLocal",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::setLocal);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLex",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getLex);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findPropStrict",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findPropStrict);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getProperty",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::getProperty);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findProperty",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::findProperty);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newArray",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::newArray);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newClass",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newClass);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushString",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushString);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"initProperty",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::initProperty);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getScopeObject",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getScopeObject);
+}
+
+string ABCVm::getMultinameString(unsigned int mi) const
+{
+	const multiname_info* m=&constant_pool.multinames[mi];
+	string ret;
+	switch(m->kind)
+	{
+		case 0x07:
+		{
+			const namespace_info* n=&constant_pool.namespaces[m->ns];
+			ret=getString(n->name)+'.'+ getString(m->name);
+			break;
+		}
+/*		case 0x0d:
+			LOG(CALLS, "QNameA");
+			break;
+		case 0x0f:
+			LOG(CALLS, "RTQName");
+			break;
+		case 0x10:
+			LOG(CALLS, "RTQNameA");
+			break;
+		case 0x11:
+			LOG(CALLS, "RTQNameL");
+			break;
+		case 0x12:
+			LOG(CALLS, "RTQNameLA");
+			break;
+		case 0x09:
+		{
+			LOG(CALLS, "Multiname: " << getString(m->name));
+			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
+			printNamespaceSet(s);
+			break;
+		}
+		case 0x0e:
+			LOG(CALLS, "MultinameA");
+			break;
+		case 0x1b:
+			LOG(CALLS, "MultinameL");
+			break;
+		case 0x1c:
+			LOG(CALLS, "MultinameLA");
+			break;*/
+		default:
+			LOG(ERROR,"Multiname to String not yet implemented for this kind");
+			break;
+	}
+	return ret;
 }
 
 ABCVm::ABCVm(istream& in):module("abc jit")
@@ -128,7 +228,11 @@ ABCVm::ABCVm(istream& in):module("abc jit")
 	in >> class_count;
 	instances.resize(class_count);
 	for(int i=0;i<class_count;i++)
+	{
 		in >> instances[i];
+		//Link instance names with classes
+		valid_classes[getMultinameString(instances[i].name)]=i;
+	}
 	classes.resize(class_count);
 	for(int i=0;i<class_count;i++)
 		in >> classes[i];
@@ -151,6 +255,45 @@ ABCVm::ABCVm(istream& in):module("abc jit")
 	}
 
 	registerFunctions();
+
+
+/*	for(int i=0;i<constant_pool.namespace_count;i++)
+		printMultiname(i);*/
+/*	for(int i=0;i<class_count;i++)
+		printClass(i);*/
+}
+
+SWFObject ABCVm::buildNamedClass(const string& s)
+{
+	map<string,int>::iterator it=valid_classes.find(s);
+	if(it!=valid_classes.end())
+		LOG(CALLS,"Class " << s << " found");
+	//TODO: Really build class
+	int index=it->second;
+
+//	printClass(index);
+	method_info* m=&methods[classes[index].cinit];
+	synt_method(m);
+	LOG(CALLS,"Calling Class init");
+	if(m->f)
+	{
+		cout << "body length " << m->body->code_length << endl;
+		void* f_ptr=ex->getPointerToFunction(m->f);
+		void (*FP)() = (void (*)())f_ptr;
+		FP();
+	}
+	m=&methods[instances[index].init];
+	synt_method(m);
+	LOG(CALLS,"Calling Instance init");
+	if(m->f)
+	{
+		cout << "body length " << m->body->code_length <<endl;
+		void* f_ptr=ex->getPointerToFunction(m->f);
+		void (*FP)() = (void (*)())f_ptr;
+		FP();
+	}
+	module.dump();
+	return new ASObject;
 }
 
 inline method_info* ABCVm::get_method(unsigned int m)
@@ -164,9 +307,29 @@ inline method_info* ABCVm::get_method(unsigned int m)
 	}
 }
 
+void ABCVm::newActivation(ABCVm* th)
+{
+	cout << "newActivation" << endl;
+}
+
 void ABCVm::popScope(ABCVm* th)
 {
 	cout << "popScope" << endl;
+}
+
+void ABCVm::setSlot(ABCVm* th, int n)
+{
+	cout << "setSlot " << n << endl;
+}
+
+void ABCVm::setLocal(ABCVm* th, int n)
+{
+	cout << "setLocal " << n << endl;
+}
+
+void ABCVm::dup(ABCVm* th)
+{
+	cout << "dup" << endl;
 }
 
 void ABCVm::pushNull(ABCVm* th)
@@ -179,6 +342,18 @@ void ABCVm::pushScope(ABCVm* th)
 	cout << "pushScope" << endl;
 }
 
+void ABCVm::getProperty(ABCVm* th, int n)
+{
+	cout << "getProperty " << n << endl;
+	th->printMultiname(n);
+}
+
+void ABCVm::findProperty(ABCVm* th, int n)
+{
+	cout << "findProperty " << n << endl;
+	th->printMultiname(n);
+}
+
 void ABCVm::findPropStrict(ABCVm* th, int n)
 {
 	cout << "findPropStrict " << n << endl;
@@ -189,6 +364,12 @@ void ABCVm::initProperty(ABCVm* th, int n)
 {
 	cout << "initProperty " << n << endl;
 	th->printMultiname(n);
+}
+
+void ABCVm::newArray(ABCVm* th, int n)
+{
+	cout << "newArray " << n << endl;
+	th->printClass(n);
 }
 
 void ABCVm::newClass(ABCVm* th, int n)
@@ -206,6 +387,11 @@ void ABCVm::getLex(ABCVm* th, int n)
 {
 	cout << "getLex " << n << endl;
 	th->printMultiname(n);
+}
+
+void ABCVm::pushString(ABCVm* th, int n)
+{
+	cout << "pushString " << n << ' ' << th->getString(n)<< endl;
 }
 
 void ABCVm::getLocal(ABCVm* th, int n)
@@ -269,16 +455,46 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("pushNull"), th);
 				break;
 			}
+			case 0x2c:
+			{
+				//pushstring
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("pushString"), th, constant);
+				break;
+			}
 			case 0x30:
 			{
 				//pushscope
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), th);
 				break;
 			}
+			case 0x2a:
+			{
+				//dup
+				Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
+				break;
+			}
 			case 0x47:
 			{
 				//returnvoid
 				Builder.CreateRetVoid();
+				break;
+			}
+			case 0x56:
+			{
+				//newarray
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("newArray"), th, constant);
+				break;
+			}
+			case 0x57:
+			{
+				//newactivation
+				Builder.CreateCall(ex->FindFunctionNamed("newActivation"), th);
 				break;
 			}
 			case 0x58:
@@ -299,6 +515,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("findPropStrict"), th, constant);
 				break;
 			}
+			case 0x5e:
+			{
+				//findproperty
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("findProperty"), th, constant);
+				break;
+			}
 			case 0x60:
 			{
 				//getlex
@@ -317,6 +542,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("getScopeObject"), th, constant);
 				break;
 			}
+			case 0x66:
+			{
+				//getproperty
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("getProperty"), th, constant);
+				break;
+			}
 			case 0x68:
 			{
 				//initproperty
@@ -326,11 +560,28 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("initProperty"), th, constant);
 				break;
 			}
+			case 0x6d:
+			{
+				//setslot
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("setSlot"), th, constant);
+				break;
+			}
 			case 0xd0:
+			case 0xd1:
 			{
 				//getlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
+				break;
+			}
+			case 0xd6:
+			{
+				//setlocal_n
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
+				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), th, constant);
 				break;
 			}
 			default:
@@ -400,7 +651,8 @@ void ABCVm::buildTrait(const traits_info* t)
 
 void ABCVm::printTrait(const traits_info* t) const
 {
-	switch(t->kind)
+	printMultiname(t->name);
+	switch(t->kind&0xf)
 	{
 		case traits_info::Slot:
 			LOG(CALLS,"Slot trait");
@@ -428,7 +680,6 @@ void ABCVm::printTrait(const traits_info* t) const
 			LOG(CALLS,"Const trait");
 			break;
 	}
-	printMultiname(t->name);
 }
 
 void ABCVm::printMultiname(int mi) const
@@ -439,7 +690,7 @@ void ABCVm::printMultiname(int mi) const
 		return;
 	}
 	const multiname_info* m=&constant_pool.multinames[mi];
-	LOG(CALLS, "NameID: " << m->name );
+//	LOG(CALLS, "NameID: " << m->name );
 	switch(m->kind)
 	{
 		case 0x07:
@@ -525,22 +776,17 @@ void ABCVm::printNamespaceSet(const ns_set_info* m) const
 
 SWFObject ABCVm::buildClass(int m) 
 {
-	if(valid_classes.find(m)==valid_classes.end())
-	{
-		const class_info* c=&classes[m];
-		if(c->trait_count)
-			LOG(NOT_IMPLEMENTED,"Should add class traits");
+	const class_info* c=&classes[m];
+	if(c->trait_count)
+		LOG(NOT_IMPLEMENTED,"Should add class traits");
 
-		valid_classes[m]=SWFObject(new ASObject);
-
-/*		//Run class initialization
-		method_info* mi=get_method(c->cinit);
-		synt_method(mi);
-		void* f_ptr=ex->getPointerToFunction(mi->f);
-		void (*FP)() = (void (*)())f_ptr;
-		LOG(CALLS,"Class init lenght" << mi->body->code_length);
-		FP();*/
-	}
+/*	//Run class initialization
+	method_info* mi=get_method(c->cinit);
+	synt_method(mi);
+	void* f_ptr=ex->getPointerToFunction(mi->f);
+	void (*FP)() = (void (*)())f_ptr;
+	LOG(CALLS,"Class init lenght" << mi->body->code_length);
+	FP();*/
 
 	const instance_info* i=&instances[m];
 	string name=getString(constant_pool.multinames[i->name].name);
@@ -567,26 +813,31 @@ SWFObject ABCVm::buildClass(int m)
 		LOG(CALLS,"instance init lenght" << mi->body->code_length);
 		FP();
 	}*/
-	return valid_classes[m]->clone();
+	return new ASObject();
 }
 
 void ABCVm::printClass(int m) const
 {
 	const instance_info* i=&instances[m];
-	LOG(CALLS,"Class name:");
-	printMultiname(i->name);
+	LOG(CALLS,"Class name: " << getMultinameString(i->name));
+//	printMultiname(i->name);
 	LOG(CALLS,"Class supername:");
 	printMultiname(i->supername);
 	LOG(CALLS,"Flags " <<hex << i->flags);
 	LOG(CALLS,"Instance traits n: " <<i->trait_count);
 	for(int j=0;j<i->trait_count;j++)
 		printTrait(&i->traits[j]);
+	LOG(CALLS,"Instance init");
+	const method_info* mi=&methods.at(i->init);
+	printMethod(mi);
 
 	const class_info* c=&classes[m];
 	LOG(CALLS,"Class traits n: " <<c->trait_count);
 	for(int j=0;j<c->trait_count;j++)
 		printTrait(&c->traits[j]);
-
+	LOG(CALLS,"Class init");
+	mi=&methods[c->cinit];
+	printMethod(mi);
 }
 
 void ABCVm::printMethod(const method_info* m) const
@@ -596,7 +847,10 @@ void ABCVm::printMethod(const method_info* m) const
 	LOG(CALLS,"Params n: " << m->param_count);
 	LOG(CALLS,"Return " << m->return_type);
 	LOG(CALLS,"Flags " << m->flags);
-	LOG(CALLS,"Body Lenght " << m->body->code_length);
+	if(m->body)
+		LOG(CALLS,"Body Lenght " << m->body->code_length)
+	else
+		LOG(CALLS,"No Body")
 }
 
 istream& operator>>(istream& in, u32& v)
@@ -670,6 +924,8 @@ istream& operator>>(istream& in, u30& v)
 			LOG(ERROR,"parsing u30");
 	}
 	while(t2&0x80);
+	if(v.val&0xc0000000)
+			LOG(ERROR,"parsing u30");
 	return in;
 }
 
@@ -855,7 +1111,7 @@ istream& operator>>(istream& in, traits_info& v)
 		case traits_info::Const:
 			in >> v.slot_id >> v.type_name >> v.vindex;
 			if(v.vindex)
-				in >> v.kind;
+				in >> v.vkind;
 			break;
 		case traits_info::Class:
 			in >> v.slot_id >> v.classi;
@@ -863,10 +1119,10 @@ istream& operator>>(istream& in, traits_info& v)
 		case traits_info::Function:
 			in >> v.slot_id >> v.function;
 			break;
-		case traits_info::Method:
 		case traits_info::Getter:
 		case traits_info::Setter:
-			in >> v.slot_id >> v.method;
+		case traits_info::Method:
+			in >> v.disp_id >> v.method;
 			break;
 		default:
 			LOG(ERROR,"Unexpected kind " << v.kind);

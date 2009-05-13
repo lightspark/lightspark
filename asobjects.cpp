@@ -109,13 +109,13 @@ SWFObject ASXML::load(const SWFObject& obj, arguments* args)
 	STRING url=base+args->args[0]->toString();
 	if(curl)
 	{
-		curl_easy_setopt(curl, CURLOPT_URL, (const char*)(url));
+		curl_easy_setopt(curl, CURLOPT_URL, (string(url)).c_str());
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, obj.getData());
 		res = curl_easy_perform(curl);
 		curl_easy_cleanup(curl);
 	}
-	xmlDocPtr doc=xmlReadMemory(th->xml_buf,th->xml_index,url,NULL,0);
+	xmlDocPtr doc=xmlReadMemory(th->xml_buf,th->xml_index,(string(url)).c_str(),NULL,0);
 
 	IFunction* on_load=obj->getVariableByName("onLoad")->toFunction();
 	arguments a;

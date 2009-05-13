@@ -49,6 +49,7 @@ friend std::istream& operator>>(std::istream& in, u30& v);
 private:
 	uint32_t val;
 public:
+	u30():val(0){}
 	operator uint32_t() const{return val;}
 };
 
@@ -199,6 +200,7 @@ private:
 	u8 vkind;
 	u30 classi;
 	u30 function;
+	u30 disp_id;
 	u30 method;
 
 	u30 metadata_count;
@@ -298,11 +300,12 @@ private:
 	void buildTrait(const traits_info* t);
 	void printNamespaceSet(const ns_set_info* m) const;
 	std::string getString(unsigned int s) const;
+	std::string getMultinameString(unsigned int m) const;
 
 	llvm::Function* synt_method(method_info* m);
 
 	std::map<int,SWFObject> registers;
-	std::map<int,SWFObject> valid_classes;
+	std::map<std::string,int> valid_classes;
 	ASObject Global;
 	std::vector<SWFObject> stack;
 	llvm::Module module;
@@ -311,17 +314,26 @@ private:
 	void registerFunctions();
 	//Interpreted AS instructions
 	static void getLocal(ABCVm* th, int n); 
+	static void setLocal(ABCVm* th, int n); 
+	static void setSlot(ABCVm* th, int n); 
+	static void pushString(ABCVm* th, int n); 
 	static void getLex(ABCVm* th, int n); 
 	static void getScopeObject(ABCVm* th, int n); 
 	static void initProperty(ABCVm* th, int n); 
 	static void newClass(ABCVm* th, int n); 
+	static void newArray(ABCVm* th, int n); 
 	static void findPropStrict(ABCVm* th, int n);
+	static void findProperty(ABCVm* th, int n);
+	static void getProperty(ABCVm* th, int n);
 	static void pushScope(ABCVm* th);
 	static void pushNull(ABCVm* th);
+	static void dup(ABCVm* th);
 	static void popScope(ABCVm* th);
+	static void newActivation(ABCVm* th);
 public:
 	ABCVm(std::istream& in);
 	void Run();
+	SWFObject buildNamedClass(const std::string& n);
 };
 
 class DoABCTag: public DisplayListTag
@@ -336,10 +348,16 @@ public:
 	int getDepth() const;
 };
 
-class SymbolClassTag: public Tag
+class SymbolClassTag: public DisplayListTag
 {
+private:
+	UI16 NumSymbols;
+	std::vector<UI16> Tags;
+	std::vector<STRING> Names;
 public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
+	void Render( );
+	int getDepth() const;
 };
 
 std::istream& operator>>(std::istream& in, u8& v);

@@ -108,6 +108,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"dup",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::dup);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"swap",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::swap);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNull",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushNull);
 
@@ -120,8 +123,26 @@ void ABCVm::registerFunctions()
 	// (ABCVm*,int)
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifEq",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifEq);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newCatch",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::newCatch);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newObject",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::newObject);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifFalse",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifFalse);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"jump",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::jump);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getSlot",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::getSlot);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setSlot",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setSlot);
@@ -141,6 +162,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findProperty",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findProperty);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructSuper",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::constructSuper);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newArray",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newArray);
 
@@ -155,6 +179,18 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getScopeObject",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getScopeObject);
+
+	// (ABCVm*,int,int)
+	sig.push_back(llvm::IntegerType::get(32));
+	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callPropVoid",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::callPropVoid);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callProperty",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::callProperty);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructProp",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::constructProp);
 }
 
 string ABCVm::getMultinameString(unsigned int mi) const
@@ -307,6 +343,11 @@ inline method_info* ABCVm::get_method(unsigned int m)
 	}
 }
 
+void ABCVm::swap(ABCVm* th)
+{
+	cout << "swap" << endl;
+}
+
 void ABCVm::newActivation(ABCVm* th)
 {
 	cout << "newActivation" << endl;
@@ -317,9 +358,54 @@ void ABCVm::popScope(ABCVm* th)
 	cout << "popScope" << endl;
 }
 
+void ABCVm::constructProp(ABCVm* th, int n, int m)
+{
+	cout << "constructProp " << n << ' ' << m << endl;
+}
+
+void ABCVm::callProperty(ABCVm* th, int n, int m)
+{
+	cout << "callProperty " << n << ' ' << m << endl;
+}
+
+void ABCVm::callPropVoid(ABCVm* th, int n, int m)
+{
+	cout << "callPropVoid " << n << ' ' << m << endl;
+}
+
+void ABCVm::jump(ABCVm* th, int offset)
+{
+	cout << "jump " << offset << endl;
+}
+
+void ABCVm::ifFalse(ABCVm* th, int offset)
+{
+	cout << "ifFalse " << offset << endl;
+}
+
+void ABCVm::ifEq(ABCVm* th, int offset)
+{
+	cout << "ifEq " << offset << endl;
+}
+
+void ABCVm::newCatch(ABCVm* th, int n)
+{
+	cout << "newCatch " << n << endl;
+}
+
+void ABCVm::newObject(ABCVm* th, int n)
+{
+	cout << "newObject " << n << endl;
+}
+
 void ABCVm::setSlot(ABCVm* th, int n)
 {
 	cout << "setSlot " << n << endl;
+}
+
+void ABCVm::getSlot(ABCVm* th, int n)
+{
+	cout << "getSlot " << n << endl;
 }
 
 void ABCVm::setLocal(ABCVm* th, int n)
@@ -340,6 +426,11 @@ void ABCVm::pushNull(ABCVm* th)
 void ABCVm::pushScope(ABCVm* th)
 {
 	cout << "pushScope" << endl;
+}
+
+void ABCVm::constructSuper(ABCVm* th, int n)
+{
+	cout << "constructSuper " << n << endl;
 }
 
 void ABCVm::getProperty(ABCVm* th, int n)
@@ -428,6 +519,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 	//We define a couple of variables that will be used a lot
 	llvm::Constant* constant;
+	llvm::Constant* constant2;
 	llvm::Value* value;
 	//let's give access to 'this' pointer to llvm
 	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)this);
@@ -443,6 +535,33 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 		switch(opcode)
 		{
+			case 0x10:
+			{
+				//jump
+				s24 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("jump"), th, constant);
+				break;
+			}
+			case 0x12:
+			{
+				//iffalse
+				s24 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifFalse"), th, constant);
+				break;
+			}
+			case 0x13:
+			{
+				//ifeq
+				s24 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), th, constant);
+				break;
+			}
 			case 0x1d:
 			{
 				//popscope
@@ -453,6 +572,12 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//pushnull
 				Builder.CreateCall(ex->FindFunctionNamed("pushNull"), th);
+				break;
+			}
+			case 0x2b:
+			{
+				//swap
+				Builder.CreateCall(ex->FindFunctionNamed("swap"), th);
 				break;
 			}
 			case 0x2c:
@@ -476,10 +601,61 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
 				break;
 			}
+			case 0x46:
+			{
+				//callproperty
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				code >> t;
+				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall3(ex->FindFunctionNamed("callProperty"), th, constant, constant2);
+				break;
+			}
 			case 0x47:
 			{
 				//returnvoid
 				Builder.CreateRetVoid();
+				break;
+			}
+			case 0x49:
+			{
+				//constructsuper
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("constructSuper"), th, constant);
+				break;
+			}
+			case 0x4a:
+			{
+				//constructprop
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				code >> t;
+				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall3(ex->FindFunctionNamed("constructProp"), th, constant, constant2);
+				break;
+			}
+			case 0x4f:
+			{
+				//callpropvoid
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				code >> t;
+				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall3(ex->FindFunctionNamed("callPropVoid"), th, constant, constant2);
+				break;
+			}
+			case 0x55:
+			{
+				//newobject
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("newObject"), th, constant);
 				break;
 			}
 			case 0x56:
@@ -504,6 +680,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("newClass"), th, constant);
+				break;
+			}
+			case 0x5a:
+			{
+				//newcatch
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("newCatch"), th, constant);
 				break;
 			}
 			case 0x5d:
@@ -560,6 +745,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("initProperty"), th, constant);
 				break;
 			}
+			case 0x6c:
+			{
+				//getslot
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("getSlot"), th, constant);
+				break;
+			}
 			case 0x6d:
 			{
 				//setslot
@@ -571,6 +765,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			}
 			case 0xd0:
 			case 0xd1:
+			case 0xd2:
 			{
 				//getlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
@@ -578,6 +773,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				break;
 			}
 			case 0xd6:
+			case 0xd7:
 			{
 				//setlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
@@ -585,7 +781,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				break;
 			}
 			default:
-				LOG(ERROR,"Not implemented instruction");
+				LOG(ERROR,"Not implemented instruction @" << code.tellg());
 				u8 a,b,c;
 				code >> a >> b >> c;
 				LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
@@ -899,6 +1095,26 @@ istream& operator>>(istream& in, s32& v)
 	}
 	while(t2&0x80);
 	if(t2&0x40)
+	{
+		//Sign extend
+		for(i;i<32;i++)
+			v.val|=(1<<i);
+	}
+	return in;
+}
+
+istream& operator>>(istream& in, s24& v)
+{
+	int i=0;
+	v.val=0;
+	uint8_t t;
+	for(int i=0;i<24;i+=8)
+	{
+		in.read((char*)&t,1);
+		v.val|=(t<<i);
+	}
+
+	if(t&0x80)
 	{
 		//Sign extend
 		for(i;i<32;i++)

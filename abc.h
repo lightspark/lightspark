@@ -25,6 +25,15 @@
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 
+class s24
+{
+friend std::istream& operator>>(std::istream& in, s24& v);
+private:
+	int32_t val;
+public:
+	operator int32_t(){return val;}
+};
+
 class s32
 {
 friend std::istream& operator>>(std::istream& in, s32& v);
@@ -313,7 +322,16 @@ private:
 
 	void registerFunctions();
 	//Interpreted AS instructions
+	static void callPropVoid(ABCVm* th, int n, int m); 
+	static void callProperty(ABCVm* th, int n, int m); 
+	static void constructProp(ABCVm* th, int n, int m); 
 	static void getLocal(ABCVm* th, int n); 
+	static void newObject(ABCVm* th, int n); 
+	static void newCatch(ABCVm* th, int n); 
+	static void jump(ABCVm* th, int offset); 
+	static void ifEq(ABCVm* th, int offset); 
+	static void ifFalse(ABCVm* th, int offset); 
+	static void getSlot(ABCVm* th, int n); 
 	static void setLocal(ABCVm* th, int n); 
 	static void setSlot(ABCVm* th, int n); 
 	static void pushString(ABCVm* th, int n); 
@@ -325,9 +343,11 @@ private:
 	static void findPropStrict(ABCVm* th, int n);
 	static void findProperty(ABCVm* th, int n);
 	static void getProperty(ABCVm* th, int n);
+	static void constructSuper(ABCVm* th, int n);
 	static void pushScope(ABCVm* th);
 	static void pushNull(ABCVm* th);
 	static void dup(ABCVm* th);
+	static void swap(ABCVm* th);
 	static void popScope(ABCVm* th);
 	static void newActivation(ABCVm* th);
 public:

@@ -79,6 +79,8 @@ int main(int argc, char* argv[])
 	while(1)
 	{
 		sys->waitToRun();
+		if(sys->shutdown)
+			break;
 		rt.draw(&sys->getFrameAtFP());
 		sys->advanceFP();
 
@@ -93,8 +95,6 @@ int main(int argc, char* argv[])
 			fps_profs.push_back(fps_profiling());
 			sys->fps_prof=&fps_profs.back();
 		}
-		if(sys->shutdown)
-			break;
 	}
 
 	it.wait();

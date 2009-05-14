@@ -108,6 +108,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"dup",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::dup);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"add",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::add);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"swap",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::swap);
 
@@ -176,6 +179,9 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"initProperty",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::initProperty);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"kill",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::kill);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getScopeObject",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getScopeObject);
@@ -343,6 +349,11 @@ inline method_info* ABCVm::get_method(unsigned int m)
 	}
 }
 
+void ABCVm::add(ABCVm* th)
+{
+	cout << "add" << endl;
+}
+
 void ABCVm::swap(ABCVm* th)
 {
 	cout << "swap" << endl;
@@ -485,6 +496,11 @@ void ABCVm::pushString(ABCVm* th, int n)
 	cout << "pushString " << n << ' ' << th->getString(n)<< endl;
 }
 
+void ABCVm::kill(ABCVm* th, int n)
+{
+	cout << "kill " << n << endl;
+}
+
 void ABCVm::getLocal(ABCVm* th, int n)
 {
 	cout << "getLocal " << n << endl;
@@ -535,6 +551,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 		switch(opcode)
 		{
+			case 0x08:
+			{
+				//kill
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("kill"), th, constant);
+				break;
+			}
 			case 0x10:
 			{
 				//jump
@@ -761,6 +786,12 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("setSlot"), th, constant);
+				break;
+			}
+			case 0xa0:
+			{
+				//add
+				Builder.CreateCall(ex->FindFunctionNamed("add"), th);
 				break;
 			}
 			case 0xd0:

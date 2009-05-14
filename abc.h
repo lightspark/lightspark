@@ -333,6 +333,7 @@ private:
 	static void ifFalse(ABCVm* th, int offset); 
 	static void getSlot(ABCVm* th, int n); 
 	static void setLocal(ABCVm* th, int n); 
+	static void kill(ABCVm* th, int n); 
 	static void setSlot(ABCVm* th, int n); 
 	static void pushString(ABCVm* th, int n); 
 	static void getLex(ABCVm* th, int n); 
@@ -348,6 +349,7 @@ private:
 	static void pushNull(ABCVm* th);
 	static void dup(ABCVm* th);
 	static void swap(ABCVm* th);
+	static void add(ABCVm* th);
 	static void popScope(ABCVm* th);
 	static void newActivation(ABCVm* th);
 public:

@@ -173,9 +173,10 @@ private:
 //	param_info param_names
 
 	llvm::Function* f;
+	ISWFObject** locals;
 public:
 	method_body_info* body;
-	method_info():body(NULL),f(NULL){}
+	method_info():body(NULL),f(NULL),locals(NULL){}
 };
 
 struct item_info
@@ -319,6 +320,8 @@ private:
 	std::vector<SWFObject> stack;
 	llvm::Module module;
 	llvm::ExecutionEngine* ex;
+
+	static void debug(void* p);
 
 	void registerFunctions();
 	//Interpreted AS instructions

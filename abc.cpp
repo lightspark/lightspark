@@ -123,6 +123,8 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::debug);
 	// (ABCVm*,int)
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
@@ -327,15 +329,17 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	m=&methods[instances[index].init];
 	synt_method(m);
 	LOG(CALLS,"Calling Instance init");
+	ISWFObject* ret=new ASObject;
 	if(m->f)
 	{
 		cout << "body length " << m->body->code_length <<endl;
+		m->locals[0]=ret;
 		void* f_ptr=ex->getPointerToFunction(m->f);
 		void (*FP)() = (void (*)())f_ptr;
 		FP();
 	}
 	module.dump();
-	return new ASObject;
+	return ret;
 }
 
 inline method_info* ABCVm::get_method(unsigned int m)
@@ -485,6 +489,11 @@ void ABCVm::getScopeObject(ABCVm* th, int n)
 	cout << "getScopeObject " << n << endl;
 }
 
+void ABCVm::debug(void* p)
+{
+	cout << p << endl;
+}
+
 void ABCVm::getLex(ABCVm* th, int n)
 {
 	cout << "getLex " << n << endl;
@@ -524,6 +533,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 	//Initialize LLVM representation of method
 	vector<const llvm::Type*> sig;
+	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	if(m->param_count)
 		LOG(ERROR,"Arguments not supported");
 
@@ -540,6 +550,11 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	//let's give access to 'this' pointer to llvm
 	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)this);
 	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(ptr_type));
+
+	//let's give access to local data storage
+	m->locals=new ISWFObject*[m->body->local_count];
+	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)m->locals);
+	llvm::Value* locals = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 
 	//Each case block builds the correct parameters for the interpreter function and call it
 	u8 opcode;
@@ -801,6 +816,10 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				//getlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 0);
+				llvm::Value* t=Builder.CreateGEP(locals,constant);
+				llvm::Value* t2=Builder.CreateLoad(t);
+				Builder.CreateCall(ex->FindFunctionNamed("debug"), t2);
 				break;
 			}
 			case 0xd6:
@@ -847,8 +866,8 @@ void ABCVm::Run()
 	{
 		module.dump();
 		void* f_ptr=ex->getPointerToFunction(m->f);
-		void (*FP)() = (void (*)())f_ptr;
-		FP();
+		void (*FP)(int*) = (void (*)(int*))f_ptr;
+		FP((int*)15);
 	}
 }
 

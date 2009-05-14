@@ -17,13 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <llvm/Module.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include "tags.h"
 #include "frame.h"
 #include "logger.h"
 #include <vector>
 #include <map>
-#include <llvm/Module.h>
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
 
 class s24
 {

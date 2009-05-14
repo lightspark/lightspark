@@ -17,9 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abc.h"
-#include "logger.h"
-#include "swftypes.h"
 //#define __STDC_LIMIT_MACROS
 #include <llvm/Module.h>
 #include <llvm/DerivedTypes.h>
@@ -28,6 +25,9 @@
 #include <llvm/Constants.h> 
 #include <llvm/Support/IRBuilder.h> 
 #include <llvm/Target/TargetData.h>
+#include "abc.h"
+#include "logger.h"
+#include "swftypes.h"
 #include <sstream>
 
 

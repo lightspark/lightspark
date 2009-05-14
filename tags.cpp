@@ -17,18 +17,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <GL/gl.h>
+#include <vector>
+#include <list>
+#include <algorithm>
+#include "abc.h"
 #include "tags.h"
 #include "actions.h"
-#include "abc.h"
 #include "geometry.h"
 #include "swftypes.h"
 #include "swf.h"
 #include "input.h"
 #include "logger.h"
-#include <vector>
-#include <list>
-#include <algorithm>
+#include <GL/gl.h>
 
 using namespace std;
 

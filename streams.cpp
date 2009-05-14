@@ -168,6 +168,10 @@ std::streamsize sync_stream::showmanyc( )
 	abort();
 }
 
+zlib_file_filter::zlib_file_filter():compressed(0),offset(0)
+{
+}
+
 std::streamsize zlib_file_filter::xsgetn ( char * s, std::streamsize n )
 {
 	if(!compressed)
@@ -181,9 +185,9 @@ std::streamsize zlib_file_filter::xsgetn ( char * s, std::streamsize n )
 		//check if output full and wrap around
 		while(strm.avail_out!=0)
 		{
-			filebuf::xsgetn((char*)buffer,4096);
+			int real_count=filebuf::xsgetn((char*)buffer,4096);
 			strm.next_in=buffer;
-			strm.avail_in=4096;
+			strm.avail_in=real_count;
 			inflate(&strm, Z_NO_FLUSH);
 		}
 		offset+=n;

@@ -351,12 +351,12 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	attrib[6]=GLX_STENCIL_SIZE;
 	attrib[7]=8;
 
-	attrib[8]=None;
+	attrib[8]=0;
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 //	printf("returned %x pointer and %u elements\n",fb, a);
 	if(!fb)
 	{
-		attrib[0]=None;
+		attrib[0]=0;
 		fb=glXChooseFBConfig(d, 0, NULL, &a);
 		LOG(ERROR,"Falling back to no depth and no stencil");
 	}
@@ -395,7 +395,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			sem_wait(&th->render);
 			if(error)
 			{
-				glXMakeContextCurrent(d, None, None, NULL);
+				glXMakeContextCurrent(d, 0, 0, NULL);
 				unsigned int h = p->height/2;
 				unsigned int w = 3 * p->width/4;
 				int x = 0;

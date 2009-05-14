@@ -63,6 +63,7 @@ private:
 	z_stream strm;
 	unsigned char buffer[4096];
 public:
+	zlib_file_filter();
 	std::streamsize xsgetn ( char * s, std::streamsize n );
 	std::streamsize xsputn ( const char * s, std::streamsize n );
 	std::streampos seekpos ( std::streampos sp, std::ios_base::openmode which/* = std::ios_base::in | std::ios_base::out*/ );

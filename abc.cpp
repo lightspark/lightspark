@@ -334,6 +334,7 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	if(m->f)
 	{
 		cout << "body length " << m->body->code_length <<endl;
+		cout << "ret " << ret << endl;
 		m->locals[0]=ret;
 		void* f_ptr=ex->getPointerToFunction(m->f);
 		void (*FP)() = (void (*)())f_ptr;
@@ -440,10 +441,7 @@ void ABCVm::pushNull(method_info* th)
 
 void ABCVm::pushScope(method_info* th)
 {
-	if(th->stack_index==0)
-		LOG(ERROR,"Empty stack");
-	cout << "sindex " << th->stack_index << endl;
-	ISWFObject* t=th->stack[--th->stack_index];
+	ISWFObject* t=th->runtime_stack_pop();
 	cout << "pushScope " << t << endl;
 	th->scope_stack.push_back(t);
 }
@@ -520,6 +518,47 @@ void ABCVm::kill(method_info* th, int n)
 	cout << "getLocal " << n << endl;
 }*/
 
+void method_info::runtime_stack_push(ISWFObject* s)
+{
+	stack[stack_index++];
+	cout << "Runtime stack index " << stack_index << endl;
+}
+
+void method_info::setStackLength(const llvm::ExecutionEngine* ex, int l)
+{
+	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
+	stack=new ISWFObject*[l];
+	llvm::Constant* constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)stack);
+	//TODO: Now the stack is considered an array of pointer to int64
+	dynamic_stack = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
+	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)&stack_index);
+	dynamic_stack_index = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::IntegerType::get(32)));
+}
+
+void method_info::llvm_stack_push(llvm::IRBuilder<>& builder, llvm::Value* val)
+{
+	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
+	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index);
+	builder.CreateStore(val,dest);
+
+	//increment stack index
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
+	llvm::Value* index2=builder.CreateAdd(index,constant);
+	builder.CreateStore(index2,dynamic_stack_index);
+}
+
+ISWFObject* method_info::runtime_stack_pop()
+{
+	if(stack_index==0)
+	{
+		LOG(ERROR,"Empty stack");
+		return NULL;
+	}
+	cout << "Runtime stack index " << stack_index << endl;
+	return stack[--stack_index];
+}
+
+
 enum STACK_TYPE{STACK_OBJECT=0};
 typedef pair<llvm::Value*, STACK_TYPE> stack_entry;
 
@@ -564,15 +603,11 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)m->locals);
 	llvm::Value* locals = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 
-	//the stack is statically handled
+	//the stack is statically handled as much as possible to allow llvm optimizations
 	//on branch and on interpreted/jitted code transition it is synchronized with the dynamic one
 	vector<stack_entry> static_stack;
 	static_stack.reserve(m->body->max_stack);
-	m->stack=new ISWFObject*[m->body->max_stack];
-	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)m->stack);
-	llvm::Value* dynamic_stack = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)&m->stack_index);
-	llvm::Value* dynamic_stack_index = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::IntegerType::get(32)));
+	m->setStackLength(ex,m->body->max_stack);
 
 	//the scope stack is not accessible to llvm code
 
@@ -657,23 +692,14 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				{
 					for(int i=0;i<static_stack.size();i++)
 					{
-						constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
-						llvm::Value* dest=Builder.CreateGEP(dynamic_stack,constant);
 						if(static_stack[i].second!=STACK_OBJECT)
 							LOG(ERROR,"Conversion not yet implemented");
-						Builder.CreateStore(static_stack[i].first,dest);
-
-						//increment stack index
-						constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
-						llvm::Value* index=Builder.CreateLoad(dynamic_stack_index);
-						llvm::Value* index2=Builder.CreateAdd(index,constant);
-						Builder.CreateStore(index2,dynamic_stack_index);
-
-						static_stack.clear();
+						m->llvm_stack_push(Builder,static_stack[i].first);
 					}
+					static_stack.clear();
+					jitted=false;
 				}
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), th);
-				jitted=false;
 				break;
 			}
 			case 0x2a:
@@ -856,8 +882,6 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//getlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
-				//Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
-
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
 				static_stack.push_back(stack_entry(Builder.CreateLoad(t,"stack"),STACK_OBJECT));
 				jitted=true;

@@ -19,6 +19,7 @@
 
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/Support/IRBuilder.h>
 #include "tags.h"
 #include "frame.h"
 #include "logger.h"
@@ -174,12 +175,21 @@ private:
 
 	llvm::Function* f;
 	ISWFObject** locals;
-public:
-	std::vector<ISWFObject*> scope_stack;
 	ISWFObject** stack;
 	uint32_t stack_index;
+	llvm::Value* dynamic_stack;
+	llvm::Value* dynamic_stack_index;
+
+public:
+	std::vector<ISWFObject*> scope_stack;
 	method_body_info* body;
-	method_info():body(NULL),f(NULL),locals(NULL),stack(NULL),stack_index(0){}
+	void runtime_stack_push(ISWFObject* s);
+	ISWFObject* runtime_stack_pop();
+	void llvm_stack_push(llvm::IRBuilder<>& builder, llvm::Value* val);
+	method_info():body(NULL),f(NULL),locals(NULL),stack(NULL),stack_index(0)
+	{
+	}
+	void setStackLength(const llvm::ExecutionEngine* ex, int l);
 };
 
 struct item_info

@@ -268,8 +268,8 @@ public:
 	STRING getName() { return Name;}
 	SWFOBJECT_TYPE getObjectType(){ return T_PLACEOBJECT;}
 	//Forwared to placed object, if valid
-	SWFObject getVariableByName(const STRING& name);
-	void setVariableByName(const STRING& name, const SWFObject& o);
+	SWFObject getVariableByName(const std::string& name);
+	void setVariableByName(const std::string& name, const SWFObject& o);
 };
 
 class FrameLabelTag: public DisplayListTag

@@ -24,6 +24,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <map>
 
 #include "logger.h"
 
@@ -76,14 +77,14 @@ private:
 	std::string String;
 public:
 	STRING(){};
-	STRING(const char* s)
+	STRING(const char* s):String(s)
 	{
-		do
+/*		do
 		{
 			String.push_back(*s);
 			s++;
 		}
-		while(*s!=0);
+		while(*s!=0);*/
 	}
 	bool operator==(const STRING& s)
 	{
@@ -154,8 +155,8 @@ public:
 	virtual int toInt();
 	virtual float toFloat();
 	virtual IFunction* toFunction();
-	virtual SWFObject getVariableByName(const STRING& name)=0;
-	virtual void setVariableByName(const STRING& name, const SWFObject& o)=0;
+	virtual SWFObject getVariableByName(const std::string& name)=0;
+	virtual void setVariableByName(const std::string& name, const SWFObject& o)=0;
 	virtual ISWFObject* clone()
 	{
 		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
@@ -174,10 +175,10 @@ protected:
 	int getVariableIndexByName(const STRING& name);
 	ISWFObject* parent;
 	ISWFObject_impl();
-	std::vector<SWFObject> Variables;
+	std::map<std::string,SWFObject> Variables;
 public:
-	SWFObject getVariableByName(const STRING& name);
-	void setVariableByName(const STRING& name, const SWFObject& o);
+	SWFObject getVariableByName(const std::string& name);
+	void setVariableByName(const std::string& name, const SWFObject& o);
 	ISWFObject* getParent();
 	void _register();
 };

@@ -162,48 +162,14 @@ void ISWFObject_impl::_register()
 	LOG(CALLS,"default _register called");
 }
 
-int ISWFObject_impl::getVariableIndexByName(const STRING& name)
+void ISWFObject_impl::setVariableByName(const string& name, const SWFObject& o)
 {
-	int ret=-1;
-	for(int i=0;i<Variables.size();i++)
-	{
-		if(Variables[i].getName()==name)
-		{
-			ret=i;
-			break;
-		}
-	}
-	return ret;
+	Variables[name]=o;
 }
 
-void ISWFObject_impl::setVariableByName(const STRING& name, const SWFObject& o)
+SWFObject ISWFObject_impl::getVariableByName(const string& name)
 {
-	int index=getVariableIndexByName(name);
-	if(index==-1)
-	{
-		Variables.push_back(o);
-		Variables.back().setName(name);
-		//Variables.back().bind();
-	}
-	else
-	{
-		Variables[index]=o;
-		Variables[index].setName(name);
-		//Variables[index].bind();
-	}
-}
-
-SWFObject ISWFObject_impl::getVariableByName(const STRING& name)
-{
-	int index=getVariableIndexByName(name);
-	if(index==-1)
-	{
-		return sys->getVariableByName(name);
-		//LOG(NO_INFO,"Could not find variable " << name<< ". Returning undefined");
-		//return SWFObject();
-	}
-	else
-		return Variables[index];
+	return Variables[name];
 }
 
 STRING Integer::toString()

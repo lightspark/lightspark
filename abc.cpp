@@ -338,7 +338,7 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	synt_method(m);
 	LOG(CALLS,"Calling Instance init");
 	ISWFObject* ret=new ASObject;
-	module.dump();
+	//module.dump();
 	//printClass(index);
 	if(m->f)
 	{
@@ -1012,19 +1012,19 @@ void ABCVm::Run()
 			printTrait(&scripts[i].traits[j]);*/
 		method_info* m=get_method(scripts[i].init);
 		cout << "Building entry script traits: " << scripts[i].trait_count << endl;
-		for(int j=0;j<scripts[j].trait_count;i++)
+		for(int j=0;j<scripts[i].trait_count;j++)
 			buildTrait(&scripts[i].traits[j]);
 		//printMethod(m);
 		synt_method(m);
 
 		if(m->f)
 		{
-			module.dump();
 			void* f_ptr=ex->getPointerToFunction(m->f);
 			void (*FP)(int*) = (void (*)(int*))f_ptr;
 			FP((int*)15);
 		}
 	}
+	//module.dump();
 }
 
 string ABCVm::getString(unsigned int s) const

@@ -73,23 +73,23 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	//Register default objects
 	SWFObject stage(new ASStage);
-	registerVariable("Stage",stage);
+	setVariableByName("Stage",stage);
 
 	SWFObject array(new ASArray);
 	array->_register();
-	registerVariable("Array",array);
+	setVariableByName("Array",array);
 
 	SWFObject object(new ASObject);
 	object->_register();
-	registerVariable("Object",object);
+	setVariableByName("Object",object);
 
 	SWFObject mcloader(new ASMovieClipLoader);
-	registerVariable("MovieClipLoader",mcloader);
+	setVariableByName("MovieClipLoader",mcloader);
 
 	SWFObject xml(new ASXML);
-	registerVariable("XML",xml);
+	setVariableByName("XML",xml);
 
-	registerVariable("",this);
+	setVariableByName("",this);
 }
 
 void SystemState::setShutdownFlag()
@@ -656,64 +656,19 @@ DictionaryTag* SystemState::dictionaryLookup(UI16 id)
 	return *it;
 }
 
-void SystemState::registerVariable(const STRING& name, const SWFObject& f)
+SWFObject SystemState::getVariableByName(const string& name)
 {
-	if(!name.isNull())
-	{
-		if(getVariableByName(name).isDefined())
-			LOG(ERROR,"Variable name aliasing, bad things could happen, name " << f.getName());
-	}
 	sem_wait(&mutex);
-	Variables.push_back(f);
-	Variables.back().setName(name);
-	sem_post(&mutex);
-}
-
-SWFObject SystemState::getVariableByName(const STRING& name)
-{
-	SWFObject ret;
-	sem_wait(&mutex);
-	bool found=false;
-	for(int i=0;i<Variables.size();i++)
-	{
-		if(Variables[i].getName()==name)
-		{
-			ret=Variables[i];
-			found=true;
-			break;
-		}
-	}
-	if(!found)
-		LOG(NO_INFO,"Could not find variable " << name<< ". Returning undefined");
+	SWFObject ret=ISWFObject_impl::getVariableByName(name);
 	sem_post(&mutex);
 	return ret;
 }
 
-void SystemState::setVariableByName(const STRING& name, const SWFObject& o)
+void SystemState::setVariableByName(const string& name, const SWFObject& o)
 {
-	cout << "sys set" << endl;
 	sem_wait(&mutex);
-	int index=getVariableIndexByName(name);
-	if(index==-1)
-	{
-		Variables.push_back(o);
-		Variables.back().setName(name);
-		//Variables.back().bind();
-	}
-	else
-	{
-		Variables[index]=o;
-		Variables[index].setName(name);
-		//Variables[index].bind();
-	}
+	ISWFObject_impl::setVariableByName(name,o);
 	sem_post(&mutex);
-}
-
-std::vector<SWFObject>& SystemState::getVariables()
-{
-	//We should get a mutex, but actually SystemState class should never be instantiated
-	LOG(NO_INFO,"Why are you asking for root movie variables");
-	return Variables;
 }
 
 SWFOBJECT_TYPE SystemState::getObjectType()

@@ -32,7 +32,7 @@ SWFObject::SWFObject():bind(false)
 	data=new Undefined;
 }
 
-SWFObject::SWFObject(const SWFObject& r):name(r.name),bind(r.bind)
+SWFObject::SWFObject(const SWFObject& r):bind(r.bind)
 {
 	//Delete old data
 	data=r.data;
@@ -59,7 +59,6 @@ int ConstantReference::toInt()
 SWFObject& SWFObject::operator=(const SWFObject& r)
 {
 	//Delete old data
-	name=r.name;
 	if(bind)
 	{
 		if(data->getObjectType()!=data->getObjectType())
@@ -715,16 +714,6 @@ STRING Undefined::toString()
 STRING Null::toString()
 {
 	return STRING("null");
-}
-
-STRING SWFObject::getName() const
-{
-	return name;
-}
-
-void SWFObject::setName(const STRING& n)
-{
-	name=n;
 }
 
 ISWFObject* SWFObject::getData() const

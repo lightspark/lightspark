@@ -128,7 +128,7 @@ class SWFObject
 {
 private:
 	ISWFObject* data;
-	STRING name;
+//	STRING name;
 	bool bind;
 	//virtual bool xequals(const SWFObject& r);
 public:
@@ -141,8 +141,6 @@ public:
 	bool equals(const SWFObject& r);
 	bool isLess(const SWFObject& r);
 	bool isGreater(const SWFObject& r);
-	STRING getName() const;
-	void setName(const STRING& n);
 	
 	ISWFObject* getData() const;
 };

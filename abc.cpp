@@ -81,12 +81,6 @@ int SymbolClassTag::getDepth() const
 	return 0x30000;
 }
 
-void dumpVariable(vector<SWFObject>& v,int n)
-{
-	cout << "size " << v.size() << endl;
-	cout << v[n].getName() << endl;
-}
-
 void SymbolClassTag::Render()
 {
 	LOG(NOT_IMPLEMENTED,"SymbolClassTag Render");
@@ -105,109 +99,130 @@ void ABCVm::registerFunctions()
 	vector<const llvm::Type*> sig;
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 
+	sig.push_back(llvm::IntegerType::get(32));
+	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::debug);
+	sig.clear();
+
 	// (ABCVm*)
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
-	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushScope",&module);
+	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushScope",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushScope);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"dup",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"dup",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::dup);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"add",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"add",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::add);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"swap",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"swap",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::swap);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNull",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNull",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushNull);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"popScope",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"popScope",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::popScope);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug",&module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::debug);
 	// (ABCVm*,int)
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifEq",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifEq",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifEq);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newCatch",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newCatch",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newCatch);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newObject",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newObject",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newObject);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifFalse",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifFalse",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifFalse);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"jump",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"jump",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::jump);
 
 /*	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);*/
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getSlot",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getSlot",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getSlot);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setSlot",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setSlot",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setSlot);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setLocal",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setLocal",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setLocal);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLex",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLex",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getLex);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findPropStrict",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findPropStrict",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findPropStrict);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getProperty",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getProperty",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getProperty);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findProperty",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findProperty",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findProperty);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructSuper",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructSuper",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::constructSuper);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newArray",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newArray",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newArray);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newClass",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newClass",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newClass);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushString",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushString",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushString);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"initProperty",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"initProperty",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::initProperty);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"kill",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"kill",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::kill);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getScopeObject",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getScopeObject",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getScopeObject);
 
 	// (ABCVm*,int,int)
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callPropVoid",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callPropVoid",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::callPropVoid);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callProperty",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callProperty",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::callProperty);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructProp",&module);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructProp",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::constructProp);
+}
+
+void ABCVm::registerClasses()
+{
+	//Register predefined types, ASObject are enough for not implemented classes
+	
+	Global.setVariableByName(".Error",new ASObject);
+	Global.setVariableByName(".Object",new ASObject);
+	Global.setVariableByName("flash.events.EventDispatcher",new ASObject);
+	Global.setVariableByName("flash.display.DisplayObject",new ASObject);
+	Global.setVariableByName("flash.display.InteractiveObject",new ASObject);
+	Global.setVariableByName("flash.display.DisplayObjectContainer",new ASObject);
+	Global.setVariableByName("flash.display.Sprite",new ASObject);
+	Global.setVariableByName("flash.events.Event",new ASObject);
+	Global.setVariableByName("flash.net.LocalConnection",new ASObject);
+	Global.setVariableByName("flash.utils.Proxy",new ASObject);
+	Global.setVariableByName("flash.events.ProgressEvent",new ASObject);
 }
 
 string ABCVm::getMultinameString(unsigned int mi) const
@@ -260,10 +275,8 @@ string ABCVm::getMultinameString(unsigned int mi) const
 	return ret;
 }
 
-ABCVm::ABCVm(istream& in):module("abc jit")
+ABCVm::ABCVm(istream& in)
 {
-	ex=llvm::ExecutionEngine::create(&module);
-
 	in >> minor >> major;
 	LOG(CALLS,"ABCVm version " << major << '.' << minor);
 	in >> constant_pool;
@@ -307,13 +320,6 @@ ABCVm::ABCVm(istream& in):module("abc jit")
 			methods[method_body[i].method].body=&method_body[i];
 	}
 
-	registerFunctions();
-
-
-/*	for(int i=0;i<constant_pool.namespace_count;i++)
-		printMultiname(i);*/
-/*	for(int i=0;i<class_count;i++)
-		printClass(i);*/
 }
 
 SWFObject ABCVm::buildNamedClass(const string& s)
@@ -329,7 +335,7 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	LOG(CALLS,"Calling Class init");
 	if(m->f)
 	{
-		cout << "body length " << m->body->code_length << endl;
+		m->locals[0]=&Global;
 		void* f_ptr=ex->getPointerToFunction(m->f);
 		void (*FP)() = (void (*)())f_ptr;
 		FP();
@@ -342,12 +348,11 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	//printClass(index);
 	if(m->f)
 	{
-		cout << "body length " << m->body->code_length <<endl;
-		cout << "ret " << ret << endl;
 /*		cout << "traits " << m->body->trait_count << endl;
 		for(int i=0;i<m->body->trait_count;i++)
 			printTrait(&m->body->traits[i]);*/
-		m->locals[0]=ret;
+		m->locals[0]=&Global;
+		m->locals[1]=ret;
 		void* f_ptr=ex->getPointerToFunction(m->f);
 		void (*FP)() = (void (*)())f_ptr;
 		FP();
@@ -519,8 +524,22 @@ void ABCVm::debug(void* p)
 
 void ABCVm::getLex(method_info* th, int n)
 {
-	cout << "getLex " << n << endl;
-	th->vm->printMultiname(n);
+	string name=th->vm->getMultinameString(n);
+	cout << "getLex " << name << endl;
+	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	bool found=false;
+	for(it;it!=th->scope_stack.rend();it++)
+	{
+		SWFObject o=(*it)->getVariableByName(name);
+		if(o->getObjectType()!=T_UNDEFINED)
+		{
+			th->runtime_stack_push(o.getData());
+			found=true;
+			break;
+		}
+	}
+	if(!found)
+		cout << "NOT found" << endl;
 }
 
 void ABCVm::pushString(method_info* th, int n)
@@ -532,11 +551,6 @@ void ABCVm::kill(method_info* th, int n)
 {
 	cout << "kill " << n << endl;
 }
-
-/*void ABCVm::getLocal(method_info* th, int n)
-{
-	cout << "getLocal " << n << endl;
-}*/
 
 void method_info::runtime_stack_push(ISWFObject* s)
 {
@@ -573,6 +587,7 @@ llvm::Value* method_info::llvm_stack_peek(llvm::IRBuilder<>& builder) const
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
 	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
+	builder.CreateCall(vm->ex->FindFunctionNamed("debug"),index2);
 	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index2);
 	return builder.CreateLoad(dest);
 }
@@ -668,7 +683,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 		LOG(ERROR,"Arguments not supported");
 
 	llvm::FunctionType* method_type=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
-	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",&module);
+	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",module);
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", m->f);
 	llvm::IRBuilder<> Builder;
 	Builder.SetInsertPoint(BB);
@@ -898,6 +913,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x60:
 			{
 				//getlex
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -1000,6 +1017,11 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 void ABCVm::Run()
 {
+	module=new llvm::Module("abc jit");
+	ex=llvm::ExecutionEngine::create(module);
+
+	registerFunctions();
+	registerClasses();
 	//Set register 0 to Global
 	//registers[0]=SWFObject(&Global);
 	//Take each script entry and run it
@@ -1016,6 +1038,8 @@ void ABCVm::Run()
 			buildTrait(&scripts[i].traits[j]);
 		//printMethod(m);
 		synt_method(m);
+
+		m->locals[0]=&Global;
 
 		if(m->f)
 		{

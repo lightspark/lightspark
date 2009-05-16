@@ -337,8 +337,10 @@ private:
 	std::map<std::string,int> valid_classes;
 	ASObject Global;
 	std::vector<SWFObject> stack;
-	llvm::Module module;
+	llvm::Module* module;
+public:
 	llvm::ExecutionEngine* ex;
+private:
 
 	//Utility
 	static void debug(void* p);
@@ -346,6 +348,8 @@ private:
 	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
 	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
 	void syncStacks(llvm::IRBuilder<>& builder, bool jitted,std::vector<stack_entry>& static_stack, method_info* m);
+
+	void registerClasses();
 
 	void registerFunctions();
 	//Interpreted AS instructions

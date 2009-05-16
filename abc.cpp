@@ -522,7 +522,7 @@ void ABCVm::kill(method_info* th, int n)
 
 void method_info::runtime_stack_push(ISWFObject* s)
 {
-	stack[stack_index++];
+	stack[stack_index++]=s;
 	cout << "Runtime stack index " << stack_index << endl;
 }
 
@@ -535,6 +535,19 @@ void method_info::setStackLength(const llvm::ExecutionEngine* ex, int l)
 	dynamic_stack = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)&stack_index);
 	dynamic_stack_index = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::IntegerType::get(32)));
+
+}
+
+llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder) const 
+{
+	//decrement stack index
+	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
+	llvm::Value* index2=builder.CreateSub(index,constant);
+	builder.CreateStore(index2,dynamic_stack_index);
+
+	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index2);
+	return builder.CreateLoad(dest);
 }
 
 llvm::Value* method_info::llvm_stack_peek(llvm::IRBuilder<>& builder) const
@@ -569,6 +582,20 @@ ISWFObject* method_info::runtime_stack_pop()
 	return stack[--stack_index];
 }
 
+
+inline ABCVm::stack_entry ABCVm::static_stack_pop(llvm::IRBuilder<>& builder, vector<ABCVm::stack_entry>& static_stack, const method_info* m) 
+{
+	//try to get the tail value from the static stack
+	if(!static_stack.empty())
+	{
+		stack_entry ret=static_stack.back();
+		static_stack.pop_back();
+		return ret;
+	}
+	//try to pop the tail value of the dynamic stack
+	cout << "Popping dynamic stack" << endl;
+	return stack_entry(m->llvm_stack_pop(builder),STACK_OBJECT);
+}
 
 inline ABCVm::stack_entry ABCVm::static_stack_peek(llvm::IRBuilder<>& builder, vector<ABCVm::stack_entry>& static_stack, const method_info* m) 
 {
@@ -734,7 +761,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//dup
 				jitted=true;
-				Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
+				//Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
 				stack_entry e=static_stack_peek(Builder,static_stack,m);
 				static_stack_push(static_stack,e);
 				break;
@@ -916,7 +943,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				//getlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
-				static_stack.push_back(stack_entry(Builder.CreateLoad(t,"stack"),STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(Builder.CreateLoad(t,"stack"),STACK_OBJECT));
 				jitted=true;
 				break;
 			}
@@ -925,7 +952,13 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//setlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
-				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), th, constant);
+				//Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), th, constant);
+				llvm::Value* t=Builder.CreateGEP(locals,constant);
+				stack_entry e=static_stack_pop(Builder,static_stack,m);
+				if(e.second!=STACK_OBJECT)
+					LOG(ERROR,"conversion not yet implemented");
+				Builder.CreateStore(e.first,t);
+				jitted=true;
 				break;
 			}
 			default:

@@ -81,6 +81,12 @@ int SymbolClassTag::getDepth() const
 	return 0x30000;
 }
 
+void dumpVariable(vector<SWFObject>& v,int n)
+{
+	cout << "size " << v.size() << endl;
+	cout << v[n].getName() << endl;
+}
+
 void SymbolClassTag::Render()
 {
 	LOG(NOT_IMPLEMENTED,"SymbolClassTag Render");
@@ -333,7 +339,7 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	LOG(CALLS,"Calling Instance init");
 	ISWFObject* ret=new ASObject;
 	module.dump();
-	printClass(index);
+	//printClass(index);
 	if(m->f)
 	{
 		cout << "body length " << m->body->code_length <<endl;
@@ -434,12 +440,12 @@ void ABCVm::getSlot(method_info* th, int n)
 
 void ABCVm::getLocal(method_info* th, int n)
 {
-	cout << "getLocal: DONE" << n << endl;
+	cout << "getLocal: DONE " << n << endl;
 }
 
 void ABCVm::setLocal(method_info* th, int n)
 {
-	cout << "setLocal: DONE" << n << endl;
+	cout << "setLocal: DONE " << n << endl;
 }
 
 void ABCVm::dup(method_info* th)
@@ -467,25 +473,25 @@ void ABCVm::constructSuper(method_info* th, int n)
 void ABCVm::getProperty(method_info* th, int n)
 {
 	cout << "getProperty " << n << endl;
-//	th->printMultiname(n);
+	th->vm->printMultiname(n);
 }
 
 void ABCVm::findProperty(method_info* th, int n)
 {
 	cout << "findProperty " << n << endl;
-//	th->printMultiname(n);
+	th->vm->printMultiname(n);
 }
 
 void ABCVm::findPropStrict(method_info* th, int n)
 {
 	cout << "findPropStrict " << n << endl;
-//	th->printMultiname(n);
+	th->vm->printMultiname(n);
 }
 
 void ABCVm::initProperty(method_info* th, int n)
 {
 	cout << "initProperty " << n << endl;
-//	th->printMultiname(n);
+	th->vm->printMultiname(n);
 }
 
 void ABCVm::newArray(method_info* th, int n)
@@ -503,7 +509,7 @@ void ABCVm::newClass(method_info* th, int n)
 void ABCVm::getScopeObject(method_info* th, int n)
 {
 	th->runtime_stack_push(th->scope_stack[n]);
-	cout << "getScopeObject: DONE" << th->scope_stack[n] << endl;
+	cout << "getScopeObject: DONE " << th->scope_stack[n] << endl;
 }
 
 void ABCVm::debug(void* p)
@@ -994,29 +1000,30 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 void ABCVm::Run()
 {
-/*	for(int i=0;i<scripts.size();i++)
-	{
-		cout << "Script N: " << i << endl;
-		for(int j=0;j<scripts[i].trait_count;j++)
-			printTrait(&scripts[i].traits[j]);
-	}*/
-
-	//Take last script entry and run it
-	method_info* m=get_method(scripts.back().init);
-	cout << "Building entry script traits: " << scripts.back().trait_count << endl;
-	for(int i=0;i<scripts.back().trait_count;i++)
-		buildTrait(&scripts.back().traits[i]);
-	printMethod(m);
-	synt_method(m);
 	//Set register 0 to Global
-	registers[0]=SWFObject(&Global);
-
-	if(m->f)
+	//registers[0]=SWFObject(&Global);
+	//Take each script entry and run it
+	for(int i=0;i<scripts.size();i++)
 	{
-		module.dump();
-		void* f_ptr=ex->getPointerToFunction(m->f);
-		void (*FP)(int*) = (void (*)(int*))f_ptr;
-		FP((int*)15);
+	//	if(i>0)
+	//		break;
+		cout << "Script N: " << i << endl;
+	/*	for(int j=0;j<scripts[i].trait_count;j++)
+			printTrait(&scripts[i].traits[j]);*/
+		method_info* m=get_method(scripts[i].init);
+		cout << "Building entry script traits: " << scripts[i].trait_count << endl;
+		for(int j=0;j<scripts[j].trait_count;i++)
+			buildTrait(&scripts[i].traits[j]);
+		//printMethod(m);
+		synt_method(m);
+
+		if(m->f)
+		{
+			module.dump();
+			void* f_ptr=ex->getPointerToFunction(m->f);
+			void (*FP)(int*) = (void (*)(int*))f_ptr;
+			FP((int*)15);
+		}
 	}
 }
 
@@ -1034,13 +1041,14 @@ void ABCVm::buildTrait(const traits_info* t)
 	{
 		case traits_info::Class:
 		{
-			string name=getString(constant_pool.multinames[t->name].name);
+			string name=getMultinameString(t->name);
 			LOG(CALLS,"Registering trait " << name);
 			Global.setVariableByName(STRING(name.c_str()), buildClass(t->classi));
 			break;
 		}
 		default:
-			LOG(ERROR,"Trait not supported");
+			string name=getString(constant_pool.multinames[t->name].name);
+			LOG(ERROR,"Trait not supported " << name);
 	}
 }
 

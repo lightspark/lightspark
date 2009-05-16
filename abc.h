@@ -186,6 +186,7 @@ public:
 	void runtime_stack_push(ISWFObject* s);
 	ISWFObject* runtime_stack_pop();
 	void llvm_stack_push(llvm::IRBuilder<>& builder, llvm::Value* val);
+	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder) const;
 	method_info():body(NULL),f(NULL),locals(NULL),stack(NULL),stack_index(0)
 	{
 	}
@@ -299,6 +300,9 @@ private:
 class ABCVm
 {
 private:
+	enum STACK_TYPE{STACK_OBJECT=0};
+	typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
+
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -334,7 +338,11 @@ private:
 	llvm::Module module;
 	llvm::ExecutionEngine* ex;
 
+	//Utility
 	static void debug(void* p);
+	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
+	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
+	void syncStacks(llvm::IRBuilder<>& builder, bool jitted,std::vector<stack_entry>& static_stack, method_info* m);
 
 	void registerFunctions();
 	//Interpreted AS instructions

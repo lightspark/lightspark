@@ -367,6 +367,8 @@ void ABCVm::swap(method_info* th)
 void ABCVm::newActivation(method_info* th)
 {
 	cout << "newActivation" << endl;
+	//TODO: Should create a real activation object
+	th->runtime_stack_push(new ASObject);
 }
 
 void ABCVm::popScope(method_info* th)
@@ -535,6 +537,15 @@ void method_info::setStackLength(const llvm::ExecutionEngine* ex, int l)
 	dynamic_stack_index = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::IntegerType::get(32)));
 }
 
+llvm::Value* method_info::llvm_stack_peek(llvm::IRBuilder<>& builder) const
+{
+	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
+	llvm::Value* index2=builder.CreateSub(index,constant);
+	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index2);
+	return builder.CreateLoad(dest);
+}
+
 void method_info::llvm_stack_push(llvm::IRBuilder<>& builder, llvm::Value* val)
 {
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
@@ -559,8 +570,34 @@ ISWFObject* method_info::runtime_stack_pop()
 }
 
 
-enum STACK_TYPE{STACK_OBJECT=0};
-typedef pair<llvm::Value*, STACK_TYPE> stack_entry;
+inline ABCVm::stack_entry ABCVm::static_stack_peek(llvm::IRBuilder<>& builder, vector<ABCVm::stack_entry>& static_stack, const method_info* m) 
+{
+	//try to get the tail value from the static stack
+	if(!static_stack.empty())
+		return static_stack.back();
+	//try to load the tail value of the dynamic stack
+	cout << "Peeking dynamic stack" << endl;
+	return stack_entry(m->llvm_stack_peek(builder),STACK_OBJECT);
+}
+
+inline void ABCVm::static_stack_push(vector<ABCVm::stack_entry>& static_stack, const ABCVm::stack_entry& e)
+{
+	static_stack.push_back(e);
+}
+
+inline void ABCVm::syncStacks(llvm::IRBuilder<>& builder, bool jitted,std::vector<stack_entry>& static_stack,method_info* m)
+{
+	if(jitted)
+	{
+		for(int i=0;i<static_stack.size();i++)
+		{
+			if(static_stack[i].second!=STACK_OBJECT)
+				LOG(ERROR,"Conversion not yet implemented");
+			m->llvm_stack_push(builder,static_stack[i].first);
+		}
+		static_stack.clear();
+	}
+}
 
 llvm::Function* ABCVm::synt_method(method_info* m)
 {
@@ -688,24 +725,18 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x30:
 			{
 				//pushscope
-				if(jitted)
-				{
-					for(int i=0;i<static_stack.size();i++)
-					{
-						if(static_stack[i].second!=STACK_OBJECT)
-							LOG(ERROR,"Conversion not yet implemented");
-						m->llvm_stack_push(Builder,static_stack[i].first);
-					}
-					static_stack.clear();
-					jitted=false;
-				}
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), th);
 				break;
 			}
 			case 0x2a:
 			{
 				//dup
+				jitted=true;
 				Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
+				stack_entry e=static_stack_peek(Builder,static_stack,m);
+				static_stack_push(static_stack,e);
 				break;
 			}
 			case 0x46:
@@ -777,6 +808,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x57:
 			{
 				//newactivation
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("newActivation"), th);
 				break;
 			}

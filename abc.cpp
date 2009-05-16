@@ -152,6 +152,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setSlot",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setSlot);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setLocal",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setLocal);
 
@@ -315,7 +318,6 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	//TODO: Really build class
 	int index=it->second;
 
-//	printClass(index);
 	method_info* m=&methods[classes[index].cinit];
 	synt_method(m);
 	LOG(CALLS,"Calling Class init");
@@ -331,10 +333,14 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	LOG(CALLS,"Calling Instance init");
 	ISWFObject* ret=new ASObject;
 	module.dump();
+	printClass(index);
 	if(m->f)
 	{
 		cout << "body length " << m->body->code_length <<endl;
 		cout << "ret " << ret << endl;
+/*		cout << "traits " << m->body->trait_count << endl;
+		for(int i=0;i<m->body->trait_count;i++)
+			printTrait(&m->body->traits[i]);*/
 		m->locals[0]=ret;
 		void* f_ptr=ex->getPointerToFunction(m->f);
 		void (*FP)() = (void (*)())f_ptr;
@@ -426,14 +432,19 @@ void ABCVm::getSlot(method_info* th, int n)
 	cout << "getSlot " << n << endl;
 }
 
+void ABCVm::getLocal(method_info* th, int n)
+{
+	cout << "getLocal: DONE" << n << endl;
+}
+
 void ABCVm::setLocal(method_info* th, int n)
 {
-	cout << "setLocal " << n << endl;
+	cout << "setLocal: DONE" << n << endl;
 }
 
 void ABCVm::dup(method_info* th)
 {
-	cout << "dup" << endl;
+	cout << "dup: DONE" << endl;
 }
 
 void ABCVm::pushNull(method_info* th)
@@ -444,7 +455,7 @@ void ABCVm::pushNull(method_info* th)
 void ABCVm::pushScope(method_info* th)
 {
 	ISWFObject* t=th->runtime_stack_pop();
-	cout << "pushScope " << t << endl;
+	cout << "pushScope: DONE " << t << endl;
 	th->scope_stack.push_back(t);
 }
 
@@ -491,7 +502,8 @@ void ABCVm::newClass(method_info* th, int n)
 
 void ABCVm::getScopeObject(method_info* th, int n)
 {
-	cout << "getScopeObject " << n << endl;
+	th->runtime_stack_push(th->scope_stack[n]);
+	cout << "getScopeObject: DONE" << th->scope_stack[n] << endl;
 }
 
 void ABCVm::debug(void* p)
@@ -502,7 +514,7 @@ void ABCVm::debug(void* p)
 void ABCVm::getLex(method_info* th, int n)
 {
 	cout << "getLex " << n << endl;
-	//th->printMultiname(n);
+	th->vm->printMultiname(n);
 }
 
 void ABCVm::pushString(method_info* th, int n)
@@ -638,6 +650,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 		return NULL;
 	}
 	stringstream code(m->body->code);
+	m->vm=this;
 
 	//The pointer size compatible int type will be useful
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
@@ -761,7 +774,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//dup
 				jitted=true;
-				//Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
+				Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
 				stack_entry e=static_stack_peek(Builder,static_stack,m);
 				static_stack_push(static_stack,e);
 				break;
@@ -888,6 +901,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x65:
 			{
 				//getscopeobject
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -924,6 +939,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x6d:
 			{
 				//setslot
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -942,6 +959,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//getlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
+				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
 				static_stack_push(static_stack,stack_entry(Builder.CreateLoad(t,"stack"),STACK_OBJECT));
 				jitted=true;
@@ -952,7 +970,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//setlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
-				//Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), th, constant);
+				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), th, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
 				stack_entry e=static_stack_pop(Builder,static_stack,m);
 				if(e.second!=STACK_OBJECT)
@@ -1033,6 +1051,7 @@ void ABCVm::printTrait(const traits_info* t) const
 	{
 		case traits_info::Slot:
 			LOG(CALLS,"Slot trait");
+			LOG(CALLS,"id: " << t->slot_id << " vindex " << t->vindex << " vkind " << t->vkind);
 			break;
 		case traits_info::Method:
 			LOG(CALLS,"Method trait");

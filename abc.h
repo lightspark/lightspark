@@ -181,6 +181,7 @@ private:
 	llvm::Value* dynamic_stack_index;
 
 public:
+	ABCVm* vm;
 	std::vector<ISWFObject*> scope_stack;
 	method_body_info* body;
 	void runtime_stack_push(ISWFObject* s);
@@ -188,7 +189,7 @@ public:
 	void llvm_stack_push(llvm::IRBuilder<>& builder, llvm::Value* val);
 	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder) const;
 	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder) const;
-	method_info():body(NULL),f(NULL),locals(NULL),stack(NULL),stack_index(0)
+	method_info():body(NULL),f(NULL),locals(NULL),stack(NULL),stack_index(0),vm(NULL)
 	{
 	}
 	void setStackLength(const llvm::ExecutionEngine* ex, int l);
@@ -351,7 +352,7 @@ private:
 	static void callPropVoid(method_info* th, int n, int m); 
 	static void callProperty(method_info* th, int n, int m); 
 	static void constructProp(method_info* th, int n, int m); 
-//	static void getLocal(method_info* th, int n); 
+	static void getLocal(method_info* th, int n); 
 	static void newObject(method_info* th, int n); 
 	static void newCatch(method_info* th, int n); 
 	static void jump(method_info* th, int offset); 

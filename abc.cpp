@@ -143,8 +143,8 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"jump",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::jump);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",&module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);
+/*	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",&module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);*/
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getSlot",&module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getSlot);
@@ -330,6 +330,7 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	synt_method(m);
 	LOG(CALLS,"Calling Instance init");
 	ISWFObject* ret=new ASObject;
+	module.dump();
 	if(m->f)
 	{
 		cout << "body length " << m->body->code_length <<endl;
@@ -338,7 +339,6 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 		void (*FP)() = (void (*)())f_ptr;
 		FP();
 	}
-	module.dump();
 	return ret;
 }
 
@@ -353,138 +353,143 @@ inline method_info* ABCVm::get_method(unsigned int m)
 	}
 }
 
-void ABCVm::add(ABCVm* th)
+void ABCVm::add(method_info* th)
 {
 	cout << "add" << endl;
 }
 
-void ABCVm::swap(ABCVm* th)
+void ABCVm::swap(method_info* th)
 {
 	cout << "swap" << endl;
 }
 
-void ABCVm::newActivation(ABCVm* th)
+void ABCVm::newActivation(method_info* th)
 {
 	cout << "newActivation" << endl;
 }
 
-void ABCVm::popScope(ABCVm* th)
+void ABCVm::popScope(method_info* th)
 {
 	cout << "popScope" << endl;
 }
 
-void ABCVm::constructProp(ABCVm* th, int n, int m)
+void ABCVm::constructProp(method_info* th, int n, int m)
 {
 	cout << "constructProp " << n << ' ' << m << endl;
 }
 
-void ABCVm::callProperty(ABCVm* th, int n, int m)
+void ABCVm::callProperty(method_info* th, int n, int m)
 {
 	cout << "callProperty " << n << ' ' << m << endl;
 }
 
-void ABCVm::callPropVoid(ABCVm* th, int n, int m)
+void ABCVm::callPropVoid(method_info* th, int n, int m)
 {
 	cout << "callPropVoid " << n << ' ' << m << endl;
 }
 
-void ABCVm::jump(ABCVm* th, int offset)
+void ABCVm::jump(method_info* th, int offset)
 {
 	cout << "jump " << offset << endl;
 }
 
-void ABCVm::ifFalse(ABCVm* th, int offset)
+void ABCVm::ifFalse(method_info* th, int offset)
 {
 	cout << "ifFalse " << offset << endl;
 }
 
-void ABCVm::ifEq(ABCVm* th, int offset)
+void ABCVm::ifEq(method_info* th, int offset)
 {
 	cout << "ifEq " << offset << endl;
 }
 
-void ABCVm::newCatch(ABCVm* th, int n)
+void ABCVm::newCatch(method_info* th, int n)
 {
 	cout << "newCatch " << n << endl;
 }
 
-void ABCVm::newObject(ABCVm* th, int n)
+void ABCVm::newObject(method_info* th, int n)
 {
 	cout << "newObject " << n << endl;
 }
 
-void ABCVm::setSlot(ABCVm* th, int n)
+void ABCVm::setSlot(method_info* th, int n)
 {
 	cout << "setSlot " << n << endl;
 }
 
-void ABCVm::getSlot(ABCVm* th, int n)
+void ABCVm::getSlot(method_info* th, int n)
 {
 	cout << "getSlot " << n << endl;
 }
 
-void ABCVm::setLocal(ABCVm* th, int n)
+void ABCVm::setLocal(method_info* th, int n)
 {
 	cout << "setLocal " << n << endl;
 }
 
-void ABCVm::dup(ABCVm* th)
+void ABCVm::dup(method_info* th)
 {
 	cout << "dup" << endl;
 }
 
-void ABCVm::pushNull(ABCVm* th)
+void ABCVm::pushNull(method_info* th)
 {
 	cout << "pushNull" << endl;
 }
 
-void ABCVm::pushScope(ABCVm* th)
+void ABCVm::pushScope(method_info* th)
 {
-	cout << "pushScope" << endl;
+	if(th->stack_index==0)
+		LOG(ERROR,"Empty stack");
+	cout << "sindex " << th->stack_index << endl;
+	ISWFObject* t=th->stack[--th->stack_index];
+	cout << "pushScope " << t << endl;
+	th->scope_stack.push_back(t);
 }
 
-void ABCVm::constructSuper(ABCVm* th, int n)
+void ABCVm::constructSuper(method_info* th, int n)
 {
 	cout << "constructSuper " << n << endl;
 }
 
-void ABCVm::getProperty(ABCVm* th, int n)
+void ABCVm::getProperty(method_info* th, int n)
 {
 	cout << "getProperty " << n << endl;
-	th->printMultiname(n);
+//	th->printMultiname(n);
 }
 
-void ABCVm::findProperty(ABCVm* th, int n)
+void ABCVm::findProperty(method_info* th, int n)
 {
 	cout << "findProperty " << n << endl;
-	th->printMultiname(n);
+//	th->printMultiname(n);
 }
 
-void ABCVm::findPropStrict(ABCVm* th, int n)
+void ABCVm::findPropStrict(method_info* th, int n)
 {
 	cout << "findPropStrict " << n << endl;
-	th->printMultiname(n);
+//	th->printMultiname(n);
 }
 
-void ABCVm::initProperty(ABCVm* th, int n)
+void ABCVm::initProperty(method_info* th, int n)
 {
 	cout << "initProperty " << n << endl;
-	th->printMultiname(n);
+//	th->printMultiname(n);
 }
 
-void ABCVm::newArray(ABCVm* th, int n)
+void ABCVm::newArray(method_info* th, int n)
 {
 	cout << "newArray " << n << endl;
-	th->printClass(n);
+//	th->printClass(n);
 }
 
-void ABCVm::newClass(ABCVm* th, int n)
+void ABCVm::newClass(method_info* th, int n)
 {
 	cout << "newClass " << n << endl;
-	th->printClass(n);
+//	th->printClass(n);
 }
 
-void ABCVm::getScopeObject(ABCVm* th, int n)
+void ABCVm::getScopeObject(method_info* th, int n)
 {
 	cout << "getScopeObject " << n << endl;
 }
@@ -494,26 +499,29 @@ void ABCVm::debug(void* p)
 	cout << p << endl;
 }
 
-void ABCVm::getLex(ABCVm* th, int n)
+void ABCVm::getLex(method_info* th, int n)
 {
 	cout << "getLex " << n << endl;
-	th->printMultiname(n);
+	//th->printMultiname(n);
 }
 
-void ABCVm::pushString(ABCVm* th, int n)
+void ABCVm::pushString(method_info* th, int n)
 {
-	cout << "pushString " << n << ' ' << th->getString(n)<< endl;
+	cout << "pushString " << n << endl;
 }
 
-void ABCVm::kill(ABCVm* th, int n)
+void ABCVm::kill(method_info* th, int n)
 {
 	cout << "kill " << n << endl;
 }
 
-void ABCVm::getLocal(ABCVm* th, int n)
+/*void ABCVm::getLocal(method_info* th, int n)
 {
 	cout << "getLocal " << n << endl;
-}
+}*/
+
+enum STACK_TYPE{STACK_OBJECT=0};
+typedef pair<llvm::Value*, STACK_TYPE> stack_entry;
 
 llvm::Function* ABCVm::synt_method(method_info* m)
 {
@@ -547,8 +555,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	llvm::Constant* constant;
 	llvm::Constant* constant2;
 	llvm::Value* value;
-	//let's give access to 'this' pointer to llvm
-	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)this);
+	//let's give access to method data to llvm
+	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)m);
 	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(ptr_type));
 
 	//let's give access to local data storage
@@ -556,6 +564,19 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)m->locals);
 	llvm::Value* locals = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 
+	//the stack is statically handled
+	//on branch and on interpreted/jitted code transition it is synchronized with the dynamic one
+	vector<stack_entry> static_stack;
+	static_stack.reserve(m->body->max_stack);
+	m->stack=new ISWFObject*[m->body->max_stack];
+	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)m->stack);
+	llvm::Value* dynamic_stack = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
+	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)&m->stack_index);
+	llvm::Value* dynamic_stack_index = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::IntegerType::get(32)));
+
+	//the scope stack is not accessible to llvm code
+
+	bool jitted=false;
 	//Each case block builds the correct parameters for the interpreter function and call it
 	u8 opcode;
 	while(1)
@@ -632,7 +653,27 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x30:
 			{
 				//pushscope
+				if(jitted)
+				{
+					for(int i=0;i<static_stack.size();i++)
+					{
+						constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
+						llvm::Value* dest=Builder.CreateGEP(dynamic_stack,constant);
+						if(static_stack[i].second!=STACK_OBJECT)
+							LOG(ERROR,"Conversion not yet implemented");
+						Builder.CreateStore(static_stack[i].first,dest);
+
+						//increment stack index
+						constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
+						llvm::Value* index=Builder.CreateLoad(dynamic_stack_index);
+						llvm::Value* index2=Builder.CreateAdd(index,constant);
+						Builder.CreateStore(index2,dynamic_stack_index);
+
+						static_stack.clear();
+					}
+				}
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), th);
+				jitted=false;
 				break;
 			}
 			case 0x2a:
@@ -815,11 +856,11 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//getlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
-				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 0);
+				//Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
+
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
-				llvm::Value* t2=Builder.CreateLoad(t);
-				Builder.CreateCall(ex->FindFunctionNamed("debug"), t2);
+				static_stack.push_back(stack_entry(Builder.CreateLoad(t,"stack"),STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0xd6:
@@ -1045,10 +1086,8 @@ SWFObject ABCVm::buildClass(int m)
 	if(i->trait_count)
 	{
 		LOG(NOT_IMPLEMENTED,"Should add instance traits");
-		for(int j=0;j<i->trait_count;j++)
-		{
-			printTrait(&i->traits[j]);
-		}
+/*		for(int j=0;j<i->trait_count;j++)
+			printTrait(&i->traits[j]);*/
 	}
 /*	//Run instance initialization
 	method_info* mi=get_method(i->init);

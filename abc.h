@@ -175,8 +175,11 @@ private:
 	llvm::Function* f;
 	ISWFObject** locals;
 public:
+	std::vector<ISWFObject*> scope_stack;
+	ISWFObject** stack;
+	uint32_t stack_index;
 	method_body_info* body;
-	method_info():body(NULL),f(NULL),locals(NULL){}
+	method_info():body(NULL),f(NULL),locals(NULL),stack(NULL),stack_index(0){}
 };
 
 struct item_info
@@ -325,36 +328,36 @@ private:
 
 	void registerFunctions();
 	//Interpreted AS instructions
-	static void callPropVoid(ABCVm* th, int n, int m); 
-	static void callProperty(ABCVm* th, int n, int m); 
-	static void constructProp(ABCVm* th, int n, int m); 
-	static void getLocal(ABCVm* th, int n); 
-	static void newObject(ABCVm* th, int n); 
-	static void newCatch(ABCVm* th, int n); 
-	static void jump(ABCVm* th, int offset); 
-	static void ifEq(ABCVm* th, int offset); 
-	static void ifFalse(ABCVm* th, int offset); 
-	static void getSlot(ABCVm* th, int n); 
-	static void setLocal(ABCVm* th, int n); 
-	static void kill(ABCVm* th, int n); 
-	static void setSlot(ABCVm* th, int n); 
-	static void pushString(ABCVm* th, int n); 
-	static void getLex(ABCVm* th, int n); 
-	static void getScopeObject(ABCVm* th, int n); 
-	static void initProperty(ABCVm* th, int n); 
-	static void newClass(ABCVm* th, int n); 
-	static void newArray(ABCVm* th, int n); 
-	static void findPropStrict(ABCVm* th, int n);
-	static void findProperty(ABCVm* th, int n);
-	static void getProperty(ABCVm* th, int n);
-	static void constructSuper(ABCVm* th, int n);
-	static void pushScope(ABCVm* th);
-	static void pushNull(ABCVm* th);
-	static void dup(ABCVm* th);
-	static void swap(ABCVm* th);
-	static void add(ABCVm* th);
-	static void popScope(ABCVm* th);
-	static void newActivation(ABCVm* th);
+	static void callPropVoid(method_info* th, int n, int m); 
+	static void callProperty(method_info* th, int n, int m); 
+	static void constructProp(method_info* th, int n, int m); 
+//	static void getLocal(method_info* th, int n); 
+	static void newObject(method_info* th, int n); 
+	static void newCatch(method_info* th, int n); 
+	static void jump(method_info* th, int offset); 
+	static void ifEq(method_info* th, int offset); 
+	static void ifFalse(method_info* th, int offset); 
+	static void getSlot(method_info* th, int n); 
+	static void setLocal(method_info* th, int n); 
+	static void kill(method_info* th, int n); 
+	static void setSlot(method_info* th, int n); 
+	static void pushString(method_info* th, int n); 
+	static void getLex(method_info* th, int n); 
+	static void getScopeObject(method_info* th, int n); 
+	static void initProperty(method_info* th, int n); 
+	static void newClass(method_info* th, int n); 
+	static void newArray(method_info* th, int n); 
+	static void findPropStrict(method_info* th, int n);
+	static void findProperty(method_info* th, int n);
+	static void getProperty(method_info* th, int n);
+	static void constructSuper(method_info* th, int n);
+	static void pushScope(method_info* th);
+	static void pushNull(method_info* th);
+	static void dup(method_info* th);
+	static void swap(method_info* th);
+	static void add(method_info* th);
+	static void popScope(method_info* th);
+	static void newActivation(method_info* th);
 public:
 	ABCVm(std::istream& in);
 	void Run();

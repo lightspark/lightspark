@@ -517,9 +517,9 @@ void ABCVm::getScopeObject(method_info* th, int n)
 	cout << "getScopeObject: DONE " << th->scope_stack[n] << endl;
 }
 
-void ABCVm::debug(void* p)
+void ABCVm::debug(int p)
 {
-	cout << p << endl;
+	cout << "debug " << p << endl;
 }
 
 void ABCVm::getLex(method_info* th, int n)
@@ -555,13 +555,14 @@ void ABCVm::kill(method_info* th, int n)
 void method_info::runtime_stack_push(ISWFObject* s)
 {
 	stack[stack_index++]=s;
-	cout << "Runtime stack index " << stack_index << endl;
+	ccout << "Runtime stack index " << stack_index << endl;
 }
 
 void method_info::setStackLength(const llvm::ExecutionEngine* ex, int l)
 {
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
-	stack=new ISWFObject*[l];
+	//TODO: We add this huge safety margin because not implemented instruction do not clean the stack as they should
+	stack=new ISWFObject*[ l*10 ];
 	llvm::Constant* constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)stack);
 	//TODO: Now the stack is considered an array of pointer to int64
 	dynamic_stack = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
@@ -587,7 +588,6 @@ llvm::Value* method_info::llvm_stack_peek(llvm::IRBuilder<>& builder) const
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
 	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
-	builder.CreateCall(vm->ex->FindFunctionNamed("debug"),index2);
 	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index2);
 	return builder.CreateLoad(dest);
 }
@@ -1066,7 +1066,7 @@ void ABCVm::buildTrait(const traits_info* t)
 		case traits_info::Class:
 		{
 			string name=getMultinameString(t->name);
-			LOG(CALLS,"Registering trait " << name);
+		//	LOG(CALLS,"Registering trait " << name);
 			Global.setVariableByName(STRING(name.c_str()), buildClass(t->classi));
 			break;
 		}
@@ -1218,15 +1218,15 @@ SWFObject ABCVm::buildClass(int m)
 
 	const instance_info* i=&instances[m];
 	string name=getString(constant_pool.multinames[i->name].name);
-	LOG(CALLS,"Building class " << name);
+//	LOG(CALLS,"Building class " << name);
 	if(i->supername)
 	{
 		string super=getString(constant_pool.multinames[i->supername].name);
-		LOG(NOT_IMPLEMENTED,"Inheritance not supported: super " << super);
+//		LOG(NOT_IMPLEMENTED,"Inheritance not supported: super " << super);
 	}
 	if(i->trait_count)
 	{
-		LOG(NOT_IMPLEMENTED,"Should add instance traits");
+//		LOG(NOT_IMPLEMENTED,"Should add instance traits");
 /*		for(int j=0;j<i->trait_count;j++)
 			printTrait(&i->traits[j]);*/
 	}

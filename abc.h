@@ -343,7 +343,7 @@ public:
 private:
 
 	//Utility
-	static void debug(void* p);
+	static void debug(int p);
 	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
 	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
 	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);

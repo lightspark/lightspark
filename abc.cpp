@@ -555,7 +555,7 @@ void ABCVm::kill(method_info* th, int n)
 void method_info::runtime_stack_push(ISWFObject* s)
 {
 	stack[stack_index++]=s;
-	ccout << "Runtime stack index " << stack_index << endl;
+	cout << "Runtime stack index " << stack_index << endl;
 }
 
 void method_info::setStackLength(const llvm::ExecutionEngine* ex, int l)

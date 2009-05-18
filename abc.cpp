@@ -430,6 +430,12 @@ void ABCVm::ifFalse(method_info* th, int offset)
 void ABCVm::ifEq(method_info* th, int offset)
 {
 	cout << "ifEq " << offset << endl;
+
+	ISWFObject* obj1=th->runtime_stack_pop();
+	ISWFObject* obj2=th->runtime_stack_pop();
+
+	//Implement real comparision
+	th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
 }
 
 void ABCVm::newCatch(method_info* th, int n)
@@ -494,8 +500,26 @@ void ABCVm::getProperty(method_info* th, int n)
 
 void ABCVm::findProperty(method_info* th, int n)
 {
-	cout << "findProperty " << n << endl;
-	th->vm->printMultiname(n);
+	string name=th->vm->getMultinameString(n);
+	cout << "findProperty " << name << endl;
+
+	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	bool found=false;
+	for(it;it!=th->scope_stack.rend();it++)
+	{
+		SWFObject o=(*it)->getVariableByName(name);
+		if(o->getObjectType()!=T_UNDEFINED)
+		{
+			th->runtime_stack_push(o.getData());
+			found=true;
+			break;
+		}
+	}
+	if(!found)
+	{
+		cout << "NOT found, pushing global" << endl;
+		th->runtime_stack_push(&th->vm->Global);
+	}
 }
 
 void ABCVm::findPropStrict(method_info* th, int n)
@@ -699,7 +723,6 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",module);
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", m->f);
 	llvm::IRBuilder<> Builder;
-	Builder.SetInsertPoint(BB);
 
 	//We define a couple of variables that will be used a lot
 	llvm::Constant* constant;
@@ -727,14 +750,31 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	blocks.insert(pair<int,llvm::BasicBlock*>(0,BB));
 
 	bool jitted=false;
+
+	//This is initialized to true so that on first iteration the entry block is used
+	bool last_is_branch=true;
 	//Each case block builds the correct parameters for the interpreter function and call it
 	u8 opcode;
 	while(1)
 	{
+		//Check if we are expecting a new block start
+		map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+		if(it!=blocks.end())
+		{
+			//A new block starts, the last instruction should have been a branch
+			if(!last_is_branch)
+			{
+				cout << "Last instruction before a new block was not a branch. Opcode " << hex << opcode<< endl;
+				abort();
+			}
+			Builder.SetInsertPoint(it->second);
+		}
+		
+		last_is_branch=false;
+
 		code >> opcode;
 		if(code.eof())
 			break;
-		cout << code.tellg() << endl;
 		switch(opcode)
 		{
 			case 0x08:
@@ -749,10 +789,27 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x10:
 			{
 				//jump
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				last_is_branch=true;
+
 				s24 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("jump"), th, constant);
+
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+				Builder.CreateBr(A);
+				Builder.SetInsertPoint(A);
 				break;
 			}
 			case 0x12:
@@ -767,19 +824,47 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x13:
 			{
 				//ifeq
+				//TODO: implement common data comparison
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+
+				last_is_branch=true;
 				s24 t;
 				code >> t;
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+			
+				//Make comparision
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), th, constant);
 
-				//Create a block for the fallthrough code and for the branch destination
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("fall", m->f);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("then", m->f);
-				//Add the blocks to the mapping
-				blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A);
-				blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg()+t,B);
-				
-				//
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifEq pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
 				break;
 			}
 			case 0x1d:
@@ -1088,7 +1173,7 @@ string ABCVm::getString(unsigned int s) const
 	if(s)
 		return constant_pool.strings[s];
 	else
-		return "<Anonymous>";
+		return "";
 }
 
 void ABCVm::buildTrait(const traits_info* t)

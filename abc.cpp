@@ -721,6 +721,10 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	m->setStackLength(ex,m->body->max_stack);
 
 	//the scope stack is not accessible to llvm code
+	
+	//Creating a mapping between blocks and starting address
+	map<int,llvm::BasicBlock*> blocks;
+	blocks.insert(pair<int,llvm::BasicBlock*>(0,BB));
 
 	bool jitted=false;
 	//Each case block builds the correct parameters for the interpreter function and call it
@@ -730,7 +734,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 		code >> opcode;
 		if(code.eof())
 			break;
-
+		cout << code.tellg() << endl;
 		switch(opcode)
 		{
 			case 0x08:
@@ -767,6 +771,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), th, constant);
+
+				//Create a block for the fallthrough code and for the branch destination
+				llvm::BasicBlock* A=llvm::BasicBlock::Create("fall", m->f);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create("then", m->f);
+				//Add the blocks to the mapping
+				blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A);
+				blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg()+t,B);
+				
+				//
 				break;
 			}
 			case 0x1d:

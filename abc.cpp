@@ -405,7 +405,16 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 
 void ABCVm::callPropVoid(method_info* th, int n, int m)
 {
-	cout << "callPropVoid " << n << ' ' << m << endl;
+	string name=th->vm->getMultinameString(n); 
+	cout << "callPropVoid " << name << ' ' << m << endl;
+	arguments args;
+	args.args.resize(m);
+	for(int i=0;i<m;i++)
+		args.args[m-i-1]=th->runtime_stack_pop();
+	ISWFObject* obj=th->runtime_stack_pop();
+	SWFObject o=obj->getVariableByName(name);
+	IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call").getData());
+	f->call(o.getData(),&args);
 }
 
 void ABCVm::jump(method_info* th, int offset)
@@ -441,6 +450,7 @@ void ABCVm::setSlot(method_info* th, int n)
 void ABCVm::getSlot(method_info* th, int n)
 {
 	cout << "getSlot " << n << endl;
+	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::getLocal(method_info* th, int n)
@@ -460,7 +470,8 @@ void ABCVm::dup(method_info* th)
 
 void ABCVm::pushNull(method_info* th)
 {
-	cout << "pushNull" << endl;
+	cout << "pushNull DONE" << endl;
+	th->runtime_stack_push(new Null);
 }
 
 void ABCVm::pushScope(method_info* th)
@@ -525,7 +536,7 @@ void ABCVm::debug(int p)
 void ABCVm::getLex(method_info* th, int n)
 {
 	string name=th->vm->getMultinameString(n);
-	cout << "getLex " << name << endl;
+	cout << "getLex DONE: " << name << endl;
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
 	bool found=false;
 	for(it;it!=th->scope_stack.rend();it++)
@@ -544,7 +555,9 @@ void ABCVm::getLex(method_info* th, int n)
 
 void ABCVm::pushString(method_info* th, int n)
 {
-	cout << "pushString " << n << endl;
+	string s=th->vm->getString(n); 
+	cout << "pushString " << s << endl;
+	th->runtime_stack_push(new ASString(s));
 }
 
 void ABCVm::kill(method_info* th, int n)
@@ -764,6 +777,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			}
 			case 0x20:
 			{
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				//pushnull
 				Builder.CreateCall(ex->FindFunctionNamed("pushNull"), th);
 				break;
@@ -776,6 +791,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			}
 			case 0x2c:
 			{
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				//pushstring
 				u30 t;
 				code >> t;
@@ -840,6 +857,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x4f:
 			{
 				//callpropvoid
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);

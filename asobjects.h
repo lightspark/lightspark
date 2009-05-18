@@ -24,9 +24,6 @@
 #include "swftypes.h"
 #include "frame.h"
 
-#define ASFUNCTION(name) \
-	static SWFObject name(const SWFObject& , arguments* args);
-
 class ASObjectWrapper: public IDisplayListElem
 {
 private:
@@ -62,8 +59,7 @@ class ASString: public ASObject
 private:
 	std::string data;
 public:
-	ASString(const char* s):data(s){}
-	ASString(const STRING& s);
+	ASString(const std::string& s):data(s){}
 	STRING toString();
 	float toFloat();
 	SWFOBJECT_TYPE getObjectType(){return T_STRING;}

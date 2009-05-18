@@ -163,7 +163,7 @@ void ISWFObject_impl::_register()
 
 void ISWFObject_impl::setVariableByName(const string& name, const SWFObject& o)
 {
-	Variables[name]=o;
+	Variables.insert(pair<string,SWFObject>(name,o));
 }
 
 SWFObject ISWFObject_impl::getVariableByName(const string& name)
@@ -704,6 +704,16 @@ STRING RegisterNumber::toString()
 	char buf[20];
 	snprintf(buf,20,"Register %i",index);
 	return STRING(buf);
+}
+
+Undefined::Undefined()
+{
+	setVariableByName(".Call",new Function(call));
+}
+
+ASFUNCTIONBODY(Undefined,call)
+{
+	LOG(CALLS,"Undefined function");
 }
 
 STRING Undefined::toString()

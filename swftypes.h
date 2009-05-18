@@ -28,9 +28,15 @@
 
 #include "logger.h"
 
+#define ASFUNCTION(name) \
+	static SWFObject name(const SWFObject& , arguments* args);
+#define ASFUNCTIONBODY(c,name) \
+	SWFObject c::name(const SWFObject& , arguments* args)
+
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_FUNCTION,
 	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED, T_STRING};
 
+class arguments;
 class SWFObject;
 class IFunction;
 class UI32
@@ -216,6 +222,8 @@ public:
 class Undefined : public ISWFObject_impl
 {
 public:
+	ASFUNCTION(call);
+	Undefined();
 	SWFOBJECT_TYPE getObjectType(){return T_UNDEFINED;}
 	STRING toString();
 	ISWFObject* clone()
@@ -251,8 +259,6 @@ public:
 		return new Double(*this);
 	}
 };
-
-class arguments;
 
 class IFunction: public ISWFObject_impl
 {

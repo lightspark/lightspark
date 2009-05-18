@@ -135,13 +135,6 @@ SWFObject ASObject::constructor(const SWFObject&, arguments* args)
 	return SWFObject();
 }
 
-ASString::ASString(const STRING& s)
-{
-	data.reserve(s.String.size());
-	for(int i=0;i<s.String.size();i++)
-		data.push_back(s.String[i]);
-}
-
 STRING ASString::toString()
 {
 	return STRING(data.data());

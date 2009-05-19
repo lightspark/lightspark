@@ -159,7 +159,7 @@ public:
 	virtual int toInt();
 	virtual float toFloat();
 	virtual IFunction* toFunction();
-	virtual SWFObject getVariableByName(const std::string& name)=0;
+	virtual SWFObject getVariableByName(const std::string& name, bool& f)=0;
 	virtual void setVariableByName(const std::string& name, const SWFObject& o)=0;
 	virtual ISWFObject* clone()
 	{
@@ -171,6 +171,9 @@ public:
 	}
 	virtual ISWFObject* getParent()=0;
 	virtual void _register()=0;
+	virtual ISWFObject* getSlot(int n)=0;
+	virtual void setSlot(int n,ISWFObject* o)=0;
+	virtual void dumpVariables()=0;
 };
 
 class ISWFObject_impl:public ISWFObject
@@ -180,11 +183,16 @@ protected:
 	ISWFObject* parent;
 	ISWFObject_impl();
 	std::map<std::string,SWFObject> Variables;
+	//Should be resizable
+	ISWFObject* slots[10]; 
 public:
-	SWFObject getVariableByName(const std::string& name);
+	SWFObject getVariableByName(const std::string& name, bool& found);
 	void setVariableByName(const std::string& name, const SWFObject& o);
 	ISWFObject* getParent();
 	void _register();
+	ISWFObject* getSlot(int n);
+	void setSlot(int n,ISWFObject* o);
+	void dumpVariables();
 };
 
 class ConstantReference : public ISWFObject_impl

@@ -981,10 +981,10 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		abort();
 }
 
-SWFObject PlaceObject2Tag::getVariableByName(const string& name)
+SWFObject PlaceObject2Tag::getVariableByName(const string& name, bool& found)
 {
 	if(wrapped)
-		return wrapped->getVariableByName(name);
+		return wrapped->getVariableByName(name,found);
 	else
 		LOG(ERROR,"No object wrapped");
 }

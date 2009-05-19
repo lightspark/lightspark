@@ -328,6 +328,8 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	if(it!=valid_classes.end())
 		LOG(CALLS,"Class " << s << " found");
 	//TODO: Really build class
+	ASObject* ret=new ASObject;
+	ret->debug_id=0xdeadbeaf;
 	int index=it->second;
 
 	method_info* m=&methods[classes[index].cinit];
@@ -342,17 +344,16 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	}
 	m=&methods[instances[index].init];
 	synt_method(m);
+	LOG(CALLS,"Building instance traits");
+	for(int i=0;i<instances[index].trait_count;i++)
+		buildTrait(ret,&instances[index].traits[i]);
+
 	LOG(CALLS,"Calling Instance init");
-	ISWFObject* ret=new ASObject;
 	//module.dump();
-	//printClass(index);
 	if(m->f)
 	{
-/*		cout << "traits " << m->body->trait_count << endl;
-		for(int i=0;i<m->body->trait_count;i++)
-			printTrait(&m->body->traits[i]);*/
-		m->locals[0]=&Global;
-		m->locals[1]=ret;
+		m->locals[0]=ret;
+		m->locals[1]=new Null;
 		void* f_ptr=ex->getPointerToFunction(m->f);
 		void (*FP)() = (void (*)())f_ptr;
 		FP();
@@ -385,7 +386,12 @@ void ABCVm::newActivation(method_info* th)
 {
 	cout << "newActivation" << endl;
 	//TODO: Should create a real activation object
-	th->runtime_stack_push(new ASObject);
+	//TODO: Should method traits be added to the activation context?
+	ASObject* act=new ASObject;
+	for(int i=0;i<th->body->trait_count;i++)
+		th->vm->buildTrait(act,&th->body->traits[i]);
+
+	th->runtime_stack_push(act);
 }
 
 void ABCVm::popScope(method_info* th)
@@ -412,8 +418,9 @@ void ABCVm::callPropVoid(method_info* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.args[m-i-1]=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
-	SWFObject o=obj->getVariableByName(name);
-	IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call").getData());
+	bool found;
+	SWFObject o=obj->getVariableByName(name,found);
+	IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found).getData());
 	f->call(o.getData(),&args);
 }
 
@@ -450,13 +457,18 @@ void ABCVm::newObject(method_info* th, int n)
 
 void ABCVm::setSlot(method_info* th, int n)
 {
-	cout << "setSlot " << n << endl;
+	cout << "setSlot DONE: " << n << endl;
+	ISWFObject* value=th->runtime_stack_pop();
+	ISWFObject* obj=th->runtime_stack_pop();
+	
+	obj->setSlot(n,value);
 }
 
 void ABCVm::getSlot(method_info* th, int n)
 {
-	cout << "getSlot " << n << endl;
-	th->runtime_stack_push(new Undefined);
+	cout << "getSlot DONE: " << n << endl;
+	ISWFObject* obj=th->runtime_stack_pop();
+	th->runtime_stack_push(obj->getSlot(n));
 }
 
 void ABCVm::getLocal(method_info* th, int n)
@@ -494,8 +506,8 @@ void ABCVm::constructSuper(method_info* th, int n)
 
 void ABCVm::getProperty(method_info* th, int n)
 {
-	cout << "getProperty " << n << endl;
-	th->vm->printMultiname(n);
+	string name=th->vm->getMultinameString(n);
+	cout << "getProperty " << name << endl;
 }
 
 void ABCVm::findProperty(method_info* th, int n)
@@ -507,11 +519,10 @@ void ABCVm::findProperty(method_info* th, int n)
 	bool found=false;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		SWFObject o=(*it)->getVariableByName(name);
-		if(o->getObjectType()!=T_UNDEFINED)
+		SWFObject o=(*it)->getVariableByName(name,found);
+		if(found)
 		{
 			th->runtime_stack_push(o.getData());
-			found=true;
 			break;
 		}
 	}
@@ -524,14 +535,18 @@ void ABCVm::findProperty(method_info* th, int n)
 
 void ABCVm::findPropStrict(method_info* th, int n)
 {
-	cout << "findPropStrict " << n << endl;
-	th->vm->printMultiname(n);
+	string name=th->vm->getMultinameString(n);
+	cout << "findPropStrict " << name << endl;
 }
 
 void ABCVm::initProperty(method_info* th, int n)
 {
-	cout << "initProperty " << n << endl;
-	th->vm->printMultiname(n);
+	string name=th->vm->getMultinameString(n);
+	cout << "initProperty " << name << endl;
+	ISWFObject* value=th->runtime_stack_pop();
+	ISWFObject* obj=th->runtime_stack_pop();
+
+	obj->setVariableByName(name,value);
 }
 
 void ABCVm::newArray(method_info* th, int n)
@@ -543,6 +558,7 @@ void ABCVm::newArray(method_info* th, int n)
 void ABCVm::newClass(method_info* th, int n)
 {
 	cout << "newClass " << n << endl;
+	th->runtime_stack_push(new Undefined);
 //	th->printClass(n);
 }
 
@@ -565,16 +581,19 @@ void ABCVm::getLex(method_info* th, int n)
 	bool found=false;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		SWFObject o=(*it)->getVariableByName(name);
-		if(o->getObjectType()!=T_UNDEFINED)
+		SWFObject o=(*it)->getVariableByName(name,found);
+		if(found)
 		{
 			th->runtime_stack_push(o.getData());
-			found=true;
 			break;
 		}
 	}
 	if(!found)
-		cout << "NOT found" << endl;
+	{
+		cout << "NOT found, pushing Undefined" << endl;
+		th->runtime_stack_push(new Undefined);
+	}
+
 }
 
 void ABCVm::pushString(method_info* th, int n)
@@ -761,11 +780,11 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 		map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
 		if(it!=blocks.end())
 		{
-			//A new block starts, the last instruction should have been a branch
+			//A new block starts, the last instruction should have been a branch?
 			if(!last_is_branch)
 			{
 				cout << "Last instruction before a new block was not a branch. Opcode " << hex << opcode<< endl;
-				abort();
+				Builder.CreateBr(it->second);
 			}
 			Builder.SetInsertPoint(it->second);
 		}
@@ -780,6 +799,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x08:
 			{
 				//kill
+				cout << "synt kill" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -789,6 +811,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x10:
 			{
 				//jump
+				cout << "synt jump" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				last_is_branch=true;
@@ -798,7 +821,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("jump"), th, constant);
 
-				//Create a block for the fallthrough code and insert in the mapping
+				//Create a block for the fallthrough code and insert it in the mapping
 				llvm::BasicBlock* A;
 				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
 				if(it!=blocks.end())
@@ -808,13 +831,27 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 					A=llvm::BasicBlock::Create("fall", m->f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
-				Builder.CreateBr(A);
+				//Create a block for the landing code and insert it in the mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("jump_land", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+
+				Builder.CreateBr(B);
 				Builder.SetInsertPoint(A);
 				break;
 			}
 			case 0x12:
 			{
 				//iffalse
+				cout << "synt iffalse" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				s24 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -824,6 +861,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x13:
 			{
 				//ifeq
+				cout << "synt ifeq" << endl;
 				//TODO: implement common data comparison
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
@@ -870,28 +908,36 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x1d:
 			{
 				//popscope
+				cout << "synt popscope" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("popScope"), th);
 				break;
 			}
 			case 0x20:
 			{
+				//pushnull
+				cout << "synt pushnull" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
-				//pushnull
 				Builder.CreateCall(ex->FindFunctionNamed("pushNull"), th);
 				break;
 			}
 			case 0x2b:
 			{
 				//swap
+				cout << "synt swap" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("swap"), th);
 				break;
 			}
 			case 0x2c:
 			{
+				//pushstring
+				cout << "synt pushstring" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
-				//pushstring
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -901,6 +947,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x30:
 			{
 				//pushscope
+				cout << "synt pushscope" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), th);
@@ -909,6 +956,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x2a:
 			{
 				//dup
+				cout << "synt dup" << endl;
 				jitted=true;
 				Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
 				stack_entry e=static_stack_peek(Builder,static_stack,m);
@@ -918,6 +966,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x46:
 			{
 				//callproperty
+				cout << "synt callproperty" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -929,12 +980,16 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x47:
 			{
 				//returnvoid
+				cout << "synt returnvoid" << endl;
 				Builder.CreateRetVoid();
 				break;
 			}
 			case 0x49:
 			{
 				//constructsuper
+				cout << "synt constructsuper" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -944,6 +999,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x4a:
 			{
 				//constructprop
+				cout << "synt constructprop" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -955,6 +1013,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x4f:
 			{
 				//callpropvoid
+				cout << "synt callpropvoid" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -968,6 +1027,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x55:
 			{
 				//newobject
+				cout << "synt newobject" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -977,6 +1039,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x56:
 			{
 				//newarray
+				cout << "synt newarray" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -986,6 +1051,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x57:
 			{
 				//newactivation
+				cout << "synt newactivation" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("newActivation"), th);
@@ -994,6 +1060,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x58:
 			{
 				//newclass
+				cout << "synt newclass" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -1003,6 +1072,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x5a:
 			{
 				//newcatch
+				cout << "synt newcatch" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -1012,6 +1084,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x5d:
 			{
 				//findpropstrict
+				cout << "synt findpropstrict" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -1021,6 +1096,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x5e:
 			{
 				//findproperty
+				cout << "synt findproperty" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -1030,6 +1108,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x60:
 			{
 				//getlex
+				cout << "synt getlex" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -1041,6 +1120,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x65:
 			{
 				//getscopeobject
+				cout << "synt getscopeobject" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -1052,6 +1132,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x66:
 			{
 				//getproperty
+				cout << "synt getproperty" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -1061,6 +1144,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x68:
 			{
 				//initproperty
+				cout << "synt initproperty" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -1070,6 +1156,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x6c:
 			{
 				//getslot
+				cout << "synt getslot" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -1079,6 +1168,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x6d:
 			{
 				//setslot
+				cout << "synt setslot" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -1090,6 +1180,9 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xa0:
 			{
 				//add
+				cout << "synt add" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("add"), th);
 				break;
 			}
@@ -1098,6 +1191,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xd2:
 			{
 				//getlocal_n
+				cout << "synt getlocal" << endl;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
@@ -1108,6 +1202,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xd6:
 			case 0xd7:
 			{
+				cout << "synt setlocal" << endl;
 				//setlocal_n
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), th, constant);
@@ -1152,7 +1247,7 @@ void ABCVm::Run()
 		method_info* m=get_method(scripts[i].init);
 		cout << "Building entry script traits: " << scripts[i].trait_count << endl;
 		for(int j=0;j<scripts[i].trait_count;j++)
-			buildTrait(&scripts[i].traits[j]);
+			buildTrait(&Global,&scripts[i].traits[j]);
 		//printMethod(m);
 		synt_method(m);
 
@@ -1176,20 +1271,37 @@ string ABCVm::getString(unsigned int s) const
 		return "";
 }
 
-void ABCVm::buildTrait(const traits_info* t)
+void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 {
+	string name=getMultinameString(t->name);
 	switch(t->kind)
 	{
 		case traits_info::Class:
 		{
-			string name=getMultinameString(t->name);
 		//	LOG(CALLS,"Registering trait " << name);
-			Global.setVariableByName(STRING(name.c_str()), buildClass(t->classi));
+			obj->setVariableByName(name, buildClass(t->classi));
 			break;
 		}
+		case traits_info::Slot:
+		{
+			if(t->vindex)
+			{
+				switch(t->vkind)
+				{
+					case 0x0c: //Null
+						obj->setSlot(t->slot_id, new Null);
+						break;
+					default:
+					//fallthrough
+					{
+					}
+				}
+			}
+			//else fallthrough
+		}
 		default:
-			string name=getString(constant_pool.multinames[t->name].name);
 			LOG(ERROR,"Trait not supported " << name);
+			obj->setVariableByName(name, new Undefined);
 	}
 }
 
@@ -1322,8 +1434,11 @@ void ABCVm::printNamespaceSet(const ns_set_info* m) const
 SWFObject ABCVm::buildClass(int m) 
 {
 	const class_info* c=&classes[m];
+	const instance_info* i=&instances[m];
+	string name=getString(constant_pool.multinames[i->name].name);
+
 	if(c->trait_count)
-		LOG(NOT_IMPLEMENTED,"Should add class traits");
+		LOG(NOT_IMPLEMENTED,"Should add class traits for " << name);
 
 /*	//Run class initialization
 	method_info* mi=get_method(c->cinit);
@@ -1333,8 +1448,6 @@ SWFObject ABCVm::buildClass(int m)
 	LOG(CALLS,"Class init lenght" << mi->body->code_length);
 	FP();*/
 
-	const instance_info* i=&instances[m];
-	string name=getString(constant_pool.multinames[i->name].name);
 //	LOG(CALLS,"Building class " << name);
 	if(i->supername)
 	{
@@ -1363,7 +1476,6 @@ void ABCVm::printClass(int m) const
 {
 	const instance_info* i=&instances[m];
 	LOG(CALLS,"Class name: " << getMultinameString(i->name));
-//	printMultiname(i->name);
 	LOG(CALLS,"Class supername:");
 	printMultiname(i->supername);
 	LOG(CALLS,"Flags " <<hex << i->flags);

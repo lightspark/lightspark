@@ -656,10 +656,10 @@ DictionaryTag* SystemState::dictionaryLookup(UI16 id)
 	return *it;
 }
 
-SWFObject SystemState::getVariableByName(const string& name)
+SWFObject SystemState::getVariableByName(const string& name, bool& found)
 {
 	sem_wait(&mutex);
-	SWFObject ret=ISWFObject_impl::getVariableByName(name);
+	SWFObject ret=ISWFObject_impl::getVariableByName(name, found);
 	sem_post(&mutex);
 	return ret;
 }

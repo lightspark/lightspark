@@ -515,7 +515,8 @@ void ActionSetProperty::Execute()
 	int index=sys->vm.stack.pop()->toInt();
 	STRING target=sys->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionSetProperty to: " << target << " index " << index);
-	SWFObject obj=sys->getVariableByName(target);
+	bool found;
+	SWFObject obj=sys->getVariableByName(target,found);
 	switch(index)
 	{
 		case 2:
@@ -541,16 +542,17 @@ void ActionGetProperty::Execute()
 	int index=sys->vm.stack.pop()->toInt();
 	STRING target=sys->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetProperty from: " << target << " index " << index);
-	SWFObject obj=sys->getVariableByName(target);
+	bool found;
+	SWFObject obj=sys->getVariableByName(target,found);
 	SWFObject ret;
 	switch(index)
 	{
 		case 5:
-			ret=obj->getVariableByName("_totalframes");
+			ret=obj->getVariableByName("_totalframes",found);
 			LOG(CALLS,"returning " << ret->toInt());
 			break;
 		case 12:
-			ret=obj->getVariableByName("_framesloaded");
+			ret=obj->getVariableByName("_framesloaded",found);
 			LOG(CALLS,"returning " << ret->toInt());
 			break;
 		default:
@@ -648,13 +650,14 @@ void ActionNewObject::Execute()
 {
 	STRING varName=sys->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionNewObject: name " << varName);
-	SWFObject type=sys->getVariableByName(varName);
+	bool found;
+	SWFObject type=sys->getVariableByName(varName,found);
 	if(!type.isDefined())
 		LOG(ERROR,"ActionNewObject: no such object");
 	int numArgs=sys->vm.stack.pop()->toInt();
 	if(numArgs)
 		LOG(ERROR,"There are arguments");
-	SWFObject c=type->getVariableByName("constructor");
+	SWFObject c=type->getVariableByName("constructor",found);
 	if(c->getObjectType()!=T_FUNCTION)
 		LOG(ERROR,"Constructor is not a function");
 	Function* f=dynamic_cast<Function*>(c.getData());
@@ -687,7 +690,8 @@ void ActionCallMethod::Execute()
 	arguments args;
 	for(int i=0;i<numArgs;i++)
 		args.args.push_back(sys->vm.stack.pop());
-	IFunction* f=obj->getVariableByName(methodName)->toFunction();
+	bool found;
+	IFunction* f=obj->getVariableByName(methodName,found)->toFunction();
 	if(f==0)
 		LOG(ERROR,"No such function");
 	SWFObject ret=f->call(obj.getData(),&args);
@@ -703,7 +707,8 @@ void ActionCallFunction::Execute()
 	arguments args;
 	for(int i=0;i<numArgs;i++)
 		args.args.push_back(sys->vm.stack.pop());
-	IFunction* f=sys->currentClip->getVariableByName(funcName)->toFunction();
+	bool found;
+	IFunction* f=sys->currentClip->getVariableByName(funcName,found)->toFunction();
 	if(f==0)
 		LOG(ERROR,"No such function");
 	SWFObject ret=f->call(NULL,&args);
@@ -865,7 +870,8 @@ void ActionGetVariable::Execute()
 {
 	STRING varName=sys->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetVariable: name " << varName);
-	SWFObject object=sys->currentClip->getVariableByName(varName);
+	bool found;
+	SWFObject object=sys->currentClip->getVariableByName(varName,found);
 	if(!object.isDefined())
 		LOG(CALLS,"ActionGetVariable: no such object");
 	sys->vm.stack.push(object);
@@ -1032,7 +1038,8 @@ void ActionGetMember::Execute()
 	STRING memberName=sys->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetMember: " << memberName);
 	SWFObject obj=sys->vm.stack.pop();
-	sys->vm.stack.push(obj->getVariableByName(memberName));
+	bool found;
+	sys->vm.stack.push(obj->getVariableByName(memberName,found));
 }
 
 void ActionSetMember::Execute()

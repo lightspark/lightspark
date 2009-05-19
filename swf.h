@@ -86,7 +86,7 @@ private:
 public:
 	bool shutdown;
 	int version;
-	SWFObject getVariableByName(const std::string& name);
+	SWFObject getVariableByName(const std::string& name, bool& f);
 	void setVariableByName(const std::string& name, const SWFObject& o);
 	ISWFObject* getParent() { return NULL; }
 	void setShutdownFlag();

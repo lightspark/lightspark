@@ -117,7 +117,8 @@ SWFObject ASXML::load(const SWFObject& obj, arguments* args)
 	}
 	xmlDocPtr doc=xmlReadMemory(th->xml_buf,th->xml_index,(string(url)).c_str(),NULL,0);
 
-	IFunction* on_load=obj->getVariableByName("onLoad")->toFunction();
+	bool found;
+	IFunction* on_load=obj->getVariableByName("onLoad",found)->toFunction();
 	arguments a;
 	a.args.push_back(new Integer(1));
 	on_load->call(NULL,&a);

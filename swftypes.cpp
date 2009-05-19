@@ -166,9 +166,26 @@ void ISWFObject_impl::setVariableByName(const string& name, const SWFObject& o)
 	Variables.insert(pair<string,SWFObject>(name,o));
 }
 
-SWFObject ISWFObject_impl::getVariableByName(const string& name)
+SWFObject ISWFObject_impl::getVariableByName(const string& name, bool& found)
 {
-	return Variables[name];
+	map<string,SWFObject>::iterator it=Variables.find(name);
+	if(it!=Variables.end())
+	{
+		found=true;
+		return it->second;
+	}
+	else
+	{
+		found=false;
+		return SWFObject();
+	}
+}
+
+void ISWFObject_impl::dumpVariables()
+{
+	map<string,SWFObject>::iterator it=Variables.begin();
+	for(it;it!=Variables.end();it++)
+		cout << it->first << endl;
 }
 
 STRING Integer::toString()
@@ -692,6 +709,16 @@ ISWFObject_impl::ISWFObject_impl():parent(NULL)
 ISWFObject* ISWFObject_impl::getParent()
 {
 	return parent;
+}
+
+ISWFObject* ISWFObject_impl::getSlot(int n)
+{
+	return slots[n-1];
+}
+
+void ISWFObject_impl::setSlot(int n,ISWFObject* o)
+{
+	slots[n-1]=o;
 }
 
 SWFObject RegisterNumber::instantiate()

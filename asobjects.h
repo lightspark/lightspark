@@ -45,6 +45,7 @@ public:
 class ASObject: public ISWFObject_impl
 {
 public:
+	ASObject():debug_id(0){}
 	void _register();
 	SWFOBJECT_TYPE getObjectType() { return T_OBJECT; }
 	static SWFObject constructor(const SWFObject& , arguments* args);
@@ -52,6 +53,9 @@ public:
 	{
 		return new ASObject(*this);
 	}
+
+	//DEBUG
+	int debug_id;
 };
 
 class ASString: public ASObject

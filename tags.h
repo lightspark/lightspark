@@ -268,7 +268,7 @@ public:
 	STRING getName() { return Name;}
 	SWFOBJECT_TYPE getObjectType(){ return T_PLACEOBJECT;}
 	//Forwared to placed object, if valid
-	SWFObject getVariableByName(const std::string& name);
+	SWFObject getVariableByName(const std::string& name, bool& found);
 	void setVariableByName(const std::string& name, const SWFObject& o);
 };
 

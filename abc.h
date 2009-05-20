@@ -186,6 +186,7 @@ public:
 	method_body_info* body;
 	void runtime_stack_push(ISWFObject* s);
 	ISWFObject* runtime_stack_pop();
+	ISWFObject* runtime_stack_peek();
 	void llvm_stack_push(llvm::IRBuilder<>& builder, llvm::Value* val);
 	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder) const;
 	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder) const;
@@ -332,6 +333,7 @@ private:
 	std::string getMultinameString(unsigned int m) const;
 
 	llvm::Function* synt_method(method_info* m);
+	llvm::FunctionType* synt_method_prototype(int n);
 
 	std::map<int,SWFObject> registers;
 	std::map<std::string,int> valid_classes;
@@ -411,6 +413,17 @@ public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
 	void Render( );
 	int getDepth() const;
+};
+
+class LLVMFunction : public IFunction
+{
+public:
+	LLVMFunction(llvm::Function* v):val(v)
+	{
+	}
+	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
+//private:
+	llvm::Function* val;
 };
 
 std::istream& operator>>(std::istream& in, u8& v);

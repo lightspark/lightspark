@@ -29,7 +29,7 @@
 #include "logger.h"
 
 #define ASFUNCTION(name) \
-	static SWFObject name(const SWFObject& , arguments* args);
+	static SWFObject name(const SWFObject& , arguments* args)
 #define ASFUNCTIONBODY(c,name) \
 	SWFObject c::name(const SWFObject& , arguments* args)
 
@@ -278,7 +278,9 @@ class Function : public IFunction
 {
 public:
 	typedef SWFObject (*as_function)(const SWFObject&, arguments*);
-	Function(as_function v):val(v){}
+	Function(as_function v):val(v)
+	{
+	}
 	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
 	SWFObject call(ISWFObject* obj, arguments* args);
 	IFunction* toFunction();

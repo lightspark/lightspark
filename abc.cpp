@@ -406,7 +406,28 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 
 void ABCVm::callProperty(method_info* th, int n, int m)
 {
-	cout << "callProperty " << n << ' ' << m << endl;
+	//Should be called after arguments are popped
+	string name=th->vm->getMultinameString(n);
+	cout << "callProperty " << name << ' ' << m << endl;
+	arguments args;
+	args.args.resize(m+1);
+	for(int i=0;i<m;i++)
+		args.args[m-i-1]=th->runtime_stack_pop();
+	ISWFObject* obj=th->runtime_stack_pop();
+	args.args[0]=obj;
+	bool found;
+	SWFObject o=obj->getVariableByName(name,found);
+	//If o is already a function call it, otherwise find the Call method
+	if(o->getObjectType()==T_FUNCTION)
+	{
+		IFunction* f=dynamic_cast<IFunction*>(o.getData());
+		f->call(o.getData(),&args);
+	}
+	else
+	{
+		IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found).getData());
+		f->call(o.getData(),&args);
+	}
 }
 
 void ABCVm::callPropVoid(method_info* th, int n, int m)
@@ -414,10 +435,11 @@ void ABCVm::callPropVoid(method_info* th, int n, int m)
 	string name=th->vm->getMultinameString(n); 
 	cout << "callPropVoid " << name << ' ' << m << endl;
 	arguments args;
-	args.args.resize(m);
+	args.args.resize(m+1);
 	for(int i=0;i<m;i++)
 		args.args[m-i-1]=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
+	args.args[0]=obj;
 	bool found;
 	SWFObject o=obj->getVariableByName(name,found);
 	IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found).getData());
@@ -671,6 +693,16 @@ ISWFObject* method_info::runtime_stack_pop()
 	return stack[--stack_index];
 }
 
+ISWFObject* method_info::runtime_stack_peek()
+{
+	if(stack_index==0)
+	{
+		LOG(ERROR,"Empty stack");
+		return NULL;
+	}
+	cout << "Runtime stack index " << stack_index << endl;
+	return stack[stack_index-1];
+}
 
 inline ABCVm::stack_entry ABCVm::static_stack_pop(llvm::IRBuilder<>& builder, vector<ABCVm::stack_entry>& static_stack, const method_info* m) 
 {
@@ -715,6 +747,23 @@ inline void ABCVm::syncStacks(llvm::IRBuilder<>& builder, bool jitted,std::vecto
 	}
 }
 
+llvm::FunctionType* ABCVm::synt_method_prototype(int n)
+{
+	//The pointer size compatible int type will be useful
+	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
+
+	//Initialize LLVM representation of method
+	vector<const llvm::Type*> sig;
+	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	for(int i=0;i<n;i++)
+	{
+		LOG(ERROR,"Arguments not supported");
+		sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	}
+
+	return llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+}
+
 llvm::Function* ABCVm::synt_method(method_info* m)
 {
 	if(m->f)
@@ -728,18 +777,12 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	}
 	stringstream code(m->body->code);
 	m->vm=this;
+	llvm::FunctionType* method_type=synt_method_prototype(m->param_count);
+	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",module);
 
 	//The pointer size compatible int type will be useful
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
-
-	//Initialize LLVM representation of method
-	vector<const llvm::Type*> sig;
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	if(m->param_count)
-		LOG(ERROR,"Arguments not supported");
-
-	llvm::FunctionType* method_type=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
-	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",module);
+	
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", m->f);
 	llvm::IRBuilder<> Builder;
 
@@ -966,6 +1009,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x46:
 			{
 				//callproperty
+				//TODO: Implement static resolution where possible
 				cout << "synt callproperty" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
@@ -974,7 +1018,20 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				code >> t;
 				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+
+/*				//Pop the stack arguments
+				vector<llvm::Value*> args(t+1);
+				for(int i=0;i<t;i++)
+					args[t-i]=static_stack_pop(Builder,static_stack,m).first;*/
+				//Call the function resolver, static case could be resolved at this time (TODO)
 				Builder.CreateCall3(ex->FindFunctionNamed("callProperty"), th, constant, constant2);
+/*				//Pop the function object, and then the object itself
+				llvm::Value* fun=static_stack_pop(Builder,static_stack,m).first;
+
+				llvm::Value* fun2=Builder.CreateBitCast(fun,synt_method_prototype(t));
+				args[0]=static_stack_pop(Builder,static_stack,m).first;
+				Builder.CreateCall(fun2,args.begin(),args.end());*/
+
 				break;
 			}
 			case 0x47:
@@ -1282,6 +1339,16 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 			obj->setVariableByName(name, buildClass(t->classi));
 			break;
 		}
+		case traits_info::Method:
+		{
+			LOG(NOT_IMPLEMENTED,"Method trait: " << name);
+			//syntetize method and create a new LLVM function object
+			method_info* m=&methods[t->method];
+			llvm::Function* f=synt_method(m);
+			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
+			obj->setVariableByName(name, new Function(f2));
+			break;
+		}
 		case traits_info::Slot:
 		{
 			if(t->vindex)
@@ -1300,7 +1367,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 			//else fallthrough
 		}
 		default:
-			LOG(ERROR,"Trait not supported " << name);
+			LOG(ERROR,"Trait not supported " << name << " " << t->kind);
 			obj->setVariableByName(name, new Undefined);
 	}
 }

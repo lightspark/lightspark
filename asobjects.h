@@ -169,7 +169,7 @@ class ASMovieClipLoader: public ASObject
 {
 public:
 	ASMovieClipLoader();
-	ASFUNCTION(addListener)
+	ASFUNCTION(addListener);
 
 	static SWFObject constructor(const SWFObject&, arguments* args);
 	void _register();
@@ -187,8 +187,8 @@ private:
 	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 public:
 	ASXML();
-	ASFUNCTION(constructor)
-	ASFUNCTION(load)
+	ASFUNCTION(constructor);
+	ASFUNCTION(load);
 	void _register();
 	ISWFObject* clone()
 	{

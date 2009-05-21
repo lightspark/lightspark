@@ -763,7 +763,7 @@ IFunction* Function::toFunction()
 	return this;
 }
 
-SWFObject Function::call(ISWFObject* obj, arguments* args)
+ISWFObject* Function::call(ISWFObject* obj, arguments* args)
 {
 	return val(obj,args);
 }

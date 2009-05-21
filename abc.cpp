@@ -244,6 +244,22 @@ string ABCVm::getMultinameString(unsigned int mi) const
 			ret=getString(n->name)+'.'+ getString(m->name);
 			break;
 		}
+		case 0x09:
+		{
+			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
+			//printNamespaceSet(s);
+			if(s->count!=1)
+			{
+				LOG(ERROR,"Multiname on namespace set not really supported yet");
+				ret="<Unsupported>";
+			}
+			else
+			{
+				const namespace_info* n=&constant_pool.namespaces[s->ns[0]];
+				ret=getString(n->name)+'.'+ getString(m->name);
+			}
+			break;
+		}
 /*		case 0x0d:
 			LOG(CALLS, "QNameA");
 			break;
@@ -259,13 +275,6 @@ string ABCVm::getMultinameString(unsigned int mi) const
 		case 0x12:
 			LOG(CALLS, "RTQNameLA");
 			break;
-		case 0x09:
-		{
-			LOG(CALLS, "Multiname: " << getString(m->name));
-			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
-			printNamespaceSet(s);
-			break;
-		}
 		case 0x0e:
 			LOG(CALLS, "MultinameA");
 			break;
@@ -276,7 +285,7 @@ string ABCVm::getMultinameString(unsigned int mi) const
 			LOG(CALLS, "MultinameLA");
 			break;*/
 		default:
-			LOG(ERROR,"Multiname to String not yet implemented for this kind");
+			LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 			break;
 	}
 	return ret;
@@ -414,23 +423,24 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 	string name=th->vm->getMultinameString(n);
 	cout << "callProperty " << name << ' ' << m << endl;
 	arguments args;
-	args.args.resize(m+1);
+	args.args.resize(m);
 	for(int i=0;i<m;i++)
 		args.args[m-i-1]=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
-	args.args[0]=obj;
 	bool found;
 	SWFObject o=obj->getVariableByName(name,found);
 	//If o is already a function call it, otherwise find the Call method
 	if(o->getObjectType()==T_FUNCTION)
 	{
 		IFunction* f=dynamic_cast<IFunction*>(o.getData());
-		f->call(o.getData(),&args);
+		ISWFObject* ret=f->call(obj,&args);
+		th->runtime_stack_push(ret);
 	}
 	else
 	{
 		IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found).getData());
-		f->call(o.getData(),&args);
+		ISWFObject* ret=f->call(obj,&args);
+		th->runtime_stack_push(ret);
 	}
 }
 
@@ -439,15 +449,14 @@ void ABCVm::callPropVoid(method_info* th, int n, int m)
 	string name=th->vm->getMultinameString(n); 
 	cout << "callPropVoid " << name << ' ' << m << endl;
 	arguments args;
-	args.args.resize(m+1);
+	args.args.resize(m);
 	for(int i=0;i<m;i++)
 		args.args[m-i-1]=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
-	args.args[0]=obj;
 	bool found;
 	SWFObject o=obj->getVariableByName(name,found);
 	IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found).getData());
-	f->call(o.getData(),&args);
+	f->call(obj,&args);
 }
 
 void ABCVm::jump(method_info* th, int offset)
@@ -545,10 +554,11 @@ void ABCVm::findProperty(method_info* th, int n)
 	bool found=false;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		SWFObject o=(*it)->getVariableByName(name,found);
+		(*it)->getVariableByName(name,found);
 		if(found)
 		{
-			th->runtime_stack_push(o.getData());
+			//We have to return the object, not the property
+			th->runtime_stack_push(*it);
 			break;
 		}
 	}
@@ -563,6 +573,24 @@ void ABCVm::findPropStrict(method_info* th, int n)
 {
 	string name=th->vm->getMultinameString(n);
 	cout << "findPropStrict " << name << endl;
+
+	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	bool found=false;
+	for(it;it!=th->scope_stack.rend();it++)
+	{
+		(*it)->getVariableByName(name,found);
+		if(found)
+		{
+			//We have to return the object, not the property
+			th->runtime_stack_push(*it);
+			break;
+		}
+	}
+	if(!found)
+	{
+		cout << "NOT found, aborting" << endl;
+		abort();
+	}
 }
 
 void ABCVm::initProperty(method_info* th, int n)
@@ -1061,6 +1089,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateRetVoid();
 				break;
 			}
+			case 0x48:
+			{
+				//returnvalue
+				//TODO: Should coerce the return type to the expected one
+				cout << "synt returnvalue" << endl;
+				stack_entry e=static_stack_pop(Builder,static_stack,m);
+				Builder.CreateRet(e.first);
+				break;
+			}
 			case 0x49:
 			{
 				//constructsuper
@@ -1374,15 +1411,25 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 				switch(t->vkind)
 				{
 					case 0x0c: //Null
+						if(!t->slot_id)
+						{
+							LOG(ERROR,"Should assign slot position");
+							abort();
+						}
 						obj->setSlot(t->slot_id, new Null);
 						break;
 					default:
-					//fallthrough
 					{
+						//fallthrough
+						LOG(ERROR,"Slot kind " << hex << t->vkind);
 					}
 				}
 			}
-			//else fallthrough
+			else
+			{
+				//else fallthrough
+				LOG(ERROR,"Slot vindex 0");
+			}
 		}
 		default:
 			LOG(ERROR,"Trait not supported " << name << " " << t->kind);

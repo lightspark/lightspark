@@ -388,9 +388,9 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 	}
 }
 
-SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
+ISWFObject* ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 {
-	retValue=SWFObject();
+	retValue=new Undefined;
 	if(retValue->getObjectType()!=T_UNDEFINED)
 		LOG(ERROR,"Not valid condition");
 	ExecutionContext* exec_bak=sys->execContext;
@@ -453,7 +453,7 @@ SWFObject ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 		}
 	}
 	sys->execContext=exec_bak;
-	return SWFObject(retValue);
+	return retValue;
 }
 
 ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
@@ -672,7 +672,7 @@ void ActionNewObject::Execute()
 void ActionReturn::Execute()
 {
 	LOG(CALLS,"ActionReturn");
-	sys->execContext->retValue=sys->vm.stack.pop();
+	sys->execContext->retValue=sys->vm.stack.pop().getData();
 }
 
 void ActionPop::Execute()
@@ -726,10 +726,10 @@ void ActionDefineFunction::Execute()
 		sys->currentClip->setVariableByName(FunctionName,SWFObject(this));
 }
 
-SWFObject ActionDefineFunction::call(ISWFObject* obj, arguments* args)
+ISWFObject* ActionDefineFunction::call(ISWFObject* obj, arguments* args)
 {
 	LOG(NOT_IMPLEMENTED,"ActionDefineFunction: Call");
-	return SWFObject();
+	return NULL;
 }
 
 void ActionDefineFunction2::Execute()

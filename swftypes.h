@@ -271,7 +271,7 @@ public:
 class IFunction: public ISWFObject_impl
 {
 public:
-	virtual SWFObject call(ISWFObject* obj, arguments* args)=0;
+	virtual ISWFObject* call(ISWFObject* obj, arguments* args)=0;
 };
 
 class Function : public IFunction
@@ -280,7 +280,7 @@ public:
 	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
 	Function(as_function v):val(v){}
 	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
-	SWFObject call(ISWFObject* obj, arguments* args);
+	ISWFObject* call(ISWFObject* obj, arguments* args);
 	IFunction* toFunction();
 private:
 	as_function val;

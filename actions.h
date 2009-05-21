@@ -28,7 +28,7 @@ protected:
 	int jumpOffset;
 public:
 	std::vector<SWFObject> regs;
-	SWFObject retValue;
+	ISWFObject* retValue;
 	ExecutionContext():jumpOffset(0),regs(10){}
 	void setJumpOffset(int offset)
 	{
@@ -120,7 +120,7 @@ public:
 	void Execute();
 	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
 	void print(){ LOG(TRACE,"ActionDefineFunction");}
-	SWFObject call(ISWFObject* obj, arguments* args);
+	ISWFObject* call(ISWFObject* obj, arguments* args);
 	STRING getName(){ return FunctionName; }
 };
 
@@ -155,7 +155,7 @@ public:
 	void Execute();
 	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
 	void print(){ LOG(TRACE,"ActionDefineFunction2");}
-	SWFObject call(ISWFObject* obj, arguments* args);
+	ISWFObject* call(ISWFObject* obj, arguments* args);
 	STRING getName(){ return FunctionName; }
 	IFunction* toFunction(){ return this; }
 };

@@ -41,10 +41,10 @@ void ASArray::_register()
 	setVariableByName("constructor",SWFObject(new Function(constructor)));
 }
 
-SWFObject ASArray::constructor(const SWFObject& th, arguments* args)
+ASFUNCTIONBODY(ASArray,constructor)
 {
 	LOG(NOT_IMPLEMENTED,"Called Array constructor");
-	return SWFObject();
+	return NULL;
 }
 
 ASMovieClipLoader::ASMovieClipLoader()
@@ -58,16 +58,16 @@ void ASMovieClipLoader::_register()
 	setVariableByName("addListener",SWFObject(new Function(addListener)));
 }
 
-SWFObject ASMovieClipLoader::constructor(const SWFObject&, arguments* args)
+ASFUNCTIONBODY(ASMovieClipLoader,constructor)
 {
 	LOG(NOT_IMPLEMENTED,"Called MovieClipLoader constructor");
-	return SWFObject();
+	return NULL;
 }
 
-SWFObject ASMovieClipLoader::addListener(const SWFObject&, arguments* args)
+ASFUNCTIONBODY(ASMovieClipLoader,addListener)
 {
 	LOG(NOT_IMPLEMENTED,"Called MovieClipLoader::addListener");
-	return SWFObject();
+	return NULL;
 }
 
 ASXML::ASXML()
@@ -83,10 +83,10 @@ void ASXML::_register()
 	setVariableByName("load",SWFObject(new Function(load)));
 }
 
-SWFObject ASXML::constructor(const SWFObject&, arguments* args)
+ASFUNCTIONBODY(ASXML,constructor)
 {
 	LOG(NOT_IMPLEMENTED,"Called XML constructor");
-	return SWFObject();
+	return NULL;
 }
 
 
@@ -98,9 +98,9 @@ size_t ASXML::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 	return size*nmemb;
 }
 
-SWFObject ASXML::load(const SWFObject& obj, arguments* args)
+ASFUNCTIONBODY(ASXML,load)
 {
-	ASXML* th=dynamic_cast<ASXML*>(obj.getData());
+	ASXML* th=dynamic_cast<ASXML*>(obj);
 	LOG(NOT_IMPLEMENTED,"Called ASXML::load " << args->args[0]->toString());
 	CURL *curl;
 	CURLcode res;
@@ -111,7 +111,7 @@ SWFObject ASXML::load(const SWFObject& obj, arguments* args)
 	{
 		curl_easy_setopt(curl, CURLOPT_URL, (string(url)).c_str());
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, obj.getData());
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, obj);
 		res = curl_easy_perform(curl);
 		curl_easy_cleanup(curl);
 	}
@@ -122,7 +122,7 @@ SWFObject ASXML::load(const SWFObject& obj, arguments* args)
 	arguments a;
 	a.args.push_back(new Integer(1));
 	on_load->call(NULL,&a);
-	return SWFObject(new Integer(1));
+	return new Integer(1);
 }
 
 void ASObject::_register()
@@ -130,10 +130,10 @@ void ASObject::_register()
 	setVariableByName("constructor",SWFObject(new Function(constructor)));
 }
 
-SWFObject ASObject::constructor(const SWFObject&, arguments* args)
+ASFUNCTIONBODY(ASObject,constructor)
 {
 	LOG(NOT_IMPLEMENTED,"Called Object constructor");
-	return SWFObject();
+	return NULL;
 }
 
 STRING ASString::toString()
@@ -165,9 +165,9 @@ void ASMovieClip::addToDisplayList(IDisplayListElem* t)
 	displayListLimit=displayList.size();
 }
 
-SWFObject ASMovieClip::createEmptyMovieClip(const SWFObject& obj, arguments* args)
+ASFUNCTIONBODY(ASMovieClip,createEmptyMovieClip)
 {
-	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj.getData());
+	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj);
 	if(th==NULL)
 		LOG(ERROR,"Not a valid ASMovieClip");
 
@@ -181,33 +181,32 @@ SWFObject ASMovieClip::createEmptyMovieClip(const SWFObject& obj, arguments* arg
 	list<IDisplayListElem*>::iterator it=lower_bound(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),t->getDepth(),list_orderer);
 	th->dynamicDisplayList.insert(it,t);
 
-	SWFObject r(ret);
-	th->setVariableByName(args->args[0]->toString(),r);
-	return r;
+	th->setVariableByName(args->args[0]->toString(),ret);
+	return ret;
 }
 
-SWFObject ASMovieClip::moveTo(const SWFObject&, arguments* args)
+ASFUNCTIONBODY(ASMovieClip,moveTo)
 {
 	LOG(NOT_IMPLEMENTED,"Called moveTo");
-	return SWFObject();
+	return NULL;
 }
 
-SWFObject ASMovieClip::lineTo(const SWFObject&, arguments* args)
+ASFUNCTIONBODY(ASMovieClip,lineTo)
 {
 	LOG(NOT_IMPLEMENTED,"Called lineTo");
-	return SWFObject();
+	return NULL;
 }
 
-SWFObject ASMovieClip::lineStyle(const SWFObject&, arguments* args)
+ASFUNCTIONBODY(ASMovieClip,lineStyle)
 {
 	LOG(NOT_IMPLEMENTED,"Called lineStyle");
-	return SWFObject();
+	return NULL;
 }
 
-SWFObject ASMovieClip::swapDepths(const SWFObject&, arguments* args)
+ASFUNCTIONBODY(ASMovieClip,swapDepths)
 {
 	LOG(NOT_IMPLEMENTED,"Called swapDepths");
-	return SWFObject();
+	return NULL;
 }
 
 void ASMovieClip::_register()

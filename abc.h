@@ -333,7 +333,7 @@ private:
 	std::string getMultinameString(unsigned int m) const;
 
 	llvm::Function* synt_method(method_info* m);
-	llvm::FunctionType* synt_method_prototype(int n);
+	llvm::FunctionType* synt_method_prototype();
 
 	std::map<int,SWFObject> registers;
 	std::map<std::string,int> valid_classes;
@@ -346,6 +346,7 @@ private:
 
 	//Utility
 	static void debug(int p);
+	static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
 	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
 	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
 	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);

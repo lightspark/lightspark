@@ -29,9 +29,9 @@
 #include "logger.h"
 
 #define ASFUNCTION(name) \
-	static SWFObject name(const SWFObject& , arguments* args)
+	static ISWFObject* name(ISWFObject* , arguments* args);
 #define ASFUNCTIONBODY(c,name) \
-	SWFObject c::name(const SWFObject& , arguments* args)
+	ISWFObject* c::name(ISWFObject* obj, arguments* args)
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_FUNCTION,
 	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED, T_STRING};
@@ -277,10 +277,8 @@ public:
 class Function : public IFunction
 {
 public:
-	typedef SWFObject (*as_function)(const SWFObject&, arguments*);
-	Function(as_function v):val(v)
-	{
-	}
+	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
+	Function(as_function v):val(v){}
 	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
 	SWFObject call(ISWFObject* obj, arguments* args);
 	IFunction* toFunction();

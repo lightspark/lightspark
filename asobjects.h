@@ -48,7 +48,7 @@ public:
 	ASObject():debug_id(0){}
 	void _register();
 	SWFOBJECT_TYPE getObjectType() { return T_OBJECT; }
-	static SWFObject constructor(const SWFObject& , arguments* args);
+	ASFUNCTION(constructor);
 	ISWFObject* clone()
 	{
 		return new ASObject(*this);
@@ -85,7 +85,7 @@ public:
 class ASArray: public ASObject
 {
 public:
-	static SWFObject constructor(const SWFObject&, arguments* args);
+	ASFUNCTION(constructor);
 	void _register();
 	ISWFObject* clone()
 	{
@@ -146,11 +146,11 @@ public:
 	int displayListLimit;
 
 	ASMovieClip();
-	static SWFObject moveTo(const SWFObject&, arguments* args);
-	static SWFObject lineStyle(const SWFObject&, arguments* args);
-	static SWFObject lineTo(const SWFObject&, arguments* args);
-	static SWFObject swapDepths(const SWFObject&, arguments* args);
-	static SWFObject createEmptyMovieClip(const SWFObject&, arguments* args);
+	ASFUNCTION(moveTo);
+	ASFUNCTION(lineStyle);
+	ASFUNCTION(lineTo);
+	ASFUNCTION(swapDepths);
+	ASFUNCTION(createEmptyMovieClip);
 
 	virtual void addToDisplayList(IDisplayListElem* r);
 
@@ -170,8 +170,8 @@ class ASMovieClipLoader: public ASObject
 public:
 	ASMovieClipLoader();
 	ASFUNCTION(addListener);
+	ASFUNCTION(constructor);
 
-	static SWFObject constructor(const SWFObject&, arguments* args);
 	void _register();
 	ISWFObject* clone()
 	{
@@ -187,8 +187,8 @@ private:
 	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 public:
 	ASXML();
-	ASFUNCTION(constructor);
-	ASFUNCTION(load);
+	ASFUNCTION(constructor)
+	ASFUNCTION(load)
 	void _register();
 	ISWFObject* clone()
 	{

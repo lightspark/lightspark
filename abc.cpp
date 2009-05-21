@@ -94,15 +94,22 @@ void SymbolClassTag::Render()
 
 }
 
+//Be careful, arguments nubering starts from 1
+ISWFObject* ABCVm::argumentDumper(arguments* arg, uint32_t n)
+{
+	return arg->args[n-1].getData();
+}
+
 void ABCVm::registerFunctions()
 {
 	vector<const llvm::Type*> sig;
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 
+	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(llvm::IntegerType::get(32));
-	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
-	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::debug);
+	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"argumentDumper",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::argumentDumper);
 	sig.clear();
 
 	// (ABCVm*)
@@ -337,10 +344,8 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	LOG(CALLS,"Calling Class init");
 	if(m->f)
 	{
-		m->locals[0]=&Global;
-		void* f_ptr=ex->getPointerToFunction(m->f);
-		void (*FP)() = (void (*)())f_ptr;
-		FP();
+		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
+		FP(&Global,NULL);
 	}
 	m=&methods[instances[index].init];
 	synt_method(m);
@@ -352,11 +357,10 @@ SWFObject ABCVm::buildNamedClass(const string& s)
 	//module.dump();
 	if(m->f)
 	{
-		m->locals[0]=ret;
-		m->locals[1]=new Null;
-		void* f_ptr=ex->getPointerToFunction(m->f);
-		void (*FP)() = (void (*)())f_ptr;
-		FP();
+		arguments args;
+		args.args.push_back(new Null);
+		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
+		FP(ret,&args);
 	}
 	return ret;
 }
@@ -747,7 +751,7 @@ inline void ABCVm::syncStacks(llvm::IRBuilder<>& builder, bool jitted,std::vecto
 	}
 }
 
-llvm::FunctionType* ABCVm::synt_method_prototype(int n)
+llvm::FunctionType* ABCVm::synt_method_prototype()
 {
 	//The pointer size compatible int type will be useful
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
@@ -755,11 +759,7 @@ llvm::FunctionType* ABCVm::synt_method_prototype(int n)
 	//Initialize LLVM representation of method
 	vector<const llvm::Type*> sig;
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	for(int i=0;i<n;i++)
-	{
-		LOG(ERROR,"Arguments not supported");
-		sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	}
+	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 
 	return llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 }
@@ -777,7 +777,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	}
 	stringstream code(m->body->code);
 	m->vm=this;
-	llvm::FunctionType* method_type=synt_method_prototype(m->param_count);
+	llvm::FunctionType* method_type=synt_method_prototype();
 	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",module);
 
 	//The pointer size compatible int type will be useful
@@ -797,7 +797,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	//let's give access to local data storage
 	m->locals=new ISWFObject*[m->body->local_count];
 	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)m->locals);
-	llvm::Value* locals = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
+	llvm::Value* locals = llvm::ConstantExpr::getIntToPtr(constant, 
+			llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 
 	//the stack is statically handled as much as possible to allow llvm optimizations
 	//on branch and on interpreted/jitted code transition it is synchronized with the dynamic one
@@ -815,6 +816,25 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 	//This is initialized to true so that on first iteration the entry block is used
 	bool last_is_branch=true;
+
+	Builder.SetInsertPoint(BB);
+	//We fill locals with function arguments
+	//First argument is the 'this'
+	constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 0);
+	llvm::Value* t=Builder.CreateGEP(locals,constant);
+	llvm::Function::ArgumentListType::iterator it=m->f->getArgumentList().begin();
+	llvm::Value* arg=it;
+	Builder.CreateStore(arg,t);
+	//Second argument is the arguments pointer
+	it++;
+	for(int i=0;i<m->param_count;i++)
+	{
+		constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i+1);
+		t=Builder.CreateGEP(locals,constant);
+		arg=Builder.CreateCall2(ex->FindFunctionNamed("argumentDumper"), it, constant);
+		Builder.CreateStore(arg,t);
+	}
+
 	//Each case block builds the correct parameters for the interpreter function and call it
 	u8 opcode;
 	while(1)
@@ -1254,13 +1274,14 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
 				static_stack_push(static_stack,stack_entry(Builder.CreateLoad(t,"stack"),STACK_OBJECT));
 				jitted=true;
+
 				break;
 			}
 			case 0xd6:
 			case 0xd7:
 			{
-				cout << "synt setlocal" << endl;
 				//setlocal_n
+				cout << "synt setlocal" << endl;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), th, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
@@ -1308,13 +1329,10 @@ void ABCVm::Run()
 		//printMethod(m);
 		synt_method(m);
 
-		m->locals[0]=&Global;
-
 		if(m->f)
 		{
-			void* f_ptr=ex->getPointerToFunction(m->f);
-			void (*FP)(int*) = (void (*)(int*))f_ptr;
-			FP((int*)15);
+			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
+			FP(&Global,NULL);
 		}
 	}
 	//module.dump();

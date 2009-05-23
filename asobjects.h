@@ -47,7 +47,7 @@ class ASObject: public ISWFObject_impl
 public:
 	ASObject():debug_id(0){}
 	void _register();
-	SWFOBJECT_TYPE getObjectType() { return T_OBJECT; }
+	SWFOBJECT_TYPE getObjectType() const { return T_OBJECT; }
 	ASFUNCTION(constructor);
 	ISWFObject* clone()
 	{
@@ -66,7 +66,7 @@ public:
 	ASString(const std::string& s):data(s){}
 	STRING toString();
 	float toFloat();
-	SWFOBJECT_TYPE getObjectType(){return T_STRING;}
+	SWFOBJECT_TYPE getObjectType() const {return T_STRING;}
 	ISWFObject* clone()
 	{
 		return new ASString(*this);

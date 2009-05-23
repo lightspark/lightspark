@@ -89,7 +89,10 @@ void SymbolClassTag::Render()
 	for(int i=0;i<NumSymbols;i++)
 	{
 		cout << Tags[i] << ' ' << Names[i] << endl;
-		sys->currentVm->buildNamedClass(Names[i]);
+		if(Tags[i]==0)
+			sys->currentVm->buildNamedClass(sys,Names[i]);
+		else
+			sys->currentVm->buildNamedClass(new ASObject,Names[i]);
 	}
 
 }
@@ -219,8 +222,15 @@ void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
 	
-	Global.setVariableByName(".Error",new ASObject);
 	Global.setVariableByName(".Object",new ASObject);
+	valid_classes[".Object"]=-1;
+	Global.setVariableByName(".int",new ASObject);
+	valid_classes[".int"]=-1;
+	Global.setVariableByName(".Boolean",new ASObject);
+	valid_classes[".Boolean"]=-1;
+
+	Global.setVariableByName(".Error",new ASObject);
+
 	Global.setVariableByName("flash.events.EventDispatcher",new ASObject);
 	Global.setVariableByName("flash.display.DisplayObject",new ASObject);
 	Global.setVariableByName("flash.display.InteractiveObject",new ASObject);
@@ -232,7 +242,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("flash.events.ProgressEvent",new ASObject);
 }
 
-string ABCVm::getMultinameString(unsigned int mi) const
+string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 {
 	const multiname_info* m=&constant_pool.multinames[mi];
 	string ret;
@@ -260,6 +270,28 @@ string ABCVm::getMultinameString(unsigned int mi) const
 			}
 			break;
 		}
+		case 0x1b:
+		{
+			string name;
+			if(th!=NULL)
+			{
+				ISWFObject* n=th->runtime_stack_pop();
+				if(n->getObjectType()!=T_STRING)
+				{
+					LOG(ERROR,"Name on the stack should be a string");
+					name="<Invalid>";
+				}
+				else
+					name=n->toString();
+			}
+			else
+				name="<Invalid>";
+			//We currently assume that a null namespace is good
+			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
+			printNamespaceSet(s);
+			return "."+name;
+			break;
+		}
 /*		case 0x0d:
 			LOG(CALLS, "QNameA");
 			break;
@@ -277,9 +309,6 @@ string ABCVm::getMultinameString(unsigned int mi) const
 			break;
 		case 0x0e:
 			LOG(CALLS, "MultinameA");
-			break;
-		case 0x1b:
-			LOG(CALLS, "MultinameL");
 			break;
 		case 0x1c:
 			LOG(CALLS, "MultinameLA");
@@ -338,40 +367,51 @@ ABCVm::ABCVm(istream& in)
 
 }
 
-SWFObject ABCVm::buildNamedClass(const string& s)
+SWFObject ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 {
 	map<string,int>::iterator it=valid_classes.find(s);
 	if(it!=valid_classes.end())
 		LOG(CALLS,"Class " << s << " found");
 	//TODO: Really build class
-	ASObject* ret=new ASObject;
-	ret->debug_id=0xdeadbeaf;
 	int index=it->second;
-
-	method_info* m=&methods[classes[index].cinit];
-	synt_method(m);
-	LOG(CALLS,"Calling Class init");
-	if(m->f)
+	if(index==-1)
 	{
-		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-		FP(&Global,NULL);
+		bool found;
+		ISWFObject* r=Global.getVariableByName(it->first,found);
+		if(!found)
+		{
+			LOG(ERROR,"Class " << it->first << " not found");
+			abort();
+		}
+		return r->clone();
 	}
-	m=&methods[instances[index].init];
-	synt_method(m);
-	LOG(CALLS,"Building instance traits");
-	for(int i=0;i<instances[index].trait_count;i++)
-		buildTrait(ret,&instances[index].traits[i]);
-
-	LOG(CALLS,"Calling Instance init");
-	//module.dump();
-	if(m->f)
+	else
 	{
-		arguments args;
-		args.args.push_back(new Null);
-		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-		FP(ret,&args);
+		method_info* m=&methods[classes[index].cinit];
+		synt_method(m);
+		LOG(CALLS,"Calling Class init");
+		if(m->f)
+		{
+			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
+			FP(&Global,NULL);
+		}
+		m=&methods[instances[index].init];
+		synt_method(m);
+		LOG(CALLS,"Building instance traits");
+		for(int i=0;i<instances[index].trait_count;i++)
+			buildTrait(base,&instances[index].traits[i]);
+
+		LOG(CALLS,"Calling Instance init");
+		//module.dump();
+		if(m->f)
+		{
+			arguments args;
+			args.args.push_back(new Null);
+			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
+			FP(base,&args);
+		}
+		return base;
 	}
-	return ret;
 }
 
 inline method_info* ABCVm::get_method(unsigned int m)
@@ -438,7 +478,7 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 	}
 	else
 	{
-		IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found).getData());
+		IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found));
 		ISWFObject* ret=f->call(obj,&args);
 		th->runtime_stack_push(ret);
 	}
@@ -455,8 +495,17 @@ void ABCVm::callPropVoid(method_info* th, int n, int m)
 	ISWFObject* obj=th->runtime_stack_pop();
 	bool found;
 	SWFObject o=obj->getVariableByName(name,found);
-	IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found).getData());
-	f->call(obj,&args);
+	//If o is already a function call it, otherwise find the Call method
+	if(o->getObjectType()==T_FUNCTION)
+	{
+		IFunction* f=dynamic_cast<IFunction*>(o.getData());
+		f->call(obj,&args);
+	}
+	else
+	{
+		IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found));
+		f->call(obj,&args);
+	}
 }
 
 void ABCVm::jump(method_info* th, int offset)
@@ -467,6 +516,24 @@ void ABCVm::jump(method_info* th, int offset)
 void ABCVm::ifFalse(method_info* th, int offset)
 {
 	cout << "ifFalse " << offset << endl;
+
+	ISWFObject* obj1=th->runtime_stack_pop();
+	th->runtime_stack_push((ISWFObject*)new uintptr_t(!Boolean_concrete(obj1)));
+}
+
+//We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
+bool Boolean_concrete(ISWFObject* obj)
+{
+	if(obj->getObjectType()==T_STRING)
+	{
+		string s=obj->toString();
+		if(s.empty())
+			return false;
+		else
+			return true;
+	}
+	else
+		return false;
 }
 
 void ABCVm::ifEq(method_info* th, int offset)
@@ -476,8 +543,11 @@ void ABCVm::ifEq(method_info* th, int offset)
 	ISWFObject* obj1=th->runtime_stack_pop();
 	ISWFObject* obj2=th->runtime_stack_pop();
 
-	//Implement real comparision
-	th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+	//Real comparision demanded to object
+	if(obj1->isEqual(obj2))
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+	else
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
 }
 
 void ABCVm::newCatch(method_info* th, int n)
@@ -541,8 +611,30 @@ void ABCVm::constructSuper(method_info* th, int n)
 
 void ABCVm::getProperty(method_info* th, int n)
 {
-	string name=th->vm->getMultinameString(n);
+	string name=th->vm->getMultinameString(n,th);
 	cout << "getProperty " << name << endl;
+
+	ISWFObject* obj=th->runtime_stack_pop();
+	//DEBUG
+	ASObject* o=dynamic_cast<ASObject*>(obj);
+	printf("Object ID 0x%lx\n",o->debug_id);
+
+
+	bool found;
+	ISWFObject* ret=obj->getVariableByName(name,found);
+	if(!found)
+	{
+		LOG(ERROR,"Property not found");
+		th->runtime_stack_push(ret);
+	}
+	else
+	{
+		//DEBUG
+		ASObject* r=dynamic_cast<ASObject*>(ret);
+		printf("0x%lx\n",r->debug_id);
+
+		th->runtime_stack_push(ret);
+	}
 }
 
 void ABCVm::findProperty(method_info* th, int n)
@@ -598,8 +690,14 @@ void ABCVm::initProperty(method_info* th, int n)
 	string name=th->vm->getMultinameString(n);
 	cout << "initProperty " << name << endl;
 	ISWFObject* value=th->runtime_stack_pop();
+	//DEBUG
+	ASObject* r=dynamic_cast<ASObject*>(value);
+	if(r!=NULL)
+		printf("Value ID 0x%lx\n",r->debug_id);
+
 	ISWFObject* obj=th->runtime_stack_pop();
 
+	//TODO: Should we make a copy or pass the reference
 	obj->setVariableByName(name,value);
 }
 
@@ -639,6 +737,10 @@ void ABCVm::getLex(method_info* th, int n)
 		if(found)
 		{
 			th->runtime_stack_push(o.getData());
+			//DEBUG
+			ASObject* r=dynamic_cast<ASObject*>(o.getData());
+			if(r!=NULL)
+				printf("Found ID 0x%lx\n",r->debug_id);
 			break;
 		}
 	}
@@ -943,10 +1045,45 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				cout << "synt iffalse" << endl;
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
+
+				last_is_branch=true;
 				s24 t;
 				code >> t;
+
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+			
+				//Make comparision
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("ifFalse"), th, constant);
+
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifFalse pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
 				break;
 			}
 			case 0x13:
@@ -1411,24 +1548,34 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 				switch(t->vkind)
 				{
 					case 0x0c: //Null
+					{
 						if(!t->slot_id)
 						{
 							LOG(ERROR,"Should assign slot position");
 							abort();
 						}
-						obj->setSlot(t->slot_id, new Null);
+						ISWFObject* ret=obj->setVariableByName(name, new Null);
+						obj->setSlot(t->slot_id, ret);
 						break;
+					}
 					default:
 					{
 						//fallthrough
 						LOG(ERROR,"Slot kind " << hex << t->vkind);
+						LOG(ERROR,"Trait not supported " << name << " " << t->kind);
+						obj->setVariableByName(name, new Undefined);
+						return;
 					}
 				}
 			}
 			else
 			{
 				//else fallthrough
-				LOG(ERROR,"Slot vindex 0");
+				LOG(CALLS,"Slot vindex 0 "<<name<<" type "<<getMultinameString(t->type_name));
+			//ISWFObject* ret=obj->setVariableByName(name, buildNamedClass(getMultinameString(t->type_name)));
+				ISWFObject* ret=obj->setVariableByName(name, new ASObject);
+				obj->setSlot(t->slot_id, ret);
+				break;
 			}
 		}
 		default:

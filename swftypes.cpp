@@ -138,6 +138,11 @@ STRING ISWFObject::toString()
 	return STRING("Cannot convert object to String");
 }
 
+bool ISWFObject::isEqual(const ISWFObject* r) const
+{
+	return false;
+}
+
 IFunction* ISWFObject::toFunction()
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Function");
@@ -161,14 +166,17 @@ void ISWFObject_impl::_register()
 	LOG(CALLS,"default _register called");
 }
 
-void ISWFObject_impl::setVariableByName(const string& name, const SWFObject& o)
+ISWFObject* ISWFObject_impl::setVariableByName(const string& name, const SWFObject& o)
 {
-	Variables.insert(pair<string,SWFObject>(name,o));
+	pair<map<string, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<string,ISWFObject*>(name,o.getData()));
+	if(!ret.second)
+		ret.first->second=o.getData();
+	return o.getData();
 }
 
-SWFObject ISWFObject_impl::getVariableByName(const string& name, bool& found)
+ISWFObject* ISWFObject_impl::getVariableByName(const string& name, bool& found)
 {
-	map<string,SWFObject>::iterator it=Variables.find(name);
+	map<string,ISWFObject*>::iterator it=Variables.find(name);
 	if(it!=Variables.end())
 	{
 		found=true;
@@ -177,13 +185,13 @@ SWFObject ISWFObject_impl::getVariableByName(const string& name, bool& found)
 	else
 	{
 		found=false;
-		return SWFObject();
+		return new Undefined;
 	}
 }
 
 void ISWFObject_impl::dumpVariables()
 {
-	map<string,SWFObject>::iterator it=Variables.begin();
+	map<string,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 		cout << it->first << endl;
 }
@@ -750,7 +758,15 @@ STRING Undefined::toString()
 
 STRING Null::toString()
 {
-	return STRING("null");
+	return "null";
+}
+
+bool Null::isEqual(const ISWFObject* r) const
+{
+	if(r->getObjectType()==T_NULL)
+		return true;
+	else
+		return false;
 }
 
 ISWFObject* SWFObject::getData() const

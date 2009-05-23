@@ -266,10 +266,10 @@ public:
 
 	//SWFObject interface
 	STRING getName() { return Name;}
-	SWFOBJECT_TYPE getObjectType(){ return T_PLACEOBJECT;}
+	SWFOBJECT_TYPE getObjectType()const{ return T_PLACEOBJECT;}
 	//Forwared to placed object, if valid
-	SWFObject getVariableByName(const std::string& name, bool& found);
-	void setVariableByName(const std::string& name, const SWFObject& o);
+	ISWFObject* getVariableByName(const std::string& name, bool& found);
+	ISWFObject* setVariableByName(const std::string& name, const SWFObject& o);
 };
 
 class FrameLabelTag: public DisplayListTag
@@ -420,7 +420,7 @@ private:
 	//std::vector < Tag* > ControlTags;
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
-	SWFOBJECT_TYPE getObjectType(){ return T_WRAPPED;}
+	SWFOBJECT_TYPE getObjectType()const{ return T_WRAPPED;}
 	virtual int getId(){ return SpriteID; }
 	void printInfo(int t=0);
 

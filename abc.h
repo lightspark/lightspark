@@ -330,7 +330,7 @@ private:
 	void buildTrait(ISWFObject* obj, const traits_info* t);
 	void printNamespaceSet(const ns_set_info* m) const;
 	std::string getString(unsigned int s) const;
-	std::string getMultinameString(unsigned int m) const;
+	std::string getMultinameString(unsigned int m, method_info* th=NULL) const;
 
 	llvm::Function* synt_method(method_info* m);
 	llvm::FunctionType* synt_method_prototype();
@@ -389,7 +389,7 @@ private:
 public:
 	ABCVm(std::istream& in);
 	void Run();
-	SWFObject buildNamedClass(const std::string& n);
+	SWFObject buildNamedClass(ISWFObject* base, const std::string& n);
 };
 
 class DoABCTag: public DisplayListTag
@@ -416,16 +416,7 @@ public:
 	int getDepth() const;
 };
 
-class LLVMFunction : public IFunction
-{
-public:
-	LLVMFunction(llvm::Function* v):val(v)
-	{
-	}
-	SWFOBJECT_TYPE getObjectType(){return T_FUNCTION;}
-//private:
-	llvm::Function* val;
-};
+bool Boolean_concrete(ISWFObject* obj);
 
 std::istream& operator>>(std::istream& in, u8& v);
 std::istream& operator>>(std::istream& in, u16& v);

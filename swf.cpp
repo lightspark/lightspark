@@ -30,6 +30,7 @@
 #include "actions.h"
 #include "streams.h"
 #include "asobjects.h"
+#include "flashdisplay.h"
 
 using namespace std;
 
@@ -90,6 +91,13 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	setVariableByName("XML",xml);
 
 	setVariableByName("",this);
+
+	//This should come from DisplayObject
+	LoaderInfo* loaderInfo=new LoaderInfo(true);
+	setVariableByName(".loaderInfo",loaderInfo);
+	//Setting fake parameters
+	loaderInfo->parameters.setVariableByName(".debug_level",new ASString(""));
+	loaderInfo->parameters.setVariableByName(".connect",new ASString("true"));
 }
 
 void SystemState::setShutdownFlag()
@@ -656,22 +664,23 @@ DictionaryTag* SystemState::dictionaryLookup(UI16 id)
 	return *it;
 }
 
-SWFObject SystemState::getVariableByName(const string& name, bool& found)
+ISWFObject* SystemState::getVariableByName(const string& name, bool& found)
 {
 	sem_wait(&mutex);
-	SWFObject ret=ISWFObject_impl::getVariableByName(name, found);
+	ISWFObject* ret=ISWFObject_impl::getVariableByName(name, found);
 	sem_post(&mutex);
 	return ret;
 }
 
-void SystemState::setVariableByName(const string& name, const SWFObject& o)
+ISWFObject* SystemState::setVariableByName(const string& name, const SWFObject& o)
 {
 	sem_wait(&mutex);
-	ISWFObject_impl::setVariableByName(name,o);
+	ISWFObject* ret=ISWFObject_impl::setVariableByName(name,o);
 	sem_post(&mutex);
+	return ret;
 }
 
-SWFOBJECT_TYPE SystemState::getObjectType()
+SWFOBJECT_TYPE SystemState::getObjectType() const
 {
 	return T_MOVIE;
 }

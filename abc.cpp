@@ -121,6 +121,12 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushScope",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushScope);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_i",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::convert_i);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce_s",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::coerce_s);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"dup",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::dup);
 
@@ -142,6 +148,12 @@ void ABCVm::registerFunctions()
 	// (ABCVm*,int)
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifLT",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifLT);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifStrictNE",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifStrictNE);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifEq",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifEq);
 
@@ -172,14 +184,26 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setLocal",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setLocal);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::coerce);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLex",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getLex);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findPropStrict",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findPropStrict);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushByte",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushByte);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"incLocal_i",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::incLocal_i);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getProperty",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getProperty);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setProperty",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::setProperty);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findProperty",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findProperty);
@@ -454,7 +478,8 @@ void ABCVm::popScope(method_info* th)
 
 void ABCVm::constructProp(method_info* th, int n, int m)
 {
-	cout << "constructProp " << n << ' ' << m << endl;
+	string name=th->vm->getMultinameString(n);
+	cout << "constructProp " << name << ' ' << m << endl;
 }
 
 void ABCVm::callProperty(method_info* th, int n, int m)
@@ -475,6 +500,11 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 		IFunction* f=dynamic_cast<IFunction*>(o.getData());
 		ISWFObject* ret=f->call(obj,&args);
 		th->runtime_stack_push(ret);
+	}
+	else if(o->getObjectType()==T_UNDEFINED)
+	{
+		LOG(NOT_IMPLEMENTED,"We got a Undefined function");
+		th->runtime_stack_push(new Undefined);
 	}
 	else
 	{
@@ -526,14 +556,30 @@ bool Boolean_concrete(ISWFObject* obj)
 {
 	if(obj->getObjectType()==T_STRING)
 	{
+		cout << "string to bool" << endl;
 		string s=obj->toString();
 		if(s.empty())
 			return false;
 		else
 			return true;
 	}
+	else if(obj->getObjectType()==T_OBJECT)
+	{
+		cout << "object to bool" << endl;
+		return true;
+	}
 	else
 		return false;
+}
+
+void ABCVm::ifStrictNE(method_info* th, int offset)
+{
+	cout << "ifStrictNE " << offset << endl;
+}
+
+void ABCVm::ifLT(method_info* th, int offset)
+{
+	cout << "ifLT " << offset << endl;
 }
 
 void ABCVm::ifEq(method_info* th, int offset)
@@ -548,6 +594,11 @@ void ABCVm::ifEq(method_info* th, int offset)
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
 	else
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+}
+
+void ABCVm::coerce(method_info* th, int n)
+{
+	cout << "coerce " << n << endl;
 }
 
 void ABCVm::newCatch(method_info* th, int n)
@@ -586,6 +637,16 @@ void ABCVm::setLocal(method_info* th, int n)
 	cout << "setLocal: DONE " << n << endl;
 }
 
+void ABCVm::convert_i(method_info* th)
+{
+	cout << "convert_i" << endl;
+}
+
+void ABCVm::coerce_s(method_info* th)
+{
+	cout << "coerce_s" << endl;
+}
+
 void ABCVm::dup(method_info* th)
 {
 	cout << "dup: DONE" << endl;
@@ -604,9 +665,33 @@ void ABCVm::pushScope(method_info* th)
 	th->scope_stack.push_back(t);
 }
 
+void ABCVm::pushByte(method_info* th, int n)
+{
+	cout << "pushByte " << n << endl;
+}
+
+void ABCVm::incLocal_i(method_info* th, int n)
+{
+	cout << "incLocal_i " << n << endl;
+}
+
 void ABCVm::constructSuper(method_info* th, int n)
 {
 	cout << "constructSuper " << n << endl;
+}
+
+void ABCVm::setProperty(method_info* th, int n)
+{
+	ISWFObject* value=th->runtime_stack_pop();
+	string name=th->vm->getMultinameString(n,th);
+	cout << "setProperty " << name << endl;
+
+	ISWFObject* obj=th->runtime_stack_pop();
+	//DEBUG
+	ASObject* o=dynamic_cast<ASObject*>(obj);
+	printf("Object ID 0x%lx\n",o->debug_id);
+
+	ISWFObject* ret=obj->setVariableByName(name,value);
 }
 
 void ABCVm::getProperty(method_info* th, int n)
@@ -617,7 +702,8 @@ void ABCVm::getProperty(method_info* th, int n)
 	ISWFObject* obj=th->runtime_stack_pop();
 	//DEBUG
 	ASObject* o=dynamic_cast<ASObject*>(obj);
-	printf("Object ID 0x%lx\n",o->debug_id);
+	if(o)
+		printf("Object ID 0x%lx\n",o->debug_id);
 
 
 	bool found;
@@ -680,8 +766,8 @@ void ABCVm::findPropStrict(method_info* th, int n)
 	}
 	if(!found)
 	{
-		cout << "NOT found, aborting" << endl;
-		abort();
+		cout << "NOT found, pushing Undefined" << endl;
+		th->runtime_stack_push(new Undefined);
 	}
 }
 
@@ -1001,6 +1087,24 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("kill"), th, constant);
 				break;
 			}
+			case 0x09:
+			{
+				//label
+				syncStacks(Builder,jitted,static_stack,m);
+				//Create a new block and insert it in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+				Builder.CreateBr(A);
+				Builder.SetInsertPoint(A);
+				break;
+			}
 			case 0x10:
 			{
 				//jump
@@ -1133,6 +1237,48 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.SetInsertPoint(A);
 				break;
 			}
+			case 0x15:
+			{
+				//iflt
+				cout << "synt iflt" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				s24 t;
+				code >> t;
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifLT"), th, constant);
+				break;
+			}
+			case 0x1a:
+			{
+				//ifstrictne
+				cout << "synt ifstrictne" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				s24 t;
+				code >> t;
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), th, constant);
+				break;
+			}
+			case 0x1b:
+			{
+				//lookupswitch
+				cout << "synt lookupswitch" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				s24 t;
+				code >> t;
+				printf("default %i\n",int(t));
+				u30 count;
+				code >> count;
+				printf("count %i\n",int(count));
+				for(int i=0;i<count+1;i++)
+					code >> t;
+				break;
+			}
 			case 0x1d:
 			{
 				//popscope
@@ -1149,6 +1295,28 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushNull"), th);
+				break;
+			}
+			case 0x24:
+			{
+				//pushbyte
+				cout << "synt pushbyte" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				uint8_t t;
+				code.read((char*)&t,1);
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("pushByte"), th, constant);
+				break;
+			}
+			case 0x2a:
+			{
+				//dup
+				cout << "synt dup" << endl;
+				jitted=true;
+				Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
+				stack_entry e=static_stack_peek(Builder,static_stack,m);
+				static_stack_push(static_stack,e);
 				break;
 			}
 			case 0x2b:
@@ -1179,16 +1347,6 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), th);
-				break;
-			}
-			case 0x2a:
-			{
-				//dup
-				cout << "synt dup" << endl;
-				jitted=true;
-				Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
-				stack_entry e=static_stack_peek(Builder,static_stack,m);
-				static_stack_push(static_stack,e);
 				break;
 			}
 			case 0x46:
@@ -1368,6 +1526,47 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("getLex"), th, constant);
 				break;
 			}
+			case 0x61:
+			{
+				//setproperty
+				cout << "synt setproperty" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("setProperty"), th, constant);
+				break;
+			}
+			case 0x62:
+			{
+				//getlocal
+				cout << "synt getlocal" << endl;
+				u30 i;
+				code >> i;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
+				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
+				llvm::Value* t=Builder.CreateGEP(locals,constant);
+				static_stack_push(static_stack,stack_entry(Builder.CreateLoad(t,"stack"),STACK_OBJECT));
+				jitted=true;
+				break;
+			}
+			case 0x63:
+			{
+				//setlocal
+				cout << "synt setlocal" << endl;
+				u30 i;
+				code >> i;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
+				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), th, constant);
+				llvm::Value* t=Builder.CreateGEP(locals,constant);
+				stack_entry e=static_stack_pop(Builder,static_stack,m);
+				if(e.second!=STACK_OBJECT)
+					LOG(ERROR,"conversion not yet implemented");
+				Builder.CreateStore(e.first,t);
+				jitted=true;
+				break;
+			}
 			case 0x65:
 			{
 				//getscopeobject
@@ -1428,6 +1627,36 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("setSlot"), th, constant);
 				break;
 			}
+			case 0x73:
+			{
+				//convert_i
+				cout << "synt convert_i" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("convert_i"), th);
+				break;
+			}
+			case 0x80:
+			{
+				//corce
+				cout << "synt coerce" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("coerce"), th, constant);
+				break;
+			}
+			case 0x85:
+			{
+				//coerce_s
+				cout << "synt coerce_s" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("coerce_s"), th);
+				break;
+			}
 			case 0xa0:
 			{
 				//add
@@ -1437,9 +1666,22 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("add"), th);
 				break;
 			}
+			case 0xc2:
+			{
+				//inclocal_i
+				cout << "synt inclocal_i" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("incLocal_i"), th, constant);
+				break;
+			}
 			case 0xd0:
 			case 0xd1:
 			case 0xd2:
+			case 0xd3:
 			{
 				//getlocal_n
 				cout << "synt getlocal" << endl;
@@ -1451,6 +1693,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 				break;
 			}
+			case 0xd5:
 			case 0xd6:
 			case 0xd7:
 			{
@@ -1846,7 +2089,7 @@ istream& operator>>(istream& in, s24& v)
 	int i=0;
 	v.val=0;
 	uint8_t t;
-	for(int i=0;i<24;i+=8)
+	for(i=0;i<24;i+=8)
 	{
 		in.read((char*)&t,1);
 		v.val|=(t<<i);
@@ -2161,4 +2404,9 @@ istream& operator>>(istream& in, cpool_info& v)
 		in >> v.multinames[i];
 
 	return in;
+}
+
+ISWFObject* parseInt(ISWFObject* obj,arguments* args)
+{
+	return new Integer(0);
 }

@@ -72,6 +72,9 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	sem_init(&mutex,0,1);
 
+	//Register global functions
+	setVariableByName(".parseInt",new Function(parseInt));
+
 	//Register default objects
 	SWFObject stage(new ASStage);
 	setVariableByName("Stage",stage);
@@ -98,6 +101,8 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	//Setting fake parameters
 	loaderInfo->parameters.setVariableByName(".debug_level",new ASString(""));
 	loaderInfo->parameters.setVariableByName(".connect",new ASString("true"));
+	loaderInfo->parameters.setVariableByName(".chat_ip",new ASString("216.246.59.237"));
+	loaderInfo->parameters.setVariableByName(".chat_host",new ASString("of1.kongregate.com"));
 }
 
 void SystemState::setShutdownFlag()

@@ -364,6 +364,8 @@ private:
 	static void newCatch(method_info* th, int n); 
 	static void jump(method_info* th, int offset); 
 	static void ifEq(method_info* th, int offset); 
+	static void ifLT(method_info* th, int offset); 
+	static void ifStrictNE(method_info* th, int offset); 
 	static void ifFalse(method_info* th, int offset); 
 	static void getSlot(method_info* th, int n); 
 	static void setLocal(method_info* th, int n); 
@@ -378,6 +380,10 @@ private:
 	static void findPropStrict(method_info* th, int n);
 	static void findProperty(method_info* th, int n);
 	static void getProperty(method_info* th, int n);
+	static void pushByte(method_info* th, int n);
+	static void incLocal_i(method_info* th, int n);
+	static void coerce(method_info* th, int n);
+	static void setProperty(method_info* th, int n);
 	static void constructSuper(method_info* th, int n);
 	static void pushScope(method_info* th);
 	static void pushNull(method_info* th);
@@ -386,6 +392,8 @@ private:
 	static void add(method_info* th);
 	static void popScope(method_info* th);
 	static void newActivation(method_info* th);
+	static void coerce_s(method_info* th);
+	static void convert_i(method_info* th);
 public:
 	ABCVm(std::istream& in);
 	void Run();
@@ -417,6 +425,7 @@ public:
 };
 
 bool Boolean_concrete(ISWFObject* obj);
+ISWFObject* parseInt(ISWFObject* obj,arguments* args);
 
 std::istream& operator>>(std::istream& in, u8& v);
 std::istream& operator>>(std::istream& in, u16& v);

@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#define GL_GLEXT_PROTOTYPES
 #include <iostream>
 #include <string.h>
 #include <pthread.h>
@@ -29,8 +30,10 @@
 #include "actions.h"
 #include "streams.h"
 #include "asobjects.h"
+#include "textfile.h"
 
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <GL/glx.h>
 using namespace std;
 
@@ -485,6 +488,68 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glLoadIdentity();
 	glOrtho(0,640,480,0,-100,0);
 	glMatrixMode(GL_MODELVIEW);
+
+	GLuint v,f,f2,p;
+	f = glCreateShader(GL_FRAGMENT_SHADER);
+
+	char *fs = NULL;
+	fs = textFileRead("lightspark.frag");
+
+	const char * ff = fs;
+	glShaderSource(f, 1, &ff,NULL);
+	free(fs);
+
+	glCompileShader(f);
+	char str[1024];
+	int a;
+	glGetShaderInfoLog(f,1024,&a,str);
+	printf("%s\n",str);
+
+	p = glCreateProgram();
+	glAttachShader(p,f);
+
+	glLinkProgram(p);
+	glUseProgram(p);
+
+	unsigned int t;
+	glGenTextures(1,&t);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_1D,t);
+
+	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+
+	/*float buffer[128];
+
+	buffer[0]=0.100;
+	buffer[1]=0.100;
+	buffer[2]=0.100;
+	buffer[3]=0.100;
+
+	buffer[4]=0.300;
+	buffer[5]=0.300;
+	buffer[6]=0.300;
+	buffer[7]=0.300;
+
+	buffer[8]=0.400;
+	buffer[9]=0.400;
+	buffer[10]=0.400;
+	buffer[11]=0.400;
+
+	buffer[12]=0.450;
+	buffer[13]=0.450;
+	buffer[14]=0.450;
+	buffer[15]=0.450;
+
+	buffer[16]=0.800;
+	buffer[17]=0.800;
+	buffer[18]=0.800;
+	buffer[19]=0.800;*/
+	//glTexImage1D(GL_TEXTURE_1D,0,4,16,0,GL_RGBA,GL_FLOAT,buffer);
+	int tex=glGetUniformLocation(p,"m_tex");
+	glUniform1i(tex,0);
 
 	float* buffer=new float[640*240];
 	try

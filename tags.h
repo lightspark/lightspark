@@ -134,6 +134,23 @@ public:
 	void printInfo(int t=0);
 };
 
+class DefineShape4Tag: public DictionaryTag, public IRenderObject
+{
+private:
+	UI16 ShapeId;
+	RECT ShapeBounds;
+	RECT EdgeBounds;
+	UB UsesFillWindingRule;
+	UB UsesNonScalingStrokes;
+	UB UsesScalingStrokes;
+	SHAPEWITHSTYLE Shapes;
+public:
+	DefineShape4Tag(RECORDHEADER h, std::istream& in);
+	virtual int getId(){ return ShapeId; }
+	virtual void Render();
+	void printInfo(int t=0);
+};
+
 class DefineMorphShapeTag: public DictionaryTag, public IRenderObject
 {
 private:
@@ -450,6 +467,18 @@ private:
 public:
 	DefineBitsLossless2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
+};
+
+class DefineScalingGridTag: public Tag
+{
+public:
+	DefineScalingGridTag(RECORDHEADER h, std::istream& in);
+};
+
+class DefineSceneAndFrameLabelDataTag: public Tag
+{
+public:
+	DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in);
 };
 
 class ExportAssetsTag: public Tag

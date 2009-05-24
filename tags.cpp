@@ -110,8 +110,14 @@ Tag* TagFactory::readTag()
 			return new SymbolClassTag(h,f);
 		case 77:
 			return new MetadataTag(h,f);
+		case 78:
+			return new DefineScalingGridTag(h,f);
 		case 82:
 			return new DoABCTag(h,f);
+		case 83:
+			return new DefineShape4Tag(h,f);
+		case 86:
+			return new DefineSceneAndFrameLabelDataTag(h,f);
 		default:
 			LOG(NOT_IMPLEMENTED,"Unsupported tag type " << (h>>6));
 			Tag t(h,f);
@@ -541,6 +547,19 @@ DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DictionaryTag
 	LOG(TRACE,"DefineShape3Tag");
 	Shapes.version=3;
 	in >> ShapeId >> ShapeBounds >> Shapes;
+}
+
+DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+{
+	LOG(TRACE,"DefineShape4Tag");
+	Shapes.version=4;
+	in >> ShapeId >> ShapeBounds >> EdgeBounds;
+	BitStream bs(in);
+	UB(5,bs);
+	UsesFillWindingRule=UB(1,bs);
+	UsesNonScalingStrokes=UB(1,bs);
+	UsesScalingStrokes=UB(1,bs);
+	in >> Shapes;
 }
 
 void DefineShape2Tag::printInfo(int t)

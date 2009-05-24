@@ -85,6 +85,12 @@ ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	skip(in);
 }
 
+DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"DefineScalingGridTag Tag");
+	skip(in);
+}
+
 SerialNumberTag::SerialNumberTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"SerialNumberTag Tag");
@@ -100,5 +106,11 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"SoundStreamBlockTag");
+	skip(in);
+}
+
+DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"DefineSceneAndFrameLabelDataTag");
 	skip(in);
 }

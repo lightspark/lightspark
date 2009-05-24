@@ -598,7 +598,13 @@ public:
 class LINESTYLE
 {
 public:
-	int version;
+	UI16 Width;
+	RGBA Color;
+};
+
+class LINESTYLE2
+{
+public:
 	UI16 Width;
 	RGBA Color;
 };
@@ -618,6 +624,7 @@ public:
 	int version;
 	UI8 LineStyleCount;
 	LINESTYLE* LineStyles;
+	LINESTYLE2* LineStyles;
 };
 
 class MORPHLINESTYLEARRAY

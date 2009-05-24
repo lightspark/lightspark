@@ -83,7 +83,11 @@ private:
 
 	sem_t mutex;
 
+	sem_t sem_valid_frame_size;
 public:
+	//OpenGL fragment programs
+	int linear_gradient_program;
+
 	bool shutdown;
 	int version;
 	ISWFObject* getVariableByName(const std::string& name, bool& f);
@@ -106,8 +110,8 @@ public:
 	Frame& getFrameAtFP();
 	void advanceFP();
 	void setFrameSize(const RECT& f);
-	void setFrameCount(int f);
 	RECT getFrameSize();
+	void setFrameCount(int f);
 	void addToDictionary(DictionaryTag* r);
 	void addToDisplayList(IDisplayListElem* r);
 	void commitFrame();
@@ -115,7 +119,6 @@ public:
 	void setBackground(const RGB& bg);
 	void setUpdateRequest(bool s);
 	DictionaryTag* dictionaryLookup(UI16 id);
-	void reset();
 	void _register(){}
 	SWFOBJECT_TYPE getObjectType() const;
 	fps_profiling* fps_prof;

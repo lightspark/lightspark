@@ -85,6 +85,7 @@ int SymbolClassTag::getDepth() const
 
 void SymbolClassTag::Render()
 {
+	return;
 	LOG(NOT_IMPLEMENTED,"SymbolClassTag Render");
 	cout << "NumSymbols " << NumSymbols << endl;
 
@@ -1774,6 +1775,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 void ABCVm::Run()
 {
+	return;
 	module=new llvm::Module("abc jit");
 	if(!ex)
 		ex=llvm::ExecutionEngine::create(module);

@@ -575,9 +575,16 @@ public:
 	std::vector<GRADRECORD> GradientRecords;
 };
 
+class FILLSTYLEARRAY;
+class MORPHFILLSTYLE;
+
 class FILLSTYLE
 {
-public:
+	friend std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v);
+	friend std::istream& operator>>(std::istream& s, FILLSTYLE& v);
+	friend std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v);
+	friend class DefineTextTag;
+private:
 	int version;
 	UI8 FillStyleType;
 	RGBA Color;
@@ -585,12 +592,14 @@ public:
 	GRADIENT Gradient;
 	UI16 BitmapId;
 	MATRIX BitmapMatrix;
+
+public:
+	virtual void setFragmentProgram() const;
 };
 
-class MORPHFILLSTYLE
+class MORPHFILLSTYLE:public FILLSTYLE
 {
 public:
-	UI8 FillStyleType;
 	RGBA StartColor;
 	RGBA EndColor;
 };

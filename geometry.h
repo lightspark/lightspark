@@ -154,12 +154,15 @@ public:
 	int color0;
 	int color1;
 
+	FILLSTYLE* style0;
+	FILLSTYLE* style1;
+
 	//DEBUG
 	void dumpEdges();
 	void dumpInterior();
 
 	void Render(int i=0) const;
-	void BuildFromEdges(bool normalize=false);
+	void BuildFromEdges(FILLSTYLE* styles, bool normalize=false);
 
 	bool operator<(const Shape& r) const;
 

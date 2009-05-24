@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#define GL_GLEXT_PROTOTYPES
 #include "swftypes.h"
 #include "tags.h"
 #include "logger.h"
@@ -543,6 +544,16 @@ std::istream& operator>>(std::istream& s, GRADIENT& v)
 		v.GradientRecords.push_back(gr);
 	}
 	return s;
+}
+
+void FILLSTYLE::setFragmentProgram() const
+{
+	if(FillStyleType==0x10)
+	{
+		glUseProgram(sys->linear_gradient_program);
+	}
+	else
+		glUseProgram(0);
 }
 
 std::istream& operator>>(std::istream& s, FILLSTYLE& v)

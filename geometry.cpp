@@ -205,8 +205,10 @@ void Shape::dumpInterior()
 	f.close();
 }
 
-void Shape::BuildFromEdges(bool normalize)
+void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 {
+	style0=NULL;
+	style1=NULL;
 	if(edges.empty())
 		return;
 
@@ -234,6 +236,19 @@ void Shape::BuildFromEdges(bool normalize)
 	{
 		LOG(ERROR,"Not coerent shape");
 		return;
+	}
+
+	if(styles)
+	{
+		if(color0)
+			style0=&styles[color0-1];
+		else
+			style0=NULL;
+
+		if(color1)
+			style1=&styles[color1-1];
+		else
+			style1=NULL;
 	}
 
 	//Calculate shape winding

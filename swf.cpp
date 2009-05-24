@@ -72,6 +72,7 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
 	sem_init(&sem_run,0,0);
+	sem_init(&sem_valid_frame_size,0,0);
 
 	sem_init(&mutex,0,1);
 
@@ -116,17 +117,6 @@ void SystemState::setShutdownFlag()
 	//Signal blocking semaphore
 	sem_post(&sem_run);
 	sem_post(&mutex);
-}
-
-void SystemState::reset()
-{
-	dictionary.clear();
-
-	sem_init(&sem_dict,0,1);
-	sem_init(&new_frame,0,0);
-	sem_init(&sem_run,0,0);
-
-	sem_init(&mutex,0,1);
 }
 
 void* ParseThread::worker(ParseThread* th)
@@ -478,15 +468,21 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1); 
-	SDL_SetVideoMode( 640, 480, 24, SDL_OPENGL );
+
+	RECT size=sys->getFrameSize();
+	int width=size.Xmax/10;
+	int height=size.Ymax/10;
+	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc(GL_LEQUAL);
 
 //	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-	glViewport(0,0,640,480);
+	glViewport(0,0,width,height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0,640,480,0,-100,0);
+	glOrtho(0,width,height,0,-100,0);
+	glScalef(0.1,0.1,1);
+
 	glMatrixMode(GL_MODELVIEW);
 
 	GLuint v,f,f2,p;
@@ -505,11 +501,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glGetShaderInfoLog(f,1024,&a,str);
 	printf("%s\n",str);
 
-	p = glCreateProgram();
-	glAttachShader(p,f);
+	sys->linear_gradient_program = glCreateProgram();
+	glAttachShader(sys->linear_gradient_program,f);
 
-	glLinkProgram(p);
-	glUseProgram(p);
+	glLinkProgram(sys->linear_gradient_program);
+//	glUseProgram(linear_gradient_program);
 
 	unsigned int t;
 	glGenTextures(1,&t);
@@ -548,7 +544,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	buffer[18]=0.800;
 	buffer[19]=0.800;*/
 	//glTexImage1D(GL_TEXTURE_1D,0,4,16,0,GL_RGBA,GL_FLOAT,buffer);
-	int tex=glGetUniformLocation(p,"m_tex");
+	int tex=glGetUniformLocation(sys->linear_gradient_program,"m_tex");
 	glUniform1i(tex,0);
 
 	float* buffer=new float[640*240];
@@ -571,8 +567,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glClearStencil(5);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 			glLoadIdentity();
-
-			glScalef(0.1,0.1,1);
 
 			th->cur_frame->Render(sys->displayListLimit);
 
@@ -654,22 +648,19 @@ void SystemState::advanceFP()
 void SystemState::setFrameCount(int f)
 {
 	sem_wait(&mutex);
-	_totalframes=f; 
+	_totalframes=f;
 	sem_post(&mutex);
 }
 
 void SystemState::setFrameSize(const RECT& f)
 {
-	sem_wait(&mutex);
-	frame_size=f; 
-	sem_post(&mutex);
+	frame_size=f;
+	sem_post(&sem_valid_frame_size);
 }
 
 RECT SystemState::getFrameSize()
 {
-/*	sem_wait(&mutex);
-	frame_size=f; 
-	sem_post(&mutex);*/
+	sem_wait(&sem_valid_frame_size);
 	return frame_size;
 }
 

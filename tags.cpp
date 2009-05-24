@@ -278,26 +278,34 @@ void DefineSpriteTag::printInfo(int t)
 	sys.currentClip=bak;*/
 }
 
-void drawStenciled(const RECT& bounds, bool filled0, bool filled1, const RGBA& color0, const RGBA& color1)
+void drawStenciled(const RECT& bounds, int fill0, int fill1, const FILLSTYLE* style0, const FILLSTYLE* style1)
 {
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
-/*	glStencilFunc(GL_EQUAL,0,0xff);
-	glColor3ub(255,0,0);
-	glBegin(GL_QUADS);
-		glVertex2i(bounds.Xmin,bounds.Ymin);
-		glVertex2i(bounds.Xmin,bounds.Ymax);
-		glVertex2i(bounds.Xmax,bounds.Ymax);
-		glVertex2i(bounds.Xmax,bounds.Ymin);
-	glEnd();*/
-	glStencilFunc(GL_EQUAL,1,0xff);
-	glColor3ub(0,255,255);
-	glBegin(GL_QUADS);
-		glVertex2i(bounds.Xmin,bounds.Ymin);
-		glVertex2i(bounds.Xmin,bounds.Ymax);
-		glVertex2i(bounds.Xmax,bounds.Ymax);
-		glVertex2i(bounds.Xmax,bounds.Ymin);
-	glEnd();
+	if(fill0)
+	{
+		glStencilFunc(GL_EQUAL,fill0,0xff);
+		if(style0)
+			style0->setFragmentProgram();
+		glBegin(GL_QUADS);
+			glVertex2i(bounds.Xmin,bounds.Ymin);
+			glVertex2i(bounds.Xmin,bounds.Ymax);
+			glVertex2i(bounds.Xmax,bounds.Ymax);
+			glVertex2i(bounds.Xmax,bounds.Ymin);
+		glEnd();
+	}
+	if(fill1)
+	{
+		glStencilFunc(GL_EQUAL,fill1,0xff);
+		if(style1)
+			style1->setFragmentProgram();
+		glBegin(GL_QUADS);
+			glVertex2i(bounds.Xmin,bounds.Ymin);
+			glVertex2i(bounds.Xmin,bounds.Ymax);
+			glVertex2i(bounds.Xmax,bounds.Ymax);
+			glVertex2i(bounds.Xmax,bounds.Ymin);
+		glEnd();
+	}
 }
 
 void ignore(istream& i, int count)
@@ -488,6 +496,11 @@ void DefineTextTag::Render()
 	float matrix[16];
 	TextMatrix.get4DMatrix(matrix);
 	glEnable(GL_STENCIL_TEST);
+
+	//Build a fake FILLSTYLE
+	FILLSTYLE f;
+	f.FillStyleType=0x00;
+	f.Color=it->TextColor;
 	for(it;it!=TextRecords.end();it++)
 	{
 		if(it->StyleFlagsHasFont)
@@ -516,7 +529,7 @@ void DefineTextTag::Render()
 			count++;
 		}
 	}
-	drawStenciled(TextBounds,true,false,it->TextColor,RGBA());
+	drawStenciled(TextBounds,1,0,&f,NULL);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
@@ -627,7 +640,7 @@ void DefineMorphShapeTag::Render()
 	FromShaperecordListToShapeVector(cur,shapes,def_color0,def_color1);
 
 	for(int i=0;i<shapes.size();i++)
-		shapes[i].BuildFromEdges(def_color0^def_color1);
+		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles,def_color0^def_color1);
 
 	sort(shapes.begin(),shapes.end());
 
@@ -636,8 +649,8 @@ void DefineMorphShapeTag::Render()
 	for(it;it!=shapes.end();it++)
 	{
 		it->Render();
+		drawStenciled(EndBounds,it->color0,it->color1,it->style0,it->style1);
 	}
-	drawStenciled(EndBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
@@ -655,7 +668,7 @@ void DefineShapeTag::Render()
 		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
 
 		for(int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(def_color0^def_color1);
+			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
 
 		sort(cached.begin(),cached.end());
 
@@ -669,9 +682,9 @@ void DefineShapeTag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render(count);
+		drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
 		count++;
 	}
-	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
@@ -689,7 +702,7 @@ void DefineShape2Tag::Render()
 		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
 
 		for(int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(def_color0^def_color1);
+			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
 
 		sort(cached.begin(),cached.end());
 
@@ -702,8 +715,12 @@ void DefineShape2Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
+		if(it->color0 >= Shapes.FillStyles.FillStyleCount)
+			it->style0=NULL;
+		if(it->color1 >= Shapes.FillStyles.FillStyleCount)
+			it->style1=NULL;
+		drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
 	}
-	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
@@ -721,7 +738,7 @@ void DefineShape4Tag::Render()
 		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
 
 		for(int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(def_color0^def_color1);
+			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
 
 		sort(cached.begin(),cached.end());
 
@@ -734,8 +751,8 @@ void DefineShape4Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
+		drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
 	}
-	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
@@ -753,7 +770,7 @@ void DefineShape3Tag::Render()
 		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
 
 		for(int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(def_color0^def_color1);
+			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
 
 		sort(cached.begin(),cached.end());
 
@@ -766,8 +783,8 @@ void DefineShape3Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
+		drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
 	}
-	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
@@ -873,7 +890,7 @@ void DefineFont3Tag::genGlyphShape(vector<Shape>& s, int glyph)
 			s[i].edges[j].p1/=20;
 			s[i].edges[j].p2/=20;
 		}
-		s[i].BuildFromEdges(def_color0^def_color1);
+		s[i].BuildFromEdges(NULL,def_color0^def_color1);
 	}
 
 	sort(s.begin(),s.end());
@@ -919,7 +936,7 @@ void DefineFont2Tag::genGlyphShape(vector<Shape>& s, int glyph)
 	FromShaperecordListToShapeVector(cur,s,def_color0,def_color1);
 
 	for(int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(def_color0^def_color1);
+		s[i].BuildFromEdges(NULL,def_color0^def_color1);
 
 	sort(s.begin(),s.end());
 
@@ -964,7 +981,7 @@ void DefineFontTag::genGlyphShape(vector<Shape>& s,int glyph)
 	FromShaperecordListToShapeVector(cur,s,def_color0,def_color1);
 
 	for(int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(def_color0^def_color1);
+		s[i].BuildFromEdges(NULL,def_color0^def_color1);
 
 	sort(s.begin(),s.end());
 	//Should check fill state

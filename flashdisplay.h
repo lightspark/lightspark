@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "swftypes.h"
 #include "abc.h"
+#include "swftypes.h"
 #include "asobjects.h"
 
 class LoaderInfo: public ASObject

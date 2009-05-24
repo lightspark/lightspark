@@ -49,10 +49,10 @@ void Shape::Render(int i) const
 	if(edges.empty())
 		return;
 
-	if(color0!=0 && color0!=1)
+/*	if(color0!=0 && color0!=1)
 		LOG(ERROR,"color0 "<<color0);
 	if(color1!=0 && color1!=1)
-		LOG(ERROR,"color1"<<color0);
+		LOG(ERROR,"color1"<<color0);*/
 
 	bool filled=false;
 	if(winding==0)
@@ -223,18 +223,18 @@ void Shape::BuildFromEdges(bool normalize)
 		}
 	}
 
-	if(!coerent)
-	{
-		LOG(ERROR,"Not coerent shape");
-		return;
-	}
-
 	outline.reserve(edges.size());
 	for(int i=0;i<edges.size();i++)
 		outline.push_back(edges[i].p1);
 
 	if(edges.back().p2==outline.front())
 		closed=true;
+
+	if(!coerent)
+	{
+		LOG(ERROR,"Not coerent shape");
+		return;
+	}
 
 	//Calculate shape winding
 	long area=0;

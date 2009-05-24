@@ -340,8 +340,7 @@ private:
 	ASObject Global;
 	std::vector<SWFObject> stack;
 	llvm::Module* module;
-public:
-	llvm::ExecutionEngine* ex;
+	static llvm::ExecutionEngine* ex;
 private:
 
 	//Utility
@@ -387,7 +386,9 @@ private:
 	static void constructSuper(method_info* th, int n);
 	static void pushScope(method_info* th);
 	static void pushNull(method_info* th);
+	static void pushFalse(method_info* th);
 	static void dup(method_info* th);
+	static void asTypelate(method_info* th);
 	static void swap(method_info* th);
 	static void add(method_info* th);
 	static void popScope(method_info* th);
@@ -422,6 +423,14 @@ public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
 	void Render( );
 	int getDepth() const;
+};
+
+class Boolean: public ASObject
+{
+private:
+	bool val;
+public:
+	Boolean(bool v):val(v){}
 };
 
 bool Boolean_concrete(ISWFObject* obj);

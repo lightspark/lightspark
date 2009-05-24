@@ -106,6 +106,10 @@ Tag* TagFactory::readTag()
 			return new ScriptLimitsTag(h,f);
 		case 69:
 			return new FileAttributesTag(h,f);
+		case 73:
+			return new DefineFontAlignZonesTag(h,f);
+		case 75:
+			return new DefineFont3Tag(h,f);
 		case 76:
 			return new SymbolClassTag(h,f);
 		case 77:
@@ -118,6 +122,8 @@ Tag* TagFactory::readTag()
 			return new DefineShape4Tag(h,f);
 		case 86:
 			return new DefineSceneAndFrameLabelDataTag(h,f);
+		case 88:
+			return new DefineFontNameTag(h,f);
 		default:
 			LOG(NOT_IMPLEMENTED,"Unsupported tag type " << (h>>6));
 			Tag t(h,f);
@@ -461,7 +467,7 @@ void DefineTextTag::Render()
 			for(it2;it2!=(it->GlyphEntries.end());it2++)
 			{
 				vector<Shape> new_shapes;
-				font->genGliphShape(new_shapes,it2->GlyphIndex);
+				font->genGlyphShape(new_shapes,it2->GlyphIndex);
 				for(int i=0;i<new_shapes.size();i++)
 				{
 					new_shapes[i].id=count;
@@ -569,6 +575,13 @@ void DefineShape2Tag::printInfo(int t)
 	cerr << "DefineShape2 Info ID " << ShapeId << endl;
 }
 
+void DefineShape4Tag::printInfo(int t)
+{
+	for(int i=0;i<t;i++)
+		cerr << '\t';
+	cerr << "DefineShape4 Info ID " << ShapeId << endl;
+}
+
 void DefineShape3Tag::printInfo(int t)
 {
 	for(int i=0;i<t;i++)
@@ -666,6 +679,38 @@ void DefineShapeTag::Render()
 void DefineShape2Tag::Render()
 {
 	LOG(TRACE,"DefineShape2 Render");
+	if(cached.size()==0)
+	{
+		timespec ts,td;
+		clock_gettime(CLOCK_REALTIME,&ts);
+		SHAPERECORD* cur=&(Shapes.ShapeRecords);
+
+		bool def_color0,def_color1;
+		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
+
+		for(int i=0;i<cached.size();i++)
+			cached[i].BuildFromEdges(def_color0^def_color1);
+
+		sort(cached.begin(),cached.end());
+
+		clock_gettime(CLOCK_REALTIME,&td);
+		sys->fps_prof->cache_time+=timeDiff(ts,td);
+	}
+
+	std::vector < Shape >::iterator it=cached.begin();
+	glEnable(GL_STENCIL_TEST);
+	for(it;it!=cached.end();it++)
+	{
+		it->Render();
+	}
+	drawStenciled(ShapeBounds,it->graphic.filled0,it->graphic.filled1,it->graphic.color0,it->graphic.color1);
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glDisable(GL_STENCIL_TEST);
+}
+
+void DefineShape4Tag::Render()
+{
+	LOG(TRACE,"DefineShape3 Render");
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -813,7 +858,59 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 	}
 }
 
-void DefineFont2Tag::genGliphShape(vector<Shape>& s, int glyph)
+void DefineFont3Tag::genGlyphShape(vector<Shape>& s, int glyph)
+{
+	SHAPE& shape=GlyphShapeTable[glyph];
+	SHAPERECORD* cur=&(shape.ShapeRecords);
+
+	bool def_color0,def_color1;
+	FromShaperecordListToShapeVector(cur,s,def_color0,def_color1);
+
+	for(int i=0;i<s.size();i++)
+	{
+		for(int j=0;j<s[i].edges.size();j++)
+		{
+			s[i].edges[j].p1/=20;
+			s[i].edges[j].p2/=20;
+		}
+		s[i].BuildFromEdges(def_color0^def_color1);
+	}
+
+	sort(s.begin(),s.end());
+
+	//Should check fill state
+
+/*		s.back().graphic.filled0=true;
+		s.back().graphic.filled1=false;
+		s.back().graphic.stroked=false;
+
+		if(i->state.validFill0)
+		{
+			if(i->state.fill0!=1)
+				LOG(ERROR,"Not valid fill style for font");
+		}
+
+		if(i->state.validFill1)
+		{
+			LOG(ERROR,"Not valid fill style for font");
+		}
+
+		if(i->state.validStroke)
+		{
+			if(i->state.stroke)
+			{
+				s.back().graphic.stroked=true;
+				LOG(ERROR,"Not valid stroke style for font");
+//				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
+			}
+			else
+				s.back().graphic.stroked=false;
+		}
+		else
+			s.back().graphic.stroked=false;*/
+}
+
+void DefineFont2Tag::genGlyphShape(vector<Shape>& s, int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
 	SHAPERECORD* cur=&(shape.ShapeRecords);
@@ -858,7 +955,7 @@ void DefineFont2Tag::genGliphShape(vector<Shape>& s, int glyph)
 			s.back().graphic.stroked=false;*/
 }
 
-void DefineFontTag::genGliphShape(vector<Shape>& s,int glyph)
+void DefineFontTag::genGlyphShape(vector<Shape>& s,int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
 	SHAPERECORD* cur=&(shape.ShapeRecords);
@@ -1114,13 +1211,16 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	}
 	while(!br.isNull());
 
-	BUTTONCONDACTION bca;
-	do
+	if(ActionOffset)
 	{
-		in >> bca;
-		Actions.push_back(bca);
+		BUTTONCONDACTION bca;
+		do
+		{
+			in >> bca;
+			Actions.push_back(bca);
+		}
+		while(!bca.isLast());
 	}
-	while(!bca.isLast());
 }
 
 void DefineButton2Tag::MouseEvent(int x, int y)

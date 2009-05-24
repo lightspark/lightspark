@@ -354,7 +354,7 @@ protected:
 	UI16 FontID;
 public:
 	FontTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s){}
-	virtual void genGliphShape(std::vector<Shape>& s, int glyph)=0;
+	virtual void genGlyphShape(std::vector<Shape>& s, int glyph)=0;
 	virtual TAGTYPE getType(){ return DICT_TAG; }
 };
 
@@ -368,7 +368,7 @@ protected:
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGliphShape(std::vector<Shape>& s, int glyph);
+	virtual void genGlyphShape(std::vector<Shape>& s, int glyph);
 };
 
 class DefineFontInfoTag: public Tag
@@ -377,11 +377,10 @@ public:
 	DefineFontInfoTag(RECORDHEADER h, std::istream& in);
 };
 
-
 class DefineFont2Tag: public FontTag
 {
 	friend class DefineTextTag; 
-private:
+protected:
 	std::vector<UI32> OffsetTable;
 	std::vector < SHAPE > GlyphShapeTable;
 	UB FontFlagsHasLayout;
@@ -409,7 +408,15 @@ private:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGliphShape(std::vector<Shape>& s, int glyph);
+	virtual void genGlyphShape(std::vector<Shape>& s, int glyph);
+};
+
+class DefineFont3Tag: public DefineFont2Tag
+{
+public:
+	DefineFont3Tag(RECORDHEADER h, std::istream& in):DefineFont2Tag(h,in){}
+	virtual int getId(){ return FontID; }
+	virtual void genGlyphShape(std::vector<Shape>& s, int glyph);
 };
 
 class DefineTextTag: public DictionaryTag, public IRenderObject
@@ -479,6 +486,18 @@ class DefineSceneAndFrameLabelDataTag: public Tag
 {
 public:
 	DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in);
+};
+
+class DefineFontNameTag: public Tag
+{
+public:
+	DefineFontNameTag(RECORDHEADER h, std::istream& in);
+};
+
+class DefineFontAlignZonesTag: public Tag
+{
+public:
+	DefineFontAlignZonesTag(RECORDHEADER h, std::istream& in);
 };
 
 class ExportAssetsTag: public Tag

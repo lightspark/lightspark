@@ -31,6 +31,8 @@
 #include <sstream>
 
 
+llvm::ExecutionEngine* ABCVm::ex;
+
 extern __thread SystemState* sys;
 
 using namespace std;
@@ -138,6 +140,12 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNull",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushNull);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushFalse",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushFalse);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"asTypelate",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::asTypelate);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"popScope",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::popScope);
@@ -275,7 +283,16 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 		case 0x07:
 		{
 			const namespace_info* n=&constant_pool.namespaces[m->ns];
-			ret=getString(n->name)+'.'+ getString(m->name);
+			if(n->name)
+			{
+				ret=getString(n->name);
+				if(ret=="")
+					ret=getString(m->name);
+				else
+					ret+="."+getString(m->name);
+			}
+			else
+				ret=getString(m->name);
 			break;
 		}
 		case 0x09:
@@ -367,6 +384,8 @@ ABCVm::ABCVm(istream& in)
 		in >> instances[i];
 		//Link instance names with classes
 		valid_classes[getMultinameString(instances[i].name)]=i;
+
+		cout << getMultinameString(instances[i].name) << endl;
 	}
 	classes.resize(class_count);
 	for(int i=0;i<class_count;i++)
@@ -395,7 +414,9 @@ SWFObject ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 {
 	map<string,int>::iterator it=valid_classes.find(s);
 	if(it!=valid_classes.end())
-		LOG(CALLS,"Class " << s << " found");
+		LOG(CALLS,"Class " << s << " found")
+	else
+		LOG(CALLS,"Class " << s << " not found")
 	//TODO: Really build class
 	int index=it->second;
 	if(index==-1)
@@ -452,6 +473,11 @@ inline method_info* ABCVm::get_method(unsigned int m)
 void ABCVm::add(method_info* th)
 {
 	cout << "add" << endl;
+}
+
+void ABCVm::asTypelate(method_info* th)
+{
+	cout << "asTypelate" << endl;
 }
 
 void ABCVm::swap(method_info* th)
@@ -650,6 +676,12 @@ void ABCVm::coerce_s(method_info* th)
 void ABCVm::dup(method_info* th)
 {
 	cout << "dup: DONE" << endl;
+}
+
+void ABCVm::pushFalse(method_info* th)
+{
+	cout << "pushFalse" << endl;
+	th->runtime_stack_push(new Boolean(false));
 }
 
 void ABCVm::pushNull(method_info* th)
@@ -1309,6 +1341,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("pushByte"), th, constant);
 				break;
 			}
+			case 0x27:
+			{
+				//pushfalse
+				cout << "synt pushfalse" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("pushFalse"), th);
+				break;
+			}
 			case 0x2a:
 			{
 				//dup
@@ -1657,6 +1698,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("coerce_s"), th);
 				break;
 			}
+			case 0x87:
+			{
+				//astypelate
+				cout << "synt astypelate" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("asTypelate"), th);
+				break;
+			}
 			case 0xa0:
 			{
 				//add
@@ -1725,7 +1775,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 void ABCVm::Run()
 {
 	module=new llvm::Module("abc jit");
-	ex=llvm::ExecutionEngine::create(module);
+	if(!ex)
+		ex=llvm::ExecutionEngine::create(module);
 
 	registerFunctions();
 	registerClasses();

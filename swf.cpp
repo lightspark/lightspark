@@ -21,17 +21,17 @@
 #include <string.h>
 #include <pthread.h>
 #include <SDL/SDL.h>
-#include <GL/gl.h>
-#include <GL/glx.h>
 #include <algorithm>
 
+#include "flashdisplay.h"
 #include "swf.h"
 #include "logger.h"
 #include "actions.h"
 #include "streams.h"
 #include "asobjects.h"
-#include "flashdisplay.h"
 
+#include <GL/gl.h>
+#include <GL/glx.h>
 using namespace std;
 
 int ParseThread::error(0);
@@ -511,10 +511,10 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			th->cur_frame->Render(sys->displayListLimit);
 
-			glReadPixels(0,240,640,240,GL_STENCIL_INDEX,GL_FLOAT,buffer);
+	/*		glReadPixels(0,240,640,240,GL_STENCIL_INDEX,GL_FLOAT,buffer);
 			for(int i=0;i<240*640;i++)
 				buffer[i]/=4;
-			glDrawPixels(640,240,GL_LUMINANCE,GL_FLOAT,buffer);
+			glDrawPixels(640,240,GL_LUMINANCE,GL_FLOAT,buffer);*/
 
 			sem_post(&th->end_render);
 			if(sys->shutdown)

@@ -598,6 +598,7 @@ public:
 class LINESTYLE
 {
 public:
+	int version;
 	UI16 Width;
 	RGBA Color;
 };
@@ -606,7 +607,17 @@ class LINESTYLE2
 {
 public:
 	UI16 Width;
+	UB StartCapStyle;
+	UB JointStyle;
+	UB HasFillFlag;
+	UB NoHScaleFlag;
+	UB NoVScaleFlag;
+	UB PixelHintingFlag;
+	UB NoClose;
+	UB EndCapStyle;
+	UI16 MiterLimitFactor;
 	RGBA Color;
+	FILLSTYLE FillType;
 };
 
 class MORPHLINESTYLE
@@ -624,7 +635,7 @@ public:
 	int version;
 	UI8 LineStyleCount;
 	LINESTYLE* LineStyles;
-	LINESTYLE2* LineStyles;
+	LINESTYLE2* LineStyles2;
 };
 
 class MORPHLINESTYLEARRAY
@@ -733,10 +744,12 @@ class SHAPE
 	friend class DefineShapeTag;
 	friend class DefineShape2Tag;
 	friend class DefineShape3Tag;
+	friend class DefineShape4Tag;
 	friend class DefineMorphShapeTag;
 	friend class DefineTextTag;
 	friend class DefineFontTag;
 	friend class DefineFont2Tag;
+	friend class DefineFont3Tag;
 private:
 	UB NumFillBits;
 	UB NumLineBits;
@@ -843,6 +856,7 @@ std::istream& operator>>(std::istream& stream, MORPHFILLSTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, LINESTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, MORPHLINESTYLEARRAY& v);
 std::istream& operator>>(std::istream& stream, LINESTYLE& v);
+std::istream& operator>>(std::istream& stream, LINESTYLE2& v);
 std::istream& operator>>(std::istream& stream, MORPHLINESTYLE& v);
 std::istream& operator>>(std::istream& stream, FILLSTYLE& v);
 std::istream& operator>>(std::istream& stream, MORPHFILLSTYLE& v);

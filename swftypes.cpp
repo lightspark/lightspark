@@ -332,11 +332,20 @@ std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
 		LOG(ERROR,"Line array extended not supported");
-	v.LineStyles=new LINESTYLE[v.LineStyleCount];
-	for(int i=0;i<v.LineStyleCount;i++)
+	if(v.version<4)
 	{
-		v.LineStyles[i].version=v.version;
-		s >> v.LineStyles[i];
+		v.LineStyles=new LINESTYLE[v.LineStyleCount];
+		for(int i=0;i<v.LineStyleCount;i++)
+		{
+			v.LineStyles[i].version=v.version;
+			s >> v.LineStyles[i];
+		}
+	}
+	else
+	{
+		v.LineStyles2=new LINESTYLE2[v.LineStyleCount];
+		for(int i=0;i<v.LineStyleCount;i++)
+			s >> v.LineStyles2[i];
 	}
 	return s;
 }
@@ -427,7 +436,28 @@ std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, LINESTYLE& v)
+istream& operator>>(istream& s, LINESTYLE2& v)
+{
+	s >> v.Width;
+	BitStream bs(s);
+	v.StartCapStyle=UB(2,bs);
+	v.JointStyle=UB(2,bs);
+	v.HasFillFlag=UB(1,bs);
+	v.NoHScaleFlag=UB(1,bs);
+	v.NoVScaleFlag=UB(1,bs);
+	v.PixelHintingFlag=UB(1,bs);
+	UB(5,bs);
+	v.NoClose=UB(1,bs);
+	v.EndCapStyle=UB(2,bs);
+	if(v.JointStyle==2)
+		s >> v.MiterLimitFactor;
+	if(v.HasFillFlag)
+		s >> v.FillType;
+	else
+		s >> v.Color;
+}
+
+istream& operator>>(istream& s, LINESTYLE& v)
 {
 	s >> v.Width;
 	if(v.version==2 || v.version==1)
@@ -441,7 +471,7 @@ std::istream& operator>>(std::istream& s, LINESTYLE& v)
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, MORPHLINESTYLE& v)
+istream& operator>>(istream& s, MORPHLINESTYLE& v)
 {
 	s >> v.StartWidth >> v.EndWidth >> v.StartColor >> v.EndColor;
 	return s;

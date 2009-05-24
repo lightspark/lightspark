@@ -67,6 +67,18 @@ SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h
 	skip(in);
 }
 
+DefineFontNameTag::DefineFontNameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"DefineFontNameTag Tag");
+	skip(in);
+}
+
+DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"DefineFontAlignZonesTag Tag");
+	skip(in);
+}
+
 ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"ExportAssetsTag Tag");

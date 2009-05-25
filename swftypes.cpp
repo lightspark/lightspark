@@ -23,6 +23,7 @@
 #include "logger.h"
 #include "actions.h"
 #include <string.h>
+#include <algorithm>
 #include <stdlib.h>
 
 using namespace std;
@@ -543,14 +544,56 @@ std::istream& operator>>(std::istream& s, GRADIENT& v)
 		s >> gr;
 		v.GradientRecords.push_back(gr);
 	}
+	sort(v.GradientRecords.begin(),v.GradientRecords.end());
 	return s;
+}
+
+inline RGBA medianColor(const RGBA& a, const RGBA& b, float factor)
+{
+	return RGBA(a.Red+(b.Red-a.Red)*factor,
+		a.Green+(b.Green-a.Green)*factor,
+		a.Blue+(b.Blue-a.Blue)*factor,
+		a.Alpha+(b.Alpha-a.Alpha)*factor);
 }
 
 void FILLSTYLE::setFragmentProgram() const
 {
+	struct color_entry
+	{
+		float r,g,b,a;
+	};
+
 	if(FillStyleType==0x10)
 	{
 		glUseProgram(sys->linear_gradient_program);
+		color_entry buffer[256];
+		int grad_index=0;
+		RGBA color_l(0,0,0,1);
+		int index_l=0;
+		RGBA color_r(Gradient.GradientRecords[0].Color);
+		int index_r=Gradient.GradientRecords[0].Ratio;
+
+		for(int i=0;i<256;i++)
+		{
+			float dist=i-index_l;
+			dist/=(index_r-index_l);
+			RGBA c=medianColor(color_l,color_r,dist);
+			buffer[i].r=float(c.Red)/256.0f;
+			buffer[i].g=float(c.Green)/256.0f;
+			buffer[i].b=float(c.Blue)/256.0f;
+			buffer[i].a=1;
+
+			if(Gradient.GradientRecords[grad_index].Ratio==i)
+			{
+				grad_index++;
+				color_l=color_r;
+				index_l=index_r;
+				color_r=Gradient.GradientRecords[grad_index].Color;
+				index_r=Gradient.GradientRecords[grad_index].Ratio;
+			}
+		}
+
+		glTexImage1D(GL_TEXTURE_1D,0,4,256,0,GL_RGBA,GL_FLOAT,buffer);
 	}
 	else
 		glUseProgram(0);

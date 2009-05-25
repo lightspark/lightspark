@@ -354,6 +354,8 @@ public:
 class RGBA
 {
 public:
+	RGBA():Red(0),Green(0),Blue(0),Alpha(1){}
+	RGBA(int r, int g, int b, int a):Red(r),Green(g),Blue(b),Alpha(a){}
 	UI8 Red;
 	UI8 Green;
 	UI8 Blue;
@@ -563,6 +565,10 @@ public:
 	int version;
 	UI8 Ratio;
 	RGBA Color;
+	bool operator<(const GRADRECORD& g) const
+	{
+		return Ratio<g.Ratio;
+	}
 };
 
 class GRADIENT

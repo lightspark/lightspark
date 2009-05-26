@@ -465,6 +465,7 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 
 void DefineTextTag::Render()
 {
+	LOG(TRACE,"DefineText Render");
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -660,7 +661,8 @@ void DefineMorphShapeTag::Render()
 	for(it;it!=shapes.end();it++)
 	{
 		it->Render();
-		drawStenciled(EndBounds,it->color0,it->color1,it->style0,it->style1);
+		if(it->closed)
+			drawStenciled(EndBounds,it->color0,it->color1,it->style0,it->style1);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -689,12 +691,11 @@ void DefineShapeTag::Render()
 
 	std::vector < Shape >::iterator it=cached.begin();
 	glEnable(GL_STENCIL_TEST);
-	int count=0;
 	for(it;it!=cached.end();it++)
 	{
-		it->Render(count);
-		drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
-		count++;
+		it->Render();
+		if(it->closed)
+			drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -763,7 +764,8 @@ void DefineShape4Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
-		drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
+		if(it->closed)
+			drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -784,7 +786,7 @@ void DefineShape3Tag::Render()
 		for(int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
 
-//		sort(cached.begin(),cached.end());
+		sort(cached.begin(),cached.end());
 
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
@@ -793,13 +795,11 @@ void DefineShape3Tag::Render()
 	std::vector < Shape >::iterator it=cached.begin();
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glEnable(GL_STENCIL_TEST);
-	int count=0;
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
 		if(it->closed)
 			drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
-		count++;
 	}
 	glDisable(GL_STENCIL_TEST);
 }
@@ -906,6 +906,8 @@ void DefineFont3Tag::genGlyphShape(vector<Shape>& s, int glyph)
 			s[i].edges[j].p2/=20;
 		}
 		s[i].BuildFromEdges(NULL,def_color0^def_color1);
+		//TODO: should fill styles be normalized
+		s[i].winding=!s[i].winding;
 	}
 
 	sort(s.begin(),s.end());

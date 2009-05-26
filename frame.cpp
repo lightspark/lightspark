@@ -33,10 +33,13 @@ void Frame::Render(int baseLayer)
 	clock_gettime(CLOCK_REALTIME,&ts);
 	list < IDisplayListElem* >::iterator i=displayList.begin();
 	int count=0;
+	LOG(TRACE,"Frame levels " << baseLayer << '/' << displayList.size());
 	for(i;i!=displayList.end();i++)
 	{
+		LOG(TRACE,"Rendering level " << count);
 		if(*i!=NULL)
 			(*i)->Render();
+		LOG(TRACE,"End Rendering level " << count);
 		count++;
 		if(count>baseLayer)
 			break;

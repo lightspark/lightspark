@@ -51,9 +51,9 @@ public:
 	bool operator==(const Vector2& v)const{return v.x==x && v.y==y;}
 	bool operator==(int i){return index==i;}
 	bool operator<(const Vector2& v) const {return (y==v.y)?(x < v.x):(y < v.y);}
-	bool operator<=(const Vector2& v) const {return y<=v.y;}
-	bool operator>=(const Vector2& v) const {return y>=v.y;}
-	bool operator<(int i) const {return index<i;}
+//	bool operator<=(const Vector2& v) const {return y<=v.y;}
+//	bool operator>=(const Vector2& v) const {return y>=v.y;}
+//	bool operator<(int i) const {return index<i;}
 	const Vector2 operator-(const Vector2& v)const { return Vector2(x-v.x,y-v.y);}
 	const Vector2 operator+(const Vector2& v)const { return Vector2(x+v.x,y+v.y);}
 	const Vector2 operator*(int p)const { return Vector2(x*p,y*p);}
@@ -129,8 +129,6 @@ public:
 class Graphic
 {
 public:
-	bool filled0;
-	bool filled1;
 	bool stroked;
 	RGBA color0;
 	RGBA color1;
@@ -141,11 +139,14 @@ class Shape
 {
 private:
 	void TessellateSimple();
+	void SetStyles(FILLSTYLE* styles);
 public:
 	std::vector<Triangle> interior;
 	std::vector<Vector2> outline;
 	std::vector<Shape> sub_shapes;
 	std::vector<Edge> edges;
+
+	bool unsupported;
 
 	Graphic graphic;
 	bool closed;

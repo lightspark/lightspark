@@ -20,5 +20,5 @@ Credits:
 	www.lighthouse3d.com
 **************************************************************************/
 
-char *textFileRead(char *fn);
-int textFileWrite(char *fn, char *s);
+char *textFileRead(const char *fn);
+int textFileWrite(const char *fn, char *s);

@@ -563,8 +563,14 @@ void FILLSTYLE::setFragmentProgram() const
 		float r,g,b,a;
 	};
 
-	if(FillStyleType==0x10)
+	if(FillStyleType==0x00)
 	{
+		LOG(TRACE,"Fill color");
+		glUseProgram(sys->color_program);
+	}
+	else if(FillStyleType==0x10)
+	{
+		LOG(TRACE,"Fill gradient");
 		glUseProgram(sys->linear_gradient_program);
 		color_entry buffer[256];
 		int grad_index=0;
@@ -596,7 +602,11 @@ void FILLSTYLE::setFragmentProgram() const
 		glTexImage1D(GL_TEXTURE_1D,0,4,256,0,GL_RGBA,GL_FLOAT,buffer);
 	}
 	else
+	{
+		LOG(NOT_IMPLEMENTED,"Reverting to fixed function");
 		glUseProgram(0);
+		glColor3f(1,0,0);
+	}
 }
 
 std::istream& operator>>(std::istream& s, FILLSTYLE& v)

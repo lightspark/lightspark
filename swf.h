@@ -84,9 +84,11 @@ private:
 	sem_t mutex;
 
 	sem_t sem_valid_frame_size;
+
 public:
 	//OpenGL fragment programs
 	int linear_gradient_program;
+	int color_program;
 
 	bool shutdown;
 	int version;
@@ -188,6 +190,7 @@ private:
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
 	GC mGC;
+	static int load_fragment_program(const char* file);
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();

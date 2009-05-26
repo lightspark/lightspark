@@ -457,6 +457,31 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	delete p;
 }
 
+int RenderThread::load_fragment_program(const char* file)
+{
+	GLuint v,f,f2,p;
+	f = glCreateShader(GL_FRAGMENT_SHADER);
+
+	char *fs = NULL;
+	fs = textFileRead(file);
+
+	const char * ff = fs;
+	glShaderSource(f, 1, &ff,NULL);
+	free(fs);
+
+	glCompileShader(f);
+	char str[1024];
+	int a;
+	glGetShaderInfoLog(f,1024,&a,str);
+	printf("%s\n",str);
+
+	int ret = glCreateProgram();
+	glAttachShader(ret,f);
+
+	glLinkProgram(ret);
+	return ret;
+}
+
 void* RenderThread::sdl_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -485,28 +510,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	glMatrixMode(GL_MODELVIEW);
 
-	GLuint v,f,f2,p;
-	f = glCreateShader(GL_FRAGMENT_SHADER);
-
-	char *fs = NULL;
-	fs = textFileRead("lightspark.frag");
-
-	const char * ff = fs;
-	glShaderSource(f, 1, &ff,NULL);
-	free(fs);
-
-	glCompileShader(f);
-	char str[1024];
-	int a;
-	glGetShaderInfoLog(f,1024,&a,str);
-	printf("%s\n",str);
-
-	sys->linear_gradient_program = glCreateProgram();
-	glAttachShader(sys->linear_gradient_program,f);
-
-	glLinkProgram(sys->linear_gradient_program);
-//	glUseProgram(linear_gradient_program);
-
 	unsigned int t;
 	glGenTextures(1,&t);
 
@@ -517,35 +520,12 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
-	/*float buffer[128];
-
-	buffer[0]=0.100;
-	buffer[1]=0.100;
-	buffer[2]=0.100;
-	buffer[3]=0.100;
-
-	buffer[4]=0.300;
-	buffer[5]=0.300;
-	buffer[6]=0.300;
-	buffer[7]=0.300;
-
-	buffer[8]=0.400;
-	buffer[9]=0.400;
-	buffer[10]=0.400;
-	buffer[11]=0.400;
-
-	buffer[12]=0.450;
-	buffer[13]=0.450;
-	buffer[14]=0.450;
-	buffer[15]=0.450;
-
-	buffer[16]=0.800;
-	buffer[17]=0.800;
-	buffer[18]=0.800;
-	buffer[19]=0.800;*/
-	//glTexImage1D(GL_TEXTURE_1D,0,4,16,0,GL_RGBA,GL_FLOAT,buffer);
+	//Load fragment shaders
+	sys->linear_gradient_program=load_fragment_program("linear_gradient.frag");
 	int tex=glGetUniformLocation(sys->linear_gradient_program,"m_tex");
 	glUniform1i(tex,0);
+
+	sys->color_program=load_fragment_program("color.frag");
 
 	float* buffer=new float[640*240];
 	try
@@ -570,7 +550,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			th->cur_frame->Render(sys->displayListLimit);
 
-	/*		glReadPixels(0,240,640,240,GL_STENCIL_INDEX,GL_FLOAT,buffer);
+			/*glReadPixels(0,240,640,240,GL_STENCIL_INDEX,GL_FLOAT,buffer);
 			for(int i=0;i<240*640;i++)
 				buffer[i]/=4;
 			glDrawPixels(640,240,GL_LUMINANCE,GL_FLOAT,buffer);*/

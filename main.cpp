@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	}
 	Log::initLogging(TRACE);
 	sys=new SystemState;
-	sys->performance_profiling=false;
+	sys->performance_profiling=true;
 	zlib_file_filter zf;
 	zf.open(argv[1],ios_base::in);
 	istream f(&zf);

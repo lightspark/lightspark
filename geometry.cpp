@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#define GL_GLEXT_PROTOTYPES
 #include <fstream>
 #include <math.h>
 #include <algorithm>
@@ -38,7 +39,13 @@ float colors[][3] = { { 0 ,0 ,0 },
 
 void Shape::Render(int i) const
 {
-	if(graphic.filled0 && graphic.filled1)
+	if(unsupported)
+	{
+		LOG(NOT_IMPLEMENTED,"Unsupported shape kind");
+		return;
+	}
+
+	if(closed && color0 && color1)
 	{
 		LOG(NOT_IMPLEMENTED,"Not supported double fill style");
 		//Shape* th=const_cast<Shape*>(this);
@@ -47,16 +54,21 @@ void Shape::Render(int i) const
 	}
 
 	if(edges.empty())
+	{
+		LOG(TRACE,"No edges in this shape");
 		return;
+	}
 
 /*	if(color0!=0 && color0!=1)
 		LOG(ERROR,"color0 "<<color0);
 	if(color1!=0 && color1!=1)
 		LOG(ERROR,"color1"<<color0);*/
 
+	glUseProgram(0);
 	bool filled=false;
-	if(winding==0)
+	if(closed && winding==0)
 	{
+		LOG(TRACE,"Filling 0");
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glStencilFunc(GL_ALWAYS,color0,0xff);
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
@@ -72,8 +84,9 @@ void Shape::Render(int i) const
 		if(color0!=0)
 			filled=true;
 	}
-	else if(winding==1)
+	else if(closed && winding==1)
 	{
+		LOG(TRACE,"Filling 1");
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glStencilFunc(GL_ALWAYS,color1,0xff);
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
@@ -93,6 +106,7 @@ void Shape::Render(int i) const
 
 	if(graphic.stroked || !filled)
 	{
+		LOG(TRACE,"Line tracing");
 		glDisable(GL_STENCIL_TEST);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NEVER,0,0);
@@ -205,38 +219,16 @@ void Shape::dumpInterior()
 	f.close();
 }
 
-void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
+void Shape::SetStyles(FILLSTYLE* styles)
 {
-	style0=NULL;
-	style1=NULL;
-	if(edges.empty())
-		return;
-
-	bool coerent=true;
-	color0=edges[0].color0;
-	color1=edges[0].color1;
-
-	for(int i=1;i<edges.size();i++)
-	{
-		if(edges[i].color0!=color0 || edges[i].color1!=color1)
-		{
-			coerent=false;
-			break;
-		}
-	}
-
 	outline.reserve(edges.size());
 	for(int i=0;i<edges.size();i++)
 		outline.push_back(edges[i].p1);
 
 	if(edges.back().p2==outline.front())
 		closed=true;
-
-	if(!coerent)
-	{
-		LOG(ERROR,"Not coerent shape");
-		return;
-	}
+	else
+		closed=false;
 
 	if(styles)
 	{
@@ -251,6 +243,14 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 			style1=NULL;
 	}
 
+/*	if(!coerent)
+	{
+		LOG(ERROR,"Not coerent shape");
+		closed=false;
+		unsupported=true;
+		return;
+	}*/
+
 	//Calculate shape winding
 	long area=0;
 	int i;
@@ -264,7 +264,49 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 		winding=1;
 	else
 		winding=0;
+}
 
+void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
+{
+	style0=NULL;
+	style1=NULL;
+	unsupported=false;
+	if(edges.empty())
+		return;
+
+	//We try to build coerent shapes out of a possible incoerent one
+	int cur_fill0=edges[0].color0;
+	int cur_fill1=edges[0].color1;
+	vector<Edge>::iterator it_start=edges.begin();
+	vector<Edge>::iterator it_cur=edges.begin();
+	do
+	{
+		if(it_cur->color0!=cur_fill0 || it_cur->color1!=cur_fill1)
+		{
+			//As the style is changed we create a new Shape;
+			sub_shapes.push_back(Shape());
+			sub_shapes.back().edges=vector<Edge>(it_start,it_cur);
+			sub_shapes.back().color0=cur_fill0;
+			sub_shapes.back().color1=cur_fill1;
+			sub_shapes.back().graphic.stroked=false;
+			sub_shapes.back().SetStyles(styles);
+			if(sub_shapes.back().closed)
+				sub_shapes.back().TessellateSimple();
+
+			edges.erase(it_start,it_cur);
+			it_start=edges.begin();
+			it_cur=edges.begin();
+			cur_fill0=it_cur->color0;
+			cur_fill1=it_cur->color1;
+		}
+		it_cur++;
+	}
+	while(it_cur!=edges.end());
+
+	color0=cur_fill0;
+	color1=cur_fill1;
+
+	SetStyles(styles);
 /*	if(normalize)
 	{
 		//If only one side of all edges is colored set the winding to the correct one
@@ -278,7 +320,6 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 	//Tessellate the shape using ear removing algorithm
 	if(closed)
 		TessellateSimple();
-
 }
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)

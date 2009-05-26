@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#define GL_GLEXT_PROTOTYPES
 #include <vector>
 #include <list>
 #include <algorithm>
@@ -287,6 +288,11 @@ void drawStenciled(const RECT& bounds, int fill0, int fill1, const FILLSTYLE* st
 		glStencilFunc(GL_EQUAL,fill0,0xff);
 		if(style0)
 			style0->setFragmentProgram();
+		else
+		{
+			glUseProgram(0);
+			glColor3f(1,0,0);
+		}
 		glBegin(GL_QUADS);
 			glVertex2i(bounds.Xmin,bounds.Ymin);
 			glVertex2i(bounds.Xmin,bounds.Ymax);
@@ -299,6 +305,11 @@ void drawStenciled(const RECT& bounds, int fill0, int fill1, const FILLSTYLE* st
 		glStencilFunc(GL_EQUAL,fill1,0xff);
 		if(style1)
 			style1->setFragmentProgram();
+		else
+		{
+			glUseProgram(0);
+			glColor3f(0,1,1);
+		}
 		glBegin(GL_QUADS);
 			glVertex2i(bounds.Xmin,bounds.Ymin);
 			glVertex2i(bounds.Xmin,bounds.Ymax);
@@ -719,6 +730,7 @@ void DefineShape2Tag::Render()
 			it->style0=NULL;
 		if(it->color1 >= Shapes.FillStyles.FillStyleCount)
 			it->style1=NULL;
+		LOG(NOT_IMPLEMENTED,"HACK schifoso");
 		drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
@@ -727,7 +739,7 @@ void DefineShape2Tag::Render()
 
 void DefineShape4Tag::Render()
 {
-	LOG(TRACE,"DefineShape3 Render");
+	LOG(TRACE,"DefineShape4 Render");
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -772,20 +784,23 @@ void DefineShape3Tag::Render()
 		for(int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
 
-		sort(cached.begin(),cached.end());
+//		sort(cached.begin(),cached.end());
 
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
 	std::vector < Shape >::iterator it=cached.begin();
+	glClear(GL_STENCIL_BUFFER_BIT);
 	glEnable(GL_STENCIL_TEST);
+	int count=0;
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
-		drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
+		if(it->closed)
+			drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
+		count++;
 	}
-	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
 

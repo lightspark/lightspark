@@ -21,5 +21,4 @@
 
 IActiveObject::IActiveObject()
 {
-	//InputThread::addListener(this);
 }

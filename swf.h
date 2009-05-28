@@ -164,7 +164,7 @@ private:
 	pthread_t t;
 	static void* sdl_worker(InputThread*);
 	static void* npapi_worker(InputThread*);
-	std::list< IActiveObject* > listeners;
+	std::vector< IActiveObject* > listeners;
 	sem_t sem_listeners;
 
 public:

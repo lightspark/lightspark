@@ -27,6 +27,8 @@
 #include <deque>
 #include <map>
 
+class SystemState;
+
 class s24
 {
 friend std::istream& operator>>(std::istream& in, s24& v);
@@ -308,6 +310,7 @@ private:
 	enum STACK_TYPE{STACK_OBJECT=0};
 	typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
 
+	SystemState* m_sys;
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -342,6 +345,7 @@ private:
 	ASObject Global;
 	std::vector<SWFObject> stack;
 	llvm::Module* module;
+
 	static llvm::ExecutionEngine* ex;
 
 	//Utility
@@ -410,11 +414,14 @@ private:
 	//Synchronization
 	sem_t mutex;
 	sem_t sem_event_count;
+
+	//Event handling
+	bool shutdown;
 	std::deque<std::pair<IActiveObject*,Event*> > events_queue;
 	void handleEvent();
 public:
-	ABCVm(std::istream& in);
-	void Run();
+	ABCVm(SystemState* s,std::istream& in);
+	static void Run(ABCVm* th);
 	SWFObject buildNamedClass(ISWFObject* base, const std::string& n);
 	void addEvent(IActiveObject*,Event*);
 };
@@ -425,6 +432,7 @@ private:
 	UI32 Flags;
 	STRING Name;
 	ABCVm* vm;
+	pthread_t thread;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
 	void Render( );
@@ -449,6 +457,31 @@ private:
 	bool val;
 public:
 	Boolean(bool v):val(v){}
+};
+
+enum EVENT_TYPE { BIND_CLASS=0, SHUTDOWN };
+
+class Event
+{
+public:
+	virtual EVENT_TYPE getEventType()=0;
+};
+
+class BindClassEvent: public Event
+{
+friend class ABCVm;
+private:
+	ISWFObject* base;
+	std::string class_name;
+public:
+	BindClassEvent(ISWFObject* b, const std::string& c):base(b),class_name(c){}
+	EVENT_TYPE getEventType(){ return BIND_CLASS;}
+};
+
+class ShutdownEvent: public Event
+{
+public:
+	EVENT_TYPE getEventType() { return SHUTDOWN; }
 };
 
 bool Boolean_concrete(ISWFObject* obj);

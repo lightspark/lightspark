@@ -113,6 +113,8 @@ void SystemState::setShutdownFlag()
 {
 	sem_wait(&mutex);
 	shutdown=true;
+	if(sys->currentVm)
+		sys->currentVm->addEvent(NULL,new ShutdownEvent());
 
 	//Signal blocking semaphore
 	sem_post(&sem_run);
@@ -277,9 +279,17 @@ void* InputThread::sdl_worker(InputThread* th)
 				}
 				break;
 			}
-			case SDL_MOUSEMOTION:
+			case SDL_MOUSEBUTTONDOWN:
 			{
-				//printf("Oh! mouse\n");
+				sem_wait(&th->sem_listeners);
+				
+				if(!th->listeners.empty())
+				{
+					cout << "listeners " << th->listeners.size() << endl;
+					sys->currentVm->addEvent(th->listeners[0],NULL);
+				}
+
+				sem_post(&th->sem_listeners);
 				break;
 			}
 		}
@@ -290,7 +300,10 @@ void InputThread::addListener(IActiveObject* ob)
 {
 	sem_wait(&sem_listeners);
 
-	listeners.push_back(ob);
+	vector<IActiveObject*>::iterator it=find(listeners.begin(),listeners.end(),ob);
+
+	if(it==listeners.end())
+		listeners.push_back(ob);
 
 	sem_post(&sem_listeners);
 }

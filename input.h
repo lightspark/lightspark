@@ -20,9 +20,7 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-class Event
-{
-};
+class Event;
 
 class IActiveObject
 {

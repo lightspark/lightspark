@@ -48,7 +48,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 	in >> Flags >> Name;
 	LOG(CALLS,"DoABCTag Name: " << Name);
 
-	vm=new ABCVm(in);
+	vm=new ABCVm(sys,in);
 	sys->currentVm=vm;
 
 	if(dest!=in.tellg())
@@ -63,7 +63,7 @@ int DoABCTag::getDepth() const
 void DoABCTag::Render()
 {
 	LOG(CALLS,"ABC Exec " << Name);
-	vm->Run();
+	pthread_create(&thread,NULL,(void* (*)(void*))ABCVm::Run,vm);
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
@@ -94,7 +94,7 @@ void SymbolClassTag::Render()
 		cout << Tags[i] << ' ' << Names[i] << endl;
 		if(Tags[i]==0)
 		{
-			sys->currentVm->buildNamedClass(sys,Names[i]);
+			sys->currentVm->addEvent(NULL,new BindClassEvent(sys,Names[i]));
 		}
 		else
 		{
@@ -106,7 +106,7 @@ void SymbolClassTag::Render()
 				abort();
 			}
 			else
-				sys->currentVm->buildNamedClass(base,Names[i]);
+				sys->currentVm->addEvent(NULL,new BindClassEvent(base,Names[i]));
 		}
 
 	}
@@ -419,7 +419,7 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 	return ret;
 }
 
-ABCVm::ABCVm(istream& in)
+ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s)
 {
 	in >> minor >> major;
 	LOG(CALLS,"ABCVm version " << major << '.' << minor);
@@ -473,10 +473,29 @@ ABCVm::ABCVm(istream& in)
 void ABCVm::handleEvent()
 {
 	sem_wait(&mutex);
-	sem_wait(&sem_event_count);
 	pair<IActiveObject*,Event*> e=events_queue.back();
 	events_queue.pop_back();
-	e.first->MouseEvent(e.second);
+	if(e.first)
+		e.first->MouseEvent(e.second);
+	else
+	{
+		//Should be handled by the Vm itself
+		switch(e.second->getEventType())
+		{
+			case BIND_CLASS:
+			{
+				BindClassEvent* ev=dynamic_cast<BindClassEvent*>(e.second);
+				buildNamedClass(ev->base,ev->class_name);
+				break;
+			}
+			case SHUTDOWN:
+				shutdown=true;
+				break;
+			default:
+				LOG(ERROR,"Not supported event");
+				abort();
+		}
+	}
 	sem_post(&mutex);
 }
 
@@ -2035,31 +2054,40 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	return m->f;
 }
 
-void ABCVm::Run()
+void ABCVm::Run(ABCVm* th)
 {
-	module=new llvm::Module("abc jit");
-	if(!ex)
-		ex=llvm::ExecutionEngine::create(module);
+	sys=th->m_sys;
+	th->module=new llvm::Module("abc jit");
 
-	registerFunctions();
-	registerClasses();
+	sem_wait(&th->mutex);
+	if(!ex)
+		ex=llvm::ExecutionEngine::create(th->module);
+	sem_post(&th->mutex);
+
+	th->registerFunctions();
+	th->registerClasses();
 	//Set register 0 to Global
 	//registers[0]=SWFObject(&Global);
 	//Take each script entry and run it
-	for(int i=0;i<scripts.size();i++)
+	for(int i=0;i<th->scripts.size();i++)
 	{
 		cout << "Script N: " << i << endl;
-		method_info* m=get_method(scripts[i].init);
-		cout << "Building entry script traits: " << scripts[i].trait_count << endl;
-		for(int j=0;j<scripts[i].trait_count;j++)
-			buildTrait(&Global,&scripts[i].traits[j]);
-		synt_method(m);
+		method_info* m=th->get_method(th->scripts[i].init);
+		cout << "Building entry script traits: " << th->scripts[i].trait_count << endl;
+		for(int j=0;j<th->scripts[i].trait_count;j++)
+			th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
+		th->synt_method(m);
 
 		if(m->f)
 		{
 			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-			FP(&Global,NULL);
+			FP(&th->Global,NULL);
 		}
+	}
+	while(!th->shutdown)
+	{
+		sem_wait(&th->sem_event_count);
+		th->handleEvent();
 	}
 	//module.dump();
 }

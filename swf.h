@@ -64,6 +64,8 @@ struct fps_profiling
 	fps_profiling():render_time(0),action_time(0),cache_time(0),fps(0){}
 };
 
+class InputThread;
+
 class SystemState:public ASMovieClip
 {
 private:
@@ -125,6 +127,7 @@ public:
 	SWFOBJECT_TYPE getObjectType() const;
 	fps_profiling* fps_prof;
 	ABCVm* currentVm;
+	InputThread* cur_input_thread;
 };
 
 class ParseThread

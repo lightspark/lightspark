@@ -25,6 +25,7 @@
 #include <string.h>
 #include <algorithm>
 #include <stdlib.h>
+#include "swf.h"
 
 using namespace std;
 extern __thread SystemState* sys;

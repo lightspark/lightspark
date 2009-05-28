@@ -68,6 +68,7 @@ int main(int argc, char* argv[])
 	ParseThread pt(sys,f);
 	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
+	sys->cur_input_thread=&it;
 
 	timespec ts,td,tperf,tperf2;
 	clock_gettime(CLOCK_REALTIME,&ts);

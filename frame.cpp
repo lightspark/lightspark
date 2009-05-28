@@ -22,6 +22,7 @@
 #include <list>
 #include <GL/gl.h>
 #include <time.h>
+#include "swf.h"
 
 using namespace std;
 long timeDiff(timespec& s, timespec& d);

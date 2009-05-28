@@ -29,6 +29,7 @@
 #include "logger.h"
 #include "swftypes.h"
 #include <sstream>
+#include "swf.h"
 
 
 llvm::ExecutionEngine* ABCVm::ex;

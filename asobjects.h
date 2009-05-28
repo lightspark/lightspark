@@ -23,6 +23,7 @@
 #include <list>
 #include "swftypes.h"
 #include "frame.h"
+#include "input.h"
 
 class ASObjectWrapper: public IDisplayListElem
 {
@@ -124,7 +125,7 @@ public:
 	}
 };
 
-class ASMovieClip: public ASObject, public IRenderObject
+class ASMovieClip: public ASObject, public IRenderObject, public IActiveObject
 {
 private:
 	static bool list_orderer(const IDisplayListElem* a, int d);
@@ -149,12 +150,14 @@ public:
 
 	ASMovieClip();
 	ASFUNCTION(moveTo);
+	ASFUNCTION(addEventListener);
 	ASFUNCTION(lineStyle);
 	ASFUNCTION(lineTo);
 	ASFUNCTION(swapDepths);
 	ASFUNCTION(createEmptyMovieClip);
 
 	virtual void addToDisplayList(IDisplayListElem* r);
+	virtual void MouseEvent(int x, int y);
 
 	//ASObject interface
 	void _register();

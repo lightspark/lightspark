@@ -165,6 +165,17 @@ void ASMovieClip::addToDisplayList(IDisplayListElem* t)
 	displayListLimit=displayList.size();
 }
 
+void ASMovieClip::MouseEvent(int x, int y)
+{
+	cout << "MovieClip mouse event" << endl;
+}
+
+ASFUNCTIONBODY(ASMovieClip,addEventListener)
+{
+	cout << "addEventListener" << endl;
+	sys->cur_input_thread->addListener(dynamic_cast<IActiveObject*>(obj));
+}
+
 ASFUNCTIONBODY(ASMovieClip,createEmptyMovieClip)
 {
 	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj);
@@ -222,6 +233,7 @@ void ASMovieClip::_register()
 	setVariableByName("lineTo",SWFObject(new Function(lineTo)));
 	setVariableByName("moveTo",SWFObject(new Function(moveTo)));
 	setVariableByName("createEmptyMovieClip",SWFObject(new Function(createEmptyMovieClip)));
+	setVariableByName("addEventListener",SWFObject(new Function(addEventListener)));
 }
 
 void ASMovieClip::Render()

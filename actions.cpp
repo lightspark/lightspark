@@ -19,6 +19,7 @@
 
 #include "actions.h"
 #include "logger.h"
+#include "swf.h"
 
 extern __thread SystemState* sys;
 

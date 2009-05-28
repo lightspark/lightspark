@@ -157,6 +157,7 @@ struct option_detail
 };
 
 class method_body_info;
+class ABCVm;
 
 class method_info
 {

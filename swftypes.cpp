@@ -799,12 +799,12 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	stream >> v.CharacterID >> v.PlaceDepth >> v.PlaceMatrix >> v.ColorTransform;
 
 	if(v.ButtonHasFilterList | v.ButtonHasBlendMode)
-		LOG(ERROR,"Button record not yet totallt supported");
+		LOG(ERROR,"Button record not yet totally supported");
 
 	return stream;
 }
 
-ISWFObject_impl::ISWFObject_impl():parent(NULL)
+ISWFObject_impl::ISWFObject_impl():parent(NULL),max_slot_index(0)
 {
 }
 
@@ -820,7 +820,13 @@ ISWFObject* ISWFObject_impl::getSlot(int n)
 
 void ISWFObject_impl::setSlot(int n,ISWFObject* o)
 {
-	slots[n-1]=o;
+	if(n>10)
+	{
+		LOG(ERROR,"Not enough slots");
+		abort();
+	}
+	int m=n-1;
+	slots[m]=o;
 }
 
 SWFObject RegisterNumber::instantiate()

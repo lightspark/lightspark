@@ -85,7 +85,6 @@ int SymbolClassTag::getDepth() const
 
 void SymbolClassTag::Render()
 {
-	return;
 	LOG(NOT_IMPLEMENTED,"SymbolClassTag Render");
 	cout << "NumSymbols " << NumSymbols << endl;
 
@@ -93,9 +92,22 @@ void SymbolClassTag::Render()
 	{
 		cout << Tags[i] << ' ' << Names[i] << endl;
 		if(Tags[i]==0)
+		{
 			sys->currentVm->buildNamedClass(sys,Names[i]);
+		}
 		else
-			sys->currentVm->buildNamedClass(new ASObject,Names[i]);
+		{
+			DictionaryTag* t=sys->dictionaryLookup(Tags[i]);
+			ASObject* base=dynamic_cast<ASObject*>(t);
+			if(base==NULL)
+			{
+				LOG(ERROR,"Base in not an ASObject");
+				abort();
+			}
+			else
+				sys->currentVm->buildNamedClass(base,Names[i]);
+		}
+
 	}
 
 }
@@ -111,10 +123,16 @@ void ABCVm::registerFunctions()
 	vector<const llvm::Type*> sig;
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 
+	sig.push_back(llvm::IntegerType::get(32));
+	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not_impl",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::not_impl);
+	sig.clear();
+
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(llvm::IntegerType::get(32));
-	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"argumentDumper",module);
+	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"argumentDumper",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::argumentDumper);
 	sig.clear();
 
@@ -124,14 +142,32 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushScope",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushScope);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_d",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::convert_d);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_b",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::convert_b);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_i",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::convert_i);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce_s",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::coerce_s);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pop",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pop);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::_not);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"equals",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::equals);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"dup",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::dup);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"multiply",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::multiply);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"add",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::add);
@@ -139,8 +175,14 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"swap",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::swap);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNaN",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushNaN);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNull",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushNull);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushTrue",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushTrue);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushFalse",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushFalse);
@@ -162,6 +204,9 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifStrictNE",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifStrictNE);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifNe",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifNe);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifEq",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifEq);
@@ -261,11 +306,22 @@ void ABCVm::registerClasses()
 	valid_classes[".int"]=-1;
 	Global.setVariableByName(".Boolean",new ASObject);
 	valid_classes[".Boolean"]=-1;
+	Global.setVariableByName("Number",new ASObject);
+	valid_classes["Number"]=-1;
+	Global.setVariableByName("String",new ASObject);
+	valid_classes["String"]=-1;
+	Global.setVariableByName("flash.display.MovieClip",new ASMovieClip);
+	valid_classes["flash.display.MovieClip"]=-1;
+	Global.setVariableByName("flash.display.DisplayObject",new ASObject);
+	valid_classes["flash.display.DisplayObject"]=-1;
+	Global.setVariableByName("flash.display.SimpleButton",new ASObject);
+	valid_classes["flash.display.SimpleButton"]=-1;
+	Global.setVariableByName("flash.text.TextField",new ASObject);
+	valid_classes["flash.text.TextField"]=-1;
 
 	Global.setVariableByName(".Error",new ASObject);
 
 	Global.setVariableByName("flash.events.EventDispatcher",new ASObject);
-	Global.setVariableByName("flash.display.DisplayObject",new ASObject);
 	Global.setVariableByName("flash.display.InteractiveObject",new ASObject);
 	Global.setVariableByName("flash.display.DisplayObjectContainer",new ASObject);
 	Global.setVariableByName("flash.display.Sprite",new ASObject);
@@ -471,6 +527,11 @@ inline method_info* ABCVm::get_method(unsigned int m)
 	}
 }
 
+void ABCVm::multiply(method_info* th)
+{
+	cout << "multiply" << endl;
+}
+
 void ABCVm::add(method_info* th)
 {
 	cout << "add" << endl;
@@ -609,6 +670,20 @@ void ABCVm::ifLT(method_info* th, int offset)
 	cout << "ifLT " << offset << endl;
 }
 
+void ABCVm::ifNe(method_info* th, int offset)
+{
+	cout << "ifNe " << offset << endl;
+
+	ISWFObject* obj1=th->runtime_stack_pop();
+	ISWFObject* obj2=th->runtime_stack_pop();
+
+	//Real comparision demanded to object
+	if(!obj1->isEqual(obj2))
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+	else
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+}
+
 void ABCVm::ifEq(method_info* th, int offset)
 {
 	cout << "ifEq " << offset << endl;
@@ -664,6 +739,16 @@ void ABCVm::setLocal(method_info* th, int n)
 	cout << "setLocal: DONE " << n << endl;
 }
 
+void ABCVm::convert_d(method_info* th)
+{
+	cout << "convert_d" << endl;
+}
+
+void ABCVm::convert_b(method_info* th)
+{
+	cout << "convert_b" << endl;
+}
+
 void ABCVm::convert_i(method_info* th)
 {
 	cout << "convert_i" << endl;
@@ -674,15 +759,48 @@ void ABCVm::coerce_s(method_info* th)
 	cout << "coerce_s" << endl;
 }
 
+void ABCVm::pop(method_info* th)
+{
+	cout << "pop: DONE" << endl;
+}
+
+void ABCVm::_not(method_info* th)
+{
+	cout << "not: DONE" << endl;
+}
+
+void ABCVm::not_impl(int n)
+{
+	cout << "not implement opcode 0x" << hex << n << endl;
+	abort();
+}
+
+void ABCVm::equals(method_info* th)
+{
+	cout << "equals" << endl;
+}
+
 void ABCVm::dup(method_info* th)
 {
 	cout << "dup: DONE" << endl;
+}
+
+void ABCVm::pushTrue(method_info* th)
+{
+	cout << "pushTrue" << endl;
+	th->runtime_stack_push(new Boolean(true));
 }
 
 void ABCVm::pushFalse(method_info* th)
 {
 	cout << "pushFalse" << endl;
 	th->runtime_stack_push(new Boolean(false));
+}
+
+void ABCVm::pushNaN(method_info* th)
+{
+	cout << "pushNaN DONE" << endl;
+	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::pushNull(method_info* th)
@@ -701,6 +819,7 @@ void ABCVm::pushScope(method_info* th)
 void ABCVm::pushByte(method_info* th, int n)
 {
 	cout << "pushByte " << n << endl;
+	th->runtime_stack_push(new Integer(n));
 }
 
 void ABCVm::incLocal_i(method_info* th, int n)
@@ -750,7 +869,8 @@ void ABCVm::getProperty(method_info* th, int n)
 	{
 		//DEBUG
 		ASObject* r=dynamic_cast<ASObject*>(ret);
-		printf("0x%lx\n",r->debug_id);
+		if(r)
+			printf("0x%lx\n",r->debug_id);
 
 		th->runtime_stack_push(ret);
 	}
@@ -1270,6 +1390,53 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.SetInsertPoint(A);
 				break;
 			}
+			case 0x14:
+			{
+				//ifne
+				cout << "synt ifne" << endl;
+				//TODO: implement common data comparison
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+
+				last_is_branch=true;
+				s24 t;
+				code >> t;
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+			
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifNe"), th, constant);
+
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifEq pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
+				break;
+			}
 			case 0x15:
 			{
 				//iflt
@@ -1342,6 +1509,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("pushByte"), th, constant);
 				break;
 			}
+			case 0x26:
+			{
+				//pushtrue
+				cout << "synt pushtrue" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("pushTrue"), th);
+				break;
+			}
 			case 0x27:
 			{
 				//pushfalse
@@ -1349,6 +1525,24 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushFalse"), th);
+				break;
+			}
+			case 0x28:
+			{
+				//pushnan
+				cout << "synt pushnan" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("pushNaN"), th);
+				break;
+			}
+			case 0x29:
+			{
+				//pop
+				cout << "synt pop" << endl;
+				jitted=true;
+				Builder.CreateCall(ex->FindFunctionNamed("pop"), th);
+				stack_entry e=static_stack_pop(Builder,static_stack,m);
 				break;
 			}
 			case 0x2a:
@@ -1678,6 +1872,24 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("convert_i"), th);
 				break;
 			}
+			case 0x75:
+			{
+				//convert_d
+				cout << "synt convert_d" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("convert_d"), th);
+				break;
+			}
+			case 0x76:
+			{
+				//convert_b
+				cout << "synt convert_b" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("convert_b"), th);
+				break;
+			}
 			case 0x80:
 			{
 				//corce
@@ -1708,6 +1920,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("asTypelate"), th);
 				break;
 			}
+			case 0x96:
+			{
+				//not
+				cout << "synt not" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("not"), th);
+				break;
+			}
 			case 0xa0:
 			{
 				//add
@@ -1715,6 +1936,24 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("add"), th);
+				break;
+			}
+			case 0xa2:
+			{
+				//multiply
+				cout << "synt multiply" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("multiply"), th);
+				break;
+			}
+			case 0xab:
+			{
+				//equals
+				cout << "synt equals" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("equals"), th);
 				break;
 			}
 			case 0xc2:
@@ -1766,6 +2005,8 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				code >> a >> b >> c;
 				LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
 						<< (unsigned int)b << ' ' << (unsigned int)c);
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode);
+				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
 				Builder.CreateRetVoid();
 				return m->f;
 		}
@@ -1775,7 +2016,6 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 void ABCVm::Run()
 {
-	return;
 	module=new llvm::Module("abc jit");
 	if(!ex)
 		ex=llvm::ExecutionEngine::create(module);
@@ -1787,16 +2027,11 @@ void ABCVm::Run()
 	//Take each script entry and run it
 	for(int i=0;i<scripts.size();i++)
 	{
-	//	if(i>0)
-	//		break;
 		cout << "Script N: " << i << endl;
-	/*	for(int j=0;j<scripts[i].trait_count;j++)
-			printTrait(&scripts[i].traits[j]);*/
 		method_info* m=get_method(scripts[i].init);
 		cout << "Building entry script traits: " << scripts[i].trait_count << endl;
 		for(int j=0;j<scripts[i].trait_count;j++)
 			buildTrait(&Global,&scripts[i].traits[j]);
-		//printMethod(m);
 		synt_method(m);
 
 		if(m->f)
@@ -1843,15 +2078,18 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 			{
 				switch(t->vkind)
 				{
+					case 0x0a: //False
+					{
+						ISWFObject* ret=obj->setVariableByName(name, new Boolean(false));
+						if(t->slot_id)
+							obj->setSlot(t->slot_id, ret);
+						break;
+					}
 					case 0x0c: //Null
 					{
-						if(!t->slot_id)
-						{
-							LOG(ERROR,"Should assign slot position");
-							abort();
-						}
 						ISWFObject* ret=obj->setVariableByName(name, new Null);
-						obj->setSlot(t->slot_id, ret);
+						if(t->slot_id)
+							obj->setSlot(t->slot_id, ret);
 						break;
 					}
 					default:
@@ -1863,13 +2101,15 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 						return;
 					}
 				}
+				LOG(CALLS,"Slot "<<getMultinameString(t->name)<<" type "<<getMultinameString(t->type_name));
+				break;
 			}
 			else
 			{
 				//else fallthrough
 				LOG(CALLS,"Slot vindex 0 "<<name<<" type "<<getMultinameString(t->type_name));
-			//ISWFObject* ret=obj->setVariableByName(name, buildNamedClass(getMultinameString(t->type_name)));
-				ISWFObject* ret=obj->setVariableByName(name, new ASObject);
+				ISWFObject* ret=obj->setVariableByName(name, buildNamedClass(new ASObject,getMultinameString(t->type_name)));
+				ret->_register();
 				obj->setSlot(t->slot_id, ret);
 				break;
 			}

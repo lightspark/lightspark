@@ -185,7 +185,8 @@ protected:
 	ISWFObject_impl();
 	std::map<std::string,ISWFObject*> Variables;
 	//Should be resizable
-	ISWFObject* slots[10]; 
+	ISWFObject* slots[10];
+	int max_slot_index;
 public:
 	ISWFObject* getVariableByName(const std::string& name, bool& found);
 	ISWFObject* setVariableByName(const std::string& name, const SWFObject& o);

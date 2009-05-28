@@ -345,6 +345,7 @@ private:
 
 	//Utility
 	static void debug(int p);
+	static void not_impl(int p);
 	static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
 	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
 	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
@@ -363,6 +364,7 @@ private:
 	static void newCatch(method_info* th, int n); 
 	static void jump(method_info* th, int offset); 
 	static void ifEq(method_info* th, int offset); 
+	static void ifNe(method_info* th, int offset); 
 	static void ifLT(method_info* th, int offset); 
 	static void ifStrictNE(method_info* th, int offset); 
 	static void ifFalse(method_info* th, int offset); 
@@ -386,15 +388,23 @@ private:
 	static void constructSuper(method_info* th, int n);
 	static void pushScope(method_info* th);
 	static void pushNull(method_info* th);
+	static void pushNaN(method_info* th);
 	static void pushFalse(method_info* th);
+	static void pushTrue(method_info* th);
 	static void dup(method_info* th);
+	static void equals(method_info* th);
+	static void _not(method_info* th);
+	static void pop(method_info* th);
 	static void asTypelate(method_info* th);
 	static void swap(method_info* th);
 	static void add(method_info* th);
+	static void multiply(method_info* th);
 	static void popScope(method_info* th);
 	static void newActivation(method_info* th);
 	static void coerce_s(method_info* th);
 	static void convert_i(method_info* th);
+	static void convert_b(method_info* th);
+	static void convert_d(method_info* th);
 public:
 	ABCVm(std::istream& in);
 	void Run();

@@ -1009,7 +1009,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	LOG(TRACE,"ShowFrame");
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_y(0),_x(0),_scalex(100)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_scalex(100)
 {
 	LOG(TRACE,"PlaceObject2");
 //	LOG(NO_INFO,"Should render with offset " << _x << " " << _y);
@@ -1047,8 +1047,6 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		else
 			wrapped=s->clone();
 
-		wrapped->setVariableByName("_y",SWFObject(&_y,true));
-		wrapped->setVariableByName("_x",SWFObject(&_x,true));
 		wrapped->setVariableByName("_scalex",SWFObject(&_scalex,true));
 	}
 	if(PlaceFlagHasMatrix)

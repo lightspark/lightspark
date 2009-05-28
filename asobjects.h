@@ -129,6 +129,8 @@ class ASMovieClip: public ASObject, public IRenderObject
 private:
 	static bool list_orderer(const IDisplayListElem* a, int d);
 protected:
+	Integer _x;
+	Integer _y;
 	Integer _visible;
 	Integer _width;
 	Integer _framesloaded;

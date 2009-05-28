@@ -147,7 +147,7 @@ float ASString::toFloat()
 	return 0;
 }
 
-ASMovieClip::ASMovieClip():_visible(1),_width(100),hack(0),_framesloaded(0),_totalframes(1),displayListLimit(0)
+ASMovieClip::ASMovieClip():_visible(1),_x(0),_y(0),_width(100),hack(0),_framesloaded(0),_totalframes(1),displayListLimit(0)
 {
 	sem_init(&sem_frames,0,1);
 	ASMovieClip::_register();
@@ -212,6 +212,8 @@ ASFUNCTIONBODY(ASMovieClip,swapDepths)
 void ASMovieClip::_register()
 {
 	setVariableByName("_visible",SWFObject(&_visible,true));
+	setVariableByName("y",SWFObject(&_y,true));
+	setVariableByName("x",SWFObject(&_x,true));
 	setVariableByName("_width",SWFObject(&_width,true));
 	setVariableByName("_framesloaded",SWFObject(&_framesloaded,true));
 	setVariableByName("_totalframes",SWFObject(&_totalframes,true));

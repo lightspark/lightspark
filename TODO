@@ -1,7 +1,7 @@
 OpenGL:
 	vertex shader per depth
-	pixel shader (fill styles sicuro, tessellazione boh)
 	clipping (si può fare il test, ma non l'aggiornamento del buffer -> via shader ?);
+
 
 implement Bool and Number
 implementa lettura degli header http
@@ -11,3 +11,4 @@ Official TODO Queue:
 -) Onor framerate
 -) Adapt to frame size
 -) Onor script limits
+-) GL: Use pixel buffer to render hollow shapes to textures and then apply them to image

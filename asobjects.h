@@ -157,7 +157,7 @@ public:
 	ASFUNCTION(createEmptyMovieClip);
 
 	virtual void addToDisplayList(IDisplayListElem* r);
-	virtual void MouseEvent(int x, int y);
+	virtual void MouseEvent(Event*);
 
 	//ASObject interface
 	void _register();

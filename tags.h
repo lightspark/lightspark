@@ -337,7 +337,7 @@ public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
 	virtual void Render();
-	virtual void MouseEvent(int x, int y);
+	virtual void MouseEvent(Event*);
 
 	void printInfo(int t=0);
 };

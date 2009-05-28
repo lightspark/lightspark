@@ -1255,7 +1255,7 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	}
 }
 
-void DefineButton2Tag::MouseEvent(int x, int y)
+void DefineButton2Tag::MouseEvent(Event* e)
 {
 	state=BUTTON_OVER;
 	IdleToOverUp=true;

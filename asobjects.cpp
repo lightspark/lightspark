@@ -165,7 +165,7 @@ void ASMovieClip::addToDisplayList(IDisplayListElem* t)
 	displayListLimit=displayList.size();
 }
 
-void ASMovieClip::MouseEvent(int x, int y)
+void ASMovieClip::MouseEvent(Event*)
 {
 	cout << "MovieClip mouse event" << endl;
 }

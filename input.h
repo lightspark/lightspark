@@ -20,12 +20,15 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+class Event
+{
+};
+
 class IActiveObject
 {
 public:
 	IActiveObject();
-	virtual void MouseEvent(int x, int y)=0;
+	virtual void MouseEvent(Event* e)=0;
 };
-
 
 #endif

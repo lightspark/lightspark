@@ -466,6 +466,26 @@ ABCVm::ABCVm(istream& in)
 			methods[method_body[i].method].body=&method_body[i];
 	}
 
+	sem_init(&mutex,0,1);
+	sem_init(&sem_event_count,0,0);
+}
+
+void ABCVm::handleEvent()
+{
+	sem_wait(&mutex);
+	sem_wait(&sem_event_count);
+	pair<IActiveObject*,Event*> e=events_queue.back();
+	events_queue.pop_back();
+	e.first->MouseEvent(e.second);
+	sem_post(&mutex);
+}
+
+void ABCVm::addEvent(IActiveObject* obj ,Event* ev)
+{
+	sem_wait(&mutex);
+	events_queue.push_back(pair<IActiveObject*,Event*>(obj, ev));
+	sem_post(&sem_event_count);
+	sem_post(&mutex);
 }
 
 SWFObject ABCVm::buildNamedClass(ISWFObject* base, const string& s)

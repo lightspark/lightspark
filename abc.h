@@ -24,6 +24,7 @@
 #include "frame.h"
 #include "logger.h"
 #include <vector>
+#include <deque>
 #include <map>
 
 class s24
@@ -342,7 +343,6 @@ private:
 	std::vector<SWFObject> stack;
 	llvm::Module* module;
 	static llvm::ExecutionEngine* ex;
-private:
 
 	//Utility
 	static void debug(int p);
@@ -406,10 +406,17 @@ private:
 	static void convert_i(method_info* th);
 	static void convert_b(method_info* th);
 	static void convert_d(method_info* th);
+
+	//Synchronization
+	sem_t mutex;
+	sem_t sem_event_count;
+	std::deque<std::pair<IActiveObject*,Event*> > events_queue;
+	void handleEvent();
 public:
 	ABCVm(std::istream& in);
 	void Run();
 	SWFObject buildNamedClass(ISWFObject* base, const std::string& n);
+	void addEvent(IActiveObject*,Event*);
 };
 
 class DoABCTag: public DisplayListTag

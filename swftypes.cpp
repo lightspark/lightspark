@@ -882,7 +882,13 @@ IFunction* Function::toFunction()
 
 ISWFObject* Function::call(ISWFObject* obj, arguments* args)
 {
-	return val(obj,args);
+	if(!bound)
+		return val(obj,args);
+	else
+	{
+		LOG(CALLS,"Calling with closure");
+		return val(closure_this,args);
+	}
 }
 
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v)

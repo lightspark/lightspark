@@ -249,7 +249,7 @@ public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
 };
 
-class PlaceObject2Tag: public DisplayListTag, public ISWFObject_impl
+class PlaceObject2Tag: public DisplayListTag//, public ISWFObject_impl
 {
 private:
 	Double _scalex;
@@ -280,11 +280,8 @@ public:
 	void printInfo(int t=0);
 
 	//SWFObject interface
-	STRING getName() { return Name;}
-	SWFOBJECT_TYPE getObjectType()const{ return T_PLACEOBJECT;}
-	//Forwared to placed object, if valid
-	ISWFObject* getVariableByName(const std::string& name, bool& found);
-	ISWFObject* setVariableByName(const std::string& name, const SWFObject& o);
+	//STRING getName() { return Name;}
+	//SWFOBJECT_TYPE getObjectType()const{ return T_PLACEOBJECT;}
 };
 
 class FrameLabelTag: public DisplayListTag

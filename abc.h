@@ -414,6 +414,7 @@ private:
 	//Synchronization
 	sem_t mutex;
 	sem_t sem_event_count;
+	bool running;
 
 	//Event handling
 	bool shutdown;
@@ -459,12 +460,20 @@ public:
 	Boolean(bool v):val(v){}
 };
 
-enum EVENT_TYPE { BIND_CLASS=0, SHUTDOWN };
+enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, MOUSE_EVENT };
 
-class Event
+class Event: public ASObject
 {
 public:
-	virtual EVENT_TYPE getEventType()=0;
+	Event();
+	virtual EVENT_TYPE getEventType() {return EVENT;}
+};
+
+class MouseEvent: public Event
+{
+public:
+	MouseEvent();
+	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
 };
 
 class BindClassEvent: public Event

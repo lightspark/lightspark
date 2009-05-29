@@ -326,7 +326,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("flash.display.InteractiveObject",new ASObject);
 	Global.setVariableByName("flash.display.DisplayObjectContainer",new ASObject);
 	Global.setVariableByName("flash.display.Sprite",new ASObject);
-	Global.setVariableByName("flash.events.Event",new ASObject);
+	Global.setVariableByName("flash.events.Event",new Event);
+	Global.setVariableByName("flash.events.MouseEvent",new MouseEvent);
 	Global.setVariableByName("flash.net.LocalConnection",new ASObject);
 	Global.setVariableByName("flash.utils.Proxy",new ASObject);
 	Global.setVariableByName("flash.events.ProgressEvent",new ASObject);
@@ -419,7 +420,7 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 	return ret;
 }
 
-ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s)
+ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
 {
 	in >> minor >> major;
 	LOG(CALLS,"ABCVm version " << major << '.' << minor);
@@ -1012,21 +1013,39 @@ void ABCVm::getLex(method_info* th, int n)
 	bool found=false;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		SWFObject o=(*it)->getVariableByName(name,found);
+		ISWFObject* o=(*it)->getVariableByName(name,found);
 		if(found)
 		{
-			th->runtime_stack_push(o.getData());
+			th->runtime_stack_push(o);
 			//DEBUG
-			ASObject* r=dynamic_cast<ASObject*>(o.getData());
+			ASObject* r=dynamic_cast<ASObject*>(o);
 			if(r!=NULL)
 				printf("Found ID 0x%lx\n",r->debug_id);
+			else
+				printf("Object type %u\n",o->getObjectType());
+
+			//If we are getting a function object attach the the current scope
+			if(o->getObjectType()==T_FUNCTION)
+			{
+				LOG(CALLS,"Attaching this to function " << name);
+				Function* f=dynamic_cast<Function*>(o);
+				f->closure_this=th->locals[0];
+			}
 			break;
 		}
 	}
 	if(!found)
 	{
-		cout << "NOT found, pushing Undefined" << endl;
-		th->runtime_stack_push(new Undefined);
+		cout << "NOT found, trying Global" << endl;
+		bool found2;
+		ISWFObject* o2=th->vm->Global.getVariableByName(name,found2);
+		if(found2)
+			th->runtime_stack_push(o2);
+		else
+		{
+			cout << "NOT found, pushing Undefined" << endl;
+			th->runtime_stack_push(new Undefined);
+		}
 	}
 
 }
@@ -2056,10 +2075,17 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 void ABCVm::Run(ABCVm* th)
 {
+	sem_wait(&th->mutex);
+	if(th->running)
+	{
+		sem_post(&th->mutex);
+		return;
+	}
+	else
+		th->running=true;
+
 	sys=th->m_sys;
 	th->module=new llvm::Module("abc jit");
-
-	sem_wait(&th->mutex);
 	if(!ex)
 		ex=llvm::ExecutionEngine::create(th->module);
 	sem_post(&th->mutex);
@@ -2157,8 +2183,16 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 			{
 				//else fallthrough
 				LOG(CALLS,"Slot vindex 0 "<<name<<" type "<<getMultinameString(t->type_name));
-				ISWFObject* ret=obj->setVariableByName(name, buildNamedClass(new ASObject,getMultinameString(t->type_name)));
-				ret->_register();
+				bool found;
+				ISWFObject* ret=obj->getVariableByName(name,found);
+				if(!found)
+				{
+					ret=obj->setVariableByName(name, 
+							buildNamedClass(new ASObject,getMultinameString(t->type_name)));
+					ret->_register();
+				}
+				else
+					LOG(CALLS,"Not resetting variable " << name);
 				obj->setSlot(t->slot_id, ret);
 				break;
 			}
@@ -2751,4 +2785,14 @@ istream& operator>>(istream& in, cpool_info& v)
 ISWFObject* parseInt(ISWFObject* obj,arguments* args)
 {
 	return new Integer(0);
+}
+
+Event::Event()
+{
+	setVariableByName("ENTER_FRAME",new ASString("enterFrame"));
+}
+
+MouseEvent::MouseEvent()
+{
+	setVariableByName("MOUSE_DOWN",new ASString("mouseDown"));
 }

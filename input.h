@@ -19,11 +19,16 @@
 
 #ifndef INPUT_H
 #define INPUT_H
+#include <map>
+#include <string>
+#include "swftypes.h" 
 
 class Event;
 
 class IActiveObject
 {
+protected:
+	std::map<std::string,IFunction*> handlers;
 public:
 	IActiveObject();
 	virtual void MouseEvent(Event* e)=0;

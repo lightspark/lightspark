@@ -165,15 +165,31 @@ void ASMovieClip::addToDisplayList(IDisplayListElem* t)
 	displayListLimit=displayList.size();
 }
 
-void ASMovieClip::MouseEvent(Event*)
+void ASMovieClip::MouseEvent(Event* e)
 {
-	cout << "MovieClip mouse event" << endl;
+	map<string,IFunction*>::iterator h=handlers.begin();
+
+	cout << "MovieClip event " << h->first<< endl;
+	arguments args;
+	args.args.push_back((ISWFObject*)0xdeadbeaf);
+	h->second->call(this,&args);
 }
 
 ASFUNCTIONBODY(ASMovieClip,addEventListener)
 {
-	cout << "addEventListener" << endl;
+	if(args->args[0]->getObjectType()!=T_STRING || args->args[1]->getObjectType()!=T_FUNCTION)
+	{
+		LOG(ERROR,"Type mismatch");
+		abort();
+	}
 	sys->cur_input_thread->addListener(dynamic_cast<IActiveObject*>(obj));
+	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj);
+
+	Function* f=dynamic_cast<Function*>(args->args[1].getData());
+	Function* f2=(Function*)f->clone();
+	f2->bind();
+
+	th->handlers.insert(pair<string,IFunction*>(args->args[0]->toString(),f2->toFunction()));
 }
 
 ASFUNCTIONBODY(ASMovieClip,createEmptyMovieClip)
@@ -225,7 +241,7 @@ void ASMovieClip::_register()
 	setVariableByName("_visible",SWFObject(&_visible,true));
 	setVariableByName("y",SWFObject(&_y,true));
 	setVariableByName("x",SWFObject(&_x,true));
-	setVariableByName("_width",SWFObject(&_width,true));
+	setVariableByName("width",SWFObject(&_width,true));
 	setVariableByName("_framesloaded",SWFObject(&_framesloaded,true));
 	setVariableByName("_totalframes",SWFObject(&_totalframes,true));
 	setVariableByName("swapDepths",SWFObject(new Function(swapDepths)));

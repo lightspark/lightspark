@@ -1064,11 +1064,12 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	{
 		in >> Name;
 		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
+		if(Name=="workarea_mc")
+			char a=0;
 		if(!(PlaceFlagMove))
 		{
-			SWFObject w_this(this);
-			//sys->parsingTarget->setVariableByName(Name,w_this);
-			sys->setVariableByName(Name,w_this);
+			sys->parsingTarget->setVariableByName(Name,wrapped);
+			//sys->setVariableByName(Name,wrapped);
 		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");
@@ -1129,7 +1130,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		abort();
 }
 
-ISWFObject* PlaceObject2Tag::getVariableByName(const string& name, bool& found)
+/*ISWFObject* PlaceObject2Tag::getVariableByName(const string& name, bool& found)
 {
 	if(wrapped)
 		return wrapped->getVariableByName(name,found);
@@ -1146,7 +1147,7 @@ ISWFObject* PlaceObject2Tag::setVariableByName(const string& name, const SWFObje
 		LOG(ERROR,"No object wrapped");
 		return NULL;
 	}
-}
+}*/
 
 void PlaceObject2Tag::Render()
 {

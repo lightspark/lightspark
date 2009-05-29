@@ -281,12 +281,23 @@ class Function : public IFunction
 {
 public:
 	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
-	Function(as_function v):val(v){}
+	Function(as_function v):val(v),bound(false){}
 	SWFOBJECT_TYPE getObjectType()const {return T_FUNCTION;}
 	ISWFObject* call(ISWFObject* obj, arguments* args);
 	IFunction* toFunction();
+	ISWFObject* clone()
+	{
+		return new Function(*this);
+	}
+	void bind()
+	{
+		bound=true;
+	}
+	ISWFObject* closure_this;
+
 private:
 	as_function val;
+	bool bound;
 };
 
 class FLOAT 

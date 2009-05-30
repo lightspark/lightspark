@@ -134,6 +134,7 @@ protected:
 	Integer _y;
 	Integer _visible;
 	Integer _width;
+	Integer _height;
 	Integer _framesloaded;
 	Integer _totalframes;
 	std::list < IDisplayListElem* > dynamicDisplayList;

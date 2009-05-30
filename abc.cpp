@@ -167,6 +167,12 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"dup",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::dup);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"subtract",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::subtract);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"divide",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::divide);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"multiply",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::multiply);
 
@@ -566,6 +572,16 @@ inline method_info* ABCVm::get_method(unsigned int m)
 		LOG(ERROR,"Requested invalid method");
 		return NULL;
 	}
+}
+
+void ABCVm::divide(method_info* th)
+{
+	cout << "divide" << endl;
+}
+
+void ABCVm::subtract(method_info* th)
+{
+	cout << "subtract" << endl;
 }
 
 void ABCVm::multiply(method_info* th)
@@ -1997,6 +2013,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("add"), th);
 				break;
 			}
+			case 0xa1:
+			{
+				//subtract
+				cout << "synt subtract" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("subtract"), th);
+				break;
+			}
 			case 0xa2:
 			{
 				//multiply
@@ -2004,6 +2029,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("multiply"), th);
+				break;
+			}
+			case 0xa3:
+			{
+				//divide
+				cout << "synt divide" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("divide"), th);
 				break;
 			}
 			case 0xab:

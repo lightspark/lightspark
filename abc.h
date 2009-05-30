@@ -404,6 +404,8 @@ private:
 	static void swap(method_info* th);
 	static void add(method_info* th);
 	static void multiply(method_info* th);
+	static void divide(method_info* th);
+	static void subtract(method_info* th);
 	static void popScope(method_info* th);
 	static void newActivation(method_info* th);
 	static void coerce_s(method_info* th);

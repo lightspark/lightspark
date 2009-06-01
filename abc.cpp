@@ -25,12 +25,13 @@
 #include <llvm/Constants.h> 
 #include <llvm/Support/IRBuilder.h> 
 #include <llvm/Target/TargetData.h>
+#include <math.h>
 #include "abc.h"
 #include "logger.h"
 #include "swftypes.h"
 #include <sstream>
 #include "swf.h"
-
+#include "flashevents.h"
 
 llvm::ExecutionEngine* ABCVm::ex;
 
@@ -137,7 +138,7 @@ void ABCVm::registerFunctions()
 	ex->addGlobalMapping(F,(void*)&ABCVm::argumentDumper);
 	sig.clear();
 
-	// (ABCVm*)
+	// (method_info*)
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushScope",module);
@@ -151,6 +152,9 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_i",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::convert_i);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce_a",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::coerce_a);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce_s",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::coerce_s);
@@ -203,9 +207,18 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
 
-	// (ABCVm*,int)
+	//Lazy pushing
+	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushUndefined",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushUndefined);
+	//End of lazy pushing
+
+	// (method_info*,int)
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifNLT",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifLT);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifLT",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifLT);
 
@@ -254,6 +267,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findPropStrict",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findPropStrict);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushShort",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushShort);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushByte",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushByte);
 
@@ -290,7 +306,7 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getScopeObject",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getScopeObject);
 
-	// (ABCVm*,int,int)
+	// (method_info*,int,int)
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callPropVoid",module);
@@ -326,13 +342,14 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("flash.text.TextField",new ASObject);
 	valid_classes["flash.text.TextField"]=-1;
 
-	Global.setVariableByName(".Error",new ASObject);
+//	Global.setVariableByName(".Error",new ASObject);
+	Global.setVariableByName("Math",new Math);
 
 	Global.setVariableByName("flash.events.EventDispatcher",new ASObject);
 	Global.setVariableByName("flash.display.InteractiveObject",new ASObject);
 	Global.setVariableByName("flash.display.DisplayObjectContainer",new ASObject);
 	Global.setVariableByName("flash.display.Sprite",new ASObject);
-	Global.setVariableByName("flash.events.Event",new Event);
+	Global.setVariableByName("flash.events.Event",new Event(""));
 	Global.setVariableByName("flash.events.MouseEvent",new MouseEvent);
 	Global.setVariableByName("flash.net.LocalConnection",new ASObject);
 	Global.setVariableByName("flash.utils.Proxy",new ASObject);
@@ -480,10 +497,10 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
 void ABCVm::handleEvent()
 {
 	sem_wait(&mutex);
-	pair<IActiveObject*,Event*> e=events_queue.back();
+	pair<InteractiveObject*,Event*> e=events_queue.back();
 	events_queue.pop_back();
 	if(e.first)
-		e.first->MouseEvent(e.second);
+		e.first->handleEvent(e.second);
 	else
 	{
 		//Should be handled by the Vm itself
@@ -506,10 +523,10 @@ void ABCVm::handleEvent()
 	sem_post(&mutex);
 }
 
-void ABCVm::addEvent(IActiveObject* obj ,Event* ev)
+void ABCVm::addEvent(InteractiveObject* obj ,Event* ev)
 {
 	sem_wait(&mutex);
-	events_queue.push_back(pair<IActiveObject*,Event*>(obj, ev));
+	events_queue.push_back(pair<InteractiveObject*,Event*>(obj, ev));
 	sem_post(&sem_event_count);
 	sem_post(&mutex);
 }
@@ -581,17 +598,36 @@ void ABCVm::divide(method_info* th)
 
 void ABCVm::subtract(method_info* th)
 {
-	cout << "subtract" << endl;
+	ISWFObject* val2=th->runtime_stack_pop();
+	ISWFObject* val1=th->runtime_stack_pop();
+
+	Number num2(val2);
+	Number num1(val1);
+	th->runtime_stack_push(new Number(num1-num2));
+	cout << "subtract " << num1 << '-' << num2 << endl;
 }
 
 void ABCVm::multiply(method_info* th)
 {
-	cout << "multiply" << endl;
+	ISWFObject* val2=th->runtime_stack_pop();
+	ISWFObject* val1=th->runtime_stack_pop();
+
+	Number num2(val2);
+	Number num1(val1);
+	th->runtime_stack_push(new Number(num1*num2));
+	cout << "multiply "  << num1 << '*' << num2 << endl;
 }
 
 void ABCVm::add(method_info* th)
 {
-	cout << "add" << endl;
+	//Implement ECMA add algorithm
+	ISWFObject* val2=th->runtime_stack_pop();
+	ISWFObject* val1=th->runtime_stack_pop();
+
+	Number num2(val2);
+	Number num1(val1);
+	th->runtime_stack_push(new Number(num1+num2));
+	cout << "add " << num1 << '+' << num2 << endl;
 }
 
 void ABCVm::asTypelate(method_info* th)
@@ -722,6 +758,11 @@ void ABCVm::ifStrictNE(method_info* th, int offset)
 	cout << "ifStrictNE " << offset << endl;
 }
 
+void ABCVm::ifNLT(method_info* th, int offset)
+{
+	cout << "ifNLT " << offset << endl;
+}
+
 void ABCVm::ifLT(method_info* th, int offset)
 {
 	cout << "ifLT " << offset << endl;
@@ -811,6 +852,11 @@ void ABCVm::convert_i(method_info* th)
 	cout << "convert_i" << endl;
 }
 
+void ABCVm::coerce_a(method_info* th)
+{
+	cout << "coerce_a" << endl;
+}
+
 void ABCVm::coerce_s(method_info* th)
 {
 	cout << "coerce_s" << endl;
@@ -860,6 +906,12 @@ void ABCVm::pushNaN(method_info* th)
 	th->runtime_stack_push(new Undefined);
 }
 
+ISWFObject* ABCVm::pushUndefined(method_info* th)
+{
+	cout << "pushUndefined DONE" << endl;
+	return new Undefined;
+}
+
 void ABCVm::pushNull(method_info* th)
 {
 	cout << "pushNull DONE" << endl;
@@ -871,6 +923,12 @@ void ABCVm::pushScope(method_info* th)
 	ISWFObject* t=th->runtime_stack_pop();
 	cout << "pushScope: DONE " << t << endl;
 	th->scope_stack.push_back(t);
+}
+
+void ABCVm::pushShort(method_info* th, int n)
+{
+	cout << "pushShort " << n << endl;
+	th->runtime_stack_push(new Integer(n));
 }
 
 void ABCVm::pushByte(method_info* th, int n)
@@ -898,7 +956,8 @@ void ABCVm::setProperty(method_info* th, int n)
 	ISWFObject* obj=th->runtime_stack_pop();
 	//DEBUG
 	ASObject* o=dynamic_cast<ASObject*>(obj);
-	printf("Object ID 0x%lx\n",o->debug_id);
+	if(o)
+		printf("Object ID 0x%lx\n",o->debug_id);
 
 	ISWFObject* ret=obj->setVariableByName(name,value);
 }
@@ -976,8 +1035,16 @@ void ABCVm::findPropStrict(method_info* th, int n)
 	}
 	if(!found)
 	{
-		cout << "NOT found, pushing Undefined" << endl;
-		th->runtime_stack_push(new Undefined);
+		cout << "NOT found, trying Global" << endl;
+		bool found2;
+		ISWFObject* o2=th->vm->Global.getVariableByName(name,found2);
+		if(found2)
+			th->runtime_stack_push(o2);
+		else
+		{
+			cout << "NOT found, pushing Undefined" << endl;
+			th->runtime_stack_push(new Undefined);
+		}
 	}
 }
 
@@ -1081,7 +1148,7 @@ void ABCVm::kill(method_info* th, int n)
 void method_info::runtime_stack_push(ISWFObject* s)
 {
 	stack[stack_index++]=s;
-	cout << "Runtime stack index " << stack_index << endl;
+	cout << "Runtime stack index " << dec << stack_index << '/' << max_stack_index<< endl;
 }
 
 void method_info::setStackLength(const llvm::ExecutionEngine* ex, int l)
@@ -1089,6 +1156,7 @@ void method_info::setStackLength(const llvm::ExecutionEngine* ex, int l)
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 	//TODO: We add this huge safety margin because not implemented instruction do not clean the stack as they should
 	stack=new ISWFObject*[ l*10 ];
+	max_stack_index=l*10;
 	llvm::Constant* constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)stack);
 	//TODO: Now the stack is considered an array of pointer to int64
 	dynamic_stack = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
@@ -1137,7 +1205,7 @@ ISWFObject* method_info::runtime_stack_pop()
 		LOG(ERROR,"Empty stack");
 		return NULL;
 	}
-	cout << "Runtime stack index " << stack_index << endl;
+	cout << "Runtime stack index " << stack_index << '/' << max_stack_index<< endl;
 	return stack[--stack_index];
 }
 
@@ -1148,7 +1216,7 @@ ISWFObject* method_info::runtime_stack_peek()
 		LOG(ERROR,"Empty stack");
 		return NULL;
 	}
-	cout << "Runtime stack index " << stack_index << endl;
+	cout << "Runtime stack index " << dec << stack_index << '/' << max_stack_index<< endl;
 	return stack[stack_index-1];
 }
 
@@ -1162,7 +1230,7 @@ inline ABCVm::stack_entry ABCVm::static_stack_pop(llvm::IRBuilder<>& builder, ve
 		return ret;
 	}
 	//try to pop the tail value of the dynamic stack
-	cout << "Popping dynamic stack" << endl;
+	cout << "Popping dynamic stack" << dec << endl;
 	return stack_entry(m->llvm_stack_pop(builder),STACK_OBJECT);
 }
 
@@ -1331,6 +1399,19 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				}
 				Builder.CreateBr(A);
 				Builder.SetInsertPoint(A);
+				break;
+			}
+			case 0x0c:
+			{
+				//ifnlt
+				cout << "synt ifnlt" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				s24 t;
+				code >> t;
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifNLT"), th, constant);
 				break;
 			}
 			case 0x10:
@@ -1572,6 +1653,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("pushNull"), th);
 				break;
 			}
+			case 0x21:
+			{
+				//pushundefined
+				cout << "synt pushundefined" << endl;
+				value=Builder.CreateCall(ex->FindFunctionNamed("pushUndefined"), th);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
+				break;
+			}
 			case 0x24:
 			{
 				//pushbyte
@@ -1582,6 +1672,18 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				code.read((char*)&t,1);
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("pushByte"), th, constant);
+				break;
+			}
+			case 0x25:
+			{
+				//pushshort
+				cout << "synt pushshort" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("pushShort"), th, constant);
 				break;
 			}
 			case 0x26:
@@ -1975,6 +2077,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("coerce"), th, constant);
+				break;
+			}
+			case 0x82:
+			{
+				//coerce_a
+				cout << "synt coerce_a" << endl;
+				syncStacks(Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("coerce_a"), th);
 				break;
 			}
 			case 0x85:
@@ -2821,12 +2932,7 @@ ISWFObject* parseInt(ISWFObject* obj,arguments* args)
 	return new Integer(0);
 }
 
-Event::Event()
+Math::Math()
 {
-	setVariableByName("ENTER_FRAME",new ASString("enterFrame"));
-}
-
-MouseEvent::MouseEvent()
-{
-	setVariableByName("MOUSE_DOWN",new ASString("mouseDown"));
+	setVariableByName("PI",new Number(M_PI));
 }

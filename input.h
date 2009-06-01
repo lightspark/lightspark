@@ -25,13 +25,13 @@
 
 class Event;
 
-class IActiveObject
+class InteractiveObject	
 {
 protected:
 	std::map<std::string,IFunction*> handlers;
 public:
-	IActiveObject();
-	virtual void MouseEvent(Event* e)=0;
+	InteractiveObject();
+	virtual void handleEvent(Event* e)=0;
 };
 
 #endif

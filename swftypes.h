@@ -254,23 +254,6 @@ public:
 	bool isEqual(const ISWFObject* r) const;
 };
 
-class Double : public ISWFObject_impl
-{
-private:
-	double val;
-public:
-	Double(double v):val(v){}
-	SWFOBJECT_TYPE getObjectType()const {return T_DOUBLE;}
-	STRING toString();
-	int toInt(); 
-	float toFloat();
-	operator double(){return val;}
-	ISWFObject* clone()
-	{
-		return new Double(*this);
-	}
-};
-
 class IFunction: public ISWFObject_impl
 {
 public:
@@ -324,6 +307,7 @@ public:
 
 class Integer : public ISWFObject_impl
 {
+friend class Number;
 private:
 	int val;
 public:

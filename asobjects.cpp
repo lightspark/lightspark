@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "asobjects.h"
+#include "flashevents.h"
 #include "swf.h"
 
 using namespace std;
@@ -165,9 +166,14 @@ void ASMovieClip::addToDisplayList(IDisplayListElem* t)
 	displayListLimit=displayList.size();
 }
 
-void ASMovieClip::MouseEvent(Event* e)
+void ASMovieClip::handleEvent(Event* e)
 {
-	map<string,IFunction*>::iterator h=handlers.begin();
+	map<std::string, IFunction*>::iterator h=handlers.find(e->type);
+	if(h==handlers.end())
+	{
+		LOG(NOT_IMPLEMENTED,"Not handled event");
+		return;
+	}
 
 	cout << "MovieClip event " << h->first<< endl;
 	arguments args;
@@ -182,14 +188,15 @@ ASFUNCTIONBODY(ASMovieClip,addEventListener)
 		LOG(ERROR,"Type mismatch");
 		abort();
 	}
-	sys->cur_input_thread->addListener(dynamic_cast<IActiveObject*>(obj));
+	sys->cur_input_thread->addListener(args->args[0]->toString(),dynamic_cast<InteractiveObject*>(obj));
 	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj);
 
 	Function* f=dynamic_cast<Function*>(args->args[1].getData());
 	Function* f2=(Function*)f->clone();
 	f2->bind();
 
-	th->handlers.insert(pair<string,IFunction*>(args->args[0]->toString(),f2->toFunction()));
+	th->handlers.insert(make_pair(args->args[0]->toString(),f2->toFunction()));
+	sys->events_name.push_back(args->args[0]->toString());
 }
 
 ASFUNCTIONBODY(ASMovieClip,createEmptyMovieClip)
@@ -297,5 +304,41 @@ void ASMovieClip::Render()
 	LOG(TRACE,"End Render MovieClip");
 
 	sys->currentClip=clip_bak;
+}
+
+Number::Number(const ISWFObject* obj)
+{
+	const Integer* i=dynamic_cast<const Integer*>(obj);
+	if(i)
+	{
+		val=i->val;
+		return;
+	}
+	const Number* n=dynamic_cast<const Number*>(obj);
+	if(n)
+	{
+		val=n->val;
+		return;
+	}
+
+	cout << obj->getObjectType() << endl;
+	abort();
+}
+
+STRING Number::toString()
+{
+	char buf[20];
+	snprintf(buf,20,"%g",val);
+	return STRING(buf);
+}
+
+float Number::toFloat()
+{
+	return val;
+}
+
+int Number::toInt()
+{
+	return val;
 }
 

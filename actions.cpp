@@ -597,7 +597,7 @@ void ActionIncrement::Execute()
 {
 	float a=sys->vm.stack.pop()->toFloat();
 	LOG(CALLS,"ActionIncrement: " << a);
-	sys->vm.stack.push(SWFObject(new Double(a+1)));
+	sys->vm.stack.push(SWFObject(new Number(a+1)));
 }
 
 void ActionGreater::Execute()
@@ -629,7 +629,7 @@ void ActionAdd2::Execute()
 	}
 	else
 	{
-		sys->vm.stack.push(SWFObject(new Double(arg1->toFloat()+arg2->toFloat())));
+		sys->vm.stack.push(SWFObject(new Number(arg1->toFloat()+arg2->toFloat())));
 		LOG(CALLS,"ActionAdd2 returning: " << arg1->toFloat() + arg2->toFloat());
 	}
 }
@@ -814,7 +814,7 @@ void ActionDivide::Execute()
 {
 	float a=sys->vm.stack.pop()->toFloat();
 	float b=sys->vm.stack.pop()->toFloat();
-	sys->vm.stack.push(SWFObject(new Double(b/a)));
+	sys->vm.stack.push(SWFObject(new Number(b/a)));
 	LOG(CALLS,"ActionDivide: return " << b << "/" << a << "="<< b/a);
 }
 
@@ -822,7 +822,7 @@ void ActionMultiply::Execute()
 {
 	float a=sys->vm.stack.pop()->toFloat();
 	float b=sys->vm.stack.pop()->toFloat();
-	sys->vm.stack.push(SWFObject(new Double(b*a)));
+	sys->vm.stack.push(SWFObject(new Number(b*a)));
 	LOG(CALLS,"ActionMultiply: return " << b*a);
 }
 
@@ -830,7 +830,7 @@ void ActionSubtract::Execute()
 {
 	float a=sys->vm.stack.pop()->toFloat();
 	float b=sys->vm.stack.pop()->toFloat();
-	sys->vm.stack.push(SWFObject(new Double(b-a)));
+	sys->vm.stack.push(SWFObject(new Number(b-a)));
 	LOG(CALLS,"ActionSubtract: return " << b-a);
 }
 
@@ -951,7 +951,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			{
 				FLOAT tmp;
 				in >> tmp;
-				Objects.push_back(SWFObject(new Double(tmp)));
+				Objects.push_back(SWFObject(new Number(tmp)));
 				r-=4;
 				LOG(CALLS,"Push: Read float " << tmp);
 				break;
@@ -991,7 +991,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			{
 				DOUBLE tmp;
 				in >> tmp;
-				Objects.push_back(SWFObject(new Double(tmp)));
+				Objects.push_back(SWFObject(new Number(tmp)));
 				r-=8;
 				LOG(TRACE,"Push: Read double " << tmp);
 				break;

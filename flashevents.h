@@ -17,40 +17,44 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "frame.h"
-#include "tags.h"
-#include <list>
-#include <GL/gl.h>
-#include <time.h>
-#include "swf.h"
+#include "asobjects.h"
+#include <string>
 
-using namespace std;
-long timeDiff(timespec& s, timespec& d);
+class ISWFObject;
 
-extern __thread SystemState* sys;
-void Frame::Render(int baseLayer)
+enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, MOUSE_EVENT };
+
+class Event: public ASObject
 {
-	timespec ts,td;
-	clock_gettime(CLOCK_REALTIME,&ts);
-	sys->cur_input_thread->broadcastEvent("enterFrame");
-	list < IDisplayListElem* >::iterator i=displayList.begin();
-	int count=0;
-	LOG(TRACE,"Frame levels " << baseLayer << '/' << displayList.size());
-	for(i;i!=displayList.end();i++)
-	{
-		LOG(TRACE,"Rendering level " << count);
-		if(*i!=NULL)
-			(*i)->Render();
-		LOG(TRACE,"End Rendering level " << count);
-		count++;
-		if(count>baseLayer)
-			break;
-	}
-	clock_gettime(CLOCK_REALTIME,&td);
-	sys->fps_prof->render_time+=timeDiff(ts,td);
-}
+public:
+	Event(const std::string& t);
+	//DEPRECATED
+	virtual EVENT_TYPE getEventType() {return EVENT;}
+	const std::string type;
+};
 
-void Frame::setLabel(STRING l)
+class MouseEvent: public Event
 {
-	Label=l;
-}
+public:
+	MouseEvent();
+	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
+};
+
+class BindClassEvent: public Event
+{
+friend class ABCVm;
+private:
+	ISWFObject* base;
+	std::string class_name;
+public:
+	BindClassEvent(ISWFObject* b, const std::string& c):Event("bindClass"),base(b),class_name(c){}
+	EVENT_TYPE getEventType(){ return BIND_CLASS;}
+};
+
+class ShutdownEvent: public Event
+{
+public:
+	ShutdownEvent():Event("shutdownEvent"){}
+	EVENT_TYPE getEventType() { return SHUTDOWN; }
+};
+

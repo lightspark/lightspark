@@ -25,6 +25,7 @@
 #include <algorithm>
 
 #include "flashdisplay.h"
+#include "flashevents.h"
 #include "swf.h"
 #include "logger.h"
 #include "actions.h"
@@ -265,17 +266,6 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_p:
 						sys->displayListLimit++;
 						break;
-/*					case SDLK_n:
-						list<IActiveObject*>::const_iterator it=listeners.begin();
-						int c=0;
-						for(it;it!=listeners.end();it++)
-						{
-							if(c==2)
-								(*it)->MouseEvent(0,0);
-							c++;
-						}
-						sem_post(&sys.sem_run);
-						break;*/
 				}
 				break;
 			}
@@ -286,7 +276,8 @@ void* InputThread::sdl_worker(InputThread* th)
 				if(!th->listeners.empty())
 				{
 					cout << "listeners " << th->listeners.size() << endl;
-					sys->currentVm->addEvent(th->listeners[0],NULL);
+					//sys->currentVm->addEvent(th->listeners[0],NULL);
+					sys->dumpEvents();
 				}
 
 				sem_post(&th->sem_listeners);
@@ -296,14 +287,37 @@ void* InputThread::sdl_worker(InputThread* th)
 	}
 }
 
-void InputThread::addListener(IActiveObject* ob)
+void InputThread::addListener(const string& t, InteractiveObject* ob)
+{
+	sem_wait(&sem_listeners);
+	LOG(TRACE,"Adding listener to " << t);
+	pair< map<string, InteractiveObject*>::iterator,map<string, InteractiveObject*>::iterator > range=listeners.equal_range(t);
+
+	//Check if this object is alreasy registered for this event
+	for(range.first;range.first!=range.second;range.first++)
+	{
+		if(range.first->second==ob)
+		{
+			LOG(TRACE,"Already added");
+			sem_post(&sem_listeners);
+			return;
+		}
+	}
+
+	//Register the listener
+	listeners.insert(make_pair(t,ob));
+
+	sem_post(&sem_listeners);
+}
+
+void InputThread::broadcastEvent(const string& t)
 {
 	sem_wait(&sem_listeners);
 
-	vector<IActiveObject*>::iterator it=find(listeners.begin(),listeners.end(),ob);
+	pair< map<string,InteractiveObject*>::iterator,map<string, InteractiveObject*>::iterator > range=listeners.equal_range(t);
 
-	if(it==listeners.end())
-		listeners.push_back(ob);
+	for(range.first;range.first!=range.second;range.first++)
+		range.first->second->handleEvent(new Event(t));
 
 	sem_post(&sem_listeners);
 }
@@ -611,7 +625,8 @@ void SystemState::waitToRun()
 		sem_wait(&mutex);
 	}
 	update_request=false;
-	state.next_FP=state.FP+1;
+	if(!state.stop_FP)
+		state.next_FP=state.FP+1;
 	if(state.next_FP>=state.max_FP)
 	{
 		state.next_FP=state.FP;

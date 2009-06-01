@@ -70,8 +70,8 @@ SWFObject& SWFObject::operator=(const SWFObject& r)
 		{
 			case T_DOUBLE:
 			{
-				Double* d1=dynamic_cast<Double*>(data);
-				Double* d2=dynamic_cast<Double*>(r.data);
+				Number* d1=dynamic_cast<Number*>(data);
+				Number* d2=dynamic_cast<Number*>(r.data);
 				*d1=*d2;
 				break;
 			}
@@ -212,23 +212,6 @@ int Integer::toInt()
 }
 
 float Integer::toFloat()
-{
-	return val;
-}
-
-STRING Double::toString()
-{
-	char buf[20];
-	snprintf(buf,20,"%g",val);
-	return STRING(buf);
-}
-
-float Double::toFloat()
-{
-	return val;
-}
-
-int Double::toInt()
 {
 	return val;
 }

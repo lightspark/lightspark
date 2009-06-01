@@ -19,6 +19,6 @@
 
 #include "input.h"
 
-IActiveObject::IActiveObject()
+InteractiveObject::InteractiveObject()
 {
 }

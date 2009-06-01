@@ -12,3 +12,5 @@ Official TODO Queue:
 -) Adapt to frame size
 -) Onor script limits
 -) GL: Use pixel buffer to render hollow shapes to textures and then apply them to image
+-) Late push for llvm code
+-) Most arithmetic instruction return a Number for sure. Exploit this

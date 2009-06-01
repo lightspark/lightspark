@@ -23,6 +23,7 @@
 #include <iostream>
 #include <fstream>
 #include <list>
+#include <map>
 #include <semaphore.h>
 #include "swftypes.h"
 #include "frame.h"
@@ -34,7 +35,7 @@
 
 class DisplayListTag;
 class DictionaryTag;
-class IActiveObject;
+class InteractiveObject;
 class ABCVm;
 
 typedef void* (*thread_worker)(void*);
@@ -128,6 +129,14 @@ public:
 	fps_profiling* fps_prof;
 	ABCVm* currentVm;
 	InputThread* cur_input_thread;
+
+	//DEBUG
+	std::vector<std::string> events_name;
+	void dumpEvents()
+	{
+		for(int i=0;i<events_name.size();i++)
+			std::cout << events_name[i] << std::endl;
+	}
 };
 
 class ParseThread
@@ -164,14 +173,15 @@ private:
 	pthread_t t;
 	static void* sdl_worker(InputThread*);
 	static void* npapi_worker(InputThread*);
-	std::vector< IActiveObject* > listeners;
+	std::multimap< std::string, InteractiveObject* > listeners;
 	sem_t sem_listeners;
 
 public:
 	InputThread(SystemState* s,ENGINE e, void* param=NULL);
 	~InputThread();
 	void wait();
-	void addListener(IActiveObject* tag);
+	void addListener(const std::string& type, InteractiveObject* tag);
+	void broadcastEvent(const std::string& type);
 };
 
 class RenderThread

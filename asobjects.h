@@ -25,6 +25,8 @@
 #include "frame.h"
 #include "input.h"
 
+class Event;
+
 class ASObjectWrapper: public IDisplayListElem
 {
 private:
@@ -94,8 +96,6 @@ public:
 	}
 };
 
-typedef Integer Number; //TODO: Implement number for real
-
 class arguments: public ASArray
 {
 public:
@@ -125,7 +125,7 @@ public:
 	}
 };
 
-class ASMovieClip: public ASObject, public IRenderObject, public IActiveObject
+class ASMovieClip: public ASObject, public IRenderObject, public InteractiveObject
 {
 private:
 	static bool list_orderer(const IDisplayListElem* a, int d);
@@ -158,7 +158,7 @@ public:
 	ASFUNCTION(createEmptyMovieClip);
 
 	virtual void addToDisplayList(IDisplayListElem* r);
-	virtual void MouseEvent(Event*);
+	virtual void handleEvent(Event*);
 
 	//ASObject interface
 	void _register();
@@ -199,6 +199,24 @@ public:
 	ISWFObject* clone()
 	{
 		return new ASXML(*this);
+	}
+};
+
+class Number : public ASObject
+{
+private:
+	double val;
+public:
+	Number(const ISWFObject* obj);
+	Number(double v):val(v){}
+	SWFOBJECT_TYPE getObjectType()const {return T_DOUBLE;}
+	STRING toString();
+	int toInt(); 
+	float toFloat();
+	operator double(){return val;}
+	ISWFObject* clone()
+	{
+		return new Number(*this);
 	}
 };
 

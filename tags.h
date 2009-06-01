@@ -249,10 +249,10 @@ public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
 };
 
-class PlaceObject2Tag: public DisplayListTag//, public ISWFObject_impl
+class PlaceObject2Tag: public DisplayListTag
 {
 private:
-	Double _scalex;
+	Number _scalex;
 
 	ISWFObject* wrapped;
 
@@ -279,9 +279,6 @@ public:
 	int getDepth() const { return Depth; }
 	void printInfo(int t=0);
 
-	//SWFObject interface
-	//STRING getName() { return Name;}
-	//SWFOBJECT_TYPE getObjectType()const{ return T_PLACEOBJECT;}
 };
 
 class FrameLabelTag: public DisplayListTag
@@ -316,7 +313,7 @@ public:
 
 class BUTTONCONDACTION;
 
-class DefineButton2Tag: public DictionaryTag, public IActiveObject, public IRenderObject
+class DefineButton2Tag: public DictionaryTag, public InteractiveObject, public IRenderObject
 {
 private:
 	UI16 ButtonId;
@@ -334,7 +331,7 @@ public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
 	virtual void Render();
-	virtual void MouseEvent(Event*);
+	virtual void handleEvent(Event*);
 
 	void printInfo(int t=0);
 };

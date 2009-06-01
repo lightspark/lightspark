@@ -180,6 +180,7 @@ private:
 	llvm::Function* f;
 	ISWFObject** locals;
 	ISWFObject** stack;
+	int max_stack_index;
 	uint32_t stack_index;
 	llvm::Value* dynamic_stack;
 	llvm::Value* dynamic_stack_index;
@@ -371,6 +372,7 @@ private:
 	static void ifEq(method_info* th, int offset); 
 	static void ifNe(method_info* th, int offset); 
 	static void ifLT(method_info* th, int offset); 
+	static void ifNLT(method_info* th, int offset); 
 	static void ifStrictNE(method_info* th, int offset); 
 	static void ifFalse(method_info* th, int offset); 
 	static void getSlot(method_info* th, int n); 
@@ -387,12 +389,14 @@ private:
 	static void findProperty(method_info* th, int n);
 	static void getProperty(method_info* th, int n);
 	static void pushByte(method_info* th, int n);
+	static void pushShort(method_info* th, int n);
 	static void incLocal_i(method_info* th, int n);
 	static void coerce(method_info* th, int n);
 	static void setProperty(method_info* th, int n);
 	static void constructSuper(method_info* th, int n);
 	static void pushScope(method_info* th);
 	static void pushNull(method_info* th);
+	static ISWFObject* pushUndefined(method_info* th);
 	static void pushNaN(method_info* th);
 	static void pushFalse(method_info* th);
 	static void pushTrue(method_info* th);
@@ -409,6 +413,7 @@ private:
 	static void popScope(method_info* th);
 	static void newActivation(method_info* th);
 	static void coerce_s(method_info* th);
+	static void coerce_a(method_info* th);
 	static void convert_i(method_info* th);
 	static void convert_b(method_info* th);
 	static void convert_d(method_info* th);
@@ -420,13 +425,13 @@ private:
 
 	//Event handling
 	bool shutdown;
-	std::deque<std::pair<IActiveObject*,Event*> > events_queue;
+	std::deque<std::pair<InteractiveObject*,Event*> > events_queue;
 	void handleEvent();
 public:
 	ABCVm(SystemState* s,std::istream& in);
 	static void Run(ABCVm* th);
 	SWFObject buildNamedClass(ISWFObject* base, const std::string& n);
-	void addEvent(IActiveObject*,Event*);
+	void addEvent(InteractiveObject*,Event*);
 };
 
 class DoABCTag: public DisplayListTag
@@ -462,37 +467,10 @@ public:
 	Boolean(bool v):val(v){}
 };
 
-enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, MOUSE_EVENT };
-
-class Event: public ASObject
+class Math: public ASObject
 {
 public:
-	Event();
-	virtual EVENT_TYPE getEventType() {return EVENT;}
-};
-
-class MouseEvent: public Event
-{
-public:
-	MouseEvent();
-	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
-};
-
-class BindClassEvent: public Event
-{
-friend class ABCVm;
-private:
-	ISWFObject* base;
-	std::string class_name;
-public:
-	BindClassEvent(ISWFObject* b, const std::string& c):base(b),class_name(c){}
-	EVENT_TYPE getEventType(){ return BIND_CLASS;}
-};
-
-class ShutdownEvent: public Event
-{
-public:
-	EVENT_TYPE getEventType() { return SHUTDOWN; }
+	Math();
 };
 
 bool Boolean_concrete(ISWFObject* obj);

@@ -278,6 +278,10 @@ public:
 	void Render( );
 	int getDepth() const { return Depth; }
 	void printInfo(int t=0);
+	void setWrapped(ISWFObject* w)
+	{
+		wrapped=w;
+	}
 
 };
 

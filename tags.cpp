@@ -1039,15 +1039,13 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
-		DictionaryTag* r=sys->dictionaryLookup(CharacterId);
+/*		DictionaryTag* r=sys->dictionaryLookup(CharacterId);
 		//DefineSpriteTag* s=dynamic_cast<DefineSpriteTag*>(r);
 		ISWFObject* s=dynamic_cast<ISWFObject*>(r);
 		if(s==NULL)
 			wrapped=new ASObject();
 		else
-			wrapped=s->clone();
-
-		wrapped->setVariableByName("_scalex",SWFObject(&_scalex,true));
+			wrapped=s->clone();*/
 	}
 	if(PlaceFlagHasMatrix)
 	{
@@ -1064,12 +1062,11 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	{
 		in >> Name;
 		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
-		if(Name=="workarea_mc")
-			char a=0;
 		if(!(PlaceFlagMove))
 		{
-			sys->parsingTarget->setVariableByName(Name,wrapped);
+			//sys->parsingTarget->setVariableByName(Name,wrapped);
 			//sys->setVariableByName(Name,wrapped);
+			sys->bind_canditates_map.insert(make_pair(CharacterId,bind_candidates(Name,sys->parsingTarget,this)));
 		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");
@@ -1129,25 +1126,6 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(CharacterId==0)
 		abort();
 }
-
-/*ISWFObject* PlaceObject2Tag::getVariableByName(const string& name, bool& found)
-{
-	if(wrapped)
-		return wrapped->getVariableByName(name,found);
-	else
-		LOG(ERROR,"No object wrapped");
-}
-
-ISWFObject* PlaceObject2Tag::setVariableByName(const string& name, const SWFObject& o)
-{
-	if(wrapped)
-		return wrapped->setVariableByName(name,o);
-	else
-	{
-		LOG(ERROR,"No object wrapped");
-		return NULL;
-	}
-}*/
 
 void PlaceObject2Tag::Render()
 {

@@ -76,7 +76,34 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
 	Names.resize(NumSymbols);
 
 	for(int i=0;i<NumSymbols;i++)
+	{
 		in >> Tags[i] >> Names[i];
+		
+		map<int, bind_candidates>::iterator it=sys->bind_canditates_map.find(Tags[i]);
+		if(it!=sys->bind_canditates_map.end())
+		{
+			to_bind.insert(*it);
+			sys->bind_canditates_map.erase(it);
+		}
+		else
+			LOG(NOT_IMPLEMENTED,"SymbolClass refers to not named object " << Tags[i]);
+	}
+
+	//Allocate default object for not binded ones
+	map<int, bind_candidates>::iterator it=sys->bind_canditates_map.begin();
+	for(it;it!=sys->bind_canditates_map.end();it++)
+	{
+		DictionaryTag* d=sys->dictionaryLookup(it->first);
+		ISWFObject* w=dynamic_cast<ISWFObject*>(d);
+		if(w==NULL)
+		{
+			LOG(NOT_IMPLEMENTED,"Placing an unsupported object "<<it->second.obj_name);
+			w=new ASObject;
+		}
+		it->second.placed_by->setWrapped(w);
+		it->second.parent->setVariableByName(it->second.obj_name,w);
+	}
+	sys->bind_canditates_map.clear();
 }
 
 int SymbolClassTag::getDepth() const
@@ -95,7 +122,7 @@ void SymbolClassTag::Render()
 		cout << Tags[i] << ' ' << Names[i] << endl;
 		if(Tags[i]==0)
 		{
-			sys->currentVm->addEvent(NULL,new BindClassEvent(sys,Names[i]));
+			sys->currentVm->addEvent(NULL,new BindClassEvent(sys,NULL,Names[i],"",NULL));
 		}
 		else
 		{
@@ -107,7 +134,20 @@ void SymbolClassTag::Render()
 				abort();
 			}
 			else
-				sys->currentVm->addEvent(NULL,new BindClassEvent(base,Names[i]));
+			{
+				map<int, bind_candidates>::iterator it=to_bind.find(Tags[i]);
+				if(it!=to_bind.end())
+				{
+					sys->currentVm->addEvent(NULL, new BindClassEvent(base->clone(), 
+						it->second.parent, Names[i], it->second.obj_name, it->second.placed_by));
+				}
+				else
+				{
+					sys->currentVm->addEvent(NULL, new BindClassEvent(base->clone(), 
+						NULL, Names[i], "", NULL));
+				}
+			}
+
 		}
 
 	}
@@ -509,7 +549,13 @@ void ABCVm::handleEvent()
 			case BIND_CLASS:
 			{
 				BindClassEvent* ev=dynamic_cast<BindClassEvent*>(e.second);
-				buildNamedClass(ev->base,ev->class_name);
+				ISWFObject* o=buildNamedClass(ev->base,ev->class_name);
+				if(ev->parent)
+				{
+					ev->parent->setVariableByName(ev->obj_name,o);
+					ev->placed_by->setWrapped(o);
+				}
+
 				break;
 			}
 			case SHUTDOWN:
@@ -531,7 +577,7 @@ void ABCVm::addEvent(InteractiveObject* obj ,Event* ev)
 	sem_post(&mutex);
 }
 
-SWFObject ABCVm::buildNamedClass(ISWFObject* base, const string& s)
+ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 {
 	map<string,int>::iterator it=valid_classes.find(s);
 	if(it!=valid_classes.end())

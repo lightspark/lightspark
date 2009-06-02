@@ -26,8 +26,7 @@
 #include <vector>
 #include <deque>
 #include <map>
-
-class SystemState;
+#include "swf.h"
 
 class s24
 {
@@ -430,7 +429,7 @@ private:
 public:
 	ABCVm(SystemState* s,std::istream& in);
 	static void Run(ABCVm* th);
-	SWFObject buildNamedClass(ISWFObject* base, const std::string& n);
+	ISWFObject* buildNamedClass(ISWFObject* base, const std::string& n);
 	void addEvent(InteractiveObject*,Event*);
 };
 
@@ -453,6 +452,7 @@ private:
 	UI16 NumSymbols;
 	std::vector<UI16> Tags;
 	std::vector<STRING> Names;
+	std::map<int, bind_candidates> to_bind;
 public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
 	void Render( );

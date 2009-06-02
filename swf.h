@@ -35,8 +35,10 @@
 
 class DisplayListTag;
 class DictionaryTag;
+class PlaceObject2Tag;
 class InteractiveObject;
 class ABCVm;
+class InputThread;
 
 typedef void* (*thread_worker)(void*);
 
@@ -65,7 +67,14 @@ struct fps_profiling
 	fps_profiling():render_time(0),action_time(0),cache_time(0),fps(0){}
 };
 
-class InputThread;
+struct bind_candidates
+{
+	std::string obj_name;
+	ISWFObject* parent;
+	PlaceObject2Tag* placed_by;
+
+	bind_candidates(const std::string& n,ISWFObject* p,PlaceObject2Tag* o):obj_name(n),parent(p),placed_by(o){}
+};
 
 class SystemState:public ASMovieClip
 {
@@ -105,6 +114,8 @@ public:
 	//Used only in ParseThread context
 	std::list < IDisplayListElem* >* parsingDisplayList;
 	ISWFObject* parsingTarget;
+	std::map<int, bind_candidates > bind_canditates_map; //Maps of Characther IDs to be instantiated in the VM
+								//A SymbolClass Tag can bind them to classes
 
 	//Used only in RenderThread context
 	ASMovieClip* currentClip;

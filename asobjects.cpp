@@ -22,6 +22,8 @@
 #include <curl/curl.h>
 #include <libxml/parser.h>
 #include <string.h>
+#include <sstream>
+#include <iomanip>
 
 #include "asobjects.h"
 #include "flashevents.h"
@@ -142,7 +144,7 @@ ASString::ASString()
 	setVariableByName("Call",new Function(ASString::String));
 }
 
-ASString::ASString(const std::string& s):data(s)
+ASString::ASString(const string& s):data(s)
 {
 	setVariableByName("Call",new Function(ASString::String));
 }
@@ -153,7 +155,10 @@ ASFUNCTIONBODY(ASString,String)
 	if(args->args[0]->getObjectType()==T_DOUBLE)
 	{
 		Number* n=dynamic_cast<Number*>(args->args[0].getData());
-		th->data+=n->val;
+		ostringstream oss;
+		oss << setprecision(8) << fixed << n->val;
+
+		th->data=oss.str();
 	}
 	else
 	{
@@ -193,7 +198,7 @@ void ASMovieClip::addToDisplayList(IDisplayListElem* t)
 
 void ASMovieClip::handleEvent(Event* e)
 {
-	map<std::string, IFunction*>::iterator h=handlers.find(e->type);
+	map<string, IFunction*>::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
 		LOG(NOT_IMPLEMENTED,"Not handled event");

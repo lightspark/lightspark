@@ -471,6 +471,7 @@ class Math: public ASObject
 {
 public:
 	Math();
+	ASFUNCTION(sqrt);
 };
 
 bool Boolean_concrete(ISWFObject* obj);

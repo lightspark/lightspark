@@ -627,10 +627,12 @@ void SystemState::waitToRun()
 	update_request=false;
 	if(!state.stop_FP)
 		state.next_FP=state.FP+1;
+	else
+		state.next_FP=state.FP;
 	if(state.next_FP>=state.max_FP)
 	{
 		state.next_FP=state.FP;
-		state.stop_FP=true;
+		//state.stop_FP=true;
 	}
 	sem_post(&mutex);
 }

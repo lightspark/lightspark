@@ -278,7 +278,10 @@ void ASMovieClip::Render()
 	ASMovieClip* clip_bak=sys->currentClip;
 	sys->currentClip=this;
 
-	state.next_FP=min(state.FP+1,frames.size()-1);
+	if(!state.stop_FP)
+		state.next_FP=min(state.FP+1,frames.size()-1);
+	else
+		state.next_FP=state.FP;
 
 	list<Frame>::iterator frame=frames.begin();
 	for(int i=0;i<state.FP;i++)

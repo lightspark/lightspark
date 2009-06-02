@@ -2935,4 +2935,17 @@ ISWFObject* parseInt(ISWFObject* obj,arguments* args)
 Math::Math()
 {
 	setVariableByName("PI",new Number(M_PI));
+	setVariableByName("sqrt",new Function(Math::sqrt));
+}
+
+ASFUNCTIONBODY(Math,sqrt)
+{
+	Number* n=dynamic_cast<Number*>(args->args[0].getData());
+	if(n)
+		return new Number(::sqrt(*n));
+	else
+	{
+		LOG(TRACE,"Invalid argument");
+		abort();
+	}
 }

@@ -322,7 +322,7 @@ void ABCVm::registerFunctions()
 void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
-	
+
 	Global.setVariableByName(".Object",new ASObject);
 	valid_classes[".Object"]=-1;
 	Global.setVariableByName(".int",new ASObject);
@@ -331,7 +331,7 @@ void ABCVm::registerClasses()
 	valid_classes[".Boolean"]=-1;
 	Global.setVariableByName("Number",new ASObject);
 	valid_classes["Number"]=-1;
-	Global.setVariableByName("String",new ASObject);
+	Global.setVariableByName("String",new ASString);
 	valid_classes["String"]=-1;
 	Global.setVariableByName("flash.display.MovieClip",new ASMovieClip);
 	valid_classes["flash.display.MovieClip"]=-1;
@@ -674,11 +674,11 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 		args.args[m-i-1]=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
 	bool found;
-	SWFObject o=obj->getVariableByName(name,found);
+	ISWFObject* o=obj->getVariableByName(name,found);
 	//If o is already a function call it, otherwise find the Call method
 	if(o->getObjectType()==T_FUNCTION)
 	{
-		IFunction* f=dynamic_cast<IFunction*>(o.getData());
+		IFunction* f=dynamic_cast<IFunction*>(o);
 		ISWFObject* ret=f->call(obj,&args);
 		th->runtime_stack_push(ret);
 	}
@@ -689,8 +689,8 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 	}
 	else
 	{
-		IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found));
-		ISWFObject* ret=f->call(obj,&args);
+		IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",found));
+		ISWFObject* ret=f->call(o,&args);
 		th->runtime_stack_push(ret);
 	}
 }
@@ -1037,9 +1037,9 @@ void ABCVm::findPropStrict(method_info* th, int n)
 	{
 		cout << "NOT found, trying Global" << endl;
 		bool found2;
-		ISWFObject* o2=th->vm->Global.getVariableByName(name,found2);
+		th->vm->Global.getVariableByName(name,found2);
 		if(found2)
-			th->runtime_stack_push(o2);
+			th->runtime_stack_push(&th->vm->Global);
 		else
 		{
 			cout << "NOT found, pushing Undefined" << endl;

@@ -66,7 +66,9 @@ class ASString: public ASObject
 private:
 	std::string data;
 public:
-	ASString(const std::string& s):data(s){}
+	ASString();
+	ASString(const std::string& s);
+	ASFUNCTION(String);
 	STRING toString();
 	float toFloat();
 	SWFOBJECT_TYPE getObjectType() const {return T_STRING;}
@@ -193,8 +195,8 @@ private:
 	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 public:
 	ASXML();
-	ASFUNCTION(constructor)
-	ASFUNCTION(load)
+	ASFUNCTION(constructor);
+	ASFUNCTION(load);
 	void _register();
 	ISWFObject* clone()
 	{
@@ -204,6 +206,7 @@ public:
 
 class Number : public ASObject
 {
+friend class ASString;
 private:
 	double val;
 public:

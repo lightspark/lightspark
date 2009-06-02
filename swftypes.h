@@ -29,7 +29,7 @@
 #include "logger.h"
 
 #define ASFUNCTION(name) \
-	static ISWFObject* name(ISWFObject* , arguments* args);
+	static ISWFObject* name(ISWFObject* , arguments* args)
 #define ASFUNCTIONBODY(c,name) \
 	ISWFObject* c::name(ISWFObject* obj, arguments* args)
 

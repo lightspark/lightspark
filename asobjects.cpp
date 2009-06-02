@@ -137,6 +137,31 @@ ASFUNCTIONBODY(ASObject,constructor)
 	return NULL;
 }
 
+ASString::ASString()
+{
+	setVariableByName("Call",new Function(ASString::String));
+}
+
+ASString::ASString(const std::string& s):data(s)
+{
+	setVariableByName("Call",new Function(ASString::String));
+}
+
+ASFUNCTIONBODY(ASString,String)
+{
+	ASString* th=dynamic_cast<ASString*>(obj);
+	if(args->args[0]->getObjectType()==T_DOUBLE)
+	{
+		Number* n=dynamic_cast<Number*>(args->args[0].getData());
+		th->data+=n->val;
+	}
+	else
+	{
+		LOG(CALLS,"Cannot convert " << args->args[0]->getObjectType() << " to String");
+		abort();
+	}
+}
+
 STRING ASString::toString()
 {
 	return STRING(data.data());

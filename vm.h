@@ -24,19 +24,18 @@
 #include <vector>
 #include "swftypes.h"
 class FunctionTag;
-class SWFObject;
 class Stack
 {
 private:
-	std::vector<SWFObject> data;
+	std::vector<ISWFObject*> data;
 public:
-	const SWFObject& operator()(int i){return *(data.rbegin()+i);}
-	void push(const SWFObject& o){ data.push_back(o);}
-	SWFObject pop()
+	ISWFObject* operator()(int i){return *(data.rbegin()+i);}
+	void push(ISWFObject* o){ data.push_back(o);}
+	ISWFObject* pop()
 	{
 		if(data.size()==0)
 			LOG(ERROR,"Empty stack");
-		SWFObject ret=data.back();
+		ISWFObject* ret=data.back();
 		data.pop_back(); 
 		return ret;
 	}

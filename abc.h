@@ -328,7 +328,7 @@ private:
 	method_info* get_method(unsigned int m);
 	void printMethod(const method_info* m) const;
 	void printClass(int m) const;
-	SWFObject buildClass(int m);
+	ISWFObject* buildClass(int m);
 	void printMultiname(int m) const;
 	void printNamespace(int n) const;
 	void printTrait(const traits_info* t) const;
@@ -340,10 +340,10 @@ private:
 	llvm::Function* synt_method(method_info* m);
 	llvm::FunctionType* synt_method_prototype();
 
-	std::map<int,SWFObject> registers;
+	std::map<int,ISWFObject*> registers;
 	std::map<std::string,int> valid_classes;
 	ASObject Global;
-	std::vector<SWFObject> stack;
+	std::vector<ISWFObject*> stack;
 	llvm::Module* module;
 
 	static llvm::ExecutionEngine* ex;
@@ -471,6 +471,8 @@ class Math: public ASObject
 {
 public:
 	Math();
+	ASFUNCTION(atan2);
+	ASFUNCTION(floor);
 	ASFUNCTION(sqrt);
 };
 

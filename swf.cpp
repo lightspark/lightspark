@@ -81,21 +81,21 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	setVariableByName(".parseInt",new Function(parseInt));
 
 	//Register default objects
-	SWFObject stage(new ASStage);
+	ISWFObject* stage(new ASStage);
 	setVariableByName("Stage",stage);
 
-	SWFObject array(new ASArray);
+	ISWFObject* array(new ASArray);
 	array->_register();
 	setVariableByName("Array",array);
 
-	SWFObject object(new ASObject);
+	ISWFObject* object(new ASObject);
 	object->_register();
 	setVariableByName("Object",object);
 
-	SWFObject mcloader(new ASMovieClipLoader);
+	ISWFObject* mcloader(new ASMovieClipLoader);
 	setVariableByName("MovieClipLoader",mcloader);
 
-	SWFObject xml(new ASXML);
+	ISWFObject* xml(new ASXML);
 	setVariableByName("XML",xml);
 
 	setVariableByName("",this);
@@ -718,7 +718,7 @@ void SystemState::setUpdateRequest(bool s)
 	sem_post(&mutex);
 }
 
-DictionaryTag* SystemState::dictionaryLookup(UI16 id)
+DictionaryTag* SystemState::dictionaryLookup(int id)
 {
 	sem_wait(&mutex);
 	//sem_wait(&sem_dict);
@@ -743,7 +743,7 @@ ISWFObject* SystemState::getVariableByName(const string& name, bool& found)
 	return ret;
 }
 
-ISWFObject* SystemState::setVariableByName(const string& name, const SWFObject& o)
+ISWFObject* SystemState::setVariableByName(const string& name, ISWFObject* o)
 {
 	sem_wait(&mutex);
 	ISWFObject* ret=ISWFObject_impl::setVariableByName(name,o);

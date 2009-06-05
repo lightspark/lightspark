@@ -69,7 +69,7 @@ public:
 	ASString();
 	ASString(const std::string& s);
 	ASFUNCTION(String);
-	STRING toString();
+	std::string toString() const;
 	float toFloat();
 	SWFOBJECT_TYPE getObjectType() const {return T_STRING;}
 	ISWFObject* clone()
@@ -101,7 +101,7 @@ public:
 class arguments: public ASArray
 {
 public:
-	std::vector<SWFObject> args;
+	std::vector<ISWFObject*> args;
 //public:
 //	static SWFObject push(arguments* th, arguments* 
 	ISWFObject* clone()
@@ -127,6 +127,25 @@ public:
 	}
 };
 
+class Number : public ASObject
+{
+friend class ASString;
+private:
+	double val;
+public:
+	Number(const ISWFObject* obj);
+	Number(double v):val(v){}
+	SWFOBJECT_TYPE getObjectType()const {return T_DOUBLE;}
+	std::string toString() const;
+	int toInt(); 
+	float toFloat();
+	operator double(){return val;}
+	ISWFObject* clone()
+	{
+		return new Number(*this);
+	}
+};
+
 class ASMovieClip: public ASObject, public IRenderObject, public InteractiveObject
 {
 private:
@@ -139,6 +158,7 @@ protected:
 	Integer _height;
 	Integer _framesloaded;
 	Integer _totalframes;
+	Number rotation;
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list < IDisplayListElem* > displayList;
 public:
@@ -201,25 +221,6 @@ public:
 	ISWFObject* clone()
 	{
 		return new ASXML(*this);
-	}
-};
-
-class Number : public ASObject
-{
-friend class ASString;
-private:
-	double val;
-public:
-	Number(const ISWFObject* obj);
-	Number(double v):val(v){}
-	SWFOBJECT_TYPE getObjectType()const {return T_DOUBLE;}
-	STRING toString();
-	int toInt(); 
-	float toFloat();
-	operator double(){return val;}
-	ISWFObject* clone()
-	{
-		return new Number(*this);
 	}
 };
 

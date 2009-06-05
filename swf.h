@@ -105,7 +105,7 @@ public:
 	bool shutdown;
 	int version;
 	ISWFObject* getVariableByName(const std::string& name, bool& f);
-	ISWFObject* setVariableByName(const std::string& name, const SWFObject& o);
+	ISWFObject* setVariableByName(const std::string& name, ISWFObject* o);
 	ISWFObject* getParent() { return NULL; }
 	void setShutdownFlag();
 
@@ -134,7 +134,7 @@ public:
 	RGB getBackground();
 	void setBackground(const RGB& bg);
 	void setUpdateRequest(bool s);
-	DictionaryTag* dictionaryLookup(UI16 id);
+	DictionaryTag* dictionaryLookup(int id);
 	void _register(){}
 	SWFOBJECT_TYPE getObjectType() const;
 	fps_profiling* fps_prof;

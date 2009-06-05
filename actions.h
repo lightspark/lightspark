@@ -27,7 +27,7 @@ class ExecutionContext
 protected:
 	int jumpOffset;
 public:
-	std::vector<SWFObject> regs;
+	std::vector<ISWFObject*> regs;
 	ISWFObject* retValue;
 	ExecutionContext():jumpOffset(0),regs(10){}
 	void setJumpOffset(int offset)
@@ -499,7 +499,7 @@ private:
 	UI8 Constant8;
 	UI16 Constant16;*/
 
-	std::vector<SWFObject> Objects;
+	std::vector<ISWFObject*> Objects;
 public:
 	ActionPush(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();

@@ -50,6 +50,15 @@ void Frame::Render(int baseLayer)
 	sys->fps_prof->render_time+=timeDiff(ts,td);
 }
 
+void dumpDisplayList(list<IDisplayListElem*>& l)
+{
+	list<IDisplayListElem*>::iterator it=l.begin();
+	for(it;it!=l.end();it++)
+	{
+		cout << *it << endl;
+	}
+}
+
 void Frame::setLabel(STRING l)
 {
 	Label=l;

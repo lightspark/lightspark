@@ -155,7 +155,7 @@ void SymbolClassTag::Render()
 //Be careful, arguments nubering starts from 1
 ISWFObject* ABCVm::argumentDumper(arguments* arg, uint32_t n)
 {
-	return arg->args[n-1].getData();
+	return arg->args[n-1];
 }
 
 void ABCVm::registerFunctions()
@@ -655,7 +655,13 @@ inline method_info* ABCVm::get_method(unsigned int m)
 
 void ABCVm::divide(method_info* th)
 {
-	cout << "divide" << endl;
+	ISWFObject* val2=th->runtime_stack_pop();
+	ISWFObject* val1=th->runtime_stack_pop();
+
+	Number num2(val2);
+	Number num1(val1);
+	th->runtime_stack_push(new Number(num1/num2));
+	cout << "divide "  << num1 << '/' << num2 << endl;
 }
 
 void ABCVm::subtract(method_info* th)
@@ -767,11 +773,11 @@ void ABCVm::callPropVoid(method_info* th, int n, int m)
 		args.args[m-i-1]=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
 	bool found;
-	SWFObject o=obj->getVariableByName(name,found);
+	ISWFObject* o=obj->getVariableByName(name,found);
 	//If o is already a function call it, otherwise find the Call method
 	if(o->getObjectType()==T_FUNCTION)
 	{
-		IFunction* f=dynamic_cast<IFunction*>(o.getData());
+		IFunction* f=dynamic_cast<IFunction*>(o);
 		f->call(obj,&args);
 	}
 	else
@@ -828,6 +834,14 @@ void ABCVm::ifNLT(method_info* th, int offset)
 void ABCVm::ifLT(method_info* th, int offset)
 {
 	cout << "ifLT " << offset << endl;
+	ISWFObject* obj2=th->runtime_stack_pop();
+	ISWFObject* obj1=th->runtime_stack_pop();
+
+	//Real comparision demanded to object
+	if(obj1->isLess(obj2))
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+	else
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
 }
 
 void ABCVm::ifNe(method_info* th, int offset)
@@ -1671,13 +1685,45 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//iflt
 				cout << "synt iflt" << endl;
+				//TODO: implement common data comparison
 				syncStacks(Builder,jitted,static_stack,m);
 				jitted=false;
+				last_is_branch=true;
 				s24 t;
 				code >> t;
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
 				//Make comparision
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("ifLT"), th, constant);
+			
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifEq pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
 				break;
 			}
 			case 0x1a:
@@ -2559,7 +2605,7 @@ void ABCVm::printNamespaceSet(const ns_set_info* m) const
 	}
 }
 
-SWFObject ABCVm::buildClass(int m) 
+ISWFObject* ABCVm::buildClass(int m) 
 {
 	const class_info* c=&classes[m];
 	const instance_info* i=&instances[m];
@@ -3023,11 +3069,38 @@ Math::Math()
 {
 	setVariableByName("PI",new Number(M_PI));
 	setVariableByName("sqrt",new Function(Math::sqrt));
+	setVariableByName("atan2",new Function(Math::atan2));
+	setVariableByName("floor",new Function(Math::floor));
+}
+
+ASFUNCTIONBODY(Math,atan2)
+{
+	Number* n1=dynamic_cast<Number*>(args->args[0]);
+	Number* n2=dynamic_cast<Number*>(args->args[1]);
+	if(n1 && n2)
+		return new Number(::atan2(*n1,*n2));
+	else
+	{
+		LOG(TRACE,"Invalid argument");
+		abort();
+	}
+}
+
+ASFUNCTIONBODY(Math,floor)
+{
+	Number* n=dynamic_cast<Number*>(args->args[0]);
+	if(n)
+		return new Number(::floor(*n));
+	else
+	{
+		LOG(TRACE,"Invalid argument");
+		abort();
+	}
 }
 
 ASFUNCTIONBODY(Math,sqrt)
 {
-	Number* n=dynamic_cast<Number*>(args->args[0].getData());
+	Number* n=dynamic_cast<Number*>(args->args[0]);
 	if(n)
 		return new Number(::sqrt(*n));
 	else

@@ -1013,7 +1013,6 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),wrapped(NULL),_scalex(100)
 {
 	LOG(TRACE,"PlaceObject2");
-//	LOG(NO_INFO,"Should render with offset " << _x << " " << _y);
 
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
@@ -1143,6 +1142,13 @@ void PlaceObject2Tag::Render()
 	}
 	if(it==NULL)
 		LOG(ERROR,"Could not find Character in dictionary");
+
+	if(CharacterId==10)
+	{
+		DefineSpriteTag* spr=dynamic_cast<DefineSpriteTag*>(it);
+		spr->hack=2;
+	}
+
 	
 	float matrix[16];
 	MATRIX m2(Matrix);

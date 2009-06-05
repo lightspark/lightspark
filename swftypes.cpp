@@ -30,23 +30,12 @@
 using namespace std;
 extern __thread SystemState* sys;
 
-SWFObject::SWFObject():bind(false)
+ISWFObject* ConstantReference::instantiate()
 {
-	data=new Undefined;
+	return new ASString(sys->vm.getConstantByIndex(index));
 }
 
-SWFObject::SWFObject(const SWFObject& r):bind(r.bind)
-{
-	//Delete old data
-	data=r.data;
-}
-
-SWFObject ConstantReference::instantiate()
-{
-	return SWFObject(new ASString(sys->vm.getConstantByIndex(index)));
-}
-
-STRING ConstantReference::toString()
+string ConstantReference::toString() const
 {
 	char buf[20];
 	snprintf(buf,20,"ConstantReference %i",index);
@@ -59,90 +48,27 @@ int ConstantReference::toInt()
 	return 0;
 }
 
-SWFObject& SWFObject::operator=(const SWFObject& r)
-{
-	//Delete old data
-	if(bind)
-	{
-		if(data->getObjectType()!=data->getObjectType())
-			LOG(ERROR,"Cannot copy binded data of different type");
-		switch(data->getObjectType())
-		{
-			case T_DOUBLE:
-			{
-				Number* d1=dynamic_cast<Number*>(data);
-				Number* d2=dynamic_cast<Number*>(r.data);
-				*d1=*d2;
-				break;
-			}
-			default:
-				LOG(ERROR,"Cannot copy object of type " << data->getObjectType());
-				break;
-		}
-	}
-	else
-		data=r.data;
-
-	return *this;
-}
-
-bool SWFObject::isGreater(const SWFObject& r)
-{
-	if(data->getObjectType()==T_STRING && r->getObjectType()==T_STRING)
-		LOG(ERROR,"String comparision not supported")
-	else
-	{
-		int a=data->toInt();
-		int b=r->toInt();
-		return a>b;
-	}
-	return false;
-}
-
-bool SWFObject::isLess(const SWFObject& r)
-{
-	if(data->getObjectType()==T_STRING && r->getObjectType()==T_STRING)
-		LOG(ERROR,"String comparision not supported")
-	else
-	{
-		int a=data->toInt();
-		int b=r->toInt();
-		return a<b;
-	}
-	return false;
-}
-
-bool SWFObject::equals(const SWFObject& r)
-{
-	//TODO: Implemenent real algorithm
-	if(data->getObjectType()!=r->getObjectType())
-		return false;
-	else
-		return true;
-}
-
-/*bool SWFObject::xequals(const SWFObject& r)
-{
-	LOG(NOT_IMPLEMENTED,"Equality not implemented for type " << data->getType());
-}*/
-
-bool SWFObject::isDefined()
-{
-	return data->getObjectType()!=T_UNDEFINED;
-}
-
-SWFObject::SWFObject(ISWFObject* d, bool b):data(d),bind(b)
-{
-}
-
-STRING ISWFObject::toString()
+string ISWFObject::toString() const
 {
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
 	return STRING("Cannot convert object to String");
 }
 
+bool ISWFObject::isGreater(const ISWFObject* r) const
+{
+	LOG(NOT_IMPLEMENTED,"Greater than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	return false;
+}
+
+bool ISWFObject::isLess(const ISWFObject* r) const
+{
+	LOG(NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	return false;
+}
+
 bool ISWFObject::isEqual(const ISWFObject* r) const
 {
+	LOG(NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	return false;
 }
 
@@ -192,12 +118,12 @@ IFunction* ISWFObject_impl::getSetterByName(const string& name, bool& found)
 	}
 }
 
-ISWFObject* ISWFObject_impl::setVariableByName(const string& name, const SWFObject& o)
+ISWFObject* ISWFObject_impl::setVariableByName(const string& name, ISWFObject* o)
 {
-	pair<map<string, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<string,ISWFObject*>(name,o.getData()));
+	pair<map<string, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<string,ISWFObject*>(name,o));
 	if(!ret.second)
-		ret.first->second=o.getData();
-	return o.getData();
+		ret.first->second=o;
+	return o;
 }
 
 ISWFObject* ISWFObject_impl::getVariableByName(const string& name, bool& found)
@@ -222,7 +148,7 @@ void ISWFObject_impl::dumpVariables()
 		cout << it->first << endl;
 }
 
-STRING Integer::toString()
+string Integer::toString() const
 {
 	char buf[20];
 	snprintf(buf,20,"%i",val);
@@ -836,12 +762,12 @@ void ISWFObject_impl::setSlot(int n,ISWFObject* o)
 	slots[m]=o;
 }
 
-SWFObject RegisterNumber::instantiate()
+ISWFObject* RegisterNumber::instantiate()
 {
 	return sys->execContext->regs[index];
 }
 
-STRING RegisterNumber::toString()
+string RegisterNumber::toString() const
 {
 	char buf[20];
 	snprintf(buf,20,"Register %i",index);
@@ -858,12 +784,12 @@ ASFUNCTIONBODY(Undefined,call)
 	LOG(CALLS,"Undefined function");
 }
 
-STRING Undefined::toString()
+string Undefined::toString() const
 {
-	return STRING("undefined");
+	return string("undefined");
 }
 
-STRING Null::toString()
+string Null::toString() const
 {
 	return "null";
 }
@@ -874,11 +800,6 @@ bool Null::isEqual(const ISWFObject* r) const
 		return true;
 	else
 		return false;
-}
-
-ISWFObject* SWFObject::getData() const
-{
-	return data;
 }
 
 IFunction* Function::toFunction()

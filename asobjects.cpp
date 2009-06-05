@@ -35,13 +35,13 @@ extern __thread SystemState* sys;
 
 ASStage::ASStage():width(640),height(480)
 {
-	setVariableByName("width",SWFObject(&width));
-	setVariableByName("height",SWFObject(&height));
+	setVariableByName("width",&width);
+	setVariableByName("height",&height);
 }
 
 void ASArray::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function(constructor)));
+	setVariableByName("constructor",new Function(constructor));
 }
 
 ASFUNCTIONBODY(ASArray,constructor)
@@ -57,8 +57,8 @@ ASMovieClipLoader::ASMovieClipLoader()
 
 void ASMovieClipLoader::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function(constructor)));
-	setVariableByName("addListener",SWFObject(new Function(addListener)));
+	setVariableByName("constructor",new Function(constructor));
+	setVariableByName("addListener",new Function(addListener));
 }
 
 ASFUNCTIONBODY(ASMovieClipLoader,constructor)
@@ -82,8 +82,8 @@ ASXML::ASXML()
 
 void ASXML::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function(constructor)));
-	setVariableByName("load",SWFObject(new Function(load)));
+	setVariableByName("constructor",new Function(constructor));
+	setVariableByName("load",new Function(load));
 }
 
 ASFUNCTIONBODY(ASXML,constructor)
@@ -108,8 +108,8 @@ ASFUNCTIONBODY(ASXML,load)
 	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
-	STRING base("www.youtube.com");
-	STRING url=base+args->args[0]->toString();
+	string base("www.youtube.com");
+	string url=base+args->args[0]->toString();
 	if(curl)
 	{
 		curl_easy_setopt(curl, CURLOPT_URL, (string(url)).c_str());
@@ -130,7 +130,7 @@ ASFUNCTIONBODY(ASXML,load)
 
 void ASObject::_register()
 {
-	setVariableByName("constructor",SWFObject(new Function(constructor)));
+	setVariableByName("constructor",new Function(constructor));
 }
 
 ASFUNCTIONBODY(ASObject,constructor)
@@ -154,7 +154,7 @@ ASFUNCTIONBODY(ASString,String)
 	ASString* th=dynamic_cast<ASString*>(obj);
 	if(args->args[0]->getObjectType()==T_DOUBLE)
 	{
-		Number* n=dynamic_cast<Number*>(args->args[0].getData());
+		Number* n=dynamic_cast<Number*>(args->args[0]);
 		ostringstream oss;
 		oss << setprecision(8) << fixed << n->val;
 
@@ -167,9 +167,9 @@ ASFUNCTIONBODY(ASString,String)
 	}
 }
 
-STRING ASString::toString()
+string ASString::toString() const
 {
-	return STRING(data.data());
+	return data.data();
 }
 
 float ASString::toFloat()
@@ -178,7 +178,7 @@ float ASString::toFloat()
 	return 0;
 }
 
-ASMovieClip::ASMovieClip():_visible(1),_x(0),_y(0),_height(100),_width(100),hack(0),_framesloaded(0),_totalframes(1),displayListLimit(0)
+ASMovieClip::ASMovieClip():_visible(1),_x(0),_y(0),_height(100),_width(100),hack(0),_framesloaded(0),_totalframes(1),displayListLimit(0),rotation(0.0)
 {
 	sem_init(&sem_frames,0,1);
 	ASMovieClip::_register();
@@ -221,7 +221,7 @@ ASFUNCTIONBODY(ASMovieClip,addEventListener)
 	sys->cur_input_thread->addListener(args->args[0]->toString(),dynamic_cast<InteractiveObject*>(obj));
 	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj);
 
-	Function* f=dynamic_cast<Function*>(args->args[1].getData());
+	Function* f=dynamic_cast<Function*>(args->args[1]);
 	Function* f2=(Function*)f->clone();
 	f2->bind();
 
@@ -275,25 +275,26 @@ ASFUNCTIONBODY(ASMovieClip,swapDepths)
 
 void ASMovieClip::_register()
 {
-	setVariableByName("_visible",SWFObject(&_visible,true));
-	setVariableByName("y",SWFObject(&_y,true));
-	setVariableByName("x",SWFObject(&_x,true));
-	setVariableByName("width",SWFObject(&_width,true));
-	setVariableByName("height",SWFObject(&_height,true));
-	setVariableByName("_framesloaded",SWFObject(&_framesloaded,true));
-	setVariableByName("_totalframes",SWFObject(&_totalframes,true));
-	setVariableByName("swapDepths",SWFObject(new Function(swapDepths)));
-	setVariableByName("lineStyle",SWFObject(new Function(lineStyle)));
-	setVariableByName("lineTo",SWFObject(new Function(lineTo)));
-	setVariableByName("moveTo",SWFObject(new Function(moveTo)));
-	setVariableByName("createEmptyMovieClip",SWFObject(new Function(createEmptyMovieClip)));
-	setVariableByName("addEventListener",SWFObject(new Function(addEventListener)));
+	setVariableByName("_visible",&_visible);
+	setVariableByName("y",&_y);
+	setVariableByName("x",&_x);
+	setVariableByName("width",&_width);
+	setVariableByName("rotation",&rotation);
+	setVariableByName("height",&_height);
+	setVariableByName("_framesloaded",&_framesloaded);
+	setVariableByName("_totalframes",&_totalframes);
+	setVariableByName("swapDepths",new Function(swapDepths));
+	setVariableByName("lineStyle",new Function(lineStyle));
+	setVariableByName("lineTo",new Function(lineTo));
+	setVariableByName("moveTo",new Function(moveTo));
+	setVariableByName("createEmptyMovieClip",new Function(createEmptyMovieClip));
+	setVariableByName("addEventListener",new Function(addEventListener));
 }
 
 void ASMovieClip::Render()
 {
 	LOG(TRACE,"Render MovieClip");
-	if(hack)
+	if(hack==1)
 	{
 		glColor3f(0,1,0);
 		glBegin(GL_QUADS);
@@ -314,15 +315,23 @@ void ASMovieClip::Render()
 		state.next_FP=state.FP;
 
 	list<Frame>::iterator frame=frames.begin();
-	for(int i=0;i<state.FP;i++)
-		frame++;
+	if(hack!=2)
+	{
+		for(int i=0;i<state.FP;i++)
+			frame++;
+	}
+	else
+	{
+		for(int i=0;i<1;i++)
+			frame++;
+	}
 
 	//Apply local transformation
-	glPushMatrix();
-	glTranslatef(_x,_y,0);
+	//glPushMatrix();
+	//glTranslatef(_x,_y,0);
 	frame->Render(displayListLimit);
 
-	glPopMatrix();
+	//glPopMatrix();
 
 	//Render objects added at runtime;
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
@@ -358,11 +367,11 @@ Number::Number(const ISWFObject* obj)
 	abort();
 }
 
-STRING Number::toString()
+string Number::toString() const
 {
 	char buf[20];
 	snprintf(buf,20,"%g",val);
-	return STRING(buf);
+	return string(buf);
 }
 
 float Number::toFloat()

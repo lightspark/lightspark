@@ -37,7 +37,6 @@ enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T
 	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED, T_STRING};
 
 class arguments;
-class SWFObject;
 class IFunction;
 class UI32
 {
@@ -128,7 +127,7 @@ public:
 	}
 };
 
-class ISWFObject;
+/*class ISWFObject;
 
 class SWFObject
 {
@@ -149,27 +148,23 @@ public:
 	bool isGreater(const SWFObject& r);
 	
 	ISWFObject* getData() const;
-};
+};*/
 
 class ISWFObject
 {
 public:
 	virtual SWFOBJECT_TYPE getObjectType() const=0;
-	virtual STRING toString();
+	virtual std::string toString() const;
 	virtual int toInt();
 	virtual float toFloat();
 	virtual IFunction* toFunction();
 	virtual ISWFObject* getVariableByName(const std::string& name, bool& f)=0;
-	virtual ISWFObject* setVariableByName(const std::string& name, const SWFObject& o)=0;
+	virtual ISWFObject* setVariableByName(const std::string& name, ISWFObject* o)=0;
 	virtual IFunction* getSetterByName(const std::string& name, bool& found)=0;
 	virtual IFunction* setSetterByName(const std::string& name, IFunction* o)=0;
 	virtual ISWFObject* clone()
 	{
 		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
-	}
-	virtual SWFObject instantiate()
-	{
-		return SWFObject(clone());
 	}
 	virtual ISWFObject* getParent()=0;
 	virtual void _register()=0;
@@ -177,6 +172,8 @@ public:
 	virtual void setSlot(int n,ISWFObject* o)=0;
 	virtual void dumpVariables()=0;
 	virtual bool isEqual(const ISWFObject* r) const;
+	virtual bool isLess(const ISWFObject* r) const;
+	virtual bool isGreater(const ISWFObject* r) const;
 };
 
 class ISWFObject_impl:public ISWFObject
@@ -195,7 +192,7 @@ public:
 	IFunction* setSetterByName(const std::string& name, IFunction* o);
 
 	ISWFObject* getVariableByName(const std::string& name, bool& found);
-	ISWFObject* setVariableByName(const std::string& name, const SWFObject& o);
+	ISWFObject* setVariableByName(const std::string& name, ISWFObject* o);
 	ISWFObject* getParent();
 	void _register();
 	ISWFObject* getSlot(int n);
@@ -210,13 +207,13 @@ private:
 public:
 	ConstantReference(int i):index(i){}
 	SWFOBJECT_TYPE getObjectType() const{return T_CONSTREF;}
-	STRING toString();
+	std::string toString() const;
 	int toInt();
 	ISWFObject* clone()
 	{
 		return new ConstantReference(*this);
 	}
-	SWFObject instantiate();
+	ISWFObject* instantiate();
 };
 
 class RegisterNumber : public ISWFObject_impl
@@ -226,13 +223,13 @@ private:
 public:
 	RegisterNumber(int i):index(i){ if(i>10) LOG(ERROR,"Register number too high"); }
 	SWFOBJECT_TYPE getObjectType() const {return T_REGNUMBER;}
-	STRING toString();
+	std::string toString() const;
 	//int toInt();
 	ISWFObject* clone()
 	{
 		return new RegisterNumber(*this);
 	}
-	SWFObject instantiate();
+	ISWFObject* instantiate();
 };
 
 class Undefined : public ISWFObject_impl
@@ -241,7 +238,7 @@ public:
 	ASFUNCTION(call);
 	Undefined();
 	SWFOBJECT_TYPE getObjectType() const {return T_UNDEFINED;}
-	STRING toString();
+	std::string toString() const;
 	ISWFObject* clone()
 	{
 		return new Undefined;
@@ -252,7 +249,7 @@ class Null : public ISWFObject_impl
 {
 public:
 	SWFOBJECT_TYPE getObjectType() const {return T_NULL;}
-	STRING toString();
+	std::string toString() const;
 	ISWFObject* clone()
 	{
 		return new Null;
@@ -320,7 +317,7 @@ public:
 	Integer(int v):val(v){}
 	Integer& operator=(int v){val=v; return *this; }
 	SWFOBJECT_TYPE getObjectType()const {return T_INTEGER;}
-	STRING toString();
+	std::string toString() const;
 	int toInt(); 
 	float toFloat();
 	operator int(){return val;}

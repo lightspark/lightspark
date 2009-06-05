@@ -161,6 +161,8 @@ public:
 	virtual IFunction* toFunction();
 	virtual ISWFObject* getVariableByName(const std::string& name, bool& f)=0;
 	virtual ISWFObject* setVariableByName(const std::string& name, const SWFObject& o)=0;
+	virtual IFunction* getSetterByName(const std::string& name, bool& found)=0;
+	virtual IFunction* setSetterByName(const std::string& name, IFunction* o)=0;
 	virtual ISWFObject* clone()
 	{
 		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
@@ -184,10 +186,14 @@ protected:
 	ISWFObject* parent;
 	ISWFObject_impl();
 	std::map<std::string,ISWFObject*> Variables;
+	std::map<std::string,IFunction*> Setters;
 	//Should be resizable
 	ISWFObject* slots[10];
 	int max_slot_index;
 public:
+	IFunction* getSetterByName(const std::string& name, bool& found);
+	IFunction* setSetterByName(const std::string& name, IFunction* o);
+
 	ISWFObject* getVariableByName(const std::string& name, bool& found);
 	ISWFObject* setVariableByName(const std::string& name, const SWFObject& o);
 	ISWFObject* getParent();

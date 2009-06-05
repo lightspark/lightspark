@@ -21,6 +21,7 @@
 #include <string>
 
 class ISWFObject;
+class PlaceObject2Tag;
 
 enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, MOUSE_EVENT };
 

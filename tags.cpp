@@ -161,8 +161,9 @@ bool list_orderer(const DisplayListTag* a, int d);
 
 DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
-	setVariableByName("text",SWFObject(new Integer(0)));
+	//setVariableByName("text",SWFObject(new Integer(0)));
 	in >> CharacterID >> Bounds;
+	LOG(TRACE,"DefineEditTextTag ID " << CharacterID);
 	BitStream bs(in);
 	HasText=UB(1,bs);
 	WordWrap=UB(1,bs);
@@ -450,8 +451,8 @@ DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):Dict
 
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 {
-	LOG(TRACE,"DefineText");
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
+	LOG(TRACE,"DefineText ID " << CharacterId);
 
 	TEXTRECORD t(this);
 	while(1)
@@ -1039,6 +1040,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasCharacter)
 	{
 		in >> CharacterId;
+		LOG(TRACE,"Placing ID " << CharacterId);
 /*		DictionaryTag* r=sys->dictionaryLookup(CharacterId);
 		//DefineSpriteTag* s=dynamic_cast<DefineSpriteTag*>(r);
 		ISWFObject* s=dynamic_cast<ISWFObject*>(r);

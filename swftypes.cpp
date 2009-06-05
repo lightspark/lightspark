@@ -169,6 +169,29 @@ void ISWFObject_impl::_register()
 	LOG(CALLS,"default _register called");
 }
 
+IFunction* ISWFObject_impl::setSetterByName(const string& name, IFunction* o)
+{
+	pair<map<string, IFunction*>::iterator,bool> ret=Setters.insert(make_pair(name,o));
+	if(!ret.second)
+		ret.first->second=o;
+	return o;
+}
+
+IFunction* ISWFObject_impl::getSetterByName(const string& name, bool& found)
+{
+	map<string,IFunction*>::iterator it=Setters.find(name);
+	if(it!=Setters.end())
+	{
+		found=true;
+		return it->second;
+	}
+	else
+	{
+		found=false;
+		return NULL;
+	}
+}
+
 ISWFObject* ISWFObject_impl::setVariableByName(const string& name, const SWFObject& o)
 {
 	pair<map<string, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<string,ISWFObject*>(name,o.getData()));

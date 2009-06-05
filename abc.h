@@ -219,7 +219,7 @@ class traits_info
 {
 friend std::istream& operator>>(std::istream& in, traits_info& v);
 friend class ABCVm;
-private:
+public:
 	enum { Slot=0,Method=1,Getter=2,Setter=3,Class=4,Function=5,Const=6};
 	enum { Final=0x10, Override=0x20, Metadata=0x40};
 	u30 name;
@@ -452,7 +452,7 @@ private:
 	UI16 NumSymbols;
 	std::vector<UI16> Tags;
 	std::vector<STRING> Names;
-	std::map<int, bind_candidates> to_bind;
+	std::multimap<int, bind_candidates> to_bind;
 public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
 	void Render( );

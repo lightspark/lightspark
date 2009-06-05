@@ -79,14 +79,14 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
 	{
 		in >> Tags[i] >> Names[i];
 		
-		map<int, bind_candidates>::iterator it=sys->bind_canditates_map.find(Tags[i]);
-		if(it!=sys->bind_canditates_map.end())
-		{
-			to_bind.insert(*it);
-			sys->bind_canditates_map.erase(it);
-		}
-		else
+		pair < map<int, bind_candidates>::iterator, map<int, bind_candidates>::iterator> range=sys->bind_canditates_map.equal_range(Tags[i]);
+		if(range.first==range.second)
 			LOG(NOT_IMPLEMENTED,"SymbolClass refers to not named object " << Tags[i]);
+		for(range.first;range.first!=range.second;range.first++)
+		{
+			to_bind.insert(*range.first);
+			sys->bind_canditates_map.erase(range.first);
+		}
 	}
 
 	//Allocate default object for not binded ones
@@ -135,23 +135,21 @@ void SymbolClassTag::Render()
 			}
 			else
 			{
-				map<int, bind_candidates>::iterator it=to_bind.find(Tags[i]);
-				if(it!=to_bind.end())
-				{
-					sys->currentVm->addEvent(NULL, new BindClassEvent(base->clone(), 
-						it->second.parent, Names[i], it->second.obj_name, it->second.placed_by));
-				}
-				else
+				pair < map<int, bind_candidates>::iterator, map<int, bind_candidates>::iterator> range=
+					sys->bind_canditates_map.equal_range(Tags[i]);
+				if(range.first==range.second)
 				{
 					sys->currentVm->addEvent(NULL, new BindClassEvent(base->clone(), 
 						NULL, Names[i], "", NULL));
 				}
+				for(range.first;range.first!=range.second;range.first++)
+				{
+					sys->currentVm->addEvent(NULL, new BindClassEvent(base->clone(), 
+						range.first->second.parent, Names[i], range.first->second.obj_name, range.first->second.placed_by));
+				}
 			}
-
 		}
-
 	}
-
 }
 
 //Be careful, arguments nubering starts from 1
@@ -361,8 +359,14 @@ void ABCVm::registerFunctions()
 
 void ABCVm::registerClasses()
 {
-	//Register predefined types, ASObject are enough for not implemented classes
+	//All valid_classes should be registered in the Global object
+/*	map<string,int>::iterator it=valid_classes.begin();
+	for(it;it!=valid_classes.end();it++)
+	{
+		Global.setVariableByName
+	}*/
 
+	//Register predefined types, ASObject are enough for not implemented classes
 	Global.setVariableByName(".Object",new ASObject);
 	valid_classes[".Object"]=-1;
 	Global.setVariableByName(".int",new ASObject);
@@ -506,12 +510,17 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
 		in >> instances[i];
 		//Link instance names with classes
 		valid_classes[getMultinameString(instances[i].name)]=i;
-
-		cout << getMultinameString(instances[i].name) << endl;
 	}
 	classes.resize(class_count);
 	for(int i=0;i<class_count;i++)
+	{
 		in >> classes[i];
+		LOG(CALLS,"Declared class " << getMultinameString(instances[i].name));
+		for(int j=0;j<classes[i].trait_count;j++)
+			cout << getMultinameString(classes[i].traits[j].name) << endl;
+		for(int j=0;j<instances[i].trait_count;j++)
+			cout << getMultinameString(instances[i].traits[j].name) << endl;
+	}
 
 	in >> script_count;
 	scripts.resize(script_count);
@@ -575,6 +584,13 @@ void ABCVm::addEvent(InteractiveObject* obj ,Event* ev)
 	events_queue.push_back(pair<InteractiveObject*,Event*>(obj, ev));
 	sem_post(&sem_event_count);
 	sem_post(&mutex);
+}
+
+void dumpClasses(map<string,int>& maps)
+{
+	map<string,int>::iterator it=maps.begin();
+	for(it;it!=maps.end();it++)
+		cout << it->first << endl;
 }
 
 ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
@@ -997,15 +1013,27 @@ void ABCVm::setProperty(method_info* th, int n)
 {
 	ISWFObject* value=th->runtime_stack_pop();
 	string name=th->vm->getMultinameString(n,th);
-	cout << "setProperty " << name << endl;
+	LOG(CALLS,"setProperty " << name);
 
 	ISWFObject* obj=th->runtime_stack_pop();
-	//DEBUG
-	ASObject* o=dynamic_cast<ASObject*>(obj);
-	if(o)
-		printf("Object ID 0x%lx\n",o->debug_id);
 
-	ISWFObject* ret=obj->setVariableByName(name,value);
+	//Check to see if a proper setter method is setted
+	bool found;
+	IFunction* f=obj->getSetterByName(name,found);
+	if(found)
+	{
+		//Call the setter
+		LOG(CALLS,"Calling the setter");
+		arguments args;
+		args.args.push_back(value);
+		f->call(obj,&args);
+		LOG(CALLS,"End of setter");
+	}
+	else
+	{
+		//No setter, just assign the variable
+		obj->setVariableByName(name,value);
+	}
 }
 
 void ABCVm::getProperty(method_info* th, int n)
@@ -2328,6 +2356,17 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 			obj->setVariableByName(name, buildClass(t->classi));
 			break;
 		}
+		case traits_info::Setter:
+		{
+			LOG(NOT_IMPLEMENTED,"Setter trait: " << name);
+			//syntetize method and create a new LLVM function object
+			method_info* m=&methods[t->method];
+			llvm::Function* f=synt_method(m);
+			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
+			obj->setSetterByName(name, new Function(f2));
+			LOG(NOT_IMPLEMENTED,"End Setter trait: " << name);
+			break;
+		}
 		case traits_info::Method:
 		{
 			LOG(NOT_IMPLEMENTED,"Method trait: " << name);
@@ -2849,7 +2888,9 @@ istream& operator>>(istream& in, class_info& v)
 	in >> v.cinit >> v.trait_count;
 	v.traits.resize(v.trait_count);
 	for(int i=0;i<v.trait_count;i++)
+	{
 		in >> v.traits[i];
+	}
 	return in;
 }
 

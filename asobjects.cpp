@@ -159,6 +159,7 @@ ASFUNCTIONBODY(ASString,String)
 		oss << setprecision(8) << fixed << n->val;
 
 		th->data=oss.str();
+		return th;
 	}
 	else
 	{
@@ -279,7 +280,8 @@ void ASMovieClip::_register()
 	setVariableByName("y",&_y);
 	setVariableByName("x",&_x);
 	setVariableByName("width",&_width);
-	setVariableByName("rotation",&rotation);
+	rotation.bind();
+	setVariableByName("rotation",&rotation,true);
 	setVariableByName("height",&_height);
 	setVariableByName("_framesloaded",&_framesloaded);
 	setVariableByName("_totalframes",&_totalframes);
@@ -329,6 +331,7 @@ void ASMovieClip::Render()
 	//Apply local transformation
 	//glPushMatrix();
 	//glTranslatef(_x,_y,0);
+	LOG(NOT_IMPLEMENTED,"Should rotate by " << rotation);
 	frame->Render(displayListLimit);
 
 	//glPopMatrix();
@@ -365,6 +368,20 @@ Number::Number(const ISWFObject* obj)
 
 	cout << obj->getObjectType() << endl;
 	abort();
+}
+
+void Number::copyFrom(const ISWFObject* o)
+{
+	if(o->getObjectType()!=T_DOUBLE)
+	{
+		LOG(ERROR,"Copying Number from type " << o->getObjectType() << " is not supported");
+		abort();
+	}
+	
+	const Number* n=dynamic_cast<const Number*>(o);
+
+	val=n->val;
+	LOG(TRACE,"Set to " << n->val);
 }
 
 string Number::toString() const

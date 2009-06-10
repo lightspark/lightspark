@@ -118,11 +118,16 @@ IFunction* ISWFObject_impl::getSetterByName(const string& name, bool& found)
 	}
 }
 
-ISWFObject* ISWFObject_impl::setVariableByName(const string& name, ISWFObject* o)
+ISWFObject* ISWFObject_impl::setVariableByName(const string& name, ISWFObject* o, bool force)
 {
 	pair<map<string, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<string,ISWFObject*>(name,o));
 	if(!ret.second)
-		ret.first->second=o;
+	{
+		if(ret.first->second->isBinded() && !force)
+			ret.first->second->copyFrom(o);
+		else
+			ret.first->second=o;
+	}
 	return o;
 }
 
@@ -737,7 +742,7 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	return stream;
 }
 
-ISWFObject_impl::ISWFObject_impl():parent(NULL),max_slot_index(0)
+ISWFObject_impl::ISWFObject_impl():parent(NULL),max_slot_index(0),binded(false)
 {
 }
 
@@ -814,6 +819,7 @@ ISWFObject* Function::call(ISWFObject* obj, arguments* args)
 	else
 	{
 		LOG(CALLS,"Calling with closure");
+		LOG(CALLS,"args 0 " << args->args[0]);
 		return val(closure_this,args);
 	}
 }

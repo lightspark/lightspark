@@ -182,6 +182,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushScope",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushScope);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::debug);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_d",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::convert_d);
 
@@ -280,9 +283,6 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"jump",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::jump);
-
-/*	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",&module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);*/
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getSlot",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::getSlot);
@@ -1171,9 +1171,9 @@ void ABCVm::getScopeObject(method_info* th, int n)
 	cout << "getScopeObject: DONE " << th->scope_stack[n] << endl;
 }
 
-void ABCVm::debug(int p)
+void ABCVm::debug(method_info* i)
 {
-	cout << "debug " << p << endl;
+	cout << "debug " << i->locals[1] << endl;
 }
 
 void ABCVm::getLex(method_info* th, int n)
@@ -1291,7 +1291,7 @@ ISWFObject* method_info::runtime_stack_pop()
 	if(stack_index==0)
 	{
 		LOG(ERROR,"Empty stack");
-		return NULL;
+		abort();
 	}
 	cout << "Runtime stack index " << stack_index << '/' << max_stack_index<< endl;
 	return stack[--stack_index];

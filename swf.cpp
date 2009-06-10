@@ -568,6 +568,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				continue;
 			}
 			SDL_GL_SwapBuffers( );
+			sleep(1);
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 			glClearDepth(0xffff);
@@ -743,10 +744,10 @@ ISWFObject* SystemState::getVariableByName(const string& name, bool& found)
 	return ret;
 }
 
-ISWFObject* SystemState::setVariableByName(const string& name, ISWFObject* o)
+ISWFObject* SystemState::setVariableByName(const string& name, ISWFObject* o, bool force)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ISWFObject_impl::setVariableByName(name,o);
+	ISWFObject* ret=ISWFObject_impl::setVariableByName(name,o,force);
 	sem_post(&mutex);
 	return ret;
 }

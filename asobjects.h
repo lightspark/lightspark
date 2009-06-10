@@ -144,6 +144,7 @@ public:
 	{
 		return new Number(*this);
 	}
+	void copyFrom(const ISWFObject* o);
 };
 
 class ASMovieClip: public ASObject, public IRenderObject, public InteractiveObject

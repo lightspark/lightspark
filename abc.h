@@ -349,7 +349,7 @@ private:
 	static llvm::ExecutionEngine* ex;
 
 	//Utility
-	static void debug(int p);
+	static void debug(method_info* th);
 	static void not_impl(int p);
 	static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
 	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);

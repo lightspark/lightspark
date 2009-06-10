@@ -159,12 +159,13 @@ public:
 	virtual float toFloat();
 	virtual IFunction* toFunction();
 	virtual ISWFObject* getVariableByName(const std::string& name, bool& f)=0;
-	virtual ISWFObject* setVariableByName(const std::string& name, ISWFObject* o)=0;
+	virtual ISWFObject* setVariableByName(const std::string& name, ISWFObject* o, bool force=false)=0;
 	virtual IFunction* getSetterByName(const std::string& name, bool& found)=0;
 	virtual IFunction* setSetterByName(const std::string& name, IFunction* o)=0;
 	virtual ISWFObject* clone()
 	{
 		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
+		abort();
 	}
 	virtual ISWFObject* getParent()=0;
 	virtual void _register()=0;
@@ -174,6 +175,15 @@ public:
 	virtual bool isEqual(const ISWFObject* r) const;
 	virtual bool isLess(const ISWFObject* r) const;
 	virtual bool isGreater(const ISWFObject* r) const;
+
+	virtual bool isBinded()=0;
+	virtual void bind()=0;
+
+	virtual void copyFrom(const ISWFObject* o)
+	{
+		LOG(ERROR,"Copy object of type " << (int)getObjectType() << " from object of type " << (int)o->getObjectType());
+		abort();
+	}
 };
 
 class ISWFObject_impl:public ISWFObject
@@ -187,17 +197,21 @@ protected:
 	//Should be resizable
 	ISWFObject* slots[10];
 	int max_slot_index;
+	bool binded;
 public:
 	IFunction* getSetterByName(const std::string& name, bool& found);
 	IFunction* setSetterByName(const std::string& name, IFunction* o);
 
 	ISWFObject* getVariableByName(const std::string& name, bool& found);
-	ISWFObject* setVariableByName(const std::string& name, ISWFObject* o);
+	ISWFObject* setVariableByName(const std::string& name, ISWFObject* o, bool force=false);
 	ISWFObject* getParent();
 	void _register();
 	ISWFObject* getSlot(int n);
 	void setSlot(int n,ISWFObject* o);
 	void dumpVariables();
+
+	bool isBinded() {return binded;}
+	void bind(){ binded=true;}
 };
 
 class ConstantReference : public ISWFObject_impl

@@ -32,7 +32,6 @@ void Frame::Render(int baseLayer)
 {
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
-	sys->cur_input_thread->broadcastEvent("enterFrame");
 	list < IDisplayListElem* >::iterator i=displayList.begin();
 	int count=0;
 	LOG(TRACE,"Frame levels " << baseLayer << '/' << displayList.size());

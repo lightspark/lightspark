@@ -314,10 +314,11 @@ void InputThread::broadcastEvent(const string& t)
 {
 	sem_wait(&sem_listeners);
 
-	pair< map<string,InteractiveObject*>::iterator,map<string, InteractiveObject*>::iterator > range=listeners.equal_range(t);
+	pair< map<string,InteractiveObject*>::iterator,map<string, InteractiveObject*>::iterator > range=
+		listeners.equal_range(t);
 
 	for(range.first;range.first!=range.second;range.first++)
-		range.first->second->handleEvent(new Event(t));
+		sys->currentVm->addEvent(range.first->second,new Event(t));
 
 	sem_post(&sem_listeners);
 }
@@ -568,7 +569,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				continue;
 			}
 			SDL_GL_SwapBuffers( );
-			sleep(1);
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 			glClearDepth(0xffff);
@@ -600,8 +600,10 @@ void RenderThread::draw(Frame* f)
 {
 	cur_frame=f;
 
+	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
 	sem_wait(&end_render);
+	sleep(1);
 
 }
 

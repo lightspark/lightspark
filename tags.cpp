@@ -1065,9 +1065,17 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
 		if(!(PlaceFlagMove))
 		{
-			//sys->parsingTarget->setVariableByName(Name,wrapped);
-			//sys->setVariableByName(Name,wrapped);
 			sys->bind_canditates_map.insert(make_pair(CharacterId,bind_candidates(Name,sys->parsingTarget,this)));
+
+			DictionaryTag* d=sys->dictionaryLookup(CharacterId);
+			ISWFObject* w=dynamic_cast<ISWFObject*>(d);
+			if(w==NULL)
+			{
+				LOG(NOT_IMPLEMENTED,"Placing an unsupported object "<<Name);
+				w=new ASObject;
+			}
+			setWrapped(w);
+			sys->parsingTarget->setVariableByName(Name,w);
 		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");

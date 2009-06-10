@@ -85,24 +85,9 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
 		for(range.first;range.first!=range.second;range.first++)
 		{
 			to_bind.insert(*range.first);
-			sys->bind_canditates_map.erase(range.first);
 		}
 	}
 
-	//Allocate default object for not binded ones
-	map<int, bind_candidates>::iterator it=sys->bind_canditates_map.begin();
-	for(it;it!=sys->bind_canditates_map.end();it++)
-	{
-		DictionaryTag* d=sys->dictionaryLookup(it->first);
-		ISWFObject* w=dynamic_cast<ISWFObject*>(d);
-		if(w==NULL)
-		{
-			LOG(NOT_IMPLEMENTED,"Placing an unsupported object "<<it->second.obj_name);
-			w=new ASObject;
-		}
-		it->second.placed_by->setWrapped(w);
-		it->second.parent->setVariableByName(it->second.obj_name,w);
-	}
 	sys->bind_canditates_map.clear();
 }
 
@@ -114,6 +99,9 @@ int SymbolClassTag::getDepth() const
 
 void SymbolClassTag::Render()
 {
+	//Should be a control tag
+	if(done)
+		return;
 	LOG(NOT_IMPLEMENTED,"SymbolClassTag Render");
 	cout << "NumSymbols " << NumSymbols << endl;
 
@@ -150,6 +138,7 @@ void SymbolClassTag::Render()
 			}
 		}
 	}
+	done=true;
 }
 
 //Be careful, arguments nubering starts from 1

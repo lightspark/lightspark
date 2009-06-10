@@ -329,12 +329,12 @@ void ASMovieClip::Render()
 	}
 
 	//Apply local transformation
-	//glPushMatrix();
+	glPushMatrix();
 	//glTranslatef(_x,_y,0);
-	LOG(NOT_IMPLEMENTED,"Should rotate by " << rotation);
+	glRotatef(rotation,0,0,1);
 	frame->Render(displayListLimit);
 
-	//glPopMatrix();
+	glPopMatrix();
 
 	//Render objects added at runtime;
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();

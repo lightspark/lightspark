@@ -101,7 +101,6 @@ DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag
 {
 	in >> CharacterId >> Splitter;
 	LOG(NOT_IMPLEMENTED,"DefineScalingGridTag Tag on ID " << CharacterId);
-	LOG(NOT_IMPLEMENTED,"Splitter " << Splitter);
 }
 
 SerialNumberTag::SerialNumberTag(RECORDHEADER h, std::istream& in):Tag(h,in)

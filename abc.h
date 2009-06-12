@@ -440,6 +440,7 @@ private:
 	STRING Name;
 	ABCVm* vm;
 	pthread_t thread;
+	bool done;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
 	void Render( );

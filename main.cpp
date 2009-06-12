@@ -25,6 +25,7 @@
 #include "logger.h"
 #include "streams.h"
 #include <time.h>
+#include <sys/resource.h>
 #include <iostream>
 #include <fstream>
 #include <list>
@@ -57,7 +58,12 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " <file.swf>" << endl;
 		exit(-1);
 	}
-	Log::initLogging(TRACE);
+	struct rlimit rl;
+	getrlimit(RLIMIT_AS,&rl);
+	rl.rlim_cur=300000000;
+	rl.rlim_max=rl.rlim_cur;
+	setrlimit(RLIMIT_AS,&rl);
+	Log::initLogging(NOT_IMPLEMENTED);
 	sys=new SystemState;
 	sys->performance_profiling=false;
 	zlib_file_filter zf;

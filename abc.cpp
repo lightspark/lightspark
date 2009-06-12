@@ -42,7 +42,7 @@ long timeDiff(timespec& s, timespec& d);
 
 void ignore(istream& i, int count);
 
-DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),done(false)
 {
 	int dest=in.tellg();
 	dest+=getSize();
@@ -64,7 +64,10 @@ int DoABCTag::getDepth() const
 void DoABCTag::Render()
 {
 	LOG(CALLS,"ABC Exec " << Name);
+	if(done)
+		return;
 	pthread_create(&thread,NULL,(void* (*)(void*))ABCVm::Run,vm);
+	done=true;
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
@@ -3070,7 +3073,7 @@ ASFUNCTIONBODY(Math,atan2)
 		return new Number(::atan2(*n1,*n2));
 	else
 	{
-		LOG(TRACE,"Invalid argument");
+		LOG(TRACE,"Invalid argument type ("<<args->args[0]->getObjectType()<<','<<args->args[1]->getObjectType()<<')');
 		abort();
 	}
 }

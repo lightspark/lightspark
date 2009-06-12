@@ -90,12 +90,12 @@ float ISWFObject::toFloat()
 	return 0;
 }
 
-void ISWFObject_impl::_register()
+void ISWFObject::_register()
 {
 	LOG(CALLS,"default _register called");
 }
 
-IFunction* ISWFObject_impl::setSetterByName(const string& name, IFunction* o)
+IFunction* ISWFObject::setSetterByName(const string& name, IFunction* o)
 {
 	pair<map<string, IFunction*>::iterator,bool> ret=Setters.insert(make_pair(name,o));
 	if(!ret.second)
@@ -103,7 +103,7 @@ IFunction* ISWFObject_impl::setSetterByName(const string& name, IFunction* o)
 	return o;
 }
 
-IFunction* ISWFObject_impl::getSetterByName(const string& name, bool& found)
+IFunction* ISWFObject::getSetterByName(const string& name, bool& found)
 {
 	map<string,IFunction*>::iterator it=Setters.find(name);
 	if(it!=Setters.end())
@@ -118,7 +118,7 @@ IFunction* ISWFObject_impl::getSetterByName(const string& name, bool& found)
 	}
 }
 
-ISWFObject* ISWFObject_impl::setVariableByName(const string& name, ISWFObject* o, bool force)
+ISWFObject* ISWFObject::setVariableByName(const string& name, ISWFObject* o, bool force)
 {
 	pair<map<string, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<string,ISWFObject*>(name,o));
 	if(!ret.second)
@@ -131,7 +131,7 @@ ISWFObject* ISWFObject_impl::setVariableByName(const string& name, ISWFObject* o
 	return o;
 }
 
-ISWFObject* ISWFObject_impl::getVariableByName(const string& name, bool& found)
+ISWFObject* ISWFObject::getVariableByName(const string& name, bool& found)
 {
 	map<string,ISWFObject*>::iterator it=Variables.find(name);
 	if(it!=Variables.end())
@@ -146,7 +146,7 @@ ISWFObject* ISWFObject_impl::getVariableByName(const string& name, bool& found)
 	}
 }
 
-void ISWFObject_impl::dumpVariables()
+void ISWFObject::dumpVariables()
 {
 	map<string,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
@@ -742,21 +742,21 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	return stream;
 }
 
-ISWFObject_impl::ISWFObject_impl():parent(NULL),max_slot_index(0),binded(false)
+ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false)
 {
 }
 
-ISWFObject* ISWFObject_impl::getParent()
+ISWFObject* ISWFObject::getParent()
 {
 	return parent;
 }
 
-ISWFObject* ISWFObject_impl::getSlot(int n)
+ISWFObject* ISWFObject::getSlot(int n)
 {
 	return slots[n-1];
 }
 
-void ISWFObject_impl::setSlot(int n,ISWFObject* o)
+void ISWFObject::setSlot(int n,ISWFObject* o)
 {
 	if(n>10)
 	{

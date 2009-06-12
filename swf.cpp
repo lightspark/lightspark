@@ -743,7 +743,7 @@ DictionaryTag* SystemState::dictionaryLookup(int id)
 ISWFObject* SystemState::getVariableByName(const string& name, bool& found)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ISWFObject_impl::getVariableByName(name, found);
+	ISWFObject* ret=ISWFObject::getVariableByName(name, found);
 	sem_post(&mutex);
 	return ret;
 }
@@ -751,7 +751,7 @@ ISWFObject* SystemState::getVariableByName(const string& name, bool& found)
 ISWFObject* SystemState::setVariableByName(const string& name, ISWFObject* o, bool force)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ISWFObject_impl::setVariableByName(name,o,force);
+	ISWFObject* ret=ISWFObject::setVariableByName(name,o,force);
 	sem_post(&mutex);
 	return ret;
 }

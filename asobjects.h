@@ -45,7 +45,7 @@ public:
 	}
 };
 
-class ASObject: public ISWFObject_impl
+class ASObject: public ISWFObject
 {
 public:
 	ASObject():debug_id(0){}

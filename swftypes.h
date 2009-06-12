@@ -128,57 +128,46 @@ public:
 	}
 };
 
-/*class ISWFObject;
-
-class SWFObject
-{
-private:
-	ISWFObject* data;
-//	STRING name;
-	bool bind;
-	//virtual bool xequals(const SWFObject& r);
-public:
-	SWFObject();
-	SWFObject(const SWFObject& o);
-	SWFObject(ISWFObject* d, bool b=false);
-	ISWFObject* operator->() const { return data; }
-	bool isDefined(); 
-	SWFObject& operator=(const SWFObject& r);
-	bool equals(const SWFObject& r);
-	bool isLess(const SWFObject& r);
-	bool isGreater(const SWFObject& r);
-	
-	ISWFObject* getData() const;
-};*/
-
 class ISWFObject
 {
+protected:
+	ISWFObject* parent;
+	ISWFObject();
+	std::map<std::string,ISWFObject*> Variables;
+	std::map<std::string,IFunction*> Setters;
+	//Should be resizable
+	ISWFObject* slots[10];
+	int max_slot_index;
+	bool binded;
 public:
+	virtual IFunction* getSetterByName(const std::string& name, bool& found);
+	virtual IFunction* setSetterByName(const std::string& name, IFunction* o);
+
+	virtual ISWFObject* getVariableByName(const std::string& name, bool& found);
+	virtual ISWFObject* setVariableByName(const std::string& name, ISWFObject* o, bool force=false);
+	virtual ISWFObject* getParent();
+	virtual void _register();
+	virtual ISWFObject* getSlot(int n);
+	virtual void setSlot(int n,ISWFObject* o);
+	virtual void dumpVariables();
+
+	bool isBinded() {return binded;}
+	void bind(){ binded=true;}
+
 	virtual SWFOBJECT_TYPE getObjectType() const=0;
 	virtual std::string toString() const;
 	virtual int toInt();
 	virtual float toFloat();
 	virtual IFunction* toFunction();
-	virtual ISWFObject* getVariableByName(const std::string& name, bool& f)=0;
-	virtual ISWFObject* setVariableByName(const std::string& name, ISWFObject* o, bool force=false)=0;
-	virtual IFunction* getSetterByName(const std::string& name, bool& found)=0;
-	virtual IFunction* setSetterByName(const std::string& name, IFunction* o)=0;
 	virtual ISWFObject* clone()
 	{
 		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
 		abort();
 	}
-	virtual ISWFObject* getParent()=0;
-	virtual void _register()=0;
-	virtual ISWFObject* getSlot(int n)=0;
-	virtual void setSlot(int n,ISWFObject* o)=0;
-	virtual void dumpVariables()=0;
+
 	virtual bool isEqual(const ISWFObject* r) const;
 	virtual bool isLess(const ISWFObject* r) const;
 	virtual bool isGreater(const ISWFObject* r) const;
-
-	virtual bool isBinded()=0;
-	virtual void bind()=0;
 
 	virtual void copyFrom(const ISWFObject* o)
 	{
@@ -187,35 +176,7 @@ public:
 	}
 };
 
-class ISWFObject_impl:public ISWFObject
-{
-protected:
-	int getVariableIndexByName(const STRING& name);
-	ISWFObject* parent;
-	ISWFObject_impl();
-	std::map<std::string,ISWFObject*> Variables;
-	std::map<std::string,IFunction*> Setters;
-	//Should be resizable
-	ISWFObject* slots[10];
-	int max_slot_index;
-	bool binded;
-public:
-	IFunction* getSetterByName(const std::string& name, bool& found);
-	IFunction* setSetterByName(const std::string& name, IFunction* o);
-
-	ISWFObject* getVariableByName(const std::string& name, bool& found);
-	ISWFObject* setVariableByName(const std::string& name, ISWFObject* o, bool force=false);
-	ISWFObject* getParent();
-	void _register();
-	ISWFObject* getSlot(int n);
-	void setSlot(int n,ISWFObject* o);
-	void dumpVariables();
-
-	bool isBinded() {return binded;}
-	void bind(){ binded=true;}
-};
-
-class ConstantReference : public ISWFObject_impl
+class ConstantReference : public ISWFObject
 {
 private:
 	int index;
@@ -231,7 +192,7 @@ public:
 	ISWFObject* instantiate();
 };
 
-class RegisterNumber : public ISWFObject_impl
+class RegisterNumber : public ISWFObject
 {
 private:
 	int index;
@@ -247,7 +208,7 @@ public:
 	ISWFObject* instantiate();
 };
 
-class Undefined : public ISWFObject_impl
+class Undefined : public ISWFObject
 {
 public:
 	ASFUNCTION(call);
@@ -260,7 +221,7 @@ public:
 	}
 };
 
-class Null : public ISWFObject_impl
+class Null : public ISWFObject
 {
 public:
 	SWFOBJECT_TYPE getObjectType() const {return T_NULL;}
@@ -272,7 +233,7 @@ public:
 	bool isEqual(const ISWFObject* r) const;
 };
 
-class IFunction: public ISWFObject_impl
+class IFunction: public ISWFObject
 {
 public:
 	virtual ISWFObject* call(ISWFObject* obj, arguments* args)=0;
@@ -323,7 +284,7 @@ public:
 	operator double(){ return val; }
 };
 
-class Integer : public ISWFObject_impl
+class Integer : public ISWFObject
 {
 friend class Number;
 private:

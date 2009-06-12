@@ -99,8 +99,8 @@ ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 
 DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"DefineScalingGridTag Tag");
-	skip(in);
+	in >> CharacterId >> Splitter;
+	LOG(NOT_IMPLEMENTED,"DefineScalingGridTag Tag on ID " << CharacterId);
 }
 
 SerialNumberTag::SerialNumberTag(RECORDHEADER h, std::istream& in):Tag(h,in)

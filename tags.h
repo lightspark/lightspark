@@ -475,6 +475,8 @@ public:
 class DefineScalingGridTag: public Tag
 {
 public:
+	UI16 CharacterId;
+	RECT Splitter;
 	DefineScalingGridTag(RECORDHEADER h, std::istream& in);
 };
 

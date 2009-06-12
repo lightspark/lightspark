@@ -805,6 +805,61 @@ void DefineShape3Tag::Render()
 	glDisable(GL_STENCIL_TEST);
 }
 
+void FromShaperecordListToDump(SHAPERECORD* cur)
+{
+	ofstream f("record_dump");
+
+	int startX=0;
+	int startY=0;
+
+	while(cur)
+	{
+		if(cur->TypeFlag)
+		{
+			if(cur->StraightFlag)
+			{
+				startX+=cur->DeltaX;
+				startY+=cur->DeltaY;
+				f << startX << ' ' << startY << endl;
+			}
+			else
+			{
+				startX+=cur->ControlDeltaX;
+				startY+=cur->ControlDeltaY;
+				f << startX << ' ' << startY << endl;
+
+				startX+=cur->AnchorDeltaX;
+				startY+=cur->AnchorDeltaY;
+				f << startX << ' ' << startY << endl;
+			}
+		}
+		else
+		{
+			if(cur->StateMoveTo)
+			{
+				startX=cur->MoveDeltaX;
+				startY=cur->MoveDeltaY;
+				f << "//Move To" << endl;
+				f << startX << ' ' << startY << endl;
+			}
+			if(cur->StateLineStyle)
+			{
+				f << "//LS=" << cur->LineStyle << endl;
+			}
+			if(cur->StateFillStyle1)
+			{
+				f << "//FS1=" << cur->FillStyle1 << endl;
+			}
+			if(cur->StateFillStyle0)
+			{
+				f << "//FS0=" << cur->FillStyle0 << endl;
+			}
+		}
+		cur=cur->next;
+	}
+	f.close();
+}
+
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes

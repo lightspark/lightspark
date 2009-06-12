@@ -27,6 +27,7 @@
 #include <map>
 
 #include "logger.h"
+#include <stdlib.h>
 
 #define ASFUNCTION(name) \
 	static ISWFObject* name(ISWFObject* , arguments* args)

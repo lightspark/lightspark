@@ -1106,6 +1106,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasMatrix)
 	{
 		in >> Matrix;
+		LOG(TRACE,"Matrix "<<endl<<Matrix);
 		//_scalex=Matrix.ScaleX;
 	}
 	if(PlaceFlagHasColorTransform)

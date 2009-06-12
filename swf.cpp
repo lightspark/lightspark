@@ -64,6 +64,8 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	sys->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
 	LOG(NO_INFO,"FrameRate " << FrameRate);
+	sys->frame_rate=FrameRate;
+	sys->frame_rate/=256;
 	sys->state.max_FP=FrameCount;
 }
 
@@ -603,7 +605,7 @@ void RenderThread::draw(Frame* f)
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
 	sem_wait(&end_render);
-	sleep(1);
+	usleep(1000000/sys->frame_rate);
 
 }
 

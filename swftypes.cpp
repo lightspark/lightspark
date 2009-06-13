@@ -313,7 +313,6 @@ std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	{
 		v.FillStyles[i].version=v.version;
 		s >> v.FillStyles[i];
-		//cout << "parsed fill " << (int)v.FillStyles[i].FillStyleType << endl;
 	}
 	return s;
 }
@@ -742,7 +741,7 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	return stream;
 }
 
-ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false)
+ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1)
 {
 }
 

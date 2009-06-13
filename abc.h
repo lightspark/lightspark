@@ -191,7 +191,7 @@ public:
 	void runtime_stack_push(ISWFObject* s);
 	ISWFObject* runtime_stack_pop();
 	ISWFObject* runtime_stack_peek();
-	void llvm_stack_push(llvm::IRBuilder<>& builder, llvm::Value* val);
+	void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val);
 	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder) const;
 	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder) const;
 	method_info():body(NULL),f(NULL),locals(NULL),stack(NULL),stack_index(0),vm(NULL)
@@ -355,7 +355,7 @@ private:
 	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
 	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
 	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
-	void syncStacks(llvm::IRBuilder<>& builder, bool jitted,std::vector<stack_entry>& static_stack, method_info* m);
+	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, bool jitted,std::vector<stack_entry>& static_stack, method_info* m);
 
 	void registerClasses();
 

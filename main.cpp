@@ -60,9 +60,9 @@ int main(int argc, char* argv[])
 	}
 	struct rlimit rl;
 	getrlimit(RLIMIT_AS,&rl);
-	rl.rlim_cur=300000000;
+	rl.rlim_cur=400000000;
 	rl.rlim_max=rl.rlim_cur;
-	setrlimit(RLIMIT_AS,&rl);
+	//setrlimit(RLIMIT_AS,&rl);
 	Log::initLogging(NOT_IMPLEMENTED);
 	sys=new SystemState;
 	sys->performance_profiling=false;

@@ -139,7 +139,23 @@ protected:
 	ISWFObject* slots[10];
 	int max_slot_index;
 	bool binded;
+	int ref_count;
 public:
+	void incRef() {ref_count++;}
+	void decRef()
+	{
+		ref_count--;
+		if(ref_count==0)
+			delete this;
+	}
+	static void s_incRef(ISWFObject* o)
+	{
+		o->incRef();
+	}
+	static void s_decRef(ISWFObject* o)
+	{
+		o->decRef();
+	}
 	virtual IFunction* getSetterByName(const std::string& name, bool& found);
 	virtual IFunction* setSetterByName(const std::string& name, IFunction* o);
 

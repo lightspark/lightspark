@@ -149,6 +149,12 @@ ASString::ASString(const string& s):data(s)
 	setVariableByName("Call",new Function(ASString::String));
 }
 
+arguments::~arguments()
+{
+	for(int i=0;i<args.size();i++)
+		args[i]->decRef();
+}
+
 ASFUNCTIONBODY(ASString,String)
 {
 	ASString* th=dynamic_cast<ASString*>(obj);
@@ -206,9 +212,9 @@ void ASMovieClip::handleEvent(Event* e)
 		return;
 	}
 
-	cout << "MovieClip event " << h->first<< endl;
+	LOG(CALLS, "MovieClip event " << h->first);
 	arguments args;
-	args.args.push_back((ISWFObject*)0xdeadbeaf);
+	args.args.push_back(e);
 	h->second->call(this,&args);
 }
 

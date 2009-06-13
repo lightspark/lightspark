@@ -102,8 +102,7 @@ class arguments: public ASArray
 {
 public:
 	std::vector<ISWFObject*> args;
-//public:
-//	static SWFObject push(arguments* th, arguments* 
+	~arguments();
 	ISWFObject* clone()
 	{
 		return new arguments(*this);

@@ -85,12 +85,6 @@ public:
 	STRING(){};
 	STRING(const char* s):String(s)
 	{
-/*		do
-		{
-			String.push_back(*s);
-			s++;
-		}
-		while(*s!=0);*/
 	}
 	bool operator==(const STRING& s)
 	{
@@ -114,10 +108,6 @@ public:
 	{
 		return !String.size();
 	}
-/*	operator const char*() const
-	{
-		return String.data();
-	}*/
 	operator const std::string&() const
 	{
 		return String;
@@ -141,6 +131,7 @@ protected:
 	bool binded;
 	int ref_count;
 public:
+	virtual ~ISWFObject();
 	void incRef() {ref_count++;}
 	void decRef()
 	{
@@ -312,7 +303,7 @@ public:
 	std::string toString() const;
 	int toInt(); 
 	float toFloat();
-	operator int(){return val;}
+	operator int() const{return val;} 
 	ISWFObject* clone()
 	{
 		return new Integer(*this);

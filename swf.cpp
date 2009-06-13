@@ -587,15 +587,18 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			sem_post(&th->end_render);
 			if(sys->shutdown)
+			{
+				delete[] buffer;
 				pthread_exit(0);
+			}
 		}
 	}
 	catch(const char* e)
 	{
 		LOG(ERROR, "Exception caught " << e);
+		delete[] buffer;
 		exit(-1);
 	}
-	delete[] buffer;
 }
 
 void RenderThread::draw(Frame* f)

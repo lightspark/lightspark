@@ -631,10 +631,11 @@ ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 		//module.dump();
 		if(m->f)
 		{
-			arguments args;
-			args.args.push_back(new Null);
+			arguments* args=new arguments;
+			args->args.push_back(new Null);
 			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-			FP(base,&args);
+			FP(base,args);
+			args->decRef();
 		}
 		return base;
 	}
@@ -775,24 +776,30 @@ void ABCVm::callPropVoid(method_info* th, int n, int m)
 {
 	string name=th->vm->getMultinameString(n); 
 	LOG(CALLS,"callPropVoid " << name << ' ' << m);
-	arguments args;
-	args.args.resize(m);
+	arguments* args=new arguments;
+	args->args.resize(m);
 	for(int i=0;i<m;i++)
-		args.args[m-i-1]=th->runtime_stack_pop();
+		args->args[m-i-1]=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
 	bool found;
 	ISWFObject* o=obj->getVariableByName(name,found);
-	//If o is already a function call it, otherwise find the Call method
-	if(o->getObjectType()==T_FUNCTION)
+	if(found)
 	{
-		IFunction* f=dynamic_cast<IFunction*>(o);
-		f->call(obj,&args);
+		//If o is already a function call it, otherwise find the Call method
+		if(o->getObjectType()==T_FUNCTION)
+		{
+			IFunction* f=dynamic_cast<IFunction*>(o);
+			f->call(obj,args);
+		}
+		else
+		{
+			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found));
+			f->call(obj,args);
+		}
 	}
 	else
-	{
-		IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found));
-		f->call(obj,&args);
-	}
+		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
+	args->decRef();
 	obj->decRef();
 }
 

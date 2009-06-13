@@ -63,6 +63,7 @@ bool ISWFObject::isGreater(const ISWFObject* r) const
 bool ISWFObject::isLess(const ISWFObject* r) const
 {
 	LOG(NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	abort();
 	return false;
 }
 
@@ -142,7 +143,7 @@ ISWFObject* ISWFObject::getVariableByName(const string& name, bool& found)
 	else
 	{
 		found=false;
-		return new Undefined;
+		return NULL;
 	}
 }
 
@@ -743,6 +744,18 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 
 ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1)
 {
+}
+
+ISWFObject::~ISWFObject()
+{
+	if(ref_count>1)
+	{
+		LOG(ERROR,"Destroying a still referenced object");
+		abort();
+	}
+	map<string,ISWFObject*>::iterator it=Variables.begin();
+	for(it;it!=Variables.end();it++)
+		it->second->decRef();
 }
 
 ISWFObject* ISWFObject::getParent()

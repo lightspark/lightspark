@@ -128,7 +128,6 @@ public:
 
 class Number : public ASObject
 {
-friend class ASString;
 private:
 	double val;
 public:
@@ -144,6 +143,7 @@ public:
 		return new Number(*this);
 	}
 	void copyFrom(const ISWFObject* o);
+	bool isLess(const ISWFObject* o) const;
 };
 
 class ASMovieClip: public ASObject, public IRenderObject, public InteractiveObject

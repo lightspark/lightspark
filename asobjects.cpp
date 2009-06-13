@@ -162,7 +162,7 @@ ASFUNCTIONBODY(ASString,String)
 	{
 		Number* n=dynamic_cast<Number*>(args->args[0]);
 		ostringstream oss;
-		oss << setprecision(8) << fixed << n->val;
+		oss << setprecision(8) << fixed << *n;
 
 		th->data=oss.str();
 		return th;
@@ -388,6 +388,19 @@ void Number::copyFrom(const ISWFObject* o)
 
 	val=n->val;
 	LOG(TRACE,"Set to " << n->val);
+}
+
+bool Number::isLess(const ISWFObject* o) const
+{
+	if(o->getObjectType()==T_INTEGER)
+	{
+		const Integer* i=dynamic_cast<const Integer*>(o);
+		return val<*i;
+	}
+	else
+	{
+		return ISWFObject::isLess(o);
+	}
 }
 
 string Number::toString() const

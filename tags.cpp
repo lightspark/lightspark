@@ -774,7 +774,9 @@ void DefineShape4Tag::Render()
 
 void DefineShape3Tag::Render()
 {
-	LOG(TRACE,"DefineShape3 Render");
+	LOG(TRACE,"DefineShape3 Render "<< ShapeId);
+	if(ShapeId == 27)
+		char a=0;
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -876,8 +878,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 
 	def_color0=false;
 	def_color1=false;
-	bool eos=false; //end of shape
-	shapes.push_back(Shape());
 	while(cur)
 	{
 		if(cur->TypeFlag)
@@ -888,10 +888,54 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 				startX+=cur->DeltaX;
 				startY+=cur->DeltaY;
 				Vector2 p2(startX,startY,count+1);
-				shapes.back().edges.push_back(Edge(p1,p2,color0,color1));
+				Edge e(p1,p2,color0,color1);
+				bool new_shape=true;
+				for(int i=0;i<shapes.size();i++)
+				{
+					if(shapes[i].edges[0].color0==color0 && shapes[i].edges[0].color1==color1)
+					{
+						if(shapes[i].edges.back().p2==e.p1)
+						{
+							shapes[i].edges.push_back(e);
+							cout << "Adding edge to shape " << i << endl;
+							new_shape=false;
+						}
+						else if(shapes[i].edges.front().p1==e.p2)
+						{
+							exit(1);
+						}
+					}
+					else if(shapes[i].edges[0].color0==color1 && shapes[i].edges[0].color1==color0)
+					{
+						//exit(3);
+						//TODO: check possible conditions
+						Edge e2(e.p2,e.p1,e.color1,e.color0);
+						cout << shapes[i].edges.front().p1 << endl;
+						cout << shapes[i].edges.front().p2 << endl;
+						cout << shapes[i].edges.back().p1 << endl << endl;
+						cout << shapes[i].edges.back().p2 << endl << endl;
+						cout << e.p1 << endl;
+						cout << e.p2 << endl << endl;
+						if(shapes[i].edges.back().p2==e2.p1)
+						{
+							exit(2);
+							shapes[i].edges.push_back(e2);
+							cout << "Adding curved edge to shape " << i << endl;
+							new_shape=false;
+						}
+						else if(shapes[i].edges.front().p1==e2.p2)
+						{
+							exit(3);
+						}
+					}
+				}
+				if(new_shape)
+				{
+					cout << "Adding edge to new shape" << endl;
+					shapes.push_back(Shape());
+					shapes.back().edges.push_back(e);
+				}
 
-				if(p2==shapes.back().edges.front().p1)
-					eos=true;
 				count++;
 			}
 			else
@@ -900,16 +944,66 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 				startX+=cur->ControlDeltaX;
 				startY+=cur->ControlDeltaY;
 				Vector2 p2(startX,startY,count+1);
-				shapes.back().edges.push_back(Edge(p1,p2,color0,color1));
+				Edge e1(p1,p2,color0,color1);
 				count++;
 
 				Vector2 p3(startX,startY,count);
 				startX+=cur->AnchorDeltaX;
 				startY+=cur->AnchorDeltaY;
 				Vector2 p4(startX,startY,count+1);
-				shapes.back().edges.push_back(Edge(p3,p4,color0,color1));
-				if(p4==shapes.back().edges.front().p1)
-					eos=true;
+				Edge e2(p3,p4,color0,color1);
+				bool new_shape=true;
+				for(int i=0;i<shapes.size();i++)
+				{
+					if(shapes[i].edges[0].color0==color0 && shapes[i].edges[0].color1==color1)
+					{
+						if(shapes[i].edges.back().p2==e1.p1)
+						{
+							shapes[i].edges.push_back(e1);
+							shapes[i].edges.push_back(e2);
+							cout << "Adding curved edge to shape " << i << endl;
+							new_shape=false;
+						}
+						else if(shapes[i].edges.front().p1==e2.p2)
+						{
+							exit(7);
+						}
+					}
+					else if(shapes[i].edges[0].color0==color1 && shapes[i].edges[0].color1==color0)
+					{
+						//exit(3);
+						//TODO: check possible conditions
+						Edge e3(e2.p2,e2.p1,e2.color1,e2.color0);
+						Edge e4(e1.p2,e1.p1,e1.color1,e1.color0);
+						cout << shapes[i].edges.front().p1 << endl;
+						cout << shapes[i].edges.front().p2 << endl;
+						cout << shapes[i].edges.back().p1 << endl << endl;
+						cout << shapes[i].edges.back().p2 << endl << endl;
+						cout << e1.p1 << endl;
+						cout << e1.p2 << endl;
+						cout << e2.p1 << endl << endl;
+						cout << e2.p2 << endl << endl;
+						if(shapes[i].edges.back().p2==e3.p1)
+						{
+							exit(7);
+							shapes[i].edges.push_back(e1);
+							shapes[i].edges.push_back(e2);
+							cout << "Adding curved edge to shape " << i << endl;
+							new_shape=false;
+						}
+						else if(shapes[i].edges.front().p1==e4.p2)
+						{
+							exit(8);
+						}
+					}
+				}
+				if(new_shape)
+				{
+					cout << "Adding curved edge to new shape" << endl;
+					shapes.push_back(Shape());
+					shapes.back().edges.push_back(e1);
+					shapes.back().edges.push_back(e2);
+				}
 				count++;
 			}
 		}
@@ -919,12 +1013,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 			{
 				startX=cur->MoveDeltaX;
 				startY=cur->MoveDeltaY;
-
-				if(!shapes.back().edges.empty() && !eos)
-					abort();
-				//add new shape (if current is not empty)
-				if(!shapes.back().edges.empty())
-					shapes.push_back(Shape());
+				cout << "Move " << startX << ' ' << startY << endl;
 			}
 /*			if(cur->StateLineStyle)
 			{

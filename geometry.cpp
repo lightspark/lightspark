@@ -45,14 +45,6 @@ void Shape::Render(int i) const
 		return;
 	}
 
-	if(closed && color0 && color1)
-	{
-		LOG(NOT_IMPLEMENTED,"Not supported double fill style");
-		//Shape* th=const_cast<Shape*>(this);
-		//th->graphic.color0=RGB(255,0,0);
-		//th->graphic.color1=RGB(0,0,255);
-	}
-
 	if(edges.empty())
 	{
 		LOG(TRACE,"No edges in this shape");
@@ -70,7 +62,7 @@ void Shape::Render(int i) const
 	{
 		LOG(TRACE,"Filling 0");
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilFunc(GL_ALWAYS,color0,0xff);
+		glStencilFunc(GL_ALWAYS,color,0xff);
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		glBegin(GL_TRIANGLES);
@@ -81,10 +73,10 @@ void Shape::Render(int i) const
 			glVertex2i(it2->v3.x,it2->v3.y);
 		}
 		glEnd();
-		if(color0!=0)
+		if(color!=0)
 			filled=true;
 	}
-	else if(closed && winding==1)
+/*	else if(closed && winding==1)
 	{
 		LOG(TRACE,"Filling 1");
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -101,10 +93,10 @@ void Shape::Render(int i) const
 		glEnd();
 		if(color1!=0)
 			filled=true;
-	}
+	}*/
 
 
-	if(graphic.stroked || !filled)
+//	if(graphic.stroked || !filled)
 	{
 		LOG(TRACE,"Line tracing");
 		glDisable(GL_STENCIL_TEST);
@@ -232,15 +224,11 @@ void Shape::SetStyles(FILLSTYLE* styles)
 
 	if(styles)
 	{
-		if(color0)
-			style0=&styles[color0-1];
+		if(color)
+			style=&styles[color-1];
 		else
-			style0=NULL;
+			style=NULL;
 
-		if(color1)
-			style1=&styles[color1-1];
-		else
-			style1=NULL;
 	}
 
 /*	if(!coerent)
@@ -268,8 +256,7 @@ void Shape::SetStyles(FILLSTYLE* styles)
 
 void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 {
-	style0=NULL;
-	style1=NULL;
+	style=NULL;
 	unsupported=false;
 	if(edges.empty())
 		return;
@@ -286,8 +273,7 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 			//As the style is changed we create a new Shape;
 			sub_shapes.push_back(Shape());
 			sub_shapes.back().edges=vector<Edge>(it_start,it_cur);
-			sub_shapes.back().color0=cur_fill0;
-			sub_shapes.back().color1=cur_fill1;
+			sub_shapes.back().color=cur_fill0;
 			sub_shapes.back().graphic.stroked=false;
 			sub_shapes.back().SetStyles(styles);
 			if(sub_shapes.back().closed)
@@ -303,8 +289,7 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 	}
 	while(it_cur!=edges.end());
 
-	color0=cur_fill0;
-	color1=cur_fill1;
+	color=cur_fill0;
 
 	SetStyles(styles);
 /*	if(normalize)

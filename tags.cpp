@@ -663,7 +663,7 @@ void DefineMorphShapeTag::Render()
 	{
 		it->Render();
 		if(it->closed)
-			drawStenciled(EndBounds,it->color0,it->color1,it->style0,it->style1);
+			drawStenciled(EndBounds,it->color,0,it->style,NULL);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -696,7 +696,7 @@ void DefineShapeTag::Render()
 	{
 		it->Render();
 		if(it->closed)
-			drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
+			drawStenciled(ShapeBounds,it->color,0,it->style,NULL);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -728,12 +728,10 @@ void DefineShape2Tag::Render()
 	for(it;it!=cached.end();it++)
 	{
 		it->Render();
-		if(it->color0 >= Shapes.FillStyles.FillStyleCount)
-			it->style0=NULL;
-		if(it->color1 >= Shapes.FillStyles.FillStyleCount)
-			it->style1=NULL;
+		if(it->color >= Shapes.FillStyles.FillStyleCount)
+			it->style=NULL;
 		LOG(NOT_IMPLEMENTED,"HACK schifoso");
-		drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
+		drawStenciled(ShapeBounds,it->color,0,it->style,NULL);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -766,7 +764,7 @@ void DefineShape4Tag::Render()
 	{
 		it->Render();
 		if(it->closed)
-			drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
+			drawStenciled(ShapeBounds,it->color,0,it->style,NULL);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -802,7 +800,7 @@ void DefineShape3Tag::Render()
 	{
 		it->Render();
 		if(it->closed)
-			drawStenciled(ShapeBounds,it->color0,it->color1,it->style0,it->style1);
+			drawStenciled(ShapeBounds,it->color,0,it->style,NULL);
 	}
 	glDisable(GL_STENCIL_TEST);
 }
@@ -890,52 +888,123 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 				Vector2 p2(startX,startY,count+1);
 				Edge e(p1,p2,color0,color1);
 				bool new_shape=true;
-				for(int i=0;i<shapes.size();i++)
+				bool used[2]={false,false};
+				if(color0)
 				{
-					if(shapes[i].edges[0].color0==color0 && shapes[i].edges[0].color1==color1)
+					for(int i=0;i<shapes.size();i++)
 					{
-						if(shapes[i].edges.back().p2==e.p1)
+						if(shapes[i].color==color0)
 						{
-							shapes[i].edges.push_back(e);
-							cout << "Adding edge to shape " << i << endl;
-							new_shape=false;
-						}
-						else if(shapes[i].edges.front().p1==e.p2)
-						{
-							exit(1);
+							if(shapes[i].edges.back().p2==e.p1 && !used[0])
+							{
+								shapes[i].edges.push_back(e);
+								cout << "Adding edge to shape " << i << endl;
+								cout << e.p1 << e.p2 << endl;
+								new_shape=false;
+								//used[0]=true;
+								break;
+							}
+							else if(shapes[i].edges.front().p1==e.p2 && !used[0])
+							{
+								shapes[i].edges.insert(shapes[i].edges.begin(),e);
+								cout << "Adding edge to shape " << i << endl;
+								cout << e.p1 << e.p2 << endl;
+								new_shape=false;
+								//used[0]=true;
+								break;
+							}
+							Edge ei(e.p2,e.p1,e.color1,e.color0);
+							if(shapes[i].edges.back().p2==ei.p1 &&
+								!(shapes[i].edges.back().p1==ei.p2) && !used[1])
+							{
+								shapes[i].edges.push_back(ei);
+								cout << "Adding edge to shape " << i << endl;
+								cout << ei.p1 << ei.p2 << endl;
+								new_shape=false;
+								//used[1]=true;
+								break;
+							}
+							else if(shapes[i].edges.front().p1==ei.p2 &&
+								!(shapes[i].edges.front().p2==ei.p1) && !used[1])
+							{
+								shapes[i].edges.insert(shapes[i].edges.begin(),ei);
+								cout << "Adding edge to shape " << i << endl;
+								cout << ei.p1 << ei.p2 << endl;
+								new_shape=false;
+								//used[1]=true;
+								break;
+							}
 						}
 					}
-					else if(shapes[i].edges[0].color0==color1 && shapes[i].edges[0].color1==color0)
+					if(new_shape)
 					{
-						//exit(3);
-						//TODO: check possible conditions
-						Edge e2(e.p2,e.p1,e.color1,e.color0);
-						cout << shapes[i].edges.front().p1 << endl;
-						cout << shapes[i].edges.front().p2 << endl;
-						cout << shapes[i].edges.back().p1 << endl << endl;
-						cout << shapes[i].edges.back().p2 << endl << endl;
-						cout << e.p1 << endl;
-						cout << e.p2 << endl << endl;
-						if(shapes[i].edges.back().p2==e2.p1)
-						{
-							exit(2);
-							shapes[i].edges.push_back(e2);
-							cout << "Adding curved edge to shape " << i << endl;
-							new_shape=false;
-						}
-						else if(shapes[i].edges.front().p1==e2.p2)
-						{
-							exit(3);
-						}
+						cout << "Adding edge to new shape " << color0 << endl;
+						cout << e.p1 << e.p2 << endl;
+						shapes.push_back(Shape());
+						shapes.back().edges.push_back(e);
+						shapes.back().color=color0;
 					}
-				}
-				if(new_shape)
-				{
-					cout << "Adding edge to new shape" << endl;
-					shapes.push_back(Shape());
-					shapes.back().edges.push_back(e);
 				}
 
+				new_shape=true;
+				if(color1)
+				{
+					for(int i=0;i<shapes.size();i++)
+					{
+						if(shapes[i].color==color1)
+						{
+							if(shapes[i].edges.back().p2==e.p1 && !used[0])
+							{
+								shapes[i].edges.push_back(e);
+								cout << "Adding edge to shape " << i << endl;
+								cout << e.p1 << e.p2 << endl;
+								new_shape=false;
+								//used[0]=true;
+								break;
+							}
+							else if(shapes[i].edges.front().p1==e.p2)
+							{
+								shapes[i].edges.insert(shapes[i].edges.begin(),e);
+								cout << "Adding edge to shape " << i << endl;
+								cout << e.p1 << e.p2 << endl;
+								new_shape=false;
+								//used[0]=true;
+								break;
+							}
+							Edge ei(e.p2,e.p1,e.color1,e.color0);
+							if(shapes[i].edges.back().p2==ei.p1 && !used[1])
+							//	shapes[i].edges.back().p2.index!=ei.p1.index)
+							{
+								shapes[i].edges.push_back(ei);
+								cout << "Adding edge to shape " << i << endl;
+								cout << e.p1 << e.p2 << endl;
+								new_shape=false;
+								exit(32);
+								//used[1]=true;
+								break;
+							}
+							else if(shapes[i].edges.front().p1==ei.p2 &&
+								!(shapes[i].edges.front().p2==ei.p1) && !used[1])
+							{
+								shapes[i].edges.insert(shapes[i].edges.begin(),ei);
+								cout << "Adding edge to shape " << i << endl;
+								cout << ei.p1 << ei.p2 << endl;
+								new_shape=false;
+								//used[1]=true;
+								break;
+							}
+						}
+					}
+					if(new_shape)
+					{
+						cout << "Adding edge to new shape " << color1 << endl;
+						cout << "puppa4" << endl;
+						cout << e.p1 << e.p2 << endl;
+						shapes.push_back(Shape());
+						shapes.back().edges.push_back(e);
+						shapes.back().color=color1;
+					}
+				}
 				count++;
 			}
 			else
@@ -953,56 +1022,145 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 				Vector2 p4(startX,startY,count+1);
 				Edge e2(p3,p4,color0,color1);
 				bool new_shape=true;
-				for(int i=0;i<shapes.size();i++)
+				if(color0)
 				{
-					if(shapes[i].edges[0].color0==color0 && shapes[i].edges[0].color1==color1)
+					for(int i=0;i<shapes.size();i++)
 					{
-						if(shapes[i].edges.back().p2==e1.p1)
+						if(shapes[i].color==color0)
 						{
-							shapes[i].edges.push_back(e1);
-							shapes[i].edges.push_back(e2);
-							cout << "Adding curved edge to shape " << i << endl;
-							new_shape=false;
-						}
-						else if(shapes[i].edges.front().p1==e2.p2)
-						{
-							exit(7);
+							if(shapes[i].edges.back().p2==e1.p1)
+							{
+								shapes[i].edges.push_back(e1);
+								shapes[i].edges.push_back(e2);
+								cout << "Adding curved edge to shape " << i << endl;
+								cout << e1.p1 << e1.p2 << endl;
+								cout << e2.p1 << e2.p2 << endl;
+								new_shape=false;
+								break;
+							}
+							else if(shapes[i].edges.front().p1==e2.p2)
+							{
+								exit(15);
+								break;
+							}
+							Edge e2i(e1.p2,e1.p1,e1.color1,e1.color0);
+							Edge e1i(e2.p2,e2.p1,e2.color1,e2.color0);
+							if(shapes[i].edges.back().p2==e1i.p1 &&
+								!(shapes[i].edges.back().p1==e1i.p2))
+							{
+								shapes[i].edges.push_back(e1i);
+								shapes[i].edges.push_back(e2i);
+								cout << "Adding curved edge to shape " << i << endl;
+								cout << e1i.p1 << e1i.p2 << endl;
+								cout << e2i.p1 << e2i.p2 << endl;
+								new_shape=false;
+								break;
+							}
+							else if(shapes[i].edges.front().p1==e2i.p2 &&
+								!(shapes[i].edges.front().p2==e2i.p1))
+							{
+								shapes[i].edges.insert(shapes[i].edges.begin(),e2i);
+								shapes[i].edges.insert(shapes[i].edges.begin(),e1i);
+								cout << "Adding curved edge to shape " << i << endl;
+								cout << e1i.p1 << e1i.p2 << endl;
+								cout << e2i.p1 << e2i.p2 << endl;
+								new_shape=false;
+								break;
+							}
 						}
 					}
-					else if(shapes[i].edges[0].color0==color1 && shapes[i].edges[0].color1==color0)
+					if(new_shape)
 					{
-						//exit(3);
-						//TODO: check possible conditions
-						Edge e3(e2.p2,e2.p1,e2.color1,e2.color0);
-						Edge e4(e1.p2,e1.p1,e1.color1,e1.color0);
-						cout << shapes[i].edges.front().p1 << endl;
-						cout << shapes[i].edges.front().p2 << endl;
-						cout << shapes[i].edges.back().p1 << endl << endl;
-						cout << shapes[i].edges.back().p2 << endl << endl;
-						cout << e1.p1 << endl;
-						cout << e1.p2 << endl;
-						cout << e2.p1 << endl << endl;
-						cout << e2.p2 << endl << endl;
-						if(shapes[i].edges.back().p2==e3.p1)
-						{
-							exit(7);
-							shapes[i].edges.push_back(e1);
-							shapes[i].edges.push_back(e2);
-							cout << "Adding curved edge to shape " << i << endl;
-							new_shape=false;
-						}
-						else if(shapes[i].edges.front().p1==e4.p2)
-						{
-							exit(8);
-						}
+						cout << "Adding edge to new shape" << endl;
+						cout << e1.p1 << e1.p2 << endl;
+						cout << e2.p1 << e2.p2 << endl;
+						shapes.push_back(Shape());
+						shapes.back().edges.push_back(e1);
+						shapes.back().edges.push_back(e2);
+						shapes.back().color=color0;
 					}
 				}
-				if(new_shape)
+
+				new_shape=true;
+				if(color1)
 				{
-					cout << "Adding curved edge to new shape" << endl;
-					shapes.push_back(Shape());
-					shapes.back().edges.push_back(e1);
-					shapes.back().edges.push_back(e2);
+					for(int i=0;i<shapes.size();i++)
+					{
+						if(shapes[i].color==color1)
+						{
+							if(shapes[i].edges.back().p2==e1.p1)
+							{
+								shapes[i].edges.push_back(e1);
+								shapes[i].edges.push_back(e2);
+								cout << "Adding curved edge to shape " << i << endl;
+								cout << e1.p1 << e1.p2 << endl;
+								cout << e2.p1 << e2.p2 << endl;
+								new_shape=false;
+								break;
+							}
+							else if(shapes[i].edges.front().p1==e2.p2)
+							{
+								shapes[i].edges.insert(shapes[i].edges.begin(),e2);
+								shapes[i].edges.insert(shapes[i].edges.begin(),e1);
+								cout << "Adding curved edge to shape " << i << endl;
+								cout << e1.p1 << e1.p2 << endl;
+								cout << e2.p1 << e2.p2 << endl;
+								new_shape=false;
+								break;
+							}
+							Edge e2i(e1.p2,e1.p1,e1.color1,e1.color0);
+							Edge e1i(e2.p2,e2.p1,e2.color1,e2.color0);
+							if(shapes[i].edges.back().p2==e1i.p1)
+								//shapes[i].edges.back().p2.index!=e1i.p1.index)
+							{
+							cout << shapes[i].edges.front().p1 << endl;
+							cout << shapes[i].edges.front().p2 << endl;
+							cout << shapes[i].edges.back().p1 << endl << endl;
+							cout << shapes[i].edges.back().p2 << endl << endl;
+							cout << e1.p1 << endl;
+							cout << e1.p2 << endl;
+							cout << e2.p1 << endl << endl;
+							cout << e2.p2 << endl << endl;
+								exit(21);
+								shapes[i].edges.push_back(e1);
+								shapes[i].edges.push_back(e2);
+								cout << "Adding curved edge to shape " << i << endl;
+								cout << e1.p1 << e1.p2 << endl;
+								cout << e2.p1 << e2.p2 << endl;
+								new_shape=false;
+								break;
+							}
+							else if(shapes[i].edges.front().p1==e2i.p2)
+							{
+								exit(22);
+								break;
+							}
+						}
+					}
+					/*for(int i=0;i<shapes.size();i++)
+					{
+							//TODO: check possible conditions
+							Edge e3(e2.p2,e2.p1,e2.color1,e2.color0);
+							Edge e4(e1.p2,e1.p1,e1.color1,e1.color0);
+							cout << shapes[i].edges.front().p1 << endl;
+							cout << shapes[i].edges.front().p2 << endl;
+							cout << shapes[i].edges.back().p1 << endl << endl;
+							cout << shapes[i].edges.back().p2 << endl << endl;
+							cout << e1.p1 << endl;
+							cout << e1.p2 << endl;
+							cout << e2.p1 << endl << endl;
+							cout << e2.p2 << endl << endl;
+					}*/
+					if(new_shape)
+					{
+						cout << "Adding curved edge to new shape" << endl;
+						cout << e1.p1 << e1.p2 << endl;
+						cout << e2.p1 << e2.p2 << endl;
+						shapes.push_back(Shape());
+						shapes.back().edges.push_back(e1);
+						shapes.back().edges.push_back(e2);
+						shapes.back().color=color1;
+					}
 				}
 				count++;
 			}
@@ -1013,6 +1171,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 			{
 				startX=cur->MoveDeltaX;
 				startY=cur->MoveDeltaY;
+				count++;
 				cout << "Move " << startX << ' ' << startY << endl;
 			}
 /*			if(cur->StateLineStyle)

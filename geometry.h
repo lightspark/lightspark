@@ -152,11 +152,9 @@ public:
 	bool closed;
 	int winding;
 	int id;
-	int color0;
-	int color1;
+	int color;
 
-	FILLSTYLE* style0;
-	FILLSTYLE* style1;
+	FILLSTYLE* style;
 
 	//DEBUG
 	void dumpEdges();

@@ -45,7 +45,7 @@ void Shape::Render(int i) const
 		return;
 	}
 
-	if(edges.empty())
+	if(outline.empty())
 	{
 		LOG(TRACE,"No edges in this shape");
 		return;
@@ -213,14 +213,10 @@ void Shape::dumpInterior()
 
 void Shape::SetStyles(FILLSTYLE* styles)
 {
-	outline.reserve(edges.size());
-	for(int i=0;i<edges.size();i++)
-		outline.push_back(edges[i].p1);
-
-	if(edges.back().p2==outline.front())
+/*	if(edges.back().p2==outline.front())
 		closed=true;
 	else
-		closed=false;
+		closed=false;*/
 
 	if(styles)
 	{
@@ -258,7 +254,7 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 {
 	style=NULL;
 	unsupported=false;
-	if(edges.empty())
+	if(outline.empty())
 		return;
 
 	//We try to build coerent shapes out of a possible incoerent one
@@ -290,6 +286,10 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 	while(it_cur!=edges.end());*/
 
 	//color=cur_fill0;
+
+	/*outline.reserve(edges.size());
+	for(int i=0;i<edges.size();i++)
+		outline.push_back(edges[i].p1);*/
 
 	SetStyles(styles);
 

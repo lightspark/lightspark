@@ -262,7 +262,7 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 		return;
 
 	//We try to build coerent shapes out of a possible incoerent one
-	int cur_fill0=edges[0].color0;
+	/*int cur_fill0=edges[0].color0;
 	int cur_fill1=edges[0].color1;
 	vector<Edge>::iterator it_start=edges.begin();
 	vector<Edge>::iterator it_cur=edges.begin();
@@ -287,24 +287,16 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 		}
 		it_cur++;
 	}
-	while(it_cur!=edges.end());
+	while(it_cur!=edges.end());*/
 
-	color=cur_fill0;
+	//color=cur_fill0;
 
 	SetStyles(styles);
-/*	if(normalize)
-	{
-		//If only one side of all edges is colored set the winding to the correct one
-		if(color0==0 && color1!=0)
-			winding=1;
-		else if(color0!=0 && color1==0)
-			winding=0;
-	}*/
 
 	graphic.stroked=false;
 	//Tessellate the shape using ear removing algorithm
-	if(closed)
-		TessellateSimple();
+	//if(closed)
+	//	TessellateSimple();
 }
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)

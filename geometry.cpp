@@ -39,28 +39,17 @@ float colors[][3] = { { 0 ,0 ,0 },
 
 void Shape::Render(int i) const
 {
-	if(unsupported)
-	{
-		LOG(NOT_IMPLEMENTED,"Unsupported shape kind");
-		return;
-	}
-
 	if(outline.empty())
 	{
 		LOG(TRACE,"No edges in this shape");
 		return;
 	}
 
-/*	if(color0!=0 && color0!=1)
-		LOG(ERROR,"color0 "<<color0);
-	if(color1!=0 && color1!=1)
-		LOG(ERROR,"color1"<<color0);*/
-
 	glUseProgram(0);
 	bool filled=false;
-	if(closed && winding==0)
+	if(closed)
 	{
-		LOG(TRACE,"Filling 0");
+		LOG(TRACE,"Filling");
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 		glStencilFunc(GL_ALWAYS,color,0xff);
 		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
@@ -76,25 +65,6 @@ void Shape::Render(int i) const
 		if(color!=0)
 			filled=true;
 	}
-/*	else if(closed && winding==1)
-	{
-		LOG(TRACE,"Filling 1");
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilFunc(GL_ALWAYS,color1,0xff);
-		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
-		std::vector<Triangle>::const_iterator it2=interior.begin();
-		glBegin(GL_TRIANGLES);
-		for(it2;it2!=interior.end();it2++)
-		{
-			glVertex2i(it2->v1.x,it2->v1.y);
-			glVertex2i(it2->v2.x,it2->v2.y);
-			glVertex2i(it2->v3.x,it2->v3.y);
-		}
-		glEnd();
-		if(color1!=0)
-			filled=true;
-	}*/
-
 
 //	if(graphic.stroked || !filled)
 	{
@@ -213,11 +183,6 @@ void Shape::dumpInterior()
 
 void Shape::SetStyles(FILLSTYLE* styles)
 {
-/*	if(edges.back().p2==outline.front())
-		closed=true;
-	else
-		closed=false;*/
-
 	if(styles)
 	{
 		if(color)
@@ -227,15 +192,7 @@ void Shape::SetStyles(FILLSTYLE* styles)
 
 	}
 
-/*	if(!coerent)
-	{
-		LOG(ERROR,"Not coerent shape");
-		closed=false;
-		unsupported=true;
-		return;
-	}*/
-
-	//Calculate shape winding
+	/*//Calculate shape winding
 	long area=0;
 	int i;
 	for(i=0; i<outline.size()-1;i++)
@@ -247,56 +204,29 @@ void Shape::SetStyles(FILLSTYLE* styles)
 	if(area<0)
 		winding=1;
 	else
-		winding=0;
+		winding=0;*/
 }
 
 void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 {
 	style=NULL;
-	unsupported=false;
 	if(outline.empty())
 		return;
 
-	//We try to build coerent shapes out of a possible incoerent one
-	/*int cur_fill0=edges[0].color0;
-	int cur_fill1=edges[0].color1;
-	vector<Edge>::iterator it_start=edges.begin();
-	vector<Edge>::iterator it_cur=edges.begin();
-	do
+	if(outline.front()==outline.back())
 	{
-		if(it_cur->color0!=cur_fill0 || it_cur->color1!=cur_fill1)
-		{
-			//As the style is changed we create a new Shape;
-			sub_shapes.push_back(Shape());
-			sub_shapes.back().edges=vector<Edge>(it_start,it_cur);
-			sub_shapes.back().color=cur_fill0;
-			sub_shapes.back().graphic.stroked=false;
-			sub_shapes.back().SetStyles(styles);
-			if(sub_shapes.back().closed)
-				sub_shapes.back().TessellateSimple();
-
-			edges.erase(it_start,it_cur);
-			it_start=edges.begin();
-			it_cur=edges.begin();
-			cur_fill0=it_cur->color0;
-			cur_fill1=it_cur->color1;
-		}
-		it_cur++;
+		closed=true;
+		outline.pop_back();
 	}
-	while(it_cur!=edges.end());*/
-
-	//color=cur_fill0;
-
-	/*outline.reserve(edges.size());
-	for(int i=0;i<edges.size();i++)
-		outline.push_back(edges[i].p1);*/
+	else
+		closed=false;
 
 	SetStyles(styles);
 
 	graphic.stroked=false;
 	//Tessellate the shape using ear removing algorithm
-	//if(closed)
-	//	TessellateSimple();
+	if(closed)
+		TessellateSimple();
 }
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)

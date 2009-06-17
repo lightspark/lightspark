@@ -146,8 +146,6 @@ public:
 	std::vector<Shape> sub_shapes;
 	std::vector<Edge> edges;
 
-	bool unsupported;
-
 	Graphic graphic;
 	bool closed;
 	int winding;

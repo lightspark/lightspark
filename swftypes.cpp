@@ -506,6 +506,11 @@ void FILLSTYLE::setFragmentProgram() const
 		LOG(TRACE,"Fill color");
 		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
 		glUniform2f(s,1,0);
+		s=glGetUniformLocation(sys->gpu_program,"g_color1");
+		glUniform4f(s,float(Color.Red)/256.0f,
+			float(Color.Green)/256.0f,
+			float(Color.Blue)/256.0f,
+			float(Color.Alpha)/256.0f);
 	}
 	else if(FillStyleType==0x10)
 	{
@@ -545,10 +550,16 @@ void FILLSTYLE::setFragmentProgram() const
 	else
 	{
 		LOG(NOT_IMPLEMENTED,"Reverting to fixed function");
-		//glColor3f(1,0,0);
-		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
-		glUniform2f(s,0,0);
+		FILLSTYLE::fixedColor(0.5,0.5,0);
 	}
+}
+
+void FILLSTYLE::fixedColor(float r, float g, float b)
+{
+	int s=glGetUniformLocation(sys->gpu_program,"g_selector");
+	glUniform2f(s,1,0);
+	s=glGetUniformLocation(sys->gpu_program,"g_color1");
+	glUniform4f(s,r,g,b,1);
 }
 
 std::istream& operator>>(std::istream& s, FILLSTYLE& v)

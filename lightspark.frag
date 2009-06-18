@@ -1,10 +1,11 @@
 uniform sampler1D g_tex;
 uniform vec2 g_selector;
+uniform vec4 g_color1;
 
 
 vec4 solid_color()
 {
-	return vec4(0.0,0.0,1.0,0.0);
+	return g_color1;
 }
 
 vec4 linear_gradient()

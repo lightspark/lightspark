@@ -583,6 +583,7 @@ private:
 
 public:
 	virtual void setFragmentProgram() const;
+	static void fixedColor(float r, float g, float b);
 };
 
 class MORPHFILLSTYLE:public FILLSTYLE

@@ -69,9 +69,9 @@ void Shape::Render(int i) const
 //	if(graphic.stroked || !filled)
 	{
 		LOG(TRACE,"Line tracing");
-		glDisable(GL_STENCIL_TEST);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glStencilFunc(GL_NEVER,0,0);
+		glStencilFunc(GL_ALWAYS,0,0);
+		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
 		std::vector<Vector2>::const_iterator it=outline.begin();
 		//glColor3ub(graphic.stroke_color.Red,graphic.stroke_color.Green,graphic.stroke_color.Blue);
 		glColor3f(colors[i%8][0],colors[i%8][1],colors[i%8][2]);
@@ -84,7 +84,6 @@ void Shape::Render(int i) const
 			glVertex2i(it->x,it->y);
 		}
 		glEnd();
-		glEnable(GL_STENCIL_TEST);
 	}
 
 	for(int i=0;i<sub_shapes.size();i++)

@@ -291,7 +291,6 @@ void drawStenciled(const RECT& bounds, int fill0, int fill1, const FILLSTYLE* st
 			style0->setFragmentProgram();
 		else
 		{
-			glUseProgram(0);
 			glColor3f(1,0,0);
 		}
 		glBegin(GL_QUADS);
@@ -308,7 +307,6 @@ void drawStenciled(const RECT& bounds, int fill0, int fill1, const FILLSTYLE* st
 			style1->setFragmentProgram();
 		else
 		{
-			glUseProgram(0);
 			glColor3f(0,1,1);
 		}
 		glBegin(GL_QUADS);

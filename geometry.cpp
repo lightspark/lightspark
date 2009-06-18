@@ -45,7 +45,6 @@ void Shape::Render(int i) const
 		return;
 	}
 
-	glUseProgram(0);
 	bool filled=false;
 	if(closed)
 	{

@@ -551,11 +551,10 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	//Load fragment shaders
-	sys->linear_gradient_program=load_fragment_program("linear_gradient.frag");
-	int tex=glGetUniformLocation(sys->linear_gradient_program,"m_tex");
+	sys->gpu_program=load_fragment_program("lightspark.frag");
+	int tex=glGetUniformLocation(sys->gpu_program,"g_tex");
 	glUniform1i(tex,0);
-
-	sys->color_program=load_fragment_program("color.frag");
+	glUseProgram(sys->gpu_program);
 
 	float* buffer=new float[640*240];
 	try

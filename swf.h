@@ -99,8 +99,7 @@ private:
 
 public:
 	//OpenGL fragment programs
-	int linear_gradient_program;
-	int color_program;
+	int gpu_program;
 
 	bool shutdown;
 	int version;

@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
 		if(timeDiff(ts,td)>1000)
 		{
 			ts=td;
-			LOG(NO_INFO,"FPS: " << count);
+			LOG(NO_INFO,"FPS: " << dec <<count);
 			sys->fps_prof->fps=count;
 			count=0;
 			fps_profs.push_back(fps_profiling());

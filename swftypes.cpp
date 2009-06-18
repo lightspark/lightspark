@@ -504,12 +504,15 @@ void FILLSTYLE::setFragmentProgram() const
 	if(FillStyleType==0x00)
 	{
 		LOG(TRACE,"Fill color");
-		glUseProgram(sys->color_program);
+		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
+		glUniform2f(s,1,0);
 	}
 	else if(FillStyleType==0x10)
 	{
 		LOG(TRACE,"Fill gradient");
-		glUseProgram(sys->linear_gradient_program);
+		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
+		glUniform2f(s,0,1);
+
 		color_entry buffer[256];
 		int grad_index=0;
 		RGBA color_l(0,0,0,1);
@@ -542,8 +545,9 @@ void FILLSTYLE::setFragmentProgram() const
 	else
 	{
 		LOG(NOT_IMPLEMENTED,"Reverting to fixed function");
-		glUseProgram(0);
-		glColor3f(1,0,0);
+		//glColor3f(1,0,0);
+		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
+		glUniform2f(s,0,0);
 	}
 }
 

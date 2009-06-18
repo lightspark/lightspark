@@ -61,11 +61,10 @@ void Shape::Render(int i) const
 			glVertex2i(it2->v3.x,it2->v3.y);
 		}
 		glEnd();
-		if(color!=0)
-			filled=true;
+		filled=true;
 	}
 
-//	if(graphic.stroked || !filled)
+	//if(/*graphic.stroked ||*/ !filled)
 	{
 		LOG(TRACE,"Line tracing");
 		FILLSTYLE::fixedColor(0,0,0);
@@ -188,20 +187,6 @@ void Shape::SetStyles(FILLSTYLE* styles)
 			style=NULL;
 
 	}
-
-	/*//Calculate shape winding
-	long area=0;
-	int i;
-	for(i=0; i<outline.size()-1;i++)
-	{
-		area+=(outline[i].y+outline[i+1].y)*(outline[i+1].x-outline[i].x)/2;
-	}
-	area+=(outline[i].y+outline[0].y)*(outline[0].x-outline[i].x)/2;
-
-	if(area<0)
-		winding=1;
-	else
-		winding=0;*/
 }
 
 void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
@@ -220,7 +205,6 @@ void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
 
 	SetStyles(styles);
 
-	graphic.stroked=false;
 	//Tessellate the shape using ear removing algorithm
 	if(closed)
 		TessellateSimple();

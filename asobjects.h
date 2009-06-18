@@ -168,7 +168,6 @@ public:
 	RunState state;
 
 public:
-	int hack;
 	int displayListLimit;
 
 	ASMovieClip();

@@ -126,15 +126,6 @@ public:
 	}
 };
 
-class Graphic
-{
-public:
-	bool stroked;
-	RGBA color0;
-	RGBA color1;
-	RGBA stroke_color;
-};
-
 class Shape
 {
 private:
@@ -146,9 +137,7 @@ public:
 	std::vector<Shape> sub_shapes;
 	std::vector<Edge> edges;
 
-	Graphic graphic;
 	bool closed;
-	int winding;
 	int id;
 	int color;
 

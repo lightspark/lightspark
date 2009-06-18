@@ -185,7 +185,7 @@ float ASString::toFloat()
 	return 0;
 }
 
-ASMovieClip::ASMovieClip():_visible(1),_x(0),_y(0),_height(100),_width(100),hack(0),_framesloaded(0),_totalframes(1),displayListLimit(0),rotation(0.0)
+ASMovieClip::ASMovieClip():_visible(1),_x(0),_y(0),_height(100),_width(100),_framesloaded(0),_totalframes(1),displayListLimit(0),rotation(0.0)
 {
 	sem_init(&sem_frames,0,1);
 	ASMovieClip::_register();
@@ -238,22 +238,21 @@ ASFUNCTIONBODY(ASMovieClip,addEventListener)
 
 ASFUNCTIONBODY(ASMovieClip,createEmptyMovieClip)
 {
-	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj);
+	LOG(NOT_IMPLEMENTED,"createEmptyMovieClip");
+	return new Undefined;
+/*	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj);
 	if(th==NULL)
 		LOG(ERROR,"Not a valid ASMovieClip");
 
 	LOG(CALLS,"Called createEmptyMovieClip: " << args->args[0]->toString() << " " << args->args[1]->toString());
 	ASMovieClip* ret=new ASMovieClip();
 
-	//HACK
-	ret->hack=1;
-
 	IDisplayListElem* t=new ASObjectWrapper(ret,args->args[1]->toInt());
 	list<IDisplayListElem*>::iterator it=lower_bound(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),t->getDepth(),list_orderer);
 	th->dynamicDisplayList.insert(it,t);
 
 	th->setVariableByName(args->args[0]->toString(),ret);
-	return ret;
+	return ret;*/
 }
 
 ASFUNCTIONBODY(ASMovieClip,moveTo)
@@ -302,17 +301,6 @@ void ASMovieClip::_register()
 void ASMovieClip::Render()
 {
 	LOG(TRACE,"Render MovieClip");
-	if(hack==1)
-	{
-		glColor3f(0,1,0);
-		glBegin(GL_QUADS);
-			glVertex2i(0,0);
-			glVertex2i(_width,0);
-			glVertex2i(_width,100);
-			glVertex2i(0,100);
-		glEnd();
-		return;
-	}
 	parent=sys->currentClip;
 	ASMovieClip* clip_bak=sys->currentClip;
 	sys->currentClip=this;
@@ -323,16 +311,6 @@ void ASMovieClip::Render()
 		state.next_FP=state.FP;
 
 	list<Frame>::iterator frame=frames.begin();
-	if(hack!=2)
-	{
-		for(int i=0;i<state.FP;i++)
-			frame++;
-	}
-	else
-	{
-		for(int i=0;i<1;i++)
-			frame++;
-	}
 
 	//Apply local transformation
 	glPushMatrix();

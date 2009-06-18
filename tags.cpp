@@ -274,40 +274,23 @@ void DefineSpriteTag::printInfo(int t)
 	{
 		count++;
 		(*it)->printInfo(t+1);
-		if(count>5 && clip.frames.back().hack)
-			break;
 	}
 	sys.currentClip=bak;*/
 }
 
-void drawStenciled(const RECT& bounds, int fill0, int fill1, const FILLSTYLE* style0, const FILLSTYLE* style1)
+void drawStenciled(const RECT& bounds, int fill, const FILLSTYLE* style)
 {
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
-	if(fill0)
+	if(fill)
 	{
-		glStencilFunc(GL_EQUAL,fill0,0xff);
-		if(style0)
-			style0->setFragmentProgram();
+		glStencilFunc(GL_EQUAL,fill,0xff);
+		if(style)
+			style->setFragmentProgram();
 		else
 		{
+			abort();
 			glColor3f(1,0,0);
-		}
-		glBegin(GL_QUADS);
-			glVertex2i(bounds.Xmin,bounds.Ymin);
-			glVertex2i(bounds.Xmin,bounds.Ymax);
-			glVertex2i(bounds.Xmax,bounds.Ymax);
-			glVertex2i(bounds.Xmax,bounds.Ymin);
-		glEnd();
-	}
-	if(fill1)
-	{
-		glStencilFunc(GL_EQUAL,fill1,0xff);
-		if(style1)
-			style1->setFragmentProgram();
-		else
-		{
-			glColor3f(0,1,1);
 		}
 		glBegin(GL_QUADS);
 			glVertex2i(bounds.Xmin,bounds.Ymin);
@@ -540,7 +523,7 @@ void DefineTextTag::Render()
 			count++;
 		}
 	}
-	drawStenciled(TextBounds,1,0,&f,NULL);
+	drawStenciled(TextBounds,1,&f);
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
 }
@@ -661,7 +644,7 @@ void DefineMorphShapeTag::Render()
 	{
 		it->Render();
 		if(it->closed)
-			drawStenciled(EndBounds,it->color,0,it->style,NULL);
+			drawStenciled(EndBounds,it->color,it->style);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -694,7 +677,7 @@ void DefineShapeTag::Render()
 	{
 		it->Render();
 		if(it->closed)
-			drawStenciled(ShapeBounds,it->color,0,it->style,NULL);
+			drawStenciled(ShapeBounds,it->color,it->style);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -727,9 +710,13 @@ void DefineShape2Tag::Render()
 	{
 		it->Render();
 		if(it->color >= Shapes.FillStyles.FillStyleCount)
-			it->style=NULL;
-		LOG(NOT_IMPLEMENTED,"HACK schifoso");
-		drawStenciled(ShapeBounds,it->color,0,it->style,NULL);
+		{
+			it->style=new FILLSTYLE;
+			it->style->FillStyleType=0x00;
+			it->style->Color=RGB(255,0,0);
+			LOG(NOT_IMPLEMENTED,"Orrible HACK");
+		}
+		drawStenciled(ShapeBounds,it->color,it->style);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -762,7 +749,7 @@ void DefineShape4Tag::Render()
 	{
 		it->Render();
 		if(it->closed)
-			drawStenciled(ShapeBounds,it->color,0,it->style,NULL);
+			drawStenciled(ShapeBounds,it->color,it->style);
 	}
 	glClear(GL_STENCIL_BUFFER_BIT);
 	glDisable(GL_STENCIL_TEST);
@@ -796,7 +783,7 @@ void DefineShape3Tag::Render()
 	{
 		it->Render();
 		if(it->closed)
-			drawStenciled(ShapeBounds,it->color,0,it->style,NULL);
+			drawStenciled(ShapeBounds,it->color,it->style);
 	}
 	glDisable(GL_STENCIL_TEST);
 }
@@ -898,16 +885,16 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 							if(shapes[i].outline.back()==p1)
 							{
 								shapes[i].outline.push_back(p2);
-								cout << "Adding edge to shape " << i << endl;
-								cout << p1 << p2 << endl;
+								//cout << "Adding edge to shape " << i << endl;
+								//cout << p1 << p2 << endl;
 								new_shape=false;
 								break;
 							}
 							else if(shapes[i].outline.front()==p2)
 							{
 								shapes[i].outline.insert(shapes[i].outline.begin(),p1);
-								cout << "Adding edge to shape " << i << endl;
-								cout << p1 << p2 << endl;
+								//cout << "Adding edge to shape " << i << endl;
+								//cout << p1 << p2 << endl;
 								new_shape=false;
 								break;
 							}
@@ -916,8 +903,8 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 								!(*(shapes[i].outline.rbegin()+1)==p1))
 							{
 								shapes[i].outline.push_back(p1);
-								cout << "Adding edge to shape " << i << endl;
-								cout << p2 << p1 << endl;
+								//cout << "Adding edge to shape " << i << endl;
+								//cout << p2 << p1 << endl;
 								new_shape=false;
 								break;
 							}
@@ -925,8 +912,8 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 								!(shapes[i].outline[1]==p2)) 
 							{
 								shapes[i].outline.insert(shapes[i].outline.begin(),p2);
-								cout << "Adding edge to shape " << i << endl;
-								cout << p2 << p1 << endl;
+								//cout << "Adding edge to shape " << i << endl;
+								//cout << p2 << p1 << endl;
 								new_shape=false;
 								break;
 							}
@@ -934,8 +921,8 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 					}
 					if(new_shape)
 					{
-						cout << "Adding edge to new shape " << shapes.size() << endl;
-						cout << p1 << p2 << endl;
+						//cout << "Adding edge to new shape " << shapes.size() << endl;
+						//cout << p1 << p2 << endl;
 						shapes.push_back(Shape());
 						shapes.back().outline.push_back(p1);
 						shapes.back().outline.push_back(p2);
@@ -968,9 +955,9 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 						{
 							shapes[i].outline.push_back(p2);
 							shapes[i].outline.push_back(p3);
-							cout << "Adding curved edge to shape " << i << endl;
-							cout << p1 << p2 << endl;
-							cout << p2 << p3 << endl;
+							//cout << "Adding curved edge to shape " << i << endl;
+							//cout << p1 << p2 << endl;
+							//cout << p2 << p3 << endl;
 							new_shape=false;
 							break;
 						}
@@ -978,9 +965,9 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 						{
 							shapes[i].outline.insert(shapes[i].outline.begin(),p2);
 							shapes[i].outline.insert(shapes[i].outline.begin(),p1);
-							cout << "Adding curved edge to shape " << i << endl;
-							cout << p1 << p2 << endl;
-							cout << p2 << p3 << endl;
+							//cout << "Adding curved edge to shape " << i << endl;
+							//cout << p1 << p2 << endl;
+							//cout << p2 << p3 << endl;
 							new_shape=false;
 							break;
 						}
@@ -990,9 +977,9 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 						{
 							shapes[i].outline.push_back(p2);
 							shapes[i].outline.push_back(p1);
-							cout << "Adding curved edge to shape " << i << endl;
-							cout << p1 << p2 << endl;
-							cout << p2 << p3 << endl;
+							//cout << "Adding curved edge to shape " << i << endl;
+							//cout << p1 << p2 << endl;
+							//cout << p2 << p3 << endl;
 							new_shape=false;
 							break;
 						}
@@ -1001,18 +988,18 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 						{
 							shapes[i].outline.insert(shapes[i].outline.begin(),p2);
 							shapes[i].outline.insert(shapes[i].outline.begin(),p3);
-							cout << "Adding curved edge to shape " << i << endl;
-							cout << p1 << p2 << endl;
-							cout << p2 << p3 << endl;
+							//cout << "Adding curved edge to shape " << i << endl;
+							//cout << p1 << p2 << endl;
+							//cout << p2 << p3 << endl;
 							new_shape=false;
 							break;
 						}
 					}
 					if(new_shape)
 					{
-						cout << "Adding edge to new shape" << endl;
-						cout << p1 << p2 << endl;
-						cout << p2 << p3 << endl;
+						//cout << "Adding edge to new shape" << endl;
+						//cout << p1 << p2 << endl;
+						//cout << p2 << p3 << endl;
 						shapes.push_back(Shape());
 						shapes.back().outline.push_back(p1);
 						shapes.back().outline.push_back(p2);
@@ -1030,7 +1017,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 				startX=cur->MoveDeltaX;
 				startY=cur->MoveDeltaY;
 				count++;
-				cout << "Move " << startX << ' ' << startY << endl;
+				//cout << "Move " << startX << ' ' << startY << endl;
 			}
 /*			if(cur->StateLineStyle)
 			{
@@ -1065,8 +1052,6 @@ void DefineFont3Tag::genGlyphShape(vector<Shape>& s, int glyph)
 		for(int j=0;j<s[i].outline.size();j++)
 			s[i].outline[j]/=20;
 		s[i].BuildFromEdges(NULL,def_color0^def_color1);
-		//TODO: should fill styles be normalized
-		s[i].winding=!s[i].winding;
 	}
 
 	sort(s.begin(),s.end());
@@ -1309,6 +1294,11 @@ void PlaceObject2Tag::Render()
 	if(it==NULL)
 		LOG(ERROR,"Could not find Character in dictionary");
 
+	if(CharacterId==10)
+	{
+		ASMovieClip* m=dynamic_cast<ASMovieClip*>(it);
+		m->state.stop_FP=true;
+	}
 	float matrix[16];
 	MATRIX m2(Matrix);
 	m2.ScaleX*=_scalex/100.0f;

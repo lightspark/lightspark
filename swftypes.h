@@ -572,6 +572,7 @@ class FILLSTYLE
 	friend std::istream& operator>>(std::istream& s, FILLSTYLE& v);
 	friend std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v);
 	friend class DefineTextTag;
+	friend class DefineShape2Tag;
 private:
 	int version;
 	UI8 FillStyleType;

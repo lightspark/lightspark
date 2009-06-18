@@ -189,7 +189,7 @@ void Shape::SetStyles(FILLSTYLE* styles)
 	}
 }
 
-void Shape::BuildFromEdges(FILLSTYLE* styles, bool normalize)
+void Shape::BuildFromEdges(FILLSTYLE* styles)
 {
 	style=NULL;
 	if(outline.empty())

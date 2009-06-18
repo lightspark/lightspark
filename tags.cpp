@@ -623,20 +623,17 @@ std::ostream& operator<<(std::ostream& s, const Vector2& p)
 	return s;
 }
 
-void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes, bool& def_color0, bool& def_color1);
+void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes);
 
 void DefineMorphShapeTag::Render()
 {
 	std::vector < Shape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
 
-	bool def_color0,def_color1;
-	FromShaperecordListToShapeVector(cur,shapes,def_color0,def_color1);
+	FromShaperecordListToShapeVector(cur,shapes);
 
 	for(int i=0;i<shapes.size();i++)
-		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles,def_color0^def_color1);
-
-	sort(shapes.begin(),shapes.end());
+		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
 
 	std::vector < Shape >::iterator it=shapes.begin();
 	glEnable(GL_STENCIL_TEST);
@@ -659,13 +656,10 @@ void DefineShapeTag::Render()
 		clock_gettime(CLOCK_REALTIME,&ts);
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
-		bool def_color0,def_color1;
-		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
+		FromShaperecordListToShapeVector(cur,cached);
 
 		for(int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
-
-		sort(cached.begin(),cached.end());
+			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
 
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
@@ -692,13 +686,10 @@ void DefineShape2Tag::Render()
 		clock_gettime(CLOCK_REALTIME,&ts);
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
-		bool def_color0,def_color1;
-		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
+		FromShaperecordListToShapeVector(cur,cached);
 
 		for(int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
-
-		sort(cached.begin(),cached.end());
+			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
 
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
@@ -731,13 +722,10 @@ void DefineShape4Tag::Render()
 		clock_gettime(CLOCK_REALTIME,&ts);
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
-		bool def_color0,def_color1;
-		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
+		FromShaperecordListToShapeVector(cur,cached);
 
 		for(int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
-
-		sort(cached.begin(),cached.end());
+			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
 
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
@@ -764,13 +752,10 @@ void DefineShape3Tag::Render()
 		clock_gettime(CLOCK_REALTIME,&ts);
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
-		bool def_color0,def_color1;
-		FromShaperecordListToShapeVector(cur,cached,def_color0,def_color1);
+		FromShaperecordListToShapeVector(cur,cached);
 
 		for(int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles,def_color0^def_color1);
-
-		sort(cached.begin(),cached.end());
+			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
 
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
@@ -845,11 +830,9 @@ void FromShaperecordListToDump(SHAPERECORD* cur)
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
 * * \param cur SHAPERECORD list head
-* * \param shapes a vector to be populated with the shapes
-* * \param def_color0 this will be set if color0 is set in any of the shapes
-* * \param def_color1 this will be set if color1 is set in any of the shapes */
+* * \param shapes a vector to be populated with the shapes */
 
-void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bool& def_color0, bool& def_color1)
+void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 {
 	int startX=0;
 	int startY=0;
@@ -857,8 +840,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 	int color0=0;
 	int color1=0;
 
-	def_color0=false;
-	def_color1=false;
 	while(cur)
 	{
 		if(cur->TypeFlag)
@@ -1027,16 +1008,15 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes,bo
 			if(cur->StateFillStyle1)
 			{
 				color1=cur->FillStyle1;
-				def_color1=true;
 			}
 			if(cur->StateFillStyle0)
 			{
 				color0=cur->FillStyle0;
-				def_color0=true;
 			}
 		}
 		cur=cur->next;
 	}
+	sort(shapes.begin(),shapes.end());
 }
 
 void DefineFont3Tag::genGlyphShape(vector<Shape>& s, int glyph)
@@ -1044,17 +1024,14 @@ void DefineFont3Tag::genGlyphShape(vector<Shape>& s, int glyph)
 	SHAPE& shape=GlyphShapeTable[glyph];
 	SHAPERECORD* cur=&(shape.ShapeRecords);
 
-	bool def_color0,def_color1;
-	FromShaperecordListToShapeVector(cur,s,def_color0,def_color1);
+	FromShaperecordListToShapeVector(cur,s);
 
 	for(int i=0;i<s.size();i++)
 	{
 		for(int j=0;j<s[i].outline.size();j++)
 			s[i].outline[j]/=20;
-		s[i].BuildFromEdges(NULL,def_color0^def_color1);
+		s[i].BuildFromEdges(NULL);
 	}
-
-	sort(s.begin(),s.end());
 
 	//Should check fill state
 
@@ -1093,13 +1070,10 @@ void DefineFont2Tag::genGlyphShape(vector<Shape>& s, int glyph)
 	SHAPE& shape=GlyphShapeTable[glyph];
 	SHAPERECORD* cur=&(shape.ShapeRecords);
 
-	bool def_color0,def_color1;
-	FromShaperecordListToShapeVector(cur,s,def_color0,def_color1);
+	FromShaperecordListToShapeVector(cur,s);
 
 	for(int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(NULL,def_color0^def_color1);
-
-	sort(s.begin(),s.end());
+		s[i].BuildFromEdges(NULL);
 
 	//Should check fill state
 
@@ -1138,13 +1112,11 @@ void DefineFontTag::genGlyphShape(vector<Shape>& s,int glyph)
 	SHAPE& shape=GlyphShapeTable[glyph];
 	SHAPERECORD* cur=&(shape.ShapeRecords);
 
-	bool def_color0,def_color1;
-	FromShaperecordListToShapeVector(cur,s,def_color0,def_color1);
+	FromShaperecordListToShapeVector(cur,s);
 
 	for(int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(NULL,def_color0^def_color1);
+		s[i].BuildFromEdges(NULL);
 
-	sort(s.begin(),s.end());
 	//Should check fill state
 }
 

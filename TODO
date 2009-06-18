@@ -16,3 +16,4 @@ Official TODO Queue:
 -) Most arithmetic instruction return a Number for sure. Exploit this
 -) Implement ScalingGrid for correct positioning of some objects
 -) Implement gradient mapping
+-) Implement stack instantiation at function call

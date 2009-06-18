@@ -64,7 +64,9 @@ struct fps_profiling
 	uint64_t action_time;
 	uint64_t cache_time;
 	uint64_t fps;
-	fps_profiling():render_time(0),action_time(0),cache_time(0),fps(0){}
+	uint64_t event_count;
+	uint64_t event_time;
+	fps_profiling():render_time(0),action_time(0),cache_time(0),fps(0),event_count(0),event_time(0){}
 };
 
 struct bind_candidates

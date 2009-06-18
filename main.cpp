@@ -79,6 +79,7 @@ int main(int argc, char* argv[])
 	timespec ts,td,tperf,tperf2;
 	clock_gettime(CLOCK_REALTIME,&ts);
 	int count=0;
+	int sec_count=0;
 
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();
@@ -99,6 +100,7 @@ int main(int argc, char* argv[])
 			LOG(NO_INFO,"FPS: " << dec <<count);
 			sys->fps_prof->fps=count;
 			count=0;
+			sec_count++;
 			fps_profs.push_back(fps_profiling());
 			sys->fps_prof=&fps_profs.back();
 		}
@@ -110,7 +112,9 @@ int main(int argc, char* argv[])
 
 	ofstream prof("lightspark.dat");
 	for(int i=0;i<fps_profs.size();i++)
-		prof << i << ' ' << fps_profs[i].render_time << ' ' << fps_profs[i].action_time << ' ' << fps_profs[i].cache_time << ' ' << fps_profs[i].fps*10 << endl;
+		prof << i << ' ' << fps_profs[i].render_time << ' ' << fps_profs[i].action_time << ' ' << 
+			fps_profs[i].cache_time << ' ' << fps_profs[i].fps*10 << ' ' << fps_profs[i].event_count << 
+			' ' << fps_profs[i].event_time << endl;
 	prof.close();
 
 	SDL_Quit();

@@ -416,6 +416,7 @@ private:
 	static void convert_i(method_info* th);
 	static void convert_b(method_info* th);
 	static void convert_d(method_info* th);
+	static void method_reset(method_info* th);
 
 	//Synchronization
 	sem_t mutex;

@@ -182,6 +182,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"incRef",module);
 	ex->addGlobalMapping(F,(void*)&ISWFObject::s_incRef);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"method_reset",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::method_reset);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_d",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::convert_d);
 
@@ -582,6 +585,12 @@ void ABCVm::addEvent(InteractiveObject* obj ,Event* ev)
 	events_queue.push_back(pair<InteractiveObject*,Event*>(obj, ev));
 	sem_post(&sem_event_count);
 	sem_post(&mutex);
+}
+
+void ABCVm::method_reset(method_info* th)
+{
+	th->stack_index=0;
+	th->scope_stack.clear();
 }
 
 void dumpClasses(map<string,int>& maps)
@@ -1432,6 +1441,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	bool last_is_branch=true;
 
 	Builder.SetInsertPoint(BB);
+	Builder.CreateCall(ex->FindFunctionNamed("method_reset"), th);
 	//We fill locals with function arguments
 	//First argument is the 'this'
 	constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 0);
@@ -2391,8 +2401,14 @@ void ABCVm::Run(ABCVm* th)
 	}
 	while(!th->shutdown)
 	{
+		timespec ts,td;
+		clock_gettime(CLOCK_REALTIME,&ts);
 		sem_wait(&th->sem_event_count);
 		th->handleEvent();
+		sys->fps_prof->event_count++;
+
+		clock_gettime(CLOCK_REALTIME,&td);
+		sys->fps_prof->event_time+=timeDiff(ts,td);
 	}
 	//module.dump();
 }

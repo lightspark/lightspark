@@ -1,29 +1,39 @@
-Lightspark Technical demo README
+Lightspark second Technical demo README
 
 First of all I'd like to thank you for testing the lightspark project,
-the current status is really primitive, but I'd like to show that something
-already works.
-
-This demo should be able to render correctly the flash test page at
-http://www.adobe.com/shockwave/welcome/
+the current status is quite primitive, but I'd like to showcase the technology of this project
 
 Be aware that the following feature are not yet supported or stable enough to be include in the demo
 
 -) Sound support
 -) Input support
 -) Antialiasing
+-) Alpha blending (Trasparency)
 
-To build the software please follow those steps
+This demo already includes a lot of cool features
 
-1) cd plugin/
+-) GLSL based rendering of fill styles (eg. gradients)
+-) LLVM based ActionScript execution. Code is compiled just in time
+-) A few tricks are also played to decrease the stack traffic tipical of stack machines.
+-) First, although simple, framerate timing
+-) Framework to handle ActionScript asynchronous events. Currently only the enterFrame event works.
+
+
+INSTALLATION:
+To compile this software you need to install development packages for llvm, sdl and opengl.
+To build the software please follow those steps.
+
+1) cd lightspark
 2) make
-3) make install
 
-The installation copy the plugin to $HOME/.mozilla/plugins/lightspark.so
+EXECUTION:
+This demo aims at rendering a simple SWF file from Adobe.
 
-Now from firefox add-on configuration disable any other flash compatible plugins such as the adobe player or gnash
+1) wget http://www.adobe.com/devnet/flash/samples/drawing_1/1_coordinates.swf
+2) ./lightspark 1_coordinates.swf
 
-Open http://www.adobe.com/shockwave/welcome/
+The results may not seem really interesting. But a lot is going on under the hood. The rotating object is animated 
+using ActionScript 3.0, which is a first class citizen in the design of the project.
 
 You're warmly invited to send feedback and error report on the project mailing list (lightspark-devel@lists.sourceforge.net)
 or bug tracker on sourceforge

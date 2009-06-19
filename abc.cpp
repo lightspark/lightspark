@@ -126,7 +126,8 @@ void SymbolClassTag::Render()
 			else
 			{
 				pair < map<int, bind_candidates>::iterator, map<int, bind_candidates>::iterator> range=
-					sys->bind_canditates_map.equal_range(Tags[i]);
+					to_bind.equal_range(Tags[i]);
+
 				if(range.first==range.second)
 				{
 					sys->currentVm->addEvent(NULL, new BindClassEvent(base->clone(), 
@@ -135,7 +136,8 @@ void SymbolClassTag::Render()
 				for(range.first;range.first!=range.second;range.first++)
 				{
 					sys->currentVm->addEvent(NULL, new BindClassEvent(base->clone(), 
-						range.first->second.parent, Names[i], range.first->second.obj_name, range.first->second.placed_by));
+						range.first->second.parent, Names[i], range.first->second.obj_name, 
+						range.first->second.placed_by));
 				}
 			}
 		}
@@ -622,6 +624,7 @@ ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 	}
 	else
 	{
+		base->class_name=s;
 		method_info* m=&methods[classes[index].cinit];
 		synt_method(m);
 		LOG(CALLS,"Calling Class init");
@@ -1093,7 +1096,7 @@ void ABCVm::getProperty(method_info* th, int n)
 	ISWFObject* ret=obj->getVariableByName(name,found);
 	if(!found)
 	{
-		LOG(ERROR,"Property not found");
+		LOG(NOT_IMPLEMENTED,"Property not found " << name);
 		th->runtime_stack_push(new Undefined);
 		//th->runtime_stack_push(ret);
 		//ret->incRef();

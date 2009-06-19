@@ -185,9 +185,11 @@ float ASString::toFloat()
 	return 0;
 }
 
-ASMovieClip::ASMovieClip():_visible(1),_x(0),_y(0),_height(100),_width(100),_framesloaded(0),_totalframes(1),displayListLimit(0),rotation(0.0)
+ASMovieClip::ASMovieClip():_visible(1),_x(0),_y(0),_height(100),_width(100),_framesloaded(0),_totalframes(1),
+	displayListLimit(0),rotation(0.0)
 {
 	sem_init(&sem_frames,0,1);
+	class_name="MovieClip";
 	ASMovieClip::_register();
 }
 
@@ -305,7 +307,7 @@ void ASMovieClip::Render()
 	ASMovieClip* clip_bak=sys->currentClip;
 	sys->currentClip=this;
 
-	if(!state.stop_FP)
+	if(!state.stop_FP && class_name=="MovieClip")
 		state.next_FP=min(state.FP+1,frames.size()-1);
 	else
 		state.next_FP=state.FP;

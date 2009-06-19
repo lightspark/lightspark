@@ -1315,11 +1315,6 @@ void PlaceObject2Tag::Render()
 	if(it==NULL)
 		LOG(ERROR,"Could not find Character in dictionary");
 
-	if(CharacterId==10)
-	{
-		ASMovieClip* m=dynamic_cast<ASMovieClip*>(it);
-		m->state.stop_FP=true;
-	}
 	float matrix[16];
 	MATRIX m2(Matrix);
 	m2.ScaleX*=_scalex/100.0f;

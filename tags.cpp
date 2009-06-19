@@ -850,10 +850,10 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 				startX+=cur->DeltaX;
 				startY+=cur->DeltaY;
 				Vector2 p2(startX,startY,count+1);
-				bool new_shape=true;
 				int color;
 				for(int k=0;k<2;k++)
 				{
+					bool new_shape=true;
 					if(k==0)
 						color=color0;
 					else
@@ -921,10 +921,10 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 				startX+=cur->AnchorDeltaX;
 				startY+=cur->AnchorDeltaY;
 				Vector2 p3(startX,startY,count+2);
-				bool new_shape=true;
 				int color;
 				for(int k=0;k<2;k++)
 				{
+					bool new_shape=true;
 					if(k==0)
 						color=color0;
 					else
@@ -932,48 +932,51 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 
 					for(int i=0;i<shapes.size();i++)
 					{
-						if(shapes[i].outline.back()==p1)
+						if(shapes[i].color==color)
 						{
-							shapes[i].outline.push_back(p2);
-							shapes[i].outline.push_back(p3);
-							//cout << "Adding curved edge to shape " << i << endl;
-							//cout << p1 << p2 << endl;
-							//cout << p2 << p3 << endl;
-							new_shape=false;
-							break;
-						}
-						else if(shapes[i].outline.front()==p3)
-						{
-							shapes[i].outline.insert(shapes[i].outline.begin(),p2);
-							shapes[i].outline.insert(shapes[i].outline.begin(),p1);
-							//cout << "Adding curved edge to shape " << i << endl;
-							//cout << p1 << p2 << endl;
-							//cout << p2 << p3 << endl;
-							new_shape=false;
-							break;
-						}
+							if(shapes[i].outline.back()==p1)
+							{
+								shapes[i].outline.push_back(p2);
+								shapes[i].outline.push_back(p3);
+								//cout << "Adding curved edge to shape " << i << endl;
+								//cout << p1 << p2 << endl;
+								//cout << p2 << p3 << endl;
+								new_shape=false;
+								break;
+							}
+							else if(shapes[i].outline.front()==p3)
+							{
+								shapes[i].outline.insert(shapes[i].outline.begin(),p2);
+								shapes[i].outline.insert(shapes[i].outline.begin(),p1);
+								//cout << "Adding curved edge to shape " << i << endl;
+								//cout << p1 << p2 << endl;
+								//cout << p2 << p3 << endl;
+								new_shape=false;
+								break;
+							}
 
-						if(shapes[i].outline.back()==p3 &&
-							!(*(shapes[i].outline.rbegin()+1)==p2))
-						{
-							shapes[i].outline.push_back(p2);
-							shapes[i].outline.push_back(p1);
-							//cout << "Adding curved edge to shape " << i << endl;
-							//cout << p1 << p2 << endl;
-							//cout << p2 << p3 << endl;
-							new_shape=false;
-							break;
-						}
-						else if(shapes[i].outline.front()==p1 &&
-							!(shapes[i].outline[1]==p2))
-						{
-							shapes[i].outline.insert(shapes[i].outline.begin(),p2);
-							shapes[i].outline.insert(shapes[i].outline.begin(),p3);
-							//cout << "Adding curved edge to shape " << i << endl;
-							//cout << p1 << p2 << endl;
-							//cout << p2 << p3 << endl;
-							new_shape=false;
-							break;
+							if(shapes[i].outline.back()==p3 &&
+								!(*(shapes[i].outline.rbegin()+1)==p2))
+							{
+								shapes[i].outline.push_back(p2);
+								shapes[i].outline.push_back(p1);
+								//cout << "Adding curved edge to shape " << i << endl;
+								//cout << p1 << p2 << endl;
+								//cout << p2 << p3 << endl;
+								new_shape=false;
+								break;
+							}
+							else if(shapes[i].outline.front()==p1 &&
+								!(shapes[i].outline[1]==p2))
+							{
+								shapes[i].outline.insert(shapes[i].outline.begin(),p2);
+								shapes[i].outline.insert(shapes[i].outline.begin(),p3);
+								//cout << "Adding curved edge to shape " << i << endl;
+								//cout << p1 << p2 << endl;
+								//cout << p2 << p3 << endl;
+								new_shape=false;
+								break;
+							}
 						}
 					}
 					if(new_shape)
@@ -1015,6 +1018,52 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 			}
 		}
 		cur=cur->next;
+	}
+
+	//Let's join shape pieces together
+	for(int i=0;i<shapes.size();i++)
+	{
+		for(int j=i+1;j<shapes.size();j++)
+		{
+			if(shapes[i].color==shapes[j].color)
+			{
+				if(shapes[i].outline.back()==shapes[j].outline.front())
+				{
+					shapes[i].outline.insert(shapes[i].outline.end(),
+							shapes[j].outline.begin()+1,shapes[j].outline.end());
+					shapes.erase(shapes.begin()+j);
+					j--;
+					continue;
+				}
+				else if(shapes[i].outline.front()==shapes[j].outline.back())
+				{
+					shapes[i].outline.insert(shapes[i].outline.begin(),
+							shapes[j].outline.begin(),shapes[j].outline.end()-1);
+					shapes.erase(shapes.begin()+j);
+					j--;
+					continue;
+				}
+				else if(shapes[i].outline.back()==shapes[j].outline.back() &&    //This should not match with
+						shapes[i].outline[shapes[i].outline.size()-2]!=	//the reverse of the same edge
+						shapes[j].outline[shapes[j].outline.size()-2])
+				{
+					shapes[i].outline.insert(shapes[i].outline.end(),
+							shapes[j].outline.rbegin()+1,shapes[j].outline.rend());
+					shapes.erase(shapes.begin()+j);
+					j--;
+					continue;
+				}
+				else if(shapes[i].outline.front()==shapes[j].outline.front() &&
+						shapes[i].outline[1]!=shapes[j].outline[1])
+				{
+					shapes[i].outline.insert(shapes[i].outline.begin(),
+							shapes[j].outline.rbegin(),shapes[j].outline.rend()-1);
+					shapes.erase(shapes.begin()+j);
+					j--;
+					continue;
+				}
+			}
+		}
 	}
 	sort(shapes.begin(),shapes.end());
 }

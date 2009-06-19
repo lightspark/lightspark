@@ -139,26 +139,9 @@ void Shape::dumpEdges()
 {
 	ofstream f("edges.dat");
 
-	for(int i=0;i<edges.size();i++)
-		f << edges[i].p1.x << ' ' << edges[i].p1.y << endl;
-/*			for(int k=0;k<cached[j].sub_shapes.size();k++)
-	{
-		for(int i=0;i<cached[j].sub_shapes[k].edges.size();i++)
-			f << cached[j].sub_shapes[k].edges[i].p1.x << ' ' << cached[j].sub_shapes[k].edges[i].p1.y << endl;
-	}*/
+	for(int i=0;i<outline.size();i++)
+		f << outline[i].x << ' ' << outline[i].y << endl;
 	f.close();
-	ofstream g("interior.dat");
-
-	for(int i=0;i<interior.size();i++)
-	{
-		g << interior[i].v1.x << ' ' << interior[i].v1.y << endl;
-		g << interior[i].v2.x << ' ' << interior[i].v2.y << endl;
-		g << interior[i].v3.x << ' ' << interior[i].v3.y << endl;
-		g << interior[i].v1.x << ' ' << interior[i].v1.y << endl;
-		g << endl;
-	}
-
-	g.close();
 }
 
 void Shape::dumpInterior()

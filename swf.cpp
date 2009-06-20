@@ -80,7 +80,7 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	sem_init(&mutex,0,1);
 
 	//Register global functions
-	setVariableByName(".parseInt",new Function(parseInt));
+	setVariableByName("parseInt",new Function(parseInt));
 
 	//Register default objects
 	ISWFObject* stage(new ASStage);
@@ -104,11 +104,12 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	//This should come from DisplayObject
 	LoaderInfo* loaderInfo=new LoaderInfo(true);
-	setVariableByName(".loaderInfo",loaderInfo);
+	setVariableByName("loaderInfo",loaderInfo);
 	//Setting fake parameters
 	loaderInfo->parameters.setVariableByName(".debug_level",new ASString(""));
 	loaderInfo->parameters.setVariableByName(".connect",new ASString("true"));
 	loaderInfo->parameters.setVariableByName(".chat_ip",new ASString("216.246.59.237"));
+	loaderInfo->parameters.setVariableByName(".chat_port",new ASString("5222"));
 	loaderInfo->parameters.setVariableByName(".chat_host",new ASString("of1.kongregate.com"));
 }
 

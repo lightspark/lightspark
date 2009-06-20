@@ -21,5 +21,5 @@
 
 void LoaderInfo::constructor()
 {
-	setVariableByName(".parameters",&parameters);
+	setVariableByName("parameters",&parameters);
 }

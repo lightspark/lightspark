@@ -369,8 +369,8 @@ void ABCVm::registerClasses()
 	}*/
 
 	//Register predefined types, ASObject are enough for not implemented classes
-	Global.setVariableByName(".Object",new ASObject);
-	valid_classes[".Object"]=-1;
+	Global.setVariableByName("Object",new ASObject);
+	valid_classes["Object"]=-1;
 	Global.setVariableByName(".int",new ASObject);
 	valid_classes[".int"]=-1;
 	Global.setVariableByName(".Boolean",new ASObject);
@@ -608,7 +608,11 @@ ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 	if(it!=valid_classes.end())
 		LOG(CALLS,"Class " << s << " found")
 	else
-		LOG(CALLS,"Class " << s << " not found")
+	{
+		LOG(ERROR,"Class " << s << " not found");
+		return new ASObject;
+	}
+
 	//TODO: Really build class
 	int index=it->second;
 	if(index==-1)
@@ -617,7 +621,7 @@ ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 		ISWFObject* r=Global.getVariableByName(it->first,found);
 		if(!found)
 		{
-			LOG(ERROR,"Class " << it->first << " not found");
+			LOG(ERROR,"Class " << it->first << " not found in global");
 			abort();
 		}
 		return r->clone();
@@ -627,11 +631,14 @@ ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 		base->class_name=s;
 		method_info* m=&methods[classes[index].cinit];
 		synt_method(m);
+		LOG(CALLS,"Building class traits");
+		for(int i=0;i<classes[index].trait_count;i++)
+			buildTrait(base,&classes[index].traits[i]);
 		LOG(CALLS,"Calling Class init");
 		if(m->f)
 		{
 			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-			FP(&Global,NULL);
+			FP(base,NULL);
 		}
 		m=&methods[instances[index].init];
 		synt_method(m);
@@ -639,7 +646,7 @@ ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 		for(int i=0;i<instances[index].trait_count;i++)
 			buildTrait(base,&instances[index].traits[i]);
 
-		LOG(CALLS,"Calling Instance init");
+		LOG(CALLS,"Calling Instance init on " << s);
 		//module.dump();
 		if(m->f)
 		{
@@ -1090,7 +1097,6 @@ void ABCVm::getProperty(method_info* th, int n)
 	LOG(CALLS, "getProperty " << name );
 
 	ISWFObject* obj=th->runtime_stack_pop();
-
 
 	bool found;
 	ISWFObject* ret=obj->getVariableByName(name,found);
@@ -2432,7 +2438,8 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 		case traits_info::Class:
 		{
 		//	LOG(CALLS,"Registering trait " << name);
-			obj->setVariableByName(name, buildClass(t->classi));
+		//	obj->setVariableByName(name, buildClass(t->classi));
+			obj->setVariableByName(name, new Undefined);
 			break;
 		}
 		case traits_info::Setter:
@@ -2454,6 +2461,12 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 			llvm::Function* f=synt_method(m);
 			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
 			obj->setVariableByName(name, new Function(f2));
+			break;
+		}
+		case traits_info::Const:
+		{
+			//TODO: Mot so const right now
+			obj->setVariableByName(name, new Undefined);
 			break;
 		}
 		case traits_info::Slot:
@@ -2496,9 +2509,10 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 				ISWFObject* ret=obj->getVariableByName(name,found);
 				if(!found)
 				{
-					ret=obj->setVariableByName(name, 
-							buildNamedClass(new ASObject,getMultinameString(t->type_name)));
-					ret->_register();
+					//ret=obj->setVariableByName(name, 
+					//		buildNamedClass(new ASObject,getMultinameString(t->type_name)));
+					//ret->_register();
+					ret=obj->setVariableByName(name,new Undefined); 
 				}
 				else
 					LOG(CALLS,"Not resetting variable " << name);

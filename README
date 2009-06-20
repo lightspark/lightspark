@@ -20,7 +20,7 @@ This demo already includes a lot of cool features
 
 
 INSTALLATION:
-To compile this software you need to install development packages for llvm, sdl and opengl.
+To compile this software you need to install development packages for llvm-2.5, sdl and opengl.
 To build the software please follow those steps.
 
 1) cd lightspark

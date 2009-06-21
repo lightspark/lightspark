@@ -106,11 +106,11 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	LoaderInfo* loaderInfo=new LoaderInfo(true);
 	setVariableByName("loaderInfo",loaderInfo);
 	//Setting fake parameters
-	loaderInfo->parameters.setVariableByName(".debug_level",new ASString(""));
-	loaderInfo->parameters.setVariableByName(".connect",new ASString("true"));
-	loaderInfo->parameters.setVariableByName(".chat_ip",new ASString("216.246.59.237"));
-	loaderInfo->parameters.setVariableByName(".chat_port",new ASString("5222"));
-	loaderInfo->parameters.setVariableByName(".chat_host",new ASString("of1.kongregate.com"));
+	loaderInfo->parameters.setVariableByName("debug_level",new ASString(""));
+	loaderInfo->parameters.setVariableByName("connect",new ASString("true"));
+	loaderInfo->parameters.setVariableByName("chat_ip",new ASString("216.246.59.237"));
+	loaderInfo->parameters.setVariableByName("chat_port",new ASString("5222"));
+	loaderInfo->parameters.setVariableByName("chat_host",new ASString("of1.kongregate.com"));
 }
 
 void SystemState::setShutdownFlag()
@@ -746,7 +746,7 @@ DictionaryTag* SystemState::dictionaryLookup(int id)
 ISWFObject* SystemState::getVariableByName(const string& name, bool& found)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ISWFObject::getVariableByName(name, found);
+	ISWFObject* ret=ASObject::getVariableByName(name, found);
 	sem_post(&mutex);
 	return ret;
 }

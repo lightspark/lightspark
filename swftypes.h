@@ -35,7 +35,7 @@
 	ISWFObject* c::name(ISWFObject* obj, arguments* args)
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_DOUBLE, T_FUNCTION,
-	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED, T_STRING};
+	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED, T_STRING, T_DEFINABLE};
 
 class arguments;
 class IFunction;
@@ -216,19 +216,6 @@ public:
 	ISWFObject* instantiate();
 };
 
-class Undefined : public ISWFObject
-{
-public:
-	ASFUNCTION(call);
-	Undefined();
-	SWFOBJECT_TYPE getObjectType() const {return T_UNDEFINED;}
-	std::string toString() const;
-	ISWFObject* clone()
-	{
-		return new Undefined;
-	}
-};
-
 class Null : public ISWFObject
 {
 public:
@@ -270,6 +257,18 @@ private:
 	bool bound;
 };
 
+//Internal object used to store traits declared in scripts, but not yet valid
+class Definable : public ISWFObject
+{
+private:
+	Function::as_function f;
+public:
+	Definable(Function::as_function _f):f(_f){}
+	//The global object will be passed from the calling context
+	void define(ISWFObject* g){ f(g,NULL); }
+	SWFOBJECT_TYPE getObjectType() const {return T_DEFINABLE;}
+};
+
 class FLOAT 
 {
 friend std::istream& operator>>(std::istream& s, FLOAT& v);
@@ -305,6 +304,7 @@ public:
 	int toInt(); 
 	float toFloat();
 	operator int() const{return val;} 
+	bool isLess(const ISWFObject* r) const;
 	ISWFObject* clone()
 	{
 		return new Integer(*this);

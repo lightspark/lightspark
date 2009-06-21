@@ -48,7 +48,8 @@ public:
 class ASObject: public ISWFObject
 {
 public:
-	ASObject():debug_id(0){}
+	ASObject* prototype;
+	ASObject():debug_id(0),prototype(NULL){}
 	void _register();
 	SWFOBJECT_TYPE getObjectType() const { return T_OBJECT; }
 	ASFUNCTION(constructor);
@@ -56,9 +57,23 @@ public:
 	{
 		return new ASObject(*this);
 	}
+	ISWFObject* getVariableByName(const std::string& name, bool& found);
 
 	//DEBUG
 	int debug_id;
+};
+
+class Undefined : public ASObject
+{
+public:
+	ASFUNCTION(call);
+	Undefined();
+	SWFOBJECT_TYPE getObjectType() const {return T_UNDEFINED;}
+	std::string toString() const;
+	ISWFObject* clone()
+	{
+		return new Undefined;
+	}
 };
 
 class ASString: public ASObject
@@ -89,20 +104,46 @@ public:
 
 class ASArray: public ASObject
 {
+friend class ABCVm;
+private:
+	std::vector<ISWFObject*> data;
+	Integer length;
 public:
+	ASArray():length(0){_register();}
+	virtual ~ASArray();
 	ASFUNCTION(constructor);
 	void _register();
 	ISWFObject* clone()
 	{
 		return new ASArray(*this);
 	}
+	ISWFObject* at(int index) const
+	{
+		return data[index];
+	}
+	ISWFObject*& at(int index)
+	{
+		return data[index];
+	}
+	int size() const
+	{
+		return data.size();
+	}
+	void push(ISWFObject* o)
+	{
+		data.push_back(o);
+		length=length+1;
+	}
+	void resize(int n)
+	{
+		data.resize(n);
+		length=n;
+	}
 };
 
 class arguments: public ASArray
 {
 public:
-	std::vector<ISWFObject*> args;
-	~arguments();
 	ISWFObject* clone()
 	{
 		return new arguments(*this);

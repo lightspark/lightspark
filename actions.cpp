@@ -397,8 +397,8 @@ ISWFObject* ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 	ExecutionContext* exec_bak=sys->execContext;
 	sys->execContext=this;
 	LOG(CALLS,"Calling Function2 " << FunctionName);
-	for(int i=0;i<args->args.size();i++)
-		LOG(CALLS,"Arg "<<i<<"="<<args->args[i]->toString());
+	for(int i=0;i<args->size();i++)
+		LOG(CALLS,"Arg "<<i<<"="<<args->at(i)->toString());
 	for(int i=0;i<NumParams;i++)
 	{
 		//cout << "Reg " << (int)Parameters[i].Register << " for " <<  Parameters[i].ParamName << endl;
@@ -406,7 +406,7 @@ ISWFObject* ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 			LOG(ERROR,"Parameter not in register")
 		else
 		{
-			sys->execContext->regs[Parameters[i].Register]=args->args[i];
+			sys->execContext->regs[Parameters[i].Register]=args->at(i);
 		}
 	}
 	int used_regs=1;
@@ -690,7 +690,7 @@ void ActionCallMethod::Execute()
 	int numArgs=sys->vm.stack.pop()->toInt();
 	arguments args;
 	for(int i=0;i<numArgs;i++)
-		args.args.push_back(sys->vm.stack.pop());
+		args.push(sys->vm.stack.pop());
 	bool found;
 	IFunction* f=obj->getVariableByName(methodName,found)->toFunction();
 	if(f==0)
@@ -707,7 +707,7 @@ void ActionCallFunction::Execute()
 	int numArgs=sys->vm.stack.pop()->toInt();
 	arguments args;
 	for(int i=0;i<numArgs;i++)
-		args.args.push_back(sys->vm.stack.pop());
+		args.push(sys->vm.stack.pop());
 	bool found;
 	IFunction* f=sys->currentClip->getVariableByName(funcName,found)->toFunction();
 	if(f==0)

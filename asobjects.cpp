@@ -42,6 +42,8 @@ ASStage::ASStage():width(640),height(480)
 void ASArray::_register()
 {
 	setVariableByName("constructor",new Function(constructor));
+	setVariableByName("length",&length);
+	length.incRef();
 }
 
 ASFUNCTIONBODY(ASArray,constructor)
@@ -104,12 +106,12 @@ size_t ASXML::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 ASFUNCTIONBODY(ASXML,load)
 {
 	ASXML* th=dynamic_cast<ASXML*>(obj);
-	LOG(NOT_IMPLEMENTED,"Called ASXML::load " << args->args[0]->toString());
+	LOG(NOT_IMPLEMENTED,"Called ASXML::load " << args->at(0)->toString());
 	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
 	string base("www.youtube.com");
-	string url=base+args->args[0]->toString();
+	string url=base+args->at(0)->toString();
 	if(curl)
 	{
 		curl_easy_setopt(curl, CURLOPT_URL, (string(url)).c_str());
@@ -123,9 +125,19 @@ ASFUNCTIONBODY(ASXML,load)
 	bool found;
 	IFunction* on_load=obj->getVariableByName("onLoad",found)->toFunction();
 	arguments a;
-	a.args.push_back(new Integer(1));
+	a.push(new Integer(1));
 	on_load->call(NULL,&a);
 	return new Integer(1);
+}
+
+
+ISWFObject* ASObject::getVariableByName(const std::string& name, bool& found)
+{
+	ISWFObject* ret=ISWFObject::getVariableByName(name,found);
+	if(!found && prototype)
+		ret=prototype->getVariableByName(name,found);
+
+	return ret;
 }
 
 void ASObject::_register()
@@ -149,18 +161,18 @@ ASString::ASString(const string& s):data(s)
 	setVariableByName("Call",new Function(ASString::String));
 }
 
-arguments::~arguments()
+ASArray::~ASArray()
 {
-	for(int i=0;i<args.size();i++)
-		args[i]->decRef();
+	for(int i=0;i<data.size();i++)
+		data[i]->decRef();
 }
 
 ASFUNCTIONBODY(ASString,String)
 {
 	ASString* th=dynamic_cast<ASString*>(obj);
-	if(args->args[0]->getObjectType()==T_DOUBLE)
+	if(args->at(0)->getObjectType()==T_DOUBLE)
 	{
-		Number* n=dynamic_cast<Number*>(args->args[0]);
+		Number* n=dynamic_cast<Number*>(args->at(0));
 		ostringstream oss;
 		oss << setprecision(8) << fixed << *n;
 
@@ -169,7 +181,7 @@ ASFUNCTIONBODY(ASString,String)
 	}
 	else
 	{
-		LOG(CALLS,"Cannot convert " << args->args[0]->getObjectType() << " to String");
+		LOG(CALLS,"Cannot convert " << args->at(0)->getObjectType() << " to String");
 		abort();
 	}
 }
@@ -216,26 +228,26 @@ void ASMovieClip::handleEvent(Event* e)
 
 	LOG(CALLS, "MovieClip event " << h->first);
 	arguments args;
-	args.args.push_back(e);
+	args.push(e);
 	h->second->call(this,&args);
 }
 
 ASFUNCTIONBODY(ASMovieClip,addEventListener)
 {
-	if(args->args[0]->getObjectType()!=T_STRING || args->args[1]->getObjectType()!=T_FUNCTION)
+	if(args->at(0)->getObjectType()!=T_STRING || args->at(1)->getObjectType()!=T_FUNCTION)
 	{
 		LOG(ERROR,"Type mismatch");
 		abort();
 	}
-	sys->cur_input_thread->addListener(args->args[0]->toString(),dynamic_cast<InteractiveObject*>(obj));
+	sys->cur_input_thread->addListener(args->at(0)->toString(),dynamic_cast<InteractiveObject*>(obj));
 	ASMovieClip* th=dynamic_cast<ASMovieClip*>(obj);
 
-	Function* f=dynamic_cast<Function*>(args->args[1]);
+	Function* f=dynamic_cast<Function*>(args->at(1));
 	Function* f2=(Function*)f->clone();
 	f2->bind();
 
-	th->handlers.insert(make_pair(args->args[0]->toString(),f2->toFunction()));
-	sys->events_name.push_back(args->args[0]->toString());
+	th->handlers.insert(make_pair(args->at(0)->toString(),f2->toFunction()));
+	sys->events_name.push_back(args->at(0)->toString());
 }
 
 ASFUNCTIONBODY(ASMovieClip,createEmptyMovieClip)

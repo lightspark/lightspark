@@ -67,6 +67,19 @@ bool ISWFObject::isLess(const ISWFObject* r) const
 	return false;
 }
 
+bool Integer::isLess(const ISWFObject* o) const
+{
+	if(o->getObjectType()==T_INTEGER)
+	{
+		const Integer* i=dynamic_cast<const Integer*>(o);
+		return val<*i;
+	}
+	else
+	{
+		return ISWFObject::isLess(o);
+	}
+}
+
 bool ISWFObject::isEqual(const ISWFObject* r) const
 {
 	LOG(NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
@@ -764,10 +777,8 @@ ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(
 ISWFObject::~ISWFObject()
 {
 	if(ref_count>1)
-	{
-		LOG(ERROR,"Destroying a still referenced object");
-		abort();
-	}
+		LOG(NO_INFO,"Destroying a still referenced object");
+
 	map<string,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 		it->second->decRef();
@@ -846,7 +857,7 @@ ISWFObject* Function::call(ISWFObject* obj, arguments* args)
 	else
 	{
 		LOG(CALLS,"Calling with closure");
-		LOG(CALLS,"args 0 " << args->args[0]);
+		LOG(CALLS,"args 0 " << args->at(0));
 		return val(closure_this,args);
 	}
 }

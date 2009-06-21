@@ -332,7 +332,7 @@ private:
 	void printMultiname(int m) const;
 	void printNamespace(int n) const;
 	void printTrait(const traits_info* t) const;
-	void buildTrait(ISWFObject* obj, const traits_info* t);
+	void buildTrait(ISWFObject* obj, const traits_info* t, Function::as_function deferred_initialization=NULL);
 	void printNamespaceSet(const ns_set_info* m) const;
 	std::string getString(unsigned int s) const;
 	std::string getMultinameString(unsigned int m, method_info* th=NULL) const;
@@ -430,7 +430,7 @@ private:
 public:
 	ABCVm(SystemState* s,std::istream& in);
 	static void Run(ABCVm* th);
-	ISWFObject* buildNamedClass(ISWFObject* base, const std::string& n);
+	ISWFObject* buildNamedClass(ASObject* base, const std::string& n);
 	void addEvent(InteractiveObject*,Event*);
 };
 

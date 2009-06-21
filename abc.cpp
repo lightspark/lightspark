@@ -130,12 +130,18 @@ void SymbolClassTag::Render()
 
 				if(range.first==range.second)
 				{
-					sys->currentVm->addEvent(NULL, new BindClassEvent(base->clone(), 
-						NULL, Names[i], "", NULL));
+					ASObject* b2=dynamic_cast<ASObject*>(base->clone());
+					if(b2==NULL)
+					{
+						LOG(ERROR,"WTF?");
+						abort();
+					}
+					sys->currentVm->addEvent(NULL, new BindClassEvent(b2, NULL, Names[i], "", NULL));
 				}
 				for(range.first;range.first!=range.second;range.first++)
 				{
-					sys->currentVm->addEvent(NULL, new BindClassEvent(base->clone(), 
+					ASObject* b2=dynamic_cast<ASObject*>(base->clone());
+					sys->currentVm->addEvent(NULL, new BindClassEvent(b2, 
 						range.first->second.parent, Names[i], range.first->second.obj_name, 
 						range.first->second.placed_by));
 				}
@@ -148,7 +154,7 @@ void SymbolClassTag::Render()
 //Be careful, arguments nubering starts from 1
 ISWFObject* ABCVm::argumentDumper(arguments* arg, uint32_t n)
 {
-	return arg->args[n-1];
+	return arg->at(n-1);
 }
 
 void ABCVm::registerFunctions()
@@ -459,7 +465,7 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 			//We currently assume that a null namespace is good
 			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 			printNamespaceSet(s);
-			return "."+name;
+			return name;
 			break;
 		}
 /*		case 0x0d:
@@ -602,11 +608,11 @@ void dumpClasses(map<string,int>& maps)
 		cout << it->first << endl;
 }
 
-ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
+ISWFObject* ABCVm::buildNamedClass(ASObject* base, const string& s)
 {
 	map<string,int>::iterator it=valid_classes.find(s);
 	if(it!=valid_classes.end())
-		LOG(CALLS,"Class " << s << " found")
+		LOG(CALLS,"buildNameClass: Class " << s << " found")
 	else
 	{
 		LOG(ERROR,"Class " << s << " not found");
@@ -624,23 +630,44 @@ ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 			LOG(ERROR,"Class " << it->first << " not found in global");
 			abort();
 		}
+		if(r->getObjectType()==T_DEFINABLE)
+			LOG(ERROR,"Class " << it->first << " is not yet valid");
 		return r->clone();
 	}
 	else
 	{
+		LOG(CALLS,"Setting class name to " << s);
 		base->class_name=s;
-		method_info* m=&methods[classes[index].cinit];
-		synt_method(m);
-		LOG(CALLS,"Building class traits");
-		for(int i=0;i<classes[index].trait_count;i++)
-			buildTrait(base,&classes[index].traits[i]);
-		LOG(CALLS,"Calling Class init");
-		if(m->f)
+		bool found;
+		ISWFObject* r=Global.getVariableByName(it->first,found);
+		if(!found)
 		{
-			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-			FP(base,NULL);
+			LOG(ERROR,"Class " << it->first << " not found in global");
+			abort();
 		}
-		m=&methods[instances[index].init];
+		if(r->getObjectType()==T_DEFINABLE)
+		{
+			LOG(CALLS,"Class " << it->first << " is not yet valid");
+			Definable* d=dynamic_cast<Definable*>(r);
+			d->define(&Global);
+			r=Global.getVariableByName(it->first,found);
+			if(!found)
+			{
+				LOG(ERROR,"Class " << it->first << " not found in global");
+				abort();
+			}
+		}
+
+		ASObject* ro=dynamic_cast<ASObject*>(r);
+		if(ro==NULL)
+		{
+			LOG(ERROR,"Class is not as ASObject");
+			abort();
+		}
+		LOG(CALLS,"Setting prototype on " << it->first);
+		base->prototype=ro;
+
+		method_info* m=&methods[instances[index].init];
 		synt_method(m);
 		LOG(CALLS,"Building instance traits");
 		for(int i=0;i<instances[index].trait_count;i++)
@@ -651,7 +678,7 @@ ISWFObject* ABCVm::buildNamedClass(ISWFObject* base, const string& s)
 		if(m->f)
 		{
 			arguments* args=new arguments;
-			args->args.push_back(new Null);
+			args->push(new Null);
 			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
 			FP(base,args);
 			args->decRef();
@@ -755,7 +782,13 @@ void ABCVm::popScope(method_info* th)
 void ABCVm::constructProp(method_info* th, int n, int m)
 {
 	string name=th->vm->getMultinameString(n);
-	LOG(CALLS,"constructProp");
+	LOG(CALLS,"constructProp "<<name << ' ' << m);
+	for(int i=0;i<m;i++)
+		th->runtime_stack_pop();
+
+	ISWFObject* obj=th->runtime_stack_pop();
+
+	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::callProperty(method_info* th, int n, int m)
@@ -764,30 +797,40 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 	string name=th->vm->getMultinameString(n);
 	LOG(CALLS,"callProperty " << name << ' ' << m);
 	arguments args;
-	args.args.resize(m);
+	args.resize(m);
 	for(int i=0;i<m;i++)
-		args.args[m-i-1]=th->runtime_stack_pop();
+		args.at(m-i-1)=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
 	bool found;
 	ISWFObject* o=obj->getVariableByName(name,found);
-	//If o is already a function call it, otherwise find the Call method
-	if(o->getObjectType()==T_FUNCTION)
+	if(found)
 	{
-		IFunction* f=dynamic_cast<IFunction*>(o);
-		ISWFObject* ret=f->call(obj,&args);
-		th->runtime_stack_push(ret);
-	}
-	else if(o->getObjectType()==T_UNDEFINED)
-	{
-		LOG(NOT_IMPLEMENTED,"We got a Undefined function");
-		th->runtime_stack_push(new Undefined);
+		//If o is already a function call it, otherwise find the Call method
+		if(o->getObjectType()==T_FUNCTION)
+		{
+			IFunction* f=dynamic_cast<IFunction*>(o);
+			ISWFObject* ret=f->call(obj,&args);
+			th->runtime_stack_push(ret);
+		}
+		else if(o->getObjectType()==T_UNDEFINED)
+		{
+			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
+			th->runtime_stack_push(new Undefined);
+		}
+		else if(o->getObjectType()==T_DEFINABLE)
+		{
+			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
+			th->runtime_stack_push(new Undefined);
+		}
+		else
+		{
+			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",found));
+			ISWFObject* ret=f->call(o,&args);
+			th->runtime_stack_push(ret);
+		}
 	}
 	else
-	{
-		IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",found));
-		ISWFObject* ret=f->call(o,&args);
-		th->runtime_stack_push(ret);
-	}
+		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 	obj->decRef();
 }
 
@@ -796,9 +839,9 @@ void ABCVm::callPropVoid(method_info* th, int n, int m)
 	string name=th->vm->getMultinameString(n); 
 	LOG(CALLS,"callPropVoid " << name << ' ' << m);
 	arguments* args=new arguments;
-	args->args.resize(m);
+	args->resize(m);
 	for(int i=0;i<m;i++)
-		args->args[m-i-1]=th->runtime_stack_pop();
+		args->at(m-i-1)=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
 	bool found;
 	ISWFObject* o=obj->getVariableByName(name,found);
@@ -809,6 +852,16 @@ void ABCVm::callPropVoid(method_info* th, int n, int m)
 		{
 			IFunction* f=dynamic_cast<IFunction*>(o);
 			f->call(obj,args);
+		}
+		else if(o->getObjectType()==T_UNDEFINED)
+		{
+			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
+			th->runtime_stack_push(new Undefined);
+		}
+		else if(o->getObjectType()==T_DEFINABLE)
+		{
+			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
+			th->runtime_stack_push(new Undefined);
 		}
 		else
 		{
@@ -924,6 +977,9 @@ void ABCVm::newCatch(method_info* th, int n)
 void ABCVm::newObject(method_info* th, int n)
 {
 	LOG(CALLS,"newObject " << n);
+	for(int i=0;i<n*2;i++)
+		th->runtime_stack_pop();
+	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::setSlot(method_info* th, int n)
@@ -1079,7 +1135,7 @@ void ABCVm::setProperty(method_info* th, int n)
 		//Call the setter
 		LOG(CALLS,"Calling the setter");
 		arguments args;
-		args.args.push_back(value);
+		args.push(value);
 		value->incRef();
 		f->call(obj,&args);
 		LOG(CALLS,"End of setter");
@@ -1109,6 +1165,8 @@ void ABCVm::getProperty(method_info* th, int n)
 	}
 	else
 	{
+		if(ret->getObjectType()==T_DEFINABLE)
+			LOG(ERROR,"Property " << name << " is not yet valid");
 		th->runtime_stack_push(ret);
 		ret->incRef();
 	}
@@ -1191,14 +1249,31 @@ void ABCVm::initProperty(method_info* th, int n)
 void ABCVm::newArray(method_info* th, int n)
 {
 	LOG(CALLS, "newArray " << n );
-//	th->printClass(n);
+	ASArray* ret=new ASArray;
+	ret->resize(n);
+	for(int i=0;i<n;i++)
+		ret->at(n-i-1)=th->runtime_stack_pop();
+
+	th->runtime_stack_push(ret);
 }
 
 void ABCVm::newClass(method_info* th, int n)
 {
 	LOG(CALLS, "newClass " << n );
-	th->runtime_stack_push(new Undefined);
-//	th->printClass(n);
+	ISWFObject* ret=th->runtime_stack_pop()->clone();
+	method_info* m=&th->vm->methods[th->vm->classes[n].cinit];
+	th->vm->synt_method(m);
+	LOG(CALLS,"Building class traits");
+	for(int i=0;i<th->vm->classes[n].trait_count;i++)
+		th->vm->buildTrait(ret,&th->vm->classes[n].traits[i]);
+	LOG(CALLS,"Calling Class init");
+	ret->class_name="newclass";
+	if(m->f)
+	{
+		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
+		FP(ret,NULL);
+	}
+	th->runtime_stack_push(ret);
 }
 
 void ABCVm::getScopeObject(method_info* th, int n)
@@ -1224,9 +1299,6 @@ void ABCVm::getLex(method_info* th, int n)
 		ISWFObject* o=(*it)->getVariableByName(name,found);
 		if(found)
 		{
-			th->runtime_stack_push(o);
-			o->incRef();
-
 			//If we are getting a function object attach the the current scope
 			if(o->getObjectType()==T_FUNCTION)
 			{
@@ -1234,6 +1306,15 @@ void ABCVm::getLex(method_info* th, int n)
 				Function* f=dynamic_cast<Function*>(o);
 				f->closure_this=th->locals[0];
 			}
+			else if(o->getObjectType()==T_DEFINABLE)
+			{
+				LOG(CALLS,"Deferred definition of property " << name);
+				Definable* d=dynamic_cast<Definable*>(o);
+				d->define(&th->vm->Global);
+				o=(*it)->getVariableByName(name,found);
+			}
+			th->runtime_stack_push(o);
+			o->incRef();
 			break;
 		}
 	}
@@ -1244,6 +1325,14 @@ void ABCVm::getLex(method_info* th, int n)
 		ISWFObject* o2=th->vm->Global.getVariableByName(name,found2);
 		if(found2)
 		{
+			if(o2->getObjectType()==T_DEFINABLE)
+			{
+				LOG(CALLS,"Deferred definition of property " << name);
+				Definable* d=dynamic_cast<Definable*>(o2);
+				d->define(&th->vm->Global);
+				o2=th->vm->Global.getVariableByName(name,found);
+			}
+
 			th->runtime_stack_push(o2);
 			o2->incRef();
 		}
@@ -2392,8 +2481,11 @@ void ABCVm::Run(ABCVm* th)
 	th->registerClasses();
 	//Set register 0 to Global
 	//registers[0]=SWFObject(&Global);
-	//Take each script entry and run it
-	for(int i=0;i<th->scripts.size();i++)
+	th->Global.class_name="Global";
+	
+	//Take script entries and declare their traits
+	int i=0;
+	for(i;i<th->scripts.size()-1;i++)
 	{
 		LOG(CALLS, "Script N: " << i );
 		method_info* m=th->get_method(th->scripts[i].init);
@@ -2401,13 +2493,28 @@ void ABCVm::Run(ABCVm* th)
 		for(int j=0;j<th->scripts[i].trait_count;j++)
 			th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
 		th->synt_method(m);
-
+		Function::as_function sinit=NULL;
 		if(m->f)
-		{
-			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-			FP(&th->Global,NULL);
-		}
+			sinit=(Function::as_function)ex->getPointerToFunction(m->f);
+
+		for(int j=0;j<th->scripts[i].trait_count;j++)
+			th->buildTrait(&th->Global,&th->scripts[i].traits[j],sinit);
 	}
+	//The last script entry has to be run
+	LOG(CALLS, "Last script (Entry Point)");
+	method_info* m=th->get_method(th->scripts[i].init);
+	LOG(CALLS, "Building entry script traits: " << th->scripts[i].trait_count );
+	for(int j=0;j<th->scripts[i].trait_count;j++)
+		th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
+	th->synt_method(m);
+	for(int j=0;j<th->scripts[i].trait_count;j++)
+		th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
+	if(m->f)
+	{
+		Function::as_function sinit=(Function::as_function)ex->getPointerToFunction(m->f);
+		sinit(&th->Global,NULL);
+	}
+
 	while(!th->shutdown)
 	{
 		timespec ts,td;
@@ -2430,7 +2537,7 @@ string ABCVm::getString(unsigned int s) const
 		return "";
 }
 
-void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
+void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_function deferred_initialization)
 {
 	string name=getMultinameString(t->name);
 	switch(t->kind)
@@ -2439,7 +2546,10 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 		{
 		//	LOG(CALLS,"Registering trait " << name);
 		//	obj->setVariableByName(name, buildClass(t->classi));
-			obj->setVariableByName(name, new Undefined);
+			if(deferred_initialization)
+				obj->setVariableByName(name, new Definable(deferred_initialization));
+			else
+				obj->setVariableByName(name, new Undefined);
 			break;
 		}
 		case traits_info::Setter:
@@ -2465,8 +2575,11 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 		}
 		case traits_info::Const:
 		{
-			//TODO: Mot so const right now
-			obj->setVariableByName(name, new Undefined);
+			//TODO: Not so const right now
+			if(deferred_initialization)
+				obj->setVariableByName(name, new Definable(deferred_initialization));
+			else
+				obj->setVariableByName(name, new Undefined);
 			break;
 		}
 		case traits_info::Slot:
@@ -2512,7 +2625,10 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t)
 					//ret=obj->setVariableByName(name, 
 					//		buildNamedClass(new ASObject,getMultinameString(t->type_name)));
 					//ret->_register();
-					ret=obj->setVariableByName(name,new Undefined); 
+					if(deferred_initialization)
+						obj->setVariableByName(name, new Definable(deferred_initialization));
+					else
+						ret=obj->setVariableByName(name,new Undefined); 
 				}
 				else
 					LOG(CALLS,"Not resetting variable " << name);
@@ -3122,20 +3238,20 @@ Math::Math()
 
 ASFUNCTIONBODY(Math,atan2)
 {
-	Number* n1=dynamic_cast<Number*>(args->args[0]);
-	Number* n2=dynamic_cast<Number*>(args->args[1]);
+	Number* n1=dynamic_cast<Number*>(args->at(0));
+	Number* n2=dynamic_cast<Number*>(args->at(1));
 	if(n1 && n2)
 		return new Number(::atan2(*n1,*n2));
 	else
 	{
-		LOG(CALLS, "Invalid argument type ("<<args->args[0]->getObjectType()<<','<<args->args[1]->getObjectType()<<')' );
+		LOG(CALLS, "Invalid argument type ("<<args->at(0)->getObjectType()<<','<<args->at(1)->getObjectType()<<')' );
 		abort();
 	}
 }
 
 ASFUNCTIONBODY(Math,floor)
 {
-	Number* n=dynamic_cast<Number*>(args->args[0]);
+	Number* n=dynamic_cast<Number*>(args->at(0));
 	if(n)
 		return new Number(::floor(*n));
 	else
@@ -3147,7 +3263,7 @@ ASFUNCTIONBODY(Math,floor)
 
 ASFUNCTIONBODY(Math,sqrt)
 {
-	Number* n=dynamic_cast<Number*>(args->args[0]);
+	Number* n=dynamic_cast<Number*>(args->at(0));
 	if(n)
 		return new Number(::sqrt(*n));
 	else

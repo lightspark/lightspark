@@ -361,6 +361,7 @@ private:
 
 	void registerFunctions();
 	//Interpreted AS instructions
+	static void hasNext2(method_info* th, int n, int m); 
 	static void callPropVoid(method_info* th, int n, int m); 
 	static void callProperty(method_info* th, int n, int m); 
 	static void constructProp(method_info* th, int n, int m); 
@@ -369,11 +370,14 @@ private:
 	static void newCatch(method_info* th, int n); 
 	static void jump(method_info* th, int offset); 
 	static void ifEq(method_info* th, int offset); 
+	static void ifStrictEq(method_info* th, int offset); 
 	static void ifNe(method_info* th, int offset); 
 	static void ifLT(method_info* th, int offset); 
 	static void ifNLT(method_info* th, int offset); 
+	static void ifNGE(method_info* th, int offset); 
 	static void ifStrictNE(method_info* th, int offset); 
 	static void ifFalse(method_info* th, int offset); 
+	static void ifTrue(method_info* th, int offset); 
 	static void getSlot(method_info* th, int n); 
 	static void setLocal(method_info* th, int n); 
 	static void kill(method_info* th, int n); 
@@ -381,6 +385,7 @@ private:
 	static void pushString(method_info* th, int n); 
 	static void getLex(method_info* th, int n); 
 	static void getScopeObject(method_info* th, int n); 
+	static void deleteProperty(method_info* th, int n); 
 	static void initProperty(method_info* th, int n); 
 	static void newClass(method_info* th, int n); 
 	static void newArray(method_info* th, int n); 
@@ -389,10 +394,14 @@ private:
 	static void getProperty(method_info* th, int n);
 	static void pushByte(method_info* th, int n);
 	static void pushShort(method_info* th, int n);
+	static void pushInt(method_info* th, int n);
 	static void incLocal_i(method_info* th, int n);
 	static void coerce(method_info* th, int n);
 	static void setProperty(method_info* th, int n);
+	static void call(method_info* th, int n);
 	static void constructSuper(method_info* th, int n);
+	static void construct(method_info* th, int n);
+	static void newFunction(method_info* th, int n);
 	static void pushScope(method_info* th);
 	static void pushNull(method_info* th);
 	static ISWFObject* pushUndefined(method_info* th);
@@ -401,9 +410,12 @@ private:
 	static void pushTrue(method_info* th);
 	static void dup(method_info* th);
 	static void equals(method_info* th);
+	static void strictEquals(method_info* th);
 	static void _not(method_info* th);
 	static void pop(method_info* th);
+	static void _throw(method_info* th);
 	static void asTypelate(method_info* th);
+	static void isTypelate(method_info* th);
 	static void swap(method_info* th);
 	static void add(method_info* th);
 	static void multiply(method_info* th);
@@ -416,6 +428,10 @@ private:
 	static void convert_i(method_info* th);
 	static void convert_b(method_info* th);
 	static void convert_d(method_info* th);
+	static void greaterThan(method_info* th);
+	static void lessThan(method_info* th);
+	static void nextName(method_info* th);
+	static void nextValue(method_info* th);
 	static void method_reset(method_info* th);
 
 	//Synchronization

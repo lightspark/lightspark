@@ -196,6 +196,12 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_d",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::convert_d);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"nextValue",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::nextValue);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"nextName",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::nextName);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_b",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::convert_b);
 
@@ -208,11 +214,23 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce_s",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::coerce_s);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"throw",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::_throw);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pop",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pop);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"lessThan",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::lessThan);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"greaterThan",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::greaterThan);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::_not);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"strictEquals",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::strictEquals);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"equals",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::equals);
@@ -247,6 +265,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushFalse",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushFalse);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"isTypelate",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::isTypelate);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"asTypelate",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::asTypelate);
 
@@ -266,7 +287,10 @@ void ABCVm::registerFunctions()
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifNLT",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifLT);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifNLT);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifNGE",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifNGE);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifLT",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifLT);
@@ -277,17 +301,29 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifNe",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifNe);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifStrictEq",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifStrictEq);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifEq",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifEq);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newCatch",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newCatch);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newFunction",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::newFunction);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newObject",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newObject);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifTrue",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifTrue);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifFalse",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifFalse);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"deleteProperty",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::deleteProperty);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"jump",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::jump);
@@ -304,6 +340,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setLocal",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setLocal);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"call",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::call);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::coerce);
 
@@ -312,6 +351,9 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findPropStrict",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findPropStrict);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushInt",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushInt);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushShort",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushShort);
@@ -330,6 +372,9 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findProperty",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findProperty);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"construct",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::construct);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructSuper",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::constructSuper);
@@ -363,6 +408,9 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructProp",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::constructProp);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"hasNext2",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::hasNext2);
 }
 
 void ABCVm::registerClasses()
@@ -393,6 +441,12 @@ void ABCVm::registerClasses()
 	valid_classes["flash.display.SimpleButton"]=-1;
 	Global.setVariableByName("flash.text.TextField",new ASObject);
 	valid_classes["flash.text.TextField"]=-1;
+	Global.setVariableByName("flash.xml.XMLDocument",new ASObject);
+	valid_classes["flash.xml.XMLDocument"]=-1;
+	Global.setVariableByName("flash.utils.Timer",new ASObject);
+	valid_classes["flash.utils.Timer"]=-1;
+	Global.setVariableByName("Array",new ASArray);
+	valid_classes["Array"]=-1;
 
 //	Global.setVariableByName(".Error",new ASObject);
 	Global.setVariableByName("Math",new Math);
@@ -664,7 +718,6 @@ ISWFObject* ABCVm::buildNamedClass(ASObject* base, const string& s)
 			LOG(ERROR,"Class is not as ASObject");
 			abort();
 		}
-		LOG(CALLS,"Setting prototype on " << it->first);
 		base->prototype=ro;
 
 		method_info* m=&methods[instances[index].init];
@@ -752,9 +805,24 @@ void ABCVm::add(method_info* th)
 	LOG(CALLS,"add " << num1 << '+' << num2);
 }
 
+void ABCVm::isTypelate(method_info* th)
+{
+	LOG(CALLS,"isTypelate");
+}
+
 void ABCVm::asTypelate(method_info* th)
 {
 	LOG(CALLS,"asTypelate");
+}
+
+void ABCVm::nextValue(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED,"nextValue");
+}
+
+void ABCVm::nextName(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED,"nextName");
 }
 
 void ABCVm::swap(method_info* th)
@@ -801,9 +869,14 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 		Definable* d=dynamic_cast<Definable*>(o);
 		d->define(&th->vm->Global);
 		o=obj->getVariableByName(name,found);
+		LOG(CALLS,"End of deferred definition of property " << name);
 	}
 
-	th->runtime_stack_push(new Undefined);
+	LOG(CALLS,"Constructing");
+	ISWFObject* ret=th->vm->buildNamedClass(new ASObject,name);
+	LOG(CALLS,"End of constructing");
+
+	th->runtime_stack_push(ret);
 }
 
 void ABCVm::callProperty(method_info* th, int n, int m)
@@ -845,8 +918,17 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 		}
 	}
 	else
+	{
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
+		th->runtime_stack_push(new Undefined);
+	}
 	obj->decRef();
+}
+
+void ABCVm::hasNext2(method_info* th, int n, int m)
+{
+	LOG(NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
+	abort();
 }
 
 void ABCVm::callPropVoid(method_info* th, int n, int m)
@@ -895,6 +977,15 @@ void ABCVm::jump(method_info* th, int offset)
 	LOG(CALLS,"jump " << offset);
 }
 
+void ABCVm::ifTrue(method_info* th, int offset)
+{
+	LOG(CALLS,"ifrue " << offset);
+
+	ISWFObject* obj1=th->runtime_stack_pop();
+	th->runtime_stack_push((ISWFObject*)new uintptr_t(Boolean_concrete(obj1)));
+	obj1->decRef();
+}
+
 void ABCVm::ifFalse(method_info* th, int offset)
 {
 	LOG(CALLS,"ifFalse " << offset);
@@ -930,9 +1021,16 @@ void ABCVm::ifStrictNE(method_info* th, int offset)
 	LOG(CALLS,"ifStrictNE " << offset);
 }
 
+void ABCVm::ifNGE(method_info* th, int offset)
+{
+	LOG(CALLS,"ifNGE " << offset);
+	abort();
+}
+
 void ABCVm::ifNLT(method_info* th, int offset)
 {
 	LOG(CALLS,"ifNLT " << offset);
+	abort();
 }
 
 void ABCVm::ifLT(method_info* th, int offset)
@@ -965,6 +1063,50 @@ void ABCVm::ifNe(method_info* th, int offset)
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
 }
 
+void ABCVm::lessThan(method_info* th)
+{
+	LOG(CALLS,"lessThan");
+
+	ISWFObject* obj1=th->runtime_stack_pop();
+	ISWFObject* obj2=th->runtime_stack_pop();
+
+	//Real comparision demanded to object
+	if(obj1->isLess(obj2))
+		th->runtime_stack_push(new Boolean(true));
+	else
+		th->runtime_stack_push(new Boolean(false));
+}
+
+void ABCVm::greaterThan(method_info* th)
+{
+	LOG(CALLS,"greaterThan");
+
+	ISWFObject* obj1=th->runtime_stack_pop();
+	ISWFObject* obj2=th->runtime_stack_pop();
+
+	//Real comparision demanded to object
+	if(obj1->isGreater(obj2))
+		th->runtime_stack_push(new Boolean(true));
+	else
+		th->runtime_stack_push(new Boolean(false));
+}
+
+void ABCVm::ifStrictEq(method_info* th, int offset)
+{
+	LOG(CALLS,"ifStrictEq " << offset);
+	abort();
+
+	//CHECK
+	ISWFObject* obj1=th->runtime_stack_pop();
+	ISWFObject* obj2=th->runtime_stack_pop();
+
+	//Real comparision demanded to object
+	if(obj1->isEqual(obj2))
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+	else
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+}
+
 void ABCVm::ifEq(method_info* th, int offset)
 {
 	LOG(CALLS,"ifEq " << offset);
@@ -979,14 +1121,31 @@ void ABCVm::ifEq(method_info* th, int offset)
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
 }
 
+void ABCVm::deleteProperty(method_info* th, int n)
+{
+	LOG(NOT_IMPLEMENTED,"deleteProperty " << n);
+}
+
+void ABCVm::call(method_info* th, int n)
+{
+	LOG(NOT_IMPLEMENTED,"call " << n);
+}
+
 void ABCVm::coerce(method_info* th, int n)
 {
-	LOG(CALLS,"coerce " << n);
+	LOG(NOT_IMPLEMENTED,"coerce " << n);
+	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::newCatch(method_info* th, int n)
 {
 	LOG(CALLS,"newCatch " << n);
+}
+
+void ABCVm::newFunction(method_info* th, int n)
+{
+	LOG(NOT_IMPLEMENTED,"newFunction " << n);
+	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::newObject(method_info* th, int n)
@@ -1065,9 +1224,19 @@ void ABCVm::not_impl(int n)
 	abort();
 }
 
+void ABCVm::_throw(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED, "throw" );
+}
+
+void ABCVm::strictEquals(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED, "strictEquals" );
+}
+
 void ABCVm::equals(method_info* th)
 {
-	LOG(CALLS, "equals" );
+	LOG(NOT_IMPLEMENTED, "equals" );
 }
 
 void ABCVm::dup(method_info* th)
@@ -1112,6 +1281,13 @@ void ABCVm::pushScope(method_info* th)
 	th->scope_stack.push_back(t);
 }
 
+void ABCVm::pushInt(method_info* th, int n)
+{
+	s32 i=th->vm->constant_pool.integer[n];
+	LOG(CALLS, "pushInt [" << dec << n << "] " << i);
+	th->runtime_stack_push(new Integer(i));
+}
+
 void ABCVm::pushShort(method_info* th, int n)
 {
 	LOG(CALLS, "pushShort " << n );
@@ -1139,9 +1315,14 @@ void ABCVm::incLocal_i(method_info* th, int n)
 
 }
 
+void ABCVm::construct(method_info* th, int n)
+{
+	LOG(NOT_IMPLEMENTED, "construct " << n );
+}
+
 void ABCVm::constructSuper(method_info* th, int n)
 {
-	LOG(CALLS, "constructSuper " << n );
+	LOG(NOT_IMPLEMENTED, "constructSuper " << n );
 }
 
 void ABCVm::setProperty(method_info* th, int n)
@@ -1291,6 +1472,9 @@ void ABCVm::newClass(method_info* th, int n)
 	LOG(CALLS,"Building class traits");
 	for(int i=0;i<th->vm->classes[n].trait_count;i++)
 		th->vm->buildTrait(ret,&th->vm->classes[n].traits[i]);
+
+	//TODO: should add Constructor the the class methods
+
 	LOG(CALLS,"Calling Class init");
 	ret->class_name="newclass";
 	if(m->f)
@@ -1606,6 +1790,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			break;
 		switch(opcode)
 		{
+			case 0x03:
+			{
+				//throw
+				LOG(CALLS, "synt throw" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("throw"), th);
+				break;
+			}
 			case 0x08:
 			{
 				//kill
@@ -1640,13 +1833,91 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//ifnlt
 				LOG(CALLS, "synt ifnlt" );
+				//TODO: implement common data comparison
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
+				last_is_branch=true;
 				s24 t;
 				code >> t;
+
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
 				//Make comparision
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("ifNLT"), th, constant);
+			
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifNLT pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
+				break;
+			}
+			case 0x0f:
+			{
+				//ifnge
+				LOG(CALLS, "synt ifnge");
+				//TODO: implement common data comparison
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				last_is_branch=true;
+				s24 t;
+				code >> t;
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifNGE"), th, constant);
+			
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifNGE pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
 				break;
 			}
 			case 0x10:
@@ -1684,6 +1955,53 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				}
 
 				Builder.CreateBr(B);
+				Builder.SetInsertPoint(A);
+				break;
+			}
+			case 0x11:
+			{
+				//iftrue
+				LOG(CALLS, "synt iftrue" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+
+				last_is_branch=true;
+				s24 t;
+				code >> t;
+
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+			
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifTrue"), th, constant);
+
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifTrue pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
 			}
@@ -1873,6 +2191,53 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.SetInsertPoint(A);
 				break;
 			}
+			case 0x19:
+			{
+				//ifstricteq
+				LOG(CALLS, "synt ifstricteq" );
+				//TODO: implement common data comparison
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+
+				last_is_branch=true;
+				s24 t;
+				code >> t;
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+			
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifStrictEq"), th, constant);
+
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifStrictEq pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
+				break;
+			}
 			case 0x1a:
 			{
 				//ifstrictne
@@ -1911,6 +2276,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("popScope"), th);
 				break;
 			}
+			case 0x1e:
+			{
+				//nextname
+				LOG(CALLS, "synt nextname" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("nextName"), th);
+				break;
+			}
 			case 0x20:
 			{
 				//pushnull
@@ -1927,6 +2301,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushUndefined"), th);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
+				break;
+			}
+			case 0x23:
+			{
+				//nextvalue
+				LOG(CALLS, "synt nextvalue" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("nextValue"), th);
 				break;
 			}
 			case 0x24:
@@ -2020,6 +2403,18 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("pushString"), th, constant);
 				break;
 			}
+			case 0x2d:
+			{
+				//pushint
+				LOG(CALLS, "synt pushint" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("pushInt"), th, constant);
+				break;
+			}
 			case 0x30:
 			{
 				//pushscope
@@ -2027,6 +2422,57 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), th);
+				break;
+			}
+			case 0x32:
+			{
+				//hasnext2
+				//TODO: Implement static resolution where possible
+				LOG(CALLS, "synt hasnext2" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				code >> t;
+				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall3(ex->FindFunctionNamed("hasNext2"), th, constant, constant2);
+				break;
+			}
+			case 0x40:
+			{
+				//newfunction
+				LOG(CALLS, "synt newfunction" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("newFunction"), th, constant);
+				break;
+			}
+			case 0x41:
+			{
+				//call
+				LOG(CALLS, "synt call" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("call"), th, constant);
+				break;
+			}
+			case 0x42:
+			{
+				//construct
+				LOG(CALLS, "synt construct" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("construct"), th, constant);
 				break;
 			}
 			case 0x46:
@@ -2283,6 +2729,18 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("initProperty"), th, constant);
 				break;
 			}
+			case 0x6a:
+			{
+				//deleteproperty
+				LOG(CALLS, "synt deleteproperty" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("deleteProperty"), th, constant);
+				break;
+			}
 			case 0x6c:
 			{
 				//getslot
@@ -2427,6 +2885,42 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("equals"), th);
 				break;
 			}
+			case 0xac:
+			{
+				//strictequals
+				LOG(CALLS, "synt strictequals" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("strictEquals"), th);
+				break;
+			}
+			case 0xad:
+			{
+				//lessthan
+				LOG(CALLS, "synt lessthan" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("lessThan"), th);
+				break;
+			}
+			case 0xaf:
+			{
+				//greaterthan
+				LOG(CALLS, "synt greaterthan" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("greaterThan"), th);
+				break;
+			}
+			case 0xb3:
+			{
+				//istypelate
+				LOG(CALLS, "synt istypelate" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("isTypelate"), th);
+				break;
+			}
 			case 0xc2:
 			{
 				//inclocal_i
@@ -2565,7 +3059,7 @@ string ABCVm::getString(unsigned int s) const
 void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_function deferred_initialization)
 {
 	string name=getMultinameString(t->name);
-	switch(t->kind)
+	switch(t->kind&0xf)
 	{
 		case traits_info::Class:
 		{

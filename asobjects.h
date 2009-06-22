@@ -139,6 +139,7 @@ public:
 		data.resize(n);
 		length=n;
 	}
+	ISWFObject* getVariableByName(const std::string& name, bool& found);
 };
 
 class arguments: public ASArray

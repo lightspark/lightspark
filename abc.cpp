@@ -451,13 +451,13 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 			if(th!=NULL)
 			{
 				ISWFObject* n=th->runtime_stack_pop();
-				if(n->getObjectType()!=T_STRING)
+				/*if(n->getObjectType()!=T_STRING)
 				{
 					LOG(ERROR,"Name on the stack should be a string");
 					name="<Invalid>";
 				}
-				else
-					name=n->toString();
+				else*/
+				name=n->toString();
 				n->decRef();
 			}
 			else
@@ -787,6 +787,21 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 		th->runtime_stack_pop();
 
 	ISWFObject* obj=th->runtime_stack_pop();
+	bool found;
+	ISWFObject* o=obj->getVariableByName(name,found);
+	if(!found)
+	{
+		LOG(ERROR,"Could not resolve property");
+		abort();
+	}
+
+	if(o->getObjectType()==T_DEFINABLE)
+	{
+		LOG(CALLS,"Deferred definition of property " << name);
+		Definable* d=dynamic_cast<Definable*>(o);
+		d->define(&th->vm->Global);
+		o=obj->getVariableByName(name,found);
+	}
 
 	th->runtime_stack_push(new Undefined);
 }
@@ -1112,6 +1127,16 @@ void ABCVm::pushByte(method_info* th, int n)
 void ABCVm::incLocal_i(method_info* th, int n)
 {
 	LOG(CALLS, "incLocal_i " << n );
+	if(th->locals[n]->getObjectType()==T_INTEGER)
+	{
+		Integer* i=dynamic_cast<Integer*>(th->locals[n]);
+		i->val++;
+	}
+	else
+	{
+		LOG(NOT_IMPLEMENTED,"Cannot increment type " << th->locals[n]->getObjectType());
+	}
+
 }
 
 void ABCVm::constructSuper(method_info* th, int n)

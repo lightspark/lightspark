@@ -294,6 +294,7 @@ public:
 class Integer : public ISWFObject
 {
 friend class Number;
+friend class ABCVm;
 private:
 	int val;
 public:

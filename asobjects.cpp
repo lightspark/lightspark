@@ -131,6 +131,38 @@ ASFUNCTIONBODY(ASXML,load)
 }
 
 
+ISWFObject* ASArray::getVariableByName(const std::string& name, bool& found)
+{
+	ISWFObject* ret;
+	bool number=true;
+	for(int i=0;i<name.size();i++)
+	{
+		if(!isdigit(name[i]))
+		{
+			number=false;
+			found=false;
+			break;
+		}
+
+	}
+	if(number)
+	{
+		int index=atoi(name.c_str());
+		if(index<data.size())
+		{
+			ret=data[index];
+			found=true;
+		}
+		else
+			found=false;
+	}
+
+	if(!found)
+		ret=ASObject::getVariableByName(name,found);
+
+	return ret;
+}
+
 ISWFObject* ASObject::getVariableByName(const std::string& name, bool& found)
 {
 	ISWFObject* ret=ISWFObject::getVariableByName(name,found);

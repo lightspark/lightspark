@@ -113,6 +113,7 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	loaderInfo->parameters.setVariableByName("chat_port",new ASString("5222"));
 	loaderInfo->parameters.setVariableByName("chat_host",new ASString("of1.kongregate.com"));
 	loaderInfo->parameters.setVariableByName("user_vars",new ASString("[]"));
+	loaderInfo->parameters.setVariableByName("chat_password",new ASString(""));
 	loaderInfo->parameters.setVariableByName("user_vars_sig",new ASString("MSMWWUaYOAHO9T9QE7r4/w=="));
 }
 

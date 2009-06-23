@@ -395,6 +395,7 @@ private:
 	static void pushByte(method_info* th, int n);
 	static void pushShort(method_info* th, int n);
 	static void pushInt(method_info* th, int n);
+	static void pushDouble(method_info* th, int n);
 	static void incLocal_i(method_info* th, int n);
 	static void coerce(method_info* th, int n);
 	static void setProperty(method_info* th, int n);
@@ -432,6 +433,11 @@ private:
 	static void lessThan(method_info* th);
 	static void nextName(method_info* th);
 	static void nextValue(method_info* th);
+	static void increment_i(method_info* th);
+	static void increment(method_info* th);
+	static void decrement_i(method_info* th);
+	static void decrement(method_info* th);
+	static void getGlobalScope(method_info* th);
 	static void method_reset(method_info* th);
 
 	//Synchronization
@@ -446,7 +452,7 @@ private:
 public:
 	ABCVm(SystemState* s,std::istream& in);
 	static void Run(ABCVm* th);
-	ISWFObject* buildNamedClass(ASObject* base, const std::string& n);
+	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
 	void addEvent(InteractiveObject*,Event*);
 };
 
@@ -480,10 +486,13 @@ public:
 
 class Boolean: public ASObject
 {
+friend bool Boolean_concrete(ISWFObject* obj);
 private:
 	bool val;
 public:
 	Boolean(bool v):val(v){}
+	SWFOBJECT_TYPE getObjectType() const { return T_BOOLEAN; }
+	
 };
 
 class Math: public ASObject

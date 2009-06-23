@@ -217,6 +217,21 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"throw",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::_throw);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getGlobalScope",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::getGlobalScope);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decrement",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::decrement);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decrement_i",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::decrement_i);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"increment",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::increment);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"increment_i",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::increment_i);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pop",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pop);
 
@@ -307,6 +322,12 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifEq",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::ifEq);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifTrue",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifTrue);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifFalse",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::ifFalse);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newCatch",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newCatch);
 
@@ -315,12 +336,6 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newObject",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newObject);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifTrue",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifTrue);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifFalse",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifFalse);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"deleteProperty",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::deleteProperty);
@@ -351,6 +366,9 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findPropStrict",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::findPropStrict);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushDouble",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::pushDouble);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushInt",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::pushInt);
@@ -621,7 +639,10 @@ void ABCVm::handleEvent()
 			case BIND_CLASS:
 			{
 				BindClassEvent* ev=dynamic_cast<BindClassEvent*>(e.second);
-				ISWFObject* o=buildNamedClass(ev->base,ev->class_name);
+				arguments args;
+				args.incRef();
+				args.push(new Null);
+				ISWFObject* o=buildNamedClass(ev->class_name,ev->base,&args);
 				if(ev->parent)
 				{
 					ev->parent->setVariableByName(ev->obj_name,o);
@@ -662,7 +683,7 @@ void dumpClasses(map<string,int>& maps)
 		cout << it->first << endl;
 }
 
-ISWFObject* ABCVm::buildNamedClass(ASObject* base, const string& s)
+ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* args)
 {
 	map<string,int>::iterator it=valid_classes.find(s);
 	if(it!=valid_classes.end())
@@ -730,9 +751,8 @@ ISWFObject* ABCVm::buildNamedClass(ASObject* base, const string& s)
 		//module.dump();
 		if(m->f)
 		{
-			arguments* args=new arguments;
-			args->push(new Null);
 			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
+			args->incRef();
 			FP(base,args);
 			args->decRef();
 		}
@@ -765,6 +785,31 @@ void ABCVm::divide(method_info* th)
 	LOG(CALLS,"divide "  << num1 << '/' << num2);
 }
 
+void ABCVm::getGlobalScope(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED,"getGlobalScope");
+}
+
+void ABCVm::decrement(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED,"decrement");
+}
+
+void ABCVm::decrement_i(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED,"decrement_i");
+}
+
+void ABCVm::increment(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED,"increment");
+}
+
+void ABCVm::increment_i(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED,"increment_i");
+}
+
 void ABCVm::subtract(method_info* th)
 {
 	ISWFObject* val2=th->runtime_stack_pop();
@@ -793,16 +838,31 @@ void ABCVm::multiply(method_info* th)
 
 void ABCVm::add(method_info* th)
 {
-	//Implement ECMA add algorithm
+	//Implement ECMA add algorithm, for XML and default
 	ISWFObject* val2=th->runtime_stack_pop();
 	ISWFObject* val1=th->runtime_stack_pop();
+	if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_NUMBER)
+	{
+		Number num2(val2);
+		Number num1(val1);
+		val1->decRef();
+		val2->decRef();
+		th->runtime_stack_push(new Number(num1+num2));
+		LOG(CALLS,"add " << num1 << '+' << num2);
+	}
+	else if(val1->getObjectType()==T_STRING && val2->getObjectType()==T_STRING)
+	{
+		string a=val1->toString();
+		string b=val2->toString();
+		th->runtime_stack_push(new ASString(a+b));
+		LOG(CALLS,"add " << a << '+' << b);
+	}
+	else
+	{
+		LOG(NOT_IMPLEMENTED,"Add between types " << val1->getObjectType() << ' ' << val2->getObjectType());
+		th->runtime_stack_push(new Undefined);
+	}
 
-	Number num2(val2);
-	Number num1(val1);
-	val1->decRef();
-	val2->decRef();
-	th->runtime_stack_push(new Number(num1+num2));
-	LOG(CALLS,"add " << num1 << '+' << num2);
 }
 
 void ABCVm::isTypelate(method_info* th)
@@ -851,8 +911,11 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 {
 	string name=th->vm->getMultinameString(n);
 	LOG(CALLS,"constructProp "<<name << ' ' << m);
+	arguments args;
+	args.incRef();
+	args.resize(m);
 	for(int i=0;i<m;i++)
-		th->runtime_stack_pop();
+		args.at(m-i-1)=th->runtime_stack_pop();
 
 	ISWFObject* obj=th->runtime_stack_pop();
 	bool found;
@@ -873,7 +936,7 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 	}
 
 	LOG(CALLS,"Constructing");
-	ISWFObject* ret=th->vm->buildNamedClass(new ASObject,name);
+	ISWFObject* ret=th->vm->buildNamedClass(name,new ASObject,&args);
 	LOG(CALLS,"End of constructing");
 
 	th->runtime_stack_push(ret);
@@ -928,7 +991,7 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 void ABCVm::hasNext2(method_info* th, int n, int m)
 {
 	LOG(NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
-	abort();
+	th->runtime_stack_push(new Boolean(false));
 }
 
 void ABCVm::callPropVoid(method_info* th, int n, int m)
@@ -1006,6 +1069,12 @@ bool Boolean_concrete(ISWFObject* obj)
 			return false;
 		else
 			return true;
+	}
+	else if(obj->getObjectType()==T_BOOLEAN)
+	{
+		LOG(CALLS,"Boolean to bool");
+		Boolean* b=dynamic_cast<Boolean*>(obj);
+		return b->val;
 	}
 	else if(obj->getObjectType()==T_OBJECT)
 	{
@@ -1134,7 +1203,6 @@ void ABCVm::call(method_info* th, int n)
 void ABCVm::coerce(method_info* th, int n)
 {
 	LOG(NOT_IMPLEMENTED,"coerce " << n);
-	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::newCatch(method_info* th, int n)
@@ -1286,6 +1354,13 @@ void ABCVm::pushInt(method_info* th, int n)
 	s32 i=th->vm->constant_pool.integer[n];
 	LOG(CALLS, "pushInt [" << dec << n << "] " << i);
 	th->runtime_stack_push(new Integer(i));
+}
+
+void ABCVm::pushDouble(method_info* th, int n)
+{
+	d64 d=th->vm->constant_pool.doubles[n];
+	LOG(CALLS, "pushDouble [" << dec << n << "] " << d);
+	th->runtime_stack_push(new Number(d));
 }
 
 void ABCVm::pushShort(method_info* th, int n)
@@ -1770,24 +1845,36 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	u8 opcode;
 	while(1)
 	{
+		code >> opcode;
+		if(code.eof())
+			break;
 		//Check if we are expecting a new block start
-		map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+		map<int,llvm::BasicBlock*>::iterator it=blocks.find(int(code.tellg())-1);
 		if(it!=blocks.end())
 		{
 			//A new block starts, the last instruction should have been a branch?
 			if(!last_is_branch)
 			{
-				LOG(CALLS, "Last instruction before a new block was not a branch. Opcode " << hex << opcode);
+				LOG(CALLS, "Last instruction before a new block was not a branch.");
 				Builder.CreateBr(it->second);
 			}
+			LOG(CALLS,"Starting block at "<<int(code.tellg())-1);
 			Builder.SetInsertPoint(it->second);
+			last_is_branch=false;
 		}
-		
-		last_is_branch=false;
+		else if(last_is_branch)
+		{
+			//TODO: Check this. It seems that there may be invalid code after
+			//block end
+			LOG(CALLS,"Ignoring at " << int(code.tellg())-1);
+			continue;
+			/*LOG(CALLS,"Inserting block at "<<int(code.tellg())-1);
+			abort();
+			llvm::BasicBlock* A=llvm::BasicBlock::Create("fall", m->f);
+			Builder.CreateBr(A);
+			Builder.SetInsertPoint(A);*/
+		}
 
-		code >> opcode;
-		if(code.eof())
-			break;
 		switch(opcode)
 		{
 			case 0x03:
@@ -1923,13 +2010,13 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x10:
 			{
 				//jump
-				LOG(CALLS, "synt jump" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				last_is_branch=true;
 
 				s24 t;
 				code >> t;
+				LOG(CALLS, "synt jump " << t );
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("jump"), th, constant);
 
@@ -2008,13 +2095,13 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x12:
 			{
 				//iffalse
-				LOG(CALLS, "synt iffalse" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 
 				last_is_branch=true;
 				s24 t;
 				code >> t;
+				LOG(CALLS, "synt iffalse " << t );
 
 				//Create a block for the fallthrough code and insert in the mapping
 				llvm::BasicBlock* A;
@@ -2102,7 +2189,6 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x14:
 			{
 				//ifne
-				LOG(CALLS, "synt ifne" );
 				//TODO: implement common data comparison
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
@@ -2110,6 +2196,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				last_is_branch=true;
 				s24 t;
 				code >> t;
+				LOG(CALLS, "synt ifne " << t );
 				//Create a block for the fallthrough code and insert in the mapping
 				llvm::BasicBlock* A;
 				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
@@ -2415,6 +2502,18 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall2(ex->FindFunctionNamed("pushInt"), th, constant);
 				break;
 			}
+			case 0x2f:
+			{
+				//pushdouble
+				LOG(CALLS, "synt pushdouble" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), th, constant);
+				break;
+			}
 			case 0x30:
 			{
 				//pushscope
@@ -2507,6 +2606,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//returnvoid
 				LOG(CALLS, "synt returnvoid" );
+				last_is_branch=true;
 				Builder.CreateRetVoid();
 				break;
 			}
@@ -2515,6 +2615,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				//returnvalue
 				//TODO: Should coerce the return type to the expected one
 				LOG(CALLS, "synt returnvalue" );
+				last_is_branch=true;
 				stack_entry e=static_stack_pop(Builder,static_stack,m);
 				Builder.CreateRet(e.first);
 				break;
@@ -2693,6 +2794,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				jitted=true;
 				break;
 			}
+			case 0x64:
+			{
+				//getglobalscope
+				LOG(CALLS, "synt getglobalscope" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"), th);
+				break;
+			}
 			case 0x65:
 			{
 				//getscopeobject
@@ -2831,6 +2941,24 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("asTypelate"), th);
 				break;
 			}
+			case 0x91:
+			{
+				//increment
+				LOG(CALLS, "synt increment" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("increment"), th);
+				break;
+			}
+			case 0x93:
+			{
+				//decrement
+				LOG(CALLS, "synt decrement" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("decrement"), th);
+				break;
+			}
 			case 0x96:
 			{
 				//not
@@ -2921,6 +3049,24 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("isTypelate"), th);
 				break;
 			}
+			case 0xc0:
+			{
+				//increment_i
+				LOG(CALLS, "synt increment_i" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("increment_i"), th);
+				break;
+			}
+			case 0xc1:
+			{
+				//decrement_i
+				LOG(CALLS, "synt decrement_i" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("decrement_i"), th);
+				break;
+			}
 			case 0xc2:
 			{
 				//inclocal_i
@@ -2974,6 +3120,16 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
 				Builder.CreateRetVoid();
 				return m->f;
+		}
+	}
+
+	map<int,llvm::BasicBlock*>::iterator it2=blocks.begin();
+	for(it2;it2!=blocks.end();it2++)
+	{
+		if(it2->second->getTerminator()==NULL)
+		{
+			cout << "start at " << it2->first << endl;
+			abort();
 		}
 	}
 	return m->f;

@@ -202,7 +202,7 @@ ASArray::~ASArray()
 ASFUNCTIONBODY(ASString,String)
 {
 	ASString* th=dynamic_cast<ASString*>(obj);
-	if(args->at(0)->getObjectType()==T_DOUBLE)
+	if(args->at(0)->getObjectType()==T_NUMBER)
 	{
 		Number* n=dynamic_cast<Number*>(args->at(0));
 		ostringstream oss;
@@ -402,7 +402,7 @@ Number::Number(const ISWFObject* obj)
 
 void Number::copyFrom(const ISWFObject* o)
 {
-	if(o->getObjectType()!=T_DOUBLE)
+	if(o->getObjectType()!=T_NUMBER)
 	{
 		LOG(ERROR,"Copying Number from type " << o->getObjectType() << " is not supported");
 		abort();

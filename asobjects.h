@@ -175,7 +175,7 @@ private:
 public:
 	Number(const ISWFObject* obj);
 	Number(double v):val(v){}
-	SWFOBJECT_TYPE getObjectType()const {return T_DOUBLE;}
+	SWFOBJECT_TYPE getObjectType()const {return T_NUMBER;}
 	std::string toString() const;
 	int toInt(); 
 	float toFloat();

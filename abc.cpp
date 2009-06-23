@@ -421,6 +421,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callPropVoid",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::callPropVoid);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callSuper",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::callSuper);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callSuperVoid",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::callSuperVoid);
 
@@ -466,6 +469,10 @@ void ABCVm::registerClasses()
 	valid_classes["flash.xml.XMLDocument"]=-1;
 	Global.setVariableByName("flash.utils.Timer",new ASObject);
 	valid_classes["flash.utils.Timer"]=-1;
+	Global.setVariableByName("flash.text.TextFormat",new ASObject);
+	valid_classes["flash.text.TextFormat"]=-1;
+	Global.setVariableByName("flash.utils.Dictionary",new ASObject);
+	valid_classes["flash.utils.Dictionary"]=-1;
 	Global.setVariableByName("Array",new ASArray);
 	valid_classes["Array"]=-1;
 
@@ -846,8 +853,8 @@ void ABCVm::add(method_info* th)
 	ISWFObject* val1=th->runtime_stack_pop();
 	if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_NUMBER)
 	{
-		Number num2(val2);
-		Number num1(val1);
+		double num2=val2->toNumber();
+		double num1=val1->toNumber();
 		val1->decRef();
 		val2->decRef();
 		th->runtime_stack_push(new Number(num1+num2));
@@ -859,6 +866,15 @@ void ABCVm::add(method_info* th)
 		string b=val2->toString();
 		th->runtime_stack_push(new ASString(a+b));
 		LOG(CALLS,"add " << a << '+' << b);
+	}
+	else if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_INTEGER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1->toNumber();
+		val1->decRef();
+		val2->decRef();
+		th->runtime_stack_push(new Number(num1+num2));
+		LOG(CALLS,"add " << num1 << '+' << num2);
 	}
 	else
 	{
@@ -915,7 +931,6 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 	string name=th->vm->getMultinameString(n);
 	LOG(CALLS,"constructProp "<<name << ' ' << m);
 	arguments args;
-	args.incRef();
 	args.resize(m);
 	for(int i=0;i<m;i++)
 		args.at(m-i-1)=th->runtime_stack_pop();
@@ -995,6 +1010,13 @@ void ABCVm::hasNext2(method_info* th, int n, int m)
 {
 	LOG(NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
 	th->runtime_stack_push(new Boolean(false));
+}
+
+void ABCVm::callSuper(method_info* th, int n, int m)
+{
+	string name=th->vm->getMultinameString(n); 
+	LOG(NOT_IMPLEMENTED,"callSuper " << name << ' ' << m);
+	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::callSuperVoid(method_info* th, int n, int m)
@@ -1108,7 +1130,17 @@ void ABCVm::ifNGE(method_info* th, int offset)
 void ABCVm::ifNLT(method_info* th, int offset)
 {
 	LOG(CALLS,"ifNLT " << offset);
-	abort();
+	ISWFObject* obj2=th->runtime_stack_pop();
+	ISWFObject* obj1=th->runtime_stack_pop();
+
+	//Real comparision demanded to object
+	if(obj1->isLess(obj2))
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+	else
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+
+	obj2->decRef();
+	obj1->decRef();
 }
 
 void ABCVm::ifLT(method_info* th, int offset)
@@ -2581,6 +2613,20 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("construct"), th, constant);
+				break;
+			}
+			case 0x45:
+			{
+				//callsuper
+				LOG(CALLS, "synt callsuper" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				code >> t;
+				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall3(ex->FindFunctionNamed("callSuper"), th, constant, constant2);
 				break;
 			}
 			case 0x46:

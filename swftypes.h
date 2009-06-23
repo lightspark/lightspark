@@ -164,7 +164,7 @@ public:
 	virtual SWFOBJECT_TYPE getObjectType() const=0;
 	virtual std::string toString() const;
 	virtual int toInt();
-	virtual float toFloat();
+	virtual double toNumber();
 	virtual IFunction* toFunction();
 	virtual ISWFObject* clone()
 	{
@@ -302,7 +302,7 @@ public:
 	SWFOBJECT_TYPE getObjectType()const {return T_INTEGER;}
 	std::string toString() const;
 	int toInt(); 
-	float toFloat();
+	double toNumber();
 	operator int() const{return val;} 
 	bool isLess(const ISWFObject* r) const;
 	ISWFObject* clone()

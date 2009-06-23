@@ -98,7 +98,7 @@ int ISWFObject::toInt()
 	return 0;
 }
 
-float ISWFObject::toFloat()
+double ISWFObject::toNumber()
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to float");
 	return 0;
@@ -179,7 +179,7 @@ int Integer::toInt()
 	return val;
 }
 
-float Integer::toFloat()
+double Integer::toNumber()
 {
 	return val;
 }
@@ -777,7 +777,7 @@ ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(
 ISWFObject::~ISWFObject()
 {
 	if(ref_count>1)
-		LOG(NO_INFO,"Destroying a still referenced object");
+		LOG(NOT_IMPLEMENTED,"Destroying a still referenced object");
 
 	map<string,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)

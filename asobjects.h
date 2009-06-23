@@ -85,7 +85,7 @@ public:
 	ASString(const std::string& s);
 	ASFUNCTION(String);
 	std::string toString() const;
-	float toFloat();
+	double toNumber();
 	SWFOBJECT_TYPE getObjectType() const {return T_STRING;}
 	ISWFObject* clone()
 	{
@@ -178,7 +178,7 @@ public:
 	SWFOBJECT_TYPE getObjectType()const {return T_NUMBER;}
 	std::string toString() const;
 	int toInt(); 
-	float toFloat();
+	double toNumber();
 	operator double(){return val;}
 	ISWFObject* clone()
 	{

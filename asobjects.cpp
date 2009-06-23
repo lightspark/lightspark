@@ -223,7 +223,7 @@ string ASString::toString() const
 	return data.data();
 }
 
-float ASString::toFloat()
+double ASString::toNumber()
 {
 	LOG(ERROR,"Cannot convert string " << data << " to float");
 	return 0;
@@ -434,7 +434,7 @@ string Number::toString() const
 	return string(buf);
 }
 
-float Number::toFloat()
+double Number::toNumber()
 {
 	return val;
 }

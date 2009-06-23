@@ -364,6 +364,7 @@ private:
 	static void hasNext2(method_info* th, int n, int m); 
 	static void callPropVoid(method_info* th, int n, int m); 
 	static void callSuperVoid(method_info* th, int n, int m); 
+	static void callSuper(method_info* th, int n, int m); 
 	static void callProperty(method_info* th, int n, int m); 
 	static void constructProp(method_info* th, int n, int m); 
 	static void getLocal(method_info* th, int n); 

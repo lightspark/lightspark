@@ -522,7 +522,7 @@ void ActionSetProperty::Execute()
 	{
 		case 2:
 			obj->setVariableByName("_scalex",value);
-			LOG(CALLS,"setting to " << value->toFloat());
+			LOG(CALLS,"setting to " << value->toNumber());
 			break;
 /*		case 5:
 			ret=obj->getVariableByName("_totalframes");
@@ -595,7 +595,7 @@ void ActionImplementsOp::Execute()
 
 void ActionIncrement::Execute()
 {
-	float a=sys->vm.stack.pop()->toFloat();
+	float a=sys->vm.stack.pop()->toNumber();
 	LOG(CALLS,"ActionIncrement: " << a);
 	sys->vm.stack.push(new Number(a+1));
 }
@@ -629,8 +629,8 @@ void ActionAdd2::Execute()
 	}
 	else
 	{
-		sys->vm.stack.push(new Number(arg1->toFloat()+arg2->toFloat()));
-		LOG(CALLS,"ActionAdd2 returning: " << arg1->toFloat() + arg2->toFloat());
+		sys->vm.stack.push(new Number(arg1->toNumber()+arg2->toNumber()));
+		LOG(CALLS,"ActionAdd2 returning: " << arg1->toNumber() + arg2->toNumber());
 	}
 }
 
@@ -812,24 +812,24 @@ void ActionIf::Execute()
 
 void ActionDivide::Execute()
 {
-	float a=sys->vm.stack.pop()->toFloat();
-	float b=sys->vm.stack.pop()->toFloat();
+	double a=sys->vm.stack.pop()->toNumber();
+	double b=sys->vm.stack.pop()->toNumber();
 	sys->vm.stack.push(new Number(b/a));
 	LOG(CALLS,"ActionDivide: return " << b << "/" << a << "="<< b/a);
 }
 
 void ActionMultiply::Execute()
 {
-	float a=sys->vm.stack.pop()->toFloat();
-	float b=sys->vm.stack.pop()->toFloat();
+	double a=sys->vm.stack.pop()->toNumber();
+	double b=sys->vm.stack.pop()->toNumber();
 	sys->vm.stack.push(new Number(b*a));
 	LOG(CALLS,"ActionMultiply: return " << b*a);
 }
 
 void ActionSubtract::Execute()
 {
-	float a=sys->vm.stack.pop()->toFloat();
-	float b=sys->vm.stack.pop()->toFloat();
+	double a=sys->vm.stack.pop()->toNumber();
+	double b=sys->vm.stack.pop()->toNumber();
 	sys->vm.stack.push(new Number(b-a));
 	LOG(CALLS,"ActionSubtract: return " << b-a);
 }
@@ -837,7 +837,7 @@ void ActionSubtract::Execute()
 void ActionNot::Execute()
 {
 	LOG(CALLS,"ActionNot");
-	float a=sys->vm.stack.pop()->toFloat();
+	double a=sys->vm.stack.pop()->toNumber();
 	if(a==0)
 		sys->vm.stack.push(new Integer(1));
 	else

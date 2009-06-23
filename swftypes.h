@@ -125,8 +125,7 @@ protected:
 	ISWFObject();
 	std::map<std::string,ISWFObject*> Variables;
 	std::map<std::string,IFunction*> Setters;
-	//Should be resizable
-	ISWFObject* slots[10];
+	std::vector<ISWFObject*> slots;
 	int max_slot_index;
 	bool binded;
 	int ref_count;

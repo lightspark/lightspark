@@ -421,6 +421,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callPropVoid",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::callPropVoid);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callSuperVoid",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::callSuperVoid);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callProperty",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::callProperty);
 
@@ -504,11 +507,11 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 		case 0x09:
 		{
 			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
-			//printNamespaceSet(s);
 			if(s->count!=1)
 			{
 				LOG(ERROR,"Multiname on namespace set not really supported yet");
-				ret="<Unsupported>";
+				printNamespaceSet(s);
+				ret=getString(m->name);
 			}
 			else
 			{
@@ -992,6 +995,12 @@ void ABCVm::hasNext2(method_info* th, int n, int m)
 {
 	LOG(NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
 	th->runtime_stack_push(new Boolean(false));
+}
+
+void ABCVm::callSuperVoid(method_info* th, int n, int m)
+{
+	string name=th->vm->getMultinameString(n); 
+	LOG(NOT_IMPLEMENTED,"callSuperVoid " << name << ' ' << m);
 }
 
 void ABCVm::callPropVoid(method_info* th, int n, int m)
@@ -2646,6 +2655,20 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall3(ex->FindFunctionNamed("constructProp"), th, constant, constant2);
 				break;
 			}
+			case 0x4e:
+			{
+				//callsupervoid
+				LOG(CALLS, "synt callsupervoid" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				code >> t;
+				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall3(ex->FindFunctionNamed("callSuperVoid"), th, constant, constant2);
+				break;
+			}
 			case 0x4f:
 			{
 				//callpropvoid
@@ -3263,6 +3286,14 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 			{
 				switch(t->vkind)
 				{
+					case 0x01: //String
+					{
+						ISWFObject* ret=obj->setVariableByName(name, 
+							new ASString(constant_pool.strings[t->vindex]));
+						if(t->slot_id)
+							obj->setSlot(t->slot_id, ret);
+						break;
+					}
 					case 0x0a: //False
 					{
 						ISWFObject* ret=obj->setVariableByName(name, new Boolean(false));
@@ -3307,7 +3338,8 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 				}
 				else
 					LOG(CALLS,"Not resetting variable " << name);
-				obj->setSlot(t->slot_id, ret);
+				if(t->slot_id)
+					obj->setSlot(t->slot_id, ret);
 				break;
 			}
 		}

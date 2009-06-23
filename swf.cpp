@@ -105,16 +105,6 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	//This should come from DisplayObject
 	LoaderInfo* loaderInfo=new LoaderInfo(true);
 	setVariableByName("loaderInfo",loaderInfo);
-	//Setting fake parameters
-	//"channel_id":channel_id,"javascript_listener":"konduitToHolodeck","chat_username":getChatUsername(),"game_id":"48761","permission_slk":"false","chat_password":getChatPassword(),"debug_level":"","chat_ip":"216.246.59.237","permission_mtx_api":"false","game_auth_token":"","user_vars":"%5B%5D","game_url":"http%3A%2F%2Fwww.kongregate.com%2Fgames%2FGregAnims%2Fuse-boxmen","game_title":"Use%20Boxmen","chat_host":"of1.kongregate.com","permission_chat_api":"false","chat_port":"5222","game_permalink":"use-boxmen","connect":"true","user_vars_sig":"MSMWWUaYOAHO9T9QE7r4%2Fw%3D%3D"
-	loaderInfo->parameters.setVariableByName("debug_level",new ASString(""));
-	loaderInfo->parameters.setVariableByName("connect",new ASString("true"));
-	loaderInfo->parameters.setVariableByName("chat_ip",new ASString("216.246.59.237"));
-	loaderInfo->parameters.setVariableByName("chat_port",new ASString("5222"));
-	loaderInfo->parameters.setVariableByName("chat_host",new ASString("of1.kongregate.com"));
-	loaderInfo->parameters.setVariableByName("user_vars",new ASString("[]"));
-	loaderInfo->parameters.setVariableByName("chat_password",new ASString(""));
-	loaderInfo->parameters.setVariableByName("user_vars_sig",new ASString("MSMWWUaYOAHO9T9QE7r4/w=="));
 }
 
 void SystemState::setShutdownFlag()

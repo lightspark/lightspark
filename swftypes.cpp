@@ -791,18 +791,24 @@ ISWFObject* ISWFObject::getParent()
 
 ISWFObject* ISWFObject::getSlot(int n)
 {
-	return slots[n-1];
+	if(n-1<slots.size())
+		return slots[n-1];
+	else
+	{
+		LOG(ERROR,"Slot out of range");
+		abort();
+	}
 }
 
 void ISWFObject::setSlot(int n,ISWFObject* o)
 {
-	if(n>10)
+	if(n-1<slots.size())
+		slots[n-1]=o;
+	else
 	{
-		LOG(ERROR,"Not enough slots");
-		abort();
+		slots.resize(n);
+		slots[n-1]=o;
 	}
-	int m=n-1;
-	slots[m]=o;
 }
 
 ISWFObject* RegisterNumber::instantiate()

@@ -776,20 +776,20 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			//glCopyTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,0,0,100,100,0);
 			glUseProgram(0);
 			// switch back to window-system-provided framebuffer
-			//glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-			//glDrawBuffer(GL_BACK);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+			glDrawBuffer(GL_BACK);
 
 			glEnable( GL_TEXTURE_2D );
 			glLoadIdentity();
 			glBegin(GL_QUADS);
-				glTexCoord2d(0.0,0.0); glVertex2i(0,0);
-				glTexCoord2d(1.0,0.0); glVertex2i(width*10,0);
-				glTexCoord2d(1.0,1.0); glVertex2i(width*10,height*10);
-				glTexCoord2d(0.0,1.0); glVertex2i(0,height*10);
+				glTexCoord2d(0.0,1.0); glVertex2i(0,0);
+				glTexCoord2d(1.0,1.0); glVertex2i(width*10,0);
+				glTexCoord2d(1.0,0.0); glVertex2i(width*10,height*10);
+				glTexCoord2d(0.0,0.0); glVertex2i(0,height*10);
 			glEnd();
 
-			//glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
-			//glDrawBuffers(1,draw_buffers);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
+			glDrawBuffers(1,draw_buffers);
 			glDisable( GL_TEXTURE_2D );
 			glUseProgram(sys->gpu_program);
 

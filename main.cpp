@@ -70,9 +70,9 @@ int main(int argc, char* argv[])
 	zf.open(argv[1],ios_base::in);
 	istream f(&zf);
 	
-	SDL_Init ( SDL_INIT_EVENTTHREAD );
+	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	ParseThread pt(sys,f);
-	RenderThread rt(sys,GLX,NULL);
+	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 	sys->cur_input_thread=&it;
 

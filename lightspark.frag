@@ -17,6 +17,9 @@ vec4 linear_gradient()
 void main()
 {
 	//It's probably faster to compute all this and select the rigth one
-	gl_FragColor=(solid_color()*g_selector.x)+
+	gl_FragData[0]=(solid_color()*g_selector.x)+
 			(linear_gradient()*g_selector.y);
+//	gl_FragData[1]=(solid_color()*g_selector.x)+
+//			(linear_gradient()*g_selector.y);
+	gl_FragData[1]=vec4(0,1,0,0);
 }

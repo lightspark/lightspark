@@ -670,17 +670,27 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute( SDL_GL_STEREO, 0);
 	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1); 
+	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
 	RECT size=sys->getFrameSize();
 	int width=size.Xmax/10;
 	int height=size.Ymax/10;
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
+
+	int i;
+	glGetIntegerv(GL_MAX_DRAW_BUFFERS,&i);
+	cout << i << endl;
+	GLenum draw_buffers[]={GL_BACK,GL_AUX0};
+	glReadBuffer(GL_AUX0);
+	glDrawBuffers(2,draw_buffers);
+//	glDrawBuffer(GL_AUX0);
+
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc(GL_LEQUAL);
 
-//	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	glViewport(0,0,width,height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -699,13 +709,22 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
+	unsigned int t2;
+	glGenTextures(1,&t2);
+
+	glBindTexture(GL_TEXTURE_2D,t2);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+
 	//Load fragment shaders
 	sys->gpu_program=load_fragment_program("lightspark.frag");
 	int tex=glGetUniformLocation(sys->gpu_program,"g_tex");
 	glUniform1i(tex,0);
 	glUseProgram(sys->gpu_program);
+ 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
-	float* buffer=new float[640*240];
+	float* buffer=new float[500*500*3];
 	try
 	{
 		while(1)
@@ -728,10 +747,22 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			th->cur_frame->Render(sys->displayListLimit);
 
-			/*glReadPixels(0,240,640,240,GL_STENCIL_INDEX,GL_FLOAT,buffer);
-			for(int i=0;i<240*640;i++)
-				buffer[i]/=4;
-			glDrawPixels(640,240,GL_LUMINANCE,GL_FLOAT,buffer);*/
+			glCopyTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,0,0,100,100,0);
+			glUseProgram(0);
+			glEnable( GL_TEXTURE_2D );
+			glLoadIdentity();
+			glBegin(GL_QUADS);
+				glTexCoord2d(0.0,0.0); glVertex2i(1000,1000);
+				glTexCoord2d(1.0,0.0); glVertex2i(2000,1000);
+				glTexCoord2d(1.0,1.0); glVertex2i(2000,2000);
+				glTexCoord2d(0.0,1.0); glVertex2i(1000,2000);
+			glEnd();
+
+			glDisable( GL_TEXTURE_2D );
+			glUseProgram(sys->gpu_program);
+
+
+			
 
 			sem_post(&th->end_render);
 			if(sys->shutdown)

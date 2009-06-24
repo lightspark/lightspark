@@ -797,7 +797,9 @@ void ABCVm::divide(method_info* th)
 
 void ABCVm::getGlobalScope(method_info* th)
 {
-	LOG(NOT_IMPLEMENTED,"getGlobalScope");
+	LOG(CALLS,"getGlobalScope");
+	th->runtime_stack_push(th->scope_stack[0]);
+	th->scope_stack[0]->incRef();
 }
 
 void ABCVm::decrement(method_info* th)

@@ -215,6 +215,7 @@ private:
 
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
+	GLXPbuffer mPbuffer;
 	GC mGC;
 	static int load_fragment_program(const char* file);
 public:

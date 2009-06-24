@@ -167,7 +167,7 @@ public:
 	static void setError(){error=1;}
 };
 
-enum ENGINE { SDL=0, NPAPI};
+enum ENGINE { SDL=0, NPAPI, GLX};
 struct NPAPI_params
 {
 	Display* display;
@@ -205,6 +205,7 @@ private:
 	pthread_t t;
 	static void* sdl_worker(RenderThread*);
 	static void* npapi_worker(RenderThread*);
+	static void* glx_worker(RenderThread*);
 	sem_t mutex;
 	sem_t render;
 	sem_t end_render;
@@ -213,9 +214,11 @@ private:
 	int bak;
 	static int error;
 
+	Display* mDisplay;
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
 	GLXPbuffer mPbuffer;
+	Window mWindow;
 	GC mGC;
 	static int load_fragment_program(const char* file);
 public:

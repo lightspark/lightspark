@@ -63,16 +63,16 @@ int main(int argc, char* argv[])
 	rl.rlim_cur=400000000;
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
-	Log::initLogging(TRACE);
+	Log::initLogging(ERROR);
 	sys=new SystemState;
 	sys->performance_profiling=false;
 	zlib_file_filter zf;
 	zf.open(argv[1],ios_base::in);
 	istream f(&zf);
 	
-	SDL_Init ( SDL_INIT_VIDEO|SDL_INIT_EVENTTHREAD );
+	SDL_Init ( SDL_INIT_EVENTTHREAD );
 	ParseThread pt(sys,f);
-	RenderThread rt(sys,SDL,NULL);
+	RenderThread rt(sys,GLX,NULL);
 	InputThread it(sys,SDL,NULL);
 	sys->cur_input_thread=&it;
 

@@ -335,6 +335,10 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):bak_frame(null_
 		npapi_params=(NPAPI_params*)params;
 		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
 	}
+	else if(e==GLX)
+	{
+		pthread_create(&t,NULL,(thread_worker)glx_worker,this);
+	}
 }
 
 RenderThread::~RenderThread()
@@ -382,7 +386,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	attrib[6]=GLX_STENCIL_SIZE;
 	attrib[7]=8;
 
-	attrib[8]=0;
+	attrib[8]=None;
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 //	printf("returned %x pointer and %u elements\n",fb, a);
 	if(!fb)
@@ -505,6 +509,156 @@ int RenderThread::load_fragment_program(const char* file)
 
 	glLinkProgram(ret);
 	return ret;
+}
+
+void* RenderThread::glx_worker(RenderThread* th)
+{
+	sys=th->m_sys;
+
+	RECT size=sys->getFrameSize();
+	int width=size.Xmax/10;
+	int height=size.Ymax/10;
+
+	int attrib[20];
+	attrib[0]=GLX_RGBA;
+	attrib[1]=GLX_DOUBLEBUFFER;
+	attrib[2]=GLX_DEPTH_SIZE;
+	attrib[3]=24;
+	attrib[4]=GLX_STENCIL_SIZE;
+	attrib[5]=8;
+	attrib[6]=GLX_RED_SIZE;
+	attrib[7]=8;
+	attrib[8]=GLX_GREEN_SIZE;
+	attrib[9]=8;
+	attrib[10]=GLX_BLUE_SIZE;
+	attrib[11]=8;
+	attrib[12]=GLX_ALPHA_SIZE;
+	attrib[13]=8;
+
+	attrib[14]=None;
+
+	XVisualInfo *vi;
+	XSetWindowAttributes swa;
+	Colormap cmap; 
+	th->mDisplay = XOpenDisplay(0);
+	vi = glXChooseVisual(th->mDisplay, DefaultScreen(th->mDisplay), attrib);
+
+	int a;
+	attrib[0]=GLX_VISUAL_ID;
+	attrib[1]=vi->visualid;
+	attrib[2]=GLX_DEPTH_SIZE;
+	attrib[3]=24;
+	attrib[4]=GLX_STENCIL_SIZE;
+	attrib[5]=8;
+	attrib[6]=GLX_RED_SIZE;
+	attrib[7]=8;
+	attrib[8]=GLX_GREEN_SIZE;
+	attrib[9]=8;
+	attrib[10]=GLX_BLUE_SIZE;
+	attrib[11]=8;
+	attrib[12]=GLX_ALPHA_SIZE;
+	attrib[13]=8;
+	attrib[14]=GLX_DRAWABLE_TYPE;
+	attrib[15]=GLX_PBUFFER_BIT;
+
+	attrib[16]=None;
+	GLXFBConfig* fb=glXChooseFBConfig(th->mDisplay, 0, attrib, &a);
+	cout << fb << endl;
+	cout << a  << endl;
+
+	//We create a pair of context, window and offscreen
+	th->mContext = glXCreateContext(th->mDisplay, vi, 0, GL_TRUE);
+
+	attrib[0]=GLX_PBUFFER_WIDTH;
+	attrib[1]=width;
+	attrib[2]=GLX_PBUFFER_HEIGHT;
+	attrib[3]=height;
+	attrib[4]=None;
+	th->mPbuffer = glXCreatePbuffer(th->mDisplay, fb[0], attrib);
+	cout << th->mPbuffer << endl;
+
+	XFree(fb);
+
+	cmap = XCreateColormap(th->mDisplay, RootWindow(th->mDisplay, vi->screen), vi->visual, AllocNone);
+	swa.colormap = cmap; 
+	swa.border_pixel = 0; 
+	swa.event_mask = StructureNotifyMask; 
+
+	th->mWindow = XCreateWindow(th->mDisplay, RootWindow(th->mDisplay, vi->screen), 100, 100, width, height, 0, vi->depth, 
+			InputOutput, vi->visual, CWBorderPixel|CWEventMask|CWColormap, &swa);
+	
+	XMapWindow(th->mDisplay, th->mWindow);
+	glXMakeContextCurrent(th->mDisplay, th->mWindow, th->mWindow, th->mContext); 
+
+	glEnable( GL_DEPTH_TEST );
+	glDepthFunc(GL_LEQUAL);
+
+	glViewport(0,0,width,height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0,width,height,0,-100,0);
+	glScalef(0.1,0.1,1);
+
+	glMatrixMode(GL_MODELVIEW);
+
+	unsigned int t;
+	glGenTextures(1,&t);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_1D,t);
+
+	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+
+	//Load fragment shaders
+	sys->gpu_program=load_fragment_program("lightspark.frag");
+	int tex=glGetUniformLocation(sys->gpu_program,"g_tex");
+	glUniform1i(tex,0);
+	glUseProgram(sys->gpu_program);
+
+	float* buffer=new float[640*240];
+	try
+	{
+		while(1)
+		{
+			sem_wait(&th->render);
+			if(th->cur_frame==NULL)
+			{
+				sem_post(&th->end_render);
+				if(sys->shutdown)
+					pthread_exit(0);
+				continue;
+			}
+			glXSwapBuffers(th->mDisplay,th->mWindow);
+			RGB bg=sys->getBackground();
+			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
+			glClearDepth(0xffff);
+			glClearStencil(5);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+			glLoadIdentity();
+
+			th->cur_frame->Render(sys->displayListLimit);
+
+			/*glReadPixels(0,240,640,240,GL_STENCIL_INDEX,GL_FLOAT,buffer);
+			for(int i=0;i<240*640;i++)
+				buffer[i]/=4;
+			glDrawPixels(640,240,GL_LUMINANCE,GL_FLOAT,buffer);*/
+
+			sem_post(&th->end_render);
+			if(sys->shutdown)
+			{
+				delete[] buffer;
+				pthread_exit(0);
+			}
+		}
+	}
+	catch(const char* e)
+	{
+		LOG(ERROR, "Exception caught " << e);
+		delete[] buffer;
+		exit(-1);
+	}
 }
 
 void* RenderThread::sdl_worker(RenderThread* th)

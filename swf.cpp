@@ -680,14 +680,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	int height=size.Ymax/10;
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
 
-	int i;
-	glGetIntegerv(GL_MAX_DRAW_BUFFERS,&i);
-	cout << i << endl;
-	GLenum draw_buffers[]={GL_BACK,GL_AUX0};
-	glReadBuffer(GL_AUX0);
-	glDrawBuffers(2,draw_buffers);
-//	glDrawBuffer(GL_AUX0);
-
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc(GL_LEQUAL);
 
@@ -711,18 +703,52 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	unsigned int t2;
 	glGenTextures(1,&t2);
-
 	glBindTexture(GL_TEXTURE_2D,t2);
+
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+	// create a renderbuffer object to store depth and stencil info
+	GLuint rboId[1];
+	glGenRenderbuffersEXT(1, rboId);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId[0]);
+	glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT,width,height);
+
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+	
+	// create a framebuffer object
+	GLuint fboId;
+	glGenFramebuffersEXT(1, &fboId);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
+	
+	// attach the texture to FBO color attachment point
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2, 0);
+	
+	// attach the renderbuffer to depth attachment point
+	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId[0]);
+	
+	// check FBO status
+	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+	if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
+	{
+		cout << status << endl;
+		abort();
+	}
+	
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT};
+	glDrawBuffers(1,draw_buffers);
+ 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	
 
 	//Load fragment shaders
 	sys->gpu_program=load_fragment_program("lightspark.frag");
 	int tex=glGetUniformLocation(sys->gpu_program,"g_tex");
 	glUniform1i(tex,0);
 	glUseProgram(sys->gpu_program);
- 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	//glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
 	float* buffer=new float[500*500*3];
 	try
@@ -747,17 +773,23 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			th->cur_frame->Render(sys->displayListLimit);
 
-			glCopyTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,0,0,100,100,0);
+			//glCopyTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,0,0,100,100,0);
 			glUseProgram(0);
+			// switch back to window-system-provided framebuffer
+			//glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+			//glDrawBuffer(GL_BACK);
+
 			glEnable( GL_TEXTURE_2D );
 			glLoadIdentity();
 			glBegin(GL_QUADS);
-				glTexCoord2d(0.0,0.0); glVertex2i(1000,1000);
-				glTexCoord2d(1.0,0.0); glVertex2i(2000,1000);
-				glTexCoord2d(1.0,1.0); glVertex2i(2000,2000);
-				glTexCoord2d(0.0,1.0); glVertex2i(1000,2000);
+				glTexCoord2d(0.0,0.0); glVertex2i(0,0);
+				glTexCoord2d(1.0,0.0); glVertex2i(width*10,0);
+				glTexCoord2d(1.0,1.0); glVertex2i(width*10,height*10);
+				glTexCoord2d(0.0,1.0); glVertex2i(0,height*10);
 			glEnd();
 
+			//glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
+			//glDrawBuffers(1,draw_buffers);
 			glDisable( GL_TEXTURE_2D );
 			glUseProgram(sys->gpu_program);
 

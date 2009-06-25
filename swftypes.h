@@ -337,7 +337,7 @@ public:
 class RGBA
 {
 public:
-	RGBA():Red(0),Green(0),Blue(0),Alpha(1){}
+	RGBA():Red(0),Green(0),Blue(0),Alpha(255){}
 	RGBA(int r, int g, int b, int a):Red(r),Green(g),Blue(b),Alpha(a){}
 	UI8 Red;
 	UI8 Green;

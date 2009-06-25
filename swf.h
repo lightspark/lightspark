@@ -103,6 +103,7 @@ public:
 	//OpenGL fragment programs
 	int gpu_program;
 	GLuint fboId[2];
+	GLuint spare_tex;
 
 	bool shutdown;
 	int version;
@@ -221,7 +222,7 @@ private:
 	GLXPbuffer mPbuffer;
 	Window mWindow;
 	GC mGC;
-	static int load_fragment_program(const char* file);
+	static int load_program();
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();

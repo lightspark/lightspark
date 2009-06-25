@@ -747,7 +747,7 @@ void DefineShape4Tag::Render()
 void DefineShape3Tag::Render()
 {
 	LOG(TRACE,"DefineShape3 Render "<< ShapeId);
-	if(texture==0)
+/*	if(texture==0)
 	{
 		glPushAttrib(GL_TEXTURE_BIT);
 		glGenTextures(1,&texture);
@@ -757,11 +757,11 @@ void DefineShape3Tag::Render()
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (ShapeBounds.Xmax-ShapeBounds.Xmin)/10, (ShapeBounds.Ymax-ShapeBounds.Ymin)/10, 
-				0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (ShapeBounds.Xmax-ShapeBounds.Xmin)/10, 
+				(ShapeBounds.Ymax-ShapeBounds.Ymin)/10, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 		glPopAttrib();
-	}
+	}*/
 	if(cached.size()==0)
 	{
 		timespec ts,td;
@@ -777,29 +777,24 @@ void DefineShape3Tag::Render()
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[1]);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, texture, 0);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glClearColor(1,1,0,1);
-	glClear(GL_COLOR_BUFFER_BIT);
+//	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[1]);
+//	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, texture, 0);
+//	glClearColor(1,0.5,0,0.2);
+//	glClear(GL_COLOR_BUFFER_BIT);
 
-	glPushMatrix();
-	glLoadIdentity();
-	//glTranslatef(-ShapeBounds.Xmin/10,-ShapeBounds.Ymin/10,0);
-	FILLSTYLE::fixedColor(0,0,1);
+/*	FILLSTYLE::fixedColor(0,0,1);
 	std::vector < Shape >::iterator it=cached.begin();
 	glDisable(GL_DEPTH);
 	for(it;it!=cached.end();it++)
 		it->Render2();
 
-	glEnable(GL_DEPTH);
-	glPopMatrix();
+	glEnable(GL_DEPTH);*/
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[0]);
+	/*glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[0]);
 	glUseProgram(0);
 	glPushAttrib(GL_TEXTURE_BIT);
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D,texture);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,0);
 		glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
@@ -813,7 +808,7 @@ void DefineShape3Tag::Render()
 
 	glPopAttrib();
 	glDisable(GL_TEXTURE_2D);
-	glUseProgram(sys->gpu_program);
+	glUseProgram(sys->gpu_program);*/
 }
 
 void FromShaperecordListToDump(SHAPERECORD* cur)

@@ -486,26 +486,34 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	delete p;
 }
 
-int RenderThread::load_fragment_program(const char* file)
+int RenderThread::load_program()
 {
-	GLuint v,f,f2,p;
+	GLuint v,f;
 	f = glCreateShader(GL_FRAGMENT_SHADER);
+	v = glCreateShader(GL_VERTEX_SHADER);
 
-	char *fs = NULL;
-	fs = textFileRead(file);
+	const char *fs = NULL;
+	fs = textFileRead("lightspark.frag");
+	glShaderSource(f, 1, &fs,NULL);
+	free((void*)fs);
 
-	const char * ff = fs;
-	glShaderSource(f, 1, &ff,NULL);
-	free(fs);
+	fs = textFileRead("lightspark.vert");
+	glShaderSource(v, 1, &fs,NULL);
+	free((void*)fs);
 
-	glCompileShader(f);
 	char str[1024];
 	int a;
+	glCompileShader(f);
 	glGetShaderInfoLog(f,1024,&a,str);
-	printf("%s\n",str);
+	printf("Fragment shader: %s\n",str);
+
+	glCompileShader(v);
+	glGetShaderInfoLog(f,1024,&a,str);
+	printf("Vertex shader: %s\n",str);
 
 	int ret = glCreateProgram();
 	glAttachShader(ret,f);
+//	glAttachShader(ret,v);
 
 	glLinkProgram(ret);
 	return ret;
@@ -612,7 +620,7 @@ void* RenderThread::glx_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	//Load fragment shaders
-	sys->gpu_program=load_fragment_program("lightspark.frag");
+	sys->gpu_program=load_program();
 	int tex=glGetUniformLocation(sys->gpu_program,"g_tex");
 	glUniform1i(tex,0);
 	glUseProgram(sys->gpu_program);
@@ -683,6 +691,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glEnable( GL_DEPTH_TEST );
 	glDepthFunc(GL_LEQUAL);
 
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
 	glViewport(0,0,width,height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -712,14 +723,15 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
  	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
-/*	glBindTexture(GL_TEXTURE_2D,t2[1]);
+	glBindTexture(GL_TEXTURE_2D,t2[1]);
+	sys->spare_tex=t2[1];
 
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
- 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );*/
+ 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 	// create a renderbuffer object to store depth and stencil info
 	GLuint rboId[1];
@@ -735,8 +747,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId[0]);
 
-	/*glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[1]);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[1], 0);*/
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[1]);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[1], 0);
 	
 	// check FBO status
 	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
@@ -747,7 +759,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	}
 
 	//Load fragment shaders
-	sys->gpu_program=load_fragment_program("lightspark.frag");
+	sys->gpu_program=load_program();
 	int tex=glGetUniformLocation(sys->gpu_program,"g_tex");
 	glUniform1i(tex,0);
 	glUseProgram(sys->gpu_program);
@@ -766,11 +778,13 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				continue;
 			}
 			SDL_GL_SwapBuffers( );
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[0]);
-			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+//			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[0]);
+//			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+			glDrawBuffer(GL_BACK);
 
 			RGB bg=sys->getBackground();
-			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
+			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 			glClearDepth(0xffff);
 			glClearStencil(5);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
@@ -778,7 +792,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			th->cur_frame->Render(sys->displayListLimit);
 
-			glUseProgram(0);
+/*			glUseProgram(0);
 			glLoadIdentity();
 			glScalef(10,10,1);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
@@ -796,7 +810,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glVertex2i(0,height);
 			glEnd();
 			glDisable(GL_TEXTURE_2D);
-			glUseProgram(sys->gpu_program);
+			glUseProgram(sys->gpu_program);*/
 
 
 			

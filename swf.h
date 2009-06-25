@@ -81,7 +81,6 @@ struct bind_candidates
 class SystemState:public ASMovieClip
 {
 private:
-	RECT frame_size;
 
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
@@ -100,8 +99,10 @@ private:
 	sem_t sem_valid_frame_size;
 
 public:
+	RECT frame_size;
 	//OpenGL fragment programs
 	int gpu_program;
+	GLuint fboId[2];
 
 	bool shutdown;
 	int version;

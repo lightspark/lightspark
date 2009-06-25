@@ -37,6 +37,52 @@ float colors[][3] = { { 0 ,0 ,0 },
 			{0,1,1},
 			{0,0,0}};
 
+void Shape::Render2(int i) const
+{
+	if(outline.empty())
+	{
+		LOG(TRACE,"No edges in this shape");
+		return;
+	}
+
+	bool filled=false;
+/*	if(closed)
+	{
+		LOG(TRACE,"Filling");
+		std::vector<Triangle>::const_iterator it2=interior.begin();
+		if(style)
+			style->setFragmentProgram();
+		else
+			abort();
+		glBegin(GL_TRIANGLES);
+		for(it2;it2!=interior.end();it2++)
+		{
+			glVertex2i(it2->v1.x,it2->v1.y);
+			glVertex2i(it2->v2.x,it2->v2.y);
+			glVertex2i(it2->v3.x,it2->v3.y);
+		}
+		glEnd();
+		filled=true;
+	}*/
+
+	//if(/*graphic.stroked ||*/ !filled)
+	{
+		LOG(TRACE,"Line tracing");
+		FILLSTYLE::fixedColor(0,0,0);
+		std::vector<Vector2>::const_iterator it=outline.begin();
+		if(closed)
+			glBegin(GL_LINE_LOOP);
+		else
+			glBegin(GL_LINE_STRIP);
+		for(it;it!=outline.end();it++)
+			glVertex2i(it->x,it->y);
+		glEnd();
+	}
+
+	for(int i=0;i<sub_shapes.size();i++)
+		sub_shapes[i].Render2();
+}
+
 void Shape::Render(int i) const
 {
 	if(outline.empty())
@@ -162,13 +208,20 @@ void Shape::dumpInterior()
 
 void Shape::SetStyles(FILLSTYLE* styles)
 {
+	static FILLSTYLE* clearStyle=NULL;
+	if(!clearStyle)
+	{
+		clearStyle=new FILLSTYLE;
+		clearStyle->FillStyleType=0x00;
+		clearStyle->Color=RGBA(0,0,0,0);
+	}
+
 	if(styles)
 	{
 		if(color)
 			style=&styles[color-1];
 		else
-			style=NULL;
-
+			style=clearStyle;
 	}
 }
 

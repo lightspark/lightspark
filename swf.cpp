@@ -701,15 +701,25 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
-	unsigned int t2;
-	glGenTextures(1,&t2);
-	glBindTexture(GL_TEXTURE_2D,t2);
+	unsigned int t2[2];
+	glGenTextures(2,t2);
+	glBindTexture(GL_TEXTURE_2D,t2[0]);
 
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+ 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+
+/*	glBindTexture(GL_TEXTURE_2D,t2[1]);
+
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+ 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );*/
 
 	// create a renderbuffer object to store depth and stencil info
 	GLuint rboId[1];
@@ -720,15 +730,13 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
 	
 	// create a framebuffer object
-	GLuint fboId;
-	glGenFramebuffersEXT(1, &fboId);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
-	
-	// attach the texture to FBO color attachment point
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2, 0);
-	
-	// attach the renderbuffer to depth attachment point
+	glGenFramebuffersEXT(2, sys->fboId);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[0]);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId[0]);
+
+	/*glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[1]);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[1], 0);*/
 	
 	// check FBO status
 	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
@@ -737,18 +745,12 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		cout << status << endl;
 		abort();
 	}
-	
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT};
-	glDrawBuffers(1,draw_buffers);
- 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-	
 
 	//Load fragment shaders
 	sys->gpu_program=load_fragment_program("lightspark.frag");
 	int tex=glGetUniformLocation(sys->gpu_program,"g_tex");
 	glUniform1i(tex,0);
 	glUseProgram(sys->gpu_program);
-	//glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
 	float* buffer=new float[500*500*3];
 	try
@@ -764,6 +766,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				continue;
 			}
 			SDL_GL_SwapBuffers( );
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[0]);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 			glClearDepth(0xffff);
@@ -773,24 +778,24 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			th->cur_frame->Render(sys->displayListLimit);
 
-			//glCopyTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,0,0,100,100,0);
 			glUseProgram(0);
-			// switch back to window-system-provided framebuffer
+			glLoadIdentity();
+			glScalef(10,10,1);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 			glDrawBuffer(GL_BACK);
-
-			glEnable( GL_TEXTURE_2D );
-			glLoadIdentity();
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glEnable(GL_TEXTURE_2D);
 			glBegin(GL_QUADS);
-				glTexCoord2d(0.0,1.0); glVertex2i(0,0);
-				glTexCoord2d(1.0,1.0); glVertex2i(width*10,0);
-				glTexCoord2d(1.0,0.0); glVertex2i(width*10,height*10);
-				glTexCoord2d(0.0,0.0); glVertex2i(0,height*10);
+				glTexCoord2f(0,0);
+				glVertex2i(0,0);
+				glTexCoord2f(1,0);
+				glVertex2i(width,0);
+				glTexCoord2f(1,1);
+				glVertex2i(width,height);
+				glTexCoord2f(0,1);
+				glVertex2i(0,height);
 			glEnd();
-
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
-			glDrawBuffers(1,draw_buffers);
-			glDisable( GL_TEXTURE_2D );
+			glDisable(GL_TEXTURE_2D);
 			glUseProgram(sys->gpu_program);
 
 

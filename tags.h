@@ -27,6 +27,7 @@
 #include "input.h"
 #include "geometry.h"
 #include "asobjects.h"
+#include <GL/gl.h>
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,END_TAG};
 
@@ -127,6 +128,7 @@ private:
 	UI16 ShapeId;
 	RECT ShapeBounds;
 	SHAPEWITHSTYLE Shapes;
+	GLuint texture;
 public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }

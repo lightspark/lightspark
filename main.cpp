@@ -63,6 +63,7 @@ int main(int argc, char* argv[])
 	rl.rlim_cur=400000000;
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
+
 	Log::initLogging(ERROR);
 	sys=new SystemState;
 	sys->performance_profiling=false;

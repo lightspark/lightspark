@@ -518,7 +518,7 @@ void FILLSTYLE::setFragmentProgram() const
 	{
 		LOG(TRACE,"Fill color");
 		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
-		glUniform2f(s,1,0);
+		glUniform3f(s,1,0,0);
 		s=glGetUniformLocation(sys->gpu_program,"g_color1");
 		glUniform4f(s,float(Color.Red)/256.0f,
 			float(Color.Green)/256.0f,
@@ -529,7 +529,7 @@ void FILLSTYLE::setFragmentProgram() const
 	{
 		LOG(TRACE,"Fill gradient");
 		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
-		glUniform2f(s,0,1);
+		glUniform3f(s,0,1,0);
 
 		color_entry buffer[256];
 		int grad_index=0;
@@ -570,7 +570,7 @@ void FILLSTYLE::setFragmentProgram() const
 void FILLSTYLE::fixedColor(float r, float g, float b)
 {
 	int s=glGetUniformLocation(sys->gpu_program,"g_selector");
-	glUniform2f(s,1,0);
+	glUniform3f(s,1,0,0);
 	s=glGetUniformLocation(sys->gpu_program,"g_color1");
 	glUniform4f(s,r,g,b,1);
 }

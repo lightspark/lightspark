@@ -278,29 +278,6 @@ void DefineSpriteTag::printInfo(int t)
 	sys.currentClip=bak;*/
 }
 
-void drawStenciled(const RECT& bounds, int fill, const FILLSTYLE* style)
-{
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-	glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
-	if(fill)
-	{
-		glStencilFunc(GL_EQUAL,fill,0xff);
-		if(style)
-			style->setFragmentProgram();
-		else
-		{
-			abort();
-			glColor3f(1,0,0);
-		}
-		glBegin(GL_QUADS);
-			glVertex2i(bounds.Xmin,bounds.Ymin);
-			glVertex2i(bounds.Xmin,bounds.Ymax);
-			glVertex2i(bounds.Xmax,bounds.Ymax);
-			glVertex2i(bounds.Xmax,bounds.Ymin);
-		glEnd();
-	}
-}
-
 void ignore(istream& i, int count)
 {
 	char* buf=new char[count];
@@ -481,6 +458,11 @@ void DefineTextTag::Render()
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDisable(GL_BLEND);
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	std::vector < GLYPHENTRY >::iterator it2;
 	int count=0;
@@ -489,12 +471,14 @@ void DefineTextTag::Render()
 	int cur_height;
 	float matrix[16];
 	TextMatrix.get4DMatrix(matrix);
-	glEnable(GL_STENCIL_TEST);
 
-	//Build a fake FILLSTYLE
+	//Build a fake FILLSTYLEs
 	FILLSTYLE f;
 	f.FillStyleType=0x00;
 	f.Color=it->TextColor;
+	FILLSTYLE clearStyle;
+	clearStyle.FillStyleType=0x00;
+	clearStyle.Color=RGBA(0,0,0,0);
 	for(it;it!=TextRecords.end();it++)
 	{
 		if(it->StyleFlagsHasFont)
@@ -513,6 +497,13 @@ void DefineTextTag::Render()
 			glScalef(scale,scale,1);
 			while(cached[shapes_done].id==count)
 			{
+				if(cached[shapes_done].color==1)
+					cached[shapes_done].style=&f;
+				else if(cached[shapes_done].color==0)
+					cached[shapes_done].style=&clearStyle;
+				else
+					abort();
+
 				cached[shapes_done].Render();
 				shapes_done++;
 				if(shapes_done==cached.size())
@@ -523,9 +514,14 @@ void DefineTextTag::Render()
 			count++;
 		}
 	}
-	drawStenciled(TextBounds,1,&f);
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glDisable(GL_STENCIL_TEST);
+
+	glEnable(GL_BLEND);
+	glUseProgram(0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glWindowPos2i(0,0);
+	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glUseProgram(sys->gpu_program);
 }
 
 void DefineTextTag::printInfo(int t)
@@ -636,16 +632,22 @@ void DefineMorphShapeTag::Render()
 	for(int i=0;i<shapes.size();i++)
 		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
 
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDisable(GL_BLEND);
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	std::vector < Shape >::iterator it=shapes.begin();
-	glEnable(GL_STENCIL_TEST);
 	for(it;it!=shapes.end();it++)
-	{
 		it->Render();
-		if(it->closed)
-			drawStenciled(EndBounds,it->color,it->style);
-	}
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glDisable(GL_STENCIL_TEST);
+
+	glEnable(GL_BLEND);
+	glUseProgram(0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glWindowPos2i(0,0);
+	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glUseProgram(sys->gpu_program);
 }
 
 void DefineShapeTag::Render()
@@ -666,16 +668,22 @@ void DefineShapeTag::Render()
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDisable(GL_BLEND);
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	std::vector < Shape >::iterator it=cached.begin();
-	glEnable(GL_STENCIL_TEST);
 	for(it;it!=cached.end();it++)
-	{
 		it->Render();
-		if(it->closed)
-			drawStenciled(ShapeBounds,it->color,it->style);
-	}
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glDisable(GL_STENCIL_TEST);
+
+	glEnable(GL_BLEND);
+	glUseProgram(0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glWindowPos2i(0,0);
+	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glUseProgram(sys->gpu_program);
 }
 
 void DefineShape2Tag::Render()
@@ -696,11 +704,14 @@ void DefineShape2Tag::Render()
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDisable(GL_BLEND);
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	std::vector < Shape >::iterator it=cached.begin();
-	glEnable(GL_STENCIL_TEST);
 	for(it;it!=cached.end();it++)
 	{
-		it->Render();
 		if(it->color >= Shapes.FillStyles.FillStyleCount)
 		{
 			it->style=new FILLSTYLE;
@@ -708,10 +719,16 @@ void DefineShape2Tag::Render()
 			it->style->Color=RGB(255,0,0);
 			LOG(NOT_IMPLEMENTED,"Orrible HACK");
 		}
-		drawStenciled(ShapeBounds,it->color,it->style);
+		it->Render();
 	}
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glDisable(GL_STENCIL_TEST);
+
+	glEnable(GL_BLEND);
+	glUseProgram(0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glWindowPos2i(0,0);
+	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glUseProgram(sys->gpu_program);
 }
 
 void DefineShape4Tag::Render()
@@ -731,17 +748,22 @@ void DefineShape4Tag::Render()
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDisable(GL_BLEND);
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	std::vector < Shape >::iterator it=cached.begin();
-	glEnable(GL_STENCIL_TEST);
 	for(it;it!=cached.end();it++)
-	{
 		it->Render();
-		if(it->closed)
-			drawStenciled(ShapeBounds,it->color,it->style);
-	}
-	glClear(GL_STENCIL_BUFFER_BIT);
-	glDisable(GL_STENCIL_TEST);
+
+	glEnable(GL_BLEND);
+	glUseProgram(0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glWindowPos2i(0,0);
+	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glUseProgram(sys->gpu_program);
 }
 
 void DefineShape3Tag::Render()
@@ -777,38 +799,24 @@ void DefineShape3Tag::Render()
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
-//	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[1]);
-//	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, texture, 0);
-//	glClearColor(1,0.5,0,0.2);
-//	glClear(GL_COLOR_BUFFER_BIT);
+	//glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, texture, 0);
 
-/*	FILLSTYLE::fixedColor(0,0,1);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDisable(GL_BLEND);
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	std::vector < Shape >::iterator it=cached.begin();
-	glDisable(GL_DEPTH);
 	for(it;it!=cached.end();it++)
-		it->Render2();
+		it->Render();
 
-	glEnable(GL_DEPTH);*/
-
-	/*glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[0]);
+	glEnable(GL_BLEND);
 	glUseProgram(0);
-	glPushAttrib(GL_TEXTURE_BIT);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,0);
-		glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymin);
-		glTexCoord2f(0,1);
-		glVertex2i(ShapeBounds.Xmin,ShapeBounds.Ymax);
-		glTexCoord2f(1,1);
-		glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymax);
-		glTexCoord2f(1,0);
-		glVertex2i(ShapeBounds.Xmax,ShapeBounds.Ymin);
-	glEnd();
-
-	glPopAttrib();
-	glDisable(GL_TEXTURE_2D);
-	glUseProgram(sys->gpu_program);*/
+	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glWindowPos2i(0,0);
+	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glUseProgram(sys->gpu_program);
 }
 
 void FromShaperecordListToDump(SHAPERECORD* cur)

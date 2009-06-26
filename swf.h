@@ -97,13 +97,15 @@ private:
 	sem_t mutex;
 
 	sem_t sem_valid_frame_size;
+	RECT frame_size;
 
 public:
-	RECT frame_size;
 	//OpenGL fragment programs
 	int gpu_program;
-	GLuint fboId[2];
+	GLuint fboId;
 	GLuint spare_tex;
+	int width;
+	int height;
 
 	bool shutdown;
 	int version;

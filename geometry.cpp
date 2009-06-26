@@ -37,7 +37,7 @@ float colors[][3] = { { 0 ,0 ,0 },
 			{0,1,1},
 			{0,0,0}};
 
-void Shape::Render2(int i) const
+void Shape::Render(int i) const
 {
 	if(outline.empty())
 	{
@@ -46,7 +46,7 @@ void Shape::Render2(int i) const
 	}
 
 	bool filled=false;
-/*	if(closed)
+	if(closed)
 	{
 		LOG(TRACE,"Filling");
 		std::vector<Triangle>::const_iterator it2=interior.begin();
@@ -63,7 +63,7 @@ void Shape::Render2(int i) const
 		}
 		glEnd();
 		filled=true;
-	}*/
+	}
 
 	//if(/*graphic.stroked ||*/ !filled)
 	{
@@ -76,56 +76,6 @@ void Shape::Render2(int i) const
 			glBegin(GL_LINE_STRIP);
 		for(it;it!=outline.end();it++)
 			glVertex2i(it->x,it->y);
-		glEnd();
-	}
-
-	for(int i=0;i<sub_shapes.size();i++)
-		sub_shapes[i].Render2();
-}
-
-void Shape::Render(int i) const
-{
-	if(outline.empty())
-	{
-		LOG(TRACE,"No edges in this shape");
-		return;
-	}
-
-	bool filled=false;
-	if(closed)
-	{
-		LOG(TRACE,"Filling");
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilFunc(GL_ALWAYS,color,0xff);
-		glStencilOp(GL_KEEP,GL_KEEP,GL_REPLACE);
-		std::vector<Triangle>::const_iterator it2=interior.begin();
-		glBegin(GL_TRIANGLES);
-		for(it2;it2!=interior.end();it2++)
-		{
-			glVertex2i(it2->v1.x,it2->v1.y);
-			glVertex2i(it2->v2.x,it2->v2.y);
-			glVertex2i(it2->v3.x,it2->v3.y);
-		}
-		glEnd();
-		filled=true;
-	}
-
-	//if(/*graphic.stroked ||*/ !filled)
-	{
-		LOG(TRACE,"Line tracing");
-		FILLSTYLE::fixedColor(0,0,0);
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glStencilFunc(GL_ALWAYS,0,0);
-		glStencilOp(GL_KEEP,GL_KEEP,GL_KEEP);
-		std::vector<Vector2>::const_iterator it=outline.begin();
-		if(closed)
-			glBegin(GL_LINE_LOOP);
-		else
-			glBegin(GL_LINE_STRIP);
-		for(it;it!=outline.end();it++)
-		{
-			glVertex2i(it->x,it->y);
-		}
 		glEnd();
 	}
 

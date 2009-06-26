@@ -383,10 +383,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	attrib[3]=p->visual;
 	attrib[4]=GLX_DEPTH_SIZE;
 	attrib[5]=24;
-	attrib[6]=GLX_STENCIL_SIZE;
-	attrib[7]=8;
 
-	attrib[8]=None;
+	attrib[6]=None;
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 //	printf("returned %x pointer and %u elements\n",fb, a);
 	if(!fb)
@@ -458,8 +456,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				RGB bg=sys->getBackground();
 				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 				glClearDepth(0xffff);
-				glClearStencil(5);
-				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 				glLoadIdentity();
 
 				float scalex=p->width;
@@ -532,18 +529,16 @@ void* RenderThread::glx_worker(RenderThread* th)
 	attrib[1]=GLX_DOUBLEBUFFER;
 	attrib[2]=GLX_DEPTH_SIZE;
 	attrib[3]=24;
-	attrib[4]=GLX_STENCIL_SIZE;
+	attrib[4]=GLX_RED_SIZE;
 	attrib[5]=8;
-	attrib[6]=GLX_RED_SIZE;
+	attrib[6]=GLX_GREEN_SIZE;
 	attrib[7]=8;
-	attrib[8]=GLX_GREEN_SIZE;
+	attrib[8]=GLX_BLUE_SIZE;
 	attrib[9]=8;
-	attrib[10]=GLX_BLUE_SIZE;
+	attrib[10]=GLX_ALPHA_SIZE;
 	attrib[11]=8;
-	attrib[12]=GLX_ALPHA_SIZE;
-	attrib[13]=8;
 
-	attrib[14]=None;
+	attrib[12]=None;
 
 	XVisualInfo *vi;
 	XSetWindowAttributes swa;
@@ -556,20 +551,18 @@ void* RenderThread::glx_worker(RenderThread* th)
 	attrib[1]=vi->visualid;
 	attrib[2]=GLX_DEPTH_SIZE;
 	attrib[3]=24;
-	attrib[4]=GLX_STENCIL_SIZE;
+	attrib[4]=GLX_RED_SIZE;
 	attrib[5]=8;
-	attrib[6]=GLX_RED_SIZE;
+	attrib[6]=GLX_GREEN_SIZE;
 	attrib[7]=8;
-	attrib[8]=GLX_GREEN_SIZE;
+	attrib[8]=GLX_BLUE_SIZE;
 	attrib[9]=8;
-	attrib[10]=GLX_BLUE_SIZE;
+	attrib[10]=GLX_ALPHA_SIZE;
 	attrib[11]=8;
-	attrib[12]=GLX_ALPHA_SIZE;
-	attrib[13]=8;
-	attrib[14]=GLX_DRAWABLE_TYPE;
-	attrib[15]=GLX_PBUFFER_BIT;
+	attrib[12]=GLX_DRAWABLE_TYPE;
+	attrib[13]=GLX_PBUFFER_BIT;
 
-	attrib[16]=None;
+	attrib[14]=None;
 	GLXFBConfig* fb=glXChooseFBConfig(th->mDisplay, 0, attrib, &a);
 	cout << fb << endl;
 	cout << a  << endl;
@@ -642,16 +635,10 @@ void* RenderThread::glx_worker(RenderThread* th)
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 			glClearDepth(0xffff);
-			glClearStencil(5);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 			glLoadIdentity();
 
 			th->cur_frame->Render(sys->displayListLimit);
-
-			/*glReadPixels(0,240,640,240,GL_STENCIL_INDEX,GL_FLOAT,buffer);
-			for(int i=0;i<240*640;i++)
-				buffer[i]/=4;
-			glDrawPixels(640,240,GL_LUMINANCE,GL_FLOAT,buffer);*/
 
 			sem_post(&th->end_render);
 			if(sys->shutdown)
@@ -676,9 +663,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
-	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute( SDL_GL_STEREO, 0);
 	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1); 
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
@@ -686,10 +671,12 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	RECT size=sys->getFrameSize();
 	int width=size.Xmax/10;
 	int height=size.Ymax/10;
+	sys->width=width;
+	sys->height=height;
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
 
-	glEnable( GL_DEPTH_TEST );
-	glDepthFunc(GL_LEQUAL);
+	glDisable(GL_DEPTH_TEST);
+	glDepthFunc(GL_ALWAYS);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
@@ -742,13 +729,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
 	
 	// create a framebuffer object
-	glGenFramebuffersEXT(2, sys->fboId);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[0]);
+	glGenFramebuffersEXT(1, &sys->fboId);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
 	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId[0]);
-
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[1]);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[1], 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,GL_TEXTURE_2D, t2[1], 0);
 	
 	// check FBO status
 	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
@@ -778,42 +763,37 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				continue;
 			}
 			SDL_GL_SwapBuffers( );
-//			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId[0]);
-//			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-			glDrawBuffer(GL_BACK);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 			glClearDepth(0xffff);
-			glClearStencil(5);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 			glLoadIdentity();
 
 			th->cur_frame->Render(sys->displayListLimit);
 
-/*			glUseProgram(0);
+			glUseProgram(0);
 			glLoadIdentity();
 			glScalef(10,10,1);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 			glDrawBuffer(GL_BACK);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D,t2[0]);
 			glBegin(GL_QUADS);
-				glTexCoord2f(0,0);
-				glVertex2i(0,0);
-				glTexCoord2f(1,0);
-				glVertex2i(width,0);
-				glTexCoord2f(1,1);
-				glVertex2i(width,height);
 				glTexCoord2f(0,1);
+				glVertex2i(0,0);
+				glTexCoord2f(1,1);
+				glVertex2i(width,0);
+				glTexCoord2f(1,0);
+				glVertex2i(width,height);
+				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
 			glDisable(GL_TEXTURE_2D);
-			glUseProgram(sys->gpu_program);*/
-
-
-			
+			glUseProgram(sys->gpu_program);
 
 			sem_post(&th->end_render);
 			if(sys->shutdown)

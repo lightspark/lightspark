@@ -149,7 +149,6 @@ public:
 	void dumpInterior();
 
 	void Render(int i=0) const;
-	void Render2(int i=0) const;
 	void BuildFromEdges(FILLSTYLE* styles);
 
 	bool operator<(const Shape& r) const;

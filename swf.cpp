@@ -79,6 +79,8 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	sem_init(&mutex,0,1);
 
+	select_side=0;
+
 	//Register global functions
 	setVariableByName("parseInt",new Function(parseInt));
 
@@ -256,6 +258,9 @@ void* InputThread::sdl_worker(InputThread* th)
 						break;
 					case SDLK_s:
 						sys->state.stop_FP=true;
+						break;
+					case SDLK_l:
+						sys->select_side=(1-sys->select_side);
 						break;
 					case SDLK_o:
 						sys->displayListLimit--;
@@ -699,8 +704,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
-	unsigned int t2[2];
-	glGenTextures(2,t2);
+	unsigned int t2[3];
+ 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	glGenTextures(3,t2);
 	glBindTexture(GL_TEXTURE_2D,t2[0]);
 
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
@@ -708,7 +714,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
- 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 	glBindTexture(GL_TEXTURE_2D,t2[1]);
 	sys->spare_tex=t2[1];
@@ -718,9 +723,16 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
- 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
-	// create a renderbuffer object to store depth and stencil info
+	glBindTexture(GL_TEXTURE_2D,t2[2]);
+	sys->spare_tex2=t2[2];
+
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	// create a renderbuffer object to store depth info
 	GLuint rboId[1];
 	glGenRenderbuffersEXT(1, rboId);
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId[0]);
@@ -732,8 +744,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glGenFramebuffersEXT(1, &sys->fboId);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
-	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId[0]);
+//	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId[0]);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,GL_TEXTURE_2D, t2[1], 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT,GL_TEXTURE_2D, t2[2], 0);
 	
 	// check FBO status
 	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);

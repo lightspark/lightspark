@@ -104,8 +104,10 @@ public:
 	int gpu_program;
 	GLuint fboId;
 	GLuint spare_tex;
+	GLuint spare_tex2;
 	int width;
 	int height;
+	int select_side;
 
 	bool shutdown;
 	int version;

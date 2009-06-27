@@ -16,4 +16,5 @@ void main()
 	//It's probably faster to compute all this and select the rigth one
 	gl_FragData[0]=(solid_color()*gl_Color.r)+
 			(linear_gradient()*gl_Color.g);
+	gl_FragData[1]=gl_Color;
 }

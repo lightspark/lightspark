@@ -517,10 +517,24 @@ void DefineTextTag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glPushMatrix();
+	glLoadIdentity();
+	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glWindowPos2i(0,0);
-	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex2i(0,0);
+		glTexCoord2f(1,1);
+		glVertex2i(sys->width,0);
+		glTexCoord2f(1,0);
+		glVertex2i(sys->width,sys->height);
+		glTexCoord2f(0,0);
+		glVertex2i(0,sys->height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
 	glUseProgram(sys->gpu_program);
 }
 
@@ -641,12 +655,25 @@ void DefineMorphShapeTag::Render()
 	for(it;it!=shapes.end();it++)
 		it->Render();
 
-	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glPushMatrix();
+	glLoadIdentity();
+	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glWindowPos2i(0,0);
-	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex2i(0,0);
+		glTexCoord2f(1,1);
+		glVertex2i(sys->width,0);
+		glTexCoord2f(1,0);
+		glVertex2i(sys->width,sys->height);
+		glTexCoord2f(0,0);
+		glVertex2i(0,sys->height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
 	glUseProgram(sys->gpu_program);
 }
 
@@ -679,10 +706,24 @@ void DefineShapeTag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glPushMatrix();
+	glLoadIdentity();
+	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glWindowPos2i(0,0);
-	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex2i(0,0);
+		glTexCoord2f(1,1);
+		glVertex2i(sys->width,0);
+		glTexCoord2f(1,0);
+		glVertex2i(sys->width,sys->height);
+		glTexCoord2f(0,0);
+		glVertex2i(0,sys->height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
 	glUseProgram(sys->gpu_program);
 }
 
@@ -724,10 +765,24 @@ void DefineShape2Tag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glPushMatrix();
+	glLoadIdentity();
+	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glWindowPos2i(0,0);
-	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex2i(0,0);
+		glTexCoord2f(1,1);
+		glVertex2i(sys->width,0);
+		glTexCoord2f(1,0);
+		glVertex2i(sys->width,sys->height);
+		glTexCoord2f(0,0);
+		glVertex2i(0,sys->height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
 	glUseProgram(sys->gpu_program);
 }
 
@@ -759,10 +814,24 @@ void DefineShape4Tag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glPushMatrix();
+	glLoadIdentity();
+	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glWindowPos2i(0,0);
-	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex2i(0,0);
+		glTexCoord2f(1,1);
+		glVertex2i(sys->width,0);
+		glTexCoord2f(1,0);
+		glVertex2i(sys->width,sys->height);
+		glTexCoord2f(0,0);
+		glVertex2i(0,sys->height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
 	glUseProgram(sys->gpu_program);
 }
 
@@ -812,10 +881,24 @@ void DefineShape3Tag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glPushMatrix();
+	glLoadIdentity();
+	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glReadBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glWindowPos2i(0,0);
-	glCopyPixels(0,0,sys->width,sys->height,GL_COLOR);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex2i(0,0);
+		glTexCoord2f(1,1);
+		glVertex2i(sys->width,0);
+		glTexCoord2f(1,0);
+		glVertex2i(sys->width,sys->height);
+		glTexCoord2f(0,0);
+		glVertex2i(0,sys->height);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
 	glUseProgram(sys->gpu_program);
 }
 

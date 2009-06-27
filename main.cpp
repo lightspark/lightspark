@@ -104,6 +104,11 @@ int main(int argc, char* argv[])
 			sec_count++;
 			fps_profs.push_back(fps_profiling());
 			sys->fps_prof=&fps_profs.back();
+			if(sec_count>500)
+			{
+				sys->setShutdownFlag();
+				break;
+			}
 		}
 	}
 

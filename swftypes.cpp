@@ -509,6 +509,8 @@ inline RGBA medianColor(const RGBA& a, const RGBA& b, float factor)
 
 void FILLSTYLE::setFragmentProgram() const
 {
+	//Let's abuse of glColor and glTexCoord to transport
+	//custom information
 	struct color_entry
 	{
 		float r,g,b,a;
@@ -517,10 +519,8 @@ void FILLSTYLE::setFragmentProgram() const
 	if(FillStyleType==0x00)
 	{
 		LOG(TRACE,"Fill color");
-		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
-		glUniform3f(s,1,0,0);
-		s=glGetUniformLocation(sys->gpu_program,"g_color1");
-		glUniform4f(s,float(Color.Red)/256.0f,
+		glColor3f(1,0,0);
+		glTexCoord4f(float(Color.Red)/256.0f,
 			float(Color.Green)/256.0f,
 			float(Color.Blue)/256.0f,
 			float(Color.Alpha)/256.0f);
@@ -529,7 +529,7 @@ void FILLSTYLE::setFragmentProgram() const
 	{
 		LOG(TRACE,"Fill gradient");
 		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
-		glUniform3f(s,0,1,0);
+		glColor3f(0,1,0);
 
 		color_entry buffer[256];
 		int grad_index=0;
@@ -569,10 +569,10 @@ void FILLSTYLE::setFragmentProgram() const
 
 void FILLSTYLE::fixedColor(float r, float g, float b)
 {
-	int s=glGetUniformLocation(sys->gpu_program,"g_selector");
-	glUniform3f(s,1,0,0);
-	s=glGetUniformLocation(sys->gpu_program,"g_color1");
-	glUniform4f(s,r,g,b,1);
+	//Let's abuse of glColor and glTexCoord to transport
+	//custom information
+	glColor3f(1,0,0);
+	glTexCoord4f(r,g,b,1);
 }
 
 std::istream& operator>>(std::istream& s, FILLSTYLE& v)

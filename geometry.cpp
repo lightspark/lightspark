@@ -50,10 +50,7 @@ void Shape::Render(int i) const
 	{
 		LOG(TRACE,"Filling");
 		std::vector<Triangle>::const_iterator it2=interior.begin();
-		if(style)
-			style->setFragmentProgram();
-		else
-			abort();
+		style->setFragmentProgram();
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)
 		{

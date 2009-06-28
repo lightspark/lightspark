@@ -518,11 +518,8 @@ void FILLSTYLE::setFragmentProgram() const
 		float r,g,b,a;
 	};
 
-	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D,g_t);
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	if(FillStyleType==0x00)
 	{
 		LOG(TRACE,"Fill color");
@@ -564,7 +561,6 @@ void FILLSTYLE::setFragmentProgram() const
 			}
 		}
 
-		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D,g_t);
 		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);
 	}
@@ -577,11 +573,8 @@ void FILLSTYLE::setFragmentProgram() const
 
 void FILLSTYLE::fixedColor(float r, float g, float b)
 {
-	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D,g_t);
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	//Let's abuse of glColor and glTexCoord to transport
 	//custom information
 	glColor3f(1,0,0);

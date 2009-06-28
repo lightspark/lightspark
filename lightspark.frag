@@ -1,5 +1,4 @@
 uniform sampler2D g_tex1;
-uniform sampler2D g_tex2;
 
 vec4 solid_color()
 {
@@ -14,7 +13,7 @@ vec4 linear_gradient()
 
 vec4 tex_lookup()
 {
-	return texture2D(g_tex2,gl_TexCoord[0].xy);
+	return texture2D(g_tex1,gl_TexCoord[0].xy);
 }
 
 void main()

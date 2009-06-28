@@ -679,6 +679,14 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	sys->height=height;
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
 
+	//Load fragment shaders
+	sys->gpu_program=load_program();
+
+	int tex=glGetUniformLocation(sys->gpu_program,"g_tex1");
+	glUniform1i(tex,0);
+
+	glUseProgram(sys->gpu_program);
+
 	glDisable(GL_DEPTH_TEST);
 	glDepthFunc(GL_ALWAYS);
 
@@ -704,7 +712,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	
  	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
-	glActiveTexture(GL_TEXTURE1);
 	unsigned int t2[3];
  	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	glGenTextures(3,t2);
@@ -733,19 +740,18 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	// create a renderbuffer object to store depth info
+	/*// create a renderbuffer object to store depth info
 	GLuint rboId[1];
 	glGenRenderbuffersEXT(1, rboId);
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId[0]);
 	glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT,width,height);
 
-	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);*/
 	
 	// create a framebuffer object
 	glGenFramebuffersEXT(1, &sys->fboId);
 	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
-//	glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, rboId[0]);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,GL_TEXTURE_2D, t2[1], 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT,GL_TEXTURE_2D, t2[2], 0);
 	
@@ -756,15 +762,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		cout << status << endl;
 		abort();
 	}
-
-	//Load fragment shaders
-	sys->gpu_program=load_program();
-	int tex=glGetUniformLocation(sys->gpu_program,"g_tex1");
-	glUniform1i(tex,0);
-
-	int tex2=glGetUniformLocation(sys->gpu_program,"g_tex2");
-	glUniform1i(tex2,1);
-	glUseProgram(sys->gpu_program);
 
 	float* buffer=new float[500*500*3];
 	try
@@ -791,13 +788,12 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			th->cur_frame->Render(sys->displayListLimit);
 
-			glUseProgram(0);
 			glLoadIdentity();
 			glScalef(10,10,1);
+			glColor3f(0,0,1);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 			glDrawBuffer(GL_BACK);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D,t2[0]);
 			glBegin(GL_QUADS);
 				glTexCoord2f(0,1);
@@ -809,8 +805,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
-			glDisable(GL_TEXTURE_2D);
-			glUseProgram(sys->gpu_program);
 
 			sem_post(&th->end_render);
 			if(sys->shutdown)

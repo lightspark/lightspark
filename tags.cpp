@@ -516,21 +516,16 @@ void DefineTextTag::Render()
 			count++;
 		}
 	}
-	glPopMatrix();
 
 	glEnable(GL_BLEND);
-	glUseProgram(0);
-	glActiveTexture(GL_TEXTURE0);
-	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glEnable(GL_TEXTURE_2D);
 	if(sys->select_side==0)
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
-
+	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -541,9 +536,7 @@ void DefineTextTag::Render()
 		glTexCoord2f(0,0);
 		glVertex2i(0,sys->height);
 	glEnd();
-	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
-	glUseProgram(sys->gpu_program);
 }
 
 void DefineTextTag::printInfo(int t)
@@ -664,18 +657,16 @@ void DefineMorphShapeTag::Render()
 	for(it;it!=shapes.end();it++)
 		it->Render();
 
-	glUseProgram(0);
-	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_BLEND);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glEnable(GL_TEXTURE_2D);
 	if(sys->select_side==0)
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
-
+	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -686,9 +677,7 @@ void DefineMorphShapeTag::Render()
 		glTexCoord2f(0,0);
 		glVertex2i(0,sys->height);
 	glEnd();
-	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
-	glUseProgram(sys->gpu_program);
 }
 
 void DefineShapeTag::Render()
@@ -720,18 +709,15 @@ void DefineShapeTag::Render()
 		it->Render();
 
 	glEnable(GL_BLEND);
-	glUseProgram(0);
-	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glEnable(GL_TEXTURE_2D);
 	if(sys->select_side==0)
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
-
+	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -742,9 +728,7 @@ void DefineShapeTag::Render()
 		glTexCoord2f(0,0);
 		glVertex2i(0,sys->height);
 	glEnd();
-	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
-	glUseProgram(sys->gpu_program);
 }
 
 void DefineShape2Tag::Render()
@@ -785,18 +769,15 @@ void DefineShape2Tag::Render()
 	}
 
 	glEnable(GL_BLEND);
-	glUseProgram(0);
-	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glEnable(GL_TEXTURE_2D);
 	if(sys->select_side==0)
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
-	
+	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -807,9 +788,7 @@ void DefineShape2Tag::Render()
 		glTexCoord2f(0,0);
 		glVertex2i(0,sys->height);
 	glEnd();
-	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
-	glUseProgram(sys->gpu_program);
 }
 
 void DefineShape4Tag::Render()
@@ -840,18 +819,15 @@ void DefineShape4Tag::Render()
 		it->Render();
 
 	glEnable(GL_BLEND);
-	glUseProgram(0);
-	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glEnable(GL_TEXTURE_2D);
 	if(sys->select_side==0)
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
-	
+	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -862,9 +838,7 @@ void DefineShape4Tag::Render()
 		glTexCoord2f(0,0);
 		glVertex2i(0,sys->height);
 	glEnd();
-	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
-	glUseProgram(sys->gpu_program);
 }
 
 void DefineShape3Tag::Render()
@@ -913,18 +887,15 @@ void DefineShape3Tag::Render()
 		it->Render();
 
 	glEnable(GL_BLEND);
-	glUseProgram(0);
-	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	glEnable(GL_TEXTURE_2D);
 	if(sys->select_side==0)
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
-
+	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -936,8 +907,6 @@ void DefineShape3Tag::Render()
 		glVertex2i(0,sys->height);
 	glEnd();
 	glPopMatrix();
-	glDisable(GL_TEXTURE_2D);
-	glUseProgram(sys->gpu_program);
 }
 
 void FromShaperecordListToDump(SHAPERECORD* cur)

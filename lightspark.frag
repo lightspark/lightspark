@@ -1,5 +1,10 @@
 uniform sampler2D g_tex1;
 
+//We abuse of default varying to pass variou data
+//gl_Color: Selector of current shader function
+//gl_TexCoord[0]: Fill color/Texture coordinate
+//gl_SecondaryColor: interactive id
+
 vec4 solid_color()
 {
 	return gl_TexCoord[0];
@@ -19,8 +24,10 @@ vec4 tex_lookup()
 void main()
 {
 	//It's probably faster to compute all this and select the rigth one
-	gl_FragData[0]=(solid_color()*gl_Color.x)+
+	vec4 ret=(solid_color()*gl_Color.x)+
 			(linear_gradient()*gl_Color.y)+
 			(tex_lookup()*gl_Color.z);
-	gl_FragData[1]=gl_Color;
+
+	gl_FragData[0]=ret;
+	gl_FragData[1]=gl_SecondaryColor*ceil(ret.a);
 }

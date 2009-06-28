@@ -39,6 +39,7 @@ class PlaceObject2Tag;
 class InteractiveObject;
 class ABCVm;
 class InputThread;
+class RenderThread;
 
 typedef void* (*thread_worker)(void*);
 
@@ -104,10 +105,8 @@ public:
 	int gpu_program;
 	GLuint fboId;
 	GLuint spare_tex;
-	GLuint spare_tex2;
 	int width;
 	int height;
-	int select_side;
 
 	bool shutdown;
 	int version;
@@ -148,6 +147,7 @@ public:
 	fps_profiling* fps_prof;
 	ABCVm* currentVm;
 	InputThread* cur_input_thread;
+	RenderThread* cur_render_thread;
 
 	//DEBUG
 	std::vector<std::string> events_name;
@@ -192,6 +192,7 @@ private:
 	pthread_t t;
 	static void* sdl_worker(InputThread*);
 	static void* npapi_worker(InputThread*);
+
 	std::multimap< std::string, InteractiveObject* > listeners;
 	sem_t sem_listeners;
 
@@ -216,7 +217,6 @@ private:
 	sem_t render;
 	sem_t end_render;
 	Frame* cur_frame;
-	Frame bak_frame;
 	int bak;
 	static int error;
 
@@ -227,11 +227,13 @@ private:
 	Window mWindow;
 	GC mGC;
 	static int load_program();
+	float* interactive_buffer;
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
 	void draw(Frame* f);
 	void wait();
 	static int setError(){error=1;}
+	float getIdAt(int x, int y);
 };
 #endif

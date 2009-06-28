@@ -76,6 +76,7 @@ int main(int argc, char* argv[])
 	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 	sys->cur_input_thread=&it;
+	sys->cur_render_thread=&rt;
 
 	timespec ts,td,tperf,tperf2;
 	clock_gettime(CLOCK_REALTIME,&ts);

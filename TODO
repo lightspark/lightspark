@@ -9,12 +9,12 @@ implementa lettura degli header http
 Official TODO Queue:
 -) Onor sandboxing
 -) Onor framerate
--) Adapt to frame size
 -) Onor script limits
--) GL: Use pixel buffer to render hollow shapes to textures and then apply them to image
 -) Late push for llvm code
 -) Most arithmetic instruction return a Number for sure. Exploit this
 -) Implement ScalingGrid for correct positioning of some objects
 -) Implement gradient mapping
 -) Implement stack instantiation at function call
--) Implement Alpha blending
+-) Limited clear of the spare buffer
+-) Texture caching
+-) Click passthrough on transparent objects

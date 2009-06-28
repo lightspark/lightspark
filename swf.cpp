@@ -79,8 +79,6 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	sem_init(&mutex,0,1);
 
-	select_side=0;
-
 	//Register global functions
 	setVariableByName("parseInt",new Function(parseInt));
 
@@ -259,9 +257,6 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_s:
 						sys->state.stop_FP=true;
 						break;
-					case SDLK_l:
-						sys->select_side=(1-sys->select_side);
-						break;
 					case SDLK_o:
 						sys->displayListLimit--;
 						break;
@@ -275,12 +270,14 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 				sem_wait(&th->sem_listeners);
 				
-				if(!th->listeners.empty())
+				/*if(!th->listeners.empty())
 				{
 					cout << "listeners " << th->listeners.size() << endl;
 					//sys->currentVm->addEvent(th->listeners[0],NULL);
 					sys->dumpEvents();
-				}
+				}*/
+
+				cout << sys->cur_render_thread->getIdAt(event.button.x,event.button.y)<< endl;
 
 				sem_post(&th->sem_listeners);
 				break;
@@ -293,21 +290,63 @@ void InputThread::addListener(const string& t, InteractiveObject* ob)
 {
 	sem_wait(&sem_listeners);
 	LOG(TRACE,"Adding listener to " << t);
-	pair< map<string, InteractiveObject*>::iterator,map<string, InteractiveObject*>::iterator > range=listeners.equal_range(t);
 
-	//Check if this object is alreasy registered for this event
-	for(range.first;range.first!=range.second;range.first++)
+	//the empty string is the *any* event
+	pair< map<string, InteractiveObject*>::iterator,map<string, InteractiveObject*>::iterator > range=
+		listeners.equal_range("");
+
+
+	bool already_known=false;
+
+	map<string,InteractiveObject*>::iterator it=range.first;
+	int count=0;
+	for(it;it!=range.second;it++)
 	{
-		if(range.first->second==ob)
+		count++;
+		if(it->second==ob)
 		{
-			LOG(TRACE,"Already added");
-			sem_post(&sem_listeners);
-			return;
+			already_known=true;
+			break;
 		}
 	}
+	range=listeners.equal_range(t);
+
+	if(already_known)
+	{
+		//Check if this object is alreasy registered for this event
+		it=range.first;
+		int count=0;
+		for(it;it!=range.second;it++)
+		{
+			count++;
+			if(it->second==ob)
+			{
+				LOG(TRACE,"Already added");
+				sem_post(&sem_listeners);
+				return;
+			}
+		}
+	}
+	else
+		listeners.insert(make_pair("",ob));
 
 	//Register the listener
 	listeners.insert(make_pair(t,ob));
+	count++;
+
+	range=listeners.equal_range("");
+	it=range.first;
+	//Set a unique id for listeners in the range [0,1]
+	//count is the number of listeners, this is correct so that no one gets 0
+	float increment=1.0f/count;
+	float cur=increment;
+	cout << "increment " << increment << endl;
+	for(it;it!=range.second;it++)
+	{
+		it->second->setId(cur);
+		cout << "setting to " << cur << endl;
+		cur+=increment;
+	}
 
 	sem_post(&sem_listeners);
 }
@@ -325,7 +364,7 @@ void InputThread::broadcastEvent(const string& t)
 	sem_post(&sem_listeners);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):bak_frame(null_list)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buffer(NULL)
 {
 	LOG(NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -660,6 +699,19 @@ void* RenderThread::glx_worker(RenderThread* th)
 
 GLuint g_t;
 
+float RenderThread::getIdAt(int x, int y)
+{
+	for(int i=0;i<sys->width*sys->height;i++)
+	{
+		if(interactive_buffer[i]!=0)
+		{
+			printf("%i %i\n",i%sys->width,i/sys->width);
+			break;
+		}
+	}
+	return interactive_buffer[y*sys->width+x];
+}
+
 void* RenderThread::sdl_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -678,6 +730,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	sys->width=width;
 	sys->height=height;
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
+	th->interactive_buffer=new float[width*height];
 
 	//Load fragment shaders
 	sys->gpu_program=load_program();
@@ -733,7 +786,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
 	glBindTexture(GL_TEXTURE_2D,t2[2]);
-	sys->spare_tex2=t2[2];
 
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
@@ -778,6 +830,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			}
 			SDL_GL_SwapBuffers( );
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
+			glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
+			glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
+
 			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
 			RGB bg=sys->getBackground();

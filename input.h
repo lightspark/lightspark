@@ -30,8 +30,10 @@ class InteractiveObject
 protected:
 	std::map<std::string,IFunction*> handlers;
 public:
+	float id;
 	InteractiveObject();
 	virtual void handleEvent(Event* e)=0;
+	void setId(float i){id=i;};
 };
 
 #endif

@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#define GL_GLEXT_PROTOTYPES
 #include <list>
 #include <algorithm>
 #include <curl/curl.h>
@@ -358,6 +359,9 @@ void ASMovieClip::Render()
 
 	list<Frame>::iterator frame=frames.begin();
 
+	//Set the id in the secondary color
+	glPushAttrib(GL_CURRENT_BIT);
+	glSecondaryColor3f(id,0,0);
 	//Apply local transformation
 	glPushMatrix();
 	//glTranslatef(_x,_y,0);
@@ -365,6 +369,7 @@ void ASMovieClip::Render()
 	frame->Render(displayListLimit);
 
 	glPopMatrix();
+	glPopAttrib();
 
 	//Render objects added at runtime;
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();

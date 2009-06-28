@@ -458,8 +458,7 @@ void DefineTextTag::Render()
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT1_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -520,11 +519,9 @@ void DefineTextTag::Render()
 	glEnable(GL_BLEND);
 	glLoadIdentity();
 	glScalef(10,10,1);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	if(sys->select_side==0)
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
-	else
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
+	glDrawBuffers(2,draw_buffers);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
@@ -647,8 +644,7 @@ void DefineMorphShapeTag::Render()
 	for(int i=0;i<shapes.size();i++)
 		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
 
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT1_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -661,11 +657,9 @@ void DefineMorphShapeTag::Render()
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	if(sys->select_side==0)
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
-	else
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
+	glDrawBuffers(2,draw_buffers);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
@@ -698,8 +692,7 @@ void DefineShapeTag::Render()
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT1_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -712,11 +705,9 @@ void DefineShapeTag::Render()
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	if(sys->select_side==0)
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
-	else
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
+	glDrawBuffers(2,draw_buffers);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
@@ -749,8 +740,7 @@ void DefineShape2Tag::Render()
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
 
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT1_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -772,11 +762,9 @@ void DefineShape2Tag::Render()
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	if(sys->select_side==0)
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
-	else
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
+	glDrawBuffers(2,draw_buffers);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
@@ -808,8 +796,7 @@ void DefineShape4Tag::Render()
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 	}
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT1_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -822,11 +809,9 @@ void DefineShape4Tag::Render()
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	if(sys->select_side==0)
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
-	else
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
+	glDrawBuffers(2,draw_buffers);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
@@ -876,8 +861,7 @@ void DefineShape3Tag::Render()
 
 	//glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, texture, 0);
 
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT1_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -890,11 +874,9 @@ void DefineShape3Tag::Render()
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
-	if(sys->select_side==0)
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
-	else
-		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
+	glDrawBuffers(2,draw_buffers);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);

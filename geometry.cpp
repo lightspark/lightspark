@@ -28,16 +28,12 @@
 
 using namespace std;
 
-float colors[][3] = { { 0 ,0 ,0 },
-			{1, 0, 0},
-			{0, 1, 0},
-			{0 ,0, 1},
-			{1 ,1, 0},
-			{1,0 ,1},
-			{0,1,1},
-			{0,0,0}};
+/*! \brief Renders the shape interior and outline setting the correct
+* *        parameters for the shader
+* * \param x Optional x translation
+* * \param y Optional y translation */
 
-void Shape::Render(int i) const
+void Shape::Render(int x, int y) const
 {
 	if(outline.empty())
 	{
@@ -54,9 +50,9 @@ void Shape::Render(int i) const
 		glBegin(GL_TRIANGLES);
 		for(it2;it2!=interior.end();it2++)
 		{
-			glVertex2i(it2->v1.x,it2->v1.y);
-			glVertex2i(it2->v2.x,it2->v2.y);
-			glVertex2i(it2->v3.x,it2->v3.y);
+			glVertex2i(it2->v1.x+x,it2->v1.y+y);
+			glVertex2i(it2->v2.x+x,it2->v2.y+y);
+			glVertex2i(it2->v3.x+x,it2->v3.y+y);
 		}
 		glEnd();
 		filled=true;
@@ -72,7 +68,7 @@ void Shape::Render(int i) const
 		else
 			glBegin(GL_LINE_STRIP);
 		for(it;it!=outline.end();it++)
-			glVertex2i(it->x,it->y);
+			glVertex2i(it->x+x,it->y+y);
 		glEnd();
 	}
 

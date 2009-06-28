@@ -469,7 +469,6 @@ void DefineTextTag::Render()
 	int count=0;
 	int shapes_done=0;
 	int x=0,y=0;//1024;
-	int cur_height;
 	float matrix[16];
 	TextMatrix.get4DMatrix(matrix);
 
@@ -480,22 +479,25 @@ void DefineTextTag::Render()
 	FILLSTYLE clearStyle;
 	clearStyle.FillStyleType=0x00;
 	clearStyle.Color=RGBA(0,0,0,0);
+	glPushMatrix();
+	glMultMatrixf(matrix);
+	float scale_cur=1;
 	for(it;it!=TextRecords.end();it++)
 	{
 		if(it->StyleFlagsHasFont)
-			cur_height=it->TextHeight;
+		{
+			float scale=it->TextHeight;
+			scale/=1024;
+			glScalef(scale/scale_cur,scale/scale_cur,1);
+			scale_cur=scale;
+		}
 		it2 = it->GlyphEntries.begin();
 		int x2=x,y2=y;
 		x2+=(*it).XOffset;
 		y2+=(*it).YOffset;
+
 		for(it2;it2!=(it->GlyphEntries.end());it2++)
 		{
-			glPushMatrix();
-			glMultMatrixf(matrix);
-			glTranslatef(x2,y2,0);
-			float scale=cur_height;
-			scale/=1024;
-			glScalef(scale,scale,1);
 			while(cached[shapes_done].id==count)
 			{
 				if(cached[shapes_done].color==1)
@@ -505,16 +507,16 @@ void DefineTextTag::Render()
 				else
 					abort();
 
-				cached[shapes_done].Render();
+				cached[shapes_done].Render(x2/scale_cur,y2/scale_cur);
 				shapes_done++;
 				if(shapes_done==cached.size())
 					break;
 			}
-			glPopMatrix();
 			x2+=it2->GlyphAdvance;
 			count++;
 		}
 	}
+	glPopMatrix();
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
@@ -726,6 +728,7 @@ void DefineShapeTag::Render()
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -789,6 +792,7 @@ void DefineShape2Tag::Render()
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+	
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -842,6 +846,7 @@ void DefineShape4Tag::Render()
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+	
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -913,6 +918,7 @@ void DefineShape3Tag::Render()
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	else
 		glBindTexture(GL_TEXTURE_2D,sys->spare_tex2);
+
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);

@@ -148,7 +148,7 @@ public:
 	void dumpEdges();
 	void dumpInterior();
 
-	void Render(int i=0) const;
+	void Render(int x=0, int y=0) const;
 	void BuildFromEdges(FILLSTYLE* styles);
 
 	bool operator<(const Shape& r) const;

@@ -268,16 +268,39 @@ void* InputThread::sdl_worker(InputThread* th)
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
+
+				float selected=sys->cur_render_thread->getIdAt(event.button.x,event.button.y);
+				if(selected==0)
+					break;
+
 				sem_wait(&th->sem_listeners);
+
+				selected--;
+				int index=th->listeners.count("")*selected;
 				
-				/*if(!th->listeners.empty())
+
+				pair< map<string, InteractiveObject*>::iterator,
+					map<string, InteractiveObject*>::iterator > range=
+					th->listeners.equal_range("");
+
+				//Get the selected item
+				map<string, InteractiveObject*>::iterator it=range.first;
+				while(index)
+				{
+					it++;
+					index--;
+				}
+
+				//Add event to the event queue
+				sys->currentVm->addEvent(it->second,new Event("mouseDown"));
+
+/*				if(!th->listeners.empty())
 				{
 					cout << "listeners " << th->listeners.size() << endl;
 					//sys->currentVm->addEvent(th->listeners[0],NULL);
 					sys->dumpEvents();
 				}*/
 
-				cout << sys->cur_render_thread->getIdAt(event.button.x,event.button.y)<< endl;
 
 				sem_post(&th->sem_listeners);
 				break;
@@ -701,14 +724,6 @@ GLuint g_t;
 
 float RenderThread::getIdAt(int x, int y)
 {
-	for(int i=0;i<sys->width*sys->height;i++)
-	{
-		if(interactive_buffer[i]!=0)
-		{
-			printf("%i %i\n",i%sys->width,i/sys->width);
-			break;
-		}
-	}
 	return interactive_buffer[y*sys->width+x];
 }
 

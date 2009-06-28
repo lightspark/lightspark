@@ -473,6 +473,8 @@ void ABCVm::registerClasses()
 	valid_classes["flash.text.TextFormat"]=-1;
 	Global.setVariableByName("flash.utils.Dictionary",new ASObject);
 	valid_classes["flash.utils.Dictionary"]=-1;
+	Global.setVariableByName("flash.geom.Rectangle",new ASObject);
+	valid_classes["flash.geom.Rectangle"]=-1;
 	Global.setVariableByName("Array",new ASArray);
 	valid_classes["Array"]=-1;
 

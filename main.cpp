@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
 
-	Log::initLogging(ERROR);
+	Log::initLogging(TRACE);
 	sys=new SystemState;
 	sys->performance_profiling=false;
 	zlib_file_filter zf;

@@ -520,6 +520,7 @@ void DefineTextTag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
@@ -664,6 +665,7 @@ void DefineMorphShapeTag::Render()
 		it->Render();
 
 	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
@@ -719,6 +721,7 @@ void DefineShapeTag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
@@ -783,6 +786,7 @@ void DefineShape2Tag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
@@ -837,6 +841,7 @@ void DefineShape4Tag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
@@ -909,6 +914,7 @@ void DefineShape3Tag::Render()
 
 	glEnable(GL_BLEND);
 	glUseProgram(0);
+	glActiveTexture(GL_TEXTURE0);
 	glPushMatrix();
 	glLoadIdentity();
 	glScalef(10,10,1);
@@ -929,8 +935,8 @@ void DefineShape3Tag::Render()
 		glTexCoord2f(0,0);
 		glVertex2i(0,sys->height);
 	glEnd();
-	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
+	glDisable(GL_TEXTURE_2D);
 	glUseProgram(sys->gpu_program);
 }
 

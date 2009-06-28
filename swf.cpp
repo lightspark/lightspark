@@ -490,9 +490,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 int RenderThread::load_program()
 {
-	GLuint v,f;
-	f = glCreateShader(GL_FRAGMENT_SHADER);
-	v = glCreateShader(GL_VERTEX_SHADER);
+	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
+	GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
 	const char *fs = NULL;
 	fs = textFileRead("lightspark.frag");
@@ -510,12 +509,11 @@ int RenderThread::load_program()
 	printf("Fragment shader: %s\n",str);
 
 	glCompileShader(v);
-	glGetShaderInfoLog(f,1024,&a,str);
+	glGetShaderInfoLog(v,1024,&a,str);
 	printf("Vertex shader: %s\n",str);
 
 	int ret = glCreateProgram();
 	glAttachShader(ret,f);
-//	glAttachShader(ret,v);
 
 	glLinkProgram(ret);
 	return ret;
@@ -610,7 +608,6 @@ void* RenderThread::glx_worker(RenderThread* th)
 	unsigned int t;
 	glGenTextures(1,&t);
 
-	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_1D,t);
 
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
@@ -661,6 +658,8 @@ void* RenderThread::glx_worker(RenderThread* th)
 	}
 }
 
+GLuint g_t;
+
 void* RenderThread::sdl_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -694,16 +693,18 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	glMatrixMode(GL_MODELVIEW);
 
-	unsigned int t;
-	glGenTextures(1,&t);
+	glGenTextures(1,&g_t);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_1D,t);
+	glBindTexture(GL_TEXTURE_2D,g_t);
 
-	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+	
+ 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
+	glActiveTexture(GL_TEXTURE1);
 	unsigned int t2[3];
  	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	glGenTextures(3,t2);
@@ -758,8 +759,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	//Load fragment shaders
 	sys->gpu_program=load_program();
-	int tex=glGetUniformLocation(sys->gpu_program,"g_tex");
+	int tex=glGetUniformLocation(sys->gpu_program,"g_tex1");
 	glUniform1i(tex,0);
+
+	int tex2=glGetUniformLocation(sys->gpu_program,"g_tex2");
+	glUniform1i(tex2,1);
 	glUseProgram(sys->gpu_program);
 
 	float* buffer=new float[500*500*3];

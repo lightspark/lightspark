@@ -507,6 +507,8 @@ inline RGBA medianColor(const RGBA& a, const RGBA& b, float factor)
 		a.Alpha+(b.Alpha-a.Alpha)*factor);
 }
 
+extern GLuint g_t;
+
 void FILLSTYLE::setFragmentProgram() const
 {
 	//Let's abuse of glColor and glTexCoord to transport
@@ -516,6 +518,11 @@ void FILLSTYLE::setFragmentProgram() const
 		float r,g,b,a;
 	};
 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D,g_t);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	if(FillStyleType==0x00)
 	{
 		LOG(TRACE,"Fill color");
@@ -528,7 +535,6 @@ void FILLSTYLE::setFragmentProgram() const
 	else if(FillStyleType==0x10)
 	{
 		LOG(TRACE,"Fill gradient");
-		int s=glGetUniformLocation(sys->gpu_program,"g_selector");
 		glColor3f(0,1,0);
 
 		color_entry buffer[256];
@@ -558,7 +564,9 @@ void FILLSTYLE::setFragmentProgram() const
 			}
 		}
 
-		glTexImage1D(GL_TEXTURE_1D,0,4,256,0,GL_RGBA,GL_FLOAT,buffer);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D,g_t);
+		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);
 	}
 	else
 	{
@@ -569,6 +577,11 @@ void FILLSTYLE::setFragmentProgram() const
 
 void FILLSTYLE::fixedColor(float r, float g, float b)
 {
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D,g_t);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
 	//Let's abuse of glColor and glTexCoord to transport
 	//custom information
 	glColor3f(1,0,0);

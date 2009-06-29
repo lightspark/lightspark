@@ -238,6 +238,43 @@ ASMovieClip::ASMovieClip():_visible(1),_x(0),_y(0),_height(100),_width(100),_fra
 	ASMovieClip::_register();
 }
 
+ASFUNCTIONBODY(Undefined,call)
+{
+	LOG(CALLS,"Undefined function");
+}
+
+string Undefined::toString() const
+{
+	return string("undefined");
+}
+
+bool ASString::isEqual(const ISWFObject* r) const
+{
+	if(r->getObjectType()==T_STRING)
+	{
+		const ASString* s=dynamic_cast<const ASString*>(r);
+		if(s->data==data)
+			return true;
+		else
+			return false;
+	}
+	else
+		return false;
+}
+
+bool Undefined::isEqual(const ISWFObject* r) const
+{
+	if(r->getObjectType()==T_UNDEFINED)
+		return true;
+	else
+		return false;
+}
+
+Undefined::Undefined()
+{
+	setVariableByName(".Call",new Function(call));
+}
+
 bool ASMovieClip::list_orderer(const IDisplayListElem* a, int d)
 {
 	return a->getDepth()<d;

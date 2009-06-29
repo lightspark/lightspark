@@ -125,11 +125,13 @@ protected:
 	ISWFObject();
 	std::map<std::string,ISWFObject*> Variables;
 	std::map<std::string,IFunction*> Setters;
+	std::map<std::string,IFunction*> Getters;
 	std::vector<ISWFObject*> slots;
 	int max_slot_index;
 	bool binded;
 	int ref_count;
 public:
+	ISWFObject* super;
 	std::string class_name;
 	virtual ~ISWFObject();
 	void incRef() {ref_count++;}
@@ -149,6 +151,8 @@ public:
 	}
 	virtual IFunction* getSetterByName(const std::string& name, bool& found);
 	virtual IFunction* setSetterByName(const std::string& name, IFunction* o);
+	virtual IFunction* getGetterByName(const std::string& name, bool& found);
+	virtual IFunction* setGetterByName(const std::string& name, IFunction* o);
 
 	virtual ISWFObject* getVariableByName(const std::string& name, bool& found);
 	virtual ISWFObject* setVariableByName(const std::string& name, ISWFObject* o, bool force=false);
@@ -157,6 +161,8 @@ public:
 	virtual ISWFObject* getSlot(int n);
 	virtual void setSlot(int n,ISWFObject* o);
 	virtual void dumpVariables();
+	virtual int numVariables();
+	std::string getNameAt(int i);
 
 	bool isBinded() {return binded;}
 	void bind(){ binded=true;}

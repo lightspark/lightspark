@@ -109,6 +109,29 @@ void ISWFObject::_register()
 	LOG(CALLS,"default _register called");
 }
 
+IFunction* ISWFObject::setGetterByName(const string& name, IFunction* o)
+{
+	pair<map<string, IFunction*>::iterator,bool> ret=Getters.insert(make_pair(name,o));
+	if(!ret.second)
+		ret.first->second=o;
+	return o;
+}
+
+IFunction* ISWFObject::getGetterByName(const string& name, bool& found)
+{
+	map<string,IFunction*>::iterator it=Getters.find(name);
+	if(it!=Getters.end())
+	{
+		found=true;
+		return it->second;
+	}
+	else
+	{
+		found=false;
+		return NULL;
+	}
+}
+
 IFunction* ISWFObject::setSetterByName(const string& name, IFunction* o)
 {
 	pair<map<string, IFunction*>::iterator,bool> ret=Setters.insert(make_pair(name,o));
@@ -776,7 +799,7 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	return stream;
 }
 
-ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1)
+ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1),super(NULL)
 {
 }
 
@@ -829,21 +852,6 @@ string RegisterNumber::toString() const
 	return STRING(buf);
 }
 
-Undefined::Undefined()
-{
-	setVariableByName(".Call",new Function(call));
-}
-
-ASFUNCTIONBODY(Undefined,call)
-{
-	LOG(CALLS,"Undefined function");
-}
-
-string Undefined::toString() const
-{
-	return string("undefined");
-}
-
 string Null::toString() const
 {
 	return "null";
@@ -862,6 +870,29 @@ bool Null::isEqual(const ISWFObject* r) const
 IFunction* Function::toFunction()
 {
 	return this;
+}
+
+string ISWFObject::getNameAt(int index)
+{
+	if(index<Variables.size())
+	{
+		map<string,ISWFObject*>::iterator it=Variables.begin();
+
+		for(int i=0;i<index;i++)
+			it++;
+
+		return it->first;
+	}
+	else
+	{
+		LOG(ERROR,"Index too big");
+		abort();
+	}
+}
+
+int ISWFObject::numVariables()
+{
+	return Variables.size();
 }
 
 ISWFObject* Function::call(ISWFObject* obj, arguments* args)

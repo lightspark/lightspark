@@ -87,7 +87,7 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
 			sys->bind_canditates_map.equal_range(Tags[i]);
 
 		if(range.first==range.second)
-			LOG(NOT_IMPLEMENTED,"SymbolClass refers to not named object " << Tags[i]);
+			LOG(NOT_IMPLEMENTED,"SymbolClass refers to not named object " << Names[i] << " id " << Tags[i]);
 		for(range.first;range.first!=range.second;range.first++)
 		{
 			to_bind.insert(*range.first);
@@ -492,6 +492,8 @@ void ABCVm::registerClasses()
 	valid_classes["flash.geom.Rectangle"]=-1;
 	Global.setVariableByName("Array",new ASArray);
 	valid_classes["Array"]=-1;
+	Global.setVariableByName("undefined",new Undefined);
+	valid_classes["undefined"]=-1;
 
 //	Global.setVariableByName(".Error",new ASObject);
 	Global.setVariableByName("Math",new Math);
@@ -534,13 +536,17 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 			if(s->count!=1)
 			{
 				LOG(ERROR,"Multiname on namespace set not really supported yet");
-				printNamespaceSet(s);
+				//printNamespaceSet(s);
 				ret=getString(m->name);
 			}
 			else
 			{
 				const namespace_info* n=&constant_pool.namespaces[s->ns[0]];
-				ret=getString(n->name)+'.'+ getString(m->name);
+				ret=getString(n->name);
+				if(ret=="")
+					ret=getString(m->name);
+				else
+					ret+="."+getString(m->name);
 			}
 			break;
 		}
@@ -563,7 +569,8 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 				name="<Invalid>";
 			//We currently assume that a null namespace is good
 			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
-			printNamespaceSet(s);
+			LOG(ERROR,"Multiname on namespace set not really supported yet");
+			//printNamespaceSet(s);
 			return name;
 			break;
 		}
@@ -623,11 +630,11 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
 	for(int i=0;i<class_count;i++)
 	{
 		in >> classes[i];
-		LOG(CALLS,"Declared class " << getMultinameString(instances[i].name));
+/*		LOG(CALLS,"Declared class " << getMultinameString(instances[i].name));
 		for(int j=0;j<classes[i].trait_count;j++)
 			LOG(CALLS,getMultinameString(classes[i].traits[j].name));
 		for(int j=0;j<instances[i].trait_count;j++)
-			LOG(CALLS,getMultinameString(instances[i].traits[j].name));
+			LOG(CALLS,getMultinameString(instances[i].traits[j].name));*/
 	}
 
 	in >> script_count;
@@ -912,12 +919,12 @@ void ABCVm::add(method_info* th)
 
 void ABCVm::isTypelate(method_info* th)
 {
-	LOG(CALLS,"isTypelate");
+	LOG(NOT_IMPLEMENTED,"isTypelate");
 }
 
 void ABCVm::asTypelate(method_info* th)
 {
-	LOG(CALLS,"asTypelate");
+	LOG(NOT_IMPLEMENTED,"asTypelate");
 }
 
 void ABCVm::nextValue(method_info* th)
@@ -927,12 +934,24 @@ void ABCVm::nextValue(method_info* th)
 
 void ABCVm::nextName(method_info* th)
 {
-	LOG(NOT_IMPLEMENTED,"nextName");
+	LOG(CALLS,"nextName");
+	Integer* i=dynamic_cast<Integer*>(th->runtime_stack_pop());
+	if(i==NULL)
+	{
+		LOG(ERROR,"Type mismatch");
+		abort();
+	}
+
+	ISWFObject* obj=th->runtime_stack_pop();
+	th->runtime_stack_push(new ASString(obj->getNameAt(*i-1)));
+
+	i->decRef();
+	obj->decRef();
 }
 
 void ABCVm::swap(method_info* th)
 {
-	LOG(CALLS,"swap");
+	LOG(NOT_IMPLEMENTED,"swap");
 }
 
 void ABCVm::newActivation(method_info* th)
@@ -949,7 +968,7 @@ void ABCVm::newActivation(method_info* th)
 
 void ABCVm::popScope(method_info* th)
 {
-	LOG(CALLS,"popScope");
+	LOG(NOT_IMPLEMENTED,"popScope");
 }
 
 void ABCVm::constructProp(method_info* th, int n, int m)
@@ -1034,8 +1053,23 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 
 void ABCVm::hasNext2(method_info* th, int n, int m)
 {
-	LOG(NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
-	th->runtime_stack_push(new Boolean(false));
+	LOG(CALLS,"hasNext2 " << n << ' ' << m);
+	ISWFObject* obj=th->locals[n];
+	int cur_index=th->locals[m]->toInt();
+	if(cur_index+1<=obj->numVariables())
+	{
+		th->locals[m]->decRef();
+		th->locals[m]=new Integer(cur_index+1);
+		th->runtime_stack_push(new Boolean(true));
+	}
+	else
+	{
+		obj->decRef();
+		th->locals[n]=new Null;
+		th->locals[m]->decRef();
+		th->locals[m]=new Integer(0);
+		th->runtime_stack_push(new Boolean(false));
+	}
 }
 
 void ABCVm::callSuper(method_info* th, int n, int m)
@@ -1099,7 +1133,7 @@ void ABCVm::jump(method_info* th, int offset)
 
 void ABCVm::ifTrue(method_info* th, int offset)
 {
-	LOG(CALLS,"ifrue " << offset);
+	LOG(CALLS,"ifTrue " << offset);
 
 	ISWFObject* obj1=th->runtime_stack_pop();
 	th->runtime_stack_push((ISWFObject*)new uintptr_t(Boolean_concrete(obj1)));
@@ -1138,13 +1172,19 @@ bool Boolean_concrete(ISWFObject* obj)
 		LOG(CALLS,"Object to bool");
 		return true;
 	}
+	else if(obj->getObjectType()==T_UNDEFINED)
+	{
+		LOG(CALLS,"Undefined to bool");
+		return false;
+	}
 	else
 		return false;
 }
 
 void ABCVm::ifStrictNE(method_info* th, int offset)
 {
-	LOG(CALLS,"ifStrictNE " << offset);
+	LOG(NOT_IMPLEMENTED,"ifStrictNE " << offset);
+	abort();
 }
 
 void ABCVm::ifNGE(method_info* th, int offset)
@@ -1269,12 +1309,13 @@ void ABCVm::call(method_info* th, int n)
 
 void ABCVm::coerce(method_info* th, int n)
 {
-	LOG(NOT_IMPLEMENTED,"coerce " << n);
+	string name=th->vm->getMultinameString(n); 
+	LOG(NOT_IMPLEMENTED,"coerce " << name);
 }
 
 void ABCVm::newCatch(method_info* th, int n)
 {
-	LOG(CALLS,"newCatch " << n);
+	LOG(NOT_IMPLEMENTED,"newCatch " << n);
 }
 
 void ABCVm::setSuper(method_info* th, int n)
@@ -1297,9 +1338,16 @@ void ABCVm::newFunction(method_info* th, int n)
 void ABCVm::newObject(method_info* th, int n)
 {
 	LOG(CALLS,"newObject " << n);
-	for(int i=0;i<n*2;i++)
-		th->runtime_stack_pop();
-	th->runtime_stack_push(new Undefined);
+	ISWFObject* ret=new ASObject;
+	for(int i=0;i<n;i++)
+	{
+		ISWFObject* value=th->runtime_stack_pop();
+		ISWFObject* name=th->runtime_stack_pop();
+		ret->setVariableByName(name->toString(),value);
+		name->decRef();
+	}
+
+	th->runtime_stack_push(ret);
 }
 
 void ABCVm::setSlot(method_info* th, int n)
@@ -1331,27 +1379,27 @@ void ABCVm::setLocal(method_info* th, int n)
 
 void ABCVm::convert_d(method_info* th)
 {
-	LOG(CALLS, "convert_d" );
+	LOG(NOT_IMPLEMENTED, "convert_d" );
 }
 
 void ABCVm::convert_b(method_info* th)
 {
-	LOG(CALLS, "convert_b" );
+	LOG(NOT_IMPLEMENTED, "convert_b" );
 }
 
 void ABCVm::convert_i(method_info* th)
 {
-	LOG(CALLS, "convert_i" );
+	LOG(NOT_IMPLEMENTED, "convert_i" );
 }
 
 void ABCVm::coerce_a(method_info* th)
 {
-	LOG(CALLS, "coerce_a" );
+	LOG(NOT_IMPLEMENTED, "coerce_a" );
 }
 
 void ABCVm::coerce_s(method_info* th)
 {
-	LOG(CALLS, "coerce_s" );
+	LOG(NOT_IMPLEMENTED, "coerce_s" );
 }
 
 void ABCVm::pop(method_info* th)
@@ -1361,7 +1409,7 @@ void ABCVm::pop(method_info* th)
 
 void ABCVm::_not(method_info* th)
 {
-	LOG(CALLS, "not: DONE" );
+	LOG(NOT_IMPLEMENTED, "not" );
 }
 
 void ABCVm::not_impl(int n)
@@ -1486,7 +1534,7 @@ void ABCVm::setProperty(method_info* th, int n)
 
 	ISWFObject* obj=th->runtime_stack_pop();
 
-	//Check to see if a proper setter method is setted
+	//Check to see if a proper setter method is available
 	bool found;
 	IFunction* f=obj->getSetterByName(name,found);
 	if(found)
@@ -1514,18 +1562,35 @@ void ABCVm::getProperty(method_info* th, int n)
 	ISWFObject* obj=th->runtime_stack_pop();
 
 	bool found;
+	//Check to see if a proper getter method is available
+	IFunction* f=obj->getGetterByName(name,found);
+	if(found)
+	{
+		//Call the getter
+		LOG(CALLS,"Calling the getter");
+		//arguments args;
+		//args.push(value);
+		//value->incRef();
+		th->runtime_stack_push(f->call(obj,NULL));
+		LOG(CALLS,"End of getter");
+		return;
+	}
+	
 	ISWFObject* ret=obj->getVariableByName(name,found);
 	if(!found)
 	{
 		LOG(NOT_IMPLEMENTED,"Property not found " << name);
 		th->runtime_stack_push(new Undefined);
-		//th->runtime_stack_push(ret);
-		//ret->incRef();
 	}
 	else
 	{
 		if(ret->getObjectType()==T_DEFINABLE)
+		{
 			LOG(ERROR,"Property " << name << " is not yet valid");
+			abort();
+		}
+		if(name=="clip")
+			cout << ret->class_name << endl;
 		th->runtime_stack_push(ret);
 		ret->incRef();
 	}
@@ -1627,7 +1692,6 @@ void ABCVm::newClass(method_info* th, int n)
 		th->vm->buildTrait(ret,&th->vm->classes[n].traits[i]);
 
 	//TODO: should add Constructor the the class methods
-
 	LOG(CALLS,"Calling Class init");
 	ret->class_name="newclass";
 	if(m->f)
@@ -1716,7 +1780,7 @@ void ABCVm::pushString(method_info* th, int n)
 
 void ABCVm::kill(method_info* th, int n)
 {
-	LOG(CALLS, "kill " << n );
+	LOG(NOT_IMPLEMENTED, "kill " << n );
 }
 
 void method_info::runtime_stack_push(ISWFObject* s)
@@ -1958,7 +2022,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x03:
 			{
 				//throw
-				LOG(CALLS, "synt throw" );
+				LOG(TRACE, "synt throw" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("throw"), th);
@@ -1968,7 +2032,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x05:
 			{
 				//setsuper
-				LOG(CALLS, "synt setsuper" );
+				LOG(TRACE, "synt setsuper" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -1980,7 +2044,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x08:
 			{
 				//kill
-				LOG(CALLS, "synt kill" );
+				LOG(TRACE, "synt kill" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2010,7 +2074,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x0c:
 			{
 				//ifnlt
-				LOG(CALLS, "synt ifnlt" );
+				LOG(TRACE, "synt ifnlt" );
 				//TODO: implement common data comparison
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
@@ -2056,7 +2120,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x0f:
 			{
 				//ifnge
-				LOG(CALLS, "synt ifnge");
+				LOG(TRACE, "synt ifnge");
 				//TODO: implement common data comparison
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
@@ -2107,7 +2171,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 
 				s24 t;
 				code >> t;
-				LOG(CALLS, "synt jump " << t );
+				LOG(TRACE, "synt jump " << t );
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("jump"), th, constant);
 
@@ -2139,7 +2203,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x11:
 			{
 				//iftrue
-				LOG(CALLS, "synt iftrue" );
+				LOG(TRACE, "synt iftrue" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 
@@ -2192,7 +2256,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				last_is_branch=true;
 				s24 t;
 				code >> t;
-				LOG(CALLS, "synt iffalse " << t );
+				LOG(TRACE, "synt iffalse " << t );
 
 				//Create a block for the fallthrough code and insert in the mapping
 				llvm::BasicBlock* A;
@@ -2233,7 +2297,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x13:
 			{
 				//ifeq
-				LOG(CALLS, "synt ifeq" );
+				LOG(TRACE, "synt ifeq" );
 				//TODO: implement common data comparison
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
@@ -2287,7 +2351,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				last_is_branch=true;
 				s24 t;
 				code >> t;
-				LOG(CALLS, "synt ifne " << t );
+				LOG(TRACE, "synt ifne " << t );
 				//Create a block for the fallthrough code and insert in the mapping
 				llvm::BasicBlock* A;
 				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
@@ -2327,7 +2391,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x15:
 			{
 				//iflt
-				LOG(CALLS, "synt iflt" );
+				LOG(TRACE, "synt iflt" );
 				//TODO: implement common data comparison
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
@@ -2372,7 +2436,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x19:
 			{
 				//ifstricteq
-				LOG(CALLS, "synt ifstricteq" );
+				LOG(TRACE, "synt ifstricteq" );
 				//TODO: implement common data comparison
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
@@ -2419,7 +2483,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x1a:
 			{
 				//ifstrictne
-				LOG(CALLS, "synt ifstrictne" );
+				LOG(TRACE, "synt ifstrictne" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				s24 t;
@@ -2432,15 +2496,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x1b:
 			{
 				//lookupswitch
-				LOG(CALLS, "synt lookupswitch" );
+				LOG(TRACE, "synt lookupswitch" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				s24 t;
 				code >> t;
-				LOG(CALLS,"default " << int(t));
+				LOG(TRACE,"default " << int(t));
 				u30 count;
 				code >> count;
-				LOG(CALLS,"count "<< int(count));
+				LOG(TRACE,"count "<< int(count));
 				for(int i=0;i<count+1;i++)
 					code >> t;
 				break;
@@ -2448,7 +2512,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x1d:
 			{
 				//popscope
-				LOG(CALLS, "synt popscope" );
+				LOG(TRACE, "synt popscope" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("popScope"), th);
@@ -2457,7 +2521,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x1e:
 			{
 				//nextname
-				LOG(CALLS, "synt nextname" );
+				LOG(TRACE, "synt nextname" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("nextName"), th);
@@ -2466,7 +2530,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x20:
 			{
 				//pushnull
-				LOG(CALLS, "synt pushnull" );
+				LOG(TRACE, "synt pushnull" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushNull"), th);
@@ -2475,7 +2539,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x21:
 			{
 				//pushundefined
-				LOG(CALLS, "synt pushundefined" );
+				LOG(TRACE, "synt pushundefined" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushUndefined"), th);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -2484,7 +2548,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x23:
 			{
 				//nextvalue
-				LOG(CALLS, "synt nextvalue" );
+				LOG(TRACE, "synt nextvalue" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("nextValue"), th);
@@ -2493,7 +2557,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x24:
 			{
 				//pushbyte
-				LOG(CALLS, "synt pushbyte" );
+				LOG(TRACE, "synt pushbyte" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				uint8_t t;
@@ -2505,7 +2569,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x25:
 			{
 				//pushshort
-				LOG(CALLS, "synt pushshort" );
+				LOG(TRACE, "synt pushshort" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2517,7 +2581,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x26:
 			{
 				//pushtrue
-				LOG(CALLS, "synt pushtrue" );
+				LOG(TRACE, "synt pushtrue" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushTrue"), th);
@@ -2526,7 +2590,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x27:
 			{
 				//pushfalse
-				LOG(CALLS, "synt pushfalse" );
+				LOG(TRACE, "synt pushfalse" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushFalse"), th);
@@ -2535,7 +2599,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x28:
 			{
 				//pushnan
-				LOG(CALLS, "synt pushnan" );
+				LOG(TRACE, "synt pushnan" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushNaN"), th);
@@ -2544,7 +2608,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x29:
 			{
 				//pop
-				LOG(CALLS, "synt pop" );
+				LOG(TRACE, "synt pop" );
 				jitted=true;
 				Builder.CreateCall(ex->FindFunctionNamed("pop"), th);
 				stack_entry e=static_stack_pop(Builder,static_stack,m);
@@ -2553,7 +2617,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x2a:
 			{
 				//dup
-				LOG(CALLS, "synt dup" );
+				LOG(TRACE, "synt dup" );
 				jitted=true;
 				Builder.CreateCall(ex->FindFunctionNamed("dup"), th);
 				stack_entry e=static_stack_peek(Builder,static_stack,m);
@@ -2563,7 +2627,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x2b:
 			{
 				//swap
-				LOG(CALLS, "synt swap" );
+				LOG(TRACE, "synt swap" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("swap"), th);
@@ -2572,7 +2636,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x2c:
 			{
 				//pushstring
-				LOG(CALLS, "synt pushstring" );
+				LOG(TRACE, "synt pushstring" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2584,7 +2648,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x2d:
 			{
 				//pushint
-				LOG(CALLS, "synt pushint" );
+				LOG(TRACE, "synt pushint" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2596,7 +2660,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x2f:
 			{
 				//pushdouble
-				LOG(CALLS, "synt pushdouble" );
+				LOG(TRACE, "synt pushdouble" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2608,7 +2672,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x30:
 			{
 				//pushscope
-				LOG(CALLS, "synt pushscope" );
+				LOG(TRACE, "synt pushscope" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), th);
@@ -2618,7 +2682,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//hasnext2
 				//TODO: Implement static resolution where possible
-				LOG(CALLS, "synt hasnext2" );
+				LOG(TRACE, "synt hasnext2" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2632,7 +2696,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x40:
 			{
 				//newfunction
-				LOG(CALLS, "synt newfunction" );
+				LOG(TRACE, "synt newfunction" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2644,7 +2708,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x41:
 			{
 				//call
-				LOG(CALLS, "synt call" );
+				LOG(TRACE, "synt call" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2656,7 +2720,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x42:
 			{
 				//construct
-				LOG(CALLS, "synt construct" );
+				LOG(TRACE, "synt construct" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2668,7 +2732,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x45:
 			{
 				//callsuper
-				LOG(CALLS, "synt callsuper" );
+				LOG(TRACE, "synt callsuper" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2683,7 +2747,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//callproperty
 				//TODO: Implement static resolution where possible
-				LOG(CALLS, "synt callproperty" );
+				LOG(TRACE, "synt callproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2710,7 +2774,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x47:
 			{
 				//returnvoid
-				LOG(CALLS, "synt returnvoid" );
+				LOG(TRACE, "synt returnvoid" );
 				last_is_branch=true;
 				Builder.CreateRetVoid();
 				break;
@@ -2719,7 +2783,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//returnvalue
 				//TODO: Should coerce the return type to the expected one
-				LOG(CALLS, "synt returnvalue" );
+				LOG(TRACE, "synt returnvalue" );
 				last_is_branch=true;
 				stack_entry e=static_stack_pop(Builder,static_stack,m);
 				Builder.CreateRet(e.first);
@@ -2728,7 +2792,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x49:
 			{
 				//constructsuper
-				LOG(CALLS, "synt constructsuper" );
+				LOG(TRACE, "synt constructsuper" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2740,7 +2804,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x4a:
 			{
 				//constructprop
-				LOG(CALLS, "synt constructprop" );
+				LOG(TRACE, "synt constructprop" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2754,7 +2818,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x4e:
 			{
 				//callsupervoid
-				LOG(CALLS, "synt callsupervoid" );
+				LOG(TRACE, "synt callsupervoid" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2768,7 +2832,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x4f:
 			{
 				//callpropvoid
-				LOG(CALLS, "synt callpropvoid" );
+				LOG(TRACE, "synt callpropvoid" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2782,7 +2846,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x55:
 			{
 				//newobject
-				LOG(CALLS, "synt newobject" );
+				LOG(TRACE, "synt newobject" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2794,7 +2858,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x56:
 			{
 				//newarray
-				LOG(CALLS, "synt newarray" );
+				LOG(TRACE, "synt newarray" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2806,7 +2870,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x57:
 			{
 				//newactivation
-				LOG(CALLS, "synt newactivation" );
+				LOG(TRACE, "synt newactivation" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("newActivation"), th);
@@ -2815,7 +2879,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x58:
 			{
 				//newclass
-				LOG(CALLS, "synt newclass" );
+				LOG(TRACE, "synt newclass" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2827,7 +2891,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x5a:
 			{
 				//newcatch
-				LOG(CALLS, "synt newcatch" );
+				LOG(TRACE, "synt newcatch" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2839,7 +2903,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x5d:
 			{
 				//findpropstrict
-				LOG(CALLS, "synt findpropstrict" );
+				LOG(TRACE, "synt findpropstrict" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2851,7 +2915,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x5e:
 			{
 				//findproperty
-				LOG(CALLS, "synt findproperty" );
+				LOG(TRACE, "synt findproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2863,7 +2927,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x60:
 			{
 				//getlex
-				LOG(CALLS, "synt getlex" );
+				LOG(TRACE, "synt getlex" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2875,7 +2939,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x61:
 			{
 				//setproperty
-				LOG(CALLS, "synt setproperty" );
+				LOG(TRACE, "synt setproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2887,7 +2951,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x62:
 			{
 				//getlocal
-				LOG(CALLS, "synt getlocal" );
+				LOG(TRACE, "synt getlocal" );
 				u30 i;
 				code >> i;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
@@ -2900,7 +2964,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x63:
 			{
 				//setlocal
-				LOG(CALLS, "synt setlocal" );
+				LOG(TRACE, "synt setlocal" );
 				u30 i;
 				code >> i;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
@@ -2916,7 +2980,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x64:
 			{
 				//getglobalscope
-				LOG(CALLS, "synt getglobalscope" );
+				LOG(TRACE, "synt getglobalscope" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"), th);
@@ -2925,7 +2989,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x65:
 			{
 				//getscopeobject
-				LOG(CALLS, "synt getscopeobject" );
+				LOG(TRACE, "synt getscopeobject" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2937,7 +3001,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x66:
 			{
 				//getproperty
-				LOG(CALLS, "synt getproperty" );
+				LOG(TRACE, "synt getproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2949,7 +3013,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x68:
 			{
 				//initproperty
-				LOG(CALLS, "synt initproperty" );
+				LOG(TRACE, "synt initproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2961,7 +3025,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x6a:
 			{
 				//deleteproperty
-				LOG(CALLS, "synt deleteproperty" );
+				LOG(TRACE, "synt deleteproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2973,7 +3037,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x6c:
 			{
 				//getslot
-				LOG(CALLS, "synt getslot" );
+				LOG(TRACE, "synt getslot" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2985,7 +3049,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x6d:
 			{
 				//setslot
-				LOG(CALLS, "synt setslot" );
+				LOG(TRACE, "synt setslot" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -2997,7 +3061,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x73:
 			{
 				//convert_i
-				LOG(CALLS, "synt convert_i" );
+				LOG(TRACE, "synt convert_i" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("convert_i"), th);
@@ -3006,7 +3070,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x75:
 			{
 				//convert_d
-				LOG(CALLS, "synt convert_d" );
+				LOG(TRACE, "synt convert_d" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("convert_d"), th);
@@ -3015,7 +3079,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x76:
 			{
 				//convert_b
-				LOG(CALLS, "synt convert_b" );
+				LOG(TRACE, "synt convert_b" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("convert_b"), th);
@@ -3024,7 +3088,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x80:
 			{
 				//corce
-				LOG(CALLS, "synt coerce" );
+				LOG(TRACE, "synt coerce" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -3036,7 +3100,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x82:
 			{
 				//coerce_a
-				LOG(CALLS, "synt coerce_a" );
+				LOG(TRACE, "synt coerce_a" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("coerce_a"), th);
@@ -3045,7 +3109,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x85:
 			{
 				//coerce_s
-				LOG(CALLS, "synt coerce_s" );
+				LOG(TRACE, "synt coerce_s" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("coerce_s"), th);
@@ -3054,7 +3118,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x87:
 			{
 				//astypelate
-				LOG(CALLS, "synt astypelate" );
+				LOG(TRACE, "synt astypelate" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("asTypelate"), th);
@@ -3063,7 +3127,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x91:
 			{
 				//increment
-				LOG(CALLS, "synt increment" );
+				LOG(TRACE, "synt increment" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("increment"), th);
@@ -3072,7 +3136,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x93:
 			{
 				//decrement
-				LOG(CALLS, "synt decrement" );
+				LOG(TRACE, "synt decrement" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("decrement"), th);
@@ -3081,7 +3145,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0x96:
 			{
 				//not
-				LOG(CALLS, "synt not" );
+				LOG(TRACE, "synt not" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("not"), th);
@@ -3090,7 +3154,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xa0:
 			{
 				//add
-				LOG(CALLS, "synt add" );
+				LOG(TRACE, "synt add" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("add"), th);
@@ -3099,7 +3163,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xa1:
 			{
 				//subtract
-				LOG(CALLS, "synt subtract" );
+				LOG(TRACE, "synt subtract" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("subtract"), th);
@@ -3108,7 +3172,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xa2:
 			{
 				//multiply
-				LOG(CALLS, "synt multiply" );
+				LOG(TRACE, "synt multiply" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("multiply"), th);
@@ -3117,7 +3181,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xa3:
 			{
 				//divide
-				LOG(CALLS, "synt divide" );
+				LOG(TRACE, "synt divide" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("divide"), th);
@@ -3126,7 +3190,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xab:
 			{
 				//equals
-				LOG(CALLS, "synt equals" );
+				LOG(TRACE, "synt equals" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("equals"), th);
@@ -3135,7 +3199,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xac:
 			{
 				//strictequals
-				LOG(CALLS, "synt strictequals" );
+				LOG(TRACE, "synt strictequals" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("strictEquals"), th);
@@ -3144,7 +3208,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xad:
 			{
 				//lessthan
-				LOG(CALLS, "synt lessthan" );
+				LOG(TRACE, "synt lessthan" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("lessThan"), th);
@@ -3153,7 +3217,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xaf:
 			{
 				//greaterthan
-				LOG(CALLS, "synt greaterthan" );
+				LOG(TRACE, "synt greaterthan" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("greaterThan"), th);
@@ -3162,7 +3226,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xb3:
 			{
 				//istypelate
-				LOG(CALLS, "synt istypelate" );
+				LOG(TRACE, "synt istypelate" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("isTypelate"), th);
@@ -3171,7 +3235,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xc0:
 			{
 				//increment_i
-				LOG(CALLS, "synt increment_i" );
+				LOG(TRACE, "synt increment_i" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("increment_i"), th);
@@ -3180,7 +3244,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xc1:
 			{
 				//decrement_i
-				LOG(CALLS, "synt decrement_i" );
+				LOG(TRACE, "synt decrement_i" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("decrement_i"), th);
@@ -3189,7 +3253,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xc2:
 			{
 				//inclocal_i
-				LOG(CALLS, "synt inclocal_i" );
+				LOG(TRACE, "synt inclocal_i" );
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				u30 t;
@@ -3204,7 +3268,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xd3:
 			{
 				//getlocal_n
-				LOG(CALLS, "synt getlocal" );
+				LOG(TRACE, "synt getlocal" );
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), th, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
@@ -3218,7 +3282,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			case 0xd7:
 			{
 				//setlocal_n
-				LOG(CALLS, "synt setlocal" );
+				LOG(TRACE, "synt setlocal" );
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
 				stack_entry e=static_stack_pop(Builder,static_stack,m);
@@ -3308,6 +3372,7 @@ void ABCVm::Run(ABCVm* th)
 		Function::as_function sinit=(Function::as_function)ex->getPointerToFunction(m->f);
 		sinit(&th->Global,NULL);
 	}
+	LOG(CALLS, "End of Entry Point");
 
 	while(!th->shutdown)
 	{
@@ -3346,20 +3411,31 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 				obj->setVariableByName(name, new Undefined);
 			break;
 		}
+		case traits_info::Getter:
+		{
+			LOG(CALLS,"Getter trait: " << name);
+			//syntetize method and create a new LLVM function object
+			method_info* m=&methods[t->method];
+			llvm::Function* f=synt_method(m);
+			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
+			obj->setGetterByName(name, new Function(f2));
+			LOG(CALLS,"End Getter trait: " << name);
+			break;
+		}
 		case traits_info::Setter:
 		{
-			LOG(NOT_IMPLEMENTED,"Setter trait: " << name);
+			LOG(CALLS,"Setter trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			llvm::Function* f=synt_method(m);
 			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
 			obj->setSetterByName(name, new Function(f2));
-			LOG(NOT_IMPLEMENTED,"End Setter trait: " << name);
+			LOG(CALLS,"End Setter trait: " << name);
 			break;
 		}
 		case traits_info::Method:
 		{
-			LOG(NOT_IMPLEMENTED,"Method trait: " << name);
+			LOG(CALLS,"Method trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			llvm::Function* f=synt_method(m);

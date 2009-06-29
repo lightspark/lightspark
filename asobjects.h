@@ -70,6 +70,7 @@ public:
 	Undefined();
 	SWFOBJECT_TYPE getObjectType() const {return T_UNDEFINED;}
 	std::string toString() const;
+	bool isEqual(const ISWFObject* r) const;
 	ISWFObject* clone()
 	{
 		return new Undefined;
@@ -86,6 +87,7 @@ public:
 	ASFUNCTION(String);
 	std::string toString() const;
 	double toNumber();
+	bool isEqual(const ISWFObject* r) const;
 	SWFOBJECT_TYPE getObjectType() const {return T_STRING;}
 	ISWFObject* clone()
 	{

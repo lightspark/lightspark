@@ -4,6 +4,7 @@ prefix = /usr
 bindir = $(prefix)/bin
 datarootdir = $(prefix)/share
 datadir = $(datarootdir)
+#PKG_BUILD_FLAG=-DLIGHTSPARK_PKG_BUILD   # Read data from /usr/share
 
 LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o tags_stub.o logger.o vm.o \
 	  asobjects.o abc.o flashdisplay.o flashevents.o textfile.o
@@ -17,7 +18,7 @@ libls.so: $(LIBOBJS)
 	$(CXX) -pthread -shared `pkg-config --cflags --libs sdl gl` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $@ $^
 
 %.o: %.cpp
-	$(CXX) -pthread `pkg-config --cflags libxml-2.0` `llvm-config --cxxflags core` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^
+	$(CXX) -pthread `pkg-config --cflags libxml-2.0` `llvm-config --cxxflags core` $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^
 
 .PHONY: all clean install
 clean:

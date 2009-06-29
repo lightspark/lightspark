@@ -23,6 +23,7 @@ Credits:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 char *textFileRead(const char *fn)
 {
@@ -71,8 +72,15 @@ int textFileWrite(const char *fn, char *s)
 }
 
 
-
-
-
+char *dataFileRead(const char *fn)
+{
+#ifdef LIGHTSPARK_PKG_BUILD
+	char buf[PATH_MAX] = "/usr/share/lightspark/";
+	strcat(buf, fn);
+	return textFileRead(buf);
+#else
+	return textFileRead(fn);
+#endif
+}
 
 

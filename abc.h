@@ -405,6 +405,7 @@ private:
 	static void constructSuper(method_info* th, int n);
 	static void construct(method_info* th, int n);
 	static void newFunction(method_info* th, int n);
+	static void setSuper(method_info* th, int n);
 	static void pushScope(method_info* th);
 	static void pushNull(method_info* th);
 	static ISWFObject* pushUndefined(method_info* th);

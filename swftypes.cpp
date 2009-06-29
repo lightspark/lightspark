@@ -853,6 +853,8 @@ bool Null::isEqual(const ISWFObject* r) const
 {
 	if(r->getObjectType()==T_NULL)
 		return true;
+	else if(r->getObjectType()==T_UNDEFINED)
+		return true;
 	else
 		return false;
 }

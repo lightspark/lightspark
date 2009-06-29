@@ -157,8 +157,6 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 	in >> BackgroundColor;
 }
 
-bool list_orderer(const DisplayListTag* a, int d);
-
 DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	//setVariableByName("text",SWFObject(new Integer(0)));

@@ -58,7 +58,8 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),done(f
 
 int DoABCTag::getDepth() const
 {
-	return 0x20001;
+	//The first thing when encoutering showframe
+	return -200;
 }
 
 void DoABCTag::Render()
@@ -82,7 +83,9 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
 	{
 		in >> Tags[i] >> Names[i];
 		
-		pair < map<int, bind_candidates>::iterator, map<int, bind_candidates>::iterator> range=sys->bind_canditates_map.equal_range(Tags[i]);
+		pair < map<int, bind_candidates>::iterator, map<int, bind_candidates>::iterator> range=
+			sys->bind_canditates_map.equal_range(Tags[i]);
+
 		if(range.first==range.second)
 			LOG(NOT_IMPLEMENTED,"SymbolClass refers to not named object " << Tags[i]);
 		for(range.first;range.first!=range.second;range.first++)
@@ -96,8 +99,8 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
 
 int SymbolClassTag::getDepth() const
 {
-	//After DoABCTag execution
-	return 0x30000;
+	//After DoABCTag execution, but before any object
+	return -100;
 }
 
 void SymbolClassTag::Render()
@@ -105,7 +108,7 @@ void SymbolClassTag::Render()
 	//Should be a control tag
 	if(done)
 		return;
-	LOG(NOT_IMPLEMENTED,"SymbolClassTag Render");
+	LOG(TRACE,"SymbolClassTag Render");
 
 	for(int i=0;i<NumSymbols;i++)
 	{
@@ -148,6 +151,13 @@ void SymbolClassTag::Render()
 			}
 		}
 	}
+	//We stop execution until execution engine catches up
+	sem_t s;
+	sem_init(&s,0,0);
+	sys->currentVm->addEvent(NULL, new SynchronizationEvent(&s));
+	sem_wait(&s);
+	//Now the bindings are effective
+
 	done=true;
 }
 
@@ -331,6 +341,9 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newCatch",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newCatch);
 
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setSuper",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::setSuper);
+
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newFunction",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newFunction);
 
@@ -471,6 +484,8 @@ void ABCVm::registerClasses()
 	valid_classes["flash.utils.Timer"]=-1;
 	Global.setVariableByName("flash.text.TextFormat",new ASObject);
 	valid_classes["flash.text.TextFormat"]=-1;
+	Global.setVariableByName("flash.text.TextFieldType",new ASObject);
+	valid_classes["flash.text.TextFieldType"]=-1;
 	Global.setVariableByName("flash.utils.Dictionary",new ASObject);
 	valid_classes["flash.utils.Dictionary"]=-1;
 	Global.setVariableByName("flash.geom.Rectangle",new ASObject);
@@ -639,8 +654,8 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
 void ABCVm::handleEvent()
 {
 	sem_wait(&mutex);
-	pair<InteractiveObject*,Event*> e=events_queue.back();
-	events_queue.pop_back();
+	pair<InteractiveObject*,Event*> e=events_queue.front();
+	events_queue.pop_front();
 	if(e.first)
 		e.first->handleEvent(e.second);
 	else
@@ -666,6 +681,12 @@ void ABCVm::handleEvent()
 			case SHUTDOWN:
 				shutdown=true;
 				break;
+			case SYNC:
+			{
+				SynchronizationEvent* ev=dynamic_cast<SynchronizationEvent*>(e.second);
+				ev->sync();
+				break;
+			}
 			default:
 				LOG(ERROR,"Not supported event");
 				abort();
@@ -737,6 +758,7 @@ ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* ar
 			LOG(CALLS,"Class " << it->first << " is not yet valid");
 			Definable* d=dynamic_cast<Definable*>(r);
 			d->define(&Global);
+			LOG(CALLS,"End of deferred init");
 			r=Global.getVariableByName(it->first,found);
 			if(!found)
 			{
@@ -1253,6 +1275,17 @@ void ABCVm::coerce(method_info* th, int n)
 void ABCVm::newCatch(method_info* th, int n)
 {
 	LOG(CALLS,"newCatch " << n);
+}
+
+void ABCVm::setSuper(method_info* th, int n)
+{
+	ISWFObject* value=th->runtime_stack_pop();
+	string name=th->vm->getMultinameString(n); 
+
+	LOG(NOT_IMPLEMENTED,"setSuper " << name);
+
+	ISWFObject* obj=th->runtime_stack_pop();
+	obj->setVariableByName(name,value);
 }
 
 void ABCVm::newFunction(method_info* th, int n)
@@ -1929,6 +1962,19 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("throw"), th);
+				Builder.CreateRetVoid();
+				break;
+			}
+			case 0x05:
+			{
+				//setsuper
+				LOG(CALLS, "synt setsuper" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("setSuper"), th, constant);
 				break;
 			}
 			case 0x08:
@@ -3384,7 +3430,10 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 					if(deferred_initialization)
 						obj->setVariableByName(name, new Definable(deferred_initialization));
 					else
-						ret=obj->setVariableByName(name,new Undefined); 
+					{
+						LOG(CALLS,"Not deferred");
+						ret=obj->setVariableByName(name,new Undefined);
+					}
 				}
 				else
 					LOG(CALLS,"Not resetting variable " << name);

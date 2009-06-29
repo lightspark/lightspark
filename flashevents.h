@@ -19,18 +19,18 @@
 
 #include "asobjects.h"
 #include <string>
+#include <semaphore.h>
 
 class ISWFObject;
 class PlaceObject2Tag;
 
-enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, MOUSE_EVENT };
+enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT };
 
 class Event: public ASObject
 {
 public:
 	Event(const std::string& t);
-	//DEPRECATED
-	virtual EVENT_TYPE getEventType() {return EVENT;}
+	virtual EVENT_TYPE getEventType() {return EVENT;} //DEPRECATED
 	const std::string type;
 };
 
@@ -41,6 +41,8 @@ public:
 	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
 };
 
+
+//Internal events from now on, used to pass data to the execution thread
 class BindClassEvent: public Event
 {
 friend class ABCVm;
@@ -63,3 +65,16 @@ public:
 	EVENT_TYPE getEventType() { return SHUTDOWN; }
 };
 
+class SynchronizationEvent: public Event
+{
+private:
+	sem_t* s;
+public:
+	SynchronizationEvent(sem_t* _s):s(_s),Event("SynchronizationEvent"){}
+	EVENT_TYPE getEventType() { return SYNC; }
+	void sync()
+	{
+		LOG(CALLS,"Posting sync");
+		sem_post(s);
+	}
+};

@@ -27,6 +27,6 @@ install: all
 	install -d $(DESTDIR)$(bindir) $(DESTDIR)$(datadir)/lightspark
 	install lightspark $(DESTDIR)$(bindir)/lightspark
 	install -m644 lightspark.frag $(DESTDIR)$(datadir)/lightspark/lightspark.frag
-	install -m644 lightspark.vert $(DESTDIR)$(datadir)/lightspark/lightspark.frag
+	install -m644 lightspark.vert $(DESTDIR)$(datadir)/lightspark/lightspark.vert
 	# TODO: library/plugin install
 

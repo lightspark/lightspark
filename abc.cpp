@@ -751,21 +751,13 @@ ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* ar
 		}
 		base->prototype=ro;
 
-		method_info* m=&methods[instances[index].init];
-		synt_method(m);
 		LOG(CALLS,"Building instance traits");
 		for(int i=0;i<instances[index].trait_count;i++)
 			buildTrait(base,&instances[index].traits[i]);
 
 		LOG(CALLS,"Calling Instance init on " << s);
-		//module.dump();
-		if(m->f)
-		{
-			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-			args->incRef();
-			FP(base,args);
-//			args->decRef();
-		}
+		args->incRef();
+		base->prototype->constructor->call(base,args);
 		return base;
 	}
 }

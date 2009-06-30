@@ -304,6 +304,12 @@ private:
 	std::vector<traits_info> traits;
 };
 
+struct opcode_handler
+{
+	const char* name;
+	void* addr;
+};
+
 class ABCVm
 {
 private:
@@ -340,10 +346,8 @@ private:
 	llvm::Function* synt_method(method_info* m);
 	llvm::FunctionType* synt_method_prototype();
 
-	std::map<int,ISWFObject*> registers;
-	std::map<std::string,int> valid_classes;
 	ASObject Global;
-	std::vector<ISWFObject*> stack;
+	//std::vector<ISWFObject*> stack;
 	llvm::Module* module;
 
 	static llvm::ExecutionEngine* ex;
@@ -376,6 +380,7 @@ private:
 	static void ifNe(method_info* th, int offset); 
 	static void ifLT(method_info* th, int offset); 
 	static void ifNLT(method_info* th, int offset); 
+	static void ifNGT(method_info* th, int offset); 
 	static void ifNGE(method_info* th, int offset); 
 	static void ifStrictNE(method_info* th, int offset); 
 	static void ifFalse(method_info* th, int offset); 
@@ -419,6 +424,7 @@ private:
 	static void _not(method_info* th);
 	static void negate(method_info* th);
 	static void pop(method_info* th);
+	static void typeOf(method_info* th);
 	static void _throw(method_info* th);
 	static void asTypelate(method_info* th);
 	static void isTypelate(method_info* th);
@@ -444,6 +450,9 @@ private:
 	static void decrement(method_info* th);
 	static void getGlobalScope(method_info* th);
 	static void method_reset(method_info* th);
+
+	static opcode_handler opcode_table_args0[];
+	static opcode_handler opcode_table_args1[];
 
 	//Synchronization
 	sem_t mutex;

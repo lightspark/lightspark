@@ -846,7 +846,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			SDL_GL_SwapBuffers( );
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
 			glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
-			glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
+			//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
 
 			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
@@ -896,7 +896,7 @@ void RenderThread::draw(Frame* f)
 {
 	cur_frame=f;
 
-//	sys->cur_input_thread->broadcastEvent("enterFrame");
+	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
 	sem_wait(&end_render);
 	usleep(1000000/sys->frame_rate);

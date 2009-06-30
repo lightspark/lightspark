@@ -33,6 +33,93 @@
 #include "swf.h"
 #include "flashevents.h"
 
+opcode_handler ABCVm::opcode_table_args0[]={
+	{"pushScope",(void*)&ABCVm::pushScope},
+	{"debug",(void*)&ABCVm::debug},
+	{"decRef",(void*)&ISWFObject::s_decRef},
+	{"incRef",(void*)&ISWFObject::s_incRef},
+	{"method_reset",(void*)&ABCVm::method_reset},
+	{"convert_d",(void*)&ABCVm::convert_d},
+	{"nextValue",(void*)&ABCVm::nextValue},
+	{"nextName",(void*)&ABCVm::nextName},
+	{"convert_b",(void*)&ABCVm::convert_b},
+	{"convert_i",(void*)&ABCVm::convert_i},
+	{"coerce_a",(void*)&ABCVm::coerce_a},
+	{"coerce_s",(void*)&ABCVm::coerce_s},
+	{"throw",(void*)&ABCVm::_throw},
+	{"getGlobalScope",(void*)&ABCVm::getGlobalScope},
+	{"decrement",(void*)&ABCVm::decrement},
+	{"decrement_i",(void*)&ABCVm::decrement_i},
+	{"increment",(void*)&ABCVm::increment},
+	{"increment_i",(void*)&ABCVm::increment_i},
+	{"pop",(void*)&ABCVm::pop},
+	{"lessThan",(void*)&ABCVm::lessThan},
+	{"greaterThan",(void*)&ABCVm::greaterThan},
+	{"negate",(void*)&ABCVm::negate},
+	{"not",(void*)&ABCVm::_not},
+	{"strictEquals",(void*)&ABCVm::strictEquals},
+	{"equals",(void*)&ABCVm::equals},
+	{"dup",(void*)&ABCVm::dup},
+	{"subtract",(void*)&ABCVm::subtract},
+	{"divide",(void*)&ABCVm::divide},
+	{"multiply",(void*)&ABCVm::multiply},
+	{"add",(void*)&ABCVm::add},
+	{"swap",(void*)&ABCVm::swap},
+	{"pushNaN",(void*)&ABCVm::pushNaN},
+	{"pushNull",(void*)&ABCVm::pushNull},
+	{"pushTrue",(void*)&ABCVm::pushTrue},
+	{"pushFalse",(void*)&ABCVm::pushFalse},
+	{"isTypelate",(void*)&ABCVm::isTypelate},
+	{"asTypelate",(void*)&ABCVm::asTypelate},
+	{"popScope",(void*)&ABCVm::popScope},
+	{"newActivation",(void*)&ABCVm::newActivation},
+	{"typeOf",(void*)ABCVm::typeOf}
+};
+
+opcode_handler ABCVm::opcode_table_args1[]={
+	{"ifNGT",(void*)&ABCVm::ifNGT},
+	{"ifNLT",(void*)&ABCVm::ifNLT},
+	{"ifNGE",(void*)&ABCVm::ifNGE},
+	{"ifLT",(void*)&ABCVm::ifLT},
+	{"ifStrictNE",(void*)&ABCVm::ifStrictNE},
+	{"ifNe",(void*)&ABCVm::ifNe},
+	{"ifStrictEq",(void*)&ABCVm::ifStrictEq},
+	{"ifEq",(void*)&ABCVm::ifEq},
+	{"ifTrue",(void*)&ABCVm::ifTrue},
+	{"ifFalse",(void*)&ABCVm::ifFalse},
+	{"newCatch",(void*)&ABCVm::newCatch},
+	{"getSuper",(void*)&ABCVm::getSuper},
+	{"setSuper",(void*)&ABCVm::setSuper},
+	{"newFunction",(void*)&ABCVm::newFunction},
+	{"newObject",(void*)&ABCVm::newObject},
+	{"deleteProperty",(void*)&ABCVm::deleteProperty},
+	{"jump",(void*)&ABCVm::jump},
+	{"getSlot",(void*)&ABCVm::getSlot},
+	{"setSlot",(void*)&ABCVm::setSlot},
+	{"getLocal",(void*)&ABCVm::getLocal},
+	{"setLocal",(void*)&ABCVm::setLocal},
+	{"call",(void*)&ABCVm::call},
+	{"coerce",(void*)&ABCVm::coerce},
+	{"getLex",(void*)&ABCVm::getLex},
+	{"findPropStrict",(void*)&ABCVm::findPropStrict},
+	{"pushDouble",(void*)&ABCVm::pushDouble},
+	{"pushInt",(void*)&ABCVm::pushInt},
+	{"pushShort",(void*)&ABCVm::pushShort},
+	{"pushByte",(void*)&ABCVm::pushByte},
+	{"incLocal_i",(void*)&ABCVm::incLocal_i},
+	{"getProperty",(void*)&ABCVm::getProperty},
+	{"setProperty",(void*)&ABCVm::setProperty},
+	{"findProperty",(void*)&ABCVm::findProperty},
+	{"construct",(void*)&ABCVm::construct},
+	{"constructSuper",(void*)&ABCVm::constructSuper},
+	{"newArray",(void*)&ABCVm::newArray},
+	{"newClass",(void*)&ABCVm::newClass},
+	{"pushString",(void*)&ABCVm::pushString},
+	{"initProperty",(void*)&ABCVm::initProperty},
+	{"kill",(void*)&ABCVm::kill},
+	{"getScopeObject",(void*)&ABCVm::getScopeObject}
+};
+
 llvm::ExecutionEngine* ABCVm::ex;
 
 extern __thread SystemState* sys;
@@ -155,122 +242,13 @@ void ABCVm::registerFunctions()
 	// (method_info*)
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushScope",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushScope);
 
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::debug);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decRef",module);
-	ex->addGlobalMapping(F,(void*)&ISWFObject::s_decRef);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"incRef",module);
-	ex->addGlobalMapping(F,(void*)&ISWFObject::s_incRef);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"method_reset",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::method_reset);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_d",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::convert_d);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"nextValue",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::nextValue);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"nextName",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::nextName);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_b",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::convert_b);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"convert_i",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::convert_i);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce_a",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::coerce_a);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce_s",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::coerce_s);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"throw",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::_throw);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getGlobalScope",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::getGlobalScope);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decrement",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::decrement);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decrement_i",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::decrement_i);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"increment",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::increment);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"increment_i",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::increment_i);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pop",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pop);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"lessThan",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::lessThan);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"greaterThan",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::greaterThan);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"negate",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::negate);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::_not);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"strictEquals",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::strictEquals);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"equals",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::equals);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"dup",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::dup);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"subtract",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::subtract);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"divide",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::divide);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"multiply",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::multiply);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"add",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::add);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"swap",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::swap);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNaN",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushNaN);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushNull",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushNull);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushTrue",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushTrue);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushFalse",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushFalse);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"isTypelate",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::isTypelate);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"asTypelate",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::asTypelate);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"popScope",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::popScope);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
+	int elems=sizeof(opcode_table_args0)/sizeof(opcode_handler);
+	for(int i=0;i<elems;i++)
+	{
+		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args0[i].name,module);
+		ex->addGlobalMapping(F,opcode_table_args0[i].addr);
+	}
 
 	//Lazy pushing
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
@@ -281,125 +259,12 @@ void ABCVm::registerFunctions()
 	// (method_info*,int)
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifNLT",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifNLT);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifNGE",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifNGE);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifLT",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifLT);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifStrictNE",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifStrictNE);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifNe",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifNe);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifStrictEq",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifStrictEq);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifEq",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifEq);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifTrue",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifTrue);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"ifFalse",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::ifFalse);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newCatch",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::newCatch);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getSuper",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::getSuper);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setSuper",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::setSuper);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newFunction",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::newFunction);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newObject",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::newObject);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"deleteProperty",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::deleteProperty);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"jump",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::jump);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getSlot",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::getSlot);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setSlot",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::setSlot);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLocal",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::getLocal);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setLocal",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::setLocal);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"call",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::call);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"coerce",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::coerce);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getLex",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::getLex);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findPropStrict",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::findPropStrict);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushDouble",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushDouble);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushInt",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushInt);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushShort",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushShort);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushByte",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushByte);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"incLocal_i",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::incLocal_i);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getProperty",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::getProperty);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setProperty",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::setProperty);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"findProperty",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::findProperty);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"construct",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::construct);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructSuper",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::constructSuper);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newArray",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::newArray);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newClass",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::newClass);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushString",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushString);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"initProperty",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::initProperty);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"kill",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::kill);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getScopeObject",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::getScopeObject);
+	elems=sizeof(opcode_table_args1)/sizeof(opcode_handler);
+	for(int i=0;i<elems;i++)
+	{
+		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args1[i].name,module);
+		ex->addGlobalMapping(F,opcode_table_args1[i].addr);
+	}
 
 	// (method_info*,int,int)
 	sig.push_back(llvm::IntegerType::get(32));
@@ -425,61 +290,48 @@ void ABCVm::registerFunctions()
 
 void ABCVm::registerClasses()
 {
-	//All valid_classes should be registered in the Global object
-/*	map<string,int>::iterator it=valid_classes.begin();
-	for(it;it!=valid_classes.end();it++)
-	{
-		Global.setVariableByName
-	}*/
-
 	//Register predefined types, ASObject are enough for not implemented classes
 	Global.setVariableByName("Object",new ASObject);
-	valid_classes["Object"]=-1;
-	Global.setVariableByName(".int",new ASObject);
-	valid_classes[".int"]=-1;
-	Global.setVariableByName(".Boolean",new ASObject);
-	valid_classes[".Boolean"]=-1;
+//	Global.setVariableByName(".int",new ASObject);
+//	Global.setVariableByName(".Boolean",new ASObject);
 	Global.setVariableByName("Number",new ASObject);
-	valid_classes["Number"]=-1;
 	Global.setVariableByName("String",new ASString);
-	valid_classes["String"]=-1;
-	Global.setVariableByName("flash.display.MovieClip",new ASMovieClip);
-	valid_classes["flash.display.MovieClip"]=-1;
-	Global.setVariableByName("flash.display.DisplayObject",new ASObject);
-	valid_classes["flash.display.DisplayObject"]=-1;
-	Global.setVariableByName("flash.display.SimpleButton",new ASObject);
-	valid_classes["flash.display.SimpleButton"]=-1;
-	Global.setVariableByName("flash.text.TextField",new ASObject);
-	valid_classes["flash.text.TextField"]=-1;
-	Global.setVariableByName("flash.xml.XMLDocument",new ASObject);
-	valid_classes["flash.xml.XMLDocument"]=-1;
-	Global.setVariableByName("flash.utils.Timer",new ASObject);
-	valid_classes["flash.utils.Timer"]=-1;
-	Global.setVariableByName("flash.text.TextFormat",new ASObject);
-	valid_classes["flash.text.TextFormat"]=-1;
-	Global.setVariableByName("flash.text.TextFieldType",new ASObject);
-	valid_classes["flash.text.TextFieldType"]=-1;
-	Global.setVariableByName("flash.utils.Dictionary",new ASObject);
-	valid_classes["flash.utils.Dictionary"]=-1;
-	Global.setVariableByName("flash.geom.Rectangle",new ASObject);
-	valid_classes["flash.geom.Rectangle"]=-1;
 	Global.setVariableByName("Array",new ASArray);
-	valid_classes["Array"]=-1;
 	Global.setVariableByName("undefined",new Undefined);
-	valid_classes["undefined"]=-1;
-
-//	Global.setVariableByName(".Error",new ASObject);
 	Global.setVariableByName("Math",new Math);
+	Global.setVariableByName("Date",new ASObject);
 
-	Global.setVariableByName("flash.events.EventDispatcher",new ASObject);
+	Global.setVariableByName("flash.display.MovieClip",new ASMovieClip);
+	Global.setVariableByName("flash.display.DisplayObject",new ASObject);
+	Global.setVariableByName("flash.display.Loader",new ASObject);
+	Global.setVariableByName("flash.display.SimpleButton",new ASObject);
 	Global.setVariableByName("flash.display.InteractiveObject",new ASObject);
 	Global.setVariableByName("flash.display.DisplayObjectContainer",new ASObject);
 	Global.setVariableByName("flash.display.Sprite",new ASObject);
+
+	Global.setVariableByName("flash.text.TextField",new ASObject);
+	Global.setVariableByName("flash.text.TextFormat",new ASObject);
+	Global.setVariableByName("flash.text.TextFieldType",new ASObject);
+
+	Global.setVariableByName("flash.xml.XMLDocument",new ASObject);
+
+	Global.setVariableByName("flash.system.ApplicationDomain",new ASObject);
+	Global.setVariableByName("flash.system.LoaderContext",new ASObject);
+
+	Global.setVariableByName("flash.utils.Timer",new ASObject);
+	Global.setVariableByName("flash.utils.Dictionary",new ASObject);
+	Global.setVariableByName("flash.utils.Proxy",new ASObject);
+
+	Global.setVariableByName("flash.geom.Rectangle",new ASObject);
+
+	Global.setVariableByName("flash.events.EventDispatcher",new ASObject);
 	Global.setVariableByName("flash.events.Event",new Event(""));
 	Global.setVariableByName("flash.events.MouseEvent",new MouseEvent);
-	Global.setVariableByName("flash.net.LocalConnection",new ASObject);
-	Global.setVariableByName("flash.utils.Proxy",new ASObject);
 	Global.setVariableByName("flash.events.ProgressEvent",new ASObject);
+
+	Global.setVariableByName("flash.net.LocalConnection",new ASObject);
+	Global.setVariableByName("flash.net.URLRequest",new Math);
+	Global.setVariableByName("flash.net.URLVariables",new Math);
 }
 
 string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
@@ -508,7 +360,7 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 			if(s->count!=1)
 			{
-				LOG(ERROR,"Multiname on namespace set not really supported yet");
+				LOG(NOT_IMPLEMENTED,"Multiname on namespace set not really supported yet");
 				//printNamespaceSet(s);
 				ret=getString(m->name);
 			}
@@ -542,7 +394,7 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 				name="<Invalid>";
 			//We currently assume that a null namespace is good
 			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
-			LOG(ERROR,"Multiname on namespace set not really supported yet");
+			LOG(NOT_IMPLEMENTED,"Multiname on namespace set not really supported yet");
 			//printNamespaceSet(s);
 			return name;
 			break;
@@ -594,11 +446,7 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
 	in >> class_count;
 	instances.resize(class_count);
 	for(int i=0;i<class_count;i++)
-	{
 		in >> instances[i];
-		//Link instance names with classes
-		valid_classes[getMultinameString(instances[i].name)]=i;
-	}
 	classes.resize(class_count);
 	for(int i=0;i<class_count;i++)
 	{
@@ -694,72 +542,48 @@ void dumpClasses(map<string,int>& maps)
 
 ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* args)
 {
-	map<string,int>::iterator it=valid_classes.find(s);
-	if(it!=valid_classes.end())
-		LOG(CALLS,"buildNamedClass: Class " << s << " found")
-	else
+	LOG(CALLS,"Setting class name to " << s);
+	base->class_name=s;
+	bool found;
+	ISWFObject* r=Global.getVariableByName(s,found);
+	if(!found)
 	{
-		LOG(ERROR,"Class " << s << " not found");
-		return new ASObject;
+		LOG(ERROR,"Class " << s << " not found in global");
+		abort();
 	}
-
-	//TODO: Really build class
-	int index=it->second;
-	if(index==-1)
+	if(r->getObjectType()==T_DEFINABLE)
 	{
-		bool found;
-		ISWFObject* r=Global.getVariableByName(it->first,found);
+		LOG(CALLS,"Class " << s << " is not yet valid");
+		Definable* d=dynamic_cast<Definable*>(r);
+		d->define(&Global);
+		LOG(CALLS,"End of deferred init");
+		r=Global.getVariableByName(s,found);
 		if(!found)
 		{
-			LOG(ERROR,"Class " << it->first << " not found in global");
+			LOG(ERROR,"Class " << s << " not found in global");
 			abort();
 		}
-		if(r->getObjectType()==T_DEFINABLE)
-			LOG(ERROR,"Class " << it->first << " is not yet valid");
-		return r->clone();
 	}
-	else
+
+	ASObject* ro=dynamic_cast<ASObject*>(r);
+	if(ro==NULL)
 	{
-		LOG(CALLS,"Setting class name to " << s);
-		base->class_name=s;
-		bool found;
-		ISWFObject* r=Global.getVariableByName(it->first,found);
-		if(!found)
-		{
-			LOG(ERROR,"Class " << it->first << " not found in global");
-			abort();
-		}
-		if(r->getObjectType()==T_DEFINABLE)
-		{
-			LOG(CALLS,"Class " << it->first << " is not yet valid");
-			Definable* d=dynamic_cast<Definable*>(r);
-			d->define(&Global);
-			LOG(CALLS,"End of deferred init");
-			r=Global.getVariableByName(it->first,found);
-			if(!found)
-			{
-				LOG(ERROR,"Class " << it->first << " not found in global");
-				abort();
-			}
-		}
+		LOG(ERROR,"Class is not as ASObject");
+		abort();
+	}
+	base->prototype=ro;
 
-		ASObject* ro=dynamic_cast<ASObject*>(r);
-		if(ro==NULL)
-		{
-			LOG(ERROR,"Class is not as ASObject");
-			abort();
-		}
-		base->prototype=ro;
-
+	if(r->class_index!=-1)
+	{
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<instances[index].trait_count;i++)
-			buildTrait(base,&instances[index].traits[i]);
+		for(int i=0;i<instances[r->class_index].trait_count;i++)
+			buildTrait(base,&instances[r->class_index].traits[i]);
 
 		LOG(CALLS,"Calling Instance init on " << s);
 		args->incRef();
 		base->prototype->constructor->call(base,args);
-		return base;
 	}
+	return base;
 }
 
 inline method_info* ABCVm::get_method(unsigned int m)
@@ -876,6 +700,13 @@ void ABCVm::add(method_info* th)
 		th->runtime_stack_push(new Undefined);
 	}
 
+}
+
+void ABCVm::typeOf(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED,"typeOf");
+	th->runtime_stack_pop();
+	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::isTypelate(method_info* th)
@@ -1175,6 +1006,22 @@ void ABCVm::ifNGE(method_info* th, int offset)
 {
 	LOG(CALLS,"ifNGE " << offset);
 	abort();
+}
+
+void ABCVm::ifNGT(method_info* th, int offset)
+{
+	LOG(CALLS,"ifNGT " << offset);
+	ISWFObject* obj2=th->runtime_stack_pop();
+	ISWFObject* obj1=th->runtime_stack_pop();
+
+	//Real comparision demanded to object
+	if(obj1->isGreater(obj2))
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+	else
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+
+//	obj2->decRef();
+//	obj1->decRef();
 }
 
 void ABCVm::ifNLT(method_info* th, int offset)
@@ -1738,13 +1585,16 @@ void ABCVm::newClass(method_info* th, int n)
 		th->vm->buildTrait(ret,&th->vm->classes[n].traits[i]);
 
 	//add Constructor the the class methods
-	LOG(CALLS,"Calling Class init");
 	method_info* construtor=&th->vm->methods[th->vm->instances[n].init];
 	th->vm->synt_method(construtor);
-	Function::as_function FP=(Function::as_function)ex->getPointerToFunction(construtor->f);
-	ret->constructor=new Function(FP);
+	if(construtor->f)
+	{
+		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(construtor->f);
+		ret->constructor=new Function(FP);
+	}
 	ret->class_index=n;
 
+	LOG(CALLS,"Calling Class init");
 	if(m->f)
 	{
 		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
@@ -1970,7 +1820,7 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 	if(!m->body)
 	{
 		string n=getString(m->name);
-		LOG(CALLS,"Method " << n << " should be intrinsic");
+		LOG(CALLS,"Method " << n << " should be intrinsic");;
 		return NULL;
 	}
 	stringstream code(m->body->code);
@@ -2172,6 +2022,52 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			
 				//Pop the stack, we are surely going to pop from the dynamic one
 				//ifNLT pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
+				break;
+			}
+			case 0x0e:
+			{
+				//ifngt
+				LOG(TRACE, "synt ifngt" );
+				//TODO: implement common data comparison
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				last_is_branch=true;
+				s24 t;
+				code >> t;
+
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifNGT"), th, constant);
+			
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifNGT pushed a pointer to integer
 				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
 				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
 				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
@@ -3214,6 +3110,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("decrement"), th);
 				break;
 			}
+			case 0x95:
+			{
+				//typeof
+				LOG(TRACE, "synt typeof" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("typeOf"), th);
+				break;
+			}
 			case 0x96:
 			{
 				//not
@@ -3409,8 +3314,6 @@ void ABCVm::Run(ABCVm* th)
 
 	th->registerFunctions();
 	th->registerClasses();
-	//Set register 0 to Global
-	//registers[0]=SWFObject(&Global);
 	th->Global.class_name="Global";
 	
 	//Take script entries and declare their traits

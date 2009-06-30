@@ -131,8 +131,8 @@ protected:
 	bool binded;
 	int ref_count;
 public:
-	ISWFObject* super;
 	IFunction* constructor;
+	int class_index;
 	std::string class_name;
 	virtual ~ISWFObject();
 	void incRef() {ref_count++;}

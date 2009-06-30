@@ -818,7 +818,8 @@ void DictionaryDefinable::define(ISWFObject* g)
 	}
 }
 
-ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1),super(NULL),constructor(NULL)
+ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1),constructor(NULL),
+	class_index(-1)
 {
 }
 

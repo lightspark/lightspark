@@ -167,6 +167,8 @@ ISWFObject* ASArray::getVariableByName(const std::string& name, bool& found)
 ISWFObject* ASObject::getVariableByName(const std::string& name, bool& found)
 {
 	ISWFObject* ret=ISWFObject::getVariableByName(name,found);
+	if(!found && super)
+		ret=super->getVariableByName(name,found);
 	if(!found && prototype)
 		ret=prototype->getVariableByName(name,found);
 
@@ -175,14 +177,14 @@ ISWFObject* ASObject::getVariableByName(const std::string& name, bool& found)
 
 void ASObject::_register()
 {
-	setVariableByName("constructor",new Function(constructor));
+//	setVariableByName("constructor",new Function(constructor));
 }
 
-ASFUNCTIONBODY(ASObject,constructor)
+/*ASFUNCTIONBODY(ASObject,constructor)
 {
 	LOG(NOT_IMPLEMENTED,"Called Object constructor");
 	return NULL;
-}
+}*/
 
 ASString::ASString()
 {

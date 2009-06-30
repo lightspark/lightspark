@@ -406,6 +406,7 @@ private:
 	static void construct(method_info* th, int n);
 	static void newFunction(method_info* th, int n);
 	static void setSuper(method_info* th, int n);
+	static void getSuper(method_info* th, int n);
 	static void pushScope(method_info* th);
 	static void pushNull(method_info* th);
 	static ISWFObject* pushUndefined(method_info* th);
@@ -416,6 +417,7 @@ private:
 	static void equals(method_info* th);
 	static void strictEquals(method_info* th);
 	static void _not(method_info* th);
+	static void negate(method_info* th);
 	static void pop(method_info* th);
 	static void _throw(method_info* th);
 	static void asTypelate(method_info* th);

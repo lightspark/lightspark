@@ -127,7 +127,11 @@ void SymbolClassTag::Render()
 //Be careful, arguments nubering starts from 1
 ISWFObject* ABCVm::argumentDumper(arguments* arg, uint32_t n)
 {
-	return arg->at(n-1);
+	//Really implement default values, we now fill with Undefined
+	if(n-1<arg->size())
+		return arg->at(n-1);
+	else
+		return new Undefined;
 }
 
 void ABCVm::registerFunctions()
@@ -213,6 +217,9 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"greaterThan",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::greaterThan);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"negate",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::negate);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::_not);
@@ -303,6 +310,9 @@ void ABCVm::registerFunctions()
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newCatch",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newCatch);
+
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"getSuper",module);
+	ex->addGlobalMapping(F,(void*)&ABCVm::getSuper);
 
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setSuper",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setSuper);
@@ -526,7 +536,7 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 				}
 				else*/
 				name=n->toString();
-				n->decRef();
+//				n->decRef();
 			}
 			else
 				name="<Invalid>";
@@ -754,7 +764,7 @@ ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* ar
 			Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
 			args->incRef();
 			FP(base,args);
-			args->decRef();
+//			args->decRef();
 		}
 		return base;
 	}
@@ -779,8 +789,8 @@ void ABCVm::divide(method_info* th)
 	Number num2(val2);
 	Number num1(val1);
 
-	val1->decRef();
-	val2->decRef();
+//	val1->decRef();
+//	val2->decRef();
 	th->runtime_stack_push(new Number(num1/num2));
 	LOG(CALLS,"divide "  << num1 << '/' << num2);
 }
@@ -819,8 +829,8 @@ void ABCVm::subtract(method_info* th)
 
 	Number num2(val2);
 	Number num1(val1);
-	val1->decRef();
-	val2->decRef();
+//	val1->decRef();
+//	val2->decRef();
 	th->runtime_stack_push(new Number(num1-num2));
 	LOG(CALLS,"subtract " << num1 << '-' << num2);
 }
@@ -832,8 +842,8 @@ void ABCVm::multiply(method_info* th)
 
 	Number num2(val2);
 	Number num1(val1);
-	val1->decRef();
-	val2->decRef();
+//	val1->decRef();
+//	val2->decRef();
 	th->runtime_stack_push(new Number(num1*num2));
 	LOG(CALLS,"multiply "  << num1 << '*' << num2);
 }
@@ -847,8 +857,8 @@ void ABCVm::add(method_info* th)
 	{
 		double num2=val2->toNumber();
 		double num1=val1->toNumber();
-		val1->decRef();
-		val2->decRef();
+//		val1->decRef();
+//		val2->decRef();
 		th->runtime_stack_push(new Number(num1+num2));
 		LOG(CALLS,"add " << num1 << '+' << num2);
 	}
@@ -863,8 +873,8 @@ void ABCVm::add(method_info* th)
 	{
 		double num2=val2->toNumber();
 		double num1=val1->toNumber();
-		val1->decRef();
-		val2->decRef();
+//		val1->decRef();
+//		val2->decRef();
 		th->runtime_stack_push(new Number(num1+num2));
 		LOG(CALLS,"add " << num1 << '+' << num2);
 	}
@@ -904,8 +914,8 @@ void ABCVm::nextName(method_info* th)
 	ISWFObject* obj=th->runtime_stack_pop();
 	th->runtime_stack_push(new ASString(obj->getNameAt(*i-1)));
 
-	i->decRef();
-	obj->decRef();
+//	i->decRef();
+//	obj->decRef();
 }
 
 void ABCVm::swap(method_info* th)
@@ -959,9 +969,31 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 	}
 
 	LOG(CALLS,"Constructing");
-	ISWFObject* ret=th->vm->buildNamedClass(name,new ASObject,&args);
-	LOG(CALLS,"End of constructing");
+	ASObject* ret=new ASObject;
 
+	ASObject* aso=dynamic_cast<ASObject*>(o);
+	ret->prototype=aso;
+	if(aso==NULL)
+		LOG(ERROR,"Class is not as ASObject");
+	
+	if(o->class_index!=-1)
+	{
+		LOG(CALLS,"Building instance traits");
+		for(int i=0;i<th->vm->instances[o->class_index].trait_count;i++)
+			th->vm->buildTrait(ret,&th->vm->instances[o->class_index].traits[i]);
+		LOG(CALLS,"Calling Instance init");
+		args.incRef();
+		o->constructor->call(ret,&args);
+//		args.decRef();
+	}
+	else
+	{
+		LOG(NOT_IMPLEMENTED,"Building a builtin class");
+//		ret->decRef();
+		ret=dynamic_cast<ASObject*>(o->clone());
+	}
+
+	LOG(CALLS,"End of constructing");
 	th->runtime_stack_push(ret);
 }
 
@@ -1008,7 +1040,7 @@ void ABCVm::callProperty(method_info* th, int n, int m)
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 		th->runtime_stack_push(new Undefined);
 	}
-	obj->decRef();
+//	obj->decRef();
 }
 
 void ABCVm::hasNext2(method_info* th, int n, int m)
@@ -1018,15 +1050,15 @@ void ABCVm::hasNext2(method_info* th, int n, int m)
 	int cur_index=th->locals[m]->toInt();
 	if(cur_index+1<=obj->numVariables())
 	{
-		th->locals[m]->decRef();
+//		th->locals[m]->decRef();
 		th->locals[m]=new Integer(cur_index+1);
 		th->runtime_stack_push(new Boolean(true));
 	}
 	else
 	{
-		obj->decRef();
+//		obj->decRef();
 		th->locals[n]=new Null;
-		th->locals[m]->decRef();
+//		th->locals[m]->decRef();
 		th->locals[m]=new Integer(0);
 		th->runtime_stack_push(new Boolean(false));
 	}
@@ -1082,8 +1114,8 @@ void ABCVm::callPropVoid(method_info* th, int n, int m)
 	}
 	else
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
-	args->decRef();
-	obj->decRef();
+//	args->decRef();
+//	obj->decRef();
 }
 
 void ABCVm::jump(method_info* th, int offset)
@@ -1097,7 +1129,7 @@ void ABCVm::ifTrue(method_info* th, int offset)
 
 	ISWFObject* obj1=th->runtime_stack_pop();
 	th->runtime_stack_push((ISWFObject*)new uintptr_t(Boolean_concrete(obj1)));
-	obj1->decRef();
+//	obj1->decRef();
 }
 
 void ABCVm::ifFalse(method_info* th, int offset)
@@ -1106,7 +1138,7 @@ void ABCVm::ifFalse(method_info* th, int offset)
 
 	ISWFObject* obj1=th->runtime_stack_pop();
 	th->runtime_stack_push((ISWFObject*)new uintptr_t(!Boolean_concrete(obj1)));
-	obj1->decRef();
+//	obj1->decRef();
 }
 
 //We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
@@ -1165,8 +1197,8 @@ void ABCVm::ifNLT(method_info* th, int offset)
 	else
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
 
-	obj2->decRef();
-	obj1->decRef();
+//	obj2->decRef();
+//	obj1->decRef();
 }
 
 void ABCVm::ifLT(method_info* th, int offset)
@@ -1181,8 +1213,8 @@ void ABCVm::ifLT(method_info* th, int offset)
 	else
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
 
-	obj2->decRef();
-	obj1->decRef();
+//	obj2->decRef();
+//	obj1->decRef();
 }
 
 void ABCVm::ifNe(method_info* th, int offset)
@@ -1278,6 +1310,21 @@ void ABCVm::newCatch(method_info* th, int n)
 	LOG(NOT_IMPLEMENTED,"newCatch " << n);
 }
 
+void ABCVm::getSuper(method_info* th, int n)
+{
+	string name=th->vm->getMultinameString(n); 
+
+	LOG(NOT_IMPLEMENTED,"getSuper " << name);
+
+	ISWFObject* obj=th->runtime_stack_pop();
+	bool found;
+	ISWFObject* ret=obj->getVariableByName(name,found);
+	if(found)
+		th->runtime_stack_push(ret);
+	else
+		th->runtime_stack_push(new Undefined);
+}
+
 void ABCVm::setSuper(method_info* th, int n)
 {
 	ISWFObject* value=th->runtime_stack_pop();
@@ -1304,7 +1351,7 @@ void ABCVm::newObject(method_info* th, int n)
 		ISWFObject* value=th->runtime_stack_pop();
 		ISWFObject* name=th->runtime_stack_pop();
 		ret->setVariableByName(name->toString(),value);
-		name->decRef();
+//		name->decRef();
 	}
 
 	th->runtime_stack_push(ret);
@@ -1365,6 +1412,11 @@ void ABCVm::coerce_s(method_info* th)
 void ABCVm::pop(method_info* th)
 {
 	LOG(CALLS, "pop: DONE" );
+}
+
+void ABCVm::negate(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED, "negate" );
 }
 
 void ABCVm::_not(method_info* th)
@@ -1483,13 +1535,47 @@ void ABCVm::construct(method_info* th, int n)
 
 void ABCVm::constructSuper(method_info* th, int n)
 {
-	LOG(NOT_IMPLEMENTED, "constructSuper " << n );
-	if(n!=0)
+	LOG(CALLS, "constructSuper " << n);
+	arguments args;
+	args.resize(n);
+	for(int i=0;i<n;i++)
+		args.at(n-i-1)=th->runtime_stack_pop();
+
+	ASObject* obj=dynamic_cast<ASObject*>(th->runtime_stack_pop());
+
+	if(obj==NULL)
 	{
-		LOG(ERROR,"super arguments");
+		LOG(CALLS,"Not an ASObject. Aborting");
 		abort();
 	}
-	ISWFObject* obj=th->runtime_stack_pop();
+
+	if(obj->prototype==NULL)
+	{
+		LOG(CALLS,"No prototype. Returning");
+		return;
+	}
+
+	//The prototype of the new super instance is the super of the prototype
+	ASObject* super=obj->prototype->super;
+	if(super->class_index!=-1)
+	{
+		obj->super=new ASObject;
+		obj->super->prototype=super;
+
+		string name=th->vm->getMultinameString(th->vm->instances[super->class_index].name,th);
+		LOG(CALLS,"Constructing " << name);
+		LOG(CALLS,"Building instance traits");
+		for(int i=0;i<th->vm->instances[super->class_index].trait_count;i++)
+			th->vm->buildTrait(obj->super,&th->vm->instances[super->class_index].traits[i]);
+		LOG(CALLS,"Calling Instance init");
+		//args.incRef();
+		super->constructor->call(obj->super,&args);
+		//args.decRef();
+
+		LOG(CALLS,"End of constructing");
+	}
+	else
+		LOG(CALLS,"No super defined");
 }
 
 void ABCVm::setProperty(method_info* th, int n)
@@ -1650,16 +1736,23 @@ void ABCVm::newArray(method_info* th, int n)
 void ABCVm::newClass(method_info* th, int n)
 {
 	LOG(CALLS, "newClass " << n );
-	ISWFObject* ret=th->runtime_stack_pop()->clone();
+	ASObject* ret=new ASObject;
+	ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
+
 	method_info* m=&th->vm->methods[th->vm->classes[n].cinit];
 	th->vm->synt_method(m);
 	LOG(CALLS,"Building class traits");
 	for(int i=0;i<th->vm->classes[n].trait_count;i++)
 		th->vm->buildTrait(ret,&th->vm->classes[n].traits[i]);
 
-	//TODO: should add Constructor the the class methods
+	//add Constructor the the class methods
 	LOG(CALLS,"Calling Class init");
-	ret->class_name="newclass";
+	method_info* construtor=&th->vm->methods[th->vm->instances[n].init];
+	th->vm->synt_method(construtor);
+	Function::as_function FP=(Function::as_function)ex->getPointerToFunction(construtor->f);
+	ret->constructor=new Function(FP);
+	ret->class_index=n;
+
 	if(m->f)
 	{
 		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
@@ -1993,6 +2086,18 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("throw"), th);
 				Builder.CreateRetVoid();
+				break;
+			}
+			case 0x04:
+			{
+				//getsuper
+				LOG(TRACE, "synt getsuper" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("getSuper"), th, constant);
 				break;
 			}
 			case 0x05:
@@ -3088,6 +3193,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				syncStacks(ex,Builder,jitted,static_stack,m);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("asTypelate"), th);
+				break;
+			}
+			case 0x90:
+			{
+				//negate
+				LOG(TRACE, "synt negate" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("negate"), th);
 				break;
 			}
 			case 0x91:

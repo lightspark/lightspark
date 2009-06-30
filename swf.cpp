@@ -896,7 +896,7 @@ void RenderThread::draw(Frame* f)
 {
 	cur_frame=f;
 
-	sys->cur_input_thread->broadcastEvent("enterFrame");
+//	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
 	sem_wait(&end_render);
 	usleep(1000000/sys->frame_rate);

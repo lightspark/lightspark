@@ -49,10 +49,11 @@ class ASObject: public ISWFObject
 {
 public:
 	ASObject* prototype;
-	ASObject():debug_id(0),prototype(NULL){}
+	ASObject* super;
+	ASObject():debug_id(0),prototype(NULL),super(NULL){}
 	void _register();
 	SWFOBJECT_TYPE getObjectType() const { return T_OBJECT; }
-	ASFUNCTION(constructor);
+	//ASFUNCTION(constructor);
 	ISWFObject* clone()
 	{
 		return new ASObject(*this);

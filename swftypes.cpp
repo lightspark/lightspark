@@ -799,7 +799,26 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	return stream;
 }
 
-ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1),super(NULL)
+void DictionaryDefinable::define(ISWFObject* g)
+{
+	DictionaryTag* t=sys->dictionaryLookup(dict_id);
+	ISWFObject* o=dynamic_cast<ISWFObject*>(t);
+	if(o==NULL)
+	{
+		//Should not happen in real live
+		ISWFObject* ret=new ASObject;
+		g->setVariableByName(p->Name,new ASObject);
+	}
+	else
+	{
+		ISWFObject* ret=o->clone();
+		ret->_register();
+		p->setWrapped(ret);
+		g->setVariableByName(p->Name,ret);
+	}
+}
+
+ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1),super(NULL),constructor(NULL)
 {
 }
 

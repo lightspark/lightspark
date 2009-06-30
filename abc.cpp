@@ -80,21 +80,7 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
 	Names.resize(NumSymbols);
 
 	for(int i=0;i<NumSymbols;i++)
-	{
 		in >> Tags[i] >> Names[i];
-		
-		pair < map<int, bind_candidates>::iterator, map<int, bind_candidates>::iterator> range=
-			sys->bind_canditates_map.equal_range(Tags[i]);
-
-		if(range.first==range.second)
-			LOG(NOT_IMPLEMENTED,"SymbolClass refers to not named object " << Names[i] << " id " << Tags[i]);
-		for(range.first;range.first!=range.second;range.first++)
-		{
-			to_bind.insert(*range.first);
-		}
-	}
-
-	sys->bind_canditates_map.clear();
 }
 
 int SymbolClassTag::getDepth() const
@@ -112,11 +98,9 @@ void SymbolClassTag::Render()
 
 	for(int i=0;i<NumSymbols;i++)
 	{
-		LOG(TRACE,Tags[i] << ' ' << Names[i]);
+		LOG(CALLS,Tags[i] << ' ' << Names[i]);
 		if(Tags[i]==0)
-		{
-			sys->currentVm->addEvent(NULL,new BindClassEvent(sys,NULL,Names[i],"",NULL));
-		}
+			sys->currentVm->addEvent(NULL,new BindClassEvent(sys,Names[i]));
 		else
 		{
 			DictionaryTag* t=sys->dictionaryLookup(Tags[i]);
@@ -127,28 +111,7 @@ void SymbolClassTag::Render()
 				abort();
 			}
 			else
-			{
-				pair < map<int, bind_candidates>::iterator, map<int, bind_candidates>::iterator> range=
-					to_bind.equal_range(Tags[i]);
-
-				if(range.first==range.second)
-				{
-					ASObject* b2=dynamic_cast<ASObject*>(base->clone());
-					if(b2==NULL)
-					{
-						LOG(ERROR,"WTF?");
-						abort();
-					}
-					sys->currentVm->addEvent(NULL, new BindClassEvent(b2, NULL, Names[i], "", NULL));
-				}
-				for(range.first;range.first!=range.second;range.first++)
-				{
-					ASObject* b2=dynamic_cast<ASObject*>(base->clone());
-					sys->currentVm->addEvent(NULL, new BindClassEvent(b2, 
-						range.first->second.parent, Names[i], range.first->second.obj_name, 
-						range.first->second.placed_by));
-				}
-			}
+				sys->currentVm->addEvent(NULL,new BindClassEvent(base,Names[i]));
 		}
 	}
 	//We stop execution until execution engine catches up
@@ -677,11 +640,7 @@ void ABCVm::handleEvent()
 				args.incRef();
 				args.push(new Null);
 				ISWFObject* o=buildNamedClass(ev->class_name,ev->base,&args);
-				if(ev->parent)
-				{
-					ev->parent->setVariableByName(ev->obj_name,o);
-					ev->placed_by->setWrapped(o);
-				}
+				LOG(CALLS,"End of binding of " << ev->class_name);
 
 				break;
 			}
@@ -727,7 +686,7 @@ ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* ar
 {
 	map<string,int>::iterator it=valid_classes.find(s);
 	if(it!=valid_classes.end())
-		LOG(CALLS,"buildNameClass: Class " << s << " found")
+		LOG(CALLS,"buildNamedClass: Class " << s << " found")
 	else
 	{
 		LOG(ERROR,"Class " << s << " not found");
@@ -968,7 +927,8 @@ void ABCVm::newActivation(method_info* th)
 
 void ABCVm::popScope(method_info* th)
 {
-	LOG(NOT_IMPLEMENTED,"popScope");
+	LOG(CALLS,"popScope");
+	th->scope_stack.pop_back();
 }
 
 void ABCVm::constructProp(method_info* th, int n, int m)
@@ -993,7 +953,7 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 	{
 		LOG(CALLS,"Deferred definition of property " << name);
 		Definable* d=dynamic_cast<Definable*>(o);
-		d->define(&th->vm->Global);
+		d->define(obj);
 		o=obj->getVariableByName(name,found);
 		LOG(CALLS,"End of deferred definition of property " << name);
 	}
@@ -1471,7 +1431,7 @@ void ABCVm::pushNull(method_info* th)
 void ABCVm::pushScope(method_info* th)
 {
 	ISWFObject* t=th->runtime_stack_pop();
-	LOG(CALLS, "pushScope: DONE " << t );
+	LOG(CALLS, "pushScope " << t );
 	th->scope_stack.push_back(t);
 }
 
@@ -1524,6 +1484,12 @@ void ABCVm::construct(method_info* th, int n)
 void ABCVm::constructSuper(method_info* th, int n)
 {
 	LOG(NOT_IMPLEMENTED, "constructSuper " << n );
+	if(n!=0)
+	{
+		LOG(ERROR,"super arguments");
+		abort();
+	}
+	ISWFObject* obj=th->runtime_stack_pop();
 }
 
 void ABCVm::setProperty(method_info* th, int n)
@@ -1736,7 +1702,7 @@ void ABCVm::getLex(method_info* th, int n)
 			{
 				LOG(CALLS,"Deferred definition of property " << name);
 				Definable* d=dynamic_cast<Definable*>(o);
-				d->define(&th->vm->Global);
+				d->define(*it);
 				o=(*it)->getVariableByName(name,found);
 			}
 			th->runtime_stack_push(o);
@@ -1997,10 +1963,10 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			//A new block starts, the last instruction should have been a branch?
 			if(!last_is_branch)
 			{
-				LOG(CALLS, "Last instruction before a new block was not a branch.");
+				LOG(TRACE, "Last instruction before a new block was not a branch.");
 				Builder.CreateBr(it->second);
 			}
-			LOG(CALLS,"Starting block at "<<int(code.tellg())-1);
+			LOG(TRACE,"Starting block at "<<int(code.tellg())-1);
 			Builder.SetInsertPoint(it->second);
 			last_is_branch=false;
 		}
@@ -3358,6 +3324,10 @@ void ABCVm::Run(ABCVm* th)
 		for(int j=0;j<th->scripts[i].trait_count;j++)
 			th->buildTrait(&th->Global,&th->scripts[i].traits[j],sinit);
 	}
+	//Before the entry point we run early events
+	while(sem_trywait(&th->sem_event_count)==0)
+		th->handleEvent();
+	LOG(CALLS,"END OF EARLY");
 	//The last script entry has to be run
 	LOG(CALLS, "Last script (Entry Point)");
 	method_info* m=th->get_method(th->scripts[i].init);
@@ -3406,7 +3376,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 		//	LOG(CALLS,"Registering trait " << name);
 		//	obj->setVariableByName(name, buildClass(t->classi));
 			if(deferred_initialization)
-				obj->setVariableByName(name, new Definable(deferred_initialization));
+				obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
 			else
 				obj->setVariableByName(name, new Undefined);
 			break;
@@ -3447,7 +3417,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 		{
 			//TODO: Not so const right now
 			if(deferred_initialization)
-				obj->setVariableByName(name, new Definable(deferred_initialization));
+				obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
 			else
 				obj->setVariableByName(name, new Undefined);
 			break;
@@ -3504,7 +3474,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 					//		buildNamedClass(new ASObject,getMultinameString(t->type_name)));
 					//ret->_register();
 					if(deferred_initialization)
-						obj->setVariableByName(name, new Definable(deferred_initialization));
+						obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
 					else
 					{
 						LOG(CALLS,"Not deferred");

@@ -49,12 +49,9 @@ friend class ABCVm;
 private:
 	ASObject* base;
 	std::string class_name;
-	ISWFObject* parent;
-	std::string obj_name;
-	PlaceObject2Tag* placed_by;
 public:
-	BindClassEvent(ASObject* b, ISWFObject* p, const std::string& c, const std::string& n, PlaceObject2Tag* t):
-		Event("bindClass"),base(b),class_name(c),parent(p),obj_name(n),placed_by(t){}
+	BindClassEvent(ASObject* b, const std::string& c):
+		Event("bindClass"),base(b),class_name(c){}
 	EVENT_TYPE getEventType(){ return BIND_CLASS;}
 };
 

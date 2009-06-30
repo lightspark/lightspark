@@ -257,6 +257,7 @@ private:
 	Number _scalex;
 
 	ISWFObject* wrapped;
+	ISWFObject* parent;
 
 	UB PlaceFlagHasClipAction;
 	UB PlaceFlagHasClipDepth;
@@ -271,11 +272,11 @@ private:
 	MATRIX Matrix;
 	CXFORMWITHALPHA ColorTransform;
 	UI16 Ratio;
-	STRING Name;
 	UI16 ClipDepth;
 	CLIPACTIONS ClipActions;
 
 public:
+	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
 	void Render( );
 	int getDepth() const { return Depth; }

@@ -1306,6 +1306,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	in >> Depth;
 	list < IDisplayListElem*>::iterator it=sys->parsingDisplayList->begin();
 	PlaceObject2Tag* already_on_list=NULL;
+	parent=sys->parsingTarget;
 	for(it;it!=sys->parsingDisplayList->end();it++)
 	{
 		if((*it)->getDepth()==Depth)
@@ -1345,17 +1346,21 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
 		if(!(PlaceFlagMove))
 		{
-			sys->bind_canditates_map.insert(make_pair(CharacterId,bind_candidates(Name,sys->parsingTarget,this)));
-
-			DictionaryTag* d=sys->dictionaryLookup(CharacterId);
-			ISWFObject* w=dynamic_cast<ISWFObject*>(d);
-			if(w==NULL)
+			/*DictionaryTag* t=sys->dictionaryLookup(CharacterId);
+			if(t==NULL)
 			{
-				LOG(NOT_IMPLEMENTED,"Placing an unsupported object "<<Name);
-				w=new ASObject;
+				LOG(ERROR,"Could not find Character in dictionary");
+				abort();
 			}
-			setWrapped(w);
-			sys->parsingTarget->setVariableByName(Name,w);
+			
+			ISWFObject* t2=dynamic_cast<ISWFObject*>(t);
+
+			if(t2==NULL)
+				sys->parsingTarget->setVariableByName(Name,new ASObject);
+			else
+				sys->parsingTarget->setVariableByName(Name,t2->clone());*/
+			sys->parsingTarget->setVariableByName(Name,new DictionaryDefinable(CharacterId, this));
+
 		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");
@@ -1422,15 +1427,38 @@ void PlaceObject2Tag::Render()
 	if(ClipDepth!=0)
 		return;
 
-	IRenderObject* it=dynamic_cast<IRenderObject*>(wrapped);
-	if(it==NULL)
+	if(wrapped)
+		LOG(CALLS,"Rendering " << Name << " " << wrapped->class_name);
+	if(wrapped==NULL && Name.size()!=0)
 	{
-		DictionaryTag* it2=sys->dictionaryLookup(CharacterId);
-		it=dynamic_cast<IRenderObject*>(it2);
-	}
-	if(it==NULL)
-		LOG(ERROR,"Could not find Character in dictionary");
+		//Our first execution, try to load our dictionary object
+		DictionaryTag* t=sys->dictionaryLookup(CharacterId);
+		if(t==NULL)
+		{
+			LOG(ERROR,"Could not find Character in dictionary");
+			abort();
+		}
+		
+		ISWFObject* t2=dynamic_cast<ISWFObject*>(t);
 
+		if(t2==NULL)
+			Name="";
+		else
+		{
+			wrapped=t2->clone();
+			parent->setVariableByName(Name,wrapped);
+		}
+	}
+
+	IRenderObject* it;
+	if(wrapped)
+	{
+		it=dynamic_cast<IRenderObject*>(wrapped);
+		if(it==NULL)
+			it=dynamic_cast<IRenderObject*>(sys->dictionaryLookup(CharacterId));
+	}
+	else
+		it=dynamic_cast<IRenderObject*>(sys->dictionaryLookup(CharacterId));
 	float matrix[16];
 	MATRIX m2(Matrix);
 	m2.ScaleX*=_scalex/100.0f;

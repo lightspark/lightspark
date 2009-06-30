@@ -86,6 +86,7 @@ int main(int argc, char* argv[])
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();
 
+	LOG(CALLS,"sys 0x" << sys);
 	while(1)
 	{
 		sys->waitToRun();

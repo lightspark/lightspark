@@ -479,7 +479,6 @@ private:
 	UI16 NumSymbols;
 	std::vector<UI16> Tags;
 	std::vector<STRING> Names;
-	std::multimap<int, bind_candidates> to_bind;
 	bool done;
 public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);

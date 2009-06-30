@@ -132,6 +132,7 @@ protected:
 	int ref_count;
 public:
 	ISWFObject* super;
+	IFunction* constructor;
 	std::string class_name;
 	virtual ~ISWFObject();
 	void incRef() {ref_count++;}
@@ -262,16 +263,34 @@ private:
 	bool bound;
 };
 
-//Internal object used to store traits declared in scripts, but not yet valid
+//Internal objects used to store traits declared in scripts and object placed, but not yet valid
 class Definable : public ISWFObject
+{
+public:
+	SWFOBJECT_TYPE getObjectType() const {return T_DEFINABLE;}
+	virtual void define(ISWFObject* g)=0;
+};
+
+class ScriptDefinable: public Definable
 {
 private:
 	Function::as_function f;
 public:
-	Definable(Function::as_function _f):f(_f){}
+	ScriptDefinable(Function::as_function _f):f(_f){}
 	//The global object will be passed from the calling context
 	void define(ISWFObject* g){ f(g,NULL); }
-	SWFOBJECT_TYPE getObjectType() const {return T_DEFINABLE;}
+};
+
+class PlaceObject2Tag;
+
+class DictionaryDefinable: public Definable
+{
+private:
+	int dict_id;
+	PlaceObject2Tag* p;
+public:
+	DictionaryDefinable(int d, PlaceObject2Tag* _p):dict_id(d),p(_p){}
+	void define(ISWFObject* g);
 };
 
 class FLOAT 

@@ -1,0 +1,6 @@
+Debian package TODO list:
+ - package the mozilla plugin:
+    - use alternatives (see swfdec debian package)
+    - use Xb-Npp (see swfdec ubuntu patch)
+    - Add Provide/Replace/Conflict: swf-player ?
+    - see swfdec shlibs.local

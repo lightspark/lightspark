@@ -21,4 +21,5 @@ Credits:
 **************************************************************************/
 
 char *textFileRead(const char *fn);
+char *dataFileRead(const char *fn);
 int textFileWrite(const char *fn, char *s);

@@ -302,11 +302,11 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("Math",new Math);
 	Global.setVariableByName("Date",new ASObject);
 
-	Global.setVariableByName("flash.display.MovieClip",new ASMovieClip);
+	Global.setVariableByName("flash.display.MovieClip",new MovieClip);
 	Global.setVariableByName("flash.display.DisplayObject",new ASObject);
 	Global.setVariableByName("flash.display.Loader",new Loader);
 	Global.setVariableByName("flash.display.SimpleButton",new ASObject);
-	Global.setVariableByName("flash.display.InteractiveObject",new ASObject);
+	Global.setVariableByName("flash.display.InteractiveObject",new ASObject),
 	Global.setVariableByName("flash.display.DisplayObjectContainer",new ASObject);
 	Global.setVariableByName("flash.display.Sprite",new ASObject);
 
@@ -483,7 +483,7 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
 void ABCVm::handleEvent()
 {
 	sem_wait(&mutex);
-	pair<InteractiveObject*,Event*> e=events_queue.front();
+	pair<EventDispatcher*,Event*> e=events_queue.front();
 	events_queue.pop_front();
 	if(e.first)
 		e.first->handleEvent(e.second);
@@ -520,10 +520,10 @@ void ABCVm::handleEvent()
 	sem_post(&mutex);
 }
 
-void ABCVm::addEvent(InteractiveObject* obj ,Event* ev)
+void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 {
 	sem_wait(&mutex);
-	events_queue.push_back(pair<InteractiveObject*,Event*>(obj, ev));
+	events_queue.push_back(pair<EventDispatcher*,Event*>(obj, ev));
 	sem_post(&sem_event_count);
 	sem_post(&mutex);
 }

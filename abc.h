@@ -464,13 +464,13 @@ private:
 
 	//Event handling
 	bool shutdown;
-	std::deque<std::pair<InteractiveObject*,Event*> > events_queue;
+	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
 public:
 	ABCVm(SystemState* s,std::istream& in);
 	static void Run(ABCVm* th);
 	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
-	void addEvent(InteractiveObject*,Event*);
+	void addEvent(EventDispatcher*,Event*);
 };
 
 class DoABCTag: public DisplayListTag

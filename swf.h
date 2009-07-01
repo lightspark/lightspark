@@ -29,6 +29,7 @@
 #include "frame.h"
 #include "vm.h"
 #include "asobjects.h"
+#include "flashdisplay.h"
 
 #include <X11/Xlib.h>
 #include <GL/glx.h>
@@ -36,7 +37,7 @@
 class DisplayListTag;
 class DictionaryTag;
 class PlaceObject2Tag;
-class InteractiveObject;
+class EventDispatcher;
 class ABCVm;
 class InputThread;
 class RenderThread;
@@ -70,7 +71,7 @@ struct fps_profiling
 	fps_profiling():render_time(0),action_time(0),cache_time(0),fps(0),event_count(0),event_time(0){}
 };
 
-class SystemState:public ASMovieClip
+class SystemState:public MovieClip
 {
 private:
 
@@ -114,7 +115,7 @@ public:
 	ISWFObject* parsingTarget;
 
 	//Used only in RenderThread context
-	ASMovieClip* currentClip;
+	MovieClip* currentClip;
 	ExecutionContext* execContext;
 
 	SystemState();
@@ -182,14 +183,14 @@ private:
 	static void* sdl_worker(InputThread*);
 	static void* npapi_worker(InputThread*);
 
-	std::multimap< std::string, InteractiveObject* > listeners;
+	std::multimap< std::string, EventDispatcher* > listeners;
 	sem_t sem_listeners;
 
 public:
 	InputThread(SystemState* s,ENGINE e, void* param=NULL);
 	~InputThread();
 	void wait();
-	void addListener(const std::string& type, InteractiveObject* tag);
+	void addListener(const std::string& type, EventDispatcher* tag);
 	void broadcastEvent(const std::string& type);
 };
 

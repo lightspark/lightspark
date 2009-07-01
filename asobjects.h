@@ -192,52 +192,6 @@ public:
 	bool isLess(const ISWFObject* o) const;
 };
 
-class ASMovieClip: public ASObject, public IRenderObject, public InteractiveObject
-{
-private:
-	static bool list_orderer(const IDisplayListElem* a, int d);
-protected:
-	Integer _x;
-	Integer _y;
-	Integer _visible;
-	Integer _width;
-	Integer _height;
-	Integer _framesloaded;
-	Integer _totalframes;
-	Number rotation;
-	std::list < IDisplayListElem* > dynamicDisplayList;
-	std::list < IDisplayListElem* > displayList;
-public:
-	//Frames mutex (shared with drawing thread)
-	sem_t sem_frames;
-	std::list<Frame> frames;
-	RunState state;
-
-public:
-	int displayListLimit;
-
-	ASMovieClip();
-	ASFUNCTION(moveTo);
-	ASFUNCTION(addEventListener);
-	ASFUNCTION(lineStyle);
-	ASFUNCTION(lineTo);
-	ASFUNCTION(swapDepths);
-	ASFUNCTION(createEmptyMovieClip);
-
-	virtual void addToDisplayList(IDisplayListElem* r);
-	virtual void handleEvent(Event*);
-
-	//ASObject interface
-	void _register();
-
-	//IRenderObject interface
-	void Render();
-	ISWFObject* clone()
-	{
-		return new ASMovieClip(*this);
-	}
-};
-
 class ASMovieClipLoader: public ASObject
 {
 public:

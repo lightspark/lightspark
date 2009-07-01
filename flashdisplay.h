@@ -17,9 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "abc.h"
+#ifndef _FLASH_DISPLAY_H
+#define _FLASH_DISPLAY_H
+
 #include "swftypes.h"
-#include "asobjects.h"
+#include "flashevents.h"
 
 class LoaderInfo: public ASObject
 {
@@ -34,7 +36,7 @@ public:
 	ASFUNCTION(addEventListener);
 };
 
-class Loader: public ASObject
+class Loader: public EventDispatcher
 {
 public:
 	Loader()
@@ -42,5 +44,50 @@ public:
 		constructor=new Function(_constructor);
 	}
 	ASFUNCTION(_constructor);
-	ASFUNCTION(addEventListener);
 };
+
+class MovieClip: public EventDispatcher, public IRenderObject
+{
+private:
+	static bool list_orderer(const IDisplayListElem* a, int d);
+protected:
+	Integer _x;
+	Integer _y;
+	Integer _visible;
+	Integer _width;
+	Integer _height;
+	Integer _framesloaded;
+	Integer _totalframes;
+	Number rotation;
+	std::list < IDisplayListElem* > dynamicDisplayList;
+	std::list < IDisplayListElem* > displayList;
+public:
+	//Frames mutex (shared with drawing thread)
+	sem_t sem_frames;
+	std::list<Frame> frames;
+	RunState state;
+
+public:
+	int displayListLimit;
+
+	MovieClip();
+	ASFUNCTION(moveTo);
+	ASFUNCTION(lineStyle);
+	ASFUNCTION(lineTo);
+	ASFUNCTION(swapDepths);
+	ASFUNCTION(createEmptyMovieClip);
+
+	virtual void addToDisplayList(IDisplayListElem* r);
+
+	//ASObject interface
+	void _register();
+
+	//IRenderObject interface
+	void Render();
+	ISWFObject* clone()
+	{
+		return new MovieClip(*this);
+	}
+};
+
+#endif

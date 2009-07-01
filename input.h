@@ -21,19 +21,7 @@
 #define INPUT_H
 #include <map>
 #include <string>
-#include "swftypes.h" 
 
-class Event;
 
-class InteractiveObject	
-{
-protected:
-	std::map<std::string,IFunction*> handlers;
-public:
-	float id;
-	InteractiveObject();
-	virtual void handleEvent(Event* e)=0;
-	void setId(float i){id=i;};
-};
 
 #endif

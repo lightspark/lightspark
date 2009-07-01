@@ -27,6 +27,7 @@
 #include "input.h"
 #include "geometry.h"
 #include "asobjects.h"
+#include "flashdisplay.h"
 #include <GL/gl.h>
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,END_TAG};
@@ -320,7 +321,7 @@ public:
 
 class BUTTONCONDACTION;
 
-class DefineButton2Tag: public DictionaryTag, public InteractiveObject, public IRenderObject
+class DefineButton2Tag: public DictionaryTag, public EventDispatcher, public IRenderObject
 {
 private:
 	UI16 ButtonId;
@@ -435,7 +436,7 @@ public:
 	void printInfo(int t=0);
 };
 
-class DefineSpriteTag: public DictionaryTag, public ASMovieClip
+class DefineSpriteTag: public DictionaryTag, public MovieClip
 {
 private:
 	UI16 SpriteID;

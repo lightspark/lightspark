@@ -32,6 +32,7 @@
 #include "streams.h"
 #include "asobjects.h"
 #include "textfile.h"
+#include "abc.h"
 
 #include <GL/gl.h>
 #include <GL/glext.h>
@@ -79,7 +80,7 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	sem_init(&mutex,0,1);
 
-	//Register global functions
+/*	//Register global functions
 	setVariableByName("parseInt",new Function(parseInt));
 
 	//Register default objects
@@ -100,7 +101,7 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	ISWFObject* xml(new ASXML);
 	setVariableByName("XML",xml);
 
-	setVariableByName("",this);
+	setVariableByName("",this);*/
 
 	//This should come from DisplayObject
 	LoaderInfo* loaderInfo=new LoaderInfo();
@@ -279,12 +280,12 @@ void* InputThread::sdl_worker(InputThread* th)
 				int index=th->listeners.count("")*selected;
 				
 
-				pair< map<string, InteractiveObject*>::iterator,
-					map<string, InteractiveObject*>::iterator > range=
+				pair< map<string, EventDispatcher*>::iterator,
+					map<string, EventDispatcher*>::iterator > range=
 					th->listeners.equal_range("");
 
 				//Get the selected item
-				map<string, InteractiveObject*>::iterator it=range.first;
+				map<string, EventDispatcher*>::iterator it=range.first;
 				while(index)
 				{
 					it++;
@@ -309,19 +310,19 @@ void* InputThread::sdl_worker(InputThread* th)
 	}
 }
 
-void InputThread::addListener(const string& t, InteractiveObject* ob)
+void InputThread::addListener(const string& t, EventDispatcher* ob)
 {
 	sem_wait(&sem_listeners);
 	LOG(TRACE,"Adding listener to " << t);
 
 	//the empty string is the *any* event
-	pair< map<string, InteractiveObject*>::iterator,map<string, InteractiveObject*>::iterator > range=
+	pair< map<string, EventDispatcher*>::iterator,map<string, EventDispatcher*>::iterator > range=
 		listeners.equal_range("");
 
 
 	bool already_known=false;
 
-	map<string,InteractiveObject*>::iterator it=range.first;
+	map<string,EventDispatcher*>::iterator it=range.first;
 	int count=0;
 	for(it;it!=range.second;it++)
 	{
@@ -378,7 +379,7 @@ void InputThread::broadcastEvent(const string& t)
 {
 	sem_wait(&sem_listeners);
 
-	pair< map<string,InteractiveObject*>::iterator,map<string, InteractiveObject*>::iterator > range=
+	pair< map<string,EventDispatcher*>::iterator,map<string, EventDispatcher*>::iterator > range=
 		listeners.equal_range(t);
 
 	for(range.first;range.first!=range.second;range.first++)
@@ -985,7 +986,7 @@ void SystemState::addToDictionary(DictionaryTag* r)
 void SystemState::addToDisplayList(IDisplayListElem* t)
 {
 	sem_wait(&mutex);
-	ASMovieClip::addToDisplayList(t);
+	MovieClip::addToDisplayList(t);
 	sem_post(&mutex);
 }
 

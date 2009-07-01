@@ -17,6 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#ifndef _FLASH_EVENTS_H
+#define _FLASH_EVENTS_H
+
 #include "asobjects.h"
 #include <string>
 #include <semaphore.h>
@@ -41,6 +44,18 @@ public:
 	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
 };
 
+class EventDispatcher: public ASObject	
+{
+private:
+	std::map<std::string,IFunction*> handlers;
+public:
+	float id;
+	EventDispatcher();
+	void handleEvent(Event* e);
+	void setId(float i){id=i;}
+
+	ASFUNCTION(addEventListener);
+};
 
 //Internal events from now on, used to pass data to the execution thread
 class BindClassEvent: public Event
@@ -75,3 +90,5 @@ public:
 		sem_post(s);
 	}
 };
+
+#endif

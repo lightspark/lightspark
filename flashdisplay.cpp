@@ -19,7 +19,21 @@
 
 #include "flashdisplay.h"
 
-void LoaderInfo::constructor()
+ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
-	setVariableByName("parameters",&parameters);
+//	setVariableByName("parameters",&parameters);
+	obj->setVariableByName("addEventListener",new Function(addEventListener));
 }
+
+ASFUNCTIONBODY(LoaderInfo,addEventListener)
+{
+	LOG(NOT_IMPLEMENTED,"Addevent on loader");
+}
+
+ASFUNCTIONBODY(Loader,_constructor)
+{
+	ISWFObject* ret=obj->setVariableByName("contentLoaderInfo",new LoaderInfo);
+	ret->bind();
+	ret->constructor->call(ret,NULL);
+}
+

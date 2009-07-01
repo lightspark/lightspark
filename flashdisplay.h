@@ -24,15 +24,23 @@
 class LoaderInfo: public ASObject
 {
 public:
-	LoaderInfo(bool build)
+	LoaderInfo()
 	{
-		debug_id=0x12345678;
-		parameters.debug_id=0x1111;
-		if(build)
-		{
-			constructor();
-		}
+		constructor=new Function(_constructor);
 	}
-	void constructor();
 	ASObject parameters;
+
+	ASFUNCTION(_constructor);
+	ASFUNCTION(addEventListener);
+};
+
+class Loader: public ASObject
+{
+public:
+	Loader()
+	{
+		constructor=new Function(_constructor);
+	}
+	ASFUNCTION(_constructor);
+	ASFUNCTION(addEventListener);
 };

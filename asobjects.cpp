@@ -169,6 +169,7 @@ ISWFObject* ASObject::getVariableByName(const std::string& name, bool& found)
 	ISWFObject* ret=ISWFObject::getVariableByName(name,found);
 	if(!found && super)
 		ret=super->getVariableByName(name,found);
+
 	if(!found && prototype)
 		ret=prototype->getVariableByName(name,found);
 

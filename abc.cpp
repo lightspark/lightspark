@@ -32,6 +32,7 @@
 #include <sstream>
 #include "swf.h"
 #include "flashevents.h"
+#include "flashdisplay.h"
 
 opcode_handler ABCVm::opcode_table_args0[]={
 	{"pushScope",(void*)&ABCVm::pushScope},
@@ -303,7 +304,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByName("flash.display.MovieClip",new ASMovieClip);
 	Global.setVariableByName("flash.display.DisplayObject",new ASObject);
-	Global.setVariableByName("flash.display.Loader",new ASObject);
+	Global.setVariableByName("flash.display.Loader",new Loader);
 	Global.setVariableByName("flash.display.SimpleButton",new ASObject);
 	Global.setVariableByName("flash.display.InteractiveObject",new ASObject);
 	Global.setVariableByName("flash.display.DisplayObjectContainer",new ASObject);
@@ -792,7 +793,10 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 	}
 
 	LOG(CALLS,"Constructing");
-	ASObject* ret=new ASObject;
+	//We get a shallow copy of the object, but clean out Variables
+	//TODO: should be done in the copy constructor
+	ASObject* ret=dynamic_cast<ASObject*>(o->clone());
+	ret->Variables.clear();
 
 	ASObject* aso=dynamic_cast<ASObject*>(o);
 	ret->prototype=aso;
@@ -804,16 +808,16 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 		LOG(CALLS,"Building instance traits");
 		for(int i=0;i<th->vm->instances[o->class_index].trait_count;i++)
 			th->vm->buildTrait(ret,&th->vm->instances[o->class_index].traits[i]);
-		LOG(CALLS,"Calling Instance init");
+	}
+	else
+		LOG(NOT_IMPLEMENTED,"Building a builtin class");
+
+	LOG(CALLS,"Calling Instance init");
+	if(o->constructor)
+	{
 		args.incRef();
 		o->constructor->call(ret,&args);
 //		args.decRef();
-	}
-	else
-	{
-		LOG(NOT_IMPLEMENTED,"Building a builtin class");
-//		ret->decRef();
-		ret=dynamic_cast<ASObject*>(o->clone());
 	}
 
 	LOG(CALLS,"End of constructing");
@@ -1177,8 +1181,18 @@ void ABCVm::setSuper(method_info* th, int n)
 
 void ABCVm::newFunction(method_info* th, int n)
 {
-	LOG(NOT_IMPLEMENTED,"newFunction " << n);
-	th->runtime_stack_push(new Undefined);
+	LOG(CALLS,"newFunction " << n);
+
+	method_info* m=&th->vm->methods[n];
+	th->vm->synt_method(m);
+	if(m->f)
+	{
+		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
+		th->runtime_stack_push(new Function(FP));
+	}
+	else
+		th->runtime_stack_push(new Undefined);
+
 }
 
 void ABCVm::newObject(method_info* th, int n)
@@ -3485,10 +3499,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 					if(deferred_initialization)
 						obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
 					else
-					{
-						LOG(CALLS,"Not deferred");
 						ret=obj->setVariableByName(name,new Undefined);
-					}
 				}
 				else
 					LOG(CALLS,"Not resetting variable " << name);

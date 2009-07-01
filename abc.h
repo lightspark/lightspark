@@ -17,6 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#ifndef _SWF_H
+#define _SWF_H
+
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/IRBuilder.h>
@@ -533,3 +536,5 @@ std::istream& operator>>(std::istream& in, multiname_info& v);
 std::istream& operator>>(std::istream& in, cpool_info& v);
 std::istream& operator>>(std::istream& in, method_info& v);
 std::istream& operator>>(std::istream& in, instance_info& v);
+
+#endif

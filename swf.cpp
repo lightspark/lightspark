@@ -103,7 +103,7 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	setVariableByName("",this);
 
 	//This should come from DisplayObject
-	LoaderInfo* loaderInfo=new LoaderInfo(true);
+	LoaderInfo* loaderInfo=new LoaderInfo();
 	setVariableByName("loaderInfo",loaderInfo);
 }
 

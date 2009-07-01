@@ -47,6 +47,7 @@ public:
 
 class ASObject: public ISWFObject
 {
+friend class ABCVm;
 public:
 	ASObject* prototype;
 	ASObject* super;

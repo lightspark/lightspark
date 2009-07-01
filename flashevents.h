@@ -37,6 +37,12 @@ public:
 	const std::string type;
 };
 
+class IOErrorEvent: public Event
+{
+public:
+	IOErrorEvent();
+};
+
 class MouseEvent: public Event
 {
 public:
@@ -54,6 +60,7 @@ public:
 	void handleEvent(Event* e);
 	void setId(float i){id=i;}
 
+	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
 };
 

@@ -23,7 +23,7 @@
 #include "swftypes.h"
 #include "flashevents.h"
 
-class LoaderInfo: public ASObject
+class LoaderInfo: public EventDispatcher
 {
 public:
 	LoaderInfo()
@@ -36,7 +36,7 @@ public:
 	ASFUNCTION(addEventListener);
 };
 
-class Loader: public EventDispatcher
+class Loader: public ASObject
 {
 public:
 	Loader()

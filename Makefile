@@ -10,8 +10,11 @@ LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o
 	  asobjects.o abc.o flashdisplay.o flashevents.o textfile.o
 
 # TODO: library?
-all: lightspark
+all: lightspark tightspark
 lightspark: main.o $(LIBOBJS) 
+	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --cxxflags --ldflags --libs core jit native` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+
+tightspark: tightspark.o $(LIBOBJS)
 	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --cxxflags --ldflags --libs core jit native` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
 libls.so: $(LIBOBJS)

@@ -63,6 +63,7 @@ opcode_handler ABCVm::opcode_table_args0[]={
 	{"dup",(void*)&ABCVm::dup},
 	{"subtract",(void*)&ABCVm::subtract},
 	{"divide",(void*)&ABCVm::divide},
+	{"modulo",(void*)&ABCVm::modulo},
 	{"multiply",(void*)&ABCVm::multiply},
 	{"add",(void*)&ABCVm::add},
 	{"swap",(void*)&ABCVm::swap},
@@ -81,6 +82,7 @@ opcode_handler ABCVm::opcode_table_args1[]={
 	{"ifNGT",(void*)&ABCVm::ifNGT},
 	{"ifNLT",(void*)&ABCVm::ifNLT},
 	{"ifNGE",(void*)&ABCVm::ifNGE},
+	{"ifNLE",(void*)&ABCVm::ifNLE},
 	{"ifLT",(void*)&ABCVm::ifLT},
 	{"ifStrictNE",(void*)&ABCVm::ifStrictNE},
 	{"ifNe",(void*)&ABCVm::ifNe},
@@ -126,7 +128,6 @@ llvm::ExecutionEngine* ABCVm::ex;
 extern __thread SystemState* sys;
 
 using namespace std;
-long timeDiff(timespec& s, timespec& d);
 
 void ignore(istream& i, int count);
 
@@ -329,6 +330,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("flash.events.Event",new Event(""));
 	Global.setVariableByName("flash.events.MouseEvent",new MouseEvent);
 	Global.setVariableByName("flash.events.ProgressEvent",new ASObject);
+	Global.setVariableByName("flash.events.IOErrorEvent",new IOErrorEvent);
 
 	Global.setVariableByName("flash.net.LocalConnection",new ASObject);
 	Global.setVariableByName("flash.net.URLRequest",new Math);
@@ -596,6 +598,20 @@ inline method_info* ABCVm::get_method(unsigned int m)
 		LOG(ERROR,"Requested invalid method");
 		return NULL;
 	}
+}
+
+void ABCVm::modulo(method_info* th)
+{
+	ISWFObject* val2=th->runtime_stack_pop();
+	ISWFObject* val1=th->runtime_stack_pop();
+
+	Number num2(val2);
+	Number num1(val1);
+
+//	val1->decRef();
+//	val2->decRef();
+	LOG(CALLS,"modulo "  << num1 << '%' << num2);
+	th->runtime_stack_push(new Number(int(num1)%int(num2)));
 }
 
 void ABCVm::divide(method_info* th)
@@ -1003,6 +1019,12 @@ bool Boolean_concrete(ISWFObject* obj)
 void ABCVm::ifStrictNE(method_info* th, int offset)
 {
 	LOG(NOT_IMPLEMENTED,"ifStrictNE " << offset);
+	abort();
+}
+
+void ABCVm::ifNLE(method_info* th, int offset)
+{
+	LOG(CALLS,"ifNLE " << offset);
 	abort();
 }
 
@@ -2036,6 +2058,51 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			
 				//Pop the stack, we are surely going to pop from the dynamic one
 				//ifNLT pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
+				break;
+			}
+			case 0x0d:
+			{
+				//ifnge
+				LOG(TRACE, "synt ifnle");
+				//TODO: implement common data comparison
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				last_is_branch=true;
+				s24 t;
+				code >> t;
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifNLE"), th, constant);
+			
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifNLE pushed a pointer to integer
 				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
 				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
 				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
@@ -3178,6 +3245,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("divide"), th);
 				break;
 			}
+			case 0xa4:
+			{
+				//modulo
+				LOG(TRACE, "synt modulo" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("modulo"), th);
+				break;
+			}
 			case 0xab:
 			{
 				//equals
@@ -3350,7 +3426,6 @@ void ABCVm::Run(ABCVm* th)
 	//Before the entry point we run early events
 	while(sem_trywait(&th->sem_event_count)==0)
 		th->handleEvent();
-	LOG(CALLS,"END OF EARLY");
 	//The last script entry has to be run
 	LOG(CALLS, "Last script (Entry Point)");
 	method_info* m=th->get_method(th->scripts[i].init);
@@ -3358,8 +3433,6 @@ void ABCVm::Run(ABCVm* th)
 	for(int j=0;j<th->scripts[i].trait_count;j++)
 		th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
 	th->synt_method(m);
-	for(int j=0;j<th->scripts[i].trait_count;j++)
-		th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
 	if(m->f)
 	{
 		Function::as_function sinit=(Function::as_function)ex->getPointerToFunction(m->f);
@@ -3482,13 +3555,15 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 						return;
 					}
 				}
-				LOG(CALLS,"Slot "<<getMultinameString(t->name)<<" type "<<getMultinameString(t->type_name));
+				string type=getMultinameString(t->type_name);
+				LOG(CALLS,"Slot "<<getMultinameString(t->name)<<" type "<<type);
 				break;
 			}
 			else
 			{
 				//else fallthrough
-				LOG(CALLS,"Slot vindex 0 "<<name<<" type "<<getMultinameString(t->type_name));
+				string type=getMultinameString(t->type_name);
+				LOG(CALLS,"Slot vindex 0 "<<name<<" type "<<type);
 				bool found;
 				ISWFObject* ret=obj->getVariableByName(name,found);
 				if(!found)

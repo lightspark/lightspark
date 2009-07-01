@@ -385,6 +385,7 @@ private:
 	static void ifNLT(method_info* th, int offset); 
 	static void ifNGT(method_info* th, int offset); 
 	static void ifNGE(method_info* th, int offset); 
+	static void ifNLE(method_info* th, int offset); 
 	static void ifStrictNE(method_info* th, int offset); 
 	static void ifFalse(method_info* th, int offset); 
 	static void ifTrue(method_info* th, int offset); 
@@ -435,6 +436,7 @@ private:
 	static void add(method_info* th);
 	static void multiply(method_info* th);
 	static void divide(method_info* th);
+	static void modulo(method_info* th);
 	static void subtract(method_info* th);
 	static void popScope(method_info* th);
 	static void newActivation(method_info* th);

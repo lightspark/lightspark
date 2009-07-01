@@ -36,19 +36,6 @@ using namespace std;
 
 __thread SystemState* sys;
 
-long timeDiff(timespec& s, timespec& d)
-{
-	timespec temp;
-	if ((d.tv_nsec-s.tv_nsec)<0) {
-		temp.tv_sec = d.tv_sec-s.tv_sec-1;
-		temp.tv_nsec = 1000000000+d.tv_nsec-s.tv_nsec;
-	} else {
-		temp.tv_sec = d.tv_sec-s.tv_sec;
-		temp.tv_nsec = d.tv_nsec-s.tv_nsec;
-	}
-	return temp.tv_sec*1000+(temp.tv_nsec)/1000000;
-}
-
 std::vector<fps_profiling> fps_profs;
 
 int main(int argc, char* argv[])

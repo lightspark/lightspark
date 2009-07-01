@@ -30,7 +30,11 @@ extern __thread SystemState* sys;
 
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
+	EventDispatcher::_constructor(obj,args);
+	ISWFObject* ret=obj->setVariableByName("sharedEvents",new EventDispatcher); //TODO: Read only
+	ret->constructor->call(ret,NULL);
 //	setVariableByName("parameters",&parameters);
+
 }
 
 ASFUNCTIONBODY(Loader,_constructor)
@@ -119,7 +123,8 @@ void MovieClip::_register()
 	setVariableByName("lineTo",new Function(lineTo));
 	setVariableByName("moveTo",new Function(moveTo));
 	setVariableByName("createEmptyMovieClip",new Function(createEmptyMovieClip));
-	setVariableByName("addEventListener",new Function(addEventListener));
+
+	EventDispatcher::_constructor(this,NULL);
 }
 
 void MovieClip::Render()

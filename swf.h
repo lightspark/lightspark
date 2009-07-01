@@ -43,6 +43,7 @@ class InputThread;
 class RenderThread;
 
 typedef void* (*thread_worker)(void*);
+long timeDiff(timespec& s, timespec& d);
 
 class SWF_HEADER
 {

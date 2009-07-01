@@ -38,8 +38,14 @@ MouseEvent::MouseEvent():Event("mouseEvent")
 	setVariableByName("MOUSE_DOWN",new ASString("mouseDown"));
 }
 
+IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
+{
+	setVariableByName("IO_ERROR",new ASString("ioError"));
+}
+
 EventDispatcher::EventDispatcher():id(0)
 {
+	constructor=new Function(_constructor);
 }
 
 ASFUNCTIONBODY(EventDispatcher,addEventListener)
@@ -58,6 +64,12 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 
 	th->handlers.insert(make_pair(args->at(0)->toString(),f2->toFunction()));
 	sys->events_name.push_back(args->at(0)->toString());
+}
+
+
+ASFUNCTIONBODY(EventDispatcher,_constructor)
+{
+	obj->setVariableByName("addEventListener",new Function(addEventListener));
 }
 
 void EventDispatcher::handleEvent(Event* e)

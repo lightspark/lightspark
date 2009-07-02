@@ -345,6 +345,8 @@ private:
 	void printNamespaceSet(const ns_set_info* m) const;
 	std::string getString(unsigned int s) const;
 	std::string getMultinameString(unsigned int m, method_info* th=NULL) const;
+	multiname getMultiname(unsigned int m, method_info* th=NULL) const;
+	Qname getQname(unsigned int m, method_info* th=NULL) const;
 
 	llvm::Function* synt_method(method_info* m);
 	llvm::FunctionType* synt_method_prototype();
@@ -385,6 +387,7 @@ private:
 	static void ifNLT(method_info* th, int offset); 
 	static void ifNGT(method_info* th, int offset); 
 	static void ifNGE(method_info* th, int offset); 
+	static void ifGE(method_info* th, int offset); 
 	static void ifNLE(method_info* th, int offset); 
 	static void ifStrictNE(method_info* th, int offset); 
 	static void ifFalse(method_info* th, int offset); 

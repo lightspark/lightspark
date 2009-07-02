@@ -104,8 +104,8 @@ public:
 	bool shutdown;
 	int version;
 	float frame_rate;
-	ISWFObject* getVariableByName(const std::string& name, bool& f);
-	ISWFObject* setVariableByName(const std::string& name, ISWFObject* o, bool force=false);
+	ISWFObject* getVariableByName(const Qname& name, bool& found);
+	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
 	ISWFObject* getParent() { return NULL; }
 	void setShutdownFlag();
 

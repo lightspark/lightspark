@@ -82,6 +82,7 @@ opcode_handler ABCVm::opcode_table_args1[]={
 	{"ifNGT",(void*)&ABCVm::ifNGT},
 	{"ifNLT",(void*)&ABCVm::ifNLT},
 	{"ifNGE",(void*)&ABCVm::ifNGE},
+	{"ifGE",(void*)&ABCVm::ifGE},
 	{"ifNLE",(void*)&ABCVm::ifNLE},
 	{"ifLT",(void*)&ABCVm::ifLT},
 	{"ifStrictNE",(void*)&ABCVm::ifStrictNE},
@@ -337,8 +338,137 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("flash.net.URLVariables",new Math);
 }
 
+Qname ABCVm::getQname(unsigned int mi, method_info* th) const
+{
+	if(mi==0)
+	{
+		LOG(ERROR,"Not a Qname");
+		abort();
+	}
+
+	const multiname_info* m=&constant_pool.multinames[mi];
+	switch(m->kind)
+	{
+		case 0x07:
+		{
+			Qname ret(getString(m->name));
+			const namespace_info* n=&constant_pool.namespaces[m->ns];
+			if(n->name)
+				ret.ns=getString(n->name);
+			else
+				abort();
+			return ret;
+		}
+/*		case 0x0d:
+			LOG(CALLS, "QNameA");
+			break;
+		case 0x0f:
+			LOG(CALLS, "RTQName");
+			break;
+		case 0x10:
+			LOG(CALLS, "RTQNameA");
+			break;
+		case 0x11:
+			LOG(CALLS, "RTQNameL");
+			break;
+		case 0x12:
+			LOG(CALLS, "RTQNameLA");
+			break;
+		case 0x0e:
+			LOG(CALLS, "MultinameA");
+			break;
+		case 0x1c:
+			LOG(CALLS, "MultinameLA");
+			break;*/
+		default:
+			LOG(ERROR,"Not a Qname kind " << hex << m->kind);
+			abort();
+	}
+}
+
+multiname ABCVm::getMultiname(unsigned int mi, method_info* th) const
+{
+	multiname ret;
+	if(mi==0)
+	{
+		ret.name="any";
+		return ret;
+	}
+
+	const multiname_info* m=&constant_pool.multinames[mi];
+	switch(m->kind)
+	{
+		case 0x07:
+		{
+			const namespace_info* n=&constant_pool.namespaces[m->ns];
+			if(n->name)
+				ret.ns.push_back(getString(n->name));
+			else
+				abort();
+			ret.name=getString(m->name);
+			break;
+		}
+		case 0x09:
+		{
+			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
+			for(int i=0;i<s->count;i++)
+			{
+				const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
+				ret.ns.push_back(getString(n->name));
+			}
+			ret.name=getString(m->name);
+			break;
+		}
+		case 0x1b:
+		{
+			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
+			for(int i=0;i<s->count;i++)
+			{
+				const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
+				ret.ns.push_back(getString(n->name));
+			}
+			if(th!=NULL)
+			{
+				ISWFObject* n=th->runtime_stack_pop();
+				ret.name=n->toString();
+//				n->decRef();
+			}
+			else
+				ret.name="<Invalid>";
+			break;
+		}
+/*		case 0x0d:
+			LOG(CALLS, "QNameA");
+			break;
+		case 0x0f:
+			LOG(CALLS, "RTQName");
+			break;
+		case 0x10:
+			LOG(CALLS, "RTQNameA");
+			break;
+		case 0x11:
+			LOG(CALLS, "RTQNameL");
+			break;
+		case 0x12:
+			LOG(CALLS, "RTQNameLA");
+			break;
+		case 0x0e:
+			LOG(CALLS, "MultinameA");
+			break;
+		case 0x1c:
+			LOG(CALLS, "MultinameLA");
+			break;*/
+		default:
+			LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+			break;
+	}
+	return ret;
+}
+
 string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 {
+	if(mi==0)
+		return "any";
 	const multiname_info* m=&constant_pool.multinames[mi];
 	string ret;
 	switch(m->kind)
@@ -364,7 +494,7 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 			if(s->count!=1)
 			{
 				LOG(NOT_IMPLEMENTED,"Multiname on namespace set not really supported yet");
-				//printNamespaceSet(s);
+				printNamespaceSet(s);
 				ret=getString(m->name);
 			}
 			else
@@ -398,7 +528,7 @@ string ABCVm::getMultinameString(unsigned int mi, method_info* th) const
 			//We currently assume that a null namespace is good
 			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 			LOG(NOT_IMPLEMENTED,"Multiname on namespace set not really supported yet");
-			//printNamespaceSet(s);
+			printNamespaceSet(s);
 			return name;
 			break;
 		}
@@ -760,7 +890,7 @@ void ABCVm::nextName(method_info* th)
 
 void ABCVm::swap(method_info* th)
 {
-	LOG(NOT_IMPLEMENTED,"swap");
+	LOG(CALLS,"swap");
 }
 
 void ABCVm::newActivation(method_info* th)
@@ -842,16 +972,17 @@ void ABCVm::constructProp(method_info* th, int n, int m)
 
 void ABCVm::callProperty(method_info* th, int n, int m)
 {
-	//Should be called after arguments are popped
-	string name=th->vm->getMultinameString(n);
-	LOG(CALLS,"callProperty " << name << ' ' << m);
 	arguments args;
 	args.resize(m);
 	for(int i=0;i<m;i++)
 		args.at(m-i-1)=th->runtime_stack_pop();
+
+	multiname name=th->vm->getMultiname(n);
+	LOG(CALLS,"callProperty " << name << ' ' << m);
+
 	ISWFObject* obj=th->runtime_stack_pop();
 	bool found;
-	ISWFObject* o=obj->getVariableByName(name,found);
+	ISWFObject* o=obj->getVariableByMultiname(name,found);
 	if(found)
 	{
 		//If o is already a function call it, otherwise find the Call method
@@ -1025,6 +1156,12 @@ void ABCVm::ifStrictNE(method_info* th, int offset)
 void ABCVm::ifNLE(method_info* th, int offset)
 {
 	LOG(CALLS,"ifNLE " << offset);
+	abort();
+}
+
+void ABCVm::ifGE(method_info* th, int offset)
+{
+	LOG(CALLS,"ifGE " << offset);
 	abort();
 }
 
@@ -1551,14 +1688,14 @@ void ABCVm::findProperty(method_info* th, int n)
 
 void ABCVm::findPropStrict(method_info* th, int n)
 {
-	string name=th->vm->getMultinameString(n);
+	multiname name=th->vm->getMultiname(n);
 	LOG(CALLS, "findPropStrict " << name );
 
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
 	bool found=false;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		(*it)->getVariableByName(name,found);
+		(*it)->getVariableByMultiname(name,found);
 		if(found)
 		{
 			//We have to return the object, not the property
@@ -1571,7 +1708,8 @@ void ABCVm::findPropStrict(method_info* th, int n)
 	{
 		LOG(CALLS, "NOT found, trying Global" );
 		bool found2;
-		th->vm->Global.getVariableByName(name,found2);
+		//TODO: to multiname
+		th->vm->Global.getVariableByName(name.name,found2);
 		if(found2)
 		{
 			th->runtime_stack_push(&th->vm->Global);
@@ -2473,6 +2611,51 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.SetInsertPoint(A);
 				break;
 			}
+			case 0x18:
+			{
+				//ifge
+				LOG(TRACE, "synt ifge");
+				//TODO: implement common data comparison
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				last_is_branch=true;
+				s24 t;
+				code >> t;
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", m->f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+				//Make comparision
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), th, constant);
+			
+				//Pop the stack, we are surely going to pop from the dynamic one
+				//ifGE pushed a pointer to integer
+				llvm::Value* cond_ptr=static_stack_pop(Builder,static_stack,m).first;
+				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
+				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
+				Builder.CreateCondBr(cond1,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
+				break;
+			}
 			case 0x19:
 			{
 				//ifstricteq
@@ -2668,9 +2851,12 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 			{
 				//swap
 				LOG(TRACE, "synt swap" );
-				syncStacks(ex,Builder,jitted,static_stack,m);
-				jitted=false;
+				jitted=true;
 				Builder.CreateCall(ex->FindFunctionNamed("swap"), th);
+				stack_entry e1=static_stack_pop(Builder,static_stack,m);
+				stack_entry e2=static_stack_pop(Builder,static_stack,m);
+				static_stack_push(static_stack,e1);
+				static_stack_push(static_stack,e2);
 				break;
 			}
 			case 0x2c:
@@ -3464,7 +3650,7 @@ string ABCVm::getString(unsigned int s) const
 
 void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_function deferred_initialization)
 {
-	string name=getMultinameString(t->name);
+	Qname name=getQname(t->name);
 	switch(t->kind&0xf)
 	{
 		case traits_info::Class:

@@ -118,14 +118,33 @@ public:
 	}
 };
 
+struct Qname
+{
+	std::string name;
+	std::string ns;
+	bool operator<(const Qname& r) const
+	{
+		return name<r.name;
+	}
+	Qname(const std::string& s):name(s){}
+	Qname(const char* s):name(s){}
+	Qname(const STRING& s):name(s){}
+};
+
+struct multiname
+{
+	std::string name;
+	std::vector<std::string> ns;
+};
+
 class ISWFObject
 {
 protected:
 	ISWFObject* parent;
 	ISWFObject();
-	std::map<std::string,ISWFObject*> Variables;
-	std::map<std::string,IFunction*> Setters;
-	std::map<std::string,IFunction*> Getters;
+	std::map<Qname,ISWFObject*> Variables;
+	std::map<Qname,IFunction*> Setters;
+	std::map<Qname,IFunction*> Getters;
 	std::vector<ISWFObject*> slots;
 	int max_slot_index;
 	bool binded;
@@ -150,13 +169,14 @@ public:
 	{
 		o->decRef();
 	}
-	virtual IFunction* getSetterByName(const std::string& name, bool& found);
-	virtual IFunction* setSetterByName(const std::string& name, IFunction* o);
-	virtual IFunction* getGetterByName(const std::string& name, bool& found);
-	virtual IFunction* setGetterByName(const std::string& name, IFunction* o);
+	virtual IFunction* getSetterByName(const Qname& name, bool& found);
+	virtual IFunction* setSetterByName(const Qname& name, IFunction* o);
+	virtual IFunction* getGetterByName(const Qname& name, bool& found);
+	virtual IFunction* setGetterByName(const Qname& name, IFunction* o);
 
-	virtual ISWFObject* getVariableByName(const std::string& name, bool& found);
-	virtual ISWFObject* setVariableByName(const std::string& name, ISWFObject* o, bool force=false);
+	virtual ISWFObject* getVariableByMultiname(const multiname& name, bool& found);
+	virtual ISWFObject* getVariableByName(const Qname& name, bool& found);
+	virtual ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
 	virtual ISWFObject* getParent();
 	virtual void _register();
 	virtual ISWFObject* getSlot(int n);
@@ -868,8 +888,10 @@ std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::ostream& operator<<(std::ostream& s, const RGBA& r);
 std::ostream& operator<<(std::ostream& s, const STRING& r);
-std::istream& operator>>(std::istream& s, RECT& v);
+std::ostream& operator<<(std::ostream& s, const multiname& r);
+std::ostream& operator<<(std::ostream& s, const Qname& r);
 
+std::istream& operator>>(std::istream& s, RECT& v);
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v);
 std::istream& operator>>(std::istream& s, CLIPACTIONRECORD& v);
 std::istream& operator>>(std::istream& s, CLIPACTIONS& v);

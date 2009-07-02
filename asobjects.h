@@ -59,7 +59,7 @@ public:
 	{
 		return new ASObject(*this);
 	}
-	ISWFObject* getVariableByName(const std::string& name, bool& found);
+	ISWFObject* getVariableByName(const Qname& name, bool& found);
 
 	//DEBUG
 	int debug_id;
@@ -143,7 +143,7 @@ public:
 		data.resize(n);
 		length=n;
 	}
-	ISWFObject* getVariableByName(const std::string& name, bool& found);
+	ISWFObject* getVariableByName(const Qname& name, bool& found);
 };
 
 class arguments: public ASArray

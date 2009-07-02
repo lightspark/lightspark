@@ -109,17 +109,17 @@ void ISWFObject::_register()
 	LOG(CALLS,"default _register called");
 }
 
-IFunction* ISWFObject::setGetterByName(const string& name, IFunction* o)
+IFunction* ISWFObject::setGetterByName(const Qname& name, IFunction* o)
 {
-	pair<map<string, IFunction*>::iterator,bool> ret=Getters.insert(make_pair(name,o));
+	pair<map<Qname, IFunction*>::iterator,bool> ret=Getters.insert(make_pair(name,o));
 	if(!ret.second)
 		ret.first->second=o;
 	return o;
 }
 
-IFunction* ISWFObject::getGetterByName(const string& name, bool& found)
+IFunction* ISWFObject::getGetterByName(const Qname& name, bool& found)
 {
-	map<string,IFunction*>::iterator it=Getters.find(name);
+	map<Qname,IFunction*>::iterator it=Getters.find(name);
 	if(it!=Getters.end())
 	{
 		found=true;
@@ -132,17 +132,17 @@ IFunction* ISWFObject::getGetterByName(const string& name, bool& found)
 	}
 }
 
-IFunction* ISWFObject::setSetterByName(const string& name, IFunction* o)
+IFunction* ISWFObject::setSetterByName(const Qname& name, IFunction* o)
 {
-	pair<map<string, IFunction*>::iterator,bool> ret=Setters.insert(make_pair(name,o));
+	pair<map<Qname, IFunction*>::iterator,bool> ret=Setters.insert(make_pair(name,o));
 	if(!ret.second)
 		ret.first->second=o;
 	return o;
 }
 
-IFunction* ISWFObject::getSetterByName(const string& name, bool& found)
+IFunction* ISWFObject::getSetterByName(const Qname& name, bool& found)
 {
-	map<string,IFunction*>::iterator it=Setters.find(name);
+	map<Qname,IFunction*>::iterator it=Setters.find(name);
 	if(it!=Setters.end())
 	{
 		found=true;
@@ -155,9 +155,9 @@ IFunction* ISWFObject::getSetterByName(const string& name, bool& found)
 	}
 }
 
-ISWFObject* ISWFObject::setVariableByName(const string& name, ISWFObject* o, bool force)
+ISWFObject* ISWFObject::setVariableByName(const Qname& name, ISWFObject* o, bool force)
 {
-	pair<map<string, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<string,ISWFObject*>(name,o));
+	pair<map<Qname, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ISWFObject*>(name,o));
 	if(!ret.second)
 	{
 		if(ret.first->second->isBinded() && !force)
@@ -168,9 +168,32 @@ ISWFObject* ISWFObject::setVariableByName(const string& name, ISWFObject* o, boo
 	return o;
 }
 
-ISWFObject* ISWFObject::getVariableByName(const string& name, bool& found)
+ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, bool& found)
 {
-	map<string,ISWFObject*>::iterator it=Variables.find(name);
+	map<Qname,ISWFObject*>::iterator it=Variables.find(name.name);
+	if(it!=Variables.end())
+	{
+		found=false;
+		for(int i=0;i<name.ns.size();i++)
+		{
+			if(it->first.ns==name.ns[i])
+			{
+				found=true;
+				break;
+			}
+		}
+		return it->second;
+	}
+	else
+	{
+		found=false;
+		return NULL;
+	}
+}
+
+ISWFObject* ISWFObject::getVariableByName(const Qname& name, bool& found)
+{
+	map<Qname,ISWFObject*>::iterator it=Variables.find(name);
 	if(it!=Variables.end())
 	{
 		found=true;
@@ -183,11 +206,25 @@ ISWFObject* ISWFObject::getVariableByName(const string& name, bool& found)
 	}
 }
 
+std::ostream& operator<<(std::ostream& s, const Qname& r)
+{
+	s << '[' << r.ns << "] " << r.name;
+	return s;
+}
+
+std::ostream& operator<<(std::ostream& s, const multiname& r)
+{
+	for(int i=0;i<r.ns.size();i++)
+		s << '[' << r.ns[i] << "] ";
+	s << r.name;
+	return s;
+}
+
 void ISWFObject::dumpVariables()
 {
-	map<string,ISWFObject*>::iterator it=Variables.begin();
+	map<Qname,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
-		cout << it->first << endl;
+		cout << it->first.ns << ' '<< it->first.name << endl;
 }
 
 string Integer::toString() const
@@ -828,7 +865,7 @@ ISWFObject::~ISWFObject()
 	if(ref_count>1)
 		LOG(NOT_IMPLEMENTED,"Destroying a still referenced object");
 
-	map<string,ISWFObject*>::iterator it=Variables.begin();
+	map<Qname,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 		it->second->decRef();
 }
@@ -896,12 +933,12 @@ string ISWFObject::getNameAt(int index)
 {
 	if(index<Variables.size())
 	{
-		map<string,ISWFObject*>::iterator it=Variables.begin();
+		map<Qname,ISWFObject*>::iterator it=Variables.begin();
 
 		for(int i=0;i<index;i++)
 			it++;
 
-		return it->first;
+		return it->first.name;
 	}
 	else
 	{

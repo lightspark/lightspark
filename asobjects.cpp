@@ -107,7 +107,7 @@ ASFUNCTIONBODY(ASXML,load)
 {
 	ASXML* th=dynamic_cast<ASXML*>(obj);
 	LOG(NOT_IMPLEMENTED,"Called ASXML::load " << args->at(0)->toString());
-	CURL *curl;
+/*	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
 	string base("www.youtube.com");
@@ -126,18 +126,18 @@ ASFUNCTIONBODY(ASXML,load)
 	IFunction* on_load=obj->getVariableByName("onLoad",found)->toFunction();
 	arguments a;
 	a.push(new Integer(1));
-	on_load->call(NULL,&a);
+	on_load->call(NULL,&a);*/
 	return new Integer(1);
 }
 
 
-ISWFObject* ASArray::getVariableByName(const std::string& name, bool& found)
+ISWFObject* ASArray::getVariableByName(const Qname& name, bool& found)
 {
 	ISWFObject* ret;
 	bool number=true;
-	for(int i=0;i<name.size();i++)
+	for(int i=0;i<name.name.size();i++)
 	{
-		if(!isdigit(name[i]))
+		if(!isdigit(name.name[i]))
 		{
 			number=false;
 			found=false;
@@ -147,7 +147,7 @@ ISWFObject* ASArray::getVariableByName(const std::string& name, bool& found)
 	}
 	if(number)
 	{
-		int index=atoi(name.c_str());
+		int index=atoi(name.name.c_str());
 		if(index<data.size())
 		{
 			ret=data[index];
@@ -163,7 +163,7 @@ ISWFObject* ASArray::getVariableByName(const std::string& name, bool& found)
 	return ret;
 }
 
-ISWFObject* ASObject::getVariableByName(const std::string& name, bool& found)
+ISWFObject* ASObject::getVariableByName(const Qname& name, bool& found)
 {
 	ISWFObject* ret=ISWFObject::getVariableByName(name,found);
 	if(!found && super)

@@ -105,7 +105,7 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	//This should come from DisplayObject
 	LoaderInfo* loaderInfo=new LoaderInfo();
-	setVariableByName("loaderInfo",loaderInfo);
+	setVariableByName(Qname("loaderInfo"),loaderInfo);
 }
 
 void SystemState::setShutdownFlag()
@@ -1035,7 +1035,7 @@ DictionaryTag* SystemState::dictionaryLookup(int id)
 	return *it;
 }
 
-ISWFObject* SystemState::getVariableByName(const string& name, bool& found)
+ISWFObject* SystemState::getVariableByName(const Qname& name, bool& found)
 {
 	sem_wait(&mutex);
 	ISWFObject* ret=ASObject::getVariableByName(name, found);
@@ -1043,7 +1043,7 @@ ISWFObject* SystemState::getVariableByName(const string& name, bool& found)
 	return ret;
 }
 
-ISWFObject* SystemState::setVariableByName(const string& name, ISWFObject* o, bool force)
+ISWFObject* SystemState::setVariableByName(const Qname& name, ISWFObject* o, bool force)
 {
 	sem_wait(&mutex);
 	ISWFObject* ret=ISWFObject::setVariableByName(name,o,force);

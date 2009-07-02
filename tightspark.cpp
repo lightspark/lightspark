@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " <file.abc>" << endl;
 		exit(-1);
 	}
-	Log::initLogging(TRACE);
+	Log::initLogging(CALLS);
 	sys=new SystemState;
 	sys->performance_profiling=false;
 

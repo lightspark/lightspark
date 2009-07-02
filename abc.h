@@ -335,16 +335,15 @@ private:
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
 	method_info* get_method(unsigned int m);
-	void printMethod(const method_info* m) const;
-	void printClass(int m) const;
+	//void printMethod(const method_info* m) const;
+	//void printClass(int m) const;
 	ISWFObject* buildClass(int m);
 	void printMultiname(int m) const;
 	void printNamespace(int n) const;
-	void printTrait(const traits_info* t) const;
+	//void printTrait(const traits_info* t) const;
 	void buildTrait(ISWFObject* obj, const traits_info* t, Function::as_function deferred_initialization=NULL);
 	void printNamespaceSet(const ns_set_info* m) const;
 	std::string getString(unsigned int s) const;
-	std::string getMultinameString(unsigned int m, method_info* th=NULL) const;
 	multiname getMultiname(unsigned int m, method_info* th=NULL) const;
 	Qname getQname(unsigned int m, method_info* th=NULL) const;
 

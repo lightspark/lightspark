@@ -173,7 +173,11 @@ ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, bool& foun
 	map<Qname,ISWFObject*>::iterator it=Variables.find(name.name);
 	if(it!=Variables.end())
 	{
-		found=false;
+		if(name.ns.empty())
+			found=true;
+		else
+			found=false;
+
 		for(int i=0;i<name.ns.size();i++)
 		{
 			if(it->first.ns==name.ns[i])
@@ -189,6 +193,27 @@ ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, bool& foun
 		found=false;
 		return NULL;
 	}
+}
+
+ISWFObject* ISWFObject::getVariableByString(const std::string& name, bool& found)
+{
+	//Slow linear lookup, should be avoided
+	map<Qname,ISWFObject*>::iterator it=Variables.begin();
+	for(it;it!=Variables.end();it++)
+	{
+		string cur=it->first.ns;
+		if(!cur.empty())
+			cur+='.';
+		cur+=it->first.name;
+		if(cur==name)
+		{
+			found=true;
+			return it->second;
+		}
+	}
+	
+	found=false;
+	return NULL;
 }
 
 ISWFObject* ISWFObject::getVariableByName(const Qname& name, bool& found)

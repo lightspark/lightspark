@@ -129,6 +129,7 @@ struct Qname
 	Qname(const std::string& s):name(s){}
 	Qname(const char* s):name(s){}
 	Qname(const STRING& s):name(s){}
+	Qname(const std::string& _ns, const std::string& _name):ns(_ns),name(_name){}
 };
 
 struct multiname
@@ -175,6 +176,7 @@ public:
 	virtual IFunction* setGetterByName(const Qname& name, IFunction* o);
 
 	virtual ISWFObject* getVariableByMultiname(const multiname& name, bool& found);
+	virtual ISWFObject* getVariableByString(const std::string& name, bool& found);
 	virtual ISWFObject* getVariableByName(const Qname& name, bool& found);
 	virtual ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
 	virtual ISWFObject* getParent();

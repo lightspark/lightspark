@@ -24,6 +24,7 @@
 #include <string.h>
 #include <sstream>
 #include <iomanip>
+#include <math.h>
 
 #include "asobjects.h"
 #include "flashevents.h"
@@ -127,6 +128,38 @@ ASFUNCTIONBODY(ASXML,load)
 }
 
 
+ISWFObject* ASArray::getVariableByMultiname(const multiname& name, bool& found)
+{
+	ISWFObject* ret;
+	bool number=true;
+	found=false;
+	for(int i=0;i<name.name.size();i++)
+	{
+		if(!isdigit(name.name[i]))
+		{
+			number=false;
+			break;
+		}
+
+	}
+	if(number)
+	{
+		int index=atoi(name.name.c_str());
+		if(index<data.size())
+		{
+			ret=data[index];
+			found=true;
+		}
+		else
+			found=false;
+	}
+
+	if(!found)
+		ret=ASObject::getVariableByMultiname(name,found);
+
+	return ret;
+}
+
 ISWFObject* ASArray::getVariableByName(const Qname& name, bool& found)
 {
 	ISWFObject* ret;
@@ -155,6 +188,18 @@ ISWFObject* ASArray::getVariableByName(const Qname& name, bool& found)
 
 	if(!found)
 		ret=ASObject::getVariableByName(name,found);
+
+	return ret;
+}
+
+ISWFObject* ASObject::getVariableByMultiname(const multiname& name, bool& found)
+{
+	ISWFObject* ret=ISWFObject::getVariableByMultiname(name,found);
+	if(!found && super)
+		ret=super->getVariableByMultiname(name,found);
+
+	if(!found && prototype)
+		ret=prototype->getVariableByMultiname(name,found);
 
 	return ret;
 }
@@ -347,9 +392,10 @@ Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisec
 
 ASFUNCTIONBODY(Date,_constructor)
 {
-	Date* th=dynamic_cast<Date*>(obj);
+	Date* th=static_cast<Date*>(obj);
 	th->setVariableByName("getTimezoneOffset",new Function(getTimezoneOffset));
 	th->setVariableByName("valueOf",new Function(valueOf));
+	th->setVariableByName(Qname(AS3,"getTime"),new Function(getTime));
 	th->year=1990;
 	th->month=1;
 	th->date=1;
@@ -365,7 +411,7 @@ ASFUNCTIONBODY(Date,getTimezoneOffset)
 	return new Number(120);
 }
 
-ASFUNCTIONBODY(Date,valueOf)
+ASFUNCTIONBODY(Date,getTime)
 {
 	Date* th=dynamic_cast<Date*>(obj);
 	long ret=0;
@@ -379,6 +425,12 @@ ASFUNCTIONBODY(Date,valueOf)
 	ret+=th->second*1000;
 	ret+=th->millisecond;
 	return new Number(ret);
+}
+
+ASFUNCTIONBODY(Date,valueOf)
+{
+	Date* th=dynamic_cast<Date*>(obj);
+	return th->getTime(obj,args);
 }
 
 IFunction* Function::toFunction()
@@ -398,3 +450,55 @@ ISWFObject* Function::call(ISWFObject* obj, arguments* args)
 	}
 }
 
+Math::Math()
+{
+	setVariableByName("PI",new Number(M_PI));
+	setVariableByName("sqrt",new Function(sqrt));
+	setVariableByName("atan2",new Function(atan2));
+	setVariableByName("floor",new Function(floor));
+	setVariableByName("random",new Function(random));
+}
+
+ASFUNCTIONBODY(Math,atan2)
+{
+	Number* n1=dynamic_cast<Number*>(args->at(0));
+	Number* n2=dynamic_cast<Number*>(args->at(1));
+	if(n1 && n2)
+		return new Number(::atan2(*n1,*n2));
+	else
+	{
+		LOG(CALLS, "Invalid argument type ("<<args->at(0)->getObjectType()<<','<<args->at(1)->getObjectType()<<')' );
+		abort();
+	}
+}
+
+ASFUNCTIONBODY(Math,floor)
+{
+	Number* n=dynamic_cast<Number*>(args->at(0));
+	if(n)
+		return new Number(::floor(*n));
+	else
+	{
+		LOG(TRACE,"Invalid argument");
+		abort();
+	}
+}
+
+ASFUNCTIONBODY(Math,sqrt)
+{
+	Number* n=dynamic_cast<Number*>(args->at(0));
+	if(n)
+		return new Number(::sqrt(*n));
+	else
+	{
+		LOG(TRACE,"Invalid argument");
+		abort();
+	}
+}
+
+ASFUNCTIONBODY(Math,random)
+{
+	double ret=rand();
+	ret/=RAND_MAX;
+	return new Integer(ret);
+}

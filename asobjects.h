@@ -25,6 +25,8 @@
 #include "frame.h"
 #include "input.h"
 
+const std::string AS3="http://adobe.com/AS3/2006/builtin";
+
 class Event;
 
 class ASObjectWrapper: public IDisplayListElem
@@ -60,6 +62,7 @@ public:
 		return new ASObject(*this);
 	}
 	ISWFObject* getVariableByName(const Qname& name, bool& found);
+	ISWFObject* getVariableByMultiname(const multiname& name, bool& found);
 
 	//DEBUG
 	int debug_id;
@@ -175,6 +178,7 @@ public:
 		length=n;
 	}
 	ISWFObject* getVariableByName(const Qname& name, bool& found);
+	ISWFObject* getVariableByMultiname(const multiname& name, bool& found);
 };
 
 class arguments: public ASArray
@@ -269,6 +273,7 @@ public:
 	Date();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getTimezoneOffset);
+	ASFUNCTION(getTime);
 	ASFUNCTION(valueOf);
 	ISWFObject* clone()
 	{
@@ -305,4 +310,15 @@ public:
 	DictionaryDefinable(int d, PlaceObject2Tag* _p):dict_id(d),p(_p){}
 	void define(ISWFObject* g);
 };
+
+class Math: public ASObject
+{
+public:
+	Math();
+	ASFUNCTION(atan2);
+	ASFUNCTION(floor);
+	ASFUNCTION(sqrt);
+	ASFUNCTION(random);
+};
+
 #endif

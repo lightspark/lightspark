@@ -25,7 +25,6 @@
 #include <llvm/Constants.h> 
 #include <llvm/Support/IRBuilder.h> 
 #include <llvm/Target/TargetData.h>
-#include <math.h>
 #include "abc.h"
 #include "logger.h"
 #include "swftypes.h"
@@ -311,7 +310,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByName(Qname("flash.display","SimpleButton"),new ASObject);
 	Global.setVariableByName(Qname("flash.display","InteractiveObject"),new ASObject),
 	Global.setVariableByName(Qname("flash.display","DisplayObjectContainer"),new ASObject);
-	Global.setVariableByName(Qname("flash.display","Sprite"),new ASObject);
+	Global.setVariableByName(Qname("flash.display","Sprite"),new Sprite);
 
 	Global.setVariableByName(Qname("flash.text","TextField"),new ASObject);
 	Global.setVariableByName(Qname("flash.text","TextFormat"),new ASObject);
@@ -747,9 +746,36 @@ void ABCVm::add(method_info* th)
 
 void ABCVm::typeOf(method_info* th)
 {
-	LOG(NOT_IMPLEMENTED,"typeOf");
-	th->runtime_stack_pop();
-	th->runtime_stack_push(new Undefined);
+	LOG(CALLS,"typeOf");
+	ISWFObject* obj=th->runtime_stack_pop();
+	string ret;
+	switch(obj->getObjectType())
+	{
+		case T_UNDEFINED:
+			ret="undefined";
+			break;
+		case T_OBJECT:
+		case T_NULL:
+			ret="object";
+			break;
+		case T_BOOLEAN:
+			ret="boolean";
+			break;
+		case T_NUMBER:
+		case T_INTEGER:
+			ret="number";
+			break;
+		case T_STRING:
+			ret="string";
+			break;
+		case T_FUNCTION:
+			ret="function";
+			break;
+		default:
+			th->runtime_stack_push(new Undefined);
+			return;
+	}
+	th->runtime_stack_push(new ASString(ret));
 }
 
 void ABCVm::isTypelate(method_info* th)
@@ -1516,7 +1542,13 @@ void ABCVm::constructSuper(method_info* th, int n)
 		LOG(CALLS,"End of constructing");
 	}
 	else
-		LOG(CALLS,"No super defined");
+	{
+		LOG(CALLS,"Builtin super");
+		LOG(CALLS,"Calling Instance init");
+		//args.incRef();
+		super->constructor->call(obj,&args);
+		//args.decRef();
+	}
 }
 
 void ABCVm::setProperty(method_info* th, int n)
@@ -1719,7 +1751,7 @@ void ABCVm::debug(method_info* i)
 void ABCVm::getLex(method_info* th, int n)
 {
 	multiname name=th->vm->getMultiname(n);
-	LOG(CALLS, "getLex DONE: " << name );
+	LOG(CALLS, "getLex: " << name );
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
 	bool found=false;
 	for(it;it!=th->scope_stack.rend();it++)
@@ -4292,49 +4324,4 @@ istream& operator>>(istream& in, cpool_info& v)
 ISWFObject* parseInt(ISWFObject* obj,arguments* args)
 {
 	return new Integer(0);
-}
-
-Math::Math()
-{
-	setVariableByName("PI",new Number(M_PI));
-	setVariableByName("sqrt",new Function(Math::sqrt));
-	setVariableByName("atan2",new Function(Math::atan2));
-	setVariableByName("floor",new Function(Math::floor));
-}
-
-ASFUNCTIONBODY(Math,atan2)
-{
-	Number* n1=dynamic_cast<Number*>(args->at(0));
-	Number* n2=dynamic_cast<Number*>(args->at(1));
-	if(n1 && n2)
-		return new Number(::atan2(*n1,*n2));
-	else
-	{
-		LOG(CALLS, "Invalid argument type ("<<args->at(0)->getObjectType()<<','<<args->at(1)->getObjectType()<<')' );
-		abort();
-	}
-}
-
-ASFUNCTIONBODY(Math,floor)
-{
-	Number* n=dynamic_cast<Number*>(args->at(0));
-	if(n)
-		return new Number(::floor(*n));
-	else
-	{
-		LOG(TRACE,"Invalid argument");
-		abort();
-	}
-}
-
-ASFUNCTIONBODY(Math,sqrt)
-{
-	Number* n=dynamic_cast<Number*>(args->at(0));
-	if(n)
-		return new Number(::sqrt(*n));
-	else
-	{
-		LOG(TRACE,"Invalid argument");
-		abort();
-	}
 }

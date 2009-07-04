@@ -46,19 +46,31 @@ public:
 	ASFUNCTION(_constructor);
 };
 
-class MovieClip: public EventDispatcher, public IRenderObject
+class Sprite: public EventDispatcher
 {
-private:
-	static bool list_orderer(const IDisplayListElem* a, int d);
 protected:
 	Integer _x;
 	Integer _y;
 	Integer _visible;
 	Integer _width;
 	Integer _height;
+	Number rotation;
+public:
+	Sprite();
+	ASFUNCTION(_constructor);
+	ISWFObject* clone()
+	{
+		return new Sprite(*this);
+	}
+};
+
+class MovieClip: public Sprite, public IRenderObject
+{
+private:
+	static bool list_orderer(const IDisplayListElem* a, int d);
+protected:
 	Integer _framesloaded;
 	Integer _totalframes;
-	Number rotation;
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list < IDisplayListElem* > displayList;
 public:
@@ -71,6 +83,7 @@ public:
 	int displayListLimit;
 
 	MovieClip();
+	ASFUNCTION(_constructor);
 	ASFUNCTION(moveTo);
 	ASFUNCTION(lineStyle);
 	ASFUNCTION(lineTo);
@@ -78,9 +91,6 @@ public:
 	ASFUNCTION(createEmptyMovieClip);
 
 	virtual void addToDisplayList(IDisplayListElem* r);
-
-	//ASObject interface
-	void _register();
 
 	//IRenderObject interface
 	void Render();

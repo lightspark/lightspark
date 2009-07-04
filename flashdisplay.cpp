@@ -44,12 +44,31 @@ ASFUNCTIONBODY(Loader,_constructor)
 	ret->constructor->call(ret,NULL);
 }
 
-MovieClip::MovieClip():_visible(1),_x(0),_y(0),_height(100),_width(100),_framesloaded(0),_totalframes(1),
-	displayListLimit(0),rotation(0.0)
+Sprite::Sprite():_visible(1),_x(0),_y(0),_height(100),_width(100),rotation(0.0)
+{
+	class_name="Sprite";
+	constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(Sprite,_constructor)
+{
+	Sprite* th=static_cast<Sprite*>(obj);
+	EventDispatcher::_constructor(th,NULL);
+	th->setVariableByName("root",sys);
+	th->setVariableByName("_visible",&th->_visible);
+	th->setVariableByName("y",&th->_y);
+	th->setVariableByName("x",&th->_x);
+	th->setVariableByName("width",&th->_width);
+	th->rotation.bind();
+	th->setVariableByName("rotation",&th->rotation,true);
+	th->setVariableByName("height",&th->_height);
+}
+
+MovieClip::MovieClip():_framesloaded(0),_totalframes(1),displayListLimit(0)
 {
 	sem_init(&sem_frames,0,1);
 	class_name="MovieClip";
-	MovieClip::_register();
+	constructor=new Function(_constructor);
 }
 
 bool MovieClip::list_orderer(const IDisplayListElem* a, int d)
@@ -107,24 +126,17 @@ ASFUNCTIONBODY(MovieClip,swapDepths)
 	return NULL;
 }
 
-void MovieClip::_register()
+ASFUNCTIONBODY(MovieClip,_constructor)
 {
-	setVariableByName("_visible",&_visible);
-	setVariableByName("y",&_y);
-	setVariableByName("x",&_x);
-	setVariableByName("width",&_width);
-	rotation.bind();
-	setVariableByName("rotation",&rotation,true);
-	setVariableByName("height",&_height);
-	setVariableByName("_framesloaded",&_framesloaded);
-	setVariableByName("_totalframes",&_totalframes);
-	setVariableByName("swapDepths",new Function(swapDepths));
-	setVariableByName("lineStyle",new Function(lineStyle));
-	setVariableByName("lineTo",new Function(lineTo));
-	setVariableByName("moveTo",new Function(moveTo));
-	setVariableByName("createEmptyMovieClip",new Function(createEmptyMovieClip));
-
-	EventDispatcher::_constructor(this,NULL);
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	Sprite::_constructor(th,NULL);
+	th->setVariableByName("_framesloaded",&th->_framesloaded);
+	th->setVariableByName("_totalframes",&th->_totalframes);
+	th->setVariableByName("swapDepths",new Function(swapDepths));
+	th->setVariableByName("lineStyle",new Function(lineStyle));
+	th->setVariableByName("lineTo",new Function(lineTo));
+	th->setVariableByName("moveTo",new Function(moveTo));
+	th->setVariableByName("createEmptyMovieClip",new Function(createEmptyMovieClip));
 }
 
 void MovieClip::Render()

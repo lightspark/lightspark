@@ -516,15 +516,6 @@ public:
 	
 };
 
-class Math: public ASObject
-{
-public:
-	Math();
-	ASFUNCTION(atan2);
-	ASFUNCTION(floor);
-	ASFUNCTION(sqrt);
-};
-
 bool Boolean_concrete(ISWFObject* obj);
 ISWFObject* parseInt(ISWFObject* obj,arguments* args);
 

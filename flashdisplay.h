@@ -22,6 +22,7 @@
 
 #include "swftypes.h"
 #include "flashevents.h"
+#include "thread_pool.h"
 
 class LoaderInfo: public EventDispatcher
 {
@@ -36,14 +37,22 @@ public:
 	ASFUNCTION(addEventListener);
 };
 
-class Loader: public ASObject
+class Loader: public ASObject, IThreadJob
 {
+private:
+	std::string url;
 public:
 	Loader()
 	{
 		constructor=new Function(_constructor);
 	}
 	ASFUNCTION(_constructor);
+	ASFUNCTION(load);
+	void execute();
+	ISWFObject* clone()
+	{
+		return new Loader(*this);
+	}
 };
 
 class Sprite: public EventDispatcher

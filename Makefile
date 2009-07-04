@@ -7,7 +7,7 @@ datadir = $(datarootdir)
 #PKG_BUILD_FLAG=-DLIGHTSPARK_PKG_BUILD   # Read data from /usr/share
 
 LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o tags_stub.o logger.o vm.o \
-	  asobjects.o abc.o flashdisplay.o flashevents.o textfile.o
+	  asobjects.o abc.o flashdisplay.o flashevents.o textfile.o thread_pool.o
 
 # TODO: library?
 all: lightspark tightspark

@@ -139,6 +139,7 @@ public:
 	ABCVm* currentVm;
 	InputThread* cur_input_thread;
 	RenderThread* cur_render_thread;
+	ThreadPool* cur_thread_pool;
 
 	//DEBUG
 	std::vector<std::string> events_name;

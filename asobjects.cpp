@@ -39,17 +39,13 @@ ASStage::ASStage():width(640),height(480)
 	setVariableByName("height",&height);
 }
 
-void ASArray::_register()
-{
-	setVariableByName("constructor",new Function(constructor));
-	setVariableByName("length",&length);
-	length.incRef();
-}
-
-ASFUNCTIONBODY(ASArray,constructor)
+ASFUNCTIONBODY(ASArray,_constructor)
 {
 	LOG(NOT_IMPLEMENTED,"Called Array constructor");
-	return NULL;
+	ASArray* th=static_cast<ASArray*>(obj);
+	th->length=0;
+	th->setVariableByName("length",&th->length);
+	th->length.incRef();
 }
 
 ASMovieClipLoader::ASMovieClipLoader()
@@ -226,7 +222,7 @@ string ASString::toString() const
 	return data.data();
 }
 
-double ASString::toNumber()
+double ASString::toNumber() const
 {
 	LOG(ERROR,"Cannot convert string " << data << " to float");
 	return 0;
@@ -302,6 +298,18 @@ void Number::copyFrom(const ISWFObject* o)
 	LOG(TRACE,"Set to " << n->val);
 }
 
+bool Number::isEqual(const ISWFObject* o) const
+{
+	if(o->getObjectType()==T_INTEGER)
+		return val==o->toNumber();
+	else if(o->getObjectType()==T_NUMBER)
+		return val==o->toNumber();
+	else
+	{
+		return ISWFObject::isLess(o);
+	}
+}
+
 bool Number::isLess(const ISWFObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
@@ -322,13 +330,71 @@ string Number::toString() const
 	return string(buf);
 }
 
-double Number::toNumber()
+double Number::toNumber() const
 {
 	return val;
 }
 
-int Number::toInt()
+int Number::toInt() const
 {
 	return val;
+}
+
+Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
+{
+	constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(Date,_constructor)
+{
+	Date* th=dynamic_cast<Date*>(obj);
+	th->setVariableByName("getTimezoneOffset",new Function(getTimezoneOffset));
+	th->setVariableByName("valueOf",new Function(valueOf));
+	th->year=1990;
+	th->month=1;
+	th->date=1;
+	th->hour=0;
+	th->minute=0;
+	th->second=0;
+	th->millisecond=0;
+}
+
+ASFUNCTIONBODY(Date,getTimezoneOffset)
+{
+	LOG(NOT_IMPLEMENTED,"getTimezoneOffset");
+	return new Number(120);
+}
+
+ASFUNCTIONBODY(Date,valueOf)
+{
+	Date* th=dynamic_cast<Date*>(obj);
+	long ret=0;
+	//TODO: leap year
+	ret+=(th->year-1990)*365*24*3600*1000;
+	//TODO: month length
+	ret+=(th->month-1)*30*24*3600*1000;
+	ret+=(th->date-1)*24*3600*1000;
+	ret+=th->hour*3600*1000;
+	ret+=th->minute*60*1000;
+	ret+=th->second*1000;
+	ret+=th->millisecond;
+	return new Number(ret);
+}
+
+IFunction* Function::toFunction()
+{
+	return this;
+}
+
+ISWFObject* Function::call(ISWFObject* obj, arguments* args)
+{
+	if(!bound)
+		return val(obj,args);
+	else
+	{
+		LOG(CALLS,"Calling with closure");
+		LOG(CALLS,"args 0 " << args->at(0));
+		return val(closure_this,args);
+	}
 }
 

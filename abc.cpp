@@ -36,6 +36,7 @@
 
 opcode_handler ABCVm::opcode_table_args0[]={
 	{"pushScope",(void*)&ABCVm::pushScope},
+	{"pushWith",(void*)&ABCVm::pushWith},
 	{"debug",(void*)&ABCVm::debug},
 	{"decRef",(void*)&ISWFObject::s_decRef},
 	{"incRef",(void*)&ISWFObject::s_incRef},
@@ -302,7 +303,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("Array",new ASArray);
 	Global.setVariableByName("undefined",new Undefined);
 	Global.setVariableByName("Math",new Math);
-	Global.setVariableByName("Date",new ASObject);
+	Global.setVariableByName("Date",new Date);
 
 	Global.setVariableByName(Qname("flash.display","MovieClip"),new MovieClip);
 	Global.setVariableByName(Qname("flash.display","DisplayObject"),new ASObject);
@@ -655,8 +656,9 @@ void ABCVm::divide(method_info* th)
 void ABCVm::getGlobalScope(method_info* th)
 {
 	LOG(CALLS,"getGlobalScope");
-	th->runtime_stack_push(th->scope_stack[0]);
-	th->scope_stack[0]->incRef();
+//	th->runtime_stack_push(th->scope_stack[0]);
+//	th->scope_stack[0]->incRef();
+	th->runtime_stack_push(&th->vm->Global);
 }
 
 void ABCVm::decrement(method_info* th)
@@ -1191,9 +1193,24 @@ void ABCVm::deleteProperty(method_info* th, int n)
 	LOG(NOT_IMPLEMENTED,"deleteProperty " << n);
 }
 
-void ABCVm::call(method_info* th, int n)
+void ABCVm::call(method_info* th, int m)
 {
-	LOG(NOT_IMPLEMENTED,"call " << n);
+	LOG(CALLS,"call " << m);
+	arguments args;
+	args.resize(m);
+	for(int i=0;i<m;i++)
+		args.at(m-i-1)=th->runtime_stack_pop();
+
+	ISWFObject* obj=th->runtime_stack_pop();
+	IFunction* f=th->runtime_stack_pop()->toFunction();
+
+	if(f==NULL)
+	{
+		LOG(ERROR,"Not a function");
+		abort();
+	}
+
+	f->call(obj,&args);
 }
 
 void ABCVm::coerce(method_info* th, int n)
@@ -1266,7 +1283,7 @@ void ABCVm::newObject(method_info* th, int n)
 
 void ABCVm::setSlot(method_info* th, int n)
 {
-	LOG(CALLS,"setSlot DONE: " << n);
+	LOG(CALLS,"setSlot " << dec << n);
 	ISWFObject* value=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
 	
@@ -1275,7 +1292,7 @@ void ABCVm::setSlot(method_info* th, int n)
 
 void ABCVm::getSlot(method_info* th, int n)
 {
-	LOG(CALLS,"getSlot DONE: " << n);
+	LOG(CALLS,"getSlot " << dec << n);
 	ISWFObject* obj=th->runtime_stack_pop();
 	th->runtime_stack_push(obj->getSlot(n));
 	obj->getSlot(n)->incRef();
@@ -1323,12 +1340,18 @@ void ABCVm::pop(method_info* th)
 
 void ABCVm::negate(method_info* th)
 {
-	LOG(NOT_IMPLEMENTED, "negate" );
+	LOG(CALLS, "negate" );
+	ISWFObject* v=th->runtime_stack_pop();
+
+	th->runtime_stack_push(new Number(-(v->toNumber())));
 }
 
 void ABCVm::_not(method_info* th)
 {
-	LOG(NOT_IMPLEMENTED, "not" );
+	LOG(CALLS, "not" );
+	ISWFObject* v=th->runtime_stack_pop();
+
+	th->runtime_stack_push(new Boolean(!(Boolean_concrete(v))));
 }
 
 void ABCVm::not_impl(int n)
@@ -1349,7 +1372,11 @@ void ABCVm::strictEquals(method_info* th)
 
 void ABCVm::equals(method_info* th)
 {
-	LOG(NOT_IMPLEMENTED, "equals" );
+	LOG(CALLS, "equals" );
+	ISWFObject* val2=th->runtime_stack_pop();
+	ISWFObject* val1=th->runtime_stack_pop();
+
+	th->runtime_stack_push(new Boolean(val1->isEqual(val2)));
 }
 
 void ABCVm::dup(method_info* th)
@@ -1385,6 +1412,13 @@ void ABCVm::pushNull(method_info* th)
 {
 	LOG(CALLS, "pushNull DONE" );
 	th->runtime_stack_push(new Null);
+}
+
+void ABCVm::pushWith(method_info* th)
+{
+	ISWFObject* t=th->runtime_stack_pop();
+	LOG(CALLS, "pushWith " << t );
+	th->scope_stack.push_back(t);
 }
 
 void ABCVm::pushScope(method_info* th)
@@ -2625,6 +2659,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 					code >> t;
 				break;
 			}
+			case 0x1c:
+			{
+				//pushwith
+				LOG(TRACE, "synt pushwith" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("pushWith"), th);
+				break;
+			}
 			case 0x1d:
 			{
 				//popscope
@@ -3642,7 +3685,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 			{
 				//else fallthrough
 				multiname type=getMultiname(t->type_name);
-				LOG(CALLS,"Slot vindex 0 "<<name<<" type "<<type);
+				LOG(CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<type);
 				bool found;
 				ISWFObject* ret=obj->getVariableByName(name,found);
 				if(!found)

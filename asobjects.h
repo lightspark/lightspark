@@ -65,6 +65,35 @@ public:
 	int debug_id;
 };
 
+class IFunction: public ASObject
+{
+public:
+	virtual ISWFObject* call(ISWFObject* obj, arguments* args)=0;
+};
+
+class Function : public IFunction
+{
+public:
+	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
+	Function(as_function v):val(v),bound(false){}
+	SWFOBJECT_TYPE getObjectType()const {return T_FUNCTION;}
+	ISWFObject* call(ISWFObject* obj, arguments* args);
+	IFunction* toFunction();
+	ISWFObject* clone()
+	{
+		return new Function(*this);
+	}
+	void bind()
+	{
+		bound=true;
+	}
+	ISWFObject* closure_this;
+
+private:
+	as_function val;
+	bool bound;
+};
+
 class Undefined : public ASObject
 {
 public:
@@ -88,7 +117,7 @@ public:
 	ASString(const std::string& s);
 	ASFUNCTION(String);
 	std::string toString() const;
-	double toNumber();
+	double toNumber() const;
 	bool isEqual(const ISWFObject* r) const;
 	SWFOBJECT_TYPE getObjectType() const {return T_STRING;}
 	ISWFObject* clone()
@@ -113,10 +142,12 @@ private:
 	std::vector<ISWFObject*> data;
 	Integer length;
 public:
-	ASArray():length(0){_register();}
+	ASArray():length(0)
+	{
+		constructor=new Function(_constructor);
+	}
 	virtual ~ASArray();
-	ASFUNCTION(constructor);
-	void _register();
+	ASFUNCTION(_constructor);
 	ISWFObject* clone()
 	{
 		return new ASArray(*this);
@@ -181,8 +212,8 @@ public:
 	Number(double v):val(v){}
 	SWFOBJECT_TYPE getObjectType()const {return T_NUMBER;}
 	std::string toString() const;
-	int toInt(); 
-	double toNumber();
+	int toInt() const; 
+	double toNumber() const;
 	operator double(){return val;}
 	ISWFObject* clone()
 	{
@@ -190,6 +221,7 @@ public:
 	}
 	void copyFrom(const ISWFObject* o);
 	bool isLess(const ISWFObject* o) const;
+	bool isEqual(const ISWFObject* o) const;
 };
 
 class ASMovieClipLoader: public ASObject
@@ -223,4 +255,54 @@ public:
 	}
 };
 
+class Date: public ASObject
+{
+private:
+	int year;
+	int month;
+	int date;
+	int hour;
+	int minute;
+	int second;
+	int millisecond;
+public:
+	Date();
+	ASFUNCTION(_constructor);
+	ASFUNCTION(getTimezoneOffset);
+	ASFUNCTION(valueOf);
+	ISWFObject* clone()
+	{
+		return new Date(*this);
+	}
+};
+
+//Internal objects used to store traits declared in scripts and object placed, but not yet valid
+class Definable : public ISWFObject
+{
+public:
+	SWFOBJECT_TYPE getObjectType() const {return T_DEFINABLE;}
+	virtual void define(ISWFObject* g)=0;
+};
+
+class ScriptDefinable: public Definable
+{
+private:
+	Function::as_function f;
+public:
+	ScriptDefinable(Function::as_function _f):f(_f){}
+	//The global object will be passed from the calling context
+	void define(ISWFObject* g){ f(g,NULL); }
+};
+
+class PlaceObject2Tag;
+
+class DictionaryDefinable: public Definable
+{
+private:
+	int dict_id;
+	PlaceObject2Tag* p;
+public:
+	DictionaryDefinable(int d, PlaceObject2Tag* _p):dict_id(d),p(_p){}
+	void define(ISWFObject* g);
+};
 #endif

@@ -42,7 +42,7 @@ string ConstantReference::toString() const
 	return STRING(buf);
 }
 
-int ConstantReference::toInt()
+int ConstantReference::toInt() const
 {
 	LOG(ERROR,"Cannot convert ConstRef to Int");
 	return 0;
@@ -80,6 +80,18 @@ bool Integer::isLess(const ISWFObject* o) const
 	}
 }
 
+bool Integer::isEqual(const ISWFObject* o) const
+{
+	if(o->getObjectType()==T_INTEGER)
+		return val==o->toInt();
+	else if(o->getObjectType()==T_NUMBER)
+		return val==o->toInt();
+	else
+	{
+		return ISWFObject::isEqual(o);
+	}
+}
+
 bool ISWFObject::isEqual(const ISWFObject* r) const
 {
 	LOG(NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
@@ -92,13 +104,13 @@ IFunction* ISWFObject::toFunction()
 	return NULL;
 }
 
-int ISWFObject::toInt()
+int ISWFObject::toInt() const
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
 	return 0;
 }
 
-double ISWFObject::toNumber()
+double ISWFObject::toNumber() const
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to float");
 	return 0;
@@ -259,12 +271,12 @@ string Integer::toString() const
 	return STRING(buf);
 }
 
-int Integer::toInt()
+int Integer::toInt() const
 {
 	return val;
 }
 
-double Integer::toNumber()
+double Integer::toNumber() const
 {
 	return val;
 }
@@ -969,11 +981,6 @@ bool Null::isEqual(const ISWFObject* r) const
 		return false;
 }
 
-IFunction* Function::toFunction()
-{
-	return this;
-}
-
 string ISWFObject::getNameAt(int index)
 {
 	if(index<Variables.size())
@@ -995,18 +1002,6 @@ string ISWFObject::getNameAt(int index)
 int ISWFObject::numVariables()
 {
 	return Variables.size();
-}
-
-ISWFObject* Function::call(ISWFObject* obj, arguments* args)
-{
-	if(!bound)
-		return val(obj,args);
-	else
-	{
-		LOG(CALLS,"Calling with closure");
-		LOG(CALLS,"args 0 " << args->at(0));
-		return val(closure_this,args);
-	}
 }
 
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v)

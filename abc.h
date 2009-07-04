@@ -419,6 +419,7 @@ private:
 	static void setSuper(method_info* th, int n);
 	static void getSuper(method_info* th, int n);
 	static void pushScope(method_info* th);
+	static void pushWith(method_info* th);
 	static void pushNull(method_info* th);
 	static ISWFObject* pushUndefined(method_info* th);
 	static void pushNaN(method_info* th);

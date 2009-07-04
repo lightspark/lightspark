@@ -195,8 +195,8 @@ public:
 
 	virtual SWFOBJECT_TYPE getObjectType() const=0;
 	virtual std::string toString() const;
-	virtual int toInt();
-	virtual double toNumber();
+	virtual int toInt() const;
+	virtual double toNumber() const;
 	virtual IFunction* toFunction();
 	virtual ISWFObject* clone()
 	{
@@ -223,7 +223,7 @@ public:
 	ConstantReference(int i):index(i){}
 	SWFOBJECT_TYPE getObjectType() const{return T_CONSTREF;}
 	std::string toString() const;
-	int toInt();
+	int toInt() const;
 	ISWFObject* clone()
 	{
 		return new ConstantReference(*this);
@@ -259,65 +259,6 @@ public:
 	bool isEqual(const ISWFObject* r) const;
 };
 
-class IFunction: public ISWFObject
-{
-public:
-	virtual ISWFObject* call(ISWFObject* obj, arguments* args)=0;
-};
-
-class Function : public IFunction
-{
-public:
-	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
-	Function(as_function v):val(v),bound(false){}
-	SWFOBJECT_TYPE getObjectType()const {return T_FUNCTION;}
-	ISWFObject* call(ISWFObject* obj, arguments* args);
-	IFunction* toFunction();
-	ISWFObject* clone()
-	{
-		return new Function(*this);
-	}
-	void bind()
-	{
-		bound=true;
-	}
-	ISWFObject* closure_this;
-
-private:
-	as_function val;
-	bool bound;
-};
-
-//Internal objects used to store traits declared in scripts and object placed, but not yet valid
-class Definable : public ISWFObject
-{
-public:
-	SWFOBJECT_TYPE getObjectType() const {return T_DEFINABLE;}
-	virtual void define(ISWFObject* g)=0;
-};
-
-class ScriptDefinable: public Definable
-{
-private:
-	Function::as_function f;
-public:
-	ScriptDefinable(Function::as_function _f):f(_f){}
-	//The global object will be passed from the calling context
-	void define(ISWFObject* g){ f(g,NULL); }
-};
-
-class PlaceObject2Tag;
-
-class DictionaryDefinable: public Definable
-{
-private:
-	int dict_id;
-	PlaceObject2Tag* p;
-public:
-	DictionaryDefinable(int d, PlaceObject2Tag* _p):dict_id(d),p(_p){}
-	void define(ISWFObject* g);
-};
-
 class FLOAT 
 {
 friend std::istream& operator>>(std::istream& s, FLOAT& v);
@@ -351,10 +292,11 @@ public:
 	Integer& operator=(int v){val=v; return *this; }
 	SWFOBJECT_TYPE getObjectType()const {return T_INTEGER;}
 	std::string toString() const;
-	int toInt(); 
-	double toNumber();
+	int toInt() const; 
+	double toNumber() const;
 	operator int() const{return val;} 
 	bool isLess(const ISWFObject* r) const;
+	bool isEqual(const ISWFObject* o) const;
 	ISWFObject* clone()
 	{
 		return new Integer(*this);

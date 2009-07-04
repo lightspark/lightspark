@@ -1544,9 +1544,11 @@ void ABCVm::constructSuper(method_info* th, int n)
 	else
 	{
 		LOG(CALLS,"Builtin super");
+		obj->super=dynamic_cast<ASObject*>(super->clone());
 		LOG(CALLS,"Calling Instance init");
 		//args.incRef();
-		super->constructor->call(obj,&args);
+		if(super->constructor)
+			super->constructor->call(obj->super,&args);
 		//args.decRef();
 	}
 }

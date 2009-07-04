@@ -35,6 +35,10 @@ public:
 	Event(const std::string& t);
 	virtual EVENT_TYPE getEventType() {return EVENT;} //DEPRECATED
 	const std::string type;
+	ISWFObject* clone()
+	{
+		return new Event(*this);
+	}
 };
 
 class IOErrorEvent: public Event

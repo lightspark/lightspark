@@ -3608,21 +3608,21 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 						ISWFObject* ret=obj->setVariableByName(name, 
 							new ASString(constant_pool.strings[t->vindex]));
 						if(t->slot_id)
-							obj->setSlot(t->slot_id, ret);
+							obj->initSlot(t->slot_id, ret, name);
 						break;
 					}
 					case 0x0a: //False
 					{
 						ISWFObject* ret=obj->setVariableByName(name, new Boolean(false));
 						if(t->slot_id)
-							obj->setSlot(t->slot_id, ret);
+							obj->initSlot(t->slot_id, ret, name);
 						break;
 					}
 					case 0x0c: //Null
 					{
 						ISWFObject* ret=obj->setVariableByName(name, new Null);
 						if(t->slot_id)
-							obj->setSlot(t->slot_id, ret);
+							obj->initSlot(t->slot_id, ret, name);
 						break;
 					}
 					default:
@@ -3655,7 +3655,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 				else
 					LOG(CALLS,"Not resetting variable " << name);
 				if(t->slot_id)
-					obj->setSlot(t->slot_id, ret);
+					obj->initSlot(t->slot_id, ret, name);
 				break;
 			}
 		}

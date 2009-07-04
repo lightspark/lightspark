@@ -37,6 +37,6 @@ int main(int argc, char* argv[])
 	sys->performance_profiling=false;
 
 	ifstream f(argv[1]);
-	ABCVm vm(NULL,f);
+	ABCVm vm(sys,f);
 	vm.Run(&vm);
 }

@@ -147,6 +147,8 @@ protected:
 	std::map<Qname,IFunction*> Setters;
 	std::map<Qname,IFunction*> Getters;
 	std::vector<ISWFObject*> slots;
+	typedef std::map<Qname,ISWFObject*>::iterator var_iterator;
+	std::vector<var_iterator> slots_vars;
 	int max_slot_index;
 	bool binded;
 	int ref_count;
@@ -183,6 +185,7 @@ public:
 	virtual void _register();
 	virtual ISWFObject* getSlot(int n);
 	virtual void setSlot(int n,ISWFObject* o);
+	virtual void initSlot(int n,ISWFObject* o, const Qname& name);
 	virtual void dumpVariables();
 	virtual int numVariables();
 	std::string getNameAt(int i);

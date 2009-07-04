@@ -911,10 +911,30 @@ ISWFObject* ISWFObject::getSlot(int n)
 	}
 }
 
+void ISWFObject::initSlot(int n,ISWFObject* o,const Qname& s)
+{
+	if(n-1<slots.size())
+	{
+		slots[n-1]=o;
+		slots_vars[n-1]=Variables.find(s);
+	}
+	else
+	{
+		slots.resize(n);
+		slots_vars.resize(n,Variables.end());
+		slots[n-1]=o;
+		slots_vars[n-1]=Variables.find(s);
+	}
+}
+
 void ISWFObject::setSlot(int n,ISWFObject* o)
 {
 	if(n-1<slots.size())
+	{
 		slots[n-1]=o;
+		if(slots_vars[n-1]!=Variables.end())
+			slots_vars[n-1]->second=o;
+	}
 	else
 	{
 		slots.resize(n);

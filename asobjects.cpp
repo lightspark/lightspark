@@ -235,6 +235,43 @@ ASString::ASString()
 ASString::ASString(const string& s):data(s)
 {
 	setVariableByName("Call",new Function(ASString::String));
+	setVariableByName(Qname("http://adobe.com/AS3/2006/builtin","indexOf"),new Function(indexOf));
+	setVariableByName(Qname("http://adobe.com/AS3/2006/builtin","split"),new Function(split));
+}
+
+ASFUNCTIONBODY(ASString,indexOf)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	ASString* r=static_cast<ASString*>(args->at(0));
+
+	int ret=th->data.find(r->data);
+	return new Integer(ret);
+}
+
+ASFUNCTIONBODY(ASString,split)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	string del=args->at(0)->toString();
+
+	ASArray* ret=new ASArray;
+	int pos=0,pos2;
+	do
+	{
+		pos2=th->data.find(del,pos);
+		if(pos2==-1)
+		{
+			string s(th->data.begin()+pos,th->data.end());
+			ret->push(new ASString(s));
+		}
+		else
+		{
+			string s(th->data.begin()+pos,th->data.begin()+pos2);
+			ret->push(new ASString(s));
+		}
+		pos=pos2+1;
+	}
+	while(pos2!=-1);
+	return ret;
 }
 
 ASArray::~ASArray()

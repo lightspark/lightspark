@@ -119,6 +119,8 @@ public:
 	ASString();
 	ASString(const std::string& s);
 	ASFUNCTION(String);
+	ASFUNCTION(indexOf);
+	ASFUNCTION(split);
 	std::string toString() const;
 	double toNumber() const;
 	bool isEqual(const ISWFObject* r) const;

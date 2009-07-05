@@ -437,6 +437,7 @@ private:
 	static void isTypelate(method_info* th);
 	static void swap(method_info* th);
 	static void add(method_info* th);
+	static void in(method_info* th);
 	static void multiply(method_info* th);
 	static void divide(method_info* th);
 	static void modulo(method_info* th);
@@ -518,6 +519,7 @@ public:
 
 bool Boolean_concrete(ISWFObject* obj);
 ISWFObject* parseInt(ISWFObject* obj,arguments* args);
+ISWFObject* parseFloat(ISWFObject* obj,arguments* args);
 
 std::istream& operator>>(std::istream& in, u8& v);
 std::istream& operator>>(std::istream& in, u16& v);

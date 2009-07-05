@@ -55,6 +55,24 @@ public:
 	}
 };
 
+class Stage: public ASObject
+{
+public:
+	Stage();
+};
+
+class StageScaleMode: public ASObject
+{
+public:
+	StageScaleMode();
+};
+
+class StageAlign: public ASObject
+{
+public:
+	StageAlign();
+};
+
 class Sprite: public EventDispatcher
 {
 protected:

@@ -58,6 +58,7 @@ opcode_handler ABCVm::opcode_table_args0[]={
 	{"greaterThan",(void*)&ABCVm::greaterThan},
 	{"negate",(void*)&ABCVm::negate},
 	{"not",(void*)&ABCVm::_not},
+	{"in",(void*)&ABCVm::in},
 	{"strictEquals",(void*)&ABCVm::strictEquals},
 	{"equals",(void*)&ABCVm::equals},
 	{"dup",(void*)&ABCVm::dup},
@@ -303,6 +304,9 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("undefined",new Undefined);
 	Global.setVariableByName("Math",new Math);
 	Global.setVariableByName("Date",new Date);
+	Global.setVariableByName("stage",new Stage);
+
+	Global.setVariableByName("parseFloat",new Function(parseFloat));
 
 	Global.setVariableByName(Qname("flash.display","MovieClip"),new MovieClip);
 	Global.setVariableByName(Qname("flash.display","DisplayObject"),new ASObject);
@@ -311,6 +315,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByName(Qname("flash.display","InteractiveObject"),new ASObject),
 	Global.setVariableByName(Qname("flash.display","DisplayObjectContainer"),new ASObject);
 	Global.setVariableByName(Qname("flash.display","Sprite"),new Sprite);
+	Global.setVariableByName(Qname("flash.display","StageScaleMode"),new StageScaleMode);
+	Global.setVariableByName(Qname("flash.display","StageAlign"),new StageAlign);
 
 	Global.setVariableByName(Qname("flash.text","TextField"),new ASObject);
 	Global.setVariableByName(Qname("flash.text","TextFormat"),new ASObject);
@@ -736,6 +742,20 @@ void ABCVm::add(method_info* th)
 		th->runtime_stack_push(new Number(num1+num2));
 		LOG(CALLS,"add " << num1 << '+' << num2);
 	}
+	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_STRING)
+	{
+		string a=val1->toString();
+		string b=val2->toString();
+		th->runtime_stack_push(new ASString(a+b));
+		LOG(CALLS,"add " << a << '+' << b);
+	}
+	else if(val1->getObjectType()==T_STRING && val2->getObjectType()==T_INTEGER)
+	{
+		string a=val1->toString();
+		string b=val2->toString();
+		th->runtime_stack_push(new ASString(a+b));
+		LOG(CALLS,"add " << a << '+' << b);
+	}
 	else
 	{
 		LOG(NOT_IMPLEMENTED,"Add between types " << val1->getObjectType() << ' ' << val2->getObjectType());
@@ -1091,7 +1111,14 @@ void ABCVm::ifGE(method_info* th, int offset)
 void ABCVm::ifNGE(method_info* th, int offset)
 {
 	LOG(CALLS,"ifNGE " << offset);
-	abort();
+	ISWFObject* obj2=th->runtime_stack_pop();
+	ISWFObject* obj1=th->runtime_stack_pop();
+
+	//Real comparision demanded to object
+	if(obj1->isGreater(obj2) || obj1->isEqual(obj2))
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+	else
+		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
 }
 
 void ABCVm::ifNGT(method_info* th, int offset)
@@ -1359,6 +1386,11 @@ void ABCVm::coerce_s(method_info* th)
 	LOG(NOT_IMPLEMENTED, "coerce_s" );
 }
 
+void ABCVm::in(method_info* th)
+{
+	LOG(NOT_IMPLEMENTED, "in" );
+}
+
 void ABCVm::pop(method_info* th)
 {
 	LOG(CALLS, "pop: DONE" );
@@ -1477,7 +1509,8 @@ void ABCVm::pushShort(method_info* th, int n)
 void ABCVm::pushByte(method_info* th, int n)
 {
 	LOG(CALLS, "pushByte " << n );
-	th->runtime_stack_push(new Integer(n));
+	signed int n2=(signed char)n;
+	th->runtime_stack_push(new Integer(n2));
 }
 
 void ABCVm::incLocal_i(method_info* th, int n)
@@ -3455,6 +3488,15 @@ llvm::Function* ABCVm::synt_method(method_info* m)
 				Builder.CreateCall(ex->FindFunctionNamed("isTypelate"), th);
 				break;
 			}
+			case 0xb4:
+			{
+				//in
+				LOG(TRACE, "synt in" );
+				syncStacks(ex,Builder,jitted,static_stack,m);
+				jitted=false;
+				Builder.CreateCall(ex->FindFunctionNamed("in"), th);
+				break;
+			}
 			case 0xc0:
 			{
 				//increment_i
@@ -4326,4 +4368,9 @@ istream& operator>>(istream& in, cpool_info& v)
 ISWFObject* parseInt(ISWFObject* obj,arguments* args)
 {
 	return new Integer(0);
+}
+
+ISWFObject* parseFloat(ISWFObject* obj,arguments* args)
+{
+	return new Number(atof(args->at(0)->toString().c_str()));
 }

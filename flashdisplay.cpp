@@ -24,8 +24,6 @@
 #include "flashdisplay.h"
 #include "swf.h"
 
-#include <algorithm>
-
 using namespace std;
 
 extern __thread SystemState* sys;
@@ -35,7 +33,6 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	EventDispatcher::_constructor(obj,args);
 	ISWFObject* ret=obj->setVariableByName("sharedEvents",new EventDispatcher); //TODO: Read only
 	ret->constructor->call(ret,NULL);
-	obj->setVariableByName("loaderURL",new ASString("localhost"));
 //	setVariableByName("parameters",&parameters);
 
 }
@@ -216,19 +213,3 @@ void MovieClip::Render()
 	sys->currentClip=clip_bak;
 }
 
-Stage::Stage()
-{
-	setVariableByName("root",sys);
-	setVariableByName("stageWidth",new Integer(640));
-	setVariableByName("stageHeight",new Integer(480));
-}
-
-StageScaleMode::StageScaleMode()
-{
-	setVariableByName("NO_SCALE",new ASString("noScale"));
-}
-
-StageAlign::StageAlign()
-{
-	setVariableByName("TOP_LEFT",new ASString("TL"));
-}

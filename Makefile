@@ -25,7 +25,7 @@ libls.so: $(LIBOBJS)
 
 .PHONY: all clean install
 clean:
-	-rm -f main.o $(LIBOBJS) lightspark tightspark libls.so
+	-rm -f main.o tightspark.o $(LIBOBJS) lightspark tightspark libls.so
 install: all
 	install -d $(DESTDIR)$(bindir) $(DESTDIR)$(datadir)/lightspark
 	install lightspark $(DESTDIR)$(bindir)/lightspark

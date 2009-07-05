@@ -164,6 +164,21 @@ struct option_detail
 class method_body_info;
 class ABCVm;
 
+struct call_context
+{
+	struct
+	{
+		ISWFObject** locals;
+		ISWFObject** stack;
+		uint32_t stack_index;
+	} __attribute__((packed));
+	ABCVm* vm;
+	std::vector<ISWFObject*> scope_stack;
+	void runtime_stack_push(ISWFObject* s);
+	ISWFObject* runtime_stack_pop();
+	ISWFObject* runtime_stack_peek();
+};
+
 class method_info
 {
 friend std::istream& operator>>(std::istream& in, method_info& v);
@@ -180,27 +195,13 @@ private:
 //	param_info param_names
 
 	llvm::Function* f;
-	ISWFObject** locals;
-	ISWFObject** stack;
-	int max_stack_index;
-	uint32_t stack_index;
-	llvm::Value* dynamic_stack;
-	llvm::Value* dynamic_stack_index;
 
 public:
 	ABCVm* vm;
-	std::vector<ISWFObject*> scope_stack;
 	method_body_info* body;
-	void runtime_stack_push(ISWFObject* s);
-	ISWFObject* runtime_stack_pop();
-	ISWFObject* runtime_stack_peek();
-	void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val);
-	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder) const;
-	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder) const;
-	method_info():body(NULL),f(NULL),locals(NULL),stack(NULL),stack_index(0),vm(NULL)
+	method_info():body(NULL),f(NULL),vm(NULL)
 	{
 	}
-	void setStackLength(const llvm::ExecutionEngine* ex, int l);
 };
 
 struct item_info
@@ -344,8 +345,8 @@ private:
 	void buildTrait(ISWFObject* obj, const traits_info* t, Function::as_function deferred_initialization=NULL);
 	void printNamespaceSet(const ns_set_info* m) const;
 	std::string getString(unsigned int s) const;
-	multiname getMultiname(unsigned int m, method_info* th=NULL) const;
-	Qname getQname(unsigned int m, method_info* th=NULL) const;
+	multiname getMultiname(unsigned int m, call_context* th=NULL) const;
+	Qname getQname(unsigned int m, call_context* th=NULL) const;
 
 	llvm::Function* synt_method(method_info* m);
 	llvm::FunctionType* synt_method_prototype();
@@ -357,109 +358,116 @@ private:
 	static llvm::ExecutionEngine* ex;
 
 	//Utility
-	static void debug(method_info* th);
+	static void debug(call_context* th);
 	static void not_impl(int p);
 	static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
-	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
-	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, const method_info* m);
+	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
+			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
+	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
+			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
-	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, bool jitted,std::vector<stack_entry>& static_stack, method_info* m);
+	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, bool jitted,
+			std::vector<stack_entry>& static_stack, 
+			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 
 	void registerClasses();
 
 	void registerFunctions();
 	//Interpreted AS instructions
-	static void hasNext2(method_info* th, int n, int m); 
-	static void callPropVoid(method_info* th, int n, int m); 
-	static void callSuperVoid(method_info* th, int n, int m); 
-	static void callSuper(method_info* th, int n, int m); 
-	static void callProperty(method_info* th, int n, int m); 
-	static void constructProp(method_info* th, int n, int m); 
-	static void getLocal(method_info* th, int n); 
-	static void newObject(method_info* th, int n); 
-	static void newCatch(method_info* th, int n); 
-	static void jump(method_info* th, int offset); 
-	static void ifEq(method_info* th, int offset); 
-	static void ifStrictEq(method_info* th, int offset); 
-	static void ifNe(method_info* th, int offset); 
-	static void ifLT(method_info* th, int offset); 
-	static void ifNLT(method_info* th, int offset); 
-	static void ifNGT(method_info* th, int offset); 
-	static void ifNGE(method_info* th, int offset); 
-	static void ifGE(method_info* th, int offset); 
-	static void ifNLE(method_info* th, int offset); 
-	static void ifStrictNE(method_info* th, int offset); 
-	static void ifFalse(method_info* th, int offset); 
-	static void ifTrue(method_info* th, int offset); 
-	static void getSlot(method_info* th, int n); 
-	static void setLocal(method_info* th, int n); 
-	static void kill(method_info* th, int n); 
-	static void setSlot(method_info* th, int n); 
-	static void pushString(method_info* th, int n); 
-	static void getLex(method_info* th, int n); 
-	static void getScopeObject(method_info* th, int n); 
-	static void deleteProperty(method_info* th, int n); 
-	static void initProperty(method_info* th, int n); 
-	static void newClass(method_info* th, int n); 
-	static void newArray(method_info* th, int n); 
-	static void findPropStrict(method_info* th, int n);
-	static void findProperty(method_info* th, int n);
-	static void getProperty(method_info* th, int n);
-	static void pushByte(method_info* th, int n);
-	static void pushShort(method_info* th, int n);
-	static void pushInt(method_info* th, int n);
-	static void pushDouble(method_info* th, int n);
-	static void incLocal_i(method_info* th, int n);
-	static void coerce(method_info* th, int n);
-	static void setProperty(method_info* th, int n);
-	static void call(method_info* th, int n);
-	static void constructSuper(method_info* th, int n);
-	static void construct(method_info* th, int n);
-	static void newFunction(method_info* th, int n);
-	static void setSuper(method_info* th, int n);
-	static void getSuper(method_info* th, int n);
-	static void pushScope(method_info* th);
-	static void pushWith(method_info* th);
-	static void pushNull(method_info* th);
-	static ISWFObject* pushUndefined(method_info* th);
-	static void pushNaN(method_info* th);
-	static void pushFalse(method_info* th);
-	static void pushTrue(method_info* th);
-	static void dup(method_info* th);
-	static void equals(method_info* th);
-	static void strictEquals(method_info* th);
-	static void _not(method_info* th);
-	static void negate(method_info* th);
-	static void pop(method_info* th);
-	static void typeOf(method_info* th);
-	static void _throw(method_info* th);
-	static void asTypelate(method_info* th);
-	static void isTypelate(method_info* th);
-	static void swap(method_info* th);
-	static void add(method_info* th);
-	static void in(method_info* th);
-	static void multiply(method_info* th);
-	static void divide(method_info* th);
-	static void modulo(method_info* th);
-	static void subtract(method_info* th);
-	static void popScope(method_info* th);
-	static void newActivation(method_info* th);
-	static void coerce_s(method_info* th);
-	static void coerce_a(method_info* th);
-	static void convert_i(method_info* th);
-	static void convert_b(method_info* th);
-	static void convert_d(method_info* th);
-	static void greaterThan(method_info* th);
-	static void lessThan(method_info* th);
-	static void nextName(method_info* th);
-	static void nextValue(method_info* th);
-	static void increment_i(method_info* th);
-	static void increment(method_info* th);
-	static void decrement_i(method_info* th);
-	static void decrement(method_info* th);
-	static void getGlobalScope(method_info* th);
-	static void method_reset(method_info* th);
+	static void hasNext2(call_context* th, int n, int m); 
+	static void callPropVoid(call_context* th, int n, int m); 
+	static void callSuperVoid(call_context* th, int n, int m); 
+	static void callSuper(call_context* th, int n, int m); 
+	static void callProperty(call_context* th, int n, int m); 
+	static void constructProp(call_context* th, int n, int m); 
+	static void getLocal(call_context* th, int n); 
+	static void newObject(call_context* th, int n); 
+	static void newCatch(call_context* th, int n); 
+	static void jump(call_context* th, int offset); 
+	static void ifEq(call_context* th, int offset); 
+	static void ifStrictEq(call_context* th, int offset); 
+	static void ifNe(call_context* th, int offset); 
+	static void ifLT(call_context* th, int offset); 
+	static void ifNLT(call_context* th, int offset); 
+	static void ifNGT(call_context* th, int offset); 
+	static void ifNGE(call_context* th, int offset); 
+	static void ifGE(call_context* th, int offset); 
+	static void ifNLE(call_context* th, int offset); 
+	static void ifStrictNE(call_context* th, int offset); 
+	static void ifFalse(call_context* th, int offset); 
+	static void ifTrue(call_context* th, int offset); 
+	static void getSlot(call_context* th, int n); 
+	static void setLocal(call_context* th, int n); 
+	static void kill(call_context* th, int n); 
+	static void setSlot(call_context* th, int n); 
+	static void pushString(call_context* th, int n); 
+	static void getLex(call_context* th, int n); 
+	static void getScopeObject(call_context* th, int n); 
+	static void deleteProperty(call_context* th, int n); 
+	static void initProperty(call_context* th, int n); 
+	static void newClass(call_context* th, int n); 
+	static void newArray(call_context* th, int n); 
+	static void findPropStrict(call_context* th, int n);
+	static void findProperty(call_context* th, int n);
+	static void getProperty(call_context* th, int n);
+	static void pushByte(call_context* th, int n);
+	static void pushShort(call_context* th, int n);
+	static void pushInt(call_context* th, int n);
+	static void pushDouble(call_context* th, int n);
+	static void incLocal_i(call_context* th, int n);
+	static void coerce(call_context* th, int n);
+	static void setProperty(call_context* th, int n);
+	static void call(call_context* th, int n);
+	static void constructSuper(call_context* th, int n);
+	static void construct(call_context* th, int n);
+	static void newFunction(call_context* th, int n);
+	static void setSuper(call_context* th, int n);
+	static void getSuper(call_context* th, int n);
+	static void pushScope(call_context* th);
+	static void pushWith(call_context* th);
+	static void pushNull(call_context* th);
+	static ISWFObject* pushUndefined(call_context* th);
+	static void pushNaN(call_context* th);
+	static void pushFalse(call_context* th);
+	static void pushTrue(call_context* th);
+	static void dup(call_context* th);
+	static void equals(call_context* th);
+	static void strictEquals(call_context* th);
+	static void _not(call_context* th);
+	static void negate(call_context* th);
+	static void pop(call_context* th);
+	static void typeOf(call_context* th);
+	static void _throw(call_context* th);
+	static void asTypelate(call_context* th);
+	static void isTypelate(call_context* th);
+	static void swap(call_context* th);
+	static void add(call_context* th);
+	static void multiply(call_context* th);
+	static void divide(call_context* th);
+	static void modulo(call_context* th);
+	static void subtract(call_context* th);
+	static void popScope(call_context* th);
+	static void newActivation(call_context* th, method_info*);
+	static void coerce_s(call_context* th);
+	static void coerce_a(call_context* th);
+	static void convert_i(call_context* th);
+	static void convert_b(call_context* th);
+	static void convert_d(call_context* th);
+	static void greaterThan(call_context* th);
+	static void lessThan(call_context* th);
+	static void nextName(call_context* th);
+	static void nextValue(call_context* th);
+	static void increment_i(call_context* th);
+	static void increment(call_context* th);
+	static void decrement_i(call_context* th);
+	static void decrement(call_context* th);
+	static void getGlobalScope(call_context* th);
 
+	//Internal utilities
+	static void method_reset(method_info* th);
+	static call_context* alloc_context(method_info* th);
+
+	//Opcode tables
 	static opcode_handler opcode_table_args0[];
 	static opcode_handler opcode_table_args1[];
 
@@ -519,7 +527,6 @@ public:
 
 bool Boolean_concrete(ISWFObject* obj);
 ISWFObject* parseInt(ISWFObject* obj,arguments* args);
-ISWFObject* parseFloat(ISWFObject* obj,arguments* args);
 
 std::istream& operator>>(std::istream& in, u8& v);
 std::istream& operator>>(std::istream& in, u16& v);

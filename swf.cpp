@@ -21,9 +21,9 @@
 #include <iostream>
 #include <string.h>
 #include <pthread.h>
+#include <SDL/SDL.h>
 #include <algorithm>
 
-#include "abc.h"
 #include "flashdisplay.h"
 #include "flashevents.h"
 #include "swf.h"
@@ -32,8 +32,8 @@
 #include "streams.h"
 #include "asobjects.h"
 #include "textfile.h"
+#include "abc.h"
 
-#include <SDL/SDL.h>
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <GL/glx.h>
@@ -80,8 +80,8 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	sem_init(&mutex,0,1);
 
-	//Register global functions
-/*	setVariableByName("parseInt",new Function(parseInt));
+/*	//Register global functions
+	setVariableByName("parseInt",new Function(parseInt));
 
 	//Register default objects
 	ISWFObject* stage(new ASStage);
@@ -105,7 +105,6 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 
 	//This should come from DisplayObject
 	LoaderInfo* loaderInfo=new LoaderInfo();
-	loaderInfo->_constructor(loaderInfo,NULL);
 	setVariableByName(Qname("loaderInfo"),loaderInfo);
 }
 

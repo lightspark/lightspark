@@ -183,7 +183,7 @@ class method_info
 {
 friend std::istream& operator>>(std::istream& in, method_info& v);
 friend class ABCVm;
-private:
+public:
 	u30 param_count;
 	u30 return_type;
 	std::vector<u30> param_type;
@@ -203,6 +203,9 @@ public:
 	{
 	}
 };
+
+llvm::Function* synt_method(method_info* m);
+llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
 
 struct item_info
 {
@@ -294,7 +297,7 @@ class method_body_info
 {
 friend std::istream& operator>>(std::istream& in, method_body_info& v);
 friend class ABCVm;
-private:
+public:
 	u30 method;
 	u30 max_stack;
 	u30 local_count;
@@ -314,12 +317,24 @@ struct opcode_handler
 	void* addr;
 };
 
+enum STACK_TYPE{STACK_OBJECT=0};
+typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
+
+//Utility
+static void debug(call_context* th);
+static void not_impl(int p);
+static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
+stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
+		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
+stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
+		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
+void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
+void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, bool jitted,
+		std::vector<stack_entry>& static_stack, 
+		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 class ABCVm
 {
-private:
-	enum STACK_TYPE{STACK_OBJECT=0};
-	typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
-
+public:
 	SystemState* m_sys;
 	u16 minor;
 	u16 major;
@@ -348,27 +363,11 @@ private:
 	multiname getMultiname(unsigned int m, call_context* th=NULL) const;
 	Qname getQname(unsigned int m, call_context* th=NULL) const;
 
-	llvm::Function* synt_method(method_info* m);
-	llvm::FunctionType* synt_method_prototype();
-
 	ASObject Global;
 	//std::vector<ISWFObject*> stack;
 	llvm::Module* module;
 
 	static llvm::ExecutionEngine* ex;
-
-	//Utility
-	static void debug(call_context* th);
-	static void not_impl(int p);
-	static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
-	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
-			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
-			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
-	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, bool jitted,
-			std::vector<stack_entry>& static_stack, 
-			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 
 	void registerClasses();
 

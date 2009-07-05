@@ -36,7 +36,7 @@
 opcode_handler ABCVm::opcode_table_args0[]={
 	{"pushScope",(void*)&ABCVm::pushScope},
 	{"pushWith",(void*)&ABCVm::pushWith},
-	{"debug",(void*)&ABCVm::debug},
+	{"debug",(void*)debug},
 	{"convert_d",(void*)&ABCVm::convert_d},
 	{"nextValue",(void*)&ABCVm::nextValue},
 	{"nextName",(void*)&ABCVm::nextName},
@@ -211,7 +211,7 @@ void SymbolClassTag::Render()
 }
 
 //Be careful, arguments nubering starts from 1
-ISWFObject* ABCVm::argumentDumper(arguments* arg, uint32_t n)
+ISWFObject* argumentDumper(arguments* arg, uint32_t n)
 {
 	//Really implement default values, we now fill with Undefined
 	if(n-1<arg->size())
@@ -228,14 +228,14 @@ void ABCVm::registerFunctions()
 	sig.push_back(llvm::IntegerType::get(32));
 	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not_impl",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::not_impl);
+	ex->addGlobalMapping(F,(void*)&not_impl);
 	sig.clear();
 
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"argumentDumper",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::argumentDumper);
+	ex->addGlobalMapping(F,(void*)&argumentDumper);
 	sig.clear();
 
 	//All the opcodes needs a pointer to the context
@@ -492,7 +492,10 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
 	in >> method_count;
 	methods.resize(method_count);
 	for(int i=0;i<method_count;i++)
+	{
 		in >> methods[i];
+		methods[i].vm=this;
+	}
 
 	in >> metadata_count;
 	metadata.resize(metadata_count);
@@ -1297,7 +1300,7 @@ void ABCVm::newFunction(call_context* th, int n)
 	LOG(CALLS,"newFunction " << n);
 
 	method_info* m=&th->vm->methods[n];
-	th->vm->synt_method(m);
+	synt_method(m);
 	if(m->f)
 	{
 		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
@@ -1396,7 +1399,7 @@ void ABCVm::_not(call_context* th)
 	th->runtime_stack_push(new Boolean(!(Boolean_concrete(v))));
 }
 
-void ABCVm::not_impl(int n)
+void not_impl(int n)
 {
 	LOG(CALLS, "not implement opcode 0x" << hex << n );
 	abort();
@@ -1730,14 +1733,14 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
 
 	method_info* m=&th->vm->methods[th->vm->classes[n].cinit];
-	th->vm->synt_method(m);
+	synt_method(m);
 	LOG(CALLS,"Building class traits");
 	for(int i=0;i<th->vm->classes[n].trait_count;i++)
 		th->vm->buildTrait(ret,&th->vm->classes[n].traits[i]);
 
 	//add Constructor the the class methods
 	method_info* construtor=&th->vm->methods[th->vm->instances[n].init];
-	th->vm->synt_method(construtor);
+	synt_method(construtor);
 	if(construtor->f)
 	{
 		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(construtor->f);
@@ -1761,7 +1764,7 @@ void ABCVm::getScopeObject(call_context* th, int n)
 	LOG(CALLS, "getScopeObject: DONE " << th->scope_stack[n] );
 }
 
-void ABCVm::debug(call_context* i)
+void debug(call_context* i)
 {
 	LOG(CALLS, "debug " << i->locals[1] );
 }
@@ -1896,7 +1899,7 @@ ISWFObject* call_context::runtime_stack_peek()
 	return stack[stack_index-1];
 }
 
-inline ABCVm::stack_entry ABCVm::static_stack_pop(llvm::IRBuilder<>& builder, vector<ABCVm::stack_entry>& static_stack, 
+inline stack_entry static_stack_pop(llvm::IRBuilder<>& builder, vector<stack_entry>& static_stack, 
 		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index) 
 {
 	//try to get the tail value from the static stack
@@ -1910,7 +1913,7 @@ inline ABCVm::stack_entry ABCVm::static_stack_pop(llvm::IRBuilder<>& builder, ve
 	return stack_entry(llvm_stack_pop(builder,dynamic_stack,dynamic_stack_index),STACK_OBJECT);
 }
 
-inline ABCVm::stack_entry ABCVm::static_stack_peek(llvm::IRBuilder<>& builder, vector<ABCVm::stack_entry>& static_stack, 
+inline stack_entry static_stack_peek(llvm::IRBuilder<>& builder, vector<stack_entry>& static_stack, 
 		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index) 
 {
 	//try to get the tail value from the static stack
@@ -1920,12 +1923,12 @@ inline ABCVm::stack_entry ABCVm::static_stack_peek(llvm::IRBuilder<>& builder, v
 	return stack_entry(llvm_stack_peek(builder,dynamic_stack,dynamic_stack_index),STACK_OBJECT);
 }
 
-inline void ABCVm::static_stack_push(vector<ABCVm::stack_entry>& static_stack, const ABCVm::stack_entry& e)
+inline void static_stack_push(vector<stack_entry>& static_stack, const stack_entry& e)
 {
 	static_stack.push_back(e);
 }
 
-inline void ABCVm::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder, bool jitted,
+inline void syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder, bool jitted,
 		std::vector<stack_entry>& static_stack,
 		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index) 
 {
@@ -1941,9 +1944,9 @@ inline void ABCVm::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& build
 	}
 }
 
-llvm::FunctionType* ABCVm::synt_method_prototype()
+llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex)
 {
-	//The pointer size compatible int type will be useful
+	//whatever pointer is good
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 
 	//Initialize LLVM representation of method
@@ -1966,23 +1969,24 @@ call_context* ABCVm::alloc_context(method_info* th)
 	return ret;
 }
 
-llvm::Function* ABCVm::synt_method(method_info* m)
+llvm::Function* synt_method(method_info* m)
 {
 	if(m->f)
 		return m->f;
 
 	if(!m->body)
 	{
-		string n=getString(m->name);
+		string n=m->vm->getString(m->name);
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
 		return NULL;
 	}
 	stringstream code(m->body->code);
-	m->vm=this;
-	llvm::FunctionType* method_type=synt_method_prototype();
-	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",module);
+	llvm::ExecutionEngine* ex=m->vm->ex;
+	llvm::FunctionType* method_type=synt_method_prototype(ex);
+	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",m->vm->module);
 
 	//The pointer size compatible int type will be useful
+	//TODO: void*
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 	
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", m->f);
@@ -3617,7 +3621,7 @@ void ABCVm::Run(ABCVm* th)
 		method_info* m=th->get_method(th->scripts[i].init);
 //		for(int j=0;j<th->scripts[i].trait_count;j++)
 //			th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
-		th->synt_method(m);
+		synt_method(m);
 		Function::as_function sinit=NULL;
 		if(m->f)
 			sinit=(Function::as_function)ex->getPointerToFunction(m->f);
@@ -3635,7 +3639,7 @@ void ABCVm::Run(ABCVm* th)
 	LOG(CALLS, "Building entry script traits: " << th->scripts[i].trait_count );
 	for(int j=0;j<th->scripts[i].trait_count;j++)
 		th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
-	th->synt_method(m);
+	synt_method(m);
 	if(m->f)
 	{
 		Function::as_function sinit=(Function::as_function)ex->getPointerToFunction(m->f);

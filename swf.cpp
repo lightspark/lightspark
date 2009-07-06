@@ -24,6 +24,7 @@
 #include <SDL/SDL.h>
 #include <algorithm>
 
+#include "abc.h"
 #include "flashdisplay.h"
 #include "flashevents.h"
 #include "swf.h"
@@ -32,7 +33,6 @@
 #include "streams.h"
 #include "asobjects.h"
 #include "textfile.h"
-#include "abc.h"
 
 #include <GL/gl.h>
 #include <GL/glext.h>

@@ -36,7 +36,7 @@
 opcode_handler ABCVm::opcode_table_args0[]={
 	{"pushScope",(void*)&ABCVm::pushScope},
 	{"pushWith",(void*)&ABCVm::pushWith},
-	{"debug",(void*)debug},
+	{"debug",(void*)&ABCVm::debug},
 	{"convert_d",(void*)&ABCVm::convert_d},
 	{"nextValue",(void*)&ABCVm::nextValue},
 	{"nextName",(void*)&ABCVm::nextName},
@@ -228,7 +228,7 @@ void ABCVm::registerFunctions()
 	sig.push_back(llvm::IntegerType::get(32));
 	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not_impl",module);
-	ex->addGlobalMapping(F,(void*)&not_impl);
+	ex->addGlobalMapping(F,(void*)&ABCVm::not_impl);
 	sig.clear();
 
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
@@ -1300,7 +1300,7 @@ void ABCVm::newFunction(call_context* th, int n)
 	LOG(CALLS,"newFunction " << n);
 
 	method_info* m=&th->vm->methods[n];
-	synt_method(m);
+	m->synt_method();
 	if(m->f)
 	{
 		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
@@ -1399,7 +1399,7 @@ void ABCVm::_not(call_context* th)
 	th->runtime_stack_push(new Boolean(!(Boolean_concrete(v))));
 }
 
-void not_impl(int n)
+void ABCVm::not_impl(int n)
 {
 	LOG(CALLS, "not implement opcode 0x" << hex << n );
 	abort();
@@ -1733,14 +1733,14 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
 
 	method_info* m=&th->vm->methods[th->vm->classes[n].cinit];
-	synt_method(m);
+	m->synt_method();
 	LOG(CALLS,"Building class traits");
 	for(int i=0;i<th->vm->classes[n].trait_count;i++)
 		th->vm->buildTrait(ret,&th->vm->classes[n].traits[i]);
 
 	//add Constructor the the class methods
 	method_info* construtor=&th->vm->methods[th->vm->instances[n].init];
-	synt_method(construtor);
+	construtor->synt_method();
 	if(construtor->f)
 	{
 		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(construtor->f);
@@ -1764,7 +1764,7 @@ void ABCVm::getScopeObject(call_context* th, int n)
 	LOG(CALLS, "getScopeObject: DONE " << th->scope_stack[n] );
 }
 
-void debug(call_context* i)
+void ABCVm::debug(call_context* i)
 {
 	LOG(CALLS, "debug " << i->locals[1] );
 }
@@ -1843,7 +1843,7 @@ void call_context::runtime_stack_push(ISWFObject* s)
 	stack[stack_index++]=s;
 }
 
-llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
+llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
 {
 	//decrement stack index
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
@@ -1855,7 +1855,7 @@ llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stac
 	return builder.CreateLoad(dest);
 }
 
-llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
+llvm::Value* method_info::llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
 {
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
 	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
@@ -1864,7 +1864,7 @@ llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_sta
 	return builder.CreateLoad(dest);
 }
 
-void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val,
+void method_info::llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val,
 		llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
 {
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
@@ -1899,7 +1899,7 @@ ISWFObject* call_context::runtime_stack_peek()
 	return stack[stack_index-1];
 }
 
-inline stack_entry static_stack_pop(llvm::IRBuilder<>& builder, vector<stack_entry>& static_stack, 
+inline method_info::stack_entry method_info::static_stack_pop(llvm::IRBuilder<>& builder, vector<method_info::stack_entry>& static_stack, 
 		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index) 
 {
 	//try to get the tail value from the static stack
@@ -1913,7 +1913,7 @@ inline stack_entry static_stack_pop(llvm::IRBuilder<>& builder, vector<stack_ent
 	return stack_entry(llvm_stack_pop(builder,dynamic_stack,dynamic_stack_index),STACK_OBJECT);
 }
 
-inline stack_entry static_stack_peek(llvm::IRBuilder<>& builder, vector<stack_entry>& static_stack, 
+inline method_info::stack_entry method_info::static_stack_peek(llvm::IRBuilder<>& builder, vector<method_info::stack_entry>& static_stack, 
 		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index) 
 {
 	//try to get the tail value from the static stack
@@ -1923,12 +1923,12 @@ inline stack_entry static_stack_peek(llvm::IRBuilder<>& builder, vector<stack_en
 	return stack_entry(llvm_stack_peek(builder,dynamic_stack,dynamic_stack_index),STACK_OBJECT);
 }
 
-inline void static_stack_push(vector<stack_entry>& static_stack, const stack_entry& e)
+inline void method_info::static_stack_push(vector<stack_entry>& static_stack, const stack_entry& e)
 {
 	static_stack.push_back(e);
 }
 
-inline void syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder, bool jitted,
+inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder, bool jitted,
 		std::vector<stack_entry>& static_stack,
 		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index) 
 {
@@ -1944,7 +1944,7 @@ inline void syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder, boo
 	}
 }
 
-llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex)
+llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex)
 {
 	//whatever pointer is good
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
@@ -1969,27 +1969,27 @@ call_context* ABCVm::alloc_context(method_info* th)
 	return ret;
 }
 
-llvm::Function* synt_method(method_info* m)
+llvm::Function* method_info::synt_method()
 {
-	if(m->f)
-		return m->f;
+	if(f)
+		return f;
 
-	if(!m->body)
+	if(!body)
 	{
-		string n=m->vm->getString(m->name);
+		string n=vm->getString(name);
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
 		return NULL;
 	}
-	stringstream code(m->body->code);
-	llvm::ExecutionEngine* ex=m->vm->ex;
+	stringstream code(body->code);
+	llvm::ExecutionEngine* ex=vm->ex;
 	llvm::FunctionType* method_type=synt_method_prototype(ex);
-	m->f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",m->vm->module);
+	f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",vm->module);
 
 	//The pointer size compatible int type will be useful
 	//TODO: void*
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 	
-	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", m->f);
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", f);
 	llvm::IRBuilder<> Builder;
 	Builder.SetInsertPoint(BB);
 
@@ -1998,7 +1998,7 @@ llvm::Function* synt_method(method_info* m)
 	llvm::Constant* constant2;
 	llvm::Value* value;
 	//let's give access to method data to llvm
-	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)m);
+	constant = llvm::ConstantInt::get(ptr_type, (uintptr_t)this);
 	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(ptr_type));
 
 	//the current execution context is allocated here
@@ -2011,7 +2011,7 @@ llvm::Function* synt_method(method_info* m)
 	//the stack is statically handled as much as possible to allow llvm optimizations
 	//on branch and on interpreted/jitted code transition it is synchronized with the dynamic one
 	vector<stack_entry> static_stack;
-	static_stack.reserve(m->body->max_stack);
+	static_stack.reserve(body->max_stack);
 	//Get the pointer to the dynamic stack
 	value=Builder.CreateStructGEP(context,1);
 	llvm::Value* dynamic_stack=Builder.CreateLoad(value);
@@ -2022,7 +2022,7 @@ llvm::Function* synt_method(method_info* m)
 	
 	//Creating a mapping between blocks and starting address
 	//The current header block is ended
-	llvm::BasicBlock *StartBB = llvm::BasicBlock::Create("entry", m->f);
+	llvm::BasicBlock *StartBB = llvm::BasicBlock::Create("entry", f);
 	Builder.CreateBr(StartBB);
 	//CHECK: maybe not needed
 	Builder.SetInsertPoint(StartBB);
@@ -2038,12 +2038,12 @@ llvm::Function* synt_method(method_info* m)
 	//First argument is the 'this'
 	constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 0);
 	llvm::Value* t=Builder.CreateGEP(locals,constant);
-	llvm::Function::ArgumentListType::iterator it=m->f->getArgumentList().begin();
+	llvm::Function::ArgumentListType::iterator it=f->getArgumentList().begin();
 	llvm::Value* arg=it;
 	Builder.CreateStore(arg,t);
 	//Second argument is the arguments pointer
 	it++;
-	for(int i=0;i<m->param_count;i++)
+	for(int i=0;i<param_count;i++)
 	{
 		constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i+1);
 		t=Builder.CreateGEP(locals,constant);
@@ -2144,7 +2144,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 				Builder.CreateBr(A);
@@ -2169,7 +2169,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2180,7 +2180,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2215,7 +2215,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2226,7 +2226,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2262,7 +2262,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2273,7 +2273,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2308,7 +2308,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2319,7 +2319,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2357,7 +2357,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 				//Create a block for the landing code and insert it in the mapping
@@ -2367,7 +2367,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("jump_land", m->f);
+					B=llvm::BasicBlock::Create("jump_land", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 
@@ -2393,7 +2393,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2404,7 +2404,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2441,7 +2441,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2452,7 +2452,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2489,7 +2489,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2500,7 +2500,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2537,7 +2537,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2548,7 +2548,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2584,7 +2584,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2595,7 +2595,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2630,7 +2630,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2641,7 +2641,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2677,7 +2677,7 @@ llvm::Function* synt_method(method_info* m)
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", m->f);
+					A=llvm::BasicBlock::Create("fall", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2688,7 +2688,7 @@ llvm::Function* synt_method(method_info* m)
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", m->f);
+					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -3576,7 +3576,7 @@ llvm::Function* synt_method(method_info* m)
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode);
 				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
 				Builder.CreateRetVoid();
-				return m->f;
+				return f;
 		}
 	}
 
@@ -3589,7 +3589,7 @@ llvm::Function* synt_method(method_info* m)
 			abort();
 		}
 	}
-	return m->f;
+	return f;
 }
 
 void ABCVm::Run(ABCVm* th)
@@ -3621,7 +3621,7 @@ void ABCVm::Run(ABCVm* th)
 		method_info* m=th->get_method(th->scripts[i].init);
 //		for(int j=0;j<th->scripts[i].trait_count;j++)
 //			th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
-		synt_method(m);
+		m->synt_method();
 		Function::as_function sinit=NULL;
 		if(m->f)
 			sinit=(Function::as_function)ex->getPointerToFunction(m->f);
@@ -3639,7 +3639,7 @@ void ABCVm::Run(ABCVm* th)
 	LOG(CALLS, "Building entry script traits: " << th->scripts[i].trait_count );
 	for(int j=0;j<th->scripts[i].trait_count;j++)
 		th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
-	synt_method(m);
+	m->synt_method();
 	if(m->f)
 	{
 		Function::as_function sinit=(Function::as_function)ex->getPointerToFunction(m->f);
@@ -3689,7 +3689,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 			LOG(CALLS,"Getter trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			llvm::Function* f=synt_method(m);
+			llvm::Function* f=m->synt_method();
 			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
 			obj->setGetterByName(name, new Function(f2));
 			LOG(CALLS,"End Getter trait: " << name);
@@ -3700,7 +3700,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 			LOG(CALLS,"Setter trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			llvm::Function* f=synt_method(m);
+			llvm::Function* f=m->synt_method();
 			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
 			obj->setSetterByName(name, new Function(f2));
 			LOG(CALLS,"End Setter trait: " << name);
@@ -3711,7 +3711,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 			LOG(CALLS,"Method trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			llvm::Function* f=synt_method(m);
+			llvm::Function* f=m->synt_method();
 			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
 			obj->setVariableByName(name, new Function(f2));
 			break;

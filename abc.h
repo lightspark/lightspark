@@ -182,8 +182,7 @@ struct call_context
 class method_info
 {
 friend std::istream& operator>>(std::istream& in, method_info& v);
-friend class ABCVm;
-public:
+private:
 	u30 param_count;
 	u30 return_type;
 	std::vector<u30> param_type;
@@ -194,18 +193,32 @@ public:
 	std::vector<option_detail> options;
 //	param_info param_names
 
-	llvm::Function* f;
+	enum STACK_TYPE{STACK_OBJECT=0};
+	typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
+	static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
+	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
+			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
+	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
+			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
+	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
+	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
+	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
+	void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val,
+			llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
+	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, bool jitted,
+			std::vector<stack_entry>& static_stack, 
+			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
+	llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
 
 public:
+	llvm::Function* synt_method();
+	llvm::Function* f;
 	ABCVm* vm;
 	method_body_info* body;
 	method_info():body(NULL),f(NULL),vm(NULL)
 	{
 	}
 };
-
-llvm::Function* synt_method(method_info* m);
-llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
 
 struct item_info
 {
@@ -296,8 +309,9 @@ private:
 class method_body_info
 {
 friend std::istream& operator>>(std::istream& in, method_body_info& v);
+friend class method_info;
 friend class ABCVm;
-public:
+private:
 	u30 method;
 	u30 max_stack;
 	u30 local_count;
@@ -317,24 +331,10 @@ struct opcode_handler
 	void* addr;
 };
 
-enum STACK_TYPE{STACK_OBJECT=0};
-typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
-
-//Utility
-static void debug(call_context* th);
-static void not_impl(int p);
-static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
-stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
-		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
-		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
-void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, bool jitted,
-		std::vector<stack_entry>& static_stack, 
-		llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 class ABCVm
 {
-public:
+friend class method_info;
+private:
 	SystemState* m_sys;
 	u16 minor;
 	u16 major;
@@ -461,6 +461,9 @@ public:
 	static void decrement_i(call_context* th);
 	static void decrement(call_context* th);
 	static void getGlobalScope(call_context* th);
+	//Utility
+	static void debug(call_context* th);
+	static void not_impl(int p);
 
 	//Internal utilities
 	static void method_reset(method_info* th);

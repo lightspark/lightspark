@@ -177,6 +177,7 @@ struct call_context
 	void runtime_stack_push(ISWFObject* s);
 	ISWFObject* runtime_stack_pop();
 	ISWFObject* runtime_stack_peek();
+	call_context(method_info* th);
 };
 
 class method_info
@@ -311,6 +312,7 @@ class method_body_info
 friend std::istream& operator>>(std::istream& in, method_body_info& v);
 friend class method_info;
 friend class ABCVm;
+friend class call_context;
 private:
 	u30 method;
 	u30 max_stack;
@@ -357,7 +359,7 @@ private:
 	void printMultiname(int m) const;
 	void printNamespace(int n) const;
 	//void printTrait(const traits_info* t) const;
-	void buildTrait(ISWFObject* obj, const traits_info* t, Function::as_function deferred_initialization=NULL);
+	void buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	void printNamespaceSet(const ns_set_info* m) const;
 	std::string getString(unsigned int s) const;
 	multiname getMultiname(unsigned int m, call_context* th=NULL) const;
@@ -366,8 +368,6 @@ private:
 	ASObject Global;
 	//std::vector<ISWFObject*> stack;
 	llvm::Module* module;
-
-	static llvm::ExecutionEngine* ex;
 
 	void registerClasses();
 
@@ -467,7 +467,6 @@ private:
 
 	//Internal utilities
 	static void method_reset(method_info* th);
-	static call_context* alloc_context(method_info* th);
 
 	//Opcode tables
 	static opcode_handler opcode_table_args0[];
@@ -483,6 +482,7 @@ private:
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
 public:
+	static llvm::ExecutionEngine* ex;
 	ABCVm(SystemState* s,std::istream& in);
 	static void Run(ABCVm* th);
 	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);

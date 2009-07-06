@@ -256,8 +256,6 @@ void ABCVm::registerFunctions()
 	// (method_info*)
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	FT=llvm::FunctionType::get(context_type, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"alloc_context",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::alloc_context);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decRef",module);
 	ex->addGlobalMapping(F,(void*)&ISWFObject::s_decRef);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"incRef",module);
@@ -1300,14 +1298,7 @@ void ABCVm::newFunction(call_context* th, int n)
 	LOG(CALLS,"newFunction " << n);
 
 	method_info* m=&th->vm->methods[n];
-	m->synt_method();
-	if(m->f)
-	{
-		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-		th->runtime_stack_push(new Function(FP));
-	}
-	else
-		th->runtime_stack_push(new Undefined);
+	th->runtime_stack_push(new SyntheticFunction(m));
 
 }
 
@@ -1733,27 +1724,18 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
 
 	method_info* m=&th->vm->methods[th->vm->classes[n].cinit];
-	m->synt_method();
+	IFunction* cinit=new SyntheticFunction(m);
 	LOG(CALLS,"Building class traits");
 	for(int i=0;i<th->vm->classes[n].trait_count;i++)
 		th->vm->buildTrait(ret,&th->vm->classes[n].traits[i]);
 
 	//add Constructor the the class methods
-	method_info* construtor=&th->vm->methods[th->vm->instances[n].init];
-	construtor->synt_method();
-	if(construtor->f)
-	{
-		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(construtor->f);
-		ret->constructor=new Function(FP);
-	}
+	method_info* constructor=&th->vm->methods[th->vm->instances[n].init];
+	ret->constructor=new SyntheticFunction(constructor);
 	ret->class_index=n;
 
 	LOG(CALLS,"Calling Class init");
-	if(m->f)
-	{
-		Function::as_function FP=(Function::as_function)ex->getPointerToFunction(m->f);
-		FP(ret,NULL);
-	}
+	cinit->call(ret,NULL);
 	th->runtime_stack_push(ret);
 }
 
@@ -1949,24 +1931,28 @@ llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex
 	//whatever pointer is good
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 
+	std::vector<const llvm::Type*> struct_elems;
+	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
+	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
+	struct_elems.push_back(llvm::IntegerType::get(32));
+	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(struct_elems,true));
+
 	//Initialize LLVM representation of method
 	vector<const llvm::Type*> sig;
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	sig.push_back(context_type);
 
 	return llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 }
 
-call_context* ABCVm::alloc_context(method_info* th)
+call_context::call_context(method_info* th)
 {
-	call_context* ret=new call_context;
-	ret->locals=new ISWFObject*[th->body->local_count];
+	locals=new ISWFObject*[th->body->local_count];
 	//TODO: We add this huge safety margin because not implemented instruction do not clean the stack as they should
-	ret->stack=new ISWFObject*[th->body->max_stack*10];
-	ret->stack_index=0;
-	ret->vm=th->vm;
-
-	return ret;
+	stack=new ISWFObject*[th->body->max_stack*10];
+	stack_index=0;
+	vm=th->vm;
 }
 
 llvm::Function* method_info::synt_method()
@@ -2002,7 +1988,10 @@ llvm::Function* method_info::synt_method()
 	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(ptr_type));
 
 	//the current execution context is allocated here
-	llvm::Value* context=Builder.CreateCall(ex->FindFunctionNamed("alloc_context"), th);
+	llvm::Function::ArgumentListType::iterator it=f->getArgumentList().begin();
+	it++;
+	it++;
+	llvm::Value* context=it;
 
 	//let's give access to local data storage
 	value=Builder.CreateStructGEP(context,0);
@@ -2038,7 +2027,7 @@ llvm::Function* method_info::synt_method()
 	//First argument is the 'this'
 	constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 0);
 	llvm::Value* t=Builder.CreateGEP(locals,constant);
-	llvm::Function::ArgumentListType::iterator it=f->getArgumentList().begin();
+	it=f->getArgumentList().begin();
 	llvm::Value* arg=it;
 	Builder.CreateStore(arg,t);
 	//Second argument is the arguments pointer
@@ -3619,16 +3608,10 @@ void ABCVm::Run(ABCVm* th)
 	{
 		LOG(CALLS, "Script N: " << i );
 		method_info* m=th->get_method(th->scripts[i].init);
-//		for(int j=0;j<th->scripts[i].trait_count;j++)
-//			th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
-		m->synt_method();
-		Function::as_function sinit=NULL;
-		if(m->f)
-			sinit=(Function::as_function)ex->getPointerToFunction(m->f);
 
 		LOG(CALLS, "Building script traits: " << th->scripts[i].trait_count );
 		for(int j=0;j<th->scripts[i].trait_count;j++)
-			th->buildTrait(&th->Global,&th->scripts[i].traits[j],sinit);
+			th->buildTrait(&th->Global,&th->scripts[i].traits[j],new SyntheticFunction(m));
 	}
 	//Before the entry point we run early events
 	while(sem_trywait(&th->sem_event_count)==0)
@@ -3636,15 +3619,11 @@ void ABCVm::Run(ABCVm* th)
 	//The last script entry has to be run
 	LOG(CALLS, "Last script (Entry Point)");
 	method_info* m=th->get_method(th->scripts[i].init);
+	IFunction* entry=new SyntheticFunction(m);
 	LOG(CALLS, "Building entry script traits: " << th->scripts[i].trait_count );
 	for(int j=0;j<th->scripts[i].trait_count;j++)
 		th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
-	m->synt_method();
-	if(m->f)
-	{
-		Function::as_function sinit=(Function::as_function)ex->getPointerToFunction(m->f);
-		sinit(&th->Global,NULL);
-	}
+	entry->call(&th->Global,NULL);
 	LOG(CALLS, "End of Entry Point");
 
 	while(!th->shutdown)
@@ -3669,7 +3648,7 @@ string ABCVm::getString(unsigned int s) const
 		return "";
 }
 
-void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_function deferred_initialization)
+void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization)
 {
 	Qname name=getQname(t->name);
 	switch(t->kind&0xf)
@@ -3689,9 +3668,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 			LOG(CALLS,"Getter trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			llvm::Function* f=m->synt_method();
-			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
-			obj->setGetterByName(name, new Function(f2));
+			obj->setGetterByName(name, new SyntheticFunction(m));
 			LOG(CALLS,"End Getter trait: " << name);
 			break;
 		}
@@ -3700,9 +3677,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 			LOG(CALLS,"Setter trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			llvm::Function* f=m->synt_method();
-			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
-			obj->setSetterByName(name, new Function(f2));
+			obj->setGetterByName(name, new SyntheticFunction(m));
 			LOG(CALLS,"End Setter trait: " << name);
 			break;
 		}
@@ -3711,9 +3686,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, Function::as_funct
 			LOG(CALLS,"Method trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			llvm::Function* f=m->synt_method();
-			Function::as_function f2=(Function::as_function)ex->getPointerToFunction(f);
-			obj->setVariableByName(name, new Function(f2));
+			obj->setGetterByName(name, new SyntheticFunction(m));
 			break;
 		}
 		case traits_info::Const:

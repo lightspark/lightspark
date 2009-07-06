@@ -28,6 +28,8 @@
 const std::string AS3="http://adobe.com/AS3/2006/builtin";
 
 class Event;
+class method_info;
+class call_context;
 
 class ASObjectWrapper: public IDisplayListElem
 {
@@ -94,6 +96,30 @@ public:
 
 private:
 	as_function val;
+	bool bound;
+};
+
+class SyntheticFunction : public IFunction
+{
+public:
+	typedef ISWFObject* (*synt_function)(ISWFObject*, arguments*, call_context* cc);
+	SyntheticFunction(method_info* m);
+	SWFOBJECT_TYPE getObjectType()const {return T_FUNCTION;}
+	ISWFObject* call(ISWFObject* obj, arguments* args);
+	IFunction* toFunction();
+	ISWFObject* clone()
+	{
+		return new SyntheticFunction(*this);
+	}
+	void bind()
+	{
+		bound=true;
+	}
+	ISWFObject* closure_this;
+
+private:
+	method_info* mi;
+	synt_function val;
 	bool bound;
 };
 
@@ -292,11 +318,11 @@ public:
 class ScriptDefinable: public Definable
 {
 private:
-	Function::as_function f;
+	IFunction* f;
 public:
-	ScriptDefinable(Function::as_function _f):f(_f){}
+	ScriptDefinable(IFunction* _f):f(_f){}
 	//The global object will be passed from the calling context
-	void define(ISWFObject* g){ f(g,NULL); }
+	void define(ISWFObject* g){ f->call(g,NULL); }
 };
 
 class PlaceObject2Tag;

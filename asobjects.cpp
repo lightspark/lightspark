@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <math.h>
 
+#include "abc.h"
 #include "asobjects.h"
 #include "flashevents.h"
 #include "swf.h"
@@ -433,9 +434,44 @@ ASFUNCTIONBODY(Date,valueOf)
 	return th->getTime(obj,args);
 }
 
+IFunction* SyntheticFunction::toFunction()
+{
+	return this;
+}
+
 IFunction* Function::toFunction()
 {
 	return this;
+}
+
+SyntheticFunction::SyntheticFunction(method_info* m):mi(m),bound(false)
+{
+	m->synt_method();
+	if(m->f)
+	{
+		val=(synt_function)m->vm->ex->getPointerToFunction(m->f);
+	}
+	else
+	{
+		LOG(ERROR,"Cannot synt the method");
+		abort();
+	}
+}
+
+ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
+{
+	call_context* cc=new call_context(mi);
+	ISWFObject* ret;
+	if(!bound)
+		ret=val(obj,args,cc);
+	else
+	{
+		LOG(CALLS,"Calling with closure");
+		LOG(CALLS,"args 0 " << args->at(0));
+		ret=val(closure_this,args,cc);
+	}
+	delete cc;
+	return ret;
 }
 
 ISWFObject* Function::call(ISWFObject* obj, arguments* args)

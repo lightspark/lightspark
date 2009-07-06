@@ -1298,7 +1298,9 @@ void ABCVm::newFunction(call_context* th, int n)
 	LOG(CALLS,"newFunction " << n);
 
 	method_info* m=&th->vm->methods[n];
-	th->runtime_stack_push(new SyntheticFunction(m));
+	SyntheticFunction* f=new SyntheticFunction(m);
+	f->func_scope=th->scope_stack;
+	th->runtime_stack_push(f);
 
 }
 

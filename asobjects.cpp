@@ -461,6 +461,7 @@ SyntheticFunction::SyntheticFunction(method_info* m):mi(m),bound(false)
 ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 {
 	call_context* cc=new call_context(mi);
+	cc->scope_stack=func_scope;
 	ISWFObject* ret;
 	if(!bound)
 		ret=val(obj,args,cc);

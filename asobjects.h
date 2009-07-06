@@ -116,6 +116,7 @@ public:
 		bound=true;
 	}
 	ISWFObject* closure_this;
+	std::vector<ISWFObject*> func_scope;
 
 private:
 	method_info* mi;

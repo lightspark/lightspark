@@ -1253,7 +1253,8 @@ void ABCVm::call(call_context* th, int m)
 		abort();
 	}
 
-	f->call(obj,&args);
+	ISWFObject* ret=f->call(obj,&args);
+	th->runtime_stack_push(ret);
 }
 
 void ABCVm::coerce(call_context* th, int n)
@@ -2040,6 +2041,18 @@ llvm::Function* method_info::synt_method()
 		t=Builder.CreateGEP(locals,constant);
 		arg=Builder.CreateCall2(ex->FindFunctionNamed("argumentDumper"), it, constant);
 		Builder.CreateStore(arg,t);
+	}
+	if(flags&0x01) //NEED_ARGUMENTS
+	{
+		constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), param_count+1);
+		t=Builder.CreateGEP(locals,constant);
+		Builder.CreateStore(it,t);
+	}
+	if(flags&0x04) //TODO: NEED_REST
+	{
+		constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), param_count+1);
+		t=Builder.CreateGEP(locals,constant);
+		Builder.CreateStore(it,t);
 	}
 
 	//Each case block builds the correct parameters for the interpreter function and call it

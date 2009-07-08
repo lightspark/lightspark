@@ -688,9 +688,9 @@ void ActionCallMethod::Execute()
 	LOG(CALLS,"ActionCallMethod: " << methodName);
 	ISWFObject* obj=sys->vm.stack.pop();
 	int numArgs=sys->vm.stack.pop()->toInt();
-	arguments args;
+	arguments args(numArgs);
 	for(int i=0;i<numArgs;i++)
-		args.push(sys->vm.stack.pop());
+		args.at(i)=sys->vm.stack.pop();
 	bool found;
 	IFunction* f=obj->getVariableByName(methodName,found)->toFunction();
 	if(f==0)
@@ -705,9 +705,9 @@ void ActionCallFunction::Execute()
 
 	string funcName=sys->vm.stack.pop()->toString();
 	int numArgs=sys->vm.stack.pop()->toInt();
-	arguments args;
+	arguments args(numArgs);;
 	for(int i=0;i<numArgs;i++)
-		args.push(sys->vm.stack.pop());
+		args.at(i)=sys->vm.stack.pop();
 	bool found;
 	IFunction* f=sys->currentClip->getVariableByName(funcName,found)->toFunction();
 	if(f==0)

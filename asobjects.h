@@ -211,6 +211,11 @@ public:
 class arguments: public ASArray
 {
 public:
+	arguments(int n)
+	{
+		resize(n);
+		_constructor(this,NULL);
+	}
 	ISWFObject* clone()
 	{
 		return new arguments(*this);

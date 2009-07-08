@@ -544,9 +544,9 @@ void ABCVm::handleEvent()
 			case BIND_CLASS:
 			{
 				BindClassEvent* ev=dynamic_cast<BindClassEvent*>(e.second);
-				arguments args;
+				arguments args(1);;
 				args.incRef();
-				args.push(new Null);
+				args.at(0)=new Null;
 				ISWFObject* o=buildNamedClass(ev->class_name,ev->base,&args);
 				LOG(CALLS,"End of binding of " << ev->class_name);
 
@@ -852,8 +852,7 @@ void ABCVm::popScope(call_context* th)
 
 void ABCVm::constructProp(call_context* th, int n, int m)
 {
-	arguments args;
-	args.resize(m);
+	arguments args(m);
 	for(int i=0;i<m;i++)
 		args.at(m-i-1)=th->runtime_stack_pop();
 
@@ -912,8 +911,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 void ABCVm::callProperty(call_context* th, int n, int m)
 {
-	arguments args;
-	args.resize(m);
+	arguments args(m);
 	for(int i=0;i<m;i++)
 		args.at(m-i-1)=th->runtime_stack_pop();
 
@@ -995,8 +993,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 {
 	multiname name=th->vm->getMultiname(n); 
 	LOG(CALLS,"callPropVoid " << name << ' ' << m);
-	arguments* args=new arguments;
-	args->resize(m);
+	arguments* args=new arguments(m);
 	for(int i=0;i<m;i++)
 		args->at(m-i-1)=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1149,9 +1146,14 @@ void ABCVm::ifLT(call_context* th, int offset)
 	ISWFObject* obj2=th->runtime_stack_pop();
 	ISWFObject* obj1=th->runtime_stack_pop();
 
+	cout << obj1->toInt() << ' ' << obj2->toInt() << endl;
+
 	//Real comparision demanded to object
 	if(obj1->isLess(obj2))
+	{
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+		cout << "true" << endl;
+	}
 	else
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
 
@@ -1239,8 +1241,7 @@ void ABCVm::deleteProperty(call_context* th, int n)
 void ABCVm::call(call_context* th, int m)
 {
 	LOG(CALLS,"call " << m);
-	arguments args;
-	args.resize(m);
+	arguments args(m);
 	for(int i=0;i<m;i++)
 		args.at(m-i-1)=th->runtime_stack_pop();
 
@@ -1516,8 +1517,7 @@ void ABCVm::construct(call_context* th, int n)
 void ABCVm::constructSuper(call_context* th, int n)
 {
 	LOG(CALLS, "constructSuper " << n);
-	arguments args;
-	args.resize(n);
+	arguments args(n);
 	for(int i=0;i<n;i++)
 		args.at(n-i-1)=th->runtime_stack_pop();
 
@@ -1581,8 +1581,8 @@ void ABCVm::setProperty(call_context* th, int n)
 	{
 		//Call the setter
 		LOG(CALLS,"Calling the setter");
-		arguments args;
-		args.push(value);
+		arguments args(1);
+		args.at(0)=value;
 		value->incRef();
 		f->call(obj,&args);
 		LOG(CALLS,"End of setter");

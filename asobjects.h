@@ -55,10 +55,11 @@ friend class ABCVm;
 public:
 	ASObject* prototype;
 	ASObject* super;
-	ASObject():debug_id(0),prototype(NULL),super(NULL){}
-	void _register();
+	ASObject();
 	SWFOBJECT_TYPE getObjectType() const { return T_OBJECT; }
-	//ASFUNCTION(constructor);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_toString);
+	std::string toString() const;
 	ISWFObject* clone()
 	{
 		return new ASObject(*this);
@@ -73,14 +74,23 @@ public:
 class IFunction: public ASObject
 {
 public:
+	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
+	IFunction():bound(false){}
+	ISWFObject* closure_this;
 	virtual ISWFObject* call(ISWFObject* obj, arguments* args)=0;
+	void bind()
+	{
+		bound=true;
+	}
+protected:
+	bool bound;
 };
 
 class Function : public IFunction
 {
 public:
-	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
-	Function(as_function v):val(v),bound(false){}
+	Function(){}
+	Function(as_function v):val(v){}
 	SWFOBJECT_TYPE getObjectType()const {return T_FUNCTION;}
 	ISWFObject* call(ISWFObject* obj, arguments* args);
 	IFunction* toFunction();
@@ -88,15 +98,9 @@ public:
 	{
 		return new Function(*this);
 	}
-	void bind()
-	{
-		bound=true;
-	}
-	ISWFObject* closure_this;
 
 private:
 	as_function val;
-	bool bound;
 };
 
 class SyntheticFunction : public IFunction
@@ -111,17 +115,11 @@ public:
 	{
 		return new SyntheticFunction(*this);
 	}
-	void bind()
-	{
-		bound=true;
-	}
-	ISWFObject* closure_this;
 	std::vector<ISWFObject*> func_scope;
 
 private:
 	method_info* mi;
 	synt_function val;
-	bool bound;
 };
 
 class Undefined : public ASObject
@@ -329,6 +327,19 @@ public:
 	ScriptDefinable(IFunction* _f):f(_f){}
 	//The global object will be passed from the calling context
 	void define(ISWFObject* g){ f->call(g,NULL); }
+};
+
+class MethodDefinable: public Definable
+{
+private:
+	IFunction::as_function f;
+	std::string name;
+public:
+	MethodDefinable(std::string _n,IFunction::as_function _f):name(_n),f(_f){}
+	void define(ISWFObject* g)
+	{
+		g->setVariableByName(name,new Function(f));
+	}
 };
 
 class PlaceObject2Tag;

@@ -106,6 +106,8 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	//This should come from DisplayObject
 	LoaderInfo* loaderInfo=new LoaderInfo();
 	setVariableByName(Qname("loaderInfo"),loaderInfo);
+
+	setVariableByName("getBounds",new Function(getBounds));
 }
 
 void SystemState::setShutdownFlag()
@@ -367,7 +369,8 @@ void InputThread::addListener(const string& t, EventDispatcher* ob)
 	cout << "increment " << increment << endl;
 	for(it;it!=range.second;it++)
 	{
-		it->second->setId(cur);
+		if(it->second)
+			it->second->setId(cur);
 		cout << "setting to " << cur << endl;
 		cur+=increment;
 	}
@@ -1069,3 +1072,7 @@ long timeDiff(timespec& s, timespec& d)
 	return temp.tv_sec*1000+(temp.tv_nsec)/1000000;
 }
 
+ASFUNCTIONBODY(SystemState,getBounds)
+{
+	return new Undefined;
+}

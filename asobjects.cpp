@@ -43,6 +43,8 @@ ASStage::ASStage():width(640),height(480)
 
 ASFUNCTIONBODY(ASArray,_constructor)
 {
+	if(args==NULL)
+		return NULL;
 	LOG(NOT_IMPLEMENTED,"Called Array constructor");
 	ASArray* th=static_cast<ASArray*>(obj);
 	th->length=0;
@@ -217,25 +219,32 @@ ISWFObject* ASObject::getVariableByName(const Qname& name, bool& found)
 	return ret;
 }
 
-void ASObject::_register()
+ASObject::ASObject():
+	debug_id(0),prototype(NULL),super(NULL)
 {
-//	setVariableByName("constructor",new Function(constructor));
+	setVariableByName("toString",new MethodDefinable("toString",ASObject::_toString));
 }
 
-/*ASFUNCTIONBODY(ASObject,constructor)
+ASFUNCTIONBODY(ASObject,_toString)
 {
-	LOG(NOT_IMPLEMENTED,"Called Object constructor");
-	return NULL;
-}*/
+	cout << "ss" << endl;
+	return new ASString(obj->toString());
+}
+
+ASFUNCTIONBODY(ASObject,_constructor)
+{
+}
 
 ASString::ASString()
 {
 	setVariableByName("Call",new Function(ASString::String));
+	setVariableByName("toString",new Function(ASObject::_toString));
 }
 
 ASString::ASString(const string& s):data(s)
 {
 	setVariableByName("Call",new Function(ASString::String));
+	setVariableByName("toString",new Function(ASObject::_toString));
 }
 
 ASArray::~ASArray()
@@ -261,6 +270,11 @@ ASFUNCTIONBODY(ASString,String)
 		LOG(CALLS,"Cannot convert " << args->at(0)->getObjectType() << " to String");
 		abort();
 	}
+}
+
+string ASObject::toString() const
+{
+	return "Object";
 }
 
 string ASString::toString() const
@@ -444,7 +458,7 @@ IFunction* Function::toFunction()
 	return this;
 }
 
-SyntheticFunction::SyntheticFunction(method_info* m):mi(m),bound(false)
+SyntheticFunction::SyntheticFunction(method_info* m):mi(m)
 {
 	m->synt_method();
 	if(m->f)

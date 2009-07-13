@@ -57,10 +57,12 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		abort();
 	}
 	EventDispatcher* th=dynamic_cast<EventDispatcher*>(obj);
+	if(th==NULL)
+		return NULL;
 	sys->cur_input_thread->addListener(args->at(0)->toString(),th);
 
-	Function* f=dynamic_cast<Function*>(args->at(1));
-	Function* f2=(Function*)f->clone();
+	IFunction* f=args->at(1)->toFunction();
+	IFunction* f2=static_cast<IFunction*>(f->clone());
 	f2->bind();
 
 	th->handlers.insert(make_pair(args->at(0)->toString(),f2->toFunction()));

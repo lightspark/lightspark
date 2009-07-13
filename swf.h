@@ -94,6 +94,8 @@ private:
 	RECT frame_size;
 
 public:
+	ASFUNCTION(getBounds);
+
 	//OpenGL fragment programs
 	int gpu_program;
 	GLuint fboId;

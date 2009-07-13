@@ -311,6 +311,11 @@ void ABCVm::registerFunctions()
 	ex->addGlobalMapping(F,(void*)&ABCVm::hasNext2);
 }
 
+ASFUNCTIONBODY(ABCVm,print)
+{
+	cout << args->at(0)->toString() << endl;
+}
+
 void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
@@ -320,9 +325,13 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("Number",new ASObject);
 	Global.setVariableByName("String",new ASString);
 	Global.setVariableByName("Array",new ASArray);
+	Global.setVariableByName("Function",new Function);
 	Global.setVariableByName("undefined",new Undefined);
 	Global.setVariableByName("Math",new Math);
 	Global.setVariableByName("Date",new Date);
+
+	Global.setVariableByName("print",new Function(print));
+	Global.setVariableByName("toString",new Function(ASObject::_toString));
 
 	Global.setVariableByName(Qname("flash.display","MovieClip"),new MovieClip);
 	Global.setVariableByName(Qname("flash.display","DisplayObject"),new ASObject);
@@ -938,7 +947,16 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		else if(o->getObjectType()==T_DEFINABLE)
 		{
 			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
-			th->runtime_stack_push(new Undefined);
+			Definable* d=static_cast<Definable*>(o);
+			d->define(obj);
+			IFunction* f=obj->getVariableByMultiname(name,found)->toFunction();
+			if(f)
+			{
+				ISWFObject* ret=f->call(obj,&args);
+				th->runtime_stack_push(ret);
+			}
+			else
+				abort();
 		}
 		else
 		{
@@ -1627,7 +1645,9 @@ void ABCVm::getProperty(call_context* th, int n)
 		if(ret->getObjectType()==T_DEFINABLE)
 		{
 			LOG(ERROR,"Property " << name << " is not yet valid");
-			abort();
+			Definable* d=static_cast<Definable*>(ret);
+			d->define(obj);
+			ret=obj->getVariableByMultiname(name,found);
 		}
 		th->runtime_stack_push(ret);
 		ret->incRef();
@@ -1769,7 +1789,7 @@ void ABCVm::getLex(call_context* th, int n)
 			if(o->getObjectType()==T_FUNCTION)
 			{
 				LOG(CALLS,"Attaching this to function " << name);
-				Function* f=dynamic_cast<Function*>(o);
+				IFunction* f=o->toFunction();
 				f->closure_this=th->locals[0];
 			}
 			else if(o->getObjectType()==T_DEFINABLE)
@@ -3692,7 +3712,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferre
 			LOG(CALLS,"Setter trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			obj->setGetterByName(name, new SyntheticFunction(m));
+			obj->setSetterByName(name, new SyntheticFunction(m));
 			LOG(CALLS,"End Setter trait: " << name);
 			break;
 		}
@@ -3701,7 +3721,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferre
 			LOG(CALLS,"Method trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			obj->setGetterByName(name, new SyntheticFunction(m));
+			obj->setVariableByName(name, new SyntheticFunction(m));
 			break;
 		}
 		case traits_info::Const:

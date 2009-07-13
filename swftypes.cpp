@@ -899,9 +899,8 @@ ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(
 
 ISWFObject::~ISWFObject()
 {
-	if(ref_count>1)
-		LOG(NOT_IMPLEMENTED,"Destroying a still referenced object");
-
+//	if(ref_count>1)
+//		LOG(NOT_IMPLEMENTED,"Destroying a still referenced object");
 
 	map<Qname,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)

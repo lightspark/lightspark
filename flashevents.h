@@ -47,6 +47,18 @@ public:
 	IOErrorEvent();
 };
 
+class KeyboardEvent: public Event
+{
+public:
+	KeyboardEvent();
+};
+
+class FocusEvent: public Event
+{
+public:
+	FocusEvent();
+};
+
 class MouseEvent: public Event
 {
 public:

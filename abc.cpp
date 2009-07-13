@@ -220,6 +220,13 @@ ISWFObject* argumentDumper(arguments* arg, uint32_t n)
 		return new Undefined;
 }
 
+ISWFObject* createRest()
+{
+	ASArray* ret=new ASArray();
+	ret->_constructor(ret,NULL);
+	return ret;
+}
+
 void ABCVm::registerFunctions()
 {
 	vector<const llvm::Type*> sig;
@@ -229,6 +236,11 @@ void ABCVm::registerFunctions()
 	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not_impl",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::not_impl);
+	sig.clear();
+
+	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"createRest",module);
+	ex->addGlobalMapping(F,(void*)createRest);
 	sig.clear();
 
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
@@ -313,7 +325,7 @@ void ABCVm::registerFunctions()
 
 ASFUNCTIONBODY(ABCVm,print)
 {
-	cout << args->at(0)->toString() << endl;
+	cerr << args->at(0)->toString() << endl;
 }
 
 void ABCVm::registerClasses()
@@ -359,6 +371,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByName(Qname("flash.events","EventDispatcher"),new ASObject);
 	Global.setVariableByName(Qname("flash.events","Event"),new Event(""));
 	Global.setVariableByName(Qname("flash.events","MouseEvent"),new MouseEvent);
+	Global.setVariableByName(Qname("flash.events","FocusEvent"),new FocusEvent);
+	Global.setVariableByName(Qname("flash.events","KeyboardEvent"),new KeyboardEvent);
 	Global.setVariableByName(Qname("flash.events","ProgressEvent"),new ASObject);
 	Global.setVariableByName(Qname("flash.events","IOErrorEvent"),new IOErrorEvent);
 
@@ -680,7 +694,7 @@ void ABCVm::divide(call_context* th)
 
 void ABCVm::getGlobalScope(call_context* th)
 {
-	LOG(CALLS,"getGlobalScope");
+	LOG(CALLS,"getGlobalScope: " << &th->vm->Global);
 //	th->runtime_stack_push(th->scope_stack[0]);
 //	th->scope_stack[0]->incRef();
 	th->runtime_stack_push(&th->vm->Global);
@@ -698,7 +712,10 @@ void ABCVm::decrement_i(call_context* th)
 
 void ABCVm::increment(call_context* th)
 {
-	LOG(NOT_IMPLEMENTED,"increment");
+	LOG(CALLS,"increment");
+
+	int n=th->runtime_stack_pop()->toInt();
+	th->runtime_stack_push(new Integer(n+1));
 }
 
 void ABCVm::increment_i(call_context* th)
@@ -746,13 +763,6 @@ void ABCVm::add(call_context* th)
 		th->runtime_stack_push(new Number(num1+num2));
 		LOG(CALLS,"add " << num1 << '+' << num2);
 	}
-	else if(val1->getObjectType()==T_STRING && val2->getObjectType()==T_STRING)
-	{
-		string a=val1->toString();
-		string b=val2->toString();
-		th->runtime_stack_push(new ASString(a+b));
-		LOG(CALLS,"add " << a << '+' << b);
-	}
 	else if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_INTEGER)
 	{
 		double num2=val2->toNumber();
@@ -761,6 +771,20 @@ void ABCVm::add(call_context* th)
 //		val2->decRef();
 		th->runtime_stack_push(new Number(num1+num2));
 		LOG(CALLS,"add " << num1 << '+' << num2);
+	}
+	else if(val1->getObjectType()==T_STRING)
+	{
+		string a=val1->toString();
+		string b=val2->toString();
+		th->runtime_stack_push(new ASString(a+b));
+		LOG(CALLS,"add " << a << '+' << b);
+	}
+	else if(val1->getObjectType()==T_ARRAY)
+	{
+		//Array concatenation
+		ASArray* ar=static_cast<ASArray*>(val1);
+		ar->push(val2);
+		th->runtime_stack_push(ar);
 	}
 	else
 	{
@@ -850,6 +874,7 @@ void ABCVm::newActivation(call_context* th,method_info* info)
 	for(int i=0;i<info->body->trait_count;i++)
 		th->vm->buildTrait(act,&info->body->traits[i]);
 
+	act->dumpVariables();
 	th->runtime_stack_push(act);
 }
 
@@ -896,19 +921,36 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	ret->prototype=aso;
 	if(aso==NULL)
 		LOG(ERROR,"Class is not as ASObject");
-	
-	if(o->class_index!=-1)
+
+	if(o->class_index==-2)
 	{
+		//We have to build the method traits
+		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
+		LOG(CALLS,"Building method traits");
+		for(int i=0;i<sf->mi->body->trait_count;i++)
+		{
+			cout << i << endl;
+			th->vm->buildTrait(ret,&sf->mi->body->traits[i]);
+		}
+		sf->call(ret,&args);
+
+	}
+	else if(o->class_index==-1)
+	{
+		//The class is builtin
+		LOG(NOT_IMPLEMENTED,"Building a builtin class");
+	}
+	else
+	{
+		//The class is declared in the script and has an index
 		LOG(CALLS,"Building instance traits");
 		for(int i=0;i<th->vm->instances[o->class_index].trait_count;i++)
 			th->vm->buildTrait(ret,&th->vm->instances[o->class_index].traits[i]);
 	}
-	else
-		LOG(NOT_IMPLEMENTED,"Building a builtin class");
 
-	LOG(CALLS,"Calling Instance init");
 	if(o->constructor)
 	{
+		LOG(CALLS,"Calling Instance init");
 		args.incRef();
 		o->constructor->call(ret,&args);
 //		args.decRef();
@@ -1164,14 +1206,9 @@ void ABCVm::ifLT(call_context* th, int offset)
 	ISWFObject* obj2=th->runtime_stack_pop();
 	ISWFObject* obj1=th->runtime_stack_pop();
 
-	cout << obj1->toInt() << ' ' << obj2->toInt() << endl;
-
 	//Real comparision demanded to object
 	if(obj1->isLess(obj2))
-	{
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
-		cout << "true" << endl;
-	}
 	else
 		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
 
@@ -2070,9 +2107,10 @@ llvm::Function* method_info::synt_method()
 	}
 	if(flags&0x04) //TODO: NEED_REST
 	{
+		llvm::Value* rest=Builder.CreateCall(ex->FindFunctionNamed("createRest"));
 		constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), param_count+1);
 		t=Builder.CreateGEP(locals,constant);
-		Builder.CreateStore(it,t);
+		Builder.CreateStore(rest,t);
 	}
 
 	//Each case block builds the correct parameters for the interpreter function and call it
@@ -3692,10 +3730,15 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferre
 		{
 		//	LOG(CALLS,"Registering trait " << name);
 		//	obj->setVariableByName(name, buildClass(t->classi));
+			ISWFObject* ret;
 			if(deferred_initialization)
-				obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
+				ret=obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
 			else
-				obj->setVariableByName(name, new Undefined);
+				ret=obj->setVariableByName(name, new Undefined);
+			
+			LOG(CALLS,"Slot "<< t->slot_id << " type Class");
+			if(t->slot_id)
+				obj->initSlot(t->slot_id, ret, name);
 			break;
 		}
 		case traits_info::Getter:
@@ -3789,7 +3832,11 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferre
 						ret=obj->setVariableByName(name,new Undefined);
 				}
 				else
+				{
 					LOG(CALLS,"Not resetting variable " << name);
+//					if(ret->constructor)
+//						ret->constructor->call(ret,NULL);
+				}
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, ret, name);
 				break;
@@ -3800,40 +3847,6 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferre
 			obj->setVariableByName(name, new Undefined);
 	}
 }
-
-/*void ABCVm::printTrait(const traits_info* t) const
-{
-	printMultiname(t->name);
-	switch(t->kind&0xf)
-	{
-		case traits_info::Slot:
-			LOG(CALLS,"Slot trait");
-			LOG(CALLS,"id: " << t->slot_id << " vindex " << t->vindex << " vkind " << t->vkind);
-			break;
-		case traits_info::Method:
-			LOG(CALLS,"Method trait");
-			LOG(CALLS,"method: " << t->method);
-			break;
-		case traits_info::Getter:
-			LOG(CALLS,"Getter trait");
-			LOG(CALLS,"method: " << t->method);
-			break;
-		case traits_info::Setter:
-			LOG(CALLS,"Setter trait");
-			LOG(CALLS,"method: " << t->method);
-			break;
-		case traits_info::Class:
-			LOG(CALLS,"Class trait: slot "<< t->slot_id);
-			printClass(t->classi);
-			break;
-		case traits_info::Function:
-			LOG(CALLS,"Function trait");
-			break;
-		case traits_info::Const:
-			LOG(CALLS,"Const trait");
-			break;
-	}
-}*/
 
 void ABCVm::printMultiname(int mi) const
 {
@@ -3967,42 +3980,6 @@ ISWFObject* ABCVm::buildClass(int m)
 	}*/
 	return new ASObject();
 }
-
-/*void ABCVm::printClass(int m) const
-{
-	const instance_info* i=&instances[m];
-	LOG(CALLS,"Class name: " << getMultiname(i->name));
-	LOG(CALLS,"Class supername:");
-	printMultiname(i->supername);
-	LOG(CALLS,"Flags " <<hex << i->flags);
-	LOG(CALLS,"Instance traits n: " <<i->trait_count);
-	for(int j=0;j<i->trait_count;j++)
-		printTrait(&i->traits[j]);
-	LOG(CALLS,"Instance init");
-	const method_info* mi=&methods.at(i->init);
-	printMethod(mi);
-
-	const class_info* c=&classes[m];
-	LOG(CALLS,"Class traits n: " <<c->trait_count);
-	for(int j=0;j<c->trait_count;j++)
-		printTrait(&c->traits[j]);
-	LOG(CALLS,"Class init");
-	mi=&methods[c->cinit];
-	printMethod(mi);
-}
-
-void ABCVm::printMethod(const method_info* m) const
-{
-	string n=getString(m->name);
-	LOG(CALLS,"Method " << n);
-	LOG(CALLS,"Params n: " << m->param_count);
-	LOG(CALLS,"Return " << m->return_type);
-	LOG(CALLS,"Flags " << m->flags);
-	if(m->body)
-		LOG(CALLS,"Body Lenght " << m->body->code_length)
-	else
-		LOG(CALLS,"No Body")
-}*/
 
 istream& operator>>(istream& in, u32& v)
 {

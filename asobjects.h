@@ -105,6 +105,7 @@ private:
 
 class SyntheticFunction : public IFunction
 {
+friend class ABCVm;
 public:
 	typedef ISWFObject* (*synt_function)(ISWFObject*, arguments*, call_context* cc);
 	SyntheticFunction(method_info* m);
@@ -174,6 +175,7 @@ public:
 	{
 		constructor=new Function(_constructor);
 	}
+	SWFOBJECT_TYPE getObjectType() const { return T_ARRAY; }
 	virtual ~ASArray();
 	ASFUNCTION(_constructor);
 	ISWFObject* clone()
@@ -182,11 +184,17 @@ public:
 	}
 	ISWFObject* at(int index) const
 	{
-		return data[index];
+		if(index<data.size())
+			return data[index];
+		else
+			abort();
 	}
 	ISWFObject*& at(int index)
 	{
-		return data[index];
+		if(index<data.size())
+			return data[index];
+		else
+			abort();
 	}
 	int size() const
 	{
@@ -199,11 +207,13 @@ public:
 	}
 	void resize(int n)
 	{
-		data.resize(n);
+		data.resize(n,new Undefined);
 		length=n;
 	}
 	ISWFObject* getVariableByName(const Qname& name, bool& found);
 	ISWFObject* getVariableByMultiname(const multiname& name, bool& found);
+	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
+	bool isEqual(const ISWFObject* r) const;
 };
 
 class arguments: public ASArray

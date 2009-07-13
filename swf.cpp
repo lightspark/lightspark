@@ -108,6 +108,8 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	setVariableByName(Qname("loaderInfo"),loaderInfo);
 
 	setVariableByName("getBounds",new Function(getBounds));
+
+	class_name="sysu";
 }
 
 void SystemState::setShutdownFlag()

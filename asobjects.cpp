@@ -43,13 +43,20 @@ ASStage::ASStage():width(640),height(480)
 
 ASFUNCTIONBODY(ASArray,_constructor)
 {
-	if(args==NULL)
-		return NULL;
-	LOG(NOT_IMPLEMENTED,"Called Array constructor");
 	ASArray* th=static_cast<ASArray*>(obj);
 	th->length=0;
 	th->setVariableByName("length",&th->length);
 	th->length.incRef();
+	if(args==NULL)
+		return NULL;
+
+	if(args->size()!=0)
+	{
+		LOG(NOT_IMPLEMENTED,"Called Array constructor");
+		th->resize(args->size());
+		for(int i=0;i<args->size();i++)
+			th->at(i)=args->at(i);
+	}
 }
 
 ASMovieClipLoader::ASMovieClipLoader()
@@ -130,6 +137,25 @@ ASFUNCTIONBODY(ASXML,load)
 	return new Integer(1);
 }
 
+bool ASArray::isEqual(const ISWFObject* r) const
+{
+	if(r->getObjectType()!=T_ARRAY)
+		return false;
+	else
+	{
+		const ASArray* ra=static_cast<const ASArray*>(r);
+		int size=data.size();
+		if(size!=ra->size())
+			return false;
+
+		for(int i=0;i<size;i++)
+		{
+			if(!data[i]->isEqual(ra->at(i)))
+				return false;
+		}
+		return true;
+	}
+}
 
 ISWFObject* ASArray::getVariableByMultiname(const multiname& name, bool& found)
 {
@@ -159,6 +185,35 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, bool& found)
 
 	if(!found)
 		ret=ASObject::getVariableByMultiname(name,found);
+
+	return ret;
+}
+
+ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o, bool force)
+{
+	ISWFObject* ret;
+	bool number=true;
+	for(int i=0;i<name.name.size();i++)
+	{
+		if(!isdigit(name.name[i]))
+		{
+			number=false;
+			break;
+		}
+
+	}
+
+	if(number)
+	{
+		int index=atoi(name.name.c_str());
+		if(index>=data.size())
+			resize(index+1);
+
+		data[index]=o;
+		ret=o;
+	}
+	else
+		ret=ASObject::setVariableByName(name,o,force);
 
 	return ret;
 }
@@ -460,20 +515,24 @@ IFunction* Function::toFunction()
 
 SyntheticFunction::SyntheticFunction(method_info* m):mi(m)
 {
+	class_index=-2;
 	m->synt_method();
 	if(m->f)
 	{
 		val=(synt_function)m->vm->ex->getPointerToFunction(m->f);
 	}
 	else
-	{
-		LOG(ERROR,"Cannot synt the method");
-		abort();
-	}
+		val=NULL;
 }
 
 ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 {
+	if(val==NULL)
+	{
+		LOG(NOT_IMPLEMENTED,"Not initialized function");
+		return NULL;
+	}
+
 	call_context* cc=new call_context(mi);
 	cc->scope_stack=func_scope;
 	ISWFObject* ret;

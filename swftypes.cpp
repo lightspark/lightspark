@@ -886,7 +886,8 @@ void DictionaryDefinable::define(ISWFObject* g)
 	else
 	{
 		ISWFObject* ret=o->clone();
-		ret->_register();
+		if(ret->constructor)
+			ret->constructor->call(ret,NULL);
 		p->setWrapped(ret);
 		g->setVariableByName(p->Name,ret);
 	}

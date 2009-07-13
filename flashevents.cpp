@@ -34,9 +34,22 @@ Event::Event(const string& t):type(t)
 	setVariableByName("UNLOAD",new ASString("unload"));
 }
 
+FocusEvent::FocusEvent():Event("focusEvent")
+{
+	setVariableByName("FOCUS_IN",new ASString("focusIn"));
+	setVariableByName("FOCUS_OUT",new ASString("focusOut"));
+}
+
+KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
+{
+	setVariableByName("KEY_DOWN",new ASString("keyDown"));
+	setVariableByName("KEY_UP",new ASString("keyUp"));
+}
+
 MouseEvent::MouseEvent():Event("mouseEvent")
 {
 	setVariableByName("MOUSE_DOWN",new ASString("mouseDown"));
+	setVariableByName("CLICK",new ASString("click"));
 }
 
 IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")

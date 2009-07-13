@@ -399,7 +399,7 @@ private:
 	static void setLocal(call_context* th, int n); 
 	static void kill(call_context* th, int n); 
 	static void setSlot(call_context* th, int n); 
-	static void pushString(call_context* th, int n); 
+	static ISWFObject* pushString(call_context* th, int n); 
 	static void getLex(call_context* th, int n); 
 	static void getScopeObject(call_context* th, int n); 
 	static void deleteProperty(call_context* th, int n); 
@@ -409,10 +409,10 @@ private:
 	static void findPropStrict(call_context* th, int n);
 	static void findProperty(call_context* th, int n);
 	static void getProperty(call_context* th, int n);
-	static void pushByte(call_context* th, int n);
-	static void pushShort(call_context* th, int n);
-	static void pushInt(call_context* th, int n);
-	static void pushDouble(call_context* th, int n);
+	static ISWFObject* pushByte(call_context* th, int n);
+	static ISWFObject* pushShort(call_context* th, int n);
+	static ISWFObject* pushInt(call_context* th, int n);
+	static ISWFObject* pushDouble(call_context* th, int n);
 	static void incLocal_i(call_context* th, int n);
 	static void coerce(call_context* th, int n);
 	static void setProperty(call_context* th, int n);
@@ -424,11 +424,11 @@ private:
 	static void getSuper(call_context* th, int n);
 	static void pushScope(call_context* th);
 	static void pushWith(call_context* th);
-	static void pushNull(call_context* th);
+	static ISWFObject* pushNull(call_context* th);
 	static ISWFObject* pushUndefined(call_context* th);
-	static void pushNaN(call_context* th);
-	static void pushFalse(call_context* th);
-	static void pushTrue(call_context* th);
+	static ISWFObject* pushNaN(call_context* th);
+	static ISWFObject* pushFalse(call_context* th);
+	static ISWFObject* pushTrue(call_context* th);
 	static void dup(call_context* th);
 	static void equals(call_context* th);
 	static void strictEquals(call_context* th);
@@ -460,7 +460,7 @@ private:
 	static void increment(call_context* th);
 	static void decrement_i(call_context* th);
 	static void decrement(call_context* th);
-	static void getGlobalScope(call_context* th);
+	static ISWFObject* getGlobalScope(call_context* th);
 	//Utility
 	static void debug(call_context* th);
 	static void not_impl(int p);
@@ -471,7 +471,9 @@ private:
 
 	//Opcode tables
 	static opcode_handler opcode_table_args0[];
+	static opcode_handler opcode_table_args0_lazy[];
 	static opcode_handler opcode_table_args1[];
+	static opcode_handler opcode_table_args1_lazy[];
 
 	//Synchronization
 	sem_t mutex;

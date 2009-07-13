@@ -33,6 +33,15 @@
 #include "flashevents.h"
 #include "flashdisplay.h"
 
+opcode_handler ABCVm::opcode_table_args0_lazy[]={
+	{"pushNaN",(void*)&ABCVm::pushNaN},
+	{"pushNull",(void*)&ABCVm::pushNull},
+	{"pushTrue",(void*)&ABCVm::pushTrue},
+	{"pushFalse",(void*)&ABCVm::pushFalse},
+	{"pushUndefined",(void*)&ABCVm::pushUndefined},
+	{"getGlobalScope",(void*)&ABCVm::getGlobalScope}
+};
+
 opcode_handler ABCVm::opcode_table_args0[]={
 	{"pushScope",(void*)&ABCVm::pushScope},
 	{"pushWith",(void*)&ABCVm::pushWith},
@@ -45,7 +54,6 @@ opcode_handler ABCVm::opcode_table_args0[]={
 	{"coerce_a",(void*)&ABCVm::coerce_a},
 	{"coerce_s",(void*)&ABCVm::coerce_s},
 	{"throw",(void*)&ABCVm::_throw},
-	{"getGlobalScope",(void*)&ABCVm::getGlobalScope},
 	{"decrement",(void*)&ABCVm::decrement},
 	{"decrement_i",(void*)&ABCVm::decrement_i},
 	{"increment",(void*)&ABCVm::increment},
@@ -64,14 +72,18 @@ opcode_handler ABCVm::opcode_table_args0[]={
 	{"multiply",(void*)&ABCVm::multiply},
 	{"add",(void*)&ABCVm::add},
 	{"swap",(void*)&ABCVm::swap},
-	{"pushNaN",(void*)&ABCVm::pushNaN},
-	{"pushNull",(void*)&ABCVm::pushNull},
-	{"pushTrue",(void*)&ABCVm::pushTrue},
-	{"pushFalse",(void*)&ABCVm::pushFalse},
 	{"isTypelate",(void*)&ABCVm::isTypelate},
 	{"asTypelate",(void*)&ABCVm::asTypelate},
 	{"popScope",(void*)&ABCVm::popScope},
 	{"typeOf",(void*)ABCVm::typeOf}
+};
+
+opcode_handler ABCVm::opcode_table_args1_lazy[]={
+	{"pushString",(void*)&ABCVm::pushString},
+	{"pushDouble",(void*)&ABCVm::pushDouble},
+	{"pushInt",(void*)&ABCVm::pushInt},
+	{"pushShort",(void*)&ABCVm::pushShort},
+	{"pushByte",(void*)&ABCVm::pushByte}
 };
 
 opcode_handler ABCVm::opcode_table_args1[]={
@@ -102,10 +114,6 @@ opcode_handler ABCVm::opcode_table_args1[]={
 	{"coerce",(void*)&ABCVm::coerce},
 	{"getLex",(void*)&ABCVm::getLex},
 	{"findPropStrict",(void*)&ABCVm::findPropStrict},
-	{"pushDouble",(void*)&ABCVm::pushDouble},
-	{"pushInt",(void*)&ABCVm::pushInt},
-	{"pushShort",(void*)&ABCVm::pushShort},
-	{"pushByte",(void*)&ABCVm::pushByte},
 	{"incLocal_i",(void*)&ABCVm::incLocal_i},
 	{"getProperty",(void*)&ABCVm::getProperty},
 	{"setProperty",(void*)&ABCVm::setProperty},
@@ -114,7 +122,6 @@ opcode_handler ABCVm::opcode_table_args1[]={
 	{"constructSuper",(void*)&ABCVm::constructSuper},
 	{"newArray",(void*)&ABCVm::newArray},
 	{"newClass",(void*)&ABCVm::newClass},
-	{"pushString",(void*)&ABCVm::pushString},
 	{"initProperty",(void*)&ABCVm::initProperty},
 	{"kill",(void*)&ABCVm::kill},
 	{"getScopeObject",(void*)&ABCVm::getScopeObject}
@@ -284,11 +291,14 @@ void ABCVm::registerFunctions()
 		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args0[i].name,module);
 		ex->addGlobalMapping(F,opcode_table_args0[i].addr);
 	}
-
 	//Lazy pushing
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"pushUndefined",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::pushUndefined);
+	elems=sizeof(opcode_table_args0_lazy)/sizeof(opcode_handler);
+	for(int i=0;i<elems;i++)
+	{
+		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args0_lazy[i].name,module);
+		ex->addGlobalMapping(F,opcode_table_args0_lazy[i].addr);
+	}
 	//End of lazy pushing
 
 	// (call_context*,int)
@@ -300,6 +310,15 @@ void ABCVm::registerFunctions()
 		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args1[i].name,module);
 		ex->addGlobalMapping(F,opcode_table_args1[i].addr);
 	}
+	//Lazy pushing
+	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	elems=sizeof(opcode_table_args1_lazy)/sizeof(opcode_handler);
+	for(int i=0;i<elems;i++)
+	{
+		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args1_lazy[i].name,module);
+		ex->addGlobalMapping(F,opcode_table_args1_lazy[i].addr);
+	}
+	//End of lazy pushing
 
 	// (call_context*,int,int)
 	sig.push_back(llvm::IntegerType::get(32));
@@ -692,12 +711,10 @@ void ABCVm::divide(call_context* th)
 	LOG(CALLS,"divide "  << num1 << '/' << num2);
 }
 
-void ABCVm::getGlobalScope(call_context* th)
+ISWFObject* ABCVm::getGlobalScope(call_context* th)
 {
 	LOG(CALLS,"getGlobalScope: " << &th->vm->Global);
-//	th->runtime_stack_push(th->scope_stack[0]);
-//	th->scope_stack[0]->incRef();
-	th->runtime_stack_push(&th->vm->Global);
+	return &th->vm->Global;
 }
 
 void ABCVm::decrement(call_context* th)
@@ -1479,22 +1496,22 @@ void ABCVm::dup(call_context* th)
 	LOG(CALLS, "dup: DONE" );
 }
 
-void ABCVm::pushTrue(call_context* th)
+ISWFObject* ABCVm::pushTrue(call_context* th)
 {
 	LOG(CALLS, "pushTrue" );
-	th->runtime_stack_push(new Boolean(true));
+	return new Boolean(true);
 }
 
-void ABCVm::pushFalse(call_context* th)
+ISWFObject* ABCVm::pushFalse(call_context* th)
 {
 	LOG(CALLS, "pushFalse" );
-	th->runtime_stack_push(new Boolean(false));
+	return new Boolean(false);
 }
 
-void ABCVm::pushNaN(call_context* th)
+ISWFObject* ABCVm::pushNaN(call_context* th)
 {
-	LOG(CALLS, "pushNaN DONE" );
-	th->runtime_stack_push(new Undefined);
+	LOG(NOT_IMPLEMENTED, "pushNaN" );
+	return new Undefined;
 }
 
 ISWFObject* ABCVm::pushUndefined(call_context* th)
@@ -1503,10 +1520,10 @@ ISWFObject* ABCVm::pushUndefined(call_context* th)
 	return new Undefined;
 }
 
-void ABCVm::pushNull(call_context* th)
+ISWFObject* ABCVm::pushNull(call_context* th)
 {
-	LOG(CALLS, "pushNull DONE" );
-	th->runtime_stack_push(new Null);
+	LOG(CALLS, "pushNull" );
+	return new Null;
 }
 
 void ABCVm::pushWith(call_context* th)
@@ -1523,30 +1540,30 @@ void ABCVm::pushScope(call_context* th)
 	th->scope_stack.push_back(t);
 }
 
-void ABCVm::pushInt(call_context* th, int n)
+ISWFObject* ABCVm::pushInt(call_context* th, int n)
 {
 	s32 i=th->vm->constant_pool.integer[n];
 	LOG(CALLS, "pushInt [" << dec << n << "] " << i);
-	th->runtime_stack_push(new Integer(i));
+	return new Integer(i);
 }
 
-void ABCVm::pushDouble(call_context* th, int n)
+ISWFObject* ABCVm::pushDouble(call_context* th, int n)
 {
 	d64 d=th->vm->constant_pool.doubles[n];
 	LOG(CALLS, "pushDouble [" << dec << n << "] " << d);
-	th->runtime_stack_push(new Number(d));
+	return new Number(d);
 }
 
-void ABCVm::pushShort(call_context* th, int n)
+ISWFObject* ABCVm::pushShort(call_context* th, int n)
 {
 	LOG(CALLS, "pushShort " << n );
-	th->runtime_stack_push(new Integer(n));
+	return new Integer(n);
 }
 
-void ABCVm::pushByte(call_context* th, int n)
+ISWFObject* ABCVm::pushByte(call_context* th, int n)
 {
 	LOG(CALLS, "pushByte " << n );
-	th->runtime_stack_push(new Integer(n));
+	return new Integer(n);
 }
 
 void ABCVm::incLocal_i(call_context* th, int n)
@@ -1868,11 +1885,11 @@ void ABCVm::getLex(call_context* th, int n)
 
 }
 
-void ABCVm::pushString(call_context* th, int n)
+ISWFObject* ABCVm::pushString(call_context* th, int n)
 {
 	string s=th->vm->getString(n); 
 	LOG(CALLS, "pushString " << s );
-	th->runtime_stack_push(new ASString(s));
+	return new ASString(s);
 }
 
 void ABCVm::kill(call_context* th, int n)
@@ -2826,9 +2843,9 @@ llvm::Function* method_info::synt_method()
 			{
 				//pushnull
 				LOG(TRACE, "synt pushnull" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
-				Builder.CreateCall(ex->FindFunctionNamed("pushNull"), context);
+				value=Builder.CreateCall(ex->FindFunctionNamed("pushNull"), context);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x21:
@@ -2853,51 +2870,51 @@ llvm::Function* method_info::synt_method()
 			{
 				//pushbyte
 				LOG(TRACE, "synt pushbyte" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				uint8_t t;
 				code.read((char*)&t,1);
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("pushByte"), context, constant);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("pushByte"), context, constant);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x25:
 			{
 				//pushshort
 				LOG(TRACE, "synt pushshort" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("pushShort"), context, constant);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("pushShort"), context, constant);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x26:
 			{
 				//pushtrue
 				LOG(TRACE, "synt pushtrue" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
-				Builder.CreateCall(ex->FindFunctionNamed("pushTrue"), context);
+				value=Builder.CreateCall(ex->FindFunctionNamed("pushTrue"), context);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x27:
 			{
 				//pushfalse
 				LOG(TRACE, "synt pushfalse" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
-				Builder.CreateCall(ex->FindFunctionNamed("pushFalse"), context);
+				value=Builder.CreateCall(ex->FindFunctionNamed("pushFalse"), context);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x28:
 			{
 				//pushnan
 				LOG(TRACE, "synt pushnan" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
-				Builder.CreateCall(ex->FindFunctionNamed("pushNaN"), context);
+				value=Builder.CreateCall(ex->FindFunctionNamed("pushNaN"), context);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x29:
@@ -2939,36 +2956,36 @@ llvm::Function* method_info::synt_method()
 			{
 				//pushstring
 				LOG(TRACE, "synt pushstring" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("pushString"), context, constant);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("pushString"), context, constant);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x2d:
 			{
 				//pushint
 				LOG(TRACE, "synt pushint" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("pushInt"), context, constant);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("pushInt"), context, constant);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x2f:
 			{
 				//pushdouble
 				LOG(TRACE, "synt pushdouble" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x30:
@@ -3285,9 +3302,9 @@ llvm::Function* method_info::synt_method()
 			{
 				//getglobalscope
 				LOG(TRACE, "synt getglobalscope" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
-				Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"), context);
+				value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"), context);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0x65:

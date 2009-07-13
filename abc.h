@@ -373,7 +373,7 @@ private:
 
 	void registerFunctions();
 	//Interpreted AS instructions
-	static void hasNext2(call_context* th, int n, int m); 
+	static ISWFObject* hasNext2(call_context* th, int n, int m); 
 	static void callPropVoid(call_context* th, int n, int m); 
 	static void callSuperVoid(call_context* th, int n, int m); 
 	static void callSuper(call_context* th, int n, int m); 
@@ -381,7 +381,7 @@ private:
 	static void constructProp(call_context* th, int n, int m); 
 	static void getLocal(call_context* th, int n); 
 	static void newObject(call_context* th, int n); 
-	static void newCatch(call_context* th, int n); 
+	static ISWFObject* newCatch(call_context* th, int n); 
 	static void jump(call_context* th, int offset); 
 	static void ifEq(call_context* th, int offset); 
 	static void ifStrictEq(call_context* th, int offset); 
@@ -395,13 +395,13 @@ private:
 	static void ifStrictNE(call_context* th, int offset); 
 	static void ifFalse(call_context* th, int offset); 
 	static void ifTrue(call_context* th, int offset); 
-	static void getSlot(call_context* th, int n); 
+	static ISWFObject* getSlot(ISWFObject* th, int n); 
 	static void setLocal(call_context* th, int n); 
 	static void kill(call_context* th, int n); 
-	static void setSlot(call_context* th, int n); 
+	static ISWFObject* setSlot(ISWFObject*, ISWFObject*, int n); 
 	static ISWFObject* pushString(call_context* th, int n); 
 	static void getLex(call_context* th, int n); 
-	static void getScopeObject(call_context* th, int n); 
+	static ISWFObject* getScopeObject(call_context* th, int n); 
 	static void deleteProperty(call_context* th, int n); 
 	static void initProperty(call_context* th, int n); 
 	static void newClass(call_context* th, int n); 
@@ -419,7 +419,7 @@ private:
 	static void call(call_context* th, int n);
 	static void constructSuper(call_context* th, int n);
 	static void construct(call_context* th, int n);
-	static void newFunction(call_context* th, int n);
+	static ISWFObject* newFunction(call_context* th, int n);
 	static void setSuper(call_context* th, int n);
 	static void getSuper(call_context* th, int n);
 	static void pushScope(call_context* th);
@@ -430,36 +430,36 @@ private:
 	static ISWFObject* pushFalse(call_context* th);
 	static ISWFObject* pushTrue(call_context* th);
 	static void dup(call_context* th);
-	static void equals(call_context* th);
-	static void strictEquals(call_context* th);
-	static void _not(call_context* th);
-	static void negate(call_context* th);
+	static ISWFObject* equals(ISWFObject*,ISWFObject*);
+	static ISWFObject* strictEquals(ISWFObject*,ISWFObject*);
+	static ISWFObject* _not(ISWFObject*);
+	static ISWFObject* negate(ISWFObject*);
 	static void pop(call_context* th);
-	static void typeOf(call_context* th);
+	static ISWFObject* typeOf(ISWFObject*);
 	static void _throw(call_context* th);
 	static void asTypelate(call_context* th);
 	static void isTypelate(call_context* th);
 	static void swap(call_context* th);
-	static void add(call_context* th);
-	static void multiply(call_context* th);
-	static void divide(call_context* th);
-	static void modulo(call_context* th);
-	static void subtract(call_context* th);
+	static ISWFObject* add(ISWFObject*,ISWFObject*);
+	static ISWFObject* multiply(ISWFObject*,ISWFObject*);
+	static ISWFObject* divide(ISWFObject*,ISWFObject*);
+	static ISWFObject* modulo(ISWFObject*,ISWFObject*);
+	static ISWFObject* subtract(ISWFObject*,ISWFObject*);
 	static void popScope(call_context* th);
-	static void newActivation(call_context* th, method_info*);
-	static void coerce_s(call_context* th);
-	static void coerce_a(call_context* th);
-	static void convert_i(call_context* th);
-	static void convert_b(call_context* th);
-	static void convert_d(call_context* th);
-	static void greaterThan(call_context* th);
-	static void lessThan(call_context* th);
-	static void nextName(call_context* th);
-	static void nextValue(call_context* th);
-	static void increment_i(call_context* th);
-	static void increment(call_context* th);
-	static void decrement_i(call_context* th);
-	static void decrement(call_context* th);
+	static ISWFObject* newActivation(call_context* th, method_info*);
+	static ISWFObject* coerce_s(ISWFObject*);
+	static ISWFObject* coerce_a(ISWFObject*);
+	static ISWFObject* convert_i(ISWFObject*);
+	static ISWFObject* convert_b(ISWFObject*);
+	static ISWFObject* convert_d(ISWFObject*);
+	static ISWFObject* greaterThan(ISWFObject*,ISWFObject*);
+	static ISWFObject* lessThan(ISWFObject*,ISWFObject*);
+	static ISWFObject* nextName(ISWFObject* index, ISWFObject* obj);
+	static ISWFObject* nextValue(ISWFObject* index, ISWFObject* obj);
+	static ISWFObject* increment_i(ISWFObject*);
+	static ISWFObject* increment(ISWFObject*);
+	static ISWFObject* decrement_i(ISWFObject*);
+	static ISWFObject* decrement(ISWFObject*);
 	static ISWFObject* getGlobalScope(call_context* th);
 	//Utility
 	static void debug(call_context* th);
@@ -474,6 +474,10 @@ private:
 	static opcode_handler opcode_table_args0_lazy[];
 	static opcode_handler opcode_table_args1[];
 	static opcode_handler opcode_table_args1_lazy[];
+	static opcode_handler opcode_table_args1_pointers[];
+	static opcode_handler opcode_table_args1_pointers_int[];
+	static opcode_handler opcode_table_args2_pointers[];
+	static opcode_handler opcode_table_args2_pointers_int[];
 
 	//Synchronization
 	sem_t mutex;

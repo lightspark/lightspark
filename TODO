@@ -10,7 +10,6 @@ Official TODO Queue:
 -) Onor sandboxing
 -) Onor framerate
 -) Onor script limits
--) Late push for llvm code
 -) Most arithmetic instruction return a Number for sure. Exploit this
 -) Implement ScalingGrid for correct positioning of some objects
 -) Implement gradient mapping

@@ -2187,8 +2187,6 @@ llvm::Function* method_info::synt_method()
 			{
 				//kill
 				LOG(TRACE, "synt kill" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -2198,7 +2196,6 @@ llvm::Function* method_info::synt_method()
 			case 0x09:
 			{
 				//label
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				//Create a new block and insert it in the mapping
 				llvm::BasicBlock* A;
 				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
@@ -2262,7 +2259,7 @@ llvm::Function* method_info::synt_method()
 			}
 			case 0x0d:
 			{
-				//ifnge
+				//ifnle
 				LOG(TRACE, "synt ifnle");
 				//TODO: implement common data comparison
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);

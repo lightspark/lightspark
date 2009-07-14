@@ -383,18 +383,18 @@ private:
 	static void newObject(call_context* th, int n); 
 	static ISWFObject* newCatch(call_context* th, int n); 
 	static void jump(call_context* th, int offset); 
-	static void ifEq(call_context* th, int offset); 
-	static void ifStrictEq(call_context* th, int offset); 
-	static void ifNe(call_context* th, int offset); 
-	static void ifLT(call_context* th, int offset); 
-	static void ifNLT(call_context* th, int offset); 
-	static void ifNGT(call_context* th, int offset); 
-	static void ifNGE(call_context* th, int offset); 
-	static void ifGE(call_context* th, int offset); 
-	static void ifNLE(call_context* th, int offset); 
-	static void ifStrictNE(call_context* th, int offset); 
-	static void ifFalse(call_context* th, int offset); 
-	static void ifTrue(call_context* th, int offset); 
+	static bool ifEq(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifStrictEq(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifNE(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifLT(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifNLT(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifNGT(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifNGE(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifGE(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifNLE(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifStrictNE(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifFalse(ISWFObject*, int offset); 
+	static bool ifTrue(ISWFObject*, int offset); 
 	static ISWFObject* getSlot(ISWFObject* th, int n); 
 	static void setLocal(call_context* th, int n); 
 	static void kill(call_context* th, int n); 
@@ -462,7 +462,6 @@ private:
 	static ISWFObject* decrement(ISWFObject*);
 	static ISWFObject* getGlobalScope(call_context* th);
 	//Utility
-	static void debug(call_context* th);
 	static void not_impl(int p);
 	ASFUNCTION(print);
 
@@ -475,8 +474,10 @@ private:
 	static opcode_handler opcode_table_args1[];
 	static opcode_handler opcode_table_args1_lazy[];
 	static opcode_handler opcode_table_args1_pointers[];
+	static opcode_handler opcode_table_args1_branches[];
 	static opcode_handler opcode_table_args1_pointers_int[];
 	static opcode_handler opcode_table_args2_pointers[];
+	static opcode_handler opcode_table_args2_branches[];
 	static opcode_handler opcode_table_args2_pointers_int[];
 
 	//Synchronization

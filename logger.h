@@ -16,10 +16,10 @@ class Log
 {
 private:
 	static sem_t mutex;
-	static LOG_LEVEL log_level;
 	LOG_LEVEL cur_level;
 	bool valid;
 	static const char* level_names[];
+	static LOG_LEVEL log_level;
 
 public:
 	Log(LOG_LEVEL l);
@@ -27,6 +27,7 @@ public:
 	std::ostream& operator()();
 	operator bool() { return valid; }
 	static void initLogging(LOG_LEVEL l);
+	static LOG_LEVEL getLevel(){return log_level;}
 
 };
 

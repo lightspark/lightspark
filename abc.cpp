@@ -42,10 +42,14 @@ opcode_handler ABCVm::opcode_table_args0_lazy[]={
 	{"getGlobalScope",(void*)&ABCVm::getGlobalScope}
 };
 
+void debug(int* i)
+{
+	LOG(CALLS, "debug "<< *i);
+}
+
 opcode_handler ABCVm::opcode_table_args0[]={
 	{"pushScope",(void*)&ABCVm::pushScope},
 	{"pushWith",(void*)&ABCVm::pushWith},
-	{"debug",(void*)&ABCVm::debug},
 	{"throw",(void*)&ABCVm::_throw},
 	{"pop",(void*)&ABCVm::pop},
 	{"dup",(void*)&ABCVm::dup},
@@ -66,19 +70,25 @@ opcode_handler ABCVm::opcode_table_args1_lazy[]={
 	{"getScopeObject",(void*)&ABCVm::getScopeObject}
 };
 
-opcode_handler ABCVm::opcode_table_args1[]={
-	{"ifNGT",(void*)&ABCVm::ifNGT},
-	{"ifNLT",(void*)&ABCVm::ifNLT},
-	{"ifNGE",(void*)&ABCVm::ifNGE},
-	{"ifGE",(void*)&ABCVm::ifGE},
-	{"ifNLE",(void*)&ABCVm::ifNLE},
-	{"ifLT",(void*)&ABCVm::ifLT},
-	{"ifStrictNE",(void*)&ABCVm::ifStrictNE},
-	{"ifNe",(void*)&ABCVm::ifNe},
-	{"ifStrictEq",(void*)&ABCVm::ifStrictEq},
-	{"ifEq",(void*)&ABCVm::ifEq},
+opcode_handler ABCVm::opcode_table_args1_branches[]={
 	{"ifTrue",(void*)&ABCVm::ifTrue},
 	{"ifFalse",(void*)&ABCVm::ifFalse},
+};
+
+opcode_handler ABCVm::opcode_table_args2_branches[]={
+	{"ifLT",(void*)&ABCVm::ifLT},
+	{"ifNLT",(void*)&ABCVm::ifNLT},
+	{"ifNGT",(void*)&ABCVm::ifNGT},
+	{"ifNGE",(void*)&ABCVm::ifNGE},
+	{"ifNLE",(void*)&ABCVm::ifNLE},
+	{"ifGE",(void*)&ABCVm::ifGE},
+	{"ifNE",(void*)&ABCVm::ifNE},
+	{"ifStrictNE",(void*)&ABCVm::ifStrictNE},
+	{"ifStrictEq",(void*)&ABCVm::ifStrictEq},
+	{"ifEq",(void*)&ABCVm::ifEq},
+};
+
+opcode_handler ABCVm::opcode_table_args1[]={
 	{"getSuper",(void*)&ABCVm::getSuper},
 	{"setSuper",(void*)&ABCVm::setSuper},
 	{"newObject",(void*)&ABCVm::newObject},
@@ -257,6 +267,12 @@ void ABCVm::registerFunctions()
 	ex->addGlobalMapping(F,(void*)&ABCVm::not_impl);
 	sig.clear();
 
+	sig.push_back(llvm::PointerType::getUnqual(llvm::IntegerType::get(32)));
+	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug",module);
+	ex->addGlobalMapping(F,(void*)debug);
+	sig.clear();
+
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"createRest",module);
 	ex->addGlobalMapping(F,(void*)createRest);
@@ -380,6 +396,16 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 
+	//Branches, no context, (ISWFObject*, int)
+	FT=llvm::FunctionType::get(llvm::IntegerType::get(1), sig, false);
+	elems=sizeof(opcode_table_args1_branches)/sizeof(opcode_handler);
+	for(int i=0;i<elems;i++)
+	{
+		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args1_branches[i].name,module);
+		ex->addGlobalMapping(F,opcode_table_args1_branches[i].addr);
+	}
+	//End of lazy pushing
+
 	//Lazy pushing, no context, (ISWFObject*, ISWFObject*)
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
@@ -401,6 +427,16 @@ void ABCVm::registerFunctions()
 	{
 		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args2_pointers_int[i].name,module);
 		ex->addGlobalMapping(F,opcode_table_args2_pointers_int[i].addr);
+	}
+	//End of lazy pushing
+	
+	//Branches, no context, (ISWFObject*, ISWFObject*, int)
+	FT=llvm::FunctionType::get(llvm::IntegerType::get(1), sig, false);
+	elems=sizeof(opcode_table_args2_branches)/sizeof(opcode_handler);
+	for(int i=0;i<elems;i++)
+	{
+		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args2_branches[i].name,module);
+		ex->addGlobalMapping(F,opcode_table_args2_branches[i].addr);
 	}
 	//End of lazy pushing
 }
@@ -1160,21 +1196,19 @@ void ABCVm::jump(call_context* th, int offset)
 	LOG(CALLS,"jump " << offset);
 }
 
-void ABCVm::ifTrue(call_context* th, int offset)
+bool ABCVm::ifTrue(ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifTrue " << offset);
 
-	ISWFObject* obj1=th->runtime_stack_pop();
-	th->runtime_stack_push((ISWFObject*)new uintptr_t(Boolean_concrete(obj1)));
+	return Boolean_concrete(obj1);
 //	obj1->decRef();
 }
 
-void ABCVm::ifFalse(call_context* th, int offset)
+bool ABCVm::ifFalse(ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifFalse " << offset);
 
-	ISWFObject* obj1=th->runtime_stack_pop();
-	th->runtime_stack_push((ISWFObject*)new uintptr_t(!Boolean_concrete(obj1)));
+	return !Boolean_concrete(obj1);
 //	obj1->decRef();
 }
 
@@ -1210,90 +1244,81 @@ bool Boolean_concrete(ISWFObject* obj)
 		return false;
 }
 
-void ABCVm::ifStrictNE(call_context* th, int offset)
+bool ABCVm::ifStrictNE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(NOT_IMPLEMENTED,"ifStrictNE " << offset);
 	abort();
 }
 
-void ABCVm::ifNLE(call_context* th, int offset)
+bool ABCVm::ifNLE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifNLE " << offset);
 	abort();
 }
 
-void ABCVm::ifGE(call_context* th, int offset)
+bool ABCVm::ifGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifGE " << offset);
 	abort();
 }
 
-void ABCVm::ifNGE(call_context* th, int offset)
+bool ABCVm::ifNGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifNGE " << offset);
 	abort();
 }
 
-void ABCVm::ifNGT(call_context* th, int offset)
+bool ABCVm::ifNGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifNGT " << offset);
-	ISWFObject* obj2=th->runtime_stack_pop();
-	ISWFObject* obj1=th->runtime_stack_pop();
 
 	//Real comparision demanded to object
 	if(obj1->isGreater(obj2))
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+		return false;
 	else
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+		return true;
 
 //	obj2->decRef();
 //	obj1->decRef();
 }
 
-void ABCVm::ifNLT(call_context* th, int offset)
+bool ABCVm::ifNLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifNLT " << offset);
-	ISWFObject* obj2=th->runtime_stack_pop();
-	ISWFObject* obj1=th->runtime_stack_pop();
 
 	//Real comparision demanded to object
 	if(obj1->isLess(obj2))
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+		return false;
 	else
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+		return true;
 
 //	obj2->decRef();
 //	obj1->decRef();
 }
 
-void ABCVm::ifLT(call_context* th, int offset)
+bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifLT " << offset);
-	ISWFObject* obj2=th->runtime_stack_pop();
-	ISWFObject* obj1=th->runtime_stack_pop();
 
 	//Real comparision demanded to object
 	if(obj1->isLess(obj2))
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+		return true;
 	else
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+		return false;
 
 //	obj2->decRef();
 //	obj1->decRef();
 }
 
-void ABCVm::ifNe(call_context* th, int offset)
+bool ABCVm::ifNE(ISWFObject* obj1, ISWFObject* obj2, int offset)
 {
-	LOG(CALLS,"ifNe " << offset);
-
-	ISWFObject* obj1=th->runtime_stack_pop();
-	ISWFObject* obj2=th->runtime_stack_pop();
+	LOG(CALLS,"ifNE " << offset);
 
 	//Real comparision demanded to object
 	if(!obj1->isEqual(obj2))
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+		return true;
 	else
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+		return false;
 }
 
 ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
@@ -1318,34 +1343,29 @@ ISWFObject* ABCVm::greaterThan(ISWFObject* obj1, ISWFObject* obj2)
 		return new Boolean(false);
 }
 
-void ABCVm::ifStrictEq(call_context* th, int offset)
+bool ABCVm::ifStrictEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
 {
 	LOG(CALLS,"ifStrictEq " << offset);
 	abort();
 
-	//CHECK
-	ISWFObject* obj1=th->runtime_stack_pop();
-	ISWFObject* obj2=th->runtime_stack_pop();
+	//CHECK types
 
 	//Real comparision demanded to object
 	if(obj1->isEqual(obj2))
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+		return true;
 	else
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+		return false;
 }
 
-void ABCVm::ifEq(call_context* th, int offset)
+bool ABCVm::ifEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
 {
 	LOG(CALLS,"ifEq " << offset);
 
-	ISWFObject* obj1=th->runtime_stack_pop();
-	ISWFObject* obj2=th->runtime_stack_pop();
-
 	//Real comparision demanded to object
 	if(obj1->isEqual(obj2))
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(1));
+		return true;
 	else
-		th->runtime_stack_push((ISWFObject*)new uintptr_t(0));
+		return false;
 }
 
 void ABCVm::deleteProperty(call_context* th, int n)
@@ -1863,11 +1883,6 @@ ISWFObject* ABCVm::getScopeObject(call_context* th, int n)
 	return ret;
 }
 
-void ABCVm::debug(call_context* i)
-{
-	LOG(CALLS, "debug " << i->locals[1] );
-}
-
 void ABCVm::getLex(call_context* th, int n)
 {
 	multiname name=th->vm->getMultiname(n);
@@ -1922,7 +1937,6 @@ void ABCVm::getLex(call_context* th, int n)
 			th->runtime_stack_push(new Undefined);
 		}
 	}
-
 }
 
 ISWFObject* ABCVm::pushString(call_context* th, int n)
@@ -2066,8 +2080,8 @@ llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex
 call_context::call_context(method_info* th)
 {
 	locals=new ISWFObject*[th->body->local_count];
-	//TODO: We add this huge safety margin because not implemented instruction do not clean the stack as they should
-	stack=new ISWFObject*[th->body->max_stack*10];
+	//TODO: We add a 3x safety margin because not implemented instruction do not clean the stack as they should
+	stack=new ISWFObject*[th->body->max_stack*3];
 	stack_index=0;
 	vm=th->vm;
 }
@@ -2185,6 +2199,8 @@ llvm::Function* method_info::synt_method()
 			if(!last_is_branch)
 			{
 				LOG(TRACE, "Last instruction before a new block was not a branch.");
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
 				Builder.CreateBr(it->second);
 			}
 			LOG(TRACE,"Starting block at "<<int(code.tellg())-1);
@@ -2272,8 +2288,6 @@ llvm::Function* method_info::synt_method()
 				//ifnlt
 				LOG(TRACE, "synt ifnlt" );
 				//TODO: implement common data comparison
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2299,17 +2313,18 @@ llvm::Function* method_info::synt_method()
 					B=llvm::BasicBlock::Create("then", f);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
-				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifNLT"), context, constant);
 			
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifNLT pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				//Make comparision
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLT"), v1, v2, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2319,8 +2334,6 @@ llvm::Function* method_info::synt_method()
 				//ifnle
 				LOG(TRACE, "synt ifnle");
 				//TODO: implement common data comparison
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2346,16 +2359,16 @@ llvm::Function* method_info::synt_method()
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifNLE"), context, constant);
-			
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifNLE pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLE"), v1, v2, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2365,8 +2378,6 @@ llvm::Function* method_info::synt_method()
 				//ifngt
 				LOG(TRACE, "synt ifngt" );
 				//TODO: implement common data comparison
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2393,16 +2404,16 @@ llvm::Function* method_info::synt_method()
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifNGT"), context, constant);
-			
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifNGT pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNGT"), v1, v2, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2412,8 +2423,6 @@ llvm::Function* method_info::synt_method()
 				//ifnge
 				LOG(TRACE, "synt ifnge");
 				//TODO: implement common data comparison
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2439,16 +2448,16 @@ llvm::Function* method_info::synt_method()
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifNGE"), context, constant);
-			
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifNGE pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNGE"), v1, v2, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2495,9 +2504,6 @@ llvm::Function* method_info::synt_method()
 			{
 				//iftrue
 				LOG(TRACE, "synt iftrue" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
-
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2525,16 +2531,14 @@ llvm::Function* method_info::synt_method()
 				}
 			
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifTrue"), context, constant);
-
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifTrue pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifTrue"), v1, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2542,8 +2546,6 @@ llvm::Function* method_info::synt_method()
 			case 0x12:
 			{
 				//iffalse
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 
 				last_is_branch=true;
 				s24 t;
@@ -2573,16 +2575,14 @@ llvm::Function* method_info::synt_method()
 				}
 			
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifFalse"), context, constant);
-
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifFalse pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifFalse"), v1, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2592,9 +2592,6 @@ llvm::Function* method_info::synt_method()
 				//ifeq
 				LOG(TRACE, "synt ifeq" );
 				//TODO: implement common data comparison
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
-
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2621,16 +2618,16 @@ llvm::Function* method_info::synt_method()
 				}
 			
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), context, constant);
-
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifEq pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifEq"), v1, v2, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2639,9 +2636,6 @@ llvm::Function* method_info::synt_method()
 			{
 				//ifne
 				//TODO: implement common data comparison
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
-
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2669,16 +2663,16 @@ llvm::Function* method_info::synt_method()
 				}
 			
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifNe"), context, constant);
-
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifEq pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNE"), v1, v2, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2688,8 +2682,6 @@ llvm::Function* method_info::synt_method()
 				//iflt
 				LOG(TRACE, "synt iflt" );
 				//TODO: implement common data comparison
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2715,16 +2707,16 @@ llvm::Function* method_info::synt_method()
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifLT"), context, constant);
-			
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifEq pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifLT"), v1, v2, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2734,8 +2726,6 @@ llvm::Function* method_info::synt_method()
 				//ifge
 				LOG(TRACE, "synt ifge");
 				//TODO: implement common data comparison
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2761,16 +2751,16 @@ llvm::Function* method_info::synt_method()
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), context, constant);
-			
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifGE pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifGE"), v1, v2, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2780,9 +2770,6 @@ llvm::Function* method_info::synt_method()
 				//ifstricteq
 				LOG(TRACE, "synt ifstricteq" );
 				//TODO: implement common data comparison
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
-
 				last_is_branch=true;
 				s24 t;
 				code >> t;
@@ -2809,16 +2796,16 @@ llvm::Function* method_info::synt_method()
 				}
 			
 				//Make comparision
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifStrictEq"), context, constant);
-
-				//Pop the stack, we are surely going to pop from the dynamic one
-				//ifStrictEq pushed a pointer to integer
-				llvm::Value* cond_ptr=
+				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateLoad(cond_ptr);
-				llvm::Value* cond1=Builder.CreateTrunc(cond,llvm::IntegerType::get(1));
-				Builder.CreateCondBr(cond1,B,A);
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifStrictEq"), v1, v2, constant);
+
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
 				//Now start populating the fallthrough block
 				Builder.SetInsertPoint(A);
 				break;
@@ -2827,13 +2814,43 @@ llvm::Function* method_info::synt_method()
 			{
 				//ifstrictne
 				LOG(TRACE, "synt ifstrictne" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
+				last_is_branch=true;
 				s24 t;
 				code >> t;
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
 				//Make comparision
+				llvm::Value* v1=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), context, constant);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifStrictNE"), v1, v2, constant);
+
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
 				break;
 			}
 			case 0x1b:

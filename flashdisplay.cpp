@@ -96,6 +96,13 @@ ASFUNCTIONBODY(Sprite,_constructor)
 	th->rotation.bind();
 	th->setVariableByName("rotation",&th->rotation,true);
 	th->setVariableByName("height",&th->_height);
+	th->setVariableByName("getBounds",new Function(getBounds));
+}
+
+ASFUNCTIONBODY(Sprite,getBounds)
+{
+	LOG(NOT_IMPLEMENTED,"Called getBounds");
+	return new Undefined;
 }
 
 MovieClip::MovieClip():_framesloaded(0),_totalframes(1),displayListLimit(0)

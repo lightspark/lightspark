@@ -67,6 +67,7 @@ protected:
 public:
 	Sprite();
 	ASFUNCTION(_constructor);
+	ASFUNCTION(getBounds);
 	ISWFObject* clone()
 	{
 		return new Sprite(*this);

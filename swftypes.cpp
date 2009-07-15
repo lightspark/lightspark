@@ -604,8 +604,6 @@ inline RGBA medianColor(const RGBA& a, const RGBA& b, float factor)
 		a.Alpha+(b.Alpha-a.Alpha)*factor);
 }
 
-extern GLuint g_t;
-
 void FILLSTYLE::setFragmentProgram() const
 {
 	//Let's abuse of glColor and glTexCoord to transport
@@ -615,7 +613,7 @@ void FILLSTYLE::setFragmentProgram() const
 		float r,g,b,a;
 	};
 
-	glBindTexture(GL_TEXTURE_2D,g_t);
+	glBindTexture(GL_TEXTURE_2D,sys->data_tex);
 
 	if(FillStyleType==0x00)
 	{
@@ -658,7 +656,7 @@ void FILLSTYLE::setFragmentProgram() const
 			}
 		}
 
-		glBindTexture(GL_TEXTURE_2D,g_t);
+		glBindTexture(GL_TEXTURE_2D,sys->data_tex);
 		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);
 	}
 	else
@@ -670,7 +668,7 @@ void FILLSTYLE::setFragmentProgram() const
 
 void FILLSTYLE::fixedColor(float r, float g, float b)
 {
-	glBindTexture(GL_TEXTURE_2D,g_t);
+	glBindTexture(GL_TEXTURE_2D,sys->data_tex);
 
 	//Let's abuse of glColor and glTexCoord to transport
 	//custom information
@@ -698,7 +696,7 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 		v.Gradient.version=v.version;
 		s >> v.Gradient;
 	}
-	else if(v.FillStyleType==0x41)
+	else if(v.FillStyleType==0x41 || v.FillStyleType==0x43)
 	{
 		s >> v.BitmapId >> v.BitmapMatrix;
 	}

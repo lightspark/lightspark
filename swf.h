@@ -100,6 +100,7 @@ public:
 	int gpu_program;
 	GLuint fboId;
 	GLuint spare_tex;
+	GLuint data_tex;
 	int width;
 	int height;
 
@@ -122,6 +123,7 @@ public:
 	ExecutionContext* execContext;
 
 	SystemState();
+	~SystemState();
 	void waitToRun();
 	Frame& getFrameAtFP();
 	void advanceFP();

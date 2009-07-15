@@ -64,8 +64,8 @@ void* MovieTimer::timer_worker(MovieTimer* th)
 		else
 			throw "rt null";
 		sem_post(&th->mutex);
-		sleep(3);
-		//sys->advanceFP();
+		//sleep(3);
+		sys->advanceFP();
 	}
 }
 
@@ -79,7 +79,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(CALLS);
+	Log::initLogging(TRACE);
 	return NPERR_NO_ERROR;
 }
 
@@ -252,6 +252,12 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			abort();
 		}
 		it=new InputThread(&m_sys,NPAPI,p2);
+
+		sys=&m_sys;
+		m_sys.cur_input_thread=it;
+		m_sys.cur_render_thread=rt;
+		m_sys.cur_thread_pool=new ThreadPool;
+		m_sys.fps_prof=new fps_profiling();
 		
 
 		// add xt event handler
@@ -264,7 +270,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			XtAddEventHandler(xtwidget, event_mask, False, (XtEventHandler)xt_event_handler, this);
 		}
 	}
-	draw();
+	//draw();
 	return TRUE;
 }
 

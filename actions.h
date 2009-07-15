@@ -463,6 +463,13 @@ public:
 	void print(){ LOG(TRACE,"ActionSetVariable");}
 };
 
+class ActionNotImplemented: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"Not implemented action");}
+};
+
 class ActionGetVariable: public ActionTag
 {
 public:

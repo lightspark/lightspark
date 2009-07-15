@@ -69,6 +69,8 @@ Tag* TagFactory::readTag()
 			return new StartSoundTag(h,f);
 		case 19:
 			return new SoundStreamBlockTag(h,f);
+		case 20:
+			return new DefineBitsLosslessTag(h,f);
 		case 22:
 			return new DefineShape2Tag(h,f);
 		case 24:
@@ -127,9 +129,7 @@ Tag* TagFactory::readTag()
 			return new DefineFontNameTag(h,f);
 		default:
 			LOG(NOT_IMPLEMENTED,"Unsupported tag type " << (h>>6));
-			Tag t(h,f);
-			t.skip(f);
-			break;
+			return new UnimplementedTag(h,f);
 	}
 }
 
@@ -392,6 +392,19 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	ignore(in,KerningCount*4);
 }
 
+DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
+{
+	int dest=in.tellg();
+	dest+=getSize();
+	in >> CharacterId >> BitmapFormat >> BitmapWidth >> BitmapHeight;
+
+	if(BitmapFormat==3)
+		in >> BitmapColorTableSize;
+
+	//TODO: read bitmap data
+	ignore(in,dest-in.tellg());
+}
+
 DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 {
 	int dest=in.tellg();
@@ -516,7 +529,6 @@ void DefineTextTag::Render()
 
 	glEnable(GL_BLEND);
 	glLoadIdentity();
-	glScalef(10,10,1);
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
 	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
@@ -654,7 +666,6 @@ void DefineMorphShapeTag::Render()
 	glEnable(GL_BLEND);
 	glPushMatrix();
 	glLoadIdentity();
-	glScalef(10,10,1);
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
 	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
@@ -702,7 +713,6 @@ void DefineShapeTag::Render()
 	glEnable(GL_BLEND);
 	glPushMatrix();
 	glLoadIdentity();
-	glScalef(10,10,1);
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
 	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
@@ -759,7 +769,6 @@ void DefineShape2Tag::Render()
 	glEnable(GL_BLEND);
 	glPushMatrix();
 	glLoadIdentity();
-	glScalef(10,10,1);
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
 	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
@@ -806,7 +815,6 @@ void DefineShape4Tag::Render()
 	glEnable(GL_BLEND);
 	glPushMatrix();
 	glLoadIdentity();
-	glScalef(10,10,1);
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
 	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
@@ -871,7 +879,6 @@ void DefineShape3Tag::Render()
 	glEnable(GL_BLEND);
 	glPushMatrix();
 	glLoadIdentity();
-	glScalef(10,10,1);
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
 	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);

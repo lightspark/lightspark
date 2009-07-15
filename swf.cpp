@@ -71,7 +71,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 }
 
 SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),performance_profiling(false),
-	parsingTarget(this),shutdown(false),currentVm(NULL)
+	parsingTarget(this),shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
@@ -108,8 +108,14 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	setVariableByName(Qname("loaderInfo"),loaderInfo);
 
 	setVariableByName("getBounds",new Function(getBounds));
+}
 
-	class_name="sysu";
+SystemState::~SystemState()
+{
+	if(currentVm)
+		delete currentVm;
+	if(cur_thread_pool)
+		delete cur_thread_pool;
 }
 
 void SystemState::setShutdownFlag()
@@ -416,10 +422,10 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buf
 
 RenderThread::~RenderThread()
 {
-	LOG(NO_INFO,"~RenderThread this=" << this);
 	void* ret;
 	pthread_cancel(t);
 	pthread_join(t,&ret);
+	LOG(NO_INFO,"~RenderThread this=" << this);
 }
 
 void* RenderThread::npapi_worker(RenderThread* th)
@@ -487,12 +493,98 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");
 
+	//Load fragment shaders
+	sys->gpu_program=load_program();
 
-	glViewport(0,0,p->width,p->height);
+	int tex=glGetUniformLocation(sys->gpu_program,"g_tex1");
+	glUniform1i(tex,0);
+
+	glUseProgram(sys->gpu_program);
+
+	glDisable(GL_DEPTH_TEST);
+	glDepthFunc(GL_ALWAYS);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
+	RECT size=sys->getFrameSize();
+	int width=p->width;
+	int height=p->height;
+	sys->width=width;
+	sys->height=height;
+	float scalex=p->width;
+	scalex/=size.Xmax;
+	float scaley=p->height;
+	scaley/=size.Ymax;
+	glViewport(0,0,width,height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0,p->width,p->height,0,-100,0);
+	glOrtho(0,width,height,0,-100,0);
+
 	glMatrixMode(GL_MODELVIEW);
+
+	GLuint dt;
+	glGenTextures(1,&dt);
+	sys->data_tex=dt;
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D,dt);
+
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+	
+ 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+
+	unsigned int t2[3];
+ 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	glGenTextures(3,t2);
+	glBindTexture(GL_TEXTURE_2D,t2[0]);
+
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+	glBindTexture(GL_TEXTURE_2D,t2[1]);
+	sys->spare_tex=t2[1];
+
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+
+	glBindTexture(GL_TEXTURE_2D,t2[2]);
+
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	/*// create a renderbuffer object to store depth info
+	GLuint rboId[1];
+	glGenRenderbuffersEXT(1, rboId);
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId[0]);
+	glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT,width,height);
+
+	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);*/
+	
+	// create a framebuffer object
+	glGenFramebuffersEXT(1, &sys->fboId);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,GL_TEXTURE_2D, t2[1], 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT,GL_TEXTURE_2D, t2[2], 0);
+	
+	// check FBO status
+	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+	if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
+	{
+		cout << status << endl;
+		abort();
+	}
 
 	try
 	{
@@ -524,22 +616,42 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				{
 					sem_post(&th->mutex);
 					sem_post(&th->end_render);
+					if(sys->shutdown)
+						pthread_exit(0);
 					continue;
 				}
+				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
+				glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
+				//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
+
+				glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+
 				RGB bg=sys->getBackground();
 				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 				glClearDepth(0xffff);
 				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 				glLoadIdentity();
-
-				float scalex=p->width;
-				scalex/=sys->getFrameSize().Xmax;
-				float scaley=p->height;
-				scaley/=sys->getFrameSize().Ymax;
 				glScalef(scalex,scaley,1);
+				th->cur_frame->Render(sys->displayListLimit);
 
-				th->cur_frame->Render(0);
-				glFlush();
+				glLoadIdentity();
+
+				glColor3f(0,0,1);
+				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+				glDrawBuffer(GL_BACK);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+				glBindTexture(GL_TEXTURE_2D,t2[0]);
+				glBegin(GL_QUADS);
+					glTexCoord2f(0,1);
+					glVertex2i(0,0);
+					glTexCoord2f(1,1);
+					glVertex2i(width,0);
+					glTexCoord2f(1,0);
+					glVertex2i(width,height);
+					glTexCoord2f(0,0);
+					glVertex2i(0,height);
+				glEnd();
+
 				glXSwapBuffers(d,p->window);
 				sem_post(&th->mutex);
 			}
@@ -562,11 +674,13 @@ int RenderThread::load_program()
 	GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
 	const char *fs = NULL;
-	fs = dataFileRead("lightspark.frag");
+	//fs = dataFileRead("lightspark.frag");
+	fs = dataFileRead("/home/alex/lightspark/lightspark.frag");
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
 
-	fs = dataFileRead("lightspark.vert");
+//	fs = dataFileRead("lightspark.vert");
+	fs = dataFileRead("/home/alex/lightspark/lightspark.vert");
 	glShaderSource(v, 1, &fs,NULL);
 	free((void*)fs);
 
@@ -726,8 +840,6 @@ void* RenderThread::glx_worker(RenderThread* th)
 	}
 }
 
-GLuint g_t;
-
 float RenderThread::getIdAt(int x, int y)
 {
 	return interactive_buffer[y*sys->width+x];
@@ -771,14 +883,15 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0,width,height,0,-100,0);
-	glScalef(0.1,0.1,1);
 
 	glMatrixMode(GL_MODELVIEW);
 
-	glGenTextures(1,&g_t);
+	GLuint dt;
+	glGenTextures(1,&dt);
+	sys->data_tex=dt;
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D,g_t);
+	glBindTexture(GL_TEXTURE_2D,dt);
 
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
@@ -861,11 +974,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glClearDepth(0xffff);
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 			glLoadIdentity();
+			glScalef(0.1,0.1,1);
 
 			th->cur_frame->Render(sys->displayListLimit);
 
 			glLoadIdentity();
-			glScalef(10,10,1);
 			glColor3f(0,0,1);
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 			glDrawBuffer(GL_BACK);
@@ -904,7 +1017,7 @@ void RenderThread::draw(Frame* f)
 
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
-	sem_wait(&end_render);
+//	sem_wait(&end_render);
 	usleep(1000000/sys->frame_rate);
 
 }

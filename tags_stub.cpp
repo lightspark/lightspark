@@ -126,3 +126,9 @@ DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h,
 	LOG(NOT_IMPLEMENTED,"DefineSceneAndFrameLabelDataTag");
 	skip(in);
 }
+
+UnimplementedTag::UnimplementedTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"Unimplemented Tag " << (h>>6));
+	skip(in);
+}

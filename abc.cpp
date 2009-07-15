@@ -182,7 +182,7 @@ void DoABCTag::Render()
 	LOG(CALLS,"ABC Exec " << Name);
 	if(done)
 		return;
-	pthread_create(&thread,NULL,(void* (*)(void*))ABCVm::Run,vm);
+	vm->start();
 	done=true;
 }
 
@@ -622,7 +622,7 @@ multiname ABCVm::getMultiname(unsigned int mi, call_context* th) const
 	return ret;
 }
 
-ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
+ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s)
 {
 	in >> minor >> major;
 	LOG(CALLS,"ABCVm version " << major << '.' << minor);
@@ -668,6 +668,15 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s),running(false)
 
 	sem_init(&mutex,0,1);
 	sem_init(&sem_event_count,0,0);
+	sem_init(&started,0,0);
+	m_sys=s;
+	pthread_create(&t,NULL,(thread_worker)Run,this);
+}
+
+ABCVm::~ABCVm()
+{
+	pthread_cancel(t);
+	pthread_join(t,NULL);
 }
 
 void ABCVm::handleEvent()
@@ -3800,17 +3809,10 @@ llvm::Function* method_info::synt_method()
 
 void ABCVm::Run(ABCVm* th)
 {
-	sem_wait(&th->mutex);
-	if(th->running)
-	{
-		sem_post(&th->mutex);
-		return;
-	}
-	else
-		th->running=true;
-
+	sem_wait(&th->started);
 	sys=th->m_sys;
 	th->module=new llvm::Module("abc jit");
+	sem_wait(&th->mutex);
 	if(!ex)
 		ex=llvm::ExecutionEngine::create(th->module);
 	sem_post(&th->mutex);

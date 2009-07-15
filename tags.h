@@ -462,6 +462,20 @@ public:
 	void execute( ){};
 };
 
+class DefineBitsLosslessTag: public DictionaryTag
+{
+private:
+	UI16 CharacterId;
+	UI8 BitmapFormat;
+	UI16 BitmapWidth;
+	UI16 BitmapHeight;
+	UI8 BitmapColorTableSize;
+	//ZlibBitmapData;
+public:
+	DefineBitsLosslessTag(RECORDHEADER h, std::istream& in);
+	virtual int getId(){ return CharacterId; }
+};
+
 class DefineBitsLossless2Tag: public DictionaryTag
 {
 private:
@@ -482,6 +496,12 @@ public:
 	UI16 CharacterId;
 	RECT Splitter;
 	DefineScalingGridTag(RECORDHEADER h, std::istream& in);
+};
+
+class UnimplementedTag: public Tag
+{
+public:
+	UnimplementedTag(RECORDHEADER h, std::istream& in);
 };
 
 class DefineSceneAndFrameLabelDataTag: public Tag

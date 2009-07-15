@@ -338,6 +338,7 @@ class ABCVm
 friend class method_info;
 private:
 	SystemState* m_sys;
+	pthread_t t;
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -483,7 +484,7 @@ private:
 	//Synchronization
 	sem_t mutex;
 	sem_t sem_event_count;
-	bool running;
+	sem_t started;
 
 	//Event handling
 	bool shutdown;
@@ -492,9 +493,11 @@ private:
 public:
 	static llvm::ExecutionEngine* ex;
 	ABCVm(SystemState* s,std::istream& in);
+	~ABCVm();
 	static void Run(ABCVm* th);
 	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
 	void addEvent(EventDispatcher*,Event*);
+	void start() { sem_post(&started);}
 };
 
 class DoABCTag: public DisplayListTag

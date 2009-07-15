@@ -332,11 +332,15 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			break;
 		default:
 			LOG(ERROR,"Unsopported ActionCode " << (int)ActionCode);
+			t=NULL;
 			break;
 	}
-	t->Length+=Length;
-	if(ActionCode>=0x80)
-		t->Length+=2;
+	if(t)
+	{
+		t->Length+=Length;
+		if(ActionCode>=0x80)
+			t->Length+=2;
+	}
 	return t;
 }
 
@@ -488,13 +492,13 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 			LOG(ERROR,"End action in function")
 		else
 			functionActions.push_back(ah.createTag(in));
-		functionActions.back()->print();
 		if(functionActions.back()==NULL)
 		{
 			LOG(ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
 		}
+		functionActions.back()->print();
 		if(in.tellg()==dest)
 			break;
 		else if(in.tellg()>dest)

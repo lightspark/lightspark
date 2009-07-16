@@ -28,6 +28,7 @@
 #include "geometry.h"
 #include "asobjects.h"
 #include "flashdisplay.h"
+#include "flashtext.h"
 #include <GL/gl.h>
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,END_TAG};
@@ -348,7 +349,19 @@ class KERNINGRECORD
 {
 };
 
-class FontTag: public DictionaryTag
+class DefineBinaryDataTag: public DictionaryTag
+{
+private:
+	UI16 Tag;
+	UI32 Reserved;
+	uint8_t* data;
+public:
+	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
+	~DefineBinaryDataTag(){delete[] data;}
+	virtual int getId(){return Tag;} 
+};
+
+class FontTag: public DictionaryTag, public ASFont
 {
 protected:
 	UI16 FontID;

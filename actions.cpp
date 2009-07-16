@@ -333,7 +333,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			t=new ActionIf(in);
 			break;
 		default:
-			LOG(ERROR,"Unsopported ActionCode " << (int)ActionCode);
+			LOG(NOT_IMPLEMENTED,"Unsupported ActionCode " << (int)ActionCode);
 			t=NULL;
 			break;
 	}

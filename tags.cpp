@@ -125,6 +125,8 @@ Tag* TagFactory::readTag()
 			return new DefineShape4Tag(h,f);
 		case 86:
 			return new DefineSceneAndFrameLabelDataTag(h,f);
+		case 87:
+			return new DefineBinaryDataTag(h,f);
 		case 88:
 			return new DefineFontNameTag(h,f);
 		default:
@@ -1648,4 +1650,14 @@ void DefineVideoStreamTag::Render()
 		glVertex2i(Width,Height);
 		glVertex2i(0,Height);
 	glEnd();
+}
+
+DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s)
+{
+	LOG(TRACE,"DefineBinaryDataTag");
+	int size=getSize();
+	s >> Tag >> Reserved;
+	size -= sizeof(Tag)+sizeof(Reserved);
+	data=new uint8_t[size];
+	s.read((char*)data,size);
 }

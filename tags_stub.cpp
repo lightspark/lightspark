@@ -28,19 +28,13 @@ void ignore(istream& i, int count);
 ProtectTag::ProtectTag(RECORDHEADER h, istream& in):ControlTag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"Protect Tag");
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
+	skip(in);
 }
 
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"DefineSound Tag");
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
+	skip(in);
 }
 
 DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h,in)

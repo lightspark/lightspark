@@ -63,7 +63,6 @@ bool ISWFObject::isGreater(const ISWFObject* r) const
 bool ISWFObject::isLess(const ISWFObject* r) const
 {
 	LOG(NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
-	abort();
 	return false;
 }
 
@@ -696,7 +695,7 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 		v.Gradient.version=v.version;
 		s >> v.Gradient;
 	}
-	else if(v.FillStyleType==0x41 || v.FillStyleType==0x43)
+	else if(v.FillStyleType==0x41 || v.FillStyleType==0x42 || v.FillStyleType==0x43)
 	{
 		s >> v.BitmapId >> v.BitmapMatrix;
 	}
@@ -711,11 +710,30 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v)
 {
 	s >> v.FillStyleType;
-	if(v.FillStyleType!=0)
+	if(v.FillStyleType==0x00)
+	{
+		s >> v.StartColor >> v.EndColor;
+	}
+	else if(v.FillStyleType==0x12)
+	{
+		s >> v.StartGradientMatrix >> v.EndGradientMatrix;
+		s >> v.NumGradients;
+		UI8 t;
+		RGBA t2;
+		for(int i=0;i<v.NumGradients;i++)
+		{
+			s >> t >> t2;
+			v.StartRatios.push_back(t);
+			v.StartColors.push_back(t2);
+			s >> t >> t2;
+			v.EndRatios.push_back(t);
+			v.EndColors.push_back(t2);
+		}
+	}
+	else
 	{
 		LOG(ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
 	}
-	s >> v.StartColor >> v.EndColor;
 	return s;
 }
 

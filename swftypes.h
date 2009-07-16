@@ -586,6 +586,13 @@ class MORPHFILLSTYLE:public FILLSTYLE
 public:
 	RGBA StartColor;
 	RGBA EndColor;
+	MATRIX StartGradientMatrix;
+	MATRIX EndGradientMatrix;
+	UI8 NumGradients;
+	std::vector<UI8> StartRatios;
+	std::vector<UI8> EndRatios;
+	std::vector<RGBA> StartColors;
+	std::vector<RGBA> EndColors;
 };
 
 class LINESTYLE

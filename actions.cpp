@@ -46,6 +46,7 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 			actions.push_back(ah.createTag(in));
 		if(actions.back()==NULL)
 		{
+			actions.pop_back();
 			LOG(ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
@@ -119,6 +120,7 @@ DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTa
 			actions.push_back(ah.createTag(in));
 		if(actions.back()==NULL)
 		{
+			actions.pop_back();
 			LOG(ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
@@ -379,6 +381,7 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 			functionActions.push_back(ah.createTag(in));
 		if(functionActions.back()==NULL)
 		{
+			functionActions.pop_back();
 			LOG(ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
@@ -494,6 +497,7 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 			functionActions.push_back(ah.createTag(in));
 		if(functionActions.back()==NULL)
 		{
+			functionActions.pop_back();
 			LOG(ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
@@ -522,23 +526,26 @@ void ActionSetProperty::Execute()
 	LOG(CALLS,"ActionSetProperty to: " << target << " index " << index);
 	bool found;
 	ISWFObject* obj=sys->getVariableByName(target,found);
-	switch(index)
+	if(found)
 	{
-		case 2:
-			obj->setVariableByName("_scalex",value);
-			LOG(CALLS,"setting to " << value->toNumber());
-			break;
-/*		case 5:
-			ret=obj->getVariableByName("_totalframes");
-			LOG(NO_INFO,"setting to " << ret->toInt());
-			break;
-		case 12:
-			ret=obj->getVariableByName("_framesloaded");
-			LOG(NO_INFO,"setting to " << ret->toInt());
-			break;*/
-		default:
-			LOG(ERROR,"Not supported property index "<< index);
-			break;
+		switch(index)
+		{
+			case 2:
+				obj->setVariableByName("_scalex",value);
+				LOG(CALLS,"setting to " << value->toNumber());
+				break;
+	/*		case 5:
+				ret=obj->getVariableByName("_totalframes");
+				LOG(NO_INFO,"setting to " << ret->toInt());
+				break;
+			case 12:
+				ret=obj->getVariableByName("_framesloaded");
+				LOG(NO_INFO,"setting to " << ret->toInt());
+				break;*/
+			default:
+				LOG(ERROR,"Not supported property index "<< index);
+				break;
+		}
 	}
 }
 
@@ -550,20 +557,25 @@ void ActionGetProperty::Execute()
 	bool found;
 	ISWFObject* obj=sys->getVariableByName(target,found);
 	ISWFObject* ret;
-	switch(index)
+	if(found)
 	{
-		case 5:
-			ret=obj->getVariableByName("_totalframes",found);
-			LOG(CALLS,"returning " << ret->toInt());
-			break;
-		case 12:
-			ret=obj->getVariableByName("_framesloaded",found);
-			LOG(CALLS,"returning " << ret->toInt());
-			break;
-		default:
-			LOG(ERROR,"Not supported property index "<< index);
-			break;
+		switch(index)
+		{
+			case 5:
+				ret=obj->getVariableByName("_totalframes",found);
+				LOG(CALLS,"returning " << ret->toInt());
+				break;
+			case 12:
+				ret=obj->getVariableByName("_framesloaded",found);
+				LOG(CALLS,"returning " << ret->toInt());
+				break;
+			default:
+				LOG(ERROR,"Not supported property index "<< index);
+				break;
+		}
 	}
+	else
+		ret=new Undefined;
 	sys->vm.stack.push(ret);
 }
 
@@ -657,21 +669,26 @@ void ActionNewObject::Execute()
 	LOG(CALLS,"ActionNewObject: name " << varName);
 	bool found;
 	ISWFObject* type=sys->getVariableByName(varName,found);
-	if(type->getObjectType()!=T_UNDEFINED)
-		LOG(ERROR,"ActionNewObject: no such object");
-	int numArgs=sys->vm.stack.pop()->toInt();
-	if(numArgs)
-		LOG(ERROR,"There are arguments");
-	ISWFObject* c=type->getVariableByName("constructor",found);
-	if(c->getObjectType()!=T_FUNCTION)
-		LOG(ERROR,"Constructor is not a function");
-	Function* f=dynamic_cast<Function*>(c);
-	if(f==NULL)
-		LOG(ERROR,"Not possible error");
+	if(found)
+	{
+		if(type->getObjectType()!=T_UNDEFINED)
+			LOG(ERROR,"ActionNewObject: no such object");
+		int numArgs=sys->vm.stack.pop()->toInt();
+		if(numArgs)
+			LOG(ERROR,"There are arguments");
+		ISWFObject* c=type->getVariableByName("constructor",found);
+		if(c->getObjectType()!=T_FUNCTION)
+			LOG(ERROR,"Constructor is not a function");
+		Function* f=dynamic_cast<Function*>(c);
+		if(f==NULL)
+			LOG(ERROR,"Not possible error");
 
-	ISWFObject* obj=type->clone();
-	f->call(obj,NULL);
-	sys->vm.stack.push(obj);
+		ISWFObject* obj=type->clone();
+		f->call(obj,NULL);
+		sys->vm.stack.push(obj);
+	}
+	else
+		sys->vm.stack.push(new Undefined);
 }
 
 void ActionReturn::Execute()
@@ -696,11 +713,23 @@ void ActionCallMethod::Execute()
 	for(int i=0;i<numArgs;i++)
 		args.at(i)=sys->vm.stack.pop();
 	bool found;
-	IFunction* f=obj->getVariableByName(methodName,found)->toFunction();
-	if(f==0)
-		LOG(ERROR,"No such function");
-	ISWFObject* ret=f->call(obj,&args);
-	sys->vm.stack.push(ret);
+	ISWFObject* ret=sys->currentClip->getVariableByName(methodName,found);
+	if(found)
+	{
+		IFunction* f=ret->toFunction();
+		if(f==0)
+		{
+			LOG(ERROR,"No such function");
+			sys->vm.stack.push(new Undefined);
+		}
+		else
+		{
+			ISWFObject* ret=f->call(NULL,&args);
+			sys->vm.stack.push(ret);
+		}
+	}
+	else
+		sys->vm.stack.push(new Undefined);
 }
 
 void ActionCallFunction::Execute()
@@ -713,12 +742,23 @@ void ActionCallFunction::Execute()
 	for(int i=0;i<numArgs;i++)
 		args.at(i)=sys->vm.stack.pop();
 	bool found;
-	IFunction* f=sys->currentClip->getVariableByName(funcName,found)->toFunction();
-	if(f==0)
-		LOG(ERROR,"No such function");
-	ISWFObject* ret=f->call(NULL,&args);
-	sys->vm.stack.push(ret);
-
+	ISWFObject* ret=sys->currentClip->getVariableByName(funcName,found);
+	if(found)
+	{
+		IFunction* f=ret->toFunction();
+		if(f==0)
+		{
+			LOG(ERROR,"No such function");
+			sys->vm.stack.push(new Undefined);
+		}
+		else
+		{
+			ISWFObject* ret=f->call(NULL,&args);
+			sys->vm.stack.push(ret);
+		}
+	}
+	else
+		sys->vm.stack.push(new Undefined);
 	LOG(CALLS,"ActionCallFunction: End");
 }
 
@@ -877,9 +917,10 @@ void ActionGetVariable::Execute()
 	LOG(CALLS,"ActionGetVariable: name " << varName);
 	bool found;
 	ISWFObject* object=sys->currentClip->getVariableByName(varName,found);
-	if(object->getObjectType()==T_UNDEFINED)
-		LOG(CALLS,"ActionGetVariable: no such object");
-	sys->vm.stack.push(object);
+	if(found)
+		sys->vm.stack.push(object);
+	else
+		sys->vm.stack.push(new Undefined);
 }
 
 void ActionToggleQuality::Execute()
@@ -1044,7 +1085,11 @@ void ActionGetMember::Execute()
 	LOG(CALLS,"ActionGetMember: " << memberName);
 	ISWFObject* obj=sys->vm.stack.pop();
 	bool found;
-	sys->vm.stack.push(obj->getVariableByName(memberName,found));
+	ISWFObject* ret=obj->getVariableByName(memberName,found);
+	if(found)
+		sys->vm.stack.push(ret);
+	else
+		sys->vm.stack.push(new Undefined);
 }
 
 void ActionSetMember::Execute()

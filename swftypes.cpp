@@ -29,10 +29,11 @@
 
 using namespace std;
 extern __thread SystemState* sys;
+extern __thread RenderThread* rt;
 
 ISWFObject* ConstantReference::instantiate()
 {
-	return new ASString(sys->vm.getConstantByIndex(index));
+	return new ASString(rt->vm.getConstantByIndex(index));
 }
 
 string ConstantReference::toString() const
@@ -612,7 +613,7 @@ void FILLSTYLE::setFragmentProgram() const
 		float r,g,b,a;
 	};
 
-	glBindTexture(GL_TEXTURE_2D,sys->data_tex);
+	glBindTexture(GL_TEXTURE_2D,rt->data_tex);
 
 	if(FillStyleType==0x00)
 	{
@@ -655,7 +656,7 @@ void FILLSTYLE::setFragmentProgram() const
 			}
 		}
 
-		glBindTexture(GL_TEXTURE_2D,sys->data_tex);
+		glBindTexture(GL_TEXTURE_2D,rt->data_tex);
 		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);
 	}
 	else
@@ -667,7 +668,7 @@ void FILLSTYLE::setFragmentProgram() const
 
 void FILLSTYLE::fixedColor(float r, float g, float b)
 {
-	glBindTexture(GL_TEXTURE_2D,sys->data_tex);
+	glBindTexture(GL_TEXTURE_2D,rt->data_tex);
 
 	//Let's abuse of glColor and glTexCoord to transport
 	//custom information
@@ -973,7 +974,7 @@ void ISWFObject::setSlot(int n,ISWFObject* o)
 
 ISWFObject* RegisterNumber::instantiate()
 {
-	return sys->execContext->regs[index];
+	return rt->execContext->regs[index];
 }
 
 string RegisterNumber::toString() const

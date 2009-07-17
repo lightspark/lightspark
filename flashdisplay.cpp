@@ -30,6 +30,7 @@
 using namespace std;
 
 extern __thread SystemState* sys;
+extern __thread RenderThread* rt;
 
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
@@ -259,9 +260,9 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 void MovieClip::Render()
 {
 	LOG(TRACE,"Render MovieClip");
-	parent=sys->currentClip;
-	MovieClip* clip_bak=sys->currentClip;
-	sys->currentClip=this;
+	parent=rt->currentClip;
+	MovieClip* clip_bak=rt->currentClip;
+	rt->currentClip=this;
 
 	if(!state.stop_FP && class_name=="MovieClip")
 		state.next_FP=min(state.FP+1,frames.size()-1);
@@ -291,6 +292,6 @@ void MovieClip::Render()
 	}
 	LOG(TRACE,"End Render MovieClip");
 
-	sys->currentClip=clip_bak;
+	rt->currentClip=clip_bak;
 }
 

@@ -93,6 +93,7 @@ public:
 
 class MovieClip: public Sprite, public IRenderObject
 {
+friend class ParseThread;
 private:
 	static bool list_orderer(const IDisplayListElem* a, int d);
 protected:

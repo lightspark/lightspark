@@ -45,6 +45,8 @@ list<IDisplayListElem*> null_list;
 int RenderThread::error(0);
 
 extern __thread SystemState* sys;
+extern __thread RenderThread* rt;
+extern __thread ParseThread* pt;
 
 SWF_HEADER::SWF_HEADER(istream& in)
 {
@@ -70,8 +72,8 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	sys->state.max_FP=FrameCount;
 }
 
-SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),performance_profiling(false),
-	parsingTarget(this),shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
+SystemState::SystemState():performance_profiling(false),
+	shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 {
 	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
@@ -136,6 +138,7 @@ void SystemState::setShutdownFlag()
 void* ParseThread::worker(ParseThread* th)
 {
 	sys=th->m_sys;
+	pt=th;
 	try
 	{
 		SWF_HEADER h(th->f);
@@ -187,7 +190,8 @@ void* ParseThread::worker(ParseThread* th)
 	}
 }
 
-ParseThread::ParseThread(SystemState* s,istream& in):f(in)
+ParseThread::ParseThread(SystemState* s,istream& in):f(in),
+	parsingDisplayList(&s->displayList),parsingTarget(s)
 {
 	m_sys=s;
 	error=0;
@@ -290,7 +294,7 @@ void* InputThread::sdl_worker(InputThread* th)
 				sem_wait(&th->sem_listeners);
 
 				selected--;
-				int index=th->listeners.count("")*selected;
+				int index=int(th->listeners.count("")*selected);
 				
 
 				pair< map<string, EventDispatcher*>::iterator,
@@ -402,7 +406,7 @@ void InputThread::broadcastEvent(const string& t)
 	sem_post(&sem_listeners);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buffer(NULL)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buffer(NULL),currentClip(s)
 {
 	LOG(NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -434,6 +438,8 @@ RenderThread::~RenderThread()
 void* RenderThread::npapi_worker(RenderThread* th)
 {
 	sys=th->m_sys;
+	rt=th;
+
 	NPAPI_params* p=th->npapi_params;
 	
 	Display* d=XOpenDisplay(NULL);
@@ -497,12 +503,12 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		printf("Indirect!!\n");
 
 	//Load fragment shaders
-	sys->gpu_program=load_program();
+	rt->gpu_program=load_program();
 
-	int tex=glGetUniformLocation(sys->gpu_program,"g_tex1");
+	int tex=glGetUniformLocation(rt->gpu_program,"g_tex1");
 	glUniform1i(tex,0);
 
-	glUseProgram(sys->gpu_program);
+	glUseProgram(rt->gpu_program);
 
 	glDisable(GL_DEPTH_TEST);
 	glDepthFunc(GL_ALWAYS);
@@ -513,8 +519,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	RECT size=sys->getFrameSize();
 	int width=p->width;
 	int height=p->height;
-	sys->width=width;
-	sys->height=height;
+	rt->width=width;
+	rt->height=height;
 	float scalex=p->width;
 	scalex/=size.Xmax;
 	float scaley=p->height;
@@ -528,7 +534,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 	GLuint dt;
 	glGenTextures(1,&dt);
-	sys->data_tex=dt;
+	rt->data_tex=dt;
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D,dt);
@@ -551,7 +557,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
 	glBindTexture(GL_TEXTURE_2D,t2[1]);
-	sys->spare_tex=t2[1];
+	rt->spare_tex=t2[1];
 
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
@@ -575,8 +581,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);*/
 	
 	// create a framebuffer object
-	glGenFramebuffersEXT(1, &sys->fboId);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
+	glGenFramebuffersEXT(1, &rt->fboId);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,GL_TEXTURE_2D, t2[1], 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT,GL_TEXTURE_2D, t2[2], 0);
@@ -623,7 +629,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 						pthread_exit(0);
 					continue;
 				}
-				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
+				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 				glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 				//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
 
@@ -707,6 +713,7 @@ int RenderThread::load_program()
 void* RenderThread::glx_worker(RenderThread* th)
 {
 	sys=th->m_sys;
+	rt=th;
 
 	RECT size=sys->getFrameSize();
 	int width=size.Xmax/10;
@@ -800,10 +807,10 @@ void* RenderThread::glx_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	//Load fragment shaders
-	sys->gpu_program=load_program();
-	int tex=glGetUniformLocation(sys->gpu_program,"g_tex");
+	rt->gpu_program=load_program();
+	int tex=glGetUniformLocation(rt->gpu_program,"g_tex");
 	glUniform1i(tex,0);
-	glUseProgram(sys->gpu_program);
+	glUseProgram(rt->gpu_program);
 
 	float* buffer=new float[640*240];
 	try
@@ -845,12 +852,13 @@ void* RenderThread::glx_worker(RenderThread* th)
 
 float RenderThread::getIdAt(int x, int y)
 {
-	return interactive_buffer[y*sys->width+x];
+	return interactive_buffer[y*width+x];
 }
 
 void* RenderThread::sdl_worker(RenderThread* th)
 {
 	sys=th->m_sys;
+	rt=th;
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
@@ -863,18 +871,18 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	RECT size=sys->getFrameSize();
 	int width=size.Xmax/10;
 	int height=size.Ymax/10;
-	sys->width=width;
-	sys->height=height;
+	rt->width=width;
+	rt->height=height;
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
 	th->interactive_buffer=new float[width*height];
 
 	//Load fragment shaders
-	sys->gpu_program=load_program();
+	rt->gpu_program=load_program();
 
-	int tex=glGetUniformLocation(sys->gpu_program,"g_tex1");
+	int tex=glGetUniformLocation(rt->gpu_program,"g_tex1");
 	glUniform1i(tex,0);
 
-	glUseProgram(sys->gpu_program);
+	glUseProgram(rt->gpu_program);
 
 	glDisable(GL_DEPTH_TEST);
 	glDepthFunc(GL_ALWAYS);
@@ -891,7 +899,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	GLuint dt;
 	glGenTextures(1,&dt);
-	sys->data_tex=dt;
+	rt->data_tex=dt;
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D,dt);
@@ -914,7 +922,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
 	glBindTexture(GL_TEXTURE_2D,t2[1]);
-	sys->spare_tex=t2[1];
+	rt->spare_tex=t2[1];
 
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
@@ -938,8 +946,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);*/
 	
 	// create a framebuffer object
-	glGenFramebuffersEXT(1, &sys->fboId);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
+	glGenFramebuffersEXT(1, &rt->fboId);
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,GL_TEXTURE_2D, t2[1], 0);
 	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT,GL_TEXTURE_2D, t2[2], 0);
@@ -966,7 +974,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				continue;
 			}
 			SDL_GL_SwapBuffers( );
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, sys->fboId);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 			glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 			//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
 

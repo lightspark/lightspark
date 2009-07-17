@@ -35,6 +35,8 @@
 using namespace std;
 
 __thread SystemState* sys;
+__thread RenderThread* rt=NULL;
+__thread ParseThread* pt=NULL;
 
 std::vector<fps_profiling> fps_profs;
 

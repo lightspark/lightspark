@@ -36,6 +36,8 @@ using namespace std;
 long timeDiff(timespec& s, timespec& d);
 
 extern __thread SystemState* sys;
+extern __thread RenderThread* rt;
+extern __thread ParseThread* pt;
 
 Tag* TagFactory::readTag()
 {
@@ -139,16 +141,16 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	in >> Depth;
 
-	list<IDisplayListElem*>::iterator it=sys->parsingDisplayList->begin();
+	list<IDisplayListElem*>::iterator it=pt->parsingDisplayList->begin();
 
-	for(it;it!=sys->parsingDisplayList->end();it++)
+	for(it;it!=pt->parsingDisplayList->end();it++)
 	{
 		if((*it)->getDepth()==Depth)
 		{
 			/*SWFObject* t=dynamic_cast<SWFObject*>(*it);
 			if(t!=NULL)
 				LOG(NO_INFO,"Removing " << t->getName());*/
-			sys->parsingDisplayList->erase(it);
+			pt->parsingDisplayList->erase(it);
 			break;
 		}
 	}
@@ -209,11 +211,11 @@ void DefineEditTextTag::Render()
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
-	ISWFObject* target_bak=sys->parsingTarget;
-	sys->parsingTarget=this;
+	ISWFObject* target_bak=pt->parsingTarget;
+	pt->parsingTarget=this;
 
-	list < IDisplayListElem* >* bak=sys->parsingDisplayList;
-	sys->parsingDisplayList=&displayList;
+	list < IDisplayListElem* >* bak=pt->parsingDisplayList;
+	pt->parsingDisplayList=&displayList;
 	in >> SpriteID >> FrameCount;
 	_totalframes=FrameCount;
 	state.max_FP=FrameCount;
@@ -248,9 +250,9 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	while(tag->getType()!=END_TAG);
 	if(frames.size()!=FrameCount)
 		LOG(ERROR,"Inconsistent frame count");
-	sys->parsingDisplayList=bak;
+	pt->parsingDisplayList=bak;
 
-	sys->parsingTarget=target_bak;
+	pt->parsingTarget=target_bak;
 	LOG(TRACE,"EndDefineSprite ID: " << SpriteID);
 }
 
@@ -533,17 +535,17 @@ void DefineTextTag::Render()
 	glLoadIdentity();
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
 		glTexCoord2f(1,1);
-		glVertex2i(sys->width,0);
+		glVertex2i(rt->width,0);
 		glTexCoord2f(1,0);
-		glVertex2i(sys->width,sys->height);
+		glVertex2i(rt->width,rt->height);
 		glTexCoord2f(0,0);
-		glVertex2i(0,sys->height);
+		glVertex2i(0,rt->height);
 	glEnd();
 	glPopMatrix();
 }
@@ -670,17 +672,17 @@ void DefineMorphShapeTag::Render()
 	glLoadIdentity();
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
 		glTexCoord2f(1,1);
-		glVertex2i(sys->width,0);
+		glVertex2i(rt->width,0);
 		glTexCoord2f(1,0);
-		glVertex2i(sys->width,sys->height);
+		glVertex2i(rt->width,rt->height);
 		glTexCoord2f(0,0);
-		glVertex2i(0,sys->height);
+		glVertex2i(0,rt->height);
 	glEnd();
 	glPopMatrix();
 }
@@ -717,17 +719,17 @@ void DefineShapeTag::Render()
 	glLoadIdentity();
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
 		glTexCoord2f(1,1);
-		glVertex2i(sys->width,0);
+		glVertex2i(rt->width,0);
 		glTexCoord2f(1,0);
-		glVertex2i(sys->width,sys->height);
+		glVertex2i(rt->width,rt->height);
 		glTexCoord2f(0,0);
-		glVertex2i(0,sys->height);
+		glVertex2i(0,rt->height);
 	glEnd();
 	glPopMatrix();
 }
@@ -774,17 +776,17 @@ void DefineShape2Tag::Render()
 	glLoadIdentity();
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
 		glTexCoord2f(1,1);
-		glVertex2i(sys->width,0);
+		glVertex2i(rt->width,0);
 		glTexCoord2f(1,0);
-		glVertex2i(sys->width,sys->height);
+		glVertex2i(rt->width,rt->height);
 		glTexCoord2f(0,0);
-		glVertex2i(0,sys->height);
+		glVertex2i(0,rt->height);
 	glEnd();
 	glPopMatrix();
 }
@@ -820,17 +822,17 @@ void DefineShape4Tag::Render()
 	glLoadIdentity();
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
 		glTexCoord2f(1,1);
-		glVertex2i(sys->width,0);
+		glVertex2i(rt->width,0);
 		glTexCoord2f(1,0);
-		glVertex2i(sys->width,sys->height);
+		glVertex2i(rt->width,rt->height);
 		glTexCoord2f(0,0);
-		glVertex2i(0,sys->height);
+		glVertex2i(0,rt->height);
 	glEnd();
 	glPopMatrix();
 }
@@ -894,17 +896,17 @@ void DefineShape3Tag::Render()
 	glLoadIdentity();
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
 	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,sys->spare_tex);
+	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
 	glColor3f(0,0,1);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
 		glTexCoord2f(1,1);
-		glVertex2i(sys->width,0);
+		glVertex2i(rt->width,0);
 		glTexCoord2f(1,0);
-		glVertex2i(sys->width,sys->height);
+		glVertex2i(rt->width,rt->height);
 		glTexCoord2f(0,0);
-		glVertex2i(0,sys->height);
+		glVertex2i(0,rt->height);
 	glEnd();
 	glPopMatrix();
 }
@@ -1324,10 +1326,10 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	PlaceFlagHasCharacter=UB(1,bs);
 	PlaceFlagMove=UB(1,bs);
 	in >> Depth;
-	list < IDisplayListElem*>::iterator it=sys->parsingDisplayList->begin();
+	list < IDisplayListElem*>::iterator it=pt->parsingDisplayList->begin();
 	PlaceObject2Tag* already_on_list=NULL;
-	parent=sys->parsingTarget;
-	for(it;it!=sys->parsingDisplayList->end();it++)
+	parent=pt->parsingTarget;
+	for(it;it!=pt->parsingDisplayList->end();it++)
 	{
 		if((*it)->getDepth()==Depth)
 		{
@@ -1379,7 +1381,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 				sys->parsingTarget->setVariableByName(Name,new ASObject);
 			else
 				sys->parsingTarget->setVariableByName(Name,t2->clone());*/
-			sys->parsingTarget->setVariableByName(Name,new DictionaryDefinable(CharacterId, this));
+			pt->parsingTarget->setVariableByName(Name,new DictionaryDefinable(CharacterId, this));
 
 		}
 		else
@@ -1432,7 +1434,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 					ClipDepth=it2->ClipDepth;
 				}
 			}
-			sys->parsingDisplayList->erase(it);
+			pt->parsingDisplayList->erase(it);
 		}
 		else
 			LOG(ERROR,"no char to move at depth " << Depth << " name " << Name);

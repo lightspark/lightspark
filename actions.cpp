@@ -22,6 +22,7 @@
 #include "swf.h"
 
 extern __thread SystemState* sys;
+extern __thread RenderThread* rt;
 
 using namespace std;
 long timeDiff(timespec& s, timespec& d);
@@ -70,8 +71,8 @@ void DoActionTag::Render()
 {
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
-	ExecutionContext* exec_bak=sys->execContext;
-	sys->execContext=this;
+	ExecutionContext* exec_bak=rt->execContext;
+	rt->execContext=this;
 	for(unsigned int i=0;i<actions.size();i++)
 	{
 		actions[i]->Execute();
@@ -97,7 +98,7 @@ void DoActionTag::Render()
 				LOG(ERROR,"Invalid jump offset");
 		}
 	}
-	sys->execContext=exec_bak;
+	rt->execContext=exec_bak;
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->action_time=timeDiff(ts,td);
 }
@@ -138,8 +139,8 @@ void DoInitActionTag::Render()
 {
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
-	ExecutionContext* exec_bak=sys->execContext;
-	sys->execContext=this;
+	ExecutionContext* exec_bak=rt->execContext;
+	rt->execContext=this;
 	for(unsigned int i=0;i<actions.size();i++)
 	{
 		actions[i]->Execute();
@@ -165,7 +166,7 @@ void DoInitActionTag::Render()
 				LOG(ERROR,"Invalid jump offset");
 		}
 	}
-	sys->execContext=exec_bak;
+	rt->execContext=exec_bak;
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->action_time=timeDiff(ts,td);
 }
@@ -353,8 +354,8 @@ RunState::RunState():FP(0),stop_FP(0)
 void ActionStop::Execute()
 {
 	LOG(CALLS,"ActionStop");
-	sys->currentClip->state.next_FP=sys->currentClip->state.FP;
-	sys->currentClip->state.stop_FP=true;
+	rt->currentClip->state.next_FP=rt->currentClip->state.FP;
+	rt->currentClip->state.stop_FP=true;
 }
 
 ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
@@ -401,8 +402,8 @@ ISWFObject* ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 	retValue=new Undefined;
 	if(retValue->getObjectType()!=T_UNDEFINED)
 		LOG(ERROR,"Not valid condition");
-	ExecutionContext* exec_bak=sys->execContext;
-	sys->execContext=this;
+	ExecutionContext* exec_bak=rt->execContext;
+	rt->execContext=this;
 	LOG(CALLS,"Calling Function2 " << FunctionName);
 	for(int i=0;i<args->size();i++)
 		LOG(CALLS,"Arg "<<i<<"="<<args->at(i)->toString());
@@ -413,14 +414,14 @@ ISWFObject* ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 			LOG(ERROR,"Parameter not in register")
 		else
 		{
-			sys->execContext->regs[Parameters[i].Register]=args->at(i);
+			rt->execContext->regs[Parameters[i].Register]=args->at(i);
 		}
 	}
 	int used_regs=1;
 	if(PreloadThisFlag)
 	{
 		LOG(CALLS,"Preload this");
-		sys->execContext->regs[used_regs]=sys->currentClip;
+		rt->execContext->regs[used_regs]=rt->currentClip;
 		used_regs++;
 	}
 	if(PreloadArgumentsFlag)
@@ -460,7 +461,7 @@ ISWFObject* ActionDefineFunction2::call(ISWFObject* obj, arguments* args)
 				LOG(ERROR,"Invalid jump offset");
 		}
 	}
-	sys->execContext=exec_bak;
+	rt->execContext=exec_bak;
 	return retValue;
 }
 
@@ -520,9 +521,9 @@ void ActionPushDuplicate::Execute()
 
 void ActionSetProperty::Execute()
 {
-	ISWFObject* value=sys->vm.stack.pop();
-	int index=sys->vm.stack.pop()->toInt();
-	string target=sys->vm.stack.pop()->toString();
+	ISWFObject* value=rt->vm.stack.pop();
+	int index=rt->vm.stack.pop()->toInt();
+	string target=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionSetProperty to: " << target << " index " << index);
 	bool found;
 	ISWFObject* obj=sys->getVariableByName(target,found);
@@ -551,8 +552,8 @@ void ActionSetProperty::Execute()
 
 void ActionGetProperty::Execute()
 {
-	int index=sys->vm.stack.pop()->toInt();
-	string target=sys->vm.stack.pop()->toString();
+	int index=rt->vm.stack.pop()->toInt();
+	string target=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetProperty from: " << target << " index " << index);
 	bool found;
 	ISWFObject* obj=sys->getVariableByName(target,found);
@@ -576,7 +577,7 @@ void ActionGetProperty::Execute()
 	}
 	else
 		ret=new Undefined;
-	sys->vm.stack.push(ret);
+	rt->vm.stack.push(ret);
 }
 
 void ActionDecrement::Execute()
@@ -611,41 +612,41 @@ void ActionImplementsOp::Execute()
 
 void ActionIncrement::Execute()
 {
-	float a=sys->vm.stack.pop()->toNumber();
+	float a=rt->vm.stack.pop()->toNumber();
 	LOG(CALLS,"ActionIncrement: " << a);
-	sys->vm.stack.push(new Number(a+1));
+	rt->vm.stack.push(new Number(a+1));
 }
 
 void ActionGreater::Execute()
 {
 	LOG(CALLS,"ActionGreater");
-	ISWFObject* arg1=sys->vm.stack.pop();
-	ISWFObject* arg2=sys->vm.stack.pop();
+	ISWFObject* arg1=rt->vm.stack.pop();
+	ISWFObject* arg2=rt->vm.stack.pop();
 	if(arg2->isGreater(arg1))
 	{
 		LOG(CALLS,"Greater");
-		sys->vm.stack.push(new Integer(1));
+		rt->vm.stack.push(new Integer(1));
 	}
 	else
 	{
 		LOG(CALLS,"Not Greater");
-		sys->vm.stack.push(new Integer(0));
+		rt->vm.stack.push(new Integer(0));
 	}
 }
 
 void ActionAdd2::Execute()
 {
-	ISWFObject* arg1=sys->vm.stack.pop();
-	ISWFObject* arg2=sys->vm.stack.pop();
+	ISWFObject* arg1=rt->vm.stack.pop();
+	ISWFObject* arg2=rt->vm.stack.pop();
 
 	if(arg1->getObjectType()==T_STRING || arg2->getObjectType()==T_STRING)
 	{
-		sys->vm.stack.push(new ASString(arg2->toString()+arg1->toString()));
-		LOG(CALLS,"ActionAdd2 (string concatenation): " << sys->vm.stack(0)->toString());
+		rt->vm.stack.push(new ASString(arg2->toString()+arg1->toString()));
+		LOG(CALLS,"ActionAdd2 (string concatenation): " << rt->vm.stack(0)->toString());
 	}
 	else
 	{
-		sys->vm.stack.push(new Number(arg1->toNumber()+arg2->toNumber()));
+		rt->vm.stack.push(new Number(arg1->toNumber()+arg2->toNumber()));
 		LOG(CALLS,"ActionAdd2 returning: " << arg1->toNumber() + arg2->toNumber());
 	}
 }
@@ -658,14 +659,14 @@ void ActionCloneSprite::Execute()
 void ActionDefineLocal::Execute()
 {
 	LOG(CALLS,"ActionDefineLocal");
-	ISWFObject* value=sys->vm.stack.pop();
-	string name=sys->vm.stack.pop()->toString();
-	sys->currentClip->setVariableByName(name,value);
+	ISWFObject* value=rt->vm.stack.pop();
+	string name=rt->vm.stack.pop()->toString();
+	rt->currentClip->setVariableByName(name,value);
 }
 
 void ActionNewObject::Execute()
 {
-	string varName=sys->vm.stack.pop()->toString();
+	string varName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionNewObject: name " << varName);
 	bool found;
 	ISWFObject* type=sys->getVariableByName(varName,found);
@@ -673,7 +674,7 @@ void ActionNewObject::Execute()
 	{
 		if(type->getObjectType()!=T_UNDEFINED)
 			LOG(ERROR,"ActionNewObject: no such object");
-		int numArgs=sys->vm.stack.pop()->toInt();
+		int numArgs=rt->vm.stack.pop()->toInt();
 		if(numArgs)
 			LOG(ERROR,"There are arguments");
 		ISWFObject* c=type->getVariableByName("constructor",found);
@@ -685,80 +686,80 @@ void ActionNewObject::Execute()
 
 		ISWFObject* obj=type->clone();
 		f->call(obj,NULL);
-		sys->vm.stack.push(obj);
+		rt->vm.stack.push(obj);
 	}
 	else
-		sys->vm.stack.push(new Undefined);
+		rt->vm.stack.push(new Undefined);
 }
 
 void ActionReturn::Execute()
 {
 	LOG(CALLS,"ActionReturn");
-	sys->execContext->retValue=sys->vm.stack.pop();
+	rt->execContext->retValue=rt->vm.stack.pop();
 }
 
 void ActionPop::Execute()
 {
-	string popped=sys->vm.stack.pop()->toString();
+	string popped=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionPop: " << popped);
 }
 
 void ActionCallMethod::Execute()
 {
-	string methodName=sys->vm.stack.pop()->toString();
+	string methodName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionCallMethod: " << methodName);
-	ISWFObject* obj=sys->vm.stack.pop();
-	int numArgs=sys->vm.stack.pop()->toInt();
+	ISWFObject* obj=rt->vm.stack.pop();
+	int numArgs=rt->vm.stack.pop()->toInt();
 	arguments args(numArgs);
 	for(int i=0;i<numArgs;i++)
-		args.at(i)=sys->vm.stack.pop();
+		args.at(i)=rt->vm.stack.pop();
 	bool found;
-	ISWFObject* ret=sys->currentClip->getVariableByName(methodName,found);
+	ISWFObject* ret=rt->currentClip->getVariableByName(methodName,found);
 	if(found)
 	{
 		IFunction* f=ret->toFunction();
 		if(f==0)
 		{
 			LOG(ERROR,"No such function");
-			sys->vm.stack.push(new Undefined);
+			rt->vm.stack.push(new Undefined);
 		}
 		else
 		{
 			ISWFObject* ret=f->call(NULL,&args);
-			sys->vm.stack.push(ret);
+			rt->vm.stack.push(ret);
 		}
 	}
 	else
-		sys->vm.stack.push(new Undefined);
+		rt->vm.stack.push(new Undefined);
 }
 
 void ActionCallFunction::Execute()
 {
 	LOG(CALLS,"ActionCallFunction");
 
-	string funcName=sys->vm.stack.pop()->toString();
-	int numArgs=sys->vm.stack.pop()->toInt();
+	string funcName=rt->vm.stack.pop()->toString();
+	int numArgs=rt->vm.stack.pop()->toInt();
 	arguments args(numArgs);;
 	for(int i=0;i<numArgs;i++)
-		args.at(i)=sys->vm.stack.pop();
+		args.at(i)=rt->vm.stack.pop();
 	bool found;
-	ISWFObject* ret=sys->currentClip->getVariableByName(funcName,found);
+	ISWFObject* ret=rt->currentClip->getVariableByName(funcName,found);
 	if(found)
 	{
 		IFunction* f=ret->toFunction();
 		if(f==0)
 		{
 			LOG(ERROR,"No such function");
-			sys->vm.stack.push(new Undefined);
+			rt->vm.stack.push(new Undefined);
 		}
 		else
 		{
 			ISWFObject* ret=f->call(NULL,&args);
-			sys->vm.stack.push(ret);
+			rt->vm.stack.push(ret);
 		}
 	}
 	else
-		sys->vm.stack.push(new Undefined);
+		rt->vm.stack.push(new Undefined);
 	LOG(CALLS,"ActionCallFunction: End");
 }
 
@@ -766,9 +767,9 @@ void ActionDefineFunction::Execute()
 {
 	LOG(CALLS,"ActionDefineFunction: " << FunctionName);
 	if(FunctionName.isNull())
-		sys->vm.stack.push(this);
+		rt->vm.stack.push(this);
 	else
-		sys->currentClip->setVariableByName(FunctionName,this);
+		rt->currentClip->setVariableByName(FunctionName,this);
 }
 
 ISWFObject* ActionDefineFunction::call(ISWFObject* obj, arguments* args)
@@ -781,49 +782,49 @@ void ActionDefineFunction2::Execute()
 {
 	LOG(CALLS,"ActionDefineFunction2: " << FunctionName);
 	if(FunctionName.isNull())
-		sys->vm.stack.push(this);
+		rt->vm.stack.push(this);
 	else
-		sys->currentClip->setVariableByName(FunctionName,this);
+		rt->currentClip->setVariableByName(FunctionName,this);
 }
 
 void ActionLess2::Execute()
 {
 	LOG(CALLS,"ActionLess2");
-	ISWFObject* arg1=sys->vm.stack.pop();
-	ISWFObject* arg2=sys->vm.stack.pop();
+	ISWFObject* arg1=rt->vm.stack.pop();
+	ISWFObject* arg2=rt->vm.stack.pop();
 	if(arg2->isLess(arg1))
 	{
 		LOG(CALLS,"Less");
-		sys->vm.stack.push(new Integer(1));
+		rt->vm.stack.push(new Integer(1));
 	}
 	else
 	{
 		LOG(CALLS,"Not Less");
-		sys->vm.stack.push(new Integer(0));
+		rt->vm.stack.push(new Integer(0));
 	}
 }
 
 void ActionEquals2::Execute()
 {
 	LOG(CALLS,"ActionEquals2");
-	ISWFObject* arg1=sys->vm.stack.pop();
-	ISWFObject* arg2=sys->vm.stack.pop();
+	ISWFObject* arg1=rt->vm.stack.pop();
+	ISWFObject* arg2=rt->vm.stack.pop();
 	if(arg1->isEqual(arg2))
 	{
 		LOG(CALLS,"Equal");
-		sys->vm.stack.push(new Integer(1));
+		rt->vm.stack.push(new Integer(1));
 	}
 	else
 	{
 		LOG(CALLS,"Not Equal");
-		sys->vm.stack.push(new Integer(0));
+		rt->vm.stack.push(new Integer(0));
 	}
 }
 
 void ActionJump::Execute()
 {
 	LOG(CALLS,"ActionJump: " << BranchOffset);
-	sys->execContext->setJumpOffset(BranchOffset);
+	rt->execContext->setJumpOffset(BranchOffset);
 }
 
 void ActionDelete::Execute()
@@ -849,43 +850,43 @@ void ActionStringExtract::Execute()
 void ActionIf::Execute()
 {
 	LOG(CALLS,"ActionIf");
-	int cond=sys->vm.stack.pop()->toInt();
+	int cond=rt->vm.stack.pop()->toInt();
 	if(cond)
-		sys->execContext->setJumpOffset(Offset);
+		rt->execContext->setJumpOffset(Offset);
 }
 
 void ActionDivide::Execute()
 {
-	double a=sys->vm.stack.pop()->toNumber();
-	double b=sys->vm.stack.pop()->toNumber();
-	sys->vm.stack.push(new Number(b/a));
+	double a=rt->vm.stack.pop()->toNumber();
+	double b=rt->vm.stack.pop()->toNumber();
+	rt->vm.stack.push(new Number(b/a));
 	LOG(CALLS,"ActionDivide: return " << b << "/" << a << "="<< b/a);
 }
 
 void ActionMultiply::Execute()
 {
-	double a=sys->vm.stack.pop()->toNumber();
-	double b=sys->vm.stack.pop()->toNumber();
-	sys->vm.stack.push(new Number(b*a));
+	double a=rt->vm.stack.pop()->toNumber();
+	double b=rt->vm.stack.pop()->toNumber();
+	rt->vm.stack.push(new Number(b*a));
 	LOG(CALLS,"ActionMultiply: return " << b*a);
 }
 
 void ActionSubtract::Execute()
 {
-	double a=sys->vm.stack.pop()->toNumber();
-	double b=sys->vm.stack.pop()->toNumber();
-	sys->vm.stack.push(new Number(b-a));
+	double a=rt->vm.stack.pop()->toNumber();
+	double b=rt->vm.stack.pop()->toNumber();
+	rt->vm.stack.push(new Number(b-a));
 	LOG(CALLS,"ActionSubtract: return " << b-a);
 }
 
 void ActionNot::Execute()
 {
 	LOG(CALLS,"ActionNot");
-	double a=sys->vm.stack.pop()->toNumber();
+	double a=rt->vm.stack.pop()->toNumber();
 	if(a==0)
-		sys->vm.stack.push(new Integer(1));
+		rt->vm.stack.push(new Integer(1));
 	else
-		sys->vm.stack.push(new Integer(0));
+		rt->vm.stack.push(new Integer(0));
 }
 
 void ActionInitArray::Execute()
@@ -905,22 +906,22 @@ void ActionStringEquals::Execute()
 
 void ActionSetVariable::Execute()
 {
-	ISWFObject* obj=sys->vm.stack.pop();
-	string varName=sys->vm.stack.pop()->toString();
+	ISWFObject* obj=rt->vm.stack.pop();
+	string varName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionSetVariable: name " << varName);
-	sys->currentClip->setVariableByName(varName,obj);
+	rt->currentClip->setVariableByName(varName,obj);
 }
 
 void ActionGetVariable::Execute()
 {
-	string varName=sys->vm.stack.pop()->toString();
+	string varName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetVariable: name " << varName);
 	bool found;
-	ISWFObject* object=sys->currentClip->getVariableByName(varName,found);
+	ISWFObject* object=rt->currentClip->getVariableByName(varName,found);
 	if(found)
-		sys->vm.stack.push(object);
+		rt->vm.stack.push(object);
 	else
-		sys->vm.stack.push(new Undefined);
+		rt->vm.stack.push(new Undefined);
 }
 
 void ActionToggleQuality::Execute()
@@ -971,7 +972,7 @@ void ActionStoreRegister::Execute()
 	LOG(CALLS,"ActionStoreRegister "<< (int)RegisterNumber);
 	if(RegisterNumber>10)
 		LOG(ERROR,"Register index too big");
-	sys->execContext->regs[RegisterNumber]=sys->vm.stack(0);
+	rt->execContext->regs[RegisterNumber]=rt->vm.stack(0);
 }
 
 ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
@@ -1081,23 +1082,23 @@ void ActionWith::Execute()
 
 void ActionGetMember::Execute()
 {
-	string memberName=sys->vm.stack.pop()->toString();
+	string memberName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetMember: " << memberName);
-	ISWFObject* obj=sys->vm.stack.pop();
+	ISWFObject* obj=rt->vm.stack.pop();
 	bool found;
 	ISWFObject* ret=obj->getVariableByName(memberName,found);
 	if(found)
-		sys->vm.stack.push(ret);
+		rt->vm.stack.push(ret);
 	else
-		sys->vm.stack.push(new Undefined);
+		rt->vm.stack.push(new Undefined);
 }
 
 void ActionSetMember::Execute()
 {
-	ISWFObject* value=sys->vm.stack.pop();
-	string memberName=sys->vm.stack.pop()->toString();
+	ISWFObject* value=rt->vm.stack.pop();
+	string memberName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionSetMember: " << memberName);
-	ISWFObject* obj=sys->vm.stack.pop();
+	ISWFObject* obj=rt->vm.stack.pop();
 	obj->setVariableByName(memberName,value);
 }
 
@@ -1107,7 +1108,7 @@ void ActionPush::Execute()
 	for(int i=0;i<Objects.size();i++)
 	{
 		LOG(CALLS,"\t " << Objects[i]->toString());
-		sys->vm.stack.push(Objects[i]->clone());
+		rt->vm.stack.push(Objects[i]->clone());
 	}
 }
 
@@ -1135,21 +1136,21 @@ void ActionGetURL2::Execute()
 void ActionPlay::Execute()
 {
 	LOG(CALLS,"ActionPlay");
-	sys->currentClip->state.next_FP=sys->currentClip->state.FP;
-	sys->currentClip->state.stop_FP=false;
+	rt->currentClip->state.next_FP=rt->currentClip->state.FP;
+	rt->currentClip->state.stop_FP=false;
 }
 
 void ActionGotoFrame::Execute()
 {
 	LOG(CALLS,"ActionGoto");
-	sys->currentClip->state.next_FP=Frame;
-	sys->currentClip->state.stop_FP=false;
+	rt->currentClip->state.next_FP=Frame;
+	rt->currentClip->state.stop_FP=false;
 }
 
 void ActionConstantPool::Execute()
 {
 	LOG(CALLS,"ActionConstantPool");
-	sys->vm.setConstantPool(ConstantPool);	
+	rt->vm.setConstantPool(ConstantPool);	
 }
 
 std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v)

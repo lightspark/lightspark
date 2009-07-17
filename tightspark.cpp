@@ -24,6 +24,8 @@
 using namespace std;
 
 __thread SystemState* sys=NULL;
+__thread RenderThread* rt=NULL;
+__thread ParseThread* pt=NULL;
 
 int main(int argc, char* argv[])
 {

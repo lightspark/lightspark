@@ -96,14 +96,6 @@ private:
 public:
 	ASFUNCTION(getBounds);
 
-	//OpenGL fragment programs
-	int gpu_program;
-	GLuint fboId;
-	GLuint spare_tex;
-	GLuint data_tex;
-	int width;
-	int height;
-
 	bool shutdown;
 	int version;
 	float frame_rate;
@@ -113,15 +105,6 @@ public:
 	void setShutdownFlag();
 
 	bool performance_profiling;
-	VirtualMachine vm;
-	//Used only in ParseThread context
-	std::list < IDisplayListElem* >* parsingDisplayList;
-	ISWFObject* parsingTarget;
-
-	//Used only in RenderThread context
-	MovieClip* currentClip;
-	ExecutionContext* execContext;
-
 	SystemState();
 	~SystemState();
 	void waitToRun();
@@ -137,7 +120,6 @@ public:
 	void setBackground(const RGB& bg);
 	void setUpdateRequest(bool s);
 	DictionaryTag* dictionaryLookup(int id);
-	void _register(){}
 	SWFOBJECT_TYPE getObjectType() const;
 	fps_profiling* fps_prof;
 	ABCVm* currentVm;
@@ -167,6 +149,10 @@ public:
 	~ParseThread();
 	void wait();
 	static void setError(){error=1;}
+
+	//Used only in ParseThread context
+	std::list < IDisplayListElem* >* parsingDisplayList;
+	ISWFObject* parsingTarget;
 };
 
 enum ENGINE { SDL=0, NPAPI, GLX};
@@ -231,5 +217,19 @@ public:
 	void wait();
 	static int setError(){error=1;}
 	float getIdAt(int x, int y);
+
+	//Used only in RenderThread context
+	MovieClip* currentClip;
+	ExecutionContext* execContext;
+	VirtualMachine vm;
+
+	//OpenGL fragment programs
+	int gpu_program;
+	GLuint fboId;
+	GLuint spare_tex;
+	GLuint data_tex;
+	int width;
+	int height;
+
 };
 #endif

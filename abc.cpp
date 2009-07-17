@@ -32,6 +32,7 @@
 #include "swf.h"
 #include "flashevents.h"
 #include "flashdisplay.h"
+#include "flashnet.h"
 
 opcode_handler ABCVm::opcode_table_args0_lazy[]={
 	{"pushNaN",(void*)&ABCVm::pushNaN},
@@ -146,6 +147,7 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 	{"lessThan",(void*)&ABCVm::lessThan},
 	{"greaterThan",(void*)&ABCVm::greaterThan},
 	{"strictEquals",(void*)&ABCVm::strictEquals},
+	{"in",(void*)&ABCVm::in},
 	{"equals",(void*)&ABCVm::equals}
 };
 
@@ -179,14 +181,14 @@ int DoABCTag::getDepth() const
 
 void DoABCTag::Render()
 {
-	LOG(CALLS,"ABC Exec " << Name);
 	if(done)
 		return;
+	LOG(CALLS,"ABC Exec " << Name);
 	vm->start();
 	done=true;
 }
 
-SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
+SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in),done(false)
 {
 	LOG(TRACE,"SymbolClassTag");
 	in >> NumSymbols;
@@ -495,8 +497,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByName(Qname("flash.events","IOErrorEvent"),new IOErrorEvent);
 
 	Global.setVariableByName(Qname("flash.net","LocalConnection"),new ASObject);
-	Global.setVariableByName(Qname("flash.net","URLRequest"),new Math);
-	Global.setVariableByName(Qname("flash.net","URLVariables"),new Math);
+	Global.setVariableByName(Qname("flash.net","URLRequest"),new URLRequest);
+	Global.setVariableByName(Qname("flash.net","URLVariables"),new ASObject);
 }
 
 Qname ABCVm::getQname(unsigned int mi, call_context* th) const
@@ -693,7 +695,7 @@ void ABCVm::handleEvent()
 		{
 			case BIND_CLASS:
 			{
-				BindClassEvent* ev=dynamic_cast<BindClassEvent*>(e.second);
+				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second);
 				arguments args(1);;
 				args.incRef();
 				args.at(0)=new Null;
@@ -707,8 +709,15 @@ void ABCVm::handleEvent()
 				break;
 			case SYNC:
 			{
-				SynchronizationEvent* ev=dynamic_cast<SynchronizationEvent*>(e.second);
+				SynchronizationEvent* ev=static_cast<SynchronizationEvent*>(e.second);
 				ev->sync();
+				break;
+			}
+			case FUNCTION:
+			{
+				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second);
+				//We hope the method is binded
+				ev->f->call(NULL,NULL);
 				break;
 			}
 			default:
@@ -948,6 +957,9 @@ void ABCVm::isTypelate(call_context* th)
 void ABCVm::asTypelate(call_context* th)
 {
 	LOG(NOT_IMPLEMENTED,"asTypelate");
+	ISWFObject* c=th->runtime_stack_pop();
+//	ISWFObject* v=th->runtime_stack_pop();
+//	th->runtime_stack_push(v);
 }
 
 ISWFObject* ABCVm::nextValue(ISWFObject* index, ISWFObject* obj)
@@ -1049,7 +1061,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	else if(o->class_index==-1)
 	{
 		//The class is builtin
-		LOG(NOT_IMPLEMENTED,"Building a builtin class");
+		LOG(CALLS,"Building a builtin class");
 	}
 	else
 	{
@@ -1274,7 +1286,16 @@ bool ABCVm::ifGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 bool ABCVm::ifNGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifNGE " << offset);
-	abort();
+
+	int a=obj1->toInt();
+	int b=obj2->toInt();
+	cout << a << ">=" << b << endl;
+
+	//Real comparision demanded to object
+	if(obj1->isGreater(obj2) || obj1->isEqual(obj2))
+		return false;
+	else
+		return true;
 }
 
 bool ABCVm::ifNGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
@@ -1551,6 +1572,12 @@ ISWFObject* ABCVm::strictEquals(ISWFObject* obj1, ISWFObject* obj2)
 {
 	LOG(NOT_IMPLEMENTED, "strictEquals" );
 	abort();
+}
+
+ISWFObject* ABCVm::in(ISWFObject* val2, ISWFObject* val1)
+{
+	LOG(CALLS, "in" );
+	return new Boolean(false);
 }
 
 ISWFObject* ABCVm::equals(ISWFObject* val2, ISWFObject* val1)
@@ -1908,7 +1935,9 @@ void ABCVm::getLex(call_context* th, int n)
 			{
 				LOG(CALLS,"Attaching this to function " << name);
 				IFunction* f=o->toFunction();
-				f->closure_this=th->locals[0];
+				//f->closure_this=th->locals[0];
+				f->closure_this=(*it);
+				f->bind();
 			}
 			else if(o->getObjectType()==T_DEFINABLE)
 			{
@@ -3702,7 +3731,7 @@ llvm::Function* method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall2(ex->FindFunctionNamed("graterThan"), v1, v2);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("greaterThan"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
 				break;
@@ -3714,6 +3743,19 @@ llvm::Function* method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("isTypelate"), context);
+				break;
+			}
+			case 0xb4:
+			{
+				//in
+				LOG(TRACE, "synt in" );
+				llvm::Value* v1=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				value=Builder.CreateCall2(ex->FindFunctionNamed("in"), v1, v2);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
 				break;
 			}
 			case 0xc0:
@@ -3833,8 +3875,8 @@ void ABCVm::Run(ABCVm* th)
 			th->buildTrait(&th->Global,&th->scripts[i].traits[j],new SyntheticFunction(m));
 	}
 	//Before the entry point we run early events
-	while(sem_trywait(&th->sem_event_count)==0)
-		th->handleEvent();
+	//while(sem_trywait(&th->sem_event_count)==0)
+	//	th->handleEvent();
 	//The last script entry has to be run
 	LOG(CALLS, "Last script (Entry Point)");
 	method_info* m=th->get_method(th->scripts[i].init);

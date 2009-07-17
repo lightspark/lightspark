@@ -466,6 +466,9 @@ ASFUNCTIONBODY(Date,_constructor)
 	th->setVariableByName("getTimezoneOffset",new Function(getTimezoneOffset));
 	th->setVariableByName("valueOf",new Function(valueOf));
 	th->setVariableByName(Qname(AS3,"getTime"),new Function(getTime));
+	th->setVariableByName(Qname(AS3,"getHours"),new Function(getHours));
+	th->setVariableByName(Qname(AS3,"getMinutes"),new Function(getMinutes));
+	th->setVariableByName(Qname(AS3,"getSeconds"),new Function(getMinutes));
 	th->year=1990;
 	th->month=1;
 	th->date=1;
@@ -479,6 +482,18 @@ ASFUNCTIONBODY(Date,getTimezoneOffset)
 {
 	LOG(NOT_IMPLEMENTED,"getTimezoneOffset");
 	return new Number(120);
+}
+
+ASFUNCTIONBODY(Date,getHours)
+{
+	Date* th=static_cast<Date*>(obj);
+	return new Number(th->hour);
+}
+
+ASFUNCTIONBODY(Date,getMinutes)
+{
+	Date* th=static_cast<Date*>(obj);
+	return new Number(th->minute);
 }
 
 ASFUNCTIONBODY(Date,getTime)
@@ -541,7 +556,6 @@ ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 	else
 	{
 		LOG(CALLS,"Calling with closure");
-		LOG(CALLS,"args 0 " << args->at(0));
 		ret=val(closure_this,args,cc);
 	}
 	delete cc;

@@ -17,36 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "thread_pool.h"
+#include "flashgeom.h"
 
-ThreadPool::ThreadPool()
+Rectangle::Rectangle(int l, int t, int r, int b)
 {
-	sem_init(&mutex,0,1);
-	sem_init(&num_jobs,0,0);
-	for(int i=0;i<NUM_THREADS;i++)
-		pthread_create(&threads[i],NULL,job_worker,this);
-}
-
-void* ThreadPool::job_worker(void* t)
-{
-	ThreadPool* th=static_cast<ThreadPool*>(t);
-
-	while(1)
-	{
-		sem_wait(&th->num_jobs);
-		sem_wait(&th->mutex);
-		IThreadJob* myJob=th->jobs.front();
-		th->jobs.pop_front();
-		sem_post(&th->mutex);
-
-		myJob->execute();
-	}
-}
-
-void ThreadPool::addJob(IThreadJob* j)
-{
-	sem_wait(&mutex);
-	jobs.push_back(j);
-	sem_post(&mutex);
-	sem_post(&num_jobs);
+/*	setVariableByName("left",new Integer(l));
+	setVariableByName("top",new Integer(t));
+	setVariableByName("top",new Integer(t));*/
+	//TODO: Use getters
+	setVariableByName("xMax",new Integer(r));
+	setVariableByName("xMin",new Integer(l));
+	setVariableByName("yMax",new Integer(b));
+	setVariableByName("yMin",new Integer(t));
 }

@@ -40,11 +40,15 @@ class Frame
 {
 private:
 	STRING Label;
+	IFunction* script;
 public:
 	std::list<IDisplayListElem*> displayList;
-	Frame(const std::list<IDisplayListElem*>& d):displayList(d){ }
+	std::list<IDisplayListElem*>* dynamicDisplayList; //This is actually owned by the movieclip
+	Frame(const std::list<IDisplayListElem*>& d, std::list<IDisplayListElem*>* dd):
+		displayList(d),dynamicDisplayList(dd),script(NULL){ }
 	void Render(int baseLayer);
 	void setLabel(STRING l);
+	void setScript(IFunction* s){script=s;}
 };
 
 #endif

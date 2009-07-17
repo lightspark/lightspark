@@ -17,36 +17,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "thread_pool.h"
+#include "flashnet.h"
 
-ThreadPool::ThreadPool()
+URLRequest::URLRequest():url(NULL)
 {
-	sem_init(&mutex,0,1);
-	sem_init(&num_jobs,0,0);
-	for(int i=0;i<NUM_THREADS;i++)
-		pthread_create(&threads[i],NULL,job_worker,this);
+	constructor=new Function(_constructor);
+	class_name="URLRequest";
 }
 
-void* ThreadPool::job_worker(void* t)
+ASFUNCTIONBODY(URLRequest,_constructor)
 {
-	ThreadPool* th=static_cast<ThreadPool*>(t);
-
-	while(1)
+	URLRequest* th=static_cast<URLRequest*>(obj);
+	if(args->at(0)->getObjectType()!=T_STRING)
 	{
-		sem_wait(&th->num_jobs);
-		sem_wait(&th->mutex);
-		IThreadJob* myJob=th->jobs.front();
-		th->jobs.pop_front();
-		sem_post(&th->mutex);
-
-		myJob->execute();
+		LOG(ERROR,"ArgumentError");
+		abort();
 	}
-}
-
-void ThreadPool::addJob(IThreadJob* j)
-{
-	sem_wait(&mutex);
-	jobs.push_back(j);
-	sem_post(&mutex);
-	sem_post(&num_jobs);
+	th->url=static_cast<ASString*>(args->at(0));
 }

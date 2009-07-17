@@ -432,6 +432,7 @@ private:
 	static ISWFObject* pushTrue(call_context* th);
 	static void dup(call_context* th);
 	static ISWFObject* equals(ISWFObject*,ISWFObject*);
+	static ISWFObject* in(ISWFObject*,ISWFObject*);
 	static ISWFObject* strictEquals(ISWFObject*,ISWFObject*);
 	static ISWFObject* _not(ISWFObject*);
 	static ISWFObject* negate(ISWFObject*);

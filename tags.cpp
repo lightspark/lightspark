@@ -236,7 +236,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			{
 				//TODO: sync maybe not needed
 				sem_wait(&sem_frames);
-				frames.push_back(Frame(displayList));
+				frames.push_back(Frame(displayList,&dynamicDisplayList));
 				sem_post(&sem_frames);
 				break;
 			}
@@ -480,7 +480,7 @@ void DefineTextTag::Render()
 	std::vector < GLYPHENTRY >::iterator it2;
 	int count=0;
 	int shapes_done=0;
-	int x=0,y=0;//1024;
+	int x=0,y=0;
 	float matrix[16];
 	TextMatrix.get4DMatrix(matrix);
 
@@ -763,6 +763,7 @@ void DefineShape2Tag::Render()
 			it->style=new FILLSTYLE;
 			it->style->FillStyleType=0x00;
 			it->style->Color=RGB(255,0,0);
+			it->color=1;
 			LOG(NOT_IMPLEMENTED,"Orrible HACK");
 		}
 		it->Render();
@@ -876,7 +877,17 @@ void DefineShape3Tag::Render()
 
 	std::vector < Shape >::iterator it=cached.begin();
 	for(it;it!=cached.end();it++)
+	{
+		if(it->color >= Shapes.FillStyles.FillStyleCount)
+		{
+			it->style=new FILLSTYLE;
+			it->style->FillStyleType=0x00;
+			it->style->Color=RGB(255,0,0);
+			it->color=1;
+			LOG(NOT_IMPLEMENTED,"Orrible HACK");
+		}
 		it->Render();
+	}
 
 	glEnable(GL_BLEND);
 	glPushMatrix();

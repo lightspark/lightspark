@@ -171,7 +171,7 @@ ISWFObject* ISWFObject::setVariableByName(const Qname& name, ISWFObject* o, bool
 	pair<map<Qname, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ISWFObject*>(name,o));
 	if(!ret.second)
 	{
-		if(ret.first->second->isBinded() && !force)
+		if(!force && ret.first->second->isBinded())
 			ret.first->second->copyFrom(o);
 		else
 			ret.first->second=o;

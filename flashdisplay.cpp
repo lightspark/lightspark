@@ -24,6 +24,8 @@
 
 #include "flashdisplay.h"
 #include "swf.h"
+#include "flashgeom.h"
+#include "flashnet.h"
 
 using namespace std;
 
@@ -49,7 +51,16 @@ ASFUNCTIONBODY(Loader,_constructor)
 ASFUNCTIONBODY(Loader,load)
 {
 	Loader* th=static_cast<Loader*>(obj);
-	th->url="http://www.whirled.com/clients/world-client.swf";
+	if(th->loading)
+		return NULL;
+	th->loading=true;
+	if(args->at(0)->class_name!="URLRequest")
+	{
+		LOG(ERROR,"ArgumentError");
+		abort();
+	}
+	URLRequest* r=static_cast<URLRequest*>(args->at(0));
+	th->url=r->url->toString();
 	sys->cur_thread_pool->addJob(th);
 }
 
@@ -89,6 +100,7 @@ ASFUNCTIONBODY(Sprite,_constructor)
 	Sprite* th=static_cast<Sprite*>(obj);
 	EventDispatcher::_constructor(th,NULL);
 	th->setVariableByName("root",sys);
+	th->setVariableByName("stage",sys);
 	th->setVariableByName("_visible",&th->_visible);
 	th->setVariableByName("y",&th->_y);
 	th->setVariableByName("x",&th->_x);
@@ -101,8 +113,8 @@ ASFUNCTIONBODY(Sprite,_constructor)
 
 ASFUNCTIONBODY(Sprite,getBounds)
 {
-	LOG(NOT_IMPLEMENTED,"Called getBounds");
-	return new Undefined;
+	LOG(NOT_IMPLEMENTED,"Calculate real bounds");
+	return new Rectangle(0,0,100,100);
 }
 
 MovieClip::MovieClip():_framesloaded(0),_totalframes(1),displayListLimit(0)
@@ -122,6 +134,64 @@ void MovieClip::addToDisplayList(IDisplayListElem* t)
 	list<IDisplayListElem*>::iterator it=lower_bound(displayList.begin(),displayList.end(),t->getDepth(),list_orderer);
 	displayList.insert(it,t);
 	displayListLimit=displayList.size();
+}
+
+ASFUNCTIONBODY(MovieClip,addChild)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	if(args->at(0)->parent==th)
+		return args->at(0);
+	else if(args->at(0)->parent!=NULL)
+	{
+		//Remove from current parent list
+		abort();
+	}
+
+	ASObject* cur=dynamic_cast<ASObject*>(args->at(0));
+	if(cur->getObjectType()==T_DEFINABLE)
+		abort();
+	IDisplayListElem* e=NULL;
+	//Look for a renderable object in the super chain
+	do
+	{
+		e=dynamic_cast<IDisplayListElem*>(cur);
+		cur=cur->super;
+	}
+	while(e==NULL && cur!=NULL);
+
+	if(e==NULL)
+	{
+		LOG(ERROR,"Cannot add arg to display list");
+		abort();
+	}
+	args->at(0)->parent=th;
+	th->dynamicDisplayList.push_back(e);
+}
+
+ASFUNCTIONBODY(MovieClip,addFrameScript)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	if(args->size()%2)
+	{
+		LOG(ERROR,"Invalid arguments to addFrameScript");
+		abort();
+	}
+	for(int i=0;i<args->size();i+=2)
+	{
+		int f=args->at(i+0)->toInt();
+		IFunction* g=args->at(i+1)->toFunction();
+
+		if(f>=th->frames.size())
+		{
+			LOG(ERROR,"Invalid frame number passed to addFrameScript");
+			abort();
+		}
+		list<Frame>::iterator frame=th->frames.begin();
+		for(int i=0;i<f;i++)
+			frame++;
+
+		frame->setScript(g);
+	}
 }
 
 ASFUNCTIONBODY(MovieClip,createEmptyMovieClip)
@@ -172,12 +242,18 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	Sprite::_constructor(th,NULL);
 	th->setVariableByName("_framesloaded",&th->_framesloaded);
+	th->setVariableByName("framesLoaded",&th->_framesloaded);
+	th->_framesloaded.bind();
 	th->setVariableByName("_totalframes",&th->_totalframes);
+	th->setVariableByName("totalFrames",&th->_totalframes);
+	th->_totalframes.bind();
 	th->setVariableByName("swapDepths",new Function(swapDepths));
 	th->setVariableByName("lineStyle",new Function(lineStyle));
 	th->setVariableByName("lineTo",new Function(lineTo));
 	th->setVariableByName("moveTo",new Function(moveTo));
 	th->setVariableByName("createEmptyMovieClip",new Function(createEmptyMovieClip));
+	th->setVariableByName("addFrameScript",new Function(addFrameScript));
+	th->setVariableByName("addChild",new Function(addChild));
 }
 
 void MovieClip::Render()
@@ -193,6 +269,8 @@ void MovieClip::Render()
 		state.next_FP=state.FP;
 
 	list<Frame>::iterator frame=frames.begin();
+	for(int i=0;i<state.FP;i++)
+		frame++;
 
 	//Set the id in the secondary color
 	glPushAttrib(GL_CURRENT_BIT);
@@ -205,11 +283,6 @@ void MovieClip::Render()
 
 	glPopMatrix();
 	glPopAttrib();
-
-	//Render objects added at runtime;
-	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
-	for(it;it!=dynamicDisplayList.end();it++)
-		(*it)->Render();
 
 	if(state.FP!=state.next_FP)
 	{

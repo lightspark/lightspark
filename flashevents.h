@@ -27,7 +27,7 @@
 class ISWFObject;
 class PlaceObject2Tag;
 
-enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT };
+enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION };
 
 class Event: public ASObject
 {
@@ -98,6 +98,16 @@ class ShutdownEvent: public Event
 public:
 	ShutdownEvent():Event("shutdownEvent"){}
 	EVENT_TYPE getEventType() { return SHUTDOWN; }
+};
+
+class FunctionEvent: public Event
+{
+friend class ABCVm;
+private:
+	IFunction* f;
+public:
+	FunctionEvent(IFunction* _f):f(_f),Event("functionEvent"){}
+	EVENT_TYPE getEventType() { return FUNCTION; }
 };
 
 class SynchronizationEvent: public Event

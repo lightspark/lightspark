@@ -17,12 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "abc.h"
 #include "frame.h"
 #include "tags.h"
 #include <list>
-#include <GL/gl.h>
 #include <time.h>
 #include "swf.h"
+#include <GL/gl.h>
 
 using namespace std;
 long timeDiff(timespec& s, timespec& d);
@@ -30,11 +31,15 @@ long timeDiff(timespec& s, timespec& d);
 extern __thread SystemState* sys;
 void Frame::Render(int baseLayer)
 {
+	if(script)
+		sys->currentVm->addEvent(NULL,new FunctionEvent(script));
+
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
-	list < IDisplayListElem* >::iterator i=displayList.begin();
+	list <IDisplayListElem* >::iterator i=displayList.begin();
 	int count=0;
 	LOG(TRACE,"Frame levels " << baseLayer << '/' << displayList.size());
+	//Render objects of this frame;
 	for(i;i!=displayList.end();i++)
 	{
 		LOG(TRACE,"Rendering level " << count);
@@ -45,6 +50,11 @@ void Frame::Render(int baseLayer)
 		if(count>baseLayer)
 			break;
 	}
+	//Render objects added at runtime
+	i=dynamicDisplayList->begin();
+	for(i;i!=dynamicDisplayList->end();i++)
+		(*i)->Render();
+
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->render_time+=timeDiff(ts,td);
 }

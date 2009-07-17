@@ -140,6 +140,7 @@ struct multiname
 
 class ISWFObject
 {
+friend class MovieClip;
 protected:
 	ISWFObject* parent;
 	ISWFObject();
@@ -566,6 +567,7 @@ class FILLSTYLE
 	friend std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v);
 	friend class DefineTextTag;
 	friend class DefineShape2Tag;
+	friend class DefineShape3Tag;
 	friend class Shape;
 private:
 	int version;

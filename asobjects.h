@@ -314,6 +314,8 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getTimezoneOffset);
 	ASFUNCTION(getTime);
+	ASFUNCTION(getHours);
+	ASFUNCTION(getMinutes);
 	ASFUNCTION(valueOf);
 	ISWFObject* clone()
 	{

@@ -104,10 +104,13 @@ SystemState::SystemState():currentClip(this),parsingDisplayList(&displayList),pe
 	setVariableByName("",this);*/
 
 	//This should come from DisplayObject
+	MovieClip::_constructor(this,NULL);
 	LoaderInfo* loaderInfo=new LoaderInfo();
 	setVariableByName(Qname("loaderInfo"),loaderInfo);
 
 	setVariableByName("getBounds",new Function(getBounds));
+	setVariableByName("root",this,true);
+	setVariableByName("stage",this,true);
 }
 
 SystemState::~SystemState()
@@ -1019,6 +1022,7 @@ void RenderThread::draw(Frame* f)
 	sem_post(&render);
 //	sem_wait(&end_render);
 	usleep(1000000/sys->frame_rate);
+//	sleep(1);
 
 }
 
@@ -1112,7 +1116,7 @@ void SystemState::commitFrame()
 {
 	sem_wait(&mutex);
 	//sem_wait(&clip.sem_frames);
-	frames.push_back(Frame(displayList));
+	frames.push_back(Frame(displayList,&dynamicDisplayList));
 	_framesloaded=frames.size();
 	sem_post(&new_frame);
 	sem_post(&mutex);

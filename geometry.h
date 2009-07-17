@@ -129,9 +129,13 @@ public:
 
 class Shape
 {
+friend class DefineTextTag;
+friend class DefineShape2Tag;
+friend class DefineShape3Tag;
 private:
 	void TessellateSimple();
 	void SetStyles(FILLSTYLE* styles);
+	FILLSTYLE* style;
 public:
 	std::vector<Triangle> interior;
 	std::vector<Vector2> outline;
@@ -141,8 +145,6 @@ public:
 	bool closed;
 	int id;
 	int color;
-
-	FILLSTYLE* style;
 
 	//DEBUG
 	void dumpEdges();

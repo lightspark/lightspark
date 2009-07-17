@@ -37,25 +37,34 @@ public:
 	ASFUNCTION(addEventListener);
 };
 
-class Loader: public ASObject, IThreadJob
+class Loader: public ASObject, public IThreadJob, public IDisplayListElem
 {
 private:
 	std::string url;
+	bool loading;
 public:
-	Loader()
+	Loader():loading(false)
 	{
 		constructor=new Function(_constructor);
 	}
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	void execute();
+	int getDepth() const
+	{
+		return 0;
+	}
+	void Render()
+	{
+		LOG(NOT_IMPLEMENTED,"Loader Rendering");
+	}
 	ISWFObject* clone()
 	{
 		return new Loader(*this);
 	}
 };
 
-class Sprite: public EventDispatcher
+class Sprite: public EventDispatcher, public IDisplayListElem
 {
 protected:
 	Integer _x;
@@ -68,6 +77,14 @@ public:
 	Sprite();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getBounds);
+	int getDepth() const
+	{
+		return 0;
+	}
+	void Render()
+	{
+		LOG(NOT_IMPLEMENTED,"Sprite Rendering");
+	}
 	ISWFObject* clone()
 	{
 		return new Sprite(*this);
@@ -99,6 +116,8 @@ public:
 	ASFUNCTION(lineTo);
 	ASFUNCTION(swapDepths);
 	ASFUNCTION(createEmptyMovieClip);
+	ASFUNCTION(addFrameScript);
+	ASFUNCTION(addChild);
 
 	virtual void addToDisplayList(IDisplayListElem* r);
 

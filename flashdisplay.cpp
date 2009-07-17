@@ -135,6 +135,10 @@ void MovieClip::addToDisplayList(IDisplayListElem* t)
 	list<IDisplayListElem*>::iterator it=lower_bound(displayList.begin(),displayList.end(),t->getDepth(),list_orderer);
 	displayList.insert(it,t);
 	displayListLimit=displayList.size();
+
+	t->root=this;
+	ASObject* o=dynamic_cast<ASObject*>(t);
+	o->setVariableByName("root",this,true);
 }
 
 ASFUNCTIONBODY(MovieClip,addChild)
@@ -167,6 +171,9 @@ ASFUNCTIONBODY(MovieClip,addChild)
 	}
 	args->at(0)->parent=th;
 	th->dynamicDisplayList.push_back(e);
+
+	e->root=th;
+	args->at(0)->setVariableByName("root",th,true);
 }
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)

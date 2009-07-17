@@ -26,6 +26,8 @@
 class IDisplayListElem
 {
 public:
+	IDisplayListElem():root(NULL){}
+	IDisplayListElem* root;
 	virtual int getDepth() const=0;
 	virtual void Render()=0;
 };

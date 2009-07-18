@@ -72,33 +72,43 @@ struct fps_profiling
 	fps_profiling():render_time(0),action_time(0),cache_time(0),fps(0),event_count(0),event_time(0){}
 };
 
-class SystemState:public MovieClip
+class RootMovieClip: public MovieClip
 {
-private:
-
+protected:
+	sem_t mutex;
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
-
-	sem_t sem_dict;
-	std::list < DictionaryTag* > dictionary;
-
+private:
 	RGB Background;
-
-	sem_t sem_run;
-
-	bool update_request;
-
-	sem_t mutex;
-
-	sem_t sem_valid_frame_size;
+	std::list < DictionaryTag* > dictionary;
 	RECT frame_size;
+	sem_t sem_valid_frame_size;
+
+public:
+	RootMovieClip();
+	float frame_rate;
+	RGB getBackground();
+	void setBackground(const RGB& bg);
+	void setFrameSize(const RECT& f);
+	RECT getFrameSize();
+	void setFrameCount(int f);
+	void addToDictionary(DictionaryTag* r);
+	DictionaryTag* dictionaryLookup(int id);
+	void addToDisplayList(IDisplayListElem* r);
+	void commitFrame();
+};
+
+class SystemState:public RootMovieClip
+{
+private:
+	sem_t sem_run;
+	bool update_request;
 
 public:
 	ASFUNCTION(getBounds);
+	RootMovieClip* root;
 
 	bool shutdown;
-	int version;
-	float frame_rate;
 	ISWFObject* getVariableByName(const Qname& name, bool& found);
 	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
 	ISWFObject* getParent() { return NULL; }
@@ -110,16 +120,7 @@ public:
 	void waitToRun();
 	Frame& getFrameAtFP();
 	void advanceFP();
-	void setFrameSize(const RECT& f);
-	RECT getFrameSize();
-	void setFrameCount(int f);
-	void addToDictionary(DictionaryTag* r);
-	void addToDisplayList(IDisplayListElem* r);
-	void commitFrame();
-	RGB getBackground();
-	void setBackground(const RGB& bg);
 	void setUpdateRequest(bool s);
-	DictionaryTag* dictionaryLookup(int id);
 	SWFOBJECT_TYPE getObjectType() const;
 	fps_profiling* fps_prof;
 	ABCVm* currentVm;
@@ -139,12 +140,14 @@ public:
 class ParseThread
 {
 private:
-	SystemState* m_sys;
 	std::istream& f;
 	pthread_t t;
 	static void* worker(ParseThread*);
 	static int error;
+	SystemState* m_sys;
 public:
+	RootMovieClip* root;
+	int version;
 	ParseThread(SystemState* s, std::istream& in);
 	~ParseThread();
 	void wait();

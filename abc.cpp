@@ -154,6 +154,7 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 llvm::ExecutionEngine* ABCVm::ex;
 
 extern __thread SystemState* sys;
+extern __thread ParseThread* pt;
 
 using namespace std;
 
@@ -3889,16 +3890,15 @@ void ABCVm::Run(ABCVm* th)
 
 	while(!th->shutdown)
 	{
-		timespec ts,td;
-		clock_gettime(CLOCK_REALTIME,&ts);
+//		timespec ts,td;
+//		clock_gettime(CLOCK_REALTIME,&ts);
 		sem_wait(&th->sem_event_count);
 		th->handleEvent();
-		sys->fps_prof->event_count++;
+//		sys->fps_prof->event_count++;
 
-		clock_gettime(CLOCK_REALTIME,&td);
-		sys->fps_prof->event_time+=timeDiff(ts,td);
+//		clock_gettime(CLOCK_REALTIME,&td);
+//		sys->fps_prof->event_time+=timeDiff(ts,td);
 	}
-	//module.dump();
 }
 
 string ABCVm::getString(unsigned int s) const

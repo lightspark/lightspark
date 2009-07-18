@@ -30,6 +30,7 @@
 using namespace std;
 extern __thread SystemState* sys;
 extern __thread RenderThread* rt;
+extern __thread ParseThread* pt;
 
 ISWFObject* ConstantReference::instantiate()
 {
@@ -1024,7 +1025,7 @@ int ISWFObject::numVariables()
 
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v)
 {
-	if(sys->version<=5)
+	if(pt->version<=5)
 	{
 		UI16 t;
 		s >> t;

@@ -1523,13 +1523,13 @@ void PlaceObject2Tag::printInfo(int t)
 
 void SetBackgroundColorTag::execute()
 {
-	sys->setBackground(BackgroundColor);
+	pt->root->setBackground(BackgroundColor);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	in >> Name;
-	if(sys->version>=6)
+	if(pt->version>=6)
 	{
 		UI8 NamedAnchor=in.peek();
 		if(NamedAnchor==1)

@@ -64,30 +64,37 @@ SWF_HEADER::SWF_HEADER(istream& in)
 		swf_stream* ss=dynamic_cast<swf_stream*>(in.rdbuf());
 		ss->setCompressed();
 	}
-	sys->version=Version;
+	pt->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
 	LOG(NO_INFO,"FrameRate " << FrameRate);
-	sys->frame_rate=FrameRate;
-	sys->frame_rate/=256;
-	sys->state.max_FP=FrameCount;
+	pt->root->frame_rate=FrameRate;
+	pt->root->frame_rate/=256;
+}
+
+RootMovieClip::RootMovieClip()
+{
+	sem_init(&mutex,0,1);
+	sem_init(&sem_valid_frame_size,0,0);
+
 }
 
 SystemState::SystemState():performance_profiling(false),
-	shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
+	shutdown(false),currentVm(NULL),cur_thread_pool(NULL),root(this)
 {
-	sem_init(&sem_dict,0,1);
 	sem_init(&new_frame,0,0);
 	sem_init(&sem_run,0,0);
-	sem_init(&sem_valid_frame_size,0,0);
+	//This should come from DisplayObject
+	MovieClip::_constructor(this,NULL);
+	LoaderInfo* loaderInfo=new LoaderInfo();
+	setVariableByName(Qname("loaderInfo"),loaderInfo);
 
-	sem_init(&mutex,0,1);
-
+	setVariableByName("getBounds",new Function(getBounds));
+	setVariableByName("root",this,true);
+	setVariableByName("stage",this,true);
 /*	//Register global functions
 	setVariableByName("parseInt",new Function(parseInt));
 
 	//Register default objects
-	ISWFObject* stage(new ASStage);
-	setVariableByName("Stage",stage);
 
 	ISWFObject* array(new ASArray);
 	array->_register();
@@ -105,14 +112,6 @@ SystemState::SystemState():performance_profiling(false),
 
 	setVariableByName("",this);*/
 
-	//This should come from DisplayObject
-	MovieClip::_constructor(this,NULL);
-	LoaderInfo* loaderInfo=new LoaderInfo();
-	setVariableByName(Qname("loaderInfo"),loaderInfo);
-
-	setVariableByName("getBounds",new Function(getBounds));
-	setVariableByName("root",this,true);
-	setVariableByName("stage",this,true);
 }
 
 SystemState::~SystemState()
@@ -142,8 +141,8 @@ void* ParseThread::worker(ParseThread* th)
 	try
 	{
 		SWF_HEADER h(th->f);
-		sys->setFrameSize(h.getFrameSize());
-		sys->setFrameCount(h.FrameCount);
+		pt->m_sys->setFrameSize(h.getFrameSize());
+		pt->m_sys->setFrameCount(h.FrameCount);
 
 		int done=0;
 
@@ -165,14 +164,14 @@ void* ParseThread::worker(ParseThread* th)
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:
-					sys->addToDictionary(dynamic_cast<DictionaryTag*>(tag));
+					th->root->addToDictionary(dynamic_cast<DictionaryTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
-					sys->addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
+					th->root->addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
 					break;
 				case SHOW_TAG:
 				{
-					sys->commitFrame();
+					th->root->commitFrame();
 					break;
 				}
 				case CONTROL_TAG:
@@ -194,6 +193,7 @@ ParseThread::ParseThread(SystemState* s,istream& in):f(in),
 	parsingDisplayList(&s->displayList),parsingTarget(s)
 {
 	m_sys=s;
+	root=s;
 	error=0;
 	pthread_create(&t,NULL,(thread_worker)worker,this);
 }
@@ -1029,7 +1029,7 @@ void RenderThread::draw(Frame* f)
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
 //	sem_wait(&end_render);
-	usleep(1000000/sys->frame_rate);
+	usleep(1000000/sys->root->frame_rate);
 //	sleep(1);
 
 }
@@ -1085,42 +1085,41 @@ void SystemState::advanceFP()
 	sem_post(&mutex);
 }
 
-void SystemState::setFrameCount(int f)
+void RootMovieClip::setFrameCount(int f)
 {
 	sem_wait(&mutex);
 	_totalframes=f;
+	state.max_FP=f;
 	sem_post(&mutex);
 }
 
-void SystemState::setFrameSize(const RECT& f)
+void RootMovieClip::setFrameSize(const RECT& f)
 {
 	frame_size=f;
 	sem_post(&sem_valid_frame_size);
 }
 
-RECT SystemState::getFrameSize()
+RECT RootMovieClip::getFrameSize()
 {
 	sem_wait(&sem_valid_frame_size);
 	return frame_size;
 }
 
-void SystemState::addToDictionary(DictionaryTag* r)
+void RootMovieClip::addToDictionary(DictionaryTag* r)
 {
 	sem_wait(&mutex);
-	//sem_wait(&sys.sem_dict);
 	dictionary.push_back(r);
-	//sem_post(&sys.sem_dict);
 	sem_post(&mutex);
 }
 
-void SystemState::addToDisplayList(IDisplayListElem* t)
+void RootMovieClip::addToDisplayList(IDisplayListElem* t)
 {
 	sem_wait(&mutex);
 	MovieClip::addToDisplayList(t);
 	sem_post(&mutex);
 }
 
-void SystemState::commitFrame()
+void RootMovieClip::commitFrame()
 {
 	sem_wait(&mutex);
 	//sem_wait(&clip.sem_frames);
@@ -1131,12 +1130,12 @@ void SystemState::commitFrame()
 	//sem_post(&clip.sem_frames);
 }
 
-RGB SystemState::getBackground()
+RGB RootMovieClip::getBackground()
 {
 	return Background;
 }
 
-void SystemState::setBackground(const RGB& bg)
+void RootMovieClip::setBackground(const RGB& bg)
 {
 	Background=bg;
 }
@@ -1148,10 +1147,9 @@ void SystemState::setUpdateRequest(bool s)
 	sem_post(&mutex);
 }
 
-DictionaryTag* SystemState::dictionaryLookup(int id)
+DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 {
 	sem_wait(&mutex);
-	//sem_wait(&sem_dict);
 	list< DictionaryTag*>::iterator it = dictionary.begin();
 	for(it;it!=dictionary.end();it++)
 	{
@@ -1160,7 +1158,6 @@ DictionaryTag* SystemState::dictionaryLookup(int id)
 	}
 	if(it==dictionary.end())
 		LOG(ERROR,"No such Id on dictionary " << id);
-	//sem_post(&sem_dict);
 	sem_post(&mutex);
 	return *it;
 }

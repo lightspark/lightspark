@@ -31,6 +31,7 @@ using namespace std;
 
 extern __thread SystemState* sys;
 extern __thread RenderThread* rt;
+extern __thread ParseThread* pt;
 
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
@@ -100,7 +101,7 @@ ASFUNCTIONBODY(Sprite,_constructor)
 {
 	Sprite* th=static_cast<Sprite*>(obj);
 	EventDispatcher::_constructor(th,NULL);
-	th->setVariableByName("root",sys);
+	th->setVariableByName("root",new Null);
 	th->setVariableByName("stage",sys);
 	th->setVariableByName("_visible",&th->_visible);
 	th->setVariableByName("y",&th->_y);
@@ -138,7 +139,8 @@ void MovieClip::addToDisplayList(IDisplayListElem* t)
 
 	t->root=this;
 	ASObject* o=dynamic_cast<ASObject*>(t);
-	o->setVariableByName("root",this,true);
+	if(o)
+		o->setVariableByName("root",this,true);
 }
 
 ASFUNCTIONBODY(MovieClip,addChild)

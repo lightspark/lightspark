@@ -49,6 +49,7 @@ KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
 MouseEvent::MouseEvent():Event("mouseEvent")
 {
 	setVariableByName("MOUSE_DOWN",new ASString("mouseDown"));
+	setVariableByName("MOUSE_UP",new ASString("mouseUp"));
 	setVariableByName("CLICK",new ASString("click"));
 }
 

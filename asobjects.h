@@ -275,7 +275,6 @@ public:
 	ASFUNCTION(addListener);
 	ASFUNCTION(constructor);
 
-	void _register();
 	ISWFObject* clone()
 	{
 		return new ASMovieClipLoader(*this);
@@ -292,7 +291,6 @@ public:
 	ASXML();
 	ASFUNCTION(constructor);
 	ASFUNCTION(load);
-	void _register();
 	ISWFObject* clone()
 	{
 		return new ASXML(*this);

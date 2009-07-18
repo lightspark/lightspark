@@ -61,14 +61,13 @@ ASFUNCTIONBODY(ASArray,_constructor)
 
 ASMovieClipLoader::ASMovieClipLoader()
 {
-	_register();
 }
 
-void ASMovieClipLoader::_register()
+/*void ASMovieClipLoader::_register()
 {
 	setVariableByName("constructor",new Function(constructor));
 	setVariableByName("addListener",new Function(addListener));
-}
+}*/
 
 ASFUNCTIONBODY(ASMovieClipLoader,constructor)
 {
@@ -84,16 +83,15 @@ ASFUNCTIONBODY(ASMovieClipLoader,addListener)
 
 ASXML::ASXML()
 {
-	_register();
 	xml_buf=new char[1024*20];
 	xml_index=0;
 }
 
-void ASXML::_register()
+/*void ASXML::_register()
 {
 	setVariableByName("constructor",new Function(constructor));
 	setVariableByName("load",new Function(load));
-}
+}*/
 
 ASFUNCTIONBODY(ASXML,constructor)
 {

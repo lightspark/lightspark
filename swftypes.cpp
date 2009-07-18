@@ -117,11 +117,6 @@ double ISWFObject::toNumber() const
 	return 0;
 }
 
-void ISWFObject::_register()
-{
-	LOG(CALLS,"default _register called");
-}
-
 IFunction* ISWFObject::setGetterByName(const Qname& name, IFunction* o)
 {
 	pair<map<Qname, IFunction*>::iterator,bool> ret=Getters.insert(make_pair(name,o));
@@ -924,11 +919,6 @@ ISWFObject::~ISWFObject()
 	map<Qname,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 		it->second->decRef();
-}
-
-ISWFObject* ISWFObject::getParent()
-{
-	return parent;
 }
 
 ISWFObject* ISWFObject::getSlot(int n)

@@ -182,8 +182,6 @@ public:
 	virtual ISWFObject* getVariableByString(const std::string& name, bool& found);
 	virtual ISWFObject* getVariableByName(const Qname& name, bool& found);
 	virtual ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
-	virtual ISWFObject* getParent();
-	virtual void _register();
 	virtual ISWFObject* getSlot(int n);
 	virtual void setSlot(int n,ISWFObject* o);
 	virtual void initSlot(int n,ISWFObject* o, const Qname& name);

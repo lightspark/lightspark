@@ -97,11 +97,9 @@ SystemState::SystemState():performance_profiling(false),
 	//Register default objects
 
 	ISWFObject* array(new ASArray);
-	array->_register();
 	setVariableByName("Array",array);
 
 	ISWFObject* object(new ASObject);
-	object->_register();
 	setVariableByName("Object",object);
 
 	ISWFObject* mcloader(new ASMovieClipLoader);
@@ -1162,7 +1160,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	return *it;
 }
 
-ISWFObject* SystemState::getVariableByName(const Qname& name, bool& found)
+ISWFObject* RootMovieClip::getVariableByName(const Qname& name, bool& found)
 {
 	sem_wait(&mutex);
 	ISWFObject* ret=ASObject::getVariableByName(name, found);
@@ -1170,7 +1168,7 @@ ISWFObject* SystemState::getVariableByName(const Qname& name, bool& found)
 	return ret;
 }
 
-ISWFObject* SystemState::setVariableByName(const Qname& name, ISWFObject* o, bool force)
+ISWFObject* RootMovieClip::setVariableByName(const Qname& name, ISWFObject* o, bool force)
 {
 	sem_wait(&mutex);
 	ISWFObject* ret=ISWFObject::setVariableByName(name,o,force);

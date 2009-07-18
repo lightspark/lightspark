@@ -96,6 +96,8 @@ public:
 	DictionaryTag* dictionaryLookup(int id);
 	void addToDisplayList(IDisplayListElem* r);
 	void commitFrame();
+	ISWFObject* getVariableByName(const Qname& name, bool& found);
+	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
 };
 
 class SystemState:public RootMovieClip
@@ -109,9 +111,6 @@ public:
 	RootMovieClip* root;
 
 	bool shutdown;
-	ISWFObject* getVariableByName(const Qname& name, bool& found);
-	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
-	ISWFObject* getParent() { return NULL; }
 	void setShutdownFlag();
 
 	bool performance_profiling;

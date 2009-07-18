@@ -3890,14 +3890,14 @@ void ABCVm::Run(ABCVm* th)
 
 	while(!th->shutdown)
 	{
-//		timespec ts,td;
-//		clock_gettime(CLOCK_REALTIME,&ts);
+		timespec ts,td;
+		clock_gettime(CLOCK_REALTIME,&ts);
 		sem_wait(&th->sem_event_count);
 		th->handleEvent();
-//		sys->fps_prof->event_count++;
+		sys->fps_prof->event_count++;
 
-//		clock_gettime(CLOCK_REALTIME,&td);
-//		sys->fps_prof->event_time+=timeDiff(ts,td);
+		clock_gettime(CLOCK_REALTIME,&td);
+		sys->fps_prof->event_time+=timeDiff(ts,td);
 	}
 }
 

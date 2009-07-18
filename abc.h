@@ -499,6 +499,7 @@ public:
 	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
 	void addEvent(EventDispatcher*,Event*);
 	void start() { sem_post(&started);}
+	void wait();
 };
 
 class DoABCTag: public DisplayListTag

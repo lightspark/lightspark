@@ -682,6 +682,11 @@ ABCVm::~ABCVm()
 	pthread_join(t,NULL);
 }
 
+void ABCVm::wait()
+{
+	pthread_join(t,NULL);
+}
+
 void ABCVm::handleEvent()
 {
 	sem_wait(&mutex);

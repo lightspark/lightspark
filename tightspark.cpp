@@ -40,5 +40,6 @@ int main(int argc, char* argv[])
 
 	ifstream f(argv[1]);
 	ABCVm vm(sys,f);
-	vm.Run(&vm);
+	vm.start();
+	vm.wait();
 }

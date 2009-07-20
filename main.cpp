@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
 
-	Log::initLogging(CALLS);
+	Log::initLogging(ERROR);
 	sys=new SystemState;
 	zlib_file_filter zf;
 	zf.open(argv[1],ios_base::in);

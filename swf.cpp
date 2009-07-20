@@ -1034,10 +1034,11 @@ void RenderThread::draw()
 
 void RootMovieClip::setFrameCount(int f)
 {
-	sem_wait(&mutex);
+	sem_wait(&sem_frames);
 	_totalframes=f;
 	state.max_FP=f;
-	sem_post(&mutex);
+	frames.reserve(f);
+	sem_post(&sem_frames);
 }
 
 void RootMovieClip::setFrameSize(const RECT& f)

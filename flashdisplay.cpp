@@ -214,11 +214,8 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 			LOG(ERROR,"Invalid frame number passed to addFrameScript");
 			abort();
 		}
-		list<Frame>::iterator frame=th->frames.begin();
-		for(int i=0;i<f;i++)
-			frame++;
 
-		frame->setScript(g);
+		th->frames[f].setScript(g);
 	}
 }
 
@@ -296,12 +293,8 @@ void MovieClip::Render()
 	else
 		state.next_FP=state.FP;
 
-	list<Frame>::iterator frame=frames.begin();
-	for(int i=0;i<state.FP;i++)
-		frame++;
-
 	if(!state.stop_FP)
-		frame->runScript();
+		frames[state.FP].runScript();
 
 	//Set the id in the secondary color
 	glPushAttrib(GL_CURRENT_BIT);
@@ -310,7 +303,7 @@ void MovieClip::Render()
 	glPushMatrix();
 	//glTranslatef(_x,_y,0);
 	glRotatef(rotation,0,0,1);
-	frame->Render(displayListLimit);
+	frames[state.FP].Render(displayListLimit);
 
 	glPopMatrix();
 	glPopAttrib();

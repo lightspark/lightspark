@@ -113,7 +113,7 @@ protected:
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list < IDisplayListElem* > displayList;
 public:
-	std::list<Frame> frames;
+	std::vector<Frame> frames;
 	RunState state;
 
 public:

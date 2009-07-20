@@ -31,13 +31,19 @@ Event::Event(const string& t):type(t)
 	setVariableByName("ENTER_FRAME",new ASString("enterFrame"));
 	setVariableByName("ADDED_TO_STAGE",new ASString("addedToStage"));
 	setVariableByName("INIT",new ASString("init"));
+	setVariableByName("ADDED",new ASString("added"));
+	setVariableByName("REMOVED",new ASString("removed"));
 	setVariableByName("UNLOAD",new ASString("unload"));
+	setVariableByName("ACTIVATE",new ASString("activate"));
+	setVariableByName("DEACTIVATE",new ASString("deactivate"));
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
 {
 	setVariableByName("FOCUS_IN",new ASString("focusIn"));
 	setVariableByName("FOCUS_OUT",new ASString("focusOut"));
+	setVariableByName("MOUSE_FOCUS_CHANGE",new ASString("mouseFocusChange"));
+	setVariableByName("KEY_FOCUS_CHANGE",new ASString("keyFocusChange"));
 }
 
 KeyboardEvent::KeyboardEvent():Event("keyboardEvent")

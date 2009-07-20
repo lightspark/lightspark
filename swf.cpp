@@ -74,15 +74,14 @@ SWF_HEADER::SWF_HEADER(istream& in)
 RootMovieClip::RootMovieClip()
 {
 	sem_init(&mutex,0,1);
+	sem_init(&sem_frames,0,1);
 	sem_init(&sem_valid_frame_size,0,0);
 
 }
 
-SystemState::SystemState():performance_profiling(false),
-	shutdown(false),currentVm(NULL),cur_thread_pool(NULL),root(this)
+SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),root(this)
 {
 	sem_init(&new_frame,0,0);
-	sem_init(&sem_run,0,0);
 	//This should come from DisplayObject
 	MovieClip::_constructor(this,NULL);
 	LoaderInfo* loaderInfo=new LoaderInfo();
@@ -127,8 +126,6 @@ void SystemState::setShutdownFlag()
 	if(sys->currentVm)
 		sys->currentVm->addEvent(NULL,new ShutdownEvent());
 
-	//Signal blocking semaphore
-	sem_post(&sem_run);
 	sem_post(&mutex);
 }
 
@@ -139,8 +136,8 @@ void* ParseThread::worker(ParseThread* th)
 	try
 	{
 		SWF_HEADER h(th->f);
-		pt->m_sys->setFrameSize(h.getFrameSize());
-		pt->m_sys->setFrameCount(h.FrameCount);
+		pt->root->setFrameSize(h.getFrameSize());
+		pt->root->setFrameCount(h.FrameCount);
 
 		int done=0;
 
@@ -187,11 +184,11 @@ void* ParseThread::worker(ParseThread* th)
 	}
 }
 
-ParseThread::ParseThread(SystemState* s,istream& in):f(in),
-	parsingDisplayList(&s->displayList),parsingTarget(s)
+ParseThread::ParseThread(SystemState* s,RootMovieClip* r,istream& in):f(in),
+	parsingDisplayList(&r->displayList),parsingTarget(r)
 {
 	m_sys=s;
-	root=s;
+	root=r;
 	error=0;
 	pthread_create(&t,NULL,(thread_worker)worker,this);
 }
@@ -619,14 +616,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			else
 			{
 				sem_wait(&th->mutex);
-				if(th->cur_frame==NULL)
-				{
-					sem_post(&th->mutex);
-					sem_post(&th->end_render);
-					if(sys->shutdown)
-						pthread_exit(0);
-					continue;
-				}
+
 				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 				glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 				//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
@@ -639,7 +629,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 				glLoadIdentity();
 				glScalef(scalex,scaley,1);
-				th->cur_frame->Render(sys->displayListLimit);
+				
+				sys->Render();
 
 				glLoadIdentity();
 
@@ -816,13 +807,6 @@ void* RenderThread::glx_worker(RenderThread* th)
 		while(1)
 		{
 			sem_wait(&th->render);
-			if(th->cur_frame==NULL)
-			{
-				sem_post(&th->end_render);
-				if(sys->shutdown)
-					pthread_exit(0);
-				continue;
-			}
 			glXSwapBuffers(th->mDisplay,th->mWindow);
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
@@ -830,7 +814,7 @@ void* RenderThread::glx_worker(RenderThread* th)
 			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 			glLoadIdentity();
 
-			th->cur_frame->Render(sys->displayListLimit);
+			sys->Render();
 
 			sem_post(&th->end_render);
 			if(sys->shutdown)
@@ -851,6 +835,33 @@ void* RenderThread::glx_worker(RenderThread* th)
 float RenderThread::getIdAt(int x, int y)
 {
 	return interactive_buffer[y*width+x];
+}
+
+void RootMovieClip::Render()
+{
+	sem_wait(&sem_frames);
+	while(1)
+	{
+		if(state.FP<frames.size())
+			break;
+
+		sem_post(&mutex);
+		sem_wait(&new_frame);
+		sem_wait(&mutex);
+	}
+
+	//We stop execution until execution engine catches up
+	if(sys->currentVm)
+	{
+		SynchronizationEvent* s=new SynchronizationEvent;
+		sys->currentVm->addEvent(NULL, s);
+		s->wait();
+		delete s;
+	}
+	//Now the bindings are effective
+
+	MovieClip::Render();
+	sem_post(&sem_frames);
 }
 
 void* RenderThread::sdl_worker(RenderThread* th)
@@ -964,13 +975,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		while(1)
 		{
 			sem_wait(&th->render);
-			if(th->cur_frame==NULL)
-			{
-				sem_post(&th->end_render);
-				if(sys->shutdown)
-					pthread_exit(0);
-				continue;
-			}
 			SDL_GL_SwapBuffers( );
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 			glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
@@ -985,7 +989,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glLoadIdentity();
 			glScalef(0.1,0.1,1);
 
-			th->cur_frame->Render(sys->displayListLimit);
+			sys->Render();
 
 			glLoadIdentity();
 			glColor3f(0,0,1);
@@ -1020,67 +1024,12 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	}
 }
 
-void RenderThread::draw(Frame* f)
+void RenderThread::draw()
 {
-	cur_frame=f;
-
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
-//	sem_wait(&end_render);
 	usleep(1000000/sys->root->frame_rate);
-//	sleep(1);
-
-}
-
-void SystemState::waitToRun()
-{
-	sem_wait(&mutex);
-
-	if(state.stop_FP && !(update_request || performance_profiling))
-	{
-		cout << "stop" << endl;
-		sem_post(&mutex);
-		sem_wait(&sem_run);
-		sem_wait(&mutex);
-	}
-	while(1)
-	{
-		if(state.FP<frames.size())
-			break;
-
-		sem_post(&mutex);
-		sem_wait(&new_frame);
-		sem_wait(&mutex);
-	}
-	update_request=false;
-	if(!state.stop_FP)
-		state.next_FP=state.FP+1;
-	else
-		state.next_FP=state.FP;
-	if(state.next_FP>=state.max_FP)
-	{
-		state.next_FP=state.FP;
-		//state.stop_FP=true;
-	}
-	sem_post(&mutex);
-}
-
-Frame& SystemState::getFrameAtFP() 
-{
-	sem_wait(&mutex);
-	list<Frame>::iterator it=frames.begin();
-	for(int i=0;i<state.FP;i++)
-		it++;
-	sem_post(&mutex);
-
-	return *it;
-}
-
-void SystemState::advanceFP()
-{
-	sem_wait(&mutex);
-	state.tick();
-	sem_post(&mutex);
+	sem_wait(&end_render);
 }
 
 void RootMovieClip::setFrameCount(int f)
@@ -1119,13 +1068,11 @@ void RootMovieClip::addToDisplayList(IDisplayListElem* t)
 
 void RootMovieClip::commitFrame()
 {
-	sem_wait(&mutex);
-	//sem_wait(&clip.sem_frames);
+	sem_wait(&sem_frames);
 	frames.push_back(Frame(displayList,&dynamicDisplayList));
 	_framesloaded=frames.size();
 	sem_post(&new_frame);
-	sem_post(&mutex);
-	//sem_post(&clip.sem_frames);
+	sem_post(&sem_frames);
 }
 
 RGB RootMovieClip::getBackground()
@@ -1136,13 +1083,6 @@ RGB RootMovieClip::getBackground()
 void RootMovieClip::setBackground(const RGB& bg)
 {
 	Background=bg;
-}
-
-void SystemState::setUpdateRequest(bool s)
-{
-	sem_wait(&mutex);
-	update_request=s;
-	sem_post(&mutex);
 }
 
 DictionaryTag* RootMovieClip::dictionaryLookup(int id)

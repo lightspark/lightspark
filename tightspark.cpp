@@ -36,7 +36,6 @@ int main(int argc, char* argv[])
 	}
 	Log::initLogging(CALLS);
 	sys=new SystemState;
-	sys->performance_profiling=false;
 
 	ifstream f(argv[1]);
 	ABCVm vm(sys,f);

@@ -68,11 +68,24 @@ bool ISWFObject::isLess(const ISWFObject* r) const
 	return false;
 }
 
+bool Integer::isGreater(const ISWFObject* o) const
+{
+	if(o->getObjectType()==T_INTEGER)
+	{
+		const Integer* i=static_cast<const Integer*>(o);
+		return val>*i;
+	}
+	else
+	{
+		return ISWFObject::isGreater(o);
+	}
+}
+
 bool Integer::isLess(const ISWFObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
-		const Integer* i=dynamic_cast<const Integer*>(o);
+		const Integer* i=static_cast<const Integer*>(o);
 		return val<*i;
 	}
 	else
@@ -711,7 +724,7 @@ std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	{
 		s >> v.StartColor >> v.EndColor;
 	}
-	else if(v.FillStyleType==0x12)
+	else if(v.FillStyleType==0x10 || v.FillStyleType==0x12)
 	{
 		s >> v.StartGradientMatrix >> v.EndGradientMatrix;
 		s >> v.NumGradients;

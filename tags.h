@@ -349,7 +349,7 @@ class KERNINGRECORD
 {
 };
 
-class DefineBinaryDataTag: public DictionaryTag
+class DefineBinaryDataTag: public DictionaryTag, public ASObject
 {
 private:
 	UI16 Tag;

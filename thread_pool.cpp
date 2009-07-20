@@ -19,8 +19,11 @@
 
 #include "thread_pool.h"
 
-ThreadPool::ThreadPool()
+extern __thread SystemState* sys;
+
+ThreadPool::ThreadPool(SystemState* s)
 {
+	m_sys=s;
 	sem_init(&mutex,0,1);
 	sem_init(&num_jobs,0,0);
 	for(int i=0;i<NUM_THREADS;i++)
@@ -30,6 +33,7 @@ ThreadPool::ThreadPool()
 void* ThreadPool::job_worker(void* t)
 {
 	ThreadPool* th=static_cast<ThreadPool*>(t);
+	sys=th->m_sys;
 
 	while(1)
 	{

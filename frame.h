@@ -51,6 +51,7 @@ public:
 	void Render(int baseLayer);
 	void setLabel(STRING l);
 	void setScript(IFunction* s){script=s;}
+	void runScript();
 };
 
 #endif

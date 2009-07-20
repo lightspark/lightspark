@@ -178,6 +178,7 @@ public:
 	SWFOBJECT_TYPE getObjectType() const { return T_ARRAY; }
 	virtual ~ASArray();
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_push);
 	ISWFObject* clone()
 	{
 		return new ASArray(*this);
@@ -240,11 +241,6 @@ public:
 public:
 	RunState();
 	void prepareNextFP();
-	void tick()
-	{
-		if(!stop_FP)
-			FP=next_FP;
-	}
 };
 
 class Number : public ASObject
@@ -345,7 +341,7 @@ private:
 	IFunction::as_function f;
 	std::string name;
 public:
-	MethodDefinable(std::string _n,IFunction::as_function _f):name(_n),f(_f){}
+	MethodDefinable(const std::string& _n,IFunction::as_function _f):name(_n),f(_f){}
 	void define(ISWFObject* g)
 	{
 		g->setVariableByName(name,new Function(f));

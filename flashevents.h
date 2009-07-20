@@ -113,14 +113,19 @@ public:
 class SynchronizationEvent: public Event
 {
 private:
-	sem_t* s;
+	sem_t s;
 public:
-	SynchronizationEvent(sem_t* _s):s(_s),Event("SynchronizationEvent"){}
+	SynchronizationEvent():Event("SynchronizationEvent"){sem_init(&s,0,0);}
+	~SynchronizationEvent(){sem_destroy(&s);}
 	EVENT_TYPE getEventType() { return SYNC; }
 	void sync()
 	{
 		LOG(CALLS,"Posting sync");
-		sem_post(s);
+		sem_post(&s);
+	}
+	void wait()
+	{
+		sem_wait(&s);
 	}
 };
 

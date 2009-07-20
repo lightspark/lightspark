@@ -24,6 +24,8 @@
 #include "flashevents.h"
 #include "thread_pool.h"
 
+class RootMovieClip;
+
 class LoaderInfo: public EventDispatcher
 {
 public:
@@ -42,8 +44,9 @@ class Loader: public ASObject, public IThreadJob, public IDisplayListElem
 private:
 	std::string url;
 	bool loading;
+	RootMovieClip* local_root;
 public:
-	Loader():loading(false)
+	Loader():loading(false),local_root(NULL)
 	{
 		constructor=new Function(_constructor);
 	}
@@ -77,6 +80,7 @@ public:
 	Sprite();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getBounds);
+	ASFUNCTION(_getParent);
 	int getDepth() const
 	{
 		return 0;
@@ -91,6 +95,13 @@ public:
 	}
 };
 
+class DisplayObject: public ASObject
+{
+public:
+	DisplayObject();
+	ASFUNCTION(_call);
+};
+
 class MovieClip: public Sprite, public IRenderObject
 {
 friend class ParseThread;
@@ -102,8 +113,6 @@ protected:
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list < IDisplayListElem* > displayList;
 public:
-	//Frames mutex (shared with drawing thread)
-	sem_t sem_frames;
 	std::list<Frame> frames;
 	RunState state;
 

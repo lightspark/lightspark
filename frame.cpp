@@ -29,11 +29,15 @@ using namespace std;
 long timeDiff(timespec& s, timespec& d);
 
 extern __thread SystemState* sys;
-void Frame::Render(int baseLayer)
+
+void Frame::runScript()
 {
 	if(script)
 		sys->currentVm->addEvent(NULL,new FunctionEvent(script));
+}
 
+void Frame::Render(int baseLayer)
+{
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
 	list <IDisplayListElem* >::iterator i=displayList.begin();

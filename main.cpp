@@ -55,18 +55,17 @@ int main(int argc, char* argv[])
 
 	Log::initLogging(CALLS);
 	sys=new SystemState;
-	sys->performance_profiling=false;
 	zlib_file_filter zf;
 	zf.open(argv[1],ios_base::in);
 	istream f(&zf);
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
-	ParseThread pt(sys,f);
+	ParseThread pt(sys,sys,f);
 	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 	sys->cur_input_thread=&it;
 	sys->cur_render_thread=&rt;
-	ThreadPool tp;
+	ThreadPool tp(sys);
 	sys->cur_thread_pool=&tp;
 
 	timespec ts,td,tperf,tperf2;
@@ -80,11 +79,9 @@ int main(int argc, char* argv[])
 	LOG(CALLS,"sys 0x" << sys);
 	while(1)
 	{
-		sys->waitToRun();
 		if(sys->shutdown)
 			break;
-		rt.draw(&sys->getFrameAtFP());
-		sys->advanceFP();
+		rt.draw();
 
 		count++;
 		clock_gettime(CLOCK_REALTIME,&td);

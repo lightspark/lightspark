@@ -160,7 +160,7 @@ using namespace std;
 
 void ignore(istream& i, int count);
 
-DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),done(false)
+DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 {
 	int dest=in.tellg();
 	dest+=getSize();
@@ -174,22 +174,13 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in),done(f
 		LOG(ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
 }
 
-int DoABCTag::getDepth() const
+void DoABCTag::execute()
 {
-	//The first thing when encoutering showframe
-	return -200;
-}
-
-void DoABCTag::Render()
-{
-	if(done)
-		return;
 	LOG(CALLS,"ABC Exec " << Name);
 	vm->start();
-	done=true;
 }
 
-SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in),done(false)
+SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
 {
 	LOG(TRACE,"SymbolClassTag");
 	in >> NumSymbols;
@@ -201,18 +192,9 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):DisplayListTag(h,in)
 		in >> Tags[i] >> Names[i];
 }
 
-int SymbolClassTag::getDepth() const
+void SymbolClassTag::execute()
 {
-	//After DoABCTag execution, but before any object
-	return -100;
-}
-
-void SymbolClassTag::Render()
-{
-	//Should be a control tag
-	if(done)
-		return;
-	LOG(TRACE,"SymbolClassTag Render");
+	LOG(TRACE,"SymbolClassTag Exec");
 
 	for(int i=0;i<NumSymbols;i++)
 	{
@@ -232,14 +214,6 @@ void SymbolClassTag::Render()
 				sys->currentVm->addEvent(NULL,new BindClassEvent(base,Names[i]));
 		}
 	}
-	//We stop execution until execution engine catches up
-	sem_t s;
-	sem_init(&s,0,0);
-	sys->currentVm->addEvent(NULL, new SynchronizationEvent(&s));
-	sem_wait(&s);
-	//Now the bindings are effective
-
-	done=true;
 }
 
 //Be careful, arguments nubering starts from 1
@@ -467,7 +441,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("toString",new Function(ASObject::_toString));
 
 	Global.setVariableByName(Qname("flash.display","MovieClip"),new MovieClip);
-	Global.setVariableByName(Qname("flash.display","DisplayObject"),new ASObject);
+	Global.setVariableByName(Qname("flash.display","DisplayObject"),new DisplayObject);
 	Global.setVariableByName(Qname("flash.display","Loader"),new Loader);
 	Global.setVariableByName(Qname("flash.display","SimpleButton"),new ASObject);
 	Global.setVariableByName(Qname("flash.display","InteractiveObject"),new ASObject),
@@ -483,9 +457,10 @@ void ABCVm::registerClasses()
 	Global.setVariableByName(Qname("flash.system","ApplicationDomain"),new ASObject);
 	Global.setVariableByName(Qname("flash.system","LoaderContext"),new ASObject);
 
-	Global.setVariableByName(Qname("flash.utils","Timer"),new ASObject);
+	Global.setVariableByName(Qname("flash.utils","ByteArray"),new ASObject);
 	Global.setVariableByName(Qname("flash.utils","Dictionary"),new ASObject);
 	Global.setVariableByName(Qname("flash.utils","Proxy"),new ASObject);
+	Global.setVariableByName(Qname("flash.utils","Timer"),new ASObject);
 
 	Global.setVariableByName(Qname("flash.geom","Rectangle"),new ASObject);
 
@@ -1132,8 +1107,16 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		else
 		{
 			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",found));
-			ISWFObject* ret=f->call(o,&args);
-			th->runtime_stack_push(ret);
+			if(f)
+			{
+				ISWFObject* ret=f->call(o,&args);
+				th->runtime_stack_push(ret);
+			}
+			else
+			{
+				LOG(CALLS,"No such function, returning Undefined");
+				th->runtime_stack_push(new Undefined);
+			}
 		}
 	}
 	else
@@ -1448,8 +1431,27 @@ void ABCVm::getSuper(call_context* th, int n)
 	LOG(NOT_IMPLEMENTED,"getSuper " << name);
 
 	ISWFObject* obj=th->runtime_stack_pop();
+	ASObject* o2=dynamic_cast<ASObject*>(obj);
+	if(o2 && o2->super)
+		obj=o2->super;
+
+	ISWFObject* ret;
 	bool found;
-	ISWFObject* ret=obj->getVariableByMultiname(name,found);
+	//Check to see if a proper getter method is available
+	IFunction* f=obj->getGetterByName(name.name,found);
+	if(found)
+	{
+		//Call the getter
+		LOG(CALLS,"Calling the getter");
+		//arguments args;
+		//args.push(value);
+		//value->incRef();
+		ret=f->call(obj,NULL);
+		LOG(CALLS,"End of getter");
+	}
+	else	
+		ret=obj->getVariableByMultiname(name,found);
+
 	if(found)
 		th->runtime_stack_push(ret);
 	else
@@ -1725,7 +1727,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 		super->constructor->call(obj->super,&args);
 		//args.decRef();
 
-		LOG(CALLS,"End of constructing");
+		LOG(CALLS,"End of constructing " << name);
 	}
 	else
 	{
@@ -1737,6 +1739,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 			super->constructor->call(obj->super,&args);
 		//args.decRef();
 	}
+	LOG(CALLS,"End super construct ");
 }
 
 void ABCVm::setProperty(call_context* th, int n)
@@ -1892,6 +1895,7 @@ void ABCVm::newArray(call_context* th, int n)
 	for(int i=0;i<n;i++)
 		ret->at(n-i-1)=th->runtime_stack_pop();
 
+	ret->_constructor(ret,NULL);
 	th->runtime_stack_push(ret);
 }
 
@@ -1933,6 +1937,19 @@ void ABCVm::getLex(call_context* th, int n)
 	bool found=false;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
+		//Check to see if a proper getter method is available
+		IFunction* f=(*it)->getGetterByName(name.name,found);
+		if(found)
+		{
+			//Call the getter
+			LOG(CALLS,"Calling the getter");
+			//arguments args;
+			//args.push(value);
+			//value->incRef();
+			th->runtime_stack_push(f->call((*it),NULL));
+			LOG(CALLS,"End of getter");
+			break;;
+		}
 		ISWFObject* o=(*it)->getVariableByMultiname(name,found);
 		if(found)
 		{
@@ -3893,7 +3910,7 @@ void ABCVm::Run(ABCVm* th)
 	entry->call(&th->Global,NULL);
 	LOG(CALLS, "End of Entry Point");
 
-	while(!th->shutdown)
+	while(1)
 	{
 		timespec ts,td;
 		clock_gettime(CLOCK_REALTIME,&ts);
@@ -3983,9 +4000,24 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferre
 							obj->initSlot(t->slot_id, ret, name);
 						break;
 					}
+					case 0x03: //Int
+					{
+						ISWFObject* ret=obj->setVariableByName(name, 
+							new Integer(constant_pool.integer[t->vindex]));
+						if(t->slot_id)
+							obj->initSlot(t->slot_id, ret, name);
+						break;
+					}
 					case 0x0a: //False
 					{
 						ISWFObject* ret=obj->setVariableByName(name, new Boolean(false));
+						if(t->slot_id)
+							obj->initSlot(t->slot_id, ret, name);
+						break;
+					}
+					case 0x0b: //True
+					{
+						ISWFObject* ret=obj->setVariableByName(name, new Boolean(true));
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name);
 						break;

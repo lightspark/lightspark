@@ -26,6 +26,8 @@
 
 #define NUM_THREADS 1
 
+class SystemState;
+
 class IThreadJob
 {
 public:
@@ -40,8 +42,9 @@ private:
 	std::deque<IThreadJob*> jobs;
 	sem_t num_jobs;
 	static void* job_worker(void*);
+	SystemState* m_sys;
 public:
-	ThreadPool();
+	ThreadPool(SystemState* s);
 	void addJob(IThreadJob* j);
 };
 

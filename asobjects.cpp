@@ -46,6 +46,7 @@ ASFUNCTIONBODY(ASArray,_constructor)
 	ASArray* th=static_cast<ASArray*>(obj);
 	th->length=0;
 	th->setVariableByName("length",&th->length);
+	th->setVariableByName(Qname(AS3,"push"),new Function(_push));
 	th->length.incRef();
 	if(args==NULL)
 		return NULL;
@@ -57,6 +58,18 @@ ASFUNCTIONBODY(ASArray,_constructor)
 		for(int i=0;i<args->size();i++)
 			th->at(i)=args->at(i);
 	}
+}
+
+ASFUNCTIONBODY(ASArray,_push)
+{
+	ASArray* th=static_cast<ASArray*>(obj);
+	if(args->size()!=1)
+	{
+		LOG(ERROR,"Multiple push");
+		abort();
+	}
+	th->push(args->at(0));
+	return new Integer(th->size());
 }
 
 ASMovieClipLoader::ASMovieClipLoader()
@@ -368,6 +381,8 @@ bool ASString::isEqual(const ISWFObject* r) const
 bool Undefined::isEqual(const ISWFObject* r) const
 {
 	if(r->getObjectType()==T_UNDEFINED)
+		return true;
+	if(r->getObjectType()==T_NULL)
 		return true;
 	else
 		return false;

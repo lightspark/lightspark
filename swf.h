@@ -83,6 +83,8 @@ private:
 	std::list < DictionaryTag* > dictionary;
 	RECT frame_size;
 	sem_t sem_valid_frame_size;
+	//Frames mutex (shared with drawing thread)
+	sem_t sem_frames;
 
 public:
 	RootMovieClip();
@@ -96,16 +98,13 @@ public:
 	DictionaryTag* dictionaryLookup(int id);
 	void addToDisplayList(IDisplayListElem* r);
 	void commitFrame();
+	void Render();
 	ISWFObject* getVariableByName(const Qname& name, bool& found);
 	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
 };
 
 class SystemState:public RootMovieClip
 {
-private:
-	sem_t sem_run;
-	bool update_request;
-
 public:
 	ASFUNCTION(getBounds);
 	RootMovieClip* root;
@@ -113,13 +112,8 @@ public:
 	bool shutdown;
 	void setShutdownFlag();
 
-	bool performance_profiling;
 	SystemState();
 	~SystemState();
-	void waitToRun();
-	Frame& getFrameAtFP();
-	void advanceFP();
-	void setUpdateRequest(bool s);
 	SWFOBJECT_TYPE getObjectType() const;
 	fps_profiling* fps_prof;
 	ABCVm* currentVm;
@@ -147,7 +141,7 @@ private:
 public:
 	RootMovieClip* root;
 	int version;
-	ParseThread(SystemState* s, std::istream& in);
+	ParseThread(SystemState* s, RootMovieClip* r,std::istream& in);
 	~ParseThread();
 	void wait();
 	static void setError(){error=1;}
@@ -200,7 +194,6 @@ private:
 	sem_t mutex;
 	sem_t render;
 	sem_t end_render;
-	Frame* cur_frame;
 	int bak;
 	static int error;
 
@@ -215,7 +208,7 @@ private:
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
-	void draw(Frame* f);
+	void draw();
 	void wait();
 	static int setError(){error=1;}
 	float getIdAt(int x, int y);

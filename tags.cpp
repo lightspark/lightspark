@@ -236,10 +236,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				break;
 			case SHOW_TAG:
 			{
-				//TODO: sync maybe not needed
-				sem_wait(&sem_frames);
 				frames.push_back(Frame(displayList,&dynamicDisplayList));
-				sem_post(&sem_frames);
 				break;
 			}
 			case CONTROL_TAG:
@@ -258,26 +255,6 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 
 void DefineSpriteTag::printInfo(int t)
 {
-/*	MovieClip* bak=sys.currentClip;
-	sys.currentClip=&clip;
-	for(int i=0;i<t;i++)
-		cerr << '\t';
-	cerr << "DefineSprite Info ID " << SpriteID << endl;
-	for(int i=0;i<t;i++)
-		cerr << '\t';
-	cerr << "\tFrame Count " << FrameCount << " real " << clip.frames.size() << endl;
-	for(int i=0;i<t;i++)
-		cerr << '\t';
-	cerr << "\tDisplay List Size " << clip.frames.back().displayList.size() << endl;
-	
-	list<DisplayListTag*>::iterator it=clip.frames.back().displayList.begin();
-	int count=0;
-	for(it;it!=clip.frames.back().displayList.end();it++)
-	{
-		count++;
-		(*it)->printInfo(t+1);
-	}
-	sys.currentClip=bak;*/
 }
 
 void ignore(istream& i, int count)
@@ -1496,29 +1473,6 @@ void PlaceObject2Tag::printInfo(int t)
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "PlaceObject2 Info ID " << CharacterId << endl;
-/*	for(int i=0;i<t;i++)
-		cerr << '\t';
-	cerr << "vvvvvvvvvvvvv" << endl;
-
-	sem_wait(&sys.sem_dict);
-	std::vector< DictionaryTag* >::iterator it=sys.dictionary.begin();
-	for(it;it!=sys.dictionary.end();it++)
-	{
-		if((*it)->getId()==CharacterId)
-			break;
-	}
-	if(it==sys.dictionary.end())
-	{
-		throw "Object does not exist";
-	}
-	sem_post(&sys.sem_dict);
-
-	(*it)->printInfo(t+1);
-
-	for(int i=0;i<t;i++)
-		cerr << '\t';
-	cerr << "^^^^^^^^^^^^^" << endl;*/
-
 }
 
 void SetBackgroundColorTag::execute()
@@ -1621,25 +1575,6 @@ void DefineButton2Tag::printInfo(int t)
 	for(int i=0;i<t;i++)
 		cerr << '\t';
 	cerr << "DefineButton2 Info" << endl;
-/*	for(unsigned int i=0;i<Characters.size();i++)
-	{
-		sem_wait(&sys.sem_dict);
-		std::vector< DictionaryTag* >::iterator it=sys.dictionary.begin();
-		for(it;it!=sys.dictionary.end();it++)
-		{
-			if((*it)->getId()==Characters[i].CharacterID)
-				break;
-		}
-		if(it==sys.dictionary.end())
-		{
-			throw "Object does not exist";
-		}
-		DictionaryTag* c=*it;
-		
-		sem_post(&sys.sem_dict);
-		c->printInfo(t+1);
-
-	}*/
 }
 
 DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
@@ -1670,6 +1605,7 @@ DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):Diction
 	LOG(TRACE,"DefineBinaryDataTag");
 	int size=getSize();
 	s >> Tag >> Reserved;
+	cout << Tag << endl;
 	size -= sizeof(Tag)+sizeof(Reserved);
 	data=new uint8_t[size];
 	s.read((char*)data,size);

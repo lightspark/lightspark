@@ -502,31 +502,27 @@ public:
 	void wait();
 };
 
-class DoABCTag: public DisplayListTag
+class DoABCTag: public ControlTag
 {
 private:
 	UI32 Flags;
 	STRING Name;
 	ABCVm* vm;
 	pthread_t thread;
-	bool done;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
-	void Render( );
-	int getDepth() const;
+	void execute( );
 };
 
-class SymbolClassTag: public DisplayListTag
+class SymbolClassTag: public ControlTag
 {
 private:
 	UI16 NumSymbols;
 	std::vector<UI16> Tags;
 	std::vector<STRING> Names;
-	bool done;
 public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
-	void Render( );
-	int getDepth() const;
+	void execute( );
 };
 
 class Boolean: public ASObject

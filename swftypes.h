@@ -295,6 +295,7 @@ public:
 	double toNumber() const;
 	operator int() const{return val;} 
 	bool isLess(const ISWFObject* r) const;
+	bool isGreater(const ISWFObject* r) const;
 	bool isEqual(const ISWFObject* o) const;
 	ISWFObject* clone()
 	{

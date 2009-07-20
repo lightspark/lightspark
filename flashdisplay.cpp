@@ -19,6 +19,7 @@
 
 #include <list>
 #include <algorithm>
+#include <fstream>
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 
@@ -26,6 +27,7 @@
 #include "swf.h"
 #include "flashgeom.h"
 #include "flashnet.h"
+#include "streams.h"
 
 using namespace std;
 
@@ -68,7 +70,14 @@ ASFUNCTIONBODY(Loader,load)
 
 void Loader::execute()
 {
-	LOG(NOT_IMPLEMENTED,"Loader async execution");
+	LOG(NOT_IMPLEMENTED,"Loader async execution " << url);
+	local_root=new RootMovieClip;
+	zlib_file_filter zf;
+	zf.open(url.c_str(),ios_base::in);
+	istream s(&zf);
+
+	ParseThread local_pt(sys,local_root,s);
+	local_pt.wait();
 /*	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
@@ -111,6 +120,7 @@ ASFUNCTIONBODY(Sprite,_constructor)
 	th->setVariableByName("rotation",&th->rotation,true);
 	th->setVariableByName("height",&th->_height);
 	th->setVariableByName("getBounds",new Function(getBounds));
+	th->setGetterByName("parent",new Function(_getParent));
 }
 
 ASFUNCTIONBODY(Sprite,getBounds)
@@ -119,9 +129,17 @@ ASFUNCTIONBODY(Sprite,getBounds)
 	return new Rectangle(0,0,100,100);
 }
 
+ASFUNCTIONBODY(Sprite,_getParent)
+{
+	Sprite* th=static_cast<Sprite*>(obj);
+	if(th->parent==NULL)
+		return new Undefined;
+
+	return th->parent;
+}
+
 MovieClip::MovieClip():_framesloaded(0),_totalframes(1),displayListLimit(0)
 {
-	sem_init(&sem_frames,0,1);
 	class_name="MovieClip";
 	constructor=new Function(_constructor);
 }
@@ -274,13 +292,16 @@ void MovieClip::Render()
 	rt->currentClip=this;
 
 	if(!state.stop_FP && class_name=="MovieClip")
-		state.next_FP=min(state.FP+1,frames.size()-1);
+		state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount
 	else
 		state.next_FP=state.FP;
 
 	list<Frame>::iterator frame=frames.begin();
 	for(int i=0;i<state.FP;i++)
 		frame++;
+
+	if(!state.stop_FP)
+		frame->runScript();
 
 	//Set the id in the secondary color
 	glPushAttrib(GL_CURRENT_BIT);
@@ -295,12 +316,21 @@ void MovieClip::Render()
 	glPopAttrib();
 
 	if(state.FP!=state.next_FP)
-	{
 		state.FP=state.next_FP;
-		sys->setUpdateRequest(true);
-	}
+	else
+		state.stop_FP=true;
 	LOG(TRACE,"End Render MovieClip");
 
 	rt->currentClip=clip_bak;
 }
 
+DisplayObject::DisplayObject()
+{
+	setVariableByName("Call",new Function(_call));
+}
+
+ASFUNCTIONBODY(DisplayObject,_call)
+{
+	LOG(CALLS,"DisplayObject Call");
+	return new Undefined;
+}

@@ -44,9 +44,10 @@ class Loader: public ASObject, public IThreadJob, public IDisplayListElem
 private:
 	std::string url;
 	bool loading;
+	bool loaded;
 	RootMovieClip* local_root;
 public:
-	Loader():loading(false),local_root(NULL)
+	Loader():loading(false),local_root(NULL),loaded(false)
 	{
 		constructor=new Function(_constructor);
 	}
@@ -57,10 +58,7 @@ public:
 	{
 		return 0;
 	}
-	void Render()
-	{
-		LOG(NOT_IMPLEMENTED,"Loader Rendering");
-	}
+	void Render();
 	ISWFObject* clone()
 	{
 		return new Loader(*this);

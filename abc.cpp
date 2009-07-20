@@ -203,7 +203,7 @@ void SymbolClassTag::execute()
 			sys->currentVm->addEvent(NULL,new BindClassEvent(sys,Names[i]));
 		else
 		{
-			DictionaryTag* t=sys->dictionaryLookup(Tags[i]);
+			DictionaryTag* t=pt->root->dictionaryLookup(Tags[i]);
 			ASObject* base=dynamic_cast<ASObject*>(t);
 			if(base==NULL)
 			{

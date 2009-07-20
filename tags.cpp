@@ -245,8 +245,9 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 		}
 	}
 	while(tag->getType()!=END_TAG);
-	if(frames.size()!=FrameCount)
-		LOG(ERROR,"Inconsistent frame count");
+
+	if(frames.size()!=FrameCount && FrameCount!=1)
+		LOG(ERROR,"Inconsistent frame count " << FrameCount);
 	pt->parsingDisplayList=bak;
 
 	pt->parsingTarget=target_bak;
@@ -1431,7 +1432,7 @@ void PlaceObject2Tag::Render()
 	if(wrapped==NULL && Name.size()!=0)
 	{
 		//Our first execution, try to load our dictionary object
-		DictionaryTag* t=sys->dictionaryLookup(CharacterId);
+		DictionaryTag* t=root->dictionaryLookup(CharacterId);
 		if(t==NULL)
 		{
 			LOG(ERROR,"Could not find Character in dictionary");
@@ -1449,15 +1450,17 @@ void PlaceObject2Tag::Render()
 		}
 	}
 
+	//This code is there because not every renderable object is a ASObject
 	IRenderObject* it;
 	if(wrapped)
 	{
 		it=dynamic_cast<IRenderObject*>(wrapped);
 		if(it==NULL)
-			it=dynamic_cast<IRenderObject*>(sys->dictionaryLookup(CharacterId));
+			it=dynamic_cast<IRenderObject*>(root->dictionaryLookup(CharacterId));
 	}
 	else
-		it=dynamic_cast<IRenderObject*>(sys->dictionaryLookup(CharacterId));
+		it=dynamic_cast<IRenderObject*>(root->dictionaryLookup(CharacterId));
+
 	float matrix[16];
 	MATRIX m2(Matrix);
 	m2.ScaleX*=_scalex/100.0f;

@@ -294,6 +294,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x54:
 			t=new ActionInstanceOf;
 			break;
+		case 0x64:
+			t=new ActionBitRShift;
+			break;
 		case 0x67:
 			t=new ActionGreater;
 			break;
@@ -368,8 +371,6 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 		in >> params[i];
 	}
 	in >> CodeSize;
-	//LOG(NOT_IMPLEMENTED,"ActionDefineFunction2: read function code");
-	//ignore(in,CodeSize);
 	streampos dest=in.tellg();
 	dest+=CodeSize;
 	Length+=CodeSize;
@@ -606,6 +607,11 @@ void ActionInstanceOf::Execute()
 }
 
 void ActionImplementsOp::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionImplementsOp");
+}
+
+void ActionBitRShift::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionImplementsOp");
 }

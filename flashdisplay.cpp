@@ -55,9 +55,9 @@ ASFUNCTIONBODY(Loader,_constructor)
 ASFUNCTIONBODY(Loader,load)
 {
 	Loader* th=static_cast<Loader*>(obj);
-	if(th->loading)
+/*	if(th->loading)
 		return NULL;
-	th->loading=true;
+	th->loading=true;*/
 	if(args->at(0)->class_name!="URLRequest")
 	{
 		LOG(ERROR,"ArgumentError");
@@ -78,6 +78,7 @@ void Loader::execute()
 
 	ParseThread local_pt(sys,local_root,s);
 	local_pt.wait();
+	loaded=true;
 /*	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
@@ -98,6 +99,15 @@ void Loader::execute()
 	arguments a;
 	a.push(new Integer(1));
 	on_load->call(NULL,&a);*/
+}
+
+void Loader::Render()
+{
+	LOG(NOT_IMPLEMENTED,"Loader Rendering");
+	if(!loaded)
+		return;
+
+	local_root->Render();
 }
 
 Sprite::Sprite():_visible(1),_x(0),_y(0),_height(100),_width(100),rotation(0.0)
@@ -155,7 +165,7 @@ void MovieClip::addToDisplayList(IDisplayListElem* t)
 	displayList.insert(it,t);
 	displayListLimit=displayList.size();
 
-	t->root=this;
+	t->root=root;
 	ASObject* o=dynamic_cast<ASObject*>(t);
 	if(o)
 		o->setVariableByName("root",this,true);
@@ -192,8 +202,8 @@ ASFUNCTIONBODY(MovieClip,addChild)
 	args->at(0)->parent=th;
 	th->dynamicDisplayList.push_back(e);
 
-	e->root=th;
-	args->at(0)->setVariableByName("root",th,true);
+	e->root=th->root;
+	args->at(0)->setVariableByName("root",th->root,true);
 }
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)

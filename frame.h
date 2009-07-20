@@ -23,11 +23,13 @@
 #include <list>
 #include "swftypes.h"
 
+class RootMovieClip;
+
 class IDisplayListElem
 {
 public:
 	IDisplayListElem():root(NULL){}
-	IDisplayListElem* root;
+	RootMovieClip* root;
 	virtual int getDepth() const=0;
 	virtual void Render()=0;
 };

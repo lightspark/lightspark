@@ -53,8 +53,11 @@ int main(int argc, char* argv[])
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
 
-	Log::initLogging(ERROR);
+	Log::initLogging(CALLS);
 	sys=new SystemState;
+	fps_profs.push_back(fps_profiling());
+	sys->fps_prof=&fps_profs.back();
+
 	zlib_file_filter zf;
 	zf.open(argv[1],ios_base::in);
 	istream f(&zf);
@@ -72,9 +75,6 @@ int main(int argc, char* argv[])
 	clock_gettime(CLOCK_REALTIME,&ts);
 	int count=0;
 	int sec_count=0;
-
-	fps_profs.push_back(fps_profiling());
-	sys->fps_prof=&fps_profs.back();
 
 	LOG(CALLS,"sys 0x" << sys);
 	while(1)

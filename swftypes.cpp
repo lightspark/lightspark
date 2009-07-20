@@ -901,7 +901,7 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 
 void DictionaryDefinable::define(ISWFObject* g)
 {
-	DictionaryTag* t=sys->dictionaryLookup(dict_id);
+	DictionaryTag* t=p->root->dictionaryLookup(dict_id);
 	ISWFObject* o=dynamic_cast<ISWFObject*>(t);
 	if(o==NULL)
 	{

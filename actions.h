@@ -421,6 +421,13 @@ public:
 	void print(){ LOG(TRACE,"ActionSetProperty");}
 };
 
+class ActionBitRShift: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionBitRShift");}
+};
+
 class ActionIncrement: public ActionTag
 {
 public:

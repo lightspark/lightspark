@@ -76,7 +76,7 @@ RootMovieClip::RootMovieClip()
 	sem_init(&mutex,0,1);
 	sem_init(&sem_frames,0,1);
 	sem_init(&sem_valid_frame_size,0,0);
-
+	root=this;
 }
 
 SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),root(this)
@@ -156,6 +156,7 @@ void* ParseThread::worker(ParseThread* th)
 				case END_TAG:
 				{
 					LOG(NO_INFO,"End of parsing @ " << th->f.tellg());
+					th->root->commitFrame();
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:
@@ -845,9 +846,9 @@ void RootMovieClip::Render()
 		if(state.FP<frames.size())
 			break;
 
-		sem_post(&mutex);
+		sem_post(&sem_frames);
 		sem_wait(&new_frame);
-		sem_wait(&mutex);
+		sem_wait(&sem_frames);
 	}
 
 	//We stop execution until execution engine catches up
@@ -1096,7 +1097,10 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 			break;
 	}
 	if(it==dictionary.end())
+	{
 		LOG(ERROR,"No such Id on dictionary " << id);
+		abort();
+	}
 	sem_post(&mutex);
 	return *it;
 }

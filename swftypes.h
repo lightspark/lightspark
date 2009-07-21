@@ -227,7 +227,6 @@ public:
 	{
 		return new ConstantReference(*this);
 	}
-	ISWFObject* instantiate();
 };
 
 class RegisterNumber : public ISWFObject

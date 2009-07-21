@@ -1000,13 +1000,16 @@ void ActionSetVariable::Execute()
 void ActionGetVariable::Execute()
 {
 	string varName=rt->vm.stack.pop()->toString();
-	LOG(CALLS,"ActionGetVariable: name " << varName);
+	LOG(CALLS,"ActionGetVariable: " << varName);
 	bool found;
 	ISWFObject* object=rt->currentClip->getVariableByName(varName,found);
 	if(found)
 		rt->vm.stack.push(object);
 	else
+	{
+		LOG(CALLS,"NOT found, pushing undefined");
 		rt->vm.stack.push(new Undefined);
+	}
 }
 
 void ActionToggleQuality::Execute()

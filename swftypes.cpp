@@ -32,16 +32,9 @@ extern __thread SystemState* sys;
 extern __thread RenderThread* rt;
 extern __thread ParseThread* pt;
 
-ISWFObject* ConstantReference::instantiate()
-{
-	return new ASString(rt->vm.getConstantByIndex(index));
-}
-
 string ConstantReference::toString() const
 {
-	char buf[20];
-	snprintf(buf,20,"ConstantReference %i",index);
-	return STRING(buf);
+	return rt->vm.getConstantByIndex(index);
 }
 
 int ConstantReference::toInt() const

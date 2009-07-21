@@ -231,8 +231,14 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x24:
 			t=new ActionCloneSprite;
 			break;
+		case 0x2b:
+			t=new ActionCastOp;
+			break;
 		case 0x2c:
 			t=new ActionImplementsOp;
+			break;
+		case 0x33:
+			t=new ActionAsciiToChar;
 			break;
 		case 0x34:
 			t=new ActionGetTime;
@@ -245,6 +251,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			break;
 		case 0x3d:
 			t=new ActionCallFunction;
+			break;
+		case 0x3f:
+			t=new ActionModulo;
 			break;
 		case 0x3e:
 			t=new ActionReturn;
@@ -270,6 +279,12 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x49:
 			t=new ActionEquals2;
 			break;
+		case 0x4a:
+			t=new ActionToNumber;
+			break;
+		case 0x4b:
+			t=new ActionToString;
+			break;
 		case 0x4c:
 			t=new ActionPushDuplicate;
 			break;
@@ -294,8 +309,17 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x54:
 			t=new ActionInstanceOf;
 			break;
+		case 0x55:
+			t=new ActionEnumerate2;
+			break;
+		case 0x60:
+			t=new ActionBitAnd;
+			break;
 		case 0x64:
 			t=new ActionBitRShift;
+			break;
+		case 0x66:
+			t=new ActionStrictEquals;
 			break;
 		case 0x67:
 			t=new ActionGreater;
@@ -611,9 +635,34 @@ void ActionImplementsOp::Execute()
 	LOG(NOT_IMPLEMENTED,"Exec: ActionImplementsOp");
 }
 
+void ActionBitAnd::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionBitAnd");
+}
+
 void ActionBitRShift::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionImplementsOp");
+	LOG(NOT_IMPLEMENTED,"Exec: ActionBitRShift");
+}
+
+void ActionEnumerate2::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionEnumerate2");
+}
+
+void ActionToString::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionToString");
+}
+
+void ActionToNumber::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionToNumber");
+}
+
+void ActionCastOp::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionCastOp");
 }
 
 void ActionIncrement::Execute()
@@ -810,6 +859,23 @@ void ActionLess2::Execute()
 	}
 }
 
+void ActionStrictEquals::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"ActionStrictEquals");
+	ISWFObject* arg1=rt->vm.stack.pop();
+	ISWFObject* arg2=rt->vm.stack.pop();
+	if(arg1->isEqual(arg2))
+	{
+		LOG(CALLS,"Equal");
+		rt->vm.stack.push(new Integer(1));
+	}
+	else
+	{
+		LOG(CALLS,"Not Equal");
+		rt->vm.stack.push(new Integer(0));
+	}
+}
+
 void ActionEquals2::Execute()
 {
 	LOG(CALLS,"ActionEquals2");
@@ -843,6 +909,11 @@ void ActionNewMethod::Execute()
 	LOG(NOT_IMPLEMENTED,"Exec: ActionNewMethod");
 }
 
+void ActionAsciiToChar::Execute()
+{
+	LOG(NOT_IMPLEMENTED,"Exec: ActionStringAdd");
+}
+
 void ActionStringAdd::Execute()
 {
 	LOG(NOT_IMPLEMENTED,"Exec: ActionStringAdd");
@@ -859,6 +930,14 @@ void ActionIf::Execute()
 	int cond=rt->vm.stack.pop()->toInt();
 	if(cond)
 		rt->execContext->setJumpOffset(Offset);
+}
+
+void ActionModulo::Execute()
+{
+	int a=rt->vm.stack.pop()->toInt();
+	int b=rt->vm.stack.pop()->toInt();
+	rt->vm.stack.push(new Number(b%a));
+	LOG(CALLS,"ActionDivide: return " << b << "%" << a << "="<< b%a);
 }
 
 void ActionDivide::Execute()
@@ -1065,6 +1144,16 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				Objects.push_back(c);
 				r--;
 				LOG(TRACE,"Push: Read constant index " << (int)i);
+				break;
+			}
+			case 9:
+			{
+				UI16 i;
+				in >> i;
+				ConstantReference* c=new ConstantReference(i);
+				Objects.push_back(c);
+				r-=2;
+				LOG(TRACE,"Push: Read long constant index " << (int)i);
 				break;
 			}
 			default:

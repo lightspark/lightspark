@@ -493,6 +493,7 @@ private:
 	void handleEvent();
 public:
 	static llvm::ExecutionEngine* ex;
+	static sem_t sem_ex;
 	ABCVm(SystemState* s,std::istream& in);
 	~ABCVm();
 	static void Run(ABCVm* th);

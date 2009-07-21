@@ -73,10 +73,10 @@ SWF_HEADER::SWF_HEADER(istream& in)
 
 RootMovieClip::RootMovieClip()
 {
+	root=this;
 	sem_init(&mutex,0,1);
 	sem_init(&sem_frames,0,1);
 	sem_init(&sem_valid_frame_size,0,0);
-	root=this;
 }
 
 SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),root(this)

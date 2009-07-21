@@ -151,7 +151,8 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 	{"equals",(void*)&ABCVm::equals}
 };
 
-llvm::ExecutionEngine* ABCVm::ex;
+llvm::ExecutionEngine* ABCVm::ex=NULL;
+sem_t ABCVm::sem_ex;
 
 extern __thread SystemState* sys;
 extern __thread ParseThread* pt;
@@ -3877,10 +3878,12 @@ void ABCVm::Run(ABCVm* th)
 	sem_wait(&th->started);
 	sys=th->m_sys;
 	th->module=new llvm::Module("abc jit");
-	sem_wait(&th->mutex);
-	if(!ex)
-		ex=llvm::ExecutionEngine::create(th->module);
-	sem_post(&th->mutex);
+	if(th->ex)
+	{
+		LOG(NOT_IMPLEMENTED,"Multiple DoABCTag are not currently supported");
+		return;
+	}
+	th->ex=llvm::ExecutionEngine::create(th->module);
 
 	th->registerFunctions();
 	th->registerClasses();

@@ -103,12 +103,6 @@ SerialNumberTag::SerialNumberTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	skip(in);
 }
 
-FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	LOG(NOT_IMPLEMENTED,"FileAttributesTag Tag");
-	skip(in);
-}
-
 SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"SoundStreamBlockTag");

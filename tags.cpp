@@ -1613,3 +1613,24 @@ DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):Diction
 	data=new uint8_t[size];
 	s.read((char*)data,size);
 }
+
+FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(TRACE,"FileAttributesTag Tag");
+	BitStream bs(in);
+	UB(1,bs);
+	UseDirectBlit=UB(1,bs);
+	UseGPU=UB(1,bs);
+	HasMetadata=UB(1,bs);
+	ActionScript3=UB(1,bs);
+	UB(2,bs);
+	UseNetwork=UB(1,bs);
+	UB(24,bs);
+
+	if(ActionScript3)
+	{
+		//TODO: should move to single VM model
+		sem_init(&ABCVm::sem_ex,0,1);
+	}
+}
+

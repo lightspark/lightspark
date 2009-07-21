@@ -235,7 +235,7 @@ class RegisterNumber : public ISWFObject
 private:
 	int index;
 public:
-	RegisterNumber(int i):index(i){ if(i>10) LOG(ERROR,"Register number too high"); }
+	RegisterNumber(int i):index(i){ }
 	SWFOBJECT_TYPE getObjectType() const {return T_REGNUMBER;}
 	std::string toString() const;
 	//int toInt();

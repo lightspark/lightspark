@@ -489,7 +489,7 @@ public:
 	virtual int getId(){ return CharacterId; }
 };
 
-class DefineBitsLossless2Tag: public DictionaryTag
+class DefineBitsLossless2Tag: public DictionaryTag, public ASObject
 {
 private:
 	UI16 CharacterId;
@@ -585,6 +585,12 @@ public:
 
 class FileAttributesTag: public Tag
 {
+private:
+	UB UseDirectBlit;
+	UB UseGPU;
+	UB HasMetadata;
+	UB ActionScript3;
+	UB UseNetwork;
 public:
 	FileAttributesTag(RECORDHEADER h, std::istream& in);
 };

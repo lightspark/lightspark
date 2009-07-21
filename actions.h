@@ -29,7 +29,7 @@ protected:
 public:
 	std::vector<ISWFObject*> regs;
 	ISWFObject* retValue;
-	ExecutionContext():jumpOffset(0),regs(10){}
+	ExecutionContext():jumpOffset(0),regs(100){}
 	void setJumpOffset(int offset)
 	{
 		jumpOffset=offset;
@@ -260,6 +260,13 @@ public:
 	void print(){ LOG(TRACE,"ActionAdd2");}
 };
 
+class ActionModulo: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionModulo");}
+};
+
 class ActionDivide: public ActionTag
 {
 public:
@@ -421,6 +428,41 @@ public:
 	void print(){ LOG(TRACE,"ActionSetProperty");}
 };
 
+class ActionEnumerate2: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionEnumerate2");}
+};
+
+class ActionToString: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionToString");}
+};
+
+class ActionToNumber: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionToNumber");}
+};
+
+class ActionCastOp: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionCastOp");}
+};
+
+class ActionBitAnd: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionBitAnd");}
+};
+
 class ActionBitRShift: public ActionTag
 {
 public:
@@ -447,6 +489,20 @@ class ActionLess2: public ActionTag
 public:
 	void Execute();
 	void print(){ LOG(TRACE,"ActionLess2");}
+};
+
+class ActionAsciiToChar: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionAsciiToChar");}
+};
+
+class ActionStrictEquals: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(TRACE,"ActionStrictEquals");}
 };
 
 class ActionEquals2: public ActionTag

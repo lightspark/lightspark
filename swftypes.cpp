@@ -315,11 +315,17 @@ std::ostream& operator<<(std::ostream& s, const RGB& r)
 void MATRIX::get4DMatrix(float matrix[16])
 {
 	memset(matrix,0,sizeof(float)*16);
-	matrix[0]=ScaleX;
+	float sX=1,sY=1;
+	if(HasScale)
+	{
+		sX=ScaleX;
+		sY=ScaleY;
+	}
+	matrix[0]=sX;
 	matrix[1]=RotateSkew0;
 
 	matrix[4]=RotateSkew1;
-	matrix[5]=ScaleY;
+	matrix[5]=sY;
 
 	matrix[10]=1;
 
@@ -894,7 +900,7 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 
 void DictionaryDefinable::define(ISWFObject* g)
 {
-	DictionaryTag* t=p->root->dictionaryLookup(dict_id);
+/*	DictionaryTag* t=p->root->dictionaryLookup(dict_id);
 	ISWFObject* o=dynamic_cast<ISWFObject*>(t);
 	if(o==NULL)
 	{
@@ -909,7 +915,7 @@ void DictionaryDefinable::define(ISWFObject* g)
 			ret->constructor->call(ret,NULL);
 		p->setWrapped(ret);
 		g->setVariableByName(p->Name,ret);
-	}
+	}*/
 }
 
 ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1),constructor(NULL),

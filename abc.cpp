@@ -681,6 +681,11 @@ void ABCVm::handleEvent()
 				arguments args(1);;
 				args.incRef();
 				args.at(0)=new Null;
+				if(ev->base->class_name=="SystemState")
+				{
+					MovieClip* m=static_cast<MovieClip*>(ev->base);
+					m->initialize();
+				}
 				ISWFObject* o=buildNamedClass(ev->class_name,ev->base,&args);
 				LOG(CALLS,"End of binding of " << ev->class_name);
 
@@ -3901,8 +3906,8 @@ void ABCVm::Run(ABCVm* th)
 			th->buildTrait(&th->Global,&th->scripts[i].traits[j],new SyntheticFunction(m));
 	}
 	//Before the entry point we run early events
-	//while(sem_trywait(&th->sem_event_count)==0)
-	//	th->handleEvent();
+//	while(sem_trywait(&th->sem_event_count)==0)
+//		th->handleEvent();
 	//The last script entry has to be run
 	LOG(CALLS, "Last script (Entry Point)");
 	method_info* m=th->get_method(th->scripts[i].init);

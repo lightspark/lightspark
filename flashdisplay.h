@@ -25,6 +25,22 @@
 #include "thread_pool.h"
 
 class RootMovieClip;
+class DisplayListTag;
+
+class IDisplayListElem: public EventDispatcher
+{
+public:
+	int Depth;
+	UI16 CharacterId;
+	MATRIX Matrix;
+	CXFORMWITHALPHA ColorTransform;
+	UI16 Ratio;
+	UI16 ClipDepth;
+	CLIPACTIONS ClipActions;
+	IDisplayListElem():root(NULL){}
+	RootMovieClip* root;
+	virtual void Render()=0;
+};
 
 class LoaderInfo: public EventDispatcher
 {
@@ -39,7 +55,7 @@ public:
 	ASFUNCTION(addEventListener);
 };
 
-class Loader: public ASObject, public IThreadJob, public IDisplayListElem
+class Loader: public IThreadJob, public IDisplayListElem
 {
 private:
 	std::string url;
@@ -65,7 +81,7 @@ public:
 	}
 };
 
-class Sprite: public EventDispatcher, public IDisplayListElem
+class Sprite: public IDisplayListElem
 {
 protected:
 	Integer _x;
@@ -100,23 +116,22 @@ public:
 	ASFUNCTION(_call);
 };
 
-class MovieClip: public Sprite, public IRenderObject
+class MovieClip: public Sprite
 {
 friend class ParseThread;
-private:
-	static bool list_orderer(const IDisplayListElem* a, int d);
 protected:
 	Integer _framesloaded;
 	Integer _totalframes;
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list < IDisplayListElem* > displayList;
+	Frame cur_frame;
+	bool initialized;
 public:
 	std::vector<Frame> frames;
 	RunState state;
 
 public:
-	int displayListLimit;
-
+	void initialize();
 	MovieClip();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(moveTo);
@@ -127,7 +142,7 @@ public:
 	ASFUNCTION(addFrameScript);
 	ASFUNCTION(addChild);
 
-	virtual void addToDisplayList(IDisplayListElem* r);
+	virtual void addToFrame(DisplayListTag* r);
 
 	//IRenderObject interface
 	void Render();

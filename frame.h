@@ -24,21 +24,9 @@
 #include "swftypes.h"
 
 class RootMovieClip;
-
-class IDisplayListElem
-{
-public:
-	IDisplayListElem():root(NULL){}
-	RootMovieClip* root;
-	virtual int getDepth() const=0;
-	virtual void Render()=0;
-};
-
-class IRenderObject
-{
-public:
-	virtual void Render()=0;
-};
+class DisplayListTag;
+class IDisplayListElem;
+class MovieClip;
 
 class Frame
 {
@@ -46,14 +34,16 @@ private:
 	STRING Label;
 	IFunction* script;
 public:
+	std::list<DisplayListTag*> blueprint;
 	std::list<IDisplayListElem*> displayList;
 	std::list<IDisplayListElem*>* dynamicDisplayList; //This is actually owned by the movieclip
-	Frame(const std::list<IDisplayListElem*>& d, std::list<IDisplayListElem*>* dd):
-		displayList(d),dynamicDisplayList(dd),script(NULL){ }
-	void Render(int baseLayer);
+	Frame(std::list<IDisplayListElem*>* dd):
+		dynamicDisplayList(dd),script(NULL){ }
+	void Render();
 	void setLabel(STRING l);
 	void setScript(IFunction* s){script=s;}
 	void runScript();
+	void init(MovieClip* parent, std::list<IDisplayListElem*>& d);
 };
 
 #endif

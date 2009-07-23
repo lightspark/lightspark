@@ -55,16 +55,10 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 	}
 }
 
-int DoActionTag::getDepth() const
+void DoActionTag::execute(MovieClip* parent, list < IDisplayListElem* >& ls)
 {
-	//The last, after any other valid depth and initactions
-	return 0x20000;
-}
-
-void DoActionTag::printInfo(int t)
-{
-	for(unsigned int i=0;i<actions.size();i++)
-		actions[i]->print();
+	Depth=0x20000;
+	ls.push_back(this);
 }
 
 void DoActionTag::Render()
@@ -129,10 +123,10 @@ DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTa
 	}
 }
 
-int DoInitActionTag::getDepth() const
+void DoInitActionTag::execute(MovieClip* parent, list < IDisplayListElem* >& ls)
 {
-	//The first after any other valid depth
-	return 0x10000;
+	Depth=0x10000;
+	ls.push_back(this);
 }
 
 void DoInitActionTag::Render()

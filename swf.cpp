@@ -90,6 +90,7 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 	setVariableByName("getBounds",new Function(getBounds));
 	setVariableByName("root",this,true);
 	setVariableByName("stage",this,true);
+	class_name="SystemState";
 /*	//Register global functions
 	setVariableByName("parseInt",new Function(parseInt));
 
@@ -163,7 +164,7 @@ void* ParseThread::worker(ParseThread* th)
 					th->root->addToDictionary(dynamic_cast<DictionaryTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
-					th->root->addToDisplayList(dynamic_cast<DisplayListTag*>(tag));
+					th->root->addToFrame(dynamic_cast<DisplayListTag*>(tag));
 					break;
 				case SHOW_TAG:
 				{
@@ -271,12 +272,12 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_s:
 						sys->state.stop_FP=true;
 						break;
-					case SDLK_o:
+/*					case SDLK_o:
 						sys->displayListLimit--;
 						break;
 					case SDLK_p:
 						sys->displayListLimit++;
-						break;
+						break;*/
 				}
 				break;
 			}
@@ -1061,17 +1062,18 @@ void RootMovieClip::addToDictionary(DictionaryTag* r)
 	sem_post(&mutex);
 }
 
-void RootMovieClip::addToDisplayList(IDisplayListElem* t)
+void RootMovieClip::addToFrame(DisplayListTag* t)
 {
 	sem_wait(&mutex);
-	MovieClip::addToDisplayList(t);
+	MovieClip::addToFrame(t);
 	sem_post(&mutex);
 }
 
 void RootMovieClip::commitFrame()
 {
 	sem_wait(&sem_frames);
-	frames.push_back(Frame(displayList,&dynamicDisplayList));
+	frames.push_back(cur_frame);
+	cur_frame=Frame(&dynamicDisplayList);
 	_framesloaded=frames.size();
 	sem_post(&new_frame);
 	sem_post(&sem_frames);

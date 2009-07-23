@@ -63,7 +63,6 @@ public:
 			ignore(in,Header&0x3f);
 	}
 	virtual TAGTYPE getType(){ return TAG; }
-	virtual void printInfo(int t=0){ std::cerr << (Header>>6) << std::endl; throw "No Info"; }
 };
 
 class EndTag:public Tag
@@ -73,11 +72,12 @@ public:
 	virtual TAGTYPE getType() { return END_TAG; }
 };
 
-class DisplayListTag: public Tag, public IDisplayListElem
+class DisplayListTag: public Tag
 {
 public:
 	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
+	virtual void execute(MovieClip* parent, std::list < IDisplayListElem* >& list)=0;
 };
 
 class DictionaryTag: public Tag
@@ -88,6 +88,7 @@ public:
 	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
 	virtual TAGTYPE getType(){ return DICT_TAG; }
 	virtual int getId(){return 0;} 
+	virtual IDisplayListElem* instance() { return NULL; } 
 };
 
 class ControlTag: public Tag
@@ -98,7 +99,7 @@ public:
 	virtual void execute()=0;
 };
 
-class DefineShapeTag: public DictionaryTag, public IRenderObject
+class DefineShapeTag: public DictionaryTag, public IDisplayListElem
 {
 private:
 	UI16 ShapeId;
@@ -108,10 +109,14 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
-	void printInfo(int t=0);
+
+	IDisplayListElem* instance()
+	{
+		return new DefineShapeTag(*this);
+	}
 };
 
-class DefineShape2Tag: public DictionaryTag, public IRenderObject
+class DefineShape2Tag: public DictionaryTag, public IDisplayListElem
 {
 private:
 	UI16 ShapeId;
@@ -121,10 +126,14 @@ public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
-	void printInfo(int t=0);
+
+	IDisplayListElem* instance()
+	{
+		return new DefineShape2Tag(*this);
+	}
 };
 
-class DefineShape3Tag: public DictionaryTag, public IRenderObject
+class DefineShape3Tag: public DictionaryTag, public IDisplayListElem
 {
 private:
 	UI16 ShapeId;
@@ -135,10 +144,14 @@ public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
-	void printInfo(int t=0);
+
+	IDisplayListElem* instance()
+	{
+		return new DefineShape3Tag(*this);
+	}
 };
 
-class DefineShape4Tag: public DictionaryTag, public IRenderObject
+class DefineShape4Tag: public DictionaryTag, public IDisplayListElem
 {
 private:
 	UI16 ShapeId;
@@ -152,10 +165,14 @@ public:
 	DefineShape4Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
-	void printInfo(int t=0);
+
+	IDisplayListElem* instance()
+	{
+		return new DefineShape4Tag(*this);
+	}
 };
 
-class DefineMorphShapeTag: public DictionaryTag, public IRenderObject
+class DefineMorphShapeTag: public DictionaryTag
 {
 private:
 	UI16 CharacterId;
@@ -170,11 +187,10 @@ public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render();
-	void printInfo(int t=0);
 };
 
 
-class DefineEditTextTag: public DictionaryTag, public ASObject, public IRenderObject
+class DefineEditTextTag: public DictionaryTag, public ASObject
 {
 private:
 	UI16 CharacterID;
@@ -244,22 +260,24 @@ public:
 	PlaceObjectTag(RECORDHEADER h, std::istream& in);
 };*/
 
-class RemoveObject2Tag: public Tag
+class RemoveObject2Tag: public DisplayListTag
 {
 private:
 	UI16 Depth;
 
 public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
+	void execute(MovieClip* parent, std::list < IDisplayListElem* >& list);
 };
 
 class PlaceObject2Tag: public DisplayListTag
 {
 private:
-	Number _scalex;
+	static bool list_orderer(const IDisplayListElem* a, int d);
+//	Number _scalex;
 
-	ISWFObject* wrapped;
-	ISWFObject* parent;
+//	ISWFObject* wrapped;
+//	ISWFObject* parent;
 
 	UB PlaceFlagHasClipAction;
 	UB PlaceFlagHasClipDepth;
@@ -280,13 +298,11 @@ private:
 public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
-	void Render( );
-	int getDepth() const { return Depth; }
-	void printInfo(int t=0);
-	void setWrapped(ISWFObject* w)
+	void execute(MovieClip* parent, std::list < IDisplayListElem* >& list);
+/*	void setWrapped(ISWFObject* w)
 	{
 		wrapped=w;
-	}
+	}*/
 
 };
 
@@ -296,13 +312,7 @@ private:
 	STRING Name;
 public:
 	FrameLabelTag(RECORDHEADER h, std::istream& in);
-	void Render( );
-	int getDepth() const
-	{
-		return 0;
-	}
-
-	void printInfo(int t=0){ std::cerr << "FrameLabel Info" << std::endl; }
+	void execute(MovieClip* parent, std::list < IDisplayListElem* >& ls);
 };
 
 class SetBackgroundColorTag: public ControlTag
@@ -322,7 +332,7 @@ public:
 
 class BUTTONCONDACTION;
 
-class DefineButton2Tag: public DictionaryTag, public EventDispatcher, public IRenderObject
+class DefineButton2Tag: public DictionaryTag, public IDisplayListElem
 {
 private:
 	UI16 ButtonId;
@@ -342,7 +352,7 @@ public:
 	virtual void Render();
 	virtual void handleEvent(Event*);
 
-	void printInfo(int t=0);
+	IDisplayListElem* instance();
 };
 
 class KERNINGRECORD
@@ -432,7 +442,7 @@ public:
 	virtual void genGlyphShape(std::vector<Shape>& s, int glyph);
 };
 
-class DefineTextTag: public DictionaryTag, public IRenderObject
+class DefineTextTag: public DictionaryTag, public IDisplayListElem
 {
 	friend class GLYPHENTRY;
 private:
@@ -446,7 +456,11 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render();
-	void printInfo(int t=0);
+
+	IDisplayListElem* instance()
+	{
+		return new DefineTextTag(*this);
+	}
 };
 
 class DefineSpriteTag: public DictionaryTag, public MovieClip
@@ -459,7 +473,11 @@ public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	SWFOBJECT_TYPE getObjectType()const{ return T_WRAPPED;}
 	virtual int getId(){ return SpriteID; }
-	void printInfo(int t=0);
+
+	IDisplayListElem* instance()
+	{
+		return new DefineSpriteTag(*this);
+	}
 
 	//ISWFObject interface
 	ISWFObject* clone()
@@ -541,7 +559,7 @@ public:
 	ExportAssetsTag(RECORDHEADER h, std::istream& in);
 };
 
-class DefineVideoStreamTag: public DictionaryTag, public IRenderObject
+class DefineVideoStreamTag: public DictionaryTag
 {
 private:
 	UI16 CharacterID;

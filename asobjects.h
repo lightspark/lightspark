@@ -31,24 +31,6 @@ class Event;
 class method_info;
 class call_context;
 
-class ASObjectWrapper: public IDisplayListElem
-{
-private:
-	IRenderObject* wrapped;
-	UI16 depth;
-public:
-	ASObjectWrapper(IRenderObject* w, UI16 d):wrapped(w),depth(d){}
-	int getDepth() const
-	{
-		return depth;
-	}
-	void Render()
-	{
-		if(wrapped)
-			wrapped->Render();
-	}
-};
-
 class ASObject: public ISWFObject
 {
 friend class ABCVm;

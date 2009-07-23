@@ -96,7 +96,7 @@ public:
 	void setFrameCount(int f);
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
-	void addToDisplayList(IDisplayListElem* r);
+	void addToFrame(DisplayListTag* t);
 	void commitFrame();
 	void Render();
 	ISWFObject* getVariableByName(const Qname& name, bool& found);

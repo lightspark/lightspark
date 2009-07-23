@@ -36,23 +36,17 @@ void Frame::runScript()
 		sys->currentVm->addEvent(NULL,new FunctionEvent(script));
 }
 
-void Frame::Render(int baseLayer)
+void Frame::Render()
 {
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
 	list <IDisplayListElem* >::iterator i=displayList.begin();
-	int count=0;
-	LOG(TRACE,"Frame levels " << baseLayer << '/' << displayList.size());
+
 	//Render objects of this frame;
 	for(i;i!=displayList.end();i++)
 	{
-		LOG(TRACE,"Rendering level " << count);
 		if(*i!=NULL)
 			(*i)->Render();
-		LOG(TRACE,"End Rendering level " << count);
-		count++;
-		if(count>baseLayer)
-			break;
 	}
 	//Render objects added at runtime
 	i=dynamicDisplayList->begin();
@@ -75,4 +69,13 @@ void dumpDisplayList(list<IDisplayListElem*>& l)
 void Frame::setLabel(STRING l)
 {
 	Label=l;
+}
+
+void Frame::init(MovieClip* parent, std::list<IDisplayListElem*>& d)
+{
+	std::list<DisplayListTag*>::iterator it=blueprint.begin();
+	for(it;it!=blueprint.end();it++)
+		(*it)->execute(parent, d);
+	blueprint.clear();
+	displayList=d;
 }

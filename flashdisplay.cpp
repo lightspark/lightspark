@@ -148,27 +148,24 @@ ASFUNCTIONBODY(Sprite,_getParent)
 	return th->parent;
 }
 
-MovieClip::MovieClip():_framesloaded(0),_totalframes(1),displayListLimit(0)
+MovieClip::MovieClip():_framesloaded(0),_totalframes(1),cur_frame(&dynamicDisplayList),initialized(false)
 {
 	class_name="MovieClip";
 	constructor=new Function(_constructor);
 }
 
-bool MovieClip::list_orderer(const IDisplayListElem* a, int d)
+void MovieClip::addToFrame(DisplayListTag* t)
 {
-	return a->getDepth()<d;
-}
-
-void MovieClip::addToDisplayList(IDisplayListElem* t)
-{
-	list<IDisplayListElem*>::iterator it=lower_bound(displayList.begin(),displayList.end(),t->getDepth(),list_orderer);
+/*	list<IDisplayListElem*>::iterator it=lower_bound(displayList.begin(),displayList.end(),t->getDepth(),list_orderer);
 	displayList.insert(it,t);
 	displayListLimit=displayList.size();
 
 	t->root=root;
 	ASObject* o=dynamic_cast<ASObject*>(t);
 	if(o)
-		o->setVariableByName("root",this,true);
+		o->setVariableByName("root",this,true);*/
+
+	cur_frame.blueprint.push_back(t);
 }
 
 ASFUNCTIONBODY(MovieClip,addChild)
@@ -298,7 +295,16 @@ void MovieClip::Render()
 	MovieClip* clip_bak=rt->currentClip;
 	rt->currentClip=this;
 
-	if(!state.stop_FP && class_name=="MovieClip")
+	bool bak=state.stop_FP;
+	if(!initialized)
+	{
+		initialize();
+		initialized=true;
+	}
+	if(state.stop_FP!=bak)
+		abort();
+
+	if(!state.stop_FP && (class_name=="MovieClip" || class_name=="SystemState"))
 		state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount
 	else
 		state.next_FP=state.FP;
@@ -309,11 +315,16 @@ void MovieClip::Render()
 	//Set the id in the secondary color
 	glPushAttrib(GL_CURRENT_BIT);
 	glSecondaryColor3f(id,0,0);
+
+	float matrix[16];
+	//m2.ScaleX*=_scalex/100.0f;
+	Matrix.get4DMatrix(matrix);
 	//Apply local transformation
 	glPushMatrix();
+	glMultMatrixf(matrix);
 	//glTranslatef(_x,_y,0);
 	glRotatef(rotation,0,0,1);
-	frames[state.FP].Render(displayListLimit);
+	frames[state.FP].Render();
 
 	glPopMatrix();
 	glPopAttrib();
@@ -325,6 +336,16 @@ void MovieClip::Render()
 	LOG(TRACE,"End Render MovieClip");
 
 	rt->currentClip=clip_bak;
+}
+
+void MovieClip::initialize()
+{
+	if(!initialized)
+	{
+		for(int i=0;i<frames.size();i++)
+			frames[i].init(this,displayList);
+		initialized=true;
+	}
 }
 
 DisplayObject::DisplayObject()

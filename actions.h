@@ -45,18 +45,17 @@ public:
 	virtual void print()=0;
 };
 
-class DoActionTag: public DisplayListTag, public ExecutionContext
+class DoActionTag: public DisplayListTag, public ExecutionContext, public IDisplayListElem
 {
 private:
 	std::vector<ActionTag*> actions;
 public:
 	DoActionTag(RECORDHEADER h, std::istream& in);
-	void Render( );
-	int getDepth() const;
-	void printInfo(int t=0);
+	void execute(MovieClip* parent, std::list < IDisplayListElem* >& ls);
+	void Render();
 };
 
-class DoInitActionTag: public DisplayListTag, public ExecutionContext
+class DoInitActionTag: public DisplayListTag, public ExecutionContext, public IDisplayListElem
 {
 private:
 	UI16 SpriteID;
@@ -65,8 +64,8 @@ private:
 	bool done;
 public:
 	DoInitActionTag(RECORDHEADER h, std::istream& in);
-	void Render( );
-	int getDepth() const;
+	void execute(MovieClip* parent, std::list < IDisplayListElem* >& ls);
+	void Render();
 };
 
 class ACTIONRECORDHEADER

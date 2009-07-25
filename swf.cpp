@@ -1107,10 +1107,10 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	return *it;
 }
 
-ISWFObject* RootMovieClip::getVariableByName(const Qname& name, bool& found)
+ISWFObject* RootMovieClip::getVariableByName(const Qname& name, ISWFObject*& owner)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ASObject::getVariableByName(name, found);
+	ISWFObject* ret=ASObject::getVariableByName(name, owner);
 	sem_post(&mutex);
 	return ret;
 }
@@ -1135,32 +1135,26 @@ void RootMovieClip::setVariableByString(const string& s, ISWFObject* o)
 		{
 			sub=s.substr(f,l-f);
 			ISWFObject* next_target;
+			ISWFObject* owner;
 			bool found;
 			if(f==0 && sub=="__Packages")
 			{
-				cout << "Merging packages with _global" << endl;
 				next_target=&sys->cur_render_thread->vm.Global;
 				found=true;
 			}
 			else
-				next_target=target->getVariableByName(sub,found);
+				next_target=target->getVariableByName(sub,owner);
 
 			f=l+1;
-			if(found)
-			{
-				cout << "Using target named " << sub << endl;
-			}
-			else
+			if(!found)
 			{
 				next_target=new Package;
-				cout << "Adding Package " << sub << endl;
 				target->setVariableByName(sub,next_target);
 			}
 			target=next_target;
 		}
 	}
 	sub=s.substr(f,l-f);
-	cout << "Finally setting " << sub << endl;
 	target->setVariableByName(sub,o);
 }
 

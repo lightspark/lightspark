@@ -46,9 +46,9 @@ public:
 	{
 		return new ASObject(*this);
 	}
-	ISWFObject* getVariableByName(const Qname& name, bool& found);
-	ISWFObject* getVariableByMultiname(const multiname& name, bool& found);
-	IFunction* getGetterByName(const Qname& name, bool& found);
+	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
+	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
+	IFunction* getGetterByName(const Qname& name, ISWFObject*& owner);
 
 	//DEBUG
 	int debug_id;
@@ -195,8 +195,8 @@ public:
 		data.resize(n,new Undefined);
 		length=n;
 	}
-	ISWFObject* getVariableByName(const Qname& name, bool& found);
-	ISWFObject* getVariableByMultiname(const multiname& name, bool& found);
+	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
+	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
 	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
 	bool isEqual(const ISWFObject* r) const;
 };

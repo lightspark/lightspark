@@ -79,6 +79,12 @@ MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	skip(in);
 }
 
+DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(NOT_IMPLEMENTED,"DefineBitsJPEG2Tag Tag");
+	skip(in);
+}
+
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"ScriptLimitsTag Tag");

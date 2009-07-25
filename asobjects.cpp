@@ -182,11 +182,11 @@ bool ASArray::isEqual(const ISWFObject* r) const
 	}
 }
 
-ISWFObject* ASArray::getVariableByMultiname(const multiname& name, bool& found)
+ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
 {
 	ISWFObject* ret;
 	bool number=true;
-	found=false;
+	owner=NULL;
 	for(int i=0;i<name.name.size();i++)
 	{
 		if(!isdigit(name.name[i]))
@@ -202,14 +202,12 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, bool& found)
 		if(index<data.size())
 		{
 			ret=data[index];
-			found=true;
+			owner=this;
 		}
-		else
-			found=false;
 	}
 
-	if(!found)
-		ret=ASObject::getVariableByMultiname(name,found);
+	if(!owner)
+		ret=ASObject::getVariableByMultiname(name,owner);
 
 	return ret;
 }
@@ -243,16 +241,16 @@ ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o, bool fo
 	return ret;
 }
 
-ISWFObject* ASArray::getVariableByName(const Qname& name, bool& found)
+ISWFObject* ASArray::getVariableByName(const Qname& name, ISWFObject*& owner)
 {
 	ISWFObject* ret;
 	bool number=true;
+	owner=NULL;
 	for(int i=0;i<name.name.size();i++)
 	{
 		if(!isdigit(name.name[i]))
 		{
 			number=false;
-			found=false;
 			break;
 		}
 
@@ -263,50 +261,48 @@ ISWFObject* ASArray::getVariableByName(const Qname& name, bool& found)
 		if(index<data.size())
 		{
 			ret=data[index];
-			found=true;
+			owner=this;
 		}
-		else
-			found=false;
 	}
 
-	if(!found)
-		ret=ASObject::getVariableByName(name,found);
+	if(!owner)
+		ret=ASObject::getVariableByName(name,owner);
 
 	return ret;
 }
 
-ISWFObject* ASObject::getVariableByMultiname(const multiname& name, bool& found)
+ISWFObject* ASObject::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
 {
-	ISWFObject* ret=ISWFObject::getVariableByMultiname(name,found);
-	if(!found && super)
-		ret=super->getVariableByMultiname(name,found);
+	ISWFObject* ret=ISWFObject::getVariableByMultiname(name,owner);
+	if(!owner && super)
+		ret=super->getVariableByMultiname(name,owner);
 
-	if(!found && prototype)
-		ret=prototype->getVariableByMultiname(name,found);
+	if(!owner && prototype)
+		ret=prototype->getVariableByMultiname(name,owner);
 
 	return ret;
 }
 
-ISWFObject* ASObject::getVariableByName(const Qname& name, bool& found)
+ISWFObject* ASObject::getVariableByName(const Qname& name, ISWFObject*& owner)
 {
-	ISWFObject* ret=ISWFObject::getVariableByName(name,found);
-	if(!found && super)
-		ret=super->getVariableByName(name,found);
+	ISWFObject* ret=ISWFObject::getVariableByName(name,owner);
+	if(!owner && super)
+		ret=super->getVariableByName(name,owner);
 
-	if(!found && prototype)
-		ret=prototype->getVariableByName(name,found);
+	if(!owner && prototype)
+		ret=prototype->getVariableByName(name,owner);
 
 	return ret;
 }
 
-IFunction* ASObject::getGetterByName(const Qname& name, bool& found)
+IFunction* ASObject::getGetterByName(const Qname& name, ISWFObject*& owner)
 {
-	IFunction* ret=ISWFObject::getGetterByName(name,found);
-	if(!found && super)
-		ret=super->getGetterByName(name,found);
+	IFunction* ret=ISWFObject::getGetterByName(name,owner);
+	if(!owner && super)
+		ret=super->getGetterByName(name,owner);
 
-	if(!found && prototype)
-		ret=prototype->getGetterByName(name,found);
+	if(!owner && prototype)
+		ret=prototype->getGetterByName(name,owner);
 
 	return ret;
 }
@@ -319,7 +315,6 @@ ASObject::ASObject():
 
 ASFUNCTIONBODY(ASObject,_toString)
 {
-	cout << "ss" << endl;
 	return new ASString(obj->toString());
 }
 

@@ -278,8 +278,8 @@ ASFUNCTIONBODY(MovieClip,stop)
 ASFUNCTIONBODY(MovieClip,_currentFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
-	cout << th->frames.size() << endl;
-	return new Integer(th->state.FP);
+	//currentFrame is 1-based
+	return new Integer(th->state.FP+1);
 }
 
 ASFUNCTIONBODY(MovieClip,_constructor)

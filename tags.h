@@ -507,6 +507,12 @@ public:
 	virtual int getId(){ return CharacterId; }
 };
 
+class DefineBitsJPEG2Tag: public Tag
+{
+public:
+	DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in);
+};
+
 class DefineBitsLossless2Tag: public DictionaryTag, public ASObject
 {
 private:

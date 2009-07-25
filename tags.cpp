@@ -74,6 +74,8 @@ Tag* TagFactory::readTag()
 			return new SoundStreamBlockTag(h,f);
 		case 20:
 			return new DefineBitsLosslessTag(h,f);
+		case 21:
+			return new DefineBitsJPEG2Tag(h,f);
 		case 22:
 			return new DefineShape2Tag(h,f);
 		case 24:

@@ -544,9 +544,9 @@ void ActionSetProperty::Execute()
 	int index=rt->vm.stack.pop()->toInt();
 	string target=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionSetProperty to: " << target << " index " << index);
-	bool found;
-	ISWFObject* obj=sys->getVariableByName(target,found);
-	if(found)
+	ISWFObject* owner;
+	ISWFObject* obj=sys->getVariableByName(target,owner);
+	if(owner)
 	{
 		switch(index)
 		{
@@ -574,19 +574,19 @@ void ActionGetProperty::Execute()
 	int index=rt->vm.stack.pop()->toInt();
 	string target=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetProperty from: " << target << " index " << index);
-	bool found;
-	ISWFObject* obj=sys->getVariableByName(target,found);
+	ISWFObject* owner;
+	ISWFObject* obj=sys->getVariableByName(target,owner);
 	ISWFObject* ret;
-	if(found)
+	if(owner)
 	{
 		switch(index)
 		{
 			case 5:
-				ret=obj->getVariableByName("_totalframes",found);
+				ret=obj->getVariableByName("_totalframes",owner);
 				LOG(CALLS,"returning " << ret->toInt());
 				break;
 			case 12:
-				ret=obj->getVariableByName("_framesloaded",found);
+				ret=obj->getVariableByName("_framesloaded",owner);
 				LOG(CALLS,"returning " << ret->toInt());
 				break;
 			default:
@@ -612,15 +612,9 @@ void ActionExtends::Execute()
 	ASObject* sub_ob=dynamic_cast<ASObject*>(sub_cons);
 	ASObject* super_ob=dynamic_cast<ASObject*>(super_cons);
 	if(sub_ob==NULL)
-	{
-		cout << "sub null" << endl;
 		abort();
-	}
 	if(super_ob==NULL)
-	{
-		cout << "super null" << endl;
 		abort();
-	}
 	ASObject* prot=new ASObject();
 	prot->super=super_ob;
 	sub_ob->prototype=prot;
@@ -734,16 +728,16 @@ void ActionNewObject::Execute()
 {
 	string varName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionNewObject: name " << varName);
-	bool found;
-	ISWFObject* type=sys->getVariableByName(varName,found);
-	if(found)
+	ISWFObject* owner;
+	ISWFObject* type=sys->getVariableByName(varName,owner);
+	if(owner)
 	{
 		if(type->getObjectType()!=T_UNDEFINED)
 			LOG(ERROR,"ActionNewObject: no such object");
 		int numArgs=rt->vm.stack.pop()->toInt();
 		if(numArgs)
 			LOG(ERROR,"There are arguments");
-		ISWFObject* c=type->getVariableByName("constructor",found);
+		ISWFObject* c=type->getVariableByName("constructor",owner);
 		if(c->getObjectType()!=T_FUNCTION)
 			LOG(ERROR,"Constructor is not a function");
 		Function* f=dynamic_cast<Function*>(c);
@@ -779,9 +773,9 @@ void ActionCallMethod::Execute()
 	arguments args(numArgs);
 	for(int i=0;i<numArgs;i++)
 		args.at(i)=rt->vm.stack.pop();
-	bool found;
-	ISWFObject* ret=rt->currentClip->getVariableByName(methodName,found);
-	if(found)
+	ISWFObject* owner;
+	ISWFObject* ret=rt->currentClip->getVariableByName(methodName,owner);
+	if(owner)
 	{
 		IFunction* f=ret->toFunction();
 		if(f==0)
@@ -808,9 +802,9 @@ void ActionCallFunction::Execute()
 	arguments args(numArgs);;
 	for(int i=0;i<numArgs;i++)
 		args.at(i)=rt->vm.stack.pop();
-	bool found;
-	ISWFObject* ret=rt->currentClip->getVariableByName(funcName,found);
-	if(found)
+	ISWFObject* owner;
+	ISWFObject* ret=rt->currentClip->getVariableByName(funcName,owner);
+	if(owner)
 	{
 		IFunction* f=ret->toFunction();
 		if(f==0)
@@ -1012,25 +1006,25 @@ void ActionGetVariable::Execute()
 {
 	string varName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetVariable: " << varName);
-	bool found;
-	ISWFObject* object=rt->currentClip->getVariableByName(varName,found);
-	if(!found)
+	ISWFObject* owner;
+	ISWFObject* object=rt->currentClip->getVariableByName(varName,owner);
+	if(!owner)
 	{
 		//Looks in Global
 		LOG(CALLS,"NOT implemented, trying Global");
-		object=rt->vm.Global.getVariableByName(varName,found);
+		object=rt->vm.Global.getVariableByName(varName,owner);
 	}
-	if(!found)
+	if(!owner)
 	{
 		//Check for special vars
 		if(varName=="_global")
 		{
-			found=true;
 			object=&rt->vm.Global;
+			owner=object;
 		}
 	}
 
-	if(found)
+	if(owner)
 		rt->vm.stack.push(object);
 	else
 	{
@@ -1210,9 +1204,9 @@ void ActionGetMember::Execute()
 	string memberName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetMember: " << memberName);
 	ISWFObject* obj=rt->vm.stack.pop();
-	bool found;
-	ISWFObject* ret=obj->getVariableByName(memberName,found);
-	if(found)
+	ISWFObject* owner;
+	ISWFObject* ret=obj->getVariableByName(memberName,owner);
+	if(owner)
 		rt->vm.stack.push(ret);
 	else
 	{

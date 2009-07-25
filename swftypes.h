@@ -173,14 +173,14 @@ public:
 	{
 		o->decRef();
 	}
-	virtual IFunction* getSetterByName(const Qname& name, bool& found);
+	virtual IFunction* getSetterByName(const Qname& name, ISWFObject*& owner);
 	virtual IFunction* setSetterByName(const Qname& name, IFunction* o);
-	virtual IFunction* getGetterByName(const Qname& name, bool& found);
+	virtual IFunction* getGetterByName(const Qname& name, ISWFObject*& owner);
 	virtual IFunction* setGetterByName(const Qname& name, IFunction* o);
 
-	virtual ISWFObject* getVariableByMultiname(const multiname& name, bool& found);
-	virtual ISWFObject* getVariableByString(const std::string& name, bool& found);
-	virtual ISWFObject* getVariableByName(const Qname& name, bool& found);
+	virtual ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
+	virtual ISWFObject* getVariableByString(const std::string& name, ISWFObject*& owner);
+	virtual ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
 	virtual ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
 	virtual ISWFObject* getSlot(int n);
 	virtual void setSlot(int n,ISWFObject* o);

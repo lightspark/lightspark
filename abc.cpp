@@ -162,13 +162,19 @@ using namespace std;
 
 void ignore(istream& i, int count);
 
-DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
+DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in),vm(NULL)
 {
 	int dest=in.tellg();
 	dest+=getSize();
 	in >> Flags >> Name;
 	LOG(CALLS,"DoABCTag Name: " << Name);
 
+	if(sys->currentVm)
+	{
+		LOG(NOT_IMPLEMENTED,"Not supported multiple VM");
+		return;
+	}
+	
 	vm=new ABCVm(sys,in);
 	sys->currentVm=vm;
 
@@ -179,7 +185,8 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 void DoABCTag::execute()
 {
 	LOG(CALLS,"ABC Exec " << Name);
-	vm->start();
+	if(vm)
+		vm->start();
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
@@ -668,6 +675,7 @@ void ABCVm::handleEvent()
 {
 	sem_wait(&mutex);
 	pair<EventDispatcher*,Event*> e=events_queue.front();
+	cout << this << " Handling event " << e.second << endl;
 	events_queue.pop_front();
 	if(e.first)
 		e.first->handleEvent(e.second);
@@ -721,6 +729,7 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	sem_wait(&mutex);
 	events_queue.push_back(pair<EventDispatcher*,Event*>(obj, ev));
 	sem_post(&sem_event_count);
+	cout << this << " Adding event " << ev << endl;
 	sem_post(&mutex);
 }
 
@@ -735,9 +744,9 @@ ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* ar
 {
 	LOG(CALLS,"Setting class name to " << s);
 	base->class_name=s;
-	bool found;
-	ISWFObject* r=Global.getVariableByString(s,found);
-	if(!found)
+	ISWFObject* owner;
+	ISWFObject* r=Global.getVariableByString(s,owner);
+	if(!owner)
 	{
 		LOG(ERROR,"Class " << s << " not found in global");
 		abort();
@@ -748,8 +757,8 @@ ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* ar
 		Definable* d=dynamic_cast<Definable*>(r);
 		d->define(&Global);
 		LOG(CALLS,"End of deferred init");
-		r=Global.getVariableByString(s,found);
-		if(!found)
+		r=Global.getVariableByString(s,owner);
+		if(!owner)
 		{
 			LOG(ERROR,"Class " << s << " not found in global");
 			abort();
@@ -1005,9 +1014,9 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	LOG(CALLS,"constructProp "<<name << ' ' << m);
 
 	ISWFObject* obj=th->runtime_stack_pop();
-	bool found;
-	ISWFObject* o=obj->getVariableByMultiname(name,found);
-	if(!found)
+	ISWFObject* owner;
+	ISWFObject* o=obj->getVariableByMultiname(name,owner);
+	if(!owner)
 	{
 		LOG(ERROR,"Could not resolve property");
 		abort();
@@ -1018,7 +1027,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		LOG(CALLS,"Deferred definition of property " << name);
 		Definable* d=dynamic_cast<Definable*>(o);
 		d->define(obj);
-		o=obj->getVariableByMultiname(name,found);
+		o=obj->getVariableByMultiname(name,owner);
 		LOG(CALLS,"End of deferred definition of property " << name);
 	}
 
@@ -1081,9 +1090,9 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	LOG(CALLS,"callProperty " << name << ' ' << m);
 
 	ISWFObject* obj=th->runtime_stack_pop();
-	bool found;
-	ISWFObject* o=obj->getVariableByMultiname(name,found);
-	if(found)
+	ISWFObject* owner;
+	ISWFObject* o=obj->getVariableByMultiname(name,owner);
+	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
 		if(o->getObjectType()==T_FUNCTION)
@@ -1102,10 +1111,10 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
-			IFunction* f=obj->getVariableByMultiname(name,found)->toFunction();
+			IFunction* f=obj->getVariableByMultiname(name,owner)->toFunction();
 			if(f)
 			{
-				ISWFObject* ret=f->call(obj,&args);
+				ISWFObject* ret=f->call(owner,&args);
 				th->runtime_stack_push(ret);
 			}
 			else
@@ -1113,7 +1122,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		}
 		else
 		{
-			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",found));
+			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",owner));
 			if(f)
 			{
 				ISWFObject* ret=f->call(o,&args);
@@ -1176,9 +1185,9 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args->at(m-i-1)=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
-	bool found;
-	ISWFObject* o=obj->getVariableByMultiname(name,found);
-	if(found)
+	ISWFObject* owner;
+	ISWFObject* o=obj->getVariableByMultiname(name,owner);
+	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
 		if(o->getObjectType()==T_FUNCTION)
@@ -1198,8 +1207,8 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		}
 		else
 		{
-			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",found));
-			f->call(obj,args);
+			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",owner));
+			f->call(owner,args);
 		}
 	}
 	else
@@ -1285,7 +1294,6 @@ bool ABCVm::ifNGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 
 	int a=obj1->toInt();
 	int b=obj2->toInt();
-	cout << a << ">=" << b << endl;
 
 	//Real comparision demanded to object
 	if(obj1->isGreater(obj2) || obj1->isEqual(obj2))
@@ -1314,15 +1322,9 @@ bool ABCVm::ifNGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 
 	//Real comparision demanded to object
 	if(obj1->isGreater(obj2))
-	{
-		cout << "false" << endl;
 		return false;
-	}
 	else
-	{
-		cout << "true" << endl;
 		return true;
-	}
 
 //	obj2->decRef();
 //	obj1->decRef();
@@ -1463,23 +1465,23 @@ void ABCVm::getSuper(call_context* th, int n)
 		obj=o2->super;
 
 	ISWFObject* ret;
-	bool found;
+	ISWFObject* owner;
 	//Check to see if a proper getter method is available
-	IFunction* f=obj->getGetterByName(name.name,found);
-	if(found)
+	IFunction* f=obj->getGetterByName(name.name,owner);
+	if(owner)
 	{
 		//Call the getter
 		LOG(CALLS,"Calling the getter");
 		//arguments args;
 		//args.push(value);
 		//value->incRef();
-		ret=f->call(obj,NULL);
+		ret=f->call(owner,NULL);
 		LOG(CALLS,"End of getter");
 	}
 	else	
-		ret=obj->getVariableByMultiname(name,found);
+		ret=obj->getVariableByMultiname(name,owner);
 
-	if(found)
+	if(owner)
 		th->runtime_stack_push(ret);
 	else
 		th->runtime_stack_push(new Undefined);
@@ -1778,16 +1780,16 @@ void ABCVm::setProperty(call_context* th, int n)
 	ISWFObject* obj=th->runtime_stack_pop();
 
 	//Check to see if a proper setter method is available
-	bool found;
-	IFunction* f=obj->getSetterByName(name.name,found);
-	if(found)
+	ISWFObject* owner;
+	IFunction* f=obj->getSetterByName(name.name,owner);
+	if(owner)
 	{
 		//Call the setter
 		LOG(CALLS,"Calling the setter");
 		arguments args(1);
 		args.at(0)=value;
 		value->incRef();
-		f->call(obj,&args);
+		f->call(owner,&args);
 		LOG(CALLS,"End of setter");
 	}
 	else
@@ -1804,23 +1806,23 @@ void ABCVm::getProperty(call_context* th, int n)
 
 	ISWFObject* obj=th->runtime_stack_pop();
 
-	bool found;
+	ISWFObject* owner;
 	//Check to see if a proper getter method is available
-	IFunction* f=obj->getGetterByName(name.name,found);
-	if(found)
+	IFunction* f=obj->getGetterByName(name.name,owner);
+	if(owner)
 	{
 		//Call the getter
 		LOG(CALLS,"Calling the getter");
 		//arguments args;
 		//args.push(value);
 		//value->incRef();
-		th->runtime_stack_push(f->call(obj,NULL));
+		th->runtime_stack_push(f->call(owner,NULL));
 		LOG(CALLS,"End of getter");
 		return;
 	}
 	
-	ISWFObject* ret=obj->getVariableByMultiname(name,found);
-	if(!found)
+	ISWFObject* ret=obj->getVariableByMultiname(name,owner);
+	if(!owner)
 	{
 		LOG(NOT_IMPLEMENTED,"Property not found " << name);
 		th->runtime_stack_push(new Undefined);
@@ -1832,7 +1834,7 @@ void ABCVm::getProperty(call_context* th, int n)
 			LOG(ERROR,"Property " << name << " is not yet valid");
 			Definable* d=static_cast<Definable*>(ret);
 			d->define(obj);
-			ret=obj->getVariableByMultiname(name,found);
+			ret=obj->getVariableByMultiname(name,owner);
 		}
 		th->runtime_stack_push(ret);
 		ret->incRef();
@@ -1845,19 +1847,19 @@ void ABCVm::findProperty(call_context* th, int n)
 	LOG(CALLS, "findProperty " << name );
 
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	bool found=false;
+	ISWFObject* owner;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		(*it)->getVariableByMultiname(name,found);
-		if(found)
+		(*it)->getVariableByMultiname(name,owner);
+		if(owner)
 		{
 			//We have to return the object, not the property
-			th->runtime_stack_push(*it);
-			(*it)->incRef();
+			th->runtime_stack_push(owner);
+			owner->incRef();
 			break;
 		}
 	}
-	if(!found)
+	if(!owner)
 	{
 		LOG(CALLS, "NOT found, pushing global" );
 		th->runtime_stack_push(&th->vm->Global);
@@ -1871,28 +1873,27 @@ void ABCVm::findPropStrict(call_context* th, int n)
 	LOG(CALLS, "findPropStrict " << name );
 
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	bool found=false;
+	ISWFObject* owner;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		(*it)->getVariableByMultiname(name,found);
-		if(found)
+		(*it)->getVariableByMultiname(name,owner);
+		if(owner)
 		{
 			//We have to return the object, not the property
-			th->runtime_stack_push(*it);
-			(*it)->incRef();
+			th->runtime_stack_push(owner);
+			owner->incRef();
 			break;
 		}
 	}
-	if(!found)
+	if(!owner)
 	{
 		LOG(CALLS, "NOT found, trying Global" );
-		bool found2;
 		//TODO: to multiname
-		th->vm->Global.getVariableByName(name.name,found2);
-		if(found2)
+		th->vm->Global.getVariableByName(name.name,owner);
+		if(owner)
 		{
-			th->runtime_stack_push(&th->vm->Global);
-			th->vm->Global.incRef();
+			th->runtime_stack_push(owner);
+			owner->incRef();
 		}
 		else
 		{
@@ -1961,24 +1962,24 @@ void ABCVm::getLex(call_context* th, int n)
 	multiname name=th->vm->getMultiname(n);
 	LOG(CALLS, "getLex: " << name );
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	bool found=false;
+	ISWFObject* owner;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
 		//Check to see if a proper getter method is available
-		IFunction* f=(*it)->getGetterByName(name.name,found);
-		if(found)
+		IFunction* f=(*it)->getGetterByName(name.name,owner);
+		if(owner)
 		{
 			//Call the getter
 			LOG(CALLS,"Calling the getter");
 			//arguments args;
 			//args.push(value);
 			//value->incRef();
-			th->runtime_stack_push(f->call((*it),NULL));
+			th->runtime_stack_push(f->call(owner,NULL));
 			LOG(CALLS,"End of getter");
 			break;;
 		}
-		ISWFObject* o=(*it)->getVariableByMultiname(name,found);
-		if(found)
+		ISWFObject* o=(*it)->getVariableByMultiname(name,owner);
+		if(owner)
 		{
 			//If we are getting a function object attach the the current scope
 			if(o->getObjectType()==T_FUNCTION)
@@ -1994,26 +1995,25 @@ void ABCVm::getLex(call_context* th, int n)
 				LOG(CALLS,"Deferred definition of property " << name);
 				Definable* d=dynamic_cast<Definable*>(o);
 				d->define(*it);
-				o=(*it)->getVariableByMultiname(name,found);
+				o=(*it)->getVariableByMultiname(name,owner);
 			}
 			th->runtime_stack_push(o);
 			o->incRef();
 			break;
 		}
 	}
-	if(!found)
+	if(!owner)
 	{
 		LOG(CALLS, "NOT found, trying Global" );
-		bool found2;
-		ISWFObject* o2=th->vm->Global.getVariableByMultiname(name,found2);
-		if(found2)
+		ISWFObject* o2=th->vm->Global.getVariableByMultiname(name,owner);
+		if(owner)
 		{
 			if(o2->getObjectType()==T_DEFINABLE)
 			{
 				LOG(CALLS,"Deferred definition of property " << name);
 				Definable* d=dynamic_cast<Definable*>(o2);
 				d->define(&th->vm->Global);
-				o2=th->vm->Global.getVariableByMultiname(name,found);
+				o2=th->vm->Global.getVariableByMultiname(name,owner);
 			}
 
 			th->runtime_stack_push(o2);
@@ -4121,9 +4121,9 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferre
 				//else fallthrough
 				multiname type=getMultiname(t->type_name);
 				LOG(CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<type);
-				bool found;
-				ISWFObject* ret=obj->getVariableByName(name,found);
-				if(!found)
+				ISWFObject* owner;
+				ISWFObject* ret=obj->getVariableByName(name,owner);
+				if(!owner)
 				{
 					if(deferred_initialization)
 						obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));

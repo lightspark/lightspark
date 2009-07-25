@@ -144,17 +144,17 @@ IFunction* ISWFObject::setGetterByName(const Qname& name, IFunction* o)
 	return o;
 }
 
-IFunction* ISWFObject::getGetterByName(const Qname& name, bool& found)
+IFunction* ISWFObject::getGetterByName(const Qname& name, ISWFObject*& owner)
 {
 	map<Qname,IFunction*>::iterator it=Getters.find(name);
 	if(it!=Getters.end())
 	{
-		found=true;
+		owner=this;
 		return it->second;
 	}
 	else
 	{
-		found=false;
+		owner=NULL;
 		return NULL;
 	}
 }
@@ -167,17 +167,17 @@ IFunction* ISWFObject::setSetterByName(const Qname& name, IFunction* o)
 	return o;
 }
 
-IFunction* ISWFObject::getSetterByName(const Qname& name, bool& found)
+IFunction* ISWFObject::getSetterByName(const Qname& name, ISWFObject*& owner)
 {
 	map<Qname,IFunction*>::iterator it=Setters.find(name);
 	if(it!=Setters.end())
 	{
-		found=true;
+		owner=this;
 		return it->second;
 	}
 	else
 	{
-		found=false;
+		owner=NULL;
 		return NULL;
 	}
 }
@@ -195,21 +195,21 @@ ISWFObject* ISWFObject::setVariableByName(const Qname& name, ISWFObject* o, bool
 	return o;
 }
 
-ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, bool& found)
+ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
 {
 	map<Qname,ISWFObject*>::iterator it=Variables.find(name.name);
 	if(it!=Variables.end())
 	{
 		if(name.ns.empty())
-			found=true;
+			owner=this;
 		else
-			found=false;
+			owner=NULL;
 
 		for(int i=0;i<name.ns.size();i++)
 		{
 			if(it->first.ns==name.ns[i])
 			{
-				found=true;
+				owner=this;
 				break;
 			}
 		}
@@ -217,12 +217,12 @@ ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, bool& foun
 	}
 	else
 	{
-		found=false;
+		owner=NULL;
 		return NULL;
 	}
 }
 
-ISWFObject* ISWFObject::getVariableByString(const std::string& name, bool& found)
+ISWFObject* ISWFObject::getVariableByString(const std::string& name, ISWFObject*& owner)
 {
 	//Slow linear lookup, should be avoided
 	map<Qname,ISWFObject*>::iterator it=Variables.begin();
@@ -234,26 +234,26 @@ ISWFObject* ISWFObject::getVariableByString(const std::string& name, bool& found
 		cur+=it->first.name;
 		if(cur==name)
 		{
-			found=true;
+			owner=this;
 			return it->second;
 		}
 	}
 	
-	found=false;
+	owner=NULL;
 	return NULL;
 }
 
-ISWFObject* ISWFObject::getVariableByName(const Qname& name, bool& found)
+ISWFObject* ISWFObject::getVariableByName(const Qname& name, ISWFObject*& owner)
 {
 	map<Qname,ISWFObject*>::iterator it=Variables.find(name);
 	if(it!=Variables.end())
 	{
-		found=true;
+		owner=this;
 		return it->second;
 	}
 	else
 	{
-		found=false;
+		owner=NULL;
 		return NULL;
 	}
 }

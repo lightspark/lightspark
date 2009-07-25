@@ -48,6 +48,7 @@ public:
 	}
 	ISWFObject* getVariableByName(const Qname& name, bool& found);
 	ISWFObject* getVariableByMultiname(const multiname& name, bool& found);
+	IFunction* getGetterByName(const Qname& name, bool& found);
 
 	//DEBUG
 	int debug_id;
@@ -161,6 +162,7 @@ public:
 	virtual ~ASArray();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_push);
+	ASFUNCTION(shift);
 	ISWFObject* clone()
 	{
 		return new ASArray(*this);

@@ -269,6 +269,19 @@ ASFUNCTIONBODY(MovieClip,swapDepths)
 	return NULL;
 }
 
+ASFUNCTIONBODY(MovieClip,stop)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	th->state.stop_FP=true;
+}
+
+ASFUNCTIONBODY(MovieClip,_currentFrame)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	cout << th->frames.size() << endl;
+	return new Integer(th->state.FP);
+}
+
 ASFUNCTIONBODY(MovieClip,_constructor)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
@@ -286,6 +299,10 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	th->setVariableByName("createEmptyMovieClip",new Function(createEmptyMovieClip));
 	th->setVariableByName("addFrameScript",new Function(addFrameScript));
 	th->setVariableByName("addChild",new Function(addChild));
+	th->setVariableByName("stop",new Function(stop));
+
+	cout << "curframe cons on " << th << endl;
+	th->setGetterByName("currentFrame",new Function(_currentFrame));
 }
 
 void MovieClip::Render()

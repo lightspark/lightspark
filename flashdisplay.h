@@ -141,6 +141,8 @@ public:
 	ASFUNCTION(createEmptyMovieClip);
 	ASFUNCTION(addFrameScript);
 	ASFUNCTION(addChild);
+	ASFUNCTION(stop);
+	ASFUNCTION(_currentFrame);
 
 	virtual void addToFrame(DisplayListTag* r);
 

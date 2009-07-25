@@ -80,6 +80,7 @@ opcode_handler ABCVm::opcode_table_args2_branches[]={
 	{"ifLT",(void*)&ABCVm::ifLT},
 	{"ifNLT",(void*)&ABCVm::ifNLT},
 	{"ifNGT",(void*)&ABCVm::ifNGT},
+	{"ifGT",(void*)&ABCVm::ifGT},
 	{"ifNGE",(void*)&ABCVm::ifNGE},
 	{"ifNLE",(void*)&ABCVm::ifNLE},
 	{"ifGE",(void*)&ABCVm::ifGE},
@@ -1293,15 +1294,35 @@ bool ABCVm::ifNGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 		return true;
 }
 
+bool ABCVm::ifGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
+{
+	LOG(CALLS,"ifGT " << offset);
+
+	//Real comparision demanded to object
+	if(obj1->isGreater(obj2))
+		return true;
+	else
+		return false;
+
+//	obj2->decRef();
+//	obj1->decRef();
+}
+
 bool ABCVm::ifNGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifNGT " << offset);
 
 	//Real comparision demanded to object
 	if(obj1->isGreater(obj2))
+	{
+		cout << "false" << endl;
 		return false;
+	}
 	else
+	{
+		cout << "true" << endl;
 		return true;
+	}
 
 //	obj2->decRef();
 //	obj1->decRef();
@@ -2780,6 +2801,51 @@ llvm::Function* method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifLT"), v1, v2, constant);
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+				Builder.CreateCondBr(cond,B,A);
+				//Now start populating the fallthrough block
+				Builder.SetInsertPoint(A);
+				break;
+			}
+			case 0x17:
+			{
+				//ifgt
+				LOG(TRACE, "synt ifgt" );
+				//TODO: implement common data comparison
+				last_is_branch=true;
+				s24 t;
+				code >> t;
+
+				//Create a block for the fallthrough code and insert in the mapping
+				llvm::BasicBlock* A;
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				if(it!=blocks.end())
+					A=it->second;
+				else
+				{
+					A=llvm::BasicBlock::Create("fall", f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+				}
+
+				//And for the branch destination, if they are not in the blocks mapping
+				llvm::BasicBlock* B;
+				it=blocks.find(int(code.tellg())+t);
+				if(it!=blocks.end())
+					B=it->second;
+				else
+				{
+					B=llvm::BasicBlock::Create("then", f);
+					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
+				}
+				//Make comparision
+				llvm::Value* v1=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifGT"), v1, v2, constant);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;

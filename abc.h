@@ -390,6 +390,7 @@ private:
 	static bool ifLT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNLT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNGT(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifGT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNGE(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifGE(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNLE(ISWFObject*, ISWFObject*, int offset); 

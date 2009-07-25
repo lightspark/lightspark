@@ -47,6 +47,7 @@ ASFUNCTIONBODY(ASArray,_constructor)
 	th->length=0;
 	th->setVariableByName("length",&th->length);
 	th->setVariableByName(Qname(AS3,"push"),new Function(_push));
+	th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
 	th->length.incRef();
 	if(args==NULL)
 		return NULL;
@@ -58,6 +59,19 @@ ASFUNCTIONBODY(ASArray,_constructor)
 		for(int i=0;i<args->size();i++)
 			th->at(i)=args->at(i);
 	}
+}
+
+ASFUNCTIONBODY(ASArray,shift)
+{
+	ASArray* th=static_cast<ASArray*>(obj);
+	if(th->data.empty())
+	{
+		LOG(ERROR,"Empty Array");
+		abort();
+	}
+	ISWFObject* ret=th->data[0];
+	th->data.erase(th->data.begin());
+	return ret;
 }
 
 ASFUNCTIONBODY(ASArray,_push)
@@ -281,6 +295,18 @@ ISWFObject* ASObject::getVariableByName(const Qname& name, bool& found)
 
 	if(!found && prototype)
 		ret=prototype->getVariableByName(name,found);
+
+	return ret;
+}
+
+IFunction* ASObject::getGetterByName(const Qname& name, bool& found)
+{
+	IFunction* ret=ISWFObject::getGetterByName(name,found);
+	if(!found && super)
+		ret=super->getGetterByName(name,found);
+
+	if(!found && prototype)
+		ret=prototype->getGetterByName(name,found);
 
 	return ret;
 }

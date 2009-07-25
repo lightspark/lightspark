@@ -120,7 +120,6 @@ public:
 	EVENT_TYPE getEventType() { return SYNC; }
 	void sync()
 	{
-		LOG(CALLS,"Posting sync");
 		sem_post(&s);
 	}
 	void wait()

@@ -51,7 +51,7 @@ private:
 	std::vector<ActionTag*> actions;
 public:
 	DoActionTag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < IDisplayListElem* >& ls);
+	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
 	void Render();
 };
 
@@ -64,7 +64,7 @@ private:
 	bool done;
 public:
 	DoInitActionTag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < IDisplayListElem* >& ls);
+	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
 	void Render();
 };
 

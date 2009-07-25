@@ -40,18 +40,26 @@ void Frame::Render()
 {
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
-	list <IDisplayListElem* >::iterator i=displayList.begin();
+	list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
 
 	//Render objects of this frame;
 	for(i;i!=displayList.end();i++)
 	{
-		if(*i!=NULL)
-			(*i)->Render();
+		if(i->second==NULL)
+			abort();
+
+		//Apply local transformation
+		float matrix[16];
+		i->first.Matrix.get4DMatrix(matrix);
+		glPushMatrix();
+		glMultMatrixf(matrix);
+		i->second->Render();
+		glPopMatrix();
 	}
 	//Render objects added at runtime
-	i=dynamicDisplayList->begin();
-	for(i;i!=dynamicDisplayList->end();i++)
-		(*i)->Render();
+	list<IDisplayListElem*>::iterator j=dynamicDisplayList->begin();
+	for(j;j!=dynamicDisplayList->end();j++)
+		(*j)->Render();
 
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->render_time+=timeDiff(ts,td);
@@ -71,7 +79,7 @@ void Frame::setLabel(STRING l)
 	Label=l;
 }
 
-void Frame::init(MovieClip* parent, std::list<IDisplayListElem*>& d)
+void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& d)
 {
 	std::list<DisplayListTag*>::iterator it=blueprint.begin();
 	for(it;it!=blueprint.end();it++)

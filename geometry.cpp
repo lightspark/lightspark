@@ -44,7 +44,7 @@ void Shape::Render(int x, int y) const
 	bool filled=false;
 	if(closed)
 	{
-		LOG(TRACE,"Filling");
+		//LOG(TRACE,"Filling");
 		std::vector<Triangle>::const_iterator it2=interior.begin();
 		style->setFragmentProgram();
 		glBegin(GL_TRIANGLES);
@@ -60,7 +60,7 @@ void Shape::Render(int x, int y) const
 
 	//if(/*graphic.stroked ||*/ !filled)
 	{
-		LOG(TRACE,"Line tracing");
+		//LOG(TRACE,"Line tracing");
 		FILLSTYLE::fixedColor(0,0,0);
 		std::vector<Vector2>::const_iterator it=outline.begin();
 		if(closed)

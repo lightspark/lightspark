@@ -145,13 +145,13 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 	in >> Depth;
 }
 
-void RemoveObject2Tag::execute(MovieClip* parent, list < IDisplayListElem* >& ls)
+void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& ls)
 {
-	list<IDisplayListElem*>::iterator it=ls.begin();
+	list <pair<PlaceInfo, IDisplayListElem*> >::iterator it=ls.begin();
 
 	for(it;it!=ls.end();it++)
 	{
-		if((*it)->Depth==Depth)
+		if(it->second->Depth==Depth)
 		{
 			/*SWFObject* t=dynamic_cast<SWFObject*>(*it);
 			if(t!=NULL)
@@ -220,7 +220,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	ISWFObject* target_bak=pt->parsingTarget;
 	pt->parsingTarget=this;
 
-	list < IDisplayListElem* >* bak=pt->parsingDisplayList;
+	list < pair<PlaceInfo, IDisplayListElem*> >* bak=pt->parsingDisplayList;
 	pt->parsingDisplayList=&displayList;
 	in >> SpriteID >> FrameCount;
 	_totalframes=FrameCount;
@@ -467,12 +467,6 @@ void DefineTextTag::Render()
 	float matrix[16];
 	TextMatrix.get4DMatrix(matrix);
 
-	float matrix2[16];
-	Matrix.get4DMatrix(matrix2);
-	//Apply local transformation
-	glPushMatrix();
-	glMultMatrixf(matrix2);
-
 	//Build a fake FILLSTYLEs
 	FILLSTYLE f;
 	f.FillStyleType=0x00;
@@ -534,7 +528,6 @@ void DefineTextTag::Render()
 		glTexCoord2f(0,0);
 		glVertex2i(0,rt->height);
 	glEnd();
-	glPopMatrix();
 	glPopMatrix();
 }
 
@@ -657,11 +650,11 @@ void DefineShapeTag::Render()
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+//	float matrix[16];
+//	Matrix.get4DMatrix(matrix);
 	//Apply local transformation
 	glPushMatrix();
-	glMultMatrixf(matrix);
+//	glMultMatrixf(matrix);
 
 	std::vector < Shape >::iterator it=cached.begin();
 	for(it;it!=cached.end();it++)
@@ -709,11 +702,8 @@ void DefineShape2Tag::Render()
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	float matrix[16];
-	Matrix.get4DMatrix(matrix);
 	//Apply local transformation
 	glPushMatrix();
-	glMultMatrixf(matrix);
 	
 	std::vector < Shape >::iterator it=cached.begin();
 	for(it;it!=cached.end();it++)
@@ -1269,23 +1259,25 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	LOG(TRACE,"ShowFrame");
 }
 
-bool PlaceObject2Tag::list_orderer(const IDisplayListElem* a, int d)
+bool PlaceObject2Tag::list_orderer(const pair<PlaceInfo, IDisplayListElem*> a, int d)
 {
-	return a->Depth<d;
+	return a.second->Depth<d;
 }
 
-void PlaceObject2Tag::execute(MovieClip* parent, std::list < IDisplayListElem* >& ls)
+void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDisplayListElem*> >& ls)
 {
 	//TODO: support clipping
 	if(ClipDepth!=0)
 		return;
 
+	PlaceInfo infos;
 	//Find if this id is already on the list
-	list < IDisplayListElem*>::iterator it=ls.begin();
+	list < pair<PlaceInfo, IDisplayListElem*> >::iterator it=ls.begin();
 	for(it;it!=ls.end();it++)
 	{
-		if((*it)->Depth==Depth)
+		if(it->second->Depth==Depth)
 		{
+			infos=it->first;
 			if(!PlaceFlagMove)
 			{
 				LOG(ERROR,"Depth already used already on displaylist");
@@ -1295,6 +1287,9 @@ void PlaceObject2Tag::execute(MovieClip* parent, std::list < IDisplayListElem* >
 		}
 	}
 
+	if(PlaceFlagHasMatrix)
+		infos.Matrix=Matrix;
+
 	IDisplayListElem* toAdd=NULL;
 	if(PlaceFlagHasCharacter)
 	{
@@ -1303,8 +1298,6 @@ void PlaceObject2Tag::execute(MovieClip* parent, std::list < IDisplayListElem* >
 		toAdd=dict->instance();
 		if(toAdd==NULL)
 			abort();
-		if(PlaceFlagHasMatrix)
-			toAdd->Matrix=Matrix;
 
 		if(PlaceFlagHasColorTransform)
 			toAdd->ColorTransform=ColorTransform;
@@ -1319,8 +1312,8 @@ void PlaceObject2Tag::execute(MovieClip* parent, std::list < IDisplayListElem* >
 		toAdd->Depth=Depth;
 		if(!PlaceFlagMove)
 		{
-			list<IDisplayListElem*>::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer);
-			ls.insert(it,toAdd);
+			list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer);
+			ls.insert(it,make_pair(infos,toAdd));
 		}
 	}
 
@@ -1346,24 +1339,21 @@ void PlaceObject2Tag::execute(MovieClip* parent, std::list < IDisplayListElem* >
 			if(!PlaceFlagHasCharacter)
 			{
 				//if(it2->PlaceFlagHasClipAction)
-				if(PlaceFlagHasMatrix)
-					(*it)->Matrix=Matrix;
-
 				if(PlaceFlagHasColorTransform)
-					(*it)->ColorTransform=ColorTransform;
+					it->second->ColorTransform=ColorTransform;
 
 				if(PlaceFlagHasRatio)
-					(*it)->Ratio=Ratio;
+					it->second->Ratio=Ratio;
 
 				if(PlaceFlagHasClipDepth)
-					(*it)->ClipDepth=ClipDepth;
-
+					it->second->ClipDepth=ClipDepth;
+				it->first=infos;
 			}
 			else
 			{
 				ls.erase(it);
-				list<IDisplayListElem*>::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer);
-				ls.insert(it,toAdd);
+				list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer);
+				ls.insert(it,make_pair(infos,toAdd));
 			}
 		}
 		else
@@ -1426,7 +1416,7 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,
 	}
 }
 
-void FrameLabelTag::execute(MovieClip* parent, std::list < IDisplayListElem* >& ls)
+void FrameLabelTag::execute(MovieClip* parent, list < pair< PlaceInfo, IDisplayListElem*> >& ls)
 {
 	LOG(NOT_IMPLEMENTED,"TODO: FrameLabel exec");
 	//sys.currentClip->frames[sys.currentClip->state.FP].setLabel(Name);

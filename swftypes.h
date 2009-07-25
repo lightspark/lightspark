@@ -441,7 +441,7 @@ public:
 
 class FB
 {
-	uint32_t buf;
+	int32_t buf;
 	int size;
 public:
 	FB() { buf=0; }
@@ -450,10 +450,25 @@ public:
 		if(s>32)
 			LOG(ERROR,"Fixed point bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
+		if(buf>>(s-1)&1)
+		{
+			for(int i=31;i>=s;i--)
+				buf|=(1<<i);
+		}
 	}
 	operator float() const
 	{
-		return (buf>>16)+(buf&0xffff)/65535.0f; //TODO: Oppure 65536?
+		if(buf>=0)
+		{
+			int32_t b=buf;
+			return b/65536.0f;
+		}
+		else
+		{
+			int32_t b=-buf;
+			return -(b/65536.0f);
+		}
+		//return (buf>>16)+(buf&0xffff)/65536.0f;
 	}
 };
 

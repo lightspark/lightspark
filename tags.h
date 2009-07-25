@@ -77,7 +77,7 @@ class DisplayListTag: public Tag
 public:
 	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
 	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
-	virtual void execute(MovieClip* parent, std::list < IDisplayListElem* >& list)=0;
+	virtual void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list)=0;
 };
 
 class DictionaryTag: public Tag
@@ -267,13 +267,13 @@ private:
 
 public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < IDisplayListElem* >& list);
+	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
 };
 
 class PlaceObject2Tag: public DisplayListTag
 {
 private:
-	static bool list_orderer(const IDisplayListElem* a, int d);
+	static bool list_orderer(const std::pair<PlaceInfo, IDisplayListElem*> a, int d);
 //	Number _scalex;
 
 //	ISWFObject* wrapped;
@@ -298,7 +298,7 @@ private:
 public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < IDisplayListElem* >& list);
+	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
 /*	void setWrapped(ISWFObject* w)
 	{
 		wrapped=w;
@@ -312,7 +312,7 @@ private:
 	STRING Name;
 public:
 	FrameLabelTag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < IDisplayListElem* >& ls);
+	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
 };
 
 class SetBackgroundColorTag: public ControlTag

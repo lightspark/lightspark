@@ -675,7 +675,6 @@ void ABCVm::handleEvent()
 {
 	sem_wait(&mutex);
 	pair<EventDispatcher*,Event*> e=events_queue.front();
-	cout << this << " Handling event " << e.second << endl;
 	events_queue.pop_front();
 	if(e.first)
 		e.first->handleEvent(e.second);
@@ -729,7 +728,6 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	sem_wait(&mutex);
 	events_queue.push_back(pair<EventDispatcher*,Event*>(obj, ev));
 	sem_post(&sem_event_count);
-	cout << this << " Adding event " << ev << endl;
 	sem_post(&mutex);
 }
 

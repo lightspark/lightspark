@@ -31,7 +31,7 @@ class MovieClip;
 class PlaceInfo
 {
 public:
-	MATRIX matrix;
+	MATRIX Matrix;
 };
 
 class Frame
@@ -41,7 +41,7 @@ private:
 	IFunction* script;
 public:
 	std::list<DisplayListTag*> blueprint;
-	std::list<IDisplayListElem*> displayList;
+	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	std::list<IDisplayListElem*>* dynamicDisplayList; //This is actually owned by the movieclip
 	Frame(std::list<IDisplayListElem*>* dd):
 		dynamicDisplayList(dd),script(NULL){ }
@@ -49,7 +49,7 @@ public:
 	void setLabel(STRING l);
 	void setScript(IFunction* s){script=s;}
 	void runScript();
-	void init(MovieClip* parent, std::list<IDisplayListElem*>& d);
+	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& d);
 };
 
 #endif

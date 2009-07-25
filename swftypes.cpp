@@ -355,8 +355,8 @@ std::ostream& operator<<(std::ostream& s, const MATRIX& r)
 		scaleX=r.ScaleX;
 		scaleY=r.ScaleY;
 	}
-	s << "| " << scaleX << ' ' << (int)r.RotateSkew0 << " |" << std::endl;
-	s << "| " << (int)r.RotateSkew1 << ' ' << scaleY << " |" << std::endl;
+	s << "| " << scaleX << ' ' << r.RotateSkew0 << " |" << std::endl;
+	s << "| " << r.RotateSkew1 << ' ' << scaleY << " |" << std::endl;
 	s << "| " << (int)r.TranslateX << ' ' << (int)r.TranslateY << " |" << std::endl;
 	return s;
 }
@@ -638,7 +638,7 @@ void FILLSTYLE::setFragmentProgram() const
 
 	if(FillStyleType==0x00)
 	{
-		LOG(TRACE,"Fill color");
+		//LOG(TRACE,"Fill color");
 		glColor3f(1,0,0);
 		glTexCoord4f(float(Color.Red)/256.0f,
 			float(Color.Green)/256.0f,
@@ -647,7 +647,7 @@ void FILLSTYLE::setFragmentProgram() const
 	}
 	else if(FillStyleType==0x10)
 	{
-		LOG(TRACE,"Fill gradient");
+		//LOG(TRACE,"Fill gradient");
 		glColor3f(0,1,0);
 
 		color_entry buffer[256];

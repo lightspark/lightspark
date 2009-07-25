@@ -32,7 +32,6 @@ class IDisplayListElem: public EventDispatcher
 public:
 	int Depth;
 	UI16 CharacterId;
-	MATRIX Matrix;
 	CXFORMWITHALPHA ColorTransform;
 	UI16 Ratio;
 	UI16 ClipDepth;
@@ -123,7 +122,7 @@ protected:
 	Integer _framesloaded;
 	Integer _totalframes;
 	std::list < IDisplayListElem* > dynamicDisplayList;
-	std::list < IDisplayListElem* > displayList;
+	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	Frame cur_frame;
 	bool initialized;
 public:

@@ -148,7 +148,7 @@ public:
 	static void setError(){error=1;}
 
 	//Used only in ParseThread context
-	std::list < IDisplayListElem* >* parsingDisplayList;
+	std::list < std::pair<PlaceInfo, IDisplayListElem*> >* parsingDisplayList;
 	ISWFObject* parsingTarget;
 };
 

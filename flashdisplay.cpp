@@ -103,7 +103,6 @@ void Loader::execute()
 
 void Loader::Render()
 {
-	LOG(NOT_IMPLEMENTED,"Loader Rendering");
 	if(!loaded)
 		return;
 
@@ -216,6 +215,7 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 		int f=args->at(i+0)->toInt();
 		IFunction* g=args->at(i+1)->toFunction();
 
+		//Should wait for frames to be received
 		if(f>=th->frames.size())
 		{
 			LOG(ERROR,"Invalid frame number passed to addFrameScript");
@@ -321,7 +321,7 @@ void MovieClip::Render()
 	if(state.stop_FP!=bak)
 		abort();
 
-	if(!state.stop_FP && (class_name=="MovieClip" || class_name=="SystemState"))
+	if(!state.stop_FP /*&& (class_name=="MovieClip" || class_name=="SystemState")*/)
 		state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount
 	else
 		state.next_FP=state.FP;
@@ -333,12 +333,8 @@ void MovieClip::Render()
 	glPushAttrib(GL_CURRENT_BIT);
 	glSecondaryColor3f(id,0,0);
 
-	float matrix[16];
-	//m2.ScaleX*=_scalex/100.0f;
-	Matrix.get4DMatrix(matrix);
 	//Apply local transformation
 	glPushMatrix();
-	glMultMatrixf(matrix);
 	//glTranslatef(_x,_y,0);
 	glRotatef(rotation,0,0,1);
 	frames[state.FP].Render();

@@ -1123,6 +1123,47 @@ ISWFObject* RootMovieClip::setVariableByName(const Qname& name, ISWFObject* o, b
 	return ret;
 }
 
+void RootMovieClip::setVariableByString(const string& s, ISWFObject* o)
+{
+	string sub;
+	int f=0;
+	int l=0;
+	ISWFObject* target=this;
+	for(l;l<s.size();l++)
+	{
+		if(s[l]=='.')
+		{
+			sub=s.substr(f,l-f);
+			ISWFObject* next_target;
+			bool found;
+			if(f==0 && sub=="__Packages")
+			{
+				cout << "Merging packages with _global" << endl;
+				next_target=&sys->cur_render_thread->vm.Global;
+				found=true;
+			}
+			else
+				next_target=target->getVariableByName(sub,found);
+
+			f=l+1;
+			if(found)
+			{
+				cout << "Using target named " << sub << endl;
+			}
+			else
+			{
+				next_target=new Package;
+				cout << "Adding Package " << sub << endl;
+				target->setVariableByName(sub,next_target);
+			}
+			target=next_target;
+		}
+	}
+	sub=s.substr(f,l-f);
+	cout << "Finally setting " << sub << endl;
+	target->setVariableByName(sub,o);
+}
+
 SWFOBJECT_TYPE SystemState::getObjectType() const
 {
 	return T_MOVIE;

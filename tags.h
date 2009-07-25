@@ -471,7 +471,7 @@ private:
 	//std::vector < Tag* > ControlTags;
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
-	SWFOBJECT_TYPE getObjectType()const{ return T_WRAPPED;}
+//	SWFOBJECT_TYPE getObjectType()const{ return T_WRAPPED;}
 	virtual int getId(){ return SpriteID; }
 
 	IDisplayListElem* instance()
@@ -555,6 +555,10 @@ public:
 
 class ExportAssetsTag: public Tag
 {
+private:
+	UI16 Count;
+	std::vector<UI16> Tags;
+	std::vector<STRING> Names;
 public:
 	ExportAssetsTag(RECORDHEADER h, std::istream& in);
 };

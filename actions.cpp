@@ -606,7 +606,24 @@ void ActionDecrement::Execute()
 
 void ActionExtends::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionExtends");
+	LOG(NOT_IMPLEMENTED,"ActionExtends");
+	ISWFObject* super_cons=rt->vm.stack.pop();
+	ISWFObject* sub_cons=rt->vm.stack.pop();
+	ASObject* sub_ob=dynamic_cast<ASObject*>(sub_cons);
+	ASObject* super_ob=dynamic_cast<ASObject*>(super_cons);
+	if(sub_ob==NULL)
+	{
+		cout << "sub null" << endl;
+		abort();
+	}
+	if(super_ob==NULL)
+	{
+		cout << "super null" << endl;
+		abort();
+	}
+	ASObject* prot=new ASObject();
+	prot->super=super_ob;
+	sub_ob->prototype=prot;
 }
 
 void ActionTypeOf::Execute()
@@ -997,11 +1014,27 @@ void ActionGetVariable::Execute()
 	LOG(CALLS,"ActionGetVariable: " << varName);
 	bool found;
 	ISWFObject* object=rt->currentClip->getVariableByName(varName,found);
+	if(!found)
+	{
+		//Looks in Global
+		LOG(CALLS,"NOT implemented, trying Global");
+		object=rt->vm.Global.getVariableByName(varName,found);
+	}
+	if(!found)
+	{
+		//Check for special vars
+		if(varName=="_global")
+		{
+			found=true;
+			object=&rt->vm.Global;
+		}
+	}
+
 	if(found)
 		rt->vm.stack.push(object);
 	else
 	{
-		LOG(CALLS,"NOT found, pushing undefined");
+		LOG(NOT_IMPLEMENTED,"NOT found, pushing undefined");
 		rt->vm.stack.push(new Undefined);
 	}
 }
@@ -1182,7 +1215,10 @@ void ActionGetMember::Execute()
 	if(found)
 		rt->vm.stack.push(ret);
 	else
+	{
+		LOG(NOT_IMPLEMENTED,"NOT found, pushing undefined");
 		rt->vm.stack.push(new Undefined);
+	}
 }
 
 void ActionSetMember::Execute()

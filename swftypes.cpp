@@ -37,6 +37,19 @@ string ConstantReference::toString() const
 	return rt->vm.getConstantByIndex(index);
 }
 
+/*double ConstantReference::toNumber() const
+{
+	string s=rt->vm.getConstantByIndex(index);
+	double ret= strtod(s.c_str(),NULL);
+	cout << "crto " << ret <<  " from " << s << endl;
+	return ret;
+}*/
+
+ISWFObject* ConstantReference::clone()
+{
+	return new ASString(rt->vm.getConstantByIndex(index));
+}
+
 int ConstantReference::toInt() const
 {
 	LOG(ERROR,"Cannot convert ConstRef to Int");
@@ -975,7 +988,7 @@ void ISWFObject::setSlot(int n,ISWFObject* o)
 	}
 }
 
-ISWFObject* RegisterNumber::instantiate()
+ISWFObject* RegisterNumber::clone()
 {
 	return rt->execContext->regs[index];
 }

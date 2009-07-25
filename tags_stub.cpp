@@ -73,12 +73,6 @@ DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& i
 	skip(in);
 }
 
-ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	LOG(NOT_IMPLEMENTED,"ExportAssetsTag Tag");
-	skip(in);
-}
-
 MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(NOT_IMPLEMENTED,"MetadataTag Tag");

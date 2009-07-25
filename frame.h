@@ -28,6 +28,12 @@ class DisplayListTag;
 class IDisplayListElem;
 class MovieClip;
 
+class PlaceInfo
+{
+public:
+	MATRIX matrix;
+};
+
 class Frame
 {
 private:

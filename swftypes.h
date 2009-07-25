@@ -35,7 +35,7 @@
 	ISWFObject* c::name(ISWFObject* obj, arguments* args)
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_NUMBER, T_FUNCTION,
-	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_WRAPPED, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY};
+	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE};
 
 class arguments;
 class IFunction;
@@ -223,10 +223,12 @@ public:
 	SWFOBJECT_TYPE getObjectType() const{return T_CONSTREF;}
 	std::string toString() const;
 	int toInt() const;
-	ISWFObject* clone()
+//	double toNumber() const;
+	ISWFObject* clone();
+/*	ISWFObject* clone()
 	{
 		return new ConstantReference(*this);
-	}
+	}*/
 };
 
 class RegisterNumber : public ISWFObject
@@ -238,11 +240,23 @@ public:
 	SWFOBJECT_TYPE getObjectType() const {return T_REGNUMBER;}
 	std::string toString() const;
 	//int toInt();
-	ISWFObject* clone()
+	ISWFObject* clone();
+/*	ISWFObject* clone()
 	{
 		return new RegisterNumber(*this);
 	}
-	ISWFObject* instantiate();
+	ISWFObject* instantiate();*/
+};
+
+class Package : public ISWFObject
+{
+public:
+	SWFOBJECT_TYPE getObjectType() const {return T_PACKAGE;}
+	ISWFObject* clone()
+	{
+		abort();
+		return NULL;
+	}
 };
 
 class Null : public ISWFObject

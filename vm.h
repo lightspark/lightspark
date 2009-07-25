@@ -23,7 +23,8 @@
 #include <semaphore.h>
 #include <vector>
 #include "swftypes.h"
-class FunctionTag;
+#include "asobjects.h"
+
 class Stack
 {
 private:
@@ -51,6 +52,7 @@ public:
 	VirtualMachine();
 	void setConstantPool(std::vector<STRING>& p);
 	STRING getConstantByIndex(int index);
+	ASObject Global;
 };
 
 #endif

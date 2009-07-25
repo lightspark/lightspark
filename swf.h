@@ -101,6 +101,7 @@ public:
 	void Render();
 	ISWFObject* getVariableByName(const Qname& name, bool& found);
 	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
+	void setVariableByString(const std::string& s, ISWFObject* o);
 };
 
 class SystemState:public RootMovieClip

@@ -20,6 +20,7 @@
 #include "vm.h"
 #include "swf.h"
 #include "actions.h"
+#include "flashdisplay.h"
 
 using namespace std;
 
@@ -28,6 +29,7 @@ extern __thread SystemState* sys;
 VirtualMachine::VirtualMachine()
 {
 	sem_init(&mutex,0,1);
+	Global.setVariableByName("MovieClip",new MovieClip);
 }
 
 void VirtualMachine::setConstantPool(vector<STRING>& p)

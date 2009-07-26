@@ -105,40 +105,28 @@ public:
 	operator std::string() const{return val;}
 };
 
-class namespace_info
+struct namespace_info
 {
-friend std::istream& operator>>(std::istream& in, namespace_info& v);
-friend class ABCVm;
-private:
 	u8 kind;
 	u30 name;
 };
 
-class ns_set_info
+struct ns_set_info
 {
-friend std::istream& operator>>(std::istream& in, ns_set_info& v);
-friend class ABCVm;
-private:
 	u30 count;
 	std::vector<u30> ns;
 };
 
-class multiname_info
+struct multiname_info
 {
-friend std::istream& operator>>(std::istream& in, multiname_info& v);
-friend class ABCVm;
-private:
 	u8 kind;
 	u30 name;
 	u30 ns;
 	u30 ns_set;
 };
 
-class cpool_info
+struct cpool_info
 {
-friend std::istream& operator>>(std::istream& in, cpool_info& v);
-friend class ABCVm;
-private:
 	u30 int_count;
 	std::vector<s32> integer;
 	u30 uint_count;
@@ -227,20 +215,15 @@ struct item_info
 	u30 value;
 };
 
-class metadata_info
+struct metadata_info
 {
-friend std::istream& operator>>(std::istream& in, metadata_info& v);
-private:
 	u30 name;
 	u30 item_count;
 	std::vector<item_info> items;
 };
 
-class traits_info
+struct traits_info
 {
-friend std::istream& operator>>(std::istream& in, traits_info& v);
-friend class ABCVm;
-public:
 	enum { Slot=0,Method=1,Getter=2,Setter=3,Class=4,Function=5,Const=6};
 	enum { Final=0x10, Override=0x20, Metadata=0x40};
 	u30 name;
@@ -259,11 +242,8 @@ public:
 	std::vector<u30> metadata;
 };
 
-class instance_info
+struct instance_info
 {
-friend std::istream& operator>>(std::istream& in, instance_info& v);
-friend class ABCVm;
-private:
 	enum { ClassSealed=0x01,ClassFinal=0x02,ClassInterface=0x04,ClassProtectedNs=0x08};
 	u30 name;
 	u30 supername;
@@ -276,21 +256,15 @@ private:
 	std::vector<traits_info> traits;
 };
 
-class class_info
+struct class_info
 {
-friend std::istream& operator>>(std::istream& in, class_info& v);
-friend class ABCVm;
-private:
 	u30 cinit;
 	u30 trait_count;
 	std::vector<traits_info> traits;
 };
 
-class script_info
+struct script_info
 {
-friend std::istream& operator>>(std::istream& in, script_info& v);
-friend class ABCVm;
-private:
 	u30 init;
 	u30 trait_count;
 	std::vector<traits_info> traits;
@@ -307,13 +281,8 @@ private:
 	u30 var_name;
 };
 
-class method_body_info
+struct method_body_info
 {
-friend std::istream& operator>>(std::istream& in, method_body_info& v);
-friend class method_info;
-friend class ABCVm;
-friend class call_context;
-private:
 	u30 method;
 	u30 max_stack;
 	u30 local_count;
@@ -333,12 +302,11 @@ struct opcode_handler
 	void* addr;
 };
 
-class ABCVm
+class ABCContext
 {
+friend class ABCVm;
 friend class method_info;
 private:
-	SystemState* m_sys;
-	pthread_t t;
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -354,18 +322,25 @@ private:
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
 	method_info* get_method(unsigned int m);
-	//void printMethod(const method_info* m) const;
-	//void printClass(int m) const;
-	ISWFObject* buildClass(int m);
-	void printMultiname(int m) const;
-	void printNamespace(int n) const;
-	//void printTrait(const traits_info* t) const;
-	void buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
-	void printNamespaceSet(const ns_set_info* m) const;
+	//ISWFObject* buildClass(int m);
 	std::string getString(unsigned int s) const;
-	multiname getMultiname(unsigned int m, call_context* th=NULL) const;
 	Qname getQname(unsigned int m, call_context* th=NULL) const;
+	void buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
+	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
+	multiname getMultiname(unsigned int m, call_context* th=NULL) const;
+	ABCVm* vm;
+public:
+	ABCContext(ABCVm* vm,std::istream& in);
+	void exec();
+};
 
+class ABCVm
+{
+friend class ABCContext;
+friend class method_info;
+private:
+	SystemState* m_sys;
+	pthread_t t;
 	ASObject Global;
 	//std::vector<ISWFObject*> stack;
 	llvm::Module* module;
@@ -493,12 +468,12 @@ private:
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
 public:
+	ABCContext* context;
 	static llvm::ExecutionEngine* ex;
 	static sem_t sem_ex;
 	ABCVm(SystemState* s,std::istream& in);
 	~ABCVm();
 	static void Run(ABCVm* th);
-	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
 	void addEvent(EventDispatcher*,Event*);
 	void start() { sem_post(&started);}
 	void wait();
@@ -553,6 +528,11 @@ std::istream& operator>>(std::istream& in, ns_set_info& v);
 std::istream& operator>>(std::istream& in, multiname_info& v);
 std::istream& operator>>(std::istream& in, cpool_info& v);
 std::istream& operator>>(std::istream& in, method_info& v);
+std::istream& operator>>(std::istream& in, method_body_info& v);
 std::istream& operator>>(std::istream& in, instance_info& v);
+std::istream& operator>>(std::istream& in, traits_info& v);
+std::istream& operator>>(std::istream& in, script_info& v);
+std::istream& operator>>(std::istream& in, metadata_info& v);
+std::istream& operator>>(std::istream& in, class_info& v);
 
 #endif

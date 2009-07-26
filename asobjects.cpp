@@ -435,16 +435,23 @@ Number::Number(const ISWFObject* obj)
 
 void Number::copyFrom(const ISWFObject* o)
 {
-	if(o->getObjectType()!=T_NUMBER)
+	if(o->getObjectType()==T_NUMBER)
+	{
+		const Number* n=static_cast<const Number*>(o);
+		val=n->val;
+	}
+	else if(o->getObjectType()==T_INTEGER)
+	{
+		const Integer* n=static_cast<const Integer*>(o);
+		val=n->val;
+	}
+	else
 	{
 		LOG(ERROR,"Copying Number from type " << o->getObjectType() << " is not supported");
 		abort();
 	}
 	
-	const Number* n=dynamic_cast<const Number*>(o);
-
-	val=n->val;
-	LOG(TRACE,"Set to " << n->val);
+	LOG(TRACE,"Set to " << val);
 }
 
 bool Number::isEqual(const ISWFObject* o) const

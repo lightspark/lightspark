@@ -486,7 +486,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByName(Qname("flash.net","URLVariables"),new ASObject);
 }
 
-Qname ABCVm::getQname(unsigned int mi, call_context* th) const
+Qname ABCContext::getQname(unsigned int mi, call_context* th) const
 {
 	if(mi==0)
 	{
@@ -532,7 +532,7 @@ Qname ABCVm::getQname(unsigned int mi, call_context* th) const
 	}
 }
 
-multiname ABCVm::getMultiname(unsigned int mi, call_context* th) const
+multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 {
 	multiname ret;
 	if(mi==0)
@@ -609,7 +609,7 @@ multiname ABCVm::getMultiname(unsigned int mi, call_context* th) const
 	return ret;
 }
 
-ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s)
+ABCContext::ABCContext(ABCVm* v,istream& in):vm(v)
 {
 	in >> minor >> major;
 	LOG(CALLS,"ABCVm version " << major << '.' << minor);
@@ -620,7 +620,7 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s)
 	for(int i=0;i<method_count;i++)
 	{
 		in >> methods[i];
-		methods[i].vm=this;
+		methods[i].vm=vm;
 	}
 
 	in >> metadata_count;
@@ -652,7 +652,11 @@ ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s)
 		else
 			methods[method_body[i].method].body=&method_body[i];
 	}
+}
 
+ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s)
+{
+	context=new ABCContext(this,in);
 	sem_init(&mutex,0,1);
 	sem_init(&sem_event_count,0,0);
 	sem_init(&started,0,0);
@@ -694,7 +698,7 @@ void ABCVm::handleEvent()
 					MovieClip* m=static_cast<MovieClip*>(ev->base);
 					m->initialize();
 				}
-				ISWFObject* o=buildNamedClass(ev->class_name,ev->base,&args);
+				ISWFObject* o=context->buildNamedClass(ev->class_name,ev->base,&args);
 				LOG(CALLS,"End of binding of " << ev->class_name);
 
 				break;
@@ -731,19 +735,12 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	sem_post(&mutex);
 }
 
-void dumpClasses(map<string,int>& maps)
-{
-	map<string,int>::iterator it=maps.begin();
-	for(it;it!=maps.end();it++)
-		cout << it->first << endl;
-}
-
-ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* args)
+ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,arguments* args)
 {
 	LOG(CALLS,"Setting class name to " << s);
 	base->class_name=s;
 	ISWFObject* owner;
-	ISWFObject* r=Global.getVariableByString(s,owner);
+	ISWFObject* r=vm->Global.getVariableByString(s,owner);
 	if(!owner)
 	{
 		LOG(ERROR,"Class " << s << " not found in global");
@@ -753,9 +750,9 @@ ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* ar
 	{
 		LOG(CALLS,"Class " << s << " is not yet valid");
 		Definable* d=dynamic_cast<Definable*>(r);
-		d->define(&Global);
+		d->define(&vm->Global);
 		LOG(CALLS,"End of deferred init");
-		r=Global.getVariableByString(s,owner);
+		r=vm->Global.getVariableByString(s,owner);
 		if(!owner)
 		{
 			LOG(ERROR,"Class " << s << " not found in global");
@@ -784,7 +781,7 @@ ISWFObject* ABCVm::buildNamedClass(const string& s, ASObject* base,arguments* ar
 	return base;
 }
 
-inline method_info* ABCVm::get_method(unsigned int m)
+inline method_info* ABCContext::get_method(unsigned int m)
 {
 	if(m<method_count)
 		return &methods[m];
@@ -991,7 +988,7 @@ ISWFObject* ABCVm::newActivation(call_context* th,method_info* info)
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act=new ASObject;
 	for(int i=0;i<info->body->trait_count;i++)
-		th->vm->buildTrait(act,&info->body->traits[i]);
+		th->vm->context->buildTrait(act,&info->body->traits[i]);
 
 	return act;
 }
@@ -1008,7 +1005,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.at(m-i-1)=th->runtime_stack_pop();
 
-	multiname name=th->vm->getMultiname(n);
+	multiname name=th->vm->context->getMultiname(n);
 	LOG(CALLS,"constructProp "<<name << ' ' << m);
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1048,7 +1045,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		for(int i=0;i<sf->mi->body->trait_count;i++)
 		{
 			cout << i << endl;
-			th->vm->buildTrait(ret,&sf->mi->body->traits[i]);
+			th->vm->context->buildTrait(ret,&sf->mi->body->traits[i]);
 		}
 		sf->call(ret,&args);
 
@@ -1062,8 +1059,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	{
 		//The class is declared in the script and has an index
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->vm->instances[o->class_index].trait_count;i++)
-			th->vm->buildTrait(ret,&th->vm->instances[o->class_index].traits[i]);
+		for(int i=0;i<th->vm->context->instances[o->class_index].trait_count;i++)
+			th->vm->context->buildTrait(ret,&th->vm->context->instances[o->class_index].traits[i]);
 	}
 
 	if(o->constructor)
@@ -1084,7 +1081,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.at(m-i-1)=th->runtime_stack_pop();
 
-	multiname name=th->vm->getMultiname(n);
+	multiname name=th->vm->context->getMultiname(n);
 	LOG(CALLS,"callProperty " << name << ' ' << m);
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1164,20 +1161,20 @@ ISWFObject* ABCVm::hasNext2(call_context* th, int n, int m)
 
 void ABCVm::callSuper(call_context* th, int n, int m)
 {
-	multiname name=th->vm->getMultiname(n); 
+	multiname name=th->vm->context->getMultiname(n); 
 	LOG(NOT_IMPLEMENTED,"callSuper " << name << ' ' << m);
 	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::callSuperVoid(call_context* th, int n, int m)
 {
-	multiname name=th->vm->getMultiname(n); 
+	multiname name=th->vm->context->getMultiname(n); 
 	LOG(NOT_IMPLEMENTED,"callSuperVoid " << name << ' ' << m);
 }
 
 void ABCVm::callPropVoid(call_context* th, int n, int m)
 {
-	multiname name=th->vm->getMultiname(n); 
+	multiname name=th->vm->context->getMultiname(n); 
 	LOG(CALLS,"callPropVoid " << name << ' ' << m);
 	arguments* args=new arguments(m);
 	for(int i=0;i<m;i++)
@@ -1441,7 +1438,7 @@ void ABCVm::call(call_context* th, int m)
 
 void ABCVm::coerce(call_context* th, int n)
 {
-	multiname name=th->vm->getMultiname(n); 
+	multiname name=th->vm->context->getMultiname(n); 
 	LOG(NOT_IMPLEMENTED,"coerce " << name);
 }
 
@@ -1453,7 +1450,7 @@ ISWFObject* ABCVm::newCatch(call_context* th, int n)
 
 void ABCVm::getSuper(call_context* th, int n)
 {
-	multiname name=th->vm->getMultiname(n); 
+	multiname name=th->vm->context->getMultiname(n); 
 
 	LOG(NOT_IMPLEMENTED,"getSuper " << name);
 
@@ -1488,7 +1485,7 @@ void ABCVm::getSuper(call_context* th, int n)
 void ABCVm::setSuper(call_context* th, int n)
 {
 	ISWFObject* value=th->runtime_stack_pop();
-	multiname name=th->vm->getMultiname(n); 
+	multiname name=th->vm->context->getMultiname(n); 
 
 	LOG(NOT_IMPLEMENTED,"setSuper " << name);
 
@@ -1500,7 +1497,7 @@ ISWFObject* ABCVm::newFunction(call_context* th, int n)
 {
 	LOG(CALLS,"newFunction " << n);
 
-	method_info* m=&th->vm->methods[n];
+	method_info* m=&th->vm->context->methods[n];
 	SyntheticFunction* f=new SyntheticFunction(m);
 	f->func_scope=th->scope_stack;
 	return f;
@@ -1672,14 +1669,14 @@ void ABCVm::pushScope(call_context* th)
 
 ISWFObject* ABCVm::pushInt(call_context* th, int n)
 {
-	s32 i=th->vm->constant_pool.integer[n];
+	s32 i=th->vm->context->constant_pool.integer[n];
 	LOG(CALLS, "pushInt [" << dec << n << "] " << i);
 	return new Integer(i);
 }
 
 ISWFObject* ABCVm::pushDouble(call_context* th, int n)
 {
-	d64 d=th->vm->constant_pool.doubles[n];
+	d64 d=th->vm->context->constant_pool.doubles[n];
 	LOG(CALLS, "pushDouble [" << dec << n << "] " << d);
 	return new Number(d);
 }
@@ -1744,11 +1741,11 @@ void ABCVm::constructSuper(call_context* th, int n)
 		obj->super=new ASObject;
 		obj->super->prototype=super;
 
-		multiname name=th->vm->getMultiname(th->vm->instances[super->class_index].name,th);
+		multiname name=th->vm->context->getMultiname(th->vm->context->instances[super->class_index].name,th);
 		LOG(CALLS,"Constructing " << name);
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->vm->instances[super->class_index].trait_count;i++)
-			th->vm->buildTrait(obj->super,&th->vm->instances[super->class_index].traits[i]);
+		for(int i=0;i<th->vm->context->instances[super->class_index].trait_count;i++)
+			th->vm->context->buildTrait(obj->super,&th->vm->context->instances[super->class_index].traits[i]);
 		LOG(CALLS,"Calling Instance init");
 		//args.incRef();
 		super->constructor->call(obj->super,&args);
@@ -1772,7 +1769,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 void ABCVm::setProperty(call_context* th, int n)
 {
 	ISWFObject* value=th->runtime_stack_pop();
-	multiname name=th->vm->getMultiname(n,th);
+	multiname name=th->vm->context->getMultiname(n,th);
 	LOG(CALLS,"setProperty " << name);
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1799,7 +1796,7 @@ void ABCVm::setProperty(call_context* th, int n)
 
 void ABCVm::getProperty(call_context* th, int n)
 {
-	multiname name=th->vm->getMultiname(n,th);
+	multiname name=th->vm->context->getMultiname(n,th);
 	LOG(CALLS, "getProperty " << name );
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1841,7 +1838,7 @@ void ABCVm::getProperty(call_context* th, int n)
 
 void ABCVm::findProperty(call_context* th, int n)
 {
-	multiname name=th->vm->getMultiname(n);
+	multiname name=th->vm->context->getMultiname(n);
 	LOG(CALLS, "findProperty " << name );
 
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
@@ -1867,7 +1864,7 @@ void ABCVm::findProperty(call_context* th, int n)
 
 void ABCVm::findPropStrict(call_context* th, int n)
 {
-	multiname name=th->vm->getMultiname(n);
+	multiname name=th->vm->context->getMultiname(n);
 	LOG(CALLS, "findPropStrict " << name );
 
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
@@ -1903,7 +1900,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 
 void ABCVm::initProperty(call_context* th, int n)
 {
-	multiname name=th->vm->getMultiname(n);
+	multiname name=th->vm->context->getMultiname(n);
 	LOG(CALLS, "initProperty " << name );
 	ISWFObject* value=th->runtime_stack_pop();
 
@@ -1931,14 +1928,14 @@ void ABCVm::newClass(call_context* th, int n)
 	ASObject* ret=new ASObject;
 	ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
 
-	method_info* m=&th->vm->methods[th->vm->classes[n].cinit];
+	method_info* m=&th->vm->context->methods[th->vm->context->classes[n].cinit];
 	IFunction* cinit=new SyntheticFunction(m);
 	LOG(CALLS,"Building class traits");
-	for(int i=0;i<th->vm->classes[n].trait_count;i++)
-		th->vm->buildTrait(ret,&th->vm->classes[n].traits[i]);
+	for(int i=0;i<th->vm->context->classes[n].trait_count;i++)
+		th->vm->context->buildTrait(ret,&th->vm->context->classes[n].traits[i]);
 
 	//add Constructor the the class methods
-	method_info* constructor=&th->vm->methods[th->vm->instances[n].init];
+	method_info* constructor=&th->vm->context->methods[th->vm->context->instances[n].init];
 	ret->constructor=new SyntheticFunction(constructor);
 	ret->class_index=n;
 
@@ -1957,7 +1954,7 @@ ISWFObject* ABCVm::getScopeObject(call_context* th, int n)
 
 void ABCVm::getLex(call_context* th, int n)
 {
-	multiname name=th->vm->getMultiname(n);
+	multiname name=th->vm->context->getMultiname(n);
 	LOG(CALLS, "getLex: " << name );
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
 	ISWFObject* owner;
@@ -2027,7 +2024,7 @@ void ABCVm::getLex(call_context* th, int n)
 
 ISWFObject* ABCVm::pushString(call_context* th, int n)
 {
-	string s=th->vm->getString(n); 
+	string s=th->vm->context->getString(n); 
 	LOG(CALLS, "pushString " << s );
 	return new ASString(s);
 }
@@ -2179,7 +2176,7 @@ llvm::Function* method_info::synt_method()
 
 	if(!body)
 	{
-		string n=vm->getString(name);
+		string n=vm->context->getString(name);
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
 		return NULL;
 	}
@@ -3942,6 +3939,34 @@ llvm::Function* method_info::synt_method()
 	return f;
 }
 
+void ABCContext::exec()
+{
+	//Take script entries and declare their traits
+	int i=0;
+	for(i;i<scripts.size()-1;i++)
+	{
+		LOG(CALLS, "Script N: " << i );
+		method_info* m=get_method(scripts[i].init);
+
+		LOG(CALLS, "Building script traits: " << scripts[i].trait_count );
+		for(int j=0;j<scripts[i].trait_count;j++)
+			buildTrait(&vm->Global,&scripts[i].traits[j],new SyntheticFunction(m));
+	}
+	//Before the entry point we run early events
+//	while(sem_trywait(&th->sem_event_count)==0)
+//		th->handleEvent();
+	//The last script entry has to be run
+	LOG(CALLS, "Last script (Entry Point)");
+	method_info* m=get_method(scripts[i].init);
+	IFunction* entry=new SyntheticFunction(m);
+	LOG(CALLS, "Building entry script traits: " << scripts[i].trait_count );
+	for(int j=0;j<scripts[i].trait_count;j++)
+		buildTrait(&vm->Global,&scripts[i].traits[j]);
+	entry->call(&vm->Global,NULL);
+	LOG(CALLS, "End of Entry Point");
+
+}
+
 void ABCVm::Run(ABCVm* th)
 {
 	sem_wait(&th->started);
@@ -3957,31 +3982,9 @@ void ABCVm::Run(ABCVm* th)
 	th->registerFunctions();
 	th->registerClasses();
 	th->Global.class_name="Global";
+
+	th->context->exec();
 	
-	//Take script entries and declare their traits
-	int i=0;
-	for(i;i<th->scripts.size()-1;i++)
-	{
-		LOG(CALLS, "Script N: " << i );
-		method_info* m=th->get_method(th->scripts[i].init);
-
-		LOG(CALLS, "Building script traits: " << th->scripts[i].trait_count );
-		for(int j=0;j<th->scripts[i].trait_count;j++)
-			th->buildTrait(&th->Global,&th->scripts[i].traits[j],new SyntheticFunction(m));
-	}
-	//Before the entry point we run early events
-//	while(sem_trywait(&th->sem_event_count)==0)
-//		th->handleEvent();
-	//The last script entry has to be run
-	LOG(CALLS, "Last script (Entry Point)");
-	method_info* m=th->get_method(th->scripts[i].init);
-	IFunction* entry=new SyntheticFunction(m);
-	LOG(CALLS, "Building entry script traits: " << th->scripts[i].trait_count );
-	for(int j=0;j<th->scripts[i].trait_count;j++)
-		th->buildTrait(&th->Global,&th->scripts[i].traits[j]);
-	entry->call(&th->Global,NULL);
-	LOG(CALLS, "End of Entry Point");
-
 	while(1)
 	{
 		timespec ts,td;
@@ -3995,7 +3998,7 @@ void ABCVm::Run(ABCVm* th)
 	}
 }
 
-string ABCVm::getString(unsigned int s) const
+string ABCContext::getString(unsigned int s) const
 {
 	if(s)
 		return constant_pool.strings[s];
@@ -4003,7 +4006,7 @@ string ABCVm::getString(unsigned int s) const
 		return "";
 }
 
-void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization)
+void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization)
 {
 	Qname name=getQname(t->name);
 	switch(t->kind&0xf)
@@ -4145,99 +4148,7 @@ void ABCVm::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferre
 	}
 }
 
-void ABCVm::printMultiname(int mi) const
-{
-	if(mi==0)
-	{
-		LOG(CALLS, "Any (*)");
-		return;
-	}
-	const multiname_info* m=&constant_pool.multinames[mi];
-//	LOG(CALLS, "NameID: " << m->name );
-	switch(m->kind)
-	{
-		case 0x07:
-			LOG(CALLS, "QName: " << getString(m->name) );
-			printNamespace(m->ns);
-			break;
-		case 0x0d:
-			LOG(CALLS, "QNameA");
-			break;
-		case 0x0f:
-			LOG(CALLS, "RTQName");
-			break;
-		case 0x10:
-			LOG(CALLS, "RTQNameA");
-			break;
-		case 0x11:
-			LOG(CALLS, "RTQNameL");
-			break;
-		case 0x12:
-			LOG(CALLS, "RTQNameLA");
-			break;
-		case 0x09:
-		{
-			LOG(CALLS, "Multiname: " << getString(m->name));
-			const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
-			printNamespaceSet(s);
-			break;
-		}
-		case 0x0e:
-			LOG(CALLS, "MultinameA");
-			break;
-		case 0x1b:
-			LOG(CALLS, "MultinameL");
-			break;
-		case 0x1c:
-			LOG(CALLS, "MultinameLA");
-			break;
-	}
-}
-
-void ABCVm::printNamespace(int n) const
-{
-	if(n==0)
-	{
-		LOG(CALLS,"Any (*)");
-		return;
-	}
-
-	const namespace_info* m=&constant_pool.namespaces[n];
-	switch(m->kind)
-	{
-		case 0x08:
-			LOG(CALLS, "Namespace " << getString(m->name));
-			break;
-		case 0x16:
-			LOG(CALLS, "PackageNamespace " << getString(m->name));
-			break;
-		case 0x17:
-			LOG(CALLS, "PackageInternalNs " << getString(m->name));
-			break;
-		case 0x18:
-			LOG(CALLS, "ProtectedNamespace " << getString(m->name));
-			break;
-		case 0x19:
-			LOG(CALLS, "ExplicitNamespace " << getString(m->name));
-			break;
-		case 0x1a:
-			LOG(CALLS, "StaticProtectedNamespace " << getString(m->name));
-			break;
-		case 0x05:
-			LOG(CALLS, "PrivateNamespace " << getString(m->name));
-			break;
-	}
-}
-
-void ABCVm::printNamespaceSet(const ns_set_info* m) const
-{
-	for(int i=0;i<m->count;i++)
-	{
-		printNamespace(m->ns[i]);
-	}
-}
-
-ISWFObject* ABCVm::buildClass(int m) 
+/*ISWFObject* ABCContext::buildClass(int m) 
 {
 	const class_info* c=&classes[m];
 	const instance_info* i=&instances[m];
@@ -4252,7 +4163,7 @@ ISWFObject* ABCVm::buildClass(int m)
 	void* f_ptr=ex->getPointerToFunction(mi->f);
 	void (*FP)() = (void (*)())f_ptr;
 	LOG(CALLS,"Class init lenght" << mi->body->code_length);
-	FP();*/
+	FP);*
 
 //	LOG(CALLS,"Building class " << name);
 	if(i->supername)
@@ -4264,7 +4175,7 @@ ISWFObject* ABCVm::buildClass(int m)
 	{
 //		LOG(NOT_IMPLEMENTED,"Should add instance traits");
 /*		for(int j=0;j<i->trait_count;j++)
-			printTrait(&i->traits[j]);*/
+			printTrait(&i->traits[j]);*
 	}
 /*	//Run instance initialization
 	method_info* mi=get_method(i->init);
@@ -4274,9 +4185,9 @@ ISWFObject* ABCVm::buildClass(int m)
 		void (*FP)() = (void (*)())f_ptr;
 		LOG(CALLS,"instance init lenght" << mi->body->code_length);
 		FP();
-	}*/
+	}*
 	return new ASObject();
-}
+}*/
 
 istream& operator>>(istream& in, u32& v)
 {

@@ -609,7 +609,7 @@ multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 	return ret;
 }
 
-ABCContext::ABCContext(ABCVm* v,istream& in):vm(v)
+ABCContext::ABCContext(ABCVm* v,ASObject* g,istream& in):vm(v),Global(g)
 {
 	in >> minor >> major;
 	LOG(CALLS,"ABCVm version " << major << '.' << minor);
@@ -620,7 +620,7 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v)
 	for(int i=0;i<method_count;i++)
 	{
 		in >> methods[i];
-		methods[i].vm=vm;
+		methods[i].context=this;
 	}
 
 	in >> metadata_count;
@@ -656,7 +656,7 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v)
 
 ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s)
 {
-	context=new ABCContext(this,in);
+	context=new ABCContext(this,&Global,in);
 	sem_init(&mutex,0,1);
 	sem_init(&sem_event_count,0,0);
 	sem_init(&started,0,0);
@@ -740,7 +740,7 @@ ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,argument
 	LOG(CALLS,"Setting class name to " << s);
 	base->class_name=s;
 	ISWFObject* owner;
-	ISWFObject* r=vm->Global.getVariableByString(s,owner);
+	ISWFObject* r=Global->getVariableByString(s,owner);
 	if(!owner)
 	{
 		LOG(ERROR,"Class " << s << " not found in global");
@@ -750,9 +750,9 @@ ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,argument
 	{
 		LOG(CALLS,"Class " << s << " is not yet valid");
 		Definable* d=dynamic_cast<Definable*>(r);
-		d->define(&vm->Global);
+		d->define(Global);
 		LOG(CALLS,"End of deferred init");
-		r=vm->Global.getVariableByString(s,owner);
+		r=Global->getVariableByString(s,owner);
 		if(!owner)
 		{
 			LOG(ERROR,"Class " << s << " not found in global");
@@ -816,8 +816,8 @@ ISWFObject* ABCVm::divide(ISWFObject* val2, ISWFObject* val1)
 
 ISWFObject* ABCVm::getGlobalScope(call_context* th)
 {
-	LOG(CALLS,"getGlobalScope: " << &th->vm->Global);
-	return &th->vm->Global;
+	LOG(CALLS,"getGlobalScope: " << &th->context->vm->Global);
+	return &th->context->vm->Global;
 }
 
 ISWFObject* ABCVm::decrement(ISWFObject* o)
@@ -988,7 +988,7 @@ ISWFObject* ABCVm::newActivation(call_context* th,method_info* info)
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act=new ASObject;
 	for(int i=0;i<info->body->trait_count;i++)
-		th->vm->context->buildTrait(act,&info->body->traits[i]);
+		th->context->buildTrait(act,&info->body->traits[i]);
 
 	return act;
 }
@@ -1005,7 +1005,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.at(m-i-1)=th->runtime_stack_pop();
 
-	multiname name=th->vm->context->getMultiname(n);
+	multiname name=th->context->getMultiname(n);
 	LOG(CALLS,"constructProp "<<name << ' ' << m);
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1045,7 +1045,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		for(int i=0;i<sf->mi->body->trait_count;i++)
 		{
 			cout << i << endl;
-			th->vm->context->buildTrait(ret,&sf->mi->body->traits[i]);
+			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
 		}
 		sf->call(ret,&args);
 
@@ -1059,8 +1059,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	{
 		//The class is declared in the script and has an index
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->vm->context->instances[o->class_index].trait_count;i++)
-			th->vm->context->buildTrait(ret,&th->vm->context->instances[o->class_index].traits[i]);
+		for(int i=0;i<th->context->instances[o->class_index].trait_count;i++)
+			th->context->buildTrait(ret,&th->context->instances[o->class_index].traits[i]);
 	}
 
 	if(o->constructor)
@@ -1081,7 +1081,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.at(m-i-1)=th->runtime_stack_pop();
 
-	multiname name=th->vm->context->getMultiname(n);
+	multiname name=th->context->getMultiname(n);
 	LOG(CALLS,"callProperty " << name << ' ' << m);
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1161,20 +1161,20 @@ ISWFObject* ABCVm::hasNext2(call_context* th, int n, int m)
 
 void ABCVm::callSuper(call_context* th, int n, int m)
 {
-	multiname name=th->vm->context->getMultiname(n); 
+	multiname name=th->context->getMultiname(n); 
 	LOG(NOT_IMPLEMENTED,"callSuper " << name << ' ' << m);
 	th->runtime_stack_push(new Undefined);
 }
 
 void ABCVm::callSuperVoid(call_context* th, int n, int m)
 {
-	multiname name=th->vm->context->getMultiname(n); 
+	multiname name=th->context->getMultiname(n); 
 	LOG(NOT_IMPLEMENTED,"callSuperVoid " << name << ' ' << m);
 }
 
 void ABCVm::callPropVoid(call_context* th, int n, int m)
 {
-	multiname name=th->vm->context->getMultiname(n); 
+	multiname name=th->context->getMultiname(n); 
 	LOG(CALLS,"callPropVoid " << name << ' ' << m);
 	arguments* args=new arguments(m);
 	for(int i=0;i<m;i++)
@@ -1438,7 +1438,7 @@ void ABCVm::call(call_context* th, int m)
 
 void ABCVm::coerce(call_context* th, int n)
 {
-	multiname name=th->vm->context->getMultiname(n); 
+	multiname name=th->context->getMultiname(n); 
 	LOG(NOT_IMPLEMENTED,"coerce " << name);
 }
 
@@ -1450,7 +1450,7 @@ ISWFObject* ABCVm::newCatch(call_context* th, int n)
 
 void ABCVm::getSuper(call_context* th, int n)
 {
-	multiname name=th->vm->context->getMultiname(n); 
+	multiname name=th->context->getMultiname(n); 
 
 	LOG(NOT_IMPLEMENTED,"getSuper " << name);
 
@@ -1485,7 +1485,7 @@ void ABCVm::getSuper(call_context* th, int n)
 void ABCVm::setSuper(call_context* th, int n)
 {
 	ISWFObject* value=th->runtime_stack_pop();
-	multiname name=th->vm->context->getMultiname(n); 
+	multiname name=th->context->getMultiname(n); 
 
 	LOG(NOT_IMPLEMENTED,"setSuper " << name);
 
@@ -1497,7 +1497,7 @@ ISWFObject* ABCVm::newFunction(call_context* th, int n)
 {
 	LOG(CALLS,"newFunction " << n);
 
-	method_info* m=&th->vm->context->methods[n];
+	method_info* m=&th->context->methods[n];
 	SyntheticFunction* f=new SyntheticFunction(m);
 	f->func_scope=th->scope_stack;
 	return f;
@@ -1669,14 +1669,14 @@ void ABCVm::pushScope(call_context* th)
 
 ISWFObject* ABCVm::pushInt(call_context* th, int n)
 {
-	s32 i=th->vm->context->constant_pool.integer[n];
+	s32 i=th->context->constant_pool.integer[n];
 	LOG(CALLS, "pushInt [" << dec << n << "] " << i);
 	return new Integer(i);
 }
 
 ISWFObject* ABCVm::pushDouble(call_context* th, int n)
 {
-	d64 d=th->vm->context->constant_pool.doubles[n];
+	d64 d=th->context->constant_pool.doubles[n];
 	LOG(CALLS, "pushDouble [" << dec << n << "] " << d);
 	return new Number(d);
 }
@@ -1741,11 +1741,11 @@ void ABCVm::constructSuper(call_context* th, int n)
 		obj->super=new ASObject;
 		obj->super->prototype=super;
 
-		multiname name=th->vm->context->getMultiname(th->vm->context->instances[super->class_index].name,th);
+		multiname name=th->context->getMultiname(th->context->instances[super->class_index].name,th);
 		LOG(CALLS,"Constructing " << name);
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->vm->context->instances[super->class_index].trait_count;i++)
-			th->vm->context->buildTrait(obj->super,&th->vm->context->instances[super->class_index].traits[i]);
+		for(int i=0;i<th->context->instances[super->class_index].trait_count;i++)
+			th->context->buildTrait(obj->super,&th->context->instances[super->class_index].traits[i]);
 		LOG(CALLS,"Calling Instance init");
 		//args.incRef();
 		super->constructor->call(obj->super,&args);
@@ -1769,7 +1769,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 void ABCVm::setProperty(call_context* th, int n)
 {
 	ISWFObject* value=th->runtime_stack_pop();
-	multiname name=th->vm->context->getMultiname(n,th);
+	multiname name=th->context->getMultiname(n,th);
 	LOG(CALLS,"setProperty " << name);
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1796,7 +1796,7 @@ void ABCVm::setProperty(call_context* th, int n)
 
 void ABCVm::getProperty(call_context* th, int n)
 {
-	multiname name=th->vm->context->getMultiname(n,th);
+	multiname name=th->context->getMultiname(n,th);
 	LOG(CALLS, "getProperty " << name );
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1838,7 +1838,7 @@ void ABCVm::getProperty(call_context* th, int n)
 
 void ABCVm::findProperty(call_context* th, int n)
 {
-	multiname name=th->vm->context->getMultiname(n);
+	multiname name=th->context->getMultiname(n);
 	LOG(CALLS, "findProperty " << name );
 
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
@@ -1857,14 +1857,14 @@ void ABCVm::findProperty(call_context* th, int n)
 	if(!owner)
 	{
 		LOG(CALLS, "NOT found, pushing global" );
-		th->runtime_stack_push(&th->vm->Global);
-		th->vm->Global.incRef();
+		th->runtime_stack_push(&th->context->vm->Global);
+		th->context->vm->Global.incRef();
 	}
 }
 
 void ABCVm::findPropStrict(call_context* th, int n)
 {
-	multiname name=th->vm->context->getMultiname(n);
+	multiname name=th->context->getMultiname(n);
 	LOG(CALLS, "findPropStrict " << name );
 
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
@@ -1884,7 +1884,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 	{
 		LOG(CALLS, "NOT found, trying Global" );
 		//TODO: to multiname
-		th->vm->Global.getVariableByName(name.name,owner);
+		th->context->vm->Global.getVariableByName(name.name,owner);
 		if(owner)
 		{
 			th->runtime_stack_push(owner);
@@ -1900,7 +1900,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 
 void ABCVm::initProperty(call_context* th, int n)
 {
-	multiname name=th->vm->context->getMultiname(n);
+	multiname name=th->context->getMultiname(n);
 	LOG(CALLS, "initProperty " << name );
 	ISWFObject* value=th->runtime_stack_pop();
 
@@ -1928,14 +1928,14 @@ void ABCVm::newClass(call_context* th, int n)
 	ASObject* ret=new ASObject;
 	ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
 
-	method_info* m=&th->vm->context->methods[th->vm->context->classes[n].cinit];
+	method_info* m=&th->context->methods[th->context->classes[n].cinit];
 	IFunction* cinit=new SyntheticFunction(m);
 	LOG(CALLS,"Building class traits");
-	for(int i=0;i<th->vm->context->classes[n].trait_count;i++)
-		th->vm->context->buildTrait(ret,&th->vm->context->classes[n].traits[i]);
+	for(int i=0;i<th->context->classes[n].trait_count;i++)
+		th->context->buildTrait(ret,&th->context->classes[n].traits[i]);
 
 	//add Constructor the the class methods
-	method_info* constructor=&th->vm->context->methods[th->vm->context->instances[n].init];
+	method_info* constructor=&th->context->methods[th->context->instances[n].init];
 	ret->constructor=new SyntheticFunction(constructor);
 	ret->class_index=n;
 
@@ -1954,7 +1954,7 @@ ISWFObject* ABCVm::getScopeObject(call_context* th, int n)
 
 void ABCVm::getLex(call_context* th, int n)
 {
-	multiname name=th->vm->context->getMultiname(n);
+	multiname name=th->context->getMultiname(n);
 	LOG(CALLS, "getLex: " << name );
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
 	ISWFObject* owner;
@@ -2000,15 +2000,15 @@ void ABCVm::getLex(call_context* th, int n)
 	if(!owner)
 	{
 		LOG(CALLS, "NOT found, trying Global" );
-		ISWFObject* o2=th->vm->Global.getVariableByMultiname(name,owner);
+		ISWFObject* o2=th->context->vm->Global.getVariableByMultiname(name,owner);
 		if(owner)
 		{
 			if(o2->getObjectType()==T_DEFINABLE)
 			{
 				LOG(CALLS,"Deferred definition of property " << name);
 				Definable* d=dynamic_cast<Definable*>(o2);
-				d->define(&th->vm->Global);
-				o2=th->vm->Global.getVariableByMultiname(name,owner);
+				d->define(&th->context->vm->Global);
+				o2=th->context->vm->Global.getVariableByMultiname(name,owner);
 			}
 
 			th->runtime_stack_push(o2);
@@ -2024,7 +2024,7 @@ void ABCVm::getLex(call_context* th, int n)
 
 ISWFObject* ABCVm::pushString(call_context* th, int n)
 {
-	string s=th->vm->context->getString(n); 
+	string s=th->context->vm->context->getString(n); 
 	LOG(CALLS, "pushString " << s );
 	return new ASString(s);
 }
@@ -2166,30 +2166,30 @@ call_context::call_context(method_info* th)
 	//TODO: We add a 3x safety margin because not implemented instruction do not clean the stack as they should
 	stack=new ISWFObject*[th->body->max_stack*3];
 	stack_index=0;
-	vm=th->vm;
+	context=th->context;
 }
 
-llvm::Function* method_info::synt_method()
+SyntheticFunction::synt_function method_info::synt_method()
 {
 	if(f)
 		return f;
 
 	if(!body)
 	{
-		string n=vm->context->getString(name);
+		string n=context->vm->context->getString(name);
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
 		return NULL;
 	}
 	stringstream code(body->code);
-	llvm::ExecutionEngine* ex=vm->ex;
+	llvm::ExecutionEngine* ex=context->vm->ex;
 	llvm::FunctionType* method_type=synt_method_prototype(ex);
-	f=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",vm->module);
+	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",context->vm->module);
 
 	//The pointer size compatible int type will be useful
 	//TODO: void*
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 	
-	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", f);
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", llvmf);
 	llvm::IRBuilder<> Builder;
 	Builder.SetInsertPoint(BB);
 
@@ -2202,7 +2202,7 @@ llvm::Function* method_info::synt_method()
 	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(ptr_type));
 
 	//the current execution context is allocated here
-	llvm::Function::ArgumentListType::iterator it=f->getArgumentList().begin();
+	llvm::Function::ArgumentListType::iterator it=llvmf->getArgumentList().begin();
 	it++;
 	it++;
 	llvm::Value* context=it;
@@ -2225,7 +2225,7 @@ llvm::Function* method_info::synt_method()
 	
 	//Creating a mapping between blocks and starting address
 	//The current header block is ended
-	llvm::BasicBlock *StartBB = llvm::BasicBlock::Create("entry", f);
+	llvm::BasicBlock *StartBB = llvm::BasicBlock::Create("entry", llvmf);
 	Builder.CreateBr(StartBB);
 	//CHECK: maybe not needed
 	Builder.SetInsertPoint(StartBB);
@@ -2241,7 +2241,7 @@ llvm::Function* method_info::synt_method()
 	//First argument is the 'this'
 	constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 0);
 	llvm::Value* t=Builder.CreateGEP(locals,constant);
-	it=f->getArgumentList().begin();
+	it=llvmf->getArgumentList().begin();
 	llvm::Value* arg=it;
 	Builder.CreateStore(arg,t);
 	//Second argument is the arguments pointer
@@ -2359,7 +2359,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 				Builder.CreateBr(A);
@@ -2382,7 +2382,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2393,7 +2393,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2427,7 +2427,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2438,7 +2438,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2472,7 +2472,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2483,7 +2483,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2516,7 +2516,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2527,7 +2527,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2565,7 +2565,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 				//Create a block for the landing code and insert it in the mapping
@@ -2575,7 +2575,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("jump_land", f);
+					B=llvm::BasicBlock::Create("jump_land", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 
@@ -2598,7 +2598,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2609,7 +2609,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2642,7 +2642,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2653,7 +2653,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2685,7 +2685,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2696,7 +2696,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2730,7 +2730,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2741,7 +2741,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2775,7 +2775,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2786,7 +2786,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2820,7 +2820,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2831,7 +2831,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2864,7 +2864,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2875,7 +2875,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -2908,7 +2908,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2919,7 +2919,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 			
@@ -2952,7 +2952,7 @@ llvm::Function* method_info::synt_method()
 					A=it->second;
 				else
 				{
-					A=llvm::BasicBlock::Create("fall", f);
+					A=llvm::BasicBlock::Create("fall", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
 				}
 
@@ -2963,7 +2963,7 @@ llvm::Function* method_info::synt_method()
 					B=it->second;
 				else
 				{
-					B=llvm::BasicBlock::Create("then", f);
+					B=llvm::BasicBlock::Create("then", llvmf);
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
@@ -3936,6 +3936,8 @@ llvm::Function* method_info::synt_method()
 			abort();
 		}
 	}
+
+	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }
 
@@ -3950,7 +3952,7 @@ void ABCContext::exec()
 
 		LOG(CALLS, "Building script traits: " << scripts[i].trait_count );
 		for(int j=0;j<scripts[i].trait_count;j++)
-			buildTrait(&vm->Global,&scripts[i].traits[j],new SyntheticFunction(m));
+			buildTrait(Global,&scripts[i].traits[j],new SyntheticFunction(m));
 	}
 	//Before the entry point we run early events
 //	while(sem_trywait(&th->sem_event_count)==0)
@@ -3961,8 +3963,8 @@ void ABCContext::exec()
 	IFunction* entry=new SyntheticFunction(m);
 	LOG(CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(int j=0;j<scripts[i].trait_count;j++)
-		buildTrait(&vm->Global,&scripts[i].traits[j]);
-	entry->call(&vm->Global,NULL);
+		buildTrait(Global,&scripts[i].traits[j]);
+	entry->call(Global,NULL);
 	LOG(CALLS, "End of Entry Point");
 
 }
@@ -4147,47 +4149,6 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 			obj->setVariableByName(name, new Undefined);
 	}
 }
-
-/*ISWFObject* ABCContext::buildClass(int m) 
-{
-	const class_info* c=&classes[m];
-	const instance_info* i=&instances[m];
-	string name=getString(constant_pool.multinames[i->name].name);
-
-	if(c->trait_count)
-		LOG(NOT_IMPLEMENTED,"Should add class traits for " << name);
-
-/*	//Run class initialization
-	method_info* mi=get_method(c->cinit);
-	synt_method(mi);
-	void* f_ptr=ex->getPointerToFunction(mi->f);
-	void (*FP)() = (void (*)())f_ptr;
-	LOG(CALLS,"Class init lenght" << mi->body->code_length);
-	FP);*
-
-//	LOG(CALLS,"Building class " << name);
-	if(i->supername)
-	{
-		string super=getString(constant_pool.multinames[i->supername].name);
-//		LOG(NOT_IMPLEMENTED,"Inheritance not supported: super " << super);
-	}
-	if(i->trait_count)
-	{
-//		LOG(NOT_IMPLEMENTED,"Should add instance traits");
-/*		for(int j=0;j<i->trait_count;j++)
-			printTrait(&i->traits[j]);*
-	}
-/*	//Run instance initialization
-	method_info* mi=get_method(i->init);
-	if(synt_method(mi))
-	{
-		void* f_ptr=ex->getPointerToFunction(mi->f);
-		void (*FP)() = (void (*)())f_ptr;
-		LOG(CALLS,"instance init lenght" << mi->body->code_length);
-		FP();
-	}*
-	return new ASObject();
-}*/
 
 istream& operator>>(istream& in, u32& v)
 {

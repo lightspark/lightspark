@@ -572,13 +572,7 @@ IFunction* Function::toFunction()
 SyntheticFunction::SyntheticFunction(method_info* m):mi(m)
 {
 	class_index=-2;
-	m->synt_method();
-	if(m->f)
-	{
-		val=(synt_function)m->vm->ex->getPointerToFunction(m->f);
-	}
-	else
-		val=NULL;
+	val=m->synt_method();
 }
 
 ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)

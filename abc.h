@@ -150,6 +150,7 @@ struct option_detail
 };
 
 class method_body_info;
+class ABCContext;
 class ABCVm;
 
 struct call_context
@@ -160,7 +161,7 @@ struct call_context
 		ISWFObject** stack;
 		uint32_t stack_index;
 	} __attribute__((packed));
-	ABCVm* vm;
+	ABCContext* context;
 	std::vector<ISWFObject*> scope_stack;
 	void runtime_stack_push(ISWFObject* s);
 	ISWFObject* runtime_stack_pop();
@@ -198,13 +199,14 @@ private:
 			std::vector<stack_entry>& static_stack, 
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 	llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
+	llvm::Function* llvmf;
 
 public:
-	llvm::Function* synt_method();
-	llvm::Function* f;
-	ABCVm* vm;
+	SyntheticFunction::synt_function synt_method();
+	SyntheticFunction::synt_function f;
+	ABCContext* context;
 	method_body_info* body;
-	method_info():body(NULL),f(NULL),vm(NULL)
+	method_info():body(NULL),f(NULL),context(NULL)
 	{
 	}
 };
@@ -329,14 +331,14 @@ private:
 	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
 	multiname getMultiname(unsigned int m, call_context* th=NULL) const;
 	ABCVm* vm;
+	ASObject* Global;
 public:
-	ABCContext(ABCVm* vm,std::istream& in);
+	ABCContext(ABCVm* vm,ASObject* g,std::istream& in);
 	void exec();
 };
 
 class ABCVm
 {
-friend class ABCContext;
 friend class method_info;
 private:
 	SystemState* m_sys;

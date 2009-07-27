@@ -26,8 +26,9 @@
 
 class ISWFObject;
 class PlaceObject2Tag;
+class ABCContext;
 
-enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION };
+enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT };
 
 class Event: public ASObject
 {
@@ -126,6 +127,16 @@ public:
 	{
 		sem_wait(&s);
 	}
+};
+
+class ABCContextInitEvent: public Event
+{
+friend class ABCVm;
+private:
+	ABCContext* context;
+public:
+	ABCContextInitEvent(ABCContext* c):Event("ABCContextInitEvent"),context(c){}
+	EVENT_TYPE getEventType() { return CONTEXT; }
 };
 
 #endif

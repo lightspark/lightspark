@@ -38,7 +38,8 @@ int main(int argc, char* argv[])
 	sys=new SystemState;
 
 	ifstream f(argv[1]);
-	ABCVm vm(sys,f);
+	//TODO: Inject Context event
+	ABCVm vm(sys);
 	vm.start();
 	vm.wait();
 }

@@ -312,14 +312,11 @@ void MovieClip::Render()
 	MovieClip* clip_bak=rt->currentClip;
 	rt->currentClip=this;
 
-	bool bak=state.stop_FP;
 	if(!initialized)
 	{
 		initialize();
 		initialized=true;
 	}
-	if(state.stop_FP!=bak)
-		abort();
 
 	if(!state.stop_FP /*&& (class_name=="MovieClip" || class_name=="SystemState")*/)
 		state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount

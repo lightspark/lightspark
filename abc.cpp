@@ -162,21 +162,17 @@ using namespace std;
 
 void ignore(istream& i, int count);
 
-DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in),vm(NULL)
+DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 {
 	int dest=in.tellg();
 	dest+=getSize();
 	in >> Flags >> Name;
 	LOG(CALLS,"DoABCTag Name: " << Name);
 
-	if(sys->currentVm)
-	{
-		LOG(NOT_IMPLEMENTED,"Not supported multiple VM");
-		return;
-	}
-	
-	vm=new ABCVm(sys,in);
-	sys->currentVm=vm;
+	if(sys->currentVm==NULL)
+		sys->currentVm=new ABCVm(sys);
+
+	context=new ABCContext(sys->currentVm,in);
 
 	if(dest!=in.tellg())
 		LOG(ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
@@ -185,8 +181,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in),vm(NULL)
 void DoABCTag::execute()
 {
 	LOG(CALLS,"ABC Exec " << Name);
-	if(vm)
-		vm->start();
+	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
@@ -609,7 +604,7 @@ multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 	return ret;
 }
 
-ABCContext::ABCContext(ABCVm* v,ASObject* g,istream& in):vm(v),Global(g)
+ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 {
 	in >> minor >> major;
 	LOG(CALLS,"ABCVm version " << major << '.' << minor);
@@ -654,9 +649,8 @@ ABCContext::ABCContext(ABCVm* v,ASObject* g,istream& in):vm(v),Global(g)
 	}
 }
 
-ABCVm::ABCVm(SystemState* s,istream& in):shutdown(false),m_sys(s)
+ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s)
 {
-	context=new ABCContext(this,&Global,in);
 	sem_init(&mutex,0,1);
 	sem_init(&sem_event_count,0,0);
 	sem_init(&started,0,0);
@@ -698,7 +692,7 @@ void ABCVm::handleEvent()
 					MovieClip* m=static_cast<MovieClip*>(ev->base);
 					m->initialize();
 				}
-				ISWFObject* o=context->buildNamedClass(ev->class_name,ev->base,&args);
+				ISWFObject* o=last_context->buildNamedClass(ev->class_name,ev->base,&args);
 				LOG(CALLS,"End of binding of " << ev->class_name);
 
 				break;
@@ -717,6 +711,14 @@ void ABCVm::handleEvent()
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second);
 				//We hope the method is binded
 				ev->f->call(NULL,NULL);
+				break;
+			}
+			case CONTEXT:
+			{
+				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second);
+				last_context=ev->context;
+				cout << "Nuovo contesto" << endl;
+				last_context->exec();
 				break;
 			}
 			default:
@@ -2024,7 +2026,7 @@ void ABCVm::getLex(call_context* th, int n)
 
 ISWFObject* ABCVm::pushString(call_context* th, int n)
 {
-	string s=th->context->vm->context->getString(n); 
+	string s=th->context->getString(n); 
 	LOG(CALLS, "pushString " << s );
 	return new ASString(s);
 }
@@ -2176,7 +2178,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	if(!body)
 	{
-		string n=context->vm->context->getString(name);
+		string n=context->getString(name);
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
 		return NULL;
 	}
@@ -2294,7 +2296,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		{
 			//TODO: Check this. It seems that there may be invalid code after
 			//block end
-			LOG(CALLS,"Ignoring at " << int(code.tellg())-1);
+			LOG(TRACE,"Ignoring at " << int(code.tellg())-1);
 			continue;
 			/*LOG(CALLS,"Inserting block at "<<int(code.tellg())-1);
 			abort();
@@ -3971,7 +3973,6 @@ void ABCContext::exec()
 
 void ABCVm::Run(ABCVm* th)
 {
-	sem_wait(&th->started);
 	sys=th->m_sys;
 	th->module=new llvm::Module("abc jit");
 	if(th->ex)
@@ -3985,8 +3986,6 @@ void ABCVm::Run(ABCVm* th)
 	th->registerClasses();
 	th->Global.class_name="Global";
 
-	th->context->exec();
-	
 	while(1)
 	{
 		timespec ts,td;

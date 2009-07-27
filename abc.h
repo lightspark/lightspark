@@ -333,12 +333,13 @@ private:
 	ABCVm* vm;
 	ASObject* Global;
 public:
-	ABCContext(ABCVm* vm,ASObject* g,std::istream& in);
+	ABCContext(ABCVm* vm,std::istream& in);
 	void exec();
 };
 
 class ABCVm
 {
+friend class ABCContext;
 friend class method_info;
 private:
 	SystemState* m_sys;
@@ -469,11 +470,11 @@ private:
 	bool shutdown;
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
+	ABCContext* last_context;
 public:
-	ABCContext* context;
 	static llvm::ExecutionEngine* ex;
 	static sem_t sem_ex;
-	ABCVm(SystemState* s,std::istream& in);
+	ABCVm(SystemState* s);
 	~ABCVm();
 	static void Run(ABCVm* th);
 	void addEvent(EventDispatcher*,Event*);
@@ -486,7 +487,7 @@ class DoABCTag: public ControlTag
 private:
 	UI32 Flags;
 	STRING Name;
-	ABCVm* vm;
+	ABCContext* context;
 	pthread_t thread;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);

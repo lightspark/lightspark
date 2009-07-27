@@ -323,21 +323,24 @@ void MovieClip::Render()
 	else
 		state.next_FP=state.FP;
 
-	if(!state.stop_FP)
-		frames[state.FP].runScript();
+	if(!frames.empty())
+	{
+		if(!state.stop_FP)
+			frames[state.FP].runScript();
 
-	//Set the id in the secondary color
-	glPushAttrib(GL_CURRENT_BIT);
-	glSecondaryColor3f(id,0,0);
+		//Set the id in the secondary color
+		glPushAttrib(GL_CURRENT_BIT);
+		glSecondaryColor3f(id,0,0);
 
-	//Apply local transformation
-	glPushMatrix();
-	//glTranslatef(_x,_y,0);
-	glRotatef(rotation,0,0,1);
-	frames[state.FP].Render();
+		//Apply local transformation
+		glPushMatrix();
+		//glTranslatef(_x,_y,0);
+		glRotatef(rotation,0,0,1);
+		frames[state.FP].Render();
 
-	glPopMatrix();
-	glPopAttrib();
+		glPopMatrix();
+		glPopAttrib();
+	}
 
 	if(state.FP!=state.next_FP)
 		state.FP=state.next_FP;

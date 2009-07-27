@@ -717,7 +717,6 @@ void ABCVm::handleEvent()
 			{
 				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second);
 				last_context=ev->context;
-				cout << "Nuovo contesto" << endl;
 				last_context->exec();
 				break;
 			}
@@ -1137,6 +1136,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 		th->runtime_stack_push(new Undefined);
 	}
+	LOG(CALLS,"End of calling " << name);
 //	obj->decRef();
 }
 
@@ -1212,6 +1212,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 //	args->decRef();
 //	obj->decRef();
+	LOG(CALLS,"End of calling " << name);
 }
 
 void ABCVm::jump(call_context* th, int offset)
@@ -1357,13 +1358,19 @@ bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 
 bool ABCVm::ifNE(ISWFObject* obj1, ISWFObject* obj2, int offset)
 {
-	LOG(CALLS,"ifNE " << offset);
+	LOG(CALLS,"ifNE " << dec << offset);
 
 	//Real comparision demanded to object
 	if(!obj1->isEqual(obj2))
+	{
+		cout << "true" << endl;
 		return true;
+	}
 	else
+	{
+		cout << "false" << endl;
 		return false;
+	}
 }
 
 ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
@@ -1710,9 +1717,73 @@ void ABCVm::incLocal_i(call_context* th, int n)
 
 }
 
-void ABCVm::construct(call_context* th, int n)
+void ABCVm::construct(call_context* th, int m)
 {
-	LOG(NOT_IMPLEMENTED, "construct " << n );
+	LOG(CALLS, "construct " << m);
+	arguments args(m);
+	for(int i=0;i<m;i++)
+		args.at(m-i-1)=th->runtime_stack_pop();
+
+	ISWFObject* o=th->runtime_stack_pop();
+
+	if(o->getObjectType()==T_DEFINABLE)
+	{
+		LOG(ERROR,"Check");
+		abort();
+	/*	LOG(CALLS,"Deferred definition of property " << name);
+		Definable* d=dynamic_cast<Definable*>(o);
+		d->define(obj);
+		o=obj->getVariableByMultiname(name,owner);
+		LOG(CALLS,"End of deferred definition of property " << name);*/
+	}
+
+	LOG(CALLS,"Constructing");
+	//We get a shallow copy of the object, but clean out Variables
+	//TODO: should be done in the copy constructor
+	ASObject* ret=dynamic_cast<ASObject*>(o->clone());
+	ret->Variables.clear();
+
+	ASObject* aso=dynamic_cast<ASObject*>(o);
+	ret->prototype=aso;
+	if(aso==NULL)
+		LOG(ERROR,"Class is not as ASObject");
+
+	if(o->class_index==-2)
+	{
+		//We have to build the method traits
+		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
+		LOG(CALLS,"Building method traits");
+		for(int i=0;i<sf->mi->body->trait_count;i++)
+		{
+			cout << i << endl;
+			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+		}
+		sf->call(ret,&args);
+
+	}
+	else if(o->class_index==-1)
+	{
+		//The class is builtin
+		LOG(CALLS,"Building a builtin class");
+	}
+	else
+	{
+		//The class is declared in the script and has an index
+		LOG(CALLS,"Building instance traits");
+		for(int i=0;i<th->context->instances[o->class_index].trait_count;i++)
+			th->context->buildTrait(ret,&th->context->instances[o->class_index].traits[i]);
+	}
+
+	if(o->constructor)
+	{
+		LOG(CALLS,"Calling Instance init");
+		args.incRef();
+		o->constructor->call(ret,&args);
+//		args.decRef();
+	}
+
+	LOG(CALLS,"End of constructing");
+	th->runtime_stack_push(ret);
 }
 
 void ABCVm::constructSuper(call_context* th, int n)
@@ -1993,6 +2064,7 @@ void ABCVm::getLex(call_context* th, int n)
 				Definable* d=dynamic_cast<Definable*>(o);
 				d->define(*it);
 				o=(*it)->getVariableByMultiname(name,owner);
+				LOG(CALLS,"End of deferred definition of property " << name);
 			}
 			th->runtime_stack_push(o);
 			o->incRef();
@@ -2009,8 +2081,9 @@ void ABCVm::getLex(call_context* th, int n)
 			{
 				LOG(CALLS,"Deferred definition of property " << name);
 				Definable* d=dynamic_cast<Definable*>(o2);
-				d->define(&th->context->vm->Global);
-				o2=th->context->vm->Global.getVariableByMultiname(name,owner);
+				d->define(th->context->Global);
+				o2=th->context->Global->getVariableByMultiname(name,owner);
+				LOG(CALLS,"End of deferred definition of property " << name);
 			}
 
 			th->runtime_stack_push(o2);

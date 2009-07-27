@@ -285,6 +285,7 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 
 				float selected=sys->cur_render_thread->getIdAt(event.button.x,event.button.y);
+				cout << "mouse" << endl;
 				if(selected==0)
 					break;
 

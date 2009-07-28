@@ -464,7 +464,6 @@ private:
 	//Synchronization
 	sem_t mutex;
 	sem_t sem_event_count;
-	sem_t started;
 
 	//Event handling
 	bool shutdown;
@@ -478,7 +477,6 @@ public:
 	~ABCVm();
 	static void Run(ABCVm* th);
 	void addEvent(EventDispatcher*,Event*);
-	void start() { sem_post(&started);}
 	void wait();
 };
 

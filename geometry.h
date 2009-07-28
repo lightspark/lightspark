@@ -138,6 +138,7 @@ private:
 	FILLSTYLE* style;
 public:
 	std::vector<Triangle> interior;
+	std::vector<std::vector<Vector2> > triangle_strips;
 	std::vector<Vector2> outline;
 	std::vector<Shape> sub_shapes;
 	std::vector<Edge> edges;

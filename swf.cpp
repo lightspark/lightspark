@@ -1137,17 +1137,16 @@ void RootMovieClip::setVariableByString(const string& s, ISWFObject* o)
 			sub=s.substr(f,l-f);
 			ISWFObject* next_target;
 			ISWFObject* owner;
-			bool found;
 			if(f==0 && sub=="__Packages")
 			{
 				next_target=&sys->cur_render_thread->vm.Global;
-				found=true;
+				owner=&sys->cur_render_thread->vm.Global;
 			}
 			else
 				next_target=target->getVariableByName(sub,owner);
 
 			f=l+1;
-			if(!found)
+			if(!owner)
 			{
 				next_target=new Package;
 				target->setVariableByName(sub,next_target);

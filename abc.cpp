@@ -653,7 +653,6 @@ ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s)
 {
 	sem_init(&mutex,0,1);
 	sem_init(&sem_event_count,0,0);
-	sem_init(&started,0,0);
 	m_sys=s;
 	pthread_create(&t,NULL,(thread_worker)Run,this);
 }

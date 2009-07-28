@@ -1554,21 +1554,3 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	}
 }
 
-ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	LOG(NO_INFO,"ExportAssetsTag Tag");
-	in >> Count;
-	Tags.resize(Count);
-	Names.resize(Count);
-	for(int i=0;i<Count;i++)
-	{
-		in >> Tags[i] >> Names[i];
-		cout << Tags[i] << ' ' << Names[i] << endl;
-		DictionaryTag* d=pt->root->dictionaryLookup(Tags[i]);
-		if(d==NULL)
-			abort();
-
-		pt->root->setVariableByString(Names[i],d->instance());
-	}
-}
-

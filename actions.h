@@ -68,6 +68,16 @@ public:
 	void Render();
 };
 
+class ExportAssetsTag: public Tag
+{
+private:
+	UI16 Count;
+	std::vector<UI16> Tags;
+	std::vector<STRING> Names;
+public:
+	ExportAssetsTag(RECORDHEADER h, std::istream& in);
+};
+
 class ACTIONRECORDHEADER
 {
 public:

@@ -44,17 +44,15 @@ void Shape::Render(int x, int y) const
 	bool filled=false;
 	if(closed)
 	{
-		//LOG(TRACE,"Filling");
-		std::vector<Triangle>::const_iterator it2=interior.begin();
 		style->setFragmentProgram();
-		glBegin(GL_TRIANGLES);
-		for(it2;it2!=interior.end();it2++)
+
+		for(int i=0;i<triangle_strips.size();i++)
 		{
-			glVertex2i(it2->v1.x+x,it2->v1.y+y);
-			glVertex2i(it2->v2.x+x,it2->v2.y+y);
-			glVertex2i(it2->v3.x+x,it2->v3.y+y);
+			glBegin(GL_TRIANGLE_STRIP);
+			for(int j=0;j<triangle_strips[i].size();j++)
+				glVertex2i(triangle_strips[i][j].x+x,triangle_strips[i][j].y+y);
+			glEnd();
 		}
-		glEnd();
 		filled=true;
 	}
 
@@ -187,6 +185,107 @@ void Shape::BuildFromEdges(FILLSTYLE* styles)
 	//Tessellate the shape using ear removing algorithm
 	if(closed)
 		TessellateSimple();
+
+	interiorbak=interior;
+	//Try to build triangle strip
+	while(!interior.empty())
+	{
+		std::vector<Vector2> strip[3];
+		std::vector<Triangle> triangles[3];
+
+		triangles[0]=interior;
+		triangles[1]=interior;
+		triangles[2]=interior;
+
+		int j[3]={2,2,2};
+
+		strip[0].push_back(interior[0].v1);
+		strip[0].push_back(interior[0].v2);
+		strip[0].push_back(interior[0].v3);
+
+		strip[1].push_back(interior[0].v3);
+		strip[1].push_back(interior[0].v1);
+		strip[1].push_back(interior[0].v2);
+
+		strip[2].push_back(interior[0].v2);
+		strip[2].push_back(interior[0].v3);
+		strip[2].push_back(interior[0].v1);
+
+		for(int k=0;k<3;k++)
+		{
+			triangles[k].erase(triangles[k].begin());
+			int i=0;
+			while(1)
+			{
+				if(i==triangles[k].size())
+					break;
+
+				if(strip[k][j[k]]==triangles[k][i].v1 && strip[k][j[k]-1]==triangles[k][i].v2)
+				{
+					strip[k].push_back(triangles[k][i].v3);
+					triangles[k].erase(triangles[k].begin()+i);
+					i=0;
+					j[k]++;
+				}
+				else if(strip[k][j[k]-1]==triangles[k][i].v1 && strip[k][j[k]]==triangles[k][i].v2)
+				{
+					strip[k].push_back(triangles[k][i].v3);
+					triangles[k].erase(triangles[k].begin()+i);
+					i=0;
+					j[k]++;
+				}
+				else if(strip[k][j[k]]==triangles[k][i].v2 && strip[k][j[k]-1]==triangles[k][i].v3)
+				{
+					strip[k].push_back(triangles[k][i].v1);
+					triangles[k].erase(triangles[k].begin()+i);
+					i=0;
+					j[k]++;
+				}
+				else if(strip[k][j[k]-1]==triangles[k][i].v2 && strip[k][j[k]]==triangles[k][i].v3)
+				{
+					strip[k].push_back(triangles[k][i].v1);
+					triangles[k].erase(triangles[k].begin()+i);
+					i=0;
+					j[k]++;
+				}
+				else if(strip[k][j[k]]==triangles[k][i].v3 && strip[k][j[k]-1]==triangles[k][i].v1)
+				{
+					strip[k].push_back(triangles[k][i].v2);
+					triangles[k].erase(triangles[k].begin()+i);
+					i=0;
+					j[k]++;
+				}
+				else if(strip[k][j[k]-1]==triangles[k][i].v3 && strip[k][j[k]]==triangles[k][i].v1)
+				{
+					strip[k].push_back(triangles[k][i].v2);
+					triangles[k].erase(triangles[k].begin()+i);
+					i=0;
+					j[k]++;
+				}
+				else
+					i++;
+			}
+		}
+
+		if(strip[0].size()<=strip[2].size() && 
+			strip[1].size()<=strip[2].size())
+		{
+			triangle_strips.push_back(strip[2]);
+			interior=triangles[2];
+		}
+		else if(strip[0].size()<=strip[1].size() && 
+			strip[2].size()<=strip[1].size())
+		{
+			triangle_strips.push_back(strip[1]);
+			interior=triangles[1];
+		}
+		else if(strip[1].size()<=strip[0].size() && 
+			strip[2].size()<=strip[0].size())
+		{
+			triangle_strips.push_back(strip[0]);
+			interior=triangles[0];
+		}
+	}
 }
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)

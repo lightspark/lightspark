@@ -36,10 +36,12 @@ int main(int argc, char* argv[])
 	}
 	Log::initLogging(CALLS);
 	sys=new SystemState;
+	sys->fps_prof=new fps_profiling();
 
 	ifstream f(argv[1]);
 	//TODO: Inject Context event
 	ABCVm vm(sys);
-	vm.start();
+	ABCContext* context=new ABCContext(&vm,f);
+	vm.addEvent(NULL,new ABCContextInitEvent(context));
 	vm.wait();
 }

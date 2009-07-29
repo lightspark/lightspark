@@ -54,7 +54,7 @@ ASFUNCTIONBODY(ASArray,_constructor)
 
 	if(args->size()!=0)
 	{
-		LOG(NOT_IMPLEMENTED,"Called Array constructor");
+		LOG(CALLS,"Called Array constructor");
 		th->resize(args->size());
 		for(int i=0;i<args->size();i++)
 			th->at(i)=args->at(i);
@@ -397,6 +397,19 @@ bool ASString::isEqual(const ISWFObject* r) const
 	}
 	else
 		return false;
+}
+
+bool Boolean::isEqual(const ISWFObject* r) const
+{
+	if(r->getObjectType()==T_BOOLEAN)
+	{
+		const Boolean* b=static_cast<const Boolean*>(r);
+		return b->val==val;
+	}
+	else
+	{
+		return ISWFObject::isEqual(r);
+	}
 }
 
 bool Undefined::isEqual(const ISWFObject* r) const

@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <stdlib.h>
 #include "swf.h"
+#include "geometry.h"
 
 using namespace std;
 extern __thread SystemState* sys;
@@ -623,6 +624,71 @@ inline RGBA medianColor(const RGBA& a, const RGBA& b, float factor)
 		a.Green+(b.Green-a.Green)*factor,
 		a.Blue+(b.Blue-a.Blue)*factor,
 		a.Alpha+(b.Alpha-a.Alpha)*factor);
+}
+
+void FILLSTYLE::setVertexData(arrayElem* elem)
+{
+	if(FillStyleType==0x00)
+	{
+		//LOG(TRACE,"Fill color");
+		elem->colors[0]=1;
+		elem->colors[1]=0;
+		elem->colors[2]=0;
+
+		elem->texcoord[0]=float(Color.Red)/256.0f;
+		elem->texcoord[1]=float(Color.Green)/256.0f;
+		elem->texcoord[2]=float(Color.Blue)/256.0f;
+		elem->texcoord[3]=float(Color.Alpha)/256.0f;
+	}
+	else if(FillStyleType==0x10)
+	{
+		//LOG(TRACE,"Fill gradient");
+		elem->colors[0]=0;
+		elem->colors[1]=1;
+		elem->colors[2]=0;
+
+		/*color_entry buffer[256];
+		int grad_index=0;
+		RGBA color_l(0,0,0,1);
+		int index_l=0;
+		RGBA color_r(Gradient.GradientRecords[0].Color);
+		int index_r=Gradient.GradientRecords[0].Ratio;
+
+		for(int i=0;i<256;i++)
+		{
+			float dist=i-index_l;
+			dist/=(index_r-index_l);
+			RGBA c=medianColor(color_l,color_r,dist);
+			buffer[i].r=float(c.Red)/256.0f;
+			buffer[i].g=float(c.Green)/256.0f;
+			buffer[i].b=float(c.Blue)/256.0f;
+			buffer[i].a=1;
+
+			if(Gradient.GradientRecords[grad_index].Ratio==i)
+			{
+				grad_index++;
+				color_l=color_r;
+				index_l=index_r;
+				color_r=Gradient.GradientRecords[grad_index].Color;
+				index_r=Gradient.GradientRecords[grad_index].Ratio;
+			}
+		}
+
+		glBindTexture(GL_TEXTURE_2D,rt->data_tex);
+		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);*/
+	}
+	else
+	{
+		LOG(NOT_IMPLEMENTED,"Reverting to fixed function");
+		elem->colors[0]=1;
+		elem->colors[1]=0;
+		elem->colors[2]=0;
+
+		elem->texcoord[0]=0.5;
+		elem->texcoord[1]=0.5;
+		elem->texcoord[2]=0;
+		elem->texcoord[3]=1;
+	}
 }
 
 void FILLSTYLE::setFragmentProgram() const

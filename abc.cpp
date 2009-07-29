@@ -33,6 +33,7 @@
 #include "flashevents.h"
 #include "flashdisplay.h"
 #include "flashnet.h"
+#include "flashsystem.h"
 
 opcode_handler ABCVm::opcode_table_args0_lazy[]={
 	{"pushNaN",(void*)&ABCVm::pushNaN},
@@ -442,6 +443,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByName("Date",new Date);
 
 	Global.setVariableByName("print",new Function(print));
+	Global.setVariableByName("trace",new Function(print));
 	Global.setVariableByName("toString",new Function(ASObject::_toString));
 
 	Global.setVariableByName(Qname("flash.display","MovieClip"),new MovieClip);
@@ -479,6 +481,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByName(Qname("flash.net","LocalConnection"),new ASObject);
 	Global.setVariableByName(Qname("flash.net","URLRequest"),new URLRequest);
 	Global.setVariableByName(Qname("flash.net","URLVariables"),new ASObject);
+
+	Global.setVariableByName(Qname("flash.system","Capabilities"),new Capabilities);
 }
 
 Qname ABCContext::getQname(unsigned int mi, call_context* th) const
@@ -1035,7 +1039,10 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	ASObject* aso=dynamic_cast<ASObject*>(o);
 	ret->prototype=aso;
 	if(aso==NULL)
+	{
 		LOG(ERROR,"Class is not as ASObject");
+		abort();
+	}	
 
 	if(o->class_index==-2)
 	{
@@ -1043,10 +1050,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
 		LOG(CALLS,"Building method traits");
 		for(int i=0;i<sf->mi->body->trait_count;i++)
-		{
-			cout << i << endl;
 			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
-		}
 		sf->call(ret,&args);
 
 	}
@@ -1361,15 +1365,9 @@ bool ABCVm::ifNE(ISWFObject* obj1, ISWFObject* obj2, int offset)
 
 	//Real comparision demanded to object
 	if(!obj1->isEqual(obj2))
-	{
-		cout << "true" << endl;
 		return true;
-	}
 	else
-	{
-		cout << "false" << endl;
 		return false;
-	}
 }
 
 ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
@@ -1753,10 +1751,7 @@ void ABCVm::construct(call_context* th, int m)
 		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
 		LOG(CALLS,"Building method traits");
 		for(int i=0;i<sf->mi->body->trait_count;i++)
-		{
-			cout << i << endl;
 			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
-		}
 		sf->call(ret,&args);
 
 	}
@@ -1808,6 +1803,38 @@ void ABCVm::constructSuper(call_context* th, int n)
 
 	//The prototype of the new super instance is the super of the prototype
 	ASObject* super=obj->prototype->super;
+
+	//Check if the super is the one we expect
+	int super_name=th->context->instances[obj->prototype->class_index].supername;
+	if(super_name)
+	{
+		Qname sname=th->context->getQname(super_name);
+		ISWFObject* owner;
+		ISWFObject* real_super=th->context->Global->getVariableByName(sname,owner);
+		if(owner)
+		{
+			if(real_super==super)
+			{
+				LOG(CALLS,"Same super");
+			}
+			else
+			{
+				LOG(CALLS,"Changing super");
+				super=dynamic_cast<ASObject*>(real_super);
+			}
+		}
+		else
+		{
+			LOG(ERROR,"Super not found");
+			abort();
+		}
+	}
+	else
+	{
+		LOG(ERROR,"No super");
+		abort();
+	}
+
 	if(super->class_index!=-1)
 	{
 		obj->super=new ASObject;
@@ -1978,7 +2005,6 @@ void ABCVm::initProperty(call_context* th, int n)
 
 	ISWFObject* obj=th->runtime_stack_pop();
 
-	//TODO: Should we make a copy or pass the reference
 	obj->setVariableByName(name.name,value);
 }
 
@@ -3997,6 +4023,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode);
 				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
 				Builder.CreateRetVoid();
+
+				f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 				return f;
 		}
 	}
@@ -4086,15 +4114,32 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 	{
 		case traits_info::Class:
 		{
-		//	LOG(CALLS,"Registering trait " << name);
-		//	obj->setVariableByName(name, buildClass(t->classi));
 			ISWFObject* ret;
 			if(deferred_initialization)
 				ret=obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
 			else
-				ret=obj->setVariableByName(name, new Undefined);
+			{
+				ret=new ASObject;
+				//Should chek super
+				//ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
+
+				method_info* m=&methods[classes[t->classi].cinit];
+				IFunction* cinit=new SyntheticFunction(m);
+				LOG(CALLS,"Building class traits");
+				for(int i=0;i<classes[t->classi].trait_count;i++)
+					buildTrait(ret,&classes[t->classi].traits[i]);
+
+				//add Constructor the the class methods
+				method_info* constructor=&methods[instances[t->classi].init];
+				ret->constructor=new SyntheticFunction(constructor);
+				ret->class_index=t->classi;
+
+				LOG(CALLS,"Calling Class init");
+				cinit->call(ret,NULL);
+				ret=obj->setVariableByName(name, ret);
+			}
 			
-			LOG(CALLS,"Slot "<< t->slot_id << " type Class");
+			LOG(CALLS,"Slot "<< t->slot_id << " type Class name " << name << " id " << t->classi);
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, ret, name);
 			break;

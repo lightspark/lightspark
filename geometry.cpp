@@ -54,6 +54,22 @@ void Shape::Render(int x, int y) const
 			glEnd();
 		}
 		filled=true;
+
+		/*char* t=(char*)varray;
+		glVertexPointer(2,GL_INT,sizeof(arrayElem),t);
+		glColorPointer(3,GL_FLOAT,sizeof(arrayElem),t+2*sizeof(GLint));
+		glTexCoordPointer(4,GL_FLOAT,sizeof(arrayElem),t+2*sizeof(GLint)+3*sizeof(GLfloat));
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		int used=0;
+		for(int i=0;i<triangle_strips.size();i++)
+		{
+			glDrawArrays(GL_TRIANGLE_STRIP,used,triangle_strips[i].size());
+			used+=triangle_strips[i].size();
+		}
+		glDisableClientState(GL_VERTEX_ARRAY);*/
 	}
 
 	//if(/*graphic.stroked ||*/ !filled)
@@ -186,7 +202,6 @@ void Shape::BuildFromEdges(FILLSTYLE* styles)
 	if(closed)
 		TessellateSimple();
 
-	interiorbak=interior;
 	//Try to build triangle strip
 	while(!interior.empty())
 	{
@@ -286,6 +301,24 @@ void Shape::BuildFromEdges(FILLSTYLE* styles)
 			interior=triangles[0];
 		}
 	}
+
+/*	int strips_size=0;
+	for(int i=0;i<triangle_strips.size();i++)
+		strips_size+=triangle_strips[i].size();
+
+	varray=new arrayElem[strips_size];
+
+	int used=0;
+	for(int i=0;i<triangle_strips.size();i++)
+	{
+		for(int j=0;j<triangle_strips[i].size();j++)
+		{
+			varray[used].coord[0]=triangle_strips[i][j].x;
+			varray[used].coord[1]=triangle_strips[i][j].y;
+			style->setVertexData(&varray[used]);
+			used++;
+		}
+	}*/
 }
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)

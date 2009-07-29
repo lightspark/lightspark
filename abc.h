@@ -503,17 +503,6 @@ public:
 	void execute( );
 };
 
-class Boolean: public ASObject
-{
-friend bool Boolean_concrete(ISWFObject* obj);
-private:
-	bool val;
-public:
-	Boolean(bool v):val(v){}
-	SWFOBJECT_TYPE getObjectType() const { return T_BOOLEAN; }
-	
-};
-
 bool Boolean_concrete(ISWFObject* obj);
 ISWFObject* parseInt(ISWFObject* obj,arguments* args);
 

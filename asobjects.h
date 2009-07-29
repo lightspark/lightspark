@@ -106,6 +106,18 @@ private:
 	synt_function val;
 };
 
+class Boolean: public ASObject
+{
+friend bool Boolean_concrete(ISWFObject* obj);
+private:
+	bool val;
+public:
+	Boolean(bool v):val(v){}
+	bool isEqual(const ISWFObject* r) const;
+	SWFOBJECT_TYPE getObjectType() const { return T_BOOLEAN; }
+	
+};
+
 class Undefined : public ASObject
 {
 public:

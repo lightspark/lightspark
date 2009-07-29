@@ -39,6 +39,8 @@ enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T
 
 class arguments;
 class IFunction;
+struct arrayElem;
+
 class UI32
 {
 friend std::istream& operator>>(std::istream& s, UI32& v);
@@ -608,6 +610,7 @@ private:
 public:
 	virtual void setFragmentProgram() const;
 	static void fixedColor(float r, float g, float b);
+	virtual void setVertexData(arrayElem* elem);
 };
 
 class MORPHFILLSTYLE:public FILLSTYLE

@@ -22,6 +22,7 @@
 #include <list>
 #include <iostream>
 #include <vector>
+#include <GL/gl.h>
 
 class Path;
 class Vector2;
@@ -69,6 +70,13 @@ public:
 	Vector2 v1,v2,v3;
 	Triangle(Vector2 a,Vector2 b, Vector2 c):v1(a),v2(b),v3(c){}
 };
+
+struct arrayElem
+{
+	GLint coord[2];
+	GLfloat colors[3];
+	GLfloat texcoord[4];
+} __attribute__((packed));
 
 class Edge
 {
@@ -136,6 +144,7 @@ private:
 	void TessellateSimple();
 	void SetStyles(FILLSTYLE* styles);
 	FILLSTYLE* style;
+	arrayElem* varray;
 public:
 	std::vector<Triangle> interior;
 	std::vector<std::vector<Vector2> > triangle_strips;

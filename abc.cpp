@@ -146,6 +146,11 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 	{"modulo",(void*)&ABCVm::modulo},
 	{"multiply",(void*)&ABCVm::multiply},
 	{"add",(void*)&ABCVm::add},
+	{"bitAnd",(void*)&ABCVm::bitAnd},
+	{"bitOr",(void*)&ABCVm::bitOr},
+	{"bitXor",(void*)&ABCVm::bitXor},
+	{"urShift",(void*)&ABCVm::urShift},
+	{"lShift",(void*)&ABCVm::lShift},
 	{"lessThan",(void*)&ABCVm::lessThan},
 	{"greaterThan",(void*)&ABCVm::greaterThan},
 	{"strictEquals",(void*)&ABCVm::strictEquals},
@@ -502,6 +507,8 @@ Qname ABCContext::getQname(unsigned int mi, call_context* th) const
 			const namespace_info* n=&constant_pool.namespaces[m->ns];
 			if(n->name)
 				ret.ns=getString(n->name);
+			ret.nskind=n->kind;
+
 			return ret;
 		}
 /*		case 0x0d:
@@ -547,7 +554,10 @@ multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 		{
 			const namespace_info* n=&constant_pool.namespaces[m->ns];
 			if(n->name)
+			{
 				ret.ns.push_back(getString(n->name));
+				ret.nskind.push_back(n->kind);
+			}
 			ret.name=getString(m->name);
 			break;
 		}
@@ -558,6 +568,7 @@ multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 			{
 				const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
 				ret.ns.push_back(getString(n->name));
+				ret.nskind.push_back(n->kind);
 			}
 			ret.name=getString(m->name);
 			break;
@@ -569,6 +580,7 @@ multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 			{
 				const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
 				ret.ns.push_back(getString(n->name));
+				ret.nskind.push_back(n->kind);
 			}
 			if(th!=NULL)
 			{
@@ -870,10 +882,66 @@ ISWFObject* ABCVm::multiply(ISWFObject* val2, ISWFObject* val1)
 	return new Number(num1*num2);
 }
 
+ISWFObject* ABCVm::lShift(ISWFObject* val1, ISWFObject* val2)
+{
+	uint32_t i2=val2->toInt();
+	int32_t i1=val1->toInt()&0x1f;
+	LOG(CALLS,"lShift "<<i2<<"<<"<<i1);
+	return new Integer(i2<<i1);
+}
+
+ISWFObject* ABCVm::urShift(ISWFObject* val1, ISWFObject* val2)
+{
+	uint32_t i2=val2->toInt();
+	int32_t i1=val1->toInt()&0x1f;
+	LOG(CALLS,"urShift "<<i2<<">>"<<i1);
+	return new Integer(i2>>i1);
+}
+
+ISWFObject* ABCVm::bitXor(ISWFObject* val2, ISWFObject* val1)
+{
+	LOG(NOT_IMPLEMENTED,"bitXor");
+	abort();
+}
+
+ISWFObject* ABCVm::bitOr(ISWFObject* val2, ISWFObject* val1)
+{
+	int i1=val1->toInt();
+	int i2=val2->toInt();
+	LOG(CALLS,"bitOr " << hex << i1 << '|' << i2);
+	return new Integer(i1|i2);
+}
+
+ISWFObject* ABCVm::bitAnd(ISWFObject* val2, ISWFObject* val1)
+{
+	int i1=val1->toInt();
+	int i2=val2->toInt();
+	LOG(CALLS,"bitAnd " << hex << i1 << '&' << i2);
+	return new Integer(i1&i2);
+}
+
 ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 {
 	//Implement ECMA add algorithm, for XML and default
 	if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_NUMBER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1->toNumber();
+//		val1->decRef();
+//		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return new Number(num1+num2);
+	}
+	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_INTEGER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1->toNumber();
+//		val1->decRef();
+//		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return new Number(num1+num2);
+	}
+	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_NUMBER)
 	{
 		double num2=val2->toNumber();
 		double num1=val1->toNumber();
@@ -1280,7 +1348,12 @@ bool ABCVm::ifStrictNE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 bool ABCVm::ifNLE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifNLE " << offset);
-	abort();
+
+	//Real comparision demanded to object
+	if(obj1->isLess(obj2) || obj1->isEqual(obj2))
+		return false;
+	else
+		return true;
 }
 
 bool ABCVm::ifGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
@@ -1292,9 +1365,6 @@ bool ABCVm::ifGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 bool ABCVm::ifNGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifNGE " << offset);
-
-	int a=obj1->toInt();
-	int b=obj2->toInt();
 
 	//Real comparision demanded to object
 	if(obj1->isGreater(obj2) || obj1->isEqual(obj2))
@@ -2131,7 +2201,8 @@ ISWFObject* ABCVm::pushString(call_context* th, int n)
 
 void ABCVm::kill(call_context* th, int n)
 {
-	LOG(NOT_IMPLEMENTED, "kill " << n );
+	LOG(CALLS, "kill " << n );
+	th->locals[n]=new Undefined;
 }
 
 void call_context::runtime_stack_push(ISWFObject* s)
@@ -2274,16 +2345,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 	if(f)
 		return f;
 
+	string n="method";
+	n+=context->getString(name);
 	if(!body)
 	{
-		string n=context->getString(name);
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
 		return NULL;
 	}
 	stringstream code(body->code);
 	llvm::ExecutionEngine* ex=context->vm->ex;
 	llvm::FunctionType* method_type=synt_method_prototype(ex);
-	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,"method",context->vm->module);
+	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,n,context->vm->module);
 
 	//The pointer size compatible int type will be useful
 	//TODO: void*
@@ -2453,6 +2525,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//label
 				//Create a new block and insert it in the mapping
+				LOG(TRACE, "synt label" );
+				last_is_branch=true;
 				llvm::BasicBlock* A;
 				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
 				if(it!=blocks.end())
@@ -3874,6 +3948,71 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=true;
 				break;
 			}
+			case 0xa5:
+			{
+				//lshift
+				LOG(TRACE, "synt lshift" );
+				llvm::Value* v1=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				value=Builder.CreateCall2(ex->FindFunctionNamed("lShift"), v1, v2);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
+				break;
+			}
+			case 0xa7:
+			{
+				//urshift
+				LOG(TRACE, "synt urshift" );
+				llvm::Value* v1=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				value=Builder.CreateCall2(ex->FindFunctionNamed("urShift"), v1, v2);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
+				break;
+			}
+			case 0xa8:
+			{
+				//bitand
+				LOG(TRACE, "synt bitand" );
+				llvm::Value* v1=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				value=Builder.CreateCall2(ex->FindFunctionNamed("bitAnd"), v1, v2);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
+				break;
+			}
+			case 0xa9:
+			{
+				//bitor
+				LOG(TRACE, "synt bitor" );
+				llvm::Value* v1=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr"), v1, v2);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
+				break;
+			}
+			case 0xaa:
+			{
+				//bitxor
+				LOG(TRACE, "synt bitxor" );
+				llvm::Value* v1=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				llvm::Value* v2=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				value=Builder.CreateCall2(ex->FindFunctionNamed("bitXor"), v1, v2);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				jitted=true;
+				break;
+			}
 			case 0xab:
 			{
 				//equals
@@ -4039,6 +4178,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
+	llvmf->dump();
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }

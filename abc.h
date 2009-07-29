@@ -422,6 +422,11 @@ private:
 	static void isTypelate(call_context* th);
 	static void swap(call_context* th);
 	static ISWFObject* add(ISWFObject*,ISWFObject*);
+	static ISWFObject* bitAnd(ISWFObject*,ISWFObject*);
+	static ISWFObject* bitOr(ISWFObject*,ISWFObject*);
+	static ISWFObject* bitXor(ISWFObject*,ISWFObject*);
+	static ISWFObject* urShift(ISWFObject*,ISWFObject*);
+	static ISWFObject* lShift(ISWFObject*,ISWFObject*);
 	static ISWFObject* multiply(ISWFObject*,ISWFObject*);
 	static ISWFObject* divide(ISWFObject*,ISWFObject*);
 	static ISWFObject* modulo(ISWFObject*,ISWFObject*);

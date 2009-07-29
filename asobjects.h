@@ -115,7 +115,7 @@ public:
 	Boolean(bool v):val(v){}
 	bool isEqual(const ISWFObject* r) const;
 	SWFOBJECT_TYPE getObjectType() const { return T_BOOLEAN; }
-	
+	std::string toString() const;
 };
 
 class Undefined : public ASObject
@@ -211,6 +211,7 @@ public:
 	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
 	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
 	bool isEqual(const ISWFObject* r) const;
+	std::string toString() const;
 };
 
 class arguments: public ASArray

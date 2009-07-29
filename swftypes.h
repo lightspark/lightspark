@@ -124,6 +124,7 @@ struct Qname
 {
 	std::string name;
 	std::string ns;
+	int nskind;
 	bool operator<(const Qname& r) const
 	{
 		return name<r.name;
@@ -138,6 +139,7 @@ struct multiname
 {
 	std::string name;
 	std::vector<std::string> ns;
+	std::vector<int> nskind;
 };
 
 class ISWFObject

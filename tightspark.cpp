@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " <file.abc>" << endl;
 		exit(-1);
 	}
-	Log::initLogging(CALLS);
+	Log::initLogging(ERROR);
 	sys=new SystemState;
 	sys->fps_prof=new fps_profiling();
 

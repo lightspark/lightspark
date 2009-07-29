@@ -261,14 +261,66 @@ ISWFObject* ISWFObject::getVariableByName(const Qname& name, ISWFObject*& owner)
 
 std::ostream& operator<<(std::ostream& s, const Qname& r)
 {
-	s << '[' << r.ns << "] " << r.name;
+	string prefix;
+	switch(r.nskind)
+	{
+		case 0x08:
+			prefix="ns:";
+			break;
+		case 0x16:
+			prefix="pakns:";
+			break;
+		case 0x17:
+			prefix="pakintns:";
+			break;
+		case 0x18:
+			prefix="protns:";
+			break;
+		case 0x19:
+			prefix="explns:";
+			break;
+		case 0x1a:
+			prefix="staticprotns:";
+			break;
+		case 0x05:
+			prefix="privns:";
+			break;
+	}
+	s << '[' << prefix << r.ns << "] " << r.name;
 	return s;
 }
 
 std::ostream& operator<<(std::ostream& s, const multiname& r)
 {
 	for(int i=0;i<r.ns.size();i++)
-		s << '[' << r.ns[i] << "] ";
+	{
+		string prefix;
+		switch(r.nskind[i])
+		{
+			case 0x08:
+				prefix="ns:";
+				break;
+			case 0x16:
+				prefix="pakns:";
+				break;
+			case 0x17:
+				prefix="pakintns:";
+				break;
+			case 0x18:
+				prefix="protns:";
+				break;
+			case 0x19:
+				prefix="explns:";
+				break;
+			case 0x1a:
+				prefix="staticprotns:";
+				break;
+			case 0x05:
+				prefix="privns:";
+				break;
+		}
+		s << '[' << prefix << r.ns[i] << "] ";
+	}
 	s << r.name;
 	return s;
 }
@@ -277,7 +329,7 @@ void ISWFObject::dumpVariables()
 {
 	map<Qname,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
-		cout << it->first.ns << ' '<< it->first.name << endl;
+		cout << '[' << it->first.ns << "] "<< it->first.name << endl;
 }
 
 string Integer::toString() const

@@ -46,7 +46,8 @@ ASFUNCTIONBODY(ASArray,_constructor)
 	ASArray* th=static_cast<ASArray*>(obj);
 	th->length=0;
 	th->setVariableByName("length",&th->length);
-	th->setVariableByName(Qname(AS3,"push"),new Function(_push));
+	//th->setVariableByName(Qname(AS3,"push"),new Function(_push));
+	th->setVariableByName("push",new Function(_push));
 	th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
 	th->length.incRef();
 	if(args==NULL)
@@ -359,9 +360,27 @@ ASFUNCTIONBODY(ASString,String)
 	}
 }
 
+string ASArray::toString() const
+{
+	string ret;
+	for(int i=0;i<data.size();i++)
+	{
+		ret+=data[i]->toString();
+		if(i!=data.size()-1)
+			ret+=',';
+	}
+	return ret;
+}
+
 string ASObject::toString() const
 {
+	cerr << getObjectType() << endl;
 	return "Object";
+}
+
+string Boolean::toString() const
+{
+	return (val)?"true":"false";
 }
 
 string ASString::toString() const

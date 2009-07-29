@@ -1054,10 +1054,30 @@ ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(
 {
 }
 
+ISWFObject* ISWFObject::clone()
+{
+	abort();
+/*	o->parent
+protected:
+	ISWFObject* parent;
+	std::map<Qname,ISWFObject*> Variables;
+	std::map<Qname,IFunction*> Setters;
+	std::map<Qname,IFunction*> Getters;
+	std::vector<ISWFObject*> slots;
+	std::vector<var_iterator> slots_vars;
+	int max_slot_index;
+	bool binded;
+public:
+	IFunction* constructor;*/
+}
+
 ISWFObject::~ISWFObject()
 {
 //	if(ref_count>1)
 //		LOG(NOT_IMPLEMENTED,"Destroying a still referenced object");
+
+//	if(constructor)
+//		constructor->decRef();
 
 	map<Qname,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
@@ -1116,21 +1136,6 @@ string RegisterNumber::toString() const
 	char buf[20];
 	snprintf(buf,20,"Register %i",index);
 	return STRING(buf);
-}
-
-string Null::toString() const
-{
-	return "null";
-}
-
-bool Null::isEqual(const ISWFObject* r) const
-{
-	if(r->getObjectType()==T_NULL)
-		return true;
-	else if(r->getObjectType()==T_UNDEFINED)
-		return true;
-	else
-		return false;
 }
 
 string ISWFObject::getNameAt(int index)

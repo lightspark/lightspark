@@ -314,6 +314,14 @@ ASObject::ASObject():
 	setVariableByName("toString",new MethodDefinable("toString",ASObject::_toString));
 }
 
+ASObject::~ASObject()
+{
+	if(super)
+		super->decRef();
+	if(prototype)
+		prototype->decRef();
+}
+
 ASFUNCTIONBODY(ASObject,_toString)
 {
 	return new ASString(obj->toString());
@@ -692,4 +700,19 @@ ASFUNCTIONBODY(Math,random)
 	double ret=rand();
 	ret/=RAND_MAX;
 	return new Integer(ret);
+}
+
+string Null::toString() const
+{
+	return "null";
+}
+
+bool Null::isEqual(const ISWFObject* r) const
+{
+	if(r->getObjectType()==T_NULL)
+		return true;
+	else if(r->getObjectType()==T_UNDEFINED)
+		return true;
+	else
+		return false;
 }

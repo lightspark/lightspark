@@ -231,7 +231,10 @@ ISWFObject* argumentDumper(arguments* arg, uint32_t n)
 {
 	//Really implement default values, we now fill with Undefined
 	if(n-1<arg->size())
+	{
+		arg->at(n-1)->incRef();
 		return arg->at(n-1);
+	}
 	else
 		return new Undefined;
 }
@@ -783,6 +786,7 @@ ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,argument
 		abort();
 	}
 	base->prototype=ro;
+	ro->incRef();
 
 	if(r->class_index!=-1)
 	{
@@ -813,8 +817,8 @@ ISWFObject* ABCVm::modulo(ISWFObject* val2, ISWFObject* val1)
 	Number num2(val2);
 	Number num1(val1);
 
-//	val1->decRef();
-//	val2->decRef();
+	val1->decRef();
+	val2->decRef();
 	LOG(CALLS,"modulo "  << num1 << '%' << num2);
 	return new Number(int(num1)%int(num2));
 }
@@ -824,16 +828,17 @@ ISWFObject* ABCVm::divide(ISWFObject* val2, ISWFObject* val1)
 	Number num2(val2);
 	Number num1(val1);
 
-//	val1->decRef();
-//	val2->decRef();
+	val1->decRef();
+	val2->decRef();
 	LOG(CALLS,"divide "  << num1 << '/' << num2);
 	return new Number(num1/num2);
 }
 
 ISWFObject* ABCVm::getGlobalScope(call_context* th)
 {
-	LOG(CALLS,"getGlobalScope: " << &th->context->vm->Global);
-	return &th->context->vm->Global;
+	LOG(CALLS,"getGlobalScope: " << &th->context->Global);
+	th->context->Global->incRef();
+	return th->context->Global;
 }
 
 ISWFObject* ABCVm::decrement(ISWFObject* o)
@@ -853,6 +858,7 @@ ISWFObject* ABCVm::increment(ISWFObject* o)
 	LOG(CALLS,"increment");
 
 	int n=o->toInt();
+	o->decRef();
 	return new Integer(n+1);
 }
 
@@ -866,8 +872,8 @@ ISWFObject* ABCVm::subtract(ISWFObject* val2, ISWFObject* val1)
 {
 	Number num2(val2);
 	Number num1(val1);
-//	val1->decRef();
-//	val2->decRef();
+	val1->decRef();
+	val2->decRef();
 	LOG(CALLS,"subtract " << num1 << '-' << num2);
 	return new Number(num1-num2);
 }
@@ -876,8 +882,8 @@ ISWFObject* ABCVm::multiply(ISWFObject* val2, ISWFObject* val1)
 {
 	Number num2(val2);
 	Number num1(val1);
-//	val1->decRef();
-//	val2->decRef();
+	val1->decRef();
+	val2->decRef();
 	LOG(CALLS,"multiply "  << num1 << '*' << num2);
 	return new Number(num1*num2);
 }
@@ -886,6 +892,8 @@ ISWFObject* ABCVm::lShift(ISWFObject* val1, ISWFObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1->toInt()&0x1f;
+	val1->decRef();
+	val2->decRef();
 	LOG(CALLS,"lShift "<<i2<<"<<"<<i1);
 	return new Integer(i2<<i1);
 }
@@ -894,6 +902,8 @@ ISWFObject* ABCVm::urShift(ISWFObject* val1, ISWFObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1->toInt()&0x1f;
+	val1->decRef();
+	val2->decRef();
 	LOG(CALLS,"urShift "<<i2<<">>"<<i1);
 	return new Integer(i2>>i1);
 }
@@ -908,6 +918,8 @@ ISWFObject* ABCVm::bitOr(ISWFObject* val2, ISWFObject* val1)
 {
 	int i1=val1->toInt();
 	int i2=val2->toInt();
+	val1->decRef();
+	val2->decRef();
 	LOG(CALLS,"bitOr " << hex << i1 << '|' << i2);
 	return new Integer(i1|i2);
 }
@@ -916,6 +928,8 @@ ISWFObject* ABCVm::bitAnd(ISWFObject* val2, ISWFObject* val1)
 {
 	int i1=val1->toInt();
 	int i2=val2->toInt();
+	val1->decRef();
+	val2->decRef();
 	LOG(CALLS,"bitAnd " << hex << i1 << '&' << i2);
 	return new Integer(i1&i2);
 }
@@ -927,8 +941,8 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 	{
 		double num2=val2->toNumber();
 		double num1=val1->toNumber();
-//		val1->decRef();
-//		val2->decRef();
+		val1->decRef();
+		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
 		return new Number(num1+num2);
 	}
@@ -936,8 +950,8 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 	{
 		double num2=val2->toNumber();
 		double num1=val1->toNumber();
-//		val1->decRef();
-//		val2->decRef();
+		val1->decRef();
+		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
 		return new Number(num1+num2);
 	}
@@ -945,8 +959,8 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 	{
 		double num2=val2->toNumber();
 		double num1=val1->toNumber();
-//		val1->decRef();
-//		val2->decRef();
+		val1->decRef();
+		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
 		return new Number(num1+num2);
 	}
@@ -954,8 +968,8 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 	{
 		double num2=val2->toNumber();
 		double num1=val1->toNumber();
-//		val1->decRef();
-//		val2->decRef();
+		val1->decRef();
+		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
 		return new Number(num1+num2);
 	}
@@ -963,6 +977,8 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 	{
 		string a=val1->toString();
 		string b=val2->toString();
+		val1->decRef();
+		val2->decRef();
 		LOG(CALLS,"add " << a << '+' << b);
 		return new ASString(a+b);
 	}
@@ -970,6 +986,7 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 	{
 		//Array concatenation
 		ASArray* ar=static_cast<ASArray*>(val1);
+		val1->decRef();
 		ar->push(val2);
 		return ar;
 	}
@@ -1010,6 +1027,7 @@ ISWFObject* ABCVm::typeOf(ISWFObject* obj)
 		default:
 			return new Undefined;
 	}
+	obj->decRef();
 	return new ASString(ret);
 }
 
@@ -1022,6 +1040,7 @@ void ABCVm::asTypelate(call_context* th)
 {
 	LOG(NOT_IMPLEMENTED,"asTypelate");
 	ISWFObject* c=th->runtime_stack_pop();
+	c->decRef();
 //	ISWFObject* v=th->runtime_stack_pop();
 //	th->runtime_stack_push(v);
 }
@@ -1042,6 +1061,7 @@ ISWFObject* ABCVm::nextName(ISWFObject* index, ISWFObject* obj)
 		abort();
 	}
 
+	index->decRef();
 	return new ASString(obj->getNameAt(*i-1));
 
 //	i->decRef();
@@ -1106,6 +1126,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	ASObject* aso=dynamic_cast<ASObject*>(o);
 	ret->prototype=aso;
+	aso->incRef();
 	if(aso==NULL)
 	{
 		LOG(ERROR,"Class is not as ASObject");
@@ -1208,7 +1229,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		th->runtime_stack_push(new Undefined);
 	}
 	LOG(CALLS,"End of calling " << name);
-//	obj->decRef();
+	obj->decRef();
 }
 
 ISWFObject* ABCVm::hasNext2(call_context* th, int n, int m)
@@ -1303,8 +1324,9 @@ bool ABCVm::ifFalse(ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifFalse " << offset);
 
-	return !Boolean_concrete(obj1);
-//	obj1->decRef();
+	bool ret=!Boolean_concrete(obj1);
+	obj1->decRef();
+	return ret;
 }
 
 //We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
@@ -1350,10 +1372,10 @@ bool ABCVm::ifNLE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	LOG(CALLS,"ifNLE " << offset);
 
 	//Real comparision demanded to object
-	if(obj1->isLess(obj2) || obj1->isEqual(obj2))
-		return false;
-	else
-		return true;
+	bool ret=!(obj1->isLess(obj2) || obj1->isEqual(obj2));
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
 }
 
 bool ABCVm::ifGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
@@ -1367,10 +1389,21 @@ bool ABCVm::ifNGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	LOG(CALLS,"ifNGE " << offset);
 
 	//Real comparision demanded to object
-	if(obj1->isGreater(obj2) || obj1->isEqual(obj2))
-		return false;
-	else
-		return true;
+	bool ret=!(obj1->isGreater(obj2) || obj1->isEqual(obj2));
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
+}
+
+bool ABCVm::ifEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
+{
+	LOG(CALLS,"ifEq " << offset);
+
+	//Real comparision demanded to object
+	bool ret=obj1->isEqual(obj2);
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
 }
 
 bool ABCVm::ifGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
@@ -1468,17 +1501,6 @@ bool ABCVm::ifStrictEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
 	abort();
 
 	//CHECK types
-
-	//Real comparision demanded to object
-	if(obj1->isEqual(obj2))
-		return true;
-	else
-		return false;
-}
-
-bool ABCVm::ifEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
-{
-	LOG(CALLS,"ifEq " << offset);
 
 	//Real comparision demanded to object
 	if(obj1->isEqual(obj2))
@@ -1812,6 +1834,7 @@ void ABCVm::construct(call_context* th, int m)
 
 	ASObject* aso=dynamic_cast<ASObject*>(o);
 	ret->prototype=aso;
+	aso->incRef();
 	if(aso==NULL)
 		LOG(ERROR,"Class is not as ASObject");
 
@@ -1909,6 +1932,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 	{
 		obj->super=new ASObject;
 		obj->super->prototype=super;
+		super->incRef();
 
 		multiname name=th->context->getMultiname(th->context->instances[super->class_index].name,th);
 		LOG(CALLS,"Constructing " << name);
@@ -1926,6 +1950,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 	{
 		LOG(CALLS,"Builtin super");
 		obj->super=dynamic_cast<ASObject*>(super->clone());
+		obj->super->Variables.clear();
 		LOG(CALLS,"Calling Instance init");
 		//args.incRef();
 		if(super->constructor)
@@ -2237,7 +2262,6 @@ void method_info::llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& 
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
 	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index);
 	builder.CreateStore(val,dest);
-	builder.CreateCall(ex->FindFunctionNamed("incRef"), val);
 
 	//increment stack index
 	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
@@ -2334,10 +2358,26 @@ llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex
 call_context::call_context(method_info* th)
 {
 	locals=new ISWFObject*[th->body->local_count];
+	locals_size=th->body->local_count;
+	memset(locals,0,sizeof(ISWFObject*)*locals_size);
 	//TODO: We add a 3x safety margin because not implemented instruction do not clean the stack as they should
 	stack=new ISWFObject*[th->body->max_stack*3];
 	stack_index=0;
 	context=th->context;
+}
+
+call_context::~call_context()
+{
+	if(stack_index!=0)
+		LOG(NOT_IMPLEMENTED,"Should clean stack of " << stack_index);
+
+	for(int i=0;i<locals_size;i++)
+	{
+		if(locals[i])
+			locals[i]->decRef();
+	}
+	delete[] locals;
+	delete[] stack;
 }
 
 SyntheticFunction::synt_function method_info::synt_method()
@@ -3645,7 +3685,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
 				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
-				static_stack_push(static_stack,stack_entry(Builder.CreateLoad(t,"stack"),STACK_OBJECT));
+				t=Builder.CreateLoad(t,"stack");
+				static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
+				Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 				jitted=true;
 				break;
 			}
@@ -4131,7 +4173,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
-				static_stack_push(static_stack,stack_entry(Builder.CreateLoad(t,"stack"),STACK_OBJECT));
+				t=Builder.CreateLoad(t,"stack");
+				static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
+				Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 				jitted=true;
 
 				break;
@@ -4178,7 +4222,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
-	llvmf->dump();
+	//llvmf->dump();
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }

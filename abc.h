@@ -162,11 +162,13 @@ struct call_context
 		uint32_t stack_index;
 	} __attribute__((packed));
 	ABCContext* context;
+	int locals_size;
 	std::vector<ISWFObject*> scope_stack;
 	void runtime_stack_push(ISWFObject* s);
 	ISWFObject* runtime_stack_pop();
 	ISWFObject* runtime_stack_peek();
 	call_context(method_info* th);
+	~call_context();
 };
 
 class method_info

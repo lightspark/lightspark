@@ -38,6 +38,7 @@ public:
 	ASObject* prototype;
 	ASObject* super;
 	ASObject();
+	virtual ~ASObject();
 	SWFOBJECT_TYPE getObjectType() const { return T_OBJECT; }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
@@ -157,6 +158,18 @@ private:
 	Integer height;
 public:
 	ASStage();
+};
+
+class Null : public ASObject
+{
+public:
+	SWFOBJECT_TYPE getObjectType() const {return T_NULL;}
+	std::string toString() const;
+	ISWFObject* clone()
+	{
+		return new Null;
+	}
+	bool isEqual(const ISWFObject* r) const;
 };
 
 class ASArray: public ASObject

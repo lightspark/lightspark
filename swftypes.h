@@ -166,8 +166,11 @@ public:
 	void decRef()
 	{
 		ref_count--;
-		//if(ref_count==0)
-		//	delete this;
+		if(ref_count==0)
+		{
+			std::cout << "deleting" << std::endl;
+			delete this;
+		}
 	}
 	static void s_incRef(ISWFObject* o)
 	{
@@ -201,11 +204,7 @@ public:
 	virtual int toInt() const;
 	virtual double toNumber() const;
 	virtual IFunction* toFunction();
-	virtual ISWFObject* clone()
-	{
-		LOG(ERROR,"Cloning object of type " << (int)getObjectType());
-		abort();
-	}
+	virtual ISWFObject* clone();
 
 	virtual bool isEqual(const ISWFObject* r) const;
 	virtual bool isLess(const ISWFObject* r) const;
@@ -261,18 +260,6 @@ public:
 		abort();
 		return NULL;
 	}
-};
-
-class Null : public ISWFObject
-{
-public:
-	SWFOBJECT_TYPE getObjectType() const {return T_NULL;}
-	std::string toString() const;
-	ISWFObject* clone()
-	{
-		return new Null;
-	}
-	bool isEqual(const ISWFObject* r) const;
 };
 
 class FLOAT 

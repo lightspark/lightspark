@@ -43,5 +43,7 @@ int main(int argc, char* argv[])
 	ABCVm vm(sys);
 	ABCContext* context=new ABCContext(&vm,f);
 	vm.addEvent(NULL,new ABCContextInitEvent(context));
+	vm.addEvent(NULL,new ShutdownEvent);
 	vm.wait();
+	delete context;
 }

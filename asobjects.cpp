@@ -58,7 +58,10 @@ ASFUNCTIONBODY(ASArray,_constructor)
 		LOG(CALLS,"Called Array constructor");
 		th->resize(args->size());
 		for(int i=0;i<args->size();i++)
+		{
 			th->at(i)=args->at(i);
+			th->at(i)->incRef();
+		}
 	}
 }
 
@@ -84,6 +87,7 @@ ASFUNCTIONBODY(ASArray,_push)
 		abort();
 	}
 	th->push(args->at(0));
+	args->at(0)->incRef();
 	return new Integer(th->size());
 }
 
@@ -232,6 +236,9 @@ ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o, bool fo
 		int index=atoi(name.name.c_str());
 		if(index>=data.size())
 			resize(index+1);
+
+		if(data[index])
+			data[index]->decRef();
 
 		data[index]=o;
 		ret=o;
@@ -625,12 +632,19 @@ ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 
 	call_context* cc=new call_context(mi);
 	cc->scope_stack=func_scope;
+	for(int i=0;i<func_scope.size();i++)
+		func_scope[i]->incRef();
+
 	ISWFObject* ret;
 	if(!bound)
+	{
+		obj->incRef();
 		ret=val(obj,args,cc);
+	}
 	else
 	{
 		LOG(CALLS,"Calling with closure");
+		closure_this->incRef();
 		ret=val(closure_this,args,cc);
 	}
 	delete cc;

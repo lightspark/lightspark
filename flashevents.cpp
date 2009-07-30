@@ -66,6 +66,8 @@ IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
 
 EventDispatcher::EventDispatcher():id(0)
 {
+	if(constructor)
+		constructor->decRef();
 	constructor=new Function(_constructor);
 }
 

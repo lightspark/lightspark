@@ -343,6 +343,7 @@ class ABCVm
 {
 friend class ABCContext;
 friend class method_info;
+friend int main(int argc, char* argv[]);
 private:
 	SystemState* m_sys;
 	pthread_t t;
@@ -478,8 +479,7 @@ private:
 	void handleEvent();
 	ABCContext* last_context;
 public:
-	static llvm::ExecutionEngine* ex;
-	static sem_t sem_ex;
+	llvm::ExecutionEngine* ex;
 	ABCVm(SystemState* s);
 	~ABCVm();
 	static void Run(ABCVm* th);

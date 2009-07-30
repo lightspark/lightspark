@@ -191,7 +191,11 @@ ISWFObject* ISWFObject::setVariableByName(const Qname& name, ISWFObject* o, bool
 		if(!force && ret.first->second->isBinded())
 			ret.first->second->copyFrom(o);
 		else
+		{
+			if(ret.first->second)
+				ret.first->second->decRef();
 			ret.first->second=o;
+		}
 	}
 	return o;
 }
@@ -1054,21 +1058,25 @@ ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(
 {
 }
 
-ISWFObject* ISWFObject::clone()
+ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1)
 {
-	abort();
-/*	o->parent
-protected:
-	ISWFObject* parent;
-	std::map<Qname,ISWFObject*> Variables;
+	parent=o.parent;
+	constructor=o.constructor;
+	if(constructor)
+		constructor->incRef();
+	
+/*	std::map<Qname,ISWFObject*> Variables;	
 	std::map<Qname,IFunction*> Setters;
 	std::map<Qname,IFunction*> Getters;
 	std::vector<ISWFObject*> slots;
 	std::vector<var_iterator> slots_vars;
 	int max_slot_index;
-	bool binded;
-public:
-	IFunction* constructor;*/
+	bool binded;*/
+}
+
+ISWFObject* ISWFObject::clone()
+{
+	abort();
 }
 
 ISWFObject::~ISWFObject()
@@ -1076,8 +1084,8 @@ ISWFObject::~ISWFObject()
 //	if(ref_count>1)
 //		LOG(NOT_IMPLEMENTED,"Destroying a still referenced object");
 
-//	if(constructor)
-//		constructor->decRef();
+	if(constructor)
+		constructor->decRef();
 
 	map<Qname,ISWFObject*>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
@@ -1086,8 +1094,8 @@ ISWFObject::~ISWFObject()
 
 ISWFObject* ISWFObject::getSlot(int n)
 {
-	if(n-1<slots.size())
-		return slots[n-1];
+	if(n-1<slots_vars.size())
+		return slots_vars[n-1]->second;
 	else
 	{
 		LOG(ERROR,"Slot out of range");
@@ -1097,32 +1105,33 @@ ISWFObject* ISWFObject::getSlot(int n)
 
 void ISWFObject::initSlot(int n,ISWFObject* o,const Qname& s)
 {
-	if(n-1<slots.size())
-	{
-		slots[n-1]=o;
+	if(n-1<slots_vars.size())
 		slots_vars[n-1]=Variables.find(s);
-	}
 	else
 	{
-		slots.resize(n);
 		slots_vars.resize(n,Variables.end());
-		slots[n-1]=o;
 		slots_vars[n-1]=Variables.find(s);
 	}
 }
 
 void ISWFObject::setSlot(int n,ISWFObject* o)
 {
-	if(n-1<slots.size())
+	if(n-1<slots_vars.size())
 	{
-		slots[n-1]=o;
 		if(slots_vars[n-1]!=Variables.end())
+		{
+			slots_vars[n-1]->second->decRef();
 			slots_vars[n-1]->second=o;
+		}
+		else
+			abort();
 	}
 	else
 	{
-		slots.resize(n);
-		slots[n-1]=o;
+		LOG(ERROR,"Setting slot out of range");
+		abort();
+		//slots_vars.resize(n);
+		//slots[n-1]=o;
 	}
 }
 

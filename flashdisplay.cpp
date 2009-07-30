@@ -112,6 +112,8 @@ void Loader::Render()
 Sprite::Sprite():_visible(1),_x(0),_y(0),_height(100),_width(100),rotation(0.0)
 {
 	class_name="Sprite";
+	if(constructor)
+		constructor->decRef();
 	constructor=new Function(_constructor);
 }
 
@@ -150,6 +152,8 @@ ASFUNCTIONBODY(Sprite,_getParent)
 MovieClip::MovieClip():_framesloaded(0),_totalframes(1),cur_frame(&dynamicDisplayList),initialized(false)
 {
 	class_name="MovieClip";
+	if(constructor)
+		constructor->decRef();
 	constructor=new Function(_constructor);
 }
 

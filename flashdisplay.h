@@ -46,6 +46,8 @@ class LoaderInfo: public EventDispatcher
 public:
 	LoaderInfo()
 	{
+		if(constructor)
+			constructor->decRef();
 		constructor=new Function(_constructor);
 	}
 	ASObject parameters;
@@ -64,6 +66,8 @@ private:
 public:
 	Loader():loading(false),local_root(NULL),loaded(false)
 	{
+		if(constructor)
+			constructor->decRef();
 		constructor=new Function(_constructor);
 	}
 	ASFUNCTION(_constructor);

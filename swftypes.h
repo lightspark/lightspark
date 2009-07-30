@@ -148,16 +148,17 @@ friend class MovieClip;
 protected:
 	ISWFObject* parent;
 	ISWFObject();
+	ISWFObject(const ISWFObject& o);
 	std::map<Qname,ISWFObject*> Variables;
 	std::map<Qname,IFunction*> Setters;
 	std::map<Qname,IFunction*> Getters;
-	std::vector<ISWFObject*> slots;
+	//std::vector<ISWFObject*> slots;
 	typedef std::map<Qname,ISWFObject*>::iterator var_iterator;
 	std::vector<var_iterator> slots_vars;
 	int max_slot_index;
 	bool binded;
-	int ref_count;
 public:
+	int ref_count;
 	IFunction* constructor;
 	int class_index;
 	std::string class_name;
@@ -165,20 +166,21 @@ public:
 	void incRef() {ref_count++;}
 	void decRef()
 	{
+		if(ref_count==0)
+			abort();
 		ref_count--;
 		if(ref_count==0)
-		{
-			std::cout << "deleting" << std::endl;
 			delete this;
-		}
 	}
 	static void s_incRef(ISWFObject* o)
 	{
-		o->incRef();
+		if(o)
+			o->incRef();
 	}
 	static void s_decRef(ISWFObject* o)
 	{
-		o->decRef();
+		if(o)
+			o->decRef();
 	}
 	virtual IFunction* getSetterByName(const Qname& name, ISWFObject*& owner);
 	virtual IFunction* setSetterByName(const Qname& name, IFunction* o);

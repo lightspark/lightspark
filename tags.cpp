@@ -1546,11 +1546,5 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	UB(2,bs);
 	UseNetwork=UB(1,bs);
 	UB(24,bs);
-
-	if(ActionScript3)
-	{
-		//TODO: should move to single VM model
-		sem_init(&ABCVm::sem_ex,0,1);
-	}
 }
 

@@ -131,6 +131,7 @@ public:
 	{
 		return new Undefined;
 	}
+	virtual ~Undefined(){}
 };
 
 class ASString: public ASObject
@@ -175,7 +176,7 @@ public:
 class ASArray: public ASObject
 {
 friend class ABCVm;
-private:
+protected:
 	std::vector<ISWFObject*> data;
 	Integer length;
 public:
@@ -217,7 +218,10 @@ public:
 	}
 	void resize(int n)
 	{
-		data.resize(n,new Undefined);
+		int l=data.size();
+		data.resize(n);
+		for(int i=l;i<n;i++)
+			data[i]=new Undefined;
 		length=n;
 	}
 	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
@@ -232,7 +236,8 @@ class arguments: public ASArray
 public:
 	arguments(int n)
 	{
-		resize(n);
+		data.resize(n,NULL);
+		length=n;
 		_constructor(this,NULL);
 	}
 	ISWFObject* clone()

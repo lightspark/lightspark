@@ -158,9 +158,6 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 	{"equals",(void*)&ABCVm::equals}
 };
 
-llvm::ExecutionEngine* ABCVm::ex=NULL;
-sem_t ABCVm::sem_ex;
-
 extern __thread SystemState* sys;
 extern __thread ParseThread* pt;
 
@@ -434,6 +431,7 @@ void ABCVm::registerFunctions()
 ASFUNCTIONBODY(ABCVm,print)
 {
 	cerr << args->at(0)->toString() << endl;
+	return new Null;
 }
 
 void ABCVm::registerClasses()
@@ -589,7 +587,7 @@ multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 			{
 				ISWFObject* n=th->runtime_stack_pop();
 				ret.name=n->toString();
-//				n->decRef();
+				n->decRef();
 			}
 			else
 				ret.name="<Invalid>";
@@ -680,6 +678,8 @@ ABCVm::~ABCVm()
 {
 	pthread_cancel(t);
 	pthread_join(t,NULL);
+	delete ex;
+	//delete module;
 }
 
 void ABCVm::wait()
@@ -814,13 +814,13 @@ inline method_info* ABCContext::get_method(unsigned int m)
 
 ISWFObject* ABCVm::modulo(ISWFObject* val2, ISWFObject* val1)
 {
-	Number num2(val2);
-	Number num1(val1);
+	int num2=val2->toInt();
+	int num1=val1->toInt();
 
 	val1->decRef();
 	val2->decRef();
 	LOG(CALLS,"modulo "  << num1 << '%' << num2);
-	return new Number(int(num1)%int(num2));
+	return new Number(num1%num2);
 }
 
 ISWFObject* ABCVm::divide(ISWFObject* val2, ISWFObject* val1)
@@ -843,13 +843,17 @@ ISWFObject* ABCVm::getGlobalScope(call_context* th)
 
 ISWFObject* ABCVm::decrement(ISWFObject* o)
 {
-	LOG(NOT_IMPLEMENTED,"decrement");
-	return o;
+	LOG(CALLS,"decrement");
+
+	int n=o->toInt();
+	o->decRef();
+	return new Integer(n-1);
 }
 
 ISWFObject* ABCVm::decrement_i(ISWFObject* o)
 {
 	LOG(NOT_IMPLEMENTED,"decrement_i");
+	abort();
 	return o;
 }
 
@@ -859,12 +863,14 @@ ISWFObject* ABCVm::increment(ISWFObject* o)
 
 	int n=o->toInt();
 	o->decRef();
-	return new Integer(n+1);
+	ISWFObject* ret=new Integer(n+1);
+	return ret;
 }
 
 ISWFObject* ABCVm::increment_i(ISWFObject* o)
 {
 	LOG(NOT_IMPLEMENTED,"increment_i");
+	abort();
 	return o;
 }
 
@@ -911,6 +917,7 @@ ISWFObject* ABCVm::urShift(ISWFObject* val1, ISWFObject* val2)
 ISWFObject* ABCVm::bitXor(ISWFObject* val2, ISWFObject* val1)
 {
 	LOG(NOT_IMPLEMENTED,"bitXor");
+	abort();
 	abort();
 }
 
@@ -1061,11 +1068,10 @@ ISWFObject* ABCVm::nextName(ISWFObject* index, ISWFObject* obj)
 		abort();
 	}
 
+	ISWFObject* ret=new ASString(obj->getNameAt(*i-1));
+	obj->decRef();
 	index->decRef();
-	return new ASString(obj->getNameAt(*i-1));
-
-//	i->decRef();
-//	obj->decRef();
+	return ret;
 }
 
 void ABCVm::swap(call_context* th)
@@ -1088,6 +1094,7 @@ ISWFObject* ABCVm::newActivation(call_context* th,method_info* info)
 void ABCVm::popScope(call_context* th)
 {
 	LOG(CALLS,"popScope");
+	th->scope_stack.back()->decRef();
 	th->scope_stack.pop_back();
 }
 
@@ -1122,6 +1129,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	//We get a shallow copy of the object, but clean out Variables
 	//TODO: should be done in the copy constructor
 	ASObject* ret=dynamic_cast<ASObject*>(o->clone());
+	if(!ret->Variables.empty())
+		abort();
 	ret->Variables.clear();
 
 	ASObject* aso=dynamic_cast<ASObject*>(o);
@@ -1164,6 +1173,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 //		args.decRef();
 	}
 
+	obj->decRef();
 	LOG(CALLS,"End of constructing");
 	th->runtime_stack_push(ret);
 }
@@ -1270,9 +1280,9 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 {
 	multiname name=th->context->getMultiname(n); 
 	LOG(CALLS,"callPropVoid " << name << ' ' << m);
-	arguments* args=new arguments(m);
+	arguments args(m);
 	for(int i=0;i<m;i++)
-		args->at(m-i-1)=th->runtime_stack_pop();
+		args.at(m-i-1)=th->runtime_stack_pop();
 	ISWFObject* obj=th->runtime_stack_pop();
 	ISWFObject* owner;
 	ISWFObject* o=obj->getVariableByMultiname(name,owner);
@@ -1282,7 +1292,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		if(o->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=dynamic_cast<IFunction*>(o);
-			f->call(obj,args);
+			f->call(obj,&args);
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
@@ -1297,13 +1307,13 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		else
 		{
 			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",owner));
-			f->call(owner,args);
+			f->call(owner,&args);
 		}
 	}
 	else
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
-//	args->decRef();
-//	obj->decRef();
+
+	obj->decRef();
 	LOG(CALLS,"End of calling " << name);
 }
 
@@ -1316,8 +1326,9 @@ bool ABCVm::ifTrue(ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifTrue " << offset);
 
-	return Boolean_concrete(obj1);
-//	obj1->decRef();
+	bool ret=Boolean_concrete(obj1);
+	obj1->decRef();
+	return ret;
 }
 
 bool ABCVm::ifFalse(ISWFObject* obj1, int offset)
@@ -1411,13 +1422,11 @@ bool ABCVm::ifGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	LOG(CALLS,"ifGT " << offset);
 
 	//Real comparision demanded to object
-	if(obj1->isGreater(obj2))
-		return true;
-	else
-		return false;
+	bool ret=obj1->isGreater(obj2);
 
-//	obj2->decRef();
-//	obj1->decRef();
+	obj2->decRef();
+	obj1->decRef();
+	return ret;
 }
 
 bool ABCVm::ifNGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
@@ -1425,13 +1434,11 @@ bool ABCVm::ifNGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	LOG(CALLS,"ifNGT " << offset);
 
 	//Real comparision demanded to object
-	if(obj1->isGreater(obj2))
-		return false;
-	else
-		return true;
+	bool ret= !(obj1->isGreater(obj2));
 
-//	obj2->decRef();
-//	obj1->decRef();
+	obj2->decRef();
+	obj1->decRef();
+	return ret;
 }
 
 bool ABCVm::ifNLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
@@ -1439,13 +1446,11 @@ bool ABCVm::ifNLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	LOG(CALLS,"ifNLT " << offset);
 
 	//Real comparision demanded to object
-	if(obj1->isLess(obj2))
-		return false;
-	else
-		return true;
+	bool ret=!(obj1->isLess(obj2));
 
-//	obj2->decRef();
-//	obj1->decRef();
+	obj2->decRef();
+	obj1->decRef();
+	return ret;
 }
 
 bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
@@ -1453,13 +1458,11 @@ bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	LOG(CALLS,"ifLT " << offset);
 
 	//Real comparision demanded to object
-	if(obj1->isLess(obj2))
-		return true;
-	else
-		return false;
+	bool ret=obj1->isLess(obj2);
 
-//	obj2->decRef();
-//	obj1->decRef();
+	obj2->decRef();
+	obj1->decRef();
+	return ret;
 }
 
 bool ABCVm::ifNE(ISWFObject* obj1, ISWFObject* obj2, int offset)
@@ -1467,10 +1470,11 @@ bool ABCVm::ifNE(ISWFObject* obj1, ISWFObject* obj2, int offset)
 	LOG(CALLS,"ifNE " << dec << offset);
 
 	//Real comparision demanded to object
-	if(!obj1->isEqual(obj2))
-		return true;
-	else
-		return false;
+	bool ret=!(obj1->isEqual(obj2));
+
+	obj2->decRef();
+	obj1->decRef();
+	return ret;
 }
 
 ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
@@ -1478,10 +1482,9 @@ ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
 	LOG(CALLS,"lessThan");
 
 	//Real comparision demanded to object
-	if(obj1->isLess(obj2))
-		return new Boolean(true);
-	else
-		return new Boolean(false);
+	bool ret=obj1->isLess(obj2);
+	obj1->decRef();
+	return new Boolean(ret);
 }
 
 ISWFObject* ABCVm::greaterThan(ISWFObject* obj1, ISWFObject* obj2)
@@ -1489,10 +1492,9 @@ ISWFObject* ABCVm::greaterThan(ISWFObject* obj1, ISWFObject* obj2)
 	LOG(CALLS,"greaterThan");
 
 	//Real comparision demanded to object
-	if(obj1->isGreater(obj2))
-		return new Boolean(true);
-	else
-		return new Boolean(false);
+	bool ret=obj1->isGreater(obj2);
+	obj1->decRef();
+	return new Boolean(ret);
 }
 
 bool ABCVm::ifStrictEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
@@ -1532,6 +1534,8 @@ void ABCVm::call(call_context* th, int m)
 
 	ISWFObject* ret=f->call(obj,&args);
 	th->runtime_stack_push(ret);
+	obj->decRef();
+	f->decRef();
 }
 
 void ABCVm::coerce(call_context* th, int n)
@@ -1610,7 +1614,7 @@ void ABCVm::newObject(call_context* th, int n)
 		ISWFObject* value=th->runtime_stack_pop();
 		ISWFObject* name=th->runtime_stack_pop();
 		ret->setVariableByName(name->toString(),value);
-//		name->decRef();
+		name->decRef();
 	}
 
 	th->runtime_stack_push(ret);
@@ -1620,6 +1624,7 @@ ISWFObject* ABCVm::setSlot(ISWFObject* value, ISWFObject* obj, int n)
 {
 	LOG(CALLS,"setSlot " << dec << n);
 	obj->setSlot(n,value);
+	obj->decRef();
 }
 
 ISWFObject* ABCVm::getSlot(ISWFObject* obj, int n)
@@ -1627,6 +1632,7 @@ ISWFObject* ABCVm::getSlot(ISWFObject* obj, int n)
 	LOG(CALLS,"getSlot " << dec << n);
 	ISWFObject* ret=obj->getSlot(n);
 	ret->incRef();
+	obj->decRef();
 	return ret;
 }
 
@@ -1678,13 +1684,17 @@ void ABCVm::pop(call_context* th)
 ISWFObject* ABCVm::negate(ISWFObject* v)
 {
 	LOG(CALLS, "negate" );
-	return new Number(-(v->toNumber()));
+	ISWFObject* ret=new Number(-(v->toNumber()));
+	v->decRef();
+	return ret;
 }
 
 ISWFObject* ABCVm::_not(ISWFObject* v)
 {
 	LOG(CALLS, "not" );
-	return new Boolean(!(Boolean_concrete(v)));
+	ISWFObject* ret=new Boolean(!(Boolean_concrete(v)));
+	v->decRef();
+	return ret;
 }
 
 void ABCVm::not_impl(int n)
@@ -1696,6 +1706,7 @@ void ABCVm::not_impl(int n)
 void ABCVm::_throw(call_context* th)
 {
 	LOG(NOT_IMPLEMENTED, "throw" );
+	abort();
 }
 
 ISWFObject* ABCVm::strictEquals(ISWFObject* obj1, ISWFObject* obj2)
@@ -1706,14 +1717,18 @@ ISWFObject* ABCVm::strictEquals(ISWFObject* obj1, ISWFObject* obj2)
 
 ISWFObject* ABCVm::in(ISWFObject* val2, ISWFObject* val1)
 {
-	LOG(CALLS, "in" );
+	LOG(NOT_IMPLEMENTED, "in" );
+	abort();
 	return new Boolean(false);
 }
 
 ISWFObject* ABCVm::equals(ISWFObject* val2, ISWFObject* val1)
 {
 	LOG(CALLS, "equals" );
-	return new Boolean(val1->isEqual(val2));
+	ISWFObject* ret=new Boolean(val1->isEqual(val2));
+	val1->decRef();
+	val2->decRef();
+	return ret;
 }
 
 void ABCVm::dup(call_context* th)
@@ -1741,7 +1756,7 @@ ISWFObject* ABCVm::pushNaN(call_context* th)
 
 ISWFObject* ABCVm::pushUndefined(call_context* th)
 {
-	LOG(CALLS, "pushUndefined DONE" );
+	LOG(CALLS, "pushUndefined" );
 	return new Undefined;
 }
 
@@ -1830,6 +1845,8 @@ void ABCVm::construct(call_context* th, int m)
 	//We get a shallow copy of the object, but clean out Variables
 	//TODO: should be done in the copy constructor
 	ASObject* ret=dynamic_cast<ASObject*>(o->clone());
+	if(!ret->Variables.empty())
+		abort();
 	ret->Variables.clear();
 
 	ASObject* aso=dynamic_cast<ASObject*>(o);
@@ -1871,6 +1888,7 @@ void ABCVm::construct(call_context* th, int m)
 
 	LOG(CALLS,"End of constructing");
 	th->runtime_stack_push(ret);
+	o->decRef();
 }
 
 void ABCVm::constructSuper(call_context* th, int n)
@@ -1950,6 +1968,8 @@ void ABCVm::constructSuper(call_context* th, int n)
 	{
 		LOG(CALLS,"Builtin super");
 		obj->super=dynamic_cast<ASObject*>(super->clone());
+		if(!obj->super->Variables.empty())
+			abort();
 		obj->super->Variables.clear();
 		LOG(CALLS,"Calling Instance init");
 		//args.incRef();
@@ -1958,6 +1978,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 		//args.decRef();
 	}
 	LOG(CALLS,"End super construct ");
+	obj->decRef();
 }
 
 void ABCVm::setProperty(call_context* th, int n)
@@ -1986,6 +2007,7 @@ void ABCVm::setProperty(call_context* th, int n)
 		//No setter, just assign the variable
 		obj->setVariableByName(name.name,value);
 	}
+	obj->decRef();
 }
 
 void ABCVm::getProperty(call_context* th, int n)
@@ -2007,6 +2029,7 @@ void ABCVm::getProperty(call_context* th, int n)
 		//value->incRef();
 		th->runtime_stack_push(f->call(owner,NULL));
 		LOG(CALLS,"End of getter");
+		obj->decRef();
 		return;
 	}
 	
@@ -2028,6 +2051,7 @@ void ABCVm::getProperty(call_context* th, int n)
 		th->runtime_stack_push(ret);
 		ret->incRef();
 	}
+	obj->decRef();
 }
 
 void ABCVm::findProperty(call_context* th, int n)
@@ -2101,6 +2125,7 @@ void ABCVm::initProperty(call_context* th, int n)
 	ISWFObject* obj=th->runtime_stack_pop();
 
 	obj->setVariableByName(name.name,value);
+	obj->decRef();
 }
 
 void ABCVm::newArray(call_context* th, int n)
@@ -2378,6 +2403,9 @@ call_context::~call_context()
 	}
 	delete[] locals;
 	delete[] stack;
+
+	for(int i=0;i<scope_stack.size();i++)
+		scope_stack[i]->decRef();
 }
 
 SyntheticFunction::synt_function method_info::synt_method()
@@ -3333,6 +3361,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				Builder.CreateCall(ex->FindFunctionNamed("pop"), context);
 				stack_entry e=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				Builder.CreateCall(ex->FindFunctionNamed("decRef"), e.first);
 				jitted=true;
 				break;
 			}
@@ -3344,6 +3373,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry e=
 					static_stack_peek(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e);
+				Builder.CreateCall(ex->FindFunctionNamed("incRef"), e.first);
 				jitted=true;
 				break;
 			}
@@ -3503,7 +3533,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//returnvoid
 				LOG(TRACE, "synt returnvoid" );
 				last_is_branch=true;
-				Builder.CreateRetVoid();
+				constant = llvm::ConstantInt::get(ptr_type, NULL);
+				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(ptr_type));
+				Builder.CreateRet(value);
 				break;
 			}
 			case 0x48:
@@ -3683,11 +3715,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 i;
 				code >> i;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
-				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
 				t=Builder.CreateLoad(t,"stack");
 				static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
 				Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 				jitted=true;
 				break;
 			}
@@ -3698,13 +3730,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 i;
 				code >> i;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
-				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
 				stack_entry e=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(e.second!=STACK_OBJECT)
 					LOG(ERROR,"conversion not yet implemented");
+
+				//First decRef the previous data
+				llvm::Value* old=Builder.CreateLoad(t);
+				Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
 				Builder.CreateStore(e.first,t);
+				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
 				jitted=true;
 				break;
 			}
@@ -4169,15 +4205,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xd3:
 			{
 				//getlocal_n
-				LOG(TRACE, "synt getlocal" );
+				LOG(TRACE, "synt getlocal_n" );
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
-				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
 				t=Builder.CreateLoad(t,"stack");
 				static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
 				Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 				jitted=true;
-
 				break;
 			}
 			case 0xd5:
@@ -4185,13 +4220,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xd7:
 			{
 				//setlocal_n
-				LOG(TRACE, "synt setlocal" );
+				LOG(TRACE, "synt setlocal_n" );
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
 				llvm::Value* t=Builder.CreateGEP(locals,constant);
 				stack_entry e=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(e.second!=STACK_OBJECT)
 					LOG(ERROR,"conversion not yet implemented");
+
+				//First decRef the previous data
+				llvm::Value* old=Builder.CreateLoad(t);
+				Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
 				Builder.CreateStore(e.first,t);
 				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
 				jitted=true;
@@ -4222,7 +4261,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
-	//llvmf->dump();
+	llvmf->dump();
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }
@@ -4259,11 +4298,6 @@ void ABCVm::Run(ABCVm* th)
 {
 	sys=th->m_sys;
 	th->module=new llvm::Module("abc jit");
-	if(th->ex)
-	{
-		LOG(NOT_IMPLEMENTED,"Multiple DoABCTag are not currently supported");
-		return;
-	}
 	th->ex=llvm::ExecutionEngine::create(th->module);
 
 	th->registerFunctions();
@@ -4277,9 +4311,10 @@ void ABCVm::Run(ABCVm* th)
 		sem_wait(&th->sem_event_count);
 		th->handleEvent();
 		sys->fps_prof->event_count++;
-
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->event_time+=timeDiff(ts,td);
+		if(th->shutdown)
+			break;
 	}
 }
 
@@ -4303,7 +4338,8 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 				ret=obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
 			else
 			{
-				ret=new ASObject;
+				ret=obj->setVariableByName(name, new Undefined);
+				/*ret=new ASObject;
 				//Should chek super
 				//ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
 
@@ -4320,7 +4356,8 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 
 				LOG(CALLS,"Calling Class init");
 				cinit->call(ret,NULL);
-				ret=obj->setVariableByName(name, ret);
+				delete cinit;
+				ret=obj->setVariableByName(name, ret);*/
 			}
 			
 			LOG(CALLS,"Slot "<< t->slot_id << " type Class name " << name << " id " << t->classi);

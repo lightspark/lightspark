@@ -21,6 +21,8 @@
 
 URLRequest::URLRequest():url(NULL)
 {
+	if(constructor)
+		constructor->decRef();
 	constructor=new Function(_constructor);
 	class_name="URLRequest";
 }

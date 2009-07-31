@@ -128,7 +128,7 @@ ASFUNCTIONBODY(Sprite,_constructor)
 	th->setVariableByName("x",&th->_x);
 	th->setVariableByName("width",&th->_width);
 	th->rotation.bind();
-	th->setVariableByName("rotation",&th->rotation,true);
+	th->setVariableByName("rotation",&th->rotation);
 	th->setVariableByName("height",&th->_height);
 	th->setVariableByName("getBounds",new Function(getBounds));
 	th->setGetterByName("parent",new Function(_getParent));
@@ -203,7 +203,7 @@ ASFUNCTIONBODY(MovieClip,addChild)
 	th->dynamicDisplayList.push_back(e);
 
 	e->root=th->root;
-	args->at(0)->setVariableByName("root",th->root,true);
+	args->at(0)->setVariableByName("root",th->root);
 }
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)

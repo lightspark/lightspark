@@ -75,6 +75,15 @@ bool ISWFObject::isLess(const ISWFObject* r) const
 	return false;
 }
 
+int multiname::count=0;
+
+multiname::~multiname()
+{
+	count--;
+	if(namert)
+		namert->decRef();
+}
+
 bool Integer::isGreater(const ISWFObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
@@ -183,14 +192,34 @@ IFunction* ISWFObject::getSetterByName(const Qname& name, ISWFObject*& owner)
 	}
 }
 
-ISWFObject* ISWFObject::setVariableByName(const Qname& name, ISWFObject* o, bool force)
+ISWFObject* ISWFObject::setVariableByName(const Qname& name, ISWFObject* o)
 {
 	pair<map<Qname, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ISWFObject*>(name,o));
 	if(!ret.second)
 	{
-		if(!force && ret.first->second->isBinded())
+/*		if(!force && ret.first->second->isBinded())
 			ret.first->second->copyFrom(o);
-		else
+		else*/
+		{
+			if(ret.first->second)
+				ret.first->second->decRef();
+			ret.first->second=o;
+		}
+	}
+	return o;
+}
+
+ISWFObject* ISWFObject::setVariableByMultiname(multiname& name, ISWFObject* o)
+{
+	if(name.namert)
+		name.name=name.namert->toString();
+
+	pair<map<Qname, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ISWFObject*>(name.name,o));
+	if(!ret.second)
+	{
+/*		if(!force && ret.first->second->isBinded())
+			ret.first->second->copyFrom(o);
+		else*/
 		{
 			if(ret.first->second)
 				ret.first->second->decRef();

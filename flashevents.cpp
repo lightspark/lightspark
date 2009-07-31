@@ -108,7 +108,7 @@ void EventDispatcher::handleEvent(Event* e)
 
 	LOG(CALLS, "Handling event " << h->first);
 	arguments args(1);
-	args.at(0)=e;
+	args.set(0,e);
 	h->second->call(this,&args);
 }
 

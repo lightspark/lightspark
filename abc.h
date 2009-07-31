@@ -23,6 +23,7 @@
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/IRBuilder.h>
+#include <llvm/PassManagers.h> 
 #include "tags.h"
 #include "frame.h"
 #include "logger.h"
@@ -123,6 +124,8 @@ struct multiname_info
 	u30 name;
 	u30 ns;
 	u30 ns_set;
+	multiname* cached;
+	multiname_info():cached(NULL){}
 };
 
 struct cpool_info
@@ -326,12 +329,13 @@ private:
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
 	method_info* get_method(unsigned int m);
-	//ISWFObject* buildClass(int m);
 	std::string getString(unsigned int s) const;
 	Qname getQname(unsigned int m, call_context* th=NULL) const;
 	void buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
 	multiname getMultiname(unsigned int m, call_context* th=NULL) const;
+	static multiname* s_getMultiname(call_context*, ISWFObject*, int m);
+	int getMultinameRTData(int n) const;
 	ABCVm* vm;
 	ASObject* Global;
 public:
@@ -398,7 +402,7 @@ private:
 	static ISWFObject* pushDouble(call_context* th, int n);
 	static void incLocal_i(call_context* th, int n);
 	static void coerce(call_context* th, int n);
-	static void setProperty(call_context* th, int n);
+	static void setProperty(ISWFObject* value,ISWFObject* obj, multiname* name);
 	static void call(call_context* th, int n);
 	static void constructSuper(call_context* th, int n);
 	static void construct(call_context* th, int n);
@@ -468,6 +472,7 @@ private:
 	static opcode_handler opcode_table_args2_pointers[];
 	static opcode_handler opcode_table_args2_branches[];
 	static opcode_handler opcode_table_args2_pointers_int[];
+	static opcode_handler opcode_table_args3_pointers[];
 
 	//Synchronization
 	sem_t mutex;
@@ -480,6 +485,7 @@ private:
 	ABCContext* last_context;
 public:
 	llvm::ExecutionEngine* ex;
+	llvm::FunctionPassManager* FPM;
 	ABCVm(SystemState* s);
 	~ABCVm();
 	static void Run(ABCVm* th);

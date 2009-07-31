@@ -37,6 +37,7 @@
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_NUMBER, T_FUNCTION,
 	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE};
 
+class ISWFObject;
 class arguments;
 class IFunction;
 struct arrayElem;
@@ -140,6 +141,10 @@ struct multiname
 	std::string name;
 	std::vector<std::string> ns;
 	std::vector<int> nskind;
+	ISWFObject* namert;
+	multiname():namert(NULL){count++;}
+	~multiname();
+	static int count;
 };
 
 class ISWFObject
@@ -152,7 +157,6 @@ protected:
 	std::map<Qname,ISWFObject*> Variables;
 	std::map<Qname,IFunction*> Setters;
 	std::map<Qname,IFunction*> Getters;
-	//std::vector<ISWFObject*> slots;
 	typedef std::map<Qname,ISWFObject*>::iterator var_iterator;
 	std::vector<var_iterator> slots_vars;
 	int max_slot_index;
@@ -188,9 +192,10 @@ public:
 	virtual IFunction* setGetterByName(const Qname& name, IFunction* o);
 
 	virtual ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
-	virtual ISWFObject* getVariableByString(const std::string& name, ISWFObject*& owner);
 	virtual ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
-	virtual ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
+	virtual ISWFObject* getVariableByString(const std::string& name, ISWFObject*& owner);
+	virtual ISWFObject* setVariableByMultiname(multiname& name, ISWFObject* o);
+	virtual ISWFObject* setVariableByName(const Qname& name, ISWFObject* o);
 	virtual ISWFObject* getSlot(int n);
 	virtual void setSlot(int n,ISWFObject* o);
 	virtual void initSlot(int n,ISWFObject* o, const Qname& name);

@@ -20,6 +20,7 @@
 #include "abc.h"
 
 #include <fstream>
+#include <sys/resource.h>
 
 using namespace std;
 
@@ -34,7 +35,13 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " <file.abc>" << endl;
 		exit(-1);
 	}
-	Log::initLogging(CALLS);
+	struct rlimit rl;
+	getrlimit(RLIMIT_AS,&rl);
+	rl.rlim_cur=1000000000;
+	rl.rlim_max=rl.rlim_cur;
+	setrlimit(RLIMIT_AS,&rl);
+
+	Log::initLogging(ERROR);
 	sys=new SystemState;
 	sys->fps_prof=new fps_profiling();
 

@@ -88,8 +88,8 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 	setVariableByName(Qname("loaderInfo"),loaderInfo);
 
 	setVariableByName("getBounds",new Function(getBounds));
-	setVariableByName("root",this,true);
-	setVariableByName("stage",this,true);
+	setVariableByName("root",this);
+	setVariableByName("stage",this);
 	class_name="SystemState";
 /*	//Register global functions
 	setVariableByName("parseInt",new Function(parseInt));
@@ -1116,10 +1116,18 @@ ISWFObject* RootMovieClip::getVariableByName(const Qname& name, ISWFObject*& own
 	return ret;
 }
 
-ISWFObject* RootMovieClip::setVariableByName(const Qname& name, ISWFObject* o, bool force)
+ISWFObject* RootMovieClip::setVariableByMultiname(multiname& name, ISWFObject* o)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ISWFObject::setVariableByName(name,o,force);
+	ISWFObject* ret=ISWFObject::setVariableByMultiname(name,o);
+	sem_post(&mutex);
+	return ret;
+}
+
+ISWFObject* RootMovieClip::setVariableByName(const Qname& name, ISWFObject* o)
+{
+	sem_wait(&mutex);
+	ISWFObject* ret=ISWFObject::setVariableByName(name,o);
 	sem_post(&mutex);
 	return ret;
 }

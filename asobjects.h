@@ -196,14 +196,25 @@ public:
 	ISWFObject* at(int index) const
 	{
 		if(index<data.size())
+		{
+			if(data[index]==NULL)
+				abort();
 			return data[index];
+		}
 		else
 			abort();
 	}
-	ISWFObject*& at(int index)
+	void set(int index, ISWFObject* o)
 	{
 		if(index<data.size())
-			return data[index];
+		{
+			if(data[index])
+			{
+				std::cout << "overwriting" << std::endl;
+				abort();
+			}
+			data[index]=o;
+		}
 		else
 			abort();
 	}
@@ -218,15 +229,13 @@ public:
 	}
 	void resize(int n)
 	{
-		int l=data.size();
-		data.resize(n);
-		for(int i=l;i<n;i++)
-			data[i]=new Undefined;
+		data.resize(n,NULL);
 		length=n;
 	}
 	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
 	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
-	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
+	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o);
+	ISWFObject* setVariableByMultiname(multiname& name, ISWFObject* o);
 	bool isEqual(const ISWFObject* r) const;
 	std::string toString() const;
 };

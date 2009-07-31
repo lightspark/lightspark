@@ -23,6 +23,8 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Constants.h> 
+#include <llvm/ModuleProvider.h> 
+#include <llvm/Transforms/Scalar.h> 
 #include <llvm/Support/IRBuilder.h> 
 #include <llvm/Target/TargetData.h>
 #include "abc.h"
@@ -105,7 +107,6 @@ opcode_handler ABCVm::opcode_table_args1[]={
 	{"findPropStrict",(void*)&ABCVm::findPropStrict},
 	{"incLocal_i",(void*)&ABCVm::incLocal_i},
 	{"getProperty",(void*)&ABCVm::getProperty},
-	{"setProperty",(void*)&ABCVm::setProperty},
 	{"findProperty",(void*)&ABCVm::findProperty},
 	{"construct",(void*)&ABCVm::construct},
 	{"constructSuper",(void*)&ABCVm::constructSuper},
@@ -135,7 +136,12 @@ opcode_handler ABCVm::opcode_table_args1_pointers[]={
 };
 
 opcode_handler ABCVm::opcode_table_args2_pointers_int[]={
-	{"setSlot",(void*)&ABCVm::setSlot}
+	{"setSlot",(void*)&ABCVm::setSlot},
+	{"getMultiname",(void*)&ABCContext::s_getMultiname}
+};
+
+opcode_handler ABCVm::opcode_table_args3_pointers[]={
+	{"setProperty",(void*)&ABCVm::setProperty},
 };
 
 opcode_handler ABCVm::opcode_table_args2_pointers[]={
@@ -426,6 +432,21 @@ void ABCVm::registerFunctions()
 		ex->addGlobalMapping(F,opcode_table_args2_branches[i].addr);
 	}
 	//End of lazy pushing
+
+	//Lazy pushing, no context, (ISWFObject*, ISWFObject*, void*)
+	sig.clear();
+	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	elems=sizeof(opcode_table_args3_pointers)/sizeof(opcode_handler);
+	for(int i=0;i<elems;i++)
+	{
+		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args3_pointers[i].name,module);
+		ex->addGlobalMapping(F,opcode_table_args3_pointers[i].addr);
+	}
+	//End of lazy pushing
+
 }
 
 ASFUNCTIONBODY(ABCVm,print)
@@ -539,6 +560,175 @@ Qname ABCContext::getQname(unsigned int mi, call_context* th) const
 	}
 }
 
+int ABCContext::getMultinameRTData(int mi) const
+{
+	if(mi==0)
+		return 0;
+
+	const multiname_info* m=&constant_pool.multinames[mi];
+	switch(m->kind)
+	{
+		case 0x07:
+		case 0x09:
+			return 0;
+		case 0x1b:
+			return 1;
+/*		case 0x0d:
+			LOG(CALLS, "QNameA");
+			break;
+		case 0x0f:
+			LOG(CALLS, "RTQName");
+			break;
+		case 0x10:
+			LOG(CALLS, "RTQNameA");
+			break;
+		case 0x11:
+			LOG(CALLS, "RTQNameL");
+			break;
+		case 0x12:
+			LOG(CALLS, "RTQNameLA");
+			break;
+		case 0x0e:
+			LOG(CALLS, "MultinameA");
+			break;
+		case 0x1c:
+			LOG(CALLS, "MultinameLA");
+			break;*/
+		default:
+			LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+			abort();
+	}
+}
+
+multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
+{
+	//We are allowe to access only the ABCContext, as the stack is not synced
+	multiname* ret;
+	if(n==0)
+	{
+		ret=new multiname;
+		ret->name="any";
+		cout << "allocating any count " << ret->count << endl;
+		return ret;
+	}
+
+	multiname_info* m=&th->context->constant_pool.multinames[n];
+	if(m->cached==NULL)
+	{
+		m->cached=new multiname;
+		ret=m->cached;
+		switch(m->kind)
+		{
+			case 0x07:
+			{
+				const namespace_info* n=&th->context->constant_pool.namespaces[m->ns];
+				if(n->name)
+				{
+					ret->ns.push_back(th->context->getString(n->name));
+					ret->nskind.push_back(n->kind);
+				}
+				ret->name=th->context->getString(m->name);
+				break;
+			}
+			case 0x09:
+			{
+				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
+				ret->ns.reserve(s->count);
+				ret->nskind.reserve(s->count);
+				for(int i=0;i<s->count;i++)
+				{
+					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
+					ret->ns.push_back(th->context->getString(n->name));
+					ret->nskind.push_back(n->kind);
+				}
+				ret->name=th->context->getString(m->name);
+				break;
+			}
+			case 0x1b:
+			{
+				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
+				ret->ns.reserve(s->count);
+				ret->nskind.reserve(s->count);
+				for(int i=0;i<s->count;i++)
+				{
+					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
+					ret->ns.push_back(th->context->getString(n->name));
+					ret->nskind.push_back(n->kind);
+				}
+				ret->namert=rt1;
+				break;
+			}
+	/*		case 0x0d:
+				LOG(CALLS, "QNameA");
+				break;
+			case 0x0f:
+				LOG(CALLS, "RTQName");
+				break;
+			case 0x10:
+				LOG(CALLS, "RTQNameA");
+				break;
+			case 0x11:
+				LOG(CALLS, "RTQNameL");
+				break;
+			case 0x12:
+				LOG(CALLS, "RTQNameLA");
+				break;
+			case 0x0e:
+				LOG(CALLS, "MultinameA");
+				break;
+			case 0x1c:
+				LOG(CALLS, "MultinameLA");
+				break;*/
+			default:
+				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				break;
+		}
+		return ret;
+	}
+	else
+	{
+		ret=m->cached;
+		switch(m->kind)
+		{
+			case 0x07:
+			case 0x09:
+			{
+				//Nothing to do, the cached value is enough
+				break;
+			}
+			case 0x1b:
+			{
+				ret->namert=rt1;
+				break;
+			}
+	/*		case 0x0d:
+				LOG(CALLS, "QNameA");
+				break;
+			case 0x0f:
+				LOG(CALLS, "RTQName");
+				break;
+			case 0x10:
+				LOG(CALLS, "RTQNameA");
+				break;
+			case 0x11:
+				LOG(CALLS, "RTQNameL");
+				break;
+			case 0x12:
+				LOG(CALLS, "RTQNameLA");
+				break;
+			case 0x0e:
+				LOG(CALLS, "MultinameA");
+				break;
+			case 0x1c:
+				LOG(CALLS, "MultinameLA");
+				break;*/
+			default:
+				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				break;
+		}
+		return ret;
+	}
+}
 multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 {
 	multiname ret;
@@ -678,7 +868,7 @@ ABCVm::~ABCVm()
 {
 	pthread_cancel(t);
 	pthread_join(t,NULL);
-	delete ex;
+	//delete ex;
 	//delete module;
 }
 
@@ -704,7 +894,8 @@ void ABCVm::handleEvent()
 				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second);
 				arguments args(1);;
 				args.incRef();
-				args.at(0)=new Null;
+				//TODO: check
+				args.set(0,new Null);
 				if(ev->base->class_name=="SystemState")
 				{
 					MovieClip* m=static_cast<MovieClip*>(ev->base);
@@ -993,7 +1184,6 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 	{
 		//Array concatenation
 		ASArray* ar=static_cast<ASArray*>(val1);
-		val1->decRef();
 		ar->push(val2);
 		return ar;
 	}
@@ -1102,7 +1292,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 {
 	arguments args(m);
 	for(int i=0;i<m;i++)
-		args.at(m-i-1)=th->runtime_stack_pop();
+		args.set(m-i-1,th->runtime_stack_pop());
 
 	multiname name=th->context->getMultiname(n);
 	LOG(CALLS,"constructProp "<<name << ' ' << m);
@@ -1182,7 +1372,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 {
 	arguments args(m);
 	for(int i=0;i<m;i++)
-		args.at(m-i-1)=th->runtime_stack_pop();
+		args.set(m-i-1,th->runtime_stack_pop());
 
 	multiname name=th->context->getMultiname(n);
 	LOG(CALLS,"callProperty " << name << ' ' << m);
@@ -1282,7 +1472,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	LOG(CALLS,"callPropVoid " << name << ' ' << m);
 	arguments args(m);
 	for(int i=0;i<m;i++)
-		args.at(m-i-1)=th->runtime_stack_pop();
+		args.set(m-i-1,th->runtime_stack_pop());
 	ISWFObject* obj=th->runtime_stack_pop();
 	ISWFObject* owner;
 	ISWFObject* o=obj->getVariableByMultiname(name,owner);
@@ -1521,7 +1711,7 @@ void ABCVm::call(call_context* th, int m)
 	LOG(CALLS,"call " << m);
 	arguments args(m);
 	for(int i=0;i<m;i++)
-		args.at(m-i-1)=th->runtime_stack_pop();
+		args.set(m-i-1,th->runtime_stack_pop());
 
 	ISWFObject* obj=th->runtime_stack_pop();
 	IFunction* f=th->runtime_stack_pop()->toFunction();
@@ -1826,7 +2016,7 @@ void ABCVm::construct(call_context* th, int m)
 	LOG(CALLS, "construct " << m);
 	arguments args(m);
 	for(int i=0;i<m;i++)
-		args.at(m-i-1)=th->runtime_stack_pop();
+		args.set(m-i-1,th->runtime_stack_pop());
 
 	ISWFObject* o=th->runtime_stack_pop();
 
@@ -1896,7 +2086,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 	LOG(CALLS, "constructSuper " << n);
 	arguments args(n);
 	for(int i=0;i<n;i++)
-		args.at(n-i-1)=th->runtime_stack_pop();
+		args.set(n-i-1,th->runtime_stack_pop());
 
 	ASObject* obj=dynamic_cast<ASObject*>(th->runtime_stack_pop());
 
@@ -1981,33 +2171,41 @@ void ABCVm::constructSuper(call_context* th, int n)
 	obj->decRef();
 }
 
-void ABCVm::setProperty(call_context* th, int n)
+void ABCVm::setProperty(ISWFObject* value,ISWFObject* obj,multiname* name)
 {
-	ISWFObject* value=th->runtime_stack_pop();
-	multiname name=th->context->getMultiname(n,th);
-	LOG(CALLS,"setProperty " << name);
-
-	ISWFObject* obj=th->runtime_stack_pop();
+	LOG(CALLS,"setProperty " << *name);
 
 	//Check to see if a proper setter method is available
 	ISWFObject* owner;
-	IFunction* f=obj->getSetterByName(name.name,owner);
+/*	if(name->namert)
+		name->name=name->namert->toString();
+	IFunction* f=obj->getSetterByName(name->name,owner);
 	if(owner)
 	{
+		abort();
 		//Call the setter
 		LOG(CALLS,"Calling the setter");
 		arguments args(1);
-		args.at(0)=value;
+		args.set(0,value);
+		//TODO: check
 		value->incRef();
+		//
+
 		f->call(owner,&args);
 		LOG(CALLS,"End of setter");
 	}
-	else
+	else*/
 	{
 		//No setter, just assign the variable
-		obj->setVariableByName(name.name,value);
+		obj->setVariableByMultiname(*name,value);
 	}
 	obj->decRef();
+
+	if(name->namert)
+	{
+		name->namert->decRef();
+		name->namert=NULL;
+	}
 }
 
 void ABCVm::getProperty(call_context* th, int n)
@@ -2134,7 +2332,7 @@ void ABCVm::newArray(call_context* th, int n)
 	ASArray* ret=new ASArray;
 	ret->resize(n);
 	for(int i=0;i<n;i++)
-		ret->at(n-i-1)=th->runtime_stack_pop();
+		ret->set(n-i-1,th->runtime_stack_pop());
 
 	ret->_constructor(ret,NULL);
 	th->runtime_stack_push(ret);
@@ -2596,13 +2794,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt label" );
 				last_is_branch=true;
 				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
+				int here=code.tellg();
+				map<int,llvm::BasicBlock*>::iterator it=blocks.find(here);
 				if(it!=blocks.end())
 					A=it->second;
 				else
 				{
 					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
+					blocks.insert(pair<int,llvm::BasicBlock*>(here,A));
 				}
 				Builder.CreateBr(A);
 				Builder.SetInsertPoint(A);
@@ -3700,12 +3899,31 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//setproperty
 				LOG(TRACE, "synt setproperty" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
-				jitted=false;
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("setProperty"), context, constant);
+				int rtdata=this->context->getMultinameRTData(t);
+				stack_entry value=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				llvm::Value* name;
+				llvm::Value* reint_context=Builder.CreateBitCast(context,llvm::PointerType::getUnqual(ptr_type));
+				if(rtdata==0)
+				{
+					//We pass a dummy second context param
+					name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, reint_context, constant);
+				}
+				else if(rtdata==1)
+				{
+					stack_entry rt1=
+						static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+					//HACK: we need to reinterpret the pointer to the generic type
+					name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, rt1.first, constant);
+				}
+				stack_entry obj=
+					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
+				jitted=true;
 				break;
 			}
 			case 0x62:
@@ -3719,7 +3937,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				t=Builder.CreateLoad(t,"stack");
 				static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
 				Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
+				if(Log::getLevel()==TRACE)
+					Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 				jitted=true;
 				break;
 			}
@@ -3740,7 +3959,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				llvm::Value* old=Builder.CreateLoad(t);
 				Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
 				Builder.CreateStore(e.first,t);
-				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
+				if(Log::getLevel()==TRACE)
+					Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
 				jitted=true;
 				break;
 			}
@@ -4211,7 +4431,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				t=Builder.CreateLoad(t,"stack");
 				static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
 				Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-				Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
+				if(Log::getLevel()==TRACE)
+					Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 				jitted=true;
 				break;
 			}
@@ -4232,7 +4453,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				llvm::Value* old=Builder.CreateLoad(t);
 				Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
 				Builder.CreateStore(e.first,t);
-				Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
+				if(Log::getLevel()==TRACE)
+					Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
 				jitted=true;
 				break;
 			}
@@ -4261,7 +4483,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
-	llvmf->dump();
+	this->context->vm->FPM->run(*llvmf);
+	//llvmf->dump();
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }
@@ -4299,6 +4522,18 @@ void ABCVm::Run(ABCVm* th)
 	sys=th->m_sys;
 	th->module=new llvm::Module("abc jit");
 	th->ex=llvm::ExecutionEngine::create(th->module);
+	llvm::ExistingModuleProvider ModuleProvider(th->module);
+	th->FPM=new llvm::FunctionPassManager(&ModuleProvider);
+            
+	th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
+	th->FPM->add(llvm::createInstructionCombiningPass());
+	th->FPM->add(llvm::createGVNPass());
+	th->FPM->add(llvm::createLICMPass());
+	th->FPM->add(llvm::createDeadStoreEliminationPass());
+	  //                     // Reassociate expressions.
+	  //                         OurFPM.add(createReassociatePass());
+	  //                                     // Simplify the control flow graph (deleting unreachable blocks, etc).
+	  //                                         OurFPM.add(createCFGSimplificationPass());
 
 	th->registerFunctions();
 	th->registerClasses();

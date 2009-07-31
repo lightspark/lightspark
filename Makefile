@@ -12,16 +12,16 @@ LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o
 # TODO: library?
 all: lightspark tightspark
 lightspark: main.o $(LIBOBJS) 
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --cxxflags --ldflags --libs core jit native` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^
+	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --cxxflags --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^
 
 tightspark: tightspark.o $(LIBOBJS)
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --cxxflags --ldflags --libs core jit native` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^
+	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --cxxflags --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ /usr/lib/llvm/lib/libLLVMScalarOpts.a /usr/lib/llvm/lib/libLLVMTransformUtils.a /usr/lib/llvm/lib/libLLVMAnalysis.a 
 
 libls.so: $(LIBOBJS)
 	$(CXX) -pthread -shared `pkg-config --cflags --libs sdl gl` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $@ $^
 
 %.o: %.cpp
-	$(CXX) -pipe -pthread `pkg-config --cflags libxml-2.0` `llvm-config --cxxflags core` $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^
+	$(CXX) -pipe -pthread `pkg-config --cflags libxml-2.0` `llvm-config --cxxflags all` $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^ 
 
 .PHONY: all clean install
 clean:

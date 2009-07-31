@@ -59,8 +59,8 @@ ASFUNCTIONBODY(ASArray,_constructor)
 		th->resize(args->size());
 		for(int i=0;i<args->size();i++)
 		{
-			th->at(i)=args->at(i);
-			th->at(i)->incRef();
+			th->set(i,args->at(i));
+			args->at(i)->incRef();
 		}
 	}
 }
@@ -207,6 +207,11 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& 
 		if(index<data.size())
 		{
 			ret=data[index];
+			if(ret==NULL)
+			{
+				ret=new Undefined;
+				data[index]=ret;
+			}
 			owner=this;
 		}
 	}
@@ -217,7 +222,57 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& 
 	return ret;
 }
 
-ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o, bool force)
+ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
+{
+	ISWFObject* ret;
+	if(name.namert && name.namert->getObjectType()==T_INTEGER)
+	{
+		int index=static_cast<Integer*>(name.namert)->toInt();
+		if(index>=data.size())
+			resize(index+1);
+
+		if(data[index])
+			data[index]->decRef();
+
+		data[index]=o;
+		ret=o;
+	}
+	else
+	{
+		if(name.namert)
+			name.name=name.namert->toString();
+
+		bool number=true;
+		for(int i=0;i<name.name.size();i++)
+		{
+			if(!isdigit(name.name[i]))
+			{
+				number=false;
+				break;
+			}
+
+		}
+
+		if(number)
+		{
+			int index=atoi(name.name.c_str());
+			if(index>=data.size())
+				resize(index+1);
+
+			if(data[index])
+				data[index]->decRef();
+
+			data[index]=o;
+			ret=o;
+		}
+		else
+			ret=ASObject::setVariableByMultiname(name,o);
+	}
+
+	return ret;
+}
+
+ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o)
 {
 	ISWFObject* ret;
 	bool number=true;
@@ -244,7 +299,7 @@ ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o, bool fo
 		ret=o;
 	}
 	else
-		ret=ASObject::setVariableByName(name,o,force);
+		ret=ASObject::setVariableByName(name,o);
 
 	return ret;
 }

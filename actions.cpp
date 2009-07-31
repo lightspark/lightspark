@@ -790,7 +790,7 @@ void ActionCallMethod::Execute()
 	int numArgs=rt->vm.stack.pop()->toInt();
 	arguments args(numArgs);
 	for(int i=0;i<numArgs;i++)
-		args.at(i)=rt->vm.stack.pop();
+		args.set(i,rt->vm.stack.pop());
 	ISWFObject* owner;
 	ISWFObject* ret=rt->currentClip->getVariableByName(methodName,owner);
 	if(owner)
@@ -819,7 +819,7 @@ void ActionCallFunction::Execute()
 	int numArgs=rt->vm.stack.pop()->toInt();
 	arguments args(numArgs);;
 	for(int i=0;i<numArgs;i++)
-		args.at(i)=rt->vm.stack.pop();
+		args.set(i,rt->vm.stack.pop());
 	ISWFObject* owner;
 	ISWFObject* ret=rt->currentClip->getVariableByName(funcName,owner);
 	if(owner)

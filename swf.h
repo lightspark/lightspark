@@ -100,7 +100,8 @@ public:
 	void commitFrame();
 	void Render();
 	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
-	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o, bool force=false);
+	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o);
+	ISWFObject* setVariableByMultiname(multiname& name, ISWFObject* o);
 	void setVariableByString(const std::string& s, ISWFObject* o);
 };
 

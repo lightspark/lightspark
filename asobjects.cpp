@@ -73,7 +73,11 @@ ASFUNCTIONBODY(ASArray,shift)
 		LOG(ERROR,"Empty Array");
 		abort();
 	}
-	ISWFObject* ret=th->data[0];
+	ISWFObject* ret;
+	if(th->data[0].type==STACK_OBJECT)
+		ret=th->data[0].data;
+	else
+		abort();
 	th->data.erase(th->data.begin());
 	return ret;
 }
@@ -180,7 +184,9 @@ bool ASArray::isEqual(const ISWFObject* r) const
 
 		for(int i=0;i<size;i++)
 		{
-			if(!data[i]->isEqual(ra->at(i)))
+			if(data[i].type!=STACK_OBJECT)
+				abort();
+			if(!data[i].data->isEqual(ra->at(i)))
 				return false;
 		}
 		return true;
@@ -206,11 +212,16 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& 
 		int index=atoi(name.name.c_str());
 		if(index<data.size())
 		{
-			ret=data[index];
+			if(data[index].type==STACK_OBJECT)
+				ret=data[index].data;
+			else if(data[index].type==STACK_INT)
+				ret=abstract_i(data[index].data_i);
+			else
+				abort();
 			if(ret==NULL)
 			{
 				ret=new Undefined;
-				data[index]=ret;
+				data[index].data=ret;
 			}
 			owner=this;
 		}
@@ -220,6 +231,62 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& 
 		ret=ASObject::getVariableByMultiname(name,owner);
 
 	return ret;
+}
+
+void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
+{
+	if(name.namert && name.namert->getObjectType()==T_INTEGER)
+	{
+		int index=static_cast<Integer*>(name.namert)->toInt();
+		if(index>=data.size())
+		{
+			//Heuristic, we increse the array 20%
+			int new_size=max(index+1,data.size()*6/5);
+			resize(new_size);
+		}
+
+		if(data[index].type==STACK_OBJECT && data[index].data)
+			data[index].data->decRef();
+
+		data[index].data_i=value;
+		data[index].type=STACK_INT;
+	}
+	else
+	{
+		abort();
+/*		if(name.namert)
+			name.name=name.namert->toString();
+
+		bool number=true;
+		for(int i=0;i<name.name.size();i++)
+		{
+			if(!isdigit(name.name[i]))
+			{
+				number=false;
+				break;
+			}
+
+		}
+
+		if(number)
+		{
+			int index=atoi(name.name.c_str());
+			if(index>=data.size())
+			{
+				//Heuristic, we increse the array 20%
+				int new_size=max(index+1,data.size()*6/5);
+				resize(new_size);
+			}
+
+			if(data[index])
+				data[index]->decRef();
+
+			data[index]=o;
+			ret=o;
+		}
+		else
+			ret=ASObject::setVariableByMultiname(name,o);*/
+	}
 }
 
 ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
@@ -235,10 +302,11 @@ ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 			resize(new_size);
 		}
 
-		if(data[index])
-			data[index]->decRef();
+		if(data[index].type==STACK_OBJECT && data[index].data)
+			data[index].data->decRef();
 
-		data[index]=o;
+		data[index].data=o;
+		data[index].type=STACK_OBJECT;
 		ret=o;
 	}
 	else
@@ -267,10 +335,11 @@ ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 				resize(new_size);
 			}
 
-			if(data[index])
-				data[index]->decRef();
+			if(data[index].type==STACK_OBJECT && data[index].data)
+				data[index].data->decRef();
 
-			data[index]=o;
+			data[index].data=o;
+			data[index].type=STACK_OBJECT;
 			ret=o;
 		}
 		else
@@ -304,8 +373,8 @@ ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o)
 			resize(new_size);
 		}
 
-		if(data[index])
-			data[index]->decRef();
+		if(data[index].type==STACK_OBJECT && data[index].data)
+			data[index].data->decRef();
 
 		data[index]=o;
 		ret=o;
@@ -335,7 +404,9 @@ ISWFObject* ASArray::getVariableByName(const Qname& name, ISWFObject*& owner)
 		int index=atoi(name.name.c_str());
 		if(index<data.size())
 		{
-			ret=data[index];
+			if(data[index].type!=STACK_OBJECT)
+				abort();
+			ret=data[index].data;
 			owner=this;
 		}
 	}
@@ -421,8 +492,8 @@ ASArray::~ASArray()
 {
 	for(int i=0;i<data.size();i++)
 	{
-		if(data[i])
-			data[i]->decRef();
+		if(data[i].type==STACK_OBJECT && data[i].data)
+			data[i].data->decRef();
 	}
 }
 
@@ -450,7 +521,9 @@ string ASArray::toString() const
 	string ret;
 	for(int i=0;i<data.size();i++)
 	{
-		ret+=data[i]->toString();
+		if(data[i].type!=STACK_OBJECT)
+			abort();
+		ret+=data[i].data->toString();
 		if(i!=data.size()-1)
 			ret+=',';
 	}

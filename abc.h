@@ -188,7 +188,6 @@ private:
 	std::vector<option_detail> options;
 //	param_info param_names
 
-	enum STACK_TYPE{STACK_OBJECT=0};
 	typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
 	static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
 	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
@@ -307,6 +306,16 @@ struct opcode_handler
 {
 	const char* name;
 	void* addr;
+
+};
+
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0 };
+
+struct typed_opcode_handler
+{
+	const char* name;
+	void* addr;
+	ARGS_TYPE type;
 };
 
 class ABCContext
@@ -403,6 +412,7 @@ private:
 	static void incLocal_i(call_context* th, int n);
 	static void coerce(call_context* th, int n);
 	static void setProperty(ISWFObject* value,ISWFObject* obj, multiname* name);
+	static void setProperty_i(intptr_t value,ISWFObject* obj, multiname* name);
 	static void call(call_context* th, int n);
 	static void constructSuper(call_context* th, int n);
 	static void construct(call_context* th, int n);
@@ -429,7 +439,7 @@ private:
 	static void isTypelate(call_context* th);
 	static void swap(call_context* th);
 	static ISWFObject* add(ISWFObject*,ISWFObject*);
-	static ISWFObject* bitAnd(ISWFObject*,ISWFObject*);
+	static uintptr_t bitAnd(ISWFObject*,ISWFObject*);
 	static ISWFObject* bitOr(ISWFObject*,ISWFObject*);
 	static ISWFObject* bitXor(ISWFObject*,ISWFObject*);
 	static ISWFObject* urShift(ISWFObject*,ISWFObject*);
@@ -441,7 +451,7 @@ private:
 	static void popScope(call_context* th);
 	static ISWFObject* newActivation(call_context* th, method_info*);
 	static ISWFObject* coerce_s(ISWFObject*);
-	static ISWFObject* coerce_a(ISWFObject*);
+	static void coerce_a();
 	static ISWFObject* convert_i(ISWFObject*);
 	static ISWFObject* convert_b(ISWFObject*);
 	static ISWFObject* convert_d(ISWFObject*);
@@ -473,6 +483,7 @@ private:
 	static opcode_handler opcode_table_args2_branches[];
 	static opcode_handler opcode_table_args2_pointers_int[];
 	static opcode_handler opcode_table_args3_pointers[];
+	static typed_opcode_handler opcode_table_uintptr_t[];
 
 	//Synchronization
 	sem_t mutex;

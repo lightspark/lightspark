@@ -148,15 +148,17 @@ double ISWFObject::toNumber() const
 
 IFunction* ISWFObject::setGetterByName(const Qname& name, IFunction* o)
 {
-	pair<map<Qname, IFunction*>::iterator,bool> ret=Getters.insert(make_pair(name,o));
+/*	pair<map<Qname, IFunction*>::iterator,bool> ret=Getters.insert(make_pair(name,o));
 	if(!ret.second)
 		ret.first->second=o;
-	return o;
+	return o;*/
 }
 
 IFunction* ISWFObject::getGetterByName(const Qname& name, ISWFObject*& owner)
 {
-	map<Qname,IFunction*>::iterator it=Getters.find(name);
+	owner=NULL;
+	return NULL;
+/*	map<Qname,IFunction*>::iterator it=Getters.find(name);
 	if(it!=Getters.end())
 	{
 		owner=this;
@@ -166,20 +168,22 @@ IFunction* ISWFObject::getGetterByName(const Qname& name, ISWFObject*& owner)
 	{
 		owner=NULL;
 		return NULL;
-	}
+	}*/
 }
 
 IFunction* ISWFObject::setSetterByName(const Qname& name, IFunction* o)
 {
-	pair<map<Qname, IFunction*>::iterator,bool> ret=Setters.insert(make_pair(name,o));
+/*	pair<map<Qname, IFunction*>::iterator,bool> ret=Setters.insert(make_pair(name,o));
 	if(!ret.second)
 		ret.first->second=o;
-	return o;
+	return o;*/
 }
 
 IFunction* ISWFObject::getSetterByName(const Qname& name, ISWFObject*& owner)
 {
-	map<Qname,IFunction*>::iterator it=Setters.find(name);
+	owner=NULL;
+	return NULL;
+/*	map<Qname,IFunction*>::iterator it=Setters.find(name);
 	if(it!=Setters.end())
 	{
 		owner=this;
@@ -189,7 +193,7 @@ IFunction* ISWFObject::getSetterByName(const Qname& name, ISWFObject*& owner)
 	{
 		owner=NULL;
 		return NULL;
-	}
+	}*/
 }
 
 ISWFObject* ISWFObject::setVariableByName(const Qname& name, ISWFObject* o)
@@ -207,6 +211,22 @@ ISWFObject* ISWFObject::setVariableByName(const Qname& name, ISWFObject* o)
 		}
 	}
 	return o;
+}
+
+void ISWFObject::setVariableByMultiname_i(multiname& name, intptr_t value)
+{
+	abort();
+/*	if(name.namert)
+		name.name=name.namert->toString();
+
+	pair<map<Qname, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ISWFObject*>(name.name,o));
+	if(!ret.second)
+	{
+		if(ret.first->second)
+			ret.first->second->decRef();
+		ret.first->second=o;
+	}
+	return o;*/
 }
 
 ISWFObject* ISWFObject::setVariableByMultiname(multiname& name, ISWFObject* o)
@@ -1110,9 +1130,6 @@ ISWFObject* ISWFObject::clone()
 
 ISWFObject::~ISWFObject()
 {
-//	if(ref_count>1)
-//		LOG(NOT_IMPLEMENTED,"Destroying a still referenced object");
-
 	if(constructor)
 		constructor->decRef();
 
@@ -1248,3 +1265,9 @@ std::istream& operator>>(std::istream& s, CLIPACTIONS& v)
 	}
 	return s;
 }
+
+ISWFObject* abstract_i(intptr_t i)
+{
+	return new Integer(i);
+}
+

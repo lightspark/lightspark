@@ -173,11 +173,23 @@ public:
 	bool isEqual(const ISWFObject* r) const;
 };
 
+struct data_slot
+{
+	STACK_TYPE type;
+	union
+	{
+		ISWFObject* data;
+		intptr_t data_i;
+	};
+	data_slot(ISWFObject* o,STACK_TYPE t=STACK_OBJECT):data(o),type(t){}
+	data_slot():data(NULL),type(STACK_OBJECT){}
+};
+
 class ASArray: public ASObject
 {
 friend class ABCVm;
 protected:
-	std::vector<ISWFObject*> data;
+	std::vector<data_slot> data;
 	Integer length;
 public:
 	ASArray():length(0)
@@ -197,9 +209,9 @@ public:
 	{
 		if(index<data.size())
 		{
-			if(data[index]==NULL)
+			if(data[index].data==NULL)
 				abort();
-			return data[index];
+			return data[index].data;
 		}
 		else
 			abort();
@@ -208,12 +220,13 @@ public:
 	{
 		if(index<data.size())
 		{
-			if(data[index])
+			if(data[index].data)
 			{
 				std::cout << "overwriting" << std::endl;
 				abort();
 			}
-			data[index]=o;
+			data[index].data=o;
+			data[index].type=STACK_OBJECT;
 		}
 		else
 			abort();
@@ -224,18 +237,19 @@ public:
 	}
 	void push(ISWFObject* o)
 	{
-		data.push_back(o);
+		data.push_back(data_slot(o,STACK_OBJECT));
 		length=length+1;
 	}
 	void resize(int n)
 	{
-		data.resize(n,NULL);
+		data.resize(n);
 		length=n;
 	}
 	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
 	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
 	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o);
 	ISWFObject* setVariableByMultiname(multiname& name, ISWFObject* o);
+	void setVariableByMultiname_i(multiname& name, intptr_t value);
 	bool isEqual(const ISWFObject* r) const;
 	std::string toString() const;
 };

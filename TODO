@@ -20,3 +20,4 @@ Official TODO Queue:
 -) Get rid of bound objects, just use setters/getters
 -) Support the same var on multiple namespaces (useNS.abc)
 -) Move setter/getter handling in the same map as variables
+-) Eavy caching of integers

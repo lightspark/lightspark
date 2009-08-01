@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 	getrlimit(RLIMIT_AS,&rl);
 	rl.rlim_cur=1000000000;
 	rl.rlim_max=rl.rlim_cur;
-	setrlimit(RLIMIT_AS,&rl);
+//	setrlimit(RLIMIT_AS,&rl);
 
 	Log::initLogging(ERROR);
 	sys=new SystemState;

@@ -229,7 +229,11 @@ ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 	{
 		int index=static_cast<Integer*>(name.namert)->toInt();
 		if(index>=data.size())
-			resize(index+1);
+		{
+			//Heuristic, we increse the array 20%
+			int new_size=max(index+1,data.size()*6/5);
+			resize(new_size);
+		}
 
 		if(data[index])
 			data[index]->decRef();
@@ -257,7 +261,11 @@ ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 		{
 			int index=atoi(name.name.c_str());
 			if(index>=data.size())
-				resize(index+1);
+			{
+				//Heuristic, we increse the array 20%
+				int new_size=max(index+1,data.size()*6/5);
+				resize(new_size);
+			}
 
 			if(data[index])
 				data[index]->decRef();
@@ -290,7 +298,11 @@ ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o)
 	{
 		int index=atoi(name.name.c_str());
 		if(index>=data.size())
-			resize(index+1);
+		{
+			//Heuristic, we increse the array 20%
+			int new_size=max(index+1,data.size()*6/5);
+			resize(new_size);
+		}
 
 		if(data[index])
 			data[index]->decRef();
@@ -408,7 +420,10 @@ ASString::ASString(const string& s):data(s)
 ASArray::~ASArray()
 {
 	for(int i=0;i<data.size();i++)
-		data[i]->decRef();
+	{
+		if(data[i])
+			data[i]->decRef();
+	}
 }
 
 ASFUNCTIONBODY(ASString,String)

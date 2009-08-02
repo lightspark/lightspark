@@ -309,7 +309,7 @@ struct opcode_handler
 
 };
 
-enum ARGS_TYPE { ARGS_OBJ_OBJ=0 };
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_INT };
 
 struct typed_opcode_handler
 {
@@ -406,7 +406,7 @@ private:
 	static void findProperty(call_context* th, int n);
 	static void getProperty(call_context* th, int n);
 	static ISWFObject* pushByte(call_context* th, int n);
-	static ISWFObject* pushShort(call_context* th, int n);
+	static intptr_t pushShort(intptr_t n);
 	static ISWFObject* pushInt(call_context* th, int n);
 	static ISWFObject* pushDouble(call_context* th, int n);
 	static void incLocal_i(call_context* th, int n);
@@ -440,6 +440,7 @@ private:
 	static void swap(call_context* th);
 	static ISWFObject* add(ISWFObject*,ISWFObject*);
 	static uintptr_t bitAnd(ISWFObject*,ISWFObject*);
+	static uintptr_t bitAnd_oi(ISWFObject* val1, intptr_t val2);
 	static ISWFObject* bitOr(ISWFObject*,ISWFObject*);
 	static ISWFObject* bitXor(ISWFObject*,ISWFObject*);
 	static ISWFObject* urShift(ISWFObject*,ISWFObject*);

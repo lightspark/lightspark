@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 	}
 	struct rlimit rl;
 	getrlimit(RLIMIT_AS,&rl);
-	rl.rlim_cur=1000000000;
+	rl.rlim_cur=500000000;
 	rl.rlim_max=rl.rlim_cur;
 //	setrlimit(RLIMIT_AS,&rl);
 

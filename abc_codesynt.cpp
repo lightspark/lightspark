@@ -58,7 +58,6 @@ opcode_handler ABCVm::opcode_table_args1_lazy[]={
 	{"pushString",(void*)&ABCVm::pushString},
 	{"pushDouble",(void*)&ABCVm::pushDouble},
 	{"pushInt",(void*)&ABCVm::pushInt},
-	{"pushShort",(void*)&ABCVm::pushShort},
 	{"newFunction",(void*)&ABCVm::newFunction},
 	{"newCatch",(void*)&ABCVm::newCatch},
 	{"pushByte",(void*)&ABCVm::pushByte},
@@ -154,7 +153,9 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 };
 
 typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
-	{"bitAnd_oo",(void*)&ABCVm::bitAnd,ARGS_OBJ_OBJ}
+	{"bitAnd_oo",(void*)&ABCVm::bitAnd,ARGS_OBJ_OBJ},
+	{"bitAnd_oi",(void*)&ABCVm::bitAnd_oi,ARGS_OBJ_INT},
+	{"pushShort",(void*)&ABCVm::pushShort,ARGS_INT}
 };
 
 extern __thread SystemState* sys;
@@ -186,7 +187,7 @@ void ABCVm::registerFunctions()
 {
 	vector<const llvm::Type*> sig;
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
-	const llvm::Type* intptr_type=ex->getTargetData()->getIntPtrType();
+	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType();
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(ptr_type);
 
 	sig.push_back(llvm::IntegerType::get(32));
@@ -347,19 +348,6 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 
-	//Lazy pushing, no context, (ISWFObject*, ISWFObject*), concrete intptr_t
-	sig.clear();
-	sig.push_back(voidptr_type);
-	sig.push_back(voidptr_type);
-	FT=llvm::FunctionType::get(intptr_type, sig, false);
-	elems=sizeof(opcode_table_uintptr_t)/sizeof(typed_opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_uintptr_t[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_uintptr_t[i].addr);
-	}
-	//End of lazy pushing
-
 	//Lazy pushing, no context, (ISWFObject*, ISWFObject*, int)
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
@@ -395,17 +383,42 @@ void ABCVm::registerFunctions()
 	}
 
 	//Build the concrete interface
-	sig[0]=intptr_type;
+	sig[0]=int_type;
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setProperty_i",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setProperty_i);
 
+	vector<const llvm::Type*> sig_obj_obj;
+	sig_obj_obj.push_back(voidptr_type);
+	sig_obj_obj.push_back(voidptr_type);
+
+	vector<const llvm::Type*> sig_obj_int;
+	sig_obj_int.push_back(voidptr_type);
+	sig_obj_int.push_back(int_type);
+
+	vector<const llvm::Type*> sig_int;
+	sig_int.push_back(int_type);
+
 	//Build abstracter
-	sig.clear();
-	sig.push_back(intptr_type);
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig_int, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"abstract_i",module);
 	ex->addGlobalMapping(F,(void*)&abstract_i);
+
+	//Lazy pushing, no context, concrete intptr_t
+	elems=sizeof(opcode_table_uintptr_t)/sizeof(typed_opcode_handler);
+	for(int i=0;i<elems;i++)
+	{
+		if(opcode_table_uintptr_t[i].type==ARGS_OBJ_OBJ)
+			FT=llvm::FunctionType::get(int_type, sig_obj_obj, false);
+		else if(opcode_table_uintptr_t[i].type==ARGS_OBJ_INT)
+			FT=llvm::FunctionType::get(int_type, sig_obj_int, false);
+		else if(opcode_table_uintptr_t[i].type==ARGS_INT)
+			FT=llvm::FunctionType::get(int_type, sig_int, false);
+		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_uintptr_t[i].name,module);
+		ex->addGlobalMapping(F,opcode_table_uintptr_t[i].addr);
+	}
+	//End of lazy pushing
+
 }
 
 llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
@@ -479,8 +492,11 @@ inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 	{
 		for(int i=0;i<static_stack.size();i++)
 		{
-			if(static_stack[i].second!=STACK_OBJECT)
-				LOG(ERROR,"Conversion not yet implemented");
+			if(static_stack[i].second==STACK_OBJECT)
+			{
+			}
+			else if(static_stack[i].second==STACK_INT)
+				static_stack[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),static_stack[i].first);
 			llvm_stack_push(ex,builder,static_stack[i].first,dynamic_stack,dynamic_stack_index);
 		}
 		static_stack.clear();
@@ -740,13 +756,20 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 			
 				//Make comparision
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+				{
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+				else
+					abort();
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLT"), v1, v2, constant);
-			
+
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLT"), v1.first, v2.first, constant);
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				Builder.CreateCondBr(cond,B,A);
@@ -784,12 +807,20 @@ SyntheticFunction::synt_function method_info::synt_method()
 					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
 				}
 				//Make comparision
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+				{
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+				else
+					abort();
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLE"), v1, v2, constant);
+
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLE"), v1.first, v2.first, constant);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -1088,12 +1119,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 			
 				//Make comparision
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+				{
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+				else
+					abort();
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNE"), v1, v2, constant);
+				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNE"), v1.first, v2.first, constant);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -1421,9 +1459,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushshort" );
 				u30 t;
 				code >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				value=Builder.CreateCall2(ex->FindFunctionNamed("pushShort"), context, constant);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				constant = llvm::ConstantInt::get(ptr_type, t);
+				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
+				if(Log::getLevel()==TRACE)
+					Builder.CreateCall(ex->FindFunctionNamed("pushShort"), constant);
 				jitted=true;
 				break;
 			}
@@ -1959,11 +1998,18 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				Builder.CreateCall3(ex->FindFunctionNamed("setSlot"), v1, v2, constant);	
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+				{
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+				else
+					abort();
+
+				Builder.CreateCall3(ex->FindFunctionNamed("setSlot"), v1.first, v2.first, constant);
 				jitted=true;
 				break;
 			}
@@ -2120,11 +2166,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//subtract
 				LOG(TRACE, "synt subtract" );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall2(ex->FindFunctionNamed("subtract"), v1, v2);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+				{
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+				else
+					abort();
+
+				value=Builder.CreateCall2(ex->FindFunctionNamed("subtract"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
 				break;
@@ -2133,11 +2185,18 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//multiply
 				LOG(TRACE, "synt multiply" );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall2(ex->FindFunctionNamed("multiply"), v1, v2);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+				{
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+				else
+					abort();
+				value=Builder.CreateCall2(ex->FindFunctionNamed("multiply"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
 				break;
@@ -2146,11 +2205,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//divide
 				LOG(TRACE, "synt divide" );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall2(ex->FindFunctionNamed("divide"), v1, v2);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+				{
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+				else
+					abort();
+
+				value=Builder.CreateCall2(ex->FindFunctionNamed("divide"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
 				break;
@@ -2159,11 +2226,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//modulo
 				LOG(TRACE, "synt modulo" );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1, v2);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+				{
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+				else
+					abort();
+				value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
 				break;
@@ -2208,6 +2280,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 				const char* f;
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					f="bitAnd_oo";
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+				{
+					//bitAnd is commutative, but llvm is not :-)
+					f="bitAnd_oi";
+					value=v1.first;
+					v1.first=v2.first;
+					v2.first=value;
+				}
 				else
 					abort();
 

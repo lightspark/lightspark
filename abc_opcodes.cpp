@@ -31,6 +31,15 @@ uintptr_t ABCVm::bitAnd(ISWFObject* val2, ISWFObject* val1)
 	return i1&i2;
 }
 
+uintptr_t ABCVm::bitAnd_oi(ISWFObject* val1, intptr_t val2)
+{
+	uintptr_t i1=val1->toInt();
+	uintptr_t i2=val2;
+	val1->decRef();
+	LOG(CALLS,"bitAnd " << hex << i1 << '&' << i2);
+	return i1&i2;
+}
+
 void ABCVm::setProperty(ISWFObject* value,ISWFObject* obj,multiname* name)
 {
 	LOG(CALLS,"setProperty " << *name);
@@ -147,5 +156,55 @@ void ABCVm::getLocal(call_context* th, int n)
 void ABCVm::setLocal(call_context* th, int n)
 {
 	LOG(CALLS,"setLocal: DONE " << n);
+}
+
+intptr_t ABCVm::pushShort(intptr_t n)
+{
+	LOG(CALLS, "pushShort " << n );
+	return n;
+}
+
+ISWFObject* ABCVm::setSlot(ISWFObject* value, ISWFObject* obj, int n)
+{
+	LOG(CALLS,"setSlot " << dec << n);
+	obj->setSlot(n,value);
+	obj->decRef();
+}
+
+ISWFObject* ABCVm::getSlot(ISWFObject* obj, int n)
+{
+	LOG(CALLS,"getSlot " << dec << n);
+	ISWFObject* ret=obj->getSlot(n);
+	ret->incRef();
+	obj->decRef();
+	return ret;
+}
+
+ISWFObject* ABCVm::negate(ISWFObject* v)
+{
+	LOG(CALLS, "negate" );
+	ISWFObject* ret=new Number(-(v->toNumber()));
+	v->decRef();
+	return ret;
+}
+
+ISWFObject* ABCVm::bitXor(ISWFObject* val2, ISWFObject* val1)
+{
+	int i1=val1->toInt();
+	int i2=val2->toInt();
+	val1->decRef();
+	val2->decRef();
+	LOG(CALLS,"bitXor " << hex << i1 << '^' << i2);
+	return new Integer(i1^i2);
+}
+
+ISWFObject* ABCVm::bitOr(ISWFObject* val2, ISWFObject* val1)
+{
+	int i1=val1->toInt();
+	int i2=val2->toInt();
+	val1->decRef();
+	val2->decRef();
+	LOG(CALLS,"bitOr " << hex << i1 << '|' << i2);
+	return new Integer(i1|i2);
 }
 

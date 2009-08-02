@@ -752,23 +752,6 @@ ISWFObject* ABCVm::urShift(ISWFObject* val1, ISWFObject* val2)
 	return new Integer(i2>>i1);
 }
 
-ISWFObject* ABCVm::bitXor(ISWFObject* val2, ISWFObject* val1)
-{
-	LOG(NOT_IMPLEMENTED,"bitXor");
-	abort();
-	abort();
-}
-
-ISWFObject* ABCVm::bitOr(ISWFObject* val2, ISWFObject* val1)
-{
-	int i1=val1->toInt();
-	int i2=val2->toInt();
-	val1->decRef();
-	val2->decRef();
-	LOG(CALLS,"bitOr " << hex << i1 << '|' << i2);
-	return new Integer(i1|i2);
-}
-
 ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 {
 	//Implement ECMA add algorithm, for XML and default
@@ -1447,30 +1430,6 @@ void ABCVm::newObject(call_context* th, int n)
 	th->runtime_stack_push(ret);
 }
 
-ISWFObject* ABCVm::setSlot(ISWFObject* value, ISWFObject* obj, int n)
-{
-	LOG(CALLS,"setSlot " << dec << n);
-	obj->setSlot(n,value);
-	obj->decRef();
-}
-
-ISWFObject* ABCVm::getSlot(ISWFObject* obj, int n)
-{
-	LOG(CALLS,"getSlot " << dec << n);
-	ISWFObject* ret=obj->getSlot(n);
-	ret->incRef();
-	obj->decRef();
-	return ret;
-}
-
-ISWFObject* ABCVm::negate(ISWFObject* v)
-{
-	LOG(CALLS, "negate" );
-	ISWFObject* ret=new Number(-(v->toNumber()));
-	v->decRef();
-	return ret;
-}
-
 ISWFObject* ABCVm::_not(ISWFObject* v)
 {
 	LOG(CALLS, "not" );
@@ -1574,12 +1533,6 @@ ISWFObject* ABCVm::pushDouble(call_context* th, int n)
 	d64 d=th->context->constant_pool.doubles[n];
 	LOG(CALLS, "pushDouble [" << dec << n << "] " << d);
 	return new Number(d);
-}
-
-ISWFObject* ABCVm::pushShort(call_context* th, int n)
-{
-	LOG(CALLS, "pushShort " << n );
-	return new Integer(n);
 }
 
 ISWFObject* ABCVm::pushByte(call_context* th, int n)

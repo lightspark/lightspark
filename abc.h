@@ -202,6 +202,8 @@ private:
 	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, bool jitted,
 			std::vector<stack_entry>& static_stack, 
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
+	void syncLocals(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder,
+			std::vector<stack_entry>& static_locals,llvm::Value* locals);
 	llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
 	llvm::Function* llvmf;
 

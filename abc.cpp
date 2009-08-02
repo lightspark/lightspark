@@ -661,40 +661,6 @@ ISWFObject* ABCVm::modulo(ISWFObject* val2, ISWFObject* val1)
 	return new Number(num1%num2);
 }
 
-ISWFObject* ABCVm::divide(ISWFObject* val2, ISWFObject* val1)
-{
-	Number num2(val2);
-	Number num1(val1);
-
-	val1->decRef();
-	val2->decRef();
-	LOG(CALLS,"divide "  << num1 << '/' << num2);
-	return new Number(num1/num2);
-}
-
-ISWFObject* ABCVm::getGlobalScope(call_context* th)
-{
-	LOG(CALLS,"getGlobalScope: " << &th->context->Global);
-	th->context->Global->incRef();
-	return th->context->Global;
-}
-
-ISWFObject* ABCVm::decrement(ISWFObject* o)
-{
-	LOG(CALLS,"decrement");
-
-	int n=o->toInt();
-	o->decRef();
-	return new Integer(n-1);
-}
-
-ISWFObject* ABCVm::decrement_i(ISWFObject* o)
-{
-	LOG(NOT_IMPLEMENTED,"decrement_i");
-	abort();
-	return o;
-}
-
 ISWFObject* ABCVm::increment(ISWFObject* o)
 {
 	LOG(CALLS,"increment");
@@ -986,70 +952,6 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	obj->decRef();
 	LOG(CALLS,"End of constructing");
 	th->runtime_stack_push(ret);
-}
-
-void ABCVm::callProperty(call_context* th, int n, int m)
-{
-	arguments args(m);
-	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
-
-	multiname name=th->context->getMultiname(n);
-	LOG(CALLS,"callProperty " << name << ' ' << m);
-
-	ISWFObject* obj=th->runtime_stack_pop();
-	ISWFObject* owner;
-	ISWFObject* o=obj->getVariableByMultiname(name,owner);
-	if(owner)
-	{
-		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=dynamic_cast<IFunction*>(o);
-			ISWFObject* ret=f->call(obj,&args);
-			th->runtime_stack_push(ret);
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
-			th->runtime_stack_push(new Undefined);
-		}
-		else if(o->getObjectType()==T_DEFINABLE)
-		{
-			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
-			Definable* d=static_cast<Definable*>(o);
-			d->define(obj);
-			IFunction* f=obj->getVariableByMultiname(name,owner)->toFunction();
-			if(f)
-			{
-				ISWFObject* ret=f->call(owner,&args);
-				th->runtime_stack_push(ret);
-			}
-			else
-				abort();
-		}
-		else
-		{
-			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",owner));
-			if(f)
-			{
-				ISWFObject* ret=f->call(o,&args);
-				th->runtime_stack_push(ret);
-			}
-			else
-			{
-				LOG(CALLS,"No such function, returning Undefined");
-				th->runtime_stack_push(new Undefined);
-			}
-		}
-	}
-	else
-	{
-		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
-		th->runtime_stack_push(new Undefined);
-	}
-	LOG(CALLS,"End of calling " << name);
-	obj->decRef();
 }
 
 ISWFObject* ABCVm::hasNext2(call_context* th, int n, int m)
@@ -1713,50 +1615,6 @@ void ABCVm::constructSuper(call_context* th, int n)
 		//args.decRef();
 	}
 	LOG(CALLS,"End super construct ");
-	obj->decRef();
-}
-
-void ABCVm::getProperty(call_context* th, int n)
-{
-	multiname name=th->context->getMultiname(n,th);
-	LOG(CALLS, "getProperty " << name );
-
-	ISWFObject* obj=th->runtime_stack_pop();
-
-	ISWFObject* owner;
-	//Check to see if a proper getter method is available
-	IFunction* f=obj->getGetterByName(name.name,owner);
-	if(owner)
-	{
-		//Call the getter
-		LOG(CALLS,"Calling the getter");
-		//arguments args;
-		//args.push(value);
-		//value->incRef();
-		th->runtime_stack_push(f->call(owner,NULL));
-		LOG(CALLS,"End of getter");
-		obj->decRef();
-		return;
-	}
-	
-	ISWFObject* ret=obj->getVariableByMultiname(name,owner);
-	if(!owner)
-	{
-		LOG(NOT_IMPLEMENTED,"Property not found " << name);
-		th->runtime_stack_push(new Undefined);
-	}
-	else
-	{
-		if(ret->getObjectType()==T_DEFINABLE)
-		{
-			LOG(ERROR,"Property " << name << " is not yet valid");
-			Definable* d=static_cast<Definable*>(ret);
-			d->define(obj);
-			ret=obj->getVariableByMultiname(name,owner);
-		}
-		th->runtime_stack_push(ret);
-		ret->incRef();
-	}
 	obj->decRef();
 }
 

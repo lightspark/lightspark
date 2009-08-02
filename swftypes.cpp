@@ -60,6 +60,7 @@ int ConstantReference::toInt() const
 string ISWFObject::toString() const
 {
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
+	abort();
 	return STRING("Cannot convert object to String");
 }
 
@@ -137,12 +138,14 @@ IFunction* ISWFObject::toFunction()
 int ISWFObject::toInt() const
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
+	abort();
 	return 0;
 }
 
 double ISWFObject::toNumber() const
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to float");
+	abort();
 	return 0;
 }
 

@@ -37,7 +37,7 @@
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_NUMBER, T_FUNCTION,
 	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE};
 
-enum STACK_TYPE{STACK_OBJECT=0,STACK_INT};
+enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT};
 
 class ISWFObject;
 class arguments;
@@ -186,6 +186,11 @@ public:
 	static void s_decRef(ISWFObject* o)
 	{
 		if(o)
+			o->decRef();
+	}
+	static void s_decRef_safe(ISWFObject* o,ISWFObject* o2)
+	{
+		if(o && o!=o2)
 			o->decRef();
 	}
 	virtual IFunction* getSetterByName(const Qname& name, ISWFObject*& owner);

@@ -77,6 +77,18 @@ void ABCVm::setProperty(ISWFObject* value,ISWFObject* obj,multiname* name)
 	}
 }
 
+ISWFObject* ABCVm::increment(ISWFObject* o)
+{
+	LOG(CALLS,"increment");
+
+	int n=o->toInt();
+	cout << "ref_count " << o->ref_count << endl;
+	cout << "incrementing " << n << endl;
+	o->decRef();
+	ISWFObject* ret=new Integer(n+1);
+	return ret;
+}
+
 void ABCVm::setProperty_i(intptr_t value,ISWFObject* obj,multiname* name)
 {
 	LOG(CALLS,"setProperty_i " << *name);

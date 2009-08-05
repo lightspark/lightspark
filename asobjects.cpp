@@ -294,7 +294,8 @@ ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 	ISWFObject* ret;
 	if(name.namert && name.namert->getObjectType()==T_INTEGER)
 	{
-		int index=static_cast<Integer*>(name.namert)->toInt();
+		int index=name.namert->toInt();
+		cout << "Int name " << index << endl; 
 		if(index>=data.size())
 		{
 			//Heuristic, we increse the array 20%

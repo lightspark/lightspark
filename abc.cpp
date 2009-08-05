@@ -661,16 +661,6 @@ ISWFObject* ABCVm::modulo(ISWFObject* val2, ISWFObject* val1)
 	return new Number(num1%num2);
 }
 
-ISWFObject* ABCVm::increment(ISWFObject* o)
-{
-	LOG(CALLS,"increment");
-
-	int n=o->toInt();
-	o->decRef();
-	ISWFObject* ret=new Integer(n+1);
-	return ret;
-}
-
 ISWFObject* ABCVm::increment_i(ISWFObject* o)
 {
 	LOG(NOT_IMPLEMENTED,"increment_i");

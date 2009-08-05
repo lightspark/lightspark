@@ -46,28 +46,7 @@ void ABCVm::setProperty(ISWFObject* value,ISWFObject* obj,multiname* name)
 
 	//Check to see if a proper setter method is available
 	ISWFObject* owner;
-/*	if(name->namert)
-		name->name=name->namert->toString();
-	IFunction* f=obj->getSetterByName(name->name,owner);
-	if(owner)
-	{
-		abort();
-		//Call the setter
-		LOG(CALLS,"Calling the setter");
-		arguments args(1);
-		args.set(0,value);
-		//TODO: check
-		value->incRef();
-		//
-
-		f->call(owner,&args);
-		LOG(CALLS,"End of setter");
-	}
-	else*/
-	{
-		//No setter, just assign the variable
-		obj->setVariableByMultiname(*name,value);
-	}
+	obj->setVariableByMultiname(*name,value);
 	obj->decRef();
 
 	if(name->namert)
@@ -95,28 +74,7 @@ void ABCVm::setProperty_i(intptr_t value,ISWFObject* obj,multiname* name)
 
 	//Check to see if a proper setter method is available
 	ISWFObject* owner;
-/*	if(name->namert)
-		name->name=name->namert->toString();
-	IFunction* f=obj->getSetterByName(name->name,owner);
-	if(owner)
-	{
-		abort();
-		//Call the setter
-		LOG(CALLS,"Calling the setter");
-		arguments args(1);
-		args.set(0,value);
-		//TODO: check
-		value->incRef();
-		//
-
-		f->call(owner,&args);
-		LOG(CALLS,"End of setter");
-	}
-	else*/
-	{
-		//No setter, just assign the variable
-		obj->setVariableByMultiname_i(*name,value);
-	}
+	obj->setVariableByMultiname_i(*name,value);
 	obj->decRef();
 
 	if(name->namert)
@@ -292,21 +250,6 @@ void ABCVm::getProperty(call_context* th, int n)
 	ISWFObject* obj=th->runtime_stack_pop();
 
 	ISWFObject* owner;
-	//Check to see if a proper getter method is available
-	IFunction* f=obj->getGetterByName(name.name,owner);
-	if(owner)
-	{
-		//Call the getter
-		LOG(CALLS,"Calling the getter");
-		//arguments args;
-		//args.push(value);
-		//value->incRef();
-		th->runtime_stack_push(f->call(owner,NULL));
-		LOG(CALLS,"End of getter");
-		obj->decRef();
-		return;
-	}
-	
 	ISWFObject* ret=obj->getVariableByMultiname(name,owner);
 	if(!owner)
 	{

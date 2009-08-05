@@ -1116,20 +1116,18 @@ ISWFObject* RootMovieClip::getVariableByName(const Qname& name, ISWFObject*& own
 	return ret;
 }
 
-ISWFObject* RootMovieClip::setVariableByMultiname(multiname& name, ISWFObject* o)
+void RootMovieClip::setVariableByMultiname(multiname& name, ISWFObject* o)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ISWFObject::setVariableByMultiname(name,o);
+	ISWFObject::setVariableByMultiname(name,o);
 	sem_post(&mutex);
-	return ret;
 }
 
-ISWFObject* RootMovieClip::setVariableByName(const Qname& name, ISWFObject* o)
+void RootMovieClip::setVariableByName(const Qname& name, ISWFObject* o)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ISWFObject::setVariableByName(name,o);
+	ISWFObject::setVariableByName(name,o);
 	sem_post(&mutex);
-	return ret;
 }
 
 void RootMovieClip::setVariableByString(const string& s, ISWFObject* o)

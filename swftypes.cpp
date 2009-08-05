@@ -149,71 +149,48 @@ double ISWFObject::toNumber() const
 	return 0;
 }
 
-IFunction* ISWFObject::setGetterByName(const Qname& name, IFunction* o)
+void ISWFObject::setGetterByName(const Qname& name, IFunction* o)
 {
-/*	pair<map<Qname, IFunction*>::iterator,bool> ret=Getters.insert(make_pair(name,o));
-	if(!ret.second)
-		ret.first->second=o;
-	return o;*/
-}
-
-IFunction* ISWFObject::getGetterByName(const Qname& name, ISWFObject*& owner)
-{
-	owner=NULL;
-	return NULL;
-/*	map<Qname,IFunction*>::iterator it=Getters.find(name);
-	if(it!=Getters.end())
-	{
-		owner=this;
-		return it->second;
-	}
-	else
-	{
-		owner=NULL;
-		return NULL;
-	}*/
-}
-
-IFunction* ISWFObject::setSetterByName(const Qname& name, IFunction* o)
-{
-/*	pair<map<Qname, IFunction*>::iterator,bool> ret=Setters.insert(make_pair(name,o));
-	if(!ret.second)
-		ret.first->second=o;
-	return o;*/
-}
-
-IFunction* ISWFObject::getSetterByName(const Qname& name, ISWFObject*& owner)
-{
-	owner=NULL;
-	return NULL;
-/*	map<Qname,IFunction*>::iterator it=Setters.find(name);
-	if(it!=Setters.end())
-	{
-		owner=this;
-		return it->second;
-	}
-	else
-	{
-		owner=NULL;
-		return NULL;
-	}*/
-}
-
-ISWFObject* ISWFObject::setVariableByName(const Qname& name, ISWFObject* o)
-{
-	pair<map<Qname, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ISWFObject*>(name,o));
+	pair<map<Qname, obj_var>::iterator,bool> ret=Variables.insert(make_pair(name,obj_var(NULL,o,NULL)));
 	if(!ret.second)
 	{
-/*		if(!force && ret.first->second->isBinded())
-			ret.first->second->copyFrom(o);
-		else*/
+		if(ret.first->second.getter)
 		{
-			if(ret.first->second)
-				ret.first->second->decRef();
-			ret.first->second=o;
+			//ret.first->second.getter->decRef();
+			//Should never happen
+			abort();
 		}
+		ret.first->second.getter=o;
 	}
-	return o;
+}
+
+void ISWFObject::setSetterByName(const Qname& name, IFunction* o)
+{
+	pair<map<Qname, obj_var>::iterator,bool> ret=Variables.insert(make_pair(name,obj_var(NULL,NULL,o)));
+	if(!ret.second)
+	{
+		if(ret.first->second.setter)
+		{
+			//ret.first->second.setter->decRef();
+			//Should never happen
+			abort();
+		}
+		ret.first->second.setter=o;
+	}
+}
+
+void ISWFObject::setVariableByName(const Qname& name, ISWFObject* o)
+{
+	pair<map<Qname, obj_var>::iterator,bool> ret=Variables.insert(make_pair(name,obj_var(o)));
+	if(!ret.second)
+	{
+		if(ret.first->second.setter)
+			abort();
+	
+		if(ret.first->second.var)
+			ret.first->second.var->decRef();
+		ret.first->second.var=o;
+	}
 }
 
 void ISWFObject::setVariableByMultiname_i(multiname& name, intptr_t value)
@@ -232,29 +209,39 @@ void ISWFObject::setVariableByMultiname_i(multiname& name, intptr_t value)
 	return o;*/
 }
 
-ISWFObject* ISWFObject::setVariableByMultiname(multiname& name, ISWFObject* o)
+void ISWFObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 {
 	if(name.namert)
 		name.name=name.namert->toString();
 
-	pair<map<Qname, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ISWFObject*>(name.name,o));
+	pair<map<Qname, obj_var>::iterator,bool> ret=Variables.insert(make_pair(name.name,obj_var(o)));
 	if(!ret.second)
 	{
-/*		if(!force && ret.first->second->isBinded())
-			ret.first->second->copyFrom(o);
-		else*/
+		if(ret.first->second.setter)
 		{
-			if(ret.first->second)
-				ret.first->second->decRef();
-			ret.first->second=o;
+			//Call the setter
+			LOG(CALLS,"Calling the setter");
+			arguments args(1);
+			args.set(0,o);
+			//TODO: check
+			o->incRef();
+			//
+
+			ret.first->second.setter->call(this,&args);
+			LOG(CALLS,"End of setter");
+		}
+		else
+		{
+			if(ret.first->second.var)
+				ret.first->second.var->decRef();
+			ret.first->second.var=o;
 		}
 	}
-	return o;
 }
 
 ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
 {
-	map<Qname,ISWFObject*>::iterator it=Variables.find(name.name);
+	map<Qname,obj_var>::iterator it=Variables.find(name.name);
 	if(it!=Variables.end())
 	{
 		if(name.ns.empty())
@@ -270,7 +257,20 @@ ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, ISWFObject
 				break;
 			}
 		}
-		return it->second;
+		//Check to see if a proper getter method is available
+		if(it->second.getter)
+		{
+			//Call the getter
+			LOG(CALLS,"Calling the getter");
+			//arguments args;
+			//args.push(value);
+			//value->incRef();
+			ISWFObject* ret=it->second.getter->call(this,NULL);
+			LOG(CALLS,"End of getter");
+			return ret;
+		}
+		else
+			return it->second.var;
 	}
 	else
 	{
@@ -282,7 +282,7 @@ ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, ISWFObject
 ISWFObject* ISWFObject::getVariableByString(const std::string& name, ISWFObject*& owner)
 {
 	//Slow linear lookup, should be avoided
-	map<Qname,ISWFObject*>::iterator it=Variables.begin();
+	map<Qname,obj_var>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 	{
 		string cur=it->first.ns;
@@ -292,7 +292,9 @@ ISWFObject* ISWFObject::getVariableByString(const std::string& name, ISWFObject*
 		if(cur==name)
 		{
 			owner=this;
-			return it->second;
+			if(it->second.getter)
+				abort();
+			return it->second.var;
 		}
 	}
 	
@@ -302,11 +304,13 @@ ISWFObject* ISWFObject::getVariableByString(const std::string& name, ISWFObject*
 
 ISWFObject* ISWFObject::getVariableByName(const Qname& name, ISWFObject*& owner)
 {
-	map<Qname,ISWFObject*>::iterator it=Variables.find(name);
+	map<Qname,obj_var>::iterator it=Variables.find(name);
 	if(it!=Variables.end())
 	{
 		owner=this;
-		return it->second;
+		if(it->second.getter)
+			abort();
+		return it->second.var;
 	}
 	else
 	{
@@ -383,7 +387,7 @@ std::ostream& operator<<(std::ostream& s, const multiname& r)
 
 void ISWFObject::dumpVariables()
 {
-	map<Qname,ISWFObject*>::iterator it=Variables.begin();
+	map<Qname,obj_var>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 		cout << '[' << it->first.ns << "] "<< it->first.name << endl;
 }
@@ -1105,7 +1109,7 @@ void DictionaryDefinable::define(ISWFObject* g)
 	}*/
 }
 
-ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),binded(false),ref_count(1),constructor(NULL),
+ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),ref_count(1),constructor(NULL),
 	class_index(-1)
 {
 }
@@ -1136,15 +1140,22 @@ ISWFObject::~ISWFObject()
 	if(constructor)
 		constructor->decRef();
 
-	map<Qname,ISWFObject*>::iterator it=Variables.begin();
+	map<Qname,obj_var>::iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
-		it->second->decRef();
+	{
+		if(it->second.var)
+			it->second.var->decRef();
+		if(it->second.setter)
+			it->second.setter->decRef();
+		if(it->second.getter)
+			it->second.getter->decRef();
+	}
 }
 
 ISWFObject* ISWFObject::getSlot(int n)
 {
 	if(n-1<slots_vars.size())
-		return slots_vars[n-1]->second;
+		return slots_vars[n-1]->second.var;
 	else
 	{
 		LOG(ERROR,"Slot out of range");
@@ -1169,8 +1180,8 @@ void ISWFObject::setSlot(int n,ISWFObject* o)
 	{
 		if(slots_vars[n-1]!=Variables.end())
 		{
-			slots_vars[n-1]->second->decRef();
-			slots_vars[n-1]->second=o;
+			slots_vars[n-1]->second.var->decRef();
+			slots_vars[n-1]->second.var=o;
 		}
 		else
 			abort();
@@ -1200,7 +1211,7 @@ string ISWFObject::getNameAt(int index)
 {
 	if(index<Variables.size())
 	{
-		map<Qname,ISWFObject*>::iterator it=Variables.begin();
+		map<Qname,obj_var>::iterator it=Variables.begin();
 
 		for(int i=0;i<index;i++)
 			it++;

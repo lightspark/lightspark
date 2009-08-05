@@ -38,7 +38,8 @@ extern __thread ParseThread* pt;
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	EventDispatcher::_constructor(obj,args);
-	ISWFObject* ret=obj->setVariableByName("sharedEvents",new EventDispatcher); //TODO: Read only
+	ISWFObject* ret=new EventDispatcher;
+	obj->setVariableByName("sharedEvents",ret); //TODO: Read only
 	ret->constructor->call(ret,NULL);
 //	setVariableByName("parameters",&parameters);
 
@@ -46,10 +47,11 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 
 ASFUNCTIONBODY(Loader,_constructor)
 {
-	ISWFObject* ret=obj->setVariableByName("contentLoaderInfo",new LoaderInfo);
-	ret->bind();
-	obj->setVariableByName("load",new Function(load));
+	ISWFObject* ret=new LoaderInfo;
+	obj->setVariableByName("contentLoaderInfo",ret);
 	ret->constructor->call(ret,NULL);
+
+	obj->setVariableByName("load",new Function(load));
 }
 
 ASFUNCTIONBODY(Loader,load)
@@ -127,8 +129,7 @@ ASFUNCTIONBODY(Sprite,_constructor)
 	th->setVariableByName("y",&th->_y);
 	th->setVariableByName("x",&th->_x);
 	th->setVariableByName("width",&th->_width);
-	th->rotation.bind();
-	th->setVariableByName("rotation",&th->rotation);
+	//th->setVariableByName("rotation",&th->rotation);
 	th->setVariableByName("height",&th->_height);
 	th->setVariableByName("getBounds",new Function(getBounds));
 	th->setGetterByName("parent",new Function(_getParent));
@@ -292,10 +293,8 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	Sprite::_constructor(th,NULL);
 	th->setVariableByName("_framesloaded",&th->_framesloaded);
 	th->setVariableByName("framesLoaded",&th->_framesloaded);
-	th->_framesloaded.bind();
 	th->setVariableByName("_totalframes",&th->_totalframes);
 	th->setVariableByName("totalFrames",&th->_totalframes);
-	th->_totalframes.bind();
 	th->setVariableByName("swapDepths",new Function(swapDepths));
 	th->setVariableByName("lineStyle",new Function(lineStyle));
 	th->setVariableByName("lineTo",new Function(lineTo));

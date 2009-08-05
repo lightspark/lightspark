@@ -44,15 +44,14 @@ ASStage::ASStage():width(640),height(480)
 ASFUNCTIONBODY(ASArray,_constructor)
 {
 	ASArray* th=static_cast<ASArray*>(obj);
-	th->length=0;
-	th->setVariableByName("length",&th->length);
+	th->setGetterByName("length",new Function(_getLength));
 	//th->setVariableByName(Qname(AS3,"push"),new Function(_push));
 	th->setVariableByName("push",new Function(_push));
 	th->setVariableByName("pop",new Function(_pop));
 	th->setVariableByName("shift",new Function(shift));
 	th->setVariableByName("unshift",new Function(unshift));
 	//th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
-	th->length.incRef();
+	//th->length.incRef();
 	if(args==NULL)
 		return NULL;
 
@@ -66,6 +65,12 @@ ASFUNCTIONBODY(ASArray,_constructor)
 			args->at(i)->incRef();
 		}
 	}
+}
+
+ASFUNCTIONBODY(ASArray,_getLength)
+{
+	ASArray* th=static_cast<ASArray*>(obj);
+	return new Integer(th->data.size());
 }
 
 ASFUNCTIONBODY(ASArray,shift)
@@ -314,9 +319,8 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 	}
 }
 
-ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
+void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 {
-	ISWFObject* ret;
 	if(name.namert && name.namert->getObjectType()==T_INTEGER)
 	{
 		int index=name.namert->toInt();
@@ -332,7 +336,6 @@ ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 
 		data[index].data=o;
 		data[index].type=STACK_OBJECT;
-		ret=o;
 	}
 	else
 	{
@@ -365,18 +368,14 @@ ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 
 			data[index].data=o;
 			data[index].type=STACK_OBJECT;
-			ret=o;
 		}
 		else
-			ret=ASObject::setVariableByMultiname(name,o);
+			ASObject::setVariableByMultiname(name,o);
 	}
-
-	return ret;
 }
 
-ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o)
+void ASArray::setVariableByName(const Qname& name, ISWFObject* o)
 {
-	ISWFObject* ret;
 	bool number=true;
 	for(int i=0;i<name.name.size();i++)
 	{
@@ -402,12 +401,9 @@ ISWFObject* ASArray::setVariableByName(const Qname& name, ISWFObject* o)
 			data[index].data->decRef();
 
 		data[index]=o;
-		ret=o;
 	}
 	else
-		ret=ASObject::setVariableByName(name,o);
-
-	return ret;
+		ASObject::setVariableByName(name,o);
 }
 
 ISWFObject* ASArray::getVariableByName(const Qname& name, ISWFObject*& owner)
@@ -462,18 +458,6 @@ ISWFObject* ASObject::getVariableByName(const Qname& name, ISWFObject*& owner)
 
 	if(!owner && prototype)
 		ret=prototype->getVariableByName(name,owner);
-
-	return ret;
-}
-
-IFunction* ASObject::getGetterByName(const Qname& name, ISWFObject*& owner)
-{
-	IFunction* ret=ISWFObject::getGetterByName(name,owner);
-	if(!owner && super)
-		ret=super->getGetterByName(name,owner);
-
-	if(!owner && prototype)
-		ret=prototype->getGetterByName(name,owner);
 
 	return ret;
 }

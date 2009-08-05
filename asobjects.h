@@ -191,7 +191,7 @@ friend class ABCVm;
 protected:
 	std::vector<data_slot> data;
 public:
-	ASArray():length(0)
+	ASArray()
 	{
 		constructor=new Function(_constructor);
 	}
@@ -202,7 +202,7 @@ public:
 	ASFUNCTION(_pop);
 	ASFUNCTION(shift);
 	ASFUNCTION(unshift);
-	ASFUNCTION(_lenght);
+	ASFUNCTION(_getLength);
 	ISWFObject* clone()
 	{
 		return new ASArray(*this);
@@ -240,17 +240,15 @@ public:
 	void push(ISWFObject* o)
 	{
 		data.push_back(data_slot(o,STACK_OBJECT));
-		length=length+1;
 	}
 	void resize(int n)
 	{
 		data.resize(n);
-		length=n;
 	}
 	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
 	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
-	ISWFObject* setVariableByName(const Qname& name, ISWFObject* o);
-	ISWFObject* setVariableByMultiname(multiname& name, ISWFObject* o);
+	void setVariableByName(const Qname& name, ISWFObject* o);
+	void setVariableByMultiname(multiname& name, ISWFObject* o);
 	void setVariableByMultiname_i(multiname& name, intptr_t value);
 	bool isEqual(const ISWFObject* r) const;
 	std::string toString() const;
@@ -262,7 +260,6 @@ public:
 	arguments(int n)
 	{
 		data.resize(n,NULL);
-		length=n;
 		_constructor(this,NULL);
 	}
 	ISWFObject* clone()

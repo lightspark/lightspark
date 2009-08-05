@@ -1239,22 +1239,8 @@ void ABCVm::getSuper(call_context* th, int n)
 	if(o2 && o2->super)
 		obj=o2->super;
 
-	ISWFObject* ret;
 	ISWFObject* owner;
-	//Check to see if a proper getter method is available
-	IFunction* f=obj->getGetterByName(name.name,owner);
-	if(owner)
-	{
-		//Call the getter
-		LOG(CALLS,"Calling the getter");
-		//arguments args;
-		//args.push(value);
-		//value->incRef();
-		ret=f->call(owner,NULL);
-		LOG(CALLS,"End of getter");
-	}
-	else	
-		ret=obj->getVariableByMultiname(name,owner);
+	ISWFObject* ret=obj->getVariableByMultiname(name,owner);
 
 	if(owner)
 		th->runtime_stack_push(ret);
@@ -1617,19 +1603,6 @@ void ABCVm::getLex(call_context* th, int n)
 	ISWFObject* owner;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		//Check to see if a proper getter method is available
-		IFunction* f=(*it)->getGetterByName(name.name,owner);
-		if(owner)
-		{
-			//Call the getter
-			LOG(CALLS,"Calling the getter");
-			//arguments args;
-			//args.push(value);
-			//value->incRef();
-			th->runtime_stack_push(f->call(owner,NULL));
-			LOG(CALLS,"End of getter");
-			break;;
-		}
 		ISWFObject* o=(*it)->getVariableByMultiname(name,owner);
 		if(owner)
 		{
@@ -1829,10 +1802,14 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 		{
 			ISWFObject* ret;
 			if(deferred_initialization)
-				ret=obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
+			{
+				ret=new ScriptDefinable(deferred_initialization);
+				obj->setVariableByName(name, ret);
+			}
 			else
 			{
-				ret=obj->setVariableByName(name, new Undefined);
+				ret=new Undefined;
+				obj->setVariableByName(name, ret);
 				/*ret=new ASObject;
 				//Should chek super
 				//ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
@@ -1902,37 +1879,40 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 				{
 					case 0x01: //String
 					{
-						ISWFObject* ret=obj->setVariableByName(name, 
-							new ASString(constant_pool.strings[t->vindex]));
+						ISWFObject* ret=new ASString(constant_pool.strings[t->vindex]);
+						obj->setVariableByName(name, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name);
 						break;
 					}
 					case 0x03: //Int
 					{
-						ISWFObject* ret=obj->setVariableByName(name, 
-							new Integer(constant_pool.integer[t->vindex]));
+						ISWFObject* ret=new Integer(constant_pool.integer[t->vindex]);
+						obj->setVariableByName(name, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name);
 						break;
 					}
 					case 0x0a: //False
 					{
-						ISWFObject* ret=obj->setVariableByName(name, new Boolean(false));
+						ISWFObject* ret=new Boolean(false);
+						obj->setVariableByName(name, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name);
 						break;
 					}
 					case 0x0b: //True
 					{
-						ISWFObject* ret=obj->setVariableByName(name, new Boolean(true));
+						ISWFObject* ret=new Boolean(true);
+						obj->setVariableByName(name, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name);
 						break;
 					}
 					case 0x0c: //Null
 					{
-						ISWFObject* ret=obj->setVariableByName(name, new Null);
+						ISWFObject* ret=new Null;
+						obj->setVariableByName(name, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name);
 						break;
@@ -1942,6 +1922,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 						//fallthrough
 						LOG(ERROR,"Slot kind " << hex << t->vkind);
 						LOG(ERROR,"Trait not supported " << name << " " << t->kind);
+						abort();
 						obj->setVariableByName(name, new Undefined);
 						return;
 					}
@@ -1960,9 +1941,15 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 				if(!owner)
 				{
 					if(deferred_initialization)
-						obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
+					{
+						ret=new ScriptDefinable(deferred_initialization);
+						obj->setVariableByName(name, ret);
+					}
 					else
-						ret=obj->setVariableByName(name,new Undefined);
+					{
+						ret=new Undefined;
+						obj->setVariableByName(name, ret);
+					}
 				}
 				else
 				{

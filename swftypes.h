@@ -149,6 +149,16 @@ struct multiname
 	static int count;
 };
 
+struct obj_var
+{
+	ISWFObject* var;
+	IFunction* setter;
+	IFunction* getter;
+	obj_var():var(NULL),setter(NULL),getter(NULL){}
+	explicit obj_var(ISWFObject* v):var(v),setter(NULL),getter(NULL){}
+	explicit obj_var(ISWFObject* v,IFunction* g,IFunction* s):var(v),setter(s),getter(g){}
+};
+
 class ISWFObject
 {
 friend class MovieClip;
@@ -156,13 +166,10 @@ protected:
 	ISWFObject* parent;
 	ISWFObject();
 	ISWFObject(const ISWFObject& o);
-	std::map<Qname,ISWFObject*> Variables;
-//	std::map<Qname,IFunction*> Setters;
-//	std::map<Qname,IFunction*> Getters;
-	typedef std::map<Qname,ISWFObject*>::iterator var_iterator;
+	std::map<Qname,obj_var> Variables;
+	typedef std::map<Qname,obj_var>::iterator var_iterator;
 	std::vector<var_iterator> slots_vars;
 	int max_slot_index;
-	bool binded;
 public:
 	int ref_count;
 	IFunction* constructor;
@@ -193,26 +200,20 @@ public:
 		if(o && o!=o2)
 			o->decRef();
 	}
-	virtual IFunction* getSetterByName(const Qname& name, ISWFObject*& owner);
-	virtual IFunction* setSetterByName(const Qname& name, IFunction* o);
-	virtual IFunction* getGetterByName(const Qname& name, ISWFObject*& owner);
-	virtual IFunction* setGetterByName(const Qname& name, IFunction* o);
-
 	virtual ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
 	virtual ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
 	virtual ISWFObject* getVariableByString(const std::string& name, ISWFObject*& owner);
 	virtual void setVariableByMultiname_i(multiname& name, intptr_t value);
-	virtual ISWFObject* setVariableByMultiname(multiname& name, ISWFObject* o);
-	virtual ISWFObject* setVariableByName(const Qname& name, ISWFObject* o);
+	virtual void setVariableByMultiname(multiname& name, ISWFObject* o);
+	virtual void setVariableByName(const Qname& name, ISWFObject* o);
+	void setGetterByName(const Qname& name, IFunction* o);
+	void setSetterByName(const Qname& name, IFunction* o);
 	virtual ISWFObject* getSlot(int n);
 	virtual void setSlot(int n,ISWFObject* o);
 	virtual void initSlot(int n,ISWFObject* o, const Qname& name);
 	virtual void dumpVariables();
 	virtual int numVariables();
 	std::string getNameAt(int i);
-
-	bool isBinded() {return binded;}
-	void bind(){ binded=true;}
 
 	virtual SWFOBJECT_TYPE getObjectType() const=0;
 	virtual std::string toString() const;

@@ -186,12 +186,15 @@ ISWFObject* createRest()
 void ABCVm::registerFunctions()
 {
 	vector<const llvm::Type*> sig;
+	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"abort",module);
+
 	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
 	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType();
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(ptr_type);
 
 	sig.push_back(llvm::IntegerType::get(32));
-	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not_impl",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::not_impl);
 	sig.clear();

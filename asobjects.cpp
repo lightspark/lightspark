@@ -48,7 +48,10 @@ ASFUNCTIONBODY(ASArray,_constructor)
 	th->setVariableByName("length",&th->length);
 	//th->setVariableByName(Qname(AS3,"push"),new Function(_push));
 	th->setVariableByName("push",new Function(_push));
-	th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
+	th->setVariableByName("pop",new Function(_pop));
+	th->setVariableByName("shift",new Function(shift));
+	th->setVariableByName("unshift",new Function(unshift));
+	//th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
 	th->length.incRef();
 	if(args==NULL)
 		return NULL;
@@ -69,10 +72,7 @@ ASFUNCTIONBODY(ASArray,shift)
 {
 	ASArray* th=static_cast<ASArray*>(obj);
 	if(th->data.empty())
-	{
-		LOG(ERROR,"Empty Array");
-		abort();
-	}
+		return new Undefined;
 	ISWFObject* ret;
 	if(th->data[0].type==STACK_OBJECT)
 		ret=th->data[0].data;
@@ -80,6 +80,31 @@ ASFUNCTIONBODY(ASArray,shift)
 		abort();
 	th->data.erase(th->data.begin());
 	return ret;
+}
+
+ASFUNCTIONBODY(ASArray,_pop)
+{
+	ASArray* th=static_cast<ASArray*>(obj);
+	ISWFObject* ret;
+	if(th->data.back().type==STACK_OBJECT)
+		ret=th->data.back().data;
+	else
+		abort();
+	th->data.pop_back();
+	return ret;
+}
+
+ASFUNCTIONBODY(ASArray,unshift)
+{
+	ASArray* th=static_cast<ASArray*>(obj);
+	if(args->size()!=1)
+	{
+		LOG(ERROR,"Multiple unshift");
+		abort();
+	}
+	th->data.insert(th->data.begin(),args->at(0));
+	args->at(0)->incRef();
+	return new Integer(th->size());
 }
 
 ASFUNCTIONBODY(ASArray,_push)
@@ -295,7 +320,6 @@ ISWFObject* ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 	if(name.namert && name.namert->getObjectType()==T_INTEGER)
 	{
 		int index=name.namert->toInt();
-		cout << "Int name " << index << endl; 
 		if(index>=data.size())
 		{
 			//Heuristic, we increse the array 20%
@@ -509,6 +533,16 @@ ASFUNCTIONBODY(ASString,String)
 
 		th->data=oss.str();
 		return th;
+	}
+	if(args->at(0)->getObjectType()==T_ARRAY)
+	{
+		cout << "array" << endl;
+		cout << args->at(0)->toString() << endl;
+		return new ASString(args->at(0)->toString());
+	}
+	if(args->at(0)->getObjectType()==T_UNDEFINED)
+	{
+		return new ASString("undefined");
 	}
 	else
 	{

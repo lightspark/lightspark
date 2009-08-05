@@ -190,7 +190,6 @@ class ASArray: public ASObject
 friend class ABCVm;
 protected:
 	std::vector<data_slot> data;
-	Integer length;
 public:
 	ASArray():length(0)
 	{
@@ -200,7 +199,10 @@ public:
 	virtual ~ASArray();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_push);
+	ASFUNCTION(_pop);
 	ASFUNCTION(shift);
+	ASFUNCTION(unshift);
+	ASFUNCTION(_lenght);
 	ISWFObject* clone()
 	{
 		return new ASArray(*this);

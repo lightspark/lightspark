@@ -1155,30 +1155,6 @@ bool ABCVm::ifNLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	return ret;
 }
 
-bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
-{
-	LOG(CALLS,"ifLT " << offset);
-
-	//Real comparision demanded to object
-	bool ret=obj1->isLess(obj2);
-
-	obj2->decRef();
-	obj1->decRef();
-	return ret;
-}
-
-bool ABCVm::ifNE(ISWFObject* obj1, ISWFObject* obj2, int offset)
-{
-	LOG(CALLS,"ifNE " << dec << offset);
-
-	//Real comparision demanded to object
-	bool ret=!(obj1->isEqual(obj2));
-
-	obj2->decRef();
-	obj1->decRef();
-	return ret;
-}
-
 ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
 {
 	LOG(CALLS,"lessThan");
@@ -1425,97 +1401,6 @@ ISWFObject* ABCVm::pushDouble(call_context* th, int n)
 	d64 d=th->context->constant_pool.doubles[n];
 	LOG(CALLS, "pushDouble [" << dec << n << "] " << d);
 	return new Number(d);
-}
-
-ISWFObject* ABCVm::pushByte(call_context* th, int n)
-{
-	LOG(CALLS, "pushByte " << n );
-	return new Integer(n);
-}
-
-void ABCVm::incLocal_i(call_context* th, int n)
-{
-	LOG(CALLS, "incLocal_i " << n );
-	if(th->locals[n]->getObjectType()==T_INTEGER)
-	{
-		Integer* i=dynamic_cast<Integer*>(th->locals[n]);
-		i->val++;
-	}
-	else
-	{
-		LOG(NOT_IMPLEMENTED,"Cannot increment type " << th->locals[n]->getObjectType());
-	}
-
-}
-
-void ABCVm::construct(call_context* th, int m)
-{
-	LOG(CALLS, "construct " << m);
-	arguments args(m);
-	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
-
-	ISWFObject* o=th->runtime_stack_pop();
-
-	if(o->getObjectType()==T_DEFINABLE)
-	{
-		LOG(ERROR,"Check");
-		abort();
-	/*	LOG(CALLS,"Deferred definition of property " << name);
-		Definable* d=dynamic_cast<Definable*>(o);
-		d->define(obj);
-		o=obj->getVariableByMultiname(name,owner);
-		LOG(CALLS,"End of deferred definition of property " << name);*/
-	}
-
-	LOG(CALLS,"Constructing");
-	//We get a shallow copy of the object, but clean out Variables
-	//TODO: should be done in the copy constructor
-	ASObject* ret=dynamic_cast<ASObject*>(o->clone());
-	if(!ret->Variables.empty())
-		abort();
-	ret->Variables.clear();
-
-	ASObject* aso=dynamic_cast<ASObject*>(o);
-	ret->prototype=aso;
-	aso->incRef();
-	if(aso==NULL)
-		LOG(ERROR,"Class is not as ASObject");
-
-	if(o->class_index==-2)
-	{
-		//We have to build the method traits
-		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
-		LOG(CALLS,"Building method traits");
-		for(int i=0;i<sf->mi->body->trait_count;i++)
-			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
-		sf->call(ret,&args);
-
-	}
-	else if(o->class_index==-1)
-	{
-		//The class is builtin
-		LOG(CALLS,"Building a builtin class");
-	}
-	else
-	{
-		//The class is declared in the script and has an index
-		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->context->instances[o->class_index].trait_count;i++)
-			th->context->buildTrait(ret,&th->context->instances[o->class_index].traits[i]);
-	}
-
-	if(o->constructor)
-	{
-		LOG(CALLS,"Calling Instance init");
-		args.incRef();
-		o->constructor->call(ret,&args);
-//		args.decRef();
-	}
-
-	LOG(CALLS,"End of constructing");
-	th->runtime_stack_push(ret);
-	o->decRef();
 }
 
 void ABCVm::constructSuper(call_context* th, int n)

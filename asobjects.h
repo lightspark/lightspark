@@ -191,13 +191,11 @@ friend class ABCVm;
 protected:
 	std::vector<data_slot> data;
 public:
-	ASArray()
-	{
-		constructor=new Function(_constructor);
-	}
+	ASArray();
 	SWFOBJECT_TYPE getObjectType() const { return T_ARRAY; }
 	virtual ~ASArray();
 	ASFUNCTION(_constructor);
+	ASFUNCTION(Array);
 	ASFUNCTION(_push);
 	ASFUNCTION(_pop);
 	ASFUNCTION(shift);

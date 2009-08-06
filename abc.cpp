@@ -771,39 +771,6 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 
 }
 
-ISWFObject* ABCVm::typeOf(ISWFObject* obj)
-{
-	LOG(CALLS,"typeOf");
-	string ret;
-	switch(obj->getObjectType())
-	{
-		case T_UNDEFINED:
-			ret="undefined";
-			break;
-		case T_OBJECT:
-		case T_NULL:
-			ret="object";
-			break;
-		case T_BOOLEAN:
-			ret="boolean";
-			break;
-		case T_NUMBER:
-		case T_INTEGER:
-			ret="number";
-			break;
-		case T_STRING:
-			ret="string";
-			break;
-		case T_FUNCTION:
-			ret="function";
-			break;
-		default:
-			return new Undefined;
-	}
-	obj->decRef();
-	return new ASString(ret);
-}
-
 void ABCVm::isTypelate(call_context* th)
 {
 	LOG(NOT_IMPLEMENTED,"isTypelate");
@@ -976,61 +943,6 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 {
 	multiname name=th->context->getMultiname(n); 
 	LOG(NOT_IMPLEMENTED,"callSuperVoid " << name << ' ' << m);
-}
-
-void ABCVm::callPropVoid(call_context* th, int n, int m)
-{
-	multiname name=th->context->getMultiname(n); 
-	LOG(CALLS,"callPropVoid " << name << ' ' << m);
-	arguments args(m);
-	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
-	ISWFObject* obj=th->runtime_stack_pop();
-	ISWFObject* owner;
-	ISWFObject* o=obj->getVariableByMultiname(name,owner);
-	if(owner)
-	{
-		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
-		{
-			IFunction* f=dynamic_cast<IFunction*>(o);
-			f->call(obj,&args);
-		}
-		else if(o->getObjectType()==T_UNDEFINED)
-		{
-			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
-			th->runtime_stack_push(new Undefined);
-		}
-		else if(o->getObjectType()==T_DEFINABLE)
-		{
-			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
-			th->runtime_stack_push(new Undefined);
-		}
-		else
-		{
-			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName(".Call",owner));
-			f->call(owner,&args);
-		}
-	}
-	else
-		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
-
-	obj->decRef();
-	LOG(CALLS,"End of calling " << name);
-}
-
-void ABCVm::jump(call_context* th, int offset)
-{
-	LOG(CALLS,"jump " << offset);
-}
-
-bool ABCVm::ifTrue(ISWFObject* obj1, int offset)
-{
-	LOG(CALLS,"ifTrue " << offset);
-
-	bool ret=Boolean_concrete(obj1);
-	obj1->decRef();
-	return ret;
 }
 
 bool ABCVm::ifFalse(ISWFObject* obj1, int offset)

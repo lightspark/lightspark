@@ -311,7 +311,7 @@ struct opcode_handler
 
 };
 
-enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_INT };
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT };
 
 struct typed_opcode_handler
 {
@@ -407,7 +407,7 @@ private:
 	static void findPropStrict(call_context* th, int n);
 	static void findProperty(call_context* th, int n);
 	static void getProperty(call_context* th, int n);
-	static ISWFObject* pushByte(call_context* th, int n);
+	static intptr_t pushByte(intptr_t n);
 	static intptr_t pushShort(intptr_t n);
 	static ISWFObject* pushInt(call_context* th, int n);
 	static ISWFObject* pushDouble(call_context* th, int n);
@@ -463,7 +463,7 @@ private:
 	static ISWFObject* nextName(ISWFObject* index, ISWFObject* obj);
 	static ISWFObject* nextValue(ISWFObject* index, ISWFObject* obj);
 	static ISWFObject* increment_i(ISWFObject*);
-	static ISWFObject* increment(ISWFObject*);
+	static uintptr_t increment(ISWFObject*);
 	static ISWFObject* decrement_i(ISWFObject*);
 	static ISWFObject* decrement(ISWFObject*);
 	static ISWFObject* getGlobalScope(call_context* th);

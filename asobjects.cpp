@@ -41,6 +41,19 @@ ASStage::ASStage():width(640),height(480)
 	setVariableByName("height",&height);
 }
 
+ASArray::ASArray()
+{
+	constructor=new Function(_constructor);
+	setVariableByName("Call",new Function(ASArray::Array));
+}
+
+ASFUNCTIONBODY(ASArray,Array)
+{
+	ISWFObject* ret=new ASArray();
+	ret->constructor->call(ret,args);
+	return ret;
+}
+
 ASFUNCTIONBODY(ASArray,_constructor)
 {
 	ASArray* th=static_cast<ASArray*>(obj);

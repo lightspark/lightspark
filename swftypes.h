@@ -37,7 +37,9 @@
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_NUMBER, T_FUNCTION,
 	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE};
 
-enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT};
+enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER};
+
+typedef double number_t;
 
 class ISWFObject;
 class arguments;
@@ -877,6 +879,7 @@ public:
 };
 
 ISWFObject* abstract_i(intptr_t i);
+ISWFObject* abstract_d(number_t i);
 
 std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);

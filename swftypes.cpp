@@ -1280,6 +1280,11 @@ std::istream& operator>>(std::istream& s, CLIPACTIONS& v)
 	return s;
 }
 
+ISWFObject* abstract_d(number_t i)
+{
+	return new Number(i);
+}
+
 ISWFObject* abstract_i(intptr_t i)
 {
 	return new Integer(i);

@@ -1546,5 +1546,11 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	UB(2,bs);
 	UseNetwork=UB(1,bs);
 	UB(24,bs);
+
+	if(ActionScript3)
+	{
+		cout << "creating vm" << endl;
+		sys->currentVm=new ABCVm(sys);
+	}
 }
 

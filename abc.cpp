@@ -45,9 +45,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 	in >> Flags >> Name;
 	LOG(CALLS,"DoABCTag Name: " << Name);
 
-	if(sys->currentVm==NULL)
-		sys->currentVm=new ABCVm(sys);
-
+	cout << "assign vm" << endl;
 	context=new ABCContext(sys->currentVm,in);
 
 	if(dest!=in.tellg())
@@ -650,17 +648,6 @@ inline method_info* ABCContext::get_method(unsigned int m)
 	}
 }
 
-ISWFObject* ABCVm::modulo(ISWFObject* val2, ISWFObject* val1)
-{
-	int num2=val2->toInt();
-	int num1=val1->toInt();
-
-	val1->decRef();
-	val2->decRef();
-	LOG(CALLS,"modulo "  << num1 << '%' << num2);
-	return new Number(num1%num2);
-}
-
 ISWFObject* ABCVm::increment_i(ISWFObject* o)
 {
 	LOG(NOT_IMPLEMENTED,"increment_i");
@@ -676,16 +663,6 @@ ISWFObject* ABCVm::subtract(ISWFObject* val2, ISWFObject* val1)
 	val2->decRef();
 	LOG(CALLS,"subtract " << num1 << '-' << num2);
 	return new Number(num1-num2);
-}
-
-ISWFObject* ABCVm::multiply(ISWFObject* val2, ISWFObject* val1)
-{
-	Number num2(val2);
-	Number num1(val1);
-	val1->decRef();
-	val2->decRef();
-	LOG(CALLS,"multiply "  << num1 << '*' << num2);
-	return new Number(num1*num2);
 }
 
 ISWFObject* ABCVm::lShift(ISWFObject* val1, ISWFObject* val2)
@@ -1285,13 +1262,6 @@ void ABCVm::pushScope(call_context* th)
 	ISWFObject* t=th->runtime_stack_pop();
 	LOG(CALLS, "pushScope " << t );
 	th->scope_stack.push_back(t);
-}
-
-ISWFObject* ABCVm::pushInt(call_context* th, int n)
-{
-	s32 i=th->context->constant_pool.integer[n];
-	LOG(CALLS, "pushInt [" << dec << n << "] " << i);
-	return new Integer(i);
 }
 
 ISWFObject* ABCVm::pushDouble(call_context* th, int n)

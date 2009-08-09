@@ -447,7 +447,7 @@ private:
 	static ISWFObject* bitXor(ISWFObject*,ISWFObject*);
 	static ISWFObject* urShift(ISWFObject*,ISWFObject*);
 	static ISWFObject* lShift(ISWFObject*,ISWFObject*);
-	static ISWFObject* multiply(ISWFObject*,ISWFObject*);
+	static number_t multiply(ISWFObject*,ISWFObject*);
 	static ISWFObject* divide(ISWFObject*,ISWFObject*);
 	static ISWFObject* modulo(ISWFObject*,ISWFObject*);
 	static ISWFObject* subtract(ISWFObject*,ISWFObject*);
@@ -487,6 +487,7 @@ private:
 	static opcode_handler opcode_table_args2_pointers_int[];
 	static opcode_handler opcode_table_args3_pointers[];
 	static typed_opcode_handler opcode_table_uintptr_t[];
+	static typed_opcode_handler opcode_table_number_t[];
 
 	//Synchronization
 	sem_t mutex;

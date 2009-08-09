@@ -157,10 +157,14 @@ ISWFObject* ABCVm::negate(ISWFObject* v)
 
 ISWFObject* ABCVm::bitXor(ISWFObject* val2, ISWFObject* val1)
 {
+	static int c=0;
 	int i1=val1->toInt();
 	int i2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
+	if(c%(1024*256)==0)
+		cout << "bitxor " << c << endl;
+	c++;
 	LOG(CALLS,"bitXor " << hex << i1 << '^' << i2);
 	return new Integer(i1^i2);
 }
@@ -332,6 +336,16 @@ intptr_t ABCVm::pushByte(intptr_t n)
 	return n;
 }
 
+number_t ABCVm::multiply(ISWFObject* val2, ISWFObject* val1)
+{
+	double num1=val1->toNumber();
+	double num2=val2->toNumber();
+	val1->decRef();
+	val2->decRef();
+	LOG(CALLS,"multiply "  << num1 << '*' << num2);
+	return num1*num2;
+}
+
 void ABCVm::incLocal_i(call_context* th, int n)
 {
 	LOG(CALLS, "incLocal_i " << n );
@@ -500,5 +514,22 @@ void ABCVm::jump(call_context* th, int offset)
 bool ABCVm::ifTrue(ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifTrue " << offset);
+}
+
+ISWFObject* ABCVm::modulo(ISWFObject* val1, ISWFObject* val2)
+{
+	int num2=val2->toInt();
+	int num1=val1->toInt();
+
+	val1->decRef();
+	val2->decRef();
+	LOG(CALLS,"modulo "  << num1 << '%' << num2);
+	return new Number(num1%num2);
+}
+
+ISWFObject* ABCVm::pushInt(call_context* th, int n)
+{
+	s32 i=th->context->constant_pool.integer[n];
+	LOG(CALLS, "pushInt [" << dec << n << "] " << i);
 }
 

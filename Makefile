@@ -13,7 +13,7 @@ LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o
 # TODO: library?
 all: lightspark tightspark
 lightspark: main.o $(LIBOBJS) 
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --cxxflags --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^
+	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --cxxflags --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ /usr/lib/llvm/lib/libLLVMScalarOpts.a /usr/lib/llvm/lib/libLLVMTransformUtils.a /usr/lib/llvm/lib/libLLVMAnalysis.a 
 
 tightspark: tightspark.o $(LIBOBJS)
 	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --cxxflags --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ /usr/lib/llvm/lib/libLLVMScalarOpts.a /usr/lib/llvm/lib/libLLVMTransformUtils.a /usr/lib/llvm/lib/libLLVMAnalysis.a 

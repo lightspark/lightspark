@@ -239,26 +239,38 @@ bool ASArray::isEqual(const ISWFObject* r) const
 ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
 {
 	ISWFObject* ret;
-	bool number=true;
 	owner=NULL;
-	for(int i=0;i<name.name.size();i++)
-	{
-		if(!isdigit(name.name[i]))
-		{
-			number=false;
-			break;
-		}
+	int index=0;
 
-	}
-	if(number)
+	if(name.name_type==multiname::NAME_STRING)
 	{
-		int index=atoi(name.name.c_str());
+		for(int i=0;i<name.name_s.size();i++)
+		{
+			if(!isdigit(name.name_s[i]))
+			{
+				index=-1;
+				break;
+			}
+
+		}
+		if(index==0)
+			index=atoi(name.name_s.c_str());
+	}
+	else if(name.name_type==multiname::NAME_INT)
+		index=name.name_i;
+
+	if(index!=-1)
+	{
 		if(index<data.size())
 		{
 			if(data[index].type==STACK_OBJECT)
 				ret=data[index].data;
 			else if(data[index].type==STACK_INT)
+			{
 				ret=abstract_i(data[index].data_i);
+				//HACK, the outside world is incReffing this variable
+				ret->fake_decRef();
+			}
 			else
 				abort();
 			if(ret==NULL)
@@ -278,9 +290,26 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& 
 
 void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 {
-	if(name.namert && name.namert->getObjectType()==T_INTEGER)
+	int index=0;
+	if(name.name_type==multiname::NAME_STRING)
 	{
-		int index=static_cast<Integer*>(name.namert)->toInt();
+		for(int i=0;i<name.name_s.size();i++)
+		{
+			if(!isdigit(name.name_s[i]))
+			{
+				index=-1;
+				break;
+			}
+
+		}
+		if(index==0)
+			index=atoi(name.name_s.c_str());
+	}
+	else if(name.name_type==multiname::NAME_INT)
+		index=name.name_i;
+
+	if(index!=-1)
+	{
 		if(index>=data.size())
 		{
 			//Heuristic, we increse the array 20%
@@ -295,48 +324,31 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 		data[index].type=STACK_INT;
 	}
 	else
-	{
-		abort();
-/*		if(name.namert)
-			name.name=name.namert->toString();
-
-		bool number=true;
-		for(int i=0;i<name.name.size();i++)
-		{
-			if(!isdigit(name.name[i]))
-			{
-				number=false;
-				break;
-			}
-
-		}
-
-		if(number)
-		{
-			int index=atoi(name.name.c_str());
-			if(index>=data.size())
-			{
-				//Heuristic, we increse the array 20%
-				int new_size=max(index+1,data.size()*6/5);
-				resize(new_size);
-			}
-
-			if(data[index])
-				data[index]->decRef();
-
-			data[index]=o;
-			ret=o;
-		}
-		else
-			ret=ASObject::setVariableByMultiname(name,o);*/
-	}
+		ASObject::setVariableByMultiname(name,abstract_i(value));
 }
 
 void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 {
-	if(name.namert && name.namert->getObjectType()==T_INTEGER)
+	int index=0;
+	if(name.name_type==multiname::NAME_STRING)
 	{
-		int index=name.namert->toInt();
+		for(int i=0;i<name.name_s.size();i++)
+		{
+			if(!isdigit(name.name_s[i]))
+			{
+				index=-1;
+				break;
+			}
+
+		}
+		if(index==0)
+			index=atoi(name.name_s.c_str());
+	}
+	else if(name.name_type==multiname::NAME_INT)
+		index=name.name_i;
+
+	if(index!=-1)
+	{
 		if(index>=data.size())
 		{
 			//Heuristic, we increse the array 20%
@@ -351,40 +363,7 @@ void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 		data[index].type=STACK_OBJECT;
 	}
 	else
-	{
-		if(name.namert)
-			name.name=name.namert->toString();
-
-		bool number=true;
-		for(int i=0;i<name.name.size();i++)
-		{
-			if(!isdigit(name.name[i]))
-			{
-				number=false;
-				break;
-			}
-
-		}
-
-		if(number)
-		{
-			int index=atoi(name.name.c_str());
-			if(index>=data.size())
-			{
-				//Heuristic, we increse the array 20%
-				int new_size=max(index+1,data.size()*6/5);
-				resize(new_size);
-			}
-
-			if(data[index].type==STACK_OBJECT && data[index].data)
-				data[index].data->decRef();
-
-			data[index].data=o;
-			data[index].type=STACK_OBJECT;
-		}
-		else
-			ASObject::setVariableByMultiname(name,o);
-	}
+		ASObject::setVariableByMultiname(name,o);
 }
 
 void ASArray::setVariableByName(const Qname& name, ISWFObject* o)

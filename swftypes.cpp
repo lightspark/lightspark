@@ -81,8 +81,6 @@ int multiname::count=0;
 multiname::~multiname()
 {
 	count--;
-	if(namert)
-		namert->decRef();
 }
 
 bool Integer::isGreater(const ISWFObject* o) const
@@ -211,10 +209,12 @@ void ISWFObject::setVariableByMultiname_i(multiname& name, intptr_t value)
 
 void ISWFObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 {
-	if(name.namert)
-		name.name=name.namert->toString();
+	pair<map<Qname, obj_var>::iterator,bool> ret;
+	if(name.name_type==multiname::NAME_INT)
+		ret=Variables.insert(make_pair(name.name_i,obj_var(o)));
+	else if(name.name_type==multiname::NAME_STRING)
+		ret=Variables.insert(make_pair(name.name_s,obj_var(o)));
 
-	pair<map<Qname, obj_var>::iterator,bool> ret=Variables.insert(make_pair(name.name,obj_var(o)));
 	if(!ret.second)
 	{
 		if(ret.first->second.setter)
@@ -241,7 +241,11 @@ void ISWFObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 
 ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
 {
-	map<Qname,obj_var>::iterator it=Variables.find(name.name);
+	map<Qname,obj_var>::iterator it;
+	if(name.name_type==multiname::NAME_INT)
+		it=Variables.find(name.name_i);
+	else if(name.name_type==multiname::NAME_STRING)
+		it=Variables.find(name.name_s);
 	if(it!=Variables.end())
 	{
 		if(name.ns.empty())
@@ -381,7 +385,10 @@ std::ostream& operator<<(std::ostream& s, const multiname& r)
 		}
 		s << '[' << prefix << r.ns[i] << "] ";
 	}
-	s << r.name;
+	if(r.name_type==multiname::NAME_INT)
+		s << r.name_i;
+	else if(r.name_type==multiname::NAME_STRING)
+		s << r.name_s;
 	return s;
 }
 

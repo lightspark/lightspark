@@ -137,16 +137,24 @@ struct Qname
 	Qname(const std::string& s):name(s){}
 	Qname(const char* s):name(s){}
 	Qname(const STRING& s):name(s){}
+	Qname(int i)
+	{
+		char buf[32];
+		sprintf(buf,"%i",i);
+		name=buf;
+	}
 	Qname(const std::string& _ns, const std::string& _name):ns(_ns),name(_name){}
 };
 
 struct multiname
 {
-	std::string name;
+	enum NAME_TYPE {NAME_STRING,NAME_INT};
+	NAME_TYPE name_type;
+	std::string name_s;
+	int name_i;
 	std::vector<std::string> ns;
 	std::vector<int> nskind;
-	ISWFObject* namert;
-	multiname():namert(NULL){count++;}
+	multiname(){count++;}
 	~multiname();
 	static int count;
 };
@@ -186,6 +194,10 @@ public:
 		ref_count--;
 		if(ref_count==0)
 			delete this;
+	}
+	void fake_decRef()
+	{
+		ref_count--;
 	}
 	static void s_incRef(ISWFObject* o)
 	{

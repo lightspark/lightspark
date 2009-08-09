@@ -27,7 +27,7 @@ uintptr_t ABCVm::bitAnd(ISWFObject* val2, ISWFObject* val1)
 	uintptr_t i2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
-	LOG(CALLS,"bitAnd " << hex << i1 << '&' << i2);
+	LOG(CALLS,"bitAnd_oo " << hex << i1 << '&' << i2);
 	return i1&i2;
 }
 
@@ -45,7 +45,11 @@ uintptr_t ABCVm::bitAnd_oi(ISWFObject* val1, intptr_t val2)
 	uintptr_t i1=val1->toInt();
 	uintptr_t i2=val2;
 	val1->decRef();
-	LOG(CALLS,"bitAnd " << hex << i1 << '&' << i2);
+	static int c=0;
+	if(c%(1024*256)==0)
+		cout << "bitand " << c << endl;
+	c++;
+	LOG(CALLS,"bitAnd_oi " << hex << i1 << '&' << i2);
 	return i1&i2;
 }
 
@@ -57,12 +61,6 @@ void ABCVm::setProperty(ISWFObject* value,ISWFObject* obj,multiname* name)
 	ISWFObject* owner;
 	obj->setVariableByMultiname(*name,value);
 	obj->decRef();
-
-	if(name->namert)
-	{
-		name->namert->decRef();
-		name->namert=NULL;
-	}
 }
 
 void ABCVm::setProperty_i(intptr_t value,ISWFObject* obj,multiname* name)
@@ -73,12 +71,6 @@ void ABCVm::setProperty_i(intptr_t value,ISWFObject* obj,multiname* name)
 	ISWFObject* owner;
 	obj->setVariableByMultiname_i(*name,value);
 	obj->decRef();
-
-	if(name->namert)
-	{
-		name->namert->decRef();
-		name->namert=NULL;
-	}
 }
 
 ISWFObject* ABCVm::convert_d(ISWFObject* o)
@@ -155,28 +147,24 @@ ISWFObject* ABCVm::negate(ISWFObject* v)
 	return ret;
 }
 
-ISWFObject* ABCVm::bitXor(ISWFObject* val2, ISWFObject* val1)
+uintptr_t ABCVm::bitXor(ISWFObject* val2, ISWFObject* val1)
 {
-	static int c=0;
 	int i1=val1->toInt();
 	int i2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
-	if(c%(1024*256)==0)
-		cout << "bitxor " << c << endl;
-	c++;
 	LOG(CALLS,"bitXor " << hex << i1 << '^' << i2);
-	return new Integer(i1^i2);
+	return i1^i2;
 }
 
-ISWFObject* ABCVm::bitOr(ISWFObject* val2, ISWFObject* val1)
+uintptr_t ABCVm::bitOr(ISWFObject* val2, ISWFObject* val1)
 {
 	int i1=val1->toInt();
 	int i2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
 	LOG(CALLS,"bitOr " << hex << i1 << '|' << i2);
-	return new Integer(i1|i2);
+	return i1|i2;
 }
 
 void ABCVm::callProperty(call_context* th, int n, int m)
@@ -243,19 +231,16 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	obj->decRef();
 }
 
-void ABCVm::getProperty(call_context* th, int n)
+ISWFObject* ABCVm::getProperty(ISWFObject* obj, multiname* name)
 {
-	multiname name=th->context->getMultiname(n,th);
 	LOG(CALLS, "getProperty " << name );
 
-	ISWFObject* obj=th->runtime_stack_pop();
-
 	ISWFObject* owner;
-	ISWFObject* ret=obj->getVariableByMultiname(name,owner);
+	ISWFObject* ret=obj->getVariableByMultiname(*name,owner);
 	if(!owner)
 	{
 		LOG(NOT_IMPLEMENTED,"Property not found " << name);
-		th->runtime_stack_push(new Undefined);
+		ret=new Undefined;
 	}
 	else
 	{
@@ -264,23 +249,23 @@ void ABCVm::getProperty(call_context* th, int n)
 			LOG(ERROR,"Property " << name << " is not yet valid");
 			Definable* d=static_cast<Definable*>(ret);
 			d->define(obj);
-			ret=obj->getVariableByMultiname(name,owner);
+			ret=obj->getVariableByMultiname(*name,owner);
 		}
-		th->runtime_stack_push(ret);
 		ret->incRef();
 	}
 	obj->decRef();
+	return ret;
 }
 
-ISWFObject* ABCVm::divide(ISWFObject* val2, ISWFObject* val1)
+number_t ABCVm::divide(ISWFObject* val2, ISWFObject* val1)
 {
-	Number num2(val2);
-	Number num1(val1);
+	double num1=val1->toNumber();
+	double num2=val2->toNumber();
 
 	val1->decRef();
 	val2->decRef();
 	LOG(CALLS,"divide "  << num1 << '/' << num2);
-	return new Number(num1/num2);
+	return num1/num2;
 }
 
 ISWFObject* ABCVm::getGlobalScope(call_context* th)
@@ -516,7 +501,7 @@ bool ABCVm::ifTrue(ISWFObject* obj1, int offset)
 	LOG(CALLS,"ifTrue " << offset);
 }
 
-ISWFObject* ABCVm::modulo(ISWFObject* val1, ISWFObject* val2)
+number_t ABCVm::modulo(ISWFObject* val1, ISWFObject* val2)
 {
 	int num2=val2->toInt();
 	int num1=val1->toInt();
@@ -524,12 +509,28 @@ ISWFObject* ABCVm::modulo(ISWFObject* val1, ISWFObject* val2)
 	val1->decRef();
 	val2->decRef();
 	LOG(CALLS,"modulo "  << num1 << '%' << num2);
-	return new Number(num1%num2);
+	return num1%num2;
+}
+
+number_t ABCVm::subtract(ISWFObject* val2, ISWFObject* val1)
+{
+	int num2=val2->toInt();
+	int num1=val1->toInt();
+
+	val1->decRef();
+	val2->decRef();
+	LOG(CALLS,"subtract " << num1 << '-' << num2);
+	return num1-num2;
 }
 
 ISWFObject* ABCVm::pushInt(call_context* th, int n)
 {
 	s32 i=th->context->constant_pool.integer[n];
 	LOG(CALLS, "pushInt [" << dec << n << "] " << i);
+}
+
+void ABCVm::kill(call_context* th, int n)
+{
+	LOG(CALLS, "kill " << n );
 }
 

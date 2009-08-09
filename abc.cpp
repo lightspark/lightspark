@@ -252,7 +252,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 	if(n==0)
 	{
 		ret=new multiname;
-		ret->name="any";
+		ret->name_s="any";
+		ret->name_type=multiname::NAME_STRING;
 		cout << "allocating any count " << ret->count << endl;
 		return ret;
 	}
@@ -272,7 +273,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 					ret->ns.push_back(th->context->getString(n->name));
 					ret->nskind.push_back(n->kind);
 				}
-				ret->name=th->context->getString(m->name);
+				ret->name_s=th->context->getString(m->name);
+				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
 			case 0x09:
@@ -286,7 +288,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 					ret->ns.push_back(th->context->getString(n->name));
 					ret->nskind.push_back(n->kind);
 				}
-				ret->name=th->context->getString(m->name);
+				ret->name_s=th->context->getString(m->name);
+				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
 			case 0x1b:
@@ -300,7 +303,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 					ret->ns.push_back(th->context->getString(n->name));
 					ret->nskind.push_back(n->kind);
 				}
-				ret->namert=rt1;
+				ret->name_s=rt1->toString();
+				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
 	/*		case 0x0d:
@@ -343,7 +347,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 			}
 			case 0x1b:
 			{
-				ret->namert=rt1;
+				ret->name_s=rt1->toString();
+				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
 	/*		case 0x0d:
@@ -374,12 +379,150 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 		return ret;
 	}
 }
+
+multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
+{
+	//We are allowe to access only the ABCContext, as the stack is not synced
+	multiname* ret;
+	if(n==0)
+	{
+		abort();
+		ret=new multiname;
+		ret->name_s="any";
+		ret->name_type=multiname::NAME_STRING;
+		cout << "allocating any count " << ret->count << endl;
+		return ret;
+	}
+
+	multiname_info* m=&th->context->constant_pool.multinames[n];
+	if(m->cached==NULL)
+	{
+		m->cached=new multiname;
+		ret=m->cached;
+		switch(m->kind)
+		{
+			case 0x07:
+			{
+				const namespace_info* n=&th->context->constant_pool.namespaces[m->ns];
+				if(n->name)
+				{
+					ret->ns.push_back(th->context->getString(n->name));
+					ret->nskind.push_back(n->kind);
+				}
+				ret->name_s=th->context->getString(m->name);
+				ret->name_type=multiname::NAME_STRING;
+				break;
+			}
+			case 0x09:
+			{
+				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
+				ret->ns.reserve(s->count);
+				ret->nskind.reserve(s->count);
+				for(int i=0;i<s->count;i++)
+				{
+					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
+					ret->ns.push_back(th->context->getString(n->name));
+					ret->nskind.push_back(n->kind);
+				}
+				ret->name_s=th->context->getString(m->name);
+				ret->name_type=multiname::NAME_STRING;
+				break;
+			}
+			case 0x1b:
+			{
+				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
+				ret->ns.reserve(s->count);
+				ret->nskind.reserve(s->count);
+				for(int i=0;i<s->count;i++)
+				{
+					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
+					ret->ns.push_back(th->context->getString(n->name));
+					ret->nskind.push_back(n->kind);
+				}
+				ret->name_i=rti;
+				ret->name_type=multiname::NAME_INT;
+				break;
+			}
+	/*		case 0x0d:
+				LOG(CALLS, "QNameA");
+				break;
+			case 0x0f:
+				LOG(CALLS, "RTQName");
+				break;
+			case 0x10:
+				LOG(CALLS, "RTQNameA");
+				break;
+			case 0x11:
+				LOG(CALLS, "RTQNameL");
+				break;
+			case 0x12:
+				LOG(CALLS, "RTQNameLA");
+				break;
+			case 0x0e:
+				LOG(CALLS, "MultinameA");
+				break;
+			case 0x1c:
+				LOG(CALLS, "MultinameLA");
+				break;*/
+			default:
+				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				break;
+		}
+		return ret;
+	}
+	else
+	{
+		ret=m->cached;
+		switch(m->kind)
+		{
+			case 0x07:
+			case 0x09:
+			{
+				//Nothing to do, the cached value is enough
+				break;
+			}
+			case 0x1b:
+			{
+				ret->name_i=rti;
+				ret->name_type=multiname::NAME_INT;
+				break;
+			}
+	/*		case 0x0d:
+				LOG(CALLS, "QNameA");
+				break;
+			case 0x0f:
+				LOG(CALLS, "RTQName");
+				break;
+			case 0x10:
+				LOG(CALLS, "RTQNameA");
+				break;
+			case 0x11:
+				LOG(CALLS, "RTQNameL");
+				break;
+			case 0x12:
+				LOG(CALLS, "RTQNameLA");
+				break;
+			case 0x0e:
+				LOG(CALLS, "MultinameA");
+				break;
+			case 0x1c:
+				LOG(CALLS, "MultinameLA");
+				break;*/
+			default:
+				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				break;
+		}
+		return ret;
+	}
+}
+
 multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 {
 	multiname ret;
 	if(mi==0)
 	{
-		ret.name="any";
+		ret.name_s="any";
+		ret.name_type=multiname::NAME_STRING;
 		return ret;
 	}
 
@@ -394,7 +537,8 @@ multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 				ret.ns.push_back(getString(n->name));
 				ret.nskind.push_back(n->kind);
 			}
-			ret.name=getString(m->name);
+			ret.name_s=getString(m->name);
+			ret.name_type=multiname::NAME_STRING;
 			break;
 		}
 		case 0x09:
@@ -406,7 +550,8 @@ multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 				ret.ns.push_back(getString(n->name));
 				ret.nskind.push_back(n->kind);
 			}
-			ret.name=getString(m->name);
+			ret.name_s=getString(m->name);
+			ret.name_type=multiname::NAME_STRING;
 			break;
 		}
 		case 0x1b:
@@ -421,11 +566,15 @@ multiname ABCContext::getMultiname(unsigned int mi, call_context* th) const
 			if(th!=NULL)
 			{
 				ISWFObject* n=th->runtime_stack_pop();
-				ret.name=n->toString();
+				ret.name_s=n->toString();
+				ret.name_type=multiname::NAME_STRING;
 				n->decRef();
 			}
 			else
-				ret.name="<Invalid>";
+			{
+				ret.name_s="<Invalid>";
+				ret.name_type=multiname::NAME_STRING;
+			}
 			break;
 		}
 /*		case 0x0d:
@@ -653,16 +802,6 @@ ISWFObject* ABCVm::increment_i(ISWFObject* o)
 	LOG(NOT_IMPLEMENTED,"increment_i");
 	abort();
 	return o;
-}
-
-ISWFObject* ABCVm::subtract(ISWFObject* val2, ISWFObject* val1)
-{
-	Number num2(val2);
-	Number num1(val1);
-	val1->decRef();
-	val2->decRef();
-	LOG(CALLS,"subtract " << num1 << '-' << num2);
-	return new Number(num1-num2);
 }
 
 ISWFObject* ABCVm::lShift(ISWFObject* val1, ISWFObject* val2)
@@ -1145,7 +1284,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	LOG(NOT_IMPLEMENTED,"setSuper " << name);
 
 	ISWFObject* obj=th->runtime_stack_pop();
-	obj->setVariableByName(name.name,value);
+	obj->setVariableByName(name.name_s,value);
 }
 
 ISWFObject* ABCVm::newFunction(call_context* th, int n)
@@ -1409,7 +1548,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 	{
 		LOG(CALLS, "NOT found, trying Global" );
 		//TODO: to multiname
-		th->context->vm->Global.getVariableByName(name.name,owner);
+		th->context->vm->Global.getVariableByName(name.name_s,owner);
 		if(owner)
 		{
 			th->runtime_stack_push(owner);
@@ -1431,7 +1570,7 @@ void ABCVm::initProperty(call_context* th, int n)
 
 	ISWFObject* obj=th->runtime_stack_pop();
 
-	obj->setVariableByName(name.name,value);
+	obj->setVariableByName(name.name_s,value);
 	obj->decRef();
 }
 
@@ -1541,12 +1680,6 @@ ISWFObject* ABCVm::pushString(call_context* th, int n)
 	string s=th->context->getString(n); 
 	LOG(CALLS, "pushString " << s );
 	return new ASString(s);
-}
-
-void ABCVm::kill(call_context* th, int n)
-{
-	LOG(CALLS, "kill " << n );
-	th->locals[n]=new Undefined;
 }
 
 void call_context::runtime_stack_push(ISWFObject* s)

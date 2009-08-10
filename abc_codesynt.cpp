@@ -132,7 +132,6 @@ opcode_handler ABCVm::opcode_table_args1_pointers[]={
 };
 
 opcode_handler ABCVm::opcode_table_args2_pointers_int[]={
-	{"setSlot",(void*)&ABCVm::setSlot},
 	{"getMultiname",(void*)&ABCContext::s_getMultiname}
 };
 
@@ -148,7 +147,6 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 	{"getProperty",(void*)&ABCVm::getProperty},
 	{"nextName",(void*)&ABCVm::nextName},
 	{"nextValue",(void*)&ABCVm::nextValue},
-	{"add",(void*)&ABCVm::add},
 	{"urShift",(void*)&ABCVm::urShift},
 	{"lShift",(void*)&ABCVm::lShift},
 	{"lessThan",(void*)&ABCVm::lessThan},
@@ -170,9 +168,23 @@ typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
 
 typed_opcode_handler ABCVm::opcode_table_number_t[]={
 	{"multiply",(void*)&ABCVm::multiply,ARGS_OBJ_OBJ},
+	{"multiply_oi",(void*)&ABCVm::multiply_oi,ARGS_OBJ_INT},
 	{"divide",(void*)&ABCVm::divide,ARGS_OBJ_OBJ},
 	{"modulo",(void*)&ABCVm::modulo,ARGS_OBJ_OBJ},
 	{"subtract",(void*)&ABCVm::subtract,ARGS_OBJ_OBJ}
+};
+
+typed_opcode_handler ABCVm::opcode_table_void[]={
+	{"setSlot",(void*)&ABCVm::setSlot,ARGS_OBJ_OBJ_INT},
+	{"debug_d",(void*)&debug_d,ARGS_NUMBER},
+	{"debug_i",(void*)&debug_i,ARGS_INT}
+};
+
+typed_opcode_handler ABCVm::opcode_table_voidptr[]={
+	{"add",(void*)&ABCVm::add,ARGS_OBJ_OBJ},
+	{"add_oi",(void*)&ABCVm::add_oi,ARGS_OBJ_INT},
+	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
+	{"abstract_i",(void*)&abstract_i,ARGS_INT}
 };
 
 extern __thread SystemState* sys;
@@ -430,6 +442,19 @@ void ABCVm::registerFunctions()
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setProperty_i",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setProperty_i);
 
+	register_table(int_type,opcode_table_uintptr_t,sizeof(opcode_table_uintptr_t)/sizeof(typed_opcode_handler));
+	register_table(number_type,opcode_table_number_t,sizeof(opcode_table_number_t)/sizeof(typed_opcode_handler));
+	register_table(llvm::Type::VoidTy,opcode_table_void,sizeof(opcode_table_void)/sizeof(typed_opcode_handler));
+	register_table(voidptr_type,opcode_table_voidptr,sizeof(opcode_table_voidptr)/sizeof(typed_opcode_handler));
+}
+
+void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len)
+{
+	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType();
+	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
+	const llvm::Type* number_type=llvm::Type::DoubleTy;
+	llvm::FunctionType* FT;
+
 	vector<const llvm::Type*> sig_obj_obj;
 	sig_obj_obj.push_back(voidptr_type);
 	sig_obj_obj.push_back(voidptr_type);
@@ -447,53 +472,28 @@ void ABCVm::registerFunctions()
 	vector<const llvm::Type*> sig_obj;
 	sig_obj.push_back(voidptr_type);
 
-	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig_number, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug_d",module);
-	ex->addGlobalMapping(F,(void*)&debug_d);
+	vector<const llvm::Type*> sig_obj_obj_int;
+	sig_obj_obj_int.push_back(voidptr_type);
+	sig_obj_obj_int.push_back(voidptr_type);
+	sig_obj_obj_int.push_back(int_type);
 
-	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig_int, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug_i",module);
-	debug_i_f=F;
-	ex->addGlobalMapping(F,(void*)&debug_i);
-
-	//Build abstractors
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig_int, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"abstract_i",module);
-	ex->addGlobalMapping(F,(void*)&abstract_i);
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig_number, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"abstract_d",module);
-	ex->addGlobalMapping(F,(void*)&abstract_d);
-
-	elems=sizeof(opcode_table_uintptr_t)/sizeof(typed_opcode_handler);
-	for(int i=0;i<elems;i++)
+	for(int i=0;i<table_len;i++)
 	{
-		if(opcode_table_uintptr_t[i].type==ARGS_OBJ_OBJ)
-			FT=llvm::FunctionType::get(int_type, sig_obj_obj, false);
-		else if(opcode_table_uintptr_t[i].type==ARGS_OBJ_INT)
-			FT=llvm::FunctionType::get(int_type, sig_obj_int, false);
-		else if(opcode_table_uintptr_t[i].type==ARGS_INT)
-			FT=llvm::FunctionType::get(int_type, sig_int, false);
-		else if(opcode_table_uintptr_t[i].type==ARGS_OBJ)
-			FT=llvm::FunctionType::get(int_type, sig_obj, false);
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_uintptr_t[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_uintptr_t[i].addr);
+		if(table[i].type==ARGS_OBJ_OBJ)
+			FT=llvm::FunctionType::get(ret_type, sig_obj_obj, false);
+		else if(table[i].type==ARGS_OBJ_INT)
+			FT=llvm::FunctionType::get(ret_type, sig_obj_int, false);
+		else if(table[i].type==ARGS_INT)
+			FT=llvm::FunctionType::get(ret_type, sig_int, false);
+		else if(table[i].type==ARGS_NUMBER)
+			FT=llvm::FunctionType::get(ret_type, sig_number, false);
+		else if(table[i].type==ARGS_OBJ)
+			FT=llvm::FunctionType::get(ret_type, sig_obj, false);
+		else if(table[i].type==ARGS_OBJ_OBJ_INT)
+			FT=llvm::FunctionType::get(ret_type, sig_obj_obj_int, false);
+		llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,table[i].name,module);
+		ex->addGlobalMapping(F,table[i].addr);
 	}
-
-	elems=sizeof(opcode_table_number_t)/sizeof(typed_opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		if(opcode_table_number_t[i].type==ARGS_OBJ_OBJ)
-			FT=llvm::FunctionType::get(number_type, sig_obj_obj, false);
-		else if(opcode_table_number_t[i].type==ARGS_OBJ_INT)
-			FT=llvm::FunctionType::get(number_type, sig_obj_int, false);
-		else if(opcode_table_number_t[i].type==ARGS_INT)
-			FT=llvm::FunctionType::get(number_type, sig_int, false);
-		else if(opcode_table_number_t[i].type==ARGS_OBJ)
-			FT=llvm::FunctionType::get(number_type, sig_obj, false);
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_number_t[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_number_t[i].addr);
-	}
-
 }
 
 llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
@@ -592,8 +592,7 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 		llvm::Value* old=builder.CreateLoad(t);
 		if(static_locals[i].second==STACK_OBJECT)
 		{
-			//decRef the previous contents, if different from new
-			builder.CreateCall2(ex->FindFunctionNamed("decRef_safe"), old, static_locals[i].first);
+			builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
 			builder.CreateStore(static_locals[i].first,t);
 		}
 		else if(static_locals[i].second==STACK_INT)
@@ -1853,9 +1852,18 @@ SyntheticFunction::synt_function method_info::synt_method()
 				last_is_branch=true;
 				constant = llvm::ConstantInt::get(ptr_type, NULL);
 				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(ptr_type));
-				Builder.CreateRet(value);
 				for(int i=0;i<static_locals.size();i++)
+				{
+					if(static_locals[i].second==STACK_OBJECT)
+						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_locals[i].first);
 					static_locals[i].second=STACK_NONE;
+				}
+				for(int i=0;i<static_stack.size();i++)
+				{
+					if(static_stack[i].second==STACK_OBJECT)
+						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_stack[i].first);
+				}
+				Builder.CreateRet(value);
 				break;
 			}
 			case 0x48:
@@ -1867,14 +1875,25 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(e.second==STACK_INT)
 					e.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),e.first);
+				else if(e.second==STACK_NUMBER)
+					e.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),e.first);
 				else if(e.second==STACK_OBJECT)
 				{
 				}
 				else
 					abort();
-				Builder.CreateRet(e.first);
 				for(int i=0;i<static_locals.size();i++)
+				{
+					if(static_locals[i].second==STACK_OBJECT)
+						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_locals[i].first);
 					static_locals[i].second=STACK_NONE;
+				}
+				for(int i=0;i<static_stack.size();i++)
+				{
+					if(static_stack[i].second==STACK_OBJECT)
+						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_stack[i].first);
+				}
+				Builder.CreateRet(e.first);
 				break;
 			}
 			case 0x49:
@@ -2082,6 +2101,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
 					static_locals[i]=stack_entry(t,STACK_OBJECT);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 				}
 				else if(static_locals[i].second==STACK_OBJECT)
 				{
@@ -2103,13 +2123,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 i;
 				code >> i;
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				/*if(static_locals[i].second==STACK_OBJECT)
-				{
-					if(e.second==STACK_OBJECT)
-						Builder.CreateCall2(ex->FindFunctionNamed("decRef_safe"), static_locals[i].first,e.first);
-					else
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
-				}*/
+				if(static_locals[i].second==STACK_OBJECT)
+					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
 
 				static_locals[i]=e;
 				if(Log::getLevel()==TRACE)
@@ -2223,7 +2238,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt setslot" );
 				u30 t;
 				code >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(ptr_type, t);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
@@ -2399,14 +2414,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 				{
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_NUMBER)
@@ -2456,6 +2469,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 				if(v2.second==STACK_INT)
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+				if(v1.second==STACK_NUMBER)
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v1.first);
+				if(v2.second==STACK_NUMBER)
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("subtract"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
@@ -2469,15 +2486,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-				{
-				}
+					value=Builder.CreateCall2(ex->FindFunctionNamed("multiply"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("multiply_oi"), v2.first, v1.first);
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("multiply_oi"), v1.first, v2.first);
 				else
 					abort();
-				value=Builder.CreateCall2(ex->FindFunctionNamed("multiply"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				jitted=true;
 				break;
@@ -2797,6 +2812,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
 					static_locals[i]=stack_entry(t,STACK_OBJECT);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
+					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 				}
 				else if(static_locals[i].second==STACK_OBJECT)
 				{
@@ -2819,13 +2835,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt setlocal_n" );
 				int i=opcode&3;
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				/*if(static_locals[i].second==STACK_OBJECT)
-				{
-					if(e.second==STACK_OBJECT)
-						Builder.CreateCall2(ex->FindFunctionNamed("decRef_safe"), static_locals[i].first,e.first);
-					else
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
-				}*/
+				if(static_locals[i].second==STACK_OBJECT)
+					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
 
 				static_locals[i]=e;
 				if(Log::getLevel()==TRACE)

@@ -46,7 +46,8 @@ uintptr_t ABCVm::bitAnd_oi(ISWFObject* val1, intptr_t val2)
 	uintptr_t i2=val2;
 	val1->decRef();
 	static int c=0;
-	if(c%(1024*256)==0)
+	static int c2=0;
+	if(c%(1024*512)==0)
 		cout << "bitand " << c << endl;
 	c++;
 	LOG(CALLS,"bitAnd_oi " << hex << i1 << '&' << i2);
@@ -123,7 +124,7 @@ intptr_t ABCVm::pushShort(intptr_t n)
 	return n;
 }
 
-ISWFObject* ABCVm::setSlot(ISWFObject* value, ISWFObject* obj, int n)
+void ABCVm::setSlot(ISWFObject* value, ISWFObject* obj, int n)
 {
 	LOG(CALLS,"setSlot " << dec << n);
 	obj->setSlot(n,value);
@@ -319,6 +320,15 @@ intptr_t ABCVm::pushByte(intptr_t n)
 {
 	LOG(CALLS, "pushByte " << n );
 	return n;
+}
+
+number_t ABCVm::multiply_oi(ISWFObject* val2, intptr_t val1)
+{
+	double num1=val1;
+	double num2=val2->toNumber();
+	val2->decRef();
+	LOG(CALLS,"multiply "  << num1 << '*' << num2);
+	return num1*num2;
 }
 
 number_t ABCVm::multiply(ISWFObject* val2, ISWFObject* val1)
@@ -532,5 +542,113 @@ ISWFObject* ABCVm::pushInt(call_context* th, int n)
 void ABCVm::kill(call_context* th, int n)
 {
 	LOG(CALLS, "kill " << n );
+}
+
+ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
+{
+	//Implement ECMA add algorithm, for XML and default
+	if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_NUMBER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1->toNumber();
+		val1->decRef();
+		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return new Number(num1+num2);
+	}
+	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_INTEGER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1->toNumber();
+		val1->decRef();
+		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return new Number(num1+num2);
+	}
+	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_NUMBER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1->toNumber();
+		val1->decRef();
+		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return new Number(num1+num2);
+	}
+	else if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_INTEGER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1->toNumber();
+		val1->decRef();
+		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return new Number(num1+num2);
+	}
+	else if(val1->getObjectType()==T_STRING)
+	{
+		string a=val1->toString();
+		string b=val2->toString();
+		val1->decRef();
+		val2->decRef();
+		LOG(CALLS,"add " << a << '+' << b);
+		return new ASString(a+b);
+	}
+	else if(val1->getObjectType()==T_ARRAY)
+	{
+		//Array concatenation
+		ASArray* ar=static_cast<ASArray*>(val1);
+		ar->push(val2);
+		return ar;
+	}
+	else
+	{
+		LOG(NOT_IMPLEMENTED,"Add between types " << val1->getObjectType() << ' ' << val2->getObjectType());
+		return new Undefined;
+	}
+
+}
+
+ISWFObject* ABCVm::add_oi(ISWFObject* val2, intptr_t val1)
+{
+	//Implement ECMA add algorithm, for XML and default
+	if(val2->getObjectType()==T_INTEGER)
+	{
+		int num2=val2->toInt();
+		int num1=val1;
+		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return new Integer(num1+num2);
+	}
+	else if(val2->getObjectType()==T_NUMBER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1;
+		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return new Number(num1+num2);
+	}
+	else if(val2->getObjectType()==T_STRING)
+	{
+		abort();
+		/*string a=val1->toString();
+		string b=val2->toString();
+		val1->decRef();
+		val2->decRef();
+		LOG(CALLS,"add " << a << '+' << b);
+		return new ASString(a+b);*/
+	}
+	else if(val2->getObjectType()==T_ARRAY)
+	{
+		abort();
+		/*//Array concatenation
+		ASArray* ar=static_cast<ASArray*>(val1);
+		ar->push(val2);
+		return ar;*/
+	}
+	else
+	{
+		LOG(NOT_IMPLEMENTED,"Add between integer and " << val2->getObjectType());
+		return new Undefined;
+	}
+
 }
 

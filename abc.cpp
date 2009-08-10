@@ -305,6 +305,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 				}
 				ret->name_s=rt1->toString();
 				ret->name_type=multiname::NAME_STRING;
+				rt1->decRef();
 				break;
 			}
 	/*		case 0x0d:
@@ -349,6 +350,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 			{
 				ret->name_s=rt1->toString();
 				ret->name_type=multiname::NAME_STRING;
+				rt1->decRef();
 				break;
 			}
 	/*		case 0x0d:
@@ -824,69 +826,6 @@ ISWFObject* ABCVm::urShift(ISWFObject* val1, ISWFObject* val2)
 	return new Integer(i2>>i1);
 }
 
-ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
-{
-	//Implement ECMA add algorithm, for XML and default
-	if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_NUMBER)
-	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
-		val1->decRef();
-		val2->decRef();
-		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
-	}
-	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_INTEGER)
-	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
-		val1->decRef();
-		val2->decRef();
-		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
-	}
-	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_NUMBER)
-	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
-		val1->decRef();
-		val2->decRef();
-		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
-	}
-	else if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_INTEGER)
-	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
-		val1->decRef();
-		val2->decRef();
-		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
-	}
-	else if(val1->getObjectType()==T_STRING)
-	{
-		string a=val1->toString();
-		string b=val2->toString();
-		val1->decRef();
-		val2->decRef();
-		LOG(CALLS,"add " << a << '+' << b);
-		return new ASString(a+b);
-	}
-	else if(val1->getObjectType()==T_ARRAY)
-	{
-		//Array concatenation
-		ASArray* ar=static_cast<ASArray*>(val1);
-		ar->push(val2);
-		return ar;
-	}
-	else
-	{
-		LOG(NOT_IMPLEMENTED,"Add between types " << val1->getObjectType() << ' ' << val2->getObjectType());
-		return new Undefined;
-	}
-
-}
-
 void ABCVm::isTypelate(call_context* th)
 {
 	LOG(NOT_IMPLEMENTED,"isTypelate");
@@ -1190,6 +1129,7 @@ ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
 	//Real comparision demanded to object
 	bool ret=obj1->isLess(obj2);
 	obj1->decRef();
+	obj2->decRef();
 	return new Boolean(ret);
 }
 
@@ -1200,6 +1140,7 @@ ISWFObject* ABCVm::greaterThan(ISWFObject* obj1, ISWFObject* obj2)
 	//Real comparision demanded to object
 	bool ret=obj1->isGreater(obj2);
 	obj1->decRef();
+	obj2->decRef();
 	return new Boolean(ret);
 }
 

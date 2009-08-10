@@ -61,7 +61,7 @@ string ISWFObject::toString() const
 {
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
 	abort();
-	return STRING("Cannot convert object to String");
+	return "Cannot convert object to String";
 }
 
 bool ISWFObject::isGreater(const ISWFObject* r) const
@@ -403,7 +403,7 @@ string Integer::toString() const
 {
 	char buf[20];
 	snprintf(buf,20,"%i",val);
-	return STRING(buf);
+	return buf;
 }
 
 int Integer::toInt() const
@@ -1116,12 +1116,12 @@ void DictionaryDefinable::define(ISWFObject* g)
 	}*/
 }
 
-ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),ref_count(1),constructor(NULL),
+ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),ref_count(1),constructor(NULL),debug(0),
 	class_index(-1)
 {
 }
 
-ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1)
+ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0)
 {
 	parent=o.parent;
 	constructor=o.constructor;

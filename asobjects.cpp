@@ -433,6 +433,18 @@ ISWFObject* ASArray::getVariableByName(const Qname& name, ISWFObject*& owner)
 ISWFObject* ASObject::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
 {
 	ISWFObject* ret=ISWFObject::getVariableByMultiname(name,owner);
+
+	if(!owner)
+	{
+		//Check if we should do lazy definition
+		if(name.name_s=="toString")
+		{
+			ret=new Function(ASObject::_toString);
+			setVariableByName("toString",ret);
+			owner=this;
+		}
+	}
+
 	if(!owner && super)
 		ret=super->getVariableByMultiname(name,owner);
 
@@ -457,7 +469,6 @@ ISWFObject* ASObject::getVariableByName(const Qname& name, ISWFObject*& owner)
 ASObject::ASObject():
 	debug_id(0),prototype(NULL),super(NULL)
 {
-	setVariableByName("toString",new MethodDefinable("toString",ASObject::_toString));
 }
 
 ASObject::~ASObject()

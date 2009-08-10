@@ -182,11 +182,15 @@ protected:
 	int max_slot_index;
 public:
 	int ref_count;
+	int debug;
 	IFunction* constructor;
 	int class_index;
 	std::string class_name;
 	virtual ~ISWFObject();
-	void incRef() {ref_count++;}
+	void incRef()
+	{
+		ref_count++;
+	}
 	void decRef()
 	{
 		if(ref_count==0)

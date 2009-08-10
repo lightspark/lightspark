@@ -311,7 +311,7 @@ struct opcode_handler
 
 };
 
-enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT };
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER };
 
 struct typed_opcode_handler
 {
@@ -397,7 +397,7 @@ private:
 	static ISWFObject* getSlot(ISWFObject* th, int n); 
 	static void setLocal(call_context* th, int n); 
 	static void kill(call_context* th, int n); 
-	static ISWFObject* setSlot(ISWFObject*, ISWFObject*, int n); 
+	static void setSlot(ISWFObject*, ISWFObject*, int n); 
 	static ISWFObject* pushString(call_context* th, int n); 
 	static void getLex(call_context* th, int n); 
 	static ISWFObject* getScopeObject(call_context* th, int n); 
@@ -442,6 +442,7 @@ private:
 	static void isTypelate(call_context* th);
 	static void swap(call_context* th);
 	static ISWFObject* add(ISWFObject*,ISWFObject*);
+	static ISWFObject* add_oi(ISWFObject*,intptr_t);
 	static uintptr_t bitAnd(ISWFObject*,ISWFObject*);
 	static uintptr_t bitAnd_oi(ISWFObject* val1, intptr_t val2);
 	static uintptr_t bitOr(ISWFObject*,ISWFObject*);
@@ -449,6 +450,7 @@ private:
 	static ISWFObject* urShift(ISWFObject*,ISWFObject*);
 	static ISWFObject* lShift(ISWFObject*,ISWFObject*);
 	static number_t multiply(ISWFObject*,ISWFObject*);
+	static number_t multiply_oi(ISWFObject*, intptr_t);
 	static number_t divide(ISWFObject*,ISWFObject*);
 	static number_t modulo(ISWFObject*,ISWFObject*);
 	static number_t subtract(ISWFObject*,ISWFObject*);
@@ -476,6 +478,7 @@ private:
 	static void method_reset(method_info* th);
 
 	//Opcode tables
+	void register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len);
 	static opcode_handler opcode_table_args0[];
 	static opcode_handler opcode_table_args0_lazy[];
 	static opcode_handler opcode_table_args1[];
@@ -490,6 +493,8 @@ private:
 	static opcode_handler opcode_table_args3_pointers[];
 	static typed_opcode_handler opcode_table_uintptr_t[];
 	static typed_opcode_handler opcode_table_number_t[];
+	static typed_opcode_handler opcode_table_void[];
+	static typed_opcode_handler opcode_table_voidptr[];
 
 	//Synchronization
 	sem_t mutex;

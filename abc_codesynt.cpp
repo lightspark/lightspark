@@ -127,7 +127,6 @@ opcode_handler ABCVm::opcode_table_args1_pointers[]={
 	{"decrement_i",(void*)&ABCVm::decrement_i},
 	{"increment_i",(void*)&ABCVm::increment_i},
 	{"negate",(void*)&ABCVm::negate},
-	{"not",(void*)&ABCVm::_not},
 	{"typeOf",(void*)ABCVm::typeOf}
 };
 
@@ -147,8 +146,6 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 	{"getProperty",(void*)&ABCVm::getProperty},
 	{"nextName",(void*)&ABCVm::nextName},
 	{"nextValue",(void*)&ABCVm::nextValue},
-	{"urShift",(void*)&ABCVm::urShift},
-	{"lShift",(void*)&ABCVm::lShift},
 	{"lessThan",(void*)&ABCVm::lessThan},
 	{"greaterThan",(void*)&ABCVm::greaterThan},
 	{"strictEquals",(void*)&ABCVm::strictEquals},
@@ -164,6 +161,9 @@ typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
 	{"increment",(void*)&ABCVm::increment,ARGS_OBJ},
 	{"bitXor",(void*)&ABCVm::bitXor,ARGS_OBJ_OBJ},
 	{"bitOr",(void*)&ABCVm::bitOr,ARGS_OBJ_OBJ},
+	{"bitOr_oi",(void*)&ABCVm::bitOr_oi,ARGS_OBJ_INT},
+	{"lShift",(void*)&ABCVm::lShift,ARGS_OBJ_OBJ},
+	{"urShift",(void*)&ABCVm::urShift,ARGS_OBJ_OBJ},
 };
 
 typed_opcode_handler ABCVm::opcode_table_number_t[]={
@@ -183,12 +183,19 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"add",(void*)&ABCVm::add,ARGS_OBJ_OBJ},
 	{"add_oi",(void*)&ABCVm::add_oi,ARGS_OBJ_INT},
+	{"add_od",(void*)&ABCVm::add_od,ARGS_OBJ_NUMBER},
 	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
-	{"abstract_i",(void*)&abstract_i,ARGS_INT}
+	{"abstract_i",(void*)&abstract_i,ARGS_INT},
+	{"abstract_b",(void*)&abstract_i,ARGS_BOOL},
+};
+
+typed_opcode_handler ABCVm::opcode_table_bool_t[]={
+	{"not",(void*)&ABCVm::_not,ARGS_OBJ},
 };
 
 extern __thread SystemState* sys;
 extern __thread ParseThread* pt;
+extern __thread Manager* iManager;
 
 using namespace std;
 
@@ -224,6 +231,7 @@ void ABCVm::registerFunctions()
 	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType();
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(ptr_type);
 	const llvm::Type* number_type=llvm::Type::DoubleTy;
+	const llvm::Type* bool_type=llvm::IntegerType::get(1);
 
 	sig.push_back(llvm::IntegerType::get(32));
 	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
@@ -446,6 +454,7 @@ void ABCVm::registerFunctions()
 	register_table(number_type,opcode_table_number_t,sizeof(opcode_table_number_t)/sizeof(typed_opcode_handler));
 	register_table(llvm::Type::VoidTy,opcode_table_void,sizeof(opcode_table_void)/sizeof(typed_opcode_handler));
 	register_table(voidptr_type,opcode_table_voidptr,sizeof(opcode_table_voidptr)/sizeof(typed_opcode_handler));
+	register_table(bool_type,opcode_table_bool_t,sizeof(opcode_table_bool_t)/sizeof(typed_opcode_handler));
 }
 
 void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len)
@@ -453,6 +462,7 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType();
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
 	const llvm::Type* number_type=llvm::Type::DoubleTy;
+	const llvm::Type* bool_type=llvm::IntegerType::get(1);
 	llvm::FunctionType* FT;
 
 	vector<const llvm::Type*> sig_obj_obj;
@@ -462,6 +472,13 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	vector<const llvm::Type*> sig_obj_int;
 	sig_obj_int.push_back(voidptr_type);
 	sig_obj_int.push_back(int_type);
+
+	vector<const llvm::Type*> sig_obj_number;
+	sig_obj_number.push_back(voidptr_type);
+	sig_obj_number.push_back(number_type);
+
+	vector<const llvm::Type*> sig_bool;
+	sig_bool.push_back(bool_type);
 
 	vector<const llvm::Type*> sig_int;
 	sig_int.push_back(int_type);
@@ -483,10 +500,14 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 			FT=llvm::FunctionType::get(ret_type, sig_obj_obj, false);
 		else if(table[i].type==ARGS_OBJ_INT)
 			FT=llvm::FunctionType::get(ret_type, sig_obj_int, false);
+		else if(table[i].type==ARGS_OBJ_NUMBER)
+			FT=llvm::FunctionType::get(ret_type, sig_obj_number, false);
 		else if(table[i].type==ARGS_INT)
 			FT=llvm::FunctionType::get(ret_type, sig_int, false);
 		else if(table[i].type==ARGS_NUMBER)
 			FT=llvm::FunctionType::get(ret_type, sig_number, false);
+		else if(table[i].type==ARGS_BOOL)
+			FT=llvm::FunctionType::get(ret_type, sig_bool, false);
 		else if(table[i].type==ARGS_OBJ)
 			FT=llvm::FunctionType::get(ret_type, sig_obj, false);
 		else if(table[i].type==ARGS_OBJ_OBJ_INT)
@@ -607,6 +628,13 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 			//decRef the previous contents
 			builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
 			llvm::Value* v=builder.CreateCall(ex->FindFunctionNamed("abstract_d"),static_locals[i].first);
+			builder.CreateStore(v,t);
+		}
+		else if(static_locals[i].second==STACK_BOOLEAN)
+		{
+			//decRef the previous contents
+			builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
+			llvm::Value* v=builder.CreateCall(ex->FindFunctionNamed("abstract_b"),static_locals[i].first);
 			builder.CreateStore(v,t);
 		}
 		else
@@ -1170,10 +1198,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 			
 				//Make comparision
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifFalse"), v1, constant);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				llvm::Value* cond;
+				if(v1.second==STACK_OBJECT)
+				{
+					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifFalse"), v1.first, constant);
+				}
+				else if(v1.second==STACK_BOOLEAN)
+					cond=Builder.CreateNot(v1.first);
+				else
+					abort();
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
@@ -2282,10 +2317,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//convert_b
 				LOG(TRACE, "synt convert_b" );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall(ex->FindFunctionNamed("convert_b"), v1);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_OBJECT)
+				{
+					value=Builder.CreateCall(ex->FindFunctionNamed("convert_b"), v1.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				}
+				else if(v1.second==STACK_BOOLEAN)
+					static_stack_push(static_stack,v1);
+				else
+					abort();
 				jitted=true;
 				break;
 			}
@@ -2397,7 +2438,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("not"), v1);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				jitted=true;
 				break;
 			}
@@ -2424,14 +2465,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_NUMBER)
 				{
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
 				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v1.first);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
@@ -2550,9 +2589,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
-					v2.first=Builder.CreateSIToFP(v2.first,llvm::Type::DoubleTy);
-					value=Builder.CreateFRem(v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+					v1.first=Builder.CreateFPToSI(v1.first,ptr_type);
+					value=Builder.CreateSRem(v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
 				{
@@ -2579,7 +2618,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("lShift"), v1.first, v2.first);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				jitted=true;
 				break;
 			}
@@ -2599,7 +2638,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("urShift"), v1.first, v2.first);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				jitted=true;
 				break;
 			}
@@ -2615,13 +2654,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					value=Builder.CreateCall2(ex->FindFunctionNamed("bitAnd_oo"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					//bitAnd is commutative, but llvm is not :-)
-					value=v1.first;
-					v1.first=v2.first;
-					v2.first=value;
-					value=Builder.CreateCall2(ex->FindFunctionNamed("bitAnd_oi"), v1.first, v2.first);
-				}
+					value=Builder.CreateCall2(ex->FindFunctionNamed("bitAnd_oi"), v2.first, v1.first);
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 					value=Builder.CreateCall2(ex->FindFunctionNamed("bitAnd_oi"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
@@ -2649,12 +2682,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt bitor" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT)
+				/*if(v1.second==STACK_INT)
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 				if(v2.second==STACK_INT)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);*/
+				if(v1.second==STACK_INT && v2.second==STACK_INT)
+					value=Builder.CreateOr(v1.first,v2.first);
+				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+					value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr_oi"), v1.first, v2.first);
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+					value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr_oi"), v2.first, v1.first);
+				else if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+					value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr"), v1.first, v2.first);
 
-				value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				jitted=true;
 				break;
@@ -2819,7 +2859,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
 					static_stack_push(static_stack,static_locals[i]);
 				}
-				else if(static_locals[i].second==STACK_INT || static_locals[i].second==STACK_NUMBER)
+				else if(static_locals[i].second==STACK_INT || 
+						static_locals[i].second==STACK_NUMBER ||
+						static_locals[i].second==STACK_BOOLEAN)
 					static_stack_push(static_stack,static_locals[i]);
 				else
 					abort();
@@ -2873,7 +2915,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 
 	this->context->vm->FPM->run(*llvmf);
-	llvmf->dump();
+	//llvmf->dump();
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }

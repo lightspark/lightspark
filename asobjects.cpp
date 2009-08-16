@@ -43,6 +43,7 @@ ASStage::ASStage():width(640),height(480)
 
 ASArray::ASArray()
 {
+	type=T_ARRAY;
 	constructor=new Function(_constructor);
 	setVariableByName("Call",new Function(ASArray::Array));
 }
@@ -242,47 +243,49 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& 
 	owner=NULL;
 	int index=0;
 
-	if(name.name_type==multiname::NAME_STRING)
+	switch(name.name_type)
 	{
-		for(int i=0;i<name.name_s.size();i++)
-		{
-			if(!isdigit(name.name_s[i]))
+		case multiname::NAME_STRING:
+			for(int i=0;i<name.name_s.size();i++)
 			{
-				index=-1;
-				break;
+				char a=name.name_s[i];
+				if(a>='0' && a<='9')
+				{
+					index*=10;
+					index+=(a-'0');
+				}
+				else
+				{
+					index=-1;
+					break;
+				}
 			}
-
-		}
-		if(index==0)
-			index=atoi(name.name_s.c_str());
+			break;
+		case multiname::NAME_INT:
+			index=name.name_i;
+			break;
 	}
-	else if(name.name_type==multiname::NAME_INT)
-		index=name.name_i;
 
-	if(index!=-1)
+	if(index!=-1 && index<data.size())
 	{
-		if(index<data.size())
-		{
-			if(data[index].type==STACK_OBJECT)
-				ret=data[index].data;
-			else if(data[index].type==STACK_INT)
+			switch(data[index].type)
 			{
-				ret=abstract_i(data[index].data_i);
-				//HACK, the outside world is incReffing this variable
-				ret->fake_decRef();
-			}
-			else
-				abort();
-			if(ret==NULL)
-			{
-				ret=new Undefined;
-				data[index].data=ret;
+				case STACK_OBJECT:
+					ret=data[index].data;
+					if(ret==NULL)
+					{
+						ret=new Undefined;
+						data[index].data=ret;
+					}
+					break;
+				case STACK_INT:
+					ret=abstract_i(data[index].data_i);
+					ret->fake_decRef();
+					break;
 			}
 			owner=this;
-		}
 	}
-
-	if(!owner)
+	else
 		ret=ASObject::getVariableByMultiname(name,owner);
 
 	return ret;
@@ -291,31 +294,39 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& 
 void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 {
 	int index=0;
-	if(name.name_type==multiname::NAME_STRING)
+	switch(name.name_type)
 	{
-		for(int i=0;i<name.name_s.size();i++)
-		{
-			if(!isdigit(name.name_s[i]))
+		case multiname::NAME_STRING:
+			for(int i=0;i<name.name_s.size();i++)
 			{
-				index=-1;
-				break;
+				char a=name.name_s[i];
+				if(a>='0' && a<='9')
+				{
+					index*=10;
+					index+=(a-'0');
+				}
+				else
+				{
+					index=-1;
+					break;
+				}
 			}
-
-		}
-		if(index==0)
-			index=atoi(name.name_s.c_str());
+			break;
+		case multiname::NAME_INT:
+			index=name.name_i;
+			break;
 	}
-	else if(name.name_type==multiname::NAME_INT)
-		index=name.name_i;
 
 	if(index!=-1)
 	{
-		if(index>=data.size())
+		if(index>=data.capacity())
 		{
 			//Heuristic, we increse the array 20%
 			int new_size=max(index+1,data.size()*6/5);
-			resize(new_size);
+			data.reserve(new_size);
 		}
+		if(index>=data.size())
+			resize(index+1);
 
 		if(data[index].type==STACK_OBJECT && data[index].data)
 			data[index].data->decRef();
@@ -349,12 +360,14 @@ void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 
 	if(index!=-1)
 	{
-		if(index>=data.size())
+		if(index>=data.capacity())
 		{
 			//Heuristic, we increse the array 20%
 			int new_size=max(index+1,data.size()*6/5);
-			resize(new_size);
+			data.reserve(new_size);
 		}
+		if(index>=data.size())
+			resize(index+1);
 
 		if(data[index].type==STACK_OBJECT && data[index].data)
 			data[index].data->decRef();
@@ -382,12 +395,14 @@ void ASArray::setVariableByName(const Qname& name, ISWFObject* o)
 	if(number)
 	{
 		int index=atoi(name.name.c_str());
-		if(index>=data.size())
+		if(index>=data.capacity())
 		{
 			//Heuristic, we increse the array 20%
 			int new_size=max(index+1,data.size()*6/5);
-			resize(new_size);
+			data.reserve(new_size);
 		}
+		if(index>=data.size())
+			resize(index+1);
 
 		if(data[index].type==STACK_OBJECT && data[index].data)
 			data[index].data->decRef();
@@ -469,6 +484,7 @@ ISWFObject* ASObject::getVariableByName(const Qname& name, ISWFObject*& owner)
 ASObject::ASObject():
 	debug_id(0),prototype(NULL),super(NULL)
 {
+	type=T_OBJECT;
 }
 
 ASObject::~ASObject()
@@ -490,12 +506,14 @@ ASFUNCTIONBODY(ASObject,_constructor)
 
 ASString::ASString()
 {
+	type=T_STRING;
 	setVariableByName("Call",new Function(ASString::String));
 	setVariableByName("toString",new Function(ASObject::_toString));
 }
 
 ASString::ASString(const string& s):data(s)
 {
+	type=T_STRING;
 	setVariableByName("Call",new Function(ASString::String));
 	setVariableByName("toString",new Function(ASObject::_toString));
 }
@@ -623,10 +641,11 @@ bool Undefined::isEqual(const ISWFObject* r) const
 
 Undefined::Undefined()
 {
+	type=T_UNDEFINED;
 	setVariableByName(".Call",new Function(call));
 }
 
-Number::Number(const ISWFObject* obj)
+/*Number::Number(const ISWFObject* obj)
 {
 	const Integer* i=dynamic_cast<const Integer*>(obj);
 	if(i)
@@ -643,7 +662,7 @@ Number::Number(const ISWFObject* obj)
 
 	cout << obj->getObjectType() << endl;
 	abort();
-}
+}*/
 
 void Number::copyFrom(const ISWFObject* o)
 {
@@ -751,24 +770,30 @@ ASFUNCTIONBODY(Date,getMinutes)
 
 ASFUNCTIONBODY(Date,getTime)
 {
-	Date* th=dynamic_cast<Date*>(obj);
-	long ret=0;
-	//TODO: leap year
-	ret+=(th->year-1990)*365*24*3600*1000;
-	//TODO: month length
-	ret+=(th->month-1)*30*24*3600*1000;
-	ret+=(th->date-1)*24*3600*1000;
-	ret+=th->hour*3600*1000;
-	ret+=th->minute*60*1000;
-	ret+=th->second*1000;
-	ret+=th->millisecond;
-	return new Number(ret);
+	Date* th=static_cast<Date*>(obj);
+	return new Number(th->toInt());
 }
 
 ASFUNCTIONBODY(Date,valueOf)
 {
 	Date* th=dynamic_cast<Date*>(obj);
-	return th->getTime(obj,args);
+	return new Number(th->toInt());
+}
+
+
+int Date::toInt() const
+{
+	int ret=0;
+	//TODO: leap year
+	ret+=(year-1990)*365*24*3600*1000;
+	//TODO: month length
+	ret+=(month-1)*30*24*3600*1000;
+	ret+=(date-1)*24*3600*1000;
+	ret+=hour*3600*1000;
+	ret+=minute*60*1000;
+	ret+=second*1000;
+	ret+=millisecond;
+	return ret;
 }
 
 IFunction* SyntheticFunction::toFunction()

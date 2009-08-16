@@ -28,6 +28,7 @@
 
 #include "logger.h"
 #include <stdlib.h>
+#include <string.h>
 
 #define ASFUNCTION(name) \
 	static ISWFObject* name(ISWFObject* , arguments* args)
@@ -35,9 +36,9 @@
 	ISWFObject* c::name(ISWFObject* obj, arguments* args)
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_NUMBER, T_FUNCTION,
-	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE};
+	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE, T_INVALID};
 
-enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER};
+enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER,STACK_BOOLEAN};
 
 typedef double number_t;
 
@@ -45,6 +46,36 @@ class ISWFObject;
 class arguments;
 class IFunction;
 struct arrayElem;
+
+struct tiny_string
+{
+	char buf[256];
+	int start;
+	tiny_string():start(0){buf[0]=0;}
+	char* operator=(const std::string& s)
+	{
+		strncpy(buf,s.c_str(),256);
+		return buf;
+	}
+	char* operator=(const char* s)
+	{
+		strncpy(buf,s,256);
+		return buf;
+	}
+	operator const char*() const
+	{
+		return buf+start;
+	}
+	char operator[](int i)
+	{
+		return *(buf+start+i);
+	}
+	int len() const
+	{
+		return strlen(buf+start);
+	}
+	void fromInt(int i);
+};
 
 class UI32
 {
@@ -169,9 +200,23 @@ struct obj_var
 	explicit obj_var(ISWFObject* v,IFunction* g,IFunction* s):var(v),setter(s),getter(g){}
 };
 
+class Manager
+{
+friend class ISWFObject;
+private:
+	std::vector<ISWFObject*> available;
+public:
+template<class T>
+	T* get();
+	void put(ISWFObject*);
+};
+
 class ISWFObject
 {
 friend class MovieClip;
+friend class Manager;
+private:
+	Manager* manager;
 protected:
 	ISWFObject* parent;
 	ISWFObject();
@@ -180,6 +225,7 @@ protected:
 	typedef std::map<Qname,obj_var>::iterator var_iterator;
 	std::vector<var_iterator> slots_vars;
 	int max_slot_index;
+	SWFOBJECT_TYPE type;
 public:
 	int ref_count;
 	int debug;
@@ -193,12 +239,18 @@ public:
 	}
 	void decRef()
 	{
-		if(ref_count==0)
-			abort();
+	//	if(ref_count==0)
+	//		abort();
 		ref_count--;
 		if(ref_count==0)
-			delete this;
+		{
+			if(manager)
+				manager->put(this);
+			else
+				delete this;
+		}
 	}
+
 	void fake_decRef()
 	{
 		ref_count--;
@@ -233,7 +285,10 @@ public:
 	virtual int numVariables();
 	std::string getNameAt(int i);
 
-	virtual SWFOBJECT_TYPE getObjectType() const=0;
+	SWFOBJECT_TYPE getObjectType() const
+	{
+		return type;
+	}
 	virtual std::string toString() const;
 	virtual int toInt() const;
 	virtual double toNumber() const;
@@ -251,13 +306,30 @@ public:
 	}
 };
 
+template<class T>
+T* Manager::get()
+{
+	if(available.empty())
+	{
+		T* ret=new T;
+		ret->manager=this;
+		return ret;
+	}
+	else
+	{
+		T* ret=static_cast<T*>(available.back());
+		available.pop_back();
+		ret->incRef();
+		return ret;
+	}
+}
+
 class ConstantReference : public ISWFObject
 {
 private:
 	int index;
 public:
-	ConstantReference(int i):index(i){}
-	SWFOBJECT_TYPE getObjectType() const{return T_CONSTREF;}
+	ConstantReference(int i):index(i){type=T_CONSTREF;}
 	std::string toString() const;
 	int toInt() const;
 //	double toNumber() const;
@@ -273,8 +345,7 @@ class RegisterNumber : public ISWFObject
 private:
 	int index;
 public:
-	RegisterNumber(int i):index(i){ }
-	SWFOBJECT_TYPE getObjectType() const {return T_REGNUMBER;}
+	RegisterNumber(int i):index(i){type=T_REGNUMBER;}
 	std::string toString() const;
 	//int toInt();
 	ISWFObject* clone();
@@ -288,7 +359,7 @@ public:
 class Package : public ISWFObject
 {
 public:
-	SWFOBJECT_TYPE getObjectType() const {return T_PACKAGE;}
+	Package(){type=T_PACKAGE;}
 	ISWFObject* clone()
 	{
 		abort();
@@ -322,13 +393,14 @@ class Integer : public ISWFObject
 {
 friend class Number;
 friend class ABCVm;
+friend ISWFObject* abstract_i(intptr_t i);
 private:
 	int val;
 public:
-	Integer(int v):val(v){}
+	Integer(int v):val(v){type=T_INTEGER;}
+	Integer():val(0){type=T_INTEGER;}
 	virtual ~Integer(){}
 	Integer& operator=(int v){val=v; return *this; }
-	SWFOBJECT_TYPE getObjectType()const {return T_INTEGER;}
 	std::string toString() const;
 	int toInt() const; 
 	double toNumber() const;
@@ -895,6 +967,7 @@ public:
 };
 
 ISWFObject* abstract_i(intptr_t i);
+ISWFObject* abstract_b(intptr_t i);
 ISWFObject* abstract_d(number_t i);
 
 std::ostream& operator<<(std::ostream& s, const RECT& r);

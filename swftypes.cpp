@@ -25,6 +25,7 @@
 #include <string.h>
 #include <algorithm>
 #include <stdlib.h>
+#include <math.h>
 #include "swf.h"
 #include "geometry.h"
 
@@ -32,6 +33,8 @@ using namespace std;
 extern __thread SystemState* sys;
 extern __thread RenderThread* rt;
 extern __thread ParseThread* pt;
+extern __thread Manager* iManager;
+extern __thread Manager* dManager;
 
 string ConstantReference::toString() const
 {
@@ -133,9 +136,12 @@ IFunction* ISWFObject::toFunction()
 	return NULL;
 }
 
+
 int ISWFObject::toInt() const
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
+	cout << "imanager " << iManager->available.size() << endl;
+	cout << "dmanager " << dManager->available.size() << endl;
 	abort();
 	return 0;
 }
@@ -402,8 +408,20 @@ void ISWFObject::dumpVariables()
 string Integer::toString() const
 {
 	char buf[20];
-	snprintf(buf,20,"%i",val);
-	return buf;
+	if(val<0)
+		abort();
+	buf[19]=0;
+	char* cur=buf+19;
+
+	int v=val;
+	do
+	{
+		cur--;
+		*cur='0'+(v%10);
+		v/=10;
+	}
+	while(v!=0);
+	return cur;
 }
 
 int Integer::toInt() const
@@ -1117,11 +1135,25 @@ void DictionaryDefinable::define(ISWFObject* g)
 }
 
 ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),ref_count(1),constructor(NULL),debug(0),
-	class_index(-1)
+	class_index(-1),manager(NULL),type(T_INVALID)
 {
 }
 
-ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0)
+/*void ISWFObject::decRef()
+{
+//	if(ref_count==0)
+//		abort();
+	ref_count--;
+	if(ref_count==0)
+	{
+		if(manager)
+			manager->put(this);
+		else
+			delete this;
+	}
+}*/
+
+ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL)
 {
 	parent=o.parent;
 	constructor=o.constructor;
@@ -1289,11 +1321,45 @@ std::istream& operator>>(std::istream& s, CLIPACTIONS& v)
 
 ISWFObject* abstract_d(number_t i)
 {
-	return new Number(i);
+	Number* ret=dManager->get<Number>();
+	ret->val=i;
+	return ret;
+}
+
+ISWFObject* abstract_b(bool i)
+{
+	return new Boolean(i);
 }
 
 ISWFObject* abstract_i(intptr_t i)
 {
-	return new Integer(i);
+	Integer* ret=iManager->get<Integer>();
+	ret->val=i;
+	return ret;
+}
+
+void tiny_string::fromInt(int i)
+{
+	buf[19]=0;
+	start=19;
+
+	if(i<0)
+		abort();
+
+	do
+	{
+		start--;
+		*(buf+start)='0'+(i%10);
+		i/=10;
+	}
+	while(i!=0);
+}
+
+void Manager::put(ISWFObject* o)
+{
+	if(available.size()>10)
+		delete o;
+	else
+		available.push_back(o);
 }
 

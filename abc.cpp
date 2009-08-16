@@ -35,6 +35,8 @@
 
 extern __thread SystemState* sys;
 extern __thread ParseThread* pt;
+__thread Manager* iManager=NULL;
+__thread Manager* dManager=NULL;
 
 using namespace std;
 
@@ -303,8 +305,16 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 					ret->ns.push_back(th->context->getString(n->name));
 					ret->nskind.push_back(n->kind);
 				}
-				ret->name_s=rt1->toString();
-				ret->name_type=multiname::NAME_STRING;
+				if(rt1->getObjectType()==T_INTEGER)
+				{
+					ret->name_i=rt1->toInt();
+					ret->name_type=multiname::NAME_INT;
+				}
+				else
+				{
+					ret->name_s=rt1->toString();
+					ret->name_type=multiname::NAME_STRING;
+				}
 				rt1->decRef();
 				break;
 			}
@@ -348,8 +358,16 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 			}
 			case 0x1b:
 			{
-				ret->name_s=rt1->toString();
-				ret->name_type=multiname::NAME_STRING;
+				if(rt1->getObjectType()==T_INTEGER)
+				{
+					ret->name_i=rt1->toInt();
+					ret->name_type=multiname::NAME_INT;
+				}
+				else
+				{
+					ret->name_s=rt1->toString();
+					ret->name_type=multiname::NAME_STRING;
+				}
 				rt1->decRef();
 				break;
 			}
@@ -657,6 +675,8 @@ ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s)
 	sem_init(&mutex,0,1);
 	sem_init(&sem_event_count,0,0);
 	m_sys=s;
+	int_manager=new Manager;
+	number_manager=new Manager;
 	pthread_create(&t,NULL,(thread_worker)Run,this);
 }
 
@@ -804,26 +824,6 @@ ISWFObject* ABCVm::increment_i(ISWFObject* o)
 	LOG(NOT_IMPLEMENTED,"increment_i");
 	abort();
 	return o;
-}
-
-ISWFObject* ABCVm::lShift(ISWFObject* val1, ISWFObject* val2)
-{
-	uint32_t i2=val2->toInt();
-	int32_t i1=val1->toInt()&0x1f;
-	val1->decRef();
-	val2->decRef();
-	LOG(CALLS,"lShift "<<i2<<"<<"<<i1);
-	return new Integer(i2<<i1);
-}
-
-ISWFObject* ABCVm::urShift(ISWFObject* val1, ISWFObject* val2)
-{
-	uint32_t i2=val2->toInt();
-	int32_t i1=val1->toInt()&0x1f;
-	val1->decRef();
-	val2->decRef();
-	LOG(CALLS,"urShift "<<i2<<">>"<<i1);
-	return new Integer(i2>>i1);
 }
 
 void ABCVm::isTypelate(call_context* th)
@@ -1024,7 +1024,7 @@ bool Boolean_concrete(ISWFObject* obj)
 	else if(obj->getObjectType()==T_BOOLEAN)
 	{
 		LOG(CALLS,"Boolean to bool");
-		Boolean* b=dynamic_cast<Boolean*>(obj);
+		Boolean* b=static_cast<Boolean*>(obj);
 		return b->val;
 	}
 	else if(obj->getObjectType()==T_OBJECT)
@@ -1251,14 +1251,6 @@ void ABCVm::newObject(call_context* th, int n)
 	}
 
 	th->runtime_stack_push(ret);
-}
-
-ISWFObject* ABCVm::_not(ISWFObject* v)
-{
-	LOG(CALLS, "not" );
-	ISWFObject* ret=new Boolean(!(Boolean_concrete(v)));
-	v->decRef();
-	return ret;
 }
 
 void ABCVm::not_impl(int n)
@@ -1708,6 +1700,8 @@ void ABCContext::exec()
 void ABCVm::Run(ABCVm* th)
 {
 	sys=th->m_sys;
+	iManager=th->int_manager;
+	dManager=th->number_manager;
 	th->module=new llvm::Module("abc jit");
 	th->ex=llvm::ExecutionEngine::create(th->module);
 	llvm::ExistingModuleProvider ModuleProvider(th->module);
@@ -2306,3 +2300,4 @@ ISWFObject* parseInt(ISWFObject* obj,arguments* args)
 {
 	return new Integer(0);
 }
+

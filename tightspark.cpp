@@ -28,6 +28,9 @@ __thread SystemState* sys=NULL;
 __thread RenderThread* rt=NULL;
 __thread ParseThread* pt=NULL;
 
+extern int count_reuse;
+extern int count_alloc;
+
 int main(int argc, char* argv[])
 {
 	if(argc!=2)

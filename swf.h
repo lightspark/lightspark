@@ -116,7 +116,6 @@ public:
 
 	SystemState();
 	~SystemState();
-	SWFOBJECT_TYPE getObjectType() const;
 	fps_profiling* fps_prof;
 	ABCVm* currentVm;
 	InputThread* cur_input_thread;

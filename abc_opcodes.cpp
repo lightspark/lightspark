@@ -48,7 +48,7 @@ uintptr_t ABCVm::bitAnd_oi(ISWFObject* val1, intptr_t val2)
 	static int c=0;
 	static int c2=0;
 	if(c%(1024*512)==0)
-		cout << "bitand " << c << endl;
+		cerr << "bitand " << c << endl;
 	c++;
 	LOG(CALLS,"bitAnd_oi " << hex << i1 << '&' << i2);
 	return i1&i2;
@@ -158,6 +158,15 @@ uintptr_t ABCVm::bitXor(ISWFObject* val2, ISWFObject* val1)
 	return i1^i2;
 }
 
+uintptr_t ABCVm::bitOr_oi(ISWFObject* val2, uintptr_t val1)
+{
+	int i1=val1;
+	int i2=val2->toInt();
+	val2->decRef();
+	LOG(CALLS,"bitOr " << hex << i1 << '|' << i2);
+	return i1|i2;
+}
+
 uintptr_t ABCVm::bitOr(ISWFObject* val2, ISWFObject* val1)
 {
 	int i1=val1->toInt();
@@ -234,20 +243,22 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 ISWFObject* ABCVm::getProperty(ISWFObject* obj, multiname* name)
 {
-	LOG(CALLS, "getProperty " << name );
+	//LOG(CALLS, "getProperty " << *name );
 
 	ISWFObject* owner;
 	ISWFObject* ret=obj->getVariableByMultiname(*name,owner);
-	if(!owner)
+	if(owner==NULL)
 	{
-		LOG(NOT_IMPLEMENTED,"Property not found " << name);
+		//LOG(NOT_IMPLEMENTED,"Property not found " << *name);
+		abort();
 		ret=new Undefined;
 	}
 	else
 	{
 		if(ret->getObjectType()==T_DEFINABLE)
 		{
-			LOG(ERROR,"Property " << name << " is not yet valid");
+			//LOG(ERROR,"Property " << name << " is not yet valid");
+			abort();
 			Definable* d=static_cast<Definable*>(ret);
 			d->define(obj);
 			ret=obj->getVariableByMultiname(*name,owner);
@@ -282,7 +293,7 @@ ISWFObject* ABCVm::decrement(ISWFObject* o)
 
 	int n=o->toInt();
 	o->decRef();
-	return new Integer(n-1);
+	return abstract_i(n-1);
 }
 
 ISWFObject* ABCVm::decrement_i(ISWFObject* o)
@@ -554,7 +565,7 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 		val1->decRef();
 		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
+		return abstract_d(num1+num2);
 	}
 	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_INTEGER)
 	{
@@ -563,7 +574,7 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 		val1->decRef();
 		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
+		return abstract_d(num1+num2);
 	}
 	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_NUMBER)
 	{
@@ -572,7 +583,7 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 		val1->decRef();
 		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
+		return abstract_d(num1+num2);
 	}
 	else if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_INTEGER)
 	{
@@ -581,7 +592,7 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 		val1->decRef();
 		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
+		return abstract_d(num1+num2);
 	}
 	else if(val1->getObjectType()==T_STRING)
 	{
@@ -616,9 +627,55 @@ ISWFObject* ABCVm::add_oi(ISWFObject* val2, intptr_t val1)
 		int num1=val1;
 		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Integer(num1+num2);
+		//return new Integer(num1+num2);
+		return abstract_i(num1+num2);
 	}
 	else if(val2->getObjectType()==T_NUMBER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1;
+		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return abstract_d(num1+num2);
+	}
+	else if(val2->getObjectType()==T_STRING)
+	{
+		abort();
+		/*string a=val1->toString();
+		string b=val2->toString();
+		val1->decRef();
+		val2->decRef();
+		LOG(CALLS,"add " << a << '+' << b);
+		return new ASString(a+b);*/
+	}
+	else if(val2->getObjectType()==T_ARRAY)
+	{
+		abort();
+		/*//Array concatenation
+		ASArray* ar=static_cast<ASArray*>(val1);
+		ar->push(val2);
+		return ar;*/
+	}
+	else
+	{
+		LOG(NOT_IMPLEMENTED,"Add between integer and " << val2->getObjectType());
+		return new Undefined;
+	}
+
+}
+
+ISWFObject* ABCVm::add_od(ISWFObject* val2, number_t val1)
+{
+	//Implement ECMA add algorithm, for XML and default
+	if(val2->getObjectType()==T_NUMBER)
+	{
+		double num2=val2->toNumber();
+		double num1=val1;
+		val2->decRef();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		return new Number(num1+num2);
+	}
+	else if(val2->getObjectType()==T_INTEGER)
 	{
 		double num2=val2->toNumber();
 		double num1=val1;
@@ -646,9 +703,37 @@ ISWFObject* ABCVm::add_oi(ISWFObject* val2, intptr_t val1)
 	}
 	else
 	{
-		LOG(NOT_IMPLEMENTED,"Add between integer and " << val2->getObjectType());
+		LOG(NOT_IMPLEMENTED,"Add between types number and " << val2->getObjectType());
 		return new Undefined;
 	}
 
+}
+
+uintptr_t ABCVm::lShift(ISWFObject* val1, ISWFObject* val2)
+{
+	uint32_t i2=val2->toInt();
+	int32_t i1=val1->toInt()&0x1f;
+	val1->decRef();
+	val2->decRef();
+	LOG(CALLS,"lShift "<<i2<<"<<"<<i1);
+	return i2<<i1;
+}
+
+uintptr_t ABCVm::urShift(ISWFObject* val1, ISWFObject* val2)
+{
+	uint32_t i2=val2->toInt();
+	int32_t i1=val1->toInt()&0x1f;
+	val1->decRef();
+	val2->decRef();
+	LOG(CALLS,"urShift "<<i2<<">>"<<i1);
+	return i2>>i1;
+}
+
+bool ABCVm::_not(ISWFObject* v)
+{
+	LOG(CALLS, "not" );
+	bool ret=!Boolean_concrete(v);
+	v->decRef();
+	return ret;
 }
 

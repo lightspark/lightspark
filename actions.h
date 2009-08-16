@@ -127,7 +127,6 @@ private:
 public:
 	ActionDefineFunction(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
-	SWFOBJECT_TYPE getObjectType()const{return T_FUNCTION;}
 	void print(){ LOG(TRACE,"ActionDefineFunction");}
 	ISWFObject* call(ISWFObject* obj, arguments* args);
 	STRING getName(){ return FunctionName; }
@@ -162,7 +161,6 @@ private:
 public:
 	ActionDefineFunction2(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
-	SWFOBJECT_TYPE getObjectType()const{return T_FUNCTION;}
 	void print(){ LOG(TRACE,"ActionDefineFunction2");}
 	ISWFObject* call(ISWFObject* obj, arguments* args);
 	STRING getName(){ return FunctionName; }

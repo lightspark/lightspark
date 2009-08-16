@@ -39,7 +39,6 @@ public:
 	ASObject* super;
 	ASObject();
 	virtual ~ASObject();
-	SWFOBJECT_TYPE getObjectType() const { return T_OBJECT; }
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	std::string toString() const;
@@ -58,8 +57,8 @@ public:
 class IFunction: public ASObject
 {
 public:
+	IFunction():bound(false){type=T_FUNCTION;}
 	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
-	IFunction():bound(false){}
 	ISWFObject* closure_this;
 	virtual ISWFObject* call(ISWFObject* obj, arguments* args)=0;
 	void bind()
@@ -75,7 +74,6 @@ class Function : public IFunction
 public:
 	Function(){}
 	Function(as_function v):val(v){}
-	SWFOBJECT_TYPE getObjectType()const {return T_FUNCTION;}
 	ISWFObject* call(ISWFObject* obj, arguments* args);
 	IFunction* toFunction();
 	ISWFObject* clone()
@@ -93,7 +91,6 @@ friend class ABCVm;
 public:
 	typedef ISWFObject* (*synt_function)(ISWFObject*, arguments*, call_context* cc);
 	SyntheticFunction(method_info* m);
-	SWFOBJECT_TYPE getObjectType()const {return T_FUNCTION;}
 	ISWFObject* call(ISWFObject* obj, arguments* args);
 	IFunction* toFunction();
 	ISWFObject* clone()
@@ -113,9 +110,8 @@ friend bool Boolean_concrete(ISWFObject* obj);
 private:
 	bool val;
 public:
-	Boolean(bool v):val(v){}
+	Boolean(bool v):val(v){type=T_BOOLEAN;}
 	bool isEqual(const ISWFObject* r) const;
-	SWFOBJECT_TYPE getObjectType() const { return T_BOOLEAN; }
 	std::string toString() const;
 };
 
@@ -124,7 +120,6 @@ class Undefined : public ASObject
 public:
 	ASFUNCTION(call);
 	Undefined();
-	SWFOBJECT_TYPE getObjectType() const {return T_UNDEFINED;}
 	std::string toString() const;
 	bool isEqual(const ISWFObject* r) const;
 	ISWFObject* clone()
@@ -145,7 +140,6 @@ public:
 	std::string toString() const;
 	double toNumber() const;
 	bool isEqual(const ISWFObject* r) const;
-	SWFOBJECT_TYPE getObjectType() const {return T_STRING;}
 	ISWFObject* clone()
 	{
 		return new ASString(*this);
@@ -164,7 +158,7 @@ public:
 class Null : public ASObject
 {
 public:
-	SWFOBJECT_TYPE getObjectType() const {return T_NULL;}
+	Null(){type=T_NULL;}
 	std::string toString() const;
 	ISWFObject* clone()
 	{
@@ -192,7 +186,6 @@ protected:
 	std::vector<data_slot> data;
 public:
 	ASArray();
-	SWFOBJECT_TYPE getObjectType() const { return T_ARRAY; }
 	virtual ~ASArray();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(Array);
@@ -280,12 +273,13 @@ public:
 
 class Number : public ASObject
 {
+friend ISWFObject* abstract_d(number_t i);
 private:
 	double val;
 public:
-	Number(const ISWFObject* obj);
-	Number(double v):val(v){}
-	SWFOBJECT_TYPE getObjectType()const {return T_NUMBER;}
+//	Number(const ISWFObject* obj);
+	Number(double v):val(v){type=T_NUMBER;}
+	Number():val(0){type=T_NUMBER;}
 	std::string toString() const;
 	int toInt() const; 
 	double toNumber() const;
@@ -346,6 +340,7 @@ public:
 	ASFUNCTION(getHours);
 	ASFUNCTION(getMinutes);
 	ASFUNCTION(valueOf);
+	int toInt() const; 
 	ISWFObject* clone()
 	{
 		return new Date(*this);
@@ -356,7 +351,7 @@ public:
 class Definable : public ISWFObject
 {
 public:
-	SWFOBJECT_TYPE getObjectType() const {return T_DEFINABLE;}
+	Definable(){type=T_DEFINABLE;}
 	virtual void define(ISWFObject* g)=0;
 };
 

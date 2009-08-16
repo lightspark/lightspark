@@ -32,6 +32,9 @@
 #include <map>
 #include "swf.h"
 
+#define likely(x)	__builtin_expect(!!(x), 1)
+#define unlikely(x)	__builtin_expect(!!(x), 0)
+
 class s24
 {
 friend std::istream& operator>>(std::istream& in, s24& v);
@@ -311,7 +314,7 @@ struct opcode_handler
 
 };
 
-enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER };
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, ARGS_BOOL };
 
 struct typed_opcode_handler
 {
@@ -433,7 +436,7 @@ private:
 	static ISWFObject* equals(ISWFObject*,ISWFObject*);
 	static ISWFObject* in(ISWFObject*,ISWFObject*);
 	static ISWFObject* strictEquals(ISWFObject*,ISWFObject*);
-	static ISWFObject* _not(ISWFObject*);
+	static bool _not(ISWFObject*);
 	static ISWFObject* negate(ISWFObject*);
 	static void pop(call_context* th);
 	static ISWFObject* typeOf(ISWFObject*);
@@ -443,12 +446,14 @@ private:
 	static void swap(call_context* th);
 	static ISWFObject* add(ISWFObject*,ISWFObject*);
 	static ISWFObject* add_oi(ISWFObject*,intptr_t);
+	static ISWFObject* add_od(ISWFObject*,number_t);
 	static uintptr_t bitAnd(ISWFObject*,ISWFObject*);
 	static uintptr_t bitAnd_oi(ISWFObject* val1, intptr_t val2);
 	static uintptr_t bitOr(ISWFObject*,ISWFObject*);
+	static uintptr_t bitOr_oi(ISWFObject*,uintptr_t);
 	static uintptr_t bitXor(ISWFObject*,ISWFObject*);
-	static ISWFObject* urShift(ISWFObject*,ISWFObject*);
-	static ISWFObject* lShift(ISWFObject*,ISWFObject*);
+	static uintptr_t urShift(ISWFObject*,ISWFObject*);
+	static uintptr_t lShift(ISWFObject*,ISWFObject*);
 	static number_t multiply(ISWFObject*,ISWFObject*);
 	static number_t multiply_oi(ISWFObject*, intptr_t);
 	static number_t divide(ISWFObject*,ISWFObject*);
@@ -495,6 +500,7 @@ private:
 	static typed_opcode_handler opcode_table_number_t[];
 	static typed_opcode_handler opcode_table_void[];
 	static typed_opcode_handler opcode_table_voidptr[];
+	static typed_opcode_handler opcode_table_bool_t[];
 
 	//Synchronization
 	sem_t mutex;
@@ -505,6 +511,9 @@ private:
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
 	ABCContext* last_context;
+
+	Manager* int_manager;
+	Manager* number_manager;
 public:
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
@@ -537,6 +546,7 @@ public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
 	void execute( );
 };
+
 
 bool Boolean_concrete(ISWFObject* obj);
 ISWFObject* parseInt(ISWFObject* obj,arguments* args);

@@ -81,6 +81,7 @@ RootMovieClip::RootMovieClip()
 
 SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),root(this)
 {
+	type=T_MOVIE;
 	sem_init(&new_frame,0,0);
 	//This should come from DisplayObject
 	MovieClip::_constructor(this,NULL);
@@ -1162,11 +1163,6 @@ void RootMovieClip::setVariableByString(const string& s, ISWFObject* o)
 	}
 	sub=s.substr(f,l-f);
 	target->setVariableByName(sub,o);
-}
-
-SWFOBJECT_TYPE SystemState::getObjectType() const
-{
-	return T_MOVIE;
 }
 
 long timeDiff(timespec& s, timespec& d)

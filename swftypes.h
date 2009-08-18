@@ -64,15 +64,18 @@ struct tiny_string
 	}
 	operator const char*() const
 	{
-		return buf+start;
+//		return buf+start;
+		return buf;
 	}
 	char operator[](int i)
 	{
-		return *(buf+start+i);
+//		return *(buf+start+i);
+		return *(buf+i);
 	}
 	int len() const
 	{
-		return strlen(buf+start);
+//		return strlen(buf+start);
+		return strlen(buf);
 	}
 	void fromInt(int i);
 };
@@ -181,7 +184,8 @@ struct multiname
 {
 	enum NAME_TYPE {NAME_STRING,NAME_INT};
 	NAME_TYPE name_type;
-	std::string name_s;
+	//std::string name_s;
+	tiny_string name_s;
 	int name_i;
 	std::vector<std::string> ns;
 	std::vector<int> nskind;
@@ -208,7 +212,7 @@ private:
 public:
 template<class T>
 	T* get();
-	void put(ISWFObject*);
+	void put(ISWFObject* o);
 };
 
 class ISWFObject
@@ -277,7 +281,10 @@ public:
 	virtual void setVariableByName(const Qname& name, ISWFObject* o);
 	void setGetterByName(const Qname& name, IFunction* o);
 	void setSetterByName(const Qname& name, IFunction* o);
-	virtual ISWFObject* getSlot(int n);
+	ISWFObject* getSlot(int n)
+	{
+		return slots_vars[n-1]->second.var;
+	}
 	virtual void setSlot(int n,ISWFObject* o);
 	virtual void initSlot(int n,ISWFObject* o, const Qname& name);
 	virtual void dumpVariables();
@@ -304,6 +311,14 @@ public:
 		abort();
 	}
 };
+
+inline void Manager::put(ISWFObject* o)
+{
+	if(available.size()>10)
+		delete o;
+	else
+		available.push_back(o);
+}
 
 template<class T>
 T* Manager::get()
@@ -392,6 +407,7 @@ class Integer : public ISWFObject
 {
 friend class Number;
 friend class ABCVm;
+friend class ABCContext;
 friend ISWFObject* abstract_i(intptr_t i);
 private:
 	int val;

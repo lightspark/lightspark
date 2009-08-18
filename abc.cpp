@@ -307,7 +307,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 				}
 				if(rt1->getObjectType()==T_INTEGER)
 				{
-					ret->name_i=rt1->toInt();
+					Integer* o=static_cast<Integer*>(rt1);
+					ret->name_i=o->val;
 					ret->name_type=multiname::NAME_INT;
 				}
 				else
@@ -360,7 +361,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 			{
 				if(rt1->getObjectType()==T_INTEGER)
 				{
-					ret->name_i=rt1->toInt();
+					Integer* o=static_cast<Integer*>(rt1);
+					ret->name_i=o->val;
 					ret->name_type=multiname::NAME_INT;
 				}
 				else
@@ -1225,7 +1227,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	LOG(NOT_IMPLEMENTED,"setSuper " << name);
 
 	ISWFObject* obj=th->runtime_stack_pop();
-	obj->setVariableByName(name.name_s,value);
+	obj->setVariableByName((const char*)name.name_s,value);
 }
 
 ISWFObject* ABCVm::newFunction(call_context* th, int n)
@@ -1449,7 +1451,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 	{
 		LOG(CALLS, "NOT found, trying Global" );
 		//TODO: to multiname
-		th->context->vm->Global.getVariableByName(name.name_s,owner);
+		th->context->vm->Global.getVariableByName((const char*)name.name_s,owner);
 		if(owner)
 		{
 			th->runtime_stack_push(owner);
@@ -1471,7 +1473,7 @@ void ABCVm::initProperty(call_context* th, int n)
 
 	ISWFObject* obj=th->runtime_stack_pop();
 
-	obj->setVariableByName(name.name_s,value);
+	obj->setVariableByName((const char*)name.name_s,value);
 	obj->decRef();
 }
 

@@ -246,7 +246,7 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& 
 	switch(name.name_type)
 	{
 		case multiname::NAME_STRING:
-			for(int i=0;i<name.name_s.size();i++)
+			for(int i=0;i<name.name_s.len();i++)
 			{
 				char a=name.name_s[i];
 				if(a>='0' && a<='9')
@@ -297,7 +297,7 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 	switch(name.name_type)
 	{
 		case multiname::NAME_STRING:
-			for(int i=0;i<name.name_s.size();i++)
+			for(int i=0;i<name.name_s.len();i++)
 			{
 				char a=name.name_s[i];
 				if(a>='0' && a<='9')
@@ -305,24 +305,22 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 					index*=10;
 					index+=(a-'0');
 				}
-				/*else
+				else
 				{
 					ASObject::setVariableByMultiname(name,abstract_i(value));
 					return;
-				}*/
+				}
 			}
 			break;
-/*		case multiname::NAME_INT:
+		case multiname::NAME_INT:
 			index=name.name_i;
-			break;*/
+			break;
 	}
 
-	abstract_i(index);
-/*	if(index==data.size())
+	if(index==data.size())
 		data.push_back(data_slot(value));
 	else if(index>data.size())
 	{
-		data.resize(index);
 		data.push_back(data_slot(value));
 	}
 	else
@@ -332,7 +330,7 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 
 		data[index].data_i=value;
 		data[index].type=STACK_INT;
-	}*/
+	}
 }
 
 void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
@@ -340,7 +338,7 @@ void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 	int index=0;
 	if(name.name_type==multiname::NAME_STRING)
 	{
-		for(int i=0;i<name.name_s.size();i++)
+		for(int i=0;i<name.name_s.len();i++)
 		{
 			if(!isdigit(name.name_s[i]))
 			{
@@ -350,7 +348,7 @@ void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 
 		}
 		if(index==0)
-			index=atoi(name.name_s.c_str());
+			index=atoi(name.name_s);
 	}
 	else if(name.name_type==multiname::NAME_INT)
 		index=name.name_i;

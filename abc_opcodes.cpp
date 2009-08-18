@@ -45,11 +45,10 @@ uintptr_t ABCVm::bitAnd_oi(ISWFObject* val1, intptr_t val2)
 	uintptr_t i1=val1->toInt();
 	uintptr_t i2=val2;
 	val1->decRef();
-	static int c=0;
-	static int c2=0;
+/*	static int c=0;
 	if(c%(1024*512)==0)
 		cerr << "bitand " << c << endl;
-	c++;
+	c++;*/
 	LOG(CALLS,"bitAnd_oi " << hex << i1 << '&' << i2);
 	return i1&i2;
 }
@@ -132,7 +131,7 @@ void ABCVm::setSlot(ISWFObject* value, ISWFObject* obj, int n)
 
 ISWFObject* ABCVm::getSlot(ISWFObject* obj, int n)
 {
-	LOG(CALLS,"getSlot " << dec << n);
+//	LOG(CALLS,"getSlot " << dec << n);
 	ISWFObject* ret=obj->getSlot(n);
 	ret->incRef();
 	obj->decRef();

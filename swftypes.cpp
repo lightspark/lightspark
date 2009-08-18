@@ -107,9 +107,7 @@ bool Integer::isLess(const ISWFObject* o) const
 		return val<*i;
 	}
 	else
-	{
 		return ISWFObject::isLess(o);
-	}
 }
 
 bool Integer::isEqual(const ISWFObject* o) const
@@ -219,7 +217,7 @@ void ISWFObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 	if(name.name_type==multiname::NAME_INT)
 		ret=Variables.insert(make_pair(name.name_i,obj_var(o)));
 	else if(name.name_type==multiname::NAME_STRING)
-		ret=Variables.insert(make_pair(name.name_s,obj_var(o)));
+		ret=Variables.insert(make_pair((const char*)name.name_s,obj_var(o)));
 
 	if(!ret.second)
 	{
@@ -251,7 +249,7 @@ ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, ISWFObject
 	if(name.name_type==multiname::NAME_INT)
 		it=Variables.find(name.name_i);
 	else if(name.name_type==multiname::NAME_STRING)
-		it=Variables.find(name.name_s);
+		it=Variables.find((const char*)name.name_s);
 	if(it!=Variables.end())
 	{
 		if(name.ns.empty())
@@ -1191,17 +1189,6 @@ ISWFObject::~ISWFObject()
 	}
 }
 
-ISWFObject* ISWFObject::getSlot(int n)
-{
-	if(n-1<slots_vars.size())
-		return slots_vars[n-1]->second.var;
-	else
-	{
-		LOG(ERROR,"Slot out of range");
-		abort();
-	}
-}
-
 void ISWFObject::initSlot(int n,ISWFObject* o,const Qname& s)
 {
 	if(n-1<slots_vars.size())
@@ -1355,11 +1342,11 @@ void tiny_string::fromInt(int i)
 	while(i!=0);
 }
 
-void Manager::put(ISWFObject* o)
+/*void Manager::put(ISWFObject* o)
 {
 	if(available.size()>10)
 		delete o;
 	else
 		available.push_back(o);
-}
+}*/
 

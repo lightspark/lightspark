@@ -1,5 +1,5 @@
 # User-overridable flags:
-CXXFLAGS = -O3 -D_GLIBCXX_NO_DEBUG
+CXXFLAGS = -g -O3 -D_GLIBCXX_NO_DEBUG
 prefix = /usr
 bindir = $(prefix)/bin
 datarootdir = $(prefix)/share

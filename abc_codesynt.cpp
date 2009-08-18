@@ -1717,9 +1717,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//pop
 				LOG(TRACE, "synt pop" );
-				Builder.CreateCall(ex->FindFunctionNamed("pop"), context);
-				stack_entry e=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(Log::getLevel()==TRACE)
+					Builder.CreateCall(ex->FindFunctionNamed("pop"), context);
+				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				Builder.CreateCall(ex->FindFunctionNamed("decRef"), e.first);
 				jitted=true;
 				break;
@@ -2960,7 +2960,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 
 	this->context->vm->FPM->run(*llvmf);
-	//llvmf->dump();
+	llvmf->dump();
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }

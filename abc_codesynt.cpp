@@ -678,6 +678,15 @@ llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex
 	return llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
 }
 
+struct block_info
+{
+	llvm::BasicBlock* BB;
+	std::vector<STACK_TYPE> locals;
+	std::vector<block_info*> preds;
+
+	block_info():BB(NULL){}
+};
+
 SyntheticFunction::synt_function method_info::synt_method()
 {
 	if(f)
@@ -690,7 +699,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
 		return NULL;
 	}
-	stringstream code(body->code);
 	llvm::ExecutionEngine* ex=context->vm->ex;
 	llvm::FunctionType* method_type=synt_method_prototype(ex);
 	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,n,context->vm->module);
@@ -733,14 +741,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	//the scope stack is not accessible to llvm code
 	
+	stringstream code(body->code);
 	//Creating a mapping between blocks and starting address
 	//The current header block is ended
 	llvm::BasicBlock *StartBB = llvm::BasicBlock::Create("entry", llvmf);
 	Builder.CreateBr(StartBB);
 	//CHECK: maybe not needed
 	Builder.SetInsertPoint(StartBB);
-	map<int,llvm::BasicBlock*> blocks;
-	blocks.insert(pair<int,llvm::BasicBlock*>(0,StartBB));
+
+	map<int,block_info> blocks;
+	blocks[-1].BB=StartBB;
 
 	bool jitted=false;
 
@@ -780,15 +790,924 @@ SyntheticFunction::synt_function method_info::synt_method()
 	vector<stack_entry> static_locals;
 	static_locals.resize(body->local_count,stack_entry(NULL,STACK_NONE));
 
-	//Each case block builds the correct parameters for the interpreter function and call it
+	//Let's build a block for the real function code
+	blocks[0].BB=llvm::BasicBlock::Create("begin", llvmf);
+	block_info* cur_block=NULL;
+
+	vector<STACK_TYPE> static_stack_types;
+
 	u8 opcode;
+	//We try to analyze the blocks first to find if locals can survive the jumps
 	while(1)
 	{
 		code >> opcode;
 		if(code.eof())
 			break;
 		//Check if we are expecting a new block start
-		map<int,llvm::BasicBlock*>::iterator it=blocks.find(int(code.tellg())-1);
+		map<int,block_info>::iterator it=blocks.find(int(code.tellg())-1);
+		if(it!=blocks.end())
+		{
+			if(cur_block)
+				it->second.preds.push_back(cur_block);
+			cur_block=&it->second;
+			cur_block->locals.resize(body->local_count,STACK_NONE);
+			//A new block starts, the last instruction should have been a branch?
+			if(!last_is_branch)
+				jitted=false;
+			last_is_branch=false;
+		}
+		else if(last_is_branch)
+		{
+			//TODO: Check this. It seems that there may be invalid code after
+			//block end
+			LOG(TRACE,"Ignoring at " << int(code.tellg())-1);
+			continue;
+		}
+		switch(opcode)
+		{
+			case 0x03:
+			{
+				//throw
+				abort();
+				break;
+			}
+			case 0x04:
+			case 0x05:
+			{
+				//getsuper
+				//setsuper
+				u30 t;
+				code >> t;
+				static_stack_types.clear();
+				break;
+			}
+			case 0x08:
+			{
+				//kill
+				LOG(TRACE, "block analysis: kill" );
+				u30 t;
+				code >> t;
+				cur_block->locals[t]=STACK_NONE;
+				break;
+			}
+			case 0x09:
+			{
+				//label
+				//Create a new block and insert it in the mapping
+				LOG(TRACE, "block analysis: label" );
+				last_is_branch=true;
+				int here=code.tellg();
+
+				if(blocks[here].BB==NULL)
+					blocks[here].BB=llvm::BasicBlock::Create("label", llvmf);
+				break;
+			}
+			case 0x0c:
+			case 0x0d:
+			case 0x0e:
+			case 0x0f:
+			case 0x10:
+			case 0x11:
+			case 0x12:
+			case 0x13:
+			case 0x14:
+			case 0x15:
+			case 0x17:
+			case 0x18:
+			case 0x19:
+			case 0x1a:
+			{
+				//ifnlt
+				//ifnle
+				//ifngt
+				//ifnge
+				//jump
+				//iftrue
+				//iffalse
+				//ifeq
+				//ifne
+				//iflt
+				//ifge
+				//ifgt
+				//ifstricteq
+				//ifstrictne
+				LOG(TRACE, "block analysis: branches" );
+				//TODO: implement common data comparison
+				last_is_branch=true;
+				s24 t;
+				code >> t;
+
+				int here=code.tellg();
+				int dest=here+t;
+				//Create a block for the fallthrough code and insert in the mapping
+				if(blocks[here].BB==NULL)
+					blocks[here].BB=llvm::BasicBlock::Create("fall", llvmf);
+
+				//And for the branch destination, if they are not in the blocks mapping
+				if(blocks[dest].BB==NULL)
+					blocks[dest].BB=llvm::BasicBlock::Create("then", llvmf);
+	
+				static_stack_types.clear();
+				break;
+			}
+			case 0x1b:
+			{
+				//TODO: lookupswitch
+				LOG(TRACE, "synt lookupswitch" );
+				s24 t;
+				code >> t;
+				u30 count;
+				code >> count;
+				for(int i=0;i<count+1;i++)
+					code >> t;
+				static_stack_types.clear();
+
+				break;
+			}
+			case 0x1c:
+			{
+				//pushwith
+				static_stack_types.clear();
+				break;
+			}
+			case 0x1d:
+			{
+				//popscope
+				break;
+			}
+			case 0x1e:
+			{
+				//nextname
+				if(!static_stack.empty())
+					static_stack_types.pop_back();
+				if(!static_stack.empty())
+					static_stack_types.pop_back();
+
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x20:
+			{
+				//pushnull
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x21:
+			{
+				//pushundefined
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x23:
+			{
+				//nextvalue
+				if(!static_stack.empty())
+					static_stack_types.pop_back();
+				if(!static_stack.empty())
+					static_stack_types.pop_back();
+
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x24:
+			{
+				//pushbyte
+				int8_t t;
+				code.read((char*)&t,1);
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0x25:
+			{
+				//pushshort
+				u30 t;
+				code >> t;
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0x26:
+			{
+				//pushtrue
+				static_stack_types.push_back(STACK_BOOLEAN);
+				break;
+			}
+			case 0x27:
+			{
+				//pushfalse
+				static_stack_types.push_back(STACK_BOOLEAN);
+				break;
+			}
+			case 0x28:
+			{
+				//pushnan
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x29:
+			{
+				//pop
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				break;
+			}
+			case 0x2a:
+			{
+				//dup
+				if(!static_stack_types.empty())
+					static_stack_types.push_back(static_stack_types.back());
+				else
+					static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x2b:
+			{
+				//swap
+				STACK_TYPE t1,t2;
+				if(!static_stack_types.empty())
+				{
+					t1=static_stack_types.back();
+					static_stack_types.pop_back();
+				}
+				else
+					t1=STACK_OBJECT;
+				if(!static_stack_types.empty())
+				{
+					t2=static_stack_types.back();
+					static_stack_types.pop_back();
+				}
+				else
+					t2=STACK_OBJECT;
+
+				static_stack_types.push_back(t1);
+				static_stack_types.push_back(t2);
+
+				break;
+			}
+			case 0x2c:
+			{
+				//pushstring
+				u30 t;
+				code >> t;
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x2d:
+			{
+				//pushint
+				u30 t;
+				code >> t;
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0x2f:
+			{
+				//pushdouble
+				u30 t;
+				code >> t;
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x30:
+			{
+				//pushscope
+				static_stack_types.clear();
+				break;
+			}
+			case 0x32:
+			{
+				//hasnext2
+				u30 t;
+				code >> t;
+				code >> t;
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x40:
+			{
+				//newfunction
+				u30 t;
+				code >> t;
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x41:
+			{
+				//call
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x42:
+			{
+				//construct
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x45:
+			{
+				//callsuper
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				code >> t;
+				break;
+			}
+			case 0x46:
+			{
+				//callproperty
+				//TODO: Implement static resolution where possible
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				code >> t;
+				break;
+			}
+			case 0x47:
+			{
+				//returnvoid
+				last_is_branch=true;
+				static_stack_types.clear();
+				break;
+			}
+			case 0x48:
+			{
+				//returnvalue
+				last_is_branch=true;
+				static_stack_types.clear();
+				break;
+			}
+			case 0x49:
+			{
+				//constructsuper
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x4a:
+			{
+				//constructprop
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				code >> t;
+				break;
+			}
+			case 0x4e:
+			{
+				//callsupervoid
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				code >> t;
+				break;
+			}
+			case 0x4f:
+			{
+				//callpropvoid
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				code >> t;
+				break;
+			}
+			case 0x55:
+			{
+				//newobject
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x56:
+			{
+				//newarray
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x57:
+			{
+				//newactivation
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x58:
+			{
+				//newclass
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x5a:
+			{
+				//newcatch
+				u30 t;
+				code >> t;
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x5d:
+			{
+				//findpropstrict
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x5e:
+			{
+				//findproperty
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x60:
+			{
+				//getlex
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x61:
+			{
+				//setproperty
+				u30 t;
+				code >> t;
+				int rtdata=this->context->getMultinameRTData(t);
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(rtdata==1)
+				{
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+				}
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				break;
+			}
+			case 0x62:
+			{
+				//getlocal
+				u30 i;
+				code >> i;
+				if(cur_block->locals[i]==STACK_NONE)
+				{
+					static_stack_types.push_back(STACK_OBJECT);
+					cur_block->locals[i]=STACK_OBJECT;
+				}
+				else
+					static_stack_types.push_back(cur_block->locals[i]);
+				break;
+			}
+			case 0x63:
+			{
+				//setlocal
+				LOG(TRACE, "synt setlocal" );
+				u30 i;
+				code >> i;
+				if(!static_stack_types.empty())
+				{
+					cur_block->locals[i]=static_stack_types.back();
+					static_stack_types.pop_back();
+				}
+				else
+					cur_block->locals[i]=STACK_OBJECT;
+				break;
+			}
+			case 0x64:
+			{
+				//getglobalscope
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x65:
+			{
+				//getscopeobject
+				u30 t;
+				code >> t;
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x66:
+			{
+				//getproperty
+				LOG(TRACE, "synt getproperty" );
+				u30 t;
+				code >> t;
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				int rtdata=this->context->getMultinameRTData(t);
+				if(rtdata==1)
+				{
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+				}
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x68:
+			{
+				//initproperty
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x6a:
+			{
+				//deleteproperty
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x6c:
+			{
+				//getslot
+				u30 t;
+				code >> t;
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x6d:
+			{
+				//setslot
+				u30 t;
+				code >> t;
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				break;
+			}
+			case 0x73:
+			{
+				//convert_i
+				break;
+			}
+			case 0x75:
+			{
+				//convert_d
+				break;
+			}
+			case 0x76:
+			{
+				//convert_b
+				break;
+			}
+			case 0x80:
+			{
+				//coerce
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0x82:
+			{
+				//coerce_a
+				break;
+			}
+			case 0x85:
+			{
+				//coerce_s
+				break;
+			}
+			case 0x87:
+			{
+				//astypelate
+				static_stack_types.clear();
+				break;
+			}
+			case 0x90:
+			{
+				//negate
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x91:
+			{
+				//increment
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0x93:
+			{
+				//decrement
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0x95:
+			{
+				//typeof
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0x96:
+			{
+				//not
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_BOOLEAN);
+				break;
+			}
+			case 0xa0:
+			{
+				//add
+				STACK_TYPE t1,t2;
+				if(!static_stack_types.empty())
+				{
+					t1=static_stack_types.back();
+					static_stack_types.pop_back();
+				}
+				else
+					t1=STACK_OBJECT;
+				if(!static_stack_types.empty())
+				{
+					t2=static_stack_types.back();
+					static_stack_types.pop_back();
+				}
+				else
+					t2=STACK_OBJECT;
+
+				if(t1==STACK_OBJECT || t2==STACK_OBJECT)
+					static_stack_types.push_back(STACK_OBJECT);
+				else if(t1==STACK_INT && t2==STACK_INT)
+					static_stack_types.push_back(STACK_INT);
+				else if(t1==STACK_INT && t2==STACK_NUMBER)
+					static_stack_types.push_back(STACK_NUMBER);
+				else if(t1==STACK_NUMBER && t2==STACK_INT)
+					static_stack_types.push_back(STACK_NUMBER);
+				else
+					abort();
+
+				break;
+			}
+			case 0xa1:
+			{
+				//subtract
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_NUMBER);
+				break;
+			}
+			case 0xa2:
+			{
+				//multiply
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_NUMBER);
+				break;
+			}
+			case 0xa3:
+			{
+				//divide
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_NUMBER);
+				break;
+			}
+			case 0xa4:
+			{
+				//modulo
+				STACK_TYPE t1,t2;
+				if(!static_stack_types.empty())
+				{
+					t2=static_stack_types.back();
+					static_stack_types.pop_back();
+				}
+				else
+					t2=STACK_OBJECT;
+				if(!static_stack_types.empty())
+				{
+					t1=static_stack_types.back();
+					static_stack_types.pop_back();
+				}
+				else
+					t1=STACK_OBJECT;
+
+				if(t1==STACK_OBJECT || t2==STACK_OBJECT)
+					static_stack_types.push_back(STACK_NUMBER);
+				else if(t1==STACK_INT && t2==STACK_NUMBER)
+				{
+					exit(2);
+					static_stack_types.push_back(STACK_NUMBER);
+				}
+				else if(t1==STACK_NUMBER && t2==STACK_INT)
+					static_stack_types.push_back(STACK_INT);
+				else
+					abort();
+				break;
+			}
+			case 0xa5:
+			{
+				//lshift
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0xa7:
+			{
+				//urshift
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0xa8:
+			{
+				//bitand
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0xa9:
+			{
+				//bitor
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0xaa:
+			{
+				//bitxor
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_INT);
+				break;
+			}
+			case 0xab:
+			{
+				//equals
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_BOOLEAN);
+				break;
+			}
+			case 0xac:
+			{
+				//strictequals
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0xad:
+			{
+				//lessthan
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0xaf:
+			{
+				//greaterthan
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0xb3:
+			{
+				//istypelate
+				static_stack_types.clear();
+				break;
+			}
+			case 0xb4:
+			{
+				//in
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0xc0:
+			{
+				//increment_i
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0xc1:
+			{
+				//decrement_i
+				if(!static_stack_types.empty())
+					static_stack_types.pop_back();
+				static_stack_types.push_back(STACK_OBJECT);
+				break;
+			}
+			case 0xc2:
+			{
+				//inclocal_i
+				static_stack_types.clear();
+				u30 t;
+				code >> t;
+				break;
+			}
+			case 0xd0:
+			case 0xd1:
+			case 0xd2:
+			case 0xd3:
+			{
+				//getlocal_n
+				int i=opcode&3;
+				if(cur_block->locals[i]==STACK_NONE)
+				{
+					static_stack_types.push_back(STACK_OBJECT);
+					cur_block->locals[i]=STACK_OBJECT;
+				}
+				else
+					static_stack_types.push_back(cur_block->locals[i]);
+				break;
+			}
+			case 0xd5:
+			case 0xd6:
+			case 0xd7:
+			{
+				//setlocal_n
+				int i=opcode&3;
+				if(!static_stack_types.empty())
+				{
+					cur_block->locals[i]=static_stack_types.back();
+					static_stack_types.pop_back();
+				}
+				else
+					cur_block->locals[i]=STACK_OBJECT;
+				break;
+			}
+			default:
+				LOG(ERROR,"Not implemented instruction @" << code.tellg());
+				u8 a,b,c;
+				code >> a >> b >> c;
+				LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
+						<< (unsigned int)b << ' ' << (unsigned int)c);
+		}
+	}
+	//Let's reset the stream
+	stringstream code2(body->code);;
+	//code.str(body->code);
+	last_is_branch=true;
+
+	static_stack.clear();
+	Builder.CreateBr(blocks[0].BB);
+	//Each case block builds the correct parameters for the interpreter function and call it
+	while(1)
+	{
+		code2 >> opcode;
+		if(code2.eof())
+			break;
+		//Check if we are expecting a new block start
+		map<int,block_info>::iterator it=blocks.find(int(code2.tellg())-1);
 		if(it!=blocks.end())
 		{
 			//A new block starts, the last instruction should have been a branch?
@@ -798,17 +1717,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateBr(it->second);
+				Builder.CreateBr(it->second.BB);
 			}
-			LOG(TRACE,"Starting block at "<<int(code.tellg())-1);
-			Builder.SetInsertPoint(it->second);
+			LOG(TRACE,"Starting block at "<<int(code2.tellg())-1);
+			Builder.SetInsertPoint(it->second.BB);
 			last_is_branch=false;
 		}
 		else if(last_is_branch)
 		{
 			//TODO: Check this. It seems that there may be invalid code after
 			//block end
-			LOG(TRACE,"Ignoring at " << int(code.tellg())-1);
+			LOG(TRACE,"Ignoring at " << int(code2.tellg())-1);
 			continue;
 			/*LOG(CALLS,"Inserting block at "<<int(code.tellg())-1);
 			abort();
@@ -837,7 +1756,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("getSuper"), context, constant);
 				break;
@@ -849,7 +1768,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("setSuper"), context, constant);
 				break;
@@ -859,7 +1778,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//kill
 				LOG(TRACE, "synt kill" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				if(Log::getLevel()==TRACE)
 				{
 					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -879,19 +1798,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//label
 				//Create a new block and insert it in the mapping
 				LOG(TRACE, "synt label" );
-				last_is_branch=true;
-				llvm::BasicBlock* A;
-				int here=code.tellg();
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(here);
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(here,A));
-				}
-				Builder.CreateBr(A);
-				Builder.SetInsertPoint(A);
 				break;
 			}
 			case 0x0c:
@@ -901,30 +1807,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
+				code2 >> t;
 
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
-			
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -948,9 +1832,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x0d:
@@ -960,28 +1845,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
+				code2 >> t;
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -1001,9 +1865,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x0e:
@@ -1013,29 +1877,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
+				code2 >> t;
 
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
 				//Make comparision
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
@@ -1047,9 +1890,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x0f:
@@ -1059,28 +1902,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
+				code2 >> t;
 				//Make comparision
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
@@ -1092,9 +1914,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x10:
@@ -1106,34 +1928,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 				last_is_branch=true;
 
 				s24 t;
-				code >> t;
+				code2 >> t;
 				LOG(TRACE, "synt jump " << t );
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("jump"), context, constant);
 
-				//Create a block for the fallthrough code and insert it in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-				//Create a block for the landing code and insert it in the mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("jump_land", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
 
-				Builder.CreateBr(B);
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateBr(blocks[dest].BB);
 				break;
 			}
 			case 0x11:
@@ -1142,30 +1945,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt iftrue" );
 				last_is_branch=true;
 				s24 t;
-				code >> t;
+				code2 >> t;
 
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
-			
 				//Make comparision
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
@@ -1175,9 +1956,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x12:
@@ -1186,31 +1967,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				last_is_branch=true;
 				s24 t;
-				code >> t;
+				code2 >> t;
 				LOG(TRACE, "synt iffalse " << t );
 
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
-			
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* cond;
@@ -1227,9 +1986,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x13:
@@ -1239,28 +1998,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
+				code2 >> t;
 			
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -1280,9 +2018,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x14:
@@ -1291,29 +2029,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
+				code2 >> t;
 				LOG(TRACE, "synt ifne " << t );
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
 			
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -1340,9 +2057,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x15:
@@ -1352,28 +2069,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
+				code2 >> t;
 
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
+				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* cond;
@@ -1381,19 +2079,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLT"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLT_io"), v1.first, v2.first);
-					//v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-					exit(1);
+					abort();
 				else
 					abort();
-				//Make comparision
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x17:
@@ -1403,29 +2099,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
+				code2 >> t;
 
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
 				//Make comparision
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
@@ -1437,9 +2112,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x18:
@@ -1449,28 +2124,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
+				code2 >> t;
 
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
 				//Make comparision
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
@@ -1482,9 +2137,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x19:
@@ -1494,28 +2149,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
-				code >> t;
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
-
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
+				code2 >> t;
 			
 				//Make comparision
 				llvm::Value* v1=
@@ -1528,9 +2162,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x1a:
@@ -1539,28 +2173,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt ifstrictne" );
 				last_is_branch=true;
 				s24 t;
-				code >> t;
-				//Create a block for the fallthrough code and insert in the mapping
-				llvm::BasicBlock* A;
-				map<int,llvm::BasicBlock*>::iterator it=blocks.find(code.tellg());
-				if(it!=blocks.end())
-					A=it->second;
-				else
-				{
-					A=llvm::BasicBlock::Create("fall", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(code.tellg(),A));
-				}
+				code2 >> t;
 
-				//And for the branch destination, if they are not in the blocks mapping
-				llvm::BasicBlock* B;
-				it=blocks.find(int(code.tellg())+t);
-				if(it!=blocks.end())
-					B=it->second;
-				else
-				{
-					B=llvm::BasicBlock::Create("then", llvmf);
-					blocks.insert(pair<int,llvm::BasicBlock*>(int(code.tellg())+t,B));
-				}
 				//Make comparision
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
@@ -1572,9 +2186,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
-				Builder.CreateCondBr(cond,B,A);
-				//Now start populating the fallthrough block
-				Builder.SetInsertPoint(A);
+				int here=code2.tellg();
+				int dest=here+t;
+				Builder.CreateCondBr(cond,blocks[dest].BB,blocks[here].BB);
 				break;
 			}
 			case 0x1b:
@@ -1585,13 +2199,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncLocals(ex,Builder,static_locals,locals);
 				jitted=false;
 				s24 t;
-				code >> t;
+				code2 >> t;
 				LOG(TRACE,"default " << int(t));
 				u30 count;
-				code >> count;
+				code2 >> count;
 				LOG(TRACE,"count "<< int(count));
 				for(int i=0;i<count+1;i++)
-					code >> t;
+					code2 >> t;
 				Builder.CreateCall(ex->FindFunctionNamed("abort"));
 
 				break;
@@ -1665,7 +2279,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//pushbyte
 				LOG(TRACE, "synt pushbyte" );
 				int8_t t;
-				code.read((char*)&t,1);
+				code2.read((char*)&t,1);
 				constant = llvm::ConstantInt::get(ptr_type, (int)t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
 				if(Log::getLevel()==TRACE)
@@ -1678,7 +2292,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//pushshort
 				LOG(TRACE, "synt pushshort" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(ptr_type, t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
 				if(Log::getLevel()==TRACE)
@@ -1757,7 +2371,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//pushstring
 				LOG(TRACE, "synt pushstring" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("pushString"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
@@ -1769,7 +2383,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//pushint
 				LOG(TRACE, "synt pushint" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				if(Log::getLevel()==TRACE)
 				{
 					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
@@ -1786,7 +2400,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//pushdouble
 				LOG(TRACE, "synt pushdouble" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
@@ -1807,9 +2421,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//hasnext2
 				LOG(TRACE, "synt hasnext2" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				code >> t;
+				code2 >> t;
 				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall(ex->FindFunctionNamed("abort"));
 				value=Builder.CreateCall3(ex->FindFunctionNamed("hasNext2"), context, constant, constant2);
@@ -1822,7 +2436,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//newfunction
 				LOG(TRACE, "synt newfunction" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newFunction"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
@@ -1836,7 +2450,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("call"), context, constant);
 				break;
@@ -1848,7 +2462,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("construct"), context, constant);
 				break;
@@ -1860,9 +2474,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				code >> t;
+				code2 >> t;
 				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall3(ex->FindFunctionNamed("callSuper"), context, constant, constant2);
 				break;
@@ -1875,9 +2489,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				code >> t;
+				code2 >> t;
 				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 
 /*				//Pop the stack arguments
@@ -1953,7 +2567,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("constructSuper"), context, constant);
 				break;
@@ -1965,9 +2579,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				code >> t;
+				code2 >> t;
 				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall3(ex->FindFunctionNamed("constructProp"), context, constant, constant2);
 				break;
@@ -1979,9 +2593,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				code >> t;
+				code2 >> t;
 				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall3(ex->FindFunctionNamed("callSuperVoid"), context, constant, constant2);
 				break;
@@ -1993,9 +2607,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				code >> t;
+				code2 >> t;
 				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall3(ex->FindFunctionNamed("callPropVoid"), context, constant, constant2);
 				break;
@@ -2007,7 +2621,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("newObject"), context, constant);
 				break;
@@ -2019,7 +2633,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("newArray"), context, constant);
 				break;
@@ -2040,7 +2654,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("newClass"), context, constant);
 				break;
@@ -2050,7 +2664,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//newcatch
 				LOG(TRACE, "synt newcatch" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newCatch"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
@@ -2064,7 +2678,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("findPropStrict"), context, constant);
 				break;
@@ -2076,7 +2690,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("findProperty"), context, constant);
 				break;
@@ -2088,7 +2702,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("getLex"), context, constant);
 				break;
@@ -2098,7 +2712,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//setproperty
 				LOG(TRACE, "synt setproperty" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				int rtdata=this->context->getMultinameRTData(t);
 				stack_entry value=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2139,7 +2753,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//getlocal
 				LOG(TRACE, "synt getlocal" );
 				u30 i;
-				code >> i;
+				code2 >> i;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
 				if(Log::getLevel()==TRACE)
 					Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
@@ -2171,7 +2785,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//setlocal
 				LOG(TRACE, "synt setlocal" );
 				u30 i;
-				code >> i;
+				code2 >> i;
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(static_locals[i].second==STACK_OBJECT)
 					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
@@ -2199,7 +2813,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//getscopeobject
 				LOG(TRACE, "synt getscopeobject" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("getScopeObject"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
@@ -2211,7 +2825,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//getproperty
 				LOG(TRACE, "synt getproperty" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				int rtdata=this->context->getMultinameRTData(t);
 				llvm::Value* name;
@@ -2251,7 +2865,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("initProperty"), context, constant);
 				break;
@@ -2263,7 +2877,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("deleteProperty"), context, constant);
 				break;
@@ -2273,7 +2887,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//getslot
 				LOG(TRACE, "synt getslot" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
@@ -2287,7 +2901,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//setslot
 				LOG(TRACE, "synt setslot" );
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(ptr_type, t);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2354,7 +2968,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("coerce"), context, constant);
 				break;
@@ -2610,7 +3224,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
-					exit(1);
+					abort();
 					v1.first=Builder.CreateSIToFP(v1.first,llvm::Type::DoubleTy);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
@@ -2754,7 +3368,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateXor(v1.first,v2.first);
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 				{
-					exit(1);
+					abort();
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 				{
@@ -2873,7 +3487,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
-				code >> t;
+				code2 >> t;
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("incLocal_i"), context, constant);
 				break;
@@ -2935,9 +3549,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				break;
 			}
 			default:
-				LOG(ERROR,"Not implemented instruction @" << code.tellg());
+				LOG(ERROR,"Not implemented instruction @" << code2.tellg());
 				u8 a,b,c;
-				code >> a >> b >> c;
+				code2 >> a >> b >> c;
 				LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
 						<< (unsigned int)b << ' ' << (unsigned int)c);
 				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode);
@@ -2949,10 +3563,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
-	map<int,llvm::BasicBlock*>::iterator it2=blocks.begin();
+	map<int,block_info>::iterator it2=blocks.begin();
 	for(it2;it2!=blocks.end();it2++)
 	{
-		if(it2->second->getTerminator()==NULL)
+		if(it2->second.BB->getTerminator()==NULL)
 		{
 			cout << "start at " << it2->first << endl;
 			abort();

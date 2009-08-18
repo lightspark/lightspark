@@ -66,10 +66,9 @@ void ABCVm::setProperty(ISWFObject* value,ISWFObject* obj,multiname* name)
 
 void ABCVm::setProperty_i(intptr_t value,ISWFObject* obj,multiname* name)
 {
-	LOG(CALLS,"setProperty_i " << *name);
+//	LOG(CALLS,"setProperty_i " << *name);
 
 	//Check to see if a proper setter method is available
-	ISWFObject* owner;
 	obj->setVariableByMultiname_i(*name,value);
 	obj->decRef();
 }
@@ -287,13 +286,13 @@ ISWFObject* ABCVm::getGlobalScope(call_context* th)
 	return th->context->Global;
 }
 
-ISWFObject* ABCVm::decrement(ISWFObject* o)
+uintptr_t ABCVm::decrement(ISWFObject* o)
 {
 	LOG(CALLS,"decrement");
 
 	int n=o->toInt();
 	o->decRef();
-	return abstract_i(n-1);
+	return n-1;
 }
 
 ISWFObject* ABCVm::decrement_i(ISWFObject* o)
@@ -303,9 +302,9 @@ ISWFObject* ABCVm::decrement_i(ISWFObject* o)
 	return o;
 }
 
-bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
+bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1)
 {
-	LOG(CALLS,"ifLT " << offset);
+	LOG(CALLS,"ifLT");
 
 	//Real comparision demanded to object
 	bool ret=obj1->isLess(obj2);
@@ -315,14 +314,35 @@ bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	return ret;
 }
 
-bool ABCVm::ifNE(ISWFObject* obj1, ISWFObject* obj2, int offset)
+bool ABCVm::ifLT_io(intptr_t val2, ISWFObject* obj1)
 {
-	LOG(CALLS,"ifNE " << dec << offset);
+	LOG(CALLS,"ifLT_io ");
+
+	//Real comparision demanded to object
+	bool ret=obj1->toInt()<val2;
+
+	obj1->decRef();
+	return ret;
+}
+
+bool ABCVm::ifNE(ISWFObject* obj1, ISWFObject* obj2)
+{
+	LOG(CALLS,"ifNE");
 
 	//Real comparision demanded to object
 	bool ret=!(obj1->isEqual(obj2));
 
 	obj2->decRef();
+	obj1->decRef();
+	return ret;
+}
+
+bool ABCVm::ifNE_oi(ISWFObject* obj1, intptr_t val2)
+{
+	LOG(CALLS,"ifNE");
+
+	bool ret=obj1->toInt()!=val2;
+
 	obj1->decRef();
 	return ret;
 }
@@ -719,11 +739,29 @@ uintptr_t ABCVm::lShift(ISWFObject* val1, ISWFObject* val2)
 	return i2<<i1;
 }
 
+uintptr_t ABCVm::lShift_io(uintptr_t val1, ISWFObject* val2)
+{
+	uint32_t i2=val2->toInt();
+	int32_t i1=val1&0x1f;
+	val2->decRef();
+	LOG(CALLS,"lShift "<<i2<<"<<"<<i1);
+	return i2<<i1;
+}
+
 uintptr_t ABCVm::urShift(ISWFObject* val1, ISWFObject* val2)
 {
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1->toInt()&0x1f;
 	val1->decRef();
+	val2->decRef();
+	LOG(CALLS,"urShift "<<i2<<">>"<<i1);
+	return i2>>i1;
+}
+
+uintptr_t ABCVm::urShift_io(uintptr_t val1, ISWFObject* val2)
+{
+	uint32_t i2=val2->toInt();
+	int32_t i1=val1&0x1f;
 	val2->decRef();
 	LOG(CALLS,"urShift "<<i2<<">>"<<i1);
 	return i2>>i1;
@@ -735,5 +773,37 @@ bool ABCVm::_not(ISWFObject* v)
 	bool ret=!Boolean_concrete(v);
 	v->decRef();
 	return ret;
+}
+
+bool ABCVm::equals(ISWFObject* val2, ISWFObject* val1)
+{
+	LOG(CALLS, "equals" );
+	bool ret=val1->isEqual(val2);
+	val1->decRef();
+	val2->decRef();
+	return ret;
+}
+
+void ABCVm::dup(call_context* th)
+{
+	LOG(CALLS, "dup: DONE" );
+}
+
+bool ABCVm::pushTrue()
+{
+	LOG(CALLS, "pushTrue" );
+	return true;
+}
+
+bool ABCVm::pushFalse()
+{
+	LOG(CALLS, "pushFalse" );
+	return false;
+}
+
+ISWFObject* ABCVm::pushNaN(call_context* th)
+{
+	LOG(NOT_IMPLEMENTED, "pushNaN" );
+	return new Undefined;
 }
 

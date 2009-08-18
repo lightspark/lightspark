@@ -177,6 +177,7 @@ struct data_slot
 	};
 	data_slot(ISWFObject* o,STACK_TYPE t=STACK_OBJECT):data(o),type(t){}
 	data_slot():data(NULL),type(STACK_OBJECT){}
+	data_slot(intptr_t i):type(STACK_INT),data_i(i){}
 };
 
 class ASArray: public ASObject

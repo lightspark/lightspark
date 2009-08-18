@@ -18,12 +18,12 @@
 **************************************************************************/
 
 //#define __STDC_LIMIT_MACROS
+#include "abc.h"
 #include <llvm/Module.h>
 #include <llvm/ModuleProvider.h> 
 #include <llvm/Target/TargetData.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Transforms/Scalar.h> 
-#include "abc.h"
 #include "logger.h"
 #include "swftypes.h"
 #include <sstream>
@@ -402,7 +402,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 
 multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 {
-	//We are allowe to access only the ABCContext, as the stack is not synced
+	//We are allowed to access only the ABCContext, as the stack is not synced
 	multiname* ret;
 	if(n==0)
 	{
@@ -1276,38 +1276,6 @@ ISWFObject* ABCVm::in(ISWFObject* val2, ISWFObject* val1)
 	LOG(NOT_IMPLEMENTED, "in" );
 	abort();
 	return new Boolean(false);
-}
-
-ISWFObject* ABCVm::equals(ISWFObject* val2, ISWFObject* val1)
-{
-	LOG(CALLS, "equals" );
-	ISWFObject* ret=new Boolean(val1->isEqual(val2));
-	val1->decRef();
-	val2->decRef();
-	return ret;
-}
-
-void ABCVm::dup(call_context* th)
-{
-	LOG(CALLS, "dup: DONE" );
-}
-
-ISWFObject* ABCVm::pushTrue(call_context* th)
-{
-	LOG(CALLS, "pushTrue" );
-	return new Boolean(true);
-}
-
-ISWFObject* ABCVm::pushFalse(call_context* th)
-{
-	LOG(CALLS, "pushFalse" );
-	return new Boolean(false);
-}
-
-ISWFObject* ABCVm::pushNaN(call_context* th)
-{
-	LOG(NOT_IMPLEMENTED, "pushNaN" );
-	return new Undefined;
 }
 
 ISWFObject* ABCVm::pushUndefined(call_context* th)

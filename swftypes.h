@@ -257,8 +257,7 @@ public:
 	}
 	static void s_incRef(ISWFObject* o)
 	{
-		if(o)
-			o->incRef();
+		o->incRef();
 	}
 	static void s_decRef(ISWFObject* o)
 	{

@@ -84,7 +84,7 @@ ASFUNCTIONBODY(ASArray,_constructor)
 ASFUNCTIONBODY(ASArray,_getLength)
 {
 	ASArray* th=static_cast<ASArray*>(obj);
-	return new Integer(th->data.size());
+	return abstract_i(th->data.size());
 }
 
 ASFUNCTIONBODY(ASArray,shift)
@@ -305,37 +305,34 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 					index*=10;
 					index+=(a-'0');
 				}
-				else
+				/*else
 				{
-					index=-1;
-					break;
-				}
+					ASObject::setVariableByMultiname(name,abstract_i(value));
+					return;
+				}*/
 			}
 			break;
-		case multiname::NAME_INT:
+/*		case multiname::NAME_INT:
 			index=name.name_i;
-			break;
+			break;*/
 	}
 
-	if(index!=-1)
+	abstract_i(index);
+/*	if(index==data.size())
+		data.push_back(data_slot(value));
+	else if(index>data.size())
 	{
-		if(index>=data.capacity())
-		{
-			//Heuristic, we increse the array 20%
-			int new_size=max(index+1,data.size()*6/5);
-			data.reserve(new_size);
-		}
-		if(index>=data.size())
-			resize(index+1);
-
+		data.resize(index);
+		data.push_back(data_slot(value));
+	}
+	else
+	{
 		if(data[index].type==STACK_OBJECT && data[index].data)
 			data[index].data->decRef();
 
 		data[index].data_i=value;
 		data[index].type=STACK_INT;
-	}
-	else
-		ASObject::setVariableByMultiname(name,abstract_i(value));
+	}*/
 }
 
 void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
@@ -363,7 +360,7 @@ void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 		if(index>=data.capacity())
 		{
 			//Heuristic, we increse the array 20%
-			int new_size=max(index+1,data.size()*6/5);
+			int new_size=max(index+1,data.size()*2);
 			data.reserve(new_size);
 		}
 		if(index>=data.size())
@@ -398,7 +395,7 @@ void ASArray::setVariableByName(const Qname& name, ISWFObject* o)
 		if(index>=data.capacity())
 		{
 			//Heuristic, we increse the array 20%
-			int new_size=max(index+1,data.size()*6/5);
+			int new_size=max(index+1,data.size()*2);
 			data.reserve(new_size);
 		}
 		if(index>=data.size())

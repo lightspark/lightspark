@@ -20,6 +20,8 @@
 #ifndef _SWF_H
 #define _SWF_H
 
+#define __STDC_LIMIT_MACROS
+#define __STDC_CONSTANT_MACROS
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/IRBuilder.h>
@@ -314,7 +316,7 @@ struct opcode_handler
 
 };
 
-enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, ARGS_BOOL };
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE };
 
 struct typed_opcode_handler
 {
@@ -386,8 +388,10 @@ private:
 	static void jump(call_context* th, int offset); 
 	static bool ifEq(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifStrictEq(ISWFObject*, ISWFObject*, int offset); 
-	static bool ifNE(ISWFObject*, ISWFObject*, int offset); 
-	static bool ifLT(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifNE(ISWFObject*, ISWFObject*); 
+	static bool ifNE_oi(ISWFObject*, intptr_t); 
+	static bool ifLT(ISWFObject*, ISWFObject*); 
+	static bool ifLT_io(intptr_t, ISWFObject*); 
 	static bool ifNLT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNGT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifGT(ISWFObject*, ISWFObject*, int offset); 
@@ -430,13 +434,13 @@ private:
 	static ISWFObject* pushNull(call_context* th);
 	static ISWFObject* pushUndefined(call_context* th);
 	static ISWFObject* pushNaN(call_context* th);
-	static ISWFObject* pushFalse(call_context* th);
-	static ISWFObject* pushTrue(call_context* th);
+	static bool pushFalse();
+	static bool pushTrue();
 	static void dup(call_context* th);
-	static ISWFObject* equals(ISWFObject*,ISWFObject*);
 	static ISWFObject* in(ISWFObject*,ISWFObject*);
 	static ISWFObject* strictEquals(ISWFObject*,ISWFObject*);
 	static bool _not(ISWFObject*);
+	static bool equals(ISWFObject*,ISWFObject*);
 	static ISWFObject* negate(ISWFObject*);
 	static void pop(call_context* th);
 	static ISWFObject* typeOf(ISWFObject*);
@@ -453,7 +457,9 @@ private:
 	static uintptr_t bitOr_oi(ISWFObject*,uintptr_t);
 	static uintptr_t bitXor(ISWFObject*,ISWFObject*);
 	static uintptr_t urShift(ISWFObject*,ISWFObject*);
+	static uintptr_t urShift_io(uintptr_t,ISWFObject*);
 	static uintptr_t lShift(ISWFObject*,ISWFObject*);
+	static uintptr_t lShift_io(uintptr_t,ISWFObject*);
 	static number_t multiply(ISWFObject*,ISWFObject*);
 	static number_t multiply_oi(ISWFObject*, intptr_t);
 	static number_t divide(ISWFObject*,ISWFObject*);
@@ -472,8 +478,8 @@ private:
 	static ISWFObject* nextValue(ISWFObject* index, ISWFObject* obj);
 	static ISWFObject* increment_i(ISWFObject*);
 	static uintptr_t increment(ISWFObject*);
+	static uintptr_t decrement(ISWFObject*);
 	static ISWFObject* decrement_i(ISWFObject*);
-	static ISWFObject* decrement(ISWFObject*);
 	static ISWFObject* getGlobalScope(call_context* th);
 	//Utility
 	static void not_impl(int p);

@@ -947,14 +947,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				break;
 			}
 			case 0x20:
+			case 0x21:
+			case 0x28:
 			{
 				//pushnull
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x21:
-			{
 				//pushundefined
+				//pushnan
 				static_stack_types.push_back(STACK_OBJECT);
 				break;
 			}
@@ -986,21 +984,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				break;
 			}
 			case 0x26:
-			{
-				//pushtrue
-				static_stack_types.push_back(STACK_BOOLEAN);
-				break;
-			}
 			case 0x27:
 			{
+				//pushtrue
 				//pushfalse
 				static_stack_types.push_back(STACK_BOOLEAN);
-				break;
-			}
-			case 0x28:
-			{
-				//pushnan
-				static_stack_types.push_back(STACK_OBJECT);
 				break;
 			}
 			case 0x29:
@@ -1091,82 +1079,27 @@ SyntheticFunction::synt_function method_info::synt_method()
 				break;
 			}
 			case 0x41:
-			{
-				//call
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
 			case 0x42:
-			{
-				//construct
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
-			case 0x45:
-			{
-				//callsuper
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				code >> t;
-				break;
-			}
-			case 0x46:
-			{
-				//callproperty
-				//TODO: Implement static resolution where possible
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				code >> t;
-				break;
-			}
-			case 0x47:
-			{
-				//returnvoid
-				last_is_branch=true;
-				static_stack_types.clear();
-				break;
-			}
-			case 0x48:
-			{
-				//returnvalue
-				last_is_branch=true;
-				static_stack_types.clear();
-				break;
-			}
 			case 0x49:
 			{
+				//call
+				//construct
 				//constructsuper
 				static_stack_types.clear();
 				u30 t;
 				code >> t;
 				break;
 			}
+			case 0x45:
+			case 0x46:
 			case 0x4a:
-			{
-				//constructprop
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				code >> t;
-				break;
-			}
 			case 0x4e:
-			{
-				//callsupervoid
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				code >> t;
-				break;
-			}
 			case 0x4f:
 			{
+				//callsuper
+				//callproperty
+				//constructprop
+				//callsupervoid
 				//callpropvoid
 				static_stack_types.clear();
 				u30 t;
@@ -1174,17 +1107,28 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code >> t;
 				break;
 			}
-			case 0x55:
+			case 0x47:
+			case 0x48:
 			{
-				//newobject
+				//returnvoid
+				//returnvalue
+				last_is_branch=true;
 				static_stack_types.clear();
-				u30 t;
-				code >> t;
 				break;
 			}
+			case 0x55:
 			case 0x56:
+			case 0x58:
+			case 0x5d:
+			case 0x5e:
+			case 0x60:
 			{
+				//newobject
 				//newarray
+				//newclass
+				//findpropstrict
+				//getlex
+				//findproperty
 				static_stack_types.clear();
 				u30 t;
 				code >> t;
@@ -1196,44 +1140,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				static_stack_types.push_back(STACK_OBJECT);
 				break;
 			}
-			case 0x58:
-			{
-				//newclass
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
 			case 0x5a:
 			{
 				//newcatch
 				u30 t;
 				code >> t;
 				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x5d:
-			{
-				//findpropstrict
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
-			case 0x5e:
-			{
-				//findproperty
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
-			case 0x60:
-			{
-				//getlex
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
 				break;
 			}
 			case 0x61:
@@ -1315,15 +1227,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				break;
 			}
 			case 0x68:
-			{
-				//initproperty
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
 			case 0x6a:
 			{
+				//initproperty
 				//deleteproperty
 				static_stack_types.clear();
 				u30 t;
@@ -1352,17 +1258,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				break;
 			}
 			case 0x73:
-			{
-				//convert_i
-				break;
-			}
 			case 0x75:
-			{
-				//convert_d
-				break;
-			}
 			case 0x76:
 			{
+				//convert_i
+				//convert_d
 				//convert_b
 				break;
 			}
@@ -1375,12 +1275,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				break;
 			}
 			case 0x82:
-			{
-				//coerce_a
-				break;
-			}
 			case 0x85:
 			{
+				//coerce_a
 				//coerce_s
 				break;
 			}
@@ -1391,43 +1288,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 				break;
 			}
 			case 0x90:
-			{
-				//negate
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
 			case 0x91:
-			{
-				//increment
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
 			case 0x93:
-			{
-				//decrement
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
 			case 0x95:
-			{
-				//typeof
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
 			case 0x96:
 			{
+				//negate
+				//increment
+				//decrement
+				//typeof
 				//not
 				if(!static_stack_types.empty())
 					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_BOOLEAN);
+				static_stack_types.push_back(STACK_OBJECT);
 				break;
 			}
 			case 0xa0:

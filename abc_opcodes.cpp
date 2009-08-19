@@ -313,11 +313,20 @@ bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1)
 	return ret;
 }
 
+bool ABCVm::ifLT_oi(ISWFObject* obj2, intptr_t val1)
+{
+	LOG(CALLS,"ifLT_oi");
+
+	bool ret=val1<obj2->toInt();
+
+	obj2->decRef();
+	return ret;
+}
+
 bool ABCVm::ifLT_io(intptr_t val2, ISWFObject* obj1)
 {
 	LOG(CALLS,"ifLT_io ");
 
-	//Real comparision demanded to object
 	bool ret=obj1->toInt()<val2;
 
 	obj1->decRef();

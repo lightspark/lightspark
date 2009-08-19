@@ -277,6 +277,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 				}
 				ret->name_s=th->context->getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
+				ret->name_i=-1;
 				break;
 			}
 			case 0x09:
@@ -292,6 +293,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 				}
 				ret->name_s=th->context->getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
+				ret->name_i=-1;
 				break;
 			}
 			case 0x1b:
@@ -310,11 +312,13 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 					Integer* o=static_cast<Integer*>(rt1);
 					ret->name_i=o->val;
 					ret->name_type=multiname::NAME_INT;
+					ret->name_s="not valid";
 				}
 				else
 				{
 					ret->name_s=rt1->toString();
 					ret->name_type=multiname::NAME_STRING;
+					ret->name_i=-1;
 				}
 				rt1->decRef();
 				break;
@@ -364,11 +368,13 @@ multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
 					Integer* o=static_cast<Integer*>(rt1);
 					ret->name_i=o->val;
 					ret->name_type=multiname::NAME_INT;
+					ret->name_s="not valid";
 				}
 				else
 				{
 					ret->name_s=rt1->toString();
 					ret->name_type=multiname::NAME_STRING;
+					ret->name_i=-1;
 				}
 				rt1->decRef();
 				break;
@@ -432,6 +438,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 					ret->nskind.push_back(n->kind);
 				}
 				ret->name_s=th->context->getString(m->name);
+				ret->name_i=-1;
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
@@ -447,6 +454,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 					ret->nskind.push_back(n->kind);
 				}
 				ret->name_s=th->context->getString(m->name);
+				ret->name_i=-1;
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
@@ -463,6 +471,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 				}
 				ret->name_i=rti;
 				ret->name_type=multiname::NAME_INT;
+				ret->name_s="not valid";
 				break;
 			}
 	/*		case 0x0d:
@@ -507,6 +516,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 			{
 				ret->name_i=rti;
 				ret->name_type=multiname::NAME_INT;
+				ret->name_s="not valid";
 				break;
 			}
 	/*		case 0x0d:
@@ -1678,10 +1688,12 @@ void ABCVm::Run(ABCVm* th)
 	th->FPM=new llvm::FunctionPassManager(&ModuleProvider);
             
 	th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
+	th->FPM->add(llvm::createVerifierPass());
 	th->FPM->add(llvm::createInstructionCombiningPass());
 	th->FPM->add(llvm::createGVNPass());
 	th->FPM->add(llvm::createLICMPass());
 	th->FPM->add(llvm::createDeadStoreEliminationPass());
+	th->FPM->add(llvm::createPromoteMemoryToRegisterPass());
 	  //                     // Reassociate expressions.
 	  //                         OurFPM.add(createReassociatePass());
 	  //                                     // Simplify the control flow graph (deleting unreachable blocks, etc).

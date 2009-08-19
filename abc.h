@@ -179,6 +179,17 @@ struct call_context
 	~call_context();
 };
 
+struct block_info
+{
+	llvm::BasicBlock* BB;
+	std::vector<STACK_TYPE> locals;
+	std::vector<STACK_TYPE> locals_start;
+	std::vector<llvm::Value*> locals_start_obj;
+	std::vector<block_info*> preds;
+
+	block_info():BB(NULL){}
+};
+
 class method_info
 {
 friend std::istream& operator>>(std::istream& in, method_info& v);
@@ -208,7 +219,8 @@ private:
 			std::vector<stack_entry>& static_stack, 
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 	void syncLocals(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder,
-			std::vector<stack_entry>& static_locals,llvm::Value* locals);
+			std::vector<stack_entry> static_locals,llvm::Value* locals,
+			const std::vector<STACK_TYPE>& expected,block_info& dest_block);
 	llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
 	llvm::Function* llvmf;
 
@@ -391,6 +403,7 @@ private:
 	static bool ifNE(ISWFObject*, ISWFObject*); 
 	static bool ifNE_oi(ISWFObject*, intptr_t); 
 	static bool ifLT(ISWFObject*, ISWFObject*); 
+	static bool ifLT_oi(ISWFObject*, intptr_t); 
 	static bool ifLT_io(intptr_t, ISWFObject*); 
 	static bool ifNLT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNGT(ISWFObject*, ISWFObject*, int offset); 

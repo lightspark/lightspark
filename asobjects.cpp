@@ -317,6 +317,7 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 			break;
 	}
 
+	//cout << "Array set " << index << endl;
 	if(index==data.size())
 		data.push_back(data_slot(value));
 	else if(index>data.size())

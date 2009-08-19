@@ -1,5 +1,5 @@
 # User-overridable flags:
-CXXFLAGS = -g -O3 -D_GLIBCXX_NO_DEBUG
+CXXFLAGS = -g -O0 -D_GLIBCXX_NO_DEBUG
 prefix = /usr
 bindir = $(prefix)/bin
 datarootdir = $(prefix)/share
@@ -16,7 +16,7 @@ lightspark: main.o $(LIBOBJS)
 	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ /usr/lib/llvm/lib/libLLVMScalarOpts.a /usr/lib/llvm/lib/libLLVMTransformUtils.a /usr/lib/llvm/lib/libLLVMAnalysis.a 
 
 tightspark: tightspark.o $(LIBOBJS)
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ /usr/lib/llvm/lib/libLLVMScalarOpts.a /usr/lib/llvm/lib/libLLVMTransformUtils.a /usr/lib/llvm/lib/libLLVMAnalysis.a 
+	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ /usr/lib/llvm/lib/libLLVMScalarOpts.a /usr/lib/llvm/lib/libLLVMTransformUtils.a /usr/lib/llvm/lib/libLLVMAnalysis.a /usr/lib/llvm/lib/libLLVMCore.a 
 
 libls.so: $(LIBOBJS)
 	$(CXX) -pthread -shared `pkg-config --cflags --libs sdl gl` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $@ $^

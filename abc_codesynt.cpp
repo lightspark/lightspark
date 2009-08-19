@@ -628,7 +628,8 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 
 		//Let's sync with the expected values...
 		//TODO: find a way to propagate the new info
-		if(static_locals[i].second!=expected[i])
+		//if(static_locals[i].second!=expected[i])
+		if(0)
 		{
 			if(expected[i]==STACK_NONE && static_locals[i].second==STACK_INT)
 			{
@@ -677,7 +678,6 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 /*		if(static_locals[i].second==dest_block.locals_start[i])
 			builder.CreateStore(static_locals[i].first,dest_block.locals_start_obj[i]);
 		else*/
-		dest_block.locals_start[i]=STACK_NONE;
 		{
 			llvm::Value* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
 			llvm::Value* t=builder.CreateGEP(locals,constant);
@@ -710,8 +710,6 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 			}
 			else
 				abort();
-
-		//	static_locals[i].second=STACK_NONE;
 		}
 	}
 }
@@ -1635,7 +1633,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	//We can now search for locals that can be saved
 	//If every predecessor blocks agree with the type of a local we pass it over
-	map<int,block_info>::iterator bit=blocks.begin();
+/*	map<int,block_info>::iterator bit=blocks.begin();
 	for(bit;bit!=blocks.end();bit++)
 	{
 		block_info& cur=bit->second;
@@ -1678,7 +1676,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			}
 
 		}
-	}
+	}*/
 
 	//Let's get another stream
 	//TODO: is there a way to reset the old one?
@@ -1711,7 +1709,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			Builder.SetInsertPoint(it->second.BB);
 			cur_block=&it->second;
 
-			if(!cur_block->locals_start.empty())
+/*			if(!cur_block->locals_start.empty())
 			{
 				//Generate prologue, LLVM should optimize register usage
 				if(static_locals.size()!=cur_block->locals_start.size())
@@ -1722,7 +1720,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 					if(cur_block->locals_start[i]!=STACK_NONE)
 						static_locals[i].first=Builder.CreateLoad(cur_block->locals_start_obj[i]);
 				}
-			}
+			}*/
+			for(int i=0;i<static_locals.size();i++)
+				static_locals[i].second=STACK_NONE;
+	
 			last_is_branch=false;
 		}
 		else if(last_is_branch)

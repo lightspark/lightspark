@@ -422,16 +422,6 @@ string Integer::toString() const
 	return cur;
 }
 
-int Integer::toInt() const
-{
-	return val;
-}
-
-double Integer::toNumber() const
-{
-	return val;
-}
-
 RECT::RECT()
 {
 }
@@ -1132,8 +1122,13 @@ void DictionaryDefinable::define(ISWFObject* g)
 	}*/
 }
 
-ISWFObject::ISWFObject():parent(NULL),max_slot_index(0),ref_count(1),constructor(NULL),debug(0),
+ISWFObject::ISWFObject():parent(NULL),ref_count(1),constructor(NULL),debug(0),
 	class_index(-1),manager(NULL),type(T_INVALID)
+{
+}
+
+ISWFObject::ISWFObject(Manager* m):parent(NULL),ref_count(1),constructor(NULL),debug(0),
+	class_index(-1),manager(m),type(T_INVALID)
 {
 }
 
@@ -1163,7 +1158,6 @@ ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL)
 	std::map<Qname,IFunction*> Getters;
 	std::vector<ISWFObject*> slots;
 	std::vector<var_iterator> slots_vars;
-	int max_slot_index;
 	bool binded;*/
 }
 

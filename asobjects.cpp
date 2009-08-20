@@ -317,11 +317,12 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 			break;
 	}
 
-	//cout << "Array set " << index << endl;
-	if(index==data.size())
+	int size=data.size();
+	if(index==size)
 		data.push_back(data_slot(value));
-	else if(index>data.size())
+	else if(index>size)
 	{
+		data.resize(index);
 		data.push_back(data_slot(value));
 	}
 	else
@@ -475,6 +476,12 @@ ISWFObject* ASObject::getVariableByName(const Qname& name, ISWFObject*& owner)
 		ret=prototype->getVariableByName(name,owner);
 
 	return ret;
+}
+
+ASObject::ASObject(Manager* m):
+	debug_id(0),prototype(NULL),super(NULL),ISWFObject(m)
+{
+	type=T_OBJECT;
 }
 
 ASObject::ASObject():
@@ -711,16 +718,6 @@ string Number::toString() const
 	char buf[20];
 	snprintf(buf,20,"%g",val);
 	return string(buf);
-}
-
-double Number::toNumber() const
-{
-	return val;
-}
-
-int Number::toInt() const
-{
-	return val;
 }
 
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)

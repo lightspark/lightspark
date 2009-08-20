@@ -32,6 +32,7 @@
 #include <vector>
 #include <deque>
 #include <map>
+#include <set>
 #include "swf.h"
 
 #define likely(x)	__builtin_expect(!!(x), 1)
@@ -185,7 +186,7 @@ struct block_info
 	std::vector<STACK_TYPE> locals;
 	std::vector<STACK_TYPE> locals_start;
 	std::vector<llvm::Value*> locals_start_obj;
-	std::vector<block_info*> preds;
+	std::set<block_info*> preds;
 
 	block_info():BB(NULL){}
 };
@@ -219,8 +220,8 @@ private:
 			std::vector<stack_entry>& static_stack, 
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 	void syncLocals(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder,
-			std::vector<stack_entry> static_locals,llvm::Value* locals,
-			const std::vector<STACK_TYPE>& expected,block_info& dest_block);
+			const std::vector<stack_entry>& static_locals,llvm::Value* locals,
+			const std::vector<STACK_TYPE>& expected,const block_info& dest_block);
 	llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
 	llvm::Function* llvmf;
 
@@ -476,7 +477,7 @@ private:
 	static number_t multiply(ISWFObject*,ISWFObject*);
 	static number_t multiply_oi(ISWFObject*, intptr_t);
 	static number_t divide(ISWFObject*,ISWFObject*);
-	static number_t modulo(ISWFObject*,ISWFObject*);
+	static intptr_t modulo(ISWFObject*,ISWFObject*);
 	static number_t subtract(ISWFObject*,ISWFObject*);
 	static void popScope(call_context* th);
 	static ISWFObject* newActivation(call_context* th, method_info*);

@@ -52,15 +52,15 @@ struct tiny_string
 	char buf[256];
 	int start;
 	tiny_string():start(0){buf[0]=0;}
-	char* operator=(const std::string& s)
+	tiny_string& operator=(const std::string& s)
 	{
 		strncpy(buf,s.c_str(),256);
-		return buf;
+		return *this;
 	}
-	char* operator=(const char* s)
+	tiny_string& operator=(const char* s)
 	{
 		strncpy(buf,s,256);
-		return buf;
+		return *this;
 	}
 	operator const char*() const
 	{
@@ -123,7 +123,7 @@ friend class ASString;
 private:
 	std::string String;
 public:
-	STRING(){};
+	STRING():String(){};
 	STRING(const char* s):String(s)
 	{
 	}
@@ -131,7 +131,7 @@ public:
 	{
 		if(String.size()!=s.String.size())
 			return false;
-		for(int i=0;i<String.size();i++)
+		for(uint32_t i=0;i<String.size();i++)
 		{
 			if(String[i]!=s.String[i])
 				return false;
@@ -224,11 +224,11 @@ private:
 protected:
 	ISWFObject* parent;
 	ISWFObject();
+	ISWFObject(Manager* m);
 	ISWFObject(const ISWFObject& o);
 	std::map<Qname,obj_var> Variables;
 	typedef std::map<Qname,obj_var>::iterator var_iterator;
 	std::vector<var_iterator> slots_vars;
-	int max_slot_index;
 	SWFOBJECT_TYPE type;
 public:
 	int ref_count;
@@ -323,19 +323,15 @@ inline void Manager::put(ISWFObject* o)
 template<class T>
 T* Manager::get()
 {
-	if(available.empty())
-	{
-		T* ret=new T;
-		ret->manager=this;
-		return ret;
-	}
-	else
+	if(available.size())
 	{
 		T* ret=static_cast<T*>(available.back());
 		available.pop_back();
 		ret->incRef();
 		return ret;
 	}
+	else
+		return new T(this);
 }
 
 class ConstantReference : public ISWFObject
@@ -413,12 +409,18 @@ private:
 	int val;
 public:
 	Integer(int v):val(v){type=T_INTEGER;}
-	Integer():val(0){type=T_INTEGER;}
+	Integer(Manager* m):val(0),ISWFObject(m){type=T_INTEGER;}
 	virtual ~Integer(){}
 	Integer& operator=(int v){val=v; return *this; }
 	std::string toString() const;
-	int toInt() const; 
-	double toNumber() const;
+	int toInt() const
+	{
+		return val;
+	}
+	double toNumber() const
+	{
+		return val;
+	}
 	operator int() const{return val;} 
 	bool isLess(const ISWFObject* r) const;
 	bool isGreater(const ISWFObject* r) const;

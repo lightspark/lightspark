@@ -45,10 +45,10 @@ uintptr_t ABCVm::bitAnd_oi(ISWFObject* val1, intptr_t val2)
 	uintptr_t i1=val1->toInt();
 	uintptr_t i2=val2;
 	val1->decRef();
-	static int c=0;
+/*	static int c=0;
 	if(c%(1024*512)==0)
 		cerr << "bitand " << c << endl;
-	c++;
+	c++;*/
 	LOG(CALLS,"bitAnd_oi " << hex << i1 << '&' << i2);
 	return i1&i2;
 }
@@ -280,7 +280,7 @@ number_t ABCVm::divide(ISWFObject* val2, ISWFObject* val1)
 
 ISWFObject* ABCVm::getGlobalScope(call_context* th)
 {
-	LOG(CALLS,"getGlobalScope: " << &th->context->Global);
+//	LOG(CALLS,"getGlobalScope: " << &th->context->Global);
 	th->context->Global->incRef();
 	return th->context->Global;
 }
@@ -315,7 +315,7 @@ bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1)
 
 bool ABCVm::ifLT_oi(ISWFObject* obj2, intptr_t val1)
 {
-	LOG(CALLS,"ifLT_oi");
+//	LOG(CALLS,"ifLT_oi");
 
 	bool ret=val1<obj2->toInt();
 
@@ -550,7 +550,7 @@ bool ABCVm::ifTrue(ISWFObject* obj1, int offset)
 	LOG(CALLS,"ifTrue " << offset);
 }
 
-number_t ABCVm::modulo(ISWFObject* val1, ISWFObject* val2)
+intptr_t ABCVm::modulo(ISWFObject* val1, ISWFObject* val2)
 {
 	int num2=val2->toInt();
 	int num1=val1->toInt();
@@ -651,11 +651,11 @@ ISWFObject* ABCVm::add_oi(ISWFObject* val2, intptr_t val1)
 	//Implement ECMA add algorithm, for XML and default
 	if(val2->getObjectType()==T_INTEGER)
 	{
-		int num2=val2->toInt();
+		Integer* ip=static_cast<Integer*>(val2);
+		int num2=ip->val;
 		int num1=val1;
 		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
-		//return new Integer(num1+num2);
 		return abstract_i(num1+num2);
 	}
 	else if(val2->getObjectType()==T_NUMBER)

@@ -159,6 +159,7 @@ typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
 	{"bitOr_oi",(void*)&ABCVm::bitOr_oi,ARGS_OBJ_INT},
 	{"lShift",(void*)&ABCVm::lShift,ARGS_OBJ_OBJ},
 	{"lShift_io",(void*)&ABCVm::lShift_io,ARGS_INT_OBJ},
+	{"modulo",(void*)&ABCVm::modulo,ARGS_OBJ_OBJ},
 	{"urShift",(void*)&ABCVm::urShift,ARGS_OBJ_OBJ},
 	{"urShift_io",(void*)&ABCVm::urShift_io,ARGS_INT_OBJ},
 };
@@ -167,7 +168,6 @@ typed_opcode_handler ABCVm::opcode_table_number_t[]={
 	{"multiply",(void*)&ABCVm::multiply,ARGS_OBJ_OBJ},
 	{"multiply_oi",(void*)&ABCVm::multiply_oi,ARGS_OBJ_INT},
 	{"divide",(void*)&ABCVm::divide,ARGS_OBJ_OBJ},
-	{"modulo",(void*)&ABCVm::modulo,ARGS_OBJ_OBJ},
 	{"subtract",(void*)&ABCVm::subtract,ARGS_OBJ_OBJ}
 };
 
@@ -618,8 +618,8 @@ inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 }
 
 inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder,
-		vector<stack_entry> static_locals,llvm::Value* locals,const vector<STACK_TYPE>& expected,
-		block_info& dest_block)
+	const vector<stack_entry>& static_locals,llvm::Value* locals,const vector<STACK_TYPE>& expected,
+	const block_info& dest_block)
 {
 	for(int i=0;i<static_locals.size();i++)
 	{
@@ -628,10 +628,10 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 
 		//Let's sync with the expected values...
 		//TODO: find a way to propagate the new info
-		//if(static_locals[i].second!=expected[i])
-		if(0)
+		if(static_locals[i].second!=expected[i])
 		{
-			if(expected[i]==STACK_NONE && static_locals[i].second==STACK_INT)
+			abort();
+	/*		if(expected[i]==STACK_NONE && static_locals[i].second==STACK_INT)
 			{
 				static_locals[i].second=STACK_OBJECT;
 				static_locals[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),static_locals[i].first);
@@ -648,8 +648,8 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 			}
 			else if(expected[i]==STACK_NONE && static_locals[i].second==STACK_OBJECT)
 			{
-//				static_locals[i].second=STACK_OBJECT;
-//				static_locals[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_b"),static_locals[i].first);
+	//				static_locals[i].second=STACK_OBJECT;
+	//				static_locals[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_b"),static_locals[i].first);
 			}
 			else if(expected[i]==STACK_NONE)
 			{
@@ -672,12 +672,12 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 				cout << expected[i] << endl;
 				cout << static_locals[i].second << endl;
 				abort();
-			}
+			}*/
 		}
-		
-/*		if(static_locals[i].second==dest_block.locals_start[i])
+	
+		if(static_locals[i].second==dest_block.locals_start[i])
 			builder.CreateStore(static_locals[i].first,dest_block.locals_start_obj[i]);
-		else*/
+		else
 		{
 			llvm::Value* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
 			llvm::Value* t=builder.CreateGEP(locals,constant);
@@ -756,7 +756,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
 	const llvm::Type* number_type=llvm::Type::DoubleTy;
 	const llvm::Type* bool_type=llvm::IntegerType::get(1);
-	
+
 	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", llvmf);
 	llvm::IRBuilder<> Builder;
 	Builder.SetInsertPoint(BB);
@@ -790,8 +790,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	llvm::Value* dynamic_stack_index=Builder.CreateStructGEP(context,2);
 
 	//the scope stack is not accessible to llvm code
-	
-	stringstream code(body->code);
+
 	//Creating a mapping between blocks and starting address
 	//The current header block is ended
 	llvm::BasicBlock *StartBB = llvm::BasicBlock::Create("entry", llvmf);
@@ -803,9 +802,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 	blocks[-1].BB=StartBB;
 
 	bool jitted=false;
-
-	//This is initialized to true so that on first iteration the entry block is used
-	bool last_is_branch=true;
 
 	//We fill locals with function arguments
 	//First argument is the 'this'
@@ -844,814 +840,873 @@ SyntheticFunction::synt_function method_info::synt_method()
 	blocks[0].BB=llvm::BasicBlock::Create("begin", llvmf);
 	block_info* cur_block=NULL;
 
-	vector<STACK_TYPE> static_stack_types;
-
 	u8 opcode;
-	//We try to analyze the blocks first to find if locals can survive the jumps
-	while(1)
-	{
-		code >> opcode;
-		if(code.eof())
-			break;
-		//Check if we are expecting a new block start
-		map<int,block_info>::iterator it=blocks.find(int(code.tellg())-1);
-		if(it!=blocks.end())
-		{
-			cur_block=&it->second;
-			cur_block->locals.resize(body->local_count,STACK_NONE);
-			//A new block starts, the last instruction should have been a branch?
-			if(!last_is_branch)
-				jitted=false;
-			last_is_branch=false;
-		}
-		else if(last_is_branch)
-		{
-			//TODO: Check this. It seems that there may be invalid code after
-			//block end
-			LOG(TRACE,"Ignoring at " << int(code.tellg())-1);
-			continue;
-		}
-		switch(opcode)
-		{
-			case 0x03:
-			{
-				//throw
-				abort();
-				break;
-			}
-			case 0x04:
-			case 0x05:
-			{
-				//getsuper
-				//setsuper
-				u30 t;
-				code >> t;
-				static_stack_types.clear();
-				break;
-			}
-			case 0x08:
-			{
-				//kill
-				LOG(TRACE, "block analysis: kill" );
-				u30 t;
-				code >> t;
-				cur_block->locals[t]=STACK_NONE;
-				break;
-			}
-			case 0x09:
-			{
-				//label
-				//Create a new block and insert it in the mapping
-				LOG(TRACE, "block analysis: label" );
-				last_is_branch=true;
-				int here=code.tellg();
-
-				if(blocks[here].BB==NULL)
-					blocks[here].BB=llvm::BasicBlock::Create("label", llvmf);
-
-				blocks[here].preds.push_back(cur_block);
-				break;
-			}
-			case 0x0c:
-			case 0x0d:
-			case 0x0e:
-			case 0x0f:
-			case 0x10:
-			case 0x11:
-			case 0x12:
-			case 0x13:
-			case 0x14:
-			case 0x15:
-			case 0x17:
-			case 0x18:
-			case 0x19:
-			case 0x1a:
-			{
-				//ifnlt
-				//ifnle
-				//ifngt
-				//ifnge
-				//jump
-				//iftrue
-				//iffalse
-				//ifeq
-				//ifne
-				//iflt
-				//ifge
-				//ifgt
-				//ifstricteq
-				//ifstrictne
-				LOG(TRACE, "block analysis: branches" );
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code >> t;
-
-				int here=code.tellg();
-				int dest=here+t;
-				//Create a block for the fallthrough code and insert in the mapping
-				if(blocks[here].BB==NULL)
-					blocks[here].BB=llvm::BasicBlock::Create("fall", llvmf);
-				blocks[here].preds.push_back(cur_block);
-
-				//And for the branch destination, if they are not in the blocks mapping
-				if(blocks[dest].BB==NULL)
-					blocks[dest].BB=llvm::BasicBlock::Create("then", llvmf);
-				blocks[dest].preds.push_back(cur_block);
-	
-				static_stack_types.clear();
-				break;
-			}
-			case 0x1b:
-			{
-				//TODO: lookupswitch
-				LOG(TRACE, "synt lookupswitch" );
-				s24 t;
-				code >> t;
-				u30 count;
-				code >> count;
-				for(int i=0;i<count+1;i++)
-					code >> t;
-				static_stack_types.clear();
-
-				break;
-			}
-			case 0x1c:
-			{
-				//pushwith
-				static_stack_types.clear();
-				break;
-			}
-			case 0x1d:
-			{
-				//popscope
-				break;
-			}
-			case 0x1e:
-			{
-				//nextname
-				if(!static_stack.empty())
-					static_stack_types.pop_back();
-				if(!static_stack.empty())
-					static_stack_types.pop_back();
-
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x20:
-			case 0x21:
-			case 0x28:
-			{
-				//pushnull
-				//pushundefined
-				//pushnan
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x23:
-			{
-				//nextvalue
-				if(!static_stack.empty())
-					static_stack_types.pop_back();
-				if(!static_stack.empty())
-					static_stack_types.pop_back();
-
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x24:
-			{
-				//pushbyte
-				int8_t t;
-				code.read((char*)&t,1);
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
-			case 0x25:
-			{
-				//pushshort
-				u30 t;
-				code >> t;
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
-			case 0x26:
-			case 0x27:
-			{
-				//pushtrue
-				//pushfalse
-				static_stack_types.push_back(STACK_BOOLEAN);
-				break;
-			}
-			case 0x29:
-			{
-				//pop
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				break;
-			}
-			case 0x2a:
-			{
-				//dup
-				if(!static_stack_types.empty())
-					static_stack_types.push_back(static_stack_types.back());
-				else
-					static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x2b:
-			{
-				//swap
-				STACK_TYPE t1,t2;
-				if(!static_stack_types.empty())
-				{
-					t1=static_stack_types.back();
-					static_stack_types.pop_back();
-				}
-				else
-					t1=STACK_OBJECT;
-				if(!static_stack_types.empty())
-				{
-					t2=static_stack_types.back();
-					static_stack_types.pop_back();
-				}
-				else
-					t2=STACK_OBJECT;
-
-				static_stack_types.push_back(t1);
-				static_stack_types.push_back(t2);
-
-				break;
-			}
-			case 0x2c:
-			{
-				//pushstring
-				u30 t;
-				code >> t;
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x2d:
-			{
-				//pushint
-				u30 t;
-				code >> t;
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
-			case 0x2f:
-			{
-				//pushdouble
-				u30 t;
-				code >> t;
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x30:
-			{
-				//pushscope
-				static_stack_types.clear();
-				break;
-			}
-			case 0x32:
-			{
-				//hasnext2
-				u30 t;
-				code >> t;
-				code >> t;
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x40:
-			{
-				//newfunction
-				u30 t;
-				code >> t;
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x41:
-			case 0x42:
-			case 0x49:
-			{
-				//call
-				//construct
-				//constructsuper
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
-			case 0x45:
-			case 0x46:
-			case 0x4a:
-			case 0x4e:
-			case 0x4f:
-			{
-				//callsuper
-				//callproperty
-				//constructprop
-				//callsupervoid
-				//callpropvoid
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				code >> t;
-				break;
-			}
-			case 0x47:
-			case 0x48:
-			{
-				//returnvoid
-				//returnvalue
-				last_is_branch=true;
-				static_stack_types.clear();
-				break;
-			}
-			case 0x55:
-			case 0x56:
-			case 0x58:
-			case 0x5d:
-			case 0x5e:
-			case 0x60:
-			{
-				//newobject
-				//newarray
-				//newclass
-				//findpropstrict
-				//getlex
-				//findproperty
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
-			case 0x57:
-			{
-				//newactivation
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x5a:
-			{
-				//newcatch
-				u30 t;
-				code >> t;
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x61:
-			{
-				//setproperty
-				u30 t;
-				code >> t;
-				int rtdata=this->context->getMultinameRTData(t);
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(rtdata==1)
-				{
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-				}
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				break;
-			}
-			case 0x62:
-			{
-				//getlocal
-				u30 i;
-				code >> i;
-				if(cur_block->locals[i]==STACK_NONE)
-				{
-					static_stack_types.push_back(STACK_OBJECT);
-					cur_block->locals[i]=STACK_OBJECT;
-				}
-				else
-					static_stack_types.push_back(cur_block->locals[i]);
-				break;
-			}
-			case 0x63:
-			{
-				//setlocal
-				LOG(TRACE, "synt setlocal" );
-				u30 i;
-				code >> i;
-				if(!static_stack_types.empty())
-				{
-					cur_block->locals[i]=static_stack_types.back();
-					static_stack_types.pop_back();
-				}
-				else
-					cur_block->locals[i]=STACK_OBJECT;
-				break;
-			}
-			case 0x64:
-			{
-				//getglobalscope
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x65:
-			{
-				//getscopeobject
-				u30 t;
-				code >> t;
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x66:
-			{
-				//getproperty
-				u30 t;
-				code >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
-				int rtdata=this->context->getMultinameRTData(t);
-				if(rtdata==1)
-				{
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-				}
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x68:
-			case 0x6a:
-			{
-				//initproperty
-				//deleteproperty
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
-			case 0x6c:
-			{
-				//getslot
-				u30 t;
-				code >> t;
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x6d:
-			{
-				//setslot
-				u30 t;
-				code >> t;
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				break;
-			}
-			case 0x73:
-			case 0x75:
-			case 0x76:
-			{
-				//convert_i
-				//convert_d
-				//convert_b
-				break;
-			}
-			case 0x80:
-			{
-				//coerce
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
-			case 0x82:
-			case 0x85:
-			{
-				//coerce_a
-				//coerce_s
-				break;
-			}
-			case 0x87:
-			{
-				//astypelate
-				static_stack_types.clear();
-				break;
-			}
-			case 0x90:
-			case 0x95:
-			{
-				//negate
-				//typeof
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0x91:
-			case 0x93:
-			{
-				//increment
-				//decrement
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
-			case 0x96:
-			{
-				//not
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_BOOLEAN);
-				break;
-			}
-			case 0xa0:
-			{
-				//add
-				STACK_TYPE t1,t2;
-				if(!static_stack_types.empty())
-				{
-					t1=static_stack_types.back();
-					static_stack_types.pop_back();
-				}
-				else
-					t1=STACK_OBJECT;
-				if(!static_stack_types.empty())
-				{
-					t2=static_stack_types.back();
-					static_stack_types.pop_back();
-				}
-				else
-					t2=STACK_OBJECT;
-
-				if(t1==STACK_OBJECT || t2==STACK_OBJECT)
-					static_stack_types.push_back(STACK_OBJECT);
-				else if(t1==STACK_INT && t2==STACK_INT)
-					static_stack_types.push_back(STACK_INT);
-				else if(t1==STACK_INT && t2==STACK_NUMBER)
-					static_stack_types.push_back(STACK_NUMBER);
-				else if(t1==STACK_NUMBER && t2==STACK_INT)
-					static_stack_types.push_back(STACK_NUMBER);
-				else
-					abort();
-
-				break;
-			}
-			case 0xa1:
-			{
-				//subtract
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_NUMBER);
-				break;
-			}
-			case 0xa2:
-			{
-				//multiply
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_NUMBER);
-				break;
-			}
-			case 0xa3:
-			{
-				//divide
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_NUMBER);
-				break;
-			}
-			case 0xa4:
-			{
-				//modulo
-				STACK_TYPE t1,t2;
-				if(!static_stack_types.empty())
-				{
-					t2=static_stack_types.back();
-					static_stack_types.pop_back();
-				}
-				else
-					t2=STACK_OBJECT;
-				if(!static_stack_types.empty())
-				{
-					t1=static_stack_types.back();
-					static_stack_types.pop_back();
-				}
-				else
-					t1=STACK_OBJECT;
-
-				if(t1==STACK_OBJECT || t2==STACK_OBJECT)
-					static_stack_types.push_back(STACK_NUMBER);
-				else if(t1==STACK_INT && t2==STACK_NUMBER)
-				{
-					exit(2);
-					static_stack_types.push_back(STACK_NUMBER);
-				}
-				else if(t1==STACK_NUMBER && t2==STACK_INT)
-					static_stack_types.push_back(STACK_INT);
-				else
-					abort();
-				break;
-			}
-			case 0xa5:
-			{
-				//lshift
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
-			case 0xa7:
-			{
-				//urshift
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
-			case 0xa8:
-			{
-				//bitand
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
-			case 0xa9:
-			{
-				//bitor
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
-			case 0xaa:
-			{
-				//bitxor
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_INT);
-				break;
-			}
-			case 0xab:
-			{
-				//equals
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_BOOLEAN);
-				break;
-			}
-			case 0xac:
-			{
-				//strictequals
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0xad:
-			{
-				//lessthan
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0xaf:
-			{
-				//greaterthan
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0xb3:
-			{
-				//istypelate
-				static_stack_types.clear();
-				break;
-			}
-			case 0xb4:
-			{
-				//in
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0xc0:
-			{
-				//increment_i
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0xc1:
-			{
-				//decrement_i
-				if(!static_stack_types.empty())
-					static_stack_types.pop_back();
-				static_stack_types.push_back(STACK_OBJECT);
-				break;
-			}
-			case 0xc2:
-			{
-				//inclocal_i
-				static_stack_types.clear();
-				u30 t;
-				code >> t;
-				break;
-			}
-			case 0xd0:
-			case 0xd1:
-			case 0xd2:
-			case 0xd3:
-			{
-				//getlocal_n
-				int i=opcode&3;
-				if(cur_block->locals[i]==STACK_NONE)
-				{
-					static_stack_types.push_back(STACK_OBJECT);
-					cur_block->locals[i]=STACK_OBJECT;
-				}
-				else
-					static_stack_types.push_back(cur_block->locals[i]);
-				break;
-			}
-			case 0xd5:
-			case 0xd6:
-			case 0xd7:
-			{
-				//setlocal_n
-				int i=opcode&3;
-				if(!static_stack_types.empty())
-				{
-					cur_block->locals[i]=static_stack_types.back();
-					static_stack_types.pop_back();
-				}
-				else
-					cur_block->locals[i]=STACK_OBJECT;
-
-				break;
-			}
-			default:
-				LOG(ERROR,"Not implemented instruction @" << code.tellg());
-				u8 a,b,c;
-				code >> a >> b >> c;
-				LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
-						<< (unsigned int)b << ' ' << (unsigned int)c);
-		}
-	}
-
-	//We can now search for locals that can be saved
-	//If every predecessor blocks agree with the type of a local we pass it over
-/*	map<int,block_info>::iterator bit=blocks.begin();
+	bool last_is_branch=true;
+	map<int,block_info>::iterator bit=blocks.begin();
 	for(bit;bit!=blocks.end();bit++)
 	{
 		block_info& cur=bit->second;
-		if(!cur.preds.empty())
+		cur.locals_start.resize(body->local_count,STACK_NONE);
+	}
+
+	//We try to analyze the blocks first to find if locals can survive the jumps
+	bool stop;
+	while(1)
+	{
+		//This is initialized to true so that on first iteration the entry block is used
+		last_is_branch=true;
+		stringstream code(body->code);
+		stop=true;
+		cur_block=NULL;
+		vector<STACK_TYPE> static_stack_types;
+
+		while(1)
 		{
-			cur.locals_start=cur.preds[0]->locals;
-			for(int i=1;i<cur.preds.size();i++)
+			code >> opcode;
+			if(code.eof())
+				break;
+			//Check if we are expecting a new block start
+			map<int,block_info>::iterator it=blocks.find(int(code.tellg())-1);
+			if(it!=blocks.end())
 			{
-				block_info* pred=cur.preds[i];
-				for(int j=0;j<pred->locals.size();j++)
+				if(cur_block)
+					it->second.preds.insert(cur_block);
+				cur_block=&it->second;
+				cur_block->locals=cur_block->locals_start;
+				//A new block starts, the last instruction should have been a branch?
+				last_is_branch=false;
+			}
+			else if(last_is_branch)
+			{
+				//TODO: Check this. It seems that there may be invalid code after
+				//block end
+				LOG(TRACE,"Ignoring at " << int(code.tellg())-1);
+				continue;
+			}
+			switch(opcode)
+			{
+				case 0x03:
 				{
-					if(cur.locals_start[j]!=pred->locals[j])
-						cur.locals_start[j]=STACK_NONE;
+					//throw
+					abort();
+					break;
+				}
+				case 0x04:
+				case 0x05:
+				{
+					//getsuper
+					//setsuper
+					u30 t;
+					code >> t;
+					static_stack_types.clear();
+					break;
+				}
+				case 0x08:
+				{
+					//kill
+					LOG(TRACE, "block analysis: kill" );
+					u30 t;
+					code >> t;
+
+					cur_block->locals[t]=STACK_NONE;
+					break;
+				}
+				case 0x09:
+				{
+					//label
+					//Create a new block and insert it in the mapping
+					LOG(TRACE, "block analysis: label" );
+					last_is_branch=true;
+					int here=code.tellg();
+
+					if(blocks[here].BB==NULL)
+					{
+						blocks[here].BB=llvm::BasicBlock::Create("label", llvmf);
+						blocks[here].locals_start.resize(body->local_count,STACK_NONE);
+					}
+
+					blocks[here].preds.insert(cur_block);
+					break;
+				}
+				case 0x0c:
+				case 0x0d:
+				case 0x0e:
+				case 0x0f:
+				case 0x10:
+				case 0x11:
+				case 0x12:
+				case 0x13:
+				case 0x14:
+				case 0x15:
+				case 0x17:
+				case 0x18:
+				case 0x19:
+				case 0x1a:
+				{
+					//ifnlt
+					//ifnle
+					//ifngt
+					//ifnge
+					//jump
+					//iftrue
+					//iffalse
+					//ifeq
+					//ifne
+					//iflt
+					//ifge
+					//ifgt
+					//ifstricteq
+					//ifstrictne
+					LOG(TRACE, "block analysis: branches" );
+					//TODO: implement common data comparison
+					last_is_branch=true;
+					s24 t;
+					code >> t;
+
+					int here=code.tellg();
+					int dest=here+t;
+					//Create a block for the fallthrough code and insert in the mapping
+					if(blocks[here].BB==NULL)
+					{
+						blocks[here].BB=llvm::BasicBlock::Create("fall", llvmf);
+						blocks[here].locals_start.resize(body->local_count,STACK_NONE);
+					}
+					blocks[here].preds.insert(cur_block);
+
+					//And for the branch destination, if they are not in the blocks mapping
+					if(blocks[dest].BB==NULL)
+					{
+						blocks[dest].BB=llvm::BasicBlock::Create("then", llvmf);
+						blocks[dest].locals_start.resize(body->local_count,STACK_NONE);
+					}
+					blocks[dest].preds.insert(cur_block);
+		
+					static_stack_types.clear();
+					break;
+				}
+				case 0x1b:
+				{
+					//TODO: lookupswitch
+					LOG(TRACE, "synt lookupswitch" );
+					s24 t;
+					code >> t;
+					u30 count;
+					code >> count;
+					for(int i=0;i<count+1;i++)
+						code >> t;
+					static_stack_types.clear();
+
+					break;
+				}
+				case 0x1c:
+				{
+					//pushwith
+					static_stack_types.clear();
+					break;
+				}
+				case 0x1d:
+				{
+					//popscope
+					break;
+				}
+				case 0x1e:
+				{
+					//nextname
+					if(!static_stack.empty())
+						static_stack_types.pop_back();
+					if(!static_stack.empty())
+						static_stack_types.pop_back();
+
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x20:
+				case 0x21:
+				case 0x28:
+				{
+					//pushnull
+					//pushundefined
+					//pushnan
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x23:
+				{
+					//nextvalue
+					if(!static_stack.empty())
+						static_stack_types.pop_back();
+					if(!static_stack.empty())
+						static_stack_types.pop_back();
+
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x24:
+				{
+					//pushbyte
+					int8_t t;
+					code.read((char*)&t,1);
+					static_stack_types.push_back(STACK_INT);
+					break;
+				}
+				case 0x25:
+				{
+					//pushshort
+					u30 t;
+					code >> t;
+					static_stack_types.push_back(STACK_INT);
+					break;
+				}
+				case 0x26:
+				case 0x27:
+				{
+					//pushtrue
+					//pushfalse
+					static_stack_types.push_back(STACK_BOOLEAN);
+					break;
+				}
+				case 0x29:
+				{
+					//pop
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					break;
+				}
+				case 0x2a:
+				{
+					//dup
+					if(!static_stack_types.empty())
+						static_stack_types.push_back(static_stack_types.back());
+					else
+						static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x2b:
+				{
+					//swap
+					STACK_TYPE t1,t2;
+					if(!static_stack_types.empty())
+					{
+						t1=static_stack_types.back();
+						static_stack_types.pop_back();
+					}
+					else
+						t1=STACK_OBJECT;
+					if(!static_stack_types.empty())
+					{
+						t2=static_stack_types.back();
+						static_stack_types.pop_back();
+					}
+					else
+						t2=STACK_OBJECT;
+
+					static_stack_types.push_back(t1);
+					static_stack_types.push_back(t2);
+
+					break;
+				}
+				case 0x2c:
+				{
+					//pushstring
+					u30 t;
+					code >> t;
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x2d:
+				{
+					//pushint
+					u30 t;
+					code >> t;
+					static_stack_types.push_back(STACK_INT);
+					break;
+				}
+				case 0x2f:
+				{
+					//pushdouble
+					u30 t;
+					code >> t;
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x30:
+				{
+					//pushscope
+					static_stack_types.clear();
+					break;
+				}
+				case 0x32:
+				{
+					//hasnext2
+					u30 t;
+					code >> t;
+					code >> t;
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x40:
+				{
+					//newfunction
+					u30 t;
+					code >> t;
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x41:
+				case 0x42:
+				case 0x49:
+				{
+					//call
+					//construct
+					//constructsuper
+					static_stack_types.clear();
+					u30 t;
+					code >> t;
+					break;
+				}
+				case 0x45:
+				case 0x46:
+				case 0x4a:
+				case 0x4e:
+				case 0x4f:
+				{
+					//callsuper
+					//callproperty
+					//constructprop
+					//callsupervoid
+					//callpropvoid
+					static_stack_types.clear();
+					u30 t;
+					code >> t;
+					code >> t;
+					break;
+				}
+				case 0x47:
+				case 0x48:
+				{
+					//returnvoid
+					//returnvalue
+					last_is_branch=true;
+					static_stack_types.clear();
+					break;
+				}
+				case 0x55:
+				case 0x56:
+				case 0x58:
+				case 0x5d:
+				case 0x5e:
+				case 0x60:
+				{
+					//newobject
+					//newarray
+					//newclass
+					//findpropstrict
+					//getlex
+					//findproperty
+					static_stack_types.clear();
+					u30 t;
+					code >> t;
+					break;
+				}
+				case 0x57:
+				{
+					//newactivation
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x5a:
+				{
+					//newcatch
+					u30 t;
+					code >> t;
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x61:
+				{
+					//setproperty
+					u30 t;
+					code >> t;
+					int rtdata=this->context->getMultinameRTData(t);
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(rtdata==1)
+					{
+						if(!static_stack_types.empty())
+							static_stack_types.pop_back();
+					}
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					break;
+				}
+				case 0x62:
+				{
+					//getlocal
+					u30 i;
+					code >> i;
+					if(cur_block->locals[i]==STACK_NONE)
+					{
+						static_stack_types.push_back(STACK_OBJECT);
+						cur_block->locals[i]=STACK_OBJECT;
+					}
+					else
+						static_stack_types.push_back(cur_block->locals[i]);
+					break;
+				}
+				case 0x63:
+				{
+					//setlocal
+					LOG(TRACE, "synt setlocal" );
+					u30 i;
+					code >> i;
+					STACK_TYPE t;
+					if(!static_stack_types.empty())
+					{
+						t=static_stack_types.back();
+						static_stack_types.pop_back();
+					}
+					else
+						t=STACK_OBJECT;
+					
+					cur_block->locals[i]=t;
+					break;
+				}
+				case 0x64:
+				{
+					//getglobalscope
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x65:
+				{
+					//getscopeobject
+					u30 t;
+					code >> t;
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x66:
+				{
+					//getproperty
+					u30 t;
+					code >> t;
+					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+					int rtdata=this->context->getMultinameRTData(t);
+					if(rtdata==1)
+					{
+						if(!static_stack_types.empty())
+							static_stack_types.pop_back();
+					}
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x68:
+				case 0x6a:
+				{
+					//initproperty
+					//deleteproperty
+					static_stack_types.clear();
+					u30 t;
+					code >> t;
+					break;
+				}
+				case 0x6c:
+				{
+					//getslot
+					u30 t;
+					code >> t;
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x6d:
+				{
+					//setslot
+					u30 t;
+					code >> t;
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					break;
+				}
+				case 0x73:
+				case 0x75:
+				case 0x76:
+				{
+					//convert_i
+					//convert_d
+					//convert_b
+					break;
+				}
+				case 0x80:
+				{
+					//coerce
+					static_stack_types.clear();
+					u30 t;
+					code >> t;
+					break;
+				}
+				case 0x82:
+				case 0x85:
+				{
+					//coerce_a
+					//coerce_s
+					break;
+				}
+				case 0x87:
+				{
+					//astypelate
+					static_stack_types.clear();
+					break;
+				}
+				case 0x90:
+				case 0x95:
+				{
+					//negate
+					//typeof
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0x91:
+				case 0x93:
+				{
+					//increment
+					//decrement
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_INT);
+					break;
+				}
+				case 0x96:
+				{
+					//not
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_BOOLEAN);
+					break;
+				}
+				case 0xa0:
+				{
+					//add
+					STACK_TYPE t1,t2;
+					if(!static_stack_types.empty())
+					{
+						t1=static_stack_types.back();
+						static_stack_types.pop_back();
+					}
+					else
+						t1=STACK_OBJECT;
+					if(!static_stack_types.empty())
+					{
+						t2=static_stack_types.back();
+						static_stack_types.pop_back();
+					}
+					else
+						t2=STACK_OBJECT;
+
+					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
+						static_stack_types.push_back(STACK_OBJECT);
+					else if(t1==STACK_INT && t2==STACK_INT)
+						static_stack_types.push_back(STACK_INT);
+					else if(t1==STACK_INT && t2==STACK_NUMBER)
+						static_stack_types.push_back(STACK_NUMBER);
+					else if(t1==STACK_NUMBER && t2==STACK_INT)
+						static_stack_types.push_back(STACK_NUMBER);
+					else
+						abort();
+
+					break;
+				}
+				case 0xa1:
+				{
+					//subtract
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_NUMBER);
+					break;
+				}
+				case 0xa2:
+				{
+					//multiply
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_NUMBER);
+					break;
+				}
+				case 0xa3:
+				{
+					//divide
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_NUMBER);
+					break;
+				}
+				case 0xa4:
+				{
+					//modulo
+					STACK_TYPE t1,t2;
+					if(!static_stack_types.empty())
+					{
+						t2=static_stack_types.back();
+						static_stack_types.pop_back();
+					}
+					else
+						t2=STACK_OBJECT;
+					if(!static_stack_types.empty())
+					{
+						t1=static_stack_types.back();
+						static_stack_types.pop_back();
+					}
+					else
+						t1=STACK_OBJECT;
+
+					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
+						static_stack_types.push_back(STACK_INT);
+					else if(t1==STACK_INT && t2==STACK_NUMBER)
+					{
+						exit(2);
+						static_stack_types.push_back(STACK_INT);
+					}
+					else if(t1==STACK_NUMBER && t2==STACK_INT)
+						static_stack_types.push_back(STACK_INT);
+					else if(t1==STACK_INT && t2==STACK_INT)
+						static_stack_types.push_back(STACK_INT);
+					else if(t1==STACK_NUMBER && t2==STACK_NUMBER)
+						static_stack_types.push_back(STACK_INT);
+					else
+						abort();
+					break;
+				}
+				case 0xa5:
+				{
+					//lshift
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_INT);
+					break;
+				}
+				case 0xa7:
+				{
+					//urshift
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_INT);
+					break;
+				}
+				case 0xa8:
+				{
+					//bitand
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_INT);
+					break;
+				}
+				case 0xa9:
+				{
+					//bitor
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_INT);
+					break;
+				}
+				case 0xaa:
+				{
+					//bitxor
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_INT);
+					break;
+				}
+				case 0xab:
+				{
+					//equals
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_BOOLEAN);
+					break;
+				}
+				case 0xac:
+				{
+					//strictequals
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0xad:
+				{
+					//lessthan
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0xaf:
+				{
+					//greaterthan
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0xb3:
+				{
+					//istypelate
+					static_stack_types.clear();
+					break;
+				}
+				case 0xb4:
+				{
+					//in
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0xc0:
+				{
+					//increment_i
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0xc1:
+				{
+					//decrement_i
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(STACK_OBJECT);
+					break;
+				}
+				case 0xc2:
+				{
+					//inclocal_i
+					static_stack_types.clear();
+					u30 t;
+					code >> t;
+					break;
+				}
+				case 0xd0:
+				case 0xd1:
+				case 0xd2:
+				case 0xd3:
+				{
+					//getlocal_n
+					int i=opcode&3;
+					if(cur_block->locals[i]==STACK_NONE)
+					{
+						static_stack_types.push_back(STACK_OBJECT);
+						cur_block->locals[i]=STACK_OBJECT;
+					}
+					else
+						static_stack_types.push_back(cur_block->locals[i]);
+					break;
+				}
+				case 0xd5:
+				case 0xd6:
+				case 0xd7:
+				{
+					//setlocal_n
+					int i=opcode&3;
+					STACK_TYPE t;
+					if(!static_stack_types.empty())
+					{
+						t=static_stack_types.back();
+						static_stack_types.pop_back();
+					}
+					else
+						t=STACK_OBJECT;
+
+					cur_block->locals[i]=t;
+					break;
+				}
+				default:
+					LOG(ERROR,"Not implemented instruction @" << code.tellg());
+					u8 a,b,c;
+					code >> a >> b >> c;
+					LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
+							<< (unsigned int)b << ' ' << (unsigned int)c);
+			}
+		}
+
+		//We can now search for locals that can be saved
+		//If every predecessor blocks agree with the type of a local we pass it over
+		map<int,block_info>::iterator bit=blocks.begin();
+		for(bit;bit!=blocks.end();bit++)
+		{
+			block_info& cur=bit->second;
+			vector<STACK_TYPE> new_start;
+			new_start.resize(body->local_count,STACK_NONE);
+			if(!cur.preds.empty())
+			{
+				set<block_info*>::iterator pred=cur.preds.begin();
+				new_start=(*pred)->locals;
+				pred++;
+				for(pred;pred!=cur.preds.end();pred++)
+				{
+					for(int j=0;j<(*pred)->locals.size();j++)
+					{
+						if(new_start[j]!=(*pred)->locals[j])
+							new_start[j]=STACK_NONE;
+					}
 				}
 			}
 
+			if(new_start!=cur.locals_start)
+			{
+			/*	for(int i=0;i<new_start.size();i++)
+					cout << new_start[i] << ' ';
+				cout << endl;
+				for(int i=0;i<cur.locals.size();i++)
+					cout << cur.locals_start[i] << ' ';
+				cout << endl;*/
+				stop=false;
+			//	cout << "again" << endl;
+				cur.locals_start=new_start;
+			}
 		}
 
+		if(stop)
+			break;
+	}
+
+	bit=blocks.begin();
+	for(bit;bit!=blocks.end();bit++)
+	{
+		block_info& cur=bit->second;
 		cur.locals_start_obj.resize(cur.locals_start.size(),NULL);
 		for(int i=0;i<cur.locals_start.size();i++)
 		{
@@ -1674,9 +1729,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				default:
 					abort();
 			}
-
 		}
-	}*/
+	}
 
 	//Let's get another stream
 	//TODO: is there a way to reset the old one?
@@ -1709,7 +1763,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			Builder.SetInsertPoint(it->second.BB);
 			cur_block=&it->second;
 
-/*			if(!cur_block->locals_start.empty())
+			if(!cur_block->locals_start.empty())
 			{
 				//Generate prologue, LLVM should optimize register usage
 				if(static_locals.size()!=cur_block->locals_start.size())
@@ -1720,10 +1774,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 					if(cur_block->locals_start[i]!=STACK_NONE)
 						static_locals[i].first=Builder.CreateLoad(cur_block->locals_start_obj[i]);
 				}
-			}*/
-			for(int i=0;i<static_locals.size();i++)
-				static_locals[i].second=STACK_NONE;
-	
+			}
+			//for(int i=0;i<static_locals.size();i++)
+			//	static_locals[i].second=STACK_NONE;
+
 			last_is_branch=false;
 		}
 		else if(last_is_branch)
@@ -1826,6 +1880,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_INT)
+				{
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
 				}
 				else
 					abort();
@@ -2484,11 +2543,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//swap
 				LOG(TRACE, "synt swap" );
-				Builder.CreateCall(ex->FindFunctionNamed("swap"), context);
-				stack_entry e1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry e2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(Log::getLevel()==TRACE)
+					Builder.CreateCall(ex->FindFunctionNamed("swap"), context);
+				stack_entry e1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry e2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e1);
 				static_stack_push(static_stack,e2);
 				jitted=true;
@@ -2622,13 +2680,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> t;
 				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
 
-/*				//Pop the stack arguments
+	/*				//Pop the stack arguments
 				vector<llvm::Value*> args(t+1);
 				for(int i=0;i<t;i++)
 					args[t-i]=static_stack_pop(Builder,static_stack,m).first;*/
 				//Call the function resolver, static case could be resolved at this time (TODO)
 				Builder.CreateCall3(ex->FindFunctionNamed("callProperty"), context, constant, constant2);
-/*				//Pop the function object, and then the object itself
+	/*				//Pop the function object, and then the object itself
 				llvm::Value* fun=static_stack_pop(Builder,static_stack,m).first;
 
 				llvm::Value* fun2=Builder.CreateBitCast(fun,synt_method_prototype(t));
@@ -3321,6 +3379,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v1.first);
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+				else if(v1.second==STACK_INT && v2.second==STACK_INT)
+				{
+				v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+				}
 				else
 					abort();
 
@@ -3338,19 +3401,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 				{
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 				{
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
@@ -3365,6 +3428,18 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateSRem(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
+				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
+				{
+					v1.first=Builder.CreateFPToSI(v1.first,int_type);
+					v2.first=Builder.CreateFPToSI(v2.first,int_type);
+					value=Builder.CreateSRem(v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_INT)
+				{
+					value=Builder.CreateSRem(v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
 				{
 					exit(4);
@@ -3373,7 +3448,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
 				else
 					abort();
@@ -3705,8 +3780,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
-	llvmf->dump();
 	this->context->vm->FPM->run(*llvmf);
+	llvmf->dump();
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }

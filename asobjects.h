@@ -38,6 +38,7 @@ public:
 	ASObject* prototype;
 	ASObject* super;
 	ASObject();
+	ASObject(Manager* m);
 	virtual ~ASObject();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
@@ -280,10 +281,16 @@ private:
 public:
 //	Number(const ISWFObject* obj);
 	Number(double v):val(v){type=T_NUMBER;}
-	Number():val(0){type=T_NUMBER;}
+	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
 	std::string toString() const;
-	int toInt() const; 
-	double toNumber() const;
+	int toInt() const
+	{
+		return val;
+	}
+	double toNumber() const
+	{
+		return val;
+	}
 	operator double(){return val;}
 	ISWFObject* clone()
 	{

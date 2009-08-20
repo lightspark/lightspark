@@ -26,6 +26,7 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/IRBuilder.h>
 #include <llvm/PassManagers.h> 
+#include <llvm/LLVMContext.h> 
 #include "tags.h"
 #include "frame.h"
 #include "logger.h"
@@ -537,6 +538,7 @@ private:
 public:
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
+	llvm::LLVMContext llvm_context;
 	ABCVm(SystemState* s);
 	~ABCVm();
 	static void Run(ABCVm* th);

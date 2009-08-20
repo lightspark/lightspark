@@ -1,5 +1,6 @@
 # User-overridable flags:
-CXXFLAGS = -g -O3 -D_GLIBCXX_NO_DEBUG 
+CXXFLAGS = -g -O3 -D_GLIBCXX_NO_DEBUG -fpermissive
+LLVMLIBS = `llvm-config --libfiles`
 prefix = /usr
 bindir = $(prefix)/bin
 datarootdir = $(prefix)/share
@@ -13,10 +14,14 @@ LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o
 # TODO: library?
 all: lightspark tightspark
 lightspark: main.o $(LIBOBJS) 
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ /usr/lib/llvm/lib/libLLVMScalarOpts.a /usr/lib/llvm/lib/libLLVMTransformUtils.a /usr/lib/llvm/lib/libLLVMAnalysis.a 
+	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ \
+	$(LLVMLIBS)
 
 tightspark: tightspark.o $(LIBOBJS)
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags --libs all` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ /usr/lib/llvm/lib/libLLVMScalarOpts.a /usr/lib/llvm/lib/libLLVMTransformUtils.a /usr/lib/llvm/lib/libLLVMAnalysis.a /usr/lib/llvm/lib/libLLVMCore.a 
+	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ \
+	$(LLVMLIBS)
+
+
 
 libls.so: $(LIBOBJS)
 	$(CXX) -pthread -shared `pkg-config --cflags --libs sdl gl` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $@ $^

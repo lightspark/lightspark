@@ -229,23 +229,24 @@ llvm::Function* debug_i_f;
 void ABCVm::registerFunctions()
 {
 	vector<const llvm::Type*> sig;
-	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	llvm::FunctionType* FT=llvm::FunctionType::get(llvm::Type::getVoidTy(llvm_context), sig, false);
 	llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"abort",module);
 
-	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
-	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType();
+	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType(llvm_context);
+	const llvm::Type* int_type=ptr_type;
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(ptr_type);
-	const llvm::Type* number_type=llvm::Type::DoubleTy;
-	const llvm::Type* bool_type=llvm::IntegerType::get(1);
+	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
+	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
+	const llvm::Type* void_type=llvm::Type::getVoidTy(llvm_context);
 
-	sig.push_back(llvm::IntegerType::get(32));
-	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	sig.push_back(int_type);
+	FT=llvm::FunctionType::get(void_type, sig, false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not_impl",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::not_impl);
 	sig.clear();
 
-	sig.push_back(llvm::PointerType::getUnqual(llvm::IntegerType::get(32)));
-	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	sig.push_back(ptr_type);
+	FT=llvm::FunctionType::get(void_type, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug",module);
 	ex->addGlobalMapping(F,(void*)debug);
 	sig.clear();
@@ -256,7 +257,7 @@ void ABCVm::registerFunctions()
 	sig.clear();
 
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	sig.push_back(llvm::IntegerType::get(32));
+	sig.push_back(int_type);
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"argumentDumper",module);
 	ex->addGlobalMapping(F,(void*)&argumentDumper);
@@ -266,8 +267,8 @@ void ABCVm::registerFunctions()
 	std::vector<const llvm::Type*> struct_elems;
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	struct_elems.push_back(llvm::IntegerType::get(32));
-	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(struct_elems,true));
+	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
+	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,struct_elems,true));
 
 	//newActivation needs both method_info and the context
 	sig.push_back(context_type);
@@ -293,7 +294,7 @@ void ABCVm::registerFunctions()
 
 	// (call_context*)
 	sig.push_back(context_type);
-	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	FT=llvm::FunctionType::get(void_type, sig, false);
 
 	int elems=sizeof(opcode_table_args0)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
@@ -312,8 +313,8 @@ void ABCVm::registerFunctions()
 	//End of lazy pushing
 
 	// (call_context*,int)
-	sig.push_back(llvm::IntegerType::get(32));
-	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	sig.push_back(int_type);
+	FT=llvm::FunctionType::get(void_type, sig, false);
 	elems=sizeof(opcode_table_args1)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
 	{
@@ -331,8 +332,8 @@ void ABCVm::registerFunctions()
 	//End of lazy pushing
 
 	// (call_context*,int,int)
-	sig.push_back(llvm::IntegerType::get(32));
-	FT=llvm::FunctionType::get(llvm::Type::VoidTy, sig, false);
+	sig.push_back(int_type);
+	FT=llvm::FunctionType::get(void_type, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callPropVoid",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::callPropVoid);
 
@@ -368,7 +369,7 @@ void ABCVm::registerFunctions()
 	//End of lazy pushing
 
 	//Lazy pushing, no context, (ISWFObject*, int)
-	sig.push_back(llvm::IntegerType::get(32));
+	sig.push_back(int_type);
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	elems=sizeof(opcode_table_args1_pointers_int)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
@@ -379,7 +380,7 @@ void ABCVm::registerFunctions()
 	//End of lazy pushing
 
 	//Branches, no context, (ISWFObject*, int)
-	FT=llvm::FunctionType::get(llvm::IntegerType::get(1), sig, false);
+	FT=llvm::FunctionType::get(bool_type, sig, false);
 	elems=sizeof(opcode_table_args1_branches)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
 	{
@@ -402,7 +403,7 @@ void ABCVm::registerFunctions()
 	//End of lazy pushing
 
 	//Lazy pushing, no context, (ISWFObject*, ISWFObject*, int)
-	sig.push_back(llvm::IntegerType::get(32));
+	sig.push_back(int_type);
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	elems=sizeof(opcode_table_args2_pointers_int)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
@@ -413,7 +414,7 @@ void ABCVm::registerFunctions()
 	//End of lazy pushing
 	
 	//Branches, no context, (ISWFObject*, ISWFObject*, int)
-	FT=llvm::FunctionType::get(llvm::IntegerType::get(1), sig, false);
+	FT=llvm::FunctionType::get(bool_type, sig, false);
 	elems=sizeof(opcode_table_args2_branches)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
 	{
@@ -426,7 +427,7 @@ void ABCVm::registerFunctions()
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(int_type);
-	sig.push_back(llvm::IntegerType::get(32));
+	sig.push_back(int_type);
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	elems=sizeof(opcode_table_args_pointer_2int)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
@@ -457,17 +458,17 @@ void ABCVm::registerFunctions()
 
 	register_table(int_type,opcode_table_uintptr_t,sizeof(opcode_table_uintptr_t)/sizeof(typed_opcode_handler));
 	register_table(number_type,opcode_table_number_t,sizeof(opcode_table_number_t)/sizeof(typed_opcode_handler));
-	register_table(llvm::Type::VoidTy,opcode_table_void,sizeof(opcode_table_void)/sizeof(typed_opcode_handler));
+	register_table(void_type,opcode_table_void,sizeof(opcode_table_void)/sizeof(typed_opcode_handler));
 	register_table(voidptr_type,opcode_table_voidptr,sizeof(opcode_table_voidptr)/sizeof(typed_opcode_handler));
 	register_table(bool_type,opcode_table_bool_t,sizeof(opcode_table_bool_t)/sizeof(typed_opcode_handler));
 }
 
 void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len)
 {
-	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType();
+	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
-	const llvm::Type* number_type=llvm::Type::DoubleTy;
-	const llvm::Type* bool_type=llvm::IntegerType::get(1);
+	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
+	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
 	llvm::FunctionType* FT;
 
 	vector<const llvm::Type*> sig_obj_obj;
@@ -536,7 +537,7 @@ llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value*
 {
 	//decrement stack index
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 
@@ -547,7 +548,7 @@ llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value*
 llvm::Value* method_info::llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
 {
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
 	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index2);
 	return builder.CreateLoad(dest);
@@ -561,7 +562,7 @@ void method_info::llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& 
 	builder.CreateStore(val,dest);
 
 	//increment stack index
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,32), 1);
 	llvm::Value* index2=builder.CreateAdd(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 }
@@ -679,7 +680,7 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 			builder.CreateStore(static_locals[i].first,dest_block.locals_start_obj[i]);
 		else
 		{
-			llvm::Value* constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
+			llvm::Value* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,32), i);
 			llvm::Value* t=builder.CreateGEP(locals,constant);
 			llvm::Value* old=builder.CreateLoad(t);
 			if(static_locals[i].second==STACK_OBJECT)
@@ -717,13 +718,13 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex)
 {
 	//whatever pointer is good
-	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType();
+	const llvm::Type* ptr_type=ex->getTargetData()->getIntPtrType(context->vm->llvm_context);
 
 	std::vector<const llvm::Type*> struct_elems;
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	struct_elems.push_back(llvm::IntegerType::get(32));
-	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(struct_elems,true));
+	struct_elems.push_back(llvm::IntegerType::get(context->vm->llvm_context,32));
+	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(context->vm->llvm_context,struct_elems,true));
 
 	//Initialize LLVM representation of method
 	vector<const llvm::Type*> sig;
@@ -747,18 +748,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 		return NULL;
 	}
 	llvm::ExecutionEngine* ex=context->vm->ex;
+	llvm::LLVMContext& llvm_context=context->vm->llvm_context;
 	llvm::FunctionType* method_type=synt_method_prototype(ex);
 	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,n,context->vm->module);
 
 	//The pointer size compatible int type will be useful
 	//TODO: void*
-	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType();
+	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(context->vm->llvm_context);
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
-	const llvm::Type* number_type=llvm::Type::DoubleTy;
-	const llvm::Type* bool_type=llvm::IntegerType::get(1);
+	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
+	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
 
-	llvm::BasicBlock *BB = llvm::BasicBlock::Create("entry", llvmf);
-	llvm::IRBuilder<> Builder;
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
+	llvm::IRBuilder<> Builder(llvm_context);
 	Builder.SetInsertPoint(BB);
 
 	//We define a couple of variables that will be used a lot
@@ -793,7 +795,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	//Creating a mapping between blocks and starting address
 	//The current header block is ended
-	llvm::BasicBlock *StartBB = llvm::BasicBlock::Create("entry", llvmf);
+	llvm::BasicBlock *StartBB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
 	Builder.CreateBr(StartBB);
 	//CHECK: maybe not needed
 	Builder.SetInsertPoint(StartBB);
@@ -805,7 +807,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	//We fill locals with function arguments
 	//First argument is the 'this'
-	constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), 0);
+	constant = llvm::ConstantInt::get(int_type, 0);
 	llvm::Value* t=Builder.CreateGEP(locals,constant);
 	it=llvmf->getArgumentList().begin();
 	llvm::Value* arg=it;
@@ -814,21 +816,21 @@ SyntheticFunction::synt_function method_info::synt_method()
 	it++;
 	for(int i=0;i<param_count;i++)
 	{
-		constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i+1);
+		constant = llvm::ConstantInt::get(int_type, i+1);
 		t=Builder.CreateGEP(locals,constant);
 		arg=Builder.CreateCall2(ex->FindFunctionNamed("argumentDumper"), it, constant);
 		Builder.CreateStore(arg,t);
 	}
 	if(flags&0x01) //NEED_ARGUMENTS
 	{
-		constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), param_count+1);
+		constant = llvm::ConstantInt::get(int_type, param_count+1);
 		t=Builder.CreateGEP(locals,constant);
 		Builder.CreateStore(it,t);
 	}
 	if(flags&0x04) //TODO: NEED_REST
 	{
 		llvm::Value* rest=Builder.CreateCall(ex->FindFunctionNamed("createRest"));
-		constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), param_count+1);
+		constant = llvm::ConstantInt::get(int_type, param_count+1);
 		t=Builder.CreateGEP(locals,constant);
 		Builder.CreateStore(rest,t);
 	}
@@ -837,7 +839,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	static_locals.resize(body->local_count,stack_entry(NULL,STACK_NONE));
 
 	//Let's build a block for the real function code
-	blocks[0].BB=llvm::BasicBlock::Create("begin", llvmf);
+	blocks[0].BB=llvm::BasicBlock::Create(llvm_context,"begin", llvmf);
 	block_info* cur_block=NULL;
 
 	u8 opcode;
@@ -921,7 +923,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 					if(blocks[here].BB==NULL)
 					{
-						blocks[here].BB=llvm::BasicBlock::Create("label", llvmf);
+						blocks[here].BB=llvm::BasicBlock::Create(llvm_context,"label", llvmf);
 						blocks[here].locals_start.resize(body->local_count,STACK_NONE);
 					}
 
@@ -968,7 +970,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//Create a block for the fallthrough code and insert in the mapping
 					if(blocks[here].BB==NULL)
 					{
-						blocks[here].BB=llvm::BasicBlock::Create("fall", llvmf);
+						blocks[here].BB=llvm::BasicBlock::Create(llvm_context,"fall", llvmf);
 						blocks[here].locals_start.resize(body->local_count,STACK_NONE);
 					}
 					blocks[here].preds.insert(cur_block);
@@ -976,7 +978,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//And for the branch destination, if they are not in the blocks mapping
 					if(blocks[dest].BB==NULL)
 					{
-						blocks[dest].BB=llvm::BasicBlock::Create("then", llvmf);
+						blocks[dest].BB=llvm::BasicBlock::Create(llvm_context,"then", llvmf);
 						blocks[dest].locals_start.resize(body->local_count,STACK_NONE);
 					}
 					blocks[dest].preds.insert(cur_block);
@@ -1290,7 +1292,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//getproperty
 					u30 t;
 					code >> t;
-					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+					constant = llvm::ConstantInt::get(int_type, t);
 					int rtdata=this->context->getMultinameRTData(t);
 					if(rtdata==1)
 					{
@@ -1814,7 +1816,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("getSuper"), context, constant);
 				break;
 			}
@@ -1826,7 +1828,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("setSuper"), context, constant);
 				break;
 			}
@@ -1838,7 +1840,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> t;
 				if(Log::getLevel()==TRACE)
 				{
-					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("kill"), context, constant);
 				}
 				int i=t;
@@ -1888,7 +1890,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else
 					abort();
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 
 				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLT"), v1.first, v2.first, constant);
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -1896,8 +1898,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -1928,7 +1930,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
 				else
 					abort();
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 
 				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLE"), v1.first, v2.first, constant);
 			
@@ -1937,8 +1939,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -1963,7 +1965,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNGT"), v1, v2, constant);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -1971,8 +1973,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -1996,7 +1998,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNGE"), v1, v2, constant);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2004,8 +2006,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2027,7 +2029,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt jump " << t );
 				if(Log::getLevel()==TRACE)
 				{
-					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("jump"), context, constant);
 				}
 				int here=code2.tellg();
@@ -2048,7 +2050,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//Make comparision
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifTrue"), v1, constant);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2056,8 +2058,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2082,7 +2084,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				llvm::Value* cond;
 				if(v1.second==STACK_OBJECT)
 				{
-					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+					constant = llvm::ConstantInt::get(int_type, t);
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifFalse"), v1.first, constant);
 				}
 				else if(v1.second==STACK_BOOLEAN)
@@ -2095,8 +2097,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2119,7 +2121,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* cond;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				//Make comparision
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					cond=Builder.CreateCall3(ex->FindFunctionNamed("ifEq"), v1.first, v2.first, constant);
@@ -2135,7 +2137,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
-					v1.first=Builder.CreateSIToFP(v1.first,llvm::Type::DoubleTy);
+					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					cond=Builder.CreateFCmpOEQ(v1.first,v2.first);
 				}
 				else
@@ -2146,8 +2148,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2179,7 +2181,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNE_oi"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
-					v1.first=Builder.CreateSIToFP(v1.first,llvm::Type::DoubleTy);
+					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					cond=Builder.CreateFCmpONE(v1.first,v2.first);
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
@@ -2194,8 +2196,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2235,8 +2237,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2261,7 +2263,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifGT"), v1, v2, constant);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2269,8 +2271,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2295,7 +2297,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifGE"), v1, v2, constant);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2303,8 +2305,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2325,7 +2327,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifStrictEq"), v1, v2, constant);
 
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2333,8 +2335,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2358,7 +2360,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifStrictNE"), v1, v2, constant);
 
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2366,8 +2368,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				int here=code2.tellg();
 				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create("epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create("epilogueB", llvmf);
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
 				Builder.CreateCondBr(cond,B,A);
 				Builder.SetInsertPoint(A);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
@@ -2558,7 +2560,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushstring" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("pushString"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -2572,7 +2574,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> t;
 				if(Log::getLevel()==TRACE)
 				{
-					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("pushInt"), context, constant);
 				}
 				s32 i=this->context->constant_pool.integer[t];
@@ -2587,7 +2589,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushdouble" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -2608,9 +2610,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt hasnext2" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				code2 >> t;
-				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant2 = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall(ex->FindFunctionNamed("abort"));
 				value=Builder.CreateCall3(ex->FindFunctionNamed("hasNext2"), context, constant, constant2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
@@ -2623,7 +2625,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt newfunction" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newFunction"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -2637,7 +2639,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("call"), context, constant);
 				break;
 			}
@@ -2649,7 +2651,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("construct"), context, constant);
 				break;
 			}
@@ -2661,9 +2663,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				code2 >> t;
-				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant2 = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall3(ex->FindFunctionNamed("callSuper"), context, constant, constant2);
 				break;
 			}
@@ -2676,9 +2678,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				code2 >> t;
-				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant2 = llvm::ConstantInt::get(int_type, t);
 
 	/*				//Pop the stack arguments
 				vector<llvm::Value*> args(t+1);
@@ -2754,7 +2756,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("constructSuper"), context, constant);
 				break;
 			}
@@ -2766,9 +2768,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				code2 >> t;
-				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant2 = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall3(ex->FindFunctionNamed("constructProp"), context, constant, constant2);
 				break;
 			}
@@ -2780,9 +2782,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				code2 >> t;
-				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant2 = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall3(ex->FindFunctionNamed("callSuperVoid"), context, constant, constant2);
 				break;
 			}
@@ -2794,9 +2796,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				code2 >> t;
-				constant2 = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant2 = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall3(ex->FindFunctionNamed("callPropVoid"), context, constant, constant2);
 				break;
 			}
@@ -2808,7 +2810,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("newObject"), context, constant);
 				break;
 			}
@@ -2820,7 +2822,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("newArray"), context, constant);
 				break;
 			}
@@ -2841,7 +2843,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("newClass"), context, constant);
 				break;
 			}
@@ -2851,7 +2853,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt newcatch" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newCatch"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -2865,7 +2867,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("findPropStrict"), context, constant);
 				break;
 			}
@@ -2877,7 +2879,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("findProperty"), context, constant);
 				break;
 			}
@@ -2889,7 +2891,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("getLex"), context, constant);
 				break;
 			}
@@ -2899,7 +2901,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt setproperty" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				int rtdata=this->context->getMultinameRTData(t);
 				stack_entry value=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* name;
@@ -2940,7 +2942,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt getlocal" );
 				u30 i;
 				code2 >> i;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
+				constant = llvm::ConstantInt::get(int_type, i);
 				if(Log::getLevel()==TRACE)
 					Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 
@@ -2979,7 +2981,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				static_locals[i]=e;
 				if(Log::getLevel()==TRACE)
 				{
-					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
+					constant = llvm::ConstantInt::get(int_type, i);
 					Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
 				}
 				jitted=true;
@@ -3000,7 +3002,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt getscopeobject" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("getScopeObject"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -3012,7 +3014,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt getproperty" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				int rtdata=this->context->getMultinameRTData(t);
 				llvm::Value* name;
 				//HACK: we need to reinterpret the pointer to the generic type
@@ -3052,7 +3054,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("initProperty"), context, constant);
 				break;
 			}
@@ -3064,7 +3066,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("deleteProperty"), context, constant);
 				break;
 			}
@@ -3074,7 +3076,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt getslot" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("getSlot"), v1, constant);
@@ -3155,7 +3157,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(llvm::IntegerType::get(llvm_context,32), t);
 				Builder.CreateCall2(ex->FindFunctionNamed("coerce"), context, constant);
 				break;
 			}
@@ -3309,14 +3311,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
 					//TODO: 32bit check
-					v1.first=Builder.CreateSIToFP(v1.first,llvm::Type::DoubleTy);
+					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					value=Builder.CreateAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
 					//TODO: 32bit check
-					v2.first=Builder.CreateSIToFP(v2.first,llvm::Type::DoubleTy);
+					v2.first=Builder.CreateSIToFP(v2.first,number_type);
 					value=Builder.CreateAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
@@ -3418,7 +3420,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
 					abort();
-					v1.first=Builder.CreateSIToFP(v1.first,llvm::Type::DoubleTy);
+					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
@@ -3695,7 +3697,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), t);
+				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("incLocal_i"), context, constant);
 				break;
 			}
@@ -3707,7 +3709,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//getlocal_n
 				int i=opcode&3;
 				LOG(TRACE, "synt getlocal_n " << i );
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), i);
+				constant = llvm::ConstantInt::get(int_type, i);
 				if(Log::getLevel()==TRACE)
 					Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 
@@ -3749,7 +3751,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				static_locals[i]=e;
 				if(Log::getLevel()==TRACE)
 				{
-					constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode&3);
+					constant = llvm::ConstantInt::get(int_type, opcode&3);
 					Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
 				}
 				jitted=true;
@@ -3761,7 +3763,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> a >> b >> c;
 				LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
 						<< (unsigned int)b << ' ' << (unsigned int)c);
-				constant = llvm::ConstantInt::get(llvm::IntegerType::get(32), opcode);
+				constant = llvm::ConstantInt::get(int_type, opcode);
 				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);
 				Builder.CreateRetVoid();
 
@@ -3781,7 +3783,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 
 	this->context->vm->FPM->run(*llvmf);
-	llvmf->dump();
+	//llvmf->dump();
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }

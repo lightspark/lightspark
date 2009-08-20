@@ -20,8 +20,12 @@
 //#define __STDC_LIMIT_MACROS
 #include "abc.h"
 #include <llvm/Module.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/JIT.h>
+#include <llvm/LLVMContext.h>
 #include <llvm/ModuleProvider.h> 
 #include <llvm/Target/TargetData.h>
+#include <llvm/Target/TargetSelect.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Transforms/Scalar.h> 
 #include "logger.h"
@@ -1664,11 +1668,16 @@ void ABCVm::Run(ABCVm* th)
 	sys=th->m_sys;
 	iManager=th->int_manager;
 	dManager=th->number_manager;
-	th->module=new llvm::Module("abc jit");
-	th->ex=llvm::ExecutionEngine::create(th->module);
-	llvm::ExistingModuleProvider ModuleProvider(th->module);
-	th->FPM=new llvm::FunctionPassManager(&ModuleProvider);
-            
+	llvm::InitializeNativeTarget();
+	th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
+	llvm::ExistingModuleProvider mp(th->module);
+	llvm::EngineBuilder eb(&mp);
+	eb.setEngineKind(llvm::EngineKind::JIT);
+	eb.setOptLevel(llvm::CodeGenOpt::Default);
+	th->ex=eb.create();
+
+	th->FPM=new llvm::FunctionPassManager(&mp);
+       
 	th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
 //	th->FPM->add(llvm::createVerifierPass());
 	th->FPM->add(llvm::createPromoteMemoryToRegisterPass());
@@ -1695,6 +1704,7 @@ void ABCVm::Run(ABCVm* th)
 		if(th->shutdown)
 			break;
 	}
+	mp.releaseModule();
 }
 
 string ABCContext::getString(unsigned int s) const

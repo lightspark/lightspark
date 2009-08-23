@@ -1302,6 +1302,7 @@ std::istream& operator>>(std::istream& s, CLIPACTIONS& v)
 
 ISWFObject* abstract_d(number_t i)
 {
+	//cout << "abstract_d" << endl;
 	Number* ret=dManager->get<Number>();
 	ret->val=i;
 	return ret;
@@ -1309,11 +1310,13 @@ ISWFObject* abstract_d(number_t i)
 
 ISWFObject* abstract_b(bool i)
 {
+	//cout << "abstract_b" << endl;
 	return new Boolean(i);
 }
 
 ISWFObject* abstract_i(intptr_t i)
 {
+	//cout << "abstract_i" << endl;
 	Integer* ret=iManager->get<Integer>();
 	ret->val=i;
 	return ret;

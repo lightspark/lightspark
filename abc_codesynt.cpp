@@ -3783,7 +3783,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 
 	this->context->vm->FPM->run(*llvmf);
-	//llvmf->dump();
+	llvmf->dump();
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }

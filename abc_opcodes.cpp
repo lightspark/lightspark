@@ -65,7 +65,7 @@ void ABCVm::setProperty(ISWFObject* value,ISWFObject* obj,multiname* name)
 
 void ABCVm::setProperty_i(intptr_t value,ISWFObject* obj,multiname* name)
 {
-//	LOG(CALLS,"setProperty_i " << *name);
+	LOG(CALLS,"setProperty_i " << *name);
 
 	//Check to see if a proper setter method is available
 	obj->setVariableByMultiname_i(*name,value);
@@ -131,7 +131,7 @@ void ABCVm::setSlot(ISWFObject* value, ISWFObject* obj, int n)
 
 ISWFObject* ABCVm::getSlot(ISWFObject* obj, int n)
 {
-//	LOG(CALLS,"getSlot " << dec << n);
+	LOG(CALLS,"getSlot " << dec << n);
 	ISWFObject* ret=obj->getSlot(n);
 	ret->incRef();
 	obj->decRef();
@@ -241,7 +241,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 ISWFObject* ABCVm::getProperty(ISWFObject* obj, multiname* name)
 {
-	//LOG(CALLS, "getProperty " << *name );
+	LOG(CALLS, "getProperty " << *name );
 
 	ISWFObject* owner;
 	ISWFObject* ret=obj->getVariableByMultiname(*name,owner);
@@ -280,7 +280,7 @@ number_t ABCVm::divide(ISWFObject* val2, ISWFObject* val1)
 
 ISWFObject* ABCVm::getGlobalScope(call_context* th)
 {
-//	LOG(CALLS,"getGlobalScope: " << &th->context->Global);
+	LOG(CALLS,"getGlobalScope: " << &th->context->Global);
 	th->context->Global->incRef();
 	return th->context->Global;
 }
@@ -315,7 +315,7 @@ bool ABCVm::ifLT(ISWFObject* obj2, ISWFObject* obj1)
 
 bool ABCVm::ifLT_oi(ISWFObject* obj2, intptr_t val1)
 {
-//	LOG(CALLS,"ifLT_oi");
+	LOG(CALLS,"ifLT_oi");
 
 	bool ret=val1<obj2->toInt();
 

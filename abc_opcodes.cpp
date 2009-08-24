@@ -239,6 +239,21 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	obj->decRef();
 }
 
+intptr_t ABCVm::getProperty_i(ISWFObject* obj, multiname* name)
+{
+	LOG(CALLS, "getProperty_i " << *name );
+
+	ISWFObject* owner;
+	intptr_t ret=obj->getVariableByMultiname_i(*name,owner);
+	if(owner==NULL)
+	{
+		//LOG(NOT_IMPLEMENTED,"Property not found " << *name);
+		abort();
+	}
+	obj->decRef();
+	return ret;
+}
+
 ISWFObject* ABCVm::getProperty(ISWFObject* obj, multiname* name)
 {
 	LOG(CALLS, "getProperty " << *name );
@@ -559,6 +574,16 @@ intptr_t ABCVm::modulo(ISWFObject* val1, ISWFObject* val2)
 	val2->decRef();
 	LOG(CALLS,"modulo "  << num1 << '%' << num2);
 	return num1%num2;
+}
+
+number_t ABCVm::subtract_oi(ISWFObject* val2, intptr_t val1)
+{
+	int num2=val2->toInt();
+	int num1=val1;
+
+	val2->decRef();
+	LOG(CALLS,"subtract " << num1 << '-' << num2);
+	return num1-num2;
 }
 
 number_t ABCVm::subtract(ISWFObject* val2, ISWFObject* val1)

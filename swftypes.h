@@ -274,6 +274,7 @@ public:
 			o->decRef();
 	}
 	virtual ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
+	virtual intptr_t getVariableByMultiname_i(const multiname& name, ISWFObject*& owner);
 	virtual ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
 	virtual ISWFObject* getVariableByString(const std::string& name, ISWFObject*& owner);
 	virtual void setVariableByMultiname_i(multiname& name, intptr_t value);
@@ -405,6 +406,7 @@ friend class Number;
 friend class ABCVm;
 friend class ABCContext;
 friend ISWFObject* abstract_i(intptr_t i);
+friend ISWFObject* abstract_i2(intptr_t i);
 private:
 	int val;
 public:
@@ -984,7 +986,8 @@ public:
 };
 
 ISWFObject* abstract_i(intptr_t i);
-ISWFObject* abstract_b(intptr_t i);
+ISWFObject* abstract_i2(intptr_t i);
+ISWFObject* abstract_b(bool i);
 ISWFObject* abstract_d(number_t i);
 
 std::ostream& operator<<(std::ostream& s, const RECT& r);

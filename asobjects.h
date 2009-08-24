@@ -240,6 +240,7 @@ public:
 	}
 	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
 	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
+	intptr_t getVariableByMultiname_i(const multiname& name, ISWFObject*& owner);
 	void setVariableByName(const Qname& name, ISWFObject* o);
 	void setVariableByMultiname(multiname& name, ISWFObject* o);
 	void setVariableByMultiname_i(multiname& name, intptr_t value);

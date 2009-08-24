@@ -1679,7 +1679,7 @@ void ABCVm::Run(ABCVm* th)
 	th->FPM=new llvm::FunctionPassManager(&mp);
        
 	th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
-//	th->FPM->add(llvm::createVerifierPass());
+	//th->FPM->add(llvm::createVerifierPass());
 	th->FPM->add(llvm::createPromoteMemoryToRegisterPass());
 	th->FPM->add(llvm::createReassociatePass());
 	th->FPM->add(llvm::createCFGSimplificationPass());

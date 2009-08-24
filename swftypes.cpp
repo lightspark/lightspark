@@ -243,6 +243,12 @@ void ISWFObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 	}
 }
 
+intptr_t ISWFObject::getVariableByMultiname_i(const multiname& name, ISWFObject*& owner)
+{
+	cout << "getVariableByMultiname_i invalid" << endl;
+	abort();
+}
+
 ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
 {
 	map<Qname,obj_var>::iterator it;
@@ -1312,6 +1318,14 @@ ISWFObject* abstract_b(bool i)
 {
 	//cout << "abstract_b" << endl;
 	return new Boolean(i);
+}
+
+ISWFObject* abstract_i2(intptr_t i)
+{
+	//cout << "abstract_i" << endl;
+	Integer* ret=iManager->get<Integer>();
+	ret->val=i;
+	return ret;
 }
 
 ISWFObject* abstract_i(intptr_t i)

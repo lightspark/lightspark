@@ -188,6 +188,7 @@ struct block_info
 	std::vector<STACK_TYPE> locals_start;
 	std::vector<llvm::Value*> locals_start_obj;
 	std::set<block_info*> preds;
+	std::vector<STACK_TYPE> push_types;
 
 	block_info():BB(NULL){}
 };
@@ -436,6 +437,7 @@ private:
 	static void incLocal_i(call_context* th, int n);
 	static void coerce(call_context* th, int n);
 	static ISWFObject* getProperty(ISWFObject* obj, multiname* name);
+	static intptr_t getProperty_i(ISWFObject* obj, multiname* name);
 	static void setProperty(ISWFObject* value,ISWFObject* obj, multiname* name);
 	static void setProperty_i(intptr_t value,ISWFObject* obj, multiname* name);
 	static void call(call_context* th, int n);
@@ -480,6 +482,7 @@ private:
 	static number_t divide(ISWFObject*,ISWFObject*);
 	static intptr_t modulo(ISWFObject*,ISWFObject*);
 	static number_t subtract(ISWFObject*,ISWFObject*);
+	static number_t subtract_oi(ISWFObject*, intptr_t);
 	static void popScope(call_context* th);
 	static ISWFObject* newActivation(call_context* th, method_info*);
 	static ISWFObject* coerce_s(ISWFObject*);

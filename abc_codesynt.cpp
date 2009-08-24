@@ -138,7 +138,6 @@ opcode_handler ABCVm::opcode_table_args3_pointers[]={
 };
 
 opcode_handler ABCVm::opcode_table_args2_pointers[]={
-	{"getProperty",(void*)&ABCVm::getProperty},
 	{"nextName",(void*)&ABCVm::nextName},
 	{"nextValue",(void*)&ABCVm::nextValue},
 	{"lessThan",(void*)&ABCVm::lessThan},
@@ -162,13 +161,15 @@ typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
 	{"modulo",(void*)&ABCVm::modulo,ARGS_OBJ_OBJ},
 	{"urShift",(void*)&ABCVm::urShift,ARGS_OBJ_OBJ},
 	{"urShift_io",(void*)&ABCVm::urShift_io,ARGS_INT_OBJ},
+	{"getProperty_i",(void*)&ABCVm::getProperty_i,ARGS_OBJ_OBJ}
 };
 
 typed_opcode_handler ABCVm::opcode_table_number_t[]={
 	{"multiply",(void*)&ABCVm::multiply,ARGS_OBJ_OBJ},
 	{"multiply_oi",(void*)&ABCVm::multiply_oi,ARGS_OBJ_INT},
 	{"divide",(void*)&ABCVm::divide,ARGS_OBJ_OBJ},
-	{"subtract",(void*)&ABCVm::subtract,ARGS_OBJ_OBJ}
+	{"subtract",(void*)&ABCVm::subtract,ARGS_OBJ_OBJ},
+	{"subtract_oi",(void*)&ABCVm::subtract_oi,ARGS_OBJ_INT}
 };
 
 typed_opcode_handler ABCVm::opcode_table_void[]={
@@ -183,7 +184,9 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"add_od",(void*)&ABCVm::add_od,ARGS_OBJ_NUMBER},
 	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
 	{"abstract_i",(void*)&abstract_i,ARGS_INT},
-	{"abstract_b",(void*)&abstract_i,ARGS_BOOL},
+	{"abstract_i2",(void*)&abstract_i2,ARGS_INT},
+	{"abstract_b",(void*)&abstract_b,ARGS_BOOL},
+	{"getProperty",(void*)&ABCVm::getProperty,ARGS_OBJ_OBJ}
 };
 
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
@@ -692,7 +695,7 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 			{
 				//decRef the previous contents
 				builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
-				llvm::Value* v=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),static_locals[i].first);
+				llvm::Value* v=builder.CreateCall(ex->FindFunctionNamed("abstract_i2"),static_locals[i].first);
 				builder.CreateStore(v,t);
 			}
 			else if(static_locals[i].second==STACK_NUMBER)
@@ -712,6 +715,18 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 			else
 				abort();
 		}
+	}
+}
+
+STACK_TYPE checkProactiveCasting(vector<STACK_TYPE>& push_types,int& push_index,STACK_TYPE type)
+{
+	push_index++;
+	if(push_index<push_types.size())
+		return push_types[push_index-1];
+	else
+	{
+		push_types.push_back(type);
+		return type;
 	}
 }
 
@@ -860,7 +875,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 		stringstream code(body->code);
 		stop=true;
 		cur_block=NULL;
-		vector<STACK_TYPE> static_stack_types;
+		vector<pair<int, STACK_TYPE> > static_stack_types;
+		int push_index=0;
 
 		while(1)
 		{
@@ -875,6 +891,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					it->second.preds.insert(cur_block);
 				cur_block=&it->second;
 				cur_block->locals=cur_block->locals_start;
+				push_index=0;
 				//A new block starts, the last instruction should have been a branch?
 				last_is_branch=false;
 			}
@@ -928,6 +945,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					}
 
 					blocks[here].preds.insert(cur_block);
+					static_stack_types.clear();
 					break;
 				}
 				case 0x0c:
@@ -1019,7 +1037,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					if(!static_stack.empty())
 						static_stack_types.pop_back();
 
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x20:
@@ -1029,7 +1048,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushnull
 					//pushundefined
 					//pushnan
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x23:
@@ -1040,7 +1060,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					if(!static_stack.empty())
 						static_stack_types.pop_back();
 
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x24:
@@ -1048,7 +1069,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushbyte
 					int8_t t;
 					code.read((char*)&t,1);
-					static_stack_types.push_back(STACK_INT);
+					static_stack_types.push_back(make_pair(push_index,STACK_INT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0x25:
@@ -1056,7 +1078,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushshort
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(STACK_INT);
+					static_stack_types.push_back(make_pair(push_index,STACK_INT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0x26:
@@ -1064,7 +1087,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//pushtrue
 					//pushfalse
-					static_stack_types.push_back(STACK_BOOLEAN);
+					static_stack_types.push_back(make_pair(push_index,STACK_BOOLEAN));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_BOOLEAN);
 					break;
 				}
 				case 0x29:
@@ -1078,9 +1102,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//dup
 					if(!static_stack_types.empty())
+					{
 						static_stack_types.push_back(static_stack_types.back());
+						checkProactiveCasting(cur_block->push_types,push_index,static_stack_types.back().second);
+					}
 					else
-						static_stack_types.push_back(STACK_OBJECT);
+					{
+						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+						checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					}
 					break;
 				}
 				case 0x2b:
@@ -1089,21 +1119,24 @@ SyntheticFunction::synt_function method_info::synt_method()
 					STACK_TYPE t1,t2;
 					if(!static_stack_types.empty())
 					{
-						t1=static_stack_types.back();
+						t1=static_stack_types.back().second;
 						static_stack_types.pop_back();
 					}
 					else
 						t1=STACK_OBJECT;
+
 					if(!static_stack_types.empty())
 					{
-						t2=static_stack_types.back();
+						t2=static_stack_types.back().second;
 						static_stack_types.pop_back();
 					}
 					else
 						t2=STACK_OBJECT;
 
-					static_stack_types.push_back(t1);
-					static_stack_types.push_back(t2);
+					static_stack_types.push_back(make_pair(push_index,t1));
+					checkProactiveCasting(cur_block->push_types,push_index,t1);
+					static_stack_types.push_back(make_pair(push_index,t2));
+					checkProactiveCasting(cur_block->push_types,push_index,t2);
 
 					break;
 				}
@@ -1112,7 +1145,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushstring
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x2d:
@@ -1120,7 +1154,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushint
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(STACK_INT);
+					static_stack_types.push_back(make_pair(push_index,STACK_INT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0x2f:
@@ -1128,7 +1163,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushdouble
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x30:
@@ -1143,7 +1179,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					u30 t;
 					code >> t;
 					code >> t;
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x40:
@@ -1151,7 +1188,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//newfunction
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x41:
@@ -1213,7 +1251,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x57:
 				{
 					//newactivation
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x5a:
@@ -1221,7 +1260,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//newcatch
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x61:
@@ -1248,11 +1288,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 					code >> i;
 					if(cur_block->locals[i]==STACK_NONE)
 					{
-						static_stack_types.push_back(STACK_OBJECT);
+						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+						checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 						cur_block->locals[i]=STACK_OBJECT;
 					}
 					else
-						static_stack_types.push_back(cur_block->locals[i]);
+					{
+						static_stack_types.push_back(make_pair(push_index,cur_block->locals[i]));
+						checkProactiveCasting(cur_block->push_types,push_index,cur_block->locals[i]);
+					}
 					break;
 				}
 				case 0x63:
@@ -1264,7 +1308,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					STACK_TYPE t;
 					if(!static_stack_types.empty())
 					{
-						t=static_stack_types.back();
+						t=static_stack_types.back().second;
 						static_stack_types.pop_back();
 					}
 					else
@@ -1276,7 +1320,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x64:
 				{
 					//getglobalscope
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x65:
@@ -1284,7 +1329,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//getscopeobject
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x66:
@@ -1301,7 +1347,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 					}
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_OBJECT);
+
+					STACK_TYPE actual_type=checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					if(actual_type==STACK_OBJECT)
+						static_stack_types.push_back(make_pair(push_index-1,STACK_OBJECT)); //The index was incremented by the check
+					else if(actual_type==STACK_INT)
+						static_stack_types.push_back(make_pair(push_index-1,STACK_INT));
+					else
+					{
+						cout << cur_block->push_types[push_index-1] << endl;
+						abort();
+					}
 					break;
 				}
 				case 0x68:
@@ -1321,7 +1377,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					code >> t;
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x6d:
@@ -1372,7 +1429,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//typeof
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0x91:
@@ -1382,7 +1440,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//decrement
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_INT);
+					static_stack_types.push_back(make_pair(push_index,STACK_INT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0x96:
@@ -1390,7 +1449,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//not
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_BOOLEAN);
+					static_stack_types.push_back(make_pair(push_index,STACK_BOOLEAN));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_BOOLEAN);
 					break;
 				}
 				case 0xa0:
@@ -1399,27 +1459,39 @@ SyntheticFunction::synt_function method_info::synt_method()
 					STACK_TYPE t1,t2;
 					if(!static_stack_types.empty())
 					{
-						t1=static_stack_types.back();
+						t1=static_stack_types.back().second;
 						static_stack_types.pop_back();
 					}
 					else
 						t1=STACK_OBJECT;
 					if(!static_stack_types.empty())
 					{
-						t2=static_stack_types.back();
+						t2=static_stack_types.back().second;
 						static_stack_types.pop_back();
 					}
 					else
 						t2=STACK_OBJECT;
 
 					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
-						static_stack_types.push_back(STACK_OBJECT);
+					{
+						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+						checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					}
 					else if(t1==STACK_INT && t2==STACK_INT)
-						static_stack_types.push_back(STACK_INT);
+					{
+						static_stack_types.push_back(make_pair(push_index,STACK_INT));
+						checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					}
 					else if(t1==STACK_INT && t2==STACK_NUMBER)
-						static_stack_types.push_back(STACK_NUMBER);
+					{
+						static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
+						checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
+					}
 					else if(t1==STACK_NUMBER && t2==STACK_INT)
-						static_stack_types.push_back(STACK_NUMBER);
+					{
+						static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
+						checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
+					}
 					else
 						abort();
 
@@ -1432,17 +1504,25 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_NUMBER);
+					static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
 					break;
 				}
 				case 0xa2:
 				{
 					//multiply
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
+					}
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_NUMBER);
+					}
+					static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
 					break;
 				}
 				case 0xa3:
@@ -1452,7 +1532,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_NUMBER);
+					static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
 					break;
 				}
 				case 0xa4:
@@ -1461,64 +1542,86 @@ SyntheticFunction::synt_function method_info::synt_method()
 					STACK_TYPE t1,t2;
 					if(!static_stack_types.empty())
 					{
-						t2=static_stack_types.back();
+						t2=static_stack_types.back().second;
 						static_stack_types.pop_back();
 					}
 					else
 						t2=STACK_OBJECT;
 					if(!static_stack_types.empty())
 					{
-						t1=static_stack_types.back();
+						t1=static_stack_types.back().second;
 						static_stack_types.pop_back();
 					}
 					else
 						t1=STACK_OBJECT;
 
 					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
-						static_stack_types.push_back(STACK_INT);
+						static_stack_types.push_back(make_pair(push_index,STACK_INT));
 					else if(t1==STACK_INT && t2==STACK_NUMBER)
 					{
 						exit(2);
-						static_stack_types.push_back(STACK_INT);
+						static_stack_types.push_back(make_pair(push_index,STACK_INT));
 					}
 					else if(t1==STACK_NUMBER && t2==STACK_INT)
-						static_stack_types.push_back(STACK_INT);
+						static_stack_types.push_back(make_pair(push_index,STACK_INT));
 					else if(t1==STACK_INT && t2==STACK_INT)
-						static_stack_types.push_back(STACK_INT);
+						static_stack_types.push_back(make_pair(push_index,STACK_INT));
 					else if(t1==STACK_NUMBER && t2==STACK_NUMBER)
-						static_stack_types.push_back(STACK_INT);
+						static_stack_types.push_back(make_pair(push_index,STACK_INT));
 					else
 						abort();
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0xa5:
 				{
 					//lshift
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
+					}
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_INT);
+					}
+					static_stack_types.push_back(make_pair(push_index,STACK_INT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0xa7:
 				{
 					//urshift
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
+					}
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_INT);
+					}
+					static_stack_types.push_back(make_pair(push_index,STACK_INT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0xa8:
 				{
 					//bitand
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
+					}
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_INT);
+					}
+					static_stack_types.push_back(make_pair(push_index,STACK_INT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0xa9:
@@ -1528,7 +1631,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_INT);
+					static_stack_types.push_back(make_pair(push_index,STACK_INT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0xaa:
@@ -1538,7 +1642,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_INT);
+					static_stack_types.push_back(make_pair(push_index,STACK_INT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
 					break;
 				}
 				case 0xab:
@@ -1548,7 +1653,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_BOOLEAN);
+					static_stack_types.push_back(make_pair(push_index,STACK_BOOLEAN));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_BOOLEAN);
 					break;
 				}
 				case 0xac:
@@ -1558,7 +1664,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0xad:
@@ -1568,7 +1675,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0xaf:
@@ -1578,7 +1686,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0xb3:
@@ -1594,7 +1703,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0xc0:
@@ -1602,7 +1712,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//increment_i
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0xc1:
@@ -1610,7 +1721,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//decrement_i
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					break;
 				}
 				case 0xc2:
@@ -1630,11 +1742,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 					int i=opcode&3;
 					if(cur_block->locals[i]==STACK_NONE)
 					{
-						static_stack_types.push_back(STACK_OBJECT);
+						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
+						checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 						cur_block->locals[i]=STACK_OBJECT;
 					}
 					else
-						static_stack_types.push_back(cur_block->locals[i]);
+					{
+						static_stack_types.push_back(make_pair(push_index,cur_block->locals[i]));
+						checkProactiveCasting(cur_block->push_types,push_index,cur_block->locals[i]);
+					}
 					break;
 				}
 				case 0xd5:
@@ -1646,7 +1762,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					STACK_TYPE t;
 					if(!static_stack_types.empty())
 					{
-						t=static_stack_types.back();
+						t=static_stack_types.back().second;
 						static_stack_types.pop_back();
 					}
 					else
@@ -1742,6 +1858,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	static_stack.clear();
 	Builder.CreateBr(blocks[0].BB);
 
+	int push_index=0;
 	//Each case block builds the correct parameters for the interpreter function and call it
 	while(1)
 	{
@@ -1764,6 +1881,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			LOG(TRACE,"Starting block at "<<int(code2.tellg())-1);
 			Builder.SetInsertPoint(it->second.BB);
 			cur_block=&it->second;
+			push_index=0;
 
 			if(!cur_block->locals_start.empty())
 			{
@@ -1835,9 +1953,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x08:
 			{
 				//kill
-				LOG(TRACE, "synt kill" );
 				u30 t;
 				code2 >> t;
+				LOG(TRACE, "synt kill " << t );
 				if(Log::getLevel()==TRACE)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
@@ -2428,6 +2546,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("nextName"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2437,6 +2556,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushnull" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushNull"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2446,6 +2566,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushundefined" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushUndefined"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2460,6 +2581,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("nextValue"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2471,6 +2593,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2.read((char*)&t,1);
 				constant = llvm::ConstantInt::get(int_type, (int)t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
+				push_index++;
 				if(Log::getLevel()==TRACE)
 					value=Builder.CreateCall(ex->FindFunctionNamed("pushByte"), constant);
 				jitted=true;
@@ -2484,6 +2607,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
+				push_index++;
 				if(Log::getLevel()==TRACE)
 					Builder.CreateCall(ex->FindFunctionNamed("pushShort"), constant);
 				jitted=true;
@@ -2495,6 +2619,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushtrue" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushTrue"));
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2504,6 +2629,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushfalse" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushFalse"));
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2513,6 +2639,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushnan" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushNaN"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2535,6 +2662,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					Builder.CreateCall(ex->FindFunctionNamed("dup"), context);
 				stack_entry e=static_stack_peek(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e);
+				push_index++;
 
 				if(e.second==STACK_OBJECT)
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), e.first);
@@ -2550,7 +2678,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry e1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry e2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e1);
+				push_index++;
 				static_stack_push(static_stack,e2);
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2563,6 +2693,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("pushString"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2580,6 +2711,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				s32 i=this->context->constant_pool.integer[t];
 				constant = llvm::ConstantInt::get(int_type, i);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2592,6 +2724,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2616,6 +2749,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				Builder.CreateCall(ex->FindFunctionNamed("abort"));
 				value=Builder.CreateCall3(ex->FindFunctionNamed("hasNext2"), context, constant, constant2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2628,6 +2762,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newFunction"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2832,6 +2967,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt newactivation" );
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newActivation"), context, th);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2856,6 +2992,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newCatch"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2965,6 +3102,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2993,6 +3131,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt getglobalscope" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3005,6 +3144,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("getScopeObject"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3041,8 +3181,20 @@ SyntheticFunction::synt_function method_info::synt_method()
 						abort();
 				}
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty"), obj.first, name);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+
+				if(cur_block->push_types[push_index]==STACK_OBJECT)
+				{
+					value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty"), obj.first, name);
+					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				}
+				else if(cur_block->push_types[push_index]==STACK_INT)
+				{
+					value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty_i"), obj.first, name);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				}
+				else
+					abort();
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3081,6 +3233,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("getSlot"), v1, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3146,6 +3299,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,v1);
 				else
 					abort();
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3169,8 +3323,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					Builder.CreateCall(ex->FindFunctionNamed("coerce_a"), context);
 				/*stack_entry v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT)
-					value=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 				else
 					value=v1.first;
 				
@@ -3206,6 +3358,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("negate"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3225,6 +3378,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3243,6 +3397,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					exit(v1.second);
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3254,6 +3409,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("typeOf"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3269,6 +3425,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3282,31 +3439,37 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+					push_index++;
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+					push_index++;
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+					push_index++;
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_NUMBER)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+					push_index++;
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+					push_index++;
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
 				{
 					value=Builder.CreateAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+					push_index++;
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
@@ -3314,6 +3477,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					value=Builder.CreateAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+					push_index++;
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
@@ -3321,6 +3485,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateSIToFP(v2.first,number_type);
 					value=Builder.CreateAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+					push_index++;
 				}
 				else
 					abort();
@@ -3334,17 +3499,25 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt subtract" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-				if(v2.second==STACK_INT)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-				if(v1.second==STACK_NUMBER)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v1.first);
-				if(v2.second==STACK_NUMBER)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+				{
+					value=Builder.CreateCall2(ex->FindFunctionNamed("subtract"), v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_INT)
+				{
+					value=Builder.CreateSub(v2.first, v1.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				}
+				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
+				{
+					value=Builder.CreateCall2(ex->FindFunctionNamed("subtract_oi"), v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				}
+				else
+					abort();
 
-				value=Builder.CreateCall2(ex->FindFunctionNamed("subtract"), v1.first, v2.first);
-				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3360,9 +3533,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall2(ex->FindFunctionNamed("multiply_oi"), v2.first, v1.first);
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 					value=Builder.CreateCall2(ex->FindFunctionNamed("multiply_oi"), v1.first, v2.first);
+				else if(v1.second==STACK_INT && v2.second==STACK_INT)
+				{
+					value=Builder.CreateMul(v1.first, v2.first);
+					value=Builder.CreateSIToFP(value,number_type);
+				}
 				else
 					abort();
 				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3383,7 +3562,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
 				{
-				v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
 				}
 				else
@@ -3391,6 +3570,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("divide"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3404,18 +3584,21 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+					push_index++;
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 				{
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+					push_index++;
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 				{
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+					push_index++;
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
@@ -3423,12 +3606,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+					push_index++;
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
 					v1.first=Builder.CreateFPToSI(v1.first,int_type);
 					value=Builder.CreateSRem(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+					push_index++;
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
 				{
@@ -3436,11 +3621,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateFPToSI(v2.first,int_type);
 					value=Builder.CreateSRem(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+					push_index++;
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
 				{
 					value=Builder.CreateSRem(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+					push_index++;
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
 				{
@@ -3451,6 +3638,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+					push_index++;
 				}
 				else
 					abort();
@@ -3475,6 +3663,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					abort();
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3484,14 +3673,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt urshift" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				/*if(v1.second==STACK_INT)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-				if(v2.second==STACK_INT)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-				if(v1.second==STACK_NUMBER)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v1.first);
-				if(v2.second==STACK_NUMBER)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);*/
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					value=Builder.CreateCall2(ex->FindFunctionNamed("urShift"), v1.first, v2.first);
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
@@ -3511,6 +3692,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					abort();
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3545,6 +3727,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					abort();
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3564,6 +3747,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr"), v1.first, v2.first);
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3587,6 +3771,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall2(ex->FindFunctionNamed("bitXor"), v1.first, v2.first);
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3600,6 +3785,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("equals"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3613,6 +3799,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("strictEquals"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3629,6 +3816,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("lessThan"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3642,6 +3830,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("greaterThan"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3664,6 +3853,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("in"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3675,6 +3865,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("increment_i"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3686,6 +3877,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("decrement_i"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3718,6 +3910,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					llvm::Value* t=Builder.CreateGEP(locals,constant);
 					t=Builder.CreateLoad(t,"stack");
 					static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
+					push_index++;
 					static_locals[i]=stack_entry(t,STACK_OBJECT);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
@@ -3726,11 +3919,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
 					static_stack_push(static_stack,static_locals[i]);
+					push_index++;
 				}
 				else if(static_locals[i].second==STACK_INT || 
 						static_locals[i].second==STACK_NUMBER ||
 						static_locals[i].second==STACK_BOOLEAN)
+				{
 					static_stack_push(static_stack,static_locals[i]);
+					push_index++;
+				}
 				else
 					abort();
 

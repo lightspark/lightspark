@@ -237,6 +237,54 @@ bool ASArray::isEqual(const ISWFObject* r) const
 	}
 }
 
+intptr_t ASArray::getVariableByMultiname_i(const multiname& name, ISWFObject*& owner)
+{
+	intptr_t ret;
+	owner=NULL;
+	int index=0;
+
+	switch(name.name_type)
+	{
+		case multiname::NAME_STRING:
+			for(int i=0;i<name.name_s.len();i++)
+			{
+				char a=name.name_s[i];
+				if(a>='0' && a<='9')
+				{
+					index*=10;
+					index+=(a-'0');
+				}
+				else
+				{
+					index=-1;
+					break;
+				}
+			}
+			break;
+		case multiname::NAME_INT:
+			index=name.name_i;
+			break;
+	}
+
+	if(index!=-1 && index<data.size())
+	{
+			switch(data[index].type)
+			{
+				case STACK_OBJECT:
+					ret=data[index].data->toInt();
+					break;
+				case STACK_INT:
+					ret=data[index].data_i;
+					break;
+			}
+			owner=this;
+	}
+	else
+		ret=ASObject::getVariableByMultiname_i(name,owner);
+
+	return ret;
+}
+
 ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
 {
 	ISWFObject* ret;
@@ -279,6 +327,7 @@ ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& 
 					}
 					break;
 				case STACK_INT:
+					//cout << "Not efficent" << endl;
 					ret=abstract_i(data[index].data_i);
 					ret->fake_decRef();
 					break;

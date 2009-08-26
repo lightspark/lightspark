@@ -187,7 +187,10 @@ struct block_info
 	std::vector<STACK_TYPE> locals;
 	std::vector<STACK_TYPE> locals_start;
 	std::vector<llvm::Value*> locals_start_obj;
+	std::vector<bool> locals_reset;
+	std::vector<bool> locals_used;
 	std::set<block_info*> preds;
+	std::set<block_info*> seqs;
 	std::vector<STACK_TYPE> push_types;
 
 	block_info():BB(NULL){}

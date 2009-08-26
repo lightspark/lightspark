@@ -678,7 +678,9 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 				abort();
 			}*/
 		}
-	
+		if(dest_block.locals_reset[i])
+			continue;
+
 		if(static_locals[i].second==dest_block.locals_start[i])
 			builder.CreateStore(static_locals[i].first,dest_block.locals_start_obj[i]);
 		else
@@ -864,6 +866,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 	{
 		block_info& cur=bit->second;
 		cur.locals_start.resize(body->local_count,STACK_NONE);
+		cur.locals_reset.resize(body->local_count,false);
+		cur.locals_used.resize(body->local_count,false);
 	}
 
 	//We try to analyze the blocks first to find if locals can survive the jumps
@@ -888,7 +892,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 			if(it!=blocks.end())
 			{
 				if(cur_block)
+				{
 					it->second.preds.insert(cur_block);
+					cur_block->seqs.insert(&it->second);
+				}
 				cur_block=&it->second;
 				cur_block->locals=cur_block->locals_start;
 				push_index=0;
@@ -942,9 +949,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					{
 						blocks[here].BB=llvm::BasicBlock::Create(llvm_context,"label", llvmf);
 						blocks[here].locals_start.resize(body->local_count,STACK_NONE);
+						blocks[here].locals_reset.resize(body->local_count,false);
+						blocks[here].locals_used.resize(body->local_count,false);
 					}
 
 					blocks[here].preds.insert(cur_block);
+					cur_block->seqs.insert(&blocks[here]);
 					static_stack_types.clear();
 					break;
 				}
@@ -990,16 +1000,22 @@ SyntheticFunction::synt_function method_info::synt_method()
 					{
 						blocks[here].BB=llvm::BasicBlock::Create(llvm_context,"fall", llvmf);
 						blocks[here].locals_start.resize(body->local_count,STACK_NONE);
+						blocks[here].locals_reset.resize(body->local_count,false);
+						blocks[here].locals_used.resize(body->local_count,false);
 					}
 					blocks[here].preds.insert(cur_block);
+					cur_block->seqs.insert(&blocks[here]);
 
 					//And for the branch destination, if they are not in the blocks mapping
 					if(blocks[dest].BB==NULL)
 					{
 						blocks[dest].BB=llvm::BasicBlock::Create(llvm_context,"then", llvmf);
 						blocks[dest].locals_start.resize(body->local_count,STACK_NONE);
+						blocks[dest].locals_reset.resize(body->local_count,false);
+						blocks[dest].locals_used.resize(body->local_count,false);
 					}
 					blocks[dest].preds.insert(cur_block);
+					cur_block->seqs.insert(&blocks[dest]);
 		
 					static_stack_types.clear();
 					break;
@@ -1228,6 +1244,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//returnvalue
 					last_is_branch=true;
 					static_stack_types.clear();
+					for(int i=0;i<body->local_count;i++)
+					{
+						if(cur_block->locals_used[i]==false)
+							cur_block->locals_reset[i]=true;
+					}
 					break;
 				}
 				case 0x55:
@@ -1286,6 +1307,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//getlocal
 					u30 i;
 					code >> i;
+					cur_block->locals_used[i]=true;
 					if(cur_block->locals[i]==STACK_NONE)
 					{
 						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
@@ -1305,6 +1327,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					LOG(TRACE, "synt setlocal" );
 					u30 i;
 					code >> i;
+					cur_block->locals_used[i]=true;
 					STACK_TYPE t;
 					if(!static_stack_types.empty())
 					{
@@ -1314,6 +1337,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					else
 						t=STACK_OBJECT;
 					
+					if(cur_block->locals[i]==STACK_NONE)
+						cur_block->locals_reset[i]=true;
 					cur_block->locals[i]=t;
 					break;
 				}
@@ -1740,6 +1765,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//getlocal_n
 					int i=opcode&3;
+					cur_block->locals_used[i]=true;
 					if(cur_block->locals[i]==STACK_NONE)
 					{
 						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
@@ -1759,6 +1785,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//setlocal_n
 					int i=opcode&3;
+					cur_block->locals_used[i]=true;
 					STACK_TYPE t;
 					if(!static_stack_types.empty())
 					{
@@ -1768,6 +1795,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					else
 						t=STACK_OBJECT;
 
+					if(cur_block->locals[i]==STACK_NONE)
+						cur_block->locals_reset[i]=true;
 					cur_block->locals[i]=t;
 					break;
 				}
@@ -1778,6 +1807,46 @@ SyntheticFunction::synt_function method_info::synt_method()
 					LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
 							<< (unsigned int)b << ' ' << (unsigned int)c);
 			}
+		}
+
+		//Let's propagate locals reset information
+		while(1)
+		{
+			stop=true;
+			map<int,block_info>::iterator bit=blocks.begin();
+			for(bit;bit!=blocks.end();bit++)
+			{
+				block_info& cur=bit->second;
+				std::vector<bool> new_reset(body->local_count,false);
+				for(int i=0;i<body->local_count;i++)
+				{
+					if(cur.locals_used[i]==false)
+						new_reset[i]=true;
+				}
+				set<block_info*>::iterator seq=cur.seqs.begin();
+				for(seq;seq!=cur.seqs.end();seq++)
+				{
+					for(int i=0;i<body->local_count;i++)
+					{
+						if((*seq)->locals_reset[i]==false)
+							new_reset[i]=false;
+					}
+				}
+				for(int i=0;i<body->local_count;i++)
+				{
+					if(cur.locals_reset[i]==true)
+						new_reset[i]=true;
+				}
+				if(new_reset!=cur.locals_reset)
+				{
+					stop=false;
+					cur.locals_reset=new_reset;
+
+				}
+			}
+
+			if(stop)
+				break;
 		}
 
 		//We can now search for locals that can be saved
@@ -1801,6 +1870,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 							new_start[j]=STACK_NONE;
 					}
 				}
+			}
+			//It's not useful to sync variables that are going to be resetted
+			for(int i=0;i<body->local_count;i++)
+			{
+				if(cur.locals_reset[i])
+					new_start[i]=STACK_NONE;
 			}
 
 			if(new_start!=cur.locals_start)
@@ -1895,8 +1970,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_locals[i].first=Builder.CreateLoad(cur_block->locals_start_obj[i]);
 				}
 			}
-			//for(int i=0;i<static_locals.size();i++)
-			//	static_locals[i].second=STACK_NONE;
 
 			last_is_branch=false;
 		}
@@ -2329,11 +2402,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x15:
 			{
 				//iflt
-				LOG(TRACE, "synt iflt" );
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
 				code2 >> t;
+				LOG(TRACE, "synt iflt "<< t );
 
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -3979,8 +4052,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
-	this->context->vm->FPM->run(*llvmf);
 	llvmf->dump();
+	this->context->vm->FPM->run(*llvmf);
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }

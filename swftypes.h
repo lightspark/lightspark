@@ -403,6 +403,7 @@ public:
 class Integer : public ISWFObject
 {
 friend class Number;
+friend class ASArray;
 friend class ABCVm;
 friend class ABCContext;
 friend ISWFObject* abstract_i(intptr_t i);

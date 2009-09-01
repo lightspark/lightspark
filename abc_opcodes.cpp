@@ -80,7 +80,7 @@ ISWFObject* ABCVm::convert_d(ISWFObject* o)
 
 ISWFObject* ABCVm::convert_b(ISWFObject* o)
 {
-	LOG(NOT_IMPLEMENTED, "convert_b" );
+	LOG(TRACE, "convert_b" );
 	return o;
 }
 
@@ -192,7 +192,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		//If o is already a function call it, otherwise find the Call method
 		if(o->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=dynamic_cast<IFunction*>(o);
+			IFunction* f=static_cast<IFunction*>(o);
 			ISWFObject* ret=f->call(obj,&args);
 			th->runtime_stack_push(ret);
 		}
@@ -586,6 +586,16 @@ number_t ABCVm::subtract_oi(ISWFObject* val2, intptr_t val1)
 	return num1-num2;
 }
 
+number_t ABCVm::subtract_io(intptr_t val2, ISWFObject* val1)
+{
+	int num2=val2;
+	int num1=val1->toInt();
+
+	val1->decRef();
+	LOG(CALLS,"subtract " << num1 << '-' << num2);
+	return num1-num2;
+}
+
 number_t ABCVm::subtract(ISWFObject* val2, ISWFObject* val1)
 {
 	int num2=val2->toInt();
@@ -838,5 +848,68 @@ ISWFObject* ABCVm::pushNaN(call_context* th)
 {
 	LOG(NOT_IMPLEMENTED, "pushNaN" );
 	return new Undefined;
+}
+
+bool ABCVm::ifGT(ISWFObject* obj2, ISWFObject* obj1)
+{
+	LOG(CALLS,"ifGT");
+
+	//Real comparision demanded to object
+	bool ret=obj1->isGreater(obj2);
+
+	obj2->decRef();
+	obj1->decRef();
+	return ret;
+}
+
+bool ABCVm::ifNGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
+{
+	LOG(CALLS,"ifNGT " << offset);
+
+	//Real comparision demanded to object
+	bool ret= !(obj1->isGreater(obj2));
+
+	obj2->decRef();
+	obj1->decRef();
+	return ret;
+}
+
+bool ABCVm::ifLE(ISWFObject* obj2, ISWFObject* obj1)
+{
+	LOG(CALLS,"ifLE");
+
+	//Real comparision demanded to object
+	bool ret=obj1->isLess(obj2) || obj1->isEqual(obj2);
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
+}
+
+bool ABCVm::ifNLE(ISWFObject* obj2, ISWFObject* obj1, int offset)
+{
+	LOG(CALLS,"ifNLE " << offset);
+
+	//Real comparision demanded to object
+	bool ret=!(obj1->isLess(obj2) || obj1->isEqual(obj2));
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
+}
+
+bool ABCVm::ifGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
+{
+	LOG(CALLS,"ifGE " << offset);
+	abort();
+}
+
+bool ABCVm::ifNGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
+{
+	LOG(CALLS,"ifNGE " << offset);
+
+	//Real comparision demanded to object
+	bool ret=!(obj1->isGreater(obj2) || obj1->isEqual(obj2));
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
 }
 

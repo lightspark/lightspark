@@ -409,11 +409,12 @@ private:
 	static bool ifNE(ISWFObject*, ISWFObject*); 
 	static bool ifNE_oi(ISWFObject*, intptr_t); 
 	static bool ifLT(ISWFObject*, ISWFObject*); 
+	static bool ifGT(ISWFObject*, ISWFObject*); 
+	static bool ifLE(ISWFObject*, ISWFObject*); 
 	static bool ifLT_oi(ISWFObject*, intptr_t); 
 	static bool ifLT_io(intptr_t, ISWFObject*); 
 	static bool ifNLT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNGT(ISWFObject*, ISWFObject*, int offset); 
-	static bool ifGT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNGE(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifGE(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNLE(ISWFObject*, ISWFObject*, int offset); 
@@ -486,6 +487,7 @@ private:
 	static intptr_t modulo(ISWFObject*,ISWFObject*);
 	static number_t subtract(ISWFObject*,ISWFObject*);
 	static number_t subtract_oi(ISWFObject*, intptr_t);
+	static number_t subtract_io(intptr_t, ISWFObject*);
 	static void popScope(call_context* th);
 	static ISWFObject* newActivation(call_context* th, method_info*);
 	static ISWFObject* coerce_s(ISWFObject*);

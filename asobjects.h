@@ -299,6 +299,7 @@ public:
 	}
 	void copyFrom(const ISWFObject* o);
 	bool isLess(const ISWFObject* o) const;
+	bool isGreater(const ISWFObject* o) const;
 	bool isEqual(const ISWFObject* o) const;
 };
 

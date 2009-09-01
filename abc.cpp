@@ -1045,34 +1045,6 @@ bool ABCVm::ifStrictNE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	abort();
 }
 
-bool ABCVm::ifNLE(ISWFObject* obj2, ISWFObject* obj1, int offset)
-{
-	LOG(CALLS,"ifNLE " << offset);
-
-	//Real comparision demanded to object
-	bool ret=!(obj1->isLess(obj2) || obj1->isEqual(obj2));
-	obj1->decRef();
-	obj2->decRef();
-	return ret;
-}
-
-bool ABCVm::ifGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
-{
-	LOG(CALLS,"ifGE " << offset);
-	abort();
-}
-
-bool ABCVm::ifNGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
-{
-	LOG(CALLS,"ifNGE " << offset);
-
-	//Real comparision demanded to object
-	bool ret=!(obj1->isGreater(obj2) || obj1->isEqual(obj2));
-	obj1->decRef();
-	obj2->decRef();
-	return ret;
-}
-
 bool ABCVm::ifEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
 {
 	LOG(CALLS,"ifEq " << offset);
@@ -1081,30 +1053,6 @@ bool ABCVm::ifEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
 	bool ret=obj1->isEqual(obj2);
 	obj1->decRef();
 	obj2->decRef();
-	return ret;
-}
-
-bool ABCVm::ifGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
-{
-	LOG(CALLS,"ifGT " << offset);
-
-	//Real comparision demanded to object
-	bool ret=obj1->isGreater(obj2);
-
-	obj2->decRef();
-	obj1->decRef();
-	return ret;
-}
-
-bool ABCVm::ifNGT(ISWFObject* obj2, ISWFObject* obj1, int offset)
-{
-	LOG(CALLS,"ifNGT " << offset);
-
-	//Real comparision demanded to object
-	bool ret= !(obj1->isGreater(obj2));
-
-	obj2->decRef();
-	obj1->decRef();
 	return ret;
 }
 
@@ -1253,7 +1201,7 @@ void ABCVm::newObject(call_context* th, int n)
 
 void ABCVm::not_impl(int n)
 {
-	LOG(CALLS, "not implement opcode 0x" << hex << n );
+	LOG(NOT_IMPLEMENTED, "not implement opcode 0x" << hex << n );
 	abort();
 }
 
@@ -1679,7 +1627,7 @@ void ABCVm::Run(ABCVm* th)
 	th->FPM=new llvm::FunctionPassManager(&mp);
        
 	th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
-	//th->FPM->add(llvm::createVerifierPass());
+	th->FPM->add(llvm::createVerifierPass());
 	th->FPM->add(llvm::createPromoteMemoryToRegisterPass());
 	th->FPM->add(llvm::createReassociatePass());
 	th->FPM->add(llvm::createCFGSimplificationPass());

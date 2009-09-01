@@ -76,6 +76,7 @@ bool ISWFObject::isGreater(const ISWFObject* r) const
 bool ISWFObject::isLess(const ISWFObject* r) const
 {
 	LOG(NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	abort();
 	return false;
 }
 

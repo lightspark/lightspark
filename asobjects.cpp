@@ -46,6 +46,11 @@ ASArray::ASArray()
 	type=T_ARRAY;
 	constructor=new Function(_constructor);
 	setVariableByName("Call",new Function(ASArray::Array));
+	setGetterByName("length",new Function(_getLength));
+	setVariableByName("push",new Function(_push));
+	setVariableByName("pop",new Function(_pop));
+	setVariableByName("shift",new Function(shift));
+	setVariableByName("unshift",new Function(unshift));
 }
 
 ASFUNCTIONBODY(ASArray,Array)
@@ -58,12 +63,7 @@ ASFUNCTIONBODY(ASArray,Array)
 ASFUNCTIONBODY(ASArray,_constructor)
 {
 	ASArray* th=static_cast<ASArray*>(obj);
-	th->setGetterByName("length",new Function(_getLength));
 	//th->setVariableByName(Qname(AS3,"push"),new Function(_push));
-	th->setVariableByName("push",new Function(_push));
-	th->setVariableByName("pop",new Function(_pop));
-	th->setVariableByName("shift",new Function(shift));
-	th->setVariableByName("unshift",new Function(unshift));
 	//th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
 	//th->length.incRef();
 	if(args==NULL)
@@ -418,8 +418,18 @@ void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 		if(data[index].type==STACK_OBJECT && data[index].data)
 			data[index].data->decRef();
 
-		data[index].data=o;
-		data[index].type=STACK_OBJECT;
+		if(o->getObjectType()==T_INTEGER)
+		{
+			Integer* i=static_cast<Integer*>(o);
+			data[index].data_i=i->val;
+			data[index].type=STACK_INT;
+			o->decRef();
+		}
+		else
+		{
+			data[index].data=o;
+			data[index].type=STACK_OBJECT;
+		}
 	}
 	else
 		ASObject::setVariableByMultiname(name,o);
@@ -694,7 +704,7 @@ bool Undefined::isEqual(const ISWFObject* r) const
 Undefined::Undefined()
 {
 	type=T_UNDEFINED;
-	setVariableByName(".Call",new Function(call));
+//	setVariableByName(".Call",new Function(call));
 }
 
 /*Number::Number(const ISWFObject* obj)
@@ -749,12 +759,35 @@ bool Number::isEqual(const ISWFObject* o) const
 	}
 }
 
+bool Number::isGreater(const ISWFObject* o) const
+{
+	if(o->getObjectType()==T_INTEGER)
+	{
+		const Integer* i=static_cast<const Integer*>(o);
+		return val>i->val;
+	}
+	else if(o->getObjectType()==T_NUMBER)
+	{
+		const Number* i=static_cast<const Number*>(o);
+		return val>i->val;
+	}
+	else
+	{
+		return ISWFObject::isGreater(o);
+	}
+}
+
 bool Number::isLess(const ISWFObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
-		const Integer* i=dynamic_cast<const Integer*>(o);
-		return val<*i;
+		const Integer* i=static_cast<const Integer*>(o);
+		return val<i->val;
+	}
+	else if(o->getObjectType()==T_NUMBER)
+	{
+		const Number* i=static_cast<const Number*>(o);
+		return val<i->val;
 	}
 	else
 	{
@@ -921,7 +954,11 @@ ASFUNCTIONBODY(Math,floor)
 {
 	Number* n=dynamic_cast<Number*>(args->at(0));
 	if(n)
-		return new Number(::floor(*n));
+	{
+		Integer* ret=new Integer(::floor(*n));
+		ret->debug=0xdead;
+		return ret;
+	}
 	else
 	{
 		LOG(TRACE,"Invalid argument");

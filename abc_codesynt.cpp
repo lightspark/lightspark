@@ -79,7 +79,6 @@ opcode_handler ABCVm::opcode_table_args1_branches[]={
 opcode_handler ABCVm::opcode_table_args2_branches[]={
 	{"ifNLT",(void*)&ABCVm::ifNLT},
 	{"ifNGT",(void*)&ABCVm::ifNGT},
-	{"ifGT",(void*)&ABCVm::ifGT},
 	{"ifNGE",(void*)&ABCVm::ifNGE},
 	{"ifNLE",(void*)&ABCVm::ifNLE},
 	{"ifGE",(void*)&ABCVm::ifGE},
@@ -169,7 +168,8 @@ typed_opcode_handler ABCVm::opcode_table_number_t[]={
 	{"multiply_oi",(void*)&ABCVm::multiply_oi,ARGS_OBJ_INT},
 	{"divide",(void*)&ABCVm::divide,ARGS_OBJ_OBJ},
 	{"subtract",(void*)&ABCVm::subtract,ARGS_OBJ_OBJ},
-	{"subtract_oi",(void*)&ABCVm::subtract_oi,ARGS_OBJ_INT}
+	{"subtract_oi",(void*)&ABCVm::subtract_oi,ARGS_OBJ_INT},
+	{"subtract_io",(void*)&ABCVm::subtract_io,ARGS_INT_OBJ}
 };
 
 typed_opcode_handler ABCVm::opcode_table_void[]={
@@ -197,6 +197,8 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"ifLT",(void*)&ABCVm::ifLT,ARGS_OBJ_OBJ},
 	{"ifLT_io",(void*)&ABCVm::ifLT_io,ARGS_INT_OBJ},
 	{"ifLT_oi",(void*)&ABCVm::ifLT_oi,ARGS_OBJ_INT},
+	{"ifGT",(void*)&ABCVm::ifGT,ARGS_OBJ_OBJ},
+	{"ifLE",(void*)&ABCVm::ifGT,ARGS_OBJ_OBJ},
 	{"pushTrue",(void*)&ABCVm::pushTrue,ARGS_NONE},
 	{"pushFalse",(void*)&ABCVm::pushFalse,ARGS_NONE},
 };
@@ -678,8 +680,13 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 				abort();
 			}*/
 		}
+
 		if(dest_block.locals_reset[i])
+		{
+			if(static_locals[i].second==STACK_OBJECT)
+				builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
 			continue;
+		}
 
 		if(static_locals[i].second==dest_block.locals_start[i])
 			builder.CreateStore(static_locals[i].first,dest_block.locals_start_obj[i]);
@@ -968,6 +975,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x13:
 				case 0x14:
 				case 0x15:
+				case 0x16:
 				case 0x17:
 				case 0x18:
 				case 0x19:
@@ -983,6 +991,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//ifeq
 					//ifne
 					//iflt
+					//ifle
 					//ifge
 					//ifgt
 					//ifstricteq
@@ -2440,6 +2449,42 @@ SyntheticFunction::synt_function method_info::synt_method()
 				Builder.CreateBr(blocks[dest].BB);
 				break;
 			}
+			case 0x16:
+			{
+				//ifle
+				LOG(TRACE, "synt ifle" );
+				//TODO: implement common data comparison
+				last_is_branch=true;
+				s24 t;
+				code2 >> t;
+
+				//Make comparision
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				constant = llvm::ConstantInt::get(int_type, t);
+				llvm::Value* cond;
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLE"), v1.first, v2.first);
+				else
+					abort();
+			
+				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				jitted=false;
+
+				int here=code2.tellg();
+				int dest=here+t;
+				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
+				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
+				Builder.CreateCondBr(cond,B,A);
+				Builder.SetInsertPoint(A);
+				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
+				Builder.CreateBr(blocks[here].BB);
+
+				Builder.SetInsertPoint(B);
+				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
+				Builder.CreateBr(blocks[dest].BB);
+				break;
+			}
 			case 0x17:
 			{
 				//ifgt
@@ -2450,12 +2495,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> t;
 
 				//Make comparision
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				constant = llvm::ConstantInt::get(int_type, t);
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifGT"), v1, v2, constant);
+				llvm::Value* cond;
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGT"), v1.first, v2.first);
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+				{
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGT"), v1.first, v2.first);
+				}
+				else
+					abort();
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -3141,6 +3193,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),value.first);
 					Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
 				}
+				else if(value.second==STACK_BOOLEAN)
+				{
+					value.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),value.first);
+					Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
+				}
 				else
 					Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
 				jitted=true;
@@ -3182,9 +3239,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x63:
 			{
 				//setlocal
-				LOG(TRACE, "synt setlocal" );
 				u30 i;
 				code2 >> i;
+				LOG(TRACE, "synt setlocal " << i);
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(static_locals[i].second==STACK_OBJECT)
 					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
@@ -3587,6 +3644,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall2(ex->FindFunctionNamed("subtract_oi"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+				{
+					value=Builder.CreateCall2(ex->FindFunctionNamed("subtract_io"), v1.first, v2.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				}
 				else
 					abort();
 
@@ -3637,6 +3699,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
+				{
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
 				}
 				else
 					abort();
@@ -4052,8 +4119,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
-	llvmf->dump();
-	this->context->vm->FPM->run(*llvmf);
+	//llvmf->dump();
+	//this->context->vm->FPM->run(*llvmf);
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
 	return f;
 }

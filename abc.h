@@ -177,7 +177,7 @@ struct call_context
 	void runtime_stack_push(ISWFObject* s);
 	ISWFObject* runtime_stack_pop();
 	ISWFObject* runtime_stack_peek();
-	call_context(method_info* th);
+	call_context(method_info* th, ISWFObject** args=NULL, int numArgs=0);
 	~call_context();
 };
 
@@ -198,6 +198,7 @@ struct block_info
 
 class method_info
 {
+enum { NEED_ARGUMENTS=1,NEED_REST=4};
 friend std::istream& operator>>(std::istream& in, method_info& v);
 private:
 	u30 param_count;
@@ -235,6 +236,8 @@ public:
 	SyntheticFunction::synt_function f;
 	ABCContext* context;
 	method_body_info* body;
+	bool needsArgs() { return flags&NEED_ARGUMENTS;}
+	int numArgs() { return param_count; }
 	method_info():body(NULL),f(NULL),context(NULL)
 	{
 	}
@@ -367,7 +370,7 @@ private:
 	Qname getQname(unsigned int m, call_context* th=NULL) const;
 	void buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
-	multiname getMultiname(unsigned int m, call_context* th=NULL) const;
+	multiname* getMultiname(unsigned int m, call_context* th=NULL);
 	static multiname* s_getMultiname(call_context*, ISWFObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
 	int getMultinameRTData(int n) const;

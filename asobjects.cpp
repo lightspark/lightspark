@@ -46,11 +46,6 @@ ASArray::ASArray()
 	type=T_ARRAY;
 	constructor=new Function(_constructor);
 	setVariableByName("Call",new Function(ASArray::Array));
-	setGetterByName("length",new Function(_getLength));
-	setVariableByName("push",new Function(_push));
-	setVariableByName("pop",new Function(_pop));
-	setVariableByName("shift",new Function(shift));
-	setVariableByName("unshift",new Function(unshift));
 }
 
 ASFUNCTIONBODY(ASArray,Array)
@@ -63,6 +58,11 @@ ASFUNCTIONBODY(ASArray,Array)
 ASFUNCTIONBODY(ASArray,_constructor)
 {
 	ASArray* th=static_cast<ASArray*>(obj);
+	th->setGetterByName("length",new Function(_getLength));
+	th->setVariableByName("push",new Function(_push));
+	th->setVariableByName("pop",new Function(_pop));
+	th->setVariableByName("shift",new Function(shift));
+	th->setVariableByName("unshift",new Function(unshift));
 	//th->setVariableByName(Qname(AS3,"push"),new Function(_push));
 	//th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
 	//th->length.incRef();
@@ -887,6 +887,36 @@ SyntheticFunction::SyntheticFunction(method_info* m):mi(m)
 	val=m->synt_method();
 }
 
+ISWFObject* SyntheticFunction::fast_call(ISWFObject* obj, ISWFObject** args, int numArgs)
+{
+	if(mi->needsArgs())
+		abort();
+
+	call_context* cc=new call_context(mi,args,numArgs);
+	cc->scope_stack=func_scope;
+	for(int i=0;i<func_scope.size();i++)
+		func_scope[i]->incRef();
+
+	cc->locals[0]=obj;
+	for(int i=numArgs;i<mi->numArgs();i++)
+		cc->locals[i+1]=new Undefined;
+
+	ISWFObject* ret;
+	if(!bound)
+	{
+		obj->incRef();
+		ret=val(obj,NULL,cc);
+	}
+	else
+	{
+		LOG(CALLS,"Calling with closure");
+		closure_this->incRef();
+		ret=val(closure_this,NULL,cc);
+	}
+	delete cc;
+	return ret;
+}
+
 ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 {
 	if(val==NULL)
@@ -899,6 +929,19 @@ ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 	cc->scope_stack=func_scope;
 	for(int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
+
+	cc->locals[0]=obj;
+	int i=0;
+	if(args)
+	{
+		for(i;i<args->size();i++)
+		{
+			cc->locals[i+1]=args->at(i);
+			cc->locals[i+1]->incRef();
+		}
+	}
+	for(i;i<mi->numArgs();i++)
+		cc->locals[i+1]=new Undefined;
 
 	ISWFObject* ret;
 	if(!bound)
@@ -914,6 +957,14 @@ ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 	}
 	delete cc;
 	return ret;
+}
+
+ISWFObject* Function::fast_call(ISWFObject* obj, ISWFObject** args,int num_args)
+{
+	arguments arg(num_args);
+	for(int i=0;i<num_args;i++)
+		arg.set(i,args[i]);
+	return call(obj,&arg);
 }
 
 ISWFObject* Function::call(ISWFObject* obj, arguments* args)

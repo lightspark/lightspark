@@ -62,6 +62,7 @@ public:
 	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
 	ISWFObject* closure_this;
 	virtual ISWFObject* call(ISWFObject* obj, arguments* args)=0;
+	virtual ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args)=0;
 	void bind()
 	{
 		bound=true;
@@ -76,6 +77,7 @@ public:
 	Function(){}
 	Function(as_function v):val(v){}
 	ISWFObject* call(ISWFObject* obj, arguments* args);
+	ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args);
 	IFunction* toFunction();
 	ISWFObject* clone()
 	{
@@ -93,6 +95,7 @@ public:
 	typedef ISWFObject* (*synt_function)(ISWFObject*, arguments*, call_context* cc);
 	SyntheticFunction(method_info* m);
 	ISWFObject* call(ISWFObject* obj, arguments* args);
+	ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args);
 	IFunction* toFunction();
 	ISWFObject* clone()
 	{

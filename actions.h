@@ -129,6 +129,10 @@ public:
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDefineFunction");}
 	ISWFObject* call(ISWFObject* obj, arguments* args);
+	ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args)
+	{
+		abort();
+	}
 	STRING getName(){ return FunctionName; }
 };
 
@@ -163,6 +167,10 @@ public:
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDefineFunction2");}
 	ISWFObject* call(ISWFObject* obj, arguments* args);
+	ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args)
+	{
+		abort();
+	}
 	STRING getName(){ return FunctionName; }
 	IFunction* toFunction(){ return this; }
 };

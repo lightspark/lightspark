@@ -177,23 +177,23 @@ uintptr_t ABCVm::bitOr(ISWFObject* val2, ISWFObject* val1)
 
 void ABCVm::callProperty(call_context* th, int n, int m)
 {
-	arguments args(m);
+	ISWFObject** args=new ISWFObject*[m];
 	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
+		args[m-i-1]=th->runtime_stack_pop();
 
-	multiname name=th->context->getMultiname(n);
-	LOG(CALLS,"callProperty " << name << ' ' << m);
+	multiname* name=th->context->getMultiname(n);
+	LOG(CALLS,"callProperty " << *name << ' ' << m);
 
 	ISWFObject* obj=th->runtime_stack_pop();
 	ISWFObject* owner;
-	ISWFObject* o=obj->getVariableByMultiname(name,owner);
+	ISWFObject* o=obj->getVariableByMultiname(*name,owner);
 	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
 		if(o->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o);
-			ISWFObject* ret=f->call(obj,&args);
+			ISWFObject* ret=f->fast_call(obj,args,m);
 			th->runtime_stack_push(ret);
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
@@ -206,10 +206,10 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
-			IFunction* f=obj->getVariableByMultiname(name,owner)->toFunction();
+			IFunction* f=obj->getVariableByMultiname(*name,owner)->toFunction();
 			if(f)
 			{
-				ISWFObject* ret=f->call(owner,&args);
+				ISWFObject* ret=f->fast_call(owner,args,m);
 				th->runtime_stack_push(ret);
 			}
 			else
@@ -220,7 +220,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",owner));
 			if(f)
 			{
-				ISWFObject* ret=f->call(o,&args);
+				ISWFObject* ret=f->fast_call(o,args,m);
 				th->runtime_stack_push(ret);
 			}
 			else
@@ -237,6 +237,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	}
 	LOG(CALLS,"End of calling " << name);
 	obj->decRef();
+	delete[] args;
 }
 
 intptr_t ABCVm::getProperty_i(ISWFObject* obj, multiname* name)
@@ -516,14 +517,14 @@ ISWFObject* ABCVm::typeOf(ISWFObject* obj)
 
 void ABCVm::callPropVoid(call_context* th, int n, int m)
 {
-	multiname name=th->context->getMultiname(n); 
-	LOG(CALLS,"callPropVoid " << name << ' ' << m);
+	multiname* name=th->context->getMultiname(n); 
+	LOG(CALLS,"callPropVoid " << *name << ' ' << m);
 	arguments args(m);
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
 	ISWFObject* obj=th->runtime_stack_pop();
 	ISWFObject* owner;
-	ISWFObject* o=obj->getVariableByMultiname(name,owner);
+	ISWFObject* o=obj->getVariableByMultiname(*name,owner);
 	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
@@ -552,7 +553,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 
 	obj->decRef();
-	LOG(CALLS,"End of calling " << name);
+	LOG(CALLS,"End of calling " << *name);
 }
 
 void ABCVm::jump(call_context* th, int offset)

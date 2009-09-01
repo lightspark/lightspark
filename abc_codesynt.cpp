@@ -795,7 +795,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 	constant = llvm::ConstantInt::get(int_type, (uintptr_t)this);
 	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
 
-	//the current execution context is allocated here
 	llvm::Function::ArgumentListType::iterator it=llvmf->getArgumentList().begin();
 	it++;
 	it++;
@@ -829,7 +828,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	bool jitted=false;
 
-	//We fill locals with function arguments
+/*	//We fill locals with function arguments
 	//First argument is the 'this'
 	constant = llvm::ConstantInt::get(int_type, 0);
 	llvm::Value* t=Builder.CreateGEP(locals,constant);
@@ -844,19 +843,21 @@ SyntheticFunction::synt_function method_info::synt_method()
 		t=Builder.CreateGEP(locals,constant);
 		arg=Builder.CreateCall2(ex->FindFunctionNamed("argumentDumper"), it, constant);
 		Builder.CreateStore(arg,t);
-	}
-	if(flags&0x01) //NEED_ARGUMENTS
+	}*/
+	if(flags&NEED_ARGUMENTS) 
 	{
+		abort();
+		/*constant = llvm::ConstantInt::get(int_type, param_count+1);
+		t=Builder.CreateGEP(locals,constant);
+		Builder.CreateStore(it,t);*/
+	}
+	if(flags&NEED_REST) //TODO
+	{
+		abort();
+		/*llvm::Value* rest=Builder.CreateCall(ex->FindFunctionNamed("createRest"));
 		constant = llvm::ConstantInt::get(int_type, param_count+1);
 		t=Builder.CreateGEP(locals,constant);
-		Builder.CreateStore(it,t);
-	}
-	if(flags&0x04) //TODO: NEED_REST
-	{
-		llvm::Value* rest=Builder.CreateCall(ex->FindFunctionNamed("createRest"));
-		constant = llvm::ConstantInt::get(int_type, param_count+1);
-		t=Builder.CreateGEP(locals,constant);
-		Builder.CreateStore(rest,t);
+		Builder.CreateStore(rest,t);*/
 	}
 
 	vector<stack_entry> static_locals;

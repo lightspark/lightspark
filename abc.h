@@ -237,6 +237,7 @@ public:
 	ABCContext* context;
 	method_body_info* body;
 	bool needsArgs() { return flags&NEED_ARGUMENTS;}
+	bool needsRest() { return flags&NEED_REST;}
 	int numArgs() { return param_count; }
 	method_info():body(NULL),f(NULL),context(NULL)
 	{
@@ -337,7 +338,8 @@ struct opcode_handler
 
 };
 
-enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE };
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE,
+			ARGS_NUMBER_OBJ};
 
 struct typed_opcode_handler
 {
@@ -370,7 +372,7 @@ private:
 	Qname getQname(unsigned int m, call_context* th=NULL) const;
 	void buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
-	multiname* getMultiname(unsigned int m, call_context* th=NULL);
+	multiname* getMultiname(unsigned int m, call_context* th);
 	static multiname* s_getMultiname(call_context*, ISWFObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
 	int getMultinameRTData(int n) const;
@@ -491,14 +493,18 @@ private:
 	static number_t subtract(ISWFObject*,ISWFObject*);
 	static number_t subtract_oi(ISWFObject*, intptr_t);
 	static number_t subtract_io(intptr_t, ISWFObject*);
+	static number_t subtract_do(number_t, ISWFObject*);
 	static void popScope(call_context* th);
 	static ISWFObject* newActivation(call_context* th, method_info*);
 	static ISWFObject* coerce_s(ISWFObject*);
 	static void coerce_a();
 	static ISWFObject* convert_i(ISWFObject*);
+	static ISWFObject* convert_u(ISWFObject*);
 	static ISWFObject* convert_b(ISWFObject*);
 	static ISWFObject* convert_d(ISWFObject*);
 	static ISWFObject* greaterThan(ISWFObject*,ISWFObject*);
+	static ISWFObject* greaterEquals(ISWFObject*,ISWFObject*);
+	static ISWFObject* lessEquals(ISWFObject*,ISWFObject*);
 	static ISWFObject* lessThan(ISWFObject*,ISWFObject*);
 	static ISWFObject* nextName(ISWFObject* index, ISWFObject* obj);
 	static ISWFObject* nextValue(ISWFObject* index, ISWFObject* obj);

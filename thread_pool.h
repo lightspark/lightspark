@@ -32,6 +32,7 @@ class IThreadJob
 {
 public:
 	virtual void execute()=0;
+	virtual ~IThreadJob(){}
 };
 
 class ThreadPool

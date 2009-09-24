@@ -49,6 +49,7 @@ public:
 	}
 	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
 	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
+	void setVariableByMultiname(multiname& name, ISWFObject* o);
 	IFunction* getGetterByName(const Qname& name, ISWFObject*& owner);
 
 	//DEBUG
@@ -141,6 +142,8 @@ public:
 	ASString();
 	ASString(const std::string& s);
 	ASFUNCTION(String);
+	ASFUNCTION(split);
+	ASFUNCTION(_getLength);
 	std::string toString() const;
 	double toNumber() const;
 	bool isEqual(const ISWFObject* r) const;
@@ -196,6 +199,7 @@ public:
 	ASFUNCTION(Array);
 	ASFUNCTION(_push);
 	ASFUNCTION(_pop);
+	ASFUNCTION(join);
 	ASFUNCTION(shift);
 	ASFUNCTION(unshift);
 	ASFUNCTION(_getLength);
@@ -254,10 +258,11 @@ public:
 class arguments: public ASArray
 {
 public:
-	arguments(int n)
+	arguments(int n, bool construct=true)
 	{
 		data.resize(n,NULL);
-		_constructor(this,NULL);
+		if(construct)
+			_constructor(this,NULL);
 	}
 	ISWFObject* clone()
 	{
@@ -295,7 +300,7 @@ public:
 	{
 		return val;
 	}
-	operator double(){return val;}
+	operator double() const {return val;}
 	ISWFObject* clone()
 	{
 		return new Number(*this);
@@ -350,9 +355,11 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getTimezoneOffset);
 	ASFUNCTION(getTime);
+	ASFUNCTION(getFullYear);
 	ASFUNCTION(getHours);
 	ASFUNCTION(getMinutes);
 	ASFUNCTION(valueOf);
+	std::string toString() const;
 	int toInt() const; 
 	ISWFObject* clone()
 	{
@@ -408,6 +415,7 @@ class Math: public ASObject
 public:
 	Math();
 	ASFUNCTION(atan2);
+	ASFUNCTION(abs);
 	ASFUNCTION(floor);
 	ASFUNCTION(sqrt);
 	ASFUNCTION(random);

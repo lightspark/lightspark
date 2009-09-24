@@ -43,6 +43,7 @@ public:
 	ActionTag():Length(1){}
 	virtual void Execute()=0;
 	virtual void print()=0;
+	virtual ~ActionTag(){}
 };
 
 class DoActionTag: public DisplayListTag, public ExecutionContext, public IDisplayListElem

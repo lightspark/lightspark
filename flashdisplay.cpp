@@ -41,7 +41,10 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	ISWFObject* ret=new EventDispatcher;
 	obj->setVariableByName("sharedEvents",ret); //TODO: Read only
 	ret->constructor->call(ret,NULL);
-//	setVariableByName("parameters",&parameters);
+	ASObject* params=new ASObject;
+	obj->setVariableByName("parameters",params);
+	params->setVariableByName("connect",new ASString("true"));
+//	{"chat_bosh_port":"80","chat_username":encodeURIComponent(active_user.chatUsername()),"channel_id":encodeURIComponent(channel_id),"permission_slk":"false","chat_password":encodeURIComponent(active_user.chatPassword()),"enable_bosh":encodeURIComponent(active_user.boshEnabled()),"user_vars":encodeURIComponent(active_user.userVars()),"chat_ip":"216.246.59.237","permission_mtx_api":"false","enable_compression":encodeURIComponent(active_user.compressionEnabled()),"chat_host":"of1.kongregate.com","api_host":"http%3A%2F%2Fapi.kongregate.com","permission_chat_api":"false","game_permalink":"cube-colossus","game_title":"Cube%20Colossus","chat_port":"5222","game_auth_token":encodeURIComponent(active_user.gameAuthToken()),"permission_sc_api":"true","user_vars_sig":encodeURIComponent(active_user.userVarsSig()),"javascript_listener":"konduitToHolodeck","chat_bosh_host":"of1.kongregate.com","connect":"true","game_id":"53988","game_url":"http%3A%2F%2Fwww.kongregate.com%2Fgames%2Flucidrine%2Fcube-colossus","debug_level":encodeURIComponent(active_user.debugLevel())},{"allowscriptaccess":"always","allownetworking":"all"},{});
 
 }
 
@@ -124,15 +127,42 @@ ASFUNCTIONBODY(Sprite,_constructor)
 	Sprite* th=static_cast<Sprite*>(obj);
 	EventDispatcher::_constructor(th,NULL);
 	th->setVariableByName("root",new Null);
+	if(sys)
+		sys->incRef();
 	th->setVariableByName("stage",sys);
-	th->setVariableByName("_visible",&th->_visible);
-	th->setVariableByName("y",&th->_y);
-	th->setVariableByName("x",&th->_x);
-	th->setVariableByName("width",&th->_width);
-	//th->setVariableByName("rotation",&th->rotation);
-	th->setVariableByName("height",&th->_height);
+	//th->setVariableByName("_visible",&th->_visible);
+	//th->setVariableByName("width",&th->_width);
+	//th->setVariableByName("height",&th->_height);
 	th->setVariableByName("getBounds",new Function(getBounds));
+	th->setGetterByName("rotation",new Function(getRotation));
+	th->setSetterByName("rotation",new Function(setRotation));
 	th->setGetterByName("parent",new Function(_getParent));
+	th->setGetterByName("y",new Function(getY));
+	th->setGetterByName("x",new Function(getX));
+}
+
+ASFUNCTIONBODY(Sprite,getY)
+{
+	Sprite* th=static_cast<Sprite*>(obj);
+	return new Number(th->_y);
+}
+
+ASFUNCTIONBODY(Sprite,getX)
+{
+	Sprite* th=static_cast<Sprite*>(obj);
+	return new Number(th->_x);
+}
+
+ASFUNCTIONBODY(Sprite,setRotation)
+{
+	Sprite* th=static_cast<Sprite*>(obj);
+	th->rotation=args->at(0)->toNumber();
+}
+
+ASFUNCTIONBODY(Sprite,getRotation)
+{
+	Sprite* th=static_cast<Sprite*>(obj);
+	return new Number(th->rotation);
 }
 
 ASFUNCTIONBODY(Sprite,getBounds)

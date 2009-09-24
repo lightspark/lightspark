@@ -107,6 +107,11 @@ bool Integer::isLess(const ISWFObject* o) const
 		const Integer* i=static_cast<const Integer*>(o);
 		return val<*i;
 	}
+	else if(o->getObjectType()==T_NUMBER)
+	{
+		const Number* i=static_cast<const Number*>(o);
+		return val<double(*i);
+	}
 	else
 		return ISWFObject::isLess(o);
 }
@@ -188,7 +193,16 @@ void ISWFObject::setVariableByName(const Qname& name, ISWFObject* o)
 	if(!ret.second)
 	{
 		if(ret.first->second.setter)
-			abort();
+		{
+			//Call the setter
+			LOG(CALLS,"Calling the setter");
+			arguments args(1);
+			args.set(0,o);
+			//TODO: check
+			o->incRef();
+			ret.first->second.setter->call(this,&args);
+			LOG(CALLS,"End of setter");
+		}
 	
 		if(ret.first->second.var)
 			ret.first->second.var->decRef();
@@ -198,7 +212,7 @@ void ISWFObject::setVariableByName(const Qname& name, ISWFObject* o)
 
 void ISWFObject::setVariableByMultiname_i(multiname& name, intptr_t value)
 {
-	abort();
+	setVariableByMultiname(name,abstract_i(value));
 /*	if(name.namert)
 		name.name=name.namert->toString();
 
@@ -1153,7 +1167,7 @@ ISWFObject::ISWFObject(Manager* m):parent(NULL),ref_count(1),constructor(NULL),d
 	}
 }*/
 
-ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL)
+ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL),type(o.type)
 {
 	parent=o.parent;
 	constructor=o.constructor;

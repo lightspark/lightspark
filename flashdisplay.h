@@ -50,8 +50,6 @@ public:
 			constructor->decRef();
 		constructor=new Function(_constructor);
 	}
-	ASObject parameters;
-
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
 };
@@ -87,16 +85,20 @@ public:
 class Sprite: public IDisplayListElem
 {
 protected:
-	Integer _x;
-	Integer _y;
-	Integer _visible;
-	Integer _width;
-	Integer _height;
-	Number rotation;
+	intptr_t _x;
+	intptr_t _y;
+	intptr_t _visible;
+	intptr_t _width;
+	intptr_t _height;
+	number_t rotation;
 public:
 	Sprite();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getBounds);
+	ASFUNCTION(getRotation);
+	ASFUNCTION(setRotation);
+	ASFUNCTION(getX);
+	ASFUNCTION(getY);
 	ASFUNCTION(_getParent);
 	int getDepth() const
 	{

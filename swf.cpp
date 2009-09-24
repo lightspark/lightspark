@@ -86,6 +86,7 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 	//This should come from DisplayObject
 	MovieClip::_constructor(this,NULL);
 	LoaderInfo* loaderInfo=new LoaderInfo();
+	loaderInfo->_constructor(loaderInfo,NULL);
 	setVariableByName(Qname("loaderInfo"),loaderInfo);
 
 	setVariableByName("getBounds",new Function(getBounds));

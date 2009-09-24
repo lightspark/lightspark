@@ -43,6 +43,7 @@ enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER,STACK_BOOLEAN};
 typedef double number_t;
 
 class ISWFObject;
+class ASObject;
 class arguments;
 class IFunction;
 struct arrayElem;
@@ -219,6 +220,7 @@ class ISWFObject
 {
 friend class MovieClip;
 friend class Manager;
+friend class ASObject;
 private:
 	Manager* manager;
 protected:
@@ -243,8 +245,8 @@ public:
 	}
 	void decRef()
 	{
-	//	if(ref_count==0)
-	//		abort();
+		if(ref_count==0)
+			abort();
 		ref_count--;
 		if(ref_count==0)
 		{
@@ -727,6 +729,7 @@ public:
 	virtual void setFragmentProgram() const;
 	static void fixedColor(float r, float g, float b);
 	virtual void setVertexData(arrayElem* elem);
+	virtual ~FILLSTYLE(){}
 };
 
 class MORPHFILLSTYLE:public FILLSTYLE
@@ -741,6 +744,7 @@ public:
 	std::vector<UI8> EndRatios;
 	std::vector<RGBA> StartColors;
 	std::vector<RGBA> EndColors;
+	virtual ~MORPHFILLSTYLE(){}
 };
 
 class LINESTYLE

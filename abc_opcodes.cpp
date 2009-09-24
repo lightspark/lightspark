@@ -57,8 +57,6 @@ void ABCVm::setProperty(ISWFObject* value,ISWFObject* obj,multiname* name)
 {
 	LOG(CALLS,"setProperty " << *name);
 
-	//Check to see if a proper setter method is available
-	ISWFObject* owner;
 	obj->setVariableByMultiname(*name,value);
 	obj->decRef();
 }
@@ -67,7 +65,6 @@ void ABCVm::setProperty_i(intptr_t value,ISWFObject* obj,multiname* name)
 {
 	LOG(CALLS,"setProperty_i " << *name);
 
-	//Check to see if a proper setter method is available
 	obj->setVariableByMultiname_i(*name,value);
 	obj->decRef();
 }
@@ -81,6 +78,12 @@ ISWFObject* ABCVm::convert_d(ISWFObject* o)
 ISWFObject* ABCVm::convert_b(ISWFObject* o)
 {
 	LOG(TRACE, "convert_b" );
+	return o;
+}
+
+ISWFObject* ABCVm::convert_u(ISWFObject* o)
+{
+	LOG(NOT_IMPLEMENTED, "convert_u" );
 	return o;
 }
 
@@ -181,7 +184,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
 
-	multiname* name=th->context->getMultiname(n);
+	multiname* name=th->context->getMultiname(n,th);
 	LOG(CALLS,"callProperty " << *name << ' ' << m);
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -193,7 +196,8 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		if(o->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o);
-			ISWFObject* ret=f->fast_call(obj,args,m);
+			//Methods as to be runned with their own class this
+			ISWFObject* ret=f->fast_call(owner,args,m);
 			th->runtime_stack_push(ret);
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
@@ -225,7 +229,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			}
 			else
 			{
-				LOG(CALLS,"No such function, returning Undefined");
+				LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
 				th->runtime_stack_push(new Undefined);
 			}
 		}
@@ -263,8 +267,8 @@ ISWFObject* ABCVm::getProperty(ISWFObject* obj, multiname* name)
 	ISWFObject* ret=obj->getVariableByMultiname(*name,owner);
 	if(owner==NULL)
 	{
-		//LOG(NOT_IMPLEMENTED,"Property not found " << *name);
-		abort();
+		LOG(NOT_IMPLEMENTED,"Property not found " << *name);
+		//abort();
 		ret=new Undefined;
 	}
 	else
@@ -431,7 +435,7 @@ void ABCVm::construct(call_context* th, int m)
 		LOG(CALLS,"End of deferred definition of property " << name);*/
 	}
 
-	LOG(CALLS,"Constructing");
+	LOG(CALLS,"Constructing " << o->class_name);
 	//We get a shallow copy of the object, but clean out Variables
 	//TODO: should be done in the copy constructor
 	ASObject* ret=dynamic_cast<ASObject*>(o->clone());
@@ -517,7 +521,7 @@ ISWFObject* ABCVm::typeOf(ISWFObject* obj)
 
 void ABCVm::callPropVoid(call_context* th, int n, int m)
 {
-	multiname* name=th->context->getMultiname(n); 
+	multiname* name=th->context->getMultiname(n,th); 
 	LOG(CALLS,"callPropVoid " << *name << ' ' << m);
 	arguments args(m);
 	for(int i=0;i<m;i++)
@@ -583,6 +587,16 @@ number_t ABCVm::subtract_oi(ISWFObject* val2, intptr_t val1)
 	int num1=val1;
 
 	val2->decRef();
+	LOG(CALLS,"subtract " << num1 << '-' << num2);
+	return num1-num2;
+}
+
+number_t ABCVm::subtract_do(number_t val2, ISWFObject* val1)
+{
+	number_t num2=val2;
+	number_t num1=val1->toNumber();
+
+	val1->decRef();
 	LOG(CALLS,"subtract " << num1 << '-' << num2);
 	return num1-num2;
 }
@@ -658,7 +672,7 @@ ISWFObject* ABCVm::add(ISWFObject* val2, ISWFObject* val1)
 		LOG(CALLS,"add " << num1 << '+' << num2);
 		return abstract_d(num1+num2);
 	}
-	else if(val1->getObjectType()==T_STRING)
+	else if(val1->getObjectType()==T_STRING || val2->getObjectType()==T_STRING)
 	{
 		string a=val1->toString();
 		string b=val2->toString();
@@ -912,5 +926,429 @@ bool ABCVm::ifNGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
+}
+
+void ABCVm::_throw(call_context* th)
+{
+	LOG(NOT_IMPLEMENTED, "throw" );
+	abort();
+}
+
+void ABCVm::setSuper(call_context* th, int n)
+{
+	ISWFObject* value=th->runtime_stack_pop();
+	multiname* name=th->context->getMultiname(n,th); 
+
+	LOG(NOT_IMPLEMENTED,"setSuper " << *name);
+
+	ISWFObject* obj=th->runtime_stack_pop();
+	ASObject* o2=dynamic_cast<ASObject*>(obj);
+	if(o2 && o2->super)
+		obj=o2->super;
+
+	obj->setVariableByMultiname(*name,value);
+
+	//TODO: decRef object
+}
+
+void ABCVm::getSuper(call_context* th, int n)
+{
+	multiname* name=th->context->getMultiname(n,th); 
+
+	LOG(NOT_IMPLEMENTED,"getSuper " << *name);
+
+	ISWFObject* obj=th->runtime_stack_pop();
+	ASObject* o2=dynamic_cast<ASObject*>(obj);
+	if(o2 && o2->super)
+		obj=o2->super;
+
+	ISWFObject* owner;
+	ISWFObject* ret=obj->getVariableByMultiname(*name,owner);
+
+	if(owner)
+	{
+		ret->incRef();
+		th->runtime_stack_push(ret);
+	}
+	else
+		th->runtime_stack_push(new Undefined);
+
+	//TODO: decRef object
+}
+
+void ABCVm::getLex(call_context* th, int n)
+{
+	multiname* name=th->context->getMultiname(n,th);
+	LOG(CALLS, "getLex: " << *name );
+	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	ISWFObject* owner;
+	for(it;it!=th->scope_stack.rend();it++)
+	{
+		ISWFObject* o=(*it)->getVariableByMultiname(*name,owner);
+		if(owner)
+		{
+			//If we are getting a function object attach the the current scope
+			if(o->getObjectType()==T_FUNCTION)
+			{
+				LOG(CALLS,"Attaching this to function " << name);
+				IFunction* f=o->toFunction();
+				//f->closure_this=th->locals[0];
+				f->closure_this=(*it);
+				f->bind();
+			}
+			else if(o->getObjectType()==T_DEFINABLE)
+			{
+				LOG(CALLS,"Deferred definition of property " << *name);
+				Definable* d=dynamic_cast<Definable*>(o);
+				d->define(*it);
+				o=(*it)->getVariableByMultiname(*name,owner);
+				LOG(CALLS,"End of deferred definition of property " << *name);
+			}
+			th->runtime_stack_push(o);
+			o->incRef();
+			break;
+		}
+	}
+	if(!owner)
+	{
+		LOG(CALLS, "NOT found, trying Global" );
+		ISWFObject* o2=th->context->vm->Global.getVariableByMultiname(*name,owner);
+		if(owner)
+		{
+			if(o2->getObjectType()==T_DEFINABLE)
+			{
+				LOG(CALLS,"Deferred definition of property " << *name);
+				Definable* d=dynamic_cast<Definable*>(o2);
+				d->define(th->context->Global);
+				o2=th->context->Global->getVariableByMultiname(*name,owner);
+				LOG(CALLS,"End of deferred definition of property " << *name);
+			}
+
+			th->runtime_stack_push(o2);
+			o2->incRef();
+		}
+		else
+		{
+			LOG(CALLS, "NOT found, pushing Undefined" );
+			th->runtime_stack_push(new Undefined);
+		}
+	}
+}
+
+void ABCVm::constructSuper(call_context* th, int n)
+{
+	LOG(CALLS, "constructSuper " << n);
+	arguments args(n);
+	for(int i=0;i<n;i++)
+		args.set(n-i-1,th->runtime_stack_pop());
+
+	ASObject* obj=dynamic_cast<ASObject*>(th->runtime_stack_pop());
+
+	if(obj==NULL)
+	{
+		LOG(CALLS,"Not an ASObject. Aborting");
+		abort();
+	}
+
+	if(obj->prototype==NULL)
+	{
+		LOG(CALLS,"No prototype. Returning");
+		return;
+	}
+
+	//The prototype of the new super instance is the super of the prototype
+	ASObject* super=obj->prototype->super;
+
+	//Check if the super is the one we expect
+	int super_name=th->context->instances[obj->prototype->class_index].supername;
+	if(super_name)
+	{
+		Qname sname=th->context->getQname(super_name);
+		ISWFObject* owner;
+		ISWFObject* real_super=th->context->Global->getVariableByName(sname,owner);
+		if(owner)
+		{
+			if(real_super==super)
+			{
+				LOG(CALLS,"Same super");
+			}
+			else
+			{
+				LOG(CALLS,"Changing super");
+				super=dynamic_cast<ASObject*>(real_super);
+			}
+		}
+		else
+		{
+			LOG(ERROR,"Super not found");
+			abort();
+		}
+	}
+	else
+	{
+		LOG(ERROR,"No super");
+		abort();
+	}
+
+	if(super->class_index!=-1)
+	{
+		obj->super=new ASObject;
+		obj->super->prototype=super;
+		super->incRef();
+
+		multiname* name=th->context->getMultiname(th->context->instances[super->class_index].name,th);
+		LOG(CALLS,"Constructing super " << *name << " obj " << obj->super << " on obj " << obj);
+		obj->super->class_name=name->name_s;
+		LOG(CALLS,"Building instance traits");
+		for(int i=0;i<th->context->instances[super->class_index].trait_count;i++)
+			th->context->buildTrait(obj->super,&th->context->instances[super->class_index].traits[i]);
+		LOG(CALLS,"Calling Instance init");
+		//args.incRef();
+		super->constructor->call(obj->super,&args);
+		//args.decRef();
+
+		LOG(CALLS,"End of constructing " << *name);
+	}
+	else
+	{
+		LOG(CALLS,"Builtin super");
+		obj->super=dynamic_cast<ASObject*>(super->clone());
+		if(!obj->super->Variables.empty())
+			abort();
+		obj->super->Variables.clear();
+		LOG(CALLS,"Calling Instance init");
+		//args.incRef();
+		if(super->constructor)
+			super->constructor->call(obj->super,&args);
+		//args.decRef();
+	}
+	LOG(CALLS,"End super construct ");
+	obj->decRef();
+}
+
+void ABCVm::findPropStrict(call_context* th, int n)
+{
+	multiname* name=th->context->getMultiname(n,th);
+	LOG(CALLS, "findPropStrict " << *name );
+
+	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	ISWFObject* owner;
+	for(it;it!=th->scope_stack.rend();it++)
+	{
+		(*it)->getVariableByMultiname(*name,owner);
+		if(owner)
+		{
+			//We have to return the object, not the property
+			th->runtime_stack_push(owner);
+			owner->incRef();
+			break;
+		}
+	}
+	if(!owner)
+	{
+		LOG(CALLS, "NOT found, trying Global" );
+		//TODO: to multiname
+		th->context->vm->Global.getVariableByName((const char*)name->name_s,owner);
+		if(owner)
+		{
+			th->runtime_stack_push(owner);
+			owner->incRef();
+		}
+		else
+		{
+			LOG(CALLS, "NOT found, pushing Undefined" );
+			th->runtime_stack_push(new Undefined);
+		}
+	}
+}
+
+ISWFObject* ABCVm::greaterThan(ISWFObject* obj1, ISWFObject* obj2)
+{
+	LOG(CALLS,"greaterThan");
+
+	//Real comparision demanded to object
+	bool ret=obj1->isGreater(obj2);
+	obj1->decRef();
+	obj2->decRef();
+	return new Boolean(ret);
+}
+
+ISWFObject* ABCVm::greaterEquals(ISWFObject* obj1, ISWFObject* obj2)
+{
+	LOG(CALLS,"greaterEquals");
+
+	//Real comparision demanded to object
+	bool ret=(obj1->isGreater(obj2) || obj1->isEqual(obj2));
+	obj1->decRef();
+	obj2->decRef();
+	return new Boolean(ret);
+}
+
+ISWFObject* ABCVm::lessEquals(ISWFObject* obj1, ISWFObject* obj2)
+{
+	LOG(CALLS,"lessEquals");
+
+	//Real comparision demanded to object
+	bool ret=(obj1->isLess(obj2) || obj1->isEqual(obj2));
+	obj1->decRef();
+	obj2->decRef();
+	return new Boolean(ret);
+}
+
+void ABCVm::initProperty(call_context* th, int n)
+{
+	ISWFObject* value=th->runtime_stack_pop();
+	multiname* name=th->context->getMultiname(n,th);
+	LOG(CALLS, "initProperty " << *name );
+
+	ISWFObject* obj=th->runtime_stack_pop();
+
+	obj->setVariableByName((const char*)name->name_s,value);
+	obj->decRef();
+}
+
+void ABCVm::callSuper(call_context* th, int n, int m)
+{
+	ISWFObject** args=new ISWFObject*[m];
+	for(int i=0;i<m;i++)
+		args[m-i-1]=th->runtime_stack_pop();
+
+	multiname* name=th->context->getMultiname(n,th); 
+	LOG(NOT_IMPLEMENTED,"callSuper " << *name << ' ' << m);
+
+	ISWFObject* receiver=th->runtime_stack_pop();
+	ASObject* o2=dynamic_cast<ASObject*>(receiver);
+	ISWFObject* obj;
+	if(o2 && o2->super)
+		obj=o2->super;
+	else
+		obj=receiver;
+
+	ISWFObject* owner;
+	ISWFObject* o=obj->getVariableByMultiname(*name,owner);
+	if(owner)
+	{
+		//If o is already a function call it, otherwise find the Call method
+		if(o->getObjectType()==T_FUNCTION)
+		{
+			IFunction* f=static_cast<IFunction*>(o);
+			ISWFObject* ret=f->fast_call(owner,args,m);
+			th->runtime_stack_push(ret);
+		}
+		else if(o->getObjectType()==T_UNDEFINED)
+		{
+			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
+			th->runtime_stack_push(new Undefined);
+		}
+		else if(o->getObjectType()==T_DEFINABLE)
+		{
+			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
+			Definable* d=static_cast<Definable*>(o);
+			d->define(obj);
+			IFunction* f=obj->getVariableByMultiname(*name,owner)->toFunction();
+			if(f)
+			{
+				ISWFObject* ret=f->fast_call(owner,args,m);
+				th->runtime_stack_push(ret);
+			}
+			else
+				abort();
+		}
+		else
+		{
+			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",owner));
+			if(f)
+			{
+				ISWFObject* ret=f->fast_call(o,args,m);
+				th->runtime_stack_push(ret);
+			}
+			else
+			{
+				LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
+				th->runtime_stack_push(new Undefined);
+			}
+		}
+	}
+	else
+	{
+		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
+		th->runtime_stack_push(new Undefined);
+	}
+	LOG(CALLS,"End of calling " << name);
+	receiver->decRef();
+	delete[] args;
+}
+
+void ABCVm::callSuperVoid(call_context* th, int n, int m)
+{
+	ISWFObject** args=new ISWFObject*[m];
+	for(int i=0;i<m;i++)
+		args[m-i-1]=th->runtime_stack_pop();
+
+	multiname* name=th->context->getMultiname(n,th); 
+	LOG(NOT_IMPLEMENTED,"callSuperVoid " << *name << ' ' << m);
+
+	ISWFObject* receiver=th->runtime_stack_pop();
+	ASObject* o2=dynamic_cast<ASObject*>(receiver);
+	ISWFObject* obj;
+	if(o2 && o2->super)
+		obj=o2->super;
+	else
+		obj=receiver;
+
+	ISWFObject* owner;
+	ISWFObject* o=obj->getVariableByMultiname(*name,owner);
+	if(owner)
+	{
+		//If o is already a function call it, otherwise find the Call method
+		if(o->getObjectType()==T_FUNCTION)
+		{
+			IFunction* f=static_cast<IFunction*>(o);
+			f->fast_call(obj,args,m);
+		}
+		else if(o->getObjectType()==T_UNDEFINED)
+		{
+			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
+		}
+		else if(o->getObjectType()==T_DEFINABLE)
+		{
+			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
+			Definable* d=static_cast<Definable*>(o);
+			d->define(obj);
+			IFunction* f=obj->getVariableByMultiname(*name,owner)->toFunction();
+			if(f)
+				f->fast_call(owner,args,m);
+			else
+				abort();
+		}
+		else
+		{
+			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByName("Call",owner));
+			if(f)
+				f->fast_call(o,args,m);
+			else
+			{
+				LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
+			}
+		}
+	}
+	else
+	{
+		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
+	}
+	LOG(CALLS,"End of calling " << name);
+	receiver->decRef();
+	delete[] args;
+}
+
+void ABCVm::isTypelate(call_context* th)
+{
+	LOG(NOT_IMPLEMENTED,"isTypelate");
+	ISWFObject* type=th->runtime_stack_pop();
+	ISWFObject* obj=th->runtime_stack_pop();
+	if(type->class_name==obj->class_name)
+		th->runtime_stack_push(new Boolean(true));
+	else
+		th->runtime_stack_push(new Boolean(false));
 }
 

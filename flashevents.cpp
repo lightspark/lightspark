@@ -19,6 +19,7 @@
 
 #include <string>
 
+#include "abc.h"
 #include "flashevents.h"
 #include "swf.h"
 
@@ -91,10 +92,20 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	sys->events_name.push_back(args->at(0)->toString());
 }
 
+ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
+{
+	EventDispatcher* th=dynamic_cast<EventDispatcher*>(obj);
+	Event* e=dynamic_cast<Event*>(args->at(0));
+	if(e==NULL || th==NULL)
+		return new Boolean(false);
+	sys->currentVm->addEvent(th,e);
+	return new Boolean(true);
+}
 
 ASFUNCTIONBODY(EventDispatcher,_constructor)
 {
 	obj->setVariableByName("addEventListener",new Function(addEventListener));
+	obj->setVariableByName("dispatchEvent",new Function(dispatchEvent));
 }
 
 void EventDispatcher::handleEvent(Event* e)
@@ -109,6 +120,7 @@ void EventDispatcher::handleEvent(Event* e)
 	LOG(CALLS, "Handling event " << h->first);
 	arguments args(1);
 	args.set(0,e);
+	this->incRef();
 	h->second->call(this,&args);
 }
 

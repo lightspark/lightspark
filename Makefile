@@ -1,5 +1,5 @@
 # User-overridable flags:
-CXXFLAGS = -g -O3 -D_GLIBCXX_NO_DEBUG -fpermissive
+CXXFLAGS = -g -O0 -D_GLIBCXX_NO_DEBUG -fpermissive -Wnon-virtual-dtor
 LLVMLIBS = `llvm-config --libfiles`
 prefix = /usr
 bindir = $(prefix)/bin

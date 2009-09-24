@@ -63,6 +63,7 @@ public:
 			ignore(in,Header&0x3f);
 	}
 	virtual TAGTYPE getType(){ return TAG; }
+	virtual ~Tag(){}
 };
 
 class EndTag:public Tag

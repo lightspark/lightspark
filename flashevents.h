@@ -74,11 +74,13 @@ private:
 public:
 	float id;
 	EventDispatcher();
+	virtual ~EventDispatcher(){}
 	void handleEvent(Event* e);
 	void setId(float i){id=i;}
 
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
+	ASFUNCTION(dispatchEvent);
 };
 
 //Internal events from now on, used to pass data to the execution thread

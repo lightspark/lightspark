@@ -148,7 +148,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByName(Qname("flash.geom","Rectangle"),new ASObject);
 
-	Global.setVariableByName(Qname("flash.events","EventDispatcher"),new ASObject);
+	Global.setVariableByName(Qname("flash.events","EventDispatcher"),new EventDispatcher);
 	Global.setVariableByName(Qname("flash.events","Event"),new Event(""));
 	Global.setVariableByName(Qname("flash.events","MouseEvent"),new MouseEvent);
 	Global.setVariableByName(Qname("flash.events","FocusEvent"),new FocusEvent);
@@ -874,11 +874,6 @@ ISWFObject* ABCVm::increment_i(ISWFObject* o)
 	return o;
 }
 
-void ABCVm::isTypelate(call_context* th)
-{
-	LOG(NOT_IMPLEMENTED,"isTypelate");
-}
-
 void ABCVm::asTypelate(call_context* th)
 {
 	LOG(NOT_IMPLEMENTED,"asTypelate");
@@ -940,7 +935,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
 
-	multiname* name=th->context->getMultiname(n);
+	multiname* name=th->context->getMultiname(n,th);
 	LOG(CALLS,"constructProp "<< *name << ' ' << m);
 
 	ISWFObject* obj=th->runtime_stack_pop();
@@ -1035,19 +1030,6 @@ ISWFObject* ABCVm::hasNext2(call_context* th, int n, int m)
 	}
 }
 
-void ABCVm::callSuper(call_context* th, int n, int m)
-{
-	multiname* name=th->context->getMultiname(n); 
-	LOG(NOT_IMPLEMENTED,"callSuper " << *name << ' ' << m);
-	th->runtime_stack_push(new Undefined);
-}
-
-void ABCVm::callSuperVoid(call_context* th, int n, int m)
-{
-	multiname* name=th->context->getMultiname(n); 
-	LOG(NOT_IMPLEMENTED,"callSuperVoid " << *name << ' ' << m);
-}
-
 bool ABCVm::ifFalse(ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifFalse " << offset);
@@ -1129,17 +1111,6 @@ ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
 	return new Boolean(ret);
 }
 
-ISWFObject* ABCVm::greaterThan(ISWFObject* obj1, ISWFObject* obj2)
-{
-	LOG(CALLS,"greaterThan");
-
-	//Real comparision demanded to object
-	bool ret=obj1->isGreater(obj2);
-	obj1->decRef();
-	obj2->decRef();
-	return new Boolean(ret);
-}
-
 bool ABCVm::ifStrictEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
 {
 	LOG(CALLS,"ifStrictEq " << offset);
@@ -1183,7 +1154,7 @@ void ABCVm::call(call_context* th, int m)
 
 void ABCVm::coerce(call_context* th, int n)
 {
-	multiname* name=th->context->getMultiname(n); 
+	multiname* name=th->context->getMultiname(n,NULL); 
 	LOG(NOT_IMPLEMENTED,"coerce " << *name);
 }
 
@@ -1191,37 +1162,6 @@ ISWFObject* ABCVm::newCatch(call_context* th, int n)
 {
 	LOG(NOT_IMPLEMENTED,"newCatch " << n);
 	return new Undefined;
-}
-
-void ABCVm::getSuper(call_context* th, int n)
-{
-	multiname* name=th->context->getMultiname(n); 
-
-	LOG(NOT_IMPLEMENTED,"getSuper " << *name);
-
-	ISWFObject* obj=th->runtime_stack_pop();
-	ASObject* o2=dynamic_cast<ASObject*>(obj);
-	if(o2 && o2->super)
-		obj=o2->super;
-
-	ISWFObject* owner;
-	ISWFObject* ret=obj->getVariableByMultiname(*name,owner);
-
-	if(owner)
-		th->runtime_stack_push(ret);
-	else
-		th->runtime_stack_push(new Undefined);
-}
-
-void ABCVm::setSuper(call_context* th, int n)
-{
-	ISWFObject* value=th->runtime_stack_pop();
-	multiname* name=th->context->getMultiname(n); 
-
-	LOG(NOT_IMPLEMENTED,"setSuper " << *name);
-
-	ISWFObject* obj=th->runtime_stack_pop();
-	obj->setVariableByName((const char*)name->name_s,value);
 }
 
 ISWFObject* ABCVm::newFunction(call_context* th, int n)
@@ -1252,12 +1192,6 @@ void ABCVm::newObject(call_context* th, int n)
 void ABCVm::not_impl(int n)
 {
 	LOG(NOT_IMPLEMENTED, "not implement opcode 0x" << hex << n );
-	abort();
-}
-
-void ABCVm::_throw(call_context* th)
-{
-	LOG(NOT_IMPLEMENTED, "throw" );
 	abort();
 }
 
@@ -1307,99 +1241,9 @@ ISWFObject* ABCVm::pushDouble(call_context* th, int n)
 	return new Number(d);
 }
 
-void ABCVm::constructSuper(call_context* th, int n)
-{
-	LOG(CALLS, "constructSuper " << n);
-	arguments args(n);
-	for(int i=0;i<n;i++)
-		args.set(n-i-1,th->runtime_stack_pop());
-
-	ASObject* obj=dynamic_cast<ASObject*>(th->runtime_stack_pop());
-
-	if(obj==NULL)
-	{
-		LOG(CALLS,"Not an ASObject. Aborting");
-		abort();
-	}
-
-	if(obj->prototype==NULL)
-	{
-		LOG(CALLS,"No prototype. Returning");
-		return;
-	}
-
-	//The prototype of the new super instance is the super of the prototype
-	ASObject* super=obj->prototype->super;
-
-	//Check if the super is the one we expect
-	int super_name=th->context->instances[obj->prototype->class_index].supername;
-	if(super_name)
-	{
-		Qname sname=th->context->getQname(super_name);
-		ISWFObject* owner;
-		ISWFObject* real_super=th->context->Global->getVariableByName(sname,owner);
-		if(owner)
-		{
-			if(real_super==super)
-			{
-				LOG(CALLS,"Same super");
-			}
-			else
-			{
-				LOG(CALLS,"Changing super");
-				super=dynamic_cast<ASObject*>(real_super);
-			}
-		}
-		else
-		{
-			LOG(ERROR,"Super not found");
-			abort();
-		}
-	}
-	else
-	{
-		LOG(ERROR,"No super");
-		abort();
-	}
-
-	if(super->class_index!=-1)
-	{
-		obj->super=new ASObject;
-		obj->super->prototype=super;
-		super->incRef();
-
-		multiname* name=th->context->getMultiname(th->context->instances[super->class_index].name,th);
-		LOG(CALLS,"Constructing " << *name);
-		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->context->instances[super->class_index].trait_count;i++)
-			th->context->buildTrait(obj->super,&th->context->instances[super->class_index].traits[i]);
-		LOG(CALLS,"Calling Instance init");
-		//args.incRef();
-		super->constructor->call(obj->super,&args);
-		//args.decRef();
-
-		LOG(CALLS,"End of constructing " << *name);
-	}
-	else
-	{
-		LOG(CALLS,"Builtin super");
-		obj->super=dynamic_cast<ASObject*>(super->clone());
-		if(!obj->super->Variables.empty())
-			abort();
-		obj->super->Variables.clear();
-		LOG(CALLS,"Calling Instance init");
-		//args.incRef();
-		if(super->constructor)
-			super->constructor->call(obj->super,&args);
-		//args.decRef();
-	}
-	LOG(CALLS,"End super construct ");
-	obj->decRef();
-}
-
 void ABCVm::findProperty(call_context* th, int n)
 {
-	multiname* name=th->context->getMultiname(n);
+	multiname* name=th->context->getMultiname(n,th);
 	LOG(CALLS, "findProperty " << *name );
 
 	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
@@ -1421,54 +1265,6 @@ void ABCVm::findProperty(call_context* th, int n)
 		th->runtime_stack_push(&th->context->vm->Global);
 		th->context->vm->Global.incRef();
 	}
-}
-
-void ABCVm::findPropStrict(call_context* th, int n)
-{
-	multiname* name=th->context->getMultiname(n);
-	LOG(CALLS, "findPropStrict " << name );
-
-	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	ISWFObject* owner;
-	for(it;it!=th->scope_stack.rend();it++)
-	{
-		(*it)->getVariableByMultiname(*name,owner);
-		if(owner)
-		{
-			//We have to return the object, not the property
-			th->runtime_stack_push(owner);
-			owner->incRef();
-			break;
-		}
-	}
-	if(!owner)
-	{
-		LOG(CALLS, "NOT found, trying Global" );
-		//TODO: to multiname
-		th->context->vm->Global.getVariableByName((const char*)name->name_s,owner);
-		if(owner)
-		{
-			th->runtime_stack_push(owner);
-			owner->incRef();
-		}
-		else
-		{
-			LOG(CALLS, "NOT found, pushing Undefined" );
-			th->runtime_stack_push(new Undefined);
-		}
-	}
-}
-
-void ABCVm::initProperty(call_context* th, int n)
-{
-	multiname* name=th->context->getMultiname(n);
-	LOG(CALLS, "initProperty " << *name );
-	ISWFObject* value=th->runtime_stack_pop();
-
-	ISWFObject* obj=th->runtime_stack_pop();
-
-	obj->setVariableByName((const char*)name->name_s,value);
-	obj->decRef();
 }
 
 void ABCVm::newArray(call_context* th, int n)
@@ -1513,65 +1309,6 @@ ISWFObject* ABCVm::getScopeObject(call_context* th, int n)
 	return ret;
 }
 
-void ABCVm::getLex(call_context* th, int n)
-{
-	multiname* name=th->context->getMultiname(n);
-	LOG(CALLS, "getLex: " << *name );
-	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	ISWFObject* owner;
-	for(it;it!=th->scope_stack.rend();it++)
-	{
-		ISWFObject* o=(*it)->getVariableByMultiname(*name,owner);
-		if(owner)
-		{
-			//If we are getting a function object attach the the current scope
-			if(o->getObjectType()==T_FUNCTION)
-			{
-				LOG(CALLS,"Attaching this to function " << name);
-				IFunction* f=o->toFunction();
-				//f->closure_this=th->locals[0];
-				f->closure_this=(*it);
-				f->bind();
-			}
-			else if(o->getObjectType()==T_DEFINABLE)
-			{
-				LOG(CALLS,"Deferred definition of property " << name);
-				Definable* d=dynamic_cast<Definable*>(o);
-				d->define(*it);
-				o=(*it)->getVariableByMultiname(*name,owner);
-				LOG(CALLS,"End of deferred definition of property " << name);
-			}
-			th->runtime_stack_push(o);
-			o->incRef();
-			break;
-		}
-	}
-	if(!owner)
-	{
-		LOG(CALLS, "NOT found, trying Global" );
-		ISWFObject* o2=th->context->vm->Global.getVariableByMultiname(*name,owner);
-		if(owner)
-		{
-			if(o2->getObjectType()==T_DEFINABLE)
-			{
-				LOG(CALLS,"Deferred definition of property " << name);
-				Definable* d=dynamic_cast<Definable*>(o2);
-				d->define(th->context->Global);
-				o2=th->context->Global->getVariableByMultiname(*name,owner);
-				LOG(CALLS,"End of deferred definition of property " << name);
-			}
-
-			th->runtime_stack_push(o2);
-			o2->incRef();
-		}
-		else
-		{
-			LOG(CALLS, "NOT found, pushing Undefined" );
-			th->runtime_stack_push(new Undefined);
-		}
-	}
-}
-
 ISWFObject* ABCVm::pushString(call_context* th, int n)
 {
 	string s=th->context->getString(n); 
@@ -1607,7 +1344,7 @@ ISWFObject* call_context::runtime_stack_peek()
 
 call_context::call_context(method_info* th, ISWFObject** args, int num_args)
 {
-	locals=new ISWFObject*[th->body->local_count];
+	locals=new ISWFObject*[th->body->local_count+1];
 	locals_size=th->body->local_count;
 	memset(locals,0,sizeof(ISWFObject*)*locals_size);
 	if(args)
@@ -1849,14 +1586,14 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 						return;
 					}
 				}
-				multiname* type=getMultiname(t->type_name);
+				multiname* type=getMultiname(t->type_name,NULL);
 				LOG(CALLS,"Slot "<<name<<" type "<<*type);
 				break;
 			}
 			else
 			{
 				//else fallthrough
-				multiname* type=getMultiname(t->type_name);
+				multiname* type=getMultiname(t->type_name,NULL);
 				LOG(CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				ISWFObject* owner;
 				ISWFObject* ret=obj->getVariableByName(name,owner);

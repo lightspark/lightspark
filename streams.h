@@ -26,6 +26,7 @@ class swf_stream
 {
 public:
 	virtual void setCompressed()=0;
+	virtual ~swf_stream(){}
 };
 
 class sync_stream: public std::streambuf, public swf_stream

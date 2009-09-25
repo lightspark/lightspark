@@ -1859,8 +1859,9 @@ istream& operator>>(istream& in, method_info& v)
 	}
 	if(v.flags&0x80)
 	{
-		LOG(ERROR,"Params names not supported");
-		abort();
+		v.param_names.resize(v.param_count);
+		for(int i=0;i<v.param_count;i++)
+			in >> v.param_names[i];
 	}
 	return in;
 }

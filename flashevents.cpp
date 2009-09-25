@@ -37,6 +37,7 @@ Event::Event(const string& t):type(t)
 	setVariableByName("UNLOAD",new ASString("unload"));
 	setVariableByName("ACTIVATE",new ASString("activate"));
 	setVariableByName("DEACTIVATE",new ASString("deactivate"));
+	setGetterByName("type",new Function(_getType));
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
@@ -70,6 +71,12 @@ EventDispatcher::EventDispatcher():id(0)
 	if(constructor)
 		constructor->decRef();
 	constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(Event,_getType)
+{
+	Event* th=static_cast<Event*>(obj);
+	return new ASString(th->type);
 }
 
 ASFUNCTIONBODY(EventDispatcher,addEventListener)

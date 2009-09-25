@@ -81,7 +81,6 @@ opcode_handler ABCVm::opcode_table_args2_branches[]={
 	{"ifNGT",(void*)&ABCVm::ifNGT},
 	{"ifNGE",(void*)&ABCVm::ifNGE},
 	{"ifNLE",(void*)&ABCVm::ifNLE},
-	{"ifGE",(void*)&ABCVm::ifGE},
 	{"ifStrictNE",(void*)&ABCVm::ifStrictNE},
 	{"ifStrictEq",(void*)&ABCVm::ifStrictEq},
 	{"ifEq",(void*)&ABCVm::ifEq},
@@ -201,6 +200,7 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"ifLT_io",(void*)&ABCVm::ifLT_io,ARGS_INT_OBJ},
 	{"ifLT_oi",(void*)&ABCVm::ifLT_oi,ARGS_OBJ_INT},
 	{"ifGT",(void*)&ABCVm::ifGT,ARGS_OBJ_OBJ},
+	{"ifGE",(void*)&ABCVm::ifGE,ARGS_OBJ_OBJ},
 	{"ifLE",(void*)&ABCVm::ifGT,ARGS_OBJ_OBJ},
 	{"pushTrue",(void*)&ABCVm::pushTrue,ARGS_NONE},
 	{"pushFalse",(void*)&ABCVm::pushFalse,ARGS_NONE},
@@ -1389,6 +1389,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.push_back(make_pair(push_index-1,STACK_OBJECT)); //The index was incremented by the check
 					else if(actual_type==STACK_INT)
 						static_stack_types.push_back(make_pair(push_index-1,STACK_INT));
+					else if(actual_type==STACK_BOOLEAN)
+						static_stack_types.push_back(make_pair(push_index-1,STACK_OBJECT));
 					else
 					{
 						cout << cur_block->push_types[push_index-1] << endl;
@@ -1838,6 +1840,28 @@ SyntheticFunction::synt_function method_info::synt_method()
 					if(cur_block->locals[i]==STACK_NONE)
 						cur_block->locals_reset[i]=true;
 					cur_block->locals[i]=t;
+					break;
+				}
+				case 0xef:
+				{
+					//debug
+					uint8_t debug_type;
+					u30 index;
+					uint8_t reg;
+					u30 extra;
+					code.read((char*)&debug_type,1);
+					code >> index;
+					code.read((char*)&reg,1);
+					code >> extra;
+					break;
+				}
+				case 0xf0:
+				case 0xf1:
+				{
+					//debugline
+					//debugfile
+					u30 t;
+					code >> t;
 					break;
 				}
 				default:
@@ -2586,12 +2610,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> t;
 
 				//Make comparision
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				constant = llvm::ConstantInt::get(int_type, t);
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifGE"), v1, v2, constant);
+				llvm::Value* cond;
+				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), v1.first, v2.first);
+				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
+				{
+					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), v1.first, v2.first);
+				}
+				else
+					abort();
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -3375,7 +3406,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
-				if(cur_block->push_types[push_index]==STACK_OBJECT)
+				if(cur_block->push_types[push_index]==STACK_OBJECT ||
+					cur_block->push_types[push_index]==STACK_BOOLEAN)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty"), obj.first, name);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
@@ -3762,6 +3794,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
 					v2.first=Builder.CreateSIToFP(v2.first,number_type);
+					value=Builder.CreateMul(v1.first, v2.first);
+				}
+				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
+				{
+					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					value=Builder.CreateMul(v1.first, v2.first);
 				}
 				else
@@ -4220,6 +4257,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				int i=opcode&3;
 				LOG(TRACE, "synt setlocal_n " << i );
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				//DecRef previous local
 				if(static_locals[i].second==STACK_OBJECT)
 					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
 
@@ -4230,6 +4268,36 @@ SyntheticFunction::synt_function method_info::synt_method()
 					Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
 				}
 				jitted=true;
+				break;
+			}
+			case 0xef:
+			{
+				//debug
+				LOG(TRACE, "synt debug" );
+				uint8_t debug_type;
+				u30 index;
+				uint8_t reg;
+				u30 extra;
+				code2.read((char*)&debug_type,1);
+				code2 >> index;
+				code2.read((char*)&reg,1);
+				code2 >> extra;
+				break;
+			}
+			case 0xf0:
+			{
+				//debugline
+				LOG(TRACE, "synt debugline" );
+				u30 t;
+				code2 >> t;
+				break;
+			}
+			case 0xf1:
+			{
+				//debugfile
+				LOG(TRACE, "synt debugfile" );
+				u30 t;
+				code2 >> t;
 				break;
 			}
 			default:

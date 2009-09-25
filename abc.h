@@ -209,7 +209,7 @@ private:
 
 	u30 option_count;
 	std::vector<option_detail> options;
-//	param_info param_names
+	std::vector<u30> param_names;
 
 	typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
 	static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
@@ -335,7 +335,6 @@ struct opcode_handler
 {
 	const char* name;
 	void* addr;
-
 };
 
 enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE,
@@ -421,7 +420,7 @@ private:
 	static bool ifNLT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNGT(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifNGE(ISWFObject*, ISWFObject*, int offset); 
-	static bool ifGE(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifGE(ISWFObject*, ISWFObject*); 
 	static bool ifNLE(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifStrictNE(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifFalse(ISWFObject*, int offset); 

@@ -34,6 +34,7 @@ class Event: public ASObject
 {
 public:
 	Event(const std::string& t);
+	ASFUNCTION(_getType);
 	virtual EVENT_TYPE getEventType() {return EVENT;} //DEPRECATED
 	const std::string type;
 	ISWFObject* clone()

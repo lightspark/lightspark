@@ -207,7 +207,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		}
 		else if(o->getObjectType()==T_DEFINABLE)
 		{
-			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
+			LOG(CALLS,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
 			IFunction* f=obj->getVariableByMultiname(*name,owner)->toFunction();
@@ -217,7 +217,11 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 				th->runtime_stack_push(ret);
 			}
 			else
-				abort();
+			{
+				LOG(NOT_IMPLEMENTED,"No such function");
+				th->runtime_stack_push(new Undefined);
+				//abort();
+			}
 		}
 		else
 		{
@@ -911,9 +915,9 @@ bool ABCVm::ifNLE(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	return ret;
 }
 
-bool ABCVm::ifGE(ISWFObject* obj2, ISWFObject* obj1, int offset)
+bool ABCVm::ifGE(ISWFObject* obj2, ISWFObject* obj1)
 {
-	LOG(CALLS,"ifGE " << offset);
+	LOG(CALLS,"ifGE");
 	abort();
 }
 
@@ -1242,7 +1246,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 		}
 		else if(o->getObjectType()==T_DEFINABLE)
 		{
-			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
+			LOG(CALLS,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
 			IFunction* f=obj->getVariableByMultiname(*name,owner)->toFunction();
@@ -1252,7 +1256,11 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 				th->runtime_stack_push(ret);
 			}
 			else
-				abort();
+			{
+				LOG(NOT_IMPLEMENTED,"No such function");
+				th->runtime_stack_push(new Undefined);
+				//abort();
+			}
 		}
 		else
 		{
@@ -1312,14 +1320,17 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		}
 		else if(o->getObjectType()==T_DEFINABLE)
 		{
-			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
+			LOG(CALLS,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
 			IFunction* f=obj->getVariableByMultiname(*name,owner)->toFunction();
 			if(f)
 				f->fast_call(owner,args,m);
 			else
-				abort();
+			{
+				LOG(NOT_IMPLEMENTED,"No such function");
+			//	abort();
+			}
 		}
 		else
 		{

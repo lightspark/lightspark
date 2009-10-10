@@ -41,6 +41,24 @@ public:
 	virtual void Render()=0;
 };
 
+class DisplayObject: public IDisplayListElem
+{
+public:
+	DisplayObject();
+	ASFUNCTION(_call);
+	void Render()
+	{
+		abort();
+	}
+};
+
+class DisplayObjectContainer: public DisplayObject
+{
+public:
+	DisplayObjectContainer();
+	ASFUNCTION(_getNumChildren);
+};
+
 class LoaderInfo: public EventDispatcher
 {
 public:
@@ -54,7 +72,7 @@ public:
 	ASFUNCTION(addEventListener);
 };
 
-class Loader: public IThreadJob, public IDisplayListElem
+class Loader: public IThreadJob, public DisplayObjectContainer
 {
 private:
 	std::string url;
@@ -70,6 +88,7 @@ public:
 	}
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
+	ASFUNCTION(loadBytes);
 	void execute();
 	int getDepth() const
 	{
@@ -82,7 +101,7 @@ public:
 	}
 };
 
-class Sprite: public IDisplayListElem
+class Sprite: public DisplayObjectContainer
 {
 protected:
 	intptr_t _x;
@@ -112,13 +131,6 @@ public:
 	{
 		return new Sprite(*this);
 	}
-};
-
-class DisplayObject: public ASObject
-{
-public:
-	DisplayObject();
-	ASFUNCTION(_call);
 };
 
 class MovieClip: public Sprite

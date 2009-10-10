@@ -99,8 +99,8 @@ public:
 	void addToFrame(DisplayListTag* t);
 	void commitFrame();
 	void Render();
-	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
-	void setVariableByName(const Qname& name, ISWFObject* o);
+	ISWFObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o);
 	void setVariableByMultiname(multiname& name, ISWFObject* o);
 	void setVariableByString(const std::string& s, ISWFObject* o);
 };

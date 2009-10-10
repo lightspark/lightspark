@@ -1325,7 +1325,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		{
 			if(toAdd->constructor)
 				toAdd->constructor->call(toAdd,NULL);
-			parent->setVariableByName(Name,toAdd);
+			parent->setVariableByQName((const char*)Name,"",toAdd);
 		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");

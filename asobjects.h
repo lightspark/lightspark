@@ -25,7 +25,7 @@
 #include "frame.h"
 #include "input.h"
 
-const std::string AS3="http://adobe.com/AS3/2006/builtin";
+const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
 
 class Event;
 class method_info;
@@ -42,15 +42,14 @@ public:
 	virtual ~ASObject();
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
-	std::string toString() const;
+	tiny_string toString() const;
 	ISWFObject* clone()
 	{
 		return new ASObject(*this);
 	}
-	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
+	ISWFObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner);
 	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
 	void setVariableByMultiname(multiname& name, ISWFObject* o);
-	IFunction* getGetterByName(const Qname& name, ISWFObject*& owner);
 
 	//DEBUG
 	int debug_id;
@@ -116,8 +115,12 @@ private:
 	bool val;
 public:
 	Boolean(bool v):val(v){type=T_BOOLEAN;}
+	int toInt() const
+	{
+		return val;
+	}
 	bool isEqual(const ISWFObject* r) const;
-	std::string toString() const;
+	tiny_string toString() const;
 };
 
 class Undefined : public ASObject
@@ -125,7 +128,7 @@ class Undefined : public ASObject
 public:
 	ASFUNCTION(call);
 	Undefined();
-	std::string toString() const;
+	tiny_string toString() const;
 	bool isEqual(const ISWFObject* r) const;
 	ISWFObject* clone()
 	{
@@ -141,10 +144,13 @@ private:
 public:
 	ASString();
 	ASString(const std::string& s);
+	ASString(const tiny_string& s);
+	ASString(const char* s);
 	ASFUNCTION(String);
 	ASFUNCTION(split);
 	ASFUNCTION(_getLength);
-	std::string toString() const;
+	ASFUNCTION(replace);
+	tiny_string toString() const;
 	double toNumber() const;
 	bool isEqual(const ISWFObject* r) const;
 	ISWFObject* clone()
@@ -166,7 +172,7 @@ class Null : public ASObject
 {
 public:
 	Null(){type=T_NULL;}
-	std::string toString() const;
+	tiny_string toString() const;
 	ISWFObject* clone()
 	{
 		return new Null;
@@ -245,14 +251,14 @@ public:
 	{
 		data.resize(n);
 	}
-	ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
+	ISWFObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner);
 	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
 	intptr_t getVariableByMultiname_i(const multiname& name, ISWFObject*& owner);
-	void setVariableByName(const Qname& name, ISWFObject* o);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o);
 	void setVariableByMultiname(multiname& name, ISWFObject* o);
 	void setVariableByMultiname_i(multiname& name, intptr_t value);
 	bool isEqual(const ISWFObject* r) const;
-	std::string toString() const;
+	tiny_string toString() const;
 };
 
 class arguments: public ASArray
@@ -288,10 +294,9 @@ friend ISWFObject* abstract_d(number_t i);
 private:
 	double val;
 public:
-//	Number(const ISWFObject* obj);
 	Number(double v):val(v){type=T_NUMBER;}
 	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
-	std::string toString() const;
+	tiny_string toString() const;
 	int toInt() const
 	{
 		return val;
@@ -359,7 +364,7 @@ public:
 	ASFUNCTION(getHours);
 	ASFUNCTION(getMinutes);
 	ASFUNCTION(valueOf);
-	std::string toString() const;
+	tiny_string toString() const;
 	int toInt() const; 
 	ISWFObject* clone()
 	{
@@ -385,7 +390,8 @@ public:
 	void define(ISWFObject* g){ f->call(g,NULL); }
 };
 
-class MethodDefinable: public Definable
+//Deprecated
+/*class MethodDefinable: public Definable
 {
 private:
 	IFunction::as_function f;
@@ -394,9 +400,9 @@ public:
 	MethodDefinable(const std::string& _n,IFunction::as_function _f):name(_n),f(_f){}
 	void define(ISWFObject* g)
 	{
-		g->setVariableByName(name,new Function(f));
+		g->setVariableByQName(name,new Function(f));
 	}
-};
+};*/
 
 class PlaceObject2Tag;
 
@@ -419,6 +425,20 @@ public:
 	ASFUNCTION(floor);
 	ASFUNCTION(sqrt);
 	ASFUNCTION(random);
+};
+
+class RegExp: public ASObject
+{
+private:
+	std::string re;
+	std::string flags;
+public:
+	RegExp();
+	ASFUNCTION(_constructor);
+	ISWFObject* clone()
+	{
+		return new RegExp(*this);
+	}
 };
 
 #endif

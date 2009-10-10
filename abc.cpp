@@ -109,61 +109,62 @@ ASFUNCTIONBODY(ABCVm,print)
 void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
-	Global.setVariableByName("Object",new ASObject);
+	Global.setVariableByQName("Object","",new ASObject);
 //	Global.setVariableByName(".int",new ASObject);
 //	Global.setVariableByName(".Boolean",new ASObject);
-	Global.setVariableByName("Number",new ASObject);
-	Global.setVariableByName("String",new ASString);
-	Global.setVariableByName("Array",new ASArray);
-	Global.setVariableByName("Function",new Function);
-	Global.setVariableByName("undefined",new Undefined);
-	Global.setVariableByName("Math",new Math);
-	Global.setVariableByName("Date",new Date);
+	Global.setVariableByQName("Number","",new ASObject);
+	Global.setVariableByQName("String","",new ASString);
+	Global.setVariableByQName("Array","",new ASArray);
+	Global.setVariableByQName("Function","",new Function);
+	Global.setVariableByQName("undefined","",new Undefined);
+	Global.setVariableByQName("Math","",new Math);
+	Global.setVariableByQName("Date","",new Date);
+	Global.setVariableByQName("RegExp","",new RegExp);
 
-	Global.setVariableByName("print",new Function(print));
-	Global.setVariableByName("trace",new Function(print));
-	Global.setVariableByName("toString",new Function(ASObject::_toString));
+	Global.setVariableByQName("print","",new Function(print));
+	Global.setVariableByQName("trace","",new Function(print));
+	Global.setVariableByQName("toString","",new Function(ASObject::_toString));
 
-	Global.setVariableByName(Qname("flash.display","MovieClip"),new MovieClip);
-	Global.setVariableByName(Qname("flash.display","DisplayObject"),new DisplayObject);
-	Global.setVariableByName(Qname("flash.display","Loader"),new Loader);
-	Global.setVariableByName(Qname("flash.display","SimpleButton"),new ASObject);
-	Global.setVariableByName(Qname("flash.display","InteractiveObject"),new ASObject),
-	Global.setVariableByName(Qname("flash.display","DisplayObjectContainer"),new ASObject);
-	Global.setVariableByName(Qname("flash.display","Sprite"),new Sprite);
+	Global.setVariableByQName("MovieClip","flash.display",new MovieClip);
+	Global.setVariableByQName("DisplayObject","flash.display",new DisplayObject);
+	Global.setVariableByQName("Loader","flash.display",new Loader);
+	Global.setVariableByQName("SimpleButton","flash.display",new ASObject);
+	Global.setVariableByQName("InteractiveObject","flash.display",new ASObject),
+	Global.setVariableByQName("DisplayObjectContainer","flash.display",new DisplayObjectContainer);
+	Global.setVariableByQName("Sprite","flash.display",new Sprite);
 
-	Global.setVariableByName(Qname("flash.text","TextField"),new ASObject);
-	Global.setVariableByName(Qname("flash.text","TextFormat"),new ASObject);
-	Global.setVariableByName(Qname("flash.text","TextFieldType"),new ASObject);
+	Global.setVariableByQName("TextField","flash.text",new ASObject);
+	Global.setVariableByQName("TextFormat","flash.text",new ASObject);
+	Global.setVariableByQName("TextFieldType","flash.text",new ASObject);
 
-	Global.setVariableByName(Qname("flash.xml","XMLDocument"),new ASObject);
+	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject);
 
-	Global.setVariableByName(Qname("flash.system","ApplicationDomain"),new ASObject);
-	Global.setVariableByName(Qname("flash.system","LoaderContext"),new ASObject);
+	Global.setVariableByQName("ApplicationDomain","flash.system",new ASObject);
+	Global.setVariableByQName("LoaderContext","flash.system",new ASObject);
 
-	Global.setVariableByName(Qname("flash.utils","ByteArray"),new ASObject);
-	Global.setVariableByName(Qname("flash.utils","Dictionary"),new ASObject);
-	Global.setVariableByName(Qname("flash.utils","Proxy"),new ASObject);
-	Global.setVariableByName(Qname("flash.utils","Timer"),new ASObject);
+	Global.setVariableByQName("ByteArray","flash.utils",new ASArray);
+	Global.setVariableByQName("Dictionary","flash.utils",new ASObject);
+	Global.setVariableByQName("Proxy","flash.utils",new ASObject);
+	Global.setVariableByQName("Timer","flash.utils",new ASObject);
 
-	Global.setVariableByName(Qname("flash.geom","Rectangle"),new ASObject);
+	Global.setVariableByQName("Rectangle","flash.geom",new ASObject);
 
-	Global.setVariableByName(Qname("flash.events","EventDispatcher"),new EventDispatcher);
-	Global.setVariableByName(Qname("flash.events","Event"),new Event(""));
-	Global.setVariableByName(Qname("flash.events","MouseEvent"),new MouseEvent);
-	Global.setVariableByName(Qname("flash.events","FocusEvent"),new FocusEvent);
-	Global.setVariableByName(Qname("flash.events","KeyboardEvent"),new KeyboardEvent);
-	Global.setVariableByName(Qname("flash.events","ProgressEvent"),new ASObject);
-	Global.setVariableByName(Qname("flash.events","IOErrorEvent"),new IOErrorEvent);
+	Global.setVariableByQName("EventDispatcher","flash.events",new EventDispatcher);
+	Global.setVariableByQName("Event","flash.events",new Event(""));
+	Global.setVariableByQName("MouseEvent","flash.events",new MouseEvent);
+	Global.setVariableByQName("FocusEvent","flash.events",new FocusEvent);
+	Global.setVariableByQName("KeyboardEvent","flash.events",new KeyboardEvent);
+	Global.setVariableByQName("ProgressEvent","flash.events",new ASObject);
+	Global.setVariableByQName("IOErrorEvent","flash.events",new IOErrorEvent);
 
-	Global.setVariableByName(Qname("flash.net","LocalConnection"),new ASObject);
-	Global.setVariableByName(Qname("flash.net","URLRequest"),new URLRequest);
-	Global.setVariableByName(Qname("flash.net","URLVariables"),new ASObject);
+	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
+	Global.setVariableByQName("URLRequest","flash.net",new URLRequest);
+	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
 
-	Global.setVariableByName(Qname("flash.system","Capabilities"),new Capabilities);
+	Global.setVariableByQName("Capabilities","flash.system",new Capabilities);
 }
 
-Qname ABCContext::getQname(unsigned int mi, call_context* th) const
+/*Qname ABCContext::getQname(unsigned int mi, call_context* th) const
 {
 	if(mi==0)
 	{
@@ -204,12 +205,12 @@ Qname ABCContext::getQname(unsigned int mi, call_context* th) const
 			break;
 		case 0x1c:
 			LOG(CALLS, "MultinameLA");
-			break;*/
+			break;*
 		default:
 			LOG(ERROR,"Not a Qname kind " << hex << m->kind);
 			abort();
 	}
-}
+}*/
 
 int ABCContext::getMultinameRTData(int mi) const
 {
@@ -555,11 +556,8 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			case 0x07:
 			{
 				const namespace_info* n=&constant_pool.namespaces[m->ns];
-				if(n->name)
-				{
-					ret->ns.push_back(getString(n->name));
-					ret->nskind.push_back(n->kind);
-				}
+				ret->ns.push_back(getString(n->name));
+				ret->nskind.push_back(n->kind);
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -695,7 +693,20 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 	in >> class_count;
 	instances.resize(class_count);
 	for(int i=0;i<class_count;i++)
+	{
 		in >> instances[i];
+		cout << "Class " << getString(instances[i].name) << endl;
+		if(instances[i].supername)
+			cout << "Super " << *getMultiname(instances[i].supername,NULL) << endl;
+		if(instances[i].interface_count)
+		{
+			cout << "Implements" << endl; 
+			for(int j=0;j<instances[i].interfaces.size();j++)
+			{
+				cout << "\t" << *getMultiname(instances[i].interfaces[j],NULL) << endl;
+			}
+		}
+	}
 	classes.resize(class_count);
 	for(int i=0;i<class_count;i++)
 		in >> classes[i];
@@ -812,7 +823,6 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,arguments* args)
 {
 	LOG(CALLS,"Setting class name to " << s);
-	base->class_name=s;
 	ISWFObject* owner;
 	ISWFObject* r=Global->getVariableByString(s,owner);
 	if(!owner)
@@ -825,7 +835,7 @@ ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,argument
 		LOG(CALLS,"Class " << s << " is not yet valid");
 		Definable* d=dynamic_cast<Definable*>(r);
 		d->define(Global);
-		LOG(CALLS,"End of deferred init");
+		LOG(CALLS,"End of deferred init of class " << s);
 		r=Global->getVariableByString(s,owner);
 		if(!owner)
 		{
@@ -834,26 +844,33 @@ ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,argument
 		}
 	}
 
+	//Now the class is valid, check that it's not a builtin one
+	assert(r->class_index!=-1);
+
+	ASObject* obj=new ASObject;
+	obj->class_name=s;
 	ASObject* ro=dynamic_cast<ASObject*>(r);
 	if(ro==NULL)
 	{
 		LOG(ERROR,"Class is not as ASObject");
 		abort();
 	}
-	base->prototype=ro;
+	obj->prototype=ro;
+	obj->super=base;
 	ro->incRef();
+	base->incRef();
 
 	if(r->class_index!=-1)
 	{
 		LOG(CALLS,"Building instance traits");
 		for(int i=0;i<instances[r->class_index].trait_count;i++)
-			buildTrait(base,&instances[r->class_index].traits[i]);
+			buildTrait(obj,&instances[r->class_index].traits[i]);
 
 		LOG(CALLS,"Calling Instance init on " << s);
 		args->incRef();
-		base->prototype->constructor->call(base,args);
+		obj->prototype->constructor->call(obj,args);
 	}
-	return base;
+	return obj;
 }
 
 inline method_info* ABCContext::get_method(unsigned int m)
@@ -957,12 +974,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	}
 
 	LOG(CALLS,"Constructing");
-	//We get a shallow copy of the object, but clean out Variables
-	//TODO: should be done in the copy constructor
 	ASObject* ret=dynamic_cast<ASObject*>(o->clone());
-	if(!ret->Variables.empty())
-		abort();
-	ret->Variables.clear();
 
 	ASObject* aso=dynamic_cast<ASObject*>(o);
 	ret->prototype=aso;
@@ -1045,8 +1057,8 @@ bool Boolean_concrete(ISWFObject* obj)
 	if(obj->getObjectType()==T_STRING)
 	{
 		LOG(CALLS,"String to bool");
-		string s=obj->toString();
-		if(s.empty())
+		tiny_string s=obj->toString();
+		if(s.len()==0)
 			return false;
 		else
 			return true;
@@ -1069,12 +1081,6 @@ bool Boolean_concrete(ISWFObject* obj)
 	}
 	else
 		return false;
-}
-
-bool ABCVm::ifStrictNE(ISWFObject* obj2, ISWFObject* obj1, int offset)
-{
-	LOG(NOT_IMPLEMENTED,"ifStrictNE " << offset);
-	abort();
 }
 
 bool ABCVm::ifEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
@@ -1182,7 +1188,7 @@ void ABCVm::newObject(call_context* th, int n)
 	{
 		ISWFObject* value=th->runtime_stack_pop();
 		ISWFObject* name=th->runtime_stack_pop();
-		ret->setVariableByName(name->toString(),value);
+		ret->setVariableByQName(name->toString(),"",value);
 		name->decRef();
 	}
 
@@ -1199,13 +1205,6 @@ ISWFObject* ABCVm::strictEquals(ISWFObject* obj1, ISWFObject* obj2)
 {
 	LOG(NOT_IMPLEMENTED, "strictEquals" );
 	abort();
-}
-
-ISWFObject* ABCVm::in(ISWFObject* val2, ISWFObject* val1)
-{
-	LOG(NOT_IMPLEMENTED, "in" );
-	abort();
-	return new Boolean(false);
 }
 
 ISWFObject* ABCVm::pushUndefined(call_context* th)
@@ -1311,7 +1310,7 @@ ISWFObject* ABCVm::getScopeObject(call_context* th, int n)
 
 ISWFObject* ABCVm::pushString(call_context* th, int n)
 {
-	string s=th->context->getString(n); 
+	tiny_string s=th->context->getString(n); 
 	LOG(CALLS, "pushString " << s );
 	return new ASString(s);
 }
@@ -1444,7 +1443,7 @@ void ABCVm::Run(ABCVm* th)
 	mp.releaseModule();
 }
 
-string ABCContext::getString(unsigned int s) const
+tiny_string ABCContext::getString(unsigned int s) const
 {
 	if(s)
 		return constant_pool.strings[s];
@@ -1454,7 +1453,13 @@ string ABCContext::getString(unsigned int s) const
 
 void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization)
 {
-	Qname name=getQname(t->name);
+	const multiname* mname=getMultiname(t->name,NULL);
+	//Should be a Qname
+	if(mname->ns.size()!=1)
+		abort();
+
+	const tiny_string& name=mname->name_s;
+	const tiny_string& ns=mname->ns[0];
 	switch(t->kind&0xf)
 	{
 		case traits_info::Class:
@@ -1463,12 +1468,12 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 			if(deferred_initialization)
 			{
 				ret=new ScriptDefinable(deferred_initialization);
-				obj->setVariableByName(name, ret);
+				obj->setVariableByMultiname(*mname, ret);
 			}
 			else
 			{
 				ret=new Undefined;
-				obj->setVariableByName(name, ret);
+				obj->setVariableByMultiname(*mname, ret);
 				/*ret=new ASObject;
 				//Should chek super
 				//ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
@@ -1492,7 +1497,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 			
 			LOG(CALLS,"Slot "<< t->slot_id << " type Class name " << name << " id " << t->classi);
 			if(t->slot_id)
-				obj->initSlot(t->slot_id, ret, name);
+				obj->initSlot(t->slot_id, ret, name, ns);
 			break;
 		}
 		case traits_info::Getter:
@@ -1500,7 +1505,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 			LOG(CALLS,"Getter trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			obj->setGetterByName(name, new SyntheticFunction(m));
+			obj->setGetterByQName(name, ns, new SyntheticFunction(m));
 			LOG(CALLS,"End Getter trait: " << name);
 			break;
 		}
@@ -1509,7 +1514,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 			LOG(CALLS,"Setter trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			obj->setSetterByName(name, new SyntheticFunction(m));
+			obj->setSetterByQName(name, ns, new SyntheticFunction(m));
 			LOG(CALLS,"End Setter trait: " << name);
 			break;
 		}
@@ -1518,16 +1523,16 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 			LOG(CALLS,"Method trait: " << name);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			obj->setVariableByName(name, new SyntheticFunction(m));
+			obj->setVariableByQName(name, ns, new SyntheticFunction(m));
 			break;
 		}
 		case traits_info::Const:
 		{
 			//TODO: Not so const right now
 			if(deferred_initialization)
-				obj->setVariableByName(name, new ScriptDefinable(deferred_initialization));
+				obj->setVariableByQName(name, ns, new ScriptDefinable(deferred_initialization));
 			else
-				obj->setVariableByName(name, new Undefined);
+				obj->setVariableByQName(name, ns, new Undefined);
 			break;
 		}
 		case traits_info::Slot:
@@ -1539,41 +1544,41 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 					case 0x01: //String
 					{
 						ISWFObject* ret=new ASString(constant_pool.strings[t->vindex]);
-						obj->setVariableByName(name, ret);
+						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name);
+							obj->initSlot(t->slot_id, ret, name, ns);
 						break;
 					}
 					case 0x03: //Int
 					{
 						ISWFObject* ret=new Integer(constant_pool.integer[t->vindex]);
-						obj->setVariableByName(name, ret);
+						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name);
+							obj->initSlot(t->slot_id, ret, name, ns);
 						break;
 					}
 					case 0x0a: //False
 					{
 						ISWFObject* ret=new Boolean(false);
-						obj->setVariableByName(name, ret);
+						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name);
+							obj->initSlot(t->slot_id, ret, name, ns);
 						break;
 					}
 					case 0x0b: //True
 					{
 						ISWFObject* ret=new Boolean(true);
-						obj->setVariableByName(name, ret);
+						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name);
+							obj->initSlot(t->slot_id, ret, name, ns);
 						break;
 					}
 					case 0x0c: //Null
 					{
 						ISWFObject* ret=new Null;
-						obj->setVariableByName(name, ret);
+						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name);
+							obj->initSlot(t->slot_id, ret, name, ns);
 						break;
 					}
 					default:
@@ -1582,7 +1587,6 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 						LOG(ERROR,"Slot kind " << hex << t->vkind);
 						LOG(ERROR,"Trait not supported " << name << " " << t->kind);
 						abort();
-						obj->setVariableByName(name, new Undefined);
 						return;
 					}
 				}
@@ -1596,18 +1600,18 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 				multiname* type=getMultiname(t->type_name,NULL);
 				LOG(CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				ISWFObject* owner;
-				ISWFObject* ret=obj->getVariableByName(name,owner);
+				ISWFObject* ret=obj->getVariableByQName(name,ns,owner);
 				if(!owner)
 				{
 					if(deferred_initialization)
 					{
 						ret=new ScriptDefinable(deferred_initialization);
-						obj->setVariableByName(name, ret);
+						obj->setVariableByQName(name, ns, ret);
 					}
 					else
 					{
 						ret=new Undefined;
-						obj->setVariableByName(name, ret);
+						obj->setVariableByQName(name, ns, ret);
 					}
 				}
 				else
@@ -1617,13 +1621,13 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 //						ret->constructor->call(ret,NULL);
 				}
 				if(t->slot_id)
-					obj->initSlot(t->slot_id, ret, name);
+					obj->initSlot(t->slot_id, ret, name,ns );
 				break;
 			}
 		}
 		default:
 			LOG(ERROR,"Trait not supported " << name << " " << t->kind);
-			obj->setVariableByName(name, new Undefined);
+			obj->setVariableByQName(name, ns, new Undefined);
 	}
 }
 
@@ -1752,14 +1756,16 @@ istream& operator>>(istream& in, string_info& v)
 	//TODO: String are expected to be UTF-8 encoded.
 	//This temporary implementation assume ASCII, so fail if high bit is set
 	uint8_t t;
-	v.val.reserve(v.size);
+	string tmp;
+	tmp.reserve(v.size);
 	for(int i=0;i<v.size;i++)
 	{
 		in.read((char*)&t,1);
-		v.val.push_back(t);
+		tmp.push_back(t);
 		if(t&0x80)
 			LOG(NOT_IMPLEMENTED,"Multibyte not handled");
 	}
+	v.val=tmp.c_str();
 	return in;
 }
 
@@ -2009,5 +2015,12 @@ istream& operator>>(istream& in, cpool_info& v)
 ISWFObject* parseInt(ISWFObject* obj,arguments* args)
 {
 	return new Integer(0);
+}
+
+intptr_t ABCVm::s_toInt(ISWFObject* o)
+{
+	if(o->getObjectType()!=T_INTEGER)
+		abort();
+	return o->toInt();
 }
 

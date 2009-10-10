@@ -21,5 +21,5 @@
 
 Capabilities::Capabilities()
 {
-	setVariableByName("playerType",new ASString("AVMPlus"));
+	setVariableByQName("playerType","",new ASString("AVMPlus"));
 }

@@ -29,41 +29,42 @@ extern __thread SystemState* sys;
 
 Event::Event(const string& t):type(t)
 {
-	setVariableByName("ENTER_FRAME",new ASString("enterFrame"));
-	setVariableByName("ADDED_TO_STAGE",new ASString("addedToStage"));
-	setVariableByName("INIT",new ASString("init"));
-	setVariableByName("ADDED",new ASString("added"));
-	setVariableByName("REMOVED",new ASString("removed"));
-	setVariableByName("UNLOAD",new ASString("unload"));
-	setVariableByName("ACTIVATE",new ASString("activate"));
-	setVariableByName("DEACTIVATE",new ASString("deactivate"));
-	setGetterByName("type",new Function(_getType));
+	setVariableByQName("ENTER_FRAME","",new ASString("enterFrame"));
+	setVariableByQName("ADDED_TO_STAGE","",new ASString("addedToStage"));
+	setVariableByQName("INIT","",new ASString("init"));
+	setVariableByQName("ADDED","",new ASString("added"));
+	setVariableByQName("COMPLETE","",new ASString("complete"));
+	setVariableByQName("REMOVED","",new ASString("removed"));
+	setVariableByQName("UNLOAD","",new ASString("unload"));
+	setVariableByQName("ACTIVATE","",new ASString("activate"));
+	setVariableByQName("DEACTIVATE","",new ASString("deactivate"));
+	setGetterByQName("type","",new Function(_getType));
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
 {
-	setVariableByName("FOCUS_IN",new ASString("focusIn"));
-	setVariableByName("FOCUS_OUT",new ASString("focusOut"));
-	setVariableByName("MOUSE_FOCUS_CHANGE",new ASString("mouseFocusChange"));
-	setVariableByName("KEY_FOCUS_CHANGE",new ASString("keyFocusChange"));
+	setVariableByQName("FOCUS_IN","",new ASString("focusIn"));
+	setVariableByQName("FOCUS_OUT","",new ASString("focusOut"));
+	setVariableByQName("MOUSE_FOCUS_CHANGE","",new ASString("mouseFocusChange"));
+	setVariableByQName("KEY_FOCUS_CHANGE","", new ASString("keyFocusChange"));
 }
 
 KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
 {
-	setVariableByName("KEY_DOWN",new ASString("keyDown"));
-	setVariableByName("KEY_UP",new ASString("keyUp"));
+	setVariableByQName("KEY_DOWN","",new ASString("keyDown"));
+	setVariableByQName("KEY_UP","",new ASString("keyUp"));
 }
 
 MouseEvent::MouseEvent():Event("mouseEvent")
 {
-	setVariableByName("MOUSE_DOWN",new ASString("mouseDown"));
-	setVariableByName("MOUSE_UP",new ASString("mouseUp"));
-	setVariableByName("CLICK",new ASString("click"));
+	setVariableByQName("MOUSE_DOWN","",new ASString("mouseDown"));
+	setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
+	setVariableByQName("CLICK","",new ASString("click"));
 }
 
 IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
 {
-	setVariableByName("IO_ERROR",new ASString("ioError"));
+	setVariableByQName("IO_ERROR","",new ASString("ioError"));
 }
 
 EventDispatcher::EventDispatcher():id(0)
@@ -89,14 +90,14 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	EventDispatcher* th=dynamic_cast<EventDispatcher*>(obj);
 	if(th==NULL)
 		return NULL;
-	sys->cur_input_thread->addListener(args->at(0)->toString(),th);
+	sys->cur_input_thread->addListener(string(args->at(0)->toString()),th);
 
 	IFunction* f=args->at(1)->toFunction();
 	IFunction* f2=static_cast<IFunction*>(f->clone());
 	f2->bind();
 
 	th->handlers.insert(make_pair(args->at(0)->toString(),f2->toFunction()));
-	sys->events_name.push_back(args->at(0)->toString());
+	sys->events_name.push_back(string(args->at(0)->toString()));
 }
 
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
@@ -111,8 +112,8 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 
 ASFUNCTIONBODY(EventDispatcher,_constructor)
 {
-	obj->setVariableByName("addEventListener",new Function(addEventListener));
-	obj->setVariableByName("dispatchEvent",new Function(dispatchEvent));
+	obj->setVariableByQName("addEventListener","",new Function(addEventListener));
+	obj->setVariableByQName("dispatchEvent","",new Function(dispatchEvent));
 }
 
 void EventDispatcher::handleEvent(Event* e)

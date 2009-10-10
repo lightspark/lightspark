@@ -48,11 +48,22 @@ class arguments;
 class IFunction;
 struct arrayElem;
 
-struct tiny_string
+class tiny_string
 {
+private:
 	char buf[256];
-	int start;
-	tiny_string():start(0){buf[0]=0;}
+public:
+	tiny_string(){buf[0]=0;}
+	tiny_string(const char* s)
+	{
+		if(strlen(s)>255)
+			abort();
+		strcpy(buf,s);
+	}
+	explicit tiny_string(int i)
+	{
+		sprintf(buf,"%i",i);
+	}
 	tiny_string& operator=(const std::string& s)
 	{
 		strncpy(buf,s.c_str(),256);
@@ -63,22 +74,30 @@ struct tiny_string
 		strncpy(buf,s,256);
 		return *this;
 	}
+	bool operator<(const tiny_string& r) const
+	{
+		return strncmp(buf,r.buf,256)<0;
+	}
+	bool operator==(const tiny_string& r) const
+	{
+		return strncmp(buf,r.buf,256)==0;
+	}
+	bool operator==(const char* r) const
+	{
+		return strncmp(buf,r,256)==0;
+	}
 	operator const char*() const
 	{
-//		return buf+start;
 		return buf;
 	}
 	char operator[](int i)
 	{
-//		return *(buf+start+i);
 		return *(buf+i);
 	}
 	int len() const
 	{
-//		return strlen(buf+start);
 		return strlen(buf);
 	}
-	void fromInt(int i);
 };
 
 class UI32
@@ -154,13 +173,17 @@ public:
 	{
 		return String;
 	}
+	operator const char*() const
+	{
+		return String.c_str();
+	}
 	int size()
 	{
 		return String.size();
 	}
 };
 
-struct Qname
+/*struct Qname
 {
 	std::string name;
 	std::string ns;
@@ -179,16 +202,15 @@ struct Qname
 		name=buf;
 	}
 	Qname(const std::string& _ns, const std::string& _name):ns(_ns),name(_name){}
-};
+};*/
 
 struct multiname
 {
 	enum NAME_TYPE {NAME_STRING,NAME_INT};
 	NAME_TYPE name_type;
-	//std::string name_s;
 	tiny_string name_s;
 	int name_i;
-	std::vector<std::string> ns;
+	std::vector<tiny_string> ns;
 	std::vector<int> nskind;
 	multiname(){count++;}
 	~multiname();
@@ -223,13 +245,17 @@ friend class Manager;
 friend class ASObject;
 private:
 	Manager* manager;
+	//maps variable name to namespace name and var
+	std::multimap<tiny_string,std::pair<tiny_string, obj_var> > Variables;
 protected:
 	ISWFObject* parent;
 	ISWFObject();
 	ISWFObject(Manager* m);
 	ISWFObject(const ISWFObject& o);
-	std::map<Qname,obj_var> Variables;
-	typedef std::map<Qname,obj_var>::iterator var_iterator;
+	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
+	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
+	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create=true);
+	obj_var* findObjVar(const multiname& mname, bool create=true);
 	std::vector<var_iterator> slots_vars;
 	SWFOBJECT_TYPE type;
 public:
@@ -277,19 +303,19 @@ public:
 	}
 	virtual ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name, ISWFObject*& owner);
-	virtual ISWFObject* getVariableByName(const Qname& name, ISWFObject*& owner);
+	virtual ISWFObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner);
 	virtual ISWFObject* getVariableByString(const std::string& name, ISWFObject*& owner);
-	virtual void setVariableByMultiname_i(multiname& name, intptr_t value);
-	virtual void setVariableByMultiname(multiname& name, ISWFObject* o);
-	virtual void setVariableByName(const Qname& name, ISWFObject* o);
-	void setGetterByName(const Qname& name, IFunction* o);
-	void setSetterByName(const Qname& name, IFunction* o);
+	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
+	virtual void setVariableByMultiname(const multiname& name, ISWFObject* o);
+	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o);
+	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
+	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	ISWFObject* getSlot(int n)
 	{
-		return slots_vars[n-1]->second.var;
+		return slots_vars[n-1]->second.second.var;
 	}
 	virtual void setSlot(int n,ISWFObject* o);
-	virtual void initSlot(int n,ISWFObject* o, const Qname& name);
+	virtual void initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns);
 	virtual void dumpVariables();
 	virtual int numVariables();
 	std::string getNameAt(int i);
@@ -298,10 +324,12 @@ public:
 	{
 		return type;
 	}
-	virtual std::string toString() const;
+	virtual tiny_string toString() const;
 	virtual int toInt() const;
 	virtual double toNumber() const;
 	virtual IFunction* toFunction();
+
+	//TODO: check clone semantics, as actually nothing is cloned
 	virtual ISWFObject* clone();
 
 	virtual bool isEqual(const ISWFObject* r) const;
@@ -343,7 +371,7 @@ private:
 	int index;
 public:
 	ConstantReference(int i):index(i){type=T_CONSTREF;}
-	std::string toString() const;
+	tiny_string toString() const;
 	int toInt() const;
 //	double toNumber() const;
 	ISWFObject* clone();
@@ -359,7 +387,7 @@ private:
 	int index;
 public:
 	RegisterNumber(int i):index(i){type=T_REGNUMBER;}
-	std::string toString() const;
+	tiny_string toString() const;
 	//int toInt();
 	ISWFObject* clone();
 /*	ISWFObject* clone()
@@ -417,7 +445,7 @@ public:
 	Integer(Manager* m):val(0),ISWFObject(m){type=T_INTEGER;}
 	virtual ~Integer(){}
 	Integer& operator=(int v){val=v; return *this; }
-	std::string toString() const;
+	tiny_string toString() const;
 	int toInt() const
 	{
 		return val;
@@ -1000,7 +1028,7 @@ std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::ostream& operator<<(std::ostream& s, const RGBA& r);
 std::ostream& operator<<(std::ostream& s, const STRING& r);
 std::ostream& operator<<(std::ostream& s, const multiname& r);
-std::ostream& operator<<(std::ostream& s, const Qname& r);
+//std::ostream& operator<<(std::ostream& s, const Qname& r);
 
 std::istream& operator>>(std::istream& s, RECT& v);
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v);

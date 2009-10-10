@@ -25,8 +25,8 @@ Rectangle::Rectangle(int l, int t, int r, int b)
 	setVariableByName("top",new Integer(t));
 	setVariableByName("top",new Integer(t));*/
 	//TODO: Use getters
-	setVariableByName("xMax",new Integer(r));
-	setVariableByName("xMin",new Integer(l));
-	setVariableByName("yMax",new Integer(b));
-	setVariableByName("yMin",new Integer(t));
+	setVariableByQName("xMax","",new Integer(r));
+	setVariableByQName("xMin","",new Integer(l));
+	setVariableByQName("yMax","",new Integer(b));
+	setVariableByQName("yMin","",new Integer(t));
 }

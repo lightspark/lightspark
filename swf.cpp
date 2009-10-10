@@ -83,15 +83,15 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 {
 	type=T_MOVIE;
 	sem_init(&new_frame,0,0);
-	//This should come from DisplayObject
 	MovieClip::_constructor(this,NULL);
 	LoaderInfo* loaderInfo=new LoaderInfo();
 	loaderInfo->_constructor(loaderInfo,NULL);
-	setVariableByName(Qname("loaderInfo"),loaderInfo);
+	setVariableByQName("loaderInfo","",loaderInfo);
 
-	setVariableByName("getBounds",new Function(getBounds));
-	setVariableByName("root",this);
-	setVariableByName("stage",this);
+	//This should come from DisplayObject
+	setVariableByQName("getBounds","",new Function(getBounds));
+	setVariableByQName("root","",this);
+	setVariableByQName("stage","",this);
 	class_name="SystemState";
 /*	//Register global functions
 	setVariableByName("parseInt",new Function(parseInt));
@@ -1110,10 +1110,10 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	return *it;
 }
 
-ISWFObject* RootMovieClip::getVariableByName(const Qname& name, ISWFObject*& owner)
+ISWFObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ASObject::getVariableByName(name, owner);
+	ISWFObject* ret=ASObject::getVariableByQName(name, ns, owner);
 	sem_post(&mutex);
 	return ret;
 }
@@ -1125,10 +1125,10 @@ void RootMovieClip::setVariableByMultiname(multiname& name, ISWFObject* o)
 	sem_post(&mutex);
 }
 
-void RootMovieClip::setVariableByName(const Qname& name, ISWFObject* o)
+void RootMovieClip::setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o)
 {
 	sem_wait(&mutex);
-	ISWFObject::setVariableByName(name,o);
+	ISWFObject::setVariableByQName(name,ns,o);
 	sem_post(&mutex);
 }
 
@@ -1151,19 +1151,19 @@ void RootMovieClip::setVariableByString(const string& s, ISWFObject* o)
 				owner=&sys->cur_render_thread->vm.Global;
 			}
 			else
-				next_target=target->getVariableByName(sub,owner);
+				next_target=target->getVariableByQName(sub.c_str(),"",owner);
 
 			f=l+1;
 			if(!owner)
 			{
 				next_target=new Package;
-				target->setVariableByName(sub,next_target);
+				target->setVariableByQName(sub.c_str(),"",next_target);
 			}
 			target=next_target;
 		}
 	}
 	sub=s.substr(f,l-f);
-	target->setVariableByName(sub,o);
+	target->setVariableByQName(sub.c_str(),"",o);
 }
 
 long timeDiff(timespec& s, timespec& d)

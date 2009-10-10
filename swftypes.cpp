@@ -36,9 +36,9 @@ extern __thread ParseThread* pt;
 extern __thread Manager* iManager;
 extern __thread Manager* dManager;
 
-string ConstantReference::toString() const
+tiny_string ConstantReference::toString() const
 {
-	return rt->vm.getConstantByIndex(index);
+	return (const char*)rt->vm.getConstantByIndex(index);
 }
 
 /*double ConstantReference::toNumber() const
@@ -51,7 +51,7 @@ string ConstantReference::toString() const
 
 ISWFObject* ConstantReference::clone()
 {
-	return new ASString(rt->vm.getConstantByIndex(index));
+	return new ASString((const char*)rt->vm.getConstantByIndex(index));
 }
 
 int ConstantReference::toInt() const
@@ -60,7 +60,7 @@ int ConstantReference::toInt() const
 	return 0;
 }
 
-string ISWFObject::toString() const
+tiny_string ISWFObject::toString() const
 {
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
 	abort();
@@ -157,60 +157,78 @@ double ISWFObject::toNumber() const
 	return 0;
 }
 
-void ISWFObject::setGetterByName(const Qname& name, IFunction* o)
+obj_var* ISWFObject::findObjVar(const tiny_string& name, const tiny_string& ns, bool create)
 {
-	pair<map<Qname, obj_var>::iterator,bool> ret=Variables.insert(make_pair(name,obj_var(NULL,o,NULL)));
-	if(!ret.second)
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
+	if(ret.first->first==name)
 	{
-		if(ret.first->second.getter)
+		//Check if this namespace is already present
+		var_iterator& start=ret.first;
+		for(start;start!=ret.second;start++)
 		{
-			//ret.first->second.getter->decRef();
-			//Should never happen
-			abort();
+			if(start->second.first==ns)
+				return &start->second.second;
 		}
-		ret.first->second.getter=o;
+	}
+
+	//Name not present, insert it if we have to create it
+	if(create)
+	{
+		var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair(ns, obj_var() ) ) );
+		return &inserted->second.second;
+	}
+	else
+		return NULL;
+}
+
+void ISWFObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+{
+	obj_var* obj=findObjVar(name,ns);
+	if(obj->getter)
+	{
+		//ret.first->second.getter->decRef();
+		//Should never happen
+		abort();
+	}
+	obj->getter=o;
+}
+
+void ISWFObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+{
+	obj_var* obj=findObjVar(name,ns);
+	if(obj->setter)
+	{
+		//ret.first->second.setter->decRef();
+		//Should never happen
+		abort();
+	}
+	obj->setter=o;
+}
+
+void ISWFObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o)
+{
+	obj_var* obj=findObjVar(name,ns);
+
+	if(obj->setter)
+	{
+		//Call the setter
+		LOG(CALLS,"Calling the setter");
+		arguments args(1);
+		args.set(0,o);
+		//TODO: check
+		o->incRef();
+		obj->setter->call(this,&args);
+		LOG(CALLS,"End of setter");
+	}
+	else
+	{
+		if(obj->var)
+			obj->var->decRef();
+		obj->var=o;
 	}
 }
 
-void ISWFObject::setSetterByName(const Qname& name, IFunction* o)
-{
-	pair<map<Qname, obj_var>::iterator,bool> ret=Variables.insert(make_pair(name,obj_var(NULL,NULL,o)));
-	if(!ret.second)
-	{
-		if(ret.first->second.setter)
-		{
-			//ret.first->second.setter->decRef();
-			//Should never happen
-			abort();
-		}
-		ret.first->second.setter=o;
-	}
-}
-
-void ISWFObject::setVariableByName(const Qname& name, ISWFObject* o)
-{
-	pair<map<Qname, obj_var>::iterator,bool> ret=Variables.insert(make_pair(name,obj_var(o)));
-	if(!ret.second)
-	{
-		if(ret.first->second.setter)
-		{
-			//Call the setter
-			LOG(CALLS,"Calling the setter");
-			arguments args(1);
-			args.set(0,o);
-			//TODO: check
-			o->incRef();
-			ret.first->second.setter->call(this,&args);
-			LOG(CALLS,"End of setter");
-		}
-	
-		if(ret.first->second.var)
-			ret.first->second.var->decRef();
-		ret.first->second.var=o;
-	}
-}
-
-void ISWFObject::setVariableByMultiname_i(multiname& name, intptr_t value)
+void ISWFObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	setVariableByMultiname(name,abstract_i(value));
 /*	if(name.namert)
@@ -226,104 +244,121 @@ void ISWFObject::setVariableByMultiname_i(multiname& name, intptr_t value)
 	return o;*/
 }
 
-void ISWFObject::setVariableByMultiname(multiname& name, ISWFObject* o)
+obj_var* ISWFObject::findObjVar(const multiname& mname, bool create)
 {
-	pair<map<Qname, obj_var>::iterator,bool> ret;
-	if(name.name_type==multiname::NAME_INT)
-		ret=Variables.insert(make_pair(name.name_i,obj_var(o)));
-	else if(name.name_type==multiname::NAME_STRING)
-		ret=Variables.insert(make_pair((const char*)name.name_s,obj_var(o)));
+	tiny_string name;
+	if(mname.name_type==multiname::NAME_INT)
+		name=tiny_string(mname.name_i);
+	else if(mname.name_type==multiname::NAME_STRING)
+		name=mname.name_s;
 
-	if(!ret.second)
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
+	if(ret.first->first==name)
 	{
-		if(ret.first->second.setter)
+		//Check if one the namespace is already present
+		if(mname.ns.empty())
+			abort();
+		for(int i=0;i<mname.ns.size();i++)
 		{
-			//Call the setter
-			LOG(CALLS,"Calling the setter");
-			arguments args(1);
-			args.set(0,o);
-			//TODO: check
-			o->incRef();
-			//
+			const tiny_string& ns=mname.ns[i];
+			var_iterator start=ret.first;
+			for(start;start!=ret.second;start++)
+			{
+				if(start->second.first==ns)
+					return &start->second.second;
+			}
+		}
+	}
 
-			ret.first->second.setter->call(this,&args);
-			LOG(CALLS,"End of setter");
-		}
-		else
+	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
+	if(create)
+	{
+		if(mname.ns.size()>1)
 		{
-			if(ret.first->second.var)
-				ret.first->second.var->decRef();
-			ret.first->second.var=o;
+			//Hack, insert with empty name
+			//Here the object MUST exist
+			var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair("", obj_var() ) ) );
+			return &inserted->second.second;
 		}
+		var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair(mname.ns[0], obj_var() ) ) );
+		return &inserted->second.second;
+	}
+	else
+		return NULL;
+}
+
+void ISWFObject::setVariableByMultiname(const multiname& mname, ISWFObject* o)
+{
+	obj_var* obj=findObjVar(mname);
+
+	if(obj->setter)
+	{
+		//Call the setter
+		LOG(CALLS,"Calling the setter");
+		arguments args(1);
+		args.set(0,o);
+		//TODO: check
+		o->incRef();
+		obj->setter->call(this,&args);
+		LOG(CALLS,"End of setter");
+	}
+	else
+	{
+		if(obj->var)
+			obj->var->decRef();
+		obj->var=o;
 	}
 }
 
 intptr_t ISWFObject::getVariableByMultiname_i(const multiname& name, ISWFObject*& owner)
 {
-	cout << "getVariableByMultiname_i invalid" << endl;
-	abort();
+	ISWFObject* ret=getVariableByMultiname(name,owner);
+	if(ret)
+		return ret->toInt();
 }
 
-ISWFObject* ISWFObject::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
+ISWFObject* ISWFObject::getVariableByMultiname(const multiname& mname, ISWFObject*& owner)
 {
-	map<Qname,obj_var>::iterator it;
-	if(name.name_type==multiname::NAME_INT)
-		it=Variables.find(name.name_i);
-	else if(name.name_type==multiname::NAME_STRING)
-		it=Variables.find((const char*)name.name_s);
-	if(it!=Variables.end())
-	{
-		if(name.ns.empty())
-			owner=this;
-		else
-			owner=NULL;
+	obj_var* obj=findObjVar(mname,false);
 
-		for(int i=0;i<name.ns.size();i++)
-		{
-			if(it->first.ns==name.ns[i])
-			{
-				owner=this;
-				break;
-			}
-		}
-		//Check to see if a proper getter method is available
-		if(it->second.getter)
-		{
-			//Call the getter
-			LOG(CALLS,"Calling the getter");
-			//arguments args;
-			//args.push(value);
-			//value->incRef();
-			ISWFObject* ret=it->second.getter->call(this,NULL);
-			LOG(CALLS,"End of getter");
-			return ret;
-		}
-		else
-			return it->second.var;
-	}
-	else
+	if(obj==NULL)
 	{
 		owner=NULL;
 		return NULL;
+	}
+
+	if(obj->getter)
+	{
+		//Call the getter
+		LOG(CALLS,"Calling the getter");
+		ISWFObject* ret=obj->getter->call(this,NULL);
+		LOG(CALLS,"End of getter");
+		owner=this;
+		return ret;
+	}
+	else
+	{
+		owner=this;
+		return obj->var;
 	}
 }
 
 ISWFObject* ISWFObject::getVariableByString(const std::string& name, ISWFObject*& owner)
 {
 	//Slow linear lookup, should be avoided
-	map<Qname,obj_var>::iterator it=Variables.begin();
+	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 	{
-		string cur=it->first.ns;
+		string cur(it->second.first);
 		if(!cur.empty())
 			cur+='.';
-		cur+=it->first.name;
+		cur+=it->first;
 		if(cur==name)
 		{
 			owner=this;
-			if(it->second.getter)
+			if(it->second.second.getter)
 				abort();
-			return it->second.var;
+			return it->second.second.var;
 		}
 	}
 	
@@ -331,24 +366,33 @@ ISWFObject* ISWFObject::getVariableByString(const std::string& name, ISWFObject*
 	return NULL;
 }
 
-ISWFObject* ISWFObject::getVariableByName(const Qname& name, ISWFObject*& owner)
+ISWFObject* ISWFObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
 {
-	map<Qname,obj_var>::iterator it=Variables.find(name);
-	if(it!=Variables.end())
-	{
-		owner=this;
-		if(it->second.getter)
-			abort();
-		return it->second.var;
-	}
-	else
+	obj_var* obj=findObjVar(name,ns,false);
+
+	if(obj==NULL)
 	{
 		owner=NULL;
 		return NULL;
 	}
+
+	if(obj->getter)
+	{
+		//Call the getter
+		LOG(CALLS,"Calling the getter");
+		ISWFObject* ret=obj->getter->call(this,NULL);
+		LOG(CALLS,"End of getter");
+		owner=this;
+		return ret;
+	}
+	else
+	{
+		owner=this;
+		return obj->var;
+	}
 }
 
-std::ostream& operator<<(std::ostream& s, const Qname& r)
+/*std::ostream& operator<<(std::ostream& s, const Qname& r)
 {
 	string prefix;
 	switch(r.nskind)
@@ -377,7 +421,7 @@ std::ostream& operator<<(std::ostream& s, const Qname& r)
 	}
 	s << '[' << prefix << r.ns << "] " << r.name;
 	return s;
-}
+}*/
 
 std::ostream& operator<<(std::ostream& s, const multiname& r)
 {
@@ -419,12 +463,12 @@ std::ostream& operator<<(std::ostream& s, const multiname& r)
 
 void ISWFObject::dumpVariables()
 {
-	map<Qname,obj_var>::iterator it=Variables.begin();
+	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
-		cout << '[' << it->first.ns << "] "<< it->first.name << endl;
+		cout << '[' << it->second.first << "] "<< it->first << endl;
 }
 
-string Integer::toString() const
+tiny_string Integer::toString() const
 {
 	char buf[20];
 	if(val<0)
@@ -1178,8 +1222,7 @@ ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL),
 	std::map<Qname,IFunction*> Setters;
 	std::map<Qname,IFunction*> Getters;
 	std::vector<ISWFObject*> slots;
-	std::vector<var_iterator> slots_vars;
-	bool binded;*/
+	std::vector<var_iterator> slots_vars;*/
 }
 
 ISWFObject* ISWFObject::clone()
@@ -1192,27 +1235,42 @@ ISWFObject::~ISWFObject()
 	if(constructor)
 		constructor->decRef();
 
-	map<Qname,obj_var>::iterator it=Variables.begin();
+	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 	{
-		if(it->second.var)
-			it->second.var->decRef();
-		if(it->second.setter)
-			it->second.setter->decRef();
-		if(it->second.getter)
-			it->second.getter->decRef();
+		if(it->second.second.var)
+			it->second.second.var->decRef();
+		if(it->second.second.setter)
+			it->second.second.setter->decRef();
+		if(it->second.second.getter)
+			it->second.second.getter->decRef();
 	}
 }
 
-void ISWFObject::initSlot(int n,ISWFObject* o,const Qname& s)
+void ISWFObject::initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns)
 {
-	if(n-1<slots_vars.size())
-		slots_vars[n-1]=Variables.find(s);
-	else
-	{
+	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
-		slots_vars[n-1]=Variables.find(s);
+
+	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
+	cout << ret.first->first << endl;
+	if(ret.first->first==name)
+	{
+		//Check if this namespace is already present
+		var_iterator& start=ret.first;
+		for(start;start!=ret.second;start++)
+		{
+			if(start->second.first==ns)
+			{
+				slots_vars[n-1]=start;
+				return;
+			}
+		}
 	}
+
+	//Name not present, no good
+	abort();
 }
 
 void ISWFObject::setSlot(int n,ISWFObject* o)
@@ -1221,8 +1279,10 @@ void ISWFObject::setSlot(int n,ISWFObject* o)
 	{
 		if(slots_vars[n-1]!=Variables.end())
 		{
-			slots_vars[n-1]->second.var->decRef();
-			slots_vars[n-1]->second.var=o;
+			if(slots_vars[n-1]->second.second.setter)
+				abort();
+			slots_vars[n-1]->second.second.var->decRef();
+			slots_vars[n-1]->second.second.var=o;
 		}
 		else
 			abort();
@@ -1241,23 +1301,23 @@ ISWFObject* RegisterNumber::clone()
 	return rt->execContext->regs[index];
 }
 
-string RegisterNumber::toString() const
+tiny_string RegisterNumber::toString() const
 {
 	char buf[20];
 	snprintf(buf,20,"Register %i",index);
-	return STRING(buf);
+	return buf;
 }
 
 string ISWFObject::getNameAt(int index)
 {
 	if(index<Variables.size())
 	{
-		map<Qname,obj_var>::iterator it=Variables.begin();
+		var_iterator it=Variables.begin();
 
 		for(int i=0;i<index;i++)
 			it++;
 
-		return it->first.name;
+		return string(it->first);
 	}
 	else
 	{
@@ -1349,23 +1409,6 @@ ISWFObject* abstract_i(intptr_t i)
 	Integer* ret=iManager->get<Integer>();
 	ret->val=i;
 	return ret;
-}
-
-void tiny_string::fromInt(int i)
-{
-	buf[19]=0;
-	start=19;
-
-	if(i<0)
-		abort();
-
-	do
-	{
-		start--;
-		*(buf+start)='0'+(i%10);
-		i/=10;
-	}
-	while(i!=0);
 }
 
 /*void Manager::put(ISWFObject* o)

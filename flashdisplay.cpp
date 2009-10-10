@@ -39,11 +39,11 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	EventDispatcher::_constructor(obj,args);
 	ISWFObject* ret=new EventDispatcher;
-	obj->setVariableByName("sharedEvents",ret); //TODO: Read only
+	obj->setVariableByQName("sharedEvents","",ret); //TODO: Read only
 	ret->constructor->call(ret,NULL);
 	ASObject* params=new ASObject;
-	obj->setVariableByName("parameters",params);
-	params->setVariableByName("connect",new ASString("true"));
+	obj->setVariableByQName("parameters","",params);
+	params->setVariableByQName("connect","",new ASString("true"));
 //	{"chat_bosh_port":"80","chat_username":encodeURIComponent(active_user.chatUsername()),"channel_id":encodeURIComponent(channel_id),"permission_slk":"false","chat_password":encodeURIComponent(active_user.chatPassword()),"enable_bosh":encodeURIComponent(active_user.boshEnabled()),"user_vars":encodeURIComponent(active_user.userVars()),"chat_ip":"216.246.59.237","permission_mtx_api":"false","enable_compression":encodeURIComponent(active_user.compressionEnabled()),"chat_host":"of1.kongregate.com","api_host":"http%3A%2F%2Fapi.kongregate.com","permission_chat_api":"false","game_permalink":"cube-colossus","game_title":"Cube%20Colossus","chat_port":"5222","game_auth_token":encodeURIComponent(active_user.gameAuthToken()),"permission_sc_api":"true","user_vars_sig":encodeURIComponent(active_user.userVarsSig()),"javascript_listener":"konduitToHolodeck","chat_bosh_host":"of1.kongregate.com","connect":"true","game_id":"53988","game_url":"http%3A%2F%2Fwww.kongregate.com%2Fgames%2Flucidrine%2Fcube-colossus","debug_level":encodeURIComponent(active_user.debugLevel())},{"allowscriptaccess":"always","allownetworking":"all"},{});
 
 }
@@ -51,15 +51,33 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 ASFUNCTIONBODY(Loader,_constructor)
 {
 	ISWFObject* ret=new LoaderInfo;
-	obj->setVariableByName("contentLoaderInfo",ret);
+	obj->setVariableByQName("contentLoaderInfo","",ret);
 	ret->constructor->call(ret,NULL);
 
-	obj->setVariableByName("load",new Function(load));
+	obj->setVariableByQName("load","",new Function(load));
+	obj->setVariableByQName("loadBytes","",new Function(loadBytes));
 }
 
 ASFUNCTIONBODY(Loader,load)
 {
 	Loader* th=static_cast<Loader*>(obj);
+/*	if(th->loading)
+		return NULL;
+	th->loading=true;*/
+	if(args->at(0)->class_name!="URLRequest")
+	{
+		LOG(ERROR,"ArgumentError");
+		abort();
+	}
+	URLRequest* r=static_cast<URLRequest*>(args->at(0));
+	th->url=r->url->toString();
+	sys->cur_thread_pool->addJob(th);
+}
+
+ASFUNCTIONBODY(Loader,loadBytes)
+{
+	Loader* th=static_cast<Loader*>(obj);
+	abort();
 /*	if(th->loading)
 		return NULL;
 	th->loading=true;*/
@@ -126,19 +144,19 @@ ASFUNCTIONBODY(Sprite,_constructor)
 {
 	Sprite* th=static_cast<Sprite*>(obj);
 	EventDispatcher::_constructor(th,NULL);
-	th->setVariableByName("root",new Null);
+	th->setVariableByQName("root","",new Null);
 	if(sys)
 		sys->incRef();
-	th->setVariableByName("stage",sys);
+	th->setVariableByQName("stage","",sys);
 	//th->setVariableByName("_visible",&th->_visible);
 	//th->setVariableByName("width",&th->_width);
 	//th->setVariableByName("height",&th->_height);
-	th->setVariableByName("getBounds",new Function(getBounds));
-	th->setGetterByName("rotation",new Function(getRotation));
-	th->setSetterByName("rotation",new Function(setRotation));
-	th->setGetterByName("parent",new Function(_getParent));
-	th->setGetterByName("y",new Function(getY));
-	th->setGetterByName("x",new Function(getX));
+	th->setVariableByQName("getBounds","",new Function(getBounds));
+	th->setGetterByQName("rotation","",new Function(getRotation));
+	th->setSetterByQName("rotation","",new Function(setRotation));
+	th->setGetterByQName("parent","",new Function(_getParent));
+	th->setGetterByQName("y","",new Function(getY));
+	th->setGetterByQName("x","",new Function(getX));
 }
 
 ASFUNCTIONBODY(Sprite,getY)
@@ -234,7 +252,7 @@ ASFUNCTIONBODY(MovieClip,addChild)
 	th->dynamicDisplayList.push_back(e);
 
 	e->root=th->root;
-	args->at(0)->setVariableByName("root",th->root);
+	args->at(0)->setVariableByQName("root","",th->root);
 }
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)
@@ -321,21 +339,21 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	Sprite::_constructor(th,NULL);
-	th->setVariableByName("_framesloaded",&th->_framesloaded);
-	th->setVariableByName("framesLoaded",&th->_framesloaded);
-	th->setVariableByName("_totalframes",&th->_totalframes);
-	th->setVariableByName("totalFrames",&th->_totalframes);
-	th->setVariableByName("swapDepths",new Function(swapDepths));
-	th->setVariableByName("lineStyle",new Function(lineStyle));
-	th->setVariableByName("lineTo",new Function(lineTo));
-	th->setVariableByName("moveTo",new Function(moveTo));
-	th->setVariableByName("createEmptyMovieClip",new Function(createEmptyMovieClip));
-	th->setVariableByName("addFrameScript",new Function(addFrameScript));
-	th->setVariableByName("addChild",new Function(addChild));
-	th->setVariableByName("stop",new Function(stop));
+	th->setVariableByQName("_framesloaded","",&th->_framesloaded);
+	th->setVariableByQName("framesLoaded","",&th->_framesloaded);
+	th->setVariableByQName("_totalframes","",&th->_totalframes);
+	th->setVariableByQName("totalFrames","",&th->_totalframes);
+	th->setVariableByQName("swapDepths","",new Function(swapDepths));
+	th->setVariableByQName("lineStyle","",new Function(lineStyle));
+	th->setVariableByQName("lineTo","",new Function(lineTo));
+	th->setVariableByQName("moveTo","",new Function(moveTo));
+	th->setVariableByQName("createEmptyMovieClip","",new Function(createEmptyMovieClip));
+	th->setVariableByQName("addFrameScript","",new Function(addFrameScript));
+	th->setVariableByQName("addChild","",new Function(addChild));
+	th->setVariableByQName("stop","",new Function(stop));
 
 	cout << "curframe cons on " << th << endl;
-	th->setGetterByName("currentFrame",new Function(_currentFrame));
+	th->setGetterByQName("currentFrame","",new Function(_currentFrame));
 }
 
 void MovieClip::Render()
@@ -396,11 +414,22 @@ void MovieClip::initialize()
 
 DisplayObject::DisplayObject()
 {
-	setVariableByName("Call",new Function(_call));
+	setVariableByQName("Call","",new Function(_call));
 }
 
 ASFUNCTIONBODY(DisplayObject,_call)
 {
 	LOG(CALLS,"DisplayObject Call");
 	return new Undefined;
+}
+
+DisplayObjectContainer::DisplayObjectContainer()
+{
+	cout << "DisplayObjectContainer constructor" << endl;
+	setGetterByQName("numChildren","",new Function(_getNumChildren));
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
+{
+	return new Integer(0);;
 }

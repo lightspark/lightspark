@@ -37,16 +37,16 @@ extern __thread SystemState* sys;
 
 ASStage::ASStage():width(640),height(480)
 {
-	setVariableByName("width",&width);
-	setVariableByName("height",&height);
+	setVariableByQName("width","",&width);
+	setVariableByQName("height","",&height);
 }
 
 ASArray::ASArray()
 {
 	type=T_ARRAY;
 	constructor=new Function(_constructor);
-	setVariableByName("Call",new Function(ASArray::Array));
-	setVariableByName("toString",new Function(ASObject::_toString));
+	ASObject::setVariableByQName("Call","",new Function(ASArray::Array));
+	ASObject::setVariableByQName("toString","",new Function(ASObject::_toString));
 }
 
 ASFUNCTIONBODY(ASArray,Array)
@@ -59,12 +59,12 @@ ASFUNCTIONBODY(ASArray,Array)
 ASFUNCTIONBODY(ASArray,_constructor)
 {
 	ASArray* th=static_cast<ASArray*>(obj);
-	th->setGetterByName("length",new Function(_getLength));
-	th->setVariableByName("pop",new Function(_pop));
-	th->setVariableByName("shift",new Function(shift));
-	th->setVariableByName("unshift",new Function(unshift));
-	th->setVariableByName(Qname(AS3,"join"),new Function(join));
-	th->setVariableByName(Qname(AS3,"push"),new Function(_push));
+	th->setGetterByQName("length","",new Function(_getLength));
+	th->ASObject::setVariableByQName("pop","",new Function(_pop));
+	th->ASObject::setVariableByQName("shift","",new Function(shift));
+	th->ASObject::setVariableByQName("unshift","",new Function(unshift));
+	th->ASObject::setVariableByQName("join",AS3,new Function(join));
+	th->ASObject::setVariableByQName("push",AS3,new Function(_push));
 	//th->setVariableByName("push",new Function(_push));
 	//th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
 	if(args==NULL)
@@ -450,9 +450,10 @@ void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 		ASObject::setVariableByMultiname(name,o);
 }
 
-void ASArray::setVariableByName(const Qname& name, ISWFObject* o)
+void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o)
 {
-	bool number=true;
+	abort();
+/*	bool number=true;
 	for(int i=0;i<name.name.size();i++)
 	{
 		if(!isdigit(name.name[i]))
@@ -481,12 +482,13 @@ void ASArray::setVariableByName(const Qname& name, ISWFObject* o)
 		data[index]=o;
 	}
 	else
-		ASObject::setVariableByName(name,o);
+		ASObject::setVariableByName(name,o);*/
 }
 
-ISWFObject* ASArray::getVariableByName(const Qname& name, ISWFObject*& owner)
+ISWFObject* ASArray::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
 {
-	ISWFObject* ret;
+	abort();
+/*	ISWFObject* ret;
 	bool number=true;
 	owner=NULL;
 	for(int i=0;i<name.name.size();i++)
@@ -513,7 +515,7 @@ ISWFObject* ASArray::getVariableByName(const Qname& name, ISWFObject*& owner)
 	if(!owner)
 		ret=ASObject::getVariableByName(name,owner);
 
-	return ret;
+	return ret;*/
 }
 
 ISWFObject* ASObject::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
@@ -526,7 +528,7 @@ ISWFObject* ASObject::getVariableByMultiname(const multiname& name, ISWFObject*&
 		if(name.name_s=="toString")
 		{
 			ret=new Function(ASObject::_toString);
-			setVariableByName("toString",ret);
+			setVariableByQName("toString","",ret);
 			owner=this;
 		}
 	}
@@ -543,15 +545,13 @@ ISWFObject* ASObject::getVariableByMultiname(const multiname& name, ISWFObject*&
 void ASObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 {
 	ISWFObject* owner=NULL;
-	if(name.name_type!=multiname::NAME_STRING)
-		abort();
 
-	map<Qname, obj_var>::iterator ret;
+	obj_var* obj;
 	ASObject* cur=this;
 	do
 	{
-		ret=cur->Variables.find((const char*)name.name_s);
-		if(ret!=cur->Variables.end())
+		obj=cur->findObjVar(name,false);
+		if(obj)
 			owner=cur;
 		cur=cur->super;
 	}
@@ -559,7 +559,7 @@ void ASObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 
 	if(owner) //Variable already defined change it
 	{
-		if(ret->second.setter)
+		if(obj->setter)
 		{
 			//Call the setter
 			LOG(CALLS,"Calling the setter");
@@ -569,59 +569,31 @@ void ASObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 			o->incRef();
 			//
 
-			ret->second.setter->call(owner,&args);
+			obj->setter->call(owner,&args);
 			LOG(CALLS,"End of setter");
 		}
 		else
 		{
-			if(ret->second.var)
-				ret->second.var->decRef();
-			ret->second.var=o;
+			if(obj->var)
+				obj->var->decRef();
+			obj->var=o;
 		}
 	}
 	else //Insert it
 	{
-		Variables.insert(make_pair((const char*)name.name_s,obj_var(o)));
+		obj=findObjVar(name,true);
+		obj->var=o;
 	}
-
-/*	pair<map<Qname, obj_var>::iterator,bool> ret;
-	if(name.name_type==multiname::NAME_INT)
-		ret=Variables.insert(make_pair(name.name_i,obj_var(o)));
-	else if(name.name_type==multiname::NAME_STRING)
-		ret=Variables.insert(make_pair((const char*)name.name_s,obj_var(o)));
-
-	if(!ret.second)
-	{
-		if(ret.first->second.setter)
-		{
-			//Call the setter
-			LOG(CALLS,"Calling the setter");
-			arguments args(1);
-			args.set(0,o);
-			//TODO: check
-			o->incRef();
-			//
-
-			ret.first->second.setter->call(this,&args);
-			LOG(CALLS,"End of setter");
-		}
-		else
-		{
-			if(ret.first->second.var)
-				ret.first->second.var->decRef();
-			ret.first->second.var=o;
-		}
-	}*/
 }
 
-ISWFObject* ASObject::getVariableByName(const Qname& name, ISWFObject*& owner)
+ISWFObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
 {
-	ISWFObject* ret=ISWFObject::getVariableByName(name,owner);
+	ISWFObject* ret=ISWFObject::getVariableByQName(name,ns,owner);
 	if(!owner && super)
-		ret=super->getVariableByName(name,owner);
+		ret=super->getVariableByQName(name,ns,owner);
 
 	if(!owner && prototype)
-		ret=prototype->getVariableByName(name,owner);
+		ret=prototype->getVariableByQName(name,ns,owner);
 
 	return ret;
 }
@@ -658,19 +630,41 @@ ASFUNCTIONBODY(ASObject,_constructor)
 ASString::ASString()
 {
 	type=T_STRING;
-	setVariableByName("Call",new Function(ASString::String));
-	setVariableByName("toString",new Function(ASObject::_toString));
-	setVariableByName(Qname(AS3,"split"),new Function(split));
-	setGetterByName("length",new Function(_getLength));
+	setVariableByQName("Call","",new Function(ASString::String));
+	setVariableByQName("toString","",new Function(ASObject::_toString));
+	setVariableByQName("split",AS3,new Function(split));
+	setVariableByQName("replace",AS3,new Function(replace));
+	setGetterByQName("length","",new Function(_getLength));
 }
 
 ASString::ASString(const string& s):data(s)
 {
 	type=T_STRING;
-	setVariableByName("Call",new Function(ASString::String));
-	setVariableByName("toString",new Function(ASObject::_toString));
-	setVariableByName(Qname(AS3,"split"),new Function(split));
-	setGetterByName("length",new Function(_getLength));
+	setVariableByQName("Call","",new Function(ASString::String));
+	setVariableByQName("toString","",new Function(ASObject::_toString));
+	setVariableByQName("split",AS3,new Function(split));
+	setVariableByQName("replace",AS3,new Function(replace));
+	setGetterByQName("length","",new Function(_getLength));
+}
+
+ASString::ASString(const tiny_string& s):data((const char*)s)
+{
+	type=T_STRING;
+	setVariableByQName("Call","",new Function(ASString::String));
+	setVariableByQName("toString","",new Function(ASObject::_toString));
+	setVariableByQName("split",AS3,new Function(split));
+	setVariableByQName("replace",AS3,new Function(replace));
+	setGetterByQName("length","",new Function(_getLength));
+}
+
+ASString::ASString(const char* s):data(s)
+{
+	type=T_STRING;
+	setVariableByQName("Call","",new Function(ASString::String));
+	setVariableByQName("toString","",new Function(ASObject::_toString));
+	setVariableByQName("split",AS3,new Function(split));
+	setVariableByQName("replace",AS3,new Function(replace));
+	setGetterByQName("length","",new Function(_getLength));
 }
 
 ASFUNCTIONBODY(ASString,_getLength)
@@ -750,7 +744,7 @@ ASFUNCTIONBODY(ASString,String)
 	}
 }
 
-string ASArray::toString() const
+tiny_string ASArray::toString() const
 {
 	string ret;
 	for(int i=0;i<data.size();i++)
@@ -761,23 +755,23 @@ string ASArray::toString() const
 		if(i!=data.size()-1)
 			ret+=',';
 	}
-	return ret;
+	return ret.c_str();
 }
 
-string ASObject::toString() const
+tiny_string ASObject::toString() const
 {
 	cerr << getObjectType() << endl;
 	return "Object";
 }
 
-string Boolean::toString() const
+tiny_string Boolean::toString() const
 {
 	return (val)?"true":"false";
 }
 
-string ASString::toString() const
+tiny_string ASString::toString() const
 {
-	return data.data();
+	return data.c_str();
 }
 
 double ASString::toNumber() const
@@ -791,9 +785,9 @@ ASFUNCTIONBODY(Undefined,call)
 	LOG(CALLS,"Undefined function");
 }
 
-string Undefined::toString() const
+tiny_string Undefined::toString() const
 {
-	return string("null");
+	return "null";
 }
 
 bool ASString::isEqual(const ISWFObject* r) const
@@ -927,11 +921,11 @@ bool Number::isLess(const ISWFObject* o) const
 	}
 }
 
-string Number::toString() const
+tiny_string Number::toString() const
 {
 	char buf[20];
 	snprintf(buf,20,"%g",val);
-	return string(buf);
+	return buf;
 }
 
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
@@ -942,15 +936,15 @@ Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisec
 ASFUNCTIONBODY(Date,_constructor)
 {
 	Date* th=static_cast<Date*>(obj);
-	th->setVariableByName("getTimezoneOffset",new Function(getTimezoneOffset));
-	th->setVariableByName("valueOf",new Function(valueOf));
-	th->setVariableByName(Qname(AS3,"getTime"),new Function(getTime));
-	th->setVariableByName("getFullYear",new Function(getFullYear));
+	th->setVariableByQName("getTimezoneOffset","",new Function(getTimezoneOffset));
+	th->setVariableByQName("valueOf","",new Function(valueOf));
+	th->setVariableByQName("getTime",AS3,new Function(getTime));
+	th->setVariableByQName("getFullYear","",new Function(getFullYear));
 	//th->setVariableByName(Qname(AS3,"getFullYear"),new Function(getFullYear));
-	th->setVariableByName(Qname(AS3,"getHours"),new Function(getHours));
-	th->setVariableByName(Qname(AS3,"getMinutes"),new Function(getMinutes));
-	th->setVariableByName(Qname(AS3,"getSeconds"),new Function(getMinutes));
-	th->setVariableByName(Qname(AS3,"toString"),new Function(ASObject::_toString));
+	th->setVariableByQName("getHours",AS3,new Function(getHours));
+	th->setVariableByQName("getMinutes",AS3,new Function(getMinutes));
+	th->setVariableByQName("getSeconds",AS3,new Function(getMinutes));
+	th->setVariableByQName("toString",AS3,new Function(ASObject::_toString));
 	th->year=1990;
 	th->month=1;
 	th->date=1;
@@ -996,7 +990,6 @@ ASFUNCTIONBODY(Date,valueOf)
 	return new Number(th->toInt());
 }
 
-
 int Date::toInt() const
 {
 	int ret=0;
@@ -1012,7 +1005,7 @@ int Date::toInt() const
 	return ret;
 }
 
-std::string Date::toString() const
+tiny_string Date::toString() const
 {
 	return "Wed Apr 12 15:30:17 GMT-0700 2006";
 }
@@ -1045,7 +1038,10 @@ ISWFObject* SyntheticFunction::fast_call(ISWFObject* obj, ISWFObject** args, int
 
 	cc->locals[0]=obj;
 	for(int i=numArgs;i<mi->numArgs();i++)
+	{
+		cout << "filling arg " << i << endl;
 		cc->locals[i+1]=new Undefined;
+	}
 
 	if(mi->needsRest()) //TODO
 	{
@@ -1093,7 +1089,10 @@ ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 		}
 	}
 	for(i;i<mi->numArgs();i++)
+	{
+		cout << "filling arg " << i << endl;
 		cc->locals[i+1]=new Undefined;
+	}
 
 	if(mi->needsRest()) //TODO
 	{
@@ -1145,12 +1144,12 @@ ISWFObject* Function::call(ISWFObject* obj, arguments* args)
 
 Math::Math()
 {
-	setVariableByName("PI",new Number(M_PI));
-	setVariableByName("sqrt",new Function(sqrt));
-	setVariableByName("atan2",new Function(atan2));
-	setVariableByName("abs",new Function(abs));
-	setVariableByName("floor",new Function(floor));
-	setVariableByName("random",new Function(random));
+	setVariableByQName("PI","",new Number(M_PI));
+	setVariableByQName("sqrt","",new Function(sqrt));
+	setVariableByQName("atan2","",new Function(atan2));
+	setVariableByQName("abs","",new Function(abs));
+	setVariableByQName("floor","",new Function(floor));
+	setVariableByQName("random","",new Function(random));
 }
 
 ASFUNCTIONBODY(Math,atan2)
@@ -1215,7 +1214,7 @@ ASFUNCTIONBODY(Math,random)
 	return new Integer(ret);
 }
 
-string Null::toString() const
+tiny_string Null::toString() const
 {
 	return "null";
 }
@@ -1228,4 +1227,22 @@ bool Null::isEqual(const ISWFObject* r) const
 		return true;
 	else
 		return false;
+}
+
+RegExp::RegExp()
+{
+	constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(RegExp,_constructor)
+{
+	RegExp* th=static_cast<RegExp*>(obj);
+	th->re=args->at(0)->toString();
+	th->flags=args->at(1)->toString();
+}
+
+ASFUNCTIONBODY(ASString,replace)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	return new ASString(th->data);
 }

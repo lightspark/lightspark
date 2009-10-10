@@ -108,9 +108,9 @@ class string_info
 friend std::istream& operator>>(std::istream& in, string_info& v);
 private:
 	u30 size;
-	std::string val;
+	tiny_string val;
 public:
-	operator std::string() const{return val;}
+	operator tiny_string() const{return val;}
 };
 
 struct namespace_info
@@ -169,7 +169,7 @@ struct call_context
 	{
 		ISWFObject** locals;
 		ISWFObject** stack;
-		uint32_t stack_index;
+		uintptr_t stack_index;
 	} __attribute__((packed));
 	ABCContext* context;
 	int locals_size;
@@ -196,6 +196,8 @@ struct block_info
 	block_info():BB(NULL){}
 };
 
+typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
+
 class method_info
 {
 enum { NEED_ARGUMENTS=1,NEED_REST=4};
@@ -211,12 +213,12 @@ private:
 	std::vector<option_detail> options;
 	std::vector<u30> param_names;
 
-	typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
 	static ISWFObject* argumentDumper(arguments* arg, uint32_t n);
 	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
+	void abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, stack_entry& e);
 	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
 	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
 	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
@@ -367,8 +369,8 @@ private:
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
 	method_info* get_method(unsigned int m);
-	std::string getString(unsigned int s) const;
-	Qname getQname(unsigned int m, call_context* th=NULL) const;
+	tiny_string getString(unsigned int s) const;
+	//Qname getQname(unsigned int m, call_context* th=NULL) const;
 	void buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	ISWFObject* buildNamedClass(const std::string& n, ASObject*, arguments* a);
 	multiname* getMultiname(unsigned int m, call_context* th);
@@ -422,7 +424,7 @@ private:
 	static bool ifNGE(ISWFObject*, ISWFObject*, int offset); 
 	static bool ifGE(ISWFObject*, ISWFObject*); 
 	static bool ifNLE(ISWFObject*, ISWFObject*, int offset); 
-	static bool ifStrictNE(ISWFObject*, ISWFObject*, int offset); 
+	static bool ifStrictNE(ISWFObject*, ISWFObject*); 
 	static bool ifFalse(ISWFObject*, int offset); 
 	static bool ifTrue(ISWFObject*, int offset); 
 	static ISWFObject* getSlot(ISWFObject* th, int n); 
@@ -477,10 +479,12 @@ private:
 	static ISWFObject* add_oi(ISWFObject*,intptr_t);
 	static ISWFObject* add_od(ISWFObject*,number_t);
 	static uintptr_t bitAnd(ISWFObject*,ISWFObject*);
+	static uintptr_t bitNot(ISWFObject*);
 	static uintptr_t bitAnd_oi(ISWFObject* val1, intptr_t val2);
 	static uintptr_t bitOr(ISWFObject*,ISWFObject*);
 	static uintptr_t bitOr_oi(ISWFObject*,uintptr_t);
 	static uintptr_t bitXor(ISWFObject*,ISWFObject*);
+	static uintptr_t rShift(ISWFObject*,ISWFObject*);
 	static uintptr_t urShift(ISWFObject*,ISWFObject*);
 	static uintptr_t urShift_io(uintptr_t,ISWFObject*);
 	static uintptr_t lShift(ISWFObject*,ISWFObject*);
@@ -493,10 +497,14 @@ private:
 	static number_t subtract_oi(ISWFObject*, intptr_t);
 	static number_t subtract_io(intptr_t, ISWFObject*);
 	static number_t subtract_do(number_t, ISWFObject*);
+	static intptr_t s_toInt(ISWFObject*);
 	static void popScope(call_context* th);
 	static ISWFObject* newActivation(call_context* th, method_info*);
 	static ISWFObject* coerce_s(ISWFObject*);
+	static ISWFObject* checkfilter(ISWFObject*);
 	static void coerce_a();
+	static void label();
+	static void lookupswitch();
 	static ISWFObject* convert_i(ISWFObject*);
 	static ISWFObject* convert_u(ISWFObject*);
 	static ISWFObject* convert_b(ISWFObject*);

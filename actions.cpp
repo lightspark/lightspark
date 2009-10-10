@@ -560,16 +560,16 @@ void ActionSetProperty::Execute()
 {
 	ISWFObject* value=rt->vm.stack.pop();
 	int index=rt->vm.stack.pop()->toInt();
-	string target=rt->vm.stack.pop()->toString();
+	tiny_string target=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionSetProperty to: " << target << " index " << index);
 	ISWFObject* owner;
-	ISWFObject* obj=sys->getVariableByName(target,owner);
+	ISWFObject* obj=sys->getVariableByQName(target,"",owner);
 	if(owner)
 	{
 		switch(index)
 		{
 			case 2:
-				obj->setVariableByName("_scalex",value);
+				obj->setVariableByQName("_scalex","",value);
 				LOG(CALLS,"setting to " << value->toNumber());
 				break;
 	/*		case 5:
@@ -590,21 +590,21 @@ void ActionSetProperty::Execute()
 void ActionGetProperty::Execute()
 {
 	int index=rt->vm.stack.pop()->toInt();
-	string target=rt->vm.stack.pop()->toString();
+	tiny_string target=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetProperty from: " << target << " index " << index);
 	ISWFObject* owner;
-	ISWFObject* obj=sys->getVariableByName(target,owner);
+	ISWFObject* obj=sys->getVariableByQName(target,"",owner);
 	ISWFObject* ret;
 	if(owner)
 	{
 		switch(index)
 		{
 			case 5:
-				ret=obj->getVariableByName("_totalframes",owner);
+				ret=obj->getVariableByQName("_totalframes","",owner);
 				LOG(CALLS,"returning " << ret->toInt());
 				break;
 			case 12:
-				ret=obj->getVariableByName("_framesloaded",owner);
+				ret=obj->getVariableByQName("_framesloaded","",owner);
 				LOG(CALLS,"returning " << ret->toInt());
 				break;
 			default:
@@ -719,7 +719,9 @@ void ActionAdd2::Execute()
 
 	if(arg1->getObjectType()==T_STRING || arg2->getObjectType()==T_STRING)
 	{
-		rt->vm.stack.push(new ASString(arg2->toString()+arg1->toString()));
+		string tmp(arg2->toString());
+		tmp+=arg1->toString();
+		rt->vm.stack.push(new ASString(tmp));
 		LOG(CALLS,"ActionAdd2 (string concatenation): " << rt->vm.stack(0)->toString());
 	}
 	else
@@ -738,16 +740,16 @@ void ActionDefineLocal::Execute()
 {
 	LOG(CALLS,"ActionDefineLocal");
 	ISWFObject* value=rt->vm.stack.pop();
-	string name=rt->vm.stack.pop()->toString();
-	rt->currentClip->setVariableByName(name,value);
+	tiny_string name=rt->vm.stack.pop()->toString();
+	rt->currentClip->setVariableByQName(name,"",value);
 }
 
 void ActionNewObject::Execute()
 {
-	string varName=rt->vm.stack.pop()->toString();
+	tiny_string varName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionNewObject: name " << varName);
 	ISWFObject* owner;
-	ISWFObject* type=sys->getVariableByName(varName,owner);
+	ISWFObject* type=sys->getVariableByQName(varName,"",owner);
 	if(owner)
 	{
 		if(type->getObjectType()!=T_UNDEFINED)
@@ -755,7 +757,7 @@ void ActionNewObject::Execute()
 		int numArgs=rt->vm.stack.pop()->toInt();
 		if(numArgs)
 			LOG(ERROR,"There are arguments");
-		ISWFObject* c=type->getVariableByName("constructor",owner);
+		ISWFObject* c=type->getVariableByQName("constructor","",owner);
 		if(c->getObjectType()!=T_FUNCTION)
 			LOG(ERROR,"Constructor is not a function");
 		Function* f=dynamic_cast<Function*>(c);
@@ -778,13 +780,13 @@ void ActionReturn::Execute()
 
 void ActionPop::Execute()
 {
-	string popped=rt->vm.stack.pop()->toString();
+	tiny_string popped=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionPop: " << popped);
 }
 
 void ActionCallMethod::Execute()
 {
-	string methodName=rt->vm.stack.pop()->toString();
+	tiny_string methodName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionCallMethod: " << methodName);
 	ISWFObject* obj=rt->vm.stack.pop();
 	int numArgs=rt->vm.stack.pop()->toInt();
@@ -792,7 +794,7 @@ void ActionCallMethod::Execute()
 	for(int i=0;i<numArgs;i++)
 		args.set(i,rt->vm.stack.pop());
 	ISWFObject* owner;
-	ISWFObject* ret=rt->currentClip->getVariableByName(methodName,owner);
+	ISWFObject* ret=rt->currentClip->getVariableByQName(methodName,"",owner);
 	if(owner)
 	{
 		IFunction* f=ret->toFunction();
@@ -815,13 +817,13 @@ void ActionCallFunction::Execute()
 {
 	LOG(CALLS,"ActionCallFunction");
 
-	string funcName=rt->vm.stack.pop()->toString();
+	tiny_string funcName=rt->vm.stack.pop()->toString();
 	int numArgs=rt->vm.stack.pop()->toInt();
 	arguments args(numArgs);;
 	for(int i=0;i<numArgs;i++)
 		args.set(i,rt->vm.stack.pop());
 	ISWFObject* owner;
-	ISWFObject* ret=rt->currentClip->getVariableByName(funcName,owner);
+	ISWFObject* ret=rt->currentClip->getVariableByQName(funcName,"",owner);
 	if(owner)
 	{
 		IFunction* f=ret->toFunction();
@@ -847,7 +849,7 @@ void ActionDefineFunction::Execute()
 	if(FunctionName.isNull())
 		rt->vm.stack.push(this);
 	else
-		rt->currentClip->setVariableByName(FunctionName,this);
+		rt->currentClip->setVariableByQName((const char*)FunctionName,"",this);
 }
 
 ISWFObject* ActionDefineFunction::call(ISWFObject* obj, arguments* args)
@@ -862,7 +864,7 @@ void ActionDefineFunction2::Execute()
 	if(FunctionName.isNull())
 		rt->vm.stack.push(this);
 	else
-		rt->currentClip->setVariableByName(FunctionName,this);
+		rt->currentClip->setVariableByQName((const char*)FunctionName,"",this);
 }
 
 void ActionLess2::Execute()
@@ -1015,22 +1017,22 @@ void ActionStringEquals::Execute()
 void ActionSetVariable::Execute()
 {
 	ISWFObject* obj=rt->vm.stack.pop();
-	string varName=rt->vm.stack.pop()->toString();
+	tiny_string varName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionSetVariable: name " << varName);
-	rt->currentClip->setVariableByName(varName,obj);
+	rt->currentClip->setVariableByQName(varName,"",obj);
 }
 
 void ActionGetVariable::Execute()
 {
-	string varName=rt->vm.stack.pop()->toString();
+	tiny_string varName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetVariable: " << varName);
 	ISWFObject* owner;
-	ISWFObject* object=rt->currentClip->getVariableByName(varName,owner);
+	ISWFObject* object=rt->currentClip->getVariableByQName(varName,"",owner);
 	if(!owner)
 	{
 		//Looks in Global
 		LOG(CALLS,"NOT implemented, trying Global");
-		object=rt->vm.Global.getVariableByName(varName,owner);
+		object=rt->vm.Global.getVariableByQName(varName,"",owner);
 	}
 	if(!owner)
 	{
@@ -1115,7 +1117,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			{
 				STRING tmp;
 				in >> tmp;
-				Objects.push_back(new ASString(tmp));
+				Objects.push_back(new ASString((const char*)tmp));
 				r-=(tmp.size()+1);
 				LOG(CALLS,"Push: Read string " << tmp);
 				break;
@@ -1219,11 +1221,11 @@ void ActionWith::Execute()
 
 void ActionGetMember::Execute()
 {
-	string memberName=rt->vm.stack.pop()->toString();
+	tiny_string memberName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionGetMember: " << memberName);
 	ISWFObject* obj=rt->vm.stack.pop();
 	ISWFObject* owner;
-	ISWFObject* ret=obj->getVariableByName(memberName,owner);
+	ISWFObject* ret=obj->getVariableByQName(memberName,"",owner);
 	if(owner)
 		rt->vm.stack.push(ret);
 	else
@@ -1236,10 +1238,10 @@ void ActionGetMember::Execute()
 void ActionSetMember::Execute()
 {
 	ISWFObject* value=rt->vm.stack.pop();
-	string memberName=rt->vm.stack.pop()->toString();
+	tiny_string memberName=rt->vm.stack.pop()->toString();
 	LOG(CALLS,"ActionSetMember: " << memberName);
 	ISWFObject* obj=rt->vm.stack.pop();
-	obj->setVariableByName(memberName,value);
+	obj->setVariableByQName(memberName,"",value);
 }
 
 void ActionPush::Execute()

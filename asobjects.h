@@ -34,10 +34,15 @@ class call_context;
 class ASObject: public ISWFObject
 {
 friend class ABCVm;
+friend class ABCContext;
+private:
+	//Used during binding to inject an object in the hierarchy
+	ASObject* super_inject;
 public:
 	ASObject* prototype;
 	ASObject* super;
 	ASObject();
+	ASObject(const std::string& c);
 	ASObject(Manager* m);
 	virtual ~ASObject();
 	ASFUNCTION(_constructor);
@@ -66,6 +71,7 @@ public:
 	void bind()
 	{
 		bound=true;
+		std::cout << "Binding" << std::endl;
 	}
 protected:
 	bool bound;

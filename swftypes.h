@@ -259,11 +259,11 @@ protected:
 	std::vector<var_iterator> slots_vars;
 	SWFOBJECT_TYPE type;
 public:
+	std::string class_name;
 	int ref_count;
 	int debug;
 	IFunction* constructor;
 	int class_index;
-	std::string class_name;
 	virtual ~ISWFObject();
 	void incRef()
 	{

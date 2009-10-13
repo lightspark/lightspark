@@ -393,7 +393,6 @@ private:
 	SystemState* m_sys;
 	pthread_t t;
 	ASObject Global;
-	//std::vector<ISWFObject*> stack;
 	llvm::Module* module;
 
 	void registerClasses();

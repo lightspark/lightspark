@@ -36,6 +36,7 @@
 #include "flashdisplay.h"
 #include "flashnet.h"
 #include "flashsystem.h"
+#include "flashutils.h"
 
 extern __thread SystemState* sys;
 extern __thread ParseThread* pt;
@@ -142,7 +143,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("ApplicationDomain","flash.system",new ASObject);
 	Global.setVariableByQName("LoaderContext","flash.system",new ASObject);
 
-	Global.setVariableByQName("ByteArray","flash.utils",new ASArray);
+	Global.setVariableByQName("ByteArray","flash.utils",new ByteArray);
 	Global.setVariableByQName("Dictionary","flash.utils",new ASObject);
 	Global.setVariableByQName("Proxy","flash.utils",new ASObject);
 	Global.setVariableByQName("Timer","flash.utils",new ASObject);
@@ -776,6 +777,7 @@ void ABCVm::handleEvent()
 					MovieClip* m=static_cast<MovieClip*>(ev->base);
 					m->initialize();
 				}
+				LOG(CALLS,"Binding of " << ev->class_name);
 				ISWFObject* o=last_context->buildNamedClass(ev->class_name,ev->base,&args);
 				LOG(CALLS,"End of binding of " << ev->class_name);
 
@@ -856,7 +858,7 @@ ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,argument
 		abort();
 	}
 	obj->prototype=ro;
-	obj->super=base;
+	obj->super_inject=base;
 	ro->incRef();
 	base->incRef();
 
@@ -1392,6 +1394,7 @@ void ABCContext::exec()
 	method_info* m=get_method(scripts[i].init);
 	IFunction* entry=new SyntheticFunction(m);
 	LOG(CALLS, "Building entry script traits: " << scripts[i].trait_count );
+	assert(!Global->class_name.empty());
 	for(int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(Global,&scripts[i].traits[j]);
 	entry->call(Global,NULL);

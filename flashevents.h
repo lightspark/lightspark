@@ -72,6 +72,7 @@ class EventDispatcher: public ASObject
 {
 private:
 	std::map<std::string,IFunction*> handlers;
+	void dumpHandlers();
 public:
 	float id;
 	EventDispatcher();

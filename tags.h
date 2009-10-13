@@ -29,6 +29,7 @@
 #include "asobjects.h"
 #include "flashdisplay.h"
 #include "flashtext.h"
+#include "flashutils.h"
 #include <GL/gl.h>
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,END_TAG};
@@ -360,7 +361,7 @@ class KERNINGRECORD
 {
 };
 
-class DefineBinaryDataTag: public DictionaryTag, public ASObject
+class DefineBinaryDataTag: public DictionaryTag, public ByteArray
 {
 private:
 	UI16 Tag;

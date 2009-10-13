@@ -74,10 +74,12 @@ struct fps_profiling
 
 class RootMovieClip: public MovieClip
 {
+friend class ParseThread;
 protected:
 	sem_t mutex;
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
+	LoaderInfo* loaderInfo;
 private:
 	RGB Background;
 	std::list < DictionaryTag* > dictionary;

@@ -74,6 +74,13 @@ EventDispatcher::EventDispatcher():id(0)
 	constructor=new Function(_constructor);
 }
 
+void EventDispatcher::dumpHandlers()
+{
+	std::map<std::string,IFunction*>::iterator it=handlers.begin();
+	for(it;it!=handlers.end();it++)
+		std::cout << it->first << std::endl;
+}
+
 ASFUNCTIONBODY(Event,_getType)
 {
 	Event* th=static_cast<Event*>(obj);
@@ -92,11 +99,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		return NULL;
 	sys->cur_input_thread->addListener(string(args->at(0)->toString()),th);
 
-	IFunction* f=args->at(1)->toFunction();
-	IFunction* f2=static_cast<IFunction*>(f->clone());
-	f2->bind();
-
-	th->handlers.insert(make_pair(args->at(0)->toString(),f2->toFunction()));
+	th->handlers.insert(make_pair(args->at(0)->toString(),args->at(1)->toFunction()));
 	sys->events_name.push_back(string(args->at(0)->toString()));
 }
 
@@ -127,6 +130,7 @@ void EventDispatcher::handleEvent(Event* e)
 
 	LOG(CALLS, "Handling event " << h->first);
 	arguments args(1);
+	//The event is going to be decreffed as a function parameter
 	args.set(0,e);
 	this->incRef();
 	h->second->call(this,&args);

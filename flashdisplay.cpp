@@ -77,10 +77,9 @@ ASFUNCTIONBODY(Loader,load)
 ASFUNCTIONBODY(Loader,loadBytes)
 {
 	Loader* th=static_cast<Loader*>(obj);
-	abort();
 /*	if(th->loading)
 		return NULL;
-	th->loading=true;*/
+	th->loading=true;
 	if(args->at(0)->class_name!="URLRequest")
 	{
 		LOG(ERROR,"ArgumentError");
@@ -88,7 +87,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	}
 	URLRequest* r=static_cast<URLRequest*>(args->at(0));
 	th->url=r->url->toString();
-	sys->cur_thread_pool->addJob(th);
+	sys->cur_thread_pool->addJob(th);*/
 }
 
 void Loader::execute()
@@ -132,7 +131,7 @@ void Loader::Render()
 	local_root->Render();
 }
 
-Sprite::Sprite():_visible(1),_x(0),_y(0),_height(100),_width(100),rotation(0.0)
+Sprite::Sprite():_visible(1),_x(0),_y(0),rotation(0.0)
 {
 	class_name="Sprite";
 	if(constructor)
@@ -412,15 +411,29 @@ void MovieClip::initialize()
 	}
 }
 
-DisplayObject::DisplayObject()
+DisplayObject::DisplayObject():height(100),width(100)
 {
 	setVariableByQName("Call","",new Function(_call));
+	setGetterByQName("width","",new Function(_getWidth));
+	setGetterByQName("height","",new Function(_getHeight));
 }
 
 ASFUNCTIONBODY(DisplayObject,_call)
 {
 	LOG(CALLS,"DisplayObject Call");
 	return new Undefined;
+}
+
+ASFUNCTIONBODY(DisplayObject,_getWidth)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	return abstract_i(th->width);
+}
+
+ASFUNCTIONBODY(DisplayObject,_getHeight)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	return abstract_i(th->height);
 }
 
 DisplayObjectContainer::DisplayObjectContainer()

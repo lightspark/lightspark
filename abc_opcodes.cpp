@@ -313,7 +313,15 @@ ISWFObject* ABCVm::getProperty(ISWFObject* obj, multiname* name)
 	}
 	else
 	{
-		if(ret->getObjectType()==T_DEFINABLE)
+		//If we are getting a function object attach the the current scope
+		if(ret->getObjectType()==T_FUNCTION)
+		{
+			LOG(CALLS,"Attaching this to function " << name);
+			IFunction* f=ret->clone()->toFunction();
+			f->closure_this=owner;
+			f->bind();
+		}
+		else if(ret->getObjectType()==T_DEFINABLE)
 		{
 			//LOG(ERROR,"Property " << name << " is not yet valid");
 			abort();
@@ -1031,6 +1039,7 @@ void ABCVm::getLex(call_context* th, int n)
 	ISWFObject* owner;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
+		assert(!(*it)->class_name.empty());
 		ISWFObject* o=(*it)->getVariableByMultiname(*name,owner);
 		if(owner)
 		{
@@ -1038,8 +1047,7 @@ void ABCVm::getLex(call_context* th, int n)
 			if(o->getObjectType()==T_FUNCTION)
 			{
 				LOG(CALLS,"Attaching this to function " << name);
-				IFunction* f=o->toFunction();
-				//f->closure_this=th->locals[0];
+				IFunction* f=o->clone()->toFunction();
 				f->closure_this=(*it);
 				f->bind();
 			}
@@ -1076,7 +1084,7 @@ void ABCVm::getLex(call_context* th, int n)
 		}
 		else
 		{
-			LOG(CALLS, "NOT found, pushing Undefined" );
+			LOG(NOT_IMPLEMENTED, "NOT found, pushing Undefined" );
 			th->runtime_stack_push(new Undefined);
 		}
 	}
@@ -1141,6 +1149,8 @@ void ABCVm::constructSuper(call_context* th, int n)
 	if(super->class_index!=-1)
 	{
 		obj->super=new ASObject;
+		//Propagate injection super
+		obj->super->super_inject=obj->super_inject;
 		obj->super->prototype=super;
 		super->incRef();
 
@@ -1159,13 +1169,41 @@ void ABCVm::constructSuper(call_context* th, int n)
 	}
 	else
 	{
-		LOG(CALLS,"Builtin super");
-		obj->super=dynamic_cast<ASObject*>(super->clone());
-		LOG(CALLS,"Calling Instance init");
-		//args.incRef();
-		if(super->constructor)
-			super->constructor->call(obj->super,&args);
-		//args.decRef();
+		assert(!super->class_name.empty());
+		LOG(CALLS,"Builtin super " << super->class_name);
+		if(obj->super_inject)
+		{
+			//Check if we have to inject the super
+			ASObject* cur=obj->super_inject;
+			while(cur!=NULL)
+			{
+				assert(!cur->class_name.empty());
+				if(cur->class_name==super->class_name)
+				{
+					//Ok, we have to inject the super here
+					obj->super=obj->super_inject;
+					obj->super_inject=NULL;
+					break;
+				}
+				cur=cur->super;
+			}
+			//Assert if no suitable injection point has been found
+			if(cur==NULL)
+			{
+				//HACK: insert here anyway
+				obj->super=obj->super_inject;
+				LOG(CALLS,"HACK: Injecting before " << obj->class_name);
+			}
+		}
+		else
+		{
+			obj->super=dynamic_cast<ASObject*>(super->clone());
+			LOG(CALLS,"Calling Instance init");
+			//args.incRef();
+			if(super->constructor)
+				super->constructor->call(obj->super,&args);
+			//args.decRef();
+		}
 	}
 	LOG(CALLS,"End super construct ");
 	obj->decRef();
@@ -1201,7 +1239,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 		}
 		else
 		{
-			LOG(CALLS, "NOT found, pushing Undefined" );
+			LOG(CALLS, "NOT_IMPLEMENTED found, pushing Undefined" );
 			th->runtime_stack_push(new Undefined);
 		}
 	}
@@ -1400,10 +1438,10 @@ void ABCVm::isTypelate(call_context* th)
 	ISWFObject* obj=th->runtime_stack_pop();
 	cout << "Name " << type->class_name << " type " << type->getObjectType() << endl;
 	cout << "Name " << obj->class_name << " type " << obj->getObjectType() << endl;
-	if(type->class_name==obj->class_name)
+//	if(type->class_name==obj->class_name)
 		th->runtime_stack_push(new Boolean(true));
-	else
-		th->runtime_stack_push(new Boolean(false));
+//	else
+//		th->runtime_stack_push(new Boolean(false));
 }
 
 bool ABCVm::ifStrictNE(ISWFObject* obj2, ISWFObject* obj1)
@@ -1417,6 +1455,6 @@ bool ABCVm::ifStrictNE(ISWFObject* obj2, ISWFObject* obj1)
 ISWFObject* ABCVm::in(ISWFObject* val2, ISWFObject* val1)
 {
 	LOG(NOT_IMPLEMENTED, "in" );
-	return new Boolean(false);
+	return new Boolean(true);
 }
 

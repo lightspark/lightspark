@@ -71,7 +71,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	pt->root->frame_rate/=256;
 }
 
-RootMovieClip::RootMovieClip()
+RootMovieClip::RootMovieClip():loaderInfo(NULL)
 {
 	root=this;
 	sem_init(&mutex,0,1);
@@ -84,7 +84,7 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 	type=T_MOVIE;
 	sem_init(&new_frame,0,0);
 	MovieClip::_constructor(this,NULL);
-	LoaderInfo* loaderInfo=new LoaderInfo();
+	loaderInfo=new LoaderInfo();
 	loaderInfo->_constructor(loaderInfo,NULL);
 	setVariableByQName("loaderInfo","",loaderInfo);
 
@@ -93,25 +93,6 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 	setVariableByQName("root","",this);
 	setVariableByQName("stage","",this);
 	class_name="SystemState";
-/*	//Register global functions
-	setVariableByName("parseInt",new Function(parseInt));
-
-	//Register default objects
-
-	ISWFObject* array(new ASArray);
-	setVariableByName("Array",array);
-
-	ISWFObject* object(new ASObject);
-	setVariableByName("Object",object);
-
-	ISWFObject* mcloader(new ASMovieClipLoader);
-	setVariableByName("MovieClipLoader",mcloader);
-
-	ISWFObject* xml(new ASXML);
-	setVariableByName("XML",xml);
-
-	setVariableByName("",this);*/
-
 }
 
 SystemState::~SystemState()
@@ -160,6 +141,12 @@ void* ParseThread::worker(ParseThread* th)
 				{
 					LOG(NO_INFO,"End of parsing @ " << th->f.tellg());
 					th->root->commitFrame();
+					//Wait for handling of all previous events
+					SynchronizationEvent* sync=new SynchronizationEvent;
+					sys->currentVm->addEvent(NULL, sync);
+					sync->wait();
+					//Now signal the completion for this root
+					sys->currentVm->addEvent(th->root->loaderInfo,new Event("init"));
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:

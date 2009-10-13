@@ -599,15 +599,24 @@ ISWFObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 }
 
 ASObject::ASObject(Manager* m):
-	debug_id(0),prototype(NULL),super(NULL),ISWFObject(m)
+	debug_id(0),prototype(NULL),super(NULL),super_inject(NULL),ISWFObject(m)
 {
 	type=T_OBJECT;
+	class_name="Object";
 }
 
 ASObject::ASObject():
-	debug_id(0),prototype(NULL),super(NULL)
+	debug_id(0),prototype(NULL),super(NULL),super_inject(NULL)
 {
 	type=T_OBJECT;
+	class_name="Object";
+}
+
+ASObject::ASObject(const std::string& c):
+	debug_id(0),prototype(NULL),super(NULL),super_inject(NULL)
+{
+	type=T_OBJECT;
+	class_name=c;
 }
 
 ASObject::~ASObject()

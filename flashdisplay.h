@@ -43,9 +43,14 @@ public:
 
 class DisplayObject: public IDisplayListElem
 {
+private:
+	intptr_t width;
+	intptr_t height;
 public:
 	DisplayObject();
-	ASFUNCTION(_call);
+	ASFUNCTION(_call); //TODO: delete and implement upcasting
+	ASFUNCTION(_getWidth);
+	ASFUNCTION(_getHeight);
 	void Render()
 	{
 		abort();
@@ -107,8 +112,6 @@ protected:
 	intptr_t _x;
 	intptr_t _y;
 	intptr_t _visible;
-	intptr_t _width;
-	intptr_t _height;
 	number_t rotation;
 public:
 	Sprite();

@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 #include "swf.h"
 #include "geometry.h"
 
@@ -157,7 +158,7 @@ double ISWFObject::toNumber() const
 	return 0;
 }
 
-obj_var* ISWFObject::findObjVar(const tiny_string& name, const tiny_string& ns, bool create)
+obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& ns, bool create)
 {
 	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	if(ret.first->first==name)
@@ -183,7 +184,7 @@ obj_var* ISWFObject::findObjVar(const tiny_string& name, const tiny_string& ns, 
 
 void ISWFObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
-	obj_var* obj=findObjVar(name,ns);
+	obj_var* obj=Variables.findObjVar(name,ns);
 	if(obj->getter)
 	{
 		//ret.first->second.getter->decRef();
@@ -195,7 +196,7 @@ void ISWFObject::setGetterByQName(const tiny_string& name, const tiny_string& ns
 
 void ISWFObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
-	obj_var* obj=findObjVar(name,ns);
+	obj_var* obj=Variables.findObjVar(name,ns);
 	if(obj->setter)
 	{
 		//ret.first->second.setter->decRef();
@@ -207,7 +208,7 @@ void ISWFObject::setSetterByQName(const tiny_string& name, const tiny_string& ns
 
 void ISWFObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o)
 {
-	obj_var* obj=findObjVar(name,ns);
+	obj_var* obj=Variables.findObjVar(name,ns);
 
 	if(obj->setter)
 	{
@@ -244,7 +245,7 @@ void ISWFObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	return o;*/
 }
 
-obj_var* ISWFObject::findObjVar(const multiname& mname, bool create)
+obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 {
 	tiny_string name;
 	if(mname.name_type==multiname::NAME_INT)
@@ -289,7 +290,7 @@ obj_var* ISWFObject::findObjVar(const multiname& mname, bool create)
 
 void ISWFObject::setVariableByMultiname(const multiname& mname, ISWFObject* o)
 {
-	obj_var* obj=findObjVar(mname);
+	obj_var* obj=Variables.findObjVar(mname);
 
 	if(obj->setter)
 	{
@@ -315,11 +316,13 @@ intptr_t ISWFObject::getVariableByMultiname_i(const multiname& name, ISWFObject*
 	ISWFObject* ret=getVariableByMultiname(name,owner);
 	if(ret)
 		return ret->toInt();
+	else
+		abort();
 }
 
 ISWFObject* ISWFObject::getVariableByMultiname(const multiname& mname, ISWFObject*& owner)
 {
-	obj_var* obj=findObjVar(mname,false);
+	obj_var* obj=Variables.findObjVar(mname,false);
 
 	if(obj==NULL)
 	{
@@ -334,16 +337,18 @@ ISWFObject* ISWFObject::getVariableByMultiname(const multiname& mname, ISWFObjec
 		ISWFObject* ret=obj->getter->call(this,NULL);
 		LOG(CALLS,"End of getter");
 		owner=this;
+		assert(ret);
 		return ret;
 	}
 	else
 	{
 		owner=this;
+		assert(obj->var);
 		return obj->var;
 	}
 }
 
-ISWFObject* ISWFObject::getVariableByString(const std::string& name, ISWFObject*& owner)
+ISWFObject* variables_map::getVariableByString(const std::string& name)
 {
 	//Slow linear lookup, should be avoided
 	var_iterator it=Variables.begin();
@@ -355,20 +360,18 @@ ISWFObject* ISWFObject::getVariableByString(const std::string& name, ISWFObject*
 		cur+=it->first;
 		if(cur==name)
 		{
-			owner=this;
 			if(it->second.second.getter)
 				abort();
 			return it->second.second.var;
 		}
 	}
 	
-	owner=NULL;
 	return NULL;
 }
 
 ISWFObject* ISWFObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
 {
-	obj_var* obj=findObjVar(name,ns,false);
+	obj_var* obj=Variables.findObjVar(name,ns,false);
 
 	if(obj==NULL)
 	{
@@ -461,7 +464,7 @@ std::ostream& operator<<(std::ostream& s, const multiname& r)
 	return s;
 }
 
-void ISWFObject::dumpVariables()
+void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
@@ -1169,6 +1172,7 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 
 void DictionaryDefinable::define(ISWFObject* g)
 {
+	abort();
 /*	DictionaryTag* t=p->root->dictionaryLookup(dict_id);
 	ISWFObject* o=dynamic_cast<ISWFObject*>(t);
 	if(o==NULL)
@@ -1188,12 +1192,12 @@ void DictionaryDefinable::define(ISWFObject* g)
 }
 
 ISWFObject::ISWFObject():parent(NULL),ref_count(1),constructor(NULL),debug(0),
-	class_index(-1),manager(NULL),type(T_INVALID)
+	class_index(-1),manager(NULL),type(T_INVALID),mostDerived(this)
 {
 }
 
 ISWFObject::ISWFObject(Manager* m):parent(NULL),ref_count(1),constructor(NULL),debug(0),
-	class_index(-1),manager(m),type(T_INVALID)
+	class_index(-1),manager(m),type(T_INVALID),mostDerived(this)
 {
 }
 
@@ -1211,7 +1215,7 @@ ISWFObject::ISWFObject(Manager* m):parent(NULL),ref_count(1),constructor(NULL),d
 	}
 }*/
 
-ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL),type(o.type)
+ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL),type(o.type),mostDerived(this)
 {
 	parent=o.parent;
 	constructor=o.constructor;
@@ -1230,11 +1234,8 @@ ISWFObject* ISWFObject::clone()
 	abort();
 }
 
-ISWFObject::~ISWFObject()
+variables_map::~variables_map()
 {
-	if(constructor)
-		constructor->decRef();
-
 	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 	{
@@ -1247,7 +1248,13 @@ ISWFObject::~ISWFObject()
 	}
 }
 
-void ISWFObject::initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns)
+ISWFObject::~ISWFObject()
+{
+	if(constructor)
+		constructor->decRef();
+}
+
+void variables_map::initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
@@ -1273,7 +1280,7 @@ void ISWFObject::initSlot(int n,ISWFObject* o, const tiny_string& name, const ti
 	abort();
 }
 
-void ISWFObject::setSlot(int n,ISWFObject* o)
+void variables_map::setSlot(int n,ISWFObject* o)
 {
 	if(n-1<slots_vars.size())
 	{
@@ -1310,7 +1317,8 @@ tiny_string RegisterNumber::toString() const
 
 string ISWFObject::getNameAt(int index)
 {
-	if(index<Variables.size())
+	abort();
+/*	if(index<Variables.size())
 	{
 		var_iterator it=Variables.begin();
 
@@ -1323,12 +1331,13 @@ string ISWFObject::getNameAt(int index)
 	{
 		LOG(ERROR,"Index too big");
 		abort();
-	}
+	}*/
 }
 
 int ISWFObject::numVariables()
 {
-	return Variables.size();
+	abort();
+//	return Variables.size();
 }
 
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v)

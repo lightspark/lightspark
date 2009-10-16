@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
 
-	Log::initLogging(TRACE);
+	Log::initLogging(CALLS);
 	sys=new SystemState;
 	sys->fps_prof=new fps_profiling();
 

@@ -163,6 +163,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
 
 	Global.setVariableByQName("Capabilities","flash.system",new Capabilities);
+
+	Global.setVariableByQName("isNaN","",new Function(isNaN));
 }
 
 /*Qname ABCContext::getQname(unsigned int mi, call_context* th) const
@@ -732,7 +734,7 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 
 ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s)
 {
-	sem_init(&mutex,0,1);
+	sem_init(&event_queue_mutex,0,1);
 	sem_init(&sem_event_count,0,0);
 	m_sys=s;
 	int_manager=new Manager;
@@ -755,9 +757,10 @@ void ABCVm::wait()
 
 void ABCVm::handleEvent()
 {
-	sem_wait(&mutex);
+	sem_wait(&event_queue_mutex);
 	pair<EventDispatcher*,Event*> e=events_queue.front();
 	events_queue.pop_front();
+	sem_post(&event_queue_mutex);
 	if(e.first)
 		e.first->handleEvent(e.second);
 	else
@@ -772,15 +775,14 @@ void ABCVm::handleEvent()
 				args.incRef();
 				//TODO: check
 				args.set(0,new Null);
-				if(ev->base->class_name=="SystemState")
+				if(ev->base==sys)
 				{
 					MovieClip* m=static_cast<MovieClip*>(ev->base);
 					m->initialize();
 				}
 				LOG(CALLS,"Binding of " << ev->class_name);
-				ISWFObject* o=last_context->buildNamedClass(ev->class_name,ev->base,&args);
+				last_context->buildClassAndInjectBase(ev->class_name,ev->base,&args);
 				LOG(CALLS,"End of binding of " << ev->class_name);
-
 				break;
 			}
 			case SHUTDOWN:
@@ -811,18 +813,17 @@ void ABCVm::handleEvent()
 				abort();
 		}
 	}
-	sem_post(&mutex);
 }
 
 void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 {
-	sem_wait(&mutex);
+	sem_wait(&event_queue_mutex);
 	events_queue.push_back(pair<EventDispatcher*,Event*>(obj, ev));
 	sem_post(&sem_event_count);
-	sem_post(&mutex);
+	sem_post(&event_queue_mutex);
 }
 
-ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,arguments* args)
+void ABCContext::buildClassAndInjectBase(const string& s, ASObject* base,arguments* args)
 {
 	LOG(CALLS,"Setting class name to " << s);
 	ISWFObject* owner;
@@ -846,11 +847,26 @@ ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,argument
 		}
 	}
 
+	//Walk up the super prototype and clone to inject the base
+	ASObject* cur=static_cast<ASObject*>(r);
+	while(cur->super->class_name!=base->class_name)
+	{
+		ASObject* new_super=static_cast<ASObject*>(cur->super->clone());
+		cur->super=new_super;
+		cur=cur->super;
+		assert(cur);
+	}
+
+	//TODO: handle refcounting
+	//Inject the base
+	cur->super=base;
+
 	//Now the class is valid, check that it's not a builtin one
 	assert(r->class_index!=-1);
 
+	//It's now possible to actually build an instance
 	ASObject* obj=new ASObject;
-	obj->class_name=s;
+	//obj->class_name=s;
 	ASObject* ro=dynamic_cast<ASObject*>(r);
 	if(ro==NULL)
 	{
@@ -858,7 +874,6 @@ ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,argument
 		abort();
 	}
 	obj->prototype=ro;
-	obj->super_inject=base;
 	ro->incRef();
 	base->incRef();
 
@@ -872,7 +887,6 @@ ISWFObject* ABCContext::buildNamedClass(const string& s, ASObject* base,argument
 		args->incRef();
 		obj->prototype->constructor->call(obj,args);
 	}
-	return obj;
 }
 
 inline method_info* ABCContext::get_method(unsigned int m)
@@ -948,84 +962,10 @@ void ABCVm::popScope(call_context* th)
 	th->scope_stack.pop_back();
 }
 
-void ABCVm::constructProp(call_context* th, int n, int m)
-{
-	arguments args(m);
-	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
-
-	multiname* name=th->context->getMultiname(n,th);
-	LOG(CALLS,"constructProp "<< *name << ' ' << m);
-
-	ISWFObject* obj=th->runtime_stack_pop();
-	ISWFObject* owner;
-	ISWFObject* o=obj->getVariableByMultiname(*name,owner);
-	if(!owner)
-	{
-		LOG(ERROR,"Could not resolve property");
-		abort();
-	}
-
-	if(o->getObjectType()==T_DEFINABLE)
-	{
-		LOG(CALLS,"Deferred definition of property " << name);
-		Definable* d=dynamic_cast<Definable*>(o);
-		d->define(obj);
-		o=obj->getVariableByMultiname(*name,owner);
-		LOG(CALLS,"End of deferred definition of property " << name);
-	}
-
-	LOG(CALLS,"Constructing");
-	ASObject* ret=dynamic_cast<ASObject*>(o->clone());
-
-	ASObject* aso=dynamic_cast<ASObject*>(o);
-	ret->prototype=aso;
-	aso->incRef();
-	if(aso==NULL)
-	{
-		LOG(ERROR,"Class is not as ASObject");
-		abort();
-	}	
-
-	if(o->class_index==-2)
-	{
-		//We have to build the method traits
-		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
-		LOG(CALLS,"Building method traits");
-		for(int i=0;i<sf->mi->body->trait_count;i++)
-			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
-		sf->call(ret,&args);
-
-	}
-	else if(o->class_index==-1)
-	{
-		//The class is builtin
-		LOG(CALLS,"Building a builtin class");
-	}
-	else
-	{
-		//The class is declared in the script and has an index
-		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->context->instances[o->class_index].trait_count;i++)
-			th->context->buildTrait(ret,&th->context->instances[o->class_index].traits[i]);
-	}
-
-	if(o->constructor)
-	{
-		LOG(CALLS,"Calling Instance init");
-		args.incRef();
-		o->constructor->call(ret,&args);
-//		args.decRef();
-	}
-
-	obj->decRef();
-	LOG(CALLS,"End of constructing");
-	th->runtime_stack_push(ret);
-}
-
 ISWFObject* ABCVm::hasNext2(call_context* th, int n, int m)
 {
-	LOG(CALLS,"hasNext2 " << n << ' ' << m);
+	abort();
+/*	LOG(CALLS,"hasNext2 " << n << ' ' << m);
 	ISWFObject* obj=th->locals[n];
 	int cur_index=th->locals[m]->toInt();
 	if(cur_index+1<=obj->numVariables())
@@ -1041,16 +981,7 @@ ISWFObject* ABCVm::hasNext2(call_context* th, int n, int m)
 //		th->locals[m]->decRef();
 		th->locals[m]=new Integer(0);
 		return new Boolean(false);
-	}
-}
-
-bool ABCVm::ifFalse(ISWFObject* obj1, int offset)
-{
-	LOG(CALLS,"ifFalse " << offset);
-
-	bool ret=!Boolean_concrete(obj1);
-	obj1->decRef();
-	return ret;
+	}*/
 }
 
 //We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
@@ -1297,8 +1228,9 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->constructor=new SyntheticFunction(constructor);
 	ret->class_index=n;
 
-	LOG(CALLS,"Calling Class init");
+	LOG(CALLS,"Calling Class init " << ret);
 	cinit->call(ret,NULL);
+	LOG(CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
 }
 
@@ -1463,6 +1395,8 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 
 	const tiny_string& name=mname->name_s;
 	const tiny_string& ns=mname->ns[0];
+	if(t->kind>>4)
+		cout << "Next slot has flags " << (t->kind>>4) << endl;
 	switch(t->kind&0xf)
 	{
 		case traits_info::Class:
@@ -1505,16 +1439,28 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 		}
 		case traits_info::Getter:
 		{
-			LOG(CALLS,"Getter trait: " << name);
-			//syntetize method and create a new LLVM function object
-			method_info* m=&methods[t->method];
-			obj->setGetterByQName(name, ns, new SyntheticFunction(m));
+			LOG(CALLS,"Getter trait: " << name << " #" << t->method);
+			//Hack, try to find this on the most derived variables
+			obj_var* var=obj->mostDerived->Variables.findObjVar(name,ns,false);
+			if(var && var->getter) //Ok, it seems that we have been overridden, set this in our map
+			{
+				LOG(CALLS,"HACK: overridden getter");
+				IFunction* f=static_cast<IFunction*>(var->getter->clone());
+				f->bind(obj->mostDerived);
+				obj->setGetterByQName(name,ns,f);
+			}
+			else
+			{
+				//syntetize method and create a new LLVM function object
+				method_info* m=&methods[t->method];
+				obj->setGetterByQName(name, ns, new SyntheticFunction(m));
+			}
 			LOG(CALLS,"End Getter trait: " << name);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(CALLS,"Setter trait: " << name);
+			LOG(CALLS,"Setter trait: " << name << " #" << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			obj->setSetterByQName(name, ns, new SyntheticFunction(m));
@@ -1523,7 +1469,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 		}
 		case traits_info::Method:
 		{
-			LOG(CALLS,"Method trait: " << name);
+			LOG(CALLS,"Method trait: " << name << " #" << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			obj->setVariableByQName(name, ns, new SyntheticFunction(m));
@@ -1776,7 +1722,10 @@ istream& operator>>(istream& in, namespace_info& v)
 {
 	in >> v.kind >> v.name;
 	if(v.kind!=0x05 && v.kind!=0x08 && v.kind!=0x16 && v.kind!=0x17 && v.kind!=0x18 && v.kind!=0x19 && v.kind!=0x1a)
+	{
 		LOG(ERROR,"Unexpected namespace kind");
+		abort();
+	}
 	return in;
 }
 
@@ -2025,5 +1974,13 @@ intptr_t ABCVm::s_toInt(ISWFObject* o)
 	if(o->getObjectType()!=T_INTEGER)
 		abort();
 	return o->toInt();
+}
+
+ISWFObject* isNaN(ISWFObject* obj,arguments* args)
+{
+	if(args->at(0)->getObjectType()==T_UNDEFINED)
+		return abstract_b(true);
+	else
+		abort();
 }
 

@@ -92,7 +92,6 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 	setVariableByQName("getBounds","",new Function(getBounds));
 	setVariableByQName("root","",this);
 	setVariableByQName("stage","",this);
-	class_name="SystemState";
 }
 
 SystemState::~SystemState()

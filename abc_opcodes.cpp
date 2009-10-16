@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #include "abc.h"
-
+#include <typeinfo>
 using namespace std;
 
 uintptr_t ABCVm::bitAnd(ISWFObject* val2, ISWFObject* val1)
@@ -261,6 +261,15 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		}
 		else
 		{
+			if(m==1) //Assume this is a constructor
+			{
+				LOG(CALLS,"Passthorugh of " << args[0]);
+				th->runtime_stack_push(args[0]);
+			}
+			else
+				abort();
+
+			/*
 			IFunction* f=dynamic_cast<IFunction*>(o->getVariableByQName("Call","",owner));
 			if(f)
 			{
@@ -271,7 +280,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			{
 				LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
 				th->runtime_stack_push(new Undefined);
-			}
+			}*/
 		}
 	}
 	else
@@ -318,8 +327,8 @@ ISWFObject* ABCVm::getProperty(ISWFObject* obj, multiname* name)
 		{
 			LOG(CALLS,"Attaching this to function " << name);
 			IFunction* f=ret->clone()->toFunction();
-			f->closure_this=owner;
-			f->bind();
+			f->bind(owner);
+			ret=f;
 		}
 		else if(ret->getObjectType()==T_DEFINABLE)
 		{
@@ -407,6 +416,7 @@ bool ABCVm::ifNE(ISWFObject* obj1, ISWFObject* obj2)
 
 	//Real comparision demanded to object
 	bool ret=!(obj1->isEqual(obj2));
+	cout << "compare " << ret << endl;
 
 	obj2->decRef();
 	obj1->decRef();
@@ -1040,6 +1050,13 @@ void ABCVm::getLex(call_context* th, int n)
 	for(it;it!=th->scope_stack.rend();it++)
 	{
 		assert(!(*it)->class_name.empty());
+		ASObject* s=((ASObject*)*it);
+		while(s)
+		{
+			cout << typeid(*s).name() << " (" << s->class_name << ") -> ";
+			s=s->super;
+		}
+		cout << endl;
 		ISWFObject* o=(*it)->getVariableByMultiname(*name,owner);
 		if(owner)
 		{
@@ -1048,8 +1065,8 @@ void ABCVm::getLex(call_context* th, int n)
 			{
 				LOG(CALLS,"Attaching this to function " << name);
 				IFunction* f=o->clone()->toFunction();
-				f->closure_this=(*it);
-				f->bind();
+				f->bind(*it);
+				o=f;
 			}
 			else if(o->getObjectType()==T_DEFINABLE)
 			{
@@ -1148,15 +1165,13 @@ void ABCVm::constructSuper(call_context* th, int n)
 
 	if(super->class_index!=-1)
 	{
-		obj->super=new ASObject;
-		//Propagate injection super
-		obj->super->super_inject=obj->super_inject;
+		multiname* name=th->context->getMultiname(th->context->instances[super->class_index].name,th);
+		LOG(CALLS,"Constructing super " << *name << " obj " << obj->super << " on obj " << obj);
+
+		obj->super=new ASObject(name->name_s,obj->mostDerived);
 		obj->super->prototype=super;
 		super->incRef();
 
-		multiname* name=th->context->getMultiname(th->context->instances[super->class_index].name,th);
-		LOG(CALLS,"Constructing super " << *name << " obj " << obj->super << " on obj " << obj);
-		obj->super->class_name=name->name_s;
 		LOG(CALLS,"Building instance traits");
 		for(int i=0;i<th->context->instances[super->class_index].trait_count;i++)
 			th->context->buildTrait(obj->super,&th->context->instances[super->class_index].traits[i]);
@@ -1165,45 +1180,18 @@ void ABCVm::constructSuper(call_context* th, int n)
 		super->constructor->call(obj->super,&args);
 		//args.decRef();
 
-		LOG(CALLS,"End of constructing " << *name);
+		LOG(CALLS,"End of constructing super " << *name);
 	}
 	else
 	{
 		assert(!super->class_name.empty());
 		LOG(CALLS,"Builtin super " << super->class_name);
-		if(obj->super_inject)
-		{
-			//Check if we have to inject the super
-			ASObject* cur=obj->super_inject;
-			while(cur!=NULL)
-			{
-				assert(!cur->class_name.empty());
-				if(cur->class_name==super->class_name)
-				{
-					//Ok, we have to inject the super here
-					obj->super=obj->super_inject;
-					obj->super_inject=NULL;
-					break;
-				}
-				cur=cur->super;
-			}
-			//Assert if no suitable injection point has been found
-			if(cur==NULL)
-			{
-				//HACK: insert here anyway
-				obj->super=obj->super_inject;
-				LOG(CALLS,"HACK: Injecting before " << obj->class_name);
-			}
-		}
-		else
-		{
-			obj->super=dynamic_cast<ASObject*>(super->clone());
-			LOG(CALLS,"Calling Instance init");
-			//args.incRef();
-			if(super->constructor)
-				super->constructor->call(obj->super,&args);
-			//args.decRef();
-		}
+		obj->super=dynamic_cast<ASObject*>(super->clone());
+		LOG(CALLS,"Calling Instance init");
+		//args.incRef();
+		if(super->constructor)
+			super->constructor->call(obj->super,&args);
+		//args.decRef();
 	}
 	LOG(CALLS,"End super construct ");
 	obj->decRef();
@@ -1219,6 +1207,13 @@ void ABCVm::findPropStrict(call_context* th, int n)
 	for(it;it!=th->scope_stack.rend();it++)
 	{
 		(*it)->getVariableByMultiname(*name,owner);
+		ASObject* s=((ASObject*)*it);
+		while(s)
+		{
+			cout << typeid(*s).name() << " (" << s->class_name << ") -> ";
+			s=s->super;
+		}
+		cout << endl;
 		if(owner)
 		{
 			//We have to return the object, not the property
@@ -1456,5 +1451,90 @@ ISWFObject* ABCVm::in(ISWFObject* val2, ISWFObject* val1)
 {
 	LOG(NOT_IMPLEMENTED, "in" );
 	return new Boolean(true);
+}
+
+bool ABCVm::ifFalse(ISWFObject* obj1, int offset)
+{
+	LOG(CALLS,"ifFalse " << offset);
+
+	bool ret=!Boolean_concrete(obj1);
+	cout << "return " << ret << endl;
+	obj1->decRef();
+	return ret;
+}
+
+void ABCVm::constructProp(call_context* th, int n, int m)
+{
+	arguments args(m);
+	for(int i=0;i<m;i++)
+		args.set(m-i-1,th->runtime_stack_pop());
+
+	multiname* name=th->context->getMultiname(n,th);
+	LOG(CALLS,"constructProp "<< *name << ' ' << m);
+
+	ISWFObject* obj=th->runtime_stack_pop();
+	ISWFObject* owner;
+	ISWFObject* o=obj->getVariableByMultiname(*name,owner);
+	if(!owner)
+	{
+		LOG(ERROR,"Could not resolve property");
+		abort();
+	}
+
+	if(o->getObjectType()==T_DEFINABLE)
+	{
+		LOG(CALLS,"Deferred definition of property " << name);
+		Definable* d=dynamic_cast<Definable*>(o);
+		d->define(obj);
+		o=obj->getVariableByMultiname(*name,owner);
+		LOG(CALLS,"End of deferred definition of property " << name);
+	}
+
+	LOG(CALLS,"Constructing");
+	ASObject* ret=dynamic_cast<ASObject*>(o->clone());
+
+	ASObject* aso=dynamic_cast<ASObject*>(o);
+	ret->prototype=aso;
+	aso->incRef();
+	if(aso==NULL)
+	{
+		LOG(ERROR,"Class is not as ASObject");
+		abort();
+	}	
+
+	if(o->class_index==-2)
+	{
+		//We have to build the method traits
+		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
+		LOG(CALLS,"Building method traits");
+		for(int i=0;i<sf->mi->body->trait_count;i++)
+			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+		sf->call(ret,&args);
+
+	}
+	else if(o->class_index==-1)
+	{
+		//The class is builtin
+		LOG(CALLS,"Building a builtin class");
+	}
+	else
+	{
+		//The class is declared in the script and has an index
+		LOG(CALLS,"Building instance traits");
+		for(int i=0;i<th->context->instances[o->class_index].trait_count;i++)
+			th->context->buildTrait(ret,&th->context->instances[o->class_index].traits[i]);
+	}
+
+	if(o->constructor)
+	{
+		LOG(CALLS,"Calling Instance init");
+		args.incRef();
+		o->constructor->call(ret,&args);
+//		args.decRef();
+	}
+
+	obj->decRef();
+	LOG(CALLS,"End of constructing");
+	th->runtime_stack_push(ret);
 }
 

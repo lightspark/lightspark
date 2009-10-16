@@ -22,6 +22,7 @@
 
 #include "swftypes.h"
 #include "flashevents.h"
+#include "flashutils.h"
 #include "thread_pool.h"
 
 class RootMovieClip;
@@ -80,10 +81,14 @@ public:
 class Loader: public IThreadJob, public DisplayObjectContainer
 {
 private:
+	enum SOURCE { URL, BYTES };
+	SOURCE source;
 	std::string url;
+	ByteArray* bytes;
 	bool loading;
 	bool loaded;
 	RootMovieClip* local_root;
+	LoaderInfo* contentLoaderInfo;
 public:
 	Loader():loading(false),local_root(NULL),loaded(false)
 	{

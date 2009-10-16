@@ -1526,12 +1526,14 @@ void DefineVideoStreamTag::Render()
 DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s)
 {
 	LOG(TRACE,"DefineBinaryDataTag");
+	class_name="ByteArray";
 	int size=getSize();
 	s >> Tag >> Reserved;
 	cout << Tag << endl;
 	size -= sizeof(Tag)+sizeof(Reserved);
-	data=new uint8_t[size];
-	s.read((char*)data,size);
+	bytes=new uint8_t[size];
+	len=size;
+	s.read((char*)bytes,size);
 }
 
 FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)

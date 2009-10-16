@@ -158,12 +158,6 @@ ASMovieClipLoader::ASMovieClipLoader()
 {
 }
 
-/*void ASMovieClipLoader::_register()
-{
-	setVariableByName("constructor",new Function(constructor));
-	setVariableByName("addListener",new Function(addListener));
-}*/
-
 ASFUNCTIONBODY(ASMovieClipLoader,constructor)
 {
 	LOG(NOT_IMPLEMENTED,"Called MovieClipLoader constructor");
@@ -181,12 +175,6 @@ ASXML::ASXML()
 	xml_buf=new char[1024*20];
 	xml_index=0;
 }
-
-/*void ASXML::_register()
-{
-	setVariableByName("constructor",new Function(constructor));
-	setVariableByName("load",new Function(load));
-}*/
 
 ASFUNCTIONBODY(ASXML,constructor)
 {
@@ -452,21 +440,21 @@ void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 
 void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o)
 {
-	abort();
-/*	bool number=true;
-	for(int i=0;i<name.name.size();i++)
+	int index=0;
+	for(int i=0;i<name.len();i++)
 	{
-		if(!isdigit(name.name[i]))
+		if(!isdigit(name[i]))
 		{
-			number=false;
+			index=-1;
 			break;
 		}
 
 	}
+	if(index==0)
+		index=atoi((const char*)name);
 
-	if(number)
+	if(index!=-1)
 	{
-		int index=atoi(name.name.c_str());
 		if(index>=data.capacity())
 		{
 			//Heuristic, we increse the array 20%
@@ -479,10 +467,21 @@ void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns,
 		if(data[index].type==STACK_OBJECT && data[index].data)
 			data[index].data->decRef();
 
-		data[index]=o;
+		if(o->getObjectType()==T_INTEGER)
+		{
+			Integer* i=static_cast<Integer*>(o);
+			data[index].data_i=i->val;
+			data[index].type=STACK_INT;
+			o->decRef();
+		}
+		else
+		{
+			data[index].data=o;
+			data[index].type=STACK_OBJECT;
+		}
 	}
 	else
-		ASObject::setVariableByName(name,o);*/
+		ASObject::setVariableByQName(name,ns,o);
 }
 
 ISWFObject* ASArray::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
@@ -550,7 +549,7 @@ void ASObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 	ASObject* cur=this;
 	do
 	{
-		obj=cur->findObjVar(name,false);
+		obj=cur->Variables.findObjVar(name,false);
 		if(obj)
 			owner=cur;
 		cur=cur->super;
@@ -581,7 +580,7 @@ void ASObject::setVariableByMultiname(multiname& name, ISWFObject* o)
 	}
 	else //Insert it
 	{
-		obj=findObjVar(name,true);
+		obj=Variables.findObjVar(name,true);
 		obj->var=o;
 	}
 }
@@ -599,24 +598,25 @@ ISWFObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 }
 
 ASObject::ASObject(Manager* m):
-	debug_id(0),prototype(NULL),super(NULL),super_inject(NULL),ISWFObject(m)
+	debug_id(0),prototype(NULL),super(NULL),ISWFObject(m)
 {
 	type=T_OBJECT;
 	class_name="Object";
 }
 
 ASObject::ASObject():
-	debug_id(0),prototype(NULL),super(NULL),super_inject(NULL)
+	debug_id(0),prototype(NULL),super(NULL)
 {
 	type=T_OBJECT;
 	class_name="Object";
 }
 
-ASObject::ASObject(const std::string& c):
-	debug_id(0),prototype(NULL),super(NULL),super_inject(NULL)
+ASObject::ASObject(const tiny_string& c, ISWFObject* v):
+	debug_id(0),prototype(NULL),super(NULL)
 {
 	type=T_OBJECT;
 	class_name=c;
+	mostDerived=v;
 }
 
 ASObject::~ASObject()
@@ -1045,6 +1045,12 @@ ISWFObject* SyntheticFunction::fast_call(ISWFObject* obj, ISWFObject** args, int
 	for(int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
 
+	if(bound)
+	{
+		LOG(CALLS,"Calling with closure " << this);
+		obj=closure_this;
+	}
+
 	cc->locals[0]=obj;
 	for(int i=numArgs;i<mi->numArgs();i++)
 	{
@@ -1058,18 +1064,9 @@ ISWFObject* SyntheticFunction::fast_call(ISWFObject* obj, ISWFObject** args, int
 		rest->_constructor(rest,NULL);
 		cc->locals[mi->numArgs()+1]=rest;
 	}
-	ISWFObject* ret;
-	if(!bound)
-	{
-		obj->incRef();
-		ret=val(obj,NULL,cc);
-	}
-	else
-	{
-		LOG(CALLS,"Calling with closure");
-		closure_this->incRef();
-		ret=val(closure_this,NULL,cc);
-	}
+	obj->incRef();
+	ISWFObject* ret=val(obj,NULL,cc);
+
 	delete cc;
 	return ret;
 }
@@ -1086,6 +1083,12 @@ ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 	cc->scope_stack=func_scope;
 	for(int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
+
+	if(bound)
+	{
+		LOG(CALLS,"Calling with closure " << this);
+		obj=closure_this;
+	}
 
 	cc->locals[0]=obj;
 	int i=0;
@@ -1114,19 +1117,9 @@ ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 		Builder.CreateStore(rest,t);*/
 	}
 
+	obj->incRef();
+	ISWFObject* ret=val(obj,args,cc);
 
-	ISWFObject* ret;
-	if(!bound)
-	{
-		obj->incRef();
-		ret=val(obj,args,cc);
-	}
-	else
-	{
-		LOG(CALLS,"Calling with closure");
-		closure_this->incRef();
-		ret=val(closure_this,args,cc);
-	}
 	delete cc;
 	return ret;
 }
@@ -1145,7 +1138,7 @@ ISWFObject* Function::call(ISWFObject* obj, arguments* args)
 		return val(obj,args);
 	else
 	{
-		LOG(CALLS,"Calling with closure");
+		LOG(CALLS,"Calling with closure " << this);
 		LOG(CALLS,"args 0 " << args->at(0));
 		return val(closure_this,args);
 	}

@@ -35,14 +35,13 @@ class ASObject: public ISWFObject
 {
 friend class ABCVm;
 friend class ABCContext;
-private:
-	//Used during binding to inject an object in the hierarchy
-	ASObject* super_inject;
 public:
 	ASObject* prototype;
 	ASObject* super;
+	//Deprecated default constructor
 	ASObject();
-	ASObject(const std::string& c);
+	//Constructor to set class_name and derivedVariables
+	ASObject(const tiny_string& c, ISWFObject* v);
 	ASObject(Manager* m);
 	virtual ~ASObject();
 	ASFUNCTION(_constructor);
@@ -65,15 +64,16 @@ class IFunction: public ASObject
 public:
 	IFunction():bound(false){type=T_FUNCTION;}
 	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
-	ISWFObject* closure_this;
 	virtual ISWFObject* call(ISWFObject* obj, arguments* args)=0;
 	virtual ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args)=0;
-	void bind()
+	void bind(ISWFObject* c)
 	{
 		bound=true;
-		std::cout << "Binding" << std::endl;
+		closure_this=c;
+		std::cout << "Binding " << this << std::endl;
 	}
 protected:
+	ISWFObject* closure_this;
 	bool bound;
 };
 

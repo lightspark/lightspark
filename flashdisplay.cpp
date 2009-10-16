@@ -23,6 +23,7 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
 
+#include "abc.h"
 #include "flashdisplay.h"
 #include "swf.h"
 #include "flashgeom.h"
@@ -50,9 +51,10 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 
 ASFUNCTIONBODY(Loader,_constructor)
 {
-	ISWFObject* ret=new LoaderInfo;
-	obj->setVariableByQName("contentLoaderInfo","",ret);
-	ret->constructor->call(ret,NULL);
+	Loader* th=static_cast<Loader*>(obj);
+	th->contentLoaderInfo=new LoaderInfo;
+	obj->setVariableByQName("contentLoaderInfo","",th->contentLoaderInfo);
+	th->contentLoaderInfo->constructor->call(th->contentLoaderInfo,NULL);
 
 	obj->setVariableByQName("load","",new Function(load));
 	obj->setVariableByQName("loadBytes","",new Function(loadBytes));
@@ -71,36 +73,67 @@ ASFUNCTIONBODY(Loader,load)
 	}
 	URLRequest* r=static_cast<URLRequest*>(args->at(0));
 	th->url=r->url->toString();
+	th->source=URL;
 	sys->cur_thread_pool->addJob(th);
 }
 
 ASFUNCTIONBODY(Loader,loadBytes)
 {
 	Loader* th=static_cast<Loader*>(obj);
-/*	if(th->loading)
+	if(th->loading)
 		return NULL;
-	th->loading=true;
-	if(args->at(0)->class_name!="URLRequest")
+	//Find the actual ByteArray object
+	ASObject* cur=dynamic_cast<ASObject*>(args->at(0));
+	assert(cur);
+	cur=cur->prototype;
+	while(cur->class_name!="ByteArray")
+		cur=cur->super;
+	th->bytes=dynamic_cast<ByteArray*>(cur);
+	assert(th->bytes);
+	if(th->bytes->bytes)
+	{
+		th->loading=true;
+		th->source=BYTES;
+		sys->cur_thread_pool->addJob(th);
+	}
+
+	/*if(args->at(0)->class_name!="URLRequest")
 	{
 		LOG(ERROR,"ArgumentError");
 		abort();
 	}
-	URLRequest* r=static_cast<URLRequest*>(args->at(0));
-	th->url=r->url->toString();
-	sys->cur_thread_pool->addJob(th);*/
+	URLRequest* r=static_cast<URLRequest*>(args->at(0));*/
 }
 
 void Loader::execute()
 {
+	static char name[]="0puppa";
 	LOG(NOT_IMPLEMENTED,"Loader async execution " << url);
-	local_root=new RootMovieClip;
-	zlib_file_filter zf;
-	zf.open(url.c_str(),ios_base::in);
-	istream s(&zf);
+	if(source==URL)
+	{
+		local_root=new RootMovieClip;
+		zlib_file_filter zf;
+		zf.open(url.c_str(),ios_base::in);
+		istream s(&zf);
 
-	ParseThread local_pt(sys,local_root,s);
-	local_pt.wait();
+		ParseThread local_pt(sys,local_root,s);
+		local_pt.wait();
+	}
+	else if(source==BYTES)
+	{
+		//Implement loadBytes, now just dump
+		assert(bytes->bytes);
+
+		FILE* f=fopen(name,"w");
+		fwrite(bytes->bytes,1,bytes->len,f);
+		fclose(f);
+
+		name[0]++;
+	}
 	loaded=true;
+	//Add a complete event for this object
+	sys->currentVm->addEvent(contentLoaderInfo,new Event("complete"));
+
 /*	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
@@ -199,7 +232,7 @@ ASFUNCTIONBODY(Sprite,_getParent)
 
 MovieClip::MovieClip():_framesloaded(0),_totalframes(1),cur_frame(&dynamicDisplayList),initialized(false)
 {
-	class_name="MovieClip";
+	//class_name="MovieClip";
 	if(constructor)
 		constructor->decRef();
 	constructor=new Function(_constructor);
@@ -368,7 +401,7 @@ void MovieClip::Render()
 		initialized=true;
 	}
 
-	if(!state.stop_FP /*&& (class_name=="MovieClip" || class_name=="SystemState")*/)
+	if(!state.stop_FP /*&& (class_name=="MovieClip")*/)
 		state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount
 	else
 		state.next_FP=state.FP;

@@ -19,6 +19,6 @@
 
 #include "flashutils.h"
 
-ByteArray::ByteArray():ASObject("ByteArray")
+ByteArray::ByteArray():ASObject("ByteArray",this),bytes(NULL),len(0)
 {
 }

@@ -24,6 +24,10 @@
 
 class ByteArray: public ASObject
 {
+friend class Loader;
+protected:
+	uint8_t* bytes;
+	int len;
 public:
 	ByteArray();
 };

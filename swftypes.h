@@ -238,26 +238,44 @@ template<class T>
 	void put(ISWFObject* o);
 };
 
+class variables_map
+{
+private:
+	std::multimap<tiny_string,std::pair<tiny_string, obj_var> > Variables;
+	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
+	std::vector<var_iterator> slots_vars;
+public:
+	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
+	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create=true);
+	obj_var* findObjVar(const multiname& mname, bool create=true);
+	ISWFObject* getSlot(int n)
+	{
+		return slots_vars[n-1]->second.second.var;
+	}
+	void setSlot(int n,ISWFObject* o);
+	void initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns);
+	ISWFObject* getVariableByString(const std::string& name);
+	void dumpVariables();
+	~variables_map();
+};
+
 class ISWFObject
 {
 friend class MovieClip;
 friend class Manager;
-friend class ASObject;
-private:
-	Manager* manager;
-	//maps variable name to namespace name and var
-	std::multimap<tiny_string,std::pair<tiny_string, obj_var> > Variables;
+friend class ABCVm;
+friend class ABCContext;
 protected:
 	ISWFObject* parent;
 	ISWFObject();
 	ISWFObject(Manager* m);
 	ISWFObject(const ISWFObject& o);
-	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
-	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
-	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create=true);
-	obj_var* findObjVar(const multiname& mname, bool create=true);
-	std::vector<var_iterator> slots_vars;
 	SWFOBJECT_TYPE type;
+	ISWFObject* mostDerived;
+	variables_map Variables;
+private:
+	Manager* manager;
+	//maps variable name to namespace name and var
 public:
 	std::string class_name;
 	int ref_count;
@@ -301,10 +319,15 @@ public:
 		if(o && o!=o2)
 			o->decRef();
 	}
+	virtual ISWFObject* getVariableByString(const std::string& name, ISWFObject*& owner)
+	{
+		ISWFObject* ret=Variables.getVariableByString(name);
+		owner=(ret)?this:NULL;
+		return ret;
+	}
 	virtual ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name, ISWFObject*& owner);
 	virtual ISWFObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner);
-	virtual ISWFObject* getVariableByString(const std::string& name, ISWFObject*& owner);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ISWFObject* o);
 	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o);
@@ -312,11 +335,16 @@ public:
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	ISWFObject* getSlot(int n)
 	{
-		return slots_vars[n-1]->second.second.var;
+		return Variables.getSlot(n);
 	}
-	virtual void setSlot(int n,ISWFObject* o);
-	virtual void initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns);
-	virtual void dumpVariables();
+	virtual void setSlot(int n,ISWFObject* o)
+	{
+		Variables.setSlot(n,o);
+	}
+	virtual void initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns)
+	{
+		Variables.initSlot(n,o,name,ns);
+	}
 	virtual int numVariables();
 	std::string getNameAt(int i);
 

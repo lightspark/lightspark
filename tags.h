@@ -366,11 +366,15 @@ class DefineBinaryDataTag: public DictionaryTag, public ByteArray
 private:
 	UI16 Tag;
 	UI32 Reserved;
-	uint8_t* data;
 public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
-	~DefineBinaryDataTag(){delete[] data;}
+	~DefineBinaryDataTag(){delete[] bytes;}
 	virtual int getId(){return Tag;} 
+	ISWFObject* clone()
+	{
+		abort();
+		//return new DefineS(*this);
+	}
 };
 
 class FontTag: public DictionaryTag, public ASFont

@@ -1050,13 +1050,13 @@ void ABCVm::getLex(call_context* th, int n)
 	for(it;it!=th->scope_stack.rend();it++)
 	{
 		assert(!(*it)->class_name.empty());
-		ASObject* s=((ASObject*)*it);
+		/*ASObject* s=((ASObject*)*it);
 		while(s)
 		{
 			cout << typeid(*s).name() << " (" << s->class_name << ") -> ";
 			s=s->super;
 		}
-		cout << endl;
+		cout << endl;*/
 		ISWFObject* o=(*it)->getVariableByMultiname(*name,owner);
 		if(owner)
 		{
@@ -1141,14 +1141,15 @@ void ABCVm::constructSuper(call_context* th, int n)
 		ISWFObject* real_super=th->context->Global->getVariableByMultiname(*mname,owner);
 		if(owner)
 		{
+			//WTF is this, why the hell i've done this!!
 			if(real_super==super)
 			{
 				LOG(CALLS,"Same super");
 			}
 			else
 			{
-				LOG(CALLS,"Changing super");
-				super=dynamic_cast<ASObject*>(real_super);
+				LOG(CALLS,"Wrong super");
+				//super=dynamic_cast<ASObject*>(real_super);
 			}
 		}
 		else
@@ -1165,7 +1166,8 @@ void ABCVm::constructSuper(call_context* th, int n)
 
 	if(super->class_index!=-1)
 	{
-		multiname* name=th->context->getMultiname(th->context->instances[super->class_index].name,th);
+		cout << super->class_index << endl;
+		multiname* name=th->context->getMultiname(th->context->instances[super->class_index].name,NULL);
 		LOG(CALLS,"Constructing super " << *name << " obj " << obj->super << " on obj " << obj);
 
 		obj->super=new ASObject(name->name_s,obj->mostDerived);

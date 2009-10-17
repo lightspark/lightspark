@@ -1215,7 +1215,7 @@ ISWFObject::ISWFObject(Manager* m):parent(NULL),ref_count(1),constructor(NULL),d
 	}
 }*/
 
-ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL),type(o.type),mostDerived(this)
+ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL),type(o.type),mostDerived(this),class_index(o.class_index)
 {
 	parent=o.parent;
 	constructor=o.constructor;

@@ -109,6 +109,8 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	Event* e=dynamic_cast<Event*>(args->at(0));
 	if(e==NULL || th==NULL)
 		return new Boolean(false);
+	//CHECK: maybe is to be cloned
+	e->incRef();
 	sys->currentVm->addEvent(th,e);
 	return new Boolean(true);
 }
@@ -124,7 +126,7 @@ void EventDispatcher::handleEvent(Event* e)
 	map<string, IFunction*>::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
-		LOG(NOT_IMPLEMENTED,"Not handled event");
+		LOG(NOT_IMPLEMENTED,"Not handled event " << e->type);
 		return;
 	}
 

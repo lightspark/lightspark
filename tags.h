@@ -372,8 +372,7 @@ public:
 	virtual int getId(){return Tag;} 
 	ISWFObject* clone()
 	{
-		abort();
-		//return new DefineS(*this);
+		return new DefineBinaryDataTag(*this);
 	}
 };
 

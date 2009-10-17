@@ -29,6 +29,7 @@
 #include "logger.h"
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define ASFUNCTION(name) \
 	static ISWFObject* name(ISWFObject* , arguments* args)
@@ -277,6 +278,10 @@ private:
 	Manager* manager;
 	//maps variable name to namespace name and var
 public:
+	void check()
+	{
+		assert(ref_count>0);
+	}
 	std::string class_name;
 	int ref_count;
 	int debug;

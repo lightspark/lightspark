@@ -257,6 +257,10 @@ public:
 	void initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns);
 	ISWFObject* getVariableByString(const std::string& name);
 	void dumpVariables();
+	int size()
+	{
+		Variables.size();
+	}
 	~variables_map();
 };
 

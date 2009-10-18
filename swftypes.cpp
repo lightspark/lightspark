@@ -1215,7 +1215,8 @@ ISWFObject::ISWFObject(Manager* m):parent(NULL),ref_count(1),constructor(NULL),d
 	}
 }*/
 
-ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL),type(o.type),mostDerived(this),class_index(o.class_index)
+ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL),type(o.type),mostDerived(this),
+	class_index(o.class_index),class_name(o.class_name)
 {
 	parent=o.parent;
 	constructor=o.constructor;
@@ -1336,8 +1337,7 @@ string ISWFObject::getNameAt(int index)
 
 int ISWFObject::numVariables()
 {
-	abort();
-//	return Variables.size();
+	return Variables.size();
 }
 
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v)

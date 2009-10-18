@@ -643,6 +643,8 @@ ASString::ASString()
 	setVariableByQName("toString","",new Function(ASObject::_toString));
 	setVariableByQName("split",AS3,new Function(split));
 	setVariableByQName("replace",AS3,new Function(replace));
+	setVariableByQName("indexOf",AS3,new Function(indexOf));
+	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
 	setGetterByQName("length","",new Function(_getLength));
 }
 
@@ -653,6 +655,8 @@ ASString::ASString(const string& s):data(s)
 	setVariableByQName("toString","",new Function(ASObject::_toString));
 	setVariableByQName("split",AS3,new Function(split));
 	setVariableByQName("replace",AS3,new Function(replace));
+	setVariableByQName("indexOf",AS3,new Function(indexOf));
+	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
 	setGetterByQName("length","",new Function(_getLength));
 }
 
@@ -663,6 +667,8 @@ ASString::ASString(const tiny_string& s):data((const char*)s)
 	setVariableByQName("toString","",new Function(ASObject::_toString));
 	setVariableByQName("split",AS3,new Function(split));
 	setVariableByQName("replace",AS3,new Function(replace));
+	setVariableByQName("indexOf",AS3,new Function(indexOf));
+	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
 	setGetterByQName("length","",new Function(_getLength));
 }
 
@@ -1240,11 +1246,28 @@ ASFUNCTIONBODY(RegExp,_constructor)
 {
 	RegExp* th=static_cast<RegExp*>(obj);
 	th->re=args->at(0)->toString();
-	th->flags=args->at(1)->toString();
+	if(args->size()>1)
+		th->flags=args->at(1)->toString();
+}
+
+ASFUNCTIONBODY(ASString,charCodeAt)
+{
+	LOG(NOT_IMPLEMENTED,"ASString::charCodeAt not really implemented");
+	ASString* th=static_cast<ASString*>(obj);
+	int index=args->at(0)->toInt();
+	return new Integer(th->data[index]);
+}
+
+ASFUNCTIONBODY(ASString,indexOf)
+{
+	LOG(NOT_IMPLEMENTED,"ASString::indexOf not really implemented");
+	ASString* th=static_cast<ASString*>(obj);
+	return new Integer(-1);
 }
 
 ASFUNCTIONBODY(ASString,replace)
 {
+	LOG(NOT_IMPLEMENTED,"ASString::replace not really implemented");
 	ASString* th=static_cast<ASString*>(obj);
 	return new ASString(th->data);
 }

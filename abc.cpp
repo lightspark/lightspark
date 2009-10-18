@@ -147,6 +147,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Dictionary","flash.utils",new ASObject);
 	Global.setVariableByQName("Proxy","flash.utils",new ASObject);
 	Global.setVariableByQName("Timer","flash.utils",new ASObject);
+	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
 
 	Global.setVariableByQName("Rectangle","flash.geom",new ASObject);
 
@@ -225,6 +226,7 @@ int ABCContext::getMultinameRTData(int mi) const
 	{
 		case 0x07:
 		case 0x09:
+		case 0x0e:
 			return 0;
 		case 0x1b:
 			return 1;
@@ -242,9 +244,6 @@ int ABCContext::getMultinameRTData(int mi) const
 			break;
 		case 0x12:
 			LOG(CALLS, "RTQNameLA");
-			break;
-		case 0x0e:
-			LOG(CALLS, "MultinameA");
 			break;
 		case 0x1c:
 			LOG(CALLS, "MultinameLA");
@@ -900,13 +899,6 @@ inline method_info* ABCContext::get_method(unsigned int m)
 	}
 }
 
-ISWFObject* ABCVm::increment_i(ISWFObject* o)
-{
-	LOG(NOT_IMPLEMENTED,"increment_i");
-	abort();
-	return o;
-}
-
 void ABCVm::asTypelate(call_context* th)
 {
 	LOG(NOT_IMPLEMENTED,"asTypelate");
@@ -920,22 +912,6 @@ ISWFObject* ABCVm::nextValue(ISWFObject* index, ISWFObject* obj)
 {
 	LOG(NOT_IMPLEMENTED,"nextValue");
 	abort();
-}
-
-ISWFObject* ABCVm::nextName(ISWFObject* index, ISWFObject* obj)
-{
-	LOG(CALLS,"nextName");
-	Integer* i=dynamic_cast<Integer*>(index);
-	if(i==NULL)
-	{
-		LOG(ERROR,"Type mismatch");
-		abort();
-	}
-
-	ISWFObject* ret=new ASString(obj->getNameAt(*i-1));
-	obj->decRef();
-	index->decRef();
-	return ret;
 }
 
 void ABCVm::swap(call_context* th)
@@ -960,28 +936,6 @@ void ABCVm::popScope(call_context* th)
 	LOG(CALLS,"popScope");
 	th->scope_stack.back()->decRef();
 	th->scope_stack.pop_back();
-}
-
-ISWFObject* ABCVm::hasNext2(call_context* th, int n, int m)
-{
-	abort();
-/*	LOG(CALLS,"hasNext2 " << n << ' ' << m);
-	ISWFObject* obj=th->locals[n];
-	int cur_index=th->locals[m]->toInt();
-	if(cur_index+1<=obj->numVariables())
-	{
-//		th->locals[m]->decRef();
-		th->locals[m]=new Integer(cur_index+1);
-		return new Boolean(true);
-	}
-	else
-	{
-//		obj->decRef();
-		th->locals[n]=new Null;
-//		th->locals[m]->decRef();
-		th->locals[m]=new Integer(0);
-		return new Boolean(false);
-	}*/
 }
 
 //We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
@@ -1111,21 +1065,6 @@ ISWFObject* ABCVm::newFunction(call_context* th, int n)
 	SyntheticFunction* f=new SyntheticFunction(m);
 	f->func_scope=th->scope_stack;
 	return f;
-}
-
-void ABCVm::newObject(call_context* th, int n)
-{
-	LOG(CALLS,"newObject " << n);
-	ISWFObject* ret=new ASObject;
-	for(int i=0;i<n;i++)
-	{
-		ISWFObject* value=th->runtime_stack_pop();
-		ISWFObject* name=th->runtime_stack_pop();
-		ret->setVariableByQName(name->toString(),"",value);
-		name->decRef();
-	}
-
-	th->runtime_stack_push(ret);
 }
 
 void ABCVm::not_impl(int n)
@@ -1440,39 +1379,69 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 		case traits_info::Getter:
 		{
 			LOG(CALLS,"Getter trait: " << name << " #" << t->method);
+			IFunction* f=NULL;
 			//Hack, try to find this on the most derived variables
 			obj_var* var=obj->mostDerived->Variables.findObjVar(name,ns,false);
 			if(var && var->getter) //Ok, it seems that we have been overridden, set this in our map
 			{
 				LOG(CALLS,"HACK: overridden getter");
-				IFunction* f=static_cast<IFunction*>(var->getter->clone());
+				f=static_cast<IFunction*>(var->getter->clone());
 				f->bind(obj->mostDerived);
-				obj->setGetterByQName(name,ns,f);
 			}
-			else
+			
+			if(f==NULL)
 			{
 				//syntetize method and create a new LLVM function object
 				method_info* m=&methods[t->method];
-				obj->setGetterByQName(name, ns, new SyntheticFunction(m));
+				f=new SyntheticFunction(m);
 			}
+			obj->setGetterByQName(name,ns,f);
 			LOG(CALLS,"End Getter trait: " << name);
 			break;
 		}
 		case traits_info::Setter:
 		{
 			LOG(CALLS,"Setter trait: " << name << " #" << t->method);
-			//syntetize method and create a new LLVM function object
-			method_info* m=&methods[t->method];
-			obj->setSetterByQName(name, ns, new SyntheticFunction(m));
+			IFunction* f=NULL;
+			//Hack, try to find this on the most derived variables
+			obj_var* var=obj->mostDerived->Variables.findObjVar(name,ns,false);
+			if(var && var->setter) //Ok, it seems that we have been overridden, set this in our map
+			{
+				LOG(CALLS,"HACK: overridden setter");
+				f=static_cast<IFunction*>(var->setter->clone());
+				f->bind(obj->mostDerived);
+			}
+			
+			if(f==NULL)
+			{
+				//syntetize method and create a new LLVM function object
+				method_info* m=&methods[t->method];
+				f=new SyntheticFunction(m);
+			}
+			obj->setSetterByQName(name,ns,f);
 			LOG(CALLS,"End Setter trait: " << name);
 			break;
 		}
 		case traits_info::Method:
 		{
 			LOG(CALLS,"Method trait: " << name << " #" << t->method);
-			//syntetize method and create a new LLVM function object
-			method_info* m=&methods[t->method];
-			obj->setVariableByQName(name, ns, new SyntheticFunction(m));
+			IFunction* f=NULL;
+			//Hack, try to find this on the most derived variables
+			obj_var* var=obj->mostDerived->Variables.findObjVar(name,ns,false);
+			if(var && var->var) //Ok, it seems that we have been overridden, set this in our map
+			{
+				LOG(CALLS,"HACK: overridden method");
+				f=static_cast<IFunction*>(var->var->clone());
+				f->bind(obj->mostDerived);
+			}
+			
+			if(f==NULL)
+			{
+				//syntetize method and create a new LLVM function object
+				method_info* m=&methods[t->method];
+				f=new SyntheticFunction(m);
+			}
+			obj->setVariableByQName(name,ns,f);
 			break;
 		}
 		case traits_info::Const:
@@ -1501,6 +1470,14 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 					case 0x03: //Int
 					{
 						ISWFObject* ret=new Integer(constant_pool.integer[t->vindex]);
+						obj->setVariableByQName(name, ns, ret);
+						if(t->slot_id)
+							obj->initSlot(t->slot_id, ret, name, ns);
+						break;
+					}
+					case 0x06: //Double
+					{
+						ISWFObject* ret=new Number(constant_pool.doubles[t->vindex]);
 						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name, ns);

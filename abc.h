@@ -407,6 +407,7 @@ private:
 	static void constructProp(call_context* th, int n, int m); 
 	static void getLocal(call_context* th, int n); 
 	static void newObject(call_context* th, int n); 
+	static void getDescendants(call_context* th, int n); 
 	static ISWFObject* newCatch(call_context* th, int n); 
 	static void jump(call_context* th, int offset); 
 	static bool ifEq(ISWFObject*, ISWFObject*, int offset); 
@@ -514,7 +515,7 @@ private:
 	static ISWFObject* lessThan(ISWFObject*,ISWFObject*);
 	static ISWFObject* nextName(ISWFObject* index, ISWFObject* obj);
 	static ISWFObject* nextValue(ISWFObject* index, ISWFObject* obj);
-	static ISWFObject* increment_i(ISWFObject*);
+	static uintptr_t increment_i(ISWFObject*);
 	static uintptr_t increment(ISWFObject*);
 	static uintptr_t decrement(ISWFObject*);
 	static ISWFObject* decrement_i(ISWFObject*);

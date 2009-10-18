@@ -623,6 +623,10 @@ void ABCVm::jump(call_context* th, int offset)
 bool ABCVm::ifTrue(ISWFObject* obj1, int offset)
 {
 	LOG(CALLS,"ifTrue " << offset);
+
+	bool ret=Boolean_concrete(obj1);
+	obj1->decRef();
+	return ret;
 }
 
 intptr_t ABCVm::modulo(ISWFObject* val1, ISWFObject* val2)
@@ -1538,5 +1542,83 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	obj->decRef();
 	LOG(CALLS,"End of constructing");
 	th->runtime_stack_push(ret);
+}
+
+ISWFObject* ABCVm::hasNext2(call_context* th, int n, int m)
+{
+	LOG(NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
+	ISWFObject* obj=th->locals[n];
+	int cur_index=th->locals[m]->toInt();
+
+	if(cur_index+1<=obj->numVariables())
+	{
+		th->locals[m]->decRef();
+		th->locals[m]=new Integer(cur_index+1);
+		return new Boolean(true);
+	}
+	else
+	{
+		obj->decRef();
+		th->locals[n]=new Null;
+		th->locals[m]->decRef();
+		th->locals[m]=new Integer(0);
+		return new Boolean(false);
+	}
+}
+
+void ABCVm::newObject(call_context* th, int n)
+{
+	LOG(CALLS,"newObject " << n);
+	ISWFObject* ret=new ASObject;
+	for(int i=0;i<n;i++)
+	{
+		ISWFObject* value=th->runtime_stack_pop();
+		ISWFObject* name=th->runtime_stack_pop();
+		ret->setVariableByQName(name->toString(),"",value);
+		name->decRef();
+	}
+
+	th->runtime_stack_push(ret);
+}
+
+void ABCVm::getDescendants(call_context* th, int n)
+{
+	abort();
+	LOG(CALLS,"newObject " << n);
+	ISWFObject* ret=new ASObject;
+	for(int i=0;i<n;i++)
+	{
+		ISWFObject* value=th->runtime_stack_pop();
+		ISWFObject* name=th->runtime_stack_pop();
+		ret->setVariableByQName(name->toString(),"",value);
+		name->decRef();
+	}
+
+	th->runtime_stack_push(ret);
+}
+
+uintptr_t ABCVm::increment_i(ISWFObject* o)
+{
+	LOG(CALLS,"increment_i");
+
+	int n=o->toInt();
+	o->decRef();
+	return n+1;
+}
+
+ISWFObject* ABCVm::nextName(ISWFObject* index, ISWFObject* obj)
+{
+	LOG(CALLS,"nextName");
+	Integer* i=dynamic_cast<Integer*>(index);
+	if(i==NULL)
+	{
+		LOG(ERROR,"Type mismatch");
+		abort();
+	}
+
+	ISWFObject* ret=new ASString(obj->getNameAt(*i-1));
+	obj->decRef();
+	index->decRef();
+	return ret;
 }
 

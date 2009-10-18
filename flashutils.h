@@ -32,4 +32,6 @@ public:
 	ByteArray();
 };
 
+ISWFObject* getQualifiedClassName(ISWFObject* , arguments* args);
+
 #endif

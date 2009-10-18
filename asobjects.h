@@ -156,6 +156,8 @@ public:
 	ASFUNCTION(split);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(replace);
+	ASFUNCTION(indexOf);
+	ASFUNCTION(charCodeAt);
 	tiny_string toString() const;
 	double toNumber() const;
 	bool isEqual(const ISWFObject* r) const;

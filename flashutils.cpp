@@ -22,3 +22,9 @@
 ByteArray::ByteArray():ASObject("ByteArray",this),bytes(NULL),len(0)
 {
 }
+
+ISWFObject* getQualifiedClassName(ISWFObject* obj, arguments* args)
+{
+	//TODO: check, it's not was the system expect
+	return new ASString(args->at(0)->class_name);
+}

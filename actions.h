@@ -27,8 +27,8 @@ class ExecutionContext
 protected:
 	int jumpOffset;
 public:
-	std::vector<ISWFObject*> regs;
-	ISWFObject* retValue;
+	std::vector<ASObject*> regs;
+	ASObject* retValue;
 	ExecutionContext():jumpOffset(0),regs(100){}
 	void setJumpOffset(int offset)
 	{
@@ -129,8 +129,8 @@ public:
 	ActionDefineFunction(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDefineFunction");}
-	ISWFObject* call(ISWFObject* obj, arguments* args);
-	ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args)
+	ASObject* call(ASObject* obj, arguments* args);
+	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args)
 	{
 		abort();
 	}
@@ -167,8 +167,8 @@ public:
 	ActionDefineFunction2(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 	void print(){ LOG(TRACE,"ActionDefineFunction2");}
-	ISWFObject* call(ISWFObject* obj, arguments* args);
-	ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args)
+	ASObject* call(ASObject* obj, arguments* args);
+	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args)
 	{
 		abort();
 	}
@@ -585,7 +585,7 @@ private:
 	UI8 Constant8;
 	UI16 Constant16;*/
 
-	std::vector<ISWFObject*> Objects;
+	std::vector<ASObject*> Objects;
 public:
 	ActionPush(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();

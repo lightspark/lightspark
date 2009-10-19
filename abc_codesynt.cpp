@@ -192,7 +192,6 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"add_od",(void*)&ABCVm::add_od,ARGS_OBJ_NUMBER},
 	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
 	{"abstract_i",(void*)&abstract_i,ARGS_INT},
-	{"abstract_i2",(void*)&abstract_i2,ARGS_INT},
 	{"abstract_b",(void*)&abstract_b,ARGS_BOOL},
 	{"getProperty",(void*)&ABCVm::getProperty,ARGS_OBJ_OBJ}
 };
@@ -220,7 +219,7 @@ extern __thread Manager* iManager;
 using namespace std;
 
 //Be careful, arguments nubering starts from 1
-ISWFObject* argumentDumper(arguments* arg, uint32_t n)
+ASObject* argumentDumper(arguments* arg, uint32_t n)
 {
 	//Really implement default values, we now fill with Undefined
 	if(n-1<arg->size())
@@ -232,7 +231,7 @@ ISWFObject* argumentDumper(arguments* arg, uint32_t n)
 		return new Undefined;
 }
 
-ISWFObject* createRest()
+ASObject* createRest()
 {
 	ASArray* ret=new ASArray();
 	ret->_constructor(ret,NULL);
@@ -297,14 +296,14 @@ void ABCVm::registerFunctions()
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	FT=llvm::FunctionType::get(context_type, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decRef",module);
-	ex->addGlobalMapping(F,(void*)&ISWFObject::s_decRef);
+	ex->addGlobalMapping(F,(void*)&ASObject::s_decRef);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"incRef",module);
-	ex->addGlobalMapping(F,(void*)&ISWFObject::s_incRef);
+	ex->addGlobalMapping(F,(void*)&ASObject::s_incRef);
 
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	FT=llvm::FunctionType::get(context_type, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decRef_safe",module);
-	ex->addGlobalMapping(F,(void*)&ISWFObject::s_decRef_safe);
+	ex->addGlobalMapping(F,(void*)&ASObject::s_decRef_safe);
 	sig.clear();
 
 	// (call_context*)
@@ -371,7 +370,7 @@ void ABCVm::registerFunctions()
 	ex->addGlobalMapping(F,(void*)&ABCVm::hasNext2);
 	//End of lazy pushing
 	
-	//Lazy pushing, no context, (ISWFObject*)
+	//Lazy pushing, no context, (ASObject*)
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
@@ -383,7 +382,7 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 
-	//Lazy pushing, no context, (ISWFObject*, int)
+	//Lazy pushing, no context, (ASObject*, int)
 	sig.push_back(int_type);
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	elems=sizeof(opcode_table_args1_pointers_int)/sizeof(opcode_handler);
@@ -394,7 +393,7 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 
-	//Branches, no context, (ISWFObject*, int)
+	//Branches, no context, (ASObject*, int)
 	FT=llvm::FunctionType::get(bool_type, sig, false);
 	elems=sizeof(opcode_table_args1_branches)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
@@ -404,7 +403,7 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 
-	//Lazy pushing, no context, (ISWFObject*, ISWFObject*)
+	//Lazy pushing, no context, (ASObject*, ASObject*)
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
@@ -417,7 +416,7 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 
-	//Lazy pushing, no context, (ISWFObject*, ISWFObject*, int)
+	//Lazy pushing, no context, (ASObject*, ASObject*, int)
 	sig.push_back(int_type);
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 	elems=sizeof(opcode_table_args2_pointers_int)/sizeof(opcode_handler);
@@ -428,7 +427,7 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 	
-	//Branches, no context, (ISWFObject*, ISWFObject*, int)
+	//Branches, no context, (ASObject*, ASObject*, int)
 	FT=llvm::FunctionType::get(bool_type, sig, false);
 	elems=sizeof(opcode_table_args2_branches)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
@@ -438,7 +437,7 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 
-	//Lazy pushing, no context, (ISWFObject*, uintptr_t, int)
+	//Lazy pushing, no context, (ASObject*, uintptr_t, int)
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(int_type);
@@ -452,7 +451,7 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 
-	//Lazy pushing, no context, (ISWFObject*, ISWFObject*, void*)
+	//Lazy pushing, no context, (ASObject*, ASObject*, void*)
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
@@ -741,7 +740,7 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 			{
 				//decRef the previous contents
 				builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
-				llvm::Value* v=builder.CreateCall(ex->FindFunctionNamed("abstract_i2"),static_locals[i].first);
+				llvm::Value* v=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),static_locals[i].first);
 				builder.CreateStore(v,t);
 			}
 			else if(static_locals[i].second==STACK_NUMBER)

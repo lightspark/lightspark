@@ -105,7 +105,7 @@ public:
 		return 0;
 	}
 	void Render();
-	ISWFObject* clone()
+	Loader* clone()
 	{
 		return new Loader(*this);
 	}
@@ -135,7 +135,7 @@ public:
 	{
 		LOG(NOT_IMPLEMENTED,"Sprite Rendering");
 	}
-	ISWFObject* clone()
+	Sprite* clone()
 	{
 		return new Sprite(*this);
 	}
@@ -173,7 +173,7 @@ public:
 
 	//IRenderObject interface
 	void Render();
-	ISWFObject* clone()
+	MovieClip* clone()
 	{
 		return new MovieClip(*this);
 	}

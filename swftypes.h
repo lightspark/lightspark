@@ -32,9 +32,9 @@
 #include <assert.h>
 
 #define ASFUNCTION(name) \
-	static ISWFObject* name(ISWFObject* , arguments* args)
+	static ASObject* name(ASObject* , arguments* args)
 #define ASFUNCTIONBODY(c,name) \
-	ISWFObject* c::name(ISWFObject* obj, arguments* args)
+	ASObject* c::name(ASObject* obj, arguments* args)
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_NUMBER, T_FUNCTION,
 	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE, T_INVALID};
@@ -43,7 +43,6 @@ enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER,STACK_BOOLEAN};
 
 typedef double number_t;
 
-class ISWFObject;
 class ASObject;
 class arguments;
 class IFunction;
@@ -220,23 +219,23 @@ struct multiname
 
 struct obj_var
 {
-	ISWFObject* var;
+	ASObject* var;
 	IFunction* setter;
 	IFunction* getter;
 	obj_var():var(NULL),setter(NULL),getter(NULL){}
-	explicit obj_var(ISWFObject* v):var(v),setter(NULL),getter(NULL){}
-	explicit obj_var(ISWFObject* v,IFunction* g,IFunction* s):var(v),setter(s),getter(g){}
+	explicit obj_var(ASObject* v):var(v),setter(NULL),getter(NULL){}
+	explicit obj_var(ASObject* v,IFunction* g,IFunction* s):var(v),setter(s),getter(g){}
 };
 
 class Manager
 {
-friend class ISWFObject;
+friend class ASObject;
 private:
-	std::vector<ISWFObject*> available;
+	std::vector<ASObject*> available;
 public:
 template<class T>
 	T* get();
-	void put(ISWFObject* o);
+	void put(ASObject* o);
 };
 
 class variables_map
@@ -249,57 +248,60 @@ public:
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
 	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create=true);
 	obj_var* findObjVar(const multiname& mname, bool create=true);
-	ISWFObject* getSlot(int n)
+	ASObject* getSlot(int n)
 	{
 		return slots_vars[n-1]->second.second.var;
 	}
-	void setSlot(int n,ISWFObject* o);
-	void initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns);
-	ISWFObject* getVariableByString(const std::string& name);
+	void setSlot(int n,ASObject* o);
+	void initSlot(int n,ASObject* o, const tiny_string& name, const tiny_string& ns);
+	ASObject* getVariableByString(const std::string& name);
 	void dumpVariables();
 	int size()
 	{
 		Variables.size();
 	}
+	tiny_string getNameAt(int i);
 	~variables_map();
 };
 
-class ISWFObject
+class ASObject
 {
 friend class MovieClip;
 friend class Manager;
 friend class ABCVm;
 friend class ABCContext;
 protected:
-	ISWFObject* parent;
-	ISWFObject();
-	ISWFObject(Manager* m);
-	ISWFObject(const ISWFObject& o);
+	ASObject* parent;
 	SWFOBJECT_TYPE type;
-	ISWFObject* mostDerived;
-	variables_map Variables;
-private:
-	Manager* manager;
+	ASObject* mostDerived;
 	//maps variable name to namespace name and var
+	variables_map Variables;
+	ASObject(const ASObject& o);
+private:
+	int ref_count;
+	Manager* manager;
 public:
+	//Constructor to set class_name and derivedVariables
+	ASObject(const tiny_string& c, ASObject* v=NULL, Manager* m=NULL);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_toString);
+	virtual ~ASObject();
 	void check()
 	{
 		assert(ref_count>0);
 	}
+	ASObject* prototype;
+	ASObject* super;
 	std::string class_name;
-	int ref_count;
-	int debug;
 	IFunction* constructor;
 	int class_index;
-	virtual ~ISWFObject();
 	void incRef()
 	{
 		ref_count++;
 	}
 	void decRef()
 	{
-		if(ref_count==0)
-			abort();
+		assert(ref_count>0);
 		ref_count--;
 		if(ref_count==0)
 		{
@@ -314,48 +316,51 @@ public:
 	{
 		ref_count--;
 	}
-	static void s_incRef(ISWFObject* o)
+	static void s_incRef(ASObject* o)
 	{
 		o->incRef();
 	}
-	static void s_decRef(ISWFObject* o)
+	static void s_decRef(ASObject* o)
 	{
 		if(o)
 			o->decRef();
 	}
-	static void s_decRef_safe(ISWFObject* o,ISWFObject* o2)
+	static void s_decRef_safe(ASObject* o,ASObject* o2)
 	{
 		if(o && o!=o2)
 			o->decRef();
 	}
-	virtual ISWFObject* getVariableByString(const std::string& name, ISWFObject*& owner)
+	virtual ASObject* getVariableByString(const std::string& name, ASObject*& owner)
 	{
-		ISWFObject* ret=Variables.getVariableByString(name);
+		ASObject* ret=Variables.getVariableByString(name);
 		owner=(ret)?this:NULL;
 		return ret;
 	}
-	virtual ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
-	virtual intptr_t getVariableByMultiname_i(const multiname& name, ISWFObject*& owner);
-	virtual ISWFObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner);
+	virtual ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner);
+	virtual intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner);
+	virtual ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
-	virtual void setVariableByMultiname(const multiname& name, ISWFObject* o);
-	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o);
+	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
+	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
-	ISWFObject* getSlot(int n)
+	ASObject* getSlot(int n)
 	{
 		return Variables.getSlot(n);
 	}
-	virtual void setSlot(int n,ISWFObject* o)
+	virtual void setSlot(int n,ASObject* o)
 	{
 		Variables.setSlot(n,o);
 	}
-	virtual void initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns)
+	virtual void initSlot(int n,ASObject* o, const tiny_string& name, const tiny_string& ns)
 	{
 		Variables.initSlot(n,o,name,ns);
 	}
 	virtual int numVariables();
-	std::string getNameAt(int i);
+	tiny_string getNameAt(int i)
+	{
+		return Variables.getNameAt(i);
+	}
 
 	SWFOBJECT_TYPE getObjectType() const
 	{
@@ -367,20 +372,23 @@ public:
 	virtual IFunction* toFunction();
 
 	//TODO: check clone semantics, as actually nothing is cloned
-	virtual ISWFObject* clone();
+	virtual ASObject* clone()
+	{
+		return new ASObject(*this);
+	}
 
-	virtual bool isEqual(const ISWFObject* r) const;
-	virtual bool isLess(const ISWFObject* r) const;
-	virtual bool isGreater(const ISWFObject* r) const;
+	virtual bool isEqual(const ASObject* r) const;
+	virtual bool isLess(const ASObject* r) const;
+	virtual bool isGreater(const ASObject* r) const;
 
-	virtual void copyFrom(const ISWFObject* o)
+	virtual void copyFrom(const ASObject* o)
 	{
 		LOG(ERROR,"Copy object of type " << (int)getObjectType() << " from object of type " << (int)o->getObjectType());
 		abort();
 	}
 };
 
-inline void Manager::put(ISWFObject* o)
+inline void Manager::put(ASObject* o)
 {
 	if(available.size()>10)
 		delete o;
@@ -402,7 +410,7 @@ T* Manager::get()
 		return new T(this);
 }
 
-class ConstantReference : public ISWFObject
+/*class ConstantReference : public ASObject
 {
 private:
 	int index;
@@ -411,14 +419,14 @@ public:
 	tiny_string toString() const;
 	int toInt() const;
 //	double toNumber() const;
-	ISWFObject* clone();
-/*	ISWFObject* clone()
+	ASObject* clone();
+	ASObject* clone()
 	{
 		return new ConstantReference(*this);
-	}*/
+	}
 };
 
-class RegisterNumber : public ISWFObject
+class RegisterNumber : public ASObject
 {
 private:
 	int index;
@@ -426,19 +434,19 @@ public:
 	RegisterNumber(int i):index(i){type=T_REGNUMBER;}
 	tiny_string toString() const;
 	//int toInt();
-	ISWFObject* clone();
-/*	ISWFObject* clone()
+	ASObject* clone();
+	ASObject* clone()
 	{
 		return new RegisterNumber(*this);
 	}
-	ISWFObject* instantiate();*/
-};
+	ASObject* instantiate();
+};*/
 
-class Package : public ISWFObject
+class Package : public ASObject
 {
 public:
-	Package(){type=T_PACKAGE;}
-	ISWFObject* clone()
+	Package():ASObject("Package",this){type=T_PACKAGE;}
+	ASObject* clone()
 	{
 		abort();
 		return NULL;
@@ -465,40 +473,6 @@ public:
 	DOUBLE():val(0){}
 	DOUBLE(double v):val(v){}
 	operator double(){ return val; }
-};
-
-class Integer : public ISWFObject
-{
-friend class Number;
-friend class ASArray;
-friend class ABCVm;
-friend class ABCContext;
-friend ISWFObject* abstract_i(intptr_t i);
-friend ISWFObject* abstract_i2(intptr_t i);
-private:
-	int val;
-public:
-	Integer(int v):val(v){type=T_INTEGER;}
-	Integer(Manager* m):val(0),ISWFObject(m){type=T_INTEGER;}
-	virtual ~Integer(){}
-	Integer& operator=(int v){val=v; return *this; }
-	tiny_string toString() const;
-	int toInt() const
-	{
-		return val;
-	}
-	double toNumber() const
-	{
-		return val;
-	}
-	operator int() const{return val;} 
-	bool isLess(const ISWFObject* r) const;
-	bool isGreater(const ISWFObject* r) const;
-	bool isEqual(const ISWFObject* o) const;
-	ISWFObject* clone()
-	{
-		return new Integer(*this);
-	}
 };
 
 class SI16
@@ -1055,10 +1029,9 @@ public:
 	std::vector<CLIPACTIONRECORD> ClipActionRecords;
 };
 
-ISWFObject* abstract_i(intptr_t i);
-ISWFObject* abstract_i2(intptr_t i);
-ISWFObject* abstract_b(bool i);
-ISWFObject* abstract_d(number_t i);
+ASObject* abstract_i(intptr_t i);
+ASObject* abstract_b(bool i);
+ASObject* abstract_d(number_t i);
 
 std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);

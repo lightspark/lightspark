@@ -31,49 +31,21 @@ class Event;
 class method_info;
 class call_context;
 
-class ASObject: public ISWFObject
-{
-friend class ABCVm;
-friend class ABCContext;
-public:
-	ASObject* prototype;
-	ASObject* super;
-	//Deprecated default constructor
-	ASObject();
-	//Constructor to set class_name and derivedVariables
-	ASObject(const tiny_string& c, ISWFObject* v);
-	ASObject(Manager* m);
-	virtual ~ASObject();
-	ASFUNCTION(_constructor);
-	ASFUNCTION(_toString);
-	tiny_string toString() const;
-	ISWFObject* clone()
-	{
-		return new ASObject(*this);
-	}
-	ISWFObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner);
-	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
-	void setVariableByMultiname(multiname& name, ISWFObject* o);
-
-	//DEBUG
-	int debug_id;
-};
-
 class IFunction: public ASObject
 {
 public:
-	IFunction():bound(false){type=T_FUNCTION;}
-	typedef ISWFObject* (*as_function)(ISWFObject*, arguments*);
-	virtual ISWFObject* call(ISWFObject* obj, arguments* args)=0;
-	virtual ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args)=0;
-	void bind(ISWFObject* c)
+	IFunction():bound(false),ASObject("IFunction",this){type=T_FUNCTION;}
+	typedef ASObject* (*as_function)(ASObject*, arguments*);
+	virtual ASObject* call(ASObject* obj, arguments* args)=0;
+	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args)=0;
+	void bind(ASObject* c)
 	{
 		bound=true;
 		closure_this=c;
 		std::cout << "Binding " << this << std::endl;
 	}
 protected:
-	ISWFObject* closure_this;
+	ASObject* closure_this;
 	bool bound;
 };
 
@@ -82,10 +54,10 @@ class Function : public IFunction
 public:
 	Function(){}
 	Function(as_function v):val(v){}
-	ISWFObject* call(ISWFObject* obj, arguments* args);
-	ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args);
+	ASObject* call(ASObject* obj, arguments* args);
+	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args);
 	IFunction* toFunction();
-	ISWFObject* clone()
+	ASObject* clone()
 	{
 		return new Function(*this);
 	}
@@ -98,16 +70,16 @@ class SyntheticFunction : public IFunction
 {
 friend class ABCVm;
 public:
-	typedef ISWFObject* (*synt_function)(ISWFObject*, arguments*, call_context* cc);
+	typedef ASObject* (*synt_function)(ASObject*, arguments*, call_context* cc);
 	SyntheticFunction(method_info* m);
-	ISWFObject* call(ISWFObject* obj, arguments* args);
-	ISWFObject* fast_call(ISWFObject* obj, ISWFObject** args,int num_args);
+	ASObject* call(ASObject* obj, arguments* args);
+	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args);
 	IFunction* toFunction();
-	ISWFObject* clone()
+	ASObject* clone()
 	{
 		return new SyntheticFunction(*this);
 	}
-	std::vector<ISWFObject*> func_scope;
+	std::vector<ASObject*> func_scope;
 
 private:
 	method_info* mi;
@@ -116,16 +88,16 @@ private:
 
 class Boolean: public ASObject
 {
-friend bool Boolean_concrete(ISWFObject* obj);
+friend bool Boolean_concrete(ASObject* obj);
 private:
 	bool val;
 public:
-	Boolean(bool v):val(v){type=T_BOOLEAN;}
+	Boolean(bool v):val(v),ASObject("Boolean",this){type=T_BOOLEAN;}
 	int toInt() const
 	{
 		return val;
 	}
-	bool isEqual(const ISWFObject* r) const;
+	bool isEqual(const ASObject* r) const;
 	tiny_string toString() const;
 };
 
@@ -135,8 +107,8 @@ public:
 	ASFUNCTION(call);
 	Undefined();
 	tiny_string toString() const;
-	bool isEqual(const ISWFObject* r) const;
-	ISWFObject* clone()
+	bool isEqual(const ASObject* r) const;
+	ASObject* clone()
 	{
 		return new Undefined;
 	}
@@ -160,8 +132,8 @@ public:
 	ASFUNCTION(charCodeAt);
 	tiny_string toString() const;
 	double toNumber() const;
-	bool isEqual(const ISWFObject* r) const;
-	ISWFObject* clone()
+	bool isEqual(const ASObject* r) const;
+	ASObject* clone()
 	{
 		return new ASString(*this);
 	}
@@ -170,8 +142,8 @@ public:
 class ASStage: public ASObject
 {
 private:
-	Integer width;
-	Integer height;
+	uintptr_t width;
+	uintptr_t height;
 public:
 	ASStage();
 };
@@ -179,13 +151,13 @@ public:
 class Null : public ASObject
 {
 public:
-	Null(){type=T_NULL;}
+	Null():ASObject("Null",this){type=T_NULL;}
 	tiny_string toString() const;
-	ISWFObject* clone()
+	ASObject* clone()
 	{
 		return new Null;
 	}
-	bool isEqual(const ISWFObject* r) const;
+	bool isEqual(const ASObject* r) const;
 };
 
 struct data_slot
@@ -193,10 +165,10 @@ struct data_slot
 	STACK_TYPE type;
 	union
 	{
-		ISWFObject* data;
+		ASObject* data;
 		intptr_t data_i;
 	};
-	data_slot(ISWFObject* o,STACK_TYPE t=STACK_OBJECT):data(o),type(t){}
+	data_slot(ASObject* o,STACK_TYPE t=STACK_OBJECT):data(o),type(t){}
 	data_slot():data(NULL),type(STACK_OBJECT){}
 	data_slot(intptr_t i):type(STACK_INT),data_i(i){}
 };
@@ -217,11 +189,11 @@ public:
 	ASFUNCTION(shift);
 	ASFUNCTION(unshift);
 	ASFUNCTION(_getLength);
-	ISWFObject* clone()
+	ASObject* clone()
 	{
 		return new ASArray(*this);
 	}
-	ISWFObject* at(int index) const
+	ASObject* at(int index) const
 	{
 		if(index<data.size())
 		{
@@ -232,7 +204,7 @@ public:
 		else
 			abort();
 	}
-	void set(int index, ISWFObject* o)
+	void set(int index, ASObject* o)
 	{
 		if(index<data.size())
 		{
@@ -251,7 +223,7 @@ public:
 	{
 		return data.size();
 	}
-	void push(ISWFObject* o)
+	void push(ASObject* o)
 	{
 		data.push_back(data_slot(o,STACK_OBJECT));
 	}
@@ -259,13 +231,13 @@ public:
 	{
 		data.resize(n);
 	}
-	ISWFObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner);
-	ISWFObject* getVariableByMultiname(const multiname& name, ISWFObject*& owner);
-	intptr_t getVariableByMultiname_i(const multiname& name, ISWFObject*& owner);
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o);
-	void setVariableByMultiname(multiname& name, ISWFObject* o);
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
+	ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner);
+	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	void setVariableByMultiname(multiname& name, ASObject* o);
 	void setVariableByMultiname_i(multiname& name, intptr_t value);
-	bool isEqual(const ISWFObject* r) const;
+	bool isEqual(const ASObject* r) const;
 	tiny_string toString() const;
 };
 
@@ -278,7 +250,7 @@ public:
 		if(construct)
 			_constructor(this,NULL);
 	}
-	ISWFObject* clone()
+	ASObject* clone()
 	{
 		return new arguments(*this);
 	}
@@ -296,14 +268,47 @@ public:
 	void prepareNextFP();
 };
 
+class Integer : public ASObject
+{
+friend class Number;
+friend class ASArray;
+friend class ABCVm;
+friend class ABCContext;
+friend ASObject* abstract_i(intptr_t i);
+private:
+	int val;
+public:
+	Integer(int v):ASObject("Integer",this),val(v){type=T_INTEGER;}
+	Integer(Manager* m):ASObject("Integer",this,m),val(0){type=T_INTEGER;}
+	virtual ~Integer(){}
+	Integer& operator=(int v){val=v; return *this; }
+	tiny_string toString() const;
+	int toInt() const
+	{
+		return val;
+	}
+	double toNumber() const
+	{
+		return val;
+	}
+	operator int() const{return val;} 
+	bool isLess(const ASObject* r) const;
+	bool isGreater(const ASObject* r) const;
+	bool isEqual(const ASObject* o) const;
+	ASObject* clone()
+	{
+		return new Integer(*this);
+	}
+};
+
 class Number : public ASObject
 {
-friend ISWFObject* abstract_d(number_t i);
+friend ASObject* abstract_d(number_t i);
 private:
 	double val;
 public:
-	Number(double v):val(v){type=T_NUMBER;}
-	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
+	Number(double v):ASObject("Number",this),val(v){type=T_NUMBER;}
+	Number(Manager* m):ASObject("Number",this,m),val(0){type=T_NUMBER;}
 	tiny_string toString() const;
 	int toInt() const
 	{
@@ -314,14 +319,14 @@ public:
 		return val;
 	}
 	operator double() const {return val;}
-	ISWFObject* clone()
+	ASObject* clone()
 	{
 		return new Number(*this);
 	}
-	void copyFrom(const ISWFObject* o);
-	bool isLess(const ISWFObject* o) const;
-	bool isGreater(const ISWFObject* o) const;
-	bool isEqual(const ISWFObject* o) const;
+	void copyFrom(const ASObject* o);
+	bool isLess(const ASObject* o) const;
+	bool isGreater(const ASObject* o) const;
+	bool isEqual(const ASObject* o) const;
 };
 
 class ASMovieClipLoader: public ASObject
@@ -331,7 +336,7 @@ public:
 	ASFUNCTION(addListener);
 	ASFUNCTION(constructor);
 
-	ISWFObject* clone()
+	ASObject* clone()
 	{
 		return new ASMovieClipLoader(*this);
 	}
@@ -347,7 +352,7 @@ public:
 	ASXML();
 	ASFUNCTION(constructor);
 	ASFUNCTION(load);
-	ISWFObject* clone()
+	ASObject* clone()
 	{
 		return new ASXML(*this);
 	}
@@ -374,18 +379,18 @@ public:
 	ASFUNCTION(valueOf);
 	tiny_string toString() const;
 	int toInt() const; 
-	ISWFObject* clone()
+	ASObject* clone()
 	{
 		return new Date(*this);
 	}
 };
 
 //Internal objects used to store traits declared in scripts and object placed, but not yet valid
-class Definable : public ISWFObject
+class Definable : public ASObject
 {
 public:
-	Definable(){type=T_DEFINABLE;}
-	virtual void define(ISWFObject* g)=0;
+	Definable():ASObject("Definable",this){type=T_DEFINABLE;}
+	virtual void define(ASObject* g)=0;
 };
 
 class ScriptDefinable: public Definable
@@ -395,7 +400,7 @@ private:
 public:
 	ScriptDefinable(IFunction* _f):f(_f){}
 	//The global object will be passed from the calling context
-	void define(ISWFObject* g){ f->call(g,NULL); }
+	void define(ASObject* g){ f->call(g,NULL); }
 };
 
 //Deprecated
@@ -406,7 +411,7 @@ private:
 	std::string name;
 public:
 	MethodDefinable(const std::string& _n,IFunction::as_function _f):name(_n),f(_f){}
-	void define(ISWFObject* g)
+	void define(ASObject* g)
 	{
 		g->setVariableByQName(name,new Function(f));
 	}
@@ -421,7 +426,7 @@ private:
 	PlaceObject2Tag* p;
 public:
 	DictionaryDefinable(int d, PlaceObject2Tag* _p):dict_id(d),p(_p){}
-	void define(ISWFObject* g);
+	void define(ASObject* g);
 };
 
 class Math: public ASObject
@@ -443,7 +448,7 @@ private:
 public:
 	RegExp();
 	ASFUNCTION(_constructor);
-	ISWFObject* clone()
+	RegExp* clone()
 	{
 		return new RegExp(*this);
 	}

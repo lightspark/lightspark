@@ -24,7 +24,7 @@
 #include <string>
 #include <semaphore.h>
 
-class ISWFObject;
+class ASObject;
 class PlaceObject2Tag;
 class ABCContext;
 
@@ -37,7 +37,7 @@ public:
 	ASFUNCTION(_getType);
 	virtual EVENT_TYPE getEventType() {return EVENT;} //DEPRECATED
 	const std::string type;
-	ISWFObject* clone()
+	Event* clone()
 	{
 		return new Event(*this);
 	}

@@ -278,8 +278,8 @@ private:
 	static bool list_orderer(const std::pair<PlaceInfo, IDisplayListElem*> a, int d);
 //	Number _scalex;
 
-//	ISWFObject* wrapped;
-//	ISWFObject* parent;
+//	ASObject* wrapped;
+//	ASObject* parent;
 
 	UB PlaceFlagHasClipAction;
 	UB PlaceFlagHasClipDepth;
@@ -301,7 +301,7 @@ public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
 	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
-/*	void setWrapped(ISWFObject* w)
+/*	void setWrapped(ASObject* w)
 	{
 		wrapped=w;
 	}*/
@@ -370,7 +370,7 @@ public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
 	~DefineBinaryDataTag(){delete[] bytes;}
 	virtual int getId(){return Tag;} 
-	ISWFObject* clone()
+	DefineBinaryDataTag* clone()
 	{
 		return new DefineBinaryDataTag(*this);
 	}
@@ -483,8 +483,8 @@ public:
 		return new DefineSpriteTag(*this);
 	}
 
-	//ISWFObject interface
-	ISWFObject* clone()
+	//ASObject interface
+	DefineSpriteTag* clone()
 	{
 		return new DefineSpriteTag(*this);
 	}

@@ -25,22 +25,22 @@
 #include "swftypes.h"
 #include "asobjects.h"
 
-class Stack
+/*class Stack
 {
 private:
-	std::vector<ISWFObject*> data;
+	std::vector<ASObject*> data;
 public:
-	ISWFObject* operator()(int i){return *(data.rbegin()+i);}
-	void push(ISWFObject* o){ data.push_back(o);}
-	ISWFObject* pop()
+	ASObject* operator()(int i){return *(data.rbegin()+i);}
+	void push(ASObject* o){ data.push_back(o);}
+	ASObject* pop()
 	{
 		if(data.size()==0)
 			LOG(ERROR,"Empty stack");
-		ISWFObject* ret=data.back();
+		ASObject* ret=data.back();
 		data.pop_back(); 
 		return ret;
 	}
-};
+};*/
 
 class VirtualMachine
 {
@@ -48,11 +48,11 @@ private:
 	sem_t mutex;
 	std::vector<STRING> ConstantPool;
 public:
-	Stack stack;
+//	Stack stack;
 	VirtualMachine();
 	void setConstantPool(std::vector<STRING>& p);
 	STRING getConstantByIndex(int index);
-	ASObject Global;
+//	ASObject Global;
 };
 
 #endif

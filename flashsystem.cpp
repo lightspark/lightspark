@@ -19,7 +19,7 @@
 
 #include "flashsystem.h"
 
-Capabilities::Capabilities()
+Capabilities::Capabilities():ASObject("Capabilities",this)
 {
 	setVariableByQName("playerType","",new ASString("AVMPlus"));
 }

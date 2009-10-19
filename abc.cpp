@@ -110,10 +110,8 @@ ASFUNCTIONBODY(ABCVm,print)
 void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
-	Global.setVariableByQName("Object","",new ASObject);
-//	Global.setVariableByName(".int",new ASObject);
-//	Global.setVariableByName(".Boolean",new ASObject);
-	Global.setVariableByQName("Number","",new ASObject);
+	Global.setVariableByQName("Object","",new ASObject("Object"));
+	Global.setVariableByQName("Number","",new Number(0.0));
 	Global.setVariableByQName("String","",new ASString);
 	Global.setVariableByQName("Array","",new ASArray);
 	Global.setVariableByQName("Function","",new Function);
@@ -129,39 +127,39 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("MovieClip","flash.display",new MovieClip);
 	Global.setVariableByQName("DisplayObject","flash.display",new DisplayObject);
 	Global.setVariableByQName("Loader","flash.display",new Loader);
-	Global.setVariableByQName("SimpleButton","flash.display",new ASObject);
-	Global.setVariableByQName("InteractiveObject","flash.display",new ASObject),
+	Global.setVariableByQName("SimpleButton","flash.display",new ASObject("SimpleButton"));
+	Global.setVariableByQName("InteractiveObject","flash.display",new ASObject("InteractiveObject")),
 	Global.setVariableByQName("DisplayObjectContainer","flash.display",new DisplayObjectContainer);
 	Global.setVariableByQName("Sprite","flash.display",new Sprite);
 
-	Global.setVariableByQName("TextField","flash.text",new ASObject);
-	Global.setVariableByQName("TextFormat","flash.text",new ASObject);
-	Global.setVariableByQName("TextFieldType","flash.text",new ASObject);
+	Global.setVariableByQName("TextField","flash.text",new ASObject("TextField"));
+	Global.setVariableByQName("TextFormat","flash.text",new ASObject("TextFormat"));
+	Global.setVariableByQName("TextFieldType","flash.text",new ASObject("TextFieldType"));
 
-	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject);
+	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject("XMLDocument"));
 
-	Global.setVariableByQName("ApplicationDomain","flash.system",new ASObject);
-	Global.setVariableByQName("LoaderContext","flash.system",new ASObject);
+	Global.setVariableByQName("ApplicationDomain","flash.system",new ASObject("ApplicationDomain"));
+	Global.setVariableByQName("LoaderContext","flash.system",new ASObject("LoaderContext"));
 
 	Global.setVariableByQName("ByteArray","flash.utils",new ByteArray);
-	Global.setVariableByQName("Dictionary","flash.utils",new ASObject);
-	Global.setVariableByQName("Proxy","flash.utils",new ASObject);
-	Global.setVariableByQName("Timer","flash.utils",new ASObject);
+	Global.setVariableByQName("Dictionary","flash.utils",new ASObject("Dictionary"));
+	Global.setVariableByQName("Proxy","flash.utils",new ASObject("Proxy"));
+	Global.setVariableByQName("Timer","flash.utils",new ASObject("Timer"));
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
 
-	Global.setVariableByQName("Rectangle","flash.geom",new ASObject);
+	Global.setVariableByQName("Rectangle","flash.geom",new ASObject("Rectangle"));
 
 	Global.setVariableByQName("EventDispatcher","flash.events",new EventDispatcher);
-	Global.setVariableByQName("Event","flash.events",new Event(""));
+	Global.setVariableByQName("Event","flash.events",new Event("Event"));
 	Global.setVariableByQName("MouseEvent","flash.events",new MouseEvent);
 	Global.setVariableByQName("FocusEvent","flash.events",new FocusEvent);
 	Global.setVariableByQName("KeyboardEvent","flash.events",new KeyboardEvent);
-	Global.setVariableByQName("ProgressEvent","flash.events",new ASObject);
+	Global.setVariableByQName("ProgressEvent","flash.events",new Event("ProgressEvent"));
 	Global.setVariableByQName("IOErrorEvent","flash.events",new IOErrorEvent);
 
-	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
+	Global.setVariableByQName("LocalConnection","flash.net",new ASObject("LocalConnection"));
 	Global.setVariableByQName("URLRequest","flash.net",new URLRequest);
-	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
+	Global.setVariableByQName("URLVariables","flash.net",new ASObject("URLVariables"));
 
 	Global.setVariableByQName("Capabilities","flash.system",new Capabilities);
 
@@ -254,7 +252,7 @@ int ABCContext::getMultinameRTData(int mi) const
 	}
 }
 
-multiname* ABCContext::s_getMultiname(call_context* th, ISWFObject* rt1, int n)
+multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 {
 	//We are allowe to access only the ABCContext, as the stack is not synced
 	multiname* ret;
@@ -590,7 +588,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 					ret->ns.push_back(getString(n->name));
 					ret->nskind.push_back(n->kind);
 				}
-				ISWFObject* n=th->runtime_stack_pop();
+				ASObject* n=th->runtime_stack_pop();
 				ret->name_s=n->toString();
 				ret->name_type=multiname::NAME_STRING;
 				n->decRef();
@@ -638,7 +636,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			}
 			case 0x1b:
 			{
-				ISWFObject* n=th->runtime_stack_pop();
+				ASObject* n=th->runtime_stack_pop();
 				ret->name_s=n->toString();
 				ret->name_type=multiname::NAME_STRING;
 				n->decRef();
@@ -731,7 +729,7 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 	}
 }
 
-ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s)
+ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s),Global("Global")
 {
 	sem_init(&event_queue_mutex,0,1);
 	sem_init(&sem_event_count,0,0);
@@ -825,20 +823,20 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 void ABCContext::buildClassAndInjectBase(const string& s, ASObject* base,arguments* args)
 {
 	LOG(CALLS,"Setting class name to " << s);
-	ISWFObject* owner;
-	ISWFObject* r=Global->getVariableByString(s,owner);
+	ASObject* owner;
+	ASObject* derived_class=Global->getVariableByString(s,owner);
 	if(!owner)
 	{
 		LOG(ERROR,"Class " << s << " not found in global");
 		abort();
 	}
-	if(r->getObjectType()==T_DEFINABLE)
+	if(derived_class->getObjectType()==T_DEFINABLE)
 	{
 		LOG(CALLS,"Class " << s << " is not yet valid");
-		Definable* d=dynamic_cast<Definable*>(r);
+		Definable* d=static_cast<Definable*>(derived_class);
 		d->define(Global);
 		LOG(CALLS,"End of deferred init of class " << s);
-		r=Global->getVariableByString(s,owner);
+		derived_class=Global->getVariableByString(s,owner);
 		if(!owner)
 		{
 			LOG(ERROR,"Class " << s << " not found in global");
@@ -847,10 +845,10 @@ void ABCContext::buildClassAndInjectBase(const string& s, ASObject* base,argumen
 	}
 
 	//Walk up the super prototype and clone to inject the base
-	ASObject* cur=static_cast<ASObject*>(r);
+	ASObject* cur=derived_class;
 	while(cur->super->class_name!=base->class_name)
 	{
-		ASObject* new_super=static_cast<ASObject*>(cur->super->clone());
+		ASObject* new_super=cur->super->clone();
 		cur->super=new_super;
 		cur=cur->super;
 		assert(cur);
@@ -861,26 +859,19 @@ void ABCContext::buildClassAndInjectBase(const string& s, ASObject* base,argumen
 	cur->super=base;
 
 	//Now the class is valid, check that it's not a builtin one
-	assert(r->class_index!=-1);
+	assert(derived_class->class_index!=-1);
 
 	//It's now possible to actually build an instance
-	ASObject* obj=new ASObject;
-	//obj->class_name=s;
-	ASObject* ro=dynamic_cast<ASObject*>(r);
-	if(ro==NULL)
-	{
-		LOG(ERROR,"Class is not as ASObject");
-		abort();
-	}
-	obj->prototype=ro;
-	ro->incRef();
+	ASObject* obj=new ASObject(s.c_str());
+	obj->prototype=derived_class;
+	derived_class->incRef();
 	base->incRef();
 
-	if(r->class_index!=-1)
+	if(derived_class->class_index!=-1)
 	{
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<instances[r->class_index].trait_count;i++)
-			buildTrait(obj,&instances[r->class_index].traits[i]);
+		for(int i=0;i<instances[derived_class->class_index].trait_count;i++)
+			buildTrait(obj,&instances[derived_class->class_index].traits[i]);
 
 		LOG(CALLS,"Calling Instance init on " << s);
 		args->incRef();
@@ -902,13 +893,13 @@ inline method_info* ABCContext::get_method(unsigned int m)
 void ABCVm::asTypelate(call_context* th)
 {
 	LOG(NOT_IMPLEMENTED,"asTypelate");
-	ISWFObject* c=th->runtime_stack_pop();
+	ASObject* c=th->runtime_stack_pop();
 	c->decRef();
-//	ISWFObject* v=th->runtime_stack_pop();
+//	ASObject* v=th->runtime_stack_pop();
 //	th->runtime_stack_push(v);
 }
 
-ISWFObject* ABCVm::nextValue(ISWFObject* index, ISWFObject* obj)
+ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 {
 	LOG(NOT_IMPLEMENTED,"nextValue");
 	abort();
@@ -919,12 +910,12 @@ void ABCVm::swap(call_context* th)
 	LOG(CALLS,"swap");
 }
 
-ISWFObject* ABCVm::newActivation(call_context* th,method_info* info)
+ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 {
 	LOG(CALLS,"newActivation");
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
-	ASObject* act=new ASObject;
+	ASObject* act=new ASObject("ActivationContext");
 	for(int i=0;i<info->body->trait_count;i++)
 		th->context->buildTrait(act,&info->body->traits[i]);
 
@@ -939,7 +930,7 @@ void ABCVm::popScope(call_context* th)
 }
 
 //We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
-bool Boolean_concrete(ISWFObject* obj)
+bool Boolean_concrete(ASObject* obj)
 {
 	if(obj->getObjectType()==T_STRING)
 	{
@@ -970,7 +961,7 @@ bool Boolean_concrete(ISWFObject* obj)
 		return false;
 }
 
-bool ABCVm::ifEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
+bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2, int offset)
 {
 	LOG(CALLS,"ifEq " << offset);
 
@@ -981,7 +972,7 @@ bool ABCVm::ifEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
 	return ret;
 }
 
-bool ABCVm::ifNLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
+bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1, int offset)
 {
 	LOG(CALLS,"ifNLT " << offset);
 
@@ -993,7 +984,7 @@ bool ABCVm::ifNLT(ISWFObject* obj2, ISWFObject* obj1, int offset)
 	return ret;
 }
 
-ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
+ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 {
 	LOG(CALLS,"lessThan");
 
@@ -1004,7 +995,7 @@ ISWFObject* ABCVm::lessThan(ISWFObject* obj1, ISWFObject* obj2)
 	return new Boolean(ret);
 }
 
-bool ABCVm::ifStrictEq(ISWFObject* obj1, ISWFObject* obj2, int offset)
+bool ABCVm::ifStrictEq(ASObject* obj1, ASObject* obj2, int offset)
 {
 	LOG(CALLS,"ifStrictEq " << offset);
 	abort();
@@ -1030,7 +1021,7 @@ void ABCVm::call(call_context* th, int m)
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
 
-	ISWFObject* obj=th->runtime_stack_pop();
+	ASObject* obj=th->runtime_stack_pop();
 	IFunction* f=th->runtime_stack_pop()->toFunction();
 
 	if(f==NULL)
@@ -1039,7 +1030,7 @@ void ABCVm::call(call_context* th, int m)
 		abort();
 	}
 
-	ISWFObject* ret=f->call(obj,&args);
+	ASObject* ret=f->call(obj,&args);
 	th->runtime_stack_push(ret);
 	obj->decRef();
 	f->decRef();
@@ -1051,13 +1042,13 @@ void ABCVm::coerce(call_context* th, int n)
 	LOG(NOT_IMPLEMENTED,"coerce " << *name);
 }
 
-ISWFObject* ABCVm::newCatch(call_context* th, int n)
+ASObject* ABCVm::newCatch(call_context* th, int n)
 {
 	LOG(NOT_IMPLEMENTED,"newCatch " << n);
 	return new Undefined;
 }
 
-ISWFObject* ABCVm::newFunction(call_context* th, int n)
+ASObject* ABCVm::newFunction(call_context* th, int n)
 {
 	LOG(CALLS,"newFunction " << n);
 
@@ -1073,19 +1064,19 @@ void ABCVm::not_impl(int n)
 	abort();
 }
 
-ISWFObject* ABCVm::strictEquals(ISWFObject* obj1, ISWFObject* obj2)
+ASObject* ABCVm::strictEquals(ASObject* obj1, ASObject* obj2)
 {
 	LOG(NOT_IMPLEMENTED, "strictEquals" );
 	abort();
 }
 
-ISWFObject* ABCVm::pushUndefined(call_context* th)
+ASObject* ABCVm::pushUndefined(call_context* th)
 {
 	LOG(CALLS, "pushUndefined" );
 	return new Undefined;
 }
 
-ISWFObject* ABCVm::pushNull(call_context* th)
+ASObject* ABCVm::pushNull(call_context* th)
 {
 	LOG(CALLS, "pushNull" );
 	return new Null;
@@ -1093,19 +1084,19 @@ ISWFObject* ABCVm::pushNull(call_context* th)
 
 void ABCVm::pushWith(call_context* th)
 {
-	ISWFObject* t=th->runtime_stack_pop();
+	ASObject* t=th->runtime_stack_pop();
 	LOG(CALLS, "pushWith " << t );
 	th->scope_stack.push_back(t);
 }
 
 void ABCVm::pushScope(call_context* th)
 {
-	ISWFObject* t=th->runtime_stack_pop();
+	ASObject* t=th->runtime_stack_pop();
 	LOG(CALLS, "pushScope " << t );
 	th->scope_stack.push_back(t);
 }
 
-ISWFObject* ABCVm::pushDouble(call_context* th, int n)
+ASObject* ABCVm::pushDouble(call_context* th, int n)
 {
 	d64 d=th->context->constant_pool.doubles[n];
 	LOG(CALLS, "pushDouble [" << dec << n << "] " << d);
@@ -1117,8 +1108,8 @@ void ABCVm::findProperty(call_context* th, int n)
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(CALLS, "findProperty " << *name );
 
-	vector<ISWFObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	ISWFObject* owner;
+	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	ASObject* owner;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
 		(*it)->getVariableByMultiname(*name,owner);
@@ -1150,61 +1141,38 @@ void ABCVm::newArray(call_context* th, int n)
 	th->runtime_stack_push(ret);
 }
 
-void ABCVm::newClass(call_context* th, int n)
+ASObject* ABCVm::getScopeObject(call_context* th, int n)
 {
-	LOG(CALLS, "newClass " << n );
-	ASObject* ret=new ASObject;
-	ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
-
-	method_info* m=&th->context->methods[th->context->classes[n].cinit];
-	IFunction* cinit=new SyntheticFunction(m);
-	LOG(CALLS,"Building class traits");
-	for(int i=0;i<th->context->classes[n].trait_count;i++)
-		th->context->buildTrait(ret,&th->context->classes[n].traits[i]);
-
-	//add Constructor the the class methods
-	method_info* constructor=&th->context->methods[th->context->instances[n].init];
-	ret->constructor=new SyntheticFunction(constructor);
-	ret->class_index=n;
-
-	LOG(CALLS,"Calling Class init " << ret);
-	cinit->call(ret,NULL);
-	LOG(CALLS,"End of Class init " << ret);
-	th->runtime_stack_push(ret);
-}
-
-ISWFObject* ABCVm::getScopeObject(call_context* th, int n)
-{
-	ISWFObject* ret=th->scope_stack[n];
+	ASObject* ret=th->scope_stack[n];
 	ret->incRef();
 	LOG(CALLS, "getScopeObject: " << ret );
 	return ret;
 }
 
-ISWFObject* ABCVm::pushString(call_context* th, int n)
+ASObject* ABCVm::pushString(call_context* th, int n)
 {
 	tiny_string s=th->context->getString(n); 
 	LOG(CALLS, "pushString " << s );
 	return new ASString(s);
 }
 
-void call_context::runtime_stack_push(ISWFObject* s)
+void call_context::runtime_stack_push(ASObject* s)
 {
 	stack[stack_index++]=s;
 }
 
-ISWFObject* call_context::runtime_stack_pop()
+ASObject* call_context::runtime_stack_pop()
 {
 	if(stack_index==0)
 	{
 		LOG(ERROR,"Empty stack");
 		abort();
 	}
-	ISWFObject* ret=stack[--stack_index];
+	ASObject* ret=stack[--stack_index];
 	return ret;
 }
 
-ISWFObject* call_context::runtime_stack_peek()
+ASObject* call_context::runtime_stack_peek()
 {
 	if(stack_index==0)
 	{
@@ -1214,15 +1182,15 @@ ISWFObject* call_context::runtime_stack_peek()
 	return stack[stack_index-1];
 }
 
-call_context::call_context(method_info* th, ISWFObject** args, int num_args)
+call_context::call_context(method_info* th, ASObject** args, int num_args)
 {
-	locals=new ISWFObject*[th->body->local_count+1];
+	locals=new ASObject*[th->body->local_count+1];
 	locals_size=th->body->local_count;
-	memset(locals,0,sizeof(ISWFObject*)*locals_size);
+	memset(locals,0,sizeof(ASObject*)*locals_size);
 	if(args)
-		memcpy(locals+1,args,num_args*sizeof(ISWFObject*));
+		memcpy(locals+1,args,num_args*sizeof(ASObject*));
 	//TODO: We add a 3x safety margin because not implemented instruction do not clean the stack as they should
-	stack=new ISWFObject*[th->body->max_stack*3];
+	stack=new ASObject*[th->body->max_stack*3];
 	stack_index=0;
 	context=th->context;
 }
@@ -1325,7 +1293,7 @@ tiny_string ABCContext::getString(unsigned int s) const
 		return "";
 }
 
-void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* deferred_initialization)
+void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization)
 {
 	const multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
@@ -1340,7 +1308,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 	{
 		case traits_info::Class:
 		{
-			ISWFObject* ret;
+			ASObject* ret;
 			if(deferred_initialization)
 			{
 				ret=new ScriptDefinable(deferred_initialization);
@@ -1350,25 +1318,6 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 			{
 				ret=new Undefined;
 				obj->setVariableByMultiname(*mname, ret);
-				/*ret=new ASObject;
-				//Should chek super
-				//ret->super=dynamic_cast<ASObject*>(th->runtime_stack_pop());
-
-				method_info* m=&methods[classes[t->classi].cinit];
-				IFunction* cinit=new SyntheticFunction(m);
-				LOG(CALLS,"Building class traits");
-				for(int i=0;i<classes[t->classi].trait_count;i++)
-					buildTrait(ret,&classes[t->classi].traits[i]);
-
-				//add Constructor the the class methods
-				method_info* constructor=&methods[instances[t->classi].init];
-				ret->constructor=new SyntheticFunction(constructor);
-				ret->class_index=t->classi;
-
-				LOG(CALLS,"Calling Class init");
-				cinit->call(ret,NULL);
-				delete cinit;
-				ret=obj->setVariableByName(name, ret);*/
 			}
 			
 			LOG(CALLS,"Slot "<< t->slot_id << " type Class name " << name << " id " << t->classi);
@@ -1461,7 +1410,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 				{
 					case 0x01: //String
 					{
-						ISWFObject* ret=new ASString(constant_pool.strings[t->vindex]);
+						ASObject* ret=new ASString(constant_pool.strings[t->vindex]);
 						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name, ns);
@@ -1469,7 +1418,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 					}
 					case 0x03: //Int
 					{
-						ISWFObject* ret=new Integer(constant_pool.integer[t->vindex]);
+						ASObject* ret=new Integer(constant_pool.integer[t->vindex]);
 						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name, ns);
@@ -1477,7 +1426,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 					}
 					case 0x06: //Double
 					{
-						ISWFObject* ret=new Number(constant_pool.doubles[t->vindex]);
+						ASObject* ret=new Number(constant_pool.doubles[t->vindex]);
 						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name, ns);
@@ -1485,7 +1434,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 					}
 					case 0x0a: //False
 					{
-						ISWFObject* ret=new Boolean(false);
+						ASObject* ret=new Boolean(false);
 						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name, ns);
@@ -1493,7 +1442,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 					}
 					case 0x0b: //True
 					{
-						ISWFObject* ret=new Boolean(true);
+						ASObject* ret=new Boolean(true);
 						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name, ns);
@@ -1501,7 +1450,7 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 					}
 					case 0x0c: //Null
 					{
-						ISWFObject* ret=new Null;
+						ASObject* ret=new Null;
 						obj->setVariableByQName(name, ns, ret);
 						if(t->slot_id)
 							obj->initSlot(t->slot_id, ret, name, ns);
@@ -1525,8 +1474,8 @@ void ABCContext::buildTrait(ISWFObject* obj, const traits_info* t, IFunction* de
 				//else fallthrough
 				multiname* type=getMultiname(t->type_name,NULL);
 				LOG(CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
-				ISWFObject* owner;
-				ISWFObject* ret=obj->getVariableByQName(name,ns,owner);
+				ASObject* owner;
+				ASObject* ret=obj->getVariableByQName(name,ns,owner);
 				if(!owner)
 				{
 					if(deferred_initialization)
@@ -1941,19 +1890,19 @@ istream& operator>>(istream& in, cpool_info& v)
 	return in;
 }
 
-ISWFObject* parseInt(ISWFObject* obj,arguments* args)
+ASObject* parseInt(ASObject* obj,arguments* args)
 {
 	return new Integer(0);
 }
 
-intptr_t ABCVm::s_toInt(ISWFObject* o)
+intptr_t ABCVm::s_toInt(ASObject* o)
 {
 	if(o->getObjectType()!=T_INTEGER)
 		abort();
 	return o->toInt();
 }
 
-ISWFObject* isNaN(ISWFObject* obj,arguments* args)
+ASObject* isNaN(ASObject* obj,arguments* args)
 {
 	if(args->at(0)->getObjectType()==T_UNDEFINED)
 		return abstract_b(true);

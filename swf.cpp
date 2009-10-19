@@ -50,7 +50,6 @@ extern __thread ParseThread* pt;
 
 SWF_HEADER::SWF_HEADER(istream& in)
 {
-	//Valid only on little endian platforms
 	in >> Signature[0] >> Signature[1] >> Signature[2];
 
 	in >> Version >> FileLength;
@@ -63,6 +62,11 @@ SWF_HEADER::SWF_HEADER(istream& in)
 		LOG(NO_INFO, "Compressed SWF file: Version " << (int)Version << " Length " << FileLength);
 		swf_stream* ss=dynamic_cast<swf_stream*>(in.rdbuf());
 		ss->setCompressed();
+	}
+	else
+	{
+		LOG(NO_INFO,"No SWF file sigature found");
+		abort();
 	}
 	pt->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
@@ -149,10 +153,10 @@ void* ParseThread::worker(ParseThread* th)
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:
-					th->root->addToDictionary(dynamic_cast<DictionaryTag*>(tag));
+					th->root->addToDictionary(static_cast<DictionaryTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
-					th->root->addToFrame(dynamic_cast<DisplayListTag*>(tag));
+					th->root->addToFrame(static_cast<DisplayListTag*>(tag));
 					break;
 				case SHOW_TAG:
 				{
@@ -160,7 +164,7 @@ void* ParseThread::worker(ParseThread* th)
 					break;
 				}
 				case CONTROL_TAG:
-					dynamic_cast<ControlTag*>(tag)->execute();
+					static_cast<ControlTag*>(tag)->execute();
 					break;
 			}
 			if(sys->shutdown)
@@ -1096,41 +1100,43 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	return *it;
 }
 
-ISWFObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
+ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 {
 	sem_wait(&mutex);
-	ISWFObject* ret=ASObject::getVariableByQName(name, ns, owner);
+	ASObject* ret=ASObject::getVariableByQName(name, ns, owner);
 	sem_post(&mutex);
 	return ret;
 }
 
-void RootMovieClip::setVariableByMultiname(multiname& name, ISWFObject* o)
+void RootMovieClip::setVariableByMultiname(multiname& name, ASObject* o)
 {
 	sem_wait(&mutex);
-	ISWFObject::setVariableByMultiname(name,o);
+	ASObject::setVariableByMultiname(name,o);
 	sem_post(&mutex);
 }
 
-void RootMovieClip::setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o)
+void RootMovieClip::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	sem_wait(&mutex);
-	ISWFObject::setVariableByQName(name,ns,o);
+	ASObject::setVariableByQName(name,ns,o);
 	sem_post(&mutex);
 }
 
-void RootMovieClip::setVariableByString(const string& s, ISWFObject* o)
+void RootMovieClip::setVariableByString(const string& s, ASObject* o)
 {
-	string sub;
+	abort();
+	//TODO: ActionScript2 support
+/*	string sub;
 	int f=0;
 	int l=0;
-	ISWFObject* target=this;
+	ASObject* target=this;
 	for(l;l<s.size();l++)
 	{
 		if(s[l]=='.')
 		{
 			sub=s.substr(f,l-f);
-			ISWFObject* next_target;
-			ISWFObject* owner;
+			ASObject* next_target;
+			ASObject* owner;
 			if(f==0 && sub=="__Packages")
 			{
 				next_target=&sys->cur_render_thread->vm.Global;
@@ -1149,7 +1155,7 @@ void RootMovieClip::setVariableByString(const string& s, ISWFObject* o)
 		}
 	}
 	sub=s.substr(f,l-f);
-	target->setVariableByQName(sub.c_str(),"",o);
+	target->setVariableByQName(sub.c_str(),"",o);*/
 }
 
 long timeDiff(timespec& s, timespec& d)

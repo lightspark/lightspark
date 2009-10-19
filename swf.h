@@ -101,10 +101,10 @@ public:
 	void addToFrame(DisplayListTag* t);
 	void commitFrame();
 	void Render();
-	ISWFObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner);
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o);
-	void setVariableByMultiname(multiname& name, ISWFObject* o);
-	void setVariableByString(const std::string& s, ISWFObject* o);
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	void setVariableByMultiname(multiname& name, ASObject* o);
+	void setVariableByString(const std::string& s, ASObject* o);
 };
 
 class SystemState:public RootMovieClip
@@ -151,7 +151,7 @@ public:
 
 	//Used only in ParseThread context
 	std::list < std::pair<PlaceInfo, IDisplayListElem*> >* parsingDisplayList;
-	ISWFObject* parsingTarget;
+	ASObject* parsingTarget;
 };
 
 enum ENGINE { SDL=0, NPAPI, GLX};

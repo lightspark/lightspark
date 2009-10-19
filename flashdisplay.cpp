@@ -39,10 +39,10 @@ extern __thread ParseThread* pt;
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	EventDispatcher::_constructor(obj,args);
-	ISWFObject* ret=new EventDispatcher;
+	ASObject* ret=new EventDispatcher;
 	obj->setVariableByQName("sharedEvents","",ret); //TODO: Read only
 	ret->constructor->call(ret,NULL);
-	ASObject* params=new ASObject;
+	ASObject* params=new ASObject("Object");
 	obj->setVariableByQName("parameters","",params);
 	params->setVariableByQName("connect","",new ASString("true"));
 //	{"chat_bosh_port":"80","chat_username":encodeURIComponent(active_user.chatUsername()),"channel_id":encodeURIComponent(channel_id),"permission_slk":"false","chat_password":encodeURIComponent(active_user.chatPassword()),"enable_bosh":encodeURIComponent(active_user.boshEnabled()),"user_vars":encodeURIComponent(active_user.userVars()),"chat_ip":"216.246.59.237","permission_mtx_api":"false","enable_compression":encodeURIComponent(active_user.compressionEnabled()),"chat_host":"of1.kongregate.com","api_host":"http%3A%2F%2Fapi.kongregate.com","permission_chat_api":"false","game_permalink":"cube-colossus","game_title":"Cube%20Colossus","chat_port":"5222","game_auth_token":encodeURIComponent(active_user.gameAuthToken()),"permission_sc_api":"true","user_vars_sig":encodeURIComponent(active_user.userVarsSig()),"javascript_listener":"konduitToHolodeck","chat_bosh_host":"of1.kongregate.com","connect":"true","game_id":"53988","game_url":"http%3A%2F%2Fwww.kongregate.com%2Fgames%2Flucidrine%2Fcube-colossus","debug_level":encodeURIComponent(active_user.debugLevel())},{"allowscriptaccess":"always","allownetworking":"all"},{});
@@ -83,7 +83,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	if(th->loading)
 		return NULL;
 	//Find the actual ByteArray object
-	ASObject* cur=dynamic_cast<ASObject*>(args->at(0));
+	ASObject* cur=args->at(0);
 	assert(cur);
 	cur=cur->prototype;
 	while(cur->class_name!="ByteArray")
@@ -245,7 +245,7 @@ void MovieClip::addToFrame(DisplayListTag* t)
 	displayListLimit=displayList.size();
 
 	t->root=root;
-	ASObject* o=dynamic_cast<ASObject*>(t);
+	ASObject* o=static_cast<ASObject*>(t);
 	if(o)
 		o->setVariableByName("root",this,true);*/
 
@@ -263,7 +263,7 @@ ASFUNCTIONBODY(MovieClip,addChild)
 		abort();
 	}
 
-	ASObject* cur=dynamic_cast<ASObject*>(args->at(0));
+	ASObject* cur=args->at(0);
 	if(cur->getObjectType()==T_DEFINABLE)
 		abort();
 	IDisplayListElem* e=NULL;
@@ -315,7 +315,7 @@ ASFUNCTIONBODY(MovieClip,createEmptyMovieClip)
 {
 	LOG(NOT_IMPLEMENTED,"createEmptyMovieClip");
 	return new Undefined;
-/*	MovieClip* th=dynamic_cast<MovieClip*>(obj);
+/*	MovieClip* th=static_cast<MovieClip*>(obj);
 	if(th==NULL)
 		LOG(ERROR,"Not a valid MovieClip");
 

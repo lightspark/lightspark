@@ -27,7 +27,7 @@ using namespace std;
 
 extern __thread SystemState* sys;
 
-Event::Event(const string& t):type(t)
+Event::Event(const string& t):type(t),ASObject("Event",this)
 {
 	setVariableByQName("ENTER_FRAME","",new ASString("enterFrame"));
 	setVariableByQName("ADDED_TO_STAGE","",new ASString("addedToStage"));
@@ -67,7 +67,7 @@ IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
 	setVariableByQName("IO_ERROR","",new ASString("ioError"));
 }
 
-EventDispatcher::EventDispatcher():id(0)
+EventDispatcher::EventDispatcher():ASObject("EventDispatcher",this),id(0)
 {
 	if(constructor)
 		constructor->decRef();
@@ -89,12 +89,12 @@ ASFUNCTIONBODY(Event,_getType)
 
 ASFUNCTIONBODY(EventDispatcher,addEventListener)
 {
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
 	if(args->at(0)->getObjectType()!=T_STRING || args->at(1)->getObjectType()!=T_FUNCTION)
 	{
 		LOG(ERROR,"Type mismatch");
 		abort();
 	}
-	EventDispatcher* th=dynamic_cast<EventDispatcher*>(obj);
 	if(th==NULL)
 		return NULL;
 	sys->cur_input_thread->addListener(string(args->at(0)->toString()),th);
@@ -105,7 +105,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
-	EventDispatcher* th=dynamic_cast<EventDispatcher*>(obj);
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
 	Event* e=dynamic_cast<Event*>(args->at(0));
 	if(e==NULL || th==NULL)
 		return new Boolean(false);

@@ -153,9 +153,6 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, IDisplay
 	{
 		if(it->second->Depth==Depth)
 		{
-			/*SWFObject* t=dynamic_cast<SWFObject*>(*it);
-			if(t!=NULL)
-				LOG(NO_INFO,"Removing " << t->getName());*/
 			ls.erase(it);
 			break;
 		}
@@ -167,7 +164,7 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 	in >> BackgroundColor;
 }
 
-DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in),ASObject("DefineEditTextTag",this)
 {
 	//setVariableByName("text",SWFObject(new Integer(0)));
 	in >> CharacterID >> Bounds;
@@ -217,7 +214,7 @@ void DefineEditTextTag::Render()
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
-	ISWFObject* target_bak=pt->parsingTarget;
+	ASObject* target_bak=pt->parsingTarget;
 	pt->parsingTarget=this;
 
 	list < pair<PlaceInfo, IDisplayListElem*> >* bak=pt->parsingDisplayList;
@@ -238,7 +235,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				LOG(ERROR,"Dictionary tag inside a sprite. Should not happen.");
 				break;
 			case DISPLAY_LIST_TAG:
-				addToFrame(dynamic_cast<DisplayListTag*>(tag));
+				addToFrame(static_cast<DisplayListTag*>(tag));
 				break;
 			case SHOW_TAG:
 			{
@@ -390,7 +387,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):Dictio
 	ignore(in,dest-in.tellg());
 }
 
-DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
+DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in),ASObject("DefineBitsLossless2Tag",this)
 {
 	int dest=in.tellg();
 	dest+=getSize();
@@ -1465,6 +1462,7 @@ void DefineButton2Tag::handleEvent(Event* e)
 
 void DefineButton2Tag::Render()
 {
+	abort();
 /*	for(unsigned int i=0;i<Characters.size();i++)
 	{
 		if(Characters[i].ButtonStateUp && state==BUTTON_UP)

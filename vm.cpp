@@ -29,7 +29,7 @@ extern __thread SystemState* sys;
 VirtualMachine::VirtualMachine()
 {
 	sem_init(&mutex,0,1);
-	Global.setVariableByQName("MovieClip","",new MovieClip);
+	//Global.setVariableByQName("MovieClip","",new MovieClip);
 }
 
 void VirtualMachine::setConstantPool(vector<STRING>& p)

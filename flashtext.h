@@ -24,6 +24,8 @@
 
 class ASFont: public ASObject
 {
+public:
+	ASFont():ASObject("Font",this){}
 };
 
 #endif

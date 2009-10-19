@@ -35,13 +35,13 @@ using namespace std;
 
 extern __thread SystemState* sys;
 
-ASStage::ASStage():width(640),height(480)
+ASStage::ASStage():width(640),height(480),ASObject("Stage",this)
 {
-	setVariableByQName("width","",&width);
-	setVariableByQName("height","",&height);
+//	setVariableByQName("width","",&width);
+//	setVariableByQName("height","",&height);
 }
 
-ASArray::ASArray()
+ASArray::ASArray():ASObject("Array",this)
 {
 	type=T_ARRAY;
 	constructor=new Function(_constructor);
@@ -51,7 +51,7 @@ ASArray::ASArray()
 
 ASFUNCTIONBODY(ASArray,Array)
 {
-	ISWFObject* ret=new ASArray();
+	ASObject* ret=new ASArray();
 	ret->constructor->call(ret,args);
 	return ret;
 }
@@ -93,7 +93,7 @@ ASFUNCTIONBODY(ASArray,shift)
 	ASArray* th=static_cast<ASArray*>(obj);
 	if(th->data.empty())
 		return new Undefined;
-	ISWFObject* ret;
+	ASObject* ret;
 	if(th->data[0].type==STACK_OBJECT)
 		ret=th->data[0].data;
 	else
@@ -105,7 +105,7 @@ ASFUNCTIONBODY(ASArray,shift)
 ASFUNCTIONBODY(ASArray,join)
 {
 		ASArray* th=static_cast<ASArray*>(obj);
-		ISWFObject* del=args->at(0);
+		ASObject* del=args->at(0);
 		string ret;
 		for(int i=0;i<th->size();i++)
 		{
@@ -119,7 +119,7 @@ ASFUNCTIONBODY(ASArray,join)
 ASFUNCTIONBODY(ASArray,_pop)
 {
 	ASArray* th=static_cast<ASArray*>(obj);
-	ISWFObject* ret;
+	ASObject* ret;
 	if(th->data.back().type==STACK_OBJECT)
 		ret=th->data.back().data;
 	else
@@ -154,7 +154,7 @@ ASFUNCTIONBODY(ASArray,_push)
 	return new Integer(th->size());
 }
 
-ASMovieClipLoader::ASMovieClipLoader()
+ASMovieClipLoader::ASMovieClipLoader():ASObject("MovieClipLoader",this)
 {
 }
 
@@ -170,7 +170,7 @@ ASFUNCTIONBODY(ASMovieClipLoader,addListener)
 	return NULL;
 }
 
-ASXML::ASXML()
+ASXML::ASXML():ASObject("XML",this)
 {
 	xml_buf=new char[1024*20];
 	xml_index=0;
@@ -193,7 +193,7 @@ size_t ASXML::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 
 ASFUNCTIONBODY(ASXML,load)
 {
-	ASXML* th=dynamic_cast<ASXML*>(obj);
+	ASXML* th=static_cast<ASXML*>(obj);
 	LOG(NOT_IMPLEMENTED,"Called ASXML::load " << args->at(0)->toString());
 /*	CURL *curl;
 	CURLcode res;
@@ -218,7 +218,7 @@ ASFUNCTIONBODY(ASXML,load)
 	return new Integer(1);
 }
 
-bool ASArray::isEqual(const ISWFObject* r) const
+bool ASArray::isEqual(const ASObject* r) const
 {
 	if(r->getObjectType()!=T_ARRAY)
 		return false;
@@ -240,7 +240,7 @@ bool ASArray::isEqual(const ISWFObject* r) const
 	}
 }
 
-intptr_t ASArray::getVariableByMultiname_i(const multiname& name, ISWFObject*& owner)
+intptr_t ASArray::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 {
 	intptr_t ret;
 	owner=NULL;
@@ -288,9 +288,9 @@ intptr_t ASArray::getVariableByMultiname_i(const multiname& name, ISWFObject*& o
 	return ret;
 }
 
-ISWFObject* ASArray::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
+ASObject* ASArray::getVariableByMultiname(const multiname& name, ASObject*& owner)
 {
-	ISWFObject* ret;
+	ASObject* ret;
 	owner=NULL;
 	int index=0;
 
@@ -387,7 +387,7 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 	}
 }
 
-void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
+void ASArray::setVariableByMultiname(multiname& name, ASObject* o)
 {
 	int index=0;
 	if(name.name_type==multiname::NAME_STRING)
@@ -438,7 +438,7 @@ void ASArray::setVariableByMultiname(multiname& name, ISWFObject* o)
 		ASObject::setVariableByMultiname(name,o);
 }
 
-void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o)
+void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	int index=0;
 	for(int i=0;i<name.len();i++)
@@ -484,10 +484,10 @@ void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns,
 		ASObject::setVariableByQName(name,ns,o);
 }
 
-ISWFObject* ASArray::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
+ASObject* ASArray::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 {
 	abort();
-/*	ISWFObject* ret;
+/*	ASObject* ret;
 	bool number=true;
 	owner=NULL;
 	for(int i=0;i<name.name.size();i++)
@@ -517,126 +517,7 @@ ISWFObject* ASArray::getVariableByQName(const tiny_string& name, const tiny_stri
 	return ret;*/
 }
 
-ISWFObject* ASObject::getVariableByMultiname(const multiname& name, ISWFObject*& owner)
-{
-	ISWFObject* ret=ISWFObject::getVariableByMultiname(name,owner);
-
-	if(!owner)
-	{
-		//Check if we should do lazy definition
-		if(name.name_s=="toString")
-		{
-			ret=new Function(ASObject::_toString);
-			setVariableByQName("toString","",ret);
-			owner=this;
-		}
-	}
-
-	if(!owner && super)
-		ret=super->getVariableByMultiname(name,owner);
-
-	if(!owner && prototype)
-		ret=prototype->getVariableByMultiname(name,owner);
-
-	return ret;
-}
-
-void ASObject::setVariableByMultiname(multiname& name, ISWFObject* o)
-{
-	ISWFObject* owner=NULL;
-
-	obj_var* obj;
-	ASObject* cur=this;
-	do
-	{
-		obj=cur->Variables.findObjVar(name,false);
-		if(obj)
-			owner=cur;
-		cur=cur->super;
-	}
-	while(cur && owner==NULL);
-
-	if(owner) //Variable already defined change it
-	{
-		if(obj->setter)
-		{
-			//Call the setter
-			LOG(CALLS,"Calling the setter");
-			arguments args(1);
-			args.set(0,o);
-			//TODO: check
-			o->incRef();
-			//
-
-			obj->setter->call(owner,&args);
-			LOG(CALLS,"End of setter");
-		}
-		else
-		{
-			if(obj->var)
-				obj->var->decRef();
-			obj->var=o;
-		}
-	}
-	else //Insert it
-	{
-		obj=Variables.findObjVar(name,true);
-		obj->var=o;
-	}
-}
-
-ISWFObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
-{
-	ISWFObject* ret=ISWFObject::getVariableByQName(name,ns,owner);
-	if(!owner && super)
-		ret=super->getVariableByQName(name,ns,owner);
-
-	if(!owner && prototype)
-		ret=prototype->getVariableByQName(name,ns,owner);
-
-	return ret;
-}
-
-ASObject::ASObject(Manager* m):
-	debug_id(0),prototype(NULL),super(NULL),ISWFObject(m)
-{
-	type=T_OBJECT;
-	class_name="Object";
-}
-
-ASObject::ASObject():
-	debug_id(0),prototype(NULL),super(NULL)
-{
-	type=T_OBJECT;
-	class_name="Object";
-}
-
-ASObject::ASObject(const tiny_string& c, ISWFObject* v):
-	debug_id(0),prototype(NULL),super(NULL)
-{
-	type=T_OBJECT;
-	class_name=c;
-	mostDerived=v;
-}
-
-ASObject::~ASObject()
-{
-	if(super)
-		super->decRef();
-	if(prototype)
-		prototype->decRef();
-}
-
-ASFUNCTIONBODY(ASObject,_toString)
-{
-	return new ASString(obj->toString());
-}
-
-ASFUNCTIONBODY(ASObject,_constructor)
-{
-}
-
-ASString::ASString()
+ASString::ASString():ASObject("String",this)
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -648,7 +529,7 @@ ASString::ASString()
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const string& s):data(s)
+ASString::ASString(const string& s):ASObject("String",this),data(s)
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -660,7 +541,7 @@ ASString::ASString(const string& s):data(s)
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const tiny_string& s):data((const char*)s)
+ASString::ASString(const tiny_string& s):ASObject("String",this),data((const char*)s)
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -672,7 +553,7 @@ ASString::ASString(const tiny_string& s):data((const char*)s)
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const char* s):data(s)
+ASString::ASString(const char* s):ASObject("String",this),data(s)
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -702,7 +583,7 @@ ASFUNCTIONBODY(ASString,split)
 	cout << th->data << endl;
 	ASArray* ret=new ASArray();
 	ret->_constructor(ret,NULL);
-	ISWFObject* delimiter=args->at(0);
+	ASObject* delimiter=args->at(0);
 	if(delimiter->getObjectType()==T_STRING)
 	{
 		ASString* del=static_cast<ASString*>(delimiter);
@@ -773,12 +654,6 @@ tiny_string ASArray::toString() const
 	return ret.c_str();
 }
 
-tiny_string ASObject::toString() const
-{
-	cerr << getObjectType() << endl;
-	return "Object";
-}
-
 tiny_string Boolean::toString() const
 {
 	return (val)?"true":"false";
@@ -805,11 +680,11 @@ tiny_string Undefined::toString() const
 	return "null";
 }
 
-bool ASString::isEqual(const ISWFObject* r) const
+bool ASString::isEqual(const ASObject* r) const
 {
 	if(r->getObjectType()==T_STRING)
 	{
-		const ASString* s=dynamic_cast<const ASString*>(r);
+		const ASString* s=static_cast<const ASString*>(r);
 		if(s->data==data)
 			return true;
 		else
@@ -819,7 +694,7 @@ bool ASString::isEqual(const ISWFObject* r) const
 		return false;
 }
 
-bool Boolean::isEqual(const ISWFObject* r) const
+bool Boolean::isEqual(const ASObject* r) const
 {
 	if(r->getObjectType()==T_BOOLEAN)
 	{
@@ -828,11 +703,11 @@ bool Boolean::isEqual(const ISWFObject* r) const
 	}
 	else
 	{
-		return ISWFObject::isEqual(r);
+		return ASObject::isEqual(r);
 	}
 }
 
-bool Undefined::isEqual(const ISWFObject* r) const
+bool Undefined::isEqual(const ASObject* r) const
 {
 	if(r->getObjectType()==T_UNDEFINED)
 		return true;
@@ -842,32 +717,13 @@ bool Undefined::isEqual(const ISWFObject* r) const
 		return false;
 }
 
-Undefined::Undefined()
+Undefined::Undefined():ASObject("undefined",this)
 {
 	type=T_UNDEFINED;
 //	setVariableByName(".Call",new Function(call));
 }
 
-/*Number::Number(const ISWFObject* obj)
-{
-	const Integer* i=dynamic_cast<const Integer*>(obj);
-	if(i)
-	{
-		val=i->val;
-		return;
-	}
-	const Number* n=dynamic_cast<const Number*>(obj);
-	if(n)
-	{
-		val=n->val;
-		return;
-	}
-
-	cout << obj->getObjectType() << endl;
-	abort();
-}*/
-
-void Number::copyFrom(const ISWFObject* o)
+void Number::copyFrom(const ASObject* o)
 {
 	if(o->getObjectType()==T_NUMBER)
 	{
@@ -888,7 +744,7 @@ void Number::copyFrom(const ISWFObject* o)
 	LOG(TRACE,"Set to " << val);
 }
 
-bool Number::isEqual(const ISWFObject* o) const
+bool Number::isEqual(const ASObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
 		return val==o->toNumber();
@@ -896,11 +752,11 @@ bool Number::isEqual(const ISWFObject* o) const
 		return val==o->toNumber();
 	else
 	{
-		return ISWFObject::isLess(o);
+		return ASObject::isLess(o);
 	}
 }
 
-bool Number::isGreater(const ISWFObject* o) const
+bool Number::isGreater(const ASObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
@@ -914,11 +770,11 @@ bool Number::isGreater(const ISWFObject* o) const
 	}
 	else
 	{
-		return ISWFObject::isGreater(o);
+		return ASObject::isGreater(o);
 	}
 }
 
-bool Number::isLess(const ISWFObject* o) const
+bool Number::isLess(const ASObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
@@ -932,7 +788,7 @@ bool Number::isLess(const ISWFObject* o) const
 	}
 	else
 	{
-		return ISWFObject::isLess(o);
+		return ASObject::isLess(o);
 	}
 }
 
@@ -943,7 +799,7 @@ tiny_string Number::toString() const
 	return buf;
 }
 
-Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
+Date::Date():ASObject("Date",this),year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
 {
 	constructor=new Function(_constructor);
 }
@@ -1001,7 +857,7 @@ ASFUNCTIONBODY(Date,getTime)
 
 ASFUNCTIONBODY(Date,valueOf)
 {
-	Date* th=dynamic_cast<Date*>(obj);
+	Date* th=static_cast<Date*>(obj);
 	return new Number(th->toInt());
 }
 
@@ -1041,7 +897,7 @@ SyntheticFunction::SyntheticFunction(method_info* m):mi(m)
 	val=m->synt_method();
 }
 
-ISWFObject* SyntheticFunction::fast_call(ISWFObject* obj, ISWFObject** args, int numArgs)
+ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numArgs)
 {
 	if(mi->needsArgs())
 		abort();
@@ -1071,13 +927,13 @@ ISWFObject* SyntheticFunction::fast_call(ISWFObject* obj, ISWFObject** args, int
 		cc->locals[mi->numArgs()+1]=rest;
 	}
 	obj->incRef();
-	ISWFObject* ret=val(obj,NULL,cc);
+	ASObject* ret=val(obj,NULL,cc);
 
 	delete cc;
 	return ret;
 }
 
-ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
+ASObject* SyntheticFunction::call(ASObject* obj, arguments* args)
 {
 	if(val==NULL)
 	{
@@ -1124,13 +980,13 @@ ISWFObject* SyntheticFunction::call(ISWFObject* obj, arguments* args)
 	}
 
 	obj->incRef();
-	ISWFObject* ret=val(obj,args,cc);
+	ASObject* ret=val(obj,args,cc);
 
 	delete cc;
 	return ret;
 }
 
-ISWFObject* Function::fast_call(ISWFObject* obj, ISWFObject** args,int num_args)
+ASObject* Function::fast_call(ASObject* obj, ASObject** args,int num_args)
 {
 	arguments arg(num_args,false);
 	for(int i=0;i<num_args;i++)
@@ -1138,7 +994,7 @@ ISWFObject* Function::fast_call(ISWFObject* obj, ISWFObject** args,int num_args)
 	return call(obj,&arg);
 }
 
-ISWFObject* Function::call(ISWFObject* obj, arguments* args)
+ASObject* Function::call(ASObject* obj, arguments* args)
 {
 	if(!bound)
 		return val(obj,args);
@@ -1150,7 +1006,7 @@ ISWFObject* Function::call(ISWFObject* obj, arguments* args)
 	}
 }
 
-Math::Math()
+Math::Math():ASObject("Math",this)
 {
 	setVariableByQName("PI","",new Number(M_PI));
 	setVariableByQName("sqrt","",new Function(sqrt));
@@ -1162,57 +1018,27 @@ Math::Math()
 
 ASFUNCTIONBODY(Math,atan2)
 {
-	Number* n1=dynamic_cast<Number*>(args->at(0));
-	Number* n2=dynamic_cast<Number*>(args->at(1));
-	if(n1 && n2)
-		return new Number(::atan2(*n1,*n2));
-	else
-	{
-		LOG(CALLS, "Invalid argument type ("<<args->at(0)->getObjectType()<<','<<args->at(1)->getObjectType()<<')' );
-		abort();
-	}
+	double n1=args->at(0)->toNumber();
+	double n2=args->at(1)->toNumber();
+	return new Number(::atan2(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,abs)
 {
-	Number* n=dynamic_cast<Number*>(args->at(0));
-	if(n)
-	{
-		Integer* ret=new Integer(::abs(*n));
-		return ret;
-	}
-	else
-	{
-		LOG(TRACE,"Invalid argument");
-		abort();
-	}
+	double n=args->at(0)->toNumber();
+	return new Integer(::abs(n));
 }
 
 ASFUNCTIONBODY(Math,floor)
 {
-	Number* n=dynamic_cast<Number*>(args->at(0));
-	if(n)
-	{
-		Integer* ret=new Integer(::floor(*n));
-		return ret;
-	}
-	else
-	{
-		LOG(TRACE,"Invalid argument");
-		abort();
-	}
+	double n=args->at(0)->toNumber();
+	return new Integer(::floor(n));
 }
 
 ASFUNCTIONBODY(Math,sqrt)
 {
-	Number* n=dynamic_cast<Number*>(args->at(0));
-	if(n)
-		return new Number(::sqrt(*n));
-	else
-	{
-		LOG(TRACE,"Invalid argument");
-		abort();
-	}
+	double n=args->at(0)->toNumber();
+	return new Integer(::sqrt(n));
 }
 
 ASFUNCTIONBODY(Math,random)
@@ -1227,7 +1053,7 @@ tiny_string Null::toString() const
 	return "null";
 }
 
-bool Null::isEqual(const ISWFObject* r) const
+bool Null::isEqual(const ASObject* r) const
 {
 	if(r->getObjectType()==T_NULL)
 		return true;
@@ -1237,7 +1063,7 @@ bool Null::isEqual(const ISWFObject* r) const
 		return false;
 }
 
-RegExp::RegExp()
+RegExp::RegExp():ASObject("RegExp",this)
 {
 	constructor=new Function(_constructor);
 }

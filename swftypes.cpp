@@ -37,20 +37,20 @@ extern __thread ParseThread* pt;
 extern __thread Manager* iManager;
 extern __thread Manager* dManager;
 
-tiny_string ConstantReference::toString() const
+/*tiny_string ConstantReference::toString() const
 {
 	return (const char*)rt->vm.getConstantByIndex(index);
 }
 
-/*double ConstantReference::toNumber() const
+double ConstantReference::toNumber() const
 {
 	string s=rt->vm.getConstantByIndex(index);
 	double ret= strtod(s.c_str(),NULL);
 	cout << "crto " << ret <<  " from " << s << endl;
 	return ret;
-}*/
+}
 
-ISWFObject* ConstantReference::clone()
+ASObject* ConstantReference::clone()
 {
 	return new ASString((const char*)rt->vm.getConstantByIndex(index));
 }
@@ -59,22 +59,22 @@ int ConstantReference::toInt() const
 {
 	LOG(ERROR,"Cannot convert ConstRef to Int");
 	return 0;
-}
+}*/
 
-tiny_string ISWFObject::toString() const
+tiny_string ASObject::toString() const
 {
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
 	abort();
 	return "Cannot convert object to String";
 }
 
-bool ISWFObject::isGreater(const ISWFObject* r) const
+bool ASObject::isGreater(const ASObject* r) const
 {
 	LOG(NOT_IMPLEMENTED,"Greater than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	return false;
 }
 
-bool ISWFObject::isLess(const ISWFObject* r) const
+bool ASObject::isLess(const ASObject* r) const
 {
 	LOG(NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	abort();
@@ -88,7 +88,7 @@ multiname::~multiname()
 	count--;
 }
 
-bool Integer::isGreater(const ISWFObject* o) const
+bool Integer::isGreater(const ASObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
@@ -97,11 +97,11 @@ bool Integer::isGreater(const ISWFObject* o) const
 	}
 	else
 	{
-		return ISWFObject::isGreater(o);
+		return ASObject::isGreater(o);
 	}
 }
 
-bool Integer::isLess(const ISWFObject* o) const
+bool Integer::isLess(const ASObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
@@ -114,10 +114,10 @@ bool Integer::isLess(const ISWFObject* o) const
 		return val<double(*i);
 	}
 	else
-		return ISWFObject::isLess(o);
+		return ASObject::isLess(o);
 }
 
-bool Integer::isEqual(const ISWFObject* o) const
+bool Integer::isEqual(const ASObject* o) const
 {
 	if(o->getObjectType()==T_INTEGER)
 		return val==o->toInt();
@@ -125,24 +125,24 @@ bool Integer::isEqual(const ISWFObject* o) const
 		return val==o->toInt();
 	else
 	{
-		return ISWFObject::isEqual(o);
+		return ASObject::isEqual(o);
 	}
 }
 
-bool ISWFObject::isEqual(const ISWFObject* r) const
+bool ASObject::isEqual(const ASObject* r) const
 {
 	LOG(NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	return false;
 }
 
-IFunction* ISWFObject::toFunction()
+IFunction* ASObject::toFunction()
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Function");
 	return NULL;
 }
 
 
-int ISWFObject::toInt() const
+int ASObject::toInt() const
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
 	cout << "imanager " << iManager->available.size() << endl;
@@ -151,7 +151,7 @@ int ISWFObject::toInt() const
 	return 0;
 }
 
-double ISWFObject::toNumber() const
+double ASObject::toNumber() const
 {
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to float");
 	abort();
@@ -182,7 +182,7 @@ obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& n
 		return NULL;
 }
 
-void ISWFObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	obj_var* obj=Variables.findObjVar(name,ns);
 	if(obj->getter)
@@ -194,7 +194,7 @@ void ISWFObject::setGetterByQName(const tiny_string& name, const tiny_string& ns
 	obj->getter=o;
 }
 
-void ISWFObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	obj_var* obj=Variables.findObjVar(name,ns);
 	if(obj->setter)
@@ -206,7 +206,7 @@ void ISWFObject::setSetterByQName(const tiny_string& name, const tiny_string& ns
 	obj->setter=o;
 }
 
-void ISWFObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject* o)
+void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	obj_var* obj=Variables.findObjVar(name,ns);
 
@@ -229,13 +229,13 @@ void ISWFObject::setVariableByQName(const tiny_string& name, const tiny_string& 
 	}
 }
 
-void ISWFObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
+void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	setVariableByMultiname(name,abstract_i(value));
 /*	if(name.namert)
 		name.name=name.namert->toString();
 
-	pair<map<Qname, ISWFObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ISWFObject*>(name.name,o));
+	pair<map<Qname, ASObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ASObject*>(name.name,o));
 	if(!ret.second)
 	{
 		if(ret.first->second)
@@ -288,67 +288,116 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 		return NULL;
 }
 
-void ISWFObject::setVariableByMultiname(const multiname& mname, ISWFObject* o)
+ASFUNCTIONBODY(ASObject,_toString)
 {
-	obj_var* obj=Variables.findObjVar(mname);
+	return new ASString(obj->toString());
+}
 
-	if(obj->setter)
+ASFUNCTIONBODY(ASObject,_constructor)
+{
+}
+
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	ASObject* owner=NULL;
+
+	obj_var* obj;
+	ASObject* cur=this;
+	do
 	{
-		//Call the setter
-		LOG(CALLS,"Calling the setter");
-		arguments args(1);
-		args.set(0,o);
-		//TODO: check
-		o->incRef();
-		obj->setter->call(this,&args);
-		LOG(CALLS,"End of setter");
+		obj=cur->Variables.findObjVar(name,false);
+		if(obj)
+			owner=cur;
+		cur=cur->super;
 	}
-	else
+	while(cur && owner==NULL);
+
+	if(owner) //Variable already defined change it
 	{
-		if(obj->var)
-			obj->var->decRef();
+		if(obj->setter)
+		{
+			//Call the setter
+			LOG(CALLS,"Calling the setter");
+			arguments args(1);
+			args.set(0,o);
+			//TODO: check
+			o->incRef();
+			//
+
+			obj->setter->call(owner,&args);
+			LOG(CALLS,"End of setter");
+		}
+		else
+		{
+			if(obj->var)
+				obj->var->decRef();
+			obj->var=o;
+		}
+	}
+	else //Insert it
+	{
+		obj=Variables.findObjVar(name,true);
 		obj->var=o;
 	}
 }
 
-intptr_t ISWFObject::getVariableByMultiname_i(const multiname& name, ISWFObject*& owner)
+intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 {
-	ISWFObject* ret=getVariableByMultiname(name,owner);
+	ASObject* ret=getVariableByMultiname(name,owner);
 	if(ret)
 		return ret->toInt();
 	else
 		abort();
 }
 
-ISWFObject* ISWFObject::getVariableByMultiname(const multiname& mname, ISWFObject*& owner)
+ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& owner)
 {
-	obj_var* obj=Variables.findObjVar(mname,false);
+	obj_var* obj=Variables.findObjVar(name,false);
+	ASObject* ret;
 
 	if(obj==NULL)
-	{
 		owner=NULL;
-		return NULL;
-	}
-
-	if(obj->getter)
-	{
-		//Call the getter
-		LOG(CALLS,"Calling the getter");
-		ISWFObject* ret=obj->getter->call(this,NULL);
-		LOG(CALLS,"End of getter");
-		owner=this;
-		assert(ret);
-		return ret;
-	}
 	else
 	{
-		owner=this;
-		assert(obj->var);
-		return obj->var;
+		if(obj->getter)
+		{
+			//Call the getter
+			LOG(CALLS,"Calling the getter");
+			ASObject* ret=obj->getter->call(this,NULL);
+			LOG(CALLS,"End of getter");
+			owner=this;
+			assert(ret);
+			return ret;
+		}
+		else
+		{
+			owner=this;
+			assert(obj->var);
+			return obj->var;
+		}
 	}
+
+	if(!owner)
+	{
+		//Check if we should do lazy definition
+		if(name.name_s=="toString")
+		{
+			ret=new Function(ASObject::_toString);
+			setVariableByQName("toString","",ret);
+			owner=this;
+		}
+	}
+
+	if(!owner && super)
+		ret=super->getVariableByMultiname(name,owner);
+
+	if(!owner && prototype)
+		ret=prototype->getVariableByMultiname(name,owner);
+
+	return ret;
 }
 
-ISWFObject* variables_map::getVariableByString(const std::string& name)
+ASObject* variables_map::getVariableByString(const std::string& name)
 {
 	//Slow linear lookup, should be avoided
 	var_iterator it=Variables.begin();
@@ -369,30 +418,38 @@ ISWFObject* variables_map::getVariableByString(const std::string& name)
 	return NULL;
 }
 
-ISWFObject* ISWFObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ISWFObject*& owner)
+ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 {
 	obj_var* obj=Variables.findObjVar(name,ns,false);
+	ASObject* ret;
 
 	if(obj==NULL)
-	{
 		owner=NULL;
-		return NULL;
-	}
-
-	if(obj->getter)
-	{
-		//Call the getter
-		LOG(CALLS,"Calling the getter");
-		ISWFObject* ret=obj->getter->call(this,NULL);
-		LOG(CALLS,"End of getter");
-		owner=this;
-		return ret;
-	}
 	else
 	{
-		owner=this;
-		return obj->var;
+		if(obj->getter)
+		{
+			//Call the getter
+			LOG(CALLS,"Calling the getter");
+			ret=obj->getter->call(this,NULL);
+			LOG(CALLS,"End of getter");
+			owner=this;
+			return ret;
+		}
+		else
+		{
+			owner=this;
+			return obj->var;
+		}
 	}
+
+	if(!owner && super)
+		ret=super->getVariableByQName(name,ns,owner);
+
+	if(!owner && prototype)
+		ret=prototype->getVariableByQName(name,ns,owner);
+
+	return ret;
 }
 
 /*std::ostream& operator<<(std::ostream& s, const Qname& r)
@@ -1170,69 +1227,25 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	return stream;
 }
 
-void DictionaryDefinable::define(ISWFObject* g)
+void DictionaryDefinable::define(ASObject* g)
 {
 	abort();
 /*	DictionaryTag* t=p->root->dictionaryLookup(dict_id);
-	ISWFObject* o=dynamic_cast<ISWFObject*>(t);
+	ASObject* o=dynamic_cast<ASObject*>(t);
 	if(o==NULL)
 	{
 		//Should not happen in real live
-		ISWFObject* ret=new ASObject;
+		ASObject* ret=new ASObject;
 		g->setVariableByName(p->Name,new ASObject);
 	}
 	else
 	{
-		ISWFObject* ret=o->clone();
+		ASObject* ret=o->clone();
 		if(ret->constructor)
 			ret->constructor->call(ret,NULL);
 		p->setWrapped(ret);
 		g->setVariableByName(p->Name,ret);
 	}*/
-}
-
-ISWFObject::ISWFObject():parent(NULL),ref_count(1),constructor(NULL),debug(0),
-	class_index(-1),manager(NULL),type(T_INVALID),mostDerived(this)
-{
-}
-
-ISWFObject::ISWFObject(Manager* m):parent(NULL),ref_count(1),constructor(NULL),debug(0),
-	class_index(-1),manager(m),type(T_INVALID),mostDerived(this)
-{
-}
-
-/*void ISWFObject::decRef()
-{
-//	if(ref_count==0)
-//		abort();
-	ref_count--;
-	if(ref_count==0)
-	{
-		if(manager)
-			manager->put(this);
-		else
-			delete this;
-	}
-}*/
-
-ISWFObject::ISWFObject(const ISWFObject& o):ref_count(1),debug(0),manager(NULL),type(o.type),mostDerived(this),
-	class_index(o.class_index),class_name(o.class_name)
-{
-	parent=o.parent;
-	constructor=o.constructor;
-	if(constructor)
-		constructor->incRef();
-	
-/*	std::map<Qname,ISWFObject*> Variables;	
-	std::map<Qname,IFunction*> Setters;
-	std::map<Qname,IFunction*> Getters;
-	std::vector<ISWFObject*> slots;
-	std::vector<var_iterator> slots_vars;*/
-}
-
-ISWFObject* ISWFObject::clone()
-{
-	abort();
 }
 
 variables_map::~variables_map()
@@ -1249,13 +1262,46 @@ variables_map::~variables_map()
 	}
 }
 
-ISWFObject::~ISWFObject()
+ASObject::ASObject(const tiny_string& c, ASObject* v, Manager* m):
+	prototype(NULL),super(NULL),parent(NULL),ref_count(1),
+	constructor(NULL),class_index(-1),manager(m),type(T_OBJECT),class_name(c)
 {
+	mostDerived=(v)?v:this;
+}
+
+ASObject::ASObject(const ASObject& o):
+	prototype(o.prototype),super(o.super),manager(NULL),parent(NULL),ref_count(1),
+	constructor(NULL),class_index(o.class_index),type(o.type),
+	mostDerived(this),class_name(o.class_name)
+{
+	parent=o.parent;
+	constructor=o.constructor;
+	if(constructor)
+		constructor->incRef();
+
+	if(super)
+		super->incRef();
+	if(prototype)
+		prototype->incRef();
+	
+/*	std::map<Qname,ASObject*> Variables;	
+	std::map<Qname,IFunction*> Setters;
+	std::map<Qname,IFunction*> Getters;
+	std::vector<ASObject*> slots;
+	std::vector<var_iterator> slots_vars;*/
+}
+
+ASObject::~ASObject()
+{
+	if(super)
+		super->decRef();
+	if(prototype)
+		prototype->decRef();
 	if(constructor)
 		constructor->decRef();
 }
 
-void variables_map::initSlot(int n,ISWFObject* o, const tiny_string& name, const tiny_string& ns)
+void variables_map::initSlot(int n,ASObject* o, const tiny_string& name, const tiny_string& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
@@ -1281,7 +1327,7 @@ void variables_map::initSlot(int n,ISWFObject* o, const tiny_string& name, const
 	abort();
 }
 
-void variables_map::setSlot(int n,ISWFObject* o)
+void variables_map::setSlot(int n,ASObject* o)
 {
 	if(n-1<slots_vars.size())
 	{
@@ -1304,7 +1350,7 @@ void variables_map::setSlot(int n,ISWFObject* o)
 	}
 }
 
-ISWFObject* RegisterNumber::clone()
+/*ASObject* RegisterNumber::clone()
 {
 	return rt->execContext->regs[index];
 }
@@ -1314,28 +1360,27 @@ tiny_string RegisterNumber::toString() const
 	char buf[20];
 	snprintf(buf,20,"Register %i",index);
 	return buf;
-}
+}*/
 
-string ISWFObject::getNameAt(int index)
+tiny_string variables_map::getNameAt(int index)
 {
-	abort();
-/*	if(index<Variables.size())
+	if(index<Variables.size())
 	{
 		var_iterator it=Variables.begin();
 
 		for(int i=0;i<index;i++)
 			it++;
 
-		return string(it->first);
+		return tiny_string(it->first);
 	}
 	else
 	{
 		LOG(ERROR,"Index too big");
 		abort();
-	}*/
+	}
 }
 
-int ISWFObject::numVariables()
+int ASObject::numVariables()
 {
 	return Variables.size();
 }
@@ -1390,41 +1435,21 @@ std::istream& operator>>(std::istream& s, CLIPACTIONS& v)
 	return s;
 }
 
-ISWFObject* abstract_d(number_t i)
+ASObject* abstract_d(number_t i)
 {
-	//cout << "abstract_d" << endl;
 	Number* ret=dManager->get<Number>();
 	ret->val=i;
 	return ret;
 }
 
-ISWFObject* abstract_b(bool i)
+ASObject* abstract_b(bool i)
 {
-	//cout << "abstract_b" << endl;
 	return new Boolean(i);
 }
 
-ISWFObject* abstract_i2(intptr_t i)
+ASObject* abstract_i(intptr_t i)
 {
-	//cout << "abstract_i" << endl;
 	Integer* ret=iManager->get<Integer>();
 	ret->val=i;
 	return ret;
 }
-
-ISWFObject* abstract_i(intptr_t i)
-{
-	//cout << "abstract_i" << endl;
-	Integer* ret=iManager->get<Integer>();
-	ret->val=i;
-	return ret;
-}
-
-/*void Manager::put(ISWFObject* o)
-{
-	if(available.size()>10)
-		delete o;
-	else
-		available.push_back(o);
-}*/
-

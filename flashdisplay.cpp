@@ -44,9 +44,97 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	ret->constructor->call(ret,NULL);
 	ASObject* params=new ASObject("Object");
 	obj->setVariableByQName("parameters","",params);
-	params->setVariableByQName("connect","",new ASString("true"));
-//	{"chat_bosh_port":"80","chat_username":encodeURIComponent(active_user.chatUsername()),"channel_id":encodeURIComponent(channel_id),"permission_slk":"false","chat_password":encodeURIComponent(active_user.chatPassword()),"enable_bosh":encodeURIComponent(active_user.boshEnabled()),"user_vars":encodeURIComponent(active_user.userVars()),"chat_ip":"216.246.59.237","permission_mtx_api":"false","enable_compression":encodeURIComponent(active_user.compressionEnabled()),"chat_host":"of1.kongregate.com","api_host":"http%3A%2F%2Fapi.kongregate.com","permission_chat_api":"false","game_permalink":"cube-colossus","game_title":"Cube%20Colossus","chat_port":"5222","game_auth_token":encodeURIComponent(active_user.gameAuthToken()),"permission_sc_api":"true","user_vars_sig":encodeURIComponent(active_user.userVarsSig()),"javascript_listener":"konduitToHolodeck","chat_bosh_host":"of1.kongregate.com","connect":"true","game_id":"53988","game_url":"http%3A%2F%2Fwww.kongregate.com%2Fgames%2Flucidrine%2Fcube-colossus","debug_level":encodeURIComponent(active_user.debugLevel())},{"allowscriptaccess":"always","allownetworking":"all"},{});
+	obj->setGetterByQName("loaderURL","",new Function(_getLoaderUrl));
+	obj->setGetterByQName("url","",new Function(_getUrl));
+	params->setVariableByQName("length_seconds","",new ASString("558"));
+	params->setVariableByQName("cr","",new ASString("US"));
+	params->setVariableByQName("plid","",new ASString("AAR2WiuKNxt32IdW"));
+	params->setVariableByQName("t","",new ASString("vjVQa1PpcFOpt5byKez5Rz71Hui_DHUbc_z_AtcWBa0="));
+	params->setVariableByQName("vq","",new ASString("medium"));
+	params->setVariableByQName("sk","",new ASString("PaOie8-uH5AhsKIdWMmBUtdP4LkQJERtC"));
+	params->setVariableByQName("video_id","",new ASString("G4S9tV8ZLcE"));
+//rv.2.thumbnailUrl": "http%3A%2F%2Fi1.ytimg.com%2Fvi%2FxWyMjzVXq7Y%2Fdefault.jpg"
+//"rv.7.length_seconds": "439",
+//"rv.0.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D15lKSqY86Ew", 
+//"rv.0.view_count": "194",
+//"rv.2.title": "Paul+Mawhinney+Records+Largest+Collection+in+the+World", 
+//"rv.7.thumbnailUrl": "http%3A%2F%2Fi3.ytimg.com%2Fvi%2Fza7e9rwF_Cc%2Fdefault.jpg",
+// "rv.4.rating": "4.92647058824",
+//"rv.7.title": "Using+glue+to+clean+vinyl+record+albums", 
+//"rv.3.view_count": "20281", 
+//"allow_embed": "1", 
+//"rv.5.title": "T+Pain+Obama+Auto-Tune", 
+//"is_doubleclick_tracked": "1", 
+//"rv.4.thumbnailUrl": "http%3A%2F%2Fi3.ytimg.com%2Fvi%2F2j7F_4S2lgM%2Fdefault.jpg"
+//"fmt_url_map": "34%7Chttp%3A%2F%2Fv9.lscache2.c.youtube.com%2Fvideoplayback%3Fip%3D0.0.0.0%26sparams%3Did%252Cexpire%252Cip%252Cipbits%252Citag%252Calgorithm%252Cburst%252Cfactor%26fexp%3D903900%252C900025%252C905207%26algorithm%3Dthrottle-factor%26itag%3D34%26ipbits%3D0%26signature%3DA45863BF4EEB761129156DB5275FD1B69119666F.7633A2E1E476044B0D313C22E5641B2B6FBD3601%26sver%3D3%26expire%3D1256054400%26key%3Dyt1%26factor%3D1.25%26burst%3D40%26id%3D1b84bdb55f192dc1%2C5%7Chttp%3A%2F%2Fv3.lscache8.c.youtube.com%2Fvideoplayback%3Fip%3D0.0.0.0%26sparams%3Did%252Cexpire%252Cip%252Cipbits%252Citag%252Calgorithm%252Cburst%252Cfactor%26fexp%3D903900%252C900025%252C905207%26algorithm%3Dthrottle-factor%26itag%3D5%26ipbits%3D0%26signature%3DD04298060B1F95665DB6622292E34D316C23D761.8E3DB733F92F8C90BEB8EAE558516067B76D32CB%26sver%3D3%26expire%3D1256054400%26key%3Dyt1%26factor%3D1.25%26burst%3D40%26id%3D1b84bdb55f192dc1", 
+//"rv.0.length_seconds": "232", 
+//"rv.2.rating": "4.91304347826", 
+//"keywords": "Pack%2CRats%2CVinyl%2CPAUL", 
+//"rv.1.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DuBLuMVOr3nw", 
+//"rv.6.thumbnailUrl": "http%3A%2F%2Fi2.ytimg.com%2Fvi%2FmolqV4L23FM%2Fdefault.jpg", 
+//"rv.1.id": "uBLuMVOr3nw", 
+//"rv.3.rating": "4.93258426966", 
+//"rv.6.title": "How+Vinyl+Records+Are+Made", 
+//"rv.7.id": "za7e9rwF_Cc", 
+//"rv.1.title": "%27The+Archive%27+by+Sean+Dunne", 
+//"rv.1.thumbnailUrl": "http%3A%2F%2Fi2.ytimg.com%2Fvi%2FuBLuMVOr3nw%2Fdefault.jpg", 
+//"rv.5.view_count": "994171", 
+//"rv.0.rating": "5.0", 
+//"watermark": "http%3A%2F%2Fs.ytimg.com%2Fyt%2Fswf%2Flogo-vfl106645.swf%2Chttp%3A%2F%2Fs.ytimg.com%2Fyt%2Fswf%2Fhdlogo-vfl100714.swf", 
+//"rv.6.author": "RockItOutBlog", 
+//"rv.3.title": "Vinyl+LP+records+-+still+spinning+after+60+years%21", 
+//"rv.5.id": "ITT6bYYGVfM", 
+//"rv.4.author": "ROCKETBOOM", 
+//"rv.0.id": "15lKSqY86Ew", 
+//"rv.3.length_seconds": "410", 
+//"rv.5.rating": "4.82385398981", 
+//"rv.4.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D2j7F_4S2lgM", 
+//"fexp": "903900%2C900025%2C905207", 
+//"rv.1.author": "ithentic", 
+//"rv.1.rating": "5.0", 
+//"rv.4.title": "The+World%27s+Largest+Record+Collection", 
+//"rv.5.thumbnailUrl": "http%3A%2F%2Fi2.ytimg.com%2Fvi%2FITT6bYYGVfM%2Fdefault.jpg", 
+//"rv.5.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DITT6bYYGVfM", 
+//"rv.6.length_seconds": "405", 
+//"rv.0.title": "Jerry+Weber+of+Jerry%27s+Records+on+%22Pack+Rats%22", 
+//"rv.0.author": "dougpaynedotcom", 
+//"rv.3.thumbnailUrl": "http%3A%2F%2Fi1.ytimg.com%2Fvi%2FtggLYE87Ed0%2Fdefault.jpg", 
+//"rv.2.author": "Frunzenskaya", 
+//"rv.6.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DmolqV4L23FM", 
+//"rv.7.rating": "5.0", 
+//"rv.3.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DtggLYE87Ed0", 
+//"fmt_map": "34%2F0%2F9%2F0%2F115%2C5%2F0%2F7%2F0%2F0", 
+//"hl": "en", 
+//"rv.7.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dza7e9rwF_Cc", 
+//"rv.2.view_count": "6753", 
+//"rv.4.length_seconds": "257", 
+//"rv.4.view_count": "44120", 
+//"rv.2.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DxWyMjzVXq7Y", 
+//"rv.5.length_seconds": "118", 
+//"rv.0.thumbnailUrl": "http%3A%2F%2Fi2.ytimg.com%2Fvi%2F15lKSqY86Ew%2Fdefault.jpg", 
+//"rv.7.author": "hrgiger6", 
+//"rv.1.view_count": "535", 
+//"rv.1.length_seconds": "456", 
+//"rv.6.rating": "4.93965517241", 
+//"rv.5.author": "JimmyKimmelLive", 
+//"rv.3.id": "tggLYE87Ed0", 
+//"rv.2.id": "xWyMjzVXq7Y", 
+//"rv.2.length_seconds": "456", 
+//"rv.6.id": "molqV4L23FM", 
+//"rv.6.view_count": "2493", 
+//"rv.3.author": "bctvguy", 
+//"rv.4.id": "2j7F_4S2lgM", 
+//"rv.7.view_count": "301"
+}
 
+ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
+{
+	return new ASString("www.youtube.com");
+}
+
+ASFUNCTIONBODY(LoaderInfo,_getUrl)
+{
+	return new ASString("www.youtube.com/watch.swf");
 }
 
 ASFUNCTIONBODY(Loader,_constructor)
@@ -66,7 +154,7 @@ ASFUNCTIONBODY(Loader,load)
 /*	if(th->loading)
 		return NULL;
 	th->loading=true;*/
-	if(args->at(0)->class_name!="URLRequest")
+	if(args->at(0)->getClassName()!="URLRequest")
 	{
 		LOG(ERROR,"ArgumentError");
 		abort();
@@ -86,7 +174,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	ASObject* cur=args->at(0);
 	assert(cur);
 	cur=cur->prototype;
-	while(cur->class_name!="ByteArray")
+	while(cur->getClassName()!="ByteArray")
 		cur=cur->super;
 	th->bytes=dynamic_cast<ByteArray*>(cur);
 	assert(th->bytes);
@@ -113,7 +201,7 @@ void Loader::execute()
 	{
 		local_root=new RootMovieClip;
 		zlib_file_filter zf;
-		zf.open(url.c_str(),ios_base::in);
+		zf.open(url.raw_buf(),ios_base::in);
 		istream s(&zf);
 
 		ParseThread local_pt(sys,local_root,s);

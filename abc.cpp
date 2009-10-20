@@ -122,6 +122,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("print","",new Function(print));
 	Global.setVariableByQName("trace","",new Function(print));
+	Global.setVariableByQName("parseInt","",new Function(parseInt));
 	Global.setVariableByQName("toString","",new Function(ASObject::_toString));
 
 	Global.setVariableByQName("MovieClip","flash.display",new MovieClip);
@@ -890,15 +891,6 @@ inline method_info* ABCContext::get_method(unsigned int m)
 	}
 }
 
-void ABCVm::asTypelate(call_context* th)
-{
-	LOG(NOT_IMPLEMENTED,"asTypelate");
-	ASObject* c=th->runtime_stack_pop();
-	c->decRef();
-//	ASObject* v=th->runtime_stack_pop();
-//	th->runtime_stack_push(v);
-}
-
 ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 {
 	LOG(NOT_IMPLEMENTED,"nextValue");
@@ -1233,7 +1225,6 @@ void ABCContext::exec()
 	method_info* m=get_method(scripts[i].init);
 	IFunction* entry=new SyntheticFunction(m);
 	LOG(CALLS, "Building entry script traits: " << scripts[i].trait_count );
-	assert(!Global->class_name.empty());
 	for(int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(Global,&scripts[i].traits[j]);
 	entry->call(Global,NULL);
@@ -1304,6 +1295,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 	const tiny_string& ns=mname->ns[0];
 	if(t->kind>>4)
 		cout << "Next slot has flags " << (t->kind>>4) << endl;
+	if(t->slot_id)
+		LOG(CALLS,"Using slot " << t->slot_id << " on class " << obj->class_name);	
 	switch(t->kind&0xf)
 	{
 		case traits_info::Class:
@@ -1395,6 +1388,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		}
 		case traits_info::Const:
 		{
+			LOG(CALLS,"Const trait");
 			//TODO: Not so const right now
 			if(deferred_initialization)
 				obj->setVariableByQName(name, ns, new ScriptDefinable(deferred_initialization));
@@ -1892,7 +1886,12 @@ istream& operator>>(istream& in, cpool_info& v)
 
 ASObject* parseInt(ASObject* obj,arguments* args)
 {
-	return new Integer(0);
+	if(args->at(0)->getObjectType()==T_UNDEFINED)
+		return new Undefined;
+	else
+	{
+		return new Integer(atoi(args->at(0)->toString().raw_buf()));
+	}
 }
 
 intptr_t ABCVm::s_toInt(ASObject* o)

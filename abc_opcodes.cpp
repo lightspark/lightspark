@@ -212,6 +212,15 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	LOG(CALLS,"callProperty " << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
+
+	//HACK osceno
+	if(name->name_s=="isWhiteListedUrl")
+	{
+		LOG(NOT_IMPLEMENTED,"HACK osceno per youtube");
+		th->runtime_stack_push(new Boolean(true));
+		return;
+	}
+
 	ASObject* owner;
 	ASObject* o=obj->getVariableByMultiname(*name,owner);
 	if(owner)
@@ -573,8 +582,6 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 {
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(CALLS,"callPropVoid " << *name << ' ' << m);
-	if(name->name_s=="applyFlashVars")
-		char a=0;
 	arguments args(m);
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
@@ -731,8 +738,8 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	}
 	else if(val1->getObjectType()==T_STRING || val2->getObjectType()==T_STRING)
 	{
-		string a(val1->toString());
-		string b(val2->toString());
+		string a(val1->toString().raw_buf());
+		string b(val2->toString().raw_buf());
 		val1->decRef();
 		val2->decRef();
 		LOG(CALLS,"add " << a << '+' << b);
@@ -1049,14 +1056,6 @@ void ABCVm::getLex(call_context* th, int n)
 	ASObject* owner;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		assert(!(*it)->class_name.empty());
-		/*ASObject* s=((ASObject*)*it);
-		while(s)
-		{
-			cout << typeid(*s).name() << " (" << s->class_name << ") -> ";
-			s=s->super;
-		}
-		cout << endl;*/
 		ASObject* o=(*it)->getVariableByMultiname(*name,owner);
 		if(owner)
 		{
@@ -1179,7 +1178,6 @@ void ABCVm::constructSuper(call_context* th, int n)
 	}
 	else
 	{
-		assert(!super->class_name.empty());
 		LOG(CALLS,"Builtin super " << super->class_name);
 		obj->super=super->clone();
 		LOG(CALLS,"Calling Instance init");
@@ -1362,7 +1360,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	multiname* name=th->context->getMultiname(n,th); 
-	LOG(NOT_IMPLEMENTED,"callSuperVoid " << *name << ' ' << m);
+	LOG(CALLS,"callSuperVoid " << *name << ' ' << m);
 
 	ASObject* receiver=th->runtime_stack_pop();
 	ASObject* obj;
@@ -1434,16 +1432,19 @@ void ABCVm::isTypelate(call_context* th)
 
 bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
 {
-	LOG(NOT_IMPLEMENTED,"ifStrictNE");
+	LOG(CALLS,"ifStrictNE");
 	if(obj1->getObjectType()!=obj2->getObjectType())
 		return false;
 	return ifNE(obj2,obj1);
 }
 
-ASObject* ABCVm::in(ASObject* val2, ASObject* val1)
+bool ABCVm::in(ASObject* val2, ASObject* val1)
 {
-	LOG(NOT_IMPLEMENTED, "in" );
-	return new Boolean(true);
+	LOG(CALLS, "in" );
+	bool ret=val2->hasProperty(val1->toString());
+	val1->decRef();
+	val2->decRef();
+	return ret;
 }
 
 bool ABCVm::ifFalse(ASObject* obj1, int offset)
@@ -1476,11 +1477,11 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	if(o->getObjectType()==T_DEFINABLE)
 	{
-		LOG(CALLS,"Deferred definition of property " << name);
+		LOG(CALLS,"Deferred definition of property " << *name);
 		Definable* d=static_cast<Definable*>(o);
 		d->define(obj);
 		o=obj->getVariableByMultiname(*name,owner);
-		LOG(CALLS,"End of deferred definition of property " << name);
+		LOG(CALLS,"End of deferred definition of property " << *name);
 	}
 
 	LOG(CALLS,"Constructing");
@@ -1627,5 +1628,14 @@ void ABCVm::newClass(call_context* th, int n)
 	cinit->call(ret,NULL);
 	LOG(CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
+}
+
+void ABCVm::asTypelate(call_context* th)
+{
+	LOG(NOT_IMPLEMENTED,"asTypelate");
+	ASObject* c=th->runtime_stack_pop();
+	c->decRef();
+//	ASObject* v=th->runtime_stack_pop();
+//	th->runtime_stack_push(v);
 }
 

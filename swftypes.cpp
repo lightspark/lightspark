@@ -83,6 +83,23 @@ bool ASObject::isLess(const ASObject* r) const
 
 int multiname::count=0;
 
+tiny_string multiname::qualifiedString()
+{
+	assert(ns.size()==1);
+	assert(name_type==NAME_STRING);
+	if(ns[0]=="")
+		return name_s;
+	else
+	{
+		tiny_string ret=ns[0];
+		ret+="::";
+		ret+=name_s;
+		cout <<  ret << endl;
+		abort();
+		return ret;
+	}
+}
+
 multiname::~multiname()
 {
 	count--;
@@ -180,6 +197,22 @@ obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& n
 	}
 	else
 		return NULL;
+}
+
+bool variables_map::hasProperty(const tiny_string& name)
+{
+	return Variables.find(name)!=Variables.end();
+}
+
+bool ASObject::hasProperty(const tiny_string& name)
+{
+	bool ret=Variables.hasProperty(name);
+	if(!ret && super)
+		ret=super->hasProperty(name);
+	if(!ret && prototype)
+		ret=prototype->hasProperty(name);
+
+	return ret;
 }
 
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
@@ -403,10 +436,10 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
 	{
-		string cur(it->second.first);
+		string cur(it->second.first.raw_buf());
 		if(!cur.empty())
 			cur+='.';
-		cur+=it->first;
+		cur+=it->first.raw_buf();
 		if(cur==name)
 		{
 			if(it->second.second.getter)
@@ -452,36 +485,11 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 	return ret;
 }
 
-/*std::ostream& operator<<(std::ostream& s, const Qname& r)
+std::ostream& operator<<(std::ostream& s, const tiny_string& r)
 {
-	string prefix;
-	switch(r.nskind)
-	{
-		case 0x08:
-			prefix="ns:";
-			break;
-		case 0x16:
-			prefix="pakns:";
-			break;
-		case 0x17:
-			prefix="pakintns:";
-			break;
-		case 0x18:
-			prefix="protns:";
-			break;
-		case 0x19:
-			prefix="explns:";
-			break;
-		case 0x1a:
-			prefix="staticprotns:";
-			break;
-		case 0x05:
-			prefix="privns:";
-			break;
-	}
-	s << '[' << prefix << r.ns << "] " << r.name;
+	s << r.buf;
 	return s;
-}*/
+}
 
 std::ostream& operator<<(std::ostream& s, const multiname& r)
 {

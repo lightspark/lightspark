@@ -50,6 +50,7 @@ struct arrayElem;
 
 class tiny_string
 {
+friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
 	char buf[256];
 public:
@@ -74,6 +75,16 @@ public:
 		strncpy(buf,s,256);
 		return *this;
 	}
+	tiny_string& operator+=(const char* s)
+	{
+		strncat(buf,s,255-strlen(buf));
+		return *this;
+	}
+	tiny_string& operator+=(const tiny_string& r)
+	{
+		strncat(buf,r.buf,255-strlen(buf));
+		return *this;
+	}
 	bool operator<(const tiny_string& r) const
 	{
 		return strncmp(buf,r.buf,256)<0;
@@ -82,15 +93,19 @@ public:
 	{
 		return strncmp(buf,r.buf,256)==0;
 	}
+	bool operator!=(const tiny_string& r) const
+	{
+		return strncmp(buf,r.buf,256)!=0;
+	}
 	bool operator==(const char* r) const
 	{
 		return strncmp(buf,r,256)==0;
 	}
-	operator const char*() const
+	const char* raw_buf() const
 	{
 		return buf;
 	}
-	char operator[](int i)
+	char operator[](int i) const
 	{
 		return *(buf+i);
 	}
@@ -215,6 +230,7 @@ struct multiname
 	multiname(){count++;}
 	~multiname();
 	static int count;
+	tiny_string qualifiedString();
 };
 
 struct obj_var
@@ -261,6 +277,7 @@ public:
 		Variables.size();
 	}
 	tiny_string getNameAt(int i);
+	bool hasProperty(const tiny_string& name);
 	~variables_map();
 };
 
@@ -277,6 +294,7 @@ protected:
 	//maps variable name to namespace name and var
 	variables_map Variables;
 	ASObject(const ASObject& o);
+	tiny_string class_name;
 private:
 	int ref_count;
 	Manager* manager;
@@ -290,9 +308,12 @@ public:
 	{
 		assert(ref_count>0);
 	}
+	const tiny_string& getClassName()
+	{
+		return mostDerived->class_name;
+	}
 	ASObject* prototype;
 	ASObject* super;
-	std::string class_name;
 	IFunction* constructor;
 	int class_index;
 	void incRef()
@@ -311,7 +332,6 @@ public:
 				delete this;
 		}
 	}
-
 	void fake_decRef()
 	{
 		ref_count--;
@@ -344,6 +364,7 @@ public:
 	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
+	bool hasProperty(const tiny_string& name);
 	ASObject* getSlot(int n)
 	{
 		return Variables.getSlot(n);
@@ -1038,7 +1059,7 @@ std::ostream& operator<<(std::ostream& s, const RGB& r);
 std::ostream& operator<<(std::ostream& s, const RGBA& r);
 std::ostream& operator<<(std::ostream& s, const STRING& r);
 std::ostream& operator<<(std::ostream& s, const multiname& r);
-//std::ostream& operator<<(std::ostream& s, const Qname& r);
+std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 
 std::istream& operator>>(std::istream& s, RECT& v);
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v);

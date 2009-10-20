@@ -76,6 +76,8 @@ public:
 	}
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
+	ASFUNCTION(_getLoaderUrl);
+	ASFUNCTION(_getUrl);
 };
 
 class Loader: public IThreadJob, public DisplayObjectContainer
@@ -83,7 +85,7 @@ class Loader: public IThreadJob, public DisplayObjectContainer
 private:
 	enum SOURCE { URL, BYTES };
 	SOURCE source;
-	std::string url;
+	tiny_string url;
 	ByteArray* bytes;
 	bool loading;
 	bool loaded;

@@ -31,6 +31,44 @@ class Event;
 class method_info;
 class call_context;
 
+class DebugTracer: public ASObject
+{
+private:
+	tiny_string tracer_name;
+public:
+	DebugTracer(const tiny_string& n):tracer_name(n),ASObject("Tracer"){}
+	ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner)
+	{
+		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname " << name);
+		return ASObject::getVariableByMultiname(name,owner);
+	}
+	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner)
+	{
+		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname_i " << name);
+		return ASObject::getVariableByMultiname_i(name,owner);
+	}
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+	{
+		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByQName " << name << " on namespace " << ns);
+		return ASObject::getVariableByQName(name,ns,owner);
+	}
+	void setVariableByMultiname_i(const multiname& name, intptr_t value)
+	{
+		LOG(CALLS,"DebugTracer " << tracer_name << ": setVariableByMultiname_i " << name << " to value " << value);
+		ASObject::setVariableByMultiname_i(name,value);
+	}
+	void setVariableByMultiname(const multiname& name, ASObject* o)
+	{
+		LOG(CALLS,"DebugTracer " << tracer_name << ": setVariableByMultiname " << name << " to an object");
+		ASObject::setVariableByMultiname(name,o);
+	}
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+	{
+		LOG(CALLS,"DebugTracer " << tracer_name << ": setVariableByQName " << name << " on namespace " << ns);
+		ASObject::setVariableByQName(name,ns,o);
+	}
+};
+
 class IFunction: public ASObject
 {
 public:
@@ -448,6 +486,7 @@ private:
 public:
 	RegExp();
 	ASFUNCTION(_constructor);
+	ASFUNCTION(exec);
 	RegExp* clone()
 	{
 		return new RegExp(*this);

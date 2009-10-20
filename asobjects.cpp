@@ -109,9 +109,9 @@ ASFUNCTIONBODY(ASArray,join)
 		string ret;
 		for(int i=0;i<th->size();i++)
 		{
-			ret+=th->at(i)->toString();
+			ret+=th->at(i)->toString().raw_buf();
 			if(i!=th->size()-1)
-				ret+=del->toString();
+				ret+=del->toString().raw_buf();
 		}
 		return new ASString(ret);
 }
@@ -402,7 +402,7 @@ void ASArray::setVariableByMultiname(multiname& name, ASObject* o)
 
 		}
 		if(index==0)
-			index=atoi(name.name_s);
+			index=atoi(name.name_s.raw_buf());
 	}
 	else if(name.name_type==multiname::NAME_INT)
 		index=name.name_i;
@@ -451,7 +451,7 @@ void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns,
 
 	}
 	if(index==0)
-		index=atoi((const char*)name);
+		index=atoi(name.raw_buf());
 
 	if(index!=-1)
 	{
@@ -541,7 +541,7 @@ ASString::ASString(const string& s):ASObject("String",this),data(s)
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const tiny_string& s):ASObject("String",this),data((const char*)s)
+ASString::ASString(const tiny_string& s):ASObject("String",this),data(s.raw_buf())
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -647,7 +647,7 @@ tiny_string ASArray::toString() const
 	{
 		if(data[i].type!=STACK_OBJECT)
 			abort();
-		ret+=data[i].data->toString();
+		ret+=data[i].data->toString().raw_buf();
 		if(i!=data.size()-1)
 			ret+=',';
 	}
@@ -1071,9 +1071,17 @@ RegExp::RegExp():ASObject("RegExp",this)
 ASFUNCTIONBODY(RegExp,_constructor)
 {
 	RegExp* th=static_cast<RegExp*>(obj);
-	th->re=args->at(0)->toString();
+	th->re=args->at(0)->toString().raw_buf();
 	if(args->size()>1)
-		th->flags=args->at(1)->toString();
+		th->flags=args->at(1)->toString().raw_buf();
+	th->setVariableByQName("exec",AS3,new Function(exec));
+}
+
+ASFUNCTIONBODY(RegExp,exec)
+{
+	RegExp* th=static_cast<RegExp*>(obj);
+	cout << "Returning tracer2" <<endl;
+	return new DebugTracer("RegExp::exec");
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)

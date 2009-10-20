@@ -19,12 +19,15 @@
 
 #include "flashutils.h"
 
+using namespace std;
+
 ByteArray::ByteArray():ASObject("ByteArray",this),bytes(NULL),len(0)
 {
 }
 
 ASObject* getQualifiedClassName(ASObject* obj, arguments* args)
 {
-	//TODO: check, it's not was the system expect
-	return new ASString(args->at(0)->class_name);
+	int class_index=obj->class_index;
+	cout << args->at(0)->getClassName() << endl;
+	return new ASString(args->at(0)->getClassName());
 }

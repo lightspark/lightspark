@@ -145,7 +145,6 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 	{"greaterEquals",(void*)&ABCVm::greaterEquals},
 	{"lessEquals",(void*)&ABCVm::lessEquals},
 	{"strictEquals",(void*)&ABCVm::strictEquals},
-	{"in",(void*)&ABCVm::in},
 };
 
 typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
@@ -207,6 +206,7 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"ifGT",(void*)&ABCVm::ifGT,ARGS_OBJ_OBJ},
 	{"ifGE",(void*)&ABCVm::ifGE,ARGS_OBJ_OBJ},
 	{"ifLE",(void*)&ABCVm::ifGT,ARGS_OBJ_OBJ},
+	{"in",(void*)&ABCVm::in,ARGS_OBJ_OBJ},
 	{"ifStrictNE",(void*)&ABCVm::ifStrictNE,ARGS_OBJ_OBJ},
 	{"pushTrue",(void*)&ABCVm::pushTrue,ARGS_NONE},
 	{"pushFalse",(void*)&ABCVm::pushFalse,ARGS_NONE},
@@ -801,7 +801,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		return f;
 
 	string n="method";
-	n+=context->getString(name);
+	n+=context->getString(name).raw_buf();
 	if(!body)
 	{
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
@@ -1890,8 +1890,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(push_index,STACK_BOOLEAN));
+					checkProactiveCasting(cur_block->push_types,push_index,STACK_BOOLEAN);
 					break;
 				}
 				case 0xc1:
@@ -4362,7 +4362,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("in"), v1, v2);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				push_index++;
 				jitted=true;
 				break;

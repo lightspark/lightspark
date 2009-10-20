@@ -464,7 +464,7 @@ private:
 	static bool pushFalse();
 	static bool pushTrue();
 	static void dup(call_context* th);
-	static ASObject* in(ASObject*,ASObject*);
+	static bool in(ASObject*,ASObject*);
 	static ASObject* strictEquals(ASObject*,ASObject*);
 	static bool _not(ASObject*);
 	static bool equals(ASObject*,ASObject*);

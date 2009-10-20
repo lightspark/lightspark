@@ -97,10 +97,10 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	}
 	if(th==NULL)
 		return NULL;
-	sys->cur_input_thread->addListener(string(args->at(0)->toString()),th);
+	sys->cur_input_thread->addListener(args->at(0)->toString().raw_buf(),th);
 
-	th->handlers.insert(make_pair(args->at(0)->toString(),args->at(1)->toFunction()));
-	sys->events_name.push_back(string(args->at(0)->toString()));
+	th->handlers.insert(make_pair(args->at(0)->toString().raw_buf(),args->at(1)->toFunction()));
+	sys->events_name.push_back(args->at(0)->toString().raw_buf());
 }
 
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)

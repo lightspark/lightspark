@@ -27,7 +27,7 @@ using namespace std;
 
 extern __thread SystemState* sys;
 
-Event::Event(const string& t):type(t),ASObject("Event",this)
+Event::Event(const string& t):type(t),ASObject("Event")
 {
 	setVariableByQName("ENTER_FRAME","",new ASString("enterFrame"));
 	setVariableByQName("ADDED_TO_STAGE","",new ASString("addedToStage"));
@@ -67,7 +67,7 @@ IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
 	setVariableByQName("IO_ERROR","",new ASString("ioError"));
 }
 
-EventDispatcher::EventDispatcher():ASObject("EventDispatcher",this),id(0)
+EventDispatcher::EventDispatcher():ASObject("EventDispatcher"),id(0)
 {
 	if(constructor)
 		constructor->decRef();

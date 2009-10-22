@@ -154,11 +154,12 @@ ASFUNCTIONBODY(Loader,load)
 /*	if(th->loading)
 		return NULL;
 	th->loading=true;*/
-	if(args->at(0)->getClassName()!="URLRequest")
+	abort();
+/*	if(args->at(0)->getClassName()!="URLRequest")
 	{
 		LOG(ERROR,"ArgumentError");
 		abort();
-	}
+	}*/
 	URLRequest* r=static_cast<URLRequest*>(args->at(0));
 	th->url=r->url->toString();
 	th->source=URL;
@@ -174,8 +175,9 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	ASObject* cur=args->at(0);
 	assert(cur);
 	cur=cur->prototype;
-	while(cur->getClassName()!="ByteArray")
-		cur=cur->super;
+	abort();
+//	while(cur->getClassName()!="ByteArray")
+//		cur=cur->super;
 	th->bytes=dynamic_cast<ByteArray*>(cur);
 	assert(th->bytes);
 	if(th->bytes->bytes)
@@ -356,12 +358,13 @@ ASFUNCTIONBODY(MovieClip,addChild)
 		abort();
 	IDisplayListElem* e=NULL;
 	//Look for a renderable object in the super chain
-	do
+	abort();
+/*	do
 	{
 		e=dynamic_cast<IDisplayListElem*>(cur);
 		cur=cur->super;
 	}
-	while(e==NULL && cur!=NULL);
+	while(e==NULL && cur!=NULL);*/
 
 	if(e==NULL)
 	{

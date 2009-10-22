@@ -110,7 +110,7 @@ ASFUNCTIONBODY(ABCVm,print)
 void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
-	Global.setVariableByQName("Object","",new ASObject("Object"));
+	Global.setVariableByQName("Object","",new Class<ASObject>("Object"));
 	Global.setVariableByQName("Number","",new Number(0.0));
 	Global.setVariableByQName("String","",new ASString);
 	Global.setVariableByQName("Array","",new ASArray);
@@ -125,13 +125,13 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("parseInt","",new Function(parseInt));
 	Global.setVariableByQName("toString","",new Function(ASObject::_toString));
 
-	Global.setVariableByQName("MovieClip","flash.display",new MovieClip);
+	Global.setVariableByQName("MovieClip","flash.display",new Class<MovieClip>("MovieClip"));
 	Global.setVariableByQName("DisplayObject","flash.display",new DisplayObject);
 	Global.setVariableByQName("Loader","flash.display",new Loader);
 	Global.setVariableByQName("SimpleButton","flash.display",new ASObject("SimpleButton"));
 	Global.setVariableByQName("InteractiveObject","flash.display",new ASObject("InteractiveObject")),
 	Global.setVariableByQName("DisplayObjectContainer","flash.display",new DisplayObjectContainer);
-	Global.setVariableByQName("Sprite","flash.display",new Sprite);
+	Global.setVariableByQName("Sprite","flash.display",new Class<Sprite>("Sprite"));
 
 	Global.setVariableByQName("TextField","flash.text",new ASObject("TextField"));
 	Global.setVariableByQName("TextFormat","flash.text",new ASObject("TextFormat"));
@@ -142,7 +142,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("ApplicationDomain","flash.system",new ASObject("ApplicationDomain"));
 	Global.setVariableByQName("LoaderContext","flash.system",new ASObject("LoaderContext"));
 
-	Global.setVariableByQName("ByteArray","flash.utils",new ByteArray);
+	Global.setVariableByQName("ByteArray","flash.utils",new Class<ByteArray>("ByteArray"));
 	Global.setVariableByQName("Dictionary","flash.utils",new ASObject("Dictionary"));
 	Global.setVariableByQName("Proxy","flash.utils",new ASObject("Proxy"));
 	Global.setVariableByQName("Timer","flash.utils",new ASObject("Timer"));
@@ -845,8 +845,9 @@ void ABCContext::buildClassAndInjectBase(const string& s, ASObject* base,argumen
 		}
 	}
 
+	assert(derived_class->getObjectType()==T_CLASS);
 	//Walk up the super prototype and clone to inject the base
-	ASObject* cur=derived_class;
+/*	ASObject* cur=derived_class;
 	while(cur->super->class_name!=base->class_name)
 	{
 		ASObject* new_super=cur->super->clone();
@@ -857,16 +858,14 @@ void ABCContext::buildClassAndInjectBase(const string& s, ASObject* base,argumen
 
 	//TODO: handle refcounting
 	//Inject the base
-	cur->super=base;
+	cur->super=base;*/
 
 	//Now the class is valid, check that it's not a builtin one
 	assert(derived_class->class_index!=-1);
 
 	//It's now possible to actually build an instance
-	ASObject* obj=new ASObject(s.c_str());
-	obj->prototype=derived_class;
-	derived_class->incRef();
-	base->incRef();
+	ASObject* obj=static_cast<Class_base*>(derived_class)->getInstance();
+	//base->incRef();
 
 	if(derived_class->class_index!=-1)
 	{
@@ -1322,8 +1321,10 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		{
 			LOG(CALLS,"Getter trait: " << name << " #" << t->method);
 			IFunction* f=NULL;
+			abort();
+			/*
 			//Hack, try to find this on the most derived variables
-			obj_var* var=obj->mostDerived->Variables.findObjVar(name,ns,false);
+			obj_var* var=obj->findObjVar(name,ns,false);
 			if(var && var->getter) //Ok, it seems that we have been overridden, set this in our map
 			{
 				LOG(CALLS,"HACK: overridden getter");
@@ -1338,13 +1339,15 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				f=new SyntheticFunction(m);
 			}
 			obj->setGetterByQName(name,ns,f);
-			LOG(CALLS,"End Getter trait: " << name);
+			LOG(CALLS,"End Getter trait: " << name);*/
 			break;
 		}
 		case traits_info::Setter:
 		{
 			LOG(CALLS,"Setter trait: " << name << " #" << t->method);
 			IFunction* f=NULL;
+			abort();
+			/*
 			//Hack, try to find this on the most derived variables
 			obj_var* var=obj->mostDerived->Variables.findObjVar(name,ns,false);
 			if(var && var->setter) //Ok, it seems that we have been overridden, set this in our map
@@ -1361,13 +1364,15 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				f=new SyntheticFunction(m);
 			}
 			obj->setSetterByQName(name,ns,f);
-			LOG(CALLS,"End Setter trait: " << name);
+			LOG(CALLS,"End Setter trait: " << name);*/
 			break;
 		}
 		case traits_info::Method:
 		{
 			LOG(CALLS,"Method trait: " << name << " #" << t->method);
 			IFunction* f=NULL;
+			abort();
+			/*
 			//Hack, try to find this on the most derived variables
 			obj_var* var=obj->mostDerived->Variables.findObjVar(name,ns,false);
 			if(var && var->var) //Ok, it seems that we have been overridden, set this in our map
@@ -1383,7 +1388,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				method_info* m=&methods[t->method];
 				f=new SyntheticFunction(m);
 			}
-			obj->setVariableByQName(name,ns,f);
+			obj->setVariableByQName(name,ns,f);*/
 			break;
 		}
 		case traits_info::Const:

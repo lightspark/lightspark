@@ -175,10 +175,10 @@ double ASObject::toNumber() const
 	return 0;
 }
 
-obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& ns, bool create)
+obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create)
 {
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
-	if(ret.first->first==name)
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name,level));
+	if(ret.first!=ret.second) //If length!=0 value is found
 	{
 		//Check if this namespace is already present
 		var_iterator& start=ret.first;
@@ -192,23 +192,27 @@ obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& n
 	//Name not present, insert it if we have to create it
 	if(create)
 	{
-		var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair(ns, obj_var() ) ) );
+		var_iterator inserted=Variables.insert(ret.first,make_pair(nameAndLevel(name,level), make_pair(ns, obj_var() ) ) );
 		return &inserted->second.second;
 	}
 	else
 		return NULL;
 }
 
-bool variables_map::hasProperty(const tiny_string& name)
+bool variables_map::hasProperty(const tiny_string& name,int level)
 {
-	return Variables.find(name)!=Variables.end();
+	return Variables.find(nameAndLevel(name,level))!=Variables.end();
 }
 
 bool ASObject::hasProperty(const tiny_string& name)
 {
-	bool ret=Variables.hasProperty(name);
-	if(!ret && super)
-		ret=super->hasProperty(name);
+	bool ret;
+	for(int i=0;i<max_level;i++)
+	{
+		ret=Variables.hasProperty(name,i);
+		if(ret)
+			break;
+	}
 	if(!ret && prototype)
 		ret=prototype->hasProperty(name);
 
@@ -217,31 +221,30 @@ bool ASObject::hasProperty(const tiny_string& name)
 
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
-	obj_var* obj=Variables.findObjVar(name,ns);
-	if(obj->getter)
-	{
-		//ret.first->second.getter->decRef();
-		//Should never happen
-		abort();
-	}
+	obj_var* obj=Variables.findObjVar(name,ns,max_level,true);
+	assert(obj->getter==NULL);
 	obj->getter=o;
 }
 
 void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
-	obj_var* obj=Variables.findObjVar(name,ns);
-	if(obj->setter)
-	{
-		//ret.first->second.setter->decRef();
-		//Should never happen
-		abort();
-	}
+	obj_var* obj=Variables.findObjVar(name,ns,max_level,true);
+	assert(obj->setter==NULL);
 	obj->setter=o;
 }
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
-	obj_var* obj=Variables.findObjVar(name,ns);
+	obj_var* obj=NULL;
+	for(int i=max_level;i>0;i--)
+	{
+		obj=Variables.findObjVar(name,ns,i-1,false);
+		if(obj)
+			break;
+	}
+
+	if(obj==NULL)
+		obj=Variables.findObjVar(name,ns,max_level,true);
 
 	if(obj->setter)
 	{
@@ -265,20 +268,9 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	setVariableByMultiname(name,abstract_i(value));
-/*	if(name.namert)
-		name.name=name.namert->toString();
-
-	pair<map<Qname, ASObject*>::iterator,bool> ret=Variables.insert(pair<Qname,ASObject*>(name.name,o));
-	if(!ret.second)
-	{
-		if(ret.first->second)
-			ret.first->second->decRef();
-		ret.first->second=o;
-	}
-	return o;*/
 }
 
-obj_var* variables_map::findObjVar(const multiname& mname, bool create)
+obj_var* variables_map::findObjVar(const multiname& mname, int level, bool create)
 {
 	tiny_string name;
 	if(mname.name_type==multiname::NAME_INT)
@@ -286,8 +278,8 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 	else if(mname.name_type==multiname::NAME_STRING)
 		name=mname.name_s;
 
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
-	if(ret.first->first==name)
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name,level));
+	if(ret.first!=ret.second)
 	{
 		//Check if one the namespace is already present
 		if(mname.ns.empty())
@@ -309,12 +301,13 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 	{
 		if(mname.ns.size()>1)
 		{
+			abort();
 			//Hack, insert with empty name
 			//Here the object MUST exist
-			var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair("", obj_var() ) ) );
+			var_iterator inserted=Variables.insert(ret.first,make_pair(nameAndLevel(name,level), make_pair("", obj_var() ) ) );
 			return &inserted->second.second;
 		}
-		var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair(mname.ns[0], obj_var() ) ) );
+		var_iterator inserted=Variables.insert(ret.first,make_pair(nameAndLevel(name,level), make_pair(mname.ns[0], obj_var() ) ) );
 		return &inserted->second.second;
 	}
 	else
@@ -332,50 +325,39 @@ ASFUNCTIONBODY(ASObject,_constructor)
 
 void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 {
-	ASObject* owner=NULL;
-
-	obj_var* obj;
-	ASObject* cur=this;
-	do
+	obj_var* obj=NULL;
+	for(int i=max_level;i>0;i--)
 	{
-		obj=cur->Variables.findObjVar(name,false);
+		obj=Variables.findObjVar(name,i-1,false);
 		if(obj)
-			owner=cur;
-		cur=cur->super;
+			break;
 	}
-	while(cur && owner==NULL);
 
-	if(owner) //Variable already defined change it
+	if(obj==NULL)
+		obj=Variables.findObjVar(name,max_level,true);
+
+	if(obj->setter)
 	{
-		if(obj->setter)
-		{
-			//Call the setter
-			LOG(CALLS,"Calling the setter");
-			arguments args(1);
-			args.set(0,o);
-			//TODO: check
-			o->incRef();
-			//
-
-			obj->setter->call(owner,&args);
-			LOG(CALLS,"End of setter");
-		}
-		else
-		{
-			if(obj->var)
-				obj->var->decRef();
-			obj->var=o;
-		}
+		//Call the setter
+		LOG(CALLS,"Calling the setter");
+		arguments args(1);
+		args.set(0,o);
+		//TODO: check
+		o->incRef();
+		obj->setter->call(this,&args);
+		LOG(CALLS,"End of setter");
 	}
-	else //Insert it
+	else
 	{
-		obj=Variables.findObjVar(name,true);
+		if(obj->var)
+			obj->var->decRef();
 		obj->var=o;
 	}
 }
 
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 {
+	abort();
 	ASObject* ret=getVariableByMultiname(name,owner);
 	if(ret)
 		return ret->toInt();
@@ -385,12 +367,15 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& ow
 
 ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& owner)
 {
-	obj_var* obj=Variables.findObjVar(name,false);
-	ASObject* ret;
+	obj_var* obj=NULL;
+	for(int i=max_level;i>=0;i--)
+	{
+		obj=Variables.findObjVar(name,i,false);
+		if(obj)
+			break;
+	}
 
-	if(obj==NULL)
-		owner=NULL;
-	else
+	if(obj!=NULL)
 	{
 		if(obj->getter)
 		{
@@ -409,25 +394,25 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& own
 			return obj->var;
 		}
 	}
-
-	if(!owner)
+	else
 	{
 		//Check if we should do lazy definition
 		if(name.name_s=="toString")
 		{
-			ret=new Function(ASObject::_toString);
+			ASObject* ret=new Function(ASObject::_toString);
 			setVariableByQName("toString","",ret);
 			owner=this;
+			return ret;
 		}
+
+		//It has not been found yet, ask the prototype
+		if(prototype)
+			return prototype->getVariableByMultiname(name,owner);
 	}
 
-	if(!owner && super)
-		ret=super->getVariableByMultiname(name,owner);
-
-	if(!owner && prototype)
-		ret=prototype->getVariableByMultiname(name,owner);
-
-	return ret;
+	//If it has not been found
+	owner=NULL;
+	return NULL;
 }
 
 ASObject* variables_map::getVariableByString(const std::string& name)
@@ -439,7 +424,7 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 		string cur(it->second.first.raw_buf());
 		if(!cur.empty())
 			cur+='.';
-		cur+=it->first.raw_buf();
+		cur+=it->first.name.raw_buf();
 		if(cur==name)
 		{
 			if(it->second.second.getter)
@@ -453,7 +438,8 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 
 ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 {
-	obj_var* obj=Variables.findObjVar(name,ns,false);
+	abort();
+	obj_var* obj=Variables.findObjVar(name,ns,max_level,false);
 	ASObject* ret;
 
 	if(obj==NULL)
@@ -475,9 +461,6 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 			return obj->var;
 		}
 	}
-
-	if(!owner && super)
-		ret=super->getVariableByQName(name,ns,owner);
 
 	if(!owner && prototype)
 		ret=prototype->getVariableByQName(name,ns,owner);
@@ -533,7 +516,7 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
-		cout << '[' << it->second.first << "] "<< it->first << endl;
+		cout << it->first.level << ": [" << it->second.first << "] "<< it->first.name << endl;
 }
 
 tiny_string Integer::toString() const
@@ -1270,54 +1253,51 @@ variables_map::~variables_map()
 	}
 }
 
-ASObject::ASObject(const tiny_string& c, ASObject* v, Manager* m):
-	prototype(NULL),super(NULL),parent(NULL),ref_count(1),
-	constructor(NULL),class_index(-1),manager(m),type(T_OBJECT),class_name(c)
+ASObject::ASObject(const tiny_string& c, Manager* m):
+	prototype(NULL),parent(NULL),ref_count(1),constructor(NULL),class_index(-1),
+	manager(m),type(T_OBJECT),class_name(c),max_level(0)
 {
-	mostDerived=(v)?v:this;
 }
 
 ASObject::ASObject(const ASObject& o):
-	prototype(o.prototype),super(o.super),manager(NULL),parent(NULL),ref_count(1),
+	prototype(o.prototype),manager(NULL),parent(NULL),ref_count(1),
 	constructor(NULL),class_index(o.class_index),type(o.type),
-	mostDerived(this),class_name(o.class_name)
+	class_name(o.class_name),max_level(0)
 {
 	parent=o.parent;
 	constructor=o.constructor;
 	if(constructor)
 		constructor->incRef();
 
-	if(super)
-		super->incRef();
 	if(prototype)
 		prototype->incRef();
 	
 /*	std::map<Qname,ASObject*> Variables;	
-	std::map<Qname,IFunction*> Setters;
-	std::map<Qname,IFunction*> Getters;
 	std::vector<ASObject*> slots;
 	std::vector<var_iterator> slots_vars;*/
 }
 
 ASObject::~ASObject()
 {
-	if(super)
-		super->decRef();
 	if(prototype)
 		prototype->decRef();
 	if(constructor)
 		constructor->decRef();
 }
 
-void variables_map::initSlot(int n,ASObject* o, const tiny_string& name, const tiny_string& ns)
+void variables_map::initSlot(int n, int level, ASObject* o, const tiny_string& name, const tiny_string& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
 
-	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
-	cout << ret.first->first << endl;
-	if(ret.first->first==name)
+	if(slots_vars[n]==Variables.end())
+	{
+		LOG(NOT_IMPLEMENTED,"Slot overwrite attempted");
+		return;
+	}
+
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name,level));
+	if(ret.first!=ret.second)
 	{
 		//Check if this namespace is already present
 		var_iterator& start=ret.first;
@@ -1337,6 +1317,7 @@ void variables_map::initSlot(int n,ASObject* o, const tiny_string& name, const t
 
 void variables_map::setSlot(int n,ASObject* o)
 {
+	abort();
 	if(n-1<slots_vars.size())
 	{
 		if(slots_vars[n-1]!=Variables.end())
@@ -1372,6 +1353,7 @@ tiny_string RegisterNumber::toString() const
 
 tiny_string variables_map::getNameAt(int index)
 {
+	abort();
 	if(index<Variables.size())
 	{
 		var_iterator it=Variables.begin();
@@ -1379,7 +1361,7 @@ tiny_string variables_map::getNameAt(int index)
 		for(int i=0;i<index;i++)
 			it++;
 
-		return tiny_string(it->first);
+		return tiny_string(it->first.name);
 	}
 	else
 	{

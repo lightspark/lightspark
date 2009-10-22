@@ -37,13 +37,14 @@
 	ASObject* c::name(ASObject* obj, arguments* args)
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_NUMBER, T_FUNCTION,
-	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE, T_INVALID};
+	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE, T_INVALID, T_CLASS};
 
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER,STACK_BOOLEAN};
 
 typedef double number_t;
 
 class ASObject;
+class Class_base;
 class arguments;
 class IFunction;
 struct arrayElem;
@@ -254,22 +255,37 @@ template<class T>
 	void put(ASObject* o);
 };
 
+class nameAndLevel
+{
+public:
+	tiny_string name;
+	int level;
+	nameAndLevel(const tiny_string& n, int l):name(n),level(l){}
+	bool operator<(const nameAndLevel& r) const
+	{
+		if(name==r.name)
+			return level<r.level;
+		else
+			return name<r.name;
+	}
+};
+
 class variables_map
 {
 private:
-	std::multimap<tiny_string,std::pair<tiny_string, obj_var> > Variables;
-	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
+	std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> > Variables;
+	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::iterator var_iterator;
 	std::vector<var_iterator> slots_vars;
 public:
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
-	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create=true);
-	obj_var* findObjVar(const multiname& mname, bool create=true);
+	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create);
+	obj_var* findObjVar(const multiname& mname, int level, bool create);
 	ASObject* getSlot(int n)
 	{
 		return slots_vars[n-1]->second.second.var;
 	}
 	void setSlot(int n,ASObject* o);
-	void initSlot(int n,ASObject* o, const tiny_string& name, const tiny_string& ns);
+	void initSlot(int n,int level, ASObject* o, const tiny_string& name, const tiny_string& ns);
 	ASObject* getVariableByString(const std::string& name);
 	void dumpVariables();
 	int size()
@@ -277,7 +293,7 @@ public:
 		Variables.size();
 	}
 	tiny_string getNameAt(int i);
-	bool hasProperty(const tiny_string& name);
+	bool hasProperty(const tiny_string& name, int level);
 	~variables_map();
 };
 
@@ -290,7 +306,6 @@ friend class ABCContext;
 protected:
 	ASObject* parent;
 	SWFOBJECT_TYPE type;
-	ASObject* mostDerived;
 	//maps variable name to namespace name and var
 	variables_map Variables;
 	ASObject(const ASObject& o);
@@ -298,9 +313,10 @@ protected:
 private:
 	int ref_count;
 	Manager* manager;
+	int max_level;
 public:
-	//Constructor to set class_name and derivedVariables
-	ASObject(const tiny_string& c, ASObject* v=NULL, Manager* m=NULL);
+	//Constructor to set class_name
+	ASObject(const tiny_string& c, Manager* m=NULL);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	virtual ~ASObject();
@@ -308,12 +324,11 @@ public:
 	{
 		assert(ref_count>0);
 	}
-	const tiny_string& getClassName()
+/*	const tiny_string& getClassName()
 	{
 		return mostDerived->class_name;
-	}
-	ASObject* prototype;
-	ASObject* super;
+	}*/
+	Class_base* prototype;
 	IFunction* constructor;
 	int class_index;
 	void incRef()
@@ -375,7 +390,7 @@ public:
 	}
 	virtual void initSlot(int n,ASObject* o, const tiny_string& name, const tiny_string& ns)
 	{
-		Variables.initSlot(n,o,name,ns);
+		Variables.initSlot(n,max_level,o,name,ns);
 	}
 	virtual int numVariables();
 	tiny_string getNameAt(int i)
@@ -466,7 +481,7 @@ public:
 class Package : public ASObject
 {
 public:
-	Package():ASObject("Package",this){type=T_PACKAGE;}
+	Package():ASObject("Package"){type=T_PACKAGE;}
 	ASObject* clone()
 	{
 		abort();

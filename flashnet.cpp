@@ -19,7 +19,7 @@
 
 #include "flashnet.h"
 
-URLRequest::URLRequest():ASObject("URLRequest",this),url(NULL)
+URLRequest::URLRequest():ASObject("URLRequest"),url(NULL)
 {
 	if(constructor)
 		constructor->decRef();

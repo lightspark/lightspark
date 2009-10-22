@@ -19,7 +19,7 @@
 
 #include "flashgeom.h"
 
-Rectangle::Rectangle(int l, int t, int r, int b):ASObject("Rectangle",this)
+Rectangle::Rectangle(int l, int t, int r, int b):ASObject("Rectangle")
 {
 /*	setVariableByName("left",new Integer(l));
 	setVariableByName("top",new Integer(t));

@@ -505,7 +505,8 @@ void ABCVm::construct(call_context* th, int m)
 	LOG(CALLS,"Constructing " << obj->class_name);
 	ASObject* ret=obj->clone();
 
-	ret->prototype=obj;
+	assert(obj->getObjectType()==T_CLASS);
+	ret->prototype=static_cast<Class_base*>(obj);
 	obj->incRef();
 
 	if(obj->class_index==-2)
@@ -1010,28 +1011,30 @@ void ABCVm::_throw(call_context* th)
 
 void ABCVm::setSuper(call_context* th, int n)
 {
+	abort();
 	ASObject* value=th->runtime_stack_pop();
 	multiname* name=th->context->getMultiname(n,th); 
 
 	LOG(NOT_IMPLEMENTED,"setSuper " << *name);
 
-	ASObject* obj=th->runtime_stack_pop();
+/*	ASObject* obj=th->runtime_stack_pop();
 	if(obj->super)
 		obj=obj->super;
 
 	obj->setVariableByMultiname(*name,value);
 
-	//TODO: decRef object
+	//TODO: decRef object*/
 }
 
 void ABCVm::getSuper(call_context* th, int n)
 {
+	abort();
 	multiname* name=th->context->getMultiname(n,th); 
 
 	LOG(NOT_IMPLEMENTED,"getSuper " << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
-	if(obj->super)
+/*	if(obj->super)
 		obj=obj->super;
 
 	ASObject* owner;
@@ -1045,7 +1048,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	else
 		th->runtime_stack_push(new Undefined);
 
-	//TODO: decRef object
+	//TODO: decRef object*/
 }
 
 void ABCVm::getLex(call_context* th, int n)
@@ -1118,15 +1121,23 @@ void ABCVm::constructSuper(call_context* th, int n)
 	if(obj->prototype==NULL)
 	{
 		LOG(CALLS,"No prototype. Returning");
+		abort();
 		return;
 	}
 
-	//The prototype of the new super instance is the super of the prototype
-	ASObject* super=obj->prototype->super;
+	//Store the old prototype and level
+	Class_base* old_prototype=obj->prototype;
+	int old_level=obj->max_level;
+
+	//Move the object protoype and level up
+	obj->prototype=old_prototype->super;
+	obj->max_level--;
+	assert(obj->max_level==obj->prototype->max_level);
 
 	//Check if the super is the one we expect
 	int super_name=th->context->instances[obj->prototype->class_index].supername;
-	if(super_name)
+	assert(super_name);
+/*	if(super_name)
 	{
 		const multiname* mname=th->context->getMultiname(super_name,NULL);
 		const tiny_string& sname=mname->name_s;
@@ -1155,11 +1166,12 @@ void ABCVm::constructSuper(call_context* th, int n)
 	{
 		LOG(ERROR,"No super");
 		abort();
-	}
+	}*/
 
 	if(super->class_index!=-1)
 	{
-		multiname* name=th->context->getMultiname(th->context->instances[super->class_index].name,NULL);
+		abort();
+/*		multiname* name=th->context->getMultiname(th->context->instances[super->class_index].name,NULL);
 		LOG(CALLS,"Constructing super " << *name << " obj " << obj->super << " on obj " << obj);
 
 		obj->super=new ASObject(name->name_s,obj->mostDerived);
@@ -1174,17 +1186,18 @@ void ABCVm::constructSuper(call_context* th, int n)
 		super->constructor->call(obj->super,&args);
 		//args.decRef();
 
-		LOG(CALLS,"End of constructing super " << *name);
+		LOG(CALLS,"End of constructing super " << *name);*/
 	}
 	else
 	{
-		LOG(CALLS,"Builtin super " << super->class_name);
+		abort();
+/*		LOG(CALLS,"Builtin super " << super->class_name);
 		obj->super=super->clone();
 		LOG(CALLS,"Calling Instance init");
 		//args.incRef();
 		if(super->constructor)
 			super->constructor->call(obj->super,&args);
-		//args.decRef();
+		//args.decRef();*/
 	}
 	LOG(CALLS,"End super construct ");
 	obj->decRef();
@@ -1200,13 +1213,6 @@ void ABCVm::findPropStrict(call_context* th, int n)
 	for(it;it!=th->scope_stack.rend();it++)
 	{
 		(*it)->getVariableByMultiname(*name,owner);
-		ASObject* s=((ASObject*)*it);
-		while(s)
-		{
-			cout << typeid(*s).name() << " (" << s->class_name << ") -> ";
-			s=s->super;
-		}
-		cout << endl;
 		if(owner)
 		{
 			//We have to return the object, not the property
@@ -1280,6 +1286,7 @@ void ABCVm::initProperty(call_context* th, int n)
 
 void ABCVm::callSuper(call_context* th, int n, int m)
 {
+	abort();
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
@@ -1288,7 +1295,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	LOG(NOT_IMPLEMENTED,"callSuper " << *name << ' ' << m);
 
 	ASObject* receiver=th->runtime_stack_pop();
-	ASObject* obj;
+	/*ASObject* obj;
 	if(receiver->super)
 		obj=receiver->super;
 	else
@@ -1330,17 +1337,17 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 		}
 		else
 		{
-			/*IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
-			if(f)
-			{
-				ASObject* ret=f->fast_call(o,args,m);
-				th->runtime_stack_push(ret);
-			}
-			else*/
-			{
-				LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
-				th->runtime_stack_push(new Undefined);
-			}
+			//IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
+			//if(f)
+			//{
+			//	ASObject* ret=f->fast_call(o,args,m);
+			//	th->runtime_stack_push(ret);
+			//}
+			//else
+			//{
+			//	LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
+			//	th->runtime_stack_push(new Undefined);
+			//}
 		}
 	}
 	else
@@ -1350,11 +1357,12 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	}
 	LOG(CALLS,"End of calling " << name);
 	receiver->decRef();
-	delete[] args;
+	delete[] args;*/
 }
 
 void ABCVm::callSuperVoid(call_context* th, int n, int m)
 {
+	abort();
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
@@ -1363,7 +1371,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	LOG(CALLS,"callSuperVoid " << *name << ' ' << m);
 
 	ASObject* receiver=th->runtime_stack_pop();
-	ASObject* obj;
+/*	ASObject* obj;
 	if(receiver->super)
 		obj=receiver->super;
 	else
@@ -1399,13 +1407,13 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		}
 		else
 		{
-			/*IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
-			if(f)
-				f->fast_call(o,args,m);
-			else*/
-			{
-				LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
-			}
+			//IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
+			//if(f)
+			//	f->fast_call(o,args,m);
+			//else
+			//{
+			//	LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
+			//}
 		}
 	}
 	else
@@ -1414,7 +1422,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	}
 	LOG(CALLS,"End of calling " << name);
 	receiver->decRef();
-	delete[] args;
+	delete[] args;*/
 }
 
 void ABCVm::isTypelate(call_context* th)
@@ -1486,8 +1494,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	LOG(CALLS,"Constructing");
 	ASObject* ret=o->clone();
-
-	ret->prototype=o;
+	assert(o->getObjectType()==T_CLASS);
+	ret->prototype=static_cast<Class_base*>(o);
 	o->incRef();
 
 	if(o->class_index==-2)
@@ -1611,8 +1619,11 @@ void ABCVm::newClass(call_context* th, int n)
 	assert(name_index);
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
 
-	ASObject* ret=new ASObject(mname->name_s);
-	ret->super=th->runtime_stack_pop();
+	Class_base* ret=new Class<ASObject*>(mname->name_s);
+	ASObject* tmp=th->runtime_stack_pop();
+	assert(tmp->getObjectType()==T_CLASS);
+	ret->super=static_cast<Class_base*>(tmp);
+	ret->max_level=tmp->max_level+1;
 
 	method_info* m=&th->context->methods[th->context->classes[n].cinit];
 	IFunction* cinit=new SyntheticFunction(m);

@@ -35,13 +35,13 @@ using namespace std;
 
 extern __thread SystemState* sys;
 
-ASStage::ASStage():width(640),height(480),ASObject("Stage",this)
+ASStage::ASStage():width(640),height(480),ASObject("Stage")
 {
 //	setVariableByQName("width","",&width);
 //	setVariableByQName("height","",&height);
 }
 
-ASArray::ASArray():ASObject("Array",this)
+ASArray::ASArray():ASObject("Array")
 {
 	type=T_ARRAY;
 	constructor=new Function(_constructor);
@@ -154,7 +154,7 @@ ASFUNCTIONBODY(ASArray,_push)
 	return new Integer(th->size());
 }
 
-ASMovieClipLoader::ASMovieClipLoader():ASObject("MovieClipLoader",this)
+ASMovieClipLoader::ASMovieClipLoader():ASObject("MovieClipLoader")
 {
 }
 
@@ -170,7 +170,7 @@ ASFUNCTIONBODY(ASMovieClipLoader,addListener)
 	return NULL;
 }
 
-ASXML::ASXML():ASObject("XML",this)
+ASXML::ASXML():ASObject("XML")
 {
 	xml_buf=new char[1024*20];
 	xml_index=0;
@@ -242,6 +242,7 @@ bool ASArray::isEqual(const ASObject* r) const
 
 intptr_t ASArray::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 {
+	abort();
 	intptr_t ret;
 	owner=NULL;
 	int index=0;
@@ -290,6 +291,7 @@ intptr_t ASArray::getVariableByMultiname_i(const multiname& name, ASObject*& own
 
 ASObject* ASArray::getVariableByMultiname(const multiname& name, ASObject*& owner)
 {
+	abort();
 	ASObject* ret;
 	owner=NULL;
 	int index=0;
@@ -345,6 +347,7 @@ ASObject* ASArray::getVariableByMultiname(const multiname& name, ASObject*& owne
 
 void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 {
+	abort();
 	int index=0;
 	switch(name.name_type)
 	{
@@ -389,6 +392,7 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 
 void ASArray::setVariableByMultiname(multiname& name, ASObject* o)
 {
+	abort();
 	int index=0;
 	if(name.name_type==multiname::NAME_STRING)
 	{
@@ -440,6 +444,7 @@ void ASArray::setVariableByMultiname(multiname& name, ASObject* o)
 
 void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
+	abort();
 	int index=0;
 	for(int i=0;i<name.len();i++)
 	{
@@ -517,7 +522,7 @@ ASObject* ASArray::getVariableByQName(const tiny_string& name, const tiny_string
 	return ret;*/
 }
 
-ASString::ASString():ASObject("String",this)
+ASString::ASString():ASObject("String")
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -529,7 +534,7 @@ ASString::ASString():ASObject("String",this)
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const string& s):ASObject("String",this),data(s)
+ASString::ASString(const string& s):ASObject("String"),data(s)
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -541,7 +546,7 @@ ASString::ASString(const string& s):ASObject("String",this),data(s)
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const tiny_string& s):ASObject("String",this),data(s.raw_buf())
+ASString::ASString(const tiny_string& s):ASObject("String"),data(s.raw_buf())
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -553,7 +558,7 @@ ASString::ASString(const tiny_string& s):ASObject("String",this),data(s.raw_buf(
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const char* s):ASObject("String",this),data(s)
+ASString::ASString(const char* s):ASObject("String"),data(s)
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -717,7 +722,7 @@ bool Undefined::isEqual(const ASObject* r) const
 		return false;
 }
 
-Undefined::Undefined():ASObject("undefined",this)
+Undefined::Undefined():ASObject("undefined")
 {
 	type=T_UNDEFINED;
 //	setVariableByName(".Call",new Function(call));
@@ -799,7 +804,7 @@ tiny_string Number::toString() const
 	return buf;
 }
 
-Date::Date():ASObject("Date",this),year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
+Date::Date():ASObject("Date"),year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
 {
 	constructor=new Function(_constructor);
 }
@@ -1006,7 +1011,7 @@ ASObject* Function::call(ASObject* obj, arguments* args)
 	}
 }
 
-Math::Math():ASObject("Math",this)
+Math::Math():ASObject("Math")
 {
 	setVariableByQName("PI","",new Number(M_PI));
 	setVariableByQName("sqrt","",new Function(sqrt));
@@ -1063,7 +1068,7 @@ bool Null::isEqual(const ASObject* r) const
 		return false;
 }
 
-RegExp::RegExp():ASObject("RegExp",this)
+RegExp::RegExp():ASObject("RegExp")
 {
 	constructor=new Function(_constructor);
 }

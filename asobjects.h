@@ -69,10 +69,40 @@ public:
 	}
 };
 
+class Class_base: public ASObject
+{
+friend class ABCVm;
+private:
+	Class_base* super;
+public:
+	Class_base(const tiny_string& name):super(NULL),ASObject(name){type=T_CLASS;}
+	ASObject* clone()
+	{
+		abort();
+	}
+	virtual ASObject* getInstance()=0;
+};
+
+template< class T>
+class Class: public Class_base
+{
+public:
+	Class(const tiny_string& name):Class_base(name){}
+	ASObject* getInstance()
+	{
+		ASObject* ret=new T(class_name);
+		ret->max_level=max_level;
+		ret->prototype=this;
+		//As we are the prototype we should incRef ourself
+		incRef();
+		return ret;
+	}
+};
+
 class IFunction: public ASObject
 {
 public:
-	IFunction():bound(false),ASObject("IFunction",this){type=T_FUNCTION;}
+	IFunction():bound(false),ASObject("IFunction"){type=T_FUNCTION;}
 	typedef ASObject* (*as_function)(ASObject*, arguments*);
 	virtual ASObject* call(ASObject* obj, arguments* args)=0;
 	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args)=0;
@@ -130,7 +160,7 @@ friend bool Boolean_concrete(ASObject* obj);
 private:
 	bool val;
 public:
-	Boolean(bool v):val(v),ASObject("Boolean",this){type=T_BOOLEAN;}
+	Boolean(bool v):val(v),ASObject("Boolean"){type=T_BOOLEAN;}
 	int toInt() const
 	{
 		return val;
@@ -189,7 +219,7 @@ public:
 class Null : public ASObject
 {
 public:
-	Null():ASObject("Null",this){type=T_NULL;}
+	Null():ASObject("Null"){type=T_NULL;}
 	tiny_string toString() const;
 	ASObject* clone()
 	{
@@ -316,8 +346,8 @@ friend ASObject* abstract_i(intptr_t i);
 private:
 	int val;
 public:
-	Integer(int v):ASObject("Integer",this),val(v){type=T_INTEGER;}
-	Integer(Manager* m):ASObject("Integer",this,m),val(0){type=T_INTEGER;}
+	Integer(int v):ASObject("Integer"),val(v){type=T_INTEGER;}
+	Integer(Manager* m):ASObject("Integer",m),val(0){type=T_INTEGER;}
 	virtual ~Integer(){}
 	Integer& operator=(int v){val=v; return *this; }
 	tiny_string toString() const;
@@ -345,8 +375,8 @@ friend ASObject* abstract_d(number_t i);
 private:
 	double val;
 public:
-	Number(double v):ASObject("Number",this),val(v){type=T_NUMBER;}
-	Number(Manager* m):ASObject("Number",this,m),val(0){type=T_NUMBER;}
+	Number(double v):ASObject("Number"),val(v){type=T_NUMBER;}
+	Number(Manager* m):ASObject("Number",m),val(0){type=T_NUMBER;}
 	tiny_string toString() const;
 	int toInt() const
 	{
@@ -427,7 +457,7 @@ public:
 class Definable : public ASObject
 {
 public:
-	Definable():ASObject("Definable",this){type=T_DEFINABLE;}
+	Definable():ASObject("Definable"){type=T_DEFINABLE;}
 	virtual void define(ASObject* g)=0;
 };
 

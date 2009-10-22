@@ -21,13 +21,14 @@
 
 using namespace std;
 
-ByteArray::ByteArray():ASObject("ByteArray",this),bytes(NULL),len(0)
+ByteArray::ByteArray():ASObject("ByteArray"),bytes(NULL),len(0)
 {
 }
 
 ASObject* getQualifiedClassName(ASObject* obj, arguments* args)
 {
 	int class_index=obj->class_index;
-	cout << args->at(0)->getClassName() << endl;
-	return new ASString(args->at(0)->getClassName());
+	abort();
+	//cout << args->at(0)->getClassName() << endl;
+	//return new ASString(args->at(0)->getClassName());
 }

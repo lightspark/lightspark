@@ -164,7 +164,7 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 	in >> BackgroundColor;
 }
 
-DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in),ASObject("DefineEditTextTag",this)
+DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in),ASObject("DefineEditTextTag")
 {
 	//setVariableByName("text",SWFObject(new Integer(0)));
 	in >> CharacterID >> Bounds;
@@ -387,7 +387,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):Dictio
 	ignore(in,dest-in.tellg());
 }
 
-DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in),ASObject("DefineBitsLossless2Tag",this)
+DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in),ASObject("DefineBitsLossless2Tag")
 {
 	int dest=in.tellg();
 	dest+=getSize();

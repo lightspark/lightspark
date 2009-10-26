@@ -42,6 +42,7 @@ REGISTER_CLASS_NAME(DisplayObject);
 REGISTER_CLASS_NAME(DisplayObjectContainer);
 REGISTER_CLASS_NAME(Sprite);
 REGISTER_CLASS_NAME(Loader);
+REGISTER_CLASS_NAME(Shape);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -348,6 +349,7 @@ void MovieClip::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
+	c->super=Class<Sprite>::getClass();
 }
 
 MovieClip::MovieClip():_framesloaded(0),_totalframes(1),cur_frame(&dynamicDisplayList),initialized(false)
@@ -568,9 +570,7 @@ void MovieClip::initialize()
 
 DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL)
 {
-/*	setVariableByQName("Call","",new Function(_call));
-	setGetterByQName("width","",new Function(_getWidth));
-	setGetterByQName("height","",new Function(_getHeight));*/
+//	setVariableByQName("Call","",new Function(_call));
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -590,7 +590,8 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 		obj->setVariableByQName("loaderInfo","",th->loaderInfo->obj);
 	}
 
-	//This should come from DisplayObject
+	obj->setGetterByQName("width","",new Function(_getWidth));
+	obj->setGetterByQName("height","",new Function(_getHeight));
 	//setVariableByQName("getBounds","",new Function(getBounds));
 	//setVariableByQName("root","",this);
 	//setVariableByQName("stage","",this);
@@ -612,6 +613,7 @@ void DisplayObjectContainer::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
+	c->super=Class<DisplayObject>::getClass();
 }
 
 DisplayObjectContainer::DisplayObjectContainer()
@@ -628,3 +630,16 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 {
 	return new Integer(0);;
 }
+
+void Shape::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->super=Class<DisplayObject>::getClass();
+}
+
+ASFUNCTIONBODY(Shape,_constructor)
+{
+	DisplayObject::_constructor(obj,NULL);
+}
+

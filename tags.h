@@ -85,7 +85,7 @@ public:
 class DictionaryTag: public Tag
 {
 protected:
-	std::vector<Shape> cached;
+	std::vector<GeomShape> cached;
 public:
 	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
 	virtual TAGTYPE getType(){ return DICT_TAG; }
@@ -382,7 +382,7 @@ protected:
 	UI16 FontID;
 public:
 	FontTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s){}
-	virtual void genGlyphShape(std::vector<Shape>& s, int glyph)=0;
+	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph)=0;
 	virtual TAGTYPE getType(){ return DICT_TAG; }
 };
 
@@ -396,7 +396,7 @@ protected:
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGlyphShape(std::vector<Shape>& s, int glyph);
+	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFontInfoTag: public Tag
@@ -436,7 +436,7 @@ protected:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
-	virtual void genGlyphShape(std::vector<Shape>& s, int glyph);
+	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineFont3Tag: public DefineFont2Tag
@@ -444,7 +444,7 @@ class DefineFont3Tag: public DefineFont2Tag
 public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in):DefineFont2Tag(h,in){}
 	virtual int getId(){ return FontID; }
-	virtual void genGlyphShape(std::vector<Shape>& s, int glyph);
+	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
 class DefineTextTag: public DictionaryTag, public IDisplayListElem

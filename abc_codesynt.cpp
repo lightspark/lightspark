@@ -176,7 +176,7 @@ typed_opcode_handler ABCVm::opcode_table_number_t[]={
 	{"subtract",(void*)&ABCVm::subtract,ARGS_OBJ_OBJ},
 	{"subtract_oi",(void*)&ABCVm::subtract_oi,ARGS_OBJ_INT},
 	{"subtract_io",(void*)&ABCVm::subtract_io,ARGS_INT_OBJ},
-	{"subtract_do",(void*)&ABCVm::subtract_io,ARGS_NUMBER_OBJ}
+	{"subtract_do",(void*)&ABCVm::subtract_do,ARGS_NUMBER_OBJ}
 };
 
 typed_opcode_handler ABCVm::opcode_table_void[]={

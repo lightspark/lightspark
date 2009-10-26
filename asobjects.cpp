@@ -969,7 +969,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args)
 	int i=0;
 	if(args)
 	{
-		for(i;i<args->size();i++)
+		int args_len=min(args->size(),mi->numArgs());
+		if(args_len>mi->numArgs())
+			assert(mi->needsRest());
+		for(i;i<args_len;i++)
 		{
 			cc->locals[i+1]=args->at(i);
 			cc->locals[i+1]->incRef();
@@ -983,10 +986,9 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args)
 
 	if(mi->needsRest()) //TODO
 	{
-		abort();
-/*		ASArray* rest=new ASArray();
-		rest->_constructor(rest,NULL);
-		cc->locals[mi->numArgs()+1]=rest;*/
+		Array* rest=Class<Array>::getInstanceS();
+		rest->_constructor(rest->obj,NULL);
+		cc->locals[mi->numArgs()+1]=rest->obj;
 		/*llvm::Value* rest=Builder.CreateCall(ex->FindFunctionNamed("createRest"));
 		constant = llvm::ConstantInt::get(int_type, param_count+1);
 		t=Builder.CreateGEP(locals,constant);

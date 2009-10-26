@@ -129,7 +129,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("InteractiveObject","flash.display",new ASObject),
 	Global.setVariableByQName("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getClass());
 	Global.setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());
-	Global.setVariableByQName("Shape","flash.display",Class<IInterface>::getClass("Shape"));
+	Global.setVariableByQName("Shape","flash.display",Class<Shape>::getClass());
 
 	Global.setVariableByQName("TextField","flash.text",new ASObject);
 	Global.setVariableByQName("TextFormat","flash.text",new ASObject);
@@ -148,6 +148,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("Rectangle","flash.geom",new ASObject);
 	Global.setVariableByQName("Matrix","flash.geom",Class<IInterface>::getClass("Matrix"));
+	Global.setVariableByQName("Point","flash.geom",Class<IInterface>::getClass("Point"));
 
 	Global.setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
 	Global.setVariableByQName("Event","flash.events",Class<Event>::getClass());
@@ -871,8 +872,7 @@ void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,argum
 	if(derived_class_tmp->class_index!=-1)
 	{
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<instances[derived_class_tmp->class_index].trait_count;i++)
-			buildTrait(obj,&instances[derived_class_tmp->class_index].traits[i]);
+		buildClassTraits(obj, derived_class_tmp->class_index);
 
 		LOG(CALLS,"Calling Instance init on " << s);
 		//args->incRef();
@@ -1283,6 +1283,12 @@ tiny_string ABCContext::getString(unsigned int s) const
 		return "";
 }
 
+inline void ABCContext::buildClassTraits(ASObject* obj, int class_index)
+{
+	for(int i=0;i<instances[class_index].trait_count;i++)
+		buildTrait(obj,&instances[class_index].traits[i]);
+}
+
 void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization)
 {
 	const multiname* mname=getMultiname(t->name,NULL);
@@ -1317,68 +1323,42 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		case traits_info::Getter:
 		{
 			LOG(CALLS,"Getter trait: " << ns << "::" << name << " #" << t->method);
-			IFunction* f=NULL;
-			/*//Hack, try to find this on the most derived variables
-			obj_var* var=obj->findObjVar(name,ns,false);
-			if(var && var->getter) //Ok, it seems that we have been overridden, set this in our map
-			{
-				LOG(CALLS,"HACK: overridden getter");
-				f=static_cast<IFunction*>(var->getter->clone());
-				f->bind(obj->mostDerived);
-			}
-			
-			if(f==NULL)*/
-			{
-				//syntetize method and create a new LLVM function object
-				method_info* m=&methods[t->method];
-				f=new SyntheticFunction(m);
-			}
+			//syntetize method and create a new LLVM function object
+			method_info* m=&methods[t->method];
+			IFunction* f=new SyntheticFunction(m);
+
 			obj->setGetterByQName(name,ns,f);
+			//We should inherit the setter from the hierarchy
+			obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false);
+			if(var && var->setter) //Ok, also set the inherited setter
+				obj->setSetterByQName(name,ns,var->setter);
+			
 			LOG(CALLS,"End Getter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Setter:
 		{
 			LOG(CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
-			IFunction* f=NULL;
-			/*//Hack, try to find this on the most derived variables
-			obj_var* var=obj->findObjVar(name,ns,false);
-			if(var && var->getter) //Ok, it seems that we have been overridden, set this in our map
-			{
-				LOG(CALLS,"HACK: overridden getter");
-				f=static_cast<IFunction*>(var->getter->clone());
-				f->bind(obj->mostDerived);
-			}
-			
-			if(f==NULL)*/
-			{
-				//syntetize method and create a new LLVM function object
-				method_info* m=&methods[t->method];
-				f=new SyntheticFunction(m);
-			}
+			//syntetize method and create a new LLVM function object
+			method_info* m=&methods[t->method];
+			IFunction* f=new SyntheticFunction(m);
+
 			obj->setSetterByQName(name,ns,f);
+			//We should inherit the setter from the hierarchy
+			obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false);
+			if(var && var->getter) //Ok, also set the inherited setter
+				obj->setGetterByQName(name,ns,var->getter);
+			
 			LOG(CALLS,"End Setter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Method:
 		{
 			LOG(CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
-			IFunction* f=NULL;
-			/*//Hack, try to find this on the most derived variables
-			obj_var* var=obj->findObjVar(name,ns,false);
-			if(var && var->getter) //Ok, it seems that we have been overridden, set this in our map
-			{
-				LOG(CALLS,"HACK: overridden getter");
-				f=static_cast<IFunction*>(var->getter->clone());
-				f->bind(obj->mostDerived);
-			}
-			
-			if(f==NULL)*/
-			{
-				//syntetize method and create a new LLVM function object
-				method_info* m=&methods[t->method];
-				f=new SyntheticFunction(m);
-			}
+			//syntetize method and create a new LLVM function object
+			method_info* m=&methods[t->method];
+			IFunction* f=new SyntheticFunction(m);
+
 			obj->setVariableByQName(name,ns,f);
 			LOG(CALLS,"End Method trait: " << ns << "::" << name);
 			break;

@@ -802,7 +802,7 @@ class FILLSTYLE
 	friend class DefineTextTag;
 	friend class DefineShape2Tag;
 	friend class DefineShape3Tag;
-	friend class Shape;
+	friend class GeomShape;
 private:
 	int version;
 	UI8 FillStyleType;
@@ -973,7 +973,7 @@ public:
 	TEXTRECORD(DefineTextTag* p):parent(p){}
 };
 
-class Shape;
+class GeomShape;
 
 class SHAPE
 {

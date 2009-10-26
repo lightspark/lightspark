@@ -66,15 +66,19 @@ KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
 
 MouseEvent::MouseEvent():Event("mouseEvent")
 {
-/*	setVariableByQName("MOUSE_DOWN","",new ASString("mouseDown"));
-	setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
-	setVariableByQName("CLICK","",new ASString("click"));*/
+//	setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
 }
 
 void MouseEvent::sinit(Class_base* c)
 {
 //	assert(c->constructor==NULL);
 //	c->constructor=new Function(_constructor);
+	c->setVariableByQName("CLICK","",new ASString("click"));
+	c->setVariableByQName("DOUBLE_CLICK","",new ASString("doubleClick"));
+	c->setVariableByQName("MOUSE_DOWN","",new ASString("mouseDown"));
+	c->setVariableByQName("MOUSE_OUT","",new ASString("mouseOut"));
+	c->setVariableByQName("MOUSE_OVER","",new ASString("mouseOver"));
+	c->setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
 }
 
 IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")

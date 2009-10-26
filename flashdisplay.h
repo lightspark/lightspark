@@ -70,6 +70,13 @@ public:
 	ASFUNCTION(_getNumChildren);
 };
 
+class Shape: public DisplayObject
+{
+public:
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+};
+
 class LoaderInfo: public EventDispatcher
 {
 public:

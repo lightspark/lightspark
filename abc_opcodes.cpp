@@ -337,7 +337,6 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	if(owner==NULL)
 	{
 		LOG(NOT_IMPLEMENTED,"Property not found " << *name);
-		//abort();
 		ret=new Undefined;
 	}
 	else
@@ -469,7 +468,7 @@ number_t ABCVm::multiply_oi(ASObject* val2, intptr_t val1)
 	double num1=val1;
 	double num2=val2->toNumber();
 	val2->decRef();
-	LOG(CALLS,"multiply "  << num1 << '*' << num2);
+	LOG(CALLS,"multiply_oi "  << num1 << '*' << num2);
 	return num1*num2;
 }
 
@@ -682,6 +681,12 @@ number_t ABCVm::subtract_oi(ASObject* val2, intptr_t val1)
 
 number_t ABCVm::subtract_do(number_t val2, ASObject* val1)
 {
+	if(val1->getObjectType()==T_UNDEFINED)
+	{
+		//HACK
+		LOG(NOT_IMPLEMENTED,"subtract: HACK");
+		return 0;
+	}
 	number_t num2=val2;
 	number_t num1=val1->toNumber();
 
@@ -702,6 +707,13 @@ number_t ABCVm::subtract_io(intptr_t val2, ASObject* val1)
 
 number_t ABCVm::subtract(ASObject* val2, ASObject* val1)
 {
+	if(val1->getObjectType()==T_UNDEFINED ||
+		val2->getObjectType()==T_UNDEFINED)
+	{
+		//HACK
+		LOG(NOT_IMPLEMENTED,"subtract: HACK");
+		return 0;
+	}
 	int num2=val2->toInt();
 	int num1=val1->toInt();
 
@@ -1302,17 +1314,11 @@ ASObject* ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 
 void ABCVm::initProperty(call_context* th, int n)
 {
-	static int count=0;
 	ASObject* value=th->runtime_stack_pop();
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(CALLS, "initProperty " << *name );
-	if(name->name_s=="container")
-		count++;
 
 	ASObject* obj=th->runtime_stack_pop();
-//	if(count==2)
-//		abort();
-
 
 	obj->setVariableByMultiname(*name,value);
 	obj->decRef();
@@ -1327,16 +1333,23 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(NOT_IMPLEMENTED,"callSuper " << *name << ' ' << m);
 
-	ASObject* receiver=th->runtime_stack_pop();
-	abort();
-	/*ASObject* obj;
-	if(receiver->super)
-		obj=receiver->super;
-	else
-		obj=receiver;
+	ASObject* obj=th->runtime_stack_pop();
+	//HACK (nice) set the max level to the current actual prototype before looking up the member
+	assert(obj->actualPrototype);
+	int oldlevel=obj->max_level;
+	obj->max_level=obj->actualPrototype->max_level-1;
+	//Store the old prototype
+	Class_base* old_prototype=obj->actualPrototype;
+
+	//Move the object protoype and level up
+	obj->actualPrototype=old_prototype->super;
 
 	ASObject* owner;
 	ASObject* o=obj->getVariableByMultiname(*name,owner);
+
+	//Set back the original max_level
+	obj->max_level=oldlevel;
+
 	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
@@ -1351,7 +1364,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
 			th->runtime_stack_push(new Undefined);
 		}
-		else if(o->getObjectType()==T_DEFINABLE)
+/*		else if(o->getObjectType()==T_DEFINABLE)
 		{
 			LOG(CALLS,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o);
@@ -1382,16 +1395,23 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 			//	LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
 			//	th->runtime_stack_push(new Undefined);
 			//}
-		}
+		}*/
+		else
+			abort();
 	}
 	else
 	{
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 		th->runtime_stack_push(new Undefined);
 	}
-	LOG(CALLS,"End of calling " << name);
-	receiver->decRef();
-	delete[] args;*/
+	LOG(CALLS,"End of calling " << *name);
+
+	//Reset prototype to its previous value
+	assert(obj->actualPrototype==old_prototype->super);
+	obj->actualPrototype=old_prototype;
+
+	obj->decRef();
+	delete[] args;
 }
 
 void ABCVm::callSuperVoid(call_context* th, int n, int m)
@@ -1475,13 +1495,22 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 
 void ABCVm::isTypelate(call_context* th)
 {
-	LOG(NOT_IMPLEMENTED,"isTypelate: returing true");
+	LOG(NOT_IMPLEMENTED,"isTypelate");
 	ASObject* type=th->runtime_stack_pop();
 	ASObject* obj=th->runtime_stack_pop();
+	if(obj->getObjectType()==T_UNDEFINED)
+	{
+		th->runtime_stack_push(new Boolean(false));
+		cout << "false" << endl;
+	}
+	else
+	{
+		cout << "true" << endl;
+		th->runtime_stack_push(new Boolean(true));
+	}
 //	cout << "Name " << type->class_name << " type " << type->getObjectType() << endl;
 //	cout << "Name " << obj->class_name << " type " << obj->getObjectType() << endl;
 //	if(type->class_name==obj->class_name)
-		th->runtime_stack_push(new Boolean(true));
 //	else
 //		th->runtime_stack_push(new Boolean(false));
 }

@@ -438,7 +438,7 @@ void DefineTextTag::Render()
 			it2 = it->GlyphEntries.begin();
 			for(it2;it2!=(it->GlyphEntries.end());it2++)
 			{
-				vector<Shape> new_shapes;
+				vector<GeomShape> new_shapes;
 				font->genGlyphShape(new_shapes,it2->GlyphIndex);
 				for(int i=0;i<new_shapes.size();i++)
 				{
@@ -583,11 +583,11 @@ std::ostream& operator<<(std::ostream& s, const Vector2& p)
 	return s;
 }
 
-void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes);
+void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shapes);
 
 void DefineMorphShapeTag::Render()
 {
-	std::vector < Shape > shapes;
+	std::vector < GeomShape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
 
 	FromShaperecordListToShapeVector(cur,shapes);
@@ -600,7 +600,7 @@ void DefineMorphShapeTag::Render()
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	std::vector < Shape >::iterator it=shapes.begin();
+	std::vector < GeomShape >::iterator it=shapes.begin();
 	for(it;it!=shapes.end();it++)
 		it->Render();
 
@@ -653,7 +653,7 @@ void DefineShapeTag::Render()
 	glPushMatrix();
 //	glMultMatrixf(matrix);
 
-	std::vector < Shape >::iterator it=cached.begin();
+	std::vector < GeomShape >::iterator it=cached.begin();
 	for(it;it!=cached.end();it++)
 		it->Render();
 
@@ -702,7 +702,7 @@ void DefineShape2Tag::Render()
 	//Apply local transformation
 	glPushMatrix();
 	
-	std::vector < Shape >::iterator it=cached.begin();
+	std::vector < GeomShape >::iterator it=cached.begin();
 	for(it;it!=cached.end();it++)
 	{
 		if(it->color >= Shapes.FillStyles.FillStyleCount)
@@ -757,7 +757,7 @@ void DefineShape4Tag::Render()
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	std::vector < Shape >::iterator it=cached.begin();
+	std::vector < GeomShape >::iterator it=cached.begin();
 	for(it;it!=cached.end();it++)
 		it->Render();
 
@@ -821,7 +821,7 @@ void DefineShape3Tag::Render()
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	std::vector < Shape >::iterator it=cached.begin();
+	std::vector < GeomShape >::iterator it=cached.begin();
 	for(it;it!=cached.end();it++)
 	{
 		if(it->color >= Shapes.FillStyles.FillStyleCount)
@@ -914,7 +914,7 @@ void FromShaperecordListToDump(SHAPERECORD* cur)
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes */
 
-void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
+void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shapes)
 {
 	int startX=0;
 	int startY=0;
@@ -986,7 +986,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 					{
 						//cout << "Adding edge to new shape " << shapes.size() << endl;
 						//cout << p1 << p2 << endl;
-						shapes.push_back(Shape());
+						shapes.push_back(GeomShape());
 						shapes.back().outline.push_back(p1);
 						shapes.back().outline.push_back(p2);
 						shapes.back().color=color;
@@ -1066,7 +1066,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 						//cout << "Adding edge to new shape" << endl;
 						//cout << p1 << p2 << endl;
 						//cout << p2 << p3 << endl;
-						shapes.push_back(Shape());
+						shapes.push_back(GeomShape());
 						shapes.back().outline.push_back(p1);
 						shapes.back().outline.push_back(p2);
 						shapes.back().outline.push_back(p3);
@@ -1150,7 +1150,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<Shape>& shapes)
 	sort(shapes.begin(),shapes.end());
 }
 
-void DefineFont3Tag::genGlyphShape(vector<Shape>& s, int glyph)
+void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
 	SHAPERECORD* cur=&(shape.ShapeRecords);
@@ -1196,7 +1196,7 @@ void DefineFont3Tag::genGlyphShape(vector<Shape>& s, int glyph)
 			s.back().graphic.stroked=false;*/
 }
 
-void DefineFont2Tag::genGlyphShape(vector<Shape>& s, int glyph)
+void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
 	SHAPERECORD* cur=&(shape.ShapeRecords);
@@ -1238,7 +1238,7 @@ void DefineFont2Tag::genGlyphShape(vector<Shape>& s, int glyph)
 			s.back().graphic.stroked=false;*/
 }
 
-void DefineFontTag::genGlyphShape(vector<Shape>& s,int glyph)
+void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
 	SHAPERECORD* cur=&(shape.ShapeRecords);

@@ -370,7 +370,6 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 {
-	abort();
 	ASObject* ret=getVariableByMultiname(name,owner);
 	if(ret)
 		return ret->toInt();
@@ -403,8 +402,9 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& own
 		else
 		{
 			owner=this;
-			assert(obj->var);
-			return obj->var;
+			//assert(obj->var);
+			//HACK: for enabled on youtube
+			return (obj->var)?obj->var:new Undefined;
 		}
 	}
 	else

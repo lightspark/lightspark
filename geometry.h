@@ -26,7 +26,7 @@
 
 class Path;
 class Vector2;
-class Shape;
+class GeomShape;
 
 class FilterIterator
 {
@@ -80,7 +80,7 @@ struct arrayElem
 
 class Edge
 {
-	friend class Shape;
+	friend class GeomShape;
 public:
 	Vector2 p1;
 	Vector2 p2;
@@ -135,7 +135,7 @@ public:
 	}
 };
 
-class Shape
+class GeomShape
 {
 friend class DefineTextTag;
 friend class DefineShape2Tag;
@@ -149,7 +149,7 @@ public:
 	std::vector<Triangle> interior;
 	std::vector<std::vector<Vector2> > triangle_strips;
 	std::vector<Vector2> outline;
-	std::vector<Shape> sub_shapes;
+	std::vector<GeomShape> sub_shapes;
 	std::vector<Edge> edges;
 
 	bool closed;
@@ -163,7 +163,7 @@ public:
 	void Render(int x=0, int y=0) const;
 	void BuildFromEdges(FILLSTYLE* styles);
 
-	bool operator<(const Shape& r) const;
+	bool operator<(const GeomShape& r) const;
 
 };
 

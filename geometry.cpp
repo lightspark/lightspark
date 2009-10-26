@@ -33,7 +33,7 @@ using namespace std;
 * * \param x Optional x translation
 * * \param y Optional y translation */
 
-void Shape::Render(int x, int y) const
+void GeomShape::Render(int x, int y) const
 {
 	if(outline.empty())
 	{
@@ -138,7 +138,7 @@ bool FilterIterator::operator!=(FilterIterator& i)
 	return i.it!=it;
 }
 
-void Shape::dumpEdges()
+void GeomShape::dumpEdges()
 {
 	ofstream f("edges.dat");
 
@@ -147,7 +147,7 @@ void Shape::dumpEdges()
 	f.close();
 }
 
-void Shape::dumpInterior()
+void GeomShape::dumpInterior()
 {
 	ofstream f("interior.dat");
 
@@ -163,7 +163,7 @@ void Shape::dumpInterior()
 	f.close();
 }
 
-void Shape::SetStyles(FILLSTYLE* styles)
+void GeomShape::SetStyles(FILLSTYLE* styles)
 {
 	static FILLSTYLE* clearStyle=NULL;
 	if(!clearStyle)
@@ -182,7 +182,7 @@ void Shape::SetStyles(FILLSTYLE* styles)
 	}
 }
 
-void Shape::BuildFromEdges(FILLSTYLE* styles)
+void GeomShape::BuildFromEdges(FILLSTYLE* styles)
 {
 	style=NULL;
 	if(outline.empty())
@@ -377,7 +377,7 @@ inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,c
 	return (u >= 0) && (v>= 0) && (u + v <= 1);
 }
 
-void Shape::TessellateSimple()
+void GeomShape::TessellateSimple()
 {
 	vector<Vector2> P=outline;
 	int i=0;
@@ -440,7 +440,7 @@ void Shape::TessellateSimple()
 }
 
 //Shape are compared using the minimum vertex
-bool Shape::operator<(const Shape& r) const
+bool GeomShape::operator<(const GeomShape& r) const
 {
 	Vector2 vl=*min_element(outline.begin(),outline.end());
 	Vector2 vr=*min_element(r.outline.begin(),r.outline.end());

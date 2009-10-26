@@ -85,18 +85,15 @@ void SymbolClassTag::execute()
 	{
 		LOG(CALLS,Tags[i] << ' ' << Names[i]);
 		if(Tags[i]==0)
+		{
 			sys->currentVm->addEvent(NULL,new BindClassEvent(sys,Names[i]));
+		}
 		else
 		{
 			DictionaryTag* t=pt->root->dictionaryLookup(Tags[i]);
-			ASObject* base=dynamic_cast<ASObject*>(t);
-			if(base==NULL)
-			{
-				LOG(ERROR,"Base in not an ASObject");
-				abort();
-			}
-			else
-				sys->currentVm->addEvent(NULL,new BindClassEvent(base,Names[i]));
+			IInterface* base=dynamic_cast<IInterface*>(t);
+			assert(base!=NULL);
+			sys->currentVm->addEvent(NULL,new BindClassEvent(base,Names[i]));
 		}
 	}
 }
@@ -110,57 +107,59 @@ ASFUNCTIONBODY(ABCVm,print)
 void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
-	Global.setVariableByQName("Object","",new Class<ASObject>("Object"));
+	Global.setVariableByQName("Object","",Class<IInterface>::getClass());
 	Global.setVariableByQName("Number","",new Number(0.0));
 	Global.setVariableByQName("String","",new ASString);
-	Global.setVariableByQName("Array","",new ASArray);
+	Global.setVariableByQName("Array","",Class<Array>::getClass());
 	Global.setVariableByQName("Function","",new Function);
 	Global.setVariableByQName("undefined","",new Undefined);
 	Global.setVariableByQName("Math","",new Math);
-	Global.setVariableByQName("Date","",new Date);
-	Global.setVariableByQName("RegExp","",new RegExp);
+	Global.setVariableByQName("Date","",Class<Date>::getClass());
+	Global.setVariableByQName("RegExp","",Class<RegExp>::getClass());
 
 	Global.setVariableByQName("print","",new Function(print));
 	Global.setVariableByQName("trace","",new Function(print));
 	Global.setVariableByQName("parseInt","",new Function(parseInt));
 	Global.setVariableByQName("toString","",new Function(ASObject::_toString));
 
-	Global.setVariableByQName("MovieClip","flash.display",new Class<MovieClip>("MovieClip"));
-	Global.setVariableByQName("DisplayObject","flash.display",new DisplayObject);
-	Global.setVariableByQName("Loader","flash.display",new Loader);
-	Global.setVariableByQName("SimpleButton","flash.display",new ASObject("SimpleButton"));
-	Global.setVariableByQName("InteractiveObject","flash.display",new ASObject("InteractiveObject")),
-	Global.setVariableByQName("DisplayObjectContainer","flash.display",new DisplayObjectContainer);
-	Global.setVariableByQName("Sprite","flash.display",new Class<Sprite>("Sprite"));
+	Global.setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass());
+	Global.setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass());
+	Global.setVariableByQName("Loader","flash.display",Class<Loader>::getClass());
+	Global.setVariableByQName("SimpleButton","flash.display",new ASObject);
+	Global.setVariableByQName("InteractiveObject","flash.display",new ASObject),
+	Global.setVariableByQName("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getClass());
+	Global.setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());
+	Global.setVariableByQName("Shape","flash.display",Class<IInterface>::getClass("Shape"));
 
-	Global.setVariableByQName("TextField","flash.text",new ASObject("TextField"));
-	Global.setVariableByQName("TextFormat","flash.text",new ASObject("TextFormat"));
-	Global.setVariableByQName("TextFieldType","flash.text",new ASObject("TextFieldType"));
+	Global.setVariableByQName("TextField","flash.text",new ASObject);
+	Global.setVariableByQName("TextFormat","flash.text",new ASObject);
+	Global.setVariableByQName("TextFieldType","flash.text",new ASObject);
 
-	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject("XMLDocument"));
+	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject);
 
-	Global.setVariableByQName("ApplicationDomain","flash.system",new ASObject("ApplicationDomain"));
-	Global.setVariableByQName("LoaderContext","flash.system",new ASObject("LoaderContext"));
+	Global.setVariableByQName("ApplicationDomain","flash.system",Class<IInterface>::getClass("ApplicationDomain"));
+	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
 
-	Global.setVariableByQName("ByteArray","flash.utils",new Class<ByteArray>("ByteArray"));
-	Global.setVariableByQName("Dictionary","flash.utils",new ASObject("Dictionary"));
-	Global.setVariableByQName("Proxy","flash.utils",new ASObject("Proxy"));
-	Global.setVariableByQName("Timer","flash.utils",new ASObject("Timer"));
+	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
+	Global.setVariableByQName("Dictionary","flash.utils",new ASObject);
+	Global.setVariableByQName("Proxy","flash.utils",new ASObject);
+	Global.setVariableByQName("Timer","flash.utils",new ASObject);
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
 
-	Global.setVariableByQName("Rectangle","flash.geom",new ASObject("Rectangle"));
+	Global.setVariableByQName("Rectangle","flash.geom",new ASObject);
+	Global.setVariableByQName("Matrix","flash.geom",Class<IInterface>::getClass("Matrix"));
 
-	Global.setVariableByQName("EventDispatcher","flash.events",new EventDispatcher);
-	Global.setVariableByQName("Event","flash.events",new Event("Event"));
-	Global.setVariableByQName("MouseEvent","flash.events",new MouseEvent);
-	Global.setVariableByQName("FocusEvent","flash.events",new FocusEvent);
-	Global.setVariableByQName("KeyboardEvent","flash.events",new KeyboardEvent);
-	Global.setVariableByQName("ProgressEvent","flash.events",new Event("ProgressEvent"));
-	Global.setVariableByQName("IOErrorEvent","flash.events",new IOErrorEvent);
+	Global.setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
+	Global.setVariableByQName("Event","flash.events",Class<Event>::getClass());
+	Global.setVariableByQName("MouseEvent","flash.events",Class<MouseEvent>::getClass());
+//	Global.setVariableByQName("FocusEvent","flash.events",new FocusEvent);
+//	Global.setVariableByQName("KeyboardEvent","flash.events",new KeyboardEvent);
+//	Global.setVariableByQName("ProgressEvent","flash.events",new Event("ProgressEvent"));
+//	Global.setVariableByQName("IOErrorEvent","flash.events",new IOErrorEvent);
 
-	Global.setVariableByQName("LocalConnection","flash.net",new ASObject("LocalConnection"));
+	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
 	Global.setVariableByQName("URLRequest","flash.net",new URLRequest);
-	Global.setVariableByQName("URLVariables","flash.net",new ASObject("URLVariables"));
+	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
 
 	Global.setVariableByQName("Capabilities","flash.system",new Capabilities);
 
@@ -730,7 +729,7 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 	}
 }
 
-ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s),Global("Global")
+ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s)
 {
 	sem_init(&event_queue_mutex,0,1);
 	sem_init(&sem_event_count,0,0);
@@ -769,10 +768,10 @@ void ABCVm::handleEvent()
 			case BIND_CLASS:
 			{
 				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second);
-				arguments args(1);;
-				args.incRef();
+				arguments args(0);
+/*				args.incRef();
 				//TODO: check
-				args.set(0,new Null);
+				args.set(0,new Null);*/
 				if(ev->base==sys)
 				{
 					MovieClip* m=static_cast<MovieClip*>(ev->base);
@@ -821,7 +820,7 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	sem_post(&event_queue_mutex);
 }
 
-void ABCContext::buildClassAndInjectBase(const string& s, ASObject* base,arguments* args)
+void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,arguments* args)
 {
 	LOG(CALLS,"Setting class name to " << s);
 	ASObject* owner;
@@ -861,20 +860,22 @@ void ABCContext::buildClassAndInjectBase(const string& s, ASObject* base,argumen
 	cur->super=base;*/
 
 	//Now the class is valid, check that it's not a builtin one
-	assert(derived_class->class_index!=-1);
+	Class_base* derived_class_tmp=static_cast<Class_base*>(derived_class);
+	assert(derived_class_tmp->class_index!=-1);
 
 	//It's now possible to actually build an instance
-	ASObject* obj=static_cast<Class_base*>(derived_class)->getInstance();
-	//base->incRef();
+	ASObject* obj=derived_class_tmp->getInstance()->obj;
+	//Acquire the base interface in the object
+	obj->acquireInterface(base);
 
-	if(derived_class->class_index!=-1)
+	if(derived_class_tmp->class_index!=-1)
 	{
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<instances[derived_class->class_index].trait_count;i++)
-			buildTrait(obj,&instances[derived_class->class_index].traits[i]);
+		for(int i=0;i<instances[derived_class_tmp->class_index].trait_count;i++)
+			buildTrait(obj,&instances[derived_class_tmp->class_index].traits[i]);
 
 		LOG(CALLS,"Calling Instance init on " << s);
-		args->incRef();
+		//args->incRef();
 		obj->prototype->constructor->call(obj,args);
 	}
 }
@@ -906,7 +907,7 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 	LOG(CALLS,"newActivation");
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
-	ASObject* act=new ASObject("ActivationContext");
+	ASObject* act=new ASObject;
 	for(int i=0;i<info->body->trait_count;i++)
 		th->context->buildTrait(act,&info->body->traits[i]);
 
@@ -1123,13 +1124,13 @@ void ABCVm::findProperty(call_context* th, int n)
 void ABCVm::newArray(call_context* th, int n)
 {
 	LOG(CALLS, "newArray " << n );
-	ASArray* ret=new ASArray;
+	Array* ret=Class<Array>::getInstanceS();
 	ret->resize(n);
 	for(int i=0;i<n;i++)
 		ret->set(n-i-1,th->runtime_stack_pop());
 
-	ret->_constructor(ret,NULL);
-	th->runtime_stack_push(ret);
+	ret->_constructor(ret->obj,NULL);
+	th->runtime_stack_push(ret->obj);
 }
 
 ASObject* ABCVm::getScopeObject(call_context* th, int n)
@@ -1258,7 +1259,6 @@ void ABCVm::Run(ABCVm* th)
 
 	th->registerFunctions();
 	th->registerClasses();
-	th->Global.class_name="Global";
 
 	while(1)
 	{
@@ -1287,15 +1287,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 {
 	const multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
-	if(mname->ns.size()!=1)
-		abort();
+	assert(mname->ns.size()==1);
 
 	const tiny_string& name=mname->name_s;
 	const tiny_string& ns=mname->ns[0];
 	if(t->kind>>4)
 		cout << "Next slot has flags " << (t->kind>>4) << endl;
-	if(t->slot_id)
-		LOG(CALLS,"Using slot " << t->slot_id << " on class " << obj->class_name);	
 	switch(t->kind&0xf)
 	{
 		case traits_info::Class:
@@ -1312,18 +1309,16 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				obj->setVariableByMultiname(*mname, ret);
 			}
 			
-			LOG(CALLS,"Slot "<< t->slot_id << " type Class name " << name << " id " << t->classi);
+			LOG(CALLS,"Slot "<< t->slot_id << " type Class name " << ns << "::" << name << " id " << t->classi);
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, ret, name, ns);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(CALLS,"Getter trait: " << name << " #" << t->method);
+			LOG(CALLS,"Getter trait: " << ns << "::" << name << " #" << t->method);
 			IFunction* f=NULL;
-			abort();
-			/*
-			//Hack, try to find this on the most derived variables
+			/*//Hack, try to find this on the most derived variables
 			obj_var* var=obj->findObjVar(name,ns,false);
 			if(var && var->getter) //Ok, it seems that we have been overridden, set this in our map
 			{
@@ -1332,63 +1327,60 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				f->bind(obj->mostDerived);
 			}
 			
-			if(f==NULL)
+			if(f==NULL)*/
 			{
 				//syntetize method and create a new LLVM function object
 				method_info* m=&methods[t->method];
 				f=new SyntheticFunction(m);
 			}
 			obj->setGetterByQName(name,ns,f);
-			LOG(CALLS,"End Getter trait: " << name);*/
+			LOG(CALLS,"End Getter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(CALLS,"Setter trait: " << name << " #" << t->method);
+			LOG(CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
 			IFunction* f=NULL;
-			abort();
-			/*
-			//Hack, try to find this on the most derived variables
-			obj_var* var=obj->mostDerived->Variables.findObjVar(name,ns,false);
-			if(var && var->setter) //Ok, it seems that we have been overridden, set this in our map
+			/*//Hack, try to find this on the most derived variables
+			obj_var* var=obj->findObjVar(name,ns,false);
+			if(var && var->getter) //Ok, it seems that we have been overridden, set this in our map
 			{
-				LOG(CALLS,"HACK: overridden setter");
-				f=static_cast<IFunction*>(var->setter->clone());
+				LOG(CALLS,"HACK: overridden getter");
+				f=static_cast<IFunction*>(var->getter->clone());
 				f->bind(obj->mostDerived);
 			}
 			
-			if(f==NULL)
+			if(f==NULL)*/
 			{
 				//syntetize method and create a new LLVM function object
 				method_info* m=&methods[t->method];
 				f=new SyntheticFunction(m);
 			}
 			obj->setSetterByQName(name,ns,f);
-			LOG(CALLS,"End Setter trait: " << name);*/
+			LOG(CALLS,"End Setter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Method:
 		{
-			LOG(CALLS,"Method trait: " << name << " #" << t->method);
+			LOG(CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
 			IFunction* f=NULL;
-			abort();
-			/*
-			//Hack, try to find this on the most derived variables
-			obj_var* var=obj->mostDerived->Variables.findObjVar(name,ns,false);
-			if(var && var->var) //Ok, it seems that we have been overridden, set this in our map
+			/*//Hack, try to find this on the most derived variables
+			obj_var* var=obj->findObjVar(name,ns,false);
+			if(var && var->getter) //Ok, it seems that we have been overridden, set this in our map
 			{
-				LOG(CALLS,"HACK: overridden method");
-				f=static_cast<IFunction*>(var->var->clone());
+				LOG(CALLS,"HACK: overridden getter");
+				f=static_cast<IFunction*>(var->getter->clone());
 				f->bind(obj->mostDerived);
 			}
 			
-			if(f==NULL)
+			if(f==NULL)*/
 			{
 				//syntetize method and create a new LLVM function object
 				method_info* m=&methods[t->method];
 				f=new SyntheticFunction(m);
 			}
-			obj->setVariableByQName(name,ns,f);*/
+			obj->setVariableByQName(name,ns,f);
+			LOG(CALLS,"End Method trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Const:

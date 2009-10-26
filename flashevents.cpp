@@ -27,51 +27,70 @@ using namespace std;
 
 extern __thread SystemState* sys;
 
-Event::Event(const string& t):type(t),ASObject("Event")
+REGISTER_CLASS_NAME(EventDispatcher);
+REGISTER_CLASS_NAME(Event);
+REGISTER_CLASS_NAME(MouseEvent);
+
+Event::Event(const string& t):type(t)
 {
-	setVariableByQName("ENTER_FRAME","",new ASString("enterFrame"));
-	setVariableByQName("ADDED_TO_STAGE","",new ASString("addedToStage"));
-	setVariableByQName("INIT","",new ASString("init"));
-	setVariableByQName("ADDED","",new ASString("added"));
-	setVariableByQName("COMPLETE","",new ASString("complete"));
-	setVariableByQName("REMOVED","",new ASString("removed"));
-	setVariableByQName("UNLOAD","",new ASString("unload"));
-	setVariableByQName("ACTIVATE","",new ASString("activate"));
-	setVariableByQName("DEACTIVATE","",new ASString("deactivate"));
-	setGetterByQName("type","",new Function(_getType));
+}
+
+void Event::sinit(Class_base* c)
+{
+	//assert(c->constructor==NULL);
+	//c->constructor=new Function(_constructor);
+	c->setVariableByQName("ENTER_FRAME","",new ASString("enterFrame"));
+	c->setVariableByQName("ADDED_TO_STAGE","",new ASString("addedToStage"));
+	c->setVariableByQName("INIT","",new ASString("init"));
+	c->setVariableByQName("ADDED","",new ASString("added"));
+	c->setVariableByQName("COMPLETE","",new ASString("complete"));
+	c->setVariableByQName("REMOVED","",new ASString("removed"));
+	c->setVariableByQName("UNLOAD","",new ASString("unload"));
+	c->setVariableByQName("ACTIVATE","",new ASString("activate"));
+	c->setVariableByQName("DEACTIVATE","",new ASString("deactivate"));
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
 {
-	setVariableByQName("FOCUS_IN","",new ASString("focusIn"));
+	/*setVariableByQName("FOCUS_IN","",new ASString("focusIn"));
 	setVariableByQName("FOCUS_OUT","",new ASString("focusOut"));
 	setVariableByQName("MOUSE_FOCUS_CHANGE","",new ASString("mouseFocusChange"));
-	setVariableByQName("KEY_FOCUS_CHANGE","", new ASString("keyFocusChange"));
+	setVariableByQName("KEY_FOCUS_CHANGE","", new ASString("keyFocusChange"));*/
 }
 
 KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
 {
-	setVariableByQName("KEY_DOWN","",new ASString("keyDown"));
-	setVariableByQName("KEY_UP","",new ASString("keyUp"));
+//	setVariableByQName("KEY_DOWN","",new ASString("keyDown"));
+//	setVariableByQName("KEY_UP","",new ASString("keyUp"));
 }
 
 MouseEvent::MouseEvent():Event("mouseEvent")
 {
-	setVariableByQName("MOUSE_DOWN","",new ASString("mouseDown"));
+/*	setVariableByQName("MOUSE_DOWN","",new ASString("mouseDown"));
 	setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
-	setVariableByQName("CLICK","",new ASString("click"));
+	setVariableByQName("CLICK","",new ASString("click"));*/
+}
+
+void MouseEvent::sinit(Class_base* c)
+{
+//	assert(c->constructor==NULL);
+//	c->constructor=new Function(_constructor);
 }
 
 IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
 {
-	setVariableByQName("IO_ERROR","",new ASString("ioError"));
+//	setVariableByQName("IO_ERROR","",new ASString("ioError"));
 }
 
-EventDispatcher::EventDispatcher():ASObject("EventDispatcher"),id(0)
+EventDispatcher::EventDispatcher():id(0)
 {
-	if(constructor)
-		constructor->decRef();
-	constructor=new Function(_constructor);
+	magic=0xdeadbeaf;
+}
+
+void EventDispatcher::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
 }
 
 void EventDispatcher::dumpHandlers()
@@ -83,13 +102,13 @@ void EventDispatcher::dumpHandlers()
 
 ASFUNCTIONBODY(Event,_getType)
 {
-	Event* th=static_cast<Event*>(obj);
+	Event* th=static_cast<Event*>(obj->interface);
 	return new ASString(th->type);
 }
 
 ASFUNCTIONBODY(EventDispatcher,addEventListener)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj->interface);
 	if(args->at(0)->getObjectType()!=T_STRING || args->at(1)->getObjectType()!=T_FUNCTION)
 	{
 		LOG(ERROR,"Type mismatch");
@@ -105,18 +124,20 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
-	Event* e=dynamic_cast<Event*>(args->at(0));
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj->interface);
+	Event* e=static_cast<Event*>(args->at(0)->interface);
+	assert(th->magic==0xdeadbeaf);
 	if(e==NULL || th==NULL)
 		return new Boolean(false);
-	//CHECK: maybe is to be cloned
-	e->incRef();
-	sys->currentVm->addEvent(th,e);
+/*	//CHECK: maybe is to be cloned
+	args->at(0)->incRef();
+	sys->currentVm->addEvent(th,e);*/
 	return new Boolean(true);
 }
 
 ASFUNCTIONBODY(EventDispatcher,_constructor)
 {
+	cout << "EventDispatcher constructor" << endl;
 	obj->setVariableByQName("addEventListener","",new Function(addEventListener));
 	obj->setVariableByQName("dispatchEvent","",new Function(dispatchEvent));
 }
@@ -132,9 +153,10 @@ void EventDispatcher::handleEvent(Event* e)
 
 	LOG(CALLS, "Handling event " << h->first);
 	arguments args(1);
+	assert(e->obj);
 	//The event is going to be decreffed as a function parameter
-	args.set(0,e);
-	this->incRef();
-	h->second->call(this,&args);
+	args.set(0,e->obj);
+	obj->incRef();
+	h->second->call(obj,&args);
 }
 

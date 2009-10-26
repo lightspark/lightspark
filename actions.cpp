@@ -43,7 +43,8 @@ ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 		DictionaryTag* d=pt->root->dictionaryLookup(Tags[i]);
 		if(d==NULL)
 			abort();
-		pt->root->setVariableByString(Names[i],d->instance());
+		//TODO:new interface based model
+		//pt->root->setVariableByString(Names[i],d->instance());
 	}
 }
 
@@ -458,7 +459,8 @@ ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args)
 	if(PreloadThisFlag)
 	{
 		LOG(CALLS,"Preload this");
-		rt->execContext->regs[used_regs]=rt->currentClip;
+		abort();
+		//rt->execContext->regs[used_regs]=rt->currentClip;
 		used_regs++;
 	}
 	if(PreloadArgumentsFlag)

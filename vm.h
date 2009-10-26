@@ -23,7 +23,7 @@
 #include <semaphore.h>
 #include <vector>
 #include "swftypes.h"
-#include "asobjects.h"
+//#include "asobjects.h"
 
 /*class Stack
 {

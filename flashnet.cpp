@@ -19,12 +19,11 @@
 
 #include "flashnet.h"
 
-URLRequest::URLRequest():ASObject("URLRequest"),url(NULL)
+URLRequest::URLRequest():url(NULL)
 {
-	if(constructor)
+/*	if(constructor)
 		constructor->decRef();
-	constructor=new Function(_constructor);
-	class_name="URLRequest";
+	constructor=new Function(_constructor);*/
 }
 
 ASFUNCTIONBODY(URLRequest,_constructor)

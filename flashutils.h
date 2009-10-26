@@ -20,9 +20,9 @@
 #ifndef _FLASH_UTILS_H
 #define _FLASH_UTILS_H
 
-#include "asobjects.h"
+#include "swftypes.h"
 
-class ByteArray: public ASObject
+class ByteArray: public IInterface
 {
 friend class Loader;
 protected:
@@ -30,6 +30,7 @@ protected:
 	int len;
 public:
 	ByteArray();
+	static void sinit(Class_base* c);
 };
 
 ASObject* getQualifiedClassName(ASObject* , arguments* args);

@@ -20,7 +20,7 @@
 #ifndef _FLASH_EVENTS_H
 #define _FLASH_EVENTS_H
 
-#include "asobjects.h"
+//#include "asobjects.h"
 #include <string>
 #include <semaphore.h>
 
@@ -30,10 +30,13 @@ class ABCContext;
 
 enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT };
 
-class Event: public ASObject
+class Event: public IInterface
 {
 public:
+	Event(){ Event("Event"); }
 	Event(const std::string& t);
+	virtual ~Event(){}
+	static void sinit(Class_base*);
 	ASFUNCTION(_getType);
 	virtual EVENT_TYPE getEventType() {return EVENT;} //DEPRECATED
 	const std::string type;
@@ -47,28 +50,32 @@ class IOErrorEvent: public Event
 {
 public:
 	IOErrorEvent();
+	static void sinit(Class_base*);
 };
 
 class KeyboardEvent: public Event
 {
 public:
 	KeyboardEvent();
+	static void sinit(Class_base*);
 };
 
 class FocusEvent: public Event
 {
 public:
 	FocusEvent();
+	static void sinit(Class_base*);
 };
 
 class MouseEvent: public Event
 {
 public:
 	MouseEvent();
+	static void sinit(Class_base*);
 	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
 };
 
-class EventDispatcher: public ASObject	
+class EventDispatcher: public IInterface
 {
 private:
 	std::map<std::string,IFunction*> handlers;
@@ -76,6 +83,7 @@ private:
 public:
 	float id;
 	EventDispatcher();
+	static void sinit(Class_base*);
 	virtual ~EventDispatcher(){}
 	void handleEvent(Event* e);
 	void setId(float i){id=i;}
@@ -90,11 +98,12 @@ class BindClassEvent: public Event
 {
 friend class ABCVm;
 private:
-	ASObject* base;
+	IInterface* base;
 	std::string class_name;
 public:
-	BindClassEvent(ASObject* b, const std::string& c):
+	BindClassEvent(IInterface* b, const std::string& c):
 		Event("bindClass"),base(b),class_name(c){}
+	static void sinit(Class_base*);
 	EVENT_TYPE getEventType(){ return BIND_CLASS;}
 };
 
@@ -102,6 +111,7 @@ class ShutdownEvent: public Event
 {
 public:
 	ShutdownEvent():Event("shutdownEvent"){}
+	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return SHUTDOWN; }
 };
 
@@ -112,6 +122,7 @@ private:
 	IFunction* f;
 public:
 	FunctionEvent(IFunction* _f):f(_f),Event("functionEvent"){}
+	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return FUNCTION; }
 };
 
@@ -121,6 +132,7 @@ private:
 	sem_t s;
 public:
 	SynchronizationEvent():Event("SynchronizationEvent"){sem_init(&s,0,0);}
+	static void sinit(Class_base*);
 	~SynchronizationEvent(){sem_destroy(&s);}
 	EVENT_TYPE getEventType() { return SYNC; }
 	void sync()
@@ -140,6 +152,7 @@ private:
 	ABCContext* context;
 public:
 	ABCContextInitEvent(ABCContext* c):Event("ABCContextInitEvent"),context(c){}
+	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return CONTEXT; }
 };
 

@@ -24,8 +24,11 @@
 #include "swftypes.h"
 #include "frame.h"
 #include "input.h"
+#include "swf.h"
 
 const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
+
+extern __thread SystemState* sys;
 
 class Event;
 class method_info;
@@ -36,7 +39,7 @@ class DebugTracer: public ASObject
 private:
 	tiny_string tracer_name;
 public:
-	DebugTracer(const tiny_string& n):tracer_name(n),ASObject("Tracer"){}
+	DebugTracer(const tiny_string& n):tracer_name(n){}
 	ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner)
 	{
 		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname " << name);
@@ -72,37 +75,24 @@ public:
 class Class_base: public ASObject
 {
 friend class ABCVm;
-private:
-	Class_base* super;
 public:
-	Class_base(const tiny_string& name):super(NULL),ASObject(name){type=T_CLASS;}
+	Class_base* super;
+	IFunction* constructor;
+	int class_index;
+	Class_base(const tiny_string& name):super(NULL),constructor(NULL),class_name(name),class_index(-1){type=T_CLASS;}
+	~Class_base();
 	ASObject* clone()
 	{
 		abort();
 	}
-	virtual ASObject* getInstance()=0;
-};
-
-template< class T>
-class Class: public Class_base
-{
-public:
-	Class(const tiny_string& name):Class_base(name){}
-	ASObject* getInstance()
-	{
-		ASObject* ret=new T(class_name);
-		ret->max_level=max_level;
-		ret->prototype=this;
-		//As we are the prototype we should incRef ourself
-		incRef();
-		return ret;
-	}
+	virtual IInterface* getInstance()=0;
+	tiny_string class_name;
 };
 
 class IFunction: public ASObject
 {
 public:
-	IFunction():bound(false),ASObject("IFunction"){type=T_FUNCTION;}
+	IFunction():bound(false){type=T_FUNCTION;}
 	typedef ASObject* (*as_function)(ASObject*, arguments*);
 	virtual ASObject* call(ASObject* obj, arguments* args)=0;
 	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args)=0;
@@ -160,7 +150,7 @@ friend bool Boolean_concrete(ASObject* obj);
 private:
 	bool val;
 public:
-	Boolean(bool v):val(v),ASObject("Boolean"){type=T_BOOLEAN;}
+	Boolean(bool v):val(v){type=T_BOOLEAN;}
 	int toInt() const
 	{
 		return val;
@@ -219,7 +209,7 @@ public:
 class Null : public ASObject
 {
 public:
-	Null():ASObject("Null"){type=T_NULL;}
+	Null(){type=T_NULL;}
 	tiny_string toString() const;
 	ASObject* clone()
 	{
@@ -241,26 +231,26 @@ struct data_slot
 	data_slot(intptr_t i):type(STACK_INT),data_i(i){}
 };
 
-class ASArray: public ASObject
+class Array: public IInterface
 {
 friend class ABCVm;
 protected:
 	std::vector<data_slot> data;
 public:
-	ASArray();
-	virtual ~ASArray();
+	Array();
+	virtual ~Array();
 	ASFUNCTION(_constructor);
-	ASFUNCTION(Array);
+	//ASFUNCTION(Array);
 	ASFUNCTION(_push);
 	ASFUNCTION(_pop);
 	ASFUNCTION(join);
 	ASFUNCTION(shift);
 	ASFUNCTION(unshift);
 	ASFUNCTION(_getLength);
-	ASObject* clone()
+/*	ASObject* clone()
 	{
 		return new ASArray(*this);
-	}
+	}*/
 	ASObject* at(int index) const
 	{
 		if(index<data.size())
@@ -309,31 +299,19 @@ public:
 	tiny_string toString() const;
 };
 
-class arguments: public ASArray
+class arguments: public Array
 {
 public:
 	arguments(int n, bool construct=true)
 	{
 		data.resize(n,NULL);
-		if(construct)
-			_constructor(this,NULL);
+//		if(construct)
+//			_constructor(this,NULL);
 	}
-	ASObject* clone()
+/*	ASObject* clone()
 	{
 		return new arguments(*this);
-	}
-};
-
-class RunState
-{
-public:
-	int FP;
-	int next_FP;
-	int max_FP;
-	bool stop_FP;
-public:
-	RunState();
-	void prepareNextFP();
+	}*/
 };
 
 class Integer : public ASObject
@@ -346,8 +324,8 @@ friend ASObject* abstract_i(intptr_t i);
 private:
 	int val;
 public:
-	Integer(int v):ASObject("Integer"),val(v){type=T_INTEGER;}
-	Integer(Manager* m):ASObject("Integer",m),val(0){type=T_INTEGER;}
+	Integer(int v):val(v){type=T_INTEGER;}
+	Integer(Manager* m):val(0){type=T_INTEGER;}
 	virtual ~Integer(){}
 	Integer& operator=(int v){val=v; return *this; }
 	tiny_string toString() const;
@@ -375,8 +353,8 @@ friend ASObject* abstract_d(number_t i);
 private:
 	double val;
 public:
-	Number(double v):ASObject("Number"),val(v){type=T_NUMBER;}
-	Number(Manager* m):ASObject("Number",m),val(0){type=T_NUMBER;}
+	Number(double v):val(v){type=T_NUMBER;}
+	Number(Manager* m):val(0){type=T_NUMBER;}
 	tiny_string toString() const;
 	int toInt() const
 	{
@@ -426,7 +404,7 @@ public:
 	}
 };
 
-class Date: public ASObject
+class Date: public IInterface
 {
 private:
 	int year;
@@ -438,6 +416,7 @@ private:
 	int millisecond;
 public:
 	Date();
+	static void sinit(Class_base*){}
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getTimezoneOffset);
 	ASFUNCTION(getTime);
@@ -447,17 +426,17 @@ public:
 	ASFUNCTION(valueOf);
 	tiny_string toString() const;
 	int toInt() const; 
-	ASObject* clone()
+/*	ASObject* clone()
 	{
 		return new Date(*this);
-	}
+	}*/
 };
 
 //Internal objects used to store traits declared in scripts and object placed, but not yet valid
 class Definable : public ASObject
 {
 public:
-	Definable():ASObject("Definable"){type=T_DEFINABLE;}
+	Definable(){type=T_DEFINABLE;}
 	virtual void define(ASObject* g)=0;
 };
 
@@ -508,18 +487,102 @@ public:
 	ASFUNCTION(random);
 };
 
-class RegExp: public ASObject
+class RegExp: public IInterface
 {
 private:
 	std::string re;
 	std::string flags;
 public:
 	RegExp();
+	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(exec);
 	RegExp* clone()
 	{
 		return new RegExp(*this);
+	}
+};
+
+template<typename T>
+class ClassName
+{
+public:
+	static const char* name;
+};
+
+#define REGISTER_CLASS_NAME(X) template<> \
+	const char* ClassName<X>::name = #X;
+
+#define REGISTER_CLASS_NAME2(X,NAME) template<> \
+	const char* ClassName<X>::name = NAME;
+
+class Class_inherit:public Class_base
+{
+public:
+	Class_inherit(const tiny_string& name):Class_base(name){}
+	IInterface* getInstance();
+};
+
+template< class T>
+class Class: public Class_base
+{
+private:
+	Class(const tiny_string& name):Class_base(name){}
+	T* getInstance()
+	{
+		ASObject* obj=new ASObject;
+		obj->max_level=max_level;
+		obj->prototype=this;
+		obj->actualPrototype=this;
+		//TODO: Add interface T to ret
+		T* ret=new T;
+		ret->obj=obj;
+		obj->interface=ret;
+		/*uintptr_t t1=(uintptr_t)ret;
+		uintptr_t t2=(uintptr_t)obj->interface;
+		assert(t1==t2);*/
+		//As we are the prototype we should incRef ourself
+		incRef();
+		return ret;
+	}
+public:
+	static T* getInstanceS()
+	{
+		Class<T>* c=Class<T>::getClass();
+		return c->getInstance();
+	}
+	template <typename ARG1>
+	static T* getInstanceS(ARG1 a1)
+	{
+		Class<T>* c=Class<T>::getClass();
+		ASObject* obj=new ASObject;
+		//TODO: Add interface T to ret
+		obj->max_level=c->max_level;
+		obj->prototype=c;
+		obj->actualPrototype=c;
+		T* ret=new T(a1);
+		ret->obj=obj;
+		obj->interface=ret;
+		//As we are the prototype we should incRef ourself
+		c->incRef();
+		return ret;
+	}
+	static Class<T>* getClass(const tiny_string& name)
+	{
+		std::map<tiny_string, Class_base*>::iterator it=sys->classes.find(name);
+		if(it==sys->classes.end()) //This class is not yet in the map, create it
+		{
+			Class<T>* ret=new Class<T>(name);
+			T::sinit(ret);
+			sys->classes.insert(std::make_pair(name,ret));
+			return ret;
+		}
+		else
+			return static_cast<Class<T>*>(it->second);
+	}
+	static Class<T>* getClass()
+	{
+		return getClass(ClassName<T>::name);
 	}
 };
 

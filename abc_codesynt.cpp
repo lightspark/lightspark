@@ -233,9 +233,10 @@ ASObject* argumentDumper(arguments* arg, uint32_t n)
 
 ASObject* createRest()
 {
-	ASArray* ret=new ASArray();
+	abort();
+/*	Array* ret=new Array();
 	ret->_constructor(ret,NULL);
-	return ret;
+	return ret;*/
 }
 
 llvm::Function* debug_i_f;

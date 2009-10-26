@@ -28,7 +28,7 @@
 #include "swftypes.h"
 #include "frame.h"
 #include "vm.h"
-#include "asobjects.h"
+//#include "asobjects.h"
 #include "flashdisplay.h"
 
 #include <X11/Xlib.h>
@@ -79,7 +79,6 @@ protected:
 	sem_t mutex;
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
-	LoaderInfo* loaderInfo;
 private:
 	RGB Background;
 	std::list < DictionaryTag* > dictionary;
@@ -101,17 +100,18 @@ public:
 	void addToFrame(DisplayListTag* t);
 	void commitFrame();
 	void Render();
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
+/*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
-	void setVariableByString(const std::string& s, ASObject* o);
+	void setVariableByString(const std::string& s, ASObject* o);*/
 };
 
-class SystemState:public RootMovieClip
+class SystemState: public RootMovieClip
 {
 public:
 	ASFUNCTION(getBounds);
 	RootMovieClip* root;
+	//ASObject* obj;
 
 	bool shutdown;
 	void setShutdownFlag();
@@ -123,6 +123,9 @@ public:
 	InputThread* cur_input_thread;
 	RenderThread* cur_render_thread;
 	ThreadPool* cur_thread_pool;
+
+	//Class map
+	std::map<tiny_string, Class_base*> classes;
 
 	//DEBUG
 	std::vector<std::string> events_name;
@@ -151,7 +154,8 @@ public:
 
 	//Used only in ParseThread context
 	std::list < std::pair<PlaceInfo, IDisplayListElem*> >* parsingDisplayList;
-	ASObject* parsingTarget;
+	//DEPRECATED
+	Sprite* parsingTarget;
 };
 
 enum ENGINE { SDL=0, NPAPI, GLX};

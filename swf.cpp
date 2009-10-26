@@ -75,7 +75,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	pt->root->frame_rate/=256;
 }
 
-RootMovieClip::RootMovieClip():loaderInfo(NULL)
+RootMovieClip::RootMovieClip()
 {
 	root=this;
 	sem_init(&mutex,0,1);
@@ -85,17 +85,9 @@ RootMovieClip::RootMovieClip():loaderInfo(NULL)
 
 SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),root(this)
 {
-	type=T_MOVIE;
+	sys=this;
 	sem_init(&new_frame,0,0);
-	MovieClip::_constructor(this,NULL);
-	loaderInfo=new LoaderInfo();
-	loaderInfo->_constructor(loaderInfo,NULL);
-	setVariableByQName("loaderInfo","",loaderInfo);
-
-	//This should come from DisplayObject
-	setVariableByQName("getBounds","",new Function(getBounds));
-	setVariableByQName("root","",this);
-	setVariableByQName("stage","",this);
+	loaderInfo=Class<LoaderInfo>::getInstanceS();
 }
 
 SystemState::~SystemState()
@@ -104,6 +96,8 @@ SystemState::~SystemState()
 		delete currentVm;
 	if(cur_thread_pool)
 		delete cur_thread_pool;
+	obj->interface=NULL;
+	delete obj;
 }
 
 void SystemState::setShutdownFlag()
@@ -149,7 +143,7 @@ void* ParseThread::worker(ParseThread* th)
 					sys->currentVm->addEvent(NULL, sync);
 					sync->wait();
 					//Now signal the completion for this root
-					sys->currentVm->addEvent(th->root->loaderInfo,new Event("init"));
+					sys->currentVm->addEvent(th->root->loaderInfo,Class<Event>::getInstanceS("init"));
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:
@@ -1100,7 +1094,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	return *it;
 }
 
-ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+/*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 {
 	sem_wait(&mutex);
 	ASObject* ret=ASObject::getVariableByQName(name, ns, owner);
@@ -1126,7 +1120,7 @@ void RootMovieClip::setVariableByString(const string& s, ASObject* o)
 {
 	abort();
 	//TODO: ActionScript2 support
-/*	string sub;
+	string sub;
 	int f=0;
 	int l=0;
 	ASObject* target=this;
@@ -1155,8 +1149,8 @@ void RootMovieClip::setVariableByString(const string& s, ASObject* o)
 		}
 	}
 	sub=s.substr(f,l-f);
-	target->setVariableByQName(sub.c_str(),"",o);*/
-}
+	target->setVariableByQName(sub.c_str(),"",o);
+}*/
 
 long timeDiff(timespec& s, timespec& d)
 {

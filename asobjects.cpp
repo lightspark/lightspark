@@ -35,36 +35,41 @@ using namespace std;
 
 extern __thread SystemState* sys;
 
-ASStage::ASStage():width(640),height(480),ASObject("Stage")
+REGISTER_CLASS_NAME(Array);
+REGISTER_CLASS_NAME(IInterface);
+REGISTER_CLASS_NAME(Date);
+REGISTER_CLASS_NAME(RegExp);
+
+ASStage::ASStage():width(640),height(480)
 {
 //	setVariableByQName("width","",&width);
 //	setVariableByQName("height","",&height);
 }
 
-ASArray::ASArray():ASObject("Array")
+Array::Array()
 {
 	type=T_ARRAY;
-	constructor=new Function(_constructor);
-	ASObject::setVariableByQName("Call","",new Function(ASArray::Array));
-	ASObject::setVariableByQName("toString","",new Function(ASObject::_toString));
+	//constructor=new Function(_constructor);
+	//ASObject::setVariableByQName("Call","",new Function(ASArray::Array));
+	//ASObject::setVariableByQName("toString","",new Function(ASObject::_toString));
 }
 
-ASFUNCTIONBODY(ASArray,Array)
+/*ASFUNCTIONBODY(Array,Array)
 {
 	ASObject* ret=new ASArray();
-	ret->constructor->call(ret,args);
+	//ret->constructor->call(ret,args);
 	return ret;
-}
+}*/
 
-ASFUNCTIONBODY(ASArray,_constructor)
+ASFUNCTIONBODY(Array,_constructor)
 {
-	ASArray* th=static_cast<ASArray*>(obj);
-	th->setGetterByQName("length","",new Function(_getLength));
-	th->ASObject::setVariableByQName("pop","",new Function(_pop));
-	th->ASObject::setVariableByQName("shift","",new Function(shift));
-	th->ASObject::setVariableByQName("unshift","",new Function(unshift));
-	th->ASObject::setVariableByQName("join",AS3,new Function(join));
-	th->ASObject::setVariableByQName("push",AS3,new Function(_push));
+	Array* th=static_cast<Array*>(obj->interface);
+	obj->setGetterByQName("length","",new Function(_getLength));
+	obj->ASObject::setVariableByQName("pop","",new Function(_pop));
+	obj->ASObject::setVariableByQName("shift","",new Function(shift));
+	obj->ASObject::setVariableByQName("unshift","",new Function(unshift));
+	obj->ASObject::setVariableByQName("join",AS3,new Function(join));
+	obj->ASObject::setVariableByQName("push",AS3,new Function(_push));
 	//th->setVariableByName("push",new Function(_push));
 	//th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
 	if(args==NULL)
@@ -82,15 +87,15 @@ ASFUNCTIONBODY(ASArray,_constructor)
 	}
 }
 
-ASFUNCTIONBODY(ASArray,_getLength)
+ASFUNCTIONBODY(Array,_getLength)
 {
-	ASArray* th=static_cast<ASArray*>(obj);
+	Array* th=static_cast<Array*>(obj->interface);
 	return abstract_i(th->data.size());
 }
 
-ASFUNCTIONBODY(ASArray,shift)
+ASFUNCTIONBODY(Array,shift)
 {
-	ASArray* th=static_cast<ASArray*>(obj);
+	Array* th=static_cast<Array*>(obj->interface);
 	if(th->data.empty())
 		return new Undefined;
 	ASObject* ret;
@@ -102,9 +107,9 @@ ASFUNCTIONBODY(ASArray,shift)
 	return ret;
 }
 
-ASFUNCTIONBODY(ASArray,join)
+ASFUNCTIONBODY(Array,join)
 {
-		ASArray* th=static_cast<ASArray*>(obj);
+		Array* th=static_cast<Array*>(obj->interface);
 		ASObject* del=args->at(0);
 		string ret;
 		for(int i=0;i<th->size();i++)
@@ -116,9 +121,9 @@ ASFUNCTIONBODY(ASArray,join)
 		return new ASString(ret);
 }
 
-ASFUNCTIONBODY(ASArray,_pop)
+ASFUNCTIONBODY(Array,_pop)
 {
-	ASArray* th=static_cast<ASArray*>(obj);
+	Array* th=static_cast<Array*>(obj->interface);
 	ASObject* ret;
 	if(th->data.back().type==STACK_OBJECT)
 		ret=th->data.back().data;
@@ -128,9 +133,9 @@ ASFUNCTIONBODY(ASArray,_pop)
 	return ret;
 }
 
-ASFUNCTIONBODY(ASArray,unshift)
+ASFUNCTIONBODY(Array,unshift)
 {
-	ASArray* th=static_cast<ASArray*>(obj);
+	Array* th=static_cast<Array*>(obj->interface);
 	if(args->size()!=1)
 	{
 		LOG(ERROR,"Multiple unshift");
@@ -141,9 +146,9 @@ ASFUNCTIONBODY(ASArray,unshift)
 	return new Integer(th->size());
 }
 
-ASFUNCTIONBODY(ASArray,_push)
+ASFUNCTIONBODY(Array,_push)
 {
-	ASArray* th=static_cast<ASArray*>(obj);
+	Array* th=static_cast<Array*>(obj->interface);
 	if(args->size()!=1)
 	{
 		LOG(ERROR,"Multiple push");
@@ -154,7 +159,7 @@ ASFUNCTIONBODY(ASArray,_push)
 	return new Integer(th->size());
 }
 
-ASMovieClipLoader::ASMovieClipLoader():ASObject("MovieClipLoader")
+ASMovieClipLoader::ASMovieClipLoader()
 {
 }
 
@@ -170,7 +175,7 @@ ASFUNCTIONBODY(ASMovieClipLoader,addListener)
 	return NULL;
 }
 
-ASXML::ASXML():ASObject("XML")
+ASXML::ASXML()
 {
 	xml_buf=new char[1024*20];
 	xml_index=0;
@@ -218,13 +223,13 @@ ASFUNCTIONBODY(ASXML,load)
 	return new Integer(1);
 }
 
-bool ASArray::isEqual(const ASObject* r) const
+bool Array::isEqual(const ASObject* r) const
 {
 	if(r->getObjectType()!=T_ARRAY)
 		return false;
 	else
 	{
-		const ASArray* ra=static_cast<const ASArray*>(r);
+		const Array* ra=static_cast<const Array*>(r->interface);
 		int size=data.size();
 		if(size!=ra->size())
 			return false;
@@ -240,10 +245,10 @@ bool ASArray::isEqual(const ASObject* r) const
 	}
 }
 
-intptr_t ASArray::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
+intptr_t Array::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 {
 	abort();
-	intptr_t ret;
+/*	intptr_t ret;
 	owner=NULL;
 	int index=0;
 
@@ -281,18 +286,18 @@ intptr_t ASArray::getVariableByMultiname_i(const multiname& name, ASObject*& own
 					ret=data[index].data_i;
 					break;
 			}
-			owner=this;
+			owner=obj;
 	}
 	else
 		ret=ASObject::getVariableByMultiname_i(name,owner);
 
-	return ret;
+	return ret;*/
 }
 
-ASObject* ASArray::getVariableByMultiname(const multiname& name, ASObject*& owner)
+ASObject* Array::getVariableByMultiname(const multiname& name, ASObject*& owner)
 {
 	abort();
-	ASObject* ret;
+/*	ASObject* ret;
 	owner=NULL;
 	int index=0;
 
@@ -342,13 +347,13 @@ ASObject* ASArray::getVariableByMultiname(const multiname& name, ASObject*& owne
 	else
 		ret=ASObject::getVariableByMultiname(name,owner);
 
-	return ret;
+	return ret;*/
 }
 
-void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
+void Array::setVariableByMultiname_i(multiname& name, intptr_t value)
 {
 	abort();
-	int index=0;
+/*	int index=0;
 	switch(name.name_type)
 	{
 		case multiname::NAME_STRING:
@@ -387,13 +392,13 @@ void ASArray::setVariableByMultiname_i(multiname& name, intptr_t value)
 
 		data[index].data_i=value;
 		data[index].type=STACK_INT;
-	}
+	}*/
 }
 
-void ASArray::setVariableByMultiname(multiname& name, ASObject* o)
+void Array::setVariableByMultiname(multiname& name, ASObject* o)
 {
 	abort();
-	int index=0;
+/*	int index=0;
 	if(name.name_type==multiname::NAME_STRING)
 	{
 		for(int i=0;i<name.name_s.len();i++)
@@ -439,13 +444,13 @@ void ASArray::setVariableByMultiname(multiname& name, ASObject* o)
 		}
 	}
 	else
-		ASObject::setVariableByMultiname(name,o);
+		ASObject::setVariableByMultiname(name,o);*/
 }
 
-void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+void Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	abort();
-	int index=0;
+/*	int index=0;
 	for(int i=0;i<name.len();i++)
 	{
 		if(!isdigit(name[i]))
@@ -486,10 +491,10 @@ void ASArray::setVariableByQName(const tiny_string& name, const tiny_string& ns,
 		}
 	}
 	else
-		ASObject::setVariableByQName(name,ns,o);
+		ASObject::setVariableByQName(name,ns,o);*/
 }
 
-ASObject* ASArray::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+ASObject* Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 {
 	abort();
 /*	ASObject* ret;
@@ -522,7 +527,7 @@ ASObject* ASArray::getVariableByQName(const tiny_string& name, const tiny_string
 	return ret;*/
 }
 
-ASString::ASString():ASObject("String")
+ASString::ASString()
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -534,7 +539,7 @@ ASString::ASString():ASObject("String")
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const string& s):ASObject("String"),data(s)
+ASString::ASString(const string& s):data(s)
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -546,7 +551,7 @@ ASString::ASString(const string& s):ASObject("String"),data(s)
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const tiny_string& s):ASObject("String"),data(s.raw_buf())
+ASString::ASString(const tiny_string& s):data(s.raw_buf())
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -558,7 +563,7 @@ ASString::ASString(const tiny_string& s):ASObject("String"),data(s.raw_buf())
 	setGetterByQName("length","",new Function(_getLength));
 }
 
-ASString::ASString(const char* s):ASObject("String"),data(s)
+ASString::ASString(const char* s):data(s)
 {
 	type=T_STRING;
 	setVariableByQName("Call","",new Function(ASString::String));
@@ -573,7 +578,8 @@ ASFUNCTIONBODY(ASString,_getLength)
 	ASString* th=static_cast<ASString*>(obj);
 	return abstract_i(th->data.size());
 }
-ASArray::~ASArray()
+
+Array::~Array()
 {
 	for(int i=0;i<data.size();i++)
 	{
@@ -584,9 +590,10 @@ ASArray::~ASArray()
 
 ASFUNCTIONBODY(ASString,split)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	abort();
+/*	ASString* th=static_cast<ASString*>(obj);
 	cout << th->data << endl;
-	ASArray* ret=new ASArray();
+	Array* ret=new Array;
 	ret->_constructor(ret,NULL);
 	ASObject* delimiter=args->at(0);
 	if(delimiter->getObjectType()==T_STRING)
@@ -607,7 +614,7 @@ ASFUNCTIONBODY(ASString,split)
 	else
 		abort();
 
-	return ret;
+	return ret;*/
 }
 
 ASFUNCTIONBODY(ASString,String)
@@ -645,7 +652,7 @@ ASFUNCTIONBODY(ASString,String)
 	}
 }
 
-tiny_string ASArray::toString() const
+tiny_string Array::toString() const
 {
 	string ret;
 	for(int i=0;i<data.size();i++)
@@ -722,7 +729,7 @@ bool Undefined::isEqual(const ASObject* r) const
 		return false;
 }
 
-Undefined::Undefined():ASObject("undefined")
+Undefined::Undefined()
 {
 	type=T_UNDEFINED;
 //	setVariableByName(".Call",new Function(call));
@@ -804,23 +811,23 @@ tiny_string Number::toString() const
 	return buf;
 }
 
-Date::Date():ASObject("Date"),year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
+Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
 {
-	constructor=new Function(_constructor);
+	//constructor=new Function(_constructor);
 }
 
 ASFUNCTIONBODY(Date,_constructor)
 {
-	Date* th=static_cast<Date*>(obj);
-	th->setVariableByQName("getTimezoneOffset","",new Function(getTimezoneOffset));
-	th->setVariableByQName("valueOf","",new Function(valueOf));
-	th->setVariableByQName("getTime",AS3,new Function(getTime));
-	th->setVariableByQName("getFullYear","",new Function(getFullYear));
+	Date* th=static_cast<Date*>(obj->interface);
+	obj->setVariableByQName("getTimezoneOffset","",new Function(getTimezoneOffset));
+	obj->setVariableByQName("valueOf","",new Function(valueOf));
+	obj->setVariableByQName("getTime",AS3,new Function(getTime));
+	obj->setVariableByQName("getFullYear","",new Function(getFullYear));
 	//th->setVariableByName(Qname(AS3,"getFullYear"),new Function(getFullYear));
-	th->setVariableByQName("getHours",AS3,new Function(getHours));
-	th->setVariableByQName("getMinutes",AS3,new Function(getMinutes));
-	th->setVariableByQName("getSeconds",AS3,new Function(getMinutes));
-	th->setVariableByQName("toString",AS3,new Function(ASObject::_toString));
+	obj->setVariableByQName("getHours",AS3,new Function(getHours));
+	obj->setVariableByQName("getMinutes",AS3,new Function(getMinutes));
+	obj->setVariableByQName("getSeconds",AS3,new Function(getMinutes));
+	obj->setVariableByQName("toString",AS3,new Function(ASObject::_toString));
 	th->year=1990;
 	th->month=1;
 	th->date=1;
@@ -838,31 +845,31 @@ ASFUNCTIONBODY(Date,getTimezoneOffset)
 
 ASFUNCTIONBODY(Date,getFullYear)
 {
-	Date* th=static_cast<Date*>(obj);
+	Date* th=static_cast<Date*>(obj->interface);
 	return new Number(th->year);
 }
 
 ASFUNCTIONBODY(Date,getHours)
 {
-	Date* th=static_cast<Date*>(obj);
+	Date* th=static_cast<Date*>(obj->interface);
 	return new Number(th->hour);
 }
 
 ASFUNCTIONBODY(Date,getMinutes)
 {
-	Date* th=static_cast<Date*>(obj);
+	Date* th=static_cast<Date*>(obj->interface);
 	return new Number(th->minute);
 }
 
 ASFUNCTIONBODY(Date,getTime)
 {
-	Date* th=static_cast<Date*>(obj);
+	Date* th=static_cast<Date*>(obj->interface);
 	return new Number(th->toInt());
 }
 
 ASFUNCTIONBODY(Date,valueOf)
 {
-	Date* th=static_cast<Date*>(obj);
+	Date* th=static_cast<Date*>(obj->interface);
 	return new Number(th->toInt());
 }
 
@@ -898,7 +905,7 @@ IFunction* Function::toFunction()
 
 SyntheticFunction::SyntheticFunction(method_info* m):mi(m)
 {
-	class_index=-2;
+//	class_index=-2;
 	val=m->synt_method();
 }
 
@@ -927,9 +934,10 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 
 	if(mi->needsRest()) //TODO
 	{
-		ASArray* rest=new ASArray();
-		rest->_constructor(rest,NULL);
-		cc->locals[mi->numArgs()+1]=rest;
+		abort();
+//		Array* rest=new Array();
+//		rest->_constructor(rest,NULL);
+//		cc->locals[mi->numArgs()+1]=rest;
 	}
 	obj->incRef();
 	ASObject* ret=val(obj,NULL,cc);
@@ -975,9 +983,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args)
 
 	if(mi->needsRest()) //TODO
 	{
-		ASArray* rest=new ASArray();
+		abort();
+/*		ASArray* rest=new ASArray();
 		rest->_constructor(rest,NULL);
-		cc->locals[mi->numArgs()+1]=rest;
+		cc->locals[mi->numArgs()+1]=rest;*/
 		/*llvm::Value* rest=Builder.CreateCall(ex->FindFunctionNamed("createRest"));
 		constant = llvm::ConstantInt::get(int_type, param_count+1);
 		t=Builder.CreateGEP(locals,constant);
@@ -1011,7 +1020,7 @@ ASObject* Function::call(ASObject* obj, arguments* args)
 	}
 }
 
-Math::Math():ASObject("Math")
+Math::Math()
 {
 	setVariableByQName("PI","",new Number(M_PI));
 	setVariableByQName("sqrt","",new Function(sqrt));
@@ -1068,23 +1077,28 @@ bool Null::isEqual(const ASObject* r) const
 		return false;
 }
 
-RegExp::RegExp():ASObject("RegExp")
+RegExp::RegExp()
 {
-	constructor=new Function(_constructor);
+}
+
+void RegExp::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
 }
 
 ASFUNCTIONBODY(RegExp,_constructor)
 {
-	RegExp* th=static_cast<RegExp*>(obj);
+	RegExp* th=static_cast<RegExp*>(obj->interface);
 	th->re=args->at(0)->toString().raw_buf();
 	if(args->size()>1)
 		th->flags=args->at(1)->toString().raw_buf();
-	th->setVariableByQName("exec",AS3,new Function(exec));
+	obj->setVariableByQName("exec",AS3,new Function(exec));
 }
 
 ASFUNCTIONBODY(RegExp,exec)
 {
-	RegExp* th=static_cast<RegExp*>(obj);
+	RegExp* th=static_cast<RegExp*>(obj->interface);
 	cout << "Returning tracer2" <<endl;
 	return new DebugTracer("RegExp::exec");
 }
@@ -1109,4 +1123,24 @@ ASFUNCTIONBODY(ASString,replace)
 	LOG(NOT_IMPLEMENTED,"ASString::replace not really implemented");
 	ASString* th=static_cast<ASString*>(obj);
 	return new ASString(th->data);
+}
+
+Class_base::~Class_base()
+{
+	if(constructor)
+		constructor->decRef();
+}
+
+IInterface* Class_inherit::getInstance()
+{
+	//TODO: Ask our super for the interface to ret
+	assert(super);
+	IInterface* ret=super->getInstance();
+	ret->obj->max_level=max_level;
+	ret->obj->prototype->decRef();
+	ret->obj->prototype=this;
+	ret->obj->actualPrototype=this;
+	//As we are the prototype we should incRef ourself
+	incRef();
+	return ret;
 }

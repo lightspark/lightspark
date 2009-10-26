@@ -27,6 +27,7 @@
 
 class RootMovieClip;
 class DisplayListTag;
+class LoaderInfo;
 
 class IDisplayListElem: public EventDispatcher
 {
@@ -44,12 +45,14 @@ public:
 
 class DisplayObject: public IDisplayListElem
 {
-private:
+protected:
 	intptr_t width;
 	intptr_t height;
+	LoaderInfo* loaderInfo;
 public:
 	DisplayObject();
-	ASFUNCTION(_call); //TODO: delete and implement upcasting
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_getHeight);
 	void Render()
@@ -62,6 +65,8 @@ class DisplayObjectContainer: public DisplayObject
 {
 public:
 	DisplayObjectContainer();
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_getNumChildren);
 };
 
@@ -70,10 +75,8 @@ class LoaderInfo: public EventDispatcher
 public:
 	LoaderInfo()
 	{
-		if(constructor)
-			constructor->decRef();
-		constructor=new Function(_constructor);
 	}
+	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
 	ASFUNCTION(_getLoaderUrl);
@@ -94,10 +97,8 @@ private:
 public:
 	Loader():loading(false),local_root(NULL),loaded(false)
 	{
-		if(constructor)
-			constructor->decRef();
-		constructor=new Function(_constructor);
 	}
+	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	ASFUNCTION(loadBytes);
@@ -122,6 +123,7 @@ protected:
 	number_t rotation;
 public:
 	Sprite();
+	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getBounds);
 	ASFUNCTION(getRotation);
@@ -147,8 +149,8 @@ class MovieClip: public Sprite
 {
 friend class ParseThread;
 protected:
-	Integer _framesloaded;
-	Integer _totalframes;
+	int _framesloaded;
+	int _totalframes;
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	Frame cur_frame;
@@ -160,6 +162,7 @@ public:
 public:
 	void initialize();
 	MovieClip();
+	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(moveTo);
 	ASFUNCTION(lineStyle);

@@ -45,6 +45,7 @@ typedef double number_t;
 
 class ASObject;
 class Class_base;
+class IInterface;
 class arguments;
 class IFunction;
 struct arrayElem;
@@ -299,24 +300,25 @@ public:
 
 class ASObject
 {
-friend class MovieClip;
 friend class Manager;
 friend class ABCVm;
 friend class ABCContext;
+friend class SystemState;
 protected:
 	ASObject* parent;
-	SWFOBJECT_TYPE type;
 	//maps variable name to namespace name and var
 	variables_map Variables;
 	ASObject(const ASObject& o);
-	tiny_string class_name;
+	SWFOBJECT_TYPE type;
 private:
 	int ref_count;
 	Manager* manager;
-	int max_level;
 public:
+	IInterface* interface;
+	void acquireInterface(IInterface* i);
+	int max_level;
 	//Constructor to set class_name
-	ASObject(const tiny_string& c, Manager* m=NULL);
+	ASObject(Manager* m=NULL);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_toString);
 	virtual ~ASObject();
@@ -329,8 +331,7 @@ public:
 		return mostDerived->class_name;
 	}*/
 	Class_base* prototype;
-	IFunction* constructor;
-	int class_index;
+	Class_base* actualPrototype;
 	void incRef()
 	{
 		ref_count++;
@@ -398,10 +399,7 @@ public:
 		return Variables.getNameAt(i);
 	}
 
-	SWFOBJECT_TYPE getObjectType() const
-	{
-		return type;
-	}
+	SWFOBJECT_TYPE getObjectType() const;
 	virtual tiny_string toString() const;
 	virtual int toInt() const;
 	virtual double toNumber() const;
@@ -422,6 +420,20 @@ public:
 		LOG(ERROR,"Copy object of type " << (int)getObjectType() << " from object of type " << (int)o->getObjectType());
 		abort();
 	}
+};
+
+class IInterface
+{
+friend void ASObject::acquireInterface(IInterface* i);
+friend class ASObject;
+protected:
+	SWFOBJECT_TYPE type;
+	uint32_t magic;
+public:
+	ASObject* obj;
+	IInterface():type(T_OBJECT),obj(NULL),magic(0x11223344){}
+	virtual ~IInterface(){}
+	static void sinit(Class_base*){}
 };
 
 inline void Manager::put(ASObject* o)
@@ -481,7 +493,7 @@ public:
 class Package : public ASObject
 {
 public:
-	Package():ASObject("Package"){type=T_PACKAGE;}
+	Package(){type=T_PACKAGE;}
 	ASObject* clone()
 	{
 		abort();
@@ -1065,6 +1077,18 @@ public:
 	std::vector<CLIPACTIONRECORD> ClipActionRecords;
 };
 
+class RunState
+{
+public:
+	int FP;
+	int next_FP;
+	int max_FP;
+	bool stop_FP;
+public:
+	RunState();
+	void prepareNextFP();
+};
+
 ASObject* abstract_i(intptr_t i);
 ASObject* abstract_b(bool i);
 ASObject* abstract_d(number_t i);
@@ -1100,4 +1124,5 @@ std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
 std::istream& operator>>(std::istream& stream, GLYPHENTRY& v);
 std::istream& operator>>(std::istream& stream, STRING& v);
 std::istream& operator>>(std::istream& stream, BUTTONRECORD& v);
+
 #endif

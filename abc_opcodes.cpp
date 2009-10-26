@@ -221,6 +221,14 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		return;
 	}
 
+	//Here overriding is supposed to work, so restore prototype and max_level
+	int oldlevel=obj->max_level;
+	if(obj->prototype)
+		obj->max_level=obj->prototype->max_level;
+	//Store the old prototype
+	Class_base* old_prototype=obj->actualPrototype;
+	obj->actualPrototype=obj->prototype;
+
 	ASObject* owner;
 	ASObject* o=obj->getVariableByMultiname(*name,owner);
 	if(owner)
@@ -298,6 +306,9 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		th->runtime_stack_push(new Undefined);
 	}
 	LOG(CALLS,"End of calling " << *name);
+
+	obj->actualPrototype=old_prototype;
+	obj->max_level=oldlevel;
 	obj->decRef();
 	delete[] args;
 }
@@ -403,7 +414,12 @@ bool ABCVm::ifLT_oi(ASObject* obj2, intptr_t val1)
 {
 	LOG(CALLS,"ifLT_oi");
 
-	bool ret=val1<obj2->toInt();
+	//As ECMA said, on NaN return undefined... and undefined means not jump
+	bool ret;
+	if(obj2->getObjectType()==T_UNDEFINED)
+		ret=false;
+	else
+		ret=val1<obj2->toInt();
 
 	obj2->decRef();
 	return ret;
@@ -502,15 +518,15 @@ void ABCVm::construct(call_context* th, int m)
 		LOG(CALLS,"End of deferred definition of property " << name);*/
 	}
 
-	LOG(CALLS,"Constructing " << obj->class_name);
-	ASObject* ret=obj->clone();
+	LOG(CALLS,"Constructing");
+	Class_base* o_class=static_cast<Class_base*>(obj);
+	assert(o_class->getObjectType()==T_CLASS);
+	ASObject* ret=o_class->getInstance()->obj;;
 
-	assert(obj->getObjectType()==T_CLASS);
-	ret->prototype=static_cast<Class_base*>(obj);
-	obj->incRef();
 
-	if(obj->class_index==-2)
+	if(o_class->class_index==-2)
 	{
+		abort();
 		//We have to build the method traits
 		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
 		LOG(CALLS,"Building method traits");
@@ -519,7 +535,7 @@ void ABCVm::construct(call_context* th, int m)
 		sf->call(ret,&args);
 
 	}
-	else if(obj->class_index==-1)
+	else if(o_class->class_index==-1)
 	{
 		//The class is builtin
 		LOG(CALLS,"Building a builtin class");
@@ -528,21 +544,20 @@ void ABCVm::construct(call_context* th, int m)
 	{
 		//The class is declared in the script and has an index
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->context->instances[obj->class_index].trait_count;i++)
-			th->context->buildTrait(ret,&th->context->instances[obj->class_index].traits[i]);
+		for(int i=0;i<th->context->instances[o_class->class_index].trait_count;i++)
+			th->context->buildTrait(ret,&th->context->instances[o_class->class_index].traits[i]);
 	}
 
-	if(obj->constructor)
+	if(o_class->constructor)
 	{
 		LOG(CALLS,"Calling Instance init");
-		args.incRef();
-		obj->constructor->call(ret,&args);
+		o_class->constructor->call(ret,&args);
 //		args.decRef();
 	}
 
+	obj->decRef();
 	LOG(CALLS,"End of constructing");
 	th->runtime_stack_push(ret);
-	obj->decRef();
 }
 
 ASObject* ABCVm::typeOf(ASObject* obj)
@@ -587,6 +602,15 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
 	ASObject* obj=th->runtime_stack_pop();
+
+	//Here overriding is supposed to work, so restore prototype and max_level
+	int oldlevel=obj->max_level;
+	if(obj->prototype)
+		obj->max_level=obj->prototype->max_level;
+	//Store the old prototype
+	Class_base* old_prototype=obj->actualPrototype;
+	obj->actualPrototype=obj->prototype;
+
 	ASObject* owner;
 	ASObject* o=obj->getVariableByMultiname(*name,owner);
 	if(owner)
@@ -600,12 +624,10 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
 			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
-			th->runtime_stack_push(new Undefined);
 		}
 		else if(o->getObjectType()==T_DEFINABLE)
 		{
 			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
-			th->runtime_stack_push(new Undefined);
 		}
 		else
 		{
@@ -617,6 +639,8 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	else
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 
+	obj->actualPrototype=old_prototype;
+	obj->max_level=oldlevel;
 	obj->decRef();
 	LOG(CALLS,"End of calling " << *name);
 }
@@ -749,9 +773,9 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	else if(val1->getObjectType()==T_ARRAY)
 	{
 		//Array concatenation
-		ASArray* ar=static_cast<ASArray*>(val1);
+		Array* ar=static_cast<Array*>(val1->interface);
 		ar->push(val2);
-		return ar;
+		return val1;
 	}
 	else
 	{
@@ -1118,25 +1142,63 @@ void ABCVm::constructSuper(call_context* th, int n)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	if(obj->prototype==NULL)
+	if(obj->actualPrototype==NULL)
 	{
 		LOG(CALLS,"No prototype. Returning");
 		abort();
 		return;
 	}
 
-	//Store the old prototype and level
-	Class_base* old_prototype=obj->prototype;
-	int old_level=obj->max_level;
+	//Store the old prototype
+	Class_base* old_prototype=obj->actualPrototype;
+	cout << "Cur prototype name " << obj->actualPrototype->class_name << endl;
 
 	//Move the object protoype and level up
-	obj->prototype=old_prototype->super;
-	obj->max_level--;
-	assert(obj->max_level==obj->prototype->max_level);
+	obj->actualPrototype=old_prototype->super;
 
 	//Check if the super is the one we expect
-	int super_name=th->context->instances[obj->prototype->class_index].supername;
-	assert(super_name);
+//	int super_name=th->context->instances[obj->prototype->class_index].supername;
+//	assert(super_name);
+
+	assert(obj->actualPrototype);
+	if(obj->actualPrototype->class_index!=-1)
+	{
+		multiname* name=th->context->getMultiname(th->context->instances[obj->actualPrototype->class_index].name,NULL);
+		LOG(CALLS,"Constructing super " << *name);
+
+		LOG(CALLS,"Building instance traits");
+		//To insert the trait in the rigth level we have to change the max_level
+		int oldlevel=obj->max_level;
+		obj->max_level=obj->actualPrototype->max_level;
+
+		for(int i=0;i<th->context->instances[obj->actualPrototype->class_index].trait_count;i++)
+			th->context->buildTrait(obj,&th->context->instances[obj->actualPrototype->class_index].traits[i]);
+
+		obj->max_level=oldlevel;
+		LOG(CALLS,"Calling Instance init");
+		//args.incRef();
+		assert(obj->actualPrototype->constructor);
+		obj->actualPrototype->constructor->call(obj,&args);
+		//args.decRef();
+
+		LOG(CALLS,"End of constructing super " << *name);
+	}
+	else
+	{
+		LOG(CALLS,"Builtin super " << obj->actualPrototype->class_name);
+		LOG(CALLS,"Calling Instance init");
+		//args.incRef();
+		if(obj->actualPrototype->constructor)
+			obj->actualPrototype->constructor->call(obj,&args);
+		//args.decRef();
+	}
+	LOG(CALLS,"End super construct ");
+
+	//Reset prototype to its previous value
+	assert(obj->actualPrototype==old_prototype->super);
+	obj->actualPrototype=old_prototype;
+
+	obj->decRef();
 /*	if(super_name)
 	{
 		const multiname* mname=th->context->getMultiname(super_name,NULL);
@@ -1167,40 +1229,6 @@ void ABCVm::constructSuper(call_context* th, int n)
 		LOG(ERROR,"No super");
 		abort();
 	}*/
-
-	if(super->class_index!=-1)
-	{
-		abort();
-/*		multiname* name=th->context->getMultiname(th->context->instances[super->class_index].name,NULL);
-		LOG(CALLS,"Constructing super " << *name << " obj " << obj->super << " on obj " << obj);
-
-		obj->super=new ASObject(name->name_s,obj->mostDerived);
-		obj->super->prototype=super;
-		super->incRef();
-
-		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->context->instances[super->class_index].trait_count;i++)
-			th->context->buildTrait(obj->super,&th->context->instances[super->class_index].traits[i]);
-		LOG(CALLS,"Calling Instance init");
-		//args.incRef();
-		super->constructor->call(obj->super,&args);
-		//args.decRef();
-
-		LOG(CALLS,"End of constructing super " << *name);*/
-	}
-	else
-	{
-		abort();
-/*		LOG(CALLS,"Builtin super " << super->class_name);
-		obj->super=super->clone();
-		LOG(CALLS,"Calling Instance init");
-		//args.incRef();
-		if(super->constructor)
-			super->constructor->call(obj->super,&args);
-		//args.decRef();*/
-	}
-	LOG(CALLS,"End super construct ");
-	obj->decRef();
 }
 
 void ABCVm::findPropStrict(call_context* th, int n)
@@ -1274,11 +1302,17 @@ ASObject* ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 
 void ABCVm::initProperty(call_context* th, int n)
 {
+	static int count=0;
 	ASObject* value=th->runtime_stack_pop();
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(CALLS, "initProperty " << *name );
+	if(name->name_s=="container")
+		count++;
 
 	ASObject* obj=th->runtime_stack_pop();
+//	if(count==2)
+//		abort();
+
 
 	obj->setVariableByMultiname(*name,value);
 	obj->decRef();
@@ -1286,7 +1320,6 @@ void ABCVm::initProperty(call_context* th, int n)
 
 void ABCVm::callSuper(call_context* th, int n, int m)
 {
-	abort();
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
@@ -1295,6 +1328,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	LOG(NOT_IMPLEMENTED,"callSuper " << *name << ' ' << m);
 
 	ASObject* receiver=th->runtime_stack_pop();
+	abort();
 	/*ASObject* obj;
 	if(receiver->super)
 		obj=receiver->super;
@@ -1362,7 +1396,6 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 
 void ABCVm::callSuperVoid(call_context* th, int n, int m)
 {
-	abort();
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
@@ -1370,15 +1403,23 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(CALLS,"callSuperVoid " << *name << ' ' << m);
 
-	ASObject* receiver=th->runtime_stack_pop();
-/*	ASObject* obj;
-	if(receiver->super)
-		obj=receiver->super;
-	else
-		obj=receiver;
+	ASObject* obj=th->runtime_stack_pop();
+	//HACK (nice) set the max level to the current actual prototype before looking up the member
+	assert(obj->actualPrototype);
+	int oldlevel=obj->max_level;
+	obj->max_level=obj->actualPrototype->max_level-1;
+	//Store the old prototype
+	Class_base* old_prototype=obj->actualPrototype;
+
+	//Move the object protoype and level up
+	obj->actualPrototype=old_prototype->super;
 
 	ASObject* owner;
 	ASObject* o=obj->getVariableByMultiname(*name,owner);
+
+	//Set back the original max_level
+	obj->max_level=oldlevel;
+
 	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
@@ -1391,7 +1432,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		{
 			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
 		}
-		else if(o->getObjectType()==T_DEFINABLE)
+/*		else if(o->getObjectType()==T_DEFINABLE)
 		{
 			LOG(CALLS,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o);
@@ -1414,24 +1455,31 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 			//{
 			//	LOG(NOT_IMPLEMENTED,"No such function, returning Undefined");
 			//}
-		}
+		}*/
+		else
+			abort();
 	}
 	else
 	{
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 	}
-	LOG(CALLS,"End of calling " << name);
-	receiver->decRef();
-	delete[] args;*/
+	LOG(CALLS,"End of calling " << *name);
+
+	//Reset prototype to its previous value
+	assert(obj->actualPrototype==old_prototype->super);
+	obj->actualPrototype=old_prototype;
+
+	obj->decRef();
+	delete[] args;
 }
 
 void ABCVm::isTypelate(call_context* th)
 {
-	LOG(NOT_IMPLEMENTED,"isTypelate");
+	LOG(NOT_IMPLEMENTED,"isTypelate: returing true");
 	ASObject* type=th->runtime_stack_pop();
 	ASObject* obj=th->runtime_stack_pop();
-	cout << "Name " << type->class_name << " type " << type->getObjectType() << endl;
-	cout << "Name " << obj->class_name << " type " << obj->getObjectType() << endl;
+//	cout << "Name " << type->class_name << " type " << type->getObjectType() << endl;
+//	cout << "Name " << obj->class_name << " type " << obj->getObjectType() << endl;
 //	if(type->class_name==obj->class_name)
 		th->runtime_stack_push(new Boolean(true));
 //	else
@@ -1473,6 +1521,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(CALLS,"constructProp "<< *name << ' ' << m);
+	if(m==1 && args.at(0)->prototype)
+		cout << "arg[0]->class_name " << args.at(0)->prototype->class_name << endl;
 
 	ASObject* obj=th->runtime_stack_pop();
 	ASObject* owner;
@@ -1493,13 +1543,13 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	}
 
 	LOG(CALLS,"Constructing");
-	ASObject* ret=o->clone();
-	assert(o->getObjectType()==T_CLASS);
-	ret->prototype=static_cast<Class_base*>(o);
-	o->incRef();
+	Class_base* o_class=static_cast<Class_base*>(o);
+	assert(o_class->getObjectType()==T_CLASS);
+	ASObject* ret=o_class->getInstance()->obj;;
 
-	if(o->class_index==-2)
+	if(o_class->class_index==-2)
 	{
+		abort();
 		//We have to build the method traits
 		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
 		LOG(CALLS,"Building method traits");
@@ -1508,7 +1558,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		sf->call(ret,&args);
 
 	}
-	else if(o->class_index==-1)
+	else if(o_class->class_index==-1)
 	{
 		//The class is builtin
 		LOG(CALLS,"Building a builtin class");
@@ -1517,15 +1567,15 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	{
 		//The class is declared in the script and has an index
 		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->context->instances[o->class_index].trait_count;i++)
-			th->context->buildTrait(ret,&th->context->instances[o->class_index].traits[i]);
+		for(int i=0;i<th->context->instances[o_class->class_index].trait_count;i++)
+			th->context->buildTrait(ret,&th->context->instances[o_class->class_index].traits[i]);
 	}
 
-	if(o->constructor)
+	if(o_class->constructor)
 	{
 		LOG(CALLS,"Calling Instance init");
-		args.incRef();
-		o->constructor->call(ret,&args);
+		//args.incRef();
+		o_class->constructor->call(ret,&args);
 //		args.decRef();
 	}
 
@@ -1559,7 +1609,7 @@ ASObject* ABCVm::hasNext2(call_context* th, int n, int m)
 void ABCVm::newObject(call_context* th, int n)
 {
 	LOG(CALLS,"newObject " << n);
-	ASObject* ret=new ASObject("Object");
+	ASObject* ret=new ASObject;
 	for(int i=0;i<n;i++)
 	{
 		ASObject* value=th->runtime_stack_pop();
@@ -1619,11 +1669,17 @@ void ABCVm::newClass(call_context* th, int n)
 	assert(name_index);
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
 
-	Class_base* ret=new Class<ASObject*>(mname->name_s);
+	Class_base* ret=new Class_inherit(mname->name_s);
+//	Class_base* ret=Class<IInterface>::getClass(mname->name_s);
 	ASObject* tmp=th->runtime_stack_pop();
-	assert(tmp->getObjectType()==T_CLASS);
-	ret->super=static_cast<Class_base*>(tmp);
-	ret->max_level=tmp->max_level+1;
+
+	//Null is a "valid" base class
+	if(tmp->getObjectType()!=T_NULL)
+	{
+		assert(tmp->getObjectType()==T_CLASS);
+		ret->super=static_cast<Class_base*>(tmp);
+		ret->max_level=tmp->max_level+1;
+	}
 
 	method_info* m=&th->context->methods[th->context->classes[n].cinit];
 	IFunction* cinit=new SyntheticFunction(m);

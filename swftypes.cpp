@@ -81,6 +81,19 @@ bool ASObject::isLess(const ASObject* r) const
 	return false;
 }
 
+void ASObject::acquireInterface(IInterface* i)
+{
+	assert(i!=interface);
+	delete interface;
+	interface=i;
+	interface->obj=this;
+}
+
+SWFOBJECT_TYPE ASObject::getObjectType() const
+{
+	return (interface)?(interface->type):type;
+}
+
 int multiname::count=0;
 
 tiny_string multiname::qualifiedString()
@@ -207,7 +220,7 @@ bool variables_map::hasProperty(const tiny_string& name,int level)
 bool ASObject::hasProperty(const tiny_string& name)
 {
 	bool ret;
-	for(int i=0;i<max_level;i++)
+	for(int i=0;i<=max_level;i++)
 	{
 		ret=Variables.hasProperty(name,i);
 		if(ret)
@@ -297,11 +310,11 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 	}
 
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
+	//HACK: this is needed if the propertu should be present but it's not
 	if(create)
 	{
 		if(mname.ns.size()>1)
 		{
-			abort();
 			//Hack, insert with empty name
 			//Here the object MUST exist
 			var_iterator inserted=Variables.insert(ret.first,make_pair(nameAndLevel(name,level), make_pair("", obj_var() ) ) );
@@ -438,13 +451,17 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 
 ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 {
-	abort();
-	obj_var* obj=Variables.findObjVar(name,ns,max_level,false);
 	ASObject* ret;
 
-	if(obj==NULL)
-		owner=NULL;
-	else
+	obj_var* obj=NULL;
+	for(int i=max_level;i>=0;i--)
+	{
+		obj=Variables.findObjVar(name,ns,i,false);
+		if(obj)
+			break;
+	}
+
+	if(obj!=NULL)
 	{
 		if(obj->getter)
 		{
@@ -453,19 +470,22 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 			ret=obj->getter->call(this,NULL);
 			LOG(CALLS,"End of getter");
 			owner=this;
-			return ret;
 		}
 		else
 		{
 			owner=this;
-			return obj->var;
+			ret=obj->var;
 		}
 	}
+	else
+	{
+		owner=NULL;
 
-	if(!owner && prototype)
-		ret=prototype->getVariableByQName(name,ns,owner);
+		if(prototype)
+			ret=prototype->getVariableByQName(name,ns,owner);
+	}
 
-	return ret;
+	return (owner)?ret:NULL;
 }
 
 std::ostream& operator<<(std::ostream& s, const tiny_string& r)
@@ -516,7 +536,7 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
-		cout << it->first.level << ": [" << it->second.first << "] "<< it->first.name << endl;
+		cout << it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << it->second.second.var << endl;
 }
 
 tiny_string Integer::toString() const
@@ -1253,21 +1273,17 @@ variables_map::~variables_map()
 	}
 }
 
-ASObject::ASObject(const tiny_string& c, Manager* m):
-	prototype(NULL),parent(NULL),ref_count(1),constructor(NULL),class_index(-1),
-	manager(m),type(T_OBJECT),class_name(c),max_level(0)
+ASObject::ASObject(Manager* m):
+	prototype(NULL),actualPrototype(NULL),parent(NULL),ref_count(1),
+	manager(m),type(T_OBJECT),max_level(0),interface(NULL)
 {
 }
 
 ASObject::ASObject(const ASObject& o):
-	prototype(o.prototype),manager(NULL),parent(NULL),ref_count(1),
-	constructor(NULL),class_index(o.class_index),type(o.type),
-	class_name(o.class_name),max_level(0)
+	prototype(o.prototype),actualPrototype(o.prototype),manager(NULL),parent(NULL),ref_count(1),
+	type(o.type),max_level(0),interface(NULL)
 {
 	parent=o.parent;
-	constructor=o.constructor;
-	if(constructor)
-		constructor->incRef();
 
 	if(prototype)
 		prototype->incRef();
@@ -1281,8 +1297,8 @@ ASObject::~ASObject()
 {
 	if(prototype)
 		prototype->decRef();
-	if(constructor)
-		constructor->decRef();
+
+	assert(prototype==actualPrototype);
 }
 
 void variables_map::initSlot(int n, int level, ASObject* o, const tiny_string& name, const tiny_string& ns)
@@ -1290,7 +1306,7 @@ void variables_map::initSlot(int n, int level, ASObject* o, const tiny_string& n
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
 
-	if(slots_vars[n]==Variables.end())
+	if(slots_vars[n-1]!=Variables.end())
 	{
 		LOG(NOT_IMPLEMENTED,"Slot overwrite attempted");
 		return;
@@ -1317,18 +1333,13 @@ void variables_map::initSlot(int n, int level, ASObject* o, const tiny_string& n
 
 void variables_map::setSlot(int n,ASObject* o)
 {
-	abort();
 	if(n-1<slots_vars.size())
 	{
-		if(slots_vars[n-1]!=Variables.end())
-		{
-			if(slots_vars[n-1]->second.second.setter)
-				abort();
-			slots_vars[n-1]->second.second.var->decRef();
-			slots_vars[n-1]->second.second.var=o;
-		}
-		else
+		assert(slots_vars[n-1]!=Variables.end());
+		if(slots_vars[n-1]->second.second.setter)
 			abort();
+		slots_vars[n-1]->second.second.var->decRef();
+		slots_vars[n-1]->second.second.var=o;
 	}
 	else
 	{
@@ -1353,7 +1364,7 @@ tiny_string RegisterNumber::toString() const
 
 tiny_string variables_map::getNameAt(int index)
 {
-	abort();
+	//TODO: CHECK behavious on overridden methods
 	if(index<Variables.size())
 	{
 		var_iterator it=Variables.begin();

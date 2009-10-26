@@ -18,17 +18,24 @@
 **************************************************************************/
 
 #include "flashutils.h"
+#include "asobjects.h"
 
 using namespace std;
 
-ByteArray::ByteArray():ASObject("ByteArray"),bytes(NULL),len(0)
+REGISTER_CLASS_NAME(ByteArray);
+
+ByteArray::ByteArray():bytes(NULL),len(0)
+{
+}
+
+void ByteArray::sinit(Class_base* c)
 {
 }
 
 ASObject* getQualifiedClassName(ASObject* obj, arguments* args)
 {
-	int class_index=obj->class_index;
-	abort();
-	//cout << args->at(0)->getClassName() << endl;
-	//return new ASString(args->at(0)->getClassName());
+	assert(args->at(0)->prototype);
+	cout << args->at(0)->prototype->class_name << endl;
+	return new ASString(args->at(0)->prototype->class_name);
 }
+

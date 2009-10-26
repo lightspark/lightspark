@@ -164,7 +164,7 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 	in >> BackgroundColor;
 }
 
-DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in),ASObject("DefineEditTextTag")
+DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	//setVariableByName("text",SWFObject(new Integer(0)));
 	in >> CharacterID >> Bounds;
@@ -214,7 +214,7 @@ void DefineEditTextTag::Render()
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
-	ASObject* target_bak=pt->parsingTarget;
+	Sprite* target_bak=pt->parsingTarget;
 	pt->parsingTarget=this;
 
 	list < pair<PlaceInfo, IDisplayListElem*> >* bak=pt->parsingDisplayList;
@@ -387,7 +387,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):Dictio
 	ignore(in,dest-in.tellg());
 }
 
-DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in),ASObject("DefineBitsLossless2Tag")
+DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 {
 	int dest=in.tellg();
 	dest+=getSize();
@@ -1320,9 +1320,9 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		LOG(NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
 		if(!(PlaceFlagMove))
 		{
-			if(toAdd->constructor)
-				toAdd->constructor->call(toAdd,NULL);
-			parent->setVariableByQName((const char*)Name,"",toAdd);
+			//if(toAdd->constructor)
+			//	toAdd->constructor->call(toAdd,NULL);
+			//parent->setVariableByQName((const char*)Name,"",toAdd);
 		}
 		else
 			LOG(ERROR, "Moving of registered objects not really supported");
@@ -1524,7 +1524,6 @@ void DefineVideoStreamTag::Render()
 DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s)
 {
 	LOG(TRACE,"DefineBinaryDataTag");
-	class_name="ByteArray";
 	int size=getSize();
 	s >> Tag >> Reserved;
 	cout << Tag << endl;

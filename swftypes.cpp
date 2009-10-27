@@ -51,11 +51,6 @@ double ConstantReference::toNumber() const
 	return ret;
 }
 
-ASObject* ConstantReference::clone()
-{
-	return new ASString((const char*)rt->vm.getConstantByIndex(index));
-}
-
 int ConstantReference::toInt() const
 {
 	LOG(ERROR,"Cannot convert ConstRef to Int");
@@ -1351,12 +1346,7 @@ void variables_map::setSlot(int n,ASObject* o)
 	}
 }
 
-/*ASObject* RegisterNumber::clone()
-{
-	return rt->execContext->regs[index];
-}
-
-tiny_string RegisterNumber::toString() const
+/*tiny_string RegisterNumber::toString() const
 {
 	char buf[20];
 	snprintf(buf,20,"Register %i",index);

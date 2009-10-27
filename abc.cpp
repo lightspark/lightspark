@@ -855,19 +855,6 @@ void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,argum
 	}
 
 	assert(derived_class->getObjectType()==T_CLASS);
-	//Walk up the super prototype and clone to inject the base
-/*	ASObject* cur=derived_class;
-	while(cur->super->class_name!=base->class_name)
-	{
-		ASObject* new_super=cur->super->clone();
-		cur->super=new_super;
-		cur=cur->super;
-		assert(cur);
-	}
-
-	//TODO: handle refcounting
-	//Inject the base
-	cur->super=base;*/
 
 	//Now the class is valid, check that it's not a builtin one
 	Class_base* derived_class_tmp=static_cast<Class_base*>(derived_class);

@@ -345,7 +345,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 		if(ret->getObjectType()==T_FUNCTION)
 		{
 			LOG(CALLS,"Attaching this to function " << name);
-			IFunction* f=ret->clone()->toFunction();
+			IFunction* f=ret->toFunction()->clone();
 			f->bind(owner);
 			ret=f;
 		}
@@ -1095,7 +1095,7 @@ void ABCVm::getLex(call_context* th, int n)
 			if(o->getObjectType()==T_FUNCTION)
 			{
 				LOG(CALLS,"Attaching this to function " << name);
-				IFunction* f=o->clone()->toFunction();
+				IFunction* f=o->toFunction()->clone();
 				f->bind(*it);
 				o=f;
 			}

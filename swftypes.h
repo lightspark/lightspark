@@ -403,12 +403,6 @@ public:
 	virtual double toNumber() const;
 	virtual IFunction* toFunction();
 
-	//TODO: check clone semantics, as actually nothing is cloned
-	virtual ASObject* clone()
-	{
-		return new ASObject(*this);
-	}
-
 	virtual bool isEqual(const ASObject* r) const;
 	virtual bool isLess(const ASObject* r) const;
 	virtual bool isGreater(const ASObject* r) const;
@@ -466,11 +460,6 @@ public:
 	tiny_string toString() const;
 	int toInt() const;
 //	double toNumber() const;
-	ASObject* clone();
-	ASObject* clone()
-	{
-		return new ConstantReference(*this);
-	}
 };
 
 class RegisterNumber : public ASObject
@@ -481,11 +470,6 @@ public:
 	RegisterNumber(int i):index(i){type=T_REGNUMBER;}
 	tiny_string toString() const;
 	//int toInt();
-	ASObject* clone();
-	ASObject* clone()
-	{
-		return new RegisterNumber(*this);
-	}
 	ASObject* instantiate();
 };*/
 
@@ -493,11 +477,6 @@ class Package : public ASObject
 {
 public:
 	Package(){type=T_PACKAGE;}
-	ASObject* clone()
-	{
-		abort();
-		return NULL;
-	}
 };
 
 class FLOAT 

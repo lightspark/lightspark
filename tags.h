@@ -370,10 +370,6 @@ public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
 	~DefineBinaryDataTag(){delete[] bytes;}
 	virtual int getId(){return Tag;} 
-	DefineBinaryDataTag* clone()
-	{
-		return new DefineBinaryDataTag(*this);
-	}
 };
 
 class FontTag: public DictionaryTag, public ASFont
@@ -479,12 +475,6 @@ public:
 	virtual int getId(){ return SpriteID; }
 
 	IDisplayListElem* instance()
-	{
-		return new DefineSpriteTag(*this);
-	}
-
-	//ASObject interface
-	DefineSpriteTag* clone()
 	{
 		return new DefineSpriteTag(*this);
 	}

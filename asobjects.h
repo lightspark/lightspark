@@ -83,10 +83,6 @@ public:
 	int class_index;
 	Class_base(const tiny_string& name):super(NULL),constructor(NULL),class_name(name),class_index(-1){type=T_CLASS;}
 	~Class_base();
-	ASObject* clone()
-	{
-		abort();
-	}
 	virtual IInterface* getInstance(bool construct=false)=0;
 	tiny_string class_name;
 	ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner)
@@ -121,6 +117,7 @@ public:
 	typedef ASObject* (*as_function)(ASObject*, arguments*);
 	virtual ASObject* call(ASObject* obj, arguments* args)=0;
 	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args)=0;
+	virtual IFunction* clone()=0;
 	void bind(ASObject* c)
 	{
 		bound=true;
@@ -140,7 +137,7 @@ public:
 	ASObject* call(ASObject* obj, arguments* args);
 	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args);
 	IFunction* toFunction();
-	ASObject* clone()
+	Function* clone()
 	{
 		return new Function(*this);
 	}
@@ -159,11 +156,11 @@ public:
 	ASObject* call(ASObject* obj, arguments* args);
 	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args);
 	IFunction* toFunction();
-	ASObject* clone()
+	std::vector<ASObject*> func_scope;
+	SyntheticFunction* clone()
 	{
 		return new SyntheticFunction(*this);
 	}
-	std::vector<ASObject*> func_scope;
 
 private:
 	method_info* mi;
@@ -192,10 +189,6 @@ public:
 	Undefined();
 	tiny_string toString() const;
 	bool isEqual(const ASObject* r) const;
-	ASObject* clone()
-	{
-		return new Undefined;
-	}
 	virtual ~Undefined(){}
 };
 
@@ -217,10 +210,6 @@ public:
 	tiny_string toString() const;
 	double toNumber() const;
 	bool isEqual(const ASObject* r) const;
-	ASObject* clone()
-	{
-		return new ASString(*this);
-	}
 };
 
 class ASStage: public ASObject
@@ -237,10 +226,6 @@ class Null : public ASObject
 public:
 	Null(){type=T_NULL;}
 	tiny_string toString() const;
-	ASObject* clone()
-	{
-		return new Null;
-	}
 	bool isEqual(const ASObject* r) const;
 };
 
@@ -274,10 +259,6 @@ public:
 	ASFUNCTION(shift);
 	ASFUNCTION(unshift);
 	ASFUNCTION(_getLength);
-/*	ASObject* clone()
-	{
-		return new ASArray(*this);
-	}*/
 	ASObject* at(int index) const
 	{
 		if(index<data.size())
@@ -335,10 +316,6 @@ public:
 //		if(construct)
 //			_constructor(this,NULL);
 	}
-/*	ASObject* clone()
-	{
-		return new arguments(*this);
-	}*/
 };
 
 class Integer : public ASObject
@@ -368,10 +345,6 @@ public:
 	bool isLess(const ASObject* r) const;
 	bool isGreater(const ASObject* r) const;
 	bool isEqual(const ASObject* o) const;
-	ASObject* clone()
-	{
-		return new Integer(*this);
-	}
 };
 
 class Number : public ASObject
@@ -392,10 +365,6 @@ public:
 		return val;
 	}
 	operator double() const {return val;}
-	ASObject* clone()
-	{
-		return new Number(*this);
-	}
 	void copyFrom(const ASObject* o);
 	bool isLess(const ASObject* o) const;
 	bool isGreater(const ASObject* o) const;
@@ -409,10 +378,6 @@ public:
 	ASFUNCTION(addListener);
 	ASFUNCTION(constructor);
 
-	ASObject* clone()
-	{
-		return new ASMovieClipLoader(*this);
-	}
 };
 
 class ASXML: public ASObject
@@ -425,10 +390,6 @@ public:
 	ASXML();
 	ASFUNCTION(constructor);
 	ASFUNCTION(load);
-	ASObject* clone()
-	{
-		return new ASXML(*this);
-	}
 };
 
 class Date: public IInterface
@@ -453,10 +414,6 @@ public:
 	ASFUNCTION(valueOf);
 	tiny_string toString() const;
 	int toInt() const; 
-/*	ASObject* clone()
-	{
-		return new Date(*this);
-	}*/
 };
 
 //Internal objects used to store traits declared in scripts and object placed, but not yet valid
@@ -527,10 +484,6 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(exec);
-	RegExp* clone()
-	{
-		return new RegExp(*this);
-	}
 };
 
 template<typename T>

@@ -115,10 +115,6 @@ public:
 		return 0;
 	}
 	void Render();
-	Loader* clone()
-	{
-		return new Loader(*this);
-	}
 };
 
 class Sprite: public DisplayObjectContainer
@@ -145,10 +141,6 @@ public:
 	void Render()
 	{
 		LOG(NOT_IMPLEMENTED,"Sprite Rendering");
-	}
-	Sprite* clone()
-	{
-		return new Sprite(*this);
 	}
 };
 
@@ -185,10 +177,6 @@ public:
 
 	//IRenderObject interface
 	void Render();
-	MovieClip* clone()
-	{
-		return new MovieClip(*this);
-	}
 };
 
 #endif

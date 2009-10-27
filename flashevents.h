@@ -41,10 +41,6 @@ public:
 	ASFUNCTION(_getType);
 	virtual EVENT_TYPE getEventType() {return EVENT;} //DEPRECATED
 	tiny_string type;
-	Event* clone()
-	{
-		return new Event(*this);
-	}
 };
 
 class FakeEvent: public Event

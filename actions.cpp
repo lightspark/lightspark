@@ -352,9 +352,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x88:
 			t=new ActionConstantPool(in);
 			break;
-		case 0x8e:
-			t=new ActionDefineFunction2(in,this);
-			break;
+//		case 0x8e:
+//			t=new ActionDefineFunction2(in,this);
+//			break;
 		case 0x94:
 			t=new ActionWith(in);
 			break;
@@ -367,9 +367,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x9a:
 			t=new ActionGetURL2(in);
 			break;
-		case 0x9b:
-			t=new ActionDefineFunction(in,this);
-			break;
+//		case 0x9b:
+//			t=new ActionDefineFunction(in,this);
+//			break;
 		case 0x9d:
 			t=new ActionIf(in);
 			break;
@@ -774,7 +774,7 @@ void ActionNewObject::Execute()
 		if(f==NULL)
 			LOG(ERROR,"Not possible error");
 
-		ASObject* obj=type->clone();
+		ASObject* obj=new ASObject;
 		f->call(obj,NULL);
 		rt->vm.stack.push(obj);
 	}

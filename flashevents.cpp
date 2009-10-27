@@ -30,24 +30,34 @@ extern __thread SystemState* sys;
 REGISTER_CLASS_NAME(EventDispatcher);
 REGISTER_CLASS_NAME(Event);
 REGISTER_CLASS_NAME(MouseEvent);
+REGISTER_CLASS_NAME(ProgressEvent);
+REGISTER_CLASS_NAME(IOErrorEvent);
 
-Event::Event(const string& t):type(t)
+Event::Event(const tiny_string& t):type(t)
 {
 }
 
 void Event::sinit(Class_base* c)
 {
-	//assert(c->constructor==NULL);
-	//c->constructor=new Function(_constructor);
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
 	c->setVariableByQName("ENTER_FRAME","",new ASString("enterFrame"));
 	c->setVariableByQName("ADDED_TO_STAGE","",new ASString("addedToStage"));
 	c->setVariableByQName("INIT","",new ASString("init"));
+	c->setVariableByQName("CLOSE","",new ASString("close"));
 	c->setVariableByQName("ADDED","",new ASString("added"));
 	c->setVariableByQName("COMPLETE","",new ASString("complete"));
 	c->setVariableByQName("REMOVED","",new ASString("removed"));
 	c->setVariableByQName("UNLOAD","",new ASString("unload"));
 	c->setVariableByQName("ACTIVATE","",new ASString("activate"));
 	c->setVariableByQName("DEACTIVATE","",new ASString("deactivate"));
+}
+
+ASFUNCTIONBODY(Event,_constructor)
+{
+	Event* th=static_cast<Event*>(obj->interface);
+	assert(args->at(0)->getObjectType()==T_STRING);
+	th->type=args->at(0)->toString();
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
@@ -69,6 +79,15 @@ MouseEvent::MouseEvent():Event("mouseEvent")
 //	setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
 }
 
+ProgressEvent::ProgressEvent():Event("mouseEvent")
+{
+}
+
+void ProgressEvent::sinit(Class_base* c)
+{
+	c->setVariableByQName("PROGRESS","",new ASString("progress"));
+}
+
 void MouseEvent::sinit(Class_base* c)
 {
 //	assert(c->constructor==NULL);
@@ -79,11 +98,22 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("MOUSE_OUT","",new ASString("mouseOut"));
 	c->setVariableByQName("MOUSE_OVER","",new ASString("mouseOver"));
 	c->setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
+	c->setVariableByQName("ROLL_OVER","",new ASString("rollOver"));
+	c->setVariableByQName("ROLL_OUT","",new ASString("rollOut"));
 }
 
 IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
 {
-//	setVariableByQName("IO_ERROR","",new ASString("ioError"));
+}
+
+void IOErrorEvent::sinit(Class_base* c)
+{
+	c->setVariableByQName("IO_ERROR","",new ASString("ioError"));
+}
+
+void FakeEvent::sinit(Class_base* c)
+{
+	c->setVariableByQName("SECURITY_ERROR","",new ASString("securityError"));
 }
 
 EventDispatcher::EventDispatcher():id(0)
@@ -99,7 +129,7 @@ void EventDispatcher::sinit(Class_base* c)
 
 void EventDispatcher::dumpHandlers()
 {
-	std::map<std::string,IFunction*>::iterator it=handlers.begin();
+	std::map<tiny_string,IFunction*>::iterator it=handlers.begin();
 	for(it;it!=handlers.end();it++)
 		std::cout << it->first << std::endl;
 }
@@ -133,9 +163,10 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	assert(th->magic==0xdeadbeaf);
 	if(e==NULL || th==NULL)
 		return new Boolean(false);
-/*	//CHECK: maybe is to be cloned
+	//CHECK: maybe is to be cloned
 	args->at(0)->incRef();
-	sys->currentVm->addEvent(th,e);*/
+	assert(e->type!="");
+	sys->currentVm->addEvent(th,e);
 	return new Boolean(true);
 }
 
@@ -143,12 +174,14 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 {
 	cout << "EventDispatcher constructor" << endl;
 	obj->setVariableByQName("addEventListener","",new Function(addEventListener));
+	//MEGAHACK!!! should implement interface support
+	obj->setVariableByQName("addEventListener","flash.events:IEventDispatcher",new Function(addEventListener));
 	obj->setVariableByQName("dispatchEvent","",new Function(dispatchEvent));
 }
 
 void EventDispatcher::handleEvent(Event* e)
 {
-	map<string, IFunction*>::iterator h=handlers.find(e->type);
+	map<tiny_string, IFunction*>::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
 		LOG(NOT_IMPLEMENTED,"Not handled event " << e->type);

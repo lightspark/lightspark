@@ -294,6 +294,7 @@ public:
 		Variables.size();
 	}
 	tiny_string getNameAt(int i);
+	obj_var* getValueAt(int i);
 	bool hasProperty(const tiny_string& name, int level);
 	~variables_map();
 };
@@ -398,7 +399,7 @@ public:
 	{
 		return Variables.getNameAt(i);
 	}
-
+	ASObject* getValueAt(int i);
 	SWFOBJECT_TYPE getObjectType() const;
 	virtual tiny_string toString() const;
 	virtual int toInt() const;

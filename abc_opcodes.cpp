@@ -214,7 +214,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	ASObject* obj=th->runtime_stack_pop();
 
 	//HACK osceno
-	if(name->name_s=="isWhiteListedUrl")
+	if(name->name_s=="isWhiteListedUrl" || name->name_s=="isAtLeastVersion")
 	{
 		LOG(NOT_IMPLEMENTED,"HACK osceno per youtube");
 		th->runtime_stack_push(new Boolean(true));
@@ -365,6 +365,13 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 
 number_t ABCVm::divide(ASObject* val2, ASObject* val1)
 {
+	if(val1->getObjectType()==T_UNDEFINED ||
+		val2->getObjectType()==T_UNDEFINED)
+	{
+		//HACK
+		LOG(NOT_IMPLEMENTED,"subtract: HACK");
+		return 0;
+	}
 	double num1=val1->toNumber();
 	double num2=val2->toNumber();
 
@@ -622,7 +629,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
-			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
+			LOG(NOT_IMPLEMENTED,"We got a Undefined function onj type " << obj->prototype->class_name);
 		}
 		else if(o->getObjectType()==T_DEFINABLE)
 		{
@@ -636,7 +643,16 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		}
 	}
 	else
-		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
+	{
+		if(obj->prototype)
+		{
+			LOG(NOT_IMPLEMENTED,"We got a Undefined function obj type " << obj->prototype->class_name);
+		}
+		else
+		{
+			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
+		}
+	}
 
 	obj->actualPrototype=old_prototype;
 	obj->max_level=oldlevel;
@@ -675,7 +691,7 @@ number_t ABCVm::subtract_oi(ASObject* val2, intptr_t val1)
 	int num1=val1;
 
 	val2->decRef();
-	LOG(CALLS,"subtract " << num1 << '-' << num2);
+	LOG(CALLS,"subtract_oi " << num1 << '-' << num2);
 	return num1-num2;
 }
 
@@ -691,17 +707,23 @@ number_t ABCVm::subtract_do(number_t val2, ASObject* val1)
 	number_t num1=val1->toNumber();
 
 	val1->decRef();
-	LOG(CALLS,"subtract " << num1 << '-' << num2);
+	LOG(CALLS,"subtract_do " << num1 << '-' << num2);
 	return num1-num2;
 }
 
 number_t ABCVm::subtract_io(intptr_t val2, ASObject* val1)
 {
+	if(val1->getObjectType()==T_UNDEFINED)
+	{
+		//HACK
+		LOG(NOT_IMPLEMENTED,"subtract: HACK");
+		return 0;
+	}
 	int num2=val2;
 	int num1=val1->toInt();
 
 	val1->decRef();
-	LOG(CALLS,"subtract " << num1 << '-' << num2);
+	LOG(CALLS,"subtract_io " << num1 << '-' << num2);
 	return num1-num2;
 }
 
@@ -1424,6 +1446,8 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	LOG(CALLS,"callSuperVoid " << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
+
+	cout << "super name " << obj->actualPrototype->super->class_name << endl;
 	//HACK (nice) set the max level to the current actual prototype before looking up the member
 	assert(obj->actualPrototype);
 	int oldlevel=obj->max_level;
@@ -1733,5 +1757,45 @@ void ABCVm::asTypelate(call_context* th)
 	c->decRef();
 //	ASObject* v=th->runtime_stack_pop();
 //	th->runtime_stack_push(v);
+}
+
+ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
+{
+	LOG(NOT_IMPLEMENTED,"nextValue");
+	if(index->getObjectType()!=T_INTEGER)
+	{
+		LOG(ERROR,"Type mismatch");
+		abort();
+	}
+
+	ASObject* ret=obj->getValueAt(index->toInt()-1);
+	obj->decRef();
+	index->decRef();
+	ret->incRef();
+	return ret;
+}
+
+void ABCVm::swap(call_context* th)
+{
+	LOG(CALLS,"swap");
+}
+
+ASObject* ABCVm::newActivation(call_context* th,method_info* info)
+{
+	LOG(CALLS,"newActivation");
+	//TODO: Should create a real activation object
+	//TODO: Should method traits be added to the activation context?
+	ASObject* act=new ASObject;
+	for(int i=0;i<info->body->trait_count;i++)
+		th->context->buildTrait(act,&info->body->traits[i]);
+
+	return act;
+}
+
+void ABCVm::popScope(call_context* th)
+{
+	LOG(CALLS,"popScope");
+	th->scope_stack.back()->decRef();
+	th->scope_stack.pop_back();
 }
 

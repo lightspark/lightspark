@@ -128,7 +128,7 @@ public:
 	std::map<tiny_string, Class_base*> classes;
 
 	//DEBUG
-	std::vector<std::string> events_name;
+	std::vector<tiny_string> events_name;
 	void dumpEvents()
 	{
 		for(int i=0;i<events_name.size();i++)
@@ -178,15 +178,15 @@ private:
 	static void* sdl_worker(InputThread*);
 	static void* npapi_worker(InputThread*);
 
-	std::multimap< std::string, EventDispatcher* > listeners;
+	std::multimap< tiny_string, EventDispatcher* > listeners;
 	sem_t sem_listeners;
 
 public:
 	InputThread(SystemState* s,ENGINE e, void* param=NULL);
 	~InputThread();
 	void wait();
-	void addListener(const std::string& type, EventDispatcher* tag);
-	void broadcastEvent(const std::string& type);
+	void addListener(const tiny_string& type, EventDispatcher* tag);
+	void broadcastEvent(const tiny_string& type);
 };
 
 class RenderThread

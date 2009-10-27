@@ -131,9 +131,9 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());
 	Global.setVariableByQName("Shape","flash.display",Class<Shape>::getClass());
 
-	Global.setVariableByQName("TextField","flash.text",new ASObject);
-	Global.setVariableByQName("TextFormat","flash.text",new ASObject);
-	Global.setVariableByQName("TextFieldType","flash.text",new ASObject);
+	Global.setVariableByQName("TextField","flash.text",Class<IInterface>::getClass("TextField"));
+	Global.setVariableByQName("TextFormat","flash.text",Class<IInterface>::getClass("TextFormat"));
+	Global.setVariableByQName("TextFieldType","flash.text",Class<IInterface>::getClass("TextFieldType"));
 
 	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject);
 
@@ -143,26 +143,33 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
 	Global.setVariableByQName("Dictionary","flash.utils",new ASObject);
 	Global.setVariableByQName("Proxy","flash.utils",new ASObject);
-	Global.setVariableByQName("Timer","flash.utils",new ASObject);
+	Global.setVariableByQName("Timer","flash.utils",Class<IInterface>::getClass("Timer"));
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
 
-	Global.setVariableByQName("Rectangle","flash.geom",new ASObject);
+	Global.setVariableByQName("Rectangle","flash.geom",Class<IInterface>::getClass("Rectangle"));
 	Global.setVariableByQName("Matrix","flash.geom",Class<IInterface>::getClass("Matrix"));
 	Global.setVariableByQName("Point","flash.geom",Class<IInterface>::getClass("Point"));
 
 	Global.setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
 	Global.setVariableByQName("Event","flash.events",Class<Event>::getClass());
 	Global.setVariableByQName("MouseEvent","flash.events",Class<MouseEvent>::getClass());
+	Global.setVariableByQName("ProgressEvent","flash.events",Class<ProgressEvent>::getClass());
+	Global.setVariableByQName("IOErrorEvent","flash.events",Class<IOErrorEvent>::getClass());
+	Global.setVariableByQName("SecurityErrorEvent","flash.events",Class<FakeEvent>::getClass("SecurityErrorEvent"));
+	Global.setVariableByQName("TextEvent","flash.events",Class<FakeEvent>::getClass("TextEvent"));
+	Global.setVariableByQName("ErrorEvent","flash.events",Class<FakeEvent>::getClass("ErrorEvent"));
 //	Global.setVariableByQName("FocusEvent","flash.events",new FocusEvent);
 //	Global.setVariableByQName("KeyboardEvent","flash.events",new KeyboardEvent);
 //	Global.setVariableByQName("ProgressEvent","flash.events",new Event("ProgressEvent"));
-//	Global.setVariableByQName("IOErrorEvent","flash.events",new IOErrorEvent);
 
 	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
 	Global.setVariableByQName("URLRequest","flash.net",new URLRequest);
 	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
 
 	Global.setVariableByQName("Capabilities","flash.system",new Capabilities);
+
+	Global.setVariableByQName("ContextMenu","flash.ui",Class<IInterface>::getClass("ContextMenu"));
+	Global.setVariableByQName("ContextMenuItem","flash.ui",Class<IInterface>::getClass("ContextMenuItem"));
 
 	Global.setVariableByQName("isNaN","",new Function(isNaN));
 }
@@ -696,7 +703,7 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 	for(int i=0;i<class_count;i++)
 	{
 		in >> instances[i];
-		cout << "Class " << getString(instances[i].name) << endl;
+		cout << "Class " << *getMultiname(instances[i].name,NULL) << endl;
 		if(instances[i].supername)
 			cout << "Super " << *getMultiname(instances[i].supername,NULL) << endl;
 		if(instances[i].interface_count)
@@ -889,36 +896,6 @@ inline method_info* ABCContext::get_method(unsigned int m)
 		LOG(ERROR,"Requested invalid method");
 		return NULL;
 	}
-}
-
-ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
-{
-	LOG(NOT_IMPLEMENTED,"nextValue");
-	abort();
-}
-
-void ABCVm::swap(call_context* th)
-{
-	LOG(CALLS,"swap");
-}
-
-ASObject* ABCVm::newActivation(call_context* th,method_info* info)
-{
-	LOG(CALLS,"newActivation");
-	//TODO: Should create a real activation object
-	//TODO: Should method traits be added to the activation context?
-	ASObject* act=new ASObject;
-	for(int i=0;i<info->body->trait_count;i++)
-		th->context->buildTrait(act,&info->body->traits[i]);
-
-	return act;
-}
-
-void ABCVm::popScope(call_context* th)
-{
-	LOG(CALLS,"popScope");
-	th->scope_stack.back()->decRef();
-	th->scope_stack.pop_back();
 }
 
 //We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
@@ -1882,6 +1859,8 @@ ASObject* isNaN(ASObject* obj,arguments* args)
 {
 	if(args->at(0)->getObjectType()==T_UNDEFINED)
 		return abstract_b(true);
+	else if(args->at(0)->getObjectType()==T_INTEGER)
+		return abstract_b(false);
 	else
 		abort();
 }

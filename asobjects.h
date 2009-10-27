@@ -85,8 +85,30 @@ public:
 	{
 		abort();
 	}
-	virtual IInterface* getInstance()=0;
+	virtual IInterface* getInstance(bool construct=false)=0;
 	tiny_string class_name;
+	ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner)
+	{
+		ASObject* ret=ASObject::getVariableByMultiname(name,owner);
+		if(owner==NULL && super)
+			ret=super->getVariableByMultiname(name,owner);
+		return ret;
+	}
+	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner)
+	{
+		abort();
+/*		intptr_t ret=ASObject::getVariableByMultiname(name.owner);
+		if(owner==NULL && super)
+			ret=super->getVariableByMultiname(name,owner);
+		return ret;*/
+	}
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+	{
+		ASObject* ret=ASObject::getVariableByQName(name,ns,owner);
+		if(owner==NULL && super)
+			ret=super->getVariableByQName(name,ns,owner);
+		return ret;
+	}
 };
 
 class IFunction: public ASObject
@@ -239,6 +261,7 @@ protected:
 public:
 	Array();
 	virtual ~Array();
+	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 	//ASFUNCTION(Array);
 	ASFUNCTION(_push);
@@ -482,9 +505,12 @@ public:
 	Math();
 	ASFUNCTION(atan2);
 	ASFUNCTION(abs);
+	ASFUNCTION(sin);
 	ASFUNCTION(floor);
+	ASFUNCTION(round);
 	ASFUNCTION(sqrt);
 	ASFUNCTION(random);
+	ASFUNCTION(max);
 };
 
 class RegExp: public IInterface
@@ -520,7 +546,7 @@ class Class_inherit:public Class_base
 {
 public:
 	Class_inherit(const tiny_string& name):Class_base(name){}
-	IInterface* getInstance();
+	IInterface* getInstance(bool construct=false);
 };
 
 template< class T>
@@ -528,7 +554,7 @@ class Class: public Class_base
 {
 private:
 	Class(const tiny_string& name):Class_base(name){}
-	T* getInstance()
+	T* getInstance(bool construct)
 	{
 		ASObject* obj=new ASObject;
 		obj->max_level=max_level;
@@ -538,18 +564,17 @@ private:
 		T* ret=new T;
 		ret->obj=obj;
 		obj->interface=ret;
-		/*uintptr_t t1=(uintptr_t)ret;
-		uintptr_t t2=(uintptr_t)obj->interface;
-		assert(t1==t2);*/
 		//As we are the prototype we should incRef ourself
 		incRef();
+		if(construct && constructor)
+			constructor->call(obj,NULL);
 		return ret;
 	}
 public:
-	static T* getInstanceS()
+	static T* getInstanceS(bool construct=false)
 	{
 		Class<T>* c=Class<T>::getClass();
-		return c->getInstance();
+		return c->getInstance(construct);
 	}
 	template <typename ARG1>
 	static T* getInstanceS(ARG1 a1)

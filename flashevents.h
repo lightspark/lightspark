@@ -34,16 +34,24 @@ class Event: public IInterface
 {
 public:
 	Event(){ Event("Event"); }
-	Event(const std::string& t);
+	Event(const tiny_string& t);
 	virtual ~Event(){}
 	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_getType);
 	virtual EVENT_TYPE getEventType() {return EVENT;} //DEPRECATED
-	const std::string type;
+	tiny_string type;
 	Event* clone()
 	{
 		return new Event(*this);
 	}
+};
+
+class FakeEvent: public Event
+{
+public:
+	FakeEvent():Event("fakeEvent"){}
+	static void sinit(Class_base*);
 };
 
 class IOErrorEvent: public Event
@@ -67,6 +75,13 @@ public:
 	static void sinit(Class_base*);
 };
 
+class ProgressEvent: public Event
+{
+public:
+	ProgressEvent();
+	static void sinit(Class_base*);
+};
+
 class MouseEvent: public Event
 {
 public:
@@ -78,7 +93,7 @@ public:
 class EventDispatcher: public IInterface
 {
 private:
-	std::map<std::string,IFunction*> handlers;
+	std::map<tiny_string,IFunction*> handlers;
 	void dumpHandlers();
 public:
 	float id;

@@ -54,6 +54,12 @@ Array::Array()
 	//ASObject::setVariableByQName("toString","",new Function(ASObject::_toString));
 }
 
+void Array::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
 /*ASFUNCTIONBODY(Array,Array)
 {
 	ASObject* ret=new ASArray();
@@ -590,11 +596,10 @@ Array::~Array()
 
 ASFUNCTIONBODY(ASString,split)
 {
-	abort();
-/*	ASString* th=static_cast<ASString*>(obj);
-	cout << th->data << endl;
-	Array* ret=new Array;
-	ret->_constructor(ret,NULL);
+	LOG(NOT_IMPLEMENTED,"ASString::split not really implemented");
+	ASString* th=static_cast<ASString*>(obj);
+//	cout << th->data << endl;
+	Array* ret=Class<Array>::getInstanceS(true);
 	ASObject* delimiter=args->at(0);
 	if(delimiter->getObjectType()==T_STRING)
 	{
@@ -614,7 +619,7 @@ ASFUNCTIONBODY(ASString,split)
 	else
 		abort();
 
-	return ret;*/
+	return ret->obj;
 }
 
 ASFUNCTIONBODY(ASString,String)
@@ -1027,8 +1032,11 @@ Math::Math()
 	setVariableByQName("PI","",new Number(M_PI));
 	setVariableByQName("sqrt","",new Function(sqrt));
 	setVariableByQName("atan2","",new Function(atan2));
+	setVariableByQName("max","",new Function(max));
 	setVariableByQName("abs","",new Function(abs));
+	setVariableByQName("sin","",new Function(sin));
 	setVariableByQName("floor","",new Function(floor));
+	setVariableByQName("round","",new Function(round));
 	setVariableByQName("random","",new Function(random));
 }
 
@@ -1037,6 +1045,19 @@ ASFUNCTIONBODY(Math,atan2)
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
 	return new Number(::atan2(n1,n2));
+}
+
+ASFUNCTIONBODY(Math,max)
+{
+	double n1=args->at(0)->toNumber();
+	double n2=args->at(1)->toNumber();
+	return new Number(::max(n1,n2));
+}
+
+ASFUNCTIONBODY(Math,sin)
+{
+	double n=args->at(0)->toNumber();
+	return new Number(::sin(n*M_PI/180));
 }
 
 ASFUNCTIONBODY(Math,abs)
@@ -1049,6 +1070,12 @@ ASFUNCTIONBODY(Math,floor)
 {
 	double n=args->at(0)->toNumber();
 	return new Integer(::floor(n));
+}
+
+ASFUNCTIONBODY(Math,round)
+{
+	double n=args->at(0)->toNumber();
+	return new Integer(::round(n));
 }
 
 ASFUNCTIONBODY(Math,sqrt)
@@ -1133,11 +1160,11 @@ Class_base::~Class_base()
 		constructor->decRef();
 }
 
-IInterface* Class_inherit::getInstance()
+IInterface* Class_inherit::getInstance(bool construct)
 {
 	//TODO: Ask our super for the interface to ret
 	assert(super);
-	IInterface* ret=super->getInstance();
+	IInterface* ret=super->getInstance(construct);
 	ret->obj->max_level=max_level;
 	ret->obj->prototype->decRef();
 	ret->obj->prototype=this;

@@ -22,4 +22,5 @@
 Capabilities::Capabilities()
 {
 	setVariableByQName("playerType","",new ASString("AVMPlus"));
+	setVariableByQName("version","",new ASString("UNIX 10,0,0,0"));
 }

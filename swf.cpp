@@ -281,12 +281,12 @@ void* InputThread::sdl_worker(InputThread* th)
 				int index=int(th->listeners.count("")*selected);
 				
 
-				pair< map<string, EventDispatcher*>::iterator,
-					map<string, EventDispatcher*>::iterator > range=
+				pair< map<tiny_string, EventDispatcher*>::iterator,
+					map<tiny_string, EventDispatcher*>::iterator > range=
 					th->listeners.equal_range("");
 
 				//Get the selected item
-				map<string, EventDispatcher*>::iterator it=range.first;
+				map<tiny_string, EventDispatcher*>::iterator it=range.first;
 				while(index)
 				{
 					it++;
@@ -311,19 +311,19 @@ void* InputThread::sdl_worker(InputThread* th)
 	}
 }
 
-void InputThread::addListener(const string& t, EventDispatcher* ob)
+void InputThread::addListener(const tiny_string& t, EventDispatcher* ob)
 {
 	sem_wait(&sem_listeners);
 	LOG(TRACE,"Adding listener to " << t);
 
 	//the empty string is the *any* event
-	pair< map<string, EventDispatcher*>::iterator,map<string, EventDispatcher*>::iterator > range=
+	pair< map<tiny_string, EventDispatcher*>::iterator,map<tiny_string, EventDispatcher*>::iterator > range=
 		listeners.equal_range("");
 
 
 	bool already_known=false;
 
-	map<string,EventDispatcher*>::iterator it=range.first;
+	map<tiny_string,EventDispatcher*>::iterator it=range.first;
 	int count=0;
 	for(it;it!=range.second;it++)
 	{
@@ -377,11 +377,11 @@ void InputThread::addListener(const string& t, EventDispatcher* ob)
 	sem_post(&sem_listeners);
 }
 
-void InputThread::broadcastEvent(const string& t)
+void InputThread::broadcastEvent(const tiny_string& t)
 {
 	sem_wait(&sem_listeners);
 
-	pair< map<string,EventDispatcher*>::iterator,map<string, EventDispatcher*>::iterator > range=
+	pair< map<tiny_string,EventDispatcher*>::iterator,map<tiny_string, EventDispatcher*>::iterator > range=
 		listeners.equal_range(t);
 
 	for(range.first;range.first!=range.second;range.first++)

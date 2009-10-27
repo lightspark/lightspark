@@ -1362,6 +1362,43 @@ tiny_string RegisterNumber::toString() const
 	return buf;
 }*/
 
+obj_var* variables_map::getValueAt(int index)
+{
+	//TODO: CHECK behavious on overridden methods
+	if(index<Variables.size())
+	{
+		var_iterator it=Variables.begin();
+
+		for(int i=0;i<index;i++)
+			it++;
+
+		return &it->second.second;
+	}
+	else
+	{
+		LOG(ERROR,"Index too big");
+		abort();
+	}
+}
+
+ASObject* ASObject::getValueAt(int index)
+{
+	obj_var* obj=Variables.getValueAt(index);
+	assert(obj);
+	ASObject* ret;
+	if(obj->getter)
+	{
+		//Call the getter
+		LOG(CALLS,"Calling the getter");
+		ret=obj->getter->call(this,NULL);
+		LOG(CALLS,"End of getter");
+	}
+	else
+		ret=obj->var;
+
+	return ret;
+}
+
 tiny_string variables_map::getNameAt(int index)
 {
 	//TODO: CHECK behavious on overridden methods

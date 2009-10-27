@@ -130,6 +130,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getClass());
 	Global.setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());
 	Global.setVariableByQName("Shape","flash.display",Class<Shape>::getClass());
+	Global.setVariableByQName("IBitmapDrawable","flash.display",Class<IInterface>::getClass("IBitmapDrawable"));
 
 	Global.setVariableByQName("TextField","flash.text",Class<IInterface>::getClass("TextField"));
 	Global.setVariableByQName("TextFormat","flash.text",Class<IInterface>::getClass("TextFormat"));
@@ -158,6 +159,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("SecurityErrorEvent","flash.events",Class<FakeEvent>::getClass("SecurityErrorEvent"));
 	Global.setVariableByQName("TextEvent","flash.events",Class<FakeEvent>::getClass("TextEvent"));
 	Global.setVariableByQName("ErrorEvent","flash.events",Class<FakeEvent>::getClass("ErrorEvent"));
+	Global.setVariableByQName("IEventDispatcher","flash.events",Class<IInterface>::getClass("IEventDispatcher"));
 //	Global.setVariableByQName("FocusEvent","flash.events",new FocusEvent);
 //	Global.setVariableByQName("KeyboardEvent","flash.events",new KeyboardEvent);
 //	Global.setVariableByQName("ProgressEvent","flash.events",new Event("ProgressEvent"));

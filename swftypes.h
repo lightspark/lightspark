@@ -44,6 +44,7 @@ enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER,STACK_BOOLEAN};
 typedef double number_t;
 
 class ASObject;
+class ABCContext;
 class Class_base;
 class IInterface;
 class arguments;
@@ -327,10 +328,6 @@ public:
 	{
 		assert(ref_count>0);
 	}
-/*	const tiny_string& getClassName()
-	{
-		return mostDerived->class_name;
-	}*/
 	Class_base* prototype;
 	Class_base* actualPrototype;
 	void incRef()
@@ -421,6 +418,7 @@ public:
 		LOG(ERROR,"Copy object of type " << (int)getObjectType() << " from object of type " << (int)o->getObjectType());
 		abort();
 	}
+	void handleConstruction(ABCContext* context,arguments* args);
 };
 
 class IInterface

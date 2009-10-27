@@ -175,7 +175,6 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 	cout << "EventDispatcher constructor" << endl;
 	obj->setVariableByQName("addEventListener","",new Function(addEventListener));
 	//MEGAHACK!!! should implement interface support
-	obj->setVariableByQName("addEventListener","flash.events:IEventDispatcher",new Function(addEventListener));
 	obj->setVariableByQName("dispatchEvent","",new Function(dispatchEvent));
 }
 

@@ -75,6 +75,8 @@ public:
 class Class_base: public ASObject
 {
 friend class ABCVm;
+private:
+	std::vector<ASObject*> interfaces;
 public:
 	Class_base* super;
 	IFunction* constructor;
@@ -109,6 +111,7 @@ public:
 			ret=super->getVariableByQName(name,ns,owner);
 		return ret;
 	}
+	void addImplementedInterface(Class_base* i);
 };
 
 class IFunction: public ASObject
@@ -149,6 +152,7 @@ private:
 class SyntheticFunction : public IFunction
 {
 friend class ABCVm;
+friend void ASObject::handleConstruction(ABCContext* context,arguments* args);
 public:
 	typedef ASObject* (*synt_function)(ASObject*, arguments*, call_context* cc);
 	SyntheticFunction(method_info* m);

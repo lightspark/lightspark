@@ -354,6 +354,18 @@ class ABCContext
 friend class ABCVm;
 friend class method_info;
 private:
+	method_info* get_method(unsigned int m);
+	tiny_string getString(unsigned int s) const;
+	//Qname getQname(unsigned int m, call_context* th=NULL) const;
+	void buildClassTraits(ASObject* obj, int class_index);
+	void buildClassAndInjectBase(const std::string& n, IInterface*, arguments* a);
+	multiname* getMultiname(unsigned int m, call_context* th);
+	static multiname* s_getMultiname(call_context*, ASObject*, int m);
+	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
+	int getMultinameRTData(int n) const;
+	ABCVm* vm;
+	ASObject* Global;
+public:
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -368,19 +380,7 @@ private:
 	std::vector<script_info> scripts;
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
-	method_info* get_method(unsigned int m);
-	tiny_string getString(unsigned int s) const;
-	//Qname getQname(unsigned int m, call_context* th=NULL) const;
 	void buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
-	void buildClassTraits(ASObject* obj, int class_index);
-	void buildClassAndInjectBase(const std::string& n, IInterface*, arguments* a);
-	multiname* getMultiname(unsigned int m, call_context* th);
-	static multiname* s_getMultiname(call_context*, ASObject*, int m);
-	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
-	int getMultinameRTData(int n) const;
-	ABCVm* vm;
-	ASObject* Global;
-public:
 	ABCContext(ABCVm* vm,std::istream& in);
 	void exec();
 };

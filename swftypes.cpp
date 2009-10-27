@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #define GL_GLEXT_PROTOTYPES
+#include "abc.h"
 #include "swftypes.h"
 #include "tags.h"
 #include "logger.h"
@@ -1421,6 +1422,48 @@ tiny_string variables_map::getNameAt(int index)
 int ASObject::numVariables()
 {
 	return Variables.size();
+}
+
+void ASObject::handleConstruction(ABCContext* context,arguments* args)
+{
+	if(actualPrototype->class_index==-2)
+	{
+		abort();
+		//We have to build the method traits
+		SyntheticFunction* sf=static_cast<SyntheticFunction*>(this);
+		LOG(CALLS,"Building method traits");
+		for(int i=0;i<sf->mi->body->trait_count;i++)
+			context->buildTrait(this,&sf->mi->body->traits[i]);
+		sf->call(this,args);
+
+	}
+	else if(actualPrototype->class_index==-1)
+	{
+		//The class is builtin
+		LOG(CALLS,"Building a builtin class");
+	}
+	else
+	{
+		//The class is declared in the script and has an index
+		LOG(CALLS,"Building instance traits");
+
+		//To insert the trait in the rigth level we have to change the max_level
+		//This is a No Op if not constructSuper
+		int oldlevel=max_level;
+		max_level=actualPrototype->max_level;
+
+		for(int i=0;i<context->instances[actualPrototype->class_index].trait_count;i++)
+			context->buildTrait(this,&context->instances[actualPrototype->class_index].traits[i]);
+
+		max_level=oldlevel;
+	}
+
+	if(actualPrototype->constructor)
+	{
+		LOG(CALLS,"Calling Instance init");
+		actualPrototype->constructor->call(this,args);
+	}
+
 }
 
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v)

@@ -1160,6 +1160,11 @@ Class_base::~Class_base()
 		constructor->decRef();
 }
 
+void Class_base::addImplementedInterface(Class_base* i)
+{
+	interfaces.push_back(i);
+}
+
 IInterface* Class_inherit::getInstance(bool construct)
 {
 	//TODO: Ask our super for the interface to ret

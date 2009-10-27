@@ -527,40 +527,11 @@ void ABCVm::construct(call_context* th, int m)
 	LOG(CALLS,"Constructing");
 	Class_base* o_class=static_cast<Class_base*>(obj);
 	assert(o_class->getObjectType()==T_CLASS);
-	ASObject* ret=o_class->getInstance()->obj;;
+	ASObject* ret=o_class->getInstance()->obj;
 
+	ret->handleConstruction(th->context, &args);
 
-	if(o_class->class_index==-2)
-	{
-		abort();
-		//We have to build the method traits
-		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
-		LOG(CALLS,"Building method traits");
-		for(int i=0;i<sf->mi->body->trait_count;i++)
-			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
-		sf->call(ret,&args);
-
-	}
-	else if(o_class->class_index==-1)
-	{
-		//The class is builtin
-		LOG(CALLS,"Building a builtin class");
-	}
-	else
-	{
-		//The class is declared in the script and has an index
-		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->context->instances[o_class->class_index].trait_count;i++)
-			th->context->buildTrait(ret,&th->context->instances[o_class->class_index].traits[i]);
-	}
-
-	if(o_class->constructor)
-	{
-		LOG(CALLS,"Calling Instance init");
-		o_class->constructor->call(ret,&args);
-//		args.decRef();
-	}
-
+//	args.decRef();
 	obj->decRef();
 	LOG(CALLS,"End of constructing");
 	th->runtime_stack_push(ret);
@@ -1186,46 +1157,14 @@ void ABCVm::constructSuper(call_context* th, int n)
 	//Store the old prototype
 	Class_base* old_prototype=obj->actualPrototype;
 	cout << "Cur prototype name " << obj->actualPrototype->class_name << endl;
-
 	//Move the object protoype and level up
 	obj->actualPrototype=old_prototype->super;
-
-	//Check if the super is the one we expect
-//	int super_name=th->context->instances[obj->prototype->class_index].supername;
-//	assert(super_name);
-
 	assert(obj->actualPrototype);
-	if(obj->actualPrototype->class_index!=-1)
-	{
-		multiname* name=th->context->getMultiname(th->context->instances[obj->actualPrototype->class_index].name,NULL);
-		LOG(CALLS,"Constructing super " << *name);
 
-		LOG(CALLS,"Building instance traits");
-		//To insert the trait in the rigth level we have to change the max_level
-		int oldlevel=obj->max_level;
-		obj->max_level=obj->actualPrototype->max_level;
+	//multiname* name=th->context->getMultiname(th->context->instances[obj->actualPrototype->class_index].name,NULL);
+	//LOG(CALLS,"Constructing super " << *name);
 
-		for(int i=0;i<th->context->instances[obj->actualPrototype->class_index].trait_count;i++)
-			th->context->buildTrait(obj,&th->context->instances[obj->actualPrototype->class_index].traits[i]);
-
-		obj->max_level=oldlevel;
-		LOG(CALLS,"Calling Instance init");
-		//args.incRef();
-		assert(obj->actualPrototype->constructor);
-		obj->actualPrototype->constructor->call(obj,&args);
-		//args.decRef();
-
-		LOG(CALLS,"End of constructing super " << *name);
-	}
-	else
-	{
-		LOG(CALLS,"Builtin super " << obj->actualPrototype->class_name);
-		LOG(CALLS,"Calling Instance init");
-		//args.incRef();
-		if(obj->actualPrototype->constructor)
-			obj->actualPrototype->constructor->call(obj,&args);
-		//args.decRef();
-	}
+	obj->handleConstruction(th->context,&args);
 	LOG(CALLS,"End super construct ");
 
 	//Reset prototype to its previous value
@@ -1233,36 +1172,6 @@ void ABCVm::constructSuper(call_context* th, int n)
 	obj->actualPrototype=old_prototype;
 
 	obj->decRef();
-/*	if(super_name)
-	{
-		const multiname* mname=th->context->getMultiname(super_name,NULL);
-		const tiny_string& sname=mname->name_s;
-		ASObject* owner;
-		ASObject* real_super=th->context->Global->getVariableByMultiname(*mname,owner);
-		if(owner)
-		{
-			//WTF is this, why the hell i've done this!!
-			if(real_super==super)
-			{
-				LOG(CALLS,"Same super");
-			}
-			else
-			{
-				LOG(CALLS,"Wrong super");
-				//super=real_super;
-			}
-		}
-		else
-		{
-			LOG(ERROR,"Super not found");
-			abort();
-		}
-	}
-	else
-	{
-		LOG(ERROR,"No super");
-		abort();
-	}*/
 }
 
 void ABCVm::findPropStrict(call_context* th, int n)
@@ -1600,38 +1509,9 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	assert(o_class->getObjectType()==T_CLASS);
 	ASObject* ret=o_class->getInstance()->obj;;
 
-	if(o_class->class_index==-2)
-	{
-		abort();
-		//We have to build the method traits
-		SyntheticFunction* sf=static_cast<SyntheticFunction*>(ret);
-		LOG(CALLS,"Building method traits");
-		for(int i=0;i<sf->mi->body->trait_count;i++)
-			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
-		sf->call(ret,&args);
+	ret->handleConstruction(th->context, &args);
 
-	}
-	else if(o_class->class_index==-1)
-	{
-		//The class is builtin
-		LOG(CALLS,"Building a builtin class");
-	}
-	else
-	{
-		//The class is declared in the script and has an index
-		LOG(CALLS,"Building instance traits");
-		for(int i=0;i<th->context->instances[o_class->class_index].trait_count;i++)
-			th->context->buildTrait(ret,&th->context->instances[o_class->class_index].traits[i]);
-	}
-
-	if(o_class->constructor)
-	{
-		LOG(CALLS,"Calling Instance init");
-		//args.incRef();
-		o_class->constructor->call(ret,&args);
 //		args.decRef();
-	}
-
 	obj->decRef();
 	LOG(CALLS,"End of constructing");
 	th->runtime_stack_push(ret);
@@ -1743,6 +1623,26 @@ void ABCVm::newClass(call_context* th, int n)
 	//add Constructor the the class methods
 	ret->constructor=new SyntheticFunction(constructor);
 	ret->class_index=n;
+
+	//add implemented interfaces
+	for(int i=0;i<th->context->instances[n].interface_count;i++)
+	{
+		ASObject* owner;
+		multiname* name=th->context->getMultiname(th->context->instances[n].interfaces[i],NULL);
+		ASObject* obj=th->context->Global->getVariableByMultiname(*name,owner);
+		assert(owner);
+		if(obj->getObjectType()==T_DEFINABLE)
+		{
+			LOG(CALLS,"Class " << *name << " is not yet valid");
+			Definable* d=static_cast<Definable*>(obj);
+			d->define(th->context->Global);
+			LOG(CALLS,"End of deferred init of class " << *name);
+			obj=th->context->Global->getVariableByMultiname(*name,owner);
+			assert(owner);
+		}
+		assert(obj->getObjectType()==T_CLASS);
+		ret->addImplementedInterface(static_cast<Class_base*>(obj));
+	}
 
 	LOG(CALLS,"Calling Class init " << ret);
 	cinit->call(ret,NULL);

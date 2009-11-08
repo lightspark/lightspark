@@ -276,7 +276,7 @@ void Loader::Render()
 	local_root->Render();
 }
 
-Sprite::Sprite():_visible(1),_x(0),_y(0),rotation(0.0)
+Sprite::Sprite():_x(0),_y(0)
 {
 }
 
@@ -295,12 +295,7 @@ ASFUNCTIONBODY(Sprite,_constructor)
 	if(sys)
 		sys->incRef();
 	th->setVariableByQName("stage","",sys);
-	//th->setVariableByName("_visible",&th->_visible);
-	//th->setVariableByName("width",&th->_width);
-	//th->setVariableByName("height",&th->_height);
 	th->setVariableByQName("getBounds","",new Function(getBounds));
-	th->setGetterByQName("rotation","",new Function(getRotation));
-	th->setSetterByQName("rotation","",new Function(setRotation));
 	th->setGetterByQName("parent","",new Function(_getParent));
 	th->setGetterByQName("y","",new Function(getY));
 	th->setGetterByQName("x","",new Function(getX));*/
@@ -316,18 +311,6 @@ ASFUNCTIONBODY(Sprite,getX)
 {
 	Sprite* th=static_cast<Sprite*>(obj->interface);
 	return new Number(th->_x);
-}
-
-ASFUNCTIONBODY(Sprite,setRotation)
-{
-	Sprite* th=static_cast<Sprite*>(obj->interface);
-	th->rotation=args->at(0)->toNumber();
-}
-
-ASFUNCTIONBODY(Sprite,getRotation)
-{
-	Sprite* th=static_cast<Sprite*>(obj->interface);
-	return new Number(th->rotation);
 }
 
 ASFUNCTIONBODY(Sprite,getBounds)
@@ -494,8 +477,8 @@ ASFUNCTIONBODY(MovieClip,_currentFrame)
 ASFUNCTIONBODY(MovieClip,_constructor)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj->interface);
-/*	Sprite::_constructor(th,NULL);
-	th->setVariableByQName("_framesloaded","",&th->_framesloaded);
+	Sprite::_constructor(obj,NULL);
+/*	th->setVariableByQName("_framesloaded","",&th->_framesloaded);
 	th->setVariableByQName("framesLoaded","",&th->_framesloaded);
 	th->setVariableByQName("_totalframes","",&th->_totalframes);
 	th->setVariableByQName("totalFrames","",&th->_totalframes);
@@ -568,7 +551,7 @@ void MovieClip::initialize()
 	}
 }
 
-DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL)
+DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL),rotation(0.0)
 {
 //	setVariableByQName("Call","",new Function(_call));
 }
@@ -592,9 +575,68 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 
 	obj->setGetterByQName("width","",new Function(_getWidth));
 	obj->setGetterByQName("height","",new Function(_getHeight));
-	//setVariableByQName("getBounds","",new Function(getBounds));
-	//setVariableByQName("root","",this);
+	obj->setGetterByQName("visible","",new Function(_getVisible));
+	obj->setGetterByQName("rotation","",new Function(_getRotation));
+	obj->setGetterByQName("name","",new Function(_getName));
+	obj->setGetterByQName("blendMode","",new Function(_getBlendMode));
+	obj->setGetterByQName("scale9Grid","",new Function(_getScale9Grid));
+	obj->setVariableByQName("localToGlobal","",new Function(localToGlobal));
+	obj->setSetterByQName("width","",new Function(_setWidth));
+	obj->setSetterByQName("name","",new Function(_setName));
 	//setVariableByQName("stage","",this);
+}
+
+ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	return new Undefined;
+}
+
+ASFUNCTIONBODY(DisplayObject,_getBlendMode)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	return new Undefined;
+}
+
+ASFUNCTIONBODY(DisplayObject,localToGlobal)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	return new Undefined;
+}
+
+ASFUNCTIONBODY(DisplayObject,_setRotation)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	th->rotation=args->at(0)->toNumber();
+}
+
+ASFUNCTIONBODY(DisplayObject,_setWidth)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	th->width=args->at(0)->toInt();
+}
+
+ASFUNCTIONBODY(DisplayObject,_setName)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+}
+
+ASFUNCTIONBODY(DisplayObject,_getName)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	return new Undefined;
+}
+
+ASFUNCTIONBODY(DisplayObject,_getRotation)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	return new Number(th->rotation);
+}
+
+ASFUNCTIONBODY(DisplayObject,_getVisible)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	return abstract_b(true);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getWidth)

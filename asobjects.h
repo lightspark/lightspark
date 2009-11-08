@@ -75,8 +75,9 @@ public:
 class Class_base: public ASObject
 {
 friend class ABCVm;
+friend void ASObject::handleConstruction(ABCContext* context,arguments* args);
 private:
-	std::vector<ASObject*> interfaces;
+	std::vector<Class_base*> interfaces;
 public:
 	Class_base* super;
 	IFunction* constructor;

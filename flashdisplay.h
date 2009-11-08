@@ -48,13 +48,23 @@ class DisplayObject: public IDisplayListElem
 protected:
 	intptr_t width;
 	intptr_t height;
+	number_t rotation;
 	LoaderInfo* loaderInfo;
 public:
 	DisplayObject();
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getVisible);
 	ASFUNCTION(_getWidth);
+	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getHeight);
+	ASFUNCTION(_getRotation);
+	ASFUNCTION(_getName);
+	ASFUNCTION(_getBlendMode);
+	ASFUNCTION(_getScale9Grid);
+	ASFUNCTION(_setRotation);
+	ASFUNCTION(_setName);
+	ASFUNCTION(localToGlobal);
 	void Render()
 	{
 		abort();
@@ -122,15 +132,11 @@ class Sprite: public DisplayObjectContainer
 protected:
 	intptr_t _x;
 	intptr_t _y;
-	intptr_t _visible;
-	number_t rotation;
 public:
 	Sprite();
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getBounds);
-	ASFUNCTION(getRotation);
-	ASFUNCTION(setRotation);
 	ASFUNCTION(getX);
 	ASFUNCTION(getY);
 	ASFUNCTION(_getParent);

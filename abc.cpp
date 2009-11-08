@@ -1255,6 +1255,101 @@ inline void ABCContext::buildClassTraits(ASObject* obj, int class_index)
 		buildTrait(obj,&instances[class_index].traits[i]);
 }
 
+void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
+{
+	const multiname* mname=getMultiname(t->name,NULL);
+	//Should be a Qname
+	assert(mname->ns.size()==1);
+
+	const tiny_string& name=mname->name_s;
+	const tiny_string& ns=mname->ns[0];
+	if(t->kind>>4)
+		cout << "Next slot has flags " << (t->kind>>4) << endl;
+	switch(t->kind&0xf)
+	{
+		//Link the methods to the implementations
+		case traits_info::Method:
+		{
+			LOG(CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
+			method_info* m=&methods[t->method];
+			assert(m->body==0);
+			int level=obj->max_level;
+			obj_var* var=NULL;
+			do
+			{
+				var=obj->Variables.findObjVar(name,"",level,false);
+				level--;
+			}
+			while(var==NULL && level>=0);
+			if(var)
+			{
+				assert(var);
+				assert(var->var);
+
+				obj->setVariableByQName(name,ns,var->var);
+			}
+
+			LOG(CALLS,"End Method trait: " << ns << "::" << name);
+			break;
+		}
+		case traits_info::Getter:
+		{
+			LOG(CALLS,"Getter trait: " << ns << "::" << name);
+			method_info* m=&methods[t->method];
+			assert(m->body==0);
+			int level=obj->max_level;
+			obj_var* var=NULL;
+			do
+			{
+				var=obj->Variables.findObjVar(name,"",level,false);
+				level--;
+			}
+			while((var==NULL || var->getter==NULL) && level>=0);
+			if(var)
+			{
+				assert(var);
+				assert(var->getter);
+
+				obj->setGetterByQName(name,ns,var->getter);
+			}
+			
+			LOG(CALLS,"End Getter trait: " << ns << "::" << name);
+			break;
+		}
+		case traits_info::Setter:
+		{
+			LOG(CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
+			method_info* m=&methods[t->method];
+			assert(m->body==0);
+			int level=obj->max_level;
+			obj_var* var=NULL;
+			do
+			{
+				var=obj->Variables.findObjVar(name,"",level,false);
+				level--;
+			}
+			while((var==NULL || var->setter==NULL) && level>=0);
+			if(var && var->setter)
+			{
+				assert(var);
+				assert(var->setter);
+
+				obj->setSetterByQName(name,ns,var->setter);
+			}
+			
+			LOG(CALLS,"End Setter trait: " << ns << "::" << name);
+			break;
+		}
+//		case traits_info::Class:
+//		case traits_info::Const:
+//		case traits_info::Slot:
+		default:
+			LOG(ERROR,"Trait not supported " << name << " " << t->kind);
+			abort();
+			//obj->setVariableByQName(name, ns, new Undefined);
+	}
+}
+
 void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization)
 {
 	const multiname* mname=getMultiname(t->name,NULL);

@@ -213,6 +213,8 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
+	if(name->name_s=="getVideoData")
+		__asm__("int $3");
 	//HACK osceno
 	if(name->name_s=="isWhiteListedUrl" || name->name_s=="isAtLeastVersion")
 	{

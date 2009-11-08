@@ -230,14 +230,16 @@ bool ASObject::hasProperty(const tiny_string& name)
 
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
-	obj_var* obj=Variables.findObjVar(name,ns,max_level,true);
+	int level=(actualPrototype)?actualPrototype->max_level:max_level;
+	obj_var* obj=Variables.findObjVar(name,ns,level,true);
 	assert(obj->getter==NULL);
 	obj->getter=o;
 }
 
 void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
-	obj_var* obj=Variables.findObjVar(name,ns,max_level,true);
+	int level=(actualPrototype)?actualPrototype->max_level:max_level;
+	obj_var* obj=Variables.findObjVar(name,ns,level,true);
 	assert(obj->setter==NULL);
 	obj->setter=o;
 }
@@ -532,7 +534,8 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
-		cout << it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << it->second.second.var << endl;
+		cout << it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << 
+			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter << endl;
 }
 
 tiny_string Integer::toString() const
@@ -1454,6 +1457,21 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args)
 		actualPrototype->constructor->call(this,args);
 	}
 
+	//Lets's setup the interfaces
+	for(int i=0;i<actualPrototype->interfaces.size();i++)
+	{
+		for(int j=0;j<context->instances[actualPrototype->interfaces[i]->class_index].trait_count;j++)
+		{
+			traits_info* t=&context->instances[actualPrototype->interfaces[i]->class_index].traits[j];
+			context->linkTrait(this,t);
+		}
+
+		if(actualPrototype->interfaces[i]->constructor)
+		{
+			LOG(CALLS,"Calling interface init for " << actualPrototype->interfaces[i]->class_name);
+			actualPrototype->interfaces[i]->constructor->call(this,NULL);
+		}
+	}
 }
 
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v)

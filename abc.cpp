@@ -1255,6 +1255,30 @@ inline void ABCContext::buildClassTraits(ASObject* obj, int class_index)
 		buildTrait(obj,&instances[class_index].traits[i]);
 }
 
+void ABCContext::linkInterface(const Class_base* interface, ASObject* obj)
+{
+	//TODO: implement builtin interfaces
+	if(interface->class_index==-1)
+		return;
+
+	//Recursively link interfaces implemented by this interface
+	for(int i=0;i<interface->interfaces.size();i++)
+		linkInterface(interface->interfaces[i],obj);
+
+	//Link traits of this interface
+	for(int j=0;j<instances[interface->class_index].trait_count;j++)
+	{
+		traits_info* t=&instances[interface->class_index].traits[j];
+		linkTrait(obj,t);
+	}
+
+	if(interface->constructor)
+	{
+		LOG(CALLS,"Calling interface init for " << interface->class_name);
+		interface->constructor->call(obj,NULL);
+	}
+}
+
 void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 {
 	const multiname* mname=getMultiname(t->name,NULL);
@@ -1350,6 +1374,30 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 	}
 }
 
+ASObject* ABCContext::getConstant(int kind, int index)
+{
+	switch(kind)
+	{
+		case 0x01: //String
+			return new ASString(constant_pool.strings[index]);
+		case 0x03: //Int
+			return new Integer(constant_pool.integer[index]);
+		case 0x06: //Double
+			return new Number(constant_pool.doubles[index]);
+		case 0x0a: //False
+			return new Boolean(false);
+		case 0x0b: //True
+			return new Boolean(true);
+		case 0x0c: //Null
+			return new Null;
+		default:
+		{
+			LOG(ERROR,"Constant kind " << hex << kind);
+			abort();
+		}
+	}
+}
+
 void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization)
 {
 	const multiname* mname=getMultiname(t->name,NULL);
@@ -1419,6 +1467,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			IFunction* f=new SyntheticFunction(m);
+			if(name=="setSize")
+				f->debug=0x12345678;
 
 			obj->setVariableByQName(name,ns,f);
 			LOG(CALLS,"End Method trait: " << ns << "::" << name);
@@ -1438,65 +1488,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		{
 			if(t->vindex)
 			{
-				switch(t->vkind)
-				{
-					case 0x01: //String
-					{
-						ASObject* ret=new ASString(constant_pool.strings[t->vindex]);
-						obj->setVariableByQName(name, ns, ret);
-						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name, ns);
-						break;
-					}
-					case 0x03: //Int
-					{
-						ASObject* ret=new Integer(constant_pool.integer[t->vindex]);
-						obj->setVariableByQName(name, ns, ret);
-						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name, ns);
-						break;
-					}
-					case 0x06: //Double
-					{
-						ASObject* ret=new Number(constant_pool.doubles[t->vindex]);
-						obj->setVariableByQName(name, ns, ret);
-						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name, ns);
-						break;
-					}
-					case 0x0a: //False
-					{
-						ASObject* ret=new Boolean(false);
-						obj->setVariableByQName(name, ns, ret);
-						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name, ns);
-						break;
-					}
-					case 0x0b: //True
-					{
-						ASObject* ret=new Boolean(true);
-						obj->setVariableByQName(name, ns, ret);
-						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name, ns);
-						break;
-					}
-					case 0x0c: //Null
-					{
-						ASObject* ret=new Null;
-						obj->setVariableByQName(name, ns, ret);
-						if(t->slot_id)
-							obj->initSlot(t->slot_id, ret, name, ns);
-						break;
-					}
-					default:
-					{
-						//fallthrough
-						LOG(ERROR,"Slot kind " << hex << t->vkind);
-						LOG(ERROR,"Trait not supported " << name << " " << t->kind);
-						abort();
-						return;
-					}
-				}
+				ASObject* ret=getConstant(t->vkind,t->vindex);
+				obj->setVariableByQName(name, ns, ret);
+				if(t->slot_id)
+					obj->initSlot(t->slot_id, ret, name, ns);
+
 				multiname* type=getMultiname(t->type_name,NULL);
 				LOG(CALLS,"Slot "<<name<<" type "<<*type);
 				break;
@@ -1536,6 +1532,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			LOG(ERROR,"Trait not supported " << name << " " << t->kind);
 			obj->setVariableByQName(name, ns, new Undefined);
 	}
+}
+
+
+ASObject* method_info::getOptional(int i)
+{
+	assert(i<options.size());
+	return context->getConstant(options[i].kind,options[i].val);
 }
 
 istream& operator>>(istream& in, u32& v)
@@ -1944,6 +1947,8 @@ ASObject* isNaN(ASObject* obj,arguments* args)
 	if(args->at(0)->getObjectType()==T_UNDEFINED)
 		return abstract_b(true);
 	else if(args->at(0)->getObjectType()==T_INTEGER)
+		return abstract_b(false);
+	else if(args->at(0)->getObjectType()==T_NUMBER)
 		return abstract_b(false);
 	else
 		abort();

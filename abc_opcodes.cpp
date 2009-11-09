@@ -213,8 +213,6 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	if(name->name_s=="getVideoData")
-		__asm__("int $3");
 	//HACK osceno
 	if(name->name_s=="isWhiteListedUrl" || name->name_s=="isAtLeastVersion")
 	{
@@ -531,7 +529,7 @@ void ABCVm::construct(call_context* th, int m)
 	assert(o_class->getObjectType()==T_CLASS);
 	ASObject* ret=o_class->getInstance()->obj;
 
-	ret->handleConstruction(th->context, &args);
+	ret->handleConstruction(th->context, &args, true);
 
 //	args.decRef();
 	obj->decRef();
@@ -1166,7 +1164,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 	//multiname* name=th->context->getMultiname(th->context->instances[obj->actualPrototype->class_index].name,NULL);
 	//LOG(CALLS,"Constructing super " << *name);
 
-	obj->handleConstruction(th->context,&args);
+	obj->handleConstruction(th->context,&args, false);
 	LOG(CALLS,"End super construct ");
 
 	//Reset prototype to its previous value
@@ -1511,7 +1509,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	assert(o_class->getObjectType()==T_CLASS);
 	ASObject* ret=o_class->getInstance()->obj;;
 
-	ret->handleConstruction(th->context, &args);
+	ret->handleConstruction(th->context, &args, true);
 
 //		args.decRef();
 	obj->decRef();

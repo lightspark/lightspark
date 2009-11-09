@@ -55,12 +55,12 @@ class tiny_string
 {
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
-	char buf[256];
+	char buf[1024];
 public:
 	tiny_string(){buf[0]=0;}
 	tiny_string(const char* s)
 	{
-		if(strlen(s)>255)
+		if(strlen(s)>1023)
 			abort();
 		strcpy(buf,s);
 	}
@@ -316,6 +316,7 @@ private:
 	int ref_count;
 	Manager* manager;
 public:
+	int debug;
 	IInterface* interface;
 	void acquireInterface(IInterface* i);
 	int max_level;
@@ -340,6 +341,7 @@ public:
 		ref_count--;
 		if(ref_count==0)
 		{
+			assert(debug==0);
 			if(manager)
 				manager->put(this);
 			else
@@ -412,7 +414,7 @@ public:
 		LOG(ERROR,"Copy object of type " << (int)getObjectType() << " from object of type " << (int)o->getObjectType());
 		abort();
 	}
-	void handleConstruction(ABCContext* context,arguments* args);
+	void handleConstruction(ABCContext* context,arguments* args, bool linkInterfaces);
 };
 
 class IInterface

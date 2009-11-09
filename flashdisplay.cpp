@@ -67,6 +67,8 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	params->setVariableByQName("vq","",new ASString("medium"));
 	params->setVariableByQName("sk","",new ASString("PaOie8-uH5AhsKIdWMmBUtdP4LkQJERtC"));
 	params->setVariableByQName("video_id","",new ASString("G4S9tV8ZLcE"));
+	params->setVariableByQName("fmt_map","",new ASString("34/0/9/0/115,5/0/7/0/0"));
+	params->setVariableByQName("fmt_url_map","",new ASString("34|http://v9.lscache2.c.youtube.com/videoplayback?ip=0.0.0.0&sparams=id%2Cexpire%2Cip%2Cipbits%2Citag%2Calgorithm%2Cburst%2Cfactor&fexp=903900%2C900025%2C905207&algorithm=throttle-factor&itag=34&ipbits=0&signature=A45863BF4EEB761129156DB5275FD1B69119666F.7633A2E1E476044B0D313C22E5641B2B6FBD3601&sver=3&expire=1256054400&key=yt1&factor=1.25&burst=40&id=1b84bdb55f192dc1,5|http://v3.lscache8.c.youtube.com/videoplayback?ip=0.0.0.0&sparams=id%2Cexpire%2Cip%2Cipbits%2Citag%2Calgorithm%2Cburst%2Cfactor&fexp=903900%2C900025%2C905207&algorithm=throttle-factor&itag=5&ipbits=0&signature=D04298060B1F95665DB6622292E34D316C23D761.8E3DB733F92F8C90BEB8EAE558516067B76D32CB&sver=3&expire=1256054400&key=yt1&factor=1.25&burst=40&id=1b84bdb55f192dc1"));
 //rv.2.thumbnailUrl": "http%3A%2F%2Fi1.ytimg.com%2Fvi%2FxWyMjzVXq7Y%2Fdefault.jpg"
 //"rv.7.length_seconds": "439",
 //"rv.0.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D15lKSqY86Ew", 
@@ -80,6 +82,7 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 //"rv.5.title": "T+Pain+Obama+Auto-Tune", 
 //"is_doubleclick_tracked": "1", 
 //"rv.4.thumbnailUrl": "http%3A%2F%2Fi3.ytimg.com%2Fvi%2F2j7F_4S2lgM%2Fdefault.jpg"
+//"fmt_map": "34%2F0%2F9%2F0%2F115%2C5%2F0%2F7%2F0%2F0", 
 //"fmt_url_map": "34%7Chttp%3A%2F%2Fv9.lscache2.c.youtube.com%2Fvideoplayback%3Fip%3D0.0.0.0%26sparams%3Did%252Cexpire%252Cip%252Cipbits%252Citag%252Calgorithm%252Cburst%252Cfactor%26fexp%3D903900%252C900025%252C905207%26algorithm%3Dthrottle-factor%26itag%3D34%26ipbits%3D0%26signature%3DA45863BF4EEB761129156DB5275FD1B69119666F.7633A2E1E476044B0D313C22E5641B2B6FBD3601%26sver%3D3%26expire%3D1256054400%26key%3Dyt1%26factor%3D1.25%26burst%3D40%26id%3D1b84bdb55f192dc1%2C5%7Chttp%3A%2F%2Fv3.lscache8.c.youtube.com%2Fvideoplayback%3Fip%3D0.0.0.0%26sparams%3Did%252Cexpire%252Cip%252Cipbits%252Citag%252Calgorithm%252Cburst%252Cfactor%26fexp%3D903900%252C900025%252C905207%26algorithm%3Dthrottle-factor%26itag%3D5%26ipbits%3D0%26signature%3DD04298060B1F95665DB6622292E34D316C23D761.8E3DB733F92F8C90BEB8EAE558516067B76D32CB%26sver%3D3%26expire%3D1256054400%26key%3Dyt1%26factor%3D1.25%26burst%3D40%26id%3D1b84bdb55f192dc1", 
 //"rv.0.length_seconds": "232", 
 //"rv.2.rating": "4.91304347826", 
@@ -117,7 +120,6 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 //"rv.6.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DmolqV4L23FM", 
 //"rv.7.rating": "5.0", 
 //"rv.3.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DtggLYE87Ed0", 
-//"fmt_map": "34%2F0%2F9%2F0%2F115%2C5%2F0%2F7%2F0%2F0", 
 //"hl": "en", 
 //"rv.7.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dza7e9rwF_Cc", 
 //"rv.2.view_count": "6753", 

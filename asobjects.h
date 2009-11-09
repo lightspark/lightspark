@@ -75,7 +75,8 @@ public:
 class Class_base: public ASObject
 {
 friend class ABCVm;
-friend void ASObject::handleConstruction(ABCContext* context,arguments* args);
+friend class ABCContext;
+friend void ASObject::handleConstruction(ABCContext* context,arguments* args, bool linkInterfaces);
 private:
 	std::vector<Class_base*> interfaces;
 public:
@@ -150,7 +151,7 @@ private:
 class SyntheticFunction : public IFunction
 {
 friend class ABCVm;
-friend void ASObject::handleConstruction(ABCContext* context,arguments* args);
+friend void ASObject::handleConstruction(ABCContext* context,arguments* args, bool linkInterfaces);
 public:
 	typedef ASObject* (*synt_function)(ASObject*, arguments*, call_context* cc);
 	SyntheticFunction(method_info* m);

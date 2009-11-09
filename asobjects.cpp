@@ -931,11 +931,27 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	}
 
 	cc->locals[0]=obj;
-	for(int i=numArgs;i<mi->numArgs();i++)
+	int i=numArgs;
+	int args_len=mi->numArgs();
+
+	//Fixup missing parameters
+	int missing_params=args_len-i;
+	assert(missing_params<=mi->option_count);
+	int starting_options=mi->option_count-missing_params;
+
+	for(int j=starting_options;j<mi->option_count;j++)
+	{
+		cc->locals[i+1]=mi->getOptional(j);
+		i++;
+	}
+	
+	assert(i==mi->numArgs());
+
+	/*for(int i=numArgs;i<mi->numArgs();i++)
 	{
 		cout << "filling arg " << i << endl;
 		cc->locals[i+1]=new Undefined;
-	}
+	}*/
 
 	if(mi->needsRest()) //TODO
 	{
@@ -972,22 +988,38 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args)
 
 	cc->locals[0]=obj;
 	int i=0;
+	int args_len=mi->numArgs();
 	if(args)
 	{
-		int args_len=min(args->size(),mi->numArgs());
-		if(args_len>mi->numArgs())
+		if(args->size()>mi->numArgs())
+		{
 			assert(mi->needsRest());
-		for(i;i<args_len;i++)
+		}
+		for(i;i<min(args->size(),args_len);i++)
 		{
 			cc->locals[i+1]=args->at(i);
 			cc->locals[i+1]->incRef();
 		}
 	}
-	for(i;i<mi->numArgs();i++)
+
+	//Fixup missing parameters
+	int missing_params=args_len-i;
+	assert(missing_params<=mi->option_count);
+	int starting_options=mi->option_count-missing_params;
+
+	for(int j=starting_options;j<mi->option_count;j++)
+	{
+		cc->locals[i+1]=mi->getOptional(j);
+		i++;
+	}
+	
+	assert(i==mi->numArgs());
+
+/*	for(i;i<mi->numArgs();i++)
 	{
 		cout << "filling arg " << i << endl;
 		cc->locals[i+1]=new Undefined;
-	}
+	}*/
 
 	if(mi->needsRest()) //TODO
 	{

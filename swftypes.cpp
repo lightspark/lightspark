@@ -1274,13 +1274,13 @@ variables_map::~variables_map()
 
 ASObject::ASObject(Manager* m):
 	prototype(NULL),actualPrototype(NULL),parent(NULL),ref_count(1),
-	manager(m),type(T_OBJECT),max_level(0),interface(NULL)
+	manager(m),type(T_OBJECT),max_level(0),interface(NULL),debug(0)
 {
 }
 
 ASObject::ASObject(const ASObject& o):
 	prototype(o.prototype),actualPrototype(o.prototype),manager(NULL),parent(NULL),ref_count(1),
-	type(o.type),max_level(0),interface(NULL)
+	type(o.type),max_level(0),interface(NULL),debug(0)
 {
 	parent=o.parent;
 
@@ -1417,7 +1417,7 @@ int ASObject::numVariables()
 	return Variables.size();
 }
 
-void ASObject::handleConstruction(ABCContext* context,arguments* args)
+void ASObject::handleConstruction(ABCContext* context,arguments* args, bool linkInterfaces)
 {
 	if(actualPrototype->class_index==-2)
 	{
@@ -1457,19 +1457,12 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args)
 		actualPrototype->constructor->call(this,args);
 	}
 
-	//Lets's setup the interfaces
-	for(int i=0;i<actualPrototype->interfaces.size();i++)
+	if(linkInterfaces)
 	{
-		for(int j=0;j<context->instances[actualPrototype->interfaces[i]->class_index].trait_count;j++)
+		//Lets's setup the interfaces
+		for(int i=0;i<actualPrototype->interfaces.size();i++)
 		{
-			traits_info* t=&context->instances[actualPrototype->interfaces[i]->class_index].traits[j];
-			context->linkTrait(this,t);
-		}
-
-		if(actualPrototype->interfaces[i]->constructor)
-		{
-			LOG(CALLS,"Calling interface init for " << actualPrototype->interfaces[i]->class_name);
-			actualPrototype->interfaces[i]->constructor->call(this,NULL);
+			context->linkInterface(actualPrototype->interfaces[i], this);
 		}
 	}
 }

@@ -73,6 +73,7 @@ private:
 	uint32_t val;
 public:
 	u30():val(0){}
+	u30(int v):val(v){}
 	operator uint32_t() const{return val;}
 };
 
@@ -200,17 +201,16 @@ typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
 
 class method_info
 {
-enum { NEED_ARGUMENTS=1,NEED_REST=4};
+enum { NEED_ARGUMENTS=1,NEED_REST=4, HAS_OPTIONAL=8};
 friend std::istream& operator>>(std::istream& in, method_info& v);
 private:
 	u30 param_count;
 	u30 return_type;
 	std::vector<u30> param_type;
+	std::vector<option_detail> options;
 	u30 name;
 	u8 flags;
 
-	u30 option_count;
-	std::vector<option_detail> options;
 	std::vector<u30> param_names;
 
 	static ASObject* argumentDumper(arguments* arg, uint32_t n);
@@ -234,14 +234,17 @@ private:
 	llvm::Function* llvmf;
 
 public:
+	u30 option_count;
 	SyntheticFunction::synt_function synt_method();
 	SyntheticFunction::synt_function f;
 	ABCContext* context;
 	method_body_info* body;
 	bool needsArgs() { return flags&NEED_ARGUMENTS;}
 	bool needsRest() { return flags&NEED_REST;}
+	bool hasOptional() { return flags&HAS_OPTIONAL;}
+	ASObject* getOptional(int i);
 	int numArgs() { return param_count; }
-	method_info():body(NULL),f(NULL),context(NULL)
+	method_info():body(NULL),f(NULL),context(NULL),option_count(0)
 	{
 	}
 };
@@ -362,7 +365,9 @@ private:
 	multiname* getMultiname(unsigned int m, call_context* th);
 	static multiname* s_getMultiname(call_context*, ASObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
+	void linkTrait(ASObject* obj, const traits_info* t);
 	int getMultinameRTData(int n) const;
+	ASObject* getConstant(int kind, int index);
 	ABCVm* vm;
 	ASObject* Global;
 public:
@@ -381,7 +386,8 @@ public:
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
 	void buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
-	void linkTrait(ASObject* obj, const traits_info* t);
+	void getOptionalConstant(const option_detail& opt);
+	void linkInterface(const Class_base* interface, ASObject* obj);
 	ABCContext(ABCVm* vm,std::istream& in);
 	void exec();
 };

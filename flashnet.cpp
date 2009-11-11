@@ -19,11 +19,16 @@
 
 #include "flashnet.h"
 
+REGISTER_CLASS_NAME(URLRequest);
+
 URLRequest::URLRequest():url(NULL)
 {
-/*	if(constructor)
-		constructor->decRef();
-	constructor=new Function(_constructor);*/
+}
+
+void URLRequest::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
 }
 
 ASFUNCTIONBODY(URLRequest,_constructor)
@@ -35,4 +40,5 @@ ASFUNCTIONBODY(URLRequest,_constructor)
 		abort();
 	}
 	th->url=static_cast<ASString*>(args->at(0));
+	cout << "url is " << *th->url << endl;
 }

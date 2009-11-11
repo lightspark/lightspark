@@ -22,13 +22,14 @@
 
 #include "asobjects.h"
 
-class URLRequest: public ASObject
+class URLRequest: public IInterface
 {
 friend class Loader;
 private:
 	ASString* url; 
 public:
 	URLRequest();
+	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 };
 

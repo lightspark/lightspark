@@ -593,9 +593,7 @@ Array::~Array()
 
 ASFUNCTIONBODY(ASString,split)
 {
-	LOG(NOT_IMPLEMENTED,"ASString::split not really implemented");
 	ASString* th=static_cast<ASString*>(obj);
-//	cout << th->data << endl;
 	Array* ret=Class<Array>::getInstanceS(true);
 	ASObject* delimiter=args->at(0);
 	if(delimiter->getObjectType()==T_STRING)

@@ -165,7 +165,7 @@ void ABCVm::registerClasses()
 //	Global.setVariableByQName("ProgressEvent","flash.events",new Event("ProgressEvent"));
 
 	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
-	Global.setVariableByQName("URLRequest","flash.net",new URLRequest);
+	Global.setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass());
 	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
 
 	Global.setVariableByQName("Capabilities","flash.system",new Capabilities);
@@ -1467,8 +1467,15 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			IFunction* f=new SyntheticFunction(m);
-			if(name=="setSize")
-				f->debug=0x12345678;
+
+			/*//If overriding we lookup if this name is already defined
+			//If the namespace where is defined is different usually we dont't care
+			//but, if it's the name of a super, then we have to take over also that
+			//ns:name combination
+			if(t->kind&0x20)
+			{
+				obj_var* var=obj->Variables.findObjVar(name,ns,
+			}*/
 
 			obj->setVariableByQName(name,ns,f);
 			LOG(CALLS,"End Method trait: " << ns << "::" << name);

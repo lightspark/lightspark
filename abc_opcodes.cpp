@@ -334,6 +334,8 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 
 	ASObject* owner;
 	ASObject* ret=obj->getVariableByMultiname(*name,owner);
+//	if(name->name_s=="state")
+//		__asm__("int $3");
 	if(owner==NULL)
 	{
 		LOG(NOT_IMPLEMENTED,"Property not found " << *name);
@@ -1522,17 +1524,29 @@ ASObject* ABCVm::hasNext2(call_context* th, int n, int m)
 {
 	LOG(NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
 	ASObject* obj=th->locals[n];
-	int cur_index=th->locals[m]->toInt();
-
-	if(cur_index+1<=obj->numVariables())
+	int cur_index=th->locals[m]->toInt()+1;
+	//Look up if there is a following index which is still an object
+	//(not a method)
+	for(cur_index;cur_index<obj->numVariables();cur_index++)
 	{
+		obj_var* var=obj->Variables.getValueAt(cur_index);
+		if(var->var && var->var->getObjectType()!=T_FUNCTION)
+			break;
+	}
+
+	//Our references are 0 based, the AS ones are 1 based
+	//what a mess
+	if(cur_index<obj->numVariables())
+	{
+		if(obj->getNameAt(cur_index)=="toString")
+			abort();
 		th->locals[m]->decRef();
 		th->locals[m]=new Integer(cur_index+1);
 		return new Boolean(true);
 	}
 	else
 	{
-		obj->decRef();
+		th->locals[n]->decRef();
 		th->locals[n]=new Null;
 		th->locals[m]->decRef();
 		th->locals[m]=new Integer(0);

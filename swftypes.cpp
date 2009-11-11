@@ -247,7 +247,7 @@ double ASObject::toNumber() const
 	return 0;
 }
 
-obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create)
+obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create, bool exact)
 {
 	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name,level));
 	if(ret.first!=ret.second) //If length!=0 value is found
@@ -261,9 +261,11 @@ obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& n
 		}
 		//HACK: if any object with this name is defined we
 		//return the first
-		if(!create)
+		if(!exact)
 		{
 			LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
+			if(name=="play")
+				__asm__("int $3");
 			return &ret.first->second.second;
 		}
 	}
@@ -301,7 +303,7 @@ bool ASObject::hasProperty(const tiny_string& name)
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	int level=(actualPrototype)?actualPrototype->max_level:max_level;
-	obj_var* obj=Variables.findObjVar(name,ns,level,true);
+	obj_var* obj=Variables.findObjVar(name,ns,level,true,true);
 	assert(obj->getter==NULL);
 	obj->getter=o;
 }
@@ -309,7 +311,7 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	int level=(actualPrototype)?actualPrototype->max_level:max_level;
-	obj_var* obj=Variables.findObjVar(name,ns,level,true);
+	obj_var* obj=Variables.findObjVar(name,ns,level,true,true);
 	assert(obj->setter==NULL);
 	obj->setter=o;
 }
@@ -337,13 +339,13 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	obj_var* obj=NULL;
 	for(int i=max_level;i>0;i--)
 	{
-		obj=Variables.findObjVar(name,i-1,false);
+		obj=Variables.findObjVar(name,i-1,false,true);
 		if(obj)
 			break;
 	}
 
 	if(obj==NULL)
-		obj=Variables.findObjVar(name,max_level,true);
+		obj=Variables.findObjVar(name,max_level,true,true);
 
 	if(obj->setter)
 	{
@@ -375,13 +377,13 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	obj_var* obj=NULL;
 	for(int i=max_level;i>0;i--)
 	{
-		obj=Variables.findObjVar(name,ns,i-1,false);
+		obj=Variables.findObjVar(name,ns,i-1,false,true);
 		if(obj)
 			break;
 	}
 
 	if(obj==NULL)
-		obj=Variables.findObjVar(name,ns,max_level,true);
+		obj=Variables.findObjVar(name,ns,max_level,true,true);
 
 	if(obj->setter)
 	{
@@ -402,7 +404,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	}
 }
 
-obj_var* variables_map::findObjVar(const multiname& mname, int level, bool create)
+obj_var* variables_map::findObjVar(const multiname& mname, int level, bool create, bool exact)
 {
 	tiny_string name;
 	if(mname.name_type==multiname::NAME_INT)
@@ -427,9 +429,11 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 			}
 			//HACK: if any object with this name is defined we
 			//return the first
-			if(!create)
+			if(!exact)
 			{
 				LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
+				if(name=="play")
+					__asm__("int $3");
 				return &ret.first->second.second;
 			}
 		}
@@ -498,7 +502,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& own
 	obj_var* obj=NULL;
 	for(int i=max_level;i>=0;i--)
 	{
-		obj=Variables.findObjVar(name,i,false);
+		obj=Variables.findObjVar(name,i,false,false);
 		if(obj)
 			break;
 	}
@@ -560,7 +564,7 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 	obj_var* obj=NULL;
 	for(int i=max_level;i>=0;i--)
 	{
-		obj=Variables.findObjVar(name,ns,i,false);
+		obj=Variables.findObjVar(name,ns,i,false,false);
 		if(obj)
 			break;
 	}

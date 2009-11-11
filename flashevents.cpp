@@ -114,6 +114,7 @@ void IOErrorEvent::sinit(Class_base* c)
 void FakeEvent::sinit(Class_base* c)
 {
 	c->setVariableByQName("SECURITY_ERROR","",new ASString("securityError"));
+	c->setVariableByQName("ERROR","",new ASString("error"));
 }
 
 EventDispatcher::EventDispatcher():id(0)

@@ -1301,7 +1301,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			obj_var* var=NULL;
 			do
 			{
-				var=obj->Variables.findObjVar(name,"",level,false);
+				var=obj->Variables.findObjVar(name,"",level,false,false);
 				level--;
 			}
 			while(var==NULL && level>=0);
@@ -1325,7 +1325,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			obj_var* var=NULL;
 			do
 			{
-				var=obj->Variables.findObjVar(name,"",level,false);
+				var=obj->Variables.findObjVar(name,"",level,false,false);
 				level--;
 			}
 			while((var==NULL || var->getter==NULL) && level>=0);
@@ -1349,7 +1349,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			obj_var* var=NULL;
 			do
 			{
-				var=obj->Variables.findObjVar(name,"",level,false);
+				var=obj->Variables.findObjVar(name,"",level,false,false);
 				level--;
 			}
 			while((var==NULL || var->setter==NULL) && level>=0);
@@ -1438,7 +1438,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 			obj->setGetterByQName(name,ns,f);
 			//We should inherit the setter from the hierarchy
-			obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false);
+			obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false,true);
 			if(var && var->setter) //Ok, also set the inherited setter
 				obj->setSetterByQName(name,ns,var->setter);
 			
@@ -1454,7 +1454,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 			obj->setSetterByQName(name,ns,f);
 			//We should inherit the setter from the hierarchy
-			obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false);
+			obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false,true);
 			if(var && var->getter) //Ok, also set the inherited setter
 				obj->setGetterByQName(name,ns,var->getter);
 			

@@ -16,3 +16,5 @@ Official TODO Queue:
 -) Texture caching
 -) Click passthrough on transparent objects
 -) Implement rest arguments
+-) Allocate super member before members
+-) Understand the semantics of nextname on methods and the like

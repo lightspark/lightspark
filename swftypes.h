@@ -70,39 +70,39 @@ public:
 	}
 	tiny_string& operator=(const std::string& s)
 	{
-		strncpy(buf,s.c_str(),256);
+		strncpy(buf,s.c_str(),1023);
 		return *this;
 	}
 	tiny_string& operator=(const char* s)
 	{
-		strncpy(buf,s,256);
+		strncpy(buf,s,1023);
 		return *this;
 	}
 	tiny_string& operator+=(const char* s)
 	{
-		strncat(buf,s,255-strlen(buf));
+		strncat(buf,s,1023-strlen(buf));
 		return *this;
 	}
 	tiny_string& operator+=(const tiny_string& r)
 	{
-		strncat(buf,r.buf,255-strlen(buf));
+		strncat(buf,r.buf,1023-strlen(buf));
 		return *this;
 	}
 	bool operator<(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,256)<0;
+		return strncmp(buf,r.buf,1024)<0;
 	}
 	bool operator==(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,256)==0;
+		return strncmp(buf,r.buf,1024)==0;
 	}
 	bool operator!=(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,256)!=0;
+		return strncmp(buf,r.buf,1024)!=0;
 	}
 	bool operator==(const char* r) const
 	{
-		return strncmp(buf,r,256)==0;
+		return strncmp(buf,r,1024)==0;
 	}
 	const char* raw_buf() const
 	{

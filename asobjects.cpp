@@ -1168,8 +1168,9 @@ ASFUNCTIONBODY(ASString,concat)
 {
 	LOG(NOT_IMPLEMENTED,"ASString::concat not really implemented");
 	ASString* th=static_cast<ASString*>(obj);
-	__asm__("int $3");
-	return new ASString(th->data);
+	th->data+=args->at(0)->toString().raw_buf();
+	th->incRef();
+	return th;
 }
 
 Class_base::~Class_base()

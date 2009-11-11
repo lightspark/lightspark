@@ -575,6 +575,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 {
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(CALLS,"callPropVoid " << *name << ' ' << m);
+
 	arguments args(m);
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());

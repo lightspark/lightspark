@@ -221,11 +221,18 @@ obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& n
 	if(ret.first!=ret.second) //If length!=0 value is found
 	{
 		//Check if this namespace is already present
-		var_iterator& start=ret.first;
+		var_iterator start=ret.first;
 		for(start;start!=ret.second;start++)
 		{
 			if(start->second.first==ns)
 				return &start->second.second;
+		}
+		//HACK: if any object with this name is defined we
+		//return the first
+		if(!create)
+		{
+			LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
+			return &ret.first->second.second;
 		}
 	}
 
@@ -385,6 +392,13 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 			{
 				if(start->second.first==ns)
 					return &start->second.second;
+			}
+			//HACK: if any object with this name is defined we
+			//return the first
+			if(!create)
+			{
+				LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
+				return &ret.first->second.second;
 			}
 		}
 	}

@@ -178,7 +178,7 @@ ASFUNCTIONBODY(Loader,load)
 		LOG(ERROR,"ArgumentError");
 		abort();
 	}*/
-	URLRequest* r=static_cast<URLRequest*>(args->at(0));
+	URLRequest* r=static_cast<URLRequest*>(args->at(0)->interface);
 	th->url=r->url->toString();
 	th->source=URL;
 	sys->cur_thread_pool->addJob(th);

@@ -16,5 +16,3 @@ Official TODO Queue:
 -) Texture caching
 -) Click passthrough on transparent objects
 -) Implement rest arguments
--) Get rid of bound objects, just use setters/getters
--) Support the same var on multiple namespaces (useNS.abc)

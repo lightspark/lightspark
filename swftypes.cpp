@@ -90,6 +90,37 @@ SWFOBJECT_TYPE ASObject::getObjectType() const
 	return (interface)?(interface->type):type;
 }
 
+
+bool IInterface::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
+{
+	return false;
+}
+
+bool IInterface::getVariableByMultiname(const multiname& name, ASObject*& out)
+{
+	return false;
+}
+
+bool IInterface::getVariableByMultiname_i(const multiname& name, intptr_t& out)
+{
+	return false;
+}
+
+bool IInterface::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+{
+	return false;
+}
+
+bool IInterface::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	return false;
+}
+
+bool IInterface::setVariableByMultiname_i(const multiname& name, intptr_t value)
+{
+	return false;
+}
+
 int multiname::count=0;
 
 tiny_string multiname::qualifiedString()
@@ -244,8 +275,64 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 	obj->setter=o;
 }
 
+//In all setter we first pass the value to the interface to see if special handling is possible
+void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
+{
+	if(interface)
+	{
+		if(interface->setVariableByMultiname_i(name,value))
+			return;
+	}
+
+	setVariableByMultiname(name,abstract_i(value));
+}
+
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	if(interface)
+	{
+		if(interface->setVariableByMultiname(name,o))
+			return;
+	}
+
+	obj_var* obj=NULL;
+	for(int i=max_level;i>0;i--)
+	{
+		obj=Variables.findObjVar(name,i-1,false);
+		if(obj)
+			break;
+	}
+
+	if(obj==NULL)
+		obj=Variables.findObjVar(name,max_level,true);
+
+	if(obj->setter)
+	{
+		//Call the setter
+		LOG(CALLS,"Calling the setter");
+		arguments args(1);
+		args.set(0,o);
+		//TODO: check
+		o->incRef();
+		obj->setter->call(this,&args);
+		LOG(CALLS,"End of setter");
+	}
+	else
+	{
+		if(obj->var)
+			obj->var->decRef();
+		obj->var=o;
+	}
+}
+
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
+	if(interface)
+	{
+		if(interface->setVariableByQName(name,ns,o))
+			return;
+	}
+
 	obj_var* obj=NULL;
 	for(int i=max_level;i>0;i--)
 	{
@@ -274,11 +361,6 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 			obj->var->decRef();
 		obj->var=o;
 	}
-}
-
-void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
-{
-	setVariableByMultiname(name,abstract_i(value));
 }
 
 obj_var* variables_map::findObjVar(const multiname& mname, int level, bool create)
@@ -334,40 +416,20 @@ ASFUNCTIONBODY(ASObject,_constructor)
 {
 }
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
-{
-	obj_var* obj=NULL;
-	for(int i=max_level;i>0;i--)
-	{
-		obj=Variables.findObjVar(name,i-1,false);
-		if(obj)
-			break;
-	}
-
-	if(obj==NULL)
-		obj=Variables.findObjVar(name,max_level,true);
-
-	if(obj->setter)
-	{
-		//Call the setter
-		LOG(CALLS,"Calling the setter");
-		arguments args(1);
-		args.set(0,o);
-		//TODO: check
-		o->incRef();
-		obj->setter->call(this,&args);
-		LOG(CALLS,"End of setter");
-	}
-	else
-	{
-		if(obj->var)
-			obj->var->decRef();
-		obj->var=o;
-	}
-}
-
+//In all the getter function we first ask the interface, so that special handling (e.g. Array)
+//can be done
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 {
+	if(interface)
+	{
+		intptr_t ret;
+		if(interface->getVariableByMultiname_i(name,ret))
+		{
+			owner=this;
+			return ret;
+		}
+	}
+
 	ASObject* ret=getVariableByMultiname(name,owner);
 	if(ret)
 		return ret->toInt();
@@ -377,6 +439,16 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& ow
 
 ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& owner)
 {
+	if(interface)
+	{
+		ASObject* ret;
+		if(interface->getVariableByMultiname(name,ret))
+		{
+			owner=this;
+			return ret;
+		}
+	}
+
 	obj_var* obj=NULL;
 	for(int i=max_level;i>=0;i--)
 	{
@@ -426,30 +498,18 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& own
 	return NULL;
 }
 
-ASObject* variables_map::getVariableByString(const std::string& name)
-{
-	//Slow linear lookup, should be avoided
-	var_iterator it=Variables.begin();
-	for(it;it!=Variables.end();it++)
-	{
-		string cur(it->second.first.raw_buf());
-		if(!cur.empty())
-			cur+='.';
-		cur+=it->first.name.raw_buf();
-		if(cur==name)
-		{
-			if(it->second.second.getter)
-				abort();
-			return it->second.second.var;
-		}
-	}
-	
-	return NULL;
-}
-
 ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 {
 	ASObject* ret;
+
+	if(interface)
+	{
+		if(interface->getVariableByQName(name,ns,ret))
+		{
+			owner=this;
+			return ret;
+		}
+	}
 
 	obj_var* obj=NULL;
 	for(int i=max_level;i>=0;i--)
@@ -484,6 +544,27 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 	}
 
 	return (owner)?ret:NULL;
+}
+
+ASObject* variables_map::getVariableByString(const std::string& name)
+{
+	//Slow linear lookup, should be avoided
+	var_iterator it=Variables.begin();
+	for(it;it!=Variables.end();it++)
+	{
+		string cur(it->second.first.raw_buf());
+		if(!cur.empty())
+			cur+='.';
+		cur+=it->first.name.raw_buf();
+		if(cur==name)
+		{
+			if(it->second.second.getter)
+				abort();
+			return it->second.second.var;
+		}
+	}
+	
+	return NULL;
 }
 
 std::ostream& operator<<(std::ostream& s, const tiny_string& r)

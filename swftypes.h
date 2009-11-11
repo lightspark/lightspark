@@ -421,6 +421,13 @@ class IInterface
 {
 friend void ASObject::acquireInterface(IInterface* i);
 friend class ASObject;
+private:
+	virtual bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out);
+	virtual bool getVariableByMultiname(const multiname& name, ASObject*& out);
+	virtual bool getVariableByMultiname_i(const multiname& name, intptr_t& out);
+	virtual bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	virtual bool setVariableByMultiname(const multiname& name, ASObject* o);
+	virtual bool setVariableByMultiname_i(const multiname& name, intptr_t value);
 protected:
 	SWFOBJECT_TYPE type;
 	uint32_t magic;

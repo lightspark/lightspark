@@ -299,12 +299,12 @@ public:
 	{
 		data.resize(n);
 	}
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
-	ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner);
-	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner);
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	void setVariableByMultiname(multiname& name, ASObject* o);
-	void setVariableByMultiname_i(multiname& name, intptr_t value);
+	virtual bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out);
+	virtual bool getVariableByMultiname(const multiname& name, ASObject*& out);
+	virtual bool getVariableByMultiname_i(const multiname& name, intptr_t& out);
+	virtual bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	virtual bool setVariableByMultiname(multiname& name, ASObject* o);
+	virtual bool setVariableByMultiname_i(multiname& name, intptr_t value);
 	bool isEqual(const ASObject* r) const;
 	tiny_string toString() const;
 };
@@ -323,7 +323,7 @@ public:
 class Integer : public ASObject
 {
 friend class Number;
-friend class ASArray;
+friend class Array;
 friend class ABCVm;
 friend class ABCContext;
 friend ASObject* abstract_i(intptr_t i);

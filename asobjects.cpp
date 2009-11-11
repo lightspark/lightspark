@@ -251,7 +251,7 @@ bool Array::isEqual(const ASObject* r) const
 	}
 }
 
-intptr_t Array::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
+bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 {
 	abort();
 /*	intptr_t ret;
@@ -300,63 +300,63 @@ intptr_t Array::getVariableByMultiname_i(const multiname& name, ASObject*& owner
 	return ret;*/
 }
 
-ASObject* Array::getVariableByMultiname(const multiname& name, ASObject*& owner)
+bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
 {
-	abort();
-/*	ASObject* ret;
-	owner=NULL;
-	int index=0;
+	//First of all the multiname has to contain the null namespace
+	int i=0;
+	for(i;i<name.ns.size();i++)
+	{
+		if(name.ns[i]=="")
+			break;
+	}
+	if(i==name.ns.size())
+		return false;
 
+	int index=0;
 	switch(name.name_type)
 	{
+		//We try to convert this to an index, otherwise bail out
 		case multiname::NAME_STRING:
 			for(int i=0;i<name.name_s.len();i++)
 			{
-				char a=name.name_s[i];
-				if(a>='0' && a<='9')
-				{
-					index*=10;
-					index+=(a-'0');
-				}
-				else
-				{
-					index=-1;
-					break;
-				}
+				if(!isdigit(name.name_s[i]))
+					return false;
+
+				index*=10;
+				index+=(name.name_s[i]-'0');
 			}
 			break;
+		//This is already an int, so its good enough
 		case multiname::NAME_INT:
 			index=name.name_i;
 			break;
 	}
 
-	if(index!=-1 && index<data.size())
+	if(index<data.size())
 	{
-			switch(data[index].type)
-			{
-				case STACK_OBJECT:
-					ret=data[index].data;
-					if(ret==NULL)
-					{
-						ret=new Undefined;
-						data[index].data=ret;
-					}
-					break;
-				case STACK_INT:
-					//cout << "Not efficent" << endl;
-					ret=abstract_i(data[index].data_i);
-					ret->fake_decRef();
-					break;
-			}
-			owner=this;
+		switch(data[index].type)
+		{
+			case STACK_OBJECT:
+				out=data[index].data;
+				if(out==NULL)
+				{
+					out=new Undefined;
+					data[index].data=out;
+				}
+				break;
+			case STACK_INT:
+				//cout << "Not efficent" << endl;
+				out=abstract_i(data[index].data_i);
+				out->fake_decRef();
+				break;
+		}
+		return true;
 	}
 	else
-		ret=ASObject::getVariableByMultiname(name,owner);
-
-	return ret;*/
+		return false;
 }
 
-void Array::setVariableByMultiname_i(multiname& name, intptr_t value)
+bool Array::setVariableByMultiname_i(multiname& name, intptr_t value)
 {
 	abort();
 /*	int index=0;
@@ -401,7 +401,7 @@ void Array::setVariableByMultiname_i(multiname& name, intptr_t value)
 	}*/
 }
 
-void Array::setVariableByMultiname(multiname& name, ASObject* o)
+bool Array::setVariableByMultiname(multiname& name, ASObject* o)
 {
 	abort();
 /*	int index=0;
@@ -453,54 +453,51 @@ void Array::setVariableByMultiname(multiname& name, ASObject* o)
 		ASObject::setVariableByMultiname(name,o);*/
 }
 
-void Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+bool Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
-	abort();
-/*	int index=0;
+	if(ns!="")
+		return false;
+	assert(name.len()!=0);
+	int index=0;
+	//First we try to convert the string name to an index, at the first non-digit
+	//we bail out
 	for(int i=0;i<name.len();i++)
 	{
 		if(!isdigit(name[i]))
-		{
-			index=-1;
-			break;
-		}
+			return false;
 
+		index*=10;
+		index+=(name[i]-'0');
 	}
-	if(index==0)
-		index=atoi(name.raw_buf());
 
-	if(index!=-1)
+	if(index>=data.capacity())
 	{
-		if(index>=data.capacity())
-		{
-			//Heuristic, we increse the array 20%
-			int new_size=max(index+1,data.size()*2);
-			data.reserve(new_size);
-		}
-		if(index>=data.size())
-			resize(index+1);
+		//Heuristic, we increse the array 20%
+		int new_size=max(index+1,data.size()*2);
+		data.reserve(new_size);
+	}
+	if(index>=data.size())
+		resize(index+1);
 
-		if(data[index].type==STACK_OBJECT && data[index].data)
-			data[index].data->decRef();
+	if(data[index].type==STACK_OBJECT && data[index].data)
+		data[index].data->decRef();
 
-		if(o->getObjectType()==T_INTEGER)
-		{
-			Integer* i=static_cast<Integer*>(o);
-			data[index].data_i=i->val;
-			data[index].type=STACK_INT;
-			o->decRef();
-		}
-		else
-		{
-			data[index].data=o;
-			data[index].type=STACK_OBJECT;
-		}
+	if(o->getObjectType()==T_INTEGER)
+	{
+		Integer* i=static_cast<Integer*>(o);
+		data[index].data_i=i->val;
+		data[index].type=STACK_INT;
+		o->decRef();
 	}
 	else
-		ASObject::setVariableByQName(name,ns,o);*/
+	{
+		data[index].data=o;
+		data[index].type=STACK_OBJECT;
+	}
+	return true;
 }
 
-ASObject* Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+bool Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 {
 	abort();
 /*	ASObject* ret;

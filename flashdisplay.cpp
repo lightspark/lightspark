@@ -179,7 +179,7 @@ ASFUNCTIONBODY(Loader,load)
 		abort();
 	}*/
 	URLRequest* r=static_cast<URLRequest*>(args->at(0)->interface);
-	th->url=r->url->toString();
+	th->url=r->url;
 	th->source=URL;
 	sys->cur_thread_pool->addJob(th);
 }

@@ -229,7 +229,7 @@ ASFUNCTIONBODY(ASXML,load)
 	return new Integer(1);
 }
 
-bool Array::isEqual(const ASObject* r) const
+bool Array::isEqual(ASObject* r)
 {
 	if(r->getObjectType()!=T_ARRAY)
 		return false;
@@ -537,6 +537,7 @@ ASString::ASString()
 	setVariableByQName("toString","",new Function(ASObject::_toString));
 	setVariableByQName("split",AS3,new Function(split));
 	setVariableByQName("replace",AS3,new Function(replace));
+	setVariableByQName("concat",AS3,new Function(concat));
 	setVariableByQName("indexOf",AS3,new Function(indexOf));
 	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
 	setGetterByQName("length","",new Function(_getLength));
@@ -549,6 +550,7 @@ ASString::ASString(const string& s):data(s)
 	setVariableByQName("toString","",new Function(ASObject::_toString));
 	setVariableByQName("split",AS3,new Function(split));
 	setVariableByQName("replace",AS3,new Function(replace));
+	setVariableByQName("concat",AS3,new Function(concat));
 	setVariableByQName("indexOf",AS3,new Function(indexOf));
 	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
 	setGetterByQName("length","",new Function(_getLength));
@@ -561,6 +563,7 @@ ASString::ASString(const tiny_string& s):data(s.raw_buf())
 	setVariableByQName("toString","",new Function(ASObject::_toString));
 	setVariableByQName("split",AS3,new Function(split));
 	setVariableByQName("replace",AS3,new Function(replace));
+	setVariableByQName("concat",AS3,new Function(concat));
 	setVariableByQName("indexOf",AS3,new Function(indexOf));
 	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
 	setGetterByQName("length","",new Function(_getLength));
@@ -573,6 +576,7 @@ ASString::ASString(const char* s):data(s)
 	setVariableByQName("toString","",new Function(ASObject::_toString));
 	setVariableByQName("split",AS3,new Function(split));
 	setVariableByQName("replace",AS3,new Function(replace));
+	setVariableByQName("concat",AS3,new Function(concat));
 	setGetterByQName("length","",new Function(_getLength));
 }
 
@@ -692,7 +696,7 @@ tiny_string Undefined::toString() const
 	return "null";
 }
 
-bool ASString::isEqual(const ASObject* r) const
+bool ASString::isEqual(ASObject* r)
 {
 	if(r->getObjectType()==T_STRING)
 	{
@@ -706,7 +710,7 @@ bool ASString::isEqual(const ASObject* r) const
 		return false;
 }
 
-bool Boolean::isEqual(const ASObject* r) const
+bool Boolean::isEqual(ASObject* r)
 {
 	if(r->getObjectType()==T_BOOLEAN)
 	{
@@ -719,7 +723,7 @@ bool Boolean::isEqual(const ASObject* r) const
 	}
 }
 
-bool Undefined::isEqual(const ASObject* r) const
+bool Undefined::isEqual(ASObject* r)
 {
 	if(r->getObjectType()==T_UNDEFINED)
 		return true;
@@ -735,28 +739,7 @@ Undefined::Undefined()
 //	setVariableByName(".Call",new Function(call));
 }
 
-void Number::copyFrom(const ASObject* o)
-{
-	if(o->getObjectType()==T_NUMBER)
-	{
-		const Number* n=static_cast<const Number*>(o);
-		val=n->val;
-	}
-	else if(o->getObjectType()==T_INTEGER)
-	{
-		const Integer* n=static_cast<const Integer*>(o);
-		val=n->val;
-	}
-	else
-	{
-		LOG(ERROR,"Copying Number from type " << o->getObjectType() << " is not supported");
-		abort();
-	}
-	
-	LOG(TRACE,"Set to " << val);
-}
-
-bool Number::isEqual(const ASObject* o) const
+bool Number::isEqual(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 		return val==o->toNumber();
@@ -768,7 +751,7 @@ bool Number::isEqual(const ASObject* o) const
 	}
 }
 
-bool Number::isGreater(const ASObject* o) const
+bool Number::isGreater(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
@@ -786,7 +769,7 @@ bool Number::isGreater(const ASObject* o) const
 	}
 }
 
-bool Number::isLess(const ASObject* o) const
+bool Number::isLess(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
@@ -1123,7 +1106,7 @@ tiny_string Null::toString() const
 	return "null";
 }
 
-bool Null::isEqual(const ASObject* r) const
+bool Null::isEqual(ASObject* r)
 {
 	if(r->getObjectType()==T_NULL)
 		return true;
@@ -1178,6 +1161,14 @@ ASFUNCTIONBODY(ASString,replace)
 {
 	LOG(NOT_IMPLEMENTED,"ASString::replace not really implemented");
 	ASString* th=static_cast<ASString*>(obj);
+	return new ASString(th->data);
+}
+
+ASFUNCTIONBODY(ASString,concat)
+{
+	LOG(NOT_IMPLEMENTED,"ASString::concat not really implemented");
+	ASString* th=static_cast<ASString*>(obj);
+	__asm__("int $3");
 	return new ASString(th->data);
 }
 

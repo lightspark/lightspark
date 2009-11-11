@@ -180,7 +180,7 @@ public:
 	{
 		return val;
 	}
-	bool isEqual(const ASObject* r) const;
+	bool isEqual(ASObject* r);
 	tiny_string toString() const;
 };
 
@@ -190,7 +190,7 @@ public:
 	ASFUNCTION(call);
 	Undefined();
 	tiny_string toString() const;
-	bool isEqual(const ASObject* r) const;
+	bool isEqual(ASObject* r);
 	virtual ~Undefined(){}
 };
 
@@ -207,11 +207,12 @@ public:
 	ASFUNCTION(split);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(replace);
+	ASFUNCTION(concat);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);
 	tiny_string toString() const;
 	double toNumber() const;
-	bool isEqual(const ASObject* r) const;
+	bool isEqual(ASObject* r);
 };
 
 class ASStage: public ASObject
@@ -228,7 +229,7 @@ class Null : public ASObject
 public:
 	Null(){type=T_NULL;}
 	tiny_string toString() const;
-	bool isEqual(const ASObject* r) const;
+	bool isEqual(ASObject* r);
 };
 
 struct data_slot
@@ -305,7 +306,7 @@ public:
 	virtual bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	virtual bool setVariableByMultiname(multiname& name, ASObject* o);
 	virtual bool setVariableByMultiname_i(multiname& name, intptr_t value);
-	bool isEqual(const ASObject* r) const;
+	bool isEqual(ASObject* r);
 	tiny_string toString() const;
 };
 
@@ -344,9 +345,9 @@ public:
 		return val;
 	}
 	operator int() const{return val;} 
-	bool isLess(const ASObject* r) const;
-	bool isGreater(const ASObject* r) const;
-	bool isEqual(const ASObject* o) const;
+	bool isLess(ASObject* r);
+	bool isGreater(ASObject* r);
+	bool isEqual(ASObject* o);
 };
 
 class Number : public ASObject
@@ -367,10 +368,9 @@ public:
 		return val;
 	}
 	operator double() const {return val;}
-	void copyFrom(const ASObject* o);
-	bool isLess(const ASObject* o) const;
-	bool isGreater(const ASObject* o) const;
-	bool isEqual(const ASObject* o) const;
+	bool isLess(ASObject* o);
+	bool isGreater(ASObject* o);
+	bool isEqual(ASObject* o);
 };
 
 class ASMovieClipLoader: public ASObject

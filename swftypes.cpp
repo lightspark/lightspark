@@ -64,17 +64,33 @@ tiny_string ASObject::toString() const
 	return "Cannot convert object to String";
 }
 
-bool ASObject::isGreater(const ASObject* r) const
+bool ASObject::isGreater(ASObject* r)
 {
 	LOG(NOT_IMPLEMENTED,"Greater than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	abort();
 	return false;
 }
 
-bool ASObject::isLess(const ASObject* r) const
+bool ASObject::isLess(ASObject* r)
 {
-	LOG(NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
-	abort();
-	return false;
+	//We can try to call valueOf and compare that
+	ASObject* owner1,*owner2;
+	ASObject* obj1=getVariableByQName("valueOf","",owner1);
+	ASObject* obj2=r->getVariableByQName("valueOf","",owner2);
+	if(owner1==NULL || owner2==NULL)
+	{
+		LOG(NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+		abort();
+	}
+
+	IFunction* f1=obj1->toFunction();
+	IFunction* f2=obj2->toFunction();
+
+	ASObject* ret1=f1->call(this,NULL);
+	ASObject* ret2=f2->call(r,NULL);
+
+	LOG(CALLS,"Overloaded isLess");
+	return ret1->isLess(ret2);
 }
 
 void ASObject::acquireInterface(IInterface* i)
@@ -145,7 +161,7 @@ multiname::~multiname()
 	count--;
 }
 
-bool Integer::isGreater(const ASObject* o) const
+bool Integer::isGreater(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
@@ -158,7 +174,7 @@ bool Integer::isGreater(const ASObject* o) const
 	}
 }
 
-bool Integer::isLess(const ASObject* o) const
+bool Integer::isLess(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
@@ -174,7 +190,7 @@ bool Integer::isLess(const ASObject* o) const
 		return ASObject::isLess(o);
 }
 
-bool Integer::isEqual(const ASObject* o) const
+bool Integer::isEqual(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 		return val==o->toInt();
@@ -186,10 +202,26 @@ bool Integer::isEqual(const ASObject* o) const
 	}
 }
 
-bool ASObject::isEqual(const ASObject* r) const
+bool ASObject::isEqual(ASObject* r)
 {
-	LOG(NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
-	return false;
+	//We can try to call valueOf (maybe equals) and compare that
+	ASObject* owner1,*owner2;
+	ASObject* obj1=getVariableByQName("valueOf","",owner1);
+	ASObject* obj2=r->getVariableByQName("valueOf","",owner2);
+	if(owner1==NULL || owner2==NULL)
+	{
+		LOG(NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+		return false;
+	}
+
+	IFunction* f1=obj1->toFunction();
+	IFunction* f2=obj2->toFunction();
+
+	ASObject* ret1=f1->call(this,NULL);
+	ASObject* ret2=f2->call(r,NULL);
+
+	LOG(CALLS,"Overloaded isEqual");
+	return ret1->isEqual(ret2);
 }
 
 IFunction* ASObject::toFunction()

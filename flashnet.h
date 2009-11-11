@@ -26,11 +26,13 @@ class URLRequest: public IInterface
 {
 friend class Loader;
 private:
-	ASString* url; 
+	tiny_string url; 
 public:
 	URLRequest();
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getUrl);
+	ASFUNCTION(_setUrl);
 };
 
 #endif

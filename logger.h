@@ -10,12 +10,12 @@ enum LOG_LEVEL { NO_INFO=0, ERROR=1, NOT_IMPLEMENTED=2,CALLS=3,TRACE=4};
 {							\
 	if(level<=Log::getLevel())			\
 	{						\
-		int a;						\
+		int __a__;						\
 		pthread_testcancel();				\
-		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,&a); \
+		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,&__a__); \
 		Log l(level);				\
 		l() << esp << std::endl;		\
-		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,&a); \
+		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,&__a__); \
 	}						\
 }
 

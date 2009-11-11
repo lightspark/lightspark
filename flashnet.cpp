@@ -23,7 +23,7 @@ using namespace std;
 
 REGISTER_CLASS_NAME(URLRequest);
 
-URLRequest::URLRequest():url(NULL)
+URLRequest::URLRequest()
 {
 }
 
@@ -43,7 +43,22 @@ ASFUNCTIONBODY(URLRequest,_constructor)
 	th->url=static_cast<ASString*>(args->at(0));*/
 	if(args->size()>0 && args->at(0)->getObjectType()==T_STRING)
 	{
-		th->url=static_cast<ASString*>(args->at(0));
-		cout << "url is " << th->url->toString() << endl;
+		th->url=args->at(0)->toString();
+		cout << "url is " << th->url << endl;
 	}
+	obj->setSetterByQName("url","",new Function(_setUrl));
+	obj->setGetterByQName("url","",new Function(_getUrl));
+}
+
+ASFUNCTIONBODY(URLRequest,_setUrl)
+{
+	URLRequest* th=static_cast<URLRequest*>(obj->interface);
+	th->url=args->at(0)->toString();
+	cout << "Setting url to " << th->url << endl;
+}
+
+ASFUNCTIONBODY(URLRequest,_getUrl)
+{
+	URLRequest* th=static_cast<URLRequest*>(obj->interface);
+	return new ASString(th->url);
 }

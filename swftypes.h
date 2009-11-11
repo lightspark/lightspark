@@ -405,15 +405,10 @@ public:
 	virtual double toNumber() const;
 	virtual IFunction* toFunction();
 
-	virtual bool isEqual(const ASObject* r) const;
-	virtual bool isLess(const ASObject* r) const;
-	virtual bool isGreater(const ASObject* r) const;
+	virtual bool isEqual(ASObject* r);
+	virtual bool isLess(ASObject* r);
+	virtual bool isGreater(ASObject* r);
 
-	virtual void copyFrom(const ASObject* o)
-	{
-		LOG(ERROR,"Copy object of type " << (int)getObjectType() << " from object of type " << (int)o->getObjectType());
-		abort();
-	}
 	void handleConstruction(ABCContext* context,arguments* args, bool linkInterfaces);
 };
 

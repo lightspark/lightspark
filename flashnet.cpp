@@ -21,6 +21,8 @@
 
 using namespace std;
 
+REGISTER_CLASS_NAME(URLLoader);
+REGISTER_CLASS_NAME(URLLoaderDataFormat);
 REGISTER_CLASS_NAME(URLRequest);
 
 URLRequest::URLRequest()
@@ -62,3 +64,61 @@ ASFUNCTIONBODY(URLRequest,_getUrl)
 	URLRequest* th=static_cast<URLRequest*>(obj->interface);
 	return new ASString(th->url);
 }
+
+URLLoader::URLLoader():dataFormat("text")
+{
+}
+
+void URLLoader::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(URLLoader,_constructor)
+{
+	EventDispatcher::_constructor(obj,NULL);
+	obj->setGetterByQName("dataFormat","",new Function(_getDataFormat));
+	obj->setSetterByQName("dataFormat","",new Function(_setDataFormat));
+	obj->setVariableByQName("load","",new Function(load));
+}
+
+ASFUNCTIONBODY(URLLoader,load)
+{
+	URLLoader* th=static_cast<URLLoader*>(obj->interface);
+	ASObject* arg=args->at(0);
+	assert(arg && arg->prototype->class_name=="URLRequest");
+	URLRequest* req=static_cast<URLRequest*>(arg->interface);
+	tiny_string url=req->url;
+	cout << "url is " << url << endl;
+	ASObject* owner;
+	ASObject* data=arg->getVariableByQName("data","",owner);
+	assert(owner);
+	for(int i=0;i<data->numVariables();i++)
+	{
+		ASObject* cur=data->getValueAt(i);
+		if(cur->getObjectType()!=T_FUNCTION)
+			cout << "\t" << data->getNameAt(i) << ": " << cur->toString() << endl;
+	}
+}
+
+ASFUNCTIONBODY(URLLoader,_getDataFormat)
+{
+	URLLoader* th=static_cast<URLLoader*>(obj->interface);
+	return new ASString(th->dataFormat);
+}
+
+ASFUNCTIONBODY(URLLoader,_setDataFormat)
+{
+	URLLoader* th=static_cast<URLLoader*>(obj->interface);
+	assert(args->at(0));
+	th->dataFormat=args->at(0)->toString();
+}
+
+void URLLoaderDataFormat::sinit(Class_base* c)
+{
+	c->setVariableByQName("VARIABLES","",new ASString("variables"));
+	c->setVariableByQName("TEXT","",new ASString("text"));
+	c->setVariableByQName("BINARY","",new ASString("binary"));
+}
+

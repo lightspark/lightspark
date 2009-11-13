@@ -16,5 +16,6 @@ Official TODO Queue:
 -) Texture caching
 -) Click passthrough on transparent objects
 -) Implement rest arguments
+-) Really support isTypelate (checking pointers, not strings)
 -) Allocate super member before members
 -) Understand the semantics of nextname on methods and the like

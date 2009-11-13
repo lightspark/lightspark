@@ -1,6 +1,6 @@
 # User-overridable flags:
 CXXFLAGS = -g -O0 -D_GLIBCXX_NO_DEBUG -fpermissive -Wnon-virtual-dtor
-LLVMLIBS = `llvm-config --libfiles`
+LLVMLIBS = `llvm-config --libfiles engine`
 prefix = /usr
 bindir = $(prefix)/bin
 datarootdir = $(prefix)/share

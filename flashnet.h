@@ -21,10 +21,12 @@
 #define _FLASH_NET_H
 
 #include "asobjects.h"
+#include "flashevents.h"
 
 class URLRequest: public IInterface
 {
 friend class Loader;
+friend class URLLoader;
 private:
 	tiny_string url; 
 public:
@@ -33,6 +35,25 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getUrl);
 	ASFUNCTION(_setUrl);
+};
+
+class URLLoaderDataFormat: public IInterface
+{
+public:
+	static void sinit(Class_base*);
+};
+
+class URLLoader: public EventDispatcher
+{
+private:
+	tiny_string dataFormat;
+public:
+	URLLoader();
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(load);
+	ASFUNCTION(_getDataFormat);
+	ASFUNCTION(_setDataFormat);
 };
 
 #endif

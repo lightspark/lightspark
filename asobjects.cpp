@@ -317,6 +317,7 @@ bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
 	{
 		//We try to convert this to an index, otherwise bail out
 		case multiname::NAME_STRING:
+			assert(name.name_s.len());
 			for(int i=0;i<name.name_s.len();i++)
 			{
 				if(!isdigit(name.name_s[i]))
@@ -356,7 +357,7 @@ bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
 		return false;
 }
 
-bool Array::setVariableByMultiname_i(multiname& name, intptr_t value)
+bool Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	abort();
 /*	int index=0;
@@ -401,56 +402,64 @@ bool Array::setVariableByMultiname_i(multiname& name, intptr_t value)
 	}*/
 }
 
-bool Array::setVariableByMultiname(multiname& name, ASObject* o)
+bool Array::setVariableByMultiname(const multiname& name, ASObject* o)
 {
-	abort();
-/*	int index=0;
-	if(name.name_type==multiname::NAME_STRING)
+	//First of all the multiname has to contain the null namespace
+	int i=0;
+	for(i;i<name.ns.size();i++)
 	{
-		for(int i=0;i<name.name_s.len();i++)
-		{
-			if(!isdigit(name.name_s[i]))
-			{
-				index=-1;
-				break;
-			}
-
-		}
-		if(index==0)
-			index=atoi(name.name_s.raw_buf());
+		if(name.ns[i]=="")
+			break;
 	}
-	else if(name.name_type==multiname::NAME_INT)
-		index=name.name_i;
+	if(i==name.ns.size())
+		return false;
 
-	if(index!=-1)
+	int index=0;
+	switch(name.name_type)
 	{
-		if(index>=data.capacity())
-		{
-			//Heuristic, we increse the array 20%
-			int new_size=max(index+1,data.size()*2);
-			data.reserve(new_size);
-		}
-		if(index>=data.size())
-			resize(index+1);
+		//We try to convert this to an index, otherwise bail out
+		case multiname::NAME_STRING:
+			assert(name.name_s.len());
+			for(int i=0;i<name.name_s.len();i++)
+			{
+				if(!isdigit(name.name_s[i]))
+					return false;
 
-		if(data[index].type==STACK_OBJECT && data[index].data)
-			data[index].data->decRef();
+				index*=10;
+				index+=(name.name_s[i]-'0');
+			}
+			break;
+		//This is already an int, so its good enough
+		case multiname::NAME_INT:
+			index=name.name_i;
+			break;
+	}
 
-		if(o->getObjectType()==T_INTEGER)
-		{
-			Integer* i=static_cast<Integer*>(o);
-			data[index].data_i=i->val;
-			data[index].type=STACK_INT;
-			o->decRef();
-		}
-		else
-		{
-			data[index].data=o;
-			data[index].type=STACK_OBJECT;
-		}
+	if(index>=data.capacity())
+	{
+		//Heuristic, we increse the array 20%
+		int new_size=max(index+1,data.size()*2);
+		data.reserve(new_size);
+	}
+	if(index>=data.size())
+		resize(index+1);
+
+	if(data[index].type==STACK_OBJECT && data[index].data)
+		data[index].data->decRef();
+
+	if(o->getObjectType()==T_INTEGER)
+	{
+		Integer* i=static_cast<Integer*>(o);
+		data[index].data_i=i->val;
+		data[index].type=STACK_INT;
+		o->decRef();
 	}
 	else
-		ASObject::setVariableByMultiname(name,o);*/
+	{
+		data[index].data=o;
+		data[index].type=STACK_OBJECT;
+	}
+	return true;
 }
 
 bool Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
@@ -796,7 +805,12 @@ tiny_string Number::toString() const
 
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
 {
-	//constructor=new Function(_constructor);
+}
+
+void Date::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
 }
 
 ASFUNCTIONBODY(Date,_constructor)
@@ -897,7 +911,11 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	if(mi->needsArgs())
 		abort();
 
-	call_context* cc=new call_context(mi,args,numArgs);
+	int args_len=mi->numArgs();
+	int passedToLocals=min(numArgs,args_len);
+	int passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
+	call_context* cc=new call_context(mi,args,passedToLocals);
+	int i=passedToLocals;
 	cc->scope_stack=func_scope;
 	for(int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
@@ -909,8 +927,6 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	}
 
 	cc->locals[0]=obj;
-	int i=numArgs;
-	int args_len=mi->numArgs();
 
 	//Fixup missing parameters
 	int missing_params=args_len-i;
@@ -933,10 +949,9 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 
 	if(mi->needsRest()) //TODO
 	{
-		abort();
-//		Array* rest=new Array();
-//		rest->_constructor(rest,NULL);
-//		cc->locals[mi->numArgs()+1]=rest;
+		assert(passedToRest==0);
+		Array* rest=Class<Array>::getInstanceS(true);
+		cc->locals[i+1]=rest->obj;
 	}
 	obj->incRef();
 	ASObject* ret=val(obj,NULL,cc);

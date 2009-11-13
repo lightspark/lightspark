@@ -201,27 +201,6 @@ public:
 	}
 };
 
-/*struct Qname
-{
-	std::string name;
-	std::string ns;
-	int nskind;
-	bool operator<(const Qname& r) const
-	{
-		return name<r.name;
-	}
-	Qname(const std::string& s):name(s){}
-	Qname(const char* s):name(s){}
-	Qname(const STRING& s):name(s){}
-	Qname(int i)
-	{
-		char buf[32];
-		sprintf(buf,"%i",i);
-		name=buf;
-	}
-	Qname(const std::string& _ns, const std::string& _name):ns(_ns),name(_name){}
-};*/
-
 struct multiname
 {
 	enum NAME_TYPE {NAME_STRING,NAME_INT};

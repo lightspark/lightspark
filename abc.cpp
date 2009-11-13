@@ -1312,6 +1312,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				assert(var);
 				assert(var->var);
 
+				var->var->incRef();
 				obj->setVariableByQName(name,ns,var->var);
 			}
 
@@ -1336,6 +1337,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				assert(var);
 				assert(var->getter);
 
+				var->getter->incRef();
 				obj->setGetterByQName(name,ns,var->getter);
 			}
 			
@@ -1360,6 +1362,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				assert(var);
 				assert(var->setter);
 
+				var->setter->incRef();
 				obj->setSetterByQName(name,ns,var->setter);
 			}
 			

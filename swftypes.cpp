@@ -73,6 +73,8 @@ bool ASObject::isGreater(ASObject* r)
 
 bool ASObject::isLess(ASObject* r)
 {
+	assert(interface==NULL);
+
 	//We can try to call valueOf and compare that
 	ASObject* owner1,*owner2;
 	ASObject* obj1=getVariableByQName("valueOf","",owner1);
@@ -105,7 +107,6 @@ SWFOBJECT_TYPE ASObject::getObjectType() const
 {
 	return (interface)?(interface->type):type;
 }
-
 
 bool IInterface::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 {
@@ -204,6 +205,8 @@ bool Integer::isEqual(ASObject* o)
 
 bool ASObject::isEqual(ASObject* r)
 {
+	assert(interface==NULL);
+
 	//We can try to call valueOf (maybe equals) and compare that
 	ASObject* owner1,*owner2;
 	ASObject* obj1=getVariableByQName("valueOf","",owner1);
@@ -263,6 +266,7 @@ obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& n
 		//return the first
 		if(!exact)
 		{
+			__asm__("int $3");
 			LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
 			if(name=="play")
 				__asm__("int $3");
@@ -427,15 +431,13 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 				if(start->second.first==ns)
 					return &start->second.second;
 			}
-			//HACK: if any object with this name is defined we
-			//return the first
-			if(!exact)
-			{
-				LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
-				if(name=="play")
-					__asm__("int $3");
-				return &ret.first->second.second;
-			}
+		}
+		//HACK: if any object with this name is defined we
+		//return the first
+		if(!exact)
+		{
+			LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on [multinam]::" << name << ". Found on " << ret.first->second.first);
+			return &ret.first->second.second;
 		}
 	}
 

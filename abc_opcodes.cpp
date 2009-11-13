@@ -45,10 +45,6 @@ uintptr_t ABCVm::bitAnd_oi(ASObject* val1, intptr_t val2)
 	uintptr_t i1=val1->toInt();
 	uintptr_t i2=val2;
 	val1->decRef();
-/*	static int c=0;
-	if(c%(1024*512)==0)
-		cerr << "bitand " << c << endl;
-	c++;*/
 	LOG(CALLS,"bitAnd_oi " << hex << i1 << '&' << i2);
 	return i1&i2;
 }
@@ -334,10 +330,9 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 
 	ASObject* owner;
 	ASObject* ret=obj->getVariableByMultiname(*name,owner);
-//	if(name->name_s=="state")
-//		__asm__("int $3");
 	if(owner==NULL)
 	{
+		__asm__("int $3");
 		LOG(NOT_IMPLEMENTED,"Property not found " << *name);
 		ret=new Undefined;
 	}
@@ -412,6 +407,7 @@ bool ABCVm::ifLT(ASObject* obj2, ASObject* obj1)
 
 	//Real comparision demanded to object
 	bool ret=obj1->isLess(obj2);
+	cout << obj1->toInt() << "<" << obj2->toInt() << endl;
 
 	obj2->decRef();
 	obj1->decRef();
@@ -1508,16 +1504,27 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	}
 
 	LOG(CALLS,"Constructing");
-	Class_base* o_class=static_cast<Class_base*>(o);
-	assert(o_class->getObjectType()==T_CLASS);
-	ASObject* ret=o_class->getInstance()->obj;;
+	if(o->getObjectType()==T_CLASS)
+	{
+		Class_base* o_class=static_cast<Class_base*>(o);
+		ASObject* ret=o_class->getInstance()->obj;;
 
-	ret->handleConstruction(th->context, &args, true);
+		ret->handleConstruction(th->context, &args, true);
+		th->runtime_stack_push(ret);
+	}
+	else if(o->getObjectType()==T_FUNCTION)
+	{
+		SyntheticFunction* sf=static_cast<SyntheticFunction*>(o);
+		ASObject* ret=new ASObject;
+		LOG(CALLS,"Building method traits");
+		for(int i=0;i<sf->mi->body->trait_count;i++)
+			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+		sf->call(ret,&args);
+		th->runtime_stack_push(ret);
+	}
 
-//		args.decRef();
 	obj->decRef();
 	LOG(CALLS,"End of constructing");
-	th->runtime_stack_push(ret);
 }
 
 ASObject* ABCVm::hasNext2(call_context* th, int n, int m)

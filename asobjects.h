@@ -304,8 +304,8 @@ public:
 	virtual bool getVariableByMultiname(const multiname& name, ASObject*& out);
 	virtual bool getVariableByMultiname_i(const multiname& name, intptr_t& out);
 	virtual bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	virtual bool setVariableByMultiname(multiname& name, ASObject* o);
-	virtual bool setVariableByMultiname_i(multiname& name, intptr_t value);
+	virtual bool setVariableByMultiname(const multiname& name, ASObject* o);
+	virtual bool setVariableByMultiname_i(const multiname& name, intptr_t value);
 	bool isEqual(ASObject* r);
 	tiny_string toString() const;
 };
@@ -406,7 +406,7 @@ private:
 	int millisecond;
 public:
 	Date();
-	static void sinit(Class_base*){}
+	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getTimezoneOffset);
 	ASFUNCTION(getTime);

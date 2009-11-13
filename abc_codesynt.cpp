@@ -881,13 +881,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 		arg=Builder.CreateCall2(ex->FindFunctionNamed("argumentDumper"), it, constant);
 		Builder.CreateStore(arg,t);
 	}*/
-	if(flags&NEED_ARGUMENTS) 
-	{
-		abort();
-		/*constant = llvm::ConstantInt::get(int_type, param_count+1);
-		t=Builder.CreateGEP(locals,constant);
-		Builder.CreateStore(it,t);*/
-	}
 	vector<stack_entry> static_locals;
 	static_locals.resize(body->local_count,stack_entry(NULL,STACK_NONE));
 

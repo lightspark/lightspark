@@ -229,26 +229,27 @@ ASFUNCTIONBODY(ASXML,load)
 	return new Integer(1);
 }
 
-bool Array::isEqual(ASObject* r)
+bool Array::isEqual(bool& ret, ASObject* r)
 {
 	if(r->getObjectType()!=T_ARRAY)
-		return false;
+		ret=false;
 	else
 	{
 		const Array* ra=static_cast<const Array*>(r->interface);
 		int size=data.size();
 		if(size!=ra->size())
-			return false;
+			ret=false;
 
 		for(int i=0;i<size;i++)
 		{
 			if(data[i].type!=STACK_OBJECT)
 				abort();
 			if(!data[i].data->isEqual(ra->at(i)))
-				return false;
+				ret=false;
 		}
-		return true;
+		ret=true;
 	}
+	return true;
 }
 
 bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
@@ -665,6 +666,12 @@ ASFUNCTIONBODY(ASString,String)
 	}
 }
 
+bool Array::toString(tiny_string& ret)
+{
+	ret=toString();
+	return true;
+}
+
 tiny_string Array::toString() const
 {
 	string ret;
@@ -825,7 +832,7 @@ ASFUNCTIONBODY(Date,_constructor)
 	obj->setVariableByQName("getMinutes",AS3,new Function(getMinutes));
 	obj->setVariableByQName("getSeconds",AS3,new Function(getMinutes));
 	obj->setVariableByQName("toString",AS3,new Function(ASObject::_toString));
-	th->year=1990;
+	th->year=1969;
 	th->month=1;
 	th->date=1;
 	th->hour=0;
@@ -888,6 +895,11 @@ int Date::toInt() const
 tiny_string Date::toString() const
 {
 	return "Wed Apr 12 15:30:17 GMT-0700 2006";
+}
+
+tiny_string Function_Object::toString() const
+{
+	return "function Function() {}";
 }
 
 IFunction* SyntheticFunction::toFunction()

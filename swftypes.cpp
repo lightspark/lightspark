@@ -59,9 +59,14 @@ int ConstantReference::toInt() const
 
 tiny_string ASObject::toString() const
 {
+	tiny_string ret;
+	if(interface)
+	{
+		if(interface->toString(ret))
+			return ret;
+	}
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
-	abort();
-	return "Cannot convert object to String";
+	return "[object Object]";
 }
 
 bool ASObject::isGreater(ASObject* r)
@@ -106,6 +111,16 @@ void ASObject::acquireInterface(IInterface* i)
 SWFOBJECT_TYPE ASObject::getObjectType() const
 {
 	return (interface)?(interface->type):type;
+}
+
+bool IInterface::isEqual(bool& ret, ASObject* r)
+{
+	return false;
+}
+
+bool IInterface::toString(tiny_string& ret)
+{
+	return false;
 }
 
 bool IInterface::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
@@ -205,7 +220,12 @@ bool Integer::isEqual(ASObject* o)
 
 bool ASObject::isEqual(ASObject* r)
 {
-	assert(interface==NULL);
+	if(interface)
+	{
+		bool ret;
+		if(interface->isEqual(ret,r))
+			return ret;
+	}
 
 	//We can try to call valueOf (maybe equals) and compare that
 	ASObject* owner1,*owner2;
@@ -266,10 +286,7 @@ obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& n
 		//return the first
 		if(!exact)
 		{
-			__asm__("int $3");
 			LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
-			if(name=="play")
-				__asm__("int $3");
 			return &ret.first->second.second;
 		}
 	}

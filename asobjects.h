@@ -131,6 +131,30 @@ protected:
 	bool bound;
 };
 
+class Function_Object: public IFunction
+{
+public:
+	//The interface of a function, but the behaviour of an object
+	Function_Object(){type=T_OBJECT;}
+	ASObject* call(ASObject* obj, arguments* args)
+	{
+		abort();
+	}
+	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args)
+	{
+		abort();
+	}
+	IFunction* toFunction()
+	{
+		abort();
+	}
+	Function_Object* clone()
+	{
+		abort();
+	}
+	tiny_string toString() const;
+};
+
 class Function : public IFunction
 {
 public:
@@ -300,13 +324,14 @@ public:
 	{
 		data.resize(n);
 	}
-	virtual bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out);
-	virtual bool getVariableByMultiname(const multiname& name, ASObject*& out);
-	virtual bool getVariableByMultiname_i(const multiname& name, intptr_t& out);
-	virtual bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	virtual bool setVariableByMultiname(const multiname& name, ASObject* o);
-	virtual bool setVariableByMultiname_i(const multiname& name, intptr_t value);
-	bool isEqual(ASObject* r);
+	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out);
+	bool getVariableByMultiname(const multiname& name, ASObject*& out);
+	bool getVariableByMultiname_i(const multiname& name, intptr_t& out);
+	bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	bool setVariableByMultiname(const multiname& name, ASObject* o);
+	bool setVariableByMultiname_i(const multiname& name, intptr_t value);
+	bool toString(tiny_string& ret);
+	bool isEqual(bool& ret, ASObject* r);
 	tiny_string toString() const;
 };
 

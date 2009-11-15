@@ -403,6 +403,8 @@ private:
 	virtual bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	virtual bool setVariableByMultiname(const multiname& name, ASObject* o);
 	virtual bool setVariableByMultiname_i(const multiname& name, intptr_t value);
+	virtual bool toString(tiny_string& ret);
+	virtual bool isEqual(bool& ret, ASObject* o);
 protected:
 	SWFOBJECT_TYPE type;
 	uint32_t magic;

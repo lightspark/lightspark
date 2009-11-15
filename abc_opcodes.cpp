@@ -332,7 +332,6 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	ASObject* ret=obj->getVariableByMultiname(*name,owner);
 	if(owner==NULL)
 	{
-		__asm__("int $3");
 		LOG(NOT_IMPLEMENTED,"Property not found " << *name);
 		ret=new Undefined;
 	}
@@ -811,13 +810,12 @@ ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
 	}
 	else if(val2->getObjectType()==T_STRING)
 	{
-		abort();
-		/*string a=val1->toString();
-		string b=val2->toString();
-		val1->decRef();
+		tiny_string tmp(val1);
+		string a(tmp.raw_buf());
+		string b(val2->toString().raw_buf());
 		val2->decRef();
 		LOG(CALLS,"add " << a << '+' << b);
-		return new ASString(a+b);*/
+		return new ASString(a+b);
 	}
 	else if(val2->getObjectType()==T_ARRAY)
 	{
@@ -1481,6 +1479,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		args.set(m-i-1,th->runtime_stack_pop());
 
 	multiname* name=th->context->getMultiname(n,th);
+
 	LOG(CALLS,"constructProp "<< *name << ' ' << m);
 	if(m==1 && args.at(0)->prototype)
 		cout << "arg[0]->class_name " << args.at(0)->prototype->class_name << endl;
@@ -1515,11 +1514,14 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	else if(o->getObjectType()==T_FUNCTION)
 	{
 		SyntheticFunction* sf=static_cast<SyntheticFunction*>(o);
-		ASObject* ret=new ASObject;
-		LOG(CALLS,"Building method traits");
-		for(int i=0;i<sf->mi->body->trait_count;i++)
-			th->context->buildTrait(ret,&sf->mi->body->traits[i]);
-		sf->call(ret,&args);
+		ASObject* ret=new Function_Object;
+		if(sf->mi->body)
+		{
+			LOG(CALLS,"Building method traits");
+			for(int i=0;i<sf->mi->body->trait_count;i++)
+				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+			sf->call(ret,&args);
+		}
 		th->runtime_stack_push(ret);
 	}
 

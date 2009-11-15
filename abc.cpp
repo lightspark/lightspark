@@ -1598,12 +1598,13 @@ istream& operator>>(istream& in, s32& v)
 		}
 	}
 	while(t2&0x80);
+/*	//Sign extension usage not clear at all
 	if(t2&0x40)
 	{
 		//Sign extend
 		for(i;i<32;i++)
 			v.val|=(1<<i);
-	}
+	}*/
 	return in;
 }
 

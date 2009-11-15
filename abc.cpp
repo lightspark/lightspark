@@ -1182,8 +1182,9 @@ void ABCContext::exec()
 		method_info* m=get_method(scripts[i].init);
 
 		LOG(CALLS, "Building script traits: " << scripts[i].trait_count );
+		SyntheticFunction* mf=new SyntheticFunction(m);
 		for(int j=0;j<scripts[i].trait_count;j++)
-			buildTrait(Global,&scripts[i].traits[j],new SyntheticFunction(m));
+			buildTrait(Global,&scripts[i].traits[j],mf);
 	}
 	//Before the entry point we run early events
 //	while(sem_trywait(&th->sem_event_count)==0)
@@ -1257,8 +1258,13 @@ inline void ABCContext::buildClassTraits(ASObject* obj, int class_index)
 		buildTrait(obj,&instances[class_index].traits[i]);
 }
 
-void ABCContext::linkInterface(const Class_base* interface, ASObject* obj)
+void ABCContext::linkInterface(const multiname& interface_name, ASObject* obj)
 {
+	ASObject* owner;
+	ASObject* interface_obj=Global->getVariableByMultiname(interface_name,owner);
+	assert(owner && interface_obj->getObjectType()==T_CLASS);
+	Class_base* interface=static_cast<Class_base*>(interface_obj);
+
 	//TODO: implement builtin interfaces
 	if(interface->class_index==-1)
 		return;
@@ -1411,6 +1417,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 	const tiny_string& name=mname->name_s;
 	const tiny_string& ns=mname->ns[0];
+	if(name=="DefaultInt")
+		__asm__("int $3");
 	if(t->kind>>4)
 		cout << "Next slot has flags " << (t->kind>>4) << endl;
 	switch(t->kind&0xf)

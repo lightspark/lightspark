@@ -1651,21 +1651,22 @@ void ABCVm::newClass(call_context* th, int n)
 	//add implemented interfaces
 	for(int i=0;i<th->context->instances[n].interface_count;i++)
 	{
-		ASObject* owner;
 		multiname* name=th->context->getMultiname(th->context->instances[n].interfaces[i],NULL);
+		ret->addImplementedInterface(*name);
+
+		//Mke the class valid if needed
+		ASObject* owner;
 		ASObject* obj=th->context->Global->getVariableByMultiname(*name,owner);
 		assert(owner);
 		if(obj->getObjectType()==T_DEFINABLE)
 		{
-			LOG(CALLS,"Class " << *name << " is not yet valid");
+			LOG(CALLS,"Class " << *name << " is not yet valid (as interface)");
 			Definable* d=static_cast<Definable*>(obj);
 			d->define(th->context->Global);
 			LOG(CALLS,"End of deferred init of class " << *name);
 			obj=th->context->Global->getVariableByMultiname(*name,owner);
 			assert(owner);
 		}
-		assert(obj->getObjectType()==T_CLASS);
-		ret->addImplementedInterface(static_cast<Class_base*>(obj));
 	}
 
 	LOG(CALLS,"Calling Class init " << ret);

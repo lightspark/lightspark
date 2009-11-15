@@ -388,7 +388,7 @@ public:
 	std::vector<method_body_info> method_body;
 	void buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	void getOptionalConstant(const option_detail& opt);
-	void linkInterface(const Class_base* interface, ASObject* obj);
+	void linkInterface(const multiname& interface_name, ASObject* obj);
 	ABCContext(ABCVm* vm,std::istream& in);
 	void exec();
 };

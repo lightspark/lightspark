@@ -1206,7 +1206,7 @@ Class_base::~Class_base()
 		constructor->decRef();
 }
 
-void Class_base::addImplementedInterface(Class_base* i)
+void Class_base::addImplementedInterface(const multiname& i)
 {
 	interfaces.push_back(i);
 }

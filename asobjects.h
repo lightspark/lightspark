@@ -78,7 +78,7 @@ friend class ABCVm;
 friend class ABCContext;
 friend void ASObject::handleConstruction(ABCContext* context,arguments* args, bool linkInterfaces);
 private:
-	std::vector<Class_base*> interfaces;
+	std::vector<multiname> interfaces;
 public:
 	Class_base* super;
 	IFunction* constructor;
@@ -109,7 +109,7 @@ public:
 			ret=super->getVariableByQName(name,ns,owner);
 		return ret;
 	}
-	void addImplementedInterface(Class_base* i);
+	void addImplementedInterface(const multiname& i);
 };
 
 class IFunction: public ASObject

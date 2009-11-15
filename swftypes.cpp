@@ -1611,9 +1611,7 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args, bool link
 	{
 		//Lets's setup the interfaces
 		for(int i=0;i<actualPrototype->interfaces.size();i++)
-		{
 			context->linkInterface(actualPrototype->interfaces[i], this);
-		}
 	}
 }
 

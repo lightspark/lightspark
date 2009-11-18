@@ -803,6 +803,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	string n="method";
 	n+=context->getString(name).raw_buf();
+	cout << "Building method " << n << endl; 
 	if(!body)
 	{
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
@@ -1200,6 +1201,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
 						checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
 					}
+					push_index++;
 					break;
 				}
 				case 0x2b:
@@ -1502,8 +1504,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x76:
 				{
 					//convert_i
+					//convert_u
 					//convert_d
 					//convert_b
+					push_index++;
 					break;
 				}
 				case 0x78:
@@ -3655,6 +3659,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3666,6 +3671,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
+				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3677,6 +3683,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
+				push_index++;
 				jitted=true;
 				break;
 			}

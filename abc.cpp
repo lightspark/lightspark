@@ -142,7 +142,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
 
 	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
-	Global.setVariableByQName("Dictionary","flash.utils",new ASObject);
+	Global.setVariableByQName("Dictionary","flash.utils",Class<IInterface>::getClass("Dictionary"));
 	Global.setVariableByQName("Proxy","flash.utils",new ASObject);
 	Global.setVariableByQName("Timer","flash.utils",Class<IInterface>::getClass("Timer"));
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
@@ -1063,32 +1063,6 @@ ASObject* ABCVm::pushDouble(call_context* th, int n)
 	return new Number(d);
 }
 
-void ABCVm::findProperty(call_context* th, int n)
-{
-	multiname* name=th->context->getMultiname(n,th);
-	LOG(CALLS, "findProperty " << *name );
-
-	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	ASObject* owner;
-	for(it;it!=th->scope_stack.rend();it++)
-	{
-		(*it)->getVariableByMultiname(*name,owner);
-		if(owner)
-		{
-			//We have to return the object, not the property
-			th->runtime_stack_push(owner);
-			owner->incRef();
-			break;
-		}
-	}
-	if(!owner)
-	{
-		LOG(CALLS, "NOT found, pushing global" );
-		th->runtime_stack_push(&th->context->vm->Global);
-		th->context->vm->Global.incRef();
-	}
-}
-
 void ABCVm::newArray(call_context* th, int n)
 {
 	LOG(CALLS, "newArray " << n );
@@ -1463,6 +1437,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			LOG(CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
+			if(name=="compatibilityVersionString")
+				__asm__("int $3");
+
 			IFunction* f=new SyntheticFunction(m);
 
 			obj->setSetterByQName(name,ns,f);

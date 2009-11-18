@@ -239,7 +239,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
-			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
+			LOG(NOT_IMPLEMENTED,"We got a Undefined function on obj " << ((obj->prototype)?obj->prototype->class_name:"Object"));
 			th->runtime_stack_push(new Undefined);
 		}
 		else if(o->getObjectType()==T_DEFINABLE)
@@ -298,7 +298,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	}
 	else
 	{
-		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
+		LOG(NOT_IMPLEMENTED,"Calling an undefined function on obj " << ((obj->prototype)?obj->prototype->class_name:"Object"));
 		th->runtime_stack_push(new Undefined);
 	}
 	LOG(CALLS,"End of calling " << *name);
@@ -1171,6 +1171,32 @@ void ABCVm::constructSuper(call_context* th, int n)
 	obj->decRef();
 }
 
+void ABCVm::findProperty(call_context* th, int n)
+{
+	multiname* name=th->context->getMultiname(n,th);
+	LOG(CALLS, "findProperty " << *name );
+
+	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
+	ASObject* owner;
+	for(it;it!=th->scope_stack.rend();it++)
+	{
+		(*it)->getVariableByMultiname(*name,owner);
+		if(owner)
+		{
+			//We have to return the object, not the property
+			th->runtime_stack_push(owner);
+			owner->incRef();
+			break;
+		}
+	}
+	if(!owner)
+	{
+		LOG(CALLS, "NOT found, pushing global" );
+		th->runtime_stack_push(&th->context->vm->Global);
+		th->context->vm->Global.incRef();
+	}
+}
+
 void ABCVm::findPropStrict(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th);
@@ -1481,8 +1507,6 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	multiname* name=th->context->getMultiname(n,th);
 
 	LOG(CALLS,"constructProp "<< *name << ' ' << m);
-	if(m==1 && args.at(0)->prototype)
-		cout << "arg[0]->class_name " << args.at(0)->prototype->class_name << endl;
 
 	ASObject* obj=th->runtime_stack_pop();
 	ASObject* owner;
@@ -1524,6 +1548,8 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		}
 		th->runtime_stack_push(ret);
 	}
+	else
+		abort();
 
 	obj->decRef();
 	LOG(CALLS,"End of constructing");

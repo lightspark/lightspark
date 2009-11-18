@@ -116,6 +116,12 @@ public:
 	{
 		return strlen(buf);
 	}
+	tiny_string substr(int start, int end) const
+	{
+		tiny_string ret;
+		strncpy(ret.buf,buf+start,end-start);
+		return ret;
+	}
 };
 
 class UI32

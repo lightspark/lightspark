@@ -21,6 +21,12 @@ do
 	total=$(($total+1))
 
 	cat /tmp/out.test
+	iserror=""
+	grep "Error" /tmp/out.test
+	if [ $? -eq 0 ]
+	then
+		iserror=" Error"
+	fi
 	grep "FAILED" /tmp/out.test
 	if [ $? -eq 0 ]
 	then
@@ -29,7 +35,7 @@ do
 		then
 			echo "Test failed on $i"
 			failed=$(($failed+1))
-			echo $i >> tests.failed
+			echo $i $iserror >> tests.failed
 			continue
 		fi
 	fi
@@ -42,7 +48,7 @@ do
 		then
 			echo "Differences between reference and tightspark on " $i
 			failed=$(($failed+1))
-			echo $i >> tests.failed
+			echo $i $iserror >> tests.failed
 		fi
 	fi
 	rm /tmp/out.test /tmp/out.ref

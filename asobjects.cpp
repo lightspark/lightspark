@@ -550,6 +550,7 @@ ASString::ASString()
 	setVariableByQName("concat",AS3,new Function(concat));
 	setVariableByQName("indexOf",AS3,new Function(indexOf));
 	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
+	setVariableByQName("slice",AS3,new Function(slice));
 	setGetterByQName("length","",new Function(_getLength));
 }
 
@@ -563,6 +564,7 @@ ASString::ASString(const string& s):data(s)
 	setVariableByQName("concat",AS3,new Function(concat));
 	setVariableByQName("indexOf",AS3,new Function(indexOf));
 	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
+	setVariableByQName("slice",AS3,new Function(slice));
 	setGetterByQName("length","",new Function(_getLength));
 }
 
@@ -576,6 +578,7 @@ ASString::ASString(const tiny_string& s):data(s.raw_buf())
 	setVariableByQName("concat",AS3,new Function(concat));
 	setVariableByQName("indexOf",AS3,new Function(indexOf));
 	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
+	setVariableByQName("slice",AS3,new Function(slice));
 	setGetterByQName("length","",new Function(_getLength));
 }
 
@@ -587,6 +590,7 @@ ASString::ASString(const char* s):data(s)
 	setVariableByQName("split",AS3,new Function(split));
 	setVariableByQName("replace",AS3,new Function(replace));
 	setVariableByQName("concat",AS3,new Function(concat));
+	setVariableByQName("slice",AS3,new Function(slice));
 	setGetterByQName("length","",new Function(_getLength));
 }
 
@@ -892,9 +896,15 @@ int Date::toInt() const
 	return ret;
 }
 
+bool Date::toString(tiny_string& ret)
+{
+	ret=toString();
+	return true;
+}
+
 tiny_string Date::toString() const
 {
-	return "Wed Apr 12 15:30:17 GMT-0700 2006";
+	return "Wed Dec 31 16:00:00 GMT-0800 1969";
 }
 
 tiny_string Function_Object::toString() const
@@ -1167,6 +1177,14 @@ ASFUNCTIONBODY(RegExp,exec)
 	RegExp* th=static_cast<RegExp*>(obj->interface);
 	cout << "Returning tracer2" <<endl;
 	return new DebugTracer("RegExp::exec");
+}
+
+ASFUNCTIONBODY(ASString,slice)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	int startIndex=args->at(0)->toInt();
+	int endIndex=args->at(1)->toInt();
+	return new ASString(th->data.substr(startIndex,endIndex));
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)

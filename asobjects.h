@@ -232,6 +232,7 @@ public:
 	ASFUNCTION(_getLength);
 	ASFUNCTION(replace);
 	ASFUNCTION(concat);
+	ASFUNCTION(slice);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);
 	tiny_string toString() const;
@@ -439,6 +440,7 @@ public:
 	ASFUNCTION(getHours);
 	ASFUNCTION(getMinutes);
 	ASFUNCTION(valueOf);
+	bool toString(tiny_string& ret);
 	tiny_string toString() const;
 	int toInt() const; 
 };

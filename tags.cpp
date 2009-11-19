@@ -135,6 +135,7 @@ Tag* TagFactory::readTag()
 		case 88:
 			return new DefineFontNameTag(h,f);
 		default:
+			abort();
 			LOG(NOT_IMPLEMENTED,"Unsupported tag type " << (h>>6));
 			return new UnimplementedTag(h,f);
 	}

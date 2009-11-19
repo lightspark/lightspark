@@ -1054,27 +1054,49 @@ void ABCVm::setSuper(call_context* th, int n)
 
 void ABCVm::getSuper(call_context* th, int n)
 {
-	abort();
 	multiname* name=th->context->getMultiname(n,th); 
-
 	LOG(NOT_IMPLEMENTED,"getSuper " << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
-/*	if(obj->super)
-		obj=obj->super;
+	//HACK (nice) set the max level to the current actual prototype before looking up the member
+	assert(obj->actualPrototype);
+	int oldlevel=obj->max_level;
+	obj->max_level=obj->actualPrototype->max_level-1;
+	//Store the old prototype
+	Class_base* old_prototype=obj->actualPrototype;
+
+	//Move the object protoype and level up
+	obj->actualPrototype=old_prototype->super;
 
 	ASObject* owner;
-	ASObject* ret=obj->getVariableByMultiname(*name,owner);
+	ASObject* o=obj->getVariableByMultiname(*name,owner);
+
+	//Set back the original max_level
+	obj->max_level=oldlevel;
 
 	if(owner)
 	{
-		ret->incRef();
-		th->runtime_stack_push(ret);
+		if(o->getObjectType()==T_DEFINABLE)
+		{
+			LOG(CALLS,"We got an object not yet valid");
+			Definable* d=static_cast<Definable*>(o);
+			d->define(obj);
+			o=obj->getVariableByMultiname(*name,owner);
+		}
+		o->incRef();
+		th->runtime_stack_push(o);
 	}
 	else
+	{
+		LOG(NOT_IMPLEMENTED,"NOT found, pushing Undefined");
 		th->runtime_stack_push(new Undefined);
+	}
 
-	//TODO: decRef object*/
+	//Reset prototype to its previous value
+	assert(obj->actualPrototype==old_prototype->super);
+	obj->actualPrototype=old_prototype;
+
+	obj->decRef();
 }
 
 void ABCVm::getLex(call_context* th, int n)
@@ -1157,7 +1179,8 @@ void ABCVm::constructSuper(call_context* th, int n)
 	//Move the object protoype and level up
 	obj->actualPrototype=old_prototype->super;
 	assert(obj->actualPrototype);
-
+	int oldlevel=obj->max_level;
+	obj->max_level=obj->actualPrototype->max_level;
 	//multiname* name=th->context->getMultiname(th->context->instances[obj->actualPrototype->class_index].name,NULL);
 	//LOG(CALLS,"Constructing super " << *name);
 
@@ -1167,6 +1190,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 	//Reset prototype to its previous value
 	assert(obj->actualPrototype==old_prototype->super);
 	obj->actualPrototype=old_prototype;
+	obj->max_level=oldlevel;
 
 	obj->decRef();
 }
@@ -1683,7 +1707,11 @@ void ABCVm::newClass(call_context* th, int n)
 		//Mke the class valid if needed
 		ASObject* owner;
 		ASObject* obj=th->context->Global->getVariableByMultiname(*name,owner);
-		assert(owner);
+
+		//Named only interfaces seems to be allowed 
+		if(!owner)
+			continue;
+
 		if(obj->getObjectType()==T_DEFINABLE)
 		{
 			LOG(CALLS,"Class " << *name << " is not yet valid (as interface)");

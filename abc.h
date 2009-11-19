@@ -133,6 +133,8 @@ struct multiname_info
 	u30 name;
 	u30 ns;
 	u30 ns_set;
+	u30 type_definition;
+	std::vector<u30> param_types;
 	multiname* cached;
 	multiname_info():cached(NULL){}
 };
@@ -193,9 +195,10 @@ struct block_info
 	std::vector<bool> locals_used;
 	std::set<block_info*> preds;
 	std::set<block_info*> seqs;
-	std::vector<STACK_TYPE> push_types;
+	std::map<int,STACK_TYPE> push_types;
 
 	block_info():BB(NULL){}
+	STACK_TYPE checkProactiveCasting(int local_ip,STACK_TYPE type);
 };
 
 typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;

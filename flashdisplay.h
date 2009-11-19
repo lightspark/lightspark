@@ -177,7 +177,7 @@ public:
 	ASFUNCTION(addFrameScript);
 	ASFUNCTION(addChild);
 	ASFUNCTION(stop);
-	ASFUNCTION(_currentFrame);
+	ASFUNCTION(_getCurrentFrame);
 
 	virtual void addToFrame(DisplayListTag* r);
 

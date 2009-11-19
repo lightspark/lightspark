@@ -1437,8 +1437,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			LOG(CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			if(name=="compatibilityVersionString")
-				__asm__("int $3");
 
 			IFunction* f=new SyntheticFunction(m);
 
@@ -1746,8 +1744,23 @@ istream& operator>>(istream& in, multiname_info& v)
 		case 0x1c:
 			in >> v.ns_set;
 			break;
+		case 0x1d:
+		{
+			in >> v.type_definition;
+			u8 num_params;
+			in >> num_params;
+			v.param_types.resize(num_params);
+			for(int i=0;i<num_params;i++)
+			{
+				u30 t;
+				in >> t;
+				v.param_types[i]=t;
+			}
+			break;
+		}
 		default:
-			LOG(ERROR,"Unexpected multiname kind");
+			LOG(ERROR,"Unexpected multiname kind " << hex << v.kind);
+			abort();
 			break;
 	}
 	return in;

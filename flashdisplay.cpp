@@ -296,7 +296,6 @@ ASFUNCTIONBODY(Sprite,_constructor)
 /*	th->setVariableByQName("root","",new Null);
 	if(sys)
 		sys->incRef();
-	th->setVariableByQName("stage","",sys);
 	th->setVariableByQName("getBounds","",new Function(getBounds));
 	th->setGetterByQName("parent","",new Function(_getParent));
 	th->setGetterByQName("y","",new Function(getY));
@@ -469,7 +468,7 @@ ASFUNCTIONBODY(MovieClip,stop)
 	th->state.stop_FP=true;
 }
 
-ASFUNCTIONBODY(MovieClip,_currentFrame)
+ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj->interface);
 	//currentFrame is 1-based
@@ -480,6 +479,7 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj->interface);
 	Sprite::_constructor(obj,NULL);
+	obj->setGetterByQName("currentFrame","",new Function(_getCurrentFrame));
 /*	th->setVariableByQName("_framesloaded","",&th->_framesloaded);
 	th->setVariableByQName("framesLoaded","",&th->_framesloaded);
 	th->setVariableByQName("_totalframes","",&th->_totalframes);
@@ -491,10 +491,8 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	th->setVariableByQName("createEmptyMovieClip","",new Function(createEmptyMovieClip));
 	th->setVariableByQName("addFrameScript","",new Function(addFrameScript));
 	th->setVariableByQName("addChild","",new Function(addChild));
-	th->setVariableByQName("stop","",new Function(stop));
+	th->setVariableByQName("stop","",new Function(stop));*/
 
-	cout << "curframe cons on " << th << endl;
-	th->setGetterByQName("currentFrame","",new Function(_currentFrame));*/
 }
 
 void MovieClip::Render()
@@ -583,9 +581,9 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 	obj->setGetterByQName("blendMode","",new Function(_getBlendMode));
 	obj->setGetterByQName("scale9Grid","",new Function(_getScale9Grid));
 	obj->setVariableByQName("localToGlobal","",new Function(localToGlobal));
+	obj->setVariableByQName("stage","",new ASObject);
 	obj->setSetterByQName("width","",new Function(_setWidth));
 	obj->setSetterByQName("name","",new Function(_setName));
-	//setVariableByQName("stage","",this);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)

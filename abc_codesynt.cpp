@@ -764,16 +764,10 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 	}
 }
 
-STACK_TYPE checkProactiveCasting(vector<STACK_TYPE>& push_types,int& push_index,STACK_TYPE type)
+STACK_TYPE block_info::checkProactiveCasting(int local_ip,STACK_TYPE type)
 {
-	push_index++;
-	if(push_index<push_types.size())
-		return push_types[push_index-1];
-	else
-	{
-		push_types.push_back(type);
-		return type;
-	}
+	pair< map<int,STACK_TYPE>::iterator, bool> result=push_types.insert(make_pair(local_ip,type));
+	return result.first->second;
 }
 
 llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex)
@@ -910,15 +904,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 		stop=true;
 		cur_block=NULL;
 		vector<pair<int, STACK_TYPE> > static_stack_types;
-		int push_index=0;
+		int local_ip=0;
 
 		while(1)
 		{
+			local_ip=code.tellg();
 			code >> opcode;
 			if(code.eof())
 				break;
 			//Check if we are expecting a new block start
-			map<int,block_info>::iterator it=blocks.find(int(code.tellg())-1);
+			map<int,block_info>::iterator it=blocks.find(local_ip);
 			if(it!=blocks.end())
 			{
 				if(cur_block)
@@ -927,9 +922,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->seqs.insert(&it->second);
 				}
 				cur_block=&it->second;
-				LOG(TRACE,"New block at " << int(code.tellg())-1);
+				LOG(TRACE,"New block at " << local_ip);
 				cur_block->locals=cur_block->locals_start;
-				push_index=0;
 				//A new block starts, the last instruction should have been a branch?
 				last_is_branch=false;
 				static_stack_types.clear();
@@ -938,7 +932,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//TODO: Check this. It seems that there may be invalid code after
 				//block end
-				LOG(TRACE,"Ignoring at " << int(code.tellg())-1);
+				LOG(TRACE,"Ignoring at " << local_ip);
 				continue;
 			}
 			switch(opcode)
@@ -974,7 +968,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//label
 					//Create a new block and insert it in the mapping
 					LOG(TRACE, "block analysis: label" );
-					int here=int(code.tellg())-1;
+					int here=local_ip;
 
 					if(blocks[here].BB==NULL)
 					{
@@ -990,9 +984,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->seqs.insert(&blocks[here]);
 					static_stack_types.clear();
 					cur_block=&blocks[here];
-					LOG(TRACE,"New block at " << int(code.tellg())-1);
+					LOG(TRACE,"New block at " << local_ip);
 					cur_block->locals=cur_block->locals_start;
-					push_index=0;
 					//A new block starts, the last instruction should have been a branch?
 					break;
 				}
@@ -1127,8 +1120,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					if(!static_stack.empty())
 						static_stack_types.pop_back();
 
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x20:
@@ -1138,8 +1131,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushnull
 					//pushundefined
 					//pushnan
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x23:
@@ -1150,8 +1143,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					if(!static_stack.empty())
 						static_stack_types.pop_back();
 
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x24:
@@ -1159,8 +1152,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushbyte
 					int8_t t;
 					code.read((char*)&t,1);
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0x25:
@@ -1168,8 +1161,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushshort
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0x26:
@@ -1177,8 +1170,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//pushtrue
 					//pushfalse
-					static_stack_types.push_back(make_pair(push_index,STACK_BOOLEAN));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_BOOLEAN);
+					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
 				case 0x29:
@@ -1191,43 +1184,39 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x2a:
 				{
 					//dup
+					pair <int, STACK_TYPE> val;
 					if(!static_stack_types.empty())
-					{
-						static_stack_types.push_back(static_stack_types.back());
-						checkProactiveCasting(cur_block->push_types,push_index,static_stack_types.back().second);
-					}
+						val=static_stack_types.back();
 					else
-					{
-						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
-					}
-					push_index++;
+						val=make_pair(local_ip,STACK_OBJECT);
+
+					val.first=local_ip;
+					static_stack_types.push_back(val);
+					cur_block->checkProactiveCasting(local_ip,val.second);
 					break;
 				}
 				case 0x2b:
 				{
 					//swap
-					STACK_TYPE t1,t2;
+					pair <int, STACK_TYPE> t1,t2;
 					if(!static_stack_types.empty())
 					{
-						t1=static_stack_types.back().second;
+						t1=static_stack_types.back();
 						static_stack_types.pop_back();
 					}
 					else
-						t1=STACK_OBJECT;
+						t1=make_pair(local_ip,STACK_OBJECT);
 
 					if(!static_stack_types.empty())
 					{
-						t2=static_stack_types.back().second;
+						t2=static_stack_types.back();
 						static_stack_types.pop_back();
 					}
 					else
-						t2=STACK_OBJECT;
+						t2=make_pair(local_ip,STACK_OBJECT);
 
-					static_stack_types.push_back(make_pair(push_index,t1));
-					checkProactiveCasting(cur_block->push_types,push_index,t1);
-					static_stack_types.push_back(make_pair(push_index,t2));
-					checkProactiveCasting(cur_block->push_types,push_index,t2);
+					static_stack_types.push_back(t1);
+					static_stack_types.push_back(t2);
 
 					break;
 				}
@@ -1236,8 +1225,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushstring
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x2d:
@@ -1245,8 +1234,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushint
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0x2f:
@@ -1254,8 +1243,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushdouble
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x30:
@@ -1272,8 +1261,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->locals[t]=STACK_NONE;
 					code >> t;
 					cur_block->locals[t]=STACK_NONE;
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x40:
@@ -1281,8 +1270,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//newfunction
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x41:
@@ -1351,8 +1340,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x57:
 				{
 					//newactivation
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x5a:
@@ -1360,8 +1349,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//newcatch
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x61:
@@ -1389,14 +1378,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->locals_used[i]=true;
 					if(cur_block->locals[i]==STACK_NONE)
 					{
-						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 						cur_block->locals[i]=STACK_OBJECT;
 					}
 					else
 					{
-						static_stack_types.push_back(make_pair(push_index,cur_block->locals[i]));
-						checkProactiveCasting(cur_block->push_types,push_index,cur_block->locals[i]);
+						static_stack_types.push_back(make_pair(local_ip,cur_block->locals[i]));
+						cur_block->checkProactiveCasting(local_ip,cur_block->locals[i]);
 					}
 					break;
 				}
@@ -1424,8 +1413,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x64:
 				{
 					//getglobalscope
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x65:
@@ -1433,8 +1422,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//getscopeobject
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x66:
@@ -1452,16 +1441,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
 
-					STACK_TYPE actual_type=checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					STACK_TYPE actual_type=cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					if(actual_type==STACK_OBJECT)
-						static_stack_types.push_back(make_pair(push_index-1,STACK_OBJECT)); //The index was incremented by the check
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					else if(actual_type==STACK_INT)
-						static_stack_types.push_back(make_pair(push_index-1,STACK_INT));
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					else if(actual_type==STACK_BOOLEAN)
-						static_stack_types.push_back(make_pair(push_index-1,STACK_OBJECT));
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					else
 					{
-						cout << cur_block->push_types[push_index-1] << endl;
+						cout << cur_block->push_types[local_ip] << endl;
 						abort();
 					}
 					break;
@@ -1483,8 +1472,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					code >> t;
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x6d:
@@ -1507,7 +1496,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//convert_u
 					//convert_d
 					//convert_b
-					push_index++;
 					break;
 				}
 				case 0x78:
@@ -1543,8 +1531,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//typeof
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x91:
@@ -1556,8 +1544,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//increment_i
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0x96:
@@ -1565,8 +1553,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//not
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_BOOLEAN));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_BOOLEAN);
+					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
 				case 0x97:
@@ -1574,8 +1562,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//bitnot
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0xa0:
@@ -1599,28 +1587,18 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
 					{
-						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					}
 					else if(t1==STACK_INT && t2==STACK_INT)
 					{
-						static_stack_types.push_back(make_pair(push_index,STACK_INT));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					}
-					else if(t1==STACK_INT && t2==STACK_NUMBER)
+					else if(t1==STACK_NUMBER || t2==STACK_NUMBER)
 					{
-						static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
-					}
-					else if(t1==STACK_NUMBER && t2==STACK_INT)
-					{
-						static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
-					}
-					else if(t1==STACK_NUMBER && t2==STACK_NUMBER)
-					{
-						static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
+						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					}
 					else
 						abort();
@@ -1634,8 +1612,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
+					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					break;
 				}
 				case 0xa2:
@@ -1661,13 +1639,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 					if(t1==STACK_INT && t2==STACK_INT)
 					{
-						static_stack_types.push_back(make_pair(push_index,STACK_INT));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					}
 					else
 					{
-						static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
+						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					}
 					break;
 				}
@@ -1678,8 +1656,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_NUMBER));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_NUMBER);
+					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					break;
 				}
 				case 0xa4:
@@ -1702,21 +1680,21 @@ SyntheticFunction::synt_function method_info::synt_method()
 						t1=STACK_OBJECT;
 
 					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
-						static_stack_types.push_back(make_pair(push_index,STACK_INT));
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					else if(t1==STACK_INT && t2==STACK_NUMBER)
 					{
 						exit(2);
-						static_stack_types.push_back(make_pair(push_index,STACK_INT));
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					}
 					else if(t1==STACK_NUMBER && t2==STACK_INT)
-						static_stack_types.push_back(make_pair(push_index,STACK_INT));
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					else if(t1==STACK_INT && t2==STACK_INT)
-						static_stack_types.push_back(make_pair(push_index,STACK_INT));
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					else if(t1==STACK_NUMBER && t2==STACK_NUMBER)
-						static_stack_types.push_back(make_pair(push_index,STACK_INT));
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					else
 						abort();
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0xa5:
@@ -1732,8 +1710,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
 					}
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0xa6:
@@ -1749,8 +1727,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
 					}
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0xa7:
@@ -1766,8 +1744,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
 					}
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0xa8:
@@ -1783,8 +1761,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
 						static_stack_types.pop_back();
 					}
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0xa9:
@@ -1794,8 +1772,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0xaa:
@@ -1805,8 +1783,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_INT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_INT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0xab:
@@ -1816,8 +1794,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_BOOLEAN));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_BOOLEAN);
+					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
 				case 0xac:
@@ -1827,8 +1805,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0xad:
@@ -1838,8 +1816,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0xae:
@@ -1849,8 +1827,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0xaf:
@@ -1860,8 +1838,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0xb0:
@@ -1871,8 +1849,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0xb3:
@@ -1888,8 +1866,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_BOOLEAN));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_BOOLEAN);
+					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
 				case 0xc1:
@@ -1897,8 +1875,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//decrement_i
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-					checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0xc2:
@@ -1919,14 +1897,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->locals_used[i]=true;
 					if(cur_block->locals[i]==STACK_NONE)
 					{
-						static_stack_types.push_back(make_pair(push_index,STACK_OBJECT));
-						checkProactiveCasting(cur_block->push_types,push_index,STACK_OBJECT);
+						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 						cur_block->locals[i]=STACK_OBJECT;
 					}
 					else
 					{
-						static_stack_types.push_back(make_pair(push_index,cur_block->locals[i]));
-						checkProactiveCasting(cur_block->push_types,push_index,cur_block->locals[i]);
+						static_stack_types.push_back(make_pair(local_ip,cur_block->locals[i]));
+						cur_block->checkProactiveCasting(local_ip,cur_block->locals[i]);
 					}
 					break;
 				}
@@ -2106,15 +2084,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 	static_stack.clear();
 	Builder.CreateBr(blocks[0].BB);
 
-	int push_index=0;
+	int local_ip=0;
 	//Each case block builds the correct parameters for the interpreter function and call it
 	while(1)
 	{
+		local_ip=code2.tellg();
 		code2 >> opcode;
 		if(code2.eof())
 			break;
 		//Check if we are expecting a new block start
-		map<int,block_info>::iterator it=blocks.find(int(code2.tellg())-1);
+		map<int,block_info>::iterator it=blocks.find(local_ip);
 		if(it!=blocks.end())
 		{
 			//A new block starts, the last instruction should have been a branch?
@@ -2126,10 +2105,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				jitted=false;
 				Builder.CreateBr(it->second.BB);
 			}
-			LOG(TRACE,"Starting block at "<<int(code2.tellg())-1);
+			LOG(TRACE,"Starting block at "<<local_ip);
 			Builder.SetInsertPoint(it->second.BB);
 			cur_block=&it->second;
-			push_index=0;
 
 			if(!cur_block->locals_start.empty())
 			{
@@ -2150,7 +2128,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		{
 			//TODO: Check this. It seems that there may be invalid code after
 			//block end
-			LOG(TRACE,"Ignoring at " << int(code2.tellg())-1);
+			LOG(TRACE,"Ignoring at " << local_ip);
 			continue;
 			/*LOG(CALLS,"Inserting block at "<<int(code.tellg())-1);
 			abort();
@@ -2893,7 +2871,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("nextName"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2903,7 +2880,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushnull" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushNull"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2913,7 +2889,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushundefined" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushUndefined"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2928,7 +2903,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("nextValue"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2940,7 +2914,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2.read((char*)&t,1);
 				constant = llvm::ConstantInt::get(int_type, (int)t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				push_index++;
 				if(Log::getLevel()==CALLS)
 					value=Builder.CreateCall(ex->FindFunctionNamed("pushByte"), constant);
 				jitted=true;
@@ -2954,7 +2927,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				push_index++;
 				if(Log::getLevel()==CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("pushShort"), constant);
 				jitted=true;
@@ -2966,7 +2938,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushtrue" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushTrue"));
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2976,7 +2947,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushfalse" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushFalse"));
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -2986,7 +2956,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushnan" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushNaN"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3010,7 +2979,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					Builder.CreateCall(ex->FindFunctionNamed("dup"), context);
 				stack_entry e=static_stack_peek(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e);
-				push_index++;
 
 				if(e.second==STACK_OBJECT)
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), e.first);
@@ -3026,9 +2994,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry e1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry e2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e1);
-				push_index++;
 				static_stack_push(static_stack,e2);
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3041,7 +3007,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("pushString"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3059,7 +3024,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				s32 i=this->context->constant_pool.integer[t];
 				constant = llvm::ConstantInt::get(int_type, i);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3072,7 +3036,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3117,7 +3080,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				value=Builder.CreateCall3(ex->FindFunctionNamed("hasNext2"), context, constant, constant2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3130,7 +3092,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newFunction"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3337,7 +3298,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt newactivation" );
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newActivation"), context, th);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3374,7 +3334,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newCatch"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3489,7 +3448,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3518,7 +3476,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt getglobalscope" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3531,7 +3488,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("getScopeObject"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3569,20 +3525,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
-				if(cur_block->push_types[push_index]==STACK_OBJECT ||
-					cur_block->push_types[push_index]==STACK_BOOLEAN)
+				if(cur_block->push_types[local_ip]==STACK_OBJECT ||
+					cur_block->push_types[local_ip]==STACK_BOOLEAN)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty"), obj.first, name);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				}
-				else if(cur_block->push_types[push_index]==STACK_INT)
+				else if(cur_block->push_types[local_ip]==STACK_INT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("getProperty_i"), obj.first, name);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
 				else
 					abort();
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3621,7 +3576,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("getSlot"), v1, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3659,7 +3613,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3671,7 +3624,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3683,7 +3635,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3701,7 +3652,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,v1);
 				else
 					abort();
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3713,7 +3663,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				abstract_value(ex,Builder,v1);
 				value=Builder.CreateCall(ex->FindFunctionNamed("checkfilter"), v1.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3772,7 +3721,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				abstract_value(ex,Builder,v1);
 				value=Builder.CreateCall(ex->FindFunctionNamed("negate"), v1.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3791,7 +3739,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3811,7 +3758,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall(ex->FindFunctionNamed("decrement"), v1.first);
 				}
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3823,7 +3769,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("typeOf"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3839,7 +3784,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3853,7 +3797,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -3867,37 +3810,31 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-					push_index++;
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-					push_index++;
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_oi"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-					push_index++;
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_NUMBER)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-					push_index++;
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_OBJECT)
 				{
 					value=Builder.CreateCall2(ex->FindFunctionNamed("add_od"), v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-					push_index++;
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
 				{
 					value=Builder.CreateAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-					push_index++;
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
@@ -3905,7 +3842,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					value=Builder.CreateAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-					push_index++;
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
 				{
@@ -3913,14 +3849,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateSIToFP(v2.first,number_type);
 					value=Builder.CreateAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-					push_index++;
 				}
 				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
 				{
 					//TODO: 32bit check
 					value=Builder.CreateAdd(v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-					push_index++;
 				}
 				else
 					abort();
@@ -3974,7 +3908,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4019,7 +3952,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4034,7 +3966,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("divide"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4076,7 +4007,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4098,7 +4028,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4121,7 +4050,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4153,7 +4081,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					abort();
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4188,7 +4115,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4210,7 +4136,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					abort();
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4235,7 +4160,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4262,7 +4186,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4276,7 +4199,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("strictEquals"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4295,7 +4217,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("lessThan"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4310,7 +4231,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("lessEquals"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4325,7 +4245,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("greaterThan"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4341,7 +4260,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("greaterEquals"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4364,7 +4282,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("in"), v1, v2);
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4383,7 +4300,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 					abort();
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4395,7 +4311,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("decrement_i"), v1);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				push_index++;
 				jitted=true;
 				break;
 			}
@@ -4428,7 +4343,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 					llvm::Value* t=Builder.CreateGEP(locals,constant);
 					t=Builder.CreateLoad(t,"stack");
 					static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
-					push_index++;
 					static_locals[i]=stack_entry(t,STACK_OBJECT);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
@@ -4437,14 +4351,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
 					static_stack_push(static_stack,static_locals[i]);
-					push_index++;
 				}
 				else if(static_locals[i].second==STACK_INT || 
 						static_locals[i].second==STACK_NUMBER ||
 						static_locals[i].second==STACK_BOOLEAN)
 				{
 					static_stack_push(static_stack,static_locals[i]);
-					push_index++;
 				}
 				else
 					abort();

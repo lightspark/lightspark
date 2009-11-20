@@ -59,6 +59,7 @@ int ConstantReference::toInt() const
 
 tiny_string ASObject::toString() const
 {
+	assert(ref_count>0);
 	tiny_string ret;
 	if(interface)
 	{
@@ -71,6 +72,7 @@ tiny_string ASObject::toString() const
 
 bool ASObject::isGreater(ASObject* r)
 {
+	assert(ref_count>0);
 	LOG(NOT_IMPLEMENTED,"Greater than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	abort();
 	return false;
@@ -78,6 +80,7 @@ bool ASObject::isGreater(ASObject* r)
 
 bool ASObject::isLess(ASObject* r)
 {
+	assert(ref_count>0);
 	assert(interface==NULL);
 
 	//We can try to call valueOf and compare that
@@ -102,6 +105,7 @@ bool ASObject::isLess(ASObject* r)
 
 void ASObject::acquireInterface(IInterface* i)
 {
+	assert(ref_count>0);
 	assert(i!=interface);
 	delete interface;
 	interface=i;
@@ -110,6 +114,7 @@ void ASObject::acquireInterface(IInterface* i)
 
 SWFOBJECT_TYPE ASObject::getObjectType() const
 {
+	assert(ref_count>0);
 	return (interface)?(interface->type):type;
 }
 
@@ -220,6 +225,7 @@ bool Integer::isEqual(ASObject* o)
 
 bool ASObject::isEqual(ASObject* r)
 {
+	assert(ref_count>0);
 	if(interface)
 	{
 		bool ret;
@@ -308,6 +314,7 @@ bool variables_map::hasProperty(const tiny_string& name,int level)
 
 bool ASObject::hasProperty(const tiny_string& name)
 {
+	assert(ref_count>0);
 	bool ret;
 	for(int i=0;i<=max_level;i++)
 	{
@@ -323,6 +330,7 @@ bool ASObject::hasProperty(const tiny_string& name)
 
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
+	assert(ref_count>0);
 	int level=(actualPrototype)?actualPrototype->max_level:max_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,true);
 	assert(obj->getter==NULL);
@@ -331,6 +339,7 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 
 void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
+	assert(ref_count>0);
 	int level=(actualPrototype)?actualPrototype->max_level:max_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,true);
 	assert(obj->setter==NULL);
@@ -340,6 +349,7 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 //In all setter we first pass the value to the interface to see if special handling is possible
 void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
+	assert(ref_count>0);
 	if(interface)
 	{
 		if(interface->setVariableByMultiname_i(name,value))
@@ -351,6 +361,7 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 
 void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 {
+	assert(ref_count>0);
 	if(interface)
 	{
 		if(interface->setVariableByMultiname(name,o))
@@ -389,6 +400,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
+	assert(ref_count>0);
 	if(interface)
 	{
 		if(interface->setVariableByQName(name,ns,o))
@@ -489,6 +501,7 @@ ASFUNCTIONBODY(ASObject,_constructor)
 //can be done
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 {
+	assert(ref_count>0);
 	if(interface)
 	{
 		intptr_t ret;
@@ -508,6 +521,7 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& ow
 
 ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& owner)
 {
+	assert(ref_count>0);
 	if(interface)
 	{
 		ASObject* ret;
@@ -569,6 +583,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& own
 
 ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 {
+	assert(ref_count>0);
 	ASObject* ret;
 
 	if(interface)

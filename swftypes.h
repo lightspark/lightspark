@@ -320,10 +320,14 @@ public:
 	void incRef()
 	{
 		ref_count++;
+		if(ref_count>20000)
+			abort();
 	}
 	void decRef()
 	{
 		assert(ref_count>0);
+		if(ref_count>20000)
+			abort();
 		ref_count--;
 		if(ref_count==0)
 		{

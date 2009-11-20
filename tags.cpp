@@ -221,7 +221,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	list < pair<PlaceInfo, IDisplayListElem*> >* bak=pt->parsingDisplayList;
 	pt->parsingDisplayList=&displayList;
 	in >> SpriteID >> FrameCount;
-	_totalframes=FrameCount;
+	totalFrames=FrameCount;
 	state.max_FP=FrameCount;
 
 	LOG(TRACE,"DefineSprite ID: " << SpriteID);

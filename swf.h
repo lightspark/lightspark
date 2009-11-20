@@ -110,8 +110,6 @@ class SystemState: public RootMovieClip
 {
 public:
 	ASFUNCTION(getBounds);
-	RootMovieClip* root;
-	//ASObject* obj;
 
 	bool shutdown;
 	void setShutdownFlag();

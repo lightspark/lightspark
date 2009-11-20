@@ -60,6 +60,7 @@ public:
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_getRotation);
 	ASFUNCTION(_getName);
+	ASFUNCTION(_getRoot);
 	ASFUNCTION(_getBlendMode);
 	ASFUNCTION(_getScale9Grid);
 	ASFUNCTION(_setRotation);
@@ -155,7 +156,7 @@ class MovieClip: public Sprite
 friend class ParseThread;
 protected:
 	int _framesloaded;
-	int _totalframes;
+	int totalFrames;
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	Frame cur_frame;
@@ -178,6 +179,7 @@ public:
 	ASFUNCTION(addChild);
 	ASFUNCTION(stop);
 	ASFUNCTION(_getCurrentFrame);
+	ASFUNCTION(_getTotalFrames);
 
 	virtual void addToFrame(DisplayListTag* r);
 

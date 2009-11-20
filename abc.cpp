@@ -116,6 +116,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Math","",new Math);
 	Global.setVariableByQName("Date","",Class<Date>::getClass());
 	Global.setVariableByQName("RegExp","",Class<RegExp>::getClass());
+	Global.setVariableByQName("QName","",Class<IInterface>::getClass("QName"));
 
 	Global.setVariableByQName("print","",new Function(print));
 	Global.setVariableByQName("trace","",new Function(print));
@@ -143,7 +144,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
 	Global.setVariableByQName("Dictionary","flash.utils",Class<IInterface>::getClass("Dictionary"));
-	Global.setVariableByQName("Proxy","flash.utils",new ASObject);
+	Global.setVariableByQName("Proxy","flash.utils",Class<IInterface>::getClass("Proxy"));
 	Global.setVariableByQName("Timer","flash.utils",Class<IInterface>::getClass("Timer"));
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
 

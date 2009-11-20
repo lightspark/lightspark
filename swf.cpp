@@ -83,7 +83,7 @@ RootMovieClip::RootMovieClip()
 	sem_init(&sem_valid_frame_size,0,0);
 }
 
-SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),root(this)
+SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 {
 	sys=this;
 	sem_init(&new_frame,0,0);
@@ -1024,7 +1024,7 @@ void RenderThread::draw()
 void RootMovieClip::setFrameCount(int f)
 {
 	sem_wait(&sem_frames);
-	_totalframes=f;
+	totalFrames=f;
 	state.max_FP=f;
 	frames.reserve(f);
 	sem_post(&sem_frames);

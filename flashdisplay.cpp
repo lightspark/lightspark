@@ -336,7 +336,7 @@ void MovieClip::sinit(Class_base* c)
 	c->super=Class<Sprite>::getClass();
 }
 
-MovieClip::MovieClip():_framesloaded(0),_totalframes(1),cur_frame(&dynamicDisplayList),initialized(false)
+MovieClip::MovieClip():_framesloaded(0),totalFrames(1),cur_frame(&dynamicDisplayList),initialized(false)
 {
 	//class_name="MovieClip";
 /*	if(constructor)
@@ -468,6 +468,13 @@ ASFUNCTIONBODY(MovieClip,stop)
 	th->state.stop_FP=true;
 }
 
+ASFUNCTIONBODY(MovieClip,_getTotalFrames)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj->interface);
+	//currentFrame is 1-based
+	return new Integer(th->totalFrames);
+}
+
 ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj->interface);
@@ -480,9 +487,8 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	MovieClip* th=static_cast<MovieClip*>(obj->interface);
 	Sprite::_constructor(obj,NULL);
 	obj->setGetterByQName("currentFrame","",new Function(_getCurrentFrame));
-/*	th->setVariableByQName("_framesloaded","",&th->_framesloaded);
-	th->setVariableByQName("framesLoaded","",&th->_framesloaded);
-	th->setVariableByQName("_totalframes","",&th->_totalframes);
+	obj->setGetterByQName("totalFrames","",new Function(_getTotalFrames));
+/*	th->setVariableByQName("framesLoaded","",&th->_framesloaded);
 	th->setVariableByQName("totalFrames","",&th->_totalframes);
 	th->setVariableByQName("swapDepths","",new Function(swapDepths));
 	th->setVariableByQName("lineStyle","",new Function(lineStyle));
@@ -578,6 +584,7 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 	obj->setGetterByQName("visible","",new Function(_getVisible));
 	obj->setGetterByQName("rotation","",new Function(_getRotation));
 	obj->setGetterByQName("name","",new Function(_getName));
+	obj->setGetterByQName("root","",new Function(_getRoot));
 	obj->setGetterByQName("blendMode","",new Function(_getBlendMode));
 	obj->setGetterByQName("scale9Grid","",new Function(_getScale9Grid));
 	obj->setVariableByQName("localToGlobal","",new Function(localToGlobal));
@@ -625,6 +632,13 @@ ASFUNCTIONBODY(DisplayObject,_getName)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
 	return new Undefined;
+}
+
+ASFUNCTIONBODY(DisplayObject,_getRoot)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	assert(th->root->obj);
+	return th->root->obj;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRotation)

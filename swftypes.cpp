@@ -439,13 +439,13 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 
 obj_var* variables_map::findObjVar(const multiname& mname, int level, bool create, bool exact)
 {
-	tiny_string name;
+	nameAndLevel name("",level);
 	if(mname.name_type==multiname::NAME_INT)
-		name=tiny_string(mname.name_i);
+		name.name=tiny_string(mname.name_i);
 	else if(mname.name_type==multiname::NAME_STRING)
-		name=mname.name_s;
+		name.name=mname.name_s;
 
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name,level));
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	if(ret.first!=ret.second)
 	{
 		//Check if one the namespace is already present
@@ -465,7 +465,8 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 		//return the first
 		if(!exact)
 		{
-			LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on [multinam]::" << name << ". Found on " << ret.first->second.first);
+			LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on [multinam]::" << name.name << ". Found on " << 
+				ret.first->second.first);
 			return &ret.first->second.second;
 		}
 	}
@@ -478,10 +479,10 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 		{
 			//Hack, insert with empty name
 			//Here the object MUST exist
-			var_iterator inserted=Variables.insert(ret.first,make_pair(nameAndLevel(name,level), make_pair("", obj_var() ) ) );
+			var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair("", obj_var() ) ) );
 			return &inserted->second.second;
 		}
-		var_iterator inserted=Variables.insert(ret.first,make_pair(nameAndLevel(name,level), make_pair(mname.ns[0], obj_var() ) ) );
+		var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair(mname.ns[0], obj_var() ) ) );
 		return &inserted->second.second;
 	}
 	else

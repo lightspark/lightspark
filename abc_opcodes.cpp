@@ -1382,7 +1382,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 		th->runtime_stack_push(new Undefined);
 	}
-	LOG(CALLS,"End of calling " << *name);
+	LOG(CALLS,"End of callSuper " << *name);
 
 	//Reset prototype to its previous value
 	assert(obj->actualPrototype==old_prototype->super);
@@ -1403,7 +1403,6 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	cout << "super name " << obj->actualPrototype->super->class_name << endl;
 	//HACK (nice) set the max level to the current actual prototype before looking up the member
 	assert(obj->actualPrototype);
 	int oldlevel=obj->max_level;
@@ -1463,7 +1462,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	{
 		LOG(NOT_IMPLEMENTED,"Calling an undefined function");
 	}
-	LOG(CALLS,"End of calling " << *name);
+	LOG(CALLS,"End of callSuperVoid " << *name);
 
 	//Reset prototype to its previous value
 	assert(obj->actualPrototype==old_prototype->super);

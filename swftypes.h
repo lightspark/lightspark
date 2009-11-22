@@ -55,12 +55,12 @@ class tiny_string
 {
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
-	char buf[1024];
+	char buf[512];
 public:
 	tiny_string(){buf[0]=0;}
 	tiny_string(const char* s)
 	{
-		if(strlen(s)>1023)
+		if(strlen(s)>511)
 			abort();
 		strcpy(buf,s);
 	}
@@ -70,39 +70,39 @@ public:
 	}
 	tiny_string& operator=(const std::string& s)
 	{
-		strncpy(buf,s.c_str(),1023);
+		strncpy(buf,s.c_str(),512);
 		return *this;
 	}
 	tiny_string& operator=(const char* s)
 	{
-		strncpy(buf,s,1023);
+		strncpy(buf,s,512);
 		return *this;
 	}
 	tiny_string& operator+=(const char* s)
 	{
-		strncat(buf,s,1023-strlen(buf));
+		strncat(buf,s,511-strlen(buf));
 		return *this;
 	}
 	tiny_string& operator+=(const tiny_string& r)
 	{
-		strncat(buf,r.buf,1023-strlen(buf));
+		strncat(buf,r.buf,511-strlen(buf));
 		return *this;
 	}
 	bool operator<(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,1024)<0;
+		return strncmp(buf,r.buf,512)<0;
 	}
 	bool operator==(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,1024)==0;
+		return strncmp(buf,r.buf,512)==0;
 	}
 	bool operator!=(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,1024)!=0;
+		return strncmp(buf,r.buf,512)!=0;
 	}
 	bool operator==(const char* r) const
 	{
-		return strncmp(buf,r,1024)==0;
+		return strncmp(buf,r,512)==0;
 	}
 	const char* raw_buf() const
 	{
@@ -247,6 +247,7 @@ class nameAndLevel
 public:
 	tiny_string name;
 	int level;
+	nameAndLevel(const char* s, int l):name(s),level(l){}
 	nameAndLevel(const tiny_string& n, int l):name(n),level(l){}
 	bool operator<(const nameAndLevel& r) const
 	{
@@ -320,14 +321,10 @@ public:
 	void incRef()
 	{
 		ref_count++;
-		if(ref_count>20000)
-			abort();
 	}
 	void decRef()
 	{
 		assert(ref_count>0);
-		if(ref_count>20000)
-			abort();
 		ref_count--;
 		if(ref_count==0)
 		{

@@ -273,6 +273,9 @@ struct data_slot
 class Array: public IInterface
 {
 friend class ABCVm;
+private:
+	bool isValidMultiname(const multiname& name, int& index) const;
+	bool isValidQName(const tiny_string& name, const tiny_string& ns, int& index);
 protected:
 	std::vector<data_slot> data;
 public:

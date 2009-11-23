@@ -226,29 +226,29 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	obj->actualPrototype=obj->prototype;
 
 	ASObject* owner;
-	ASObject* o=obj->getVariableByMultiname(*name,owner);
+	objAndLevel o=obj->getVariableByMultiname(*name,owner);
 	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
+		if(o.obj->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o);
-			//Methods as to be runned with their own class this
-			ASObject* ret=f->fast_call(owner,args,m);
+			IFunction* f=static_cast<IFunction*>(o.obj);
+			//Methods has to be runned with their own class this
+			ASObject* ret=f->fast_call(owner,args,m,o.level);
 			th->runtime_stack_push(ret);
 		}
-		else if(o->getObjectType()==T_UNDEFINED)
+		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
 			LOG(NOT_IMPLEMENTED,"We got a Undefined function on obj " << ((obj->prototype)?obj->prototype->class_name:"Object"));
 			th->runtime_stack_push(new Undefined);
 		}
-		else if(o->getObjectType()==T_DEFINABLE)
+		else if(o.obj->getObjectType()==T_DEFINABLE)
 		{
 			LOG(CALLS,"We got a function not yet valid");
-			Definable* d=static_cast<Definable*>(o);
+			Definable* d=static_cast<Definable*>(o.obj);
 			d->define(obj);
 			o=obj->getVariableByMultiname(*name,owner);
-			if(o->getObjectType()==T_OBJECT)
+			if(o.obj->getObjectType()==T_OBJECT)
 			{
 				//Could be a interface upcasting, return the argument
 				LOG(NOT_IMPLEMENTED,"Interface upcating?, return arg");
@@ -258,10 +258,10 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			}
 			else
 			{
-				IFunction* f=o->toFunction();
+				IFunction* f=o.obj->toFunction();
 				if(f)
 				{
-					ASObject* ret=f->fast_call(owner,args,m);
+					ASObject* ret=f->fast_call(owner,args,m,o.level);
 					th->runtime_stack_push(ret);
 				}
 				else
@@ -329,32 +329,36 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	LOG(CALLS, "getProperty " << *name );
 
 	ASObject* owner;
-	ASObject* ret=obj->getVariableByMultiname(*name,owner);
+	ASObject* ret=obj->getVariableByMultiname(*name,owner).obj;
 	if(owner==NULL)
 	{
 		LOG(NOT_IMPLEMENTED,"Property not found " << *name);
-		ret=new Undefined;
+		return new Undefined;
 	}
 	else
 	{
 		//If we are getting a function object attach the the current scope
 		if(ret->getObjectType()==T_FUNCTION)
 		{
+			//TODO: maybe also the level should be binded
 			LOG(CALLS,"Attaching this to function " << name);
 			IFunction* f=ret->toFunction()->clone();
 			f->bind(owner);
-			ret=f;
+			obj->decRef();
+			f->incRef();
+			return f;
 		}
 		else if(ret->getObjectType()==T_DEFINABLE)
 		{
 			//LOG(ERROR,"Property " << name << " is not yet valid");
 			abort();
-			Definable* d=static_cast<Definable*>(ret);
+			/*Definable* d=static_cast<Definable*>(ret.obj);
 			d->define(obj);
 			ret=obj->getVariableByMultiname(*name,owner);
+			ret->incRef();*/
 		}
-		ret->incRef();
 	}
+	ret->incRef();
 	obj->decRef();
 	return ret;
 }
@@ -587,20 +591,20 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	obj->actualPrototype=obj->prototype;
 
 	ASObject* owner;
-	ASObject* o=obj->getVariableByMultiname(*name,owner);
+	objAndLevel o=obj->getVariableByMultiname(*name,owner);
 	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
+		if(o.obj->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o);
-			f->call(obj,&args);
+			IFunction* f=static_cast<IFunction*>(o.obj);
+			f->call(obj,&args,o.level);
 		}
-		else if(o->getObjectType()==T_UNDEFINED)
+		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
 			LOG(NOT_IMPLEMENTED,"We got a Undefined function onj type " << obj->prototype->class_name);
 		}
-		else if(o->getObjectType()==T_DEFINABLE)
+		else if(o.obj->getObjectType()==T_DEFINABLE)
 		{
 			LOG(NOT_IMPLEMENTED,"We got a function not yet valid");
 		}
@@ -1069,7 +1073,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	obj->actualPrototype=old_prototype->super;
 
 	ASObject* owner;
-	ASObject* o=obj->getVariableByMultiname(*name,owner);
+	ASObject* o=obj->getVariableByMultiname(*name,owner).obj;
 
 	//Set back the original max_level
 	obj->max_level=oldlevel;
@@ -1081,7 +1085,7 @@ void ABCVm::getSuper(call_context* th, int n)
 			LOG(CALLS,"We got an object not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
-			o=obj->getVariableByMultiname(*name,owner);
+			o=obj->getVariableByMultiname(*name,owner).obj;
 		}
 		o->incRef();
 		th->runtime_stack_push(o);
@@ -1107,7 +1111,7 @@ void ABCVm::getLex(call_context* th, int n)
 	ASObject* owner;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		ASObject* o=(*it)->getVariableByMultiname(*name,owner);
+		ASObject* o=(*it)->getVariableByMultiname(*name,owner).obj;
 		if(owner)
 		{
 			//If we are getting a function object attach the the current scope
@@ -1123,7 +1127,7 @@ void ABCVm::getLex(call_context* th, int n)
 				LOG(CALLS,"Deferred definition of property " << *name);
 				Definable* d=static_cast<Definable*>(o);
 				d->define(*it);
-				o=(*it)->getVariableByMultiname(*name,owner);
+				o=(*it)->getVariableByMultiname(*name,owner).obj;
 				LOG(CALLS,"End of deferred definition of property " << *name);
 			}
 			th->runtime_stack_push(o);
@@ -1134,7 +1138,7 @@ void ABCVm::getLex(call_context* th, int n)
 	if(!owner)
 	{
 		LOG(CALLS, "NOT found, trying Global" );
-		ASObject* o2=th->context->vm->Global.getVariableByMultiname(*name,owner);
+		ASObject* o2=th->context->vm->Global.getVariableByMultiname(*name,owner).obj;
 		if(owner)
 		{
 			if(o2->getObjectType()==T_DEFINABLE)
@@ -1142,7 +1146,7 @@ void ABCVm::getLex(call_context* th, int n)
 				LOG(CALLS,"Deferred definition of property " << *name);
 				Definable* d=static_cast<Definable*>(o2);
 				d->define(th->context->Global);
-				o2=th->context->Global->getVariableByMultiname(*name,owner);
+				o2=th->context->Global->getVariableByMultiname(*name,owner).obj;
 				LOG(CALLS,"End of deferred definition of property " << *name);
 			}
 
@@ -1315,7 +1319,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	//HACK (nice) set the max level to the current actual prototype before looking up the member
 	assert(obj->actualPrototype);
 	int oldlevel=obj->max_level;
-	obj->max_level=obj->actualPrototype->max_level-1;
+	obj->max_level=th->cur_level_of_this-1;
 	//Store the old prototype
 	Class_base* old_prototype=obj->actualPrototype;
 
@@ -1323,7 +1327,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	obj->actualPrototype=old_prototype->super;
 
 	ASObject* owner;
-	ASObject* o=obj->getVariableByMultiname(*name,owner);
+	objAndLevel o=obj->getVariableByMultiname(*name,owner);
 
 	//Set back the original max_level
 	obj->max_level=oldlevel;
@@ -1331,13 +1335,13 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
+		if(o.obj->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o);
-			ASObject* ret=f->fast_call(owner,args,m);
+			IFunction* f=static_cast<IFunction*>(o.obj);
+			ASObject* ret=f->fast_call(owner,args,m,o.level);
 			th->runtime_stack_push(ret);
 		}
-		else if(o->getObjectType()==T_UNDEFINED)
+		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
 			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
 			th->runtime_stack_push(new Undefined);
@@ -1400,13 +1404,15 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(CALLS,"callSuperVoid " << *name << ' ' << m);
+	if(name->name_s=="addChildAt")
+		__asm__("int $3");
 
 	ASObject* obj=th->runtime_stack_pop();
 
 	//HACK (nice) set the max level to the current actual prototype before looking up the member
 	assert(obj->actualPrototype);
 	int oldlevel=obj->max_level;
-	obj->max_level=obj->actualPrototype->max_level-1;
+	obj->max_level=th->cur_level_of_this-1;
 	//Store the old prototype
 	Class_base* old_prototype=obj->actualPrototype;
 
@@ -1414,7 +1420,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	obj->actualPrototype=old_prototype->super;
 
 	ASObject* owner;
-	ASObject* o=obj->getVariableByMultiname(*name,owner);
+	objAndLevel o=obj->getVariableByMultiname(*name,owner);
 
 	//Set back the original max_level
 	obj->max_level=oldlevel;
@@ -1422,12 +1428,12 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	if(owner)
 	{
 		//If o is already a function call it, otherwise find the Call method
-		if(o->getObjectType()==T_FUNCTION)
+		if(o.obj->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o);
-			f->fast_call(obj,args,m);
+			IFunction* f=static_cast<IFunction*>(o.obj);
+			f->fast_call(obj,args,m,o.level);
 		}
-		else if(o->getObjectType()==T_UNDEFINED)
+		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
 			LOG(NOT_IMPLEMENTED,"We got a Undefined function");
 		}
@@ -1533,7 +1539,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 	ASObject* owner;
-	ASObject* o=obj->getVariableByMultiname(*name,owner);
+	ASObject* o=obj->getVariableByMultiname(*name,owner).obj;
 	if(!owner)
 	{
 		LOG(ERROR,"Could not resolve property");
@@ -1545,7 +1551,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		LOG(CALLS,"Deferred definition of property " << *name);
 		Definable* d=static_cast<Definable*>(o);
 		d->define(obj);
-		o=obj->getVariableByMultiname(*name,owner);
+		o=obj->getVariableByMultiname(*name,owner).obj;
 		LOG(CALLS,"End of deferred definition of property " << *name);
 	}
 
@@ -1567,7 +1573,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 			LOG(CALLS,"Building method traits");
 			for(int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
-			sf->call(ret,&args);
+			sf->call(ret,&args,ret->max_level);
 		}
 		th->runtime_stack_push(ret);
 	}
@@ -1705,7 +1711,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 		//Mke the class valid if needed
 		ASObject* owner;
-		ASObject* obj=th->context->Global->getVariableByMultiname(*name,owner);
+		ASObject* obj=th->context->Global->getVariableByMultiname(*name,owner).obj;
 
 		//Named only interfaces seems to be allowed 
 		if(!owner)
@@ -1717,13 +1723,13 @@ void ABCVm::newClass(call_context* th, int n)
 			Definable* d=static_cast<Definable*>(obj);
 			d->define(th->context->Global);
 			LOG(CALLS,"End of deferred init of class " << *name);
-			obj=th->context->Global->getVariableByMultiname(*name,owner);
+			obj=th->context->Global->getVariableByMultiname(*name,owner).obj;
 			assert(owner);
 		}
 	}
 
 	LOG(CALLS,"Calling Class init " << ret);
-	cinit->call(ret,NULL);
+	cinit->call(ret,NULL,ret->max_level);
 	LOG(CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
 }

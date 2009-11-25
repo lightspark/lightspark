@@ -361,7 +361,7 @@ private:
 	int val;
 public:
 	Integer(int v):val(v){type=T_INTEGER;}
-	Integer(Manager* m):val(0){type=T_INTEGER;}
+	Integer(Manager* m):val(0),ASObject(m){type=T_INTEGER;}
 	virtual ~Integer(){}
 	Integer& operator=(int v){val=v; return *this; }
 	tiny_string toString() const;
@@ -433,6 +433,7 @@ private:
 	int minute;
 	int second;
 	int millisecond;
+	int toInt() const;
 public:
 	Date();
 	static void sinit(Class_base*);
@@ -445,7 +446,7 @@ public:
 	ASFUNCTION(valueOf);
 	bool toString(tiny_string& ret);
 	tiny_string toString() const;
-	int toInt() const; 
+	bool toInt(int& ret);
 };
 
 //Internal objects used to store traits declared in scripts and object placed, but not yet valid

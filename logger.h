@@ -6,6 +6,7 @@
 
 enum LOG_LEVEL { NO_INFO=0, ERROR=1, NOT_IMPLEMENTED=2,CALLS=3,TRACE=4};
 
+#if 1
 #define LOG(level,esp)					\
 {							\
 	if(level<=Log::getLevel())			\
@@ -18,6 +19,9 @@ enum LOG_LEVEL { NO_INFO=0, ERROR=1, NOT_IMPLEMENTED=2,CALLS=3,TRACE=4};
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,&__a__); \
 	}						\
 }
+#else
+#define LOG(level,esp) {}
+#endif
 
 class Log
 {

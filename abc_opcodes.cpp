@@ -406,7 +406,6 @@ bool ABCVm::ifLT(ASObject* obj2, ASObject* obj1)
 
 	//Real comparision demanded to object
 	bool ret=obj1->isLess(obj2);
-	cout << obj1->toInt() << "<" << obj2->toInt() << endl;
 
 	obj2->decRef();
 	obj1->decRef();
@@ -728,49 +727,31 @@ void ABCVm::kill(call_context* th, int n)
 ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 {
 	//Implement ECMA add algorithm, for XML and default
-	if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_NUMBER)
+	if(val1->getObjectType()==T_NUMBER || val2->getObjectType()==T_NUMBER)
 	{
 		double num2=val2->toNumber();
 		double num1=val1->toNumber();
+		LOG(CALLS,"add " << num1 << '+' << num2);
 		val1->decRef();
 		val2->decRef();
-		LOG(CALLS,"add " << num1 << '+' << num2);
 		return abstract_d(num1+num2);
 	}
 	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_INTEGER)
 	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
+		intptr_t num2=val2->toInt();
+		intptr_t num1=val1->toInt();
+		LOG(CALLS,"add " << num1 << '+' << num2);
 		val1->decRef();
 		val2->decRef();
-		LOG(CALLS,"add " << num1 << '+' << num2);
-		return abstract_d(num1+num2);
-	}
-	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_NUMBER)
-	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
-		val1->decRef();
-		val2->decRef();
-		LOG(CALLS,"add " << num1 << '+' << num2);
-		return abstract_d(num1+num2);
-	}
-	else if(val1->getObjectType()==T_NUMBER && val2->getObjectType()==T_INTEGER)
-	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
-		val1->decRef();
-		val2->decRef();
-		LOG(CALLS,"add " << num1 << '+' << num2);
-		return abstract_d(num1+num2);
+		return abstract_i(num1+num2);
 	}
 	else if(val1->getObjectType()==T_STRING || val2->getObjectType()==T_STRING)
 	{
 		string a(val1->toString().raw_buf());
 		string b(val2->toString().raw_buf());
+		LOG(CALLS,"add " << a << '+' << b);
 		val1->decRef();
 		val2->decRef();
-		LOG(CALLS,"add " << a << '+' << b);
 		return new ASString(a+b);
 	}
 	else if(val1->getObjectType()==T_ARRAY)
@@ -794,8 +775,8 @@ ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
 	if(val2->getObjectType()==T_INTEGER)
 	{
 		Integer* ip=static_cast<Integer*>(val2);
-		int num2=ip->val;
-		int num1=val1;
+		intptr_t num2=ip->val;
+		intptr_t num1=val1;
 		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
 		return abstract_i(num1+num2);

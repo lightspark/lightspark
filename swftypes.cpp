@@ -100,6 +100,7 @@ bool ASObject::isLess(ASObject* r)
 	ASObject* ret2=f2->call(r,NULL);
 
 	LOG(CALLS,"Overloaded isLess");
+	abort();
 	return ret1->isLess(ret2);
 }
 
@@ -114,11 +115,15 @@ void ASObject::acquireInterface(IInterface* i)
 
 SWFOBJECT_TYPE ASObject::getObjectType() const
 {
-	assert(ref_count>0);
 	return (interface)?(interface->type):type;
 }
 
 bool IInterface::isEqual(bool& ret, ASObject* r)
+{
+	return false;
+}
+
+bool IInterface::toInt(int& ret)
 {
 	return false;
 }
@@ -262,6 +267,12 @@ IFunction* ASObject::toFunction()
 
 int ASObject::toInt() const
 {
+	if(interface)
+	{
+		int ret;
+		if(interface->toInt(ret))
+			return ret;
+	}
 	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
 	cout << "imanager " << iManager->available.size() << endl;
 	cout << "dmanager " << dManager->available.size() << endl;
@@ -551,6 +562,8 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, ASObject*& own
 			LOG(CALLS,"End of getter");
 			owner=this;
 			assert(ret);
+			//The returned value is already owned by the caller
+			ret->fake_decRef();
 			return ret;
 		}
 		else
@@ -613,6 +626,8 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 			ret=obj->getter->call(this,NULL);
 			LOG(CALLS,"End of getter");
 			owner=this;
+			//The variable is already owned by the caller
+			ret->fake_decRef();
 		}
 		else
 		{
@@ -1552,6 +1567,7 @@ ASObject* ASObject::getValueAt(int index)
 		LOG(CALLS,"Calling the getter");
 		ret=obj->getter->call(this,NULL);
 		LOG(CALLS,"End of getter");
+		ret->fake_decRef();
 	}
 	else
 		ret=obj->var;

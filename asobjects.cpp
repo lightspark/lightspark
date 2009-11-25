@@ -254,51 +254,39 @@ bool Array::isEqual(bool& ret, ASObject* r)
 
 bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 {
-	abort();
-/*	intptr_t ret;
-	owner=NULL;
 	int index=0;
+	if(!isValidMultiname(name,index))
+		return false;
 
-	switch(name.name_type)
+	if(index<data.size())
 	{
-		case multiname::NAME_STRING:
-			for(int i=0;i<name.name_s.len();i++)
+		switch(data[index].type)
+		{
+			case STACK_OBJECT:
 			{
-				char a=name.name_s[i];
-				if(a>='0' && a<='9')
+				assert(data[index].data!=NULL);
+				if(data[index].data->getObjectType()==T_INTEGER)
 				{
-					index*=10;
-					index+=(a-'0');
+					Integer* i=static_cast<Integer*>(data[index].data);
+					out=i->toInt();
+				}
+				else if(data[index].data->getObjectType()==T_NUMBER)
+				{
+					Number* i=static_cast<Number*>(data[index].data);
+					out=i->toInt();
 				}
 				else
-				{
-					index=-1;
-					break;
-				}
+					abort();
+				break;
 			}
-			break;
-		case multiname::NAME_INT:
-			index=name.name_i;
-			break;
-	}
-
-	if(index!=-1 && index<data.size())
-	{
-			switch(data[index].type)
-			{
-				case STACK_OBJECT:
-					ret=data[index].data->toInt();
-					break;
-				case STACK_INT:
-					ret=data[index].data_i;
-					break;
-			}
-			owner=obj;
+			case STACK_INT:
+				out=data[index].data_i;
+				break;
+		}
+		return true;
 	}
 	else
-		ret=ASObject::getVariableByMultiname_i(name,owner);
-
-	return ret;*/
+		return false;
 }
 
 bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
@@ -357,24 +345,23 @@ bool Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
 bool Array::isValidMultiname(const multiname& name, int& index) const
 {
 	//First of all the multiname has to contain the null namespace
-	int i=0;
-	for(i;i<name.ns.size();i++)
-	{
-		if(name.ns[i]=="")
-			break;
-	}
-	if(i==name.ns.size())
+	//As the namespace vector is sorted, we check only the first one
+	assert(name.ns.size()!=0);
+	if(name.ns[0]!="")
 		return false;
 
 	index=0;
+	int len;
 	switch(name.name_type)
 	{
 		//We try to convert this to an index, otherwise bail out
 		case multiname::NAME_STRING:
-			assert(name.name_s.len());
-			for(int i=0;i<name.name_s.len();i++)
+			len=name.name_s.len();
+			assert(len);
+			__asm__("int $3");
+			for(int i=0;i<len;i++)
 			{
-				if(!isdigit(name.name_s[i]))
+				if(name.name_s[i]<'0' || name.name_s[i]>'9')
 					return false;
 
 				index*=10;
@@ -846,6 +833,12 @@ ASFUNCTIONBODY(Date,valueOf)
 {
 	Date* th=static_cast<Date*>(obj->interface);
 	return new Number(th->toInt());
+}
+
+bool Date::toInt(int& ret)
+{
+	ret=toInt();
+	return true;
 }
 
 int Date::toInt() const

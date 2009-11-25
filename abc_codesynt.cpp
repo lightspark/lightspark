@@ -45,7 +45,6 @@ void debug_i(intptr_t i)
 opcode_handler ABCVm::opcode_table_args0_lazy[]={
 	{"pushNaN",(void*)&ABCVm::pushNaN},
 	{"coerce_a",(void*)&ABCVm::coerce_a},
-	{"label",(void*)&ABCVm::label},
 	{"lookupswitch",(void*)&ABCVm::lookupswitch},
 	{"pushNull",(void*)&ABCVm::pushNull},
 	{"pushUndefined",(void*)&ABCVm::pushUndefined},
@@ -182,7 +181,8 @@ typed_opcode_handler ABCVm::opcode_table_number_t[]={
 typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"setSlot",(void*)&ABCVm::setSlot,ARGS_OBJ_OBJ_INT},
 	{"debug_d",(void*)&debug_d,ARGS_NUMBER},
-	{"debug_i",(void*)&debug_i,ARGS_INT}
+	{"debug_i",(void*)&debug_i,ARGS_INT},
+	{"label",(void*)&ABCVm::label,ARGS_NONE},
 };
 
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
@@ -295,14 +295,14 @@ void ABCVm::registerFunctions()
 
 	// (method_info*)
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	FT=llvm::FunctionType::get(context_type, sig, false);
+	FT=llvm::FunctionType::get(void_type, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decRef",module);
 	ex->addGlobalMapping(F,(void*)&ASObject::s_decRef);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"incRef",module);
 	ex->addGlobalMapping(F,(void*)&ASObject::s_incRef);
 
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	FT=llvm::FunctionType::get(context_type, sig, false);
+	FT=llvm::FunctionType::get(void_type, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decRef_safe",module);
 	ex->addGlobalMapping(F,(void*)&ASObject::s_decRef_safe);
 	sig.clear();
@@ -457,7 +457,7 @@ void ABCVm::registerFunctions()
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	FT=llvm::FunctionType::get(void_type, sig, false);
 	elems=sizeof(opcode_table_args3_pointers)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
 	{
@@ -467,7 +467,7 @@ void ABCVm::registerFunctions()
 
 	//Build the concrete interface
 	sig[0]=int_type;
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	FT=llvm::FunctionType::get(void_type, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"setProperty_i",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::setProperty_i);
 
@@ -797,7 +797,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	string n="method";
 	n+=context->getString(name).raw_buf();
-	cout << "Building method " << n << endl; 
 	if(!body)
 	{
 		LOG(CALLS,"Method " << n << " should be intrinsic");;
@@ -845,6 +844,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 	llvm::Value* dynamic_stack=Builder.CreateLoad(value);
 	//Get the index of the dynamic stack
 	llvm::Value* dynamic_stack_index=Builder.CreateStructGEP(context,2);
+
+/*	//Allocate a fast dynamic stack based on LLVM alloca instruction
+	//This is used on branches
+	vactor<llvm::Value*> fast_dynamic_stack(body->max_stack);
+	for(int i=0;i<body->max_stack;i++)
+		fast_dynamic_stack[i]=Builder.CreateAlloca(voidptr_type);
+	//Allocate also a stack pointer
+	llvm::Value* fast_dynamic_stack_index=*/
 
 	//the scope stack is not accessible to llvm code
 
@@ -2198,7 +2205,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//label
 				//Create a new block and insert it in the mapping
 				LOG(TRACE, "synt label" );
-				Builder.CreateCall(ex->FindFunctionNamed("label"),context);
+				if(Log::getLevel()>=CALLS)
+					Builder.CreateCall(ex->FindFunctionNamed("label"));
 				break;
 			}
 			case 0x0c:
@@ -2212,12 +2220,19 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				constant = llvm::ConstantInt::get(int_type, t);
 
-				abstract_value(ex,Builder,v1);
-				abstract_value(ex,Builder,v2);
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLT"), v1.first, v2.first, constant);
+				llvm::Value* cond;
+				if(v1.second==STACK_INT && v2.second==STACK_INT)
+					cond=Builder.CreateICmpSGE(v2.first,v1.first); //GE == NLT
+				else
+				{
+					abstract_value(ex,Builder,v1);
+					abstract_value(ex,Builder,v2);
+					cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLT"), v1.first, v2.first, constant);
+				}
+
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 
@@ -4441,7 +4456,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 
 	//llvmf->dump();
-	//this->context->vm->FPM->run(*llvmf);
+	this->context->vm->FPM->run(*llvmf);
 	f=(SyntheticFunction::synt_function)this->context->vm->ex->getPointerToFunction(llvmf);
+	//cerr << "Address " << reinterpret_cast<void*>(f) << endl;
 	return f;
 }

@@ -586,6 +586,9 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 					ret->ns.push_back(getString(n->name));
 					ret->nskind.push_back(n->kind);
 				}
+				//Should also sort the kinds
+				sort(ret->ns.begin(),ret->ns.end());
+
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -601,6 +604,9 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 					ret->ns.push_back(getString(n->name));
 					ret->nskind.push_back(n->kind);
 				}
+				//Should also sort the kinds
+				sort(ret->ns.begin(),ret->ns.end());
+
 				ASObject* n=th->runtime_stack_pop();
 				ret->name_s=n->toString();
 				ret->name_type=multiname::NAME_STRING;
@@ -1192,7 +1198,7 @@ void ABCVm::Run(ABCVm* th)
 	th->FPM=new llvm::FunctionPassManager(&mp);
        
 	th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
-	th->FPM->add(llvm::createVerifierPass());
+//	th->FPM->add(llvm::createVerifierPass());
 	th->FPM->add(llvm::createPromoteMemoryToRegisterPass());
 	th->FPM->add(llvm::createReassociatePass());
 	th->FPM->add(llvm::createCFGSimplificationPass());

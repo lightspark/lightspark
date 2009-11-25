@@ -104,6 +104,10 @@ public:
 	{
 		return strncmp(buf,r,512)==0;
 	}
+	bool operator!=(const char* r) const
+	{
+		return strncmp(buf,r,512)!=0;
+	}
 	const char* raw_buf() const
 	{
 		return buf;
@@ -330,7 +334,9 @@ public:
 		{
 			assert(debug==0);
 			if(manager)
+			{
 				manager->put(this);
+			}
 			else
 				delete this;
 		}
@@ -412,6 +418,7 @@ private:
 	virtual bool setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual bool toString(tiny_string& ret);
 	virtual bool isEqual(bool& ret, ASObject* o);
+	virtual bool toInt(int& ret);
 protected:
 	SWFOBJECT_TYPE type;
 	uint32_t magic;
@@ -424,7 +431,7 @@ public:
 
 inline void Manager::put(ASObject* o)
 {
-	if(available.size()>10)
+	if(available.size()>15)
 		delete o;
 	else
 		available.push_back(o);

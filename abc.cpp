@@ -265,6 +265,59 @@ int ABCContext::getMultinameRTData(int mi) const
 	}
 }
 
+//Pre: we already know that n is not zero and that we are going to use an RT multiname from getMultinameRTData
+multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
+{
+	//We are allowed to access only the ABCContext, as the stack is not synced
+	multiname* ret;
+
+	multiname_info* m=&th->context->constant_pool.multinames[n];
+	if(m->cached==NULL)
+	{
+		m->cached=new multiname;
+		ret=m->cached;
+		switch(m->kind)
+		{
+			case 0x1b:
+			{
+				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
+				ret->ns.reserve(s->count);
+				ret->nskind.reserve(s->count);
+				for(int i=0;i<s->count;i++)
+				{
+					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
+					ret->ns.push_back(th->context->getString(n->name));
+					ret->nskind.push_back(n->kind);
+				}
+				ret->name_d=rtd;
+				ret->name_type=multiname::NAME_NUMBER;
+				break;
+			}
+			default:
+				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				break;
+		}
+		return ret;
+	}
+	else
+	{
+		ret=m->cached;
+		switch(m->kind)
+		{
+			case 0x1b:
+			{
+				ret->name_d=rtd;
+				ret->name_type=multiname::NAME_NUMBER;
+				break;
+			}
+			default:
+				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				break;
+		}
+		return ret;
+	}
+}
+
 multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 {
 	//We are allowe to access only the ABCContext, as the stack is not synced
@@ -329,6 +382,12 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 					ret->name_i=o->val;
 					ret->name_type=multiname::NAME_INT;
 				}
+				else if(rt1->getObjectType()==T_NUMBER)
+				{
+					Number* o=static_cast<Number*>(rt1);
+					ret->name_d=o->val;
+					ret->name_type=multiname::NAME_NUMBER;
+				}
 				else
 				{
 					ret->name_s=rt1->toString();
@@ -383,6 +442,12 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 					ret->name_i=o->val;
 					ret->name_type=multiname::NAME_INT;
 				}
+				else if(rt1->getObjectType()==T_NUMBER)
+				{
+					Number* o=static_cast<Number*>(rt1);
+					ret->name_d=o->val;
+					ret->name_type=multiname::NAME_NUMBER;
+				}
 				else
 				{
 					ret->name_s=rt1->toString();
@@ -420,7 +485,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 	}
 }
 
-//Pre: we already know that n is not zero from getMultinameRTData
+//Pre: we already know that n is not zero and that we are going to use an RT multiname from getMultinameRTData
 multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 {
 	//We are allowed to access only the ABCContext, as the stack is not synced
@@ -433,33 +498,6 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 		ret=m->cached;
 		switch(m->kind)
 		{
-			case 0x07:
-			{
-				const namespace_info* n=&th->context->constant_pool.namespaces[m->ns];
-				if(n->name)
-				{
-					ret->ns.push_back(th->context->getString(n->name));
-					ret->nskind.push_back(n->kind);
-				}
-				ret->name_s=th->context->getString(m->name);
-				ret->name_type=multiname::NAME_STRING;
-				break;
-			}
-			case 0x09:
-			{
-				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
-				ret->ns.reserve(s->count);
-				ret->nskind.reserve(s->count);
-				for(int i=0;i<s->count;i++)
-				{
-					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(th->context->getString(n->name));
-					ret->nskind.push_back(n->kind);
-				}
-				ret->name_s=th->context->getString(m->name);
-				ret->name_type=multiname::NAME_STRING;
-				break;
-			}
 			case 0x1b:
 			{
 				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
@@ -475,27 +513,6 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 				ret->name_type=multiname::NAME_INT;
 				break;
 			}
-	/*		case 0x0d:
-				LOG(CALLS, "QNameA");
-				break;
-			case 0x0f:
-				LOG(CALLS, "RTQName");
-				break;
-			case 0x10:
-				LOG(CALLS, "RTQNameA");
-				break;
-			case 0x11:
-				LOG(CALLS, "RTQNameL");
-				break;
-			case 0x12:
-				LOG(CALLS, "RTQNameLA");
-				break;
-			case 0x0e:
-				LOG(CALLS, "MultinameA");
-				break;
-			case 0x1c:
-				LOG(CALLS, "MultinameLA");
-				break;*/
 			default:
 				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
@@ -507,39 +524,12 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 		ret=m->cached;
 		switch(m->kind)
 		{
-			case 0x07:
-			case 0x09:
-			{
-				//Nothing to do, the cached value is enough
-				break;
-			}
 			case 0x1b:
 			{
 				ret->name_i=rti;
 				ret->name_type=multiname::NAME_INT;
 				break;
 			}
-	/*		case 0x0d:
-				LOG(CALLS, "QNameA");
-				break;
-			case 0x0f:
-				LOG(CALLS, "RTQName");
-				break;
-			case 0x10:
-				LOG(CALLS, "RTQNameA");
-				break;
-			case 0x11:
-				LOG(CALLS, "RTQNameL");
-				break;
-			case 0x12:
-				LOG(CALLS, "RTQNameLA");
-				break;
-			case 0x0e:
-				LOG(CALLS, "MultinameA");
-				break;
-			case 0x1c:
-				LOG(CALLS, "MultinameLA");
-				break;*/
 			default:
 				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
@@ -928,29 +918,6 @@ bool Boolean_concrete(ASObject* obj)
 		return false;
 }
 
-bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2, int offset)
-{
-	LOG(CALLS,"ifEq " << offset);
-
-	//Real comparision demanded to object
-	bool ret=obj1->isEqual(obj2);
-	obj1->decRef();
-	obj2->decRef();
-	return ret;
-}
-
-bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1, int offset)
-{
-	LOG(CALLS,"ifNLT " << offset);
-
-	//Real comparision demanded to object
-	bool ret=!(obj1->isLess(obj2));
-
-	obj2->decRef();
-	obj1->decRef();
-	return ret;
-}
-
 ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 {
 	LOG(CALLS,"lessThan");
@@ -960,20 +927,6 @@ ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 	obj1->decRef();
 	obj2->decRef();
 	return new Boolean(ret);
-}
-
-bool ABCVm::ifStrictEq(ASObject* obj1, ASObject* obj2, int offset)
-{
-	LOG(CALLS,"ifStrictEq " << offset);
-	abort();
-
-	//CHECK types
-
-	//Real comparision demanded to object
-	if(obj1->isEqual(obj2))
-		return true;
-	else
-		return false;
 }
 
 void ABCVm::deleteProperty(call_context* th, int n)
@@ -1035,32 +988,6 @@ ASObject* ABCVm::strictEquals(ASObject* obj1, ASObject* obj2)
 {
 	LOG(NOT_IMPLEMENTED, "strictEquals" );
 	abort();
-}
-
-ASObject* ABCVm::pushUndefined(call_context* th)
-{
-	LOG(CALLS, "pushUndefined" );
-	return new Undefined;
-}
-
-ASObject* ABCVm::pushNull(call_context* th)
-{
-	LOG(CALLS, "pushNull" );
-	return new Null;
-}
-
-void ABCVm::pushWith(call_context* th)
-{
-	ASObject* t=th->runtime_stack_pop();
-	LOG(CALLS, "pushWith " << t );
-	th->scope_stack.push_back(t);
-}
-
-void ABCVm::pushScope(call_context* th)
-{
-	ASObject* t=th->runtime_stack_pop();
-	LOG(CALLS, "pushScope " << t );
-	th->scope_stack.push_back(t);
 }
 
 ASObject* ABCVm::pushDouble(call_context* th, int n)

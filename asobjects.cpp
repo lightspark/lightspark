@@ -358,7 +358,6 @@ bool Array::isValidMultiname(const multiname& name, int& index) const
 		case multiname::NAME_STRING:
 			len=name.name_s.len();
 			assert(len);
-			__asm__("int $3");
 			for(int i=0;i<len;i++)
 			{
 				if(name.name_s[i]<'0' || name.name_s[i]>'9')
@@ -371,6 +370,10 @@ bool Array::isValidMultiname(const multiname& name, int& index) const
 		//This is already an int, so its good enough
 		case multiname::NAME_INT:
 			index=name.name_i;
+			break;
+		case multiname::NAME_NUMBER:
+			//TODO: check that this is really an integer
+			index=name.name_d;
 			break;
 	}
 	return true;

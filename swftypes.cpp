@@ -453,6 +453,8 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 	nameAndLevel name("",level);
 	if(mname.name_type==multiname::NAME_INT)
 		name.name=tiny_string(mname.name_i);
+	else if(mname.name_type==multiname::NAME_NUMBER)
+		name.name=tiny_string(mname.name_d);
 	else if(mname.name_type==multiname::NAME_STRING)
 		name.name=mname.name_s;
 
@@ -706,6 +708,8 @@ std::ostream& operator<<(std::ostream& s, const multiname& r)
 	}
 	if(r.name_type==multiname::NAME_INT)
 		s << r.name_i;
+	else if(r.name_type==multiname::NAME_NUMBER)
+		s << r.name_d;
 	else if(r.name_type==multiname::NAME_STRING)
 		s << r.name_s;
 	return s;

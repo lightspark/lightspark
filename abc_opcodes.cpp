@@ -99,6 +99,18 @@ void ABCVm::lookupswitch()
 	LOG(CALLS, "lookupswitch" );
 }
 
+ASObject* ABCVm::pushUndefined()
+{
+	LOG(CALLS, "pushUndefined" );
+	return new Undefined;
+}
+
+ASObject* ABCVm::pushNull()
+{
+	LOG(CALLS, "pushNull" );
+	return new Null;
+}
+
 void ABCVm::coerce_a()
 {
 	LOG(NOT_IMPLEMENTED, "coerce_a" );
@@ -116,7 +128,7 @@ ASObject* ABCVm::coerce_s(ASObject* o)
 	return o;
 }
 
-void ABCVm::pop(call_context* th)
+void ABCVm::pop()
 {
 	LOG(CALLS, "pop: DONE" );
 }
@@ -377,6 +389,20 @@ number_t ABCVm::divide(ASObject* val2, ASObject* val1)
 	return num1/num2;
 }
 
+void ABCVm::pushWith(call_context* th)
+{
+	ASObject* t=th->runtime_stack_pop();
+	LOG(CALLS, "pushWith " << t );
+	th->scope_stack.push_back(t);
+}
+
+void ABCVm::pushScope(call_context* th)
+{
+	ASObject* t=th->runtime_stack_pop();
+	LOG(CALLS, "pushScope " << t );
+	th->scope_stack.push_back(t);
+}
+
 ASObject* ABCVm::getGlobalScope(call_context* th)
 {
 	LOG(CALLS,"getGlobalScope: " << &th->context->Global);
@@ -398,6 +424,18 @@ ASObject* ABCVm::decrement_i(ASObject* o)
 	LOG(NOT_IMPLEMENTED,"decrement_i");
 	abort();
 	return o;
+}
+
+bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1)
+{
+	LOG(CALLS,"ifNLT");
+
+	//Real comparision demanded to object
+	bool ret=!(obj1->isLess(obj2));
+
+	obj2->decRef();
+	obj1->decRef();
+	return ret;
 }
 
 bool ABCVm::ifLT(ASObject* obj2, ASObject* obj1)
@@ -633,9 +671,9 @@ void ABCVm::jump(call_context* th, int offset)
 	LOG(CALLS,"jump " << offset);
 }
 
-bool ABCVm::ifTrue(ASObject* obj1, int offset)
+bool ABCVm::ifTrue(ASObject* obj1)
 {
-	LOG(CALLS,"ifTrue " << offset);
+	LOG(CALLS,"ifTrue");
 
 	bool ret=Boolean_concrete(obj1);
 	obj1->decRef();
@@ -727,16 +765,7 @@ void ABCVm::kill(call_context* th, int n)
 ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 {
 	//Implement ECMA add algorithm, for XML and default
-	if(val1->getObjectType()==T_NUMBER || val2->getObjectType()==T_NUMBER)
-	{
-		double num2=val2->toNumber();
-		double num1=val1->toNumber();
-		LOG(CALLS,"add " << num1 << '+' << num2);
-		val1->decRef();
-		val2->decRef();
-		return abstract_d(num1+num2);
-	}
-	else if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_INTEGER)
+	if(val1->getObjectType()==T_INTEGER && val2->getObjectType()==T_INTEGER)
 	{
 		intptr_t num2=val2->toInt();
 		intptr_t num1=val1->toInt();
@@ -744,6 +773,13 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		val1->decRef();
 		val2->decRef();
 		return abstract_i(num1+num2);
+	}
+	else if(val1->getObjectType()==T_ARRAY)
+	{
+		//Array concatenation
+		Array* ar=static_cast<Array*>(val1->interface);
+		ar->push(val2);
+		return val1;
 	}
 	else if(val1->getObjectType()==T_STRING || val2->getObjectType()==T_STRING)
 	{
@@ -754,12 +790,14 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		val2->decRef();
 		return new ASString(a+b);
 	}
-	else if(val1->getObjectType()==T_ARRAY)
+	else if(val1->getObjectType()==T_NUMBER || val2->getObjectType()==T_NUMBER)
 	{
-		//Array concatenation
-		Array* ar=static_cast<Array*>(val1->interface);
-		ar->push(val2);
-		return val1;
+		double num2=val2->toNumber();
+		double num1=val1->toNumber();
+		LOG(CALLS,"add " << num1 << '+' << num2);
+		val1->decRef();
+		val2->decRef();
+		return abstract_d(num1+num2);
 	}
 	else
 	{
@@ -924,7 +962,7 @@ bool ABCVm::equals(ASObject* val2, ASObject* val1)
 	return ret;
 }
 
-void ABCVm::dup(call_context* th)
+void ABCVm::dup()
 {
 	LOG(CALLS, "dup: DONE" );
 }
@@ -941,7 +979,7 @@ bool ABCVm::pushFalse()
 	return false;
 }
 
-ASObject* ABCVm::pushNaN(call_context* th)
+ASObject* ABCVm::pushNaN()
 {
 	LOG(NOT_IMPLEMENTED, "pushNaN" );
 	return new Undefined;
@@ -959,9 +997,9 @@ bool ABCVm::ifGT(ASObject* obj2, ASObject* obj1)
 	return ret;
 }
 
-bool ABCVm::ifNGT(ASObject* obj2, ASObject* obj1, int offset)
+bool ABCVm::ifNGT(ASObject* obj2, ASObject* obj1)
 {
-	LOG(CALLS,"ifNGT " << offset);
+	LOG(CALLS,"ifNGT");
 
 	//Real comparision demanded to object
 	bool ret= !(obj1->isGreater(obj2));
@@ -982,9 +1020,9 @@ bool ABCVm::ifLE(ASObject* obj2, ASObject* obj1)
 	return ret;
 }
 
-bool ABCVm::ifNLE(ASObject* obj2, ASObject* obj1, int offset)
+bool ABCVm::ifNLE(ASObject* obj2, ASObject* obj1)
 {
-	LOG(CALLS,"ifNLE " << offset);
+	LOG(CALLS,"ifNLE");
 
 	//Real comparision demanded to object
 	bool ret=!(obj1->isLess(obj2) || obj1->isEqual(obj2));
@@ -999,9 +1037,9 @@ bool ABCVm::ifGE(ASObject* obj2, ASObject* obj1)
 	abort();
 }
 
-bool ABCVm::ifNGE(ASObject* obj2, ASObject* obj1, int offset)
+bool ABCVm::ifNGE(ASObject* obj2, ASObject* obj1)
 {
-	LOG(CALLS,"ifNGE " << offset);
+	LOG(CALLS,"ifNGE");
 
 	//Real comparision demanded to object
 	bool ret=!(obj1->isGreater(obj2) || obj1->isEqual(obj2));
@@ -1453,26 +1491,49 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	delete[] args;
 }
 
-void ABCVm::isTypelate(call_context* th)
+bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(NOT_IMPLEMENTED,"isTypelate");
-	ASObject* type=th->runtime_stack_pop();
-	ASObject* obj=th->runtime_stack_pop();
 	if(obj->getObjectType()==T_UNDEFINED)
 	{
-		th->runtime_stack_push(new Boolean(false));
 		cout << "false" << endl;
+		return false;
 	}
 	else
 	{
 		cout << "true" << endl;
-		th->runtime_stack_push(new Boolean(true));
+		return true;
 	}
 //	cout << "Name " << type->class_name << " type " << type->getObjectType() << endl;
 //	cout << "Name " << obj->class_name << " type " << obj->getObjectType() << endl;
 //	if(type->class_name==obj->class_name)
 //	else
 //		th->runtime_stack_push(new Boolean(false));
+}
+
+bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2)
+{
+	LOG(CALLS,"ifEq");
+
+	//Real comparision demanded to object
+	bool ret=obj1->isEqual(obj2);
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
+}
+
+bool ABCVm::ifStrictEq(ASObject* obj1, ASObject* obj2)
+{
+	LOG(CALLS,"ifStrictEq");
+	abort();
+
+	//CHECK types
+
+	//Real comparision demanded to object
+	if(obj1->isEqual(obj2))
+		return true;
+	else
+		return false;
 }
 
 bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
@@ -1492,9 +1553,9 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 	return ret;
 }
 
-bool ABCVm::ifFalse(ASObject* obj1, int offset)
+bool ABCVm::ifFalse(ASObject* obj1)
 {
-	LOG(CALLS,"ifFalse " << offset);
+	LOG(CALLS,"ifFalse");
 
 	bool ret=!Boolean_concrete(obj1);
 	cout << "return " << ret << endl;
@@ -1734,7 +1795,7 @@ ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 	return ret;
 }
 
-void ABCVm::swap(call_context* th)
+void ABCVm::swap()
 {
 	LOG(CALLS,"swap");
 }

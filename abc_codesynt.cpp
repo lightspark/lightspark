@@ -43,11 +43,6 @@ void debug_i(intptr_t i)
 }
 
 opcode_handler ABCVm::opcode_table_args0_lazy[]={
-	{"pushNaN",(void*)&ABCVm::pushNaN},
-	{"coerce_a",(void*)&ABCVm::coerce_a},
-	{"lookupswitch",(void*)&ABCVm::lookupswitch},
-	{"pushNull",(void*)&ABCVm::pushNull},
-	{"pushUndefined",(void*)&ABCVm::pushUndefined},
 	{"getGlobalScope",(void*)&ABCVm::getGlobalScope}
 };
 
@@ -55,11 +50,7 @@ opcode_handler ABCVm::opcode_table_args0[]={
 	{"pushScope",(void*)&ABCVm::pushScope},
 	{"pushWith",(void*)&ABCVm::pushWith},
 	{"throw",(void*)&ABCVm::_throw},
-	{"pop",(void*)&ABCVm::pop},
-	{"dup",(void*)&ABCVm::dup},
-	{"swap",(void*)&ABCVm::swap},
 	{"popScope",(void*)&ABCVm::popScope},
-	{"isTypelate",(void*)&ABCVm::isTypelate},
 	{"asTypelate",(void*)&ABCVm::asTypelate},
 };
 
@@ -70,20 +61,6 @@ opcode_handler ABCVm::opcode_table_args1_lazy[]={
 	{"newFunction",(void*)&ABCVm::newFunction},
 	{"newCatch",(void*)&ABCVm::newCatch},
 	{"getScopeObject",(void*)&ABCVm::getScopeObject}
-};
-
-opcode_handler ABCVm::opcode_table_args1_branches[]={
-	{"ifTrue",(void*)&ABCVm::ifTrue},
-	{"ifFalse",(void*)&ABCVm::ifFalse},
-};
-
-opcode_handler ABCVm::opcode_table_args2_branches[]={
-	{"ifNLT",(void*)&ABCVm::ifNLT},
-	{"ifNGT",(void*)&ABCVm::ifNGT},
-	{"ifNGE",(void*)&ABCVm::ifNGE},
-	{"ifNLE",(void*)&ABCVm::ifNLE},
-	{"ifStrictEq",(void*)&ABCVm::ifStrictEq},
-	{"ifEq",(void*)&ABCVm::ifEq},
 };
 
 opcode_handler ABCVm::opcode_table_args1[]={
@@ -130,6 +107,10 @@ opcode_handler ABCVm::opcode_table_args2_pointers_int[]={
 
 opcode_handler ABCVm::opcode_table_args_pointer_2int[]={
 	{"getMultiname_i",(void*)&ABCContext::s_getMultiname_i}
+};
+
+opcode_handler ABCVm::opcode_table_args_pointer_number_int[]={
+	{"getMultiname_d",(void*)&ABCContext::s_getMultiname_d}
 };
 
 opcode_handler ABCVm::opcode_table_args3_pointers[]={
@@ -183,6 +164,11 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"debug_d",(void*)&debug_d,ARGS_NUMBER},
 	{"debug_i",(void*)&debug_i,ARGS_INT},
 	{"label",(void*)&ABCVm::label,ARGS_NONE},
+	{"pop",(void*)&ABCVm::pop,ARGS_NONE},
+	{"dup",(void*)&ABCVm::dup,ARGS_NONE},
+	{"swap",(void*)&ABCVm::swap,ARGS_NONE},
+	{"coerce_a",(void*)&ABCVm::coerce_a,ARGS_NONE},
+	{"lookupswitch",(void*)&ABCVm::lookupswitch,ARGS_NONE},
 };
 
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
@@ -192,24 +178,36 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
 	{"abstract_i",(void*)&abstract_i,ARGS_INT},
 	{"abstract_b",(void*)&abstract_b,ARGS_BOOL},
+	{"pushNaN",(void*)&ABCVm::pushNaN,ARGS_NONE},
+	{"pushNull",(void*)&ABCVm::pushNull,ARGS_NONE},
+	{"pushUndefined",(void*)&ABCVm::pushUndefined,ARGS_NONE},
 	{"getProperty",(void*)&ABCVm::getProperty,ARGS_OBJ_OBJ}
 };
 
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"not",(void*)&ABCVm::_not,ARGS_OBJ},
 	{"equals",(void*)&ABCVm::equals,ARGS_OBJ_OBJ},
+	{"ifEq",(void*)&ABCVm::ifEq,ARGS_OBJ_OBJ},
 	{"ifNE",(void*)&ABCVm::ifNE,ARGS_OBJ_OBJ},
 	{"ifNE_oi",(void*)&ABCVm::ifNE_oi,ARGS_OBJ_INT},
 	{"ifLT",(void*)&ABCVm::ifLT,ARGS_OBJ_OBJ},
+	{"ifNLT",(void*)&ABCVm::ifNLT,ARGS_OBJ_OBJ},
 	{"ifLT_io",(void*)&ABCVm::ifLT_io,ARGS_INT_OBJ},
 	{"ifLT_oi",(void*)&ABCVm::ifLT_oi,ARGS_OBJ_INT},
 	{"ifGT",(void*)&ABCVm::ifGT,ARGS_OBJ_OBJ},
+	{"ifNGT",(void*)&ABCVm::ifNGT,ARGS_OBJ_OBJ},
 	{"ifGE",(void*)&ABCVm::ifGE,ARGS_OBJ_OBJ},
+	{"ifNGE",(void*)&ABCVm::ifNGE,ARGS_OBJ_OBJ},
 	{"ifLE",(void*)&ABCVm::ifGT,ARGS_OBJ_OBJ},
+	{"ifNLE",(void*)&ABCVm::ifNLE,ARGS_OBJ_OBJ},
 	{"in",(void*)&ABCVm::in,ARGS_OBJ_OBJ},
 	{"ifStrictNE",(void*)&ABCVm::ifStrictNE,ARGS_OBJ_OBJ},
+	{"ifStrictEq",(void*)&ABCVm::ifStrictEq,ARGS_OBJ_OBJ},
 	{"pushTrue",(void*)&ABCVm::pushTrue,ARGS_NONE},
 	{"pushFalse",(void*)&ABCVm::pushFalse,ARGS_NONE},
+	{"isTypelate",(void*)&ABCVm::isTypelate,ARGS_OBJ_OBJ},
+	{"ifTrue",(void*)&ABCVm::ifTrue,ARGS_OBJ},
+	{"ifFalse",(void*)&ABCVm::ifFalse,ARGS_OBJ},
 };
 
 extern __thread SystemState* sys;
@@ -394,16 +392,6 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 
-	//Branches, no context, (ASObject*, int)
-	FT=llvm::FunctionType::get(bool_type, sig, false);
-	elems=sizeof(opcode_table_args1_branches)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args1_branches[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args1_branches[i].addr);
-	}
-	//End of lazy pushing
-
 	//Lazy pushing, no context, (ASObject*, ASObject*)
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
@@ -428,16 +416,6 @@ void ABCVm::registerFunctions()
 	}
 	//End of lazy pushing
 	
-	//Branches, no context, (ASObject*, ASObject*, int)
-	FT=llvm::FunctionType::get(bool_type, sig, false);
-	elems=sizeof(opcode_table_args2_branches)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args2_branches[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args2_branches[i].addr);
-	}
-	//End of lazy pushing
-
 	//Lazy pushing, no context, (ASObject*, uintptr_t, int)
 	sig.clear();
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
@@ -449,6 +427,18 @@ void ABCVm::registerFunctions()
 	{
 		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args_pointer_2int[i].name,module);
 		ex->addGlobalMapping(F,opcode_table_args_pointer_2int[i].addr);
+	}
+
+	sig.clear();
+	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
+	sig.push_back(number_type);
+	sig.push_back(int_type);
+	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	elems=sizeof(opcode_table_args_pointer_number_int)/sizeof(opcode_handler);
+	for(int i=0;i<elems;i++)
+	{
+		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args_pointer_number_int[i].name,module);
+		ex->addGlobalMapping(F,opcode_table_args_pointer_number_int[i].addr);
 	}
 	//End of lazy pushing
 
@@ -2221,7 +2211,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				constant = llvm::ConstantInt::get(int_type, t);
 
 				llvm::Value* cond;
 				if(v1.second==STACK_INT && v2.second==STACK_INT)
@@ -2230,7 +2219,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					abstract_value(ex,Builder,v1);
 					abstract_value(ex,Builder,v2);
-					cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLT"), v1.first, v2.first, constant);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNLT"), v1.first, v2.first);
 				}
 
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2275,9 +2264,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 				else
 					abort();
-				constant = llvm::ConstantInt::get(int_type, t);
 
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNLE"), v1.first, v2.first, constant);
+				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNLE"), v1.first, v2.first);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2311,7 +2299,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNGT"), v1.first, v2.first, constant);
+				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNGT"), v1.first, v2.first);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2342,11 +2330,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				constant = llvm::ConstantInt::get(int_type, t);
 
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifNGE"), v1.first, v2.first, constant);
+				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNGE"), v1.first, v2.first);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2396,12 +2383,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond;
 				if(v1.second==STACK_BOOLEAN)
 					cond=v1.first;
 				else
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifTrue"), v1.first, constant);
+					cond=Builder.CreateCall(ex->FindFunctionNamed("ifTrue"), v1.first);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2437,8 +2423,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else
 				{
 					abstract_value(ex,Builder,v1);
-					constant = llvm::ConstantInt::get(int_type, t);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifFalse"), v1.first, constant);
+					cond=Builder.CreateCall(ex->FindFunctionNamed("ifFalse"), v1.first);
 				}
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2470,19 +2455,18 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* cond;
-				constant = llvm::ConstantInt::get(int_type, t);
 				//Make comparision
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall3(ex->FindFunctionNamed("ifEq"), v1.first, v2.first, constant);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 				{
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					cond=Builder.CreateCall3(ex->FindFunctionNamed("ifEq"), v1.first, v2.first, constant);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
 				}
 				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
 				{
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-					cond=Builder.CreateCall3(ex->FindFunctionNamed("ifEq"), v1.first, v2.first, constant);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
 				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
@@ -2493,7 +2477,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-					cond=Builder.CreateCall3(ex->FindFunctionNamed("ifEq"), v1.first, v2.first, constant);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
 				}
 				else
 					abort();
@@ -2619,7 +2603,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond;
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLE"), v1.first, v2.first);
@@ -2655,7 +2638,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond;
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGT"), v1.first, v2.first);
@@ -2696,7 +2678,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond;
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), v1.first, v2.first);
@@ -2739,8 +2720,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				constant = llvm::ConstantInt::get(int_type, t);
-				llvm::Value* cond=Builder.CreateCall3(ex->FindFunctionNamed("ifStrictEq"), v1, v2, constant);
+				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictEq"), v1, v2);
 
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2770,7 +2750,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				constant = llvm::ConstantInt::get(int_type, t);
 				llvm::Value* cond;
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), v1.first, v2.first);
@@ -2893,7 +2872,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//pushnull
 				LOG(TRACE, "synt pushnull" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("pushNull"), context);
+				value=Builder.CreateCall(ex->FindFunctionNamed("pushNull"));
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
 				break;
@@ -2902,7 +2881,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//pushundefined
 				LOG(TRACE, "synt pushundefined" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("pushUndefined"), context);
+				value=Builder.CreateCall(ex->FindFunctionNamed("pushUndefined"));
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
 				break;
@@ -3528,13 +3507,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 					if(rt1.second==STACK_INT)
 						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_i"), reint_context, rt1.first, constant);
+					else if(rt1.second==STACK_NUMBER)
+						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_d"), reint_context, rt1.first, constant);
 					else if(rt1.second==STACK_OBJECT)
 						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, rt1.first, constant);
-					else if(rt1.second==STACK_NUMBER)
-					{
-						rt1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),rt1.first);
-						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, rt1.first, constant);
-					}
 					else
 						abort();
 				}
@@ -4282,9 +4258,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//istypelate
 				LOG(TRACE, "synt istypelate" );
-				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				assert(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("isTypelate"),v1.first,v2.first);
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				jitted=false;
-				Builder.CreateCall(ex->FindFunctionNamed("isTypelate"), context);
 				break;
 			}
 			case 0xb4:

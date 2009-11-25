@@ -64,9 +64,13 @@ public:
 			abort();
 		strcpy(buf,s);
 	}
-	explicit tiny_string(int i)
+	explicit tiny_string(intptr_t i)
 	{
 		sprintf(buf,"%i",i);
+	}
+	explicit tiny_string(number_t d)
+	{
+		sprintf(buf,"%g",d);
 	}
 	tiny_string& operator=(const std::string& s)
 	{
@@ -213,10 +217,11 @@ public:
 
 struct multiname
 {
-	enum NAME_TYPE {NAME_STRING,NAME_INT};
+	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER};
 	NAME_TYPE name_type;
 	tiny_string name_s;
-	int name_i;
+	intptr_t name_i;
+	number_t name_d;
 	std::vector<tiny_string> ns;
 	std::vector<int> nskind;
 	multiname(){count++;}

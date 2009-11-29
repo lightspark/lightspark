@@ -198,7 +198,7 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"ifNGT",(void*)&ABCVm::ifNGT,ARGS_OBJ_OBJ},
 	{"ifGE",(void*)&ABCVm::ifGE,ARGS_OBJ_OBJ},
 	{"ifNGE",(void*)&ABCVm::ifNGE,ARGS_OBJ_OBJ},
-	{"ifLE",(void*)&ABCVm::ifGT,ARGS_OBJ_OBJ},
+	{"ifLE",(void*)&ABCVm::ifLE,ARGS_OBJ_OBJ},
 	{"ifNLE",(void*)&ABCVm::ifNLE,ARGS_OBJ_OBJ},
 	{"in",(void*)&ABCVm::in,ARGS_OBJ_OBJ},
 	{"ifStrictNE",(void*)&ABCVm::ifStrictNE,ARGS_OBJ_OBJ},
@@ -1240,8 +1240,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//pushdouble
 					u30 t;
 					code >> t;
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					break;
 				}
 				case 0x30:
@@ -2250,21 +2250,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-				{
-				}
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
-				}
-				else
-					abort();
 
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
 				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNLE"), v1.first, v2.first);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2473,14 +2461,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					cond=Builder.CreateFCmpOEQ(v1.first,v2.first);
 				}
-				else if(v1.second==STACK_INT && v2.second==STACK_INT)
+				else
 				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+					abstract_value(ex,Builder,v1);
+					abstract_value(ex,Builder,v2);
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
 				}
-				else
-					abort();
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2572,7 +2558,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
 					cond=Builder.CreateICmpSLT(v2.first,v1.first);
 				else
-					abort();
+				{
+					abstract_value(ex,Builder,v1);
+					abstract_value(ex,Builder,v2);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLT"), v1.first, v2.first);
+				}
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2607,7 +2597,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLE"), v1.first, v2.first);
 				else
-					abort();
+				{
+					abstract_value(ex,Builder,v1);
+					abstract_value(ex,Builder,v2);
+					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLE"), v1.first, v2.first);
+				}
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2639,15 +2633,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* cond;
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGT"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGT"), v1.first, v2.first);
-				}
-				else
-					abort();
+
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
+				cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGT"), v1.first, v2.first);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2679,15 +2668,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				llvm::Value* cond;
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), v1.first, v2.first);
-				}
-				else
-					abort();
+
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
+				cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), v1.first, v2.first);
 			
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
@@ -2787,7 +2771,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//lookupswitch
 				LOG(TRACE, "synt lookupswitch" );
-				Builder.CreateCall(ex->FindFunctionNamed("lookupswitch"),context);
+				if(Log::getLevel()>=CALLS)
+					Builder.CreateCall(ex->FindFunctionNamed("lookupswitch"));
 				last_is_branch=true;
 
 				int here=int(code2.tellg())-1; //Base for the jumps is the instruction itself for the switch
@@ -2958,7 +2943,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//pop
 				LOG(TRACE, "synt pop" );
 				if(Log::getLevel()==CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("pop"), context);
+					Builder.CreateCall(ex->FindFunctionNamed("pop"));
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(e.second==STACK_OBJECT)
 					Builder.CreateCall(ex->FindFunctionNamed("decRef"), e.first);
@@ -2970,7 +2955,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//dup
 				LOG(TRACE, "synt dup" );
 				if(Log::getLevel()==CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("dup"), context);
+					Builder.CreateCall(ex->FindFunctionNamed("dup"));
 				stack_entry e=static_stack_peek(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e);
 
@@ -2984,7 +2969,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//swap
 				LOG(TRACE, "synt swap" );
 				if(Log::getLevel()==CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("swap"), context);
+					Builder.CreateCall(ex->FindFunctionNamed("swap"));
 				stack_entry e1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry e2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e1);
@@ -3027,9 +3012,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt pushdouble" );
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				value=Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+
+				if(Log::getLevel()==CALLS)
+				{
+					constant = llvm::ConstantInt::get(int_type, t);
+					Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
+				}
+				number_t d=this->context->constant_pool.doubles[t];
+				constant = llvm::ConstantFP::get(number_type,d);
+				static_stack_push(static_stack,stack_entry(constant,STACK_NUMBER));
 				jitted=true;
 				break;
 			}
@@ -3390,6 +3381,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 					if(rt1.second==STACK_INT)
 						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_i"), reint_context, rt1.first, constant);
+					else if(rt1.second==STACK_NUMBER)
+						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_d"), reint_context, rt1.first, constant);
 					else if(rt1.second==STACK_OBJECT)
 						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, rt1.first, constant);
 					else
@@ -3674,7 +3667,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//coerce_a
 				LOG(TRACE, "synt coerce_a" );
 				if(Log::getLevel()==CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("coerce_a"), context);
+					Builder.CreateCall(ex->FindFunctionNamed("coerce_a"));
 				/*stack_entry v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				else
@@ -3869,6 +3862,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateSub(v2.first, v1.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
+				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
+				{
+					value=Builder.CreateSub(v2.first, v1.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
+				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
@@ -3953,9 +3951,26 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
-				abstract_value(ex,Builder,v1);
-				abstract_value(ex,Builder,v2);
-				value=Builder.CreateCall2(ex->FindFunctionNamed("divide"), v1.first, v2.first);
+				if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
+				{
+					v1.first=Builder.CreateSIToFP(v1.first,number_type);
+					value=Builder.CreateFDiv(v2.first,v1.first);
+				}
+				else if(v1.second==STACK_NUMBER && v2.second==STACK_INT)
+				{
+					v2.first=Builder.CreateSIToFP(v2.first,number_type);
+					value=Builder.CreateFDiv(v2.first,v1.first);
+				}
+				else if(v1.second==STACK_NUMBER && v2.second==STACK_NUMBER)
+				{
+					value=Builder.CreateFDiv(v2.first,v1.first);
+				}
+				else
+				{
+					abstract_value(ex,Builder,v1);
+					abstract_value(ex,Builder,v2);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("divide"), v1.first, v2.first);
+				}
 				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				jitted=true;
 				break;
@@ -4175,7 +4190,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
 					value=Builder.CreateICmpEQ(v1.first,v2.first);
 				else
-					abort();
+				{
+					abstract_value(ex,Builder,v1);
+					abstract_value(ex,Builder,v2);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("equals"), v1.first, v2.first);
+				}
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				jitted=true;
 				break;
@@ -4199,12 +4218,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(TRACE, "synt lessthan" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-				if(v2.second==STACK_INT)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-				else if(v2.second==STACK_NUMBER)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),v2.first);
+
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
 
 				value=Builder.CreateCall2(ex->FindFunctionNamed("lessThan"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));

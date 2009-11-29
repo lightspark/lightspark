@@ -481,7 +481,7 @@ bool ABCVm::ifNE(ASObject* obj1, ASObject* obj2)
 
 	//Real comparision demanded to object
 	bool ret=!(obj1->isEqual(obj2));
-	cout << "compare " << ret << endl;
+//	cout << "compare " << ret << endl;
 
 	obj2->decRef();
 	obj1->decRef();
@@ -757,6 +757,12 @@ ASObject* ABCVm::pushInt(call_context* th, int n)
 	LOG(CALLS, "pushInt [" << dec << n << "] " << i);
 }
 
+ASObject* ABCVm::pushDouble(call_context* th, int n)
+{
+	d64 d=th->context->constant_pool.doubles[n];
+	LOG(CALLS, "pushDouble [" << dec << n << "] " << d);
+}
+
 void ABCVm::kill(call_context* th, int n)
 {
 	LOG(CALLS, "kill " << n );
@@ -829,9 +835,8 @@ ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
 	}
 	else if(val2->getObjectType()==T_STRING)
 	{
-		tiny_string tmp(val1);
-		string a(tmp.raw_buf());
-		string b(val2->toString().raw_buf());
+		tiny_string a(val1);
+		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(CALLS,"add " << a << '+' << b);
 		return new ASString(a+b);
@@ -861,7 +866,7 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 		double num1=val1;
 		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
+		return abstract_d(num1+num2);
 	}
 	else if(val2->getObjectType()==T_INTEGER)
 	{
@@ -869,17 +874,15 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 		double num1=val1;
 		val2->decRef();
 		LOG(CALLS,"add " << num1 << '+' << num2);
-		return new Number(num1+num2);
+		return abstract_d(num1+num2);
 	}
 	else if(val2->getObjectType()==T_STRING)
 	{
-		abort();
-		/*string a=val1->toString();
-		string b=val2->toString();
-		val1->decRef();
+		tiny_string a(val1);
+		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(CALLS,"add " << a << '+' << b);
-		return new ASString(a+b);*/
+		return new ASString(a+b);
 	}
 	else if(val2->getObjectType()==T_ARRAY)
 	{
@@ -1558,7 +1561,6 @@ bool ABCVm::ifFalse(ASObject* obj1)
 	LOG(CALLS,"ifFalse");
 
 	bool ret=!Boolean_concrete(obj1);
-	cout << "return " << ret << endl;
 	obj1->decRef();
 	return ret;
 }

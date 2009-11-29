@@ -6,7 +6,7 @@
 
 enum LOG_LEVEL { NO_INFO=0, ERROR=1, NOT_IMPLEMENTED=2,CALLS=3,TRACE=4};
 
-#if 0
+#if 1
 #define LOG(level,esp)					\
 {							\
 	if(level<=Log::getLevel())			\

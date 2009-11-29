@@ -1045,60 +1045,75 @@ Math::Math()
 	setVariableByQName("max","",new Function(max));
 	setVariableByQName("abs","",new Function(abs));
 	setVariableByQName("sin","",new Function(sin));
+	setVariableByQName("cos","",new Function(cos));
 	setVariableByQName("floor","",new Function(floor));
 	setVariableByQName("round","",new Function(round));
 	setVariableByQName("random","",new Function(random));
+	setVariableByQName("pow","",new Function(pow));
 }
 
 ASFUNCTIONBODY(Math,atan2)
 {
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
-	return new Number(::atan2(n1,n2));
+	return abstract_d(::atan2(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,max)
 {
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
-	return new Number(::max(n1,n2));
+	return abstract_d(::max(n1,n2));
+}
+
+ASFUNCTIONBODY(Math,cos)
+{
+	double n=args->at(0)->toNumber();
+	return abstract_d(::cos(n*M_PI/180));
 }
 
 ASFUNCTIONBODY(Math,sin)
 {
 	double n=args->at(0)->toNumber();
-	return new Number(::sin(n*M_PI/180));
+	return abstract_d(::sin(n*M_PI/180));
 }
 
 ASFUNCTIONBODY(Math,abs)
 {
 	double n=args->at(0)->toNumber();
-	return new Integer(::abs(n));
+	return abstract_d(::abs(n));
 }
 
 ASFUNCTIONBODY(Math,floor)
 {
 	double n=args->at(0)->toNumber();
-	return new Integer(::floor(n));
+	return abstract_i(::floor(n));
 }
 
 ASFUNCTIONBODY(Math,round)
 {
 	double n=args->at(0)->toNumber();
-	return new Integer(::round(n));
+	return abstract_i(::round(n));
 }
 
 ASFUNCTIONBODY(Math,sqrt)
 {
 	double n=args->at(0)->toNumber();
-	return new Integer(::sqrt(n));
+	return abstract_d(::sqrt(n));
+}
+
+ASFUNCTIONBODY(Math,pow)
+{
+	double x=args->at(0)->toNumber();
+	double y=args->at(1)->toNumber();
+	return abstract_d(::pow(x,y));
 }
 
 ASFUNCTIONBODY(Math,random)
 {
 	double ret=rand();
 	ret/=RAND_MAX;
-	return new Integer(ret);
+	return abstract_d(ret);
 }
 
 tiny_string Null::toString() const

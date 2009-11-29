@@ -55,12 +55,13 @@ class tiny_string
 {
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
-	char buf[512];
+	#define SIZE 1024
+	char buf[SIZE];
 public:
 	tiny_string(){buf[0]=0;}
 	tiny_string(const char* s)
 	{
-		if(strlen(s)>511)
+		if(strlen(s)>(SIZE-1))
 			abort();
 		strcpy(buf,s);
 	}
@@ -74,43 +75,49 @@ public:
 	}
 	tiny_string& operator=(const std::string& s)
 	{
-		strncpy(buf,s.c_str(),512);
+		strncpy(buf,s.c_str(),SIZE);
 		return *this;
 	}
 	tiny_string& operator=(const char* s)
 	{
-		strncpy(buf,s,512);
+		strncpy(buf,s,SIZE);
 		return *this;
 	}
 	tiny_string& operator+=(const char* s)
 	{
-		strncat(buf,s,511-strlen(buf));
+		strncat(buf,s,SIZE-1-strlen(buf));
 		return *this;
 	}
 	tiny_string& operator+=(const tiny_string& r)
 	{
-		strncat(buf,r.buf,511-strlen(buf));
+		strncat(buf,r.buf,SIZE-1-strlen(buf));
 		return *this;
+	}
+	const tiny_string operator+(const tiny_string& r)
+	{
+		tiny_string ret(buf);
+		ret+=r;
+		return ret;
 	}
 	bool operator<(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,512)<0;
+		return strncmp(buf,r.buf,SIZE)<0;
 	}
 	bool operator==(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,512)==0;
+		return strncmp(buf,r.buf,SIZE)==0;
 	}
 	bool operator!=(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,512)!=0;
+		return strncmp(buf,r.buf,SIZE)!=0;
 	}
 	bool operator==(const char* r) const
 	{
-		return strncmp(buf,r,512)==0;
+		return strncmp(buf,r,SIZE)==0;
 	}
 	bool operator!=(const char* r) const
 	{
-		return strncmp(buf,r,512)!=0;
+		return strncmp(buf,r,SIZE)!=0;
 	}
 	const char* raw_buf() const
 	{
@@ -436,6 +443,7 @@ public:
 
 inline void Manager::put(ASObject* o)
 {
+	//std::cout << "putting[" << name << "] " << o << std::endl;
 	if(available.size()>15)
 		delete o;
 	else
@@ -450,6 +458,7 @@ T* Manager::get()
 		T* ret=static_cast<T*>(available.back());
 		available.pop_back();
 		ret->incRef();
+		//std::cout << "getting[" << name << "] " << ret << std::endl;
 		return ret;
 	}
 	else

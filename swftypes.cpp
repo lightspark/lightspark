@@ -194,6 +194,11 @@ bool Integer::isGreater(ASObject* o)
 		const Integer* i=static_cast<const Integer*>(o);
 		return val>*i;
 	}
+	else if(o->getObjectType()==T_NUMBER)
+	{
+		const Number* d=static_cast<const Number*>(o);
+		return val>*d;
+	}
 	else
 	{
 		return ASObject::isGreater(o);

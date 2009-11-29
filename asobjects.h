@@ -359,10 +359,17 @@ friend class ABCContext;
 friend ASObject* abstract_i(intptr_t i);
 private:
 	int val;
+	//int debug;
 public:
-	Integer(int v):val(v){type=T_INTEGER;}
-	Integer(Manager* m):val(0),ASObject(m){type=T_INTEGER;}
-	virtual ~Integer(){}
+	Integer(int v):val(v){type=T_INTEGER;
+		//debug=rand();
+		//std::cout << "new " << this << std::endl;
+	}
+	Integer(Manager* m):val(0),ASObject(m){type=T_INTEGER;
+		//debug=rand();
+		//std::cout << "new " << this << std::endl;
+	}
+	virtual ~Integer(){/*std::cout << "deleting "  << debug << std::endl;*/}
 	Integer& operator=(int v){val=v; return *this; }
 	tiny_string toString() const;
 	int toInt() const
@@ -387,7 +394,7 @@ private:
 	double val;
 public:
 	Number(double v):val(v){type=T_NUMBER;}
-	Number(Manager* m):val(0){type=T_NUMBER;}
+	Number(Manager* m):val(0),ASObject(m){type=T_NUMBER;}
 	tiny_string toString() const;
 	int toInt() const
 	{
@@ -501,11 +508,13 @@ public:
 	ASFUNCTION(atan2);
 	ASFUNCTION(abs);
 	ASFUNCTION(sin);
+	ASFUNCTION(cos);
 	ASFUNCTION(floor);
 	ASFUNCTION(round);
 	ASFUNCTION(sqrt);
 	ASFUNCTION(random);
 	ASFUNCTION(max);
+	ASFUNCTION(pow);
 };
 
 class RegExp: public IInterface

@@ -990,13 +990,6 @@ ASObject* ABCVm::strictEquals(ASObject* obj1, ASObject* obj2)
 	abort();
 }
 
-ASObject* ABCVm::pushDouble(call_context* th, int n)
-{
-	d64 d=th->context->constant_pool.doubles[n];
-	LOG(CALLS, "pushDouble [" << dec << n << "] " << d);
-	return new Number(d);
-}
-
 void ABCVm::newArray(call_context* th, int n)
 {
 	LOG(CALLS, "newArray " << n );
@@ -1884,7 +1877,9 @@ intptr_t ABCVm::s_toInt(ASObject* o)
 {
 	if(o->getObjectType()!=T_INTEGER)
 		abort();
-	return o->toInt();
+	intptr_t ret=o->toInt();
+	o->decRef();
+	return ret;
 }
 
 ASObject* isNaN(ASObject* obj,arguments* args)

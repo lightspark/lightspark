@@ -804,13 +804,13 @@ void ABCVm::handleEvent()
 				ev->sync();
 				break;
 			}
-			case FUNCTION:
+			/*case FUNCTION:
 			{
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second);
 				//We hope the method is binded
 				ev->f->call(NULL,NULL);
 				break;
-			}
+			}*/
 			case CONTEXT:
 			{
 				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second);
@@ -875,7 +875,7 @@ void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,argum
 
 		LOG(CALLS,"Calling Instance init on " << s);
 		//args->incRef();
-		obj->prototype->constructor->call(obj,args);
+		obj->prototype->constructor->call(obj,args,obj->max_level);
 	}
 }
 
@@ -954,7 +954,8 @@ void ABCVm::call(call_context* th, int m)
 		abort();
 	}
 
-	ASObject* ret=f->call(obj,&args);
+	//This seems wrong
+	ASObject* ret=f->call(obj,&args,obj->max_level);
 	th->runtime_stack_push(ret);
 	obj->decRef();
 	f->decRef();
@@ -1047,7 +1048,7 @@ ASObject* call_context::runtime_stack_peek()
 	return stack[stack_index-1];
 }
 
-call_context::call_context(method_info* th, ASObject** args, int num_args)
+call_context::call_context(method_info* th, int level, ASObject** args, int num_args):cur_level_of_this(level)
 {
 	locals=new ASObject*[th->body->local_count+1];
 	locals_size=th->body->local_count;
@@ -1101,7 +1102,7 @@ void ABCContext::exec()
 	LOG(CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(Global,&scripts[i].traits[j]);
-	entry->call(Global,NULL);
+	entry->call(Global,NULL,Global->max_level);
 	LOG(CALLS, "End of Entry Point");
 
 }
@@ -1166,7 +1167,7 @@ inline void ABCContext::buildClassTraits(ASObject* obj, int class_index)
 void ABCContext::linkInterface(const multiname& interface_name, ASObject* obj)
 {
 	ASObject* owner;
-	ASObject* interface_obj=Global->getVariableByMultiname(interface_name,owner);
+	ASObject* interface_obj=Global->getVariableByMultiname(interface_name,owner).obj;
 	assert(owner && interface_obj->getObjectType()==T_CLASS);
 	Class_base* interface=static_cast<Class_base*>(interface_obj);
 
@@ -1188,7 +1189,7 @@ void ABCContext::linkInterface(const multiname& interface_name, ASObject* obj)
 	if(interface->constructor)
 	{
 		LOG(CALLS,"Calling interface init for " << interface->class_name);
-		interface->constructor->call(obj,NULL);
+		interface->constructor->call(obj,NULL,obj->max_level);
 	}
 }
 
@@ -1429,7 +1430,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				multiname* type=getMultiname(t->type_name,NULL);
 				LOG(CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				ASObject* owner;
-				ASObject* ret=obj->getVariableByQName(name,ns,owner);
+				ASObject* ret=obj->getVariableByQName(name,ns,owner).obj;
 				if(!owner)
 				{
 					if(deferred_initialization)

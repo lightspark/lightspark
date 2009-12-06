@@ -40,7 +40,7 @@ private:
 	tiny_string tracer_name;
 public:
 	DebugTracer(const tiny_string& n):tracer_name(n){}
-	ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner)
+	objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner)
 	{
 		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname " << name);
 		return ASObject::getVariableByMultiname(name,owner);
@@ -50,7 +50,7 @@ public:
 		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname_i " << name);
 		return ASObject::getVariableByMultiname_i(name,owner);
 	}
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 	{
 		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByQName " << name << " on namespace " << ns);
 		return ASObject::getVariableByQName(name,ns,owner);
@@ -87,9 +87,9 @@ public:
 	~Class_base();
 	virtual IInterface* getInstance(bool construct=false)=0;
 	tiny_string class_name;
-	ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner)
+	objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner)
 	{
-		ASObject* ret=ASObject::getVariableByMultiname(name,owner);
+		objAndLevel ret=ASObject::getVariableByMultiname(name,owner);
 		if(owner==NULL && super)
 			ret=super->getVariableByMultiname(name,owner);
 		return ret;
@@ -102,9 +102,9 @@ public:
 			ret=super->getVariableByMultiname(name,owner);
 		return ret;*/
 	}
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 	{
-		ASObject* ret=ASObject::getVariableByQName(name,ns,owner);
+		objAndLevel ret=ASObject::getVariableByQName(name,ns,owner);
 		if(owner==NULL && super)
 			ret=super->getVariableByQName(name,ns,owner);
 		return ret;
@@ -117,8 +117,8 @@ class IFunction: public ASObject
 public:
 	IFunction():bound(false){type=T_FUNCTION;}
 	typedef ASObject* (*as_function)(ASObject*, arguments*);
-	virtual ASObject* call(ASObject* obj, arguments* args)=0;
-	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args)=0;
+	virtual ASObject* call(ASObject* obj, arguments* args, int level)=0;
+	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)=0;
 	virtual IFunction* clone()=0;
 	void bind(ASObject* c)
 	{
@@ -136,11 +136,11 @@ class Function_Object: public IFunction
 public:
 	//The interface of a function, but the behaviour of an object
 	Function_Object(){type=T_OBJECT;}
-	ASObject* call(ASObject* obj, arguments* args)
+	ASObject* call(ASObject* obj, arguments* args, int level)
 	{
 		abort();
 	}
-	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args)
+	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)
 	{
 		abort();
 	}
@@ -160,8 +160,8 @@ class Function : public IFunction
 public:
 	Function(){}
 	Function(as_function v):val(v){}
-	ASObject* call(ASObject* obj, arguments* args);
-	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args);
+	ASObject* call(ASObject* obj, arguments* args, int level);
+	ASObject* fast_call(ASObject* obj, ASObject** args, int num_args, int level);
 	IFunction* toFunction();
 	Function* clone()
 	{
@@ -179,8 +179,8 @@ friend void ASObject::handleConstruction(ABCContext* context,arguments* args, bo
 public:
 	typedef ASObject* (*synt_function)(ASObject*, arguments*, call_context* cc);
 	SyntheticFunction(method_info* m);
-	ASObject* call(ASObject* obj, arguments* args);
-	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args);
+	ASObject* call(ASObject* obj, arguments* args, int level);
+	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level);
 	IFunction* toFunction();
 	std::vector<ASObject*> func_scope;
 	SyntheticFunction* clone()
@@ -472,7 +472,7 @@ private:
 public:
 	ScriptDefinable(IFunction* _f):f(_f){}
 	//The global object will be passed from the calling context
-	void define(ASObject* g){ f->call(g,NULL); }
+	void define(ASObject* g){ f->call(g,NULL,0); }
 };
 
 //Deprecated
@@ -567,7 +567,7 @@ private:
 		//As we are the prototype we should incRef ourself
 		incRef();
 		if(construct && constructor)
-			constructor->call(obj,NULL);
+			constructor->call(obj,NULL,obj->max_level);
 		return ret;
 	}
 public:

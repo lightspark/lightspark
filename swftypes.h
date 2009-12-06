@@ -310,6 +310,14 @@ template<class T>
 	void put(ASObject* o);
 };
 
+class objAndLevel
+{
+public:
+	ASObject* obj;
+	int level;
+	objAndLevel(ASObject* o, int l):obj(o),level(l){}
+};
+
 class nameAndLevel
 {
 public:
@@ -429,9 +437,9 @@ public:
 		owner=(ret)?this:NULL;
 		return ret;
 	}
-	virtual ASObject* getVariableByMultiname(const multiname& name, ASObject*& owner);
+	virtual objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner);
-	virtual ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
+	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
 	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);

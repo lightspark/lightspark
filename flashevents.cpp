@@ -195,6 +195,7 @@ void EventDispatcher::handleEvent(Event* e)
 	//The event is going to be decreffed as a function parameter
 	args.set(0,e->obj);
 	obj->incRef();
-	h->second->call(obj,&args);
+	//TODO: check, ok we should also bind the level
+	h->second->call(obj,&args,obj->max_level);
 }
 

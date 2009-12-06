@@ -891,7 +891,7 @@ SyntheticFunction::SyntheticFunction(method_info* m):mi(m)
 	val=m->synt_method();
 }
 
-ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numArgs)
+ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numArgs, int level)
 {
 	if(mi->needsArgs())
 		abort();
@@ -899,7 +899,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	int args_len=mi->numArgs();
 	int passedToLocals=min(numArgs,args_len);
 	int passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
-	call_context* cc=new call_context(mi,args,passedToLocals);
+	call_context* cc=new call_context(mi,level,args,passedToLocals);
 	int i=passedToLocals;
 	cc->scope_stack=func_scope;
 	for(int i=0;i<func_scope.size();i++)
@@ -945,7 +945,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	return ret;
 }
 
-ASObject* SyntheticFunction::call(ASObject* obj, arguments* args)
+ASObject* SyntheticFunction::call(ASObject* obj, arguments* args, int level)
 {
 	if(val==NULL)
 	{
@@ -953,7 +953,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args)
 		return NULL;
 	}
 
-	call_context* cc=new call_context(mi);
+	call_context* cc=new call_context(mi, level);
 	cc->scope_stack=func_scope;
 	for(int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
@@ -1017,15 +1017,15 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args)
 	return ret;
 }
 
-ASObject* Function::fast_call(ASObject* obj, ASObject** args,int num_args)
+ASObject* Function::fast_call(ASObject* obj, ASObject** args,int num_args, int level)
 {
 	arguments arg(num_args,false);
 	for(int i=0;i<num_args;i++)
 		arg.set(i,args[i]);
-	return call(obj,&arg);
+	return call(obj,&arg,level);
 }
 
-ASObject* Function::call(ASObject* obj, arguments* args)
+ASObject* Function::call(ASObject* obj, arguments* args, int level)
 {
 	if(!bound)
 		return val(obj,args);

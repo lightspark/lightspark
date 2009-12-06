@@ -176,12 +176,14 @@ struct call_context
 		uintptr_t stack_index;
 	} __attribute__((packed));
 	ABCContext* context;
+	//We have to keep track of what is the level in the hierarchy for the currently executed function
+	const int cur_level_of_this;
 	int locals_size;
 	std::vector<ASObject*> scope_stack;
 	void runtime_stack_push(ASObject* s);
 	ASObject* runtime_stack_pop();
 	ASObject* runtime_stack_peek();
-	call_context(method_info* th, ASObject** args=NULL, int numArgs=0);
+	call_context(method_info* th, int l, ASObject** args=NULL, int numArgs=0);
 	~call_context();
 };
 

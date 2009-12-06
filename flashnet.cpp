@@ -92,7 +92,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	tiny_string url=req->url;
 	cout << "url is " << url << endl;
 	ASObject* owner;
-	ASObject* data=arg->getVariableByQName("data","",owner);
+	ASObject* data=arg->getVariableByQName("data","",owner).obj;
 	assert(owner);
 	for(int i=0;i<data->numVariables();i++)
 	{

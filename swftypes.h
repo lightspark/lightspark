@@ -55,42 +55,94 @@ class tiny_string
 {
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
-	#define SIZE 1024
-	char buf[SIZE];
+	#define SIZE 256
+	char _buf_static[SIZE];
+	char* buf;
+	bool isStatic;
 public:
-	tiny_string(){buf[0]=0;}
-	tiny_string(const char* s)
+	tiny_string():buf(_buf_static),isStatic(true){buf[0]=0;}
+	tiny_string(const char* s):buf(_buf_static),isStatic(true)
 	{
 		if(strlen(s)>(SIZE-1))
-			abort();
+		{
+			isStatic=false;
+			buf=new char[4096];
+		}
+		assert(strlen(s)<=4096);
 		strcpy(buf,s);
 	}
-	explicit tiny_string(intptr_t i)
+	tiny_string(const tiny_string& r):isStatic(true),buf(_buf_static)
+	{
+		if(strlen(r.buf)>(SIZE-1))
+		{
+			isStatic=false;
+			buf=new char[4096];
+			abort();
+		}
+		assert(strlen(r.buf)<=4096);
+		strcpy(buf,r.buf);
+	}
+	~tiny_string()
+	{
+		if(isStatic==false)
+			delete[] buf;
+	}
+	explicit tiny_string(intptr_t i):isStatic(true),buf(_buf_static)
 	{
 		sprintf(buf,"%i",i);
 	}
-	explicit tiny_string(number_t d)
+	explicit tiny_string(number_t d):isStatic(true),buf(_buf_static)
 	{
 		sprintf(buf,"%g",d);
 	}
+	tiny_string& operator=(const tiny_string& s)
+	{
+		if(s.len()>(SIZE-1))
+		{
+			isStatic=false;
+			assert(s.len()<=4096);
+			buf=new char[4096];
+		}
+		//Lenght is already checked
+		strcpy(buf,s.buf);
+		return *this;
+	}
 	tiny_string& operator=(const std::string& s)
 	{
-		strncpy(buf,s.c_str(),SIZE);
+		if(s.size()>(SIZE-1))
+		{
+			isStatic=false;
+			assert(s.size()<=4096);
+			buf=new char[4096];
+		}
+		//Lenght is already checked
+		strcpy(buf,s.c_str());
 		return *this;
 	}
 	tiny_string& operator=(const char* s)
 	{
-		strncpy(buf,s,SIZE);
+		if(strlen(s)>(SIZE-1))
+		{
+			isStatic=false;
+			assert(strlen(s)<=4096);
+			buf=new char[4096];
+		}
+		//Lenght is already checked
+		strcpy(buf,s);
 		return *this;
 	}
 	tiny_string& operator+=(const char* s)
 	{
-		strncat(buf,s,SIZE-1-strlen(buf));
+		int newlen=strlen(buf)+strlen(s)+1;
+		assert(newlen<SIZE);
+		strcat(buf,s);
 		return *this;
 	}
 	tiny_string& operator+=(const tiny_string& r)
 	{
-		strncat(buf,r.buf,SIZE-1-strlen(buf));
+		int newlen=strlen(buf)+strlen(r.buf)+1;
+		assert(newlen<SIZE);
+		strcat(buf,r.buf);
 		return *this;
 	}
 	const tiny_string operator+(const tiny_string& r)
@@ -101,23 +153,23 @@ public:
 	}
 	bool operator<(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,SIZE)<0;
+		return strcmp(buf,r.buf)<0;
 	}
 	bool operator==(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,SIZE)==0;
+		return strcmp(buf,r.buf)==0;
 	}
 	bool operator!=(const tiny_string& r) const
 	{
-		return strncmp(buf,r.buf,SIZE)!=0;
+		return strcmp(buf,r.buf)!=0;
 	}
 	bool operator==(const char* r) const
 	{
-		return strncmp(buf,r,SIZE)==0;
+		return strcmp(buf,r)==0;
 	}
 	bool operator!=(const char* r) const
 	{
-		return strncmp(buf,r,SIZE)!=0;
+		return strcmp(buf,r)!=0;
 	}
 	const char* raw_buf() const
 	{

@@ -1068,14 +1068,16 @@ ASFUNCTIONBODY(Math,max)
 
 ASFUNCTIONBODY(Math,cos)
 {
+	//Angle is in radians
 	double n=args->at(0)->toNumber();
-	return abstract_d(::cos(n*M_PI/180));
+	return abstract_d(::cos(n));
 }
 
 ASFUNCTIONBODY(Math,sin)
 {
+	//Angle is in radians
 	double n=args->at(0)->toNumber();
-	return abstract_d(::sin(n*M_PI/180));
+	return abstract_d(::sin(n));
 }
 
 ASFUNCTIONBODY(Math,abs)

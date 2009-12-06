@@ -563,6 +563,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				ret->nskind.push_back(n->kind);
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
+				ret->name_s.len();
 				break;
 			}
 			case 0x09:
@@ -581,6 +582,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
+				ret->name_s.len();
 				break;
 			}
 			case 0x1b:
@@ -601,6 +603,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				ret->name_s=n->toString();
 				ret->name_type=multiname::NAME_STRING;
 				n->decRef();
+				ret->name_s.len();
 				break;
 			}
 	/*		case 0x0d:
@@ -676,6 +679,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
+		ret->name_s.len();
 		return ret;
 	}
 }

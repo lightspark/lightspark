@@ -246,6 +246,8 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
 			//Methods has to be runned with their own class this
+			//The owner has to be increffed
+			owner->incRef();
 			ASObject* ret=f->fast_call(owner,args,m,o.level);
 			th->runtime_stack_push(ret);
 		}
@@ -273,6 +275,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 				IFunction* f=o.obj->toFunction();
 				if(f)
 				{
+					owner->incRef();
 					ASObject* ret=f->fast_call(owner,args,m,o.level);
 					th->runtime_stack_push(ret);
 				}
@@ -635,7 +638,8 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		if(o.obj->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
-			f->call(obj,&args,o.level);
+			owner->incRef();
+			f->call(owner,&args,o.level);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
@@ -1360,6 +1364,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 		if(o.obj->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
+			owner->incRef();
 			ASObject* ret=f->fast_call(owner,args,m,o.level);
 			th->runtime_stack_push(ret);
 		}
@@ -1453,7 +1458,8 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		if(o.obj->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
-			f->fast_call(obj,args,m,o.level);
+			owner->incRef();
+			f->fast_call(owner,args,m,o.level);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
@@ -1617,6 +1623,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 			LOG(CALLS,"Building method traits");
 			for(int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+			ret->incRef();
 			sf->call(ret,&args,ret->max_level);
 		}
 		th->runtime_stack_push(ret);
@@ -1773,6 +1780,7 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	LOG(CALLS,"Calling Class init " << ret);
+	ret->incRef();
 	cinit->call(ret,NULL,ret->max_level);
 	LOG(CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);

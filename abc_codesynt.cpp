@@ -2933,7 +2933,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//pushnan
 				LOG(TRACE, "synt pushnan" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("pushNaN"), context);
+				value=Builder.CreateCall(ex->FindFunctionNamed("pushNaN"));
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
 				break;

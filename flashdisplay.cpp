@@ -43,6 +43,7 @@ REGISTER_CLASS_NAME(DisplayObjectContainer);
 REGISTER_CLASS_NAME(Sprite);
 REGISTER_CLASS_NAME(Loader);
 REGISTER_CLASS_NAME(Shape);
+REGISTER_CLASS_NAME(Stage);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -278,7 +279,7 @@ void Loader::Render()
 	local_root->Render();
 }
 
-Sprite::Sprite():_x(0),_y(0)
+Sprite::Sprite()
 {
 }
 
@@ -297,27 +298,7 @@ ASFUNCTIONBODY(Sprite,_constructor)
 	if(sys)
 		sys->incRef();
 	th->setVariableByQName("getBounds","",new Function(getBounds));
-	th->setGetterByQName("parent","",new Function(_getParent));
-	th->setGetterByQName("y","",new Function(getY));
-	th->setGetterByQName("x","",new Function(getX));*/
-}
-
-ASFUNCTIONBODY(Sprite,getY)
-{
-	Sprite* th=static_cast<Sprite*>(obj->interface);
-	return new Number(th->_y);
-}
-
-ASFUNCTIONBODY(Sprite,getX)
-{
-	Sprite* th=static_cast<Sprite*>(obj->interface);
-	return new Number(th->_x);
-}
-
-ASFUNCTIONBODY(Sprite,getBounds)
-{
-	LOG(NOT_IMPLEMENTED,"Calculate real bounds");
-	return new Rectangle(0,0,100,100);
+	th->setGetterByQName("parent","",new Function(_getParent));*/
 }
 
 ASFUNCTIONBODY(Sprite,_getParent)
@@ -509,10 +490,7 @@ void MovieClip::Render()
 	rt->currentClip=this;
 
 	if(!initialized)
-	{
 		initialize();
-		initialized=true;
-	}
 
 	if(!state.stop_FP /*&& (class_name=="MovieClip")*/)
 		state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount
@@ -557,15 +535,65 @@ void MovieClip::initialize()
 	}
 }
 
+void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+{
+	xmin=10;
+	ymin=10;
+	xmax=110;
+	ymax=110;
+}
+
 DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL),rotation(0.0)
 {
-//	setVariableByQName("Call","",new Function(_call));
 }
 
 void DisplayObject::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
+	c->constructor=new Function(_getX);
+}
+
+ASFUNCTIONBODY(DisplayObject,_getX)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	return abstract_d(th->Matrix.TranslateX);
+}
+
+ASFUNCTIONBODY(DisplayObject,_setX)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	assert(args && args->size()==1);
+	th->Matrix.TranslateX=args->at(0)->toInt();
+}
+
+ASFUNCTIONBODY(DisplayObject,_getY)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	return abstract_d(th->Matrix.TranslateY);
+}
+
+ASFUNCTIONBODY(DisplayObject,_setY)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	assert(args && args->size()==1);
+	th->Matrix.TranslateY=args->at(0)->toInt();
+}
+
+ASFUNCTIONBODY(DisplayObject,_getBounds)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	Rectangle* ret=Class<Rectangle>::getInstanceS(true);
+	number_t x1,x2,y1,y2;
+	th->getBounds(x1,x2,y1,y2);
+
+	//Bounds are in the form [XY]{min,max}
+	//convert it to rect (x,y,width,height) representation
+	ret->x=x1;
+	ret->width=x2-x1;
+	ret->y=y1;
+	ret->height=y2-y1;
+	return ret->obj;
 }
 
 ASFUNCTIONBODY(DisplayObject,_constructor)
@@ -580,6 +608,8 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 	}
 
 	obj->setGetterByQName("width","",new Function(_getWidth));
+	obj->setGetterByQName("x","",new Function(_getX));
+	obj->setGetterByQName("y","",new Function(_getY));
 	obj->setGetterByQName("height","",new Function(_getHeight));
 	obj->setGetterByQName("visible","",new Function(_getVisible));
 	obj->setGetterByQName("rotation","",new Function(_getRotation));
@@ -587,10 +617,20 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 	obj->setGetterByQName("root","",new Function(_getRoot));
 	obj->setGetterByQName("blendMode","",new Function(_getBlendMode));
 	obj->setGetterByQName("scale9Grid","",new Function(_getScale9Grid));
+	obj->setGetterByQName("stage","",new Function(_getStage));
+	obj->setVariableByQName("getBounds","",new Function(_getBounds));
 	obj->setVariableByQName("localToGlobal","",new Function(localToGlobal));
-	obj->setVariableByQName("stage","",new ASObject);
 	obj->setSetterByQName("width","",new Function(_setWidth));
 	obj->setSetterByQName("name","",new Function(_setName));
+	obj->setSetterByQName("x","",new Function(_setX));
+	obj->setSetterByQName("y","",new Function(_setY));
+}
+
+ASFUNCTIONBODY(DisplayObject,_getStage)
+{
+	assert(sys->stage);
+	sys->stage->obj->incRef();
+	return sys->stage->obj;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
@@ -699,3 +739,32 @@ ASFUNCTIONBODY(Shape,_constructor)
 	DisplayObject::_constructor(obj,NULL);
 }
 
+void Stage::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->super=Class<DisplayObjectContainer>::getClass();
+}
+
+Stage::Stage():width(6400),height(4800)
+{
+//	setVariableByQName("height","",&height);
+}
+
+ASFUNCTIONBODY(Stage,_constructor)
+{
+	obj->setGetterByQName("stageWidth","",new Function(_getStageWidth));
+	obj->setGetterByQName("stageHeight","",new Function(_getStageHeight));
+}
+
+ASFUNCTIONBODY(Stage,_getStageWidth)
+{
+	Stage* th=static_cast<Stage*>(obj->interface);
+	return abstract_d(th->width);
+}
+
+ASFUNCTIONBODY(Stage,_getStageHeight)
+{
+	Stage* th=static_cast<Stage*>(obj->interface);
+	return abstract_d(th->height);
+}

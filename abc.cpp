@@ -37,6 +37,7 @@
 #include "flashnet.h"
 #include "flashsystem.h"
 #include "flashutils.h"
+#include "flashgeom.h"
 
 extern __thread SystemState* sys;
 extern __thread ParseThread* pt;
@@ -148,7 +149,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Timer","flash.utils",Class<IInterface>::getClass("Timer"));
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
 
-	Global.setVariableByQName("Rectangle","flash.geom",Class<IInterface>::getClass("Rectangle"));
+	Global.setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
+	Global.setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass());
 	Global.setVariableByQName("Matrix","flash.geom",Class<IInterface>::getClass("Matrix"));
 	Global.setVariableByQName("Point","flash.geom",Class<IInterface>::getClass("Point"));
 
@@ -818,6 +820,17 @@ void ABCVm::handleEvent()
 				last_context->exec();
 				break;
 			}
+			case CONSTRUCT_OBJECT:
+			{
+				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
+				LOG(CALLS,"Building instance traits");
+				last_context->buildClassTraits(ev->obj, ev->_class->class_index);
+
+				LOG(CALLS,"Calling Instance init");
+				ev->_class->constructor->call(ev->obj,NULL,ev->obj->max_level);
+				ev->sync();
+				break;
+			}
 			default:
 				LOG(ERROR,"Not supported event");
 				abort();
@@ -863,20 +876,24 @@ void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,argum
 	Class_base* derived_class_tmp=static_cast<Class_base*>(derived_class);
 	assert(derived_class_tmp->class_index!=-1);
 
-	//It's now possible to actually build an instance
+	assert(base->obj==NULL);
+/*	//It's now possible to actually build an instance
 	ASObject* obj=derived_class_tmp->getInstance()->obj;
 	//Acquire the base interface in the object
 	obj->acquireInterface(base);
-
+	__asm__("int $3");*/
+	base->obj=derived_class_tmp;
+/*
 	if(derived_class_tmp->class_index!=-1)
 	{
 		LOG(CALLS,"Building instance traits");
-		buildClassTraits(obj, derived_class_tmp->class_index);
+		buildClassTraits(derived_class_tmp, derived_class_tmp->class_index);
 
+		//TODO: check for root movie
 		LOG(CALLS,"Calling Instance init on " << s);
 		//args->incRef();
 		obj->prototype->constructor->call(obj,args,obj->max_level);
-	}
+	}*/
 }
 
 inline method_info* ABCContext::get_method(unsigned int m)
@@ -920,17 +937,6 @@ bool Boolean_concrete(ASObject* obj)
 	}
 	else
 		return false;
-}
-
-ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
-{
-	LOG(CALLS,"lessThan");
-
-	//Real comparision demanded to object
-	bool ret=obj1->isLess(obj2);
-	obj1->decRef();
-	obj2->decRef();
-	return new Boolean(ret);
 }
 
 void ABCVm::deleteProperty(call_context* th, int n)

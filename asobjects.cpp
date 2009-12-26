@@ -40,12 +40,6 @@ REGISTER_CLASS_NAME(IInterface);
 REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
 
-ASStage::ASStage():width(640),height(480)
-{
-//	setVariableByQName("width","",&width);
-//	setVariableByQName("height","",&height);
-}
-
 Array::Array()
 {
 	type=T_ARRAY;
@@ -965,6 +959,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args, int level)
 	}
 
 	cc->locals[0]=obj;
+	cc->locals[0]->incRef();
 	int i=0;
 	int args_len=mi->numArgs();
 	if(args)

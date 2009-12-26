@@ -240,15 +240,6 @@ public:
 	bool isEqual(ASObject* r);
 };
 
-class ASStage: public ASObject
-{
-private:
-	uintptr_t width;
-	uintptr_t height;
-public:
-	ASStage();
-};
-
 class Null : public ASObject
 {
 public:

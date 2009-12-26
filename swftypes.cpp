@@ -118,6 +118,22 @@ SWFOBJECT_TYPE ASObject::getObjectType() const
 	return (interface)?(interface->type):type;
 }
 
+IInterface::IInterface(const IInterface& r):type(r.type),magic(r.magic),obj(NULL)
+{
+	if(r.obj)
+	{
+		//An IInterface derived class can only be cloned if the obj is a Class
+		assert(r.obj->getObjectType()==T_CLASS);
+		Class_base* c=static_cast<Class_base*>(r.obj);
+		obj=new ASObject;
+		obj->prototype=c;
+		obj->actualPrototype=c;
+		obj->max_level=c->max_level;
+		c->incRef();
+		obj->interface=this;
+	}
+}
+
 bool IInterface::isEqual(bool& ret, ASObject* r)
 {
 	return false;
@@ -605,7 +621,6 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 		//Check if we should do lazy definition
 		if(name.name_s=="toString")
 		{
-			abort();
 			ASObject* ret=new Function(ASObject::_toString);
 			setVariableByQName("toString","",ret);
 			owner=this;
@@ -826,6 +841,12 @@ void MATRIX::get4DMatrix(float matrix[16])
 	matrix[12]=TranslateX;
 	matrix[13]=TranslateY;
 	matrix[15]=1;
+}
+
+void MATRIX::getTranslation(int& x, int& y)
+{
+	x=TranslateX;
+	y=TranslateY;
 }
 
 std::ostream& operator<<(std::ostream& s, const MATRIX& r)

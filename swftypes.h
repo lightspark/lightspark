@@ -396,15 +396,18 @@ public:
 	Class_base* actualPrototype;
 	void incRef()
 	{
+		//std::cout << "incref " << this << std::endl;
 		ref_count++;
 	}
 	void decRef()
 	{
+		//std::cout << "decref " << this << std::endl;
 		assert(ref_count>0);
 		ref_count--;
 		if(ref_count==0)
 		{
 			assert(debug==0);
+			//std::cout << "delete " << this << std::endl;
 			if(manager)
 			{
 				manager->put(this);
@@ -497,6 +500,7 @@ protected:
 public:
 	ASObject* obj;
 	IInterface():type(T_OBJECT),obj(NULL),magic(0x11223344){}
+	IInterface(const IInterface& r);
 	virtual ~IInterface(){}
 	static void sinit(Class_base*){}
 };
@@ -522,7 +526,11 @@ T* Manager::get()
 		return ret;
 	}
 	else
-		return new T(this);
+	{
+		T* ret=new T(this);
+		//std::cout << "newing" << ret << std::endl;
+		return ret;
+	}
 }
 
 /*class ConstantReference : public ASObject
@@ -804,21 +812,21 @@ class MATRIX
 	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
 public:
 	int size;
-	UB HasScale;
-	UB NScaleBits;
+	int HasScale;
+	int NScaleBits;
 	float ScaleX;
 	float ScaleY;
-	UB HasRotate;
-	UB NRotateBits;
-	FB RotateSkew0;
-	FB RotateSkew1;
-	UB NTranslateBits;
-	SB TranslateX;
-	SB TranslateY;
+	int HasRotate;
+	int NRotateBits;
+	float RotateSkew0;
+	float RotateSkew1;
+	int NTranslateBits;
+	int TranslateX;
+	int TranslateY;
 public:
 	MATRIX():size(0){}
 	void get4DMatrix(float matrix[16]);
-	//int getSize(){return size;}
+	void getTranslation(int& x, int& y);
 };
 
 class GRADRECORD

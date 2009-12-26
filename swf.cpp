@@ -88,6 +88,7 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 	sys=this;
 	sem_init(&new_frame,0,0);
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
+	stage=Class<Stage>::getInstanceS(true);
 }
 
 SystemState::~SystemState()
@@ -385,7 +386,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 		listeners.equal_range(t);
 
 	for(range.first;range.first!=range.second;range.first++)
-		sys->currentVm->addEvent(range.first->second,new Event(t));
+		sys->currentVm->addEvent(range.first->second,Class<Event>::getInstanceS(t));
 
 	sem_post(&sem_listeners);
 }

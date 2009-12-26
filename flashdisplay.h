@@ -38,9 +38,13 @@ public:
 	UI16 Ratio;
 	UI16 ClipDepth;
 	CLIPACTIONS ClipActions;
-	IDisplayListElem():root(NULL){}
 	RootMovieClip* root;
+	MATRIX Matrix;
+	MATRIX* origMatrix;
+
+	IDisplayListElem():root(NULL),origMatrix(NULL){}
 	virtual void Render()=0;
+	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)=0;
 };
 
 class DisplayObject: public IDisplayListElem
@@ -55,7 +59,13 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getVisible);
+	ASFUNCTION(_getStage);
+	ASFUNCTION(_getX);
+	ASFUNCTION(_setX);
+	ASFUNCTION(_getY);
+	ASFUNCTION(_setY);
 	ASFUNCTION(_getWidth);
+	ASFUNCTION(_getBounds);
 	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_getRotation);
@@ -70,12 +80,20 @@ public:
 	{
 		abort();
 	}
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		abort();
+	}
 };
 
 class DisplayObjectContainer: public DisplayObject
 {
 public:
 	DisplayObjectContainer();
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		abort();
+	}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getNumChildren);
@@ -86,6 +104,10 @@ class Shape: public DisplayObject
 public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		abort();
+	}
 };
 
 class LoaderInfo: public EventDispatcher
@@ -130,24 +152,18 @@ public:
 
 class Sprite: public DisplayObjectContainer
 {
-protected:
-	intptr_t _x;
-	intptr_t _y;
 public:
 	Sprite();
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(getBounds);
-	ASFUNCTION(getX);
-	ASFUNCTION(getY);
 	ASFUNCTION(_getParent);
 	int getDepth() const
 	{
 		return 0;
 	}
-	void Render()
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
-		LOG(NOT_IMPLEMENTED,"Sprite Rendering");
+		abort();
 	}
 };
 
@@ -183,8 +199,22 @@ public:
 
 	virtual void addToFrame(DisplayListTag* r);
 
-	//IRenderObject interface
+	//IDisplayListElem interface
 	void Render();
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+};
+
+class Stage: public DisplayObjectContainer
+{
+private:
+	uintptr_t width;
+	uintptr_t height;
+public:
+	Stage();
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getStageWidth);
+	ASFUNCTION(_getStageHeight);
 };
 
 #endif

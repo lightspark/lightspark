@@ -19,14 +19,96 @@
 
 #include "flashgeom.h"
 
-Rectangle::Rectangle(int l, int t, int r, int b)
+REGISTER_CLASS_NAME(ColorTransform);
+REGISTER_CLASS_NAME(Rectangle);
+
+void Rectangle::sinit(Class_base* c)
 {
-/*	setVariableByName("left",new Integer(l));
-	setVariableByName("top",new Integer(t));
-	setVariableByName("top",new Integer(t));*/
-	//TODO: Use getters
-	setVariableByQName("xMax","",new Integer(r));
-	setVariableByQName("xMin","",new Integer(l));
-	setVariableByQName("yMax","",new Integer(b));
-	setVariableByQName("yMin","",new Integer(t));
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(Rectangle,_constructor)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	if(args && args->size()!=0)
+		abort();
+	th->x=0;
+	th->y=0;
+	th->width=0;
+	th->height=0;
+	obj->setGetterByQName("left","",new Function(_getLeft));
+	obj->setGetterByQName("right","",new Function(_getRight));
+	obj->setGetterByQName("top","",new Function(_getTop));
+	obj->setGetterByQName("bottom","",new Function(_getBottom));
+}
+
+ASFUNCTIONBODY(Rectangle,_getLeft)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	return abstract_d(th->x);
+}
+
+ASFUNCTIONBODY(Rectangle,_getRight)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	return abstract_d(th->x + th->width);
+}
+
+ASFUNCTIONBODY(Rectangle,_getTop)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	return abstract_d(th->y);
+}
+
+ASFUNCTIONBODY(Rectangle,_getBottom)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	return abstract_d(th->y + th->height);
+}
+
+void ColorTransform::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(ColorTransform,_constructor)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj->interface);
+	if(args->size()!=0)
+		abort();
+	//Setting multiplier to default
+	th->redMultiplier=1.0;
+	th->greenMultiplier=1.0;
+	th->blueMultiplier=1.0;
+	th->alphaMultiplier=1.0;
+	//Setting offset to the input value
+	th->redOffset=0.0;
+	th->greenOffset=0.0;
+	th->blueOffset=0.0;
+	th->alphaOffset=0.0;
+}
+
+ASFUNCTIONBODY(ColorTransform,setColor)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj->interface);
+	if(args->size()!=1)
+		abort();
+	uintptr_t tmp=args->at(0)->toInt();
+	//Setting multiplier to 0
+	th->redMultiplier=0;
+	th->greenMultiplier=0;
+	th->blueMultiplier=0;
+	th->alphaMultiplier=0;
+	//Setting offset to the input value
+	th->alphaOffset=(tmp>>24)&0xff;
+	th->redOffset=(tmp>>16)&0xff;
+	th->greenOffset=(tmp>>8)&0xff;
+	th->blueOffset=tmp&0xff;
+}
+
+ASFUNCTIONBODY(ColorTransform,getColor)
+{
+	abort();
 }

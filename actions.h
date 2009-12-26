@@ -54,6 +54,10 @@ public:
 	DoActionTag(RECORDHEADER h, std::istream& in);
 	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
 	void Render();
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		abort();
+	}
 };
 
 class DoInitActionTag: public DisplayListTag, public ExecutionContext, public IDisplayListElem
@@ -67,6 +71,10 @@ public:
 	DoInitActionTag(RECORDHEADER h, std::istream& in);
 	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
 	void Render();
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		abort();
+	}
 };
 
 class ExportAssetsTag: public Tag

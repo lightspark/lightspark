@@ -1835,3 +1835,14 @@ void ABCVm::popScope(call_context* th)
 	th->scope_stack.pop_back();
 }
 
+ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
+{
+	LOG(CALLS,"lessThan");
+
+	//Real comparision demanded to object
+	bool ret=obj1->isLess(obj2);
+	obj1->decRef();
+	obj2->decRef();
+	return new Boolean(ret);
+}
+

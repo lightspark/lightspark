@@ -4216,8 +4216,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//lessthan
 				LOG(TRACE, "synt lessthan" );
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
@@ -4231,8 +4231,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//lessequals
 				LOG(TRACE, "synt lessequals" );
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
@@ -4245,8 +4245,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//greaterthan
 				LOG(TRACE, "synt greaterthan" );
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
@@ -4259,8 +4259,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//greaterequals
 				LOG(TRACE, "synt greaterequals" );
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT)
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
 				if(v2.second==STACK_INT)

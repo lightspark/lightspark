@@ -1291,11 +1291,21 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 	IDisplayListElem* toAdd=NULL;
 	if(PlaceFlagHasCharacter)
 	{
+		//As the transformation matrix can change every frame
+		//it is saved in a side data structure
+		//and assigned to the internal struture every frame
 		LOG(TRACE,"Placing ID " << CharacterId);
 		DictionaryTag* dict=parent->root->dictionaryLookup(CharacterId);
 		toAdd=dict->instance();
-		if(toAdd==NULL)
-			abort();
+		assert(toAdd);
+
+		if(toAdd->obj)
+		{
+			//We now ask the VM to construct this object
+			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd->obj,toAdd->obj->prototype);
+			sys->currentVm->addEvent(NULL,e);
+			e->wait();
+		}
 
 		if(PlaceFlagHasColorTransform)
 			toAdd->ColorTransform=ColorTransform;

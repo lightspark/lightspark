@@ -117,6 +117,7 @@ public:
 	SystemState();
 	~SystemState();
 	fps_profiling* fps_prof;
+	Stage* stage;
 	ABCVm* currentVm;
 	InputThread* cur_input_thread;
 	RenderThread* cur_render_thread;

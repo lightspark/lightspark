@@ -28,7 +28,7 @@ class ASObject;
 class PlaceObject2Tag;
 class ABCContext;
 
-enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT };
+enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT, CONSTRUCT_OBJECT };
 
 class Event: public IInterface
 {
@@ -143,6 +143,7 @@ private:
 	sem_t s;
 public:
 	SynchronizationEvent():Event("SynchronizationEvent"){sem_init(&s,0,0);}
+	SynchronizationEvent(const tiny_string& _s):Event(_s){sem_init(&s,0,0);}
 	static void sinit(Class_base*);
 	~SynchronizationEvent(){sem_destroy(&s);}
 	EVENT_TYPE getEventType() { return SYNC; }
@@ -165,6 +166,19 @@ public:
 	ABCContextInitEvent(ABCContext* c):Event("ABCContextInitEvent"),context(c){}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return CONTEXT; }
+};
+
+//This event is also synchronous
+class ConstructObjectEvent: public SynchronizationEvent
+{
+friend class ABCVm;
+private:
+	ASObject* obj;
+	Class_base* _class;
+	static void sinit(Class_base*);
+public:
+	ConstructObjectEvent(ASObject* o, Class_base* c):SynchronizationEvent("ConstructObjectEvent"),_class(c),obj(o){}
+	EVENT_TYPE getEventType() { return CONSTRUCT_OBJECT; }
 };
 
 #endif

@@ -22,10 +22,28 @@
 
 #include "asobjects.h"
 
-class Rectangle: public ASObject
+class Rectangle: public IInterface
 {
 public:
-	Rectangle(int l, int t, int r, int b);
+	number_t x,y,width,height;
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getLeft);
+	ASFUNCTION(_getRight);
+	ASFUNCTION(_getTop);
+	ASFUNCTION(_getBottom);
+};
+
+class ColorTransform: public IInterface
+{
+private:
+	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
+	number_t redOffset,greenOffset,blueOffset,alphaOffset;
+public:
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(setColor);
+	ASFUNCTION(getColor);
 };
 
 #endif

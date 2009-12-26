@@ -111,6 +111,13 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
+	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		xmin=ShapeBounds.Xmin;
+		xmax=ShapeBounds.Xmax;
+		ymin=ShapeBounds.Ymin;
+		ymax=ShapeBounds.Ymax;
+	}
 
 	IDisplayListElem* instance()
 	{
@@ -128,6 +135,13 @@ public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
+	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		xmin=ShapeBounds.Xmin;
+		xmax=ShapeBounds.Xmax;
+		ymin=ShapeBounds.Ymin;
+		ymax=ShapeBounds.Ymax;
+	}
 
 	IDisplayListElem* instance()
 	{
@@ -146,6 +160,13 @@ public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
+	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		xmin=ShapeBounds.Xmin;
+		xmax=ShapeBounds.Xmax;
+		ymin=ShapeBounds.Ymin;
+		ymax=ShapeBounds.Ymax;
+	}
 
 	IDisplayListElem* instance()
 	{
@@ -167,6 +188,13 @@ public:
 	DefineShape4Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
+	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		xmin=ShapeBounds.Xmin;
+		xmax=ShapeBounds.Xmax;
+		ymin=ShapeBounds.Ymin;
+		ymax=ShapeBounds.Ymax;
+	}
 
 	IDisplayListElem* instance()
 	{
@@ -352,6 +380,10 @@ public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
 	virtual void Render();
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		abort();
+	}
 	virtual void handleEvent(Event*);
 
 	IDisplayListElem* instance();
@@ -457,6 +489,13 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render();
+	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	{
+		xmin=TextBounds.Xmin;
+		xmax=TextBounds.Xmax;
+		ymin=TextBounds.Ymin;
+		ymax=TextBounds.Ymax;
+	}
 
 	IDisplayListElem* instance()
 	{
@@ -469,7 +508,6 @@ class DefineSpriteTag: public DictionaryTag, public MovieClip
 private:
 	UI16 SpriteID;
 	UI16 FrameCount;
-	//std::vector < Tag* > ControlTags;
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }

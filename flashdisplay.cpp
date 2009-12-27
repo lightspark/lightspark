@@ -294,16 +294,12 @@ ASFUNCTIONBODY(Sprite,_constructor)
 {
 	Sprite* th=static_cast<Sprite*>(obj->interface);
 	DisplayObjectContainer::_constructor(obj,NULL);
-/*	th->setVariableByQName("root","",new Null);
-	if(sys)
-		sys->incRef();
-	th->setVariableByQName("getBounds","",new Function(getBounds));
-	th->setGetterByQName("parent","",new Function(_getParent));*/
 }
 
 ASFUNCTIONBODY(Sprite,_getParent)
 {
 	Sprite* th=static_cast<Sprite*>(obj->interface);
+	abort();
 /*	if(th->parent==NULL)
 		return new Undefined;
 
@@ -537,10 +533,14 @@ void MovieClip::initialize()
 
 void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
-	xmin=10;
-	ymin=10;
-	xmax=110;
-	ymax=110;
+	//Iterate over the displaylist of the current frame
+	//TODO: add dynamic dysplay list
+	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::iterator it=frames[state.FP].displayList.begin();
+	assert(frames[state.FP].displayList.size()==1);
+	it->second->getBounds(xmin,xmax,ymin,ymax);
+	//TODO: take rotation into account
+	Matrix.multiply2D(xmin,ymin,xmin,ymin);
+	Matrix.multiply2D(xmax,ymax,xmax,ymax);
 }
 
 DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL),rotation(0.0)

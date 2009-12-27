@@ -72,7 +72,7 @@ void GeomShape::Render(int x, int y) const
 		glDisableClientState(GL_VERTEX_ARRAY);*/
 	}
 
-	//if(/*graphic.stroked ||*/ !filled)
+	if(/*graphic.stroked ||*/ !filled)
 	{
 		//LOG(TRACE,"Line tracing");
 		FILLSTYLE::fixedColor(0,0,0);

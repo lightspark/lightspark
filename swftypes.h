@@ -827,6 +827,7 @@ public:
 	MATRIX():size(0){}
 	void get4DMatrix(float matrix[16]);
 	void getTranslation(int& x, int& y);
+	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout);
 };
 
 class GRADRECORD

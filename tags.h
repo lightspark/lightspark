@@ -113,10 +113,10 @@ public:
 	virtual void Render();
 	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
-		xmin=ShapeBounds.Xmin;
-		xmax=ShapeBounds.Xmax;
-		ymin=ShapeBounds.Ymin;
-		ymax=ShapeBounds.Ymax;
+		//Apply transformation with the current matrix
+		Matrix.multiply2D(ShapeBounds.Xmin,ShapeBounds.Ymin,xmin,ymin);
+		Matrix.multiply2D(ShapeBounds.Xmax,ShapeBounds.Ymax,xmax,ymax);
+		//TODO: adapt for rotation
 	}
 
 	IDisplayListElem* instance()
@@ -137,10 +137,10 @@ public:
 	virtual void Render();
 	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
-		xmin=ShapeBounds.Xmin;
-		xmax=ShapeBounds.Xmax;
-		ymin=ShapeBounds.Ymin;
-		ymax=ShapeBounds.Ymax;
+		//Apply transformation with the current matrix
+		Matrix.multiply2D(ShapeBounds.Xmin,ShapeBounds.Ymin,xmin,ymin);
+		Matrix.multiply2D(ShapeBounds.Xmax,ShapeBounds.Ymax,xmax,ymax);
+		//TODO: adapt for rotation
 	}
 
 	IDisplayListElem* instance()
@@ -162,6 +162,7 @@ public:
 	virtual void Render();
 	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
+		abort();
 		xmin=ShapeBounds.Xmin;
 		xmax=ShapeBounds.Xmax;
 		ymin=ShapeBounds.Ymin;
@@ -190,6 +191,7 @@ public:
 	virtual void Render();
 	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
+		abort();
 		xmin=ShapeBounds.Xmin;
 		xmax=ShapeBounds.Xmax;
 		ymin=ShapeBounds.Ymin;
@@ -304,10 +306,6 @@ class PlaceObject2Tag: public DisplayListTag
 {
 private:
 	static bool list_orderer(const std::pair<PlaceInfo, IDisplayListElem*> a, int d);
-//	Number _scalex;
-
-//	ASObject* wrapped;
-//	ASObject* parent;
 
 	UB PlaceFlagHasClipAction;
 	UB PlaceFlagHasClipDepth;
@@ -491,6 +489,7 @@ public:
 	virtual void Render();
 	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
+		abort();
 		xmin=TextBounds.Xmin;
 		xmax=TextBounds.Xmax;
 		ymin=TextBounds.Ymin;

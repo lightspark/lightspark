@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
 
-	Log::initLogging(CALLS);
+	Log::initLogging(NO_INFO);
 	sys=new SystemState;
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();
@@ -88,7 +88,8 @@ int main(int argc, char* argv[])
 		if(timeDiff(ts,td)>1000)
 		{
 			ts=td;
-			LOG(NO_INFO,"FPS: " << dec <<count);
+			//LOG(NO_INFO,"FPS: " << dec <<count);
+			cout << "FPS: " << dec << count << endl;
 			sys->fps_prof->fps=count;
 			count=0;
 			sec_count++;

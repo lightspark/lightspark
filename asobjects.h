@@ -26,13 +26,16 @@
 #include "input.h"
 #include "swf.h"
 
+namespace lightspark
+{
+
 const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
 
-extern __thread SystemState* sys;
+extern TLSDATA SystemState* sys;
 
 class Event;
 class method_info;
-class call_context;
+struct call_context;
 
 class DebugTracer: public ASObject
 {
@@ -281,7 +284,7 @@ public:
 	ASFUNCTION(shift);
 	ASFUNCTION(unshift);
 	ASFUNCTION(_getLength);
-	ASObject* at(int index) const
+	ASObject* at(unsigned int index) const
 	{
 		if(index<data.size())
 		{
@@ -292,7 +295,7 @@ public:
 		else
 			abort();
 	}
-	void set(int index, ASObject* o)
+	void set(unsigned int index, ASObject* o)
 	{
 		if(index<data.size())
 		{
@@ -389,7 +392,7 @@ public:
 	tiny_string toString() const;
 	int toInt() const
 	{
-		return val;
+		return int(val);
 	}
 	double toNumber() const
 	{
@@ -504,7 +507,7 @@ public:
 	ASFUNCTION(round);
 	ASFUNCTION(sqrt);
 	ASFUNCTION(random);
-	ASFUNCTION(max);
+	ASFUNCTION(_max);
 	ASFUNCTION(pow);
 };
 
@@ -600,6 +603,8 @@ public:
 	{
 		return getClass(ClassName<T>::name);
 	}
+};
+
 };
 
 #endif

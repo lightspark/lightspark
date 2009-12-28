@@ -22,6 +22,9 @@
 
 #include "swftypes.h"
 
+namespace lightspark
+{
+
 class ByteArray: public IInterface
 {
 friend class Loader;
@@ -34,5 +37,7 @@ public:
 };
 
 ASObject* getQualifiedClassName(ASObject* , arguments* args);
+
+};
 
 #endif

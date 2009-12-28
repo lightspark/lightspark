@@ -23,6 +23,9 @@
 #include <list>
 #include "swftypes.h"
 
+namespace lightspark
+{
+
 class RootMovieClip;
 class DisplayListTag;
 class IDisplayListElem;
@@ -50,6 +53,7 @@ public:
 	void setScript(IFunction* s){script=s;}
 	void runScript();
 	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& d);
+};
 };
 
 #endif

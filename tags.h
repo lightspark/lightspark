@@ -32,6 +32,9 @@
 #include "flashutils.h"
 #include <GL/gl.h>
 
+namespace lightspark
+{
+
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,END_TAG};
 
 void ignore(std::istream& i, int count);
@@ -651,6 +654,8 @@ private:
 public:
 	TagFactory(std::istream& in):f(in){}
 	Tag* readTag();
+};
+
 };
 
 #endif

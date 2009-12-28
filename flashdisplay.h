@@ -25,6 +25,9 @@
 #include "flashutils.h"
 #include "thread_pool.h"
 
+namespace lightspark
+{
+
 class RootMovieClip;
 class DisplayListTag;
 class LoaderInfo;
@@ -215,6 +218,8 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getStageWidth);
 	ASFUNCTION(_getStageHeight);
+};
+
 };
 
 #endif

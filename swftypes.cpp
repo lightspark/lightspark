@@ -32,11 +32,13 @@
 #include "geometry.h"
 
 using namespace std;
-extern __thread SystemState* sys;
-extern __thread RenderThread* rt;
-extern __thread ParseThread* pt;
-extern __thread Manager* iManager;
-extern __thread Manager* dManager;
+using namespace lightspark;
+
+extern TLSDATA SystemState* sys;
+extern TLSDATA RenderThread* rt;
+extern TLSDATA ParseThread* pt;
+extern TLSDATA Manager* iManager;
+extern TLSDATA Manager* dManager;
 
 /*tiny_string ConstantReference::toString() const
 {

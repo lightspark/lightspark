@@ -22,10 +22,13 @@
 
 #include "asobjects.h"
 
+namespace lightspark
+{
 class ASFont: public ASObject
 {
 public:
 	ASFont(){}
+};
 };
 
 #endif

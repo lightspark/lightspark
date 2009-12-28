@@ -23,6 +23,10 @@
 #include <semaphore.h>
 #include <vector>
 #include "swftypes.h"
+
+namespace lightspark
+{
+
 //#include "asobjects.h"
 
 /*class Stack
@@ -55,4 +59,5 @@ public:
 //	ASObject Global;
 };
 
+};
 #endif

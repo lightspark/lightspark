@@ -24,6 +24,9 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+namespace lightspark
+{
+
 #define NUM_THREADS 1
 
 class SystemState;
@@ -47,6 +50,8 @@ private:
 public:
 	ThreadPool(SystemState* s);
 	void addJob(IThreadJob* j);
+};
+
 };
 
 #endif

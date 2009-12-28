@@ -17,6 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+//Define cross platform helpers
+#ifdef WIN32
+#define TLSDATA __declspec( thread )
+#else
+#define TLSDATA __thread
+#endif
+
 #ifndef SWF_H
 #define SWF_H
 
@@ -31,8 +38,16 @@
 //#include "asobjects.h"
 #include "flashdisplay.h"
 
+#ifndef WIN32
 #include <X11/Xlib.h>
 #include <GL/glx.h>
+#else
+#include <windows.h>
+#include <GL/gl.h>
+#endif
+
+namespace lightspark
+{
 
 class DisplayListTag;
 class DictionaryTag;
@@ -130,7 +145,7 @@ public:
 	std::vector<tiny_string> events_name;
 	void dumpEvents()
 	{
-		for(int i=0;i<events_name.size();i++)
+		for(unsigned int i=0;i<events_name.size();i++)
 			std::cout << events_name[i] << std::endl;
 	}
 };
@@ -158,6 +173,7 @@ public:
 };
 
 enum ENGINE { SDL=0, NPAPI, GLX};
+#ifndef WIN32
 struct NPAPI_params
 {
 	Display* display;
@@ -166,6 +182,11 @@ struct NPAPI_params
 	int width;
 	int height;
 };
+#else
+struct NPAPI_params
+{
+};
+#endif
 
 
 class InputThread
@@ -203,12 +224,14 @@ private:
 	int bak;
 	static int error;
 
+#ifndef WIN32
 	Display* mDisplay;
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
 	GLXPbuffer mPbuffer;
 	Window mWindow;
 	GC mGC;
+#endif
 	static int load_program();
 	float* interactive_buffer;
 public:
@@ -231,6 +254,8 @@ public:
 	GLuint data_tex;
 	int width;
 	int height;
+
+};
 
 };
 #endif

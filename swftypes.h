@@ -20,7 +20,8 @@
 #ifndef SWFTYPES_H
 #define SWFTYPES_H
 
-#include <stdint.h>
+//#include "pstdint.h"
+#include <llvm/Support/DataTypes.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -30,6 +31,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+namespace lightspark
+{
 
 #define ASFUNCTION(name) \
 	static ASObject* name(ASObject* , arguments* args)
@@ -55,15 +59,15 @@ class tiny_string
 {
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
-	#define SIZE 256
-	char _buf_static[SIZE];
+	#define TS_SIZE 256
+	char _buf_static[TS_SIZE];
 	char* buf;
 	bool isStatic;
 public:
 	tiny_string():buf(_buf_static),isStatic(true){buf[0]=0;}
 	tiny_string(const char* s):buf(_buf_static),isStatic(true)
 	{
-		if(strlen(s)>(SIZE-1))
+		if(strlen(s)>(TS_SIZE-1))
 		{
 			isStatic=false;
 			buf=new char[4096];
@@ -73,7 +77,7 @@ public:
 	}
 	tiny_string(const tiny_string& r):isStatic(true),buf(_buf_static)
 	{
-		if(strlen(r.buf)>(SIZE-1))
+		if(strlen(r.buf)>(TS_SIZE-1))
 		{
 			isStatic=false;
 			buf=new char[4096];
@@ -97,7 +101,7 @@ public:
 	}
 	tiny_string& operator=(const tiny_string& s)
 	{
-		if(s.len()>(SIZE-1))
+		if(s.len()>(TS_SIZE-1))
 		{
 			isStatic=false;
 			assert(s.len()<=4096);
@@ -109,7 +113,7 @@ public:
 	}
 	tiny_string& operator=(const std::string& s)
 	{
-		if(s.size()>(SIZE-1))
+		if(s.size()>(TS_SIZE-1))
 		{
 			isStatic=false;
 			assert(s.size()<=4096);
@@ -121,7 +125,7 @@ public:
 	}
 	tiny_string& operator=(const char* s)
 	{
-		if(strlen(s)>(SIZE-1))
+		if(strlen(s)>(TS_SIZE-1))
 		{
 			isStatic=false;
 			assert(strlen(s)<=4096);
@@ -134,14 +138,14 @@ public:
 	tiny_string& operator+=(const char* s)
 	{
 		int newlen=strlen(buf)+strlen(s)+1;
-		assert(newlen<SIZE);
+		assert(newlen<TS_SIZE);
 		strcat(buf,s);
 		return *this;
 	}
 	tiny_string& operator+=(const tiny_string& r)
 	{
 		int newlen=strlen(buf)+strlen(r.buf)+1;
-		assert(newlen<SIZE);
+		assert(newlen<TS_SIZE);
 		strcat(buf,r.buf);
 		return *this;
 	}
@@ -252,7 +256,7 @@ public:
 	STRING operator+(const STRING& s)
 	{
 		STRING ret(*this);
-		for(int i=0;i<s.String.size();i++)
+		for(unsigned int i=0;i<s.String.size();i++)
 			ret.String.push_back(s.String[i]);
 		return ret;
 	}
@@ -1186,4 +1190,5 @@ std::istream& operator>>(std::istream& stream, GLYPHENTRY& v);
 std::istream& operator>>(std::istream& stream, STRING& v);
 std::istream& operator>>(std::istream& stream, BUTTONRECORD& v);
 
+};
 #endif

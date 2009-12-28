@@ -22,7 +22,7 @@
 
 #define __STDC_LIMIT_MACROS
 #define __STDC_CONSTANT_MACROS
-#include <stdint.h>
+//#include "pstdint.h"
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/IRBuilder.h>
@@ -36,6 +36,13 @@
 #include <map>
 #include <set>
 #include "swf.h"
+
+#ifdef exception_info
+#undef exception_info
+#endif
+
+namespace lightspark
+{
 
 #define likely(x)	__builtin_expect(!!(x), 1)
 #define unlikely(x)	__builtin_expect(!!(x), 0)
@@ -169,12 +176,14 @@ class ABCVm;
 
 struct call_context
 {
+#include "packed_begin.h"
 	struct
 	{
 		ASObject** locals;
 		ASObject** stack;
 		uintptr_t stack_index;
-	} __attribute__((packed));
+	} PACKED;
+#include "packed_end.h"
 	ABCContext* context;
 	//We have to keep track of what is the level in the hierarchy for the currently executed function
 	const int cur_level_of_this;
@@ -630,5 +639,7 @@ std::istream& operator>>(std::istream& in, traits_info& v);
 std::istream& operator>>(std::istream& in, script_info& v);
 std::istream& operator>>(std::istream& in, metadata_info& v);
 std::istream& operator>>(std::istream& in, class_info& v);
+
+}
 
 #endif

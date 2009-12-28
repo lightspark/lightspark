@@ -22,6 +22,9 @@
 #include "logger.h"
 #include <vector>
 
+namespace lightspark
+{
+
 class ExecutionContext
 {
 protected:
@@ -624,3 +627,4 @@ public:
 
 std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v);
 
+};

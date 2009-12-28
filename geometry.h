@@ -22,7 +22,13 @@
 #include <list>
 #include <iostream>
 #include <vector>
+#ifdef WIN32
+#include <windows.h>
+#endif
 #include <GL/gl.h>
+
+namespace lightspark
+{
 
 class Path;
 class Vector2;
@@ -71,12 +77,14 @@ public:
 	Triangle(Vector2 a,Vector2 b, Vector2 c):v1(a),v2(b),v3(c){}
 };
 
+#include "packed_begin.h"
 struct arrayElem
 {
 	GLint coord[2];
 	GLfloat colors[3];
 	GLfloat texcoord[4];
-} __attribute__((packed));
+} PACKED;
+#include "packed_end.h"
 
 class Edge
 {
@@ -164,6 +172,8 @@ public:
 	void BuildFromEdges(FILLSTYLE* styles);
 
 	bool operator<(const GeomShape& r) const;
+
+};
 
 };
 

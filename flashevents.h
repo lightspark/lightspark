@@ -20,15 +20,21 @@
 #ifndef _FLASH_EVENTS_H
 #define _FLASH_EVENTS_H
 
-//#include "asobjects.h"
+#include "asobjects.h"
 #include <string>
 #include <semaphore.h>
+
+#undef MOUSE_EVENT
+
+namespace lightspark
+{
+
+enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_OBJECT };
 
 class ASObject;
 class PlaceObject2Tag;
 class ABCContext;
 
-enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT, CONSTRUCT_OBJECT };
 
 class Event: public IInterface
 {
@@ -165,7 +171,7 @@ private:
 public:
 	ABCContextInitEvent(ABCContext* c):Event("ABCContextInitEvent"),context(c){}
 	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() { return CONTEXT; }
+	EVENT_TYPE getEventType() { return CONTEXT_INIT; }
 };
 
 //This event is also synchronous
@@ -181,4 +187,5 @@ public:
 	EVENT_TYPE getEventType() { return CONSTRUCT_OBJECT; }
 };
 
+};
 #endif

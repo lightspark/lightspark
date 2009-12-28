@@ -25,18 +25,24 @@
 #include "logger.h"
 #include "streams.h"
 #include <time.h>
+#ifndef WIN32
 #include <sys/resource.h>
+#endif
 #include <iostream>
 #include <fstream>
 #include <list>
 
-#include <SDL/SDL.h>
+#ifdef WIN32
+#include <windows.h>
+#endif
+#include <SDL.h>
 
 using namespace std;
+using namespace lightspark;
 
-__thread SystemState* sys;
-__thread RenderThread* rt=NULL;
-__thread ParseThread* pt=NULL;
+TLSDATA SystemState* lightspark::sys;
+TLSDATA RenderThread* rt=NULL;
+TLSDATA ParseThread* pt=NULL;
 
 std::vector<fps_profiling> fps_profs;
 
@@ -47,15 +53,18 @@ int main(int argc, char* argv[])
 		cout << "Usage: " << argv[0] << " <file.swf>" << endl;
 		exit(-1);
 	}
+
+#ifndef WIN32
 	struct rlimit rl;
 	getrlimit(RLIMIT_AS,&rl);
 	rl.rlim_cur=400000000;
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
+#endif
 
 	Log::initLogging(NO_INFO);
 	sys=new SystemState;
-	fps_profs.push_back(fps_profiling());
+/*	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();
 
 	zlib_file_filter zf;
@@ -115,6 +124,7 @@ int main(int argc, char* argv[])
 			' ' << fps_profs[i].event_time << endl;
 	prof.close();
 
-	SDL_Quit();
+	SDL_Quit();*/
+	return 0;
 }
 

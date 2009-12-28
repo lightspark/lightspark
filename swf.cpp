@@ -21,7 +21,7 @@
 #include <iostream>
 #include <string.h>
 #include <pthread.h>
-#include <SDL/SDL.h>
+#include <SDL.h>
 #include <algorithm>
 
 #include "abc.h"
@@ -35,18 +35,22 @@
 #include "textfile.h"
 
 #include <GL/gl.h>
+#ifndef WIN32
 #include <GL/glext.h>
 #include <GL/glx.h>
+#endif
+
 using namespace std;
+using namespace lightspark;
 
 int ParseThread::error(0);
 
 list<IDisplayListElem*> null_list;
 int RenderThread::error(0);
 
-extern __thread SystemState* sys;
-extern __thread RenderThread* rt;
-extern __thread ParseThread* pt;
+extern TLSDATA SystemState* sys;
+extern TLSDATA RenderThread* rt;
+extern TLSDATA ParseThread* pt;
 
 SWF_HEADER::SWF_HEADER(istream& in)
 {

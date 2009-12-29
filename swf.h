@@ -17,13 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-//Define cross platform helpers
-#ifdef WIN32
-#define TLSDATA __declspec( thread )
-#else
-#define TLSDATA __thread
-#endif
-
 #ifndef SWF_H
 #define SWF_H
 
@@ -42,8 +35,8 @@
 #include <X11/Xlib.h>
 #include <GL/glx.h>
 #else
-#include <windows.h>
-#include <GL/gl.h>
+//#include <windows.h>
+#include <GL/glew.h>
 #endif
 
 namespace lightspark

@@ -22,24 +22,25 @@
 #include "logger.h"
 
 using namespace std;
+using namespace lightspark;
 
-void ignore(istream& i, int count);
+void lightspark::ignore(istream& i, int count);
 
 ProtectTag::ProtectTag(RECORDHEADER h, istream& in):ControlTag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"Protect Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"Protect Tag");
 	skip(in);
 }
 
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"DefineSound Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"DefineSound Tag");
 	skip(in);
 }
 
 DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"DefineFontInfo Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"DefineFontInfo Tag");
 	if((h&0x3f)==0x3f)
 		ignore(in,Length);
 	else
@@ -48,7 +49,7 @@ DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 
 StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"StartSound Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"StartSound Tag");
 	if((h&0x3f)==0x3f)
 		ignore(in,Length);
 	else
@@ -57,66 +58,66 @@ StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 
 SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"SoundStreamHead2 Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"SoundStreamHead2 Tag");
 	skip(in);
 }
 
 DefineFontNameTag::DefineFontNameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"DefineFontNameTag Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"DefineFontNameTag Tag");
 	skip(in);
 }
 
 DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"DefineFontAlignZonesTag Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"DefineFontAlignZonesTag Tag");
 	skip(in);
 }
 
 MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"MetadataTag Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"MetadataTag Tag");
 	skip(in);
 }
 
 DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"DefineBitsJPEG2Tag Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"DefineBitsJPEG2Tag Tag");
 	skip(in);
 }
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"ScriptLimitsTag Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"ScriptLimitsTag Tag");
 	skip(in);
 }
 
 DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	in >> CharacterId >> Splitter;
-	LOG(NOT_IMPLEMENTED,"DefineScalingGridTag Tag on ID " << CharacterId);
+	LOG(LOG_NOT_IMPLEMENTED,"DefineScalingGridTag Tag on ID " << CharacterId);
 }
 
 SerialNumberTag::SerialNumberTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"SerialNumberTag Tag");
+	LOG(LOG_NOT_IMPLEMENTED,"SerialNumberTag Tag");
 	skip(in);
 }
 
 SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"SoundStreamBlockTag");
+	LOG(LOG_NOT_IMPLEMENTED,"SoundStreamBlockTag");
 	skip(in);
 }
 
 DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"DefineSceneAndFrameLabelDataTag");
+	LOG(LOG_NOT_IMPLEMENTED,"DefineSceneAndFrameLabelDataTag");
 	skip(in);
 }
 
 UnimplementedTag::UnimplementedTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NOT_IMPLEMENTED,"Unimplemented Tag " << (h>>6));
+	LOG(LOG_NOT_IMPLEMENTED,"Unimplemented Tag " << (h>>6));
 	skip(in);
 }

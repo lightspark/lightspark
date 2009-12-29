@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Users\Alessandro\Progetti\lightspark-win\SDL-1.2.14\include&quot;;&quot;C:\Program Files (x86)\LLVM\include&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\zlib\include&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\Pre-built.2\include&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Users\Alessandro\Progetti\lightspark-win\glew\include&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\SDL-1.2.14\include&quot;;&quot;C:\Program Files (x86)\LLVM\include&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\zlib\include&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\Pre-built.2\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -61,9 +61,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="SDL.lib SDLmain.lib pthreadVSE2.lib"
+				AdditionalDependencies="SDL.lib SDLmain.lib pthreadVSE2.lib glew32.lib opengl32.lib LLVMAnalysis.lib LLVMCore.lib LLVMExecutionEngine.lib LLVMJIT.lib LLVMSupport.lib LLVMSystem.lib LLVMCodeGen.lib LLVMScalarOpts.lib LLVMTransformUtils.lib LLVMTarget.lib LLVMX86CodeGen.lib LLVMMC.lib LLVMSelectionDAG.lib LLVMAsmPrinter.lib LLVMX86Info.lib zdll.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\Users\Alessandro\Progetti\lightspark-win\Pre-built.2\lib&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\SDL-1.2.14\lib&quot;"
+				AdditionalLibraryDirectories="&quot;C:\Users\Alessandro\Progetti\lightspark-win\zlib\lib&quot;;&quot;C:\Program Files (x86)\LLVM\lib&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\glew\lib&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\Pre-built.2\lib&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\SDL-1.2.14\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -174,6 +174,62 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\abc.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\abc_codesynt.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\abc_opcodes.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\actions.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\asobjects.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\compat.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\flashdisplay.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\flashevents.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\flashgeom.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\flashnet.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\flashsystem.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\flashutils.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\frame.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\geometry.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\logger.cpp"
 				>
 			</File>
@@ -182,7 +238,35 @@
 				>
 			</File>
 			<File
+				RelativePath=".\streams.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\swf.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\swftypes.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\tags.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\tags_stub.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\textfile.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\thread_pool.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\vm.cpp"
 				>
 			</File>
 		</Filter>
@@ -201,6 +285,10 @@
 			</File>
 			<File
 				RelativePath=".\asobjects.h"
+				>
+			</File>
+			<File
+				RelativePath=".\compat.h"
 				>
 			</File>
 			<File

@@ -17,16 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#define GL_GLEXT_PROTOTYPES
 #include <fstream>
 #include <math.h>
 #include <algorithm>
-#include <GL/gl.h>
+#include <GL/glew.h>
 #include "swftypes.h"
 #include "logger.h"
 #include "geometry.h"
 
 using namespace std;
+using namespace lightspark;
 
 /*! \brief Renders the shape interior and outline setting the correct
 * *        parameters for the shader
@@ -37,7 +37,7 @@ void GeomShape::Render(int x, int y) const
 {
 	if(outline.empty())
 	{
-		LOG(TRACE,"No edges in this shape");
+		LOG(LOG_TRACE,"No edges in this shape");
 		return;
 	}
 

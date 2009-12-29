@@ -21,10 +21,12 @@
 #include "swf.h"
 #include "actions.h"
 #include "flashdisplay.h"
+#include "compat.h"
 
 using namespace std;
+using namespace lightspark;
 
-extern __thread SystemState* sys;
+extern TLSDATA SystemState* sys;
 
 VirtualMachine::VirtualMachine()
 {

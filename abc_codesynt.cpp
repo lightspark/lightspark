@@ -26,20 +26,24 @@
 #include <llvm/Target/TargetData.h>
 #include <sstream>
 #include "swftypes.h"
+#include "compat.h"
+
+using namespace std;
+using namespace lightspark;
 
 void debug(int* i)
 {
-	LOG(CALLS, "debug "<< i);
+	LOG(LOG_CALLS, "debug "<< i);
 }
 
 void debug_d(number_t f)
 {
-	LOG(CALLS, "debug_d "<< f);
+	LOG(LOG_CALLS, "debug_d "<< f);
 }
 
 void debug_i(intptr_t i)
 {
-	LOG(CALLS, "debug_i "<< i);
+	LOG(LOG_CALLS, "debug_i "<< i);
 }
 
 opcode_handler ABCVm::opcode_table_args0_lazy[]={
@@ -210,11 +214,9 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"ifFalse",(void*)&ABCVm::ifFalse,ARGS_OBJ},
 };
 
-extern __thread SystemState* sys;
-extern __thread ParseThread* pt;
-extern __thread Manager* iManager;
-
-using namespace std;
+extern TLSDATA SystemState* sys;
+extern TLSDATA ParseThread* pt;
+extern TLSDATA Manager* iManager;
 
 //Be careful, arguments nubering starts from 1
 ASObject* argumentDumper(arguments* arg, uint32_t n)
@@ -232,6 +234,7 @@ ASObject* argumentDumper(arguments* arg, uint32_t n)
 ASObject* createRest()
 {
 	abort();
+	return NULL;
 /*	Array* ret=new Array();
 	ret->_constructor(ret,NULL);
 	return ret;*/
@@ -789,7 +792,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	n+=context->getString(name).raw_buf();
 	if(!body)
 	{
-		LOG(CALLS,"Method " << n << " should be intrinsic");;
+		LOG(LOG_CALLS,"Method " << n << " should be intrinsic");;
 		return NULL;
 	}
 	llvm::ExecutionEngine* ex=context->vm->ex;
@@ -919,7 +922,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->seqs.insert(&it->second);
 				}
 				cur_block=&it->second;
-				LOG(TRACE,"New block at " << local_ip);
+				LOG(LOG_TRACE,"New block at " << local_ip);
 				cur_block->locals=cur_block->locals_start;
 				//A new block starts, the last instruction should have been a branch?
 				last_is_branch=false;
@@ -929,7 +932,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//TODO: Check this. It seems that there may be invalid code after
 				//block end
-				LOG(TRACE,"Ignoring at " << local_ip);
+				LOG(LOG_TRACE,"Ignoring at " << local_ip);
 				continue;
 			}
 			switch(opcode)
@@ -953,7 +956,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x08:
 				{
 					//kill
-					LOG(TRACE, "block analysis: kill" );
+					LOG(LOG_TRACE, "block analysis: kill" );
 					u30 t;
 					code >> t;
 
@@ -964,7 +967,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//label
 					//Create a new block and insert it in the mapping
-					LOG(TRACE, "block analysis: label" );
+					LOG(LOG_TRACE, "block analysis: label" );
 					int here=local_ip;
 
 					if(blocks[here].BB==NULL)
@@ -981,7 +984,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->seqs.insert(&blocks[here]);
 					static_stack_types.clear();
 					cur_block=&blocks[here];
-					LOG(TRACE,"New block at " << local_ip);
+					LOG(LOG_TRACE,"New block at " << local_ip);
 					cur_block->locals=cur_block->locals_start;
 					//A new block starts, the last instruction should have been a branch?
 					break;
@@ -1017,7 +1020,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//ifgt
 					//ifstricteq
 					//ifstrictne
-					LOG(TRACE, "block analysis: branches" );
+					LOG(LOG_TRACE, "block analysis: branches" );
 					//TODO: implement common data comparison
 					last_is_branch=true;
 					s24 t;
@@ -1053,22 +1056,22 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x1b:
 				{
 					//lookupswitch
-					LOG(TRACE, "synt lookupswitch" );
+					LOG(LOG_TRACE, "synt lookupswitch" );
 					last_is_branch=true;
 
 					int here=int(code.tellg())-1; //Base for the jumps is the instruction itself for the switch
 					s24 t;
 					code >> t;
 					int defaultdest=here+t;
-					LOG(TRACE,"default " << int(t));
+					LOG(LOG_TRACE,"default " << int(t));
 					u30 count;
 					code >> count;
-					LOG(TRACE,"count "<< int(count));
+					LOG(LOG_TRACE,"count "<< int(count));
 					vector<s24> offsets(count+1);
 					for(int i=0;i<count+1;i++)
 					{
 						code >> offsets[i];
-						LOG(TRACE,"Case " << i << " " << offsets[i]);
+						LOG(LOG_TRACE,"Case " << i << " " << offsets[i]);
 					}
 					static_stack_types.clear();
 					jitted=false;
@@ -1389,7 +1392,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x63:
 				{
 					//setlocal
-					LOG(TRACE, "synt setlocal" );
+					LOG(LOG_TRACE, "synt setlocal" );
 					u30 i;
 					code >> i;
 					cur_block->locals_used[i]=true;
@@ -1911,7 +1914,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//setlocal_n
 					int i=opcode&3;
-					LOG(TRACE, "synt setlocal " << i);
+					LOG(LOG_TRACE, "synt setlocal " << i);
 					cur_block->locals_used[i]=true;
 					STACK_TYPE t;
 					if(!static_stack_types.empty())
@@ -1950,10 +1953,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 					break;
 				}
 				default:
-					LOG(ERROR,"Not implemented instruction @" << code.tellg());
+					LOG(LOG_ERROR,"Not implemented instruction @" << code.tellg());
 					u8 a,b,c;
 					code >> a >> b >> c;
-					LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
+					LOG(LOG_ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
 							<< (unsigned int)b << ' ' << (unsigned int)c);
 			}
 		}
@@ -2096,13 +2099,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 			//A new block starts, the last instruction should have been a branch?
 			if(!last_is_branch)
 			{
-				LOG(TRACE, "Last instruction before a new block was not a branch.");
+				LOG(LOG_TRACE, "Last instruction before a new block was not a branch.");
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,it->second);
 				jitted=false;
 				Builder.CreateBr(it->second.BB);
 			}
-			LOG(TRACE,"Starting block at "<<local_ip);
+			LOG(LOG_TRACE,"Starting block at "<<local_ip);
 			Builder.SetInsertPoint(it->second.BB);
 			cur_block=&it->second;
 
@@ -2125,7 +2128,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		{
 			//TODO: Check this. It seems that there may be invalid code after
 			//block end
-			LOG(TRACE,"Ignoring at " << local_ip);
+			LOG(LOG_TRACE,"Ignoring at " << local_ip);
 			continue;
 			/*LOG(CALLS,"Inserting block at "<<int(code.tellg())-1);
 			abort();
@@ -2139,7 +2142,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x03:
 			{
 				//throw
-				LOG(TRACE, "synt throw" );
+				LOG(LOG_TRACE, "synt throw" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				//syncLocals(ex,Builder,static_locals,locals,cur_block->locals,*cur_block);
 				jitted=false;
@@ -2149,7 +2152,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x04:
 			{
 				//getsuper
-				LOG(TRACE, "synt getsuper" );
+				LOG(LOG_TRACE, "synt getsuper" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -2161,7 +2164,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x05:
 			{
 				//setsuper
-				LOG(TRACE, "synt setsuper" );
+				LOG(LOG_TRACE, "synt setsuper" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -2175,8 +2178,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//kill
 				u30 t;
 				code2 >> t;
-				LOG(TRACE, "synt kill " << t );
-				if(Log::getLevel()==CALLS)
+				LOG(LOG_TRACE, "synt kill " << t );
+				if(Log::getLevel()==LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("kill"), context, constant);
@@ -2194,15 +2197,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//label
 				//Create a new block and insert it in the mapping
-				LOG(TRACE, "synt label" );
-				if(Log::getLevel()>=CALLS)
+				LOG(LOG_TRACE, "synt label" );
+				if(Log::getLevel()>=LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("label"));
 				break;
 			}
 			case 0x0c:
 			{
 				//ifnlt
-				LOG(TRACE, "synt ifnlt" );
+				LOG(LOG_TRACE, "synt ifnlt" );
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
@@ -2242,7 +2245,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x0d:
 			{
 				//ifnle
-				LOG(TRACE, "synt ifnle");
+				LOG(LOG_TRACE, "synt ifnle");
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
@@ -2275,7 +2278,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x0e:
 			{
 				//ifngt
-				LOG(TRACE, "synt ifngt" );
+				LOG(LOG_TRACE, "synt ifngt" );
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
@@ -2309,7 +2312,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x0f:
 			{
 				//ifnge
-				LOG(TRACE, "synt ifnge");
+				LOG(LOG_TRACE, "synt ifnge");
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
@@ -2347,8 +2350,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				s24 t;
 				code2 >> t;
-				LOG(TRACE, "synt jump " << t );
-				if(Log::getLevel()==CALLS)
+				LOG(LOG_TRACE, "synt jump " << t );
+				if(Log::getLevel()==LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("jump"), context, constant);
@@ -2364,7 +2367,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x11:
 			{
 				//iftrue
-				LOG(TRACE, "synt iftrue" );
+				LOG(LOG_TRACE, "synt iftrue" );
 				last_is_branch=true;
 				s24 t;
 				code2 >> t;
@@ -2401,7 +2404,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				last_is_branch=true;
 				s24 t;
 				code2 >> t;
-				LOG(TRACE, "synt iffalse " << t );
+				LOG(LOG_TRACE, "synt iffalse " << t );
 
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2434,7 +2437,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x13:
 			{
 				//ifeq
-				LOG(TRACE, "synt ifeq" );
+				LOG(LOG_TRACE, "synt ifeq" );
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
@@ -2492,7 +2495,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				last_is_branch=true;
 				s24 t;
 				code2 >> t;
-				LOG(TRACE, "synt ifne " << t );
+				LOG(LOG_TRACE, "synt ifne " << t );
 			
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2543,7 +2546,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				last_is_branch=true;
 				s24 t;
 				code2 >> t;
-				LOG(TRACE, "synt iflt "<< t );
+				LOG(LOG_TRACE, "synt iflt "<< t );
 
 				//Make comparision
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2584,7 +2587,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x16:
 			{
 				//ifle
-				LOG(TRACE, "synt ifle" );
+				LOG(LOG_TRACE, "synt ifle" );
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
@@ -2623,7 +2626,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x17:
 			{
 				//ifgt
-				LOG(TRACE, "synt ifgt" );
+				LOG(LOG_TRACE, "synt ifgt" );
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
@@ -2658,7 +2661,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x18:
 			{
 				//ifge
-				LOG(TRACE, "synt ifge");
+				LOG(LOG_TRACE, "synt ifge");
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
@@ -2693,7 +2696,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x19:
 			{
 				//ifstricteq
-				LOG(TRACE, "synt ifstricteq" );
+				LOG(LOG_TRACE, "synt ifstricteq" );
 				//TODO: implement common data comparison
 				last_is_branch=true;
 				s24 t;
@@ -2726,7 +2729,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x1a:
 			{
 				//ifstrictne
-				LOG(TRACE, "synt ifstrictne" );
+				LOG(LOG_TRACE, "synt ifstrictne" );
 				last_is_branch=true;
 				s24 t;
 				code2 >> t;
@@ -2770,8 +2773,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x1b:
 			{
 				//lookupswitch
-				LOG(TRACE, "synt lookupswitch" );
-				if(Log::getLevel()>=CALLS)
+				LOG(LOG_TRACE, "synt lookupswitch" );
+				if(Log::getLevel()>=LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("lookupswitch"));
 				last_is_branch=true;
 
@@ -2779,15 +2782,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 				s24 t;
 				code2 >> t;
 				int defaultdest=here+t;
-				LOG(TRACE,"default " << int(t));
+				LOG(LOG_TRACE,"default " << int(t));
 				u30 count;
 				code2 >> count;
-				LOG(TRACE,"count "<< int(count));
+				LOG(LOG_TRACE,"count "<< int(count));
 				vector<s24> offsets(count+1);
 				for(int i=0;i<count+1;i++)
 				{
 					code2 >> offsets[i];
-					LOG(TRACE,"Case " << i << " " << offsets[i]);
+					LOG(LOG_TRACE,"Case " << i << " " << offsets[i]);
 				}
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(e.second==STACK_INT);
@@ -2824,7 +2827,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x1c:
 			{
 				//pushwith
-				LOG(TRACE, "synt pushwith" );
+				LOG(LOG_TRACE, "synt pushwith" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushWith"), context);
@@ -2833,7 +2836,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x1d:
 			{
 				//popscope
-				LOG(TRACE, "synt popscope" );
+				LOG(LOG_TRACE, "synt popscope" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("popScope"), context);
@@ -2842,7 +2845,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x1e:
 			{
 				//nextname
-				LOG(TRACE, "synt nextname" );
+				LOG(LOG_TRACE, "synt nextname" );
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
@@ -2856,7 +2859,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x20:
 			{
 				//pushnull
-				LOG(TRACE, "synt pushnull" );
+				LOG(LOG_TRACE, "synt pushnull" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushNull"));
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -2865,7 +2868,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x21:
 			{
 				//pushundefined
-				LOG(TRACE, "synt pushundefined" );
+				LOG(LOG_TRACE, "synt pushundefined" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushUndefined"));
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -2874,7 +2877,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x23:
 			{
 				//nextvalue
-				LOG(TRACE, "synt nextvalue" );
+				LOG(LOG_TRACE, "synt nextvalue" );
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
@@ -2888,12 +2891,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x24:
 			{
 				//pushbyte
-				LOG(TRACE, "synt pushbyte" );
+				LOG(LOG_TRACE, "synt pushbyte" );
 				int8_t t;
 				code2.read((char*)&t,1);
 				constant = llvm::ConstantInt::get(int_type, (int)t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				if(Log::getLevel()==CALLS)
+				if(Log::getLevel()==LOG_CALLS)
 					value=Builder.CreateCall(ex->FindFunctionNamed("pushByte"), constant);
 				jitted=true;
 				break;
@@ -2901,12 +2904,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x25:
 			{
 				//pushshort
-				LOG(TRACE, "synt pushshort" );
+				LOG(LOG_TRACE, "synt pushshort" );
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				if(Log::getLevel()==CALLS)
+				if(Log::getLevel()==LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("pushShort"), constant);
 				jitted=true;
 				break;
@@ -2914,7 +2917,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x26:
 			{
 				//pushtrue
-				LOG(TRACE, "synt pushtrue" );
+				LOG(LOG_TRACE, "synt pushtrue" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushTrue"));
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				jitted=true;
@@ -2923,7 +2926,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x27:
 			{
 				//pushfalse
-				LOG(TRACE, "synt pushfalse" );
+				LOG(LOG_TRACE, "synt pushfalse" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushFalse"));
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				jitted=true;
@@ -2932,7 +2935,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x28:
 			{
 				//pushnan
-				LOG(TRACE, "synt pushnan" );
+				LOG(LOG_TRACE, "synt pushnan" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("pushNaN"));
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -2941,8 +2944,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x29:
 			{
 				//pop
-				LOG(TRACE, "synt pop" );
-				if(Log::getLevel()==CALLS)
+				LOG(LOG_TRACE, "synt pop" );
+				if(Log::getLevel()==LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("pop"));
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(e.second==STACK_OBJECT)
@@ -2953,8 +2956,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x2a:
 			{
 				//dup
-				LOG(TRACE, "synt dup" );
-				if(Log::getLevel()==CALLS)
+				LOG(LOG_TRACE, "synt dup" );
+				if(Log::getLevel()==LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("dup"));
 				stack_entry e=static_stack_peek(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e);
@@ -2967,8 +2970,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x2b:
 			{
 				//swap
-				LOG(TRACE, "synt swap" );
-				if(Log::getLevel()==CALLS)
+				LOG(LOG_TRACE, "synt swap" );
+				if(Log::getLevel()==LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("swap"));
 				stack_entry e1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry e2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -2980,7 +2983,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x2c:
 			{
 				//pushstring
-				LOG(TRACE, "synt pushstring" );
+				LOG(LOG_TRACE, "synt pushstring" );
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
@@ -2992,10 +2995,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x2d:
 			{
 				//pushint
-				LOG(TRACE, "synt pushint" );
+				LOG(LOG_TRACE, "synt pushint" );
 				u30 t;
 				code2 >> t;
-				if(Log::getLevel()==CALLS)
+				if(Log::getLevel()==LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("pushInt"), context, constant);
@@ -3009,11 +3012,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x2f:
 			{
 				//pushdouble
-				LOG(TRACE, "synt pushdouble" );
+				LOG(LOG_TRACE, "synt pushdouble" );
 				u30 t;
 				code2 >> t;
 
-				if(Log::getLevel()==CALLS)
+				if(Log::getLevel()==LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
@@ -3027,7 +3030,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x30:
 			{
 				//pushscope
-				LOG(TRACE, "synt pushscope" );
+				LOG(LOG_TRACE, "synt pushscope" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), context);
@@ -3036,7 +3039,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x32:
 			{
 				//hasnext2
-				LOG(TRACE, "synt hasnext2" );
+				LOG(LOG_TRACE, "synt hasnext2" );
 				u30 t,t2;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
@@ -3071,7 +3074,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x40:
 			{
 				//newfunction
-				LOG(TRACE, "synt newfunction" );
+				LOG(LOG_TRACE, "synt newfunction" );
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
@@ -3083,7 +3086,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x41:
 			{
 				//call
-				LOG(TRACE, "synt call" );
+				LOG(LOG_TRACE, "synt call" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3095,7 +3098,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x42:
 			{
 				//construct
-				LOG(TRACE, "synt construct" );
+				LOG(LOG_TRACE, "synt construct" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3107,7 +3110,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x45:
 			{
 				//callsuper
-				LOG(TRACE, "synt callsuper" );
+				LOG(LOG_TRACE, "synt callsuper" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3122,7 +3125,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//callproperty
 				//TODO: Implement static resolution where possible
-				LOG(TRACE, "synt callproperty" );
+				LOG(LOG_TRACE, "synt callproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3149,7 +3152,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x47:
 			{
 				//returnvoid
-				LOG(TRACE, "synt returnvoid" );
+				LOG(LOG_TRACE, "synt returnvoid" );
 				last_is_branch=true;
 				constant = llvm::ConstantInt::get(int_type, NULL);
 				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
@@ -3171,7 +3174,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//returnvalue
 				//TODO: Should coerce the return type to the expected one
-				LOG(TRACE, "synt returnvalue" );
+				LOG(LOG_TRACE, "synt returnvalue" );
 				last_is_branch=true;
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(e.second==STACK_INT)
@@ -3202,7 +3205,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x49:
 			{
 				//constructsuper
-				LOG(TRACE, "synt constructsuper" );
+				LOG(LOG_TRACE, "synt constructsuper" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3214,7 +3217,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x4a:
 			{
 				//constructprop
-				LOG(TRACE, "synt constructprop" );
+				LOG(LOG_TRACE, "synt constructprop" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3228,7 +3231,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x4e:
 			{
 				//callsupervoid
-				LOG(TRACE, "synt callsupervoid" );
+				LOG(LOG_TRACE, "synt callsupervoid" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3242,7 +3245,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x4f:
 			{
 				//callpropvoid
-				LOG(TRACE, "synt callpropvoid" );
+				LOG(LOG_TRACE, "synt callpropvoid" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3256,7 +3259,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x55:
 			{
 				//newobject
-				LOG(TRACE, "synt newobject" );
+				LOG(LOG_TRACE, "synt newobject" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3268,7 +3271,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x56:
 			{
 				//newarray
-				LOG(TRACE, "synt newarray" );
+				LOG(LOG_TRACE, "synt newarray" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3280,7 +3283,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x57:
 			{
 				//newactivation
-				LOG(TRACE, "synt newactivation" );
+				LOG(LOG_TRACE, "synt newactivation" );
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newActivation"), context, th);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -3289,7 +3292,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x58:
 			{
 				//newclass
-				LOG(TRACE, "synt newclass" );
+				LOG(LOG_TRACE, "synt newclass" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3301,7 +3304,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x59:
 			{
 				//getdescendants
-				LOG(TRACE, "synt getdescendants" );
+				LOG(LOG_TRACE, "synt getdescendants" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3313,7 +3316,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x5a:
 			{
 				//newcatch
-				LOG(TRACE, "synt newcatch" );
+				LOG(LOG_TRACE, "synt newcatch" );
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
@@ -3325,7 +3328,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x5d:
 			{
 				//findpropstrict
-				LOG(TRACE, "synt findpropstrict" );
+				LOG(LOG_TRACE, "synt findpropstrict" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3337,7 +3340,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x5e:
 			{
 				//findproperty
-				LOG(TRACE, "synt findproperty" );
+				LOG(LOG_TRACE, "synt findproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3349,7 +3352,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x60:
 			{
 				//getlex
-				LOG(TRACE, "synt getlex" );
+				LOG(LOG_TRACE, "synt getlex" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3361,7 +3364,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x61:
 			{
 				//setproperty
-				LOG(TRACE, "synt setproperty" );
+				LOG(LOG_TRACE, "synt setproperty" );
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
@@ -3409,11 +3412,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x62:
 			{
 				//getlocal
-				LOG(TRACE, "synt getlocal" );
+				LOG(LOG_TRACE, "synt getlocal" );
 				u30 i;
 				code2 >> i;
 				constant = llvm::ConstantInt::get(int_type, i);
-				if(Log::getLevel()==CALLS)
+				if(Log::getLevel()==LOG_CALLS)
 					Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 
 				if(static_locals[i].second==STACK_NONE)
@@ -3443,13 +3446,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//setlocal
 				u30 i;
 				code2 >> i;
-				LOG(TRACE, "synt setlocal " << i);
+				LOG(LOG_TRACE, "synt setlocal " << i);
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(static_locals[i].second==STACK_OBJECT)
 					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
 
 				static_locals[i]=e;
-				if(Log::getLevel()==CALLS)
+				if(Log::getLevel()==LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, i);
 					Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
@@ -3460,7 +3463,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x64:
 			{
 				//getglobalscope
-				LOG(TRACE, "synt getglobalscope" );
+				LOG(LOG_TRACE, "synt getglobalscope" );
 				value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				jitted=true;
@@ -3469,7 +3472,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x65:
 			{
 				//getscopeobject
-				LOG(TRACE, "synt getscopeobject" );
+				LOG(LOG_TRACE, "synt getscopeobject" );
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
@@ -3481,7 +3484,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x66:
 			{
 				//getproperty
-				LOG(TRACE, "synt getproperty" );
+				LOG(LOG_TRACE, "synt getproperty" );
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
@@ -3528,7 +3531,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x68:
 			{
 				//initproperty
-				LOG(TRACE, "synt initproperty" );
+				LOG(LOG_TRACE, "synt initproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3540,7 +3543,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x6a:
 			{
 				//deleteproperty
-				LOG(TRACE, "synt deleteproperty" );
+				LOG(LOG_TRACE, "synt deleteproperty" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3552,7 +3555,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x6c:
 			{
 				//getslot
-				LOG(TRACE, "synt getslot" );
+				LOG(LOG_TRACE, "synt getslot" );
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
@@ -3566,7 +3569,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x6d:
 			{
 				//setslot
-				LOG(TRACE, "synt setslot" );
+				LOG(LOG_TRACE, "synt setslot" );
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
@@ -3592,7 +3595,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x73:
 			{
 				//convert_i
-				LOG(TRACE, "synt convert_i" );
+				LOG(LOG_TRACE, "synt convert_i" );
 				/*llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1);
@@ -3603,7 +3606,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x74:
 			{
 				//convert_u
-				LOG(TRACE, "synt convert_u" );
+				LOG(LOG_TRACE, "synt convert_u" );
 				/*llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1);
@@ -3614,7 +3617,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x75:
 			{
 				//convert_d
-				LOG(TRACE, "synt convert_d" );
+				LOG(LOG_TRACE, "synt convert_d" );
 				/*llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1);
@@ -3625,7 +3628,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x76:
 			{
 				//convert_b
-				LOG(TRACE, "synt convert_b" );
+				LOG(LOG_TRACE, "synt convert_b" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT)
 				{
@@ -3642,7 +3645,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x78:
 			{
 				//checkfilter
-				LOG(TRACE, "synt checkfilter" );
+				LOG(LOG_TRACE, "synt checkfilter" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				abstract_value(ex,Builder,v1);
 				value=Builder.CreateCall(ex->FindFunctionNamed("checkfilter"), v1.first);
@@ -3653,7 +3656,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x80:
 			{
 				//coerce
-				LOG(TRACE, "synt coerce" );
+				LOG(LOG_TRACE, "synt coerce" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -3665,8 +3668,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x82:
 			{
 				//coerce_a
-				LOG(TRACE, "synt coerce_a" );
-				if(Log::getLevel()==CALLS)
+				LOG(LOG_TRACE, "synt coerce_a" );
+				if(Log::getLevel()==LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("coerce_a"));
 				/*stack_entry v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -3680,7 +3683,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x85:
 			{
 				//coerce_s
-				LOG(TRACE, "synt coerce_s" );
+				LOG(LOG_TRACE, "synt coerce_s" );
 				/*llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("coerce_s"), v1);
@@ -3691,7 +3694,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x87:
 			{
 				//astypelate
-				LOG(TRACE, "synt astypelate" );
+				LOG(LOG_TRACE, "synt astypelate" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				Builder.CreateCall(ex->FindFunctionNamed("asTypelate"), context);
@@ -3700,7 +3703,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x90:
 			{
 				//negate
-				LOG(TRACE, "synt negate" );
+				LOG(LOG_TRACE, "synt negate" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				abstract_value(ex,Builder,v1);
 				value=Builder.CreateCall(ex->FindFunctionNamed("negate"), v1.first);
@@ -3711,7 +3714,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x91:
 			{
 				//increment
-				LOG(TRACE, "synt increment" );
+				LOG(LOG_TRACE, "synt increment" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT)
 					value=Builder.CreateCall(ex->FindFunctionNamed("increment"), v1.first);
@@ -3729,7 +3732,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x93:
 			{
 				//decrement
-				LOG(TRACE, "synt decrement" );
+				LOG(LOG_TRACE, "synt decrement" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT)
 				{
@@ -3748,7 +3751,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x95:
 			{
 				//typeof
-				LOG(TRACE, "synt typeof" );
+				LOG(LOG_TRACE, "synt typeof" );
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("typeOf"), v1);
@@ -3759,7 +3762,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x96:
 			{
 				//not
-				LOG(TRACE, "synt not" );
+				LOG(LOG_TRACE, "synt not" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT)
 					value=Builder.CreateCall(ex->FindFunctionNamed("not"), v1.first);
@@ -3774,7 +3777,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0x97:
 			{
 				//bitnot
-				LOG(TRACE, "synt bitnot" );
+				LOG(LOG_TRACE, "synt bitnot" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT)
 					value=Builder.CreateCall(ex->FindFunctionNamed("bitNot"), v1.first);
@@ -3787,7 +3790,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa0:
 			{
 				//add
-				LOG(TRACE, "synt add" );
+				LOG(LOG_TRACE, "synt add" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
@@ -3849,7 +3852,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa1:
 			{
 				//subtract
-				LOG(TRACE, "synt subtract" );
+				LOG(LOG_TRACE, "synt subtract" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
@@ -3903,7 +3906,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa2:
 			{
 				//multiply
-				LOG(TRACE, "synt multiply" );
+				LOG(LOG_TRACE, "synt multiply" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
@@ -3947,7 +3950,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa3:
 			{
 				//divide
-				LOG(TRACE, "synt divide" );
+				LOG(LOG_TRACE, "synt divide" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
@@ -3978,7 +3981,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa4:
 			{
 				//modulo
-				LOG(TRACE, "synt modulo" );
+				LOG(LOG_TRACE, "synt modulo" );
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
@@ -4019,7 +4022,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa5:
 			{
 				//lshift
-				LOG(TRACE, "synt lshift" );
+				LOG(LOG_TRACE, "synt lshift" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
@@ -4040,7 +4043,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa6:
 			{
 				//rshift
-				LOG(TRACE, "synt rshift" );
+				LOG(LOG_TRACE, "synt rshift" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
@@ -4062,7 +4065,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa7:
 			{
 				//urshift
-				LOG(TRACE, "synt urshift" );
+				LOG(LOG_TRACE, "synt urshift" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
@@ -4093,7 +4096,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa8:
 			{
 				//bitand
-				LOG(TRACE, "synt bitand" );
+				LOG(LOG_TRACE, "synt bitand" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
@@ -4127,7 +4130,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xa9:
 			{
 				//bitor
-				LOG(TRACE, "synt bitor" );
+				LOG(LOG_TRACE, "synt bitor" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT && v2.second==STACK_INT)
@@ -4148,7 +4151,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xaa:
 			{
 				//bitxor
-				LOG(TRACE, "synt bitxor" );
+				LOG(LOG_TRACE, "synt bitxor" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT && v2.second==STACK_INT)
@@ -4172,7 +4175,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xab:
 			{
 				//equals
-				LOG(TRACE, "synt equals" );
+				LOG(LOG_TRACE, "synt equals" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
@@ -4202,7 +4205,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xac:
 			{
 				//strictequals
-				LOG(TRACE, "synt strictequals" );
+				LOG(LOG_TRACE, "synt strictequals" );
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
@@ -4215,7 +4218,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xad:
 			{
 				//lessthan
-				LOG(TRACE, "synt lessthan" );
+				LOG(LOG_TRACE, "synt lessthan" );
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
@@ -4230,7 +4233,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xae:
 			{
 				//lessequals
-				LOG(TRACE, "synt lessequals" );
+				LOG(LOG_TRACE, "synt lessequals" );
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
@@ -4244,7 +4247,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xaf:
 			{
 				//greaterthan
-				LOG(TRACE, "synt greaterthan" );
+				LOG(LOG_TRACE, "synt greaterthan" );
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
@@ -4258,7 +4261,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xb0:
 			{
 				//greaterequals
-				LOG(TRACE, "synt greaterequals" );
+				LOG(LOG_TRACE, "synt greaterequals" );
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT)
@@ -4273,7 +4276,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xb3:
 			{
 				//istypelate
-				LOG(TRACE, "synt istypelate" );
+				LOG(LOG_TRACE, "synt istypelate" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				assert(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT);
@@ -4285,7 +4288,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xb4:
 			{
 				//in
-				LOG(TRACE, "synt in" );
+				LOG(LOG_TRACE, "synt in" );
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				llvm::Value* v2=
@@ -4298,7 +4301,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xc0:
 			{
 				//increment_i
-				LOG(TRACE, "synt increment_i" );
+				LOG(LOG_TRACE, "synt increment_i" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_OBJECT)
 					value=Builder.CreateCall(ex->FindFunctionNamed("increment_i"), v1.first);
@@ -4316,7 +4319,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xc1:
 			{
 				//decrement_i
-				LOG(TRACE, "synt decrement_i" );
+				LOG(LOG_TRACE, "synt decrement_i" );
 				llvm::Value* v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall(ex->FindFunctionNamed("decrement_i"), v1);
@@ -4327,7 +4330,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xc2:
 			{
 				//inclocal_i
-				LOG(TRACE, "synt inclocal_i" );
+				LOG(LOG_TRACE, "synt inclocal_i" );
 				syncStacks(ex,Builder,jitted,static_stack,dynamic_stack,dynamic_stack_index);
 				jitted=false;
 				u30 t;
@@ -4343,9 +4346,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//getlocal_n
 				int i=opcode&3;
-				LOG(TRACE, "synt getlocal_n " << i );
+				LOG(LOG_TRACE, "synt getlocal_n " << i );
 				constant = llvm::ConstantInt::get(int_type, i);
-				if(Log::getLevel()==CALLS)
+				if(Log::getLevel()==LOG_CALLS)
 					Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
 
 				if(static_locals[i].second==STACK_NONE)
@@ -4380,14 +4383,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//setlocal_n
 				int i=opcode&3;
-				LOG(TRACE, "synt setlocal_n " << i );
+				LOG(LOG_TRACE, "synt setlocal_n " << i );
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				//DecRef previous local
 				if(static_locals[i].second==STACK_OBJECT)
 					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
 
 				static_locals[i]=e;
-				if(Log::getLevel()==CALLS)
+				if(Log::getLevel()==LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, opcode&3);
 					Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
@@ -4398,7 +4401,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xef:
 			{
 				//debug
-				LOG(TRACE, "synt debug" );
+				LOG(LOG_TRACE, "synt debug" );
 				uint8_t debug_type;
 				u30 index;
 				uint8_t reg;
@@ -4412,7 +4415,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xf0:
 			{
 				//debugline
-				LOG(TRACE, "synt debugline" );
+				LOG(LOG_TRACE, "synt debugline" );
 				u30 t;
 				code2 >> t;
 				break;
@@ -4420,16 +4423,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 			case 0xf1:
 			{
 				//debugfile
-				LOG(TRACE, "synt debugfile" );
+				LOG(LOG_TRACE, "synt debugfile" );
 				u30 t;
 				code2 >> t;
 				break;
 			}
 			default:
-				LOG(ERROR,"Not implemented instruction @" << code2.tellg());
+				LOG(LOG_ERROR,"Not implemented instruction @" << code2.tellg());
 				u8 a,b,c;
 				code2 >> a >> b >> c;
-				LOG(ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
+				LOG(LOG_ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)a << ' ' 
 						<< (unsigned int)b << ' ' << (unsigned int)c);
 				constant = llvm::ConstantInt::get(int_type, opcode);
 				Builder.CreateCall(ex->FindFunctionNamed("not_impl"), constant);

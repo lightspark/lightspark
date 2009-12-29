@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#define GL_GLEXT_PROTOTYPES
+//#define GL_GLEXT_PROTOTYPES
 #include <iostream>
 #include <string.h>
 #include <pthread.h>
@@ -33,8 +33,9 @@
 #include "streams.h"
 #include "asobjects.h"
 #include "textfile.h"
+#include "compat.h"
 
-#include <GL/gl.h>
+#include <GL/glew.h>
 #ifndef WIN32
 #include <GL/glext.h>
 #include <GL/glx.h>
@@ -59,22 +60,22 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	in >> Version >> FileLength;
 	if(Signature[0]=='F' && Signature[1]=='W' && Signature[2]=='S')
 	{
-		LOG(NO_INFO, "Uncompressed SWF file: Version " << (int)Version << " Length " << FileLength);
+		LOG(LOG_NO_INFO, "Uncompressed SWF file: Version " << (int)Version << " Length " << FileLength);
 	}
 	else if(Signature[0]=='C' && Signature[1]=='W' && Signature[2]=='S')
 	{
-		LOG(NO_INFO, "Compressed SWF file: Version " << (int)Version << " Length " << FileLength);
+		LOG(LOG_NO_INFO, "Compressed SWF file: Version " << (int)Version << " Length " << FileLength);
 		swf_stream* ss=dynamic_cast<swf_stream*>(in.rdbuf());
 		ss->setCompressed();
 	}
 	else
 	{
-		LOG(NO_INFO,"No SWF file sigature found");
+		LOG(LOG_NO_INFO,"No SWF file signature found");
 		abort();
 	}
 	pt->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
-	LOG(NO_INFO,"FrameRate " << FrameRate);
+	LOG(LOG_NO_INFO,"FrameRate " << FrameRate);
 	pt->root->frame_rate=FrameRate;
 	pt->root->frame_rate/=256;
 }
@@ -101,7 +102,7 @@ SystemState::~SystemState()
 		delete currentVm;
 	if(cur_thread_pool)
 		delete cur_thread_pool;
-	obj->interface=NULL;
+	obj->implementation=NULL;
 	delete obj;
 }
 
@@ -132,7 +133,7 @@ void* ParseThread::worker(ParseThread* th)
 		{
 			if(error)
 			{
-				LOG(NO_INFO,"Terminating parsing thread on error state");
+				LOG(LOG_NO_INFO,"Terminating parsing thread on error state");
 				pthread_exit(NULL);
 			}
 			Tag* tag=factory.readTag();
@@ -141,7 +142,7 @@ void* ParseThread::worker(ParseThread* th)
 			//	case TAG:
 				case END_TAG:
 				{
-					LOG(NO_INFO,"End of parsing @ " << th->f.tellg());
+					LOG(LOG_NO_INFO,"End of parsing @ " << th->f.tellg());
 					th->root->commitFrame();
 					//Wait for handling of all previous events
 					SynchronizationEvent* sync=new SynchronizationEvent;
@@ -172,7 +173,7 @@ void* ParseThread::worker(ParseThread* th)
 	}
 	catch(const char* s)
 	{
-		LOG(ERROR,"Exception caught: " << s);
+		LOG(LOG_ERROR,"Exception caught: " << s);
 		exit(-1);
 	}
 }
@@ -207,15 +208,17 @@ void ParseThread::wait()
 InputThread::InputThread(SystemState* s,ENGINE e, void* param)
 {
 	m_sys=s;
-	LOG(NO_INFO,"Creating input thread");
+	LOG(LOG_NO_INFO,"Creating input thread");
 	sem_init(&sem_listeners,0,1);
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
+#ifndef WIN32
 	else
 	{
 		npapi_params=(NPAPI_params*)param;
 		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
 	}
+#endif
 }
 
 InputThread::~InputThread()
@@ -230,10 +233,11 @@ void InputThread::wait()
 	pthread_join(t,NULL);
 }
 
+#ifndef WIN32
 void* InputThread::npapi_worker(InputThread* th)
 {
 	sys=th->m_sys;
-/*	NPAPI_params* p=(NPAPI_params*)in_ptr;
+	NPAPI_params* p=(NPAPI_params*)in_ptr;
 //	Display* d=XOpenDisplay(NULL);
 	XSelectInput(p->display,p->window,PointerMotionMask|ExposureMask);
 
@@ -241,8 +245,9 @@ void* InputThread::npapi_worker(InputThread* th)
 	while(XWindowEvent(p->display,p->window,PointerMotionMask|ExposureMask, &e))
 	{
 		exit(-1);
-	}*/
+	}
 }
+#endif
 
 void* InputThread::sdl_worker(InputThread* th)
 {
@@ -285,13 +290,12 @@ void* InputThread::sdl_worker(InputThread* th)
 				selected--;
 				int index=int(th->listeners.count("")*selected);
 				
-
-				pair< map<tiny_string, EventDispatcher*>::iterator,
-					map<tiny_string, EventDispatcher*>::iterator > range=
+				pair< multimap<tiny_string, EventDispatcher*>::const_iterator,
+					multimap<tiny_string, EventDispatcher*>::const_iterator > range=
 					th->listeners.equal_range("");
 
 				//Get the selected item
-				map<tiny_string, EventDispatcher*>::iterator it=range.first;
+				multimap<tiny_string, EventDispatcher*>::const_iterator it=range.first;
 				while(index)
 				{
 					it++;
@@ -308,27 +312,28 @@ void* InputThread::sdl_worker(InputThread* th)
 					sys->dumpEvents();
 				}*/
 
-
 				sem_post(&th->sem_listeners);
 				break;
 			}
 		}
 	}
+	return NULL;
 }
 
 void InputThread::addListener(const tiny_string& t, EventDispatcher* ob)
 {
 	sem_wait(&sem_listeners);
-	LOG(TRACE,"Adding listener to " << t);
+	LOG(LOG_TRACE,"Adding listener to " << t);
 
 	//the empty string is the *any* event
-	pair< map<tiny_string, EventDispatcher*>::iterator,map<tiny_string, EventDispatcher*>::iterator > range=
+	pair< multimap<tiny_string, EventDispatcher*>::const_iterator, 
+		multimap<tiny_string, EventDispatcher*>::const_iterator > range=
 		listeners.equal_range("");
 
 
 	bool already_known=false;
 
-	map<tiny_string,EventDispatcher*>::iterator it=range.first;
+	multimap<tiny_string, EventDispatcher*>::const_iterator it=range.first;
 	int count=0;
 	for(it;it!=range.second;it++)
 	{
@@ -351,7 +356,7 @@ void InputThread::addListener(const tiny_string& t, EventDispatcher* ob)
 			count++;
 			if(it->second==ob)
 			{
-				LOG(TRACE,"Already added");
+				LOG(LOG_TRACE,"Already added");
 				sem_post(&sem_listeners);
 				return;
 			}
@@ -386,7 +391,8 @@ void InputThread::broadcastEvent(const tiny_string& t)
 {
 	sem_wait(&sem_listeners);
 
-	pair< map<tiny_string,EventDispatcher*>::iterator,map<tiny_string, EventDispatcher*>::iterator > range=
+	pair< multimap<tiny_string,EventDispatcher*>::const_iterator, 
+		multimap<tiny_string, EventDispatcher*>::const_iterator > range=
 		listeners.equal_range(t);
 
 	for(range.first;range.first!=range.second;range.first++)
@@ -397,7 +403,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buffer(NULL),currentClip(s)
 {
-	LOG(NO_INFO,"RenderThread this=" << this);
+	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
 	sem_init(&mutex,0,1);
 	sem_init(&render,0,0);
@@ -405,6 +411,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buf
 	error=0;
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
+#ifndef WIN32
 	else if(e==NPAPI)
 	{
 		npapi_params=(NPAPI_params*)params;
@@ -414,6 +421,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buf
 	{
 		pthread_create(&t,NULL,(thread_worker)glx_worker,this);
 	}
+#endif
 }
 
 RenderThread::~RenderThread()
@@ -421,16 +429,17 @@ RenderThread::~RenderThread()
 	void* ret;
 	pthread_cancel(t);
 	pthread_join(t,&ret);
-	LOG(NO_INFO,"~RenderThread this=" << this);
+	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
 }
 
+#ifndef WIN32
 void* RenderThread::npapi_worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
 
 	NPAPI_params* p=th->npapi_params;
-	
+
 	Display* d=XOpenDisplay(NULL);
 
 	XFontStruct *mFontInfo;
@@ -659,6 +668,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	}
 	delete p;
 }
+#endif
 
 int RenderThread::load_program()
 {
@@ -693,6 +703,7 @@ int RenderThread::load_program()
 	return ret;
 }
 
+#ifndef WIN32
 void* RenderThread::glx_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -825,6 +836,7 @@ void* RenderThread::glx_worker(RenderThread* th)
 		exit(-1);
 	}
 }
+#endif
 
 float RenderThread::getIdAt(int x, int y)
 {
@@ -877,6 +889,13 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	rt->width=width;
 	rt->height=height;
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
+	//Now we can initialize GLEW
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		LOG(LOG_ERROR,"Cannot initialize GLEW");
+		abort();
+	}
 	th->interactive_buffer=new float[width*height];
 
 	//Load fragment shaders
@@ -1012,7 +1031,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	}
 	catch(const char* e)
 	{
-		LOG(ERROR, "Exception caught " << e);
+		LOG(LOG_ERROR, "Exception caught " << e);
 		delete[] buffer;
 		exit(-1);
 	}
@@ -1022,7 +1041,7 @@ void RenderThread::draw()
 {
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
-	usleep(1000000/sys->root->frame_rate);
+	compat_msleep(1000/sys->root->frame_rate);
 	sem_wait(&end_render);
 }
 
@@ -1035,13 +1054,13 @@ void RootMovieClip::setFrameCount(int f)
 	sem_post(&sem_frames);
 }
 
-void RootMovieClip::setFrameSize(const RECT& f)
+void RootMovieClip::setFrameSize(const lightspark::RECT& f)
 {
 	frame_size=f;
 	sem_post(&sem_valid_frame_size);
 }
 
-RECT RootMovieClip::getFrameSize()
+lightspark::RECT RootMovieClip::getFrameSize()
 {
 	sem_wait(&sem_valid_frame_size);
 	return frame_size;
@@ -1092,11 +1111,12 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	}
 	if(it==dictionary.end())
 	{
-		LOG(ERROR,"No such Id on dictionary " << id);
+		LOG(LOG_ERROR,"No such Id on dictionary " << id);
 		abort();
 	}
+	DictionaryTag* ret=*it;
 	sem_post(&mutex);
-	return *it;
+	return ret;
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

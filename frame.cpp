@@ -23,12 +23,15 @@
 #include <list>
 #include <time.h>
 #include "swf.h"
-#include <GL/gl.h>
+#include "compat.h"
+#include <GL/glew.h>
 
 using namespace std;
+using namespace lightspark;
+
 long timeDiff(timespec& s, timespec& d);
 
-extern __thread SystemState* sys;
+extern TLSDATA SystemState* sys;
 
 void Frame::runScript()
 {
@@ -38,8 +41,10 @@ void Frame::runScript()
 
 void Frame::Render()
 {
+#ifndef WIN32
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
+#endif
 	list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
 
 	//Render objects of this frame;
@@ -68,8 +73,10 @@ void Frame::Render()
 	for(j;j!=dynamicDisplayList->end();j++)
 		(*j)->Render();
 
+#ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->render_time+=timeDiff(ts,td);
+#endif
 }
 
 void dumpDisplayList(list<IDisplayListElem*>& l)

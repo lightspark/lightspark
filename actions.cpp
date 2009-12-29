@@ -20,19 +20,22 @@
 #include "actions.h"
 #include "logger.h"
 #include "swf.h"
-
-extern __thread SystemState* sys;
-extern __thread RenderThread* rt;
-extern __thread ParseThread* pt;
+#include "compat.h"
 
 using namespace std;
+using namespace lightspark;
+
+extern TLSDATA SystemState* sys;
+extern TLSDATA RenderThread* rt;
+extern TLSDATA ParseThread* pt;
+
 long timeDiff(timespec& s, timespec& d);
 
-void ignore(istream& i, int count);
+void lightspark::ignore(istream& i, int count);
 
 ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(NO_INFO,"ExportAssetsTag Tag");
+	LOG(LOG_NO_INFO,"ExportAssetsTag Tag");
 	in >> Count;
 	Tags.resize(Count);
 	Names.resize(Count);
@@ -50,7 +53,7 @@ ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 
 DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
-	LOG(CALLS,"DoActionTag");
+	LOG(LOG_CALLS,"DoActionTag");
 	int dest=in.tellg();
 	if((h&0x3f)==0x3f)
 		dest+=Length;
@@ -67,7 +70,7 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 		if(actions.back()==NULL)
 		{
 			actions.pop_back();
-			LOG(ERROR,"Not supported action opcode");
+			LOG(LOG_ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
 		}
@@ -82,8 +85,10 @@ void DoActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, ID
 
 void DoActionTag::Render()
 {
+#ifndef WIN32
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
+#endif
 	ExecutionContext* exec_bak=rt->execContext;
 	rt->execContext=this;
 	for(unsigned int i=0;i<actions.size();i++)
@@ -98,7 +103,7 @@ void DoActionTag::Render()
 				i--;
 			}
 			if(off<0)
-				LOG(ERROR,"Invalid jump offset");
+				LOG(LOG_ERROR,"Invalid jump offset");
 		}
 		else if(jumpOffset>0)
 		{
@@ -108,17 +113,19 @@ void DoActionTag::Render()
 				jumpOffset-=actions[i]->Length;
 			}
 			if(jumpOffset<0)
-				LOG(ERROR,"Invalid jump offset");
+				LOG(LOG_ERROR,"Invalid jump offset");
 		}
 	}
 	rt->execContext=exec_bak;
+#ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->action_time=timeDiff(ts,td);
+#endif
 }
 
 DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
-	LOG(CALLS,"DoInitActionTag");
+	LOG(LOG_CALLS,"DoInitActionTag");
 	int dest=in.tellg();
 	if((h&0x3f)==0x3f)
 		dest+=Length;
@@ -135,7 +142,7 @@ DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTa
 		if(actions.back()==NULL)
 		{
 			actions.pop_back();
-			LOG(ERROR,"Not supported action opcode");
+			LOG(LOG_ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
 		}
@@ -150,8 +157,10 @@ void DoInitActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo
 
 void DoInitActionTag::Render()
 {
+#ifndef WIN32
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
+#endif
 	ExecutionContext* exec_bak=rt->execContext;
 	rt->execContext=this;
 	for(unsigned int i=0;i<actions.size();i++)
@@ -166,7 +175,7 @@ void DoInitActionTag::Render()
 				i--;
 			}
 			if(off<0)
-				LOG(ERROR,"Invalid jump offset");
+				LOG(LOG_ERROR,"Invalid jump offset");
 		}
 		else if(jumpOffset>0)
 		{
@@ -176,12 +185,14 @@ void DoInitActionTag::Render()
 				jumpOffset-=actions[i]->Length;
 			}
 			if(jumpOffset<0)
-				LOG(ERROR,"Invalid jump offset");
+				LOG(LOG_ERROR,"Invalid jump offset");
 		}
 	}
 	rt->execContext=exec_bak;
+#ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->action_time=timeDiff(ts,td);
+#endif
 }
 
 ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)
@@ -374,7 +385,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			t=new ActionIf(in);
 			break;
 		default:
-			LOG(NOT_IMPLEMENTED,"Unsupported ActionCode " << (int)ActionCode);
+			LOG(LOG_NOT_IMPLEMENTED,"Unsupported ActionCode " << (int)ActionCode);
 			t=NULL;
 			break;
 	}
@@ -393,7 +404,7 @@ RunState::RunState():FP(0),stop_FP(0)
 
 void ActionStop::Execute()
 {
-	LOG(CALLS,"ActionStop");
+	LOG(LOG_CALLS,"ActionStop");
 	rt->currentClip->state.next_FP=rt->currentClip->state.FP;
 	rt->currentClip->state.stop_FP=true;
 }
@@ -401,7 +412,7 @@ void ActionStop::Execute()
 ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 {
 	in >> FunctionName >> NumParams;
-	LOG(CALLS,"Defining function " << FunctionName);
+	LOG(LOG_CALLS,"Defining function " << FunctionName);
 	params.resize(NumParams);
 	for(int i=0;i<NumParams;i++)
 	{
@@ -415,13 +426,13 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 	{
 		ACTIONRECORDHEADER ah(in);
 		if(ah.ActionCode==0)
-			LOG(ERROR,"End action in function")
+			LOG(LOG_ERROR,"End action in function")
 		else
 			functionActions.push_back(ah.createTag(in));
 		if(functionActions.back()==NULL)
 		{
 			functionActions.pop_back();
-			LOG(ERROR,"Not supported action opcode");
+			LOG(LOG_ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
 		}
@@ -429,7 +440,7 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 			break;
 		else if(in.tellg()>dest)
 		{
-			LOG(ERROR,"CodeSize not consistent");
+			LOG(LOG_ERROR,"CodeSize not consistent");
 			break;
 		}
 	}
@@ -439,17 +450,17 @@ ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args)
 {
 	retValue=new Undefined;
 	if(retValue->getObjectType()!=T_UNDEFINED)
-		LOG(ERROR,"Not valid condition");
+		LOG(LOG_ERROR,"Not valid condition");
 	ExecutionContext* exec_bak=rt->execContext;
 	rt->execContext=this;
-	LOG(CALLS,"Calling Function2 " << FunctionName);
+	LOG(LOG_CALLS,"Calling Function2 " << FunctionName);
 	for(int i=0;i<args->size();i++)
-		LOG(CALLS,"Arg "<<i<<"="<<args->at(i)->toString());
+		LOG(LOG_CALLS,"Arg "<<i<<"="<<args->at(i)->toString());
 	for(int i=0;i<NumParams;i++)
 	{
 		//cout << "Reg " << (int)Parameters[i].Register << " for " <<  Parameters[i].ParamName << endl;
 		if(Parameters[i].Register==0)
-			LOG(ERROR,"Parameter not in register")
+			LOG(LOG_ERROR,"Parameter not in register")
 		else
 		{
 			rt->execContext->regs[Parameters[i].Register]=args->at(i);
@@ -458,21 +469,21 @@ ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args)
 	int used_regs=1;
 	if(PreloadThisFlag)
 	{
-		LOG(CALLS,"Preload this");
+		LOG(LOG_CALLS,"Preload this");
 		abort();
 		//rt->execContext->regs[used_regs]=rt->currentClip;
 		used_regs++;
 	}
 	if(PreloadArgumentsFlag)
-		LOG(CALLS,"Preload arguments "<<used_regs);
+		LOG(LOG_CALLS,"Preload arguments "<<used_regs);
 	if(PreloadSuperFlag)
-		LOG(CALLS,"Preload super "<<used_regs);
+		LOG(LOG_CALLS,"Preload super "<<used_regs);
 	if(PreloadRootFlag)
-		LOG(CALLS,"Preload root "<<used_regs);
+		LOG(LOG_CALLS,"Preload root "<<used_regs);
 	if(PreloadParentFlag)
-		LOG(CALLS,"Preload parent "<<used_regs);
+		LOG(LOG_CALLS,"Preload parent "<<used_regs);
 	if(PreloadGlobalFlag)
-		LOG(CALLS,"Preload global "<<used_regs);
+		LOG(LOG_CALLS,"Preload global "<<used_regs);
 
 	for(unsigned int i=0;i<functionActions.size();i++)
 	{
@@ -486,7 +497,7 @@ ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args)
 				i--;
 			}
 			if(off<0)
-				LOG(ERROR,"Invalid jump offset");
+				LOG(LOG_ERROR,"Invalid jump offset");
 			jumpOffset=0;
 		}
 		else if(jumpOffset>0)
@@ -497,7 +508,7 @@ ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args)
 				jumpOffset-=functionActions[i]->Length;
 			}
 			if(jumpOffset<0)
-				LOG(ERROR,"Invalid jump offset");
+				LOG(LOG_ERROR,"Invalid jump offset");
 		}
 	}
 	rt->execContext=exec_bak;
@@ -507,7 +518,7 @@ ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args)
 ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 {
 	in >> FunctionName >> NumParams >> RegisterCount;
-	LOG(CALLS,"Defining function2 " << FunctionName);
+	LOG(LOG_CALLS,"Defining function2 " << FunctionName);
 	BitStream bs(in);
 	PreloadParentFlag=UB(1,bs);
 	PreloadRootFlag=UB(1,bs);
@@ -532,13 +543,13 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 	{
 		ACTIONRECORDHEADER ah(in);
 		if(ah.ActionCode==0)
-			LOG(ERROR,"End action in function")
+			LOG(LOG_ERROR,"End action in function")
 		else
 			functionActions.push_back(ah.createTag(in));
 		if(functionActions.back()==NULL)
 		{
 			functionActions.pop_back();
-			LOG(ERROR,"Not supported action opcode");
+			LOG(LOG_ERROR,"Not supported action opcode");
 			ignore(in,dest-in.tellg());
 			break;
 		}
@@ -547,7 +558,7 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 			break;
 		else if(in.tellg()>dest)
 		{
-			LOG(ERROR,"CodeSize not consistent with file offset " << in.tellg());
+			LOG(LOG_ERROR,"CodeSize not consistent with file offset " << in.tellg());
 			break;
 		}
 	}
@@ -555,7 +566,7 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 
 void ActionPushDuplicate::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionPushDuplicate");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionPushDuplicate");
 }
 
 void ActionSetProperty::Execute()
@@ -564,7 +575,7 @@ void ActionSetProperty::Execute()
 /*	ASObject* value=rt->vm.stack.pop();
 	int index=rt->vm.stack.pop()->toInt();
 	tiny_string target=rt->vm.stack.pop()->toString();
-	LOG(CALLS,"ActionSetProperty to: " << target << " index " << index);
+	LOG(LOG_CALLS,"ActionSetProperty to: " << target << " index " << index);
 	ASObject* owner;
 	ASObject* obj=sys->getVariableByQName(target,"",owner);
 	if(owner)
@@ -573,7 +584,7 @@ void ActionSetProperty::Execute()
 		{
 			case 2:
 				obj->setVariableByQName("_scalex","",value);
-				LOG(CALLS,"setting to " << value->toNumber());
+				LOG(LOG_CALLS,"setting to " << value->toNumber());
 				break;
 	/*		case 5:
 				ret=obj->getVariableByName("_totalframes");
@@ -584,7 +595,7 @@ void ActionSetProperty::Execute()
 				LOG(NO_INFO,"setting to " << ret->toInt());
 				break;
 			default:
-				LOG(ERROR,"Not supported property index "<< index);
+				LOG(LOG_ERROR,"Not supported property index "<< index);
 				break;
 		}
 	}*/
@@ -595,7 +606,7 @@ void ActionGetProperty::Execute()
 	abort();
 /*	int index=rt->vm.stack.pop()->toInt();
 	tiny_string target=rt->vm.stack.pop()->toString();
-	LOG(CALLS,"ActionGetProperty from: " << target << " index " << index);
+	LOG(LOG_CALLS,"ActionGetProperty from: " << target << " index " << index);
 	ASObject* owner;
 	ASObject* obj=sys->getVariableByQName(target,"",owner);
 	ASObject* ret;
@@ -605,14 +616,14 @@ void ActionGetProperty::Execute()
 		{
 			case 5:
 				ret=obj->getVariableByQName("_totalframes","",owner);
-				LOG(CALLS,"returning " << ret->toInt());
+				LOG(LOG_CALLS,"returning " << ret->toInt());
 				break;
 			case 12:
 				ret=obj->getVariableByQName("_framesloaded","",owner);
-				LOG(CALLS,"returning " << ret->toInt());
+				LOG(LOG_CALLS,"returning " << ret->toInt());
 				break;
 			default:
-				LOG(ERROR,"Not supported property index "<< index);
+				LOG(LOG_ERROR,"Not supported property index "<< index);
 				break;
 		}
 	}
@@ -623,13 +634,13 @@ void ActionGetProperty::Execute()
 
 void ActionDecrement::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionDecrement");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionDecrement");
 }
 
 void ActionExtends::Execute()
 {
 	abort();
-/*	LOG(NOT_IMPLEMENTED,"ActionExtends");
+/*	LOG(LOG_NOT_IMPLEMENTED,"ActionExtends");
 	ASObject* super_cons=rt->vm.stack.pop();
 	ASObject* sub_cons=rt->vm.stack.pop();
 	ASObject* sub_ob=sub_cons;
@@ -645,76 +656,76 @@ void ActionExtends::Execute()
 
 void ActionTypeOf::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionTypeOf");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionTypeOf");
 }
 
 void ActionGetTime::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionGetTime");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionGetTime");
 }
 
 void ActionInstanceOf::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionInstanceOf");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionInstanceOf");
 }
 
 void ActionImplementsOp::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionImplementsOp");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionImplementsOp");
 }
 
 void ActionBitAnd::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionBitAnd");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionBitAnd");
 }
 
 void ActionBitRShift::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionBitRShift");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionBitRShift");
 }
 
 void ActionEnumerate2::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionEnumerate2");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionEnumerate2");
 }
 
 void ActionToString::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionToString");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionToString");
 }
 
 void ActionToNumber::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionToNumber");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionToNumber");
 }
 
 void ActionCastOp::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionCastOp");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionCastOp");
 }
 
 void ActionIncrement::Execute()
 {
 	abort();
 /*	float a=rt->vm.stack.pop()->toNumber();
-	LOG(CALLS,"ActionIncrement: " << a);
+	LOG(LOG_CALLS,"ActionIncrement: " << a);
 	rt->vm.stack.push(new Number(a+1));*/
 }
 
 void ActionGreater::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionGreater");
+/*	LOG(LOG_CALLS,"ActionGreater");
 	ASObject* arg1=rt->vm.stack.pop();
 	ASObject* arg2=rt->vm.stack.pop();
 	if(arg2->isGreater(arg1))
 	{
-		LOG(CALLS,"Greater");
+		LOG(LOG_CALLS,"Greater");
 		rt->vm.stack.push(new Integer(1));
 	}
 	else
 	{
-		LOG(CALLS,"Not Greater");
+		LOG(LOG_CALLS,"Not Greater");
 		rt->vm.stack.push(new Integer(0));
 	}*/
 }
@@ -730,24 +741,24 @@ void ActionAdd2::Execute()
 		string tmp(arg2->toString());
 		tmp+=arg1->toString();
 		rt->vm.stack.push(new ASString(tmp));
-		LOG(CALLS,"ActionAdd2 (string concatenation): " << rt->vm.stack(0)->toString());
+		LOG(LOG_CALLS,"ActionAdd2 (string concatenation): " << rt->vm.stack(0)->toString());
 	}
 	else
 	{
 		rt->vm.stack.push(new Number(arg1->toNumber()+arg2->toNumber()));
-		LOG(CALLS,"ActionAdd2 returning: " << arg1->toNumber() + arg2->toNumber());
+		LOG(LOG_CALLS,"ActionAdd2 returning: " << arg1->toNumber() + arg2->toNumber());
 	}*/
 }
 
 void ActionCloneSprite::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionCloneSprite");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionCloneSprite");
 }
 
 void ActionDefineLocal::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionDefineLocal");
+/*	LOG(LOG_CALLS,"ActionDefineLocal");
 	ASObject* value=rt->vm.stack.pop();
 	tiny_string name=rt->vm.stack.pop()->toString();
 	rt->currentClip->setVariableByQName(name,"",value);*/
@@ -757,22 +768,22 @@ void ActionNewObject::Execute()
 {
 	abort();
 /*	tiny_string varName=rt->vm.stack.pop()->toString();
-	LOG(CALLS,"ActionNewObject: name " << varName);
+	LOG(LOG_CALLS,"ActionNewObject: name " << varName);
 	ASObject* owner;
 	ASObject* type=sys->getVariableByQName(varName,"",owner);
 	if(owner)
 	{
 		if(type->getObjectType()!=T_UNDEFINED)
-			LOG(ERROR,"ActionNewObject: no such object");
+			LOG(LOG_ERROR,"ActionNewObject: no such object");
 		int numArgs=rt->vm.stack.pop()->toInt();
 		if(numArgs)
-			LOG(ERROR,"There are arguments");
+			LOG(LOG_ERROR,"There are arguments");
 		ASObject* c=type->getVariableByQName("constructor","",owner);
 		if(c->getObjectType()!=T_FUNCTION)
-			LOG(ERROR,"Constructor is not a function");
+			LOG(LOG_ERROR,"Constructor is not a function");
 		Function* f=static_cast<Function*>(c);
 		if(f==NULL)
-			LOG(ERROR,"Not possible error");
+			LOG(LOG_ERROR,"Not possible error");
 
 		ASObject* obj=new ASObject;
 		f->call(obj,NULL);
@@ -785,7 +796,7 @@ void ActionNewObject::Execute()
 void ActionReturn::Execute()
 {
 	abort();
-//	LOG(CALLS,"ActionReturn");
+//	LOG(LOG_CALLS,"ActionReturn");
 //	rt->execContext->retValue=rt->vm.stack.pop();
 }
 
@@ -793,14 +804,14 @@ void ActionPop::Execute()
 {
 	abort();
 //	tiny_string popped=rt->vm.stack.pop()->toString();
-//	LOG(CALLS,"ActionPop: " << popped);
+//	LOG(LOG_CALLS,"ActionPop: " << popped);
 }
 
 void ActionCallMethod::Execute()
 {
 	abort();
 /*	tiny_string methodName=rt->vm.stack.pop()->toString();
-	LOG(CALLS,"ActionCallMethod: " << methodName);
+	LOG(LOG_CALLS,"ActionCallMethod: " << methodName);
 	ASObject* obj=rt->vm.stack.pop();
 	int numArgs=rt->vm.stack.pop()->toInt();
 	arguments args(numArgs);
@@ -813,7 +824,7 @@ void ActionCallMethod::Execute()
 		IFunction* f=ret->toFunction();
 		if(f==0)
 		{
-			LOG(ERROR,"No such function");
+			LOG(LOG_ERROR,"No such function");
 			rt->vm.stack.push(new Undefined);
 		}
 		else
@@ -829,7 +840,7 @@ void ActionCallMethod::Execute()
 void ActionCallFunction::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionCallFunction");
+/*	LOG(LOG_CALLS,"ActionCallFunction");
 
 	tiny_string funcName=rt->vm.stack.pop()->toString();
 	int numArgs=rt->vm.stack.pop()->toInt();
@@ -843,7 +854,7 @@ void ActionCallFunction::Execute()
 		IFunction* f=ret->toFunction();
 		if(f==0)
 		{
-			LOG(ERROR,"No such function");
+			LOG(LOG_ERROR,"No such function");
 			rt->vm.stack.push(new Undefined);
 		}
 		else
@@ -854,13 +865,13 @@ void ActionCallFunction::Execute()
 	}
 	else
 		rt->vm.stack.push(new Undefined);
-	LOG(CALLS,"ActionCallFunction: End");*/
+	LOG(LOG_CALLS,"ActionCallFunction: End");*/
 }
 
 void ActionDefineFunction::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionDefineFunction: " << FunctionName);
+/*	LOG(LOG_CALLS,"ActionDefineFunction: " << FunctionName);
 	if(FunctionName.isNull())
 		rt->vm.stack.push(this);
 	else
@@ -869,14 +880,14 @@ void ActionDefineFunction::Execute()
 
 ASObject* ActionDefineFunction::call(ASObject* obj, arguments* args)
 {
-	LOG(NOT_IMPLEMENTED,"ActionDefineFunction: Call");
+	LOG(LOG_NOT_IMPLEMENTED,"ActionDefineFunction: Call");
 	return NULL;
 }
 
 void ActionDefineFunction2::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionDefineFunction2: " << FunctionName);
+/*	LOG(LOG_CALLS,"ActionDefineFunction2: " << FunctionName);
 	if(FunctionName.isNull())
 		rt->vm.stack.push(this);
 	else
@@ -886,17 +897,17 @@ void ActionDefineFunction2::Execute()
 void ActionLess2::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionLess2");
+/*	LOG(LOG_CALLS,"ActionLess2");
 	ASObject* arg1=rt->vm.stack.pop();
 	ASObject* arg2=rt->vm.stack.pop();
 	if(arg2->isLess(arg1))
 	{
-		LOG(CALLS,"Less");
+		LOG(LOG_CALLS,"Less");
 		rt->vm.stack.push(new Integer(1));
 	}
 	else
 	{
-		LOG(CALLS,"Not Less");
+		LOG(LOG_CALLS,"Not Less");
 		rt->vm.stack.push(new Integer(0));
 	}*/
 }
@@ -904,17 +915,17 @@ void ActionLess2::Execute()
 void ActionStrictEquals::Execute()
 {
 	abort();
-/*	LOG(NOT_IMPLEMENTED,"ActionStrictEquals");
+/*	LOG(LOG_NOT_IMPLEMENTED,"ActionStrictEquals");
 	ASObject* arg1=rt->vm.stack.pop();
 	ASObject* arg2=rt->vm.stack.pop();
 	if(arg1->isEqual(arg2))
 	{
-		LOG(CALLS,"Equal");
+		LOG(LOG_CALLS,"Equal");
 		rt->vm.stack.push(new Integer(1));
 	}
 	else
 	{
-		LOG(CALLS,"Not Equal");
+		LOG(LOG_CALLS,"Not Equal");
 		rt->vm.stack.push(new Integer(0));
 	}*/
 }
@@ -922,56 +933,56 @@ void ActionStrictEquals::Execute()
 void ActionEquals2::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionEquals2");
+/*	LOG(LOG_CALLS,"ActionEquals2");
 	ASObject* arg1=rt->vm.stack.pop();
 	ASObject* arg2=rt->vm.stack.pop();
 	if(arg1->isEqual(arg2))
 	{
-		LOG(CALLS,"Equal");
+		LOG(LOG_CALLS,"Equal");
 		rt->vm.stack.push(new Integer(1));
 	}
 	else
 	{
-		LOG(CALLS,"Not Equal");
+		LOG(LOG_CALLS,"Not Equal");
 		rt->vm.stack.push(new Integer(0));
 	}*/
 }
 
 void ActionJump::Execute()
 {
-	LOG(CALLS,"ActionJump: " << BranchOffset);
+	LOG(LOG_CALLS,"ActionJump: " << BranchOffset);
 	rt->execContext->setJumpOffset(BranchOffset);
 }
 
 void ActionDelete::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionDelete");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionDelete");
 }
 
 void ActionNewMethod::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionNewMethod");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionNewMethod");
 }
 
 void ActionAsciiToChar::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionStringAdd");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionStringAdd");
 }
 
 void ActionStringAdd::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionStringAdd");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionStringAdd");
 }
 
 void ActionStringExtract::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionStringExtract");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionStringExtract");
 }
 
 void ActionIf::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionIf");
+/*	LOG(LOG_CALLS,"ActionIf");
 	int cond=rt->vm.stack.pop()->toInt();
 	if(cond)
 		rt->execContext->setJumpOffset(Offset);*/
@@ -983,7 +994,7 @@ void ActionModulo::Execute()
 /*	int a=rt->vm.stack.pop()->toInt();
 	int b=rt->vm.stack.pop()->toInt();
 	rt->vm.stack.push(new Number(b%a));
-	LOG(CALLS,"ActionDivide: return " << b << "%" << a << "="<< b%a);*/
+	LOG(LOG_CALLS,"ActionDivide: return " << b << "%" << a << "="<< b%a);*/
 }
 
 void ActionDivide::Execute()
@@ -992,7 +1003,7 @@ void ActionDivide::Execute()
 /*	double a=rt->vm.stack.pop()->toNumber();
 	double b=rt->vm.stack.pop()->toNumber();
 	rt->vm.stack.push(new Number(b/a));
-	LOG(CALLS,"ActionDivide: return " << b << "/" << a << "="<< b/a);*/
+	LOG(LOG_CALLS,"ActionDivide: return " << b << "/" << a << "="<< b/a);*/
 }
 
 void ActionMultiply::Execute()
@@ -1001,7 +1012,7 @@ void ActionMultiply::Execute()
 /*	double a=rt->vm.stack.pop()->toNumber();
 	double b=rt->vm.stack.pop()->toNumber();
 	rt->vm.stack.push(new Number(b*a));
-	LOG(CALLS,"ActionMultiply: return " << b*a);*/
+	LOG(LOG_CALLS,"ActionMultiply: return " << b*a);*/
 }
 
 void ActionSubtract::Execute()
@@ -1010,13 +1021,13 @@ void ActionSubtract::Execute()
 /*	double a=rt->vm.stack.pop()->toNumber();
 	double b=rt->vm.stack.pop()->toNumber();
 	rt->vm.stack.push(new Number(b-a));
-	LOG(CALLS,"ActionSubtract: return " << b-a);*/
+	LOG(LOG_CALLS,"ActionSubtract: return " << b-a);*/
 }
 
 void ActionNot::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionNot");
+/*	LOG(LOG_CALLS,"ActionNot");
 	double a=rt->vm.stack.pop()->toNumber();
 	if(a==0)
 		rt->vm.stack.push(new Integer(1));
@@ -1026,17 +1037,17 @@ void ActionNot::Execute()
 
 void ActionInitArray::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionInitArray");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionInitArray");
 }
 
 void ActionInitObject::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionInitObject");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionInitObject");
 }
 
 void ActionStringEquals::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionStringEquals");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionStringEquals");
 }
 
 void ActionSetVariable::Execute()
@@ -1044,7 +1055,7 @@ void ActionSetVariable::Execute()
 	abort();
 /*	ASObject* obj=rt->vm.stack.pop();
 	tiny_string varName=rt->vm.stack.pop()->toString();
-	LOG(CALLS,"ActionSetVariable: name " << varName);
+	LOG(LOG_CALLS,"ActionSetVariable: name " << varName);
 	rt->currentClip->setVariableByQName(varName,"",obj);*/
 }
 
@@ -1052,13 +1063,13 @@ void ActionGetVariable::Execute()
 {
 	abort();
 /*	tiny_string varName=rt->vm.stack.pop()->toString();
-	LOG(CALLS,"ActionGetVariable: " << varName);
+	LOG(LOG_CALLS,"ActionGetVariable: " << varName);
 	ASObject* owner;
 	ASObject* object=rt->currentClip->getVariableByQName(varName,"",owner);
 	if(!owner)
 	{
 		//Looks in Global
-		LOG(CALLS,"NOT implemented, trying Global");
+		LOG(LOG_CALLS,"NOT implemented, trying Global");
 		object=rt->vm.Global.getVariableByQName(varName,"",owner);
 	}
 	if(!owner)
@@ -1075,14 +1086,14 @@ void ActionGetVariable::Execute()
 		rt->vm.stack.push(object);
 	else
 	{
-		LOG(NOT_IMPLEMENTED,"NOT found, pushing undefined");
+		LOG(LOG_NOT_IMPLEMENTED,"NOT found, pushing undefined");
 		rt->vm.stack.push(new Undefined);
 	}*/
 }
 
 void ActionToggleQuality::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionToggleQuality");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionToggleQuality");
 }
 
 ActionGotoFrame::ActionGotoFrame(std::istream& in)
@@ -1110,7 +1121,7 @@ ActionConstantPool::ActionConstantPool(std::istream& in)
 	in >> Count;
 
 	STRING s;
-	LOG(TRACE,"ConstantPool: Reading " << Count <<  " constants");
+	LOG(LOG_TRACE,"ConstantPool: Reading " << Count <<  " constants");
 	for(int i=0;i<Count;i++)
 	{
 		in >> s;
@@ -1126,9 +1137,9 @@ ActionStoreRegister::ActionStoreRegister(std::istream& in)
 void ActionStoreRegister::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionStoreRegister "<< (int)RegisterNumber);
+/*	LOG(LOG_CALLS,"ActionStoreRegister "<< (int)RegisterNumber);
 	if(RegisterNumber>10)
-		LOG(ERROR,"Register index too big");
+		LOG(LOG_ERROR,"Register index too big");
 	rt->execContext->regs[RegisterNumber]=rt->vm.stack(0);*/
 }
 
@@ -1148,7 +1159,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				in >> tmp;
 				Objects.push_back(new ASString((const char*)tmp));
 				r-=(tmp.size()+1);
-				LOG(CALLS,"Push: Read string " << tmp);
+				LOG(LOG_CALLS,"Push: Read string " << tmp);
 				break;
 			}
 			case 1:
@@ -1157,7 +1168,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				in >> tmp;
 				Objects.push_back(new Number(tmp));
 				r-=4;
-				LOG(CALLS,"Push: Read float " << tmp);
+				LOG(LOG_CALLS,"Push: Read float " << tmp);
 				break;
 			}
 			case 2:
@@ -1230,7 +1241,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				break;
 			}
 			default:
-				LOG(ERROR,"Push type: " << (int)Type);
+				LOG(LOG_ERROR,"Push type: " << (int)Type);
 				ignore(in,r);
 				r=0;
 				break;
@@ -1240,19 +1251,19 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 
 void ActionPush::print()
 {
-	LOG(TRACE,"ActionPush");
+	LOG(LOG_TRACE,"ActionPush");
 }
 
 void ActionWith::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"Exec: ActionWith");
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionWith");
 }
 
 void ActionGetMember::Execute()
 {
 	abort();
 /*	tiny_string memberName=rt->vm.stack.pop()->toString();
-	LOG(CALLS,"ActionGetMember: " << memberName);
+	LOG(LOG_CALLS,"ActionGetMember: " << memberName);
 	ASObject* obj=rt->vm.stack.pop();
 	ASObject* owner;
 	ASObject* ret=obj->getVariableByQName(memberName,"",owner);
@@ -1260,7 +1271,7 @@ void ActionGetMember::Execute()
 		rt->vm.stack.push(ret);
 	else
 	{
-		LOG(NOT_IMPLEMENTED,"NOT found, pushing undefined");
+		LOG(LOG_NOT_IMPLEMENTED,"NOT found, pushing undefined");
 		rt->vm.stack.push(new Undefined);
 	}*/
 }
@@ -1270,7 +1281,7 @@ void ActionSetMember::Execute()
 	abort();
 /*	ASObject* value=rt->vm.stack.pop();
 	tiny_string memberName=rt->vm.stack.pop()->toString();
-	LOG(CALLS,"ActionSetMember: " << memberName);
+	LOG(LOG_CALLS,"ActionSetMember: " << memberName);
 	ASObject* obj=rt->vm.stack.pop();
 	obj->setVariableByQName(memberName,"",value);*/
 }
@@ -1278,10 +1289,10 @@ void ActionSetMember::Execute()
 void ActionPush::Execute()
 {
 	abort();
-/*	LOG(CALLS,"ActionPush");
+/*	LOG(LOG_CALLS,"ActionPush");
 	for(int i=0;i<Objects.size();i++)
 	{
-		LOG(CALLS,"\t " << Objects[i]->toString());
+		LOG(LOG_CALLS,"\t " << Objects[i]->toString());
 		rt->vm.stack.push(Objects[i]->clone());
 	}*/
 }
@@ -1293,41 +1304,41 @@ ActionGetURL::ActionGetURL(std::istream& in)
 
 ActionGetURL2::ActionGetURL2(std::istream& in)
 {
-	LOG(NOT_IMPLEMENTED,"GetURL2");
+	LOG(LOG_NOT_IMPLEMENTED,"GetURL2");
 	in >> Reserved;
 }
 
 void ActionGetURL::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"GetURL: exec");
+	LOG(LOG_NOT_IMPLEMENTED,"GetURL: exec");
 }
 
 void ActionGetURL2::Execute()
 {
-	LOG(NOT_IMPLEMENTED,"GetURL2: exec");
+	LOG(LOG_NOT_IMPLEMENTED,"GetURL2: exec");
 }
 
 void ActionPlay::Execute()
 {
-	LOG(CALLS,"ActionPlay");
+	LOG(LOG_CALLS,"ActionPlay");
 	rt->currentClip->state.next_FP=rt->currentClip->state.FP;
 	rt->currentClip->state.stop_FP=false;
 }
 
 void ActionGotoFrame::Execute()
 {
-	LOG(CALLS,"ActionGoto");
+	LOG(LOG_CALLS,"ActionGoto");
 	rt->currentClip->state.next_FP=Frame;
 	rt->currentClip->state.stop_FP=false;
 }
 
 void ActionConstantPool::Execute()
 {
-	LOG(CALLS,"ActionConstantPool");
+	LOG(LOG_CALLS,"ActionConstantPool");
 	rt->vm.setConstantPool(ConstantPool);	
 }
 
-std::istream& operator>>(std::istream& stream, BUTTONCONDACTION& v)
+std::istream& lightspark::operator >>(std::istream& stream, BUTTONCONDACTION& v)
 {
 	stream >> v.CondActionSize;
 

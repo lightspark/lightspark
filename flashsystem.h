@@ -22,10 +22,14 @@
 
 #include "asobjects.h"
 
+namespace lightspark
+{
+
 class Capabilities: public ASObject
 {
 public:
 	Capabilities();
 };
 
+};
 #endif

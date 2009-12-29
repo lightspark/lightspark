@@ -19,6 +19,8 @@
 
 #include "flashsystem.h"
 
+using namespace lightspark;
+
 Capabilities::Capabilities()
 {
 	setVariableByQName("playerType","",new ASString("AVMPlus"));

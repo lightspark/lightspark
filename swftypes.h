@@ -20,8 +20,7 @@
 #ifndef SWFTYPES_H
 #define SWFTYPES_H
 
-//#include "pstdint.h"
-#include <llvm/Support/DataTypes.h>
+#include <llvm/System/DataTypes.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -359,7 +358,7 @@ public:
 	void dumpVariables();
 	int size()
 	{
-		Variables.size();
+		return Variables.size();
 	}
 	tiny_string getNameAt(int i);
 	obj_var* getValueAt(int i);
@@ -384,7 +383,7 @@ private:
 	Manager* manager;
 public:
 	int debug;
-	IInterface* interface;
+	IInterface* implementation;
 	void acquireInterface(IInterface* i);
 	int max_level;
 	//Constructor to set class_name
@@ -719,7 +718,7 @@ public:
 	FB(int s,BitStream& stream):size(s)
 	{
 		if(s>32)
-			LOG(ERROR,"Fixed point bit field wider than 32 bit not supported");
+			LOG(LOG_ERROR,"Fixed point bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
 		if(buf>>(s-1)&1)
 		{
@@ -763,7 +762,7 @@ public:
 			i++;
 		}*/
 		if(s>32)
-			LOG(ERROR,"Unsigned bit field wider than 32 bit not supported");
+			LOG(LOG_ERROR,"Unsigned bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
 	}
 	operator int() const
@@ -781,7 +780,7 @@ public:
 	SB(int s,BitStream& stream):size(s)
 	{
 		if(s>32)
-			LOG(ERROR,"Signed bit field wider than 32 bit not supported");
+			LOG(LOG_ERROR,"Signed bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
 		if(buf>>(s-1)&1)
 		{
@@ -836,6 +835,7 @@ public:
 
 class GRADRECORD
 {
+	friend std::istream& operator>>(std::istream& s, GRADRECORD& v);
 public:
 	int version;
 	UI8 Ratio;
@@ -848,6 +848,7 @@ public:
 
 class GRADIENT
 {
+	friend std::istream& operator>>(std::istream& s, GRADIENT& v);
 public:
 	int version;
 	UB SpreadMode;

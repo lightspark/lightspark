@@ -25,13 +25,14 @@
 #include "frame.h"
 #include "input.h"
 #include "swf.h"
+#include "compat.h"
+
+extern TLSDATA lightspark::SystemState* sys;
 
 namespace lightspark
 {
 
 const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
-
-extern TLSDATA SystemState* sys;
 
 class Event;
 class method_info;
@@ -45,32 +46,32 @@ public:
 	DebugTracer(const tiny_string& n):tracer_name(n){}
 	objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner)
 	{
-		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname " << name);
+		LOG(LOG_CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname " << name);
 		return ASObject::getVariableByMultiname(name,owner);
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 	{
-		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname_i " << name);
+		LOG(LOG_CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname_i " << name);
 		return ASObject::getVariableByMultiname_i(name,owner);
 	}
 	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
 	{
-		LOG(CALLS,"DebugTracer " << tracer_name << ": getVariableByQName " << name << " on namespace " << ns);
+		LOG(LOG_CALLS,"DebugTracer " << tracer_name << ": getVariableByQName " << name << " on namespace " << ns);
 		return ASObject::getVariableByQName(name,ns,owner);
 	}
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
-		LOG(CALLS,"DebugTracer " << tracer_name << ": setVariableByMultiname_i " << name << " to value " << value);
+		LOG(LOG_CALLS,"DebugTracer " << tracer_name << ": setVariableByMultiname_i " << name << " to value " << value);
 		ASObject::setVariableByMultiname_i(name,value);
 	}
 	void setVariableByMultiname(const multiname& name, ASObject* o)
 	{
-		LOG(CALLS,"DebugTracer " << tracer_name << ": setVariableByMultiname " << name << " to an object");
+		LOG(LOG_CALLS,"DebugTracer " << tracer_name << ": setVariableByMultiname " << name << " to an object");
 		ASObject::setVariableByMultiname(name,o);
 	}
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 	{
-		LOG(CALLS,"DebugTracer " << tracer_name << ": setVariableByQName " << name << " on namespace " << ns);
+		LOG(LOG_CALLS,"DebugTracer " << tracer_name << ": setVariableByQName " << name << " on namespace " << ns);
 		ASObject::setVariableByQName(name,ns,o);
 	}
 };
@@ -100,6 +101,7 @@ public:
 	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 	{
 		abort();
+		return 0;
 /*		intptr_t ret=ASObject::getVariableByMultiname(name.owner);
 		if(owner==NULL && super)
 			ret=super->getVariableByMultiname(name,owner);
@@ -142,18 +144,22 @@ public:
 	ASObject* call(ASObject* obj, arguments* args, int level)
 	{
 		abort();
+		return NULL;
 	}
 	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)
 	{
 		abort();
+		return NULL;
 	}
 	IFunction* toFunction()
 	{
 		abort();
+		return NULL;
 	}
 	Function_Object* clone()
 	{
 		abort();
+		return NULL;
 	}
 	tiny_string toString() const;
 };
@@ -557,7 +563,7 @@ private:
 		//TODO: Add interface T to ret
 		T* ret=new T;
 		ret->obj=obj;
-		obj->interface=ret;
+		obj->implementation=ret;
 		//As we are the prototype we should incRef ourself
 		incRef();
 		if(construct && constructor)
@@ -581,7 +587,7 @@ public:
 		obj->actualPrototype=c;
 		T* ret=new T(a1);
 		ret->obj=obj;
-		obj->interface=ret;
+		obj->implementation=ret;
 		//As we are the prototype we should incRef ourself
 		c->incRef();
 		return ret;

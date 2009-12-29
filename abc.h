@@ -170,7 +170,7 @@ struct option_detail
 	u8 kind;
 };
 
-class method_body_info;
+struct method_body_info;
 class ABCContext;
 class ABCVm;
 
@@ -466,8 +466,8 @@ private:
 	static void findProperty(call_context* th, int n);
 	static intptr_t pushByte(intptr_t n);
 	static intptr_t pushShort(intptr_t n);
-	static ASObject* pushInt(call_context* th, int n);
-	static ASObject* pushDouble(call_context* th, int n);
+	static void pushInt(call_context* th, int n);
+	static void pushDouble(call_context* th, int n);
 	static void incLocal_i(call_context* th, int n);
 	static void coerce(call_context* th, int n);
 	static ASObject* getProperty(ASObject* obj, multiname* name);

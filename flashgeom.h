@@ -22,6 +22,9 @@
 
 #include "asobjects.h"
 
+namespace lightspark
+{
+
 class Rectangle: public IInterface
 {
 public:
@@ -46,4 +49,5 @@ public:
 	ASFUNCTION(getColor);
 };
 
+};
 #endif

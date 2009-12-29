@@ -20,6 +20,7 @@
 #include "flashnet.h"
 
 using namespace std;
+using namespace lightspark;
 
 REGISTER_CLASS_NAME(URLLoader);
 REGISTER_CLASS_NAME(URLLoaderDataFormat);
@@ -37,7 +38,7 @@ void URLRequest::sinit(Class_base* c)
 
 ASFUNCTIONBODY(URLRequest,_constructor)
 {
-	URLRequest* th=static_cast<URLRequest*>(obj->interface);
+	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
 /*	if(args->at(0)->getObjectType()!=T_STRING)
 	{
 		abort();
@@ -50,18 +51,20 @@ ASFUNCTIONBODY(URLRequest,_constructor)
 	}
 	obj->setSetterByQName("url","",new Function(_setUrl));
 	obj->setGetterByQName("url","",new Function(_getUrl));
+	return NULL;
 }
 
 ASFUNCTIONBODY(URLRequest,_setUrl)
 {
-	URLRequest* th=static_cast<URLRequest*>(obj->interface);
+	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
 	th->url=args->at(0)->toString();
 	cout << "Setting url to " << th->url << endl;
+	return NULL;
 }
 
 ASFUNCTIONBODY(URLRequest,_getUrl)
 {
-	URLRequest* th=static_cast<URLRequest*>(obj->interface);
+	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
 	return new ASString(th->url);
 }
 
@@ -81,14 +84,15 @@ ASFUNCTIONBODY(URLLoader,_constructor)
 	obj->setGetterByQName("dataFormat","",new Function(_getDataFormat));
 	obj->setSetterByQName("dataFormat","",new Function(_setDataFormat));
 	obj->setVariableByQName("load","",new Function(load));
+	return NULL;
 }
 
 ASFUNCTIONBODY(URLLoader,load)
 {
-	URLLoader* th=static_cast<URLLoader*>(obj->interface);
+	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
 	ASObject* arg=args->at(0);
 	assert(arg && arg->prototype->class_name=="URLRequest");
-	URLRequest* req=static_cast<URLRequest*>(arg->interface);
+	URLRequest* req=static_cast<URLRequest*>(arg->implementation);
 	tiny_string url=req->url;
 	cout << "url is " << url << endl;
 	ASObject* owner;
@@ -100,19 +104,21 @@ ASFUNCTIONBODY(URLLoader,load)
 		if(cur->getObjectType()!=T_FUNCTION)
 			cout << "\t" << data->getNameAt(i) << ": " << cur->toString() << endl;
 	}
+	return NULL;
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
 {
-	URLLoader* th=static_cast<URLLoader*>(obj->interface);
+	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
 	return new ASString(th->dataFormat);
 }
 
 ASFUNCTIONBODY(URLLoader,_setDataFormat)
 {
-	URLLoader* th=static_cast<URLLoader*>(obj->interface);
+	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
 	assert(args->at(0));
 	th->dataFormat=args->at(0)->toString();
+	return NULL;
 }
 
 void URLLoaderDataFormat::sinit(Class_base* c)

@@ -17,43 +17,20 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "thread_pool.h"
-#include "compat.h"
+#ifdef WIN32
+#include <windows.h>
+#endif
 
-using namespace lightspark;
+//Define cross platform helpers
+#ifdef WIN32
+#define TLSDATA __declspec( thread )
+#else
+#define TLSDATA __thread
+#endif
 
-extern TLSDATA SystemState* sys;
+#ifdef WIN32
+#define snprintf _snprintf
+int round ( double f_val );
+#endif
 
-ThreadPool::ThreadPool(SystemState* s)
-{
-	m_sys=s;
-	sem_init(&mutex,0,1);
-	sem_init(&num_jobs,0,0);
-	for(int i=0;i<NUM_THREADS;i++)
-		pthread_create(&threads[i],NULL,job_worker,this);
-}
-
-void* ThreadPool::job_worker(void* t)
-{
-	ThreadPool* th=static_cast<ThreadPool*>(t);
-	sys=th->m_sys;
-
-	while(1)
-	{
-		sem_wait(&th->num_jobs);
-		sem_wait(&th->mutex);
-		IThreadJob* myJob=th->jobs.front();
-		th->jobs.pop_front();
-		sem_post(&th->mutex);
-
-		myJob->execute();
-	}
-}
-
-void ThreadPool::addJob(IThreadJob* j)
-{
-	sem_wait(&mutex);
-	jobs.push_back(j);
-	sem_post(&mutex);
-	sem_post(&num_jobs);
-}
+void compat_msleep(unsigned int time);

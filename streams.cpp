@@ -46,7 +46,7 @@ void sync_stream::setCompressed()
 	strm.next_in = Z_NULL;
 	int ret = inflateInit(&strm);
 	if (ret != Z_OK)
-		LOG(ERROR,"Failed to initialize ZLib");
+		LOG(LOG_ERROR,"Failed to initialize ZLib");
 	sem_post(&mutex);
 }
 
@@ -62,7 +62,7 @@ streamsize sync_stream::xsgetn ( char * s, streamsize n )
 			strm.next_in=(unsigned char*)buffer+head;
 		}
 		else
-			LOG(ERROR,"Sync stream WIP 1");
+			LOG(LOG_ERROR,"Sync stream WIP 1");
 
 		/* run inflate() on input until output buffer not full */
 		strm.avail_out = n;
@@ -75,7 +75,7 @@ streamsize sync_stream::xsgetn ( char * s, streamsize n )
 		//check if output full and wrap around
 		while(strm.avail_out!=0)
 		{
-			LOG(NO_INFO,"Try code");
+			LOG(LOG_NO_INFO,"Try code");
 			wait=(head+1)%buf_size;
 			sem_post(&mutex);
 			sem_wait(&ready);
@@ -87,7 +87,7 @@ streamsize sync_stream::xsgetn ( char * s, streamsize n )
 				inflate(&strm, Z_NO_FLUSH);
 			}
 			else
-				LOG(ERROR,"Sync stream WIP 3");
+				LOG(LOG_ERROR,"Sync stream WIP 3");
 			head+=(tail-head)-strm.avail_in;
 			head%=buf_size;
 		}
@@ -146,6 +146,7 @@ std::streampos sync_stream::seekpos ( std::streampos sp, std::ios_base::openmode
 {
 	printf("puppa1\n");
 	abort();
+	return 0;
 }
 
 std::streampos sync_stream::seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which )
@@ -166,6 +167,7 @@ std::streamsize sync_stream::showmanyc( )
 {
 	printf("puppa3\n");
 	abort();
+	return 0;
 }
 
 zlib_file_filter::zlib_file_filter():compressed(0),offset(0)
@@ -204,6 +206,7 @@ std::streampos zlib_file_filter::seekpos ( std::streampos sp, std::ios_base::ope
 {
 	printf("puppa1\n");
 	abort();
+	return 0;
 }
 
 std::streampos zlib_file_filter::seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which)
@@ -225,6 +228,7 @@ std::streamsize zlib_file_filter::showmanyc( )
 {
 	printf("puppa3\n");
 	abort();
+	return 0;
 }
 
 void zlib_file_filter::setCompressed()
@@ -239,5 +243,5 @@ void zlib_file_filter::setCompressed()
 	strm.next_in = Z_NULL;
 	int ret = inflateInit(&strm);
 	if (ret != Z_OK)
-		LOG(ERROR,"Failed to initialize ZLib");
+		LOG(LOG_ERROR,"Failed to initialize ZLib");
 }

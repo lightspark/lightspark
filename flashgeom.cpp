@@ -19,8 +19,10 @@
 
 #include "flashgeom.h"
 
+using namespace lightspark;
+
 REGISTER_CLASS_NAME(ColorTransform);
-REGISTER_CLASS_NAME(Rectangle);
+REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle");
 
 void Rectangle::sinit(Class_base* c)
 {
@@ -30,7 +32,7 @@ void Rectangle::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Rectangle,_constructor)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 	if(args && args->size()!=0)
 		abort();
 	th->x=0;
@@ -41,29 +43,30 @@ ASFUNCTIONBODY(Rectangle,_constructor)
 	obj->setGetterByQName("right","",new Function(_getRight));
 	obj->setGetterByQName("top","",new Function(_getTop));
 	obj->setGetterByQName("bottom","",new Function(_getBottom));
+	return NULL;
 }
 
 ASFUNCTIONBODY(Rectangle,_getLeft)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 	return abstract_d(th->x);
 }
 
 ASFUNCTIONBODY(Rectangle,_getRight)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 	return abstract_d(th->x + th->width);
 }
 
 ASFUNCTIONBODY(Rectangle,_getTop)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 	return abstract_d(th->y);
 }
 
 ASFUNCTIONBODY(Rectangle,_getBottom)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->interface);
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 	return abstract_d(th->y + th->height);
 }
 
@@ -75,7 +78,7 @@ void ColorTransform::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ColorTransform,_constructor)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj->interface);
+	ColorTransform* th=static_cast<ColorTransform*>(obj->implementation);
 	if(args->size()!=0)
 		abort();
 	//Setting multiplier to default
@@ -88,11 +91,12 @@ ASFUNCTIONBODY(ColorTransform,_constructor)
 	th->greenOffset=0.0;
 	th->blueOffset=0.0;
 	th->alphaOffset=0.0;
+	return NULL;
 }
 
 ASFUNCTIONBODY(ColorTransform,setColor)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj->interface);
+	ColorTransform* th=static_cast<ColorTransform*>(obj->implementation);
 	if(args->size()!=1)
 		abort();
 	uintptr_t tmp=args->at(0)->toInt();
@@ -106,9 +110,11 @@ ASFUNCTIONBODY(ColorTransform,setColor)
 	th->redOffset=(tmp>>16)&0xff;
 	th->greenOffset=(tmp>>8)&0xff;
 	th->blueOffset=tmp&0xff;
+	return NULL;
 }
 
 ASFUNCTIONBODY(ColorTransform,getColor)
 {
 	abort();
+	return NULL;
 }

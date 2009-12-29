@@ -38,37 +38,39 @@
 #include "flashsystem.h"
 #include "flashutils.h"
 #include "flashgeom.h"
-
-extern __thread SystemState* sys;
-extern __thread ParseThread* pt;
-__thread Manager* iManager=NULL;
-__thread Manager* dManager=NULL;
+#include "compat.h"
 
 using namespace std;
+using namespace lightspark;
+
+extern TLSDATA SystemState* sys;
+extern TLSDATA ParseThread* pt;
+TLSDATA Manager* iManager=NULL;
+TLSDATA Manager* dManager=NULL;
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 {
 	int dest=in.tellg();
 	dest+=getSize();
 	in >> Flags >> Name;
-	LOG(CALLS,"DoABCTag Name: " << Name);
+	LOG(LOG_CALLS,"DoABCTag Name: " << Name);
 
 	cout << "assign vm" << endl;
 	context=new ABCContext(sys->currentVm,in);
 
 	if(dest!=in.tellg())
-		LOG(ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
+		LOG(LOG_ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
 }
 
 void DoABCTag::execute()
 {
-	LOG(CALLS,"ABC Exec " << Name);
+	LOG(LOG_CALLS,"ABC Exec " << Name);
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
 {
-	LOG(TRACE,"SymbolClassTag");
+	LOG(LOG_TRACE,"SymbolClassTag");
 	in >> NumSymbols;
 
 	Tags.resize(NumSymbols);
@@ -80,11 +82,11 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
 
 void SymbolClassTag::execute()
 {
-	LOG(TRACE,"SymbolClassTag Exec");
+	LOG(LOG_TRACE,"SymbolClassTag Exec");
 
 	for(int i=0;i<NumSymbols;i++)
 	{
-		LOG(CALLS,Tags[i] << ' ' << Names[i]);
+		LOG(LOG_CALLS,Tags[i] << ' ' << Names[i]);
 		if(Tags[i]==0)
 		{
 			sys->currentVm->addEvent(NULL,new BindClassEvent(sys,Names[i]));
@@ -262,7 +264,7 @@ int ABCContext::getMultinameRTData(int mi) const
 			LOG(CALLS, "MultinameLA");
 			break;*/
 		default:
-			LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+			LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 			abort();
 	}
 }
@@ -296,7 +298,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				break;
 			}
 			default:
-				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
 		return ret;
@@ -313,7 +315,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				break;
 			}
 			default:
-				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
 		return ret;
@@ -420,7 +422,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				LOG(CALLS, "MultinameLA");
 				break;*/
 			default:
-				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
 		return ret;
@@ -480,7 +482,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				LOG(CALLS, "MultinameLA");
 				break;*/
 			default:
-				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
 		return ret;
@@ -516,7 +518,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 				break;
 			}
 			default:
-				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
 		return ret;
@@ -533,7 +535,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 				break;
 			}
 			default:
-				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
 		return ret;
@@ -630,7 +632,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				LOG(CALLS, "MultinameLA");
 				break;*/
 			default:
-				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
 		return ret;
@@ -678,7 +680,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				LOG(CALLS, "MultinameLA");
 				break;*/
 			default:
-				LOG(ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
 		ret->name_s.len();
@@ -689,7 +691,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 {
 	in >> minor >> major;
-	LOG(CALLS,"ABCVm version " << major << '.' << minor);
+	LOG(LOG_CALLS,"ABCVm version " << major << '.' << minor);
 	in >> constant_pool;
 
 	in >> method_count;
@@ -738,7 +740,7 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 		in >> method_body[i];
 		//Link method body with method signature
 		if(methods[method_body[i].method].body!=NULL)
-			LOG(ERROR,"Duplicate body assigment")
+			LOG(LOG_ERROR,"Duplicate body assigment")
 		else
 			methods[method_body[i].method].body=&method_body[i];
 	}
@@ -792,9 +794,9 @@ void ABCVm::handleEvent()
 					MovieClip* m=static_cast<MovieClip*>(ev->base);
 					m->initialize();
 				}
-				LOG(CALLS,"Binding of " << ev->class_name);
+				LOG(LOG_CALLS,"Binding of " << ev->class_name);
 				last_context->buildClassAndInjectBase(ev->class_name,ev->base,&args);
-				LOG(CALLS,"End of binding of " << ev->class_name);
+				LOG(LOG_CALLS,"End of binding of " << ev->class_name);
 				break;
 			}
 			case SHUTDOWN:
@@ -813,7 +815,7 @@ void ABCVm::handleEvent()
 				ev->f->call(NULL,NULL);
 				break;
 			}*/
-			case CONTEXT:
+			case CONTEXT_INIT:
 			{
 				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second);
 				last_context=ev->context;
@@ -823,16 +825,16 @@ void ABCVm::handleEvent()
 			case CONSTRUCT_OBJECT:
 			{
 				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
-				LOG(CALLS,"Building instance traits");
+				LOG(LOG_CALLS,"Building instance traits");
 				last_context->buildClassTraits(ev->obj, ev->_class->class_index);
 
-				LOG(CALLS,"Calling Instance init");
+				LOG(LOG_CALLS,"Calling Instance init");
 				ev->_class->constructor->call(ev->obj,NULL,ev->obj->max_level);
 				ev->sync();
 				break;
 			}
 			default:
-				LOG(ERROR,"Not supported event");
+				LOG(LOG_ERROR,"Not supported event");
 				abort();
 		}
 	}
@@ -848,24 +850,24 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 
 void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,arguments* args)
 {
-	LOG(CALLS,"Setting class name to " << s);
+	LOG(LOG_CALLS,"Setting class name to " << s);
 	ASObject* owner;
 	ASObject* derived_class=Global->getVariableByString(s,owner);
 	if(!owner)
 	{
-		LOG(ERROR,"Class " << s << " not found in global");
+		LOG(LOG_ERROR,"Class " << s << " not found in global");
 		abort();
 	}
 	if(derived_class->getObjectType()==T_DEFINABLE)
 	{
-		LOG(CALLS,"Class " << s << " is not yet valid");
+		LOG(LOG_CALLS,"Class " << s << " is not yet valid");
 		Definable* d=static_cast<Definable*>(derived_class);
 		d->define(Global);
-		LOG(CALLS,"End of deferred init of class " << s);
+		LOG(LOG_CALLS,"End of deferred init of class " << s);
 		derived_class=Global->getVariableByString(s,owner);
 		if(!owner)
 		{
-			LOG(ERROR,"Class " << s << " not found in global");
+			LOG(LOG_ERROR,"Class " << s << " not found in global");
 			abort();
 		}
 	}
@@ -902,17 +904,17 @@ inline method_info* ABCContext::get_method(unsigned int m)
 		return &methods[m];
 	else
 	{
-		LOG(ERROR,"Requested invalid method");
+		LOG(LOG_ERROR,"Requested invalid method");
 		return NULL;
 	}
 }
 
 //We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
-bool Boolean_concrete(ASObject* obj)
+bool lightspark::Boolean_concrete(ASObject* obj)
 {
 	if(obj->getObjectType()==T_STRING)
 	{
-		LOG(CALLS,"String to bool");
+		LOG(LOG_CALLS,"String to bool");
 		tiny_string s=obj->toString();
 		if(s.len()==0)
 			return false;
@@ -921,18 +923,18 @@ bool Boolean_concrete(ASObject* obj)
 	}
 	else if(obj->getObjectType()==T_BOOLEAN)
 	{
-		LOG(CALLS,"Boolean to bool");
+		LOG(LOG_CALLS,"Boolean to bool");
 		Boolean* b=static_cast<Boolean*>(obj);
 		return b->val;
 	}
 	else if(obj->getObjectType()==T_OBJECT)
 	{
-		LOG(CALLS,"Object to bool");
+		LOG(LOG_CALLS,"Object to bool");
 		return true;
 	}
 	else if(obj->getObjectType()==T_UNDEFINED)
 	{
-		LOG(CALLS,"Undefined to bool");
+		LOG(LOG_CALLS,"Undefined to bool");
 		return false;
 	}
 	else
@@ -941,12 +943,12 @@ bool Boolean_concrete(ASObject* obj)
 
 void ABCVm::deleteProperty(call_context* th, int n)
 {
-	LOG(NOT_IMPLEMENTED,"deleteProperty " << n);
+	LOG(LOG_NOT_IMPLEMENTED,"deleteProperty " << n);
 }
 
 void ABCVm::call(call_context* th, int m)
 {
-	LOG(CALLS,"call " << m);
+	LOG(LOG_CALLS,"call " << m);
 	arguments args(m);
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
@@ -956,7 +958,7 @@ void ABCVm::call(call_context* th, int m)
 
 	if(f==NULL)
 	{
-		LOG(ERROR,"Not a function");
+		LOG(LOG_ERROR,"Not a function");
 		abort();
 	}
 
@@ -970,18 +972,18 @@ void ABCVm::call(call_context* th, int m)
 void ABCVm::coerce(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,NULL); 
-	LOG(NOT_IMPLEMENTED,"coerce " << *name);
+	LOG(LOG_NOT_IMPLEMENTED,"coerce " << *name);
 }
 
 ASObject* ABCVm::newCatch(call_context* th, int n)
 {
-	LOG(NOT_IMPLEMENTED,"newCatch " << n);
+	LOG(LOG_NOT_IMPLEMENTED,"newCatch " << n);
 	return new Undefined;
 }
 
 ASObject* ABCVm::newFunction(call_context* th, int n)
 {
-	LOG(CALLS,"newFunction " << n);
+	LOG(LOG_CALLS,"newFunction " << n);
 
 	method_info* m=&th->context->methods[n];
 	SyntheticFunction* f=new SyntheticFunction(m);
@@ -991,19 +993,20 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 
 void ABCVm::not_impl(int n)
 {
-	LOG(NOT_IMPLEMENTED, "not implement opcode 0x" << hex << n );
+	LOG(LOG_NOT_IMPLEMENTED, "not implement opcode 0x" << hex << n );
 	abort();
 }
 
 ASObject* ABCVm::strictEquals(ASObject* obj1, ASObject* obj2)
 {
-	LOG(NOT_IMPLEMENTED, "strictEquals" );
+	LOG(LOG_NOT_IMPLEMENTED, "strictEquals" );
 	abort();
+	return NULL;
 }
 
 void ABCVm::newArray(call_context* th, int n)
 {
-	LOG(CALLS, "newArray " << n );
+	LOG(LOG_CALLS, "newArray " << n );
 	Array* ret=Class<Array>::getInstanceS();
 	ret->resize(n);
 	for(int i=0;i<n;i++)
@@ -1017,14 +1020,14 @@ ASObject* ABCVm::getScopeObject(call_context* th, int n)
 {
 	ASObject* ret=th->scope_stack[n];
 	ret->incRef();
-	LOG(CALLS, "getScopeObject: " << ret );
+	LOG(LOG_CALLS, "getScopeObject: " << ret );
 	return ret;
 }
 
 ASObject* ABCVm::pushString(call_context* th, int n)
 {
 	tiny_string s=th->context->getString(n); 
-	LOG(CALLS, "pushString " << s );
+	LOG(LOG_CALLS, "pushString " << s );
 	return new ASString(s);
 }
 
@@ -1037,7 +1040,7 @@ ASObject* call_context::runtime_stack_pop()
 {
 	if(stack_index==0)
 	{
-		LOG(ERROR,"Empty stack");
+		LOG(LOG_ERROR,"Empty stack");
 		abort();
 	}
 	ASObject* ret=stack[--stack_index];
@@ -1048,7 +1051,7 @@ ASObject* call_context::runtime_stack_peek()
 {
 	if(stack_index==0)
 	{
-		LOG(ERROR,"Empty stack");
+		LOG(LOG_ERROR,"Empty stack");
 		return NULL;
 	}
 	return stack[stack_index-1];
@@ -1070,7 +1073,7 @@ call_context::call_context(method_info* th, int level, ASObject** args, int num_
 call_context::~call_context()
 {
 	if(stack_index!=0)
-		LOG(NOT_IMPLEMENTED,"Should clean stack of " << stack_index);
+		LOG(LOG_NOT_IMPLEMENTED,"Should clean stack of " << stack_index);
 
 	for(int i=0;i<locals_size;i++)
 	{
@@ -1090,10 +1093,10 @@ void ABCContext::exec()
 	int i=0;
 	for(i;i<scripts.size()-1;i++)
 	{
-		LOG(CALLS, "Script N: " << i );
+		LOG(LOG_CALLS, "Script N: " << i );
 		method_info* m=get_method(scripts[i].init);
 
-		LOG(CALLS, "Building script traits: " << scripts[i].trait_count );
+		LOG(LOG_CALLS, "Building script traits: " << scripts[i].trait_count );
 		SyntheticFunction* mf=new SyntheticFunction(m);
 		for(int j=0;j<scripts[i].trait_count;j++)
 			buildTrait(Global,&scripts[i].traits[j],mf);
@@ -1102,14 +1105,14 @@ void ABCContext::exec()
 //	while(sem_trywait(&th->sem_event_count)==0)
 //		th->handleEvent();
 	//The last script entry has to be run
-	LOG(CALLS, "Last script (Entry Point)");
+	LOG(LOG_CALLS, "Last script (Entry Point)");
 	method_info* m=get_method(scripts[i].init);
 	IFunction* entry=new SyntheticFunction(m);
-	LOG(CALLS, "Building entry script traits: " << scripts[i].trait_count );
+	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(Global,&scripts[i].traits[j]);
 	entry->call(Global,NULL,Global->max_level);
-	LOG(CALLS, "End of Entry Point");
+	LOG(LOG_CALLS, "End of Entry Point");
 
 }
 
@@ -1143,13 +1146,17 @@ void ABCVm::Run(ABCVm* th)
 
 	while(1)
 	{
+#ifndef WIN32
 		timespec ts,td;
 		clock_gettime(CLOCK_REALTIME,&ts);
 		sem_wait(&th->sem_event_count);
+#endif
 		th->handleEvent();
 		sys->fps_prof->event_count++;
+#ifndef WIN32
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->event_time+=timeDiff(ts,td);
+#endif
 		if(th->shutdown)
 			break;
 	}
@@ -1175,27 +1182,27 @@ void ABCContext::linkInterface(const multiname& interface_name, ASObject* obj)
 	ASObject* owner;
 	ASObject* interface_obj=Global->getVariableByMultiname(interface_name,owner).obj;
 	assert(owner && interface_obj->getObjectType()==T_CLASS);
-	Class_base* interface=static_cast<Class_base*>(interface_obj);
+	Class_base* inter=static_cast<Class_base*>(interface_obj);
 
 	//TODO: implement builtin interfaces
-	if(interface->class_index==-1)
+	if(inter->class_index==-1)
 		return;
 
 	//Recursively link interfaces implemented by this interface
-	for(int i=0;i<interface->interfaces.size();i++)
-		linkInterface(interface->interfaces[i],obj);
+	for(int i=0;i<inter->interfaces.size();i++)
+		linkInterface(inter->interfaces[i],obj);
 
 	//Link traits of this interface
-	for(int j=0;j<instances[interface->class_index].trait_count;j++)
+	for(int j=0;j<instances[inter->class_index].trait_count;j++)
 	{
-		traits_info* t=&instances[interface->class_index].traits[j];
+		traits_info* t=&instances[inter->class_index].traits[j];
 		linkTrait(obj,t);
 	}
 
-	if(interface->constructor)
+	if(inter->constructor)
 	{
-		LOG(CALLS,"Calling interface init for " << interface->class_name);
-		interface->constructor->call(obj,NULL,obj->max_level);
+		LOG(LOG_CALLS,"Calling interface init for " << inter->class_name);
+		inter->constructor->call(obj,NULL,obj->max_level);
 	}
 }
 
@@ -1214,7 +1221,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 		//Link the methods to the implementations
 		case traits_info::Method:
 		{
-			LOG(CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
 			method_info* m=&methods[t->method];
 			assert(m->body==0);
 			int level=obj->max_level;
@@ -1234,12 +1241,12 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				obj->setVariableByQName(name,ns,var->var);
 			}
 
-			LOG(CALLS,"End Method trait: " << ns << "::" << name);
+			LOG(LOG_CALLS,"End Method trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(CALLS,"Getter trait: " << ns << "::" << name);
+			LOG(LOG_CALLS,"Getter trait: " << ns << "::" << name);
 			method_info* m=&methods[t->method];
 			assert(m->body==0);
 			int level=obj->max_level;
@@ -1259,12 +1266,12 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				obj->setGetterByQName(name,ns,var->getter);
 			}
 			
-			LOG(CALLS,"End Getter trait: " << ns << "::" << name);
+			LOG(LOG_CALLS,"End Getter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
 			method_info* m=&methods[t->method];
 			assert(m->body==0);
 			int level=obj->max_level;
@@ -1284,14 +1291,14 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				obj->setSetterByQName(name,ns,var->setter);
 			}
 			
-			LOG(CALLS,"End Setter trait: " << ns << "::" << name);
+			LOG(LOG_CALLS,"End Setter trait: " << ns << "::" << name);
 			break;
 		}
 //		case traits_info::Class:
 //		case traits_info::Const:
 //		case traits_info::Slot:
 		default:
-			LOG(ERROR,"Trait not supported " << name << " " << t->kind);
+			LOG(LOG_ERROR,"Trait not supported " << name << " " << t->kind);
 			abort();
 			//obj->setVariableByQName(name, ns, new Undefined);
 	}
@@ -1315,7 +1322,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 			return new Null;
 		default:
 		{
-			LOG(ERROR,"Constant kind " << hex << kind);
+			LOG(LOG_ERROR,"Constant kind " << hex << kind);
 			abort();
 		}
 	}
@@ -1329,8 +1336,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 	const tiny_string& name=mname->name_s;
 	const tiny_string& ns=mname->ns[0];
-	if(name=="DefaultInt")
-		__asm__("int $3");
 	if(t->kind>>4)
 		cout << "Next slot has flags " << (t->kind>>4) << endl;
 	switch(t->kind&0xf)
@@ -1349,14 +1354,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				obj->setVariableByMultiname(*mname, ret);
 			}
 			
-			LOG(CALLS,"Slot "<< t->slot_id << " type Class name " << ns << "::" << name << " id " << t->classi);
+			LOG(LOG_CALLS,"Slot "<< t->slot_id << " type Class name " << ns << "::" << name << " id " << t->classi);
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, ret, name, ns);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(CALLS,"Getter trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,"Getter trait: " << ns << "::" << name << " #" << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			IFunction* f=new SyntheticFunction(m);
@@ -1367,12 +1372,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			if(var && var->setter) //Ok, also set the inherited setter
 				obj->setSetterByQName(name,ns,var->setter);
 			
-			LOG(CALLS,"End Getter trait: " << ns << "::" << name);
+			LOG(LOG_CALLS,"End Getter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 
@@ -1384,12 +1389,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			if(var && var->getter) //Ok, also set the inherited setter
 				obj->setGetterByQName(name,ns,var->getter);
 			
-			LOG(CALLS,"End Setter trait: " << ns << "::" << name);
+			LOG(LOG_CALLS,"End Setter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Method:
 		{
-			LOG(CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			IFunction* f=new SyntheticFunction(m);
@@ -1404,12 +1409,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}*/
 
 			obj->setVariableByQName(name,ns,f);
-			LOG(CALLS,"End Method trait: " << ns << "::" << name);
+			LOG(LOG_CALLS,"End Method trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Const:
 		{
-			LOG(CALLS,"Const trait");
+			LOG(LOG_CALLS,"Const trait");
 			//TODO: Not so const right now
 			if(deferred_initialization)
 				obj->setVariableByQName(name, ns, new ScriptDefinable(deferred_initialization));
@@ -1427,14 +1432,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					obj->initSlot(t->slot_id, ret, name, ns);
 
 				multiname* type=getMultiname(t->type_name,NULL);
-				LOG(CALLS,"Slot "<<name<<" type "<<*type);
+				LOG(LOG_CALLS,"Slot "<<name<<" type "<<*type);
 				break;
 			}
 			else
 			{
 				//else fallthrough
 				multiname* type=getMultiname(t->type_name,NULL);
-				LOG(CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
+				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				ASObject* owner;
 				ASObject* ret=obj->getVariableByQName(name,ns,owner).obj;
 				if(!owner)
@@ -1452,7 +1457,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				}
 				else
 				{
-					LOG(CALLS,"Not resetting variable " << name);
+					LOG(LOG_CALLS,"Not resetting variable " << name);
 //					if(ret->constructor)
 //						ret->constructor->call(ret,NULL);
 				}
@@ -1462,7 +1467,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}
 		}
 		default:
-			LOG(ERROR,"Trait not supported " << name << " " << t->kind);
+			LOG(LOG_ERROR,"Trait not supported " << name << " " << t->kind);
 			obj->setVariableByQName(name, ns, new Undefined);
 	}
 }
@@ -1474,7 +1479,7 @@ ASObject* method_info::getOptional(int i)
 	return context->getConstant(options[i].kind,options[i].val);
 }
 
-istream& operator>>(istream& in, u32& v)
+istream& lightspark::operator>>(istream& in, u32& v)
 {
 	int i=0;
 	uint8_t t,t2;
@@ -1490,7 +1495,7 @@ istream& operator>>(istream& in, u32& v)
 		if(i==35)
 		{
 			if(t>15)
-				LOG(ERROR,"parsing u32");
+				LOG(LOG_ERROR,"parsing u32");
 			break;
 		}
 	}
@@ -1498,7 +1503,7 @@ istream& operator>>(istream& in, u32& v)
 	return in;
 }
 
-istream& operator>>(istream& in, s32& v)
+istream& lightspark::operator>>(istream& in, s32& v)
 {
 	int i=0;
 	uint8_t t,t2;
@@ -1514,7 +1519,7 @@ istream& operator>>(istream& in, s32& v)
 		if(i==35)
 		{
 			if(t>15)
-				LOG(ERROR,"parsing s32");
+				LOG(LOG_ERROR,"parsing s32");
 			break;
 		}
 	}
@@ -1529,7 +1534,7 @@ istream& operator>>(istream& in, s32& v)
 	return in;
 }
 
-istream& operator>>(istream& in, s24& v)
+istream& lightspark::operator>>(istream& in, s24& v)
 {
 	int i=0;
 	v.val=0;
@@ -1549,7 +1554,7 @@ istream& operator>>(istream& in, s24& v)
 	return in;
 }
 
-istream& operator>>(istream& in, u30& v)
+istream& lightspark::operator>>(istream& in, u30& v)
 {
 	int i=0;
 	uint8_t t,t2;
@@ -1563,15 +1568,15 @@ istream& operator>>(istream& in, u30& v)
 		v.val|=(t<<i);
 		i+=7;
 		if(i>29)
-			LOG(ERROR,"parsing u30");
+			LOG(LOG_ERROR,"parsing u30");
 	}
 	while(t2&0x80);
 	if(v.val&0xc0000000)
-			LOG(ERROR,"parsing u30");
+			LOG(LOG_ERROR,"parsing u30");
 	return in;
 }
 
-istream& operator>>(istream& in, u8& v)
+istream& lightspark::operator>>(istream& in, u8& v)
 {
 	uint8_t t;
 	in.read((char*)&t,1);
@@ -1579,7 +1584,7 @@ istream& operator>>(istream& in, u8& v)
 	return in;
 }
 
-istream& operator>>(istream& in, u16& v)
+istream& lightspark::operator>>(istream& in, u16& v)
 {
 	uint16_t t;
 	in.read((char*)&t,2);
@@ -1587,14 +1592,14 @@ istream& operator>>(istream& in, u16& v)
 	return in;
 }
 
-istream& operator>>(istream& in, d64& v)
+istream& lightspark::operator>>(istream& in, d64& v)
 {
 	//Should check if this is right
 	in.read((char*)&v.val,8);
 	return in;
 }
 
-istream& operator>>(istream& in, string_info& v)
+istream& lightspark::operator>>(istream& in, string_info& v)
 {
 	in >> v.size;
 	//TODO: String are expected to be UTF-8 encoded.
@@ -1607,24 +1612,24 @@ istream& operator>>(istream& in, string_info& v)
 		in.read((char*)&t,1);
 		tmp.push_back(t);
 		if(t&0x80)
-			LOG(NOT_IMPLEMENTED,"Multibyte not handled");
+			LOG(LOG_NOT_IMPLEMENTED,"Multibyte not handled");
 	}
 	v.val=tmp.c_str();
 	return in;
 }
 
-istream& operator>>(istream& in, namespace_info& v)
+istream& lightspark::operator>>(istream& in, namespace_info& v)
 {
 	in >> v.kind >> v.name;
 	if(v.kind!=0x05 && v.kind!=0x08 && v.kind!=0x16 && v.kind!=0x17 && v.kind!=0x18 && v.kind!=0x19 && v.kind!=0x1a)
 	{
-		LOG(ERROR,"Unexpected namespace kind");
+		LOG(LOG_ERROR,"Unexpected namespace kind");
 		abort();
 	}
 	return in;
 }
 
-istream& operator>>(istream& in, method_body_info& v)
+istream& lightspark::operator>>(istream& in, method_body_info& v)
 {
 	in >> v.method >> v.max_stack >> v.local_count >> v.init_scope_depth >> v.max_scope_depth >> v.code_length;
 	v.code.resize(v.code_length);
@@ -1643,7 +1648,7 @@ istream& operator>>(istream& in, method_body_info& v)
 	return in;
 }
 
-istream& operator>>(istream& in, ns_set_info& v)
+istream& lightspark::operator >>(istream& in, ns_set_info& v)
 {
 	in >> v.count;
 
@@ -1652,12 +1657,12 @@ istream& operator>>(istream& in, ns_set_info& v)
 	{
 		in >> v.ns[i];
 		if(v.ns[i]==0)
-			LOG(ERROR,"0 not allowed");
+			LOG(LOG_ERROR,"0 not allowed");
 	}
 	return in;
 }
 
-istream& operator>>(istream& in, multiname_info& v)
+istream& lightspark::operator>>(istream& in, multiname_info& v)
 {
 	in >> v.kind;
 
@@ -1697,14 +1702,14 @@ istream& operator>>(istream& in, multiname_info& v)
 			break;
 		}
 		default:
-			LOG(ERROR,"Unexpected multiname kind " << hex << v.kind);
+			LOG(LOG_ERROR,"Unexpected multiname kind " << hex << v.kind);
 			abort();
 			break;
 	}
 	return in;
 }
 
-istream& operator>>(istream& in, method_info& v)
+istream& lightspark::operator>>(istream& in, method_info& v)
 {
 	in >> v.param_count;
 	in >> v.return_type;
@@ -1722,7 +1727,7 @@ istream& operator>>(istream& in, method_info& v)
 		{
 			in >> v.options[i].val >> v.options[i].kind;
 			if(v.options[i].kind>0x1a)
-				LOG(ERROR,"Unexpected options type");
+				LOG(LOG_ERROR,"Unexpected options type");
 		}
 	}
 	if(v.flags&0x80)
@@ -1734,7 +1739,7 @@ istream& operator>>(istream& in, method_info& v)
 	return in;
 }
 
-istream& operator>>(istream& in, script_info& v)
+istream& lightspark::operator>>(istream& in, script_info& v)
 {
 	in >> v.init >> v.trait_count;
 	v.traits.resize(v.trait_count);
@@ -1743,7 +1748,7 @@ istream& operator>>(istream& in, script_info& v)
 	return in;
 }
 
-istream& operator>>(istream& in, class_info& v)
+istream& lightspark::operator>>(istream& in, class_info& v)
 {
 	in >> v.cinit >> v.trait_count;
 	v.traits.resize(v.trait_count);
@@ -1754,7 +1759,7 @@ istream& operator>>(istream& in, class_info& v)
 	return in;
 }
 
-istream& operator>>(istream& in, metadata_info& v)
+istream& lightspark::operator>>(istream& in, metadata_info& v)
 {
 	in >> v.name;
 	in >> v.item_count;
@@ -1767,7 +1772,7 @@ istream& operator>>(istream& in, metadata_info& v)
 	return in;
 }
 
-istream& operator>>(istream& in, traits_info& v)
+istream& lightspark::operator>>(istream& in, traits_info& v)
 {
 	in >> v.name >> v.kind;
 	switch(v.kind&0xf)
@@ -1790,7 +1795,7 @@ istream& operator>>(istream& in, traits_info& v)
 			in >> v.disp_id >> v.method;
 			break;
 		default:
-			LOG(ERROR,"Unexpected kind " << v.kind);
+			LOG(LOG_ERROR,"Unexpected kind " << v.kind);
 			break;
 	}
 
@@ -1804,13 +1809,13 @@ istream& operator>>(istream& in, traits_info& v)
 	return in;
 }
 
-istream& operator>>(istream& in, exception_info& v)
+istream& lightspark::operator >>(istream& in, exception_info& v)
 {
 	in >> v.from >> v.to >> v.target >> v.exc_type >> v.var_name;
 	return in;
 }
 
-istream& operator>>(istream& in, instance_info& v)
+istream& lightspark::operator>>(istream& in, instance_info& v)
 {
 	in >> v.name >> v.supername >> v.flags;
 	if(v.flags&instance_info::ClassProtectedNs)
@@ -1834,7 +1839,7 @@ istream& operator>>(istream& in, instance_info& v)
 	return in;
 }
 
-istream& operator>>(istream& in, cpool_info& v)
+istream& lightspark::operator>>(istream& in, cpool_info& v)
 {
 	in >> v.int_count;
 	v.integer.resize(v.int_count);
@@ -1874,7 +1879,7 @@ istream& operator>>(istream& in, cpool_info& v)
 	return in;
 }
 
-ASObject* parseInt(ASObject* obj,arguments* args)
+ASObject* lightspark::parseInt(ASObject* obj,arguments* args)
 {
 	if(args->at(0)->getObjectType()==T_UNDEFINED)
 		return new Undefined;
@@ -1893,7 +1898,7 @@ intptr_t ABCVm::s_toInt(ASObject* o)
 	return ret;
 }
 
-ASObject* isNaN(ASObject* obj,arguments* args)
+ASObject* lightspark::isNaN(ASObject* obj,arguments* args)
 {
 	if(args->at(0)->getObjectType()==T_UNDEFINED)
 		return abstract_b(true);

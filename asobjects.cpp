@@ -19,21 +19,24 @@
 
 #include <list>
 #include <algorithm>
-#include <curl/curl.h>
-#include <libxml/parser.h>
+//#include <curl/curl.h>
+//#include <libxml/parser.h>
 #include <string.h>
 #include <sstream>
 #include <iomanip>
-#include <math.h>
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #include "abc.h"
 #include "asobjects.h"
 #include "flashevents.h"
 #include "swf.h"
+#include "compat.h"
 
 using namespace std;
+using namespace lightspark;
 
-extern __thread SystemState* sys;
+extern TLSDATA SystemState* sys;
 
 REGISTER_CLASS_NAME(Array);
 REGISTER_CLASS_NAME(IInterface);
@@ -63,7 +66,7 @@ void Array::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Array,_constructor)
 {
-	Array* th=static_cast<Array*>(obj->interface);
+	Array* th=static_cast<Array*>(obj->implementation);
 	obj->setGetterByQName("length","",new Function(_getLength));
 	obj->ASObject::setVariableByQName("pop","",new Function(_pop));
 	obj->ASObject::setVariableByQName("shift","",new Function(shift));
@@ -77,7 +80,7 @@ ASFUNCTIONBODY(Array,_constructor)
 
 	if(args->size()!=0)
 	{
-		LOG(CALLS,"Called Array constructor");
+		LOG(LOG_CALLS,"Called Array constructor");
 		th->resize(args->size());
 		for(int i=0;i<args->size();i++)
 		{
@@ -89,13 +92,13 @@ ASFUNCTIONBODY(Array,_constructor)
 
 ASFUNCTIONBODY(Array,_getLength)
 {
-	Array* th=static_cast<Array*>(obj->interface);
+	Array* th=static_cast<Array*>(obj->implementation);
 	return abstract_i(th->data.size());
 }
 
 ASFUNCTIONBODY(Array,shift)
 {
-	Array* th=static_cast<Array*>(obj->interface);
+	Array* th=static_cast<Array*>(obj->implementation);
 	if(th->data.empty())
 		return new Undefined;
 	ASObject* ret;
@@ -109,7 +112,7 @@ ASFUNCTIONBODY(Array,shift)
 
 ASFUNCTIONBODY(Array,join)
 {
-		Array* th=static_cast<Array*>(obj->interface);
+		Array* th=static_cast<Array*>(obj->implementation);
 		ASObject* del=args->at(0);
 		string ret;
 		for(int i=0;i<th->size();i++)
@@ -123,7 +126,7 @@ ASFUNCTIONBODY(Array,join)
 
 ASFUNCTIONBODY(Array,_pop)
 {
-	Array* th=static_cast<Array*>(obj->interface);
+	Array* th=static_cast<Array*>(obj->implementation);
 	ASObject* ret;
 	if(th->data.back().type==STACK_OBJECT)
 		ret=th->data.back().data;
@@ -135,10 +138,10 @@ ASFUNCTIONBODY(Array,_pop)
 
 ASFUNCTIONBODY(Array,unshift)
 {
-	Array* th=static_cast<Array*>(obj->interface);
+	Array* th=static_cast<Array*>(obj->implementation);
 	if(args->size()!=1)
 	{
-		LOG(ERROR,"Multiple unshift");
+		LOG(LOG_ERROR,"Multiple unshift");
 		abort();
 	}
 	th->data.insert(th->data.begin(),args->at(0));
@@ -148,10 +151,10 @@ ASFUNCTIONBODY(Array,unshift)
 
 ASFUNCTIONBODY(Array,_push)
 {
-	Array* th=static_cast<Array*>(obj->interface);
+	Array* th=static_cast<Array*>(obj->implementation);
 	if(args->size()!=1)
 	{
-		LOG(ERROR,"Multiple push");
+		LOG(LOG_ERROR,"Multiple push");
 		abort();
 	}
 	th->push(args->at(0));
@@ -165,13 +168,13 @@ ASMovieClipLoader::ASMovieClipLoader()
 
 ASFUNCTIONBODY(ASMovieClipLoader,constructor)
 {
-	LOG(NOT_IMPLEMENTED,"Called MovieClipLoader constructor");
+	LOG(LOG_NOT_IMPLEMENTED,"Called MovieClipLoader constructor");
 	return NULL;
 }
 
 ASFUNCTIONBODY(ASMovieClipLoader,addListener)
 {
-	LOG(NOT_IMPLEMENTED,"Called MovieClipLoader::addListener");
+	LOG(LOG_NOT_IMPLEMENTED,"Called MovieClipLoader::addListener");
 	return NULL;
 }
 
@@ -183,7 +186,7 @@ ASXML::ASXML()
 
 ASFUNCTIONBODY(ASXML,constructor)
 {
-	LOG(NOT_IMPLEMENTED,"Called XML constructor");
+	LOG(LOG_NOT_IMPLEMENTED,"Called XML constructor");
 	return NULL;
 }
 
@@ -199,7 +202,7 @@ size_t ASXML::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 ASFUNCTIONBODY(ASXML,load)
 {
 	ASXML* th=static_cast<ASXML*>(obj);
-	LOG(NOT_IMPLEMENTED,"Called ASXML::load " << args->at(0)->toString());
+	LOG(LOG_NOT_IMPLEMENTED,"Called ASXML::load " << args->at(0)->toString());
 /*	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
@@ -229,7 +232,7 @@ bool Array::isEqual(bool& ret, ASObject* r)
 		ret=false;
 	else
 	{
-		const Array* ra=static_cast<const Array*>(r->interface);
+		const Array* ra=static_cast<const Array*>(r->implementation);
 		int size=data.size();
 		if(size!=ra->size())
 			ret=false;
@@ -461,6 +464,7 @@ bool Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, A
 bool Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 {
 	abort();
+	return NULL;
 /*	ASObject* ret;
 	bool number=true;
 	owner=NULL;
@@ -489,6 +493,7 @@ bool Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, A
 		ret=ASObject::getVariableByName(name,owner);
 
 	return ret;*/
+
 }
 
 ASString::ASString()
@@ -616,7 +621,7 @@ ASFUNCTIONBODY(ASString,String)
 	}
 	else
 	{
-		LOG(CALLS,"Cannot convert " << args->at(0)->getObjectType() << " to String");
+		LOG(LOG_CALLS,"Cannot convert " << args->at(0)->getObjectType() << " to String");
 		abort();
 	}
 }
@@ -653,13 +658,14 @@ tiny_string ASString::toString() const
 
 double ASString::toNumber() const
 {
-	LOG(ERROR,"Cannot convert string " << data << " to float");
+	LOG(LOG_ERROR,"Cannot convert string " << data << " to float");
 	return 0;
 }
 
 ASFUNCTIONBODY(Undefined,call)
 {
-	LOG(CALLS,"Undefined function");
+	LOG(LOG_CALLS,"Undefined function");
+	return NULL;
 }
 
 tiny_string Undefined::toString() const
@@ -777,7 +783,7 @@ void Date::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Date,_constructor)
 {
-	Date* th=static_cast<Date*>(obj->interface);
+	Date* th=static_cast<Date*>(obj->implementation);
 	obj->setVariableByQName("getTimezoneOffset","",new Function(getTimezoneOffset));
 	obj->setVariableByQName("valueOf","",new Function(valueOf));
 	obj->setVariableByQName("getTime",AS3,new Function(getTime));
@@ -794,41 +800,42 @@ ASFUNCTIONBODY(Date,_constructor)
 	th->minute=0;
 	th->second=0;
 	th->millisecond=0;
+	return NULL;
 }
 
 ASFUNCTIONBODY(Date,getTimezoneOffset)
 {
-	LOG(NOT_IMPLEMENTED,"getTimezoneOffset");
+	LOG(LOG_NOT_IMPLEMENTED,"getTimezoneOffset");
 	return new Number(120);
 }
 
 ASFUNCTIONBODY(Date,getFullYear)
 {
-	Date* th=static_cast<Date*>(obj->interface);
+	Date* th=static_cast<Date*>(obj->implementation);
 	return new Number(th->year);
 }
 
 ASFUNCTIONBODY(Date,getHours)
 {
-	Date* th=static_cast<Date*>(obj->interface);
+	Date* th=static_cast<Date*>(obj->implementation);
 	return new Number(th->hour);
 }
 
 ASFUNCTIONBODY(Date,getMinutes)
 {
-	Date* th=static_cast<Date*>(obj->interface);
+	Date* th=static_cast<Date*>(obj->implementation);
 	return new Number(th->minute);
 }
 
 ASFUNCTIONBODY(Date,getTime)
 {
-	Date* th=static_cast<Date*>(obj->interface);
+	Date* th=static_cast<Date*>(obj->implementation);
 	return new Number(th->toInt());
 }
 
 ASFUNCTIONBODY(Date,valueOf)
 {
-	Date* th=static_cast<Date*>(obj->interface);
+	Date* th=static_cast<Date*>(obj->implementation);
 	return new Number(th->toInt());
 }
 
@@ -901,7 +908,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 
 	if(bound)
 	{
-		LOG(CALLS,"Calling with closure " << this);
+		LOG(LOG_CALLS,"Calling with closure " << this);
 		obj=closure_this;
 	}
 
@@ -943,7 +950,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args, int level)
 {
 	if(val==NULL)
 	{
-		LOG(NOT_IMPLEMENTED,"Not initialized function");
+		LOG(LOG_NOT_IMPLEMENTED,"Not initialized function");
 		return NULL;
 	}
 
@@ -954,7 +961,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args, int level)
 
 	if(bound)
 	{
-		LOG(CALLS,"Calling with closure " << this);
+		LOG(LOG_CALLS,"Calling with closure " << this);
 		obj=closure_this;
 	}
 
@@ -1026,8 +1033,8 @@ ASObject* Function::call(ASObject* obj, arguments* args, int level)
 		return val(obj,args);
 	else
 	{
-		LOG(CALLS,"Calling with closure " << this);
-		LOG(CALLS,"args 0 " << args->at(0));
+		LOG(LOG_CALLS,"Calling with closure " << this);
+		LOG(LOG_CALLS,"args 0 " << args->at(0));
 		return val(closure_this,args);
 	}
 }
@@ -1037,7 +1044,7 @@ Math::Math()
 	setVariableByQName("PI","",new Number(M_PI));
 	setVariableByQName("sqrt","",new Function(sqrt));
 	setVariableByQName("atan2","",new Function(atan2));
-	setVariableByQName("max","",new Function(max));
+	setVariableByQName("max","",new Function(_max));
 	setVariableByQName("abs","",new Function(abs));
 	setVariableByQName("sin","",new Function(sin));
 	setVariableByQName("cos","",new Function(cos));
@@ -1054,11 +1061,11 @@ ASFUNCTIONBODY(Math,atan2)
 	return abstract_d(::atan2(n1,n2));
 }
 
-ASFUNCTIONBODY(Math,max)
+ASFUNCTIONBODY(Math,_max)
 {
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
-	return abstract_d(::max(n1,n2));
+	return abstract_d(max(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,cos)
@@ -1140,16 +1147,17 @@ void RegExp::sinit(Class_base* c)
 
 ASFUNCTIONBODY(RegExp,_constructor)
 {
-	RegExp* th=static_cast<RegExp*>(obj->interface);
+	RegExp* th=static_cast<RegExp*>(obj->implementation);
 	th->re=args->at(0)->toString().raw_buf();
 	if(args->size()>1)
 		th->flags=args->at(1)->toString().raw_buf();
 	obj->setVariableByQName("exec",AS3,new Function(exec));
+	return NULL;
 }
 
 ASFUNCTIONBODY(RegExp,exec)
 {
-	RegExp* th=static_cast<RegExp*>(obj->interface);
+	RegExp* th=static_cast<RegExp*>(obj->implementation);
 	cout << "Returning tracer2" <<endl;
 	return new DebugTracer("RegExp::exec");
 }
@@ -1164,7 +1172,7 @@ ASFUNCTIONBODY(ASString,slice)
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
-	LOG(NOT_IMPLEMENTED,"ASString::charCodeAt not really implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"ASString::charCodeAt not really implemented");
 	ASString* th=static_cast<ASString*>(obj);
 	int index=args->at(0)->toInt();
 	return new Integer(th->data[index]);
@@ -1172,21 +1180,21 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 
 ASFUNCTIONBODY(ASString,indexOf)
 {
-	LOG(NOT_IMPLEMENTED,"ASString::indexOf not really implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"ASString::indexOf not really implemented");
 	ASString* th=static_cast<ASString*>(obj);
 	return new Integer(-1);
 }
 
 ASFUNCTIONBODY(ASString,replace)
 {
-	LOG(NOT_IMPLEMENTED,"ASString::replace not really implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"ASString::replace not really implemented");
 	ASString* th=static_cast<ASString*>(obj);
 	return new ASString(th->data);
 }
 
 ASFUNCTIONBODY(ASString,concat)
 {
-	LOG(NOT_IMPLEMENTED,"ASString::concat not really implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"ASString::concat not really implemented");
 	ASString* th=static_cast<ASString*>(obj);
 	th->data+=args->at(0)->toString().raw_buf();
 	th->incRef();

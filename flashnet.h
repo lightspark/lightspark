@@ -23,6 +23,9 @@
 #include "asobjects.h"
 #include "flashevents.h"
 
+namespace lightspark
+{
+
 class URLRequest: public IInterface
 {
 friend class Loader;
@@ -54,6 +57,8 @@ public:
 	ASFUNCTION(load);
 	ASFUNCTION(_getDataFormat);
 	ASFUNCTION(_setDataFormat);
+};
+
 };
 
 #endif

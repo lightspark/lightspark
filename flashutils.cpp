@@ -21,6 +21,7 @@
 #include "asobjects.h"
 
 using namespace std;
+using namespace lightspark;
 
 REGISTER_CLASS_NAME(ByteArray);
 
@@ -32,7 +33,7 @@ void ByteArray::sinit(Class_base* c)
 {
 }
 
-ASObject* getQualifiedClassName(ASObject* obj, arguments* args)
+ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)
 {
 	assert(args->at(0)->prototype);
 	cout << args->at(0)->prototype->class_name << endl;

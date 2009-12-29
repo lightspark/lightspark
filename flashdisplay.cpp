@@ -20,8 +20,7 @@
 #include <list>
 #include <algorithm>
 #include <fstream>
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
+#include <GL/glew.h>
 
 #include "abc.h"
 #include "flashdisplay.h"
@@ -29,12 +28,14 @@
 #include "flashgeom.h"
 #include "flashnet.h"
 #include "streams.h"
+#include "compat.h"
 
 using namespace std;
+using namespace lightspark;
 
-extern __thread SystemState* sys;
-extern __thread RenderThread* rt;
-extern __thread ParseThread* pt;
+extern TLSDATA SystemState* sys;
+extern TLSDATA RenderThread* rt;
+extern TLSDATA ParseThread* pt;
 
 REGISTER_CLASS_NAME(LoaderInfo);
 REGISTER_CLASS_NAME(MovieClip);
@@ -142,6 +143,7 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 //"rv.3.author": "bctvguy", 
 //"rv.4.id": "2j7F_4S2lgM", 
 //"rv.7.view_count": "301"
+	return NULL;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
@@ -156,7 +158,7 @@ ASFUNCTIONBODY(LoaderInfo,_getUrl)
 
 ASFUNCTIONBODY(Loader,_constructor)
 {
-	Loader* th=static_cast<Loader*>(obj->interface);
+	Loader* th=static_cast<Loader*>(obj->implementation);
 	assert(th);
 	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS();
 	th->contentLoaderInfo->_constructor(th->contentLoaderInfo->obj,NULL);
@@ -165,11 +167,12 @@ ASFUNCTIONBODY(Loader,_constructor)
 
 //	obj->setVariableByQName("load","",new Function(load));
 //	obj->setVariableByQName("loadBytes","",new Function(loadBytes));
+	return NULL;
 }
 
 ASFUNCTIONBODY(Loader,load)
 {
-	Loader* th=static_cast<Loader*>(obj->interface);
+	Loader* th=static_cast<Loader*>(obj->implementation);
 /*	if(th->loading)
 		return NULL;
 	th->loading=true;*/
@@ -179,15 +182,16 @@ ASFUNCTIONBODY(Loader,load)
 		LOG(ERROR,"ArgumentError");
 		abort();
 	}*/
-	URLRequest* r=static_cast<URLRequest*>(args->at(0)->interface);
+	URLRequest* r=static_cast<URLRequest*>(args->at(0)->implementation);
 	th->url=r->url;
 	th->source=URL;
 	sys->cur_thread_pool->addJob(th);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Loader,loadBytes)
 {
-	Loader* th=static_cast<Loader*>(obj->interface);
+	Loader* th=static_cast<Loader*>(obj->implementation);
 	if(th->loading)
 		return NULL;
 	//Find the actual ByteArray object
@@ -223,7 +227,7 @@ void Loader::sinit(Class_base* c)
 void Loader::execute()
 {
 	static char name[]="0puppa";
-	LOG(NOT_IMPLEMENTED,"Loader async execution " << url);
+	LOG(LOG_NOT_IMPLEMENTED,"Loader async execution " << url);
 	if(source==URL)
 	{
 		local_root=new RootMovieClip;
@@ -292,18 +296,20 @@ void Sprite::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Sprite,_constructor)
 {
-	Sprite* th=static_cast<Sprite*>(obj->interface);
+	Sprite* th=static_cast<Sprite*>(obj->implementation);
 	DisplayObjectContainer::_constructor(obj,NULL);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Sprite,_getParent)
 {
-	Sprite* th=static_cast<Sprite*>(obj->interface);
+	Sprite* th=static_cast<Sprite*>(obj->implementation);
 	abort();
 /*	if(th->parent==NULL)
 		return new Undefined;
 
 	return th->parent;*/
+	return NULL;
 }
 
 void MovieClip::sinit(Class_base* c)
@@ -337,7 +343,7 @@ void MovieClip::addToFrame(DisplayListTag* t)
 
 ASFUNCTIONBODY(MovieClip,addChild)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->interface);
+	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	abort();
 /*	if(args->at(0)->parent==th)
 		return args->at(0);
@@ -370,14 +376,15 @@ ASFUNCTIONBODY(MovieClip,addChild)
 
 	e->root=th->root;
 	args->at(0)->setVariableByQName("root","",th->root);*/
+	return NULL;
 }
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->interface);
+	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	if(args->size()%2)
 	{
-		LOG(ERROR,"Invalid arguments to addFrameScript");
+		LOG(LOG_ERROR,"Invalid arguments to addFrameScript");
 		abort();
 	}
 	for(int i=0;i<args->size();i+=2)
@@ -388,17 +395,18 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 		//Should wait for frames to be received
 		if(f>=th->frames.size())
 		{
-			LOG(ERROR,"Invalid frame number passed to addFrameScript");
+			LOG(LOG_ERROR,"Invalid frame number passed to addFrameScript");
 			abort();
 		}
 
 		th->frames[f].setScript(g);
 	}
+	return NULL;
 }
 
 ASFUNCTIONBODY(MovieClip,createEmptyMovieClip)
 {
-	LOG(NOT_IMPLEMENTED,"createEmptyMovieClip");
+	LOG(LOG_NOT_IMPLEMENTED,"createEmptyMovieClip");
 	return new Undefined;
 /*	MovieClip* th=static_cast<MovieClip*>(obj);
 	if(th==NULL)
@@ -417,51 +425,52 @@ ASFUNCTIONBODY(MovieClip,createEmptyMovieClip)
 
 ASFUNCTIONBODY(MovieClip,moveTo)
 {
-	LOG(NOT_IMPLEMENTED,"Called moveTo");
+	LOG(LOG_NOT_IMPLEMENTED,"Called moveTo");
 	return NULL;
 }
 
 ASFUNCTIONBODY(MovieClip,lineTo)
 {
-	LOG(NOT_IMPLEMENTED,"Called lineTo");
+	LOG(LOG_NOT_IMPLEMENTED,"Called lineTo");
 	return NULL;
 }
 
 ASFUNCTIONBODY(MovieClip,lineStyle)
 {
-	LOG(NOT_IMPLEMENTED,"Called lineStyle");
+	LOG(LOG_NOT_IMPLEMENTED,"Called lineStyle");
 	return NULL;
 }
 
 ASFUNCTIONBODY(MovieClip,swapDepths)
 {
-	LOG(NOT_IMPLEMENTED,"Called swapDepths");
+	LOG(LOG_NOT_IMPLEMENTED,"Called swapDepths");
 	return NULL;
 }
 
 ASFUNCTIONBODY(MovieClip,stop)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->interface);
+	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	th->state.stop_FP=true;
+	return NULL;
 }
 
 ASFUNCTIONBODY(MovieClip,_getTotalFrames)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->interface);
+	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	//currentFrame is 1-based
 	return new Integer(th->totalFrames);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->interface);
+	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	//currentFrame is 1-based
 	return new Integer(th->state.FP+1);
 }
 
 ASFUNCTIONBODY(MovieClip,_constructor)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->interface);
+	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	Sprite::_constructor(obj,NULL);
 	obj->setGetterByQName("currentFrame","",new Function(_getCurrentFrame));
 	obj->setGetterByQName("totalFrames","",new Function(_getTotalFrames));
@@ -475,12 +484,12 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	th->setVariableByQName("addFrameScript","",new Function(addFrameScript));
 	th->setVariableByQName("addChild","",new Function(addChild));
 	th->setVariableByQName("stop","",new Function(stop));*/
-
+	return NULL;
 }
 
 void MovieClip::Render()
 {
-	LOG(TRACE,"Render MovieClip");
+	LOG(LOG_TRACE,"Render MovieClip");
 //	parent=rt->currentClip;
 	MovieClip* clip_bak=rt->currentClip;
 	rt->currentClip=this;
@@ -516,7 +525,7 @@ void MovieClip::Render()
 		state.FP=state.next_FP;
 	else
 		state.stop_FP=true;
-	LOG(TRACE,"End Render MovieClip");
+	LOG(LOG_TRACE,"End Render MovieClip");
 
 	rt->currentClip=clip_bak;
 }
@@ -556,33 +565,35 @@ void DisplayObject::sinit(Class_base* c)
 
 ASFUNCTIONBODY(DisplayObject,_getX)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return abstract_d(th->Matrix.TranslateX);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setX)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	assert(args && args->size()==1);
 	th->Matrix.TranslateX=args->at(0)->toInt();
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getY)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return abstract_d(th->Matrix.TranslateY);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setY)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	assert(args && args->size()==1);
 	th->Matrix.TranslateY=args->at(0)->toInt();
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getBounds)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	Rectangle* ret=Class<Rectangle>::getInstanceS(true);
 	number_t x1,x2,y1,y2;
 	th->getBounds(x1,x2,y1,y2);
@@ -598,7 +609,7 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 
 ASFUNCTIONBODY(DisplayObject,_constructor)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	EventDispatcher::_constructor(obj,NULL);
 	if(th->loaderInfo)
 	{
@@ -624,6 +635,7 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 	obj->setSetterByQName("name","",new Function(_setName));
 	obj->setSetterByQName("x","",new Function(_setX));
 	obj->setSetterByQName("y","",new Function(_setY));
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getStage)
@@ -635,73 +647,76 @@ ASFUNCTIONBODY(DisplayObject,_getStage)
 
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getBlendMode)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,localToGlobal)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_setRotation)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	th->rotation=args->at(0)->toNumber();
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_setWidth)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	th->width=args->at(0)->toInt();
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_setName)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getName)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRoot)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	assert(th->root->obj);
 	return th->root->obj;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRotation)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Number(th->rotation);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getVisible)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return abstract_b(true);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getWidth)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return abstract_i(th->width);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getHeight)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->interface);
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return abstract_i(th->height);
 }
 
@@ -720,6 +735,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL);
 	obj->setGetterByQName("numChildren","",new Function(_getNumChildren));
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
@@ -737,6 +753,7 @@ void Shape::sinit(Class_base* c)
 ASFUNCTIONBODY(Shape,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL);
+	return NULL;
 }
 
 void Stage::sinit(Class_base* c)
@@ -755,16 +772,17 @@ ASFUNCTIONBODY(Stage,_constructor)
 {
 	obj->setGetterByQName("stageWidth","",new Function(_getStageWidth));
 	obj->setGetterByQName("stageHeight","",new Function(_getStageHeight));
+	return NULL;
 }
 
 ASFUNCTIONBODY(Stage,_getStageWidth)
 {
-	Stage* th=static_cast<Stage*>(obj->interface);
+	Stage* th=static_cast<Stage*>(obj->implementation);
 	return abstract_d(th->width);
 }
 
 ASFUNCTIONBODY(Stage,_getStageHeight)
 {
-	Stage* th=static_cast<Stage*>(obj->interface);
+	Stage* th=static_cast<Stage*>(obj->implementation);
 	return abstract_d(th->height);
 }

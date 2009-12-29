@@ -30,7 +30,7 @@
 #include "flashdisplay.h"
 #include "flashtext.h"
 #include "flashutils.h"
-#include <GL/gl.h>
+#include <GL/glew.h>
 
 namespace lightspark
 {
@@ -308,7 +308,15 @@ public:
 class PlaceObject2Tag: public DisplayListTag
 {
 private:
-	static bool list_orderer(const std::pair<PlaceInfo, IDisplayListElem*> a, int d);
+	//static bool list_orderer(const std::pair<PlaceInfo, IDisplayListElem*>& a, int d);
+	//static bool list_orderer(int d, const std::pair<PlaceInfo, IDisplayListElem*>& a);
+	class list_orderer
+	{
+	public:
+		bool operator()(const std::pair<PlaceInfo, IDisplayListElem*>& a, int d);
+		bool operator()(int d, const std::pair<PlaceInfo, IDisplayListElem*>& a);
+		bool operator()(const std::pair<PlaceInfo, IDisplayListElem*>& a, const std::pair<PlaceInfo, IDisplayListElem*>& b);
+	};
 
 	UB PlaceFlagHasClipAction;
 	UB PlaceFlagHasClipDepth;

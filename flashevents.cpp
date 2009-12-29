@@ -22,10 +22,12 @@
 #include "abc.h"
 #include "flashevents.h"
 #include "swf.h"
+#include "compat.h"
 
 using namespace std;
+using namespace lightspark;
 
-extern __thread SystemState* sys;
+extern TLSDATA SystemState* sys;
 
 REGISTER_CLASS_NAME(EventDispatcher);
 REGISTER_CLASS_NAME(Event);
@@ -55,9 +57,10 @@ void Event::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Event,_constructor)
 {
-	Event* th=static_cast<Event*>(obj->interface);
+	Event* th=static_cast<Event*>(obj->implementation);
 	assert(args->at(0)->getObjectType()==T_STRING);
 	th->type=args->at(0)->toString();
+	return NULL;
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
@@ -137,16 +140,16 @@ void EventDispatcher::dumpHandlers()
 
 ASFUNCTIONBODY(Event,_getType)
 {
-	Event* th=static_cast<Event*>(obj->interface);
+	Event* th=static_cast<Event*>(obj->implementation);
 	return new ASString(th->type);
 }
 
 ASFUNCTIONBODY(EventDispatcher,addEventListener)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj->interface);
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
 	if(args->at(0)->getObjectType()!=T_STRING || args->at(1)->getObjectType()!=T_FUNCTION)
 	{
-		LOG(ERROR,"Type mismatch");
+		LOG(LOG_ERROR,"Type mismatch");
 		abort();
 	}
 	if(th==NULL)
@@ -159,8 +162,8 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj->interface);
-	Event* e=static_cast<Event*>(args->at(0)->interface);
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
+	Event* e=static_cast<Event*>(args->at(0)->implementation);
 	assert(th->magic==0xdeadbeaf);
 	if(e==NULL || th==NULL)
 		return new Boolean(false);
@@ -178,6 +181,7 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 	obj->setVariableByQName("addEventListener","flash.events:IEventDispatcher",new Function(addEventListener));
 	//MEGAHACK!!! should implement interface support
 	obj->setVariableByQName("dispatchEvent","",new Function(dispatchEvent));
+	return NULL;
 }
 
 void EventDispatcher::handleEvent(Event* e)
@@ -185,11 +189,11 @@ void EventDispatcher::handleEvent(Event* e)
 	map<tiny_string, IFunction*>::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
-		LOG(NOT_IMPLEMENTED,"Not handled event " << e->type);
+		LOG(LOG_NOT_IMPLEMENTED,"Not handled event " << e->type);
 		return;
 	}
 
-	LOG(CALLS, "Handling event " << h->first);
+	LOG(LOG_CALLS, "Handling event " << h->first);
 	arguments args(1);
 	assert(e->obj);
 	//The event is going to be decreffed as a function parameter

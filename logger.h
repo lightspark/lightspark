@@ -4,7 +4,7 @@
 #include <semaphore.h>
 #include <iostream>
 
-enum LOG_LEVEL { NO_INFO=0, ERROR=1, NOT_IMPLEMENTED=2,CALLS=3,TRACE=4};
+enum LOG_LEVEL { LOG_NO_INFO=0, LOG_ERROR=1, LOG_NOT_IMPLEMENTED=2,LOG_CALLS=3,LOG_TRACE=4};
 
 #if 1
 #define LOG(level,esp)					\

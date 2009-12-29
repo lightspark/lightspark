@@ -40,7 +40,7 @@
 using namespace std;
 using namespace lightspark;
 
-TLSDATA SystemState* lightspark::sys;
+TLSDATA SystemState* sys;
 TLSDATA RenderThread* rt=NULL;
 TLSDATA ParseThread* pt=NULL;
 
@@ -62,9 +62,9 @@ int main(int argc, char* argv[])
 	//setrlimit(RLIMIT_AS,&rl);
 #endif
 
-	Log::initLogging(NO_INFO);
+	Log::initLogging(LOG_TRACE);
 	sys=new SystemState;
-/*	fps_profs.push_back(fps_profiling());
+	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();
 
 	zlib_file_filter zf;
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	ParseThread pt(sys,sys,f);
-	RenderThread rt(sys,SDL,NULL);
+/*	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 	sys->cur_input_thread=&it;
 	sys->cur_render_thread=&rt;

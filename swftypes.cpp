@@ -55,7 +55,7 @@ double ConstantReference::toNumber() const
 
 int ConstantReference::toInt() const
 {
-	LOG(ERROR,"Cannot convert ConstRef to Int");
+	LOG(LOG_ERROR,"Cannot convert ConstRef to Int");
 	return 0;
 }*/
 
@@ -63,9 +63,9 @@ tiny_string ASObject::toString() const
 {
 	assert(ref_count>0);
 	tiny_string ret;
-	if(interface)
+	if(implementation)
 	{
-		if(interface->toString(ret))
+		if(implementation->toString(ret))
 			return ret;
 	}
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
@@ -75,7 +75,7 @@ tiny_string ASObject::toString() const
 bool ASObject::isGreater(ASObject* r)
 {
 	assert(ref_count>0);
-	LOG(NOT_IMPLEMENTED,"Greater than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	LOG(LOG_NOT_IMPLEMENTED,"Greater than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	abort();
 	return false;
 }
@@ -83,7 +83,7 @@ bool ASObject::isGreater(ASObject* r)
 bool ASObject::isLess(ASObject* r)
 {
 	assert(ref_count>0);
-	assert(interface==NULL);
+	assert(implementation==NULL);
 
 	//We can try to call valueOf and compare that
 	ASObject* owner1,*owner2;
@@ -91,7 +91,7 @@ bool ASObject::isLess(ASObject* r)
 	objAndLevel obj2=r->getVariableByQName("valueOf","",owner2);
 	if(owner1==NULL || owner2==NULL)
 	{
-		LOG(NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+		LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 		abort();
 	}
 
@@ -101,7 +101,7 @@ bool ASObject::isLess(ASObject* r)
 	ASObject* ret1=f1->call(this,NULL,obj1.level);
 	ASObject* ret2=f2->call(r,NULL,obj2.level);
 
-	LOG(CALLS,"Overloaded isLess");
+	LOG(LOG_CALLS,"Overloaded isLess");
 	abort();
 	return ret1->isLess(ret2);
 }
@@ -109,15 +109,15 @@ bool ASObject::isLess(ASObject* r)
 void ASObject::acquireInterface(IInterface* i)
 {
 	assert(ref_count>0);
-	assert(i!=interface);
-	delete interface;
-	interface=i;
-	interface->obj=this;
+	assert(i!=implementation);
+	delete implementation;
+	implementation=i;
+	implementation->obj=this;
 }
 
 SWFOBJECT_TYPE ASObject::getObjectType() const
 {
-	return (interface)?(interface->type):type;
+	return (implementation)?(implementation->type):type;
 }
 
 IInterface::IInterface(const IInterface& r):type(r.type),magic(r.magic),obj(NULL)
@@ -132,7 +132,7 @@ IInterface::IInterface(const IInterface& r):type(r.type),magic(r.magic),obj(NULL
 		obj->actualPrototype=c;
 		obj->max_level=c->max_level;
 		c->incRef();
-		obj->interface=this;
+		obj->implementation=this;
 	}
 }
 
@@ -254,10 +254,10 @@ bool Integer::isEqual(ASObject* o)
 bool ASObject::isEqual(ASObject* r)
 {
 	assert(ref_count>0);
-	if(interface)
+	if(implementation)
 	{
 		bool ret;
-		if(interface->isEqual(ret,r))
+		if(implementation->isEqual(ret,r))
 			return ret;
 	}
 
@@ -267,7 +267,7 @@ bool ASObject::isEqual(ASObject* r)
 	objAndLevel obj2=r->getVariableByQName("valueOf","",owner2);
 	if(owner1==NULL || owner2==NULL)
 	{
-		LOG(NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+		LOG(LOG_NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 		return false;
 	}
 
@@ -277,26 +277,26 @@ bool ASObject::isEqual(ASObject* r)
 	ASObject* ret1=f1->call(this,NULL,obj1.level);
 	ASObject* ret2=f2->call(r,NULL,obj2.level);
 
-	LOG(CALLS,"Overloaded isEqual");
+	LOG(LOG_CALLS,"Overloaded isEqual");
 	return ret1->isEqual(ret2);
 }
 
 IFunction* ASObject::toFunction()
 {
-	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Function");
+	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to Function");
 	return NULL;
 }
 
 
 int ASObject::toInt() const
 {
-	if(interface)
+	if(implementation)
 	{
 		int ret;
-		if(interface->toInt(ret))
+		if(implementation->toInt(ret))
 			return ret;
 	}
-	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
+	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
 	cout << "imanager " << iManager->available.size() << endl;
 	cout << "dmanager " << dManager->available.size() << endl;
 	abort();
@@ -305,7 +305,7 @@ int ASObject::toInt() const
 
 double ASObject::toNumber() const
 {
-	LOG(ERROR,"Cannot convert object of type " << getObjectType() << " to float");
+	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to float");
 	abort();
 	return 0;
 }
@@ -326,7 +326,7 @@ obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& n
 		//return the first
 		if(!exact)
 		{
-			LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
+			LOG(LOG_NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
 			return &ret.first->second.second;
 		}
 	}
@@ -384,9 +384,9 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	assert(ref_count>0);
-	if(interface)
+	if(implementation)
 	{
-		if(interface->setVariableByMultiname_i(name,value))
+		if(implementation->setVariableByMultiname_i(name,value))
 			return;
 	}
 
@@ -396,9 +396,9 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	assert(ref_count>0);
-	if(interface)
+	if(implementation)
 	{
-		if(interface->setVariableByMultiname(name,o))
+		if(implementation->setVariableByMultiname(name,o))
 			return;
 	}
 
@@ -423,13 +423,13 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	if(obj->setter)
 	{
 		//Call the setter
-		LOG(CALLS,"Calling the setter");
+		LOG(LOG_CALLS,"Calling the setter");
 		arguments args(1);
 		args.set(0,o);
 		//TODO: check
 		o->incRef();
 		obj->setter->call(this,&args,level);
-		LOG(CALLS,"End of setter");
+		LOG(LOG_CALLS,"End of setter");
 	}
 	else
 	{
@@ -442,9 +442,9 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	assert(ref_count>0);
-	if(interface)
+	if(implementation)
 	{
-		if(interface->setVariableByQName(name,ns,o))
+		if(implementation->setVariableByQName(name,ns,o))
 			return;
 	}
 
@@ -469,13 +469,13 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	if(obj->setter)
 	{
 		//Call the setter
-		LOG(CALLS,"Calling the setter");
+		LOG(LOG_CALLS,"Calling the setter");
 		arguments args(1);
 		args.set(0,o);
 		//TODO: check
 		o->incRef();
 		obj->setter->call(this,&args, level);
-		LOG(CALLS,"End of setter");
+		LOG(LOG_CALLS,"End of setter");
 	}
 	else
 	{
@@ -515,7 +515,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 		//return the first
 		if(!exact)
 		{
-			LOG(NOT_IMPLEMENTED,"Overriding or other weird condition on [multinam]::" << name.name << ". Found on " << 
+			LOG(LOG_NOT_IMPLEMENTED,"Overriding or other weird condition on [multinam]::" << name.name << ". Found on " << 
 				ret.first->second.first);
 			return &ret.first->second.second;
 		}
@@ -546,6 +546,7 @@ ASFUNCTIONBODY(ASObject,_toString)
 
 ASFUNCTIONBODY(ASObject,_constructor)
 {
+	return NULL;
 }
 
 //In all the getter function we first ask the interface, so that special handling (e.g. Array)
@@ -553,10 +554,10 @@ ASFUNCTIONBODY(ASObject,_constructor)
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
 {
 	assert(ref_count>0);
-	if(interface)
+	if(implementation)
 	{
 		intptr_t ret;
-		if(interface->getVariableByMultiname_i(name,ret))
+		if(implementation->getVariableByMultiname_i(name,ret))
 		{
 			owner=this;
 			return ret;
@@ -573,10 +574,10 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& ow
 objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& owner)
 {
 	assert(ref_count>0);
-	if(interface)
+	if(implementation)
 	{
 		ASObject* ret;
-		if(interface->getVariableByMultiname(name,ret))
+		if(implementation->getVariableByMultiname(name,ret))
 		{
 			owner=this;
 			//TODO check
@@ -601,9 +602,9 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 		if(obj->getter)
 		{
 			//Call the getter
-			LOG(CALLS,"Calling the getter");
+			LOG(LOG_CALLS,"Calling the getter");
 			ASObject* ret=obj->getter->call(this,NULL,level);
-			LOG(CALLS,"End of getter");
+			LOG(LOG_CALLS,"End of getter");
 			owner=this;
 			assert(ret);
 			//The returned value is already owned by the caller
@@ -644,10 +645,10 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 {
 	assert(ref_count>0);
 
-	if(interface)
+	if(implementation)
 	{
 		ASObject* ret;
-		if(interface->getVariableByQName(name,ns,ret))
+		if(implementation->getVariableByQName(name,ns,ret))
 		{
 			owner=this;
 			return objAndLevel(ret,max_level);
@@ -671,9 +672,9 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 		if(obj->getter)
 		{
 			//Call the getter
-			LOG(CALLS,"Calling the getter");
+			LOG(LOG_CALLS,"Calling the getter");
 			ASObject* ret=obj->getter->call(this,NULL,level);
-			LOG(CALLS,"End of getter");
+			LOG(LOG_CALLS,"End of getter");
 			owner=this;
 			//The variable is already owned by the caller
 			ret->fake_decRef();
@@ -721,13 +722,13 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 	return NULL;
 }
 
-std::ostream& operator<<(std::ostream& s, const tiny_string& r)
+std::ostream& lightspark::operator<<(std::ostream& s, const tiny_string& r)
 {
 	s << r.buf;
 	return s;
 }
 
-std::ostream& operator<<(std::ostream& s, const multiname& r)
+std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 {
 	for(int i=0;i<r.ns.size();i++)
 	{
@@ -794,17 +795,17 @@ tiny_string Integer::toString() const
 	return cur;
 }
 
-RECT::RECT()
+lightspark::RECT::RECT()
 {
 }
 
-std::ostream& operator<<(std::ostream& s, const RECT& r)
+std::ostream& lightspark::operator<<(std::ostream& s, const RECT& r)
 {
 	s << '{' << (int)r.Xmin << ',' << r.Xmax << ',' << r.Ymin << ',' << r.Ymax << '}';
 	return s;
 }
 
-ostream& operator<<(ostream& s, const STRING& t)
+ostream& lightspark::operator<<(ostream& s, const STRING& t)
 {
 	for(unsigned int i=0;i<t.String.size();i++)
 		s << t.String[i];
@@ -865,7 +866,7 @@ std::ostream& operator<<(std::ostream& s, const MATRIX& r)
 	return s;
 }
 
-std::istream& operator>>(std::istream& stream, STRING& v)
+std::istream& lightspark::operator>>(std::istream& stream, STRING& v)
 {
 	v.String.clear();
 	UI8 c;
@@ -880,7 +881,7 @@ std::istream& operator>>(std::istream& stream, STRING& v)
 	return stream;
 }
 
-std::istream& operator>>(std::istream& stream, RECT& v)
+std::istream& lightspark::operator>>(std::istream& stream, RECT& v)
 {
 	BitStream s(stream);
 	v.NBits=UB(5,s);
@@ -891,23 +892,23 @@ std::istream& operator>>(std::istream& stream, RECT& v)
 	return stream;
 }
 
-std::istream& operator>>(std::istream& s, RGB& v)
+std::istream& lightspark::operator>>(std::istream& s, RGB& v)
 {
 	s >> v.Red >> v.Green >> v.Blue;
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, RGBA& v)
+std::istream& lightspark::operator>>(std::istream& s, RGBA& v)
 {
 	s >> v.Red >> v.Green >> v.Blue >> v.Alpha;
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
+std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 {
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
-		LOG(ERROR,"Line array extended not supported");
+		LOG(LOG_ERROR,"Line array extended not supported");
 	if(v.version<4)
 	{
 		v.LineStyles=new LINESTYLE[v.LineStyleCount];
@@ -926,11 +927,11 @@ std::istream& operator>>(std::istream& s, LINESTYLEARRAY& v)
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
+std::istream& lightspark::operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 {
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
-		LOG(ERROR,"Line array extended not supported");
+		LOG(LOG_ERROR,"Line array extended not supported");
 	v.LineStyles=new MORPHLINESTYLE[v.LineStyleCount];
 	for(int i=0;i<v.LineStyleCount;i++)
 	{
@@ -939,11 +940,11 @@ std::istream& operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
+std::istream& lightspark::operator>>(std::istream& s, FILLSTYLEARRAY& v)
 {
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
-		LOG(ERROR,"Fill array extended not supported");
+		LOG(LOG_ERROR,"Fill array extended not supported");
 	v.FillStyles=new FILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
@@ -953,11 +954,11 @@ std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, MORPHFILLSTYLEARRAY& v)
+std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLEARRAY& v)
 {
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
-		LOG(ERROR,"Fill array extended not supported");
+		LOG(LOG_ERROR,"Fill array extended not supported");
 	v.FillStyles=new MORPHFILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
@@ -966,7 +967,7 @@ std::istream& operator>>(std::istream& s, MORPHFILLSTYLEARRAY& v)
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, SHAPE& v)
+std::istream& lightspark::operator>>(std::istream& s, SHAPE& v)
 {
 	BitStream bs(s);
 	v.NumFillBits=UB(4,bs);
@@ -987,7 +988,7 @@ std::istream& operator>>(std::istream& s, SHAPE& v)
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
+std::istream& lightspark::operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 {
 	v.FillStyles.version=v.version;
 	v.LineStyles.version=v.version;
@@ -1011,7 +1012,7 @@ std::istream& operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 	return s;
 }
 
-istream& operator>>(istream& s, LINESTYLE2& v)
+istream& lightspark::operator>>(istream& s, LINESTYLE2& v)
 {
 	s >> v.Width;
 	BitStream bs(s);
@@ -1030,9 +1031,11 @@ istream& operator>>(istream& s, LINESTYLE2& v)
 		s >> v.FillType;
 	else
 		s >> v.Color;
+
+	return s;
 }
 
-istream& operator>>(istream& s, LINESTYLE& v)
+istream& lightspark::operator>>(istream& s, LINESTYLE& v)
 {
 	s >> v.Width;
 	if(v.version==2 || v.version==1)
@@ -1046,19 +1049,19 @@ istream& operator>>(istream& s, LINESTYLE& v)
 	return s;
 }
 
-istream& operator>>(istream& s, MORPHLINESTYLE& v)
+istream& lightspark::operator>>(istream& s, MORPHLINESTYLE& v)
 {
 	s >> v.StartWidth >> v.EndWidth >> v.StartColor >> v.EndColor;
 	return s;
 }
 
-std::istream& operator>>(std::istream& in, TEXTRECORD& v)
+std::istream& lightspark::operator>>(std::istream& in, TEXTRECORD& v)
 {
 	BitStream bs(in);
 	v.TextRecordType=UB(1,bs);
 	v.StyleFlagsReserved=UB(3,bs);
 	if(v.StyleFlagsReserved)
-		LOG(ERROR,"Reserved bits not so reserved");
+		LOG(LOG_ERROR,"Reserved bits not so reserved");
 	v.StyleFlagsHasFont=UB(1,bs);
 	v.StyleFlagsHasColor=UB(1,bs);
 	v.StyleFlagsHasYOffset=UB(1,bs);
@@ -1089,7 +1092,7 @@ std::istream& operator>>(std::istream& in, TEXTRECORD& v)
 	return in;
 }
 
-std::istream& operator>>(std::istream& s, GRADRECORD& v)
+std::istream& lightspark::operator>>(std::istream& s, GRADRECORD& v)
 {
 	s >> v.Ratio;
 	if(v.version==1 || v.version==2)
@@ -1104,7 +1107,7 @@ std::istream& operator>>(std::istream& s, GRADRECORD& v)
 	return s;
 }
 
-std::istream& operator>>(std::istream& s, GRADIENT& v)
+std::istream& lightspark::operator>>(std::istream& s, GRADIENT& v)
 {
 	BitStream bs(s);
 	v.SpreadMode=UB(2,bs);
@@ -1182,7 +1185,7 @@ void FILLSTYLE::setVertexData(arrayElem* elem)
 	}
 	else
 	{
-		LOG(NOT_IMPLEMENTED,"Reverting to fixed function");
+		LOG(LOG_NOT_IMPLEMENTED,"Reverting to fixed function");
 		elem->colors[0]=1;
 		elem->colors[1]=0;
 		elem->colors[2]=0;
@@ -1251,7 +1254,7 @@ void FILLSTYLE::setFragmentProgram() const
 	}
 	else
 	{
-		LOG(NOT_IMPLEMENTED,"Reverting to fixed function");
+		LOG(LOG_NOT_IMPLEMENTED,"Reverting to fixed function");
 		FILLSTYLE::fixedColor(0.5,0.5,0);
 	}
 }
@@ -1266,7 +1269,7 @@ void FILLSTYLE::fixedColor(float r, float g, float b)
 	glTexCoord4f(r,g,b,1);
 }
 
-std::istream& operator>>(std::istream& s, FILLSTYLE& v)
+std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 {
 	s >> v.FillStyleType;
 	if(v.FillStyleType==0x00)
@@ -1292,13 +1295,13 @@ std::istream& operator>>(std::istream& s, FILLSTYLE& v)
 	}
 	else
 	{
-		LOG(ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
+		LOG(LOG_ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
 	}
 	return s;
 }
 
 
-std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v)
+std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 {
 	s >> v.FillStyleType;
 	if(v.FillStyleType==0x00)
@@ -1323,7 +1326,7 @@ std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	}
 	else
 	{
-		LOG(ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
+		LOG(LOG_ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
 	}
 	return s;
 }
@@ -1406,7 +1409,7 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 	}
 }
 
-std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v)
+std::istream& lightspark::operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 {
 	BitStream bs(stream);
 	v.HasAddTerms=UB(1,bs);
@@ -1429,7 +1432,7 @@ std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 	return stream;
 }
 
-std::istream& operator>>(std::istream& stream, MATRIX& v)
+std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 {
 	BitStream bs(stream);
 	v.HasScale=UB(1,bs);
@@ -1457,7 +1460,7 @@ std::istream& operator>>(std::istream& stream, MATRIX& v)
 	return stream;
 }
 
-std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
+std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 {
 	BitStream bs(stream);
 
@@ -1475,7 +1478,7 @@ std::istream& operator>>(std::istream& stream, BUTTONRECORD& v)
 	stream >> v.CharacterID >> v.PlaceDepth >> v.PlaceMatrix >> v.ColorTransform;
 
 	if(v.ButtonHasFilterList | v.ButtonHasBlendMode)
-		LOG(ERROR,"Button record not yet totally supported");
+		LOG(LOG_ERROR,"Button record not yet totally supported");
 
 	return stream;
 }
@@ -1517,13 +1520,13 @@ variables_map::~variables_map()
 
 ASObject::ASObject(Manager* m):
 	prototype(NULL),actualPrototype(NULL),parent(NULL),ref_count(1),
-	manager(m),type(T_OBJECT),max_level(0),interface(NULL),debug(0)
+	manager(m),type(T_OBJECT),max_level(0),implementation(NULL),debug(0)
 {
 }
 
 ASObject::ASObject(const ASObject& o):
 	prototype(o.prototype),actualPrototype(o.prototype),manager(NULL),parent(NULL),ref_count(1),
-	type(o.type),max_level(0),interface(NULL),debug(0)
+	type(o.type),max_level(0),implementation(NULL),debug(0)
 {
 	parent=o.parent;
 
@@ -1550,7 +1553,7 @@ void variables_map::initSlot(int n, int level, ASObject* o, const tiny_string& n
 
 	if(slots_vars[n-1]!=Variables.end())
 	{
-		LOG(NOT_IMPLEMENTED,"Slot overwrite attempted");
+		LOG(LOG_NOT_IMPLEMENTED,"Slot overwrite attempted");
 		return;
 	}
 
@@ -1585,7 +1588,7 @@ void variables_map::setSlot(int n,ASObject* o)
 	}
 	else
 	{
-		LOG(ERROR,"Setting slot out of range");
+		LOG(LOG_ERROR,"Setting slot out of range");
 		abort();
 		//slots_vars.resize(n);
 		//slots[n-1]=o;
@@ -1613,7 +1616,7 @@ obj_var* variables_map::getValueAt(int index)
 	}
 	else
 	{
-		LOG(ERROR,"Index too big");
+		LOG(LOG_ERROR,"Index too big");
 		abort();
 	}
 }
@@ -1628,10 +1631,10 @@ ASObject* ASObject::getValueAt(int index)
 		//TODO: check for call level
 		abort();
 /*		//Call the getter
-		LOG(CALLS,"Calling the getter");
+		LOG(LOG_CALLS,"Calling the getter");
 		ret=obj->getter->call(this,NULL);
 		ret->fake_decRef();
-		LOG(CALLS,"End of getter");*/
+		LOG(LOG_CALLS,"End of getter");*/
 	}
 	else
 		ret=obj->var;
@@ -1653,7 +1656,7 @@ tiny_string variables_map::getNameAt(int index)
 	}
 	else
 	{
-		LOG(ERROR,"Index too big");
+		LOG(LOG_ERROR,"Index too big");
 		abort();
 	}
 }
@@ -1670,7 +1673,7 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args, bool link
 		abort();
 		//We have to build the method traits
 		SyntheticFunction* sf=static_cast<SyntheticFunction*>(this);
-		LOG(CALLS,"Building method traits");
+		LOG(LOG_CALLS,"Building method traits");
 		for(int i=0;i<sf->mi->body->trait_count;i++)
 			context->buildTrait(this,&sf->mi->body->traits[i]);
 		sf->call(this,args,max_level);
@@ -1679,12 +1682,12 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args, bool link
 	else if(actualPrototype->class_index==-1)
 	{
 		//The class is builtin
-		LOG(CALLS,"Building a builtin class");
+		LOG(LOG_CALLS,"Building a builtin class");
 	}
 	else
 	{
 		//The class is declared in the script and has an index
-		LOG(CALLS,"Building instance traits");
+		LOG(LOG_CALLS,"Building instance traits");
 
 		//To insert the trait in the rigth level we have to change the max_level
 		//This is a No Op if not constructSuper
@@ -1699,7 +1702,7 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args, bool link
 
 	if(actualPrototype->constructor)
 	{
-		LOG(CALLS,"Calling Instance init");
+		LOG(LOG_CALLS,"Calling Instance init");
 		actualPrototype->constructor->call(this,args,max_level);
 	}
 
@@ -1711,7 +1714,7 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args, bool link
 	}
 }
 
-std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v)
+std::istream& lightspark::operator>>(std::istream& s, CLIPEVENTFLAGS& v)
 {
 	if(pt->version<=5)
 	{
@@ -1731,13 +1734,13 @@ bool CLIPEVENTFLAGS::isNull()
 	return toParse==0;
 }
 
-std::istream& operator>>(std::istream& s, CLIPACTIONRECORD& v)
+std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONRECORD& v)
 {
 	s >> v.EventFlags;
 	if(v.EventFlags.isNull())
 		return s;
 	s >> v.ActionRecordSize;
-	LOG(NOT_IMPLEMENTED,"Skipping " << v.ActionRecordSize << " of action data");
+	LOG(LOG_NOT_IMPLEMENTED,"Skipping " << v.ActionRecordSize << " of action data");
 	ignore(s,v.ActionRecordSize);
 	return s;
 }
@@ -1747,7 +1750,7 @@ bool CLIPACTIONRECORD::isLast()
 	return EventFlags.isNull();
 }
 
-std::istream& operator>>(std::istream& s, CLIPACTIONS& v)
+std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 {
 	s >> v.Reserved >> v.AllEventFlags;
 	while(1)
@@ -1761,19 +1764,19 @@ std::istream& operator>>(std::istream& s, CLIPACTIONS& v)
 	return s;
 }
 
-ASObject* abstract_d(number_t i)
+ASObject* lightspark::abstract_d(number_t i)
 {
 	Number* ret=dManager->get<Number>();
 	ret->val=i;
 	return ret;
 }
 
-ASObject* abstract_b(bool i)
+ASObject* lightspark::abstract_b(bool i)
 {
 	return new Boolean(i);
 }
 
-ASObject* abstract_i(intptr_t i)
+ASObject* lightspark::abstract_i(intptr_t i)
 {
 	Integer* ret=iManager->get<Integer>();
 	ret->val=i;

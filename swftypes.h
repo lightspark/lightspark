@@ -20,7 +20,13 @@
 #ifndef SWFTYPES_H
 #define SWFTYPES_H
 
+#define __STDC_LIMIT_MACROS
+#define __STDC_CONSTANT_MACROS
+#ifdef WIN32
 #include <llvm/System/DataTypes.h>
+#else
+#include <llvm/Support/DataTypes.h>
+#endif
 #include <iostream>
 #include <fstream>
 #include <vector>

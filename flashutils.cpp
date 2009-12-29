@@ -19,6 +19,7 @@
 
 #include "flashutils.h"
 #include "asobjects.h"
+#include "class.h"
 
 using namespace std;
 using namespace lightspark;

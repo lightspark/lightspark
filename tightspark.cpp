@@ -21,12 +21,14 @@
 
 #include <fstream>
 #include <sys/resource.h>
+#include "compat.h"
 
 using namespace std;
+using namespace lightspark;
 
-__thread SystemState* sys=NULL;
-__thread RenderThread* rt=NULL;
-__thread ParseThread* pt=NULL;
+TLSDATA SystemState* sys=NULL;
+TLSDATA RenderThread* rt=NULL;
+TLSDATA ParseThread* pt=NULL;
 
 extern int count_reuse;
 extern int count_alloc;
@@ -44,7 +46,7 @@ int main(int argc, char* argv[])
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
 
-	Log::initLogging(CALLS);
+	Log::initLogging(LOG_CALLS);
 	sys=new SystemState;
 	sys->fps_prof=new fps_profiling();
 

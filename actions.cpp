@@ -29,7 +29,7 @@ extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
 
-long timeDiff(timespec& s, timespec& d);
+long lightspark::timeDiff(timespec& s, timespec& d);
 
 void lightspark::ignore(istream& i, int count);
 

@@ -29,7 +29,7 @@
 using namespace std;
 using namespace lightspark;
 
-long timeDiff(timespec& s, timespec& d);
+long lightspark::timeDiff(timespec& s, timespec& d);
 
 extern TLSDATA SystemState* sys;
 

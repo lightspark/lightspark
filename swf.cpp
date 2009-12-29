@@ -34,10 +34,11 @@
 #include "asobjects.h"
 #include "textfile.h"
 #include "compat.h"
+#include "class.h"
 
 #include <GL/glew.h>
 #ifndef WIN32
-#include <GL/glext.h>
+//#include <GL/glext.h>
 #include <GL/glx.h>
 #endif
 
@@ -236,7 +237,7 @@ void InputThread::wait()
 #ifndef WIN32
 void* InputThread::npapi_worker(InputThread* th)
 {
-	sys=th->m_sys;
+/*	sys=th->m_sys;
 	NPAPI_params* p=(NPAPI_params*)in_ptr;
 //	Display* d=XOpenDisplay(NULL);
 	XSelectInput(p->display,p->window,PointerMotionMask|ExposureMask);
@@ -245,7 +246,7 @@ void* InputThread::npapi_worker(InputThread* th)
 	while(XWindowEvent(p->display,p->window,PointerMotionMask|ExposureMask, &e))
 	{
 		exit(-1);
-	}
+	}*/
 }
 #endif
 
@@ -477,7 +478,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	{
 		attrib[0]=0;
 		fb=glXChooseFBConfig(d, 0, NULL, &a);
-		LOG(ERROR,"Falling back to no depth and no stencil");
+		LOG(LOG_ERROR,"Falling back to no depth and no stencil");
 	}
 	int i;
 	for(i=0;i<a;i++)
@@ -663,7 +664,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	}
 	catch(const char* e)
 	{
-		LOG(ERROR,"Exception caught " << e);
+		LOG(LOG_ERROR,"Exception caught " << e);
 		exit(-1);
 	}
 	delete p;
@@ -831,7 +832,7 @@ void* RenderThread::glx_worker(RenderThread* th)
 	}
 	catch(const char* e)
 	{
-		LOG(ERROR, "Exception caught " << e);
+		LOG(LOG_ERROR, "Exception caught " << e);
 		delete[] buffer;
 		exit(-1);
 	}
@@ -1177,7 +1178,7 @@ void RootMovieClip::setVariableByString(const string& s, ASObject* o)
 	target->setVariableByQName(sub.c_str(),"",o);
 }*/
 
-long timeDiff(timespec& s, timespec& d)
+long lightspark::timeDiff(timespec& s, timespec& d)
 {
 	timespec temp;
 	if ((d.tv_nsec-s.tv_nsec)<0) {

@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "flashnet.h"
+#include "class.h"
 
 using namespace std;
 using namespace lightspark;

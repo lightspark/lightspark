@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "flashgeom.h"
+#include "class.h"
 
 using namespace lightspark;
 

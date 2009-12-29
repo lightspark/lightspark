@@ -10,17 +10,17 @@ datadir = $(datarootdir)
 
 LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o tags_stub.o logger.o vm.o \
 	  asobjects.o abc.o abc_codesynt.o abc_opcodes.o flashdisplay.o flashevents.o textfile.o thread_pool.o \
-	  flashgeom.o flashnet.o flashsystem.o flashutils.o
+	  flashgeom.o flashnet.o flashsystem.o flashutils.o compat.o
 
 # TODO: library?
 all: lightspark tightspark
 lightspark: main.o $(LIBOBJS) 
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ \
-	$(LLVMLIBS)
+	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags` -lGLEW $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe \
+		-o $@ $^ $(LLVMLIBS)
 
 tightspark: tightspark.o $(LIBOBJS)
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe -o $@ $^ \
-	$(LLVMLIBS)
+	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags` -lGLEW $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe \
+		-o $@ $^ $(LLVMLIBS)
 
 
 
@@ -28,7 +28,7 @@ libls.so: $(LIBOBJS)
 	$(CXX) -pthread -shared `pkg-config --cflags --libs sdl gl` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $@ $^
 
 %.o: %.cpp
-	$(CXX) -pipe -pthread `pkg-config --cflags libxml-2.0` -I`llvm-config --includedir` $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^ 
+	$(CXX) -pipe -pthread `pkg-config --cflags gl sdl libcurl libxml-2.0` -I`llvm-config --includedir` $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^ 
 
 .PHONY: all clean install
 clean:

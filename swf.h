@@ -31,12 +31,12 @@
 //#include "asobjects.h"
 #include "flashdisplay.h"
 
+#include <GL/glew.h>
 #ifndef WIN32
 #include <X11/Xlib.h>
 #include <GL/glx.h>
 #else
 //#include <windows.h>
-#include <GL/glew.h>
 #endif
 
 namespace lightspark

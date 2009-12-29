@@ -19,6 +19,8 @@
 
 #include "abc.h"
 #include <typeinfo>
+#include "class.h"
+
 using namespace std;
 using namespace lightspark;
 

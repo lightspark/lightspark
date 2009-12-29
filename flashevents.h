@@ -35,7 +35,6 @@ class ASObject;
 class PlaceObject2Tag;
 class ABCContext;
 
-
 class Event: public IInterface
 {
 public:

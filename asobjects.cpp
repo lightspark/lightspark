@@ -32,6 +32,7 @@
 #include "flashevents.h"
 #include "swf.h"
 #include "compat.h"
+#include "class.h"
 
 using namespace std;
 using namespace lightspark;

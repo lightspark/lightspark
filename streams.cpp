@@ -171,7 +171,7 @@ std::streamsize sync_stream::showmanyc( )
 	return 0;
 }
 
-zlib_file_filter::zlib_file_filter(const char* file_name)
+zlib_file_filter::zlib_file_filter(const char* file_name):consumed(0)
 {
 	f=fopen(file_name,"rb");
 	assert(f!=NULL);
@@ -205,6 +205,10 @@ zlib_file_filter::zlib_file_filter(const char* file_name)
 int zlib_file_filter::underflow()
 {
 	assert(gptr()==egptr());
+
+	//First of all we add the lenght of the buffer to the comsumed variable
+	consumed+=(gptr()-eback());
+
 	setg(buffer,buffer,buffer+4096);
 	if(!compressed)
 		fread(buffer,1,4096,f);
@@ -230,5 +234,13 @@ int zlib_file_filter::underflow()
 		}
 	}
 
-	return 0;
+	return buffer[0];
+}
+
+zlib_file_filter::pos_type zlib_file_filter::seekoff(off_type off, ios_base::seekdir dir,ios_base::openmode mode)
+{
+	assert(off==0);
+	//The current offset is the amount of byte completely consumed plus the amount used in the buffer
+	int ret=consumed+(gptr()-eback());
+	return ret;
 }

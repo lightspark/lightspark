@@ -62,31 +62,31 @@ int main(int argc, char* argv[])
 	//setrlimit(RLIMIT_AS,&rl);
 #endif
 
-	Log::initLogging(LOG_TRACE);
+	Log::initLogging(LOG_ERROR);
 	sys=new SystemState;
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();
 
 	zlib_file_filter zf(argv[1]);
-	//zf.open(argv[1],ios_base::in);
 	istream f(&zf);
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	ParseThread pt(sys,sys,f);
-	pt.wait();
-/*	RenderThread rt(sys,SDL,NULL);
+	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 	sys->cur_input_thread=&it;
 	sys->cur_render_thread=&rt;
 	ThreadPool tp(sys);
 	sys->cur_thread_pool=&tp;
 
+#ifndef WIN32
 	timespec ts,td,tperf,tperf2;
 	clock_gettime(CLOCK_REALTIME,&ts);
+#endif
 	int count=0;
 	int sec_count=0;
 
-	LOG(CALLS,"sys 0x" << sys);
+	LOG(LOG_CALLS,"sys 0x" << sys);
 	while(1)
 	{
 		if(sys->shutdown)
@@ -94,6 +94,7 @@ int main(int argc, char* argv[])
 		rt.draw();
 
 		count++;
+#ifndef WIN32
 		clock_gettime(CLOCK_REALTIME,&td);
 		if(timeDiff(ts,td)>1000)
 		{
@@ -112,6 +113,7 @@ int main(int argc, char* argv[])
 				break;
 			}
 		}
+#endif
 	}
 
 	it.wait();
@@ -125,7 +127,7 @@ int main(int argc, char* argv[])
 			' ' << fps_profs[i].event_time << endl;
 	prof.close();
 
-	SDL_Quit();*/
+	SDL_Quit();
 	return 0;
 }
 

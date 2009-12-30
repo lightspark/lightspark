@@ -59,8 +59,12 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 	cout << "assign vm" << endl;
 	context=new ABCContext(sys->currentVm,in);
 
-	if(dest!=in.tellg())
+	int pos=in.tellg();
+	if(dest!=pos)
+	{
 		LOG(LOG_ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
+		abort();
+	}
 }
 
 void DoABCTag::execute()

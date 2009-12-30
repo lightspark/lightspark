@@ -1454,6 +1454,11 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 		v.RotateSkew0=FB(v.NRotateBits,bs);
 		v.RotateSkew1=FB(v.NRotateBits,bs);
 	}
+	else
+	{
+		v.RotateSkew0=0;
+		v.RotateSkew1=0;
+	}
 	v.NTranslateBits=UB(5,bs);
 	v.TranslateX=SB(v.NTranslateBits,bs);
 	v.TranslateY=SB(v.NTranslateBits,bs);

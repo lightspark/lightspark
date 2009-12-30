@@ -12,8 +12,11 @@ vec4 solid_color()
 
 vec4 linear_gradient()
 {
-	vec2 coord=vec2(float(gl_FragCoord.x)/1000.0,0);
-	return texture2D(g_tex1,coord);
+	//vec2 coord=vec2(float(gl_FragCoord.x)/1000.0,0);
+	//return texture2D(g_tex1,coord);
+	//TODO: not working, accessing gl_FragCoord causes access violation
+	
+	return vec4(0,0,1,1);
 }
 
 vec4 tex_lookup()
@@ -29,5 +32,5 @@ void main()
 			(tex_lookup()*gl_Color.z);
 
 	gl_FragData[0]=ret;
-	gl_FragData[1]=gl_SecondaryColor*ceil(ret.a);
+	//gl_FragData[1]=gl_SecondaryColor*ceil(ret.a);
 }

@@ -117,6 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="&quot;C:\Users\Alessandro\Progetti\lightspark-win\glew\include&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\SDL-1.2.14\include&quot;;&quot;C:\Program Files (x86)\LLVM\include&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\zlib\include&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\Pre-built.2\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -135,7 +136,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="SDL.lib SDLmain.lib pthreadVSE2.lib glew32.lib opengl32.lib LLVMAnalysis.lib LLVMCore.lib LLVMExecutionEngine.lib LLVMJIT.lib LLVMSupport.lib LLVMSystem.lib LLVMCodeGen.lib LLVMScalarOpts.lib LLVMTransformUtils.lib LLVMTarget.lib LLVMX86CodeGen.lib LLVMMC.lib LLVMSelectionDAG.lib LLVMAsmPrinter.lib LLVMX86Info.lib zdll.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;C:\Users\Alessandro\Progetti\lightspark-win\zlib\lib&quot;;&quot;C:\Program Files (x86)\LLVM\lib&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\glew\lib&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\Pre-built.2\lib&quot;;&quot;C:\Users\Alessandro\Progetti\lightspark-win\SDL-1.2.14\lib&quot;"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"
@@ -381,6 +384,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\lightspark.frag"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

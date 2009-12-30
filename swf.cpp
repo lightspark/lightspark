@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-//#define GL_GLEXT_PROTOTYPES
 #include <iostream>
 #include <string.h>
 #include <pthread.h>
@@ -267,12 +266,6 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_s:
 						sys->state.stop_FP=true;
 						break;
-/*					case SDLK_o:
-						sys->displayListLimit--;
-						break;
-					case SDLK_p:
-						sys->displayListLimit++;
-						break;*/
 				}
 				break;
 			}
@@ -303,13 +296,6 @@ void* InputThread::sdl_worker(InputThread* th)
 
 				//Add event to the event queue
 				sys->currentVm->addEvent(it->second,new Event("mouseDown"));
-
-/*				if(!th->listeners.empty())
-				{
-					cout << "listeners " << th->listeners.size() << endl;
-					//sys->currentVm->addEvent(th->listeners[0],NULL);
-					sys->dumpEvents();
-				}*/
 
 				sem_post(&th->sem_listeners);
 				break;
@@ -675,15 +661,15 @@ int RenderThread::load_program()
 	GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
 	const char *fs = NULL;
-	//fs = dataFileRead("lightspark.frag");
-	fs = dataFileRead("/home/alex/lightspark/lightspark.frag");
+	fs = dataFileRead("lightspark.frag");
+	//fs = dataFileRead("/home/alex/lightspark/lightspark.frag");
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
 
-//	fs = dataFileRead("lightspark.vert");
-	fs = dataFileRead("/home/alex/lightspark/lightspark.vert");
+/*	fs = dataFileRead("lightspark.vert");
+//	fs = dataFileRead("/home/alex/lightspark/lightspark.vert");
 	glShaderSource(v, 1, &fs,NULL);
-	free((void*)fs);
+	free((void*)fs);*/
 
 	char str[1024];
 	int a;
@@ -691,9 +677,9 @@ int RenderThread::load_program()
 	glGetShaderInfoLog(f,1024,&a,str);
 	printf("Fragment shader: %s\n",str);
 
-	glCompileShader(v);
+/*	glCompileShader(v);
 	glGetShaderInfoLog(v,1024,&a,str);
-	printf("Vertex shader: %s\n",str);
+	printf("Vertex shader: %s\n",str);*/
 
 	int ret = glCreateProgram();
 	glAttachShader(ret,f);
@@ -873,18 +859,19 @@ void* RenderThread::sdl_worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
+	SDL_Init(SDL_INIT_VIDEO);
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
-	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1); 
+	SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1); 
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
 	RECT size=sys->getFrameSize();
-	int width=size.Xmax/10;
-	int height=size.Ymax/10;
+	int width=size.Xmax/20;
+	int height=size.Ymax/20;
 	rt->width=width;
 	rt->height=height;
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
@@ -910,11 +897,12 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
-
+	
 	glViewport(0,0,width,height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0,width,height,0,-100,0);
+
 
 	glMatrixMode(GL_MODELVIEW);
 
@@ -932,9 +920,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
  	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 	unsigned int t2[3];
- 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-	glGenTextures(3,t2);
+ 	glGenTextures(3,t2);
 	glBindTexture(GL_TEXTURE_2D,t2[0]);
+	//glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
@@ -958,13 +946,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	/*// create a renderbuffer object to store depth info
-	GLuint rboId[1];
-	glGenRenderbuffersEXT(1, rboId);
-	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId[0]);
-	glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT,width,height);
-
-	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);*/
 	
 	// create a framebuffer object
 	glGenFramebuffersEXT(1, &rt->fboId);
@@ -981,34 +962,39 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		abort();
 	}
 
-	float* buffer=new float[500*500*3];
 	try
 	{
+		//Texturing must be enabled otherwise no tex coord will be sent to the shader
+		glEnable(GL_TEXTURE_2D);
 		while(1)
 		{
 			sem_wait(&th->render);
+			SDL_PumpEvents();
 			SDL_GL_SwapBuffers( );
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
-			glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
+			//glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 			//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
 
 			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-			glClearDepth(0xffff);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT);
 			glLoadIdentity();
-			glScalef(0.1,0.1,1);
-
+			glScalef(0.05,0.05,1);
+			
 			sys->Render();
 
 			glLoadIdentity();
-			glColor3f(0,0,1);
+
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 			glDrawBuffer(GL_BACK);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			glClearColor(0,0,0,1);
+			glClear(GL_COLOR_BUFFER_BIT);
+
 			glBindTexture(GL_TEXTURE_2D,t2[0]);
+			glColor4f(0,0,1,0);
 			glBegin(GL_QUADS);
 				glTexCoord2f(0,1);
 				glVertex2i(0,0);
@@ -1019,21 +1005,20 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
-
+			
 			sem_post(&th->end_render);
 			if(sys->shutdown)
-			{
-				delete[] buffer;
 				pthread_exit(0);
-			}
 		}
+		glDisable(GL_TEXTURE_2D);
+		//glUseProgram(rt->gpu_program);
 	}
 	catch(const char* e)
 	{
 		LOG(LOG_ERROR, "Exception caught " << e);
-		delete[] buffer;
 		exit(-1);
 	}
+	return NULL;
 }
 
 void RenderThread::draw()

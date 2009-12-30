@@ -62,13 +62,14 @@ class zlib_file_filter:public std::streambuf
 {
 private:
 	bool compressed;
-	//int offset;
+	int consumed;
 	z_stream strm;
 	FILE* f;
 	char buffer[4096];
 	char in_buf[1024];
 protected:
 	virtual int underflow();
+	virtual pos_type seekoff(off_type, ios_base::seekdir,ios_base::openmode);
 public:
 	zlib_file_filter(const char* file_name);
 };

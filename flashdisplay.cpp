@@ -231,13 +231,14 @@ void Loader::execute()
 	LOG(LOG_NOT_IMPLEMENTED,"Loader async execution " << url);
 	if(source==URL)
 	{
-		local_root=new RootMovieClip;
+		abort();
+		/*local_root=new RootMovieClip;
 		zlib_file_filter zf;
 		zf.open(url.raw_buf(),ios_base::in);
 		istream s(&zf);
 
 		ParseThread local_pt(sys,local_root,s);
-		local_pt.wait();
+		local_pt.wait();*/
 	}
 	else if(source==BYTES)
 	{

@@ -21,6 +21,7 @@
 #include "logger.h"
 #include <cstdlib>
 #include <cstring>
+#include <assert.h>
 
 using namespace std;
 
@@ -170,78 +171,64 @@ std::streamsize sync_stream::showmanyc( )
 	return 0;
 }
 
-zlib_file_filter::zlib_file_filter():compressed(0),offset(0)
+zlib_file_filter::zlib_file_filter(const char* file_name)
 {
+	f=fopen(file_name,"rb");
+	assert(f!=NULL);
+
+	//Verify the signature on the fly, and initialize the first 8 bytes
+	setg(buffer,buffer,buffer+8);
+	if(fread(buffer,1,8,f)!=8)
+		abort();
+	if(buffer[1]!='W' || buffer[2]!='S')
+		abort();
+	if(buffer[0]=='F')
+		compressed=false;
+	else if(buffer[0]=='C')
+	{
+		compressed=true;
+		strm.zalloc = Z_NULL;
+		strm.zfree = Z_NULL;
+		strm.opaque = Z_NULL;
+		strm.avail_in = 0;
+		strm.next_in = Z_NULL;
+		int ret = inflateInit(&strm);
+		if (ret != Z_OK)
+			LOG(LOG_ERROR,"Failed to initialize ZLib");
+	}
+	else
+		abort();
+
+	//Ok, it seems to be a valid SWF, from now, if the file is compressed, data has to be inflated
 }
 
-std::streamsize zlib_file_filter::xsgetn ( char * s, std::streamsize n )
+int zlib_file_filter::underflow()
 {
+	assert(gptr()==egptr());
+	setg(buffer,buffer,buffer+4096);
 	if(!compressed)
-		return filebuf::xsgetn(s,n);
+		fread(buffer,1,4096,f);
 	else
 	{
-		/* run inflate() on input until output buffer not full */
-		strm.avail_out = n;
-		strm.next_out = (unsigned char*)s;
+		// run inflate() on input until output buffer not full
+		strm.avail_out = 4096;
+		strm.next_out = (unsigned char*)buffer;
 		inflate(&strm, Z_NO_FLUSH);
 		//check if output full and wrap around
 		while(strm.avail_out!=0)
 		{
-			int real_count=filebuf::xsgetn((char*)buffer,4096);
-			strm.next_in=buffer;
+			int real_count=fread(in_buf,1,1024,f);
+			if(real_count==0)
+			{
+				//File is not big enough to fill the buffer
+				setg(buffer,buffer,buffer+(4096-strm.avail_out));
+				break;
+			}
+			strm.next_in=(unsigned char*)in_buf;
 			strm.avail_in=real_count;
 			inflate(&strm, Z_NO_FLUSH);
 		}
-		offset+=n;
 	}
-	return n;
-}
 
-std::streamsize zlib_file_filter::xsputn ( const char * s, std::streamsize n )
-{
-	return filebuf::xsputn(s,n);
-}
-
-std::streampos zlib_file_filter::seekpos ( std::streampos sp, std::ios_base::openmode which)
-{
-	printf("puppa1\n");
-	abort();
 	return 0;
-}
-
-std::streampos zlib_file_filter::seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which)
-{
-	if(!compressed)
-		return filebuf::seekoff(off,way,which);
-	else
-	{
-		if(off!=0)
-		{
-			printf("puppa2\n");
-			abort();
-		}
-		return offset;
-	}
-}
-
-std::streamsize zlib_file_filter::showmanyc( )
-{
-	printf("puppa3\n");
-	abort();
-	return 0;
-}
-
-void zlib_file_filter::setCompressed()
-{
-	compressed=true;
-	offset=filebuf::seekoff(0,ios_base::cur,ios_base::in);
-	/* allocate inflate state */
-	strm.zalloc = Z_NULL;
-	strm.zfree = Z_NULL;
-	strm.opaque = Z_NULL;
-	strm.avail_in = 0;
-	strm.next_in = Z_NULL;
-	int ret = inflateInit(&strm);
-	if (ret != Z_OK)
-		LOG(LOG_ERROR,"Failed to initialize ZLib");
 }

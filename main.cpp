@@ -67,12 +67,13 @@ int main(int argc, char* argv[])
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();
 
-	zlib_file_filter zf;
-	zf.open(argv[1],ios_base::in);
+	zlib_file_filter zf(argv[1]);
+	//zf.open(argv[1],ios_base::in);
 	istream f(&zf);
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	ParseThread pt(sys,sys,f);
+	pt.wait();
 /*	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 	sys->cur_input_thread=&it;

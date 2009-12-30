@@ -288,6 +288,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\class.h"
+				>
+			</File>
+			<File
 				RelativePath=".\compat.h"
 				>
 			</File>

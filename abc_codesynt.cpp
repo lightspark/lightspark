@@ -551,7 +551,7 @@ llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value*
 {
 	//decrement stack index
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,64), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 
@@ -562,7 +562,7 @@ llvm::Value* method_info::llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value*
 llvm::Value* method_info::llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index)
 {
 	llvm::Value* index=builder.CreateLoad(dynamic_stack_index);
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,64), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,32), 1);
 	llvm::Value* index2=builder.CreateSub(index,constant);
 	llvm::Value* dest=builder.CreateGEP(dynamic_stack,index2);
 	return builder.CreateLoad(dest);
@@ -576,7 +576,7 @@ void method_info::llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& 
 	builder.CreateStore(val,dest);
 
 	//increment stack index
-	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,64), 1);
+	llvm::Constant* constant = llvm::ConstantInt::get(llvm::IntegerType::get(context->vm->llvm_context,32), 1);
 	llvm::Value* index2=builder.CreateAdd(index,constant);
 	builder.CreateStore(index2,dynamic_stack_index);
 }
@@ -771,7 +771,7 @@ llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex
 	std::vector<const llvm::Type*> struct_elems;
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	struct_elems.push_back(ptr_type);
+	struct_elems.push_back(llvm::IntegerType::get(context->vm->llvm_context,32));
 	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(context->vm->llvm_context,struct_elems,true));
 
 	//Initialize LLVM representation of method

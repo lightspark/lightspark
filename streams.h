@@ -22,6 +22,8 @@
 #include <semaphore.h>
 #include "zlib.h"
 
+using namespace std;
+
 class swf_stream
 {
 public:
@@ -56,20 +58,17 @@ private:
 	const int buf_size;
 };
 
-class zlib_file_filter:public std::filebuf, public swf_stream
+class zlib_file_filter:public std::streambuf
 {
 private:
 	bool compressed;
-	int offset;
+	//int offset;
 	z_stream strm;
-	unsigned char buffer[4096];
+	FILE* f;
+	char buffer[4096];
+	char in_buf[1024];
+protected:
+	virtual int underflow();
 public:
-	zlib_file_filter();
-	std::streamsize xsgetn ( char * s, std::streamsize n );
-	std::streamsize xsputn ( const char * s, std::streamsize n );
-	std::streampos seekpos ( std::streampos sp, std::ios_base::openmode which/* = std::ios_base::in | std::ios_base::out*/ );
-	std::streampos seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which);/* = 
-			std::ios_base::in | std::ios_base::out );*/
-	std::streamsize showmanyc( );
-	void setCompressed();
+	zlib_file_filter(const char* file_name);
 };

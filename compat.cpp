@@ -17,7 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#ifndef WIN32
 #include <unistd.h>
+#endif
 
 #include "compat.h"
 

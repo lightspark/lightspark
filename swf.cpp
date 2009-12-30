@@ -66,8 +66,6 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	else if(Signature[0]=='C' && Signature[1]=='W' && Signature[2]=='S')
 	{
 		LOG(LOG_NO_INFO, "Compressed SWF file: Version " << (int)Version << " Length " << FileLength);
-		swf_stream* ss=dynamic_cast<swf_stream*>(in.rdbuf());
-		ss->setCompressed();
 	}
 	else
 	{

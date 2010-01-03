@@ -283,7 +283,7 @@ void ABCVm::registerFunctions()
 	std::vector<const llvm::Type*> struct_elems;
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
-	struct_elems.push_back(int_type);
+	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
 	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,struct_elems,true));
 
 	//newActivation needs both method_info and the context

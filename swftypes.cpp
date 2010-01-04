@@ -616,7 +616,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 		{
 			owner=this;
 			assert(obj->var);
-			return objAndLevel(obj->var,max_level);
+			return objAndLevel(obj->var,level);
 		}
 	}
 	else

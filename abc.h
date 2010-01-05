@@ -376,7 +376,7 @@ private:
 	tiny_string getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
 	void buildClassTraits(ASObject* obj, int class_index);
-	void buildClassAndInjectBase(const std::string& n, IInterface*, arguments* a);
+	void buildClassAndInjectBase(const std::string& n, IInterface*, arguments* a, bool construct_instance);
 	multiname* getMultiname(unsigned int m, call_context* th);
 	static multiname* s_getMultiname(call_context*, ASObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);

@@ -232,6 +232,7 @@ public:
 
 class ASString: public ASObject
 {
+friend class ASQName;
 private:
 	std::string data;
 public:
@@ -252,12 +253,35 @@ public:
 	bool isEqual(ASObject* r);
 };
 
-class Null : public ASObject
+class Null: public ASObject
 {
 public:
 	Null(){type=T_NULL;}
 	tiny_string toString() const;
 	bool isEqual(ASObject* r);
+};
+
+class ASQName: public IInterface
+{
+private:
+	tiny_string uri;
+	tiny_string local_name;
+public:
+	ASQName(){type=T_QNAME;}
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
+
+class Namespace: public IInterface
+{
+friend class ASQName;
+private:
+	tiny_string uri;
+public:
+	Namespace(){type=T_NAMESPACE;}
+	Namespace(const tiny_string& _uri):uri(_uri){type=T_NAMESPACE;}
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
 };
 
 struct data_slot

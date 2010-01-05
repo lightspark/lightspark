@@ -124,7 +124,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Math","",new Math);
 	Global.setVariableByQName("Date","",Class<Date>::getClass());
 	Global.setVariableByQName("RegExp","",Class<RegExp>::getClass());
-	Global.setVariableByQName("QName","",Class<IInterface>::getClass("QName"));
+	Global.setVariableByQName("QName","",Class<ASQName>::getClass());
 
 	Global.setVariableByQName("print","",new Function(print));
 	Global.setVariableByQName("trace","",new Function(print));
@@ -794,13 +794,15 @@ void ABCVm::handleEvent()
 /*				args.incRef();
 				//TODO: check
 				args.set(0,new Null);*/
+				bool construct_instance=false;
 				if(ev->base==sys)
 				{
 					MovieClip* m=static_cast<MovieClip*>(ev->base);
 					m->initialize();
+					construct_instance=true;
 				}
 				LOG(LOG_CALLS,"Binding of " << ev->class_name);
-				last_context->buildClassAndInjectBase(ev->class_name,ev->base,&args);
+				last_context->buildClassAndInjectBase(ev->class_name,ev->base,&args,construct_instance);
 				LOG(LOG_CALLS,"End of binding of " << ev->class_name);
 				break;
 			}
@@ -853,7 +855,7 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	sem_post(&event_queue_mutex);
 }
 
-void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,arguments* args)
+void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,arguments* args, bool construct_instance)
 {
 	LOG(LOG_CALLS,"Setting class name to " << s);
 	ASObject* owner;
@@ -890,17 +892,25 @@ void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,argum
 	obj->acquireInterface(base);
 	__asm__("int $3");*/
 	base->obj=derived_class_tmp;
-/*
-	if(derived_class_tmp->class_index!=-1)
-	{
-		LOG(CALLS,"Building instance traits");
-		buildClassTraits(derived_class_tmp, derived_class_tmp->class_index);
 
-		//TODO: check for root movie
-		LOG(CALLS,"Calling Instance init on " << s);
+	if(construct_instance)
+	{
+		assert(derived_class_tmp->class_index>0);
+
+		ASObject* tmp=new ASObject;
+		base->obj=tmp;
+		tmp->max_level=derived_class_tmp->max_level;
+		tmp->prototype=derived_class_tmp;
+		tmp->actualPrototype=derived_class_tmp;
+		tmp->implementation=base;
+
+		LOG(LOG_CALLS,"Building instance traits");
+		buildClassTraits(base->obj, derived_class_tmp->class_index);
+
+		LOG(LOG_CALLS,"Calling Instance init on " << s);
 		//args->incRef();
-		obj->prototype->constructor->call(obj,args,obj->max_level);
-	}*/
+		derived_class_tmp->constructor->call(base->obj,args,base->obj->max_level);
+	}
 }
 
 inline method_info* ABCContext::get_method(unsigned int m)
@@ -1319,6 +1329,9 @@ ASObject* ABCContext::getConstant(int kind, int index)
 			return new Integer(constant_pool.integer[index]);
 		case 0x06: //Double
 			return new Number(constant_pool.doubles[index]);
+		case 0x08: //Namespace
+			assert(constant_pool.namespaces[index].name);
+			return Class<Namespace>::getInstanceS(false,getString(constant_pool.namespaces[index].name))->obj;
 		case 0x0a: //False
 			return new Boolean(false);
 		case 0x0b: //True
@@ -1341,6 +1354,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 	const tiny_string& name=mname->name_s;
 	const tiny_string& ns=mname->ns[0];
+
 	if(t->kind>>4)
 		cout << "Next slot has flags " << (t->kind>>4) << endl;
 	switch(t->kind&0xf)
@@ -1419,12 +1433,16 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		}
 		case traits_info::Const:
 		{
-			LOG(LOG_CALLS,"Const trait");
-			//TODO: Not so const right now
-			if(deferred_initialization)
-				obj->setVariableByQName(name, ns, new ScriptDefinable(deferred_initialization));
-			else
-				obj->setVariableByQName(name, ns, new Undefined);
+			//The index has to be valid
+			assert(t->vindex);
+
+			ASObject* ret=getConstant(t->vkind,t->vindex);
+			obj->setVariableByQName(name, ns, ret);
+			if(t->slot_id)
+				obj->initSlot(t->slot_id, ret, name, ns);
+
+			multiname* type=getMultiname(t->type_name,NULL);
+			LOG(LOG_CALLS,"Const "<<name<<" type "<<*type);
 			break;
 		}
 		case traits_info::Slot:

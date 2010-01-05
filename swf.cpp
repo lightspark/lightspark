@@ -147,7 +147,7 @@ void* ParseThread::worker(ParseThread* th)
 					sys->currentVm->addEvent(NULL, sync);
 					sync->wait();
 					//Now signal the completion for this root
-					sys->currentVm->addEvent(th->root->loaderInfo,Class<Event>::getInstanceS("init"));
+					sys->currentVm->addEvent(th->root->loaderInfo,Class<Event>::getInstanceS(false,"init"));
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:
@@ -381,7 +381,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 		listeners.equal_range(t);
 
 	for(range.first;range.first!=range.second;range.first++)
-		sys->currentVm->addEvent(range.first->second,Class<Event>::getInstanceS(t));
+		sys->currentVm->addEvent(range.first->second,Class<Event>::getInstanceS(false,t));
 
 	sem_post(&sem_listeners);
 }
@@ -1025,7 +1025,7 @@ void RenderThread::draw()
 {
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
-	compat_msleep(1000/sys->root->frame_rate);
+//	compat_msleep(1000/sys->root->frame_rate);
 	sem_wait(&end_render);
 }
 

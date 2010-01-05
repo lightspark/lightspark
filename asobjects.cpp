@@ -40,6 +40,8 @@ using namespace lightspark;
 extern TLSDATA SystemState* sys;
 
 REGISTER_CLASS_NAME(Array);
+REGISTER_CLASS_NAME2(ASQName,"QName");
+REGISTER_CLASS_NAME(Namespace);
 REGISTER_CLASS_NAME(IInterface);
 REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
@@ -1225,4 +1227,48 @@ IInterface* Class_inherit::getInstance(bool construct)
 	//As we are the prototype we should incRef ourself
 	incRef();
 	return ret;
+}
+
+void ASQName::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(ASQName,_constructor)
+{
+	ASQName* th=static_cast<ASQName*>(obj->implementation);
+	if(args->size()!=2)
+		abort();
+
+	assert(args->at(0)->getObjectType()==T_STRING || args->at(0)->getObjectType()==T_NAMESPACE);
+	assert(args->at(1)->getObjectType()==T_STRING);
+
+	switch(args->at(0)->getObjectType())
+	{
+		case T_STRING:
+		{
+			ASString* s=static_cast<ASString*>(args->at(0));
+			th->uri=s->data;
+			break;
+		}
+		case T_NAMESPACE:
+		{
+			Namespace* n=static_cast<Namespace*>(args->at(0)->implementation);
+			th->uri=n->uri;
+			break;
+		}
+	}
+	th->local_name=args->at(1)->toString();
+}
+
+void Namespace::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(Namespace,_constructor)
+{
+	abort();
 }

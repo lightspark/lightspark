@@ -74,8 +74,9 @@ public:
 		return c->getInstance(construct);
 	}
 	template <typename ARG1>
-	static T* getInstanceS(ARG1 a1)
+	static T* getInstanceS(bool construct, ARG1 a1)
 	{
+		assert(construct==false);
 		Class<T>* c=Class<T>::getClass();
 		ASObject* obj=new ASObject;
 		//TODO: Add interface T to ret

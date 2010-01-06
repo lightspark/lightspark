@@ -100,6 +100,8 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getNumChildren);
+	ASFUNCTION(addChild);
+	ASFUNCTION(addChildAt);
 };
 
 class Shape: public DisplayObject
@@ -195,7 +197,6 @@ public:
 	ASFUNCTION(swapDepths);
 	ASFUNCTION(createEmptyMovieClip);
 	ASFUNCTION(addFrameScript);
-	ASFUNCTION(addChild);
 	ASFUNCTION(stop);
 	ASFUNCTION(_getCurrentFrame);
 	ASFUNCTION(_getTotalFrames);

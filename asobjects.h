@@ -263,6 +263,7 @@ public:
 
 class ASQName: public IInterface
 {
+friend class ABCContext;
 private:
 	tiny_string uri;
 	tiny_string local_name;
@@ -555,6 +556,8 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(exec);
 };
+
+bool isSubclass(ASObject* obj, const Class_base* c);
 
 };
 

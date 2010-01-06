@@ -343,44 +343,6 @@ void MovieClip::addToFrame(DisplayListTag* t)
 	cur_frame.blueprint.push_back(t);
 }
 
-ASFUNCTIONBODY(MovieClip,addChild)
-{
-	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
-	abort();
-/*	if(args->at(0)->parent==th)
-		return args->at(0);
-	else if(args->at(0)->parent!=NULL)
-	{
-		//Remove from current parent list
-		abort();
-	}
-
-	ASObject* cur=args->at(0);
-	if(cur->getObjectType()==T_DEFINABLE)
-		abort();
-	IDisplayListElem* e=NULL;
-	//Look for a renderable object in the super chain
-	abort();
-	do
-	{
-		e=dynamic_cast<IDisplayListElem*>(cur);
-		cur=cur->super;
-	}
-	while(e==NULL && cur!=NULL);
-
-	if(e==NULL)
-	{
-		LOG(ERROR,"Cannot add arg to display list");
-		abort();
-	}
-	args->at(0)->parent=th;
-	th->dynamicDisplayList.push_back(e);
-
-	e->root=th->root;
-	args->at(0)->setVariableByQName("root","",th->root);*/
-	return NULL;
-}
-
 ASFUNCTIONBODY(MovieClip,addFrameScript)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
@@ -476,6 +438,7 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	Sprite::_constructor(obj,NULL);
 	obj->setGetterByQName("currentFrame","",new Function(_getCurrentFrame));
 	obj->setGetterByQName("totalFrames","",new Function(_getTotalFrames));
+	obj->setVariableByQName("stop","",new Function(stop));
 /*	th->setVariableByQName("framesLoaded","",&th->_framesloaded);
 	th->setVariableByQName("totalFrames","",&th->_totalframes);
 	th->setVariableByQName("swapDepths","",new Function(swapDepths));
@@ -483,9 +446,7 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	th->setVariableByQName("lineTo","",new Function(lineTo));
 	th->setVariableByQName("moveTo","",new Function(moveTo));
 	th->setVariableByQName("createEmptyMovieClip","",new Function(createEmptyMovieClip));
-	th->setVariableByQName("addFrameScript","",new Function(addFrameScript));
-	th->setVariableByQName("addChild","",new Function(addChild));
-	th->setVariableByQName("stop","",new Function(stop));*/
+	th->setVariableByQName("addFrameScript","",new Function(addFrameScript));*/
 	return NULL;
 }
 
@@ -737,12 +698,73 @@ ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL);
 	obj->setGetterByQName("numChildren","",new Function(_getNumChildren));
+	obj->setVariableByQName("addChild","",new Function(addChild));
+	obj->setVariableByQName("addChildAt","",new Function(addChildAt));
 	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 {
 	return new Integer(0);;
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+
+	//For now just set the root variable
+	//TODO: Interesting things such as inserting the object in the display list will be done later
+
+	assert(args->size()==2);
+	//Validate object type
+	assert(isSubclass(args->at(0),Class<DisplayObject>::getClass()));
+
+	//Cast to object
+	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+
+	//Set the root of the movie to this container
+	assert(th==sys);
+	assert(d->root==NULL);
+	assert(th->root==sys);
+	d->root=th->root;
+
+/*	if(args->at(0)->parent==th)
+		return args->at(0);
+	else if(args->at(0)->parent!=NULL)
+	{
+		//Remove from current parent list
+		abort();
+	}
+
+	ASObject* cur=args->at(0);
+	if(cur->getObjectType()==T_DEFINABLE)
+		abort();
+
+	if(e==NULL)
+	{
+		LOG(ERROR,"Cannot add arg to display list");
+		abort();
+	}
+	args->at(0)->parent=th;
+	th->dynamicDisplayList.push_back(e);*/
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,addChild)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	assert(args->size()==1);
+	//Validate object type
+	assert(isSubclass(args->at(0),Class<DisplayObject>::getClass()));
+
+	//Cast to object
+	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+
+	//Set the root of the movie to this container
+	assert(d->root==NULL);
+	assert(th->root==sys);
+	d->root=th->root;
 }
 
 void Shape::sinit(Class_base* c)

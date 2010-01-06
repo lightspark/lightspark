@@ -397,6 +397,12 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 					ret->name_d=o->val;
 					ret->name_type=multiname::NAME_NUMBER;
 				}
+				else if(rt1->getObjectType()==T_QNAME)
+				{
+					ASQName* qname=static_cast<ASQName*>(rt1->implementation);
+					ret->name_s=qname->local_name;
+					ret->name_type=multiname::NAME_STRING;
+				}
 				else
 				{
 					ret->name_s=rt1->toString();
@@ -456,6 +462,12 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 					Number* o=static_cast<Number*>(rt1);
 					ret->name_d=o->val;
 					ret->name_type=multiname::NAME_NUMBER;
+				}
+				else if(rt1->getObjectType()==T_QNAME)
+				{
+					ASQName* qname=static_cast<ASQName*>(rt1->implementation);
+					ret->name_s=qname->local_name;
+					ret->name_type=multiname::NAME_STRING;
 				}
 				else
 				{

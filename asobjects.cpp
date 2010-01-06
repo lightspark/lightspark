@@ -1272,3 +1272,15 @@ ASFUNCTIONBODY(Namespace,_constructor)
 {
 	abort();
 }
+
+bool lightspark::isSubclass(ASObject* obj, const Class_base* c)
+{
+	Class_base* cur=obj->prototype;
+	while(cur)
+	{
+		if(cur==c)
+			return true;
+		cur=cur->super;
+	}
+	return false;
+}

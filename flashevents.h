@@ -83,6 +83,14 @@ public:
 	static void sinit(Class_base*);
 };
 
+class TimerEvent: public Event
+{
+public:
+	TimerEvent():Event("DEPRECATED"){}
+	TimerEvent(const tiny_string& t):Event(t){};
+	static void sinit(Class_base*);
+};
+
 class MouseEvent: public Event
 {
 public:

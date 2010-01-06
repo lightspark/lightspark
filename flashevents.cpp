@@ -33,6 +33,7 @@ extern TLSDATA SystemState* sys;
 REGISTER_CLASS_NAME(EventDispatcher);
 REGISTER_CLASS_NAME(Event);
 REGISTER_CLASS_NAME(MouseEvent);
+REGISTER_CLASS_NAME(TimerEvent);
 REGISTER_CLASS_NAME(ProgressEvent);
 REGISTER_CLASS_NAME(IOErrorEvent);
 
@@ -83,13 +84,19 @@ MouseEvent::MouseEvent():Event("mouseEvent")
 //	setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
 }
 
-ProgressEvent::ProgressEvent():Event("mouseEvent")
+ProgressEvent::ProgressEvent():Event("progressEvent")
 {
 }
 
 void ProgressEvent::sinit(Class_base* c)
 {
 	c->setVariableByQName("PROGRESS","",new ASString("progress"));
+}
+
+void TimerEvent::sinit(Class_base* c)
+{
+	c->setVariableByQName("TIMER","",new ASString("timer"));
+	c->setVariableByQName("TIMER_COMPLETE","",new ASString("timerComplete"));
 }
 
 void MouseEvent::sinit(Class_base* c)

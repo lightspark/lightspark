@@ -21,6 +21,8 @@
 #define _FLASH_UTILS_H
 
 #include "swftypes.h"
+#include "flashevents.h"
+#include "thread_pool.h"
 
 namespace lightspark
 {
@@ -34,6 +36,19 @@ protected:
 public:
 	ByteArray();
 	static void sinit(Class_base* c);
+};
+
+class Timer: public EventDispatcher, public IThreadJob
+{
+private:
+	void execute();
+protected:
+	uint32_t delay;
+public:
+	Timer():delay(0){};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(start);
 };
 
 ASObject* getQualifiedClassName(ASObject* , arguments* args);

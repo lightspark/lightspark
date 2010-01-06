@@ -17,14 +17,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "abc.h"
 #include "flashutils.h"
 #include "asobjects.h"
 #include "class.h"
+#include "compat.h"
 
 using namespace std;
 using namespace lightspark;
 
 REGISTER_CLASS_NAME(ByteArray);
+REGISTER_CLASS_NAME(Timer);
 
 ByteArray::ByteArray():bytes(NULL),len(0)
 {
@@ -32,6 +35,36 @@ ByteArray::ByteArray():bytes(NULL),len(0)
 
 void ByteArray::sinit(Class_base* c)
 {
+}
+
+void Timer::execute()
+{
+	compat_msleep(delay);
+	sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS(false,"timer"));
+}
+
+void Timer::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(Timer,_constructor)
+{
+	EventDispatcher::_constructor(obj,NULL);
+	Timer* th=static_cast<Timer*>(obj->implementation);
+	obj->setVariableByQName("start","",new Function(start));
+
+	assert(args->size()==1);
+
+	//Set only the delay for now
+	th->delay=args->at(0)->toInt();
+}
+
+ASFUNCTIONBODY(Timer,start)
+{
+	Timer* th=static_cast<Timer*>(obj->implementation);
+	sys->cur_thread_pool->addJob(th);
 }
 
 ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)

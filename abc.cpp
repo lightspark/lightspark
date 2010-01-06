@@ -153,7 +153,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
 	Global.setVariableByQName("Dictionary","flash.utils",Class<IInterface>::getClass("Dictionary"));
 	Global.setVariableByQName("Proxy","flash.utils",Class<IInterface>::getClass("Proxy"));
-	Global.setVariableByQName("Timer","flash.utils",Class<IInterface>::getClass("Timer"));
+	Global.setVariableByQName("Timer","flash.utils",Class<Timer>::getClass());
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
 
 	Global.setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
@@ -165,6 +165,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Event","flash.events",Class<Event>::getClass());
 	Global.setVariableByQName("MouseEvent","flash.events",Class<MouseEvent>::getClass());
 	Global.setVariableByQName("ProgressEvent","flash.events",Class<ProgressEvent>::getClass());
+	Global.setVariableByQName("TimerEvent","flash.events",Class<TimerEvent>::getClass());
 	Global.setVariableByQName("IOErrorEvent","flash.events",Class<IOErrorEvent>::getClass());
 	Global.setVariableByQName("SecurityErrorEvent","flash.events",Class<FakeEvent>::getClass("SecurityErrorEvent"));
 	Global.setVariableByQName("TextEvent","flash.events",Class<FakeEvent>::getClass("TextEvent"));

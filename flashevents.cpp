@@ -160,12 +160,34 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		LOG(LOG_ERROR,"Type mismatch");
 		abort();
 	}
-	if(th==NULL)
-		return NULL;
-	sys->cur_input_thread->addListener(args->at(0)->toString().raw_buf(),th);
+//	sys->cur_input_thread->addListener(args->at(0)->toString(),th);
 
-	th->handlers.insert(make_pair(args->at(0)->toString().raw_buf(),args->at(1)->toFunction()));
-	sys->events_name.push_back(args->at(0)->toString().raw_buf());
+	th->handlers.insert(make_pair(args->at(0)->toString(),args->at(1)->toFunction()));
+	sys->events_name.push_back(args->at(0)->toString());
+}
+
+ASFUNCTIONBODY(EventDispatcher,removeEventListener)
+{
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
+	if(args->at(0)->getObjectType()!=T_STRING || args->at(1)->getObjectType()!=T_FUNCTION)
+	{
+		LOG(LOG_ERROR,"Type mismatch");
+		abort();
+	}
+//	sys->cur_input_thread->addListener(args->at(0)->toString(),th);
+
+	map<tiny_string, IFunction*>::iterator h=th->handlers.find(args->at(0)->toString());
+	if(h==th->handlers.end())
+	{
+		LOG(LOG_CALLS,"Event not found");
+		return NULL;
+	}
+
+	//SERIOUS_TODO: functions should be compared based on their method body
+	//assert(h->second==args->at(1)->toFunction());
+
+	th->handlers.erase(h);
+	return NULL;
 }
 
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
@@ -186,8 +208,9 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 {
 	cout << "EventDispatcher constructor" << endl;
 	obj->setVariableByQName("addEventListener","",new Function(addEventListener));
-	obj->setVariableByQName("addEventListener","flash.events:IEventDispatcher",new Function(addEventListener));
+	obj->setVariableByQName("removeEventListener","",new Function(removeEventListener));
 	//MEGAHACK!!! should implement interface support
+	obj->setVariableByQName("addEventListener","flash.events:IEventDispatcher",new Function(addEventListener));
 	obj->setVariableByQName("dispatchEvent","",new Function(dispatchEvent));
 	return NULL;
 }

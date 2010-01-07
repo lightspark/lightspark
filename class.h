@@ -51,6 +51,7 @@ class Class: public Class_base
 {
 private:
 	Class(const tiny_string& name):Class_base(name){}
+	//This function is instantiated always because of inheritance
 	T* getInstance(bool construct)
 	{
 		ASObject* obj=new ASObject;

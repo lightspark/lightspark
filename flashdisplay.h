@@ -117,8 +117,11 @@ public:
 
 class LoaderInfo: public EventDispatcher
 {
+private:
+	uint32_t bytesLoaded;
+	uint32_t bytesTotal;
 public:
-	LoaderInfo()
+	LoaderInfo():bytesLoaded(100),bytesTotal(100)
 	{
 	}
 	static void sinit(Class_base* c);
@@ -126,6 +129,8 @@ public:
 	ASFUNCTION(addEventListener);
 	ASFUNCTION(_getLoaderUrl);
 	ASFUNCTION(_getUrl);
+	ASFUNCTION(_getBytesLoaded);
+	ASFUNCTION(_getBytesTotal);
 };
 
 class Loader: public IThreadJob, public DisplayObjectContainer
@@ -174,10 +179,11 @@ public:
 
 class MovieClip: public Sprite
 {
+//SERIOUS_TODO: add syncrhonization
 friend class ParseThread;
 protected:
-	int _framesloaded;
-	int totalFrames;
+	uint32_t framesLoaded;
+	uint32_t totalFrames;
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	Frame cur_frame;
@@ -198,8 +204,10 @@ public:
 	ASFUNCTION(createEmptyMovieClip);
 	ASFUNCTION(addFrameScript);
 	ASFUNCTION(stop);
+	ASFUNCTION(nextFrame);
 	ASFUNCTION(_getCurrentFrame);
 	ASFUNCTION(_getTotalFrames);
+	ASFUNCTION(_getFramesLoaded);
 
 	virtual void addToFrame(DisplayListTag* r);
 

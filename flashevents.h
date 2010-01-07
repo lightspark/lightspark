@@ -114,6 +114,7 @@ public:
 
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
+	ASFUNCTION(removeEventListener);
 	ASFUNCTION(dispatchEvent);
 };
 

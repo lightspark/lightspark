@@ -1069,7 +1069,7 @@ void RootMovieClip::commitFrame()
 	sem_wait(&sem_frames);
 	frames.push_back(cur_frame);
 	cur_frame=Frame(&dynamicDisplayList);
-	_framesloaded=frames.size();
+	framesLoaded=frames.size();
 	sem_post(&new_frame);
 	sem_post(&sem_frames);
 }

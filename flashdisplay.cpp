@@ -63,6 +63,9 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	obj->setVariableByQName("parameters","",params);
 	obj->setGetterByQName("loaderURL","",new Function(_getLoaderUrl));
 	obj->setGetterByQName("url","",new Function(_getUrl));
+	obj->setGetterByQName("bytesLoaded","",new Function(_getBytesLoaded));
+	obj->setGetterByQName("bytesTotal","",new Function(_getBytesTotal));
+
 	params->setVariableByQName("length_seconds","",new ASString("558"));
 	params->setVariableByQName("cr","",new ASString("US"));
 	params->setVariableByQName("plid","",new ASString("AAR2WiuKNxt32IdW"));
@@ -155,6 +158,18 @@ ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
 ASFUNCTIONBODY(LoaderInfo,_getUrl)
 {
 	return new ASString("www.youtube.com/watch.swf");
+}
+
+ASFUNCTIONBODY(LoaderInfo,_getBytesLoaded)
+{
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	return abstract_i(th->bytesLoaded);
+}
+
+ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
+{
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	return abstract_i(th->bytesTotal);
 }
 
 ASFUNCTIONBODY(Loader,_constructor)
@@ -321,12 +336,8 @@ void MovieClip::sinit(Class_base* c)
 	c->super=Class<Sprite>::getClass();
 }
 
-MovieClip::MovieClip():_framesloaded(0),totalFrames(1),cur_frame(&dynamicDisplayList),initialized(false)
+MovieClip::MovieClip():framesLoaded(0),totalFrames(1),cur_frame(&dynamicDisplayList),initialized(false)
 {
-	//class_name="MovieClip";
-/*	if(constructor)
-		constructor->decRef();
-	constructor=new Function(_constructor);*/
 }
 
 void MovieClip::addToFrame(DisplayListTag* t)
@@ -418,6 +429,22 @@ ASFUNCTIONBODY(MovieClip,stop)
 	return NULL;
 }
 
+ASFUNCTIONBODY(MovieClip,nextFrame)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	//Quite not right, for the duration of this event at least the frame should be constant
+	assert(th->state.FP<th->state.max_FP);
+	th->state.FP++;
+	return NULL;
+}
+
+ASFUNCTIONBODY(MovieClip,_getFramesLoaded)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	//currentFrame is 1-based
+	return new Integer(th->framesLoaded);
+}
+
 ASFUNCTIONBODY(MovieClip,_getTotalFrames)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
@@ -438,10 +465,10 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	Sprite::_constructor(obj,NULL);
 	obj->setGetterByQName("currentFrame","",new Function(_getCurrentFrame));
 	obj->setGetterByQName("totalFrames","",new Function(_getTotalFrames));
+	obj->setGetterByQName("framesLoaded","",new Function(_getFramesLoaded));
 	obj->setVariableByQName("stop","",new Function(stop));
-/*	th->setVariableByQName("framesLoaded","",&th->_framesloaded);
-	th->setVariableByQName("totalFrames","",&th->_totalframes);
-	th->setVariableByQName("swapDepths","",new Function(swapDepths));
+	obj->setVariableByQName("nextFrame","",new Function(nextFrame));
+/*	th->setVariableByQName("swapDepths","",new Function(swapDepths));
 	th->setVariableByQName("lineStyle","",new Function(lineStyle));
 	th->setVariableByQName("lineTo","",new Function(lineTo));
 	th->setVariableByQName("moveTo","",new Function(moveTo));

@@ -1468,7 +1468,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					obj->initSlot(t->slot_id, ret, name, ns);
 
 				multiname* type=getMultiname(t->type_name,NULL);
-				LOG(LOG_CALLS,"Slot "<<name<<" type "<<*type);
+				LOG(LOG_CALLS,"Slot " << t->slot_id << ' ' <<name<<" type "<<*type);
 				break;
 			}
 			else

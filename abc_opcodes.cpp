@@ -487,11 +487,9 @@ bool ABCVm::ifLT_io(intptr_t val2, ASObject* obj1)
 
 bool ABCVm::ifNE(ASObject* obj1, ASObject* obj2)
 {
-	LOG(LOG_CALLS,"ifNE");
-
 	//Real comparision demanded to object
 	bool ret=!(obj1->isEqual(obj2));
-//	cout << "compare " << ret << endl;
+	LOG(LOG_CALLS,"ifNE (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -500,9 +498,8 @@ bool ABCVm::ifNE(ASObject* obj1, ASObject* obj2)
 
 bool ABCVm::ifNE_oi(ASObject* obj1, intptr_t val2)
 {
-	LOG(LOG_CALLS,"ifNE");
-
 	bool ret=obj1->toInt()!=val2;
+	LOG(LOG_CALLS,"ifNE (" << ((ret)?"taken)":"not taken)"));
 
 	obj1->decRef();
 	return ret;
@@ -1013,10 +1010,10 @@ bool ABCVm::ifGT(ASObject* obj2, ASObject* obj1)
 
 bool ABCVm::ifNGT(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifNGT");
 
 	//Real comparision demanded to object
 	bool ret= !(obj1->isGreater(obj2));
+	LOG(LOG_CALLS,"ifNGT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -1572,9 +1569,9 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 
 bool ABCVm::ifFalse(ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifFalse");
-
 	bool ret=!Boolean_concrete(obj1);
+	LOG(LOG_CALLS,"ifFalse (" << ((ret)?"taken":"not taken") << ')');
+
 	obj1->decRef();
 	return ret;
 }

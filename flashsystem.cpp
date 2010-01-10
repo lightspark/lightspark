@@ -49,14 +49,35 @@ ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
 	return Class<ApplicationDomain>::getInstanceS(true)->obj;
 }
 
+void ApplicationDomain::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns)
+{
+	//Ok, let's split our string into namespace and name part
+	for(int i=tmp.len()-1;i>0;i--)
+	{
+		if(tmp[i]==':')
+		{
+			assert(tmp[i-1]==':');
+			ns=tmp.substr(0,i-1);
+			name=tmp.substr(i+1,tmp.len());
+			return;
+		}
+	}
+	//No double colons in the string
+	name=tmp;
+	ns="";
+}
+
 ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 {
-	//TODO: support namespace with colons ( :: ) lookup
 	assert(args && args->size()==1);
+	const tiny_string& tmp=args->at(0)->toString();
+	tiny_string name,ns;
+
+	stringToQName(tmp,name,ns);
+
 	ASObject* owner;
-	const tiny_string& name=args->at(0)->toString();
-	LOG(LOG_CALLS,"Looking for definition of " << name);
-	objAndLevel o=sys->currentVm->last_context->Global->getVariableByQName(name,"",owner);
+	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
+	objAndLevel o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);
 	if(owner==NULL)
 		return abstract_b(false);
 	else
@@ -67,25 +88,28 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 			LOG(LOG_CALLS,"We got an object not yet valid");
 			Definable* d=static_cast<Definable*>(o.obj);
 			d->define(sys->currentVm->last_context->Global);
-			o=sys->currentVm->last_context->Global->getVariableByQName(name,"",owner);
+			o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);
 		}
 
 		if(o.obj->getObjectType()!=T_CLASS)
 			return abstract_b(false);
 
-		LOG(LOG_CALLS,"Found definition for " << name);
+		LOG(LOG_CALLS,"Found definition for " << ns << " :: " << name);
 		return abstract_b(true);
 	}
 }
 
 ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 {
-	//TODO: support namespace with colons ( :: ) lookup
 	assert(args && args->size()==1);
+	const tiny_string& tmp=args->at(0)->toString();
+	tiny_string name,ns;
+
+	stringToQName(tmp,name,ns);
+
 	ASObject* owner;
-	const tiny_string& name=args->at(0)->toString();
-	LOG(LOG_CALLS,"Looking for definition of " << name);
-	objAndLevel o=sys->currentVm->last_context->Global->getVariableByQName(name,"",owner);
+	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
+	objAndLevel o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);
 	assert(owner);
 
 	//Check if the object has to be defined
@@ -95,11 +119,11 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 /*		LOG(LOG_CALLS,"We got an object not yet valid");
 		Definable* d=static_cast<Definable*>(o.obj);
 		d->define(sys->currentVm->last_context->Global);
-		o=sys->currentVm->last_context->Global->getVariableByQName(name,"",owner);*/
+		o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);*/
 	}
 
 	assert(o.obj->getObjectType()==T_CLASS);
 
-	LOG(LOG_CALLS,"Getting definition for " << name);
+	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
 	return o.obj;
 }

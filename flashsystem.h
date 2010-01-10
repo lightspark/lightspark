@@ -33,6 +33,8 @@ public:
 
 class ApplicationDomain: public IInterface
 {
+private:
+	static void stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns);
 public:
 	ApplicationDomain(){}
 	static void sinit(Class_base* c);

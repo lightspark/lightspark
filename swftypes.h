@@ -196,7 +196,9 @@ public:
 	tiny_string substr(int start, int end) const
 	{
 		tiny_string ret;
+		assert((end-start+1)<TS_SIZE);
 		strncpy(ret.buf,buf+start,end-start);
+		ret.buf[end-start]=0;
 		return ret;
 	}
 };

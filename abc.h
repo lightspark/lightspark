@@ -239,8 +239,7 @@ private:
 	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
 	void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val,
 			llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
-	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, bool jitted,
-			std::vector<stack_entry>& static_stack, 
+	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, 
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 	void syncLocals(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder,
 			const std::vector<stack_entry>& static_locals,llvm::Value* locals,

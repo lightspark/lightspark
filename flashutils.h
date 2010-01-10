@@ -44,11 +44,13 @@ private:
 	void execute();
 protected:
 	uint32_t delay;
+	bool running;
 public:
-	Timer():delay(0){};
+	Timer():delay(0),running(false){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(start);
+	ASFUNCTION(reset);
 };
 
 ASObject* getQualifiedClassName(ASObject* , arguments* args);

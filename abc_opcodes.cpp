@@ -244,7 +244,16 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	objAndLevel o=obj->getVariableByMultiname(*name,owner);
 	if(owner)
 	{
-		//If o is already a function call it, otherwise find the Call method
+		//Run the deferred initialization if needed
+		if(o.obj->getObjectType()==T_DEFINABLE)
+		{
+			LOG(LOG_CALLS,"We got a function not yet valid");
+			Definable* d=static_cast<Definable*>(o.obj);
+			d->define(obj);
+			o=obj->getVariableByMultiname(*name,owner);
+		}
+
+		//If o is already a function call it
 		if(o.obj->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
@@ -258,37 +267,6 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function on obj " << ((obj->prototype)?obj->prototype->class_name:"Object"));
 			th->runtime_stack_push(new Undefined);
-		}
-		else if(o.obj->getObjectType()==T_DEFINABLE)
-		{
-			LOG(LOG_CALLS,"We got a function not yet valid");
-			Definable* d=static_cast<Definable*>(o.obj);
-			d->define(obj);
-			o=obj->getVariableByMultiname(*name,owner);
-			if(o.obj->getObjectType()==T_OBJECT)
-			{
-				//Could be a interface upcasting, return the argument
-				LOG(LOG_NOT_IMPLEMENTED,"Interface upcating?, return arg");
-				if(m!=1)
-					abort();
-				th->runtime_stack_push(args[0]);
-			}
-			else
-			{
-				IFunction* f=o.obj->toFunction();
-				if(f)
-				{
-					owner->incRef();
-					ASObject* ret=f->fast_call(owner,args,m,o.level);
-					th->runtime_stack_push(ret);
-				}
-				else
-				{
-					LOG(LOG_NOT_IMPLEMENTED,"No such function");
-					th->runtime_stack_push(new Undefined);
-					//abort();
-				}
-			}
 		}
 		else
 		{
@@ -681,9 +659,9 @@ void ABCVm::jump(call_context* th, int offset)
 
 bool ABCVm::ifTrue(ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifTrue");
-
 	bool ret=Boolean_concrete(obj1);
+	LOG(LOG_CALLS,"ifTrue (" << ((ret)?"taken)":"not taken)"));
+
 	obj1->decRef();
 	return ret;
 }
@@ -1282,7 +1260,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 		}
 		else
 		{
-			LOG(LOG_CALLS, "LOG_NOT_IMPLEMENTED found, pushing Undefined" );
+			LOG(LOG_CALLS, "NOT found, pushing Undefined" );
 			th->runtime_stack_push(new Undefined);
 		}
 	}

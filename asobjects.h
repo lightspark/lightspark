@@ -120,6 +120,18 @@ public:
 	void addImplementedInterface(const multiname& i);
 };
 
+class Class_object: public Class_base
+{
+private:
+	Class_object():Class_base("Class"){};
+public:
+	IInterface* getInstance(bool construct=false)
+	{
+		abort();
+	}
+	static Class_object* getClass();
+};
+
 class IFunction: public ASObject
 {
 public:

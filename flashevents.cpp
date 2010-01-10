@@ -84,7 +84,7 @@ MouseEvent::MouseEvent():Event("mouseEvent")
 //	setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
 }
 
-ProgressEvent::ProgressEvent():Event("progressEvent")
+ProgressEvent::ProgressEvent():Event("progress")
 {
 }
 

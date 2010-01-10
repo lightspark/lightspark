@@ -1229,6 +1229,21 @@ IInterface* Class_inherit::getInstance(bool construct)
 	return ret;
 }
 
+Class_object* Class_object::getClass()
+{
+	//We check if we are registered in the class map
+	//if not we register ourselves (see also Class<T>::getClass)
+	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Class");
+	if(it==sys->classes.end()) //This class is not yet in the map, create it
+	{
+		Class_object* ret=new Class_object();
+		sys->classes.insert(std::make_pair("Class",ret));
+		return ret;
+	}
+	else
+		return static_cast<Class_object*>(it->second);
+}
+
 void ASQName::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);

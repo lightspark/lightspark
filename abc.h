@@ -385,8 +385,8 @@ private:
 	int getMultinameRTData(int n) const;
 	ASObject* getConstant(int kind, int index);
 	ABCVm* vm;
-	ASObject* Global;
 public:
+	ASObject* Global;
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -416,6 +416,8 @@ friend int main(int argc, char* argv[]);
 private:
 	SystemState* m_sys;
 	pthread_t t;
+
+	//This object is referenced through the pointer is ABCContext
 	ASObject Global;
 	llvm::Module* module;
 
@@ -578,11 +580,11 @@ private:
 	bool shutdown;
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
-	ABCContext* last_context;
 
 	Manager* int_manager;
 	Manager* number_manager;
 public:
+	ABCContext* last_context;
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
 	llvm::LLVMContext llvm_context;

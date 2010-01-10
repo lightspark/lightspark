@@ -18,11 +18,88 @@
 **************************************************************************/
 
 #include "flashsystem.h"
+#include "abc.h"
+#include "class.h"
 
 using namespace lightspark;
+
+REGISTER_CLASS_NAME(ApplicationDomain);
 
 Capabilities::Capabilities()
 {
 	setVariableByQName("playerType","",new ASString("AVMPlus"));
 	setVariableByQName("version","",new ASString("UNIX 10,0,0,0"));
+}
+
+void ApplicationDomain::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->setGetterByQName("currentDomain","",new Function(_getCurrentDomain));
+}
+
+ASFUNCTIONBODY(ApplicationDomain,_constructor)
+{
+	obj->setVariableByQName("hasDefinition","",new Function(hasDefinition));
+	obj->setVariableByQName("getDefinition","",new Function(getDefinition));
+}
+
+ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
+{
+	return Class<ApplicationDomain>::getInstanceS(true)->obj;
+}
+
+ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
+{
+	//TODO: support namespace with colons ( :: ) lookup
+	assert(args && args->size()==1);
+	ASObject* owner;
+	const tiny_string& name=args->at(0)->toString();
+	LOG(LOG_CALLS,"Looking for definition of " << name);
+	objAndLevel o=sys->currentVm->last_context->Global->getVariableByQName(name,"",owner);
+	if(owner==NULL)
+		return abstract_b(false);
+	else
+	{
+		//Check if the object has to be defined
+		if(o.obj->getObjectType()==T_DEFINABLE)
+		{
+			LOG(LOG_CALLS,"We got an object not yet valid");
+			Definable* d=static_cast<Definable*>(o.obj);
+			d->define(sys->currentVm->last_context->Global);
+			o=sys->currentVm->last_context->Global->getVariableByQName(name,"",owner);
+		}
+
+		if(o.obj->getObjectType()!=T_CLASS)
+			return abstract_b(false);
+
+		LOG(LOG_CALLS,"Found definition for " << name);
+		return abstract_b(true);
+	}
+}
+
+ASFUNCTIONBODY(ApplicationDomain,getDefinition)
+{
+	//TODO: support namespace with colons ( :: ) lookup
+	assert(args && args->size()==1);
+	ASObject* owner;
+	const tiny_string& name=args->at(0)->toString();
+	LOG(LOG_CALLS,"Looking for definition of " << name);
+	objAndLevel o=sys->currentVm->last_context->Global->getVariableByQName(name,"",owner);
+	assert(owner);
+
+	//Check if the object has to be defined
+	if(o.obj->getObjectType()==T_DEFINABLE)
+	{
+		abort();
+/*		LOG(LOG_CALLS,"We got an object not yet valid");
+		Definable* d=static_cast<Definable*>(o.obj);
+		d->define(sys->currentVm->last_context->Global);
+		o=sys->currentVm->last_context->Global->getVariableByQName(name,"",owner);*/
+	}
+
+	assert(o.obj->getObjectType()==T_CLASS);
+
+	LOG(LOG_CALLS,"Getting definition for " << name);
+	return o.obj;
 }

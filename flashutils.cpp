@@ -39,8 +39,12 @@ void ByteArray::sinit(Class_base* c)
 
 void Timer::execute()
 {
-	compat_msleep(delay);
-	sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS(false,"timer"));
+	while(running)
+	{
+		compat_msleep(delay);
+		if(running)
+			sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS(false,"timer"));
+	}
 }
 
 void Timer::sinit(Class_base* c)
@@ -54,6 +58,7 @@ ASFUNCTIONBODY(Timer,_constructor)
 	EventDispatcher::_constructor(obj,NULL);
 	Timer* th=static_cast<Timer*>(obj->implementation);
 	obj->setVariableByQName("start","",new Function(start));
+	obj->setVariableByQName("reset","",new Function(reset));
 
 	assert(args->size()==1);
 
@@ -64,7 +69,14 @@ ASFUNCTIONBODY(Timer,_constructor)
 ASFUNCTIONBODY(Timer,start)
 {
 	Timer* th=static_cast<Timer*>(obj->implementation);
+	th->running=true;
 	sys->cur_thread_pool->addJob(th);
+}
+
+ASFUNCTIONBODY(Timer,reset)
+{
+	Timer* th=static_cast<Timer*>(obj->implementation);
+	th->running=false;
 }
 
 ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)

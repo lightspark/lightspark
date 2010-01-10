@@ -116,6 +116,7 @@ void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
 	Global.setVariableByQName("Object","",Class<IInterface>::getClass());
+	Global.setVariableByQName("Class","",Class_object::getClass());
 	Global.setVariableByQName("Number","",new Number(0.0));
 	Global.setVariableByQName("String","",new ASString);
 	Global.setVariableByQName("Array","",Class<Array>::getClass());
@@ -147,7 +148,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject);
 
-	Global.setVariableByQName("ApplicationDomain","flash.system",Class<IInterface>::getClass("ApplicationDomain"));
+	Global.setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());
 	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
 
 	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
@@ -237,6 +238,7 @@ void ABCVm::registerClasses()
 	}
 }*/
 
+//This function is used at compile time
 int ABCContext::getMultinameRTData(int mi) const
 {
 	if(mi==0)
@@ -249,6 +251,7 @@ int ABCContext::getMultinameRTData(int mi) const
 		case 0x09:
 		case 0x0e:
 			return 0;
+		case 0x0f:
 		case 0x1b:
 			return 1;
 /*		case 0x0d:
@@ -270,7 +273,7 @@ int ABCContext::getMultinameRTData(int mi) const
 			LOG(CALLS, "MultinameLA");
 			break;*/
 		default:
-			LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+			LOG(LOG_ERROR,"getMultinameRTData not yet implemented for this kind " << hex << m->kind);
 			abort();
 	}
 }
@@ -958,6 +961,11 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 	else if(obj->getObjectType()==T_OBJECT)
 	{
 		LOG(LOG_CALLS,"Object to bool");
+		return true;
+	}
+	else if(obj->getObjectType()==T_CLASS)
+	{
+		LOG(LOG_CALLS,"Class to bool");
 		return true;
 	}
 	else if(obj->getObjectType()==T_UNDEFINED)

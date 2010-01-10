@@ -54,6 +54,7 @@ public:
 };
 
 ASObject* getQualifiedClassName(ASObject* , arguments* args);
+ASObject* getDefinitionByName(ASObject* , arguments* args);
 
 };
 

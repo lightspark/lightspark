@@ -362,7 +362,7 @@ public:
 		return slots_vars[n-1]->second.second.var;
 	}
 	void setSlot(int n,ASObject* o);
-	void initSlot(int n,int level, ASObject* o, const tiny_string& name, const tiny_string& ns);
+	void initSlot(int n,int level, const tiny_string& name, const tiny_string& ns);
 	ASObject* getVariableByString(const std::string& name);
 	void dumpVariables();
 	int size()
@@ -469,9 +469,9 @@ public:
 	{
 		Variables.setSlot(n,o);
 	}
-	virtual void initSlot(int n,ASObject* o, const tiny_string& name, const tiny_string& ns)
+	virtual void initSlot(int n,const tiny_string& name, const tiny_string& ns)
 	{
-		Variables.initSlot(n,max_level,o,name,ns);
+		Variables.initSlot(n,max_level,name,ns);
 	}
 	virtual int numVariables();
 	tiny_string getNameAt(int i)
@@ -1167,6 +1167,8 @@ public:
 ASObject* abstract_i(intptr_t i);
 ASObject* abstract_b(bool i);
 ASObject* abstract_d(number_t i);
+
+void stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns);
 
 std::ostream& operator<<(std::ostream& s, const RECT& r);
 std::ostream& operator<<(std::ostream& s, const RGB& r);

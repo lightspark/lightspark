@@ -935,7 +935,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x03:
 				{
 					//throw
+
+					//see also returnvoid
+					last_is_branch=true;
 					static_stack_types.clear();
+					for(int i=0;i<body->local_count;i++)
+					{
+						if(cur_block->locals_used[i]==false)
+							cur_block->locals_reset[i]=true;
+					}
 					break;
 				}
 				case 0x04:
@@ -1481,11 +1489,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					break;
 				}
+				case 0x70:
 				case 0x73:
 				case 0x74:
 				case 0x75:
 				case 0x76:
 				{
+					//convert_s
 					//convert_i
 					//convert_u
 					//convert_d
@@ -2139,6 +2149,22 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				//syncLocals(ex,Builder,static_locals,locals,cur_block->locals,*cur_block);
 				Builder.CreateCall(ex->FindFunctionNamed("throw"), context);
+				//Right now we set up like we do for retunrvoid
+				last_is_branch=true;
+				constant = llvm::ConstantInt::get(int_type, NULL);
+				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
+				for(int i=0;i<static_locals.size();i++)
+				{
+					if(static_locals[i].second==STACK_OBJECT)
+						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_locals[i].first);
+					static_locals[i].second=STACK_NONE;
+				}
+				for(int i=0;i<static_stack.size();i++)
+				{
+					if(static_stack[i].second==STACK_OBJECT)
+						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_stack[i].first);
+				}
+				Builder.CreateRet(value);
 				break;
 			}
 			case 0x04:
@@ -3516,6 +3542,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					abort();
 
 				Builder.CreateCall3(ex->FindFunctionNamed("setSlot"), v1.first, v2.first, constant);
+				break;
+			}
+			case 0x70:
+			{
+				//convert_s
+				LOG(LOG_TRACE, "synt convert_s" );
 				break;
 			}
 			case 0x73:

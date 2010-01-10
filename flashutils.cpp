@@ -86,3 +86,30 @@ ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)
 	return new ASString(args->at(0)->prototype->class_name);
 }
 
+ASFUNCTIONBODY(lightspark,getDefinitionByName)
+{
+	assert(args && args->size()==1);
+	const tiny_string& tmp=args->at(0)->toString();
+	tiny_string name,ns;
+
+	stringToQName(tmp,name,ns);
+
+	ASObject* owner;
+	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
+	objAndLevel o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);
+	assert(owner);
+
+	//Check if the object has to be defined
+	if(o.obj->getObjectType()==T_DEFINABLE)
+	{
+		LOG(LOG_CALLS,"We got an object not yet valid");
+		Definable* d=static_cast<Definable*>(o.obj);
+		d->define(sys->currentVm->last_context->Global);
+		o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);
+	}
+
+	assert(o.obj->getObjectType()==T_CLASS);
+
+	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
+	return o.obj;
+}

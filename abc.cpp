@@ -156,6 +156,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Proxy","flash.utils",Class<IInterface>::getClass("Proxy"));
 	Global.setVariableByQName("Timer","flash.utils",Class<Timer>::getClass());
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
+	Global.setVariableByQName("getDefinitionByName","flash.utils",new Function(getDefinitionByName));
 
 	Global.setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
 	Global.setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass());
@@ -1396,7 +1397,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			
 			LOG(LOG_CALLS,"Slot "<< t->slot_id << " type Class name " << ns << "::" << name << " id " << t->classi);
 			if(t->slot_id)
-				obj->initSlot(t->slot_id, ret, name, ns);
+				obj->initSlot(t->slot_id, name, ns);
 			break;
 		}
 		case traits_info::Getter:
@@ -1454,35 +1455,48 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		}
 		case traits_info::Const:
 		{
-			//The index has to be valid
-			assert(t->vindex);
-
-			ASObject* ret=getConstant(t->vkind,t->vindex);
-			obj->setVariableByQName(name, ns, ret);
-			if(t->slot_id)
-				obj->initSlot(t->slot_id, ret, name, ns);
-
 			multiname* type=getMultiname(t->type_name,NULL);
+			ASObject* ret;
+			//If the index is valid we set the constant
+			if(t->vindex)
+			{
+				ret=getConstant(t->vkind,t->vindex);
+				obj->setVariableByQName(name, ns, ret);
+				if(t->slot_id)
+					obj->initSlot(t->slot_id, name, ns);
+			}
+			else
+			{
+				ASObject* owner;
+				ret=obj->getVariableByQName(name,ns,owner).obj;
+				assert(owner==NULL);
+
+				assert(deferred_initialization==NULL);
+
+				ret=new Undefined;
+				obj->setVariableByQName(name, ns, ret);
+			}
 			LOG(LOG_CALLS,"Const "<<name<<" type "<<*type);
+			if(t->slot_id)
+				obj->initSlot(t->slot_id, name,ns );
 			break;
 		}
 		case traits_info::Slot:
 		{
+			multiname* type=getMultiname(t->type_name,NULL);
 			if(t->vindex)
 			{
 				ASObject* ret=getConstant(t->vkind,t->vindex);
 				obj->setVariableByQName(name, ns, ret);
 				if(t->slot_id)
-					obj->initSlot(t->slot_id, ret, name, ns);
+					obj->initSlot(t->slot_id, name, ns);
 
-				multiname* type=getMultiname(t->type_name,NULL);
 				LOG(LOG_CALLS,"Slot " << t->slot_id << ' ' <<name<<" type "<<*type);
 				break;
 			}
 			else
 			{
 				//else fallthrough
-				multiname* type=getMultiname(t->type_name,NULL);
 				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				ASObject* owner;
 				ASObject* ret=obj->getVariableByQName(name,ns,owner).obj;
@@ -1506,7 +1520,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 //						ret->constructor->call(ret,NULL);
 				}
 				if(t->slot_id)
-					obj->initSlot(t->slot_id, ret, name,ns );
+					obj->initSlot(t->slot_id, name,ns );
 				break;
 			}
 		}

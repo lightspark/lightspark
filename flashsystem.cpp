@@ -49,24 +49,6 @@ ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
 	return Class<ApplicationDomain>::getInstanceS(true)->obj;
 }
 
-void ApplicationDomain::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns)
-{
-	//Ok, let's split our string into namespace and name part
-	for(int i=tmp.len()-1;i>0;i--)
-	{
-		if(tmp[i]==':')
-		{
-			assert(tmp[i-1]==':');
-			ns=tmp.substr(0,i-1);
-			name=tmp.substr(i+1,tmp.len());
-			return;
-		}
-	}
-	//No double colons in the string
-	name=tmp;
-	ns="";
-}
-
 ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 {
 	assert(args && args->size()==1);

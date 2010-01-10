@@ -1551,7 +1551,7 @@ ASObject::~ASObject()
 	assert(prototype==actualPrototype);
 }
 
-void variables_map::initSlot(int n, int level, ASObject* o, const tiny_string& name, const tiny_string& ns)
+void variables_map::initSlot(int n, int level, const tiny_string& name, const tiny_string& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
@@ -1787,3 +1787,22 @@ ASObject* lightspark::abstract_i(intptr_t i)
 	ret->val=i;
 	return ret;
 }
+
+void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_string& ns)
+{
+	//Ok, let's split our string into namespace and name part
+	for(int i=tmp.len()-1;i>0;i--)
+	{
+		if(tmp[i]==':')
+		{
+			assert(tmp[i-1]==':');
+			ns=tmp.substr(0,i-1);
+			name=tmp.substr(i+1,tmp.len());
+			return;
+		}
+	}
+	//No double colons in the string
+	name=tmp;
+	ns="";
+}
+

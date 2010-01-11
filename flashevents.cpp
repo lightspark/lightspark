@@ -55,6 +55,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("UNLOAD","",new ASString("unload"));
 	c->setVariableByQName("ACTIVATE","",new ASString("activate"));
 	c->setVariableByQName("DEACTIVATE","",new ASString("deactivate"));
+	c->setVariableByQName("CHANGE","",new ASString("change"));
 }
 
 ASFUNCTIONBODY(Event,_constructor)
@@ -126,6 +127,10 @@ void FakeEvent::sinit(Class_base* c)
 {
 	c->setVariableByQName("SECURITY_ERROR","",new ASString("securityError"));
 	c->setVariableByQName("ERROR","",new ASString("error"));
+	c->setVariableByQName("FOCUS_IN","",new ASString("focusIn"));
+	c->setVariableByQName("FOCUS_OUT","",new ASString("focusOut"));
+	c->setVariableByQName("KEY_DOWN","",new ASString("keyDown"));
+	c->setVariableByQName("KEY_UP","",new ASString("keyUp"));
 }
 
 EventDispatcher::EventDispatcher():id(0)

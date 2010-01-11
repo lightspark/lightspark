@@ -224,14 +224,6 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	//HACK osceno
-	if(name->name_s=="isWhiteListedUrl" || name->name_s=="isAtLeastVersion")
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"HACK osceno per youtube");
-		th->runtime_stack_push(new Boolean(true));
-		return;
-	}
-
 	//Here overriding is supposed to work, so restore prototype and max_level
 	int oldlevel=obj->max_level;
 	if(obj->prototype)
@@ -1046,19 +1038,31 @@ void ABCVm::_throw(call_context* th)
 
 void ABCVm::setSuper(call_context* th, int n)
 {
-	abort();
 	ASObject* value=th->runtime_stack_pop();
 	multiname* name=th->context->getMultiname(n,th); 
-
 	LOG(LOG_NOT_IMPLEMENTED,"setSuper " << *name);
 
-/*	ASObject* obj=th->runtime_stack_pop();
-	if(obj->super)
-		obj=obj->super;
+	ASObject* obj=th->runtime_stack_pop();
+	//HACK (nice) set the max level to the current actual prototype before looking up the member
+	assert(obj->actualPrototype);
+	int oldlevel=obj->max_level;
+	obj->max_level=obj->actualPrototype->max_level-1;
+	//Store the old prototype
+	Class_base* old_prototype=obj->actualPrototype;
+
+	//Move the object protoype and level up
+	obj->actualPrototype=old_prototype->super;
 
 	obj->setVariableByMultiname(*name,value);
 
-	//TODO: decRef object*/
+	//Set back the original max_level
+	obj->max_level=oldlevel;
+
+	//Reset prototype to its previous value
+	assert(obj->actualPrototype==old_prototype->super);
+	obj->actualPrototype=old_prototype;
+
+	obj->decRef();
 }
 
 void ABCVm::getSuper(call_context* th, int n)
@@ -1318,7 +1322,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 		args[m-i-1]=th->runtime_stack_pop();
 
 	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_NOT_IMPLEMENTED,"callSuper " << *name << ' ' << m);
+	LOG(LOG_CALLS,"callSuper " << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
 	//HACK (nice) set the max level to the current actual prototype before looking up the member

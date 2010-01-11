@@ -24,11 +24,24 @@
 using namespace lightspark;
 
 REGISTER_CLASS_NAME(ApplicationDomain);
+REGISTER_CLASS_NAME(Capabilities);
 
-Capabilities::Capabilities()
+void Capabilities::sinit(Class_base* c)
 {
-	setVariableByQName("playerType","",new ASString("AVMPlus"));
-	setVariableByQName("version","",new ASString("UNIX 10,0,0,0"));
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->setGetterByQName("language","",new Function(_getLanguage));
+}
+
+ASFUNCTIONBODY(Capabilities,_constructor)
+{
+	obj->setVariableByQName("playerType","",new ASString("AVMPlus"));
+	obj->setVariableByQName("version","",new ASString("UNIX 10,0,0,0"));
+}
+
+ASFUNCTIONBODY(Capabilities,_getLanguage)
+{
+	return new ASString("en");
 }
 
 void ApplicationDomain::sinit(Class_base* c)

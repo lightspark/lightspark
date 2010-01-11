@@ -173,8 +173,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("TextEvent","flash.events",Class<FakeEvent>::getClass("TextEvent"));
 	Global.setVariableByQName("ErrorEvent","flash.events",Class<FakeEvent>::getClass("ErrorEvent"));
 	Global.setVariableByQName("IEventDispatcher","flash.events",Class<IInterface>::getClass("IEventDispatcher"));
-//	Global.setVariableByQName("FocusEvent","flash.events",new FocusEvent);
-//	Global.setVariableByQName("KeyboardEvent","flash.events",new KeyboardEvent);
+	Global.setVariableByQName("FocusEvent","flash.events",Class<FakeEvent>::getClass("FocusEvent"));
+	Global.setVariableByQName("KeyboardEvent","flash.events",Class<FakeEvent>::getClass("KeyboardEvent"));
 //	Global.setVariableByQName("ProgressEvent","flash.events",new Event("ProgressEvent"));
 
 	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
@@ -183,7 +183,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass());
 	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
 
-	Global.setVariableByQName("Capabilities","flash.system",new Capabilities);
+	Global.setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());
 
 	Global.setVariableByQName("ContextMenu","flash.ui",Class<IInterface>::getClass("ContextMenu"));
 	Global.setVariableByQName("ContextMenuItem","flash.ui",Class<IInterface>::getClass("ContextMenuItem"));

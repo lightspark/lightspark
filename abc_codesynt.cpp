@@ -4191,10 +4191,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, "synt greaterequals" );
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT)
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-				if(v2.second==STACK_INT)
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
+
+				abstract_value(ex,Builder,v1);
+				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("greaterEquals"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;

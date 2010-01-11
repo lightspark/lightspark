@@ -25,10 +25,13 @@
 namespace lightspark
 {
 
-class Capabilities: public ASObject
+class Capabilities: public IInterface
 {
 public:
-	Capabilities();
+	Capabilities(){};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getLanguage);
 };
 
 class ApplicationDomain: public IInterface

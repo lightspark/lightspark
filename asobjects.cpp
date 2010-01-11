@@ -76,6 +76,7 @@ ASFUNCTIONBODY(Array,_constructor)
 	obj->ASObject::setVariableByQName("unshift","",new Function(unshift));
 	obj->ASObject::setVariableByQName("join",AS3,new Function(join));
 	obj->ASObject::setVariableByQName("push",AS3,new Function(_push));
+	obj->ASObject::setVariableByQName("sort",AS3,new Function(_sort));
 	//th->setVariableByName("push",new Function(_push));
 	//th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
 	if(args==NULL)
@@ -137,6 +138,12 @@ ASFUNCTIONBODY(Array,_pop)
 		abort();
 	th->data.pop_back();
 	return ret;
+}
+
+ASFUNCTIONBODY(Array,_sort)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");
+	return obj;
 }
 
 ASFUNCTIONBODY(Array,unshift)
@@ -502,61 +509,45 @@ bool Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, A
 ASString::ASString()
 {
 	type=T_STRING;
-	setVariableByQName("Call","",new Function(ASString::String));
-	setVariableByQName("toString","",new Function(ASObject::_toString));
-	setVariableByQName("split",AS3,new Function(split));
-	setVariableByQName("replace",AS3,new Function(replace));
-	setVariableByQName("concat",AS3,new Function(concat));
-	setVariableByQName("indexOf",AS3,new Function(indexOf));
-	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
-	setVariableByQName("slice",AS3,new Function(slice));
-	setGetterByQName("length","",new Function(_getLength));
+	registerMethods();
 }
 
 ASString::ASString(const string& s):data(s)
 {
 	type=T_STRING;
-	setVariableByQName("Call","",new Function(ASString::String));
-	setVariableByQName("toString","",new Function(ASObject::_toString));
-	setVariableByQName("split",AS3,new Function(split));
-	setVariableByQName("replace",AS3,new Function(replace));
-	setVariableByQName("concat",AS3,new Function(concat));
-	setVariableByQName("indexOf",AS3,new Function(indexOf));
-	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
-	setVariableByQName("slice",AS3,new Function(slice));
-	setGetterByQName("length","",new Function(_getLength));
+	registerMethods();
 }
 
 ASString::ASString(const tiny_string& s):data(s.raw_buf())
 {
 	type=T_STRING;
-	setVariableByQName("Call","",new Function(ASString::String));
-	setVariableByQName("toString","",new Function(ASObject::_toString));
-	setVariableByQName("split",AS3,new Function(split));
-	setVariableByQName("replace",AS3,new Function(replace));
-	setVariableByQName("concat",AS3,new Function(concat));
-	setVariableByQName("indexOf",AS3,new Function(indexOf));
-	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
-	setVariableByQName("slice",AS3,new Function(slice));
-	setGetterByQName("length","",new Function(_getLength));
+	registerMethods();
 }
 
 ASString::ASString(const char* s):data(s)
 {
 	type=T_STRING;
-	setVariableByQName("Call","",new Function(ASString::String));
-	setVariableByQName("toString","",new Function(ASObject::_toString));
-	setVariableByQName("split",AS3,new Function(split));
-	setVariableByQName("replace",AS3,new Function(replace));
-	setVariableByQName("concat",AS3,new Function(concat));
-	setVariableByQName("slice",AS3,new Function(slice));
-	setGetterByQName("length","",new Function(_getLength));
+	registerMethods();
 }
 
 ASFUNCTIONBODY(ASString,_getLength)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	return abstract_i(th->data.size());
+}
+
+void ASString::registerMethods()
+{
+	setVariableByQName("Call","",new Function(ASString::String));
+	setVariableByQName("toString","",new Function(ASObject::_toString));
+	setVariableByQName("split",AS3,new Function(split));
+	setVariableByQName("replace",AS3,new Function(replace));
+	setVariableByQName("concat",AS3,new Function(concat));
+	setVariableByQName("indexOf",AS3,new Function(indexOf));
+	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
+	setVariableByQName("slice",AS3,new Function(slice));
+	setVariableByQName("toLowerCase",AS3,new Function(toLowerCase));
+	setGetterByQName("length","",new Function(_getLength));
 }
 
 Array::~Array()
@@ -1188,11 +1179,44 @@ ASFUNCTIONBODY(ASString,indexOf)
 	return new Integer(-1);
 }
 
+ASFUNCTIONBODY(ASString,toLowerCase)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	ASString* ret=new ASString;
+	ret->data=th->data;
+	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::tolower);
+	return ret;
+}
+
 ASFUNCTIONBODY(ASString,replace)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ASString::replace not really implemented");
-	ASString* th=static_cast<ASString*>(obj);
-	return new ASString(th->data);
+	const ASString* th=static_cast<const ASString*>(obj);
+	ASString* ret=new ASString(th->data);
+
+	assert(args->size()==2 && args->at(1)->getObjectType()==T_STRING);
+
+	if(args->at(0)->prototype!=Class<RegExp>::getClass())
+		abort();
+
+	RegExp* re=static_cast<RegExp*>(args->at(0)->implementation);
+	assert(re->re.size()==1 && re->flags.size()==1);
+
+	bool g=(re->flags[0]=='g')?true:false;
+	const tiny_string& replaceWith=args->at(1)->toString();
+	assert(replaceWith.len()==1);
+
+	for(int i=0;i<th->data.size();i++)
+	{
+		if(th->data[i]==re->re[0])
+		{
+			ret->data[i]=replaceWith[0];
+			if(!g)
+				break;
+		}
+	}
+
+	return ret;
 }
 
 ASFUNCTIONBODY(ASString,concat)

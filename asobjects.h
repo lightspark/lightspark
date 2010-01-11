@@ -242,11 +242,13 @@ public:
 	virtual ~Undefined(){}
 };
 
+//ASString has to be converted to an Interface... it's still to much used as an object
 class ASString: public ASObject
 {
 friend class ASQName;
 private:
 	std::string data;
+	void registerMethods();
 public:
 	ASString();
 	ASString(const std::string& s);
@@ -260,6 +262,7 @@ public:
 	ASFUNCTION(slice);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);
+	ASFUNCTION(toLowerCase);
 	tiny_string toString() const;
 	double toNumber() const;
 	bool isEqual(ASObject* r);
@@ -328,6 +331,7 @@ public:
 	ASFUNCTION(_pop);
 	ASFUNCTION(join);
 	ASFUNCTION(shift);
+	ASFUNCTION(_sort);
 	ASFUNCTION(unshift);
 	ASFUNCTION(_getLength);
 	ASObject* at(unsigned int index) const
@@ -559,6 +563,7 @@ public:
 
 class RegExp: public IInterface
 {
+friend class ASString;
 private:
 	std::string re;
 	std::string flags;
@@ -567,6 +572,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(exec);
+	ASFUNCTION(replace);
 };
 
 bool isSubclass(ASObject* obj, const Class_base* c);

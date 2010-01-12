@@ -683,6 +683,7 @@ ASFUNCTIONBODY(DisplayObject,_getRoot)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	assert(th->root->obj);
+	th->root->obj->incRef();
 	return th->root->obj;
 }
 

@@ -265,6 +265,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			if(m==1) //Assume this is a constructor
 			{
 				LOG(LOG_CALLS,"Passthorugh of " << args[0]);
+				args[0]->incRef();
 				th->runtime_stack_push(args[0]);
 			}
 			else
@@ -1142,7 +1143,7 @@ void ABCVm::getLex(call_context* th, int n)
 			}
 			th->runtime_stack_push(o);
 			o->incRef();
-			break;
+			return;
 		}
 	}
 	if(!owner)

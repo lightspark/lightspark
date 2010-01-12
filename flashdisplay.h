@@ -121,7 +121,7 @@ private:
 	uint32_t bytesLoaded;
 	uint32_t bytesTotal;
 public:
-	LoaderInfo():bytesLoaded(100),bytesTotal(100)
+	LoaderInfo():bytesLoaded(80),bytesTotal(100)
 	{
 	}
 	static void sinit(Class_base* c);

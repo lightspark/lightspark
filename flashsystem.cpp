@@ -31,12 +31,12 @@ void Capabilities::sinit(Class_base* c)
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
 	c->setGetterByQName("language","",new Function(_getLanguage));
+	c->setVariableByQName("version","",new ASString("UNIX 10,0,0,0"));
 }
 
 ASFUNCTIONBODY(Capabilities,_constructor)
 {
 	obj->setVariableByQName("playerType","",new ASString("AVMPlus"));
-	obj->setVariableByQName("version","",new ASString("UNIX 10,0,0,0"));
 }
 
 ASFUNCTIONBODY(Capabilities,_getLanguage)

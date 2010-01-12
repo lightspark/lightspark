@@ -202,11 +202,11 @@ zlib_file_filter::zlib_file_filter(const char* file_name):consumed(0)
 	//Ok, it seems to be a valid SWF, from now, if the file is compressed, data has to be inflated
 }
 
-int zlib_file_filter::underflow()
+zlib_file_filter::int_type zlib_file_filter::underflow()
 {
 	assert(gptr()==egptr());
 
-	//First of all we add the lenght of the buffer to the comsumed variable
+	//First of all we add the lenght of the buffer to the consumed variable
 	consumed+=(gptr()-eback());
 
 	setg(buffer,buffer,buffer+4096);
@@ -230,11 +230,21 @@ int zlib_file_filter::underflow()
 			}
 			strm.next_in=(unsigned char*)in_buf;
 			strm.avail_in=real_count;
-			inflate(&strm, Z_NO_FLUSH);
+			int ret=inflate(&strm, Z_NO_FLUSH);
+			if(ret==Z_OK);
+			else if(ret==Z_STREAM_END)
+			{
+				//The stream ended, close the buffer here
+				setg(buffer,buffer,buffer+(4096-strm.avail_out));
+				break;
+			}
+			else
+				abort();
 		}
 	}
 
-	return buffer[0];
+	//Cast to signed, otherwise 0xff would become eof
+	return (unsigned char)buffer[0];
 }
 
 zlib_file_filter::pos_type zlib_file_filter::seekoff(off_type off, ios_base::seekdir dir,ios_base::openmode mode)

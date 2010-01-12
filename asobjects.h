@@ -291,6 +291,7 @@ public:
 class Namespace: public IInterface
 {
 friend class ASQName;
+friend class ABCContext;
 private:
 	tiny_string uri;
 public:

@@ -482,11 +482,25 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				rt1->decRef();
 				break;
 			}
+			case 0x0f: //RTQName
+			{
+				//Reset the namespaces
+				ret->nskind.clear();
+				ret->ns.clear();
+
+				//TODO: Next line is an hack
+				ret->nskind.push_back(0x08);
+
+				assert(rt1->prototype==Class<Namespace>::getClass());
+				Namespace* tmpns=static_cast<Namespace*>(rt1->implementation);
+				ret->ns.push_back(tmpns->uri);
+				ret->name_type=multiname::NAME_STRING;
+				ret->name_s=th->context->getString(m->name);
+				rt1->decRef();
+				break;
+			}
 	/*		case 0x0d:
 				LOG(CALLS, "QNameA");
-				break;
-			case 0x0f:
-				LOG(CALLS, "RTQName");
 				break;
 			case 0x10:
 				LOG(CALLS, "RTQNameA");
@@ -589,7 +603,6 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				ret->nskind.push_back(n->kind);
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
-				ret->name_s.len();
 				break;
 			}
 			case 0x09:
@@ -608,7 +621,6 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
-				ret->name_s.len();
 				break;
 			}
 			case 0x1b:
@@ -629,14 +641,23 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				ret->name_s=n->toString();
 				ret->name_type=multiname::NAME_STRING;
 				n->decRef();
-				ret->name_s.len();
+				break;
+			}
+			case 0x0f: //RTQName
+			{
+				//TODO: Next line is an hack
+				ret->nskind.push_back(0x08);
+				ASObject* n=th->runtime_stack_pop();
+				assert(n->prototype==Class<Namespace>::getClass());
+				Namespace* tmpns=static_cast<Namespace*>(n->implementation);
+				ret->ns.push_back(tmpns->uri);
+				ret->name_type=multiname::NAME_STRING;
+				ret->name_s=getString(m->name);
+				n->decRef();
 				break;
 			}
 	/*		case 0x0d:
 				LOG(CALLS, "QNameA");
-				break;
-			case 0x0f:
-				LOG(CALLS, "RTQName");
 				break;
 			case 0x10:
 				LOG(CALLS, "RTQNameA");
@@ -702,7 +723,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				LOG(CALLS, "MultinameLA");
 				break;*/
 			default:
-				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,"dMultiname to String not yet implemented for this kind " << hex << m->kind);
 				break;
 		}
 		ret->name_s.len();
@@ -760,9 +781,13 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 	for(int i=0;i<method_body_count;i++)
 	{
 		in >> method_body[i];
+
 		//Link method body with method signature
 		if(methods[method_body[i].method].body!=NULL)
-			LOG(LOG_ERROR,"Duplicate body assigment")
+		{
+			LOG(LOG_ERROR,"Duplicate body assigment");
+			abort();
+		}
 		else
 			methods[method_body[i].method].body=&method_body[i];
 	}
@@ -969,6 +994,11 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		LOG(LOG_CALLS,"Class to bool");
 		return true;
 	}
+	else if(obj->getObjectType()==T_ARRAY)
+	{
+		LOG(LOG_CALLS,"Array to bool");
+		return true;
+	}
 	else if(obj->getObjectType()==T_UNDEFINED)
 	{
 		LOG(LOG_CALLS,"Undefined to bool");
@@ -981,29 +1011,6 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 void ABCVm::deleteProperty(call_context* th, int n)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"deleteProperty " << n);
-}
-
-void ABCVm::call(call_context* th, int m)
-{
-	LOG(LOG_CALLS,"call " << m);
-	arguments args(m);
-	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
-
-	ASObject* obj=th->runtime_stack_pop();
-	IFunction* f=th->runtime_stack_pop()->toFunction();
-
-	if(f==NULL)
-	{
-		LOG(LOG_ERROR,"Not a function");
-		abort();
-	}
-
-	//This seems wrong
-	ASObject* ret=f->call(obj,&args,obj->max_level);
-	th->runtime_stack_push(ret);
-	obj->decRef();
-	f->decRef();
 }
 
 void ABCVm::coerce(call_context* th, int n)

@@ -68,7 +68,7 @@ private:
 	char buffer[4096];
 	char in_buf[1024];
 protected:
-	virtual int underflow();
+	virtual int_type underflow();
 	virtual pos_type seekoff(off_type, ios_base::seekdir,ios_base::openmode);
 public:
 	zlib_file_filter(const char* file_name);

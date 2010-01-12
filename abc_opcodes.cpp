@@ -317,6 +317,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	LOG(LOG_CALLS, "getProperty " << *name );
 
 	ASObject* owner;
+
 	ASObject* ret=obj->getVariableByMultiname(*name,owner).obj;
 	if(owner==NULL)
 	{
@@ -1825,5 +1826,32 @@ ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 	obj1->decRef();
 	obj2->decRef();
 	return new Boolean(ret);
+}
+
+void ABCVm::call(call_context* th, int m)
+{
+	LOG(LOG_CALLS,"call " << m);
+	arguments args(m);
+	for(int i=0;i<m;i++)
+		args.set(m-i-1,th->runtime_stack_pop());
+
+	ASObject* obj=th->runtime_stack_pop();
+	ASObject* f=th->runtime_stack_pop();
+
+	if(f->getObjectType()==T_FUNCTION)
+	{
+		//This seems wrong
+		IFunction* func=f->toFunction();
+		ASObject* ret=func->call(obj,&args,obj->max_level);
+		th->runtime_stack_push(ret);
+		obj->decRef();
+		f->decRef();
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Function not good");
+		th->runtime_stack_push(new Undefined);
+	}
+
 }
 

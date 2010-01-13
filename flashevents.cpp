@@ -111,13 +111,13 @@ ASFUNCTIONBODY(ProgressEvent,_constructor)
 ASFUNCTIONBODY(ProgressEvent,_getBytesLoaded)
 {
 	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
-	return abstract_i(th->bytesLoaded);
+	return abstract_d(th->bytesLoaded);
 }
 
 ASFUNCTIONBODY(ProgressEvent,_getBytesTotal)
 {
 	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
-	return abstract_i(th->bytesTotal);
+	return abstract_d(th->bytesTotal);
 }
 
 void TimerEvent::sinit(Class_base* c)

@@ -854,14 +854,8 @@ void MATRIX::getTranslation(int& x, int& y)
 
 std::ostream& operator<<(std::ostream& s, const MATRIX& r)
 {
-	float scaleX=1,scaleY=1;
-	if(r.HasScale)
-	{
-		scaleX=r.ScaleX;
-		scaleY=r.ScaleY;
-	}
-	s << "| " << scaleX << ' ' << r.RotateSkew0 << " |" << std::endl;
-	s << "| " << r.RotateSkew1 << ' ' << scaleY << " |" << std::endl;
+	s << "| " << r.ScaleX << ' ' << r.RotateSkew0 << " |" << std::endl;
+	s << "| " << r.RotateSkew1 << ' ' << r.ScaleY << " |" << std::endl;
 	s << "| " << (int)r.TranslateX << ' ' << (int)r.TranslateY << " |" << std::endl;
 	return s;
 }
@@ -1435,33 +1429,23 @@ std::istream& lightspark::operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 {
 	BitStream bs(stream);
-	v.HasScale=UB(1,bs);
-	if(v.HasScale)
+	int HasScale=UB(1,bs);
+	if(HasScale)
 	{
-		v.NScaleBits=UB(5,bs);
-		v.ScaleX=FB(v.NScaleBits,bs);
-		v.ScaleY=FB(v.NScaleBits,bs);
+		int NScaleBits=UB(5,bs);
+		v.ScaleX=FB(NScaleBits,bs);
+		v.ScaleY=FB(NScaleBits,bs);
 	}
-	else
+	int HasRotate=UB(1,bs);
+	if(HasRotate)
 	{
-		v.ScaleX=1;
-		v.ScaleY=1;
+		int NRotateBits=UB(5,bs);
+		v.RotateSkew0=FB(NRotateBits,bs);
+		v.RotateSkew1=FB(NRotateBits,bs);
 	}
-	v.HasRotate=UB(1,bs);
-	if(v.HasRotate)
-	{
-		v.NRotateBits=UB(5,bs);
-		v.RotateSkew0=FB(v.NRotateBits,bs);
-		v.RotateSkew1=FB(v.NRotateBits,bs);
-	}
-	else
-	{
-		v.RotateSkew0=0;
-		v.RotateSkew1=0;
-	}
-	v.NTranslateBits=UB(5,bs);
-	v.TranslateX=SB(v.NTranslateBits,bs);
-	v.TranslateY=SB(v.NTranslateBits,bs);
+	int NTranslateBits=UB(5,bs);
+	v.TranslateX=SB(NTranslateBits,bs);
+	v.TranslateY=SB(NTranslateBits,bs);
 	return stream;
 }
 

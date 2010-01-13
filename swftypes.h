@@ -823,20 +823,14 @@ class MATRIX
 	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
 	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
 public:
-	int size;
-	int HasScale;
-	int NScaleBits;
 	float ScaleX;
 	float ScaleY;
-	int HasRotate;
-	int NRotateBits;
 	float RotateSkew0;
 	float RotateSkew1;
-	int NTranslateBits;
 	int TranslateX;
 	int TranslateY;
 public:
-	MATRIX():size(0){}
+	MATRIX():ScaleX(1),ScaleY(1),RotateSkew0(0),RotateSkew1(0),TranslateX(0),TranslateY(0){}
 	void get4DMatrix(float matrix[16]);
 	void getTranslation(int& x, int& y);
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout);

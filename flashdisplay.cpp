@@ -46,6 +46,7 @@ REGISTER_CLASS_NAME(Sprite);
 REGISTER_CLASS_NAME(Loader);
 REGISTER_CLASS_NAME(Shape);
 REGISTER_CLASS_NAME(Stage);
+REGISTER_CLASS_NAME(Graphics);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -300,7 +301,7 @@ void Loader::Render()
 	local_root->Render();
 }
 
-Sprite::Sprite():hackdraw(false)
+Sprite::Sprite():graphics(NULL)
 {
 }
 
@@ -313,28 +314,41 @@ void Sprite::sinit(Class_base* c)
 
 void Sprite::Render()
 {
-	assert(hackdraw);
-	cout << "HACKdraw" << endl;
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
+	glPushMatrix();
+	glMultMatrixf(matrix);
 
-	FILLSTYLE::fixedColor(0,0,0);
-	glBegin(GL_QUADS);
-		glVertex2i(0,0);
-		glVertex2i(100,0);
-		glVertex2i(100,100);
-		glVertex2i(0,100);
-	glEnd();
+	//Draw the dynamically added graphics, if any
+	if(graphics)
+		graphics->Render();
 
 	//Now draw also the display list
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
 	for(it;it!=dynamicDisplayList.end();it++)
 		(*it)->Render();
+	glPopMatrix();
+
 }
 
 ASFUNCTIONBODY(Sprite,_constructor)
 {
 	Sprite* th=static_cast<Sprite*>(obj->implementation);
 	DisplayObjectContainer::_constructor(obj,NULL);
+
+	obj->setGetterByQName("graphics","",new Function(_getGraphics));
 	return NULL;
+}
+
+ASFUNCTIONBODY(Sprite,_getGraphics)
+{
+	Sprite* th=static_cast<Sprite*>(obj->implementation);
+	//Probably graphics is not used often, so create it here
+	if(th->graphics==NULL)
+		th->graphics=Class<Graphics>::getInstanceS(true);
+
+	th->graphics->obj->incRef();
+	return th->graphics->obj;
 }
 
 void MovieClip::sinit(Class_base* c)
@@ -778,10 +792,6 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 	//We insert the object in the back of the list
 	//TODO: support the 'at index' version of the call
 	dynamicDisplayList.push_back(child);
-
-	//HACK: Enable hacking rendering of the object
-	Sprite* sprite=static_cast<Sprite*>(child);
-	sprite->hackdraw=true;
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
@@ -832,9 +842,8 @@ void Stage::sinit(Class_base* c)
 	c->super=Class<DisplayObjectContainer>::getClass();
 }
 
-Stage::Stage():width(6400),height(4800)
+Stage::Stage()
 {
-//	setVariableByQName("height","",&height);
 }
 
 ASFUNCTIONBODY(Stage,_constructor)
@@ -847,11 +856,79 @@ ASFUNCTIONBODY(Stage,_constructor)
 ASFUNCTIONBODY(Stage,_getStageWidth)
 {
 	Stage* th=static_cast<Stage*>(obj->implementation);
-	return abstract_d(th->width);
+	RECT size=sys->getFrameSize();
+	int width=size.Xmax/20;
+	return abstract_d(width);
 }
 
 ASFUNCTIONBODY(Stage,_getStageHeight)
 {
 	Stage* th=static_cast<Stage*>(obj->implementation);
-	return abstract_d(th->height);
+	RECT size=sys->getFrameSize();
+	int height=size.Ymax/20;
+	return abstract_d(height);
+}
+
+void Graphics::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(Graphics,_constructor)
+{
+	obj->setVariableByQName("clear","",new Function(clear));
+	obj->setVariableByQName("drawRect","",new Function(drawRect));
+}
+
+ASFUNCTIONBODY(Graphics,clear)
+{
+	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	sem_wait(&th->geometry_mutex);
+	th->geometry.clear();
+	sem_post(&th->geometry_mutex);
+}
+
+ASFUNCTIONBODY(Graphics,drawRect)
+{
+	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	assert(args->size()==4);
+
+	int x=args->at(0)->toInt();
+	int y=args->at(1)->toInt();
+	int width=args->at(2)->toInt();
+	int height=args->at(3)->toInt();
+
+	//Build a shape and add it to the geometry vector
+	GeomShape tmpShape;
+	tmpShape.outline.push_back(Vector2(x,y));
+	tmpShape.outline.push_back(Vector2(x+width,y));
+	tmpShape.outline.push_back(Vector2(x+width,y+height));
+	tmpShape.outline.push_back(Vector2(x,y+height));
+	tmpShape.outline.push_back(Vector2(x,y));
+
+	sem_wait(&th->geometry_mutex);
+	th->geometry.push_back(tmpShape);
+	sem_post(&th->geometry_mutex);
+	return NULL;
+}
+
+void Graphics::Render()
+{
+	sem_wait(&geometry_mutex);
+	for(int i=0;i<geometry.size();i++)
+		geometry[i].Render();
+
+/*	if(geometry.size()==0)
+	{
+		FILLSTYLE::fixedColor(0,0,0);
+		glBegin(GL_QUADS);
+			glVertex2i(0,0);
+			glVertex2i(100,0);
+			glVertex2i(100,100);
+			glVertex2i(0,100);
+		glEnd();
+	}*/
+	sem_post(&geometry_mutex);
+
 }

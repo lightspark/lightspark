@@ -17,6 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#ifndef COMPAT_H
+#define COMPAT_H
+
 //Define cross platform helpers
 #ifdef WIN32
 #include <windows.h>
@@ -31,3 +34,15 @@ int round ( double f_val );
 void compat_msleep(unsigned int time);
 
 uint64_t compat_msectiming();
+
+inline double dmin(double a,double b)
+{
+	return (a<b)?a:b;
+}
+
+inline double dmax(double a,double b)
+{
+	return (a>b)?a:b;
+}
+
+#endif

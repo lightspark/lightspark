@@ -53,7 +53,6 @@ void Frame::Render()
 		assert(i->second);
 
 		//Sync the original matrix with the current one if needed
-		//__asm__("int $3");
 		if(i->second->origMatrix)
 			*(i->second->origMatrix)=i->second->Matrix;
 		//Assign object data from current transformation

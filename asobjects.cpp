@@ -1060,14 +1060,14 @@ ASFUNCTIONBODY(Math,_max)
 {
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
-	return abstract_d(max(n1,n2));
+	return abstract_d(dmax(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,_min)
 {
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
-	return abstract_d(min(n1,n2));
+	return abstract_d(dmin(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,cos)

@@ -24,6 +24,7 @@
 #include "flashevents.h"
 #include "flashutils.h"
 #include "thread_pool.h"
+#include "geometry.h"
 
 namespace lightspark
 {
@@ -112,6 +113,24 @@ public:
 	ASFUNCTION(addChildAt);
 };
 
+class Graphics: public IInterface
+{
+private:
+	//As geometry is used by RenderThread but modified by ABCVm we have to mutex a bit
+	sem_t geometry_mutex;
+	std::vector<GeomShape> geometry;
+public:
+	Graphics()
+	{
+		sem_init(&geometry_mutex,0,1);
+	}
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(drawRect);
+	ASFUNCTION(clear);
+	void Render();
+};
+
 class Shape: public DisplayObject
 {
 public:
@@ -170,13 +189,13 @@ public:
 
 class Sprite: public DisplayObjectContainer
 {
+private:
+	Graphics* graphics;
 public:
-	//HACK
-	bool hackdraw;
-
 	Sprite();
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getGraphics);
 	int getDepth() const
 	{
 		return 0;
@@ -229,8 +248,9 @@ public:
 class Stage: public DisplayObjectContainer
 {
 private:
-	uintptr_t width;
-	uintptr_t height;
+	//Taken directly from SystemState
+	//uintptr_t width;
+	//uintptr_t height;
 public:
 	Stage();
 	static void sinit(Class_base* c);

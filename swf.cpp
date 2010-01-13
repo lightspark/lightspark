@@ -982,7 +982,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 			glClear(GL_COLOR_BUFFER_BIT);
 			glLoadIdentity();
-			glScalef(0.05,0.05,1);
+			//glScalef(0.05,0.05,1);
 			
 			sys->Render();
 
@@ -1047,8 +1047,11 @@ void RootMovieClip::setFrameSize(const lightspark::RECT& f)
 
 lightspark::RECT RootMovieClip::getFrameSize()
 {
+	//This is a sync semapore the first time and then a mutex
 	sem_wait(&sem_valid_frame_size);
-	return frame_size;
+	lightspark::RECT ret=frame_size;
+	sem_post(&sem_valid_frame_size);
+	return ret;
 }
 
 void RootMovieClip::addToDictionary(DictionaryTag* r)

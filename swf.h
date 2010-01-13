@@ -133,6 +133,9 @@ public:
 	RenderThread* cur_render_thread;
 	ThreadPool* cur_thread_pool;
 
+	//Application starting time in milliseconds
+	uint64_t startTime;
+
 	//Class map
 	std::map<tiny_string, Class_base*> classes;
 

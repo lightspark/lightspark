@@ -113,3 +113,9 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
 	return o.obj;
 }
+
+ASFUNCTIONBODY(lightspark,getTimer)
+{
+	uint64_t ret=compat_msectiming() - sys->startTime;
+	return abstract_i(ret);
+}

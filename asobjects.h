@@ -559,6 +559,7 @@ public:
 	ASFUNCTION(sqrt);
 	ASFUNCTION(random);
 	ASFUNCTION(_max);
+	ASFUNCTION(_min);
 	ASFUNCTION(pow);
 };
 

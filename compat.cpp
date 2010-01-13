@@ -19,6 +19,7 @@
 
 #ifndef WIN32
 #include <unistd.h>
+#include <time.h>
 #endif
 
 #include "compat.h"
@@ -38,3 +39,10 @@ int round(double f)
     return ( f < 0.0 ) ? (int) ( f - 0.5 ) : (int) ( f + 0.5 );
 }
 #endif
+
+uint64_t compat_msectiming()
+{
+	timespec t;
+	clock_gettime(CLOCK_MONOTONIC,&t);
+	return (t.tv_sec*1000 + t.tv_nsec/1000000);
+}

@@ -141,6 +141,9 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());
 	Global.setVariableByQName("Shape","flash.display",Class<Shape>::getClass());
 	Global.setVariableByQName("IBitmapDrawable","flash.display",Class<IInterface>::getClass("IBitmapDrawable"));
+	Global.setVariableByQName("BitmapData","flash.display",Class<IInterface>::getClass("BitmapData"));
+
+	Global.setVariableByQName("DropShadowFilter","flash.filters",Class<IInterface>::getClass("DropShadowFilter"));
 
 	Global.setVariableByQName("TextField","flash.text",Class<IInterface>::getClass("TextField"));
 	Global.setVariableByQName("TextFormat","flash.text",Class<IInterface>::getClass("TextFormat"));
@@ -157,6 +160,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Timer","flash.utils",Class<Timer>::getClass());
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
 	Global.setVariableByQName("getDefinitionByName","flash.utils",new Function(getDefinitionByName));
+	Global.setVariableByQName("getTimer","flash.utils",new Function(getTimer));
 
 	Global.setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
 	Global.setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass());

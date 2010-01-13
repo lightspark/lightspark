@@ -92,6 +92,7 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 	sem_init(&new_frame,0,0);
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS(true);
+	startTime=compat_msectiming();
 }
 
 SystemState::~SystemState()

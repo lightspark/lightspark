@@ -23,6 +23,7 @@
 #include "asobjects.h"
 #include <string>
 #include <semaphore.h>
+#include "compat.h"
 
 #undef MOUSE_EVENT
 
@@ -78,9 +79,15 @@ public:
 
 class ProgressEvent: public Event
 {
+private:
+	uint32_t bytesLoaded;
+	uint32_t bytesTotal;
 public:
 	ProgressEvent();
 	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getBytesLoaded);
+	ASFUNCTION(_getBytesTotal);
 };
 
 class TimerEvent: public Event

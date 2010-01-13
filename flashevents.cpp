@@ -85,13 +85,39 @@ MouseEvent::MouseEvent():Event("mouseEvent")
 //	setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
 }
 
-ProgressEvent::ProgressEvent():Event("progress")
+ProgressEvent::ProgressEvent():Event("progress"),bytesLoaded(0),bytesTotal(0)
 {
 }
 
 void ProgressEvent::sinit(Class_base* c)
 {
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
 	c->setVariableByQName("PROGRESS","",new ASString("progress"));
+}
+
+ASFUNCTIONBODY(ProgressEvent,_constructor)
+{
+	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
+	if(args->size()>=4)
+		th->bytesLoaded=args->at(3)->toInt();
+	if(args->size()>=5)
+		th->bytesTotal=args->at(4)->toInt();
+
+	obj->setGetterByQName("bytesLoaded","",new Function(_getBytesLoaded));
+	obj->setGetterByQName("bytesTotal","",new Function(_getBytesTotal));
+}
+
+ASFUNCTIONBODY(ProgressEvent,_getBytesLoaded)
+{
+	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
+	return abstract_i(th->bytesLoaded);
+}
+
+ASFUNCTIONBODY(ProgressEvent,_getBytesTotal)
+{
+	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
+	return abstract_i(th->bytesTotal);
 }
 
 void TimerEvent::sinit(Class_base* c)

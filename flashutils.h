@@ -55,6 +55,7 @@ public:
 
 ASObject* getQualifiedClassName(ASObject* , arguments* args);
 ASObject* getDefinitionByName(ASObject* , arguments* args);
+ASObject* getTimer(ASObject* , arguments* args);
 
 };
 

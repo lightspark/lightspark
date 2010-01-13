@@ -756,6 +756,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	assert(th->root==sys);
 	d->root=th->root;
 
+	__asm__("int $3");
+
 /*	if(args->at(0)->parent==th)
 		return args->at(0);
 	else if(args->at(0)->parent!=NULL)
@@ -793,6 +795,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	assert(d->root==NULL);
 	assert(th->root==sys);
 	d->root=th->root;
+
+	__asm__("int $3");
 }
 
 void Shape::sinit(Class_base* c)

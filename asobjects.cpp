@@ -1039,6 +1039,7 @@ Math::Math()
 	setVariableByQName("sqrt","",new Function(sqrt));
 	setVariableByQName("atan2","",new Function(atan2));
 	setVariableByQName("max","",new Function(_max));
+	setVariableByQName("min","",new Function(_min));
 	setVariableByQName("abs","",new Function(abs));
 	setVariableByQName("sin","",new Function(sin));
 	setVariableByQName("cos","",new Function(cos));
@@ -1060,6 +1061,13 @@ ASFUNCTIONBODY(Math,_max)
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
 	return abstract_d(max(n1,n2));
+}
+
+ASFUNCTIONBODY(Math,_min)
+{
+	double n1=args->at(0)->toNumber();
+	double n2=args->at(1)->toNumber();
+	return abstract_d(min(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,cos)

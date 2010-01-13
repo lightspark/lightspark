@@ -17,20 +17,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifdef WIN32
-#include <windows.h>
-#endif
-
 //Define cross platform helpers
 #ifdef WIN32
+#include <windows.h>
 #define TLSDATA __declspec( thread )
-#else
+#define snprintf _snprintf
+int round ( double f_val );
+#else //GCC
+#include <inttypes.h>
 #define TLSDATA __thread
 #endif
 
-#ifdef WIN32
-#define snprintf _snprintf
-int round ( double f_val );
-#endif
-
 void compat_msleep(unsigned int time);
+
+uint64_t compat_msectiming();

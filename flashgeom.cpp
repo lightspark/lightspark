@@ -34,12 +34,24 @@ void Rectangle::sinit(Class_base* c)
 ASFUNCTIONBODY(Rectangle,_constructor)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
-	if(args && args->size()!=0)
-		abort();
+
 	th->x=0;
 	th->y=0;
 	th->width=0;
 	th->height=0;
+	if(args)
+	{
+		int size=args->size();
+		if(size>=1)
+			th->x=args->at(0)->toInt();
+		if(size>=2)
+			th->y=args->at(1)->toInt();
+		if(size>=3)
+			th->width=args->at(2)->toInt();
+		if(size>=4)
+			th->height=args->at(3)->toInt();
+	}
+
 	obj->setGetterByQName("left","",new Function(_getLeft));
 	obj->setGetterByQName("right","",new Function(_getRight));
 	obj->setGetterByQName("top","",new Function(_getTop));

@@ -31,6 +31,7 @@ namespace lightspark
 class RootMovieClip;
 class DisplayListTag;
 class LoaderInfo;
+class DisplayObjectContainer;
 
 class IDisplayListElem: public EventDispatcher
 {
@@ -52,11 +53,13 @@ public:
 
 class DisplayObject: public IDisplayListElem
 {
+friend class DisplayObjectContainer;
 protected:
 	intptr_t width;
 	intptr_t height;
 	number_t rotation;
 	LoaderInfo* loaderInfo;
+	DisplayObjectContainer* parent;
 public:
 	DisplayObject();
 	static void sinit(Class_base* c);
@@ -73,6 +76,7 @@ public:
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_getRotation);
 	ASFUNCTION(_getName);
+	ASFUNCTION(_getParent);
 	ASFUNCTION(_getRoot);
 	ASFUNCTION(_getBlendMode);
 	ASFUNCTION(_getScale9Grid);
@@ -91,6 +95,10 @@ public:
 
 class DisplayObjectContainer: public DisplayObject
 {
+private:
+	void _addChildAt(DisplayObject* child, int index);
+protected:
+	std::list < IDisplayListElem* > dynamicDisplayList;
 public:
 	DisplayObjectContainer();
 	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
@@ -163,10 +171,12 @@ public:
 class Sprite: public DisplayObjectContainer
 {
 public:
+	//HACK
+	bool hackdraw;
+
 	Sprite();
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(_getParent);
 	int getDepth() const
 	{
 		return 0;
@@ -175,6 +185,7 @@ public:
 	{
 		abort();
 	}
+	void Render();
 };
 
 class MovieClip: public Sprite
@@ -184,7 +195,6 @@ friend class ParseThread;
 protected:
 	uint32_t framesLoaded;
 	uint32_t totalFrames;
-	std::list < IDisplayListElem* > dynamicDisplayList;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	Frame cur_frame;
 	bool initialized;

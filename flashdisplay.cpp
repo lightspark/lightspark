@@ -300,7 +300,7 @@ void Loader::Render()
 	local_root->Render();
 }
 
-Sprite::Sprite()
+Sprite::Sprite():hackdraw(false)
 {
 }
 
@@ -311,21 +311,29 @@ void Sprite::sinit(Class_base* c)
 	c->super=Class<DisplayObjectContainer>::getClass();
 }
 
+void Sprite::Render()
+{
+	assert(hackdraw);
+	cout << "HACKdraw" << endl;
+
+	FILLSTYLE::fixedColor(0,0,0);
+	glBegin(GL_QUADS);
+		glVertex2i(0,0);
+		glVertex2i(100,0);
+		glVertex2i(100,100);
+		glVertex2i(0,100);
+	glEnd();
+
+	//Now draw also the display list
+	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
+	for(it;it!=dynamicDisplayList.end();it++)
+		(*it)->Render();
+}
+
 ASFUNCTIONBODY(Sprite,_constructor)
 {
 	Sprite* th=static_cast<Sprite*>(obj->implementation);
 	DisplayObjectContainer::_constructor(obj,NULL);
-	return NULL;
-}
-
-ASFUNCTIONBODY(Sprite,_getParent)
-{
-	Sprite* th=static_cast<Sprite*>(obj->implementation);
-	abort();
-/*	if(th->parent==NULL)
-		return new Undefined;
-
-	return th->parent;*/
 	return NULL;
 }
 
@@ -542,7 +550,7 @@ void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	Matrix.multiply2D(xmax,ymax,xmax,ymax);
 }
 
-DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL),rotation(0.0)
+DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL),rotation(0.0),parent(NULL)
 {
 }
 
@@ -615,6 +623,7 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 	obj->setGetterByQName("visible","",new Function(_getVisible));
 	obj->setGetterByQName("rotation","",new Function(_getRotation));
 	obj->setGetterByQName("name","",new Function(_getName));
+	obj->setGetterByQName("parent","",new Function(_getParent));
 	obj->setGetterByQName("root","",new Function(_getRoot));
 	obj->setGetterByQName("blendMode","",new Function(_getBlendMode));
 	obj->setGetterByQName("scale9Grid","",new Function(_getScale9Grid));
@@ -679,6 +688,16 @@ ASFUNCTIONBODY(DisplayObject,_getName)
 	return new Undefined;
 }
 
+ASFUNCTIONBODY(DisplayObject,_getParent)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	if(th->parent==NULL)
+		return new Undefined;
+
+	th->parent->obj->incRef();
+	return th->parent->obj;
+}
+
 ASFUNCTIONBODY(DisplayObject,_getRoot)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
@@ -736,49 +755,47 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 	return new Integer(0);;
 }
 
-ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
+void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 {
-	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
-
 	//For now just set the root variable
 	//TODO: Interesting things such as inserting the object in the display list will be done later
 
+	//Set the root of the movie to this container
+	assert(child->root==NULL);
+	assert(root==sys);
+	child->root=root;
+
+	//The HACK for this supports only Sprites now
+	assert(isSubclass(child->obj ,Class<Sprite>::getClass()));
+
+	//If the child has no parent, set this container to parent
+	//If there is a previous parent, purge the child from his list
+	assert(child->parent==NULL);
+	if(child->parent==this) //Child already in this container
+		return;
+	child->parent=this;
+
+	//We insert the object in the back of the list
+	//TODO: support the 'at index' version of the call
+	dynamicDisplayList.push_back(child);
+
+	//HACK: Enable hacking rendering of the object
+	Sprite* sprite=static_cast<Sprite*>(child);
+	sprite->hackdraw=true;
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
 	assert(args->size()==2);
 	//Validate object type
 	assert(isSubclass(args->at(0),Class<DisplayObject>::getClass()));
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+	th->_addChildAt(d,0);
 
-	//Set the root of the movie to this container
-	assert(th==sys);
-	assert(d->root==NULL);
-	assert(th->root==sys);
-	d->root=th->root;
-
-	__asm__("int $3");
-
-/*	if(args->at(0)->parent==th)
-		return args->at(0);
-	else if(args->at(0)->parent!=NULL)
-	{
-		//Remove from current parent list
-		abort();
-	}
-
-	ASObject* cur=args->at(0);
-	if(cur->getObjectType()==T_DEFINABLE)
-		abort();
-
-	if(e==NULL)
-	{
-		LOG(ERROR,"Cannot add arg to display list");
-		abort();
-	}
-	args->at(0)->parent=th;
-	th->dynamicDisplayList.push_back(e);*/
-
-	return NULL;
+	return d->obj;
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,addChild)
@@ -790,13 +807,9 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+	th->_addChildAt(d,0);
 
-	//Set the root of the movie to this container
-	assert(d->root==NULL);
-	assert(th->root==sys);
-	d->root=th->root;
-
-	__asm__("int $3");
+	return d->obj;
 }
 
 void Shape::sinit(Class_base* c)

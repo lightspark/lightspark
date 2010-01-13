@@ -1263,7 +1263,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 	const tiny_string& name=mname->name_s;
 	const tiny_string& ns=mname->ns[0];
 	if(t->kind>>4)
-		cout << "Next slot has flags " << (t->kind>>4) << endl;
+		LOG(LOG_CALLS,"Next slot has flags " << (t->kind>>4));
 	switch(t->kind&0xf)
 	{
 		//Link the methods to the implementations
@@ -1389,7 +1389,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 	const tiny_string& ns=mname->ns[0];
 
 	if(t->kind>>4)
-		cout << "Next slot has flags " << (t->kind>>4) << endl;
+		LOG(LOG_CALLS,"Next slot has flags " << (t->kind>>4));
 	switch(t->kind&0xf)
 	{
 		case traits_info::Class:

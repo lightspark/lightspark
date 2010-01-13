@@ -1026,7 +1026,7 @@ void RenderThread::draw()
 {
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
-//	compat_msleep(1000/sys->root->frame_rate);
+	compat_msleep(1000/sys->root->frame_rate);
 	sem_wait(&end_render);
 }
 

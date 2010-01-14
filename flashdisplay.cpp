@@ -623,13 +623,8 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	EventDispatcher::_constructor(obj,NULL);
-	if(th->loaderInfo)
-	{
-		assert(th->loaderInfo->obj!=NULL);
-		th->loaderInfo->_constructor(th->loaderInfo->obj,NULL);
-		obj->setVariableByQName("loaderInfo","",th->loaderInfo->obj);
-	}
 
+	obj->setGetterByQName("loaderInfo","",new Function(_getLoaderInfo));
 	obj->setGetterByQName("width","",new Function(_getWidth));
 	obj->setGetterByQName("x","",new Function(_getX));
 	obj->setGetterByQName("y","",new Function(_getY));
@@ -649,6 +644,18 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 	obj->setSetterByQName("x","",new Function(_setX));
 	obj->setSetterByQName("y","",new Function(_setY));
 	return NULL;
+}
+
+ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	if(th->loaderInfo)
+	{
+		th->loaderInfo->obj->incRef();
+		return th->loaderInfo->obj;
+	}
+	else
+		return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getStage)

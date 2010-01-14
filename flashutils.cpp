@@ -97,7 +97,11 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	ASObject* owner;
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
 	objAndLevel o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);
-	assert(owner);
+
+	//assert(owner);
+	//TODO: should raise an exception, for now just return undefined
+	if(!owner)
+		return new Undefined;
 
 	//Check if the object has to be defined
 	if(o.obj->getObjectType()==T_DEFINABLE)

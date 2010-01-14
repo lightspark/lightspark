@@ -60,13 +60,6 @@ void Array::sinit(Class_base* c)
 	c->constructor=new Function(_constructor);
 }
 
-/*ASFUNCTIONBODY(Array,Array)
-{
-	ASObject* ret=new ASArray();
-	//ret->constructor->call(ret,args);
-	return ret;
-}*/
-
 ASFUNCTIONBODY(Array,_constructor)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
@@ -77,12 +70,9 @@ ASFUNCTIONBODY(Array,_constructor)
 	obj->ASObject::setVariableByQName("join",AS3,new Function(join));
 	obj->ASObject::setVariableByQName("push",AS3,new Function(_push));
 	obj->ASObject::setVariableByQName("sort",AS3,new Function(_sort));
-	//th->setVariableByName("push",new Function(_push));
-	//th->setVariableByName(Qname(AS3,"shift"),new Function(shift));
-	if(args==NULL)
-		return NULL;
+	obj->ASObject::setVariableByQName("concat",AS3,new Function(_concat));
 
-	if(args->size()!=0)
+	if(args && args->size()!=0)
 	{
 		LOG(LOG_CALLS,"Called Array constructor");
 		th->resize(args->size());
@@ -92,6 +82,7 @@ ASFUNCTIONBODY(Array,_constructor)
 			args->at(i)->incRef();
 		}
 	}
+	return NULL;
 }
 
 ASFUNCTIONBODY(Array,_getLength)
@@ -126,6 +117,38 @@ ASFUNCTIONBODY(Array,join)
 				ret+=del->toString().raw_buf();
 		}
 		return new ASString(ret);
+}
+
+ASFUNCTIONBODY(Array,_concat)
+{
+	Array* th=static_cast<Array*>(obj->implementation);
+	Array* ret=Class<Array>::getInstanceS(true);
+	ret->data=th->data;
+	if(args->size()>=1 && args->at(0)->getObjectType()==T_ARRAY)
+	{
+		assert(args->size()==1);
+		Array* tmp=Class<Array>::cast(args->at(0)->implementation);
+		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
+	}
+	else
+	{
+		//Insert the arguments in the array
+		ret->data.insert(th->data.end(),args->data.begin(),args->data.end());
+		ret->data.reserve(ret->data.size()+args->size());
+		for(int i=0;i<args->size();i++)
+			ret->push(args->at(i));
+	}
+
+	//All the elements in the new array should be increffed, as args will be deleted and
+	//this array could die too
+	for(int i=0;i<ret->data.size();i++)
+	{
+		
+		if(ret->data[i].type==STACK_OBJECT)
+			ret->data[i].data->incRef();
+	}
+	
+	return ret->obj;
 }
 
 ASFUNCTIONBODY(Array,_pop)

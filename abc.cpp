@@ -71,6 +71,10 @@ void DoABCTag::execute()
 {
 	LOG(LOG_CALLS,"ABC Exec " << Name);
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
+	SynchronizationEvent* se=new SynchronizationEvent;
+	sys->currentVm->addEvent(NULL,se);
+	se->wait();
+	__asm__("int $3");
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
@@ -130,6 +134,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("print","",new Function(print));
 	Global.setVariableByQName("trace","",new Function(print));
 	Global.setVariableByQName("parseInt","",new Function(parseInt));
+	Global.setVariableByQName("parseFloat","",new Function(parseFloat));
 	Global.setVariableByQName("toString","",new Function(ASObject::_toString));
 
 	Global.setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass());
@@ -1046,13 +1051,6 @@ void ABCVm::not_impl(int n)
 	abort();
 }
 
-ASObject* ABCVm::strictEquals(ASObject* obj1, ASObject* obj2)
-{
-	LOG(LOG_NOT_IMPLEMENTED, "strictEquals" );
-	abort();
-	return NULL;
-}
-
 void ABCVm::newArray(call_context* th, int n)
 {
 	LOG(LOG_CALLS, "newArray " << n );
@@ -1956,6 +1954,16 @@ ASObject* lightspark::parseInt(ASObject* obj,arguments* args)
 	else
 	{
 		return new Integer(atoi(args->at(0)->toString().raw_buf()));
+	}
+}
+
+ASObject* lightspark::parseFloat(ASObject* obj,arguments* args)
+{
+	if(args->at(0)->getObjectType()==T_UNDEFINED)
+		return new Undefined;
+	else
+	{
+		return new Integer(atof(args->at(0)->toString().raw_buf()));
 	}
 }
 

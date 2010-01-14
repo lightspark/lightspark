@@ -327,8 +327,8 @@ public:
 	virtual ~Array();
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
-	//ASFUNCTION(Array);
 	ASFUNCTION(_push);
+	ASFUNCTION(_concat);
 	ASFUNCTION(_pop);
 	ASFUNCTION(join);
 	ASFUNCTION(shift);

@@ -490,7 +490,7 @@ private:
 	static bool pushTrue();
 	static void dup();
 	static bool in(ASObject*,ASObject*);
-	static ASObject* strictEquals(ASObject*,ASObject*);
+	static bool strictEquals(ASObject*,ASObject*);
 	static bool _not(ASObject*);
 	static bool equals(ASObject*,ASObject*);
 	static ASObject* negate(ASObject*);
@@ -620,6 +620,7 @@ public:
 
 bool Boolean_concrete(ASObject* obj);
 ASObject* parseInt(ASObject* obj,arguments* args);
+ASObject* parseFloat(ASObject* obj,arguments* args);
 ASObject* isNaN(ASObject* obj,arguments* args);
 
 std::istream& operator>>(std::istream& in, u8& v);

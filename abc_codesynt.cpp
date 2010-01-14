@@ -128,7 +128,6 @@ opcode_handler ABCVm::opcode_table_args2_pointers[]={
 	{"greaterThan",(void*)&ABCVm::greaterThan},
 	{"greaterEquals",(void*)&ABCVm::greaterEquals},
 	{"lessEquals",(void*)&ABCVm::lessEquals},
-	{"strictEquals",(void*)&ABCVm::strictEquals},
 };
 
 typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
@@ -191,6 +190,7 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"not",(void*)&ABCVm::_not,ARGS_OBJ},
 	{"equals",(void*)&ABCVm::equals,ARGS_OBJ_OBJ},
+	{"strictEquals",(void*)&ABCVm::strictEquals,ARGS_OBJ_OBJ},
 	{"ifEq",(void*)&ABCVm::ifEq,ARGS_OBJ_OBJ},
 	{"ifNE",(void*)&ABCVm::ifNE,ARGS_OBJ_OBJ},
 	{"ifNE_oi",(void*)&ABCVm::ifNE_oi,ARGS_OBJ_INT},
@@ -4142,7 +4142,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				llvm::Value* v2=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
 				value=Builder.CreateCall2(ex->FindFunctionNamed("strictEquals"), v1, v2);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
 			case 0xad:

@@ -82,7 +82,6 @@ KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
 
 MouseEvent::MouseEvent():Event("mouseEvent")
 {
-//	setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
 }
 
 ProgressEvent::ProgressEvent():Event("progress"),bytesLoaded(0),bytesTotal(0)
@@ -136,6 +135,7 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("MOUSE_OUT","",new ASString("mouseOut"));
 	c->setVariableByQName("MOUSE_OVER","",new ASString("mouseOver"));
 	c->setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
+	c->setVariableByQName("MOUSE_WHEEL","",new ASString("mouseWheel"));
 	c->setVariableByQName("ROLL_OVER","",new ASString("rollOver"));
 	c->setVariableByQName("ROLL_OUT","",new ASString("rollOut"));
 }

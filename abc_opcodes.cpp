@@ -945,6 +945,14 @@ bool ABCVm::equals(ASObject* val2, ASObject* val1)
 	return ret;
 }
 
+bool ABCVm::strictEquals(ASObject* obj2, ASObject* obj1)
+{
+	LOG(LOG_CALLS, "strictEquals" );
+	if(obj1->getObjectType()!=obj2->getObjectType())
+		return false;
+	return equals(obj2,obj1);
+}
+
 void ABCVm::dup()
 {
 	LOG(LOG_CALLS, "dup: DONE" );
@@ -1017,8 +1025,11 @@ bool ABCVm::ifNLE(ASObject* obj2, ASObject* obj1)
 bool ABCVm::ifGE(ASObject* obj2, ASObject* obj1)
 {
 	LOG(LOG_CALLS,"ifGE");
-	abort();
-	return false;
+	//Real comparision demanded to object
+	bool ret=obj1->isGreater(obj2) || obj1->isEqual(obj2);
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
 }
 
 bool ABCVm::ifNGE(ASObject* obj2, ASObject* obj1)
@@ -1193,13 +1204,14 @@ void ABCVm::constructSuper(call_context* th, int n)
 	cout << "Cur prototype name " << obj->actualPrototype->class_name << endl;
 	//Move the object protoype and level up
 	obj->actualPrototype=old_prototype->super;
+	cout << "Super prototype name " << obj->actualPrototype->class_name << endl;
 	assert(obj->actualPrototype);
 	int oldlevel=obj->max_level;
 	obj->max_level=obj->actualPrototype->max_level;
 	//multiname* name=th->context->getMultiname(th->context->instances[obj->actualPrototype->class_index].name,NULL);
 	//LOG(LOG_CALLS,"Constructing super " << *name);
 
-	obj->handleConstruction(th->context,&args, false);
+	obj->handleConstruction(th->context,&args, true);
 	LOG(LOG_CALLS,"End super construct ");
 
 	//Reset prototype to its previous value

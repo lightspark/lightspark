@@ -108,6 +108,10 @@ public:
 	{
 		return getClass(ClassName<T>::name);
 	}
+	static T* cast(IInterface* o)
+	{
+		return static_cast<T*>(o);
+	}
 };
 
 };

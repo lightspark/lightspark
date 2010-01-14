@@ -261,24 +261,28 @@ bool ASObject::isEqual(ASObject* r)
 			return ret;
 	}
 
+	//if we are comparing the same object the answer is true
+	if(this==r)
+		return true;
+
 	//We can try to call valueOf (maybe equals) and compare that
 	ASObject* owner1,*owner2;
 	objAndLevel obj1=getVariableByQName("valueOf","",owner1);
 	objAndLevel obj2=r->getVariableByQName("valueOf","",owner2);
-	if(owner1==NULL || owner2==NULL)
+	if(owner1!=NULL && owner2!=NULL)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
-		return false;
+		IFunction* f1=obj1.obj->toFunction();
+		IFunction* f2=obj2.obj->toFunction();
+
+		ASObject* ret1=f1->call(this,NULL,obj1.level);
+		ASObject* ret2=f2->call(r,NULL,obj2.level);
+
+		LOG(LOG_CALLS,"Overloaded isEqual");
+		return ret1->isEqual(ret2);
 	}
 
-	IFunction* f1=obj1.obj->toFunction();
-	IFunction* f2=obj2.obj->toFunction();
-
-	ASObject* ret1=f1->call(this,NULL,obj1.level);
-	ASObject* ret2=f2->call(r,NULL,obj2.level);
-
-	LOG(LOG_CALLS,"Overloaded isEqual");
-	return ret1->isEqual(ret2);
+	LOG(LOG_NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	return false;
 }
 
 IFunction* ASObject::toFunction()
@@ -367,7 +371,11 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 	assert(ref_count>0);
 	int level=(actualPrototype)?actualPrototype->max_level:max_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,true);
-	assert(obj->getter==NULL);
+	if(obj->getter!=NULL)
+	{
+		assert(o==obj->getter);
+		return;
+	}
 	obj->getter=o;
 }
 
@@ -495,7 +503,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 	else if(mname.name_type==multiname::NAME_STRING)
 		name.name=mname.name_s;
 
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
+	const pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	if(ret.first!=ret.second)
 	{
 		//Check if one the namespace is already present
@@ -515,7 +523,9 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 		//return the first
 		if(!exact)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"Overriding or other weird condition on [multinam]::" << name.name << ". Found on " << 
+			if(name.name=="initialize")
+				__asm__("int $3");
+			LOG(LOG_NOT_IMPLEMENTED,"Overriding or other weird condition on [multiname]::" << name.name << ". Found on " << 
 				ret.first->second.first);
 			return &ret.first->second.second;
 		}
@@ -589,11 +599,33 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 	int level;
 	for(int i=max_level;i>=0;i--)
 	{
-		obj=Variables.findObjVar(name,i,false,false);
+		obj=Variables.findObjVar(name,i,false,true);
 		if(obj)
 		{
-			level=i;
-			break;
+			//HACK: to declare the object valid the getter or the object has to be declared
+			if(obj->getter || obj->var)
+			{
+				level=i;
+				break;
+			}
+			else
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"HACK: No getter or object, proceed to previous level");
+			}
+		}
+	}
+
+	//If no result yet, try again without setting the exact flag
+	if(!obj)
+	{
+		for(int i=max_level;i>=0;i--)
+		{
+			obj=Variables.findObjVar(name,i,false,false);
+			if(obj)
+			{
+				level=i;
+				break;
+			}
 		}
 	}
 
@@ -1699,7 +1731,10 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args, bool link
 	{
 		//Lets's setup the interfaces
 		for(int i=0;i<actualPrototype->interfaces.size();i++)
+		{
+			LOG(LOG_CALLS,"Linking with interface " << actualPrototype->interfaces[i]);
 			context->linkInterface(actualPrototype->interfaces[i], this);
+		}
 	}
 }
 

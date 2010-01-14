@@ -71,6 +71,7 @@ public:
 	ASFUNCTION(_setX);
 	ASFUNCTION(_getY);
 	ASFUNCTION(_setY);
+	ASFUNCTION(_getLoaderInfo);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_getBounds);
 	ASFUNCTION(_setWidth);
@@ -148,7 +149,7 @@ private:
 	uint32_t bytesLoaded;
 	uint32_t bytesTotal;
 public:
-	LoaderInfo():bytesLoaded(40),bytesTotal(100)
+	LoaderInfo():bytesLoaded(100),bytesTotal(100)
 	{
 	}
 	static void sinit(Class_base* c);

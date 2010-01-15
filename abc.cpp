@@ -57,7 +57,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 	LOG(LOG_CALLS,"DoABCTag Name: " << Name);
 
 	cout << "assign vm" << endl;
-	context=new ABCContext(sys->currentVm,in);
+	context=new ABCContext(in);
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -74,7 +74,6 @@ void DoABCTag::execute()
 	SynchronizationEvent* se=new SynchronizationEvent;
 	sys->currentVm->addEvent(NULL,se);
 	se->wait();
-	__asm__("int $3");
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
@@ -319,6 +318,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 			}
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				abort();
 				break;
 		}
 		return ret;
@@ -336,6 +336,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 			}
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				abort();
 				break;
 		}
 		return ret;
@@ -426,11 +427,20 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				rt1->decRef();
 				break;
 			}
+			case 0x0f: //RTQName
+			{
+				//TODO: Next line is an hack
+				ret->nskind.push_back(0x08);
+				assert(rt1->prototype==Class<Namespace>::getClass());
+				Namespace* tmpns=static_cast<Namespace*>(rt1->implementation);
+				ret->ns.push_back(tmpns->uri);
+				ret->name_type=multiname::NAME_STRING;
+				ret->name_s=th->context->getString(m->name);
+				rt1->decRef();
+				break;
+			}
 	/*		case 0x0d:
 				LOG(CALLS, "QNameA");
-				break;
-			case 0x0f:
-				LOG(CALLS, "RTQName");
 				break;
 			case 0x10:
 				LOG(CALLS, "RTQNameA");
@@ -449,6 +459,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				break;*/
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				abort();
 				break;
 		}
 		return ret;
@@ -529,6 +540,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				break;*/
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				abort();
 				break;
 		}
 		return ret;
@@ -565,6 +577,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 			}
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				abort();
 				break;
 		}
 		return ret;
@@ -582,6 +595,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 			}
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				abort();
 				break;
 		}
 		return ret;
@@ -686,6 +700,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				break;*/
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				abort();
 				break;
 		}
 		return ret;
@@ -734,6 +749,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				break;*/
 			default:
 				LOG(LOG_ERROR,"dMultiname to String not yet implemented for this kind " << hex << m->kind);
+				abort();
 				break;
 		}
 		ret->name_s.len();
@@ -741,7 +757,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 	}
 }
 
-ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
+ABCContext::ABCContext(istream& in)
 {
 	in >> minor >> major;
 	LOG(LOG_CALLS,"ABCVm version " << major << '.' << minor);
@@ -766,6 +782,15 @@ ABCContext::ABCContext(ABCVm* v,istream& in):vm(v),Global(&v->Global)
 	{
 		in >> instances[i];
 		cout << "Class " << *getMultiname(instances[i].name,NULL) << endl;
+		cout << "Flags:" << endl;
+		if((instances[i].flags)&0x01)
+			cout << "\tSealed" << endl;
+		if((instances[i].flags)&0x02)
+			cout << "\tFinal" << endl;
+		if((instances[i].flags)&0x04)
+			cout << "\tInterface" << endl;
+		if((instances[i].flags)&0x08)
+			cout << "\tProtectedNS " << getString(constant_pool.namespaces[instances[i].protectedNs].name) << endl;
 		if(instances[i].supername)
 			cout << "Super " << *getMultiname(instances[i].supername,NULL) << endl;
 		if(instances[i].interface_count)
@@ -854,7 +879,7 @@ void ABCVm::handleEvent()
 					construct_instance=true;
 				}
 				LOG(LOG_CALLS,"Binding of " << ev->class_name);
-				last_context->buildClassAndInjectBase(ev->class_name,ev->base,&args,construct_instance);
+				buildClassAndInjectBase(ev->class_name,ev->base,&args,construct_instance);
 				LOG(LOG_CALLS,"End of binding of " << ev->class_name);
 				break;
 			}
@@ -877,15 +902,14 @@ void ABCVm::handleEvent()
 			case CONTEXT_INIT:
 			{
 				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second);
-				last_context=ev->context;
-				last_context->exec();
+				ev->context->exec();
 				break;
 			}
 			case CONSTRUCT_OBJECT:
 			{
 				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
 				LOG(LOG_CALLS,"Building instance traits");
-				last_context->buildClassTraits(ev->obj, ev->_class->class_index);
+				ev->_class->context->buildClassTraits(ev->obj, ev->_class->class_index);
 
 				LOG(LOG_CALLS,"Calling Instance init");
 				ev->_class->constructor->call(ev->obj,NULL,ev->obj->max_level);
@@ -907,11 +931,11 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	sem_post(&event_queue_mutex);
 }
 
-void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,arguments* args, bool construct_instance)
+void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,arguments* args, bool construct_instance)
 {
 	LOG(LOG_CALLS,"Setting class name to " << s);
 	ASObject* owner;
-	ASObject* derived_class=Global->getVariableByString(s,owner);
+	ASObject* derived_class=Global.getVariableByString(s,owner);
 	if(!owner)
 	{
 		LOG(LOG_ERROR,"Class " << s << " not found in global");
@@ -921,9 +945,9 @@ void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,argum
 	{
 		LOG(LOG_CALLS,"Class " << s << " is not yet valid");
 		Definable* d=static_cast<Definable*>(derived_class);
-		d->define(Global);
+		d->define(&Global);
 		LOG(LOG_CALLS,"End of deferred init of class " << s);
-		derived_class=Global->getVariableByString(s,owner);
+		derived_class=Global.getVariableByString(s,owner);
 		if(!owner)
 		{
 			LOG(LOG_ERROR,"Class " << s << " not found in global");
@@ -957,7 +981,7 @@ void ABCContext::buildClassAndInjectBase(const string& s, IInterface* base,argum
 		tmp->implementation=base;
 
 		LOG(LOG_CALLS,"Building instance traits");
-		buildClassTraits(base->obj, derived_class_tmp->class_index);
+		derived_class_tmp->context->buildClassTraits(base->obj, derived_class_tmp->class_index);
 
 		LOG(LOG_CALLS,"Calling Instance init on " << s);
 		//args->incRef();
@@ -1146,7 +1170,7 @@ void ABCContext::exec()
 		LOG(LOG_CALLS, "Building script traits: " << scripts[i].trait_count );
 		SyntheticFunction* mf=new SyntheticFunction(m);
 		for(int j=0;j<scripts[i].trait_count;j++)
-			buildTrait(Global,&scripts[i].traits[j],mf);
+			buildTrait(&sys->currentVm->Global,&scripts[i].traits[j],mf);
 	}
 	//Before the entry point we run early events
 //	while(sem_trywait(&th->sem_event_count)==0)
@@ -1157,8 +1181,8 @@ void ABCContext::exec()
 	IFunction* entry=new SyntheticFunction(m);
 	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(int j=0;j<scripts[i].trait_count;j++)
-		buildTrait(Global,&scripts[i].traits[j]);
-	entry->call(Global,NULL,Global->max_level);
+		buildTrait(&sys->currentVm->Global,&scripts[i].traits[j]);
+	entry->call(&sys->currentVm->Global,NULL,sys->currentVm->Global.max_level);
 	LOG(LOG_CALLS, "End of Entry Point");
 
 }
@@ -1227,23 +1251,27 @@ inline void ABCContext::buildClassTraits(ASObject* obj, int class_index)
 void ABCContext::linkInterface(const multiname& interface_name, ASObject* obj)
 {
 	ASObject* owner;
-	ASObject* interface_obj=Global->getVariableByMultiname(interface_name,owner).obj;
+	ASObject* interface_obj=getGlobal()->getVariableByMultiname(interface_name,owner).obj;
 	assert(owner && interface_obj->getObjectType()==T_CLASS);
 	Class_base* inter=static_cast<Class_base*>(interface_obj);
-
-	//TODO: implement builtin interfaces
 	if(inter->class_index==-1)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Linking of builtin interface " << interface_name << " not supported");
 		return;
+	}
+
+	ABCContext* context=inter->context;
+	assert(context);
 
 	//Recursively link interfaces implemented by this interface
 	for(int i=0;i<inter->interfaces.size();i++)
 		linkInterface(inter->interfaces[i],obj);
 
 	//Link traits of this interface
-	for(int j=0;j<instances[inter->class_index].trait_count;j++)
+	for(int j=0;j<context->instances[inter->class_index].trait_count;j++)
 	{
-		traits_info* t=&instances[inter->class_index].traits[j];
-		linkTrait(obj,t);
+		traits_info* t=&context->instances[inter->class_index].traits[j];
+		context->linkTrait(obj,t);
 	}
 
 	if(inter->constructor)
@@ -1285,7 +1313,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				assert(var->var);
 
 				var->var->incRef();
-				obj->setVariableByQName(name,ns,var->var);
+				obj->setVariableByQName(name,ns,var->var,false);
 			}
 
 			LOG(LOG_CALLS,"End Method trait: " << ns << "::" << name);
@@ -1395,15 +1423,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		{
 			ASObject* ret;
 			if(deferred_initialization)
-			{
 				ret=new ScriptDefinable(deferred_initialization);
-				obj->setVariableByMultiname(*mname, ret);
-			}
 			else
-			{
 				ret=new Undefined;
-				obj->setVariableByMultiname(*mname, ret);
-			}
+
+			obj->setVariableByQName(name, ns, ret, false);
 			
 			LOG(LOG_CALLS,"Slot "<< t->slot_id << " type Class name " << ns << "::" << name << " id " << t->classi);
 			if(t->slot_id)
@@ -1459,7 +1483,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				obj_var* var=obj->Variables.findObjVar(name,ns,
 			}*/
 
-			obj->setVariableByQName(name,ns,f);
+			obj->setVariableByQName(name,ns,f,false);
 			LOG(LOG_CALLS,"End Method trait: " << ns << "::" << name);
 			break;
 		}
@@ -1471,7 +1495,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			if(t->vindex)
 			{
 				ret=getConstant(t->vkind,t->vindex);
-				obj->setVariableByQName(name, ns, ret);
+				obj->setVariableByQName(name, ns, ret, false);
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, name, ns);
 			}
@@ -1484,7 +1508,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				assert(deferred_initialization==NULL);
 
 				ret=new Undefined;
-				obj->setVariableByQName(name, ns, ret);
+				obj->setVariableByQName(name, ns, ret, false);
 			}
 			LOG(LOG_CALLS,"Const "<<name<<" type "<<*type);
 			if(t->slot_id)
@@ -1497,7 +1521,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			if(t->vindex)
 			{
 				ASObject* ret=getConstant(t->vkind,t->vindex);
-				obj->setVariableByQName(name, ns, ret);
+				obj->setVariableByQName(name, ns, ret, false);
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, name, ns);
 
@@ -1515,12 +1539,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					if(deferred_initialization)
 					{
 						ret=new ScriptDefinable(deferred_initialization);
-						obj->setVariableByQName(name, ns, ret);
+						obj->setVariableByQName(name, ns, ret, false);
 					}
 					else
 					{
 						ret=new Undefined;
-						obj->setVariableByQName(name, ns, ret);
+						obj->setVariableByQName(name, ns, ret, false);
 					}
 				}
 				else
@@ -1536,7 +1560,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		}
 		default:
 			LOG(LOG_ERROR,"Trait not supported " << name << " " << t->kind);
-			obj->setVariableByQName(name, ns, new Undefined);
+			obj->setVariableByQName(name, ns, new Undefined, false);
 	}
 }
 

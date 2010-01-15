@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 	ifstream f(argv[1]);
 	//TODO: Inject Context event
 	ABCVm vm(sys);
-	ABCContext* context=new ABCContext(&vm,f);
+	ABCContext* context=new ABCContext(f);
 	vm.addEvent(NULL,new ABCContextInitEvent(context));
 	vm.addEvent(NULL,new ShutdownEvent);
 	vm.wait();

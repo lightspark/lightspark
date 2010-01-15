@@ -387,9 +387,10 @@ void ABCVm::pushScope(call_context* th)
 
 ASObject* ABCVm::getGlobalScope(call_context* th)
 {
-	LOG(LOG_CALLS,"getGlobalScope: " << &th->context->Global);
-	th->context->Global->incRef();
-	return th->context->Global;
+	ASObject* ret=getGlobal();
+	LOG(LOG_CALLS,"getGlobalScope: " << ret);
+	ret->incRef();
+	return ret;
 }
 
 uintptr_t ABCVm::decrement(ASObject* o)
@@ -542,7 +543,7 @@ void ABCVm::construct(call_context* th, int m)
 	assert(o_class->getObjectType()==T_CLASS);
 	ASObject* ret=o_class->getInstance()->obj;
 
-	ret->handleConstruction(th->context, &args, true);
+	ret->handleConstruction(&args, true);
 
 //	args.decRef();
 	obj->decRef();
@@ -1160,15 +1161,15 @@ void ABCVm::getLex(call_context* th, int n)
 	if(!owner)
 	{
 		LOG(LOG_CALLS, "NOT found, trying Global" );
-		ASObject* o2=th->context->vm->Global.getVariableByMultiname(*name,owner).obj;
+		ASObject* o2=getGlobal()->getVariableByMultiname(*name,owner).obj;
 		if(owner)
 		{
 			if(o2->getObjectType()==T_DEFINABLE)
 			{
 				LOG(LOG_CALLS,"Deferred definition of property " << *name);
 				Definable* d=static_cast<Definable*>(o2);
-				d->define(th->context->Global);
-				o2=th->context->Global->getVariableByMultiname(*name,owner).obj;
+				d->define(getGlobal());
+				o2=getGlobal()->getVariableByMultiname(*name,owner).obj;
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
 
@@ -1211,7 +1212,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 	//multiname* name=th->context->getMultiname(th->context->instances[obj->actualPrototype->class_index].name,NULL);
 	//LOG(LOG_CALLS,"Constructing super " << *name);
 
-	obj->handleConstruction(th->context,&args, true);
+	obj->handleConstruction(&args, true);
 	LOG(LOG_CALLS,"End super construct ");
 
 	//Reset prototype to its previous value
@@ -1243,8 +1244,8 @@ void ABCVm::findProperty(call_context* th, int n)
 	if(!owner)
 	{
 		LOG(LOG_CALLS, "NOT found, pushing global" );
-		th->runtime_stack_push(&th->context->vm->Global);
-		th->context->vm->Global.incRef();
+		getGlobal()->incRef();
+		th->runtime_stack_push(getGlobal());
 	}
 }
 
@@ -1269,8 +1270,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 	if(!owner)
 	{
 		LOG(LOG_CALLS, "NOT found, trying Global" );
-		//TODO: to multiname
-		th->context->vm->Global.getVariableByMultiname(*name,owner);
+		getGlobal()->getVariableByMultiname(*name,owner);
 		if(owner)
 		{
 			th->runtime_stack_push(owner);
@@ -1428,6 +1428,9 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(LOG_CALLS,"callSuperVoid " << *name << ' ' << m);
+
+	if(name->name_s=="initialize")
+		__asm__("int $3");
 
 	ASObject* obj=th->runtime_stack_pop();
 
@@ -1606,7 +1609,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		Class_base* o_class=static_cast<Class_base*>(o);
 		ASObject* ret=o_class->getInstance()->obj;;
 
-		ret->handleConstruction(th->context, &args, true);
+		ret->handleConstruction(&args, true);
 		th->runtime_stack_push(ret);
 	}
 	else if(o->getObjectType()==T_FUNCTION)
@@ -1728,8 +1731,10 @@ void ABCVm::newClass(call_context* th, int n)
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
 
 	Class_base* ret=new Class_inherit(mname->name_s);
-//	Class_base* ret=Class<IInterface>::getClass(mname->name_s);
 	ASObject* tmp=th->runtime_stack_pop();
+
+	assert(th->context);
+	ret->context=th->context;
 
 	//Null is a "valid" base class
 	if(tmp->getObjectType()!=T_NULL)
@@ -1755,9 +1760,9 @@ void ABCVm::newClass(call_context* th, int n)
 		multiname* name=th->context->getMultiname(th->context->instances[n].interfaces[i],NULL);
 		ret->addImplementedInterface(*name);
 
-		//Mke the class valid if needed
+		//Make the class valid if needed
 		ASObject* owner;
-		ASObject* obj=th->context->Global->getVariableByMultiname(*name,owner).obj;
+		ASObject* obj=getGlobal()->getVariableByMultiname(*name,owner).obj;
 
 		//Named only interfaces seems to be allowed 
 		if(!owner)
@@ -1767,9 +1772,9 @@ void ABCVm::newClass(call_context* th, int n)
 		{
 			LOG(LOG_CALLS,"Class " << *name << " is not yet valid (as interface)");
 			Definable* d=static_cast<Definable*>(obj);
-			d->define(th->context->Global);
+			d->define(getGlobal());
 			LOG(LOG_CALLS,"End of deferred init of class " << *name);
-			obj=th->context->Global->getVariableByMultiname(*name,owner).obj;
+			obj=getGlobal()->getVariableByMultiname(*name,owner).obj;
 			assert(owner);
 		}
 	}

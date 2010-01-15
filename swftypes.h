@@ -410,6 +410,7 @@ public:
 	{
 		//std::cout << "incref " << this << std::endl;
 		ref_count++;
+		assert(ref_count>0);
 	}
 	void decRef()
 	{
@@ -425,7 +426,11 @@ public:
 				manager->put(this);
 			}
 			else
+			{
+				//Let's make refcount very invalid
+				ref_count=-1024;
 				delete this;
+			}
 		}
 	}
 	void fake_decRef()
@@ -457,7 +462,7 @@ public:
 	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
-	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	bool hasProperty(const tiny_string& name);
@@ -489,7 +494,7 @@ public:
 	virtual bool isLess(ASObject* r);
 	virtual bool isGreater(ASObject* r);
 
-	void handleConstruction(ABCContext* context,arguments* args, bool linkInterfaces);
+	void handleConstruction(arguments* args, bool linkInterfaces);
 };
 
 class IInterface

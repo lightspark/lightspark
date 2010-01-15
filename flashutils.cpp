@@ -96,7 +96,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 
 	ASObject* owner;
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
-	objAndLevel o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);
+	objAndLevel o=getGlobal()->getVariableByQName(name,ns,owner);
 
 	//assert(owner);
 	//TODO: should raise an exception, for now just return undefined
@@ -108,8 +108,8 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	{
 		LOG(LOG_CALLS,"We got an object not yet valid");
 		Definable* d=static_cast<Definable*>(o.obj);
-		d->define(sys->currentVm->last_context->Global);
-		o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);
+		d->define(getGlobal());
+		o=getGlobal()->getVariableByQName(name,ns,owner);
 	}
 
 	assert(o.obj->getObjectType()==T_CLASS);

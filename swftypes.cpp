@@ -384,7 +384,11 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 	assert(ref_count>0);
 	int level=(actualPrototype)?actualPrototype->max_level:max_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,true);
-	assert(obj->setter==NULL);
+	if(obj->setter!=NULL)
+	{
+		assert(o==obj->setter);
+		return;
+	}
 	obj->setter=o;
 }
 
@@ -447,7 +451,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	}
 }
 
-void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back)
 {
 	assert(ref_count>0);
 	if(implementation)
@@ -458,13 +462,17 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 
 	obj_var* obj=NULL;
 	int level;
-	for(int i=max_level;i>0;i--)
+
+	if(find_back)
 	{
-		obj=Variables.findObjVar(name,ns,i-1,false,true);
-		if(obj)
+		for(int i=max_level;i>0;i--)
 		{
-			level=i-1;
-			break;
+			obj=Variables.findObjVar(name,ns,i-1,false,true);
+			if(obj)
+			{
+				level=i-1;
+				break;
+			}
 		}
 	}
 
@@ -1687,7 +1695,7 @@ int ASObject::numVariables()
 	return Variables.size();
 }
 
-void ASObject::handleConstruction(ABCContext* context,arguments* args, bool linkInterfaces)
+void ASObject::handleConstruction(arguments* args, bool linkInterfaces)
 {
 	if(actualPrototype->class_index==-2)
 	{
@@ -1696,7 +1704,7 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args, bool link
 		SyntheticFunction* sf=static_cast<SyntheticFunction*>(this);
 		LOG(LOG_CALLS,"Building method traits");
 		for(int i=0;i<sf->mi->body->trait_count;i++)
-			context->buildTrait(this,&sf->mi->body->traits[i]);
+			sf->mi->context->buildTrait(this,&sf->mi->body->traits[i]);
 		sf->call(this,args,max_level);
 
 	}
@@ -1715,8 +1723,8 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args, bool link
 		int oldlevel=max_level;
 		max_level=actualPrototype->max_level;
 
-		for(int i=0;i<context->instances[actualPrototype->class_index].trait_count;i++)
-			context->buildTrait(this,&context->instances[actualPrototype->class_index].traits[i]);
+		for(int i=0;i<actualPrototype->context->instances[actualPrototype->class_index].trait_count;i++)
+			actualPrototype->context->buildTrait(this,&actualPrototype->context->instances[actualPrototype->class_index].traits[i]);
 
 		max_level=oldlevel;
 	}
@@ -1733,7 +1741,7 @@ void ASObject::handleConstruction(ABCContext* context,arguments* args, bool link
 		for(int i=0;i<actualPrototype->interfaces.size();i++)
 		{
 			LOG(LOG_CALLS,"Linking with interface " << actualPrototype->interfaces[i]);
-			context->linkInterface(actualPrototype->interfaces[i], this);
+			ABCContext::linkInterface(actualPrototype->interfaces[i], this);
 		}
 	}
 }

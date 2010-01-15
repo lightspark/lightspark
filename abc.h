@@ -375,7 +375,6 @@ private:
 	tiny_string getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
 	void buildClassTraits(ASObject* obj, int class_index);
-	void buildClassAndInjectBase(const std::string& n, IInterface*, arguments* a, bool construct_instance);
 	multiname* getMultiname(unsigned int m, call_context* th);
 	static multiname* s_getMultiname(call_context*, ASObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
@@ -383,9 +382,7 @@ private:
 	void linkTrait(ASObject* obj, const traits_info* t);
 	int getMultinameRTData(int n) const;
 	ASObject* getConstant(int kind, int index);
-	ABCVm* vm;
 public:
-	ASObject* Global;
 	u16 minor;
 	u16 major;
 	cpool_info constant_pool;
@@ -402,8 +399,8 @@ public:
 	std::vector<method_body_info> method_body;
 	void buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	void getOptionalConstant(const option_detail& opt);
-	void linkInterface(const multiname& interface_name, ASObject* obj);
-	ABCContext(ABCVm* vm,std::istream& in);
+	static void linkInterface(const multiname& interface_name, ASObject* obj);
+	ABCContext(std::istream& in);
 	void exec();
 };
 
@@ -416,8 +413,6 @@ private:
 	SystemState* m_sys;
 	pthread_t t;
 
-	//This object is referenced through the pointer is ABCContext
-	ASObject Global;
 	llvm::Module* module;
 
 	void registerClasses();
@@ -580,10 +575,12 @@ private:
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
 
+	void buildClassAndInjectBase(const std::string& n, IInterface*, arguments* a, bool construct_instance);
+
 	Manager* int_manager;
 	Manager* number_manager;
 public:
-	ABCContext* last_context;
+	ASObject Global;
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
 	llvm::LLVMContext llvm_context;
@@ -623,6 +620,16 @@ ASObject* parseInt(ASObject* obj,arguments* args);
 ASObject* parseFloat(ASObject* obj,arguments* args);
 ASObject* isNaN(ASObject* obj,arguments* args);
 
+inline ASObject* getGlobal()
+{
+	return &sys->currentVm->Global;
+}
+
+inline ABCVm* getVm()
+{
+	return sys->currentVm;
+}
+
 std::istream& operator>>(std::istream& in, u8& v);
 std::istream& operator>>(std::istream& in, u16& v);
 std::istream& operator>>(std::istream& in, u30& v);
@@ -642,6 +649,6 @@ std::istream& operator>>(std::istream& in, script_info& v);
 std::istream& operator>>(std::istream& in, metadata_info& v);
 std::istream& operator>>(std::istream& in, class_info& v);
 
-}
+};
 
 #endif

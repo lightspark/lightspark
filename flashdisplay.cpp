@@ -807,6 +807,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	assert(args->size()==2);
 	//Validate object type
 	assert(isSubclass(args->at(0),Class<DisplayObject>::getClass()));
+	if(args->at(0)->prototype->class_name=="Application")
+		abort();
+
+	if(args->at(0)->prototype->class_name=="test")
+		abort();
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);

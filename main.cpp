@@ -129,6 +129,7 @@ int main(int argc, char* argv[])
 			' ' << fps_profs[i].event_time << endl;
 	prof.close();
 
+	abort();
 	SDL_Quit();
 	return 0;
 }

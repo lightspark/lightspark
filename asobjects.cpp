@@ -1284,6 +1284,21 @@ IInterface* Class_inherit::getInstance(bool construct)
 	return ret;
 }
 
+void Class_inherit::buildInstanceTraits(ASObject* o) const
+{
+	assert(class_index!=-1);
+	//The class is declared in the script and has an index
+	LOG(LOG_CALLS,"Building instance traits");
+
+	//To insert the trait in the rigth level we have to change the max_level
+	int oldlevel=o->max_level;
+	o->max_level=max_level;
+
+	context->buildInstanceTraits(o,class_index);
+
+	o->max_level=oldlevel;
+}
+
 Class_object* Class_object::getClass()
 {
 	//We check if we are registered in the class map

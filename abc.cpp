@@ -267,9 +267,6 @@ int ABCContext::getMultinameRTData(int mi) const
 /*		case 0x0d:
 			LOG(CALLS, "QNameA");
 			break;
-		case 0x0f:
-			LOG(CALLS, "RTQName");
-			break;
 		case 0x10:
 			LOG(CALLS, "RTQNameA");
 			break;
@@ -515,8 +512,6 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				assert(rt1->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(rt1->implementation);
 				ret->ns.push_back(tmpns->uri);
-				ret->name_type=multiname::NAME_STRING;
-				ret->name_s=th->context->getString(m->name);
 				rt1->decRef();
 				break;
 			}
@@ -726,11 +721,24 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				n->decRef();
 				break;
 			}
+			case 0x0f: //RTQName
+			{
+				ASObject* n=th->runtime_stack_pop();
+				//Reset the namespaces
+				ret->nskind.clear();
+				ret->ns.clear();
+
+				//TODO: Next line is an hack
+				ret->nskind.push_back(0x08);
+
+				assert(n->prototype==Class<Namespace>::getClass());
+				Namespace* tmpns=static_cast<Namespace*>(n->implementation);
+				ret->ns.push_back(tmpns->uri);
+				n->decRef();
+				break;
+			}
 	/*		case 0x0d:
 				LOG(CALLS, "QNameA");
-				break;
-			case 0x0f:
-				LOG(CALLS, "RTQName");
 				break;
 			case 0x10:
 				LOG(CALLS, "RTQNameA");
@@ -909,7 +917,7 @@ void ABCVm::handleEvent()
 			{
 				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
 				LOG(LOG_CALLS,"Building instance traits");
-				ev->_class->context->buildClassTraits(ev->obj, ev->_class->class_index);
+				ev->_class->context->buildInstanceTraits(ev->obj, ev->_class->class_index);
 
 				LOG(LOG_CALLS,"Calling Instance init");
 				ev->_class->constructor->call(ev->obj,NULL,ev->obj->max_level);
@@ -980,12 +988,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,arguments*
 		tmp->actualPrototype=derived_class_tmp;
 		tmp->implementation=base;
 
-		LOG(LOG_CALLS,"Building instance traits");
-		derived_class_tmp->context->buildClassTraits(base->obj, derived_class_tmp->class_index);
-
-		LOG(LOG_CALLS,"Calling Instance init on " << s);
-		//args->incRef();
-		derived_class_tmp->constructor->call(base->obj,args,base->obj->max_level);
+		tmp->handleConstruction(args,true,true);
 	}
 }
 
@@ -1066,6 +1069,8 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	method_info* m=&th->context->methods[n];
 	SyntheticFunction* f=new SyntheticFunction(m);
 	f->func_scope=th->scope_stack;
+	for(int i=0;i<f->func_scope.size();i++)
+		f->func_scope[i]->incRef();
 	return f;
 }
 
@@ -1242,7 +1247,7 @@ tiny_string ABCContext::getString(unsigned int s) const
 		return "";
 }
 
-inline void ABCContext::buildClassTraits(ASObject* obj, int class_index)
+inline void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 {
 	for(int i=0;i<instances[class_index].trait_count;i++)
 		buildTrait(obj,&instances[class_index].traits[i]);
@@ -1316,7 +1321,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				obj->setVariableByQName(name,ns,var->var,false);
 			}
 
-			LOG(LOG_CALLS,"End Method trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Getter:
@@ -1341,7 +1346,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				obj->setGetterByQName(name,ns,var->getter);
 			}
 			
-			LOG(LOG_CALLS,"End Getter trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,"End Getter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Setter:
@@ -1366,7 +1371,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				obj->setSetterByQName(name,ns,var->setter);
 			}
 			
-			LOG(LOG_CALLS,"End Setter trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,"End Setter trait: " << ns << "::" << name);
 			break;
 		}
 //		case traits_info::Class:
@@ -1443,11 +1448,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 			obj->setGetterByQName(name,ns,f);
 			//We should inherit the setter from the hierarchy
-			obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false,true);
+			/*obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false,true);
 			if(var && var->setter) //Ok, also set the inherited setter
-				obj->setSetterByQName(name,ns,var->setter);
+				obj->setSetterByQName(name,ns,var->setter);*/
 			
-			LOG(LOG_CALLS,"End Getter trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,"End Getter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Setter:
@@ -1460,11 +1465,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 			obj->setSetterByQName(name,ns,f);
 			//We should inherit the setter from the hierarchy
-			obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false,true);
+			/*obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false,true);
 			if(var && var->getter) //Ok, also set the inherited setter
-				obj->setGetterByQName(name,ns,var->getter);
+				obj->setGetterByQName(name,ns,var->getter);*/
 			
-			LOG(LOG_CALLS,"End Setter trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,"End Setter trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Method:
@@ -1484,7 +1489,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}*/
 
 			obj->setVariableByQName(name,ns,f,false);
-			LOG(LOG_CALLS,"End Method trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Const:

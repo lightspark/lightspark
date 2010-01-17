@@ -44,6 +44,7 @@ class Class_inherit:public Class_base
 public:
 	Class_inherit(const tiny_string& name):Class_base(name){}
 	IInterface* getInstance(bool construct=false);
+	void buildInstanceTraits(ASObject* o) const;
 };
 
 template< class T>
@@ -111,6 +112,10 @@ public:
 	static T* cast(IInterface* o)
 	{
 		return static_cast<T*>(o);
+	}
+	void buildInstanceTraits(ASObject* o) const
+	{
+		T::buildTraits(o);
 	}
 };
 

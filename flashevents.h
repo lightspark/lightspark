@@ -109,7 +109,7 @@ public:
 class EventDispatcher: public IInterface
 {
 private:
-	std::map<tiny_string,IFunction*> handlers;
+	std::map<tiny_string,std::list<IFunction*> > handlers;
 	void dumpHandlers();
 public:
 	float id;

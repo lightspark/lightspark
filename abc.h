@@ -374,7 +374,6 @@ private:
 	method_info* get_method(unsigned int m);
 	tiny_string getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
-	void buildClassTraits(ASObject* obj, int class_index);
 	multiname* getMultiname(unsigned int m, call_context* th);
 	static multiname* s_getMultiname(call_context*, ASObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
@@ -400,6 +399,7 @@ public:
 	void buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	void getOptionalConstant(const option_detail& opt);
 	static void linkInterface(const multiname& interface_name, ASObject* obj);
+	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in);
 	void exec();
 };

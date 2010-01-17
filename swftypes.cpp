@@ -181,6 +181,12 @@ bool IInterface::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	return false;
 }
 
+void IInterface::buildTraits(ASObject* o)
+{
+	assert(o->prototype);
+	LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->prototype->class_name);
+}
+
 int multiname::count=0;
 
 tiny_string multiname::qualifiedString()
@@ -1695,9 +1701,23 @@ int ASObject::numVariables()
 	return Variables.size();
 }
 
-void ASObject::handleConstruction(arguments* args, bool linkInterfaces)
+void ASObject::recursiveBuild(const Class_base* cur)
 {
-	if(actualPrototype->class_index==-2)
+	if(cur->super)
+	{
+		Class_base* old=actualPrototype;
+		actualPrototype=cur->super;
+		recursiveBuild(cur->super);
+		assert(cur==old);
+		actualPrototype=old;
+	}
+	LOG(LOG_CALLS,"Building traits for " << cur->class_name);
+	cur->buildInstanceTraits(this);
+}
+
+void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits)
+{
+/*	if(actualPrototype->class_index==-2)
 	{
 		abort();
 		//We have to build the method traits
@@ -1706,43 +1726,37 @@ void ASObject::handleConstruction(arguments* args, bool linkInterfaces)
 		for(int i=0;i<sf->mi->body->trait_count;i++)
 			sf->mi->context->buildTrait(this,&sf->mi->body->traits[i]);
 		sf->call(this,args,max_level);
+	}*/
+	assert(actualPrototype->class_index!=-2);
+	assert(buildTraits==false || actualPrototype==prototype);
 
-	}
-	else if(actualPrototype->class_index==-1)
+/*	else if(actualPrototype->class_index==-1)
 	{
 		//The class is builtin
 		LOG(LOG_CALLS,"Building a builtin class");
-	}
-	else
+	}*/
+	if(buildTraits)
+		recursiveBuild(actualPrototype);
+
+	if(linkInterfaces)
 	{
-		//The class is declared in the script and has an index
-		LOG(LOG_CALLS,"Building instance traits");
-
-		//To insert the trait in the rigth level we have to change the max_level
-		//This is a No Op if not constructSuper
-		int oldlevel=max_level;
-		max_level=actualPrototype->max_level;
-
-		for(int i=0;i<actualPrototype->context->instances[actualPrototype->class_index].trait_count;i++)
-			actualPrototype->context->buildTrait(this,&actualPrototype->context->instances[actualPrototype->class_index].traits[i]);
-
-		max_level=oldlevel;
+		//Lets's setup the interfaces
+		Class_base* cur=actualPrototype;
+		while(cur)
+		{
+			for(int i=0;i<cur->interfaces.size();i++)
+			{
+				LOG(LOG_CALLS,"Linking with interface " << cur->interfaces[i]);
+				ABCContext::linkInterface(cur->interfaces[i], this);
+			}
+			cur = cur->super;
+		}
 	}
 
 	if(actualPrototype->constructor)
 	{
 		LOG(LOG_CALLS,"Calling Instance init");
 		actualPrototype->constructor->call(this,args,max_level);
-	}
-
-	if(linkInterfaces)
-	{
-		//Lets's setup the interfaces
-		for(int i=0;i<actualPrototype->interfaces.size();i++)
-		{
-			LOG(LOG_CALLS,"Linking with interface " << actualPrototype->interfaces[i]);
-			ABCContext::linkInterface(actualPrototype->interfaces[i], this);
-		}
 	}
 }
 

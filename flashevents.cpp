@@ -172,7 +172,7 @@ void EventDispatcher::sinit(Class_base* c)
 
 void EventDispatcher::dumpHandlers()
 {
-	std::map<tiny_string,IFunction*>::iterator it=handlers.begin();
+	std::map<tiny_string,list<IFunction*> >::iterator it=handlers.begin();
 	for(it;it!=handlers.end();it++)
 		std::cout << it->first << std::endl;
 }
@@ -193,7 +193,15 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	}
 //	sys->cur_input_thread->addListener(args->at(0)->toString(),th);
 
-	th->handlers.insert(make_pair(args->at(0)->toString(),args->at(1)->toFunction()));
+	std::map<tiny_string,std::list<IFunction*> >::iterator it=
+		th->handlers.insert(make_pair(args->at(0)->toString(),list<IFunction*>())).first;
+
+	//Should compare based on method info
+	if(find(it->second.begin(),it->second.end(),args->at(1)->toFunction())!=it->second.end())
+		abort();
+
+	it->second.push_back(args->at(1)->toFunction());
+
 	sys->events_name.push_back(args->at(0)->toString());
 }
 
@@ -207,17 +215,17 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 	}
 //	sys->cur_input_thread->addListener(args->at(0)->toString(),th);
 
-	map<tiny_string, IFunction*>::iterator h=th->handlers.find(args->at(0)->toString());
+	map<tiny_string, list<IFunction*> >::iterator h=th->handlers.find(args->at(0)->toString());
 	if(h==th->handlers.end())
 	{
 		LOG(LOG_CALLS,"Event not found");
 		return NULL;
 	}
 
-	//SERIOUS_TODO: functions should be compared based on their method body
+	//SERIOUS_TODO: functions should be compared based on their method info
 	//assert(h->second==args->at(1)->toFunction());
 
-	th->handlers.erase(h);
+	h->second.clear();
 	return NULL;
 }
 
@@ -248,7 +256,7 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 
 void EventDispatcher::handleEvent(Event* e)
 {
-	map<tiny_string, IFunction*>::iterator h=handlers.find(e->type);
+	map<tiny_string, list<IFunction*> >::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Not handled event " << e->type);
@@ -256,12 +264,25 @@ void EventDispatcher::handleEvent(Event* e)
 	}
 
 	LOG(LOG_CALLS, "Handling event " << h->first);
-	arguments args(1);
 	assert(e->obj);
-	//The event is going to be decreffed as a function parameter
-	args.set(0,e->obj);
-	obj->incRef();
 	//TODO: check, ok we should also bind the level
-	h->second->call(obj,&args,obj->max_level);
+	list<IFunction*>::iterator it=h->second.begin();
+	for(it;it!=h->second.end();it++)
+	{
+		arguments args(1);
+		//The event is going to be decreffed as a function parameter
+		e->obj->incRef();
+		args.set(0,e->obj);
+		obj->incRef();
+		(*it)->call(obj,&args,obj->max_level);
+
+		//HACK
+		if(h->second.empty())
+			break;
+	}
+	e->obj->decRef();
+	
+	//If the number of handlers now if 0, then purge the entry from the map
+	//TODO
 }
 

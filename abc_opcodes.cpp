@@ -543,7 +543,7 @@ void ABCVm::construct(call_context* th, int m)
 	assert(o_class->getObjectType()==T_CLASS);
 	ASObject* ret=o_class->getInstance()->obj;
 
-	ret->handleConstruction(&args, true);
+	ret->handleConstruction(&args, true, true);
 
 //	args.decRef();
 	obj->decRef();
@@ -1212,7 +1212,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 	//multiname* name=th->context->getMultiname(th->context->instances[obj->actualPrototype->class_index].name,NULL);
 	//LOG(LOG_CALLS,"Constructing super " << *name);
 
-	obj->handleConstruction(&args, true);
+	obj->handleConstruction(&args, false, false);
 	LOG(LOG_CALLS,"End super construct ");
 
 	//Reset prototype to its previous value
@@ -1429,9 +1429,6 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(LOG_CALLS,"callSuperVoid " << *name << ' ' << m);
 
-	if(name->name_s=="initialize")
-		__asm__("int $3");
-
 	ASObject* obj=th->runtime_stack_pop();
 
 	//HACK (nice) set the max level to the current actual prototype before looking up the member
@@ -1535,26 +1532,18 @@ bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2)
 	return ret;
 }
 
-bool ABCVm::ifStrictEq(ASObject* obj1, ASObject* obj2)
+bool ABCVm::ifStrictEq(ASObject* obj2, ASObject* obj1)
 {
 	LOG(LOG_CALLS,"ifStrictEq");
-	abort();
-
-	//CHECK types
-
-	//Real comparision demanded to object
-	if(obj1->isEqual(obj2))
-		return true;
-	else
+	if(obj1->getObjectType()!=obj2->getObjectType())
 		return false;
+	return ifEq(obj2,obj1);
 }
 
 bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
 {
 	LOG(LOG_CALLS,"ifStrictNE");
-	if(obj1->getObjectType()!=obj2->getObjectType())
-		return false;
-	return ifNE(obj2,obj1);
+	return !ifStrictEq(obj2,obj1);
 }
 
 bool ABCVm::in(ASObject* val2, ASObject* val1)
@@ -1609,7 +1598,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		Class_base* o_class=static_cast<Class_base*>(o);
 		ASObject* ret=o_class->getInstance()->obj;;
 
-		ret->handleConstruction(&args, true);
+		ret->handleConstruction(&args, true, true);
 		th->runtime_stack_push(ret);
 	}
 	else if(o->getObjectType()==T_FUNCTION)

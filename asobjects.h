@@ -83,7 +83,7 @@ class Class_base: public ASObject
 {
 friend class ABCVm;
 friend class ABCContext;
-friend void ASObject::handleConstruction(arguments* args, bool linkInterfaces);
+friend void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits);
 private:
 	std::vector<multiname> interfaces;
 public:
@@ -120,6 +120,7 @@ public:
 		return ret;
 	}
 	void addImplementedInterface(const multiname& i);
+	virtual void buildInstanceTraits(ASObject* o) const=0;
 };
 
 class Class_object: public Class_base
@@ -132,6 +133,10 @@ public:
 		abort();
 	}
 	static Class_object* getClass();
+	void buildInstanceTraits(ASObject* o) const
+	{
+		abort();
+	}
 };
 
 class IFunction: public ASObject
@@ -201,7 +206,7 @@ private:
 class SyntheticFunction : public IFunction
 {
 friend class ABCVm;
-friend void ASObject::handleConstruction(arguments* args, bool linkInterfaces);
+friend void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits);
 public:
 	typedef ASObject* (*synt_function)(ASObject*, arguments*, call_context* cc);
 	SyntheticFunction(method_info* m);

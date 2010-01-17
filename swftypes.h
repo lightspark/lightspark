@@ -383,13 +383,14 @@ friend class ABCContext;
 friend class SystemState;
 protected:
 	ASObject* parent;
-	//maps variable name to namespace name and var
+	//maps variable name to namespace and var
 	variables_map Variables;
 	ASObject(const ASObject& o);
 	SWFOBJECT_TYPE type;
 private:
 	int ref_count;
 	Manager* manager;
+	void recursiveBuild(const Class_base* cur);
 public:
 	int debug;
 	IInterface* implementation;
@@ -420,7 +421,6 @@ public:
 		if(ref_count==0)
 		{
 			assert(debug==0);
-			//std::cout << "delete " << this << std::endl;
 			if(manager)
 			{
 				manager->put(this);
@@ -429,6 +429,7 @@ public:
 			{
 				//Let's make refcount very invalid
 				ref_count=-1024;
+				//std::cout << "delete " << this << std::endl;
 				delete this;
 			}
 		}
@@ -494,7 +495,7 @@ public:
 	virtual bool isLess(ASObject* r);
 	virtual bool isGreater(ASObject* r);
 
-	void handleConstruction(arguments* args, bool linkInterfaces);
+	void handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits);
 };
 
 class IInterface
@@ -520,6 +521,7 @@ public:
 	IInterface(const IInterface& r);
 	virtual ~IInterface(){}
 	static void sinit(Class_base*){}
+	static void buildTraits(ASObject* o);
 };
 
 inline void Manager::put(ASObject* o)

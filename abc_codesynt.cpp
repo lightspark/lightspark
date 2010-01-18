@@ -100,7 +100,6 @@ opcode_handler ABCVm::opcode_table_args1_pointers[]={
 	{"convert_i",(void*)&ABCVm::convert_i},
 	{"coerce_s",(void*)&ABCVm::coerce_s},
 	{"checkfilter",(void*)&ABCVm::checkfilter},
-	{"decrement_i",(void*)&ABCVm::decrement_i},
 	{"negate",(void*)&ABCVm::negate},
 	{"typeOf",(void*)ABCVm::typeOf}
 };
@@ -138,6 +137,7 @@ typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
 	{"increment",(void*)&ABCVm::increment,ARGS_OBJ},
 	{"increment_i",(void*)&ABCVm::increment_i,ARGS_OBJ},
 	{"decrement",(void*)&ABCVm::decrement,ARGS_OBJ},
+	{"decrement_i",(void*)&ABCVm::decrement_i,ARGS_OBJ},
 	{"bitNot",(void*)&ABCVm::bitNot,ARGS_OBJ},
 	{"bitXor",(void*)&ABCVm::bitXor,ARGS_OBJ_OBJ},
 	{"bitOr",(void*)&ABCVm::bitOr,ARGS_OBJ_OBJ},
@@ -367,7 +367,7 @@ void ABCVm::registerFunctions()
 
 
 	//Lazy pushing
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
+	FT=llvm::FunctionType::get(bool_type, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"hasNext2",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::hasNext2);
 	//End of lazy pushing
@@ -1263,8 +1263,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->locals[t]=STACK_NONE;
 					code >> t;
 					cur_block->locals[t]=STACK_NONE;
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
+					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
 				case 0x40:
@@ -1542,10 +1542,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x91:
 				case 0x93:
 				case 0xc0:
+				case 0xc1:
 				{
 					//increment
 					//decrement
 					//increment_i
+					//decrement_i
 					if(!static_stack_types.empty())
 						static_stack_types.pop_back();
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
@@ -1872,15 +1874,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 						static_stack_types.pop_back();
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
-					break;
-				}
-				case 0xc1:
-				{
-					//decrement_i
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0xc2:
@@ -3048,7 +3041,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 
 				value=Builder.CreateCall3(ex->FindFunctionNamed("hasNext2"), context, constant, constant2);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
 			case 0x40:
@@ -4242,10 +4235,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//decrement_i
 				LOG(LOG_TRACE, "synt decrement_i" );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall(ex->FindFunctionNamed("decrement_i"), v1);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_OBJECT)
+					value=Builder.CreateCall(ex->FindFunctionNamed("decrement_i"), v1.first);
+				else if(v1.second==STACK_INT)
+				{
+					constant = llvm::ConstantInt::get(int_type, 1);
+					value=Builder.CreateSub(v1.first,constant);
+				}
+				else
+					abort();
+				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
 			case 0xc2:

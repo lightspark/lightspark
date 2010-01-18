@@ -419,7 +419,7 @@ private:
 
 	void registerFunctions();
 	//Interpreted AS instructions
-	static ASObject* hasNext2(call_context* th, int n, int m); 
+	static bool hasNext2(call_context* th, int n, int m); 
 	static void callPropVoid(call_context* th, int n, int m); 
 	static void callSuperVoid(call_context* th, int n, int m); 
 	static void callSuper(call_context* th, int n, int m); 
@@ -538,7 +538,7 @@ private:
 	static uintptr_t increment_i(ASObject*);
 	static uintptr_t increment(ASObject*);
 	static uintptr_t decrement(ASObject*);
-	static ASObject* decrement_i(ASObject*);
+	static uintptr_t decrement_i(ASObject*);
 	static ASObject* getGlobalScope(call_context* th);
 	//Utility
 	static void not_impl(int p);

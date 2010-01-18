@@ -402,11 +402,13 @@ uintptr_t ABCVm::decrement(ASObject* o)
 	return n-1;
 }
 
-ASObject* ABCVm::decrement_i(ASObject* o)
+uintptr_t ABCVm::decrement_i(ASObject* o)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"decrement_i");
-	abort();
-	return o;
+	LOG(LOG_CALLS,"decrement_i");
+
+	int n=o->toInt();
+	o->decRef();
+	return n-1;
 }
 
 bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1)
@@ -939,8 +941,8 @@ bool ABCVm::_not(ASObject* v)
 
 bool ABCVm::equals(ASObject* val2, ASObject* val1)
 {
-	LOG(LOG_CALLS, "equals" );
 	bool ret=val1->isEqual(val2);
+	LOG(LOG_CALLS, "equals " << ret);
 	val1->decRef();
 	val2->decRef();
 	return ret;
@@ -1509,11 +1511,19 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	if(obj->getObjectType()==T_UNDEFINED)
 	{
 		cout << "false" << endl;
+		assert(type->getObjectType()==T_CLASS);
+		Class_base* c=static_cast<Class_base*>(type);
+		bool real_ret=isSubclass(obj,c);
+		assert(real_ret==false);
 		return false;
 	}
 	else
 	{
 		cout << "true" << endl;
+		assert(type->getObjectType()==T_CLASS);
+		Class_base* c=static_cast<Class_base*>(type);
+		bool real_ret=isSubclass(obj,c);
+		assert(real_ret==true);
 		return true;
 	}
 //	cout << "Name " << type->class_name << " type " << type->getObjectType() << endl;
@@ -1624,11 +1634,34 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	LOG(LOG_CALLS,"End of constructing");
 }
 
-ASObject* ABCVm::hasNext2(call_context* th, int n, int m)
+bool ABCVm::hasNext2(call_context* th, int n, int m)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
 	ASObject* obj=th->locals[n];
-	int cur_index=th->locals[m]->toInt()+1;
+	int cur_index=th->locals[m]->toInt();
+
+	if(obj->implementation)
+	{
+		bool ret;
+		//cur_index is modified with the next index
+		if(obj->implementation->hasNext(cur_index,ret))
+		{
+			if(ret)
+			{
+				th->locals[m]->decRef();
+				th->locals[m]=new Integer(cur_index);
+			}
+			else
+			{
+				th->locals[n]->decRef();
+				th->locals[n]=new Null;
+				th->locals[m]->decRef();
+				th->locals[m]=new Integer(0);
+			}
+			return ret;
+		}
+	}
+
 	//Look up if there is a following index which is still an object
 	//(not a method)
 	for(cur_index;cur_index<obj->numVariables();cur_index++)
@@ -1642,11 +1675,9 @@ ASObject* ABCVm::hasNext2(call_context* th, int n, int m)
 	//what a mess
 	if(cur_index<obj->numVariables())
 	{
-		if(obj->getNameAt(cur_index)=="toString")
-			abort();
 		th->locals[m]->decRef();
 		th->locals[m]=new Integer(cur_index+1);
-		return new Boolean(true);
+		return true;
 	}
 	else
 	{
@@ -1654,7 +1685,7 @@ ASObject* ABCVm::hasNext2(call_context* th, int n, int m)
 		th->locals[n]=new Null;
 		th->locals[m]->decRef();
 		th->locals[m]=new Integer(0);
-		return new Boolean(false);
+		return false;
 	}
 }
 
@@ -1707,7 +1738,18 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 		abort();
 	}
 
-	ASObject* ret=new ASString(obj->getNameAt(index->toInt()-1));
+	ASObject* ret=NULL;
+	if(obj->implementation)
+	{ 
+		if(obj->implementation->nextName(index->toInt()-1,ret))
+		{
+			obj->decRef();
+			index->decRef();
+			return ret;
+		}
+	}
+
+	ret=new ASString(obj->getNameAt(index->toInt()-1));
 	obj->decRef();
 	index->decRef();
 	return ret;

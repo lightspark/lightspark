@@ -169,3 +169,20 @@ bool Dictionary::getVariableByMultiname(const multiname& name, ASObject*& out)
 	}
 	return true;
 }
+
+bool Dictionary::hasNext(int& index, bool& out)
+{
+	out=index<data.size();
+	index++;
+	return true;
+}
+
+bool Dictionary::nextName(int index, ASObject*& out)
+{
+	assert(index<data.size());
+	map<ASObject*,ASObject*>::iterator it=data.begin();
+	for(int i=0;i<index;i++)
+		it++;
+	out=it->first;
+	return true;
+}

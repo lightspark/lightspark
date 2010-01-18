@@ -39,14 +39,16 @@ class ABCContext;
 class Event: public IInterface
 {
 public:
-	Event(){ Event("Event"); }
-	Event(const tiny_string& t);
+	Event():type("Event"),target(NULL){}
+	Event(const tiny_string& t, ASObject* _t=NULL);
 	virtual ~Event(){}
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getType);
+	ASFUNCTION(_getTarget);
 	virtual EVENT_TYPE getEventType() {return EVENT;} //DEPRECATED
 	tiny_string type;
+	ASObject* target;
 };
 
 class FakeEvent: public Event

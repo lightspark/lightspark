@@ -506,6 +506,7 @@ class IInterface
 {
 friend void ASObject::acquireInterface(IInterface* i);
 friend class ASObject;
+friend class ABCVm;
 private:
 	virtual bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out);
 	virtual bool getVariableByMultiname(const multiname& name, ASObject*& out);
@@ -516,6 +517,8 @@ private:
 	virtual bool toString(tiny_string& ret);
 	virtual bool isEqual(bool& ret, ASObject* o);
 	virtual bool toInt(int& ret);
+	virtual bool hasNext(int& index, bool& out);
+	virtual bool nextName(int index, ASObject*& out);
 protected:
 	SWFOBJECT_TYPE type;
 	uint32_t magic;

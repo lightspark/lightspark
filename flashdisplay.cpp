@@ -572,7 +572,18 @@ void DisplayObject::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
-	c->constructor=new Function(_getX);
+}
+
+ASFUNCTIONBODY(DisplayObject,_getScaleX)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	return abstract_d(th->Matrix.ScaleX);
+}
+
+ASFUNCTIONBODY(DisplayObject,_getScaleY)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	return abstract_d(th->Matrix.ScaleY);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getX)
@@ -626,6 +637,8 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 
 	obj->setGetterByQName("loaderInfo","",new Function(_getLoaderInfo));
 	obj->setGetterByQName("width","",new Function(_getWidth));
+	obj->setGetterByQName("scaleX","",new Function(_getScaleX));
+	obj->setGetterByQName("scaleY","",new Function(_getScaleY));
 	obj->setGetterByQName("x","",new Function(_getX));
 	obj->setGetterByQName("y","",new Function(_getY));
 	obj->setGetterByQName("height","",new Function(_getHeight));
@@ -766,6 +779,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL);
 	obj->setGetterByQName("numChildren","",new Function(_getNumChildren));
+	obj->setVariableByQName("getChildIndex","",new Function(getChildIndex));
 	obj->setVariableByQName("addChild","",new Function(addChild));
 	obj->setVariableByQName("addChildAt","",new Function(addChildAt));
 	return NULL;
@@ -807,15 +821,14 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	assert(args->size()==2);
 	//Validate object type
 	assert(isSubclass(args->at(0),Class<DisplayObject>::getClass()));
-	if(args->at(0)->prototype->class_name=="Application")
-		abort();
-
-	if(args->at(0)->prototype->class_name=="test")
-		abort();
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
 	th->_addChildAt(d,0);
+
+	//Notify the object
+	d->obj->incRef();
+	sys->currentVm->addEvent(d,Class<Event>::getInstanceS(true,"added",d->obj));
 
 	return d->obj;
 }
@@ -831,7 +844,36 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
 	th->_addChildAt(d,0);
 
+	//Notify the object
+	d->obj->incRef();
+	sys->currentVm->addEvent(d,Class<Event>::getInstanceS(true,"added",d->obj));
+
 	return d->obj;
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	assert(args->size()==1);
+	//Validate object type
+	assert(isSubclass(args->at(0),Class<DisplayObject>::getClass()));
+
+	//Cast to object
+	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+
+	list<IDisplayListElem*>::const_iterator it=th->dynamicDisplayList.begin();
+	int ret=0;
+	do
+	{
+		if(*it==d)
+			break;
+		
+		ret++;
+		it++;
+		assert(it!=th->dynamicDisplayList.end());
+	}
+	while(1);
+	return abstract_i(ret);
 }
 
 void Shape::sinit(Class_base* c)

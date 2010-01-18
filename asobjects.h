@@ -86,6 +86,7 @@ friend class ABCContext;
 friend void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits);
 private:
 	std::vector<multiname> interfaces;
+	std::vector<Class_base*> interfaces_added;
 public:
 	Class_base* super;
 	IFunction* constructor;

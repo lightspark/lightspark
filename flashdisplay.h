@@ -71,6 +71,8 @@ public:
 	ASFUNCTION(_setX);
 	ASFUNCTION(_getY);
 	ASFUNCTION(_setY);
+	ASFUNCTION(_getScaleX);
+	ASFUNCTION(_getScaleY);
 	ASFUNCTION(_getLoaderInfo);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_getBounds);
@@ -112,6 +114,7 @@ public:
 	ASFUNCTION(_getNumChildren);
 	ASFUNCTION(addChild);
 	ASFUNCTION(addChildAt);
+	ASFUNCTION(getChildIndex);
 };
 
 class Graphics: public IInterface

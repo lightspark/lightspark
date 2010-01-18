@@ -78,7 +78,6 @@ public:
 	template <typename ARG1>
 	static T* getInstanceS(bool construct, ARG1 a1)
 	{
-		assert(construct==false);
 		Class<T>* c=Class<T>::getClass();
 		ASObject* obj=new ASObject;
 		//TODO: Add interface T to ret
@@ -90,6 +89,26 @@ public:
 		obj->implementation=ret;
 		//As we are the prototype we should incRef ourself
 		c->incRef();
+		if(construct)
+			obj->handleConstruction(NULL,true,true);
+		return ret;
+	}
+	template <typename ARG1, typename ARG2>
+	static T* getInstanceS(bool construct, ARG1 a1, ARG2 a2)
+	{
+		Class<T>* c=Class<T>::getClass();
+		ASObject* obj=new ASObject;
+		//TODO: Add interface T to ret
+		obj->max_level=c->max_level;
+		obj->prototype=c;
+		obj->actualPrototype=c;
+		T* ret=new T(a1,a2);
+		ret->obj=obj;
+		obj->implementation=ret;
+		//As we are the prototype we should incRef ourself
+		c->incRef();
+		if(construct)
+			obj->handleConstruction(NULL,true,true);
 		return ret;
 	}
 	static Class<T>* getClass(const tiny_string& name)

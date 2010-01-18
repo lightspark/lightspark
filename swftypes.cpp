@@ -181,6 +181,16 @@ bool IInterface::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	return false;
 }
 
+bool IInterface::hasNext(int& index, bool& out)
+{
+	return false;
+}
+
+bool IInterface::nextName(int index, ASObject*& out)
+{
+	return false;
+}
+
 void IInterface::buildTraits(ASObject* o)
 {
 	assert(o->prototype);
@@ -315,6 +325,11 @@ int ASObject::toInt() const
 
 double ASObject::toNumber() const
 {
+	if(getObjectType()==T_UNDEFINED)
+	{
+		cout << "HACK: returning 0 from Undefined::toNumber" << endl;
+		return 0;
+	}
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to float");
 	abort();
 	return 0;

@@ -35,7 +35,7 @@ REGISTER_CLASS_NAME(TimerEvent);
 REGISTER_CLASS_NAME(ProgressEvent);
 REGISTER_CLASS_NAME(IOErrorEvent);
 
-Event::Event(const tiny_string& t):type(t)
+Event::Event(const tiny_string& t, ASObject* _t):type(t),target(_t)
 {
 }
 
@@ -60,9 +60,32 @@ void Event::sinit(Class_base* c)
 ASFUNCTIONBODY(Event,_constructor)
 {
 	Event* th=static_cast<Event*>(obj->implementation);
-	assert(args->at(0)->getObjectType()==T_STRING);
-	th->type=args->at(0)->toString();
+	if(args)
+	{
+		assert(args->at(0)->getObjectType()==T_STRING);
+		th->type=args->at(0)->toString();
+	}
+
+	obj->setGetterByQName("target","",new Function(_getTarget));
 	return NULL;
+}
+
+ASFUNCTIONBODY(Event,_getTarget)
+{
+	Event* th=static_cast<Event*>(obj->implementation);
+	if(th->target)
+	{
+		th->target->incRef();
+		return th->target;
+	}
+	else
+		return new Undefined;
+}
+
+ASFUNCTIONBODY(Event,_getType)
+{
+	Event* th=static_cast<Event*>(obj->implementation);
+	return new ASString(th->type);
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
@@ -174,12 +197,6 @@ void EventDispatcher::dumpHandlers()
 	std::map<tiny_string,list<listener> >::iterator it=handlers.begin();
 	for(it;it!=handlers.end();it++)
 		std::cout << it->first << std::endl;
-}
-
-ASFUNCTIONBODY(Event,_getType)
-{
-	Event* th=static_cast<Event*>(obj->implementation);
-	return new ASString(th->type);
 }
 
 ASFUNCTIONBODY(EventDispatcher,addEventListener)

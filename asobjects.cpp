@@ -1228,27 +1228,43 @@ ASFUNCTIONBODY(ASString,replace)
 	LOG(LOG_NOT_IMPLEMENTED,"ASString::replace not really implemented");
 	const ASString* th=static_cast<const ASString*>(obj);
 	ASString* ret=new ASString(th->data);
+	const tiny_string& replaceWith=args->at(1)->toString();
 
 	assert(args->size()==2 && args->at(1)->getObjectType()==T_STRING);
 
-	if(args->at(0)->prototype!=Class<RegExp>::getClass())
-		abort();
-
-	RegExp* re=static_cast<RegExp*>(args->at(0)->implementation);
-	assert(re->re.size()==1 && re->flags.size()==1);
-
-	bool g=(re->flags[0]=='g')?true:false;
-	const tiny_string& replaceWith=args->at(1)->toString();
-	assert(replaceWith.len()==1);
-
-	for(int i=0;i<th->data.size();i++)
+	if(args->at(0)->prototype==Class<RegExp>::getClass())
 	{
-		if(th->data[i]==re->re[0])
+		RegExp* re=static_cast<RegExp*>(args->at(0)->implementation);
+		assert(re->re.size()==1 && re->flags.size()==1);
+
+		bool g=(re->flags[0]=='g')?true:false;
+		assert(replaceWith.len()==1);
+
+		for(int i=0;i<th->data.size();i++)
 		{
-			ret->data[i]=replaceWith[0];
-			if(!g)
-				break;
+			if(th->data[i]==re->re[0])
+			{
+				ret->data[i]=replaceWith[0];
+				if(!g)
+					break;
+			}
 		}
+	}
+	else if(args->at(0)->getObjectType()==T_STRING)
+	{
+		ASString* s=static_cast<ASString*>(args->at(0));
+		int index=0;
+		do
+		{
+			index=ret->data.find(s->data,index);
+			if(index==-1) //No result
+				break;
+			ret->data.replace(index,s->data.size(),replaceWith.raw_buf());
+			index+=(replaceWith.len()-s->data.size());
+			__asm__("int $3");
+
+		}
+		while(index<ret->data.size());
 	}
 
 	return ret;

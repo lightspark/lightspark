@@ -264,6 +264,7 @@ public:
 class ASString: public ASObject
 {
 friend class ASQName;
+friend class ABCContext;
 private:
 	std::string data;
 	void registerMethods();

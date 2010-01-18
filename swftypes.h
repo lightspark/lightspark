@@ -288,11 +288,15 @@ public:
 
 struct multiname
 {
-	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER};
+	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
 	NAME_TYPE name_type;
 	tiny_string name_s;
-	intptr_t name_i;
-	number_t name_d;
+	union
+	{
+		intptr_t name_i;
+		number_t name_d;
+		ASObject* name_o;
+	};
 	std::vector<tiny_string> ns;
 	std::vector<int> nskind;
 	multiname(){count++;}

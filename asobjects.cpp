@@ -407,6 +407,8 @@ bool Array::isValidMultiname(const multiname& name, int& index) const
 			//TODO: check that this is really an integer
 			index=name.name_d;
 			break;
+		default:
+			abort();
 	}
 	return true;
 }

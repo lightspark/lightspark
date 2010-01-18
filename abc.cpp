@@ -160,7 +160,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
 
 	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
-	Global.setVariableByQName("Dictionary","flash.utils",Class<IInterface>::getClass("Dictionary"));
+	Global.setVariableByQName("Dictionary","flash.utils",Class<Dictionary>::getClass());
 	Global.setVariableByQName("Proxy","flash.utils",Class<IInterface>::getClass("Proxy"));
 	Global.setVariableByQName("Timer","flash.utils",Class<Timer>::getClass());
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
@@ -416,10 +416,23 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
+				else if(rt1->getObjectType()==T_OBJECT)
+				{
+					ret->name_o=rt1;
+					ret->name_type=multiname::NAME_OBJECT;
+					rt1->incRef();
+				}
+				else if(rt1->getObjectType()==T_STRING)
+				{
+					ASString* o=static_cast<ASString*>(rt1);
+					ret->name_s=o->data;
+					ret->name_type=multiname::NAME_STRING;
+				}
 				else
 				{
-					ret->name_s=rt1->toString();
-					ret->name_type=multiname::NAME_STRING;
+					abort();
+					//ret->name_s=rt1->toString();
+					//ret->name_type=multiname::NAME_STRING;
 				}
 				rt1->decRef();
 				break;
@@ -492,10 +505,29 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
+				else if(rt1->getObjectType()==T_OBJECT)
+				{
+					ret->name_o=rt1;
+					ret->name_type=multiname::NAME_OBJECT;
+					rt1->incRef();
+				}
+				else if(rt1->getObjectType()==T_STRING)
+				{
+					ASString* o=static_cast<ASString*>(rt1);
+					ret->name_s=o->data;
+					ret->name_type=multiname::NAME_STRING;
+				}
+				else if(rt1->getObjectType()==T_UNDEFINED ||
+					rt1->getObjectType()==T_NULL)
+				{
+					ret->name_s="undefined";
+					ret->name_type=multiname::NAME_STRING;
+				}
 				else
 				{
-					ret->name_s=rt1->toString();
-					ret->name_type=multiname::NAME_STRING;
+					abort();
+					//ret->name_s=rt1->toString();
+					//ret->name_type=multiname::NAME_STRING;
 				}
 				rt1->decRef();
 				break;
@@ -657,6 +689,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				sort(ret->ns.begin(),ret->ns.end());
 
 				ASObject* n=th->runtime_stack_pop();
+				assert(n->getObjectType()!=T_OBJECT);
 				ret->name_s=n->toString();
 				ret->name_type=multiname::NAME_STRING;
 				n->decRef();
@@ -716,6 +749,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			case 0x1b:
 			{
 				ASObject* n=th->runtime_stack_pop();
+				assert(n->getObjectType()!=T_OBJECT);
 				ret->name_s=n->toString();
 				ret->name_type=multiname::NAME_STRING;
 				n->decRef();

@@ -24,6 +24,8 @@
 #include "flashevents.h"
 #include "thread_pool.h"
 
+#include <map>
+
 namespace lightspark
 {
 
@@ -53,6 +55,47 @@ public:
 	ASFUNCTION(reset);
 };
 
+class Dictionary: public IInterface
+{
+friend class ABCVm;
+/*private:
+	bool isValidMultiname(const multiname& name, int& index) const;
+	bool isValidQName(const tiny_string& name, const tiny_string& ns, int& index);*/
+private:
+	std::map<ASObject*,ASObject*> data;
+public:
+	Dictionary(){};
+	virtual ~Dictionary(){};
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
+	{
+		abort();
+	}
+	bool getVariableByMultiname(const multiname& name, ASObject*& out);
+	bool getVariableByMultiname_i(const multiname& name, intptr_t& out)
+	{
+		abort();
+	}
+	bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+	{
+		abort();
+	}
+	bool setVariableByMultiname(const multiname& name, ASObject* o);
+	bool setVariableByMultiname_i(const multiname& name, intptr_t value);
+	bool toString(tiny_string& ret)
+	{
+		abort();
+	}
+	bool isEqual(bool& ret, ASObject* r)
+	{
+		abort();
+	}
+	tiny_string toString() const
+	{
+		abort();
+	}
+};
 ASObject* getQualifiedClassName(ASObject* , arguments* args);
 ASObject* getDefinitionByName(ASObject* , arguments* args);
 ASObject* getTimer(ASObject* , arguments* args);

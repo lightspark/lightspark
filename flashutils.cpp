@@ -28,6 +28,7 @@ using namespace lightspark;
 
 REGISTER_CLASS_NAME(ByteArray);
 REGISTER_CLASS_NAME(Timer);
+REGISTER_CLASS_NAME(Dictionary);
 
 ByteArray::ByteArray():bytes(NULL),len(0)
 {
@@ -122,4 +123,49 @@ ASFUNCTIONBODY(lightspark,getTimer)
 {
 	uint64_t ret=compat_msectiming() - sys->startTime;
 	return abstract_i(ret);
+}
+
+void Dictionary::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(Dictionary,_constructor)
+{
+}
+
+bool Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
+{
+	return setVariableByMultiname(name,abstract_i(value));
+}
+
+bool Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	assert(name.name_type==multiname::NAME_OBJECT);
+	//We can use the [] operator, as the value is just a pointer and there is no side effect in creating one
+	data[name.name_o]=o;
+	//This is ugly, but at least we are sure that we own name_o
+	multiname* tmp=const_cast<multiname*>(&name);
+	tmp->name_o=NULL;
+	return true;
+}
+
+bool Dictionary::getVariableByMultiname(const multiname& name, ASObject*& out)
+{
+	assert(name.name_type==multiname::NAME_OBJECT);
+	//We can use the [] operator, as the value is just a pointer and there is no side effect in creating one
+	map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
+	if(it==data.end())
+		out=new Undefined;
+	else
+	{
+		ASObject* ret=it->second;
+		ret->incRef();
+		out=ret;
+		//This is ugly, but at least we are sure that we own name_o
+		multiname* tmp=const_cast<multiname*>(&name);
+		tmp->name_o=NULL;
+	}
+	return true;
 }

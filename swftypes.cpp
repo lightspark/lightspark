@@ -516,6 +516,8 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 		name.name=tiny_string(mname.name_d);
 	else if(mname.name_type==multiname::NAME_STRING)
 		name.name=mname.name_s;
+	else
+		abort();
 
 	const pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	if(ret.first!=ret.second)
@@ -811,6 +813,8 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 		s << r.name_d;
 	else if(r.name_type==multiname::NAME_STRING)
 		s << r.name_s;
+	else
+		s << r.name_o; //We print the hexadecimal value
 	return s;
 }
 

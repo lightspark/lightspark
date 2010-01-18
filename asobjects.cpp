@@ -1334,6 +1334,74 @@ Class_object* Class_object::getClass()
 		return static_cast<Class_object*>(it->second);
 }
 
+const std::vector<Class_base*>& Class_base::getInterfaces() const
+{
+	if(!interfaces_ready)
+	{
+		//Recursively get interfaces implemented by this interface
+		for(int i=0;i<interfaces.size();i++)
+		{
+			ASObject* owner;
+			ASObject* interface_obj=getGlobal()->getVariableByMultiname(interfaces[i],owner).obj;
+			assert(owner && interface_obj->getObjectType()==T_CLASS);
+			Class_base* inter=static_cast<Class_base*>(interface_obj);
+
+			interfaces_added.push_back(inter);
+			//Probe the interface for its interfaces
+			inter->getInterfaces();
+		}
+		//Clean the interface vector to save some space
+		interfaces.clear();
+		interfaces_ready=true;
+	}
+	return interfaces_added;
+}
+
+void Class_base::linkInterface(ASObject* obj) const
+{
+	if(class_index==-1)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Linking of builtin interface " << class_name << " not supported");
+		return;
+	}
+	//Recursively link interfaces implemented by this interface
+	for(int i=0;i<getInterfaces().size();i++)
+		getInterfaces()[i]->linkInterface(obj);
+
+	assert(context);
+
+	//Link traits of this interface
+	for(int j=0;j<context->instances[class_index].trait_count;j++)
+	{
+		traits_info* t=&context->instances[class_index].traits[j];
+		context->linkTrait(obj,t);
+	}
+
+	if(constructor)
+	{
+		LOG(LOG_CALLS,"Calling interface init for " << class_name);
+		constructor->call(obj,NULL,obj->max_level);
+	}
+}
+
+bool Class_base::isSubClass(const Class_base* cls) const
+{
+	if(cls==this)
+		return true;
+
+	//Now check the interfaces
+	for(int i=0;i<getInterfaces().size();i++)
+	{
+		if(getInterfaces()[i]->isSubClass(cls))
+			return true;
+	}
+
+	//Now ask the super
+	if(super && super->isSubClass(cls))
+		return true;
+	return false;
+}
+
 void ASQName::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
@@ -1378,14 +1446,3 @@ ASFUNCTIONBODY(Namespace,_constructor)
 	abort();
 }
 
-bool lightspark::isSubclass(ASObject* obj, const Class_base* c)
-{
-	Class_base* cur=obj->prototype;
-	while(cur)
-	{
-		if(cur==c)
-			return true;
-		cur=cur->super;
-	}
-	return false;
-}

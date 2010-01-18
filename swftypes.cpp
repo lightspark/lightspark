@@ -1656,7 +1656,7 @@ void variables_map::setSlot(int n,ASObject* o)
 	return buf;
 }*/
 
-obj_var* variables_map::getValueAt(int index)
+obj_var* variables_map::getValueAt(int index, int& level)
 {
 	//TODO: CHECK behavious on overridden methods
 	if(index<Variables.size())
@@ -1666,6 +1666,7 @@ obj_var* variables_map::getValueAt(int index)
 		for(int i=0;i<index;i++)
 			it++;
 
+		level=it->first.level;
 		return &it->second.second;
 	}
 	else
@@ -1677,18 +1678,17 @@ obj_var* variables_map::getValueAt(int index)
 
 ASObject* ASObject::getValueAt(int index)
 {
-	obj_var* obj=Variables.getValueAt(index);
+	int level;
+	obj_var* obj=Variables.getValueAt(index,level);
 	assert(obj);
 	ASObject* ret;
 	if(obj->getter)
 	{
-		//TODO: check for call level
-		abort();
-/*		//Call the getter
+		//Call the getter
 		LOG(LOG_CALLS,"Calling the getter");
-		ret=obj->getter->call(this,NULL);
+		ret=obj->getter->call(this,NULL,level);
 		ret->fake_decRef();
-		LOG(LOG_CALLS,"End of getter");*/
+		LOG(LOG_CALLS,"End of getter");
 	}
 	else
 		ret=obj->var;
@@ -1763,10 +1763,11 @@ void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool bui
 		Class_base* cur=actualPrototype;
 		while(cur)
 		{
-			for(int i=0;i<cur->interfaces.size();i++)
+			const vector<Class_base*>& interfaces=cur->getInterfaces();
+			for(int i=0;i<interfaces.size();i++)
 			{
-				LOG(LOG_CALLS,"Linking with interface " << cur->interfaces[i]);
-				ABCContext::linkInterface(cur->interfaces[i], this);
+				LOG(LOG_CALLS,"Linking with interface " << interfaces[i]->class_name);
+				interfaces[i]->linkInterface(this);
 			}
 			cur = cur->super;
 		}

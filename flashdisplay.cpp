@@ -25,6 +25,7 @@
 #include "swf.h"
 #include "flashgeom.h"
 #include "flashnet.h"
+#include "flashsystem.h"
 #include "streams.h"
 #include "compat.h"
 #include "class.h"
@@ -66,8 +67,9 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	obj->setGetterByQName("url","",new Function(_getUrl));
 	obj->setGetterByQName("bytesLoaded","",new Function(_getBytesLoaded));
 	obj->setGetterByQName("bytesTotal","",new Function(_getBytesTotal));
+	obj->setGetterByQName("applicationDomain","",new Function(_getApplicationDomain));
 
-	params->setVariableByQName("length_seconds","",new ASString("558"));
+/*	params->setVariableByQName("length_seconds","",new ASString("558"));
 	params->setVariableByQName("cr","",new ASString("US"));
 	params->setVariableByQName("plid","",new ASString("AAR2WiuKNxt32IdW"));
 	params->setVariableByQName("t","",new ASString("vjVQa1PpcFOpt5byKez5Rz71Hui_DHUbc_z_AtcWBa0="));
@@ -75,7 +77,7 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	params->setVariableByQName("sk","",new ASString("PaOie8-uH5AhsKIdWMmBUtdP4LkQJERtC"));
 	params->setVariableByQName("video_id","",new ASString("G4S9tV8ZLcE"));
 	params->setVariableByQName("fmt_map","",new ASString("34/0/9/0/115,5/0/7/0/0"));
-	params->setVariableByQName("fmt_url_map","",new ASString("34|http://v9.lscache2.c.youtube.com/videoplayback?ip=0.0.0.0&sparams=id%2Cexpire%2Cip%2Cipbits%2Citag%2Calgorithm%2Cburst%2Cfactor&fexp=903900%2C900025%2C905207&algorithm=throttle-factor&itag=34&ipbits=0&signature=A45863BF4EEB761129156DB5275FD1B69119666F.7633A2E1E476044B0D313C22E5641B2B6FBD3601&sver=3&expire=1256054400&key=yt1&factor=1.25&burst=40&id=1b84bdb55f192dc1,5|http://v3.lscache8.c.youtube.com/videoplayback?ip=0.0.0.0&sparams=id%2Cexpire%2Cip%2Cipbits%2Citag%2Calgorithm%2Cburst%2Cfactor&fexp=903900%2C900025%2C905207&algorithm=throttle-factor&itag=5&ipbits=0&signature=D04298060B1F95665DB6622292E34D316C23D761.8E3DB733F92F8C90BEB8EAE558516067B76D32CB&sver=3&expire=1256054400&key=yt1&factor=1.25&burst=40&id=1b84bdb55f192dc1"));
+	params->setVariableByQName("fmt_url_map","",new ASString("34|http://v9.lscache2.c.youtube.com/videoplayback?ip=0.0.0.0&sparams=id%2Cexpire%2Cip%2Cipbits%2Citag%2Calgorithm%2Cburst%2Cfactor&fexp=903900%2C900025%2C905207&algorithm=throttle-factor&itag=34&ipbits=0&signature=A45863BF4EEB761129156DB5275FD1B69119666F.7633A2E1E476044B0D313C22E5641B2B6FBD3601&sver=3&expire=1256054400&key=yt1&factor=1.25&burst=40&id=1b84bdb55f192dc1,5|http://v3.lscache8.c.youtube.com/videoplayback?ip=0.0.0.0&sparams=id%2Cexpire%2Cip%2Cipbits%2Citag%2Calgorithm%2Cburst%2Cfactor&fexp=903900%2C900025%2C905207&algorithm=throttle-factor&itag=5&ipbits=0&signature=D04298060B1F95665DB6622292E34D316C23D761.8E3DB733F92F8C90BEB8EAE558516067B76D32CB&sver=3&expire=1256054400&key=yt1&factor=1.25&burst=40&id=1b84bdb55f192dc1"));*/
 //rv.2.thumbnailUrl": "http%3A%2F%2Fi1.ytimg.com%2Fvi%2FxWyMjzVXq7Y%2Fdefault.jpg"
 //"rv.7.length_seconds": "439",
 //"rv.0.url": "http%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D15lKSqY86Ew", 
@@ -171,6 +173,11 @@ ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
 	return abstract_i(th->bytesTotal);
+}
+
+ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
+{
+	return Class<ApplicationDomain>::getInstanceS(true)->obj;
 }
 
 ASFUNCTIONBODY(Loader,_constructor)
@@ -801,7 +808,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 	child->root=root;
 
 	//The HACK for this supports only Sprites now
-	assert(isSubclass(child->obj ,Class<Sprite>::getClass()));
+	assert(child->obj->prototype->isSubClass(Class<Sprite>::getClass()));
 
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
@@ -820,7 +827,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
 	assert(args->size()==2);
 	//Validate object type
-	assert(isSubclass(args->at(0),Class<DisplayObject>::getClass()));
+	assert(args->at(0)->prototype->isSubClass(Class<Sprite>::getClass()));
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
@@ -838,7 +845,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
 	assert(args->size()==1);
 	//Validate object type
-	assert(isSubclass(args->at(0),Class<DisplayObject>::getClass()));
+	assert(args->at(0)->prototype->isSubClass(Class<Sprite>::getClass()));
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
@@ -856,7 +863,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
 	assert(args->size()==1);
 	//Validate object type
-	assert(isSubclass(args->at(0),Class<DisplayObject>::getClass()));
+	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);

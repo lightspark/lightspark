@@ -82,18 +82,18 @@ public:
 class Class_base: public ASObject
 {
 friend class ABCVm;
-friend class ABCContext;
-friend void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits);
 private:
-	std::vector<multiname> interfaces;
-	std::vector<Class_base*> interfaces_added;
+	mutable std::vector<multiname> interfaces;
+	mutable std::vector<Class_base*> interfaces_added;
+	mutable bool interfaces_ready;
 public:
 	Class_base* super;
 	IFunction* constructor;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
 	int class_index;
-	Class_base(const tiny_string& name):super(NULL),constructor(NULL),context(NULL),class_name(name),class_index(-1){type=T_CLASS;}
+	Class_base(const tiny_string& name):super(NULL),constructor(NULL),context(NULL),class_name(name),class_index(-1),
+		interfaces_ready(false)	{type=T_CLASS;}
 	~Class_base();
 	virtual IInterface* getInstance(bool construct=false)=0;
 	tiny_string class_name;
@@ -122,6 +122,9 @@ public:
 	}
 	void addImplementedInterface(const multiname& i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
+	const std::vector<Class_base*>& getInterfaces() const;
+	void linkInterface(ASObject* obj) const;
+	bool isSubClass(const Class_base* cls) const;
 };
 
 class Class_object: public Class_base
@@ -596,8 +599,6 @@ public:
 	ASFUNCTION(exec);
 	ASFUNCTION(replace);
 };
-
-bool isSubclass(ASObject* obj, const Class_base* c);
 
 };
 

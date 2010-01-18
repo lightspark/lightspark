@@ -374,7 +374,7 @@ public:
 		return Variables.size();
 	}
 	tiny_string getNameAt(int i);
-	obj_var* getValueAt(int i);
+	obj_var* getValueAt(int i, int& level);
 	bool hasProperty(const tiny_string& name, int level);
 	~variables_map();
 };

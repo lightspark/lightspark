@@ -1509,28 +1509,24 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"isTypelate");
 	if(obj->getObjectType()==T_UNDEFINED)
-	{
-		cout << "false" << endl;
-		assert(type->getObjectType()==T_CLASS);
-		Class_base* c=static_cast<Class_base*>(type);
-		bool real_ret=isSubclass(obj,c);
-		assert(real_ret==false);
 		return false;
-	}
 	else
 	{
-		cout << "true" << endl;
-		assert(type->getObjectType()==T_CLASS);
-		Class_base* c=static_cast<Class_base*>(type);
-		bool real_ret=isSubclass(obj,c);
-		assert(real_ret==true);
-		return true;
+		if(obj->prototype)
+		{
+			assert(type->getObjectType()==T_CLASS);
+			Class_base* c=static_cast<Class_base*>(type);
+			cout << "Type " << obj->prototype->class_name << " is subclass of " << c->class_name << endl;
+			bool real_ret=obj->prototype->isSubClass(c);
+			cout << real_ret << endl;
+			return real_ret;
+		}
+		else
+		{
+			cout << "Buffo isTypelate on " << obj->getObjectType() << endl;
+			return false;
+		}
 	}
-//	cout << "Name " << type->class_name << " type " << type->getObjectType() << endl;
-//	cout << "Name " << obj->class_name << " type " << obj->getObjectType() << endl;
-//	if(type->class_name==obj->class_name)
-//	else
-//		th->runtime_stack_push(new Boolean(false));
 }
 
 bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2)
@@ -1662,14 +1658,14 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 		}
 	}
 
-	//Look up if there is a following index which is still an object
+/*	//Look up if there is a following index which is still an object
 	//(not a method)
 	for(cur_index;cur_index<obj->numVariables();cur_index++)
 	{
 		obj_var* var=obj->Variables.getValueAt(cur_index);
 		if(var->var && var->var->getObjectType()!=T_FUNCTION)
 			break;
-	}
+	}*/
 
 	//Our references are 0 based, the AS ones are 1 based
 	//what a mess

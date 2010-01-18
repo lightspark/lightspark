@@ -140,7 +140,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass());
 	Global.setVariableByQName("Loader","flash.display",Class<Loader>::getClass());
 	Global.setVariableByQName("SimpleButton","flash.display",new ASObject);
-	Global.setVariableByQName("InteractiveObject","flash.display",new ASObject),
+	Global.setVariableByQName("InteractiveObject","flash.display",Class<IInterface>::getClass("InteractiveObject")),
 	Global.setVariableByQName("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getClass());
 	Global.setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());
 	Global.setVariableByQName("Shape","flash.display",Class<Shape>::getClass());
@@ -1286,39 +1286,6 @@ inline void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 {
 	for(int i=0;i<instances[class_index].trait_count;i++)
 		buildTrait(obj,&instances[class_index].traits[i]);
-}
-
-void ABCContext::linkInterface(const multiname& interface_name, ASObject* obj)
-{
-	ASObject* owner;
-	ASObject* interface_obj=getGlobal()->getVariableByMultiname(interface_name,owner).obj;
-	assert(owner && interface_obj->getObjectType()==T_CLASS);
-	Class_base* inter=static_cast<Class_base*>(interface_obj);
-	if(inter->class_index==-1)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Linking of builtin interface " << interface_name << " not supported");
-		return;
-	}
-
-	ABCContext* context=inter->context;
-	assert(context);
-
-	//Recursively link interfaces implemented by this interface
-	for(int i=0;i<inter->interfaces.size();i++)
-		linkInterface(inter->interfaces[i],obj);
-
-	//Link traits of this interface
-	for(int j=0;j<context->instances[inter->class_index].trait_count;j++)
-	{
-		traits_info* t=&context->instances[inter->class_index].traits[j];
-		context->linkTrait(obj,t);
-	}
-
-	if(inter->constructor)
-	{
-		LOG(LOG_CALLS,"Calling interface init for " << inter->class_name);
-		inter->constructor->call(obj,NULL,obj->max_level);
-	}
 }
 
 void ABCContext::linkTrait(ASObject* obj, const traits_info* t)

@@ -162,6 +162,7 @@ public:
 	ASFUNCTION(_getUrl);
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
+	ASFUNCTION(_getApplicationDomain);
 };
 
 class Loader: public IThreadJob, public DisplayObjectContainer

@@ -378,7 +378,6 @@ private:
 	static multiname* s_getMultiname(call_context*, ASObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
-	void linkTrait(ASObject* obj, const traits_info* t);
 	int getMultinameRTData(int n) const;
 	ASObject* getConstant(int kind, int index);
 public:
@@ -397,8 +396,8 @@ public:
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
 	void buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
+	void linkTrait(ASObject* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
-	static void linkInterface(const multiname& interface_name, ASObject* obj);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in);
 	void exec();

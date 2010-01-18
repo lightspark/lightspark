@@ -215,7 +215,11 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 
 	std::map<tiny_string,std::list<listener> >::iterator it=th->handlers.insert(make_pair(eventName,list<listener>())).first;
 
-	assert(find(it->second.begin(),it->second.end(),f)==it->second.end());
+	if(find(it->second.begin(),it->second.end(),f)!=it->second.end())
+	{
+		cout << "Weird event reregistration" << endl;
+		return NULL;
+	}
 
 	f->incRef();
 	it->second.push_back(listener(f));

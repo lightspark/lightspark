@@ -17,7 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <iostream>
+#define __STDC_LIMIT_MACROS
+#define __STDC_CONSTANT_MACROS
 #include <string.h>
 #include <pthread.h>
 #include <SDL.h>

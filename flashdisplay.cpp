@@ -19,8 +19,6 @@
 
 #include <list>
 #include <algorithm>
-#include <fstream>
-#include <GL/glew.h>
 
 #include "abc.h"
 #include "flashdisplay.h"
@@ -31,6 +29,8 @@
 #include "compat.h"
 #include "class.h"
 
+#include <GL/glew.h>
+#include <fstream>
 using namespace std;
 using namespace lightspark;
 

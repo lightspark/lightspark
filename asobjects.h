@@ -198,6 +198,10 @@ public:
 	{
 		return new Function(*this);
 	}
+	bool isEqual(ASObject* r)
+	{
+		abort();
+	}
 
 private:
 	as_function val;
@@ -217,6 +221,13 @@ public:
 	SyntheticFunction* clone()
 	{
 		return new SyntheticFunction(*this);
+	}
+	bool isEqual(ASObject* r)
+	{
+		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
+		if(sf==NULL)
+			return false;
+		return mi==sf->mi;
 	}
 
 private:

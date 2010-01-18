@@ -106,10 +106,23 @@ public:
 	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
 };
 
+class listener
+{
+friend class EventDispatcher;
+private:
+	IFunction* f;
+public:
+	explicit listener(IFunction* _f):f(_f){};
+	bool operator==(IFunction* r)
+	{
+		return f->isEqual(r);
+	}
+};
+
 class EventDispatcher: public IInterface
 {
 private:
-	std::map<tiny_string,std::list<IFunction*> > handlers;
+	std::map<tiny_string,std::list<listener> > handlers;
 	void dumpHandlers();
 public:
 	float id;
@@ -118,6 +131,7 @@ public:
 	virtual ~EventDispatcher(){}
 	void handleEvent(Event* e);
 	void setId(float i){id=i;}
+	bool hasEventListener(const tiny_string& eventName);
 
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);

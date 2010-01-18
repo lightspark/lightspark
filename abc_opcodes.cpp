@@ -335,7 +335,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 			IFunction* f=ret->toFunction()->clone();
 			f->bind(owner);
 			obj->decRef();
-			f->incRef();
+			//No incref is needed, as the function is a new instance
 			return f;
 		}
 		else if(ret->getObjectType()==T_DEFINABLE)
@@ -1172,6 +1172,8 @@ void ABCVm::getLex(call_context* th, int n)
 				o2=getGlobal()->getVariableByMultiname(*name,owner).obj;
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
+			else if(o2->getObjectType()==T_FUNCTION)
+				abort();
 
 			th->runtime_stack_push(o2);
 			o2->incRef();

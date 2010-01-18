@@ -46,6 +46,7 @@ void Event::sinit(Class_base* c)
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
 	c->setVariableByQName("ENTER_FRAME","",new ASString("enterFrame"));
+	c->setVariableByQName("RENDER","",new ASString("render"));
 	c->setVariableByQName("ADDED_TO_STAGE","",new ASString("addedToStage"));
 	c->setVariableByQName("INIT","",new ASString("init"));
 	c->setVariableByQName("CLOSE","",new ASString("close"));
@@ -172,7 +173,7 @@ void EventDispatcher::sinit(Class_base* c)
 
 void EventDispatcher::dumpHandlers()
 {
-	std::map<tiny_string,list<IFunction*> >::iterator it=handlers.begin();
+	std::map<tiny_string,list<listener> >::iterator it=handlers.begin();
 	for(it;it!=handlers.end();it++)
 		std::cout << it->first << std::endl;
 }
@@ -191,18 +192,20 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		LOG(LOG_ERROR,"Type mismatch");
 		abort();
 	}
-//	sys->cur_input_thread->addListener(args->at(0)->toString(),th);
+	const tiny_string& eventName=args->at(0)->toString();
+	IFunction* f=args->at(1)->toFunction();
+	//TODO: find a nice way to do this
+	if(eventName=="enterFrame")
+		sys->cur_input_thread->addListener(eventName,th);
 
-	std::map<tiny_string,std::list<IFunction*> >::iterator it=
-		th->handlers.insert(make_pair(args->at(0)->toString(),list<IFunction*>())).first;
+	std::map<tiny_string,std::list<listener> >::iterator it=th->handlers.insert(make_pair(eventName,list<listener>())).first;
 
-	//Should compare based on method info
-	if(find(it->second.begin(),it->second.end(),args->at(1)->toFunction())!=it->second.end())
-		abort();
+	assert(find(it->second.begin(),it->second.end(),f)==it->second.end());
 
-	it->second.push_back(args->at(1)->toFunction());
+	f->incRef();
+	it->second.push_back(listener(f));
 
-	sys->events_name.push_back(args->at(0)->toString());
+	sys->events_name.push_back(eventName);
 }
 
 ASFUNCTIONBODY(EventDispatcher,removeEventListener)
@@ -215,17 +218,18 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 	}
 //	sys->cur_input_thread->addListener(args->at(0)->toString(),th);
 
-	map<tiny_string, list<IFunction*> >::iterator h=th->handlers.find(args->at(0)->toString());
+	map<tiny_string, list<listener> >::iterator h=th->handlers.find(args->at(0)->toString());
 	if(h==th->handlers.end())
 	{
 		LOG(LOG_CALLS,"Event not found");
 		return NULL;
 	}
 
-	//SERIOUS_TODO: functions should be compared based on their method info
-	//assert(h->second==args->at(1)->toFunction());
-
-	h->second.clear();
+	std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),args->at(1)->toFunction());
+	assert(it!=h->second.end());
+	//The listener owns the function
+	it->f->decRef();
+	h->second.erase(it);
 	return NULL;
 }
 
@@ -256,7 +260,7 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 
 void EventDispatcher::handleEvent(Event* e)
 {
-	map<tiny_string, list<IFunction*> >::iterator h=handlers.find(e->type);
+	map<tiny_string, list<listener> >::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Not handled event " << e->type);
@@ -265,20 +269,22 @@ void EventDispatcher::handleEvent(Event* e)
 
 	LOG(LOG_CALLS, "Handling event " << h->first);
 	assert(e->obj);
+
+	//Create a temporary copy of the listeners, as the list can be modified during the calls
+	vector<listener> tmpListener(h->second.begin(),h->second.end());
 	//TODO: check, ok we should also bind the level
-	list<IFunction*>::iterator it=h->second.begin();
-	for(it;it!=h->second.end();it++)
+	for(int i=0;i<tmpListener.size();i++)
 	{
 		arguments args(1);
 		//The event is going to be decreffed as a function parameter
 		e->obj->incRef();
 		args.set(0,e->obj);
 		obj->incRef();
-		(*it)->call(obj,&args,obj->max_level);
-
-		//HACK
-		if(h->second.empty())
-			break;
+		//tmpListener is now also owned by the vector
+		tmpListener[i].f->incRef();
+		tmpListener[i].f->call(obj,&args,obj->max_level);
+		//And now no more, f can also be deleted
+		tmpListener[i].f->decRef();
 	}
 	e->obj->decRef();
 	
@@ -286,3 +292,10 @@ void EventDispatcher::handleEvent(Event* e)
 	//TODO
 }
 
+bool EventDispatcher::hasEventListener(const tiny_string& eventName)
+{
+	if(handlers.find(eventName)==handlers.end())
+		return false;
+	else
+		return true;
+}

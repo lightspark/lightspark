@@ -690,9 +690,42 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				sort(ret->ns.begin(),ret->ns.end());
 
 				ASObject* n=th->runtime_stack_pop();
-				assert(n->getObjectType()!=T_OBJECT);
-				ret->name_s=n->toString();
-				ret->name_type=multiname::NAME_STRING;
+				if(n->getObjectType()==T_INTEGER)
+				{
+					Integer* o=static_cast<Integer*>(n);
+					ret->name_i=o->val;
+					ret->name_type=multiname::NAME_INT;
+				}
+				else if(n->getObjectType()==T_NUMBER)
+				{
+					Number* o=static_cast<Number*>(n);
+					ret->name_d=o->val;
+					ret->name_type=multiname::NAME_NUMBER;
+				}
+				else if(n->getObjectType()==T_QNAME)
+				{
+					ASQName* qname=static_cast<ASQName*>(n->implementation);
+					ret->name_s=qname->local_name;
+					ret->name_type=multiname::NAME_STRING;
+				}
+				else if(n->getObjectType()==T_OBJECT)
+				{
+					ret->name_o=n;
+					ret->name_type=multiname::NAME_OBJECT;
+					n->incRef();
+				}
+				else if(n->getObjectType()==T_STRING)
+				{
+					ASString* o=static_cast<ASString*>(n);
+					ret->name_s=o->data;
+					ret->name_type=multiname::NAME_STRING;
+				}
+				else
+				{
+					abort();
+					//ret->name_s=n->toString();
+					//ret->name_type=multiname::NAME_STRING;
+				}
 				n->decRef();
 				break;
 			}
@@ -750,9 +783,42 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			case 0x1b:
 			{
 				ASObject* n=th->runtime_stack_pop();
-				assert(n->getObjectType()!=T_OBJECT);
-				ret->name_s=n->toString();
-				ret->name_type=multiname::NAME_STRING;
+				if(n->getObjectType()==T_INTEGER)
+				{
+					Integer* o=static_cast<Integer*>(n);
+					ret->name_i=o->val;
+					ret->name_type=multiname::NAME_INT;
+				}
+				else if(n->getObjectType()==T_NUMBER)
+				{
+					Number* o=static_cast<Number*>(n);
+					ret->name_d=o->val;
+					ret->name_type=multiname::NAME_NUMBER;
+				}
+				else if(n->getObjectType()==T_QNAME)
+				{
+					ASQName* qname=static_cast<ASQName*>(n->implementation);
+					ret->name_s=qname->local_name;
+					ret->name_type=multiname::NAME_STRING;
+				}
+				else if(n->getObjectType()==T_OBJECT)
+				{
+					ret->name_o=n;
+					ret->name_type=multiname::NAME_OBJECT;
+					n->incRef();
+				}
+				else if(n->getObjectType()==T_STRING)
+				{
+					ASString* o=static_cast<ASString*>(n);
+					ret->name_s=o->data;
+					ret->name_type=multiname::NAME_STRING;
+				}
+				else
+				{
+					abort();
+					//ret->name_s=n->toString();
+					//ret->name_type=multiname::NAME_STRING;
+				}
 				n->decRef();
 				break;
 			}
@@ -1080,11 +1146,6 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		return false;
 }
 
-void ABCVm::deleteProperty(call_context* th, int n)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"deleteProperty " << n);
-}
-
 void ABCVm::coerce(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,NULL); 
@@ -1183,8 +1244,7 @@ call_context::call_context(method_info* th, int level, ASObject** args, int num_
 
 call_context::~call_context()
 {
-	if(stack_index!=0)
-		LOG(LOG_NOT_IMPLEMENTED,"Should clean stack of " << stack_index);
+	assert(stack_index==0);
 
 	for(int i=0;i<locals_size;i++)
 	{
@@ -1540,26 +1600,26 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				//else fallthrough
 				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				ASObject* owner;
-				ASObject* ret=obj->getVariableByQName(name,ns,owner).obj;
-				if(!owner)
+				objAndLevel ret=obj->getVariableByQName(name,ns,owner);
+				if(owner)
 				{
-					if(deferred_initialization)
-					{
-						ret=new ScriptDefinable(deferred_initialization);
-						obj->setVariableByQName(name, ns, ret, false);
-					}
+					if(obj->actualPrototype)
+						assert(ret.level<obj->actualPrototype->max_level);
 					else
-					{
-						ret=new Undefined;
-						obj->setVariableByQName(name, ns, ret, false);
-					}
+						assert(ret.level<obj->max_level);
+				}
+
+				if(deferred_initialization)
+				{
+					ASObject* ret=new ScriptDefinable(deferred_initialization);
+					obj->setVariableByQName(name, ns, ret, false);
 				}
 				else
 				{
-					LOG(LOG_CALLS,"Not resetting variable " << name);
-//					if(ret->constructor)
-//						ret->constructor->call(ret,NULL);
+					ASObject* ret=new Undefined;
+					obj->setVariableByQName(name, ns, ret, false);
 				}
+
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, name,ns );
 				break;

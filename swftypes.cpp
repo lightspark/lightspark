@@ -437,12 +437,12 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 
 	obj_var* obj=NULL;
 	int level;
-	for(int i=max_level;i>0;i--)
+	for(int i=max_level;i>=0;i--)
 	{
-		obj=Variables.findObjVar(name,i-1,false,true);
+		obj=Variables.findObjVar(name,i,false,true);
 		if(obj)
 		{
-			level=i-1;
+			level=i;
 			break;
 		}
 	}
@@ -486,12 +486,12 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 
 	if(find_back)
 	{
-		for(int i=max_level;i>0;i--)
+		for(int i=max_level;i>=0;i--)
 		{
-			obj=Variables.findObjVar(name,ns,i-1,false,true);
+			obj=Variables.findObjVar(name,ns,i,false,true);
 			if(obj)
 			{
-				level=i-1;
+				level=i;
 				break;
 			}
 		}
@@ -693,6 +693,12 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 			//Added at level 0, as Object is always the base
 			return objAndLevel(ret,0);
 		}
+		else if(name.name_s=="call" && getObjectType()==T_FUNCTION)
+		{
+			//Fake returning the function itself
+			owner=this;
+			return objAndLevel(this,0);
+		}
 
 		//It has not been found yet, ask the prototype
 		if(prototype)
@@ -746,7 +752,7 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 		else
 		{
 			owner=this;
-			return objAndLevel(obj->var,max_level);
+			return objAndLevel(obj->var,level);
 		}
 	}
 	else

@@ -322,7 +322,14 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	ASObject* ret=obj->getVariableByMultiname(*name,owner).obj;
 	if(owner==NULL)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Property not found " << *name);
+		if(obj->prototype)
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"Property not found " << *name << " on type " << obj->prototype->class_name);
+		}
+		else
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"Property not found " << *name);
+		}
 		return new Undefined;
 	}
 	else
@@ -1900,5 +1907,11 @@ void ABCVm::call(call_context* th, int m)
 		th->runtime_stack_push(new Undefined);
 	}
 
+}
+
+void ABCVm::deleteProperty(call_context* th, int n)
+{
+	multiname* name=th->context->getMultiname(n,th); 
+	LOG(LOG_NOT_IMPLEMENTED,"deleteProperty " << *name);
 }
 

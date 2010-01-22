@@ -82,9 +82,16 @@ ASFUNCTIONBODY(Timer,reset)
 
 ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)
 {
-	assert(args->at(0)->prototype);
-	cout << args->at(0)->prototype->class_name << endl;
-	return new ASString(args->at(0)->prototype->class_name);
+	if(args->at(0)->getObjectType()!=T_CLASS)
+	{
+		assert(args->at(0)->prototype);
+		return new ASString(args->at(0)->prototype->class_name);
+	}
+	else
+	{
+		Class_base* c=static_cast<Class_base*>(args->at(0));
+		return new ASString(c->class_name);
+	}
 }
 
 ASFUNCTIONBODY(lightspark,getDefinitionByName)

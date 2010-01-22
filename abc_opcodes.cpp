@@ -223,6 +223,8 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	LOG(LOG_CALLS,"callProperty " << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
+	if(obj->prototype)
+		cout << obj->prototype->class_name << endl;
 
 	//Here overriding is supposed to work, so restore prototype and max_level
 	int oldlevel=obj->max_level;
@@ -1538,10 +1540,10 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 
 bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2)
 {
-	LOG(LOG_CALLS,"ifEq");
+	bool ret=obj1->isEqual(obj2);
+	LOG(LOG_CALLS,"ifEq (" << ((ret)?"taken)":"not taken)"));
 
 	//Real comparision demanded to object
-	bool ret=obj1->isEqual(obj2);
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1642,6 +1644,8 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 	LOG(LOG_NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
 	ASObject* obj=th->locals[n];
 	int cur_index=th->locals[m]->toInt();
+	//if(obj->numVariables()==4)
+	//	__asm__("int $3");
 
 	if(obj->implementation)
 	{
@@ -1789,6 +1793,14 @@ void ABCVm::newClass(call_context* th, int n)
 	//add Constructor the the class methods
 	ret->constructor=new SyntheticFunction(constructor);
 	ret->class_index=n;
+
+	//Add protected namespace if needed
+	if((th->context->instances[n].flags)&0x08)
+	{
+		ret->use_protected=true;
+		int ns=th->context->instances[n].protectedNs;
+		ret->protected_ns=th->context->getString(th->context->constant_pool.namespaces[ns].name);
+	}
 
 	//add implemented interfaces
 	for(int i=0;i<th->context->instances[n].interface_count;i++)

@@ -321,6 +321,11 @@ void Sprite::sinit(Class_base* c)
 
 void Sprite::Render()
 {
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDisable(GL_BLEND);
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
@@ -330,12 +335,40 @@ void Sprite::Render()
 	if(graphics)
 		graphics->Render();
 
+	glGetFloatv(GL_MODELVIEW, matrix);
+
+
+/*		FILLSTYLE::fixedColor(0,0,0);
+	glBegin(GL_QUADS);
+		glVertex2i(0,0);
+		glVertex2i(75,0);
+		glVertex2i(75,75);
+		glVertex2i(0,75);
+	glEnd();*/
+
+	glEnable(GL_BLEND);
+	glLoadIdentity();
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
+	glDrawBuffers(2,draw_buffers);
+
+	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
+	glColor3f(0,0,1);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex2i(0,0);
+		glTexCoord2f(1,1);
+		glVertex2i(rt->width,0);
+		glTexCoord2f(1,0);
+		glVertex2i(rt->width,rt->height);
+		glTexCoord2f(0,0);
+		glVertex2i(0,rt->height);
+	glEnd();
+	glPopMatrix();
+
 	//Now draw also the display list
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
 	for(it;it!=dynamicDisplayList.end();it++)
 		(*it)->Render();
-	glPopMatrix();
-
 }
 
 ASFUNCTIONBODY(Sprite,_constructor)
@@ -742,9 +775,13 @@ ASFUNCTIONBODY(DisplayObject,_getParent)
 ASFUNCTIONBODY(DisplayObject,_getRoot)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	assert(th->root->obj);
-	th->root->obj->incRef();
-	return th->root->obj;
+	if(th->root)
+	{
+		th->root->obj->incRef();
+		return th->root->obj;
+	}
+	else
+		return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRotation)
@@ -803,8 +840,10 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 	//TODO: Interesting things such as inserting the object in the display list will be done later
 
 	//Set the root of the movie to this container
+	if(obj->prototype->class_name=="VBox")
+		__asm__("int $3");
+
 	assert(child->root==NULL);
-	assert(root==sys);
 	child->root=root;
 
 	//The HACK for this supports only Sprites now
@@ -977,17 +1016,18 @@ ASFUNCTIONBODY(Graphics,drawRect)
 void Graphics::Render()
 {
 	sem_wait(&geometry_mutex);
+
 	for(int i=0;i<geometry.size();i++)
 		geometry[i].Render();
 
-/*	if(geometry.size()==0)
+/*	if(geometry.size()==1)
 	{
 		FILLSTYLE::fixedColor(0,0,0);
 		glBegin(GL_QUADS);
 			glVertex2i(0,0);
-			glVertex2i(100,0);
-			glVertex2i(100,100);
-			glVertex2i(0,100);
+			glVertex2i(75,0);
+			glVertex2i(75,75);
+			glVertex2i(0,75);
 		glEnd();
 	}*/
 	sem_post(&geometry_mutex);

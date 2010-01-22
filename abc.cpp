@@ -1236,8 +1236,7 @@ call_context::call_context(method_info* th, int level, ASObject** args, int num_
 	memset(locals,0,sizeof(ASObject*)*locals_size);
 	if(args)
 		memcpy(locals+1,args,num_args*sizeof(ASObject*));
-	//TODO: We add a 3x safety margin because not implemented instruction do not clean the stack as they should
-	stack=new ASObject*[th->body->max_stack*3];
+	stack=new ASObject*[th->body->max_stack];
 	stack_index=0;
 	context=th->context;
 }
@@ -1508,11 +1507,30 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			method_info* m=&methods[t->method];
 			IFunction* f=new SyntheticFunction(m);
 
+			//We have to override if there is a method with the same name,
+			//even if the namespace are different, if both are protected
+			if(obj->actualPrototype && t->kind&0x20 && 
+				obj->actualPrototype->use_protected && ns==obj->actualPrototype->protected_ns)
+			{
+				//Walk the super chain and find variables to override
+				Class_base* cur=obj->actualPrototype->super;
+				for(int i=(obj->max_level-1);i>=0;i--)
+				{
+					assert(cur);
+					if(cur->use_protected)
+					{
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,true);
+						if(var)
+						{
+							//A superclass defined a protected method that we have to override.
+							//TODO: incref variable?
+							obj->setGetterByQName(name,cur->protected_ns,f);
+						}
+					}
+					cur=cur->super;
+				}
+			}
 			obj->setGetterByQName(name,ns,f);
-			//We should inherit the setter from the hierarchy
-			/*obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false,true);
-			if(var && var->setter) //Ok, also set the inherited setter
-				obj->setSetterByQName(name,ns,var->setter);*/
 			
 			LOG(LOG_TRACE,"End Getter trait: " << ns << "::" << name);
 			break;
@@ -1525,11 +1543,30 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 			IFunction* f=new SyntheticFunction(m);
 
+			//We have to override if there is a method with the same name,
+			//even if the namespace are different, if both are protected
+			if(obj->actualPrototype && t->kind&0x20 && 
+				obj->actualPrototype->use_protected && ns==obj->actualPrototype->protected_ns)
+			{
+				//Walk the super chain and find variables to override
+				Class_base* cur=obj->actualPrototype->super;
+				for(int i=(obj->max_level-1);i>=0;i--)
+				{
+					assert(cur);
+					if(cur->use_protected)
+					{
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,true);
+						if(var)
+						{
+							//A superclass defined a protected method that we have to override.
+							//TODO: incref variable?
+							obj->setSetterByQName(name,cur->protected_ns,f);
+						}
+					}
+					cur=cur->super;
+				}
+			}
 			obj->setSetterByQName(name,ns,f);
-			//We should inherit the setter from the hierarchy
-			/*obj_var* var=obj->Variables.findObjVar(name,ns,obj->max_level-1,false,true);
-			if(var && var->getter) //Ok, also set the inherited setter
-				obj->setGetterByQName(name,ns,var->getter);*/
 			
 			LOG(LOG_TRACE,"End Setter trait: " << ns << "::" << name);
 			break;
@@ -1541,14 +1578,29 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			method_info* m=&methods[t->method];
 			IFunction* f=new SyntheticFunction(m);
 
-			/*//If overriding we lookup if this name is already defined
-			//If the namespace where is defined is different usually we dont't care
-			//but, if it's the name of a super, then we have to take over also that
-			//ns:name combination
-			if(t->kind&0x20)
+			//We have to override if there is a method with the same name,
+			//even if the namespace are different, if both are protected
+			if(obj->actualPrototype && t->kind&0x20 && 
+				obj->actualPrototype->use_protected && ns==obj->actualPrototype->protected_ns)
 			{
-				obj_var* var=obj->Variables.findObjVar(name,ns,
-			}*/
+				//Walk the super chain and find variables to override
+				Class_base* cur=obj->actualPrototype->super;
+				for(int i=(obj->max_level-1);i>=0;i--)
+				{
+					assert(cur);
+					if(cur->use_protected)
+					{
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,true);
+						if(var)
+						{
+							//A superclass defined a protected method that we have to override.
+							//TODO: incref variable?
+							obj->setVariableByQName(name,cur->protected_ns,f,false);
+						}
+					}
+					cur=cur->super;
+				}
+			}
 
 			obj->setVariableByQName(name,ns,f,false);
 			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);

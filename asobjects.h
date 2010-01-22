@@ -82,10 +82,13 @@ public:
 class Class_base: public ASObject
 {
 friend class ABCVm;
+friend class ABCContext;
 private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
 	mutable bool interfaces_ready;
+	bool use_protected;
+	tiny_string protected_ns;
 public:
 	Class_base* super;
 	IFunction* constructor;
@@ -93,7 +96,7 @@ public:
 	ABCContext* context;
 	int class_index;
 	Class_base(const tiny_string& name):super(NULL),constructor(NULL),context(NULL),class_name(name),class_index(-1),
-		interfaces_ready(false)	{type=T_CLASS;}
+		interfaces_ready(false),use_protected(false){type=T_CLASS;}
 	~Class_base();
 	virtual IInterface* getInstance(bool construct=false)=0;
 	tiny_string class_name;

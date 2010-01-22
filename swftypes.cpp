@@ -447,6 +447,21 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 		}
 	}
 
+	//TODO: If no result try to look up also in upper levels
+	if(obj==NULL && prototype)
+	{
+		for(int i=max_level+1;i<=prototype->max_level;i++)
+		{
+			obj=Variables.findObjVar(name,i,false,true);
+			if(obj)
+			{
+				cout << "Found on upper level" << endl;
+				level=i;
+				break;
+			}
+		}
+	}
+
 	if(obj==NULL)
 	{
 		level=max_level;
@@ -554,8 +569,6 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 		//return the first
 		if(!exact)
 		{
-			if(name.name=="initialize")
-				__asm__("int $3");
 			LOG(LOG_NOT_IMPLEMENTED,"Overriding or other weird condition on [multiname]::" << name.name << ". Found on " << 
 				ret.first->second.first);
 			return &ret.first->second.second;
@@ -589,6 +602,25 @@ ASFUNCTIONBODY(ASObject,_constructor)
 {
 	return NULL;
 }
+
+/*ASFUNCTIONBODY(ASObject,_getPrototype)
+{
+	if(prototype==NULL)
+		return new Undefined;
+
+	prototype->incRef();
+	return prototype;
+}
+
+ASFUNCTIONBODY(ASObject,_setPrototype)
+{
+	if(prototype)
+		prototype->decRef();
+
+	prototype=args->at(0);
+	prototype->incRef();
+	return NULL;
+}*/
 
 //In all the getter function we first ask the interface, so that special handling (e.g. Array)
 //can be done
@@ -693,7 +725,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 			//Added at level 0, as Object is always the base
 			return objAndLevel(ret,0);
 		}
-		else if(name.name_s=="call" && getObjectType()==T_FUNCTION)
+		else if(getObjectType()==T_FUNCTION && name.name_s=="call")
 		{
 			//Fake returning the function itself
 			owner=this;

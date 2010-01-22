@@ -387,6 +387,7 @@ friend class ABCContext;
 friend class SystemState;
 protected:
 	ASObject* parent;
+	ASObject* asprototype; //HUMM.. ok the prototype, actually class, should be renamed
 	//maps variable name to namespace and var
 	variables_map Variables;
 	ASObject(const ASObject& o);
@@ -403,6 +404,8 @@ public:
 	//Constructor to set class_name
 	ASObject(Manager* m=NULL);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getPrototype);
+	ASFUNCTION(_setPrototype);
 	ASFUNCTION(_toString);
 	virtual ~ASObject();
 	void check()

@@ -55,6 +55,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("ACTIVATE","",new ASString("activate"));
 	c->setVariableByQName("DEACTIVATE","",new ASString("deactivate"));
 	c->setVariableByQName("CHANGE","",new ASString("change"));
+	c->setVariableByQName("RESIZE","",new ASString("resize"));
 }
 
 ASFUNCTIONBODY(Event,_constructor)

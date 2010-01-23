@@ -604,7 +604,7 @@ void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	Matrix.multiply2D(xmax,ymax,xmax,ymax);
 }
 
-DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL),rotation(0.0),parent(NULL)
+DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL),rotation(0.0)
 {
 }
 
@@ -866,7 +866,7 @@ void DisplayObjectContainer::_removeChild(IDisplayListElem* child)
 	assert(child->parent==this);
 	assert(child->root==root);
 
-	list<IDisplayListElem*>::const_iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
+	list<IDisplayListElem*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 	assert(it!=dynamicDisplayList.end());
 	dynamicDisplayList.erase(it);
 }

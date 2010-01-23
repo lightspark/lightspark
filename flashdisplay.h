@@ -46,8 +46,9 @@ public:
 	RootMovieClip* root;
 	MATRIX Matrix;
 	MATRIX* origMatrix;
+	DisplayObjectContainer* parent;
 
-	IDisplayListElem():root(NULL),origMatrix(NULL){}
+	IDisplayListElem():root(NULL),origMatrix(NULL),parent(NULL){}
 	virtual void Render()=0;
 	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)=0;
 };
@@ -60,7 +61,6 @@ protected:
 	intptr_t height;
 	number_t rotation;
 	LoaderInfo* loaderInfo;
-	DisplayObjectContainer* parent;
 public:
 	DisplayObject();
 	static void sinit(Class_base* c);

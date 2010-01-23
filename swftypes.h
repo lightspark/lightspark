@@ -522,6 +522,7 @@ private:
 	virtual bool toInt(int& ret);
 	virtual bool hasNext(int& index, bool& out);
 	virtual bool nextName(int index, ASObject*& out);
+	virtual bool nextValue(int index, ASObject*& out);
 protected:
 	SWFOBJECT_TYPE type;
 	uint32_t magic;

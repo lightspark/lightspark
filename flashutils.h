@@ -97,6 +97,7 @@ public:
 	}
 	bool hasNext(int& index, bool& out);
 	bool nextName(int index, ASObject*& out);
+	bool nextValue(int index, ASObject*& out);
 };
 ASObject* getQualifiedClassName(ASObject* , arguments* args);
 ASObject* getDefinitionByName(ASObject* , arguments* args);

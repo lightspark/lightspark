@@ -83,6 +83,7 @@ opcode_handler ABCVm::opcode_table_args1[]={
 	{"incLocal_i",(void*)&ABCVm::incLocal_i},
 	{"findProperty",(void*)&ABCVm::findProperty},
 	{"construct",(void*)&ABCVm::construct},
+	{"constructGenericType",(void*)&ABCVm::constructGenericType},
 	{"constructSuper",(void*)&ABCVm::constructSuper},
 	{"newArray",(void*)&ABCVm::newArray},
 	{"newClass",(void*)&ABCVm::newClass},
@@ -1279,6 +1280,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x41:
 				case 0x42:
 				case 0x49:
+				case 0x53:
 				{
 					//call
 					//construct
@@ -3218,6 +3220,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> t;
 				constant2 = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall3(ex->FindFunctionNamed("callPropVoid"), context, constant, constant2);
+				break;
+			}
+			case 0x53:
+			{
+				//constructgenerictype
+				LOG(LOG_TRACE, "synt constructgenerictype" );
+				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				u30 t;
+				code2 >> t;
+				constant = llvm::ConstantInt::get(int_type, t);
+				Builder.CreateCall2(ex->FindFunctionNamed("constructGenericType"), context, constant);
 				break;
 			}
 			case 0x55:

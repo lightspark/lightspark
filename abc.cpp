@@ -742,6 +742,18 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				n->decRef();
 				break;
 			}
+			case 0x1d:
+			{
+				multiname_info* td=&constant_pool.multinames[m->type_definition];
+				multiname_info* p=&constant_pool.multinames[m->param_types[0]];
+				const namespace_info* n=&constant_pool.namespaces[td->ns];
+				ret->ns.push_back(getString(n->name));
+				ret->nskind.push_back(n->kind);
+				ret->name_s=getString(td->name);
+				ret->name_type=multiname::NAME_STRING;
+				cout << "PUPPA" << endl;
+				break;
+			}
 	/*		case 0x0d:
 				LOG(CALLS, "QNameA");
 				break;
@@ -774,6 +786,8 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			return ret;
 		switch(m->kind)
 		{
+			case 0x1d:
+				cout << "PUPPA" << endl;
 			case 0x07:
 			case 0x09:
 			{
@@ -1156,18 +1170,6 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"newCatch " << n);
 	return new Undefined;
-}
-
-ASObject* ABCVm::newFunction(call_context* th, int n)
-{
-	LOG(LOG_CALLS,"newFunction " << n);
-
-	method_info* m=&th->context->methods[n];
-	SyntheticFunction* f=new SyntheticFunction(m);
-	f->func_scope=th->scope_stack;
-	for(int i=0;i<f->func_scope.size();i++)
-		f->func_scope[i]->incRef();
-	return f;
 }
 
 void ABCVm::not_impl(int n)

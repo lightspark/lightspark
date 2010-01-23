@@ -123,6 +123,18 @@ public:
 			ret=super->getVariableByQName(name,ns,owner);
 		return ret;
 	}
+/*	void setVariableByMultiname_i(const multiname& name, intptr_t value)
+	{
+		abort();
+	}
+	void setVariableByMultiname(const multiname& name, ASObject* o)
+	{
+		abort();
+	}
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true)
+	{
+		abort();
+	}*/
 	void addImplementedInterface(const multiname& i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
 	const std::vector<Class_base*>& getInterfaces() const;
@@ -134,13 +146,68 @@ class Class_object: public Class_base
 {
 private:
 	Class_object():Class_base("Class"){};
-public:
 	IInterface* getInstance(bool construct=false)
 	{
 		abort();
 	}
-	static Class_object* getClass();
 	void buildInstanceTraits(ASObject* o) const
+	{
+		abort();
+	}
+public:
+	static Class_object* getClass();
+};
+
+//Adaptor from fuction to class, it does not seems to be a good idea to
+//derive IFunction from Class_base, because it's too heavyweight
+class Class_function: public Class_base
+{
+private:
+	IFunction* f;
+	ASObject* asprototype;
+	IInterface* getInstance(bool construct=false)
+	{
+		abort();
+	}
+	void buildInstanceTraits(ASObject* o) const
+	{
+		abort();
+	}
+public:
+	Class_function(IFunction* _f, ASObject* _p):f(_f),Class_base("Function"),asprototype(_p){}
+	tiny_string class_name;
+	objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner)
+	{
+		objAndLevel ret=Class_base::getVariableByMultiname(name,owner);
+		if(owner==NULL && asprototype)
+			ret=asprototype->getVariableByMultiname(name,owner);
+		return ret;
+	}
+	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner)
+	{
+		abort();
+		return 0;
+/*		intptr_t ret=ASObject::getVariableByMultiname(name.owner);
+		if(owner==NULL && super)
+			ret=super->getVariableByMultiname(name,owner);
+		return ret;*/
+	}
+	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+	{
+		objAndLevel ret=Class_base::getVariableByQName(name,ns,owner);
+		if(owner==NULL && asprototype)
+			ret=asprototype->getVariableByQName(name,ns,owner);
+		return ret;
+	}
+	void setVariableByMultiname_i(const multiname& name, intptr_t value)
+	{
+		abort();
+	}
+	void setVariableByMultiname(const multiname& name, ASObject* o)
+	{
+		abort();
+	}
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true)
 	{
 		abort();
 	}
@@ -149,48 +216,38 @@ public:
 class IFunction: public ASObject
 {
 public:
-	IFunction():bound(false){type=T_FUNCTION;}
+	IFunction():bound(false),closure_this(NULL){type=T_FUNCTION;}
 	typedef ASObject* (*as_function)(ASObject*, arguments*);
 	virtual ASObject* call(ASObject* obj, arguments* args, int level)=0;
 	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)=0;
-	virtual IFunction* clone()=0;
-	void bind(ASObject* c)
+	IFunction* bind(ASObject* c)
 	{
-		bound=true;
-		closure_this=c;
-		std::cout << "Binding " << this << std::endl;
+		if(!bound)
+		{
+			//If binding with null we are not a class method
+			IFunction* ret;
+			if(c!=NULL)
+				ret=clone();
+			else
+			{
+				incRef();
+				ret=this;
+			}
+			ret->bound=true;
+			ret->closure_this=c;
+			std::cout << "Binding " << ret << std::endl;
+			return ret;
+		}
+		else
+		{
+			incRef();
+			return this;
+		}
 	}
 protected:
+	virtual IFunction* clone()=0;
 	ASObject* closure_this;
 	bool bound;
-};
-
-class Function_Object: public IFunction
-{
-public:
-	//The interface of a function, but the behaviour of an object
-	Function_Object(){type=T_OBJECT;}
-	ASObject* call(ASObject* obj, arguments* args, int level)
-	{
-		abort();
-		return NULL;
-	}
-	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)
-	{
-		abort();
-		return NULL;
-	}
-	IFunction* toFunction()
-	{
-		abort();
-		return NULL;
-	}
-	Function_Object* clone()
-	{
-		abort();
-		return NULL;
-	}
-	tiny_string toString() const;
 };
 
 class Function : public IFunction
@@ -201,10 +258,6 @@ public:
 	ASObject* call(ASObject* obj, arguments* args, int level);
 	ASObject* fast_call(ASObject* obj, ASObject** args, int num_args, int level);
 	IFunction* toFunction();
-	Function* clone()
-	{
-		return new Function(*this);
-	}
 	bool isEqual(ASObject* r)
 	{
 		abort();
@@ -212,6 +265,10 @@ public:
 
 private:
 	as_function val;
+	Function* clone()
+	{
+		return new Function(*this);
+	}
 };
 
 class SyntheticFunction : public IFunction
@@ -225,10 +282,6 @@ public:
 	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level);
 	IFunction* toFunction();
 	std::vector<ASObject*> func_scope;
-	SyntheticFunction* clone()
-	{
-		return new SyntheticFunction(*this);
-	}
 	bool isEqual(ASObject* r)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
@@ -240,6 +293,10 @@ public:
 private:
 	method_info* mi;
 	synt_function val;
+	SyntheticFunction* clone()
+	{
+		return new SyntheticFunction(*this);
+	}
 };
 
 class Boolean: public ASObject
@@ -407,6 +464,12 @@ public:
 	bool setVariableByMultiname_i(const multiname& name, intptr_t value);
 	bool toString(tiny_string& ret);
 	bool isEqual(bool& ret, ASObject* r);
+	bool hasNext(int& index, bool& out);
+	bool nextName(int index, ASObject*& out)
+	{
+		abort();
+	}
+	bool nextValue(int index, ASObject*& out);
 	tiny_string toString() const;
 };
 

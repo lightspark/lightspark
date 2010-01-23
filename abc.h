@@ -472,6 +472,7 @@ private:
 	static void call(call_context* th, int n);
 	static void constructSuper(call_context* th, int n);
 	static void construct(call_context* th, int n);
+	static void constructGenericType(call_context* th, int n);
 	static ASObject* newFunction(call_context* th, int n);
 	static void setSuper(call_context* th, int n);
 	static void getSuper(call_context* th, int n);

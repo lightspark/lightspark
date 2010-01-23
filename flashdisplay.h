@@ -104,6 +104,7 @@ private:
 protected:
 	std::list < IDisplayListElem* > dynamicDisplayList;
 public:
+	void _removeChild(IDisplayListElem*);
 	DisplayObjectContainer();
 	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
@@ -115,6 +116,7 @@ public:
 	ASFUNCTION(addChild);
 	ASFUNCTION(addChildAt);
 	ASFUNCTION(getChildIndex);
+	ASFUNCTION(getChildAt);
 };
 
 class Graphics: public IInterface

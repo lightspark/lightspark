@@ -667,6 +667,21 @@ tiny_string Array::toString() const
 	return ret.c_str();
 }
 
+bool Array::nextValue(int index, ASObject*& out)
+{
+	assert(index<data.size());
+	assert(data[index].type==STACK_OBJECT);
+	out=data[index].data;
+	return true;
+}
+
+bool Array::hasNext(int& index, bool& out)
+{
+	out=index<data.size();
+	index++;
+	return true;
+}
+
 tiny_string Boolean::toString() const
 {
 	return (val)?"true":"false";
@@ -892,11 +907,6 @@ tiny_string Date::toString() const
 	return "Wed Dec 31 16:00:00 GMT-0800 1969";
 }
 
-tiny_string Function_Object::toString() const
-{
-	return "function Function() {}";
-}
-
 IFunction* SyntheticFunction::toFunction()
 {
 	return this;
@@ -927,7 +937,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	for(int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
 
-	if(bound)
+	if(bound && closure_this)
 	{
 		LOG(LOG_CALLS,"Calling with closure " << this);
 		obj=closure_this;
@@ -980,7 +990,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args, int level)
 	for(int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
 
-	if(bound)
+	if(bound && closure_this)
 	{
 		LOG(LOG_CALLS,"Calling with closure " << this);
 		obj=closure_this;
@@ -1050,14 +1060,13 @@ ASObject* Function::fast_call(ASObject* obj, ASObject** args,int num_args, int l
 
 ASObject* Function::call(ASObject* obj, arguments* args, int level)
 {
-	if(!bound)
-		return val(obj,args);
-	else
+	if(bound && closure_this)
 	{
 		LOG(LOG_CALLS,"Calling with closure " << this);
-		LOG(LOG_CALLS,"args 0 " << args->at(0));
 		return val(closure_this,args);
 	}
+	else
+		return val(obj,args);
 }
 
 Math::Math()

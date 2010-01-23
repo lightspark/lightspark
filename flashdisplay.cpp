@@ -824,6 +824,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 	DisplayObject::_constructor(obj,NULL);
 	obj->setGetterByQName("numChildren","",new Function(_getNumChildren));
 	obj->setVariableByQName("getChildIndex","",new Function(getChildIndex));
+	obj->setVariableByQName("getChildAt","",new Function(getChildAt));
 	obj->setVariableByQName("addChild","",new Function(addChild));
 	obj->setVariableByQName("addChildAt","",new Function(addChildAt));
 	return NULL;
@@ -836,13 +837,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 
 void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 {
-	//For now just set the root variable
-	//TODO: Interesting things such as inserting the object in the display list will be done later
-
 	//Set the root of the movie to this container
-	if(obj->prototype->class_name=="VBox")
-		__asm__("int $3");
-
 	assert(child->root==NULL);
 	child->root=root;
 
@@ -851,14 +846,29 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
-	assert(child->parent==NULL);
-	if(child->parent==this) //Child already in this container
-		return;
+	if(child->parent)
+	{
+		//Child already in this container
+		if(child->parent==this)
+			return;
+		else
+			child->parent->_removeChild(child);
+	}
 	child->parent=this;
 
 	//We insert the object in the back of the list
 	//TODO: support the 'at index' version of the call
 	dynamicDisplayList.push_back(child);
+}
+
+void DisplayObjectContainer::_removeChild(IDisplayListElem* child)
+{
+	assert(child->parent==this);
+	assert(child->root==root);
+
+	list<IDisplayListElem*>::const_iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
+	assert(it!=dynamicDisplayList.end());
+	dynamicDisplayList.erase(it);
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
@@ -867,6 +877,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	assert(args->size()==2);
 	//Validate object type
 	assert(args->at(0)->prototype->isSubClass(Class<Sprite>::getClass()));
+	args->at(0)->incRef();
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
@@ -885,6 +896,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	assert(args->size()==1);
 	//Validate object type
 	assert(args->at(0)->prototype->isSubClass(Class<Sprite>::getClass()));
+	args->at(0)->incRef();
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
@@ -895,6 +907,20 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	sys->currentVm->addEvent(d,Class<Event>::getInstanceS(true,"added",d->obj));
 
 	return d->obj;
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	assert(args->size()==1);
+	int index=args->at(0)->toInt();
+	assert(index<th->dynamicDisplayList.size());
+	list<IDisplayListElem*>::iterator it=th->dynamicDisplayList.begin();
+	for(int i=0;i<index;i++)
+		it++;
+
+	(*it)->obj->incRef();
+	return (*it)->obj;
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)

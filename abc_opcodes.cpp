@@ -341,8 +341,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 		{
 			//TODO: maybe also the level should be binded
 			LOG(LOG_CALLS,"Attaching this to function " << name);
-			IFunction* f=ret->toFunction()->clone();
-			f->bind(owner);
+			IFunction* f=ret->toFunction()->bind(owner);
 			obj->decRef();
 			//No incref is needed, as the function is a new instance
 			return f;
@@ -562,6 +561,41 @@ void ABCVm::construct(call_context* th, int m)
 	th->runtime_stack_push(ret);
 }
 
+void ABCVm::constructGenericType(call_context* th, int m)
+{
+	abort();
+	LOG(LOG_CALLS, "constructGenericType " << m);
+	arguments args(m);
+	for(int i=0;i<m;i++)
+		args.set(m-i-1,th->runtime_stack_pop());
+	__asm__("int $3");
+
+	ASObject* obj=th->runtime_stack_pop();
+
+	if(obj->getObjectType()==T_DEFINABLE)
+	{
+		LOG(LOG_ERROR,"Check");
+		abort();
+	/*	LOG(LOG_CALLS,"Deferred definition of property " << name);
+		Definable* d=static_cast<Definable*>(o);
+		d->define(obj);
+		o=obj->getVariableByMultiname(name,owner);
+		LOG(LOG_CALLS,"End of deferred definition of property " << name);*/
+	}
+
+	LOG(LOG_CALLS,"Constructing");
+	Class_base* o_class=static_cast<Class_base*>(obj);
+	assert(o_class->getObjectType()==T_CLASS);
+	ASObject* ret=o_class->getInstance()->obj;
+
+	ret->handleConstruction(&args, true, true);
+
+//	args.decRef();
+	obj->decRef();
+	LOG(LOG_CALLS,"End of constructing");
+	th->runtime_stack_push(ret);
+}
+
 ASObject* ABCVm::typeOf(ASObject* obj)
 {
 	LOG(LOG_CALLS,"typeOf");
@@ -605,6 +639,8 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
 	ASObject* obj=th->runtime_stack_pop();
+	if(obj->prototype)
+		cout << obj->prototype->class_name << endl;
 
 	//Here overriding is supposed to work, so restore prototype and max_level
 	int oldlevel=obj->max_level;
@@ -952,6 +988,11 @@ bool ABCVm::equals(ASObject* val2, ASObject* val1)
 {
 	bool ret=val1->isEqual(val2);
 	LOG(LOG_CALLS, "equals " << ret);
+	if(val1->getObjectType()==T_STRING || val2->getObjectType()==T_STRING)
+	{
+		cout << val1->toString() << endl;
+		cout << val2->toString() << endl;
+	}
 	val1->decRef();
 	val2->decRef();
 	return ret;
@@ -1152,8 +1193,7 @@ void ABCVm::getLex(call_context* th, int n)
 			if(o->getObjectType()==T_FUNCTION)
 			{
 				LOG(LOG_CALLS,"Attaching this to function " << name);
-				IFunction* f=o->toFunction()->clone();
-				f->bind(*it);
+				IFunction* f=o->toFunction()->bind(*it);
 				o=f;
 			}
 			else if(o->getObjectType()==T_DEFINABLE)
@@ -1600,6 +1640,9 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		abort();
 	}
 
+	//The get protocol expects that we incRef the var
+	o->incRef();
+
 	if(o->getObjectType()==T_DEFINABLE)
 	{
 		LOG(LOG_CALLS,"Deferred definition of property " << *name);
@@ -1620,15 +1663,29 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	}
 	else if(o->getObjectType()==T_FUNCTION)
 	{
-		SyntheticFunction* sf=static_cast<SyntheticFunction*>(o);
-		ASObject* ret=new Function_Object;
+		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(o);
+		assert(sf);
+		ASObject* ret=new ASObject;
 		if(sf->mi->body)
 		{
 			LOG(LOG_CALLS,"Building method traits");
 			for(int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
 			ret->incRef();
+			assert(sf->closure_this==NULL);
 			sf->call(ret,&args,ret->max_level);
+
+			//Let's see if an AS prototype has been defined on the function
+			ASObject* owner;
+			ASObject* asp=sf->getVariableByQName("prototype","",owner).obj;
+			if(owner==NULL)
+				asp=NULL;
+			else
+				asp->incRef();
+
+			//Now add our prototype
+			sf->incRef();
+			ret->prototype=new Class_function(sf,asp);
 		}
 		th->runtime_stack_push(ret);
 	}
@@ -1644,8 +1701,6 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 	LOG(LOG_NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
 	ASObject* obj=th->locals[n];
 	int cur_index=th->locals[m]->toInt();
-	//if(obj->numVariables()==4)
-	//	__asm__("int $3");
 
 	if(obj->implementation)
 	{
@@ -1734,6 +1789,34 @@ uintptr_t ABCVm::increment_i(ASObject* o)
 	int n=o->toInt();
 	o->decRef();
 	return n+1;
+}
+
+ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"nextValue");
+	if(index->getObjectType()!=T_INTEGER)
+	{
+		LOG(LOG_ERROR,"Type mismatch");
+		abort();
+	}
+
+	ASObject* ret=NULL;
+	if(obj->implementation)
+	{ 
+		if(obj->implementation->nextValue(index->toInt()-1,ret))
+		{
+			obj->decRef();
+			index->decRef();
+			ret->incRef();
+			return ret;
+		}
+	}
+
+	ret=obj->getValueAt(index->toInt()-1);
+	obj->decRef();
+	index->decRef();
+	ret->incRef();
+	return ret;
 }
 
 ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
@@ -1843,22 +1926,6 @@ void ABCVm::asTypelate(call_context* th)
 //	th->runtime_stack_push(v);
 }
 
-ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"nextValue");
-	if(index->getObjectType()!=T_INTEGER)
-	{
-		LOG(LOG_ERROR,"Type mismatch");
-		abort();
-	}
-
-	ASObject* ret=obj->getValueAt(index->toInt()-1);
-	obj->decRef();
-	index->decRef();
-	ret->incRef();
-	return ret;
-}
-
 void ABCVm::swap()
 {
 	LOG(LOG_CALLS,"swap");
@@ -1925,5 +1992,20 @@ void ABCVm::deleteProperty(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(LOG_NOT_IMPLEMENTED,"deleteProperty " << *name);
+}
+
+ASObject* ABCVm::newFunction(call_context* th, int n)
+{
+	LOG(LOG_CALLS,"newFunction " << n);
+
+	method_info* m=&th->context->methods[n];
+	SyntheticFunction* f=new SyntheticFunction(m);
+	f->func_scope=th->scope_stack;
+	for(int i=0;i<f->func_scope.size();i++)
+		f->func_scope[i]->incRef();
+
+	//Bind the function to null, as this is not a class method
+	f->bind(NULL);
+	return f;
 }
 

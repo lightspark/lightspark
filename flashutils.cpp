@@ -193,3 +193,14 @@ bool Dictionary::nextName(int index, ASObject*& out)
 	out=it->first;
 	return true;
 }
+
+bool Dictionary::nextValue(int index, ASObject*& out)
+{
+	abort();
+/*	assert(index<data.size());
+	map<ASObject*,ASObject*>::iterator it=data.begin();
+	for(int i=0;i<index;i++)
+		it++;
+	out=it->first;
+	return true;*/
+}

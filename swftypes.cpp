@@ -191,6 +191,11 @@ bool IInterface::nextName(int index, ASObject*& out)
 	return false;
 }
 
+bool IInterface::nextValue(int index, ASObject*& out)
+{
+	return false;
+}
+
 void IInterface::buildTraits(ASObject* o)
 {
 	assert(o->prototype);
@@ -447,7 +452,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 		}
 	}
 
-	//TODO: If no result try to look up also in upper levels
+	//CHECK: If no result try to look up also in upper levels
 	if(obj==NULL && prototype)
 	{
 		for(int i=max_level+1;i<=prototype->max_level;i++)

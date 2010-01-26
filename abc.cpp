@@ -165,6 +165,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Proxy","flash.utils",Class<IInterface>::getClass("Proxy"));
 	Global.setVariableByQName("Timer","flash.utils",Class<Timer>::getClass());
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
+	Global.setVariableByQName("getQualifiedSuperclassName","flash.utils",new Function(getQualifiedSuperclassName));
 	Global.setVariableByQName("getDefinitionByName","flash.utils",new Function(getDefinitionByName));
 	Global.setVariableByQName("getTimer","flash.utils",new Function(getTimer));
 
@@ -1156,6 +1157,11 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		LOG(LOG_CALLS,"Undefined to bool");
 		return false;
 	}
+	else if(obj->getObjectType()==T_NULL)
+	{
+		LOG(LOG_CALLS,"Null to bool");
+		return false;
+	}
 	else
 		return false;
 }
@@ -1654,25 +1660,28 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				//else fallthrough
 				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				ASObject* owner;
-				objAndLevel ret=obj->getVariableByQName(name,ns,owner);
+				objAndLevel previous_definition=obj->getVariableByQName(name,ns,owner);
 				if(owner)
 				{
 					if(obj->actualPrototype)
-						assert(ret.level<obj->actualPrototype->max_level);
+						assert(previous_definition.level<obj->actualPrototype->max_level);
 					else
-						assert(ret.level<obj->max_level);
+						assert(previous_definition.level<obj->max_level);
 				}
 
+				ASObject* ret;
 				if(deferred_initialization)
-				{
-					ASObject* ret=new ScriptDefinable(deferred_initialization);
-					obj->setVariableByQName(name, ns, ret, false);
-				}
+					ret=new ScriptDefinable(deferred_initialization);
 				else
 				{
-					ASObject* ret=new Undefined;
-					obj->setVariableByQName(name, ns, ret, false);
+					//TODO: find  nice way to handle default
+					if(type->name_type==multiname::NAME_STRING && type->name_s=="int" && 
+							type->ns.size()==1 && type->ns[0]=="")
+						ret=abstract_i(0);
+					else
+						ret=new Undefined;
 				}
+				obj->setVariableByQName(name, ns, ret, false);
 
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, name,ns );

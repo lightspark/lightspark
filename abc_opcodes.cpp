@@ -54,7 +54,7 @@ uintptr_t ABCVm::bitAnd_oi(ASObject* val1, intptr_t val2)
 
 void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 {
-	LOG(LOG_CALLS,"setProperty " << *name);
+	LOG(LOG_CALLS,"setProperty " << *name << ' ' << obj);
 
 	obj->setVariableByMultiname(*name,value);
 	obj->decRef();
@@ -317,7 +317,7 @@ intptr_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 
 ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
-	LOG(LOG_CALLS, "getProperty " << *name );
+	LOG(LOG_CALLS, "getProperty " << *name << ' ' << obj);
 
 	ASObject* owner;
 
@@ -557,7 +557,7 @@ void ABCVm::construct(call_context* th, int m)
 
 //	args.decRef();
 	obj->decRef();
-	LOG(LOG_CALLS,"End of constructing");
+	LOG(LOG_CALLS,"End of constructing " << ret);
 	th->runtime_stack_push(ret);
 }
 
@@ -639,6 +639,9 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
 	ASObject* obj=th->runtime_stack_pop();
+	if(name->name_s=="setActualSize" || name->name_s=="updateDisplayList" || name->name_s=="setLayoutBoundsSize")
+		cout << args.at(0)->toInt() << ' ' << args.at(1)->toInt() << endl;
+
 	if(obj->prototype)
 		cout << obj->prototype->class_name << endl;
 
@@ -1374,9 +1377,9 @@ void ABCVm::initProperty(call_context* th, int n)
 {
 	ASObject* value=th->runtime_stack_pop();
 	multiname* name=th->context->getMultiname(n,th);
-	LOG(LOG_CALLS, "initProperty " << *name );
-
 	ASObject* obj=th->runtime_stack_pop();
+
+	LOG(LOG_CALLS, "initProperty " << *name << ' ' << obj);
 
 	obj->setVariableByMultiname(*name,value);
 	obj->decRef();
@@ -1404,6 +1407,8 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 
 	ASObject* owner;
 	objAndLevel o=obj->getVariableByMultiname(*name,owner);
+	if(name->name_s=="updateDisplayList")
+		cout << "level " << o.level << endl;
 
 	//Set back the original max_level
 	obj->max_level=oldlevel;
@@ -1496,6 +1501,8 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 
 	ASObject* owner;
 	objAndLevel o=obj->getVariableByMultiname(*name,owner);
+	if(name->name_s=="updateDisplayList")
+		cout << "level " << o.level << endl;
 
 	//Set back the original max_level
 	obj->max_level=oldlevel;
@@ -1558,7 +1565,11 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"isTypelate");
 	if(obj->getObjectType()==T_UNDEFINED)
+	{
+		obj->decRef();
+		type->decRef();
 		return false;
+	}
 	else
 	{
 		if(obj->prototype)
@@ -1568,14 +1579,82 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 			cout << "Type " << obj->prototype->class_name << " is subclass of " << c->class_name << endl;
 			bool real_ret=obj->prototype->isSubClass(c);
 			cout << real_ret << endl;
+			obj->decRef();
+			type->decRef();
 			return real_ret;
 		}
 		else
 		{
 			cout << "Buffo isTypelate on " << obj->getObjectType() << endl;
-			return false;
+			bool real_ret=obj->getObjectType()==type->getObjectType();
+			cout << real_ret << endl;
+			if(real_ret==false)
+			{
+				//TODO: obscene hack, check casting of stuff
+				if(obj->getObjectType()==T_INTEGER && type->getObjectType()==T_NUMBER)
+				{
+					cout << "HACK for Integer" << endl;
+					real_ret=true;
+				}
+			}
+			obj->decRef();
+			type->decRef();
+			return real_ret;
 		}
 	}
+}
+
+ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"asTypelate");
+	//Special case for string... should convert ASString to Class
+	if(type->getObjectType()==T_STRING)
+	{
+		cout << "Type is string" << endl;
+		type->decRef();
+		if(obj->getObjectType()==T_STRING)
+			return obj;
+		else
+		{
+			obj->decRef();
+			return new Null;
+		}
+	}
+
+	assert(type->getObjectType()==T_CLASS);
+	Class_base* c=static_cast<Class_base*>(type);
+
+/*	if(obj->getObjectType()==T_UNDEFINED)
+		return new Null;
+	else
+	{*/
+		if(obj->prototype)
+		{
+			cout << "Type " << obj->prototype->class_name << " is subclass of " << c->class_name << endl;
+			bool real_ret=obj->prototype->isSubClass(c);
+			cout << real_ret << endl;
+			type->decRef();
+			if(real_ret)
+				return obj;
+			else
+			{
+				obj->decRef();
+				return new Null;
+			}
+		}
+		else
+		{
+			//Maybe we are a class already
+			if(obj->getObjectType()==T_CLASS && c->class_name=="Class")
+			{
+				type->decRef();
+				return obj;
+			}
+			obj->decRef();
+			type->decRef();
+			return new Null;
+		}
+//	}
 }
 
 bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2)
@@ -1653,19 +1732,19 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	}
 
 	LOG(LOG_CALLS,"Constructing");
+	ASObject* ret;
 	if(o->getObjectType()==T_CLASS)
 	{
 		Class_base* o_class=static_cast<Class_base*>(o);
-		ASObject* ret=o_class->getInstance()->obj;;
+		ret=o_class->getInstance()->obj;;
 
 		ret->handleConstruction(&args, true, true);
-		th->runtime_stack_push(ret);
 	}
 	else if(o->getObjectType()==T_FUNCTION)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(o);
 		assert(sf);
-		ASObject* ret=new ASObject;
+		ret=new ASObject;
 		if(sf->mi->body)
 		{
 			LOG(LOG_CALLS,"Building method traits");
@@ -1687,13 +1766,13 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 			sf->incRef();
 			ret->prototype=new Class_function(sf,asp);
 		}
-		th->runtime_stack_push(ret);
 	}
 	else
 		abort();
 
+	th->runtime_stack_push(ret);
 	obj->decRef();
-	LOG(LOG_CALLS,"End of constructing");
+	LOG(LOG_CALLS,"End of constructing " << ret);
 }
 
 bool ABCVm::hasNext2(call_context* th, int n, int m)
@@ -1915,15 +1994,6 @@ void ABCVm::newClass(call_context* th, int n)
 	cinit->call(ret,NULL,ret->max_level);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
-}
-
-void ABCVm::asTypelate(call_context* th)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"asTypelate");
-	ASObject* c=th->runtime_stack_pop();
-	c->decRef();
-//	ASObject* v=th->runtime_stack_pop();
-//	th->runtime_stack_push(v);
 }
 
 void ABCVm::swap()

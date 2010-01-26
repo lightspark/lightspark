@@ -374,7 +374,6 @@ private:
 	method_info* get_method(unsigned int m);
 	tiny_string getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
-	multiname* getMultiname(unsigned int m, call_context* th);
 	static multiname* s_getMultiname(call_context*, ASObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
 	static multiname* s_getMultiname_d(call_context*, number_t i , int m);
@@ -398,6 +397,7 @@ public:
 	void buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	void linkTrait(ASObject* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
+	multiname* getMultiname(unsigned int m, call_context* th);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in);
 	void exec();
@@ -492,7 +492,7 @@ private:
 	static void pop();
 	static ASObject* typeOf(ASObject*);
 	static void _throw(call_context* th);
-	static void asTypelate(call_context* th);
+	static ASObject* asTypelate(ASObject* type, ASObject* obj);
 	static bool isTypelate(ASObject* type, ASObject* obj);
 	static void swap();
 	static ASObject* add(ASObject*,ASObject*);

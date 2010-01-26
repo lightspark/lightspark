@@ -21,6 +21,7 @@
 #include "class.h"
 
 using namespace lightspark;
+using namespace std;
 
 REGISTER_CLASS_NAME(ColorTransform);
 REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle");
@@ -51,6 +52,10 @@ ASFUNCTIONBODY(Rectangle,_constructor)
 		if(size>=4)
 			th->height=args->at(3)->toInt();
 	}
+	cout << th->x << endl;
+	cout << th->y << endl;
+	cout << th->width << endl;
+	cout << th->height << endl;
 
 	obj->setGetterByQName("left","",new Function(_getLeft));
 	obj->setGetterByQName("right","",new Function(_getRight));

@@ -321,6 +321,12 @@ void Sprite::sinit(Class_base* c)
 
 void Sprite::Render()
 {
+/*	if(obj && obj->prototype && obj->prototype->class_name=="ContainerBorderSkin")
+	{
+		if(parent && parent->obj->prototype->class_name=="VBox")
+			__asm__("int $3");
+	}*/
+
 	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
@@ -844,6 +850,9 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 	//The HACK for this supports only Sprites now
 	assert(child->obj->prototype->isSubClass(Class<Sprite>::getClass()));
 
+//	if(child->obj->prototype->class_name=="BorderSkin")
+//		abort();
+
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
 	if(child->parent)
@@ -1005,6 +1014,7 @@ ASFUNCTIONBODY(Graphics,_constructor)
 {
 	obj->setVariableByQName("clear","",new Function(clear));
 	obj->setVariableByQName("drawRect","",new Function(drawRect));
+	obj->setVariableByQName("beginFill","",new Function(beginFill));
 }
 
 ASFUNCTIONBODY(Graphics,clear)
@@ -1024,6 +1034,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	int y=args->at(1)->toInt();
 	int width=args->at(2)->toInt();
 	int height=args->at(3)->toInt();
+	cout << x << ' ' << y << ' ' << width << ' ' << height << endl;
 
 	//Build a shape and add it to the geometry vector
 	GeomShape tmpShape;
@@ -1036,6 +1047,16 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	sem_wait(&th->geometry_mutex);
 	th->geometry.push_back(tmpShape);
 	sem_post(&th->geometry_mutex);
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,beginFill)
+{
+	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	if(args->size()>=1)
+		cout << "Color " << hex << args->at(0)->toInt() << dec << endl;
+	if(args->size()>=2)
+		cout << "Alpha " << args->at(1)->toNumber() << endl;
 	return NULL;
 }
 

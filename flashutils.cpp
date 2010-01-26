@@ -82,16 +82,37 @@ ASFUNCTIONBODY(Timer,reset)
 
 ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)
 {
-	if(args->at(0)->getObjectType()!=T_CLASS)
+	//CHECK: what to do is ns is empty
+	ASObject* target=args->at(0);
+	Class_base* c;
+	if(target->getObjectType()!=T_CLASS)
 	{
-		assert(args->at(0)->prototype);
-		return new ASString(args->at(0)->prototype->class_name);
+		assert(target->prototype);
+		c=target->prototype;
 	}
 	else
+		c=static_cast<Class_base*>(target);
+
+	return new ASString(c->getQualifiedClassName());
+}
+
+ASObject* lightspark::getQualifiedSuperclassName(ASObject* obj, arguments* args)
+{
+	//CHECK: what to do is ns is empty
+	ASObject* target=args->at(0);
+	Class_base* c;
+	if(target->getObjectType()!=T_CLASS)
 	{
-		Class_base* c=static_cast<Class_base*>(args->at(0));
-		return new ASString(c->class_name);
+		assert(target->prototype);
+		c=target->prototype->super;
 	}
+	else
+		c=static_cast<Class_base*>(target)->super;
+
+	assert(c);
+
+	cout << c->getQualifiedClassName() << endl;
+	return new ASString(c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY(lightspark,getDefinitionByName)
@@ -109,7 +130,10 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	//assert(owner);
 	//TODO: should raise an exception, for now just return undefined
 	if(!owner)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"NOT found");
 		return new Undefined;
+	}
 
 	//Check if the object has to be defined
 	if(o.obj->getObjectType()==T_DEFINABLE)

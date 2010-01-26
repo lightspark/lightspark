@@ -1096,6 +1096,7 @@ ASFUNCTIONBODY(Math,_max)
 {
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
+	cout << n1 << ' ' << n2 << endl;
 	return abstract_d(dmax(n1,n2));
 }
 
@@ -1103,6 +1104,7 @@ ASFUNCTIONBODY(Math,_min)
 {
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
+	cout << n1 << ' ' << n2 << endl;
 	return abstract_d(dmin(n1,n2));
 }
 
@@ -1165,6 +1167,7 @@ tiny_string Null::toString() const
 
 bool Null::isEqual(ASObject* r)
 {
+	cout << "NULL " << r->getObjectType() << endl;
 	if(r->getObjectType()==T_NULL)
 		return true;
 	else if(r->getObjectType()==T_UNDEFINED)
@@ -1270,7 +1273,6 @@ ASFUNCTIONBODY(ASString,replace)
 				break;
 			ret->data.replace(index,s->data.size(),replaceWith.raw_buf());
 			index+=(replaceWith.len()-s->data.size());
-			__asm__("int $3");
 
 		}
 		while(index<ret->data.size());
@@ -1409,6 +1411,25 @@ bool Class_base::isSubClass(const Class_base* cls) const
 	if(super && super->isSubClass(cls))
 		return true;
 	return false;
+}
+
+tiny_string Class_base::getQualifiedClassName() const
+{
+	if(class_index==-1)
+		return class_name;
+	else
+	{
+		assert(context);
+		int name_index=context->instances[class_index].name;
+		assert(name_index);
+		const multiname* mname=context->getMultiname(name_index,NULL);
+		assert(mname->ns.size()==1);
+		tiny_string ret=mname->ns[0];
+		ret+="::";
+		assert(mname->name_type==multiname::NAME_STRING);
+		ret+=mname->name_s;
+		return ret;
+	}
 }
 
 void ASQName::sinit(Class_base* c)

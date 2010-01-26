@@ -100,6 +100,7 @@ public:
 	bool nextValue(int index, ASObject*& out);
 };
 ASObject* getQualifiedClassName(ASObject* , arguments* args);
+ASObject* getQualifiedSuperclassName(ASObject* , arguments* args);
 ASObject* getDefinitionByName(ASObject* , arguments* args);
 ASObject* getTimer(ASObject* , arguments* args);
 

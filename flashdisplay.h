@@ -132,6 +132,7 @@ public:
 	}
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(beginFill);
 	ASFUNCTION(drawRect);
 	ASFUNCTION(clear);
 	void Render();

@@ -140,6 +140,7 @@ public:
 	const std::vector<Class_base*>& getInterfaces() const;
 	void linkInterface(ASObject* obj) const;
 	bool isSubClass(const Class_base* cls) const;
+	tiny_string getQualifiedClassName() const;
 };
 
 class Class_object: public Class_base
@@ -284,6 +285,7 @@ public:
 	std::vector<ASObject*> func_scope;
 	bool isEqual(ASObject* r)
 	{
+		std::cout << "SF: " << r->getObjectType() << std::endl;
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
 		if(sf==NULL)
 			return false;

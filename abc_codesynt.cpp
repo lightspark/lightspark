@@ -55,7 +55,6 @@ opcode_handler ABCVm::opcode_table_args0[]={
 	{"pushWith",(void*)&ABCVm::pushWith},
 	{"throw",(void*)&ABCVm::_throw},
 	{"popScope",(void*)&ABCVm::popScope},
-	{"asTypelate",(void*)&ABCVm::asTypelate},
 };
 
 opcode_handler ABCVm::opcode_table_args1_lazy[]={
@@ -185,7 +184,8 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"pushNaN",(void*)&ABCVm::pushNaN,ARGS_NONE},
 	{"pushNull",(void*)&ABCVm::pushNull,ARGS_NONE},
 	{"pushUndefined",(void*)&ABCVm::pushUndefined,ARGS_NONE},
-	{"getProperty",(void*)&ABCVm::getProperty,ARGS_OBJ_OBJ}
+	{"getProperty",(void*)&ABCVm::getProperty,ARGS_OBJ_OBJ},
+	{"asTypelate",(void*)&ABCVm::asTypelate,ARGS_OBJ_OBJ}
 };
 
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
@@ -1527,7 +1527,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x87:
 				{
 					//astypelate
-					static_stack_types.clear();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x90:
@@ -1864,7 +1869,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xb3:
 				{
 					//istypelate
-					static_stack_types.clear();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					if(!static_stack_types.empty())
+						static_stack_types.pop_back();
+					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
 				case 0xb4:
@@ -3651,8 +3661,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//astypelate
 				LOG(LOG_TRACE, "synt astypelate" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				Builder.CreateCall(ex->FindFunctionNamed("asTypelate"), context);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				assert(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("asTypelate"),v1.first,v2.first);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
 			case 0x90:

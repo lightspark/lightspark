@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application 
+    xmlns:mx="http://www.adobe.com/2006/mxml" 
+    horizontalAlign="center" verticalAlign="middle">
+
+    <mx:VBox x="0" y="0" width="201" height="200" backgroundColor="0x0080C0" alpha="0.8"/>
+</mx:Application>

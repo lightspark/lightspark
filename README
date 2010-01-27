@@ -8,7 +8,6 @@ Be aware that the following feature are not yet supported or stable enough to be
 -) Sound support
 -) Input support
 -) Antialiasing
--) Alpha blending (Trasparency)
 
 This demo already includes a lot of cool features
 
@@ -16,24 +15,26 @@ This demo already includes a lot of cool features
 -) LLVM based ActionScript execution. Code is compiled just in time
 -) A few tricks are also played to decrease the stack traffic tipical of stack machines.
 -) First, although simple, framerate timing
--) Framework to handle ActionScript asynchronous events. Currently only the enterFrame event works.
+-) Framework to handle ActionScript asynchronous events.
 
 
 INSTALLATION:
-To compile this software you need to install development packages for llvm-2.5, sdl and opengl.
+To compile this software you need to install development packages for llvm-2.6, sdl and opengl.
 To build the software please follow those steps.
 
 1) cd lightspark
 2) make
 
 EXECUTION:
-This demo aims at rendering a simple SWF file from Adobe.
+This demo aims at rendering a simple SWF file generated from the mxml source test2.mxml in this directory.
+You can generate test2.swf to test2.mxml using the mxmlc compiler included in the flex sdk. For your
+convenience you can download the compiled demo from
 
-1) wget http://www.adobe.com/devnet/flash/samples/drawing_1/1_coordinates.swf
-2) ./lightspark 1_coordinates.swf
+http://allievi.sssup.it/tatiana/test2.swf
 
-The results may not seem really interesting. But a lot is going on under the hood. The rotating object is animated 
-using ActionScript 3.0, which is a first class citizen in the design of the project.
+You can execute the file using the standalone player
 
-You're warmly invited to send feedback and error report on the project mailing list (lightspark-devel@lists.sourceforge.net)
-or bug tracker on sourceforge
+./lightspark test2.swf
+
+Be aware that this will generate a massive amount of debugging messages. Press 'Q' on Lightspark window to
+close the application

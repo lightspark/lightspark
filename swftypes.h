@@ -360,15 +360,18 @@ public:
 
 class variables_map
 {
+//ASObject knows how to use its variable_map
+friend class ASObject;
+//ABCContext uses findObjVar when building and linking traits
+friend class ABCContext;
 private:
 	std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> > Variables;
 	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::iterator var_iterator;
 	std::vector<var_iterator> slots_vars;
-public:
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
-	//exact is a temporary hack until super members reworks
-	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create, bool exact);
-	obj_var* findObjVar(const multiname& mname, int level, bool create, bool exact);
+	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create);
+	obj_var* findObjVar(const multiname& mname, int level, bool create);
+public:
 	ASObject* getSlot(int n)
 	{
 		return slots_vars[n-1]->second.second.var;

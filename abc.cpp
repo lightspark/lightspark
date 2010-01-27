@@ -1360,7 +1360,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			obj_var* var=NULL;
 			do
 			{
-				var=obj->Variables.findObjVar(name,"",level,false,false);
+				var=obj->Variables.findObjVar(name,"",level,false);
 				level--;
 			}
 			while(var==NULL && level>=0);
@@ -1389,7 +1389,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			obj_var* var=NULL;
 			do
 			{
-				var=obj->Variables.findObjVar(name,"",level,false,false);
+				var=obj->Variables.findObjVar(name,"",level,false);
 				level--;
 			}
 			while((var==NULL || var->getter==NULL) && level>=0);
@@ -1418,7 +1418,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			obj_var* var=NULL;
 			do
 			{
-				var=obj->Variables.findObjVar(name,"",level,false,false);
+				var=obj->Variables.findObjVar(name,"",level,false);
 				level--;
 			}
 			while((var==NULL || var->setter==NULL) && level>=0);
@@ -1522,7 +1522,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					assert(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,true);
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false);
 						if(var)
 						{
 							//A superclass defined a protected method that we have to override.
@@ -1558,7 +1558,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					assert(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,true);
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false);
 						if(var)
 						{
 							//A superclass defined a protected method that we have to override.
@@ -1593,7 +1593,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					assert(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,true);
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false);
 						if(var)
 						{
 							//A superclass defined a protected method that we have to override.

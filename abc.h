@@ -343,6 +343,7 @@ struct method_body_info
 	u30 init_scope_depth;
 	u30 max_scope_depth;
 	u30 code_length;
+	//This is a string to use it in a stringstream
 	std::string code;
 	u30 exception_count;
 	std::vector<exception_info> exceptions;
@@ -587,6 +588,7 @@ public:
 	ABCVm(SystemState* s);
 	~ABCVm();
 	static void Run(ABCVm* th);
+	void executeFunction(SyntheticFunction* function);
 	void addEvent(EventDispatcher*,Event*);
 	void wait();
 };
@@ -629,6 +631,8 @@ inline ABCVm* getVm()
 {
 	return sys->currentVm;
 }
+
+ASObject* undefinedFunction(ASObject* , arguments* args);
 
 std::istream& operator>>(std::istream& in, u8& v);
 std::istream& operator>>(std::istream& in, u16& v);

@@ -45,9 +45,8 @@ namespace lightspark
 #define ASFUNCTIONBODY(c,name) \
 	ASObject* c::name(ASObject* obj, arguments* args)
 
-enum SWFOBJECT_TYPE { T_OBJECT=0, T_MOVIE, T_REGNUMBER, T_CONSTREF, T_INTEGER, T_NUMBER, T_FUNCTION,
-	T_UNDEFINED, T_NULL, T_PLACEOBJECT, T_STRING, T_DEFINABLE, T_BOOLEAN, T_ARRAY, T_PACKAGE, 
-	T_INVALID, T_CLASS, T_QNAME, T_NAMESPACE};
+enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEFINED=4, T_NULL=5, T_STRING=6, 
+	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12};
 
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER,STACK_BOOLEAN};
 
@@ -69,6 +68,7 @@ private:
 	char _buf_static[TS_SIZE];
 	char* buf;
 	bool isStatic;
+	//TODO: use static buffer again if reassigning to short string
 public:
 	tiny_string():buf(_buf_static),isStatic(true){buf[0]=0;}
 	tiny_string(const char* s):buf(_buf_static),isStatic(true)
@@ -286,6 +286,18 @@ public:
 	}
 };
 
+struct nsNameAndKind
+{
+	tiny_string name;
+	int kind;
+	nsNameAndKind(const tiny_string& _name, int _kind):name(_name),kind(_kind){}
+	nsNameAndKind(const char* _name, int _kind):name(_name),kind(_kind){}
+	bool operator<(const nsNameAndKind& r) const
+	{
+		return name < r.name;
+	}
+};
+
 struct multiname
 {
 	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_NUMBER,NAME_OBJECT};
@@ -297,12 +309,8 @@ struct multiname
 		number_t name_d;
 		ASObject* name_o;
 	};
-	std::vector<tiny_string> ns;
-	std::vector<int> nskind;
-	multiname(){count++;}
-	~multiname();
-	static int count;
-	tiny_string qualifiedString();
+	std::vector<nsNameAndKind> ns;
+	tiny_string qualifiedString() const;
 };
 
 struct obj_var
@@ -562,34 +570,6 @@ T* Manager::get()
 		return ret;
 	}
 }
-
-/*class ConstantReference : public ASObject
-{
-private:
-	int index;
-public:
-	ConstantReference(int i):index(i){type=T_CONSTREF;}
-	tiny_string toString() const;
-	int toInt() const;
-//	double toNumber() const;
-};
-
-class RegisterNumber : public ASObject
-{
-private:
-	int index;
-public:
-	RegisterNumber(int i):index(i){type=T_REGNUMBER;}
-	tiny_string toString() const;
-	//int toInt();
-	ASObject* instantiate();
-};*/
-
-class Package : public ASObject
-{
-public:
-	Package(){type=T_PACKAGE;}
-};
 
 class FLOAT 
 {

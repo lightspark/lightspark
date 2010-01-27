@@ -379,7 +379,7 @@ bool Array::isValidMultiname(const multiname& name, int& index) const
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
 	assert(name.ns.size()!=0);
-	if(name.ns[0]!="")
+	if(name.ns[0].name!="")
 		return false;
 
 	index=0;
@@ -1034,8 +1034,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, arguments* args, int level)
 
 	if(mi->needsRest()) //TODO
 	{
-		Array* rest=Class<Array>::getInstanceS();
-		rest->_constructor(rest->obj,NULL);
+		Array* rest=Class<Array>::getInstanceS(true);
 		cc->locals[mi->numArgs()+1]=rest->obj;
 		/*llvm::Value* rest=Builder.CreateCall(ex->FindFunctionNamed("createRest"));
 		constant = llvm::ConstantInt::get(int_type, param_count+1);
@@ -1301,17 +1300,20 @@ void Class_base::addImplementedInterface(const multiname& i)
 	interfaces.push_back(i);
 }
 
-IInterface* Class_inherit::getInstance(bool construct)
+IInterface* Class_inherit::getInstance(bool construct, arguments* args)
 {
 	//TODO: Ask our super for the interface to ret
 	assert(super);
-	IInterface* ret=super->getInstance(construct);
+	//Our super should not construct, we are going to do it ourselves
+	IInterface* ret=super->getInstance(false,args);
 	ret->obj->max_level=max_level;
 	ret->obj->prototype->decRef();
 	ret->obj->prototype=this;
 	ret->obj->actualPrototype=this;
 	//As we are the prototype we should incRef ourself
 	incRef();
+	if(construct)
+		ret->obj->handleConstruction(args,true,true);
 	return ret;
 }
 
@@ -1423,12 +1425,7 @@ tiny_string Class_base::getQualifiedClassName() const
 		int name_index=context->instances[class_index].name;
 		assert(name_index);
 		const multiname* mname=context->getMultiname(name_index,NULL);
-		assert(mname->ns.size()==1);
-		tiny_string ret=mname->ns[0];
-		ret+="::";
-		assert(mname->name_type==multiname::NAME_STRING);
-		ret+=mname->name_s;
-		return ret;
+		return mname->qualifiedString();
 	}
 }
 

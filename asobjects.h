@@ -98,7 +98,7 @@ public:
 	Class_base(const tiny_string& name):super(NULL),constructor(NULL),context(NULL),class_name(name),class_index(-1),
 		interfaces_ready(false),use_protected(false){type=T_CLASS;}
 	~Class_base();
-	virtual IInterface* getInstance(bool construct=false)=0;
+	virtual IInterface* getInstance(bool construct, arguments* args)=0;
 	tiny_string class_name;
 	objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner)
 	{
@@ -147,7 +147,7 @@ class Class_object: public Class_base
 {
 private:
 	Class_object():Class_base("Class"){};
-	IInterface* getInstance(bool construct=false)
+	IInterface* getInstance(bool construct, arguments* args)
 	{
 		abort();
 	}
@@ -166,7 +166,7 @@ class Class_function: public Class_base
 private:
 	IFunction* f;
 	ASObject* asprototype;
-	IInterface* getInstance(bool construct=false)
+	IInterface* getInstance(bool construct, arguments* args)
 	{
 		abort();
 	}

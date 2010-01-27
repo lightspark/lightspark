@@ -64,6 +64,7 @@ protected:
 public:
 	DisplayObject();
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getVisible);
 	ASFUNCTION(_getStage);
@@ -111,6 +112,7 @@ public:
 		abort();
 	}
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getNumChildren);
 	ASFUNCTION(addChild);
@@ -131,6 +133,7 @@ public:
 		sem_init(&geometry_mutex,0,1);
 	}
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(beginFill);
 	ASFUNCTION(drawRect);
@@ -142,6 +145,7 @@ class Shape: public DisplayObject
 {
 public:
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
@@ -159,6 +163,7 @@ public:
 	{
 	}
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
 	ASFUNCTION(_getLoaderUrl);
@@ -184,6 +189,7 @@ public:
 	{
 	}
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	ASFUNCTION(loadBytes);
@@ -202,6 +208,7 @@ private:
 public:
 	Sprite();
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
 	int getDepth() const
@@ -233,6 +240,7 @@ public:
 	void initialize();
 	MovieClip();
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(moveTo);
 	ASFUNCTION(lineStyle);
@@ -262,6 +270,7 @@ private:
 public:
 	Stage();
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getStageWidth);
 	ASFUNCTION(_getStageHeight);

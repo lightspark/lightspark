@@ -304,13 +304,12 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 			{
 				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				ret->nskind.reserve(s->count);
 				for(int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(th->context->getString(n->name));
-					ret->nskind.push_back(n->kind);
+					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
 				}
+				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_d=rtd;
 				ret->name_type=multiname::NAME_NUMBER;
 				break;
@@ -351,7 +350,6 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 		ret=new multiname;
 		ret->name_s="any";
 		ret->name_type=multiname::NAME_STRING;
-		cout << "allocating any count " << ret->count << endl;
 		return ret;
 	}
 
@@ -365,11 +363,9 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			case 0x07:
 			{
 				const namespace_info* n=&th->context->constant_pool.namespaces[m->ns];
-				if(n->name)
-				{
-					ret->ns.push_back(th->context->getString(n->name));
-					ret->nskind.push_back(n->kind);
-				}
+				assert(n->name);
+				ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
+
 				ret->name_s=th->context->getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -378,13 +374,12 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			{
 				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				ret->nskind.reserve(s->count);
 				for(int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(th->context->getString(n->name));
-					ret->nskind.push_back(n->kind);
+					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
 				}
+				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_s=th->context->getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -393,13 +388,12 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			{
 				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				ret->nskind.reserve(s->count);
 				for(int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(th->context->getString(n->name));
-					ret->nskind.push_back(n->kind);
+					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
 				}
+				sort(ret->ns.begin(),ret->ns.end());
 				if(rt1->getObjectType()==T_INTEGER)
 				{
 					Integer* o=static_cast<Integer*>(rt1);
@@ -441,11 +435,10 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			}
 			case 0x0f: //RTQName
 			{
-				//TODO: Next line is an hack
-				ret->nskind.push_back(0x08);
 				assert(rt1->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(rt1->implementation);
-				ret->ns.push_back(tmpns->uri);
+				//TODO: What is the right ns kind?
+				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
 				ret->name_type=multiname::NAME_STRING;
 				ret->name_s=th->context->getString(m->name);
 				rt1->decRef();
@@ -537,15 +530,12 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			case 0x0f: //RTQName
 			{
 				//Reset the namespaces
-				ret->nskind.clear();
 				ret->ns.clear();
-
-				//TODO: Next line is an hack
-				ret->nskind.push_back(0x08);
 
 				assert(rt1->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(rt1->implementation);
-				ret->ns.push_back(tmpns->uri);
+				//TODO: What is the right ns kind?
+				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
 				rt1->decRef();
 				break;
 			}
@@ -593,13 +583,12 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 			{
 				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				ret->nskind.reserve(s->count);
 				for(int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(th->context->getString(n->name));
-					ret->nskind.push_back(n->kind);
+					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
 				}
+				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_i=rti;
 				ret->name_type=multiname::NAME_INT;
 				break;
@@ -652,8 +641,11 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			case 0x07:
 			{
 				const namespace_info* n=&constant_pool.namespaces[m->ns];
-				ret->ns.push_back(getString(n->name));
-				ret->nskind.push_back(n->kind);
+				if(n->name)
+					ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
+				else
+					ret->ns.push_back(nsNameAndKind("",n->kind));
+
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -662,14 +654,11 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			{
 				const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				ret->nskind.reserve(s->count);
 				for(int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(getString(n->name));
-					ret->nskind.push_back(n->kind);
+					ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
 				}
-				//Should also sort the kinds
 				sort(ret->ns.begin(),ret->ns.end());
 
 				ret->name_s=getString(m->name);
@@ -680,14 +669,11 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			{
 				const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				ret->nskind.reserve(s->count);
 				for(int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(getString(n->name));
-					ret->nskind.push_back(n->kind);
+					ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
 				}
-				//Should also sort the kinds
 				sort(ret->ns.begin(),ret->ns.end());
 
 				ASObject* n=th->runtime_stack_pop();
@@ -732,12 +718,11 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			}
 			case 0x0f: //RTQName
 			{
-				//TODO: Next line is an hack
-				ret->nskind.push_back(0x08);
 				ASObject* n=th->runtime_stack_pop();
 				assert(n->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(n->implementation);
-				ret->ns.push_back(tmpns->uri);
+				//TODO: What is the right ns kind?
+				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
 				ret->name_type=multiname::NAME_STRING;
 				ret->name_s=getString(m->name);
 				n->decRef();
@@ -745,14 +730,13 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			}
 			case 0x1d:
 			{
+				assert(m->param_types.size()==1);
 				multiname_info* td=&constant_pool.multinames[m->type_definition];
 				multiname_info* p=&constant_pool.multinames[m->param_types[0]];
 				const namespace_info* n=&constant_pool.namespaces[td->ns];
-				ret->ns.push_back(getString(n->name));
-				ret->nskind.push_back(n->kind);
+				ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
 				ret->name_s=getString(td->name);
 				ret->name_type=multiname::NAME_STRING;
-				cout << "PUPPA" << endl;
 				break;
 			}
 	/*		case 0x0d:
@@ -841,15 +825,12 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			{
 				ASObject* n=th->runtime_stack_pop();
 				//Reset the namespaces
-				ret->nskind.clear();
 				ret->ns.clear();
-
-				//TODO: Next line is an hack
-				ret->nskind.push_back(0x08);
 
 				assert(n->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(n->implementation);
-				ret->ns.push_back(tmpns->uri);
+				//TODO: What is the right kind?
+				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
 				n->decRef();
 				break;
 			}
@@ -1187,12 +1168,11 @@ void ABCVm::not_impl(int n)
 void ABCVm::newArray(call_context* th, int n)
 {
 	LOG(LOG_CALLS, "newArray " << n );
-	Array* ret=Class<Array>::getInstanceS();
+	Array* ret=Class<Array>::getInstanceS(true);
 	ret->resize(n);
 	for(int i=0;i<n;i++)
 		ret->set(n-i-1,th->runtime_stack_pop());
 
-	ret->_constructor(ret->obj,NULL);
 	th->runtime_stack_push(ret->obj);
 }
 
@@ -1310,7 +1290,10 @@ void ABCVm::Run(ABCVm* th)
 	th->FPM=new llvm::FunctionPassManager(&mp);
        
 	th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
-//	th->FPM->add(llvm::createVerifierPass());
+#ifndef NDEBUG
+	//This is pretty heavy, do not enable in release
+	th->FPM->add(llvm::createVerifierPass());
+#endif
 	th->FPM->add(llvm::createPromoteMemoryToRegisterPass());
 	th->FPM->add(llvm::createReassociatePass());
 	th->FPM->add(llvm::createCFGSimplificationPass());
@@ -1349,7 +1332,7 @@ tiny_string ABCContext::getString(unsigned int s) const
 		return "";
 }
 
-inline void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
+void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 {
 	for(int i=0;i<instances[class_index].trait_count;i++)
 		buildTrait(obj,&instances[class_index].traits[i]);
@@ -1362,7 +1345,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 	assert(mname->ns.size()==1);
 
 	const tiny_string& name=mname->name_s;
-	const tiny_string& ns=mname->ns[0];
+	const tiny_string& ns=mname->ns[0].name;
 	if(t->kind>>4)
 		LOG(LOG_CALLS,"Next slot has flags " << (t->kind>>4));
 	switch(t->kind&0xf)
@@ -1389,6 +1372,10 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				var->var->incRef();
 				obj->setVariableByQName(name,ns,var->var,false);
 			}
+			else
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"Method not linkable");
+			}
 
 			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);
 			break;
@@ -1414,6 +1401,10 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				var->getter->incRef();
 				obj->setGetterByQName(name,ns,var->getter);
 			}
+			else
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"Getter not linkable");
+			}
 			
 			LOG(LOG_TRACE,"End Getter trait: " << ns << "::" << name);
 			break;
@@ -1431,13 +1422,17 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				level--;
 			}
 			while((var==NULL || var->setter==NULL) && level>=0);
-			if(var && var->setter)
+			if(var)
 			{
 				assert(var);
 				assert(var->setter);
 
 				var->setter->incRef();
 				obj->setSetterByQName(name,ns,var->setter);
+			}
+			else
+			{
+				LOG(LOG_NOT_IMPLEMENTED,"Setter not linkable");
 			}
 			
 			LOG(LOG_TRACE,"End Setter trait: " << ns << "::" << name);
@@ -1487,7 +1482,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 	assert(mname->ns.size()==1);
 
 	const tiny_string& name=mname->name_s;
-	const tiny_string& ns=mname->ns[0];
+	const tiny_string& ns=mname->ns[0].name;
 
 	if(t->kind>>4)
 		LOG(LOG_CALLS,"Next slot has flags " << (t->kind>>4));
@@ -1674,9 +1669,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					ret=new ScriptDefinable(deferred_initialization);
 				else
 				{
-					//TODO: find  nice way to handle default
+					//TODO: find nice way to handle default construction
 					if(type->name_type==multiname::NAME_STRING && type->name_s=="int" && 
-							type->ns.size()==1 && type->ns[0]=="")
+							type->ns.size()==1 && type->ns[0].name=="")
 						ret=abstract_i(0);
 					else
 						ret=new Undefined;
@@ -2142,3 +2137,8 @@ ASObject* lightspark::isNaN(ASObject* obj,arguments* args)
 		abort();
 }
 
+ASFUNCTIONBODY(lightspark,undefinedFunction)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Function not implemented");
+	return NULL;
+}

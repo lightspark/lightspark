@@ -149,7 +149,7 @@ void* ParseThread::worker(ParseThread* th)
 					sys->currentVm->addEvent(NULL, sync);
 					sync->wait();
 					//Now signal the completion for this root
-					sys->currentVm->addEvent(th->root->loaderInfo,Class<Event>::getInstanceS(false,"init"));
+					sys->currentVm->addEvent(th->root->loaderInfo,Class<Event>::getInstanceS(true,"init"));
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:
@@ -383,7 +383,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 		listeners.equal_range(t);
 
 	for(range.first;range.first!=range.second;range.first++)
-		sys->currentVm->addEvent(range.first->second,Class<Event>::getInstanceS(false,t));
+		sys->currentVm->addEvent(range.first->second,Class<Event>::getInstanceS(true,t));
 
 	sem_post(&sem_listeners);
 }

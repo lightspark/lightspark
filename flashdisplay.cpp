@@ -53,6 +53,17 @@ void LoaderInfo::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
+	c->super=Class<EventDispatcher>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void LoaderInfo::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("loaderURL","",new Function(_getLoaderUrl));
+	o->setGetterByQName("url","",new Function(_getUrl));
+	o->setGetterByQName("bytesLoaded","",new Function(_getBytesLoaded));
+	o->setGetterByQName("bytesTotal","",new Function(_getBytesTotal));
+	o->setGetterByQName("applicationDomain","",new Function(_getApplicationDomain));
 }
 
 ASFUNCTIONBODY(LoaderInfo,_constructor)
@@ -63,11 +74,6 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	ret->constructor->call(ret,NULL);*/
 	ASObject* params=new ASObject;
 	obj->setVariableByQName("parameters","",params);
-	obj->setGetterByQName("loaderURL","",new Function(_getLoaderUrl));
-	obj->setGetterByQName("url","",new Function(_getUrl));
-	obj->setGetterByQName("bytesLoaded","",new Function(_getBytesLoaded));
-	obj->setGetterByQName("bytesTotal","",new Function(_getBytesTotal));
-	obj->setGetterByQName("applicationDomain","",new Function(_getApplicationDomain));
 
 /*	params->setVariableByQName("length_seconds","",new ASString("558"));
 	params->setVariableByQName("cr","",new ASString("US"));
@@ -184,8 +190,7 @@ ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj->implementation);
 	assert(th);
-	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS();
-	th->contentLoaderInfo->_constructor(th->contentLoaderInfo->obj,NULL);
+	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(true);
 
 	obj->setVariableByQName("contentLoaderInfo","",th->contentLoaderInfo->obj);
 
@@ -246,6 +251,12 @@ void Loader::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
+	c->super=Class<DisplayObjectContainer>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void Loader::buildTraits(ASObject* o)
+{
 }
 
 void Loader::execute()
@@ -317,6 +328,12 @@ void Sprite::sinit(Class_base* c)
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
 	c->super=Class<DisplayObjectContainer>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void Sprite::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("graphics","",new Function(_getGraphics));
 }
 
 void Sprite::Render()
@@ -382,7 +399,6 @@ ASFUNCTIONBODY(Sprite,_constructor)
 	Sprite* th=static_cast<Sprite*>(obj->implementation);
 	DisplayObjectContainer::_constructor(obj,NULL);
 
-	obj->setGetterByQName("graphics","",new Function(_getGraphics));
 	return NULL;
 }
 
@@ -402,6 +418,16 @@ void MovieClip::sinit(Class_base* c)
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
 	c->super=Class<Sprite>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void MovieClip::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("currentFrame","",new Function(_getCurrentFrame));
+	o->setGetterByQName("totalFrames","",new Function(_getTotalFrames));
+	o->setGetterByQName("framesLoaded","",new Function(_getFramesLoaded));
+	o->setVariableByQName("stop","",new Function(stop));
+	o->setVariableByQName("nextFrame","",new Function(nextFrame));
 }
 
 MovieClip::MovieClip():framesLoaded(0),totalFrames(1),cur_frame(&dynamicDisplayList),initialized(false)
@@ -531,11 +557,6 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	Sprite::_constructor(obj,NULL);
-	obj->setGetterByQName("currentFrame","",new Function(_getCurrentFrame));
-	obj->setGetterByQName("totalFrames","",new Function(_getTotalFrames));
-	obj->setGetterByQName("framesLoaded","",new Function(_getFramesLoaded));
-	obj->setVariableByQName("stop","",new Function(stop));
-	obj->setVariableByQName("nextFrame","",new Function(nextFrame));
 /*	th->setVariableByQName("swapDepths","",new Function(swapDepths));
 	th->setVariableByQName("lineStyle","",new Function(lineStyle));
 	th->setVariableByQName("lineTo","",new Function(lineTo));
@@ -618,6 +639,48 @@ void DisplayObject::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
+	c->super=Class<EventDispatcher>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void DisplayObject::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("loaderInfo","",new Function(_getLoaderInfo));
+	o->setGetterByQName("width","",new Function(_getWidth));
+	o->setSetterByQName("width","",new Function(_setWidth));
+	o->setGetterByQName("scaleX","",new Function(_getScaleX));
+	o->setSetterByQName("scaleX","",new Function(undefinedFunction));
+	o->setGetterByQName("scaleY","",new Function(_getScaleY));
+	o->setSetterByQName("scaleY","",new Function(undefinedFunction));
+	o->setGetterByQName("x","",new Function(_getX));
+	o->setSetterByQName("x","",new Function(_setX));
+	o->setGetterByQName("y","",new Function(_getY));
+	o->setSetterByQName("y","",new Function(_setY));
+	o->setGetterByQName("height","",new Function(_getHeight));
+	o->setSetterByQName("height","",new Function(undefinedFunction));
+	o->setGetterByQName("visible","",new Function(_getVisible));
+	o->setSetterByQName("visible","",new Function(undefinedFunction));
+	o->setGetterByQName("rotation","",new Function(_getRotation));
+	o->setSetterByQName("rotation","",new Function(undefinedFunction));
+	o->setGetterByQName("name","",new Function(_getName));
+	o->setGetterByQName("parent","",new Function(_getParent));
+	o->setGetterByQName("root","",new Function(_getRoot));
+	o->setGetterByQName("blendMode","",new Function(_getBlendMode));
+	o->setSetterByQName("blendMode","",new Function(undefinedFunction));
+	o->setGetterByQName("scale9Grid","",new Function(_getScale9Grid));
+	o->setSetterByQName("scale9Grid","",new Function(undefinedFunction));
+	o->setGetterByQName("stage","",new Function(_getStage));
+	o->setVariableByQName("getBounds","",new Function(_getBounds));
+	o->setVariableByQName("localToGlobal","",new Function(localToGlobal));
+	o->setSetterByQName("name","",new Function(_setName));
+	o->setGetterByQName("mask","",new Function(undefinedFunction));
+	o->setSetterByQName("mask","",new Function(undefinedFunction));
+	o->setGetterByQName("alpha","",new Function(undefinedFunction));
+	o->setSetterByQName("alpha","",new Function(undefinedFunction));
+	o->setGetterByQName("cacheAsBitmap","",new Function(undefinedFunction));
+	o->setSetterByQName("cacheAsBitmap","",new Function(undefinedFunction));
+	o->setGetterByQName("opaqueBackground","",new Function(undefinedFunction));
+	o->setSetterByQName("opaqueBackground","",new Function(undefinedFunction));
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScaleX)
@@ -681,27 +744,6 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	EventDispatcher::_constructor(obj,NULL);
 
-	obj->setGetterByQName("loaderInfo","",new Function(_getLoaderInfo));
-	obj->setGetterByQName("width","",new Function(_getWidth));
-	obj->setGetterByQName("scaleX","",new Function(_getScaleX));
-	obj->setGetterByQName("scaleY","",new Function(_getScaleY));
-	obj->setGetterByQName("x","",new Function(_getX));
-	obj->setGetterByQName("y","",new Function(_getY));
-	obj->setGetterByQName("height","",new Function(_getHeight));
-	obj->setGetterByQName("visible","",new Function(_getVisible));
-	obj->setGetterByQName("rotation","",new Function(_getRotation));
-	obj->setGetterByQName("name","",new Function(_getName));
-	obj->setGetterByQName("parent","",new Function(_getParent));
-	obj->setGetterByQName("root","",new Function(_getRoot));
-	obj->setGetterByQName("blendMode","",new Function(_getBlendMode));
-	obj->setGetterByQName("scale9Grid","",new Function(_getScale9Grid));
-	obj->setGetterByQName("stage","",new Function(_getStage));
-	obj->setVariableByQName("getBounds","",new Function(_getBounds));
-	obj->setVariableByQName("localToGlobal","",new Function(localToGlobal));
-	obj->setSetterByQName("width","",new Function(_setWidth));
-	obj->setSetterByQName("name","",new Function(_setName));
-	obj->setSetterByQName("x","",new Function(_setX));
-	obj->setSetterByQName("y","",new Function(_setY));
 	return NULL;
 }
 
@@ -819,6 +861,16 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
 	c->super=Class<DisplayObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void DisplayObjectContainer::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("numChildren","",new Function(_getNumChildren));
+	o->setVariableByQName("getChildIndex","",new Function(getChildIndex));
+	o->setVariableByQName("getChildAt","",new Function(getChildAt));
+	o->setVariableByQName("addChild","",new Function(addChild));
+	o->setVariableByQName("addChildAt","",new Function(addChildAt));
 }
 
 DisplayObjectContainer::DisplayObjectContainer()
@@ -828,11 +880,6 @@ DisplayObjectContainer::DisplayObjectContainer()
 ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL);
-	obj->setGetterByQName("numChildren","",new Function(_getNumChildren));
-	obj->setVariableByQName("getChildIndex","",new Function(getChildIndex));
-	obj->setVariableByQName("getChildAt","",new Function(getChildAt));
-	obj->setVariableByQName("addChild","",new Function(addChild));
-	obj->setVariableByQName("addChildAt","",new Function(addChildAt));
 	return NULL;
 }
 
@@ -962,6 +1009,11 @@ void Shape::sinit(Class_base* c)
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
 	c->super=Class<DisplayObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void Shape::buildTraits(ASObject* o)
+{
 }
 
 ASFUNCTIONBODY(Shape,_constructor)
@@ -975,6 +1027,13 @@ void Stage::sinit(Class_base* c)
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
 	c->super=Class<DisplayObjectContainer>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void Stage::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("stageWidth","",new Function(_getStageWidth));
+	o->setGetterByQName("stageHeight","",new Function(_getStageHeight));
 }
 
 Stage::Stage()
@@ -983,8 +1042,6 @@ Stage::Stage()
 
 ASFUNCTIONBODY(Stage,_constructor)
 {
-	obj->setGetterByQName("stageWidth","",new Function(_getStageWidth));
-	obj->setGetterByQName("stageHeight","",new Function(_getStageHeight));
 	return NULL;
 }
 
@@ -1010,11 +1067,15 @@ void Graphics::sinit(Class_base* c)
 	c->constructor=new Function(_constructor);
 }
 
+void Graphics::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("clear","",new Function(clear));
+	o->setVariableByQName("drawRect","",new Function(drawRect));
+	o->setVariableByQName("beginFill","",new Function(beginFill));
+}
+
 ASFUNCTIONBODY(Graphics,_constructor)
 {
-	obj->setVariableByQName("clear","",new Function(clear));
-	obj->setVariableByQName("drawRect","",new Function(drawRect));
-	obj->setVariableByQName("beginFill","",new Function(beginFill));
 }
 
 ASFUNCTIONBODY(Graphics,clear)

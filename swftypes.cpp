@@ -202,28 +202,20 @@ void IInterface::buildTraits(ASObject* o)
 	LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->prototype->class_name);
 }
 
-int multiname::count=0;
-
-tiny_string multiname::qualifiedString()
+tiny_string multiname::qualifiedString() const
 {
 	assert(ns.size()==1);
 	assert(name_type==NAME_STRING);
-	if(ns[0]=="")
+	//TODO: what if the ns is empty
+	if(false && ns[0].name=="")
 		return name_s;
 	else
 	{
-		tiny_string ret=ns[0];
+		tiny_string ret=ns[0].name;
 		ret+="::";
 		ret+=name_s;
-		cout <<  ret << endl;
-		abort();
 		return ret;
 	}
-}
-
-multiname::~multiname()
-{
-	count--;
 }
 
 bool Integer::isGreater(ASObject* o)
@@ -351,13 +343,6 @@ obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& n
 		{
 			if(start->second.first==ns)
 				return &start->second.second;
-		}
-		//HACK: if any object with this name is defined we
-		//return the first
-		if(!exact)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,"Overriding or other weird condition on " << ns << "::" << name << ". Found on " << ret.first->second.first);
-			return &ret.first->second.second;
 		}
 	}
 
@@ -562,7 +547,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 			abort();
 		for(int i=0;i<mname.ns.size();i++)
 		{
-			const tiny_string& ns=mname.ns[i];
+			const tiny_string& ns=mname.ns[i].name;
 			var_iterator start=ret.first;
 			for(start;start!=ret.second;start++)
 			{
@@ -570,18 +555,10 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 					return &start->second.second;
 			}
 		}
-		//HACK: if any object with this name is defined we
-		//return the first
-		if(!exact)
-		{
-			LOG(LOG_NOT_IMPLEMENTED,"Overriding or other weird condition on [multiname]::" << name.name << ". Found on " << 
-				ret.first->second.first);
-			return &ret.first->second.second;
-		}
 	}
 
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
-	//HACK: this is needed if the propertu should be present but it's not
+	//TODO: HACK: this is needed if the property should be present but it's not
 	if(create)
 	{
 		if(mname.ns.size()>1)
@@ -591,7 +568,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 			var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair("", obj_var() ) ) );
 			return &inserted->second.second;
 		}
-		var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair(mname.ns[0], obj_var() ) ) );
+		var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair(mname.ns[0].name, obj_var() ) ) );
 		return &inserted->second.second;
 	}
 	else
@@ -839,7 +816,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 	for(int i=0;i<r.ns.size();i++)
 	{
 		string prefix;
-		switch(r.nskind[i])
+		switch(r.ns[i].kind)
 		{
 			case 0x08:
 				prefix="ns:";
@@ -863,7 +840,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 				prefix="privns:";
 				break;
 		}
-		s << '[' << prefix << r.ns[i] << "] ";
+		s << '[' << prefix << r.ns[i].name << "] ";
 	}
 	if(r.name_type==multiname::NAME_INT)
 		s << r.name_i;
@@ -1774,7 +1751,10 @@ void ASObject::recursiveBuild(const Class_base* cur)
 		actualPrototype=old;
 	}
 	LOG(LOG_CALLS,"Building traits for " << cur->class_name);
+	int old_level=max_level;
+	max_level=cur->max_level;
 	cur->buildInstanceTraits(this);
+	max_level=old_level;
 }
 
 void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits)

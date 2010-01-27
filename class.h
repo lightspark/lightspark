@@ -41,9 +41,10 @@ public:
 
 class Class_inherit:public Class_base
 {
+private:
+	IInterface* getInstance(bool construct, arguments* args);
 public:
 	Class_inherit(const tiny_string& name):Class_base(name){}
-	IInterface* getInstance(bool construct=false);
 	void buildInstanceTraits(ASObject* o) const;
 };
 
@@ -53,7 +54,7 @@ class Class: public Class_base
 private:
 	Class(const tiny_string& name):Class_base(name){}
 	//This function is instantiated always because of inheritance
-	T* getInstance(bool construct)
+	T* getInstance(bool construct, arguments* args)
 	{
 		ASObject* obj=new ASObject;
 		obj->max_level=max_level;
@@ -65,15 +66,15 @@ private:
 		obj->implementation=ret;
 		//As we are the prototype we should incRef ourself
 		incRef();
-		if(construct && constructor)
-			constructor->call(obj,NULL,obj->max_level);
+		if(construct)
+			ret->obj->handleConstruction(args,true,true);
 		return ret;
 	}
 public:
-	static T* getInstanceS(bool construct=false)
+	static T* getInstanceS(bool construct)
 	{
 		Class<T>* c=Class<T>::getClass();
-		return c->getInstance(construct);
+		return c->getInstance(construct,NULL);
 	}
 	template <typename ARG1>
 	static T* getInstanceS(bool construct, ARG1 a1)

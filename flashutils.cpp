@@ -44,7 +44,7 @@ void Timer::execute()
 	{
 		compat_msleep(delay);
 		if(running)
-			sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS(false,"timer"));
+			sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS(true,"timer"));
 	}
 }
 

@@ -551,9 +551,7 @@ void ABCVm::construct(call_context* th, int m)
 	LOG(LOG_CALLS,"Constructing");
 	Class_base* o_class=static_cast<Class_base*>(obj);
 	assert(o_class->getObjectType()==T_CLASS);
-	ASObject* ret=o_class->getInstance()->obj;
-
-	ret->handleConstruction(&args, true, true);
+	ASObject* ret=o_class->getInstance(true,&args)->obj;
 
 //	args.decRef();
 	obj->decRef();
@@ -586,9 +584,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	LOG(LOG_CALLS,"Constructing");
 	Class_base* o_class=static_cast<Class_base*>(obj);
 	assert(o_class->getObjectType()==T_CLASS);
-	ASObject* ret=o_class->getInstance()->obj;
-
-	ret->handleConstruction(&args, true, true);
+	ASObject* ret=o_class->getInstance(true,&args)->obj;
 
 //	args.decRef();
 	obj->decRef();
@@ -1736,9 +1732,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	if(o->getObjectType()==T_CLASS)
 	{
 		Class_base* o_class=static_cast<Class_base*>(o);
-		ret=o_class->getInstance()->obj;;
-
-		ret->handleConstruction(&args, true, true);
+		ret=o_class->getInstance(true,&args)->obj;
 	}
 	else if(o->getObjectType()==T_FUNCTION)
 	{

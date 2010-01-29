@@ -917,7 +917,7 @@ IFunction* Function::toFunction()
 	return this;
 }
 
-SyntheticFunction::SyntheticFunction(method_info* m):mi(m)
+SyntheticFunction::SyntheticFunction(method_info* m):mi(m),hit_count(0)
 {
 //	class_index=-2;
 	val=m->synt_method();
@@ -925,6 +925,12 @@ SyntheticFunction::SyntheticFunction(method_info* m):mi(m)
 
 ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numArgs, int level)
 {
+	if(val==NULL)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Not initialized function");
+		return NULL;
+	}
+
 	if(mi->needsArgs())
 		abort();
 
@@ -944,6 +950,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	}
 
 	cc->locals[0]=obj;
+	obj->incRef();
 
 	//Fixup missing parameters
 	int missing_params=args_len-i;
@@ -957,12 +964,6 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	}
 	
 	assert(i==mi->numArgs());
-
-	/*for(int i=numArgs;i<mi->numArgs();i++)
-	{
-		cout << "filling arg " << i << endl;
-		cc->locals[i+1]=new Undefined;
-	}*/
 
 	if(mi->needsRest()) //TODO
 	{
@@ -970,8 +971,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 		Array* rest=Class<Array>::getInstanceS(true);
 		cc->locals[i+1]=rest->obj;
 	}
-	obj->incRef();
-	ASObject* ret=val(obj,NULL,cc);
+	ASObject* ret=val(cc);
 
 	delete cc;
 	return ret;
@@ -979,79 +979,31 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 
 ASObject* SyntheticFunction::call(ASObject* obj, arguments* args, int level)
 {
-	if(val==NULL)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Not initialized function");
-		return NULL;
-	}
-
-	call_context* cc=new call_context(mi, level);
-	cc->scope_stack=func_scope;
-	for(int i=0;i<func_scope.size();i++)
-		func_scope[i]->incRef();
-
-	if(bound && closure_this)
-	{
-		LOG(LOG_CALLS,"Calling with closure " << this);
-		obj=closure_this;
-	}
-
-	cc->locals[0]=obj;
-	cc->locals[0]->incRef();
-	int i=0;
-	int args_len=mi->numArgs();
+	ASObject** args_fast;
+	int args_len;
 	if(args)
 	{
-		if(args->size()>mi->numArgs())
+		args_len=args->size();
+		args_fast=new ASObject*[args_len];
+		for(int i=0;i<args_len;i++)
 		{
-			assert(mi->needsRest());
-		}
-		for(i;i<min(args->size(),args_len);i++)
-		{
-			cc->locals[i+1]=args->at(i);
-			cc->locals[i+1]->incRef();
+			args_fast[i]=args->at(i);
+			args_fast[i]->incRef();
 		}
 	}
-
-	//Fixup missing parameters
-	int missing_params=args_len-i;
-	assert(missing_params<=mi->option_count);
-	int starting_options=mi->option_count-missing_params;
-
-	for(int j=starting_options;j<mi->option_count;j++)
+	else
 	{
-		cc->locals[i+1]=mi->getOptional(j);
-		i++;
+		args_fast=NULL;
+		args_len=0;
 	}
-	
-	assert(i==mi->numArgs());
-
-/*	for(i;i<mi->numArgs();i++)
-	{
-		cout << "filling arg " << i << endl;
-		cc->locals[i+1]=new Undefined;
-	}*/
-
-	if(mi->needsRest()) //TODO
-	{
-		Array* rest=Class<Array>::getInstanceS(true);
-		cc->locals[mi->numArgs()+1]=rest->obj;
-		/*llvm::Value* rest=Builder.CreateCall(ex->FindFunctionNamed("createRest"));
-		constant = llvm::ConstantInt::get(int_type, param_count+1);
-		t=Builder.CreateGEP(locals,constant);
-		Builder.CreateStore(rest,t);*/
-	}
-
-	obj->incRef();
-	ASObject* ret=val(obj,args,cc);
-
-	delete cc;
+	ASObject* ret=fast_call(obj,args_fast,args_len,level);
+	delete[] args_fast;
 	return ret;
 }
 
 ASObject* Function::fast_call(ASObject* obj, ASObject** args,int num_args, int level)
 {
-	arguments arg(num_args,false);
+	arguments arg(num_args);
 	for(int i=0;i<num_args;i++)
 		arg.set(i,args[i]);
 	return call(obj,&arg,level);

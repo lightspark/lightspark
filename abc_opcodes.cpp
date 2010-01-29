@@ -987,11 +987,6 @@ bool ABCVm::equals(ASObject* val2, ASObject* val1)
 {
 	bool ret=val1->isEqual(val2);
 	LOG(LOG_CALLS, "equals " << ret);
-	if(val1->getObjectType()==T_STRING || val2->getObjectType()==T_STRING)
-	{
-		cout << val1->toString() << endl;
-		cout << val2->toString() << endl;
-	}
 	val1->decRef();
 	val2->decRef();
 	return ret;

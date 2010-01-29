@@ -192,7 +192,7 @@ struct call_context
 	void runtime_stack_push(ASObject* s);
 	ASObject* runtime_stack_pop();
 	ASObject* runtime_stack_peek();
-	call_context(method_info* th, int l, ASObject** args=NULL, int numArgs=0);
+	call_context(method_info* th, int l, ASObject** args, int numArgs);
 	~call_context();
 };
 

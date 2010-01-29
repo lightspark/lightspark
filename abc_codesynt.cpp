@@ -774,8 +774,6 @@ llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex
 
 	//Initialize LLVM representation of method
 	vector<const llvm::Type*> sig;
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	sig.push_back(context_type);
 
 	return llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
@@ -818,8 +816,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
 
 	llvm::Function::ArgumentListType::iterator it=llvmf->getArgumentList().begin();
-	it++;
-	it++;
 	llvm::Value* context=it;
 
 	//let's give access to local data storage
@@ -856,22 +852,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 	map<int,block_info> blocks;
 	blocks[-1].BB=StartBB;
 
-/*	//We fill locals with function arguments
-	//First argument is the 'this'
-	constant = llvm::ConstantInt::get(int_type, 0);
-	llvm::Value* t=Builder.CreateGEP(locals,constant);
-	it=llvmf->getArgumentList().begin();
-	llvm::Value* arg=it;
-	Builder.CreateStore(arg,t);
-	//Second argument is the arguments pointer
-	it++;
-	for(int i=0;i<param_count;i++)
-	{
-		constant = llvm::ConstantInt::get(int_type, i+1);
-		t=Builder.CreateGEP(locals,constant);
-		arg=Builder.CreateCall2(ex->FindFunctionNamed("argumentDumper"), it, constant);
-		Builder.CreateStore(arg,t);
-	}*/
 	vector<stack_entry> static_locals;
 	static_locals.resize(body->local_count,stack_entry(NULL,STACK_NONE));
 

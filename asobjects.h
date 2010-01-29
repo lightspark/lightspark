@@ -277,7 +277,7 @@ class SyntheticFunction : public IFunction
 friend class ABCVm;
 friend void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits);
 public:
-	typedef ASObject* (*synt_function)(ASObject*, arguments*, call_context* cc);
+	typedef ASObject* (*synt_function)(call_context* cc);
 	SyntheticFunction(method_info* m);
 	ASObject* call(ASObject* obj, arguments* args, int level);
 	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level);
@@ -285,7 +285,6 @@ public:
 	std::vector<ASObject*> func_scope;
 	bool isEqual(ASObject* r)
 	{
-		std::cout << "SF: " << r->getObjectType() << std::endl;
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(r);
 		if(sf==NULL)
 			return false;
@@ -293,6 +292,7 @@ public:
 	}
 
 private:
+	int hit_count;
 	method_info* mi;
 	synt_function val;
 	SyntheticFunction* clone()
@@ -478,11 +478,9 @@ public:
 class arguments: public Array
 {
 public:
-	arguments(int n, bool construct=true)
+	arguments(int n)
 	{
 		data.resize(n,NULL);
-//		if(construct)
-//			_constructor(this,NULL);
 	}
 };
 

@@ -116,6 +116,12 @@ DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h,
 	skip(in);
 }
 
+CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"CSMTextSettingsTag");
+	skip(in);
+}
+
 UnimplementedTag::UnimplementedTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Unimplemented Tag " << (h>>6));

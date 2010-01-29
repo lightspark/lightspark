@@ -630,6 +630,12 @@ public:
 	MetadataTag(RECORDHEADER h, std::istream& in);
 };
 
+class CSMTextSettingsTag: public Tag
+{
+public:
+	CSMTextSettingsTag(RECORDHEADER h, std::istream& in);
+};
+
 class ScriptLimitsTag: public Tag
 {
 public:

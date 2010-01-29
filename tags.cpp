@@ -118,6 +118,8 @@ Tag* TagFactory::readTag()
 			return new FileAttributesTag(h,f);
 		case 73:
 			return new DefineFontAlignZonesTag(h,f);
+		case 74:
+			return new CSMTextSettingsTag(h,f);
 		case 75:
 			return new DefineFont3Tag(h,f);
 		case 76:

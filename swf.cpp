@@ -1144,7 +1144,6 @@ void RootMovieClip::setVariableByString(const string& s, ASObject* o)
 		{
 			sub=s.substr(f,l-f);
 			ASObject* next_target;
-			ASObject* owner;
 			if(f==0 && sub=="__Packages")
 			{
 				next_target=&sys->cur_render_thread->vm.Global;

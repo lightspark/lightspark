@@ -70,10 +70,9 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 	stringToQName(tmp,name,ns);
 
-	ASObject* owner;
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
-	objAndLevel o=getGlobal()->getVariableByQName(name,ns,owner);
-	if(owner==NULL)
+	objAndLevel o=getGlobal()->getVariableByQName(name,ns);
+	if(o.obj==NULL)
 		return abstract_b(false);
 	else
 	{
@@ -83,7 +82,7 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 			LOG(LOG_CALLS,"We got an object not yet valid");
 			Definable* d=static_cast<Definable*>(o.obj);
 			d->define(getGlobal());
-			o=getGlobal()->getVariableByQName(name,ns,owner);
+			o=getGlobal()->getVariableByQName(name,ns);
 		}
 
 		if(o.obj->getObjectType()!=T_CLASS)
@@ -102,10 +101,9 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	stringToQName(tmp,name,ns);
 
-	ASObject* owner;
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
-	objAndLevel o=getGlobal()->getVariableByQName(name,ns,owner);
-	assert(owner);
+	objAndLevel o=getGlobal()->getVariableByQName(name,ns);
+	assert(o.obj);
 
 	//Check if the object has to be defined
 	if(o.obj->getObjectType()==T_DEFINABLE)

@@ -111,7 +111,7 @@ public:
 	void addToFrame(DisplayListTag* t);
 	void commitFrame();
 	void Render();
-/*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
+/*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
 	void setVariableByString(const std::string& s, ASObject* o);*/

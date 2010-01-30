@@ -86,10 +86,9 @@ bool ASObject::isLess(ASObject* r)
 	assert(implementation==NULL);
 
 	//We can try to call valueOf and compare that
-	ASObject* owner1,*owner2;
-	objAndLevel obj1=getVariableByQName("valueOf","",owner1);
-	objAndLevel obj2=r->getVariableByQName("valueOf","",owner2);
-	if(owner1==NULL || owner2==NULL)
+	objAndLevel obj1=getVariableByQName("valueOf","");
+	objAndLevel obj2=r->getVariableByQName("valueOf","");
+	if(obj1.obj==NULL || obj2.obj==NULL)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 		abort();
@@ -279,10 +278,9 @@ bool ASObject::isEqual(ASObject* r)
 		return true;
 
 	//We can try to call valueOf (maybe equals) and compare that
-	ASObject* owner1,*owner2;
-	objAndLevel obj1=getVariableByQName("valueOf","",owner1);
-	objAndLevel obj2=r->getVariableByQName("valueOf","",owner2);
-	if(owner1!=NULL && owner2!=NULL)
+	objAndLevel obj1=getVariableByQName("valueOf","");
+	objAndLevel obj2=r->getVariableByQName("valueOf","");
+	if(obj1.obj!=NULL && obj2.obj!=NULL)
 	{
 		IFunction* f1=obj1.obj->toFunction();
 		IFunction* f2=obj2.obj->toFunction();
@@ -606,27 +604,22 @@ ASFUNCTIONBODY(ASObject,_setPrototype)
 
 //In all the getter function we first ask the interface, so that special handling (e.g. Array)
 //can be done
-intptr_t ASObject::getVariableByMultiname_i(const multiname& name, ASObject*& owner)
+intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	assert(ref_count>0);
 	if(implementation)
 	{
 		intptr_t ret;
 		if(implementation->getVariableByMultiname_i(name,ret))
-		{
-			owner=this;
 			return ret;
-		}
 	}
 
-	ASObject* ret=getVariableByMultiname(name,owner).obj;
-	if(ret)
-		return ret->toInt();
-	else
-		abort();
+	ASObject* ret=getVariableByMultiname(name).obj;
+	assert(ret);
+	return ret->toInt();
 }
 
-objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& owner)
+objAndLevel ASObject::getVariableByMultiname(const multiname& name)
 {
 	assert(ref_count>0);
 	if(implementation)
@@ -634,7 +627,6 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 		ASObject* ret;
 		if(implementation->getVariableByMultiname(name,ret))
 		{
-			owner=this;
 			//TODO check
 			return objAndLevel(ret,max_level);
 		}
@@ -668,7 +660,6 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 			LOG(LOG_CALLS,"Calling the getter");
 			ASObject* ret=obj->getter->call(this,NULL,level);
 			LOG(LOG_CALLS,"End of getter");
-			owner=this;
 			assert(ret);
 			//The returned value is already owned by the caller
 			ret->fake_decRef();
@@ -677,7 +668,6 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 		}
 		else
 		{
-			owner=this;
 			assert(obj->var);
 			return objAndLevel(obj->var,level);
 		}
@@ -689,28 +679,25 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, ASObject*& o
 		{
 			ASObject* ret=new Function(ASObject::_toString);
 			setVariableByQName("toString","",ret);
-			owner=this;
 			//Added at level 0, as Object is always the base
 			return objAndLevel(ret,0);
 		}
 		else if(getObjectType()==T_FUNCTION && name.name_s=="call")
 		{
 			//Fake returning the function itself
-			owner=this;
 			return objAndLevel(this,0);
 		}
 
 		//It has not been found yet, ask the prototype
 		if(prototype)
-			return prototype->getVariableByMultiname(name,owner);
+			return prototype->getVariableByMultiname(name);
 	}
 
 	//If it has not been found
-	owner=NULL;
 	return objAndLevel(NULL,0);
 }
 
-objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns)
 {
 	assert(ref_count>0);
 
@@ -718,10 +705,7 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 	{
 		ASObject* ret;
 		if(implementation->getVariableByQName(name,ns,ret))
-		{
-			owner=this;
 			return objAndLevel(ret,max_level);
-		}
 	}
 
 	obj_var* obj=NULL;
@@ -744,27 +728,18 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 			LOG(LOG_CALLS,"Calling the getter");
 			ASObject* ret=obj->getter->call(this,NULL,level);
 			LOG(LOG_CALLS,"End of getter");
-			owner=this;
 			//The variable is already owned by the caller
 			ret->fake_decRef();
 			return objAndLevel(ret,level);
 		}
 		else
-		{
-			owner=this;
 			return objAndLevel(obj->var,level);
-		}
 	}
-	else
+	else if(prototype)
 	{
-		owner=NULL;
-
-		if(prototype)
-		{
-			objAndLevel ret=prototype->getVariableByQName(name,ns,owner);
-			if(owner)
-				return ret;
-		}
+		objAndLevel ret=prototype->getVariableByQName(name,ns);
+		if(ret.obj)
+			return ret;
 	}
 
 	return objAndLevel(NULL,0);

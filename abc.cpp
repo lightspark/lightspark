@@ -1039,25 +1039,21 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,arguments* args, bool construct_instance)
 {
 	LOG(LOG_CALLS,"Setting class name to " << s);
-	ASObject* owner;
-	ASObject* derived_class=Global.getVariableByString(s,owner);
-	if(!owner)
+	ASObject* derived_class=Global.getVariableByString(s);
+	if(derived_class==NULL)
 	{
 		LOG(LOG_ERROR,"Class " << s << " not found in global");
 		abort();
 	}
+
 	if(derived_class->getObjectType()==T_DEFINABLE)
 	{
 		LOG(LOG_CALLS,"Class " << s << " is not yet valid");
 		Definable* d=static_cast<Definable*>(derived_class);
 		d->define(&Global);
 		LOG(LOG_CALLS,"End of deferred init of class " << s);
-		derived_class=Global.getVariableByString(s,owner);
-		if(!owner)
-		{
-			LOG(LOG_ERROR,"Class " << s << " not found in global");
-			abort();
-		}
+		derived_class=Global.getVariableByString(s);
+		assert(derived_class);
 	}
 
 	assert(derived_class->getObjectType()==T_CLASS);
@@ -1623,9 +1619,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}
 			else
 			{
-				ASObject* owner;
-				ret=obj->getVariableByQName(name,ns,owner).obj;
-				assert(owner==NULL);
+				ret=obj->getVariableByQName(name,ns).obj;
+				assert(ret==NULL);
 
 				assert(deferred_initialization==NULL);
 
@@ -1654,9 +1649,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			{
 				//else fallthrough
 				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
-				ASObject* owner;
-				objAndLevel previous_definition=obj->getVariableByQName(name,ns,owner);
-				if(owner)
+				objAndLevel previous_definition=obj->getVariableByQName(name,ns);
+				if(previous_definition.obj)
 				{
 					if(obj->actualPrototype)
 						assert(previous_definition.level<obj->actualPrototype->max_level);

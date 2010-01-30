@@ -47,20 +47,20 @@ private:
 	tiny_string tracer_name;
 public:
 	DebugTracer(const tiny_string& n):tracer_name(n){}
-	objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner)
+	objAndLevel getVariableByMultiname(const multiname& name)
 	{
 		LOG(LOG_CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname " << name);
-		return ASObject::getVariableByMultiname(name,owner);
+		return ASObject::getVariableByMultiname(name);
 	}
-	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner)
+	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		LOG(LOG_CALLS,"DebugTracer " << tracer_name << ": getVariableByMultiname_i " << name);
-		return ASObject::getVariableByMultiname_i(name,owner);
+		return ASObject::getVariableByMultiname_i(name);
 	}
-	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns)
 	{
 		LOG(LOG_CALLS,"DebugTracer " << tracer_name << ": getVariableByQName " << name << " on namespace " << ns);
-		return ASObject::getVariableByQName(name,ns,owner);
+		return ASObject::getVariableByQName(name,ns);
 	}
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
@@ -100,27 +100,27 @@ public:
 	~Class_base();
 	virtual IInterface* getInstance(bool construct, arguments* args)=0;
 	tiny_string class_name;
-	objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner)
+	objAndLevel getVariableByMultiname(const multiname& name)
 	{
-		objAndLevel ret=ASObject::getVariableByMultiname(name,owner);
-		if(owner==NULL && super)
-			ret=super->getVariableByMultiname(name,owner);
+		objAndLevel ret=ASObject::getVariableByMultiname(name);
+		if(ret.obj==NULL && super)
+			ret=super->getVariableByMultiname(name);
 		return ret;
 	}
-	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner)
+	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		abort();
 		return 0;
-/*		intptr_t ret=ASObject::getVariableByMultiname(name.owner);
-		if(owner==NULL && super)
-			ret=super->getVariableByMultiname(name,owner);
+/*		intptr_t ret=ASObject::getVariableByMultiname(name);
+		if(==NULL && super)
+			ret=super->getVariableByMultiname(name);
 		return ret;*/
 	}
-	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns)
 	{
-		objAndLevel ret=ASObject::getVariableByQName(name,ns,owner);
-		if(owner==NULL && super)
-			ret=super->getVariableByQName(name,ns,owner);
+		objAndLevel ret=ASObject::getVariableByQName(name,ns);
+		if(ret.obj==NULL && super)
+			ret=super->getVariableByQName(name,ns);
 		return ret;
 	}
 /*	void setVariableByMultiname_i(const multiname& name, intptr_t value)
@@ -177,27 +177,27 @@ private:
 public:
 	Class_function(IFunction* _f, ASObject* _p):f(_f),Class_base("Function"),asprototype(_p){}
 	tiny_string class_name;
-	objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner)
+	objAndLevel getVariableByMultiname(const multiname& name)
 	{
-		objAndLevel ret=Class_base::getVariableByMultiname(name,owner);
-		if(owner==NULL && asprototype)
-			ret=asprototype->getVariableByMultiname(name,owner);
+		objAndLevel ret=Class_base::getVariableByMultiname(name);
+		if(ret.obj==NULL && asprototype)
+			ret=asprototype->getVariableByMultiname(name);
 		return ret;
 	}
-	intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner)
+	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		abort();
 		return 0;
-/*		intptr_t ret=ASObject::getVariableByMultiname(name.owner);
-		if(owner==NULL && super)
-			ret=super->getVariableByMultiname(name,owner);
+/*		intptr_t ret=ASObject::getVariableByMultiname(name);
+		if(ret==NULL && super)
+			ret=super->getVariableByMultiname(name);
 		return ret;*/
 	}
-	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
+	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns)
 	{
-		objAndLevel ret=Class_base::getVariableByQName(name,ns,owner);
-		if(owner==NULL && asprototype)
-			ret=asprototype->getVariableByQName(name,ns,owner);
+		objAndLevel ret=Class_base::getVariableByQName(name,ns);
+		if(ret.obj==NULL && asprototype)
+			ret=asprototype->getVariableByQName(name,ns);
 		return ret;
 	}
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
@@ -228,7 +228,10 @@ public:
 			//If binding with null we are not a class method
 			IFunction* ret;
 			if(c!=NULL)
+			{
+				c->incRef();
 				ret=clone();
+			}
 			else
 			{
 				incRef();

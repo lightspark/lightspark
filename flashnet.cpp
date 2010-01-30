@@ -96,9 +96,8 @@ ASFUNCTIONBODY(URLLoader,load)
 	URLRequest* req=static_cast<URLRequest*>(arg->implementation);
 	tiny_string url=req->url;
 	cout << "url is " << url << endl;
-	ASObject* owner;
-	ASObject* data=arg->getVariableByQName("data","",owner).obj;
-	assert(owner);
+	ASObject* data=arg->getVariableByQName("data","").obj;
+	assert(data);
 	for(int i=0;i<data->numVariables();i++)
 	{
 		ASObject* cur=data->getValueAt(i);

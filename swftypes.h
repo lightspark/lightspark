@@ -466,15 +466,14 @@ public:
 		if(o && o!=o2)
 			o->decRef();
 	}
-	virtual ASObject* getVariableByString(const std::string& name, ASObject*& owner)
+	virtual ASObject* getVariableByString(const std::string& name)
 	{
 		ASObject* ret=Variables.getVariableByString(name);
-		owner=(ret)?this:NULL;
 		return ret;
 	}
-	virtual objAndLevel getVariableByMultiname(const multiname& name, ASObject*& owner);
-	virtual intptr_t getVariableByMultiname_i(const multiname& name, ASObject*& owner);
-	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner);
+	virtual objAndLevel getVariableByMultiname(const multiname& name);
+	virtual intptr_t getVariableByMultiname_i(const multiname& name);
+	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
 	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true);

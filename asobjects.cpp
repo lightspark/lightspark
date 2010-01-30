@@ -1306,9 +1306,8 @@ const std::vector<Class_base*>& Class_base::getInterfaces() const
 		//Recursively get interfaces implemented by this interface
 		for(int i=0;i<interfaces.size();i++)
 		{
-			ASObject* owner;
-			ASObject* interface_obj=getGlobal()->getVariableByMultiname(interfaces[i],owner).obj;
-			assert(owner && interface_obj->getObjectType()==T_CLASS);
+			ASObject* interface_obj=getGlobal()->getVariableByMultiname(interfaces[i]).obj;
+			assert(interface_obj && interface_obj->getObjectType()==T_CLASS);
 			Class_base* inter=static_cast<Class_base*>(interface_obj);
 
 			interfaces_added.push_back(inter);

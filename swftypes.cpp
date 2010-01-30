@@ -1579,19 +1579,19 @@ variables_map::~variables_map()
 }
 
 ASObject::ASObject(Manager* m):
-	prototype(NULL),actualPrototype(NULL),parent(NULL),ref_count(1),
-	manager(m),type(T_OBJECT),max_level(0),implementation(NULL),debug(0)
+	prototype(NULL),actualPrototype(NULL),ref_count(1),
+	manager(m),type(T_OBJECT),max_level(0),implementation(NULL)
 {
 }
 
 ASObject::ASObject(const ASObject& o):
-	prototype(o.prototype),actualPrototype(o.prototype),manager(NULL),parent(NULL),ref_count(1),
-	type(o.type),max_level(0),implementation(NULL),debug(0)
+	prototype(o.prototype),actualPrototype(o.prototype),manager(NULL),ref_count(1),
+	type(o.type),max_level(0),implementation(NULL)
 {
-	parent=o.parent;
-
 	if(prototype)
 		prototype->incRef();
+
+	assert(o.Variables.size()==0);
 	
 /*	std::map<Qname,ASObject*> Variables;	
 	std::vector<ASObject*> slots;

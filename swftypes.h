@@ -371,7 +371,7 @@ private:
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
 	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create);
 	obj_var* findObjVar(const multiname& mname, int level, bool create);
-public:
+//public:
 	ASObject* getSlot(int n)
 	{
 		return slots_vars[n-1]->second.second.var;
@@ -380,7 +380,7 @@ public:
 	void initSlot(int n,int level, const tiny_string& name, const tiny_string& ns);
 	ASObject* getVariableByString(const std::string& name);
 	void dumpVariables();
-	int size()
+	int size() const
 	{
 		return Variables.size();
 	}
@@ -397,7 +397,6 @@ friend class ABCVm;
 friend class ABCContext;
 friend class SystemState;
 protected:
-	ASObject* parent;
 	ASObject* asprototype; //HUMM.. ok the prototype, actually class, should be renamed
 	//maps variable name to namespace and var
 	variables_map Variables;
@@ -408,11 +407,11 @@ private:
 	Manager* manager;
 	void recursiveBuild(const Class_base* cur);
 public:
-	int debug;
 	IInterface* implementation;
-	void acquireInterface(IInterface* i);
 	int max_level;
-	//Constructor to set class_name
+	Class_base* prototype;
+	Class_base* actualPrototype;
+	void acquireInterface(IInterface* i);
 	ASObject(Manager* m=NULL);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getPrototype);
@@ -423,8 +422,6 @@ public:
 	{
 		assert(ref_count>0);
 	}
-	Class_base* prototype;
-	Class_base* actualPrototype;
 	void incRef()
 	{
 		//std::cout << "incref " << this << std::endl;
@@ -438,7 +435,6 @@ public:
 		ref_count--;
 		if(ref_count==0)
 		{
-			assert(debug==0);
 			if(manager)
 			{
 				manager->put(this);

@@ -30,6 +30,7 @@
 #include <assert.h>
 #include "swf.h"
 #include "geometry.h"
+#include "class.h"
 
 using namespace std;
 using namespace lightspark;
@@ -138,6 +139,11 @@ IInterface::IInterface(const IInterface& r):type(r.type),obj(NULL)
 }
 
 bool IInterface::isEqual(bool& ret, ASObject* r)
+{
+	return false;
+}
+
+bool IInterface::toNumber(double& ret)
 {
 	return false;
 }
@@ -654,7 +660,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 
 ASFUNCTIONBODY(ASObject,_toString)
 {
-	return new ASString(obj->toString());
+	return Class<ASString>::getInstanceS(true,obj->toString())->obj;
 }
 
 ASFUNCTIONBODY(ASObject,_constructor)

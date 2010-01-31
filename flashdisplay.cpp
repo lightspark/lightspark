@@ -162,12 +162,14 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 
 ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
 {
-	return new ASString("www.youtube.com");
+	abort();
+//	return new ASString("www.youtube.com");
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getUrl)
 {
-	return new ASString("www.youtube.com/watch.swf");
+	return new Undefined;
+//	return new ASString("www.youtube.com/watch.swf");
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytesLoaded)
@@ -1150,8 +1152,8 @@ void Graphics::Render()
 
 void LineScaleMode::sinit(Class_base* c)
 {
-	c->setVariableByQName("HORIZONTAL","",new ASString("horizontal"));
-	c->setVariableByQName("NONE","",new ASString("none"));
-	c->setVariableByQName("NORMAL","",new ASString("normal"));
-	c->setVariableByQName("VERTICAL","",new ASString("vertical"));
+	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS(true,"horizontal")->obj);
+	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS(true,"none")->obj);
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS(true,"normal")->obj);
+	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS(true,"vertical")->obj);
 }

@@ -43,19 +43,19 @@ void Event::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
-	c->setVariableByQName("ENTER_FRAME","",new ASString("enterFrame"));
-	c->setVariableByQName("RENDER","",new ASString("render"));
-	c->setVariableByQName("ADDED_TO_STAGE","",new ASString("addedToStage"));
-	c->setVariableByQName("INIT","",new ASString("init"));
-	c->setVariableByQName("CLOSE","",new ASString("close"));
-	c->setVariableByQName("ADDED","",new ASString("added"));
-	c->setVariableByQName("COMPLETE","",new ASString("complete"));
-	c->setVariableByQName("REMOVED","",new ASString("removed"));
-	c->setVariableByQName("UNLOAD","",new ASString("unload"));
-	c->setVariableByQName("ACTIVATE","",new ASString("activate"));
-	c->setVariableByQName("DEACTIVATE","",new ASString("deactivate"));
-	c->setVariableByQName("CHANGE","",new ASString("change"));
-	c->setVariableByQName("RESIZE","",new ASString("resize"));
+	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS(true,"enterFrame")->obj);
+	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS(true,"render")->obj);
+	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS(true,"addedToStage")->obj);
+	c->setVariableByQName("INIT","",Class<ASString>::getInstanceS(true,"init")->obj);
+	c->setVariableByQName("CLOSE","",Class<ASString>::getInstanceS(true,"close")->obj);
+	c->setVariableByQName("ADDED","",Class<ASString>::getInstanceS(true,"added")->obj);
+	c->setVariableByQName("COMPLETE","",Class<ASString>::getInstanceS(true,"complete")->obj);
+	c->setVariableByQName("REMOVED","",Class<ASString>::getInstanceS(true,"removed")->obj);
+	c->setVariableByQName("UNLOAD","",Class<ASString>::getInstanceS(true,"unload")->obj);
+	c->setVariableByQName("ACTIVATE","",Class<ASString>::getInstanceS(true,"activate")->obj);
+	c->setVariableByQName("DEACTIVATE","",Class<ASString>::getInstanceS(true,"deactivate")->obj);
+	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS(true,"change")->obj);
+	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS(true,"resize")->obj);
 }
 
 ASFUNCTIONBODY(Event,_constructor)
@@ -86,7 +86,7 @@ ASFUNCTIONBODY(Event,_getTarget)
 ASFUNCTIONBODY(Event,_getType)
 {
 	Event* th=static_cast<Event*>(obj->implementation);
-	return new ASString(th->type);
+	return Class<ASString>::getInstanceS(true,th->type)->obj;
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
@@ -115,7 +115,7 @@ void ProgressEvent::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
-	c->setVariableByQName("PROGRESS","",new ASString("progress"));
+	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS(true,"progress")->obj);
 }
 
 ASFUNCTIONBODY(ProgressEvent,_constructor)
@@ -144,23 +144,23 @@ ASFUNCTIONBODY(ProgressEvent,_getBytesTotal)
 
 void TimerEvent::sinit(Class_base* c)
 {
-	c->setVariableByQName("TIMER","",new ASString("timer"));
-	c->setVariableByQName("TIMER_COMPLETE","",new ASString("timerComplete"));
+	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS(true,"timer")->obj);
+	c->setVariableByQName("TIMER_COMPLETE","",Class<ASString>::getInstanceS(true,"timerComplete")->obj);
 }
 
 void MouseEvent::sinit(Class_base* c)
 {
 //	assert(c->constructor==NULL);
 //	c->constructor=new Function(_constructor);
-	c->setVariableByQName("CLICK","",new ASString("click"));
-	c->setVariableByQName("DOUBLE_CLICK","",new ASString("doubleClick"));
-	c->setVariableByQName("MOUSE_DOWN","",new ASString("mouseDown"));
-	c->setVariableByQName("MOUSE_OUT","",new ASString("mouseOut"));
-	c->setVariableByQName("MOUSE_OVER","",new ASString("mouseOver"));
-	c->setVariableByQName("MOUSE_UP","",new ASString("mouseUp"));
-	c->setVariableByQName("MOUSE_WHEEL","",new ASString("mouseWheel"));
-	c->setVariableByQName("ROLL_OVER","",new ASString("rollOver"));
-	c->setVariableByQName("ROLL_OUT","",new ASString("rollOut"));
+	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS(true,"click")->obj);
+	c->setVariableByQName("DOUBLE_CLICK","",Class<ASString>::getInstanceS(true,"doubleClick")->obj);
+	c->setVariableByQName("MOUSE_DOWN","",Class<ASString>::getInstanceS(true,"mouseDown")->obj);
+	c->setVariableByQName("MOUSE_OUT","",Class<ASString>::getInstanceS(true,"mouseOut")->obj);
+	c->setVariableByQName("MOUSE_OVER","",Class<ASString>::getInstanceS(true,"mouseOver")->obj);
+	c->setVariableByQName("MOUSE_UP","",Class<ASString>::getInstanceS(true,"mouseUp")->obj);
+	c->setVariableByQName("MOUSE_WHEEL","",Class<ASString>::getInstanceS(true,"mouseWheel")->obj);
+	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS(true,"rollOver")->obj);
+	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS(true,"rollOut")->obj);
 }
 
 IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
@@ -169,17 +169,17 @@ IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
 
 void IOErrorEvent::sinit(Class_base* c)
 {
-	c->setVariableByQName("IO_ERROR","",new ASString("ioError"));
+	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS(true,"ioError")->obj);
 }
 
 void FakeEvent::sinit(Class_base* c)
 {
-	c->setVariableByQName("SECURITY_ERROR","",new ASString("securityError"));
-	c->setVariableByQName("ERROR","",new ASString("error"));
-	c->setVariableByQName("FOCUS_IN","",new ASString("focusIn"));
-	c->setVariableByQName("FOCUS_OUT","",new ASString("focusOut"));
-	c->setVariableByQName("KEY_DOWN","",new ASString("keyDown"));
-	c->setVariableByQName("KEY_UP","",new ASString("keyUp"));
+	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS(true,"securityError")->obj);
+	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS(true,"error")->obj);
+	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS(true,"focusIn")->obj);
+	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS(true,"focusOut")->obj);
+	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS(true,"keyDown")->obj);
+	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS(true,"keyUp")->obj);
 }
 
 EventDispatcher::EventDispatcher():id(0)

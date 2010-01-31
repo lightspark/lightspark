@@ -121,7 +121,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Object","",Class<IInterface>::getClass());
 	Global.setVariableByQName("Class","",Class_object::getClass());
 	Global.setVariableByQName("Number","",new Number(0.0));
-	Global.setVariableByQName("String","",new ASString);
+	Global.setVariableByQName("String","",Class<ASString>::getClass());
 	Global.setVariableByQName("Array","",Class<Array>::getClass());
 	Global.setVariableByQName("Function","",new Function);
 	Global.setVariableByQName("undefined","",new Undefined);
@@ -421,7 +421,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else if(rt1->getObjectType()==T_STRING)
 				{
-					ASString* o=static_cast<ASString*>(rt1);
+					ASString* o=static_cast<ASString*>(rt1->implementation);
 					ret->name_s=o->data;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -509,7 +509,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else if(rt1->getObjectType()==T_STRING)
 				{
-					ASString* o=static_cast<ASString*>(rt1);
+					ASString* o=static_cast<ASString*>(rt1->implementation);
 					ret->name_s=o->data;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -704,7 +704,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				}
 				else if(n->getObjectType()==T_STRING)
 				{
-					ASString* o=static_cast<ASString*>(n);
+					ASString* o=static_cast<ASString*>(n->implementation);
 					ret->name_s=o->data;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -809,7 +809,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				}
 				else if(n->getObjectType()==T_STRING)
 				{
-					ASString* o=static_cast<ASString*>(n);
+					ASString* o=static_cast<ASString*>(n->implementation);
 					ret->name_s=o->data;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -1179,7 +1179,7 @@ ASObject* ABCVm::pushString(call_context* th, int n)
 {
 	tiny_string s=th->context->getString(n); 
 	LOG(LOG_CALLS, "pushString " << s );
-	return new ASString(s);
+	return Class<ASString>::getInstanceS(true,s)->obj;
 }
 
 void call_context::runtime_stack_push(ASObject* s)
@@ -1445,14 +1445,14 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	switch(kind)
 	{
 		case 0x01: //String
-			return new ASString(constant_pool.strings[index]);
+			return Class<ASString>::getInstanceS(true,constant_pool.strings[index])->obj;
 		case 0x03: //Int
 			return new Integer(constant_pool.integer[index]);
 		case 0x06: //Double
 			return new Number(constant_pool.doubles[index]);
 		case 0x08: //Namespace
 			assert(constant_pool.namespaces[index].name);
-			return Class<Namespace>::getInstanceS(false,getString(constant_pool.namespaces[index].name))->obj;
+			return Class<Namespace>::getInstanceS(true,getString(constant_pool.namespaces[index].name))->obj;
 		case 0x0a: //False
 			return new Boolean(false);
 		case 0x0b: //True

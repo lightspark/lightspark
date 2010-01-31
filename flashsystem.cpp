@@ -31,17 +31,17 @@ void Capabilities::sinit(Class_base* c)
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
 	c->setGetterByQName("language","",new Function(_getLanguage));
-	c->setVariableByQName("version","",new ASString("UNIX 10,0,0,0"));
+	c->setVariableByQName("version","",Class<ASString>::getInstanceS(true,"UNIX 10,0,0,0")->obj);
 }
 
 ASFUNCTIONBODY(Capabilities,_constructor)
 {
-	obj->setVariableByQName("playerType","",new ASString("AVMPlus"));
+	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS(true,"AVMPlus")->obj);
 }
 
 ASFUNCTIONBODY(Capabilities,_getLanguage)
 {
-	return new ASString("en");
+	return Class<ASString>::getInstanceS(true,"en")->obj;
 }
 
 void ApplicationDomain::sinit(Class_base* c)

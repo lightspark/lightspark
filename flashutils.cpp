@@ -93,7 +93,7 @@ ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)
 	else
 		c=static_cast<Class_base*>(target);
 
-	return new ASString(c->getQualifiedClassName());
+	return Class<ASString>::getInstanceS(true,c->getQualifiedClassName())->obj;
 }
 
 ASObject* lightspark::getQualifiedSuperclassName(ASObject* obj, arguments* args)
@@ -112,7 +112,7 @@ ASObject* lightspark::getQualifiedSuperclassName(ASObject* obj, arguments* args)
 	assert(c);
 
 	cout << c->getQualifiedClassName() << endl;
-	return new ASString(c->getQualifiedClassName());
+	return Class<ASString>::getInstanceS(true,c->getQualifiedClassName())->obj;
 }
 
 ASFUNCTIONBODY(lightspark,getDefinitionByName)

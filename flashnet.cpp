@@ -66,7 +66,7 @@ ASFUNCTIONBODY(URLRequest,_setUrl)
 ASFUNCTIONBODY(URLRequest,_getUrl)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
-	return new ASString(th->url);
+	return Class<ASString>::getInstanceS(true,th->url)->obj;
 }
 
 URLLoader::URLLoader():dataFormat("text")
@@ -110,7 +110,7 @@ ASFUNCTIONBODY(URLLoader,load)
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
-	return new ASString(th->dataFormat);
+	return Class<ASString>::getInstanceS(true,th->dataFormat)->obj;
 }
 
 ASFUNCTIONBODY(URLLoader,_setDataFormat)
@@ -123,8 +123,8 @@ ASFUNCTIONBODY(URLLoader,_setDataFormat)
 
 void URLLoaderDataFormat::sinit(Class_base* c)
 {
-	c->setVariableByQName("VARIABLES","",new ASString("variables"));
-	c->setVariableByQName("TEXT","",new ASString("text"));
-	c->setVariableByQName("BINARY","",new ASString("binary"));
+	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS(true,"variables")->obj);
+	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS(true,"text")->obj);
+	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS(true,"binary")->obj);
 }
 

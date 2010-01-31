@@ -48,12 +48,12 @@ REGISTER_CLASS_NAME(IInterface);
 REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
 REGISTER_CLASS_NAME(Math);
+REGISTER_CLASS_NAME(ASString);
 
 Array::Array()
 {
 	type=T_ARRAY;
 	//constructor=new Function(_constructor);
-	//ASObject::setVariableByQName("Call","",new Function(ASArray::Array));
 	//ASObject::setVariableByQName("toString","",new Function(ASObject::_toString));
 }
 
@@ -119,7 +119,7 @@ ASFUNCTIONBODY(Array,join)
 			if(i!=th->size()-1)
 				ret+=del->toString().raw_buf();
 		}
-		return new ASString(ret);
+		return Class<ASString>::getInstanceS(true,ret)->obj;
 }
 
 ASFUNCTIONBODY(Array,_concat)
@@ -537,45 +537,50 @@ bool Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, A
 ASString::ASString()
 {
 	type=T_STRING;
-	registerMethods();
 }
 
 ASString::ASString(const string& s):data(s)
 {
 	type=T_STRING;
-	registerMethods();
 }
 
 ASString::ASString(const tiny_string& s):data(s.raw_buf())
 {
 	type=T_STRING;
-	registerMethods();
 }
 
 ASString::ASString(const char* s):data(s)
 {
 	type=T_STRING;
-	registerMethods();
 }
+
+/*ASFUNCTIONBODY(ASString,_constructor)
+{
+}*/
 
 ASFUNCTIONBODY(ASString,_getLength)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=static_cast<ASString*>(obj->implementation);
 	return abstract_i(th->data.size());
 }
 
-void ASString::registerMethods()
+void ASString::sinit(Class_base* c)
 {
-	setVariableByQName("Call","",new Function(ASString::String));
-	setVariableByQName("toString","",new Function(ASObject::_toString));
-	setVariableByQName("split",AS3,new Function(split));
-	setVariableByQName("replace",AS3,new Function(replace));
-	setVariableByQName("concat",AS3,new Function(concat));
-	setVariableByQName("indexOf",AS3,new Function(indexOf));
-	setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
-	setVariableByQName("slice",AS3,new Function(slice));
-	setVariableByQName("toLowerCase",AS3,new Function(toLowerCase));
-	setGetterByQName("length","",new Function(_getLength));
+	assert(c->constructor==NULL);
+//	c->constructor=new Function(_constructor);
+}
+
+void ASString::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("toString","",new Function(ASObject::_toString));
+	o->setVariableByQName("split",AS3,new Function(split));
+	o->setVariableByQName("replace",AS3,new Function(replace));
+	o->setVariableByQName("concat",AS3,new Function(concat));
+	o->setVariableByQName("indexOf",AS3,new Function(indexOf));
+	o->setVariableByQName("charCodeAt",AS3,new Function(charCodeAt));
+	o->setVariableByQName("slice",AS3,new Function(slice));
+	o->setVariableByQName("toLowerCase",AS3,new Function(toLowerCase));
+	o->setGetterByQName("length","",new Function(_getLength));
 }
 
 Array::~Array()
@@ -589,20 +594,20 @@ Array::~Array()
 
 ASFUNCTIONBODY(ASString,split)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=static_cast<ASString*>(obj->implementation);
 	Array* ret=Class<Array>::getInstanceS(true);
 	ASObject* delimiter=args->at(0);
 	if(delimiter->getObjectType()==T_STRING)
 	{
-		ASString* del=static_cast<ASString*>(delimiter);
+		ASString* del=static_cast<ASString*>(delimiter->implementation);
 		int start=0;
 		do
 		{
 			int match=th->data.find(del->data,start);
 			if(match==-1)
 				match=th->data.size();
-			ASString* s=new ASString(th->data.substr(start,match));
-			ret->push(s);
+			ASString* s=Class<ASString>::getInstanceS(true,(th->data.substr(start,match)));
+			ret->push(s->obj);
 			start=match+del->data.size();
 		}
 		while(start<th->data.size());
@@ -611,39 +616,6 @@ ASFUNCTIONBODY(ASString,split)
 		abort();
 
 	return ret->obj;
-}
-
-ASFUNCTIONBODY(ASString,String)
-{
-	if(args->at(0)->getObjectType()==T_INTEGER)
-	{
-		Integer* n=static_cast<Integer*>(args->at(0));
-		ostringstream oss;
-		oss << setprecision(8) << fixed << *n;
-
-		return new ASString(oss.str());
-	}
-	else if(args->at(0)->getObjectType()==T_NUMBER)
-	{
-		Number* n=static_cast<Number*>(args->at(0));
-		ostringstream oss;
-		oss << setprecision(8) << fixed << *n;
-
-		return new ASString(oss.str());
-	}
-	else if(args->at(0)->getObjectType()==T_ARRAY)
-	{
-		return new ASString(args->at(0)->toString());
-	}
-	else if(args->at(0)->getObjectType()==T_UNDEFINED)
-	{
-		return new ASString("undefined");
-	}
-	else
-	{
-		LOG(LOG_CALLS,"Cannot convert " << args->at(0)->getObjectType() << " to String");
-		abort();
-	}
 }
 
 bool Array::toString(tiny_string& ret)
@@ -691,10 +663,10 @@ tiny_string ASString::toString() const
 	return data.c_str();
 }
 
-double ASString::toNumber() const
+bool ASString::toString(tiny_string& ret)
 {
-	LOG(LOG_ERROR,"Cannot convert string " << data << " to float");
-	return 0;
+	ret=toString();
+	return true;
 }
 
 ASFUNCTIONBODY(Undefined,call)
@@ -708,18 +680,20 @@ tiny_string Undefined::toString() const
 	return "null";
 }
 
-bool ASString::isEqual(ASObject* r)
+bool ASString::isEqual(bool& ret, ASObject* r)
 {
 	if(r->getObjectType()==T_STRING)
 	{
-		const ASString* s=static_cast<const ASString*>(r);
+		const ASString* s=static_cast<const ASString*>(r->implementation);
 		if(s->data==data)
-			return true;
+			ret=true;
 		else
-			return false;
+			ret=false;
 	}
 	else
-		return false;
+		ret=false;
+
+	return true;
 }
 
 bool Boolean::isEqual(ASObject* r)
@@ -748,7 +722,7 @@ bool Undefined::isEqual(ASObject* r)
 Undefined::Undefined()
 {
 	type=T_UNDEFINED;
-//	setVariableByName(".Call",new Function(call));
+	//	setVariableByName(".Call",new Function(call));
 }
 
 bool Number::isEqual(ASObject* o)
@@ -1165,16 +1139,16 @@ ASFUNCTIONBODY(RegExp,exec)
 
 ASFUNCTIONBODY(ASString,slice)
 {
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=static_cast<ASString*>(obj->implementation);
 	int startIndex=args->at(0)->toInt();
 	int endIndex=args->at(1)->toInt();
-	return new ASString(th->data.substr(startIndex,endIndex));
+	return Class<ASString>::getInstanceS(true,th->data.substr(startIndex,endIndex))->obj;
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ASString::charCodeAt not really implemented");
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=static_cast<ASString*>(obj->implementation);
 	int index=args->at(0)->toInt();
 	return new Integer(th->data[index]);
 }
@@ -1182,24 +1156,24 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 ASFUNCTIONBODY(ASString,indexOf)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ASString::indexOf not really implemented");
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=static_cast<ASString*>(obj->implementation);
 	return new Integer(-1);
 }
 
 ASFUNCTIONBODY(ASString,toLowerCase)
 {
-	ASString* th=static_cast<ASString*>(obj);
-	ASString* ret=new ASString;
+	ASString* th=static_cast<ASString*>(obj->implementation);
+	ASString* ret=Class<ASString>::getInstanceS(true);
 	ret->data=th->data;
 	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::tolower);
-	return ret;
+	return ret->obj;
 }
 
 ASFUNCTIONBODY(ASString,replace)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ASString::replace not really implemented");
-	const ASString* th=static_cast<const ASString*>(obj);
-	ASString* ret=new ASString(th->data);
+	const ASString* th=static_cast<const ASString*>(obj->implementation);
+	ASString* ret=Class<ASString>::getInstanceS(true,th->data);
 	const tiny_string& replaceWith=args->at(1)->toString();
 
 	assert(args->size()==2 && args->at(1)->getObjectType()==T_STRING);
@@ -1224,7 +1198,7 @@ ASFUNCTIONBODY(ASString,replace)
 	}
 	else if(args->at(0)->getObjectType()==T_STRING)
 	{
-		ASString* s=static_cast<ASString*>(args->at(0));
+		ASString* s=static_cast<ASString*>(args->at(0)->implementation);
 		int index=0;
 		do
 		{
@@ -1238,16 +1212,16 @@ ASFUNCTIONBODY(ASString,replace)
 		while(index<ret->data.size());
 	}
 
-	return ret;
+	return ret->obj;
 }
 
 ASFUNCTIONBODY(ASString,concat)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ASString::concat not really implemented");
-	ASString* th=static_cast<ASString*>(obj);
+	ASString* th=static_cast<ASString*>(obj->implementation);
 	th->data+=args->at(0)->toString().raw_buf();
-	th->incRef();
-	return th;
+	th->obj->incRef();
+	return th->obj;
 }
 
 Class_base::~Class_base()
@@ -1408,7 +1382,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 	{
 		case T_STRING:
 		{
-			ASString* s=static_cast<ASString*>(args->at(0));
+			ASString* s=static_cast<ASString*>(args->at(0)->implementation);
 			th->uri=s->data;
 			break;
 		}
@@ -1430,6 +1404,6 @@ void Namespace::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Namespace,_constructor)
 {
-	abort();
+	assert(args==NULL);
 }
 

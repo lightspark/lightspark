@@ -628,7 +628,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 			return new Undefined;
 	}
 	obj->decRef();
-	return new ASString(ret);
+	return Class<ASString>::getInstanceS(true,ret)->obj;
 }
 
 void ABCVm::callPropVoid(call_context* th, int n, int m)
@@ -824,7 +824,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		LOG(LOG_CALLS,"add " << a << '+' << b);
 		val1->decRef();
 		val2->decRef();
-		return new ASString(a+b);
+		return Class<ASString>::getInstanceS(true,a+b)->obj;
 	}
 	else if(val1->getObjectType()==T_NUMBER || val2->getObjectType()==T_NUMBER)
 	{
@@ -869,7 +869,7 @@ ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,"add " << a << '+' << b);
-		return new ASString(a+b);
+		return Class<ASString>::getInstanceS(true,a+b)->obj;
 	}
 	else if(val2->getObjectType()==T_ARRAY)
 	{
@@ -912,7 +912,7 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,"add " << a << '+' << b);
-		return new ASString(a+b);
+		return Class<ASString>::getInstanceS(true,a+b)->obj;
 	}
 	else if(val2->getObjectType()==T_ARRAY)
 	{
@@ -1597,19 +1597,6 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,"asTypelate");
-	//Special case for string... should convert ASString to Class
-	if(type->getObjectType()==T_STRING)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Type is string");
-		type->decRef();
-		if(obj->getObjectType()==T_STRING)
-			return obj;
-		else
-		{
-			obj->decRef();
-			return new Null;
-		}
-	}
 
 	assert(type->getObjectType()==T_CLASS);
 	Class_base* c=static_cast<Class_base*>(type);
@@ -1902,7 +1889,7 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 		}
 	}
 
-	ret=new ASString(obj->getNameAt(index->toInt()-1));
+	ret=Class<ASString>::getInstanceS(true,obj->getNameAt(index->toInt()-1))->obj;
 	obj->decRef();
 	index->decRef();
 	return ret;

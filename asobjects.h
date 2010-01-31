@@ -330,19 +330,21 @@ public:
 };
 
 //ASString has to be converted to an Interface... it's still to much used as an object
-class ASString: public ASObject
+class ASString: public IInterface
 {
 friend class ASQName;
 friend class ABCContext;
 private:
 	std::string data;
 	void registerMethods();
+	tiny_string toString() const;
 public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASString();
 	ASString(const std::string& s);
 	ASString(const tiny_string& s);
 	ASString(const char* s);
-	ASFUNCTION(String);
 	ASFUNCTION(split);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(replace);
@@ -351,9 +353,8 @@ public:
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);
 	ASFUNCTION(toLowerCase);
-	tiny_string toString() const;
-	double toNumber() const;
-	bool isEqual(ASObject* r);
+	bool isEqual(bool& ret, ASObject* o);
+	bool toString(tiny_string& ret);
 };
 
 class Null: public ASObject

@@ -94,8 +94,10 @@ bool ASObject::isLess(ASObject* r)
 		abort();
 	}
 
-	IFunction* f1=obj1.obj->toFunction();
-	IFunction* f2=obj2.obj->toFunction();
+	assert(obj1.obj->getObjectType()==T_FUNCTION && obj2.obj->getObjectType()==T_FUNCTION);
+
+	IFunction* f1=static_cast<IFunction*>(obj1.obj);
+	IFunction* f2=static_cast<IFunction*>(obj2.obj);
 
 	ASObject* ret1=f1->call(this,NULL,obj1.level);
 	ASObject* ret2=f2->call(r,NULL,obj2.level);
@@ -290,8 +292,9 @@ bool ASObject::isEqual(ASObject* r)
 	objAndLevel obj2=r->getVariableByQName("valueOf","");
 	if(obj1.obj!=NULL && obj2.obj!=NULL)
 	{
-		IFunction* f1=obj1.obj->toFunction();
-		IFunction* f2=obj2.obj->toFunction();
+		assert(obj1.obj->getObjectType()==T_FUNCTION && obj2.obj->getObjectType()==T_FUNCTION);
+		IFunction* f1=static_cast<IFunction*>(obj1.obj);
+		IFunction* f2=static_cast<IFunction*>(obj2.obj);
 
 		ASObject* ret1=f1->call(this,NULL,obj1.level);
 		ASObject* ret2=f2->call(r,NULL,obj2.level);
@@ -303,13 +306,6 @@ bool ASObject::isEqual(ASObject* r)
 	LOG(LOG_NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	return false;
 }
-
-IFunction* ASObject::toFunction()
-{
-	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to Function");
-	return NULL;
-}
-
 
 int ASObject::toInt() const
 {

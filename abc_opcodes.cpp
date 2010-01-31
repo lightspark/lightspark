@@ -346,7 +346,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 		{
 			//TODO: maybe also the level should be binded
 			LOG(LOG_CALLS,"Attaching this to function " << name);
-			IFunction* f=ret->toFunction()->bind(obj);
+			IFunction* f=static_cast<IFunction*>(ret)->bind(obj);
 			obj->decRef();
 			//No incref is needed, as the function is a new instance
 			return f;
@@ -1190,7 +1190,7 @@ void ABCVm::getLex(call_context* th, int n)
 			if(o->getObjectType()==T_FUNCTION)
 			{
 				LOG(LOG_CALLS,"Attaching this to function " << name);
-				IFunction* f=o->toFunction()->bind(*it);
+				IFunction* f=static_cast<IFunction*>(o)->bind(*it);
 				o=f;
 			}
 			else if(o->getObjectType()==T_DEFINABLE)
@@ -2026,8 +2026,7 @@ void ABCVm::call(call_context* th, int m)
 
 	if(f->getObjectType()==T_FUNCTION)
 	{
-		//This seems wrong
-		IFunction* func=f->toFunction();
+		IFunction* func=static_cast<IFunction*>(f);
 		ASObject* ret=func->call(obj,&args,obj->max_level);
 		th->runtime_stack_push(ret);
 		obj->decRef();
@@ -2050,6 +2049,8 @@ void ABCVm::deleteProperty(call_context* th, int n)
 
 	//Now we assume thta all objects are dynamic
 	th->runtime_stack_push(abstract_b(true));
+
+	obj->decRef();
 }
 
 ASObject* ABCVm::newFunction(call_context* th, int n)

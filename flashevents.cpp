@@ -208,7 +208,8 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		abort();
 	}
 	const tiny_string& eventName=args->at(0)->toString();
-	IFunction* f=args->at(1)->toFunction();
+	IFunction* f=static_cast<IFunction*>(args->at(1));
+
 	//TODO: find a nice way to do this
 	if(eventName=="enterFrame")
 		sys->cur_input_thread->addListener(eventName,th);
@@ -244,7 +245,8 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		return NULL;
 	}
 
-	std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),args->at(1)->toFunction());
+	IFunction* f=static_cast<IFunction*>(args->at(1));
+	std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),f);
 	assert(it!=h->second.end());
 	//The listener owns the function
 	it->f->decRef();

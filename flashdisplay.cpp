@@ -451,7 +451,8 @@ void MovieClip::addToFrame(DisplayListTag* t)
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	abort();
+/*	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	if(args->size()%2)
 	{
 		LOG(LOG_ERROR,"Invalid arguments to addFrameScript");
@@ -470,7 +471,7 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 		}
 
 		th->frames[f].setScript(g);
-	}
+	}*/
 	return NULL;
 }
 

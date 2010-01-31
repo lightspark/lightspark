@@ -503,7 +503,6 @@ public:
 	virtual tiny_string toString() const;
 	virtual int toInt() const;
 	virtual double toNumber() const;
-	virtual IFunction* toFunction();
 
 	virtual bool isEqual(ASObject* r);
 	virtual bool isLess(ASObject* r);

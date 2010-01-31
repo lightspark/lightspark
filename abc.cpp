@@ -125,7 +125,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Array","",Class<Array>::getClass());
 	Global.setVariableByQName("Function","",new Function);
 	Global.setVariableByQName("undefined","",new Undefined);
-	Global.setVariableByQName("Math","",new Math);
+	Global.setVariableByQName("Math","",Class<Math>::getClass());
 	Global.setVariableByQName("Date","",Class<Date>::getClass());
 	Global.setVariableByQName("RegExp","",Class<RegExp>::getClass());
 	Global.setVariableByQName("QName","",Class<ASQName>::getClass());
@@ -146,6 +146,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Shape","flash.display",Class<Shape>::getClass());
 	Global.setVariableByQName("Stage","flash.display",Class<Stage>::getClass());
 	Global.setVariableByQName("Graphics","flash.display",Class<Graphics>::getClass());
+	Global.setVariableByQName("LineScaleMode","flash.display",Class<LineScaleMode>::getClass());
 	Global.setVariableByQName("IBitmapDrawable","flash.display",Class<IInterface>::getClass("IBitmapDrawable"));
 	Global.setVariableByQName("BitmapData","flash.display",Class<IInterface>::getClass("BitmapData"));
 
@@ -886,24 +887,24 @@ ABCContext::ABCContext(istream& in)
 	for(int i=0;i<class_count;i++)
 	{
 		in >> instances[i];
-		cout << "Class " << *getMultiname(instances[i].name,NULL) << endl;
-		cout << "Flags:" << endl;
+		LOG(LOG_CALLS,"Class " << *getMultiname(instances[i].name,NULL));
+		LOG(LOG_CALLS,"Flags:");
 		if((instances[i].flags)&0x01)
-			cout << "\tSealed" << endl;
+			LOG(LOG_CALLS,"\tSealed");
 		if((instances[i].flags)&0x02)
-			cout << "\tFinal" << endl;
+			LOG(LOG_CALLS,"\tFinal");
 		if((instances[i].flags)&0x04)
-			cout << "\tInterface" << endl;
+			LOG(LOG_CALLS,"\tInterface");
 		if((instances[i].flags)&0x08)
-			cout << "\tProtectedNS " << getString(constant_pool.namespaces[instances[i].protectedNs].name) << endl;
+			LOG(LOG_CALLS,"\tProtectedNS " << getString(constant_pool.namespaces[instances[i].protectedNs].name));
 		if(instances[i].supername)
-			cout << "Super " << *getMultiname(instances[i].supername,NULL) << endl;
+			LOG(LOG_CALLS,"Super " << *getMultiname(instances[i].supername,NULL));
 		if(instances[i].interface_count)
 		{
-			cout << "Implements" << endl; 
+			LOG(LOG_CALLS,"Implements");
 			for(int j=0;j<instances[i].interfaces.size();j++)
 			{
-				cout << "\t" << *getMultiname(instances[i].interfaces[j],NULL) << endl;
+				LOG(LOG_CALLS,"\t" << *getMultiname(instances[i].interfaces[j],NULL));
 			}
 		}
 	}
@@ -1143,12 +1144,6 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		return false;
 }
 
-void ABCVm::coerce(call_context* th, int n)
-{
-	multiname* name=th->context->getMultiname(n,NULL); 
-	LOG(LOG_NOT_IMPLEMENTED,"coerce " << *name);
-}
-
 ASObject* ABCVm::newCatch(call_context* th, int n)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"newCatch " << n);
@@ -1282,9 +1277,10 @@ void ABCVm::Run(ABCVm* th)
 	eb.setEngineKind(llvm::EngineKind::JIT);
 	eb.setOptLevel(llvm::CodeGenOpt::Default);
 	th->ex=eb.create();
+	assert(th->ex);
 
 	th->FPM=new llvm::FunctionPassManager(&mp);
-       
+      
 	th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
 #ifndef NDEBUG
 	//This is pretty heavy, do not enable in release

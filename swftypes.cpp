@@ -119,7 +119,7 @@ SWFOBJECT_TYPE ASObject::getObjectType() const
 	return (implementation)?(implementation->type):type;
 }
 
-IInterface::IInterface(const IInterface& r):type(r.type),magic(r.magic),obj(NULL)
+IInterface::IInterface(const IInterface& r):type(r.type),obj(NULL)
 {
 	if(r.obj)
 	{
@@ -170,6 +170,11 @@ bool IInterface::setVariableByQName(const tiny_string& name, const tiny_string& 
 	return false;
 }
 
+bool IInterface::deleteVariableByMultiname(const multiname& name)
+{
+	return false;
+}
+
 bool IInterface::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	return false;
@@ -197,8 +202,8 @@ bool IInterface::nextValue(int index, ASObject*& out)
 
 void IInterface::buildTraits(ASObject* o)
 {
-	assert(o->prototype);
-	LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->prototype->class_name);
+	assert(o->actualPrototype);
+	LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->actualPrototype->class_name);
 }
 
 tiny_string multiname::qualifiedString() const
@@ -277,6 +282,9 @@ bool ASObject::isEqual(ASObject* r)
 	if(this==r)
 		return true;
 
+	if(r->getObjectType()==T_NULL || r->getObjectType()==T_UNDEFINED)
+		return false;
+
 	//We can try to call valueOf (maybe equals) and compare that
 	objAndLevel obj1=getVariableByQName("valueOf","");
 	objAndLevel obj2=r->getVariableByQName("valueOf","");
@@ -323,6 +331,7 @@ double ASObject::toNumber() const
 	if(getObjectType()==T_UNDEFINED)
 	{
 		cout << "HACK: returning 0 from Undefined::toNumber" << endl;
+		abort();
 		return 0;
 	}
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to float");
@@ -399,6 +408,47 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 		return;
 	}
 	obj->setter=o;
+}
+
+void ASObject::deleteVariableByMultiname(const multiname& name)
+{
+	assert(ref_count>0);
+	if(implementation)
+	{
+		if(implementation->deleteVariableByMultiname(name))
+			return;
+	}
+
+	//Find out if the variable is declared more than once
+	obj_var* obj=NULL;
+	int level;
+	unsigned int count=0;
+	for(int i=max_level;i>=0;i--)
+	{
+		obj=Variables.findObjVar(name,i,false);
+		if(obj)
+		{
+			count++;
+			level=i;
+		}
+	}
+	//if it's not present it's ok
+	if(count==0)
+		return;
+
+	assert(count==1);
+
+	//Now dereference the values
+	obj=Variables.findObjVar(name,level,false);
+	if(obj->var)
+		obj->var->decRef();
+	if(obj->getter)
+		obj->getter->decRef();
+	if(obj->setter)
+		obj->setter->decRef();
+
+	//Now kill the variable
+	Variables.killObjVar(name,level);
 }
 
 //In all setter we first pass the value to the interface to see if special handling is possible
@@ -525,6 +575,40 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	}
 }
 
+void variables_map::killObjVar(const multiname& mname, int level)
+{
+	nameAndLevel name("",level);
+	if(mname.name_type==multiname::NAME_INT)
+		name.name=tiny_string(mname.name_i);
+	else if(mname.name_type==multiname::NAME_NUMBER)
+		name.name=tiny_string(mname.name_d);
+	else if(mname.name_type==multiname::NAME_STRING)
+		name.name=mname.name_s;
+	else
+		abort();
+
+	const pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
+	assert(ret.first!=ret.second);
+
+	//Find the namespace
+	assert(!mname.ns.empty());
+	for(int i=0;i<mname.ns.size();i++)
+	{
+		const tiny_string& ns=mname.ns[i].name;
+		var_iterator start=ret.first;
+		for(start;start!=ret.second;start++)
+		{
+			if(start->second.first==ns)
+			{
+				Variables.erase(start);
+				return;
+			}
+		}
+	}
+
+	abort();
+}
+
 obj_var* variables_map::findObjVar(const multiname& mname, int level, bool create)
 {
 	nameAndLevel name("",level);
@@ -541,8 +625,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 	if(ret.first!=ret.second)
 	{
 		//Check if one the namespace is already present
-		if(mname.ns.empty())
-			abort();
+		assert(!mname.ns.empty());
 		for(int i=0;i<mname.ns.size();i++)
 		{
 			const tiny_string& ns=mname.ns[i].name;
@@ -639,15 +722,13 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name)
 		obj=Variables.findObjVar(name,i,false);
 		if(obj)
 		{
-			//HACK: to declare the object valid the getter or the object has to be declared
+			//HACK: to return the object valid the getter or the object has to be declared
+			//It seems valid for a class to redefine only the setter, so if we can't find
+			//something to get, just go to the previous level
 			if(obj->getter || obj->var)
 			{
 				level=i;
 				break;
-			}
-			else
-			{
-				LOG(LOG_NOT_IMPLEMENTED,"HACK: No getter or object, proceed to previous level");
 			}
 		}
 	}
@@ -826,7 +907,11 @@ tiny_string Integer::toString() const
 {
 	char buf[20];
 	if(val<0)
-		abort();
+	{
+		//This can be a slow path, as it not used for array access
+		snprintf(buf,20,"%i",val);
+		return buf;
+	}
 	buf[19]=0;
 	char* cur=buf+19;
 
@@ -1586,17 +1671,11 @@ void variables_map::initSlot(int n, int level, const tiny_string& name, const ti
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
 
-	if(slots_vars[n-1]!=Variables.end())
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Slot overwrite attempted");
-		return;
-	}
-
 	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name,level));
 	if(ret.first!=ret.second)
 	{
 		//Check if this namespace is already present
-		var_iterator& start=ret.first;
+		var_iterator start=ret.first;
 		for(start;start!=ret.second;start++)
 		{
 			if(start->second.first==ns)

@@ -203,6 +203,7 @@ public:
 
 class Sprite: public DisplayObjectContainer
 {
+friend class DisplayObject;
 private:
 	Graphics* graphics;
 public:
@@ -274,6 +275,12 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getStageWidth);
 	ASFUNCTION(_getStageHeight);
+};
+
+class LineScaleMode: public IInterface
+{
+public:
+	static void sinit(Class_base* c);
 };
 
 };

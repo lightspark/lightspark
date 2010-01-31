@@ -68,7 +68,6 @@ int main(int argc, char* argv[])
 	sys->fps_prof=&fps_profs.back();
 
 	zlib_file_filter zf(argv[1]);
-	sys->zf=&zf;
 	istream f(&zf);
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	

@@ -239,7 +239,7 @@ public:
 			}
 			ret->bound=true;
 			ret->closure_this=c;
-			std::cout << "Binding " << ret << std::endl;
+			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}
 		else
@@ -638,15 +638,16 @@ public:
 	void define(ASObject* g);
 };
 
-class Math: public ASObject
+class Math: public IInterface
 {
 public:
-	Math();
+	static void sinit(Class_base* c);
 	ASFUNCTION(atan2);
 	ASFUNCTION(abs);
 	ASFUNCTION(sin);
 	ASFUNCTION(cos);
 	ASFUNCTION(floor);
+	ASFUNCTION(ceil);
 	ASFUNCTION(round);
 	ASFUNCTION(sqrt);
 	ASFUNCTION(random);

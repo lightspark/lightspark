@@ -371,7 +371,7 @@ private:
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
 	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create);
 	obj_var* findObjVar(const multiname& mname, int level, bool create);
-//public:
+	void killObjVar(const multiname& mname, int level);
 	ASObject* getSlot(int n)
 	{
 		return slots_vars[n-1]->second.second.var;
@@ -476,6 +476,7 @@ public:
 	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
+	virtual void deleteVariableByMultiname(const multiname& name);
 	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
@@ -523,6 +524,7 @@ private:
 	virtual bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	virtual bool setVariableByMultiname(const multiname& name, ASObject* o);
 	virtual bool setVariableByMultiname_i(const multiname& name, intptr_t value);
+	virtual bool deleteVariableByMultiname(const multiname& name);
 	virtual bool toString(tiny_string& ret);
 	virtual bool isEqual(bool& ret, ASObject* o);
 	virtual bool toInt(int& ret);
@@ -531,10 +533,9 @@ private:
 	virtual bool nextValue(int index, ASObject*& out);
 protected:
 	SWFOBJECT_TYPE type;
-	uint32_t magic;
 public:
 	ASObject* obj;
-	IInterface():type(T_OBJECT),obj(NULL),magic(0x11223344){}
+	IInterface():type(T_OBJECT),obj(NULL){}
 	IInterface(const IInterface& r);
 	virtual ~IInterface(){}
 	static void sinit(Class_base*){}
@@ -671,7 +672,7 @@ inline std::istream& operator>>(std::istream& s, FLOAT& v)
 
 inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 {
-	// "Wacky format" is 45670123. Thanks to Ghash :-)
+	// "Wacky format" is 45670123. Thanks to Ghash for reversing :-)
 	s.read(((char*)&v.val)+4,4);
 	s.read(((char*)&v.val),4);
 	return s;
@@ -811,7 +812,6 @@ public:
 	SB Ymax;
 public:
 	RECT();
-//	RECT(FILE* in);
 };
 
 class MATRIX
@@ -1067,8 +1067,6 @@ public:
 	int version;
 	FILLSTYLEARRAY FillStyles;
 	LINESTYLEARRAY LineStyles;
-public:
-//	SHAPEWITHSTYLE(){}
 };
 
 class CXFORMWITHALPHA

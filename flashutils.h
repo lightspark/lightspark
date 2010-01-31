@@ -83,9 +83,10 @@ public:
 	}
 	bool setVariableByMultiname(const multiname& name, ASObject* o);
 	bool setVariableByMultiname_i(const multiname& name, intptr_t value);
+	bool deleteVariableByMultiname(const multiname& name);
 	bool toString(tiny_string& ret)
 	{
-		abort();
+		return false;
 	}
 	bool isEqual(bool& ret, ASObject* r)
 	{

@@ -47,6 +47,7 @@ REGISTER_CLASS_NAME(Namespace);
 REGISTER_CLASS_NAME(IInterface);
 REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
+REGISTER_CLASS_NAME(Math);
 
 Array::Array()
 {
@@ -632,8 +633,6 @@ ASFUNCTIONBODY(ASString,String)
 	}
 	else if(args->at(0)->getObjectType()==T_ARRAY)
 	{
-		cout << "array" << endl;
-		cout << args->at(0)->toString() << endl;
 		return new ASString(args->at(0)->toString());
 	}
 	else if(args->at(0)->getObjectType()==T_UNDEFINED)
@@ -917,17 +916,23 @@ IFunction* Function::toFunction()
 	return this;
 }
 
-SyntheticFunction::SyntheticFunction(method_info* m):mi(m),hit_count(0)
+SyntheticFunction::SyntheticFunction(method_info* m):mi(m),hit_count(0),val(NULL)
 {
 //	class_index=-2;
-	val=m->synt_method();
 }
 
 ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numArgs, int level)
 {
+	if(hit_count==0)
+	{
+		//This is the first time we call this function, synt it
+		val=mi->synt_method();
+	}
+
+	hit_count++;
 	if(val==NULL)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Not initialized function");
+//		LOG(LOG_NOT_IMPLEMENTED,"Not initialized function");
 		return NULL;
 	}
 
@@ -1020,20 +1025,21 @@ ASObject* Function::call(ASObject* obj, arguments* args, int level)
 		return val(obj,args);
 }
 
-Math::Math()
+void Math::sinit(Class_base* c)
 {
-	setVariableByQName("PI","",new Number(M_PI));
-	setVariableByQName("sqrt","",new Function(sqrt));
-	setVariableByQName("atan2","",new Function(atan2));
-	setVariableByQName("max","",new Function(_max));
-	setVariableByQName("min","",new Function(_min));
-	setVariableByQName("abs","",new Function(abs));
-	setVariableByQName("sin","",new Function(sin));
-	setVariableByQName("cos","",new Function(cos));
-	setVariableByQName("floor","",new Function(floor));
-	setVariableByQName("round","",new Function(round));
-	setVariableByQName("random","",new Function(random));
-	setVariableByQName("pow","",new Function(pow));
+	c->setVariableByQName("PI","",new Number(M_PI));
+	c->setVariableByQName("sqrt","",new Function(sqrt));
+	c->setVariableByQName("atan2","",new Function(atan2));
+	c->setVariableByQName("max","",new Function(_max));
+	c->setVariableByQName("min","",new Function(_min));
+	c->setVariableByQName("abs","",new Function(abs));
+	c->setVariableByQName("sin","",new Function(sin));
+	c->setVariableByQName("cos","",new Function(cos));
+	c->setVariableByQName("floor","",new Function(floor));
+	c->setVariableByQName("ceil","",new Function(ceil));
+	c->setVariableByQName("round","",new Function(round));
+	c->setVariableByQName("random","",new Function(random));
+	c->setVariableByQName("pow","",new Function(pow));
 }
 
 ASFUNCTIONBODY(Math,atan2)
@@ -1047,7 +1053,6 @@ ASFUNCTIONBODY(Math,_max)
 {
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
-	cout << n1 << ' ' << n2 << endl;
 	return abstract_d(dmax(n1,n2));
 }
 
@@ -1055,7 +1060,6 @@ ASFUNCTIONBODY(Math,_min)
 {
 	double n1=args->at(0)->toNumber();
 	double n2=args->at(1)->toNumber();
-	cout << n1 << ' ' << n2 << endl;
 	return abstract_d(dmin(n1,n2));
 }
 
@@ -1077,6 +1081,12 @@ ASFUNCTIONBODY(Math,abs)
 {
 	double n=args->at(0)->toNumber();
 	return abstract_d(::abs(n));
+}
+
+ASFUNCTIONBODY(Math,ceil)
+{
+	double n=args->at(0)->toNumber();
+	return abstract_i(::ceil(n));
 }
 
 ASFUNCTIONBODY(Math,floor)
@@ -1118,7 +1128,6 @@ tiny_string Null::toString() const
 
 bool Null::isEqual(ASObject* r)
 {
-	cout << "NULL " << r->getObjectType() << endl;
 	if(r->getObjectType()==T_NULL)
 		return true;
 	else if(r->getObjectType()==T_UNDEFINED)

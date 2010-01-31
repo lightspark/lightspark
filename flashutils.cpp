@@ -181,10 +181,26 @@ bool Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
 	return true;
 }
 
+bool Dictionary::deleteVariableByMultiname(const multiname& name)
+{
+	assert(name.name_type==multiname::NAME_OBJECT);
+	map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
+	assert(it!=data.end());
+
+	ASObject* ret=it->second;
+	ret->decRef();
+
+	data.erase(it);
+
+	//This is ugly, but at least we are sure that we own name_o
+	multiname* tmp=const_cast<multiname*>(&name);
+	tmp->name_o=NULL;
+	return true;
+}
+
 bool Dictionary::getVariableByMultiname(const multiname& name, ASObject*& out)
 {
 	assert(name.name_type==multiname::NAME_OBJECT);
-	//We can use the [] operator, as the value is just a pointer and there is no side effect in creating one
 	map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
 	if(it==data.end())
 		out=new Undefined;

@@ -425,7 +425,8 @@ private:
 	static void callSuper(call_context* th, int n, int m); 
 	static void callProperty(call_context* th, int n, int m); 
 	static void constructProp(call_context* th, int n, int m); 
-	static void getLocal(call_context* th, int n); 
+	static void getLocal(ASObject* o, int n); 
+	static void getLocal_short(int n); 
 	static void newObject(call_context* th, int n); 
 	static void getDescendants(call_context* th, int n); 
 	static ASObject* newCatch(call_context* th, int n); 
@@ -448,7 +449,7 @@ private:
 	static bool ifFalse(ASObject*); 
 	static bool ifTrue(ASObject*); 
 	static ASObject* getSlot(ASObject* th, int n); 
-	static void setLocal(call_context* th, int n); 
+	static void setLocal(int n); 
 	static void kill(call_context* th, int n); 
 	static void setSlot(ASObject*, ASObject*, int n); 
 	static ASObject* pushString(call_context* th, int n); 

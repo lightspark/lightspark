@@ -48,6 +48,7 @@ REGISTER_CLASS_NAME(Loader);
 REGISTER_CLASS_NAME(Shape);
 REGISTER_CLASS_NAME(Stage);
 REGISTER_CLASS_NAME(Graphics);
+REGISTER_CLASS_NAME(LineScaleMode);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -631,7 +632,7 @@ void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	Matrix.multiply2D(xmax,ymax,xmax,ymax);
 }
 
-DisplayObject::DisplayObject():height(100),width(100),loaderInfo(NULL),rotation(0.0)
+DisplayObject::DisplayObject():height(0),width(0),loaderInfo(NULL),rotation(0.0)
 {
 }
 
@@ -795,6 +796,7 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	th->width=args->at(0)->toInt();
+	abort();
 	return NULL;
 }
 
@@ -847,6 +849,11 @@ ASFUNCTIONBODY(DisplayObject,_getVisible)
 ASFUNCTIONBODY(DisplayObject,_getWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+
+	//DEBUG
+	Sprite* sp=dynamic_cast<Sprite*>(th);
+	if(sp)
+		assert(sp->graphics==NULL && sp->dynamicDisplayList.empty());
 	return abstract_i(th->width);
 }
 
@@ -1095,7 +1102,6 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	int y=args->at(1)->toInt();
 	int width=args->at(2)->toInt();
 	int height=args->at(3)->toInt();
-	cout << x << ' ' << y << ' ' << width << ' ' << height << endl;
 
 	//Build a shape and add it to the geometry vector
 	GeomShape tmpShape;
@@ -1139,5 +1145,12 @@ void Graphics::Render()
 		glEnd();
 	}*/
 	sem_post(&geometry_mutex);
+}
 
+void LineScaleMode::sinit(Class_base* c)
+{
+	c->setVariableByQName("HORIZONTAL","",new ASString("horizontal"));
+	c->setVariableByQName("NONE","",new ASString("none"));
+	c->setVariableByQName("NORMAL","",new ASString("normal"));
+	c->setVariableByQName("VERTICAL","",new ASString("vertical"));
 }

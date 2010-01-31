@@ -1043,12 +1043,16 @@ void RootMovieClip::setFrameCount(int f)
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)
 {
 	frame_size=f;
+	//Also set the width and height properties
+	assert(f.Xmin==0 && f.Ymin==0);
+	width=f.Xmax;
+	height=f.Ymax;
 	sem_post(&sem_valid_frame_size);
 }
 
 lightspark::RECT RootMovieClip::getFrameSize()
 {
-	//This is a sync semapore the first time and then a mutex
+	//This is a sync semaphore the first time and then a mutex
 	sem_wait(&sem_valid_frame_size);
 	lightspark::RECT ret=frame_size;
 	sem_post(&sem_valid_frame_size);

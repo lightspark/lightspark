@@ -184,7 +184,6 @@ void FakeEvent::sinit(Class_base* c)
 
 EventDispatcher::EventDispatcher():id(0)
 {
-	magic=0xdeadbeaf;
 }
 
 void EventDispatcher::sinit(Class_base* c)
@@ -257,7 +256,6 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
 	Event* e=static_cast<Event*>(args->at(0)->implementation);
-	assert(th->magic==0xdeadbeaf);
 	if(e==NULL || th==NULL)
 		return new Boolean(false);
 	//CHECK: maybe is to be cloned

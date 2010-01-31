@@ -148,7 +148,6 @@ public:
 		for(unsigned int i=0;i<events_name.size();i++)
 			std::cout << events_name[i] << std::endl;
 	}
-	::zlib_file_filter* zf;
 };
 
 class ParseThread

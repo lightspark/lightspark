@@ -131,17 +131,28 @@ ASObject* ABCVm::coerce_s(ASObject* o)
 	return o;
 }
 
+void ABCVm::coerce(call_context* th, int n)
+{
+	multiname* name=th->context->getMultiname(n,NULL); 
+	LOG(LOG_CALLS,"coerce " << *name);
+}
+
 void ABCVm::pop()
 {
 	LOG(LOG_CALLS, "pop: DONE" );
 }
 
-void ABCVm::getLocal(call_context* th, int n)
+void ABCVm::getLocal(ASObject* o, int n)
 {
-	LOG(LOG_CALLS,"getLocal: DONE " << n);
+	LOG(LOG_CALLS,"getLocal[" << n << "] " << o->toString());
 }
 
-void ABCVm::setLocal(call_context* th, int n)
+void ABCVm::getLocal_short(int n)
+{
+	LOG(LOG_CALLS,"getLocal[" << n << "]");
+}
+
+void ABCVm::setLocal(int n)
 {
 	LOG(LOG_CALLS,"setLocal: DONE " << n);
 }
@@ -224,7 +235,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 	if(obj->prototype)
-		cout << obj->prototype->class_name << endl;
+		LOG(LOG_CALLS,obj->prototype->class_name);
 
 	//Here overriding is supposed to work, so restore prototype and max_level
 	int oldlevel=obj->max_level;
@@ -288,7 +299,8 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function on obj " << ((obj->prototype)?obj->prototype->class_name:"Object"));
+		LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function " << *name << " on obj " << 
+				((obj->prototype)?obj->prototype->class_name:"Object"));
 		th->runtime_stack_push(new Undefined);
 	}
 	LOG(LOG_CALLS,"End of calling " << *name);
@@ -628,11 +640,9 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
 	ASObject* obj=th->runtime_stack_pop();
-	if(name->name_s=="setActualSize" || name->name_s=="updateDisplayList" || name->name_s=="setLayoutBoundsSize")
-		cout << args.at(0)->toInt() << ' ' << args.at(1)->toInt() << endl;
 
 	if(obj->prototype)
-		cout << obj->prototype->class_name << endl;
+		LOG(LOG_CALLS, obj->prototype->class_name);
 
 	//Here overriding is supposed to work, so restore prototype and max_level
 	int oldlevel=obj->max_level;
@@ -654,7 +664,8 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function onj type " << obj->prototype->class_name);
+			LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function " << *name << " on obj " << 
+					((obj->prototype)?obj->prototype->class_name:"Object"));
 		}
 		else if(o.obj->getObjectType()==T_DEFINABLE)
 		{
@@ -1011,7 +1022,8 @@ bool ABCVm::pushFalse()
 
 ASObject* ABCVm::pushNaN()
 {
-	LOG(LOG_NOT_IMPLEMENTED, "pushNaN" );
+	LOG(LOG_CALLS, "pushNaN" );
+	//Not completely correct, but mostly ok
 	return new Undefined;
 }
 
@@ -1120,7 +1132,7 @@ void ABCVm::setSuper(call_context* th, int n)
 void ABCVm::getSuper(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_NOT_IMPLEMENTED,"getSuper " << *name);
+	LOG(LOG_CALLS,"getSuper " << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
 	//HACK (nice) set the max level to the current actual prototype before looking up the member
@@ -1240,10 +1252,10 @@ void ABCVm::constructSuper(call_context* th, int n)
 
 	//Store the old prototype
 	Class_base* old_prototype=obj->actualPrototype;
-	cout << "Cur prototype name " << obj->actualPrototype->class_name << endl;
+	LOG(LOG_CALLS,"Cur prototype name " << obj->actualPrototype->class_name);
 	//Move the object protoype and level up
 	obj->actualPrototype=old_prototype->super;
-	cout << "Super prototype name " << obj->actualPrototype->class_name << endl;
+	LOG(LOG_CALLS,"Super prototype name " << obj->actualPrototype->class_name);
 	assert(obj->actualPrototype);
 	int oldlevel=obj->max_level;
 	obj->max_level=obj->actualPrototype->max_level;
@@ -1542,7 +1554,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 
 bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"isTypelate");
+	LOG(LOG_CALLS,"isTypelate");
 	if(obj->getObjectType()==T_UNDEFINED)
 	{
 		obj->decRef();
@@ -1555,18 +1567,17 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		{
 			assert(type->getObjectType()==T_CLASS);
 			Class_base* c=static_cast<Class_base*>(type);
-			cout << "Type " << obj->prototype->class_name << " is subclass of " << c->class_name << endl;
 			bool real_ret=obj->prototype->isSubClass(c);
-			cout << real_ret << endl;
+			LOG(LOG_CALLS,"Type " << obj->prototype->class_name << " is " << ((real_ret)?" ":"not ") 
+					<< "subclass of " << c->class_name);
 			obj->decRef();
 			type->decRef();
 			return real_ret;
 		}
 		else
 		{
-			cout << "Buffo isTypelate on " << obj->getObjectType() << endl;
 			bool real_ret=obj->getObjectType()==type->getObjectType();
-			cout << real_ret << endl;
+			LOG(LOG_CALLS,"isTypelate on non classed object " << real_ret);
 			if(real_ret==false)
 			{
 				//TODO: obscene hack, check casting of stuff
@@ -1585,11 +1596,11 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 
 ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"asTypelate");
+	LOG(LOG_CALLS,"asTypelate");
 	//Special case for string... should convert ASString to Class
 	if(type->getObjectType()==T_STRING)
 	{
-		cout << "Type is string" << endl;
+		LOG(LOG_NOT_IMPLEMENTED,"Type is string");
 		type->decRef();
 		if(obj->getObjectType()==T_STRING)
 			return obj;
@@ -1609,9 +1620,9 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	{*/
 		if(obj->prototype)
 		{
-			cout << "Type " << obj->prototype->class_name << " is subclass of " << c->class_name << endl;
 			bool real_ret=obj->prototype->isSubClass(c);
-			cout << real_ret << endl;
+			LOG(LOG_CALLS,"Type " << obj->prototype->class_name << " is " << ((real_ret)?" ":"not ") 
+					<< "subclass of " << c->class_name);
 			type->decRef();
 			if(real_ret)
 				return obj;
@@ -2034,6 +2045,11 @@ void ABCVm::deleteProperty(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(LOG_NOT_IMPLEMENTED,"deleteProperty " << *name);
+	ASObject* obj=th->runtime_stack_pop();
+	obj->deleteVariableByMultiname(*name);
+
+	//Now we assume thta all objects are dynamic
+	th->runtime_stack_push(abstract_b(true));
 }
 
 ASObject* ABCVm::newFunction(call_context* th, int n)

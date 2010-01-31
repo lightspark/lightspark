@@ -1,7 +1,7 @@
 # User-overridable flags:
 CXXFLAGS = -g -O0 -D_GLIBCXX_NO_DEBUG -Wnon-virtual-dtor
-#CXXFLAGS = -O3 -DNDEBUG -Wnon-virtual-dtor
-LLVMLIBS = `llvm-config --libfiles engine`
+CXXFLAGS_RELEASE = -O3 -DNDEBUG -Wnon-virtual-dtor
+LLVMLIBS = `llvm-config --libfiles engine interpreter`
 prefix = /usr
 bindir = $(prefix)/bin
 datarootdir = $(prefix)/share
@@ -14,6 +14,10 @@ LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o
 
 # TODO: library?
 all: lightspark tightspark
+
+release: CXXFLAGS=$(CXXFLAGS_RELEASE)
+release: all
+
 lightspark: main.o $(LIBOBJS) 
 	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags` -lGLEW $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe \
 		-o $@ $^ $(LLVMLIBS)

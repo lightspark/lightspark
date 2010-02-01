@@ -162,14 +162,14 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 
 ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
 {
-	abort();
-//	return new ASString("www.youtube.com");
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	return Class<ASString>::getInstanceS(true,th->loaderURL)->obj;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getUrl)
 {
-	return new Undefined;
-//	return new ASString("www.youtube.com/watch.swf");
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	return Class<ASString>::getInstanceS(true,th->url)->obj;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytesLoaded)

@@ -77,6 +77,7 @@ class FocusEvent: public Event
 public:
 	FocusEvent();
 	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
 };
 
 class ProgressEvent: public Event
@@ -121,6 +122,12 @@ public:
 	}
 };
 
+class IEventDispatcher: public InterfaceClass
+{
+public:
+	static void linkTraits(ASObject* o);
+};
+
 class EventDispatcher: public IInterface
 {
 private:
@@ -130,6 +137,7 @@ public:
 	float id;
 	EventDispatcher();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	virtual ~EventDispatcher(){}
 	void handleEvent(Event* e);
 	void setId(float i){id=i;}

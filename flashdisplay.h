@@ -155,9 +155,12 @@ public:
 
 class LoaderInfo: public EventDispatcher
 {
+friend class SystemState;
 private:
 	uint32_t bytesLoaded;
 	uint32_t bytesTotal;
+	tiny_string url;
+	tiny_string loaderURL;
 public:
 	LoaderInfo():bytesLoaded(100),bytesTotal(100)
 	{

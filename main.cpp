@@ -48,9 +48,36 @@ std::vector<fps_profiling> fps_profs;
 
 int main(int argc, char* argv[])
 {
-	if(argc!=2)
+	char* fileName=NULL;
+	char* url=NULL;
+
+	for(int i=1;i<argc;i++)
 	{
-		cout << "Usage: " << argv[0] << " <file.swf>" << endl;
+		if(strcmp(argv[i],"-u")==0 || 
+			strcmp(argv[i],"--url")==0)
+		{
+			i++;
+			if(i==argc)
+				break;
+
+			url=argv[i];
+		}
+		else
+		{
+			//No options flag, so set the swf file name
+			if(fileName) //If already set, exit in error status
+			{
+				fileName=NULL;
+				break;
+			}
+			fileName=argv[i];
+		}
+	}
+
+
+	if(fileName==NULL)
+	{
+		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf] <file.swf>" << endl;
 		exit(-1);
 	}
 
@@ -66,6 +93,10 @@ int main(int argc, char* argv[])
 	sys=new SystemState;
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();
+
+	//Set a bit of SystemState using parameters
+	if(url)
+		sys->setUrl(url);
 
 	zlib_file_filter zf(argv[1]);
 	istream f(&zf);

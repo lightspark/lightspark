@@ -87,7 +87,6 @@ public:
 		{
 			isStatic=false;
 			buf=new char[4096];
-			abort();
 		}
 		assert(strlen(r.buf)<=4096);
 		strcpy(buf,r.buf);

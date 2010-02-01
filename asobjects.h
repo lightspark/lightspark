@@ -79,6 +79,12 @@ public:
 	}
 };
 
+class InterfaceClass: public IInterface
+{
+protected:
+	static void lookupAndLink(ASObject* o, const tiny_string& name, const tiny_string& interfaceNs);
+};
+
 class Class_base: public ASObject
 {
 friend class ABCVm;
@@ -86,7 +92,6 @@ friend class ABCContext;
 private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
-	mutable bool interfaces_ready;
 	bool use_protected;
 	tiny_string protected_ns;
 public:
@@ -96,7 +101,7 @@ public:
 	ABCContext* context;
 	int class_index;
 	Class_base(const tiny_string& name):super(NULL),constructor(NULL),context(NULL),class_name(name),class_index(-1),
-		interfaces_ready(false),use_protected(false){type=T_CLASS;}
+		use_protected(false){type=T_CLASS;}
 	~Class_base();
 	virtual IInterface* getInstance(bool construct, arguments* args)=0;
 	tiny_string class_name;
@@ -136,6 +141,7 @@ public:
 		abort();
 	}*/
 	void addImplementedInterface(const multiname& i);
+	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
 	const std::vector<Class_base*>& getInterfaces() const;
 	void linkInterface(ASObject* obj) const;
@@ -415,6 +421,7 @@ public:
 	Array();
 	virtual ~Array();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_push);
 	ASFUNCTION(_concat);

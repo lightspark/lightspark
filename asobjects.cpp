@@ -63,17 +63,21 @@ void Array::sinit(Class_base* c)
 	c->constructor=new Function(_constructor);
 }
 
+void Array::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("length","",new Function(_getLength));
+	o->ASObject::setVariableByQName("pop","",new Function(_pop));
+	o->ASObject::setVariableByQName("shift","",new Function(shift));
+	o->ASObject::setVariableByQName("unshift","",new Function(unshift));
+	o->ASObject::setVariableByQName("join",AS3,new Function(join));
+	o->ASObject::setVariableByQName("push",AS3,new Function(_push));
+	o->ASObject::setVariableByQName("sort",AS3,new Function(_sort));
+	o->ASObject::setVariableByQName("concat",AS3,new Function(_concat));
+}
+
 ASFUNCTIONBODY(Array,_constructor)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
-	obj->setGetterByQName("length","",new Function(_getLength));
-	obj->ASObject::setVariableByQName("pop","",new Function(_pop));
-	obj->ASObject::setVariableByQName("shift","",new Function(shift));
-	obj->ASObject::setVariableByQName("unshift","",new Function(unshift));
-	obj->ASObject::setVariableByQName("join",AS3,new Function(join));
-	obj->ASObject::setVariableByQName("push",AS3,new Function(_push));
-	obj->ASObject::setVariableByQName("sort",AS3,new Function(_sort));
-	obj->ASObject::setVariableByQName("concat",AS3,new Function(_concat));
 
 	if(args && args->size()!=0)
 	{
@@ -1235,6 +1239,11 @@ void Class_base::addImplementedInterface(const multiname& i)
 	interfaces.push_back(i);
 }
 
+void Class_base::addImplementedInterface(Class_base* i)
+{
+	interfaces_added.push_back(i);
+}
+
 IInterface* Class_inherit::getInstance(bool construct, arguments* args)
 {
 	//TODO: Ask our super for the interface to ret
@@ -1284,7 +1293,7 @@ Class_object* Class_object::getClass()
 
 const std::vector<Class_base*>& Class_base::getInterfaces() const
 {
-	if(!interfaces_ready)
+	if(!interfaces.empty())
 	{
 		//Recursively get interfaces implemented by this interface
 		for(int i=0;i<interfaces.size();i++)
@@ -1299,7 +1308,6 @@ const std::vector<Class_base*>& Class_base::getInterfaces() const
 		}
 		//Clean the interface vector to save some space
 		interfaces.clear();
-		interfaces_ready=true;
 	}
 	return interfaces_added;
 }
@@ -1407,3 +1415,9 @@ ASFUNCTIONBODY(Namespace,_constructor)
 	assert(args==NULL);
 }
 
+void InterfaceClass::lookupAndLink(ASObject* o, const tiny_string& name, const tiny_string& interfaceNs)
+{
+	ASObject* ret=o->getVariableByQName(name,"").obj;
+	assert(ret);
+	o->setVariableByQName(name,interfaceNs,ret);
+}

@@ -28,12 +28,19 @@ using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
 
+REGISTER_CLASS_NAME(IEventDispatcher);
 REGISTER_CLASS_NAME(EventDispatcher);
 REGISTER_CLASS_NAME(Event);
 REGISTER_CLASS_NAME(MouseEvent);
 REGISTER_CLASS_NAME(TimerEvent);
 REGISTER_CLASS_NAME(ProgressEvent);
 REGISTER_CLASS_NAME(IOErrorEvent);
+REGISTER_CLASS_NAME(FocusEvent);
+
+void IEventDispatcher::linkTraits(ASObject* o)
+{
+	lookupAndLink(o,"addEventListener","flash.events:IEventDispatcher");
+}
 
 Event::Event(const tiny_string& t, ASObject* _t):type(t),target(_t)
 {
@@ -91,10 +98,20 @@ ASFUNCTIONBODY(Event,_getType)
 
 FocusEvent::FocusEvent():Event("focusEvent")
 {
-	/*setVariableByQName("FOCUS_IN","",new ASString("focusIn"));
-	setVariableByQName("FOCUS_OUT","",new ASString("focusOut"));
-	setVariableByQName("MOUSE_FOCUS_CHANGE","",new ASString("mouseFocusChange"));
-	setVariableByQName("KEY_FOCUS_CHANGE","", new ASString("keyFocusChange"));*/
+}
+
+void FocusEvent::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS(true,"focusIn")->obj);
+	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS(true,"focusOut")->obj);
+	c->setVariableByQName("MOUSE_FOCUS_CHANGE","",Class<ASString>::getInstanceS(true,"mouseFocusChange")->obj);
+	c->setVariableByQName("KEY_FOCUS_CHANGE","",Class<ASString>::getInstanceS(true,"keyFocusChange")->obj);
+}
+
+ASFUNCTIONBODY(FocusEvent,_constructor)
+{
 }
 
 KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
@@ -176,8 +193,6 @@ void FakeEvent::sinit(Class_base* c)
 {
 	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS(true,"securityError")->obj);
 	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS(true,"error")->obj);
-	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS(true,"focusIn")->obj);
-	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS(true,"focusOut")->obj);
 	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS(true,"keyDown")->obj);
 	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS(true,"keyUp")->obj);
 }
@@ -190,6 +205,16 @@ void EventDispatcher::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
+	c->addImplementedInterface(Class<IEventDispatcher>::getClass());
+}
+
+void EventDispatcher::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("addEventListener","",new Function(addEventListener));
+	o->setVariableByQName("removeEventListener","",new Function(removeEventListener));
+	o->setVariableByQName("dispatchEvent","",new Function(dispatchEvent));
+
+	IEventDispatcher::linkTraits(o);
 }
 
 void EventDispatcher::dumpHandlers()
@@ -269,12 +294,6 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 
 ASFUNCTIONBODY(EventDispatcher,_constructor)
 {
-	cout << "EventDispatcher constructor" << endl;
-	obj->setVariableByQName("addEventListener","",new Function(addEventListener));
-	obj->setVariableByQName("removeEventListener","",new Function(removeEventListener));
-	//MEGAHACK!!! should implement interface support
-	obj->setVariableByQName("addEventListener","flash.events:IEventDispatcher",new Function(addEventListener));
-	obj->setVariableByQName("dispatchEvent","",new Function(dispatchEvent));
 	return NULL;
 }
 

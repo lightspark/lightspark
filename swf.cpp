@@ -96,6 +96,12 @@ SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
 	startTime=compat_msectiming();
 }
 
+void SystemState::setUrl(const tiny_string& url)
+{
+	loaderInfo->url=url;
+	loaderInfo->loaderURL=url;
+}
+
 SystemState::~SystemState()
 {
 	if(currentVm)

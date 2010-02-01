@@ -122,6 +122,7 @@ class SystemState: public RootMovieClip
 {
 public:
 	ASFUNCTION(getBounds);
+	void setUrl(const tiny_string& url);
 
 	bool shutdown;
 	void setShutdownFlag();
@@ -134,7 +135,6 @@ public:
 	InputThread* cur_input_thread;
 	RenderThread* cur_render_thread;
 	ThreadPool* cur_thread_pool;
-
 	//Application starting time in milliseconds
 	uint64_t startTime;
 

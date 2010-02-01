@@ -673,6 +673,7 @@ private:
 public:
 	RegExp();
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(exec);
 	ASFUNCTION(replace);

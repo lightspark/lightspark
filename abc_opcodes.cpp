@@ -116,7 +116,7 @@ ASObject* ABCVm::pushNull()
 
 void ABCVm::coerce_a()
 {
-	LOG(LOG_NOT_IMPLEMENTED, "coerce_a" );
+	LOG(LOG_CALLS, "coerce_a" );
 }
 
 ASObject* ABCVm::checkfilter(ASObject* o)
@@ -1748,7 +1748,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 bool ABCVm::hasNext2(call_context* th, int n, int m)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"hasNext2 " << n << ' ' << m);
+	LOG(LOG_CALLS,"hasNext2 " << n << ' ' << m);
 	ASObject* obj=th->locals[n];
 	int cur_index=th->locals[m]->toInt();
 

@@ -2,6 +2,8 @@
 CXXFLAGS = -g -O0 -D_GLIBCXX_NO_DEBUG -Wnon-virtual-dtor
 CXXFLAGS_RELEASE = -O3 -DNDEBUG -Wnon-virtual-dtor
 LLVMLIBS = `llvm-config --libfiles engine interpreter`
+EXTRAFLAGS = `pkg-config --cflags gl sdl libcurl libxml-2.0 libpcrecpp`
+EXTRALIBS = `pkg-config --cflags --libs gl sdl libcurl libxml-2.0 libpcrecpp`
 prefix = /usr
 bindir = $(prefix)/bin
 datarootdir = $(prefix)/share
@@ -19,24 +21,21 @@ release: CXXFLAGS=$(CXXFLAGS_RELEASE)
 release: all
 
 lightspark: main.o $(LIBOBJS) 
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags` -lGLEW $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe \
-		-o $@ $^ $(LLVMLIBS)
+	$(CXX) -pthread -lz `llvm-config --ldflags` -lGLEW $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe \
+		-o $@ $^ $(LLVMLIBS) $(EXTRALIBS)
 
 tightspark: tightspark.o $(LIBOBJS)
-	$(CXX) -pthread `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz `llvm-config --ldflags` -lGLEW $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe \
-		-o $@ $^ $(LLVMLIBS)
+	$(CXX) -pthread -lz `llvm-config --ldflags` -lGLEW $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe \
+		-o $@ $^ $(LLVMLIBS) $(EXTRALIBS)
 
 
-
-libls.so: $(LIBOBJS)
-	$(CXX) -pthread -shared `pkg-config --cflags --libs sdl gl` $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $@ $^
 
 %.o: %.cpp
-	$(CXX) -pipe -pthread `pkg-config --cflags gl sdl libcurl libxml-2.0` -I`llvm-config --includedir` $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^ 
+	$(CXX) -pipe -pthread -I`llvm-config --includedir` $(EXTRAFLAGS) $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^ 
 
 .PHONY: all clean install
 clean:
-	-rm -f main.o tightspark.o $(LIBOBJS) lightspark tightspark libls.so
+	-rm -f main.o tightspark.o $(LIBOBJS) lightspark tightspark
 install: all
 	install -d $(DESTDIR)$(bindir) $(DESTDIR)$(datadir)/lightspark
 	install lightspark $(DESTDIR)$(bindir)/lightspark

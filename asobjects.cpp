@@ -23,6 +23,7 @@
 #include <algorithm>
 //#include <curl/curl.h>
 //#include <libxml/parser.h>
+#include <pcrecpp.h>
 #include <string.h>
 #include <sstream>
 #include <iomanip>
@@ -1124,21 +1125,26 @@ void RegExp::sinit(Class_base* c)
 	c->constructor=new Function(_constructor);
 }
 
+void RegExp::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("exec",AS3,new Function(exec));
+}
+
 ASFUNCTIONBODY(RegExp,_constructor)
 {
 	RegExp* th=static_cast<RegExp*>(obj->implementation);
 	th->re=args->at(0)->toString().raw_buf();
 	if(args->size()>1)
 		th->flags=args->at(1)->toString().raw_buf();
-	obj->setVariableByQName("exec",AS3,new Function(exec));
 	return NULL;
 }
 
 ASFUNCTIONBODY(RegExp,exec)
 {
-	RegExp* th=static_cast<RegExp*>(obj->implementation);
+	abort();
+/*	RegExp* th=static_cast<RegExp*>(obj->implementation);
 	cout << "Returning tracer2" <<endl;
-	return new DebugTracer("RegExp::exec");
+	return new DebugTracer("RegExp::exec");*/
 }
 
 ASFUNCTIONBODY(ASString,slice)
@@ -1178,27 +1184,47 @@ ASFUNCTIONBODY(ASString,replace)
 	LOG(LOG_NOT_IMPLEMENTED,"ASString::replace not really implemented");
 	const ASString* th=static_cast<const ASString*>(obj->implementation);
 	ASString* ret=Class<ASString>::getInstanceS(true,th->data);
-	const tiny_string& replaceWith=args->at(1)->toString();
+	string replaceWith(args->at(1)->toString().raw_buf());
+	//We have to escape '\\' because that is interpreted by pcrecpp
+	int index=0;
+	do
+	{
+		index=replaceWith.find("\\",index);
+		if(index==-1) //No result
+			break;
+		replaceWith.replace(index,1,"\\\\");
+
+		//Increment index to jump over the added character
+		index+=2;
+	}
+	while(index<ret->data.size());
 
 	assert(args->size()==2 && args->at(1)->getObjectType()==T_STRING);
 
 	if(args->at(0)->prototype==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args->at(0)->implementation);
-		assert(re->re.size()==1 && re->flags.size()==1);
-
-		bool g=(re->flags[0]=='g')?true:false;
-		assert(replaceWith.len()==1);
-
-		for(int i=0;i<th->data.size();i++)
+		bool global=false;
+		for(int i=0;i<re->flags.size();i++)
 		{
-			if(th->data[i]==re->re[0])
+			switch(re->flags[i])
 			{
-				ret->data[i]=replaceWith[0];
-				if(!g)
+				case 'g':
+					global=true;
 					break;
+				case 'i':
+				case 's':
+				case 'm':
+				case 'x':
+					abort();
 			}
 		}
+
+		pcrecpp::RE pcreRE(re->re);
+		if(global)
+			pcreRE.GlobalReplace(replaceWith,&ret->data);
+		else
+			pcreRE.Replace(replaceWith,&ret->data);
 	}
 	else if(args->at(0)->getObjectType()==T_STRING)
 	{
@@ -1209,12 +1235,14 @@ ASFUNCTIONBODY(ASString,replace)
 			index=ret->data.find(s->data,index);
 			if(index==-1) //No result
 				break;
-			ret->data.replace(index,s->data.size(),replaceWith.raw_buf());
-			index+=(replaceWith.len()-s->data.size());
+			ret->data.replace(index,s->data.size(),replaceWith);
+			index+=(replaceWith.size()-s->data.size());
 
 		}
 		while(index<ret->data.size());
 	}
+	else
+		abort();
 
 	return ret->obj;
 }

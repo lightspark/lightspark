@@ -1792,7 +1792,7 @@ void ASObject::recursiveBuild(const Class_base* cur)
 		assert(cur==old);
 		actualPrototype=old;
 	}
-	LOG(LOG_CALLS,"Building traits for " << cur->class_name);
+	LOG(LOG_TRACE,"Building traits for " << cur->class_name);
 	int old_level=max_level;
 	max_level=cur->max_level;
 	cur->buildInstanceTraits(this);

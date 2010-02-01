@@ -42,7 +42,7 @@ ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	for(int i=0;i<Count;i++)
 	{
 		in >> Tags[i] >> Names[i];
-		cout << Tags[i] << ' ' << Names[i] << endl;
+//		cout << Tags[i] << ' ' << Names[i] << endl;
 		DictionaryTag* d=pt->root->dictionaryLookup(Tags[i]);
 		if(d==NULL)
 			abort();

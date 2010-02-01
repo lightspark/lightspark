@@ -1039,6 +1039,15 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 
 void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,arguments* args, bool construct_instance)
 {
+	//It seems to be acceptable for the same base to be binded multiple times,
+	//We refuse to do it, as it's an undocumented behaviour, but we warn the user
+	//I've seen this behaviour only for youtube
+	if(base->obj!=NULL)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Multiple binding on " << s << ". Not binding");
+		return;
+	}
+
 	LOG(LOG_CALLS,"Setting class name to " << s);
 	ASObject* derived_class=Global.getVariableByString(s);
 	if(derived_class==NULL)
@@ -1063,12 +1072,6 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,arguments*
 	Class_base* derived_class_tmp=static_cast<Class_base*>(derived_class);
 	assert(derived_class_tmp->class_index!=-1);
 
-	assert(base->obj==NULL);
-/*	//It's now possible to actually build an instance
-	ASObject* obj=derived_class_tmp->getInstance()->obj;
-	//Acquire the base interface in the object
-	obj->acquireInterface(base);
-	__asm__("int $3");*/
 	base->obj=derived_class_tmp;
 
 	if(construct_instance)

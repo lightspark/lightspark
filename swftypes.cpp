@@ -41,31 +41,12 @@ extern TLSDATA ParseThread* pt;
 extern TLSDATA Manager* iManager;
 extern TLSDATA Manager* dManager;
 
-/*tiny_string ConstantReference::toString() const
-{
-	return (const char*)rt->vm.getConstantByIndex(index);
-}
-
-double ConstantReference::toNumber() const
-{
-	string s=rt->vm.getConstantByIndex(index);
-	double ret= strtod(s.c_str(),NULL);
-	cout << "crto " << ret <<  " from " << s << endl;
-	return ret;
-}
-
-int ConstantReference::toInt() const
-{
-	LOG(LOG_ERROR,"Cannot convert ConstRef to Int");
-	return 0;
-}*/
-
 tiny_string ASObject::toString() const
 {
 	assert(ref_count>0);
-	tiny_string ret;
 	if(implementation)
 	{
+		tiny_string ret;
 		if(implementation->toString(ret))
 			return ret;
 	}

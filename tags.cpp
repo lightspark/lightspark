@@ -222,8 +222,6 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	Sprite* target_bak=pt->parsingTarget;
 	pt->parsingTarget=this;
 
-	list < pair<PlaceInfo, IDisplayListElem*> >* bak=pt->parsingDisplayList;
-	pt->parsingDisplayList=&displayList;
 	in >> SpriteID >> FrameCount;
 	totalFrames=FrameCount;
 	state.max_FP=FrameCount;
@@ -238,6 +236,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 		{
 			case DICT_TAG:
 				LOG(LOG_ERROR,"Dictionary tag inside a sprite. Should not happen.");
+				abort();
 				break;
 			case DISPLAY_LIST_TAG:
 				addToFrame(static_cast<DisplayListTag*>(tag));
@@ -250,6 +249,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			}
 			case CONTROL_TAG:
 				LOG(LOG_ERROR,"Control tag inside a sprite. Should not happen.");
+				abort();
 				break;
 		}
 	}
@@ -257,7 +257,6 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 
 	if(frames.size()!=FrameCount && FrameCount!=1)
 		LOG(LOG_ERROR,"Inconsistent frame count " << FrameCount);
-	pt->parsingDisplayList=bak;
 
 	pt->parsingTarget=target_bak;
 	LOG(LOG_TRACE,"EndDefineSprite ID: " << SpriteID);
@@ -1447,9 +1446,9 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 		abort();
 }
 
-void SetBackgroundColorTag::execute()
+void SetBackgroundColorTag::execute(RootMovieClip* root)
 {
-	pt->root->setBackground(BackgroundColor);
+	root->setBackground(BackgroundColor);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)

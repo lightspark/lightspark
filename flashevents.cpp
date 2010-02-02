@@ -65,6 +65,11 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS(true,"resize")->obj);
 }
 
+void Event::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("target","",new Function(_getTarget));
+}
+
 ASFUNCTIONBODY(Event,_constructor)
 {
 	Event* th=static_cast<Event*>(obj->implementation);
@@ -73,8 +78,6 @@ ASFUNCTIONBODY(Event,_constructor)
 		assert(args->at(0)->getObjectType()==T_STRING);
 		th->type=args->at(0)->toString();
 	}
-
-	obj->setGetterByQName("target","",new Function(_getTarget));
 	return NULL;
 }
 
@@ -135,6 +138,12 @@ void ProgressEvent::sinit(Class_base* c)
 	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS(true,"progress")->obj);
 }
 
+void ProgressEvent::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("bytesLoaded","",new Function(_getBytesLoaded));
+	o->setGetterByQName("bytesTotal","",new Function(_getBytesTotal));
+}
+
 ASFUNCTIONBODY(ProgressEvent,_constructor)
 {
 	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
@@ -142,9 +151,6 @@ ASFUNCTIONBODY(ProgressEvent,_constructor)
 		th->bytesLoaded=args->at(3)->toInt();
 	if(args->size()>=5)
 		th->bytesTotal=args->at(4)->toInt();
-
-	obj->setGetterByQName("bytesLoaded","",new Function(_getBytesLoaded));
-	obj->setGetterByQName("bytesTotal","",new Function(_getBytesTotal));
 }
 
 ASFUNCTIONBODY(ProgressEvent,_getBytesLoaded)

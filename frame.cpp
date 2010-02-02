@@ -94,9 +94,47 @@ void Frame::setLabel(STRING l)
 
 void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& d)
 {
-	std::list<DisplayListTag*>::iterator it=blueprint.begin();
-	for(it;it!=blueprint.end();it++)
-		(*it)->execute(parent, d);
-	blueprint.clear();
-	displayList=d;
+	if(!initialized)
+	{
+		__asm__("int $3");
+		//Execute control tags for this frame
+		//Only the root movie clip can have control tags
+		if(!controls.empty())
+		{
+			assert(parent->root==parent);
+			for(int i=0;i<controls.size();i++)
+				controls[i]->execute(parent->root);
+			controls.clear();
+
+			if(sys->currentVm)
+			{
+				//We stop execution until execution engine catches up
+				SynchronizationEvent* s=new SynchronizationEvent;
+				sys->currentVm->addEvent(NULL, s);
+				s->wait();
+				delete s;
+				//Now the bindings are effective for all tags
+			}
+		}
+
+		//Update the displayList using the tags in this frame
+		std::list<DisplayListTag*>::iterator it=blueprint.begin();
+		for(it;it!=blueprint.end();it++)
+			(*it)->execute(parent, d);
+		blueprint.clear();
+		displayList=d;
+		initialized=true;
+
+		//Let's see if we have to bind the root movie clip itself
+		if(parent->root->toBind && sys->currentVm)
+		{
+			sys->currentVm->addEvent(NULL,new BindClassEvent(parent->root,parent->root->bindName));
+			//We stop execution until execution engine catches up
+			SynchronizationEvent* s=new SynchronizationEvent;
+			sys->currentVm->addEvent(NULL, s);
+			s->wait();
+			delete s;
+			//Now the bindings are effective also for our parent (the root)
+		}
+	}
 }

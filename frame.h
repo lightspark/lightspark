@@ -28,6 +28,7 @@ namespace lightspark
 
 class RootMovieClip;
 class DisplayListTag;
+class ControlTag;
 class IDisplayListElem;
 class MovieClip;
 
@@ -42,10 +43,13 @@ class Frame
 private:
 	STRING Label;
 	IFunction* script;
+	bool initialized;
 public:
 	std::list<DisplayListTag*> blueprint;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	std::list<IDisplayListElem*>* dynamicDisplayList; //This is actually owned by the movieclip
+	//A temporary vector for control tags
+	std::vector < ControlTag* > controls;
 	Frame(std::list<IDisplayListElem*>* dd):
 		dynamicDisplayList(dd),script(NULL){ }
 	void Render();

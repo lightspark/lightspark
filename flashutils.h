@@ -67,6 +67,7 @@ public:
 	Dictionary(){};
 	virtual ~Dictionary(){};
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 	{

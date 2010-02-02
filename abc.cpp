@@ -67,7 +67,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 	}
 }
 
-void DoABCTag::execute()
+void DoABCTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,"ABC Exec " << Name);
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
@@ -88,7 +88,7 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
 		in >> Tags[i] >> Names[i];
 }
 
-void SymbolClassTag::execute()
+void SymbolClassTag::execute(RootMovieClip* root)
 {
 	LOG(LOG_TRACE,"SymbolClassTag Exec");
 
@@ -97,14 +97,16 @@ void SymbolClassTag::execute()
 		LOG(LOG_CALLS,Tags[i] << ' ' << Names[i]);
 		if(Tags[i]==0)
 		{
-			sys->currentVm->addEvent(NULL,new BindClassEvent(sys,Names[i]));
+			//We have to bind this root movieclip itself, let's tell it.
+			//This will be done later
+			root->bindToName((const char*)Names[i]);
 		}
 		else
 		{
-			DictionaryTag* t=pt->root->dictionaryLookup(Tags[i]);
+			DictionaryTag* t=root->dictionaryLookup(Tags[i]);
 			IInterface* base=dynamic_cast<IInterface*>(t);
 			assert(base!=NULL);
-			sys->currentVm->addEvent(NULL,new BindClassEvent(base,Names[i]));
+			sys->currentVm->addEvent(NULL,new BindClassEvent(base,(const char*)Names[i]));
 		}
 	}
 }
@@ -977,15 +979,12 @@ void ABCVm::handleEvent()
 /*				args.incRef();
 				//TODO: check
 				args.set(0,new Null);*/
+				//TODO: move construct_instance to the event itself
 				bool construct_instance=false;
 				if(ev->base==sys)
-				{
-					MovieClip* m=static_cast<MovieClip*>(ev->base);
-					m->initialize();
 					construct_instance=true;
-				}
 				LOG(LOG_CALLS,"Binding of " << ev->class_name);
-				buildClassAndInjectBase(ev->class_name,ev->base,&args,construct_instance);
+				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base,&args,construct_instance);
 				LOG(LOG_CALLS,"End of binding of " << ev->class_name);
 				break;
 			}

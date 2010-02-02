@@ -101,7 +101,7 @@ class ControlTag: public Tag
 public:
 	ControlTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
 	virtual TAGTYPE getType(){ return CONTROL_TAG; }
-	virtual void execute()=0;
+	virtual void execute(RootMovieClip* root)=0;
 };
 
 class DefineShapeTag: public DictionaryTag, public IDisplayListElem
@@ -360,7 +360,7 @@ private:
 	RGB BackgroundColor;
 public:
 	SetBackgroundColorTag(RECORDHEADER h, std::istream& in);
-	void execute( );
+	void execute(RootMovieClip* root);
 };
 
 class SoundStreamHead2Tag: public Tag
@@ -532,7 +532,7 @@ class ProtectTag: public ControlTag
 {
 public:
 	ProtectTag(RECORDHEADER h, std::istream& in);
-	void execute( ){};
+	void execute(RootMovieClip* root){};
 };
 
 class DefineBitsLosslessTag: public DictionaryTag

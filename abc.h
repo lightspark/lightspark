@@ -603,7 +603,7 @@ private:
 	pthread_t thread;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
-	void execute( );
+	void execute(RootMovieClip* root);
 };
 
 class SymbolClassTag: public ControlTag
@@ -614,7 +614,7 @@ private:
 	std::vector<STRING> Names;
 public:
 	SymbolClassTag(RECORDHEADER h, std::istream& in);
-	void execute( );
+	void execute(RootMovieClip* root);
 };
 
 

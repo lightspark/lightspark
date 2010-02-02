@@ -79,12 +79,19 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	pt->root->frame_rate/=256;
 }
 
-RootMovieClip::RootMovieClip()
+RootMovieClip::RootMovieClip():toBind(false)
 {
 	root=this;
 	sem_init(&mutex,0,1);
 	sem_init(&sem_frames,0,1);
 	sem_init(&sem_valid_frame_size,0,0);
+}
+
+void RootMovieClip::bindToName(const tiny_string& n)
+{
+	assert(toBind==false);
+	toBind=true;
+	bindName=n;
 }
 
 SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
@@ -145,7 +152,6 @@ void* ParseThread::worker(ParseThread* th)
 			Tag* tag=factory.readTag();
 			switch(tag->getType())
 			{
-			//	case TAG:
 				case END_TAG:
 				{
 					LOG(LOG_NO_INFO,"End of parsing @ " << th->f.tellg());
@@ -165,12 +171,10 @@ void* ParseThread::worker(ParseThread* th)
 					th->root->addToFrame(static_cast<DisplayListTag*>(tag));
 					break;
 				case SHOW_TAG:
-				{
 					th->root->commitFrame();
 					break;
-				}
 				case CONTROL_TAG:
-					static_cast<ControlTag*>(tag)->execute();
+					th->root->addToFrame(static_cast<ControlTag*>(tag));
 					break;
 			}
 			if(sys->shutdown)
@@ -184,8 +188,7 @@ void* ParseThread::worker(ParseThread* th)
 	}
 }
 
-ParseThread::ParseThread(SystemState* s,RootMovieClip* r,istream& in):f(in),
-	parsingDisplayList(&r->displayList),parsingTarget(r)
+ParseThread::ParseThread(SystemState* s,RootMovieClip* r,istream& in):f(in),parsingTarget(r)
 {
 	m_sys=s;
 	root=r;
@@ -841,23 +844,14 @@ void RootMovieClip::Render()
 	sem_wait(&sem_frames);
 	while(1)
 	{
-		if(state.FP<frames.size())
+		//Check if the next frame we are going to play is available
+		if(state.next_FP<frames.size())
 			break;
 
 		sem_post(&sem_frames);
 		sem_wait(&new_frame);
 		sem_wait(&sem_frames);
 	}
-
-	//We stop execution until execution engine catches up
-	if(sys->currentVm)
-	{
-		SynchronizationEvent* s=new SynchronizationEvent;
-		sys->currentVm->addEvent(NULL, s);
-		s->wait();
-		delete s;
-	}
-	//Now the bindings are effective
 
 	MovieClip::Render();
 	sem_post(&sem_frames);
@@ -1077,6 +1071,11 @@ void RootMovieClip::addToFrame(DisplayListTag* t)
 	sem_wait(&mutex);
 	MovieClip::addToFrame(t);
 	sem_post(&mutex);
+}
+
+void RootMovieClip::addToFrame(ControlTag* t)
+{
+	cur_frame.controls.push_back(t);
 }
 
 void RootMovieClip::commitFrame()

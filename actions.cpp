@@ -398,7 +398,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 	return t;
 }
 
-RunState::RunState():FP(0),stop_FP(0)
+RunState::RunState():FP(0),stop_FP(0),next_FP(0)
 {
 }
 

@@ -147,6 +147,7 @@ public:
 	void linkInterface(ASObject* obj) const;
 	bool isSubClass(const Class_base* cls) const;
 	tiny_string getQualifiedClassName() const;
+	virtual tiny_string toString() const;
 };
 
 class Class_object: public Class_base
@@ -393,6 +394,7 @@ public:
 	Namespace(){type=T_NAMESPACE;}
 	Namespace(const tiny_string& _uri):uri(_uri){type=T_NAMESPACE;}
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 };
 

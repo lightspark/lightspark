@@ -1181,7 +1181,6 @@ ASFUNCTIONBODY(ASString,toLowerCase)
 
 ASFUNCTIONBODY(ASString,replace)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"ASString::replace not really implemented");
 	const ASString* th=static_cast<const ASString*>(obj->implementation);
 	ASString* ret=Class<ASString>::getInstanceS(true,th->data);
 	string replaceWith(args->at(1)->toString().raw_buf());
@@ -1270,6 +1269,14 @@ void Class_base::addImplementedInterface(const multiname& i)
 void Class_base::addImplementedInterface(Class_base* i)
 {
 	interfaces_added.push_back(i);
+}
+
+tiny_string Class_base::toString() const
+{
+	tiny_string ret="[Class ";
+	ret+=class_name;
+	ret+="]";
+	return ret;
 }
 
 IInterface* Class_inherit::getInstance(bool construct, arguments* args)
@@ -1436,6 +1443,10 @@ void Namespace::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
+}
+
+void Namespace::buildTraits(ASObject* o)
+{
 }
 
 ASFUNCTIONBODY(Namespace,_constructor)

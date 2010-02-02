@@ -51,10 +51,14 @@ void ApplicationDomain::sinit(Class_base* c)
 	c->setGetterByQName("currentDomain","",new Function(_getCurrentDomain));
 }
 
+void ApplicationDomain::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("hasDefinition","",new Function(hasDefinition));
+	o->setVariableByQName("getDefinition","",new Function(getDefinition));
+}
+
 ASFUNCTIONBODY(ApplicationDomain,_constructor)
 {
-	obj->setVariableByQName("hasDefinition","",new Function(hasDefinition));
-	obj->setVariableByQName("getDefinition","",new Function(getDefinition));
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)

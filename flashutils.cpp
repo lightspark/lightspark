@@ -161,6 +161,10 @@ void Dictionary::sinit(Class_base* c)
 	c->constructor=new Function(_constructor);
 }
 
+void Dictionary::buildTraits(ASObject* o)
+{
+}
+
 ASFUNCTIONBODY(Dictionary,_constructor)
 {
 }

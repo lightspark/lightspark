@@ -235,13 +235,11 @@ protected:
 	uint32_t totalFrames;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	Frame cur_frame;
-	bool initialized;
 public:
 	std::vector<Frame> frames;
 	RunState state;
 
 public:
-	void initialize();
 	MovieClip();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

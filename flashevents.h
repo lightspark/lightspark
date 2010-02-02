@@ -43,6 +43,7 @@ public:
 	Event(const tiny_string& t, ASObject* _t=NULL);
 	virtual ~Event(){}
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getType);
 	ASFUNCTION(_getTarget);
@@ -56,6 +57,9 @@ class FakeEvent: public Event
 public:
 	FakeEvent():Event("fakeEvent"){}
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
 };
 
 class IOErrorEvent: public Event
@@ -63,6 +67,9 @@ class IOErrorEvent: public Event
 public:
 	IOErrorEvent();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
 };
 
 class KeyboardEvent: public Event
@@ -70,6 +77,9 @@ class KeyboardEvent: public Event
 public:
 	KeyboardEvent();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
 };
 
 class FocusEvent: public Event
@@ -77,6 +87,9 @@ class FocusEvent: public Event
 public:
 	FocusEvent();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
 	ASFUNCTION(_constructor);
 };
 
@@ -88,6 +101,7 @@ private:
 public:
 	ProgressEvent();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
@@ -99,6 +113,9 @@ public:
 	TimerEvent():Event("DEPRECATED"){}
 	TimerEvent(const tiny_string& t):Event(t){};
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
 };
 
 class MouseEvent: public Event
@@ -106,6 +123,9 @@ class MouseEvent: public Event
 public:
 	MouseEvent();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
 	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
 };
 
@@ -155,9 +175,9 @@ class BindClassEvent: public Event
 friend class ABCVm;
 private:
 	IInterface* base;
-	std::string class_name;
+	tiny_string class_name;
 public:
-	BindClassEvent(IInterface* b, const std::string& c):
+	BindClassEvent(IInterface* b, const tiny_string& c):
 		Event("bindClass"),base(b),class_name(c){}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType(){ return BIND_CLASS;}

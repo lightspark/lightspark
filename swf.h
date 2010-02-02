@@ -86,6 +86,7 @@ struct fps_profiling
 class RootMovieClip: public MovieClip
 {
 friend class ParseThread;
+friend class Frame;
 protected:
 	sem_t mutex;
 	//Semaphore to wait for new frames to be available
@@ -97,6 +98,8 @@ private:
 	sem_t sem_valid_frame_size;
 	//Frames mutex (shared with drawing thread)
 	sem_t sem_frames;
+	bool toBind;
+	tiny_string bindName;
 
 public:
 	RootMovieClip();
@@ -109,8 +112,10 @@ public:
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
 	void addToFrame(DisplayListTag* t);
+	void addToFrame(ControlTag* t);
 	void commitFrame();
 	void Render();
+	void bindToName(const tiny_string& n);
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
@@ -166,8 +171,6 @@ public:
 	void wait();
 	static void setError(){error=1;}
 
-	//Used only in ParseThread context
-	std::list < std::pair<PlaceInfo, IDisplayListElem*> >* parsingDisplayList;
 	//DEPRECATED
 	Sprite* parsingTarget;
 };

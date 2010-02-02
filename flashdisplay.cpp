@@ -433,7 +433,7 @@ void MovieClip::buildTraits(ASObject* o)
 	o->setVariableByQName("nextFrame","",new Function(nextFrame));
 }
 
-MovieClip::MovieClip():framesLoaded(0),totalFrames(1),cur_frame(&dynamicDisplayList),initialized(false)
+MovieClip::MovieClip():framesLoaded(0),totalFrames(1),cur_frame(&dynamicDisplayList)
 {
 }
 
@@ -532,7 +532,7 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	//Quite not right, for the duration of this event at least the frame should be constant
 	assert(th->state.FP<th->state.max_FP);
-	th->state.FP++;
+	th->state.next_FP=th->state.FP+1;
 	return NULL;
 }
 
@@ -577,18 +577,19 @@ void MovieClip::Render()
 	MovieClip* clip_bak=rt->currentClip;
 	rt->currentClip=this;
 
-	if(!initialized)
-		initialize();
-
 	if(!state.stop_FP /*&& (class_name=="MovieClip")*/)
+	{
+		state.FP=state.next_FP;
 		state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount
-	else
-		state.next_FP=state.FP;
+	}
 
 	if(!frames.empty())
 	{
 		if(!state.stop_FP)
 			frames[state.FP].runScript();
+
+		//Initialize the currentframe if needed
+		frames[state.FP].init(this,displayList);
 
 		//Set the id in the secondary color
 		glPushAttrib(GL_CURRENT_BIT);
@@ -597,30 +598,20 @@ void MovieClip::Render()
 		//Apply local transformation
 		glPushMatrix();
 		//glTranslatef(_x,_y,0);
-		glRotatef(rotation,0,0,1);
+		//glRotatef(rotation,0,0,1);
 		frames[state.FP].Render();
 
 		glPopMatrix();
 		glPopAttrib();
 	}
 
-	if(state.FP!=state.next_FP)
+/*	if(state.FP!=state.next_FP)
 		state.FP=state.next_FP;
 	else
-		state.stop_FP=true;
+		state.stop_FP=true;*/
 	LOG(LOG_TRACE,"End Render MovieClip");
 
 	rt->currentClip=clip_bak;
-}
-
-void MovieClip::initialize()
-{
-	if(!initialized)
-	{
-		for(int i=0;i<frames.size();i++)
-			frames[i].init(this,displayList);
-		initialized=true;
-	}
 }
 
 void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)

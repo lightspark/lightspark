@@ -149,6 +149,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Stage","flash.display",Class<Stage>::getClass());
 	Global.setVariableByQName("Graphics","flash.display",Class<Graphics>::getClass());
 	Global.setVariableByQName("LineScaleMode","flash.display",Class<LineScaleMode>::getClass());
+	Global.setVariableByQName("StageScaleMode","flash.display",Class<StageScaleMode>::getClass());
 	Global.setVariableByQName("IBitmapDrawable","flash.display",Class<IInterface>::getClass("IBitmapDrawable"));
 	Global.setVariableByQName("BitmapData","flash.display",Class<IInterface>::getClass("BitmapData"));
 
@@ -1016,7 +1017,7 @@ void ABCVm::handleEvent()
 				LOG(LOG_CALLS,"Building instance traits");
 				ev->_class->context->buildInstanceTraits(ev->obj, ev->_class->class_index);
 
-				LOG(LOG_CALLS,"Calling Instance init");
+				LOG(LOG_CALLS,"Calling Instance init " << ev->_class->class_name);
 				ev->_class->constructor->call(ev->obj,NULL,ev->obj->max_level);
 				ev->sync();
 				break;

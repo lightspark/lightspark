@@ -49,6 +49,7 @@ REGISTER_CLASS_NAME(Shape);
 REGISTER_CLASS_NAME(Stage);
 REGISTER_CLASS_NAME(Graphics);
 REGISTER_CLASS_NAME(LineScaleMode);
+REGISTER_CLASS_NAME(StageScaleMode);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -264,7 +265,7 @@ void Loader::buildTraits(ASObject* o)
 
 void Loader::execute()
 {
-	static char name[]="0puppa";
+	static char name[]="0dump";
 	LOG(LOG_NOT_IMPLEMENTED,"Loader async execution " << url);
 	if(source==URL)
 	{
@@ -1147,4 +1148,12 @@ void LineScaleMode::sinit(Class_base* c)
 	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS(true,"none")->obj);
 	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS(true,"normal")->obj);
 	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS(true,"vertical")->obj);
+}
+
+void StageScaleMode::sinit(Class_base* c)
+{
+	c->setVariableByQName("EXACT_FIT","",Class<ASString>::getInstanceS(true,"exactFit")->obj);
+	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS(true,"noBorder")->obj);
+	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS(true,"noScale")->obj);
+	c->setVariableByQName("SHOW_ALL","",Class<ASString>::getInstanceS(true,"showAll")->obj);
 }

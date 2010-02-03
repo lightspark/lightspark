@@ -1602,12 +1602,34 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xa1:
 				{
 					//subtract
+					STACK_TYPE t1,t2;
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
+						t1=static_stack_types.back().second;
 						static_stack_types.pop_back();
+					}
+					else
+						t1=STACK_OBJECT;
 					if(!static_stack_types.empty())
+					{
+						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
+						t2=static_stack_types.back().second;
 						static_stack_types.pop_back();
-					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
-					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+					}
+					else
+						t2=STACK_OBJECT;
+
+					if(t1==STACK_INT && t2==STACK_INT)
+					{
+						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+						cur_block->checkProactiveCasting(local_ip,STACK_INT);
+					}
+					else
+					{
+						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+					}
 					break;
 				}
 				case 0xa2:

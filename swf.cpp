@@ -79,7 +79,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	pt->root->frame_rate/=256;
 }
 
-RootMovieClip::RootMovieClip():toBind(false)
+RootMovieClip::RootMovieClip():toBind(false),initialized(false)
 {
 	root=this;
 	sem_init(&mutex,0,1);
@@ -156,12 +156,6 @@ void* ParseThread::worker(ParseThread* th)
 				{
 					LOG(LOG_NO_INFO,"End of parsing @ " << th->f.tellg());
 					th->root->commitFrame();
-					//Wait for handling of all previous events
-					SynchronizationEvent* sync=new SynchronizationEvent;
-					sys->currentVm->addEvent(NULL, sync);
-					sync->wait();
-					//Now signal the completion for this root
-					sys->currentVm->addEvent(th->root->loaderInfo,Class<Event>::getInstanceS(true,"init"));
 					pthread_exit(NULL);
 				}
 				case DICT_TAG:
@@ -837,6 +831,22 @@ void* RenderThread::glx_worker(RenderThread* th)
 float RenderThread::getIdAt(int x, int y)
 {
 	return interactive_buffer[y*width+x];
+}
+
+void RootMovieClip::initialize()
+{
+	if(!initialized && sys->currentVm)
+	{
+		initialized=true;
+		//Let's see if we have to bind the root movie clip itself
+		sys->currentVm->addEvent(NULL,new BindClassEvent(this,bindName));
+		//Now signal the completion for this root
+		sys->currentVm->addEvent(loaderInfo,Class<Event>::getInstanceS(true,"init"));
+		//Wait for handling of all previous events
+		SynchronizationEvent* sync=new SynchronizationEvent;
+		sys->currentVm->addEvent(NULL, sync);
+		sync->wait();
+	}
 }
 
 void RootMovieClip::Render()

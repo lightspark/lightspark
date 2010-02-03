@@ -592,6 +592,7 @@ private:
 public:
 	Date();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(getTimezoneOffset);
 	ASFUNCTION(getTime);

@@ -96,7 +96,6 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 {
 	if(!initialized)
 	{
-		__asm__("int $3");
 		//Execute control tags for this frame
 		//Only the root movie clip can have control tags
 		if(!controls.empty())
@@ -125,16 +124,9 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 		displayList=d;
 		initialized=true;
 
-		//Let's see if we have to bind the root movie clip itself
-		if(parent->root->toBind && sys->currentVm)
-		{
-			sys->currentVm->addEvent(NULL,new BindClassEvent(parent->root,parent->root->bindName));
-			//We stop execution until execution engine catches up
-			SynchronizationEvent* s=new SynchronizationEvent;
-			sys->currentVm->addEvent(NULL, s);
-			s->wait();
-			delete s;
-			//Now the bindings are effective also for our parent (the root)
-		}
+		//Root movie clips are initialized now, after the first frame is really ready 
+		if(parent->root==parent)
+			parent->root->initialize();
+		//Now the bindings are effective also for our parent (the root)
 	}
 }

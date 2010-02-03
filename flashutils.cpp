@@ -38,6 +38,19 @@ void ByteArray::sinit(Class_base* c)
 {
 }
 
+uint8_t* ByteArray::getBuffer(unsigned int size)
+{
+	assert(bytes==NULL);
+	len=size;
+	bytes=new uint8_t[len];
+	return bytes;
+}
+
+ByteArray::~ByteArray()
+{
+	delete[] bytes;
+}
+
 void Timer::execute()
 {
 	while(running)

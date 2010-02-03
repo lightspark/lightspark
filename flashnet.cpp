@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "abc.h"
 #include "flashnet.h"
 #include "class.h"
 
@@ -69,7 +70,7 @@ ASFUNCTIONBODY(URLRequest,_getUrl)
 	return Class<ASString>::getInstanceS(true,th->url)->obj;
 }
 
-URLLoader::URLLoader():dataFormat("text")
+URLLoader::URLLoader():dataFormat("text"),data(NULL)
 {
 }
 
@@ -77,14 +78,21 @@ void URLLoader::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 	c->constructor=new Function(_constructor);
+	c->super=Class<EventDispatcher>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void URLLoader::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("dataFormat","",new Function(_getDataFormat));
+	o->setGetterByQName("data","",new Function(_getData));
+	o->setSetterByQName("dataFormat","",new Function(_setDataFormat));
+	o->setVariableByQName("load","",new Function(load));
 }
 
 ASFUNCTIONBODY(URLLoader,_constructor)
 {
 	EventDispatcher::_constructor(obj,NULL);
-	obj->setGetterByQName("dataFormat","",new Function(_getDataFormat));
-	obj->setSetterByQName("dataFormat","",new Function(_setDataFormat));
-	obj->setVariableByQName("load","",new Function(load));
 	return NULL;
 }
 
@@ -92,25 +100,46 @@ ASFUNCTIONBODY(URLLoader,load)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
 	ASObject* arg=args->at(0);
-	assert(arg && arg->prototype->class_name=="URLRequest");
-	URLRequest* req=static_cast<URLRequest*>(arg->implementation);
-	tiny_string url=req->url;
-	cout << "url is " << url << endl;
+	assert(arg->prototype==Class<URLRequest>::getClass());
+	th->urlRequest=static_cast<URLRequest*>(arg->implementation);
 	ASObject* data=arg->getVariableByQName("data","").obj;
-	assert(data);
-	for(int i=0;i<data->numVariables();i++)
-	{
-		ASObject* cur=data->getValueAt(i);
-		if(cur->getObjectType()!=T_FUNCTION)
-			cout << "\t" << data->getNameAt(i) << ": " << cur->toString() << endl;
-	}
+	//No POST data
+	assert(data==NULL);
+	assert(th->dataFormat=="binary");
+	sys->cur_thread_pool->addJob(th);
 	return NULL;
+}
+
+void URLLoader::execute()
+{
+	LOG(LOG_NOT_IMPLEMENTED,"URLLoader temporarily from file " << urlRequest->url);
+	FILE* f=fopen(urlRequest->url.raw_buf(),"rb");
+	assert(f);
+	fseek(f,0,SEEK_END);
+	unsigned int size=ftell(f);
+	fseek(f,0,SEEK_SET);
+	ByteArray* tmpData=Class<ByteArray>::getInstanceS(true);
+	uint8_t* buf=tmpData->getBuffer(size);
+	fread(buf,1,size,f);
+	data=tmpData->obj;
+	//Add a complete event for this object
+	sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"complete",obj));
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
 	return Class<ASString>::getInstanceS(true,th->dataFormat)->obj;
+}
+
+ASFUNCTIONBODY(URLLoader,_getData)
+{
+	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
+	if(th->data==NULL)
+		return new Undefined;
+	
+	th->data->incRef();
+	return th->data;
 }
 
 ASFUNCTIONBODY(URLLoader,_setDataFormat)

@@ -795,18 +795,21 @@ void Date::sinit(Class_base* c)
 	c->constructor=new Function(_constructor);
 }
 
+void Date::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("getTimezoneOffset","",new Function(getTimezoneOffset));
+	o->setVariableByQName("valueOf","",new Function(valueOf));
+	o->setVariableByQName("getTime",AS3,new Function(getTime));
+	o->setVariableByQName("getFullYear","",new Function(getFullYear));
+	o->setVariableByQName("getHours",AS3,new Function(getHours));
+	o->setVariableByQName("getMinutes",AS3,new Function(getMinutes));
+	o->setVariableByQName("getSeconds",AS3,new Function(getMinutes));
+	//o->setVariableByQName("toString",AS3,new Function(ASObject::_toString));
+}
+
 ASFUNCTIONBODY(Date,_constructor)
 {
 	Date* th=static_cast<Date*>(obj->implementation);
-	obj->setVariableByQName("getTimezoneOffset","",new Function(getTimezoneOffset));
-	obj->setVariableByQName("valueOf","",new Function(valueOf));
-	obj->setVariableByQName("getTime",AS3,new Function(getTime));
-	obj->setVariableByQName("getFullYear","",new Function(getFullYear));
-	//th->setVariableByName(Qname(AS3,"getFullYear"),new Function(getFullYear));
-	obj->setVariableByQName("getHours",AS3,new Function(getHours));
-	obj->setVariableByQName("getMinutes",AS3,new Function(getMinutes));
-	obj->setVariableByQName("getSeconds",AS3,new Function(getMinutes));
-	obj->setVariableByQName("toString",AS3,new Function(ASObject::_toString));
 	th->year=1969;
 	th->month=1;
 	th->date=1;

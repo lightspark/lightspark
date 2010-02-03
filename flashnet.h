@@ -22,6 +22,7 @@
 
 #include "asobjects.h"
 #include "flashevents.h"
+#include "thread_pool.h"
 
 namespace lightspark
 {
@@ -46,17 +47,22 @@ public:
 	static void sinit(Class_base*);
 };
 
-class URLLoader: public EventDispatcher
+class URLLoader: public EventDispatcher, public IThreadJob
 {
 private:
 	tiny_string dataFormat;
+	URLRequest* urlRequest;
+	ASObject* data;
 public:
 	URLLoader();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	ASFUNCTION(_getDataFormat);
+	ASFUNCTION(_getData);
 	ASFUNCTION(_setDataFormat);
+	void execute();
 };
 
 };

@@ -37,7 +37,9 @@ protected:
 	int len;
 public:
 	ByteArray();
+	~ByteArray();
 	static void sinit(Class_base* c);
+	uint8_t* getBuffer(unsigned int size);
 };
 
 class Timer: public EventDispatcher, public IThreadJob

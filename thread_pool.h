@@ -27,7 +27,7 @@
 namespace lightspark
 {
 
-#define NUM_THREADS 1
+#define NUM_THREADS 2
 
 class SystemState;
 

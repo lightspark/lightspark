@@ -86,11 +86,11 @@ struct fps_profiling
 class RootMovieClip: public MovieClip
 {
 friend class ParseThread;
-friend class Frame;
 protected:
 	sem_t mutex;
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
+	bool initialized;
 private:
 	RGB Background;
 	std::list < DictionaryTag* > dictionary;
@@ -116,6 +116,7 @@ public:
 	void commitFrame();
 	void Render();
 	void bindToName(const tiny_string& n);
+	void initialize();
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);

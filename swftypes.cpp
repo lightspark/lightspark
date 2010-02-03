@@ -1821,7 +1821,7 @@ void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool bui
 
 	if(actualPrototype->constructor)
 	{
-		LOG(LOG_CALLS,"Calling Instance init");
+		LOG(LOG_CALLS,"Calling Instance init " << actualPrototype->class_name);
 		actualPrototype->constructor->call(this,args,max_level);
 	}
 }

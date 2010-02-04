@@ -357,8 +357,8 @@ struct opcode_handler
 	void* addr;
 };
 
-enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE,
-			ARGS_NUMBER_OBJ};
+enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, 
+	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT};
 
 struct typed_opcode_handler
 {
@@ -425,6 +425,9 @@ private:
 	static void callSuper(call_context* th, int n, int m); 
 	static void callProperty(call_context* th, int n, int m); 
 	static void constructProp(call_context* th, int n, int m); 
+	static void setLocal(int n); 
+	static void setLocal_int(int n,int v); 
+	static void setLocal_obj(int n,ASObject* v);
 	static void getLocal(ASObject* o, int n); 
 	static void getLocal_short(int n); 
 	static void newObject(call_context* th, int n); 
@@ -449,7 +452,6 @@ private:
 	static bool ifFalse(ASObject*); 
 	static bool ifTrue(ASObject*); 
 	static ASObject* getSlot(ASObject* th, int n); 
-	static void setLocal(int n); 
 	static void kill(call_context* th, int n); 
 	static void setSlot(ASObject*, ASObject*, int n); 
 	static ASObject* pushString(call_context* th, int n); 
@@ -464,6 +466,7 @@ private:
 	static intptr_t pushByte(intptr_t n);
 	static intptr_t pushShort(intptr_t n);
 	static void pushInt(call_context* th, int n);
+	static void pushUInt(call_context* th, int n);
 	static void pushDouble(call_context* th, int n);
 	static void incLocal_i(call_context* th, int n);
 	static void coerce(call_context* th, int n);
@@ -622,6 +625,7 @@ bool Boolean_concrete(ASObject* obj);
 ASObject* parseInt(ASObject* obj,arguments* args);
 ASObject* parseFloat(ASObject* obj,arguments* args);
 ASObject* isNaN(ASObject* obj,arguments* args);
+ASObject* _int(ASObject* obj,arguments* args);
 
 inline ASObject* getGlobal()
 {

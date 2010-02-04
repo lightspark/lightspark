@@ -136,6 +136,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("trace","",new Function(print));
 	Global.setVariableByQName("parseInt","",new Function(parseInt));
 	Global.setVariableByQName("parseFloat","",new Function(parseFloat));
+	Global.setVariableByQName("int","",new Function(_int));
 	Global.setVariableByQName("toString","",new Function(ASObject::_toString));
 
 	Global.setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass());
@@ -150,6 +151,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Graphics","flash.display",Class<Graphics>::getClass());
 	Global.setVariableByQName("LineScaleMode","flash.display",Class<LineScaleMode>::getClass());
 	Global.setVariableByQName("StageScaleMode","flash.display",Class<StageScaleMode>::getClass());
+	Global.setVariableByQName("StageAlign","flash.display",Class<StageAlign>::getClass());
 	Global.setVariableByQName("IBitmapDrawable","flash.display",Class<IInterface>::getClass("IBitmapDrawable"));
 	Global.setVariableByQName("BitmapData","flash.display",Class<IInterface>::getClass("BitmapData"));
 
@@ -190,13 +192,13 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("IEventDispatcher","flash.events",Class<IEventDispatcher>::getClass());
 	Global.setVariableByQName("FocusEvent","flash.events",Class<FocusEvent>::getClass());
 	Global.setVariableByQName("KeyboardEvent","flash.events",Class<FakeEvent>::getClass("KeyboardEvent"));
-//	Global.setVariableByQName("ProgressEvent","flash.events",new Event("ProgressEvent"));
 
 	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
 	Global.setVariableByQName("URLLoader","flash.net",Class<URLLoader>::getClass());
 	Global.setVariableByQName("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getClass());
 	Global.setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass());
 	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
+	Global.setVariableByQName("SharedObject","flash.net",Class<SharedObject>::getClass());
 
 	Global.setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());
 
@@ -1253,9 +1255,6 @@ void ABCContext::exec()
 		for(int j=0;j<scripts[i].trait_count;j++)
 			buildTrait(&sys->currentVm->Global,&scripts[i].traits[j],mf);
 	}
-	//Before the entry point we run early events
-//	while(sem_trywait(&th->sem_event_count)==0)
-//		th->handleEvent();
 	//The last script entry has to be run
 	LOG(LOG_CALLS, "Last script (Entry Point)");
 	method_info* m=get_method(scripts[i].init);
@@ -1729,7 +1728,9 @@ istream& lightspark::operator>>(istream& in, s32& v)
 		if(i==35)
 		{
 			if(t>15)
+			{
 				LOG(LOG_ERROR,"parsing s32");
+			}
 			break;
 		}
 	}
@@ -2089,7 +2090,14 @@ istream& lightspark::operator>>(istream& in, cpool_info& v)
 	return in;
 }
 
-ASObject* lightspark::parseInt(ASObject* obj,arguments* args)
+ASFUNCTIONBODY(lightspark,_int)
+{
+	cout << "returning " << hex << args->at(0)->toInt() << dec << endl;
+	//Int is specified as 32bit
+	return abstract_i(args->at(0)->toInt()&0xffffffff);
+}
+
+ASFUNCTIONBODY(lightspark,parseInt)
 {
 	if(args->at(0)->getObjectType()==T_UNDEFINED)
 		return new Undefined;
@@ -2099,7 +2107,7 @@ ASObject* lightspark::parseInt(ASObject* obj,arguments* args)
 	}
 }
 
-ASObject* lightspark::parseFloat(ASObject* obj,arguments* args)
+ASFUNCTIONBODY(lightspark,parseFloat)
 {
 	if(args->at(0)->getObjectType()==T_UNDEFINED)
 		return new Undefined;
@@ -2118,7 +2126,7 @@ intptr_t ABCVm::s_toInt(ASObject* o)
 	return ret;
 }
 
-ASObject* lightspark::isNaN(ASObject* obj,arguments* args)
+ASFUNCTIONBODY(lightspark,isNaN)
 {
 	if(args->at(0)->getObjectType()==T_UNDEFINED)
 		return abstract_b(true);

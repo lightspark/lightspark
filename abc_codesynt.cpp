@@ -61,6 +61,7 @@ opcode_handler ABCVm::opcode_table_args1_lazy[]={
 	{"pushString",(void*)&ABCVm::pushString},
 	{"pushDouble",(void*)&ABCVm::pushDouble},
 	{"pushInt",(void*)&ABCVm::pushInt},
+	{"pushUInt",(void*)&ABCVm::pushUInt},
 	{"newFunction",(void*)&ABCVm::newFunction},
 	{"newCatch",(void*)&ABCVm::newCatch},
 	{"getScopeObject",(void*)&ABCVm::getScopeObject}
@@ -173,6 +174,8 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"getLocal",(void*)&ABCVm::getLocal,ARGS_OBJ_INT},
 	{"getLocal_short",(void*)&ABCVm::getLocal_short,ARGS_INT},
 	{"setLocal",(void*)&ABCVm::setLocal,ARGS_INT},
+	{"setLocal_int",(void*)&ABCVm::setLocal_int,ARGS_INT_INT},
+	{"setLocal_obj",(void*)&ABCVm::setLocal_obj,ARGS_INT_OBJ},
 };
 
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
@@ -520,6 +523,10 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	sig_number_obj.push_back(number_type);
 	sig_number_obj.push_back(voidptr_type);
 
+	vector<const llvm::Type*> sig_int_int;
+	sig_int_int.push_back(int_type);
+	sig_int_int.push_back(int_type);
+
 	for(int i=0;i<table_len;i++)
 	{
 		if(table[i].type==ARGS_OBJ_OBJ)
@@ -544,6 +551,8 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 			FT=llvm::FunctionType::get(ret_type, sig_obj_obj_int, false);
 		else if(table[i].type==ARGS_NUMBER_OBJ)
 			FT=llvm::FunctionType::get(ret_type, sig_number_obj, false);
+		else if(table[i].type==ARGS_INT_INT)
+			FT=llvm::FunctionType::get(ret_type, sig_int_int, false);
 		llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,table[i].name,module);
 		ex->addGlobalMapping(F,table[i].addr);
 	}
@@ -1214,6 +1223,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					break;
 				}
 				case 0x2d:
+				case 0x2e:
 				{
 					//pushint
 					u30 t;
@@ -3000,6 +3010,22 @@ SyntheticFunction::synt_function method_info::synt_method()
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
 				break;
 			}
+			case 0x2e:
+			{
+				//pushuint
+				LOG(LOG_TRACE, "synt pushuint" );
+				u30 t;
+				code2 >> t;
+				if(Log::getLevel()==LOG_CALLS)
+				{
+					constant = llvm::ConstantInt::get(int_type, t);
+					Builder.CreateCall2(ex->FindFunctionNamed("pushUInt"), context, constant);
+				}
+				u32 i=this->context->constant_pool.uinteger[t];
+				constant = llvm::ConstantInt::get(int_type, i);
+				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
+				break;
+			}
 			case 0x2f:
 			{
 				//pushdouble
@@ -3441,7 +3467,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(Log::getLevel()==LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, i);
-					Builder.CreateCall(ex->FindFunctionNamed("setLocal"), constant);
+					if(e.second==STACK_INT)
+						Builder.CreateCall2(ex->FindFunctionNamed("setLocal_int"), constant, e.first);
+					else if(e.second==STACK_OBJECT)
+						Builder.CreateCall2(ex->FindFunctionNamed("setLocal_obj"), constant, e.first);
+					else
+						Builder.CreateCall(ex->FindFunctionNamed("setLocal"), constant);
 				}
 				break;
 			}
@@ -3752,10 +3783,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//bitnot
 				LOG(LOG_TRACE, "synt bitnot" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_OBJECT)
-					value=Builder.CreateCall(ex->FindFunctionNamed("bitNot"), v1.first);
-				else
-					abort();
+				abstract_value(ex,Builder,v1);
+				value=Builder.CreateCall(ex->FindFunctionNamed("bitNot"), v1.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
@@ -3995,7 +4024,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 					value=Builder.CreateCall2(ex->FindFunctionNamed("lShift_io"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
-					value=Builder.CreateShl(v2.first,v1.first); //Check for trucation of v1.first
+				{
+					constant = llvm::ConstantInt::get(int_type, 31); //Mask for v1
+					v1.first=Builder.CreateAnd(v1.first,constant);
+					value=Builder.CreateShl(v2.first,v1.first);
+				}
 				else
 				{
 					abstract_value(ex,Builder,v1);
@@ -4102,10 +4135,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr_oi"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 					value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr_oi"), v2.first, v1.first);
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr"), v1.first, v2.first);
 				else
-					abort();
+				{
+					abstract_value(ex,Builder,v1);
+					abstract_value(ex,Builder,v2);
+					value=Builder.CreateCall2(ex->FindFunctionNamed("bitOr"), v1.first, v2.first);
+				}
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
@@ -4352,7 +4387,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(Log::getLevel()==LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, opcode&3);
-					Builder.CreateCall(ex->FindFunctionNamed("setLocal"), constant);
+					if(e.second==STACK_INT)
+						Builder.CreateCall2(ex->FindFunctionNamed("setLocal_int"), constant, e.first);
+					else if(e.second==STACK_OBJECT)
+						Builder.CreateCall2(ex->FindFunctionNamed("setLocal_obj"), constant, e.first);
+					else
+						Builder.CreateCall(ex->FindFunctionNamed("setLocal"), constant);
 				}
 				break;
 			}

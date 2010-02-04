@@ -27,6 +27,7 @@ using namespace lightspark;
 REGISTER_CLASS_NAME(URLLoader);
 REGISTER_CLASS_NAME(URLLoaderDataFormat);
 REGISTER_CLASS_NAME(URLRequest);
+REGISTER_CLASS_NAME(SharedObject);
 
 URLRequest::URLRequest()
 {
@@ -157,3 +158,6 @@ void URLLoaderDataFormat::sinit(Class_base* c)
 	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS(true,"binary")->obj);
 }
 
+void SharedObject::sinit(Class_base* c)
+{
+};

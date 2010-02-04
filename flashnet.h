@@ -47,6 +47,12 @@ public:
 	static void sinit(Class_base*);
 };
 
+class SharedObject: public IInterface
+{
+public:
+	static void sinit(Class_base*);
+};
+
 class URLLoader: public EventDispatcher, public IThreadJob
 {
 private:

@@ -294,6 +294,11 @@ bool ASObject::isEqual(ASObject* r)
 	return false;
 }
 
+unsigned int ASObject::toUInt() const
+{
+	return toInt();
+}
+
 int ASObject::toInt() const
 {
 	if(implementation)
@@ -892,7 +897,7 @@ tiny_string Integer::toString() const
 	if(val<0)
 	{
 		//This can be a slow path, as it not used for array access
-		snprintf(buf,20,"%i",val);
+		snprintf(buf,20,"%x",val);
 		return buf;
 	}
 	buf[19]=0;

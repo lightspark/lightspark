@@ -501,6 +501,7 @@ public:
 	SWFOBJECT_TYPE getObjectType() const;
 	virtual tiny_string toString() const;
 	virtual int toInt() const;
+	virtual unsigned int toUInt() const;
 	virtual double toNumber() const;
 
 	virtual bool isEqual(ASObject* r);

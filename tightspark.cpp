@@ -35,7 +35,7 @@ extern int count_alloc;
 
 int main(int argc, char* argv[])
 {
-	if(argc!=2)
+	if(argc<2)
 	{
 		cout << "Usage: " << argv[0] << " <file.abc>" << endl;
 		exit(-1);
@@ -50,12 +50,14 @@ int main(int argc, char* argv[])
 	sys=new SystemState;
 	sys->fps_prof=new fps_profiling();
 
-	ifstream f(argv[1]);
-	//TODO: Inject Context event
 	ABCVm vm(sys);
-	ABCContext* context=new ABCContext(f);
-	vm.addEvent(NULL,new ABCContextInitEvent(context));
+	sys->currentVm=&vm;
+	for(int i=1;i<argc;i++)
+	{
+		ifstream f(argv[i]);
+		ABCContext* context=new ABCContext(f);
+		vm.addEvent(NULL,new ABCContextInitEvent(context));
+	}
 	vm.addEvent(NULL,new ShutdownEvent);
 	vm.wait();
-	delete context;
 }

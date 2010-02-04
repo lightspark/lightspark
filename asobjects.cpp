@@ -747,7 +747,45 @@ bool Undefined::isEqual(ASObject* r)
 Undefined::Undefined()
 {
 	type=T_UNDEFINED;
-	//	setVariableByName(".Call",new Function(call));
+}
+
+ASFUNCTIONBODY(Integer,_toString)
+{
+	Integer* th=static_cast<Integer*>(obj);
+	int radix=10;
+	char buf[20];
+	if(args->size()==1)
+		radix=args->at(0)->toUInt();
+	assert(radix==10 || radix==16);
+	if(radix==10)
+		snprintf(buf,20,"%i",th->val);
+	else if(radix==16)
+		snprintf(buf,20,"%x",th->val);
+
+	return Class<ASString>::getInstanceS(true,buf)->obj;
+}
+
+tiny_string Integer::toString() const
+{
+	char buf[20];
+	if(val<0)
+	{
+		//This can be a slow path, as it not used for array access
+		snprintf(buf,20,"%i",val);
+		return buf;
+	}
+	buf[19]=0;
+	char* cur=buf+19;
+
+	int v=val;
+	do
+	{
+		cur--;
+		*cur='0'+(v%10);
+		v/=10;
+	}
+	while(v!=0);
+	return cur;
 }
 
 bool Number::isEqual(ASObject* o)

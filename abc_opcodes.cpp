@@ -80,16 +80,15 @@ ASObject* ABCVm::convert_b(ASObject* o)
 	return o;
 }
 
-ASObject* ABCVm::convert_u(ASObject* o)
+uintptr_t ABCVm::convert_u(ASObject* o)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "convert_u" );
-	return o;
+	LOG(LOG_CALLS, "convert_u" );
+	return o->toUInt();
 }
 
-ASObject* ABCVm::convert_i(ASObject* o)
+intptr_t ABCVm::convert_i(ASObject* o)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "convert_i" );
-	return o;
+	return o->toInt();
 }
 
 void ABCVm::label()
@@ -142,6 +141,11 @@ void ABCVm::pop()
 	LOG(LOG_CALLS, "pop: DONE" );
 }
 
+void ABCVm::getLocal_int(int n, int v)
+{
+	LOG(LOG_CALLS,"getLocal[" << n << "] (int)= " << dec << v);
+}
+
 void ABCVm::getLocal(ASObject* o, int n)
 {
 	LOG(LOG_CALLS,"getLocal[" << n << "] (" << o << ") " << o->toString());
@@ -159,7 +163,7 @@ void ABCVm::setLocal(int n)
 
 void ABCVm::setLocal_int(int n, int v)
 {
-	LOG(LOG_CALLS,"setLocal[" << n << "] (int)= " << v);
+	LOG(LOG_CALLS,"setLocal[" << n << "] (int)= " << dec << v);
 }
 
 void ABCVm::setLocal_obj(int n, ASObject* v)
@@ -327,7 +331,6 @@ intptr_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 
 	//TODO: implement exception handling to find out if no integer can be returned
 	intptr_t ret=obj->getVariableByMultiname_i(*name);
-	cout << ret << endl;
 
 	obj->decRef();
 	return ret;
@@ -693,7 +696,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	{
 		if(obj->prototype)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function obj type " << obj->prototype->class_name);
+			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function " << name->name_s << " on obj type " << obj->prototype->class_name);
 		}
 		else
 		{
@@ -956,7 +959,6 @@ uintptr_t ABCVm::lShift(ASObject* val1, ASObject* val2)
 	LOG(LOG_CALLS,"lShift "<<hex<<i2<<"<<"<<i1<<dec);
 	//Left shift are supposed to always work in 32bit
 	uint32_t ret=i2<<i1;
-	cout << ret << endl;
 	return ret;
 }
 
@@ -968,7 +970,6 @@ uintptr_t ABCVm::lShift_io(uintptr_t val1, ASObject* val2)
 	LOG(LOG_CALLS,"lShift "<<hex<<i2<<"<<"<<i1<<dec);
 	//Left shift are supposed to always work in 32bit
 	uint32_t ret=i2<<i1;
-	cout << ret << endl;
 	return ret;
 }
 
@@ -989,7 +990,6 @@ uintptr_t ABCVm::urShift(ASObject* val1, ASObject* val2)
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,"urShift "<<hex<<i2<<">>"<<i1<<dec);
-	cout << (i2>>i1) << endl;
 	return i2>>i1;
 }
 
@@ -999,7 +999,6 @@ uintptr_t ABCVm::urShift_io(uintptr_t val1, ASObject* val2)
 	int32_t i1=val1&0x1f;
 	val2->decRef();
 	LOG(LOG_CALLS,"urShift "<<hex<<i2<<">>"<<i1<<dec);
-	cout << (i2>>i1) << endl;
 	return i2>>i1;
 }
 

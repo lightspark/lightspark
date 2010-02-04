@@ -2092,7 +2092,6 @@ istream& lightspark::operator>>(istream& in, cpool_info& v)
 
 ASFUNCTIONBODY(lightspark,_int)
 {
-	cout << "returning " << hex << args->at(0)->toInt() << dec << endl;
 	//Int is specified as 32bit
 	return abstract_i(args->at(0)->toInt()&0xffffffff);
 }

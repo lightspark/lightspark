@@ -510,14 +510,13 @@ private:
 	//int debug;
 public:
 	Integer(int v):val(v){type=T_INTEGER;
-		//debug=rand();
-		//std::cout << "new " << this << std::endl;
+		setVariableByQName("toString",AS3,new Function(Integer::_toString));
 	}
 	Integer(Manager* m):val(0),ASObject(m){type=T_INTEGER;
-		//debug=rand();
-		//std::cout << "new " << this << std::endl;
+		setVariableByQName("toString",AS3,new Function(Integer::_toString));
 	}
-	virtual ~Integer(){/*std::cout << "deleting "  << debug << std::endl;*/}
+	ASFUNCTION(_toString);
+	virtual ~Integer(){}
 	Integer& operator=(int v){val=v; return *this; }
 	tiny_string toString() const;
 	int toInt() const

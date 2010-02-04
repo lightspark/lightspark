@@ -94,9 +94,6 @@ opcode_handler ABCVm::opcode_table_args1_pointers_int[]={
 };
 
 opcode_handler ABCVm::opcode_table_args1_pointers[]={
-	{"convert_d",(void*)&ABCVm::convert_d},
-	{"convert_b",(void*)&ABCVm::convert_b},
-	{"convert_i",(void*)&ABCVm::convert_i},
 	{"coerce_s",(void*)&ABCVm::coerce_s},
 	{"checkfilter",(void*)&ABCVm::checkfilter},
 	{"negate",(void*)&ABCVm::negate},
@@ -148,7 +145,9 @@ typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
 	{"rShift",(void*)&ABCVm::rShift,ARGS_OBJ_OBJ},
 	{"urShift_io",(void*)&ABCVm::urShift_io,ARGS_INT_OBJ},
 	{"toInt",(void*)&ABCVm::s_toInt,ARGS_OBJ},
-	{"getProperty_i",(void*)&ABCVm::getProperty_i,ARGS_OBJ_OBJ}
+	{"getProperty_i",(void*)&ABCVm::getProperty_i,ARGS_OBJ_OBJ},
+	{"convert_i",(void*)&ABCVm::convert_i,ARGS_OBJ},
+	{"convert_u",(void*)&ABCVm::convert_u,ARGS_OBJ},
 };
 
 typed_opcode_handler ABCVm::opcode_table_number_t[]={
@@ -173,6 +172,7 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"lookupswitch",(void*)&ABCVm::lookupswitch,ARGS_NONE},
 	{"getLocal",(void*)&ABCVm::getLocal,ARGS_OBJ_INT},
 	{"getLocal_short",(void*)&ABCVm::getLocal_short,ARGS_INT},
+	{"getLocal_int",(void*)&ABCVm::getLocal_int,ARGS_INT_INT},
 	{"setLocal",(void*)&ABCVm::setLocal,ARGS_INT},
 	{"setLocal_int",(void*)&ABCVm::setLocal_int,ARGS_INT_INT},
 	{"setLocal_obj",(void*)&ABCVm::setLocal_obj,ARGS_INT_OBJ},
@@ -180,6 +180,8 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"add",(void*)&ABCVm::add,ARGS_OBJ_OBJ},
+	{"convert_d",(void*)&ABCVm::convert_d,ARGS_OBJ},
+	{"convert_b",(void*)&ABCVm::convert_b,ARGS_OBJ},
 	{"add_oi",(void*)&ABCVm::add_oi,ARGS_OBJ_INT},
 	{"add_od",(void*)&ABCVm::add_od,ARGS_OBJ_NUMBER},
 	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
@@ -809,6 +811,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	//The pointer size compatible int type will be useful
 	//TODO: void*
 	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
+	const llvm::Type* int32_type=llvm::IntegerType::get(getVm()->llvm_context,32);
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
 	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
 	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
@@ -1483,16 +1486,30 @@ SyntheticFunction::synt_function method_info::synt_method()
 					break;
 				}
 				case 0x70:
-				case 0x73:
-				case 0x74:
 				case 0x75:
 				case 0x76:
 				{
 					//convert_s
-					//convert_i
-					//convert_u
 					//convert_d
 					//convert_b
+					break;
+				}
+				case 0x73:
+				case 0x74:
+				{
+					//convert_i
+					//convert_u
+					STACK_TYPE t;
+					if(!static_stack_types.empty())
+					{
+						t=static_stack_types.back().second;
+						static_stack_types.pop_back();
+					}
+					else
+						t=STACK_OBJECT;
+
+					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
+					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
 				case 0x78:
@@ -2213,7 +2230,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 t;
 				code2 >> t;
 				LOG(LOG_TRACE, "synt kill " << t );
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("kill"), context, constant);
@@ -2380,7 +2397,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				s24 t;
 				code2 >> t;
 				LOG(LOG_TRACE, "synt jump " << t );
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("jump"), context, constant);
@@ -2907,7 +2924,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2.read((char*)&t,1);
 				constant = llvm::ConstantInt::get(int_type, (int)t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 					value=Builder.CreateCall(ex->FindFunctionNamed("pushByte"), constant);
 				break;
 			}
@@ -2919,7 +2936,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("pushShort"), constant);
 				break;
 			}
@@ -2951,7 +2968,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//pop
 				LOG(LOG_TRACE, "synt pop" );
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("pop"));
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(e.second==STACK_OBJECT)
@@ -2962,7 +2979,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//dup
 				LOG(LOG_TRACE, "synt dup" );
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("dup"));
 				stack_entry e=static_stack_peek(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e);
@@ -2975,7 +2992,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//swap
 				LOG(LOG_TRACE, "synt swap" );
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("swap"));
 				stack_entry e1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry e2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -3000,7 +3017,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, "synt pushint" );
 				u30 t;
 				code2 >> t;
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("pushInt"), context, constant);
@@ -3016,7 +3033,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, "synt pushuint" );
 				u30 t;
 				code2 >> t;
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("pushUInt"), context, constant);
@@ -3033,7 +3050,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 t;
 				code2 >> t;
 
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
 					Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
@@ -3430,7 +3447,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_locals[i]=stack_entry(t,STACK_OBJECT);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-					if(Log::getLevel()==LOG_CALLS)
+					if(Log::getLevel()==LOG_TRACE)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), t, constant);
 
 				}
@@ -3438,14 +3455,20 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_CALLS)
+					if(Log::getLevel()==LOG_TRACE)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), static_locals[i].first, constant);
 				}
-				else if(static_locals[i].second==STACK_INT || static_locals[i].second==STACK_NUMBER 
-						|| static_locals[i].second==STACK_BOOLEAN)
+				else if(static_locals[i].second==STACK_INT)
 				{
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_CALLS)
+					if(Log::getLevel()==LOG_TRACE)
+						Builder.CreateCall2(ex->FindFunctionNamed("getLocal_int"), constant, static_locals[i].first);
+				}
+				else if(static_locals[i].second==STACK_NUMBER ||
+						static_locals[i].second==STACK_BOOLEAN)
+				{
+					static_stack_push(static_stack,static_locals[i]);
+					if(Log::getLevel()==LOG_TRACE)
 						Builder.CreateCall(ex->FindFunctionNamed("getLocal_short"), constant);
 				}
 				else
@@ -3464,7 +3487,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
 
 				static_locals[i]=e;
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, i);
 					if(e.second==STACK_INT)
@@ -3611,30 +3634,46 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//convert_i
 				LOG(LOG_TRACE, "synt convert_i" );
-				/*llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_NUMBER)
+				{
+					value=Builder.CreateFPToSI(v1.first,int_type);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				}
+				else if(v1.second==STACK_INT) //Nothing to do
+				{
+					static_stack_push(static_stack,v1);
+				}
+				else
+				{
+					value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				}
 				break;
 			}
 			case 0x74:
 			{
 				//convert_u
 				LOG(LOG_TRACE, "synt convert_u" );
-				/*llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(v1.second==STACK_INT) //Nothing to do
+				{
+					static_stack_push(static_stack,v1);
+				}
+				else
+				{
+					value=Builder.CreateCall(ex->FindFunctionNamed("convert_u"), v1.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_INT));
+				}
 				break;
 			}
 			case 0x75:
 			{
 				//convert_d
 				LOG(LOG_TRACE, "synt convert_d" );
-				/*llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));*/
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1.first);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
 			case 0x76:
@@ -3678,7 +3717,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//coerce_a
 				LOG(LOG_TRACE, "synt coerce_a" );
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 					Builder.CreateCall(ex->FindFunctionNamed("coerce_a"));
 				/*stack_entry v1=
 					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
@@ -4073,7 +4112,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
 					value=Builder.CreateCall2(ex->FindFunctionNamed("urShift_io"), v1.first, v2.first);
 				else if(v1.second==STACK_INT && v2.second==STACK_INT)
+				{
+					v2.first=Builder.CreateIntCast(v2.first,int32_type,false);
+					v1.first=Builder.CreateIntCast(v1.first,int32_type,false);
 					value=Builder.CreateLShr(v2.first,v1.first); //Check for trucation of v1.first
+					value=Builder.CreateIntCast(value,int_type,false);
+				}
 				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
 					v2.first=Builder.CreateFPToSI(v2.first,int_type);
@@ -4348,22 +4392,27 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_locals[i]=stack_entry(t,STACK_OBJECT);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-					if(Log::getLevel()==LOG_CALLS)
+					if(Log::getLevel()==LOG_TRACE)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), t, constant);
 				}
 				else if(static_locals[i].second==STACK_OBJECT)
 				{
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_CALLS)
+					if(Log::getLevel()==LOG_TRACE)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), static_locals[i].first, constant);
 				}
-				else if(static_locals[i].second==STACK_INT || 
-						static_locals[i].second==STACK_NUMBER ||
+				else if(static_locals[i].second==STACK_INT)
+				{
+					static_stack_push(static_stack,static_locals[i]);
+					if(Log::getLevel()==LOG_TRACE)
+						Builder.CreateCall2(ex->FindFunctionNamed("getLocal_int"), constant, static_locals[i].first);
+				}
+				else if(static_locals[i].second==STACK_NUMBER ||
 						static_locals[i].second==STACK_BOOLEAN)
 				{
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_CALLS)
+					if(Log::getLevel()==LOG_TRACE)
 						Builder.CreateCall(ex->FindFunctionNamed("getLocal_short"), constant);
 				}
 				else
@@ -4384,7 +4433,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
 
 				static_locals[i]=e;
-				if(Log::getLevel()==LOG_CALLS)
+				if(Log::getLevel()>=LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, opcode&3);
 					if(e.second==STACK_INT)

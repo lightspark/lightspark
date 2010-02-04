@@ -430,6 +430,7 @@ private:
 	static void setLocal_obj(int n,ASObject* v);
 	static void getLocal(ASObject* o, int n); 
 	static void getLocal_short(int n); 
+	static void getLocal_int(int n, int v); 
 	static void newObject(call_context* th, int n); 
 	static void getDescendants(call_context* th, int n); 
 	static ASObject* newCatch(call_context* th, int n); 
@@ -530,8 +531,8 @@ private:
 	static void coerce_a();
 	static void label();
 	static void lookupswitch();
-	static ASObject* convert_i(ASObject*);
-	static ASObject* convert_u(ASObject*);
+	static intptr_t convert_i(ASObject*);
+	static uintptr_t convert_u(ASObject*);
 	static ASObject* convert_b(ASObject*);
 	static ASObject* convert_d(ASObject*);
 	static ASObject* greaterThan(ASObject*,ASObject*);

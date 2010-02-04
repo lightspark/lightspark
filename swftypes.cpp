@@ -891,29 +891,6 @@ void variables_map::dumpVariables()
 			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter << endl;
 }
 
-tiny_string Integer::toString() const
-{
-	char buf[20];
-	if(val<0)
-	{
-		//This can be a slow path, as it not used for array access
-		snprintf(buf,20,"%x",val);
-		return buf;
-	}
-	buf[19]=0;
-	char* cur=buf+19;
-
-	int v=val;
-	do
-	{
-		cur--;
-		*cur='0'+(v%10);
-		v/=10;
-	}
-	while(v!=0);
-	return cur;
-}
-
 lightspark::RECT::RECT()
 {
 }
@@ -1696,13 +1673,6 @@ void variables_map::setSlot(int n,ASObject* o)
 		//slots[n-1]=o;
 	}
 }
-
-/*tiny_string RegisterNumber::toString() const
-{
-	char buf[20];
-	snprintf(buf,20,"Register %i",index);
-	return buf;
-}*/
 
 obj_var* variables_map::getValueAt(int index, int& level)
 {

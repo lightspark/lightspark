@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
 	//setrlimit(RLIMIT_AS,&rl);
 #endif
 
-	Log::initLogging(LOG_CALLS);
+	Log::initLogging(LOG_NOT_IMPLEMENTED);
 	sys=new SystemState;
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();

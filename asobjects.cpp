@@ -80,14 +80,23 @@ ASFUNCTIONBODY(Array,_constructor)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
 
-	if(args && args->size()!=0)
+	if(args)
 	{
-		LOG(LOG_CALLS,"Called Array constructor");
-		th->resize(args->size());
-		for(int i=0;i<args->size();i++)
+		if(args->size()==1)
 		{
-			th->set(i,args->at(i));
-			args->at(i)->incRef();
+			int size=args->at(0)->toInt();
+			LOG(LOG_CALLS,"Creating array of length " << size);
+			th->resize(size);
+		}
+		else
+		{
+			LOG(LOG_CALLS,"Called Array constructor");
+			th->resize(args->size());
+			for(int i=0;i<args->size();i++)
+			{
+				th->set(i,args->at(i));
+				args->at(i)->incRef();
+			}
 		}
 	}
 	return NULL;
@@ -380,7 +389,7 @@ bool Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	return true;
 }
 
-bool Array::isValidMultiname(const multiname& name, int& index) const
+bool Array::isValidMultiname(const multiname& name, int& index)
 {
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
@@ -634,9 +643,20 @@ tiny_string Array::toString() const
 	string ret;
 	for(int i=0;i<data.size();i++)
 	{
-		if(data[i].type!=STACK_OBJECT)
+		if(data[i].type==STACK_OBJECT)
+		{
+			if(data[i].data)
+				ret+=data[i].data->toString().raw_buf();
+		}
+		else if(data[i].type==STACK_INT)
+		{
+			char buf[20];
+			snprintf(buf,20,"%i",data[i].data_i);
+			ret+=buf;
+		}
+		else
 			abort();
-		ret+=data[i].data->toString().raw_buf();
+
 		if(i!=data.size()-1)
 			ret+=',';
 	}

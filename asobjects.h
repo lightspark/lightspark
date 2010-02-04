@@ -414,12 +414,13 @@ struct data_slot
 class Array: public IInterface
 {
 friend class ABCVm;
-private:
-	bool isValidMultiname(const multiname& name, int& index) const;
-	bool isValidQName(const tiny_string& name, const tiny_string& ns, int& index);
 protected:
 	std::vector<data_slot> data;
 public:
+	//These utility methods are also used by ByteArray 
+	static bool isValidMultiname(const multiname& name, int& index);
+	static bool isValidQName(const tiny_string& name, const tiny_string& ns, int& index);
+
 	Array();
 	virtual ~Array();
 	static void sinit(Class_base*);
@@ -543,9 +544,19 @@ public:
 	Number(double v):val(v){type=T_NUMBER;}
 	Number(Manager* m):val(0),ASObject(m){type=T_NUMBER;}
 	tiny_string toString() const;
+	unsigned int toUInt() const
+	{
+		return (unsigned int)(val);
+	}
 	int toInt() const
 	{
-		return int(val);
+		if(val<0)
+			return int(val);
+		else
+		{
+			uint32_t ret=val;
+			return ret;
+		}
 	}
 	double toNumber() const
 	{

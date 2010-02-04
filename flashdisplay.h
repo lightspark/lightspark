@@ -278,7 +278,16 @@ public:
 	ASFUNCTION(_getStageHeight);
 };
 
-class StageScaleMode: public DisplayObjectContainer
+class StageScaleMode: public IInterface
+{
+public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o)
+	{
+	}
+};
+
+class StageAlign: public IInterface
 {
 public:
 	static void sinit(Class_base* c);

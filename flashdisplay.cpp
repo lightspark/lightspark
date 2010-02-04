@@ -50,6 +50,7 @@ REGISTER_CLASS_NAME(Stage);
 REGISTER_CLASS_NAME(Graphics);
 REGISTER_CLASS_NAME(LineScaleMode);
 REGISTER_CLASS_NAME(StageScaleMode);
+REGISTER_CLASS_NAME(StageAlign);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -1156,4 +1157,9 @@ void StageScaleMode::sinit(Class_base* c)
 	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS(true,"noBorder")->obj);
 	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS(true,"noScale")->obj);
 	c->setVariableByQName("SHOW_ALL","",Class<ASString>::getInstanceS(true,"showAll")->obj);
+}
+
+void StageAlign::sinit(Class_base* c)
+{
+	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS(true,"TL")->obj);
 }

@@ -26,8 +26,8 @@ using namespace lightspark;
 
 uintptr_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
 {
-	uintptr_t i1=val1->toInt();
-	uintptr_t i2=val2->toInt();
+	uintptr_t i1=val1->toUInt();
+	uintptr_t i2=val2->toUInt();
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,"bitAnd_oo " << hex << i1 << '&' << i2);
@@ -45,7 +45,7 @@ uintptr_t ABCVm::increment(ASObject* o)
 
 uintptr_t ABCVm::bitAnd_oi(ASObject* val1, intptr_t val2)
 {
-	uintptr_t i1=val1->toInt();
+	uintptr_t i1=val1->toUInt();
 	uintptr_t i2=val2;
 	val1->decRef();
 	LOG(LOG_CALLS,"bitAnd_oi " << hex << i1 << '&' << i2);
@@ -144,7 +144,7 @@ void ABCVm::pop()
 
 void ABCVm::getLocal(ASObject* o, int n)
 {
-	LOG(LOG_CALLS,"getLocal[" << n << "] " << o->toString());
+	LOG(LOG_CALLS,"getLocal[" << n << "] (" << o << ") " << o->toString());
 }
 
 void ABCVm::getLocal_short(int n)
@@ -154,7 +154,17 @@ void ABCVm::getLocal_short(int n)
 
 void ABCVm::setLocal(int n)
 {
-	LOG(LOG_CALLS,"setLocal: DONE " << n);
+	LOG(LOG_CALLS,"setLocal[" << n << "]");
+}
+
+void ABCVm::setLocal_int(int n, int v)
+{
+	LOG(LOG_CALLS,"setLocal[" << n << "] (int)= " << v);
+}
+
+void ABCVm::setLocal_obj(int n, ASObject* v)
+{
+	LOG(LOG_CALLS,"setLocal[" << n << "] = " << v->toString());
 }
 
 intptr_t ABCVm::pushShort(intptr_t n)
@@ -189,7 +199,7 @@ ASObject* ABCVm::negate(ASObject* v)
 
 uintptr_t ABCVm::bitNot(ASObject* val)
 {
-	uintptr_t i1=val->toInt();
+	uintptr_t i1=val->toUInt();
 	val->decRef();
 	LOG(LOG_CALLS,"bitNot " << hex << i1);
 	return ~i1;
@@ -197,8 +207,8 @@ uintptr_t ABCVm::bitNot(ASObject* val)
 
 uintptr_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
 {
-	int i1=val1->toInt();
-	int i2=val2->toInt();
+	int i1=val1->toUInt();
+	int i2=val2->toUInt();
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,"bitXor " << hex << i1 << '^' << i2);
@@ -208,7 +218,7 @@ uintptr_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
 uintptr_t ABCVm::bitOr_oi(ASObject* val2, uintptr_t val1)
 {
 	int i1=val1;
-	int i2=val2->toInt();
+	int i2=val2->toUInt();
 	val2->decRef();
 	LOG(LOG_CALLS,"bitOr " << hex << i1 << '|' << i2);
 	return i1|i2;
@@ -216,8 +226,8 @@ uintptr_t ABCVm::bitOr_oi(ASObject* val2, uintptr_t val1)
 
 uintptr_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 {
-	int i1=val1->toInt();
-	int i2=val2->toInt();
+	int i1=val1->toUInt();
+	int i2=val2->toUInt();
 	val1->decRef();
 	val2->decRef();
 	LOG(LOG_CALLS,"bitOr " << hex << i1 << '|' << i2);
@@ -317,6 +327,7 @@ intptr_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 
 	//TODO: implement exception handling to find out if no integer can be returned
 	intptr_t ret=obj->getVariableByMultiname_i(*name);
+	cout << ret << endl;
 
 	obj->decRef();
 	return ret;
@@ -759,7 +770,7 @@ number_t ABCVm::subtract_io(intptr_t val2, ASObject* val1)
 	int num1=val1->toInt();
 
 	val1->decRef();
-	LOG(LOG_CALLS,"subtract_io " << num1 << '-' << num2);
+	LOG(LOG_CALLS,"subtract_io " << dec << num1 << '-' << num2);
 	return num1-num2;
 }
 
@@ -779,6 +790,12 @@ number_t ABCVm::subtract(ASObject* val2, ASObject* val1)
 	val2->decRef();
 	LOG(LOG_CALLS,"subtract " << num1 << '-' << num2);
 	return num1-num2;
+}
+
+void ABCVm::pushUInt(call_context* th, int n)
+{
+	u32 i=th->context->constant_pool.uinteger[n];
+	LOG(LOG_CALLS, "pushUInt [" << dec << n << "] " << i);
 }
 
 void ABCVm::pushInt(call_context* th, int n)
@@ -936,8 +953,11 @@ uintptr_t ABCVm::lShift(ASObject* val1, ASObject* val2)
 	int32_t i1=val1->toInt()&0x1f;
 	val1->decRef();
 	val2->decRef();
-	LOG(LOG_CALLS,"lShift "<<i2<<"<<"<<i1);
-	return i2<<i1;
+	LOG(LOG_CALLS,"lShift "<<hex<<i2<<"<<"<<i1<<dec);
+	//Left shift are supposed to always work in 32bit
+	uint32_t ret=i2<<i1;
+	cout << ret << endl;
+	return ret;
 }
 
 uintptr_t ABCVm::lShift_io(uintptr_t val1, ASObject* val2)
@@ -945,8 +965,11 @@ uintptr_t ABCVm::lShift_io(uintptr_t val1, ASObject* val2)
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1&0x1f;
 	val2->decRef();
-	LOG(LOG_CALLS,"lShift "<<i2<<"<<"<<i1);
-	return i2<<i1;
+	LOG(LOG_CALLS,"lShift "<<hex<<i2<<"<<"<<i1<<dec);
+	//Left shift are supposed to always work in 32bit
+	uint32_t ret=i2<<i1;
+	cout << ret << endl;
+	return ret;
 }
 
 uintptr_t ABCVm::rShift(ASObject* val1, ASObject* val2)
@@ -955,7 +978,7 @@ uintptr_t ABCVm::rShift(ASObject* val1, ASObject* val2)
 	int32_t i1=val1->toInt()&0x1f;
 	val1->decRef();
 	val2->decRef();
-	LOG(LOG_CALLS,"rShift "<<i2<<">>"<<i1);
+	LOG(LOG_CALLS,"rShift "<<hex<<i2<<">>"<<i1<<dec);
 	return i2>>i1;
 }
 
@@ -965,7 +988,8 @@ uintptr_t ABCVm::urShift(ASObject* val1, ASObject* val2)
 	int32_t i1=val1->toInt()&0x1f;
 	val1->decRef();
 	val2->decRef();
-	LOG(LOG_CALLS,"urShift "<<i2<<">>"<<i1);
+	LOG(LOG_CALLS,"urShift "<<hex<<i2<<">>"<<i1<<dec);
+	cout << (i2>>i1) << endl;
 	return i2>>i1;
 }
 
@@ -974,7 +998,8 @@ uintptr_t ABCVm::urShift_io(uintptr_t val1, ASObject* val2)
 	uint32_t i2=val2->toInt();
 	int32_t i1=val1&0x1f;
 	val2->decRef();
-	LOG(LOG_CALLS,"urShift "<<i2<<">>"<<i1);
+	LOG(LOG_CALLS,"urShift "<<hex<<i2<<">>"<<i1<<dec);
+	cout << (i2>>i1) << endl;
 	return i2>>i1;
 }
 
@@ -2015,7 +2040,9 @@ void ABCVm::call(call_context* th, int m)
 	{
 		IFunction* func=static_cast<IFunction*>(f);
 		ASObject* ret=func->call(obj,&args,obj->max_level);
-		th->runtime_stack_push(ret);
+		//Push the value only if not null
+		if(ret)
+			th->runtime_stack_push(ret);
 		obj->decRef();
 		f->decRef();
 	}

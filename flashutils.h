@@ -35,11 +35,28 @@ friend class Loader;
 protected:
 	uint8_t* bytes;
 	int len;
+	int position;
 public:
 	ByteArray();
 	~ByteArray();
+	ASFUNCTION(_getBytesAvailable);
+	ASFUNCTION(_getLength);
+	ASFUNCTION(_getPosition);
+	ASFUNCTION(_setPosition);
+	ASFUNCTION(readBytes);
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	uint8_t* getBuffer(unsigned int size);
+	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
+	{
+		abort();
+	}
+	bool getVariableByMultiname(const multiname& name, ASObject*& out);
+	bool getVariableByMultiname_i(const multiname& name, intptr_t& out);
+	bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	bool setVariableByMultiname(const multiname& name, ASObject* o);
+	bool setVariableByMultiname_i(const multiname& name, intptr_t value);
+	bool isEqual(bool& ret, ASObject* r);
 };
 
 class Timer: public EventDispatcher, public IThreadJob

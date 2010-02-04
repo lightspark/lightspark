@@ -30,25 +30,158 @@ REGISTER_CLASS_NAME(ByteArray);
 REGISTER_CLASS_NAME(Timer);
 REGISTER_CLASS_NAME(Dictionary);
 
-ByteArray::ByteArray():bytes(NULL),len(0)
+ByteArray::ByteArray():bytes(NULL),len(0),position(0)
 {
+}
+
+ByteArray::~ByteArray()
+{
+	delete[] bytes;
 }
 
 void ByteArray::sinit(Class_base* c)
 {
 }
 
+void ByteArray::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("length","",new Function(_getLength));
+	o->setGetterByQName("bytesAvailable","",new Function(_getBytesAvailable));
+	o->setGetterByQName("position","",new Function(_getPosition));
+	o->setSetterByQName("position","",new Function(_setPosition));
+	o->setVariableByQName("readBytes","",new Function(readBytes));
+}
+
 uint8_t* ByteArray::getBuffer(unsigned int size)
 {
-	assert(bytes==NULL);
-	len=size;
-	bytes=new uint8_t[len];
+	if(bytes==NULL)
+	{
+		len=size;
+		bytes=new uint8_t[len];
+	}
+	else
+	{
+		assert(size<=len);
+	}
 	return bytes;
 }
 
-ByteArray::~ByteArray()
+ASFUNCTIONBODY(ByteArray,_getPosition)
 {
-	delete[] bytes;
+	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	return abstract_i(th->position);
+}
+
+ASFUNCTIONBODY(ByteArray,_setPosition)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	int pos=args->at(0)->toInt();
+	th->position=pos;
+	return NULL;
+}
+
+ASFUNCTIONBODY(ByteArray,_getLength)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	return abstract_i(th->len);
+}
+
+ASFUNCTIONBODY(ByteArray,_getBytesAvailable)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	return abstract_i(th->len-th->position);
+}
+
+ASFUNCTIONBODY(ByteArray,readBytes)
+{
+	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	//Validate parameters
+	assert(args->size()==3);
+	assert(args->at(0)->prototype==Class<ByteArray>::getClass());
+
+	ByteArray* out=Class<ByteArray>::cast(args->at(0)->implementation);
+	int offset=args->at(1)->toInt();
+	int length=args->at(2)->toInt();
+	assert(offset==0);
+
+	uint8_t* buf=out->getBuffer(length);
+	memcpy(buf,th->bytes+th->position,length);
+	th->position+=length;
+
+	return NULL;
+}
+
+bool ByteArray::getVariableByMultiname(const multiname& name, ASObject*& out)
+{
+	int index=0;
+	if(!Array::isValidMultiname(name,index))
+		return false;
+
+	assert(index<len);
+	out=abstract_i(bytes[index]);
+
+	return true;
+}
+
+bool ByteArray::getVariableByMultiname_i(const multiname& name, intptr_t& out)
+{
+	int index=0;
+	if(!Array::isValidMultiname(name,index))
+		return false;
+
+	assert(index<len);
+	out=bytes[index];
+
+	return true;
+}
+
+bool ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+{
+	int index=0;
+	if(!Array::isValidQName(name,ns,index))
+		return false;
+
+	abort();
+}
+
+bool ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	int index=0;
+	if(!Array::isValidMultiname(name,index))
+		return false;
+
+	if(index>=len)
+	{
+		//Resize the array
+		uint8_t* buf=new uint8_t[index+1];
+		memcpy(buf,bytes,len);
+		delete[] bytes;
+		len=index+1;
+		bytes=buf;
+	}
+
+	if(o->getObjectType()!=T_UNDEFINED)
+		bytes[index]=o->toInt();
+	else
+		bytes[index]=0;
+	return true;
+}
+
+bool ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
+{
+	int index=0;
+	if(!Array::isValidMultiname(name,index))
+		return false;
+
+	abort();
+}
+
+bool ByteArray::isEqual(bool& ret, ASObject* r)
+{
+	if(r->getObjectType()!=T_OBJECT)
+		return false;
+	
+	abort();
 }
 
 void Timer::execute()

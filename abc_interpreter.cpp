@@ -888,14 +888,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				static_stack_push(static_stack,stack_entry(constant,STACK_NUMBER));
 				break;
 			}
-			case 0x30:
-			{
-				//pushscope
-				LOG(LOG_TRACE, "synt pushscope" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				Builder.CreateCall(ex->FindFunctionNamed("pushScope"), context);
-				break;
-			}
 			case 0x32:
 			{
 				//hasnext2
@@ -2199,6 +2191,12 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code2 >> t;
 				break;
 			}*/
+			case 0x30:
+			{
+				//pushscope
+				pushScope(context);
+				break;
+			}
 			case 0xd0:
 			case 0xd1:
 			case 0xd2:

@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
 		{
 			useInterpreter=true;
 		}
-		if(strcmp(argv[i],"-l")==0 || 
+		else if(strcmp(argv[i],"-l")==0 || 
 			strcmp(argv[i],"--log-level")==0)
 		{
 			i++;

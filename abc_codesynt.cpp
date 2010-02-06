@@ -3822,8 +3822,15 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//bitnot
 				LOG(LOG_TRACE, "synt bitnot" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				abstract_value(ex,Builder,v1);
-				value=Builder.CreateCall(ex->FindFunctionNamed("bitNot"), v1.first);
+				if(v1.second==STACK_INT)
+				{
+					value=Builder.CreateNot(v1.first);
+				}
+				else
+				{
+					abstract_value(ex,Builder,v1);
+					value=Builder.CreateCall(ex->FindFunctionNamed("bitNot"), v1.first);
+				}
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
@@ -4500,8 +4507,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
-	//llvmf->dump();
 	getVm()->FPM->run(*llvmf);
+	//llvmf->dump();
 	f=(SyntheticFunction::synt_function)getVm()->ex->getPointerToFunction(llvmf);
 	return f;
 }

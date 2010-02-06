@@ -684,14 +684,16 @@ class RegExp: public IInterface
 friend class ASString;
 private:
 	std::string re;
-	std::string flags;
+	bool global;
+	bool ignoreCase;
+	int lastIndex;
 public:
 	RegExp();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(exec);
-	ASFUNCTION(replace);
+	ASFUNCTION(test);
 };
 
 };

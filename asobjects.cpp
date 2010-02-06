@@ -1186,7 +1186,7 @@ bool Null::isEqual(ASObject* r)
 		return false;
 }
 
-RegExp::RegExp()
+RegExp::RegExp():global(false),ignoreCase(false),lastIndex(0)
 {
 }
 
@@ -1199,6 +1199,7 @@ void RegExp::sinit(Class_base* c)
 void RegExp::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("exec",AS3,new Function(exec));
+	o->setVariableByQName("test",AS3,new Function(test));
 }
 
 ASFUNCTIONBODY(RegExp,_constructor)
@@ -1206,7 +1207,25 @@ ASFUNCTIONBODY(RegExp,_constructor)
 	RegExp* th=static_cast<RegExp*>(obj->implementation);
 	th->re=args->at(0)->toString().raw_buf();
 	if(args->size()>1)
-		th->flags=args->at(1)->toString().raw_buf();
+	{
+		const tiny_string& flags=args->at(1)->toString();
+		for(int i=0;i<flags.len();i++)
+		{
+			switch(flags[i])
+			{
+				case 'g':
+					th->global=true;
+					break;
+				case 'i':
+					th->ignoreCase=true;
+					break;
+				case 's':
+				case 'm':
+				case 'x':
+					abort();
+			}
+		}
+	}
 	return NULL;
 }
 
@@ -1216,6 +1235,20 @@ ASFUNCTIONBODY(RegExp,exec)
 /*	RegExp* th=static_cast<RegExp*>(obj->implementation);
 	cout << "Returning tracer2" <<endl;
 	return new DebugTracer("RegExp::exec");*/
+}
+
+ASFUNCTIONBODY(RegExp,test)
+{
+	RegExp* th=static_cast<RegExp*>(obj->implementation);
+	pcrecpp::RE_Options opt;
+	opt.set_caseless(th->ignoreCase);
+
+	pcrecpp::RE pcreRE(th->re,opt);
+	assert(th->lastIndex==0);
+	const tiny_string& arg0=args->at(0)->toString();
+
+	bool ret=pcreRE.PartialMatch(arg0.raw_buf());
+	return new Boolean(ret);
 }
 
 ASFUNCTIONBODY(ASString,slice)
@@ -1274,24 +1307,11 @@ ASFUNCTIONBODY(ASString,replace)
 	if(args->at(0)->prototype==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args->at(0)->implementation);
-		bool global=false;
-		for(int i=0;i<re->flags.size();i++)
-		{
-			switch(re->flags[i])
-			{
-				case 'g':
-					global=true;
-					break;
-				case 'i':
-				case 's':
-				case 'm':
-				case 'x':
-					abort();
-			}
-		}
 
-		pcrecpp::RE pcreRE(re->re);
-		if(global)
+		pcrecpp::RE_Options opt;
+		opt.set_caseless(re->ignoreCase);
+		pcrecpp::RE pcreRE(re->re,opt);
+		if(re->global)
 			pcreRE.GlobalReplace(replaceWith,&ret->data);
 		else
 			pcreRE.Replace(replaceWith,&ret->data);

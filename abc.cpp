@@ -38,6 +38,7 @@
 #include "flashsystem.h"
 #include "flashutils.h"
 #include "flashgeom.h"
+#include "flashexternal.h"
 #include "compat.h"
 #include "class.h"
 
@@ -141,6 +142,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass());
 	Global.setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass());
 	Global.setVariableByQName("Loader","flash.display",Class<Loader>::getClass());
+	Global.setVariableByQName("LoaderInfo","flash.display",Class<LoaderInfo>::getClass());
 	Global.setVariableByQName("SimpleButton","flash.display",new ASObject);
 	Global.setVariableByQName("InteractiveObject","flash.display",Class<IInterface>::getClass("InteractiveObject")),
 	Global.setVariableByQName("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getClass());
@@ -164,6 +166,8 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());
 	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
+
+	Global.setVariableByQName("ExternalInterface","flash.external",Class<ExternalInterface>::getClass());
 
 	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
 	Global.setVariableByQName("Dictionary","flash.utils",Class<Dictionary>::getClass());

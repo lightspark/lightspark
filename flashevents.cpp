@@ -90,7 +90,10 @@ ASFUNCTIONBODY(Event,_getTarget)
 		return th->target;
 	}
 	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Target for event " << th->type);
 		return new Undefined;
+	}
 }
 
 ASFUNCTIONBODY(Event,_getType)

@@ -1188,7 +1188,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"NOT found, pushing Undefined");
+		LOG(LOG_NOT_IMPLEMENTED,"NOT found " << name->name_s<< ", pushing Undefined");
 		th->runtime_stack_push(new Undefined);
 	}
 
@@ -1252,7 +1252,7 @@ void ABCVm::getLex(call_context* th, int n)
 		}
 		else
 		{
-			LOG(LOG_NOT_IMPLEMENTED, "NOT found, pushing Undefined" );
+			LOG(LOG_NOT_IMPLEMENTED,"NOT found " << name->name_s<< ", pushing Undefined");
 			th->runtime_stack_push(new Undefined);
 		}
 	}
@@ -2042,6 +2042,8 @@ void ABCVm::call(call_context* th, int m)
 		//Push the value only if not null
 		if(ret)
 			th->runtime_stack_push(ret);
+		else
+			th->runtime_stack_push(new Undefined);
 		obj->decRef();
 		f->decRef();
 	}

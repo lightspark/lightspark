@@ -585,6 +585,9 @@ private:
 
 	Manager* int_manager;
 	Manager* number_manager;
+
+	//Interpreter
+
 public:
 	ASObject Global;
 	llvm::ExecutionEngine* ex;
@@ -593,7 +596,7 @@ public:
 	ABCVm(SystemState* s);
 	~ABCVm();
 	static void Run(ABCVm* th);
-	void executeFunction(SyntheticFunction* function);
+	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
 	void addEvent(EventDispatcher*,Event*);
 	void wait();
 };

@@ -1,22 +1,23 @@
 #include "abc.h"
 #include "compat.h"
+#include <string>
+#include <sstream>
 
+using namespace std;
 using namespace lightspark;
 
-void ABCVm::executeFunction(SyntheticFunction* function, call_context* context)
+ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* context)
 {
 	method_info* mi=function->mi;
 
-	//Create a useful alias for the function code
-	string& code=body->code;
+	stringstream code(mi->body->code);
 
-	int local_ip=0;
-	uint8_t opcode;
+	u8 opcode;
 
 	//Each case block builds the correct parameters for the interpreter function and call it
 	while(1)
 	{
-		opcode=code[local_ip];
+		code >> opcode;
 
 		switch(opcode)
 		{
@@ -2148,43 +2149,6 @@ void ABCVm::executeFunction(SyntheticFunction* function, call_context* context)
 				Builder.CreateCall2(ex->FindFunctionNamed("incLocal_i"), context, constant);
 				break;
 			}
-			case 0xd0:
-			case 0xd1:
-			case 0xd2:
-			case 0xd3:
-			{
-				//getlocal_n
-				int i=opcode&3;
-				LOG(LOG_TRACE, "synt getlocal_n " << i );
-				constant = llvm::ConstantInt::get(int_type, i);
-				if(Log::getLevel()==LOG_CALLS)
-					Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
-
-				if(static_locals[i].second==STACK_NONE)
-				{
-					llvm::Value* t=Builder.CreateGEP(locals,constant);
-					t=Builder.CreateLoad(t,"stack");
-					static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
-					static_locals[i]=stack_entry(t,STACK_OBJECT);
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-				}
-				else if(static_locals[i].second==STACK_OBJECT)
-				{
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
-					static_stack_push(static_stack,static_locals[i]);
-				}
-				else if(static_locals[i].second==STACK_INT || 
-						static_locals[i].second==STACK_NUMBER ||
-						static_locals[i].second==STACK_BOOLEAN)
-				{
-					static_stack_push(static_stack,static_locals[i]);
-				}
-				else
-					abort();
-
-				break;
-			}
 			case 0xd5:
 			case 0xd6:
 			case 0xd7:
@@ -2235,11 +2199,25 @@ void ABCVm::executeFunction(SyntheticFunction* function, call_context* context)
 				code2 >> t;
 				break;
 			}*/
+			case 0xd0:
+			case 0xd1:
+			case 0xd2:
+			case 0xd3:
+			{
+				//getlocal_n
+				int i=opcode&3;
+				LOG(LOG_CALLS, "getLocal " << i );
+				context->runtime_stack_push(context->locals[i]);
+
+				break;
+			}
 			default:
-				LOG(LOG_ERROR,"Not implemented instruction @" << local_ip);
-				LOG(LOG_ERROR,"dump " << hex << (unsigned int)opcode << ' ' << (unsigned int)code[local_ip+1] << ' ' 
-						<< (unsigned int)code[local_ip+2] << ' ' << (unsigned int)code[local_ip+3]);
+				LOG(LOG_ERROR,"Not intepreted instruction @" << code.tellg());
+				LOG(LOG_ERROR,"dump " << hex << (unsigned int)opcode);
 				abort();
 		}
 	}
+
+	//We managed to execute all the function
+	return context->runtime_stack_pop();
 }

@@ -58,18 +58,29 @@ private:
 	const int buf_size;
 };
 
-class zlib_file_filter:public std::streambuf
+class zlib_filter: public std::streambuf
 {
 private:
 	bool compressed;
 	int consumed;
 	z_stream strm;
-	FILE* f;
 	char buffer[4096];
-	char in_buf[1024];
+	int available;
+	virtual int provideBuffer(int limit)=0;
 protected:
+	char in_buf[4096];
+	void initialize();
 	virtual int_type underflow();
 	virtual pos_type seekoff(off_type, ios_base::seekdir,ios_base::openmode);
+public:
+	zlib_filter();
+};
+
+class zlib_file_filter:public zlib_filter
+{
+private:
+	FILE* f;
+	int provideBuffer(int limit);
 public:
 	zlib_file_filter(const char* file_name);
 };

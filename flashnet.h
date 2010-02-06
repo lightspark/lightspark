@@ -53,6 +53,12 @@ public:
 	static void sinit(Class_base*);
 };
 
+class ObjectEncoding: public IInterface
+{
+public:
+	static void sinit(Class_base*);
+};
+
 class URLLoader: public EventDispatcher, public IThreadJob
 {
 private:

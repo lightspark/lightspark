@@ -154,6 +154,9 @@ public:
 		for(unsigned int i=0;i<events_name.size();i++)
 			std::cout << events_name[i] << std::endl;
 	}
+
+	//Flags for command line options
+	bool useInterpreter;
 };
 
 class ParseThread

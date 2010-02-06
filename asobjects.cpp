@@ -963,17 +963,16 @@ SyntheticFunction::SyntheticFunction(method_info* m):mi(m),hit_count(0),val(NULL
 
 ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numArgs, int level)
 {
-	if(hit_count==0)
-	{
-		//This is the first time we call this function, synt it
-		val=mi->synt_method();
-	}
-
-	hit_count++;
-	if(val==NULL)
+	if(mi->body==0)
 	{
 //		LOG(LOG_NOT_IMPLEMENTED,"Not initialized function");
 		return NULL;
+	}
+
+	if(hit_count==3 || sys->useInterpreter==false)
+	{
+		//We passed the hot function threshold, synt the function
+		val=mi->synt_method();
 	}
 
 	if(mi->needsArgs())
@@ -1016,9 +1015,18 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 		Array* rest=Class<Array>::getInstanceS(true);
 		cc->locals[i+1]=rest->obj;
 	}
-	ASObject* ret=val(cc);
+	ASObject* ret;
+	if(hit_count<3 && sys->useInterpreter)
+	{
+		//This is not an hot function, execute it using the intepreter
+		ret=ABCVm::executeFunction(this,cc);
+	}
+	else
+		ret=val(cc);
+
 
 	delete cc;
+	hit_count++;
 	return ret;
 }
 

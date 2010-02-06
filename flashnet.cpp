@@ -28,6 +28,7 @@ REGISTER_CLASS_NAME(URLLoader);
 REGISTER_CLASS_NAME(URLLoaderDataFormat);
 REGISTER_CLASS_NAME(URLRequest);
 REGISTER_CLASS_NAME(SharedObject);
+REGISTER_CLASS_NAME(ObjectEncoding);
 
 URLRequest::URLRequest()
 {
@@ -160,4 +161,11 @@ void URLLoaderDataFormat::sinit(Class_base* c)
 
 void SharedObject::sinit(Class_base* c)
 {
+};
+
+void ObjectEncoding::sinit(Class_base* c)
+{
+	c->setVariableByQName("AMF0","",new Integer(0));
+	c->setVariableByQName("AMF3","",new Integer(3));
+	c->setVariableByQName("DEFAULT","",new Integer(3));
 };

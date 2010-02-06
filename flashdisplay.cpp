@@ -194,13 +194,7 @@ ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj->implementation);
-	assert(th);
 	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(true);
-
-	obj->setVariableByQName("contentLoaderInfo","",th->contentLoaderInfo->obj);
-
-//	obj->setVariableByQName("load","",new Function(load));
-//	obj->setVariableByQName("loadBytes","",new Function(loadBytes));
 	return NULL;
 }
 
@@ -229,27 +223,15 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	if(th->loading)
 		return NULL;
 	//Find the actual ByteArray object
-	ASObject* cur=args->at(0);
-	assert(cur);
-	cur=cur->prototype;
-	abort();
-//	while(cur->getClassName()!="ByteArray")
-//		cur=cur->super;
-	th->bytes=dynamic_cast<ByteArray*>(cur);
-	assert(th->bytes);
+	assert(args->size()>=1);
+	assert(args->at(0)->prototype->isSubClass(Class<ByteArray>::getClass()));
+	th->bytes=static_cast<ByteArray*>(args->at(0)->implementation);
 	if(th->bytes->bytes)
 	{
 		th->loading=true;
 		th->source=BYTES;
 		sys->cur_thread_pool->addJob(th);
 	}
-
-	/*if(args->at(0)->class_name!="URLRequest")
-	{
-		LOG(ERROR,"ArgumentError");
-		abort();
-	}
-	URLRequest* r=static_cast<URLRequest*>(args->at(0));*/
 }
 
 void Loader::sinit(Class_base* c)
@@ -262,6 +244,9 @@ void Loader::sinit(Class_base* c)
 
 void Loader::buildTraits(ASObject* o)
 {
+//	o->setVariableByQName("contentLoaderInfo","",contentLoaderInfo->obj);
+	o->setVariableByQName("loadBytes","",new Function(loadBytes));
+//	obj->setVariableByQName("load","",new Function(load));
 }
 
 void Loader::execute()
@@ -284,11 +269,22 @@ void Loader::execute()
 		//Implement loadBytes, now just dump
 		assert(bytes->bytes);
 
-		FILE* f=fopen(name,"w");
+		/*FILE* f=fopen(name,"w");
 		fwrite(bytes->bytes,1,bytes->len,f);
 		fclose(f);
 
-		name[0]++;
+		name[0]++;*/
+
+		//We only support swf files now
+		assert(memcmp(bytes->bytes,"CWS",3));
+
+/*		local_root=new RootMovieClip;
+		zlib_file_filter zf;
+		zf.open(url.raw_buf(),ios_base::in);
+		istream s(&zf);
+
+		ParseThread local_pt(sys,local_root,s);
+		local_pt.wait();*/
 	}
 	loaded=true;
 	//Add a complete event for this object
@@ -432,7 +428,7 @@ void MovieClip::buildTraits(ASObject* o)
 	o->setGetterByQName("totalFrames","",new Function(_getTotalFrames));
 	o->setGetterByQName("framesLoaded","",new Function(_getFramesLoaded));
 	o->setVariableByQName("stop","",new Function(stop));
-	o->setVariableByQName("nextFrame","",new Function(nextFrame));
+//	o->setVariableByQName("nextFrame","",new Function(nextFrame));
 }
 
 MovieClip::MovieClip():framesLoaded(0),totalFrames(1),cur_frame(&dynamicDisplayList)

@@ -50,6 +50,7 @@ int main(int argc, char* argv[])
 {
 	char* fileName=NULL;
 	char* url=NULL;
+	bool useInterpreter=false;
 
 	for(int i=1;i<argc;i++)
 	{
@@ -58,9 +59,17 @@ int main(int argc, char* argv[])
 		{
 			i++;
 			if(i==argc)
+			{
+				fileName=NULL;
 				break;
+			}
 
 			url=argv[i];
+		}
+		else if(strcmp(argv[i],"-i")==0 || 
+			strcmp(argv[i],"--enable-interpreter")==0)
+		{
+			useInterpreter=true;
 		}
 		else
 		{
@@ -97,8 +106,9 @@ int main(int argc, char* argv[])
 	//Set a bit of SystemState using parameters
 	if(url)
 		sys->setUrl(url);
+	sys->useInterpreter=useInterpreter;
 
-	zlib_file_filter zf(argv[1]);
+	zlib_file_filter zf(fileName);
 	istream f(&zf);
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	

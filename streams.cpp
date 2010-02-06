@@ -171,20 +171,23 @@ std::streamsize sync_stream::showmanyc( )
 	return 0;
 }
 
-zlib_file_filter::zlib_file_filter(const char* file_name):consumed(0)
+zlib_filter::zlib_filter():consumed(0),available(0)
 {
-	f=fopen(file_name,"rb");
-	assert(f!=NULL);
+}
 
-	//Verify the signature on the fly, and initialize the first 8 bytes
-	setg(buffer,buffer,buffer+8);
-	if(fread(buffer,1,8,f)!=8)
+void zlib_filter::initialize()
+{
+	//Should check that this is called only once
+	available=provideBuffer(8);
+	assert(available==8);
+	//We read only the first 8 bytes, as those are alwayt uncompressed
+
+	//Now check the signature
+	if(in_buf[1]!='W' || in_buf[2]!='S')
 		abort();
-	if(buffer[1]!='W' || buffer[2]!='S')
-		abort();
-	if(buffer[0]=='F')
+	if(in_buf[0]=='F')
 		compressed=false;
-	else if(buffer[0]=='C')
+	else if(in_buf[0]=='C')
 	{
 		compressed=true;
 		strm.zalloc = Z_NULL;
@@ -194,38 +197,51 @@ zlib_file_filter::zlib_file_filter(const char* file_name):consumed(0)
 		strm.next_in = Z_NULL;
 		int ret = inflateInit(&strm);
 		if (ret != Z_OK)
+		{
 			LOG(LOG_ERROR,"Failed to initialize ZLib");
+			abort();
+		}
 	}
 	else
 		abort();
 
 	//Ok, it seems to be a valid SWF, from now, if the file is compressed, data has to be inflated
+
+	//Copy the in_buf to the out buffer
+	memcpy(buffer,in_buf,8);
+	setg(buffer,buffer,buffer+available);
 }
 
-zlib_file_filter::int_type zlib_file_filter::underflow()
+zlib_filter::int_type zlib_filter::underflow()
 {
 	assert(gptr()==egptr());
 
 	//First of all we add the lenght of the buffer to the consumed variable
 	consumed+=(gptr()-eback());
 
-	setg(buffer,buffer,buffer+4096);
 	if(!compressed)
-		fread(buffer,1,4096,f);
+	{
+		int real_count=provideBuffer(4096);
+		assert(real_count>0);
+		memcpy(buffer,in_buf,real_count);
+		setg(buffer,buffer,buffer+real_count);
+	}
 	else
 	{
 		// run inflate() on input until output buffer not full
 		strm.avail_out = 4096;
 		strm.next_out = (unsigned char*)buffer;
 		inflate(&strm, Z_NO_FLUSH);
+		available=4096;
 		//check if output full and wrap around
 		while(strm.avail_out!=0)
 		{
-			int real_count=fread(in_buf,1,1024,f);
+			int real_count=provideBuffer(4096);
+			assert(strm.avail_in==0);
 			if(real_count==0)
 			{
 				//File is not big enough to fill the buffer
-				setg(buffer,buffer,buffer+(4096-strm.avail_out));
+				available=4096-strm.avail_out;
 				break;
 			}
 			strm.next_in=(unsigned char*)in_buf;
@@ -235,22 +251,37 @@ zlib_file_filter::int_type zlib_file_filter::underflow()
 			else if(ret==Z_STREAM_END)
 			{
 				//The stream ended, close the buffer here
-				setg(buffer,buffer,buffer+(4096-strm.avail_out));
+				available=4096-strm.avail_out;
 				break;
 			}
 			else
 				abort();
 		}
+		setg(buffer,buffer,buffer+available);
 	}
 
 	//Cast to signed, otherwise 0xff would become eof
 	return (unsigned char)buffer[0];
 }
 
-zlib_file_filter::pos_type zlib_file_filter::seekoff(off_type off, ios_base::seekdir dir,ios_base::openmode mode)
+zlib_filter::pos_type zlib_filter::seekoff(off_type off, ios_base::seekdir dir,ios_base::openmode mode)
 {
 	assert(off==0);
 	//The current offset is the amount of byte completely consumed plus the amount used in the buffer
 	int ret=consumed+(gptr()-eback());
 	return ret;
 }
+
+zlib_file_filter::zlib_file_filter(const char* file_name)
+{
+	f=fopen(file_name,"rb");
+	assert(f!=NULL);
+
+	initialize();
+}
+
+int zlib_file_filter::provideBuffer(int limit)
+{
+	return fread(in_buf,1,limit,f);
+}
+

@@ -182,6 +182,7 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("MOUSE_OVER","",Class<ASString>::getInstanceS(true,"mouseOver")->obj);
 	c->setVariableByQName("MOUSE_UP","",Class<ASString>::getInstanceS(true,"mouseUp")->obj);
 	c->setVariableByQName("MOUSE_WHEEL","",Class<ASString>::getInstanceS(true,"mouseWheel")->obj);
+	c->setVariableByQName("MOUSE_MOVE","",Class<ASString>::getInstanceS(true,"mouseMove")->obj);
 	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS(true,"rollOver")->obj);
 	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS(true,"rollOut")->obj);
 }

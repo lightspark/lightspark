@@ -94,7 +94,7 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL)
+SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),useInterpreter(false)
 {
 	sys=this;
 	sem_init(&new_frame,0,0);

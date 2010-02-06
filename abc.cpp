@@ -199,6 +199,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass());
 	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
 	Global.setVariableByQName("SharedObject","flash.net",Class<SharedObject>::getClass());
+	Global.setVariableByQName("ObjectEncoding","flash.net",Class<ObjectEncoding>::getClass());
 
 	Global.setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());
 

@@ -99,6 +99,7 @@ int main(int argc, char* argv[])
 #endif
 
 	Log::initLogging(LOG_NOT_IMPLEMENTED);
+//	Log::initLogging(LOG_CALLS);
 	sys=new SystemState;
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();

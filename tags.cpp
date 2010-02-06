@@ -1595,7 +1595,8 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	UseNetwork=UB(1,bs);
 	UB(24,bs);
 
-	if(ActionScript3)
+	//We do not need more than a Vm
+	if(ActionScript3 && sys->currentVm==NULL)
 	{
 		cout << "creating vm" << endl;
 		sys->currentVm=new ABCVm(sys);

@@ -190,7 +190,14 @@ void Timer::execute()
 	{
 		compat_msleep(delay);
 		if(running)
+		{
 			sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS(true,"timer"));
+			//Do not spam timer events until this is done
+			SynchronizationEvent* se=new SynchronizationEvent;
+			sys->currentVm->addEvent(NULL,se);
+			se->wait();
+			delete se;
+		}
 	}
 }
 

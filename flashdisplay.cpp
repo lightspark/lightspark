@@ -276,15 +276,14 @@ void Loader::execute()
 		name[0]++;*/
 
 		//We only support swf files now
-		assert(memcmp(bytes->bytes,"CWS",3));
+		assert(memcmp(bytes->bytes,"CWS",3)==0);
 
-/*		local_root=new RootMovieClip;
-		zlib_file_filter zf;
-		zf.open(url.raw_buf(),ios_base::in);
+		local_root=new RootMovieClip;
+		zlib_bytes_filter zf(bytes->bytes,bytes->len);
 		istream s(&zf);
 
 		ParseThread local_pt(sys,local_root,s);
-		local_pt.wait();*/
+		local_pt.wait();
 	}
 	loaded=true;
 	//Add a complete event for this object

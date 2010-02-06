@@ -56,7 +56,6 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 	in >> Flags >> Name;
 	LOG(LOG_CALLS,"DoABCTag Name: " << Name);
 
-	cout << "assign vm" << endl;
 	context=new ABCContext(in);
 
 	int pos=in.tellg();
@@ -1245,6 +1244,7 @@ call_context::~call_context()
 void ABCContext::exec()
 {
 	//Take script entries and declare their traits
+	//TODO: check entrypoint concept
 	int i=0;
 	for(i;i<scripts.size()-1;i++)
 	{
@@ -1265,7 +1265,6 @@ void ABCContext::exec()
 		buildTrait(&sys->currentVm->Global,&scripts[i].traits[j]);
 	entry->call(&sys->currentVm->Global,NULL,sys->currentVm->Global.max_level);
 	LOG(LOG_CALLS, "End of Entry Point");
-
 }
 
 void ABCVm::Run(ABCVm* th)

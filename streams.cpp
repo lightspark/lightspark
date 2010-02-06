@@ -285,3 +285,16 @@ int zlib_file_filter::provideBuffer(int limit)
 	return fread(in_buf,1,limit,f);
 }
 
+zlib_bytes_filter::zlib_bytes_filter(const uint8_t* b, int l):buf(b),len(l),offset(0)
+{
+	initialize();
+}
+
+int zlib_bytes_filter::provideBuffer(int limit)
+{
+	int ret=min(limit,len-offset);
+	memcpy(in_buf,buf+offset,ret);
+	offset+=ret;
+	return ret;
+}
+

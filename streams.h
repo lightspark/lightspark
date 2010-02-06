@@ -20,6 +20,7 @@
 #include <streambuf>
 #include <fstream>
 #include <semaphore.h>
+#include <inttypes.h>
 #include "zlib.h"
 
 using namespace std;
@@ -83,4 +84,15 @@ private:
 	int provideBuffer(int limit);
 public:
 	zlib_file_filter(const char* file_name);
+};
+
+class zlib_bytes_filter:public zlib_filter
+{
+private:
+	const uint8_t* buf;
+	int offset;
+	int len;
+	int provideBuffer(int limit);
+public:
+	zlib_bytes_filter(const uint8_t* b, int l);
 };

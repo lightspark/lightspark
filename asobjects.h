@@ -224,11 +224,11 @@ public:
 class IFunction: public ASObject
 {
 public:
-	IFunction():bound(false),closure_this(NULL){type=T_FUNCTION;}
+	IFunction():bound(false),closure_this(NULL),closure_level(-1){type=T_FUNCTION;}
 	typedef ASObject* (*as_function)(ASObject*, arguments*);
 	virtual ASObject* call(ASObject* obj, arguments* args, int level)=0;
 	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)=0;
-	IFunction* bind(ASObject* c)
+	IFunction* bind(ASObject* c, int level)
 	{
 		if(!bound)
 		{
@@ -246,6 +246,7 @@ public:
 			}
 			ret->bound=true;
 			ret->closure_this=c;
+			ret->closure_level=level;
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}
@@ -258,6 +259,7 @@ public:
 protected:
 	virtual IFunction* clone()=0;
 	ASObject* closure_this;
+	int closure_level;
 	bool bound;
 };
 

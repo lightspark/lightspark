@@ -67,14 +67,15 @@ void LoaderInfo::buildTraits(ASObject* o)
 	o->setGetterByQName("bytesLoaded","",new Function(_getBytesLoaded));
 	o->setGetterByQName("bytesTotal","",new Function(_getBytesTotal));
 	o->setGetterByQName("applicationDomain","",new Function(_getApplicationDomain));
+	o->setGetterByQName("sharedEvents","",new Function(_getSharedEvents));
 }
 
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
 	EventDispatcher::_constructor(obj,args);
-/*	ASObject* ret=new EventDispatcher;
-	obj->setVariableByQName("sharedEvents","",ret); //TODO: Read only
-	ret->constructor->call(ret,NULL);*/
+	th->sharedEvents=Class<EventDispatcher>::getInstanceS(true);
+
 	ASObject* params=new ASObject;
 	obj->setVariableByQName("parameters","",params);
 
@@ -168,6 +169,13 @@ ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
 	return Class<ASString>::getInstanceS(true,th->loaderURL)->obj;
 }
 
+ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
+{
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	th->sharedEvents->obj->incRef();
+	return th->sharedEvents->obj;
+}
+
 ASFUNCTIONBODY(LoaderInfo,_getUrl)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
@@ -196,6 +204,13 @@ ASFUNCTIONBODY(Loader,_constructor)
 	Loader* th=static_cast<Loader*>(obj->implementation);
 	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(true);
 	return NULL;
+}
+
+ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
+{
+	Loader* th=static_cast<Loader*>(obj->implementation);
+	th->contentLoaderInfo->obj->incRef();
+	return th->contentLoaderInfo->obj;
 }
 
 ASFUNCTIONBODY(Loader,load)
@@ -244,7 +259,7 @@ void Loader::sinit(Class_base* c)
 
 void Loader::buildTraits(ASObject* o)
 {
-//	o->setVariableByQName("contentLoaderInfo","",contentLoaderInfo->obj);
+	o->setGetterByQName("contentLoaderInfo","",new Function(_getContentLoaderInfo));
 	o->setVariableByQName("loadBytes","",new Function(loadBytes));
 //	obj->setVariableByQName("load","",new Function(load));
 }
@@ -278,7 +293,9 @@ void Loader::execute()
 		//We only support swf files now
 		assert(memcmp(bytes->bytes,"CWS",3)==0);
 
-		local_root=new RootMovieClip;
+		//The loaderInfo of the content is out contentLoaderInfo
+		contentLoaderInfo->obj->incRef();
+		local_root=new RootMovieClip(contentLoaderInfo);
 		zlib_bytes_filter zf(bytes->bytes,bytes->len);
 		istream s(&zf);
 
@@ -287,7 +304,7 @@ void Loader::execute()
 	}
 	loaded=true;
 	//Add a complete event for this object
-	sys->currentVm->addEvent(contentLoaderInfo,new Event("complete"));
+	sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS(true,"complete"));
 
 /*	CURL *curl;
 	CURLcode res;

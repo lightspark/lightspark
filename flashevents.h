@@ -167,6 +167,7 @@ public:
 	ASFUNCTION(addEventListener);
 	ASFUNCTION(removeEventListener);
 	ASFUNCTION(dispatchEvent);
+	ASFUNCTION(_hasEventListener);
 };
 
 //Internal events from now on, used to pass data to the execution thread

@@ -218,6 +218,7 @@ void EventDispatcher::sinit(Class_base* c)
 void EventDispatcher::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("addEventListener","",new Function(addEventListener));
+	o->setVariableByQName("hasEventListener","",new Function(_hasEventListener));
 	o->setVariableByQName("removeEventListener","",new Function(removeEventListener));
 	o->setVariableByQName("dispatchEvent","",new Function(dispatchEvent));
 
@@ -258,6 +259,15 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	it->second.push_back(listener(f));
 
 	sys->events_name.push_back(eventName);
+}
+
+ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
+{
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
+	assert(args->size()==1 && args->at(0)->getObjectType()==T_STRING);
+	const tiny_string& eventName=args->at(0)->toString();
+	bool ret=th->hasEventListener(eventName);
+	return new Boolean(ret);
 }
 
 ASFUNCTIONBODY(EventDispatcher,removeEventListener)

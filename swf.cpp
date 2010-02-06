@@ -79,12 +79,13 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	pt->root->frame_rate/=256;
 }
 
-RootMovieClip::RootMovieClip():toBind(false),initialized(false)
+RootMovieClip::RootMovieClip(LoaderInfo* li):toBind(false),initialized(false)
 {
 	root=this;
 	sem_init(&mutex,0,1);
 	sem_init(&sem_frames,0,1);
 	sem_init(&sem_valid_frame_size,0,0);
+	loaderInfo=li;
 }
 
 void RootMovieClip::bindToName(const tiny_string& n)
@@ -94,7 +95,7 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),useInterpreter(false)
+SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),useInterpreter(false),RootMovieClip(NULL)
 {
 	sys=this;
 	sem_init(&new_frame,0,0);

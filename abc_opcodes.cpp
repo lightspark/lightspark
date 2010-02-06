@@ -340,8 +340,9 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, "getProperty " << *name << ' ' << obj);
 
-	ASObject* ret=obj->getVariableByMultiname(*name).obj;
-	if(ret==NULL)
+	objAndLevel ret=obj->getVariableByMultiname(*name);
+	
+	if(ret.obj==NULL)
 	{
 		if(obj->prototype)
 		{
@@ -356,16 +357,16 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	else
 	{
 		//If we are getting a function object attach the the current scope
-		if(ret->getObjectType()==T_FUNCTION)
+		if(ret.obj->getObjectType()==T_FUNCTION)
 		{
 			//TODO: maybe also the level should be binded
 			LOG(LOG_CALLS,"Attaching this to function " << name);
-			IFunction* f=static_cast<IFunction*>(ret)->bind(obj);
+			IFunction* f=static_cast<IFunction*>(ret.obj)->bind(obj,ret.level);
 			obj->decRef();
 			//No incref is needed, as the function is a new instance
 			return f;
 		}
-		else if(ret->getObjectType()==T_DEFINABLE)
+		else if(ret.obj->getObjectType()==T_DEFINABLE)
 		{
 			//LOG(ERROR,"Property " << name << " is not yet valid");
 			abort();
@@ -375,9 +376,9 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 			ret->incRef();*/
 		}
 	}
-	ret->incRef();
+	ret.obj->incRef();
 	obj->decRef();
-	return ret;
+	return ret.obj;
 }
 
 number_t ABCVm::divide(ASObject* val2, ASObject* val1)
@@ -1207,14 +1208,15 @@ void ABCVm::getLex(call_context* th, int n)
 	ASObject* o;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
-		o=(*it)->getVariableByMultiname(*name).obj;
+		objAndLevel tmpo=(*it)->getVariableByMultiname(*name);
+		o=tmpo.obj;
 		if(o)
 		{
 			//If we are getting a function object attach the the current scope
 			if(o->getObjectType()==T_FUNCTION)
 			{
 				LOG(LOG_CALLS,"Attaching this to function " << name);
-				IFunction* f=static_cast<IFunction*>(o)->bind(*it);
+				IFunction* f=static_cast<IFunction*>(o)->bind(*it,tmpo.level);
 				o=f;
 			}
 			else if(o->getObjectType()==T_DEFINABLE)
@@ -1483,7 +1485,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function");
+		LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function " << name->name_s);
 		th->runtime_stack_push(new Undefined);
 	}
 	LOG(LOG_CALLS,"End of callSuper " << *name);
@@ -2079,7 +2081,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 		f->func_scope[i]->incRef();
 
 	//Bind the function to null, as this is not a class method
-	f->bind(NULL);
+	f->bind(NULL,-1);
 	return f;
 }
 

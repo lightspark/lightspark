@@ -102,7 +102,7 @@ private:
 	tiny_string bindName;
 
 public:
-	RootMovieClip();
+	RootMovieClip(LoaderInfo* li);
 	float frame_rate;
 	RGB getBackground();
 	void setBackground(const RGB& bg);

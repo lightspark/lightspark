@@ -51,6 +51,7 @@ int main(int argc, char* argv[])
 	char* fileName=NULL;
 	char* url=NULL;
 	bool useInterpreter=false;
+	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
 
 	for(int i=1;i<argc;i++)
 	{
@@ -70,6 +71,18 @@ int main(int argc, char* argv[])
 			strcmp(argv[i],"--enable-interpreter")==0)
 		{
 			useInterpreter=true;
+		}
+		if(strcmp(argv[i],"-l")==0 || 
+			strcmp(argv[i],"--log-level")==0)
+		{
+			i++;
+			if(i==argc)
+			{
+				fileName=NULL;
+				break;
+			}
+
+			log_level=(LOG_LEVEL)atoi(argv[i]);
 		}
 		else
 		{
@@ -98,8 +111,7 @@ int main(int argc, char* argv[])
 	//setrlimit(RLIMIT_AS,&rl);
 #endif
 
-	Log::initLogging(LOG_NOT_IMPLEMENTED);
-//	Log::initLogging(LOG_CALLS);
+	Log::initLogging(log_level);
 	sys=new SystemState;
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();

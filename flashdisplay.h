@@ -161,6 +161,7 @@ private:
 	uint32_t bytesTotal;
 	tiny_string url;
 	tiny_string loaderURL;
+	EventDispatcher* sharedEvents;
 public:
 	LoaderInfo():bytesLoaded(100),bytesTotal(100)
 	{
@@ -174,6 +175,7 @@ public:
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getApplicationDomain);
+	ASFUNCTION(_getSharedEvents);
 };
 
 class Loader: public IThreadJob, public DisplayObjectContainer
@@ -196,6 +198,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(load);
 	ASFUNCTION(loadBytes);
+	ASFUNCTION(_getContentLoaderInfo);
 	void execute();
 	int getDepth() const
 	{

@@ -981,7 +981,9 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	int args_len=mi->numArgs();
 	int passedToLocals=min(numArgs,args_len);
 	int passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
-	call_context* cc=new call_context(mi,level,args,passedToLocals);
+	int realLevel=(bound)?closure_level:level;
+
+	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
 	int i=passedToLocals;
 	cc->scope_stack=func_scope;
 	for(int i=0;i<func_scope.size();i++)

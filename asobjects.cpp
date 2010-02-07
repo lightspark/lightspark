@@ -587,6 +587,7 @@ void ASString::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("toString","",new Function(ASObject::_toString));
 	o->setVariableByQName("split",AS3,new Function(split));
+	o->setVariableByQName("substr",AS3,new Function(substr));
 	o->setVariableByQName("replace",AS3,new Function(replace));
 	o->setVariableByQName("concat",AS3,new Function(concat));
 	o->setVariableByQName("indexOf",AS3,new Function(indexOf));
@@ -629,6 +630,20 @@ ASFUNCTIONBODY(ASString,split)
 		abort();
 
 	return ret->obj;
+}
+
+ASFUNCTIONBODY(ASString,substr)
+{
+	ASString* th=static_cast<ASString*>(obj->implementation);
+	int start=args->at(0)->toInt();
+	if(start<0)
+		start=th->data.size()+start;
+
+	int len=0x7fffffff;
+	if(args->size()==2)
+		len=args->at(1)->toInt();
+
+	return Class<ASString>::getInstanceS(true,th->data.substr(start,len))->obj;
 }
 
 bool Array::toString(tiny_string& ret)
@@ -1230,9 +1245,8 @@ ASFUNCTIONBODY(RegExp,_constructor)
 
 ASFUNCTIONBODY(RegExp,exec)
 {
-	abort();
-/*	RegExp* th=static_cast<RegExp*>(obj->implementation);
-	cout << "Returning tracer2" <<endl;
+	RegExp* th=static_cast<RegExp*>(obj->implementation);
+/*	cout << "Returning tracer2" <<endl;
 	return new DebugTracer("RegExp::exec");*/
 }
 

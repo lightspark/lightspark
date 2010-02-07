@@ -1522,6 +1522,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
 					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+					break;
 				}
 				case 0x76:
 				{
@@ -1537,6 +1538,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
+					break;
 				}
 				case 0x78:
 				{
@@ -3698,7 +3700,10 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//convert_d
 				LOG(LOG_TRACE, "synt convert_d" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1.first);
+				if(v1.second==STACK_INT)
+					value=Builder.CreateSIToFP(v1.first,number_type);
+				else
+					value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				break;
 			}

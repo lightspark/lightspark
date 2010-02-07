@@ -343,6 +343,7 @@ class ASString: public IInterface
 {
 friend class ASQName;
 friend class ABCContext;
+friend ASObject* unescape(ASObject* obj,arguments* args);
 private:
 	std::string data;
 	void registerMethods();
@@ -359,6 +360,7 @@ public:
 	ASFUNCTION(replace);
 	ASFUNCTION(concat);
 	ASFUNCTION(slice);
+	ASFUNCTION(substr);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);
 	ASFUNCTION(toLowerCase);

@@ -630,6 +630,7 @@ ASObject* parseInt(ASObject* obj,arguments* args);
 ASObject* parseFloat(ASObject* obj,arguments* args);
 ASObject* isNaN(ASObject* obj,arguments* args);
 ASObject* _int(ASObject* obj,arguments* args);
+ASObject* unescape(ASObject* obj,arguments* args);
 
 inline ASObject* getGlobal()
 {

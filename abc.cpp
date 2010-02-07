@@ -137,6 +137,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("parseInt","",new Function(parseInt));
 	Global.setVariableByQName("parseFloat","",new Function(parseFloat));
 	Global.setVariableByQName("int","",new Function(_int));
+	Global.setVariableByQName("unescape","",new Function(unescape));
 	Global.setVariableByQName("toString","",new Function(ASObject::_toString));
 
 	Global.setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass());
@@ -2139,6 +2140,22 @@ ASFUNCTIONBODY(lightspark,isNaN)
 		return abstract_b(false);
 	else
 		abort();
+}
+
+ASFUNCTIONBODY(lightspark,unescape)
+{
+	ASString* th=static_cast<ASString*>(args->at(0)->implementation);
+	string ret;
+	ret.reserve(th->data.size());
+	for(int i=0;i<th->data.size();i++)
+	{
+		if(th->data[i]=='%')
+			abort();
+		else
+			ret.push_back(th->data[i]);
+	}
+
+	return Class<ASString>::getInstanceS(true,ret)->obj;
 }
 
 ASFUNCTIONBODY(lightspark,undefinedFunction)

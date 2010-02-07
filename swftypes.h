@@ -1147,7 +1147,7 @@ public:
 	int next_FP;
 	int max_FP;
 	bool stop_FP;
-public:
+	bool explicit_FP;
 	RunState();
 	void prepareNextFP();
 };

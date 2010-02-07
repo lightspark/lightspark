@@ -1212,7 +1212,7 @@ void RegExp::sinit(Class_base* c)
 
 void RegExp::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("exec",AS3,new Function(exec));
+//	o->setVariableByQName("exec",AS3,new Function(exec));
 	o->setVariableByQName("test",AS3,new Function(test));
 }
 
@@ -1248,6 +1248,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	RegExp* th=static_cast<RegExp*>(obj->implementation);
 /*	cout << "Returning tracer2" <<endl;
 	return new DebugTracer("RegExp::exec");*/
+	return new Null;
 }
 
 ASFUNCTIONBODY(RegExp,test)

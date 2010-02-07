@@ -30,7 +30,7 @@
 namespace lightspark
 {
 
-enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_OBJECT };
+enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_OBJECT, CHANGE_FRAME };
 
 class ASObject;
 class PlaceObject2Tag;
@@ -245,6 +245,19 @@ private:
 public:
 	ConstructObjectEvent(ASObject* o, Class_base* c):SynchronizationEvent("ConstructObjectEvent"),_class(c),obj(o){}
 	EVENT_TYPE getEventType() { return CONSTRUCT_OBJECT; }
+};
+
+//Event to change the current frame
+class FrameChangeEvent: public Event
+{
+friend class ABCVm;
+private:
+	int frame;
+	MovieClip* movieClip;
+	static void sinit(Class_base*);
+public:
+	FrameChangeEvent(int f, MovieClip* m):frame(f),movieClip(m),Event("FrameChangeEvent"){}
+	EVENT_TYPE getEventType() { return CHANGE_FRAME; }
 };
 
 };

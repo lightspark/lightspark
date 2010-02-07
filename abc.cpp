@@ -1029,6 +1029,13 @@ void ABCVm::handleEvent()
 				ev->sync();
 				break;
 			}
+			case CHANGE_FRAME:
+			{
+				FrameChangeEvent* ev=static_cast<FrameChangeEvent*>(e.second);
+				ev->movieClip->state.next_FP=ev->frame;
+				ev->movieClip->state.explicit_FP=true;
+				break;
+			}
 			default:
 				LOG(LOG_ERROR,"Not supported event");
 				abort();
@@ -1667,9 +1674,17 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				else
 				{
 					//TODO: find nice way to handle default construction
-					if(type->name_type==multiname::NAME_STRING && type->name_s=="int" && 
+					if(type->name_type==multiname::NAME_STRING && 
 							type->ns.size()==1 && type->ns[0].name=="")
-						ret=abstract_i(0);
+					{
+						if(type->name_s=="int" || type->name_s=="uint" )
+							ret=abstract_i(0);
+						else if(type->name_s=="Number")
+							//Should be NaN
+							ret=abstract_d(0);
+						else
+							ret=new Undefined;
+					}
 					else
 						ret=new Undefined;
 				}

@@ -359,7 +359,7 @@ void MovieClip::buildTraits(ASObject* o)
 	o->setGetterByQName("totalFrames","",new Function(_getTotalFrames));
 	o->setGetterByQName("framesLoaded","",new Function(_getFramesLoaded));
 	o->setVariableByQName("stop","",new Function(stop));
-//	o->setVariableByQName("nextFrame","",new Function(nextFrame));
+	o->setVariableByQName("nextFrame","",new Function(nextFrame));
 }
 
 MovieClip::MovieClip():framesLoaded(0),totalFrames(1),cur_frame(&dynamicDisplayList)
@@ -459,9 +459,8 @@ ASFUNCTIONBODY(MovieClip,stop)
 ASFUNCTIONBODY(MovieClip,nextFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
-	//Quite not right, for the duration of this event at least the frame should be constant
 	assert(th->state.FP<th->state.max_FP);
-	th->state.next_FP=th->state.FP+1;
+	sys->currentVm->addEvent(NULL,new FrameChangeEvent(th->state.FP+1,th));
 	return NULL;
 }
 
@@ -506,19 +505,20 @@ void MovieClip::Render()
 	MovieClip* clip_bak=rt->currentClip;
 	rt->currentClip=this;
 
-	if(!state.stop_FP /*&& (class_name=="MovieClip")*/)
+	if(!state.stop_FP || state.explicit_FP /*&& (class_name=="MovieClip")*/)
 	{
+		//Before assigning the next_FP we initialize the frame
+		frames[state.next_FP].init(this,displayList);
 		state.FP=state.next_FP;
-		state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount
+		if(!state.stop_FP)
+			state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount
+		state.explicit_FP=false;
 	}
 
 	if(!frames.empty())
 	{
 		if(!state.stop_FP)
 			frames[state.FP].runScript();
-
-		//Initialize the currentframe if needed
-		frames[state.FP].init(this,displayList);
 
 		//Set the id in the secondary color
 		glPushAttrib(GL_CURRENT_BIT);

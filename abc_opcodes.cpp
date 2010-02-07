@@ -70,7 +70,7 @@ void ABCVm::setProperty_i(intptr_t value,ASObject* obj,multiname* name)
 
 number_t ABCVm::convert_d(ASObject* o)
 {
-	LOG(LOG_CALLS, "convert_b" );
+	LOG(LOG_CALLS, "convert_d" );
 	number_t ret=o->toNumber();
 	o->decRef();
 	return ret;
@@ -578,11 +578,40 @@ void ABCVm::construct(call_context* th, int m)
 	}
 
 	LOG(LOG_CALLS,"Constructing");
-	Class_base* o_class=static_cast<Class_base*>(obj);
-	assert(o_class->getObjectType()==T_CLASS);
-	ASObject* ret=o_class->getInstance(true,&args)->obj;
 
-//	args.decRef();
+	ASObject* ret;
+	if(obj->getObjectType()==T_CLASS)
+	{
+		Class_base* o_class=static_cast<Class_base*>(obj);
+		ret=o_class->getInstance(true,&args)->obj;
+	}
+	else if(obj->getObjectType()==T_FUNCTION)
+	{
+		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
+		assert(sf);
+		ret=new ASObject;
+		if(sf->mi->body)
+		{
+			LOG(LOG_CALLS,"Building method traits");
+			for(int i=0;i<sf->mi->body->trait_count;i++)
+				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+			ret->incRef();
+			assert(sf->closure_this==NULL);
+			sf->call(ret,&args,ret->max_level);
+
+			//Let's see if an AS prototype has been defined on the function
+			ASObject* asp=sf->getVariableByQName("prototype","").obj;
+			if(asp)
+				asp->incRef();
+
+			//Now add our prototype
+			sf->incRef();
+			ret->prototype=new Class_function(sf,asp);
+		}
+	}
+	else
+		abort();
+
 	obj->decRef();
 	LOG(LOG_CALLS,"End of constructing " << ret);
 	th->runtime_stack_push(ret);

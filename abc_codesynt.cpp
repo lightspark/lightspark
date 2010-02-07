@@ -3664,19 +3664,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, "synt convert_i" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_NUMBER)
-				{
 					value=Builder.CreateFPToSI(v1.first,int_type);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
 				else if(v1.second==STACK_INT) //Nothing to do
-				{
-					static_stack_push(static_stack,v1);
-				}
+					value=v1.first;
 				else
-				{
 					value=Builder.CreateCall(ex->FindFunctionNamed("convert_i"), v1.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
+
+				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
 			case 0x74:
@@ -3685,9 +3679,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, "synt convert_u" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT) //Nothing to do
-				{
 					static_stack_push(static_stack,v1);
-				}
 				else
 				{
 					value=Builder.CreateCall(ex->FindFunctionNamed("convert_u"), v1.first);
@@ -3702,8 +3694,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT)
 					value=Builder.CreateSIToFP(v1.first,number_type);
+				else if(v1.second==STACK_NUMBER)
+					value=v1.first;
 				else
 					value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1.first);
+
 				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				break;
 			}

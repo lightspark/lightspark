@@ -110,6 +110,20 @@ void SystemState::setUrl(const tiny_string& url)
 	loaderInfo->loaderURL=url;
 }
 
+void SystemState::parseParameters(istream& i)
+{
+	ASObject* ret=new ASObject;
+	while(!i.eof())
+	{
+		string name,value;
+		getline(i,name);
+		getline(i,value);
+
+		ret->setVariableByQName(name.c_str(),"",Class<ASString>::getInstanceS(true,value)->obj);
+	}
+	loaderInfo->obj->setVariableByQName("parameters","",ret);
+}
+
 SystemState::~SystemState()
 {
 	if(currentVm)

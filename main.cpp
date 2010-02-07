@@ -50,6 +50,7 @@ int main(int argc, char* argv[])
 {
 	char* fileName=NULL;
 	char* url=NULL;
+	char* paramsFileName=NULL;
 	bool useInterpreter=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
 
@@ -83,6 +84,17 @@ int main(int argc, char* argv[])
 			}
 
 			log_level=(LOG_LEVEL)atoi(argv[i]);
+		}
+		else if(strcmp(argv[i],"-p")==0 || 
+			strcmp(argv[i],"--parameters-file")==0)
+		{
+			i++;
+			if(i==argc)
+			{
+				fileName=NULL;
+				break;
+			}
+			paramsFileName=argv[i];
 		}
 		else
 		{
@@ -120,6 +132,15 @@ int main(int argc, char* argv[])
 	if(url)
 		sys->setUrl(url);
 	sys->useInterpreter=useInterpreter;
+	if(paramsFileName)
+	{
+		ifstream p(paramsFileName);
+		if(p)
+		{
+			sys->parseParameters(p);
+			p.close();
+		}
+	}
 
 	zlib_file_filter zf(fileName);
 	istream f(&zf);

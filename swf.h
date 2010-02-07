@@ -157,6 +157,8 @@ public:
 
 	//Flags for command line options
 	bool useInterpreter;
+
+	void parseParameters(std::istream& i);
 };
 
 class ParseThread

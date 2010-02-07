@@ -32,6 +32,7 @@ namespace lightspark
 class ByteArray: public IInterface
 {
 friend class Loader;
+friend class URLLoader;
 protected:
 	uint8_t* bytes;
 	int len;

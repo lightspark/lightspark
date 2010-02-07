@@ -21,7 +21,6 @@
 #define __STDC_CONSTANT_MACROS
 #include <list>
 #include <algorithm>
-//#include <curl/curl.h>
 //#include <libxml/parser.h>
 #include <pcrecpp.h>
 #include <string.h>

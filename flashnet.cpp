@@ -20,6 +20,7 @@
 #include "abc.h"
 #include "flashnet.h"
 #include "class.h"
+#include <curl/curl.h>
 
 using namespace std;
 using namespace lightspark;
@@ -112,20 +113,70 @@ ASFUNCTIONBODY(URLLoader,load)
 	return NULL;
 }
 
+struct bufferAndOffset
+{
+	ByteArray* byteArray;
+	int offset;
+//	bufferAndOffset(uint8_t* b,int s):buffer(b),size(s),offset(0){}
+	bufferAndOffset():byteArray(NULL),offset(0){}
+};
+
 void URLLoader::execute()
 {
-	LOG(LOG_NOT_IMPLEMENTED,"URLLoader temporarily from file " << urlRequest->url);
-	FILE* f=fopen(urlRequest->url.raw_buf(),"rb");
-	assert(f);
-	fseek(f,0,SEEK_END);
-	unsigned int size=ftell(f);
-	fseek(f,0,SEEK_SET);
-	ByteArray* tmpData=Class<ByteArray>::getInstanceS(true);
-	uint8_t* buf=tmpData->getBuffer(size);
-	fread(buf,1,size,f);
-	data=tmpData->obj;
-	//Add a complete event for this object
-	sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"complete",obj));
+	CURL *curl;
+	CURLcode res;
+	curl = curl_easy_init();
+	bool done=false;
+	bufferAndOffset* b=new bufferAndOffset;
+	if(curl)
+	{
+		curl_easy_setopt(curl, CURLOPT_URL, urlRequest->url.raw_buf());
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, b);
+		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);
+		curl_easy_setopt(curl, CURLOPT_HEADERDATA, b);
+		res = curl_easy_perform(curl);
+		if(res==0)
+			done=true;
+		curl_easy_cleanup(curl);
+	}
+
+	if(done)
+	{
+		data=b->byteArray->obj;
+		//Send a complete event for this object
+		sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"complete",obj));
+	}
+	else
+	{
+		assert(b->byteArray==NULL);
+		//Notify an error during loading
+		sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"ioError",obj));
+	}
+	delete b;
+}
+
+size_t URLLoader::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+	bufferAndOffset* bo=(bufferAndOffset*)userp;
+	memcpy(bo->byteArray->bytes + bo->offset,buffer,size*nmemb);
+	bo->offset+=(size*nmemb);
+	return size*nmemb;
+}
+
+size_t URLLoader::write_header(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+	bufferAndOffset* bo=(bufferAndOffset*)userp;
+	char* headerLine=(char*)buffer;
+	//Now read the length and allocate the byteArray
+	if(strncmp(headerLine,"Content-Length: ",16)==0)
+	{
+		assert(bo->byteArray==NULL);
+		int len=atoi(headerLine+16);
+		bo->byteArray=Class<ByteArray>::getInstanceS(true);
+		bo->byteArray->getBuffer(len);
+	}
+	return size*nmemb;
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)

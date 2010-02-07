@@ -65,6 +65,8 @@ private:
 	tiny_string dataFormat;
 	URLRequest* urlRequest;
 	ASObject* data;
+	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
+	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
 public:
 	URLLoader();
 	static void sinit(Class_base*);

@@ -157,7 +157,8 @@ typed_opcode_handler ABCVm::opcode_table_number_t[]={
 	{"subtract",(void*)&ABCVm::subtract,ARGS_OBJ_OBJ},
 	{"subtract_oi",(void*)&ABCVm::subtract_oi,ARGS_OBJ_INT},
 	{"subtract_io",(void*)&ABCVm::subtract_io,ARGS_INT_OBJ},
-	{"subtract_do",(void*)&ABCVm::subtract_do,ARGS_NUMBER_OBJ}
+	{"subtract_do",(void*)&ABCVm::subtract_do,ARGS_NUMBER_OBJ},
+	{"convert_d",(void*)&ABCVm::convert_d,ARGS_OBJ}
 };
 
 typed_opcode_handler ABCVm::opcode_table_void[]={
@@ -180,8 +181,6 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"add",(void*)&ABCVm::add,ARGS_OBJ_OBJ},
-	{"convert_d",(void*)&ABCVm::convert_d,ARGS_OBJ},
-	{"convert_b",(void*)&ABCVm::convert_b,ARGS_OBJ},
 	{"add_oi",(void*)&ABCVm::add_oi,ARGS_OBJ_INT},
 	{"add_od",(void*)&ABCVm::add_od,ARGS_OBJ_NUMBER},
 	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
@@ -219,6 +218,7 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"isTypelate",(void*)&ABCVm::isTypelate,ARGS_OBJ_OBJ},
 	{"ifTrue",(void*)&ABCVm::ifTrue,ARGS_OBJ},
 	{"ifFalse",(void*)&ABCVm::ifFalse,ARGS_OBJ},
+	{"convert_b",(void*)&ABCVm::convert_b,ARGS_OBJ}
 };
 
 extern TLSDATA SystemState* sys;
@@ -1486,12 +1486,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					break;
 				}
 				case 0x70:
-				case 0x75:
-				case 0x76:
 				{
 					//convert_s
-					//convert_d
-					//convert_b
 					break;
 				}
 				case 0x73:
@@ -1511,6 +1507,36 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
+				}
+				case 0x75:
+				{
+					//convert_d
+					STACK_TYPE t;
+					if(!static_stack_types.empty())
+					{
+						t=static_stack_types.back().second;
+						static_stack_types.pop_back();
+					}
+					else
+						t=STACK_OBJECT;
+
+					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+				}
+				case 0x76:
+				{
+					//convert_b
+					STACK_TYPE t;
+					if(!static_stack_types.empty())
+					{
+						t=static_stack_types.back().second;
+						static_stack_types.pop_back();
+					}
+					else
+						t=STACK_OBJECT;
+
+					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
+					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 				}
 				case 0x78:
 				{
@@ -3673,7 +3699,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, "synt convert_d" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				value=Builder.CreateCall(ex->FindFunctionNamed("convert_d"), v1.first);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				break;
 			}
 			case 0x76:
@@ -3681,15 +3707,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//convert_b
 				LOG(LOG_TRACE, "synt convert_b" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_OBJECT)
-				{
-					value=Builder.CreateCall(ex->FindFunctionNamed("convert_b"), v1.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				}
-				else if(v1.second==STACK_BOOLEAN)
+				if(v1.second==STACK_BOOLEAN)
 					static_stack_push(static_stack,v1);
 				else
-					abort();
+				{
+					value=Builder.CreateCall(ex->FindFunctionNamed("convert_b"), v1.first);
+					static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
+				}
 				break;
 			}
 			case 0x78:

@@ -533,8 +533,8 @@ private:
 	static void lookupswitch();
 	static intptr_t convert_i(ASObject*);
 	static uintptr_t convert_u(ASObject*);
-	static ASObject* convert_b(ASObject*);
-	static ASObject* convert_d(ASObject*);
+	static number_t convert_d(ASObject*);
+	static bool convert_b(ASObject*);
 	static ASObject* greaterThan(ASObject*,ASObject*);
 	static ASObject* greaterEquals(ASObject*,ASObject*);
 	static ASObject* lessEquals(ASObject*,ASObject*);

@@ -68,27 +68,36 @@ void ABCVm::setProperty_i(intptr_t value,ASObject* obj,multiname* name)
 	obj->decRef();
 }
 
-ASObject* ABCVm::convert_d(ASObject* o)
+number_t ABCVm::convert_d(ASObject* o)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "convert_d" );
-	return o;
+	LOG(LOG_CALLS, "convert_b" );
+	number_t ret=o->toNumber();
+	o->decRef();
+	return ret;
 }
 
-ASObject* ABCVm::convert_b(ASObject* o)
+bool ABCVm::convert_b(ASObject* o)
 {
-	LOG(LOG_TRACE, "convert_b" );
-	return o;
+	LOG(LOG_CALLS, "convert_b" );
+	bool ret=Boolean_concrete(o);
+	o->decRef();
+	return ret;
 }
 
 uintptr_t ABCVm::convert_u(ASObject* o)
 {
 	LOG(LOG_CALLS, "convert_u" );
-	return o->toUInt();
+	uintptr_t ret=o->toUInt();
+	o->decRef();
+	return ret;
 }
 
 intptr_t ABCVm::convert_i(ASObject* o)
 {
-	return o->toInt();
+	LOG(LOG_CALLS, "convert_i" );
+	intptr_t ret=o->toInt();
+	o->decRef();
+	return ret;
 }
 
 void ABCVm::label()
@@ -701,7 +710,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		}
 		else
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function");
+			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function " << name->name_s);
 		}
 	}
 

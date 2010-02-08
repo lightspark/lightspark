@@ -977,11 +977,14 @@ SyntheticFunction::SyntheticFunction(method_info* m):mi(m),hit_count(0),val(NULL
 
 ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numArgs, int level)
 {
-	if(mi->body==0)
+	if(mi->body==NULL)
 	{
 //		LOG(LOG_NOT_IMPLEMENTED,"Not initialized function");
 		return NULL;
 	}
+
+	//Validate that the initial scope depth is correct
+	assert(mi->body->init_scope_depth==func_scope.size());
 
 	if(hit_count==3 || sys->useInterpreter==false)
 	{

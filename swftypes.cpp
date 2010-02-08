@@ -327,24 +327,32 @@ double ASObject::toNumber() const
 	return 0;
 }
 
-obj_var* variables_map::findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create)
+obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, int& level, bool create, bool searchPreviusLevels)
 {
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name,level));
-	if(ret.first!=ret.second) //If length!=0 value is found
+	nameAndLevel name(n,level);
+	const var_iterator ret_begin=Variables.lower_bound(name);
+	//This actually look for the first different name, if we accept also previous levels
+	//Otherwise we are just doing equal_range
+	if(searchPreviusLevels)
+		name.level=0;
+	const var_iterator ret_end=Variables.upper_bound(name);
+	name.level=level;
+
+	var_iterator ret=ret_begin;
+	for(ret;ret!=ret_end;ret++)
 	{
-		//Check if this namespace is already present
-		var_iterator start=ret.first;
-		for(start;start!=ret.second;start++)
+		//We can use binary search, as the namespace are ordered
+		if(ret->second.first==ns)
 		{
-			if(start->second.first==ns)
-				return &start->second.second;
+			level=ret->first.level;
+			return &ret->second.second;
 		}
 	}
 
 	//Name not present, insert it if we have to create it
 	if(create)
 	{
-		var_iterator inserted=Variables.insert(ret.first,make_pair(nameAndLevel(name,level), make_pair(ns, obj_var() ) ) );
+		var_iterator inserted=Variables.insert(ret_begin,make_pair(nameAndLevel(n,level), make_pair(ns, obj_var() ) ) );
 		return &inserted->second.second;
 	}
 	else
@@ -376,7 +384,7 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 {
 	assert(ref_count>0);
 	int level=(actualPrototype)?actualPrototype->max_level:max_level;
-	obj_var* obj=Variables.findObjVar(name,ns,level,true);
+	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
 	if(obj->getter!=NULL)
 	{
 		assert(o==obj->getter);
@@ -389,7 +397,7 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 {
 	assert(ref_count>0);
 	int level=(actualPrototype)?actualPrototype->max_level:max_level;
-	obj_var* obj=Variables.findObjVar(name,ns,level,true);
+	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
 	if(obj->setter!=NULL)
 	{
 		assert(o==obj->setter);
@@ -413,7 +421,8 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 	unsigned int count=0;
 	for(int i=max_level;i>=0;i--)
 	{
-		obj=Variables.findObjVar(name,i,false);
+		//We stick to the old iteration mode, as we need to count
+		obj=Variables.findObjVar(name,max_level,false,false);
 		if(obj)
 		{
 			count++;
@@ -427,7 +436,8 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 	assert(count==1);
 
 	//Now dereference the values
-	obj=Variables.findObjVar(name,level,false);
+	//TODO: maybe we can look on the previous levels
+	obj=Variables.findObjVar(name,level,false,false);
 	if(obj->var)
 		obj->var->decRef();
 	if(obj->getter)
@@ -462,23 +472,15 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	}
 
 	obj_var* obj=NULL;
-	int level;
-	for(int i=max_level;i>=0;i--)
-	{
-		obj=Variables.findObjVar(name,i,false);
-		if(obj)
-		{
-			level=i;
-			break;
-		}
-	}
+	int level=max_level;
+	obj=Variables.findObjVar(name,level,false,true);
 
 	//CHECK: If no result try to look up also in upper levels
 	if(obj==NULL && prototype)
 	{
 		for(int i=max_level+1;i<=prototype->max_level;i++)
 		{
-			obj=Variables.findObjVar(name,i,false);
+			obj=Variables.findObjVar(name,i,false,false);
 			if(obj)
 			{
 				cout << "Found on upper level" << endl;
@@ -491,7 +493,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	if(obj==NULL)
 	{
 		level=max_level;
-		obj=Variables.findObjVar(name,max_level,true);
+		obj=Variables.findObjVar(name,max_level,true,false);
 	}
 
 	if(obj->setter)
@@ -523,25 +525,13 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	}
 
 	obj_var* obj=NULL;
-	int level;
-
-	if(find_back)
-	{
-		for(int i=max_level;i>=0;i--)
-		{
-			obj=Variables.findObjVar(name,ns,i,false);
-			if(obj)
-			{
-				level=i;
-				break;
-			}
-		}
-	}
+	int level=max_level;
+	obj=Variables.findObjVar(name,ns,level,false,find_back);
 
 	if(obj==NULL)
 	{
-		level=max_level;
-		obj=Variables.findObjVar(name,ns,max_level,true);
+		assert(level==max_level);
+		obj=Variables.findObjVar(name,ns,max_level,true,false);
 	}
 
 	if(obj->setter)
@@ -597,7 +587,7 @@ void variables_map::killObjVar(const multiname& mname, int level)
 	abort();
 }
 
-obj_var* variables_map::findObjVar(const multiname& mname, int level, bool create)
+obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool create, bool searchPreviusLevels)
 {
 	nameAndLevel name("",level);
 	if(mname.name_type==multiname::NAME_INT)
@@ -609,20 +599,24 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 	else
 		abort();
 
-	const pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
-	if(ret.first!=ret.second)
+	const var_iterator ret_begin=Variables.lower_bound(name);
+	//This actually look for the first different name, if we accept also previous levels
+	//Otherwise we are just doing equal_range
+	if(searchPreviusLevels)
+		name.level=0;
+	const var_iterator ret_end=Variables.upper_bound(name);
+	name.level=level;
+
+	var_iterator ret=ret_begin;
+	for(ret;ret!=ret_end;ret++)
 	{
 		//Check if one the namespace is already present
 		assert(!mname.ns.empty());
-		for(int i=0;i<mname.ns.size();i++)
+		//We can use binary search, as the namespace are ordered
+		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.first))
 		{
-			const tiny_string& ns=mname.ns[i].name;
-			var_iterator start=ret.first;
-			for(start;start!=ret.second;start++)
-			{
-				if(start->second.first==ns)
-					return &start->second.second;
-			}
+			level=ret->first.level;
+			return &ret->second.second;
 		}
 	}
 
@@ -634,10 +628,10 @@ obj_var* variables_map::findObjVar(const multiname& mname, int level, bool creat
 		{
 			//Hack, insert with empty name
 			//Here the object MUST exist
-			var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair("", obj_var() ) ) );
+			var_iterator inserted=Variables.insert(ret,make_pair(name, make_pair("", obj_var() ) ) );
 			return &inserted->second.second;
 		}
-		var_iterator inserted=Variables.insert(ret.first,make_pair(name, make_pair(mname.ns[0].name, obj_var() ) ) );
+		var_iterator inserted=Variables.insert(ret,make_pair(name, make_pair(mname.ns[0].name, obj_var() ) ) );
 		return &inserted->second.second;
 	}
 	else
@@ -707,7 +701,8 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name)
 	int level;
 	for(int i=max_level;i>=0;i--)
 	{
-		obj=Variables.findObjVar(name,i,false);
+		//The variable i is automatically moved to the right level
+		obj=Variables.findObjVar(name,i,false,true);
 		if(obj)
 		{
 			//HACK: to return the object valid the getter or the object has to be declared
@@ -778,16 +773,8 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 	}
 
 	obj_var* obj=NULL;
-	int level;
-	for(int i=max_level;i>=0;i--)
-	{
-		obj=Variables.findObjVar(name,ns,i,false);
-		if(obj)
-		{
-			level=i;
-			break;
-		}
-	}
+	int level=max_level;
+	obj=Variables.findObjVar(name,ns,level,false,true);
 
 	if(obj!=NULL)
 	{

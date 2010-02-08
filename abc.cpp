@@ -1265,16 +1265,20 @@ void ABCContext::exec()
 
 		LOG(LOG_CALLS, "Building script traits: " << scripts[i].trait_count );
 		SyntheticFunction* mf=new SyntheticFunction(m);
+		mf->func_scope.push_back(getGlobal());
+
 		for(int j=0;j<scripts[i].trait_count;j++)
-			buildTrait(&sys->currentVm->Global,&scripts[i].traits[j],mf);
+			buildTrait(getGlobal(),&scripts[i].traits[j],mf);
 	}
 	//The last script entry has to be run
 	LOG(LOG_CALLS, "Last script (Entry Point)");
 	method_info* m=get_method(scripts[i].init);
-	IFunction* entry=new SyntheticFunction(m);
+	SyntheticFunction* entry=new SyntheticFunction(m);
+	entry->addToScope(getGlobal());
+
 	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(int j=0;j<scripts[i].trait_count;j++)
-		buildTrait(&sys->currentVm->Global,&scripts[i].traits[j]);
+		buildTrait(getGlobal(),&scripts[i].traits[j]);
 	entry->call(&sys->currentVm->Global,NULL,sys->currentVm->Global.max_level);
 	LOG(LOG_CALLS, "End of Entry Point");
 }
@@ -1363,13 +1367,9 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			method_info* m=&methods[t->method];
 			assert(m->body==0);
 			int level=obj->max_level;
-			obj_var* var=NULL;
-			do
-			{
-				var=obj->Variables.findObjVar(name,"",level,false);
-				level--;
-			}
-			while(var==NULL && level>=0);
+
+			obj_var* var=obj->Variables.findObjVar(name,"",level,false,true);
+
 			if(var)
 			{
 				assert(var);
@@ -1393,12 +1393,13 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			assert(m->body==0);
 			int level=obj->max_level;
 			obj_var* var=NULL;
+
 			do
 			{
-				var=obj->Variables.findObjVar(name,"",level,false);
-				level--;
+				obj_var* var=obj->Variables.findObjVar(name,"",level,false,true);
 			}
-			while((var==NULL || var->getter==NULL) && level>=0);
+			while(var!=NULL && var->getter==NULL);
+
 			if(var)
 			{
 				assert(var);
@@ -1422,12 +1423,13 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			assert(m->body==0);
 			int level=obj->max_level;
 			obj_var* var=NULL;
+
 			do
 			{
-				var=obj->Variables.findObjVar(name,"",level,false);
-				level--;
+				obj_var* var=obj->Variables.findObjVar(name,"",level,false,true);
 			}
-			while((var==NULL || var->setter==NULL) && level>=0);
+			while(var!=NULL && var->setter==NULL);
+
 			if(var)
 			{
 				assert(var);
@@ -1528,7 +1530,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					assert(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false);
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,false);
 						if(var)
 						{
 							//A superclass defined a protected method that we have to override.
@@ -1564,7 +1566,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					assert(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false);
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,false);
 						if(var)
 						{
 							//A superclass defined a protected method that we have to override.
@@ -1599,7 +1601,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					assert(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false);
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,false);
 						if(var)
 						{
 							//A superclass defined a protected method that we have to override.

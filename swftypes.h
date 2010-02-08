@@ -295,6 +295,16 @@ struct nsNameAndKind
 	{
 		return name < r.name;
 	}
+	bool operator<(const tiny_string& r) const
+	{
+		return name < r;
+	}
+
+	//Automatic conversion to tiny_string is useful is multiname lookup
+	operator const tiny_string&() const
+	{
+		return name;
+	}
 };
 
 struct multiname
@@ -351,7 +361,7 @@ public:
 	bool operator<(const nameAndLevel& r) const
 	{
 		if(name==r.name)
-			return level<r.level;
+			return level>r.level; //This forces the ordering in descending order
 		else
 			return name<r.name;
 	}
@@ -368,8 +378,9 @@ private:
 	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::iterator var_iterator;
 	std::vector<var_iterator> slots_vars;
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
-	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int level, bool create);
-	obj_var* findObjVar(const multiname& mname, int level, bool create);
+	//Level will be modified with the actual level where the object is found
+	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int& level, bool create, bool searchPreviusLevels);
+	obj_var* findObjVar(const multiname& mname, int& level, bool create, bool searchPreviusLevels);
 	void killObjVar(const multiname& mname, int level);
 	ASObject* getSlot(int n)
 	{

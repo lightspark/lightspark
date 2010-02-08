@@ -1387,7 +1387,8 @@ void ABCVm::findPropStrict(call_context* th, int n)
 	if(o.obj==NULL)
 	{
 		LOG(LOG_CALLS, "NOT found, trying Global" );
-		o=getGlobal()->getVariableByMultiname(*name);
+		abort();
+/*		o=getGlobal()->getVariableByMultiname(*name);
 		if(o.obj)
 		{
 			getGlobal()->incRef();
@@ -1397,7 +1398,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 		{
 			LOG(LOG_CALLS, "NOT found, pushing Undefined" );
 			th->runtime_stack_push(new Undefined);
-		}
+		}*/
 	}
 }
 
@@ -1982,7 +1983,13 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	method_info* m=&th->context->methods[th->context->classes[n].cinit];
-	IFunction* cinit=new SyntheticFunction(m);
+	SyntheticFunction* cinit=new SyntheticFunction(m);
+	//cinit must inherit the current scope
+	cinit->acquireScope(th->scope_stack);
+	//and the created class
+	cinit->addToScope(ret);
+
+
 	LOG(LOG_CALLS,"Building class traits");
 	for(int i=0;i<th->context->classes[n].trait_count;i++)
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i]);
@@ -2025,7 +2032,8 @@ void ABCVm::newClass(call_context* th, int n)
 
 	LOG(LOG_CALLS,"Calling Class init " << ret);
 	ret->incRef();
-	cinit->call(ret,NULL,ret->max_level);
+	//Static function are called with global as this
+	cinit->call(getGlobal(),NULL,ret->max_level);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
 }

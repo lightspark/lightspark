@@ -302,6 +302,17 @@ public:
 			return false;
 		return mi==sf->mi;
 	}
+	void acquireScope(const std::vector<ASObject*>& scope)
+	{
+		assert(func_scope.empty());
+		func_scope=scope;
+		for(int i=0;i<func_scope.size();i++)
+			func_scope[i]->incRef();
+	}
+	void addToScope(ASObject* s)
+	{
+		func_scope.push_back(s);
+	}
 
 private:
 	int hit_count;

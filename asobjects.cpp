@@ -983,9 +983,6 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 		return NULL;
 	}
 
-	//Validate that the initial scope depth is correct
-	assert(mi->body->init_scope_depth==func_scope.size());
-
 	if(hit_count==3 || sys->useInterpreter==false)
 	{
 		//We passed the hot function threshold, synt the function

@@ -1387,8 +1387,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 	if(o.obj==NULL)
 	{
 		LOG(LOG_CALLS, "NOT found, trying Global" );
-		abort();
-/*		o=getGlobal()->getVariableByMultiname(*name);
+		o=getGlobal()->getVariableByMultiname(*name);
 		if(o.obj)
 		{
 			getGlobal()->incRef();
@@ -1398,7 +1397,7 @@ void ABCVm::findPropStrict(call_context* th, int n)
 		{
 			LOG(LOG_CALLS, "NOT found, pushing Undefined" );
 			th->runtime_stack_push(new Undefined);
-		}*/
+		}
 	}
 }
 
@@ -2032,7 +2031,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 	LOG(LOG_CALLS,"Calling Class init " << ret);
 	ret->incRef();
-	//Static function are called with global as this
+	//Class init functions are called with global as this
 	cinit->call(getGlobal(),NULL,ret->max_level);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);

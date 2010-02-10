@@ -1265,7 +1265,7 @@ void ABCContext::exec()
 
 		LOG(LOG_CALLS, "Building script traits: " << scripts[i].trait_count );
 		SyntheticFunction* mf=new SyntheticFunction(m);
-		mf->func_scope.push_back(getGlobal());
+		mf->addToScope(getGlobal());
 
 		for(int j=0;j<scripts[i].trait_count;j++)
 			buildTrait(getGlobal(),&scripts[i].traits[j],mf);
@@ -1279,7 +1279,7 @@ void ABCContext::exec()
 	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(getGlobal(),&scripts[i].traits[j]);
-	entry->call(&sys->currentVm->Global,NULL,sys->currentVm->Global.max_level);
+	entry->call(getGlobal(),NULL,sys->currentVm->Global.max_level);
 	LOG(LOG_CALLS, "End of Entry Point");
 }
 

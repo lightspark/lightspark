@@ -244,6 +244,9 @@ private:
 	void syncLocals(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder,
 			const std::vector<stack_entry>& static_locals,llvm::Value* locals,
 			const std::vector<STACK_TYPE>& expected,const block_info& dest_block);
+	typedef std::vector<std::pair<int, STACK_TYPE> > static_stack_types_vector;
+	void consumeStackForRTMultiname(static_stack_types_vector& stack, int multinameIndex) const;
+	std::pair<int, STACK_TYPE> popTypeFromStack(static_stack_types_vector& stack, int localIp) const;
 	llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
 	llvm::Function* llvmf;
 

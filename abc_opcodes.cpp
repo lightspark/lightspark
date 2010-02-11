@@ -1293,6 +1293,8 @@ void ABCVm::getLex(call_context* th, int n)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"NOT found " << name->name_s<< ", pushing Undefined");
+			if(name->name_s=="SpriteAsset")
+				__asm__("int $3");
 			th->runtime_stack_push(new Undefined);
 		}
 	}

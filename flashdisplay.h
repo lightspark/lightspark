@@ -189,8 +189,9 @@ private:
 	bool loaded;
 	RootMovieClip* local_root;
 	LoaderInfo* contentLoaderInfo;
+	DisplayObject* content;
 public:
-	Loader():loading(false),local_root(NULL),loaded(false)
+	Loader():loading(false),local_root(NULL),loaded(false),content(NULL)
 	{
 	}
 	static void sinit(Class_base* c);
@@ -241,7 +242,6 @@ protected:
 public:
 	std::vector<Frame> frames;
 	RunState state;
-
 public:
 	MovieClip();
 	static void sinit(Class_base* c);
@@ -260,6 +260,8 @@ public:
 	ASFUNCTION(_getFramesLoaded);
 
 	virtual void addToFrame(DisplayListTag* r);
+
+	void advanceFrame();
 
 	//IDisplayListElem interface
 	void Render();

@@ -791,6 +791,32 @@ llvm::FunctionType* method_info::synt_method_prototype(llvm::ExecutionEngine* ex
 	return llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
 }
 
+void method_info::consumeStackForRTMultiname(static_stack_types_vector& stack, int multinameIndex) const
+{
+	int rtdata=context->getMultinameRTData(multinameIndex);
+	for(int i=0;i<rtdata;i++)
+	{
+		if(!stack.empty())
+			stack.pop_back();
+		else
+			break;
+	}
+}
+
+inline pair<int,STACK_TYPE> method_info::popTypeFromStack(static_stack_types_vector& stack, int local_ip) const
+{
+	pair<int, STACK_TYPE> ret;
+	if(!stack.empty())
+	{
+		ret=stack.back();
+		stack.pop_back();
+	}
+	else
+		ret=make_pair(local_ip,STACK_OBJECT);
+
+	return ret;
+}
+
 SyntheticFunction::synt_function method_info::synt_method()
 {
 	if(f)
@@ -892,7 +918,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		stringstream code(body->code);
 		stop=true;
 		cur_block=NULL;
-		vector<pair<int, STACK_TYPE> > static_stack_types;
+		static_stack_types_vector static_stack_types;
 		int local_ip=0;
 
 		while(1)
@@ -1111,10 +1137,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x1e:
 				{
 					//nextname
-					if(!static_stack.empty())
-						static_stack_types.pop_back();
-					if(!static_stack.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
@@ -1134,10 +1158,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x23:
 				{
 					//nextvalue
-					if(!static_stack.empty())
-						static_stack_types.pop_back();
-					if(!static_stack.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
@@ -1173,21 +1195,17 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x29:
 				{
 					//pop
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
 					break;
 				}
 				case 0x2a:
 				{
 					//dup
-					pair <int, STACK_TYPE> val;
-					if(!static_stack_types.empty())
-						val=static_stack_types.back();
-					else
-						val=make_pair(local_ip,STACK_OBJECT);
-
+					pair <int, STACK_TYPE> val=popTypeFromStack(static_stack_types,local_ip);
+					static_stack_types.push_back(val);
 					val.first=local_ip;
 					static_stack_types.push_back(val);
+
 					cur_block->checkProactiveCasting(local_ip,val.second);
 					break;
 				}
@@ -1195,21 +1213,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//swap
 					pair <int, STACK_TYPE> t1,t2;
-					if(!static_stack_types.empty())
-					{
-						t1=static_stack_types.back();
-						static_stack_types.pop_back();
-					}
-					else
-						t1=make_pair(local_ip,STACK_OBJECT);
-
-					if(!static_stack_types.empty())
-					{
-						t2=static_stack_types.back();
-						static_stack_types.pop_back();
-					}
-					else
-						t2=make_pair(local_ip,STACK_OBJECT);
+					t1=popTypeFromStack(static_stack_types,local_ip);
+					t2=popTypeFromStack(static_stack_types,local_ip);
 
 					static_stack_types.push_back(t1);
 					static_stack_types.push_back(t2);
@@ -1336,9 +1341,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//findpropstrict
 					//findproperty
-					static_stack_types.clear();
 					u30 t;
 					code >> t;
+
+					//We only need to sync the stack if we need RT data for the multiname
+					if(this->context->getMultinameRTData(t)!=0)
+						static_stack_types.clear();
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
@@ -1364,16 +1373,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//setproperty
 					u30 t;
 					code >> t;
-					int rtdata=this->context->getMultinameRTData(t);
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(rtdata==1)
-					{
-						if(!static_stack_types.empty())
-							static_stack_types.pop_back();
-					}
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					//the value
+					popTypeFromStack(static_stack_types,local_ip);
+					//the rt multiname stuff
+					consumeStackForRTMultiname(static_stack_types,t);
+					//the object
+					popTypeFromStack(static_stack_types,local_ip);
 					break;
 				}
 				case 0x62:
@@ -1402,14 +1407,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					u30 i;
 					code >> i;
 					cur_block->locals_used[i]=true;
-					STACK_TYPE t;
-					if(!static_stack_types.empty())
-					{
-						t=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t=STACK_OBJECT;
+					STACK_TYPE t=popTypeFromStack(static_stack_types,local_ip).second;
 					
 					if(cur_block->locals[i]==STACK_NONE)
 						cur_block->locals_reset[i]=true;
@@ -1438,14 +1436,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					u30 t;
 					code >> t;
 					constant = llvm::ConstantInt::get(int_type, t);
-					int rtdata=this->context->getMultinameRTData(t);
-					if(rtdata==1)
-					{
-						if(!static_stack_types.empty())
-							static_stack_types.pop_back();
-					}
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					consumeStackForRTMultiname(static_stack_types,t);
+					popTypeFromStack(static_stack_types,local_ip);
 
 					STACK_TYPE actual_type=cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					if(actual_type==STACK_OBJECT)
@@ -1476,8 +1468,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//getslot
 					u30 t;
 					code >> t;
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
@@ -1487,10 +1479,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//setslot
 					u30 t;
 					code >> t;
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
 					break;
 				}
 				case 0x70:
@@ -1503,14 +1493,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//convert_i
 					//convert_u
-					STACK_TYPE t;
-					if(!static_stack_types.empty())
-					{
-						t=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t=STACK_OBJECT;
+					STACK_TYPE t=popTypeFromStack(static_stack_types,local_ip).second;
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
@@ -1519,14 +1502,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x75:
 				{
 					//convert_d
-					STACK_TYPE t;
-					if(!static_stack_types.empty())
-					{
-						t=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t=STACK_OBJECT;
+					STACK_TYPE t=popTypeFromStack(static_stack_types,local_ip).second;
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
 					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
@@ -1535,14 +1511,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x76:
 				{
 					//convert_b
-					STACK_TYPE t;
-					if(!static_stack_types.empty())
-					{
-						t=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t=STACK_OBJECT;
+					STACK_TYPE t=popTypeFromStack(static_stack_types,local_ip).second;
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
@@ -1571,10 +1540,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x87:
 				{
 					//astypelate
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip).second;
+					popTypeFromStack(static_stack_types,local_ip).second;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
@@ -1584,8 +1552,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//negate
 					//typeof
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip).second;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
@@ -1599,8 +1567,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//decrement
 					//increment_i
 					//decrement_i
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip).second;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
@@ -1608,8 +1576,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x96:
 				{
 					//not
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip).second;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
@@ -1617,8 +1585,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x97:
 				{
 					//bitnot
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip).second;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
@@ -1627,20 +1595,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//add
 					STACK_TYPE t1,t2;
-					if(!static_stack_types.empty())
-					{
-						t1=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t1=STACK_OBJECT;
-					if(!static_stack_types.empty())
-					{
-						t2=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t2=STACK_OBJECT;
+					t1=popTypeFromStack(static_stack_types,local_ip).second;
+					t2=popTypeFromStack(static_stack_types,local_ip).second;
 
 					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
 					{
@@ -1666,22 +1622,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//subtract
 					STACK_TYPE t1,t2;
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						t1=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t1=STACK_OBJECT;
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						t2=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t2=STACK_OBJECT;
+					t1=popTypeFromStack(static_stack_types,local_ip).second;
+					t2=popTypeFromStack(static_stack_types,local_ip).second;
 
 					if(t1==STACK_INT && t2==STACK_INT)
 					{
@@ -1699,22 +1641,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//multiply
 					STACK_TYPE t1,t2;
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						t1=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t1=STACK_OBJECT;
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						t2=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t2=STACK_OBJECT;
+					t1=popTypeFromStack(static_stack_types,local_ip).second;
+					t2=popTypeFromStack(static_stack_types,local_ip).second;
 
 					if(t1==STACK_INT && t2==STACK_INT)
 					{
@@ -1731,10 +1659,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xa3:
 				{
 					//divide
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip).second;
+					popTypeFromStack(static_stack_types,local_ip).second;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
 					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					break;
@@ -1743,20 +1670,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//modulo
 					STACK_TYPE t1,t2;
-					if(!static_stack_types.empty())
-					{
-						t2=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t2=STACK_OBJECT;
-					if(!static_stack_types.empty())
-					{
-						t1=static_stack_types.back().second;
-						static_stack_types.pop_back();
-					}
-					else
-						t1=STACK_OBJECT;
+					t1=popTypeFromStack(static_stack_types,local_ip).second;
+					t2=popTypeFromStack(static_stack_types,local_ip).second;
 
 					if(t1==STACK_OBJECT || t2==STACK_OBJECT)
 						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
@@ -1779,16 +1694,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xa5:
 				{
 					//lshift
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						static_stack_types.pop_back();
-					}
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						static_stack_types.pop_back();
-					}
+					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					if(t1.first!=local_ip)
+						cur_block->push_types[t1.first]=STACK_INT;
+					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					if(t2.first!=local_ip)
+						cur_block->push_types[t2.first]=STACK_INT;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
@@ -1796,16 +1708,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xa6:
 				{
 					//rshift
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						static_stack_types.pop_back();
-					}
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						static_stack_types.pop_back();
-					}
+					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					if(t1.first!=local_ip)
+						cur_block->push_types[t1.first]=STACK_INT;
+					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					if(t2.first!=local_ip)
+						cur_block->push_types[t2.first]=STACK_INT;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
@@ -1813,16 +1722,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xa7:
 				{
 					//urshift
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						static_stack_types.pop_back();
-					}
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						static_stack_types.pop_back();
-					}
+					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					if(t1.first!=local_ip)
+						cur_block->push_types[t1.first]=STACK_INT;
+					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					if(t2.first!=local_ip)
+						cur_block->push_types[t2.first]=STACK_INT;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
@@ -1830,16 +1736,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xa8:
 				{
 					//bitand
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						static_stack_types.pop_back();
-					}
-					if(!static_stack_types.empty())
-					{
-						cur_block->push_types[static_stack_types.back().first]=STACK_INT;
-						static_stack_types.pop_back();
-					}
+					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					if(t1.first!=local_ip)
+						cur_block->push_types[t1.first]=STACK_INT;
+					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					if(t2.first!=local_ip)
+						cur_block->push_types[t2.first]=STACK_INT;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
@@ -1847,10 +1750,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xa9:
 				{
 					//bitor
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					if(t1.first!=local_ip)
+						cur_block->push_types[t1.first]=STACK_INT;
+					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					if(t2.first!=local_ip)
+						cur_block->push_types[t2.first]=STACK_INT;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
@@ -1858,10 +1764,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xaa:
 				{
 					//bitxor
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					if(t1.first!=local_ip)
+						cur_block->push_types[t1.first]=STACK_INT;
+					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					if(t2.first!=local_ip)
+						cur_block->push_types[t2.first]=STACK_INT;
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
@@ -1869,10 +1778,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xab:
 				{
 					//equals
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
@@ -1880,10 +1788,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xac:
 				{
 					//strictequals
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
@@ -1891,10 +1797,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xad:
 				{
 					//lessthan
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
@@ -1902,10 +1807,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xae:
 				{
 					//lessequals
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
@@ -1913,10 +1817,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xaf:
 				{
 					//greaterthan
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
@@ -1924,10 +1827,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xb0:
 				{
 					//greaterequals
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
@@ -1935,10 +1837,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xb3:
 				{
 					//istypelate
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
@@ -1946,10 +1847,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0xb4:
 				{
 					//in
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
-					if(!static_stack_types.empty())
-						static_stack_types.pop_back();
+					popTypeFromStack(static_stack_types,local_ip);
+					popTypeFromStack(static_stack_types,local_ip);
+
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
@@ -3392,11 +3292,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//findpropstrict
 				LOG(LOG_TRACE, "synt findpropstrict" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				u30 t;
 				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-
 				int rtdata=this->context->getMultinameRTData(t);
 				//If this is a non runtime multiname, try to resolve the name on global,
 				//If we can do it, push Global
@@ -3414,7 +3311,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 
 				if(staticallyResolved==false)
+				{
+					syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
+					constant = llvm::ConstantInt::get(int_type, t);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("findPropStrict"), context, constant);
+				}
 
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
@@ -3707,13 +3608,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//convert_u
 				LOG(LOG_TRACE, "synt convert_u" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_INT) //Nothing to do
-					static_stack_push(static_stack,v1);
+				if(v1.second==STACK_NUMBER)
+					value=Builder.CreateFPToUI(v1.first,int_type);
+				else if(v1.second==STACK_INT) //Nothing to do
+					value=v1.first;
 				else
-				{
 					value=Builder.CreateCall(ex->FindFunctionNamed("convert_u"), v1.first);
-					static_stack_push(static_stack,stack_entry(value,STACK_INT));
-				}
+
+				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
 			case 0x75:

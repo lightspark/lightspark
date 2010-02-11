@@ -216,31 +216,14 @@ void Loader::execute()
 
 		ParseThread local_pt(sys,local_root,s);
 		local_pt.wait();
+		//HACK: advance to first frame, so that scripts get executed
+		//We shold understand how to deliver frame events to movieclips not in the display list
+		local_root->advanceFrame();
+		content=local_root;
 	}
 	loaded=true;
 	//Add a complete event for this object
 	sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS(true,"complete"));
-
-/*	CURL *curl;
-	CURLcode res;
-	curl = curl_easy_init();
-	string base("www.youtube.com");
-	string url=base+args->at(0)->toString();
-	if(curl)
-	{
-		curl_easy_setopt(curl, CURLOPT_URL, (string(url)).c_str());
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, obj);
-		res = curl_easy_perform(curl);
-		curl_easy_cleanup(curl);
-	}
-	xmlDocPtr doc=xmlReadMemory(th->xml_buf,th->xml_index,(string(url)).c_str(),NULL,0);
-
-	bool found;
-	IFunction* on_load=obj->getVariableByName("onLoad",found)->toFunction();
-	arguments a;
-	a.push(new Integer(1));
-	on_load->call(NULL,&a);*/
 }
 
 void Loader::Render()
@@ -498,13 +481,8 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	return NULL;
 }
 
-void MovieClip::Render()
+void MovieClip::advanceFrame()
 {
-	LOG(LOG_TRACE,"Render MovieClip");
-//	parent=rt->currentClip;
-	MovieClip* clip_bak=rt->currentClip;
-	rt->currentClip=this;
-
 	if(!state.stop_FP || state.explicit_FP /*&& (class_name=="MovieClip")*/)
 	{
 		//Before assigning the next_FP we initialize the frame
@@ -515,32 +493,37 @@ void MovieClip::Render()
 		state.explicit_FP=false;
 	}
 
-	if(!frames.empty())
-	{
-		if(!state.stop_FP)
-			frames[state.FP].runScript();
+}
 
-		//Set the id in the secondary color
-		glPushAttrib(GL_CURRENT_BIT);
-		glSecondaryColor3f(id,0,0);
+void MovieClip::Render()
+{
+	LOG(LOG_TRACE,"Render MovieClip");
+	//MovieClip* clip_bak=rt->currentClip;
+	//rt->currentClip=this;
 
-		//Apply local transformation
-		glPushMatrix();
-		//glTranslatef(_x,_y,0);
-		//glRotatef(rotation,0,0,1);
-		frames[state.FP].Render();
+	advanceFrame();
 
-		glPopMatrix();
-		glPopAttrib();
-	}
+	assert(state.FP<frames.size());
 
-/*	if(state.FP!=state.next_FP)
-		state.FP=state.next_FP;
-	else
-		state.stop_FP=true;*/
+	if(!state.stop_FP)
+		frames[state.FP].runScript();
+
+	//Set the id in the secondary color
+	glPushAttrib(GL_CURRENT_BIT);
+	glSecondaryColor3f(id,0,0);
+
+	//Apply local transformation
+	glPushMatrix();
+	//glTranslatef(_x,_y,0);
+	//glRotatef(rotation,0,0,1);
+	frames[state.FP].Render();
+
+	glPopMatrix();
+	glPopAttrib();
+
 	LOG(LOG_TRACE,"End Render MovieClip");
 
-	rt->currentClip=clip_bak;
+	//rt->currentClip=clip_bak;
 }
 
 void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)

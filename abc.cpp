@@ -191,6 +191,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("TimerEvent","flash.events",Class<TimerEvent>::getClass());
 	Global.setVariableByQName("IOErrorEvent","flash.events",Class<IOErrorEvent>::getClass());
 	Global.setVariableByQName("SecurityErrorEvent","flash.events",Class<FakeEvent>::getClass("SecurityErrorEvent"));
+	Global.setVariableByQName("FullScreenEvent","flash.events",Class<FakeEvent>::getClass("FullScreenEvent"));
 	Global.setVariableByQName("TextEvent","flash.events",Class<FakeEvent>::getClass("TextEvent"));
 	Global.setVariableByQName("ErrorEvent","flash.events",Class<FakeEvent>::getClass("ErrorEvent"));
 	Global.setVariableByQName("IEventDispatcher","flash.events",Class<IEventDispatcher>::getClass());

@@ -3725,6 +3725,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					constant = llvm::ConstantInt::get(int_type, 1);
 					value=Builder.CreateAdd(v1.first,constant);
 				}
+				else if(v1.second==STACK_NUMBER)
+				{
+					constant = llvm::ConstantInt::get(int_type, 1);
+					v1.first=Builder.CreateFPToSI(v1.first,int_type);
+					value=Builder.CreateAdd(v1.first,constant);
+				}
 				else
 					abort();
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));

@@ -53,6 +53,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS(true,"enterFrame")->obj);
 	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS(true,"render")->obj);
 	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS(true,"addedToStage")->obj);
+	c->setVariableByQName("REMOVED_FROM_STAGE","",Class<ASString>::getInstanceS(true,"removedFromStage")->obj);
 	c->setVariableByQName("INIT","",Class<ASString>::getInstanceS(true,"init")->obj);
 	c->setVariableByQName("CLOSE","",Class<ASString>::getInstanceS(true,"close")->obj);
 	c->setVariableByQName("ADDED","",Class<ASString>::getInstanceS(true,"added")->obj);
@@ -205,6 +206,7 @@ void FakeEvent::sinit(Class_base* c)
 	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS(true,"error")->obj);
 	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS(true,"keyDown")->obj);
 	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS(true,"keyUp")->obj);
+	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS(true,"fullScreen")->obj);
 }
 
 EventDispatcher::EventDispatcher():id(0)

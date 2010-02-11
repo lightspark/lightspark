@@ -989,8 +989,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 		val=mi->synt_method();
 	}
 
-	if(mi->needsArgs())
-		abort();
+	assert(mi->needsArgs()==false)
 
 	int args_len=mi->numArgs();
 	int passedToLocals=min(numArgs,args_len);
@@ -1027,8 +1026,11 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 
 	if(mi->needsRest()) //TODO
 	{
-		assert(passedToRest==0);
 		Array* rest=Class<Array>::getInstanceS(true);
+		rest->resize(passedToRest);
+		for(int j=0;j<passedToRest;j++)
+			rest->set(j,args[passedToLocals+j]);
+
 		cc->locals[i+1]=rest->obj;
 	}
 	ASObject* ret;
@@ -1291,8 +1293,12 @@ ASFUNCTIONBODY(RegExp,test)
 ASFUNCTIONBODY(ASString,slice)
 {
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	int startIndex=args->at(0)->toInt();
-	int endIndex=args->at(1)->toInt();
+	int startIndex=0;
+	if(args->size()>=1)
+		startIndex=args->at(0)->toInt();
+	int endIndex=0x7fffffff;
+	if(args->size()>=2)
+		endIndex=args->at(1)->toInt();
 	return Class<ASString>::getInstanceS(true,th->data.substr(startIndex,endIndex))->obj;
 }
 

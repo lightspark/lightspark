@@ -1575,7 +1575,6 @@ DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):Diction
 	LOG(LOG_TRACE,"DefineBinaryDataTag");
 	int size=getSize();
 	s >> Tag >> Reserved;
-	cout << Tag << endl;
 	size -= sizeof(Tag)+sizeof(Reserved);
 	bytes=new uint8_t[size];
 	len=size;

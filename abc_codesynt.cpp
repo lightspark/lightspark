@@ -46,10 +46,6 @@ void debug_i(intptr_t i)
 	LOG(LOG_CALLS, "debug_i "<< i);
 }
 
-opcode_handler ABCVm::opcode_table_args0_lazy[]={
-	{"getGlobalScope",(void*)&ABCVm::getGlobalScope}
-};
-
 opcode_handler ABCVm::opcode_table_args0[]={
 	{"pushScope",(void*)&ABCVm::pushScope},
 	{"pushWith",(void*)&ABCVm::pushWith},
@@ -190,7 +186,8 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"pushNull",(void*)&ABCVm::pushNull,ARGS_NONE},
 	{"pushUndefined",(void*)&ABCVm::pushUndefined,ARGS_NONE},
 	{"getProperty",(void*)&ABCVm::getProperty,ARGS_OBJ_OBJ},
-	{"asTypelate",(void*)&ABCVm::asTypelate,ARGS_OBJ_OBJ}
+	{"asTypelate",(void*)&ABCVm::asTypelate,ARGS_OBJ_OBJ},
+	{"getGlobalScope",(void*)&ABCVm::getGlobalScope,ARGS_NONE}
 };
 
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
@@ -325,15 +322,6 @@ void ABCVm::registerFunctions()
 		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args0[i].name,module);
 		ex->addGlobalMapping(F,opcode_table_args0[i].addr);
 	}
-	//Lazy pushing
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	elems=sizeof(opcode_table_args0_lazy)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args0_lazy[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args0_lazy[i].addr);
-	}
-	//End of lazy pushing
 
 	// (call_context*,int)
 	sig.push_back(int_type);
@@ -3531,7 +3519,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//getglobalscope
 				LOG(LOG_TRACE, "synt getglobalscope" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"), context);
+				value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"));
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}

@@ -422,7 +422,7 @@ void ABCVm::pushScope(call_context* th)
 	th->scope_stack.push_back(t);
 }
 
-ASObject* ABCVm::getGlobalScope(call_context* th)
+ASObject* ABCVm::getGlobalScope()
 {
 	ASObject* ret=getGlobal();
 	LOG(LOG_CALLS,"getGlobalScope: " << ret);
@@ -2032,7 +2032,7 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG(LOG_CALLS,"Calling Class init " << ret);
 	ret->incRef();
 	//Class init functions are called with global as this
-	cinit->call(getGlobal(),NULL,ret->max_level);
+	cinit->call(ret,NULL,ret->max_level);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
 }

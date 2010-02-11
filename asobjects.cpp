@@ -1212,7 +1212,7 @@ void RegExp::sinit(Class_base* c)
 
 void RegExp::buildTraits(ASObject* o)
 {
-//	o->setVariableByQName("exec",AS3,new Function(exec));
+	o->setVariableByQName("exec",AS3,new Function(exec));
 	o->setVariableByQName("test",AS3,new Function(test));
 }
 
@@ -1246,8 +1246,28 @@ ASFUNCTIONBODY(RegExp,_constructor)
 ASFUNCTIONBODY(RegExp,exec)
 {
 	RegExp* th=static_cast<RegExp*>(obj->implementation);
-/*	cout << "Returning tracer2" <<endl;
-	return new DebugTracer("RegExp::exec");*/
+//	assert(th->global);
+	pcrecpp::RE_Options opt;
+	opt.set_caseless(th->ignoreCase);
+
+	pcrecpp::RE pcreRE(th->re,opt);
+	assert(th->lastIndex==0);
+	const tiny_string& arg0=args->at(0)->toString();
+	cout << th->re << endl;
+	int numberOfCaptures=pcreRE.NumberOfCapturingGroups();
+	cout << numberOfCaptures << endl;
+	assert(numberOfCaptures!=-1);
+	//The array of arguments
+	pcrecpp::Arg** captures=new pcrecpp::Arg*[numberOfCaptures];
+	//The array of strings
+	string* s=new string[numberOfCaptures];
+	for(int i=0;i<numberOfCaptures;i++)
+		captures[i]=new pcrecpp::Arg(&s[i]);
+
+	int consumed;
+	bool ret=pcreRE.DoMatch(arg0.raw_buf(),pcrecpp::RE::ANCHOR_START,&consumed,captures,numberOfCaptures);
+	assert(ret==false);
+
 	return new Null;
 }
 

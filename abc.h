@@ -545,7 +545,7 @@ private:
 	static uintptr_t increment(ASObject*);
 	static uintptr_t decrement(ASObject*);
 	static uintptr_t decrement_i(ASObject*);
-	static ASObject* getGlobalScope(call_context* th);
+	static ASObject* getGlobalScope();
 	//Utility
 	static void not_impl(int p);
 	ASFUNCTION(print);
@@ -556,7 +556,6 @@ private:
 	//Opcode tables
 	void register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len);
 	static opcode_handler opcode_table_args0[];
-	static opcode_handler opcode_table_args0_lazy[];
 	static opcode_handler opcode_table_args1[];
 	static opcode_handler opcode_table_args1_lazy[];
 	static opcode_handler opcode_table_args1_pointers[];

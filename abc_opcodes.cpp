@@ -1337,7 +1337,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 	obj->decRef();
 }
 
-void ABCVm::findProperty(call_context* th, int n)
+ASObject* ABCVm::findProperty(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, "findProperty " << *name );
@@ -1363,24 +1363,24 @@ void ABCVm::findProperty(call_context* th, int n)
 
 	assert(ret);
 	ret->incRef();
-	th->runtime_stack_push(ret);
+	return ret;
 }
 
-void ABCVm::findPropStrict(call_context* th, int n)
+ASObject* ABCVm::findPropStrict(call_context* th, int n)
 {
 	multiname* name=th->context->getMultiname(n,th);
 	LOG(LOG_CALLS, "findPropStrict " << *name );
 
 	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
 	objAndLevel o(NULL,0);
+	ASObject* ret=NULL;
 	for(it;it!=th->scope_stack.rend();it++)
 	{
 		o=(*it)->getVariableByMultiname(*name);
 		if(o.obj)
 		{
 			//We have to return the object, not the property
-			(*it)->incRef();
-			th->runtime_stack_push(*it);
+			ret=*it;
 			break;
 		}
 	}
@@ -1389,16 +1389,18 @@ void ABCVm::findPropStrict(call_context* th, int n)
 		LOG(LOG_CALLS, "NOT found, trying Global" );
 		o=getGlobal()->getVariableByMultiname(*name);
 		if(o.obj)
-		{
-			getGlobal()->incRef();
-			th->runtime_stack_push(getGlobal());
-		}
+			ret=getGlobal();
 		else
 		{
-			LOG(LOG_CALLS, "NOT found, pushing Undefined" );
-			th->runtime_stack_push(new Undefined);
+			LOG(LOG_NOT_IMPLEMENTED, "NOT found, pushing Undefined");
+			ret=new Undefined;
+			//abort();
 		}
 	}
+
+	assert(ret);
+	ret->incRef();
+	return ret;
 }
 
 ASObject* ABCVm::greaterThan(ASObject* obj1, ASObject* obj2)

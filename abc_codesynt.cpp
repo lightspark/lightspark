@@ -73,9 +73,7 @@ opcode_handler ABCVm::opcode_table_args1[]={
 	{"call",(void*)&ABCVm::call},
 	{"coerce",(void*)&ABCVm::coerce},
 	{"getLex",(void*)&ABCVm::getLex},
-	{"findPropStrict",(void*)&ABCVm::findPropStrict},
 	{"incLocal_i",(void*)&ABCVm::incLocal_i},
-	{"findProperty",(void*)&ABCVm::findProperty},
 	{"construct",(void*)&ABCVm::construct},
 	{"constructGenericType",(void*)&ABCVm::constructGenericType},
 	{"constructSuper",(void*)&ABCVm::constructSuper},
@@ -187,7 +185,9 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"pushUndefined",(void*)&ABCVm::pushUndefined,ARGS_NONE},
 	{"getProperty",(void*)&ABCVm::getProperty,ARGS_OBJ_OBJ},
 	{"asTypelate",(void*)&ABCVm::asTypelate,ARGS_OBJ_OBJ},
-	{"getGlobalScope",(void*)&ABCVm::getGlobalScope,ARGS_NONE}
+	{"getGlobalScope",(void*)&ABCVm::getGlobalScope,ARGS_NONE},
+	{"findPropStrict",(void*)&ABCVm::findPropStrict,ARGS_CONTEXT_INT},
+	{"findProperty",(void*)&ABCVm::findProperty,ARGS_CONTEXT_INT},
 };
 
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
@@ -517,6 +517,16 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	sig_int_int.push_back(int_type);
 	sig_int_int.push_back(int_type);
 
+	std::vector<const llvm::Type*> struct_elems;
+	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(int_type)));
+	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(int_type)));
+	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
+	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,struct_elems,true));
+
+	vector<const llvm::Type*> sig_context_int;
+	sig_context_int.push_back(context_type);
+	sig_context_int.push_back(int_type);
+
 	for(int i=0;i<table_len;i++)
 	{
 		if(table[i].type==ARGS_OBJ_OBJ)
@@ -543,6 +553,8 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 			FT=llvm::FunctionType::get(ret_type, sig_number_obj, false);
 		else if(table[i].type==ARGS_INT_INT)
 			FT=llvm::FunctionType::get(ret_type, sig_int_int, false);
+		else if(table[i].type==ARGS_CONTEXT_INT)
+			FT=llvm::FunctionType::get(ret_type, sig_context_int, false);
 		llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,table[i].name,module);
 		ex->addGlobalMapping(F,table[i].addr);
 	}
@@ -1307,20 +1319,28 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x56:
 				case 0x58:
 				case 0x59:
-				case 0x5d:
-				case 0x5e:
 				case 0x60:
 				{
 					//newobject
 					//newarray
 					//newclass
 					//getdescendants
-					//findpropstrict
 					//getlex
+					static_stack_types.clear();
+					u30 t;
+					code >> t;
+					break;
+				}
+				case 0x5d:
+				case 0x5e:
+				{
+					//findpropstrict
 					//findproperty
 					static_stack_types.clear();
 					u30 t;
 					code >> t;
+					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
+					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
 				case 0x57:
@@ -3376,7 +3396,27 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("findPropStrict"), context, constant);
+
+				int rtdata=this->context->getMultinameRTData(t);
+				//If this is a non runtime multiname, try to resolve the name on global,
+				//If we can do it, push Global
+				//HACK: should walk the scope stack
+				bool staticallyResolved=false;
+				if(rtdata==0)
+				{
+					multiname* name=this->context->getMultiname(t,NULL);
+					if(getGlobal()->getVariableByMultiname(*name).obj!=NULL)
+					{
+						//Ok, let's push global at runtime
+						value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"));
+						staticallyResolved=true;
+					}
+				}
+
+				if(staticallyResolved==false)
+					value=Builder.CreateCall2(ex->FindFunctionNamed("findPropStrict"), context, constant);
+
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
 			case 0x5e:
@@ -3387,7 +3427,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 t;
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("findProperty"), context, constant);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("findProperty"), context, constant);
+				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
 			case 0x60:

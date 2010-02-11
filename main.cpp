@@ -186,6 +186,7 @@ int main(int argc, char* argv[])
 			{
 				cout << "exiting" << endl;
 				sys->setShutdownFlag();
+				exit(-2);
 				break;
 			}
 		}

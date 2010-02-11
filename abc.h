@@ -358,7 +358,7 @@ struct opcode_handler
 };
 
 enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, 
-	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT};
+	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT_INT};
 
 struct typed_opcode_handler
 {
@@ -462,8 +462,8 @@ private:
 	static void initProperty(call_context* th, int n); 
 	static void newClass(call_context* th, int n); 
 	static void newArray(call_context* th, int n); 
-	static void findPropStrict(call_context* th, int n);
-	static void findProperty(call_context* th, int n);
+	static ASObject* findPropStrict(call_context* th, int n);
+	static ASObject* findProperty(call_context* th, int n);
 	static intptr_t pushByte(intptr_t n);
 	static intptr_t pushShort(intptr_t n);
 	static void pushInt(call_context* th, int n);

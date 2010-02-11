@@ -1268,6 +1268,9 @@ ASFUNCTIONBODY(RegExp,exec)
 	bool ret=pcreRE.DoMatch(arg0.raw_buf(),pcrecpp::RE::ANCHOR_START,&consumed,captures,numberOfCaptures);
 	assert(ret==false);
 
+	delete[] s;
+	delete[] captures;
+
 	return new Null;
 }
 
@@ -1303,9 +1306,35 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 
 ASFUNCTIONBODY(ASString,indexOf)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"ASString::indexOf not really implemented");
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	return new Integer(-1);
+	const tiny_string& arg0=args->at(0)->toString();
+	int startIndex=0;
+	if(args->size()>1)
+		startIndex=args->at(1)->toInt();
+	
+	assert(startIndex==0);
+	bool found=false;
+	for(int i=startIndex;i<th->data.size();i++)
+	{
+		if(th->data[i]==arg0[0])
+		{
+			found=true;
+			for(int j=1;j<arg0.len();j++)
+			{
+				if(th->data[i+j]!=arg0[j])
+				{
+					found=false;
+					break;
+				}
+			}
+		}
+	}
+
+	assert(found==false);
+	if(!found)
+		return new Integer(-1);
+	else
+		return new Integer(startIndex);
 }
 
 ASFUNCTIONBODY(ASString,toLowerCase)

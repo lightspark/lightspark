@@ -31,6 +31,7 @@
 #include "logger.h"
 #include "swftypes.h"
 #include <sstream>
+#include <limits>
 #include "swf.h"
 #include "flashevents.h"
 #include "flashdisplay.h"
@@ -1392,12 +1393,13 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			LOG(LOG_CALLS,"Getter trait: " << ns << "::" << name);
 			method_info* m=&methods[t->method];
 			assert(m->body==0);
-			int level=obj->max_level;
+			int level=obj->max_level+1;
 			obj_var* var=NULL;
 
 			do
 			{
-				obj_var* var=obj->Variables.findObjVar(name,"",level,false,true);
+				level--;
+				var=obj->Variables.findObjVar(name,"",level,false,true);
 			}
 			while(var!=NULL && var->getter==NULL);
 
@@ -1422,12 +1424,13 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			LOG(LOG_CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
 			method_info* m=&methods[t->method];
 			assert(m->body==0);
-			int level=obj->max_level;
+			int level=obj->max_level+1;
 			obj_var* var=NULL;
 
 			do
 			{
-				obj_var* var=obj->Variables.findObjVar(name,"",level,false,true);
+				level--;
+				var=obj->Variables.findObjVar(name,"",level,false,true);
 			}
 			while(var!=NULL && var->setter==NULL);
 
@@ -1683,8 +1686,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 						if(type->name_s=="int" || type->name_s=="uint" )
 							ret=abstract_i(0);
 						else if(type->name_s=="Number")
-							//Should be NaN
-							ret=abstract_d(0);
+							ret=abstract_d(numeric_limits<double>::quiet_NaN());
 						else
 							ret=new Undefined;
 					}
@@ -2135,10 +2137,12 @@ ASFUNCTIONBODY(lightspark,parseFloat)
 		return new Undefined;
 	else
 	{
-		return new Integer(atof(args->at(0)->toString().raw_buf()));
+		return new Number(atof(args->at(0)->toString().raw_buf()));
 	}
 }
 
+
+//DEPRECATED: use convert_i
 intptr_t ABCVm::s_toInt(ASObject* o)
 {
 	if(o->getObjectType()!=T_INTEGER)
@@ -2155,7 +2159,12 @@ ASFUNCTIONBODY(lightspark,isNaN)
 	else if(args->at(0)->getObjectType()==T_INTEGER)
 		return abstract_b(false);
 	else if(args->at(0)->getObjectType()==T_NUMBER)
-		return abstract_b(false);
+	{
+		if(isnan(args->at(0)->toNumber()))
+			return abstract_b(true);
+		else
+			return abstract_b(false);
+	}
 	else
 		abort();
 }

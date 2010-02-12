@@ -721,7 +721,14 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name)
 		if(obj->getter)
 		{
 			//Call the getter
-			LOG(LOG_CALLS,"Calling the getter");
+			if(prototype)
+			{
+				LOG(LOG_CALLS,"Calling the getter on type " << prototype->class_name);
+			}
+			else
+			{
+				LOG(LOG_CALLS,"Calling the getter");
+			}
 			ASObject* ret=obj->getter->call(this,NULL,level);
 			LOG(LOG_CALLS,"End of getter");
 			assert(ret);

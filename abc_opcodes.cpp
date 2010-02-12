@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #include "abc.h"
-#include <typeinfo>
+#include <limits>
 #include "class.h"
 
 using namespace std;
@@ -71,9 +71,14 @@ void ABCVm::setProperty_i(intptr_t value,ASObject* obj,multiname* name)
 number_t ABCVm::convert_d(ASObject* o)
 {
 	LOG(LOG_CALLS, "convert_d" );
-	number_t ret=o->toNumber();
-	o->decRef();
-	return ret;
+	if(o->getObjectType()!=T_UNDEFINED)
+	{
+		number_t ret=o->toNumber();
+		o->decRef();
+		return ret;
+	}
+	else
+		return numeric_limits<double>::quiet_NaN();
 }
 
 bool ABCVm::convert_b(ASObject* o)
@@ -1293,8 +1298,6 @@ void ABCVm::getLex(call_context* th, int n)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"NOT found " << name->name_s<< ", pushing Undefined");
-			if(name->name_s=="SpriteAsset")
-				__asm__("int $3");
 			th->runtime_stack_push(new Undefined);
 		}
 	}

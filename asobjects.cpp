@@ -989,7 +989,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 		val=mi->synt_method();
 	}
 
-	assert(mi->needsArgs()==false)
+	assert(mi->needsArgs()==false);
 
 	int args_len=mi->numArgs();
 	int passedToLocals=min(numArgs,args_len);

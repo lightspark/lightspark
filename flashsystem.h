@@ -34,6 +34,12 @@ public:
 	ASFUNCTION(_getLanguage);
 };
 
+class Security: public IInterface
+{
+public:
+	static void sinit(Class_base* c);
+};
+
 class ApplicationDomain: public IInterface
 {
 public:

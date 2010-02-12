@@ -124,6 +124,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Object","",Class<IInterface>::getClass());
 	Global.setVariableByQName("Class","",Class_object::getClass());
 	Global.setVariableByQName("Number","",new Number(0.0));
+	Global.setVariableByQName("NaN","",new Number(numeric_limits<double>::quiet_NaN()));
+	Global.setVariableByQName("Infinity","",new Number(numeric_limits<double>::infinity()));
 	Global.setVariableByQName("String","",Class<ASString>::getClass());
 	Global.setVariableByQName("Array","",Class<Array>::getClass());
 	Global.setVariableByQName("Function","",new Function);
@@ -166,9 +168,6 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject);
 
-	Global.setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());
-	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
-
 	Global.setVariableByQName("ExternalInterface","flash.external",Class<ExternalInterface>::getClass());
 
 	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
@@ -208,6 +207,9 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("ObjectEncoding","flash.net",Class<ObjectEncoding>::getClass());
 
 	Global.setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());
+	Global.setVariableByQName("Security","flash.system",Class<Security>::getClass());
+	Global.setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());
+	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
 
 	Global.setVariableByQName("ContextMenu","flash.ui",Class<IInterface>::getClass("ContextMenu"));
 	Global.setVariableByQName("ContextMenuItem","flash.ui",Class<IInterface>::getClass("ContextMenuItem"));

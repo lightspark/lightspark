@@ -25,6 +25,7 @@ using namespace lightspark;
 
 REGISTER_CLASS_NAME(ApplicationDomain);
 REGISTER_CLASS_NAME(Capabilities);
+REGISTER_CLASS_NAME(Security);
 
 void Capabilities::sinit(Class_base* c)
 {
@@ -123,4 +124,10 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
 	return o.obj;
+}
+
+void Security::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->setVariableByQName("allowDomain","",new Function(undefinedFunction));
 }

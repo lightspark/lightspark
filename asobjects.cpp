@@ -1304,9 +1304,11 @@ ASFUNCTIONBODY(ASString,slice)
 
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"ASString::charCodeAt not really implemented");
+	//TODO: should return utf16
+	LOG(LOG_CALLS,"ASString::charCodeAt not really implemented");
 	ASString* th=static_cast<ASString*>(obj->implementation);
 	int index=args->at(0)->toInt();
+	assert(index>=0 && index<th->data.size());
 	return new Integer(th->data[index]);
 }
 

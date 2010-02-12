@@ -28,8 +28,10 @@ namespace lightspark
 class Rectangle: public IInterface
 {
 public:
+	Rectangle():x(0),y(0),width(0),height(0){}
 	number_t x,y,width,height;
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLeft);
 	ASFUNCTION(_getRight);

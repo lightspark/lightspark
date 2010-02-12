@@ -32,14 +32,18 @@ void Rectangle::sinit(Class_base* c)
 	c->constructor=new Function(_constructor);
 }
 
+void Rectangle::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("left","",new Function(_getLeft));
+	o->setGetterByQName("right","",new Function(_getRight));
+	o->setGetterByQName("top","",new Function(_getTop));
+	o->setGetterByQName("bottom","",new Function(_getBottom));
+}
+
 ASFUNCTIONBODY(Rectangle,_constructor)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 
-	th->x=0;
-	th->y=0;
-	th->width=0;
-	th->height=0;
 	if(args)
 	{
 		int size=args->size();
@@ -52,11 +56,6 @@ ASFUNCTIONBODY(Rectangle,_constructor)
 		if(size>=4)
 			th->height=args->at(3)->toInt();
 	}
-
-	obj->setGetterByQName("left","",new Function(_getLeft));
-	obj->setGetterByQName("right","",new Function(_getRight));
-	obj->setGetterByQName("top","",new Function(_getTop));
-	obj->setGetterByQName("bottom","",new Function(_getBottom));
 	return NULL;
 }
 

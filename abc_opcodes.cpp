@@ -1172,7 +1172,7 @@ void ABCVm::setSuper(call_context* th, int n)
 {
 	ASObject* value=th->runtime_stack_pop();
 	multiname* name=th->context->getMultiname(n,th); 
-	LOG(LOG_NOT_IMPLEMENTED,"setSuper " << *name);
+	LOG(LOG_CALLS,"setSuper " << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
 	//HACK (nice) set the max level to the current actual prototype before looking up the member
@@ -1914,7 +1914,7 @@ uintptr_t ABCVm::increment_i(ASObject* o)
 
 ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"nextValue");
+	LOG(LOG_CALLS,"nextValue");
 	if(index->getObjectType()!=T_INTEGER)
 	{
 		LOG(LOG_ERROR,"Type mismatch");

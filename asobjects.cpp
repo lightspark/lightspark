@@ -1322,7 +1322,8 @@ ASFUNCTIONBODY(ASString,indexOf)
 	
 	assert(startIndex==0);
 	bool found=false;
-	for(int i=startIndex;i<th->data.size();i++)
+	int i;
+	for(i=startIndex;i<th->data.size();i++)
 	{
 		if(th->data[i]==arg0[0])
 		{
@@ -1336,13 +1337,14 @@ ASFUNCTIONBODY(ASString,indexOf)
 				}
 			}
 		}
+		if(found)
+			break;
 	}
 
-	assert(found==false);
 	if(!found)
 		return new Integer(-1);
 	else
-		return new Integer(startIndex);
+		return new Integer(i);
 }
 
 ASFUNCTIONBODY(ASString,toLowerCase)

@@ -102,6 +102,7 @@ class DisplayObjectContainer: public DisplayObject
 {
 private:
 	void _addChildAt(DisplayObject* child, int index);
+	bool _contains(DisplayObject* d);
 protected:
 	std::list < IDisplayListElem* > dynamicDisplayList;
 public:
@@ -119,6 +120,7 @@ public:
 	ASFUNCTION(addChildAt);
 	ASFUNCTION(getChildIndex);
 	ASFUNCTION(getChildAt);
+	ASFUNCTION(contains);
 };
 
 class Graphics: public IInterface

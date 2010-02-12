@@ -2137,3 +2137,18 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	return f;
 }
 
+ASObject* ABCVm::getScopeObject(call_context* th, int n)
+{
+	ASObject* ret=th->scope_stack[n];
+	ret->incRef();
+	LOG(LOG_CALLS, "getScopeObject: " << ret );
+	return ret;
+}
+
+ASObject* ABCVm::pushString(call_context* th, int n)
+{
+	tiny_string s=th->context->getString(n); 
+	LOG(LOG_CALLS, "pushString " << s );
+	return Class<ASString>::getInstanceS(true,s)->obj;
+}
+

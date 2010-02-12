@@ -784,6 +784,7 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 	o->setVariableByQName("getChildAt","",new Function(getChildAt));
 	o->setVariableByQName("addChild","",new Function(addChild));
 	o->setVariableByQName("addChildAt","",new Function(addChildAt));
+	o->setVariableByQName("contains","",new Function(contains));
 }
 
 DisplayObjectContainer::DisplayObjectContainer()
@@ -838,6 +839,37 @@ void DisplayObjectContainer::_removeChild(IDisplayListElem* child)
 	list<IDisplayListElem*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 	assert(it!=dynamicDisplayList.end());
 	dynamicDisplayList.erase(it);
+}
+
+bool DisplayObjectContainer::_contains(DisplayObject* d)
+{
+	if(d==this)
+		return true;
+
+	list<IDisplayListElem*>::const_iterator it=dynamicDisplayList.begin();
+	for(it;it!=dynamicDisplayList.end();it++)
+	{
+		if(*it==d)
+			return true;
+		DisplayObjectContainer* c=dynamic_cast<DisplayObjectContainer*>(*it);
+		if(c && c->_contains(d))
+			return true;
+	}
+	return false;
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,contains)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	assert(args->size()==1);
+	//Validate object type
+	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
+
+	//Cast to object
+	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+
+	bool ret=th->_contains(d);
+	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)

@@ -1299,17 +1299,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
-			case 0x65:
-			{
-				//getscopeobject
-				LOG(LOG_TRACE, "synt getscopeobject" );
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				value=Builder.CreateCall2(ex->FindFunctionNamed("getScopeObject"), context, constant);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
 			case 0x66:
 			{
 				//getproperty
@@ -2195,6 +2184,14 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			{
 				//pushscope
 				pushScope(context);
+				break;
+			}
+			case 0x65:
+			{
+				//getscopeobject
+				u30 t;
+				code >> t;
+				context->runtime_stack_push(getScopeObject(context,t));
 				break;
 			}
 			case 0xd0:

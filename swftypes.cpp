@@ -216,12 +216,12 @@ bool Integer::isGreater(ASObject* o)
 	if(o->getObjectType()==T_INTEGER)
 	{
 		const Integer* i=static_cast<const Integer*>(o);
-		return val>*i;
+		return val > i->toInt();
 	}
 	else if(o->getObjectType()==T_NUMBER)
 	{
 		const Number* d=static_cast<const Number*>(o);
-		return val>*d;
+		return val > d->toNumber();
 	}
 	else
 	{
@@ -234,12 +234,12 @@ bool Integer::isLess(ASObject* o)
 	if(o->getObjectType()==T_INTEGER)
 	{
 		const Integer* i=static_cast<const Integer*>(o);
-		return val<*i;
+		return val < i->toInt();
 	}
 	else if(o->getObjectType()==T_NUMBER)
 	{
 		const Number* i=static_cast<const Number*>(o);
-		return val<double(*i);
+		return val < i->toNumber();
 	}
 	else
 		return ASObject::isLess(o);

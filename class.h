@@ -139,5 +139,36 @@ public:
 	}
 };
 
+//Specialized class for uint
+template<>
+class Class<UInteger>: public Class_base
+{
+private:
+	Class<UInteger>():Class_base("uint"){}
+	IInterface* getInstance(bool construct, arguments* args)
+	{
+		abort();
+		return NULL;
+	}
+public:
+	static Class<UInteger>* getClass(const tiny_string& name)
+	{
+		std::map<tiny_string, Class_base*>::iterator it=sys->classes.find(name);
+		if(it==sys->classes.end()) //This class is not yet in the map, create it
+		{
+			Class<UInteger>* ret=new Class<UInteger>;
+			UInteger::sinit(ret);
+			sys->classes.insert(std::make_pair(name,ret));
+			return ret;
+		}
+		else
+			return static_cast<Class<UInteger>*>(it->second);
+	}
+	void buildInstanceTraits(ASObject* o) const
+	{
+		abort();
+	}
+};
+
 };
 #endif

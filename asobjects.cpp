@@ -1624,3 +1624,8 @@ void InterfaceClass::lookupAndLink(ASObject* o, const tiny_string& name, const t
 	assert(ret);
 	o->setVariableByQName(name,interfaceNs,ret);
 }
+
+void UInteger::sinit(Class_base* c)
+{
+	c->setVariableByQName("MAX_VALUE","",new UInteger(0xffffffff));
+}

@@ -331,7 +331,7 @@ private:
 	bool val;
 public:
 	Boolean(bool v):val(v){type=T_BOOLEAN;}
-	int toInt() const
+	int32_t toInt() const
 	{
 		return val;
 	}
@@ -521,10 +521,9 @@ friend class ABCVm;
 friend class ABCContext;
 friend ASObject* abstract_i(intptr_t i);
 private:
-	int val;
-	//int debug;
+	int32_t val;
 public:
-	Integer(int v):val(v){type=T_INTEGER;
+	Integer(int32_t v=0):val(v){type=T_INTEGER;
 		setVariableByQName("toString",AS3,new Function(Integer::_toString));
 	}
 	Integer(Manager* m):val(0),ASObject(m){type=T_INTEGER;
@@ -532,9 +531,9 @@ public:
 	}
 	ASFUNCTION(_toString);
 	virtual ~Integer(){}
-	Integer& operator=(int v){val=v; return *this; }
+	//Integer& operator=(int v){val=v; return *this; }
 	tiny_string toString() const;
-	int toInt() const
+	int32_t toInt() const
 	{
 		return val;
 	}
@@ -542,10 +541,52 @@ public:
 	{
 		return val;
 	}
-	operator int() const{return val;} 
+//	operator int() const{return val;} 
 	bool isLess(ASObject* r);
 	bool isGreater(ASObject* r);
 	bool isEqual(ASObject* o);
+};
+
+class UInteger: public ASObject
+{
+private:
+	uint32_t val;
+public:
+	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
+
+	//Integer& operator=(int v){val=v; return *this; }
+	static void sinit(Class_base* c);
+	tiny_string toString() const
+	{
+		abort();
+	}
+	int32_t toInt() const
+	{
+		abort();
+//		return val;
+	}
+	uint32_t toUInt() const
+	{
+		return val;
+	}
+	double toNumber() const
+	{
+		abort();
+//		return val;
+	}
+//	operator int() const{return val;} 
+	bool isLess(ASObject* r)
+	{
+		abort();
+	}
+	bool isGreater(ASObject* r)
+	{
+		abort();
+	}
+	bool isEqual(ASObject* o)
+	{
+		abort();
+	}
 };
 
 class Number : public ASObject
@@ -562,7 +603,7 @@ public:
 	{
 		return (unsigned int)(val);
 	}
-	int toInt() const
+	int32_t toInt() const
 	{
 		if(val<0)
 			return int(val);
@@ -576,7 +617,7 @@ public:
 	{
 		return val;
 	}
-	operator double() const {return val;}
+//	operator double() const {return val;}
 	bool isLess(ASObject* o);
 	bool isGreater(ASObject* o);
 	bool isEqual(ASObject* o);
@@ -613,7 +654,7 @@ private:
 	int minute;
 	int second;
 	int millisecond;
-	int toInt() const;
+	int32_t toInt() const;
 public:
 	Date();
 	static void sinit(Class_base*);
@@ -647,20 +688,6 @@ public:
 	//The global object will be passed from the calling context
 	void define(ASObject* g){ f->call(g,NULL,0); }
 };
-
-//Deprecated
-/*class MethodDefinable: public Definable
-{
-private:
-	IFunction::as_function f;
-	std::string name;
-public:
-	MethodDefinable(const std::string& _n,IFunction::as_function _f):name(_n),f(_f){}
-	void define(ASObject* g)
-	{
-		g->setVariableByQName(name,new Function(f));
-	}
-};*/
 
 class PlaceObject2Tag;
 

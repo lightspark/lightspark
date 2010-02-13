@@ -134,6 +134,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Date","",Class<Date>::getClass());
 	Global.setVariableByQName("RegExp","",Class<RegExp>::getClass());
 	Global.setVariableByQName("QName","",Class<ASQName>::getClass());
+	Global.setVariableByQName("uint","",Class<UInteger>::getClass("uint"));
 
 	Global.setVariableByQName("print","",new Function(print));
 	Global.setVariableByQName("trace","",new Function(print));

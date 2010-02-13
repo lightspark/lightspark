@@ -46,7 +46,7 @@ namespace lightspark
 	ASObject* c::name(ASObject* obj, arguments* args)
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEFINED=4, T_NULL=5, T_STRING=6, 
-	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12};
+	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13};
 
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER,STACK_BOOLEAN};
 
@@ -511,8 +511,8 @@ public:
 	ASObject* getValueAt(int i);
 	SWFOBJECT_TYPE getObjectType() const;
 	virtual tiny_string toString() const;
-	virtual int toInt() const;
-	virtual unsigned int toUInt() const;
+	virtual int32_t toInt() const;
+	virtual uint32_t toUInt() const;
 	virtual double toNumber() const;
 
 	virtual bool isEqual(ASObject* r);

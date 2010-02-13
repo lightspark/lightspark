@@ -160,12 +160,14 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("StageAlign","flash.display",Class<StageAlign>::getClass());
 	Global.setVariableByQName("IBitmapDrawable","flash.display",Class<IInterface>::getClass("IBitmapDrawable"));
 	Global.setVariableByQName("BitmapData","flash.display",Class<IInterface>::getClass("BitmapData"));
+	Global.setVariableByQName("Bitmap","flash.display",Class<Bitmap>::getClass());
 
 	Global.setVariableByQName("DropShadowFilter","flash.filters",Class<IInterface>::getClass("DropShadowFilter"));
 
 	Global.setVariableByQName("TextField","flash.text",Class<IInterface>::getClass("TextField"));
 	Global.setVariableByQName("TextFormat","flash.text",Class<IInterface>::getClass("TextFormat"));
 	Global.setVariableByQName("TextFieldType","flash.text",Class<IInterface>::getClass("TextFieldType"));
+	Global.setVariableByQName("Font","flash.text",Class<Font>::getClass());
 
 	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject);
 

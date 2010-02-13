@@ -51,6 +51,7 @@ REGISTER_CLASS_NAME(Graphics);
 REGISTER_CLASS_NAME(LineScaleMode);
 REGISTER_CLASS_NAME(StageScaleMode);
 REGISTER_CLASS_NAME(StageAlign);
+REGISTER_CLASS_NAME(Bitmap);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -811,9 +812,6 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 	//The HACK for this supports only Sprites now
 	assert(child->obj->prototype->isSubClass(Class<Sprite>::getClass()));
 
-//	if(child->obj->prototype->class_name=="BorderSkin")
-//		abort();
-
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
 	if(child->parent)
@@ -1104,4 +1102,12 @@ void StageScaleMode::sinit(Class_base* c)
 void StageAlign::sinit(Class_base* c)
 {
 	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS(true,"TL")->obj);
+}
+
+void Bitmap::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+//	c->constructor=new Function(_constructor);
+	c->super=Class<DisplayObject>::getClass();
+	c->max_level=c->super->max_level+1;
 }

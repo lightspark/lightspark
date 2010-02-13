@@ -731,14 +731,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
-			case 0x20:
-			{
-				//pushnull
-				LOG(LOG_TRACE, "synt pushnull" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("pushNull"));
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
 			case 0x21:
 			{
 				//pushundefined
@@ -1127,17 +1119,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				LOG(LOG_TRACE, "synt newactivation" );
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newActivation"), context, th);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
-			case 0x58:
-			{
-				//newclass
-				LOG(LOG_TRACE, "synt newclass" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("newClass"), context, constant);
 				break;
 			}
 			case 0x59:
@@ -2180,10 +2161,24 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code2 >> t;
 				break;
 			}*/
+			case 0x20:
+			{
+				//pushnull
+				context->runtime_stack_push(new Null);
+				break;
+			}
 			case 0x30:
 			{
 				//pushscope
 				pushScope(context);
+				break;
+			}
+			case 0x58:
+			{
+				//newclass
+				u30 t;
+				code >> t;
+				newClass(context,t);
 				break;
 			}
 			case 0x65:

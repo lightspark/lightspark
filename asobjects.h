@@ -734,6 +734,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(exec);
 	ASFUNCTION(test);
+	ASFUNCTION(_getGlobal);
 };
 
 };

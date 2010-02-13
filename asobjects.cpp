@@ -1216,6 +1216,7 @@ void RegExp::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("exec",AS3,new Function(exec));
 	o->setVariableByQName("test",AS3,new Function(test));
+	o->setGetterByQName("global","",new Function(_getGlobal));
 }
 
 ASFUNCTIONBODY(RegExp,_constructor)
@@ -1245,10 +1246,15 @@ ASFUNCTIONBODY(RegExp,_constructor)
 	return NULL;
 }
 
+ASFUNCTIONBODY(RegExp,_getGlobal)
+{
+	RegExp* th=static_cast<RegExp*>(obj->implementation);
+	return abstract_b(th->global);
+}
+
 ASFUNCTIONBODY(RegExp,exec)
 {
 	RegExp* th=static_cast<RegExp*>(obj->implementation);
-//	assert(th->global);
 	pcrecpp::RE_Options opt;
 	opt.set_caseless(th->ignoreCase);
 

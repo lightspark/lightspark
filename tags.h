@@ -413,7 +413,7 @@ public:
 	virtual int getId(){return Tag;} 
 };
 
-class FontTag: public DictionaryTag, public ASFont
+class FontTag: public DictionaryTag
 {
 protected:
 	UI16 FontID;
@@ -555,7 +555,7 @@ public:
 	DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in);
 };
 
-class DefineBitsLossless2Tag: public DictionaryTag, public ASObject
+class DefineBitsLossless2Tag: public DictionaryTag, public Bitmap
 {
 private:
 	UI16 CharacterId;

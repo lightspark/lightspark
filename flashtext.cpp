@@ -17,21 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FLASH_TEXT_H
-#define _FLASH_TEXT_H
+#include "flashtext.h"
+#include "class.h"
 
-#include "asobjects.h"
+using namespace std;
+using namespace lightspark;
 
-namespace lightspark
+REGISTER_CLASS_NAME2(lightspark::Font,"Font");
+
+void lightspark::Font::sinit(Class_base* c)
 {
-
-class Font: public IInterface
-{
-public:
-	static void sinit(Class_base* c);
-//	static void buildTraits(ASObject* o);
-};
-
-};
-
-#endif
+	assert(c->constructor==NULL);
+//	c->constructor=new Function(_constructor);
+}

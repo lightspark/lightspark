@@ -309,6 +309,12 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class Bitmap: public DisplayObject
+{
+public:
+	static void sinit(Class_base* c);
+};
+
 };
 
 #endif

@@ -29,4 +29,10 @@ void lightspark::Font::sinit(Class_base* c)
 {
 	assert(c->constructor==NULL);
 //	c->constructor=new Function(_constructor);
+	c->setVariableByQName("enumerateFonts","",new Function(enumerateFonts));
+}
+
+ASFUNCTIONBODY(lightspark::Font,enumerateFonts)
+{
+	return Class<Array>::getInstanceS(true)->obj;
 }

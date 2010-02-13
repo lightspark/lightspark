@@ -809,9 +809,6 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 	assert(child->root==NULL);
 	child->root=root;
 
-	//The HACK for this supports only Sprites now
-	assert(child->obj->prototype->isSubClass(Class<Sprite>::getClass()));
-
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
 	if(child->parent)
@@ -875,11 +872,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
 	assert(args->size()==2);
 	//Validate object type
-	assert(args->at(0)->prototype->isSubClass(Class<Sprite>::getClass()));
+	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
 	args->at(0)->incRef();
 
 	//Cast to object
-	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+	DisplayObject* d=Class<DisplayObject>::cast(args->at(0)->implementation);
 	th->_addChildAt(d,0);
 
 	//Notify the object
@@ -894,11 +891,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
 	assert(args->size()==1);
 	//Validate object type
-	assert(args->at(0)->prototype->isSubClass(Class<Sprite>::getClass()));
+	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
 	args->at(0)->incRef();
 
 	//Cast to object
-	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+	DisplayObject* d=Class<DisplayObject>::cast(args->at(0)->implementation);
 	th->_addChildAt(d,0);
 
 	//Notify the object
@@ -957,12 +954,24 @@ void Shape::sinit(Class_base* c)
 
 void Shape::buildTraits(ASObject* o)
 {
+	o->setGetterByQName("graphics","",new Function(_getGraphics));
 }
 
 ASFUNCTIONBODY(Shape,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL);
 	return NULL;
+}
+
+ASFUNCTIONBODY(Shape,_getGraphics)
+{
+	Shape* th=static_cast<Shape*>(obj->implementation);
+	//Probably graphics is not used often, so create it here
+	if(th->graphics==NULL)
+		th->graphics=Class<Graphics>::getInstanceS(true);
+
+	th->graphics->obj->incRef();
+	return th->graphics->obj;
 }
 
 void Stage::sinit(Class_base* c)

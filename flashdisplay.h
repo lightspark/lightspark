@@ -145,10 +145,14 @@ public:
 
 class Shape: public DisplayObject
 {
+private:
+	Graphics* graphics;
 public:
+	Shape():graphics(NULL){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	ASFUNCTION(_getGraphics);
 	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		abort();

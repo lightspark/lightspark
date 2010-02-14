@@ -252,6 +252,43 @@ void Sprite::buildTraits(ASObject* o)
 	o->setGetterByQName("graphics","",new Function(_getGraphics));
 }
 
+void Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+{
+	//Iterate over the displaylist of the current frame
+	if(dynamicDisplayList.size()==0 && graphics==NULL)
+	{
+		xmin=0;
+		xmax=0;
+		ymin=0;
+		ymax=0;
+		return;
+	}
+
+	//TODO: Check bounds calculation
+	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
+	for(it;it!=dynamicDisplayList.end();it++)
+	{
+		number_t txmin,txmax,tymin,tymax;
+		(*it)->getBounds(txmin,txmax,tymin,tymax);
+		xmin = min(xmin,txmin);
+		xmax = max(xmax,txmax);
+		ymin = min(ymin,txmin);
+		ymax = max(ymax,tymax);
+	}
+	if(graphics)
+	{
+		number_t txmin,txmax,tymin,tymax;
+		graphics->getBounds(xmin,xmax,ymin,ymax);
+		xmin = min(xmin,txmin);
+		xmax = max(xmax,txmax);
+		ymin = min(ymin,txmin);
+		ymax = max(ymax,tymax);
+	}
+	//TODO: take rotation into account
+	Matrix.multiply2D(xmin,ymin,xmin,ymin);
+	Matrix.multiply2D(xmax,ymax,xmax,ymax);
+}
+
 void Sprite::Render()
 {
 /*	if(obj && obj->prototype && obj->prototype->class_name=="ContainerBorderSkin")
@@ -474,9 +511,6 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	Sprite::_constructor(obj,NULL);
 /*	th->setVariableByQName("swapDepths","",new Function(swapDepths));
-	th->setVariableByQName("lineStyle","",new Function(lineStyle));
-	th->setVariableByQName("lineTo","",new Function(lineTo));
-	th->setVariableByQName("moveTo","",new Function(moveTo));
 	th->setVariableByQName("createEmptyMovieClip","",new Function(createEmptyMovieClip));
 	th->setVariableByQName("addFrameScript","",new Function(addFrameScript));*/
 	return NULL;
@@ -530,6 +564,14 @@ void MovieClip::Render()
 void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	//Iterate over the displaylist of the current frame
+	if(dynamicDisplayList.size()==0 && frames[state.FP].displayList.size()==0)
+	{
+		xmin=0;
+		xmax=0;
+		ymin=0;
+		ymax=0;
+		return;
+	}
 	//TODO: add dynamic dysplay list
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::iterator it=frames[state.FP].displayList.begin();
 	assert(frames[state.FP].displayList.size()==1);
@@ -703,7 +745,7 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	th->width=args->at(0)->toInt();
-	abort();
+	LOG(LOG_NOT_IMPLEMENTED,"Setting width not really supported on type " << ((obj->prototype)?(obj->prototype->class_name):""));
 	return NULL;
 }
 
@@ -756,11 +798,14 @@ ASFUNCTIONBODY(DisplayObject,_getVisible)
 ASFUNCTIONBODY(DisplayObject,_getWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//If the width has been explicity set, return that
+	if(th->width!=0)
+		return abstract_b(th->width);
 
-	//DEBUG
-	Sprite* sp=dynamic_cast<Sprite*>(th);
-	if(sp)
-		assert(sp->graphics==NULL && sp->dynamicDisplayList.empty());
+	number_t x1,x2,y1,y2;
+	th->getBounds(x1,x2,y1,y2);
+
+	th->width=x2-x1;
 	return abstract_i(th->width);
 }
 
@@ -1024,6 +1069,41 @@ void Graphics::buildTraits(ASObject* o)
 	o->setVariableByQName("clear","",new Function(clear));
 	o->setVariableByQName("drawRect","",new Function(drawRect));
 	o->setVariableByQName("beginFill","",new Function(beginFill));
+}
+
+void Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+{
+	if(geometry.size()==0)
+	{
+		xmin=0;
+		xmax=0;
+		ymin=0;
+		ymax=0;
+	}
+	else
+	{
+		//Initialize values to the first available
+		assert(geometry[0].outline.size()>0);
+		xmin=xmax=geometry[0].outline[0].x;
+		ymin=ymax=geometry[0].outline[0].y;
+
+		for(int i=0;i<geometry.size();i++)
+		{
+			for(int j=0;j<geometry[i].outline.size();j++)
+			{
+				const Vector2& v=geometry[i].outline[j];
+				if(v.x<xmin)
+					xmin=v.x;
+				else if(v.x>xmax)
+					xmax=v.x;
+
+				if(v.y<ymin)
+					ymin=v.y;
+				else if(v.y>ymax)
+					ymax=v.y;
+			}
+		}
+	}
 }
 
 ASFUNCTIONBODY(Graphics,_constructor)

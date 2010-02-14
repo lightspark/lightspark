@@ -46,9 +46,9 @@ namespace lightspark
 	ASObject* c::name(ASObject* obj, arguments* args)
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEFINED=4, T_NULL=5, T_STRING=6, 
-	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13};
+	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14};
 
-enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_NUMBER,STACK_BOOLEAN};
+enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_UINT,STACK_NUMBER,STACK_BOOLEAN};
 
 typedef double number_t;
 
@@ -396,7 +396,6 @@ private:
 	}
 	tiny_string getNameAt(int i);
 	obj_var* getValueAt(int i, int& level);
-	bool hasProperty(const tiny_string& name, int level);
 	~variables_map();
 };
 
@@ -483,14 +482,15 @@ public:
 	}
 	virtual objAndLevel getVariableByMultiname(const multiname& name);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
-	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns);
+	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
 	virtual void deleteVariableByMultiname(const multiname& name);
-	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true);
+	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
-	bool hasProperty(const tiny_string& name);
+	bool hasPropertyByMultiname(const multiname& name);
+	bool hasPropertyByQName(const tiny_string& name, const tiny_string& ns);
 	ASObject* getSlot(int n)
 	{
 		return Variables.getSlot(n);

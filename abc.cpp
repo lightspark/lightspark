@@ -164,7 +164,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("DropShadowFilter","flash.filters",Class<IInterface>::getClass("DropShadowFilter"));
 
-	Global.setVariableByQName("TextField","flash.text",Class<IInterface>::getClass("TextField"));
+	Global.setVariableByQName("TextField","flash.text",Class<TextField>::getClass());
 	Global.setVariableByQName("TextFormat","flash.text",Class<IInterface>::getClass("TextFormat"));
 	Global.setVariableByQName("TextFieldType","flash.text",Class<IInterface>::getClass("TextFieldType"));
 	Global.setVariableByQName("Font","flash.text",Class<Font>::getClass());
@@ -175,7 +175,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("ByteArray","flash.utils",Class<ByteArray>::getClass());
 	Global.setVariableByQName("Dictionary","flash.utils",Class<Dictionary>::getClass());
-	Global.setVariableByQName("Proxy","flash.utils",Class<IInterface>::getClass("Proxy"));
+	Global.setVariableByQName("Proxy","flash.utils",Class<Proxy>::getClass());
 	Global.setVariableByQName("Timer","flash.utils",Class<Timer>::getClass());
 	Global.setVariableByQName("getQualifiedClassName","flash.utils",new Function(getQualifiedClassName));
 	Global.setVariableByQName("getQualifiedSuperclassName","flash.utils",new Function(getQualifiedSuperclassName));
@@ -185,7 +185,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
 	Global.setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass());
 	Global.setVariableByQName("Matrix","flash.geom",Class<IInterface>::getClass("Matrix"));
-	Global.setVariableByQName("Point","flash.geom",Class<IInterface>::getClass("Point"));
+	Global.setVariableByQName("Point","flash.geom",Class<Point>::getClass());
 
 	Global.setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
 	Global.setVariableByQName("Event","flash.events",Class<Event>::getClass());
@@ -1127,7 +1127,7 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 	if(obj->getObjectType()==T_STRING)
 	{
 		LOG(LOG_CALLS,"String to bool");
-		tiny_string s=obj->toString();
+		const tiny_string& s=obj->toString();
 		if(s.len()==0)
 			return false;
 		else
@@ -1164,8 +1164,29 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		LOG(LOG_CALLS,"Null to bool");
 		return false;
 	}
+	else if(obj->getObjectType()==T_NUMBER)
+	{
+		LOG(LOG_CALLS,"Number to bool");
+		double val=obj->toNumber();
+		if(val==0 || isnan(val))
+			return false;
+		else
+			return true;
+	}
+	else if(obj->getObjectType()==T_INTEGER)
+	{
+		LOG(LOG_CALLS,"Integer to bool");
+		int32_t val=obj->toInt();
+		if(val==0)
+			return false;
+		else
+			return true;
+	}
 	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Boolean conversion for type " << obj->getObjectType() << endl);
 		return false;
+	}
 }
 
 ASObject* ABCVm::newCatch(call_context* th, int n)

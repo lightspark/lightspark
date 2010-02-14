@@ -141,6 +141,7 @@ public:
 	ASFUNCTION(drawRect);
 	ASFUNCTION(clear);
 	void Render();
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 };
 
 class Shape: public DisplayObject
@@ -155,7 +156,15 @@ public:
 	ASFUNCTION(_getGraphics);
 	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
-		abort();
+		if(graphics)
+			graphics->getBounds(xmin,xmax,ymin,ymax);
+		else
+		{
+			xmin=0;
+			xmax=0;
+			ymin=0;
+			ymax=0;
+		}
 	}
 };
 
@@ -229,10 +238,7 @@ public:
 	{
 		return 0;
 	}
-	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
-	{
-		abort();
-	}
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 	void Render();
 };
 

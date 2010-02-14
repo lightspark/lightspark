@@ -791,12 +791,7 @@ number_t ABCVm::subtract_oi(ASObject* val2, intptr_t val1)
 
 number_t ABCVm::subtract_do(number_t val2, ASObject* val1)
 {
-	if(val1->getObjectType()==T_UNDEFINED)
-	{
-		//HACK
-		LOG(LOG_NOT_IMPLEMENTED,"subtract: HACK");
-		return 0;
-	}
+	assert(val1->getObjectType()!=T_UNDEFINED);
 	number_t num2=val2;
 	number_t num1=val1->toNumber();
 
@@ -1733,7 +1728,7 @@ bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
 bool ABCVm::in(ASObject* val2, ASObject* val1)
 {
 	LOG(LOG_CALLS, "in" );
-	bool ret=val2->hasProperty(val1->toString());
+	bool ret=val2->hasPropertyByQName(val1->toString(),"");
 	val1->decRef();
 	val2->decRef();
 	return ret;

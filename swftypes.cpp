@@ -359,25 +359,20 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, 
 		return NULL;
 }
 
-bool variables_map::hasProperty(const tiny_string& name,int level)
-{
-	return Variables.find(nameAndLevel(name,level))!=Variables.end();
-}
-
-bool ASObject::hasProperty(const tiny_string& name)
+bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns)
 {
 	assert(ref_count>0);
-	bool ret;
-	for(int i=0;i<=max_level;i++)
-	{
-		ret=Variables.hasProperty(name,i);
-		if(ret)
-			break;
-	}
-	if(!ret && prototype)
-		ret=prototype->hasProperty(name);
 
-	return ret;
+	int level=max_level;
+	return (Variables.findObjVar(name, ns, level, false, true)!=NULL);
+}
+
+bool ASObject::hasPropertyByMultiname(const multiname& name)
+{
+	assert(ref_count>0);
+
+	int level=max_level;
+	return (Variables.findObjVar(name, level, false, true)!=NULL);
 }
 
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
@@ -515,10 +510,10 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	}
 }
 
-void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back)
+void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
 {
 	assert(ref_count>0);
-	if(implementation)
+	if(implementation && !skip_impl)
 	{
 		if(implementation->setVariableByQName(name,ns,o))
 			return;
@@ -768,11 +763,11 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name)
 	return objAndLevel(NULL,0);
 }
 
-objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns)
+objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)
 {
 	assert(ref_count>0);
 
-	if(implementation)
+	if(implementation && !skip_impl)
 	{
 		ASObject* ret;
 		if(implementation->getVariableByQName(name,ns,ret))
@@ -1764,13 +1759,15 @@ void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool bui
 	assert(actualPrototype->class_index!=-2);
 	assert(buildTraits==false || actualPrototype==prototype);
 
-/*	else if(actualPrototype->class_index==-1)
-	{
-		//The class is builtin
-		LOG(LOG_CALLS,"Building a builtin class");
-	}*/
 	if(buildTraits)
+	{
+		//HACK: suppress implementation handling of variable just now
+		IInterface* impl=implementation;
+		implementation=NULL;
 		recursiveBuild(actualPrototype);
+		//And restore it
+		implementation=impl;
+	}
 
 	if(linkInterfaces)
 	{

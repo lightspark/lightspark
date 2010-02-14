@@ -35,8 +35,23 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLeft);
 	ASFUNCTION(_getRight);
+	ASFUNCTION(_getWidth);
 	ASFUNCTION(_getTop);
 	ASFUNCTION(_getBottom);
+	ASFUNCTION(_getHeight);
+};
+
+class Point: public IInterface
+{
+private:
+	number_t x,y;
+public:
+	Point():x(0),y(0){}
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getX);
+	ASFUNCTION(_getY);
 };
 
 class ColorTransform: public IInterface

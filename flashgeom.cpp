@@ -24,6 +24,7 @@ using namespace lightspark;
 using namespace std;
 
 REGISTER_CLASS_NAME(ColorTransform);
+REGISTER_CLASS_NAME(Point);
 REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle");
 
 void Rectangle::sinit(Class_base* c)
@@ -34,10 +35,20 @@ void Rectangle::sinit(Class_base* c)
 
 void Rectangle::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("left","",new Function(_getLeft));
+	IFunction* left=new Function(_getLeft);
+	o->setGetterByQName("left","",left);
+	left->incRef();
+	o->setGetterByQName("x","",left);
 	o->setGetterByQName("right","",new Function(_getRight));
-	o->setGetterByQName("top","",new Function(_getTop));
+	o->setGetterByQName("width","",new Function(_getWidth));
+
+	IFunction* top=new Function(_getTop);
+	o->setGetterByQName("top","",top);
+	top->incRef();
+	o->setGetterByQName("y","",top);
+
 	o->setGetterByQName("bottom","",new Function(_getBottom));
+	o->setGetterByQName("height","",new Function(_getHeight));
 }
 
 ASFUNCTIONBODY(Rectangle,_constructor)
@@ -71,6 +82,12 @@ ASFUNCTIONBODY(Rectangle,_getRight)
 	return abstract_d(th->x + th->width);
 }
 
+ASFUNCTIONBODY(Rectangle,_getWidth)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	return abstract_d(th->width);
+}
+
 ASFUNCTIONBODY(Rectangle,_getTop)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
@@ -81,6 +98,12 @@ ASFUNCTIONBODY(Rectangle,_getBottom)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 	return abstract_d(th->y + th->height);
+}
+
+ASFUNCTIONBODY(Rectangle,_getHeight)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	return abstract_d(th->height);
 }
 
 void ColorTransform::sinit(Class_base* c)
@@ -130,4 +153,42 @@ ASFUNCTIONBODY(ColorTransform,getColor)
 {
 	abort();
 	return NULL;
+}
+
+void Point::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+void Point::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("x","",new Function(_getX));
+	o->setGetterByQName("y","",new Function(_getY));
+}
+
+ASFUNCTIONBODY(Point,_constructor)
+{
+	Point* th=static_cast<Point*>(obj->implementation);
+	if(args)
+	{
+		int size=args->size();
+		if(size>=1)
+			th->x=args->at(0)->toInt();
+		if(size>=2)
+			th->y=args->at(1)->toInt();
+	}
+	return NULL;
+}
+
+ASFUNCTIONBODY(Point,_getX)
+{
+	Point* th=static_cast<Point*>(obj->implementation);
+	return abstract_d(th->x);
+}
+
+ASFUNCTIONBODY(Point,_getY)
+{
+	Point* th=static_cast<Point*>(obj->implementation);
+	return abstract_d(th->y);
 }

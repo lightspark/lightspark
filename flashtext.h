@@ -21,6 +21,7 @@
 #define _FLASH_TEXT_H
 
 #include "asobjects.h"
+#include "flashdisplay.h"
 
 namespace lightspark
 {
@@ -31,6 +32,13 @@ public:
 	static void sinit(Class_base* c);
 //	static void buildTraits(ASObject* o);
 	ASFUNCTION(enumerateFonts);
+};
+
+class TextField: public DisplayObject
+{
+public:
+	static void sinit(Class_base* c);
+	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 };
 
 };

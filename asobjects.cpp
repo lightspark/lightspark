@@ -67,7 +67,7 @@ void Array::buildTraits(ASObject* o)
 {
 	o->setGetterByQName("length","",new Function(_getLength));
 	o->ASObject::setVariableByQName("pop","",new Function(_pop));
-	o->ASObject::setVariableByQName("shift","",new Function(shift));
+	o->ASObject::setVariableByQName("shift",AS3,new Function(shift));
 	o->ASObject::setVariableByQName("unshift","",new Function(unshift));
 	o->ASObject::setVariableByQName("join",AS3,new Function(join));
 	o->ASObject::setVariableByQName("push",AS3,new Function(_push));
@@ -1633,5 +1633,7 @@ void InterfaceClass::lookupAndLink(ASObject* o, const tiny_string& name, const t
 
 void UInteger::sinit(Class_base* c)
 {
-	c->setVariableByQName("MAX_VALUE","",new UInteger(0xffffffff));
+	//TODO: add in the JIT support for unsigned number
+	//Right now we pretend to be signed, to make comparisons work
+	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff));
 }

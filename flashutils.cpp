@@ -29,6 +29,7 @@ using namespace lightspark;
 REGISTER_CLASS_NAME(ByteArray);
 REGISTER_CLASS_NAME(Timer);
 REGISTER_CLASS_NAME(Dictionary);
+REGISTER_CLASS_NAME(Proxy);
 
 ByteArray::ByteArray():bytes(NULL),len(0),position(0)
 {
@@ -329,13 +330,19 @@ bool Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
 
 bool Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
 {
-	assert(name.name_type==multiname::NAME_OBJECT);
-	//We can use the [] operator, as the value is just a pointer and there is no side effect in creating one
-	data[name.name_o]=o;
-	//This is ugly, but at least we are sure that we own name_o
-	multiname* tmp=const_cast<multiname*>(&name);
-	tmp->name_o=NULL;
-	return true;
+	if(name.name_type==multiname::NAME_OBJECT)
+	{
+		//We can use the [] operator, as the value is just a pointer and there is no side effect in creating one
+		data[name.name_o]=o;
+		//This is ugly, but at least we are sure that we own name_o
+		multiname* tmp=const_cast<multiname*>(&name);
+		tmp->name_o=NULL;
+		return true;
+	}
+	else if(name.name_type==multiname::NAME_STRING)
+		data[Class<ASString>::getInstanceS(true,name.name_s)->obj]=o;
+	else
+		abort();
 }
 
 bool Dictionary::deleteVariableByMultiname(const multiname& name)
@@ -357,19 +364,47 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 
 bool Dictionary::getVariableByMultiname(const multiname& name, ASObject*& out)
 {
-	assert(name.name_type==multiname::NAME_OBJECT);
-	map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
-	if(it==data.end())
-		out=new Undefined;
-	else
+	if(name.name_type==multiname::NAME_OBJECT)
 	{
-		ASObject* ret=it->second;
-		ret->incRef();
-		out=ret;
-		//This is ugly, but at least we are sure that we own name_o
-		multiname* tmp=const_cast<multiname*>(&name);
-		tmp->name_o=NULL;
+		//From specs, then === operator compare references when working on generic objects
+		map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
+		if(it==data.end())
+			out=new Undefined;
+		else
+		{
+			ASObject* ret=it->second;
+			ret->incRef();
+			out=ret;
+			//This is ugly, but at least we are sure that we own name_o
+			multiname* tmp=const_cast<multiname*>(&name);
+			tmp->name_o=NULL;
+		}
 	}
+	else if(name.name_type==multiname::NAME_STRING)
+	{
+		//Ok, we need to do the slow lookup on every object and check for === comparison
+		map<ASObject*, ASObject*>::iterator it=data.begin();
+		for(it;it!=data.end();it++)
+		{
+			if(it->first->getObjectType()==T_STRING)
+			{
+				ASString* s=Class<ASString>::cast(it->first->implementation);
+				if(name.name_s == s->data.c_str())
+				{
+					//Value found
+					ASObject* ret=it->second;
+					ret->incRef();
+					out=ret;
+					return true;
+				}
+			}
+		}
+		//Value not found
+		out=new Undefined;
+	}
+	else
+		abort();
+
 	return true;
 }
 
@@ -399,4 +434,45 @@ bool Dictionary::nextValue(int index, ASObject*& out)
 		it++;
 	out=it->first;
 	return true;*/
+}
+
+void Proxy::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	//c->constructor=new Function(_constructor);
+}
+
+bool Proxy::setVariableByMultiname(const multiname& name, ASObject* o)
+{
+	//We now assume that we are trying to set an actual property, not using the setter
+	assert(obj->hasPropertyByMultiname(name));
+	assert(!obj->hasPropertyByQName("setProperty",flash_proxy));
+
+	return false;
+}
+
+bool Proxy::getVariableByMultiname(const multiname& name, ASObject*& out)
+{
+	if(suppress)
+		return false;
+
+	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
+	objAndLevel o=obj->getVariableByQName("getProperty",flash_proxy,true);
+
+	if(o.obj==NULL)
+		return false;
+
+	assert(o.obj->getObjectType()==T_FUNCTION);
+
+	IFunction* f=static_cast<IFunction*>(o.obj);
+
+	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
+	arguments args(1);
+	args.set(0,Class<ASString>::getInstanceS(true,name.name_s)->obj);
+	//We now suppress special handling
+	suppress=true;
+	out=f->call(obj,&args, obj->max_level);
+	assert(out);
+	suppress=false;
+	return true;
 }

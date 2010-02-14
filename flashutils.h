@@ -28,6 +28,7 @@
 
 namespace lightspark
 {
+const tiny_string flash_proxy="http://www.adobe.com/2006/actionscript/flash/proxy";
 
 class ByteArray: public IInterface
 {
@@ -78,9 +79,6 @@ public:
 class Dictionary: public IInterface
 {
 friend class ABCVm;
-/*private:
-	bool isValidMultiname(const multiname& name, int& index) const;
-	bool isValidQName(const tiny_string& name, const tiny_string& ns, int& index);*/
 private:
 	std::map<ASObject*,ASObject*> data;
 public:
@@ -121,6 +119,65 @@ public:
 	bool nextName(int index, ASObject*& out);
 	bool nextValue(int index, ASObject*& out);
 };
+
+class Proxy: public IInterface
+{
+friend class ABCVm;
+private:
+	bool suppress;
+public:
+	Proxy():suppress(false){}
+	static void sinit(Class_base*);
+//	static void buildTraits(ASObject* o);
+//	ASFUNCTION(_constructor);
+	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
+	{
+		abort();
+	}
+	bool getVariableByMultiname(const multiname& name, ASObject*& out);
+	bool getVariableByMultiname_i(const multiname& name, intptr_t& out)
+	{
+		abort();
+	}
+	bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+	{
+		abort();
+	}
+	bool setVariableByMultiname(const multiname& name, ASObject* o);
+	bool setVariableByMultiname_i(const multiname& name, intptr_t value)
+	{
+		abort();
+	}
+	bool deleteVariableByMultiname(const multiname& name)
+	{
+		abort();
+	}
+	bool toString(tiny_string& ret)
+	{
+		return false;
+	}
+	bool isEqual(bool& ret, ASObject* r)
+	{
+		abort();
+	}
+	tiny_string toString() const
+	{
+		abort();
+	}
+	bool hasNext(int& index, bool& out)
+	{
+		abort();
+	}
+	bool nextName(int index, ASObject*& out)
+	{
+		abort();
+	}
+	bool nextValue(int index, ASObject*& out)
+	{
+		abort();
+	}
+};
+
 ASObject* getQualifiedClassName(ASObject* , arguments* args);
 ASObject* getQualifiedSuperclassName(ASObject* , arguments* args);
 ASObject* getDefinitionByName(ASObject* , arguments* args);

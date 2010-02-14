@@ -354,6 +354,7 @@ class ASString: public IInterface
 {
 friend class ASQName;
 friend class ABCContext;
+friend class Dictionary;
 friend ASObject* unescape(ASObject* obj,arguments* args);
 private:
 	std::string data;

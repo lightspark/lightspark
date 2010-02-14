@@ -977,27 +977,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				break;
 			}
-			case 0x47:
-			{
-				//returnvoid
-				LOG(LOG_TRACE, "synt returnvoid" );
-				last_is_branch=true;
-				constant = llvm::ConstantInt::get(int_type, NULL);
-				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
-				for(int i=0;i<static_locals.size();i++)
-				{
-					if(static_locals[i].second==STACK_OBJECT)
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_locals[i].first);
-					static_locals[i].second=STACK_NONE;
-				}
-				for(int i=0;i<static_stack.size();i++)
-				{
-					if(static_stack[i].second==STACK_OBJECT)
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_stack[i].first);
-				}
-				Builder.CreateRet(value);
-				break;
-			}
 			case 0x48:
 			{
 				//returnvalue
@@ -1143,17 +1122,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
-			case 0x5d:
-			{
-				//findpropstrict
-				LOG(LOG_TRACE, "synt findpropstrict" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("findPropStrict"), context, constant);
-				break;
-			}
 			case 0x5e:
 			{
 				//findproperty
@@ -1163,17 +1131,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code2 >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
 				Builder.CreateCall2(ex->FindFunctionNamed("findProperty"), context, constant);
-				break;
-			}
-			case 0x60:
-			{
-				//getlex
-				LOG(LOG_TRACE, "synt getlex" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("getLex"), context, constant);
 				break;
 			}
 			case 0x61:
@@ -1324,17 +1281,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				}
 				else
 					abort();
-				break;
-			}
-			case 0x68:
-			{
-				//initproperty
-				LOG(LOG_TRACE, "synt initproperty" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("initProperty"), context, constant);
 				break;
 			}
 			case 0x6a:
@@ -2173,6 +2119,11 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				pushScope(context);
 				break;
 			}
+			case 0x47:
+			{
+				//returnvoid
+				return NULL;
+			}
 			case 0x58:
 			{
 				//newclass
@@ -2181,12 +2132,36 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				newClass(context,t);
 				break;
 			}
+			case 0x5d:
+			{
+				//findpropstrict
+				u30 t;
+				code >> t;
+				context->runtime_stack_push(findPropStrict(context,t));
+				break;
+			}
+			case 0x60:
+			{
+				//getlex
+				u30 t;
+				code >> t;
+				getLex(context,t);
+				break;
+			}
 			case 0x65:
 			{
 				//getscopeobject
 				u30 t;
 				code >> t;
 				context->runtime_stack_push(getScopeObject(context,t));
+				break;
+			}
+			case 0x68:
+			{
+				//initproperty
+				u30 t;
+				code >> t;
+				initProperty(context,t);
 				break;
 			}
 			case 0xd0:

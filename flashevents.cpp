@@ -294,10 +294,12 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 
 	IFunction* f=static_cast<IFunction*>(args->at(1));
 	std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),f);
-	assert(it!=h->second.end());
-	//The listener owns the function
-	it->f->decRef();
-	h->second.erase(it);
+	if(it!=h->second.end())
+	{
+		//The listener owns the function
+		it->f->decRef();
+		h->second.erase(it);
+	}
 	return NULL;
 }
 

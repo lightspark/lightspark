@@ -349,7 +349,6 @@ public:
 	virtual ~Undefined(){}
 };
 
-//ASString has to be converted to an Interface... it's still to much used as an object
 class ASString: public IInterface
 {
 friend class ASQName;
@@ -377,6 +376,7 @@ public:
 	ASFUNCTION(charCodeAt);
 	ASFUNCTION(toLowerCase);
 	bool isEqual(bool& ret, ASObject* o);
+	bool isGreater(bool& ret, ASObject* o);
 	bool toString(tiny_string& ret);
 };
 

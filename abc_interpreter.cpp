@@ -18,76 +18,12 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 	while(1)
 	{
 		code >> opcode;
+		if(code.eof())
+			abort();
 
 		switch(opcode)
 		{
-/*			case 0x03:
-			{
-				//throw
-				LOG(LOG_TRACE, "synt throw" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				//syncLocals(ex,Builder,static_locals,locals,cur_block->locals,*cur_block);
-				Builder.CreateCall(ex->FindFunctionNamed("throw"), context);
-				//Right now we set up like we do for retunrvoid
-				last_is_branch=true;
-				constant = llvm::ConstantInt::get(int_type, NULL);
-				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
-				for(int i=0;i<static_locals.size();i++)
-				{
-					if(static_locals[i].second==STACK_OBJECT)
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_locals[i].first);
-					static_locals[i].second=STACK_NONE;
-				}
-				for(int i=0;i<static_stack.size();i++)
-				{
-					if(static_stack[i].second==STACK_OBJECT)
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_stack[i].first);
-				}
-				Builder.CreateRet(value);
-				break;
-			}
-			case 0x04:
-			{
-				//getsuper
-				LOG(LOG_TRACE, "synt getsuper" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("getSuper"), context, constant);
-				break;
-			}
-			case 0x05:
-			{
-				//setsuper
-				LOG(LOG_TRACE, "synt setsuper" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("setSuper"), context, constant);
-				break;
-			}
-			case 0x08:
-			{
-				//kill
-				u30 t;
-				code2 >> t;
-				LOG(LOG_TRACE, "synt kill " << t );
-				if(Log::getLevel()==LOG_CALLS)
-				{
-					constant = llvm::ConstantInt::get(int_type, t);
-					Builder.CreateCall2(ex->FindFunctionNamed("kill"), context, constant);
-				}
-				int i=t;
-				if(static_locals[i].second==STACK_OBJECT)
-					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
-
-				static_locals[i].second=STACK_NONE;
-
-				break;
-			}
-			case 0x09:
+/*			case 0x09:
 			{
 				//label
 				//Create a new block and insert it in the mapping
@@ -1122,17 +1058,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
-			case 0x5e:
-			{
-				//findproperty
-				LOG(LOG_TRACE, "synt findproperty" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("findProperty"), context, constant);
-				break;
-			}
 			case 0x61:
 			{
 				//setproperty
@@ -2107,6 +2032,38 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code2 >> t;
 				break;
 			}*/
+			case 0x03:
+			{
+				//throw
+				_throw(context);
+				break;
+			}
+			case 0x04:
+			{
+				//getsuper
+				u30 t;
+				code >> t;
+				getSuper(context,t);
+				break;
+			}
+			case 0x05:
+			{
+				//setsuper
+				u30 t;
+				code >> t;
+				setSuper(context,t);
+				break;
+			}
+			case 0x08:
+			{
+				//kill
+				u30 t;
+				code >> t;
+				assert(context->locals[t]);
+				context->locals[t]->decRef();
+				context->locals[t]=new Undefined;
+				break;
+			}
 			case 0x20:
 			{
 				//pushnull
@@ -2138,6 +2095,14 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t;
 				code >> t;
 				context->runtime_stack_push(findPropStrict(context,t));
+				break;
+			}
+			case 0x5e:
+			{
+				//findproperty
+				u30 t;
+				code >> t;
+				context->runtime_stack_push(findProperty(context,t));
 				break;
 			}
 			case 0x60:
@@ -2172,6 +2137,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//getlocal_n
 				int i=opcode&3;
 				LOG(LOG_CALLS, "getLocal " << i );
+				assert(context->locals[i]);
 				context->runtime_stack_push(context->locals[i]);
 
 				break;

@@ -564,7 +564,7 @@ void MovieClip::Render()
 void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	//Iterate over the displaylist of the current frame
-	if(dynamicDisplayList.size()==0 && frames[state.FP].displayList.size()==0)
+	if(dynamicDisplayList.size()==0 && (frames.size()==0 || frames[state.FP].displayList.size()==0))
 	{
 		xmin=0;
 		xmax=0;

@@ -735,6 +735,27 @@ bool ASString::isEqual(bool& ret, ASObject* r)
 	return true;
 }
 
+bool ASString::isGreater(bool& ret, ASObject* o)
+{
+	//TODO: Implement ECMA-262 11.8.5 algorithm
+	//Number comparison has the priority over strings
+	if(o->getObjectType()==T_INTEGER)
+	{
+		//Check if the string may be converted to integer
+		//TODO: check whole string?
+		if(isdigit(data[0]))
+		{
+			int val1=atoi(data.c_str());
+			int val2=o->toInt();
+			ret= val1 > val2;
+			return true;
+		}
+	}
+	cout << o->getObjectType() << endl;
+	abort();
+	return true;
+}
+
 bool Boolean::isEqual(ASObject* r)
 {
 	if(r->getObjectType()==T_BOOLEAN)

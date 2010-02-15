@@ -537,6 +537,8 @@ private:
 	virtual bool deleteVariableByMultiname(const multiname& name);
 	virtual bool toString(tiny_string& ret);
 	virtual bool isEqual(bool& ret, ASObject* o);
+	virtual bool isLess(bool& ret, ASObject* o);
+	virtual bool isGreater(bool& ret, ASObject* o);
 	virtual bool toInt(int& ret);
 	virtual bool toNumber(double& ret);
 	virtual bool hasNext(int& index, bool& out);

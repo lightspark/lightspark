@@ -57,7 +57,15 @@ tiny_string ASObject::toString() const
 bool ASObject::isGreater(ASObject* r)
 {
 	assert(ref_count>0);
+	if(implementation)
+	{
+		bool ret;
+		if(implementation->isGreater(ret,r))
+			return ret;
+	}
 	LOG(LOG_NOT_IMPLEMENTED,"Greater than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	if(prototype)
+		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
 	abort();
 	return false;
 }
@@ -117,6 +125,16 @@ IInterface::IInterface(const IInterface& r):type(r.type),obj(NULL)
 		c->incRef();
 		obj->implementation=this;
 	}
+}
+
+bool IInterface::isGreater(bool& ret, ASObject* r)
+{
+	return false;
+}
+
+bool IInterface::isLess(bool& ret, ASObject* r)
+{
+	return false;
 }
 
 bool IInterface::isEqual(bool& ret, ASObject* r)
@@ -291,6 +309,8 @@ bool ASObject::isEqual(ASObject* r)
 	}
 
 	LOG(LOG_NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	if(prototype)
+		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
 	return false;
 }
 

@@ -291,12 +291,6 @@ void Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 void Sprite::Render()
 {
-/*	if(obj && obj->prototype && obj->prototype->class_name=="ContainerBorderSkin")
-	{
-		if(parent && parent->obj->prototype->class_name=="VBox")
-			__asm__("int $3");
-	}*/
-
 	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
@@ -631,6 +625,9 @@ void DisplayObject::buildTraits(ASObject* o)
 	o->setSetterByQName("cacheAsBitmap","",new Function(undefinedFunction));
 	o->setGetterByQName("opaqueBackground","",new Function(undefinedFunction));
 	o->setSetterByQName("opaqueBackground","",new Function(undefinedFunction));
+
+	//This is from InteractiveObject
+	o->setSetterByQName("mouseEnabled","",new Function(undefinedFunction));
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScaleX)
@@ -831,6 +828,7 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 	o->setVariableByQName("addChild","",new Function(addChild));
 	o->setVariableByQName("addChildAt","",new Function(addChildAt));
 	o->setVariableByQName("contains","",new Function(contains));
+	o->setSetterByQName("mouseChildren","",new Function(undefinedFunction));
 }
 
 DisplayObjectContainer::DisplayObjectContainer()

@@ -40,6 +40,8 @@ REGISTER_CLASS_NAME(FocusEvent);
 void IEventDispatcher::linkTraits(ASObject* o)
 {
 	lookupAndLink(o,"addEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(o,"removeEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(o,"dispatchEvent","flash.events:IEventDispatcher");
 }
 
 Event::Event(const tiny_string& t, ASObject* _t):type(t),target(_t)
@@ -345,7 +347,8 @@ void EventDispatcher::handleEvent(Event* e)
 		obj->incRef();
 		//tmpListener is now also owned by the vector
 		tmpListener[i].f->incRef();
-		tmpListener[i].f->call(obj,&args,obj->max_level);
+		//If the f is a class method, both the 'this' and level are ignored
+		tmpListener[i].f->call(obj,&args,0);
 		//And now no more, f can also be deleted
 		tmpListener[i].f->decRef();
 	}

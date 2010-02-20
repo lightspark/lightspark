@@ -115,13 +115,13 @@ IInterface::IInterface(const IInterface& r):type(r.type),obj(NULL)
 {
 	if(r.obj)
 	{
+		abort();
 		//An IInterface derived class can only be cloned if the obj is a Class
 		assert(r.obj->getObjectType()==T_CLASS);
 		Class_base* c=static_cast<Class_base*>(r.obj);
 		obj=new ASObject;
 		obj->prototype=c;
 		obj->actualPrototype=c;
-		obj->max_level=c->max_level;
 		c->incRef();
 		obj->implementation=this;
 	}
@@ -210,7 +210,8 @@ bool IInterface::nextValue(int index, ASObject*& out)
 void IInterface::buildTraits(ASObject* o)
 {
 	assert(o->actualPrototype);
-	LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->actualPrototype->class_name);
+	if(o->actualPrototype->class_name!="IInterface")
+		LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->actualPrototype->class_name);
 }
 
 tiny_string multiname::qualifiedString() const
@@ -361,7 +362,6 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, 
 	var_iterator ret=ret_begin;
 	for(ret;ret!=ret_end;ret++)
 	{
-		//We can use binary search, as the namespace are ordered
 		if(ret->second.first==ns)
 		{
 			level=ret->first.level;
@@ -383,7 +383,8 @@ bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns
 {
 	assert(ref_count>0);
 
-	int level=max_level;
+	//We look in all the object's levels
+	int level=(prototype)?(prototype->max_level):0;
 	return (Variables.findObjVar(name, ns, level, false, true)!=NULL);
 }
 
@@ -391,14 +392,16 @@ bool ASObject::hasPropertyByMultiname(const multiname& name)
 {
 	assert(ref_count>0);
 
-	int level=max_level;
+	//We look in all the object's levels
+	int level=(prototype)?(prototype->max_level):0;
 	return (Variables.findObjVar(name, level, false, true)!=NULL);
 }
 
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	assert(ref_count>0);
-	int level=(actualPrototype)?actualPrototype->max_level:max_level;
+	//Getters are inserted with the current level of the prototype chain
+	int level=(actualPrototype)?actualPrototype->max_level:0;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
 	if(obj->getter!=NULL)
 	{
@@ -411,7 +414,8 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	assert(ref_count>0);
-	int level=(actualPrototype)?actualPrototype->max_level:max_level;
+	//Setters are inserted with the current level of the prototype chain
+	int level=(actualPrototype)?actualPrototype->max_level:0;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
 	if(obj->setter!=NULL)
 	{
@@ -434,6 +438,8 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 	obj_var* obj=NULL;
 	int level;
 	unsigned int count=0;
+	//We search in every level
+	int max_level=(prototype)?prototype->max_level:0;
 	for(int i=max_level;i>=0;i--)
 	{
 		//We stick to the old iteration mode, as we need to count
@@ -467,7 +473,7 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 //In all setter we first pass the value to the interface to see if special handling is possible
 void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
-	assert(ref_count>0);
+	check();
 	if(implementation)
 	{
 		if(implementation->setVariableByMultiname_i(name,value))
@@ -477,9 +483,9 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	setVariableByMultiname(name,abstract_i(value));
 }
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
-	assert(ref_count>0);
+	check();
 	if(implementation)
 	{
 		if(implementation->setVariableByMultiname(name,o))
@@ -487,28 +493,15 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 	}
 
 	obj_var* obj=NULL;
-	int level=max_level;
+	//It's always correct to use the current level for the object
+	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level
+	int level=cur_level;
 	obj=Variables.findObjVar(name,level,false,true);
-
-	//CHECK: If no result try to look up also in upper levels
-	if(obj==NULL && prototype)
-	{
-		for(int i=max_level+1;i<=prototype->max_level;i++)
-		{
-			obj=Variables.findObjVar(name,i,false,false);
-			if(obj)
-			{
-				cout << "Found on upper level" << endl;
-				level=i;
-				break;
-			}
-		}
-	}
 
 	if(obj==NULL)
 	{
-		level=max_level;
-		obj=Variables.findObjVar(name,max_level,true,false);
+		assert(level==cur_level);
+		obj=Variables.findObjVar(name,level,true,false);
 	}
 
 	if(obj->setter)
@@ -519,7 +512,11 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 		args.set(0,o);
 		//TODO: check
 		o->incRef();
-		obj->setter->call(this,&args,level);
+		//Overriding function is automatically done by using cur_level
+		IFunction* setter=obj->setter;
+		if(enableOverride)
+			setter=setter->getOverride();
+		setter->call(this,&args, level);
 		LOG(LOG_CALLS,"End of setter");
 	}
 	else
@@ -528,11 +525,12 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o)
 			obj->var->decRef();
 		obj->var=o;
 	}
+	check();
 }
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
 {
-	assert(ref_count>0);
+	check();
 	if(implementation && !skip_impl)
 	{
 		if(implementation->setVariableByQName(name,ns,o))
@@ -540,13 +538,16 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	}
 
 	obj_var* obj=NULL;
-	int level=max_level;
+	//It's always correct to use the current level for the object
+	//NOTE: we assume that [gs]etSuper and setProperty correctly manipulate the cur_level
+	int level=cur_level;
 	obj=Variables.findObjVar(name,ns,level,false,find_back);
 
 	if(obj==NULL)
 	{
-		assert(level==max_level);
-		obj=Variables.findObjVar(name,ns,max_level,true,false);
+		//When the var is not found level should not be modified
+		assert(cur_level==level);
+		obj=Variables.findObjVar(name,ns,level,true,false);
 	}
 
 	if(obj->setter)
@@ -557,7 +558,8 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 		args.set(0,o);
 		//TODO: check
 		o->incRef();
-		obj->setter->call(this,&args, level);
+		IFunction* setter=obj->setter->getOverride();
+		setter->call(this,&args, level);
 		LOG(LOG_CALLS,"End of setter");
 	}
 	else
@@ -682,11 +684,19 @@ ASFUNCTIONBODY(ASObject,_setPrototype)
 	return NULL;
 }*/
 
+
+void ASObject::initSlot(int n,const tiny_string& name, const tiny_string& ns)
+{
+	//Should be correct to use the level on the prototype chain
+	int level=(actualPrototype)?actualPrototype->max_level:0;
+	Variables.initSlot(n,level,name,ns);
+}
+
 //In all the getter function we first ask the interface, so that special handling (e.g. Array)
 //can be done
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
-	assert(ref_count>0);
+	check();
 	if(implementation)
 	{
 		intptr_t ret;
@@ -699,28 +709,31 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-objAndLevel ASObject::getVariableByMultiname(const multiname& name)
+objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
-	assert(ref_count>0);
-	if(implementation)
+	check();
+	if(implementation && !skip_impl)
 	{
 		ASObject* ret;
-		if(implementation->getVariableByMultiname(name,ret))
+		//It seems that various kind of implementation works only with the empty namespace
+		assert(name.ns.size()>0);
+		if(name.ns[0].name=="" && implementation->getVariableByMultiname(name,ret))
 		{
 			//TODO check
-			return objAndLevel(ret,max_level);
+			assert(prototype);
+			return objAndLevel(ret, cur_level);
 		}
 	}
 
 	obj_var* obj=NULL;
 	int level;
+	int max_level=cur_level;
 	for(int i=max_level;i>=0;i--)
 	{
 		//The variable i is automatically moved to the right level
 		obj=Variables.findObjVar(name,i,false,true);
 		if(obj)
 		{
-			//HACK: to return the object valid the getter or the object has to be declared
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, just go to the previous level
 			if(obj->getter || obj->var)
@@ -744,7 +757,10 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name)
 			{
 				LOG(LOG_CALLS,"Calling the getter");
 			}
-			ASObject* ret=obj->getter->call(this,NULL,level);
+			IFunction* getter=obj->getter;
+			if(enableOverride)
+				getter=getter->getOverride();
+			ASObject* ret=getter->call(this,NULL,level);
 			LOG(LOG_CALLS,"End of getter");
 			assert(ret);
 			//The returned value is already owned by the caller
@@ -776,7 +792,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name)
 
 		//It has not been found yet, ask the prototype
 		if(prototype)
-			return prototype->getVariableByMultiname(name);
+			return prototype->getVariableByMultiname(name,skip_impl);
 	}
 
 	//If it has not been found
@@ -785,17 +801,21 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name)
 
 objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)
 {
-	assert(ref_count>0);
+	check();
 
 	if(implementation && !skip_impl)
 	{
 		ASObject* ret;
+		assert(prototype);
 		if(implementation->getVariableByQName(name,ns,ret))
-			return objAndLevel(ret,max_level);
+		{
+			assert(prototype);
+			return objAndLevel(ret, cur_level);
+		}
 	}
 
 	obj_var* obj=NULL;
-	int level=max_level;
+	int level=cur_level;
 	obj=Variables.findObjVar(name,ns,level,false,true);
 
 	if(obj!=NULL)
@@ -804,7 +824,8 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 		{
 			//Call the getter
 			LOG(LOG_CALLS,"Calling the getter");
-			ASObject* ret=obj->getter->call(this,NULL,level);
+			IFunction* getter=obj->getter->getOverride();
+			ASObject* ret=getter->call(this,NULL,level);
 			LOG(LOG_CALLS,"End of getter");
 			//The variable is already owned by the caller
 			ret->fake_decRef();
@@ -892,11 +913,50 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 	return s;
 }
 
+void ASObject::check()
+{
+	//Put here a bunch of safety check on the object
+	assert(ref_count>0);
+	//Heavyweight stuff
+#if 1
+	variables_map::var_iterator it=Variables.Variables.begin();
+	for(it;it!=Variables.Variables.end();it++)
+	{
+		variables_map::var_iterator next=it;
+		next++;
+		if(next==Variables.Variables.end())
+			break;
+
+		//No double definition of a single variable should exist
+		if(it->first.name==next->first.name && it->second.first==next->second.first)
+		{
+			if(it->second.second.var==NULL && next->second.second.var==NULL)
+				continue;
+
+			if(it->second.second.var==NULL || next->second.second.var==NULL)
+			{
+				cout << it->first.name << endl;
+				cout << it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter << endl;
+				cout << next->second.second.var << ' ' << next->second.second.setter << ' ' << next->second.second.getter << endl;
+				abort();
+			}
+
+			if(it->second.second.var->getObjectType()!=T_FUNCTION || next->second.second.var->getObjectType()!=T_FUNCTION)
+			{
+				cout << it->first.name << endl;
+				abort();
+			}
+		}
+	}
+
+#endif
+}
+
 void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(it;it!=Variables.end();it++)
-		cout << it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << 
+		cerr << it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << 
 			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter << endl;
 }
 
@@ -1614,22 +1674,18 @@ variables_map::~variables_map()
 
 ASObject::ASObject(Manager* m):
 	prototype(NULL),actualPrototype(NULL),ref_count(1),
-	manager(m),type(T_OBJECT),max_level(0),implementation(NULL)
+	manager(m),type(T_OBJECT),implementation(NULL),cur_level(0)
 {
 }
 
 ASObject::ASObject(const ASObject& o):
 	prototype(o.prototype),actualPrototype(o.prototype),manager(NULL),ref_count(1),
-	type(o.type),max_level(0),implementation(NULL)
+	type(o.type),implementation(NULL),cur_level(0)
 {
 	if(prototype)
 		prototype->incRef();
 
 	assert(o.Variables.size()==0);
-	
-/*	std::map<Qname,ASObject*> Variables;	
-	std::vector<ASObject*> slots;
-	std::vector<var_iterator> slots_vars;*/
 }
 
 ASObject::~ASObject()
@@ -1638,6 +1694,16 @@ ASObject::~ASObject()
 		prototype->decRef();
 
 	assert(prototype==actualPrototype);
+}
+
+int ASObject::_maxlevel()
+{
+	return (prototype)?(prototype->max_level):0;
+}
+
+void ASObject::resetLevel()
+{
+	cur_level=_maxlevel();
 }
 
 void variables_map::initSlot(int n, int level, const tiny_string& name, const tiny_string& ns)
@@ -1713,7 +1779,9 @@ ASObject* ASObject::getValueAt(int index)
 	{
 		//Call the getter
 		LOG(LOG_CALLS,"Calling the getter");
-		ret=obj->getter->call(this,NULL,level);
+		IFunction* getter=obj->getter->getOverride();
+		ASObject* ret=getter->call(this,NULL,level);
+		ret=getter->call(this,NULL,level);
 		ret->fake_decRef();
 		LOG(LOG_CALLS,"End of getter");
 	}
@@ -1758,13 +1826,19 @@ void ASObject::recursiveBuild(const Class_base* cur)
 		actualPrototype=old;
 	}
 	LOG(LOG_TRACE,"Building traits for " << cur->class_name);
-	int old_level=max_level;
-	max_level=cur->max_level;
+	cur_level=cur->max_level;
 	cur->buildInstanceTraits(this);
-	max_level=old_level;
+
+	//Link the interfaces for this level
+	const vector<Class_base*>& interfaces=cur->getInterfaces();
+	for(int i=0;i<interfaces.size();i++)
+	{
+		LOG(LOG_CALLS,"Linking with interface " << interfaces[i]->class_name);
+		interfaces[i]->linkInterface(this);
+	}
 }
 
-void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits)
+void ASObject::handleConstruction(arguments* args, bool buildAndLink)
 {
 /*	if(actualPrototype->class_index==-2)
 	{
@@ -1777,9 +1851,9 @@ void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool bui
 		sf->call(this,args,max_level);
 	}*/
 	assert(actualPrototype->class_index!=-2);
-	assert(buildTraits==false || actualPrototype==prototype);
+	assert(buildAndLink==false || actualPrototype==prototype);
 
-	if(buildTraits)
+	if(buildAndLink)
 	{
 		//HACK: suppress implementation handling of variable just now
 		IInterface* impl=implementation;
@@ -1787,28 +1861,18 @@ void ASObject::handleConstruction(arguments* args, bool linkInterfaces, bool bui
 		recursiveBuild(actualPrototype);
 		//And restore it
 		implementation=impl;
-	}
-
-	if(linkInterfaces)
-	{
-		//Lets's setup the interfaces
-		Class_base* cur=actualPrototype;
-		while(cur)
-		{
-			const vector<Class_base*>& interfaces=cur->getInterfaces();
-			for(int i=0;i<interfaces.size();i++)
-			{
-				LOG(LOG_CALLS,"Linking with interface " << interfaces[i]->class_name);
-				interfaces[i]->linkInterface(this);
-			}
-			cur = cur->super;
-		}
+		assert(cur_level==prototype->max_level);
 	}
 
 	if(actualPrototype->constructor)
 	{
 		LOG(LOG_CALLS,"Calling Instance init " << actualPrototype->class_name);
-		actualPrototype->constructor->call(this,args,max_level);
+		//As constructors are not binded, we should change here the level
+
+		int l=cur_level;
+		cur_level=actualPrototype->max_level;
+		actualPrototype->constructor->call(this,args,actualPrototype->max_level);
+		cur_level=l;
 	}
 }
 

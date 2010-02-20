@@ -118,6 +118,18 @@ ASFUNCTIONBODY(ABCVm,print)
 	return new Null;
 }
 
+void ABCVm::pushObjAndLevel(ASObject* o, int l)
+{
+	method_this_stack.push_back(thisAndLevel(o,l));
+}
+
+thisAndLevel ABCVm::popObjAndLevel()
+{
+	thisAndLevel ret=method_this_stack.back();
+	method_this_stack.pop_back();
+	return ret;
+}
+
 void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
@@ -185,6 +197,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
 	Global.setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass());
 	Global.setVariableByQName("Matrix","flash.geom",Class<IInterface>::getClass("Matrix"));
+	Global.setVariableByQName("Transform","flash.geom",Class<Transform>::getClass());
 	Global.setVariableByQName("Point","flash.geom",Class<Point>::getClass());
 
 	Global.setVariableByQName("EventDispatcher","flash.events",Class<EventDispatcher>::getClass());
@@ -958,6 +971,8 @@ ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s)
 	m_sys=s;
 	int_manager=new Manager;
 	number_manager=new Manager;
+	//Push a dummy default context
+	pushObjAndLevel(new ASObject,0);
 	pthread_create(&t,NULL,(thread_worker)Run,this);
 }
 
@@ -1032,7 +1047,7 @@ void ABCVm::handleEvent()
 				ev->_class->context->buildInstanceTraits(ev->obj, ev->_class->class_index);
 
 				LOG(LOG_CALLS,"Calling Instance init " << ev->_class->class_name);
-				ev->_class->constructor->call(ev->obj,NULL,ev->obj->max_level);
+				ev->_class->constructor->call(ev->obj,NULL,ev->_class->max_level);
 				ev->sync();
 				break;
 			}
@@ -1101,12 +1116,13 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,arguments*
 
 		ASObject* tmp=new ASObject;
 		base->obj=tmp;
-		tmp->max_level=derived_class_tmp->max_level;
 		tmp->prototype=derived_class_tmp;
 		tmp->actualPrototype=derived_class_tmp;
 		tmp->implementation=base;
-
-		tmp->handleConstruction(args,true,true);
+		getVm()->pushObjAndLevel(tmp,derived_class_tmp->max_level);
+		tmp->handleConstruction(args,true);
+		thisAndLevel tl=getVm()->popObjAndLevel();
+		assert(tl.cur_this==tmp);
 	}
 }
 
@@ -1238,7 +1254,7 @@ ASObject* call_context::runtime_stack_peek()
 	return stack[stack_index-1];
 }
 
-call_context::call_context(method_info* th, int level, ASObject** args, int num_args):cur_level_of_this(level)
+call_context::call_context(method_info* th, int level, ASObject** args, int num_args)
 {
 	locals=new ASObject*[th->body->local_count+1];
 	locals_size=th->body->local_count;
@@ -1281,7 +1297,7 @@ void ABCContext::exec()
 		mf->addToScope(getGlobal());
 
 		for(int j=0;j<scripts[i].trait_count;j++)
-			buildTrait(getGlobal(),&scripts[i].traits[j],mf);
+			buildTrait(getGlobal(),&scripts[i].traits[j],false,mf);
 	}
 	//The last script entry has to be run
 	LOG(LOG_CALLS, "Last script (Entry Point)");
@@ -1291,8 +1307,8 @@ void ABCContext::exec()
 
 	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(int j=0;j<scripts[i].trait_count;j++)
-		buildTrait(getGlobal(),&scripts[i].traits[j]);
-	entry->call(getGlobal(),NULL,sys->currentVm->Global.max_level);
+		buildTrait(getGlobal(),&scripts[i].traits[j],false);
+	entry->call(getGlobal(),NULL,0);
 	LOG(LOG_CALLS, "End of Entry Point");
 }
 
@@ -1358,7 +1374,7 @@ tiny_string ABCContext::getString(unsigned int s) const
 void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 {
 	for(int i=0;i<instances[class_index].trait_count;i++)
-		buildTrait(obj,&instances[class_index].traits[i]);
+		buildTrait(obj,&instances[class_index].traits[i],true);
 }
 
 void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
@@ -1379,7 +1395,8 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			LOG(LOG_CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
 			method_info* m=&methods[t->method];
 			assert(m->body==0);
-			int level=obj->max_level;
+			assert(obj->actualPrototype);
+			int level=obj->actualPrototype->max_level;
 
 			obj_var* var=obj->Variables.findObjVar(name,"",level,false,true);
 
@@ -1404,7 +1421,8 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			LOG(LOG_CALLS,"Getter trait: " << ns << "::" << name);
 			method_info* m=&methods[t->method];
 			assert(m->body==0);
-			int level=obj->max_level+1;
+			assert(obj->actualPrototype);
+			int level=obj->actualPrototype->max_level+1;
 			obj_var* var=NULL;
 
 			do
@@ -1435,7 +1453,8 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			LOG(LOG_CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
 			method_info* m=&methods[t->method];
 			assert(m->body==0);
-			int level=obj->max_level+1;
+			assert(obj->actualPrototype);
+			int level=obj->actualPrototype->max_level+1;
 			obj_var* var=NULL;
 
 			do
@@ -1498,7 +1517,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	}
 }
 
-void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization)
+void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFunction* deferred_initialization)
 {
 	const multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
@@ -1513,6 +1532,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 	{
 		case traits_info::Class:
 		{
+			//Check if this already defined in upper levels
+			objAndLevel tmpo=obj->getVariableByQName(name,ns,true);
+			if(tmpo.obj)
+				return;
+
 			ASObject* ret;
 			if(deferred_initialization)
 				ret=new ScriptDefinable(deferred_initialization);
@@ -1521,7 +1545,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 			obj->setVariableByQName(name, ns, ret, false);
 			
-			LOG(LOG_CALLS,"Slot "<< t->slot_id << " type Class name " << ns << "::" << name << " id " << t->classi);
+			LOG(LOG_CALLS,"Class slot "<< t->slot_id << " type Class name " << ns << "::" << name << " id " << t->classi);
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, name, ns);
 			break;
@@ -1540,7 +1564,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=obj->actualPrototype->super;
-				for(int i=(obj->max_level-1);i>=0;i--)
+				for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
 				{
 					assert(cur);
 					if(cur->use_protected)
@@ -1556,7 +1580,27 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					cur=cur->super;
 				}
 			}
+
+			if(bind)
+				f->bind(obj,obj->actualPrototype->max_level);
 			obj->setGetterByQName(name,ns,f);
+
+			//Iterate to find a getter
+			for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
+			{
+				obj_var* var=obj->Variables.findObjVar(name,ns,i,false,false);
+				if(var)
+				{
+					assert(t->kind&0x20);
+					if(var->getter)
+					{
+						//Ok, we are overriding this getter
+						assert(var->getter->isOverridden()==false);
+						var->getter->override(f);
+						break;
+					}
+				}
+			}
 			
 			LOG(LOG_TRACE,"End Getter trait: " << ns << "::" << name);
 			break;
@@ -1576,12 +1620,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=obj->actualPrototype->super;
-				for(int i=(obj->max_level-1);i>=0;i--)
+				for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
 				{
 					assert(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,false);
+						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,true);
 						if(var)
 						{
 							//A superclass defined a protected method that we have to override.
@@ -1592,7 +1636,27 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					cur=cur->super;
 				}
 			}
+
+			if(bind)
+				f->bind(obj,obj->actualPrototype->max_level);
 			obj->setSetterByQName(name,ns,f);
+			
+			//Iterate to find a setter
+			for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
+			{
+				obj_var* var=obj->Variables.findObjVar(name,ns,i,false,true);
+				if(var)
+				{
+					assert(t->kind&0x20);
+					if(var->setter)
+					{
+						//Ok, we are overriding this getter
+						assert(var->setter->isOverridden()==false);
+						var->setter->override(f);
+						break;
+					}
+				}
+			}
 			
 			LOG(LOG_TRACE,"End Setter trait: " << ns << "::" << name);
 			break;
@@ -1611,7 +1675,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=obj->actualPrototype->super;
-				for(int i=(obj->max_level-1);i>=0;i--)
+				for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
 				{
 					assert(cur);
 					if(cur->use_protected)
@@ -1628,12 +1692,34 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				}
 			}
 
+			//NOTE: it is legal to define function with the same name at different levels, handle this somehow
+			if(t->kind&0x20)
+			{
+				int level=obj->actualPrototype->max_level-1;
+				obj_var* var=obj->Variables.findObjVar(name,ns,level,false,true);
+				if(var)
+				{
+					assert(var->var->getObjectType()==T_FUNCTION);
+					IFunction* oldf=static_cast<IFunction*>(var->var);
+					//Ok, we are overriding this method
+					assert(oldf->isOverridden()==false);
+					oldf->override(f);
+				}
+			}
+
+			if(bind)
+				f->bind(obj,obj->actualPrototype->max_level);
 			obj->setVariableByQName(name,ns,f,false);
 			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);
 			break;
 		}
 		case traits_info::Const:
 		{
+			//Check if this already defined in upper levels
+			objAndLevel tmpo=obj->getVariableByQName(name,ns,true);
+			if(tmpo.obj)
+				return;
+
 			multiname* type=getMultiname(t->type_name,NULL);
 			ASObject* ret;
 			//If the index is valid we set the constant
@@ -1661,6 +1747,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		}
 		case traits_info::Slot:
 		{
+			//Check if this already defined in upper levels
+			objAndLevel tmpo=obj->getVariableByQName(name,ns,true);
+			if(tmpo.obj)
+				return;
+
 			multiname* type=getMultiname(t->type_name,NULL);
 			if(t->vindex)
 			{
@@ -1679,10 +1770,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				objAndLevel previous_definition=obj->getVariableByQName(name,ns);
 				if(previous_definition.obj)
 				{
+					assert(obj->prototype);
 					if(obj->actualPrototype)
 						assert(previous_definition.level<obj->actualPrototype->max_level);
-					else
-						assert(previous_definition.level<obj->max_level);
+					//else
+					//	assert(previous_definition.level<obj->max_level);
 				}
 
 				ASObject* ret;

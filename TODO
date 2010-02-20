@@ -13,3 +13,6 @@ Official TODO Queue:
 -) Texture caching
 -) Click passthrough on transparent objects
 -) Understand the semantics of nextname on methods and the like
+-) Check that setGetter, setSetter and initSlot are used only during initialization
+-) handle private methods, which should be getted on the same level
+-) stick to current level change ot sue flag to getVariable.../setVariable

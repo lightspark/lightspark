@@ -66,5 +66,12 @@ public:
 	ASFUNCTION(getColor);
 };
 
+class Transform: public IInterface
+{
+public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
 };
 #endif

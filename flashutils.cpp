@@ -446,7 +446,7 @@ bool Proxy::setVariableByMultiname(const multiname& name, ASObject* o)
 {
 	//We now assume that we are trying to set an actual property, not using the setter
 	assert(obj->hasPropertyByMultiname(name));
-	assert(!obj->hasPropertyByQName("setProperty",flash_proxy));
+	//assert(!obj->hasPropertyByQName("setProperty",flash_proxy));
 
 	return false;
 }
@@ -471,7 +471,7 @@ bool Proxy::getVariableByMultiname(const multiname& name, ASObject*& out)
 	args.set(0,Class<ASString>::getInstanceS(true,name.name_s)->obj);
 	//We now suppress special handling
 	suppress=true;
-	out=f->call(obj,&args, obj->max_level);
+	out=f->call(obj,&args, obj->actualPrototype->max_level);
 	assert(out);
 	suppress=false;
 	return true;

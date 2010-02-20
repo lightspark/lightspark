@@ -3407,7 +3407,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_locals[i]=stack_entry(t,STACK_OBJECT);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-					if(Log::getLevel()==LOG_TRACE)
+					if(Log::getLevel()>=LOG_CALLS)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), t, constant);
 
 				}
@@ -3415,20 +3415,20 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_TRACE)
+					if(Log::getLevel()>=LOG_CALLS)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), static_locals[i].first, constant);
 				}
 				else if(static_locals[i].second==STACK_INT)
 				{
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_TRACE)
+					if(Log::getLevel()>=LOG_CALLS)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal_int"), constant, static_locals[i].first);
 				}
 				else if(static_locals[i].second==STACK_NUMBER ||
 						static_locals[i].second==STACK_BOOLEAN)
 				{
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_TRACE)
+					if(Log::getLevel()>=LOG_CALLS)
 						Builder.CreateCall(ex->FindFunctionNamed("getLocal_short"), constant);
 				}
 				else
@@ -4362,27 +4362,27 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_locals[i]=stack_entry(t,STACK_OBJECT);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-					if(Log::getLevel()==LOG_TRACE)
+					if(Log::getLevel()>=LOG_CALLS)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), t, constant);
 				}
 				else if(static_locals[i].second==STACK_OBJECT)
 				{
 					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_TRACE)
+					if(Log::getLevel()>=LOG_CALLS)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), static_locals[i].first, constant);
 				}
 				else if(static_locals[i].second==STACK_INT)
 				{
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_TRACE)
+					if(Log::getLevel()>=LOG_CALLS)
 						Builder.CreateCall2(ex->FindFunctionNamed("getLocal_int"), constant, static_locals[i].first);
 				}
 				else if(static_locals[i].second==STACK_NUMBER ||
 						static_locals[i].second==STACK_BOOLEAN)
 				{
 					static_stack_push(static_stack,static_locals[i]);
-					if(Log::getLevel()==LOG_TRACE)
+					if(Log::getLevel()>=LOG_CALLS)
 						Builder.CreateCall(ex->FindFunctionNamed("getLocal_short"), constant);
 				}
 				else

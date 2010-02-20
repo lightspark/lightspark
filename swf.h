@@ -127,7 +127,6 @@ public:
 class SystemState: public RootMovieClip
 {
 public:
-	ASFUNCTION(getBounds);
 	void setUrl(const tiny_string& url);
 
 	bool shutdown;

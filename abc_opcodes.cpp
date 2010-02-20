@@ -56,13 +56,21 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 {
 	LOG(LOG_CALLS,"setProperty " << *name << ' ' << obj);
 
+	//We have to reset the level before finding a variable
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	if(tl.cur_this==obj)
+		obj->resetLevel();
+
 	obj->setVariableByMultiname(*name,value);
+	if(tl.cur_this==obj)
+		obj->setLevel(tl.cur_level);
+
 	obj->decRef();
 }
 
 void ABCVm::setProperty_i(intptr_t value,ASObject* obj,multiname* name)
 {
-	LOG(LOG_CALLS,"setProperty_i " << *name);
+	LOG(LOG_CALLS,"setProperty_i " << *name << ' ' <<obj);
 
 	obj->setVariableByMultiname_i(*name,value);
 	obj->decRef();
@@ -265,15 +273,17 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	if(obj->prototype)
 		LOG(LOG_CALLS,obj->prototype->class_name);
 
-	//Here overriding is supposed to work, so restore prototype and max_level
-	int oldlevel=obj->max_level;
-	if(obj->prototype)
-		obj->max_level=obj->prototype->max_level;
-	//Store the old prototype
-	Class_base* old_prototype=obj->actualPrototype;
-	obj->actualPrototype=obj->prototype;
+	//We have to reset the level, as we may be getting a function defined at a lower level
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	if(tl.cur_this==obj)
+		obj->resetLevel();
 
-	objAndLevel o=obj->getVariableByMultiname(*name);
+	//We should skip the special implementation of get
+	objAndLevel o=obj->getVariableByMultiname(*name, true);
+
+	if(tl.cur_this==obj)
+		obj->setLevel(tl.cur_level);
+
 	if(o.obj)
 	{
 		//Run the deferred initialization if needed
@@ -282,6 +292,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			LOG(LOG_CALLS,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o.obj);
 			d->define(obj);
+			assert(obj==getGlobal());
 			o=obj->getVariableByMultiname(*name);
 		}
 
@@ -292,7 +303,18 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			//Methods has to be runned with their own class this
 			//The owner has to be increffed
 			obj->incRef();
-			ASObject* ret=f->fast_call(obj,args,m,o.level);
+			ASObject* ret=NULL;
+			//HACK for Proxy, here till callProperty proxying is implemented
+			if(name->ns.size()==1 && name->ns[0].name==flash_proxy)
+			{
+				Proxy* p=dynamic_cast<Proxy*>(obj->implementation);
+				assert(p);
+				p->suppress=true;
+				ret=f->fast_call(obj,args,m,o.level);
+				p->suppress=false;
+			}
+			else
+				ret=f->fast_call(obj,args,m,o.level);
 			th->runtime_stack_push(ret);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
@@ -333,8 +355,6 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	}
 	LOG(LOG_CALLS,"End of calling " << *name);
 
-	obj->actualPrototype=old_prototype;
-	obj->max_level=oldlevel;
 	obj->decRef();
 	delete[] args;
 }
@@ -354,8 +374,20 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, "getProperty " << *name << ' ' << obj);
 
+	int v=getVm()->method_this_stack.size();
+
+	//We have to reset the level before finding a variable
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	if(tl.cur_this==obj)
+		obj->resetLevel();
+
 	objAndLevel ret=obj->getVariableByMultiname(*name);
+
+	if(tl.cur_this==obj)
+		obj->setLevel(tl.cur_level);
 	
+	assert(v==getVm()->method_this_stack.size());
+
 	if(ret.obj==NULL)
 	{
 		if(obj->prototype)
@@ -515,6 +547,9 @@ bool ABCVm::ifNE(ASObject* obj1, ASObject* obj2)
 
 bool ABCVm::ifNE_oi(ASObject* obj1, intptr_t val2)
 {
+	//HACK
+	if(obj1->getObjectType()==T_UNDEFINED)
+		return false;
 	bool ret=obj1->toInt()!=val2;
 	LOG(LOG_CALLS,"ifNE (" << ((ret)?"taken)":"not taken)"));
 
@@ -599,10 +634,10 @@ void ABCVm::construct(call_context* th, int m)
 		{
 			LOG(LOG_CALLS,"Building method traits");
 			for(int i=0;i<sf->mi->body->trait_count;i++)
-				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			sf->call(ret,&args,ret->max_level);
+			sf->call(ret,&args,0);
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;
@@ -702,23 +737,36 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	if(obj->prototype)
 		LOG(LOG_CALLS, obj->prototype->class_name);
 
-	//Here overriding is supposed to work, so restore prototype and max_level
-	int oldlevel=obj->max_level;
-	if(obj->prototype)
-		obj->max_level=obj->prototype->max_level;
-	//Store the old prototype
-	Class_base* old_prototype=obj->actualPrototype;
-	obj->actualPrototype=obj->prototype;
+	//We have to reset the level, as we may be getting a function defined at a lower level
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	if(tl.cur_this==obj)
+		obj->resetLevel();
 
-	objAndLevel o=obj->getVariableByMultiname(*name);
+	//We should skip the special implementation of get
+	objAndLevel o=obj->getVariableByMultiname(*name,true);
+
+	if(tl.cur_this==obj)
+		obj->setLevel(tl.cur_level);
+
 	if(o.obj)
 	{
 		//If o is already a function call it, otherwise find the Call method
 		if(o.obj->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o.obj);
+			IFunction* f=static_cast<IFunction*>(o.obj)->getOverride();
 			obj->incRef();
-			f->call(obj,&args,o.level);
+
+			//HACK for Proxy, here till callProperty proxying is implemented
+			if(name->ns.size()==1 && name->ns[0].name==flash_proxy)
+			{
+				Proxy* p=dynamic_cast<Proxy*>(obj->implementation);
+				assert(p);
+				p->suppress=true;
+				f->call(obj,&args,o.level);
+				p->suppress=false;
+			}
+			else
+				f->call(obj,&args,o.level);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
@@ -748,8 +796,6 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		}
 	}
 
-	obj->actualPrototype=old_prototype;
-	obj->max_level=oldlevel;
 	obj->decRef();
 	LOG(LOG_CALLS,"End of calling " << *name);
 }
@@ -1170,20 +1216,23 @@ void ABCVm::setSuper(call_context* th, int n)
 	LOG(LOG_CALLS,"setSuper " << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
-	//HACK (nice) set the max level to the current actual prototype before looking up the member
 	assert(obj->actualPrototype);
-	int oldlevel=obj->max_level;
-	obj->max_level=obj->actualPrototype->max_level-1;
 	//Store the old prototype
 	Class_base* old_prototype=obj->actualPrototype;
 
-	//Move the object protoype and level up
+	//Move the object prototype
 	obj->actualPrototype=old_prototype->super;
 
-	obj->setVariableByMultiname(*name,value);
+	//We modify the cur_level of obj
+	obj->decLevel();
 
-	//Set back the original max_level
-	obj->max_level=oldlevel;
+	obj->setVariableByMultiname(*name,value, false);
+
+	//And the reset it using the stack
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	//What if using [sg]etSuper not on this??
+	assert(tl.cur_this==obj);
+	tl.cur_this->setLevel(tl.cur_level);
 
 	//Reset prototype to its previous value
 	assert(obj->actualPrototype==old_prototype->super);
@@ -1198,20 +1247,28 @@ void ABCVm::getSuper(call_context* th, int n)
 	LOG(LOG_CALLS,"getSuper " << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
-	//HACK (nice) set the max level to the current actual prototype before looking up the member
 	assert(obj->actualPrototype);
-	int oldlevel=obj->max_level;
-	obj->max_level=obj->actualPrototype->max_level-1;
 	//Store the old prototype
 	Class_base* old_prototype=obj->actualPrototype;
 
 	//Move the object protoype and level up
 	obj->actualPrototype=old_prototype->super;
 
-	ASObject* o=obj->getVariableByMultiname(*name).obj;
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	//What if using [sg]etSuper not on this??
+	assert(tl.cur_this==obj);
 
-	//Set back the original max_level
-	obj->max_level=oldlevel;
+	//We modify the cur_level of obj
+	obj->decLevel();
+
+	//Should we skip implementation? I think it's reasonable
+	ASObject* o=obj->getVariableByMultiname(*name, true, false).obj;
+
+	tl=getVm()->getCurObjAndLevel();
+	//What if using [sg]etSuper not on this??
+	assert(tl.cur_this==obj);
+	//And the reset it using the stack
+	tl.cur_this->setLevel(tl.cur_level);
 
 	if(o)
 	{
@@ -1220,6 +1277,7 @@ void ABCVm::getSuper(call_context* th, int n)
 			LOG(LOG_CALLS,"We got an object not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
+			assert(obj==getGlobal());
 			o=obj->getVariableByMultiname(*name).obj;
 		}
 		o->incRef();
@@ -1244,9 +1302,18 @@ void ABCVm::getLex(call_context* th, int n)
 	LOG(LOG_CALLS, "getLex: " << *name );
 	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
 	ASObject* o;
+
+	//Find out the current 'this', when looking up over it, we have to consider all of it
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	for(it;it!=th->scope_stack.rend();it++)
 	{
+		if(*it==tl.cur_this)
+			tl.cur_this->resetLevel();
+
 		objAndLevel tmpo=(*it)->getVariableByMultiname(*name);
+		if(*it==tl.cur_this)
+			tl.cur_this->setLevel(tl.cur_level);
+
 		o=tmpo.obj;
 		if(o)
 		{
@@ -1262,6 +1329,7 @@ void ABCVm::getLex(call_context* th, int n)
 				LOG(LOG_CALLS,"Deferred definition of property " << *name);
 				Definable* d=static_cast<Definable*>(o);
 				d->define(*it);
+				assert(*it==getGlobal());
 				o=(*it)->getVariableByMultiname(*name).obj;
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
@@ -1321,18 +1389,20 @@ void ABCVm::constructSuper(call_context* th, int n)
 	obj->actualPrototype=old_prototype->super;
 	LOG(LOG_CALLS,"Super prototype name " << obj->actualPrototype->class_name);
 	assert(obj->actualPrototype);
-	int oldlevel=obj->max_level;
-	obj->max_level=obj->actualPrototype->max_level;
-	//multiname* name=th->context->getMultiname(th->context->instances[obj->actualPrototype->class_index].name,NULL);
-	//LOG(LOG_CALLS,"Constructing super " << *name);
 
-	obj->handleConstruction(&args, false, false);
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	assert(tl.cur_this==obj);
+	assert(tl.cur_level==obj->getLevel());
+	int level=obj->getLevel();
+	obj->decLevel();
+	//Check that current 'this' is the object
+	obj->handleConstruction(&args, false);
 	LOG(LOG_CALLS,"End super construct ");
+	obj->setLevel(level);
 
 	//Reset prototype to its previous value
 	assert(obj->actualPrototype==old_prototype->super);
 	obj->actualPrototype=old_prototype;
-	obj->max_level=oldlevel;
 
 	obj->decRef();
 }
@@ -1345,9 +1415,16 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
 	objAndLevel o(NULL,0);
 	ASObject* ret=NULL;
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	for(it;it!=th->scope_stack.rend();it++)
 	{
+		if(*it==tl.cur_this)
+			tl.cur_this->resetLevel();
+
 		o=(*it)->getVariableByMultiname(*name);
+		if(*it==tl.cur_this)
+			tl.cur_this->setLevel(tl.cur_level);
+
 		if(o.obj)
 		{
 			//We have to return the object, not the property
@@ -1374,9 +1451,15 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
 	objAndLevel o(NULL,0);
 	ASObject* ret=NULL;
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+
 	for(it;it!=th->scope_stack.rend();it++)
 	{
+		if(*it==tl.cur_this)
+			tl.cur_this->resetLevel();
 		o=(*it)->getVariableByMultiname(*name);
+		if(*it==tl.cur_this)
+			tl.cur_this->setLevel(tl.cur_level);
 		if(o.obj)
 		{
 			//We have to return the object, not the property
@@ -1458,20 +1541,26 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	LOG(LOG_CALLS,"callSuper " << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
-	//HACK (nice) set the max level to the current actual prototype before looking up the member
 	assert(obj->actualPrototype);
-	int oldlevel=obj->max_level;
-	obj->max_level=th->cur_level_of_this-1;
 	//Store the old prototype
 	Class_base* old_prototype=obj->actualPrototype;
 
 	//Move the object protoype and level up
 	obj->actualPrototype=old_prototype->super;
 
-	objAndLevel o=obj->getVariableByMultiname(*name);
+	//We modify the cur_level of obj
+	obj->decLevel();
 
-	//Set back the original max_level
-	obj->max_level=oldlevel;
+	int v=getVm()->method_this_stack.size();
+
+	//We should skip the special implementation of get
+	objAndLevel o=obj->getVariableByMultiname(*name, true, false);
+
+	//And the reset it using the stack
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	//What if using [sg]etSuper not on this??
+	assert(tl.cur_this==obj);
+	tl.cur_this->setLevel(tl.cur_level);
 
 	if(o.obj)
 	{
@@ -1534,6 +1623,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	assert(obj->actualPrototype==old_prototype->super);
 	obj->actualPrototype=old_prototype;
 
+	assert(v==getVm()->method_this_stack.size());
 	obj->decRef();
 	delete[] args;
 }
@@ -1549,20 +1639,24 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	//HACK (nice) set the max level to the current actual prototype before looking up the member
 	assert(obj->actualPrototype);
-	int oldlevel=obj->max_level;
-	obj->max_level=th->cur_level_of_this-1;
 	//Store the old prototype
 	Class_base* old_prototype=obj->actualPrototype;
 
 	//Move the object protoype and level up
 	obj->actualPrototype=old_prototype->super;
 
-	objAndLevel o=obj->getVariableByMultiname(*name);
+	//We modify the cur_level of obj
+	obj->decLevel();
 
-	//Set back the original max_level
-	obj->max_level=oldlevel;
+	//We should skip the special implementation of get
+	objAndLevel o=obj->getVariableByMultiname(*name, true);
+
+	//And the reset it using the stack
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	//What if using [sg]etSuper not on this??
+	assert(tl.cur_this==obj);
+	tl.cur_this->setLevel(tl.cur_level);
 
 	if(o.obj)
 	{
@@ -1754,7 +1848,16 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	LOG(LOG_CALLS,"constructProp "<< *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
+
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	if(tl.cur_this==obj)
+		obj->resetLevel();
+
 	ASObject* o=obj->getVariableByMultiname(*name).obj;
+
+	if(tl.cur_this==obj)
+		obj->setLevel(tl.cur_level);
+
 	if(o==NULL)
 	{
 		LOG(LOG_ERROR,"Could not resolve property");
@@ -1789,10 +1892,10 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		{
 			LOG(LOG_CALLS,"Building method traits");
 			for(int i=0;i<sf->mi->body->trait_count;i++)
-				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			sf->call(ret,&args,ret->max_level);
+			sf->call(ret,&args,0);
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;
@@ -1980,7 +2083,8 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		assert(tmp->getObjectType()==T_CLASS);
 		ret->super=static_cast<Class_base*>(tmp);
-		ret->max_level=tmp->max_level+1;
+		ret->max_level=ret->super->max_level+1;
+		ret->setLevel(ret->max_level);
 	}
 
 	method_info* m=&th->context->methods[th->context->classes[n].cinit];
@@ -1993,7 +2097,13 @@ void ABCVm::newClass(call_context* th, int n)
 
 	LOG(LOG_CALLS,"Building class traits");
 	for(int i=0;i<th->context->classes[n].trait_count;i++)
-		th->context->buildTrait(ret,&th->context->classes[n].traits[i]);
+	{
+		//When we build the traits we set the prototype to itself, so the level is correctly found
+		ret->actualPrototype=ret;
+		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
+		//Then we clean away this HACK
+		ret->actualPrototype=NULL;
+	}
 
 	//add Constructor the the class methods
 	ret->constructor=new SyntheticFunction(constructor);
@@ -2051,7 +2161,7 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act=new ASObject;
 	for(int i=0;i<info->body->trait_count;i++)
-		th->context->buildTrait(act,&info->body->traits[i]);
+		th->context->buildTrait(act,&info->body->traits[i],false);
 
 	return act;
 }
@@ -2076,18 +2186,19 @@ ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 
 void ABCVm::call(call_context* th, int m)
 {
-	LOG(LOG_CALLS,"call " << m);
 	arguments args(m);
 	for(int i=0;i<m;i++)
 		args.set(m-i-1,th->runtime_stack_pop());
 
 	ASObject* obj=th->runtime_stack_pop();
 	ASObject* f=th->runtime_stack_pop();
+	LOG(LOG_CALLS,"call " << m << ' ' << f);
 
 	if(f->getObjectType()==T_FUNCTION)
 	{
 		IFunction* func=static_cast<IFunction*>(f);
-		ASObject* ret=func->call(obj,&args,obj->max_level);
+		//TODO: check for correct level, member function are already binded
+		ASObject* ret=func->call(obj,&args,0);
 		//Push the value only if not null
 		if(ret)
 			th->runtime_stack_push(ret);
@@ -2101,6 +2212,7 @@ void ABCVm::call(call_context* th, int m)
 		LOG(LOG_NOT_IMPLEMENTED,"Function not good");
 		th->runtime_stack_push(new Undefined);
 	}
+	LOG(LOG_CALLS,"End of call " << m << ' ' << f);
 
 }
 

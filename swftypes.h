@@ -389,7 +389,6 @@ private:
 	void setSlot(int n,ASObject* o);
 	void initSlot(int n,int level, const tiny_string& name, const tiny_string& ns);
 	ASObject* getVariableByString(const std::string& name);
-	void dumpVariables();
 	int size() const
 	{
 		return Variables.size();
@@ -397,6 +396,8 @@ private:
 	tiny_string getNameAt(int i);
 	obj_var* getValueAt(int i, int& level);
 	~variables_map();
+public:
+	void dumpVariables();
 };
 
 class ASObject
@@ -415,9 +416,10 @@ private:
 	int ref_count;
 	Manager* manager;
 	void recursiveBuild(const Class_base* cur);
+	int cur_level;
+	virtual int _maxlevel();
 public:
 	IInterface* implementation;
-	int max_level;
 	Class_base* prototype;
 	Class_base* actualPrototype;
 	void acquireInterface(IInterface* i);
@@ -427,10 +429,7 @@ public:
 	ASFUNCTION(_setPrototype);
 	ASFUNCTION(_toString);
 	virtual ~ASObject();
-	void check()
-	{
-		assert(ref_count>0);
-	}
+	void check();
 	void incRef()
 	{
 		//std::cout << "incref " << this << std::endl;
@@ -480,11 +479,12 @@ public:
 		ASObject* ret=Variables.getVariableByString(name);
 		return ret;
 	}
-	virtual objAndLevel getVariableByMultiname(const multiname& name);
+	//The enableOverride parameter is set to false in setSuper, getSuper and callSuper
+	virtual objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true );
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
 	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
-	virtual void setVariableByMultiname(const multiname& name, ASObject* o);
+	virtual void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
 	virtual void deleteVariableByMultiname(const multiname& name);
 	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
@@ -499,10 +499,7 @@ public:
 	{
 		Variables.setSlot(n,o);
 	}
-	virtual void initSlot(int n,const tiny_string& name, const tiny_string& ns)
-	{
-		Variables.initSlot(n,max_level,name,ns);
-	}
+	virtual void initSlot(int n,const tiny_string& name, const tiny_string& ns);
 	virtual int numVariables();
 	tiny_string getNameAt(int i)
 	{
@@ -519,7 +516,23 @@ public:
 	virtual bool isLess(ASObject* r);
 	virtual bool isGreater(ASObject* r);
 
-	void handleConstruction(arguments* args, bool linkInterfaces, bool buildTraits);
+	void handleConstruction(arguments* args, bool buildAndLink);
+
+	//Level handling
+	int getLevel() const
+	{
+		return cur_level;
+	}
+	void decLevel()
+	{
+		assert(cur_level>0);
+		cur_level--;
+	}
+	void setLevel(int l)
+	{
+		cur_level=l;
+	}
+	void resetLevel();
 };
 
 class IInterface

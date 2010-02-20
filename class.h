@@ -57,7 +57,6 @@ private:
 	T* getInstance(bool construct, arguments* args)
 	{
 		ASObject* obj=new ASObject;
-		obj->max_level=max_level;
 		obj->prototype=this;
 		obj->actualPrototype=this;
 		//TODO: Add interface T to ret
@@ -67,7 +66,7 @@ private:
 		//As we are the prototype we should incRef ourself
 		incRef();
 		if(construct)
-			ret->obj->handleConstruction(args,true,true);
+			ret->obj->handleConstruction(args,true);
 		return ret;
 	}
 public:
@@ -82,7 +81,6 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		ASObject* obj=new ASObject;
 		//TODO: Add interface T to ret
-		obj->max_level=c->max_level;
 		obj->prototype=c;
 		obj->actualPrototype=c;
 		T* ret=new T(a1);
@@ -91,7 +89,7 @@ public:
 		//As we are the prototype we should incRef ourself
 		c->incRef();
 		if(construct)
-			obj->handleConstruction(NULL,true,true);
+			obj->handleConstruction(NULL,true);
 		return ret;
 	}
 	template <typename ARG1, typename ARG2>
@@ -100,7 +98,6 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		ASObject* obj=new ASObject;
 		//TODO: Add interface T to ret
-		obj->max_level=c->max_level;
 		obj->prototype=c;
 		obj->actualPrototype=c;
 		T* ret=new T(a1,a2);
@@ -109,7 +106,7 @@ public:
 		//As we are the prototype we should incRef ourself
 		c->incRef();
 		if(construct)
-			obj->handleConstruction(NULL,true,true);
+			obj->handleConstruction(NULL,true);
 		return ret;
 	}
 	static Class<T>* getClass(const tiny_string& name)

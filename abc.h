@@ -185,8 +185,6 @@ struct call_context
 	} PACKED;
 #include "packed_end.h"
 	ABCContext* context;
-	//We have to keep track of what is the level in the hierarchy for the currently executed function
-	const int cur_level_of_this;
 	int locals_size;
 	std::vector<ASObject*> scope_stack;
 	void runtime_stack_push(ASObject* s);
@@ -398,13 +396,20 @@ public:
 	std::vector<script_info> scripts;
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
-	void buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
+	void buildTrait(ASObject* obj, const traits_info* t, bool bind, IFunction* deferred_initialization=NULL);
 	void linkTrait(ASObject* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
 	multiname* getMultiname(unsigned int m, call_context* th);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in);
 	void exec();
+};
+
+struct thisAndLevel
+{
+	ASObject* cur_this;
+	int cur_level;
+	thisAndLevel(ASObject* t,int l):cur_this(t),cur_level(l){}
 };
 
 class ABCVm
@@ -590,6 +595,10 @@ private:
 
 	//Interpreter
 
+	//These are used to keep track of the current 'this' for class methods, and relative level
+	//It's sane to have them per-Vm, as anyway the vm is single by specs, single threaded
+	std::vector<thisAndLevel> method_this_stack;
+
 public:
 	ASObject Global;
 	llvm::ExecutionEngine* ex;
@@ -601,6 +610,13 @@ public:
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
 	void addEvent(EventDispatcher*,Event*);
 	void wait();
+
+	void pushObjAndLevel(ASObject* o, int l);
+	thisAndLevel popObjAndLevel();
+	thisAndLevel getCurObjAndLevel()
+	{
+		return method_this_stack.back();
+	}
 };
 
 class DoABCTag: public ControlTag

@@ -17,12 +17,14 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "abc.h"
 #include "flashgeom.h"
 #include "class.h"
 
 using namespace lightspark;
 using namespace std;
 
+REGISTER_CLASS_NAME(Transform);
 REGISTER_CLASS_NAME(ColorTransform);
 REGISTER_CLASS_NAME(Point);
 REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle");
@@ -192,3 +194,15 @@ ASFUNCTIONBODY(Point,_getY)
 	Point* th=static_cast<Point*>(obj->implementation);
 	return abstract_d(th->y);
 }
+
+void Transform::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	//c->constructor=new Function(_constructor);
+}
+
+void Transform::buildTraits(ASObject* o)
+{
+	o->setSetterByQName("colorTransform","",new Function(undefinedFunction));
+}
+

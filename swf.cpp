@@ -1212,7 +1212,3 @@ long lightspark::timeDiff(timespec& s, timespec& d)
 	return temp.tv_sec*1000+(temp.tv_nsec)/1000000;
 }
 
-ASFUNCTIONBODY(SystemState,getBounds)
-{
-	return new Undefined;
-}

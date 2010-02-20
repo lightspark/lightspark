@@ -831,7 +831,7 @@ bool Number::isEqual(ASObject* o)
 		return val==o->toNumber();
 	else
 	{
-		return ASObject::isLess(o);
+		return ASObject::isEqual(o);
 	}
 }
 
@@ -1028,6 +1028,16 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 		LOG(LOG_CALLS,"Calling with closure " << this);
 		obj=closure_this;
 	}
+	//As we are changing execution context (e.g. 'this' and level), reset the level of the current
+	//object and add the new 'this' and level to the stack
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	tl.cur_this->resetLevel();
+	if(closure_this)
+	{
+		getVm()->pushObjAndLevel(closure_this,closure_level);
+		//Set the current level
+		closure_this->setLevel(closure_level);
+	}
 
 	cc->locals[0]=obj;
 	obj->incRef();
@@ -1063,6 +1073,16 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	else
 		ret=val(cc);
 
+	//Now pop this context and reset the level correctly
+	if(closure_this)
+	{
+		tl=getVm()->popObjAndLevel();
+		assert(tl.cur_this==closure_this);
+		assert(tl.cur_this->getLevel()==closure_level);
+		closure_this->resetLevel();
+	}
+	tl=getVm()->getCurObjAndLevel();
+	tl.cur_this->setLevel(tl.cur_level);
 
 	delete cc;
 	hit_count++;
@@ -1476,14 +1496,23 @@ IInterface* Class_inherit::getInstance(bool construct, arguments* args)
 	assert(super);
 	//Our super should not construct, we are going to do it ourselves
 	IInterface* ret=super->getInstance(false,args);
-	ret->obj->max_level=max_level;
 	ret->obj->prototype->decRef();
 	ret->obj->prototype=this;
 	ret->obj->actualPrototype=this;
 	//As we are the prototype we should incRef ourself
 	incRef();
 	if(construct)
-		ret->obj->handleConstruction(args,true,true);
+	{
+		//This should be done only for Class_inherit
+		thisAndLevel tl=getVm()->getCurObjAndLevel();
+		tl.cur_this->resetLevel();
+		getVm()->pushObjAndLevel(ret->obj,max_level);
+		ret->obj->handleConstruction(args,true);
+		tl=getVm()->popObjAndLevel();
+		assert(tl.cur_this==ret->obj);
+		tl=getVm()->getCurObjAndLevel();
+		tl.cur_this->setLevel(tl.cur_level);
+	}
 	return ret;
 }
 
@@ -1493,13 +1522,7 @@ void Class_inherit::buildInstanceTraits(ASObject* o) const
 	//The class is declared in the script and has an index
 	LOG(LOG_CALLS,"Building instance traits");
 
-	//To insert the trait in the rigth level we have to change the max_level
-	int oldlevel=o->max_level;
-	o->max_level=max_level;
-
 	context->buildInstanceTraits(o,class_index);
-
-	o->max_level=oldlevel;
 }
 
 Class_object* Class_object::getClass()
@@ -1561,7 +1584,7 @@ void Class_base::linkInterface(ASObject* obj) const
 	if(constructor)
 	{
 		LOG(LOG_CALLS,"Calling interface init for " << class_name);
-		constructor->call(obj,NULL,obj->max_level);
+		constructor->call(obj,NULL,max_level);
 	}
 }
 
@@ -1649,6 +1672,7 @@ void InterfaceClass::lookupAndLink(ASObject* o, const tiny_string& name, const t
 {
 	ASObject* ret=o->getVariableByQName(name,"").obj;
 	assert(ret);
+	ret->incRef();
 	o->setVariableByQName(name,interfaceNs,ret);
 }
 

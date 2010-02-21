@@ -36,6 +36,13 @@ REGISTER_CLASS_NAME(TimerEvent);
 REGISTER_CLASS_NAME(ProgressEvent);
 REGISTER_CLASS_NAME(IOErrorEvent);
 REGISTER_CLASS_NAME(FocusEvent);
+REGISTER_CLASS_NAME(NetStatusEvent);
+REGISTER_CLASS_NAME(FullScreenEvent);
+REGISTER_CLASS_NAME(KeyboardEvent);
+REGISTER_CLASS_NAME(TextEvent);
+REGISTER_CLASS_NAME(ErrorEvent);
+REGISTER_CLASS_NAME(SecurityErrorEvent);
+REGISTER_CLASS_NAME(AsyncErrorEvent);
 
 void IEventDispatcher::linkTraits(ASObject* o)
 {
@@ -123,12 +130,6 @@ ASFUNCTIONBODY(FocusEvent,_constructor)
 {
 }
 
-KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
-{
-//	setVariableByQName("KEY_DOWN","",new ASString("keyDown"));
-//	setVariableByQName("KEY_UP","",new ASString("keyUp"));
-}
-
 MouseEvent::MouseEvent():Event("mouseEvent")
 {
 }
@@ -193,22 +194,13 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS(true,"rollOut")->obj);
 }
 
-IOErrorEvent::IOErrorEvent():Event("IOErrorEvent")
+IOErrorEvent::IOErrorEvent()
 {
 }
 
 void IOErrorEvent::sinit(Class_base* c)
 {
 	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS(true,"ioError")->obj);
-}
-
-void FakeEvent::sinit(Class_base* c)
-{
-	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS(true,"securityError")->obj);
-	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS(true,"error")->obj);
-	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS(true,"keyDown")->obj);
-	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS(true,"keyUp")->obj);
-	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS(true,"fullScreen")->obj);
 }
 
 EventDispatcher::EventDispatcher():id(0)
@@ -365,3 +357,124 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 	else
 		return true;
 }
+
+NetStatusEvent::NetStatusEvent():Event("netStatusEvent")
+{
+}
+
+void NetStatusEvent::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->setVariableByQName("NET_STATUS","",Class<ASString>::getInstanceS(true,"netStatus")->obj);
+}
+
+ASFUNCTIONBODY(NetStatusEvent,_constructor)
+{
+}
+
+FullScreenEvent::FullScreenEvent():Event("fullScreenEvent")
+{
+}
+
+void FullScreenEvent::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS(true,"fullScreen")->obj);
+}
+
+ASFUNCTIONBODY(FullScreenEvent,_constructor)
+{
+}
+
+KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
+{
+}
+
+void KeyboardEvent::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS(true,"keyDown")->obj);
+	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS(true,"keyUp")->obj);
+}
+
+ASFUNCTIONBODY(KeyboardEvent,_constructor)
+{
+}
+
+TextEvent::TextEvent():Event("textEvent")
+{
+}
+
+void TextEvent::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+ASFUNCTIONBODY(TextEvent,_constructor)
+{
+	Event::_constructor(obj,args);
+}
+
+ErrorEvent::ErrorEvent()
+{
+}
+
+void ErrorEvent::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->super=Class<TextEvent>::getClass();
+	c->max_level=c->super->max_level+1;
+
+	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS(true,"error")->obj);
+}
+
+ASFUNCTIONBODY(ErrorEvent,_constructor)
+{
+	TextEvent::_constructor(obj,args);
+}
+
+SecurityErrorEvent::SecurityErrorEvent()
+{
+}
+
+void SecurityErrorEvent::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->super=Class<ErrorEvent>::getClass();
+	c->max_level=c->super->max_level+1;
+
+	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS(true,"securityError")->obj);
+}
+
+ASFUNCTIONBODY(SecurityErrorEvent,_constructor)
+{
+	ErrorEvent::_constructor(obj,args);
+}
+
+AsyncErrorEvent::AsyncErrorEvent()
+{
+}
+
+void AsyncErrorEvent::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->super=Class<ErrorEvent>::getClass();
+	c->max_level=c->super->max_level+1;
+
+	c->setVariableByQName("ASYNC_ERROR","",Class<ASString>::getInstanceS(true,"asyncError")->obj);
+}
+
+ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
+{
+	ErrorEvent::_constructor(obj,args);
+}
+

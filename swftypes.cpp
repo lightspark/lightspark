@@ -282,6 +282,11 @@ bool Integer::isEqual(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 		return val==o->toInt();
+	else if(o->getObjectType()==T_UINTEGER)
+	{
+		//CHECK: somehow wrong
+		return val==o->toInt();
+	}
 	else if(o->getObjectType()==T_NUMBER)
 		return val==o->toInt();
 	else

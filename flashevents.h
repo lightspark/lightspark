@@ -52,17 +52,73 @@ public:
 	ASObject* target;
 };
 
-class FakeEvent: public Event
+class KeyboardEvent: public Event
 {
 public:
-	FakeEvent():Event("fakeEvent"){}
+	KeyboardEvent();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
 	}
+	ASFUNCTION(_constructor);
 };
 
-class IOErrorEvent: public Event
+class FocusEvent: public Event
+{
+public:
+	FocusEvent();
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+	ASFUNCTION(_constructor);
+};
+
+class FullScreenEvent: public Event
+{
+public:
+	FullScreenEvent();
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+	ASFUNCTION(_constructor);
+};
+
+class NetStatusEvent: public Event
+{
+public:
+	NetStatusEvent();
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+	ASFUNCTION(_constructor);
+};
+
+class TextEvent: public Event
+{
+public:
+	TextEvent();
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+	ASFUNCTION(_constructor);
+};
+
+class ErrorEvent: public TextEvent
+{
+public:
+	ErrorEvent();
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+	ASFUNCTION(_constructor);
+};
+
+class IOErrorEvent: public ErrorEvent
 {
 public:
 	IOErrorEvent();
@@ -72,20 +128,21 @@ public:
 	}
 };
 
-class KeyboardEvent: public Event
+class SecurityErrorEvent: public ErrorEvent
 {
 public:
-	KeyboardEvent();
+	SecurityErrorEvent();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{
 	}
+	ASFUNCTION(_constructor);
 };
 
-class FocusEvent: public Event
+class AsyncErrorEvent: public ErrorEvent
 {
 public:
-	FocusEvent();
+	AsyncErrorEvent();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{

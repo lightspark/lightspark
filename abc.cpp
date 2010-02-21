@@ -206,13 +206,15 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("ProgressEvent","flash.events",Class<ProgressEvent>::getClass());
 	Global.setVariableByQName("TimerEvent","flash.events",Class<TimerEvent>::getClass());
 	Global.setVariableByQName("IOErrorEvent","flash.events",Class<IOErrorEvent>::getClass());
-	Global.setVariableByQName("SecurityErrorEvent","flash.events",Class<FakeEvent>::getClass("SecurityErrorEvent"));
-	Global.setVariableByQName("FullScreenEvent","flash.events",Class<FakeEvent>::getClass("FullScreenEvent"));
-	Global.setVariableByQName("TextEvent","flash.events",Class<FakeEvent>::getClass("TextEvent"));
-	Global.setVariableByQName("ErrorEvent","flash.events",Class<FakeEvent>::getClass("ErrorEvent"));
+	Global.setVariableByQName("ErrorEvent","flash.events",Class<ErrorEvent>::getClass());
+	Global.setVariableByQName("SecurityErrorEvent","flash.events",Class<SecurityErrorEvent>::getClass());
+	Global.setVariableByQName("AsyncErrorEvent","flash.events",Class<AsyncErrorEvent>::getClass());
+	Global.setVariableByQName("FullScreenEvent","flash.events",Class<FullScreenEvent>::getClass());
+	Global.setVariableByQName("TextEvent","flash.events",Class<TextEvent>::getClass());
 	Global.setVariableByQName("IEventDispatcher","flash.events",Class<IEventDispatcher>::getClass());
 	Global.setVariableByQName("FocusEvent","flash.events",Class<FocusEvent>::getClass());
-	Global.setVariableByQName("KeyboardEvent","flash.events",Class<FakeEvent>::getClass("KeyboardEvent"));
+	Global.setVariableByQName("NetStatusEvent","flash.events",Class<NetStatusEvent>::getClass());
+	Global.setVariableByQName("KeyboardEvent","flash.events",Class<KeyboardEvent>::getClass());
 
 	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
 	Global.setVariableByQName("NetConnection","flash.net",Class<NetConnection>::getClass());

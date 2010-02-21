@@ -252,26 +252,7 @@ ASFUNCTIONBODY(ASXML,load)
 {
 	ASXML* th=static_cast<ASXML*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Called ASXML::load " << args->at(0)->toString());
-/*	CURL *curl;
-	CURLcode res;
-	curl = curl_easy_init();
-	string base("www.youtube.com");
-	string url=base+args->at(0)->toString();
-	if(curl)
-	{
-		curl_easy_setopt(curl, CURLOPT_URL, (string(url)).c_str());
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, obj);
-		res = curl_easy_perform(curl);
-		curl_easy_cleanup(curl);
-	}
-	xmlDocPtr doc=xmlReadMemory(th->xml_buf,th->xml_index,(string(url)).c_str(),NULL,0);
-
-	bool found;
-	IFunction* on_load=obj->getVariableByName("onLoad",found)->toFunction();
-	arguments a;
-	a.push(new Integer(1));
-	on_load->call(NULL,&a);*/
+	abort();
 	return new Integer(1);
 }
 

@@ -27,6 +27,27 @@
 namespace lightspark
 {
 
+class CurlDownloader
+{
+private:
+	uint8_t* buffer;
+	int len;
+	int offset;
+	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
+	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
+public:
+	CurlDownloader():buffer(NULL),len(0),offset(0){}
+	bool download(const tiny_string& s);
+	uint8_t* getBuffer()
+	{
+		return buffer;
+	}
+	int getLen()
+	{
+		return len;
+	}
+};
+
 class URLRequest: public IInterface
 {
 friend class Loader;
@@ -65,8 +86,6 @@ private:
 	tiny_string dataFormat;
 	URLRequest* urlRequest;
 	ASObject* data;
-	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
-	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
 public:
 	URLLoader();
 	static void sinit(Class_base*);
@@ -76,6 +95,15 @@ public:
 	ASFUNCTION(_getDataFormat);
 	ASFUNCTION(_getData);
 	ASFUNCTION(_setDataFormat);
+	void execute();
+};
+
+class NetConnection: public EventDispatcher, public IThreadJob
+{
+public:
+	NetConnection();
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	void execute();
 };
 

@@ -215,6 +215,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("KeyboardEvent","flash.events",Class<FakeEvent>::getClass("KeyboardEvent"));
 
 	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
+	Global.setVariableByQName("NetConnection","flash.net",Class<NetConnection>::getClass());
 	Global.setVariableByQName("URLLoader","flash.net",Class<URLLoader>::getClass());
 	Global.setVariableByQName("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getClass());
 	Global.setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass());

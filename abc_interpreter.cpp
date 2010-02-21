@@ -1607,7 +1607,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				s24 t;
 				code >> t;
 
-				int here=code2.tellg();
+				int here=code.tellg();
 				int dest=here+t;
 
 				//Now 'jump' to the destination, validate on the length

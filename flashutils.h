@@ -46,9 +46,12 @@ public:
 	ASFUNCTION(_getPosition);
 	ASFUNCTION(_setPosition);
 	ASFUNCTION(readBytes);
+
+	void acquireBuffer(uint8_t* buf, int bufLen);
+	uint8_t* getBuffer(unsigned int size);
+
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	uint8_t* getBuffer(unsigned int size);
 	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 	{
 		abort();

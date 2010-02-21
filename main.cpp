@@ -124,6 +124,7 @@ int main(int argc, char* argv[])
 #endif
 
 	Log::initLogging(log_level);
+	//NOTE: see SystemState declaration
 	sys=new SystemState;
 	fps_profs.push_back(fps_profiling());
 	sys->fps_prof=&fps_profs.back();

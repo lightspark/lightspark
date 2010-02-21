@@ -132,6 +132,8 @@ public:
 	bool shutdown;
 	void setShutdownFlag();
 
+	//Be careful, SystemState constructor does some global initialization that must be done
+	//before any other thread gets started
 	SystemState();
 	~SystemState();
 	fps_profiling* fps_prof;

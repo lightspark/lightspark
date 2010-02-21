@@ -185,6 +185,15 @@ bool ByteArray::isEqual(bool& ret, ASObject* r)
 	abort();
 }
 
+void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
+{
+	if(bytes)
+		delete[] bytes;
+	bytes=buf;
+	len=bufLen;
+	position=0;
+}
+
 void Timer::execute()
 {
 	while(running)

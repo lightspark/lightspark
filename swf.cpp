@@ -37,6 +37,7 @@
 #include "class.h"
 
 #include <GL/glew.h>
+#include <curl/curl.h>
 #ifndef WIN32
 //#include <GL/glext.h>
 #include <GL/glx.h>
@@ -97,6 +98,9 @@ void RootMovieClip::bindToName(const tiny_string& n)
 
 SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),useInterpreter(false),RootMovieClip(NULL)
 {
+	//Do needed global initialization
+	curl_global_init(CURL_GLOBAL_ALL);
+
 	sys=this;
 	sem_init(&new_frame,0,0);
 	loaderInfo=Class<LoaderInfo>::getInstanceS(true);

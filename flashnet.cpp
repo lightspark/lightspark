@@ -30,6 +30,7 @@ REGISTER_CLASS_NAME(URLLoaderDataFormat);
 REGISTER_CLASS_NAME(URLRequest);
 REGISTER_CLASS_NAME(SharedObject);
 REGISTER_CLASS_NAME(ObjectEncoding);
+REGISTER_CLASS_NAME(NetConnection);
 
 URLRequest::URLRequest()
 {
@@ -113,70 +114,24 @@ ASFUNCTIONBODY(URLLoader,load)
 	return NULL;
 }
 
-struct bufferAndOffset
-{
-	ByteArray* byteArray;
-	int offset;
-//	bufferAndOffset(uint8_t* b,int s):buffer(b),size(s),offset(0){}
-	bufferAndOffset():byteArray(NULL),offset(0){}
-};
-
 void URLLoader::execute()
 {
-	CURL *curl;
-	CURLcode res;
-	curl = curl_easy_init();
-	bool done=false;
-	bufferAndOffset* b=new bufferAndOffset;
-	if(curl)
-	{
-		curl_easy_setopt(curl, CURLOPT_URL, urlRequest->url.raw_buf());
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, b);
-		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);
-		curl_easy_setopt(curl, CURLOPT_HEADERDATA, b);
-		res = curl_easy_perform(curl);
-		if(res==0)
-			done=true;
-		curl_easy_cleanup(curl);
-	}
+	CurlDownloader curlDownloader;
 
+	bool done=curlDownloader.download(urlRequest->url);
 	if(done)
 	{
-		data=b->byteArray->obj;
+		ByteArray* byteArray=Class<ByteArray>::getInstanceS(true);
+		byteArray->acquireBuffer(curlDownloader.getBuffer(),curlDownloader.getLen());
+		data=byteArray->obj;
 		//Send a complete event for this object
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"complete",obj));
 	}
 	else
 	{
-		assert(b->byteArray==NULL);
 		//Notify an error during loading
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"ioError",obj));
 	}
-	delete b;
-}
-
-size_t URLLoader::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
-{
-	bufferAndOffset* bo=(bufferAndOffset*)userp;
-	memcpy(bo->byteArray->bytes + bo->offset,buffer,size*nmemb);
-	bo->offset+=(size*nmemb);
-	return size*nmemb;
-}
-
-size_t URLLoader::write_header(void *buffer, size_t size, size_t nmemb, void *userp)
-{
-	bufferAndOffset* bo=(bufferAndOffset*)userp;
-	char* headerLine=(char*)buffer;
-	//Now read the length and allocate the byteArray
-	if(strncmp(headerLine,"Content-Length: ",16)==0)
-	{
-		assert(bo->byteArray==NULL);
-		int len=atoi(headerLine+16);
-		bo->byteArray=Class<ByteArray>::getInstanceS(true);
-		bo->byteArray->getBuffer(len);
-	}
-	return size*nmemb;
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
@@ -220,3 +175,69 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("AMF3","",new Integer(3));
 	c->setVariableByQName("DEFAULT","",new Integer(3));
 };
+
+NetConnection::NetConnection()
+{
+}
+
+void NetConnection::sinit(Class_base* c)
+{
+	//assert(c->constructor==NULL);
+	//c->constructor=new Function(_constructor);
+	c->super=Class<EventDispatcher>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void NetConnection::buildTraits(ASObject* o)
+{
+}
+
+void NetConnection::execute()
+{
+	abort();
+}
+
+bool CurlDownloader::download(const tiny_string& s)
+{
+	CURL *curl;
+	CURLcode res;
+	curl = curl_easy_init();
+	bool ret=false;
+	if(curl)
+	{
+		curl_easy_setopt(curl, CURLOPT_URL, s.raw_buf());
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
+		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);
+		curl_easy_setopt(curl, CURLOPT_HEADERDATA, this);
+		res = curl_easy_perform(curl);
+		if(res==0)
+			ret=true;
+		curl_easy_cleanup(curl);
+	}
+
+	return ret;
+}
+
+size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
+	memcpy(th->buffer + th->offset,buffer,size*nmemb);
+	th->offset+=(size*nmemb);
+	return size*nmemb;
+}
+
+size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
+	char* headerLine=(char*)buffer;
+	if(strncmp(headerLine,"Content-Length: ",16)==0)
+	{
+		//Now read the length and allocate the byteArray
+		assert(th->buffer==NULL);
+		th->len=atoi(headerLine+16);
+		th->buffer=new uint8_t[th->len];
+	}
+	return size*nmemb;
+}
+

@@ -215,10 +215,11 @@ ASFUNCTIONBODY(Timer,_constructor)
 	obj->setVariableByQName("start","",new Function(start));
 	obj->setVariableByQName("reset","",new Function(reset));
 
-	assert(args->size()==1);
-
-	//Set only the delay for now
 	th->delay=args->at(0)->toInt();
+	if(args->size()>=1)
+		th->repeatCount=args->at(1)->toInt();
+
+	return NULL;
 }
 
 ASFUNCTIONBODY(Timer,start)

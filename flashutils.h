@@ -67,9 +67,10 @@ private:
 	void execute();
 protected:
 	uint32_t delay;
+	uint32_t repeatCount;
 	bool running;
 public:
-	Timer():delay(0),running(false){};
+	Timer():delay(0),running(false),repeatCount(0){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(start);

@@ -72,6 +72,8 @@ public:
 	ASFUNCTION(_setX);
 	ASFUNCTION(_getY);
 	ASFUNCTION(_setY);
+	ASFUNCTION(_getMask);
+	ASFUNCTION(_getAlpha);
 	ASFUNCTION(_getScaleX);
 	ASFUNCTION(_getScaleY);
 	ASFUNCTION(_getLoaderInfo);

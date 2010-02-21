@@ -170,7 +170,7 @@ void ABCVm::getLocal_int(int n, int v)
 
 void ABCVm::getLocal(ASObject* o, int n)
 {
-	LOG(LOG_CALLS,"getLocal[" << n << "] (" << o << ") " << o->toString());
+	LOG(LOG_CALLS,"getLocal[" << n << "] (" << o << ") " << o->toString(true));
 }
 
 void ABCVm::getLocal_short(int n)
@@ -190,7 +190,7 @@ void ABCVm::setLocal_int(int n, int v)
 
 void ABCVm::setLocal_obj(int n, ASObject* v)
 {
-	LOG(LOG_CALLS,"setLocal[" << n << "] = " << v->toString());
+	LOG(LOG_CALLS,"setLocal[" << n << "] = " << v->toString(true));
 }
 
 intptr_t ABCVm::pushShort(intptr_t n)

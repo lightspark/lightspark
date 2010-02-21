@@ -617,9 +617,9 @@ void DisplayObject::buildTraits(ASObject* o)
 	o->setVariableByQName("getBounds","",new Function(_getBounds));
 	o->setVariableByQName("localToGlobal","",new Function(localToGlobal));
 	o->setSetterByQName("name","",new Function(_setName));
-	o->setGetterByQName("mask","",new Function(undefinedFunction));
+	o->setGetterByQName("mask","",new Function(_getMask));
 	o->setSetterByQName("mask","",new Function(undefinedFunction));
-	o->setGetterByQName("alpha","",new Function(undefinedFunction));
+	o->setGetterByQName("alpha","",new Function(_getAlpha));
 	o->setSetterByQName("alpha","",new Function(undefinedFunction));
 	o->setGetterByQName("cacheAsBitmap","",new Function(undefinedFunction));
 	o->setSetterByQName("cacheAsBitmap","",new Function(undefinedFunction));
@@ -628,6 +628,18 @@ void DisplayObject::buildTraits(ASObject* o)
 
 	//This is from InteractiveObject
 	o->setSetterByQName("mouseEnabled","",new Function(undefinedFunction));
+}
+
+ASFUNCTIONBODY(DisplayObject,_getAlpha)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	return abstract_d(1);
+}
+
+ASFUNCTIONBODY(DisplayObject,_getMask)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	return new Null;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScaleX)

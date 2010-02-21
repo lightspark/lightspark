@@ -507,7 +507,7 @@ public:
 	}
 	ASObject* getValueAt(int i);
 	SWFOBJECT_TYPE getObjectType() const;
-	virtual tiny_string toString() const;
+	virtual tiny_string toString(bool debugMsg=false);
 	virtual int32_t toInt() const;
 	virtual uint32_t toUInt() const;
 	virtual double toNumber() const;

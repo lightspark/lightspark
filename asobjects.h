@@ -115,7 +115,7 @@ public:
 	void linkInterface(ASObject* obj) const;
 	bool isSubClass(const Class_base* cls) const;
 	tiny_string getQualifiedClassName() const;
-	virtual tiny_string toString() const;
+	tiny_string toString(bool debugMsg);
 };
 
 class Class_object: public Class_base
@@ -328,7 +328,7 @@ public:
 		return val;
 	}
 	bool isEqual(ASObject* r);
-	tiny_string toString() const;
+	tiny_string toString(bool debugMsg);
 };
 
 class Undefined : public ASObject
@@ -336,7 +336,7 @@ class Undefined : public ASObject
 public:
 	ASFUNCTION(call);
 	Undefined();
-	tiny_string toString() const;
+	tiny_string toString(bool debugMsg);
 	bool isEqual(ASObject* r);
 	virtual ~Undefined(){}
 };
@@ -368,6 +368,14 @@ public:
 	ASFUNCTION(charCodeAt);
 	ASFUNCTION(toLowerCase);
 	bool isEqual(bool& ret, ASObject* o);
+	bool isLess(bool& ret, ASObject* o)
+	{
+		abort();
+	}
+	bool isGrater(bool& ret, ASObject* o)
+	{
+		abort();
+	}
 	bool isGreater(bool& ret, ASObject* o);
 	bool toString(tiny_string& ret);
 };
@@ -376,7 +384,7 @@ class Null: public ASObject
 {
 public:
 	Null(){type=T_NULL;}
-	tiny_string toString() const;
+	tiny_string toString(bool debugMsg);
 	bool isEqual(ASObject* r);
 };
 
@@ -524,8 +532,7 @@ public:
 	}
 	ASFUNCTION(_toString);
 	virtual ~Integer(){}
-	//Integer& operator=(int v){val=v; return *this; }
-	tiny_string toString() const;
+	tiny_string toString(bool debugMsg);
 	int32_t toInt() const
 	{
 		return val;
@@ -534,7 +541,6 @@ public:
 	{
 		return val;
 	}
-//	operator int() const{return val;} 
 	bool isLess(ASObject* r);
 	bool isGreater(ASObject* r);
 	bool isEqual(ASObject* o);
@@ -547,9 +553,8 @@ private:
 public:
 	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
 
-	//Integer& operator=(int v){val=v; return *this; }
 	static void sinit(Class_base* c);
-	tiny_string toString() const
+	tiny_string toString(bool debugMsg)
 	{
 		abort();
 	}
@@ -567,7 +572,6 @@ public:
 		abort();
 //		return val;
 	}
-//	operator int() const{return val;} 
 	bool isLess(ASObject* r)
 	{
 		abort();
@@ -591,7 +595,7 @@ private:
 public:
 	Number(double v):val(v){type=T_NUMBER;}
 	Number(Manager* m):val(0),ASObject(m){type=T_NUMBER;}
-	tiny_string toString() const;
+	tiny_string toString(bool debugMsg);
 	unsigned int toUInt() const
 	{
 		return (unsigned int)(val);

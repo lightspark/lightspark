@@ -692,7 +692,7 @@ bool Array::hasNext(int& index, bool& out)
 	return true;
 }
 
-tiny_string Boolean::toString() const
+tiny_string Boolean::toString(bool debugMsg)
 {
 	return (val)?"true":"false";
 }
@@ -714,7 +714,7 @@ ASFUNCTIONBODY(Undefined,call)
 	return NULL;
 }
 
-tiny_string Undefined::toString() const
+tiny_string Undefined::toString(bool debugMsg)
 {
 	return "null";
 }
@@ -800,7 +800,7 @@ ASFUNCTIONBODY(Integer,_toString)
 	return Class<ASString>::getInstanceS(true,buf)->obj;
 }
 
-tiny_string Integer::toString() const
+tiny_string Integer::toString(bool debugMsg)
 {
 	char buf[20];
 	if(val<0)
@@ -871,7 +871,7 @@ bool Number::isLess(ASObject* o)
 	}
 }
 
-tiny_string Number::toString() const
+tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];
 	snprintf(buf,20,"%g",val);
@@ -1228,7 +1228,7 @@ ASFUNCTIONBODY(Math,random)
 	return abstract_d(ret);
 }
 
-tiny_string Null::toString() const
+tiny_string Null::toString(bool debugMsg)
 {
 	return "null";
 }
@@ -1482,7 +1482,7 @@ void Class_base::addImplementedInterface(Class_base* i)
 	interfaces_added.push_back(i);
 }
 
-tiny_string Class_base::toString() const
+tiny_string Class_base::toString(bool debugMsg)
 {
 	tiny_string ret="[Class ";
 	ret+=class_name;

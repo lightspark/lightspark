@@ -41,16 +41,27 @@ extern TLSDATA ParseThread* pt;
 extern TLSDATA Manager* iManager;
 extern TLSDATA Manager* dManager;
 
-tiny_string ASObject::toString() const
+tiny_string ASObject::toString(bool debugMsg)
 {
 	assert(ref_count>0);
 	if(implementation)
 	{
 		tiny_string ret;
+		assert(prototype);
+		//When in an internal debug msg, do not print complex objects
+		if(debugMsg)
+		{
+			ret="[object ";
+			ret+=prototype->class_name;
+			ret+="]";
+			return ret;
+		}
 		if(implementation->toString(ret))
 			return ret;
 	}
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
+	if(debugMsg==false)
+		assert(!hasPropertyByQName("toString",""));
 	return "[object Object]";
 }
 
@@ -73,7 +84,12 @@ bool ASObject::isGreater(ASObject* r)
 bool ASObject::isLess(ASObject* r)
 {
 	assert(ref_count>0);
-	assert(implementation==NULL);
+	if(implementation)
+	{
+		bool ret;
+		if(implementation->isLess(ret,r))
+			return ret;
+	}
 
 	//We can try to call valueOf and compare that
 	objAndLevel obj1=getVariableByQName("valueOf","");
@@ -92,8 +108,6 @@ bool ASObject::isLess(ASObject* r)
 	ASObject* ret1=f1->call(this,NULL,obj1.level);
 	ASObject* ret2=f2->call(r,NULL,obj2.level);
 
-	LOG(LOG_CALLS,"Overloaded isLess");
-	abort();
 	return ret1->isLess(ret2);
 }
 

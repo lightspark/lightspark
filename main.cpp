@@ -184,10 +184,10 @@ int main(int argc, char* argv[])
 			sys->fps_prof=&fps_profs.back();
 			if(sec_count>120)
 			{
-				/*cout << "exiting" << endl;
+				cout << "exiting" << endl;
 				sys->setShutdownFlag();
 				exit(-2);
-				break;*/
+				break;
 			}
 		}
 #endif

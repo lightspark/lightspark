@@ -587,7 +587,6 @@ private:
 	bool shutdown;
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
-	int getEventQueueSize();
 
 	void buildClassAndInjectBase(const std::string& n, IInterface*, arguments* a, bool construct_instance);
 
@@ -610,6 +609,7 @@ public:
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
 	void addEvent(EventDispatcher*,Event*);
+	int getEventQueueSize();
 	void wait();
 
 	void pushObjAndLevel(ASObject* o, int l);

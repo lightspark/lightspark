@@ -1719,7 +1719,6 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,"isTypelate");
-
 	bool real_ret=false;
 
 	Class_base* objc=NULL;
@@ -1747,6 +1746,9 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	else
 	{
 		//Special cases
+		if(obj->getObjectType()==T_FUNCTION && type==Class_function::getClass())
+			return true;
+
 		real_ret=obj->getObjectType()==type->getObjectType();
 		LOG(LOG_CALLS,"isTypelate on non classed object " << real_ret);
 		if(real_ret==false)
@@ -1774,6 +1776,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,"asTypelate");
+	assert(obj->getObjectType()!=T_FUNCTION);
 
 	assert(type->getObjectType()==T_CLASS);
 	Class_base* c=static_cast<Class_base*>(type);

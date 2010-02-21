@@ -141,7 +141,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Infinity","",new Number(numeric_limits<double>::infinity()));
 	Global.setVariableByQName("String","",Class<ASString>::getClass());
 	Global.setVariableByQName("Array","",Class<Array>::getClass());
-	Global.setVariableByQName("Function","",new Function);
+	Global.setVariableByQName("Function","",Class_function::getClass());
 	Global.setVariableByQName("undefined","",new Undefined);
 	Global.setVariableByQName("Math","",Class<Math>::getClass());
 	Global.setVariableByQName("Date","",Class<Date>::getClass());

@@ -1521,6 +1521,21 @@ Class_object* Class_object::getClass()
 		return static_cast<Class_object*>(it->second);
 }
 
+Class_function* Class_function::getClass()
+{
+	//We check if we are registered in the class map
+	//if not we register ourselves (see also Class<T>::getClass)
+	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Function");
+	if(it==sys->classes.end()) //This class is not yet in the map, create it
+	{
+		Class_function* ret=new Class_function();
+		sys->classes.insert(std::make_pair("Function",ret));
+		return ret;
+	}
+	else
+		return static_cast<Class_function*>(it->second);
+}
+
 const std::vector<Class_base*>& Class_base::getInterfaces() const
 {
 	if(!interfaces.empty())

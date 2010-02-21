@@ -150,6 +150,8 @@ private:
 		abort();
 	}
 public:
+	//Class_function is both used as the prototype for each function and as the Function classs object
+	Class_function():f(NULL),Class_base("Function"),asprototype(NULL){}
 	Class_function(IFunction* _f, ASObject* _p):f(_f),Class_base("Function"),asprototype(_p){}
 	tiny_string class_name;
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true)
@@ -189,6 +191,8 @@ public:
 	{
 		abort();
 	}
+
+	static Class_function* getClass();
 };
 
 class IFunction: public ASObject

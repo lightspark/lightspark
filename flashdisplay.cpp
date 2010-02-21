@@ -305,8 +305,6 @@ void Sprite::Render()
 	if(graphics)
 		graphics->Render();
 
-	glGetFloatv(GL_MODELVIEW, matrix);
-
 
 /*		FILLSTYLE::fixedColor(0,0,0);
 	glBegin(GL_QUADS);
@@ -1014,7 +1012,42 @@ void Shape::buildTraits(ASObject* o)
 
 void Shape::Render()
 {
-	assert(graphics==NULL);
+	//If graphics is not yet initialized we have nothing to do
+	if(graphics==NULL)
+		return;
+
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDisable(GL_BLEND);
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
+	glPushMatrix();
+	glMultMatrixf(matrix);
+
+	//Draw the dynamically added graphics, if any
+	if(graphics)
+		graphics->Render();
+
+	glEnable(GL_BLEND);
+	glLoadIdentity();
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
+	glDrawBuffers(2,draw_buffers);
+
+	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
+	glColor3f(0,0,1);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex2i(0,0);
+		glTexCoord2f(1,1);
+		glVertex2i(rt->width,0);
+		glTexCoord2f(1,0);
+		glVertex2i(rt->width,rt->height);
+		glTexCoord2f(0,0);
+		glVertex2i(0,rt->height);
+	glEnd();
+	glPopMatrix();
 }
 
 ASFUNCTIONBODY(Shape,_constructor)

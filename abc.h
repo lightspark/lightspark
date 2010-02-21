@@ -587,6 +587,7 @@ private:
 	bool shutdown;
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
+	int getEventQueueSize();
 
 	void buildClassAndInjectBase(const std::string& n, IInterface*, arguments* a, bool construct_instance);
 

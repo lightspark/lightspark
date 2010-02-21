@@ -993,6 +993,11 @@ void ABCVm::wait()
 	pthread_join(t,NULL);
 }
 
+int ABCVm::getEventQueueSize()
+{
+	return events_queue.size();
+}
+
 void ABCVm::handleEvent()
 {
 	sem_wait(&event_queue_mutex);

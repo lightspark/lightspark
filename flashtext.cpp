@@ -53,3 +53,9 @@ void TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	ymin=0;
 	ymax=height;
 }
+
+void TextField::Render()
+{
+	//TODO: implement
+	LOG(LOG_NOT_IMPLEMENTED,"TextField::Render");
+}

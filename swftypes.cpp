@@ -74,6 +74,28 @@ bool ASObject::isGreater(ASObject* r)
 		if(implementation->isGreater(ret,r))
 			return ret;
 	}
+
+	if(hasPropertyByQName("valueOf",""))
+	{
+		if(r->hasPropertyByQName("valueOf","")==false)
+			abort();
+
+		objAndLevel obj1=getVariableByQName("valueOf","");
+		objAndLevel obj2=r->getVariableByQName("valueOf","");
+
+		assert(obj1.obj!=NULL && obj2.obj!=NULL);
+
+		assert(obj1.obj->getObjectType()==T_FUNCTION && obj2.obj->getObjectType()==T_FUNCTION);
+		IFunction* f1=static_cast<IFunction*>(obj1.obj);
+		IFunction* f2=static_cast<IFunction*>(obj2.obj);
+
+		ASObject* ret1=f1->call(this,NULL,obj1.level);
+		ASObject* ret2=f2->call(r,NULL,obj2.level);
+
+		LOG(LOG_CALLS,"Overloaded isLess");
+		return ret1->isGreater(ret2);
+	}
+
 	LOG(LOG_NOT_IMPLEMENTED,"Greater than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	if(prototype)
 		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
@@ -91,24 +113,32 @@ bool ASObject::isLess(ASObject* r)
 			return ret;
 	}
 
-	//We can try to call valueOf and compare that
-	objAndLevel obj1=getVariableByQName("valueOf","");
-	objAndLevel obj2=r->getVariableByQName("valueOf","");
-	if(obj1.obj==NULL || obj2.obj==NULL)
+	if(hasPropertyByQName("valueOf",""))
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
-		abort();
+		if(r->hasPropertyByQName("valueOf","")==false)
+			abort();
+
+		objAndLevel obj1=getVariableByQName("valueOf","");
+		objAndLevel obj2=r->getVariableByQName("valueOf","");
+
+		assert(obj1.obj!=NULL && obj2.obj!=NULL);
+
+		assert(obj1.obj->getObjectType()==T_FUNCTION && obj2.obj->getObjectType()==T_FUNCTION);
+		IFunction* f1=static_cast<IFunction*>(obj1.obj);
+		IFunction* f2=static_cast<IFunction*>(obj2.obj);
+
+		ASObject* ret1=f1->call(this,NULL,obj1.level);
+		ASObject* ret2=f2->call(r,NULL,obj2.level);
+
+		LOG(LOG_CALLS,"Overloaded isLess");
+		return ret1->isLess(ret2);
 	}
 
-	assert(obj1.obj->getObjectType()==T_FUNCTION && obj2.obj->getObjectType()==T_FUNCTION);
-
-	IFunction* f1=static_cast<IFunction*>(obj1.obj);
-	IFunction* f2=static_cast<IFunction*>(obj2.obj);
-
-	ASObject* ret1=f1->call(this,NULL,obj1.level);
-	ASObject* ret2=f2->call(r,NULL,obj2.level);
-
-	return ret1->isLess(ret2);
+	LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	if(prototype)
+		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
+	abort();
+	return false;
 }
 
 void ASObject::acquireInterface(IInterface* i)
@@ -312,11 +342,19 @@ bool ASObject::isEqual(ASObject* r)
 	if(r->getObjectType()==T_NULL || r->getObjectType()==T_UNDEFINED)
 		return false;
 
+	assert(!hasPropertyByQName("equals",""));
+
 	//We can try to call valueOf (maybe equals) and compare that
-	objAndLevel obj1=getVariableByQName("valueOf","");
-	objAndLevel obj2=r->getVariableByQName("valueOf","");
-	if(obj1.obj!=NULL && obj2.obj!=NULL)
+	if(hasPropertyByQName("valueOf",""))
 	{
+		if(r->hasPropertyByQName("valueOf","")==false)
+			abort();
+
+		objAndLevel obj1=getVariableByQName("valueOf","");
+		objAndLevel obj2=r->getVariableByQName("valueOf","");
+
+		assert(obj1.obj!=NULL && obj2.obj!=NULL);
+
 		assert(obj1.obj->getObjectType()==T_FUNCTION && obj2.obj->getObjectType()==T_FUNCTION);
 		IFunction* f1=static_cast<IFunction*>(obj1.obj);
 		IFunction* f2=static_cast<IFunction*>(obj2.obj);

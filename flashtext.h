@@ -39,6 +39,7 @@ class TextField: public DisplayObject
 public:
 	static void sinit(Class_base* c);
 	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	void Render();
 };
 
 };

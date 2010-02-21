@@ -3,5 +3,5 @@
     xmlns:mx="http://www.adobe.com/2006/mxml" 
     horizontalAlign="center" verticalAlign="middle">
 
-    <mx:VBox x="0" y="0" width="200" height="200" backgroundColor="0x0080C0" alpha="0.8"/>
+    <mx:VBox x="100" y="100" width="100" height="200" backgroundColor="0x0080C0" alpha="0.8"/>
 </mx:Application>

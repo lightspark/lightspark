@@ -1010,7 +1010,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
 			RGB bg=sys->getBackground();
-			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
+			//glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
+			glClearColor(1,1,1,1);
 			glClear(GL_COLOR_BUFFER_BIT);
 			glLoadIdentity();
 			//glScalef(0.05,0.05,1);

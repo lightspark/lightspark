@@ -306,7 +306,7 @@ void Sprite::Render()
 		graphics->Render();
 
 
-/*		FILLSTYLE::fixedColor(0,0,0);
+/*	FILLSTYLE::fixedColor(0,0,0);
 	glBegin(GL_QUADS);
 		glVertex2i(0,0);
 		glVertex2i(75,0);
@@ -333,10 +333,15 @@ void Sprite::Render()
 	glEnd();
 	glPopMatrix();
 
+	glPushMatrix();
+	glMultMatrixf(matrix);
+
 	//Now draw also the display list
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
 	for(it;it!=dynamicDisplayList.end();it++)
 		(*it)->Render();
+
+	glPopMatrix();
 }
 
 ASFUNCTIONBODY(Sprite,_constructor)
@@ -525,9 +530,6 @@ void MovieClip::advanceFrame()
 void MovieClip::Render()
 {
 	LOG(LOG_TRACE,"Render MovieClip");
-	//MovieClip* clip_bak=rt->currentClip;
-	//rt->currentClip=this;
-
 	advanceFrame();
 
 	assert(state.FP<frames.size());
@@ -549,8 +551,6 @@ void MovieClip::Render()
 	glPopAttrib();
 
 	LOG(LOG_TRACE,"End Render MovieClip");
-
-	//rt->currentClip=clip_bak;
 }
 
 void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
@@ -683,6 +683,8 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 ASFUNCTIONBODY(DisplayObject,_getBounds)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	assert(args->size()==1);
+
 	Rectangle* ret=Class<Rectangle>::getInstanceS(true);
 	number_t x1,x2,y1,y2;
 	th->getBounds(x1,x2,y1,y2);
@@ -1026,9 +1028,7 @@ void Shape::Render()
 	glPushMatrix();
 	glMultMatrixf(matrix);
 
-	//Draw the dynamically added graphics, if any
-	if(graphics)
-		graphics->Render();
+	graphics->Render();
 
 	glEnable(GL_BLEND);
 	glLoadIdentity();
@@ -1116,6 +1116,7 @@ void Graphics::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("clear","",new Function(clear));
 	o->setVariableByQName("drawRect","",new Function(drawRect));
+	o->setVariableByQName("moveTo","",new Function(moveTo));
 	o->setVariableByQName("beginFill","",new Function(beginFill));
 }
 
@@ -1164,6 +1165,16 @@ ASFUNCTIONBODY(Graphics,clear)
 	sem_wait(&th->geometry_mutex);
 	th->geometry.clear();
 	sem_post(&th->geometry_mutex);
+}
+
+ASFUNCTIONBODY(Graphics,moveTo)
+{
+	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	assert(args->size()==2);
+
+	th->curX=args->at(0)->toInt();
+	th->curY=args->at(1)->toInt();
+	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,drawRect)

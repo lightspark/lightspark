@@ -225,7 +225,7 @@ ASFUNCTIONBODY(Timer,_constructor)
 	obj->setVariableByQName("reset","",new Function(reset));
 
 	th->delay=args->at(0)->toInt();
-	if(args->size()>=1)
+	if(args->size()>=2)
 		th->repeatCount=args->at(1)->toInt();
 
 	return NULL;

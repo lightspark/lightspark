@@ -131,8 +131,9 @@ private:
 	//As geometry is used by RenderThread but modified by ABCVm we have to mutex a bit
 	sem_t geometry_mutex;
 	std::vector<GeomShape> geometry;
+	int curX, curY;
 public:
-	Graphics()
+	Graphics():curX(0),curY(0)
 	{
 		sem_init(&geometry_mutex,0,1);
 	}
@@ -141,6 +142,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(beginFill);
 	ASFUNCTION(drawRect);
+	ASFUNCTION(moveTo);
 	ASFUNCTION(clear);
 	void Render();
 	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);

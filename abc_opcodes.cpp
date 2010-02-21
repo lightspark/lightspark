@@ -487,10 +487,15 @@ uintptr_t ABCVm::decrement_i(ASObject* o)
 
 bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifNLT");
-
 	//Real comparision demanded to object
 	bool ret=!(obj1->isLess(obj2));
+	if(obj1->getObjectType()==T_INTEGER ||
+			obj1->getObjectType()==T_UINTEGER)
+			cout << obj1->toInt() << endl;
+	if(obj2->getObjectType()==T_INTEGER ||
+			obj2->getObjectType()==T_UINTEGER)
+			cout << obj2->toInt() << endl;
+	LOG(LOG_CALLS,"ifNLT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -499,10 +504,9 @@ bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1)
 
 bool ABCVm::ifLT(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifLT");
-
 	//Real comparision demanded to object
 	bool ret=obj1->isLess(obj2);
+	LOG(LOG_CALLS,"ifLT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -1715,43 +1719,56 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,"isTypelate");
-	if(obj->getObjectType()==T_UNDEFINED)
+
+	bool real_ret=false;
+
+	Class_base* objc=NULL;
+	Class_base* c=NULL;
+	if(obj->prototype)
 	{
-		obj->decRef();
-		type->decRef();
-		return false;
+		assert(type->getObjectType()==T_CLASS);
+		c=static_cast<Class_base*>(type);
+
+		objc=obj->prototype;
+	}
+	else if(obj->getObjectType()==T_CLASS)
+	{
+		assert(type->getObjectType()==T_CLASS);
+		c=static_cast<Class_base*>(type);
+
+		//Special case for Class
+		if(c->class_name=="Class")
+		{
+			type->decRef();
+			return obj;
+		}
+		objc=static_cast<Class_base*>(obj);
 	}
 	else
 	{
-		if(obj->prototype)
+		//Special cases
+		real_ret=obj->getObjectType()==type->getObjectType();
+		LOG(LOG_CALLS,"isTypelate on non classed object " << real_ret);
+		if(real_ret==false)
 		{
-			assert(type->getObjectType()==T_CLASS);
-			Class_base* c=static_cast<Class_base*>(type);
-			bool real_ret=obj->prototype->isSubClass(c);
-			LOG(LOG_CALLS,"Type " << obj->prototype->class_name << " is " << ((real_ret)?" ":"not ") 
-					<< "subclass of " << c->class_name);
-			obj->decRef();
-			type->decRef();
-			return real_ret;
-		}
-		else
-		{
-			bool real_ret=obj->getObjectType()==type->getObjectType();
-			LOG(LOG_CALLS,"isTypelate on non classed object " << real_ret);
-			if(real_ret==false)
+			//TODO: obscene hack, check casting of stuff
+			if(obj->getObjectType()==T_INTEGER && type->getObjectType()==T_NUMBER)
 			{
-				//TODO: obscene hack, check casting of stuff
-				if(obj->getObjectType()==T_INTEGER && type->getObjectType()==T_NUMBER)
-				{
-					cout << "HACK for Integer" << endl;
-					real_ret=true;
-				}
+				cout << "HACK for Integer" << endl;
+				real_ret=true;
 			}
-			obj->decRef();
-			type->decRef();
-			return real_ret;
 		}
+		obj->decRef();
+		type->decRef();
+		return real_ret;
 	}
+
+	real_ret=objc->isSubClass(c);
+	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?" ":"not ") 
+			<< "subclass of " << c->class_name);
+	obj->decRef();
+	type->decRef();
+	return real_ret;
 }
 
 ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
@@ -1761,37 +1778,38 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	assert(type->getObjectType()==T_CLASS);
 	Class_base* c=static_cast<Class_base*>(type);
 
-/*	if(obj->getObjectType()==T_UNDEFINED)
-		return new Null;
+	Class_base* objc;
+	if(obj->prototype)
+		objc=obj->prototype;
+	else if(obj->getObjectType()==T_CLASS)
+	{
+		//Special case for Class
+		if(c->class_name=="Class")
+		{
+			type->decRef();
+			return obj;
+		}
+		
+		objc=static_cast<Class_base*>(obj);
+	}
 	else
-	{*/
-		if(obj->prototype)
-		{
-			bool real_ret=obj->prototype->isSubClass(c);
-			LOG(LOG_CALLS,"Type " << obj->prototype->class_name << " is " << ((real_ret)?" ":"not ") 
-					<< "subclass of " << c->class_name);
-			type->decRef();
-			if(real_ret)
-				return obj;
-			else
-			{
-				obj->decRef();
-				return new Null;
-			}
-		}
-		else
-		{
-			//Maybe we are a class already
-			if(obj->getObjectType()==T_CLASS && c->class_name=="Class")
-			{
-				type->decRef();
-				return obj;
-			}
-			obj->decRef();
-			type->decRef();
-			return new Null;
-		}
-//	}
+	{
+		obj->decRef();
+		type->decRef();
+		return new Null;
+	}
+
+	bool real_ret=objc->isSubClass(c);
+	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?" ":"not ") 
+			<< "subclass of " << c->class_name);
+	type->decRef();
+	if(real_ret)
+		return obj;
+	else
+	{
+		obj->decRef();
+		return new Null;
+	}
 }
 
 bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2)

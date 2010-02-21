@@ -168,6 +168,7 @@ public:
 			ymax=0;
 		}
 	}
+	void Render();
 };
 
 class LoaderInfo: public EventDispatcher

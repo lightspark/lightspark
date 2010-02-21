@@ -560,8 +560,7 @@ public:
 	}
 	int32_t toInt() const
 	{
-		abort();
-//		return val;
+		return val;
 	}
 	uint32_t toUInt() const
 	{

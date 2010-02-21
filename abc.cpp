@@ -136,6 +136,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Object","",Class<IInterface>::getClass());
 	Global.setVariableByQName("Class","",Class_object::getClass());
 	Global.setVariableByQName("Number","",new Number(0.0));
+	Global.setVariableByQName("Boolean","",new Boolean(false));
 	Global.setVariableByQName("NaN","",new Number(numeric_limits<double>::quiet_NaN()));
 	Global.setVariableByQName("Infinity","",new Number(numeric_limits<double>::infinity()));
 	Global.setVariableByQName("String","",Class<ASString>::getClass());

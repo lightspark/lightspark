@@ -1012,6 +1012,11 @@ void Shape::buildTraits(ASObject* o)
 	o->setGetterByQName("graphics","",new Function(_getGraphics));
 }
 
+void Shape::Render()
+{
+	assert(graphics==NULL);
+}
+
 ASFUNCTIONBODY(Shape,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL);

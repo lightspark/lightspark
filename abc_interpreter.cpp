@@ -10,6 +10,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 {
 	method_info* mi=function->mi;
 
+	int code_len=mi->body->code.size();
 	stringstream code(mi->body->code);
 
 	u8 opcode;
@@ -23,569 +24,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 		switch(opcode)
 		{
-/*			case 0x09:
-			{
-				//label
-				//Create a new block and insert it in the mapping
-				LOG(LOG_TRACE, "synt label" );
-				if(Log::getLevel()>=LOG_CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("label"));
-				break;
-			}
-			case 0x0c:
-			{
-				//ifnlt
-				LOG(LOG_TRACE, "synt ifnlt" );
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				llvm::Value* cond;
-				if(v1.second==STACK_INT && v2.second==STACK_INT)
-					cond=Builder.CreateICmpSGE(v2.first,v1.first); //GE == NLT
-				else
-				{
-					abstract_value(ex,Builder,v1);
-					abstract_value(ex,Builder,v2);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNLT"), v1.first, v2.first);
-				}
-
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x0d:
-			{
-				//ifnle
-				LOG(LOG_TRACE, "synt ifnle");
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				abstract_value(ex,Builder,v1);
-				abstract_value(ex,Builder,v2);
-				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNLE"), v1.first, v2.first);
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x0e:
-			{
-				//ifngt
-				LOG(LOG_TRACE, "synt ifngt" );
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				abstract_value(ex,Builder,v1);
-				abstract_value(ex,Builder,v2);
-				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNGT"), v1.first, v2.first);
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x0f:
-			{
-				//ifnge
-				LOG(LOG_TRACE, "synt ifnge");
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-				//Make comparision
-
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				abstract_value(ex,Builder,v1);
-				abstract_value(ex,Builder,v2);
-				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNGE"), v1.first, v2.first);
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x10:
-			{
-				//jump
-				last_is_branch=true;
-
-				s24 t;
-				code2 >> t;
-				LOG(LOG_TRACE, "synt jump " << t );
-				if(Log::getLevel()==LOG_CALLS)
-				{
-					constant = llvm::ConstantInt::get(int_type, t);
-					Builder.CreateCall2(ex->FindFunctionNamed("jump"), context, constant);
-				}
-				int here=code2.tellg();
-				int dest=here+t;
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x11:
-			{
-				//iftrue
-				LOG(LOG_TRACE, "synt iftrue" );
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* cond;
-				if(v1.second==STACK_BOOLEAN)
-					cond=v1.first;
-				else
-					cond=Builder.CreateCall(ex->FindFunctionNamed("ifTrue"), v1.first);
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x12:
-			{
-				//iffalse
-
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-				LOG(LOG_TRACE, "synt iffalse " << t );
-
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* cond;
-				if(v1.second==STACK_BOOLEAN)
-					cond=Builder.CreateNot(v1.first);
-				else
-				{
-					abstract_value(ex,Builder,v1);
-					cond=Builder.CreateCall(ex->FindFunctionNamed("ifFalse"), v1.first);
-				}
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x13:
-			{
-				//ifeq
-				LOG(LOG_TRACE, "synt ifeq" );
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-			
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* cond;
-				//Make comparision
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
-				}
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-				{
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
-				}
-				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
-				{
-					v1.first=Builder.CreateSIToFP(v1.first,number_type);
-					cond=Builder.CreateFCmpOEQ(v1.first,v2.first);
-				}
-				else
-				{
-					abstract_value(ex,Builder,v1);
-					abstract_value(ex,Builder,v2);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifEq"), v1.first, v2.first);
-				}
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x14:
-			{
-				//ifne
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-				LOG(LOG_TRACE, "synt ifne " << t );
-			
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* cond;
-				if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNE_oi"), v2.first, v1.first);
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNE_oi"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
-				{
-					v1.first=Builder.CreateSIToFP(v1.first,number_type);
-					cond=Builder.CreateFCmpONE(v1.first,v2.first);
-				}
-				else if(v1.second==STACK_INT && v2.second==STACK_INT)
-				{
-					cond=Builder.CreateICmpNE(v1.first,v2.first);
-				}
-				else
-				{
-					//Abstract default
-					abstract_value(ex,Builder,v1);
-					abstract_value(ex,Builder,v2);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifNE"), v1.first, v2.first);
-				}
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x15:
-			{
-				//iflt
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-				LOG(LOG_TRACE, "synt iflt "<< t );
-
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=	static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* cond;
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLT"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLT_io"), v1.first, v2.first);
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLT_oi"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_INT)
-					cond=Builder.CreateICmpSLT(v2.first,v1.first);
-				else
-				{
-					abstract_value(ex,Builder,v1);
-					abstract_value(ex,Builder,v2);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLT"), v1.first, v2.first);
-				}
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x16:
-			{
-				//ifle
-				LOG(LOG_TRACE, "synt ifle" );
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* cond;
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLE"), v1.first, v2.first);
-				else
-				{
-					abstract_value(ex,Builder,v1);
-					abstract_value(ex,Builder,v2);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifLE"), v1.first, v2.first);
-				}
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x17:
-			{
-				//ifgt
-				LOG(LOG_TRACE, "synt ifgt" );
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* cond;
-
-				abstract_value(ex,Builder,v1);
-				abstract_value(ex,Builder,v2);
-				cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGT"), v1.first, v2.first);
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x18:
-			{
-				//ifge
-				LOG(LOG_TRACE, "synt ifge");
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* cond;
-
-				abstract_value(ex,Builder,v1);
-				abstract_value(ex,Builder,v2);
-				cond=Builder.CreateCall2(ex->FindFunctionNamed("ifGE"), v1.first, v2.first);
-			
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x19:
-			{
-				//ifstricteq
-				LOG(LOG_TRACE, "synt ifstricteq" );
-				//TODO: implement common data comparison
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-			
-				//Make comparision
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictEq"), v1, v2);
-
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x1a:
-			{
-				//ifstrictne
-				LOG(LOG_TRACE, "synt ifstrictne" );
-				last_is_branch=true;
-				s24 t;
-				code2 >> t;
-
-				//Make comparision
-				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* cond;
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), v1.first, v2.first);
-				}
-				else if(v1.second==STACK_OBJECT && v2.second==STACK_INT)
-				{
-					v2.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v2.first);
-					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), v1.first, v2.first);
-				}
-				else
-					abort();
-
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				int here=code2.tellg();
-				int dest=here+t;
-				llvm::BasicBlock* A=llvm::BasicBlock::Create(llvm_context,"epilogueA", llvmf);
-				llvm::BasicBlock* B=llvm::BasicBlock::Create(llvm_context,"epilogueB", llvmf);
-				Builder.CreateCondBr(cond,B,A);
-				Builder.SetInsertPoint(A);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[here]);
-				Builder.CreateBr(blocks[here].BB);
-
-				Builder.SetInsertPoint(B);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[dest]);
-				Builder.CreateBr(blocks[dest].BB);
-				break;
-			}
-			case 0x1b:
+/*			case 0x1b:
 			{
 				//lookupswitch
 				LOG(LOG_TRACE, "synt lookupswitch" );
@@ -770,17 +209,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				stack_entry e2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				static_stack_push(static_stack,e1);
 				static_stack_push(static_stack,e2);
-				break;
-			}
-			case 0x2c:
-			{
-				//pushstring
-				LOG(LOG_TRACE, "synt pushstring" );
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				value=Builder.CreateCall2(ex->FindFunctionNamed("pushString"), context, constant);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}
 			case 0x2d:
@@ -2064,10 +1492,384 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				context->locals[t]=new Undefined;
 				break;
 			}
+			case 0x09:
+			{
+				//label
+				break;
+			}
+			case 0x0c:
+			{
+				//ifnlt
+				s24 t;
+				code >> t;
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifNLT(v1, v2);
+
+				int here=code.tellg();
+				int dest=here+t;
+
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x0d:
+			{
+				//ifnle
+				s24 t;
+				code >> t;
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifNLE(v1, v2);
+
+				int here=code.tellg();
+				int dest=here+t;
+
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x0e:
+			{
+				//ifngt
+				s24 t;
+				code >> t;
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifNGT(v1, v2);
+
+				int here=code.tellg();
+				int dest=here+t;
+
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to contexte destination, validate on contexte lengcontext
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x0f:
+			{
+				//ifnge
+				s24 t;
+				code >> t;
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifNGE(v1, v2);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x10:
+			{
+				//jump
+				s24 t;
+				code >> t;
+
+				int here=code2.tellg();
+				int dest=here+t;
+
+				//Now 'jump' to the destination, validate on the length
+				if(dest >= code_len)
+				{
+					LOG(LOG_ERROR,"Jump outside of code");
+					abort();
+				}
+				code.seekg(dest);
+				break;
+			}
+			case 0x11:
+			{
+				//iftrue
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				bool cond=ifTrue(v1);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x12:
+			{
+				//iffalse
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				bool cond=ifFalse(v1);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x13:
+			{
+				//ifeq
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifEq(v1, v2);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x14:
+			{
+				//ifne
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifNE(v1, v2);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x15:
+			{
+				//iflt
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifLT(v1, v2);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x16:
+			{
+				//ifle
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifLE(v1, v2);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x17:
+			{
+				//ifgt
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifGT(v1, v2);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x18:
+			{
+				//ifge
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifGE(v1, v2);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x19:
+			{
+				//ifstricteq
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifStrictEq(v1, v2);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
+			case 0x1a:
+			{
+				//ifstrictne
+				s24 t;
+				code >> t;
+
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				bool cond=ifStrictNE(v1, v2);
+				if(cond)
+				{
+					int here=code.tellg();
+					int dest=here+t;
+
+					//Now 'jump' to the destination, validate on the length
+					if(dest >= code_len)
+					{
+						LOG(LOG_ERROR,"Jump outside of code");
+						abort();
+					}
+					code.seekg(dest);
+				}
+				break;
+			}
 			case 0x20:
 			{
 				//pushnull
 				context->runtime_stack_push(new Null);
+				break;
+			}
+			case 0x2c:
+			{
+				//pushstring
+				LOG(LOG_TRACE, "synt pushstring" );
+				u30 t;
+				code >> t;
+				context->runtime_stack_push(pushString(context,t));
 				break;
 			}
 			case 0x30:

@@ -92,7 +92,7 @@ bool ASObject::isGreater(ASObject* r)
 		ASObject* ret1=f1->call(this,NULL,obj1.level);
 		ASObject* ret2=f2->call(r,NULL,obj2.level);
 
-		LOG(LOG_CALLS,"Overloaded isLess");
+		LOG(LOG_CALLS,"Overloaded isGreater");
 		return ret1->isGreater(ret2);
 	}
 
@@ -342,7 +342,21 @@ bool ASObject::isEqual(ASObject* r)
 	if(r->getObjectType()==T_NULL || r->getObjectType()==T_UNDEFINED)
 		return false;
 
-	assert(!hasPropertyByQName("equals",""));
+	if(hasPropertyByQName("equals",""))
+	{
+		objAndLevel func_equals=getVariableByQName("equals","");
+
+		assert(func_equals.obj!=NULL);
+
+		assert(func_equals.obj->getObjectType()==T_FUNCTION);
+		IFunction* func=static_cast<IFunction*>(func_equals.obj);
+
+		ASObject* ret=func->fast_call(this,&r,1,func_equals.level);
+		assert(ret->getObjectType()==T_BOOLEAN);
+
+		LOG(LOG_CALLS,"Overloaded isEqual");
+		return Boolean_concrete(ret);
+	}
 
 	//We can try to call valueOf (maybe equals) and compare that
 	if(hasPropertyByQName("valueOf",""))

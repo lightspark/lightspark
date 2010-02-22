@@ -2274,3 +2274,20 @@ ASObject* ABCVm::pushString(call_context* th, int n)
 	return Class<ASString>::getInstanceS(true,s)->obj;
 }
 
+ASObject* ABCVm::newCatch(call_context* th, int n)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"newCatch " << n);
+	return new Undefined;
+}
+
+void ABCVm::newArray(call_context* th, int n)
+{
+	LOG(LOG_CALLS, "newArray " << n );
+	Array* ret=Class<Array>::getInstanceS(true);
+	ret->resize(n);
+	for(int i=0;i<n;i++)
+		ret->set(n-i-1,th->runtime_stack_pop());
+
+	th->runtime_stack_push(ret->obj);
+}
+

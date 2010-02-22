@@ -1213,27 +1213,10 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 	}
 }
 
-ASObject* ABCVm::newCatch(call_context* th, int n)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"newCatch " << n);
-	return new Undefined;
-}
-
 void ABCVm::not_impl(int n)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "not implement opcode 0x" << hex << n );
 	abort();
-}
-
-void ABCVm::newArray(call_context* th, int n)
-{
-	LOG(LOG_CALLS, "newArray " << n );
-	Array* ret=Class<Array>::getInstanceS(true);
-	ret->resize(n);
-	for(int i=0;i<n;i++)
-		ret->set(n-i-1,th->runtime_stack_pop());
-
-	th->runtime_stack_push(ret->obj);
 }
 
 void call_context::runtime_stack_push(ASObject* s)

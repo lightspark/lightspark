@@ -24,97 +24,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 		switch(opcode)
 		{
-/*			case 0x56:
-			{
-				//newarray
-				LOG(LOG_TRACE, "synt newarray" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("newArray"), context, constant);
-				break;
-			}
-			case 0x57:
-			{
-				//newactivation
-				LOG(LOG_TRACE, "synt newactivation" );
-				value=Builder.CreateCall2(ex->FindFunctionNamed("newActivation"), context, th);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
-			case 0x59:
-			{
-				//getdescendants
-				LOG(LOG_TRACE, "synt getdescendants" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("getDescendants"), context, constant);
-				break;
-			}
-			case 0x5a:
-			{
-				//newcatch
-				LOG(LOG_TRACE, "synt newcatch" );
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				value=Builder.CreateCall2(ex->FindFunctionNamed("newCatch"), context, constant);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
-			case 0x62:
-			{
-				//getlocal
-				LOG(LOG_TRACE, "synt getlocal" );
-				u30 i;
-				code2 >> i;
-				constant = llvm::ConstantInt::get(int_type, i);
-				if(Log::getLevel()==LOG_CALLS)
-					Builder.CreateCall2(ex->FindFunctionNamed("getLocal"), context, constant);
-
-				if(static_locals[i].second==STACK_NONE)
-				{
-					llvm::Value* t=Builder.CreateGEP(locals,constant);
-					t=Builder.CreateLoad(t,"stack");
-					static_stack_push(static_stack,stack_entry(t,STACK_OBJECT));
-					static_locals[i]=stack_entry(t,STACK_OBJECT);
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), t);
-				}
-				else if(static_locals[i].second==STACK_OBJECT)
-				{
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), static_locals[i].first);
-					static_stack_push(static_stack,static_locals[i]);
-				}
-				else if(static_locals[i].second==STACK_INT || static_locals[i].second==STACK_NUMBER || static_locals[i].second==STACK_BOOLEAN)
-					static_stack_push(static_stack,static_locals[i]);
-				else
-					abort();
-
-				break;
-			}
-			case 0x63:
-			{
-				//setlocal
-				u30 i;
-				code2 >> i;
-				LOG(LOG_TRACE, "synt setlocal " << i);
-				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(static_locals[i].second==STACK_OBJECT)
-					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
-
-				static_locals[i]=e;
-				if(Log::getLevel()==LOG_CALLS)
-				{
-					constant = llvm::ConstantInt::get(int_type, i);
-					Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
-				}
-				break;
-			}
-			case 0x64:
+/*			case 0x64:
 			{
 				//getglobalscope
 				LOG(LOG_TRACE, "synt getglobalscope" );
@@ -1679,12 +1589,42 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				newObject(context,t);
 				break;
 			}
+			case 0x56:
+			{
+				//newarray
+				u30 t;
+				code >> t;
+				newArray(context,t);
+				break;
+			}
+			case 0x57:
+			{
+				//newactivation
+				context->runtime_stack_push(newActivation(context, mi));
+				break;
+			}
 			case 0x58:
 			{
 				//newclass
 				u30 t;
 				code >> t;
 				newClass(context,t);
+				break;
+			}
+			case 0x59:
+			{
+				//getdescendants
+				u30 t;
+				code >> t;
+				getDescendants(context, t);
+				break;
+			}
+			case 0x5a:
+			{
+				//newcatch
+				u30 t;
+				code >> t;
+				context->runtime_stack_push(newCatch(context,t));
 				break;
 			}
 			case 0x5d:
@@ -1723,6 +1663,41 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* obj=context->runtime_stack_pop();
 
 				setProperty(value,obj,name);
+				break;
+			}
+			case 0x62:
+			{
+				//getlocal
+				u30 i;
+				code >> i;
+				LOG(LOG_CALLS, "getLocal " << i );
+				assert(context->locals[i]);
+				context->runtime_stack_push(context->locals[i]);
+				break;
+			}
+			case 0x63:
+			{
+				//setlocal
+				u30 i;
+				code2 >> i;
+				LOG(LOG_TRACE, "synt setlocal " << i);
+				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				if(static_locals[i].second==STACK_OBJECT)
+					Builder.CreateCall(ex->FindFunctionNamed("decRef"), static_locals[i].first);
+
+				static_locals[i]=e;
+				if(Log::getLevel()==LOG_CALLS)
+				{
+					constant = llvm::ConstantInt::get(int_type, i);
+					Builder.CreateCall2(ex->FindFunctionNamed("setLocal"), context, constant);
+				}
+
+				u30 i;
+				code >> i;
+				LOG(LOG_CALLS, "setLocal " << i );
+				ASObject* obj=context->runtime_stack_pop();
+				assert(obj);
+				context->locals[i]=obj;
 				break;
 			}
 			case 0x65:

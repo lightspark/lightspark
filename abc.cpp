@@ -806,8 +806,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			return ret;
 		switch(m->kind)
 		{
-			case 0x1d:
-				abort();
+			case 0x1d: //Generics, still not implemented
 			case 0x07:
 			case 0x09:
 			{

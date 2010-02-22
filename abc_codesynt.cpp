@@ -2863,7 +2863,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, (int)t);
 				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
 				if(Log::getLevel()>=LOG_CALLS)
-					value=Builder.CreateCall(ex->FindFunctionNamed("pushByte"), constant);
+					Builder.CreateCall(ex->FindFunctionNamed("pushByte"), constant);
 				break;
 			}
 			case 0x25:

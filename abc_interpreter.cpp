@@ -24,428 +24,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 		switch(opcode)
 		{
-/*			case 0x1b:
-			{
-				//lookupswitch
-				LOG(LOG_TRACE, "synt lookupswitch" );
-				if(Log::getLevel()>=LOG_CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("lookupswitch"));
-				last_is_branch=true;
-
-				int here=int(code2.tellg())-1; //Base for the jumps is the instruction itself for the switch
-				s24 t;
-				code2 >> t;
-				int defaultdest=here+t;
-				LOG(LOG_TRACE,"default " << int(t));
-				u30 count;
-				code2 >> count;
-				LOG(LOG_TRACE,"count "<< int(count));
-				vector<s24> offsets(count+1);
-				for(int i=0;i<count+1;i++)
-				{
-					code2 >> offsets[i];
-					LOG(LOG_TRACE,"Case " << i << " " << offsets[i]);
-				}
-				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(e.second==STACK_INT);
-				else if(e.second==STACK_OBJECT)
-				{
-					e.first=Builder.CreateCall(ex->FindFunctionNamed("toInt"),e.first);
-				}
-				else
-					abort();
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-				//Generate epilogue for default dest
-				llvm::BasicBlock* Default=llvm::BasicBlock::Create(llvm_context,"epilogueDest", llvmf);
-
-				llvm::SwitchInst* sw=Builder.CreateSwitch(e.first,Default);
-				Builder.SetInsertPoint(Default);
-				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[defaultdest]);
-				Builder.CreateBr(blocks[defaultdest].BB);
-
-				for(int i=0;i<offsets.size();i++)
-				{
-					int casedest=here+offsets[i];
-					llvm::ConstantInt* constant = static_cast<llvm::ConstantInt*>(llvm::ConstantInt::get(int_type, i));
-					llvm::BasicBlock* Case=llvm::BasicBlock::Create(llvm_context,"epilogueCase", llvmf);
-					sw->addCase(constant,Case);
-					Builder.SetInsertPoint(Case);
-					syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[casedest]);
-					Builder.CreateBr(blocks[casedest].BB);
-				}
-
-				break;
-			}
-			case 0x1c:
-			{
-				//pushwith
-				LOG(LOG_TRACE, "synt pushwith" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				Builder.CreateCall(ex->FindFunctionNamed("pushWith"), context);
-				break;
-			}
-			case 0x1d:
-			{
-				//popscope
-				LOG(LOG_TRACE, "synt popscope" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				Builder.CreateCall(ex->FindFunctionNamed("popScope"), context);
-				break;
-			}
-			case 0x1e:
-			{
-				//nextname
-				LOG(LOG_TRACE, "synt nextname" );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-
-				value=Builder.CreateCall2(ex->FindFunctionNamed("nextName"), v1, v2);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
-			case 0x21:
-			{
-				//pushundefined
-				LOG(LOG_TRACE, "synt pushundefined" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("pushUndefined"));
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
-			case 0x23:
-			{
-				//nextvalue
-				LOG(LOG_TRACE, "synt nextvalue" );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-
-				value=Builder.CreateCall2(ex->FindFunctionNamed("nextValue"), v1, v2);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
-			case 0x24:
-			{
-				//pushbyte
-				LOG(LOG_TRACE, "synt pushbyte" );
-				int8_t t;
-				code2.read((char*)&t,1);
-				constant = llvm::ConstantInt::get(int_type, (int)t);
-				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				if(Log::getLevel()==LOG_CALLS)
-					value=Builder.CreateCall(ex->FindFunctionNamed("pushByte"), constant);
-				break;
-			}
-			case 0x25:
-			{
-				//pushshort
-				LOG(LOG_TRACE, "synt pushshort" );
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				if(Log::getLevel()==LOG_CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("pushShort"), constant);
-				break;
-			}
-			case 0x26:
-			{
-				//pushtrue
-				LOG(LOG_TRACE, "synt pushtrue" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("pushTrue"));
-				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
-				break;
-			}
-			case 0x27:
-			{
-				//pushfalse
-				LOG(LOG_TRACE, "synt pushfalse" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("pushFalse"));
-				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
-				break;
-			}
-			case 0x28:
-			{
-				//pushnan
-				LOG(LOG_TRACE, "synt pushnan" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("pushNaN"));
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
-			case 0x29:
-			{
-				//pop
-				LOG(LOG_TRACE, "synt pop" );
-				if(Log::getLevel()==LOG_CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("pop"));
-				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(e.second==STACK_OBJECT)
-					Builder.CreateCall(ex->FindFunctionNamed("decRef"), e.first);
-				break;
-			}
-			case 0x2a:
-			{
-				//dup
-				LOG(LOG_TRACE, "synt dup" );
-				if(Log::getLevel()==LOG_CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("dup"));
-				stack_entry e=static_stack_peek(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				static_stack_push(static_stack,e);
-
-				if(e.second==STACK_OBJECT)
-					Builder.CreateCall(ex->FindFunctionNamed("incRef"), e.first);
-				break;
-			}
-			case 0x2b:
-			{
-				//swap
-				LOG(LOG_TRACE, "synt swap" );
-				if(Log::getLevel()==LOG_CALLS)
-					Builder.CreateCall(ex->FindFunctionNamed("swap"));
-				stack_entry e1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				stack_entry e2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				static_stack_push(static_stack,e1);
-				static_stack_push(static_stack,e2);
-				break;
-			}
-			case 0x2d:
-			{
-				//pushint
-				LOG(LOG_TRACE, "synt pushint" );
-				u30 t;
-				code2 >> t;
-				if(Log::getLevel()==LOG_CALLS)
-				{
-					constant = llvm::ConstantInt::get(int_type, t);
-					Builder.CreateCall2(ex->FindFunctionNamed("pushInt"), context, constant);
-				}
-				s32 i=this->context->constant_pool.integer[t];
-				constant = llvm::ConstantInt::get(int_type, i);
-				static_stack_push(static_stack,stack_entry(constant,STACK_INT));
-				break;
-			}
-			case 0x2f:
-			{
-				//pushdouble
-				LOG(LOG_TRACE, "synt pushdouble" );
-				u30 t;
-				code2 >> t;
-
-				if(Log::getLevel()==LOG_CALLS)
-				{
-					constant = llvm::ConstantInt::get(int_type, t);
-					Builder.CreateCall2(ex->FindFunctionNamed("pushDouble"), context, constant);
-				}
-				number_t d=this->context->constant_pool.doubles[t];
-				constant = llvm::ConstantFP::get(number_type,d);
-				static_stack_push(static_stack,stack_entry(constant,STACK_NUMBER));
-				break;
-			}
-			case 0x32:
-			{
-				//hasnext2
-				LOG(LOG_TRACE, "synt hasnext2" );
-				u30 t,t2;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				code2 >> t2;
-				constant2 = llvm::ConstantInt::get(int_type, t2);
-				//Sync the locals to memory
-				if(static_locals[t].second!=STACK_NONE)
-				{
-					llvm::Value* gep=Builder.CreateGEP(locals,constant);
-					llvm::Value* old=Builder.CreateLoad(gep);
-					Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
-					abstract_value(ex,Builder,static_locals[t]);
-					Builder.CreateStore(static_locals[t].first,gep);
-					static_locals[t].second=STACK_NONE;
-				}
-
-				if(static_locals[t2].second!=STACK_NONE)
-				{
-					llvm::Value* gep=Builder.CreateGEP(locals,constant2);
-					llvm::Value* old=Builder.CreateLoad(gep);
-					Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
-					abstract_value(ex,Builder,static_locals[t2]);
-					Builder.CreateStore(static_locals[t2].first,gep);
-					static_locals[t2].second=STACK_NONE;
-				}
-
-				value=Builder.CreateCall3(ex->FindFunctionNamed("hasNext2"), context, constant, constant2);
-				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
-				break;
-			}
-			case 0x40:
-			{
-				//newfunction
-				LOG(LOG_TRACE, "synt newfunction" );
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				value=Builder.CreateCall2(ex->FindFunctionNamed("newFunction"), context, constant);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
-			case 0x41:
-			{
-				//call
-				LOG(LOG_TRACE, "synt call" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("call"), context, constant);
-				break;
-			}
-			case 0x42:
-			{
-				//construct
-				LOG(LOG_TRACE, "synt construct" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("construct"), context, constant);
-				break;
-			}
-			case 0x45:
-			{
-				//callsuper
-				LOG(LOG_TRACE, "synt callsuper" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				code2 >> t;
-				constant2 = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall3(ex->FindFunctionNamed("callSuper"), context, constant, constant2);
-				break;
-			}
-			case 0x46:
-			{
-				//callproperty
-				//TODO: Implement static resolution where possible
-				LOG(LOG_TRACE, "synt callproperty" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				code2 >> t;
-				constant2 = llvm::ConstantInt::get(int_type, t);
-
-				//Call the function resolver, static case could be resolved at this time (TODO)
-				Builder.CreateCall3(ex->FindFunctionNamed("callProperty"), context, constant, constant2);
-
-				break;
-			}
-			case 0x48:
-			{
-				//returnvalue
-				//TODO: Should coerce the return type to the expected one
-				LOG(LOG_TRACE, "synt returnvalue" );
-				last_is_branch=true;
-				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(e.second==STACK_INT)
-					e.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),e.first);
-				else if(e.second==STACK_NUMBER)
-					e.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),e.first);
-				else if(e.second==STACK_OBJECT)
-				{
-				}
-				else if(e.second==STACK_BOOLEAN)
-					e.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),e.first);
-				else
-					abort();
-				for(int i=0;i<static_locals.size();i++)
-				{
-					if(static_locals[i].second==STACK_OBJECT)
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_locals[i].first);
-					static_locals[i].second=STACK_NONE;
-				}
-				for(int i=0;i<static_stack.size();i++)
-				{
-					if(static_stack[i].second==STACK_OBJECT)
-						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_stack[i].first);
-				}
-				Builder.CreateRet(e.first);
-				break;
-			}
-			case 0x49:
-			{
-				//constructsuper
-				LOG(LOG_TRACE, "synt constructsuper" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("constructSuper"), context, constant);
-				break;
-			}
-			case 0x4a:
-			{
-				//constructprop
-				LOG(LOG_TRACE, "synt constructprop" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				code2 >> t;
-				constant2 = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall3(ex->FindFunctionNamed("constructProp"), context, constant, constant2);
-				break;
-			}
-			case 0x4e:
-			{
-				//callsupervoid
-				LOG(LOG_TRACE, "synt callsupervoid" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				code2 >> t;
-				constant2 = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall3(ex->FindFunctionNamed("callSuperVoid"), context, constant, constant2);
-				break;
-			}
-			case 0x4f:
-			{
-				//callpropvoid
-				LOG(LOG_TRACE, "synt callpropvoid" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				code2 >> t;
-				constant2 = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall3(ex->FindFunctionNamed("callPropVoid"), context, constant, constant2);
-				break;
-			}
-			case 0x53:
-			{
-				//constructgenerictype
-				LOG(LOG_TRACE, "synt constructgenerictype" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("constructGenericType"), context, constant);
-				break;
-			}
-			case 0x55:
-			{
-				//newobject
-				LOG(LOG_TRACE, "synt newobject" );
-				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				Builder.CreateCall2(ex->FindFunctionNamed("newObject"), context, constant);
-				break;
-			}
-			case 0x56:
+/*			case 0x56:
 			{
 				//newarray
 				LOG(LOG_TRACE, "synt newarray" );
@@ -484,53 +63,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				constant = llvm::ConstantInt::get(int_type, t);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("newCatch"), context, constant);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
-				break;
-			}
-			case 0x61:
-			{
-				//setproperty
-				LOG(LOG_TRACE, "synt setproperty" );
-				u30 t;
-				code2 >> t;
-				constant = llvm::ConstantInt::get(int_type, t);
-				int rtdata=this->context->getMultinameRTData(t);
-				stack_entry value=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* name;
-				//HACK: we need to reinterpret the pointer to the generic type
-				llvm::Value* reint_context=Builder.CreateBitCast(context,voidptr_type);
-				if(rtdata==0)
-				{
-					//We pass a dummy second context param
-					name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, reint_context, constant);
-				}
-				else if(rtdata==1)
-				{
-					stack_entry rt1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-
-					if(rt1.second==STACK_INT)
-						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_i"), reint_context, rt1.first, constant);
-					else if(rt1.second==STACK_NUMBER)
-						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname_d"), reint_context, rt1.first, constant);
-					else if(rt1.second==STACK_OBJECT)
-						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, rt1.first, constant);
-					else
-						abort();
-				}
-				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(value.second==STACK_INT)
-					Builder.CreateCall3(ex->FindFunctionNamed("setProperty_i"),value.first, obj.first, name);
-				else if(value.second==STACK_NUMBER)
-				{
-					value.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_d"),value.first);
-					Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
-				}
-				else if(value.second==STACK_BOOLEAN)
-				{
-					value.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),value.first);
-					Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
-				}
-				else
-					Builder.CreateCall3(ex->FindFunctionNamed("setProperty"),value.first, obj.first, name);
 				break;
 			}
 			case 0x62:
@@ -1605,7 +1137,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			{
 				//jump
 				s24 t;
-				code >> t;
+			code >> t;
 
 				int here=code.tellg();
 				int dest=here+t;
@@ -1857,19 +1389,171 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				}
 				break;
 			}
+			case 0x1b:
+			{
+				//lookupswitch
+				int here=int(code.tellg())-1; //Base for the jumps is the instruction itself for the switch
+				s24 t;
+				code >> t;
+				int defaultdest=here+t;
+				LOG(LOG_CALLS,"Switch default dest " << defaultdest);
+				u30 count;
+				code >> count;
+				vector<s24> offsets(count+1);
+				for(int i=0;i<count+1;i++)
+				{
+					code >> offsets[i];
+					LOG(LOG_CALLS,"Switch dest " << i << ' ' << offsets[i]);
+				}
+
+				ASObject* index_obj=context->runtime_stack_pop();
+				assert(index_obj->getObjectType()==T_INTEGER);
+				int index=index_obj->toInt();
+
+				int dest=defaultdest;
+				if(index>=0 && index<=count)
+					dest=offsets[index];
+
+				if(dest >= code_len)
+				{
+					LOG(LOG_ERROR,"Jump outside of code");
+					abort();
+				}
+				code.seekg(dest);
+				break;
+			}
+			case 0x1c:
+			{
+				//pushwith
+				pushWith(context);
+				break;
+			}
+			case 0x1d:
+			{
+				//popscope
+				popScope(context);
+				break;
+			}
+			case 0x1e:
+			{
+				//nextname
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				context->runtime_stack_push(nextName(v1,v2));
+				break;
+			}
 			case 0x20:
 			{
 				//pushnull
-				context->runtime_stack_push(new Null);
+				context->runtime_stack_push(pushNull());
+				break;
+			}
+			case 0x21:
+			{
+				//pushundefined
+				context->runtime_stack_push(pushUndefined());
+				break;
+			}
+			case 0x23:
+			{
+				//nextvalue
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+				context->runtime_stack_push(nextValue(v1,v2));
+				break;
+			}
+			case 0x24:
+			{
+				//pushbyte
+				int8_t t;
+				code.read((char*)&t,1);
+				context->runtime_stack_push(abstract_i(t));
+				pushByte(t);
+				break;
+			}
+			case 0x25:
+			{
+				//pushshort
+				u30 t;
+				code >> t;
+				context->runtime_stack_push(abstract_i(t));
+				pushShort(t);
+				break;
+			}
+			case 0x26:
+			{
+				//pushtrue
+				context->runtime_stack_push(abstract_b(pushTrue()));
+				break;
+			}
+			case 0x27:
+			{
+				//pushfalse
+				context->runtime_stack_push(abstract_b(pushFalse()));
+				break;
+			}
+			case 0x28:
+			{
+				//pushnan
+				context->runtime_stack_push(pushNaN());
+				break;
+			}
+			case 0x29:
+			{
+				//pop
+				pop();
+				ASObject* o=context->runtime_stack_pop();
+				o->decRef();
+				break;
+			}
+			case 0x2a:
+			{
+				//dup
+				dup();
+				ASObject* o=context->runtime_stack_peek();
+				o->incRef();
+				context->runtime_stack_push(o);
+				break;
+			}
+			case 0x2b:
+			{
+				//swap
+				swap();
+				ASObject* v1=context->runtime_stack_pop();
+				ASObject* v2=context->runtime_stack_pop();
+
+				context->runtime_stack_push(v1);
+				context->runtime_stack_push(v2);
 				break;
 			}
 			case 0x2c:
 			{
 				//pushstring
-				LOG(LOG_TRACE, "synt pushstring" );
 				u30 t;
 				code >> t;
 				context->runtime_stack_push(pushString(context,t));
+				break;
+			}
+			case 0x2d:
+			{
+				//pushint
+				u30 t;
+				code >> t;
+				pushInt(context, t);
+
+				ASObject* i=abstract_i(context->context->constant_pool.integer[t]);
+				context->runtime_stack_push(i);
+				break;
+			}
+			case 0x2f:
+			{
+				//pushdouble
+				u30 t;
+				code >> t;
+				pushDouble(context, t);
+
+				ASObject* d=abstract_d(context->context->constant_pool.doubles[t]);
+				context->runtime_stack_push(d);
 				break;
 			}
 			case 0x30:
@@ -1878,10 +1562,122 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				pushScope(context);
 				break;
 			}
+			case 0x32:
+			{
+				//hasnext2
+				u30 t,t2;
+				code >> t;
+				code >> t2;
+
+				bool ret=hasNext2(context,t,t2);
+				context->runtime_stack_push(abstract_b(ret));
+				break;
+			}
+			case 0x40:
+			{
+				//newfunction
+				u30 t;
+				code >> t;
+				context->runtime_stack_push(newFunction(context,t));
+				break;
+			}
+			case 0x41:
+			{
+				//call
+				u30 t;
+				code >> t;
+				call(context,t);
+				break;
+			}
+			case 0x42:
+			{
+				//construct
+				u30 t;
+				code >> t;
+				construct(context,t);
+				break;
+			}
+			case 0x45:
+			{
+				//callsuper
+				u30 t,t2;
+				code >> t;
+				code >> t2;
+				callSuper(context,t,t2);
+				break;
+			}
+			case 0x46:
+			{
+				//callproperty
+				u30 t,t2;
+				code >> t;
+				code >> t2;
+				callProperty(context,t,t2);
+				break;
+			}
 			case 0x47:
 			{
 				//returnvoid
+				LOG(LOG_CALLS,"returnVoid");
 				return NULL;
+			}
+			case 0x48:
+			{
+				//returnvalue
+				ASObject* ret=context->runtime_stack_pop();
+				LOG(LOG_CALLS,"returnValue " << ret);
+				return ret;
+			}
+			case 0x49:
+			{
+				//constructsuper
+				u30 t;
+				code >> t;
+				constructSuper(context,t);
+				break;
+			}
+			case 0x4a:
+			{
+				//constructprop
+				u30 t,t2;
+				code >> t;
+				code >> t2;
+				constructProp(context,t,t2);
+				break;
+			}
+			case 0x4e:
+			{
+				//callsupervoid
+				u30 t,t2;
+				code >> t;
+				code >> t2;
+				callSuperVoid(context,t,t2);
+				break;
+			}
+			case 0x4f:
+			{
+				//callpropvoid
+				u30 t,t2;
+				code >> t;
+				code >> t2;
+				callPropVoid(context,t,t2);
+				break;
+			}
+			case 0x53:
+			{
+				//constructgenerictype
+				u30 t;
+				code >> t;
+				constructGenericType(context, t);
+				break;
+			}
+			case 0x55:
+			{
+				//newobject
+				u30 t;
+				code >> t;
+				newObject(context,t);
+				break;
 			}
 			case 0x58:
 			{
@@ -1913,6 +1709,20 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 t;
 				code >> t;
 				getLex(context,t);
+				break;
+			}
+			case 0x61:
+			{
+				//setproperty
+				u30 t;
+				code >> t;
+				ASObject* value=context->runtime_stack_pop();
+
+				multiname* name=context->context->getMultiname(t,context);
+
+				ASObject* obj=context->runtime_stack_pop();
+
+				setProperty(value,obj,name);
 				break;
 			}
 			case 0x65:

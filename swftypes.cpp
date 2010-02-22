@@ -410,7 +410,6 @@ double ASObject::toNumber() const
 {
 	if(getObjectType()==T_UNDEFINED)
 	{
-		cout << "HACK: returning 0 from Undefined::toNumber" << endl;
 		abort();
 		return 0;
 	}
@@ -859,6 +858,12 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 		{
 			//Fake returning the function itself
 			return objAndLevel(this,0);
+		}
+		else if(getObjectType()==T_FUNCTION && name.name_s=="apply")
+		{
+			//Create on the fly a Function
+			//HACK: both call and apply should be included in the Function object
+			return objAndLevel(new Function(IFunction::apply),0);
 		}
 
 		//It has not been found yet, ask the prototype

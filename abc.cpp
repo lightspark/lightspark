@@ -807,7 +807,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 		switch(m->kind)
 		{
 			case 0x1d:
-				cout << "PUPPA" << endl;
+				abort();
 			case 0x07:
 			case 0x09:
 			{

@@ -291,6 +291,8 @@ void Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 void Sprite::Render()
 {
+	assert(obj && obj->prototype);
+
 	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
@@ -441,24 +443,6 @@ ASFUNCTIONBODY(MovieClip,createEmptyMovieClip)
 
 	th->setVariableByName(args->args[0]->toString(),ret);
 	return ret;*/
-}
-
-ASFUNCTIONBODY(MovieClip,moveTo)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"Called moveTo");
-	return NULL;
-}
-
-ASFUNCTIONBODY(MovieClip,lineTo)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"Called lineTo");
-	return NULL;
-}
-
-ASFUNCTIONBODY(MovieClip,lineStyle)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"Called lineStyle");
-	return NULL;
 }
 
 ASFUNCTIONBODY(MovieClip,swapDepths)
@@ -677,6 +661,7 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	assert(args && args->size()==1);
 	th->Matrix.TranslateY=args->at(0)->toInt();
+	cout << th->Matrix.TranslateY << endl;
 	return NULL;
 }
 
@@ -814,14 +799,20 @@ ASFUNCTIONBODY(DisplayObject,_getWidth)
 	number_t x1,x2,y1,y2;
 	th->getBounds(x1,x2,y1,y2);
 
-	th->width=x2-x1;
-	return abstract_i(th->width);
+	return abstract_i(x2-x1);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getHeight)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return abstract_i(th->height);
+	//If the  height has been explicity set, return that
+	if(th->height!=0)
+		return abstract_b(th->height);
+
+	number_t x1,x2,y1,y2;
+	th->getBounds(x1,x2,y1,y2);
+
+	return abstract_i(y2-y1);
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)
@@ -838,6 +829,7 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 	o->setVariableByQName("getChildIndex","",new Function(getChildIndex));
 	o->setVariableByQName("getChildAt","",new Function(getChildAt));
 	o->setVariableByQName("addChild","",new Function(addChild));
+	o->setVariableByQName("removeChild","",new Function(removeChild));
 	o->setVariableByQName("addChildAt","",new Function(addChildAt));
 	o->setVariableByQName("contains","",new Function(contains));
 	o->setSetterByQName("mouseChildren","",new Function(undefinedFunction));
@@ -855,7 +847,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 
 ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 {
-	return new Integer(0);;
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	return abstract_i(th->dynamicDisplayList.size());
 }
 
 void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
@@ -877,8 +870,16 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 	child->parent=this;
 
 	//We insert the object in the back of the list
-	//TODO: support the 'at index' version of the call
-	dynamicDisplayList.push_back(child);
+	if(index==-1)
+		dynamicDisplayList.push_back(child);
+	else
+	{
+		assert(index<=dynamicDisplayList.size());
+		list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
+		for(int i=0;i<index;i++)
+			it++;
+		dynamicDisplayList.insert(it,child);
+	}
 }
 
 void DisplayObjectContainer::_removeChild(IDisplayListElem* child)
@@ -889,6 +890,7 @@ void DisplayObjectContainer::_removeChild(IDisplayListElem* child)
 	list<IDisplayListElem*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 	assert(it!=dynamicDisplayList.end());
 	dynamicDisplayList.erase(it);
+	child->parent=NULL;
 }
 
 bool DisplayObjectContainer::_contains(DisplayObject* d)
@@ -930,14 +932,31 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
 	args->at(0)->incRef();
 
+	int index=args->at(1)->toInt();
+
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args->at(0)->implementation);
-	th->_addChildAt(d,0);
+	th->_addChildAt(d,index);
 
 	//Notify the object
 	d->obj->incRef();
 	sys->currentVm->addEvent(d,Class<Event>::getInstanceS(true,"added",d->obj));
 
+	return d->obj;
+}
+
+ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	assert(args->size()==1);
+	//Validate object type
+	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	//Cast to object
+	DisplayObject* d=Class<DisplayObject>::cast(args->at(0)->implementation);
+
+	th->_removeChild(d);
+
+	//As we return the child we don't decRef it
 	return d->obj;
 }
 
@@ -951,7 +970,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args->at(0)->implementation);
-	th->_addChildAt(d,0);
+	th->_addChildAt(d,-1);
 
 	//Notify the object
 	d->obj->incRef();
@@ -1117,6 +1136,7 @@ void Graphics::buildTraits(ASObject* o)
 	o->setVariableByQName("clear","",new Function(clear));
 	o->setVariableByQName("drawRect","",new Function(drawRect));
 	o->setVariableByQName("moveTo","",new Function(moveTo));
+	o->setVariableByQName("lineTo","",new Function(lineTo));
 	o->setVariableByQName("beginFill","",new Function(beginFill));
 }
 
@@ -1172,9 +1192,40 @@ ASFUNCTIONBODY(Graphics,moveTo)
 	Graphics* th=static_cast<Graphics*>(obj->implementation);
 	assert(args->size()==2);
 
+	//As we are moving, first of all flush the shape
+	th->flushShape();
+
 	th->curX=args->at(0)->toInt();
 	th->curY=args->at(1)->toInt();
 	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,lineTo)
+{
+	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	assert(args->size()==2);
+
+	int x=args->at(0)->toInt();
+	int y=args->at(1)->toInt();
+
+	//If this is the first line, add also the starting point
+	if(th->tmpShape.outline.size()==0)
+		th->tmpShape.outline.push_back(Vector2(th->curX,th->curY));
+
+	th->tmpShape.outline.push_back(Vector2(x,y));
+
+	return NULL;
+}
+
+void Graphics::flushShape()
+{
+	if(!tmpShape.outline.empty())
+	{
+		sem_wait(&geometry_mutex);
+		geometry.push_back(tmpShape);
+		sem_post(&geometry_mutex);
+		tmpShape=GeomShape();
+	}
 }
 
 ASFUNCTIONBODY(Graphics,drawRect)
@@ -1187,17 +1238,17 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	int width=args->at(2)->toInt();
 	int height=args->at(3)->toInt();
 
-	//Build a shape and add it to the geometry vector
-	GeomShape tmpShape;
-	tmpShape.outline.push_back(Vector2(x,y));
-	tmpShape.outline.push_back(Vector2(x+width,y));
-	tmpShape.outline.push_back(Vector2(x+width,y+height));
-	tmpShape.outline.push_back(Vector2(x,y+height));
-	tmpShape.outline.push_back(Vector2(x,y));
+	th->flushShape();
 
-	sem_wait(&th->geometry_mutex);
-	th->geometry.push_back(tmpShape);
-	sem_post(&th->geometry_mutex);
+	//Build a shape and add it to the geometry vector
+	th->tmpShape.outline.push_back(Vector2(x,y));
+	th->tmpShape.outline.push_back(Vector2(x+width,y));
+	th->tmpShape.outline.push_back(Vector2(x+width,y+height));
+	th->tmpShape.outline.push_back(Vector2(x,y+height));
+	th->tmpShape.outline.push_back(Vector2(x,y));
+
+	th->flushShape();
+
 	return NULL;
 }
 
@@ -1213,6 +1264,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 
 void Graphics::Render()
 {
+	//Should probably flush the shape
 	sem_wait(&geometry_mutex);
 
 	for(int i=0;i<geometry.size();i++)

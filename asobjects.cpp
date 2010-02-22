@@ -159,7 +159,6 @@ ASFUNCTIONBODY(Array,_concat)
 	//this array could die too
 	for(int i=0;i<ret->data.size();i++)
 	{
-		
 		if(ret->data[i].type==STACK_OBJECT)
 			ret->data[i].data->incRef();
 	}
@@ -195,7 +194,7 @@ ASFUNCTIONBODY(Array,unshift)
 	}
 	th->data.insert(th->data.begin(),args->at(0));
 	args->at(0)->incRef();
-	return new Integer(th->size());
+	return abstract_i(th->size());
 }
 
 ASFUNCTIONBODY(Array,_push)
@@ -208,7 +207,7 @@ ASFUNCTIONBODY(Array,_push)
 	}
 	th->push(args->at(0));
 	args->at(0)->incRef();
-	return new Integer(th->size());
+	return abstract_i(th->size());
 }
 
 ASMovieClipLoader::ASMovieClipLoader()
@@ -970,6 +969,30 @@ IFunction* SyntheticFunction::toFunction()
 IFunction* Function::toFunction()
 {
 	return this;
+}
+
+IFunction::IFunction():bound(false),closure_this(NULL),closure_level(-1),overriden_by(NULL)
+{
+	type=T_FUNCTION;
+}
+
+ASFUNCTIONBODY(IFunction,apply)
+{
+	IFunction* th=static_cast<IFunction*>(obj);
+	assert(args->size()==2);
+
+	//Validate parameters
+	assert(args->at(1)->getObjectType()==T_ARRAY);
+	Array* array=Class<Array>::cast(args->at(1)->implementation);
+
+	int len=array->size();
+	ASObject** new_args=new ASObject*[len];
+	for(int i=0;i<len;i++)
+		new_args[i]=array->at(i);
+
+	ASObject* ret=th->fast_call(args->at(0),new_args,len,0);
+	delete[] new_args;
+	return ret;
 }
 
 SyntheticFunction::SyntheticFunction(method_info* m):mi(m),hit_count(0),val(NULL)

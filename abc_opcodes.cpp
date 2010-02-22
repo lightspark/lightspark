@@ -489,12 +489,6 @@ bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
 	bool ret=!(obj1->isLess(obj2));
-	if(obj1->getObjectType()==T_INTEGER ||
-			obj1->getObjectType()==T_UINTEGER)
-			cout << obj1->toInt() << endl;
-	if(obj2->getObjectType()==T_INTEGER ||
-			obj2->getObjectType()==T_UINTEGER)
-			cout << obj2->toInt() << endl;
 	LOG(LOG_CALLS,"ifNLT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();

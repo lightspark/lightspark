@@ -119,6 +119,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getNumChildren);
 	ASFUNCTION(addChild);
+	ASFUNCTION(removeChild);
 	ASFUNCTION(addChildAt);
 	ASFUNCTION(getChildIndex);
 	ASFUNCTION(getChildAt);
@@ -131,7 +132,9 @@ private:
 	//As geometry is used by RenderThread but modified by ABCVm we have to mutex a bit
 	sem_t geometry_mutex;
 	std::vector<GeomShape> geometry;
+	GeomShape tmpShape;
 	int curX, curY;
+	void flushShape();
 public:
 	Graphics():curX(0),curY(0)
 	{
@@ -143,6 +146,7 @@ public:
 	ASFUNCTION(beginFill);
 	ASFUNCTION(drawRect);
 	ASFUNCTION(moveTo);
+	ASFUNCTION(lineTo);
 	ASFUNCTION(clear);
 	void Render();
 	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
@@ -264,9 +268,6 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(moveTo);
-	ASFUNCTION(lineStyle);
-	ASFUNCTION(lineTo);
 	ASFUNCTION(swapDepths);
 	ASFUNCTION(createEmptyMovieClip);
 	ASFUNCTION(addFrameScript);

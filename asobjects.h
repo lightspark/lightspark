@@ -198,7 +198,8 @@ public:
 class IFunction: public ASObject
 {
 public:
-	IFunction():bound(false),closure_this(NULL),closure_level(-1),overriden_by(NULL){type=T_FUNCTION;}
+	ASFUNCTION(apply);
+	IFunction();
 	typedef ASObject* (*as_function)(ASObject*, arguments*);
 	virtual ASObject* call(ASObject* obj, arguments* args, int level)=0;
 	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)=0;
@@ -208,16 +209,6 @@ public:
 		{
 			//If binding with null we are not a class method
 			IFunction* ret;
-			/*if(c!=NULL)
-			{
-				c->incRef();
-				ret=clone();
-			}
-			else
-			{
-				incRef();
-				ret=this;
-			}*/
 			incRef();
 			ret=this;
 			ret->bound=true;

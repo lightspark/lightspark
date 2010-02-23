@@ -65,44 +65,6 @@ tiny_string ASObject::toString(bool debugMsg)
 	return "[object Object]";
 }
 
-bool ASObject::isGreater(ASObject* r)
-{
-	assert(ref_count>0);
-	if(implementation)
-	{
-		bool ret;
-		if(implementation->isGreater(ret,r))
-			return ret;
-	}
-
-	if(hasPropertyByQName("valueOf",""))
-	{
-		if(r->hasPropertyByQName("valueOf","")==false)
-			abort();
-
-		objAndLevel obj1=getVariableByQName("valueOf","");
-		objAndLevel obj2=r->getVariableByQName("valueOf","");
-
-		assert(obj1.obj!=NULL && obj2.obj!=NULL);
-
-		assert(obj1.obj->getObjectType()==T_FUNCTION && obj2.obj->getObjectType()==T_FUNCTION);
-		IFunction* f1=static_cast<IFunction*>(obj1.obj);
-		IFunction* f2=static_cast<IFunction*>(obj2.obj);
-
-		ASObject* ret1=f1->call(this,NULL,obj1.level);
-		ASObject* ret2=f2->call(r,NULL,obj2.level);
-
-		LOG(LOG_CALLS,"Overloaded isGreater");
-		return ret1->isGreater(ret2);
-	}
-
-	LOG(LOG_NOT_IMPLEMENTED,"Greater than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
-	if(prototype)
-		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
-	abort();
-	return false;
-}
-
 bool ASObject::isLess(ASObject* r)
 {
 	assert(ref_count>0);
@@ -169,11 +131,6 @@ IInterface::IInterface(const IInterface& r):type(r.type),obj(NULL)
 		c->incRef();
 		obj->implementation=this;
 	}
-}
-
-bool IInterface::isGreater(bool& ret, ASObject* r)
-{
-	return false;
 }
 
 bool IInterface::isLess(bool& ret, ASObject* r)
@@ -271,24 +228,6 @@ tiny_string multiname::qualifiedString() const
 		ret+="::";
 		ret+=name_s;
 		return ret;
-	}
-}
-
-bool Integer::isGreater(ASObject* o)
-{
-	if(o->getObjectType()==T_INTEGER)
-	{
-		const Integer* i=static_cast<const Integer*>(o);
-		return val > i->toInt();
-	}
-	else if(o->getObjectType()==T_NUMBER)
-	{
-		const Number* d=static_cast<const Number*>(o);
-		return val > d->toNumber();
-	}
-	else
-	{
-		return ASObject::isGreater(o);
 	}
 }
 
@@ -994,7 +933,7 @@ void ASObject::check()
 	//Put here a bunch of safety check on the object
 	assert(ref_count>0);
 	//Heavyweight stuff
-#if 1
+#ifndef NDEBUG
 	variables_map::var_iterator it=Variables.Variables.begin();
 	for(it;it!=Variables.Variables.end();it++)
 	{

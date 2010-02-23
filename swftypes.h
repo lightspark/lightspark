@@ -514,7 +514,6 @@ public:
 
 	virtual bool isEqual(ASObject* r);
 	virtual bool isLess(ASObject* r);
-	virtual bool isGreater(ASObject* r);
 
 	void handleConstruction(arguments* args, bool buildAndLink);
 
@@ -551,7 +550,6 @@ private:
 	virtual bool toString(tiny_string& ret);
 	virtual bool isEqual(bool& ret, ASObject* o);
 	virtual bool isLess(bool& ret, ASObject* o);
-	virtual bool isGreater(bool& ret, ASObject* o);
 	virtual bool toInt(int& ret);
 	virtual bool toNumber(double& ret);
 	virtual bool hasNext(int& index, bool& out);

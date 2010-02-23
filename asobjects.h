@@ -367,11 +367,6 @@ public:
 	{
 		abort();
 	}
-	bool isGrater(bool& ret, ASObject* o)
-	{
-		abort();
-	}
-	bool isGreater(bool& ret, ASObject* o);
 	bool toString(tiny_string& ret);
 };
 
@@ -537,7 +532,6 @@ public:
 		return val;
 	}
 	bool isLess(ASObject* r);
-	bool isGreater(ASObject* r);
 	bool isEqual(ASObject* o);
 };
 
@@ -567,10 +561,6 @@ public:
 //		return val;
 	}
 	bool isLess(ASObject* r)
-	{
-		abort();
-	}
-	bool isGreater(ASObject* r)
 	{
 		abort();
 	}
@@ -610,7 +600,6 @@ public:
 	}
 //	operator double() const {return val;}
 	bool isLess(ASObject* o);
-	bool isGreater(ASObject* o);
 	bool isEqual(ASObject* o);
 };
 

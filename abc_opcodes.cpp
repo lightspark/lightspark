@@ -1137,10 +1137,9 @@ ASObject* ABCVm::pushNaN()
 
 bool ABCVm::ifGT(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifGT");
-
 	//Real comparision demanded to object
-	bool ret=obj1->isGreater(obj2);
+	bool ret=obj2->isLess(obj1);
+	LOG(LOG_CALLS,"ifGT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -1151,7 +1150,7 @@ bool ABCVm::ifNGT(ASObject* obj2, ASObject* obj1)
 {
 
 	//Real comparision demanded to object
-	bool ret= !(obj1->isGreater(obj2));
+	bool ret=!obj2->isLess(obj1);
 	LOG(LOG_CALLS,"ifNGT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
@@ -1161,10 +1160,9 @@ bool ABCVm::ifNGT(ASObject* obj2, ASObject* obj1)
 
 bool ABCVm::ifLE(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifLE");
-
 	//Real comparision demanded to object
-	bool ret=obj1->isLess(obj2) || obj1->isEqual(obj2);
+	bool ret=!obj2->isLess(obj1);
+	LOG(LOG_CALLS,"ifLE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1172,10 +1170,9 @@ bool ABCVm::ifLE(ASObject* obj2, ASObject* obj1)
 
 bool ABCVm::ifNLE(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifNLE");
-
 	//Real comparision demanded to object
-	bool ret=!(obj1->isLess(obj2) || obj1->isEqual(obj2));
+	bool ret=obj2->isLess(obj1);
+	LOG(LOG_CALLS,"ifNLE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1183,9 +1180,9 @@ bool ABCVm::ifNLE(ASObject* obj2, ASObject* obj1)
 
 bool ABCVm::ifGE(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifGE");
 	//Real comparision demanded to object
-	bool ret=obj1->isGreater(obj2) || obj1->isEqual(obj2);
+	bool ret=!obj1->isLess(obj2);
+	LOG(LOG_CALLS,"ifGE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1193,10 +1190,9 @@ bool ABCVm::ifGE(ASObject* obj2, ASObject* obj1)
 
 bool ABCVm::ifNGE(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifNGE");
-
 	//Real comparision demanded to object
-	bool ret=!(obj1->isGreater(obj2) || obj1->isEqual(obj2));
+	bool ret=obj1->isLess(obj2);
+	LOG(LOG_CALLS,"ifNGE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
 	return ret;

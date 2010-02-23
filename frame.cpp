@@ -68,6 +68,7 @@ void Frame::Render()
 		glPopMatrix();
 	}
 	//Render objects added at runtime
+	//TODO: Add synchronization mutex, as this may be modified in the meantime by the VM
 	list<IDisplayListElem*>::iterator j=dynamicDisplayList->begin();
 	for(j;j!=dynamicDisplayList->end();j++)
 		(*j)->Render();

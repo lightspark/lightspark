@@ -715,7 +715,7 @@ bool ASString::isEqual(bool& ret, ASObject* r)
 	return true;
 }
 
-bool ASString::isGreater(bool& ret, ASObject* o)
+/*bool ASString::isGreater(bool& ret, ASObject* o)
 {
 	//TODO: Implement ECMA-262 11.8.5 algorithm
 	//Number comparison has the priority over strings
@@ -734,7 +734,7 @@ bool ASString::isGreater(bool& ret, ASObject* o)
 	cout << o->getObjectType() << endl;
 	abort();
 	return true;
-}
+}*/
 
 bool Boolean::isEqual(ASObject* r)
 {
@@ -812,24 +812,6 @@ bool Number::isEqual(ASObject* o)
 	else
 	{
 		return ASObject::isEqual(o);
-	}
-}
-
-bool Number::isGreater(ASObject* o)
-{
-	if(o->getObjectType()==T_INTEGER)
-	{
-		const Integer* i=static_cast<const Integer*>(o);
-		return val>i->val;
-	}
-	else if(o->getObjectType()==T_NUMBER)
-	{
-		const Number* i=static_cast<const Number*>(o);
-		return val>i->val;
-	}
-	else
-	{
-		return ASObject::isGreater(o);
 	}
 }
 
@@ -1002,13 +984,14 @@ SyntheticFunction::SyntheticFunction(method_info* m):mi(m),hit_count(0),val(NULL
 
 ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numArgs, int level)
 {
+	const int hit_threshold=10;
 	if(mi->body==NULL)
 	{
 //		LOG(LOG_NOT_IMPLEMENTED,"Not initialized function");
 		return NULL;
 	}
 
-	if(hit_count==3 || sys->useInterpreter==false)
+	if(hit_count==hit_threshold || sys->useInterpreter==false)
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method();
@@ -1069,7 +1052,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 		cc->locals[i+1]=rest->obj;
 	}
 	ASObject* ret;
-	if(hit_count<3 && sys->useInterpreter)
+	if(val==NULL && sys->useInterpreter)
 	{
 		//This is not an hot function, execute it using the intepreter
 		ret=ABCVm::executeFunction(this,cc);

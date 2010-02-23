@@ -4341,6 +4341,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 				u30 t;
 				code >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
+				//Sync the local to memory
+				if(static_locals[t].second!=STACK_NONE)
+				{
+					llvm::Value* gep=Builder.CreateGEP(locals,constant);
+					llvm::Value* old=Builder.CreateLoad(gep);
+					Builder.CreateCall(ex->FindFunctionNamed("decRef"), old);
+					abstract_value(ex,Builder,static_locals[t]);
+					Builder.CreateStore(static_locals[t].first,gep);
+					static_locals[t].second=STACK_NONE;
+				}
 				Builder.CreateCall2(ex->FindFunctionNamed("incLocal_i"), context, constant);
 				break;
 			}

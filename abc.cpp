@@ -461,7 +461,6 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else
 				{
-					abort();
 					//ret->name_s=rt1->toString();
 					//ret->name_type=multiname::NAME_STRING;
 				}
@@ -744,9 +743,8 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				}
 				else
 				{
-					abort();
-					//ret->name_s=n->toString();
-					//ret->name_type=multiname::NAME_STRING;
+					ret->name_s=n->toString();
+					ret->name_type=multiname::NAME_STRING;
 				}
 				n->decRef();
 				break;
@@ -848,9 +846,8 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				}
 				else
 				{
-					abort();
-					//ret->name_s=n->toString();
-					//ret->name_type=multiname::NAME_STRING;
+					ret->name_s=n->toString();
+					ret->name_type=multiname::NAME_STRING;
 				}
 				n->decRef();
 				break;

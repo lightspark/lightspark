@@ -143,6 +143,7 @@ void ABCVm::coerce_a()
 ASObject* ABCVm::checkfilter(ASObject* o)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "checkfilter" );
+	abort();
 	return o;
 }
 
@@ -433,7 +434,7 @@ number_t ABCVm::divide(ASObject* val2, ASObject* val1)
 		val2->getObjectType()==T_UNDEFINED)
 	{
 		//HACK
-		LOG(LOG_NOT_IMPLEMENTED,"subtract: HACK");
+		LOG(LOG_NOT_IMPLEMENTED,"divide: HACK");
 		return 0;
 	}
 	double num1=val1->toNumber();
@@ -814,8 +815,8 @@ bool ABCVm::ifTrue(ASObject* obj1)
 
 intptr_t ABCVm::modulo(ASObject* val1, ASObject* val2)
 {
-	int num2=val2->toInt();
 	int num1=val1->toInt();
+	int num2=val2->toInt();
 
 	val1->decRef();
 	val2->decRef();
@@ -1489,7 +1490,7 @@ ASObject* ABCVm::greaterThan(ASObject* obj1, ASObject* obj2)
 	LOG(LOG_CALLS,"greaterThan");
 
 	//Real comparision demanded to object
-	bool ret=obj1->isGreater(obj2);
+	bool ret=obj2->isLess(obj1);
 	obj1->decRef();
 	obj2->decRef();
 	return new Boolean(ret);
@@ -1500,7 +1501,7 @@ ASObject* ABCVm::greaterEquals(ASObject* obj1, ASObject* obj2)
 	LOG(LOG_CALLS,"greaterEquals");
 
 	//Real comparision demanded to object
-	bool ret=(obj1->isGreater(obj2) || obj1->isEqual(obj2));
+	bool ret=!obj1->isLess(obj2);
 	obj1->decRef();
 	obj2->decRef();
 	return new Boolean(ret);
@@ -1511,7 +1512,7 @@ ASObject* ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 	LOG(LOG_CALLS,"lessEquals");
 
 	//Real comparision demanded to object
-	bool ret=(obj1->isLess(obj2) || obj1->isEqual(obj2));
+	bool ret=!obj2->isLess(obj1);
 	obj1->decRef();
 	obj2->decRef();
 	return new Boolean(ret);

@@ -243,6 +243,19 @@ bool Integer::isLess(ASObject* o)
 		const Number* i=static_cast<const Number*>(o);
 		return val < i->toNumber();
 	}
+	else if(o->getObjectType()==T_STRING)
+	{
+		const ASString* s=static_cast<const ASString*>(o->implementation);
+		//Check if the string may be converted to integer
+		//TODO: check whole string?
+		if(isdigit(s->data[0]))
+		{
+			int val2=atoi(s->data.c_str());
+			return val < val2;
+		}
+		else
+			return false;
+	}
 	else
 		return ASObject::isLess(o);
 }

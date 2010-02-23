@@ -661,7 +661,6 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	assert(args && args->size()==1);
 	th->Matrix.TranslateY=args->at(0)->toInt();
-	cout << th->Matrix.TranslateY << endl;
 	return NULL;
 }
 
@@ -1255,10 +1254,10 @@ ASFUNCTIONBODY(Graphics,drawRect)
 ASFUNCTIONBODY(Graphics,beginFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj->implementation);
-	if(args->size()>=1)
+/*	if(args->size()>=1)
 		cout << "Color " << hex << args->at(0)->toInt() << dec << endl;
 	if(args->size()>=2)
-		cout << "Alpha " << args->at(1)->toNumber() << endl;
+		cout << "Alpha " << args->at(1)->toNumber() << endl;*/
 	return NULL;
 }
 

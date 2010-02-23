@@ -338,15 +338,10 @@ public:
 
 class ASString: public IInterface
 {
-friend class ASQName;
-friend class ABCContext;
-friend class Dictionary;
-friend ASObject* unescape(ASObject* obj,arguments* args);
 private:
-	std::string data;
-	void registerMethods();
 	tiny_string toString() const;
 public:
+	std::string data;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASString();
@@ -564,10 +559,7 @@ public:
 	{
 		abort();
 	}
-	bool isEqual(ASObject* o)
-	{
-		abort();
-	}
+	bool isEqual(ASObject* o);
 };
 
 class Number : public ASObject

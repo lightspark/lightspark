@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 	char* fileName=NULL;
 	char* url=NULL;
 	char* paramsFileName=NULL;
-	bool useInterpreter=false;
+	bool useInterpreter=true;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
 
 	for(int i=1;i<argc;i++)
@@ -68,10 +68,10 @@ int main(int argc, char* argv[])
 
 			url=argv[i];
 		}
-		else if(strcmp(argv[i],"-i")==0 || 
-			strcmp(argv[i],"--enable-interpreter")==0)
+		else if(strcmp(argv[i],"-ni")==0 || 
+			strcmp(argv[i],"--disable-interpreter")==0)
 		{
-			useInterpreter=true;
+			useInterpreter=false;
 		}
 		else if(strcmp(argv[i],"-l")==0 || 
 			strcmp(argv[i],"--log-level")==0)
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 
 	if(fileName==NULL)
 	{
-		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf] <file.swf>" << endl;
+		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf] [--disable-interpreter|-ni] [--log-level|-l 0-4] <file.swf>" << endl;
 		exit(-1);
 	}
 

@@ -731,7 +731,6 @@ bool ASString::isEqual(bool& ret, ASObject* r)
 			return true;
 		}
 	}
-	cout << o->getObjectType() << endl;
 	abort();
 	return true;
 }*/
@@ -991,7 +990,8 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 		return NULL;
 	}
 
-	if(hit_count==hit_threshold || sys->useInterpreter==false)
+	//Temporarily disable JITting
+	if(false && (hit_count==hit_threshold || sys->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method();
@@ -1684,3 +1684,21 @@ void UInteger::sinit(Class_base* c)
 	//Right now we pretend to be signed, to make comparisons work
 	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff));
 }
+
+bool UInteger::isEqual(ASObject* o)
+{
+	if(o->getObjectType()==T_INTEGER)
+	{
+		//CHECK: somehow wrong
+		return val==o->toInt();
+	}
+	else if(o->getObjectType()==T_UINTEGER)
+		return val==o->toUInt();
+	else if(o->getObjectType()==T_NUMBER)
+		return val==o->toUInt();
+	else
+	{
+		return ASObject::isEqual(o);
+	}
+}
+

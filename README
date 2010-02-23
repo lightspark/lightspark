@@ -1,7 +1,7 @@
-Lightspark second Technical demo README
+Lightspark third Technical demo README
 
 First of all I'd like to thank you for testing the lightspark project,
-the current status is quite primitive, but I'd like to showcase the technology of this project
+the current status is kind of stable, although not ready for end users
 
 Be aware that the following feature are not yet supported or stable enough to be include in the demo
 
@@ -19,22 +19,24 @@ This demo already includes a lot of cool features
 
 
 INSTALLATION:
-To compile this software you need to install development packages for llvm-2.6, sdl and opengl.
+To compile this software you need to install development packages for llvm-2.6, sdl, opengl and curl
 To build the software please follow those steps.
 
 1) cd lightspark
-2) make
+2) make release
 
 EXECUTION:
-This demo aims at rendering a simple SWF file generated from the mxml source test2.mxml in this directory.
-You can generate test2.swf to test2.mxml using the mxmlc compiler included in the flex sdk. For your
-convenience you can download the compiled demo from
+This demo aims at rendering, at least partially, the runtime generated UI of the new YouTube player. Recently YouTube switched 
+to Flash 10 and AS3 to serve some HD content, while maintaining the old AS2 based player for lower quality content.
 
-http://allievi.sssup.it/tatiana/test2.swf
+Currently only the standalone player is supported.
 
-You can execute the file using the standalone player
+-) First of all download the YouTube player SWF file.
+	wget http://s.ytimg.com/yt/swf/watch_as3-vfl143390.swf
+-) The player works by gathering the parameters from the Javascript in the page. Lightspark support loading parameters from a text file
+   using the --parameters-file command line. The release includes a suitable yt-args file
+-) Execute the file, this will render the usual UI of the YouTube player. Do not expect the video to actally play, as video downloading
+   and decoding is not yet supported
+	./lightspark --parameters-file yt-args watch_as3-vfl143390.swf
 
-./lightspark test2.swf
-
-Be aware that this will generate a massive amount of debugging messages. Press 'Q' on Lightspark window to
-close the application
+Press 'Q' on Lightspark window to close the application

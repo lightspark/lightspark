@@ -59,7 +59,6 @@ friend class DisplayObjectContainer;
 protected:
 	intptr_t width;
 	intptr_t height;
-	number_t rotation;
 	LoaderInfo* loaderInfo;
 public:
 	DisplayObject();
@@ -103,7 +102,7 @@ public:
 class DisplayObjectContainer: public DisplayObject
 {
 private:
-	void _addChildAt(DisplayObject* child, int index);
+	void _addChildAt(DisplayObject* child, unsigned int index);
 	bool _contains(DisplayObject* d);
 protected:
 	std::list < IDisplayListElem* > dynamicDisplayList;
@@ -206,16 +205,16 @@ class Loader: public IThreadJob, public DisplayObjectContainer
 {
 private:
 	enum SOURCE { URL, BYTES };
+	RootMovieClip* local_root;
+	bool loading;
+	bool loaded;
+	DisplayObject* content;
 	SOURCE source;
 	tiny_string url;
 	ByteArray* bytes;
-	bool loading;
-	bool loaded;
-	RootMovieClip* local_root;
 	LoaderInfo* contentLoaderInfo;
-	DisplayObject* content;
 public:
-	Loader():loading(false),local_root(NULL),loaded(false),content(NULL)
+	Loader():local_root(NULL),loading(false),loaded(false),content(NULL)
 	{
 	}
 	static void sinit(Class_base* c);

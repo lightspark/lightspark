@@ -1,6 +1,6 @@
 # User-overridable flags:
-CXXFLAGS = -g -O0 -D_GLIBCXX_NO_DEBUG -Wnon-virtual-dtor -Woverloaded-virtual
-CXXFLAGS_RELEASE = -O3 -DNDEBUG -Wnon-virtual-dtor -Woverloaded-virtual
+CXXFLAGS = -Wall -g -O0 -D_GLIBCXX_NO_DEBUG -Wnon-virtual-dtor -Woverloaded-virtual
+CXXFLAGS_RELEASE = -Wall -O3 -DNDEBUG -Wnon-virtual-dtor -Woverloaded-virtual
 LLVMLIBS = `llvm-config --libfiles engine interpreter`
 EXTRAFLAGS = `pkg-config --cflags gl sdl libcurl libxml-2.0 libpcrecpp`
 EXTRALIBS = `pkg-config --cflags --libs gl sdl libcurl libxml-2.0 libpcrecpp`

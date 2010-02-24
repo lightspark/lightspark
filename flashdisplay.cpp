@@ -32,6 +32,7 @@
 
 #include <GL/glew.h>
 #include <fstream>
+#include <limits>
 using namespace std;
 using namespace lightspark;
 
@@ -163,6 +164,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 		th->source=BYTES;
 		sys->cur_thread_pool->addJob(th);
 	}
+	return NULL;
 }
 
 void Loader::sinit(Class_base* c)
@@ -182,7 +184,6 @@ void Loader::buildTraits(ASObject* o)
 
 void Loader::execute()
 {
-	static char name[]="0dump";
 	LOG(LOG_NOT_IMPLEMENTED,"Loader async execution " << url);
 	if(source==URL)
 	{
@@ -199,12 +200,6 @@ void Loader::execute()
 	{
 		//Implement loadBytes, now just dump
 		assert(bytes->bytes);
-
-		/*FILE* f=fopen(name,"w");
-		fwrite(bytes->bytes,1,bytes->len,f);
-		fclose(f);
-
-		name[0]++;*/
 
 		//We only support swf files now
 		assert(memcmp(bytes->bytes,"CWS",3)==0);
@@ -266,7 +261,7 @@ void Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 	//TODO: Check bounds calculation
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
-	for(it;it!=dynamicDisplayList.end();it++)
+	for(;it!=dynamicDisplayList.end();it++)
 	{
 		number_t txmin,txmax,tymin,tymax;
 		(*it)->getBounds(txmin,txmax,tymin,tymax);
@@ -278,7 +273,7 @@ void Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 	if(graphics)
 	{
 		number_t txmin,txmax,tymin,tymax;
-		graphics->getBounds(xmin,xmax,ymin,ymax);
+		graphics->getBounds(txmin,txmax,tymin,tymax);
 		xmin = min(xmin,txmin);
 		xmax = max(xmax,txmax);
 		ymin = min(ymin,txmin);
@@ -340,7 +335,7 @@ void Sprite::Render()
 
 	//Now draw also the display list
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
-	for(it;it!=dynamicDisplayList.end();it++)
+	for(;it!=dynamicDisplayList.end();it++)
 		(*it)->Render();
 
 	glPopMatrix();
@@ -348,7 +343,7 @@ void Sprite::Render()
 
 ASFUNCTIONBODY(Sprite,_constructor)
 {
-	Sprite* th=static_cast<Sprite*>(obj->implementation);
+	//Sprite* th=static_cast<Sprite*>(obj->implementation);
 	DisplayObjectContainer::_constructor(obj,NULL);
 
 	return NULL;
@@ -489,7 +484,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 
 ASFUNCTIONBODY(MovieClip,_constructor)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	//MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	Sprite::_constructor(obj,NULL);
 /*	th->setVariableByQName("swapDepths","",new Function(swapDepths));
 	th->setVariableByQName("createEmptyMovieClip","",new Function(createEmptyMovieClip));
@@ -557,7 +552,7 @@ void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	Matrix.multiply2D(xmax,ymax,xmax,ymax);
 }
 
-DisplayObject::DisplayObject():height(0),width(0),loaderInfo(NULL),rotation(0.0)
+DisplayObject::DisplayObject():width(0),height(0),loaderInfo(NULL)
 {
 }
 
@@ -614,13 +609,13 @@ void DisplayObject::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(DisplayObject,_getAlpha)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return abstract_d(1);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getMask)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Null;
 }
 
@@ -684,7 +679,7 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 
 ASFUNCTIONBODY(DisplayObject,_constructor)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	EventDispatcher::_constructor(obj,NULL);
 
 	return NULL;
@@ -711,26 +706,27 @@ ASFUNCTIONBODY(DisplayObject,_getStage)
 
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getBlendMode)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,localToGlobal)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_setRotation)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	th->rotation=args->at(0)->toNumber();
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	abort();
+	//th->rotation=args->at(0)->toNumber();
 	return NULL;
 }
 
@@ -744,13 +740,13 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 
 ASFUNCTIONBODY(DisplayObject,_setName)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getName)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return new Undefined;
 }
 
@@ -778,13 +774,13 @@ ASFUNCTIONBODY(DisplayObject,_getRoot)
 
 ASFUNCTIONBODY(DisplayObject,_getRotation)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return new Number(th->rotation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getVisible)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return abstract_b(true);
 }
 
@@ -850,7 +846,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 	return abstract_i(th->dynamicDisplayList.size());
 }
 
-void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
+void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index)
 {
 	//Set the root of the movie to this container
 	assert(child->root==NULL);
@@ -869,13 +865,13 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, int index)
 	child->parent=this;
 
 	//We insert the object in the back of the list
-	if(index==-1)
+	if(index==numeric_limits<unsigned int>::max())
 		dynamicDisplayList.push_back(child);
 	else
 	{
 		assert(index<=dynamicDisplayList.size());
 		list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
-		for(int i=0;i<index;i++)
+		for(unsigned int i=0;i<index;i++)
 			it++;
 		dynamicDisplayList.insert(it,child);
 	}
@@ -898,7 +894,7 @@ bool DisplayObjectContainer::_contains(DisplayObject* d)
 		return true;
 
 	list<IDisplayListElem*>::const_iterator it=dynamicDisplayList.begin();
-	for(it;it!=dynamicDisplayList.end();it++)
+	for(;it!=dynamicDisplayList.end();it++)
 	{
 		if(*it==d)
 			return true;
@@ -969,7 +965,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args->at(0)->implementation);
-	th->_addChildAt(d,-1);
+	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
 	d->obj->incRef();
@@ -982,10 +978,10 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
 	assert(args->size()==1);
-	int index=args->at(0)->toInt();
+	unsigned int index=args->at(0)->toInt();
 	assert(index<th->dynamicDisplayList.size());
 	list<IDisplayListElem*>::iterator it=th->dynamicDisplayList.begin();
-	for(int i=0;i<index;i++)
+	for(unsigned int i=0;i<index;i++)
 		it++;
 
 	(*it)->obj->incRef();
@@ -1110,7 +1106,7 @@ ASFUNCTIONBODY(Stage,_constructor)
 
 ASFUNCTIONBODY(Stage,_getStageWidth)
 {
-	Stage* th=static_cast<Stage*>(obj->implementation);
+	//Stage* th=static_cast<Stage*>(obj->implementation);
 	RECT size=sys->getFrameSize();
 	int width=size.Xmax/20;
 	return abstract_d(width);
@@ -1118,7 +1114,7 @@ ASFUNCTIONBODY(Stage,_getStageWidth)
 
 ASFUNCTIONBODY(Stage,_getStageHeight)
 {
-	Stage* th=static_cast<Stage*>(obj->implementation);
+	//Stage* th=static_cast<Stage*>(obj->implementation);
 	RECT size=sys->getFrameSize();
 	int height=size.Ymax/20;
 	return abstract_d(height);
@@ -1155,9 +1151,9 @@ void Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 		xmin=xmax=geometry[0].outline[0].x;
 		ymin=ymax=geometry[0].outline[0].y;
 
-		for(int i=0;i<geometry.size();i++)
+		for(unsigned int i=0;i<geometry.size();i++)
 		{
-			for(int j=0;j<geometry[i].outline.size();j++)
+			for(unsigned int j=0;j<geometry[i].outline.size();j++)
 			{
 				const Vector2& v=geometry[i].outline[j];
 				if(v.x<xmin)
@@ -1176,6 +1172,7 @@ void Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 
 ASFUNCTIONBODY(Graphics,_constructor)
 {
+	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,clear)
@@ -1184,6 +1181,7 @@ ASFUNCTIONBODY(Graphics,clear)
 	sem_wait(&th->geometry_mutex);
 	th->geometry.clear();
 	sem_post(&th->geometry_mutex);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,moveTo)
@@ -1253,7 +1251,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 
 ASFUNCTIONBODY(Graphics,beginFill)
 {
-	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	//Graphics* th=static_cast<Graphics*>(obj->implementation);
 /*	if(args->size()>=1)
 		cout << "Color " << hex << args->at(0)->toInt() << dec << endl;
 	if(args->size()>=2)
@@ -1266,7 +1264,7 @@ void Graphics::Render()
 	//Should probably flush the shape
 	sem_wait(&geometry_mutex);
 
-	for(int i=0;i<geometry.size();i++)
+	for(unsigned int i=0;i<geometry.size();i++)
 		geometry[i].Render();
 
 /*	if(geometry.size()==1)

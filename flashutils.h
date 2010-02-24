@@ -36,8 +36,8 @@ friend class Loader;
 friend class URLLoader;
 protected:
 	uint8_t* bytes;
-	int len;
-	int position;
+	unsigned int len;
+	unsigned int position;
 public:
 	ByteArray();
 	~ByteArray();
@@ -73,7 +73,7 @@ protected:
 	uint32_t repeatCount;
 	bool running;
 public:
-	Timer():delay(0),running(false),repeatCount(0){};
+	Timer():delay(0),repeatCount(0),running(false){};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(start);
@@ -119,9 +119,9 @@ public:
 	{
 		abort();
 	}
-	bool hasNext(int& index, bool& out);
-	bool nextName(int index, ASObject*& out);
-	bool nextValue(int index, ASObject*& out);
+	bool hasNext(unsigned int& index, bool& out);
+	bool nextName(unsigned int index, ASObject*& out);
+	bool nextValue(unsigned int index, ASObject*& out);
 };
 
 class Proxy: public IInterface
@@ -168,15 +168,15 @@ public:
 	{
 		abort();
 	}
-	bool hasNext(int& index, bool& out)
+	bool hasNext(unsigned int& index, bool& out)
 	{
 		abort();
 	}
-	bool nextName(int index, ASObject*& out)
+	bool nextName(unsigned int index, ASObject*& out)
 	{
 		abort();
 	}
-	bool nextValue(int index, ASObject*& out)
+	bool nextValue(unsigned int index, ASObject*& out)
 	{
 		abort();
 	}

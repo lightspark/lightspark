@@ -38,6 +38,7 @@ void Capabilities::sinit(Class_base* c)
 ASFUNCTIONBODY(Capabilities,_constructor)
 {
 	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS(true,"AVMPlus")->obj);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Capabilities,_getLanguage)
@@ -60,6 +61,7 @@ void ApplicationDomain::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(ApplicationDomain,_constructor)
 {
+	return NULL;
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)

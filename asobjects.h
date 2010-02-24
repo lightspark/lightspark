@@ -62,17 +62,17 @@ private:
 	}
 
 public:
-	int max_level;
 	Class_base* super;
 	IFunction* constructor;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
+	tiny_string class_name;
 	int class_index;
-	Class_base(const tiny_string& name):super(NULL),constructor(NULL),context(NULL),class_name(name),class_index(-1),
-		use_protected(false),max_level(0) {type=T_CLASS;}
+	int max_level;
+	Class_base(const tiny_string& name):use_protected(false),super(NULL),constructor(NULL),context(NULL),class_name(name),class_index(-1),
+		max_level(0) {type=T_CLASS;}
 	~Class_base();
 	virtual IInterface* getInstance(bool construct, arguments* args)=0;
-	tiny_string class_name;
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true)
 	{
 		objAndLevel ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride);
@@ -151,8 +151,8 @@ private:
 	}
 public:
 	//Class_function is both used as the prototype for each function and as the Function classs object
-	Class_function():f(NULL),Class_base("Function"),asprototype(NULL){}
-	Class_function(IFunction* _f, ASObject* _p):f(_f),Class_base("Function"),asprototype(_p){}
+	Class_function():Class_base("Function"),f(NULL),asprototype(NULL){}
+	Class_function(IFunction* _f, ASObject* _p):Class_base("Function"),f(_f),asprototype(_p){}
 	tiny_string class_name;
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true)
 	{
@@ -293,7 +293,7 @@ public:
 	{
 		assert(func_scope.empty());
 		func_scope=scope;
-		for(int i=0;i<func_scope.size();i++)
+		for(unsigned int i=0;i<func_scope.size();i++)
 			func_scope[i]->incRef();
 	}
 	void addToScope(ASObject* s)
@@ -399,17 +399,19 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+enum DATA_TYPE {DATA_OBJECT=0,DATA_INT};
+
 struct data_slot
 {
-	STACK_TYPE type;
+	DATA_TYPE type;
 	union
 	{
 		ASObject* data;
-		intptr_t data_i;
+		int32_t data_i;
 	};
-	data_slot(ASObject* o,STACK_TYPE t=STACK_OBJECT):data(o),type(t){}
-	data_slot():data(NULL),type(STACK_OBJECT){}
-	data_slot(intptr_t i):type(STACK_INT),data_i(i){}
+	explicit data_slot(ASObject* o,DATA_TYPE t=DATA_OBJECT):type(t),data(o){}
+	data_slot():type(DATA_OBJECT),data(NULL){}
+	explicit data_slot(intptr_t i):type(DATA_INT),data_i(i){}
 };
 
 class Array: public IInterface
@@ -419,8 +421,8 @@ protected:
 	std::vector<data_slot> data;
 public:
 	//These utility methods are also used by ByteArray 
-	static bool isValidMultiname(const multiname& name, int& index);
-	static bool isValidQName(const tiny_string& name, const tiny_string& ns, int& index);
+	static bool isValidMultiname(const multiname& name, unsigned int& index);
+	static bool isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index);
 
 	Array();
 	virtual ~Array();
@@ -456,7 +458,7 @@ public:
 				abort();
 			}
 			data[index].data=o;
-			data[index].type=STACK_OBJECT;
+			data[index].type=DATA_OBJECT;
 		}
 		else
 			abort();
@@ -467,7 +469,7 @@ public:
 	}
 	void push(ASObject* o)
 	{
-		data.push_back(data_slot(o,STACK_OBJECT));
+		data.push_back(data_slot(o,DATA_OBJECT));
 	}
 	void resize(int n)
 	{
@@ -481,12 +483,12 @@ public:
 	bool setVariableByMultiname_i(const multiname& name, intptr_t value);
 	bool toString(tiny_string& ret);
 	bool isEqual(bool& ret, ASObject* r);
-	bool hasNext(int& index, bool& out);
-	bool nextName(int index, ASObject*& out)
+	bool hasNext(unsigned int& index, bool& out);
+	bool nextName(unsigned int index, ASObject*& out)
 	{
 		abort();
 	}
-	bool nextValue(int index, ASObject*& out);
+	bool nextValue(unsigned int index, ASObject*& out);
 	tiny_string toString() const;
 };
 
@@ -495,7 +497,7 @@ class arguments: public Array
 public:
 	arguments(int n)
 	{
-		data.resize(n,NULL);
+		data.resize(n);
 	}
 };
 
@@ -512,7 +514,7 @@ public:
 	Integer(int32_t v=0):val(v){type=T_INTEGER;
 		setVariableByQName("toString",AS3,new Function(Integer::_toString));
 	}
-	Integer(Manager* m):val(0),ASObject(m){type=T_INTEGER;
+	Integer(Manager* m):ASObject(m),val(0){type=T_INTEGER;
 		setVariableByQName("toString",AS3,new Function(Integer::_toString));
 	}
 	ASFUNCTION(_toString);
@@ -570,7 +572,7 @@ private:
 	double val;
 public:
 	Number(double v):val(v){type=T_NUMBER;}
-	Number(Manager* m):val(0),ASObject(m){type=T_NUMBER;}
+	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
 	tiny_string toString(bool debugMsg);
 	unsigned int toUInt() const
 	{

@@ -46,10 +46,10 @@ void GeomShape::Render(int x, int y) const
 	{
 		style->setFragmentProgram();
 
-		for(int i=0;i<triangle_strips.size();i++)
+		for(unsigned int i=0;i<triangle_strips.size();i++)
 		{
 			glBegin(GL_TRIANGLE_STRIP);
-			for(int j=0;j<triangle_strips[i].size();j++)
+			for(unsigned int j=0;j<triangle_strips[i].size();j++)
 				glVertex2i(triangle_strips[i][j].x+x,triangle_strips[i][j].y+y);
 			glEnd();
 		}
@@ -81,12 +81,12 @@ void GeomShape::Render(int x, int y) const
 			glBegin(GL_LINE_LOOP);
 		else
 			glBegin(GL_LINE_STRIP);
-		for(it;it!=outline.end();it++)
+		for(;it!=outline.end();it++)
 			glVertex2i(it->x+x,it->y+y);
 		glEnd();
 	}
 
-	for(int i=0;i<sub_shapes.size();i++)
+	for(unsigned int i=0;i<sub_shapes.size();i++)
 		sub_shapes[i].Render();
 }
 
@@ -142,7 +142,7 @@ void GeomShape::dumpEdges()
 {
 	ofstream f("edges.dat");
 
-	for(int i=0;i<outline.size();i++)
+	for(unsigned int i=0;i<outline.size();i++)
 		f << outline[i].x << ' ' << outline[i].y << endl;
 	f.close();
 }
@@ -151,7 +151,7 @@ void GeomShape::dumpInterior()
 {
 	ofstream f("interior.dat");
 
-	for(int i=0;i<interior.size();i++)
+	for(unsigned int i=0;i<interior.size();i++)
 	{
 		f << interior[i].v1.x << ' ' << interior[i].v1.y << endl;
 		f << interior[i].v2.x << ' ' << interior[i].v2.y << endl;
@@ -229,7 +229,7 @@ void GeomShape::BuildFromEdges(FILLSTYLE* styles)
 		for(int k=0;k<3;k++)
 		{
 			triangles[k].erase(triangles[k].begin());
-			int i=0;
+			unsigned int i=0;
 			while(1)
 			{
 				if(i==triangles[k].size())
@@ -353,6 +353,7 @@ bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& poi
 
 void fixIndex(std::vector<Vector2>& points)
 {
+	//Change this to difference between iterator and begin?
 	int size=points.size();
 	for(int i=0;i<size;i++)
 		points[i].index=i;
@@ -380,13 +381,13 @@ inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,c
 void GeomShape::TessellateSimple()
 {
 	vector<Vector2> P=outline;
-	int i=0;
+	unsigned int i=0;
 	int count=0;
 	while(P.size()>3)
 	{
 		fixIndex(P);
-		int a=(i+1)%P.size();
-		int b=(i-1+P.size())%P.size();
+		unsigned int a=(i+1)%P.size();
+		unsigned int b=(i-1+P.size())%P.size();
 		FilterIterator ai(P.begin(),P.end(),i);
 		FilterIterator bi(P.end(),P.end(),i);
 		bool not_ear=false;
@@ -403,7 +404,7 @@ void GeomShape::TessellateSimple()
 
 		if(!pointInPolygon(ai,bi,P[i]))
 		{
-			for(int j=0;j<P.size();j++)
+			for(unsigned int j=0;j<P.size();j++)
 			{
 				if(j==i || j==a || j==b)
 					continue;

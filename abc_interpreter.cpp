@@ -70,9 +70,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNLT(v1, v2);
 
-				int here=code.tellg();
-				int dest=here+t;
-
 				if(cond)
 				{
 					int here=code.tellg();
@@ -97,9 +94,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNLE(v1, v2);
 
-				int here=code.tellg();
-				int dest=here+t;
-
 				if(cond)
 				{
 					int here=code.tellg();
@@ -123,9 +117,6 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v1=context->runtime_stack_pop();
 				ASObject* v2=context->runtime_stack_pop();
 				bool cond=ifNGT(v1, v2);
-
-				int here=code.tellg();
-				int dest=here+t;
 
 				if(cond)
 				{
@@ -432,7 +423,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				u30 count;
 				code >> count;
 				vector<s24> offsets(count+1);
-				for(int i=0;i<count+1;i++)
+				for(unsigned int i=0;i<count+1;i++)
 				{
 					code >> offsets[i];
 					LOG(LOG_CALLS,"Switch dest " << i << ' ' << offsets[i]);
@@ -440,7 +431,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 
 				ASObject* index_obj=context->runtime_stack_pop();
 				assert(index_obj->getObjectType()==T_INTEGER);
-				int index=index_obj->toInt();
+				unsigned int index=index_obj->toUInt();
 
 				int dest=defaultdest;
 				if(index>=0 && index<=count)

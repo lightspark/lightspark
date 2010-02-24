@@ -154,7 +154,7 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, IDisplay
 {
 	list <pair<PlaceInfo, IDisplayListElem*> >::iterator it=ls.begin();
 
-	for(it;it!=ls.end();it++)
+	for(;it!=ls.end();it++)
 	{
 		if(it->second->Depth==Depth)
 		{
@@ -229,6 +229,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	LOG(LOG_TRACE,"DefineSprite ID: " << SpriteID);
 	TagFactory factory(in);
 	Tag* tag;
+	bool done=false;
 	do
 	{
 		tag=factory.readTag();
@@ -251,9 +252,14 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				LOG(LOG_ERROR,"Control tag inside a sprite. Should not happen.");
 				abort();
 				break;
+			case TAG:
+				break;
+			case END_TAG:
+				done=1;
+				break;
 		}
 	}
-	while(tag->getType()!=END_TAG);
+	while(!done);
 
 	if(frames.size()!=FrameCount && FrameCount!=1)
 		LOG(LOG_ERROR,"Inconsistent frame count " << FrameCount);
@@ -432,7 +438,7 @@ void DefineTextTag::Render()
 		int count=0;
 		std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 		std::vector < GLYPHENTRY >::iterator it2;
-		for(it;it!=TextRecords.end();it++)
+		for(;it!=TextRecords.end();it++)
 		{
 			if(it->StyleFlagsHasFont)
 			{
@@ -442,11 +448,11 @@ void DefineTextTag::Render()
 					LOG(LOG_ERROR,"Should be a FontTag");
 			}
 			it2 = it->GlyphEntries.begin();
-			for(it2;it2!=(it->GlyphEntries.end());it2++)
+			for(;it2!=(it->GlyphEntries.end());it2++)
 			{
 				vector<GeomShape> new_shapes;
 				font->genGlyphShape(new_shapes,it2->GlyphIndex);
-				for(int i=0;i<new_shapes.size();i++)
+				for(unsigned int i=0;i<new_shapes.size();i++)
 				{
 					new_shapes[i].id=count;
 					cached.push_back(new_shapes[i]);
@@ -468,7 +474,7 @@ void DefineTextTag::Render()
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	std::vector < GLYPHENTRY >::iterator it2;
 	int count=0;
-	int shapes_done=0;
+	unsigned int shapes_done=0;
 	int x=0,y=0;
 	float matrix[16];
 	TextMatrix.get4DMatrix(matrix);
@@ -483,7 +489,7 @@ void DefineTextTag::Render()
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	float scale_cur=1;
-	for(it;it!=TextRecords.end();it++)
+	for(;it!=TextRecords.end();it++)
 	{
 		if(it->StyleFlagsHasFont)
 		{
@@ -497,7 +503,7 @@ void DefineTextTag::Render()
 		x2+=(*it).XOffset;
 		y2+=(*it).YOffset;
 
-		for(it2;it2!=(it->GlyphEntries.end());it2++)
+		for(;it2!=(it->GlyphEntries.end());it2++)
 		{
 			while(cached[shapes_done].id==count)
 			{
@@ -601,7 +607,7 @@ void DefineMorphShapeTag::Render()
 
 	FromShaperecordListToShapeVector(cur,shapes);
 
-	for(int i=0;i<shapes.size();i++)
+	for(unsigned int i=0;i<shapes.size();i++)
 		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
 
 	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
@@ -610,7 +616,7 @@ void DefineMorphShapeTag::Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	std::vector < GeomShape >::iterator it=shapes.begin();
-	for(it;it!=shapes.end();it++)
+	for(;it!=shapes.end();it++)
 		it->Render();
 
 	glEnable(GL_BLEND);
@@ -647,7 +653,7 @@ void DefineShapeTag::Render()
 
 		FromShaperecordListToShapeVector(cur,cached);
 
-		for(int i=0;i<cached.size();i++)
+		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
 
 #ifndef WIN32
@@ -668,7 +674,7 @@ void DefineShapeTag::Render()
 //	glMultMatrixf(matrix);
 
 	std::vector < GeomShape >::iterator it=cached.begin();
-	for(it;it!=cached.end();it++)
+	for(;it!=cached.end();it++)
 		it->Render();
 
 	glEnable(GL_BLEND);
@@ -704,7 +710,7 @@ void DefineShape2Tag::Render()
 
 		FromShaperecordListToShapeVector(cur,cached);
 
-		for(int i=0;i<cached.size();i++)
+		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
 
 #ifndef WIN32
@@ -722,7 +728,7 @@ void DefineShape2Tag::Render()
 	glPushMatrix();
 	
 	std::vector < GeomShape >::iterator it=cached.begin();
-	for(it;it!=cached.end();it++)
+	for(;it!=cached.end();it++)
 	{
 		if(it->color >= Shapes.FillStyles.FillStyleCount)
 		{
@@ -767,7 +773,7 @@ void DefineShape4Tag::Render()
 
 		FromShaperecordListToShapeVector(cur,cached);
 
-		for(int i=0;i<cached.size();i++)
+		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
 
 #ifndef WIN32
@@ -781,7 +787,7 @@ void DefineShape4Tag::Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	std::vector < GeomShape >::iterator it=cached.begin();
-	for(it;it!=cached.end();it++)
+	for(;it!=cached.end();it++)
 		it->Render();
 
 	glEnable(GL_BLEND);
@@ -832,7 +838,7 @@ void DefineShape3Tag::Render()
 
 		FromShaperecordListToShapeVector(cur,cached);
 
-		for(int i=0;i<cached.size();i++)
+		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
 
 #ifndef WIN32
@@ -849,7 +855,7 @@ void DefineShape3Tag::Render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	std::vector < GeomShape >::iterator it=cached.begin();
-	for(it;it!=cached.end();it++)
+	for(;it!=cached.end();it++)
 	{
 		if(it->color >= Shapes.FillStyles.FillStyleCount)
 		{
@@ -968,7 +974,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 					else
 						color=color1;
 
-					for(int i=0;i<shapes.size();i++)
+					for(unsigned int i=0;i<shapes.size();i++)
 					{
 						if(shapes[i].color==color)
 						{
@@ -1039,7 +1045,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 					else
 						color=color1;
 
-					for(int i=0;i<shapes.size();i++)
+					for(unsigned int i=0;i<shapes.size();i++)
 					{
 						if(shapes[i].color==color)
 						{
@@ -1130,9 +1136,9 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 	}
 
 	//Let's join shape pieces together
-	for(int i=0;i<shapes.size();i++)
+	for(unsigned int i=0;i<shapes.size();i++)
 	{
-		for(int j=i+1;j<shapes.size();j++)
+		for(unsigned int j=i+1;j<shapes.size();j++)
 		{
 			if(shapes[i].color==shapes[j].color)
 			{
@@ -1184,9 +1190,9 @@ void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 
 	FromShaperecordListToShapeVector(cur,s);
 
-	for(int i=0;i<s.size();i++)
+	for(unsigned int i=0;i<s.size();i++)
 	{
-		for(int j=0;j<s[i].outline.size();j++)
+		for(unsigned int j=0;j<s[i].outline.size();j++)
 			s[i].outline[j]/=20;
 		s[i].BuildFromEdges(NULL);
 	}
@@ -1230,7 +1236,7 @@ void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 
 	FromShaperecordListToShapeVector(cur,s);
 
-	for(int i=0;i<s.size();i++)
+	for(unsigned int i=0;i<s.size();i++)
 		s[i].BuildFromEdges(NULL);
 
 	//Should check fill state
@@ -1272,7 +1278,7 @@ void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
 
 	FromShaperecordListToShapeVector(cur,s);
 
-	for(int i=0;i<s.size();i++)
+	for(unsigned int i=0;i<s.size();i++)
 		s[i].BuildFromEdges(NULL);
 
 	//Should check fill state
@@ -1307,7 +1313,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 	PlaceInfo infos;
 	//Find if this id is already on the list
 	list < pair<PlaceInfo, IDisplayListElem*> >::iterator it=ls.begin();
-	for(it;it!=ls.end();it++)
+	for(;it!=ls.end();it++)
 	{
 		if(it->second->Depth==Depth)
 		{

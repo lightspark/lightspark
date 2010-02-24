@@ -113,7 +113,7 @@ ASFUNCTIONBODY(Array,shift)
 	if(th->data.empty())
 		return new Undefined;
 	ASObject* ret;
-	if(th->data[0].type==STACK_OBJECT)
+	if(th->data[0].type==DATA_OBJECT)
 		ret=th->data[0].data;
 	else
 		abort();
@@ -157,9 +157,9 @@ ASFUNCTIONBODY(Array,_concat)
 
 	//All the elements in the new array should be increffed, as args will be deleted and
 	//this array could die too
-	for(int i=0;i<ret->data.size();i++)
+	for(unsigned int i=0;i<ret->data.size();i++)
 	{
-		if(ret->data[i].type==STACK_OBJECT)
+		if(ret->data[i].type==DATA_OBJECT)
 			ret->data[i].data->incRef();
 	}
 	
@@ -170,7 +170,7 @@ ASFUNCTIONBODY(Array,_pop)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
 	ASObject* ret;
-	if(th->data.back().type==STACK_OBJECT)
+	if(th->data.back().type==DATA_OBJECT)
 		ret=th->data.back().data;
 	else
 		abort();
@@ -192,7 +192,7 @@ ASFUNCTIONBODY(Array,unshift)
 		LOG(LOG_ERROR,"Multiple unshift");
 		abort();
 	}
-	th->data.insert(th->data.begin(),args->at(0));
+	th->data.insert(th->data.begin(),data_slot(args->at(0)));
 	args->at(0)->incRef();
 	return abstract_i(th->size());
 }
@@ -249,7 +249,7 @@ size_t ASXML::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 
 ASFUNCTIONBODY(ASXML,load)
 {
-	ASXML* th=static_cast<ASXML*>(obj);
+	//ASXML* th=static_cast<ASXML*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Called ASXML::load " << args->at(0)->toString());
 	abort();
 	return new Integer(1);
@@ -268,7 +268,7 @@ bool Array::isEqual(bool& ret, ASObject* r)
 
 		for(int i=0;i<size;i++)
 		{
-			if(data[i].type!=STACK_OBJECT)
+			if(data[i].type!=DATA_OBJECT)
 				abort();
 			if(!data[i].data->isEqual(ra->at(i)))
 				ret=false;
@@ -280,7 +280,7 @@ bool Array::isEqual(bool& ret, ASObject* r)
 
 bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return false;
 
@@ -288,7 +288,7 @@ bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 	{
 		switch(data[index].type)
 		{
-			case STACK_OBJECT:
+			case DATA_OBJECT:
 			{
 				assert(data[index].data!=NULL);
 				if(data[index].data->getObjectType()==T_INTEGER)
@@ -305,7 +305,7 @@ bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 					abort();
 				break;
 			}
-			case STACK_INT:
+			case DATA_INT:
 				out=data[index].data_i;
 				break;
 		}
@@ -317,7 +317,7 @@ bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 
 bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return false;
 
@@ -325,7 +325,7 @@ bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
 	{
 		switch(data[index].type)
 		{
-			case STACK_OBJECT:
+			case DATA_OBJECT:
 				out=data[index].data;
 				if(out==NULL)
 				{
@@ -333,7 +333,7 @@ bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
 					data[index].data=out;
 				}
 				break;
-			case STACK_INT:
+			case DATA_INT:
 				//cout << "Not efficent" << endl;
 				out=abstract_i(data[index].data_i);
 				out->fake_decRef();
@@ -347,7 +347,7 @@ bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
 
 bool Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return false;
 
@@ -360,15 +360,15 @@ bool Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	if(index>=data.size())
 		resize(index+1);
 
-	if(data[index].type==STACK_OBJECT && data[index].data)
+	if(data[index].type==DATA_OBJECT && data[index].data)
 		data[index].data->decRef();
 	data[index].data_i=value;
-	data[index].type=STACK_INT;
+	data[index].type=DATA_INT;
 
 	return true;
 }
 
-bool Array::isValidMultiname(const multiname& name, int& index)
+bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 {
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
@@ -409,7 +409,7 @@ bool Array::isValidMultiname(const multiname& name, int& index)
 
 bool Array::setVariableByMultiname(const multiname& name, ASObject* o)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return false;
 
@@ -422,25 +422,25 @@ bool Array::setVariableByMultiname(const multiname& name, ASObject* o)
 	if(index>=data.size())
 		resize(index+1);
 
-	if(data[index].type==STACK_OBJECT && data[index].data)
+	if(data[index].type==DATA_OBJECT && data[index].data)
 		data[index].data->decRef();
 
 	if(o->getObjectType()==T_INTEGER)
 	{
 		Integer* i=static_cast<Integer*>(o);
 		data[index].data_i=i->val;
-		data[index].type=STACK_INT;
+		data[index].type=DATA_INT;
 		o->decRef();
 	}
 	else
 	{
 		data[index].data=o;
-		data[index].type=STACK_OBJECT;
+		data[index].type=DATA_OBJECT;
 	}
 	return true;
 }
 
-bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, int& index)
+bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index)
 {
 	if(ns!="")
 		return false;
@@ -461,7 +461,7 @@ bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, int& in
 
 bool Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!isValidQName(name,ns,index))
 		return false;
 
@@ -474,20 +474,20 @@ bool Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, A
 	if(index>=data.size())
 		resize(index+1);
 
-	if(data[index].type==STACK_OBJECT && data[index].data)
+	if(data[index].type==DATA_OBJECT && data[index].data)
 		data[index].data->decRef();
 
 	if(o->getObjectType()==T_INTEGER)
 	{
 		Integer* i=static_cast<Integer*>(o);
 		data[index].data_i=i->val;
-		data[index].type=STACK_INT;
+		data[index].type=DATA_INT;
 		o->decRef();
 	}
 	else
 	{
 		data[index].data=o;
-		data[index].type=STACK_OBJECT;
+		data[index].type=DATA_OBJECT;
 	}
 	return true;
 }
@@ -579,9 +579,9 @@ void ASString::buildTraits(ASObject* o)
 
 Array::~Array()
 {
-	for(int i=0;i<data.size();i++)
+	for(unsigned int i=0;i<data.size();i++)
 	{
-		if(data[i].type==STACK_OBJECT && data[i].data)
+		if(data[i].type==DATA_OBJECT && data[i].data)
 			data[i].data->decRef();
 	}
 }
@@ -594,7 +594,7 @@ ASFUNCTIONBODY(ASString,split)
 	if(delimiter->getObjectType()==T_STRING)
 	{
 		ASString* del=static_cast<ASString*>(delimiter->implementation);
-		int start=0;
+		unsigned int start=0;
 		do
 		{
 			int match=th->data.find(del->data,start);
@@ -635,14 +635,14 @@ bool Array::toString(tiny_string& ret)
 tiny_string Array::toString() const
 {
 	string ret;
-	for(int i=0;i<data.size();i++)
+	for(unsigned int i=0;i<data.size();i++)
 	{
-		if(data[i].type==STACK_OBJECT)
+		if(data[i].type==DATA_OBJECT)
 		{
 			if(data[i].data)
 				ret+=data[i].data->toString().raw_buf();
 		}
-		else if(data[i].type==STACK_INT)
+		else if(data[i].type==DATA_INT)
 		{
 			char buf[20];
 			snprintf(buf,20,"%i",data[i].data_i);
@@ -657,15 +657,15 @@ tiny_string Array::toString() const
 	return ret.c_str();
 }
 
-bool Array::nextValue(int index, ASObject*& out)
+bool Array::nextValue(unsigned int index, ASObject*& out)
 {
 	assert(index<data.size());
-	assert(data[index].type==STACK_OBJECT);
+	assert(data[index].type==DATA_OBJECT);
 	out=data[index].data;
 	return true;
 }
 
-bool Array::hasNext(int& index, bool& out)
+bool Array::hasNext(unsigned int& index, bool& out)
 {
 	out=index<data.size();
 	index++;
@@ -952,7 +952,7 @@ IFunction* Function::toFunction()
 	return this;
 }
 
-IFunction::IFunction():bound(false),closure_this(NULL),closure_level(-1),overriden_by(NULL)
+IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false),overriden_by(NULL)
 {
 	type=T_FUNCTION;
 }
@@ -976,7 +976,7 @@ ASFUNCTIONBODY(IFunction,apply)
 	return ret;
 }
 
-SyntheticFunction::SyntheticFunction(method_info* m):mi(m),hit_count(0),val(NULL)
+SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL)
 {
 //	class_index=-2;
 }
@@ -1007,7 +1007,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
 	int i=passedToLocals;
 	cc->scope_stack=func_scope;
-	for(int i=0;i<func_scope.size();i++)
+	for(unsigned int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
 
 	if(bound && closure_this)
@@ -1030,11 +1030,11 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	obj->incRef();
 
 	//Fixup missing parameters
-	int missing_params=args_len-i;
+	unsigned int missing_params=args_len-i;
 	assert(missing_params<=mi->option_count);
 	int starting_options=mi->option_count-missing_params;
 
-	for(int j=starting_options;j<mi->option_count;j++)
+	for(unsigned int j=starting_options;j<mi->option_count;j++)
 	{
 		cc->locals[i+1]=mi->getOptional(j);
 		i++;
@@ -1302,7 +1302,8 @@ ASFUNCTIONBODY(RegExp,exec)
 
 	int consumed;
 	bool ret=pcreRE.DoMatch(arg0.raw_buf(),pcrecpp::RE::ANCHOR_START,&consumed,captures,numberOfCaptures);
-	assert(ret==false);
+	if(ret!=false)
+		abort();
 
 	delete[] s;
 	delete[] captures;
@@ -1341,7 +1342,7 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 	//TODO: should return utf16
 	LOG(LOG_CALLS,"ASString::charCodeAt not really implemented");
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	int index=args->at(0)->toInt();
+	unsigned int index=args->at(0)->toInt();
 	assert(index>=0 && index<th->data.size());
 	return new Integer(th->data[index]);
 }
@@ -1356,7 +1357,7 @@ ASFUNCTIONBODY(ASString,indexOf)
 	
 	assert(startIndex==0);
 	bool found=false;
-	int i;
+	unsigned int i;
 	for(i=startIndex;i<th->data.size();i++)
 	{
 		if(th->data[i]==arg0[0])
@@ -1407,7 +1408,7 @@ ASFUNCTIONBODY(ASString,replace)
 		//Increment index to jump over the added character
 		index+=2;
 	}
-	while(index<ret->data.size());
+	while(index<(int)ret->data.size());
 
 	assert(args->size()==2 && args->at(1)->getObjectType()==T_STRING);
 
@@ -1436,7 +1437,7 @@ ASFUNCTIONBODY(ASString,replace)
 			index+=(replaceWith.size()-s->data.size());
 
 		}
-		while(index<ret->data.size());
+		while(index<(int)ret->data.size());
 	}
 	else
 		abort();
@@ -1547,7 +1548,7 @@ const std::vector<Class_base*>& Class_base::getInterfaces() const
 	if(!interfaces.empty())
 	{
 		//Recursively get interfaces implemented by this interface
-		for(int i=0;i<interfaces.size();i++)
+		for(unsigned int i=0;i<interfaces.size();i++)
 		{
 			ASObject* interface_obj=getGlobal()->getVariableByMultiname(interfaces[i]).obj;
 			assert(interface_obj && interface_obj->getObjectType()==T_CLASS);
@@ -1571,13 +1572,13 @@ void Class_base::linkInterface(ASObject* obj) const
 		return;
 	}
 	//Recursively link interfaces implemented by this interface
-	for(int i=0;i<getInterfaces().size();i++)
+	for(unsigned int i=0;i<getInterfaces().size();i++)
 		getInterfaces()[i]->linkInterface(obj);
 
 	assert(context);
 
 	//Link traits of this interface
-	for(int j=0;j<context->instances[class_index].trait_count;j++)
+	for(unsigned int j=0;j<context->instances[class_index].trait_count;j++)
 	{
 		traits_info* t=&context->instances[class_index].traits[j];
 		context->linkTrait(obj,t);
@@ -1596,7 +1597,7 @@ bool Class_base::isSubClass(const Class_base* cls) const
 		return true;
 
 	//Now check the interfaces
-	for(int i=0;i<getInterfaces().size();i++)
+	for(unsigned int i=0;i<getInterfaces().size();i++)
 	{
 		if(getInterfaces()[i]->isSubClass(cls))
 			return true;
@@ -1651,8 +1652,11 @@ ASFUNCTIONBODY(ASQName,_constructor)
 			th->uri=n->uri;
 			break;
 		}
+		default:
+			abort();
 	}
 	th->local_name=args->at(1)->toString();
+	return NULL;
 }
 
 void Namespace::sinit(Class_base* c)
@@ -1668,6 +1672,7 @@ void Namespace::buildTraits(ASObject* o)
 ASFUNCTIONBODY(Namespace,_constructor)
 {
 	assert(args==NULL);
+	return NULL;
 }
 
 void InterfaceClass::lookupAndLink(ASObject* o, const tiny_string& name, const tiny_string& interfaceNs)
@@ -1690,7 +1695,7 @@ bool UInteger::isEqual(ASObject* o)
 	if(o->getObjectType()==T_INTEGER)
 	{
 		//CHECK: somehow wrong
-		return val==o->toInt();
+		return val==o->toUInt();
 	}
 	else if(o->getObjectType()==T_UINTEGER)
 		return val==o->toUInt();

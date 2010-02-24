@@ -51,7 +51,7 @@ public:
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
 	Frame(std::list<IDisplayListElem*>* dd):
-		dynamicDisplayList(dd),script(NULL),initialized(false){ }
+		script(NULL),initialized(false),dynamicDisplayList(dd){ }
 	void Render();
 	void setLabel(STRING l);
 	void setScript(IFunction* s){script=s;}

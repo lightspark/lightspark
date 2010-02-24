@@ -48,6 +48,7 @@ void* ThreadPool::job_worker(void* t)
 
 		myJob->execute();
 	}
+	return NULL;
 }
 
 void ThreadPool::addJob(IThreadJob* j)

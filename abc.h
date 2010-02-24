@@ -250,16 +250,16 @@ private:
 
 public:
 	u30 option_count;
-	SyntheticFunction::synt_function synt_method();
 	SyntheticFunction::synt_function f;
 	ABCContext* context;
 	method_body_info* body;
+	SyntheticFunction::synt_function synt_method();
 	bool needsArgs() { return flags&NEED_ARGUMENTS;}
 	bool needsRest() { return flags&NEED_REST;}
 	bool hasOptional() { return flags&HAS_OPTIONAL;}
-	ASObject* getOptional(int i);
+	ASObject* getOptional(unsigned int i);
 	int numArgs() { return param_count; }
-	method_info():body(NULL),f(NULL),context(NULL),option_count(0)
+	method_info():option_count(0),f(NULL),context(NULL),body(NULL)
 	{
 	}
 };

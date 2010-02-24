@@ -237,54 +237,6 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("isNaN","",new Function(isNaN));
 }
 
-/*Qname ABCContext::getQname(unsigned int mi, call_context* th) const
-{
-	if(mi==0)
-	{
-		LOG(ERROR,"Not a Qname");
-		abort();
-	}
-
-	const multiname_info* m=&constant_pool.multinames[mi];
-	switch(m->kind)
-	{
-		case 0x07:
-		{
-			Qname ret(getString(m->name));
-			const namespace_info* n=&constant_pool.namespaces[m->ns];
-			if(n->name)
-				ret.ns=getString(n->name);
-			ret.nskind=n->kind;
-
-			return ret;
-		}
-/*		case 0x0d:
-			LOG(CALLS, "QNameA");
-			break;
-		case 0x0f:
-			LOG(CALLS, "RTQName");
-			break;
-		case 0x10:
-			LOG(CALLS, "RTQNameA");
-			break;
-		case 0x11:
-			LOG(CALLS, "RTQNameL");
-			break;
-		case 0x12:
-			LOG(CALLS, "RTQNameLA");
-			break;
-		case 0x0e:
-			LOG(CALLS, "MultinameA");
-			break;
-		case 0x1c:
-			LOG(CALLS, "MultinameLA");
-			break;*
-		default:
-			LOG(ERROR,"Not a Qname kind " << hex << m->kind);
-			abort();
-	}
-}*/
-
 //This function is used at compile time
 int ABCContext::getMultinameRTData(int mi) const
 {
@@ -339,7 +291,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 			{
 				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				for(int i=0;i<s->count;i++)
+				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
 					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
@@ -409,7 +361,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			{
 				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				for(int i=0;i<s->count;i++)
+				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
 					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
@@ -423,7 +375,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			{
 				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				for(int i=0;i<s->count;i++)
+				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
 					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
@@ -617,7 +569,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 			{
 				const ns_set_info* s=&th->context->constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				for(int i=0;i<s->count;i++)
+				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
 					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
@@ -688,7 +640,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			{
 				const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				for(int i=0;i<s->count;i++)
+				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
 					ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
@@ -703,7 +655,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			{
 				const ns_set_info* s=&constant_pool.ns_sets[m->ns_set];
 				ret->ns.reserve(s->count);
-				for(int i=0;i<s->count;i++)
+				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
 					ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
@@ -765,7 +717,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			{
 				assert(m->param_types.size()==1);
 				multiname_info* td=&constant_pool.multinames[m->type_definition];
-				multiname_info* p=&constant_pool.multinames[m->param_types[0]];
+				//multiname_info* p=&constant_pool.multinames[m->param_types[0]];
 				const namespace_info* n=&constant_pool.namespaces[td->ns];
 				ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
 				ret->name_s=getString(td->name);
@@ -901,7 +853,7 @@ ABCContext::ABCContext(istream& in)
 
 	in >> method_count;
 	methods.resize(method_count);
-	for(int i=0;i<method_count;i++)
+	for(unsigned int i=0;i<method_count;i++)
 	{
 		in >> methods[i];
 		methods[i].context=this;
@@ -909,12 +861,12 @@ ABCContext::ABCContext(istream& in)
 
 	in >> metadata_count;
 	metadata.resize(metadata_count);
-	for(int i=0;i<metadata_count;i++)
+	for(unsigned int i=0;i<metadata_count;i++)
 		in >> metadata[i];
 
 	in >> class_count;
 	instances.resize(class_count);
-	for(int i=0;i<class_count;i++)
+	for(unsigned int i=0;i<class_count;i++)
 	{
 		in >> instances[i];
 		LOG(LOG_CALLS,"Class " << *getMultiname(instances[i].name,NULL));
@@ -932,24 +884,24 @@ ABCContext::ABCContext(istream& in)
 		if(instances[i].interface_count)
 		{
 			LOG(LOG_CALLS,"Implements");
-			for(int j=0;j<instances[i].interfaces.size();j++)
+			for(unsigned int j=0;j<instances[i].interfaces.size();j++)
 			{
 				LOG(LOG_CALLS,"\t" << *getMultiname(instances[i].interfaces[j],NULL));
 			}
 		}
 	}
 	classes.resize(class_count);
-	for(int i=0;i<class_count;i++)
+	for(unsigned int i=0;i<class_count;i++)
 		in >> classes[i];
 
 	in >> script_count;
 	scripts.resize(script_count);
-	for(int i=0;i<script_count;i++)
+	for(unsigned int i=0;i<script_count;i++)
 		in >> scripts[i];
 
 	in >> method_body_count;
 	method_body.resize(method_body_count);
-	for(int i=0;i<method_body_count;i++)
+	for(unsigned int i=0;i<method_body_count;i++)
 	{
 		in >> method_body[i];
 
@@ -964,7 +916,7 @@ ABCContext::ABCContext(istream& in)
 	}
 }
 
-ABCVm::ABCVm(SystemState* s):shutdown(false),m_sys(s)
+ABCVm::ABCVm(SystemState* s):m_sys(s),shutdown(false)
 {
 	sem_init(&event_queue_mutex,0,1);
 	sem_init(&sem_event_count,0,0);
@@ -1266,7 +1218,7 @@ call_context::~call_context()
 	delete[] locals;
 	delete[] stack;
 
-	for(int i=0;i<scope_stack.size();i++)
+	for(unsigned int i=0;i<scope_stack.size();i++)
 		scope_stack[i]->decRef();
 }
 
@@ -1274,8 +1226,8 @@ void ABCContext::exec()
 {
 	//Take script entries and declare their traits
 	//TODO: check entrypoint concept
-	int i=0;
-	for(i;i<scripts.size()-1;i++)
+	unsigned int i=0;
+	for(;i<scripts.size()-1;i++)
 	{
 		LOG(LOG_CALLS, "Script N: " << i );
 		method_info* m=get_method(scripts[i].init);
@@ -1284,7 +1236,7 @@ void ABCContext::exec()
 		SyntheticFunction* mf=new SyntheticFunction(m);
 		mf->addToScope(getGlobal());
 
-		for(int j=0;j<scripts[i].trait_count;j++)
+		for(unsigned int j=0;j<scripts[i].trait_count;j++)
 			buildTrait(getGlobal(),&scripts[i].traits[j],false,mf);
 	}
 	//The last script entry has to be run
@@ -1294,7 +1246,7 @@ void ABCContext::exec()
 	entry->addToScope(getGlobal());
 
 	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
-	for(int j=0;j<scripts[i].trait_count;j++)
+	for(unsigned int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(getGlobal(),&scripts[i].traits[j],false);
 	entry->call(getGlobal(),NULL,0);
 	LOG(LOG_CALLS, "End of Entry Point");
@@ -1361,7 +1313,7 @@ tiny_string ABCContext::getString(unsigned int s) const
 
 void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 {
-	for(int i=0;i<instances[class_index].trait_count;i++)
+	for(unsigned int i=0;i<instances[class_index].trait_count;i++)
 		buildTrait(obj,&instances[class_index].traits[i],true);
 }
 
@@ -1382,7 +1334,8 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 		{
 			LOG(LOG_CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
 			method_info* m=&methods[t->method];
-			assert(m->body==0);
+			if(m->body!=NULL)
+				abort();
 			assert(obj->actualPrototype);
 			int level=obj->actualPrototype->max_level;
 
@@ -1408,7 +1361,8 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 		{
 			LOG(LOG_CALLS,"Getter trait: " << ns << "::" << name);
 			method_info* m=&methods[t->method];
-			assert(m->body==0);
+			if(m->body!=NULL)
+				abort();
 			assert(obj->actualPrototype);
 			int level=obj->actualPrototype->max_level+1;
 			obj_var* var=NULL;
@@ -1440,7 +1394,8 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 		{
 			LOG(LOG_CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
 			method_info* m=&methods[t->method];
-			assert(m->body==0);
+			if(m->body!=NULL)
+				abort();
 			assert(obj->actualPrototype);
 			int level=obj->actualPrototype->max_level+1;
 			obj_var* var=NULL;
@@ -1708,7 +1663,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			if(tmpo.obj)
 				return;
 
-			multiname* type=getMultiname(t->type_name,NULL);
 			ASObject* ret;
 			//If the index is valid we set the constant
 			if(t->vindex)
@@ -1728,7 +1682,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				ret=new Undefined;
 				obj->setVariableByQName(name, ns, ret, false);
 			}
-			LOG(LOG_CALLS,"Const "<<name<<" type "<<*type);
+			LOG(LOG_CALLS,"Const "<<name<<" type "<< *getMultiname(t->type_name,NULL));
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, name,ns );
 			break;
@@ -1798,7 +1752,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 }
 
 
-ASObject* method_info::getOptional(int i)
+ASObject* method_info::getOptional(unsigned int i)
 {
 	assert(i<options.size());
 	return context->getConstant(options[i].kind,options[i].val);
@@ -1875,7 +1829,7 @@ istream& lightspark::operator>>(istream& in, s24& v)
 	if(t&0x80)
 	{
 		//Sign extend
-		for(i;i<32;i++)
+		for(;i<32;i++)
 			v.val|=(1<<i);
 	}
 	return in;
@@ -1934,7 +1888,7 @@ istream& lightspark::operator>>(istream& in, string_info& v)
 	uint8_t t;
 	string tmp;
 	tmp.reserve(v.size);
-	for(int i=0;i<v.size;i++)
+	for(unsigned int i=0;i<v.size;i++)
 	{
 		in.read((char*)&t,1);
 		tmp.push_back(t);
@@ -1960,17 +1914,17 @@ istream& lightspark::operator>>(istream& in, method_body_info& v)
 {
 	in >> v.method >> v.max_stack >> v.local_count >> v.init_scope_depth >> v.max_scope_depth >> v.code_length;
 	v.code.resize(v.code_length);
-	for(int i=0;i<v.code_length;i++)
+	for(unsigned int i=0;i<v.code_length;i++)
 		in.read(&v.code[i],1);
 
 	in >> v.exception_count;
 	v.exceptions.resize(v.exception_count);
-	for(int i=0;i<v.exception_count;i++)
+	for(unsigned int i=0;i<v.exception_count;i++)
 		in >> v.exceptions[i];
 
 	in >> v.trait_count;
 	v.traits.resize(v.trait_count);
-	for(int i=0;i<v.trait_count;i++)
+	for(unsigned int i=0;i<v.trait_count;i++)
 		in >> v.traits[i];
 	return in;
 }
@@ -1980,7 +1934,7 @@ istream& lightspark::operator >>(istream& in, ns_set_info& v)
 	in >> v.count;
 
 	v.ns.resize(v.count);
-	for(int i=0;i<v.count;i++)
+	for(unsigned int i=0;i<v.count;i++)
 	{
 		in >> v.ns[i];
 		if(v.ns[i]==0)
@@ -2020,7 +1974,7 @@ istream& lightspark::operator>>(istream& in, multiname_info& v)
 			u8 num_params;
 			in >> num_params;
 			v.param_types.resize(num_params);
-			for(int i=0;i<num_params;i++)
+			for(unsigned int i=0;i<num_params;i++)
 			{
 				u30 t;
 				in >> t;
@@ -2042,7 +1996,7 @@ istream& lightspark::operator>>(istream& in, method_info& v)
 	in >> v.return_type;
 
 	v.param_type.resize(v.param_count);
-	for(int i=0;i<v.param_count;i++)
+	for(unsigned int i=0;i<v.param_count;i++)
 		in >> v.param_type[i];
 	
 	in >> v.name >> v.flags;
@@ -2050,7 +2004,7 @@ istream& lightspark::operator>>(istream& in, method_info& v)
 	{
 		in >> v.option_count;
 		v.options.resize(v.option_count);
-		for(int i=0;i<v.option_count;i++)
+		for(unsigned int i=0;i<v.option_count;i++)
 		{
 			in >> v.options[i].val >> v.options[i].kind;
 			if(v.options[i].kind>0x1a)
@@ -2060,7 +2014,7 @@ istream& lightspark::operator>>(istream& in, method_info& v)
 	if(v.flags&0x80)
 	{
 		v.param_names.resize(v.param_count);
-		for(int i=0;i<v.param_count;i++)
+		for(unsigned int i=0;i<v.param_count;i++)
 			in >> v.param_names[i];
 	}
 	return in;
@@ -2070,7 +2024,7 @@ istream& lightspark::operator>>(istream& in, script_info& v)
 {
 	in >> v.init >> v.trait_count;
 	v.traits.resize(v.trait_count);
-	for(int i=0;i<v.trait_count;i++)
+	for(unsigned int i=0;i<v.trait_count;i++)
 		in >> v.traits[i];
 	return in;
 }
@@ -2079,7 +2033,7 @@ istream& lightspark::operator>>(istream& in, class_info& v)
 {
 	in >> v.cinit >> v.trait_count;
 	v.traits.resize(v.trait_count);
-	for(int i=0;i<v.trait_count;i++)
+	for(unsigned int i=0;i<v.trait_count;i++)
 	{
 		in >> v.traits[i];
 	}
@@ -2092,7 +2046,7 @@ istream& lightspark::operator>>(istream& in, metadata_info& v)
 	in >> v.item_count;
 
 	v.items.resize(v.item_count);
-	for(int i=0;i<v.item_count;i++)
+	for(unsigned int i=0;i<v.item_count;i++)
 	{
 		in >> v.items[i].key >> v.items[i].value;
 	}
@@ -2130,7 +2084,7 @@ istream& lightspark::operator>>(istream& in, traits_info& v)
 	{
 		in >> v.metadata_count;
 		v.metadata.resize(v.metadata_count);
-		for(int i=0;i<v.metadata_count;i++)
+		for(unsigned int i=0;i<v.metadata_count;i++)
 			in >> v.metadata[i];
 	}
 	return in;
@@ -2150,7 +2104,7 @@ istream& lightspark::operator>>(istream& in, instance_info& v)
 
 	in >> v.interface_count;
 	v.interfaces.resize(v.interface_count);
-	for(int i=0;i<v.interface_count;i++)
+	for(unsigned int i=0;i<v.interface_count;i++)
 	{
 		in >> v.interfaces[i];
 		if(v.interfaces[i]==0)
@@ -2161,7 +2115,7 @@ istream& lightspark::operator>>(istream& in, instance_info& v)
 
 	in >> v.trait_count;
 	v.traits.resize(v.trait_count);
-	for(int i=0;i<v.trait_count;i++)
+	for(unsigned int i=0;i<v.trait_count;i++)
 		in >> v.traits[i];
 	return in;
 }
@@ -2170,37 +2124,37 @@ istream& lightspark::operator>>(istream& in, cpool_info& v)
 {
 	in >> v.int_count;
 	v.integer.resize(v.int_count);
-	for(int i=1;i<v.int_count;i++)
+	for(unsigned int i=1;i<v.int_count;i++)
 		in >> v.integer[i];
 
 	in >> v.uint_count;
 	v.uinteger.resize(v.uint_count);
-	for(int i=1;i<v.uint_count;i++)
+	for(unsigned int i=1;i<v.uint_count;i++)
 		in >> v.uinteger[i];
 
 	in >> v.double_count;
 	v.doubles.resize(v.double_count);
-	for(int i=1;i<v.double_count;i++)
+	for(unsigned int i=1;i<v.double_count;i++)
 		in >> v.doubles[i];
 
 	in >> v.string_count;
 	v.strings.resize(v.string_count);
-	for(int i=1;i<v.string_count;i++)
+	for(unsigned int i=1;i<v.string_count;i++)
 		in >> v.strings[i];
 
 	in >> v.namespace_count;
 	v.namespaces.resize(v.namespace_count);
-	for(int i=1;i<v.namespace_count;i++)
+	for(unsigned int i=1;i<v.namespace_count;i++)
 		in >> v.namespaces[i];
 
 	in >> v.ns_set_count;
 	v.ns_sets.resize(v.ns_set_count);
-	for(int i=1;i<v.ns_set_count;i++)
+	for(unsigned int i=1;i<v.ns_set_count;i++)
 		in >> v.ns_sets[i];
 
 	in >> v.multiname_count;
 	v.multinames.resize(v.multiname_count);
-	for(int i=1;i<v.multiname_count;i++)
+	for(unsigned int i=1;i<v.multiname_count;i++)
 		in >> v.multinames[i];
 
 	return in;
@@ -2265,7 +2219,7 @@ ASFUNCTIONBODY(lightspark,unescape)
 	ASString* th=static_cast<ASString*>(args->at(0)->implementation);
 	string ret;
 	ret.reserve(th->data.size());
-	for(int i=0;i<th->data.size();i++)
+	for(unsigned int i=0;i<th->data.size();i++)
 	{
 		if(th->data[i]=='%')
 			abort();

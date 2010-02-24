@@ -31,11 +31,6 @@
 using namespace std;
 using namespace lightspark;
 
-void debug(int* i)
-{
-	LOG(LOG_CALLS, "debug "<< i);
-}
-
 void debug_d(number_t f)
 {
 	LOG(LOG_CALLS, "debug_d "<< f);
@@ -222,30 +217,6 @@ extern TLSDATA SystemState* sys;
 extern TLSDATA ParseThread* pt;
 extern TLSDATA Manager* iManager;
 
-//Be careful, arguments nubering starts from 1
-ASObject* argumentDumper(arguments* arg, uint32_t n)
-{
-	//Really implement default values, we now fill with Undefined
-	if(n-1<arg->size())
-	{
-		arg->at(n-1)->incRef();
-		return arg->at(n-1);
-	}
-	else
-		return new Undefined;
-}
-
-ASObject* createRest()
-{
-	abort();
-	return NULL;
-/*	Array* ret=new Array();
-	ret->_constructor(ret,NULL);
-	return ret;*/
-}
-
-llvm::Function* debug_i_f;
-
 void ABCVm::registerFunctions()
 {
 	vector<const llvm::Type*> sig;
@@ -263,24 +234,6 @@ void ABCVm::registerFunctions()
 	FT=llvm::FunctionType::get(void_type, sig, false);
 	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not_impl",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::not_impl);
-	sig.clear();
-
-	sig.push_back(ptr_type);
-	FT=llvm::FunctionType::get(void_type, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"debug",module);
-	ex->addGlobalMapping(F,(void*)debug);
-	sig.clear();
-
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"createRest",module);
-	ex->addGlobalMapping(F,(void*)createRest);
-	sig.clear();
-
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	sig.push_back(int_type);
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"argumentDumper",module);
-	ex->addGlobalMapping(F,(void*)&argumentDumper);
 	sig.clear();
 
 	//All the opcodes needs a pointer to the context
@@ -472,7 +425,6 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
 	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
 	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
-	llvm::FunctionType* FT;
 
 	vector<const llvm::Type*> sig_obj_obj;
 	sig_obj_obj.push_back(voidptr_type);
@@ -527,34 +479,52 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	sig_context_int.push_back(context_type);
 	sig_context_int.push_back(int_type);
 
+	llvm::FunctionType* FT=NULL;
 	for(int i=0;i<table_len;i++)
 	{
-		if(table[i].type==ARGS_OBJ_OBJ)
-			FT=llvm::FunctionType::get(ret_type, sig_obj_obj, false);
-		else if(table[i].type==ARGS_NONE)
-			FT=llvm::FunctionType::get(ret_type, sig_none, false);
-		else if(table[i].type==ARGS_INT_OBJ)
-			FT=llvm::FunctionType::get(ret_type, sig_int_obj, false);
-		else if(table[i].type==ARGS_OBJ_INT)
-			FT=llvm::FunctionType::get(ret_type, sig_obj_int, false);
-		else if(table[i].type==ARGS_OBJ_NUMBER)
-			FT=llvm::FunctionType::get(ret_type, sig_obj_number, false);
-		else if(table[i].type==ARGS_INT)
-			FT=llvm::FunctionType::get(ret_type, sig_int, false);
-		else if(table[i].type==ARGS_NUMBER)
-			FT=llvm::FunctionType::get(ret_type, sig_number, false);
-		else if(table[i].type==ARGS_BOOL)
-			FT=llvm::FunctionType::get(ret_type, sig_bool, false);
-		else if(table[i].type==ARGS_OBJ)
-			FT=llvm::FunctionType::get(ret_type, sig_obj, false);
-		else if(table[i].type==ARGS_OBJ_OBJ_INT)
-			FT=llvm::FunctionType::get(ret_type, sig_obj_obj_int, false);
-		else if(table[i].type==ARGS_NUMBER_OBJ)
-			FT=llvm::FunctionType::get(ret_type, sig_number_obj, false);
-		else if(table[i].type==ARGS_INT_INT)
-			FT=llvm::FunctionType::get(ret_type, sig_int_int, false);
-		else if(table[i].type==ARGS_CONTEXT_INT)
-			FT=llvm::FunctionType::get(ret_type, sig_context_int, false);
+		switch(table[i].type)
+		{
+			case ARGS_OBJ_OBJ:
+				FT=llvm::FunctionType::get(ret_type, sig_obj_obj, false);
+				break;
+			case ARGS_NONE:
+				FT=llvm::FunctionType::get(ret_type, sig_none, false);
+				break;
+			case ARGS_INT_OBJ:
+				FT=llvm::FunctionType::get(ret_type, sig_int_obj, false);
+				break;
+			case ARGS_OBJ_INT:
+				FT=llvm::FunctionType::get(ret_type, sig_obj_int, false);
+				break;
+			case ARGS_OBJ_NUMBER:
+				FT=llvm::FunctionType::get(ret_type, sig_obj_number, false);
+				break;
+			case ARGS_INT:
+				FT=llvm::FunctionType::get(ret_type, sig_int, false);
+				break;
+			case ARGS_NUMBER:
+				FT=llvm::FunctionType::get(ret_type, sig_number, false);
+				break;
+			case ARGS_BOOL:
+				FT=llvm::FunctionType::get(ret_type, sig_bool, false);
+				break;
+			case ARGS_OBJ:
+				FT=llvm::FunctionType::get(ret_type, sig_obj, false);
+				break;
+			case ARGS_OBJ_OBJ_INT:
+				FT=llvm::FunctionType::get(ret_type, sig_obj_obj_int, false);
+				break;
+			case ARGS_NUMBER_OBJ:
+				FT=llvm::FunctionType::get(ret_type, sig_number_obj, false);
+				break;
+			case ARGS_INT_INT:
+				FT=llvm::FunctionType::get(ret_type, sig_int_int, false);
+				break;
+			case ARGS_CONTEXT_INT:
+				FT=llvm::FunctionType::get(ret_type, sig_context_int, false);
+				break;
+		}
+
 		llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,table[i].name,module);
 		ex->addGlobalMapping(F,table[i].addr);
 	}
@@ -647,7 +617,7 @@ void method_info::abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& b
 inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>& builder, 
 		vector<stack_entry>& static_stack,llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index) 
 {
-	for(int i=0;i<static_stack.size();i++)
+	for(unsigned int i=0;i<static_stack.size();i++)
 	{
 		if(static_stack[i].second==STACK_OBJECT)
 		{
@@ -667,7 +637,7 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 	const vector<stack_entry>& static_locals,llvm::Value* locals,const vector<STACK_TYPE>& expected,
 	const block_info& dest_block)
 {
-	for(int i=0;i<static_locals.size();i++)
+	for(unsigned int i=0;i<static_locals.size();i++)
 	{
 		if(static_locals[i].second==STACK_NONE)
 			continue;
@@ -901,7 +871,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	u8 opcode;
 	bool last_is_branch=true;
 	map<int,block_info>::iterator bit=blocks.begin();
-	for(bit;bit!=blocks.end();bit++)
+	for(;bit!=blocks.end();bit++)
 	{
 		block_info& cur=bit->second;
 		cur.locals_start.resize(body->local_count,STACK_NONE);
@@ -961,7 +931,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//see also returnvoid
 					last_is_branch=true;
 					static_stack_types.clear();
-					for(int i=0;i<body->local_count;i++)
+					for(unsigned int i=0;i<body->local_count;i++)
 					{
 						if(cur_block->locals_used[i]==false)
 							cur_block->locals_reset[i]=true;
@@ -1093,7 +1063,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					code >> count;
 					LOG(LOG_TRACE,"count "<< int(count));
 					vector<s24> offsets(count+1);
-					for(int i=0;i<count+1;i++)
+					for(unsigned int i=0;i<count+1;i++)
 					{
 						code >> offsets[i];
 						LOG(LOG_TRACE,"Case " << i << " " << offsets[i]);
@@ -1109,7 +1079,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					blocks[defaultdest].preds.insert(cur_block);
 					cur_block->seqs.insert(&blocks[defaultdest]);
 
-					for(int i=0;i<offsets.size();i++)
+					for(unsigned int i=0;i<offsets.size();i++)
 					{
 						int casedest=here+offsets[i];
 						if(blocks[casedest].BB==NULL)
@@ -1315,7 +1285,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					//returnvalue
 					last_is_branch=true;
 					static_stack_types.clear();
-					for(int i=0;i<body->local_count;i++)
+					for(unsigned int i=0;i<body->local_count;i++)
 					{
 						if(cur_block->locals_used[i]==false)
 							cur_block->locals_reset[i]=true;
@@ -1495,7 +1465,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				{
 					//convert_i
 					//convert_u
-					STACK_TYPE t=popTypeFromStack(static_stack_types,local_ip).second;
+					popTypeFromStack(static_stack_types,local_ip);
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
@@ -1504,7 +1474,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x75:
 				{
 					//convert_d
-					STACK_TYPE t=popTypeFromStack(static_stack_types,local_ip).second;
+					popTypeFromStack(static_stack_types,local_ip);
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
 					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
@@ -1513,7 +1483,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				case 0x76:
 				{
 					//convert_b
-					STACK_TYPE t=popTypeFromStack(static_stack_types,local_ip).second;
+					popTypeFromStack(static_stack_types,local_ip);
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
@@ -1940,25 +1910,25 @@ SyntheticFunction::synt_function method_info::synt_method()
 		{
 			stop=true;
 			map<int,block_info>::iterator bit=blocks.begin();
-			for(bit;bit!=blocks.end();bit++)
+			for(;bit!=blocks.end();bit++)
 			{
 				block_info& cur=bit->second;
 				std::vector<bool> new_reset(body->local_count,false);
-				for(int i=0;i<body->local_count;i++)
+				for(unsigned int i=0;i<body->local_count;i++)
 				{
 					if(cur.locals_used[i]==false)
 						new_reset[i]=true;
 				}
 				set<block_info*>::iterator seq=cur.seqs.begin();
-				for(seq;seq!=cur.seqs.end();seq++)
+				for(;seq!=cur.seqs.end();seq++)
 				{
-					for(int i=0;i<body->local_count;i++)
+					for(unsigned int i=0;i<body->local_count;i++)
 					{
 						if((*seq)->locals_reset[i]==false)
 							new_reset[i]=false;
 					}
 				}
-				for(int i=0;i<body->local_count;i++)
+				for(unsigned int i=0;i<body->local_count;i++)
 				{
 					if(cur.locals_reset[i]==true)
 						new_reset[i]=true;
@@ -1977,7 +1947,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		//We can now search for locals that can be saved
 		//If every predecessor blocks agree with the type of a local we pass it over
 		map<int,block_info>::iterator bit=blocks.begin();
-		for(bit;bit!=blocks.end();bit++)
+		for(;bit!=blocks.end();bit++)
 		{
 			block_info& cur=bit->second;
 			vector<STACK_TYPE> new_start;
@@ -1987,9 +1957,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 				set<block_info*>::iterator pred=cur.preds.begin();
 				new_start=(*pred)->locals;
 				pred++;
-				for(pred;pred!=cur.preds.end();pred++)
+				for(;pred!=cur.preds.end();pred++)
 				{
-					for(int j=0;j<(*pred)->locals.size();j++)
+					for(unsigned int j=0;j<(*pred)->locals.size();j++)
 					{
 						if(new_start[j]!=(*pred)->locals[j])
 							new_start[j]=STACK_NONE;
@@ -1997,7 +1967,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				}
 			}
 			//It's not useful to sync variables that are going to be resetted
-			for(int i=0;i<body->local_count;i++)
+			for(unsigned int i=0;i<body->local_count;i++)
 			{
 				if(cur.locals_reset[i])
 					new_start[i]=STACK_NONE;
@@ -2022,11 +1992,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 
 	bit=blocks.begin();
-	for(bit;bit!=blocks.end();bit++)
+	for(;bit!=blocks.end();bit++)
 	{
 		block_info& cur=bit->second;
 		cur.locals_start_obj.resize(cur.locals_start.size(),NULL);
-		for(int i=0;i<cur.locals_start.size();i++)
+		for(unsigned int i=0;i<cur.locals_start.size();i++)
 		{
 			switch(cur.locals_start[i])
 			{
@@ -2087,7 +2057,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//Generate prologue, LLVM should optimize register usage
 				if(static_locals.size()!=cur_block->locals_start.size())
 					abort();
-				for(int i=0;i<static_locals.size();i++)
+				for(unsigned int i=0;i<static_locals.size();i++)
 				{
 					static_locals[i].second=cur_block->locals_start[i];
 					if(cur_block->locals_start[i]!=STACK_NONE)
@@ -2123,13 +2093,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				last_is_branch=true;
 				constant = llvm::ConstantInt::get(int_type, NULL);
 				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
-				for(int i=0;i<static_locals.size();i++)
+				for(unsigned int i=0;i<static_locals.size();i++)
 				{
 					if(static_locals[i].second==STACK_OBJECT)
 						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_locals[i].first);
 					static_locals[i].second=STACK_NONE;
 				}
-				for(int i=0;i<static_stack.size();i++)
+				for(unsigned int i=0;i<static_stack.size();i++)
 				{
 					if(static_stack[i].second==STACK_OBJECT)
 						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_stack[i].first);
@@ -2760,7 +2730,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code >> count;
 				LOG(LOG_TRACE,"count "<< int(count));
 				vector<s24> offsets(count+1);
-				for(int i=0;i<count+1;i++)
+				for(unsigned int i=0;i<count+1;i++)
 				{
 					code >> offsets[i];
 					LOG(LOG_TRACE,"Case " << i << " " << offsets[i]);
@@ -2783,7 +2753,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				syncLocals(ex,Builder,static_locals,locals,cur_block->locals,blocks[defaultdest]);
 				Builder.CreateBr(blocks[defaultdest].BB);
 
-				for(int i=0;i<offsets.size();i++)
+				for(unsigned int i=0;i<offsets.size();i++)
 				{
 					int casedest=here+offsets[i];
 					llvm::ConstantInt* constant = static_cast<llvm::ConstantInt*>(llvm::ConstantInt::get(int_type, i));
@@ -3120,13 +3090,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 				last_is_branch=true;
 				constant = llvm::ConstantInt::get(int_type, NULL);
 				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
-				for(int i=0;i<static_locals.size();i++)
+				for(unsigned int i=0;i<static_locals.size();i++)
 				{
 					if(static_locals[i].second==STACK_OBJECT)
 						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_locals[i].first);
 					static_locals[i].second=STACK_NONE;
 				}
-				for(int i=0;i<static_stack.size();i++)
+				for(unsigned int i=0;i<static_stack.size();i++)
 				{
 					if(static_stack[i].second==STACK_OBJECT)
 						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_stack[i].first);
@@ -3152,13 +3122,13 @@ SyntheticFunction::synt_function method_info::synt_method()
 					e.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),e.first);
 				else
 					abort();
-				for(int i=0;i<static_locals.size();i++)
+				for(unsigned int i=0;i<static_locals.size();i++)
 				{
 					if(static_locals[i].second==STACK_OBJECT)
 						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_locals[i].first);
 					static_locals[i].second=STACK_NONE;
 				}
-				for(int i=0;i<static_stack.size();i++)
+				for(unsigned int i=0;i<static_stack.size();i++)
 				{
 					if(static_stack[i].second==STACK_OBJECT)
 						Builder.CreateCall(ex->FindFunctionNamed("decRef"),static_stack[i].first);
@@ -3354,7 +3324,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				constant = llvm::ConstantInt::get(int_type, t);
 				int rtdata=this->context->getMultinameRTData(t);
 				stack_entry value=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				llvm::Value* name;
+				llvm::Value* name=NULL;
 				//HACK: we need to reinterpret the pointer to the generic type
 				llvm::Value* reint_context=Builder.CreateBitCast(context,voidptr_type);
 				if(rtdata==0)
@@ -3486,7 +3456,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				code >> t;
 				constant = llvm::ConstantInt::get(int_type, t);
 				int rtdata=this->context->getMultinameRTData(t);
-				llvm::Value* name;
+				llvm::Value* name=NULL;
 				//HACK: we need to reinterpret the pointer to the generic type
 				llvm::Value* reint_context=Builder.CreateBitCast(context,voidptr_type);
 				if(rtdata==0)
@@ -4471,7 +4441,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 
 	map<int,block_info>::iterator it2=blocks.begin();
-	for(it2;it2!=blocks.end();it2++)
+	for(;it2!=blocks.end();it2++)
 	{
 		if(it2->second.BB->getTerminator()==NULL)
 		{

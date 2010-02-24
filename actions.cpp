@@ -398,7 +398,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 	return t;
 }
 
-RunState::RunState():FP(0),stop_FP(0),next_FP(0)
+RunState::RunState():FP(0),next_FP(0),stop_FP(0)
 {
 }
 
@@ -586,7 +586,7 @@ void ActionSetProperty::Execute()
 				obj->setVariableByQName("_scalex","",value);
 				LOG(LOG_CALLS,"setting to " << value->toNumber());
 				break;
-	/*		case 5:
+			case 5:
 				ret=obj->getVariableByName("_totalframes");
 				LOG(NO_INFO,"setting to " << ret->toInt());
 				break;

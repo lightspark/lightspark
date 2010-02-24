@@ -107,8 +107,9 @@ ASFUNCTIONBODY(URLLoader,load)
 	assert(arg->prototype==Class<URLRequest>::getClass());
 	th->urlRequest=static_cast<URLRequest*>(arg->implementation);
 	ASObject* data=arg->getVariableByQName("data","").obj;
-	//No POST data
-	assert(data==NULL);
+	//POST data is not yet supported
+	if(data)
+		abort();
 	assert(th->dataFormat=="binary");
 	sys->cur_thread_pool->addJob(th);
 	return NULL;

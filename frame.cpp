@@ -48,7 +48,7 @@ void Frame::Render()
 	list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
 
 	//Render objects of this frame;
-	for(i;i!=displayList.end();i++)
+	for(;i!=displayList.end();i++)
 	{
 		assert(i->second);
 
@@ -70,7 +70,7 @@ void Frame::Render()
 	//Render objects added at runtime
 	//TODO: Add synchronization mutex, as this may be modified in the meantime by the VM
 	list<IDisplayListElem*>::iterator j=dynamicDisplayList->begin();
-	for(j;j!=dynamicDisplayList->end();j++)
+	for(;j!=dynamicDisplayList->end();j++)
 		(*j)->Render();
 
 #ifndef WIN32
@@ -82,7 +82,7 @@ void Frame::Render()
 void dumpDisplayList(list<IDisplayListElem*>& l)
 {
 	list<IDisplayListElem*>::iterator it=l.begin();
-	for(it;it!=l.end();it++)
+	for(;it!=l.end();it++)
 	{
 		cout << *it << endl;
 	}
@@ -102,7 +102,7 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 		if(!controls.empty())
 		{
 			assert(parent->root==parent);
-			for(int i=0;i<controls.size();i++)
+			for(unsigned int i=0;i<controls.size();i++)
 				controls[i]->execute(parent->root);
 			controls.clear();
 
@@ -119,7 +119,7 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 
 		//Update the displayList using the tags in this frame
 		std::list<DisplayListTag*>::iterator it=blueprint.begin();
-		for(it;it!=blueprint.end();it++)
+		for(;it!=blueprint.end();it++)
 			(*it)->execute(parent, d);
 		blueprint.clear();
 		displayList=d;

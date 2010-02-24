@@ -81,7 +81,7 @@ public:
 		assert(strlen(s)<=4096);
 		strcpy(buf,s);
 	}
-	tiny_string(const tiny_string& r):isStatic(true),buf(_buf_static)
+	tiny_string(const tiny_string& r):buf(_buf_static),isStatic(true)
 	{
 		if(strlen(r.buf)>(TS_SIZE-1))
 		{
@@ -96,11 +96,11 @@ public:
 		if(isStatic==false)
 			delete[] buf;
 	}
-	explicit tiny_string(intptr_t i):isStatic(true),buf(_buf_static)
+	explicit tiny_string(int i):buf(_buf_static),isStatic(true)
 	{
 		sprintf(buf,"%i",i);
 	}
-	explicit tiny_string(number_t d):isStatic(true),buf(_buf_static)
+	explicit tiny_string(number_t d):buf(_buf_static),isStatic(true)
 	{
 		sprintf(buf,"%g",d);
 	}
@@ -142,15 +142,13 @@ public:
 	}
 	tiny_string& operator+=(const char* s)
 	{
-		int newlen=strlen(buf)+strlen(s)+1;
-		assert(newlen<TS_SIZE);
+		assert((strlen(buf)+strlen(s)+1)<TS_SIZE);
 		strcat(buf,s);
 		return *this;
 	}
 	tiny_string& operator+=(const tiny_string& r)
 	{
-		int newlen=strlen(buf)+strlen(r.buf)+1;
-		assert(newlen<TS_SIZE);
+		assert((strlen(buf)+strlen(r.buf)+1)<TS_SIZE);
 		strcat(buf,r.buf);
 		return *this;
 	}
@@ -314,7 +312,7 @@ struct multiname
 	tiny_string name_s;
 	union
 	{
-		intptr_t name_i;
+		int32_t name_i;
 		number_t name_d;
 		ASObject* name_o;
 	};
@@ -382,19 +380,19 @@ private:
 	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int& level, bool create, bool searchPreviusLevels);
 	obj_var* findObjVar(const multiname& mname, int& level, bool create, bool searchPreviusLevels);
 	void killObjVar(const multiname& mname, int level);
-	ASObject* getSlot(int n)
+	ASObject* getSlot(unsigned int n)
 	{
 		return slots_vars[n-1]->second.second.var;
 	}
-	void setSlot(int n,ASObject* o);
-	void initSlot(int n,int level, const tiny_string& name, const tiny_string& ns);
+	void setSlot(unsigned int n,ASObject* o);
+	void initSlot(unsigned int n,int level, const tiny_string& name, const tiny_string& ns);
 	ASObject* getVariableByString(const std::string& name);
 	int size() const
 	{
 		return Variables.size();
 	}
-	tiny_string getNameAt(int i);
-	obj_var* getValueAt(int i, int& level);
+	tiny_string getNameAt(unsigned int i);
+	obj_var* getValueAt(unsigned int i, int& level);
 	~variables_map();
 public:
 	void dumpVariables();
@@ -407,7 +405,7 @@ friend class ABCVm;
 friend class ABCContext;
 friend class SystemState;
 protected:
-	ASObject* asprototype; //HUMM.. ok the prototype, actually class, should be renamed
+	//ASObject* asprototype; //HUMM.. ok the prototype, actually class, should be renamed
 	//maps variable name to namespace and var
 	variables_map Variables;
 	ASObject(const ASObject& o);
@@ -491,16 +489,16 @@ public:
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	bool hasPropertyByMultiname(const multiname& name);
 	bool hasPropertyByQName(const tiny_string& name, const tiny_string& ns);
-	ASObject* getSlot(int n)
+	ASObject* getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);
 	}
-	virtual void setSlot(int n,ASObject* o)
+	virtual void setSlot(unsigned int n,ASObject* o)
 	{
 		Variables.setSlot(n,o);
 	}
-	virtual void initSlot(int n,const tiny_string& name, const tiny_string& ns);
-	virtual int numVariables();
+	virtual void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
+	virtual unsigned int numVariables();
 	tiny_string getNameAt(int i)
 	{
 		return Variables.getNameAt(i);
@@ -552,9 +550,9 @@ private:
 	virtual bool isLess(bool& ret, ASObject* o);
 	virtual bool toInt(int& ret);
 	virtual bool toNumber(double& ret);
-	virtual bool hasNext(int& index, bool& out);
-	virtual bool nextName(int index, ASObject*& out);
-	virtual bool nextValue(int index, ASObject*& out);
+	virtual bool hasNext(unsigned int& index, bool& out);
+	virtual bool nextName(unsigned int index, ASObject*& out);
+	virtual bool nextValue(unsigned int index, ASObject*& out);
 protected:
 	SWFOBJECT_TYPE type;
 public:
@@ -1167,9 +1165,9 @@ public:
 class RunState
 {
 public:
-	int FP;
-	int next_FP;
-	int max_FP;
+	unsigned int FP;
+	unsigned int next_FP;
+	unsigned int max_FP;
 	bool stop_FP;
 	bool explicit_FP;
 	RunState();

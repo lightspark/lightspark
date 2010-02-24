@@ -155,8 +155,7 @@ ASObject* ABCVm::coerce_s(ASObject* o)
 
 void ABCVm::coerce(call_context* th, int n)
 {
-	multiname* name=th->context->getMultiname(n,NULL); 
-	LOG(LOG_CALLS,"coerce " << *name);
+	LOG(LOG_CALLS,"coerce " << *th->context->getMultiname(n,NULL));
 }
 
 void ABCVm::pop()
@@ -375,8 +374,6 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, "getProperty " << *name << ' ' << obj);
 
-	int v=getVm()->method_this_stack.size();
-
 	//We have to reset the level before finding a variable
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	if(tl.cur_this==obj)
@@ -387,8 +384,6 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	if(tl.cur_this==obj)
 		obj->setLevel(tl.cur_level);
 	
-	assert(v==getVm()->method_this_stack.size());
-
 	if(ret.obj==NULL)
 	{
 		if(obj->prototype)
@@ -632,7 +627,7 @@ void ABCVm::construct(call_context* th, int m)
 		if(sf->mi->body)
 		{
 			LOG(LOG_CALLS,"Building method traits");
-			for(int i=0;i<sf->mi->body->trait_count;i++)
+			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
@@ -969,7 +964,8 @@ ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
 	}
 	else if(val2->getObjectType()==T_STRING)
 	{
-		tiny_string a(val1);
+		//Convert argument to int32_t
+		tiny_string a((int32_t)val1);
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,"add " << a << '+' << b);
@@ -1300,7 +1296,7 @@ void ABCVm::getLex(call_context* th, int n)
 
 	//Find out the current 'this', when looking up over it, we have to consider all of it
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	for(it;it!=th->scope_stack.rend();it++)
+	for(;it!=th->scope_stack.rend();it++)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
@@ -1411,7 +1407,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	objAndLevel o(NULL,0);
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	for(it;it!=th->scope_stack.rend();it++)
+	for(;it!=th->scope_stack.rend();it++)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
@@ -1448,7 +1444,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 
-	for(it;it!=th->scope_stack.rend();it++)
+	for(;it!=th->scope_stack.rend();it++)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
@@ -1546,8 +1542,6 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	//We modify the cur_level of obj
 	obj->decLevel();
 
-	int v=getVm()->method_this_stack.size();
-
 	//We should skip the special implementation of get
 	objAndLevel o=obj->getVariableByMultiname(*name, true, false);
 
@@ -1618,7 +1612,6 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	assert(obj->actualPrototype==old_prototype->super);
 	obj->actualPrototype=old_prototype;
 
-	assert(v==getVm()->method_this_stack.size());
 	obj->decRef();
 	delete[] args;
 }
@@ -1903,7 +1896,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		if(sf->mi->body)
 		{
 			LOG(LOG_CALLS,"Building method traits");
-			for(int i=0;i<sf->mi->body->trait_count;i++)
+			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
@@ -1931,7 +1924,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 {
 	LOG(LOG_CALLS,"hasNext2 " << n << ' ' << m);
 	ASObject* obj=th->locals[n];
-	int cur_index=th->locals[m]->toInt();
+	unsigned int cur_index=th->locals[m]->toUInt();
 
 	if(obj->implementation)
 	{
@@ -2108,7 +2101,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 
 	LOG(LOG_CALLS,"Building class traits");
-	for(int i=0;i<th->context->classes[n].trait_count;i++)
+	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
 	{
 		//When we build the traits we set the prototype to itself, so the level is correctly found
 		ret->actualPrototype=ret;
@@ -2130,7 +2123,7 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	//add implemented interfaces
-	for(int i=0;i<th->context->instances[n].interface_count;i++)
+	for(unsigned int i=0;i<th->context->instances[n].interface_count;i++)
 	{
 		multiname* name=th->context->getMultiname(th->context->instances[n].interfaces[i],NULL);
 		ret->addImplementedInterface(*name);
@@ -2172,7 +2165,7 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act=new ASObject;
-	for(int i=0;i<info->body->trait_count;i++)
+	for(unsigned int i=0;i<info->body->trait_count;i++)
 		th->context->buildTrait(act,&info->body->traits[i],false);
 
 	return act;
@@ -2248,7 +2241,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	method_info* m=&th->context->methods[n];
 	SyntheticFunction* f=new SyntheticFunction(m);
 	f->func_scope=th->scope_stack;
-	for(int i=0;i<f->func_scope.size();i++)
+	for(unsigned int i=0;i<f->func_scope.size();i++)
 		f->func_scope[i]->incRef();
 
 	//Bind the function to null, as this is not a class method

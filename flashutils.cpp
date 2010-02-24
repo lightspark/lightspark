@@ -103,7 +103,9 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	ByteArray* out=Class<ByteArray>::cast(args->at(0)->implementation);
 	int offset=args->at(1)->toInt();
 	int length=args->at(2)->toInt();
-	assert(offset==0);
+	//TODO: Support offset
+	if(offset!=0)
+		abort();
 
 	uint8_t* buf=out->getBuffer(length);
 	memcpy(buf,th->bytes+th->position,length);
@@ -114,7 +116,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 
 bool ByteArray::getVariableByMultiname(const multiname& name, ASObject*& out)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return false;
 
@@ -126,7 +128,7 @@ bool ByteArray::getVariableByMultiname(const multiname& name, ASObject*& out)
 
 bool ByteArray::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return false;
 
@@ -138,7 +140,7 @@ bool ByteArray::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 
 bool ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!Array::isValidQName(name,ns,index))
 		return false;
 
@@ -147,7 +149,7 @@ bool ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& n
 
 bool ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return false;
 
@@ -170,7 +172,7 @@ bool ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 
 bool ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
-	int index=0;
+	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return false;
 
@@ -236,12 +238,14 @@ ASFUNCTIONBODY(Timer,start)
 	Timer* th=static_cast<Timer*>(obj->implementation);
 	th->running=true;
 	sys->cur_thread_pool->addJob(th);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Timer,reset)
 {
 	Timer* th=static_cast<Timer*>(obj->implementation);
 	th->running=false;
+	return NULL;
 }
 
 ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)
@@ -331,6 +335,7 @@ void Dictionary::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Dictionary,_constructor)
 {
+	return NULL;
 }
 
 bool Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
@@ -350,7 +355,10 @@ bool Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
 		return true;
 	}
 	else if(name.name_type==multiname::NAME_STRING)
+	{
 		data[Class<ASString>::getInstanceS(true,name.name_s)->obj]=o;
+		return true;
+	}
 	else
 		abort();
 }
@@ -394,7 +402,7 @@ bool Dictionary::getVariableByMultiname(const multiname& name, ASObject*& out)
 	{
 		//Ok, we need to do the slow lookup on every object and check for === comparison
 		map<ASObject*, ASObject*>::iterator it=data.begin();
-		for(it;it!=data.end();it++)
+		for(;it!=data.end();it++)
 		{
 			if(it->first->getObjectType()==T_STRING)
 			{
@@ -418,24 +426,24 @@ bool Dictionary::getVariableByMultiname(const multiname& name, ASObject*& out)
 	return true;
 }
 
-bool Dictionary::hasNext(int& index, bool& out)
+bool Dictionary::hasNext(unsigned int& index, bool& out)
 {
 	out=index<data.size();
 	index++;
 	return true;
 }
 
-bool Dictionary::nextName(int index, ASObject*& out)
+bool Dictionary::nextName(unsigned int index, ASObject*& out)
 {
 	assert(index<data.size());
 	map<ASObject*,ASObject*>::iterator it=data.begin();
-	for(int i=0;i<index;i++)
+	for(unsigned int i=0;i<index;i++)
 		it++;
 	out=it->first;
 	return true;
 }
 
-bool Dictionary::nextValue(int index, ASObject*& out)
+bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 {
 	abort();
 /*	assert(index<data.size());

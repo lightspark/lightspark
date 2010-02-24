@@ -193,17 +193,17 @@ bool IInterface::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	return false;
 }
 
-bool IInterface::hasNext(int& index, bool& out)
+bool IInterface::hasNext(unsigned int& index, bool& out)
 {
 	return false;
 }
 
-bool IInterface::nextName(int index, ASObject*& out)
+bool IInterface::nextName(unsigned int index, ASObject*& out)
 {
 	return false;
 }
 
-bool IInterface::nextValue(int index, ASObject*& out)
+bool IInterface::nextValue(unsigned int index, ASObject*& out)
 {
 	return false;
 }
@@ -382,7 +382,7 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, 
 	name.level=level;
 
 	var_iterator ret=ret_begin;
-	for(ret;ret!=ret_end;ret++)
+	for(;ret!=ret_end;ret++)
 	{
 		if(ret->second.first==ns)
 		{
@@ -609,11 +609,11 @@ void variables_map::killObjVar(const multiname& mname, int level)
 
 	//Find the namespace
 	assert(!mname.ns.empty());
-	for(int i=0;i<mname.ns.size();i++)
+	for(unsigned int i=0;i<mname.ns.size();i++)
 	{
 		const tiny_string& ns=mname.ns[i].name;
 		var_iterator start=ret.first;
-		for(start;start!=ret.second;start++)
+		for(;start!=ret.second;start++)
 		{
 			if(start->second.first==ns)
 			{
@@ -647,7 +647,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool crea
 	name.level=level;
 
 	var_iterator ret=ret_begin;
-	for(ret;ret!=ret_end;ret++)
+	for(;ret!=ret_end;ret++)
 	{
 		//Check if one the namespace is already present
 		assert(!mname.ns.empty());
@@ -707,7 +707,7 @@ ASFUNCTIONBODY(ASObject,_setPrototype)
 }*/
 
 
-void ASObject::initSlot(int n,const tiny_string& name, const tiny_string& ns)
+void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns)
 {
 	//Should be correct to use the level on the prototype chain
 	int level=(actualPrototype)?actualPrototype->max_level:0;
@@ -748,7 +748,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 	}
 
 	obj_var* obj=NULL;
-	int level;
+	int level=-1;
 	int max_level=cur_level;
 	for(int i=max_level;i>=0;i--)
 	{
@@ -768,6 +768,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 
 	if(obj!=NULL)
 	{
+		assert(level!=-1);
 		if(obj->getter)
 		{
 			//Call the getter
@@ -876,7 +877,7 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 {
 	//Slow linear lookup, should be avoided
 	var_iterator it=Variables.begin();
-	for(it;it!=Variables.end();it++)
+	for(;it!=Variables.end();it++)
 	{
 		string cur(it->second.first.raw_buf());
 		if(!cur.empty())
@@ -901,7 +902,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const tiny_string& r)
 
 std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 {
-	for(int i=0;i<r.ns.size();i++)
+	for(unsigned int i=0;i<r.ns.size();i++)
 	{
 		string prefix;
 		switch(r.ns[i].kind)
@@ -948,7 +949,7 @@ void ASObject::check()
 	//Heavyweight stuff
 #ifndef NDEBUG
 	variables_map::var_iterator it=Variables.Variables.begin();
-	for(it;it!=Variables.Variables.end();it++)
+	for(;it!=Variables.Variables.end();it++)
 	{
 		variables_map::var_iterator next=it;
 		next++;
@@ -983,7 +984,7 @@ void ASObject::check()
 void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
-	for(it;it!=Variables.end();it++)
+	for(;it!=Variables.end();it++)
 		cerr << it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << 
 			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter << endl;
 }
@@ -1689,7 +1690,7 @@ void DictionaryDefinable::define(ASObject* g)
 variables_map::~variables_map()
 {
 	var_iterator it=Variables.begin();
-	for(it;it!=Variables.end();it++)
+	for(;it!=Variables.end();it++)
 	{
 		if(it->second.second.var)
 			it->second.second.var->decRef();
@@ -1700,16 +1701,15 @@ variables_map::~variables_map()
 	}
 }
 
-ASObject::ASObject(Manager* m):
-	prototype(NULL),actualPrototype(NULL),ref_count(1),
-	manager(m),type(T_OBJECT),implementation(NULL),cur_level(0)
+ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),implementation(NULL),
+	prototype(NULL),actualPrototype(NULL)
 {
 }
 
-ASObject::ASObject(const ASObject& o):
-	prototype(o.prototype),actualPrototype(o.prototype),manager(NULL),ref_count(1),
-	type(o.type),implementation(NULL),cur_level(0)
+ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),implementation(NULL),
+	prototype(o.prototype),actualPrototype(o.prototype)
 {
+	abort();
 	if(prototype)
 		prototype->incRef();
 
@@ -1734,7 +1734,7 @@ void ASObject::resetLevel()
 	cur_level=_maxlevel();
 }
 
-void variables_map::initSlot(int n, int level, const tiny_string& name, const tiny_string& ns)
+void variables_map::initSlot(unsigned int n, int level, const tiny_string& name, const tiny_string& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
@@ -1744,7 +1744,7 @@ void variables_map::initSlot(int n, int level, const tiny_string& name, const ti
 	{
 		//Check if this namespace is already present
 		var_iterator start=ret.first;
-		for(start;start!=ret.second;start++)
+		for(;start!=ret.second;start++)
 		{
 			if(start->second.first==ns)
 			{
@@ -1758,7 +1758,7 @@ void variables_map::initSlot(int n, int level, const tiny_string& name, const ti
 	abort();
 }
 
-void variables_map::setSlot(int n,ASObject* o)
+void variables_map::setSlot(unsigned int n,ASObject* o)
 {
 	if(n-1<slots_vars.size())
 	{
@@ -1777,14 +1777,14 @@ void variables_map::setSlot(int n,ASObject* o)
 	}
 }
 
-obj_var* variables_map::getValueAt(int index, int& level)
+obj_var* variables_map::getValueAt(unsigned int index, int& level)
 {
 	//TODO: CHECK behavious on overridden methods
 	if(index<Variables.size())
 	{
 		var_iterator it=Variables.begin();
 
-		for(int i=0;i<index;i++)
+		for(unsigned int i=0;i<index;i++)
 			it++;
 
 		level=it->first.level;
@@ -1808,7 +1808,6 @@ ASObject* ASObject::getValueAt(int index)
 		//Call the getter
 		LOG(LOG_CALLS,"Calling the getter");
 		IFunction* getter=obj->getter->getOverride();
-		ASObject* ret=getter->call(this,NULL,level);
 		ret=getter->call(this,NULL,level);
 		ret->fake_decRef();
 		LOG(LOG_CALLS,"End of getter");
@@ -1819,14 +1818,14 @@ ASObject* ASObject::getValueAt(int index)
 	return ret;
 }
 
-tiny_string variables_map::getNameAt(int index)
+tiny_string variables_map::getNameAt(unsigned int index)
 {
 	//TODO: CHECK behavious on overridden methods
 	if(index<Variables.size())
 	{
 		var_iterator it=Variables.begin();
 
-		for(int i=0;i<index;i++)
+		for(unsigned int i=0;i<index;i++)
 			it++;
 
 		return tiny_string(it->first.name);
@@ -1838,7 +1837,7 @@ tiny_string variables_map::getNameAt(int index)
 	}
 }
 
-int ASObject::numVariables()
+unsigned int ASObject::numVariables()
 {
 	return Variables.size();
 }
@@ -1859,7 +1858,7 @@ void ASObject::recursiveBuild(const Class_base* cur)
 
 	//Link the interfaces for this level
 	const vector<Class_base*>& interfaces=cur->getInterfaces();
-	for(int i=0;i<interfaces.size();i++)
+	for(unsigned int i=0;i<interfaces.size();i++)
 	{
 		LOG(LOG_CALLS,"Linking with interface " << interfaces[i]->class_name);
 		interfaces[i]->linkInterface(this);

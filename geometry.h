@@ -94,7 +94,7 @@ public:
 	Vector2 p2;
 	int color0;
 	int color1;
-	Edge(const Vector2& a,const Vector2& b,int c1, int c2):color0(c1),color1(c2),p1(a),p2(b)
+	Edge(const Vector2& a,const Vector2& b,int c1, int c2):p1(a),p2(b),color0(c1),color1(c2)
 	{
 	}
 	bool yIntersect(const Vector2& p, int& dist);
@@ -154,7 +154,7 @@ private:
 	FILLSTYLE* style;
 	arrayElem* varray;
 public:
-	GeomShape():closed(false),style(NULL),varray(NULL){}
+	GeomShape():style(NULL),varray(NULL),closed(false){}
 	std::vector<Triangle> interior;
 	std::vector<std::vector<Vector2> > triangle_strips;
 	std::vector<Vector2> outline;

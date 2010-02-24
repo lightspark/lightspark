@@ -139,9 +139,9 @@ public:
 	fps_profiling* fps_prof;
 	Stage* stage;
 	ABCVm* currentVm;
+	ThreadPool* cur_thread_pool;
 	InputThread* cur_input_thread;
 	RenderThread* cur_render_thread;
-	ThreadPool* cur_thread_pool;
 	//Application starting time in milliseconds
 	uint64_t startTime;
 
@@ -249,7 +249,7 @@ public:
 	~RenderThread();
 	void draw();
 	void wait();
-	static int setError(){error=1;}
+//	static void setError(){error=1;}
 	float getIdAt(int x, int y);
 
 	//Used only in RenderThread context

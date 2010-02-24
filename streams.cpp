@@ -25,7 +25,7 @@
 
 using namespace std;
 
-sync_stream::sync_stream():head(0),tail(0),wait(-1),buf_size(1024*1024),compressed(0),offset(0)
+sync_stream::sync_stream():head(0),tail(0),wait(-1),compressed(0),offset(0),buf_size(1024*1024)
 {
 	printf("syn stream\n");
 	buffer= new char[buf_size];
@@ -285,7 +285,7 @@ int zlib_file_filter::provideBuffer(int limit)
 	return fread(in_buf,1,limit,f);
 }
 
-zlib_bytes_filter::zlib_bytes_filter(const uint8_t* b, int l):buf(b),len(l),offset(0)
+zlib_bytes_filter::zlib_bytes_filter(const uint8_t* b, int l):buf(b),offset(0),len(l)
 {
 	initialize();
 }

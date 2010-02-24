@@ -80,7 +80,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	pt->root->frame_rate/=256;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li):toBind(false),initialized(false)
+RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),toBind(false)
 {
 	root=this;
 	sem_init(&mutex,0,1);
@@ -96,7 +96,7 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():shutdown(false),currentVm(NULL),cur_thread_pool(NULL),useInterpreter(false),RootMovieClip(NULL)
+SystemState::SystemState():RootMovieClip(NULL),shutdown(false),currentVm(NULL),cur_thread_pool(NULL),useInterpreter(false)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -158,8 +158,6 @@ void* ParseThread::worker(ParseThread* th)
 		pt->root->setFrameSize(h.getFrameSize());
 		pt->root->setFrameCount(h.FrameCount);
 
-		int done=0;
-
 		TagFactory factory(th->f);
 		while(1)
 		{
@@ -188,6 +186,9 @@ void* ParseThread::worker(ParseThread* th)
 					break;
 				case CONTROL_TAG:
 					th->root->addToFrame(static_cast<ControlTag*>(tag));
+					break;
+				case TAG:
+					//Not yet implemented tag, ignore it
 					break;
 			}
 			if(sys->shutdown)
@@ -268,6 +269,7 @@ void* InputThread::npapi_worker(InputThread* th)
 	{
 		exit(-1);
 	}*/
+	return NULL;
 }
 #endif
 
@@ -290,6 +292,10 @@ void* InputThread::sdl_worker(InputThread* th)
 						break;
 					case SDLK_s:
 						sys->state.stop_FP=true;
+						break;
+
+					//Ignore any other keystrokes
+					default:
 						break;
 				}
 				break;
@@ -345,7 +351,7 @@ void InputThread::addListener(const tiny_string& t, EventDispatcher* ob)
 
 	multimap<tiny_string, EventDispatcher*>::const_iterator it=range.first;
 	int count=0;
-	for(it;it!=range.second;it++)
+	for(;it!=range.second;it++)
 	{
 		count++;
 		if(it->second==ob)
@@ -361,7 +367,7 @@ void InputThread::addListener(const tiny_string& t, EventDispatcher* ob)
 		//Check if this object is alreasy registered for this event
 		it=range.first;
 		int count=0;
-		for(it;it!=range.second;it++)
+		for(;it!=range.second;it++)
 		{
 			count++;
 			if(it->second==ob)
@@ -386,7 +392,7 @@ void InputThread::addListener(const tiny_string& t, EventDispatcher* ob)
 	float increment=1.0f/count;
 	float cur=increment;
 	cout << "increment " << increment << endl;
-	for(it;it!=range.second;it++)
+	for(;it!=range.second;it++)
 	{
 		if(it->second)
 			it->second->setId(cur);
@@ -405,7 +411,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 		multimap<tiny_string, EventDispatcher*>::const_iterator > range=
 		listeners.equal_range(t);
 
-	for(range.first;range.first!=range.second;range.first++)
+	for(;range.first!=range.second;range.first++)
 		sys->currentVm->addEvent(range.first->second,Class<Event>::getInstanceS(true,t));
 
 	sem_post(&sem_listeners);
@@ -452,12 +458,12 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 	Display* d=XOpenDisplay(NULL);
 
-	XFontStruct *mFontInfo;
+/*	XFontStruct *mFontInfo;
 	if (!mFontInfo)
 	{
 		if (!(mFontInfo = XLoadQueryFont(d, "9x15")))
 			printf("Cannot open 9X15 font\n");
-	}
+	}*/
 
 	XGCValues v;
 	v.foreground=BlackPixel(d, 0);
@@ -492,11 +498,12 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	int i;
 	for(i=0;i<a;i++)
 	{
-		int id,v;
-		glXGetFBConfigAttrib(d,fb[i],GLX_BUFFER_SIZE,&v);
+		int id;
+		//int v;
+		//glXGetFBConfigAttrib(d,fb[i],GLX_BUFFER_SIZE,&v);
 		glXGetFBConfigAttrib(d,fb[i],GLX_VISUAL_ID,&id);
 //		printf("ID 0x%x size %u\n",id,v);
-		if(id==p->visual)
+		if(id==(int)p->visual)
 		{
 //			printf("good id %x\n",id);
 			break;
@@ -610,9 +617,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			sem_wait(&th->render);
 			if(error)
 			{
-				glXMakeContextCurrent(d, 0, 0, NULL);
+				abort();
+				/*glXMakeContextCurrent(d, 0, 0, NULL);
 				unsigned int h = p->height/2;
-				unsigned int w = 3 * p->width/4;
+				//unsigned int w = 3 * p->width/4;
 				int x = 0;
 				int y = h/2;
 				GC gc = XCreateGC(d, p->window, 0, NULL);
@@ -624,7 +632,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				y += fh;
 				x += 32;
 				XDrawString(d, p->window, gc, x, y, string, l);
-				XFreeGC(d, gc);
+				XFreeGC(d, gc);*/
 			}
 			else
 			{
@@ -683,7 +691,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 int RenderThread::load_program()
 {
 	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
-	GLuint v = glCreateShader(GL_VERTEX_SHADER);
+	//GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
 	const char *fs = NULL;
 	fs = dataFileRead("lightspark.frag");
@@ -1133,7 +1141,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 {
 	sem_wait(&mutex);
 	list< DictionaryTag*>::iterator it = dictionary.begin();
-	for(it;it!=dictionary.end();it++)
+	for(;it!=dictionary.end();it++)
 	{
 		if((*it)->getId()==id)
 			break;

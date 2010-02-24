@@ -157,7 +157,7 @@ int main(int argc, char* argv[])
 	sys->cur_thread_pool=&tp;
 
 #ifndef WIN32
-	timespec ts,td,tperf,tperf2;
+	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
 	int count=0;
@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
 	pt.wait();
 
 	ofstream prof("lightspark.dat");
-	for(int i=0;i<fps_profs.size();i++)
+	for(unsigned int i=0;i<fps_profs.size();i++)
 		prof << i << ' ' << fps_profs[i].render_time << ' ' << fps_profs[i].action_time << ' ' << 
 			fps_profs[i].cache_time << ' ' << fps_profs[i].fps*10 << ' ' << fps_profs[i].event_count << 
 			' ' << fps_profs[i].event_time << endl;

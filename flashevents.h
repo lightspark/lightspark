@@ -255,7 +255,7 @@ friend class ABCVm;
 private:
 	IFunction* f;
 public:
-	FunctionEvent(IFunction* _f):f(_f),Event("functionEvent"){}
+	FunctionEvent(IFunction* _f):Event("functionEvent"),f(_f){}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return FUNCTION; }
 };
@@ -296,8 +296,8 @@ class ConstructObjectEvent: public SynchronizationEvent
 {
 friend class ABCVm;
 private:
-	ASObject* obj;
 	Class_base* _class;
+	ASObject* obj;
 	static void sinit(Class_base*);
 public:
 	ConstructObjectEvent(ASObject* o, Class_base* c):SynchronizationEvent("ConstructObjectEvent"),_class(c),obj(o){}
@@ -313,7 +313,7 @@ private:
 	MovieClip* movieClip;
 	static void sinit(Class_base*);
 public:
-	FrameChangeEvent(int f, MovieClip* m):frame(f),movieClip(m),Event("FrameChangeEvent"){}
+	FrameChangeEvent(int f, MovieClip* m):Event("FrameChangeEvent"),frame(f),movieClip(m){}
 	EVENT_TYPE getEventType() { return CHANGE_FRAME; }
 };
 

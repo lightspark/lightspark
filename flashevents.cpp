@@ -128,6 +128,7 @@ void FocusEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(FocusEvent,_constructor)
 {
+	return NULL;
 }
 
 MouseEvent::MouseEvent():Event("mouseEvent")
@@ -158,6 +159,8 @@ ASFUNCTIONBODY(ProgressEvent,_constructor)
 		th->bytesLoaded=args->at(3)->toInt();
 	if(args->size()>=5)
 		th->bytesTotal=args->at(4)->toInt();
+
+	return NULL;
 }
 
 ASFUNCTIONBODY(ProgressEvent,_getBytesLoaded)
@@ -227,7 +230,7 @@ void EventDispatcher::buildTraits(ASObject* o)
 void EventDispatcher::dumpHandlers()
 {
 	std::map<tiny_string,list<listener> >::iterator it=handlers.begin();
-	for(it;it!=handlers.end();it++)
+	for(;it!=handlers.end();it++)
 		std::cout << it->first << std::endl;
 }
 
@@ -258,6 +261,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	it->second.push_back(listener(f));
 
 	sys->events_name.push_back(eventName);
+	return NULL;
 }
 
 ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
@@ -330,7 +334,7 @@ void EventDispatcher::handleEvent(Event* e)
 	//Create a temporary copy of the listeners, as the list can be modified during the calls
 	vector<listener> tmpListener(h->second.begin(),h->second.end());
 	//TODO: check, ok we should also bind the level
-	for(int i=0;i<tmpListener.size();i++)
+	for(unsigned int i=0;i<tmpListener.size();i++)
 	{
 		arguments args(1);
 		//The event is going to be decreffed as a function parameter
@@ -371,6 +375,7 @@ void NetStatusEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(NetStatusEvent,_constructor)
 {
+	return NULL;
 }
 
 FullScreenEvent::FullScreenEvent():Event("fullScreenEvent")
@@ -386,6 +391,7 @@ void FullScreenEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(FullScreenEvent,_constructor)
 {
+	return NULL;
 }
 
 KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
@@ -402,6 +408,7 @@ void KeyboardEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(KeyboardEvent,_constructor)
 {
+	return NULL;
 }
 
 TextEvent::TextEvent():Event("textEvent")
@@ -419,6 +426,7 @@ void TextEvent::sinit(Class_base* c)
 ASFUNCTIONBODY(TextEvent,_constructor)
 {
 	Event::_constructor(obj,args);
+	return NULL;
 }
 
 ErrorEvent::ErrorEvent()
@@ -438,6 +446,7 @@ void ErrorEvent::sinit(Class_base* c)
 ASFUNCTIONBODY(ErrorEvent,_constructor)
 {
 	TextEvent::_constructor(obj,args);
+	return NULL;
 }
 
 SecurityErrorEvent::SecurityErrorEvent()
@@ -457,6 +466,7 @@ void SecurityErrorEvent::sinit(Class_base* c)
 ASFUNCTIONBODY(SecurityErrorEvent,_constructor)
 {
 	ErrorEvent::_constructor(obj,args);
+	return NULL;
 }
 
 AsyncErrorEvent::AsyncErrorEvent()
@@ -476,5 +486,6 @@ void AsyncErrorEvent::sinit(Class_base* c)
 ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
 {
 	ErrorEvent::_constructor(obj,args);
+	return NULL;
 }
 

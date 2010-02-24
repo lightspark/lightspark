@@ -489,15 +489,6 @@ public:
 	tiny_string toString() const;
 };
 
-class arguments: public Array
-{
-public:
-	arguments(int n)
-	{
-		data.resize(n);
-	}
-};
-
 class Integer : public ASObject
 {
 friend class Number;

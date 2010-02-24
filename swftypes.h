@@ -56,7 +56,6 @@ class ASObject;
 class ABCContext;
 class Class_base;
 class IInterface;
-class arguments;
 class IFunction;
 struct arrayElem;
 

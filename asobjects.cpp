@@ -1262,7 +1262,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	int numberOfCaptures=pcreRE.NumberOfCapturingGroups();
 	cout << numberOfCaptures << endl;
 	assert(numberOfCaptures!=-1);
-	//The array of arguments
+	//The array of captured groups
 	pcrecpp::Arg** captures=new pcrecpp::Arg*[numberOfCaptures];
 	//The array of strings
 	string* s=new string[numberOfCaptures];

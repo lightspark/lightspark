@@ -446,7 +446,7 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 	}
 }
 
-/*ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args, int level)
+/*ASObject* ActionDefineFunction2::call(ASObject* obj, ASObject* const* args, int argslen, int level)
 {
 	retValue=new Undefined;
 	if(retValue->getObjectType()!=T_UNDEFINED)
@@ -814,9 +814,9 @@ void ActionCallMethod::Execute()
 	LOG(LOG_CALLS,"ActionCallMethod: " << methodName);
 	ASObject* obj=rt->vm.stack.pop();
 	int numArgs=rt->vm.stack.pop()->toInt();
-	arguments args(numArgs);
+	ASObject** args=new[numArgs];
 	for(int i=0;i<numArgs;i++)
-		args.set(i,rt->vm.stack.pop());
+		args[i]=rt->vm.stack.pop();
 	ASObject* owner;
 	ASObject* ret=rt->currentClip->getVariableByQName(methodName,"",owner);
 	if(owner)
@@ -844,9 +844,9 @@ void ActionCallFunction::Execute()
 
 	tiny_string funcName=rt->vm.stack.pop()->toString();
 	int numArgs=rt->vm.stack.pop()->toInt();
-	arguments args(numArgs);;
+	ASObject** args=new[numArgs];
 	for(int i=0;i<numArgs;i++)
-		args.set(i,rt->vm.stack.pop());
+		args[i]=rt->vm.stack.pop();
 	ASObject* owner;
 	ASObject* ret=rt->currentClip->getVariableByQName(funcName,"",owner);
 	if(owner)

@@ -226,7 +226,6 @@ private:
 
 	std::vector<u30> param_names;
 
-	static ASObject* argumentDumper(arguments* arg, uint32_t n);
 	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,

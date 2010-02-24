@@ -342,7 +342,7 @@ void EventDispatcher::handleEvent(Event* e)
 		//tmpListener is now also owned by the vector
 		tmpListener[i].f->incRef();
 		//If the f is a class method, both the 'this' and level are ignored
-		tmpListener[i].f->fast_call(obj,&e->obj,1,0);
+		tmpListener[i].f->call(obj,&e->obj,1,0);
 		//And now no more, f can also be deleted
 		tmpListener[i].f->decRef();
 	}

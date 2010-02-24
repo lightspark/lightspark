@@ -310,11 +310,11 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 				Proxy* p=dynamic_cast<Proxy*>(obj->implementation);
 				assert(p);
 				p->suppress=true;
-				ret=f->fast_call(obj,args,m,o.level);
+				ret=f->call(obj,args,m,o.level);
 				p->suppress=false;
 			}
 			else
-				ret=f->fast_call(obj,args,m,o.level);
+				ret=f->call(obj,args,m,o.level);
 			th->runtime_stack_push(ret);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
@@ -337,7 +337,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
 			if(f)
 			{
-				ASObject* ret=f->fast_call(o,args,m);
+				ASObject* ret=f->call(o,args,m);
 				th->runtime_stack_push(ret);
 			}
 			else
@@ -631,7 +631,7 @@ void ABCVm::construct(call_context* th, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			sf->fast_call(ret,args,m,0);
+			sf->call(ret,args,m,0);
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;
@@ -757,11 +757,11 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 				Proxy* p=dynamic_cast<Proxy*>(obj->implementation);
 				assert(p);
 				p->suppress=true;
-				f->fast_call(obj,args,m,o.level);
+				f->call(obj,args,m,o.level);
 				p->suppress=false;
 			}
 			else
-				f->fast_call(obj,args,m,o.level);
+				f->call(obj,args,m,o.level);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
@@ -1561,7 +1561,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
 			obj->incRef();
-			ASObject* ret=f->fast_call(obj,args,m,o.level);
+			ASObject* ret=f->call(obj,args,m,o.level);
 			th->runtime_stack_push(ret);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
@@ -1577,7 +1577,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 			IFunction* f=obj->getVariableByMultiname(*name)->toFunction();
 			if(f)
 			{
-				ASObject* ret=f->fast_call(owner,args,m);
+				ASObject* ret=f->call(owner,args,m);
 				th->runtime_stack_push(ret);
 			}
 			else
@@ -1592,7 +1592,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 			//IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
 			//if(f)
 			//{
-			//	ASObject* ret=f->fast_call(o,args,m);
+			//	ASObject* ret=f->call(o,args,m);
 			//	th->runtime_stack_push(ret);
 			//}
 			//else
@@ -1656,7 +1656,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
 			obj->incRef();
-			f->fast_call(obj,args,m,o.level);
+			f->call(obj,args,m,o.level);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
@@ -1669,7 +1669,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 			d->define(obj);
 			IFunction* f=obj->getVariableByMultiname(*name,owner)->toFunction();
 			if(f)
-				f->fast_call(owner,args,m);
+				f->call(owner,args,m);
 			else
 			{
 				LOG(LOG_NOT_IMPLEMENTED,"No such function");
@@ -1680,7 +1680,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		{
 			//IFunction* f=static_cast<IFunction*>(o->getVariableByQName("Call","",owner));
 			//if(f)
-			//	f->fast_call(o,args,m);
+			//	f->call(o,args,m);
 			//else
 			//{
 			//	LOG(LOG_NOT_IMPLEMENTED,"No such function, returning Undefined");
@@ -1903,7 +1903,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			sf->fast_call(ret,args,m,0);
+			sf->call(ret,args,m,0);
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;
@@ -2153,7 +2153,7 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG(LOG_CALLS,"Calling Class init " << ret);
 	ret->incRef();
 	//Class init functions are called with global as this
-	cinit->fast_call(ret,NULL,0,ret->max_level);
+	cinit->call(ret,NULL,0,ret->max_level);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
 }
@@ -2207,7 +2207,7 @@ void ABCVm::call(call_context* th, int m)
 	{
 		IFunction* func=static_cast<IFunction*>(f);
 		//TODO: check for correct level, member function are already binded
-		ASObject* ret=func->fast_call(obj,args,m,0);
+		ASObject* ret=func->call(obj,args,m,0);
 		//Push the value only if not null
 		if(ret)
 			th->runtime_stack_push(ret);

@@ -488,7 +488,7 @@ bool Proxy::getVariableByMultiname(const multiname& name, ASObject*& out)
 	ASObject* arg=Class<ASString>::getInstanceS(true,name.name_s)->obj;
 	//We now suppress special handling
 	suppress=true;
-	out=f->fast_call(obj,&arg,1,obj->actualPrototype->max_level);
+	out=f->call(obj,&arg,1,obj->actualPrototype->max_level);
 	assert(out);
 	suppress=false;
 	return true;

@@ -999,7 +999,7 @@ void ABCVm::handleEvent()
 				ev->_class->context->buildInstanceTraits(ev->obj, ev->_class->class_index);
 
 				LOG(LOG_CALLS,"Calling Instance init " << ev->_class->class_name);
-				ev->_class->constructor->fast_call(ev->obj,NULL,0,ev->_class->max_level);
+				ev->_class->constructor->call(ev->obj,NULL,0,ev->_class->max_level);
 				ev->sync();
 				break;
 			}
@@ -1243,7 +1243,7 @@ void ABCContext::exec()
 	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(getGlobal(),&scripts[i].traits[j],false);
-	entry->fast_call(getGlobal(),NULL,0,0);
+	entry->call(getGlobal(),NULL,0,0);
 	LOG(LOG_CALLS, "End of Entry Point");
 }
 

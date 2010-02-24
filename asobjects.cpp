@@ -967,7 +967,7 @@ ASFUNCTIONBODY(IFunction,apply)
 	for(int i=0;i<len;i++)
 		new_args[i]=array->at(i);
 
-	ASObject* ret=th->fast_call(args[0],new_args,len,0);
+	ASObject* ret=th->call(args[0],new_args,len,0);
 	delete[] new_args;
 	return ret;
 }
@@ -977,7 +977,7 @@ SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL
 //	class_index=-2;
 }
 
-ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject* const* args, int numArgs, int level)
+ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numArgs, int level)
 {
 	const int hit_threshold=10;
 	if(mi->body==NULL)
@@ -1072,7 +1072,7 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject* const* args, int
 	return ret;
 }
 
-ASObject* Function::fast_call(ASObject* obj, ASObject* const* args,int num_args, int level)
+ASObject* Function::call(ASObject* obj, ASObject* const* args,int num_args, int level)
 {
 	ASObject* ret;
 	if(bound && closure_this)
@@ -1556,7 +1556,7 @@ void Class_base::linkInterface(ASObject* obj) const
 	if(constructor)
 	{
 		LOG(LOG_CALLS,"Calling interface init for " << class_name);
-		constructor->fast_call(obj,NULL,0,max_level);
+		constructor->call(obj,NULL,0,max_level);
 	}
 }
 

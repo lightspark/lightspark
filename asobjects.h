@@ -200,7 +200,7 @@ class IFunction: public ASObject
 public:
 	ASFUNCTION(apply);
 	IFunction();
-	virtual ASObject* fast_call(ASObject* obj, ASObject* const* args,int num_args, int level)=0;
+	virtual ASObject* call(ASObject* obj, ASObject* const* args,int num_args, int level)=0;
 	IFunction* bind(ASObject* c, int level)
 	{
 		if(!bound)
@@ -254,7 +254,7 @@ public:
 	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
 	Function(){}
 	Function(as_function v):val(v){}
-	ASObject* fast_call(ASObject* obj, ASObject* const* args, int num_args, int level);
+	ASObject* call(ASObject* obj, ASObject* const* args, int num_args, int level);
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
 	{
@@ -276,7 +276,7 @@ friend void ASObject::handleConstruction(ASObject* const* args, unsigned int arg
 public:
 	typedef ASObject* (*synt_function)(call_context* cc);
 	SyntheticFunction(method_info* m);
-	ASObject* fast_call(ASObject* obj, ASObject* const* args,int num_args, int level);
+	ASObject* call(ASObject* obj, ASObject* const* args,int num_args, int level);
 	IFunction* toFunction();
 	std::vector<ASObject*> func_scope;
 	bool isEqual(ASObject* r)
@@ -657,7 +657,7 @@ private:
 public:
 	ScriptDefinable(IFunction* _f):f(_f){}
 	//The global object will be passed from the calling context
-	void define(ASObject* g){ f->fast_call(g,NULL,0,0); }
+	void define(ASObject* g){ f->call(g,NULL,0,0); }
 };
 
 class PlaceObject2Tag;

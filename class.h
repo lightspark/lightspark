@@ -42,7 +42,7 @@ public:
 class Class_inherit:public Class_base
 {
 private:
-	IInterface* getInstance(bool construct, arguments* args);
+	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
 public:
 	Class_inherit(const tiny_string& name):Class_base(name){}
 	void buildInstanceTraits(ASObject* o) const;
@@ -54,7 +54,7 @@ class Class: public Class_base
 private:
 	Class(const tiny_string& name):Class_base(name){}
 	//This function is instantiated always because of inheritance
-	T* getInstance(bool construct, arguments* args)
+	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		ASObject* obj=new ASObject;
 		obj->prototype=this;
@@ -66,14 +66,14 @@ private:
 		//As we are the prototype we should incRef ourself
 		incRef();
 		if(construct)
-			ret->obj->handleConstruction(args,true);
+			ret->obj->handleConstruction(args,argslen,true);
 		return ret;
 	}
 public:
 	static T* getInstanceS(bool construct)
 	{
 		Class<T>* c=Class<T>::getClass();
-		return c->getInstance(construct,NULL);
+		return c->getInstance(construct,NULL,0);
 	}
 	template <typename ARG1>
 	static T* getInstanceS(bool construct, ARG1 a1)
@@ -89,7 +89,7 @@ public:
 		//As we are the prototype we should incRef ourself
 		c->incRef();
 		if(construct)
-			obj->handleConstruction(NULL,true);
+			obj->handleConstruction(NULL,0,true);
 		return ret;
 	}
 	template <typename ARG1, typename ARG2>
@@ -106,7 +106,7 @@ public:
 		//As we are the prototype we should incRef ourself
 		c->incRef();
 		if(construct)
-			obj->handleConstruction(NULL,true);
+			obj->handleConstruction(NULL,0,true);
 		return ret;
 	}
 	static Class<T>* getClass(const tiny_string& name)
@@ -142,7 +142,7 @@ class Class<UInteger>: public Class_base
 {
 private:
 	Class<UInteger>():Class_base("uint"){}
-	IInterface* getInstance(bool construct, arguments* args)
+	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		abort();
 		return NULL;

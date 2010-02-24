@@ -190,7 +190,7 @@ struct call_context
 	void runtime_stack_push(ASObject* s);
 	ASObject* runtime_stack_pop();
 	ASObject* runtime_stack_peek();
-	call_context(method_info* th, int l, ASObject** args, int numArgs);
+	call_context(method_info* th, int l, ASObject* const* args, const unsigned int numArgs);
 	~call_context();
 };
 
@@ -588,7 +588,7 @@ private:
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
 
-	void buildClassAndInjectBase(const std::string& n, IInterface*, arguments* a, bool construct_instance);
+	void buildClassAndInjectBase(const std::string& n, IInterface*, ASObject* const* a, const unsigned int argslen, bool construct_instance);
 
 	Manager* int_manager;
 	Manager* number_manager;
@@ -645,11 +645,12 @@ public:
 
 
 bool Boolean_concrete(ASObject* obj);
-ASObject* parseInt(ASObject* obj,arguments* args);
-ASObject* parseFloat(ASObject* obj,arguments* args);
-ASObject* isNaN(ASObject* obj,arguments* args);
-ASObject* _int(ASObject* obj,arguments* args);
-ASObject* unescape(ASObject* obj,arguments* args);
+ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* _int(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 inline ASObject* getGlobal()
 {
@@ -661,7 +662,6 @@ inline ABCVm* getVm()
 	return sys->currentVm;
 }
 
-ASObject* undefinedFunction(ASObject* , arguments* args);
 
 std::istream& operator>>(std::istream& in, u8& v);
 std::istream& operator>>(std::istream& in, u16& v);

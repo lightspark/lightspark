@@ -79,23 +79,20 @@ ASFUNCTIONBODY(Array,_constructor)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
 
-	if(args)
+	if(argslen==1)
 	{
-		if(args->size()==1)
+		int size=args[0]->toInt();
+		LOG(LOG_CALLS,"Creating array of length " << size);
+		th->resize(size);
+	}
+	else
+	{
+		LOG(LOG_CALLS,"Called Array constructor");
+		th->resize(argslen);
+		for(unsigned int i=0;i<argslen;i++)
 		{
-			int size=args->at(0)->toInt();
-			LOG(LOG_CALLS,"Creating array of length " << size);
-			th->resize(size);
-		}
-		else
-		{
-			LOG(LOG_CALLS,"Called Array constructor");
-			th->resize(args->size());
-			for(int i=0;i<args->size();i++)
-			{
-				th->set(i,args->at(i));
-				args->at(i)->incRef();
-			}
+			th->set(i,args[i]);
+			args[i]->incRef();
 		}
 	}
 	return NULL;
@@ -123,16 +120,16 @@ ASFUNCTIONBODY(Array,shift)
 
 ASFUNCTIONBODY(Array,join)
 {
-		Array* th=static_cast<Array*>(obj->implementation);
-		ASObject* del=args->at(0);
-		string ret;
-		for(int i=0;i<th->size();i++)
-		{
-			ret+=th->at(i)->toString().raw_buf();
-			if(i!=th->size()-1)
-				ret+=del->toString().raw_buf();
-		}
-		return Class<ASString>::getInstanceS(true,ret)->obj;
+	Array* th=static_cast<Array*>(obj->implementation);
+	ASObject* del=args[0];
+	string ret;
+	for(int i=0;i<th->size();i++)
+	{
+		ret+=th->at(i)->toString().raw_buf();
+		if(i!=th->size()-1)
+			ret+=del->toString().raw_buf();
+	}
+	return Class<ASString>::getInstanceS(true,ret)->obj;
 }
 
 ASFUNCTIONBODY(Array,_concat)
@@ -140,19 +137,18 @@ ASFUNCTIONBODY(Array,_concat)
 	Array* th=static_cast<Array*>(obj->implementation);
 	Array* ret=Class<Array>::getInstanceS(true);
 	ret->data=th->data;
-	if(args->size()>=1 && args->at(0)->getObjectType()==T_ARRAY)
+	if(argslen>=1 && args[0]->getObjectType()==T_ARRAY)
 	{
-		assert(args->size()==1);
-		Array* tmp=Class<Array>::cast(args->at(0)->implementation);
+		assert(argslen==1);
+		Array* tmp=Class<Array>::cast(args[0]->implementation);
 		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
 	}
 	else
 	{
 		//Insert the arguments in the array
-		ret->data.insert(th->data.end(),args->data.begin(),args->data.end());
-		ret->data.reserve(ret->data.size()+args->size());
-		for(int i=0;i<args->size();i++)
-			ret->push(args->at(i));
+		ret->data.reserve(ret->data.size()+argslen);
+		for(unsigned int i=0;i<argslen;i++)
+			ret->push(args[i]);
 	}
 
 	//All the elements in the new array should be increffed, as args will be deleted and
@@ -187,26 +183,26 @@ ASFUNCTIONBODY(Array,_sort)
 ASFUNCTIONBODY(Array,unshift)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
-	if(args->size()!=1)
+	if(argslen!=1)
 	{
 		LOG(LOG_ERROR,"Multiple unshift");
 		abort();
 	}
-	th->data.insert(th->data.begin(),data_slot(args->at(0)));
-	args->at(0)->incRef();
+	th->data.insert(th->data.begin(),data_slot(args[0]));
+	args[0]->incRef();
 	return abstract_i(th->size());
 }
 
 ASFUNCTIONBODY(Array,_push)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
-	if(args->size()!=1)
+	if(argslen!=1)
 	{
 		LOG(LOG_ERROR,"Multiple push");
 		abort();
 	}
-	th->push(args->at(0));
-	args->at(0)->incRef();
+	th->push(args[0]);
+	args[0]->incRef();
 	return abstract_i(th->size());
 }
 
@@ -250,7 +246,7 @@ size_t ASXML::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 ASFUNCTIONBODY(ASXML,load)
 {
 	//ASXML* th=static_cast<ASXML*>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"Called ASXML::load " << args->at(0)->toString());
+	LOG(LOG_NOT_IMPLEMENTED,"Called ASXML::load " << args[0]->toString());
 	abort();
 	return new Integer(1);
 }
@@ -590,7 +586,7 @@ ASFUNCTIONBODY(ASString,split)
 {
 	ASString* th=static_cast<ASString*>(obj->implementation);
 	Array* ret=Class<Array>::getInstanceS(true);
-	ASObject* delimiter=args->at(0);
+	ASObject* delimiter=args[0];
 	if(delimiter->getObjectType()==T_STRING)
 	{
 		ASString* del=static_cast<ASString*>(delimiter->implementation);
@@ -615,13 +611,13 @@ ASFUNCTIONBODY(ASString,split)
 ASFUNCTIONBODY(ASString,substr)
 {
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	int start=args->at(0)->toInt();
+	int start=args[0]->toInt();
 	if(start<0)
 		start=th->data.size()+start;
 
 	int len=0x7fffffff;
-	if(args->size()==2)
-		len=args->at(1)->toInt();
+	if(argslen==2)
+		len=args[1]->toInt();
 
 	return Class<ASString>::getInstanceS(true,th->data.substr(start,len))->obj;
 }
@@ -768,8 +764,8 @@ ASFUNCTIONBODY(Integer,_toString)
 	Integer* th=static_cast<Integer*>(obj);
 	int radix=10;
 	char buf[20];
-	if(args->size()==1)
-		radix=args->at(0)->toUInt();
+	if(argslen==1)
+		radix=args[0]->toUInt();
 	assert(radix==10 || radix==16);
 	if(radix==10)
 		snprintf(buf,20,"%i",th->val);
@@ -960,18 +956,18 @@ IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false),overrid
 ASFUNCTIONBODY(IFunction,apply)
 {
 	IFunction* th=static_cast<IFunction*>(obj);
-	assert(args->size()==2);
+	assert(argslen==2);
 
 	//Validate parameters
-	assert(args->at(1)->getObjectType()==T_ARRAY);
-	Array* array=Class<Array>::cast(args->at(1)->implementation);
+	assert(args[1]->getObjectType()==T_ARRAY);
+	Array* array=Class<Array>::cast(args[1]->implementation);
 
 	int len=array->size();
 	ASObject** new_args=new ASObject*[len];
 	for(int i=0;i<len;i++)
 		new_args[i]=array->at(i);
 
-	ASObject* ret=th->fast_call(args->at(0),new_args,len,0);
+	ASObject* ret=th->fast_call(args[0],new_args,len,0);
 	delete[] new_args;
 	return ret;
 }
@@ -981,7 +977,7 @@ SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL
 //	class_index=-2;
 }
 
-ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numArgs, int level)
+ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject* const* args, int numArgs, int level)
 {
 	const int hit_threshold=10;
 	if(mi->body==NULL)
@@ -1076,47 +1072,20 @@ ASObject* SyntheticFunction::fast_call(ASObject* obj, ASObject** args, int numAr
 	return ret;
 }
 
-ASObject* SyntheticFunction::call(ASObject* obj, arguments* args, int level)
+ASObject* Function::fast_call(ASObject* obj, ASObject* const* args,int num_args, int level)
 {
-	ASObject** args_fast;
-	int args_len;
-	if(args)
-	{
-		args_len=args->size();
-		args_fast=new ASObject*[args_len];
-		for(int i=0;i<args_len;i++)
-		{
-			args_fast[i]=args->at(i);
-			args_fast[i]->incRef();
-		}
-	}
-	else
-	{
-		args_fast=NULL;
-		args_len=0;
-	}
-	ASObject* ret=fast_call(obj,args_fast,args_len,level);
-	delete[] args_fast;
-	return ret;
-}
-
-ASObject* Function::fast_call(ASObject* obj, ASObject** args,int num_args, int level)
-{
-	arguments arg(num_args);
-	for(int i=0;i<num_args;i++)
-		arg.set(i,args[i]);
-	return call(obj,&arg,level);
-}
-
-ASObject* Function::call(ASObject* obj, arguments* args, int level)
-{
+	ASObject* ret;
 	if(bound && closure_this)
 	{
 		LOG(LOG_CALLS,"Calling with closure " << this);
-		return val(closure_this,args);
+		ret=val(closure_this,args,num_args);
 	}
 	else
-		return val(obj,args);
+		ret=val(obj,args,num_args);
+
+	for(int i=0;i<num_args;i++)
+		args[i]->decRef();
+	return ret;
 }
 
 void Math::sinit(Class_base* c)
@@ -1138,73 +1107,73 @@ void Math::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Math,atan2)
 {
-	double n1=args->at(0)->toNumber();
-	double n2=args->at(1)->toNumber();
+	double n1=args[0]->toNumber();
+	double n2=args[1]->toNumber();
 	return abstract_d(::atan2(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,_max)
 {
-	double n1=args->at(0)->toNumber();
-	double n2=args->at(1)->toNumber();
+	double n1=args[0]->toNumber();
+	double n2=args[1]->toNumber();
 	return abstract_d(dmax(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,_min)
 {
-	double n1=args->at(0)->toNumber();
-	double n2=args->at(1)->toNumber();
+	double n1=args[0]->toNumber();
+	double n2=args[1]->toNumber();
 	return abstract_d(dmin(n1,n2));
 }
 
 ASFUNCTIONBODY(Math,cos)
 {
 	//Angle is in radians
-	double n=args->at(0)->toNumber();
+	double n=args[0]->toNumber();
 	return abstract_d(::cos(n));
 }
 
 ASFUNCTIONBODY(Math,sin)
 {
 	//Angle is in radians
-	double n=args->at(0)->toNumber();
+	double n=args[0]->toNumber();
 	return abstract_d(::sin(n));
 }
 
 ASFUNCTIONBODY(Math,abs)
 {
-	double n=args->at(0)->toNumber();
+	double n=args[0]->toNumber();
 	return abstract_d(::abs(n));
 }
 
 ASFUNCTIONBODY(Math,ceil)
 {
-	double n=args->at(0)->toNumber();
+	double n=args[0]->toNumber();
 	return abstract_i(::ceil(n));
 }
 
 ASFUNCTIONBODY(Math,floor)
 {
-	double n=args->at(0)->toNumber();
+	double n=args[0]->toNumber();
 	return abstract_i(::floor(n));
 }
 
 ASFUNCTIONBODY(Math,round)
 {
-	double n=args->at(0)->toNumber();
+	double n=args[0]->toNumber();
 	return abstract_i(::round(n));
 }
 
 ASFUNCTIONBODY(Math,sqrt)
 {
-	double n=args->at(0)->toNumber();
+	double n=args[0]->toNumber();
 	return abstract_d(::sqrt(n));
 }
 
 ASFUNCTIONBODY(Math,pow)
 {
-	double x=args->at(0)->toNumber();
-	double y=args->at(1)->toNumber();
+	double x=args[0]->toNumber();
+	double y=args[1]->toNumber();
 	return abstract_d(::pow(x,y));
 }
 
@@ -1250,10 +1219,10 @@ void RegExp::buildTraits(ASObject* o)
 ASFUNCTIONBODY(RegExp,_constructor)
 {
 	RegExp* th=static_cast<RegExp*>(obj->implementation);
-	th->re=args->at(0)->toString().raw_buf();
-	if(args->size()>1)
+	th->re=args[0]->toString().raw_buf();
+	if(argslen>1)
 	{
-		const tiny_string& flags=args->at(1)->toString();
+		const tiny_string& flags=args[1]->toString();
 		for(int i=0;i<flags.len();i++)
 		{
 			switch(flags[i])
@@ -1288,7 +1257,7 @@ ASFUNCTIONBODY(RegExp,exec)
 
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert(th->lastIndex==0);
-	const tiny_string& arg0=args->at(0)->toString();
+	const tiny_string& arg0=args[0]->toString();
 	cout << th->re << endl;
 	int numberOfCaptures=pcreRE.NumberOfCapturingGroups();
 	cout << numberOfCaptures << endl;
@@ -1319,7 +1288,7 @@ ASFUNCTIONBODY(RegExp,test)
 
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert(th->lastIndex==0);
-	const tiny_string& arg0=args->at(0)->toString();
+	const tiny_string& arg0=args[0]->toString();
 
 	bool ret=pcreRE.PartialMatch(arg0.raw_buf());
 	return new Boolean(ret);
@@ -1329,11 +1298,11 @@ ASFUNCTIONBODY(ASString,slice)
 {
 	ASString* th=static_cast<ASString*>(obj->implementation);
 	int startIndex=0;
-	if(args->size()>=1)
-		startIndex=args->at(0)->toInt();
+	if(argslen>=1)
+		startIndex=args[0]->toInt();
 	int endIndex=0x7fffffff;
-	if(args->size()>=2)
-		endIndex=args->at(1)->toInt();
+	if(argslen>=2)
+		endIndex=args[1]->toInt();
 	return Class<ASString>::getInstanceS(true,th->data.substr(startIndex,endIndex))->obj;
 }
 
@@ -1342,7 +1311,7 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 	//TODO: should return utf16
 	LOG(LOG_CALLS,"ASString::charCodeAt not really implemented");
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	unsigned int index=args->at(0)->toInt();
+	unsigned int index=args[0]->toInt();
 	assert(index>=0 && index<th->data.size());
 	return new Integer(th->data[index]);
 }
@@ -1350,10 +1319,10 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 ASFUNCTIONBODY(ASString,indexOf)
 {
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	const tiny_string& arg0=args->at(0)->toString();
+	const tiny_string& arg0=args[0]->toString();
 	int startIndex=0;
-	if(args->size()>1)
-		startIndex=args->at(1)->toInt();
+	if(argslen>1)
+		startIndex=args[1]->toInt();
 	
 	assert(startIndex==0);
 	bool found=false;
@@ -1395,7 +1364,7 @@ ASFUNCTIONBODY(ASString,replace)
 {
 	const ASString* th=static_cast<const ASString*>(obj->implementation);
 	ASString* ret=Class<ASString>::getInstanceS(true,th->data);
-	string replaceWith(args->at(1)->toString().raw_buf());
+	string replaceWith(args[1]->toString().raw_buf());
 	//We have to escape '\\' because that is interpreted by pcrecpp
 	int index=0;
 	do
@@ -1410,11 +1379,11 @@ ASFUNCTIONBODY(ASString,replace)
 	}
 	while(index<(int)ret->data.size());
 
-	assert(args->size()==2 && args->at(1)->getObjectType()==T_STRING);
+	assert(argslen==2 && args[1]->getObjectType()==T_STRING);
 
-	if(args->at(0)->prototype==Class<RegExp>::getClass())
+	if(args[0]->prototype==Class<RegExp>::getClass())
 	{
-		RegExp* re=static_cast<RegExp*>(args->at(0)->implementation);
+		RegExp* re=static_cast<RegExp*>(args[0]->implementation);
 
 		pcrecpp::RE_Options opt;
 		opt.set_caseless(re->ignoreCase);
@@ -1424,9 +1393,9 @@ ASFUNCTIONBODY(ASString,replace)
 		else
 			pcreRE.Replace(replaceWith,&ret->data);
 	}
-	else if(args->at(0)->getObjectType()==T_STRING)
+	else if(args[0]->getObjectType()==T_STRING)
 	{
-		ASString* s=static_cast<ASString*>(args->at(0)->implementation);
+		ASString* s=static_cast<ASString*>(args[0]->implementation);
 		int index=0;
 		do
 		{
@@ -1449,7 +1418,7 @@ ASFUNCTIONBODY(ASString,concat)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ASString::concat not really implemented");
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	th->data+=args->at(0)->toString().raw_buf();
+	th->data+=args[0]->toString().raw_buf();
 	th->obj->incRef();
 	return th->obj;
 }
@@ -1478,12 +1447,12 @@ tiny_string Class_base::toString(bool debugMsg)
 	return ret;
 }
 
-IInterface* Class_inherit::getInstance(bool construct, arguments* args)
+IInterface* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 {
 	//TODO: Ask our super for the interface to ret
 	assert(super);
 	//Our super should not construct, we are going to do it ourselves
-	IInterface* ret=super->getInstance(false,args);
+	IInterface* ret=super->getInstance(false,NULL,0);
 	ret->obj->prototype->decRef();
 	ret->obj->prototype=this;
 	ret->obj->actualPrototype=this;
@@ -1495,7 +1464,7 @@ IInterface* Class_inherit::getInstance(bool construct, arguments* args)
 		thisAndLevel tl=getVm()->getCurObjAndLevel();
 		tl.cur_this->resetLevel();
 		getVm()->pushObjAndLevel(ret->obj,max_level);
-		ret->obj->handleConstruction(args,true);
+		ret->obj->handleConstruction(args,argslen,true);
 		tl=getVm()->popObjAndLevel();
 		assert(tl.cur_this==ret->obj);
 		tl=getVm()->getCurObjAndLevel();
@@ -1587,7 +1556,7 @@ void Class_base::linkInterface(ASObject* obj) const
 	if(constructor)
 	{
 		LOG(LOG_CALLS,"Calling interface init for " << class_name);
-		constructor->call(obj,NULL,max_level);
+		constructor->fast_call(obj,NULL,0,max_level);
 	}
 }
 
@@ -1632,30 +1601,30 @@ void ASQName::sinit(Class_base* c)
 ASFUNCTIONBODY(ASQName,_constructor)
 {
 	ASQName* th=static_cast<ASQName*>(obj->implementation);
-	if(args->size()!=2)
+	if(argslen!=2)
 		abort();
 
-	assert(args->at(0)->getObjectType()==T_STRING || args->at(0)->getObjectType()==T_NAMESPACE);
-	assert(args->at(1)->getObjectType()==T_STRING);
+	assert(args[0]->getObjectType()==T_STRING || args[0]->getObjectType()==T_NAMESPACE);
+	assert(args[1]->getObjectType()==T_STRING);
 
-	switch(args->at(0)->getObjectType())
+	switch(args[0]->getObjectType())
 	{
 		case T_STRING:
 		{
-			ASString* s=static_cast<ASString*>(args->at(0)->implementation);
+			ASString* s=static_cast<ASString*>(args[0]->implementation);
 			th->uri=s->data;
 			break;
 		}
 		case T_NAMESPACE:
 		{
-			Namespace* n=static_cast<Namespace*>(args->at(0)->implementation);
+			Namespace* n=static_cast<Namespace*>(args[0]->implementation);
 			th->uri=n->uri;
 			break;
 		}
 		default:
 			abort();
 	}
-	th->local_name=args->at(1)->toString();
+	th->local_name=args[1]->toString();
 	return NULL;
 }
 
@@ -1671,7 +1640,7 @@ void Namespace::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Namespace,_constructor)
 {
-	assert(args==NULL);
+	assert(argslen==0);
 	return NULL;
 }
 

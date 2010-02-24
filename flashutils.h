@@ -182,10 +182,10 @@ public:
 	}
 };
 
-ASObject* getQualifiedClassName(ASObject* , arguments* args);
-ASObject* getQualifiedSuperclassName(ASObject* , arguments* args);
-ASObject* getDefinitionByName(ASObject* , arguments* args);
-ASObject* getTimer(ASObject* , arguments* args);
+ASObject* getQualifiedClassName(ASObject*, ASObject* const* args, const unsigned int len);
+ASObject* getQualifiedSuperclassName(ASObject*, ASObject* const* args, const unsigned int len);
+ASObject* getDefinitionByName(ASObject*, ASObject* const* args, const unsigned int len);
+ASObject* getTimer(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 };
 

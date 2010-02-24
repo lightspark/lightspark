@@ -41,9 +41,9 @@ namespace lightspark
 {
 
 #define ASFUNCTION(name) \
-	static ASObject* name(ASObject* , arguments* args)
+	static ASObject* name(ASObject* , ASObject* const* args, const unsigned int argslen)
 #define ASFUNCTIONBODY(c,name) \
-	ASObject* c::name(ASObject* obj, arguments* args)
+	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEFINED=4, T_NULL=5, T_STRING=6, 
 	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14};
@@ -513,7 +513,7 @@ public:
 	virtual bool isEqual(ASObject* r);
 	virtual bool isLess(ASObject* r);
 
-	void handleConstruction(arguments* args, bool buildAndLink);
+	void handleConstruction(ASObject* const* args, unsigned int argslen, bool buildAndLink);
 
 	//Level handling
 	int getLevel() const

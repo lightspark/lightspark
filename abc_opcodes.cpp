@@ -594,9 +594,9 @@ void ABCVm::incLocal_i(call_context* th, int n)
 void ABCVm::construct(call_context* th, int m)
 {
 	LOG(LOG_CALLS, "construct " << m);
-	arguments args(m);
+	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
+		args[m-i-1]=th->runtime_stack_pop();
 
 	ASObject* obj=th->runtime_stack_pop();
 
@@ -617,7 +617,7 @@ void ABCVm::construct(call_context* th, int m)
 	if(obj->getObjectType()==T_CLASS)
 	{
 		Class_base* o_class=static_cast<Class_base*>(obj);
-		ret=o_class->getInstance(true,&args)->obj;
+		ret=o_class->getInstance(true,args,m)->obj;
 	}
 	else if(obj->getObjectType()==T_FUNCTION)
 	{
@@ -631,7 +631,7 @@ void ABCVm::construct(call_context* th, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			sf->call(ret,&args,0);
+			sf->fast_call(ret,args,m,0);
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;
@@ -649,15 +649,16 @@ void ABCVm::construct(call_context* th, int m)
 	obj->decRef();
 	LOG(LOG_CALLS,"End of constructing " << ret);
 	th->runtime_stack_push(ret);
+	delete[] args;
 }
 
 void ABCVm::constructGenericType(call_context* th, int m)
 {
 	abort();
 	LOG(LOG_CALLS, "constructGenericType " << m);
-	arguments args(m);
+	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
+		args[m-i-1]=th->runtime_stack_pop();
 	__asm__("int $3");
 
 	ASObject* obj=th->runtime_stack_pop();
@@ -676,12 +677,12 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	LOG(LOG_CALLS,"Constructing");
 	Class_base* o_class=static_cast<Class_base*>(obj);
 	assert(o_class->getObjectType()==T_CLASS);
-	ASObject* ret=o_class->getInstance(true,&args)->obj;
+	ASObject* ret=o_class->getInstance(true,args,m)->obj;
 
-//	args.decRef();
 	obj->decRef();
 	LOG(LOG_CALLS,"End of constructing");
 	th->runtime_stack_push(ret);
+	delete[] args;
 }
 
 ASObject* ABCVm::typeOf(ASObject* obj)
@@ -723,9 +724,9 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	multiname* name=th->context->getMultiname(n,th); 
 	LOG(LOG_CALLS,"callPropVoid " << *name << ' ' << m);
 
-	arguments args(m);
+	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
+		args[m-i-1]=th->runtime_stack_pop();
 	ASObject* obj=th->runtime_stack_pop();
 
 	if(obj->prototype)
@@ -756,11 +757,11 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 				Proxy* p=dynamic_cast<Proxy*>(obj->implementation);
 				assert(p);
 				p->suppress=true;
-				f->call(obj,&args,o.level);
+				f->fast_call(obj,args,m,o.level);
 				p->suppress=false;
 			}
 			else
-				f->call(obj,&args,o.level);
+				f->fast_call(obj,args,m,o.level);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
@@ -791,6 +792,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	}
 
 	obj->decRef();
+	delete[] args;
 	LOG(LOG_CALLS,"End of calling " << *name);
 }
 
@@ -1357,12 +1359,12 @@ void ABCVm::getLex(call_context* th, int n)
 	}
 }
 
-void ABCVm::constructSuper(call_context* th, int n)
+void ABCVm::constructSuper(call_context* th, int m)
 {
-	LOG(LOG_CALLS, "constructSuper " << n);
-	arguments args(n);
-	for(int i=0;i<n;i++)
-		args.set(n-i-1,th->runtime_stack_pop());
+	LOG(LOG_CALLS, "constructSuper " << m);
+	ASObject** args=new ASObject*[m];
+	for(int i=0;i<m;i++)
+		args[m-i-1]=th->runtime_stack_pop();
 
 	ASObject* obj=th->runtime_stack_pop();
 
@@ -1382,12 +1384,12 @@ void ABCVm::constructSuper(call_context* th, int n)
 	assert(obj->actualPrototype);
 
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	//Check that current 'this' is the object
 	assert(tl.cur_this==obj);
 	assert(tl.cur_level==obj->getLevel());
 	int level=obj->getLevel();
 	obj->decLevel();
-	//Check that current 'this' is the object
-	obj->handleConstruction(&args, false);
+	obj->handleConstruction(args, m, false);
 	LOG(LOG_CALLS,"End super construct ");
 	obj->setLevel(level);
 
@@ -1396,6 +1398,7 @@ void ABCVm::constructSuper(call_context* th, int n)
 	obj->actualPrototype=old_prototype;
 
 	obj->decRef();
+	delete[] args;
 }
 
 ASObject* ABCVm::findProperty(call_context* th, int n)
@@ -1844,9 +1847,9 @@ bool ABCVm::ifFalse(ASObject* obj1)
 
 void ABCVm::constructProp(call_context* th, int n, int m)
 {
-	arguments args(m);
+	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
+		args[m-i-1]=th->runtime_stack_pop();
 
 	multiname* name=th->context->getMultiname(n,th);
 
@@ -1886,7 +1889,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	if(o->getObjectType()==T_CLASS)
 	{
 		Class_base* o_class=static_cast<Class_base*>(o);
-		ret=o_class->getInstance(true,&args)->obj;
+		ret=o_class->getInstance(true,args,m)->obj;
 	}
 	else if(o->getObjectType()==T_FUNCTION)
 	{
@@ -1900,7 +1903,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			sf->call(ret,&args,0);
+			sf->fast_call(ret,args,m,0);
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;
@@ -1917,6 +1920,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	th->runtime_stack_push(ret);
 	obj->decRef();
+	delete[] args;
 	LOG(LOG_CALLS,"End of constructing " << ret);
 }
 
@@ -2149,7 +2153,7 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG(LOG_CALLS,"Calling Class init " << ret);
 	ret->incRef();
 	//Class init functions are called with global as this
-	cinit->call(ret,NULL,ret->max_level);
+	cinit->fast_call(ret,NULL,0,ret->max_level);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
 }
@@ -2191,9 +2195,9 @@ ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 
 void ABCVm::call(call_context* th, int m)
 {
-	arguments args(m);
+	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
-		args.set(m-i-1,th->runtime_stack_pop());
+		args[m-i-1]=th->runtime_stack_pop();
 
 	ASObject* obj=th->runtime_stack_pop();
 	ASObject* f=th->runtime_stack_pop();
@@ -2203,7 +2207,7 @@ void ABCVm::call(call_context* th, int m)
 	{
 		IFunction* func=static_cast<IFunction*>(f);
 		//TODO: check for correct level, member function are already binded
-		ASObject* ret=func->call(obj,&args,0);
+		ASObject* ret=func->fast_call(obj,args,m,0);
 		//Push the value only if not null
 		if(ret)
 			th->runtime_stack_push(ret);
@@ -2218,6 +2222,7 @@ void ABCVm::call(call_context* th, int m)
 		th->runtime_stack_push(new Undefined);
 	}
 	LOG(LOG_CALLS,"End of call " << m << ' ' << f);
+	delete[] args;
 
 }
 

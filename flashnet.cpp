@@ -45,14 +45,9 @@ void URLRequest::sinit(Class_base* c)
 ASFUNCTIONBODY(URLRequest,_constructor)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
-/*	if(args->at(0)->getObjectType()!=T_STRING)
+	if(argslen>0 && args[0]->getObjectType()==T_STRING)
 	{
-		abort();
-	}
-	th->url=static_cast<ASString*>(args->at(0));*/
-	if(args->size()>0 && args->at(0)->getObjectType()==T_STRING)
-	{
-		th->url=args->at(0)->toString();
+		th->url=args[0]->toString();
 		cout << "url is " << th->url << endl;
 	}
 	obj->setSetterByQName("url","",new Function(_setUrl));
@@ -63,7 +58,7 @@ ASFUNCTIONBODY(URLRequest,_constructor)
 ASFUNCTIONBODY(URLRequest,_setUrl)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
-	th->url=args->at(0)->toString();
+	th->url=args[0]->toString();
 	cout << "Setting url to " << th->url << endl;
 	return NULL;
 }
@@ -96,14 +91,14 @@ void URLLoader::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(URLLoader,_constructor)
 {
-	EventDispatcher::_constructor(obj,NULL);
+	EventDispatcher::_constructor(obj,NULL,0);
 	return NULL;
 }
 
 ASFUNCTIONBODY(URLLoader,load)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
-	ASObject* arg=args->at(0);
+	ASObject* arg=args[0];
 	assert(arg->prototype==Class<URLRequest>::getClass());
 	th->urlRequest=static_cast<URLRequest*>(arg->implementation);
 	ASObject* data=arg->getVariableByQName("data","").obj;
@@ -154,8 +149,8 @@ ASFUNCTIONBODY(URLLoader,_getData)
 ASFUNCTIONBODY(URLLoader,_setDataFormat)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
-	assert(args->at(0));
-	th->dataFormat=args->at(0)->toString();
+	assert(args[0]);
+	th->dataFormat=args[0]->toString();
 	return NULL;
 }
 

@@ -114,7 +114,7 @@ void SymbolClassTag::execute(RootMovieClip* root)
 
 ASFUNCTIONBODY(ABCVm,print)
 {
-	cerr << args->at(0)->toString() << endl;
+	cerr << args[0]->toString() << endl;
 	return new Null;
 }
 
@@ -962,16 +962,11 @@ void ABCVm::handleEvent()
 			case BIND_CLASS:
 			{
 				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second);
-				arguments args(0);
-/*				args.incRef();
-				//TODO: check
-				args.set(0,new Null);*/
-				//TODO: move construct_instance to the event itself
 				bool construct_instance=false;
 				if(ev->base==sys)
 					construct_instance=true;
 				LOG(LOG_CALLS,"Binding of " << ev->class_name);
-				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base,&args,construct_instance);
+				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base,NULL,0,construct_instance);
 				LOG(LOG_CALLS,"End of binding of " << ev->class_name);
 				break;
 			}
@@ -1004,7 +999,7 @@ void ABCVm::handleEvent()
 				ev->_class->context->buildInstanceTraits(ev->obj, ev->_class->class_index);
 
 				LOG(LOG_CALLS,"Calling Instance init " << ev->_class->class_name);
-				ev->_class->constructor->call(ev->obj,NULL,ev->_class->max_level);
+				ev->_class->constructor->fast_call(ev->obj,NULL,0,ev->_class->max_level);
 				ev->sync();
 				break;
 			}
@@ -1030,7 +1025,7 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	sem_post(&event_queue_mutex);
 }
 
-void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,arguments* args, bool construct_instance)
+void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* const* args, const unsigned int argslen, bool construct_instance)
 {
 	//It seems to be acceptable for the same base to be binded multiple times,
 	//We refuse to do it, as it's an undocumented behaviour, but we warn the user
@@ -1077,7 +1072,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,arguments*
 		tmp->actualPrototype=derived_class_tmp;
 		tmp->implementation=base;
 		getVm()->pushObjAndLevel(tmp,derived_class_tmp->max_level);
-		tmp->handleConstruction(args,true);
+		tmp->handleConstruction(args,argslen,true);
 		thisAndLevel tl=getVm()->popObjAndLevel();
 		assert(tl.cur_this==tmp);
 	}
@@ -1194,7 +1189,7 @@ ASObject* call_context::runtime_stack_peek()
 	return stack[stack_index-1];
 }
 
-call_context::call_context(method_info* th, int level, ASObject** args, int num_args)
+call_context::call_context(method_info* th, int level, ASObject* const* args, const unsigned int num_args)
 {
 	locals=new ASObject*[th->body->local_count+1];
 	locals_size=th->body->local_count;
@@ -1248,7 +1243,7 @@ void ABCContext::exec()
 	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(getGlobal(),&scripts[i].traits[j],false);
-	entry->call(getGlobal(),NULL,0);
+	entry->fast_call(getGlobal(),NULL,0,0);
 	LOG(LOG_CALLS, "End of Entry Point");
 }
 
@@ -2163,26 +2158,26 @@ istream& lightspark::operator>>(istream& in, cpool_info& v)
 ASFUNCTIONBODY(lightspark,_int)
 {
 	//Int is specified as 32bit
-	return abstract_i(args->at(0)->toInt()&0xffffffff);
+	return abstract_i(args[0]->toInt()&0xffffffff);
 }
 
 ASFUNCTIONBODY(lightspark,parseInt)
 {
-	if(args->at(0)->getObjectType()==T_UNDEFINED)
+	if(args[0]->getObjectType()==T_UNDEFINED)
 		return new Undefined;
 	else
 	{
-		return new Integer(atoi(args->at(0)->toString().raw_buf()));
+		return new Integer(atoi(args[0]->toString().raw_buf()));
 	}
 }
 
 ASFUNCTIONBODY(lightspark,parseFloat)
 {
-	if(args->at(0)->getObjectType()==T_UNDEFINED)
+	if(args[0]->getObjectType()==T_UNDEFINED)
 		return new Undefined;
 	else
 	{
-		return new Number(atof(args->at(0)->toString().raw_buf()));
+		return new Number(atof(args[0]->toString().raw_buf()));
 	}
 }
 
@@ -2199,13 +2194,13 @@ intptr_t ABCVm::s_toInt(ASObject* o)
 
 ASFUNCTIONBODY(lightspark,isNaN)
 {
-	if(args->at(0)->getObjectType()==T_UNDEFINED)
+	if(args[0]->getObjectType()==T_UNDEFINED)
 		return abstract_b(true);
-	else if(args->at(0)->getObjectType()==T_INTEGER)
+	else if(args[0]->getObjectType()==T_INTEGER)
 		return abstract_b(false);
-	else if(args->at(0)->getObjectType()==T_NUMBER)
+	else if(args[0]->getObjectType()==T_NUMBER)
 	{
-		if(isnan(args->at(0)->toNumber()))
+		if(isnan(args[0]->toNumber()))
 			return abstract_b(true);
 		else
 			return abstract_b(false);
@@ -2216,7 +2211,7 @@ ASFUNCTIONBODY(lightspark,isNaN)
 
 ASFUNCTIONBODY(lightspark,unescape)
 {
-	ASString* th=static_cast<ASString*>(args->at(0)->implementation);
+	ASString* th=static_cast<ASString*>(args[0]->implementation);
 	string ret;
 	ret.reserve(th->data.size());
 	for(unsigned int i=0;i<th->data.size();i++)

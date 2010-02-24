@@ -140,8 +140,7 @@ public:
 	ActionDefineFunction(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 	void print(){ LOG(LOG_TRACE,"ActionDefineFunction");}
-	ASObject* call(ASObject* obj, arguments* args, int level);
-	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)
+	ASObject* fast_call(ASObject* obj, ASObject* const* args,int num_args, int level)
 	{
 		abort();
 	}
@@ -178,8 +177,7 @@ public:
 	ActionDefineFunction2(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 	void print(){ LOG(LOG_TRACE,"ActionDefineFunction2");}
-	ASObject* call(ASObject* obj, arguments* args, int level);
-	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)
+	ASObject* fast_call(ASObject* obj, ASObject* const* args,int num_args, int level)
 	{
 		abort();
 	}

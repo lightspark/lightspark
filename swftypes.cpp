@@ -89,8 +89,8 @@ bool ASObject::isLess(ASObject* r)
 		IFunction* f1=static_cast<IFunction*>(obj1.obj);
 		IFunction* f2=static_cast<IFunction*>(obj2.obj);
 
-		ASObject* ret1=f1->call(this,NULL,obj1.level);
-		ASObject* ret2=f2->call(r,NULL,obj2.level);
+		ASObject* ret1=f1->fast_call(this,NULL,0,obj1.level);
+		ASObject* ret2=f2->fast_call(r,NULL,0,obj2.level);
 
 		LOG(LOG_CALLS,"Overloaded isLess");
 		return ret1->isLess(ret2);
@@ -325,8 +325,8 @@ bool ASObject::isEqual(ASObject* r)
 		IFunction* f1=static_cast<IFunction*>(obj1.obj);
 		IFunction* f2=static_cast<IFunction*>(obj2.obj);
 
-		ASObject* ret1=f1->call(this,NULL,obj1.level);
-		ASObject* ret2=f2->call(r,NULL,obj2.level);
+		ASObject* ret1=f1->fast_call(this,NULL,0,obj1.level);
+		ASObject* ret2=f2->fast_call(r,NULL,0,obj2.level);
 
 		LOG(LOG_CALLS,"Overloaded isEqual");
 		return ret1->isEqual(ret2);
@@ -530,15 +530,13 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 	{
 		//Call the setter
 		LOG(LOG_CALLS,"Calling the setter");
-		arguments args(1);
-		args.set(0,o);
-		//TODO: check
-		o->incRef();
 		//Overriding function is automatically done by using cur_level
 		IFunction* setter=obj->setter;
 		if(enableOverride)
 			setter=setter->getOverride();
-		setter->call(this,&args, level);
+
+		//One argument can be passed without creating an array
+		setter->fast_call(this,&o,1,level);
 		LOG(LOG_CALLS,"End of setter");
 	}
 	else
@@ -576,12 +574,10 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	{
 		//Call the setter
 		LOG(LOG_CALLS,"Calling the setter");
-		arguments args(1);
-		args.set(0,o);
-		//TODO: check
-		o->incRef();
+
 		IFunction* setter=obj->setter->getOverride();
-		setter->call(this,&args, level);
+		//One argument can be passed without creating an array
+		setter->fast_call(this,&o,1,level);
 		LOG(LOG_CALLS,"End of setter");
 	}
 	else
@@ -783,7 +779,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 			IFunction* getter=obj->getter;
 			if(enableOverride)
 				getter=getter->getOverride();
-			ASObject* ret=getter->call(this,NULL,level);
+			ASObject* ret=getter->fast_call(this,NULL,0,level);
 			LOG(LOG_CALLS,"End of getter");
 			assert(ret);
 			//The returned value is already owned by the caller
@@ -854,7 +850,7 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 			//Call the getter
 			LOG(LOG_CALLS,"Calling the getter");
 			IFunction* getter=obj->getter->getOverride();
-			ASObject* ret=getter->call(this,NULL,level);
+			ASObject* ret=getter->fast_call(this,NULL,0,level);
 			LOG(LOG_CALLS,"End of getter");
 			//The variable is already owned by the caller
 			ret->fake_decRef();
@@ -1808,7 +1804,7 @@ ASObject* ASObject::getValueAt(int index)
 		//Call the getter
 		LOG(LOG_CALLS,"Calling the getter");
 		IFunction* getter=obj->getter->getOverride();
-		ret=getter->call(this,NULL,level);
+		ret=getter->fast_call(this,NULL,0,level);
 		ret->fake_decRef();
 		LOG(LOG_CALLS,"End of getter");
 	}
@@ -1865,7 +1861,7 @@ void ASObject::recursiveBuild(const Class_base* cur)
 	}
 }
 
-void ASObject::handleConstruction(arguments* args, bool buildAndLink)
+void ASObject::handleConstruction(ASObject* const* args, unsigned int argslen, bool buildAndLink)
 {
 /*	if(actualPrototype->class_index==-2)
 	{
@@ -1898,7 +1894,7 @@ void ASObject::handleConstruction(arguments* args, bool buildAndLink)
 
 		int l=cur_level;
 		cur_level=actualPrototype->max_level;
-		actualPrototype->constructor->call(this,args,actualPrototype->max_level);
+		actualPrototype->constructor->fast_call(this,args,argslen,actualPrototype->max_level);
 		cur_level=l;
 	}
 }

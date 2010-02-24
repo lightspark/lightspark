@@ -75,7 +75,7 @@ void LoaderInfo::buildTraits(ASObject* o)
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
-	EventDispatcher::_constructor(obj,args);
+	EventDispatcher::_constructor(obj,NULL,0);
 	th->sharedEvents=Class<EventDispatcher>::getInstanceS(true);
 	return NULL;
 }
@@ -142,7 +142,7 @@ ASFUNCTIONBODY(Loader,load)
 		LOG(ERROR,"ArgumentError");
 		abort();
 	}*/
-	URLRequest* r=static_cast<URLRequest*>(args->at(0)->implementation);
+	URLRequest* r=static_cast<URLRequest*>(args[0]->implementation);
 	th->url=r->url;
 	th->source=URL;
 	sys->cur_thread_pool->addJob(th);
@@ -155,9 +155,9 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	if(th->loading)
 		return NULL;
 	//Find the actual ByteArray object
-	assert(args->size()>=1);
-	assert(args->at(0)->prototype->isSubClass(Class<ByteArray>::getClass()));
-	th->bytes=static_cast<ByteArray*>(args->at(0)->implementation);
+	assert(argslen>=1);
+	assert(args[0]->prototype->isSubClass(Class<ByteArray>::getClass()));
+	th->bytes=static_cast<ByteArray*>(args[0]->implementation);
 	if(th->bytes->bytes)
 	{
 		th->loading=true;
@@ -344,7 +344,7 @@ void Sprite::Render()
 ASFUNCTIONBODY(Sprite,_constructor)
 {
 	//Sprite* th=static_cast<Sprite*>(obj->implementation);
-	DisplayObjectContainer::_constructor(obj,NULL);
+	DisplayObjectContainer::_constructor(obj,NULL,0);
 
 	return NULL;
 }
@@ -485,7 +485,7 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 ASFUNCTIONBODY(MovieClip,_constructor)
 {
 	//MovieClip* th=static_cast<MovieClip*>(obj->implementation);
-	Sprite::_constructor(obj,NULL);
+	Sprite::_constructor(obj,NULL,0);
 /*	th->setVariableByQName("swapDepths","",new Function(swapDepths));
 	th->setVariableByQName("createEmptyMovieClip","",new Function(createEmptyMovieClip));
 	th->setVariableByQName("addFrameScript","",new Function(addFrameScript));*/
@@ -640,8 +640,8 @@ ASFUNCTIONBODY(DisplayObject,_getX)
 ASFUNCTIONBODY(DisplayObject,_setX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	assert(args && args->size()==1);
-	th->Matrix.TranslateX=args->at(0)->toInt();
+	assert(args && argslen==1);
+	th->Matrix.TranslateX=args[0]->toInt();
 	return NULL;
 }
 
@@ -654,15 +654,15 @@ ASFUNCTIONBODY(DisplayObject,_getY)
 ASFUNCTIONBODY(DisplayObject,_setY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	assert(args && args->size()==1);
-	th->Matrix.TranslateY=args->at(0)->toInt();
+	assert(args && argslen==1);
+	th->Matrix.TranslateY=args[0]->toInt();
 	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getBounds)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	assert(args->size()==1);
+	assert(argslen==1);
 
 	Rectangle* ret=Class<Rectangle>::getInstanceS(true);
 	number_t x1,x2,y1,y2;
@@ -680,7 +680,7 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 ASFUNCTIONBODY(DisplayObject,_constructor)
 {
 	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	EventDispatcher::_constructor(obj,NULL);
+	EventDispatcher::_constructor(obj,NULL,0);
 
 	return NULL;
 }
@@ -733,7 +733,7 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 ASFUNCTIONBODY(DisplayObject,_setWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	th->width=args->at(0)->toInt();
+	th->width=args[0]->toInt();
 	LOG(LOG_NOT_IMPLEMENTED,"Setting width not really supported on type " << ((obj->prototype)?(obj->prototype->class_name):""));
 	return NULL;
 }
@@ -836,7 +836,7 @@ DisplayObjectContainer::DisplayObjectContainer()
 
 ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 {
-	DisplayObject::_constructor(obj,NULL);
+	DisplayObject::_constructor(obj,NULL,0);
 	return NULL;
 }
 
@@ -908,12 +908,12 @@ bool DisplayObjectContainer::_contains(DisplayObject* d)
 ASFUNCTIONBODY(DisplayObjectContainer,contains)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
-	assert(args->size()==1);
+	assert(argslen==1);
 	//Validate object type
-	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
-	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+	DisplayObject* d=static_cast<DisplayObject*>(args[0]->implementation);
 
 	bool ret=th->_contains(d);
 	return abstract_i(ret);
@@ -922,15 +922,15 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
-	assert(args->size()==2);
+	assert(argslen==2);
 	//Validate object type
-	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
-	args->at(0)->incRef();
+	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	args[0]->incRef();
 
-	int index=args->at(1)->toInt();
+	int index=args[1]->toInt();
 
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args->at(0)->implementation);
+	DisplayObject* d=Class<DisplayObject>::cast(args[0]->implementation);
 	th->_addChildAt(d,index);
 
 	//Notify the object
@@ -943,11 +943,11 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
-	assert(args->size()==1);
+	assert(argslen==1);
 	//Validate object type
-	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args->at(0)->implementation);
+	DisplayObject* d=Class<DisplayObject>::cast(args[0]->implementation);
 
 	th->_removeChild(d);
 
@@ -958,13 +958,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
-	assert(args->size()==1);
+	assert(argslen==1);
 	//Validate object type
-	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
-	args->at(0)->incRef();
+	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	args[0]->incRef();
 
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args->at(0)->implementation);
+	DisplayObject* d=Class<DisplayObject>::cast(args[0]->implementation);
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
@@ -977,8 +977,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
-	assert(args->size()==1);
-	unsigned int index=args->at(0)->toInt();
+	assert(argslen==1);
+	unsigned int index=args[0]->toInt();
 	assert(index<th->dynamicDisplayList.size());
 	list<IDisplayListElem*>::iterator it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
@@ -991,12 +991,12 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
-	assert(args->size()==1);
+	assert(argslen==1);
 	//Validate object type
-	assert(args->at(0)->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
-	DisplayObject* d=static_cast<DisplayObject*>(args->at(0)->implementation);
+	DisplayObject* d=static_cast<DisplayObject*>(args[0]->implementation);
 
 	list<IDisplayListElem*>::const_iterator it=th->dynamicDisplayList.begin();
 	int ret=0;
@@ -1066,7 +1066,7 @@ void Shape::Render()
 
 ASFUNCTIONBODY(Shape,_constructor)
 {
-	DisplayObject::_constructor(obj,NULL);
+	DisplayObject::_constructor(obj,NULL,0);
 	return NULL;
 }
 
@@ -1187,23 +1187,23 @@ ASFUNCTIONBODY(Graphics,clear)
 ASFUNCTIONBODY(Graphics,moveTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj->implementation);
-	assert(args->size()==2);
+	assert(argslen==2);
 
 	//As we are moving, first of all flush the shape
 	th->flushShape();
 
-	th->curX=args->at(0)->toInt();
-	th->curY=args->at(1)->toInt();
+	th->curX=args[0]->toInt();
+	th->curY=args[1]->toInt();
 	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,lineTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj->implementation);
-	assert(args->size()==2);
+	assert(argslen==2);
 
-	int x=args->at(0)->toInt();
-	int y=args->at(1)->toInt();
+	int x=args[0]->toInt();
+	int y=args[1]->toInt();
 
 	//If this is the first line, add also the starting point
 	if(th->tmpShape.outline.size()==0)
@@ -1228,12 +1228,12 @@ void Graphics::flushShape()
 ASFUNCTIONBODY(Graphics,drawRect)
 {
 	Graphics* th=static_cast<Graphics*>(obj->implementation);
-	assert(args->size()==4);
+	assert(argslen==4);
 
-	int x=args->at(0)->toInt();
-	int y=args->at(1)->toInt();
-	int width=args->at(2)->toInt();
-	int height=args->at(3)->toInt();
+	int x=args[0]->toInt();
+	int y=args[1]->toInt();
+	int width=args[2]->toInt();
+	int height=args[3]->toInt();
 
 	th->flushShape();
 

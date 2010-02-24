@@ -72,7 +72,7 @@ public:
 	Class_base(const tiny_string& name):use_protected(false),super(NULL),constructor(NULL),context(NULL),class_name(name),class_index(-1),
 		max_level(0) {type=T_CLASS;}
 	~Class_base();
-	virtual IInterface* getInstance(bool construct, arguments* args)=0;
+	virtual IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true)
 	{
 		objAndLevel ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride);
@@ -122,7 +122,7 @@ class Class_object: public Class_base
 {
 private:
 	Class_object():Class_base("Class"){};
-	IInterface* getInstance(bool construct, arguments* args)
+	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		abort();
 	}
@@ -141,7 +141,7 @@ class Class_function: public Class_base
 private:
 	IFunction* f;
 	ASObject* asprototype;
-	IInterface* getInstance(bool construct, arguments* args)
+	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		abort();
 	}
@@ -200,9 +200,7 @@ class IFunction: public ASObject
 public:
 	ASFUNCTION(apply);
 	IFunction();
-	typedef ASObject* (*as_function)(ASObject*, arguments*);
-	virtual ASObject* call(ASObject* obj, arguments* args, int level)=0;
-	virtual ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level)=0;
+	virtual ASObject* fast_call(ASObject* obj, ASObject* const* args,int num_args, int level)=0;
 	IFunction* bind(ASObject* c, int level)
 	{
 		if(!bound)
@@ -253,10 +251,10 @@ protected:
 class Function : public IFunction
 {
 public:
+	typedef ASObject* (*as_function)(ASObject*, ASObject* const *, const unsigned int);
 	Function(){}
 	Function(as_function v):val(v){}
-	ASObject* call(ASObject* obj, arguments* args, int level);
-	ASObject* fast_call(ASObject* obj, ASObject** args, int num_args, int level);
+	ASObject* fast_call(ASObject* obj, ASObject* const* args, int num_args, int level);
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
 	{
@@ -274,12 +272,11 @@ private:
 class SyntheticFunction : public IFunction
 {
 friend class ABCVm;
-friend void ASObject::handleConstruction(arguments* args, bool buildAndLink);
+friend void ASObject::handleConstruction(ASObject* const* args, unsigned int argslen, bool buildAndLink);
 public:
 	typedef ASObject* (*synt_function)(call_context* cc);
 	SyntheticFunction(method_info* m);
-	ASObject* call(ASObject* obj, arguments* args, int level);
-	ASObject* fast_call(ASObject* obj, ASObject** args,int num_args, int level);
+	ASObject* fast_call(ASObject* obj, ASObject* const* args,int num_args, int level);
 	IFunction* toFunction();
 	std::vector<ASObject*> func_scope;
 	bool isEqual(ASObject* r)
@@ -660,7 +657,7 @@ private:
 public:
 	ScriptDefinable(IFunction* _f):f(_f){}
 	//The global object will be passed from the calling context
-	void define(ASObject* g){ f->call(g,NULL,0); }
+	void define(ASObject* g){ f->fast_call(g,NULL,0,0); }
 };
 
 class PlaceObject2Tag;

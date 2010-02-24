@@ -57,18 +57,15 @@ ASFUNCTIONBODY(Rectangle,_constructor)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 
-	if(args)
-	{
-		int size=args->size();
-		if(size>=1)
-			th->x=args->at(0)->toInt();
-		if(size>=2)
-			th->y=args->at(1)->toInt();
-		if(size>=3)
-			th->width=args->at(2)->toInt();
-		if(size>=4)
-			th->height=args->at(3)->toInt();
-	}
+	if(argslen>=1)
+		th->x=args[0]->toInt();
+	if(argslen>=2)
+		th->y=args[1]->toInt();
+	if(argslen>=3)
+		th->width=args[2]->toInt();
+	if(argslen>=4)
+		th->height=args[3]->toInt();
+
 	return NULL;
 }
 
@@ -117,7 +114,7 @@ void ColorTransform::sinit(Class_base* c)
 ASFUNCTIONBODY(ColorTransform,_constructor)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj->implementation);
-	if(args->size()!=0)
+	if(argslen!=0)
 		abort();
 	//Setting multiplier to default
 	th->redMultiplier=1.0;
@@ -135,9 +132,9 @@ ASFUNCTIONBODY(ColorTransform,_constructor)
 ASFUNCTIONBODY(ColorTransform,setColor)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj->implementation);
-	if(args->size()!=1)
+	if(argslen!=1)
 		abort();
-	uintptr_t tmp=args->at(0)->toInt();
+	uintptr_t tmp=args[0]->toInt();
 	//Setting multiplier to 0
 	th->redMultiplier=0;
 	th->greenMultiplier=0;
@@ -172,14 +169,11 @@ void Point::buildTraits(ASObject* o)
 ASFUNCTIONBODY(Point,_constructor)
 {
 	Point* th=static_cast<Point*>(obj->implementation);
-	if(args)
-	{
-		int size=args->size();
-		if(size>=1)
-			th->x=args->at(0)->toInt();
-		if(size>=2)
-			th->y=args->at(1)->toInt();
-	}
+	if(argslen>=1)
+		th->x=args[0]->toInt();
+	if(argslen>=2)
+		th->y=args[1]->toInt();
+
 	return NULL;
 }
 

@@ -83,10 +83,10 @@ void Event::buildTraits(ASObject* o)
 ASFUNCTIONBODY(Event,_constructor)
 {
 	Event* th=static_cast<Event*>(obj->implementation);
-	if(args)
+	if(argslen>=1)
 	{
-		assert(args->at(0)->getObjectType()==T_STRING);
-		th->type=args->at(0)->toString();
+		assert(args[0]->getObjectType()==T_STRING);
+		th->type=args[0]->toString();
 	}
 	return NULL;
 }
@@ -155,10 +155,10 @@ void ProgressEvent::buildTraits(ASObject* o)
 ASFUNCTIONBODY(ProgressEvent,_constructor)
 {
 	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
-	if(args->size()>=4)
-		th->bytesLoaded=args->at(3)->toInt();
-	if(args->size()>=5)
-		th->bytesTotal=args->at(4)->toInt();
+	if(argslen>=4)
+		th->bytesLoaded=args[3]->toInt();
+	if(argslen>=5)
+		th->bytesTotal=args[4]->toInt();
 
 	return NULL;
 }
@@ -237,13 +237,13 @@ void EventDispatcher::dumpHandlers()
 ASFUNCTIONBODY(EventDispatcher,addEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
-	if(args->at(0)->getObjectType()!=T_STRING || args->at(1)->getObjectType()!=T_FUNCTION)
+	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 	{
 		LOG(LOG_ERROR,"Type mismatch");
 		abort();
 	}
-	const tiny_string& eventName=args->at(0)->toString();
-	IFunction* f=static_cast<IFunction*>(args->at(1));
+	const tiny_string& eventName=args[0]->toString();
+	IFunction* f=static_cast<IFunction*>(args[1]);
 
 	//TODO: find a nice way to do this
 	if(eventName=="enterFrame")
@@ -267,8 +267,8 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
-	assert(args->size()==1 && args->at(0)->getObjectType()==T_STRING);
-	const tiny_string& eventName=args->at(0)->toString();
+	assert(argslen==1 && args[0]->getObjectType()==T_STRING);
+	const tiny_string& eventName=args[0]->toString();
 	bool ret=th->hasEventListener(eventName);
 	return new Boolean(ret);
 }
@@ -276,21 +276,21 @@ ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
-	if(args->at(0)->getObjectType()!=T_STRING || args->at(1)->getObjectType()!=T_FUNCTION)
+	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 	{
 		LOG(LOG_ERROR,"Type mismatch");
 		abort();
 	}
-//	sys->cur_input_thread->addListener(args->at(0)->toString(),th);
+//	sys->cur_input_thread->addListener(args[0]->toString(),th);
 
-	map<tiny_string, list<listener> >::iterator h=th->handlers.find(args->at(0)->toString());
+	map<tiny_string, list<listener> >::iterator h=th->handlers.find(args[0]->toString());
 	if(h==th->handlers.end())
 	{
 		LOG(LOG_CALLS,"Event not found");
 		return NULL;
 	}
 
-	IFunction* f=static_cast<IFunction*>(args->at(1));
+	IFunction* f=static_cast<IFunction*>(args[1]);
 	std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),f);
 	if(it!=h->second.end())
 	{
@@ -304,11 +304,11 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
-	Event* e=static_cast<Event*>(args->at(0)->implementation);
+	Event* e=static_cast<Event*>(args[0]->implementation);
 	if(e==NULL || th==NULL)
 		return new Boolean(false);
 	//CHECK: maybe is to be cloned
-	args->at(0)->incRef();
+	args[0]->incRef();
 	assert(e->type!="");
 	sys->currentVm->addEvent(th,e);
 	return new Boolean(true);
@@ -336,15 +336,13 @@ void EventDispatcher::handleEvent(Event* e)
 	//TODO: check, ok we should also bind the level
 	for(unsigned int i=0;i<tmpListener.size();i++)
 	{
-		arguments args(1);
-		//The event is going to be decreffed as a function parameter
-		e->obj->incRef();
-		args.set(0,e->obj);
 		obj->incRef();
+		//The object needs to be used multiple times
+		e->obj->incRef();
 		//tmpListener is now also owned by the vector
 		tmpListener[i].f->incRef();
 		//If the f is a class method, both the 'this' and level are ignored
-		tmpListener[i].f->call(obj,&args,0);
+		tmpListener[i].f->fast_call(obj,&e->obj,1,0);
 		//And now no more, f can also be deleted
 		tmpListener[i].f->decRef();
 	}
@@ -425,7 +423,7 @@ void TextEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(TextEvent,_constructor)
 {
-	Event::_constructor(obj,args);
+	Event::_constructor(obj,NULL,0);
 	return NULL;
 }
 
@@ -445,7 +443,7 @@ void ErrorEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ErrorEvent,_constructor)
 {
-	TextEvent::_constructor(obj,args);
+	TextEvent::_constructor(obj,NULL,0);
 	return NULL;
 }
 
@@ -465,7 +463,7 @@ void SecurityErrorEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(SecurityErrorEvent,_constructor)
 {
-	ErrorEvent::_constructor(obj,args);
+	ErrorEvent::_constructor(obj,NULL,0);
 	return NULL;
 }
 
@@ -485,7 +483,7 @@ void AsyncErrorEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
 {
-	ErrorEvent::_constructor(obj,args);
+	ErrorEvent::_constructor(obj,NULL,0);
 	return NULL;
 }
 

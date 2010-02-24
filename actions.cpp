@@ -446,7 +446,7 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 	}
 }
 
-ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args, int level)
+/*ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args, int level)
 {
 	retValue=new Undefined;
 	if(retValue->getObjectType()!=T_UNDEFINED)
@@ -513,7 +513,7 @@ ASObject* ActionDefineFunction2::call(ASObject* obj, arguments* args, int level)
 	}
 	rt->execContext=exec_bak;
 	return retValue;
-}
+}*/
 
 ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 {
@@ -876,12 +876,6 @@ void ActionDefineFunction::Execute()
 		rt->vm.stack.push(this);
 	else
 		rt->currentClip->setVariableByQName((const char*)FunctionName,"",this);*/
-}
-
-ASObject* ActionDefineFunction::call(ASObject* obj, arguments* args, int level)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"ActionDefineFunction: Call");
-	return NULL;
 }
 
 void ActionDefineFunction2::Execute()

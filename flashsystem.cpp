@@ -71,8 +71,8 @@ ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
 
 ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 {
-	assert(args && args->size()==1);
-	const tiny_string& tmp=args->at(0)->toString();
+	assert(args && argslen==1);
+	const tiny_string& tmp=args[0]->toString();
 	tiny_string name,ns;
 
 	stringToQName(tmp,name,ns);
@@ -102,8 +102,8 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 {
-	assert(args && args->size()==1);
-	const tiny_string& tmp=args->at(0)->toString();
+	assert(args && argslen==1);
+	const tiny_string& tmp=args[0]->toString();
 	tiny_string name,ns;
 
 	stringToQName(tmp,name,ns);

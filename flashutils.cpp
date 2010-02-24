@@ -76,7 +76,7 @@ ASFUNCTIONBODY(ByteArray,_getPosition)
 ASFUNCTIONBODY(ByteArray,_setPosition)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
-	int pos=args->at(0)->toInt();
+	int pos=args[0]->toInt();
 	th->position=pos;
 	return NULL;
 }
@@ -97,12 +97,12 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
 	//Validate parameters
-	assert(args->size()==3);
-	assert(args->at(0)->prototype==Class<ByteArray>::getClass());
+	assert(argslen==3);
+	assert(args[0]->prototype==Class<ByteArray>::getClass());
 
-	ByteArray* out=Class<ByteArray>::cast(args->at(0)->implementation);
-	int offset=args->at(1)->toInt();
-	int length=args->at(2)->toInt();
+	ByteArray* out=Class<ByteArray>::cast(args[0]->implementation);
+	int offset=args[1]->toInt();
+	int length=args[2]->toInt();
 	//TODO: Support offset
 	if(offset!=0)
 		abort();
@@ -221,14 +221,14 @@ void Timer::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Timer,_constructor)
 {
-	EventDispatcher::_constructor(obj,NULL);
+	EventDispatcher::_constructor(obj,NULL,0);
 	Timer* th=static_cast<Timer*>(obj->implementation);
 	obj->setVariableByQName("start","",new Function(start));
 	obj->setVariableByQName("reset","",new Function(reset));
 
-	th->delay=args->at(0)->toInt();
-	if(args->size()>=2)
-		th->repeatCount=args->at(1)->toInt();
+	th->delay=args[0]->toInt();
+	if(argslen>=2)
+		th->repeatCount=args[1]->toInt();
 
 	return NULL;
 }
@@ -248,10 +248,10 @@ ASFUNCTIONBODY(Timer,reset)
 	return NULL;
 }
 
-ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)
+ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 {
 	//CHECK: what to do is ns is empty
-	ASObject* target=args->at(0);
+	ASObject* target=args[0];
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
@@ -264,10 +264,10 @@ ASObject* lightspark::getQualifiedClassName(ASObject* obj, arguments* args)
 	return Class<ASString>::getInstanceS(true,c->getQualifiedClassName())->obj;
 }
 
-ASObject* lightspark::getQualifiedSuperclassName(ASObject* obj, arguments* args)
+ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 {
 	//CHECK: what to do is ns is empty
-	ASObject* target=args->at(0);
+	ASObject* target=args[0];
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
@@ -285,8 +285,8 @@ ASObject* lightspark::getQualifiedSuperclassName(ASObject* obj, arguments* args)
 
 ASFUNCTIONBODY(lightspark,getDefinitionByName)
 {
-	assert(args && args->size()==1);
-	const tiny_string& tmp=args->at(0)->toString();
+	assert(args && argslen==1);
+	const tiny_string& tmp=args[0]->toString();
 	tiny_string name,ns;
 
 	stringToQName(tmp,name,ns);
@@ -485,11 +485,10 @@ bool Proxy::getVariableByMultiname(const multiname& name, ASObject*& out)
 	IFunction* f=static_cast<IFunction*>(o.obj);
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	arguments args(1);
-	args.set(0,Class<ASString>::getInstanceS(true,name.name_s)->obj);
+	ASObject* arg=Class<ASString>::getInstanceS(true,name.name_s)->obj;
 	//We now suppress special handling
 	suppress=true;
-	out=f->call(obj,&args, obj->actualPrototype->max_level);
+	out=f->fast_call(obj,&arg,1,obj->actualPrototype->max_level);
 	assert(out);
 	suppress=false;
 	return true;

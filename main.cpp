@@ -52,6 +52,7 @@ int main(int argc, char* argv[])
 	char* url=NULL;
 	char* paramsFileName=NULL;
 	bool useInterpreter=true;
+	bool useJit=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
 
 	for(int i=1;i<argc;i++)
@@ -72,6 +73,11 @@ int main(int argc, char* argv[])
 			strcmp(argv[i],"--disable-interpreter")==0)
 		{
 			useInterpreter=false;
+		}
+		else if(strcmp(argv[i],"-j")==0 || 
+			strcmp(argv[i],"--enable-jit")==0)
+		{
+			useJit=true;
 		}
 		else if(strcmp(argv[i],"-l")==0 || 
 			strcmp(argv[i],"--log-level")==0)
@@ -132,7 +138,15 @@ int main(int argc, char* argv[])
 	//Set a bit of SystemState using parameters
 	if(url)
 		sys->setUrl(url);
+
+	//One of useInterpreter or useJit must be enabled
+	if(!(useInterpreter || useJit))
+	{
+		LOG(LOG_ERROR,"No execution model enabled");
+		exit(-1);
+	}
 	sys->useInterpreter=useInterpreter;
+	sys->useJit=useJit;
 	if(paramsFileName)
 	{
 		ifstream p(paramsFileName);

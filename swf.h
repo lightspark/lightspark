@@ -158,6 +158,7 @@ public:
 
 	//Flags for command line options
 	bool useInterpreter;
+	bool useJit;
 
 	void parseParameters(std::istream& i);
 };

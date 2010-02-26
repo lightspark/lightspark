@@ -778,6 +778,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 		block_info* cur_block=NULL;
 		static_stack_types_vector static_stack_types;
 		unsigned int local_ip=0;
+		u30 localIndex=0;
 		u8 opcode;
 
 		while(1)
@@ -927,6 +928,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					break;
 				}
 				case 0x1c: //pushwith
+				case 0x30: //pushscope
 				{
 					static_stack_types.clear();
 					break;
@@ -1007,7 +1009,6 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 
 					static_stack_types.push_back(t1);
 					static_stack_types.push_back(t2);
-
 					break;
 				}
 				case 0x2c: //pushstring
@@ -1033,11 +1034,6 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					code >> t;
 					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
 					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
-					break;
-				}
-				case 0x30: //pushscope
-				{
-					static_stack_types.clear();
 					break;
 				}
 				case 0x32: //hasnext2
@@ -1142,37 +1138,6 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					consumeStackForRTMultiname(static_stack_types,t);
 					//the object
 					popTypeFromStack(static_stack_types,local_ip);
-					break;
-				}
-				case 0x62: //getlocal
-				{
-					u30 i;
-					code >> i;
-					cur_block->locals_used[i]=true;
-					if(cur_block->locals[i]==STACK_NONE)
-					{
-						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-						cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-						cur_block->locals[i]=STACK_OBJECT;
-					}
-					else
-					{
-						static_stack_types.push_back(make_pair(local_ip,cur_block->locals[i]));
-						cur_block->checkProactiveCasting(local_ip,cur_block->locals[i]);
-					}
-					break;
-				}
-				case 0x63: //setlocal
-				{
-					LOG(LOG_TRACE, "synt setlocal" );
-					u30 i;
-					code >> i;
-					cur_block->locals_used[i]=true;
-					STACK_TYPE t=popTypeFromStack(static_stack_types,local_ip).second;
-					
-					if(cur_block->locals[i]==STACK_NONE)
-						cur_block->locals_reset[i]=true;
-					cur_block->locals[i]=t;
 					break;
 				}
 				case 0x64: //getglobalscope
@@ -1354,23 +1319,6 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					break;
 				}
 				case 0xa1: //subtract
-				{
-					STACK_TYPE t1,t2;
-					t1=popTypeFromStack(static_stack_types,local_ip).second;
-					t2=popTypeFromStack(static_stack_types,local_ip).second;
-
-					if(t1==STACK_INT && t2==STACK_INT)
-					{
-						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-						cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					}
-					else
-					{
-						static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
-						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
-					}
-					break;
-				}
 				case 0xa2: //multiply
 				{
 					STACK_TYPE t1,t2;
@@ -1420,70 +1368,10 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					break;
 				}
 				case 0xa5: //lshift
-				{
-					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
-					if(t1.first!=local_ip)
-						cur_block->push_types[t1.first]=STACK_INT;
-					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
-					if(t2.first!=local_ip)
-						cur_block->push_types[t2.first]=STACK_INT;
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
 				case 0xa6: //rshift
-				{
-					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
-					if(t1.first!=local_ip)
-						cur_block->push_types[t1.first]=STACK_INT;
-					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
-					if(t2.first!=local_ip)
-						cur_block->push_types[t2.first]=STACK_INT;
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
 				case 0xa7: //urshift
-				{
-					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
-					if(t1.first!=local_ip)
-						cur_block->push_types[t1.first]=STACK_INT;
-					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
-					if(t2.first!=local_ip)
-						cur_block->push_types[t2.first]=STACK_INT;
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
 				case 0xa8: //bitand
-				{
-					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
-					if(t1.first!=local_ip)
-						cur_block->push_types[t1.first]=STACK_INT;
-					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
-					if(t2.first!=local_ip)
-						cur_block->push_types[t2.first]=STACK_INT;
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
 				case 0xa9: //bitor
-				{
-					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
-					if(t1.first!=local_ip)
-						cur_block->push_types[t1.first]=STACK_INT;
-					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
-					if(t2.first!=local_ip)
-						cur_block->push_types[t2.first]=STACK_INT;
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
-					cur_block->checkProactiveCasting(local_ip,STACK_INT);
-					break;
-				}
 				case 0xaa: //bitxor
 				{
 					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
@@ -1507,14 +1395,6 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					break;
 				}
 				case 0xac: //strictequals
-				{
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
 				case 0xad: //lessthan
 				case 0xae: //lessequals
 				case 0xaf: //greaterthan
@@ -1528,14 +1408,6 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					break;
 				}
 				case 0xb3: //istypelate
-				{
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
-					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
-					break;
-				}
 				case 0xb4: //in
 				{
 					popTypeFromStack(static_stack_types,local_ip);
@@ -1552,12 +1424,14 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					code >> t;
 					break;
 				}
+				case 0x62: //getlocal
+					code >> localIndex;
 				case 0xd0: //getlocal_n
 				case 0xd1:
 				case 0xd2:
 				case 0xd3:
 				{
-					int i=opcode&3;
+					int i=(opcode==0x62)?((uint32_t)localIndex):(opcode&3);
 					cur_block->locals_used[i]=true;
 					if(cur_block->locals[i]==STACK_NONE)
 					{
@@ -1572,13 +1446,14 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					}
 					break;
 				}
+				case 0x63: //setlocal
+					code >> localIndex;
 				case 0xd4: //setlocal_n
 				case 0xd5:
 				case 0xd6:
 				case 0xd7:
 				{
-					int i=opcode&3;
-					LOG(LOG_TRACE, "synt setlocal " << i);
+					int i=(opcode==0x63)?((uint32_t)localIndex):(opcode&3);
 					cur_block->locals_used[i]=true;
 					STACK_TYPE t;
 					if(!static_stack_types.empty())

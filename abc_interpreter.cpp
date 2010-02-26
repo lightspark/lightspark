@@ -942,7 +942,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			{
 				//negate
 				ASObject* val=context->runtime_stack_pop();
-				ASObject* ret=negate(val);
+				ASObject* ret=abstract_d(negate(val));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1123,7 +1123,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v2=context->runtime_stack_pop();
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=lessThan(v1, v2);
+				ASObject* ret=abstract_b(lessThan(v1, v2));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1133,7 +1133,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v2=context->runtime_stack_pop();
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=lessEquals(v1, v2);
+				ASObject* ret=abstract_b(lessEquals(v1, v2));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1143,7 +1143,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v2=context->runtime_stack_pop();
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=greaterThan(v1, v2);
+				ASObject* ret=abstract_b(greaterThan(v1, v2));
 				context->runtime_stack_push(ret);
 				break;
 			}
@@ -1153,7 +1153,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* v2=context->runtime_stack_pop();
 				ASObject* v1=context->runtime_stack_pop();
 
-				ASObject* ret=greaterEquals(v1, v2);
+				ASObject* ret=abstract_b(greaterEquals(v1, v2));
 				context->runtime_stack_push(ret);
 				break;
 			}

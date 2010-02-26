@@ -477,8 +477,8 @@ private:
 	static bool ifFalse(ASObject*); 
 	static bool ifTrue(ASObject*); 
 	static ASObject* getSlot(ASObject* th, int n); 
-	static void kill(call_context* th, int n); 
 	static void setSlot(ASObject*, ASObject*, int n); 
+	static void kill(call_context* th, int n); 
 	static ASObject* pushString(call_context* th, int n); 
 	static void getLex(call_context* th, int n); 
 	static ASObject* getScopeObject(call_context* th, int n); 
@@ -518,7 +518,7 @@ private:
 	static bool strictEquals(ASObject*,ASObject*);
 	static bool _not(ASObject*);
 	static bool equals(ASObject*,ASObject*);
-	static ASObject* negate(ASObject*);
+	static number_t negate(ASObject*);
 	static void pop();
 	static ASObject* typeOf(ASObject*);
 	static void _throw(call_context* th);
@@ -559,10 +559,10 @@ private:
 	static uintptr_t convert_u(ASObject*);
 	static number_t convert_d(ASObject*);
 	static bool convert_b(ASObject*);
-	static ASObject* greaterThan(ASObject*,ASObject*);
-	static ASObject* greaterEquals(ASObject*,ASObject*);
-	static ASObject* lessEquals(ASObject*,ASObject*);
-	static ASObject* lessThan(ASObject*,ASObject*);
+	static bool greaterThan(ASObject*,ASObject*);
+	static bool greaterEquals(ASObject*,ASObject*);
+	static bool lessEquals(ASObject*,ASObject*);
+	static bool lessThan(ASObject*,ASObject*);
 	static ASObject* nextName(ASObject* index, ASObject* obj);
 	static ASObject* nextValue(ASObject* index, ASObject* obj);
 	static uintptr_t increment_i(ASObject*);
@@ -582,10 +582,6 @@ private:
 	static opcode_handler opcode_table_args0[];
 	static opcode_handler opcode_table_args1[];
 	static opcode_handler opcode_table_args1_lazy[];
-	static opcode_handler opcode_table_args1_pointers[];
-	static opcode_handler opcode_table_args1_pointers_int[];
-	static opcode_handler opcode_table_args2_pointers[];
-	static opcode_handler opcode_table_args2_pointers_int[];
 	static opcode_handler opcode_table_args_pointer_2int[];
 	static opcode_handler opcode_table_args_pointer_number_int[];
 	static opcode_handler opcode_table_args3_pointers[];

@@ -78,21 +78,6 @@ opcode_handler ABCVm::opcode_table_args1[]={
 	{"kill",(void*)&ABCVm::kill}
 };
 
-opcode_handler ABCVm::opcode_table_args1_pointers_int[]={
-	{"getSlot",(void*)&ABCVm::getSlot}
-};
-
-opcode_handler ABCVm::opcode_table_args1_pointers[]={
-	{"coerce_s",(void*)&ABCVm::coerce_s},
-	{"checkfilter",(void*)&ABCVm::checkfilter},
-	{"negate",(void*)&ABCVm::negate},
-	{"typeOf",(void*)ABCVm::typeOf}
-};
-
-opcode_handler ABCVm::opcode_table_args2_pointers_int[]={
-	{"getMultiname",(void*)&ABCContext::s_getMultiname}
-};
-
 opcode_handler ABCVm::opcode_table_args_pointer_2int[]={
 	{"getMultiname_i",(void*)&ABCContext::s_getMultiname_i}
 };
@@ -103,15 +88,6 @@ opcode_handler ABCVm::opcode_table_args_pointer_number_int[]={
 
 opcode_handler ABCVm::opcode_table_args3_pointers[]={
 	{"setProperty",(void*)&ABCVm::setProperty},
-};
-
-opcode_handler ABCVm::opcode_table_args2_pointers[]={
-	{"nextName",(void*)&ABCVm::nextName},
-	{"nextValue",(void*)&ABCVm::nextValue},
-	{"lessThan",(void*)&ABCVm::lessThan},
-	{"greaterThan",(void*)&ABCVm::greaterThan},
-	{"greaterEquals",(void*)&ABCVm::greaterEquals},
-	{"lessEquals",(void*)&ABCVm::lessEquals},
 };
 
 typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
@@ -147,7 +123,8 @@ typed_opcode_handler ABCVm::opcode_table_number_t[]={
 	{"subtract_oi",(void*)&ABCVm::subtract_oi,ARGS_OBJ_INT},
 	{"subtract_io",(void*)&ABCVm::subtract_io,ARGS_INT_OBJ},
 	{"subtract_do",(void*)&ABCVm::subtract_do,ARGS_NUMBER_OBJ},
-	{"convert_d",(void*)&ABCVm::convert_d,ARGS_OBJ}
+	{"convert_d",(void*)&ABCVm::convert_d,ARGS_OBJ},
+	{"negate",(void*)&ABCVm::negate,ARGS_OBJ},
 };
 
 typed_opcode_handler ABCVm::opcode_table_void[]={
@@ -172,6 +149,8 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"add",(void*)&ABCVm::add,ARGS_OBJ_OBJ},
 	{"add_oi",(void*)&ABCVm::add_oi,ARGS_OBJ_INT},
 	{"add_od",(void*)&ABCVm::add_od,ARGS_OBJ_NUMBER},
+	{"nextName",(void*)&ABCVm::nextName,ARGS_OBJ_OBJ},
+	{"nextValue",(void*)&ABCVm::nextValue,ARGS_OBJ_OBJ},
 	{"abstract_d",(void*)&abstract_d,ARGS_NUMBER},
 	{"abstract_i",(void*)&abstract_i,ARGS_INT},
 	{"abstract_b",(void*)&abstract_b,ARGS_BOOL},
@@ -183,12 +162,21 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"getGlobalScope",(void*)&ABCVm::getGlobalScope,ARGS_NONE},
 	{"findPropStrict",(void*)&ABCVm::findPropStrict,ARGS_CONTEXT_INT},
 	{"findProperty",(void*)&ABCVm::findProperty,ARGS_CONTEXT_INT},
+	{"getMultiname",(void*)&ABCContext::s_getMultiname,ARGS_OBJ_OBJ_INT},
+	{"typeOf",(void*)ABCVm::typeOf,ARGS_OBJ},
+	{"coerce_s",(void*)&ABCVm::coerce_s,ARGS_OBJ},
+	{"checkfilter",(void*)&ABCVm::checkfilter,ARGS_OBJ},
+	{"getSlot",(void*)&ABCVm::getSlot,ARGS_OBJ_INT}
 };
 
 typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"not",(void*)&ABCVm::_not,ARGS_OBJ},
 	{"equals",(void*)&ABCVm::equals,ARGS_OBJ_OBJ},
 	{"strictEquals",(void*)&ABCVm::strictEquals,ARGS_OBJ_OBJ},
+	{"greaterThan",(void*)&ABCVm::greaterThan,ARGS_OBJ_OBJ},
+	{"greaterEquals",(void*)&ABCVm::greaterEquals,ARGS_OBJ_OBJ},
+	{"lessThan",(void*)&ABCVm::lessThan,ARGS_OBJ_OBJ},
+	{"lessEquals",(void*)&ABCVm::lessEquals,ARGS_OBJ_OBJ},
 	{"ifEq",(void*)&ABCVm::ifEq,ARGS_OBJ_OBJ},
 	{"ifNE",(void*)&ABCVm::ifNE,ARGS_OBJ_OBJ},
 	{"ifNE_oi",(void*)&ABCVm::ifNE_oi,ARGS_OBJ_INT},
@@ -318,53 +306,6 @@ void ABCVm::registerFunctions()
 	FT=llvm::FunctionType::get(bool_type, sig, false);
 	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"hasNext2",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::hasNext2);
-	//End of lazy pushing
-	
-	//Lazy pushing, no context, (ASObject*)
-	sig.clear();
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	elems=sizeof(opcode_table_args1_pointers)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args1_pointers[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args1_pointers[i].addr);
-	}
-	//End of lazy pushing
-
-	//Lazy pushing, no context, (ASObject*, int)
-	sig.push_back(int_type);
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	elems=sizeof(opcode_table_args1_pointers_int)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args1_pointers_int[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args1_pointers_int[i].addr);
-	}
-	//End of lazy pushing
-
-	//Lazy pushing, no context, (ASObject*, ASObject*)
-	sig.clear();
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	elems=sizeof(opcode_table_args2_pointers)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args2_pointers[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args2_pointers[i].addr);
-	}
-	//End of lazy pushing
-
-	//Lazy pushing, no context, (ASObject*, ASObject*, int)
-	sig.push_back(int_type);
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	elems=sizeof(opcode_table_args2_pointers_int)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args2_pointers_int[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args2_pointers_int[i].addr);
-	}
 	//End of lazy pushing
 	
 	//Lazy pushing, no context, (ASObject*, uintptr_t, int)
@@ -1257,6 +1198,13 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					break;
 				}
 				case 0x90: //negate
+				{
+					popTypeFromStack(static_stack_types,local_ip).second;
+
+					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
+					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
+					break;
+				}
 				case 0x95: //typeof
 				{
 					popTypeFromStack(static_stack_types,local_ip).second;
@@ -1386,27 +1334,11 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					break;
 				}
 				case 0xab: //equals
-				{
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
-					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
-					break;
-				}
 				case 0xac: //strictequals
 				case 0xad: //lessthan
 				case 0xae: //lessequals
 				case 0xaf: //greaterthan
 				case 0xb0: //greaterequals
-				{
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
 				case 0xb3: //istypelate
 				case 0xb4: //in
 				{
@@ -3342,7 +3274,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				abstract_value(ex,Builder,v1);
 				value=Builder.CreateCall(ex->FindFunctionNamed("negate"), v1.first);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				break;
 			}
 			case 0x91:
@@ -3818,19 +3750,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, "synt equals" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				if(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT)
-					value=Builder.CreateCall2(ex->FindFunctionNamed("equals"), v1.first, v2.first);
-				else if(v1.second==STACK_INT && v2.second==STACK_OBJECT)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_i"),v1.first);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("equals"), v1.first, v2.first);
-				}
-				else if(v1.second==STACK_BOOLEAN && v2.second==STACK_OBJECT)
-				{
-					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),v1.first);
-					value=Builder.CreateCall2(ex->FindFunctionNamed("equals"), v1.first, v2.first);
-				}
-				else if(v1.second==STACK_INT && v2.second==STACK_INT)
+				if(v1.second==STACK_INT && v2.second==STACK_INT)
 					value=Builder.CreateICmpEQ(v1.first,v2.first);
 				else
 				{
@@ -3845,11 +3765,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//strictequals
 				LOG(LOG_TRACE, "synt strictequals" );
-				llvm::Value* v1=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				llvm::Value* v2=
-					static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index).first;
-				value=Builder.CreateCall2(ex->FindFunctionNamed("strictEquals"), v1, v2);
+				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
+				value=Builder.CreateCall2(ex->FindFunctionNamed("strictEquals"), v1.first, v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
@@ -3862,9 +3780,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
-
 				value=Builder.CreateCall2(ex->FindFunctionNamed("lessThan"), v1.first, v2.first);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
 			case 0xae:
@@ -3877,7 +3794,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("lessEquals"), v1.first, v2.first);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
 			case 0xaf:
@@ -3890,7 +3807,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("greaterThan"), v1.first, v2.first);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
 			case 0xb0:
@@ -3903,7 +3820,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				abstract_value(ex,Builder,v1);
 				abstract_value(ex,Builder,v2);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("greaterEquals"), v1.first, v2.first);
-				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
+				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
 			case 0xb3:

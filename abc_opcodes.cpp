@@ -215,10 +215,10 @@ ASObject* ABCVm::getSlot(ASObject* obj, int n)
 	return ret;
 }
 
-ASObject* ABCVm::negate(ASObject* v)
+number_t ABCVm::negate(ASObject* v)
 {
 	LOG(LOG_CALLS, "negate" );
-	ASObject* ret=new Number(-(v->toNumber()));
+	number_t ret=-(v->toNumber());
 	v->decRef();
 	return ret;
 }
@@ -1480,7 +1480,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	return ret;
 }
 
-ASObject* ABCVm::greaterThan(ASObject* obj1, ASObject* obj2)
+bool ABCVm::greaterThan(ASObject* obj1, ASObject* obj2)
 {
 	LOG(LOG_CALLS,"greaterThan");
 
@@ -1488,10 +1488,10 @@ ASObject* ABCVm::greaterThan(ASObject* obj1, ASObject* obj2)
 	bool ret=obj2->isLess(obj1);
 	obj1->decRef();
 	obj2->decRef();
-	return new Boolean(ret);
+	return ret;
 }
 
-ASObject* ABCVm::greaterEquals(ASObject* obj1, ASObject* obj2)
+bool ABCVm::greaterEquals(ASObject* obj1, ASObject* obj2)
 {
 	LOG(LOG_CALLS,"greaterEquals");
 
@@ -1499,10 +1499,10 @@ ASObject* ABCVm::greaterEquals(ASObject* obj1, ASObject* obj2)
 	bool ret=!obj1->isLess(obj2);
 	obj1->decRef();
 	obj2->decRef();
-	return new Boolean(ret);
+	return ret;
 }
 
-ASObject* ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
+bool ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 {
 	LOG(LOG_CALLS,"lessEquals");
 
@@ -1510,7 +1510,7 @@ ASObject* ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 	bool ret=!obj2->isLess(obj1);
 	obj1->decRef();
 	obj2->decRef();
-	return new Boolean(ret);
+	return ret;
 }
 
 void ABCVm::initProperty(call_context* th, int n)
@@ -2182,7 +2182,7 @@ void ABCVm::popScope(call_context* th)
 	th->scope_stack.pop_back();
 }
 
-ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
+bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 {
 	LOG(LOG_CALLS,"lessThan");
 
@@ -2190,7 +2190,7 @@ ASObject* ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 	bool ret=obj1->isLess(obj2);
 	obj1->decRef();
 	obj2->decRef();
-	return new Boolean(ret);
+	return ret;
 }
 
 void ABCVm::call(call_context* th, int m)

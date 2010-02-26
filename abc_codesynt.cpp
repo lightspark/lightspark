@@ -643,53 +643,8 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 			continue;
 
 		//Let's sync with the expected values...
-		//TODO: find a way to propagate the new info
 		if(static_locals[i].second!=expected[i])
-		{
 			abort();
-	/*		if(expected[i]==STACK_NONE && static_locals[i].second==STACK_INT)
-			{
-				static_locals[i].second=STACK_OBJECT;
-				static_locals[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),static_locals[i].first);
-			}
-			else if(expected[i]==STACK_NONE && static_locals[i].second==STACK_NUMBER)
-			{
-				static_locals[i].second=STACK_OBJECT;
-				static_locals[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_d"),static_locals[i].first);
-			}
-			else if(expected[i]==STACK_NONE && static_locals[i].second==STACK_BOOLEAN)
-			{
-				static_locals[i].second=STACK_OBJECT;
-				static_locals[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_b"),static_locals[i].first);
-			}
-			else if(expected[i]==STACK_NONE && static_locals[i].second==STACK_OBJECT)
-			{
-	//				static_locals[i].second=STACK_OBJECT;
-	//				static_locals[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_b"),static_locals[i].first);
-			}
-			else if(expected[i]==STACK_NONE)
-			{
-				cout << i << " not NONE but " << static_locals[i].second << endl;
-				abort();
-			}
-			else if(expected[i]==STACK_OBJECT && static_locals[i].second==STACK_INT)
-			{
-				static_locals[i].second=STACK_OBJECT;
-				static_locals[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),static_locals[i].first);
-			}
-			else if(expected[i]==STACK_OBJECT && static_locals[i].second==STACK_NUMBER)
-			{
-				static_locals[i].second=STACK_OBJECT;
-				static_locals[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_d"),static_locals[i].first);
-			}
-			else
-			{
-				cout << "Locals type not coerent with prediction" << endl;
-				cout << expected[i] << endl;
-				cout << static_locals[i].second << endl;
-				abort();
-			}*/
-		}
 
 		if(dest_block.locals_reset[i])
 		{
@@ -773,9 +728,9 @@ void method_info::consumeStackForRTMultiname(static_stack_types_vector& stack, i
 	}
 }
 
-inline pair<int,STACK_TYPE> method_info::popTypeFromStack(static_stack_types_vector& stack, int local_ip) const
+inline pair<unsigned int,STACK_TYPE> method_info::popTypeFromStack(static_stack_types_vector& stack, unsigned int local_ip) const
 {
-	pair<int, STACK_TYPE> ret;
+	pair<unsigned int, STACK_TYPE> ret;
 	if(!stack.empty())
 	{
 		ret=stack.back();
@@ -787,111 +742,43 @@ inline pair<int,STACK_TYPE> method_info::popTypeFromStack(static_stack_types_vec
 	return ret;
 }
 
-SyntheticFunction::synt_function method_info::synt_method()
+block_info::block_info(const method_info* mi, const char* blockName)
 {
-	if(f)
-		return f;
+	BB=llvm::BasicBlock::Create(getVm()->llvm_context, blockName, mi->llvmf);
+	locals_start.resize(mi->body->local_count,STACK_NONE);
+	locals_reset.resize(mi->body->local_count,false);
+	locals_used.resize(mi->body->local_count,false);
+}
 
-	string method_name="method";
-	method_name+=context->getString(name).raw_buf();
-	if(!body)
-	{
-		LOG(LOG_CALLS,"Method " << method_name << " should be intrinsic");;
-		return NULL;
-	}
-	llvm::ExecutionEngine* ex=getVm()->ex;
+void method_info::addBlock(map<unsigned int,block_info>& blocks, unsigned int ip, const char* blockName)
+{
+	if(blocks.find(ip)==blocks.end())
+		blocks.insert(make_pair(ip, block_info(this, blockName)));
+}
+
+void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder)
+{
+	bool stop;
+	stringstream code(body->code);
+	vector<stack_entry> static_locals(body->local_count,stack_entry(NULL,STACK_NONE));
 	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
-	llvm::FunctionType* method_type=synt_method_prototype(ex);
-	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,method_name,getVm()->module);
-
-	//The pointer size compatible int type will be useful
-	//TODO: void*
+	llvm::ExecutionEngine* ex=getVm()->ex;
 	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
-	const llvm::Type* int32_type=llvm::IntegerType::get(getVm()->llvm_context,32);
 	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
 	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
 	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
-
-	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
-	llvm::IRBuilder<> Builder(llvm_context);
-	Builder.SetInsertPoint(BB);
-
-	//We define a couple of variables that will be used a lot
-	llvm::Constant* constant;
-	llvm::Constant* constant2;
-	llvm::Value* value;
-	//let's give access to method data to llvm
-	constant = llvm::ConstantInt::get(int_type, (uintptr_t)this);
-	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
-
-	llvm::Function::ArgumentListType::iterator it=llvmf->getArgumentList().begin();
-	llvm::Value* context=it;
-
-	//let's give access to local data storage
-	value=Builder.CreateStructGEP(context,0);
-	llvm::Value* locals=Builder.CreateLoad(value);
-
-	//the stack is statically handled as much as possible to allow llvm optimizations
-	//on branch and on interpreted/jitted code transition it is synchronized with the dynamic one
-	vector<stack_entry> static_stack;
-	static_stack.reserve(body->max_stack);
-	//Get the pointer to the dynamic stack
-	value=Builder.CreateStructGEP(context,1);
-	llvm::Value* dynamic_stack=Builder.CreateLoad(value);
-	//Get the index of the dynamic stack
-	llvm::Value* dynamic_stack_index=Builder.CreateStructGEP(context,2);
-
-/*	//Allocate a fast dynamic stack based on LLVM alloca instruction
-	//This is used on branches
-	vactor<llvm::Value*> fast_dynamic_stack(body->max_stack);
-	for(int i=0;i<body->max_stack;i++)
-		fast_dynamic_stack[i]=Builder.CreateAlloca(voidptr_type);
-	//Allocate also a stack pointer
-	llvm::Value* fast_dynamic_stack_index=*/
-
-	//the scope stack is not accessible to llvm code
-
-	//Creating a mapping between blocks and starting address
-	//The current header block is ended
-	llvm::BasicBlock *StartBB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
-	Builder.CreateBr(StartBB);
-	//CHECK: maybe not needed
-	Builder.SetInsertPoint(StartBB);
-
-	map<int,block_info> blocks;
-	blocks[-1].BB=StartBB;
-
-	vector<stack_entry> static_locals;
-	static_locals.resize(body->local_count,stack_entry(NULL,STACK_NONE));
-
-	//Let's build a block for the real function code
-	blocks[0].BB=llvm::BasicBlock::Create(llvm_context,"begin", llvmf);
-	block_info* cur_block=NULL;
-
-	u8 opcode;
-	bool last_is_branch=true;
-	map<int,block_info>::iterator bit=blocks.begin();
-	for(;bit!=blocks.end();bit++)
-	{
-		block_info& cur=bit->second;
-		cur.locals_start.resize(body->local_count,STACK_NONE);
-		cur.locals_reset.resize(body->local_count,false);
-		cur.locals_used.resize(body->local_count,false);
-	}
-
 	//We try to analyze the blocks first to find if locals can survive the jumps
-	bool stop;
-	stringstream code(body->code);
 	while(1)
 	{
 		//This is initialized to true so that on first iteration the entry block is used
-		last_is_branch=true;
+		bool last_is_branch=true;
 		code.clear();
 		code.seekg(0);
 		stop=true;
-		cur_block=NULL;
+		block_info* cur_block=NULL;
 		static_stack_types_vector static_stack_types;
-		int local_ip=0;
+		unsigned int local_ip=0;
+		u8 opcode;
 
 		while(1)
 		{
@@ -900,7 +787,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			if(code.eof())
 				break;
 			//Check if we are expecting a new block start
-			map<int,block_info>::iterator it=blocks.find(local_ip);
+			map<unsigned int,block_info>::iterator it=blocks.find(local_ip);
 			if(it!=blocks.end())
 			{
 				if(cur_block)
@@ -911,7 +798,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 				cur_block=&it->second;
 				LOG(LOG_TRACE,"New block at " << local_ip);
 				cur_block->locals=cur_block->locals_start;
-				//A new block starts, the last instruction should have been a branch?
 				last_is_branch=false;
 				static_stack_types.clear();
 			}
@@ -924,9 +810,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 			}
 			switch(opcode)
 			{
-				case 0x03:
+				case 0x03: //throw
 				{
-					//throw
 
 					//see also returnvoid
 					last_is_branch=true;
@@ -938,19 +823,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 					}
 					break;
 				}
-				case 0x04:
-				case 0x05:
+				case 0x04: //getsuper
+				case 0x05: //setsuper
 				{
-					//getsuper
-					//setsuper
 					u30 t;
 					code >> t;
 					static_stack_types.clear();
 					break;
 				}
-				case 0x08:
+				case 0x08: //kill
 				{
-					//kill
 					LOG(LOG_TRACE, "block analysis: kill" );
 					u30 t;
 					code >> t;
@@ -958,63 +840,37 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->locals[t]=STACK_NONE;
 					break;
 				}
-				case 0x09:
+				case 0x09: //label
 				{
-					//label
 					//Create a new block and insert it in the mapping
-					LOG(LOG_TRACE, "block analysis: label" );
-					int here=local_ip;
-
-					if(blocks[here].BB==NULL)
-					{
-						blocks[here].BB=llvm::BasicBlock::Create(llvm_context,"label", llvmf);
-						blocks[here].locals_start.resize(body->local_count,STACK_NONE);
-						blocks[here].locals_reset.resize(body->local_count,false);
-						blocks[here].locals_used.resize(body->local_count,false);
-					}
+					unsigned int here=local_ip;
+					addBlock(blocks,here,"label");
 
 					last_is_branch=false;
-
 					blocks[here].preds.insert(cur_block);
 					cur_block->seqs.insert(&blocks[here]);
 					static_stack_types.clear();
 					cur_block=&blocks[here];
 					LOG(LOG_TRACE,"New block at " << local_ip);
 					cur_block->locals=cur_block->locals_start;
-					//A new block starts, the last instruction should have been a branch?
 					break;
 				}
-				case 0x0c:
-				case 0x0d:
-				case 0x0e:
-				case 0x0f:
-				case 0x10:
-				case 0x11:
-				case 0x12:
-				case 0x13:
-				case 0x14:
-				case 0x15:
-				case 0x16:
-				case 0x17:
-				case 0x18:
-				case 0x19:
-				case 0x1a:
+				case 0x0c: //ifnlt
+				case 0x0d: //ifnle
+				case 0x0e: //ifngt
+				case 0x0f: //ifnge
+				case 0x10: //jump
+				case 0x11: //iftrue
+				case 0x12: //iffalse
+				case 0x13: //ifeq
+				case 0x14: //ifne
+				case 0x15: //iflt
+				case 0x16: //ifle
+				case 0x17: //ifge
+				case 0x18: //ifgt
+				case 0x19: //ifstricteq
+				case 0x1a: //ifstrictne
 				{
-					//ifnlt
-					//ifnle
-					//ifngt
-					//ifnge
-					//jump
-					//iftrue
-					//iffalse
-					//ifeq
-					//ifne
-					//iflt
-					//ifle
-					//ifge
-					//ifgt
-					//ifstricteq
-					//ifstrictne
 					LOG(LOG_TRACE, "block analysis: branches" );
 					//TODO: implement common data comparison
 					last_is_branch=true;
@@ -1024,33 +880,20 @@ SyntheticFunction::synt_function method_info::synt_method()
 					int here=code.tellg();
 					int dest=here+t;
 					//Create a block for the fallthrough code and insert in the mapping
-					if(blocks[here].BB==NULL)
-					{
-						blocks[here].BB=llvm::BasicBlock::Create(llvm_context,"fall", llvmf);
-						blocks[here].locals_start.resize(body->local_count,STACK_NONE);
-						blocks[here].locals_reset.resize(body->local_count,false);
-						blocks[here].locals_used.resize(body->local_count,false);
-					}
+					addBlock(blocks,here,"fall");
 					blocks[here].preds.insert(cur_block);
 					cur_block->seqs.insert(&blocks[here]);
 
 					//And for the branch destination, if they are not in the blocks mapping
-					if(blocks[dest].BB==NULL)
-					{
-						blocks[dest].BB=llvm::BasicBlock::Create(llvm_context,"then", llvmf);
-						blocks[dest].locals_start.resize(body->local_count,STACK_NONE);
-						blocks[dest].locals_reset.resize(body->local_count,false);
-						blocks[dest].locals_used.resize(body->local_count,false);
-					}
+					addBlock(blocks,dest,"then");
 					blocks[dest].preds.insert(cur_block);
 					cur_block->seqs.insert(&blocks[dest]);
 		
 					static_stack_types.clear();
 					break;
 				}
-				case 0x1b:
+				case 0x1b: //lookupswitch
 				{
-					//lookupswitch
 					LOG(LOG_TRACE, "synt lookupswitch" );
 					last_is_branch=true;
 
@@ -1069,46 +912,31 @@ SyntheticFunction::synt_function method_info::synt_method()
 						LOG(LOG_TRACE,"Case " << i << " " << offsets[i]);
 					}
 					static_stack_types.clear();
-					if(blocks[defaultdest].BB==NULL)
-					{
-						blocks[defaultdest].BB=llvm::BasicBlock::Create(llvm_context,"default", llvmf);
-						blocks[defaultdest].locals_start.resize(body->local_count,STACK_NONE);
-						blocks[defaultdest].locals_reset.resize(body->local_count,false);
-						blocks[defaultdest].locals_used.resize(body->local_count,false);
-					}
+					addBlock(blocks,defaultdest,"switchdefault");
 					blocks[defaultdest].preds.insert(cur_block);
 					cur_block->seqs.insert(&blocks[defaultdest]);
 
 					for(unsigned int i=0;i<offsets.size();i++)
 					{
 						int casedest=here+offsets[i];
-						if(blocks[casedest].BB==NULL)
-						{
-							blocks[casedest].BB=llvm::BasicBlock::Create(llvm_context,"default", llvmf);
-							blocks[casedest].locals_start.resize(body->local_count,STACK_NONE);
-							blocks[casedest].locals_reset.resize(body->local_count,false);
-							blocks[casedest].locals_used.resize(body->local_count,false);
-						}
+						addBlock(blocks,casedest,"switchcase");
 						blocks[casedest].preds.insert(cur_block);
 						cur_block->seqs.insert(&blocks[casedest]);
 					}
 
 					break;
 				}
-				case 0x1c:
+				case 0x1c: //pushwith
 				{
-					//pushwith
 					static_stack_types.clear();
 					break;
 				}
-				case 0x1d:
+				case 0x1d: //popscope
 				{
-					//popscope
 					break;
 				}
-				case 0x1e:
+				case 0x1e: //nextname
 				{
-					//nextname
 					popTypeFromStack(static_stack_types,local_ip);
 					popTypeFromStack(static_stack_types,local_ip);
 
@@ -1116,20 +944,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x20:
-				case 0x21:
-				case 0x28:
+				case 0x20: //pushnull
+				case 0x21: //pushundefined
+				case 0x28: //pushnan
 				{
-					//pushnull
-					//pushundefined
-					//pushnan
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x23:
+				case 0x23: //nextvalue
 				{
-					//nextvalue
 					popTypeFromStack(static_stack_types,local_ip);
 					popTypeFromStack(static_stack_types,local_ip);
 
@@ -1137,42 +961,36 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x24:
+				case 0x24: //pushbyte
 				{
-					//pushbyte
 					int8_t t;
 					code.read((char*)&t,1);
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0x25:
+				case 0x25: //pushshort
 				{
-					//pushshort
 					u30 t;
 					code >> t;
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0x26:
-				case 0x27:
+				case 0x26: //pushtrue
+				case 0x27: //pushfalse
 				{
-					//pushtrue
-					//pushfalse
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
-				case 0x29:
+				case 0x29: //pop
 				{
-					//pop
 					popTypeFromStack(static_stack_types,local_ip);
 					break;
 				}
-				case 0x2a:
+				case 0x2a: //dup
 				{
-					//dup
 					pair <int, STACK_TYPE> val=popTypeFromStack(static_stack_types,local_ip);
 					static_stack_types.push_back(val);
 					val.first=local_ip;
@@ -1181,9 +999,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,val.second);
 					break;
 				}
-				case 0x2b:
+				case 0x2b: //swap
 				{
-					//swap
 					pair <int, STACK_TYPE> t1,t2;
 					t1=popTypeFromStack(static_stack_types,local_ip);
 					t2=popTypeFromStack(static_stack_types,local_ip);
@@ -1193,43 +1010,38 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 					break;
 				}
-				case 0x2c:
+				case 0x2c: //pushstring
 				{
-					//pushstring
 					u30 t;
 					code >> t;
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x2d:
-				case 0x2e:
+				case 0x2d: //pushint
+				case 0x2e: //pushuint
 				{
-					//pushint
 					u30 t;
 					code >> t;
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0x2f:
+				case 0x2f: //pushdouble
 				{
-					//pushdouble
 					u30 t;
 					code >> t;
 					static_stack_types.push_back(make_pair(local_ip,STACK_NUMBER));
 					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					break;
 				}
-				case 0x30:
+				case 0x30: //pushscope
 				{
-					//pushscope
 					static_stack_types.clear();
 					break;
 				}
-				case 0x32:
+				case 0x32: //hasnext2
 				{
-					//hasnext2
 					u30 t;
 					code >> t;
 					cur_block->locals[t]=STACK_NONE;
@@ -1239,50 +1051,39 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
-				case 0x40:
+				case 0x40: //newfunction
 				{
-					//newfunction
 					u30 t;
 					code >> t;
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x41:
-				case 0x42:
-				case 0x49:
-				case 0x53:
+				case 0x41: //call
+				case 0x42: //construct
+				case 0x49: //constructsuper
+				case 0x53: //constructgenerictype
 				{
-					//call
-					//construct
-					//constructsuper
 					static_stack_types.clear();
 					u30 t;
 					code >> t;
 					break;
 				}
-				case 0x45:
-				case 0x46:
-				case 0x4a:
-				case 0x4e:
-				case 0x4f:
+				case 0x45: //callsuper
+				case 0x46: //callproperty
+				case 0x4a: //constructprop
+				case 0x4e: //callsupervoid
+				case 0x4f: //callpropvoid
 				{
-					//callsuper
-					//callproperty
-					//constructprop
-					//callsupervoid
-					//callpropvoid
 					static_stack_types.clear();
 					u30 t;
 					code >> t;
 					code >> t;
 					break;
 				}
-				case 0x47:
-				case 0x48:
+				case 0x47: //returnvoid
+				case 0x48: //returnvalue
 				{
-					//returnvoid
-					//returnvalue
 					last_is_branch=true;
 					static_stack_types.clear();
 					for(unsigned int i=0;i<body->local_count;i++)
@@ -1292,27 +1093,20 @@ SyntheticFunction::synt_function method_info::synt_method()
 					}
 					break;
 				}
-				case 0x55:
-				case 0x56:
-				case 0x58:
-				case 0x59:
-				case 0x60:
+				case 0x55: //newobject
+				case 0x56: //newarray
+				case 0x58: //newclass
+				case 0x59: //getdescendants
+				case 0x60: //getlex
 				{
-					//newobject
-					//newarray
-					//newclass
-					//getdescendants
-					//getlex
 					static_stack_types.clear();
 					u30 t;
 					code >> t;
 					break;
 				}
-				case 0x5d:
-				case 0x5e:
+				case 0x5d: //findpropstrict
+				case 0x5e: //findproperty
 				{
-					//findpropstrict
-					//findproperty
 					u30 t;
 					code >> t;
 
@@ -1324,25 +1118,22 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x57:
+				case 0x57: //newactivation
 				{
-					//newactivation
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x5a:
+				case 0x5a: //newcatch
 				{
-					//newcatch
 					u30 t;
 					code >> t;
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x61:
+				case 0x61: //setproperty
 				{
-					//setproperty
 					u30 t;
 					code >> t;
 					//the value
@@ -1353,9 +1144,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					popTypeFromStack(static_stack_types,local_ip);
 					break;
 				}
-				case 0x62:
+				case 0x62: //getlocal
 				{
-					//getlocal
 					u30 i;
 					code >> i;
 					cur_block->locals_used[i]=true;
@@ -1372,9 +1162,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					}
 					break;
 				}
-				case 0x63:
+				case 0x63: //setlocal
 				{
-					//setlocal
 					LOG(LOG_TRACE, "synt setlocal" );
 					u30 i;
 					code >> i;
@@ -1386,28 +1175,24 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->locals[i]=t;
 					break;
 				}
-				case 0x64:
+				case 0x64: //getglobalscope
 				{
-					//getglobalscope
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x65:
+				case 0x65: //getscopeobject
 				{
-					//getscopeobject
 					u30 t;
 					code >> t;
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x66:
+				case 0x66: //getproperty
 				{
-					//getproperty
 					u30 t;
 					code >> t;
-					constant = llvm::ConstantInt::get(int_type, t);
 					consumeStackForRTMultiname(static_stack_types,t);
 					popTypeFromStack(static_stack_types,local_ip);
 
@@ -1425,19 +1210,16 @@ SyntheticFunction::synt_function method_info::synt_method()
 					}
 					break;
 				}
-				case 0x68:
-				case 0x6a:
+				case 0x68: //initproperty
+				case 0x6a: //deleteproperty
 				{
-					//initproperty
-					//deleteproperty
 					static_stack_types.clear();
 					u30 t;
 					code >> t;
 					break;
 				}
-				case 0x6c:
+				case 0x6c: //getslot
 				{
-					//getslot
 					u30 t;
 					code >> t;
 					popTypeFromStack(static_stack_types,local_ip);
@@ -1446,25 +1228,21 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x6d:
+				case 0x6d: //setslot
 				{
-					//setslot
 					u30 t;
 					code >> t;
 					popTypeFromStack(static_stack_types,local_ip);
 					popTypeFromStack(static_stack_types,local_ip);
 					break;
 				}
-				case 0x70:
+				case 0x70: //convert_s
 				{
-					//convert_s
 					break;
 				}
-				case 0x73:
-				case 0x74:
+				case 0x73: //convert_i
+				case 0x74: //convert_u
 				{
-					//convert_i
-					//convert_u
 					popTypeFromStack(static_stack_types,local_ip);
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
@@ -1480,38 +1258,32 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					break;
 				}
-				case 0x76:
+				case 0x76: //convert_b
 				{
-					//convert_b
 					popTypeFromStack(static_stack_types,local_ip);
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
-				case 0x78:
+				case 0x78: //checkfilter
 				{
-					//checkfilter
 					break;
 				}
-				case 0x80:
+				case 0x80: //coerce
 				{
-					//coerce
 					static_stack_types.clear();
 					u30 t;
 					code >> t;
 					break;
 				}
-				case 0x82:
-				case 0x85:
+				case 0x82: //coerce_a
+				case 0x85: //coerce_s
 				{
-					//coerce_a
-					//coerce_s
 					break;
 				}
-				case 0x87:
+				case 0x87: //astypelate
 				{
-					//astypelate
 					popTypeFromStack(static_stack_types,local_ip).second;
 					popTypeFromStack(static_stack_types,local_ip).second;
 
@@ -1519,53 +1291,44 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x90:
-				case 0x95:
+				case 0x90: //negate
+				case 0x95: //typeof
 				{
-					//negate
-					//typeof
 					popTypeFromStack(static_stack_types,local_ip).second;
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0x91:
-				case 0x93:
-				case 0xc0:
-				case 0xc1:
+				case 0x91: //increment
+				case 0x93: //decrement
+				case 0xc0: //increment_i
+				case 0xc1: //decrement_i
 				{
-					//increment
-					//decrement
-					//increment_i
-					//decrement_i
 					popTypeFromStack(static_stack_types,local_ip).second;
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0x96:
+				case 0x96: //not
 				{
-					//not
 					popTypeFromStack(static_stack_types,local_ip).second;
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_BOOLEAN));
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
-				case 0x97:
+				case 0x97: //bitnot
 				{
-					//bitnot
 					popTypeFromStack(static_stack_types,local_ip).second;
 
 					static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0xa0:
+				case 0xa0: //add
 				{
-					//add
 					STACK_TYPE t1,t2;
 					t1=popTypeFromStack(static_stack_types,local_ip).second;
 					t2=popTypeFromStack(static_stack_types,local_ip).second;
@@ -1590,9 +1353,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 					break;
 				}
-				case 0xa1:
+				case 0xa1: //subtract
 				{
-					//subtract
 					STACK_TYPE t1,t2;
 					t1=popTypeFromStack(static_stack_types,local_ip).second;
 					t2=popTypeFromStack(static_stack_types,local_ip).second;
@@ -1609,9 +1371,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					}
 					break;
 				}
-				case 0xa2:
+				case 0xa2: //multiply
 				{
-					//multiply
 					STACK_TYPE t1,t2;
 					t1=popTypeFromStack(static_stack_types,local_ip).second;
 					t2=popTypeFromStack(static_stack_types,local_ip).second;
@@ -1628,9 +1389,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					}
 					break;
 				}
-				case 0xa3:
+				case 0xa3: //divide
 				{
-					//divide
 					popTypeFromStack(static_stack_types,local_ip).second;
 					popTypeFromStack(static_stack_types,local_ip).second;
 
@@ -1638,9 +1398,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					break;
 				}
-				case 0xa4:
+				case 0xa4: //modulo
 				{
-					//modulo
 					STACK_TYPE t1,t2;
 					t1=popTypeFromStack(static_stack_types,local_ip).second;
 					t2=popTypeFromStack(static_stack_types,local_ip).second;
@@ -1660,13 +1419,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0xa5:
+				case 0xa5: //lshift
 				{
-					//lshift
-					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
 					if(t1.first!=local_ip)
 						cur_block->push_types[t1.first]=STACK_INT;
-					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
 					if(t2.first!=local_ip)
 						cur_block->push_types[t2.first]=STACK_INT;
 
@@ -1674,13 +1432,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0xa6:
+				case 0xa6: //rshift
 				{
-					//rshift
-					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
 					if(t1.first!=local_ip)
 						cur_block->push_types[t1.first]=STACK_INT;
-					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
 					if(t2.first!=local_ip)
 						cur_block->push_types[t2.first]=STACK_INT;
 
@@ -1688,13 +1445,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0xa7:
+				case 0xa7: //urshift
 				{
-					//urshift
-					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
 					if(t1.first!=local_ip)
 						cur_block->push_types[t1.first]=STACK_INT;
-					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
 					if(t2.first!=local_ip)
 						cur_block->push_types[t2.first]=STACK_INT;
 
@@ -1702,13 +1458,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0xa8:
+				case 0xa8: //bitand
 				{
-					//bitand
-					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
 					if(t1.first!=local_ip)
 						cur_block->push_types[t1.first]=STACK_INT;
-					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
 					if(t2.first!=local_ip)
 						cur_block->push_types[t2.first]=STACK_INT;
 
@@ -1716,13 +1471,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0xa9:
+				case 0xa9: //bitor
 				{
-					//bitor
-					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
 					if(t1.first!=local_ip)
 						cur_block->push_types[t1.first]=STACK_INT;
-					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
 					if(t2.first!=local_ip)
 						cur_block->push_types[t2.first]=STACK_INT;
 
@@ -1730,13 +1484,12 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0xaa:
+				case 0xaa: //bitxor
 				{
-					//bitxor
-					pair<int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t1=popTypeFromStack(static_stack_types,local_ip);
 					if(t1.first!=local_ip)
 						cur_block->push_types[t1.first]=STACK_INT;
-					pair<int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
+					pair<unsigned int, STACK_TYPE> t2=popTypeFromStack(static_stack_types,local_ip);
 					if(t2.first!=local_ip)
 						cur_block->push_types[t2.first]=STACK_INT;
 
@@ -1744,9 +1497,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
-				case 0xab:
+				case 0xab: //equals
 				{
-					//equals
 					popTypeFromStack(static_stack_types,local_ip);
 					popTypeFromStack(static_stack_types,local_ip);
 
@@ -1754,18 +1506,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
-				case 0xac:
+				case 0xac: //strictequals
 				{
-					//strictequals
-					popTypeFromStack(static_stack_types,local_ip);
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
-				case 0xad:
-				{
-					//lessthan
 					popTypeFromStack(static_stack_types,local_ip);
 					popTypeFromStack(static_stack_types,local_ip);
 
@@ -1773,9 +1515,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0xae:
+				case 0xad: //lessthan
+				case 0xae: //lessequals
+				case 0xaf: //greaterthan
+				case 0xb0: //greaterequals
 				{
-					//lessequals
 					popTypeFromStack(static_stack_types,local_ip);
 					popTypeFromStack(static_stack_types,local_ip);
 
@@ -1783,29 +1527,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
 					break;
 				}
-				case 0xaf:
+				case 0xb3: //istypelate
 				{
-					//greaterthan
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
-				case 0xb0:
-				{
-					//greaterequals
-					popTypeFromStack(static_stack_types,local_ip);
-					popTypeFromStack(static_stack_types,local_ip);
-
-					static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
-					cur_block->checkProactiveCasting(local_ip,STACK_OBJECT);
-					break;
-				}
-				case 0xb3:
-				{
-					//istypelate
 					popTypeFromStack(static_stack_types,local_ip);
 					popTypeFromStack(static_stack_types,local_ip);
 
@@ -1813,9 +1536,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
-				case 0xb4:
+				case 0xb4: //in
 				{
-					//in
 					popTypeFromStack(static_stack_types,local_ip);
 					popTypeFromStack(static_stack_types,local_ip);
 
@@ -1823,20 +1545,18 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->checkProactiveCasting(local_ip,STACK_BOOLEAN);
 					break;
 				}
-				case 0xc2:
+				case 0xc2: //inclocal_i
 				{
-					//inclocal_i
 					static_stack_types.clear();
 					u30 t;
 					code >> t;
 					break;
 				}
-				case 0xd0:
+				case 0xd0: //getlocal_n
 				case 0xd1:
 				case 0xd2:
 				case 0xd3:
 				{
-					//getlocal_n
 					int i=opcode&3;
 					cur_block->locals_used[i]=true;
 					if(cur_block->locals[i]==STACK_NONE)
@@ -1852,11 +1572,11 @@ SyntheticFunction::synt_function method_info::synt_method()
 					}
 					break;
 				}
+				case 0xd4: //setlocal_n
 				case 0xd5:
 				case 0xd6:
 				case 0xd7:
 				{
-					//setlocal_n
 					int i=opcode&3;
 					LOG(LOG_TRACE, "synt setlocal " << i);
 					cur_block->locals_used[i]=true;
@@ -1874,9 +1594,8 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cur_block->locals[i]=t;
 					break;
 				}
-				case 0xef:
+				case 0xef: //debug
 				{
-					//debug
 					uint8_t debug_type;
 					u30 index;
 					uint8_t reg;
@@ -1887,11 +1606,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 					code >> extra;
 					break;
 				}
-				case 0xf0:
-				case 0xf1:
+				case 0xf0: //debugline
+				case 0xf1: //debugfile
 				{
-					//debugline
-					//debugfile
 					u30 t;
 					code >> t;
 					break;
@@ -1909,7 +1626,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		while(1)
 		{
 			stop=true;
-			map<int,block_info>::iterator bit=blocks.begin();
+			map<unsigned int,block_info>::iterator bit=blocks.begin();
 			for(;bit!=blocks.end();bit++)
 			{
 				block_info& cur=bit->second;
@@ -1946,7 +1663,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 		//We can now search for locals that can be saved
 		//If every predecessor blocks agree with the type of a local we pass it over
-		map<int,block_info>::iterator bit=blocks.begin();
+		map<unsigned int,block_info>::iterator bit=blocks.begin();
 		for(;bit!=blocks.end();bit++)
 		{
 			block_info& cur=bit->second;
@@ -1991,7 +1708,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			break;
 	}
 
-	bit=blocks.begin();
+	map<unsigned int, block_info>::iterator bit=blocks.begin();
 	for(;bit!=blocks.end();bit++)
 	{
 		block_info& cur=bit->second;
@@ -2019,14 +1736,89 @@ SyntheticFunction::synt_function method_info::synt_method()
 			}
 		}
 	}
+}
+
+SyntheticFunction::synt_function method_info::synt_method()
+{
+	if(f)
+		return f;
+
+	string method_name="method";
+	method_name+=context->getString(name).raw_buf();
+	if(!body)
+	{
+		LOG(LOG_CALLS,"Method " << method_name << " should be intrinsic");;
+		return NULL;
+	}
+	llvm::ExecutionEngine* ex=getVm()->ex;
+	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
+	llvm::FunctionType* method_type=synt_method_prototype(ex);
+	llvmf=llvm::Function::Create(method_type,llvm::Function::ExternalLinkage,method_name,getVm()->module);
+
+	//The pointer size compatible int type will be useful
+	//TODO: void*
+	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
+	const llvm::Type* int32_type=llvm::IntegerType::get(getVm()->llvm_context,32);
+	const llvm::Type* voidptr_type=llvm::PointerType::getUnqual(int_type);
+	const llvm::Type* number_type=llvm::Type::getDoubleTy(llvm_context);
+
+	llvm::BasicBlock *BB = llvm::BasicBlock::Create(llvm_context,"entry", llvmf);
+	llvm::IRBuilder<> Builder(llvm_context);
+	Builder.SetInsertPoint(BB);
+
+	//We define a couple of variables that will be used a lot
+	llvm::Constant* constant;
+	llvm::Constant* constant2;
+	llvm::Value* value;
+	//let's give access to method data to llvm
+	constant = llvm::ConstantInt::get(int_type, (uintptr_t)this);
+	llvm::Value* th = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
+
+	llvm::Function::ArgumentListType::iterator it=llvmf->getArgumentList().begin();
+	llvm::Value* context=it;
+
+	//let's give access to local data storage
+	value=Builder.CreateStructGEP(context,0);
+	llvm::Value* locals=Builder.CreateLoad(value);
+
+	//the stack is statically handled as much as possible to allow llvm optimizations
+	//on branch and on interpreted/jitted code transition it is synchronized with the dynamic one
+	vector<stack_entry> static_stack;
+	static_stack.reserve(body->max_stack);
+	//Get the pointer to the dynamic stack
+	value=Builder.CreateStructGEP(context,1);
+	llvm::Value* dynamic_stack=Builder.CreateLoad(value);
+	//Get the index of the dynamic stack
+	llvm::Value* dynamic_stack_index=Builder.CreateStructGEP(context,2);
+
+/*	//Allocate a fast dynamic stack based on LLVM alloca instruction
+	//This is used on branches
+	vactor<llvm::Value*> fast_dynamic_stack(body->max_stack);
+	for(int i=0;i<body->max_stack;i++)
+		fast_dynamic_stack[i]=Builder.CreateAlloca(voidptr_type);
+	//Allocate also a stack pointer
+	llvm::Value* fast_dynamic_stack_index=*/
+
+	//the scope stack is not accessible to llvm code
+
+	//Creating a mapping between blocks and starting address
+	map<unsigned int,block_info> blocks;
+
+
+	//Let's build a block for the real function code
+	addBlock(blocks, 0, "begin");
+
+	doAnalysis(blocks,Builder);
 
 	//Let's reset the stream
-	code.clear();
-	code.seekg(0);
-	last_is_branch=true;
+	stringstream code(body->code);
+	vector<stack_entry> static_locals(body->local_count,stack_entry(NULL,STACK_NONE));
+	block_info* cur_block=NULL;
 
 	static_stack.clear();
 	Builder.CreateBr(blocks[0].BB);
+	u8 opcode;
+	bool last_is_branch=true;
 
 	int local_ip=0;
 	//Each case block builds the correct parameters for the interpreter function and call it
@@ -2037,10 +1829,9 @@ SyntheticFunction::synt_function method_info::synt_method()
 		if(code.eof())
 			break;
 		//Check if we are expecting a new block start
-		map<int,block_info>::iterator it=blocks.find(local_ip);
+		map<unsigned int,block_info>::iterator it=blocks.find(local_ip);
 		if(it!=blocks.end())
 		{
-			//A new block starts, the last instruction should have been a branch?
 			if(!last_is_branch)
 			{
 				LOG(LOG_TRACE, "Last instruction before a new block was not a branch.");
@@ -2055,8 +1846,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			if(!cur_block->locals_start.empty())
 			{
 				//Generate prologue, LLVM should optimize register usage
-				if(static_locals.size()!=cur_block->locals_start.size())
-					abort();
+				assert(static_locals.size()==cur_block->locals_start.size());
 				for(unsigned int i=0;i<static_locals.size();i++)
 				{
 					static_locals[i].second=cur_block->locals_start[i];
@@ -2073,11 +1863,6 @@ SyntheticFunction::synt_function method_info::synt_method()
 			//block end
 			LOG(LOG_TRACE,"Ignoring at " << local_ip);
 			continue;
-			/*LOG(CALLS,"Inserting block at "<<int(code.tellg())-1);
-			abort();
-			llvm::BasicBlock* A=llvm::BasicBlock::Create("fall", m->f);
-			Builder.CreateBr(A);
-			Builder.SetInsertPoint(A);*/
 		}
 
 		switch(opcode)
@@ -4440,7 +4225,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		}
 	}
 
-	map<int,block_info>::iterator it2=blocks.begin();
+	map<unsigned int,block_info>::iterator it2=blocks.begin();
 	for(;it2!=blocks.end();it2++)
 	{
 		if(it2->second.BB->getTerminator()==NULL)

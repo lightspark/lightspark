@@ -171,6 +171,7 @@ struct option_detail
 };
 
 struct method_body_info;
+class method_info;
 class ABCContext;
 class ABCVm;
 
@@ -206,7 +207,9 @@ struct block_info
 	std::set<block_info*> seqs;
 	std::map<int,STACK_TYPE> push_types;
 
-	block_info():BB(NULL){}
+	//Needed for indexed access
+	block_info():BB(NULL){abort();}
+	block_info(const method_info* mi, const char* blockName);
 	STACK_TYPE checkProactiveCasting(int local_ip,STACK_TYPE type);
 };
 
@@ -214,9 +217,10 @@ typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
 
 class method_info
 {
-enum { NEED_ARGUMENTS=1,NEED_REST=4, HAS_OPTIONAL=8};
 friend std::istream& operator>>(std::istream& in, method_info& v);
+friend class block_info;
 private:
+	enum { NEED_ARGUMENTS=1,NEED_REST=4, HAS_OPTIONAL=8};
 	u30 param_count;
 	u30 return_type;
 	std::vector<u30> param_type;
@@ -226,26 +230,39 @@ private:
 
 	std::vector<u30> param_names;
 
+	//Helper functions to peek/pop/push in the static stack
 	stack_entry static_stack_peek(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 	stack_entry static_stack_pop(llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack,
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
-	void abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, stack_entry& e);
 	void static_stack_push(std::vector<stack_entry>& static_stack, const stack_entry& e);
+	//Helper function to generate the right object for a concrete type
+	void abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, stack_entry& e);
+
+	//Helper functions that generates LLVM to access the stack at runtime
 	llvm::Value* llvm_stack_pop(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
 	llvm::Value* llvm_stack_peek(llvm::IRBuilder<>& builder,llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
 	void llvm_stack_push(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, llvm::Value* val,
 			llvm::Value* dynamic_stack,llvm::Value* dynamic_stack_index);
+
+	//Helper functions to sync the static stack and locals to the memory 
 	void syncStacks(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder, std::vector<stack_entry>& static_stack, 
 			llvm::Value* dynamic_stack, llvm::Value* dynamic_stack_index);
 	void syncLocals(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& builder,
 			const std::vector<stack_entry>& static_locals,llvm::Value* locals,
 			const std::vector<STACK_TYPE>& expected,const block_info& dest_block);
 	typedef std::vector<std::pair<int, STACK_TYPE> > static_stack_types_vector;
+	//Helper function to sync only part of the static stack to the memory
 	void consumeStackForRTMultiname(static_stack_types_vector& stack, int multinameIndex) const;
-	std::pair<int, STACK_TYPE> popTypeFromStack(static_stack_types_vector& stack, int localIp) const;
+
+	//Helper function to add a basic block
+	void addBlock(std::map<unsigned int,block_info>& blocks, unsigned int ip, const char* blockName);
+	std::pair<unsigned int, STACK_TYPE> popTypeFromStack(static_stack_types_vector& stack, unsigned int localIp) const;
 	llvm::FunctionType* synt_method_prototype(llvm::ExecutionEngine* ex);
 	llvm::Function* llvmf;
+
+	//Does analysis on function code to find optimization chances
+	void doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IRBuilder<>& Builder);
 
 public:
 	u30 option_count;

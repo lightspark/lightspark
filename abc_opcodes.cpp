@@ -796,7 +796,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	LOG(LOG_CALLS,"End of calling " << *name);
 }
 
-void ABCVm::jump(call_context* th, int offset)
+void ABCVm::jump(int offset)
 {
 	LOG(LOG_CALLS,"jump " << offset);
 }
@@ -894,7 +894,7 @@ void ABCVm::pushDouble(call_context* th, int n)
 	LOG(LOG_CALLS, "pushDouble [" << dec << n << "] " << d);
 }
 
-void ABCVm::kill(call_context* th, int n)
+void ABCVm::kill(int n)
 {
 	LOG(LOG_CALLS, "kill " << n );
 }

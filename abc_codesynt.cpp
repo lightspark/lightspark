@@ -41,43 +41,6 @@ void debug_i(intptr_t i)
 	LOG(LOG_CALLS, "debug_i "<< i);
 }
 
-opcode_handler ABCVm::opcode_table_args0[]={
-	{"pushScope",(void*)&ABCVm::pushScope},
-	{"pushWith",(void*)&ABCVm::pushWith},
-	{"throw",(void*)&ABCVm::_throw},
-	{"popScope",(void*)&ABCVm::popScope},
-};
-
-opcode_handler ABCVm::opcode_table_args1_lazy[]={
-	{"pushString",(void*)&ABCVm::pushString},
-	{"pushDouble",(void*)&ABCVm::pushDouble},
-	{"pushInt",(void*)&ABCVm::pushInt},
-	{"pushUInt",(void*)&ABCVm::pushUInt},
-	{"newFunction",(void*)&ABCVm::newFunction},
-	{"newCatch",(void*)&ABCVm::newCatch},
-	{"getScopeObject",(void*)&ABCVm::getScopeObject}
-};
-
-opcode_handler ABCVm::opcode_table_args1[]={
-	{"getSuper",(void*)&ABCVm::getSuper},
-	{"setSuper",(void*)&ABCVm::setSuper},
-	{"newObject",(void*)&ABCVm::newObject},
-	{"getDescendants",(void*)&ABCVm::getDescendants},
-	{"deleteProperty",(void*)&ABCVm::deleteProperty},
-	{"jump",(void*)&ABCVm::jump},
-	{"call",(void*)&ABCVm::call},
-	{"coerce",(void*)&ABCVm::coerce},
-	{"getLex",(void*)&ABCVm::getLex},
-	{"incLocal_i",(void*)&ABCVm::incLocal_i},
-	{"construct",(void*)&ABCVm::construct},
-	{"constructGenericType",(void*)&ABCVm::constructGenericType},
-	{"constructSuper",(void*)&ABCVm::constructSuper},
-	{"newArray",(void*)&ABCVm::newArray},
-	{"newClass",(void*)&ABCVm::newClass},
-	{"initProperty",(void*)&ABCVm::initProperty},
-	{"kill",(void*)&ABCVm::kill}
-};
-
 opcode_handler ABCVm::opcode_table_args_pointer_2int[]={
 	{"getMultiname_i",(void*)&ABCContext::s_getMultiname_i}
 };
@@ -143,6 +106,39 @@ typed_opcode_handler ABCVm::opcode_table_void[]={
 	{"setLocal",(void*)&ABCVm::setLocal,ARGS_INT},
 	{"setLocal_int",(void*)&ABCVm::setLocal_int,ARGS_INT_INT},
 	{"setLocal_obj",(void*)&ABCVm::setLocal_obj,ARGS_INT_OBJ},
+	{"pushScope",(void*)&ABCVm::pushScope,ARGS_CONTEXT},
+	{"pushWith",(void*)&ABCVm::pushWith,ARGS_CONTEXT},
+	{"throw",(void*)&ABCVm::_throw,ARGS_CONTEXT},
+	{"popScope",(void*)&ABCVm::popScope,ARGS_CONTEXT},
+	{"pushDouble",(void*)&ABCVm::pushDouble,ARGS_CONTEXT_INT},
+	{"pushInt",(void*)&ABCVm::pushInt,ARGS_CONTEXT_INT},
+	{"pushUInt",(void*)&ABCVm::pushUInt,ARGS_CONTEXT_INT},
+	{"getSuper",(void*)&ABCVm::getSuper,ARGS_CONTEXT_INT},
+	{"setSuper",(void*)&ABCVm::setSuper,ARGS_CONTEXT_INT},
+	{"newObject",(void*)&ABCVm::newObject,ARGS_CONTEXT_INT},
+	{"getDescendants",(void*)&ABCVm::getDescendants,ARGS_CONTEXT_INT},
+	{"deleteProperty",(void*)&ABCVm::deleteProperty,ARGS_CONTEXT_INT},
+	{"call",(void*)&ABCVm::call,ARGS_CONTEXT_INT},
+	{"coerce",(void*)&ABCVm::coerce,ARGS_CONTEXT_INT},
+	{"getLex",(void*)&ABCVm::getLex,ARGS_CONTEXT_INT},
+	{"incLocal_i",(void*)&ABCVm::incLocal_i,ARGS_CONTEXT_INT},
+	{"construct",(void*)&ABCVm::construct,ARGS_CONTEXT_INT},
+	{"constructGenericType",(void*)&ABCVm::constructGenericType,ARGS_CONTEXT_INT},
+	{"constructSuper",(void*)&ABCVm::constructSuper,ARGS_CONTEXT_INT},
+	{"newArray",(void*)&ABCVm::newArray,ARGS_CONTEXT_INT},
+	{"newClass",(void*)&ABCVm::newClass,ARGS_CONTEXT_INT},
+	{"initProperty",(void*)&ABCVm::initProperty,ARGS_CONTEXT_INT},
+	{"kill",(void*)&ABCVm::kill,ARGS_INT},
+	{"jump",(void*)&ABCVm::jump,ARGS_INT},
+	{"callProperty",(void*)&ABCVm::callProperty,ARGS_CONTEXT_INT_INT},
+	{"callPropVoid",(void*)&ABCVm::callPropVoid,ARGS_CONTEXT_INT_INT},
+	{"constructProp",(void*)&ABCVm::constructProp,ARGS_CONTEXT_INT_INT},
+	{"callSuper",(void*)&ABCVm::callSuper,ARGS_CONTEXT_INT_INT},
+	{"callSuperVoid",(void*)&ABCVm::callSuperVoid,ARGS_CONTEXT_INT_INT},
+	{"not_impl",(void*)&ABCVm::not_impl,ARGS_INT},
+	{"incRef",(void*)&ASObject::s_incRef,ARGS_OBJ},
+	{"decRef",(void*)&ASObject::s_decRef,ARGS_OBJ},
+	{"decRef_safe",(void*)&ASObject::s_decRef_safe,ARGS_OBJ_OBJ}
 };
 
 typed_opcode_handler ABCVm::opcode_table_voidptr[]={
@@ -166,6 +162,10 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"typeOf",(void*)ABCVm::typeOf,ARGS_OBJ},
 	{"coerce_s",(void*)&ABCVm::coerce_s,ARGS_OBJ},
 	{"checkfilter",(void*)&ABCVm::checkfilter,ARGS_OBJ},
+	{"pushString",(void*)&ABCVm::pushString,ARGS_CONTEXT_INT},
+	{"newFunction",(void*)&ABCVm::newFunction,ARGS_CONTEXT_INT},
+	{"newCatch",(void*)&ABCVm::newCatch,ARGS_CONTEXT_INT},
+	{"getScopeObject",(void*)&ABCVm::getScopeObject,ARGS_CONTEXT_INT},
 	{"getSlot",(void*)&ABCVm::getSlot,ARGS_OBJ_INT}
 };
 
@@ -198,7 +198,8 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 	{"isTypelate",(void*)&ABCVm::isTypelate,ARGS_OBJ_OBJ},
 	{"ifTrue",(void*)&ABCVm::ifTrue,ARGS_OBJ},
 	{"ifFalse",(void*)&ABCVm::ifFalse,ARGS_OBJ},
-	{"convert_b",(void*)&ABCVm::convert_b,ARGS_OBJ}
+	{"convert_b",(void*)&ABCVm::convert_b,ARGS_OBJ},
+	{"hasNext2",(void*)ABCVm::hasNext2,ARGS_CONTEXT_INT_INT}
 };
 
 extern TLSDATA SystemState* sys;
@@ -218,12 +219,6 @@ void ABCVm::registerFunctions()
 	const llvm::Type* bool_type=llvm::IntegerType::get(llvm_context,1);
 	const llvm::Type* void_type=llvm::Type::getVoidTy(llvm_context);
 
-	sig.push_back(int_type);
-	FT=llvm::FunctionType::get(void_type, sig, false);
-	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"not_impl",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::not_impl);
-	sig.clear();
-
 	//All the opcodes needs a pointer to the context
 	std::vector<const llvm::Type*> struct_elems;
 	struct_elems.push_back(llvm::PointerType::getUnqual(llvm::PointerType::getUnqual(ptr_type)));
@@ -235,78 +230,8 @@ void ABCVm::registerFunctions()
 	sig.push_back(context_type);
 	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);
+	llvm::Function* F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"newActivation",module);
 	ex->addGlobalMapping(F,(void*)&ABCVm::newActivation);
-	sig.clear();
-
-	// (method_info*)
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	FT=llvm::FunctionType::get(void_type, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decRef",module);
-	ex->addGlobalMapping(F,(void*)&ASObject::s_decRef);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"incRef",module);
-	ex->addGlobalMapping(F,(void*)&ASObject::s_incRef);
-
-	sig.push_back(llvm::PointerType::getUnqual(ptr_type));
-	FT=llvm::FunctionType::get(void_type, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"decRef_safe",module);
-	ex->addGlobalMapping(F,(void*)&ASObject::s_decRef_safe);
-	sig.clear();
-
-	// (call_context*)
-	sig.push_back(context_type);
-	FT=llvm::FunctionType::get(void_type, sig, false);
-
-	int elems=sizeof(opcode_table_args0)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args0[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args0[i].addr);
-	}
-
-	// (call_context*,int)
-	sig.push_back(int_type);
-	FT=llvm::FunctionType::get(void_type, sig, false);
-	elems=sizeof(opcode_table_args1)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args1[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args1[i].addr);
-	}
-	//Lazy pushing
-	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	elems=sizeof(opcode_table_args1_lazy)/sizeof(opcode_handler);
-	for(int i=0;i<elems;i++)
-	{
-		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args1_lazy[i].name,module);
-		ex->addGlobalMapping(F,opcode_table_args1_lazy[i].addr);
-	}
-	//End of lazy pushing
-
-	// (call_context*,int,int)
-	sig.push_back(int_type);
-	FT=llvm::FunctionType::get(void_type, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callPropVoid",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::callPropVoid);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callSuper",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::callSuper);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callSuperVoid",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::callSuperVoid);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"callProperty",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::callProperty);
-
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"constructProp",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::constructProp);
-
-
-	//Lazy pushing
-	FT=llvm::FunctionType::get(bool_type, sig, false);
-	F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,"hasNext2",module);
-	ex->addGlobalMapping(F,(void*)&ABCVm::hasNext2);
-	//End of lazy pushing
 	
 	//Lazy pushing, no context, (ASObject*, uintptr_t, int)
 	sig.clear();
@@ -314,7 +239,7 @@ void ABCVm::registerFunctions()
 	sig.push_back(int_type);
 	sig.push_back(int_type);
 	FT=llvm::FunctionType::get(llvm::PointerType::getUnqual(ptr_type), sig, false);
-	elems=sizeof(opcode_table_args_pointer_2int)/sizeof(opcode_handler);
+	int elems=sizeof(opcode_table_args_pointer_2int)/sizeof(opcode_handler);
 	for(int i=0;i<elems;i++)
 	{
 		F=llvm::Function::Create(FT,llvm::Function::ExternalLinkage,opcode_table_args_pointer_2int[i].name,module);
@@ -416,9 +341,17 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 	struct_elems.push_back(llvm::IntegerType::get(llvm_context,32));
 	llvm::Type* context_type=llvm::PointerType::getUnqual(llvm::StructType::get(llvm_context,struct_elems,true));
 
+	vector<const llvm::Type*> sig_context;
+	sig_context.push_back(context_type);
+
 	vector<const llvm::Type*> sig_context_int;
 	sig_context_int.push_back(context_type);
 	sig_context_int.push_back(int_type);
+
+	vector<const llvm::Type*> sig_context_int_int;
+	sig_context_int_int.push_back(context_type);
+	sig_context_int_int.push_back(int_type);
+	sig_context_int_int.push_back(int_type);
 
 	llvm::FunctionType* FT=NULL;
 	for(int i=0;i<table_len;i++)
@@ -461,8 +394,14 @@ void ABCVm::register_table(const llvm::Type* ret_type,typed_opcode_handler* tabl
 			case ARGS_INT_INT:
 				FT=llvm::FunctionType::get(ret_type, sig_int_int, false);
 				break;
+			case ARGS_CONTEXT:
+				FT=llvm::FunctionType::get(ret_type, sig_context, false);
+				break;
 			case ARGS_CONTEXT_INT:
 				FT=llvm::FunctionType::get(ret_type, sig_context_int, false);
+				break;
+			case ARGS_CONTEXT_INT_INT:
+				FT=llvm::FunctionType::get(ret_type, sig_context_int_int, false);
 				break;
 		}
 

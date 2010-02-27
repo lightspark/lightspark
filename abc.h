@@ -375,7 +375,7 @@ struct opcode_handler
 };
 
 enum ARGS_TYPE { ARGS_OBJ_OBJ=0, ARGS_OBJ_INT, ARGS_OBJ, ARGS_INT, ARGS_OBJ_OBJ_INT, ARGS_NUMBER, ARGS_OBJ_NUMBER, 
-	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT_INT};
+	ARGS_BOOL, ARGS_INT_OBJ, ARGS_NONE, ARGS_NUMBER_OBJ, ARGS_INT_INT, ARGS_CONTEXT, ARGS_CONTEXT_INT, ARGS_CONTEXT_INT_INT};
 
 struct typed_opcode_handler
 {
@@ -458,7 +458,7 @@ private:
 	static void newObject(call_context* th, int n); 
 	static void getDescendants(call_context* th, int n); 
 	static ASObject* newCatch(call_context* th, int n); 
-	static void jump(call_context* th, int offset); 
+	static void jump(int offset); 
 	static bool ifEq(ASObject*, ASObject*); 
 	static bool ifStrictEq(ASObject*, ASObject*); 
 	static bool ifNE(ASObject*, ASObject*); 
@@ -478,7 +478,7 @@ private:
 	static bool ifTrue(ASObject*); 
 	static ASObject* getSlot(ASObject* th, int n); 
 	static void setSlot(ASObject*, ASObject*, int n); 
-	static void kill(call_context* th, int n); 
+	static void kill(int n); 
 	static ASObject* pushString(call_context* th, int n); 
 	static void getLex(call_context* th, int n); 
 	static ASObject* getScopeObject(call_context* th, int n); 
@@ -579,9 +579,6 @@ private:
 
 	//Opcode tables
 	void register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len);
-	static opcode_handler opcode_table_args0[];
-	static opcode_handler opcode_table_args1[];
-	static opcode_handler opcode_table_args1_lazy[];
 	static opcode_handler opcode_table_args_pointer_2int[];
 	static opcode_handler opcode_table_args_pointer_number_int[];
 	static opcode_handler opcode_table_args3_pointers[];

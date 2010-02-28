@@ -238,6 +238,7 @@ ASFUNCTIONBODY(NetStream,_constructor)
 ASFUNCTIONBODY(NetStream,play)
 {
 	__asm__("int $3");
+	return NULL;
 }
 
 bool CurlDownloader::download(const tiny_string& s)

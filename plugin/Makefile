@@ -1,15 +1,21 @@
-LIBOBJS = ../swf.o ../swftypes.o ../tags.o ../geometry.o ../actions.o ../frame.o ../input.o ../streams.o \
-		../tags_stub.o ../logger.o ../vm.o ../asobjects.o ../abc.o ../flashdisplay.o ../flashevents.o \
-		../textfile.o ../thread_pool.o
+LIBOBJS = objs/swf.o objs/swftypes.o objs/tags.o objs/geometry.o objs/actions.o objs/frame.o objs/input.o objs/streams.o \
+	  objs/tags_stub.o objs/logger.o objs/vm.o objs/asobjects.o objs/abc.o objs/abc_codesynt.o objs/abc_opcodes.o objs/flashdisplay.o \
+	  objs/flashevents.o objs/textfile.o objs/thread_pool.o objs/flashgeom.o objs/flashnet.o objs/flashsystem.o objs/flashutils.o \
+	  objs/compat.o objs/abc_interpreter.o objs/flashexternal.o objs/flashtext.o objs/flashmedia.o
+
+default: objs lightspark.so
 
 lightspark.so: np_entry.o npn_gate.o npp_gate.o plugin.o $(LIBOBJS)
 	g++ -shared -g -o $@ $^ `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz \
 		`llvm-config --cxxflags --ldflags --libs core jit native`
 
-%.o: %.cpp
-	g++ -fPIC -g -c -o $@ $^ -I include -I /usr/include/nspr -I ../ -D MOZ_X11 -D_GLIBCXX_NO_DEBUG `pkg-config --cflags libxml-2.0` `llvm-config --cxxflags core`
+objs:
+	make -C objs
 
 install: lightspark.so
 	mkdir -p ~/.mozilla/plugins
 	cp $^ ~/.mozilla/plugins
 
+clean:
+	-rm -f objs/*.o
+	-rm -f *.o lightspark.so

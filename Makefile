@@ -29,7 +29,8 @@ tightspark: tightspark.o $(LIBOBJS)
 	$(CXX) -pthread -lz `llvm-config --ldflags` -lGLEW $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -pipe \
 		-o $@ $^ $(LLVMLIBS) $(EXTRALIBS)
 
-
+plugin:
+	make -C plugin
 
 %.o: %.cpp
 	$(CXX) -pipe -pthread -I`llvm-config --includedir` $(EXTRAFLAGS) $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^ 
@@ -37,6 +38,7 @@ tightspark: tightspark.o $(LIBOBJS)
 .PHONY: all clean install
 clean:
 	-rm -f main.o tightspark.o $(LIBOBJS) lightspark tightspark
+	make -C plugin clean
 install: all
 	install -d $(DESTDIR)$(bindir) $(DESTDIR)$(datadir)/lightspark
 	install lightspark $(DESTDIR)$(bindir)/lightspark

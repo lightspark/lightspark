@@ -31,6 +31,7 @@ REGISTER_CLASS_NAME(URLRequest);
 REGISTER_CLASS_NAME(SharedObject);
 REGISTER_CLASS_NAME(ObjectEncoding);
 REGISTER_CLASS_NAME(NetConnection);
+REGISTER_CLASS_NAME(NetStream);
 
 URLRequest::URLRequest()
 {
@@ -196,15 +197,47 @@ void NetConnection::execute()
 
 ASFUNCTIONBODY(NetConnection,connect)
 {
+	NetConnection* th=Class<NetConnection>::cast(obj->implementation);
 	assert(argslen==1);
-	if(args[0]->getObjectType()!=T_STRING)
+	if(args[0]->getObjectType()!=T_UNDEFINED)
 		abort();
-	cout << args[0]->getObjectType() << endl;
-	abort();
-	
-	ASString* arg0=Class<ASString>::cast(args[0]->implementation);
-	cout << arg0->data << endl;
-	abort();
+
+	//When the URI is undefined the connect is successful (tested on Adobe player)
+	Event* status=Class<NetStatusEvent>::getInstanceS(true);
+	ASObject* info=new ASObject;
+	info->setVariableByQName("level","",Class<ASString>::getInstanceS(true,"status")->obj);
+	info->setVariableByQName("code","",Class<ASString>::getInstanceS(true,"NetConnection.Connect.Success")->obj);
+	status->obj->setVariableByQName("info","",info);
+	getVm()->addEvent(th, status);
+	return NULL;
+}
+
+NetStream::NetStream()
+{
+}
+
+void NetStream::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->super=Class<EventDispatcher>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void NetStream::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("play","",new Function(play));
+}
+
+ASFUNCTIONBODY(NetStream,_constructor)
+{
+	cout << "NetStream constructor"  << endl;
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,play)
+{
+	__asm__("int $3");
 }
 
 bool CurlDownloader::download(const tiny_string& s)

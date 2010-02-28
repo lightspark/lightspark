@@ -40,6 +40,7 @@
 #include "flashutils.h"
 #include "flashgeom.h"
 #include "flashexternal.h"
+#include "flashmedia.h"
 #include "compat.h"
 #include "class.h"
 
@@ -219,6 +220,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("LocalConnection","flash.net",new ASObject);
 	Global.setVariableByQName("NetConnection","flash.net",Class<NetConnection>::getClass());
+	Global.setVariableByQName("NetStream","flash.net",Class<NetStream>::getClass());
 	Global.setVariableByQName("URLLoader","flash.net",Class<URLLoader>::getClass());
 	Global.setVariableByQName("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getClass());
 	Global.setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass());
@@ -230,6 +232,8 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Security","flash.system",Class<Security>::getClass());
 	Global.setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());
 	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
+
+	Global.setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getClass());
 
 	Global.setVariableByQName("ContextMenu","flash.ui",Class<IInterface>::getClass("ContextMenu"));
 	Global.setVariableByQName("ContextMenuItem","flash.ui",Class<IInterface>::getClass("ContextMenuItem"));

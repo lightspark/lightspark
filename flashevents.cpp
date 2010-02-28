@@ -360,7 +360,7 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 		return true;
 }
 
-NetStatusEvent::NetStatusEvent():Event("netStatusEvent")
+NetStatusEvent::NetStatusEvent():Event("netStatus")
 {
 }
 

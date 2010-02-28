@@ -1816,8 +1816,17 @@ bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2)
 bool ABCVm::ifStrictEq(ASObject* obj2, ASObject* obj1)
 {
 	LOG(LOG_CALLS,"ifStrictEq");
-	if(obj1->getObjectType()!=obj2->getObjectType())
-		return false;
+	//If we are dealing with objects, check the prototype
+	if(obj1->getObjectType()==T_OBJECT && obj2->getObjectType()==T_OBJECT)
+	{
+		if(obj1->prototype!=obj2->prototype)
+			return false;
+	}
+	else
+	{
+		if(obj1->getObjectType()!=obj2->getObjectType())
+			return false;
+	}
 	return ifEq(obj2,obj1);
 }
 

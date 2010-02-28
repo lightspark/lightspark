@@ -108,6 +108,16 @@ public:
 	void execute();
 };
 
+class NetStream: public EventDispatcher
+{
+public:
+	NetStream();
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(play);
+};
+
 };
 
 #endif

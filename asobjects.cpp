@@ -73,6 +73,7 @@ void Array::buildTraits(ASObject* o)
 	o->ASObject::setVariableByQName("push",AS3,new Function(_push));
 	o->ASObject::setVariableByQName("sort",AS3,new Function(_sort));
 	o->ASObject::setVariableByQName("concat",AS3,new Function(_concat));
+	o->ASObject::setVariableByQName("indexOf",AS3,new Function(indexOf));
 }
 
 ASFUNCTIONBODY(Array,_constructor)
@@ -132,6 +133,14 @@ ASFUNCTIONBODY(Array,join)
 	return Class<ASString>::getInstanceS(true,ret)->obj;
 }
 
+ASFUNCTIONBODY(Array,indexOf)
+{
+	Array* th=static_cast<Array*>(obj->implementation);
+	assert(argslen==1);
+	assert(th->data.size()==0);
+	return abstract_i(-1);
+}
+
 ASFUNCTIONBODY(Array,_concat)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
@@ -176,6 +185,9 @@ ASFUNCTIONBODY(Array,_pop)
 
 ASFUNCTIONBODY(Array,_sort)
 {
+	Array* th=static_cast<Array*>(obj->implementation);
+	if(th->data.size()>1)
+		abort();
 	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");
 	return obj;
 }
@@ -596,7 +608,7 @@ ASFUNCTIONBODY(ASString,split)
 			int match=th->data.find(del->data,start);
 			if(match==-1)
 				match=th->data.size();
-			ASString* s=Class<ASString>::getInstanceS(true,(th->data.substr(start,match)));
+			ASString* s=Class<ASString>::getInstanceS(true,th->data.substr(start,(match-start)));
 			ret->push(s->obj);
 			start=match+del->data.size();
 		}
@@ -1258,9 +1270,9 @@ ASFUNCTIONBODY(RegExp,exec)
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert(th->lastIndex==0);
 	const tiny_string& arg0=args[0]->toString();
-	cout << th->re << endl;
+	cout << "re: " << th->re << endl;
 	int numberOfCaptures=pcreRE.NumberOfCapturingGroups();
-	cout << numberOfCaptures << endl;
+	cout << "capturing gropus " << numberOfCaptures << endl;
 	assert(numberOfCaptures!=-1);
 	//The array of captured groups
 	pcrecpp::Arg** captures=new pcrecpp::Arg*[numberOfCaptures];
@@ -1416,11 +1428,12 @@ ASFUNCTIONBODY(ASString,replace)
 
 ASFUNCTIONBODY(ASString,concat)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"ASString::concat not really implemented");
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	th->data+=args[0]->toString().raw_buf();
-	th->obj->incRef();
-	return th->obj;
+	ASString* ret=Class<ASString>::getInstanceS(true,th->data);
+	for(unsigned int i=0;i<argslen;i++)
+		ret->data+=args[i]->toString().raw_buf();
+
+	return ret->obj;
 }
 
 Class_base::~Class_base()

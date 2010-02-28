@@ -499,9 +499,7 @@ inline void method_info::syncStacks(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 {
 	for(unsigned int i=0;i<static_stack.size();i++)
 	{
-		if(static_stack[i].second==STACK_OBJECT)
-		{
-		}
+		if(static_stack[i].second==STACK_OBJECT);
 		else if(static_stack[i].second==STACK_INT)
 			static_stack[i].first=builder.CreateCall(ex->FindFunctionNamed("abstract_i"),static_stack[i].first);
 		else if(static_stack[i].second==STACK_NUMBER)

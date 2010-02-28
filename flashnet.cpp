@@ -186,10 +186,24 @@ void NetConnection::sinit(Class_base* c)
 
 void NetConnection::buildTraits(ASObject* o)
 {
+	o->setVariableByQName("connect","",new Function(connect));
 }
 
 void NetConnection::execute()
 {
+	abort();
+}
+
+ASFUNCTIONBODY(NetConnection,connect)
+{
+	assert(argslen==1);
+	if(args[0]->getObjectType()!=T_STRING)
+		abort();
+	cout << args[0]->getObjectType() << endl;
+	abort();
+	
+	ASString* arg0=Class<ASString>::cast(args[0]->implementation);
+	cout << arg0->data << endl;
 	abort();
 }
 

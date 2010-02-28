@@ -332,9 +332,9 @@ bool ASObject::isEqual(ASObject* r)
 		return ret1->isEqual(ret2);
 	}
 
-	LOG(LOG_NOT_IMPLEMENTED,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	LOG(LOG_CALLS,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	if(prototype)
-		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
+		LOG(LOG_CALLS,"Type " << prototype->class_name);
 	return false;
 }
 

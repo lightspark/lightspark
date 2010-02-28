@@ -433,6 +433,7 @@ public:
 	ASFUNCTION(shift);
 	ASFUNCTION(_sort);
 	ASFUNCTION(unshift);
+	ASFUNCTION(indexOf);
 	ASFUNCTION(_getLength);
 	ASObject* at(unsigned int index) const
 	{

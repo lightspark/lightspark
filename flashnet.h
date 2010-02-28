@@ -104,6 +104,7 @@ public:
 	NetConnection();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
+	ASFUNCTION(connect);
 	void execute();
 };
 

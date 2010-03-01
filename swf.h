@@ -229,6 +229,7 @@ private:
 	static void* sdl_worker(RenderThread*);
 	static void* npapi_worker(RenderThread*);
 	static void* glx_worker(RenderThread*);
+	void commonGLInit(int width, int height, unsigned int t2[3]);
 	sem_t mutex;
 	sem_t render;
 	sem_t end_render;

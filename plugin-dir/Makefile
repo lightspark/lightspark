@@ -3,13 +3,16 @@ LIBOBJS = objs/swf.o objs/swftypes.o objs/tags.o objs/geometry.o objs/actions.o 
 	  objs/flashevents.o objs/textfile.o objs/thread_pool.o objs/flashgeom.o objs/flashnet.o objs/flashsystem.o objs/flashutils.o \
 	  objs/compat.o objs/abc_interpreter.o objs/flashexternal.o objs/flashtext.o objs/flashmedia.o
 
-default: objs lightspark.so
+default: objs-dir lightspark.so
 
 lightspark.so: np_entry.o npn_gate.o npp_gate.o plugin.o $(LIBOBJS)
 	g++ -shared -g -o $@ $^ `pkg-config --cflags --libs gl sdl libcurl libxml-2.0` -lz \
-		`llvm-config --cxxflags --ldflags --libs core jit native`
+		`llvm-config --cxxflags --ldflags --libs core jit native` -lGLEW -lpcrecpp
 
-objs:
+%.o: %.cpp
+	g++ -g -fPIC -c -o $@ $^ -I include -I ../ `nspr-config --cflags` -D MOZ_X11
+
+objs-dir:
 	make -C objs
 
 install: lightspark.so

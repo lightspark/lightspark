@@ -25,150 +25,80 @@
 
 using namespace std;
 
-sync_stream::sync_stream():head(0),tail(0),wait(-1),compressed(0),offset(0),buf_size(1024*1024)
+sync_stream::sync_stream():head(0),tail(0),buf_size(1024*1024)
 {
 	printf("syn stream\n");
-	buffer= new char[buf_size];
+	buffer=new char[buf_size];
 	sem_init(&mutex,0,1);
-	sem_init(&empty,0,0);
-	sem_init(&full,0,0);
+	sem_init(&notfull,0,0);
 	sem_init(&ready,0,0);
+	//initialize();
 }
 
-void sync_stream::setCompressed()
+int sync_stream::provideBuffer(int limit)
 {
 	sem_wait(&mutex);
-	compressed=1;
-	/* allocate inflate state */
-	strm.zalloc = Z_NULL;
-	strm.zfree = Z_NULL;
-	strm.opaque = Z_NULL;
-	strm.avail_in = 0;
-	strm.next_in = Z_NULL;
-	int ret = inflateInit(&strm);
-	if (ret != Z_OK)
-		LOG(LOG_ERROR,"Failed to initialize ZLib");
-	sem_post(&mutex);
-}
-
-streamsize sync_stream::xsgetn ( char * s, streamsize n )
-{
-	sem_wait(&mutex);
-	if(compressed)
+	if(tail==head)
 	{
-		/* decompress until deflate stream ends or end of file */
-		if(head<tail)
-		{
-			strm.avail_in=tail-head;
-			strm.next_in=(unsigned char*)buffer+head;
-		}
-		else
-			LOG(LOG_ERROR,"Sync stream WIP 1");
+		sem_post(&mutex);
+		sem_wait(&ready);
+	}
 
-		/* run inflate() on input until output buffer not full */
-		strm.avail_out = n;
-		strm.next_out = (unsigned char*)s;
-		inflate(&strm, Z_NO_FLUSH);
+	bool signal=false;
+	if(((tail-head+buf_size)%buf_size)==buf_size-1)
+		signal=true;
 
-		head+=(tail-head)-strm.avail_in;
-		head%=buf_size;
-
-		//check if output full and wrap around
-		while(strm.avail_out!=0)
-		{
-			LOG(LOG_NO_INFO,"Try code");
-			wait=(head+1)%buf_size;
-			sem_post(&mutex);
-			sem_wait(&ready);
-			wait=-1;
-			if(head<tail)
-			{
-				strm.avail_in=tail-head;
-				strm.next_in=(unsigned char*)buffer+head;
-				inflate(&strm, Z_NO_FLUSH);
-			}
-			else
-				LOG(LOG_ERROR,"Sync stream WIP 3");
-			head+=(tail-head)-strm.avail_in;
-			head%=buf_size;
-		}
+	int available=(tail-head+buf_size)%buf_size;
+	available=min(available,limit);
+	if(head+available>buf_size)
+	{
+		int i=buf_size-head;
+		memcpy(in_buf,buffer+head,i);
+		memcpy(in_buf+i,buffer,available-i);
 	}
 	else
-	{
-		if((tail-head+buf_size)%buf_size<n)
-		{
-			wait=(head+n)%buf_size;
-			sem_post(&mutex);
-			sem_wait(&ready);
-			wait=-1;
-		}
-		if(head+n>buf_size)
-		{
-			int i=buf_size-head;
-			memcpy(s,buffer+head,i);
-			memcpy(s+i,buffer,n-i);
-		}
-		else
-			memcpy(s,buffer+head,n);
-		head+=n;
-		head%=buf_size;
-	}
-	offset+=n;
-	sem_post(&mutex);
-	return n;
+		memcpy(in_buf,buffer+head,available);
+
+	head+=available;
+	head%=buf_size;
+	if(signal)
+		sem_post(&notfull);
+	else
+		sem_post(&mutex);
+	return available;
 }
 
-
-streamsize sync_stream::xsputn ( const char * s, streamsize n )
+int sync_stream::write(char* buf, int len)
 {
 	sem_wait(&mutex);
-	if((head-tail+buf_size-1)%buf_size<n)
+	if(((tail-head+buf_size)%buf_size)==buf_size-1)
 	{
-		n=(head-tail+buf_size-1)%buf_size;
+		sem_post(&mutex);
+		sem_wait(&notfull);
 	}
-	if(tail+n>buf_size)
+	bool signal=false;
+	if(tail==head)
+		signal=true;
+
+	if((head-tail+buf_size-1)%buf_size<len)
+	{
+		len=(head-tail+buf_size-1)%buf_size;
+	}
+	if(tail+len>buf_size)
 	{
 		int i=buf_size-tail;
-		memcpy(buffer+tail,s,i);
-		memcpy(buffer,s+i,n-i);
+		memcpy(buffer+tail,buf,i);
+		memcpy(buffer,buf+i,len-i);
 	}
 	else
-		memcpy(buffer+tail,s,n);
-	tail+=n;
+		memcpy(buffer+tail,buf,len);
+	tail+=len;
 	tail%=buf_size;
-	if(wait>0 && tail>=wait)
+	if(signal)
 		sem_post(&ready);
 	else
 		sem_post(&mutex);
-	return n;
-}
-
-std::streampos sync_stream::seekpos ( std::streampos sp, std::ios_base::openmode which )
-{
-	printf("puppa1\n");
-	abort();
-	return 0;
-}
-
-std::streampos sync_stream::seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which )
-{
-	int ret;
-	sem_wait(&mutex);
-	ret=offset;
-	if(off!=0)
-	{
-		printf("puppa2\n");
-		abort();
-	}
-	sem_post(&mutex);
-	return ret;
-}
-
-std::streamsize sync_stream::showmanyc( )
-{
-	printf("puppa3\n");
-	abort();
-	return 0;
+	return len;
 }
 
 zlib_filter::zlib_filter():consumed(0),available(0)
@@ -180,7 +110,7 @@ void zlib_filter::initialize()
 	//Should check that this is called only once
 	available=provideBuffer(8);
 	assert(available==8);
-	//We read only the first 8 bytes, as those are alwayt uncompressed
+	//We read only the first 8 bytes, as those are always uncompressed
 
 	//Now check the signature
 	if(in_buf[1]!='W' || in_buf[2]!='S')
@@ -216,8 +146,16 @@ zlib_filter::int_type zlib_filter::underflow()
 {
 	assert(gptr()==egptr());
 
+	__asm__("int $3");
 	//First of all we add the lenght of the buffer to the consumed variable
 	consumed+=(gptr()-eback());
+
+	//The first time
+	if(consumed==0)
+	{
+		initialize();
+		return (unsigned char)buffer[0];
+	}
 
 	if(!compressed)
 	{

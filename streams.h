@@ -25,40 +25,6 @@
 
 using namespace std;
 
-class swf_stream
-{
-public:
-	virtual void setCompressed()=0;
-	virtual ~swf_stream(){}
-};
-
-class sync_stream: public std::streambuf, public swf_stream
-{
-public:
-	sync_stream();
-	std::streamsize xsgetn ( char * s, std::streamsize n );
-	std::streamsize xsputn ( const char * s, std::streamsize n );
-	std::streampos seekpos ( std::streampos sp, std::ios_base::openmode which/* = std::ios_base::in | std::ios_base::out*/ );
-	std::streampos seekoff ( std::streamoff off, std::ios_base::seekdir way, std::ios_base::openmode which);/* = 
-			std::ios_base::in | std::ios_base::out );*/
-	std::streamsize showmanyc( );
-private:
-	void setCompressed();
-	char* buffer;
-	int head;
-	int tail;
-	sem_t mutex;
-	sem_t empty;
-	sem_t full;
-	sem_t ready;
-	int wait;
-	int compressed;
-	z_stream strm;
-	int offset;
-
-	const int buf_size;
-};
-
 class zlib_filter: public std::streambuf
 {
 private:
@@ -75,6 +41,22 @@ protected:
 	virtual pos_type seekoff(off_type, ios_base::seekdir,ios_base::openmode);
 public:
 	zlib_filter();
+};
+
+class sync_stream: public zlib_filter
+{
+public:
+	sync_stream();
+	int write(char* buf, int len);
+private:
+	int provideBuffer(int limit);
+	char* buffer;
+	int head;
+	int tail;
+	sem_t mutex;
+	sem_t notfull;
+	sem_t ready;
+	const int buf_size;
 };
 
 class zlib_file_filter:public zlib_filter

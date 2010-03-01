@@ -27,13 +27,16 @@
 
 using namespace std;
 
-__thread SystemState* sys;
+__thread lightspark::SystemState* sys;
+TLSDATA lightspark::RenderThread* rt=NULL;
+TLSDATA lightspark::ParseThread* pt=NULL;
 
-MovieTimer::MovieTimer(SystemState* s,RenderThread* r):rt(r)
+MovieTimer::MovieTimer(lightspark::SystemState* s,lightspark::RenderThread* r):rt(r)
 {
 	m_sys=s;
+	sem_init(&started,0,0);
 	sem_init(&mutex,0,1);
-	pthread_create(&t,0,(thread_worker)timer_worker,this);
+	pthread_create(&t,0,(lightspark::thread_worker)timer_worker,this);
 }
 
 MovieTimer::~MovieTimer()
@@ -43,29 +46,28 @@ MovieTimer::~MovieTimer()
 	pthread_join(t,&ret);
 }
 
-void MovieTimer::setRenderThread(RenderThread* r)
+void MovieTimer::setRenderThread(lightspark::RenderThread* r)
 {
 	sem_wait(&mutex);
-
 	rt=r;
-
 	sem_post(&mutex);
+}
+
+void MovieTimer::start()
+{
+	sem_post(&started);
 }
 
 void* MovieTimer::timer_worker(MovieTimer* th)
 {
 	sys=th->m_sys;
+	sem_wait(&th->started);
 	while(1)
 	{
-		sys->waitToRun();
 		sem_wait(&th->mutex);
-		if(th->rt!=NULL)
-			th->rt->draw(&sys->getFrameAtFP());
-		else
-			throw "rt null";
+		if(th->rt)
+			th->rt->draw();
 		sem_post(&th->mutex);
-		//sleep(3);
-		sys->advanceFP();
 	}
 }
 
@@ -79,7 +81,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(TRACE);
+	Log::initLogging(LOG_TRACE);
 	return NPERR_NO_ERROR;
 }
 
@@ -131,7 +133,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),swf_stream(&swf_buf),
-	pt(&m_sys,swf_stream),rt(NULL),mt(&m_sys,NULL),it(NULL)
+	pt(&m_sys,&m_sys,swf_stream),rt(NULL),mt(&m_sys,NULL),it(NULL)
 {
 }
 
@@ -162,9 +164,9 @@ void xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent,
 
 void nsPluginInstance::draw()
 {
-	if(rt==NULL)
+/*	if(rt==NULL || it==NULL)
 		return;
-	rt->draw(NULL);
+	rt->draw();*/
 }
 
 NPBool nsPluginInstance::init(NPWindow* aWindow)
@@ -230,20 +232,20 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
 		printf("Window visual 0x%x\n",XVisualIDFromVisual(mVisual));
 
-		NPAPI_params* p=new NPAPI_params;
+		lightspark::NPAPI_params* p=new lightspark::NPAPI_params;
 
 		p->display=mDisplay;
 		p->visual=XVisualIDFromVisual(mVisual);
 		p->window=mWindow;
 		p->width=mWidth;
 		p->height=mHeight;
-		NPAPI_params* p2=new NPAPI_params(*p);
+		lightspark::NPAPI_params* p2=new lightspark::NPAPI_params(*p);
 		if(rt!=NULL)
 		{
 			cout << "destroy old context" << endl;
 			abort();
 		}
-		rt=new RenderThread(&m_sys,NPAPI,p);
+		rt=new lightspark::RenderThread(&m_sys,lightspark::NPAPI,p);
 		mt.setRenderThread(rt);
 
 		if(it!=NULL)
@@ -251,14 +253,13 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		it=new InputThread(&m_sys,NPAPI,p2);
+		it=new lightspark::InputThread(&m_sys,lightspark::NPAPI,p2);
 
 		sys=&m_sys;
 		m_sys.cur_input_thread=it;
 		m_sys.cur_render_thread=rt;
-		m_sys.cur_thread_pool=new ThreadPool;
-		m_sys.fps_prof=new fps_profiling();
-		
+		m_sys.cur_thread_pool=new lightspark::ThreadPool(&m_sys);
+		m_sys.fps_prof=new lightspark::fps_profiling();
 
 		// add xt event handler
 		Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);
@@ -269,6 +270,9 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			XSelectInput(mDisplay, mWindow, event_mask);
 			XtAddEventHandler(xtwidget, event_mask, False, (XtEventHandler)xt_event_handler, this);
 		}
+
+		//Start the render loop
+		mt.start();
 	}
 	//draw();
 	return TRUE;
@@ -282,5 +286,6 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 
 int32 nsPluginInstance::Write(NPStream *stream, int32 offset, int32 len, void *buffer)
 {
-	return swf_buf.sputn((char*)buffer,len);
+	cout << "Writing " << len << endl;
+	return swf_buf.write((char*)buffer,len);
 }

@@ -24,7 +24,6 @@
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include <X11/cursorfont.h>
-#include <GL/glx.h>
 
 #include <iostream>
 #include <sstream>
@@ -32,19 +31,22 @@
 #include "pluginbase.h"
 #include "swf.h"
 #include "streams.h"
+#include <GL/glx.h>
 
 class MovieTimer
 {
 private:
 	pthread_t t;
 	static void* timer_worker(MovieTimer*);
-	RenderThread* rt;
+	lightspark::RenderThread* rt;
 	sem_t mutex;
-	SystemState* m_sys;
+	sem_t started;
+	lightspark::SystemState* m_sys;
 public:
-	MovieTimer(SystemState* s,RenderThread* r);
+	MovieTimer(lightspark::SystemState* s,lightspark::RenderThread* r);
 	~MovieTimer();
-	void setRenderThread(RenderThread* r);
+	void setRenderThread(lightspark::RenderThread* r);
+	void start();
 };
 
 class nsPluginInstance : public nsPluginInstanceBase
@@ -81,10 +83,10 @@ private:
 	std::istream swf_stream;
 	sync_stream swf_buf;
 
-	SystemState m_sys;
-	ParseThread pt;
-	InputThread* it;
-	RenderThread* rt;
+	lightspark::SystemState m_sys;
+	lightspark::ParseThread pt;
+	lightspark::InputThread* it;
+	lightspark::RenderThread* rt;
 	MovieTimer mt;
 };
 

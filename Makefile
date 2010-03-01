@@ -30,7 +30,7 @@ tightspark: tightspark.o $(LIBOBJS)
 		-o $@ $^ $(LLVMLIBS) $(EXTRALIBS)
 
 plugin:
-	make -C plugin
+	make -C plugin-dir
 
 %.o: %.cpp
 	$(CXX) -pipe -pthread -I`llvm-config --includedir` $(EXTRAFLAGS) $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^ 

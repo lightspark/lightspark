@@ -96,7 +96,8 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL),shutdown(false),currentVm(NULL),cur_thread_pool(NULL),useInterpreter(false)
+SystemState::SystemState():RootMovieClip(NULL),shutdown(false),currentVm(NULL),cur_thread_pool(NULL),cur_input_thread(NULL),
+	cur_render_thread(NULL),useInterpreter(true),useJit(false)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -453,23 +454,18 @@ void* RenderThread::npapi_worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
+	RECT size=sys->getFrameSize();
+	int width=size.Xmax/20;
+	int height=size.Ymax/20;
+	rt->width=width;
+	rt->height=height;
+	th->interactive_buffer=new float[width*height];
+	unsigned int t2[3];
+	sys=th->m_sys;
+	rt=th;
 
 	NPAPI_params* p=th->npapi_params;
-
 	Display* d=XOpenDisplay(NULL);
-
-/*	XFontStruct *mFontInfo;
-	if (!mFontInfo)
-	{
-		if (!(mFontInfo = XLoadQueryFont(d, "9x15")))
-			printf("Cannot open 9X15 font\n");
-	}*/
-
-	XGCValues v;
-	v.foreground=BlackPixel(d, 0);
-	v.background=WhitePixel(d, 0);
-	v.font=XLoadFont(d,"9x15");
-	th->mGC=XCreateGC(d,p->window,GCForeground|GCBackground|GCFont,&v);
 
     	int a,b;
     	Bool glx_present=glXQueryVersion(d,&a,&b);
@@ -478,17 +474,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		printf("glX not present\n");
 		return NULL;
 	}
-	int attrib[10];
-	attrib[0]=GLX_BUFFER_SIZE;
-	attrib[1]=24;
-	attrib[2]=GLX_VISUAL_ID;
-	attrib[3]=p->visual;
-	attrib[4]=GLX_DEPTH_SIZE;
-	attrib[5]=24;
-
-	attrib[6]=None;
+	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_VISUAL_ID,p->visual,GLX_DEPTH_SIZE,24,None};
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
-//	printf("returned %x pointer and %u elements\n",fb, a);
+	printf("returned %p pointer and %u elements\n",fb, a);
+	abort();
 	if(!fb)
 	{
 		attrib[0]=0;
@@ -511,6 +500,14 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	}
 	th->mFBConfig=fb[i];
 	XFree(fb);
+
+	th->commonGLInit(width, height, t2);
+
+/*	XGCValues v;
+	v.foreground=BlackPixel(d, 0);
+	v.background=WhitePixel(d, 0);
+	v.font=XLoadFont(d,"9x15");
+	th->mGC=XCreateGC(d,p->window,GCForeground|GCBackground|GCFont,&v);
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
 	glXMakeContextCurrent(d, p->window, p->window, th->mContext);
@@ -587,13 +584,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	/*// create a renderbuffer object to store depth info
-	GLuint rboId[1];
-	glGenRenderbuffersEXT(1, rboId);
-	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, rboId[0]);
-	glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT,width,height);
-
-	glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);*/
 	
 	// create a framebuffer object
 	glGenFramebuffersEXT(1, &rt->fboId);
@@ -608,7 +598,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	{
 		cout << status << endl;
 		abort();
-	}
+	}*/
 
 	try
 	{
@@ -638,7 +628,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			{
 				sem_wait(&th->mutex);
 
-				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
+			/*	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 				glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 				//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
 
@@ -669,7 +659,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 					glVertex2i(width,height);
 					glTexCoord2f(0,0);
 					glVertex2i(0,height);
-				glEnd();
+				glEnd();*/
+
+				glClearColor(1,0,0,1);
+				glClear(GL_COLOR_BUFFER_BIT);
 
 				glXSwapBuffers(d,p->window);
 				sem_post(&th->mutex);
@@ -895,26 +888,8 @@ void RootMovieClip::Render()
 	sem_post(&sem_frames);
 }
 
-void* RenderThread::sdl_worker(RenderThread* th)
+void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 {
-	sys=th->m_sys;
-	rt=th;
-	SDL_Init(SDL_INIT_VIDEO);
-	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
-	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
-	SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1); 
-	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-
-	RECT size=sys->getFrameSize();
-	int width=size.Xmax/20;
-	int height=size.Ymax/20;
-	rt->width=width;
-	rt->height=height;
-	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
 	//Now we can initialize GLEW
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -922,7 +897,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		LOG(LOG_ERROR,"Cannot initialize GLEW");
 		abort();
 	}
-	th->interactive_buffer=new float[width*height];
 
 	//Load fragment shaders
 	rt->gpu_program=load_program();
@@ -959,7 +933,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	
  	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
-	unsigned int t2[3];
  	glGenTextures(3,t2);
 	glBindTexture(GL_TEXTURE_2D,t2[0]);
 	//glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
@@ -1001,6 +974,31 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		cout << status << endl;
 		abort();
 	}
+}
+
+void* RenderThread::sdl_worker(RenderThread* th)
+{
+	sys=th->m_sys;
+	rt=th;
+	RECT size=sys->getFrameSize();
+	int width=size.Xmax/20;
+	int height=size.Ymax/20;
+	rt->width=width;
+	rt->height=height;
+	th->interactive_buffer=new float[width*height];
+	unsigned int t2[3];
+	SDL_Init(SDL_INIT_VIDEO);
+	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
+	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
+	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
+	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
+	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
+	SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1); 
+	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+
+	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
+	th->commonGLInit(width, height, t2);
 
 	try
 	{

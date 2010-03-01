@@ -32,7 +32,6 @@ sync_stream::sync_stream():head(0),tail(0),buf_size(1024*1024)
 	sem_init(&mutex,0,1);
 	sem_init(&notfull,0,0);
 	sem_init(&ready,0,0);
-	//initialize();
 }
 
 int sync_stream::provideBuffer(int limit)
@@ -146,7 +145,6 @@ zlib_filter::int_type zlib_filter::underflow()
 {
 	assert(gptr()==egptr());
 
-	__asm__("int $3");
 	//First of all we add the lenght of the buffer to the consumed variable
 	consumed+=(gptr()-eback());
 
@@ -214,8 +212,6 @@ zlib_file_filter::zlib_file_filter(const char* file_name)
 {
 	f=fopen(file_name,"rb");
 	assert(f!=NULL);
-
-	initialize();
 }
 
 int zlib_file_filter::provideBuffer(int limit)
@@ -225,7 +221,6 @@ int zlib_file_filter::provideBuffer(int limit)
 
 zlib_bytes_filter::zlib_bytes_filter(const uint8_t* b, int l):buf(b),offset(0),len(l)
 {
-	initialize();
 }
 
 int zlib_bytes_filter::provideBuffer(int limit)

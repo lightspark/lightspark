@@ -34,9 +34,9 @@ private:
 	char buffer[4096];
 	int available;
 	virtual int provideBuffer(int limit)=0;
+	void initialize();
 protected:
 	char in_buf[4096];
-	void initialize();
 	virtual int_type underflow();
 	virtual pos_type seekoff(off_type, ios_base::seekdir,ios_base::openmode);
 public:

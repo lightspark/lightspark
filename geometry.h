@@ -77,15 +77,6 @@ public:
 	Triangle(Vector2 a,Vector2 b, Vector2 c):v1(a),v2(b),v3(c){}
 };
 
-#include "packed_begin.h"
-struct arrayElem
-{
-	GLint coord[2];
-	GLfloat colors[3];
-	GLfloat texcoord[4];
-} PACKED;
-#include "packed_end.h"
-
 class Edge
 {
 	friend class GeomShape;
@@ -143,6 +134,15 @@ public:
 	}
 };
 
+#include "packed_begin.h"
+struct arrayElem
+{
+	GLint coord[2];
+	GLfloat colors[3];
+	GLfloat texcoord[4];
+} PACKED;
+#include "packed_end.h"
+
 class GeomShape
 {
 friend class DefineTextTag;
@@ -153,6 +153,7 @@ private:
 	void SetStyles(FILLSTYLE* styles);
 	FILLSTYLE* style;
 	arrayElem* varray;
+	bool closed;
 public:
 	GeomShape():style(NULL),varray(NULL),closed(false){}
 	std::vector<Triangle> interior;
@@ -161,8 +162,6 @@ public:
 	std::vector<GeomShape> sub_shapes;
 	std::vector<Edge> edges;
 
-	bool closed;
-	int id;
 	int color;
 
 	//DEBUG
@@ -174,6 +173,13 @@ public:
 
 	bool operator<(const GeomShape& r) const;
 
+};
+
+class GlyphShape: public GeomShape
+{
+public:
+	GlyphShape(const GeomShape& g, int i):GeomShape(g),id(i){}
+	int id;
 };
 
 };

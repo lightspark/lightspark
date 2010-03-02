@@ -454,10 +454,8 @@ void DefineTextTag::Render()
 				vector<GeomShape> new_shapes;
 				font->genGlyphShape(new_shapes,it2->GlyphIndex);
 				for(unsigned int i=0;i<new_shapes.size();i++)
-				{
-					new_shapes[i].id=count;
-					cached.push_back(new_shapes[i]);
-				}
+					cached.push_back(GlyphShape(new_shapes[i],count));
+
 				count++;
 			}
 		}

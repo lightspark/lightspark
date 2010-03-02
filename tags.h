@@ -494,6 +494,8 @@ private:
 	UI8 GlyphBits;
 	UI8 AdvanceBits;
 	std::vector < TEXTRECORD > TextRecords;
+	//Override the usual vector, we need special shapes
+	std::vector<GlyphShape> cached;
 public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }

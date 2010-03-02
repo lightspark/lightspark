@@ -144,6 +144,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(beginFill);
 	ASFUNCTION(drawRect);
+	ASFUNCTION(drawCircle);
 	ASFUNCTION(moveTo);
 	ASFUNCTION(lineTo);
 	ASFUNCTION(clear);

@@ -1130,6 +1130,7 @@ void Graphics::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("clear","",new Function(clear));
 	o->setVariableByQName("drawRect","",new Function(drawRect));
+	o->setVariableByQName("drawCircle","",new Function(drawCircle));
 	o->setVariableByQName("moveTo","",new Function(moveTo));
 	o->setVariableByQName("lineTo","",new Function(lineTo));
 	o->setVariableByQName("beginFill","",new Function(beginFill));
@@ -1223,6 +1224,29 @@ void Graphics::flushShape()
 		sem_post(&geometry_mutex);
 		tmpShape=GeomShape();
 	}
+}
+
+ASFUNCTIONBODY(Graphics,drawCircle)
+{
+	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	assert(argslen==3);
+
+	double x=args[0]->toNumber();
+	double y=args[1]->toNumber();
+	double radius=args[2]->toNumber();
+
+	th->flushShape();
+
+	//Well, right now let's build a square anyway
+	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));
+	th->tmpShape.outline.push_back(Vector2(x+radius,y-radius));
+	th->tmpShape.outline.push_back(Vector2(x+radius,y+radius));
+	th->tmpShape.outline.push_back(Vector2(x-radius,y+radius));
+	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));
+
+	th->flushShape();
+
+	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,drawRect)

@@ -466,10 +466,7 @@ void DefineTextTag::Render()
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 #endif
 	}
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glDisable(GL_BLEND);
-	glClearColor(1,1,1,0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	rt->glAcquireFramebuffer();
 
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	std::vector < GLYPHENTRY >::iterator it2;
@@ -524,22 +521,7 @@ void DefineTextTag::Render()
 		}
 	}
 
-	glEnable(GL_BLEND);
-	glLoadIdentity();
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor3f(0,0,1);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex2i(0,0);
-		glTexCoord2f(1,1);
-		glVertex2i(rt->width,0);
-		glTexCoord2f(1,0);
-		glVertex2i(rt->width,rt->height);
-		glTexCoord2f(0,0);
-		glVertex2i(0,rt->height);
-	glEnd();
+	rt->glBlitFramebuffer();
 	glPopMatrix();
 }
 
@@ -610,32 +592,13 @@ void DefineMorphShapeTag::Render()
 	for(unsigned int i=0;i<shapes.size();i++)
 		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
 
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glDisable(GL_BLEND);
-	glClearColor(1,1,1,0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	rt->glAcquireFramebuffer();
 
 	std::vector < GeomShape >::iterator it=shapes.begin();
 	for(;it!=shapes.end();it++)
 		it->Render();
 
-	glEnable(GL_BLEND);
-	glPushMatrix();
-	glLoadIdentity();
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor3f(0,0,1);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex2i(0,0);
-		glTexCoord2f(1,1);
-		glVertex2i(rt->width,0);
-		glTexCoord2f(1,0);
-		glVertex2i(rt->width,rt->height);
-		glTexCoord2f(0,0);
-		glVertex2i(0,rt->height);
-	glEnd();
+	rt->glBlitFramebuffer();
 	glPopMatrix();
 }
 
@@ -662,11 +625,9 @@ void DefineShapeTag::Render()
 #endif
 	}
 
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glDisable(GL_BLEND);
-	glClearColor(1,1,1,0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	rt->glAcquireFramebuffer();
 
+	//TODO: Apply local transformation
 //	float matrix[16];
 //	Matrix.get4DMatrix(matrix);
 	//Apply local transformation
@@ -677,22 +638,8 @@ void DefineShapeTag::Render()
 	for(;it!=cached.end();it++)
 		it->Render();
 
-	glEnable(GL_BLEND);
-	glLoadIdentity();
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor3f(0,0,1);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex2i(0,0);
-		glTexCoord2f(1,1);
-		glVertex2i(rt->width,0);
-		glTexCoord2f(1,0);
-		glVertex2i(rt->width,rt->height);
-		glTexCoord2f(0,0);
-		glVertex2i(0,rt->height);
-	glEnd();
+	rt->glBlitFramebuffer();
+
 	glPopMatrix();
 }
 
@@ -719,12 +666,9 @@ void DefineShape2Tag::Render()
 #endif
 	}
 
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glDisable(GL_BLEND);
-	glClearColor(1,1,1,0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	rt->glAcquireFramebuffer();
 
-	//Apply local transformation
+	//TODO: Apply local transformation
 	glPushMatrix();
 	
 	std::vector < GeomShape >::iterator it=cached.begin();
@@ -741,22 +685,7 @@ void DefineShape2Tag::Render()
 		it->Render();
 	}
 
-	glEnable(GL_BLEND);
-	glLoadIdentity();
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor3f(0,0,1);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex2i(0,0);
-		glTexCoord2f(1,1);
-		glVertex2i(rt->width,0);
-		glTexCoord2f(1,0);
-		glVertex2i(rt->width,rt->height);
-		glTexCoord2f(0,0);
-		glVertex2i(0,rt->height);
-	glEnd();
+	rt->glBlitFramebuffer();
 	glPopMatrix();
 }
 
@@ -781,32 +710,14 @@ void DefineShape4Tag::Render()
 		sys->fps_prof->cache_time+=timeDiff(ts,td);
 #endif
 	}
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glDisable(GL_BLEND);
-	glClearColor(1,1,1,0);
-	glClear(GL_COLOR_BUFFER_BIT);
+
+	rt->glAcquireFramebuffer();
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 		it->Render();
 
-	glEnable(GL_BLEND);
-	glPushMatrix();
-	glLoadIdentity();
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor3f(0,0,1);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex2i(0,0);
-		glTexCoord2f(1,1);
-		glVertex2i(rt->width,0);
-		glTexCoord2f(1,0);
-		glVertex2i(rt->width,rt->height);
-		glTexCoord2f(0,0);
-		glVertex2i(0,rt->height);
-	glEnd();
+	rt->glBlitFramebuffer();
 	glPopMatrix();
 }
 
@@ -847,12 +758,7 @@ void DefineShape3Tag::Render()
 #endif
 	}
 
-	//glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, texture, 0);
-
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glDisable(GL_BLEND);
-	glClearColor(1,1,1,0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	rt->glAcquireFramebuffer();
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -868,23 +774,7 @@ void DefineShape3Tag::Render()
 		it->Render();
 	}
 
-	glEnable(GL_BLEND);
-	glPushMatrix();
-	glLoadIdentity();
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
-	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor3f(0,0,1);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex2i(0,0);
-		glTexCoord2f(1,1);
-		glVertex2i(rt->width,0);
-		glTexCoord2f(1,0);
-		glVertex2i(rt->width,rt->height);
-		glTexCoord2f(0,0);
-		glVertex2i(0,rt->height);
-	glEnd();
+	rt->glBlitFramebuffer();
 	glPopMatrix();
 }
 

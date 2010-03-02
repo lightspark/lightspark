@@ -288,10 +288,7 @@ void Sprite::Render()
 {
 	assert(obj && obj->prototype);
 
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glDisable(GL_BLEND);
-	glClearColor(1,1,1,0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	rt->glAcquireFramebuffer();
 
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
@@ -311,23 +308,7 @@ void Sprite::Render()
 		glVertex2i(0,75);
 	glEnd();*/
 
-	glEnable(GL_BLEND);
-	glLoadIdentity();
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
-
-	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor3f(0,0,1);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex2i(0,0);
-		glTexCoord2f(1,1);
-		glVertex2i(rt->width,0);
-		glTexCoord2f(1,0);
-		glVertex2i(rt->width,rt->height);
-		glTexCoord2f(0,0);
-		glVertex2i(0,rt->height);
-	glEnd();
+	rt->glBlitFramebuffer();
 	glPopMatrix();
 
 	glPushMatrix();
@@ -383,15 +364,6 @@ MovieClip::MovieClip():framesLoaded(0),totalFrames(1),cur_frame(&dynamicDisplayL
 
 void MovieClip::addToFrame(DisplayListTag* t)
 {
-/*	list<IDisplayListElem*>::iterator it=lower_bound(displayList.begin(),displayList.end(),t->getDepth(),list_orderer);
-	displayList.insert(it,t);
-	displayListLimit=displayList.size();
-
-	t->root=root;
-	ASObject* o=static_cast<ASObject*>(t);
-	if(o)
-		o->setVariableByName("root",this,true);*/
-
 	cur_frame.blueprint.push_back(t);
 }
 
@@ -1032,10 +1004,7 @@ void Shape::Render()
 	if(graphics==NULL)
 		return;
 
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
-	glDisable(GL_BLEND);
-	glClearColor(1,1,1,0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	rt->glAcquireFramebuffer();
 
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
@@ -1044,23 +1013,7 @@ void Shape::Render()
 
 	graphics->Render();
 
-	glEnable(GL_BLEND);
-	glLoadIdentity();
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
-
-	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor3f(0,0,1);
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex2i(0,0);
-		glTexCoord2f(1,1);
-		glVertex2i(rt->width,0);
-		glTexCoord2f(1,0);
-		glVertex2i(rt->width,rt->height);
-		glTexCoord2f(0,0);
-		glVertex2i(0,rt->height);
-	glEnd();
+	rt->glBlitFramebuffer();
 	glPopMatrix();
 }
 

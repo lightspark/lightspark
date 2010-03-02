@@ -418,7 +418,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 	sem_post(&sem_listeners);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buffer(NULL),currentClip(s)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buffer(NULL),fbAcquired(false),currentClip(s)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -439,6 +439,41 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buf
 		pthread_create(&t,NULL,(thread_worker)glx_worker,this);
 	}
 #endif
+}
+
+void RenderThread::glAcquireFramebuffer()
+{
+	assert(fbAcquired==false);
+	fbAcquired=true;
+
+	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDisable(GL_BLEND);
+	glClearColor(1,1,1,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void RenderThread::glBlitFramebuffer()
+{
+	assert(fbAcquired==true);
+	fbAcquired=false;
+
+	glEnable(GL_BLEND);
+	glLoadIdentity();
+	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
+	glDrawBuffers(2,draw_buffers);
+
+	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
+	glColor3f(0,0,1);
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex2i(0,0);
+		glTexCoord2f(1,1);
+		glVertex2i(rt->width,0);
+		glTexCoord2f(1,0);
+		glVertex2i(rt->width,rt->height);
+		glTexCoord2f(0,0);
+		glVertex2i(0,rt->height);
+	glEnd();
 }
 
 RenderThread::~RenderThread()

@@ -246,13 +246,16 @@ private:
 #endif
 	static int load_program();
 	float* interactive_buffer;
+	bool fbAcquired;
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
 	void draw();
 	void wait();
-//	static void setError(){error=1;}
 	float getIdAt(int x, int y);
+	//The calling context MUST preserve current matrix with a wraping pushMatrix, popMatrix combo
+	void glAcquireFramebuffer();
+	void glBlitFramebuffer();
 
 	//Used only in RenderThread context
 	MovieClip* currentClip;

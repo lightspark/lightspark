@@ -358,13 +358,17 @@ void MovieClip::buildTraits(ASObject* o)
 	o->setVariableByQName("nextFrame","",new Function(nextFrame));
 }
 
-MovieClip::MovieClip():framesLoaded(0),totalFrames(1),cur_frame(&dynamicDisplayList)
+MovieClip::MovieClip():framesLoaded(1),totalFrames(1),cur_frame(NULL)
 {
+	//It's ok to initialize here framesLoaded=1, as it is valid and empty
+	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
+	frames.push_back(Frame(&dynamicDisplayList));
+	cur_frame=&frames.back();
 }
 
 void MovieClip::addToFrame(DisplayListTag* t)
 {
-	cur_frame.blueprint.push_back(t);
+	cur_frame->blueprint.push_back(t);
 }
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)
@@ -382,7 +386,7 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 		IFunction* g=args->at(i+1)->toFunction();
 
 		//Should wait for frames to be received
-		if(f>=th->frames.size())
+		if(f>=framesLoaded)
 		{
 			LOG(LOG_ERROR,"Invalid frame number passed to addFrameScript");
 			abort();
@@ -472,7 +476,7 @@ void MovieClip::advanceFrame()
 		frames[state.next_FP].init(this,displayList);
 		state.FP=state.next_FP;
 		if(!state.stop_FP)
-			state.next_FP=min(state.FP+1,frames.size()-1); //TODO: use framecount
+			state.next_FP=min(state.FP+1,framesLoaded-1);
 		state.explicit_FP=false;
 	}
 
@@ -481,10 +485,10 @@ void MovieClip::advanceFrame()
 void MovieClip::Render()
 {
 	LOG(LOG_TRACE,"Render MovieClip");
+
+	assert(state.FP<framesLoaded);
+
 	advanceFrame();
-
-	assert(state.FP<frames.size());
-
 	if(!state.stop_FP)
 		frames[state.FP].runScript();
 
@@ -507,7 +511,7 @@ void MovieClip::Render()
 void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	//Iterate over the displaylist of the current frame
-	if(dynamicDisplayList.size()==0 && (frames.size()==0 || frames[state.FP].displayList.size()==0))
+	if(dynamicDisplayList.size()==0 && (framesLoaded==0 || frames[state.FP].displayList.size()==0))
 	{
 		xmin=0;
 		xmax=0;

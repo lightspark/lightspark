@@ -259,7 +259,7 @@ protected:
 	uint32_t framesLoaded;
 	uint32_t totalFrames;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
-	Frame cur_frame;
+	Frame* cur_frame;
 public:
 	std::vector<Frame> frames;
 	RunState state;
@@ -284,6 +284,10 @@ public:
 	//IDisplayListElem interface
 	void Render();
 	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	void check()
+	{
+		assert(frames.size()==totalFrames);
+	}
 };
 
 class Stage: public DisplayObjectContainer

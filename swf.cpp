@@ -87,6 +87,8 @@ RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),toBind(false)
 	sem_init(&sem_frames,0,1);
 	sem_init(&sem_valid_frame_size,0,0);
 	loaderInfo=li;
+	//Reset framesLoaded, as there are still not available
+	framesLoaded=0;
 }
 
 void RootMovieClip::bindToName(const tiny_string& n)
@@ -201,6 +203,7 @@ void* ParseThread::worker(ParseThread* th)
 		LOG(LOG_ERROR,"Exception caught: " << s);
 		exit(-1);
 	}
+	th->root->check();
 }
 
 ParseThread::ParseThread(SystemState* s,RootMovieClip* r,istream& in):f(in),parsingTarget(r)
@@ -1147,15 +1150,15 @@ void RootMovieClip::addToFrame(DisplayListTag* t)
 
 void RootMovieClip::addToFrame(ControlTag* t)
 {
-	cur_frame.controls.push_back(t);
+	cur_frame->controls.push_back(t);
 }
 
 void RootMovieClip::commitFrame()
 {
 	sem_wait(&sem_frames);
-	frames.push_back(cur_frame);
-	cur_frame=Frame(&dynamicDisplayList);
 	framesLoaded=frames.size();
+	frames.push_back(Frame(&dynamicDisplayList));
+	cur_frame=&frames.back();
 	sem_post(&new_frame);
 	sem_post(&sem_frames);
 }

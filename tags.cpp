@@ -224,6 +224,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 
 	in >> SpriteID >> FrameCount;
 	totalFrames=FrameCount;
+	framesLoaded=FrameCount;
 	state.max_FP=FrameCount;
 
 	LOG(LOG_TRACE,"DefineSprite ID: " << SpriteID);
@@ -244,8 +245,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				break;
 			case SHOW_TAG:
 			{
-				frames.push_back(cur_frame);
-				cur_frame=Frame(&dynamicDisplayList);
+				frames.push_back(Frame(&dynamicDisplayList));
+				cur_frame=&frames.back();
 				break;
 			}
 			case CONTROL_TAG:
@@ -261,7 +262,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	}
 	while(!done);
 
-	if(frames.size()!=FrameCount && FrameCount!=1)
+	if(frames.size()!=FrameCount/* && FrameCount!=1*/)
 		LOG(LOG_ERROR,"Inconsistent frame count " << FrameCount);
 
 	pt->parsingTarget=target_bak;

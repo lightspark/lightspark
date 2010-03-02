@@ -288,7 +288,7 @@ ASFUNCTIONBODY(NetStream,play)
 
 ASFUNCTIONBODY(NetStream,getBytesLoaded)
 {
-	return abstract_i(1);
+	return abstract_i(0);
 }
 
 ASFUNCTIONBODY(NetStream,getBytesTotal)
@@ -298,7 +298,7 @@ ASFUNCTIONBODY(NetStream,getBytesTotal)
 
 ASFUNCTIONBODY(NetStream,getTime)
 {
-	return abstract_d(0.1);
+	return abstract_d(0);
 }
 
 void URLVariables::sinit(Class_base* c)
@@ -316,7 +316,6 @@ ASFUNCTIONBODY(URLVariables,_constructor)
 bool URLVariables::toString(tiny_string& ret)
 {
 	//Should urlencode
-	__asm__("int $3");
 	abort();
 	int size=obj->numVariables();
 	for(int i=0;i<size;i++)

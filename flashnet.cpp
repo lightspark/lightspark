@@ -272,10 +272,17 @@ ASFUNCTIONBODY(NetStream,_constructor)
 
 ASFUNCTIONBODY(NetStream,play)
 {
-//	NetStream* th=Class<NetStream>::cast(obj->implementation);
+	NetStream* th=Class<NetStream>::cast(obj->implementation);
 	assert(argslen==1);
 //	const tiny_string& arg0=args[0]->toString();
 //	cout << arg0 << endl;
+//	We assume success now
+	Event* status=Class<NetStatusEvent>::getInstanceS(true);
+	ASObject* info=new ASObject;
+	info->setVariableByQName("level","",Class<ASString>::getInstanceS(true,"status")->obj);
+	info->setVariableByQName("code","",Class<ASString>::getInstanceS(true,"NetStream.Play.Start")->obj);
+	status->obj->setVariableByQName("info","",info);
+	getVm()->addEvent(th, status);
 	return NULL;
 }
 

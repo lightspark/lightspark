@@ -28,6 +28,7 @@ using namespace lightspark;
 REGISTER_CLASS_NAME(URLLoader);
 REGISTER_CLASS_NAME(URLLoaderDataFormat);
 REGISTER_CLASS_NAME(URLRequest);
+REGISTER_CLASS_NAME(URLVariables);
 REGISTER_CLASS_NAME(SharedObject);
 REGISTER_CLASS_NAME(ObjectEncoding);
 REGISTER_CLASS_NAME(NetConnection);
@@ -101,12 +102,17 @@ ASFUNCTIONBODY(URLLoader,load)
 	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
 	ASObject* arg=args[0];
 	assert(arg->prototype==Class<URLRequest>::getClass());
-	th->urlRequest=static_cast<URLRequest*>(arg->implementation);
+	URLRequest* urlRequest=static_cast<URLRequest*>(arg->implementation);
+	th->url=urlRequest->url;
 	ASObject* data=arg->getVariableByQName("data","").obj;
-	//POST data is not yet supported
 	if(data)
-		abort();
-	assert(th->dataFormat=="binary");
+	{
+		if(data->prototype==Class<URLVariables>::getClass())
+			abort();
+		else
+			th->url+=data->toString();
+	}
+	assert(th->dataFormat=="binary" || th->dataFormat=="text");
 	sys->cur_thread_pool->addJob(th);
 	return NULL;
 }
@@ -115,12 +121,17 @@ void URLLoader::execute()
 {
 	CurlDownloader curlDownloader;
 
-	bool done=curlDownloader.download(urlRequest->url);
+	bool done=curlDownloader.download(url);
 	if(done)
 	{
-		ByteArray* byteArray=Class<ByteArray>::getInstanceS(true);
-		byteArray->acquireBuffer(curlDownloader.getBuffer(),curlDownloader.getLen());
-		data=byteArray->obj;
+		if(dataFormat=="binary")
+		{
+			ByteArray* byteArray=Class<ByteArray>::getInstanceS(true);
+			byteArray->acquireBuffer(curlDownloader.getBuffer(),curlDownloader.getLen());
+			data=byteArray->obj;
+		}
+		else if(dataFormat=="text")
+			abort();
 		//Send a complete event for this object
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"complete",obj));
 	}
@@ -227,6 +238,8 @@ void NetStream::sinit(Class_base* c)
 void NetStream::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("play","",new Function(play));
+	o->setGetterByQName("bytesLoaded","",new Function(getBytesLoaded));
+	o->setGetterByQName("time","",new Function(getTime));
 }
 
 ASFUNCTIONBODY(NetStream,_constructor)
@@ -237,8 +250,48 @@ ASFUNCTIONBODY(NetStream,_constructor)
 
 ASFUNCTIONBODY(NetStream,play)
 {
-	__asm__("int $3");
+//	NetStream* th=Class<NetStream>::cast(obj->implementation);
+	assert(argslen==1);
+//	const tiny_string& arg0=args[0]->toString();
+//	cout << arg0 << endl;
 	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,getBytesLoaded)
+{
+	return abstract_i(0);
+}
+
+ASFUNCTIONBODY(NetStream,getTime)
+{
+	return abstract_d(0);
+}
+
+void URLVariables::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+}
+
+ASFUNCTIONBODY(URLVariables,_constructor)
+{
+	assert(argslen==0);
+	return NULL;
+}
+
+bool URLVariables::toString(tiny_string& ret)
+{
+	//Should urlencode
+	int size=obj->numVariables();
+	for(int i=0;i<size;i++)
+	{
+		ret+=obj->getNameAt(i);
+		ret+="=";
+		ret+=obj->getValueAt(i)->toString();
+		if(i==size-1)
+			ret+="&";
+	}
+	return true;
 }
 
 bool CurlDownloader::download(const tiny_string& s)

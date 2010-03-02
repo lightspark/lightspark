@@ -25,6 +25,7 @@ using namespace lightspark;
 using namespace std;
 
 REGISTER_CLASS_NAME(SoundTransform);
+REGISTER_CLASS_NAME(Video);
 
 void SoundTransform::sinit(Class_base* c)
 {
@@ -36,5 +37,34 @@ ASFUNCTIONBODY(SoundTransform,_constructor)
 {
 	cout << "SoundTransform constructor" << endl;
 	return NULL;
+}
+
+void Video::sinit(Class_base* c)
+{
+	assert(c->constructor==NULL);
+	c->constructor=new Function(_constructor);
+	c->super=Class<DisplayObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void Video::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("videoWidth","",new Function(_getVideoWidth));
+}
+
+void Video::Render()
+{
+	cout << "Video::Render not implemented" << endl;
+}
+
+ASFUNCTIONBODY(Video,_constructor)
+{
+	cout << "Video constructor" << endl;
+	return NULL;
+}
+
+ASFUNCTIONBODY(Video,_getVideoWidth)
+{
+	return abstract_i(320);
 }
 

@@ -21,6 +21,7 @@
 #define _FLASH_MEDIA_H
 
 #include "asobjects.h"
+#include "flashdisplay.h"
 namespace lightspark
 {
 
@@ -29,6 +30,16 @@ class SoundTransform: public IInterface
 public:
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
+};
+
+class Video: public DisplayObject
+{
+public:
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getVideoWidth);
+	void Render();
 };
 
 };

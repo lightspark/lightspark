@@ -38,7 +38,7 @@ plugin:
 .PHONY: all clean install
 clean:
 	-rm -f main.o tightspark.o $(LIBOBJS) lightspark tightspark
-	make -C plugin clean
+	make -C plugin-dir clean
 install: all
 	install -d $(DESTDIR)$(bindir) $(DESTDIR)$(datadir)/lightspark
 	install lightspark $(DESTDIR)$(bindir)/lightspark

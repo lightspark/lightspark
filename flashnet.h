@@ -62,6 +62,14 @@ public:
 	ASFUNCTION(_setUrl);
 };
 
+class URLVariables: public IInterface
+{
+public:
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+	bool toString(tiny_string& ret);
+};
+
 class URLLoaderDataFormat: public IInterface
 {
 public:
@@ -84,7 +92,7 @@ class URLLoader: public EventDispatcher, public IThreadJob
 {
 private:
 	tiny_string dataFormat;
-	URLRequest* urlRequest;
+	tiny_string url;
 	ASObject* data;
 public:
 	URLLoader();
@@ -116,6 +124,8 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(play);
+	ASFUNCTION(getBytesLoaded);
+	ASFUNCTION(getTime);
 };
 
 };

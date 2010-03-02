@@ -224,7 +224,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("URLLoader","flash.net",Class<URLLoader>::getClass());
 	Global.setVariableByQName("URLLoaderDataFormat","flash.net",Class<URLLoaderDataFormat>::getClass());
 	Global.setVariableByQName("URLRequest","flash.net",Class<URLRequest>::getClass());
-	Global.setVariableByQName("URLVariables","flash.net",new ASObject);
+	Global.setVariableByQName("URLVariables","flash.net",Class<URLVariables>::getClass());
 	Global.setVariableByQName("SharedObject","flash.net",Class<SharedObject>::getClass());
 	Global.setVariableByQName("ObjectEncoding","flash.net",Class<ObjectEncoding>::getClass());
 
@@ -234,6 +234,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
 
 	Global.setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getClass());
+	Global.setVariableByQName("Video","flash.media",Class<Video>::getClass());
 
 	Global.setVariableByQName("ContextMenu","flash.ui",Class<IInterface>::getClass("ContextMenu"));
 	Global.setVariableByQName("ContextMenuItem","flash.ui",Class<IInterface>::getClass("ContextMenuItem"));

@@ -60,8 +60,17 @@ tiny_string ASObject::toString(bool debugMsg)
 			return ret;
 	}
 	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
-	if(debugMsg==false)
-		assert(!hasPropertyByQName("toString",""));
+	if(debugMsg==false && hasPropertyByQName("toString",""))
+	{
+		objAndLevel obj_toString=getVariableByQName("toString","");
+		if(obj_toString.obj->getObjectType()==T_FUNCTION)
+		{
+			IFunction* f_toString=static_cast<IFunction*>(obj_toString.obj);
+			ASObject* ret=f_toString->call(this,NULL,0,obj_toString.level);
+			assert(ret->getObjectType()==T_STRING);
+			return ret->toString();
+		}
+	}
 	return "[object Object]";
 }
 

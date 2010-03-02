@@ -125,6 +125,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(play);
 	ASFUNCTION(getBytesLoaded);
+	ASFUNCTION(getBytesTotal);
 	ASFUNCTION(getTime);
 };
 

@@ -110,7 +110,24 @@ ASFUNCTIONBODY(URLLoader,load)
 		if(data->prototype==Class<URLVariables>::getClass())
 			abort();
 		else
-			th->url+=data->toString();
+		{
+			const tiny_string& tmp=data->toString();
+			//TODO: Url encode the string
+			string tmp2;
+			tmp2.reserve(tmp.len()*2);
+			for(int i=0;i<tmp.len();i++)
+			{
+				if(tmp[i]==' ')
+				{
+					char buf[4];
+					sprintf(buf,"%%%x",(unsigned char)tmp[i]);
+					tmp2+=buf;
+				}
+				else
+					tmp2.push_back(tmp[i]);
+			}
+			th->url+=tmp2.c_str();
+		}
 	}
 	assert(th->dataFormat=="binary" || th->dataFormat=="text");
 	sys->cur_thread_pool->addJob(th);
@@ -131,7 +148,11 @@ void URLLoader::execute()
 			data=byteArray->obj;
 		}
 		else if(dataFormat=="text")
-			abort();
+		{
+			if(curlDownloader.getLen())
+				abort();
+			data=Class<ASString>::getInstanceS(true)->obj;
+		}
 		//Send a complete event for this object
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"complete",obj));
 	}
@@ -239,6 +260,7 @@ void NetStream::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("play","",new Function(play));
 	o->setGetterByQName("bytesLoaded","",new Function(getBytesLoaded));
+	o->setGetterByQName("bytesTotal","",new Function(getBytesTotal));
 	o->setGetterByQName("time","",new Function(getTime));
 }
 
@@ -259,12 +281,17 @@ ASFUNCTIONBODY(NetStream,play)
 
 ASFUNCTIONBODY(NetStream,getBytesLoaded)
 {
-	return abstract_i(0);
+	return abstract_i(1);
+}
+
+ASFUNCTIONBODY(NetStream,getBytesTotal)
+{
+	return abstract_i(100);
 }
 
 ASFUNCTIONBODY(NetStream,getTime)
 {
-	return abstract_d(0);
+	return abstract_d(0.1);
 }
 
 void URLVariables::sinit(Class_base* c)
@@ -282,13 +309,18 @@ ASFUNCTIONBODY(URLVariables,_constructor)
 bool URLVariables::toString(tiny_string& ret)
 {
 	//Should urlencode
+	__asm__("int $3");
+	abort();
 	int size=obj->numVariables();
 	for(int i=0;i<size;i++)
 	{
-		ret+=obj->getNameAt(i);
+		const tiny_string& tmp=obj->getNameAt(i);
+		if(tmp=="")
+			abort();
+		ret+=tmp;
 		ret+="=";
 		ret+=obj->getValueAt(i)->toString();
-		if(i==size-1)
+		if(i!=size-1)
 			ret+="&";
 	}
 	return true;

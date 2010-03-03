@@ -826,6 +826,18 @@ DisplayObjectContainer::DisplayObjectContainer()
 	sem_init(&sem_displayList,0,1);
 }
 
+//This must be called fromt VM context
+void DisplayObjectContainer::setRoot(RootMovieClip* r)
+{
+	if(r!=root)
+	{
+		DisplayObject::setRoot(r);
+		list<IDisplayListElem*>::const_iterator it=dynamicDisplayList.begin();
+		for(;it!=dynamicDisplayList.end();it++)
+			(*it)->setRoot(r);
+	}
+}
+
 ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 {
 	DisplayObject::_constructor(obj,NULL,0);
@@ -840,10 +852,6 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 
 void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index)
 {
-	//Set the root of the movie to this container
-	assert(child->root==NULL);
-	child->root=root;
-
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
 	if(child->parent)
@@ -856,6 +864,11 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 	}
 	child->parent=this;
 
+	sem_wait(&sem_displayList);
+	//Set the root of the movie to this container
+	assert(child->root==NULL);
+	child->setRoot(root);
+
 	//We insert the object in the back of the list
 	if(index==numeric_limits<unsigned int>::max())
 		dynamicDisplayList.push_back(child);
@@ -867,6 +880,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 			it++;
 		dynamicDisplayList.insert(it,child);
 	}
+	sem_post(&sem_displayList);
 }
 
 void DisplayObjectContainer::_removeChild(IDisplayListElem* child)
@@ -874,9 +888,11 @@ void DisplayObjectContainer::_removeChild(IDisplayListElem* child)
 	assert(child->parent==this);
 	assert(child->root==root);
 
+	sem_wait(&sem_displayList);
 	list<IDisplayListElem*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 	assert(it!=dynamicDisplayList.end());
 	dynamicDisplayList.erase(it);
+	sem_post(&sem_displayList);
 	child->parent=NULL;
 }
 

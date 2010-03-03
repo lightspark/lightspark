@@ -128,18 +128,8 @@ SWFOBJECT_TYPE ASObject::getObjectType() const
 
 IInterface::IInterface(const IInterface& r):type(r.type),obj(NULL)
 {
-	if(r.obj)
-	{
-		abort();
-		//An IInterface derived class can only be cloned if the obj is a Class
-		assert(r.obj->getObjectType()==T_CLASS);
-		Class_base* c=static_cast<Class_base*>(r.obj);
-		obj=new ASObject;
-		obj->prototype=c;
-		obj->actualPrototype=c;
-		c->incRef();
-		obj->implementation=this;
-	}
+	//An IInterface derived class can only be cloned if the obj is a Class
+	assert(r.obj==NULL || r.obj->getObjectType()==T_CLASS);
 }
 
 bool IInterface::isLess(bool& ret, ASObject* r)

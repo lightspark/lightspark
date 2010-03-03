@@ -51,15 +51,21 @@ public:
 	IDisplayListElem():root(NULL),origMatrix(NULL),parent(NULL){}
 	virtual void Render()=0;
 	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)=0;
+	virtual void setRoot(RootMovieClip* root)=0;
 };
 
 class DisplayObject: public IDisplayListElem
 {
+//TODO: WTF
 friend class DisplayObjectContainer;
 protected:
 	intptr_t width;
 	intptr_t height;
 	LoaderInfo* loaderInfo;
+	void setRoot(RootMovieClip* r)
+	{
+		root=r;
+	}
 public:
 	DisplayObject();
 	static void sinit(Class_base* c);
@@ -107,7 +113,10 @@ private:
 protected:
 	//This is shared between RenderThread and VM
 	std::list < IDisplayListElem* > dynamicDisplayList;
+	//The lock should only be taken when doing write operations
+	//As the RenderThread only reads, it's safe to read without the lock
 	sem_t sem_displayList;
+	void setRoot(RootMovieClip* r);
 public:
 	void _removeChild(IDisplayListElem*);
 	DisplayObjectContainer();

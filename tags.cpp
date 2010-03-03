@@ -1235,15 +1235,16 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		//and assigned to the internal struture every frame
 		LOG(LOG_TRACE,"Placing ID " << CharacterId);
 		DictionaryTag* dict=parent->root->dictionaryLookup(CharacterId);
-		toAdd=dict->instance();
+		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
 		assert(toAdd);
 
 		if(toAdd->obj)
 		{
-			//We now ask the VM to construct this object
+			abort();
+/*			//We now ask the VM to construct this object
 			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd->obj,toAdd->obj->prototype);
 			sys->currentVm->addEvent(NULL,e);
-			e->wait();
+			e->wait();*/
 		}
 
 		if(PlaceFlagHasColorTransform)
@@ -1401,7 +1402,7 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	}
 }
 
-IDisplayListElem* DefineButton2Tag::instance()
+IInterface* DefineButton2Tag::instance() const
 {
 	return new DefineButton2Tag(*this);
 }

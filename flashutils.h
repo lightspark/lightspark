@@ -38,6 +38,7 @@ protected:
 	uint8_t* bytes;
 	unsigned int len;
 	unsigned int position;
+	ByteArray(const ByteArray& b);
 public:
 	ByteArray();
 	~ByteArray();

@@ -967,11 +967,9 @@ void ABCVm::handleEvent()
 			case BIND_CLASS:
 			{
 				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second);
-				bool construct_instance=false;
-				if(ev->base==sys)
-					construct_instance=true;
+				bool isRoot= ev->base==sys;
 				LOG(LOG_CALLS,"Binding of " << ev->class_name);
-				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base,NULL,0,construct_instance);
+				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base,NULL,0,isRoot);
 				LOG(LOG_CALLS,"End of binding of " << ev->class_name);
 				break;
 			}
@@ -1030,7 +1028,7 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	sem_post(&event_queue_mutex);
 }
 
-void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* const* args, const unsigned int argslen, bool construct_instance)
+void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* const* args, const unsigned int argslen, bool isRoot)
 {
 	//It seems to be acceptable for the same base to be binded multiple times,
 	//We refuse to do it, as it's an undocumented behaviour, but we warn the user
@@ -1062,15 +1060,11 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 	assert(derived_class->getObjectType()==T_CLASS);
 
 	//Now the class is valid, check that it's not a builtin one
-	Class_base* derived_class_tmp=static_cast<Class_base*>(derived_class);
-	assert(derived_class_tmp->class_index!=-1);
+	assert(static_cast<Class_base*>(derived_class)->class_index!=-1);
+	Class_inherit* derived_class_tmp=static_cast<Class_inherit*>(derived_class);
 
-	base->obj=derived_class_tmp;
-
-	if(construct_instance)
+	if(isRoot)
 	{
-		assert(derived_class_tmp->class_index>0);
-
 		ASObject* tmp=new ASObject;
 		base->obj=tmp;
 		tmp->prototype=derived_class_tmp;
@@ -1080,6 +1074,15 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 		tmp->handleConstruction(args,argslen,true);
 		thisAndLevel tl=getVm()->popObjAndLevel();
 		assert(tl.cur_this==tmp);
+	}
+	else
+	{
+		//If this is not a root movie clip, then the base has to be a DictionaryTag
+		DictionaryTag* t=dynamic_cast<DictionaryTag*>(base);
+		assert(t);
+
+		base->obj=derived_class_tmp;
+		derived_class_tmp->bindTag(t);
 	}
 }
 

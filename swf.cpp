@@ -898,7 +898,8 @@ void RootMovieClip::initialize()
 	{
 		initialized=true;
 		//Let's see if we have to bind the root movie clip itself
-		sys->currentVm->addEvent(NULL,new BindClassEvent(this,bindName));
+		if(bindName.len())
+			sys->currentVm->addEvent(NULL,new BindClassEvent(this,bindName));
 		//Now signal the completion for this root
 		sys->currentVm->addEvent(loaderInfo,Class<Event>::getInstanceS(true,"init"));
 		//Wait for handling of all previous events

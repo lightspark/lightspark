@@ -93,7 +93,7 @@ public:
 	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
 	virtual TAGTYPE getType(){ return DICT_TAG; }
 	virtual int getId(){return 0;} 
-	virtual IDisplayListElem* instance() { return NULL; } 
+	virtual IInterface* instance() const { return NULL; } 
 };
 
 class ControlTag: public Tag
@@ -104,7 +104,7 @@ public:
 	virtual void execute(RootMovieClip* root)=0;
 };
 
-class DefineShapeTag: public DictionaryTag, public IDisplayListElem
+class DefineShapeTag: public DictionaryTag, public DisplayObject
 {
 private:
 	UI16 ShapeId;
@@ -122,13 +122,13 @@ public:
 		//TODO: adapt for rotation
 	}
 
-	IDisplayListElem* instance()
+	IInterface* instance() const
 	{
 		return new DefineShapeTag(*this);
 	}
 };
 
-class DefineShape2Tag: public DictionaryTag, public IDisplayListElem
+class DefineShape2Tag: public DictionaryTag, public DisplayObject
 {
 private:
 	UI16 ShapeId;
@@ -146,13 +146,13 @@ public:
 		//TODO: adapt for rotation
 	}
 
-	IDisplayListElem* instance()
+	IInterface* instance() const
 	{
 		return new DefineShape2Tag(*this);
 	}
 };
 
-class DefineShape3Tag: public DictionaryTag, public IDisplayListElem
+class DefineShape3Tag: public DictionaryTag, public DisplayObject
 {
 private:
 	UI16 ShapeId;
@@ -172,13 +172,13 @@ public:
 		ymax=ShapeBounds.Ymax;
 	}
 
-	IDisplayListElem* instance()
+	IInterface* instance() const
 	{
 		return new DefineShape3Tag(*this);
 	}
 };
 
-class DefineShape4Tag: public DictionaryTag, public IDisplayListElem
+class DefineShape4Tag: public DictionaryTag, public DisplayObject
 {
 private:
 	UI16 ShapeId;
@@ -201,7 +201,7 @@ public:
 		ymax=ShapeBounds.Ymax;
 	}
 
-	IDisplayListElem* instance()
+	IInterface* instance() const
 	{
 		return new DefineShape4Tag(*this);
 	}
@@ -371,7 +371,7 @@ public:
 
 class BUTTONCONDACTION;
 
-class DefineButton2Tag: public DictionaryTag, public IDisplayListElem
+class DefineButton2Tag: public DictionaryTag, public DisplayObject
 {
 private:
 	UI16 ButtonId;
@@ -395,7 +395,7 @@ public:
 	}
 	virtual void handleEvent(Event*);
 
-	IDisplayListElem* instance();
+	IInterface* instance() const;
 };
 
 class KERNINGRECORD
@@ -411,6 +411,11 @@ public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
 	~DefineBinaryDataTag(){delete[] bytes;}
 	virtual int getId(){return Tag;} 
+
+	IInterface* instance() const
+	{
+		return new DefineBinaryDataTag(*this);
+	}
 };
 
 class FontTag: public DictionaryTag
@@ -484,7 +489,7 @@ public:
 	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
-class DefineTextTag: public DictionaryTag, public IDisplayListElem
+class DefineTextTag: public DictionaryTag, public DisplayObject
 {
 	friend class GLYPHENTRY;
 private:
@@ -509,7 +514,7 @@ public:
 		ymax=TextBounds.Ymax;
 	}
 
-	IDisplayListElem* instance()
+	IInterface* instance() const
 	{
 		return new DefineTextTag(*this);
 	}
@@ -524,7 +529,7 @@ public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
 
-	IDisplayListElem* instance()
+	IInterface* instance() const
 	{
 		return new DefineSpriteTag(*this);
 	}

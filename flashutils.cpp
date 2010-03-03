@@ -35,6 +35,13 @@ ByteArray::ByteArray():bytes(NULL),len(0),position(0)
 {
 }
 
+ByteArray::ByteArray(const ByteArray& b):IInterface(b),len(b.len),position(b.position)
+{
+	assert(position==0);
+	bytes=new uint8_t[len];
+	memcpy(bytes,b.bytes,len);
+}
+
 ByteArray::~ByteArray()
 {
 	delete[] bytes;

@@ -43,9 +43,14 @@ class Class_inherit:public Class_base
 {
 private:
 	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
+	DictionaryTag const* tag;
 public:
-	Class_inherit(const tiny_string& name):Class_base(name){}
+	Class_inherit(const tiny_string& name):Class_base(name),tag(NULL){}
 	void buildInstanceTraits(ASObject* o) const;
+	void bindTag(DictionaryTag const* t)
+	{
+		tag=t;
+	}
 };
 
 template< class T>

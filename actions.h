@@ -49,7 +49,7 @@ public:
 	virtual ~ActionTag(){}
 };
 
-class DoActionTag: public DisplayListTag, public ExecutionContext, public IDisplayListElem
+class DoActionTag: public DisplayListTag, public ExecutionContext, public DisplayObject
 {
 private:
 	std::vector<ActionTag*> actions;
@@ -63,7 +63,8 @@ public:
 	}
 };
 
-class DoInitActionTag: public DisplayListTag, public ExecutionContext, public IDisplayListElem
+//This should be a control tag
+class DoInitActionTag: public DisplayListTag, public ExecutionContext, public DisplayObject
 {
 private:
 	UI16 SpriteID;

@@ -1462,14 +1462,24 @@ tiny_string Class_base::toString(bool debugMsg)
 
 IInterface* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 {
-	//TODO: Ask our super for the interface to ret
-	assert(super);
-	//Our super should not construct, we are going to do it ourselves
-	IInterface* ret=super->getInstance(false,NULL,0);
-	ret->obj->prototype->decRef();
+	IInterface* ret=NULL;
+	if(tag)
+	{
+		ret=tag->instance();
+		ret->obj=new ASObject;
+		ret->obj->implementation=ret;
+	}
+	else
+	{
+		assert(super);
+		//Our super should not construct, we are going to do it ourselves
+		ret=super->getInstance(false,NULL,0);
+		//We override the prototype
+		ret->obj->prototype->decRef();
+	}
+	//As we are the prototype we should incRef ourself
 	ret->obj->prototype=this;
 	ret->obj->actualPrototype=this;
-	//As we are the prototype we should incRef ourself
 	incRef();
 	if(construct)
 	{
@@ -1477,7 +1487,9 @@ IInterface* Class_inherit::getInstance(bool construct, ASObject* const* args, co
 		thisAndLevel tl=getVm()->getCurObjAndLevel();
 		tl.cur_this->resetLevel();
 		getVm()->pushObjAndLevel(ret->obj,max_level);
+
 		ret->obj->handleConstruction(args,argslen,true);
+
 		tl=getVm()->popObjAndLevel();
 		assert(tl.cur_this==ret->obj);
 		tl=getVm()->getCurObjAndLevel();

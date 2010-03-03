@@ -250,8 +250,10 @@ void Sprite::buildTraits(ASObject* o)
 void Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	//Iterate over the displaylist of the current frame
-	if(dynamicDisplayList.size()==0 && graphics==NULL)
+	sem_wait(&sem_displayList);
+	if(dynamicDisplayList.empty() && graphics==NULL)
 	{
+		sem_post(&sem_displayList);
 		xmin=0;
 		xmax=0;
 		ymin=0;
@@ -270,6 +272,7 @@ void Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 		ymin = min(ymin,txmin);
 		ymax = max(ymax,tymax);
 	}
+	sem_post(&sem_displayList);
 	if(graphics)
 	{
 		number_t txmin,txmax,tymin,tymax;
@@ -314,10 +317,12 @@ void Sprite::Render()
 	glPushMatrix();
 	glMultMatrixf(matrix);
 
+	sem_wait(&sem_displayList);
 	//Now draw also the display list
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();it++)
 		(*it)->Render();
+	sem_post(&sem_displayList);
 
 	glPopMatrix();
 }
@@ -362,7 +367,7 @@ MovieClip::MovieClip():framesLoaded(1),totalFrames(1),cur_frame(NULL)
 {
 	//It's ok to initialize here framesLoaded=1, as it is valid and empty
 	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
-	frames.push_back(Frame(&dynamicDisplayList));
+	frames.push_back(Frame());
 	cur_frame=&frames.back();
 }
 
@@ -502,6 +507,13 @@ void MovieClip::Render()
 	//glRotatef(rotation,0,0,1);
 	frames[state.FP].Render();
 
+	//Render objects added at runtime
+	sem_wait(&sem_displayList);
+	list<IDisplayListElem*>::iterator j=dynamicDisplayList.begin();
+	for(;j!=dynamicDisplayList.end();j++)
+		(*j)->Render();
+	sem_post(&sem_displayList);
+
 	glPopMatrix();
 	glPopAttrib();
 
@@ -511,17 +523,20 @@ void MovieClip::Render()
 void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	//Iterate over the displaylist of the current frame
-	if(dynamicDisplayList.size()==0 && (framesLoaded==0 || frames[state.FP].displayList.size()==0))
+	sem_wait(&sem_displayList);
+	if(dynamicDisplayList.empty() && (framesLoaded==0 || frames[state.FP].displayList.size()==0))
 	{
 		xmin=0;
 		xmax=0;
 		ymin=0;
 		ymax=0;
+		sem_post(&sem_displayList);
 		return;
 	}
 	//TODO: add dynamic dysplay list
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::iterator it=frames[state.FP].displayList.begin();
 	assert(frames[state.FP].displayList.size()==1);
+	sem_post(&sem_displayList);
 	it->second->getBounds(xmin,xmax,ymin,ymax);
 	//TODO: take rotation into account
 	Matrix.multiply2D(xmin,ymin,xmin,ymin);
@@ -808,6 +823,7 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 
 DisplayObjectContainer::DisplayObjectContainer()
 {
+	sem_init(&sem_displayList,0,1);
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
@@ -895,6 +911,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 	return abstract_i(ret);
 }
 
+//Only from VM context
 ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
@@ -913,21 +930,6 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	d->obj->incRef();
 	sys->currentVm->addEvent(d,Class<Event>::getInstanceS(true,"added",d->obj));
 
-	return d->obj;
-}
-
-ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
-{
-	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
-	assert(argslen==1);
-	//Validate object type
-	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
-	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args[0]->implementation);
-
-	th->_removeChild(d);
-
-	//As we return the child we don't decRef it
 	return d->obj;
 }
 
@@ -950,6 +952,23 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	return d->obj;
 }
 
+//Only from VM context
+ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	assert(argslen==1);
+	//Validate object type
+	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	//Cast to object
+	DisplayObject* d=Class<DisplayObject>::cast(args[0]->implementation);
+
+	th->_removeChild(d);
+
+	//As we return the child we don't decRef it
+	return d->obj;
+}
+
+//Only from VM context
 ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
@@ -964,6 +983,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 	return (*it)->obj;
 }
 
+//Only from VM context
 ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);

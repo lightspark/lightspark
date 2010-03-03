@@ -47,11 +47,9 @@ private:
 public:
 	std::list<DisplayListTag*> blueprint;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
-	std::list<IDisplayListElem*>* dynamicDisplayList; //This is actually owned by the movieclip
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
-	Frame(std::list<IDisplayListElem*>* dd):
-		script(NULL),initialized(false),dynamicDisplayList(dd){ }
+	Frame():script(NULL),initialized(false){}
 	void Render();
 	void setLabel(STRING l);
 	void setScript(IFunction* s){script=s;}

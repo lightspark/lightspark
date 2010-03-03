@@ -105,7 +105,9 @@ private:
 	void _addChildAt(DisplayObject* child, unsigned int index);
 	bool _contains(DisplayObject* d);
 protected:
+	//This is shared between RenderThread and VM
 	std::list < IDisplayListElem* > dynamicDisplayList;
+	sem_t sem_displayList;
 public:
 	void _removeChild(IDisplayListElem*);
 	DisplayObjectContainer();

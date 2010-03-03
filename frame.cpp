@@ -67,11 +67,6 @@ void Frame::Render()
 		i->second->Render();
 		glPopMatrix();
 	}
-	//Render objects added at runtime
-	//TODO: Add synchronization mutex, as this may be modified in the meantime by the VM
-	list<IDisplayListElem*>::iterator j=dynamicDisplayList->begin();
-	for(;j!=dynamicDisplayList->end();j++)
-		(*j)->Render();
 
 #ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&td);

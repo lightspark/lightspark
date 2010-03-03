@@ -150,6 +150,7 @@ friend class DefineShape2Tag;
 friend class DefineShape3Tag;
 private:
 	void TessellateSimple();
+	void MakeStrips();
 	void SetStyles(FILLSTYLE* styles);
 	FILLSTYLE* style;
 	arrayElem* varray;

@@ -46,21 +46,16 @@ void GeomShape::Render(int x, int y) const
 	{
 		style->setFragmentProgram();
 
-/*		for(unsigned int i=0;i<triangle_strips.size();i++)
+		//Render the strips
+		for(unsigned int i=0;i<triangle_strips.size();i++)
 		{
 			glBegin(GL_TRIANGLE_STRIP);
 			for(unsigned int j=0;j<triangle_strips[i].size();j++)
 				glVertex2i(triangle_strips[i][j].x+x,triangle_strips[i][j].y+y);
 			glEnd();
-		}*/
-		for(unsigned int i=0;i<interior.size();i++)
-		{
-			glBegin(GL_TRIANGLES);
-				glVertex2i(interior[i].v1.x,interior[i].v1.y);
-				glVertex2i(interior[i].v2.x,interior[i].v2.y);
-				glVertex2i(interior[i].v3.x,interior[i].v3.y);
-			glEnd();
 		}
+
+		assert(interior.empty());
 		filled=true;
 
 		/*char* t=(char*)varray;
@@ -208,9 +203,32 @@ void GeomShape::BuildFromEdges(FILLSTYLE* styles)
 
 	//Tessellate the shape using ear removing algorithm
 	if(closed)
+	{
 		TessellateSimple();
+		MakeStrips();
+	}
 
-	return;
+/*	int strips_size=0;
+	for(int i=0;i<triangle_strips.size();i++)
+		strips_size+=triangle_strips[i].size();
+
+	varray=new arrayElem[strips_size];
+
+	int used=0;
+	for(int i=0;i<triangle_strips.size();i++)
+	{
+		for(int j=0;j<triangle_strips[i].size();j++)
+		{
+			varray[used].coord[0]=triangle_strips[i][j].x;
+			varray[used].coord[1]=triangle_strips[i][j].y;
+			style->setVertexData(&varray[used]);
+			used++;
+		}
+	}*/
+}
+
+void GeomShape::MakeStrips()
+{
 	//Try to build triangle strips
 	while(!interior.empty())
 	{
@@ -311,23 +329,6 @@ void GeomShape::BuildFromEdges(FILLSTYLE* styles)
 		}
 	}
 
-/*	int strips_size=0;
-	for(int i=0;i<triangle_strips.size();i++)
-		strips_size+=triangle_strips[i].size();
-
-	varray=new arrayElem[strips_size];
-
-	int used=0;
-	for(int i=0;i<triangle_strips.size();i++)
-	{
-		for(int j=0;j<triangle_strips[i].size();j++)
-		{
-			varray[used].coord[0]=triangle_strips[i][j].x;
-			varray[used].coord[1]=triangle_strips[i][j].y;
-			style->setVertexData(&varray[used]);
-			used++;
-		}
-	}*/
 }
 
 bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)

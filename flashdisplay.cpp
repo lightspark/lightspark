@@ -1091,6 +1091,8 @@ void Graphics::buildTraits(ASObject* o)
 	o->setVariableByQName("moveTo","",new Function(moveTo));
 	o->setVariableByQName("lineTo","",new Function(lineTo));
 	o->setVariableByQName("beginFill","",new Function(beginFill));
+	o->setVariableByQName("beginGradientFill","",new Function(beginGradientFill));
+	o->setVariableByQName("endFill","",new Function(endFill));
 }
 
 void Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
@@ -1139,6 +1141,8 @@ ASFUNCTIONBODY(Graphics,clear)
 	sem_wait(&th->geometry_mutex);
 	th->geometry.clear();
 	sem_post(&th->geometry_mutex);
+	th->tmpShape=GeomShape();
+	th->styles.clear();
 	return NULL;
 }
 
@@ -1148,7 +1152,7 @@ ASFUNCTIONBODY(Graphics,moveTo)
 	assert(argslen==2);
 
 	//As we are moving, first of all flush the shape
-	th->flushShape();
+	th->flushShape(true);
 
 	th->curX=args[0]->toInt();
 	th->curY=args[1]->toInt();
@@ -1172,14 +1176,22 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	return NULL;
 }
 
-void Graphics::flushShape()
+void Graphics::flushShape(bool keepStyle)
 {
 	if(!tmpShape.outline.empty())
 	{
+		if(tmpShape.color)
+		{
+			assert(tmpShape.color==1);
+			tmpShape.BuildFromEdges(&styles.back());
+		}
 		sem_wait(&geometry_mutex);
+		int oldcolor=tmpShape.color;
 		geometry.push_back(tmpShape);
 		sem_post(&geometry_mutex);
 		tmpShape=GeomShape();
+		if(keepStyle)
+			tmpShape.color=oldcolor;
 	}
 }
 
@@ -1192,7 +1204,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	double y=args[1]->toNumber();
 	double radius=args[2]->toNumber();
 
-	th->flushShape();
+	th->flushShape(true);
 
 	//Well, right now let's build a square anyway
 	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));
@@ -1201,7 +1213,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	th->tmpShape.outline.push_back(Vector2(x-radius,y+radius));
 	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));
 
-	th->flushShape();
+	th->flushShape(true);
 
 	return NULL;
 }
@@ -1216,27 +1228,85 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	int width=args[2]->toInt();
 	int height=args[3]->toInt();
 
-	th->flushShape();
+	th->flushShape(true);
 
-	//Build a shape and add it to the geometry vector
-	th->tmpShape.outline.push_back(Vector2(x,y));
-	th->tmpShape.outline.push_back(Vector2(x+width,y));
-	th->tmpShape.outline.push_back(Vector2(x+width,y+height));
-	th->tmpShape.outline.push_back(Vector2(x,y+height));
-	th->tmpShape.outline.push_back(Vector2(x,y));
+	if(width==0)
+	{
+		th->tmpShape.outline.push_back(Vector2(x,y));
+		th->tmpShape.outline.push_back(Vector2(x,y+height));
+	}
+	else if(height==0)
+	{
+		th->tmpShape.outline.push_back(Vector2(x,y));
+		th->tmpShape.outline.push_back(Vector2(x+width,y));
+	}
+	else
+	{
+		//Build a shape and add it to the geometry vector
+		th->tmpShape.outline.push_back(Vector2(x,y));
+		th->tmpShape.outline.push_back(Vector2(x+width,y));
+		th->tmpShape.outline.push_back(Vector2(x+width,y+height));
+		th->tmpShape.outline.push_back(Vector2(x,y+height));
+		th->tmpShape.outline.push_back(Vector2(x,y));
+	}
 
-	th->flushShape();
+	th->flushShape(true);
 
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,beginGradientFill)
+{
+	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	th->styles.push_back(FILLSTYLE());
+	th->styles.back().FillStyleType=0x00;
+	uint32_t color=0;
+	uint8_t alpha=255;
+	if(argslen>=2) //Colors
+	{
+		assert(args[1]->getObjectType()==T_ARRAY);
+		Array* ar=Class<Array>::cast(args[1]->implementation);
+		assert(ar->size()>=1);
+		color=ar->at(0)->toUInt();
+		//cout << "Color " << hex << args->at(0)->toInt() << dec << endl;
+	}
+	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
+	th->tmpShape.color=1;
 	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,beginFill)
 {
-	//Graphics* th=static_cast<Graphics*>(obj->implementation);
-/*	if(args->size()>=1)
-		cout << "Color " << hex << args->at(0)->toInt() << dec << endl;
-	if(args->size()>=2)
-		cout << "Alpha " << args->at(1)->toNumber() << endl;*/
+	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	th->styles.push_back(FILLSTYLE());
+	th->styles.back().FillStyleType=0x00;
+	uint32_t color=0;
+	uint8_t alpha=255;
+	if(argslen>=1)
+	{
+		color=args[0]->toUInt();
+		//cout << "Color " << hex << args->at(0)->toInt() << dec << endl;
+	}
+	if(argslen>=2)
+	{
+		alpha=(uint8_t(args[1]->toNumber()*0xff));
+		//cout << "Alpha " << args->at(1)->toNumber() << endl;
+	}
+	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
+	th->tmpShape.color=1;
+	return NULL;
+}
+
+ASFUNCTIONBODY(Graphics,endFill)
+{
+	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	assert(th->tmpShape.color);
+	if(!th->tmpShape.outline.empty())
+	{
+		if(th->tmpShape.outline.front()!=th->tmpShape.outline.back())
+			th->tmpShape.outline.push_back(th->tmpShape.outline.front());
+	}
+	th->flushShape(false);
 	return NULL;
 }
 

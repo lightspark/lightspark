@@ -231,6 +231,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	TagFactory factory(in);
 	Tag* tag;
 	bool done=false;
+	bool empty=true;
 	do
 	{
 		tag=factory.readTag();
@@ -242,11 +243,13 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				break;
 			case DISPLAY_LIST_TAG:
 				addToFrame(static_cast<DisplayListTag*>(tag));
+				empty=false;
 				break;
 			case SHOW_TAG:
 			{
 				frames.push_back(Frame(&dynamicDisplayList));
 				cur_frame=&frames.back();
+				empty=true;
 				break;
 			}
 			case CONTROL_TAG:
@@ -257,13 +260,18 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				break;
 			case END_TAG:
 				done=1;
+				if(empty)
+					frames.pop_back();
 				break;
 		}
 	}
 	while(!done);
 
 	if(frames.size()!=FrameCount/* && FrameCount!=1*/)
+	{
 		LOG(LOG_ERROR,"Inconsistent frame count " << FrameCount);
+		abort();
+	}
 
 	pt->parsingTarget=target_bak;
 	LOG(LOG_TRACE,"EndDefineSprite ID: " << SpriteID);

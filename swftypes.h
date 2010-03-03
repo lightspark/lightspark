@@ -889,6 +889,7 @@ class FILLSTYLE
 	friend class DefineShape2Tag;
 	friend class DefineShape3Tag;
 	friend class GeomShape;
+	friend class Graphics;
 private:
 	int version;
 	UI8 FillStyleType;

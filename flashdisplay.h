@@ -131,9 +131,11 @@ private:
 	//As geometry is used by RenderThread but modified by ABCVm we have to mutex a bit
 	sem_t geometry_mutex;
 	std::vector<GeomShape> geometry;
+	//We need a list to preserve pointers
+	std::list<FILLSTYLE> styles;
 	GeomShape tmpShape;
 	int curX, curY;
-	void flushShape();
+	void flushShape(bool keepStyle);
 public:
 	Graphics():curX(0),curY(0)
 	{
@@ -143,6 +145,8 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(beginFill);
+	ASFUNCTION(beginGradientFill);
+	ASFUNCTION(endFill);
 	ASFUNCTION(drawRect);
 	ASFUNCTION(drawCircle);
 	ASFUNCTION(moveTo);

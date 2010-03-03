@@ -155,7 +155,7 @@ private:
 	arrayElem* varray;
 	bool closed;
 public:
-	GeomShape():style(NULL),varray(NULL),closed(false){}
+	GeomShape():style(NULL),varray(NULL),closed(false),color(0){}
 	std::vector<Triangle> interior;
 	std::vector<std::vector<Vector2> > triangle_strips;
 	std::vector<Vector2> outline;

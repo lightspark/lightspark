@@ -46,11 +46,19 @@ void GeomShape::Render(int x, int y) const
 	{
 		style->setFragmentProgram();
 
-		for(unsigned int i=0;i<triangle_strips.size();i++)
+/*		for(unsigned int i=0;i<triangle_strips.size();i++)
 		{
 			glBegin(GL_TRIANGLE_STRIP);
 			for(unsigned int j=0;j<triangle_strips[i].size();j++)
 				glVertex2i(triangle_strips[i][j].x+x,triangle_strips[i][j].y+y);
+			glEnd();
+		}*/
+		for(unsigned int i=0;i<interior.size();i++)
+		{
+			glBegin(GL_TRIANGLES);
+				glVertex2i(interior[i].v1.x,interior[i].v1.y);
+				glVertex2i(interior[i].v2.x,interior[i].v2.y);
+				glVertex2i(interior[i].v3.x,interior[i].v3.y);
 			glEnd();
 		}
 		filled=true;
@@ -202,7 +210,8 @@ void GeomShape::BuildFromEdges(FILLSTYLE* styles)
 	if(closed)
 		TessellateSimple();
 
-	//Try to build triangle strip
+	return;
+	//Try to build triangle strips
 	while(!interior.empty())
 	{
 		std::vector<Vector2> strip[3];

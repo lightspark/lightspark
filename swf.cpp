@@ -1111,7 +1111,9 @@ void RootMovieClip::setFrameCount(int f)
 	sem_wait(&sem_frames);
 	totalFrames=f;
 	state.max_FP=f;
+	assert(cur_frame==&frames.back());
 	frames.reserve(f);
+	cur_frame=&frames.back();
 	sem_post(&sem_frames);
 }
 

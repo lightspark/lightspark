@@ -80,11 +80,12 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	pt->root->frame_rate/=256;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),toBind(false)
+RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),toBind(false),frame_rate(24)
 {
 	root=this;
 	sem_init(&mutex,0,1);
 	sem_init(&sem_frames,0,1);
+	sem_init(&new_frame,0,0);
 	sem_init(&sem_valid_frame_size,0,0);
 	loaderInfo=li;
 	//Reset framesLoaded, as there are still not available
@@ -105,7 +106,6 @@ SystemState::SystemState():RootMovieClip(NULL),shutdown(false),currentVm(NULL),c
 	curl_global_init(CURL_GLOBAL_ALL);
 
 	sys=this;
-	sem_init(&new_frame,0,0);
 	loaderInfo=Class<LoaderInfo>::getInstanceS(true);
 	stage=Class<Stage>::getInstanceS(true);
 	startTime=compat_msectiming();
@@ -915,6 +915,7 @@ void RootMovieClip::Render()
 	while(1)
 	{
 		//Check if the next frame we are going to play is available
+		cout << "ROOTFRAME " << state.next_FP << endl;
 		if(state.next_FP<frames.size())
 			break;
 
@@ -1103,7 +1104,7 @@ void RenderThread::draw()
 {
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
-	compat_msleep(1000/sys->root->frame_rate);
+	compat_msleep(1000/sys->frame_rate);
 	sem_wait(&end_render);
 }
 

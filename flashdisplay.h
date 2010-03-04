@@ -50,7 +50,7 @@ public:
 
 	IDisplayListElem():root(NULL),origMatrix(NULL),parent(NULL){}
 	virtual void Render()=0;
-	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)=0;
+	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)=0;
 	virtual void setRoot(RootMovieClip* root)=0;
 };
 
@@ -64,7 +64,11 @@ protected:
 	LoaderInfo* loaderInfo;
 	void setRoot(RootMovieClip* r)
 	{
-		root=r;
+		if(root!=r)
+		{
+			assert(root==NULL);
+			root=r;
+		}
 	}
 public:
 	DisplayObject();
@@ -99,7 +103,7 @@ public:
 	{
 		abort();
 	}
-	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		abort();
 	}
@@ -120,10 +124,6 @@ protected:
 public:
 	void _removeChild(IDisplayListElem*);
 	DisplayObjectContainer();
-	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
-	{
-		abort();
-	}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -164,7 +164,7 @@ public:
 	ASFUNCTION(lineTo);
 	ASFUNCTION(clear);
 	void Render();
-	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 };
 
 class Shape: public DisplayObject
@@ -177,17 +177,12 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
-	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		if(graphics)
-			graphics->getBounds(xmin,xmax,ymin,ymax);
-		else
-		{
-			xmin=0;
-			xmax=0;
-			ymin=0;
-			ymax=0;
-		}
+			return graphics->getBounds(xmin,xmax,ymin,ymax);
+
+		return false;
 	}
 	void Render();
 };
@@ -245,6 +240,7 @@ public:
 		return 0;
 	}
 	void Render();
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 };
 
 class Sprite: public DisplayObjectContainer
@@ -262,7 +258,7 @@ public:
 	{
 		return 0;
 	}
-	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 	void Render();
 };
 
@@ -298,7 +294,7 @@ public:
 
 	//IDisplayListElem interface
 	void Render();
-	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 	void check()
 	{
 		assert(frames.size()==totalFrames);

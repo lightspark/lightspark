@@ -191,7 +191,7 @@ void GeomShape::BuildFromEdges(FILLSTYLE* styles)
 	if(outline.empty())
 		return;
 
-	if(outline.front()==outline.back())
+	if(outline.size()>1 && outline.front()==outline.back())
 	{
 		closed=true;
 		outline.pop_back();
@@ -393,6 +393,7 @@ void GeomShape::TessellateSimple()
 	vector<Vector2> P=outline;
 	unsigned int i=0;
 	int count=0;
+	assert(P.size()>=3);
 	while(P.size()>3)
 	{
 		fixIndex(P);
@@ -447,6 +448,7 @@ void GeomShape::TessellateSimple()
 		if(count>30000)
 			break;
 	}
+	assert(P.size()==3);
 	interior.push_back(Triangle(P[0],P[1],P[2]));
 }
 

@@ -114,12 +114,13 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
-	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		//Apply transformation with the current matrix
 		Matrix.multiply2D(ShapeBounds.Xmin,ShapeBounds.Ymin,xmin,ymin);
 		Matrix.multiply2D(ShapeBounds.Xmax,ShapeBounds.Ymax,xmax,ymax);
 		//TODO: adapt for rotation
+		return true;
 	}
 
 	IInterface* instance() const
@@ -138,12 +139,13 @@ public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
-	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		//Apply transformation with the current matrix
 		Matrix.multiply2D(ShapeBounds.Xmin,ShapeBounds.Ymin,xmin,ymin);
 		Matrix.multiply2D(ShapeBounds.Xmax,ShapeBounds.Ymax,xmax,ymax);
 		//TODO: adapt for rotation
+		return true;
 	}
 
 	IInterface* instance() const
@@ -163,13 +165,11 @@ public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
-	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
-		abort();
-		xmin=ShapeBounds.Xmin;
-		xmax=ShapeBounds.Xmax;
-		ymin=ShapeBounds.Ymin;
-		ymax=ShapeBounds.Ymax;
+		Matrix.multiply2D(ShapeBounds.Xmin,ShapeBounds.Ymin,xmin,ymin);
+		Matrix.multiply2D(ShapeBounds.Xmax,ShapeBounds.Ymax,xmax,ymax);
+		return true;
 	}
 
 	IInterface* instance() const
@@ -192,7 +192,7 @@ public:
 	DefineShape4Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
-	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		abort();
 		xmin=ShapeBounds.Xmin;
@@ -389,7 +389,7 @@ public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
 	virtual void Render();
-	void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		abort();
 	}
@@ -505,7 +505,7 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render();
-	virtual void getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		abort();
 		xmin=TextBounds.Xmin;

@@ -230,6 +230,23 @@ void Loader::Render()
 	local_root->Render();
 }
 
+bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+{
+	if(content)
+	{
+		if(content->getBounds(xmin,xmax,ymin,ymax))
+		{
+			Matrix.multiply2D(xmin,ymin,xmin,ymin);
+			Matrix.multiply2D(xmax,ymax,xmax,ymax);
+			return true;
+		}
+		else
+			return false;
+	}
+	else
+		return false;
+}
+
 Sprite::Sprite():graphics(NULL)
 {
 }
@@ -247,44 +264,57 @@ void Sprite::buildTraits(ASObject* o)
 	o->setGetterByQName("graphics","",new Function(_getGraphics));
 }
 
-void Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	//Iterate over the displaylist of the current frame
 	sem_wait(&sem_displayList);
 	if(dynamicDisplayList.empty() && graphics==NULL)
 	{
 		sem_post(&sem_displayList);
-		xmin=0;
-		xmax=0;
-		ymin=0;
-		ymax=0;
-		return;
+		return false;
 	}
 
+	bool ret=false;
 	//TODO: Check bounds calculation
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();it++)
 	{
 		number_t txmin,txmax,tymin,tymax;
-		(*it)->getBounds(txmin,txmax,tymin,tymax);
-		xmin = min(xmin,txmin);
-		xmax = max(xmax,txmax);
-		ymin = min(ymin,txmin);
-		ymax = max(ymax,tymax);
+		if((*it)->getBounds(txmin,txmax,tymin,tymax))
+		{
+			if(ret==true)
+			{
+				xmin = min(xmin,txmin);
+				xmax = max(xmax,txmax);
+				ymin = min(ymin,txmin);
+				ymax = max(ymax,tymax);
+			}
+			ret=true;
+		}
 	}
 	sem_post(&sem_displayList);
 	if(graphics)
 	{
 		number_t txmin,txmax,tymin,tymax;
-		graphics->getBounds(txmin,txmax,tymin,tymax);
-		xmin = min(xmin,txmin);
-		xmax = max(xmax,txmax);
-		ymin = min(ymin,txmin);
-		ymax = max(ymax,tymax);
+		if(graphics->getBounds(txmin,txmax,tymin,tymax))
+		{
+			if(ret==true)
+			{
+				xmin = min(xmin,txmin);
+				xmax = max(xmax,txmax);
+				ymin = min(ymin,txmin);
+				ymax = max(ymax,tymax);
+			}
+			ret=true;
+		}
 	}
-	//TODO: take rotation into account
-	Matrix.multiply2D(xmin,ymin,xmin,ymin);
-	Matrix.multiply2D(xmax,ymax,xmax,ymax);
+	if(ret)
+	{
+		//TODO: take rotation into account
+		Matrix.multiply2D(xmin,ymin,xmin,ymin);
+		Matrix.multiply2D(xmax,ymax,xmax,ymax);
+	}
+	return ret;
 }
 
 void Sprite::Render()
@@ -478,6 +508,7 @@ void MovieClip::advanceFrame()
 	if(!state.stop_FP || state.explicit_FP /*&& (class_name=="MovieClip")*/)
 	{
 		//Before assigning the next_FP we initialize the frame
+		assert(state.next_FP<frames.size());
 		frames[state.next_FP].init(this,displayList);
 		state.FP=state.next_FP;
 		if(!state.stop_FP)
@@ -490,12 +521,8 @@ void MovieClip::advanceFrame()
 void MovieClip::Render()
 {
 	LOG(LOG_TRACE,"Render MovieClip");
-
-	assert(state.FP<framesLoaded);
-
-	advanceFrame();
-	if(!state.stop_FP)
-		frames[state.FP].runScript();
+//	if(obj && obj->prototype && obj->prototype->class_name=="SizeButton_LargerIcon")
+//		__asm__("int $3");
 
 	//Set the id in the secondary color
 	glPushAttrib(GL_CURRENT_BIT);
@@ -505,7 +532,16 @@ void MovieClip::Render()
 	glPushMatrix();
 	//glTranslatef(_x,_y,0);
 	//glRotatef(rotation,0,0,1);
-	frames[state.FP].Render();
+	if(!frames.empty())
+	{
+		assert(state.FP<framesLoaded);
+
+		advanceFrame();
+		if(!state.stop_FP)
+			frames[state.FP].runScript();
+
+		frames[state.FP].Render();
+	}
 
 	//Render objects added at runtime
 	sem_wait(&sem_displayList);
@@ -520,27 +556,27 @@ void MovieClip::Render()
 	LOG(LOG_TRACE,"End Render MovieClip");
 }
 
-void MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	//Iterate over the displaylist of the current frame
 	sem_wait(&sem_displayList);
 	if(dynamicDisplayList.empty() && (framesLoaded==0 || frames[state.FP].displayList.size()==0))
 	{
-		xmin=0;
-		xmax=0;
-		ymin=0;
-		ymax=0;
 		sem_post(&sem_displayList);
-		return;
+		return false;
 	}
 	//TODO: add dynamic dysplay list
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::iterator it=frames[state.FP].displayList.begin();
 	assert(frames[state.FP].displayList.size()==1);
 	sem_post(&sem_displayList);
-	it->second->getBounds(xmin,xmax,ymin,ymax);
-	//TODO: take rotation into account
-	Matrix.multiply2D(xmin,ymin,xmin,ymin);
-	Matrix.multiply2D(xmax,ymax,xmax,ymax);
+	if(it->second->getBounds(xmin,xmax,ymin,ymax))
+	{
+		//TODO: take rotation into account
+		Matrix.multiply2D(xmin,ymin,xmin,ymin);
+		Matrix.multiply2D(xmax,ymax,xmax,ymax);
+		return true;
+	}
+	return false;
 }
 
 DisplayObject::DisplayObject():width(0),height(0),loaderInfo(NULL)
@@ -657,14 +693,23 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 
 	Rectangle* ret=Class<Rectangle>::getInstanceS(true);
 	number_t x1,x2,y1,y2;
-	th->getBounds(x1,x2,y1,y2);
-
-	//Bounds are in the form [XY]{min,max}
-	//convert it to rect (x,y,width,height) representation
-	ret->x=x1;
-	ret->width=x2-x1;
-	ret->y=y1;
-	ret->height=y2-y1;
+	bool r=th->getBounds(x1,x2,y1,y2);
+	if(r)
+	{
+		//Bounds are in the form [XY]{min,max}
+		//convert it to rect (x,y,width,height) representation
+		ret->x=x1;
+		ret->width=x2-x1;
+		ret->y=y1;
+		ret->height=y2-y1;
+	}
+	else
+	{
+		ret->x=0;
+		ret->width=0;
+		ret->y=0;
+		ret->height=0;
+	}
 	return ret->obj;
 }
 
@@ -783,9 +828,12 @@ ASFUNCTIONBODY(DisplayObject,_getWidth)
 		return abstract_b(th->width);
 
 	number_t x1,x2,y1,y2;
-	th->getBounds(x1,x2,y1,y2);
+	bool ret=th->getBounds(x1,x2,y1,y2);
 
-	return abstract_i(x2-x1);
+	if(ret)
+		return abstract_i(x2-x1);
+	else
+		return abstract_i(0);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getHeight)
@@ -796,9 +844,11 @@ ASFUNCTIONBODY(DisplayObject,_getHeight)
 		return abstract_b(th->height);
 
 	number_t x1,x2,y1,y2;
-	th->getBounds(x1,x2,y1,y2);
-
-	return abstract_i(y2-y1);
+	bool ret=th->getBounds(x1,x2,y1,y2);
+	if(ret)
+		return abstract_i(y2-y1);
+	else
+		return abstract_i(0);
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)
@@ -866,7 +916,6 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 
 	sem_wait(&sem_displayList);
 	//Set the root of the movie to this container
-	assert(child->root==NULL);
 	child->setRoot(root);
 
 	//We insert the object in the back of the list
@@ -1131,39 +1180,33 @@ void Graphics::buildTraits(ASObject* o)
 	o->setVariableByQName("endFill","",new Function(endFill));
 }
 
-void Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	if(geometry.size()==0)
-	{
-		xmin=0;
-		xmax=0;
-		ymin=0;
-		ymax=0;
-	}
-	else
-	{
-		//Initialize values to the first available
-		assert(geometry[0].outline.size()>0);
-		xmin=xmax=geometry[0].outline[0].x;
-		ymin=ymax=geometry[0].outline[0].y;
+		return false;
 
-		for(unsigned int i=0;i<geometry.size();i++)
+	//Initialize values to the first available
+	assert(geometry[0].outline.size()>0);
+	xmin=xmax=geometry[0].outline[0].x;
+	ymin=ymax=geometry[0].outline[0].y;
+
+	for(unsigned int i=0;i<geometry.size();i++)
+	{
+		for(unsigned int j=0;j<geometry[i].outline.size();j++)
 		{
-			for(unsigned int j=0;j<geometry[i].outline.size();j++)
-			{
-				const Vector2& v=geometry[i].outline[j];
-				if(v.x<xmin)
-					xmin=v.x;
-				else if(v.x>xmax)
-					xmax=v.x;
+			const Vector2& v=geometry[i].outline[j];
+			if(v.x<xmin)
+				xmin=v.x;
+			else if(v.x>xmax)
+				xmax=v.x;
 
-				if(v.y<ymin)
-					ymin=v.y;
-				else if(v.y>ymax)
-					ymax=v.y;
-			}
+			if(v.y<ymin)
+				ymin=v.y;
+			else if(v.y>ymax)
+				ymax=v.y;
 		}
 	}
+	return true;
 }
 
 ASFUNCTIONBODY(Graphics,_constructor)
@@ -1266,7 +1309,11 @@ ASFUNCTIONBODY(Graphics,drawRect)
 
 	th->flushShape(true);
 
-	if(width==0)
+	if(width==0 && height==0)
+	{
+		th->tmpShape.outline.push_back(Vector2(x,y));
+	}
+	else if(width==0)
 	{
 		th->tmpShape.outline.push_back(Vector2(x,y));
 		th->tmpShape.outline.push_back(Vector2(x,y+height));

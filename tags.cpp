@@ -612,9 +612,11 @@ void DefineMorphShapeTag::Render()
 void DefineShapeTag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape Render");
+	cout << "DefineShapeTag disabled" << endl;
+	return;
+
 	if(cached.size()==0)
 	{
-
 #ifndef WIN32
 		timespec ts,td;
 		clock_gettime(CLOCK_REALTIME,&ts);
@@ -699,6 +701,9 @@ void DefineShape2Tag::Render()
 void DefineShape4Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape4 Render");
+	cout << "DefineShape4Tag disabled" << endl;
+	return;
+
 	if(cached.size()==0)
 	{
 #ifndef WIN32
@@ -731,6 +736,9 @@ void DefineShape4Tag::Render()
 void DefineShape3Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape3 Render "<< ShapeId);
+	cout << "DefineShapeTag3 disabled" << endl;
+	return;
+
 /*	if(texture==0)
 	{
 		glPushAttrib(GL_TEXTURE_BIT);

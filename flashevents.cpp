@@ -253,7 +253,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 
 	if(find(it->second.begin(),it->second.end(),f)!=it->second.end())
 	{
-		cout << "Weird event reregistration" << endl;
+		LOG(LOG_CALLS,"Weird event reregistration");
 		return NULL;
 	}
 

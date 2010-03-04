@@ -286,7 +286,6 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 
 	assert(c);
 
-	cout << c->getQualifiedClassName() << endl;
 	return Class<ASString>::getInstanceS(true,c->getQualifiedClassName())->obj;
 }
 

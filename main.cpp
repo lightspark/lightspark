@@ -160,6 +160,8 @@ int main(int argc, char* argv[])
 	zlib_file_filter zf(fileName);
 	istream f(&zf);
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+	cout.exceptions( ios::failbit | ios::badbit);
+	cerr.exceptions( ios::failbit | ios::badbit);
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	ParseThread pt(sys,sys,f);
@@ -190,8 +192,7 @@ int main(int argc, char* argv[])
 		if(timeDiff(ts,td)>1000)
 		{
 			ts=td;
-			//LOG(NO_INFO,"FPS: " << dec <<count);
-			cout << "FPS: " << dec << count << endl;
+			LOG(LOG_NO_INFO,"FPS: " << dec <<count);
 			sys->fps_prof->fps=count;
 			count=0;
 			sec_count++;
@@ -199,7 +200,7 @@ int main(int argc, char* argv[])
 			sys->fps_prof=&fps_profs.back();
 			if(sec_count>120)
 			{
-				cout << "exiting" << endl;
+				LOG(LOG_NO_INFO,"Exiting");
 				sys->setShutdownFlag();
 				exit(-2);
 				break;

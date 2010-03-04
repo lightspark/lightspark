@@ -48,10 +48,8 @@ ASFUNCTIONBODY(URLRequest,_constructor)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
 	if(argslen>0 && args[0]->getObjectType()==T_STRING)
-	{
 		th->url=args[0]->toString();
-		cout << "url is " << th->url << endl;
-	}
+
 	obj->setSetterByQName("url","",new Function(_setUrl));
 	obj->setGetterByQName("url","",new Function(_getUrl));
 	return NULL;
@@ -61,7 +59,6 @@ ASFUNCTIONBODY(URLRequest,_setUrl)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
 	th->url=args[0]->toString();
-	cout << "Setting url to " << th->url << endl;
 	return NULL;
 }
 
@@ -266,7 +263,7 @@ void NetStream::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(NetStream,_constructor)
 {
-	cout << "NetStream constructor"  << endl;
+	LOG(LOG_CALLS,"NetStream constructor");
 	return NULL;
 }
 

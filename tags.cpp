@@ -612,7 +612,7 @@ void DefineMorphShapeTag::Render()
 void DefineShapeTag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape Render");
-	cout << "DefineShapeTag disabled" << endl;
+	LOG(LOG_NOT_IMPLEMENTED,"DefineShape disabled");
 	return;
 
 	if(cached.size()==0)
@@ -701,7 +701,7 @@ void DefineShape2Tag::Render()
 void DefineShape4Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape4 Render");
-	cout << "DefineShape4Tag disabled" << endl;
+	LOG(LOG_NO_INFO,"DefineShape4 disabled");
 	return;
 
 	if(cached.size()==0)
@@ -736,7 +736,7 @@ void DefineShape4Tag::Render()
 void DefineShape3Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape3 Render "<< ShapeId);
-	cout << "DefineShapeTag3 disabled" << endl;
+	LOG(LOG_NO_INFO,"DefineShape3 disabled");
 	return;
 
 /*	if(texture==0)
@@ -886,16 +886,12 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 							if(shapes[i].outline.back()==p1)
 							{
 								shapes[i].outline.push_back(p2);
-								//cout << "Adding edge to shape " << i << endl;
-								//cout << p1 << p2 << endl;
 								new_shape=false;
 								break;
 							}
 							else if(shapes[i].outline.front()==p2)
 							{
 								shapes[i].outline.insert(shapes[i].outline.begin(),p1);
-								//cout << "Adding edge to shape " << i << endl;
-								//cout << p1 << p2 << endl;
 								new_shape=false;
 								break;
 							}
@@ -904,8 +900,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 								!(*(shapes[i].outline.rbegin()+1)==p1))
 							{
 								shapes[i].outline.push_back(p1);
-								//cout << "Adding edge to shape " << i << endl;
-								//cout << p2 << p1 << endl;
 								new_shape=false;
 								break;
 							}
@@ -913,8 +907,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 								!(shapes[i].outline[1]==p2)) 
 							{
 								shapes[i].outline.insert(shapes[i].outline.begin(),p2);
-								//cout << "Adding edge to shape " << i << endl;
-								//cout << p2 << p1 << endl;
 								new_shape=false;
 								break;
 							}
@@ -922,8 +914,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 					}
 					if(new_shape)
 					{
-						//cout << "Adding edge to new shape " << shapes.size() << endl;
-						//cout << p1 << p2 << endl;
 						shapes.push_back(GeomShape());
 						shapes.back().outline.push_back(p1);
 						shapes.back().outline.push_back(p2);
@@ -958,9 +948,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 							{
 								shapes[i].outline.push_back(p2);
 								shapes[i].outline.push_back(p3);
-								//cout << "Adding curved edge to shape " << i << endl;
-								//cout << p1 << p2 << endl;
-								//cout << p2 << p3 << endl;
 								new_shape=false;
 								break;
 							}
@@ -968,9 +955,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 							{
 								shapes[i].outline.insert(shapes[i].outline.begin(),p2);
 								shapes[i].outline.insert(shapes[i].outline.begin(),p1);
-								//cout << "Adding curved edge to shape " << i << endl;
-								//cout << p1 << p2 << endl;
-								//cout << p2 << p3 << endl;
 								new_shape=false;
 								break;
 							}
@@ -980,9 +964,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 							{
 								shapes[i].outline.push_back(p2);
 								shapes[i].outline.push_back(p1);
-								//cout << "Adding curved edge to shape " << i << endl;
-								//cout << p1 << p2 << endl;
-								//cout << p2 << p3 << endl;
 								new_shape=false;
 								break;
 							}
@@ -991,9 +972,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 							{
 								shapes[i].outline.insert(shapes[i].outline.begin(),p2);
 								shapes[i].outline.insert(shapes[i].outline.begin(),p3);
-								//cout << "Adding curved edge to shape " << i << endl;
-								//cout << p1 << p2 << endl;
-								//cout << p2 << p3 << endl;
 								new_shape=false;
 								break;
 							}
@@ -1001,9 +979,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 					}
 					if(new_shape)
 					{
-						//cout << "Adding edge to new shape" << endl;
-						//cout << p1 << p2 << endl;
-						//cout << p2 << p3 << endl;
 						shapes.push_back(GeomShape());
 						shapes.back().outline.push_back(p1);
 						shapes.back().outline.push_back(p2);
@@ -1021,7 +996,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 				startX=cur->MoveDeltaX;
 				startY=cur->MoveDeltaY;
 				count++;
-				//cout << "Move " << startX << ' ' << startY << endl;
 			}
 /*			if(cur->StateLineStyle)
 			{
@@ -1509,7 +1483,7 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	//We do not need more than a Vm
 	if(ActionScript3 && sys->currentVm==NULL)
 	{
-		cout << "creating vm" << endl;
+		LOG(LOG_NO_INFO,"Creating VM");
 		sys->currentVm=new ABCVm(sys);
 	}
 }

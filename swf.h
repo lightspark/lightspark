@@ -100,6 +100,8 @@ private:
 	sem_t sem_frames;
 	bool toBind;
 	tiny_string bindName;
+	unsigned int version;
+	unsigned int fileLenght;
 
 public:
 	RootMovieClip(LoaderInfo* li);
@@ -269,7 +271,6 @@ public:
 	GLuint data_tex;
 	int width;
 	int height;
-
 };
 
 };

@@ -42,7 +42,6 @@ ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	for(int i=0;i<Count;i++)
 	{
 		in >> Tags[i] >> Names[i];
-//		cout << Tags[i] << ' ' << Names[i] << endl;
 		DictionaryTag* d=pt->root->dictionaryLookup(Tags[i]);
 		if(d==NULL)
 			abort();
@@ -458,7 +457,6 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 		LOG(LOG_CALLS,"Arg "<<i<<"="<<args->at(i)->toString());
 	for(int i=0;i<NumParams;i++)
 	{
-		//cout << "Reg " << (int)Parameters[i].Register << " for " <<  Parameters[i].ParamName << endl;
 		if(Parameters[i].Register==0)
 			LOG(LOG_ERROR,"Parameter not in register")
 		else

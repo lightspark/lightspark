@@ -59,7 +59,7 @@ tiny_string ASObject::toString(bool debugMsg)
 		if(implementation->toString(ret))
 			return ret;
 	}
-	cout << "Cannot convert object of type " << getObjectType() << " to String" << endl;
+	LOG(LOG_NOT_IMPLEMENTED,"Cannot convert object of type " << getObjectType() << " to String");
 	if(debugMsg==false && hasPropertyByQName("toString",""))
 	{
 		objAndLevel obj_toString=getVariableByQName("toString","");

@@ -342,7 +342,6 @@ bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
 				}
 				break;
 			case DATA_INT:
-				//cout << "Not efficent" << endl;
 				out=abstract_i(data[index].data_i);
 				out->fake_decRef();
 				break;
@@ -1270,9 +1269,9 @@ ASFUNCTIONBODY(RegExp,exec)
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert(th->lastIndex==0);
 	const tiny_string& arg0=args[0]->toString();
-	cout << "re: " << th->re << endl;
+	LOG(LOG_CALLS,"re: " << th->re);
 	int numberOfCaptures=pcreRE.NumberOfCapturingGroups();
-	cout << "capturing gropus " << numberOfCaptures << endl;
+	LOG(LOG_CALLS,"capturing groups " << numberOfCaptures);
 	assert(numberOfCaptures!=-1);
 	//The array of captured groups
 	pcrecpp::Arg** captures=new pcrecpp::Arg*[numberOfCaptures];

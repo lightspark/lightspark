@@ -1436,14 +1436,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 
 			if(new_start!=cur.locals_start)
 			{
-			/*	for(int i=0;i<new_start.size();i++)
-					cout << new_start[i] << ' ';
-				cout << endl;
-				for(int i=0;i<cur.locals.size();i++)
-					cout << cur.locals_start[i] << ' ';
-				cout << endl;*/
 				stop=false;
-			//	cout << "again" << endl;
 				cur.locals_start=new_start;
 			}
 		}

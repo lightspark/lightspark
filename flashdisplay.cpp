@@ -511,7 +511,7 @@ void MovieClip::advanceFrame()
 		assert(state.next_FP<frames.size());
 		frames[state.next_FP].init(this,displayList);
 		state.FP=state.next_FP;
-		if(!state.stop_FP)
+		if(!state.stop_FP && framesLoaded>0)
 			state.next_FP=min(state.FP+1,framesLoaded-1);
 		state.explicit_FP=false;
 	}
@@ -532,7 +532,7 @@ void MovieClip::Render()
 	glPushMatrix();
 	//glTranslatef(_x,_y,0);
 	//glRotatef(rotation,0,0,1);
-	if(!frames.empty())
+	if(framesLoaded)
 	{
 		assert(state.FP<framesLoaded);
 
@@ -1351,7 +1351,6 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		Array* ar=Class<Array>::cast(args[1]->implementation);
 		assert(ar->size()>=1);
 		color=ar->at(0)->toUInt();
-		//cout << "Color " << hex << args->at(0)->toInt() << dec << endl;
 	}
 	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
 	th->tmpShape.color=1;
@@ -1366,15 +1365,9 @@ ASFUNCTIONBODY(Graphics,beginFill)
 	uint32_t color=0;
 	uint8_t alpha=255;
 	if(argslen>=1)
-	{
 		color=args[0]->toUInt();
-		//cout << "Color " << hex << args->at(0)->toInt() << dec << endl;
-	}
 	if(argslen>=2)
-	{
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
-		//cout << "Alpha " << args->at(1)->toNumber() << endl;
-	}
 	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
 	th->tmpShape.color=1;
 	return NULL;

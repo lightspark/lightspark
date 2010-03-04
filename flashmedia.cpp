@@ -35,7 +35,7 @@ void SoundTransform::sinit(Class_base* c)
 
 ASFUNCTIONBODY(SoundTransform,_constructor)
 {
-	cout << "SoundTransform constructor" << endl;
+	LOG(LOG_CALLS,"SoundTransform constructor");
 	return NULL;
 }
 
@@ -54,12 +54,12 @@ void Video::buildTraits(ASObject* o)
 
 void Video::Render()
 {
-	cout << "Video::Render not implemented" << endl;
+	LOG(LOG_CALLS,"Video::Render not implemented");
 }
 
 ASFUNCTIONBODY(Video,_constructor)
 {
-	cout << "Video constructor" << endl;
+	LOG(LOG_CALLS,"Video constructor");
 	return NULL;
 }
 

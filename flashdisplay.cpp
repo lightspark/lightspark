@@ -230,7 +230,7 @@ void Loader::Render()
 	local_root->Render();
 }
 
-bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	if(content)
 	{
@@ -264,7 +264,7 @@ void Sprite::buildTraits(ASObject* o)
 	o->setGetterByQName("graphics","",new Function(_getGraphics));
 }
 
-bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	//Iterate over the displaylist of the current frame
 	sem_wait(&sem_displayList);
@@ -276,7 +276,7 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 	bool ret=false;
 	//TODO: Check bounds calculation
-	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
+	list<IDisplayListElem*>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();it++)
 	{
 		number_t txmin,txmax,tymin,tymax;
@@ -556,7 +556,7 @@ void MovieClip::Render()
 	LOG(LOG_TRACE,"End Render MovieClip");
 }
 
-bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	//Iterate over the displaylist of the current frame
 	sem_wait(&sem_displayList);
@@ -566,7 +566,7 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 		return false;
 	}
 	//TODO: add dynamic dysplay list
-	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::iterator it=frames[state.FP].displayList.begin();
+	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[state.FP].displayList.begin();
 	assert(frames[state.FP].displayList.size()==1);
 	sem_post(&sem_displayList);
 	if(it->second->getBounds(xmin,xmax,ymin,ymax))
@@ -1180,7 +1180,7 @@ void Graphics::buildTraits(ASObject* o)
 	o->setVariableByQName("endFill","",new Function(endFill));
 }
 
-bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	if(geometry.size()==0)
 		return false;

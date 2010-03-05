@@ -45,7 +45,7 @@ void TextField::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 }
 
-bool TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	//TODO: check
 	xmin=0;

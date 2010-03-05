@@ -850,7 +850,7 @@ public:
 	MATRIX():ScaleX(1),ScaleY(1),RotateSkew0(0),RotateSkew1(0),TranslateX(0),TranslateY(0){}
 	void get4DMatrix(float matrix[16]);
 	void getTranslation(int& x, int& y);
-	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout);
+	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 };
 
 class GRADRECORD

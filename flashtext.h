@@ -38,7 +38,7 @@ class TextField: public DisplayObject
 {
 public:
 	static void sinit(Class_base* c);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
 };
 

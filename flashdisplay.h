@@ -50,7 +50,7 @@ public:
 
 	IDisplayListElem():root(NULL),origMatrix(NULL),parent(NULL){}
 	virtual void Render()=0;
-	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)=0;
+	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const=0;
 	virtual void setRoot(RootMovieClip* root)=0;
 };
 
@@ -103,7 +103,7 @@ public:
 	{
 		abort();
 	}
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		abort();
 	}
@@ -119,7 +119,7 @@ protected:
 	std::list < IDisplayListElem* > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
-	sem_t sem_displayList;
+	mutable sem_t sem_displayList;
 	void setRoot(RootMovieClip* r);
 public:
 	void _removeChild(IDisplayListElem*);
@@ -164,7 +164,7 @@ public:
 	ASFUNCTION(lineTo);
 	ASFUNCTION(clear);
 	void Render();
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 };
 
 class Shape: public DisplayObject
@@ -177,7 +177,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		if(graphics)
 			return graphics->getBounds(xmin,xmax,ymin,ymax);
@@ -240,7 +240,7 @@ public:
 		return 0;
 	}
 	void Render();
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 };
 
 class Sprite: public DisplayObjectContainer
@@ -258,7 +258,7 @@ public:
 	{
 		return 0;
 	}
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
 };
 
@@ -294,7 +294,7 @@ public:
 
 	//IDisplayListElem interface
 	void Render();
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void check()
 	{
 		assert(frames.size()==totalFrames);

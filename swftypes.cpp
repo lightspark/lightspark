@@ -1029,7 +1029,7 @@ void MATRIX::get4DMatrix(float matrix[16])
 	matrix[15]=1;
 }
 
-void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout)
+void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	xout=xin*ScaleX + yin*RotateSkew1 + TranslateX;
 	yout=xin*RotateSkew0 + yin*ScaleY + TranslateY;

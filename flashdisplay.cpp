@@ -289,6 +289,13 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 				ymin = min(ymin,txmin);
 				ymax = max(ymax,tymax);
 			}
+			else
+			{
+				xmin=txmin;
+				xmax=txmax;
+				ymin=tymin;
+				ymax=tymax;
+			}
 			ret=true;
 		}
 	}
@@ -304,6 +311,13 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 				xmax = max(xmax,txmax);
 				ymin = min(ymin,txmin);
 				ymax = max(ymax,tymax);
+			}
+			else
+			{
+				xmin=txmin;
+				xmax=txmax;
+				ymin=tymin;
+				ymax=tymax;
 			}
 			ret=true;
 		}

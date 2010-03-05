@@ -460,6 +460,7 @@ void RenderThread::glBlitFramebuffer()
 	assert(fbAcquired==true);
 	fbAcquired=false;
 
+	glPushMatrix();
 	glEnable(GL_BLEND);
 	glLoadIdentity();
 	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
@@ -477,6 +478,7 @@ void RenderThread::glBlitFramebuffer()
 		glTexCoord2f(0,0);
 		glVertex2i(0,rt->height);
 	glEnd();
+	glPopMatrix();
 }
 
 RenderThread::~RenderThread()

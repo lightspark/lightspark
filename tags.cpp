@@ -729,13 +729,13 @@ void DefineShape4Tag::Render()
 #endif
 	}
 
+	rt->glAcquireFramebuffer();
+
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	
-	rt->glAcquireFramebuffer();
-
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 		it->Render();
@@ -784,13 +784,13 @@ void DefineShape3Tag::Render()
 #endif
 	}
 
+	rt->glAcquireFramebuffer();
+
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	
-	rt->glAcquireFramebuffer();
-
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 	{

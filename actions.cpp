@@ -84,6 +84,7 @@ void DoActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, ID
 
 void DoActionTag::Render()
 {
+	abort();
 #ifndef WIN32
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
@@ -156,6 +157,7 @@ void DoInitActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo
 
 void DoInitActionTag::Render()
 {
+	abort();
 #ifndef WIN32
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);

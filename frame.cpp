@@ -60,12 +60,12 @@ void Frame::Render()
 		i->second->origMatrix=&(i->first.Matrix);
 
 		//Apply local transformation
-		float matrix[16];
+		/*float matrix[16];
 		i->first.Matrix.get4DMatrix(matrix);
 		glPushMatrix();
-		glMultMatrixf(matrix);
+		glMultMatrixf(matrix);*/
 		i->second->Render();
-		glPopMatrix();
+		//glPopMatrix();
 	}
 
 #ifndef WIN32

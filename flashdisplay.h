@@ -56,7 +56,6 @@ public:
 
 class DisplayObject: public IDisplayListElem
 {
-//TODO: WTF
 friend class DisplayObjectContainer;
 protected:
 	intptr_t width;
@@ -84,7 +83,9 @@ public:
 	ASFUNCTION(_getMask);
 	ASFUNCTION(_getAlpha);
 	ASFUNCTION(_getScaleX);
+	ASFUNCTION(_setScaleX);
 	ASFUNCTION(_getScaleY);
+	ASFUNCTION(_setScaleY);
 	ASFUNCTION(_getLoaderInfo);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_getBounds);

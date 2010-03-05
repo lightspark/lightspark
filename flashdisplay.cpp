@@ -227,7 +227,15 @@ void Loader::Render()
 	if(!loaded)
 		return;
 
+	glPushMatrix();
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
+	glPushMatrix();
+	glMultMatrixf(matrix);
+
 	local_root->Render();
+
+	glPopMatrix();
 }
 
 bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -614,9 +622,9 @@ void DisplayObject::buildTraits(ASObject* o)
 	o->setGetterByQName("width","",new Function(_getWidth));
 	o->setSetterByQName("width","",new Function(_setWidth));
 	o->setGetterByQName("scaleX","",new Function(_getScaleX));
-	o->setSetterByQName("scaleX","",new Function(undefinedFunction));
+	o->setSetterByQName("scaleX","",new Function(_setScaleX));
 	o->setGetterByQName("scaleY","",new Function(_getScaleY));
-	o->setSetterByQName("scaleY","",new Function(undefinedFunction));
+	o->setSetterByQName("scaleY","",new Function(_setScaleY));
 	o->setGetterByQName("x","",new Function(_getX));
 	o->setSetterByQName("x","",new Function(_setX));
 	o->setGetterByQName("y","",new Function(_getY));
@@ -669,10 +677,26 @@ ASFUNCTIONBODY(DisplayObject,_getScaleX)
 	return abstract_d(th->Matrix.ScaleX);
 }
 
+ASFUNCTIONBODY(DisplayObject,_setScaleX)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	assert(argslen==1);
+	th->Matrix.ScaleX=args[0]->toNumber();
+	return NULL;
+}
+
 ASFUNCTIONBODY(DisplayObject,_getScaleY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	return abstract_d(th->Matrix.ScaleY);
+}
+
+ASFUNCTIONBODY(DisplayObject,_setScaleY)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	assert(argslen==1);
+	th->Matrix.ScaleY=args[0]->toNumber();
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getX)

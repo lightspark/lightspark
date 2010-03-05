@@ -78,6 +78,8 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	LOG(LOG_NO_INFO,"FrameRate " << (FrameRate/256) << '.' << (FrameRate%256));
 	pt->root->frame_rate=FrameRate;
 	pt->root->frame_rate/=256;
+	pt->root->version=Version;
+	pt->root->fileLenght=FileLength;
 }
 
 RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),toBind(false),frame_rate(24)
@@ -162,7 +164,9 @@ void* ParseThread::worker(ParseThread* th)
 		pt->root->setFrameCount(h.FrameCount);
 
 		TagFactory factory(th->f);
-		while(1)
+		bool done=false;
+		bool empty=true;
+		while(!done)
 		{
 			if(error)
 			{
@@ -175,20 +179,27 @@ void* ParseThread::worker(ParseThread* th)
 				case END_TAG:
 				{
 					LOG(LOG_NO_INFO,"End of parsing @ " << th->f.tellg());
-					th->root->commitFrame();
-					pthread_exit(NULL);
+					if(!empty)
+						th->root->commitFrame(false);
+					else
+						th->root->revertFrame();
+					done=true;
+					break;
 				}
 				case DICT_TAG:
 					th->root->addToDictionary(static_cast<DictionaryTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
 					th->root->addToFrame(static_cast<DisplayListTag*>(tag));
+					empty=false;
 					break;
 				case SHOW_TAG:
-					th->root->commitFrame();
+					th->root->commitFrame(true);
+					empty=true;
 					break;
 				case CONTROL_TAG:
 					th->root->addToFrame(static_cast<ControlTag*>(tag));
+					empty=false;
 					break;
 				case TAG:
 					//Not yet implemented tag, ignore it
@@ -201,12 +212,14 @@ void* ParseThread::worker(ParseThread* th)
 	catch(const char* s)
 	{
 		LOG(LOG_ERROR,"Exception caught: " << s);
-		exit(-1);
+		abort();
 	}
 	th->root->check();
+	th->ended=true;
+	return NULL;
 }
 
-ParseThread::ParseThread(SystemState* s,RootMovieClip* r,istream& in):f(in),parsingTarget(r)
+ParseThread::ParseThread(SystemState* s,RootMovieClip* r,istream& in):f(in),ended(false),parsingTarget(r)
 {
 	m_sys=s;
 	root=r;
@@ -214,22 +227,21 @@ ParseThread::ParseThread(SystemState* s,RootMovieClip* r,istream& in):f(in),pars
 	pthread_create(&t,NULL,(thread_worker)worker,this);
 }
 
+void ParseThread::wait()
+{
+	pthread_join(t,NULL);
+	assert(ended);
+}
+
 ParseThread::~ParseThread()
 {
-	void* ret;
-	pthread_cancel(t);
-	pthread_join(t,&ret);
+	wait();
 }
 
 void RenderThread::wait()
 {
-	pthread_cancel(t);
-	pthread_join(t,NULL);
-}
-
-void ParseThread::wait()
-{
-	pthread_join(t,NULL);
+	int ret=pthread_join(t,NULL);
+	assert(ret);
 }
 
 InputThread::InputThread(SystemState* s,ENGINE e, void* param)
@@ -250,9 +262,7 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param)
 
 InputThread::~InputThread()
 {
-	void* ret;
-	pthread_cancel(t);
-	pthread_join(t,&ret);
+	wait();
 }
 
 void InputThread::wait()
@@ -292,7 +302,8 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_q:
 						sys->setShutdownFlag();
 						LOG(LOG_CALLS,"We still miss " << sys->currentVm->getEventQueueSize() << " events");
-						pthread_exit(0);
+						exit(0);
+						//pthread_exit(0);
 						break;
 					case SDLK_s:
 						sys->state.stop_FP=true;
@@ -308,7 +319,6 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 
 				float selected=sys->cur_render_thread->getIdAt(event.button.x,event.button.y);
-				cout << "mouse" << endl;
 				if(selected==0)
 					break;
 
@@ -395,12 +405,10 @@ void InputThread::addListener(const tiny_string& t, EventDispatcher* ob)
 	//count is the number of listeners, this is correct so that no one gets 0
 	float increment=1.0f/count;
 	float cur=increment;
-	cout << "increment " << increment << endl;
 	for(;it!=range.second;it++)
 	{
 		if(it->second)
 			it->second->setId(cur);
-		cout << "setting to " << cur << endl;
 		cur+=increment;
 	}
 
@@ -713,7 +721,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	catch(const char* e)
 	{
 		LOG(LOG_ERROR,"Exception caught " << e);
-		exit(-1);
+		abort();
 	}
 	delete p;
 }
@@ -802,8 +810,6 @@ void* RenderThread::glx_worker(RenderThread* th)
 
 	attrib[14]=None;
 	GLXFBConfig* fb=glXChooseFBConfig(th->mDisplay, 0, attrib, &a);
-	cout << fb << endl;
-	cout << a  << endl;
 
 	//We create a pair of context, window and offscreen
 	th->mContext = glXCreateContext(th->mDisplay, vi, 0, GL_TRUE);
@@ -814,7 +820,6 @@ void* RenderThread::glx_worker(RenderThread* th)
 	attrib[3]=height;
 	attrib[4]=None;
 	th->mPbuffer = glXCreatePbuffer(th->mDisplay, fb[0], attrib);
-	cout << th->mPbuffer << endl;
 
 	XFree(fb);
 
@@ -882,7 +887,7 @@ void* RenderThread::glx_worker(RenderThread* th)
 	{
 		LOG(LOG_ERROR, "Exception caught " << e);
 		delete[] buffer;
-		exit(-1);
+		abort();
 	}
 }
 #endif
@@ -915,7 +920,6 @@ void RootMovieClip::Render()
 	while(1)
 	{
 		//Check if the next frame we are going to play is available
-		cout << "ROOTFRAME " << state.next_FP << endl;
 		if(state.next_FP<frames.size())
 			break;
 
@@ -1011,7 +1015,7 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
 	if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
-		cout << status << endl;
+		//cout << status << endl;
 		abort();
 	}
 }
@@ -1095,7 +1099,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	catch(const char* e)
 	{
 		LOG(LOG_ERROR, "Exception caught " << e);
-		exit(-1);
+		abort();
 	}
 	return NULL;
 }
@@ -1157,13 +1161,27 @@ void RootMovieClip::addToFrame(ControlTag* t)
 	cur_frame->controls.push_back(t);
 }
 
-void RootMovieClip::commitFrame()
+void RootMovieClip::commitFrame(bool another)
 {
 	sem_wait(&sem_frames);
 	framesLoaded=frames.size();
-	frames.push_back(Frame());
-	cur_frame=&frames.back();
+	if(another)
+	{
+		frames.push_back(Frame());
+		cur_frame=&frames.back();
+	}
+	else
+		cur_frame=NULL;
 	sem_post(&new_frame);
+	sem_post(&sem_frames);
+}
+
+void RootMovieClip::revertFrame()
+{
+	sem_wait(&sem_frames);
+	assert(frames.size() && framesLoaded==(frames.size()-1));
+	frames.pop_back();
+	cur_frame=NULL;
 	sem_post(&sem_frames);
 }
 

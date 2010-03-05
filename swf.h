@@ -100,12 +100,12 @@ private:
 	sem_t sem_frames;
 	bool toBind;
 	tiny_string bindName;
-	unsigned int version;
-	unsigned int fileLenght;
 
 public:
 	RootMovieClip(LoaderInfo* li);
 	float frame_rate;
+	unsigned int version;
+	unsigned int fileLenght;
 	RGB getBackground();
 	void setBackground(const RGB& bg);
 	void setFrameSize(const RECT& f);
@@ -115,7 +115,8 @@ public:
 	DictionaryTag* dictionaryLookup(int id);
 	void addToFrame(DisplayListTag* t);
 	void addToFrame(ControlTag* t);
-	void commitFrame();
+	void commitFrame(bool another);
+	void revertFrame();
 	void Render();
 	void bindToName(const tiny_string& n);
 	void initialize();
@@ -180,6 +181,7 @@ public:
 	~ParseThread();
 	void wait();
 	static void setError(){error=1;}
+	bool ended;
 
 	//DEPRECATED
 	Sprite* parsingTarget;

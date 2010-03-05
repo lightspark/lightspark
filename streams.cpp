@@ -216,7 +216,10 @@ zlib_file_filter::zlib_file_filter(const char* file_name)
 
 int zlib_file_filter::provideBuffer(int limit)
 {
-	return fread(in_buf,1,limit,f);
+	int ret=fread(in_buf,1,limit,f);
+	if(feof(f))
+		fclose(f);
+	return ret;
 }
 
 zlib_bytes_filter::zlib_bytes_filter(const uint8_t* b, int l):buf(b),offset(0),len(l)

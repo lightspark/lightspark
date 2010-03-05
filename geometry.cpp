@@ -42,7 +42,7 @@ void GeomShape::Render(int x, int y) const
 	}
 
 	bool filled=false;
-	if(closed)
+	if(closed && false)
 	{
 		style->setFragmentProgram();
 

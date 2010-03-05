@@ -127,7 +127,7 @@ ASFUNCTIONBODY(URLLoader,load)
 		}
 	}
 	assert(th->dataFormat=="binary" || th->dataFormat=="text");
-	sys->cur_thread_pool->addJob(th);
+	sys->addJob(th);
 	return NULL;
 }
 

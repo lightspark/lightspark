@@ -129,6 +129,8 @@ public:
 
 class SystemState: public RootMovieClip
 {
+private:
+	ThreadPool* cur_thread_pool;
 public:
 	void setUrl(const tiny_string& url);
 
@@ -142,7 +144,6 @@ public:
 	fps_profiling* fps_prof;
 	Stage* stage;
 	ABCVm* currentVm;
-	ThreadPool* cur_thread_pool;
 	InputThread* cur_input_thread;
 	RenderThread* cur_render_thread;
 	//Application starting time in milliseconds
@@ -164,24 +165,20 @@ public:
 	bool useJit;
 
 	void parseParameters(std::istream& i);
+	void addJob(IThreadJob* j);
 };
 
-class ParseThread
+class ParseThread: public IThreadJob
 {
 private:
 	std::istream& f;
-	pthread_t t;
-	static void* worker(ParseThread*);
-	static int error;
-	SystemState* m_sys;
+	sem_t ended;
 public:
 	RootMovieClip* root;
 	int version;
-	ParseThread(SystemState* s, RootMovieClip* r,std::istream& in);
-	~ParseThread();
+	ParseThread(RootMovieClip* r,std::istream& in);
+	void execute();
 	void wait();
-	static void setError(){error=1;}
-	bool ended;
 
 	//DEPRECATED
 	Sprite* parsingTarget;

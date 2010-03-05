@@ -591,6 +591,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 
 void DefineMorphShapeTag::Render()
 {
+	abort();
 	std::vector < GeomShape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
 
@@ -598,6 +599,11 @@ void DefineMorphShapeTag::Render()
 
 	for(unsigned int i=0;i<shapes.size();i++)
 		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
+
+/*	float matrix[16];
+	Matrix.get4DMatrix(matrix);
+	glPushMatrix();
+	glMultMatrixf(matrix);*/
 
 	rt->glAcquireFramebuffer();
 
@@ -612,8 +618,8 @@ void DefineMorphShapeTag::Render()
 void DefineShapeTag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape Render");
-	LOG(LOG_NOT_IMPLEMENTED,"DefineShape disabled");
-	return;
+//	LOG(LOG_NOT_IMPLEMENTED,"DefineShape disabled");
+//	return;
 
 	if(cached.size()==0)
 	{
@@ -636,12 +642,10 @@ void DefineShapeTag::Render()
 
 	rt->glAcquireFramebuffer();
 
-	//TODO: Apply local transformation
-//	float matrix[16];
-//	Matrix.get4DMatrix(matrix);
-	//Apply local transformation
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
-//	glMultMatrixf(matrix);
+	glMultMatrixf(matrix);
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -677,8 +681,10 @@ void DefineShape2Tag::Render()
 
 	rt->glAcquireFramebuffer();
 
-	//TODO: Apply local transformation
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
+	glMultMatrixf(matrix);
 	
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -701,8 +707,8 @@ void DefineShape2Tag::Render()
 void DefineShape4Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape4 Render");
-	LOG(LOG_NO_INFO,"DefineShape4 disabled");
-	return;
+//	LOG(LOG_NO_INFO,"DefineShape4 disabled");
+//	return;
 
 	if(cached.size()==0)
 	{
@@ -723,6 +729,11 @@ void DefineShape4Tag::Render()
 #endif
 	}
 
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
+	glPushMatrix();
+	glMultMatrixf(matrix);
+	
 	rt->glAcquireFramebuffer();
 
 	std::vector < GeomShape >::iterator it=cached.begin();
@@ -736,8 +747,8 @@ void DefineShape4Tag::Render()
 void DefineShape3Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape3 Render "<< ShapeId);
-	LOG(LOG_NO_INFO,"DefineShape3 disabled");
-	return;
+//	LOG(LOG_NO_INFO,"DefineShape3 disabled");
+//	return;
 
 /*	if(texture==0)
 	{
@@ -773,6 +784,11 @@ void DefineShape3Tag::Render()
 #endif
 	}
 
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
+	glPushMatrix();
+	glMultMatrixf(matrix);
+	
 	rt->glAcquireFramebuffer();
 
 	std::vector < GeomShape >::iterator it=cached.begin();

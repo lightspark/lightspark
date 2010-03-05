@@ -38,7 +38,6 @@ using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
-extern TLSDATA ParseThread* pt;
 
 REGISTER_CLASS_NAME(LoaderInfo);
 REGISTER_CLASS_NAME(MovieClip);
@@ -145,7 +144,7 @@ ASFUNCTIONBODY(Loader,load)
 	URLRequest* r=static_cast<URLRequest*>(args[0]->implementation);
 	th->url=r->url;
 	th->source=URL;
-	sys->cur_thread_pool->addJob(th);
+	sys->addJob(th);
 	return NULL;
 }
 
@@ -162,7 +161,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	{
 		th->loading=true;
 		th->source=BYTES;
-		sys->cur_thread_pool->addJob(th);
+		sys->addJob(th);
 	}
 	return NULL;
 }
@@ -210,8 +209,9 @@ void Loader::execute()
 		zlib_bytes_filter zf(bytes->bytes,bytes->len);
 		istream s(&zf);
 
-		ParseThread local_pt(sys,local_root,s);
-		local_pt.wait();
+		ParseThread* local_pt = new ParseThread(local_root,s);
+		sys->addJob(local_pt);
+		local_pt->wait();
 		//HACK: advance to first frame, so that scripts get executed
 		//We shold understand how to deliver frame events to movieclips not in the display list
 		local_root->advanceFrame();
@@ -542,10 +542,13 @@ void MovieClip::Render()
 	glPushAttrib(GL_CURRENT_BIT);
 	glSecondaryColor3f(id,0,0);
 
-	//Apply local transformation
+	assert(graphics==NULL);
+
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
-	//glTranslatef(_x,_y,0);
-	//glRotatef(rotation,0,0,1);
+	glMultMatrixf(matrix);
+
 	if(framesLoaded)
 	{
 		assert(state.FP<framesLoaded);
@@ -1104,6 +1107,9 @@ void Shape::buildTraits(ASObject* o)
 void Shape::Render()
 {
 	//If graphics is not yet initialized we have nothing to do
+	//if(obj->prototype->class_name=="PlayIcon")
+	//	__asm__("int $3");
+
 	if(graphics==NULL)
 		return;
 

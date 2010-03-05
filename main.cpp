@@ -164,13 +164,13 @@ int main(int argc, char* argv[])
 	cerr.exceptions( ios::failbit | ios::badbit);
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
-	ParseThread pt(sys,sys,f);
+	ParseThread* pt = new ParseThread(sys,f);
 	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 	sys->cur_input_thread=&it;
 	sys->cur_render_thread=&rt;
-	ThreadPool tp(sys);
-	sys->cur_thread_pool=&tp;
+	//Start the parser
+	sys->addJob(pt);
 
 #ifndef WIN32
 	timespec ts,td;
@@ -211,7 +211,8 @@ int main(int argc, char* argv[])
 
 	it.wait();
 	rt.wait();
-	pt.wait();
+	pt->wait();
+	delete pt;
 
 	ofstream prof("lightspark.dat");
 	for(unsigned int i=0;i<fps_profs.size();i++)

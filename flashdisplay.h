@@ -246,7 +246,7 @@ public:
 class Sprite: public DisplayObjectContainer
 {
 friend class DisplayObject;
-private:
+protected:
 	Graphics* graphics;
 public:
 	Sprite();

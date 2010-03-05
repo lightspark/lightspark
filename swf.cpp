@@ -46,8 +46,6 @@
 using namespace std;
 using namespace lightspark;
 
-int ParseThread::error(0);
-
 list<IDisplayListElem*> null_list;
 int RenderThread::error(0);
 
@@ -101,13 +99,15 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL),shutdown(false),currentVm(NULL),cur_thread_pool(NULL),cur_input_thread(NULL),
+SystemState::SystemState():RootMovieClip(NULL),shutdown(false),currentVm(NULL),cur_input_thread(NULL),
 	cur_render_thread(NULL),useInterpreter(true),useJit(false)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
 
+	//Create the thread pool
 	sys=this;
+	cur_thread_pool=new ThreadPool(this);
 	loaderInfo=Class<LoaderInfo>::getInstanceS(true);
 	stage=Class<Stage>::getInstanceS(true);
 	startTime=compat_msectiming();
@@ -153,52 +153,57 @@ void SystemState::setShutdownFlag()
 	sem_post(&mutex);
 }
 
-void* ParseThread::worker(ParseThread* th)
+void SystemState::addJob(IThreadJob* j)
 {
-	sys=th->m_sys;
-	pt=th;
+	cur_thread_pool->addJob(j);
+}
+
+ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),parsingTarget(r)
+{
+	root=r;
+	sem_init(&ended,0,0);
+}
+
+void ParseThread::execute()
+{
+	pt=this;
 	try
 	{
-		SWF_HEADER h(th->f);
-		pt->root->setFrameSize(h.getFrameSize());
-		pt->root->setFrameCount(h.FrameCount);
+		SWF_HEADER h(f);
+		root->setFrameSize(h.getFrameSize());
+		root->setFrameCount(h.FrameCount);
 
-		TagFactory factory(th->f);
+		TagFactory factory(f);
 		bool done=false;
 		bool empty=true;
 		while(!done)
 		{
-			if(error)
-			{
-				LOG(LOG_NO_INFO,"Terminating parsing thread on error state");
-				pthread_exit(NULL);
-			}
 			Tag* tag=factory.readTag();
 			switch(tag->getType())
 			{
 				case END_TAG:
 				{
-					LOG(LOG_NO_INFO,"End of parsing @ " << th->f.tellg());
+					LOG(LOG_NO_INFO,"End of parsing @ " << f.tellg());
 					if(!empty)
-						th->root->commitFrame(false);
+						root->commitFrame(false);
 					else
-						th->root->revertFrame();
+						root->revertFrame();
 					done=true;
 					break;
 				}
 				case DICT_TAG:
-					th->root->addToDictionary(static_cast<DictionaryTag*>(tag));
+					root->addToDictionary(static_cast<DictionaryTag*>(tag));
 					break;
 				case DISPLAY_LIST_TAG:
-					th->root->addToFrame(static_cast<DisplayListTag*>(tag));
+					root->addToFrame(static_cast<DisplayListTag*>(tag));
 					empty=false;
 					break;
 				case SHOW_TAG:
-					th->root->commitFrame(true);
+					root->commitFrame(true);
 					empty=true;
 					break;
 				case CONTROL_TAG:
-					th->root->addToFrame(static_cast<ControlTag*>(tag));
+					root->addToFrame(static_cast<ControlTag*>(tag));
 					empty=false;
 					break;
 				case TAG:
@@ -214,28 +219,15 @@ void* ParseThread::worker(ParseThread* th)
 		LOG(LOG_ERROR,"Exception caught: " << s);
 		abort();
 	}
-	th->root->check();
-	th->ended=true;
-	return NULL;
-}
+	root->check();
+	pt=NULL;
 
-ParseThread::ParseThread(SystemState* s,RootMovieClip* r,istream& in):f(in),ended(false),parsingTarget(r)
-{
-	m_sys=s;
-	root=r;
-	error=0;
-	pthread_create(&t,NULL,(thread_worker)worker,this);
+	sem_post(&ended);
 }
 
 void ParseThread::wait()
 {
-	pthread_join(t,NULL);
-	assert(ended);
-}
-
-ParseThread::~ParseThread()
-{
-	wait();
+	sem_wait(&ended);
 }
 
 void RenderThread::wait()

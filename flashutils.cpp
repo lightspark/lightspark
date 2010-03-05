@@ -244,7 +244,7 @@ ASFUNCTIONBODY(Timer,start)
 {
 	Timer* th=static_cast<Timer*>(obj->implementation);
 	th->running=true;
-	sys->cur_thread_pool->addJob(th);
+	sys->addJob(th);
 	return NULL;
 }
 

@@ -203,7 +203,6 @@ typed_opcode_handler ABCVm::opcode_table_bool_t[]={
 };
 
 extern TLSDATA SystemState* sys;
-extern TLSDATA ParseThread* pt;
 extern TLSDATA Manager* iManager;
 
 void ABCVm::registerFunctions()

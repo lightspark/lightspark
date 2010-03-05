@@ -48,7 +48,6 @@ using namespace std;
 using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
-extern TLSDATA ParseThread* pt;
 TLSDATA Manager* iManager=NULL;
 TLSDATA Manager* dManager=NULL;
 

@@ -30,6 +30,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <list>
 #include <map>
 
 #include "logger.h"
@@ -958,6 +959,13 @@ public:
 class LINESTYLEARRAY
 {
 public:
+	LINESTYLEARRAY():LineStyles(NULL),LineStyles2(NULL){}
+	~LINESTYLEARRAY()
+	{
+		delete[] LineStyles;
+		delete[] LineStyles2;
+	}
+	void appendStyles(const LINESTYLEARRAY& r);
 	int version;
 	UI8 LineStyleCount;
 	LINESTYLE* LineStyles;
@@ -974,9 +982,10 @@ public:
 class FILLSTYLEARRAY
 {
 public:
+	void appendStyles(const FILLSTYLEARRAY& r);
 	int version;
 	UI8 FillStyleCount;
-	FILLSTYLE* FillStyles;
+	std::list<FILLSTYLE> FillStyles;
 };
 
 class MORPHFILLSTYLEARRAY
@@ -1004,9 +1013,9 @@ public:
 	SB MoveDeltaX;
 	SB MoveDeltaY;
 
-	UB FillStyle1;
-	UB FillStyle0;
-	UB LineStyle;
+	unsigned int FillStyle1;
+	unsigned int FillStyle0;
+	unsigned int LineStyle;
 
 	//Edge record
 	UB StraightFlag;
@@ -1066,19 +1075,12 @@ class SHAPE
 {
 	friend std::istream& operator>>(std::istream& stream, SHAPE& v);
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
-	friend class SHAPERECORD;
-	friend class DefineShapeTag;
-	friend class DefineShape2Tag;
-	friend class DefineShape3Tag;
-	friend class DefineShape4Tag;
-	friend class DefineMorphShapeTag;
-	friend class DefineTextTag;
-	friend class DefineFontTag;
-	friend class DefineFont2Tag;
-	friend class DefineFont3Tag;
-private:
+public:
+	SHAPE():fillOffset(0),lineOffset(0){}
 	UB NumFillBits;
 	UB NumLineBits;
+	unsigned int fillOffset;
+	unsigned int lineOffset;
 	SHAPERECORD ShapeRecords;
 };
 

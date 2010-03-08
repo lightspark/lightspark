@@ -1087,6 +1087,30 @@ std::istream& lightspark::operator>>(std::istream& s, RGBA& v)
 	return s;
 }
 
+void LINESTYLEARRAY::appendStyles(const LINESTYLEARRAY& r)
+{
+	unsigned int count = LineStyleCount + r.LineStyleCount;
+
+	if(version<4)
+	{
+		LINESTYLE* s=new LINESTYLE[count];
+		memcpy(s,LineStyles,LineStyleCount*sizeof(LINESTYLE));
+		memcpy(s+LineStyleCount,r.LineStyles,r.LineStyleCount*sizeof(LINESTYLE));
+		//Now swap the old and new arrays
+		delete[] LineStyles;
+		LineStyles=s;
+	}
+	else
+	{
+		LINESTYLE2* s=new LINESTYLE2[count];
+		memcpy(s,LineStyles2,LineStyleCount*sizeof(LINESTYLE2));
+		memcpy(s+LineStyleCount,r.LineStyles2,r.LineStyleCount*sizeof(LINESTYLE2));
+		delete[] LineStyles2;
+		LineStyles2=s;
+	}
+	LineStyleCount = count;
+}
+
 std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 {
 	s >> v.LineStyleCount;
@@ -1123,16 +1147,26 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 	return s;
 }
 
+void FILLSTYLEARRAY::appendStyles(const FILLSTYLEARRAY& r)
+{
+	unsigned int count = FillStyleCount + r.FillStyleCount;
+
+	FillStyles.insert(FillStyles.end(),r.FillStyles.begin(),r.FillStyles.end());
+	FillStyleCount = count;
+}
+
 std::istream& lightspark::operator>>(std::istream& s, FILLSTYLEARRAY& v)
 {
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
 		LOG(LOG_ERROR,"Fill array extended not supported");
-	v.FillStyles=new FILLSTYLE[v.FillStyleCount];
-	for(int i=0;i<v.FillStyleCount;i++)
+
+	v.FillStyles.resize(v.FillStyleCount);
+	list<FILLSTYLE>::iterator it=v.FillStyles.begin();
+	for(;it!=v.FillStyles.end();it++)
 	{
-		v.FillStyles[i].version=v.version;
-		s >> v.FillStyles[i];
+		it->version=v.version;
+		s >> *it;
 	}
 	return s;
 }
@@ -1403,14 +1437,14 @@ void FILLSTYLE::setFragmentProgram() const
 	else if(FillStyleType==0x10)
 	{
 		//LOG(TRACE,"Fill gradient");
-		glColor3f(0,1,0);
 
 		color_entry buffer[256];
-		int grad_index=0;
+		unsigned int grad_index=0;
 		RGBA color_l(0,0,0,1);
 		int index_l=0;
 		RGBA color_r(Gradient.GradientRecords[0].Color);
 		int index_r=Gradient.GradientRecords[0].Ratio;
+		/*glColor3f(0,1,0);
 
 		for(int i=0;i<256;i++)
 		{
@@ -1422,18 +1456,26 @@ void FILLSTYLE::setFragmentProgram() const
 			buffer[i].b=float(c.Blue)/256.0f;
 			buffer[i].a=1;
 
+			assert(grad_index<Gradient.GradientRecords.size());
 			if(Gradient.GradientRecords[grad_index].Ratio==i)
 			{
-				grad_index++;
 				color_l=color_r;
 				index_l=index_r;
 				color_r=Gradient.GradientRecords[grad_index].Color;
 				index_r=Gradient.GradientRecords[grad_index].Ratio;
+				grad_index++;
 			}
 		}
 
 		glBindTexture(GL_TEXTURE_2D,rt->data_tex);
-		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);
+		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);*/
+
+		//HACK: TODO: revamp gradient support
+		glColor3f(1,0,0);
+		glTexCoord4f(float(color_r.Red)/256.0f,
+			float(color_r.Green)/256.0f,
+			float(color_r.Blue)/256.0f,
+			float(color_r.Alpha)/256.0f);
 	}
 	else
 	{
@@ -1568,24 +1610,32 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 		}
 		if(StateFillStyle0)
 		{
-			FillStyle0=UB(parent->NumFillBits,bs);
+			FillStyle0=UB(parent->NumFillBits,bs)+p->fillOffset;
 		}
 		if(StateFillStyle1)
 		{
-			FillStyle1=UB(parent->NumFillBits,bs);
+			FillStyle1=UB(parent->NumFillBits,bs)+p->fillOffset;
 		}
 		if(StateLineStyle)
 		{
-			LineStyle=UB(parent->NumLineBits,bs);
+			LineStyle=UB(parent->NumLineBits,bs)+p->lineOffset;
 		}
 		if(StateNewStyles)
 		{
 			SHAPEWITHSTYLE* ps=static_cast<SHAPEWITHSTYLE*>(parent);
 			bs.pos=0;
-			//FILLSTYLEARRAY a;
-			bs.f >> ps->FillStyles;
-			//LINESTYLEARRAY b;
-			bs.f >> ps->LineStyles;
+			FILLSTYLEARRAY a;
+			a.version=ps->FillStyles.version;
+			bs.f >> a;
+			p->fillOffset=ps->FillStyles.FillStyleCount;
+			ps->FillStyles.appendStyles(a);
+
+			LINESTYLEARRAY b;
+			b.version=ps->LineStyles.version;
+			bs.f >> b;
+			p->lineOffset=ps->LineStyles.LineStyleCount;
+			ps->LineStyles.appendStyles(b);
+
 			parent->NumFillBits=UB(4,bs);
 			parent->NumLineBits=UB(4,bs);
 		}
@@ -1622,7 +1672,12 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 	if(HasScale)
 	{
 		int NScaleBits=UB(5,bs);
-		v.ScaleX=FB(NScaleBits,bs);
+		//if(NScaleBits==1)
+		//	__asm__("int $3");
+		FB tmp=FB(NScaleBits,bs);
+		v.ScaleX=tmp;
+		//if(v.ScaleX==0)
+		//	abort();
 		v.ScaleY=FB(NScaleBits,bs);
 	}
 	int HasRotate=UB(1,bs);

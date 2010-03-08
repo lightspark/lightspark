@@ -42,7 +42,7 @@ void GeomShape::Render(int x, int y) const
 	}
 
 	bool filled=false;
-	if(closed)
+	if(closed && color)
 	{
 		style->setFragmentProgram();
 
@@ -55,7 +55,15 @@ void GeomShape::Render(int x, int y) const
 			glEnd();
 		}
 
-		assert(interior.empty());
+		//Render lone triangles
+		glBegin(GL_TRIANGLES);
+		for(unsigned int i=0;i<interior.size();i++)
+		{
+			glVertex2i(interior[i].v1.x,interior[i].v1.y);
+			glVertex2i(interior[i].v2.x,interior[i].v2.y);
+			glVertex2i(interior[i].v3.x,interior[i].v3.y);
+		}
+		glEnd();
 		filled=true;
 
 		/*char* t=(char*)varray;
@@ -75,7 +83,7 @@ void GeomShape::Render(int x, int y) const
 		glDisableClientState(GL_VERTEX_ARRAY);*/
 	}
 
-	if(/*graphic.stroked ||*/ !filled)
+	if(/*graphic.stroked ||*/ !filled && color)
 	{
 		//LOG(TRACE,"Line tracing");
 		FILLSTYLE::fixedColor(0,0,0);
@@ -166,7 +174,7 @@ void GeomShape::dumpInterior()
 	f.close();
 }
 
-void GeomShape::SetStyles(FILLSTYLE* styles)
+void GeomShape::SetStyles(const std::list<FILLSTYLE>* styles)
 {
 	static FILLSTYLE* clearStyle=NULL;
 	if(!clearStyle)
@@ -179,15 +187,23 @@ void GeomShape::SetStyles(FILLSTYLE* styles)
 	if(styles)
 	{
 		if(color)
-			style=&styles[color-1];
+		{
+			if(color > styles->size())
+				abort();
+
+			//Simulate array access :-(
+			list<FILLSTYLE>::const_iterator it=styles->begin();
+			for(unsigned int i=0;i<(color-1);i++)
+				it++;
+			style=&(*it);
+		}
 		else
 			style=clearStyle;
 	}
 }
 
-void GeomShape::BuildFromEdges(FILLSTYLE* styles)
+void GeomShape::BuildFromEdges(const std::list<FILLSTYLE>* styles)
 {
-	style=NULL;
 	if(outline.empty())
 		return;
 
@@ -205,7 +221,7 @@ void GeomShape::BuildFromEdges(FILLSTYLE* styles)
 	if(closed)
 	{
 		TessellateSimple();
-		MakeStrips();
+		//MakeStrips();
 	}
 
 /*	int strips_size=0;

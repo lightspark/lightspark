@@ -151,8 +151,8 @@ friend class DefineShape3Tag;
 private:
 	void TessellateSimple();
 	void MakeStrips();
-	void SetStyles(FILLSTYLE* styles);
-	FILLSTYLE* style;
+	void SetStyles(const std::list<FILLSTYLE>* styles);
+	const FILLSTYLE* style;
 	arrayElem* varray;
 	bool closed;
 public:
@@ -163,14 +163,14 @@ public:
 	std::vector<GeomShape> sub_shapes;
 	std::vector<Edge> edges;
 
-	int color;
+	unsigned int color;
 
 	//DEBUG
 	void dumpEdges();
 	void dumpInterior();
 
 	void Render(int x=0, int y=0) const;
-	void BuildFromEdges(FILLSTYLE* styles);
+	void BuildFromEdges(const std::list<FILLSTYLE>* styles);
 
 	bool operator<(const GeomShape& r) const;
 

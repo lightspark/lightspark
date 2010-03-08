@@ -1361,10 +1361,8 @@ void Graphics::flushShape(bool keepStyle)
 	if(!tmpShape.outline.empty())
 	{
 		if(tmpShape.color)
-		{
-			assert(tmpShape.color==1);
-			tmpShape.BuildFromEdges(&styles.back());
-		}
+			tmpShape.BuildFromEdges(&styles);
+
 		sem_wait(&geometry_mutex);
 		int oldcolor=tmpShape.color;
 		geometry.push_back(tmpShape);
@@ -1454,7 +1452,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		color=ar->at(0)->toUInt();
 	}
 	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
-	th->tmpShape.color=1;
+	th->tmpShape.color = th->styles.size(); //Colors are 1-indexed
 	return NULL;
 }
 
@@ -1470,7 +1468,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 	if(argslen>=2)
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
 	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
-	th->tmpShape.color=1;
+	th->tmpShape.color = th->styles.size(); //Colors are 1-indexed
 	return NULL;
 }
 

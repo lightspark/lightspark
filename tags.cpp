@@ -597,8 +597,8 @@ void DefineMorphShapeTag::Render()
 
 	FromShaperecordListToShapeVector(cur,shapes);
 
-	for(unsigned int i=0;i<shapes.size();i++)
-		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
+//	for(unsigned int i=0;i<shapes.size();i++)
+//		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
 
 /*	float matrix[16];
 	Matrix.get4DMatrix(matrix);
@@ -632,7 +632,7 @@ void DefineShapeTag::Render()
 		FromShaperecordListToShapeVector(cur,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
+			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 
 #ifndef WIN32
 		clock_gettime(CLOCK_REALTIME,&td);
@@ -671,7 +671,7 @@ void DefineShape2Tag::Render()
 		FromShaperecordListToShapeVector(cur,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
+			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 
 #ifndef WIN32
 		clock_gettime(CLOCK_REALTIME,&td);
@@ -689,14 +689,7 @@ void DefineShape2Tag::Render()
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 	{
-		if(it->color >= Shapes.FillStyles.FillStyleCount)
-		{
-			it->style=new FILLSTYLE;
-			it->style->FillStyleType=0x00;
-			it->style->Color=lightspark::RGB(255,0,0);
-			it->color=1;
-			LOG(LOG_NOT_IMPLEMENTED,"Orrible HACK");
-		}
+		assert(it->color <= Shapes.FillStyles.FillStyleCount);
 		it->Render();
 	}
 
@@ -721,7 +714,7 @@ void DefineShape4Tag::Render()
 		FromShaperecordListToShapeVector(cur,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
+			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 
 #ifndef WIN32
 		clock_gettime(CLOCK_REALTIME,&td);
@@ -776,7 +769,7 @@ void DefineShape3Tag::Render()
 		FromShaperecordListToShapeVector(cur,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(Shapes.FillStyles.FillStyles);
+			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 
 #ifndef WIN32
 		clock_gettime(CLOCK_REALTIME,&td);
@@ -790,18 +783,11 @@ void DefineShape3Tag::Render()
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
-	
+
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 	{
-		if(it->color >= Shapes.FillStyles.FillStyleCount)
-		{
-			it->style=new FILLSTYLE;
-			it->style->FillStyleType=0x00;
-			it->style->Color=RGB(255,0,0);
-			it->color=1;
-			LOG(LOG_NOT_IMPLEMENTED,"Orrible HACK");
-		}
+		assert(it->color <= Shapes.FillStyles.FillStyleCount);
 		it->Render();
 	}
 
@@ -886,7 +872,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 				startX+=cur->DeltaX;
 				startY+=cur->DeltaY;
 				Vector2 p2(startX,startY,count+1);
-				int color;
+				unsigned int color;
 				for(int k=0;k<2;k++)
 				{
 					bool new_shape=true;
@@ -947,7 +933,7 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 				startX+=cur->AnchorDeltaX;
 				startY+=cur->AnchorDeltaY;
 				Vector2 p3(startX,startY,count+2);
-				int color;
+				unsigned int color;
 				for(int k=0;k<2;k++)
 				{
 					bool new_shape=true;

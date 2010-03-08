@@ -90,10 +90,12 @@ class DictionaryTag: public Tag
 protected:
 	std::vector<GeomShape> cached;
 public:
-	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s){ }
+	RootMovieClip* loadedFrom;
+	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s),loadedFrom(NULL){ }
 	virtual TAGTYPE getType(){ return DICT_TAG; }
 	virtual int getId(){return 0;} 
 	virtual IInterface* instance() const { return NULL; } 
+	void setLoadedFrom(RootMovieClip* r){loadedFrom=r;}
 };
 
 class ControlTag: public Tag
@@ -117,8 +119,8 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		//Apply transformation with the current matrix
-		Matrix.multiply2D(ShapeBounds.Xmin,ShapeBounds.Ymin,xmin,ymin);
-		Matrix.multiply2D(ShapeBounds.Xmax,ShapeBounds.Ymax,xmax,ymax);
+		Matrix.multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
+		Matrix.multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
 		//TODO: adapt for rotation
 		return true;
 	}
@@ -142,8 +144,8 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		//Apply transformation with the current matrix
-		Matrix.multiply2D(ShapeBounds.Xmin,ShapeBounds.Ymin,xmin,ymin);
-		Matrix.multiply2D(ShapeBounds.Xmax,ShapeBounds.Ymax,xmax,ymax);
+		Matrix.multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
+		Matrix.multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
 		//TODO: adapt for rotation
 		return true;
 	}
@@ -167,8 +169,8 @@ public:
 	virtual void Render();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
-		Matrix.multiply2D(ShapeBounds.Xmin,ShapeBounds.Ymin,xmin,ymin);
-		Matrix.multiply2D(ShapeBounds.Xmax,ShapeBounds.Ymax,xmax,ymax);
+		Matrix.multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
+		Matrix.multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
 		return true;
 	}
 
@@ -194,11 +196,9 @@ public:
 	virtual void Render();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
-		abort();
-		xmin=ShapeBounds.Xmin;
-		xmax=ShapeBounds.Xmax;
-		ymin=ShapeBounds.Ymin;
-		ymax=ShapeBounds.Ymax;
+		Matrix.multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
+		Matrix.multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
+		return true;
 	}
 
 	IInterface* instance() const
@@ -507,11 +507,10 @@ public:
 	virtual void Render();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
-		abort();
-		xmin=TextBounds.Xmin;
-		xmax=TextBounds.Xmax;
-		ymin=TextBounds.Ymin;
-		ymax=TextBounds.Ymax;
+		Matrix.multiply2D(TextBounds.Xmin/20,TextBounds.Ymin/20,xmin,ymin);
+		Matrix.multiply2D(TextBounds.Xmax/20,TextBounds.Ymax/20,xmax,ymax);
+		//TODO: adapt for rotation
+		return true;
 	}
 
 	IInterface* instance() const
@@ -531,7 +530,9 @@ public:
 
 	IInterface* instance() const
 	{
-		return new DefineSpriteTag(*this);
+		DefineSpriteTag* ret=new DefineSpriteTag(*this);
+		ret->bootstrap();
+		return ret;
 	}
 };
 

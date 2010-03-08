@@ -95,7 +95,7 @@ private:
 	RGB Background;
 	std::list < DictionaryTag* > dictionary;
 	RECT frame_size;
-	sem_t sem_valid_frame_size;
+	mutable sem_t sem_valid_frame_size;
 	//Frames mutex (shared with drawing thread)
 	sem_t sem_frames;
 	bool toBind;
@@ -109,7 +109,7 @@ public:
 	RGB getBackground();
 	void setBackground(const RGB& bg);
 	void setFrameSize(const RECT& f);
-	RECT getFrameSize();
+	RECT getFrameSize() const;
 	void setFrameCount(int f);
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
@@ -118,6 +118,7 @@ public:
 	void commitFrame(bool another);
 	void revertFrame();
 	void Render();
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);
 	void initialize();
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);

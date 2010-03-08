@@ -1582,9 +1582,9 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 		{
 			SHAPEWITHSTYLE* ps=static_cast<SHAPEWITHSTYLE*>(parent);
 			bs.pos=0;
-			FILLSTYLEARRAY a;
+			//FILLSTYLEARRAY a;
 			bs.f >> ps->FillStyles;
-			LINESTYLEARRAY b;
+			//LINESTYLEARRAY b;
 			bs.f >> ps->LineStyles;
 			parent->NumFillBits=UB(4,bs);
 			parent->NumLineBits=UB(4,bs);

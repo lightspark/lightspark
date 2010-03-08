@@ -45,14 +45,49 @@ void TextField::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 }
 
+void TextField::buildTraits(ASObject* o)
+{
+	o->setGetterByQName("width","",new Function(TextField::_getWidth));
+	o->setSetterByQName("width","",new Function(TextField::_setWidth));
+	o->setGetterByQName("height","",new Function(TextField::_getHeight));
+	o->setSetterByQName("height","",new Function(TextField::_setHeight));
+}
+
 bool TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	//TODO: check
 	xmin=0;
 	xmax=width;
 	ymin=0;
 	ymax=height;
 	return true;
+}
+
+ASFUNCTIONBODY(TextField,_getWidth)
+{
+	TextField* th=Class<TextField>::cast(obj->implementation);
+	return abstract_i(th->width);
+}
+
+ASFUNCTIONBODY(TextField,_setWidth)
+{
+	TextField* th=Class<TextField>::cast(obj->implementation);
+	assert(argslen==1);
+	th->width=args[0]->toInt();
+	return NULL;
+}
+
+ASFUNCTIONBODY(TextField,_getHeight)
+{
+	TextField* th=Class<TextField>::cast(obj->implementation);
+	return abstract_i(th->height);
+}
+
+ASFUNCTIONBODY(TextField,_setHeight)
+{
+	TextField* th=Class<TextField>::cast(obj->implementation);
+	assert(argslen==1);
+	th->height=args[0]->toInt();
+	return NULL;
 }
 
 void TextField::Render()

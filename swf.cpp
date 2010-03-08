@@ -192,8 +192,12 @@ void ParseThread::execute()
 					break;
 				}
 				case DICT_TAG:
-					root->addToDictionary(static_cast<DictionaryTag*>(tag));
+				{
+					DictionaryTag* d=static_cast<DictionaryTag*>(tag);
+					d->setLoadedFrom(root);
+					root->addToDictionary(d);
 					break;
+				}
 				case DISPLAY_LIST_TAG:
 					root->addToFrame(static_cast<DisplayListTag*>(tag));
 					empty=false;
@@ -908,6 +912,16 @@ void RootMovieClip::initialize()
 	}
 }
 
+bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	RECT f=getFrameSize();
+	xmin=0;
+	ymin=0;
+	xmax=f.Xmax;
+	ymax=f.Ymax;
+	return true;
+}
+
 void RootMovieClip::Render()
 {
 	sem_wait(&sem_frames);
@@ -1120,14 +1134,11 @@ void RootMovieClip::setFrameCount(int f)
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)
 {
 	frame_size=f;
-	//Also set the width and height properties
 	assert(f.Xmin==0 && f.Ymin==0);
-	width=f.Xmax;
-	height=f.Ymax;
 	sem_post(&sem_valid_frame_size);
 }
 
-lightspark::RECT RootMovieClip::getFrameSize()
+lightspark::RECT RootMovieClip::getFrameSize() const
 {
 	//This is a sync semaphore the first time and then a mutex
 	sem_wait(&sem_valid_frame_size);
@@ -1166,6 +1177,12 @@ void RootMovieClip::commitFrame(bool another)
 	}
 	else
 		cur_frame=NULL;
+
+	if(framesLoaded==1)
+	{
+		//Let's initialize the first frame of this movieclip
+		bootstrap();
+	}
 	sem_post(&new_frame);
 	sem_post(&sem_frames);
 }

@@ -267,7 +267,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	}
 	while(!done);
 
-	if(frames.size()!=FrameCount/* && FrameCount!=1*/)
+	if(frames.size()!=FrameCount)
 	{
 		LOG(LOG_ERROR,"Inconsistent frame count " << FrameCount);
 		abort();
@@ -451,7 +451,7 @@ void DefineTextTag::Render()
 		{
 			if(it->StyleFlagsHasFont)
 			{
-				DictionaryTag* it3=root->dictionaryLookup(it->FontID);
+				DictionaryTag* it3=loadedFrom->dictionaryLookup(it->FontID);
 				font=dynamic_cast<FontTag*>(it3);
 				if(font==NULL)
 					LOG(LOG_ERROR,"Should be a FontTag");
@@ -1076,6 +1076,13 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 		}
 	}
 	sort(shapes.begin(),shapes.end());
+
+	//Normalize the sizes of the shapes
+	for(unsigned int i=0;i<shapes.size();i++)
+	{
+		for(unsigned int j=0;j<shapes[i].outline.size();j++)
+			shapes[i].outline[j]/=20;
+	}
 }
 
 void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
@@ -1086,11 +1093,7 @@ void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 	FromShaperecordListToShapeVector(cur,s);
 
 	for(unsigned int i=0;i<s.size();i++)
-	{
-		for(unsigned int j=0;j<s[i].outline.size();j++)
-			s[i].outline[j]/=20;
 		s[i].BuildFromEdges(NULL);
-	}
 
 	//Should check fill state
 
@@ -1232,7 +1235,13 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		//it is saved in a side data structure
 		//and assigned to the internal struture every frame
 		LOG(LOG_TRACE,"Placing ID " << CharacterId);
-		DictionaryTag* dict=parent->root->dictionaryLookup(CharacterId);
+		RootMovieClip* localRoot=NULL;
+		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
+		if(parentDict)
+			localRoot=parentDict->loadedFrom;
+		else
+			localRoot=parent->root;
+		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
 		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
 		assert(toAdd);
 

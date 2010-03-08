@@ -55,6 +55,7 @@ public:
 	void setScript(IFunction* s){script=s;}
 	void runScript();
 	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& d);
+	bool isInitialized() const { return initialized; }
 };
 };
 

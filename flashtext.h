@@ -36,10 +36,19 @@ public:
 
 class TextField: public DisplayObject
 {
+private:
+	intptr_t width;
+	intptr_t height;
 public:
+	TextField():width(0),height(0){}
 	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
+	ASFUNCTION(_getWidth);
+	ASFUNCTION(_setWidth);
+	ASFUNCTION(_getHeight);
+	ASFUNCTION(_setHeight);
 };
 
 };

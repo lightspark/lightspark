@@ -212,9 +212,6 @@ void Loader::execute()
 		ParseThread* local_pt = new ParseThread(local_root,s);
 		sys->addJob(local_pt);
 		local_pt->wait();
-		//HACK: advance to first frame, so that scripts get executed
-		//We shold understand how to deliver frame events to movieclips not in the display list
-		local_root->advanceFrame();
 		content=local_root;
 	}
 	loaded=true;
@@ -540,11 +537,18 @@ void MovieClip::advanceFrame()
 
 }
 
+void MovieClip::bootstrap()
+{
+	if(framesLoaded>0)
+	{
+		assert(frames.size()>=1);
+		frames[0].init(this,displayList);
+	}
+}
+
 void MovieClip::Render()
 {
 	LOG(LOG_TRACE,"Render MovieClip");
-//	if(obj && obj->prototype && obj->prototype->class_name=="SizeButton_LargerIcon")
-//		__asm__("int $3");
 
 	//Set the id in the secondary color
 	glPushAttrib(GL_CURRENT_BIT);
@@ -585,10 +589,22 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 {
 	//Iterate over the displaylist of the current frame
 	sem_wait(&sem_displayList);
-	if(dynamicDisplayList.empty() && (framesLoaded==0 || frames[state.FP].displayList.size()==0))
+	if(dynamicDisplayList.empty())
 	{
-		sem_post(&sem_displayList);
-		return false;
+		if(framesLoaded==0)
+		{
+			assert(frames.empty());
+			sem_post(&sem_displayList);
+			return false;
+		}
+		
+		assert(state.FP<framesLoaded);
+		assert(frames[state.FP].isInitialized());
+		if(frames[state.FP].displayList.size()==0)
+		{
+			sem_post(&sem_displayList);
+			return false;
+		}
 	}
 	//TODO: add dynamic dysplay list
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[state.FP].displayList.begin();
@@ -604,7 +620,7 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	return false;
 }
 
-DisplayObject::DisplayObject():width(0),height(0),loaderInfo(NULL)
+DisplayObject::DisplayObject():loaderInfo(NULL)
 {
 }
 
@@ -630,7 +646,7 @@ void DisplayObject::buildTraits(ASObject* o)
 	o->setGetterByQName("y","",new Function(_getY));
 	o->setSetterByQName("y","",new Function(_setY));
 	o->setGetterByQName("height","",new Function(_getHeight));
-	o->setSetterByQName("height","",new Function(undefinedFunction));
+	o->setSetterByQName("height","",new Function(_setHeight));
 	o->setGetterByQName("visible","",new Function(_getVisible));
 	o->setSetterByQName("visible","",new Function(undefinedFunction));
 	o->setGetterByQName("rotation","",new Function(_getRotation));
@@ -807,14 +823,6 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 	return NULL;
 }
 
-ASFUNCTIONBODY(DisplayObject,_setWidth)
-{
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	th->width=args[0]->toInt();
-	LOG(LOG_NOT_IMPLEMENTED,"Setting width not really supported on type " << ((obj->prototype)?(obj->prototype->class_name):""));
-	return NULL;
-}
-
 ASFUNCTIONBODY(DisplayObject,_setName)
 {
 	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
@@ -861,35 +869,71 @@ ASFUNCTIONBODY(DisplayObject,_getVisible)
 	return abstract_b(true);
 }
 
+int DisplayObject::computeHeight()
+{
+	number_t x1,x2,y1,y2;
+	bool ret=getBounds(x1,x2,y1,y2);
+
+	return (ret)?(y2-y1):0;
+}
+
+int DisplayObject::computeWidth()
+{
+	number_t x1,x2,y1,y2;
+	bool ret=getBounds(x1,x2,y1,y2);
+
+	return (ret)?(x2-x1):0;
+}
+
 ASFUNCTIONBODY(DisplayObject,_getWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	//If the width has been explicity set, return that
-	if(th->width!=0)
-		return abstract_b(th->width);
+	int ret=th->computeWidth();
+	return abstract_i(ret);
+}
 
-	number_t x1,x2,y1,y2;
-	bool ret=th->getBounds(x1,x2,y1,y2);
-
-	if(ret)
-		return abstract_i(x2-x1);
-	else
-		return abstract_i(0);
+ASFUNCTIONBODY(DisplayObject,_setWidth)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	cout << "WIDTH on " << th->obj->prototype->class_name << endl;
+	int newwidth=args[0]->toInt();
+	//Should actually scale the object
+	int computed=th->computeWidth();
+	if(computed==0) //Cannot scale, nothing to do (See Reference)
+		return NULL;
+	
+	if(computed!=newwidth) //If the width is changing, calculate new scale
+	{
+		number_t newscale=newwidth;
+		newscale/=computed;
+		th->Matrix.ScaleX=newscale;
+	}
+	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getHeight)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	//If the  height has been explicity set, return that
-	if(th->height!=0)
-		return abstract_b(th->height);
+	int ret=th->computeHeight();;
+	return abstract_i(ret);
+}
 
-	number_t x1,x2,y1,y2;
-	bool ret=th->getBounds(x1,x2,y1,y2);
-	if(ret)
-		return abstract_i(y2-y1);
-	else
-		return abstract_i(0);
+ASFUNCTIONBODY(DisplayObject,_setHeight)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	int newheight=args[0]->toInt();
+	//Should actually scale the object
+	int computed=th->computeHeight();
+	if(computed==0) //Cannot scale, nothing to do (See Reference)
+		return NULL;
+	
+	if(computed!=newheight) //If the height is changing, calculate new scale
+	{
+		number_t newscale=newheight;
+		newscale/=computed;
+		th->Matrix.ScaleY=newscale;
+	}
+	return NULL;
 }
 
 void DisplayObjectContainer::sinit(Class_base* c)
@@ -915,6 +959,19 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 DisplayObjectContainer::DisplayObjectContainer()
 {
 	sem_init(&sem_displayList,0,1);
+}
+
+void DisplayObjectContainer::dumpDisplayList()
+{
+	cout << "Size: " << dynamicDisplayList.size() << endl;
+	list<IDisplayListElem*>::const_iterator it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();it++)
+	{
+		if((*it)->obj)
+			cout << (*it)->obj->prototype->class_name << endl;
+		else
+			cout << "UNKNOWN" << endl;
+	}
 }
 
 //This must be called fromt VM context

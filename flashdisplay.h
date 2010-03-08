@@ -58,8 +58,6 @@ class DisplayObject: public IDisplayListElem
 {
 friend class DisplayObjectContainer;
 protected:
-	intptr_t width;
-	intptr_t height;
 	LoaderInfo* loaderInfo;
 	void setRoot(RootMovieClip* r)
 	{
@@ -69,6 +67,8 @@ protected:
 			root=r;
 		}
 	}
+	int computeWidth();
+	int computeHeight();
 public:
 	DisplayObject();
 	static void sinit(Class_base* c);
@@ -87,10 +87,11 @@ public:
 	ASFUNCTION(_getScaleY);
 	ASFUNCTION(_setScaleY);
 	ASFUNCTION(_getLoaderInfo);
-	ASFUNCTION(_getWidth);
 	ASFUNCTION(_getBounds);
+	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getHeight);
+	ASFUNCTION(_setHeight);
 	ASFUNCTION(_getRotation);
 	ASFUNCTION(_getName);
 	ASFUNCTION(_getParent);
@@ -123,6 +124,7 @@ protected:
 	mutable sem_t sem_displayList;
 	void setRoot(RootMovieClip* r);
 public:
+	void dumpDisplayList();
 	void _removeChild(IDisplayListElem*);
 	DisplayObjectContainer();
 	static void sinit(Class_base* c);
@@ -272,6 +274,7 @@ protected:
 	uint32_t totalFrames;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	Frame* cur_frame;
+	void bootstrap();
 public:
 	std::vector<Frame> frames;
 	RunState state;

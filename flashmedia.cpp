@@ -50,6 +50,10 @@ void Video::sinit(Class_base* c)
 void Video::buildTraits(ASObject* o)
 {
 	o->setGetterByQName("videoWidth","",new Function(_getVideoWidth));
+	o->setGetterByQName("width","",new Function(Video::_getWidth));
+	o->setSetterByQName("width","",new Function(Video::_setWidth));
+	o->setGetterByQName("height","",new Function(Video::_getHeight));
+	o->setSetterByQName("height","",new Function(Video::_setHeight));
 }
 
 void Video::Render()
@@ -66,5 +70,33 @@ ASFUNCTIONBODY(Video,_constructor)
 ASFUNCTIONBODY(Video,_getVideoWidth)
 {
 	return abstract_i(320);
+}
+
+ASFUNCTIONBODY(Video,_getWidth)
+{
+	Video* th=Class<Video>::cast(obj->implementation);
+	return abstract_i(th->width);
+}
+
+ASFUNCTIONBODY(Video,_setWidth)
+{
+	Video* th=Class<Video>::cast(obj->implementation);
+	assert(argslen==1);
+	th->width=args[0]->toInt();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Video,_getHeight)
+{
+	Video* th=Class<Video>::cast(obj->implementation);
+	return abstract_i(th->height);
+}
+
+ASFUNCTIONBODY(Video,_setHeight)
+{
+	Video* th=Class<Video>::cast(obj->implementation);
+	assert(argslen==1);
+	th->height=args[0]->toInt();
+	return NULL;
 }
 

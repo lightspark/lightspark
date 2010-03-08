@@ -34,11 +34,18 @@ public:
 
 class Video: public DisplayObject
 {
+private:
+	intptr_t width;
+	intptr_t height;
 public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getVideoWidth);
+	ASFUNCTION(_getWidth);
+	ASFUNCTION(_setWidth);
+	ASFUNCTION(_getHeight);
+	ASFUNCTION(_setHeight);
 	void Render();
 };
 

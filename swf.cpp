@@ -425,7 +425,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 	sem_post(&sem_listeners);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buffer(NULL),fbAcquired(false),currentClip(s)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buffer(NULL),fbAcquired(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;

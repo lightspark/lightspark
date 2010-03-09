@@ -259,11 +259,6 @@ public:
 	void glAcquireFramebuffer();
 	void glBlitFramebuffer();
 
-	//Used only in RenderThread context
-	MovieClip* currentClip;
-	ExecutionContext* execContext;
-	VirtualMachine vm;
-
 	//OpenGL fragment programs
 	int gpu_program;
 	GLuint fboId;

@@ -85,7 +85,7 @@ void DoActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, ID
 void DoActionTag::Render()
 {
 	abort();
-#ifndef WIN32
+/*#ifndef WIN32
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
@@ -120,7 +120,7 @@ void DoActionTag::Render()
 #ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->action_time=timeDiff(ts,td);
-#endif
+#endif*/
 }
 
 DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
@@ -158,7 +158,7 @@ void DoInitActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo
 void DoInitActionTag::Render()
 {
 	abort();
-#ifndef WIN32
+/*#ifndef WIN32
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
@@ -193,7 +193,7 @@ void DoInitActionTag::Render()
 #ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&td);
 	sys->fps_prof->action_time=timeDiff(ts,td);
-#endif
+#endif*/
 }
 
 ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)
@@ -405,9 +405,9 @@ RunState::RunState():FP(0),next_FP(0),stop_FP(0)
 
 void ActionStop::Execute()
 {
-	LOG(LOG_CALLS,"ActionStop");
+	/*LOG(LOG_CALLS,"ActionStop");
 	rt->currentClip->state.next_FP=rt->currentClip->state.FP;
-	rt->currentClip->state.stop_FP=true;
+	rt->currentClip->state.stop_FP=true;*/
 }
 
 ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
@@ -945,7 +945,7 @@ void ActionEquals2::Execute()
 void ActionJump::Execute()
 {
 	LOG(LOG_CALLS,"ActionJump: " << BranchOffset);
-	rt->execContext->setJumpOffset(BranchOffset);
+	//rt->execContext->setJumpOffset(BranchOffset);
 }
 
 void ActionDelete::Execute()
@@ -1314,22 +1314,22 @@ void ActionGetURL2::Execute()
 
 void ActionPlay::Execute()
 {
-	LOG(LOG_CALLS,"ActionPlay");
+	/*LOG(LOG_CALLS,"ActionPlay");
 	rt->currentClip->state.next_FP=rt->currentClip->state.FP;
-	rt->currentClip->state.stop_FP=false;
+	rt->currentClip->state.stop_FP=false;*/
 }
 
 void ActionGotoFrame::Execute()
 {
-	LOG(LOG_CALLS,"ActionGoto");
+	/*LOG(LOG_CALLS,"ActionGoto");
 	rt->currentClip->state.next_FP=Frame;
-	rt->currentClip->state.stop_FP=false;
+	rt->currentClip->state.stop_FP=false;*/
 }
 
 void ActionConstantPool::Execute()
 {
 	LOG(LOG_CALLS,"ActionConstantPool");
-	rt->vm.setConstantPool(ConstantPool);	
+	//rt->vm.setConstantPool(ConstantPool);	
 }
 
 std::istream& lightspark::operator >>(std::istream& stream, BUTTONCONDACTION& v)

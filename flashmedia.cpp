@@ -24,6 +24,9 @@
 using namespace lightspark;
 using namespace std;
 
+extern TLSDATA SystemState* sys;
+extern TLSDATA RenderThread* rt;
+
 REGISTER_CLASS_NAME(SoundTransform);
 REGISTER_CLASS_NAME(Video);
 
@@ -58,12 +61,67 @@ void Video::buildTraits(ASObject* o)
 
 void Video::Render()
 {
-	LOG(LOG_CALLS,"Video::Render not implemented");
+	if(!initialized)
+	{
+		glGenTextures(1,&videoTexture);
+		glGenBuffers(1,&videoBuffer);
+		initialized=true;
+
+		//Per texture initialization
+		glBindTexture(GL_TEXTURE_2D, videoTexture);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+		
+		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	}
+
+	LOG(LOG_NOT_IMPLEMENTED,"Video::Render not implemented");
+	rt->glAcquireFramebuffer();
+
+	float matrix[16];
+	Matrix.get4DMatrix(matrix);
+	glPushMatrix();
+	glMultMatrixf(matrix);
+
+	glBindTexture(GL_TEXTURE_2D, videoTexture);
+	uint32_t* buffer=new uint32_t[width*height];
+	for(int i=0;i<(width*height);i++)
+	{
+		buffer[i]=0xff000000+(i&0xff);
+	}
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+
+	//Enable texture lookup
+	glColor3f(0,0,1);
+
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,0);
+		glVertex2i(0,0);
+
+		glTexCoord2f(1,0);
+		glVertex2i(width,0);
+
+		glTexCoord2f(1,1);
+		glVertex2i(width,height);
+
+		glTexCoord2f(0,1);
+		glVertex2i(0,height);
+	glEnd();
+
+	rt->glBlitFramebuffer();
+	glPopMatrix();
+	delete[] buffer;
 }
 
 ASFUNCTIONBODY(Video,_constructor)
 {
-	LOG(LOG_CALLS,"Video constructor");
+	Video* th=Class<Video>::cast(obj->implementation);
+	assert(argslen<2);
+	if(0 < argslen)
+		th->width=args[0]->toInt();
+	if(1 < argslen)
+		th->height=args[1]->toInt();
 	return NULL;
 }
 

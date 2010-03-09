@@ -37,7 +37,11 @@ class Video: public DisplayObject
 private:
 	intptr_t width;
 	intptr_t height;
+	bool initialized;
+	GLuint videoTexture;
+	GLuint videoBuffer;
 public:
+	Video():width(320),height(240),initialized(false),videoTexture(0),videoBuffer(0){};
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

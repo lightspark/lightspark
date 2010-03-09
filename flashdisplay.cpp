@@ -1493,16 +1493,6 @@ void Graphics::Render()
 	for(unsigned int i=0;i<geometry.size();i++)
 		geometry[i].Render();
 
-/*	if(geometry.size()==1)
-	{
-		FILLSTYLE::fixedColor(0,0,0);
-		glBegin(GL_QUADS);
-			glVertex2i(0,0);
-			glVertex2i(75,0);
-			glVertex2i(75,75);
-			glVertex2i(0,75);
-		glEnd();
-	}*/
 	sem_post(&geometry_mutex);
 }
 

@@ -1479,7 +1479,7 @@ void FILLSTYLE::setFragmentProgram() const
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Reverting to fixed function");
+		LOG(LOG_NOT_IMPLEMENTED,"Style not implmented");
 		FILLSTYLE::fixedColor(0.5,0.5,0);
 	}
 }

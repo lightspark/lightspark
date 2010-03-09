@@ -1072,7 +1072,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glClearColor(1,1,1,1);
 			glClear(GL_COLOR_BUFFER_BIT);
 			glLoadIdentity();
-			//glScalef(0.05,0.05,1);
 			
 			sys->Render();
 

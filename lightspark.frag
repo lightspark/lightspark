@@ -26,7 +26,6 @@ vec4 tex_lookup()
 
 void main()
 {
-	//It's probably faster to compute all this and select the rigth one
 	vec4 ret=(solid_color()*gl_Color.x)+
 			(linear_gradient()*gl_Color.y)+
 			(tex_lookup()*gl_Color.z);

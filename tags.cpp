@@ -492,6 +492,9 @@ void DefineTextTag::Render()
 	clearStyle.Color=RGBA(0,0,0,0);
 	glPushMatrix();
 	glMultMatrixf(matrix);
+	//Shapes are defined in twips, so scale then down
+	glScalef(0.05,0.05,1);
+
 	float scale_cur=1;
 	for(;it!=TextRecords.end();it++)
 	{
@@ -646,6 +649,7 @@ void DefineShapeTag::Render()
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
+	glScalef(0.05,0.05,1);
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -685,6 +689,7 @@ void DefineShape2Tag::Render()
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
+	glScalef(0.05,0.05,1);
 	
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -728,6 +733,7 @@ void DefineShape4Tag::Render()
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
+	glScalef(0.05,0.05,1);
 	
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -783,6 +789,7 @@ void DefineShape3Tag::Render()
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
+	glScalef(0.05,0.05,1);
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -1062,13 +1069,6 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 		}
 	}
 	sort(shapes.begin(),shapes.end());
-
-	//Normalize the sizes of the shapes
-	for(unsigned int i=0;i<shapes.size();i++)
-	{
-		for(unsigned int j=0;j<shapes[i].outline.size();j++)
-			shapes[i].outline[j]/=20;
-	}
 }
 
 void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)

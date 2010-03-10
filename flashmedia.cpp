@@ -63,9 +63,9 @@ void Video::Render()
 {
 	if(!initialized)
 	{
-		glGenTextures(1,&videoTexture);
-		glGenBuffers(1,&videoBuffer);
 		initialized=true;
+		glGenTextures(1,&videoTexture);
+		glGenBuffers(2,videoBuffers);
 
 		//Per texture initialization
 		glBindTexture(GL_TEXTURE_2D, videoTexture);
@@ -76,6 +76,13 @@ void Video::Render()
 		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	}
 
+	unsigned videoWidth = 1280;
+	unsigned videoHeight = 720;
+
+	sem_wait(&mutex);
+	//Increment and wrap current buffer index
+	unsigned int nextBuffer = (curBuffer + 1)%2;
+
 	LOG(LOG_NOT_IMPLEMENTED,"Video::Render not implemented");
 	rt->glAcquireFramebuffer();
 
@@ -85,12 +92,28 @@ void Video::Render()
 	glMultMatrixf(matrix);
 
 	glBindTexture(GL_TEXTURE_2D, videoTexture);
-	uint32_t* buffer=new uint32_t[width*height];
-	for(int i=0;i<(width*height);i++)
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
+
+	//Copy content of the pbo to the texture, 0 is the offset in the pbo
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, videoWidth, videoHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, 0); 
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
+	glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
+
+	while(glGetError());
+	uint32_t* buffer = (uint32_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+	if(buffer==NULL)
+	{
+		cout << glGetError() << endl;
+		abort();
+	}
+
+	for(unsigned int i=0;i<(videoWidth*videoHeight);i++)
 	{
 		buffer[i]=0xff000000+(i&0xff);
 	}
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer);
+
+	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
 	//Enable texture lookup
 	glColor3f(0,0,1);
@@ -111,7 +134,9 @@ void Video::Render()
 
 	rt->glBlitFramebuffer();
 	glPopMatrix();
-	delete[] buffer;
+
+	curBuffer = nextBuffer;
+	sem_post(&mutex);
 }
 
 ASFUNCTIONBODY(Video,_constructor)
@@ -140,7 +165,9 @@ ASFUNCTIONBODY(Video,_setWidth)
 {
 	Video* th=Class<Video>::cast(obj->implementation);
 	assert(argslen==1);
+	sem_wait(&th->mutex);
 	th->width=args[0]->toInt();
+	sem_post(&th->mutex);
 	return NULL;
 }
 
@@ -154,7 +181,9 @@ ASFUNCTIONBODY(Video,_setHeight)
 {
 	Video* th=Class<Video>::cast(obj->implementation);
 	assert(argslen==1);
+	sem_wait(&th->mutex);
 	th->height=args[0]->toInt();
+	sem_post(&th->mutex);
 	return NULL;
 }
 

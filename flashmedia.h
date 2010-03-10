@@ -35,13 +35,15 @@ public:
 class Video: public DisplayObject
 {
 private:
+	sem_t mutex;
 	intptr_t width;
 	intptr_t height;
 	bool initialized;
 	GLuint videoTexture;
-	GLuint videoBuffer;
+	GLuint videoBuffers[2];
+	unsigned int curBuffer;
 public:
-	Video():width(320),height(240),initialized(false),videoTexture(0),videoBuffer(0){};
+	Video():width(320),height(240),initialized(false),videoTexture(0),curBuffer(0){sem_init(&mutex,0,1);};
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

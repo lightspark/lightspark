@@ -20,7 +20,6 @@
 #include "abc.h"
 #include "flashnet.h"
 #include "class.h"
-#include <curl/curl.h>
 
 using namespace std;
 using namespace lightspark;
@@ -133,9 +132,9 @@ ASFUNCTIONBODY(URLLoader,load)
 
 void URLLoader::execute()
 {
-	CurlDownloader curlDownloader;
+	CurlDownloader curlDownloader(url);
 
-	bool done=curlDownloader.download(url);
+	bool done=curlDownloader.download();
 	if(done)
 	{
 		if(dataFormat=="binary")
@@ -327,49 +326,5 @@ bool URLVariables::toString(tiny_string& ret)
 			ret+="&";
 	}
 	return true;
-}
-
-bool CurlDownloader::download(const tiny_string& s)
-{
-	CURL *curl;
-	CURLcode res;
-	curl = curl_easy_init();
-	bool ret=false;
-	if(curl)
-	{
-		curl_easy_setopt(curl, CURLOPT_URL, s.raw_buf());
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
-		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);
-		curl_easy_setopt(curl, CURLOPT_HEADERDATA, this);
-		res = curl_easy_perform(curl);
-		if(res==0)
-			ret=true;
-		curl_easy_cleanup(curl);
-	}
-
-	return ret;
-}
-
-size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
-{
-	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
-	memcpy(th->buffer + th->offset,buffer,size*nmemb);
-	th->offset+=(size*nmemb);
-	return size*nmemb;
-}
-
-size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, void *userp)
-{
-	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
-	char* headerLine=(char*)buffer;
-	if(strncmp(headerLine,"Content-Length: ",16)==0)
-	{
-		//Now read the length and allocate the byteArray
-		assert(th->buffer==NULL);
-		th->len=atoi(headerLine+16);
-		th->buffer=new uint8_t[th->len];
-	}
-	return size*nmemb;
 }
 

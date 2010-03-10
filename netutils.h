@@ -17,67 +17,50 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _STREAMS_H
-#define _STREAMS_H
+#ifndef _NET_UTILS_H
+#define _NET_UTILS_H
 
 #include <streambuf>
-#include <fstream>
-#include <semaphore.h>
 #include <inttypes.h>
-#include "zlib.h"
+#include "swftypes.h"
 
-class zlib_filter: public std::streambuf
+#include "thread_pool.h"
+
+namespace lightspark
+{
+
+//CurlDownloader can be used as a thread job, standalone or as a streambuf
+class CurlDownloader: public IThreadJob, public std::streambuf
 {
 private:
-	bool compressed;
-	int consumed;
-	z_stream strm;
-	char buffer[4096];
-	int available;
-	virtual int provideBuffer(int limit)=0;
-	void initialize();
-protected:
-	char in_buf[4096];
-	virtual int_type underflow();
-	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
-public:
-	zlib_filter();
-};
-
-class sync_stream: public zlib_filter
-{
-public:
-	sync_stream();
-	int write(char* buf, int len);
-private:
-	int provideBuffer(int limit);
-	char* buffer;
-	int head;
-	int tail;
-	sem_t mutex;
-	sem_t notfull;
-	sem_t ready;
-	const int buf_size;
-};
-
-class zlib_file_filter:public zlib_filter
-{
-private:
-	FILE* f;
-	int provideBuffer(int limit);
-public:
-	zlib_file_filter(const char* file_name);
-};
-
-class zlib_bytes_filter:public zlib_filter
-{
-private:
-	const uint8_t* buf;
-	int offset;
+	uint8_t* buffer;
 	int len;
-	int provideBuffer(int limit);
+	int tail;
+	sem_t available;
+	sem_t mutex;
+	tiny_string url;
+	bool failed;
+	bool waiting;
+	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
+	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
+	void execute();
 public:
-	zlib_bytes_filter(const uint8_t* b, int l);
+	CurlDownloader(const tiny_string& u);
+	virtual int_type underflow();
+	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode)
+	{
+		abort();
+	}
+	bool download();
+	uint8_t* getBuffer()
+	{
+		return buffer;
+	}
+	int getLen()
+	{
+		return len;
+	}
 };
 
+};
 #endif

@@ -23,30 +23,10 @@
 #include "asobjects.h"
 #include "flashevents.h"
 #include "thread_pool.h"
+#include "netutils.h"
 
 namespace lightspark
 {
-
-class CurlDownloader
-{
-private:
-	uint8_t* buffer;
-	int len;
-	int offset;
-	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
-	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
-public:
-	CurlDownloader():buffer(NULL),len(0),offset(0){}
-	bool download(const tiny_string& s);
-	uint8_t* getBuffer()
-	{
-		return buffer;
-	}
-	int getLen()
-	{
-		return len;
-	}
-};
 
 class URLRequest: public IInterface
 {

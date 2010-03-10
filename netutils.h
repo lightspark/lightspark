@@ -35,7 +35,7 @@ class CurlDownloader: public IThreadJob, public std::streambuf
 private:
 	uint8_t* buffer;
 	int len;
-	int tail;
+	unsigned int tail;
 	sem_t available;
 	sem_t mutex;
 	tiny_string url;
@@ -44,6 +44,7 @@ private:
 	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
 	void execute();
+	void setFailed();
 public:
 	CurlDownloader(const tiny_string& u);
 	virtual int_type underflow();
@@ -51,6 +52,7 @@ public:
 	{
 		abort();
 	}
+	virtual pos_type seekpos(pos_type, std::ios_base::openmode);
 	bool download();
 	uint8_t* getBuffer()
 	{

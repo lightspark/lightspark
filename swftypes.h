@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <endian.h>
 
 namespace lightspark
 {
@@ -209,6 +210,7 @@ public:
 	UI32():val(0){}
 	UI32(uint32_t v):val(v){}
 	operator uint32_t(){ return val; }
+	void bswap() { val=be32toh(val); }
 };
 
 class UI16

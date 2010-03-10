@@ -59,5 +59,7 @@ FLV_HEADER::FLV_HEADER(std::istream& in):dataOffset(0),_hasAudio(false),_hasVide
 
 	in >> DataOffset;
 
+	DataOffset.bswap();
 	dataOffset = DataOffset;
+	assert(dataOffset==9);
 }

@@ -20,6 +20,7 @@
 #include "abc.h"
 #include "flashnet.h"
 #include "class.h"
+#include "flv.h"
 
 using namespace std;
 using namespace lightspark;
@@ -201,7 +202,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("DEFAULT","",new Integer(3));
 };
 
-NetConnection::NetConnection()
+NetConnection::NetConnection():isFMS(false)
 {
 }
 
@@ -218,24 +219,18 @@ void NetConnection::buildTraits(ASObject* o)
 	o->setVariableByQName("connect","",new Function(connect));
 }
 
-void NetConnection::execute()
-{
-	abort();
-}
-
 ASFUNCTIONBODY(NetConnection,connect)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj->implementation);
 	assert(argslen==1);
 	if(args[0]->getObjectType()!=T_UNDEFINED)
+	{
+		th->isFMS=true;
 		abort();
+	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
-	Event* status=Class<NetStatusEvent>::getInstanceS(true);
-	ASObject* info=new ASObject;
-	info->setVariableByQName("level","",Class<ASString>::getInstanceS(true,"status")->obj);
-	info->setVariableByQName("code","",Class<ASString>::getInstanceS(true,"NetConnection.Connect.Success")->obj);
-	status->obj->setVariableByQName("info","",info);
+	Event* status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetConnection.Connect.Success");
 	getVm()->addEvent(th, status);
 	return NULL;
 }
@@ -263,6 +258,11 @@ void NetStream::buildTraits(ASObject* o)
 ASFUNCTIONBODY(NetStream,_constructor)
 {
 	LOG(LOG_CALLS,"NetStream constructor");
+	assert(argslen==1);
+	assert(args[0]->prototype==Class<NetConnection>::getClass());
+
+	NetConnection* netConnection = Class<NetConnection>::cast(args[0]->implementation);
+	assert(netConnection->isFMS==false);
 	return NULL;
 }
 
@@ -270,16 +270,60 @@ ASFUNCTIONBODY(NetStream,play)
 {
 	NetStream* th=Class<NetStream>::cast(obj->implementation);
 	assert(argslen==1);
-//	const tiny_string& arg0=args[0]->toString();
-//	cout << arg0 << endl;
-//	We assume success now
-	Event* status=Class<NetStatusEvent>::getInstanceS(true);
-	ASObject* info=new ASObject;
-	info->setVariableByQName("level","",Class<ASString>::getInstanceS(true,"status")->obj);
-	info->setVariableByQName("code","",Class<ASString>::getInstanceS(true,"NetStream.Play.Start")->obj);
-	status->obj->setVariableByQName("info","",info);
-	getVm()->addEvent(th, status);
+	const tiny_string& arg0=args[0]->toString();
+	cout << "__URL " << arg0 << endl;
+	th->url = arg0;
+
+	sys->addJob(th);
 	return NULL;
+}
+
+NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
+{
+	char buf[3];
+	s.read(buf,3);
+	STREAM_TYPE ret;
+	if(strncmp(buf,"FLV",3)==0)
+		ret=FLV_STREAM;
+	else
+		abort();
+
+	s.seekg(0);
+	return ret;
+}
+
+void NetStream::execute()
+{
+	CurlDownloader* curlDownloader=new CurlDownloader(url);
+	sys->addJob(curlDownloader);
+	istream s(curlDownloader);
+	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+	//We need to catch possible EOF and other error condition in the non reliable stream
+	try
+	{
+		STREAM_TYPE t=classifyStream(s);
+		if(t==FLV_STREAM)
+		{
+			FLV_HEADER h(s);
+			if(!h.isValid())
+				abort();
+
+			abort();
+		}
+		else
+			abort();
+
+	}
+	catch(exception& e)
+	{
+		cout << e.what() << endl;
+		abort();
+	}
+
+/*	Event* status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Play.Start");
+	getVm()->addEvent(this, status);
+	status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Buffer.Full");
+	getVm()->addEvent(this, status);*/
 }
 
 ASFUNCTIONBODY(NetStream,getBytesLoaded)

@@ -210,8 +210,7 @@ void Loader::execute()
 		istream s(&zf);
 
 		ParseThread* local_pt = new ParseThread(local_root,s);
-		sys->addJob(local_pt);
-		local_pt->wait();
+		local_pt->execute();
 		content=local_root;
 	}
 	loaded=true;

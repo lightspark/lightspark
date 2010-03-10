@@ -86,18 +86,24 @@ public:
 	void execute();
 };
 
-class NetConnection: public EventDispatcher, public IThreadJob
+class NetConnection: public EventDispatcher
 {
+friend class NetStream;
+private:
+	bool isFMS;
 public:
 	NetConnection();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(connect);
-	void execute();
 };
 
-class NetStream: public EventDispatcher
+class NetStream: public EventDispatcher, public IThreadJob
 {
+private:
+	enum STREAM_TYPE { FLV_STREAM=0 };
+	tiny_string url;
+	STREAM_TYPE classifyStream(std::istream& s);
 public:
 	NetStream();
 	static void sinit(Class_base*);
@@ -107,6 +113,7 @@ public:
 	ASFUNCTION(getBytesLoaded);
 	ASFUNCTION(getBytesTotal);
 	ASFUNCTION(getTime);
+	void execute();
 };
 
 };

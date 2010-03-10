@@ -19,21 +19,37 @@
 
 #include "netutils.h"
 #include <curl/curl.h>
+#include <string>
 
 using namespace lightspark;
 
-CurlDownloader::CurlDownloader(const tiny_string& u):buffer(NULL),len(0),tail(0),url(u),failed(false),waiting(false)
+CurlDownloader::CurlDownloader(const tiny_string& u):buffer(NULL),len(0),tail(0),failed(false),waiting(false)
 {
+	//TODO: Url encode the string
+	std::string tmp2;
+	tmp2.reserve(u.len()*2);
+	for(int i=0;i<u.len();i++)
+	{
+		if(u[i]==' ')
+		{
+			char buf[4];
+			sprintf(buf,"%%%x",(unsigned char)u[i]);
+			tmp2+=buf;
+		}
+		else
+			tmp2.push_back(u[i]);
+	}
+	url=tmp2.c_str();
+
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
-	setg((char*)buffer,(char*)buffer,(char*)buffer);
 }
 
 void CurlDownloader::execute()
 {
 	if(url.len()==0)
 	{
-		failed=true;
+		setFailed();
 		return;
 	}
 	CURL *curl;
@@ -48,17 +64,18 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_HEADERDATA, this);
 		res = curl_easy_perform(curl);
 		if(res!=0)
-			failed=true;
+			setFailed();
 		curl_easy_cleanup(curl);
 	}
 	else
-		failed=true;
+		setFailed();
 
 	return;
 }
 
 bool CurlDownloader::download()
 {
+	execute();
 	return !failed;
 }
 
@@ -74,6 +91,30 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 	return size*nmemb;
 }
 
+size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, void *userp)
+{
+	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
+	char* headerLine=(char*)buffer;
+	if(strncmp(headerLine,"Content-Length: ",16)==0)
+	{
+		//Now read the length and allocate the byteArray
+		assert(th->buffer==NULL);
+		th->len=atoi(headerLine+16);
+		th->buffer=new uint8_t[th->len];
+		th->setg((char*)th->buffer,(char*)th->buffer,(char*)th->buffer);
+	}
+	return size*nmemb;
+}
+
+void CurlDownloader::setFailed()
+{
+	sem_wait(&mutex);
+	failed=true;
+	if(waiting) //If we are waiting for some bytes, gives up and return EOF
+		sem_post(&available);
+	sem_post(&mutex);
+}
+
 CurlDownloader::int_type CurlDownloader::underflow()
 {
 	sem_wait(&mutex);
@@ -86,26 +127,30 @@ CurlDownloader::int_type CurlDownloader::underflow()
 		sem_post(&mutex);
 		sem_wait(&available);
 	}
+
+	//The current pointer has to be saved
+	char* cur=gptr();
+
+	if(failed)
+	{
+		sem_post(&mutex);
+		return -1;
+	}
+
+	assert(tail!=firstIndex);
 	
 	//We have some bytes now, let's use them
-	setg((char*)buffer,(char*)buffer,(char*)buffer+tail);
+	setg((char*)buffer,cur,(char*)buffer+tail);
 	sem_post(&mutex);
-
 	//Cast to signed, otherwise 0xff would become eof
 	return (unsigned char)buffer[firstIndex];
 }
 
-size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, void *userp)
+CurlDownloader::pos_type CurlDownloader::seekpos(pos_type pos, std::ios_base::openmode mode)
 {
-	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
-	char* headerLine=(char*)buffer;
-	if(strncmp(headerLine,"Content-Length: ",16)==0)
-	{
-		//Now read the length and allocate the byteArray
-		assert(th->buffer==NULL);
-		th->len=atoi(headerLine+16);
-		th->buffer=new uint8_t[th->len];
-	}
-	return size*nmemb;
+	assert(mode==std::ios_base::in);
+	sem_wait(&mutex);
+	setg((char*)buffer,(char*)buffer+pos,(char*)buffer+tail);
+	sem_post(&mutex);
+	return pos;
 }
-

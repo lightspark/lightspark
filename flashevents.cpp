@@ -360,7 +360,7 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 		return true;
 }
 
-NetStatusEvent::NetStatusEvent():Event("netStatus")
+NetStatusEvent::NetStatusEvent(const tiny_string& l, const tiny_string& c):Event("netStatus"),level(l),code(c)
 {
 }
 
@@ -373,6 +373,11 @@ void NetStatusEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(NetStatusEvent,_constructor)
 {
+	NetStatusEvent* th=Class<NetStatusEvent>::cast(obj->implementation);
+	ASObject* info=new ASObject;
+	info->setVariableByQName("level","",Class<ASString>::getInstanceS(true,th->level)->obj);
+	info->setVariableByQName("code","",Class<ASString>::getInstanceS(true,th->code)->obj);
+	obj->setVariableByQName("info","",info);
 	return NULL;
 }
 

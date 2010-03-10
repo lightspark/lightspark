@@ -86,8 +86,12 @@ public:
 
 class NetStatusEvent: public Event
 {
+private:
+	tiny_string level;
+	tiny_string code;
 public:
-	NetStatusEvent();
+	NetStatusEvent():Event("netStatus"){}
+	NetStatusEvent(const tiny_string& l, const tiny_string& c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o)
 	{

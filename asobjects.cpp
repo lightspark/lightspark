@@ -208,13 +208,11 @@ ASFUNCTIONBODY(Array,unshift)
 ASFUNCTIONBODY(Array,_push)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
-	if(argslen!=1)
+	for(unsigned int i=0;i<argslen;i++)
 	{
-		LOG(LOG_ERROR,"Multiple push");
-		abort();
+		th->push(args[i]);
+		args[i]->incRef();
 	}
-	th->push(args[0]);
-	args[0]->incRef();
 	return abstract_i(th->size());
 }
 

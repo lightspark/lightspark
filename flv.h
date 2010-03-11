@@ -20,8 +20,11 @@
 #ifndef FLV_H
 #define FLV_H
 
-#include "swftypes.h"
 #include <istream>
+#include "swftypes.h"
+
+namespace lightspark
+{
 
 class FLV_HEADER
 {
@@ -37,6 +40,35 @@ public:
 	bool isValid() { return valid; }
 	bool hasAudio() { return _hasAudio; }
 	bool hasVideo() { return _hasVideo; }
+};
+
+class VideoTag
+{
+protected:
+	uint32_t dataSize;
+	uint32_t timestamp;
+public:
+	VideoTag(std::istream& s);
+	uint32_t getDataSize() { return dataSize; }
+};
+
+class ScriptDataTag: public VideoTag
+{
+public:
+	ScriptDataTag(std::istream& s);
+};
+
+class ScriptDataString
+{
+private:
+	uint32_t size;
+	tiny_string val;
+public:
+	ScriptDataString(std::istream& s);
+	const tiny_string& getString() { return val; }
+	uint32_t getSize() { return size; }
+};
+
 };
 
 #endif

@@ -21,6 +21,7 @@
 #include "swftypes.h"
 
 using namespace lightspark;
+using namespace std;
 
 FLV_HEADER::FLV_HEADER(std::istream& in):dataOffset(0),_hasAudio(false),_hasVideo(false)
 {
@@ -62,4 +63,75 @@ FLV_HEADER::FLV_HEADER(std::istream& in):dataOffset(0),_hasAudio(false),_hasVide
 	DataOffset.bswap();
 	dataOffset = DataOffset;
 	assert(dataOffset==9);
+}
+
+VideoTag::VideoTag(istream& s)
+{
+	//Read dataSize
+	UI24 DataSize;
+	s >> DataSize;
+	DataSize.bswap();
+	dataSize=DataSize;
+
+	//Read and assemble timestamp
+	UI24 Timestamp;
+	s >> Timestamp;
+	Timestamp.bswap();
+	UI8 TimestampExtended;
+	s >> TimestampExtended;
+	timestamp=Timestamp|(TimestampExtended<<24);
+	
+	UI24 StreamID;
+	s >> StreamID;
+	assert(StreamID==0);
+}
+
+ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
+{
+	unsigned int consumed=0;
+	bool methodFound=false;
+	tiny_string methodName;
+	while(consumed<dataSize)
+	{
+		UI8 Type;
+		s >> Type;
+		switch(Type)
+		{
+			case 2:
+			{
+				ScriptDataString String(s);
+				cout << String.getString() << endl;
+				cout << String.getSize() << endl;
+				if(!methodFound)
+				{
+					methodName=String.getString();
+					methodFound=true;
+				}
+				break;
+			}
+			default:
+				cout << (int)Type << endl;
+				abort();
+				
+
+		}
+	}
+	abort();
+}
+
+ScriptDataString::ScriptDataString(std::istream& s)
+{
+	UI16 Length;
+	s >> Length;
+	Length.bswap();
+	size=Length;
+
+	//TODO: use resize on tiny_string
+	char* buf=new char[Length+1];
+	s.read(buf,Length);
+	buf[Length]=0;
+
+	val=buf;
+
+	delete[] buf;
 }

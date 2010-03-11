@@ -308,6 +308,30 @@ void NetStream::execute()
 			if(!h.isValid())
 				abort();
 
+			unsigned int prevSize=0;
+			do
+			{
+				UI32 PreviousTagSize;
+				s >> PreviousTagSize;
+				PreviousTagSize.bswap();
+				assert(PreviousTagSize==prevSize);
+
+				//Check tag type and read it
+				UI8 TagType;
+				s >> TagType;
+				switch(TagType)
+				{
+					case 18:
+					{
+						ScriptDataTag tag(s);
+						abort();
+						break;
+					}
+					default:
+						abort();
+				}
+			}
+			while(1);
 			abort();
 		}
 		else

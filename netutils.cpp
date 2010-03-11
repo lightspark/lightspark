@@ -86,8 +86,13 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 	memcpy(th->buffer + th->tail,buffer,size*nmemb);
 	th->tail+=(size*nmemb);
 	if(th->waiting)
+	{
+		th->waiting=false;
+		assert(size*nmemb);
 		sem_post(&th->available);
-	sem_post(&th->mutex);
+	}
+	else
+		sem_post(&th->mutex);
 	return size*nmemb;
 }
 
@@ -95,7 +100,9 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	char* headerLine=(char*)buffer;
-	if(strncmp(headerLine,"Content-Length: ",16)==0)
+	if(strncmp(headerLine,"HTTP/1.1 4",10)==0) //HTTP error, let's fail
+		th->setFailed();
+	else if(strncmp(headerLine,"Content-Length: ",16)==0)
 	{
 		//Now read the length and allocate the byteArray
 		assert(th->buffer==NULL);
@@ -112,7 +119,8 @@ void CurlDownloader::setFailed()
 	failed=true;
 	if(waiting) //If we are waiting for some bytes, gives up and return EOF
 		sem_post(&available);
-	sem_post(&mutex);
+	else
+		sem_post(&mutex);
 }
 
 CurlDownloader::int_type CurlDownloader::underflow()
@@ -124,8 +132,16 @@ CurlDownloader::int_type CurlDownloader::underflow()
 	if((buffer+tail)==(uint8_t*)egptr()) //We have no more bytes
 	{
 		waiting=true;
-		sem_post(&mutex);
-		sem_wait(&available);
+		if(failed)
+		{
+			sem_post(&mutex);
+			return -1;
+		}
+		else
+		{
+			sem_post(&mutex);
+			sem_wait(&available);
+		}
 	}
 
 	//The current pointer has to be saved
@@ -137,8 +153,6 @@ CurlDownloader::int_type CurlDownloader::underflow()
 		return -1;
 	}
 
-	assert(tail!=firstIndex);
-	
 	//We have some bytes now, let's use them
 	setg((char*)buffer,cur,(char*)buffer+tail);
 	sem_post(&mutex);

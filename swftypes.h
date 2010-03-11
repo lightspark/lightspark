@@ -213,6 +213,17 @@ public:
 	void bswap() { val=be32toh(val); }
 };
 
+class UI24
+{
+friend std::istream& operator>>(std::istream& s, UI24& v);
+private:
+	uint32_t val;
+public:
+	UI24():val(0){}
+	operator uint32_t() const { return val; }
+	void bswap() { val=be32toh(val); }
+};
+
 class UI16
 {
 friend std::istream& operator>>(std::istream& s, UI16& v);
@@ -223,6 +234,7 @@ public:
 	UI16(uint16_t v):val(v){}
 	operator uint16_t() const { return val; }
 	operator UI32() const { return val; }
+	void bswap() { val=be16toh(val); }
 };
 
 class UI8 
@@ -679,6 +691,13 @@ inline std::istream& operator>>(std::istream& s, SI16& v)
 inline std::istream& operator>>(std::istream& s, UI16& v)
 {
 	s.read((char*)&v.val,2);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, UI24& v)
+{
+	assert(v.val==0);
+	s.read((char*)&v.val,3);
 	return s;
 }
 

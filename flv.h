@@ -36,10 +36,10 @@ private:
 	bool _hasVideo;
 public:
 	FLV_HEADER(std::istream& in);
-	unsigned int skipAmount(){return dataOffset;}
-	bool isValid() { return valid; }
-	bool hasAudio() { return _hasAudio; }
-	bool hasVideo() { return _hasVideo; }
+	unsigned int skipAmount() const {return dataOffset;}
+	bool isValid() const { return valid; }
+	bool hasAudio() const { return _hasAudio; }
+	bool hasVideo() const { return _hasVideo; }
 };
 
 class VideoTag
@@ -49,13 +49,16 @@ protected:
 	uint32_t timestamp;
 public:
 	VideoTag(std::istream& s);
-	uint32_t getDataSize() { return dataSize; }
+	uint32_t getDataSize() const { return dataSize; }
 };
 
 class ScriptDataTag: public VideoTag
 {
+private:
+	uint32_t totalLen;
 public:
 	ScriptDataTag(std::istream& s);
+	uint32_t getTotalLen() const { return totalLen; }
 };
 
 class ScriptDataString
@@ -65,8 +68,14 @@ private:
 	tiny_string val;
 public:
 	ScriptDataString(std::istream& s);
-	const tiny_string& getString() { return val; }
-	uint32_t getSize() { return size; }
+	const tiny_string& getString() const { return val; }
+	uint32_t getSize() const { return size; }
+};
+
+class ScriptECMAArray
+{
+public:
+	ScriptECMAArray(std::istream& s);
 };
 
 };

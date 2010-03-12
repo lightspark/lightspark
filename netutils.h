@@ -48,10 +48,7 @@ private:
 public:
 	CurlDownloader(const tiny_string& u);
 	virtual int_type underflow();
-	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode)
-	{
-		abort();
-	}
+	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 	virtual pos_type seekpos(pos_type, std::ios_base::openmode);
 	bool download();
 	uint8_t* getBuffer()

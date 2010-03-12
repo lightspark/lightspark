@@ -88,35 +88,27 @@ VideoTag::VideoTag(istream& s)
 
 ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 {
-	unsigned int consumed=0;
-	bool methodFound=false;
+	unsigned int start=s.tellg();
 	tiny_string methodName;
-	while(consumed<dataSize)
-	{
-		UI8 Type;
-		s >> Type;
-		switch(Type)
-		{
-			case 2:
-			{
-				ScriptDataString String(s);
-				cout << String.getString() << endl;
-				cout << String.getSize() << endl;
-				if(!methodFound)
-				{
-					methodName=String.getString();
-					methodFound=true;
-				}
-				break;
-			}
-			default:
-				cout << (int)Type << endl;
-				abort();
-				
 
-		}
-	}
-	abort();
+	//Specs talks about an arbitrary number of stuff, actually just a string and an array are expected
+	UI8 Type;
+	s >> Type;
+	if(Type!=2)
+		abort();
+
+	ScriptDataString String(s);
+	methodName=String.getString();
+	cout << methodName << endl;
+
+	s >> Type;
+	if(Type!=8)
+		abort();
+
+	ScriptECMAArray ecmaArray(s);
+	//Compute totalLen
+	unsigned int end=s.tellg();
+	totalLen=(end-start)+11;
 }
 
 ScriptDataString::ScriptDataString(std::istream& s)
@@ -134,4 +126,52 @@ ScriptDataString::ScriptDataString(std::istream& s)
 	val=buf;
 
 	delete[] buf;
+}
+
+ScriptECMAArray::ScriptECMAArray(std::istream& s)
+{
+	//numVar is an 'approximation' of array size
+	UI32 numVar;
+	s >> numVar;
+	numVar.bswap();
+
+	while(1)
+	{
+		ScriptDataString varName(s);
+		cout << varName.getString() << endl;
+		UI8 Type;
+		s >> Type;
+		switch(Type)
+		{
+			case 0: //double (big-endian)
+			{
+				uint64_t tmp;
+				s.read((char*)&tmp,8);
+				tmp=be64toh(tmp);
+				double d=*(reinterpret_cast<double*>(&tmp));
+				cout << d << endl;
+				break;
+			}
+			case 1:
+			{
+				UI8 b;
+				s >> b;
+				cout << (int)b << endl;
+				break;
+			}
+			case 2:
+			{
+				ScriptDataString String(s);
+				cout << String.getString() << endl;
+				break;
+			}
+			case 9: //End of array
+			{
+				return;
+			}
+			default:
+				cout << (int)Type << endl;
+				abort();
+		}
+	}
 }

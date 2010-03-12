@@ -324,10 +324,11 @@ void NetStream::execute()
 					case 18:
 					{
 						ScriptDataTag tag(s);
-						abort();
+						prevSize=tag.getTotalLen();
 						break;
 					}
 					default:
+						cout << (int)TagType << endl;
 						abort();
 				}
 			}

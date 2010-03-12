@@ -168,3 +168,11 @@ CurlDownloader::pos_type CurlDownloader::seekpos(pos_type pos, std::ios_base::op
 	sem_post(&mutex);
 	return pos;
 }
+
+CurlDownloader::pos_type CurlDownloader::seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode mode)
+{
+	assert(mode==std::ios_base::in);
+	assert(off==0);
+	pos_type ret=gptr()-eback();
+	return ret;
+}

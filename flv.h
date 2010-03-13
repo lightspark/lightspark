@@ -47,18 +47,17 @@ class VideoTag
 protected:
 	uint32_t dataSize;
 	uint32_t timestamp;
+	uint32_t totalLen;
 public:
 	VideoTag(std::istream& s);
 	uint32_t getDataSize() const { return dataSize; }
+	uint32_t getTotalLen() const { return totalLen; }
 };
 
 class ScriptDataTag: public VideoTag
 {
-private:
-	uint32_t totalLen;
 public:
 	ScriptDataTag(std::istream& s);
-	uint32_t getTotalLen() const { return totalLen; }
 };
 
 class ScriptDataString
@@ -76,6 +75,20 @@ class ScriptECMAArray
 {
 public:
 	ScriptECMAArray(std::istream& s);
+};
+
+class VideoDataTag: public VideoTag
+{
+private:
+	int frameType;
+	int codecId;
+	bool _isHeader;
+public:
+	char* packetData;
+	uint32_t packetLen;
+	VideoDataTag(std::istream& s);
+	~VideoDataTag();
+	bool isHeader(){ return _isHeader; }
 };
 
 };

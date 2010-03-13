@@ -175,3 +175,42 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s)
 		}
 	}
 }
+
+VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(NULL)
+{
+	unsigned int start=s.tellg();
+	UI8 typeAndCodec;
+	s >> typeAndCodec;
+
+	frameType=(typeAndCodec>>4);
+	codecId=(typeAndCodec&0xf);
+
+	assert(frameType==1); //Key frame
+	assert(codecId==7);
+
+	//AVCVideoPacket
+	UI8 packetType;
+	s >> packetType;
+	assert(packetType==0); //Sequence header
+	_isHeader=true;
+
+	SI24 CompositionTime;
+	s >> CompositionTime;
+	assert(CompositionTime==0); //TODO: what are composition times
+
+	//Compute lenght of raw data
+	packetLen=dataSize-5;
+	packetData=new char[packetLen];
+	s.read(packetData,packetLen);
+
+	//Compute totalLen
+	unsigned int end=s.tellg();
+	totalLen=(end-start)+11;
+}
+
+VideoDataTag::~VideoDataTag()
+{
+	assert(packetData);
+
+	delete[] packetData;
+}

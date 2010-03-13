@@ -221,7 +221,27 @@ private:
 public:
 	UI24():val(0){}
 	operator uint32_t() const { return val; }
-	void bswap() { val=be32toh(val); }
+	void bswap()
+	{
+		val=be32toh(val)>>8; //The most significant byte is discarted
+	}
+};
+
+class SI24
+{
+friend std::istream& operator>>(std::istream& s, SI24& v);
+private:
+	int32_t val;
+public:
+	SI24():val(0){}
+	operator int32_t() const { return val; }
+	void bswap() 
+	{
+		val=be32toh(val)>>8; //The most significant byte is discarted
+		//Check for sign extension
+		if(val&0x800000)
+			val|=(0xff000000);
+	}
 };
 
 class UI16
@@ -698,6 +718,16 @@ inline std::istream& operator>>(std::istream& s, UI24& v)
 {
 	assert(v.val==0);
 	s.read((char*)&v.val,3);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, SI24& v)
+{
+	assert(v.val==0);
+	s.read((char*)&v.val,3);
+	//Check for sign extesion
+	if(v.val&0x800000)
+		v.val|=0xff000000;
 	return s;
 }
 

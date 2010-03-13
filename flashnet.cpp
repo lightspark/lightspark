@@ -321,6 +321,13 @@ void NetStream::execute()
 				s >> TagType;
 				switch(TagType)
 				{
+					case 9:
+					{
+						VideoDataTag tag(s);
+						prevSize=tag.getTotalLen();
+						abort();
+						break;
+					}
 					case 18:
 					{
 						ScriptDataTag tag(s);

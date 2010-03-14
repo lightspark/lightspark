@@ -13,7 +13,7 @@ datadir = $(datarootdir)
 LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o tags_stub.o logger.o vm.o \
 	  asobjects.o abc.o abc_codesynt.o abc_opcodes.o flashdisplay.o flashevents.o textfile.o thread_pool.o \
 	  flashgeom.o flashnet.o flashsystem.o flashutils.o compat.o abc_interpreter.o flashexternal.o \
-	  flashtext.o flashmedia.o flv.o netutils.o
+	  flashtext.o flashmedia.o flv.o netutils.o fastpaths.o
 
 # TODO: library?
 all: lightspark tightspark
@@ -34,6 +34,9 @@ plugin:
 
 %.o: %.cpp
 	$(CXX) -pipe -pthread -I`llvm-config --includedir` $(EXTRAFLAGS) $(PKG_BUILD_FLAG) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -c -o $@ $^ 
+
+%.o: %.asm
+	nasm -f elf64 -o $@ $^
 
 .PHONY: all clean install
 clean:

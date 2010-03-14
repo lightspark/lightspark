@@ -20,6 +20,7 @@
 #include "netutils.h"
 #include <curl/curl.h>
 #include <string>
+#include <iostream>
 
 using namespace lightspark;
 
@@ -57,6 +58,7 @@ void CurlDownloader::execute()
 	curl = curl_easy_init();
 	if(curl)
 	{
+		std::cout << url << std::endl;
 		curl_easy_setopt(curl, CURLOPT_URL, url.raw_buf());
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
@@ -100,6 +102,9 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	char* headerLine=(char*)buffer;
+
+	std::cout << headerLine << std::endl;
+
 	if(strncmp(headerLine,"HTTP/1.1 4",10)==0) //HTTP error, let's fail
 		th->setFailed();
 	else if(strncmp(headerLine,"Content-Length: ",16)==0)

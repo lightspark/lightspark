@@ -110,6 +110,8 @@ private:
 	STREAM_TYPE classifyStream(std::istream& s);
 	AVCodecContext* codecContext;
 	uint8_t* buffer;
+	uint32_t bufferSize;
+	uint32_t frameCount;
 	sem_t mutex;
 public:
 	NetStream();

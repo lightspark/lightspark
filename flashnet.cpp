@@ -21,6 +21,7 @@
 #include "flashnet.h"
 #include "class.h"
 #include "flv.h"
+#include "fastpaths.h"
 
 using namespace std;
 using namespace lightspark;
@@ -235,7 +236,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():codecContext(NULL),buffer(NULL)
+NetStream::NetStream():codecContext(NULL),buffer(NULL),bufferSize(0),frameCount(0)
 {
 	sem_init(&mutex,0,1);
 }
@@ -370,25 +371,40 @@ void NetStream::execute()
 							//The tag is a data packet, decode it
 							int frameOk=0;
 							avcodec_decode_video(codecContext, frameIn, &frameOk, tag.packetData, tag.packetLen);
-							assert(frameOk);
-							const int height=codecContext->height;
-							const int width=codecContext->width;
+							frameCount++;
+							if(frameOk==0)
+								abort();
+							assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
+							assert(codecContext->width==480);
 
-							//TODO: cache size and buffer, and resize by 3
-							const int32_t size=width*height;
-							if(buffer)
-								av_free(buffer);
-							buffer=(uint8_t*)av_malloc(size);
-
-							//Now, just intensity is used
 							int offset=0;
-							for(int y=0;y<height;y++)
+							//Check for 16-byte alignment of buffers
+							assert((((uintptr_t)frameIn->data[0])&0x7)==0);
+							assert((((uintptr_t)frameIn->data[1])&0x7)==0);
+							assert((((uintptr_t)frameIn->data[2])&0x7)==0);
+
+							const uint32_t height=codecContext->height;
+							const uint32_t width=codecContext->width;
+							assert((width&0xf)==0);
+
+							const uint32_t size=width*height*4;
+							if(size!=bufferSize)
 							{
-								memcpy(buffer+offset, frameIn->data[0]+(y*frameIn->linesize[0]), width);
-								offset+=width;
+								assert(bufferSize==0);
+								if(buffer)
+									av_free(buffer);
+								buffer=(uint8_t*)av_malloc(size);
 							}
 
-							assert(codecContext->width==480);
+							for(uint32_t y=0;y<height;y++)
+							{
+								//memcpy(dest+offset, lastFrame->data[0]+(y*lastFrame->linesize[0]), width);
+								fastYUV420ChannelsToBuffer(frameIn->data[0]+(y*frameIn->linesize[0]),
+										frameIn->data[1]+((y>>1)*frameIn->linesize[1]),
+										frameIn->data[2]+((y>>1)*frameIn->linesize[2]),
+										buffer+offset,width);
+								offset+=(width*4);
+							}
 						}
 						sem_post(&mutex);
 						break;
@@ -469,7 +485,7 @@ void NetStream::copyBuffer(uint8_t* dest)
 		height=codecContext->height;
 	}
 
-	memcpy(dest, buffer, width*height);
+	memcpy(dest, buffer, width*height*4);
 	sem_post(&mutex);
 }
 

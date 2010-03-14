@@ -17,45 +17,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _THREAD_POOL_H
-#define _THREAD_POOL_H
+#ifndef _FAST_PATHS_H
+#define _FAST_PATHS_H
 
-#include <deque>
-#include <pthread.h>
-#include <semaphore.h>
+#include <inttypes.h>
 
-namespace lightspark
+extern "C"
 {
-
-#define NUM_THREADS 5
-
-class SystemState;
-
-class IThreadJob
-{
-friend class ThreadPool;
-private:
-	bool executing;
-public:
-	IThreadJob():executing(false){}
-	virtual void execute()=0;
-	virtual ~IThreadJob(){}
-};
-
-class ThreadPool
-{
-private:
-	sem_t mutex;
-	pthread_t threads[NUM_THREADS];
-	std::deque<IThreadJob*> jobs;
-	sem_t num_jobs;
-	static void* job_worker(void*);
-	SystemState* m_sys;
-public:
-	ThreadPool(SystemState* s);
-	void addJob(IThreadJob* j);
-};
-
-};
+//Packing of YUV channels in a single buffer (YUVA)
+void fastYUV420ChannelsToBuffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t size);
+}
 
 #endif

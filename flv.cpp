@@ -99,7 +99,7 @@ ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 
 	ScriptDataString String(s);
 	methodName=String.getString();
-	cout << methodName << endl;
+	//cout << methodName << endl;
 
 	s >> Type;
 	if(Type!=8)
@@ -138,7 +138,7 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s)
 	while(1)
 	{
 		ScriptDataString varName(s);
-		cout << varName.getString() << endl;
+		//cout << varName.getString() << endl;
 		UI8 Type;
 		s >> Type;
 		switch(Type)
@@ -149,20 +149,20 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s)
 				s.read((char*)&tmp,8);
 				tmp=be64toh(tmp);
 				double d=*(reinterpret_cast<double*>(&tmp));
-				cout << d << endl;
+				//cout << d << endl;
 				break;
 			}
 			case 1:
 			{
 				UI8 b;
 				s >> b;
-				cout << (int)b << endl;
+				//cout << (int)b << endl;
 				break;
 			}
 			case 2:
 			{
 				ScriptDataString String(s);
-				cout << String.getString() << endl;
+				//cout << String.getString() << endl;
 				break;
 			}
 			case 9: //End of array
@@ -170,7 +170,7 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s)
 				return;
 			}
 			default:
-				cout << (int)Type << endl;
+				//cout << (int)Type << endl;
 				abort();
 		}
 	}
@@ -185,14 +185,24 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 	frameType=(typeAndCodec>>4);
 	codecId=(typeAndCodec&0xf);
 
-	assert(frameType==1); //Key frame
+	if(frameType!=1 && frameType!=2)
+		abort();
+
 	assert(codecId==7);
 
 	//AVCVideoPacket
 	UI8 packetType;
 	s >> packetType;
-	assert(packetType==0); //Sequence header
-	_isHeader=true;
+	switch(packetType)
+	{
+		case 0: //Sequence header
+			_isHeader=true;
+			break;
+		case 1: //NALU
+			break;
+		default:
+			assert(false && "Unexpected packet type");
+	}
 
 	SI24 CompositionTime;
 	s >> CompositionTime;
@@ -200,8 +210,8 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 	//Compute lenght of raw data
 	packetLen=dataSize-5;
-	packetData=new char[packetLen];
-	s.read(packetData,packetLen);
+	packetData=new uint8_t[packetLen];
+	s.read((char*)packetData,packetLen);
 
 	//Compute totalLen
 	unsigned int end=s.tellg();
@@ -210,7 +220,21 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 VideoDataTag::~VideoDataTag()
 {
-	assert(packetData);
-
 	delete[] packetData;
+}
+
+AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s)
+{
+	unsigned int start=s.tellg();
+	UI8 flags;
+	s >> flags;
+
+	int len=dataSize-1;
+	char* buf=new char[len];
+	s.read(buf,len);
+	delete[] buf;
+
+	//Compute totalLen
+	unsigned int end=s.tellg();
+	totalLen=(end-start)+11;
 }

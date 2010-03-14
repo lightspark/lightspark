@@ -80,15 +80,26 @@ public:
 class VideoDataTag: public VideoTag
 {
 private:
-	int frameType;
-	int codecId;
 	bool _isHeader;
 public:
-	char* packetData;
+	int frameType;
+	int codecId;
+	uint8_t* packetData;
 	uint32_t packetLen;
 	VideoDataTag(std::istream& s);
+	void releaseBuffer()
+	{
+		packetData=NULL;
+		packetLen=0;
+	}
 	~VideoDataTag();
-	bool isHeader(){ return _isHeader; }
+	bool isHeader() const { return _isHeader; }
+};
+
+class AudioDataTag: public VideoTag
+{
+public:
+	AudioDataTag(std::istream& s);
 };
 
 };

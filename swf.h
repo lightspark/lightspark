@@ -30,7 +30,6 @@
 #include "swftypes.h"
 #include "frame.h"
 #include "vm.h"
-//#include "asobjects.h"
 #include "flashdisplay.h"
 
 #include <GL/glew.h>

@@ -24,6 +24,10 @@
 #include "flashevents.h"
 #include "thread_pool.h"
 #include "netutils.h"
+extern "C"
+{
+#include <libavcodec/avcodec.h>
+}
 
 namespace lightspark
 {
@@ -104,8 +108,12 @@ private:
 	enum STREAM_TYPE { FLV_STREAM=0 };
 	tiny_string url;
 	STREAM_TYPE classifyStream(std::istream& s);
+	AVCodecContext* codecContext;
+	uint8_t* buffer;
+	sem_t mutex;
 public:
 	NetStream();
+	~NetStream();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -114,6 +122,11 @@ public:
 	ASFUNCTION(getBytesTotal);
 	ASFUNCTION(getTime);
 	void execute();
+
+	//Interface for video
+	uint32_t getVideoWidth();
+	uint32_t getVideoHeight();
+	void copyBuffer(uint8_t* dest);
 };
 
 };

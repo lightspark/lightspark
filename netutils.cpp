@@ -131,7 +131,6 @@ CurlDownloader::int_type CurlDownloader::underflow()
 
 	if((buffer+tail)==(uint8_t*)egptr()) //We have no more bytes
 	{
-		waiting=true;
 		if(failed)
 		{
 			sem_post(&mutex);
@@ -139,6 +138,7 @@ CurlDownloader::int_type CurlDownloader::underflow()
 		}
 		else
 		{
+			waiting=true;
 			sem_post(&mutex);
 			sem_wait(&available);
 		}

@@ -78,6 +78,7 @@ void Event::sinit(Class_base* c)
 void Event::buildTraits(ASObject* o)
 {
 	o->setGetterByQName("target","",new Function(_getTarget));
+	o->setGetterByQName("type","",new Function(_getType));
 }
 
 ASFUNCTIONBODY(Event,_constructor)

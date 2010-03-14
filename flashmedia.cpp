@@ -57,6 +57,7 @@ void Video::buildTraits(ASObject* o)
 	o->setSetterByQName("width","",new Function(Video::_setWidth));
 	o->setGetterByQName("height","",new Function(Video::_getHeight));
 	o->setSetterByQName("height","",new Function(Video::_setHeight));
+	o->setVariableByQName("attachNetStream","",new Function(attachNetStream));
 }
 
 void Video::Render()
@@ -76,67 +77,96 @@ void Video::Render()
 		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	}
 
-	unsigned videoWidth = 1280;
-	unsigned videoHeight = 720;
-
-	sem_wait(&mutex);
-	//Increment and wrap current buffer index
-	unsigned int nextBuffer = (curBuffer + 1)%2;
-
-	LOG(LOG_NOT_IMPLEMENTED,"Video::Render not implemented");
-	rt->glAcquireFramebuffer();
-
-	float matrix[16];
-	Matrix.get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
-
-	glBindTexture(GL_TEXTURE_2D, videoTexture);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
-
-	//Copy content of the pbo to the texture, 0 is the offset in the pbo
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, videoWidth, videoHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, 0); 
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
-	glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
-
-	while(glGetError());
-	uint32_t* buffer = (uint32_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-	if(buffer==NULL)
+	if(netStream)
 	{
-		cout << glGetError() << endl;
-		abort();
-	}
+		//Get size
+		uint32_t newWidth=netStream->getVideoWidth();
+		uint32_t newHeight=netStream->getVideoHeight();
 
-	for(unsigned int i=0;i<(videoWidth*videoHeight);i++)
+		if(videoWidth==0 || videoHeight==0)
+		{
+			videoWidth=newWidth;
+			videoHeight=newHeight;
+		}
+		else
+		{
+			if(videoWidth!=newWidth || videoHeight!=newHeight)
+				abort();
+		}
+
+		//If size is not yet valid
+		if(videoWidth==0 || videoHeight==0)
+			return;
+
+		assert(videoWidth==480);
+		//Size is validated and has not changed
+
+		//Increment and wrap current buffer index
+		unsigned int nextBuffer = (curBuffer + 1)%2;
+		rt->glAcquireFramebuffer();
+
+		float matrix[16];
+		Matrix.get4DMatrix(matrix);
+		glPushMatrix();
+		glMultMatrixf(matrix);
+
+		glBindTexture(GL_TEXTURE_2D, videoTexture);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
+
+		//Copy content of the pbo to the texture, 0 is the offset in the pbo
+//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, videoWidth, videoHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, 0); 
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, videoWidth, videoHeight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0); 
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
+//		glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight, 0, GL_STREAM_DRAW);
+
+		while(glGetError());
+		uint8_t* buffer = (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+		if(buffer==NULL)
+		{
+			cout << glGetError() << endl;
+			abort();
+		}
+
+		netStream->copyBuffer(buffer);
+
+		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+		//Enable texture lookup
+		glColor3f(0,0,1);
+
+		//width and height should not change now
+		sem_wait(&mutex);
+		glBegin(GL_QUADS);
+			glTexCoord2f(0,0);
+			glVertex2i(0,0);
+
+			glTexCoord2f(1,0);
+			glVertex2i(width,0);
+
+			glTexCoord2f(1,1);
+			glVertex2i(width,height);
+
+			glTexCoord2f(0,1);
+			glVertex2i(0,height);
+		glEnd();
+		sem_post(&mutex);
+
+		rt->glBlitFramebuffer();
+		glPopMatrix();
+
+		curBuffer = nextBuffer;
+	}
+/*	else
 	{
-		buffer[i]=0xff000000+(i&0xff);
-	}
 
-	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+		for(unsigned int i=0;i<(videoWidth*videoHeight);i++)
+		{
+			buffer[i]=0xff000000+(i&0xff);
+		}
+	}*/
 
-	//Enable texture lookup
-	glColor3f(0,0,1);
-
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,0);
-		glVertex2i(0,0);
-
-		glTexCoord2f(1,0);
-		glVertex2i(width,0);
-
-		glTexCoord2f(1,1);
-		glVertex2i(width,height);
-
-		glTexCoord2f(0,1);
-		glVertex2i(0,height);
-	glEnd();
-
-	rt->glBlitFramebuffer();
-	glPopMatrix();
-
-	curBuffer = nextBuffer;
-	sem_post(&mutex);
 }
 
 ASFUNCTIONBODY(Video,_constructor)
@@ -152,7 +182,14 @@ ASFUNCTIONBODY(Video,_constructor)
 
 ASFUNCTIONBODY(Video,_getVideoWidth)
 {
-	return abstract_i(320);
+	Video* th=Class<Video>::cast(obj->implementation);
+	return abstract_i(th->videoWidth);
+}
+
+ASFUNCTIONBODY(Video,_getVideoHeight)
+{
+	Video* th=Class<Video>::cast(obj->implementation);
+	return abstract_i(th->videoHeight);
 }
 
 ASFUNCTIONBODY(Video,_getWidth)
@@ -187,3 +224,17 @@ ASFUNCTIONBODY(Video,_setHeight)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Video,attachNetStream)
+{
+	Video* th=Class<Video>::cast(obj->implementation);
+	assert(argslen==1);
+	//Validate the parameter
+	if(args[0]->prototype!=Class<NetStream>::getClass())
+		abort();
+
+	//Acquire the netStream
+	args[0]->incRef();
+
+	th->netStream=Class<NetStream>::cast(args[0]->implementation);
+	return NULL;
+}

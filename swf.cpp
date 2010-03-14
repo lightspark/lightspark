@@ -38,6 +38,9 @@
 
 #include <GL/glew.h>
 #include <curl/curl.h>
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
 #ifndef WIN32
 //#include <GL/glext.h>
 #include <GL/glx.h>
@@ -104,6 +107,7 @@ SystemState::SystemState():RootMovieClip(NULL),shutdown(false),currentVm(NULL),c
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
+	avcodec_register_all();
 
 	//Create the thread pool
 	sys=this;

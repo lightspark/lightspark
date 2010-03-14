@@ -894,7 +894,6 @@ ASFUNCTIONBODY(DisplayObject,_getWidth)
 ASFUNCTIONBODY(DisplayObject,_setWidth)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	cout << "WIDTH on " << th->obj->prototype->class_name << endl;
 	int newwidth=args[0]->toInt();
 	//Should actually scale the object
 	int computed=th->computeWidth();

@@ -235,8 +235,19 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream()
+NetStream::NetStream():codecContext(NULL),buffer(NULL)
 {
+	sem_init(&mutex,0,1);
+}
+
+NetStream::~NetStream()
+{
+	//TODO: add executing flag for all IThreadJobs
+	if(buffer)
+		av_free(buffer);
+	assert(codecContext);
+	av_free(codecContext);
+	sem_destroy(&mutex);
 }
 
 void NetStream::sinit(Class_base* c)
@@ -271,7 +282,7 @@ ASFUNCTIONBODY(NetStream,play)
 	NetStream* th=Class<NetStream>::cast(obj->implementation);
 	assert(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
-	cout << "__URL " << arg0 << endl;
+	//cout << "__URL " << arg0 << endl;
 	th->url = arg0;
 
 	sys->addJob(th);
@@ -298,6 +309,8 @@ void NetStream::execute()
 	sys->addJob(curlDownloader);
 	istream s(curlDownloader);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+	AVFrame* frameIn=avcodec_alloc_frame();
+
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
@@ -309,6 +322,7 @@ void NetStream::execute()
 				abort();
 
 			unsigned int prevSize=0;
+			bool done=false;
 			do
 			{
 				UI32 PreviousTagSize;
@@ -321,11 +335,62 @@ void NetStream::execute()
 				s >> TagType;
 				switch(TagType)
 				{
+					case 8:
+					{
+						AudioDataTag tag(s);
+						prevSize=tag.getTotalLen();
+						break;
+					}
 					case 9:
 					{
 						VideoDataTag tag(s);
 						prevSize=tag.getTotalLen();
-						abort();
+						assert(tag.codecId==7);
+
+						sem_wait(&mutex);
+						if(tag.isHeader())
+						{
+							//The tag is the header, initialize decoding
+							assert(codecContext==NULL); //The context can be set only once
+							//TODO: serialize access to avcodec_open
+							AVCodec* codec=avcodec_find_decoder(CODEC_ID_H264);
+							assert(codec);
+
+							codecContext=avcodec_alloc_context();
+							//If this tag is the header, fill the extradata for the codec
+							codecContext->extradata=tag.packetData;
+							codecContext->extradata_size=tag.packetLen;
+							tag.releaseBuffer();
+
+							if(avcodec_open(codecContext, codec)<0)
+								abort();
+						}
+						else
+						{
+							//The tag is a data packet, decode it
+							int frameOk=0;
+							avcodec_decode_video(codecContext, frameIn, &frameOk, tag.packetData, tag.packetLen);
+							assert(frameOk);
+							const int height=codecContext->height;
+							const int width=codecContext->width;
+
+							//TODO: cache size and buffer, and resize by 3
+							const int32_t size=width*height;
+							if(buffer)
+								av_free(buffer);
+							buffer=(uint8_t*)av_malloc(size);
+
+							//Now, just intensity is used
+							int offset=0;
+							for(int y=0;y<height;y++)
+							{
+								memcpy(buffer+offset, frameIn->data[0]+(y*frameIn->linesize[0]), width);
+								offset+=width;
+							}
+
+							assert(codecContext->width==480);
+						}
+						sem_post(&mutex);
 						break;
 					}
 					case 18:
@@ -339,8 +404,7 @@ void NetStream::execute()
 						abort();
 				}
 			}
-			while(1);
-			abort();
+			while(!done);
 		}
 		else
 			abort();
@@ -352,6 +416,7 @@ void NetStream::execute()
 		abort();
 	}
 
+	av_free(frameIn);
 /*	Event* status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Play.Start");
 	getVm()->addEvent(this, status);
 	status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Buffer.Full");
@@ -371,6 +436,41 @@ ASFUNCTIONBODY(NetStream,getBytesTotal)
 ASFUNCTIONBODY(NetStream,getTime)
 {
 	return abstract_d(0);
+}
+
+
+uint32_t NetStream::getVideoWidth()
+{
+	sem_wait(&mutex);
+	uint32_t ret=0;
+	if(codecContext)
+		ret=codecContext->width;
+	sem_post(&mutex);
+	return ret;
+}
+
+uint32_t NetStream::getVideoHeight()
+{
+	sem_wait(&mutex);
+	uint32_t ret=0;
+	if(codecContext)
+		ret=codecContext->height;
+	sem_post(&mutex);
+	return ret;
+}
+
+void NetStream::copyBuffer(uint8_t* dest)
+{
+	sem_wait(&mutex);
+	uint32_t width=0,height=0;
+	if(codecContext)
+	{
+		width=codecContext->width;
+		height=codecContext->height;
+	}
+
+	memcpy(dest, buffer, width*height);
+	sem_post(&mutex);
 }
 
 void URLVariables::sinit(Class_base* c)

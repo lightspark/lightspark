@@ -22,6 +22,8 @@
 
 #include "asobjects.h"
 #include "flashdisplay.h"
+#include "flashnet.h"
+
 namespace lightspark
 {
 
@@ -36,22 +38,27 @@ class Video: public DisplayObject
 {
 private:
 	sem_t mutex;
-	intptr_t width;
-	intptr_t height;
+	uint32_t width, height, videoWidth, videoHeight;
 	bool initialized;
 	GLuint videoTexture;
 	GLuint videoBuffers[2];
 	unsigned int curBuffer;
+	NetStream* netStream;
 public:
-	Video():width(320),height(240),initialized(false),videoTexture(0),curBuffer(0){sem_init(&mutex,0,1);};
+	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),videoTexture(0),curBuffer(0),netStream(NULL)
+	{
+		sem_init(&mutex,0,1);
+	}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getVideoWidth);
+	ASFUNCTION(_getVideoHeight);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_setHeight);
+	ASFUNCTION(attachNetStream);
 	void Render();
 };
 

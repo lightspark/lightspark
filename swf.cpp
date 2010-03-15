@@ -475,7 +475,7 @@ void RenderThread::glBlitFramebuffer()
 	glDrawBuffers(2,draw_buffers);
 
 	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor3f(0,0,1);
+	glColor4f(0,0,1,0);
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
 		glVertex2i(0,0);
@@ -693,7 +693,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 				glLoadIdentity();
 
-				glColor3f(0,0,1);
+				glColor4f(0,0,1,0);
 				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 				glDrawBuffer(GL_BACK);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

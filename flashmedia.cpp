@@ -131,8 +131,8 @@ void Video::Render()
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-		//Enable texture lookup
-		glColor3f(0,0,1);
+		//Enable texture lookup and YUV to RGB conversion
+		glColor4f(0,0,0,1);
 
 		//width and height should not change now
 		sem_wait(&mutex);

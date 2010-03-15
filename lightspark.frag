@@ -5,6 +5,10 @@ uniform sampler2D g_tex1;
 //gl_TexCoord[0]: Fill color/Texture coordinate
 //gl_SecondaryColor: interactive id
 
+const mat3 YUVtoRGB = mat3(	1, 1, 1, //First coloumn
+				0, -0.344, 1.772, //Second coloumn
+				1.402, -0.714, 0); //Third coloumn
+
 vec4 solid_color()
 {
 	return gl_TexCoord[0];
@@ -24,11 +28,20 @@ vec4 tex_lookup()
 	return texture2D(g_tex1,gl_TexCoord[0].xy);
 }
 
+vec4 tex_lookup_yuv()
+{
+	//Pixel format is VUYA
+	vec4 val=texture2D(g_tex1,gl_TexCoord[0].xy).bgra-vec4(0,0.5,0.5,0);
+	val.rgb=YUVtoRGB*(val.rgb);
+	return val;
+}
+
 void main()
 {
 	vec4 ret=(solid_color()*gl_Color.x)+
 			(linear_gradient()*gl_Color.y)+
-			(tex_lookup()*gl_Color.z);
+			(tex_lookup()*gl_Color.z)+
+			(tex_lookup_yuv()*gl_Color.w);
 
 	gl_FragData[0]=ret;
 	//gl_FragData[1]=gl_SecondaryColor*ceil(ret.a);

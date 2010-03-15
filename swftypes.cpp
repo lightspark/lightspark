@@ -1428,7 +1428,7 @@ void FILLSTYLE::setFragmentProgram() const
 	if(FillStyleType==0x00)
 	{
 		//LOG(TRACE,"Fill color");
-		glColor3f(1,0,0);
+		glColor4f(1,0,0,0);
 		glTexCoord4f(float(Color.Red)/256.0f,
 			float(Color.Green)/256.0f,
 			float(Color.Blue)/256.0f,
@@ -1444,7 +1444,7 @@ void FILLSTYLE::setFragmentProgram() const
 		int index_l=0;
 		RGBA color_r(Gradient.GradientRecords[0].Color);
 		int index_r=Gradient.GradientRecords[0].Ratio;
-		/*glColor3f(0,1,0);
+		/*glColor4f(0,1,0,0);
 
 		for(int i=0;i<256;i++)
 		{
@@ -1471,7 +1471,7 @@ void FILLSTYLE::setFragmentProgram() const
 		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);*/
 
 		//HACK: TODO: revamp gradient support
-		glColor3f(1,0,0);
+		glColor4f(1,0,0,0);
 		glTexCoord4f(float(color_r.Red)/256.0f,
 			float(color_r.Green)/256.0f,
 			float(color_r.Blue)/256.0f,
@@ -1490,7 +1490,7 @@ void FILLSTYLE::fixedColor(float r, float g, float b)
 
 	//Let's abuse of glColor and glTexCoord to transport
 	//custom information
-	glColor3f(1,0,0);
+	glColor4f(1,0,0,0);
 	glTexCoord4f(r,g,b,1);
 }
 

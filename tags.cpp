@@ -1458,7 +1458,7 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):Dic
 void DefineVideoStreamTag::Render()
 {
 	LOG(LOG_NO_INFO,"DefineVideoStreamTag Render");
-	glColor3f(1,0,0);
+	glColor4f(1,0,0,0);
 	glBegin(GL_QUADS);
 		glVertex2i(0,0);
 		glVertex2i(Width,0);

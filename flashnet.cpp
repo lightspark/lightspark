@@ -375,7 +375,6 @@ void NetStream::execute()
 							if(frameOk==0)
 								abort();
 							assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
-							assert(codecContext->width==480);
 
 							int offset=0;
 							//Check for 16-byte alignment of buffers

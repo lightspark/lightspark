@@ -98,7 +98,6 @@ void Video::Render()
 		if(videoWidth==0 || videoHeight==0)
 			return;
 
-		assert(videoWidth==480);
 		//Size is validated and has not changed
 
 		//Increment and wrap current buffer index
@@ -115,9 +114,13 @@ void Video::Render()
 		if(frameReady)
 		{
 			glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
-
 			//Copy content of the pbo to the texture, 0 is the offset in the pbo
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, videoWidth, videoHeight, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, 0); 
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, videoWidth, videoHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0); 
+		}
+		else
+		{
+			//Initialize texture to video size
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, videoWidth, videoHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL); 
 		}
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
 		glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);

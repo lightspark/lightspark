@@ -121,9 +121,13 @@ void Video::Render()
 		{
 			//Initialize texture to video size
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, videoWidth, videoHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL); 
+			//Initialize both PBOs to video size
+			glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);
+			glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
+			glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[1]);
+			glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
 		}
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
 
 		while(glGetError());
 		uint8_t* buffer = (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);

@@ -144,6 +144,13 @@ SystemState::~SystemState()
 	if(cur_thread_pool)
 		delete cur_thread_pool;
 	obj->implementation=NULL;
+
+	//decRef all registered classes
+	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
+	for(;it!=classes.end();++it)
+		it->second->decRef();
+
+	//TODO: check??
 	delete obj;
 }
 

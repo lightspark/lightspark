@@ -938,6 +938,7 @@ ABCVm::~ABCVm()
 	pthread_join(t,NULL);
 	//delete ex;
 	//delete module;
+	//assert(Global.ref_count==0);
 }
 
 void ABCVm::wait()

@@ -213,6 +213,7 @@ int main(int argc, char* argv[])
 	rt.wait();
 	pt->wait();
 	delete pt;
+	delete sys;
 
 	ofstream prof("lightspark.dat");
 	for(unsigned int i=0;i<fps_profs.size();i++)

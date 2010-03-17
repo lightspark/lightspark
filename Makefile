@@ -3,7 +3,7 @@ CXXFLAGS = -Wall -g -O0 -D_GLIBCXX_NO_DEBUG -Wnon-virtual-dtor -Woverloaded-virt
 CXXFLAGS_RELEASE = -Wall -O3 -DNDEBUG -Wnon-virtual-dtor -Woverloaded-virtual
 LLVMLIBS = `llvm-config --libfiles engine interpreter`
 EXTRAFLAGS = `pkg-config --cflags gl sdl libcurl libxml-2.0 libpcrecpp libavcodec`
-EXTRALIBS = `pkg-config --cflags --libs gl sdl libcurl libxml-2.0 libpcrecpp libavcodec`
+EXTRALIBS = `pkg-config --cflags --libs gl sdl libcurl libxml-2.0 libpcrecpp libavcodec` -lrt
 prefix = /usr
 bindir = $(prefix)/bin
 datarootdir = $(prefix)/share
@@ -13,7 +13,7 @@ datadir = $(datarootdir)
 LIBOBJS = swf.o swftypes.o tags.o geometry.o actions.o frame.o input.o streams.o tags_stub.o logger.o vm.o \
 	  asobjects.o abc.o abc_codesynt.o abc_opcodes.o flashdisplay.o flashevents.o textfile.o thread_pool.o \
 	  flashgeom.o flashnet.o flashsystem.o flashutils.o compat.o abc_interpreter.o flashexternal.o \
-	  flashtext.o flashmedia.o flv.o netutils.o fastpaths.o
+	  flashtext.o flashmedia.o flv.o netutils.o fastpaths.o timer.o
 
 # TODO: library?
 all: lightspark tightspark

@@ -227,6 +227,7 @@ private:
 	tiny_string url;
 	ByteArray* bytes;
 	LoaderInfo* contentLoaderInfo;
+	void execute();
 public:
 	Loader():local_root(NULL),loading(false),loaded(false),content(NULL)
 	{
@@ -237,7 +238,6 @@ public:
 	ASFUNCTION(load);
 	ASFUNCTION(loadBytes);
 	ASFUNCTION(_getContentLoaderInfo);
-	void execute();
 	int getDepth() const
 	{
 		return 0;

@@ -33,12 +33,12 @@ class SystemState;
 
 class IThreadJob
 {
-friend class ThreadPool;
-private:
+protected:
 	bool executing;
+	virtual void execute()=0;
 public:
 	IThreadJob():executing(false){}
-	virtual void execute()=0;
+	void run();
 	virtual ~IThreadJob(){}
 };
 

@@ -173,11 +173,11 @@ class ParseThread: public IThreadJob
 private:
 	std::istream& f;
 	sem_t ended;
+	void execute();
 public:
 	RootMovieClip* root;
 	int version;
 	ParseThread(RootMovieClip* r,std::istream& in);
-	void execute();
 	void wait();
 
 	//DEPRECATED

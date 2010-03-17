@@ -46,9 +46,7 @@ void* ThreadPool::job_worker(void* t)
 		th->jobs.pop_front();
 		sem_post(&th->mutex);
 
-		myJob->executing=true;
-		myJob->execute();
-		//myJob->executing=false;
+		myJob->run();
 	}
 	return NULL;
 }
@@ -59,4 +57,11 @@ void ThreadPool::addJob(IThreadJob* j)
 	jobs.push_back(j);
 	sem_post(&mutex);
 	sem_post(&num_jobs);
+}
+
+void IThreadJob::run()
+{
+	executing=true;
+	execute();
+	executing=false;
 }

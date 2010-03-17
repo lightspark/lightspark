@@ -124,7 +124,7 @@ void* TimerThread::timer_worker(TimerThread* th)
 		}
 
 		//Now execute the job
-		e->job->execute();
+		e->job->run();
 
 		//Cleanup
 		if(destroyEvent)

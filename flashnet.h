@@ -78,6 +78,7 @@ private:
 	tiny_string dataFormat;
 	tiny_string url;
 	ASObject* data;
+	void execute();
 public:
 	URLLoader();
 	static void sinit(Class_base*);
@@ -87,7 +88,6 @@ public:
 	ASFUNCTION(_getDataFormat);
 	ASFUNCTION(_getData);
 	ASFUNCTION(_setDataFormat);
-	void execute();
 };
 
 class NetConnection: public EventDispatcher
@@ -113,6 +113,7 @@ private:
 	uint32_t bufferSize;
 	uint32_t frameCount;
 	sem_t mutex;
+	void execute();
 public:
 	NetStream();
 	~NetStream();
@@ -123,7 +124,6 @@ public:
 	ASFUNCTION(getBytesLoaded);
 	ASFUNCTION(getBytesTotal);
 	ASFUNCTION(getTime);
-	void execute();
 
 	//Interface for video
 	uint32_t getVideoWidth();

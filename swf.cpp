@@ -77,19 +77,21 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	pt->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
 	LOG(LOG_NO_INFO,"FrameRate " << (FrameRate/256) << '.' << (FrameRate%256));
-	pt->root->frame_rate=FrameRate;
-	pt->root->frame_rate/=256;
+	float frameRate=FrameRate;
+	frameRate/=256;
+
+	pt->root->setFrameRate(frameRate);
 	pt->root->version=Version;
 	pt->root->fileLenght=FileLength;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),toBind(false),frame_rate(24)
+RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),frameRate(0),toBind(false)
 {
 	root=this;
 	sem_init(&mutex,0,1);
 	sem_init(&sem_frames,0,1);
 	sem_init(&new_frame,0,0);
-	sem_init(&sem_valid_frame_size,0,0);
+	sem_init(&sem_valid_data,0,0);
 	loaderInfo=li;
 	//Reset framesLoaded, as there are still not available
 	framesLoaded=0;
@@ -102,7 +104,7 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL),shutdown(false),currentVm(NULL),cur_input_thread(NULL),
+SystemState::SystemState():RootMovieClip(NULL),frameCount(0),secsCount(0),shutdown(false),currentVm(NULL),cur_input_thread(NULL),
 	cur_render_thread(NULL),useInterpreter(true),useJit(false)
 {
 	//Do needed global initialization
@@ -111,7 +113,14 @@ SystemState::SystemState():RootMovieClip(NULL),shutdown(false),currentVm(NULL),c
 
 	//Create the thread pool
 	sys=this;
+	sem_init(&terminated,0,0);
+
+	//Get starting time
+#ifndef WIN32
+	clock_gettime(CLOCK_REALTIME,&ts);
+#endif
 	cur_thread_pool=new ThreadPool(this);
+	timerThread=new TimerThread(this);
 	loaderInfo=Class<LoaderInfo>::getInstanceS(true);
 	stage=Class<Stage>::getInstanceS(true);
 	startTime=compat_msectiming();
@@ -161,12 +170,64 @@ void SystemState::setShutdownFlag()
 	if(sys->currentVm)
 		sys->currentVm->addEvent(NULL,new ShutdownEvent());
 
+	sem_post(&terminated);
 	sem_post(&mutex);
+}
+
+void SystemState::wait()
+{
+	sem_wait(&terminated);
+}
+
+void SystemState::draw()
+{
+	assert(cur_render_thread);
+	cur_render_thread->draw();
+}
+
+void SystemState::execute()
+{
+	draw();
+#ifndef WIN32
+	clock_gettime(CLOCK_REALTIME,&td);
+	uint32_t diff=timeDiff(ts,td);
+	if(diff>1000)
+	{
+		ts=td;
+		LOG(LOG_NO_INFO,"FPS: " << dec << frameCount);
+		//fps_prof->fps=frameCount;
+		if(frameCount!=getFrameRate())
+		{
+			LOG(LOG_NO_INFO,"Frame rate is drifting");
+		}
+		frameCount=0;
+		secsCount++;
+		//fps_profs.push_back(fps_profiling());
+		//sys->fps_prof=&fps_profs.back();
+		if(secsCount>120)
+		{
+			LOG(LOG_NO_INFO,"Exiting");
+			sys->setShutdownFlag();
+		}
+	}
+	else
+		frameCount++;
+#endif
 }
 
 void SystemState::addJob(IThreadJob* j)
 {
 	cur_thread_pool->addJob(j);
+}
+
+void SystemState::addTick(uint32_t tickTime, IThreadJob* job)
+{
+	timerThread->addTick(tickTime,job);
+}
+
+void SystemState::addWait(uint32_t waitTime, IThreadJob* job)
+{
+	timerThread->addWait(waitTime,job);
 }
 
 ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),parsingTarget(r)
@@ -1106,13 +1167,21 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
-			
-			sem_post(&th->end_render);
+			//Before ending rendering, cleanup all the request arrived in the meantime
+			int postCount=1;
+			while(sem_trywait(&th->render)==0)
+				postCount++;
+
+			assert(postCount==1);
+			while(postCount)
+			{
+				sem_post(&th->end_render);
+				postCount--;
+			}
 			if(sys->shutdown)
 				pthread_exit(0);
 		}
 		glDisable(GL_TEXTURE_2D);
-		//glUseProgram(rt->gpu_program);
 	}
 	catch(const char* e)
 	{
@@ -1126,7 +1195,6 @@ void RenderThread::draw()
 {
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
-	compat_msleep(1000/sys->frame_rate);
 	sem_wait(&end_render);
 }
 
@@ -1143,17 +1211,32 @@ void RootMovieClip::setFrameCount(int f)
 
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)
 {
-	frame_size=f;
+	frameSize=f;
 	assert(f.Xmin==0 && f.Ymin==0);
-	sem_post(&sem_valid_frame_size);
+	sem_post(&sem_valid_data);
 }
 
 lightspark::RECT RootMovieClip::getFrameSize() const
 {
 	//This is a sync semaphore the first time and then a mutex
-	sem_wait(&sem_valid_frame_size);
-	lightspark::RECT ret=frame_size;
-	sem_post(&sem_valid_frame_size);
+	sem_wait(&sem_valid_data);
+	lightspark::RECT ret=frameSize;
+	sem_post(&sem_valid_data);
+	return ret;
+}
+
+void RootMovieClip::setFrameRate(float f)
+{
+	frameRate=f;
+	sem_post(&sem_valid_data);
+}
+
+float RootMovieClip::getFrameRate() const
+{
+	//This is a sync semaphore the first time and then a mutex
+	sem_wait(&sem_valid_data);
+	float ret=frameRate;
+	sem_post(&sem_valid_data);
 	return ret;
 }
 
@@ -1233,6 +1316,13 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	DictionaryTag* ret=*it;
 	sem_post(&mutex);
 	return ret;
+}
+
+void RootMovieClip::execute()
+{
+	abort();
+	//Ask for rendering, this may be faked if rendering is being done right now
+	rt->draw();
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

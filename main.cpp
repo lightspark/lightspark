@@ -171,44 +171,10 @@ int main(int argc, char* argv[])
 	sys->cur_render_thread=&rt;
 	//Start the parser
 	sys->addJob(pt);
+	//Start the rendering
+	sys->addTick(1000/sys->getFrameRate(),sys);
 
-#ifndef WIN32
-	timespec ts,td;
-	clock_gettime(CLOCK_REALTIME,&ts);
-#endif
-	int count=0;
-	int sec_count=0;
-
-	LOG(LOG_CALLS,"sys 0x" << sys);
-	while(1)
-	{
-		if(sys->shutdown)
-			break;
-		rt.draw();
-
-		count++;
-#ifndef WIN32
-		clock_gettime(CLOCK_REALTIME,&td);
-		if(timeDiff(ts,td)>1000)
-		{
-			ts=td;
-			LOG(LOG_NO_INFO,"FPS: " << dec <<count);
-			sys->fps_prof->fps=count;
-			count=0;
-			sec_count++;
-			fps_profs.push_back(fps_profiling());
-			sys->fps_prof=&fps_profs.back();
-			if(sec_count>120)
-			{
-				LOG(LOG_NO_INFO,"Exiting");
-				sys->setShutdownFlag();
-				exit(-2);
-				break;
-			}
-		}
-#endif
-	}
-
+	sys->wait();
 	it.wait();
 	rt.wait();
 	pt->wait();

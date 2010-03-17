@@ -22,11 +22,13 @@
 
 #include "timer.h"
 #include "compat.h"
+#include "swf.h"
 
 using namespace lightspark;
 using namespace std;
 
 extern TLSDATA SystemState* sys;
+extern TLSDATA RenderThread* rt;
 
 uint64_t TimerThread::timespecToMsecs(timespec t)
 {
@@ -96,7 +98,7 @@ void* TimerThread::timer_worker(TimerThread* th)
 		}
 
 		//Get expiration of first event
-		uint32_t timing=th->pendingEvents.front()->timing;
+		uint64_t timing=th->pendingEvents.front()->timing;
 		//Wait for the previous absolute time, or a newEvent signal
 		timespec tmpt=msecsToTimespec(timing);
 		sem_post(&th->mutex);
@@ -119,7 +121,7 @@ void* TimerThread::timer_worker(TimerThread* th)
 		if(e->isTick) //Let's schedule the event again
 		{
 			e->timing+=e->tickTime;
-			th->insertNewEvent(e); //newEvent may be signaled, and will be waietd by the timedwait
+			th->insertNewEvent(e); //newEvent may be signaled, and will be waited by sem_timedwait
 			destroyEvent=false;
 		}
 

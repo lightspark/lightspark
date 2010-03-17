@@ -31,6 +31,7 @@
 #include "frame.h"
 #include "vm.h"
 #include "flashdisplay.h"
+#include "timer.h"
 
 #include <GL/glew.h>
 #ifndef WIN32
@@ -82,7 +83,8 @@ struct fps_profiling
 	fps_profiling():render_time(0),action_time(0),cache_time(0),fps(0),event_count(0),event_time(0){}
 };
 
-class RootMovieClip: public MovieClip
+//RootMovieClip is used as a ThreadJob for timed rendering purpose
+class RootMovieClip: public MovieClip, public IThreadJob
 {
 friend class ParseThread;
 protected:
@@ -93,22 +95,26 @@ protected:
 private:
 	RGB Background;
 	std::list < DictionaryTag* > dictionary;
-	RECT frame_size;
-	mutable sem_t sem_valid_frame_size;
+	//frameSize and frameRate are valid only after the header has been parsed
+	RECT frameSize;
+	float frameRate;
+	mutable sem_t sem_valid_data;
 	//Frames mutex (shared with drawing thread)
 	sem_t sem_frames;
 	bool toBind;
 	tiny_string bindName;
+	void execute();
 
 public:
 	RootMovieClip(LoaderInfo* li);
-	float frame_rate;
 	unsigned int version;
 	unsigned int fileLenght;
 	RGB getBackground();
 	void setBackground(const RGB& bg);
 	void setFrameSize(const RECT& f);
 	RECT getFrameSize() const;
+	float getFrameRate() const;
+	void setFrameRate(float f);
 	void setFrameCount(int f);
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
@@ -131,11 +137,21 @@ class SystemState: public RootMovieClip
 {
 private:
 	ThreadPool* cur_thread_pool;
+	TimerThread* timerThread;
+	sem_t terminated;
+#ifndef WIN32
+	timespec ts,td;
+#endif
+	int frameCount;
+	int secsCount;
 public:
 	void setUrl(const tiny_string& url);
 
 	bool shutdown;
 	void setShutdownFlag();
+	void execute();
+	void draw();
+	void wait();
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
@@ -166,6 +182,8 @@ public:
 
 	void parseParameters(std::istream& i);
 	void addJob(IThreadJob* j);
+	void addTick(uint32_t tickTime, IThreadJob* job);
+	void addWait(uint32_t waitTime, IThreadJob* job);
 };
 
 class ParseThread: public IThreadJob

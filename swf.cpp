@@ -1130,6 +1130,14 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		glEnable(GL_TEXTURE_2D);
 		while(1)
 		{
+			//Before starting rendering, cleanup all the request arrived in the meantime
+			int fakeRenderCount=0;
+			while(sem_trywait(&th->render)==0)
+				fakeRenderCount++;
+
+			if(fakeRenderCount)
+				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
+
 			sem_wait(&th->render);
 			SDL_PumpEvents();
 			SDL_GL_SwapBuffers( );
@@ -1167,17 +1175,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
-			//Before ending rendering, cleanup all the request arrived in the meantime
-			int postCount=1;
-			while(sem_trywait(&th->render)==0)
-				postCount++;
-
-			assert(postCount==1);
-			while(postCount)
-			{
-				sem_post(&th->end_render);
-				postCount--;
-			}
+			
 			if(sys->shutdown)
 				pthread_exit(0);
 		}
@@ -1195,7 +1193,7 @@ void RenderThread::draw()
 {
 	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
-	sem_wait(&end_render);
+	//sem_wait(&end_render);
 }
 
 void RootMovieClip::setFrameCount(int f)
@@ -1228,6 +1226,8 @@ lightspark::RECT RootMovieClip::getFrameSize() const
 void RootMovieClip::setFrameRate(float f)
 {
 	frameRate=f;
+	//Now frame rate is valid, start the rendering
+	sys->addTick(1000/f,this);
 	sem_post(&sem_valid_data);
 }
 
@@ -1320,9 +1320,8 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 
 void RootMovieClip::execute()
 {
-	abort();
-	//Ask for rendering, this may be faked if rendering is being done right now
-	rt->draw();
+	//Ask for a redraw, this may be faked if rendering is being done right now
+	sys->draw();
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

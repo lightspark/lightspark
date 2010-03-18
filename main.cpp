@@ -171,8 +171,6 @@ int main(int argc, char* argv[])
 	sys->cur_render_thread=&rt;
 	//Start the parser
 	sys->addJob(pt);
-	//Start the rendering
-	sys->addTick(1000/sys->getFrameRate(),sys);
 
 	sys->wait();
 	it.wait();

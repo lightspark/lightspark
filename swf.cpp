@@ -187,6 +187,7 @@ void SystemState::draw()
 
 void SystemState::execute()
 {
+	cur_input_thread->broadcastEvent("enterFrame");
 	draw();
 #ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&td);
@@ -1191,7 +1192,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 void RenderThread::draw()
 {
-	sys->cur_input_thread->broadcastEvent("enterFrame");
 	sem_post(&render);
 	//sem_wait(&end_render);
 }
@@ -1320,8 +1320,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 
 void RootMovieClip::execute()
 {
-	//Ask for a redraw, this may be faked if rendering is being done right now
-	sys->draw();
+	//Should go to the next frame
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

@@ -106,6 +106,7 @@ ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 		abort();
 
 	ScriptECMAArray ecmaArray(s);
+	frameRate=ecmaArray.frameRate;
 	//Compute totalLen
 	unsigned int end=s.tellg();
 	totalLen=(end-start)+11;
@@ -128,7 +129,7 @@ ScriptDataString::ScriptDataString(std::istream& s)
 	delete[] buf;
 }
 
-ScriptECMAArray::ScriptECMAArray(std::istream& s)
+ScriptECMAArray::ScriptECMAArray(std::istream& s):frameRate(0)
 {
 	//numVar is an 'approximation' of array size
 	UI32 numVar;
@@ -150,6 +151,9 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s)
 				tmp=be64toh(tmp);
 				double d=*(reinterpret_cast<double*>(&tmp));
 				//cout << d << endl;
+				//HACK, extract fps information
+				if(varName.getString()=="framerate")
+					frameRate=d;
 				break;
 			}
 			case 1:

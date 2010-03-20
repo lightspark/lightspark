@@ -57,6 +57,7 @@ public:
 class ScriptDataTag: public VideoTag
 {
 public:
+	double frameRate;
 	ScriptDataTag(std::istream& s);
 };
 
@@ -74,6 +75,7 @@ public:
 class ScriptECMAArray
 {
 public:
+	double frameRate;
 	ScriptECMAArray(std::istream& s);
 };
 

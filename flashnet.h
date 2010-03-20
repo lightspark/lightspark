@@ -112,6 +112,7 @@ private:
 	uint8_t* buffer;
 	uint32_t bufferSize;
 	uint32_t frameCount;
+	double frameRate;
 	sem_t mutex;
 	void execute();
 public:
@@ -128,6 +129,7 @@ public:
 	//Interface for video
 	uint32_t getVideoWidth();
 	uint32_t getVideoHeight();
+	double getFrameRate();
 	void copyBuffer(uint8_t* dest);
 };
 

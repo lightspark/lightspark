@@ -236,7 +236,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():codecContext(NULL),buffer(NULL),bufferSize(0),frameCount(0)
+NetStream::NetStream():codecContext(NULL),buffer(NULL),bufferSize(0),frameCount(0),frameRate(0)
 {
 	sem_init(&mutex,0,1);
 }
@@ -384,6 +384,7 @@ void NetStream::execute()
 
 							const uint32_t height=codecContext->height;
 							const uint32_t width=codecContext->width;
+							assert(frameIn->pts==0);
 							assert((width&0xf)==0);
 
 							const uint32_t size=width*height*4;
@@ -412,6 +413,9 @@ void NetStream::execute()
 					{
 						ScriptDataTag tag(s);
 						prevSize=tag.getTotalLen();
+
+						//HACK: initialize frameRate from the container
+						frameRate=tag.frameRate;
 						break;
 					}
 					default:
@@ -472,6 +476,11 @@ uint32_t NetStream::getVideoHeight()
 		ret=codecContext->height;
 	sem_post(&mutex);
 	return ret;
+}
+
+double NetStream::getFrameRate()
+{
+	return frameRate;
 }
 
 void NetStream::copyBuffer(uint8_t* dest)

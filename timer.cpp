@@ -103,6 +103,10 @@ void* TimerThread::timer_worker(TimerThread* th)
 		timespec tmpt=msecsToTimespec(timing);
 		sem_post(&th->mutex);
 		int ret=sem_timedwait(&th->newEvent, &tmpt);
+		//Check for shutdown condition
+		if(sys->shutdown)
+			pthread_exit(0);
+
 		if(ret==0)
 			continue;
 

@@ -33,7 +33,7 @@
 #include "streams.h"
 #include <GL/glx.h>
 
-class MovieTimer
+/*class MovieTimer
 {
 private:
 	pthread_t t;
@@ -47,7 +47,7 @@ public:
 	~MovieTimer();
 	void setRenderThread(lightspark::RenderThread* r);
 	void start();
-};
+};*/
 
 class nsPluginInstance : public nsPluginInstanceBase
 {
@@ -87,7 +87,6 @@ private:
 	lightspark::ParseThread pt;
 	lightspark::InputThread* it;
 	lightspark::RenderThread* rt;
-	MovieTimer mt;
 };
 
 #endif // __PLUGIN_H__

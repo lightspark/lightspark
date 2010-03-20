@@ -51,8 +51,10 @@ private:
 	sem_t num_jobs;
 	static void* job_worker(void*);
 	SystemState* m_sys;
+	bool stop;
 public:
 	ThreadPool(SystemState* s);
+	~ThreadPool();
 	void addJob(IThreadJob* j);
 };
 

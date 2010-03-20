@@ -49,9 +49,6 @@ extern "C" {
 using namespace std;
 using namespace lightspark;
 
-list<IDisplayListElem*> null_list;
-int RenderThread::error(0);
-
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
@@ -91,10 +88,20 @@ RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),frameRate(0),toB
 	sem_init(&mutex,0,1);
 	sem_init(&sem_frames,0,1);
 	sem_init(&new_frame,0,0);
-	sem_init(&sem_valid_data,0,0);
+	sem_init(&sem_valid_size,0,0);
+	sem_init(&sem_valid_rate,0,0);
 	loaderInfo=li;
 	//Reset framesLoaded, as there are still not available
 	framesLoaded=0;
+}
+
+RootMovieClip::~RootMovieClip()
+{
+	sem_destroy(&mutex);
+	sem_destroy(&sem_frames);
+	sem_destroy(&new_frame);
+	sem_destroy(&sem_valid_rate);
+	sem_destroy(&sem_valid_size);
 }
 
 void RootMovieClip::bindToName(const tiny_string& n)
@@ -104,7 +111,7 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL),frameCount(0),secsCount(0),shutdown(false),currentVm(NULL),cur_input_thread(NULL),
+SystemState::SystemState():RootMovieClip(NULL),frameCount(0),secsCount(0),shutdown(false),error(false),currentVm(NULL),cur_input_thread(NULL),
 	cur_render_thread(NULL),useInterpreter(true),useJit(false)
 {
 	//Do needed global initialization
@@ -502,10 +509,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buf
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
-	sem_init(&mutex,0,1);
 	sem_init(&render,0,0);
-	sem_init(&end_render,0,0);
-	error=0;
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifndef WIN32
@@ -519,6 +523,16 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buf
 		pthread_create(&t,NULL,(thread_worker)glx_worker,this);
 	}
 #endif
+}
+
+RenderThread::~RenderThread()
+{
+	void* ret;
+	//signal potentially blocing semaphore
+	sem_post(&render);
+	pthread_join(t,&ret);
+	sem_destroy(&render);
+	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
 }
 
 void RenderThread::glAcquireFramebuffer()
@@ -558,14 +572,6 @@ void RenderThread::glBlitFramebuffer()
 	glPopMatrix();
 }
 
-RenderThread::~RenderThread()
-{
-	void* ret;
-	pthread_cancel(t);
-	pthread_join(t,&ret);
-	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
-}
-
 #ifndef WIN32
 void* RenderThread::npapi_worker(RenderThread* th)
 {
@@ -574,6 +580,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	RECT size=sys->getFrameSize();
 	int width=size.Xmax/20;
 	int height=size.Ymax/20;
+	assert(width!=0 && height!=0);
 	rt->width=width;
 	rt->height=height;
 	th->interactive_buffer=new float[width*height];
@@ -593,8 +600,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	}
 	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_VISUAL_ID,p->visual,GLX_DEPTH_SIZE,24,None};
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
-	printf("returned %p pointer and %u elements\n",fb, a);
-	abort();
 	if(!fb)
 	{
 		attrib[0]=0;
@@ -605,18 +610,20 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	for(i=0;i<a;i++)
 	{
 		int id;
-		//int v;
-		//glXGetFBConfigAttrib(d,fb[i],GLX_BUFFER_SIZE,&v);
 		glXGetFBConfigAttrib(d,fb[i],GLX_VISUAL_ID,&id);
-//		printf("ID 0x%x size %u\n",id,v);
 		if(id==(int)p->visual)
 		{
-//			printf("good id %x\n",id);
+			printf("good id %x\n",id);
 			break;
 		}
 	}
 	th->mFBConfig=fb[i];
 	XFree(fb);
+
+	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
+	glXMakeContextCurrent(d, p->window, p->window, th->mContext);
+	if(!glXIsDirect(d,th->mContext))
+		printf("Indirect!!\n");
 
 	th->commonGLInit(width, height, t2);
 
@@ -624,105 +631,28 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	v.foreground=BlackPixel(d, 0);
 	v.background=WhitePixel(d, 0);
 	v.font=XLoadFont(d,"9x15");
-	th->mGC=XCreateGC(d,p->window,GCForeground|GCBackground|GCFont,&v);
+	th->mGC=XCreateGC(d,p->window,GCForeground|GCBackground|GCFont,&v);*/
 
-	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	glXMakeContextCurrent(d, p->window, p->window, th->mContext);
-	if(!glXIsDirect(d,th->mContext))
-		printf("Indirect!!\n");
-
-	//Load fragment shaders
-	rt->gpu_program=load_program();
-
-	int tex=glGetUniformLocation(rt->gpu_program,"g_tex1");
-	glUniform1i(tex,0);
-
-	glUseProgram(rt->gpu_program);
-
-	glDisable(GL_DEPTH_TEST);
-	glDepthFunc(GL_ALWAYS);
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
-
-	RECT size=sys->getFrameSize();
-	int width=p->width;
-	int height=p->height;
-	rt->width=width;
-	rt->height=height;
-	float scalex=p->width;
-	scalex/=size.Xmax;
-	float scaley=p->height;
-	scaley/=size.Ymax;
-	glViewport(0,0,width,height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0,width,height,0,-100,0);
-
-	glMatrixMode(GL_MODELVIEW);
-
-	GLuint dt;
-	glGenTextures(1,&dt);
-	rt->data_tex=dt;
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D,dt);
-
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-	
- 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-
-	unsigned int t2[3];
- 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-	glGenTextures(3,t2);
-	glBindTexture(GL_TEXTURE_2D,t2[0]);
-
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-	glBindTexture(GL_TEXTURE_2D,t2[1]);
-	rt->spare_tex=t2[1];
-
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-	glBindTexture(GL_TEXTURE_2D,t2[2]);
-
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	
-	// create a framebuffer object
-	glGenFramebuffersEXT(1, &rt->fboId);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,GL_TEXTURE_2D, t2[1], 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT,GL_TEXTURE_2D, t2[2], 0);
-	
-	// check FBO status
-	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-	if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
-	{
-		cout << status << endl;
-		abort();
-	}*/
-
+	glEnable(GL_TEXTURE_2D);
 	try
 	{
 		while(1)
 		{
+			//Before starting rendering, cleanup all the request arrived in the meantime
+			int fakeRenderCount=0;
+			while(sem_trywait(&th->render)==0)
+			{
+				if(sys->shutdown)
+					pthread_exit(0);
+				fakeRenderCount++;
+			}
+			if(fakeRenderCount)
+				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 			sem_wait(&th->render);
-			if(error)
+			if(sys->shutdown)
+				pthread_exit(0);
+
+			if(sys->error)
 			{
 				abort();
 				/*glXMakeContextCurrent(d, 0, 0, NULL);
@@ -743,7 +673,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			}
 			else
 			{
-				sem_wait(&th->mutex);
+				glXSwapBuffers(d,p->window);
 
 			/*	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 				glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
@@ -778,15 +708,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 					glVertex2i(0,height);
 				glEnd();*/
 
+				cout << "Render" << endl;
 				glClearColor(1,0,0,1);
 				glClear(GL_COLOR_BUFFER_BIT);
-
-				glXSwapBuffers(d,p->window);
-				sem_post(&th->mutex);
 			}
-			sem_post(&th->end_render);
-			if(sys->shutdown)
-				pthread_exit(0);
 		}
 	}
 	catch(const char* e)
@@ -794,6 +719,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		LOG(LOG_ERROR,"Exception caught " << e);
 		abort();
 	}
+	glDisable(GL_TEXTURE_2D);
 	delete p;
 }
 #endif
@@ -804,8 +730,8 @@ int RenderThread::load_program()
 	//GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
 	const char *fs = NULL;
-	fs = dataFileRead("lightspark.frag");
-	//fs = dataFileRead("/home/alex/lightspark/lightspark.frag");
+	//fs = dataFileRead("lightspark.frag");
+	fs = dataFileRead("/home/alex/lightspark/" "lightspark.frag");
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
 
@@ -946,7 +872,6 @@ void* RenderThread::glx_worker(RenderThread* th)
 
 			sys->Render();
 
-			sem_post(&th->end_render);
 			if(sys->shutdown)
 			{
 				delete[] buffer;
@@ -1055,16 +980,15 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-	
  	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
  	glGenTextures(3,t2);
 	glBindTexture(GL_TEXTURE_2D,t2[0]);
-	//glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
@@ -1074,6 +998,7 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
@@ -1082,6 +1007,7 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
+	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	
@@ -1211,15 +1137,15 @@ void RootMovieClip::setFrameSize(const lightspark::RECT& f)
 {
 	frameSize=f;
 	assert(f.Xmin==0 && f.Ymin==0);
-	sem_post(&sem_valid_data);
+	sem_post(&sem_valid_size);
 }
 
 lightspark::RECT RootMovieClip::getFrameSize() const
 {
 	//This is a sync semaphore the first time and then a mutex
-	sem_wait(&sem_valid_data);
+	sem_wait(&sem_valid_size);
 	lightspark::RECT ret=frameSize;
-	sem_post(&sem_valid_data);
+	sem_post(&sem_valid_size);
 	return ret;
 }
 
@@ -1228,15 +1154,15 @@ void RootMovieClip::setFrameRate(float f)
 	frameRate=f;
 	//Now frame rate is valid, start the rendering
 	sys->addTick(1000/f,this);
-	sem_post(&sem_valid_data);
+	sem_post(&sem_valid_rate);
 }
 
 float RootMovieClip::getFrameRate() const
 {
 	//This is a sync semaphore the first time and then a mutex
-	sem_wait(&sem_valid_data);
+	sem_wait(&sem_valid_rate);
 	float ret=frameRate;
-	sem_post(&sem_valid_data);
+	sem_post(&sem_valid_rate);
 	return ret;
 }
 

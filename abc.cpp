@@ -934,10 +934,11 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),shutdown(false)
 
 ABCVm::~ABCVm()
 {
-	pthread_cancel(t);
+	//signal potentially blocking semaphores
+	sem_post(&sem_event_count);
 	pthread_join(t,NULL);
-	//delete ex;
-	//delete module;
+	sem_destroy(&sem_event_count);
+	sem_destroy(&event_queue_mutex);
 	//assert(Global.ref_count==0);
 }
 
@@ -1260,31 +1261,35 @@ void ABCVm::Run(ABCVm* th)
 	sys=th->m_sys;
 	iManager=th->int_manager;
 	dManager=th->number_manager;
-	llvm::InitializeNativeTarget();
-	th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
-	llvm::ExistingModuleProvider mp(th->module);
-	llvm::EngineBuilder eb(&mp);
-	eb.setEngineKind(llvm::EngineKind::JIT);
-	eb.setOptLevel(llvm::CodeGenOpt::Default);
-	th->ex=eb.create();
-	assert(th->ex);
+	llvm::ExistingModuleProvider* mp;
+	if(sys->useJit)
+	{
+		llvm::InitializeNativeTarget();
+		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
+		mp = new llvm::ExistingModuleProvider(th->module);
+		llvm::EngineBuilder eb(mp);
+		eb.setEngineKind(llvm::EngineKind::JIT);
+		eb.setOptLevel(llvm::CodeGenOpt::Default);
+		th->ex=eb.create();
+		assert(th->ex);
 
-	th->FPM=new llvm::FunctionPassManager(&mp);
-      
-	th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
+		th->FPM=new llvm::FunctionPassManager(mp);
+	      
+		th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
 #ifndef NDEBUG
-	//This is pretty heavy, do not enable in release
-	th->FPM->add(llvm::createVerifierPass());
+		//This is pretty heavy, do not enable in release
+		th->FPM->add(llvm::createVerifierPass());
 #endif
-	th->FPM->add(llvm::createPromoteMemoryToRegisterPass());
-	th->FPM->add(llvm::createReassociatePass());
-	th->FPM->add(llvm::createCFGSimplificationPass());
-	th->FPM->add(llvm::createGVNPass());
-	th->FPM->add(llvm::createInstructionCombiningPass());
-	th->FPM->add(llvm::createLICMPass());
-	th->FPM->add(llvm::createDeadStoreEliminationPass());
+		th->FPM->add(llvm::createPromoteMemoryToRegisterPass());
+		th->FPM->add(llvm::createReassociatePass());
+		th->FPM->add(llvm::createCFGSimplificationPass());
+		th->FPM->add(llvm::createGVNPass());
+		th->FPM->add(llvm::createInstructionCombiningPass());
+		th->FPM->add(llvm::createLICMPass());
+		th->FPM->add(llvm::createDeadStoreEliminationPass());
 
-	th->registerFunctions();
+		th->registerFunctions();
+	}
 	th->registerClasses();
 
 	while(1)
@@ -1294,16 +1299,23 @@ void ABCVm::Run(ABCVm* th)
 		clock_gettime(CLOCK_REALTIME,&ts);
 #endif
 		sem_wait(&th->sem_event_count);
+		if(th->shutdown)
+			break;
 		th->handleEvent();
 		sys->fps_prof->event_count++;
 #ifndef WIN32
 		clock_gettime(CLOCK_REALTIME,&td);
 		sys->fps_prof->event_time+=timeDiff(ts,td);
 #endif
-		if(th->shutdown)
-			break;
 	}
-	mp.releaseModule();
+
+	if(sys->useJit)
+	{
+		th->ex->clearAllGlobalMappings();
+		mp->releaseModule();
+		delete mp;
+		delete th->module;
+	}
 }
 
 tiny_string ABCContext::getString(unsigned int s) const

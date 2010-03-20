@@ -1437,6 +1437,9 @@ Class_base::~Class_base()
 {
 	if(constructor)
 		constructor->decRef();
+
+	if(super)
+		super->decRef();
 }
 
 void Class_base::addImplementedInterface(const multiname& i)
@@ -1509,14 +1512,17 @@ Class_object* Class_object::getClass()
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
 	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Class");
+	Class_object* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
-		Class_object* ret=new Class_object();
+		ret=new Class_object();
 		sys->classes.insert(std::make_pair("Class",ret));
-		return ret;
 	}
 	else
-		return static_cast<Class_object*>(it->second);
+		ret=static_cast<Class_object*>(it->second);
+
+	ret->incRef();
+	return ret;
 }
 
 Class_function* Class_function::getClass()
@@ -1524,14 +1530,17 @@ Class_function* Class_function::getClass()
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
 	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Function");
+	Class_function* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
-		Class_function* ret=new Class_function();
+		ret=new Class_function();
 		sys->classes.insert(std::make_pair("Function",ret));
-		return ret;
 	}
 	else
-		return static_cast<Class_function*>(it->second);
+		ret=static_cast<Class_function*>(it->second);
+
+	ret->incRef();
+	return ret;
 }
 
 const std::vector<Class_base*>& Class_base::getInterfaces() const

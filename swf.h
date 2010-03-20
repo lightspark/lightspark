@@ -98,7 +98,8 @@ private:
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
 	float frameRate;
-	mutable sem_t sem_valid_data;
+	mutable sem_t sem_valid_size;
+	mutable sem_t sem_valid_rate;
 	//Frames mutex (shared with drawing thread)
 	sem_t sem_frames;
 	bool toBind;
@@ -107,6 +108,7 @@ private:
 
 public:
 	RootMovieClip(LoaderInfo* li);
+	~RootMovieClip();
 	unsigned int version;
 	unsigned int fileLenght;
 	RGB getBackground();
@@ -148,6 +150,7 @@ public:
 	void setUrl(const tiny_string& url);
 
 	bool shutdown;
+	bool error;
 	void setShutdownFlag();
 	void execute();
 	void draw();
@@ -249,11 +252,8 @@ private:
 	static void* npapi_worker(RenderThread*);
 	static void* glx_worker(RenderThread*);
 	void commonGLInit(int width, int height, unsigned int t2[3]);
-	sem_t mutex;
 	sem_t render;
-	sem_t end_render;
-	int bak;
-	static int error;
+	//int bak;
 
 #ifndef WIN32
 	Display* mDisplay;

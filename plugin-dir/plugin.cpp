@@ -31,7 +31,7 @@ __thread lightspark::SystemState* sys;
 TLSDATA lightspark::RenderThread* rt=NULL;
 TLSDATA lightspark::ParseThread* pt=NULL;
 
-MovieTimer::MovieTimer(lightspark::SystemState* s,lightspark::RenderThread* r):rt(r)
+/*MovieTimer::MovieTimer(lightspark::SystemState* s,lightspark::RenderThread* r):rt(r)
 {
 	m_sys=s;
 	sem_init(&started,0,0);
@@ -69,7 +69,7 @@ void* MovieTimer::timer_worker(MovieTimer* th)
 			th->rt->draw();
 		sem_post(&th->mutex);
 	}
-}
+}*/
 
 char* NPP_GetMIMEDescription(void)
 {
@@ -133,12 +133,14 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),swf_stream(&swf_buf),
-	pt(&m_sys,&m_sys,swf_stream),rt(NULL),mt(&m_sys,NULL),it(NULL)
+	pt(&m_sys,swf_stream),rt(NULL),it(NULL)
 {
 }
 
 nsPluginInstance::~nsPluginInstance()
 {
+	//Shutdown the system
+	sys->setShutdownFlag();
 	delete rt;
 	delete it;
 }
@@ -215,6 +217,8 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	mY = aWindow->y;
 	mWidth = aWindow->width;
 	mHeight = aWindow->height;
+	if(mHeight==0 || mHeight==0)
+		assert(false);
 	if (mWindow == (Window) aWindow->window)
 	{
 		// The page with the plugin is being resized.
@@ -245,8 +249,9 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			cout << "destroy old context" << endl;
 			abort();
 		}
+		if(p->width==0 || p->height==0)
+			abort();
 		rt=new lightspark::RenderThread(&m_sys,lightspark::NPAPI,p);
-		mt.setRenderThread(rt);
 
 		if(it!=NULL)
 		{
@@ -258,8 +263,8 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		sys=&m_sys;
 		m_sys.cur_input_thread=it;
 		m_sys.cur_render_thread=rt;
-		m_sys.cur_thread_pool=new lightspark::ThreadPool(&m_sys);
 		m_sys.fps_prof=new lightspark::fps_profiling();
+		m_sys.addJob(&pt);
 
 		// add xt event handler
 		Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);
@@ -270,9 +275,6 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			XSelectInput(mDisplay, mWindow, event_mask);
 			XtAddEventHandler(xtwidget, event_mask, False, (XtEventHandler)xt_event_handler, this);
 		}
-
-		//Start the render loop
-		mt.start();
 	}
 	//draw();
 	return TRUE;

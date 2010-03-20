@@ -24,13 +24,28 @@ using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
 
-ThreadPool::ThreadPool(SystemState* s)
+ThreadPool::ThreadPool(SystemState* s):stop(false)
 {
 	m_sys=s;
 	sem_init(&mutex,0,1);
 	sem_init(&num_jobs,0,0);
 	for(int i=0;i<NUM_THREADS;i++)
 		pthread_create(&threads[i],NULL,job_worker,this);
+}
+
+ThreadPool::~ThreadPool()
+{
+	stop=true;
+	//Signal an event for all the threads
+	for(int i=0;i<NUM_THREADS;i++)
+		sem_post(&num_jobs);
+
+	void* ret;
+	for(int i=0;i<NUM_THREADS;i++)
+		pthread_join(threads[i],&ret);
+
+	sem_destroy(&num_jobs);
+	sem_destroy(&mutex);
 }
 
 void* ThreadPool::job_worker(void* t)
@@ -41,6 +56,9 @@ void* ThreadPool::job_worker(void* t)
 	while(1)
 	{
 		sem_wait(&th->num_jobs);
+		if(th->stop)
+			pthread_exit(0);
+
 		sem_wait(&th->mutex);
 		IThreadJob* myJob=th->jobs.front();
 		th->jobs.pop_front();

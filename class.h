@@ -117,15 +117,18 @@ public:
 	static Class<T>* getClass(const tiny_string& name)
 	{
 		std::map<tiny_string, Class_base*>::iterator it=sys->classes.find(name);
+		Class<T>* ret=NULL;
 		if(it==sys->classes.end()) //This class is not yet in the map, create it
 		{
-			Class<T>* ret=new Class<T>(name);
+			ret=new Class<T>(name);
 			T::sinit(ret);
 			sys->classes.insert(std::make_pair(name,ret));
-			return ret;
 		}
 		else
-			return static_cast<Class<T>*>(it->second);
+			ret=static_cast<Class<T>*>(it->second);
+
+		ret->incRef();
+		return ret;
 	}
 	static Class<T>* getClass()
 	{
@@ -156,15 +159,18 @@ public:
 	static Class<UInteger>* getClass(const tiny_string& name)
 	{
 		std::map<tiny_string, Class_base*>::iterator it=sys->classes.find(name);
+		Class<UInteger>* ret=NULL;
 		if(it==sys->classes.end()) //This class is not yet in the map, create it
 		{
-			Class<UInteger>* ret=new Class<UInteger>;
+			ret=new Class<UInteger>;
 			UInteger::sinit(ret);
 			sys->classes.insert(std::make_pair(name,ret));
-			return ret;
 		}
 		else
-			return static_cast<Class<UInteger>*>(it->second);
+			ret=static_cast<Class<UInteger>*>(it->second);
+
+		ret->incRef();
+		return ret;
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{

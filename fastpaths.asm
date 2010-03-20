@@ -40,8 +40,8 @@ xor rax,rax
 
 outer_loop:
 ; Load 16 bytes/32 pixels from U/V buffers
-	movupd xmm1,[rsi]
-	movupd xmm2,[rdx]
+	movapd xmm1,[rsi]
+	movapd xmm2,[rdx]
 	add rsi,16
 	add rdx,16
 
@@ -60,7 +60,7 @@ inner_loop:
 
 inner_loop_after_dup:
 ; Load 16 bytes/pixels from Y-buffer
-	movupd xmm0,[rdi]
+	movapd xmm0,[rdi]
 	add rdi,16
 
 ; Sub used pixels from size and move pointers

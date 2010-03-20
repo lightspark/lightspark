@@ -205,11 +205,11 @@ void SystemState::execute()
 		secsCount++;
 		//fps_profs.push_back(fps_profiling());
 		//sys->fps_prof=&fps_profs.back();
-		if(secsCount>120)
+		/*if(secsCount>120)
 		{
 			LOG(LOG_NO_INFO,"Exiting");
 			sys->setShutdownFlag();
-		}
+		}*/
 	}
 	else
 		frameCount++;

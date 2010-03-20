@@ -236,19 +236,36 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():codecContext(NULL),buffer(NULL),bufferSize(0),frameCount(0),frameRate(0)
+NetStream::NetStream():codecContext(NULL),bufferHead(0),bufferTail(0),bufferSize(0),frameCount(0),frameRate(0)
 {
 	sem_init(&mutex,0,1);
+	sem_init(&freeBuffers,0,10);
+	sem_init(&usedBuffers,0,0);
+	for(int i=0;i<10;i++)
+	{
+		buffers[i][0]=NULL;
+		buffers[i][1]=NULL;
+		buffers[i][2]=NULL;
+	}
 }
 
 NetStream::~NetStream()
 {
-	//TODO: add executing flag for all IThreadJobs
-	if(buffer)
-		av_free(buffer);
+	assert(!executing);
+	for(int i=0;i<10;i++)
+	{
+		if(buffers[i][0])
+		{
+			free(buffers[i][0]);
+			free(buffers[i][1]);
+			free(buffers[i][2]);
+		}
+	}
 	assert(codecContext);
 	av_free(codecContext);
 	sem_destroy(&mutex);
+	sem_destroy(&freeBuffers);
+	sem_destroy(&usedBuffers);
 }
 
 void NetStream::sinit(Class_base* c)
@@ -304,6 +321,34 @@ NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
 	return ret;
 }
 
+void NetStream::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height)
+{
+	sem_wait(&freeBuffers);
+	//Only one thread may access the tail
+	if(buffers[bufferTail][0]==NULL)
+	{
+		posix_memalign((void**)&buffers[bufferTail][0], 16, bufferSize);
+		posix_memalign((void**)&buffers[bufferTail][1], 16, bufferSize/4);
+		posix_memalign((void**)&buffers[bufferTail][2], 16, bufferSize/4);
+	}
+	int offset[3]={0,0,0};
+	for(uint32_t y=0;y<height;y++)
+	{
+		memcpy(buffers[bufferTail][0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),width);
+		offset[0]+=width;
+	}
+	for(uint32_t y=0;y<height/2;y++)
+	{
+		memcpy(buffers[bufferTail][1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),width/2);
+		memcpy(buffers[bufferTail][2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),width/2);
+		offset[1]+=width/2;
+		offset[2]+=width/2;
+	}
+
+	bufferTail=(bufferTail+1)%10;
+	sem_post(&usedBuffers);
+}
+
 void NetStream::execute()
 {
 	CurlDownloader* curlDownloader=new CurlDownloader(url);
@@ -348,9 +393,9 @@ void NetStream::execute()
 						prevSize=tag.getTotalLen();
 						assert(tag.codecId==7);
 
-						sem_wait(&mutex);
 						if(tag.isHeader())
 						{
+							sem_wait(&mutex);
 							//The tag is the header, initialize decoding
 							assert(codecContext==NULL); //The context can be set only once
 							//TODO: serialize access to avcodec_open
@@ -365,6 +410,7 @@ void NetStream::execute()
 
 							if(avcodec_open(codecContext, codec)<0)
 								abort();
+							sem_post(&mutex);
 						}
 						else
 						{
@@ -376,37 +422,18 @@ void NetStream::execute()
 								abort();
 							assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
 
-							int offset=0;
-							//Check for 16-byte alignment of buffers
-							assert((((uintptr_t)frameIn->data[0])&0x7)==0);
-							assert((((uintptr_t)frameIn->data[1])&0x7)==0);
-							assert((((uintptr_t)frameIn->data[2])&0x7)==0);
-
 							const uint32_t height=codecContext->height;
 							const uint32_t width=codecContext->width;
 							assert(frameIn->pts==0);
-							assert((width&0xf)==0);
 
 							const uint32_t size=width*height*4;
 							if(size!=bufferSize)
 							{
 								assert(bufferSize==0);
-								if(buffer)
-									av_free(buffer);
-								buffer=(uint8_t*)av_malloc(size);
+								bufferSize=size;
 							}
-
-							for(uint32_t y=0;y<height;y++)
-							{
-								//memcpy(dest+offset, lastFrame->data[0]+(y*lastFrame->linesize[0]), width);
-								fastYUV420ChannelsToBuffer(frameIn->data[0]+(y*frameIn->linesize[0]),
-										frameIn->data[1]+((y>>1)*frameIn->linesize[1]),
-										frameIn->data[2]+((y>>1)*frameIn->linesize[2]),
-										buffer+offset,width);
-								offset+=(width*4);
-							}
+							copyFrameToBuffers(frameIn,width,height);
 						}
-						sem_post(&mutex);
 						break;
 					}
 					case 18:
@@ -492,9 +519,22 @@ void NetStream::copyBuffer(uint8_t* dest)
 		width=codecContext->width;
 		height=codecContext->height;
 	}
-
-	memcpy(dest, buffer, width*height*4);
 	sem_post(&mutex);
+
+	//This thread does not want to stall
+	sem_wait(&usedBuffers);
+	//At least a frame is available
+	int offset=0;
+	for(uint32_t y=0;y<height;y++)
+	{
+		fastYUV420ChannelsToBuffer(buffers[bufferHead][0]+(y*width),
+				buffers[bufferHead][1]+((y>>1)*(width>>1)),
+				buffers[bufferHead][2]+((y>>1)*(width>>1)),
+				dest+offset,width);
+		offset+=width*4;
+	}
+	bufferHead=(bufferHead+1)%10;
+	sem_post(&freeBuffers);
 }
 
 void URLVariables::sinit(Class_base* c)

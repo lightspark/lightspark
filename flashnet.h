@@ -109,12 +109,18 @@ private:
 	tiny_string url;
 	STREAM_TYPE classifyStream(std::istream& s);
 	AVCodecContext* codecContext;
-	uint8_t* buffer;
+	uint8_t* buffers[10][3];
+	//Counting semphores for buffers
+	sem_t freeBuffers;
+	sem_t usedBuffers;
+	uint32_t bufferHead;
+	uint32_t bufferTail;
 	uint32_t bufferSize;
 	uint32_t frameCount;
 	double frameRate;
 	sem_t mutex;
 	void execute();
+	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height);
 public:
 	NetStream();
 	~NetStream();

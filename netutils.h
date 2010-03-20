@@ -34,8 +34,8 @@ class CurlDownloader: public IThreadJob, public std::streambuf
 {
 private:
 	uint8_t* buffer;
-	int len;
-	unsigned int tail;
+	uint32_t len;
+	uint32_t tail;
 	sem_t available;
 	sem_t mutex;
 	tiny_string url;
@@ -55,7 +55,7 @@ public:
 	{
 		return buffer;
 	}
-	int getLen()
+	uint32_t getLen()
 	{
 		return len;
 	}

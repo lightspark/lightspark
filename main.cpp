@@ -127,6 +127,9 @@ int main(int argc, char* argv[])
 	rl.rlim_cur=400000000;
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
+
+	timespec ts,td;
+	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
 
 	Log::initLogging(log_level);
@@ -186,6 +189,10 @@ int main(int argc, char* argv[])
 			' ' << fps_profs[i].event_time << endl;
 	prof.close();
 
+#ifndef WIN32
+	clock_gettime(CLOCK_REALTIME,&td);
+	cout << timeDiff(ts,td) << endl;
+#endif
 	abort();
 	SDL_Quit();
 	return 0;

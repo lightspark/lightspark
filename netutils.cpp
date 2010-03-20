@@ -84,18 +84,21 @@ bool CurlDownloader::download()
 size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
+	size_t added=size*nmemb;
+	if((th->tail+added)>th->len)
+		abort();
 	sem_wait(&th->mutex);
-	memcpy(th->buffer + th->tail,buffer,size*nmemb);
-	th->tail+=(size*nmemb);
+	memcpy(th->buffer + th->tail,buffer,added);
+	th->tail+=added;
 	if(th->waiting)
 	{
 		th->waiting=false;
-		assert(size*nmemb);
+		assert(added);
 		sem_post(&th->available);
 	}
 	else
 		sem_post(&th->mutex);
-	return size*nmemb;
+	return added;
 }
 
 size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, void *userp)
@@ -136,12 +139,12 @@ CurlDownloader::int_type CurlDownloader::underflow()
 
 	if((buffer+tail)==(uint8_t*)egptr()) //We have no more bytes
 	{
-		if(failed)
+		if(failed || (tail==len && len!=0))
 		{
 			sem_post(&mutex);
 			return -1;
 		}
-		else
+		else //More bytes should follow
 		{
 			waiting=true;
 			sem_post(&mutex);

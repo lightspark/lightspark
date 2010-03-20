@@ -1,3 +1,5 @@
+CXXFLAGS = -Wall -g -O0 -D_GLIBCXX_NO_DEBUG -Wnon-virtual-dtor -Woverloaded-virtual
+CXXFLAGS_RELEASE = -Wall -O3 -DNDEBUG -Wnon-virtual-dtor -Woverloaded-virtual
 LLVMLIBS = `llvm-config --libfiles engine interpreter`
 EXTRALIBS = `pkg-config --cflags --libs gl sdl libcurl libxml-2.0 libpcrecpp libavcodec`
 prefix = /usr
@@ -13,14 +15,20 @@ LIBOBJS = objs/swf.o objs/swftypes.o objs/tags.o objs/geometry.o objs/actions.o 
 
 default: objs-dir lightspark.so
 
+release: CXXFLAGS=$(CXXFLAGS_RELEASE)
+release: objs-release lightspark.so
+
 lightspark.so: np_entry.o npn_gate.o npp_gate.o plugin.o $(LIBOBJS)
 	g++ -shared -g -o $@ $^ $(EXTRALIBS) -lz $(LLVMLIBS) -lGLEW
 
 %.o: %.cpp
-	g++ -g -fPIC -c -o $@ $^ -I include -I ../ `nspr-config --cflags` -D MOZ_X11
+	g++ $(CXXFLAGS) -fPIC -c -o $@ $^ -I include -I ../ `nspr-config --cflags` -D MOZ_X11
 
 objs-dir:
 	make -C objs
+
+objs-release:
+	make -C objs release
 
 install: lightspark.so
 	mkdir -p ~/.mozilla/plugins

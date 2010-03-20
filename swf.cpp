@@ -532,6 +532,7 @@ RenderThread::~RenderThread()
 	sem_post(&render);
 	pthread_join(t,&ret);
 	sem_destroy(&render);
+	delete[] interactive_buffer;
 	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
 }
 
@@ -577,18 +578,27 @@ void* RenderThread::npapi_worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
+	NPAPI_params* p=th->npapi_params;
+
 	RECT size=sys->getFrameSize();
-	int width=size.Xmax/20;
-	int height=size.Ymax/20;
-	assert(width!=0 && height!=0);
-	rt->width=width;
-	rt->height=height;
-	th->interactive_buffer=new float[width*height];
+	int swf_width=size.Xmax/20;
+	int swf_height=size.Ymax/20;
+
+	int window_width=p->width;
+	int window_height=p->height;
+
+	float scalex=window_width;
+	scalex/=swf_width;
+	float scaley=window_height;
+	scaley/=swf_height;
+
+	rt->width=window_width;
+	rt->height=window_height;
+	th->interactive_buffer=new float[window_width*window_height];
 	unsigned int t2[3];
 	sys=th->m_sys;
 	rt=th;
 
-	NPAPI_params* p=th->npapi_params;
 	Display* d=XOpenDisplay(NULL);
 
     	int a,b;
@@ -625,7 +635,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");
 
-	th->commonGLInit(width, height, t2);
+	th->commonGLInit(window_width, window_height, t2);
 
 /*	XGCValues v;
 	v.foreground=BlackPixel(d, 0);
@@ -675,9 +685,9 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			{
 				glXSwapBuffers(d,p->window);
 
-			/*	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
-				glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
-				//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
+				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
+				//glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
+				//glReadPixels(0,0,window_width,window_height,GL_RED,GL_FLOAT,th->interactive_buffer);
 
 				glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
@@ -692,25 +702,24 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 				glLoadIdentity();
 
-				glColor4f(0,0,1,0);
 				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 				glDrawBuffer(GL_BACK);
-				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+				glClearColor(0,0,0,1);
+				glClear(GL_COLOR_BUFFER_BIT);
+
 				glBindTexture(GL_TEXTURE_2D,t2[0]);
+				glColor4f(0,0,1,0);
 				glBegin(GL_QUADS);
 					glTexCoord2f(0,1);
 					glVertex2i(0,0);
 					glTexCoord2f(1,1);
-					glVertex2i(width,0);
+					glVertex2i(window_width,0);
 					glTexCoord2f(1,0);
-					glVertex2i(width,height);
+					glVertex2i(window_width,window_height);
 					glTexCoord2f(0,0);
-					glVertex2i(0,height);
-				glEnd();*/
-
-				cout << "Render" << endl;
-				glClearColor(1,0,0,1);
-				glClear(GL_COLOR_BUFFER_BIT);
+					glVertex2i(0,window_height);
+				glEnd();
 			}
 		}
 	}
@@ -1060,12 +1069,18 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			//Before starting rendering, cleanup all the request arrived in the meantime
 			int fakeRenderCount=0;
 			while(sem_trywait(&th->render)==0)
+			{
+				if(sys->shutdown)
+					pthread_exit(0);
 				fakeRenderCount++;
+			}
 
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 
 			sem_wait(&th->render);
+			if(sys->shutdown)
+				pthread_exit(0);
 			SDL_PumpEvents();
 			SDL_GL_SwapBuffers( );
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
@@ -1102,9 +1117,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
-			
-			if(sys->shutdown)
-				pthread_exit(0);
 		}
 		glDisable(GL_TEXTURE_2D);
 	}

@@ -81,7 +81,7 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(LOG_TRACE);
+	Log::initLogging(LOG_NOT_IMPLEMENTED);
 	return NPERR_NO_ERROR;
 }
 
@@ -133,7 +133,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),swf_stream(&swf_buf),
-	pt(&m_sys,swf_stream),rt(NULL),it(NULL)
+	pt(&m_sys,swf_stream),it(NULL),rt(NULL)
 {
 }
 
@@ -157,7 +157,7 @@ void xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent,
 				plugin->draw();
 			}
 		case MotionNotify:
-			cout << "Motion" << endl;
+			//cout << "Motion" << endl;
 			break;
 		default:
 			break;
@@ -233,8 +233,6 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		mVisual = ws_info->visual;
 		mDepth = ws_info->depth;
 		mColormap = ws_info->colormap;
-
-		printf("Window visual 0x%x\n",XVisualIDFromVisual(mVisual));
 
 		lightspark::NPAPI_params* p=new lightspark::NPAPI_params;
 

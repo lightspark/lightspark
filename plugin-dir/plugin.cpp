@@ -284,6 +284,13 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	return NPERR_NO_ERROR; 
 }
 
+int32 nsPluginInstance::WriteReady(NPStream *stream)
+{
+	int32 ret=swf_buf.getFree();
+	cout << "Free " << ret << endl;
+	return ret;
+}
+
 int32 nsPluginInstance::Write(NPStream *stream, int32 offset, int32 len, void *buffer)
 {
 	cout << "Writing " << len << endl;

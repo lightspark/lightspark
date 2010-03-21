@@ -464,8 +464,14 @@ void GeomShape::TessellateSimple()
 		if(count>30000)
 			break;
 	}
-	assert(P.size()==3);
-	interior.push_back(Triangle(P[0],P[1],P[2]));
+
+	if(P.size()==3)
+		interior.push_back(Triangle(P[0],P[1],P[2]));
+	else
+	{
+		//Tessellation failed, let's abort it
+		interior.clear();
+	}
 }
 
 //Shape are compared using the minimum vertex

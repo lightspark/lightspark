@@ -21,6 +21,7 @@
 #include "logger.h"
 #include "swf.h"
 #include "compat.h"
+#include "class.h"
 
 using namespace std;
 using namespace lightspark;
@@ -1139,8 +1140,7 @@ void ActionStoreRegister::Execute()
 
 ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 {
-	abort();
-/*	int r=h->Length;
+	int r=h->Length;
 	while(r)
 	{
 		in >> Type;
@@ -1151,7 +1151,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			{
 				STRING tmp;
 				in >> tmp;
-				Objects.push_back(new ASString((const char*)tmp));
+				//Objects.push_back(Class<ASString>::getInstanceS(true,(const char*)tmp)->obj);
 				r-=(tmp.size()+1);
 				LOG(LOG_CALLS,"Push: Read string " << tmp);
 				break;
@@ -1160,78 +1160,78 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 			{
 				FLOAT tmp;
 				in >> tmp;
-				Objects.push_back(new Number(tmp));
+				//Objects.push_back(new Number(tmp));
 				r-=4;
 				LOG(LOG_CALLS,"Push: Read float " << tmp);
 				break;
 			}
 			case 2:
 			{
-				Objects.push_back(new Null);
-				LOG(TRACE,"Push: null");
+				//Objects.push_back(new Null);
+				LOG(LOG_TRACE,"Push: null");
 				break;
 			}
 			case 3:
 			{
-				Objects.push_back(new Undefined);
-				LOG(TRACE,"Push: undefined");
+				//Objects.push_back(new Undefined);
+				LOG(LOG_TRACE,"Push: undefined");
 				break;
 			}
 			case 4:
 			{
 				UI8 tmp;
 				in >> tmp;
-				RegisterNumber* n=new RegisterNumber(tmp);
-				Objects.push_back(n);
+				//RegisterNumber* n=new RegisterNumber(tmp);
+				//Objects.push_back(n);
 				r--;
-				LOG(TRACE,"Push: Read reg number " << (int)tmp);
+				LOG(LOG_TRACE,"Push: Read reg number " << (int)tmp);
 				break;
 			}
 			case 5:
 			{
 				UI8 tmp;
 				in >> tmp;
-				Objects.push_back(new Integer(tmp));
+				//Objects.push_back(new Integer(tmp));
 				r--;
-				LOG(TRACE,"Push: Read bool " << (int)tmp);
+				LOG(LOG_TRACE,"Push: Read bool " << (int)tmp);
 				break;
 			}
 			case 6:
 			{
 				DOUBLE tmp;
 				in >> tmp;
-				Objects.push_back(new Number(tmp));
+				//Objects.push_back(new Number(tmp));
 				r-=8;
-				LOG(TRACE,"Push: Read double " << tmp);
+				LOG(LOG_TRACE,"Push: Read double " << tmp);
 				break;
 			}
 			case 7:
 			{
 				UI32 tmp;
 				in >> tmp;
-				Objects.push_back(new Integer(tmp));
+				//Objects.push_back(new Integer(tmp));
 				r-=4;
-				LOG(TRACE,"Push: Read integer " << tmp);
+				LOG(LOG_TRACE,"Push: Read integer " << tmp);
 				break;
 			}
 			case 8:
 			{
 				UI8 i;
 				in >> i;
-				ConstantReference* c=new ConstantReference(i);
-				Objects.push_back(c);
+				//ConstantReference* c=new ConstantReference(i);
+				//Objects.push_back(c);
 				r--;
-				LOG(TRACE,"Push: Read constant index " << (int)i);
+				LOG(LOG_TRACE,"Push: Read constant index " << (int)i);
 				break;
 			}
 			case 9:
 			{
 				UI16 i;
 				in >> i;
-				ConstantReference* c=new ConstantReference(i);
-				Objects.push_back(c);
+				//ConstantReference* c=new ConstantReference(i);
+				//Objects.push_back(c);
 				r-=2;
-				LOG(TRACE,"Push: Read long constant index " << (int)i);
+				LOG(LOG_TRACE,"Push: Read long constant index " << (int)i);
 				break;
 			}
 			default:
@@ -1240,7 +1240,7 @@ ActionPush::ActionPush(std::istream& in, ACTIONRECORDHEADER* h)
 				r=0;
 				break;
 		}
-	}*/
+	}
 }
 
 void ActionPush::print()

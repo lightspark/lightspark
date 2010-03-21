@@ -25,13 +25,13 @@
 
 using namespace std;
 
-sync_stream::sync_stream():head(0),tail(0),buf_size(1024*1024)
+sync_stream::sync_stream():head(0),tail(0),wait_notfull(false),wait_notempty(false),buf_size(1024*1024)
 {
 	printf("syn stream\n");
 	buffer=new char[buf_size];
 	sem_init(&mutex,0,1);
 	sem_init(&notfull,0,0);
-	sem_init(&ready,0,0);
+	sem_init(&notempty,0,0);
 }
 
 int sync_stream::provideBuffer(int limit)
@@ -39,13 +39,10 @@ int sync_stream::provideBuffer(int limit)
 	sem_wait(&mutex);
 	if(tail==head)
 	{
+		wait_notempty=true;
 		sem_post(&mutex);
-		sem_wait(&ready);
+		sem_wait(&notempty);
 	}
-
-	bool signal=false;
-	if(((tail-head+buf_size)%buf_size)==buf_size-1)
-		signal=true;
 
 	int available=(tail-head+buf_size)%buf_size;
 	available=min(available,limit);
@@ -60,29 +57,29 @@ int sync_stream::provideBuffer(int limit)
 
 	head+=available;
 	head%=buf_size;
-	if(signal)
+	if(wait_notfull)
+	{
+		wait_notfull=true;
 		sem_post(&notfull);
+	}
 	else
 		sem_post(&mutex);
 	return available;
 }
 
-int sync_stream::write(char* buf, int len)
+uint32_t sync_stream::write(char* buf, int len)
 {
 	sem_wait(&mutex);
 	if(((tail-head+buf_size)%buf_size)==buf_size-1)
 	{
+		wait_notfull=true;
 		sem_post(&mutex);
 		sem_wait(&notfull);
 	}
-	bool signal=false;
-	if(tail==head)
-		signal=true;
 
 	if((head-tail+buf_size-1)%buf_size<len)
-	{
 		len=(head-tail+buf_size-1)%buf_size;
-	}
+
 	if(tail+len>buf_size)
 	{
 		int i=buf_size-tail;
@@ -93,11 +90,23 @@ int sync_stream::write(char* buf, int len)
 		memcpy(buffer+tail,buf,len);
 	tail+=len;
 	tail%=buf_size;
-	if(signal)
-		sem_post(&ready);
+	assert(head!=tail);
+	if(wait_notempty)
+	{
+		wait_notempty=false;
+		sem_post(&notempty);
+	}
 	else
 		sem_post(&mutex);
 	return len;
+}
+
+uint32_t sync_stream::getFree()
+{
+	sem_wait(&mutex);
+	uint32_t freeBytes=(head-tail+buf_size-1)%buf_size;
+	sem_post(&mutex);
+	return freeBytes;
 }
 
 zlib_filter::zlib_filter():consumed(0),available(0)
@@ -164,35 +173,35 @@ zlib_filter::int_type zlib_filter::underflow()
 	}
 	else
 	{
-		// run inflate() on input until output buffer not full
+		// run inflate() on input until output buffer is full
 		strm.avail_out = 4096;
 		strm.next_out = (unsigned char*)buffer;
-		inflate(&strm, Z_NO_FLUSH);
-		available=4096;
-		//check if output full and wrap around
-		while(strm.avail_out!=0)
+		do
 		{
-			int real_count=provideBuffer(4096);
-			assert(strm.avail_in==0);
-			if(real_count==0)
+			if(strm.avail_in==0)
 			{
-				//File is not big enough to fill the buffer
-				available=4096-strm.avail_out;
-				break;
+				int real_count=provideBuffer(4096);
+				if(real_count==0)
+				{
+					//File is not big enough
+					LOG(LOG_ERROR,"Unexpected end of file");
+					abort();
+				}
+				strm.next_in=(unsigned char*)in_buf;
+				strm.avail_in=real_count;
 			}
-			strm.next_in=(unsigned char*)in_buf;
-			strm.avail_in=real_count;
 			int ret=inflate(&strm, Z_NO_FLUSH);
 			if(ret==Z_OK);
 			else if(ret==Z_STREAM_END)
 			{
 				//The stream ended, close the buffer here
-				available=4096-strm.avail_out;
 				break;
 			}
 			else
 				abort();
 		}
+		while(strm.avail_out!=0);
+		int available=4096-strm.avail_out;
 		setg(buffer,buffer,buffer+available);
 	}
 

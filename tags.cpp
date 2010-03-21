@@ -139,7 +139,6 @@ Tag* TagFactory::readTag()
 		case 88:
 			return new DefineFontNameTag(h,f);
 		default:
-			abort();
 			LOG(LOG_NOT_IMPLEMENTED,"Unsupported tag type " << (h>>6));
 			return new UnimplementedTag(h,f);
 	}
@@ -389,7 +388,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 		}
 		in >> KerningCount;
 	}
-	//Stub implement kerninfo merda merda
+	//TODO: implmented Kerning support
 	ignore(in,KerningCount*4);
 }
 
@@ -1408,8 +1407,8 @@ void DefineButton2Tag::handleEvent(Event* e)
 
 void DefineButton2Tag::Render()
 {
-	abort();
-/*	for(unsigned int i=0;i<Characters.size();i++)
+	LOG(LOG_NOT_IMPLEMENTED,"DefineButton2Tag::Render");
+	/*	for(unsigned int i=0;i<Characters.size();i++)
 	{
 		if(Characters[i].ButtonStateUp && state==BUTTON_UP)
 		{

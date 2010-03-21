@@ -33,22 +33,6 @@
 #include "streams.h"
 #include <GL/glx.h>
 
-/*class MovieTimer
-{
-private:
-	pthread_t t;
-	static void* timer_worker(MovieTimer*);
-	lightspark::RenderThread* rt;
-	sem_t mutex;
-	sem_t started;
-	lightspark::SystemState* m_sys;
-public:
-	MovieTimer(lightspark::SystemState* s,lightspark::RenderThread* r);
-	~MovieTimer();
-	void setRenderThread(lightspark::RenderThread* r);
-	void start();
-};*/
-
 class nsPluginInstance : public nsPluginInstanceBase
 {
 public:
@@ -62,6 +46,7 @@ public:
 	NPError SetWindow(NPWindow* aWindow);
 	NPError NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype); 
 	int32   Write(NPStream *stream, int32 offset, int32 len, void *buffer);
+	int32   WriteReady(NPStream *stream);
 
 	// locals
 	const char * getVersion();

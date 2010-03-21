@@ -48,7 +48,8 @@ class sync_stream: public zlib_filter
 {
 public:
 	sync_stream();
-	int write(char* buf, int len);
+	uint32_t write(char* buf, int len);
+	uint32_t getFree();
 private:
 	int provideBuffer(int limit);
 	char* buffer;
@@ -56,7 +57,9 @@ private:
 	int tail;
 	sem_t mutex;
 	sem_t notfull;
-	sem_t ready;
+	sem_t notempty;
+	bool wait_notfull;
+	bool wait_notempty;
 	const int buf_size;
 };
 

@@ -126,7 +126,7 @@ SystemState::SystemState():RootMovieClip(NULL),frameCount(0),secsCount(0),shutdo
 #ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
-	cur_thread_pool=new ThreadPool(this);
+	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 	loaderInfo=Class<LoaderInfo>::getInstanceS(true);
 	stage=Class<Stage>::getInstanceS(true);
@@ -150,13 +150,20 @@ void SystemState::parseParameters(istream& i)
 
 		ret->setVariableByQName(name.c_str(),"",Class<ASString>::getInstanceS(true,value)->obj);
 	}
-	loaderInfo->obj->setVariableByQName("parameters","",ret);
+	addParameters(ret);
+}
+
+void SystemState::addParameters(ASObject* p)
+{
+	loaderInfo->obj->setVariableByQName("parameters","",p);
 }
 
 SystemState::~SystemState()
 {
-	if(cur_thread_pool)
-		delete cur_thread_pool;
+	if(timerThread)
+		delete timerThread;
+	if(threadPool)
+		delete threadPool;
 	if(currentVm)
 		delete currentVm;
 
@@ -228,7 +235,7 @@ void SystemState::execute()
 
 void SystemState::addJob(IThreadJob* j)
 {
-	cur_thread_pool->addJob(j);
+	threadPool->addJob(j);
 }
 
 void SystemState::addTick(uint32_t tickTime, IThreadJob* job)

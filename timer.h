@@ -48,13 +48,14 @@ private:
 	pthread_t t;
 	std::list<TimingEvent*> pendingEvents;
 	SystemState* m_sys;
-	bool waiting;
+	bool stopped;
 	static void* timer_worker(TimerThread*);
 	static uint64_t timespecToMsecs(timespec t);
 	static timespec msecsToTimespec(uint64_t time);
 	void insertNewEvent(TimingEvent* e);
 public:
 	TimerThread(SystemState* s);
+	~TimerThread();
 	void addTick(uint32_t tickTime, IThreadJob* job);
 	void addWait(uint32_t waitTime, IThreadJob* job);
 };

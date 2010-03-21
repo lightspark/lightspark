@@ -138,7 +138,7 @@ public:
 class SystemState: public RootMovieClip
 {
 private:
-	ThreadPool* cur_thread_pool;
+	ThreadPool* threadPool;
 	TimerThread* timerThread;
 	sem_t terminated;
 #ifndef WIN32
@@ -184,6 +184,7 @@ public:
 	bool useJit;
 
 	void parseParameters(std::istream& i);
+	void addParameters(ASObject* p);
 	void addJob(IThreadJob* j);
 	void addTick(uint32_t tickTime, IThreadJob* job);
 	void addWait(uint32_t waitTime, IThreadJob* job);

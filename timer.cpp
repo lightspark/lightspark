@@ -46,12 +46,22 @@ timespec TimerThread::msecsToTimespec(uint64_t time)
 	return ret;
 }
 
-TimerThread::TimerThread(SystemState* s):m_sys(s)
+TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false)
 {
 	sem_init(&mutex,0,1);
 	sem_init(&newEvent,0,0);
 
 	pthread_create(&t,NULL,(thread_worker)timer_worker,this);
+}
+
+TimerThread::~TimerThread()
+{
+	stopped=true;
+	sem_post(&newEvent);
+	pthread_join(t,NULL);
+
+	sem_destroy(&mutex);
+	sem_destroy(&newEvent);
 }
 
 void TimerThread::insertNewEvent(TimingEvent* e)
@@ -103,8 +113,7 @@ void* TimerThread::timer_worker(TimerThread* th)
 		timespec tmpt=msecsToTimespec(timing);
 		sem_post(&th->mutex);
 		int ret=sem_timedwait(&th->newEvent, &tmpt);
-		//Check for shutdown condition
-		if(sys->shutdown)
+		if(th->stopped || sys->shutdown)
 			pthread_exit(0);
 
 		if(ret==0)

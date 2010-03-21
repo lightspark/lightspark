@@ -150,10 +150,10 @@ void SystemState::parseParameters(istream& i)
 
 		ret->setVariableByQName(name.c_str(),"",Class<ASString>::getInstanceS(true,value)->obj);
 	}
-	addParameters(ret);
+	setParameters(ret);
 }
 
-void SystemState::addParameters(ASObject* p)
+void SystemState::setParameters(ASObject* p)
 {
 	loaderInfo->obj->setVariableByQName("parameters","",p);
 }

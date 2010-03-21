@@ -22,7 +22,8 @@
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define PLUGIN_NAME    "Shockwave Flash"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r31"
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 - Lightspark implmentation"
+#include "class.h"
 
 using namespace std;
 
@@ -76,7 +77,10 @@ nsPluginInstanceBase * NS_NewPluginInstance(nsPluginCreateData * aCreateDataStru
   if(!aCreateDataStruct)
     return NULL;
 
-  nsPluginInstance * plugin = new nsPluginInstance(aCreateDataStruct->instance);
+  nsPluginInstance * plugin = new nsPluginInstance(aCreateDataStruct->instance,
+		  					aCreateDataStruct->argc,
+		  					aCreateDataStruct->argn,
+		  					aCreateDataStruct->argv);
   return plugin;
 }
 
@@ -90,10 +94,87 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 // nsPluginInstance class implementation
 //
-nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
+nsPluginInstance::nsPluginInstance(NPP aInstance, int16 argc, char** argn, char** argv) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),swf_stream(&swf_buf),
 	m_pt(&m_sys,swf_stream),m_it(NULL),m_rt(NULL)
 {
+	//Find flashvars argument
+	for(int i=0;i<argc;i++)
+	{
+		if(argn[i]==NULL || argv[i]==NULL)
+			continue;
+		if(strcmp(argn[i],"flashvars")!=0)
+			continue;
+
+		lightspark::ASObject* params=new lightspark::ASObject;
+		//Add arguments to SystemState
+		std::string vars(argv[i]);
+		uint32_t cur=0;
+		while(cur<vars.size())
+		{
+			int n1=vars.find('=',cur);
+			if(n1==-1) //Incomplete parameters string, ignore the last
+				break;
+
+			int n2=vars.find('&',n1+1);
+			if(n2==-1)
+				n2=vars.size();
+
+			std::string varName=vars.substr(cur,(n1-cur));
+
+			//The variable value has to be urldecoded
+			bool ok=true;
+			std::string varValue;
+			varValue.reserve(n2-n1); //The maximum lenght
+			for(int j=n1+1;j<n2;j++)
+			{
+				if(vars[j]!='%')
+					varValue.push_back(vars[j]);
+				else
+				{
+					if((n2-j)<3) //Not enough characters
+					{
+						ok=false;
+						break;
+					}
+
+					int t1=hexToInt(vars[j+1]);
+					int t2=hexToInt(vars[j+2]);
+					if(t1==-1 || t2==-1)
+					{
+						ok=false;
+						break;
+					}
+
+					int c=(t1*16)+t2;
+					varValue.push_back(c);
+					j+=2;
+				}
+			}
+
+			if(ok)
+			{
+				cout << varName << ' ' << varValue << endl;
+				params->setVariableByQName(varName.c_str(),"",
+						lightspark::Class<lightspark::ASString>::getInstanceS(true,varValue)->obj);
+			}
+			cur=n2+1;
+		}
+		sys->setParameters(params);
+		break;
+	}
+}
+
+int nsPluginInstance::hexToInt(char c)
+{
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(c>='a' && c<='f')
+		return c-'a'+10;
+	else if(c>='A' && c<='F')
+		return c-'A'+10;
+	else
+		return -1;
 }
 
 nsPluginInstance::~nsPluginInstance()
@@ -247,12 +328,10 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 int32 nsPluginInstance::WriteReady(NPStream *stream)
 {
 	int32 ret=swf_buf.getFree();
-	cout << "Free " << ret << endl;
 	return ret;
 }
 
 int32 nsPluginInstance::Write(NPStream *stream, int32 offset, int32 len, void *buffer)
 {
-	cout << "Writing " << len << endl;
 	return swf_buf.write((char*)buffer,len);
 }

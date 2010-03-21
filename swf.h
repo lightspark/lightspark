@@ -184,7 +184,7 @@ public:
 	bool useJit;
 
 	void parseParameters(std::istream& i);
-	void addParameters(ASObject* p);
+	void setParameters(ASObject* p);
 	void addJob(IThreadJob* j);
 	void addTick(uint32_t tickTime, IThreadJob* job);
 	void addWait(uint32_t waitTime, IThreadJob* job);

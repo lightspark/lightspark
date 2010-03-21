@@ -36,7 +36,7 @@
 class nsPluginInstance : public nsPluginInstanceBase
 {
 public:
-	nsPluginInstance(NPP aInstance);
+	nsPluginInstance(NPP aInstance, int16 argc, char** argn, char** argv);
 	virtual ~nsPluginInstance();
 
 	NPBool init(NPWindow* aWindow);
@@ -53,6 +53,8 @@ public:
 	void draw();
 
 private:
+	int hexToInt(char c);
+
 	NPP mInstance;
 	NPBool mInitialized;
 

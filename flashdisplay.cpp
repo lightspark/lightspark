@@ -135,7 +135,7 @@ ASFUNCTIONBODY(Loader,load)
 /*	if(th->loading)
 		return NULL;
 	th->loading=true;*/
-	abort();
+	::abort();
 /*	if(args->at(0)->getClassName()!="URLRequest")
 	{
 		LOG(ERROR,"ArgumentError");

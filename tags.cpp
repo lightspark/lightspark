@@ -258,8 +258,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			case TAG:
 				break;
 			case END_TAG:
-				done=1;
-				if(empty)
+				done=true;
+				if(empty && frames.size()!=FrameCount)
 					frames.pop_back();
 				break;
 		}

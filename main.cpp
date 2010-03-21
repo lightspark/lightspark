@@ -193,7 +193,6 @@ int main(int argc, char* argv[])
 	clock_gettime(CLOCK_REALTIME,&td);
 	cout << timeDiff(ts,td) << endl;
 #endif
-	abort();
 	SDL_Quit();
 	return 0;
 }

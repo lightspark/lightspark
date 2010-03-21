@@ -228,6 +228,7 @@ private:
 	SystemState* m_sys;
 	NPAPI_params* npapi_params;
 	pthread_t t;
+	bool terminated;
 	static void* sdl_worker(InputThread*);
 	static void* npapi_worker(InputThread*);
 
@@ -248,12 +249,12 @@ private:
 	SystemState* m_sys;
 	NPAPI_params* npapi_params;
 	pthread_t t;
+	bool terminated;
 	static void* sdl_worker(RenderThread*);
 	static void* npapi_worker(RenderThread*);
 	static void* glx_worker(RenderThread*);
 	void commonGLInit(int width, int height, unsigned int t2[3]);
 	sem_t render;
-	//int bak;
 
 #ifndef WIN32
 	Display* mDisplay;

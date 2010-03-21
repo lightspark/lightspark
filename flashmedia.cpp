@@ -252,7 +252,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	assert(argslen==1);
 	//Validate the parameter
 	if(args[0]->prototype!=Class<NetStream>::getClass())
-		abort();
+		::abort();
 
 	//Acquire the netStream
 	args[0]->incRef();

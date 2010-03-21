@@ -31,46 +31,6 @@ __thread lightspark::SystemState* sys;
 TLSDATA lightspark::RenderThread* rt=NULL;
 TLSDATA lightspark::ParseThread* pt=NULL;
 
-/*MovieTimer::MovieTimer(lightspark::SystemState* s,lightspark::RenderThread* r):rt(r)
-{
-	m_sys=s;
-	sem_init(&started,0,0);
-	sem_init(&mutex,0,1);
-	pthread_create(&t,0,(lightspark::thread_worker)timer_worker,this);
-}
-
-MovieTimer::~MovieTimer()
-{
-	void* ret;
-	pthread_cancel(t);
-	pthread_join(t,&ret);
-}
-
-void MovieTimer::setRenderThread(lightspark::RenderThread* r)
-{
-	sem_wait(&mutex);
-	rt=r;
-	sem_post(&mutex);
-}
-
-void MovieTimer::start()
-{
-	sem_post(&started);
-}
-
-void* MovieTimer::timer_worker(MovieTimer* th)
-{
-	sys=th->m_sys;
-	sem_wait(&th->started);
-	while(1)
-	{
-		sem_wait(&th->mutex);
-		if(th->rt)
-			th->rt->draw();
-		sem_post(&th->mutex);
-	}
-}*/
-
 char* NPP_GetMIMEDescription(void)
 {
 	return (char*)(MIME_TYPES_DESCRIPTION);
@@ -133,16 +93,16 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),swf_stream(&swf_buf),
-	pt(&m_sys,swf_stream),it(NULL),rt(NULL)
+	m_pt(&m_sys,swf_stream),m_it(NULL),m_rt(NULL)
 {
 }
 
 nsPluginInstance::~nsPluginInstance()
 {
 	//Shutdown the system
-	sys->setShutdownFlag();
-	delete rt;
-	delete it;
+	m_sys.setShutdownFlag();
+	delete m_rt;
+	delete m_it;
 }
 
 void xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent, Boolean *b)
@@ -166,9 +126,9 @@ void xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent,
 
 void nsPluginInstance::draw()
 {
-/*	if(rt==NULL || it==NULL)
+/*	if(m_rt==NULL || m_it==NULL)
 		return;
-	rt->draw();*/
+	m_rt->draw();*/
 }
 
 NPBool nsPluginInstance::init(NPWindow* aWindow)
@@ -242,27 +202,28 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p->width=mWidth;
 		p->height=mHeight;
 		lightspark::NPAPI_params* p2=new lightspark::NPAPI_params(*p);
-		if(rt!=NULL)
+		if(m_rt!=NULL)
 		{
 			cout << "destroy old context" << endl;
 			abort();
 		}
 		if(p->width==0 || p->height==0)
 			abort();
-		rt=new lightspark::RenderThread(&m_sys,lightspark::NPAPI,p);
+		m_rt=new lightspark::RenderThread(&m_sys,lightspark::NPAPI,p);
 
-		if(it!=NULL)
+		if(m_it!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		it=new lightspark::InputThread(&m_sys,lightspark::NPAPI,p2);
+		m_it=new lightspark::InputThread(&m_sys,lightspark::NPAPI,p2);
 
-		sys=&m_sys;
-		m_sys.cur_input_thread=it;
-		m_sys.cur_render_thread=rt;
+		//sys=&m_sys;
+		sys=NULL;
+		m_sys.cur_input_thread=m_it;
+		m_sys.cur_render_thread=m_rt;
 		m_sys.fps_prof=new lightspark::fps_profiling();
-		m_sys.addJob(&pt);
+		m_sys.addJob(&m_pt);
 
 		// add xt event handler
 		Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);

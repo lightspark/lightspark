@@ -23,6 +23,7 @@
 #include <deque>
 #include <pthread.h>
 #include <semaphore.h>
+#include <stdlib.h>
 
 namespace lightspark
 {
@@ -33,12 +34,16 @@ class SystemState;
 
 class IThreadJob
 {
+friend class ThreadPool;
 protected:
 	bool executing;
+	bool aborting;
 	virtual void execute()=0;
+	virtual void abort(){::abort();}
 public:
-	IThreadJob():executing(false){}
+	IThreadJob():executing(false),aborting(false){}
 	void run();
+	void stop();
 	virtual ~IThreadJob(){}
 };
 
@@ -47,6 +52,7 @@ class ThreadPool
 private:
 	sem_t mutex;
 	pthread_t threads[NUM_THREADS];
+	IThreadJob* curJobs[NUM_THREADS];
 	std::deque<IThreadJob*> jobs;
 	sem_t num_jobs;
 	static void* job_worker(void*);

@@ -64,6 +64,9 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
 		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);
 		curl_easy_setopt(curl, CURLOPT_HEADERDATA, this);
+		curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_callback);
+		curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, this);
+		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
 		res = curl_easy_perform(curl);
 		if(res!=0)
 			setFailed();
@@ -75,10 +78,22 @@ void CurlDownloader::execute()
 	return;
 }
 
+void CurlDownloader::abort()
+{
+	failed=true;
+	sem_post(&available);
+}
+
 bool CurlDownloader::download()
 {
 	execute();
 	return !failed;
+}
+
+int CurlDownloader::progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
+{
+	CurlDownloader* th=static_cast<CurlDownloader*>(clientp);
+	return th->aborting;
 }
 
 size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
@@ -86,7 +101,7 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	size_t added=size*nmemb;
 	if((th->tail+added)>th->len)
-		abort();
+		::abort();
 	sem_wait(&th->mutex);
 	memcpy(th->buffer + th->tail,buffer,added);
 	th->tail+=added;
@@ -149,6 +164,8 @@ CurlDownloader::int_type CurlDownloader::underflow()
 			waiting=true;
 			sem_post(&mutex);
 			sem_wait(&available);
+			if(aborting)
+				return -1;
 		}
 	}
 

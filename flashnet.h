@@ -120,6 +120,7 @@ private:
 	double frameRate;
 	sem_t mutex;
 	void execute();
+	void abort();
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height);
 public:
 	NetStream();

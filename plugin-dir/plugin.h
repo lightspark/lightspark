@@ -69,9 +69,9 @@ private:
 	sync_stream swf_buf;
 
 	lightspark::SystemState m_sys;
-	lightspark::ParseThread pt;
-	lightspark::InputThread* it;
-	lightspark::RenderThread* rt;
+	lightspark::ParseThread m_pt;
+	lightspark::InputThread* m_it;
+	lightspark::RenderThread* m_rt;
 };
 
 #endif // __PLUGIN_H__

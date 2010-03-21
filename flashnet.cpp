@@ -106,7 +106,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	if(data)
 	{
 		if(data->prototype==Class<URLVariables>::getClass())
-			abort();
+			::abort();
 		else
 		{
 			const tiny_string& tmp=data->toString();
@@ -324,6 +324,8 @@ NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
 void NetStream::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height)
 {
 	sem_wait(&freeBuffers);
+	if(aborting)
+		throw "Aborting";
 	//Only one thread may access the tail
 	if(buffers[bufferTail][0]==NULL)
 	{
@@ -461,12 +463,21 @@ void NetStream::execute()
 		cout << e.what() << endl;
 		abort();
 	}
+	catch(const char*)
+	{
+	}
 
 	av_free(frameIn);
 /*	Event* status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Play.Start");
 	getVm()->addEvent(this, status);
 	status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Buffer.Full");
 	getVm()->addEvent(this, status);*/
+}
+
+void NetStream::abort()
+{
+	sem_post(&freeBuffers);
+	sem_post(&usedBuffers);
 }
 
 ASFUNCTIONBODY(NetStream,getBytesLoaded)
@@ -521,8 +532,9 @@ void NetStream::copyBuffer(uint8_t* dest)
 	}
 	sem_post(&mutex);
 
-	//This thread does not want to stall
 	sem_wait(&usedBuffers);
+//	if(aborting)
+//		throw "Aborting"
 	//At least a frame is available
 	int offset=0;
 	for(uint32_t y=0;y<height;y++)

@@ -155,27 +155,30 @@ void SystemState::parseParameters(istream& i)
 
 SystemState::~SystemState()
 {
-	if(currentVm)
-		delete currentVm;
 	if(cur_thread_pool)
 		delete cur_thread_pool;
-	obj->implementation=NULL;
+	if(currentVm)
+		delete currentVm;
 
 	//decRef all registered classes
 	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
 		it->second->decRef();
 
-	//TODO: check??
-	delete obj;
+	if(obj)
+	{
+		obj->implementation=NULL;
+		//TODO: check??
+		delete obj;
+	}
 }
 
 void SystemState::setShutdownFlag()
 {
 	sem_wait(&mutex);
 	shutdown=true;
-	if(sys->currentVm)
-		sys->currentVm->addEvent(NULL,new ShutdownEvent());
+	if(currentVm)
+		currentVm->addEvent(NULL,new ShutdownEvent());
 
 	sem_post(&terminated);
 	sem_post(&mutex);
@@ -211,11 +214,11 @@ void SystemState::execute()
 		frameCount=0;
 		secsCount++;
 		//fps_profs.push_back(fps_profiling());
-		//sys->fps_prof=&fps_profs.back();
+		//fps_prof=&fps_profs.back();
 		/*if(secsCount>120)
 		{
 			LOG(LOG_NO_INFO,"Exiting");
-			sys->setShutdownFlag();
+			setShutdownFlag();
 		}*/
 	}
 	else
@@ -316,13 +319,17 @@ void ParseThread::wait()
 
 void RenderThread::wait()
 {
+	if(terminated)
+		return;
+	//Signal potentially blocing semaphore
+	sem_post(&render);
 	int ret=pthread_join(t,NULL);
-	assert(ret);
+	assert(ret==0);
+	terminated=true;
 }
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param)
+InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false)
 {
-	m_sys=s;
 	LOG(LOG_NO_INFO,"Creating input thread");
 	sem_init(&sem_listeners,0,1);
 	if(e==SDL)
@@ -343,7 +350,10 @@ InputThread::~InputThread()
 
 void InputThread::wait()
 {
+	if(terminated)
+		return;
 	pthread_join(t,NULL);
+	terminated=true;
 }
 
 #ifndef WIN32
@@ -377,9 +387,9 @@ void* InputThread::sdl_worker(InputThread* th)
 				{
 					case SDLK_q:
 						sys->setShutdownFlag();
-						LOG(LOG_CALLS,"We still miss " << sys->currentVm->getEventQueueSize() << " events");
-						exit(0);
-						//pthread_exit(0);
+						if(sys->currentVm)
+							LOG(LOG_CALLS,"We still miss " << sys->currentVm->getEventQueueSize() << " events");
+						pthread_exit(0);
 						break;
 					case SDLK_s:
 						sys->state.stop_FP=true;
@@ -505,7 +515,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 	sem_post(&sem_listeners);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buffer(NULL),fbAcquired(false)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),interactive_buffer(NULL),fbAcquired(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -527,10 +537,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):interactive_buf
 
 RenderThread::~RenderThread()
 {
-	void* ret;
-	//signal potentially blocing semaphore
-	sem_post(&render);
-	pthread_join(t,&ret);
+	wait();
 	sem_destroy(&render);
 	delete[] interactive_buffer;
 	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
@@ -1131,7 +1138,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 void RenderThread::draw()
 {
 	sem_post(&render);
-	//sem_wait(&end_render);
 }
 
 void RootMovieClip::setFrameCount(int f)

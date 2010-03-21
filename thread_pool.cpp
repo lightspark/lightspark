@@ -30,7 +30,10 @@ ThreadPool::ThreadPool(SystemState* s):stop(false)
 	sem_init(&mutex,0,1);
 	sem_init(&num_jobs,0,0);
 	for(int i=0;i<NUM_THREADS;i++)
+	{
+		curJobs[i]=NULL;
 		pthread_create(&threads[i],NULL,job_worker,this);
+	}
 }
 
 ThreadPool::~ThreadPool()
@@ -40,9 +43,17 @@ ThreadPool::~ThreadPool()
 	for(int i=0;i<NUM_THREADS;i++)
 		sem_post(&num_jobs);
 
-	void* ret;
+	//Now abort any job that is still executing
+	sem_wait(&mutex);
 	for(int i=0;i<NUM_THREADS;i++)
-		pthread_join(threads[i],&ret);
+	{
+		if(curJobs[i])
+			curJobs[i]->stop();
+	}
+	sem_post(&mutex);
+
+	for(int i=0;i<NUM_THREADS;i++)
+		pthread_join(threads[i],NULL);
 
 	sem_destroy(&num_jobs);
 	sem_destroy(&mutex);
@@ -53,18 +64,32 @@ void* ThreadPool::job_worker(void* t)
 	ThreadPool* th=static_cast<ThreadPool*>(t);
 	sys=th->m_sys;
 
+	//Let's find out index (slow, but it's done only once)
+	uint32_t index=0;
+	for(;index<NUM_THREADS;index++)
+	{
+		if(pthread_equal(th->threads[index],pthread_self()))
+			break;
+	}
+
 	while(1)
 	{
 		sem_wait(&th->num_jobs);
 		if(th->stop)
 			pthread_exit(0);
-
 		sem_wait(&th->mutex);
 		IThreadJob* myJob=th->jobs.front();
 		th->jobs.pop_front();
+		th->curJobs[index]=myJob;
+		myJob->executing=true;
 		sem_post(&th->mutex);
 
 		myJob->run();
+
+		sem_wait(&th->mutex);
+		myJob->executing=false;
+		th->curJobs[index]=NULL;
+		sem_post(&th->mutex);
 	}
 	return NULL;
 }
@@ -79,7 +104,14 @@ void ThreadPool::addJob(IThreadJob* j)
 
 void IThreadJob::run()
 {
-	executing=true;
 	execute();
-	executing=false;
+}
+
+void IThreadJob::stop()
+{
+	if(executing)
+	{
+		aborting=true;
+		this->abort();
+	}
 }

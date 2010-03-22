@@ -39,6 +39,7 @@ public:
 	ASFUNCTION(_getTop);
 	ASFUNCTION(_getBottom);
 	ASFUNCTION(_getHeight);
+	ASFUNCTION(clone);
 };
 
 class Point: public IInterface

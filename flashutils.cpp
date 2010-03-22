@@ -466,17 +466,40 @@ void Proxy::sinit(Class_base* c)
 	//c->constructor=new Function(_constructor);
 }
 
-bool Proxy::setVariableByMultiname(const multiname& name, ASObject* o)
+bool Proxy::setVariableByMultiname(const multiname& name, ASObject* v)
 {
-	//We now assume that we are trying to set an actual property, not using the setter
-	assert(obj->hasPropertyByMultiname(name));
-	//assert(!obj->hasPropertyByQName("setProperty",flash_proxy));
+	//If a variable named like this already exist, return that
+	if(obj->hasPropertyByMultiname(name))
+		return false;
+	if(suppress)
+		return false;
 
-	return false;
+	//Check if there is a custom setter defined, skipping implementation to avoid recursive calls
+	objAndLevel o=obj->getVariableByQName("setProperty",flash_proxy,true);
+
+	if(o.obj==NULL)
+		return false;
+
+	assert(o.obj->getObjectType()==T_FUNCTION);
+
+	IFunction* f=static_cast<IFunction*>(o.obj);
+
+	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
+	ASObject* args[2];
+	args[0]=Class<ASString>::getInstanceS(true,name.name_s)->obj;
+	args[1]=v;
+	//We now suppress special handling
+	suppress=true;
+	LOG(LOG_CALLS,"Proxy::setProperty");
+	f->call(obj,args,2,obj->actualPrototype->max_level);
+	suppress=false;
+	return true;
 }
 
 bool Proxy::getVariableByMultiname(const multiname& name, ASObject*& out)
 {
+	if(obj->hasPropertyByMultiname(name))
+		return false;
 	if(suppress)
 		return false;
 
@@ -494,6 +517,7 @@ bool Proxy::getVariableByMultiname(const multiname& name, ASObject*& out)
 	ASObject* arg=Class<ASString>::getInstanceS(true,name.name_s)->obj;
 	//We now suppress special handling
 	suppress=true;
+	LOG(LOG_CALLS,"Proxy::getProperty");
 	out=f->call(obj,&arg,1,obj->actualPrototype->max_level);
 	assert(out);
 	suppress=false;

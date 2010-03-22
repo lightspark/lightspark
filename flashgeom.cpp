@@ -51,6 +51,8 @@ void Rectangle::buildTraits(ASObject* o)
 
 	o->setGetterByQName("bottom","",new Function(_getBottom));
 	o->setGetterByQName("height","",new Function(_getHeight));
+
+	o->setVariableByQName("clone","",new Function(clone));
 }
 
 ASFUNCTIONBODY(Rectangle,_constructor)
@@ -103,6 +105,17 @@ ASFUNCTIONBODY(Rectangle,_getHeight)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 	return abstract_d(th->height);
+}
+
+ASFUNCTIONBODY(Rectangle,clone)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* ret=Class<Rectangle>::getInstanceS(true);
+	ret->x=th->x;
+	ret->y=th->y;
+	ret->width=th->width;
+	ret->height=th->height;
+	return ret->obj;
 }
 
 void ColorTransform::sinit(Class_base* c)

@@ -36,9 +36,11 @@ public:
 	ASFUNCTION(_getLeft);
 	ASFUNCTION(_getRight);
 	ASFUNCTION(_getWidth);
+	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getTop);
 	ASFUNCTION(_getBottom);
 	ASFUNCTION(_getHeight);
+	ASFUNCTION(_setHeight);
 	ASFUNCTION(clone);
 };
 

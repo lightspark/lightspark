@@ -1069,7 +1069,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 	DisplayObject* d=static_cast<DisplayObject*>(args[0]->implementation);
 
 	bool ret=th->_contains(d);
-	return abstract_i(ret);
+	return abstract_b(ret);
 }
 
 //Only from VM context

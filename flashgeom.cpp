@@ -43,6 +43,7 @@ void Rectangle::buildTraits(ASObject* o)
 	o->setGetterByQName("x","",left);
 	o->setGetterByQName("right","",new Function(_getRight));
 	o->setGetterByQName("width","",new Function(_getWidth));
+	o->setSetterByQName("width","",new Function(_setWidth));
 
 	IFunction* top=new Function(_getTop);
 	o->setGetterByQName("top","",top);
@@ -51,6 +52,7 @@ void Rectangle::buildTraits(ASObject* o)
 
 	o->setGetterByQName("bottom","",new Function(_getBottom));
 	o->setGetterByQName("height","",new Function(_getHeight));
+	o->setSetterByQName("height","",new Function(_setHeight));
 
 	o->setVariableByQName("clone","",new Function(clone));
 }
@@ -89,6 +91,14 @@ ASFUNCTIONBODY(Rectangle,_getWidth)
 	return abstract_d(th->width);
 }
 
+ASFUNCTIONBODY(Rectangle,_setWidth)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	assert(argslen==1);
+	th->width=args[0]->toNumber();
+	return NULL;
+}
+
 ASFUNCTIONBODY(Rectangle,_getTop)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
@@ -105,6 +115,14 @@ ASFUNCTIONBODY(Rectangle,_getHeight)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
 	return abstract_d(th->height);
+}
+
+ASFUNCTIONBODY(Rectangle,_setHeight)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	assert(argslen==1);
+	th->height=args[0]->toNumber();
+	return NULL;
 }
 
 ASFUNCTIONBODY(Rectangle,clone)

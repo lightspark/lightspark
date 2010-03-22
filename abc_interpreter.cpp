@@ -783,9 +783,9 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//getlocal
 				u30 i;
 				code >> i;
-				LOG(LOG_CALLS, "getLocal " << i );
 				assert(context->locals[i]);
 				context->locals[i]->incRef();
+				LOG(LOG_CALLS, "getLocal " << i << ": " << context->locals[i]->toString(true) );
 				context->runtime_stack_push(context->locals[i]);
 				break;
 			}
@@ -1208,8 +1208,8 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			{
 				//getlocal_n
 				int i=opcode&3;
-				LOG(LOG_CALLS, "getLocal " << i );
 				assert(context->locals[i]);
+				LOG(LOG_CALLS, "getLocal " << i << ": " << context->locals[i]->toString(true) );
 				context->locals[i]->incRef();
 				context->runtime_stack_push(context->locals[i]);
 				break;

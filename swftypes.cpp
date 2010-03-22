@@ -59,7 +59,8 @@ tiny_string ASObject::toString(bool debugMsg)
 		if(implementation->toString(ret))
 			return ret;
 	}
-	LOG(LOG_NOT_IMPLEMENTED,"Cannot convert object of type " << getObjectType() << " to String");
+	if(debugMsg==false)
+		LOG(LOG_NOT_IMPLEMENTED,"Cannot convert object of type " << getObjectType() << " to String");
 	if(debugMsg==false && hasPropertyByQName("toString",""))
 	{
 		objAndLevel obj_toString=getVariableByQName("toString","");
@@ -540,6 +541,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 	}
 	else
 	{
+		assert(!obj->getter);
 		if(obj->var)
 			obj->var->decRef();
 		obj->var=o;
@@ -581,6 +583,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	}
 	else
 	{
+		assert(!obj->getter);
 		if(obj->var)
 			obj->var->decRef();
 		obj->var=o;
@@ -788,6 +791,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 		}
 		else
 		{
+			assert(!obj->setter);
 			assert(obj->var);
 			return objAndLevel(obj->var,level);
 		}

@@ -74,6 +74,7 @@ void Array::buildTraits(ASObject* o)
 	o->ASObject::setVariableByQName("sort",AS3,new Function(_sort));
 	o->ASObject::setVariableByQName("concat",AS3,new Function(_concat));
 	o->ASObject::setVariableByQName("indexOf",AS3,new Function(indexOf));
+	o->ASObject::setVariableByQName("filter",AS3,new Function(filter));
 }
 
 ASFUNCTIONBODY(Array,_constructor)
@@ -139,6 +140,16 @@ ASFUNCTIONBODY(Array,indexOf)
 	assert(argslen==1);
 	assert(th->data.size()==0);
 	return abstract_i(-1);
+}
+
+ASFUNCTIONBODY(Array,filter)
+{
+	//TODO: really implement
+	Array* th=static_cast<Array*>(obj->implementation);
+	assert(th->data.size()==0);
+	Array* ret=Class<Array>::getInstanceS(true);
+	ret->data=th->data;
+	return ret->obj;
 }
 
 ASFUNCTIONBODY(Array,_concat)
@@ -1568,7 +1579,7 @@ void Class_base::linkInterface(ASObject* obj) const
 {
 	if(class_index==-1)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Linking of builtin interface " << class_name << " not supported");
+		//LOG(LOG_NOT_IMPLEMENTED,"Linking of builtin interface " << class_name << " not supported");
 		return;
 	}
 	//Recursively link interfaces implemented by this interface

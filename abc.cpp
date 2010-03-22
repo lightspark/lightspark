@@ -893,6 +893,7 @@ ABCContext::ABCContext(istream& in)
 				LOG(LOG_CALLS,"\t" << *getMultiname(instances[i].interfaces[j],NULL));
 			}
 		}
+		LOG(LOG_CALLS,endl);
 	}
 	classes.resize(class_count);
 	for(unsigned int i=0;i<class_count;i++)

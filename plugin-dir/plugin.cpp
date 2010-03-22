@@ -19,10 +19,11 @@
 
 #include "plugin.h"
 #include "logger.h"
-#define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
+//#define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
+#define MIME_TYPES_HANDLED  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 - Lightspark implmentation"
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 - Lightspark implementation"
 #include "class.h"
 
 using namespace std;

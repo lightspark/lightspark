@@ -18,13 +18,121 @@
 **************************************************************************/
 
 #include "netutils.h"
+#include "compat.h"
+#include "swf.h"
 #include <curl/curl.h>
 #include <string>
 #include <iostream>
 
 using namespace lightspark;
+extern TLSDATA SystemState* sys;
 
-CurlDownloader::CurlDownloader(const tiny_string& u):buffer(NULL),len(0),tail(0),failed(false),waiting(false)
+Downloader* CurlDownloadManager::download(const tiny_string& u)
+{
+	CurlDownloader* curlDownloader=new CurlDownloader(u);
+	sys->addJob(curlDownloader);
+	return curlDownloader;
+}
+
+Downloader::Downloader():buffer(NULL),len(0),tail(0),waiting(false),failed(false)
+{
+	sem_init(&available,0,0);
+	sem_init(&mutex,0,1);
+}
+
+void Downloader::setLen(uint32_t l)
+{
+	len=l;
+	assert(buffer==NULL);
+	buffer=new uint8_t[len];
+	setg((char*)buffer,(char*)buffer,(char*)buffer);
+}
+
+void Downloader::setFailed()
+{
+	sem_wait(&mutex);
+	failed=true;
+	if(waiting) //If we are waiting for some bytes, gives up and return EOF
+		sem_post(&available);
+	else
+		sem_post(&mutex);
+}
+
+void Downloader::append(uint8_t* buf, uint32_t added)
+{
+	if(added==0)
+		return;
+	if((tail+added)>len)
+		::abort();
+	sem_wait(&mutex);
+	memcpy(buffer + tail,buf,added);
+	tail+=added;
+	if(waiting)
+	{
+		waiting=false;
+		sem_post(&available);
+	}
+	else
+		sem_post(&mutex);
+}
+
+Downloader::int_type Downloader::underflow()
+{
+	sem_wait(&mutex);
+	assert(gptr()==egptr());
+	unsigned int firstIndex=tail;
+
+	if((buffer+tail)==(uint8_t*)egptr()) //We have no more bytes
+	{
+		if(failed || (tail==len && len!=0))
+		{
+			sem_post(&mutex);
+			return -1;
+		}
+		else //More bytes should follow
+		{
+			waiting=true;
+			sem_post(&mutex);
+			sem_wait(&available);
+			if(failed)
+				return -1;
+		}
+	}
+
+	//The current pointer has to be saved
+	char* cur=gptr();
+
+	if(failed)
+	{
+		sem_post(&mutex);
+		return -1;
+	}
+
+	//We have some bytes now, let's use them
+	setg((char*)buffer,cur,(char*)buffer+tail);
+	sem_post(&mutex);
+	//Cast to unsigned, otherwise 0xff would become eof
+	return (unsigned char)buffer[firstIndex];
+}
+
+Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode mode)
+{
+	assert(mode==std::ios_base::in);
+	sem_wait(&mutex);
+	setg((char*)buffer,(char*)buffer+pos,(char*)buffer+tail);
+	sem_post(&mutex);
+	return pos;
+}
+
+Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode mode)
+{
+	assert(mode==std::ios_base::in);
+	assert(off==0);
+	pos_type ret=gptr()-eback();
+	return ret;
+}
+
+CurlDownloader::CurlDownloader(const tiny_string& u)
 {
 	//TODO: Url encode the string
 	std::string tmp2;
@@ -41,9 +149,18 @@ CurlDownloader::CurlDownloader(const tiny_string& u):buffer(NULL),len(0),tail(0)
 			tmp2.push_back(u[i]);
 	}
 	url=tmp2.c_str();
+}
 
-	sem_init(&available,0,0);
-	sem_init(&mutex,0,1);
+bool CurlDownloader::download()
+{
+	execute();
+	return !failed;
+}
+
+void CurlDownloader::abort()
+{
+	failed=true;
+	sem_post(&available);
 }
 
 void CurlDownloader::execute()
@@ -74,20 +191,6 @@ void CurlDownloader::execute()
 	}
 	else
 		setFailed();
-
-	return;
-}
-
-void CurlDownloader::abort()
-{
-	failed=true;
-	sem_post(&available);
-}
-
-bool CurlDownloader::download()
-{
-	execute();
-	return !failed;
 }
 
 int CurlDownloader::progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
@@ -100,19 +203,7 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	size_t added=size*nmemb;
-	if((th->tail+added)>th->len)
-		::abort();
-	sem_wait(&th->mutex);
-	memcpy(th->buffer + th->tail,buffer,added);
-	th->tail+=added;
-	if(th->waiting)
-	{
-		th->waiting=false;
-		assert(added);
-		sem_post(&th->available);
-	}
-	else
-		sem_post(&th->mutex);
+	th->append((uint8_t*)buffer,added);
 	return added;
 }
 
@@ -128,76 +219,8 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 	else if(strncmp(headerLine,"Content-Length: ",16)==0)
 	{
 		//Now read the length and allocate the byteArray
-		assert(th->buffer==NULL);
-		th->len=atoi(headerLine+16);
-		th->buffer=new uint8_t[th->len];
-		th->setg((char*)th->buffer,(char*)th->buffer,(char*)th->buffer);
+		th->setLen(atoi(headerLine+16));
 	}
 	return size*nmemb;
 }
 
-void CurlDownloader::setFailed()
-{
-	sem_wait(&mutex);
-	failed=true;
-	if(waiting) //If we are waiting for some bytes, gives up and return EOF
-		sem_post(&available);
-	else
-		sem_post(&mutex);
-}
-
-CurlDownloader::int_type CurlDownloader::underflow()
-{
-	sem_wait(&mutex);
-	assert(gptr()==egptr());
-	unsigned int firstIndex=tail;
-
-	if((buffer+tail)==(uint8_t*)egptr()) //We have no more bytes
-	{
-		if(failed || (tail==len && len!=0))
-		{
-			sem_post(&mutex);
-			return -1;
-		}
-		else //More bytes should follow
-		{
-			waiting=true;
-			sem_post(&mutex);
-			sem_wait(&available);
-			if(aborting)
-				return -1;
-		}
-	}
-
-	//The current pointer has to be saved
-	char* cur=gptr();
-
-	if(failed)
-	{
-		sem_post(&mutex);
-		return -1;
-	}
-
-	//We have some bytes now, let's use them
-	setg((char*)buffer,cur,(char*)buffer+tail);
-	sem_post(&mutex);
-	//Cast to signed, otherwise 0xff would become eof
-	return (unsigned char)buffer[firstIndex];
-}
-
-CurlDownloader::pos_type CurlDownloader::seekpos(pos_type pos, std::ios_base::openmode mode)
-{
-	assert(mode==std::ios_base::in);
-	sem_wait(&mutex);
-	setg((char*)buffer,(char*)buffer+pos,(char*)buffer+tail);
-	sem_post(&mutex);
-	return pos;
-}
-
-CurlDownloader::pos_type CurlDownloader::seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode mode)
-{
-	assert(mode==std::ios_base::in);
-	assert(off==0);
-	pos_type ret=gptr()-eback();
-	return ret;
-}

@@ -45,6 +45,7 @@ class zlib_file_filter;
 namespace lightspark
 {
 
+class DownloadManager;
 class DisplayListTag;
 class DictionaryTag;
 class PlaceObject2Tag;
@@ -188,6 +189,8 @@ public:
 	void addJob(IThreadJob* j);
 	void addTick(uint32_t tickTime, IThreadJob* job);
 	void addWait(uint32_t waitTime, IThreadJob* job);
+
+	DownloadManager* downloadManager;
 };
 
 class ParseThread: public IThreadJob

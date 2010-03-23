@@ -35,6 +35,7 @@
 #include "textfile.h"
 #include "compat.h"
 #include "class.h"
+#include "netutils.h"
 
 #include <GL/glew.h>
 #include <curl/curl.h>
@@ -112,7 +113,7 @@ void RootMovieClip::bindToName(const tiny_string& n)
 }
 
 SystemState::SystemState():RootMovieClip(NULL),frameCount(0),secsCount(0),shutdown(false),error(false),currentVm(NULL),cur_input_thread(NULL),
-	cur_render_thread(NULL),useInterpreter(true),useJit(false)
+	cur_render_thread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -160,12 +161,10 @@ void SystemState::setParameters(ASObject* p)
 
 SystemState::~SystemState()
 {
-	if(timerThread)
-		delete timerThread;
-	if(threadPool)
-		delete threadPool;
-	if(currentVm)
-		delete currentVm;
+	delete timerThread;
+	delete threadPool;
+	delete currentVm;
+	delete downloadManager;
 
 	//decRef all registered classes
 	std::map<tiny_string, Class_base*>::iterator it=classes.begin();

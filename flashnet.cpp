@@ -353,9 +353,8 @@ void NetStream::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint3
 
 void NetStream::execute()
 {
-	CurlDownloader* curlDownloader=new CurlDownloader(url);
-	sys->addJob(curlDownloader);
-	istream s(curlDownloader);
+	Downloader* downloader=sys->downloadManager->download(url);
+	istream s(downloader);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	AVFrame* frameIn=avcodec_alloc_frame();
 

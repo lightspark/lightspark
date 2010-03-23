@@ -24,6 +24,7 @@
 #include "geometry.h"
 #include "logger.h"
 #include "streams.h"
+#include "netutils.h"
 #include <time.h>
 #ifndef WIN32
 #include <sys/resource.h>
@@ -172,6 +173,7 @@ int main(int argc, char* argv[])
 	InputThread it(sys,SDL,NULL);
 	sys->cur_input_thread=&it;
 	sys->cur_render_thread=&rt;
+	sys->downloadManager=new CurlDownloadManager();
 	//Start the parser
 	sys->addJob(pt);
 

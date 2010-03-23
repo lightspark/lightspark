@@ -29,30 +29,41 @@
 namespace lightspark
 {
 
+class Downloader;
+
+class DownloadManager
+{
+public:
+	virtual Downloader* download(const tiny_string& u)=0;
+	virtual ~DownloadManager(){}
+};
+
+class CurlDownloadManager:public DownloadManager
+{
+public:
+	Downloader* download(const tiny_string& u);
+};
+
 //CurlDownloader can be used as a thread job, standalone or as a streambuf
-class CurlDownloader: public IThreadJob, public std::streambuf
+class Downloader: public std::streambuf
 {
 private:
+	sem_t mutex;
 	uint8_t* buffer;
 	uint32_t len;
 	uint32_t tail;
-	sem_t available;
-	sem_t mutex;
-	tiny_string url;
-	bool failed;
 	bool waiting;
-	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
-	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
-	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
-	void execute();
-	void abort();
-	void setFailed();
-public:
-	CurlDownloader(const tiny_string& u);
 	virtual int_type underflow();
 	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 	virtual pos_type seekpos(pos_type, std::ios_base::openmode);
-	bool download();
+protected:
+	void setFailed();
+	sem_t available;
+	bool failed;
+public:
+	Downloader();
+	void setLen(uint32_t l);
+	void append(uint8_t* buffer, uint32_t len);
 	uint8_t* getBuffer()
 	{
 		return buffer;
@@ -61,6 +72,20 @@ public:
 	{
 		return len;
 	}
+};
+
+class CurlDownloader: public Downloader, public IThreadJob
+{
+private:
+	tiny_string url;
+	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
+	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
+	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
+	void execute();
+	void abort();
+public:
+	CurlDownloader(const tiny_string& u);
+	bool download();
 };
 
 };

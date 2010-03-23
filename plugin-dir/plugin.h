@@ -31,7 +31,27 @@
 #include "pluginbase.h"
 #include "swf.h"
 #include "streams.h"
+#include "netutils.h"
 #include <GL/glx.h>
+
+class NPDownloadManager
+{
+private:
+	std::list<pair<tiny_string,NPDownloader*> > pendingLoads;
+	NPP instance;
+	sem_t mutex;
+public:
+	NPDownloadManager(NPP i);
+	~NPDownloadManager();
+	void download(const tiny_string& u);
+	NPDownloader* getDownloaderForUrl(const char* u);
+};
+
+class NPDownloader: public lightspark::Downloader
+{
+public:
+	NPDownloader(const tiny_string& u);
+};
 
 class nsPluginInstance : public nsPluginInstanceBase
 {

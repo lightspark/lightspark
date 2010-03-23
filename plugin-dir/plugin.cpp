@@ -32,6 +32,47 @@ __thread lightspark::SystemState* sys;
 TLSDATA lightspark::RenderThread* rt=NULL;
 TLSDATA lightspark::ParseThread* pt=NULL;
 
+NPDownloadManager(NPP i):instance(i)
+{
+	sem_init(&mutex,0,1);
+}
+
+NPDownloadManager::~NPDownloadManager()
+{
+	sem_destroy(&mutex);
+}
+
+Downloader* NPDownloaderManager::download(const tiny_string& u)
+{
+	sem_wait(&mutex);
+	//Register this download
+	pendingLoads.push_back(make_pair(u,this));
+	sem_post(&mutex);
+}
+
+NPDownloader* NPDownloaderManager::getDownloaderForUrl(const char* u)
+{
+	sem_wait(&mutex);
+	list<pair<tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
+	NPDownloader* ret=NULL;
+	for(;it!=pendingLoads.end();it++)
+	{
+		if(it->first==u)
+		{
+			ret=it->second;
+			pendingLoads.erase(it);
+			break;
+		}
+	}
+	sem_post(&mutex);
+	return ret;
+}
+
+NPDownloader::NPDownloader(NPP instance, const tiny_string& u)
+{
+	NPN_GetURLNotify(instance, u.raw_buf(), null, this);
+}
+
 char* NPP_GetMIMEDescription(void)
 {
 	return (char*)(MIME_TYPES_DESCRIPTION);
@@ -303,6 +344,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		sys=NULL;
 		m_sys.cur_input_thread=m_it;
 		m_sys.cur_render_thread=m_rt;
+		m_sys.downloadManager=new NPDownloadManager(mInstance);
 		m_sys.fps_prof=new lightspark::fps_profiling();
 		m_sys.addJob(&m_pt);
 
@@ -322,6 +364,13 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype)
 {
+	//We have to cast the downloadanager to a NPDownloadManager
+	NPDownloadManager* manager=static_cast<NPDownloadManager*>(sys->downloadanager);
+	Downloader* dl=manager->getDownloaderForUrl(stream->url);
+	cout << dl << endl;
+	abort();
+	//The downloaded is set as the private data for this stream
+	stream->pdata=dl;
 	*stype=NP_NORMAL;
 	return NPERR_NO_ERROR; 
 }

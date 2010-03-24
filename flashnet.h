@@ -118,6 +118,7 @@ private:
 	uint32_t bufferSize;
 	uint32_t frameCount;
 	double frameRate;
+	Downloader* downloader;
 	sem_t mutex;
 	void execute();
 	void abort();
@@ -129,6 +130,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(play);
+	ASFUNCTION(close);
 	ASFUNCTION(getBytesLoaded);
 	ASFUNCTION(getBytesTotal);
 	ASFUNCTION(getTime);

@@ -236,7 +236,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():codecContext(NULL),bufferHead(0),bufferTail(0),bufferSize(0),frameCount(0),frameRate(0)
+NetStream::NetStream():codecContext(NULL),bufferHead(0),bufferTail(0),bufferSize(0),frameCount(0),frameRate(0),downloader(NULL)
 {
 	sem_init(&mutex,0,1);
 	sem_init(&freeBuffers,0,10);
@@ -279,6 +279,7 @@ void NetStream::sinit(Class_base* c)
 void NetStream::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("play","",new Function(play));
+	o->setVariableByQName("close","",new Function(close));
 	o->setGetterByQName("bytesLoaded","",new Function(getBytesLoaded));
 	o->setGetterByQName("bytesTotal","",new Function(getBytesTotal));
 	o->setGetterByQName("time","",new Function(getTime));
@@ -300,10 +301,18 @@ ASFUNCTIONBODY(NetStream,play)
 	NetStream* th=Class<NetStream>::cast(obj->implementation);
 	assert(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
-	//cout << "__URL " << arg0 << endl;
 	th->url = arg0;
-
+	th->downloader=sys->downloadManager->download(th->url);
 	sys->addJob(th);
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,close)
+{
+	NetStream* th=Class<NetStream>::cast(obj->implementation);
+	if(th->downloader)
+		th->downloader->stop();
+	th->abort();
 	return NULL;
 }
 
@@ -353,7 +362,7 @@ void NetStream::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint3
 
 void NetStream::execute()
 {
-	Downloader* downloader=sys->downloadManager->download(url);
+	//mutex access to downloader
 	istream s(downloader);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	AVFrame* frameIn=avcodec_alloc_frame();
@@ -467,6 +476,10 @@ void NetStream::execute()
 	}
 
 	av_free(frameIn);
+	sem_wait(&mutex);
+	sys->downloadManager->destroy(downloader);
+	downloader=NULL;
+	sem_post(&mutex);
 /*	Event* status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Play.Start");
 	getVm()->addEvent(this, status);
 	status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Buffer.Full");
@@ -475,6 +488,10 @@ void NetStream::execute()
 
 void NetStream::abort()
 {
+	sem_wait(&mutex);
+	if(downloader)
+		downloader->stop();
+	sem_post(&mutex);
 	sem_post(&freeBuffers);
 	sem_post(&usedBuffers);
 }
@@ -531,9 +548,9 @@ void NetStream::copyBuffer(uint8_t* dest)
 	}
 	sem_post(&mutex);
 
-	sem_wait(&usedBuffers);
-//	if(aborting)
-//		throw "Aborting"
+	//We don't want ot block if no frame is available
+	if(sem_trywait(&usedBuffers)!=0)
+		return;
 	//At least a frame is available
 	int offset=0;
 	for(uint32_t y=0;y<height;y++)

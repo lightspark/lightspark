@@ -35,6 +35,7 @@ class DownloadManager
 {
 public:
 	virtual Downloader* download(const tiny_string& u)=0;
+	virtual void destroy(Downloader* d)=0;
 	virtual ~DownloadManager(){}
 };
 
@@ -42,6 +43,7 @@ class CurlDownloadManager:public DownloadManager
 {
 public:
 	Downloader* download(const tiny_string& u);
+	void destroy(Downloader* d);
 };
 
 //CurlDownloader can be used as a thread job, standalone or as a streambuf
@@ -56,14 +58,17 @@ private:
 	virtual int_type underflow();
 	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 	virtual pos_type seekpos(pos_type, std::ios_base::openmode);
+	sem_t available;
 protected:
 	void setFailed();
-	sem_t available;
 	bool failed;
 public:
 	Downloader();
+	virtual ~Downloader(){}
 	void setLen(uint32_t l);
 	void append(uint8_t* buffer, uint32_t len);
+	virtual void stop();
+	virtual void wait(){};
 	uint8_t* getBuffer()
 	{
 		return buffer;
@@ -83,8 +88,11 @@ private:
 	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 	void execute();
 	void abort();
+	void wait();
+	sem_t terminated;
 public:
 	CurlDownloader(const tiny_string& u);
+	~CurlDownloader();
 	bool download();
 };
 

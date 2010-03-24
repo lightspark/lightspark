@@ -34,6 +34,12 @@ Downloader* CurlDownloadManager::download(const tiny_string& u)
 	return curlDownloader;
 }
 
+void CurlDownloadManager::destroy(Downloader* d)
+{
+	d->wait();
+	delete d;
+}
+
 Downloader::Downloader():buffer(NULL),len(0),tail(0),waiting(false),failed(false)
 {
 	sem_init(&available,0,0);
@@ -76,6 +82,12 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 		sem_post(&mutex);
 }
 
+void Downloader::stop()
+{
+	failed=true;
+	sem_post(&available);
+}
+
 Downloader::int_type Downloader::underflow()
 {
 	sem_wait(&mutex);
@@ -95,7 +107,10 @@ Downloader::int_type Downloader::underflow()
 			sem_post(&mutex);
 			sem_wait(&available);
 			if(failed)
+			{
+				sem_post(&mutex);
 				return -1;
+			}
 		}
 	}
 
@@ -149,6 +164,13 @@ CurlDownloader::CurlDownloader(const tiny_string& u)
 			tmp2.push_back(u[i]);
 	}
 	url=tmp2.c_str();
+
+	sem_init(&terminated,0,0);
+}
+
+CurlDownloader::~CurlDownloader()
+{
+	sem_destroy(&terminated);
 }
 
 bool CurlDownloader::download()
@@ -159,8 +181,7 @@ bool CurlDownloader::download()
 
 void CurlDownloader::abort()
 {
-	failed=true;
-	sem_post(&available);
+	Downloader::stop();
 }
 
 void CurlDownloader::execute()
@@ -191,12 +212,19 @@ void CurlDownloader::execute()
 	}
 	else
 		setFailed();
+
+	sem_post(&terminated);
+}
+
+void CurlDownloader::wait()
+{
+	sem_wait(&terminated);
 }
 
 int CurlDownloader::progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(clientp);
-	return th->aborting;
+	return th->aborting || th->failed;
 }
 
 size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
@@ -212,7 +240,7 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	char* headerLine=(char*)buffer;
 
-	std::cout << "CURL header: " << headerLine << std::endl;
+	std::cerr << "CURL header: " << headerLine << std::endl;
 
 	if(strncmp(headerLine,"HTTP/1.1 4",10)==0) //HTTP error, let's fail
 		th->setFailed();

@@ -937,7 +937,8 @@ ABCVm::~ABCVm()
 {
 	//signal potentially blocking semaphores
 	sem_post(&sem_event_count);
-	pthread_join(t,NULL);
+	if(pthread_join(t,NULL)!=0)
+		abort();
 	sem_destroy(&sem_event_count);
 	sem_destroy(&event_queue_mutex);
 	//assert(Global.ref_count==0);

@@ -57,7 +57,9 @@ private:
 	lightspark::tiny_string url;
 	static void dlStartCallback(void* th);
 public:
+	bool started;
 	NPDownloader(NPP i, const lightspark::tiny_string& u);
+	void terminate();
 };
 
 class nsPluginInstance : public nsPluginInstanceBase

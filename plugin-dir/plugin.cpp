@@ -39,21 +39,40 @@ NPDownloadManager::NPDownloadManager(NPP i):instance(i)
 
 NPDownloadManager::~NPDownloadManager()
 {
+	if(!pendingLoads.empty())
+		abort();
 	sem_destroy(&mutex);
 }
 
 lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& u)
 {
 	sem_wait(&mutex);
-	NPDownloader* ret=new NPDownloader(instance, u);
+	//TODO: Url encode the string
+	std::string tmp2;
+	tmp2.reserve(u.len()*2);
+	for(int i=0;i<u.len();i++)
+	{
+		if(u[i]==' ')
+		{
+			char buf[4];
+			sprintf(buf,"%%%x",(unsigned char)u[i]);
+			tmp2+=buf;
+		}
+		else
+			tmp2.push_back(u[i]);
+	}
+	lightspark::tiny_string url=tmp2.c_str();
 	//Register this download
-	pendingLoads.push_back(make_pair(u,ret));
+	NPDownloader* ret=new NPDownloader(instance, url);
+	pendingLoads.push_back(make_pair(url,ret));
 	sem_post(&mutex);
 	return ret;
 }
 
 void NPDownloadManager::destroy(lightspark::Downloader* d)
 {
+	//First of all, wait for termination
+	d->wait();
 	sem_wait(&mutex);
 	list<pair<lightspark::tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
 	for(;it!=pendingLoads.end();it++)
@@ -76,6 +95,7 @@ NPDownloader* NPDownloadManager::getDownloaderForUrl(const char* u)
 	NPDownloader* ret=NULL;
 	for(;it!=pendingLoads.end();it++)
 	{
+		cout << it->first << endl;
 		if(it->first==u)
 		{
 			ret=it->second;
@@ -87,15 +107,21 @@ NPDownloader* NPDownloadManager::getDownloaderForUrl(const char* u)
 	return ret;
 }
 
-NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i),url(u)
+NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i),url(u),started(false)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
+}
 
+void NPDownloader::terminate()
+{
+	sem_post(&terminated);
 }
 
 void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
+	cerr << "Start download for " << th->url << endl;
+	th->started=true;
 	NPError e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
 	//NPError e=NPN_GetURLNotify(th->instance, "http://www.google.com", "_blank", th);
 	//NPError e=NPN_GetURL(instance, "http://www.google.com", "_blank");
@@ -113,7 +139,8 @@ char* NPP_GetMIMEDescription(void)
 //
 NPError NS_PluginInitialize()
 {
-	Log::initLogging(LOG_NOT_IMPLEMENTED);
+//	Log::initLogging(LOG_NOT_IMPLEMENTED);
+	Log::initLogging(LOG_NO_INFO);
 	return NPERR_NO_ERROR;
 }
 
@@ -252,6 +279,7 @@ int nsPluginInstance::hexToInt(char c)
 nsPluginInstance::~nsPluginInstance()
 {
 	//Shutdown the system
+	cerr << "instance dying" << endl;
 	m_sys.setShutdownFlag();
 	delete m_rt;
 	delete m_it;
@@ -396,9 +424,14 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	//We have to cast the downloadanager to a NPDownloadManager
 	NPDownloadManager* manager=static_cast<NPDownloadManager*>(m_sys.downloadManager);
 	lightspark::Downloader* dl=manager->getDownloaderForUrl(stream->url);
+	cerr << "Newstream for " << stream->url << endl;
+	cerr << stream->headers << endl;
 	if(dl)
-		abort();
-	//The downloaded is set as the private data for this stream
+	{
+		cerr << "via NPDownloader" << endl;
+		dl->setLen(stream->end);
+	}
+	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
 	*stype=NP_NORMAL;
 	return NPERR_NO_ERROR; 
@@ -406,29 +439,48 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 
 int32 nsPluginInstance::WriteReady(NPStream *stream)
 {
-	if(stream->pdata)
-		abort();
-	int32 ret=swf_buf.getFree();
-	return ret;
+	if(stream->pdata) //This is a Downloader based download
+		return 1024*1024;
+	else
+		return swf_buf.getFree();
 }
 
 int32 nsPluginInstance::Write(NPStream *stream, int32 offset, int32 len, void *buffer)
 {
 	if(stream->pdata)
-		abort();
-	return swf_buf.write((char*)buffer,len);
+	{
+		lightspark::Downloader* dl=static_cast<lightspark::Downloader*>(stream->pdata);
+		if(dl->hasFailed())
+			return -1;
+		dl->append((uint8_t*)buffer,len);
+		return len;
+	}
+	else
+		return swf_buf.write((char*)buffer,len);
 }
 
 NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
 	if(stream->pdata)
-		abort();
+	{
+		cerr << "Destroy " << stream->pdata << endl;
+		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
+		dl->terminate();
+	}
 	return NPERR_NO_ERROR;
 }
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
+	cerr << "URLnotify" << notifyData << endl;
 	cerr << url << endl;
 	cerr << reason << endl;
 	cerr << notifyData << endl;
+/*	if(reason!=NPRES_USER_BREAK)
+	{
+		cerr << url << endl;
+		cerr << reason << endl;
+		cerr << notifyData << endl;
+		abort();
+	}*/
 }

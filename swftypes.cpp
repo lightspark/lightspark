@@ -1875,7 +1875,7 @@ ASObject* ASObject::getValueAt(int index)
 
 tiny_string variables_map::getNameAt(unsigned int index)
 {
-	//TODO: CHECK behavious on overridden methods
+	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
 		var_iterator it=Variables.begin();

@@ -70,6 +70,7 @@ public:
 	void append(uint8_t* buffer, uint32_t len);
 	void stop();
 	void wait();
+	bool hasFailed() { return failed; }
 	uint8_t* getBuffer()
 	{
 		return buffer;

@@ -53,7 +53,10 @@ ThreadPool::~ThreadPool()
 	sem_post(&mutex);
 
 	for(int i=0;i<NUM_THREADS;i++)
-		pthread_join(threads[i],NULL);
+	{
+		if(pthread_join(threads[i],NULL)!=0)
+			abort();
+	}
 
 	sem_destroy(&num_jobs);
 	sem_destroy(&mutex);

@@ -162,9 +162,9 @@ void SystemState::setParameters(ASObject* p)
 SystemState::~SystemState()
 {
 	delete timerThread;
+	delete downloadManager;
 	delete threadPool;
 	delete currentVm;
-	delete downloadManager;
 
 	//decRef all registered classes
 	std::map<tiny_string, Class_base*>::iterator it=classes.begin();

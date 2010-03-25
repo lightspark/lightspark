@@ -22,6 +22,7 @@
 // Implementation of plugin entry points (NPP_*)
 //
 #include "pluginbase.h"
+#include <stdio.h>
 
 // here the plugin creates a plugin instance object which 
 // will be associated with this newly created NPP instance and 
@@ -138,7 +139,7 @@ int32 NPP_WriteReady (NPP instance, NPStream *stream)
 }
 
 int32 NPP_Write (NPP instance, NPStream *stream, int32 offset, int32 len, void *buffer)
-{   
+{
   if(instance == NULL)
     return len;
 

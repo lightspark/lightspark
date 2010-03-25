@@ -40,10 +40,16 @@ void CurlDownloadManager::destroy(Downloader* d)
 	delete d;
 }
 
+Downloader::~Downloader()
+{
+	sem_destroy(&terminated);
+}
+
 Downloader::Downloader():buffer(NULL),len(0),tail(0),waiting(false),failed(false)
 {
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
+	sem_init(&terminated,0,0);
 }
 
 void Downloader::setLen(uint32_t l)
@@ -86,6 +92,11 @@ void Downloader::stop()
 {
 	failed=true;
 	sem_post(&available);
+}
+
+void Downloader::wait()
+{
+	sem_wait(&terminated);
 }
 
 Downloader::int_type Downloader::underflow()
@@ -164,13 +175,6 @@ CurlDownloader::CurlDownloader(const tiny_string& u)
 			tmp2.push_back(u[i]);
 	}
 	url=tmp2.c_str();
-
-	sem_init(&terminated,0,0);
-}
-
-CurlDownloader::~CurlDownloader()
-{
-	sem_destroy(&terminated);
 }
 
 bool CurlDownloader::download()
@@ -214,11 +218,6 @@ void CurlDownloader::execute()
 		setFailed();
 
 	sem_post(&terminated);
-}
-
-void CurlDownloader::wait()
-{
-	sem_wait(&terminated);
 }
 
 int CurlDownloader::progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)

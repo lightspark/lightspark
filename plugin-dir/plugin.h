@@ -34,23 +34,29 @@
 #include "netutils.h"
 #include <GL/glx.h>
 
-class NPDownloadManager
+class NPDownloader;
+
+class NPDownloadManager: public lightspark::DownloadManager
 {
 private:
-	std::list<pair<tiny_string,NPDownloader*> > pendingLoads;
+	std::list<std::pair<lightspark::tiny_string,NPDownloader*> > pendingLoads;
 	NPP instance;
 	sem_t mutex;
 public:
 	NPDownloadManager(NPP i);
 	~NPDownloadManager();
-	void download(const tiny_string& u);
+	lightspark::Downloader* download(const lightspark::tiny_string& u);
+	void destroy(lightspark::Downloader* d);
 	NPDownloader* getDownloaderForUrl(const char* u);
 };
 
 class NPDownloader: public lightspark::Downloader
 {
+private:
+	NPP instance;
+	static void dlStartCallback(void* th);
 public:
-	NPDownloader(const tiny_string& u);
+	NPDownloader(NPP i, const lightspark::tiny_string& u);
 };
 
 class nsPluginInstance : public nsPluginInstanceBase
@@ -65,8 +71,10 @@ public:
 	NPError GetValue(NPPVariable variable, void *value);
 	NPError SetWindow(NPWindow* aWindow);
 	NPError NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype); 
+	NPError DestroyStream(NPStream *stream, NPError reason);
 	int32   Write(NPStream *stream, int32 offset, int32 len, void *buffer);
 	int32   WriteReady(NPStream *stream);
+	void    URLNotify(const char* url, NPReason reason, void* notifyData);
 
 	// locals
 	const char * getVersion();

@@ -54,6 +54,7 @@ struct nsPluginCreateData
 class nsPluginInstanceBase
 {
 public:
+  virtual ~nsPluginInstanceBase(){}
   // these three methods must be implemented in the derived
   // class platform specific way
   virtual NPBool init(NPWindow* aWindow) = 0;

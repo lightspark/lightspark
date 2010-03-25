@@ -60,15 +60,16 @@ private:
 	virtual pos_type seekpos(pos_type, std::ios_base::openmode);
 	sem_t available;
 protected:
+	sem_t terminated;
 	void setFailed();
 	bool failed;
 public:
 	Downloader();
-	virtual ~Downloader(){}
+	virtual ~Downloader();
 	void setLen(uint32_t l);
 	void append(uint8_t* buffer, uint32_t len);
-	virtual void stop();
-	virtual void wait(){};
+	void stop();
+	void wait();
 	uint8_t* getBuffer()
 	{
 		return buffer;
@@ -88,11 +89,8 @@ private:
 	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 	void execute();
 	void abort();
-	void wait();
-	sem_t terminated;
 public:
 	CurlDownloader(const tiny_string& u);
-	~CurlDownloader();
 	bool download();
 };
 

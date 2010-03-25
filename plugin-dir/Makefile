@@ -1,7 +1,8 @@
 CXXFLAGS = -Wall -g -O0 -D_GLIBCXX_NO_DEBUG -Wnon-virtual-dtor -Woverloaded-virtual
 CXXFLAGS_RELEASE = -Wall -O3 -DNDEBUG -Wnon-virtual-dtor -Woverloaded-virtual
+EXTRAFLAGS = `pkg-config --cflags mozilla-plugin` -D MOZ_X11
 LLVMLIBS = `llvm-config --libfiles engine interpreter`
-EXTRALIBS = `pkg-config --cflags --libs gl sdl libcurl libxml-2.0 libpcrecpp libavcodec`
+EXTRALIBS = `pkg-config --cflags --libs gl sdl libcurl libxml-2.0 libpcrecpp libavcodec mozilla-plugin`
 prefix = /usr
 bindir = $(prefix)/bin
 datarootdir = $(prefix)/share
@@ -22,7 +23,7 @@ lightspark.so: np_entry.o npn_gate.o npp_gate.o plugin.o $(LIBOBJS)
 	g++ -shared -g -o $@ $^ $(EXTRALIBS) -lz $(LLVMLIBS) -lGLEW
 
 %.o: %.cpp
-	g++ $(CXXFLAGS) -fPIC -c -o $@ $^ -I include -I ../ `nspr-config --cflags` -D MOZ_X11
+	g++ $(CXXFLAGS) $(EXTRAFLAGS) -fPIC -c -o $@ $^ -I include -I ../ `nspr-config --cflags`
 
 objs-dir:
 	make -C objs

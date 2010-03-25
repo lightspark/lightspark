@@ -22,6 +22,7 @@
 // Implementation of Netscape entry points (NPN_*)
 //
 #include "npplat.h"
+#include <stdio.h>
 
 extern NPNetscapeFuncs NPNFuncs;
 
@@ -49,6 +50,8 @@ NPError NPN_GetURLNotify(NPP instance, const char *url, const char *target, void
 NPError NPN_GetURL(NPP instance, const char *url, const char *target)
 {
   NPError rv = CallNPN_GetURLProc(NPNFuncs.geturl, instance, url, target);
+  if(rv!=0)
+	  abort();
   return rv;
 }
 

@@ -32,7 +32,7 @@ __thread lightspark::SystemState* sys;
 TLSDATA lightspark::RenderThread* rt=NULL;
 TLSDATA lightspark::ParseThread* pt=NULL;
 
-NPDownloadManager(NPP i):instance(i)
+NPDownloadManager::NPDownloadManager(NPP i):instance(i)
 {
 	sem_init(&mutex,0,1);
 }
@@ -42,18 +42,37 @@ NPDownloadManager::~NPDownloadManager()
 	sem_destroy(&mutex);
 }
 
-Downloader* NPDownloaderManager::download(const tiny_string& u)
+lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& u)
 {
 	sem_wait(&mutex);
+	NPDownloader* ret=new NPDownloader(instance, u);
 	//Register this download
-	pendingLoads.push_back(make_pair(u,this));
+	pendingLoads.push_back(make_pair(u,ret));
 	sem_post(&mutex);
+	return ret;
 }
 
-NPDownloader* NPDownloaderManager::getDownloaderForUrl(const char* u)
+void NPDownloadManager::destroy(lightspark::Downloader* d)
 {
 	sem_wait(&mutex);
-	list<pair<tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
+	list<pair<lightspark::tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
+	for(;it!=pendingLoads.end();it++)
+	{
+		if(it->second==d)
+		{
+			pendingLoads.erase(it);
+			break;
+		}
+	}
+	sem_post(&mutex);
+
+	delete d;
+}
+
+NPDownloader* NPDownloadManager::getDownloaderForUrl(const char* u)
+{
+	sem_wait(&mutex);
+	list<pair<lightspark::tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
 	NPDownloader* ret=NULL;
 	for(;it!=pendingLoads.end();it++)
 	{
@@ -68,9 +87,20 @@ NPDownloader* NPDownloaderManager::getDownloaderForUrl(const char* u)
 	return ret;
 }
 
-NPDownloader::NPDownloader(NPP instance, const tiny_string& u)
+NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i)
 {
-	NPN_GetURLNotify(instance, u.raw_buf(), null, this);
+	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
+
+}
+
+void NPDownloader::dlStartCallback(void* t)
+{
+	NPDownloader* th=static_cast<NPDownloader*>(t);
+	//NPError e=NPN_GetURLNotify(instance, u.raw_buf(), "_blank", this);
+	NPError e=NPN_GetURLNotify(th->instance, "http://www.google.com", "_blank", th);
+	//NPError e=NPN_GetURL(instance, "http://www.google.com", "_blank");
+	if(e!=NPERR_NO_ERROR)
+		abort();
 }
 
 char* NPP_GetMIMEDescription(void)
@@ -340,7 +370,6 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		}
 		m_it=new lightspark::InputThread(&m_sys,lightspark::NPAPI,p2);
 
-		//sys=&m_sys;
 		sys=NULL;
 		m_sys.cur_input_thread=m_it;
 		m_sys.cur_render_thread=m_rt;
@@ -365,10 +394,10 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype)
 {
 	//We have to cast the downloadanager to a NPDownloadManager
-	NPDownloadManager* manager=static_cast<NPDownloadManager*>(sys->downloadanager);
-	Downloader* dl=manager->getDownloaderForUrl(stream->url);
-	cout << dl << endl;
-	abort();
+	NPDownloadManager* manager=static_cast<NPDownloadManager*>(m_sys.downloadManager);
+	lightspark::Downloader* dl=manager->getDownloaderForUrl(stream->url);
+	if(dl)
+		abort();
 	//The downloaded is set as the private data for this stream
 	stream->pdata=dl;
 	*stype=NP_NORMAL;
@@ -377,11 +406,29 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 
 int32 nsPluginInstance::WriteReady(NPStream *stream)
 {
+	if(stream->pdata)
+		abort();
 	int32 ret=swf_buf.getFree();
 	return ret;
 }
 
 int32 nsPluginInstance::Write(NPStream *stream, int32 offset, int32 len, void *buffer)
 {
+	if(stream->pdata)
+		abort();
 	return swf_buf.write((char*)buffer,len);
+}
+
+NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
+{
+	if(stream->pdata)
+		abort();
+	return NPERR_NO_ERROR;
+}
+
+void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
+{
+	cerr << url << endl;
+	cerr << reason << endl;
+	cerr << notifyData << endl;
 }

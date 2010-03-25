@@ -605,7 +605,6 @@ typedef NPError (* NP_LOADDS NPN_PostURLNotifyUPP)(NPP instance, const char* url
 /* NPN_GetUrl */
 
 #if _NPUPP_USE_UPP_
-
 typedef UniversalProcPtr NPN_GetURLUPP;
 enum {
 	uppNPN_GetURLProcInfo = kThinkCStackBased

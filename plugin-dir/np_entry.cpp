@@ -115,6 +115,7 @@ static NPError fillNetscapeFunctionTable(NPNetscapeFuncs* aNPNFuncs)
   NPNFuncs.invalidaterect   = aNPNFuncs->invalidaterect;
   NPNFuncs.invalidateregion = aNPNFuncs->invalidateregion;
   NPNFuncs.forceredraw      = aNPNFuncs->forceredraw;
+  NPNFuncs.pluginthreadasynccall = aNPNFuncs->pluginthreadasynccall;
 
   return NPERR_NO_ERROR;
 }

@@ -58,6 +58,7 @@
 #endif
 
 #include "npruntime.h"
+#include "npfunctions.h"
 
 #include "jri.h"
 
@@ -1582,89 +1583,6 @@ typedef void (* NP_LOADDS NPN_SetExceptionUPP)(NPObject *obj, const NPUTF8 *mess
 #define CallNPN_SetExceptionProc(FUNC, ARG1, ARG2)		\
 		(*(FUNC))((ARG1), (ARG2))	
 
-#endif
-
-
-
-
-/******************************************************************************************
- * The actual plugin function table definitions
- *******************************************************************************************/
-
-#ifdef XP_MAC
-#if PRAGMA_STRUCT_ALIGN
-#pragma options align=mac68k
-#endif
-#endif
-
-typedef struct _NPPluginFuncs {
-    uint16 size;
-    uint16 version;
-    NPP_NewUPP newp;
-    NPP_DestroyUPP destroy;
-    NPP_SetWindowUPP setwindow;
-    NPP_NewStreamUPP newstream;
-    NPP_DestroyStreamUPP destroystream;
-    NPP_StreamAsFileUPP asfile;
-    NPP_WriteReadyUPP writeready;
-    NPP_WriteUPP write;
-    NPP_PrintUPP print;
-    NPP_HandleEventUPP event;
-    NPP_URLNotifyUPP urlnotify;
-    JRIGlobalRef javaClass;
-    NPP_GetValueUPP getvalue;
-    NPP_SetValueUPP setvalue;
-} NPPluginFuncs;
-
-typedef struct _NPNetscapeFuncs {
-    uint16 size;
-    uint16 version;
-    NPN_GetURLUPP geturl;
-    NPN_PostURLUPP posturl;
-    NPN_RequestReadUPP requestread;
-    NPN_NewStreamUPP newstream;
-    NPN_WriteUPP write;
-    NPN_DestroyStreamUPP destroystream;
-    NPN_StatusUPP status;
-    NPN_UserAgentUPP uagent;
-    NPN_MemAllocUPP memalloc;
-    NPN_MemFreeUPP memfree;
-    NPN_MemFlushUPP memflush;
-    NPN_ReloadPluginsUPP reloadplugins;
-    NPN_GetJavaEnvUPP getJavaEnv;
-    NPN_GetJavaPeerUPP getJavaPeer;
-    NPN_GetURLNotifyUPP geturlnotify;
-    NPN_PostURLNotifyUPP posturlnotify;
-    NPN_GetValueUPP getvalue;
-    NPN_SetValueUPP setvalue;
-    NPN_InvalidateRectUPP invalidaterect;
-    NPN_InvalidateRegionUPP invalidateregion;
-    NPN_ForceRedrawUPP forceredraw;
-    NPN_GetStringIdentifierUPP getstringidentifier;
-    NPN_GetStringIdentifiersUPP getstringidentifiers;
-    NPN_GetIntIdentifierUPP getintidentifier;
-    NPN_IdentifierIsStringUPP identifierisstring;
-    NPN_UTF8FromIdentifierUPP utf8fromidentifier;
-    NPN_IntFromIdentifierUPP intfromidentifier;
-    NPN_CreateObjectUPP createobject;
-    NPN_RetainObjectUPP retainobject;
-    NPN_ReleaseObjectUPP releaseobject;
-    NPN_InvokeUPP invoke;
-    NPN_InvokeDefaultUPP invokeDefault;
-    NPN_EvaluateUPP evaluate;
-    NPN_GetPropertyUPP getproperty;
-    NPN_SetPropertyUPP setproperty;
-    NPN_RemovePropertyUPP removeproperty;
-    NPN_HasPropertyUPP hasproperty;
-    NPN_HasMethodUPP hasmethod;
-    NPN_ReleaseVariantValueUPP releasevariantvalue;
-    NPN_SetExceptionUPP setexception;
-} NPNetscapeFuncs;
-
-#ifdef XP_MAC
-#if PRAGMA_STRUCT_ALIGN
-#pragma options align=reset
-#endif
 #endif
 
 

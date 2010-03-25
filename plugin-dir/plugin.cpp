@@ -87,7 +87,7 @@ NPDownloader* NPDownloadManager::getDownloaderForUrl(const char* u)
 	return ret;
 }
 
-NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i)
+NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i),url(u)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 
@@ -96,8 +96,8 @@ NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i)
 void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
-	//NPError e=NPN_GetURLNotify(instance, u.raw_buf(), "_blank", this);
-	NPError e=NPN_GetURLNotify(th->instance, "http://www.google.com", "_blank", th);
+	NPError e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
+	//NPError e=NPN_GetURLNotify(th->instance, "http://www.google.com", "_blank", th);
 	//NPError e=NPN_GetURL(instance, "http://www.google.com", "_blank");
 	if(e!=NPERR_NO_ERROR)
 		abort();

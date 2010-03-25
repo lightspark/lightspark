@@ -54,6 +54,7 @@ class NPDownloader: public lightspark::Downloader
 {
 private:
 	NPP instance;
+	lightspark::tiny_string url;
 	static void dlStartCallback(void* th);
 public:
 	NPDownloader(NPP i, const lightspark::tiny_string& u);

@@ -34,6 +34,12 @@ void NPN_Version(int* plugin_major, int* plugin_minor, int* netscape_major, int*
   *netscape_minor = LOBYTE(NPNFuncs.version);
 }
 
+void NPN_PluginThreadAsyncCall(NPP instance, void (*func) (void *), void *userData)
+{
+//TODO: understand the Call... wrappers and npupp.h
+  NPNFuncs.pluginthreadasynccall(instance, func, userData);
+}
+
 NPError NPN_GetURLNotify(NPP instance, const char *url, const char *target, void* notifyData)
 {
 	int navMinorVers = NPNFuncs.version & 0xFF;
@@ -159,14 +165,14 @@ void NPN_ReloadPlugins(NPBool reloadPages)
 JRIEnv* NPN_GetJavaEnv(void)
 {
   JRIEnv * rv = NULL;
-	rv = CallNPN_GetJavaEnvProc(NPNFuncs.getJavaEnv);
+  rv = (JRIEnv*)CallNPN_GetJavaEnvProc(NPNFuncs.getJavaEnv);
   return rv;
 }
 
 jref NPN_GetJavaPeer(NPP instance)
 {
   jref rv;
-  rv = CallNPN_GetJavaPeerProc(NPNFuncs.getJavaPeer, instance);
+  rv = (jref)CallNPN_GetJavaPeerProc(NPNFuncs.getJavaPeer, instance);
   return rv;
 }
 #endif

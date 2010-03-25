@@ -360,6 +360,7 @@ public:
 		abort();
 	}
 	bool toString(tiny_string& ret);
+	bool toNumber(double& ret);
 };
 
 class Null: public ASObject

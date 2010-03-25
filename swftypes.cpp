@@ -360,10 +360,11 @@ int ASObject::toInt() const
 
 double ASObject::toNumber() const
 {
-	if(getObjectType()==T_UNDEFINED)
+	if(implementation)
 	{
-		abort();
-		return 0;
+		double ret;
+		if(implementation->toNumber(ret))
+			return ret;
 	}
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to float");
 	abort();

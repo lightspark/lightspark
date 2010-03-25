@@ -704,6 +704,13 @@ bool ASString::toString(tiny_string& ret)
 	return true;
 }
 
+bool ASString::toNumber(double& ret)
+{
+	//TODO: implemented conversion that checks for validity
+	ret=atof(data.c_str());
+	return true;
+}
+
 ASFUNCTIONBODY(Undefined,call)
 {
 	LOG(LOG_CALLS,"Undefined function");

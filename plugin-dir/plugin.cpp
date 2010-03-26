@@ -72,7 +72,8 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_strin
 void NPDownloadManager::destroy(lightspark::Downloader* d)
 {
 	//First of all, wait for termination
-	d->wait();
+	if(!sys->shutdown)
+		d->wait();
 	sem_wait(&mutex);
 	list<pair<lightspark::tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
 	for(;it!=pendingLoads.end();it++)

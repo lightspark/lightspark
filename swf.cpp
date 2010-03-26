@@ -162,8 +162,8 @@ void SystemState::setParameters(ASObject* p)
 SystemState::~SystemState()
 {
 	delete timerThread;
-	delete downloadManager;
 	delete threadPool;
+	delete downloadManager;
 	delete currentVm;
 
 	//decRef all registered classes

@@ -304,14 +304,17 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
-	Event* e=static_cast<Event*>(args[0]->implementation);
+	EventDispatcher* th=Class<EventDispatcher>::cast(obj->implementation);
+	if(args[0]->prototype==NULL || !(args[0]->prototype->isSubClass(Class<Event>::getClass())))
+		return new Boolean(false);
+
+	Event* e=Class<Event>::cast(args[0]->implementation);
 	if(e==NULL || th==NULL)
 		return new Boolean(false);
 	//CHECK: maybe is to be cloned
 	args[0]->incRef();
 	assert(e->type!="");
-	sys->currentVm->addEvent(th,e);
+	th->handleEvent(e);
 	return new Boolean(true);
 }
 

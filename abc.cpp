@@ -1262,7 +1262,7 @@ void ABCVm::Run(ABCVm* th)
 	sys=th->m_sys;
 	iManager=th->int_manager;
 	dManager=th->number_manager;
-	llvm::ExistingModuleProvider* mp;
+	llvm::ExistingModuleProvider* mp=NULL;
 	if(sys->useJit)
 	{
 		llvm::InitializeNativeTarget();

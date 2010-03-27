@@ -22,6 +22,7 @@
 // Main plugin entry point implementation -- exports from the 
 // plugin library
 //
+
 #include "npplat.h"
 #include "pluginbase.h"
 

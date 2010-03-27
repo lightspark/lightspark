@@ -41,6 +41,7 @@ private:
 public:
 	URLRequest();
 	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getUrl);
 	ASFUNCTION(_setUrl);

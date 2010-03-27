@@ -1071,7 +1071,6 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 		ASObject* tmp=new ASObject;
 		base->obj=tmp;
 		tmp->prototype=derived_class_tmp;
-		tmp->actualPrototype=derived_class_tmp;
 		tmp->implementation=base;
 		getVm()->pushObjAndLevel(tmp,derived_class_tmp->max_level);
 		tmp->handleConstruction(args,argslen,true);
@@ -1353,8 +1352,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				abort();
-			assert(obj->actualPrototype);
-			int level=obj->actualPrototype->max_level;
+			int level=obj->getLevel();
 
 			obj_var* var=obj->Variables.findObjVar(name,"",level,false,true);
 
@@ -1380,8 +1378,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				abort();
-			assert(obj->actualPrototype);
-			int level=obj->actualPrototype->max_level+1;
+			int level=obj->getLevel()+1;
 			obj_var* var=NULL;
 
 			do
@@ -1413,8 +1410,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				abort();
-			assert(obj->actualPrototype);
-			int level=obj->actualPrototype->max_level+1;
+			int level=obj->getLevel()+1;
 			obj_var* var=NULL;
 
 			do
@@ -1519,12 +1515,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
-			if(obj->actualPrototype && t->kind&0x20 && 
-				obj->actualPrototype->use_protected && ns==obj->actualPrototype->protected_ns)
+			Class_base* prot=obj->getActualPrototype();
+			if(prot && t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
-				Class_base* cur=obj->actualPrototype->super;
-				for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
+				Class_base* cur=prot->super;
+				for(int i=(obj->getLevel()-1);i>=0;i--)
 				{
 					assert(cur);
 					if(cur->use_protected)
@@ -1542,11 +1538,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			}
 
 			if(bind)
-				f->bind(obj,obj->actualPrototype->max_level);
+				f->bind(obj,obj->getLevel());
 			obj->setGetterByQName(name,ns,f);
 
 			//Iterate to find a getter
-			for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
+			for(int i=(obj->getLevel()-1);i>=0;i--)
 			{
 				obj_var* var=obj->Variables.findObjVar(name,ns,i,false,false);
 				if(var)
@@ -1575,12 +1571,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
-			if(obj->actualPrototype && t->kind&0x20 && 
-				obj->actualPrototype->use_protected && ns==obj->actualPrototype->protected_ns)
+			Class_base* prot=obj->getActualPrototype();
+			if(prot && t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
-				Class_base* cur=obj->actualPrototype->super;
-				for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
+				Class_base* cur=prot->super;
+				for(int i=(obj->getLevel()-1);i>=0;i--)
 				{
 					assert(cur);
 					if(cur->use_protected)
@@ -1598,11 +1594,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			}
 
 			if(bind)
-				f->bind(obj,obj->actualPrototype->max_level);
+				f->bind(obj,obj->getLevel());
 			obj->setSetterByQName(name,ns,f);
 			
 			//Iterate to find a setter
-			for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
+			for(int i=(obj->getLevel()-1);i>=0;i--)
 			{
 				obj_var* var=obj->Variables.findObjVar(name,ns,i,false,true);
 				if(var)
@@ -1630,12 +1626,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
-			if(obj->actualPrototype && t->kind&0x20 && 
-				obj->actualPrototype->use_protected && ns==obj->actualPrototype->protected_ns)
+			Class_base* prot=obj->getActualPrototype();
+			if(prot && t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
-				Class_base* cur=obj->actualPrototype->super;
-				for(int i=(obj->actualPrototype->max_level-1);i>=0;i--)
+				Class_base* cur=prot->super;
+				for(int i=(obj->getLevel()-1);i>=0;i--)
 				{
 					assert(cur);
 					if(cur->use_protected)
@@ -1655,7 +1651,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			//NOTE: it is legal to define function with the same name at different levels, handle this somehow
 			if(t->kind&0x20)
 			{
-				int level=obj->actualPrototype->max_level-1;
+				int level=obj->getLevel()-1;
 				obj_var* var=obj->Variables.findObjVar(name,ns,level,false,true);
 				if(var)
 				{
@@ -1668,7 +1664,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			}
 
 			if(bind)
-				f->bind(obj,obj->actualPrototype->max_level);
+				f->bind(obj,obj->getLevel());
 			obj->setVariableByQName(name,ns,f,false);
 			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);
 			break;
@@ -1728,13 +1724,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				objAndLevel previous_definition=obj->getVariableByQName(name,ns);
 				if(previous_definition.obj)
-				{
-					assert(obj->prototype);
-					if(obj->actualPrototype)
-						assert(previous_definition.level<obj->actualPrototype->max_level);
-					//else
-					//	assert(previous_definition.level<obj->max_level);
-				}
+					assert(previous_definition.level<obj->getLevel());
 
 				ASObject* ret;
 				if(deferred_initialization)

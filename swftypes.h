@@ -450,10 +450,14 @@ private:
 	void recursiveBuild(const Class_base* cur);
 	int cur_level;
 	virtual int _maxlevel();
+
+#ifndef NDEBUG
+	//Stuff onyl used in debugging
+	bool initialized;
+#endif
 public:
 	IInterface* implementation;
 	Class_base* prototype;
-	Class_base* actualPrototype;
 	void acquireInterface(IInterface* i);
 	ASObject(Manager* m=NULL);
 	ASFUNCTION(_constructor);
@@ -564,6 +568,9 @@ public:
 		cur_level=l;
 	}
 	void resetLevel();
+
+	//Prototype handling
+	Class_base* getActualPrototype() const;
 };
 
 class IInterface

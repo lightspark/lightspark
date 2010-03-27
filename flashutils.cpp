@@ -491,7 +491,7 @@ bool Proxy::setVariableByMultiname(const multiname& name, ASObject* v)
 	//We now suppress special handling
 	suppress=true;
 	LOG(LOG_CALLS,"Proxy::setProperty");
-	f->call(obj,args,2,obj->actualPrototype->max_level);
+	f->call(obj,args,2,obj->getLevel());
 	suppress=false;
 	return true;
 }
@@ -518,7 +518,7 @@ bool Proxy::getVariableByMultiname(const multiname& name, ASObject*& out)
 	//We now suppress special handling
 	suppress=true;
 	LOG(LOG_CALLS,"Proxy::getProperty");
-	out=f->call(obj,&arg,1,obj->actualPrototype->max_level);
+	out=f->call(obj,&arg,1,obj->getLevel());
 	assert(out);
 	suppress=false;
 	return true;

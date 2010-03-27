@@ -1022,6 +1022,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 
 	assert(mi->needsArgs()==false);
 
+	//Prepare arguments
 	int args_len=mi->numArgs();
 	int passedToLocals=min(numArgs,args_len);
 	int passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
@@ -1037,16 +1038,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	{
 		LOG(LOG_CALLS,"Calling with closure " << this);
 		obj=closure_this;
-	}
-	//As we are changing execution context (e.g. 'this' and level), reset the level of the current
-	//object and add the new 'this' and level to the stack
-	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	tl.cur_this->resetLevel();
-	if(closure_this)
-	{
-		getVm()->pushObjAndLevel(closure_this,closure_level);
-		//Set the current level
-		closure_this->setLevel(closure_level);
 	}
 
 	cc->locals[0]=obj;
@@ -1074,6 +1065,18 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 
 		cc->locals[i+1]=rest->obj;
 	}
+	//Parameters are ready
+
+
+	//As we are changing execution context (e.g. 'this' and level), reset the level of the current
+	//object and add the new 'this' and level to the stack
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	tl.cur_this->resetLevel();
+
+	getVm()->pushObjAndLevel(obj,realLevel);
+	//Set the current level
+	obj->setLevel(realLevel);
+
 	ASObject* ret;
 	if(val==NULL && sys->useInterpreter)
 	{
@@ -1084,13 +1087,11 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 		ret=val(cc);
 
 	//Now pop this context and reset the level correctly
-	if(closure_this)
-	{
-		tl=getVm()->popObjAndLevel();
-		assert(tl.cur_this==closure_this);
-		assert(tl.cur_this->getLevel()==closure_level);
-		closure_this->resetLevel();
-	}
+	tl=getVm()->popObjAndLevel();
+	assert(tl.cur_this==obj);
+	assert(tl.cur_this->getLevel()==realLevel);
+	obj->resetLevel();
+
 	tl=getVm()->getCurObjAndLevel();
 	tl.cur_this->setLevel(tl.cur_level);
 
@@ -1497,22 +1498,9 @@ IInterface* Class_inherit::getInstance(bool construct, ASObject* const* args, co
 	}
 	//As we are the prototype we should incRef ourself
 	ret->obj->prototype=this;
-	ret->obj->actualPrototype=this;
 	incRef();
 	if(construct)
-	{
-		//This should be done only for Class_inherit
-		thisAndLevel tl=getVm()->getCurObjAndLevel();
-		tl.cur_this->resetLevel();
-		getVm()->pushObjAndLevel(ret->obj,max_level);
-
 		ret->obj->handleConstruction(args,argslen,true);
-
-		tl=getVm()->popObjAndLevel();
-		assert(tl.cur_this==ret->obj);
-		tl=getVm()->getCurObjAndLevel();
-		tl.cur_this->setLevel(tl.cur_level);
-	}
 	return ret;
 }
 

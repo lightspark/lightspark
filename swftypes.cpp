@@ -210,9 +210,8 @@ bool IInterface::nextValue(unsigned int index, ASObject*& out)
 
 void IInterface::buildTraits(ASObject* o)
 {
-	assert(o->actualPrototype);
-	if(o->actualPrototype->class_name!="IInterface")
-		LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->actualPrototype->class_name);
+	if(o->getActualPrototype()->class_name!="IInterface")
+		LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->getActualPrototype()->class_name);
 }
 
 tiny_string multiname::qualifiedString() const
@@ -423,11 +422,13 @@ bool ASObject::hasPropertyByMultiname(const multiname& name)
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	assert(ref_count>0);
+	assert(!initialized);
 	//Getters are inserted with the current level of the prototype chain
-	int level=(actualPrototype)?actualPrototype->max_level:0;
+	int level=cur_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
 	if(obj->getter!=NULL)
 	{
+		//This happens when interfaces are declared multiple times
 		assert(o==obj->getter);
 		return;
 	}
@@ -437,11 +438,13 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	assert(ref_count>0);
+	assert(!initialized);
 	//Setters are inserted with the current level of the prototype chain
-	int level=(actualPrototype)?actualPrototype->max_level:0;
+	int level=cur_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
 	if(obj->setter!=NULL)
 	{
+		//This happens when interfaces are declared multiple times
 		assert(o==obj->setter);
 		return;
 	}
@@ -709,8 +712,8 @@ ASFUNCTIONBODY(ASObject,_setPrototype)
 void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns)
 {
 	//Should be correct to use the level on the prototype chain
-	int level=(actualPrototype)?actualPrototype->max_level:0;
-	Variables.initSlot(n,level,name,ns);
+	assert(!initialized);
+	Variables.initSlot(n,cur_level,name,ns);
 }
 
 //In all the getter function we first ask the interface, so that special handling (e.g. Array)
@@ -1757,12 +1760,16 @@ variables_map::~variables_map()
 }
 
 ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),implementation(NULL),
-	prototype(NULL),actualPrototype(NULL)
+	prototype(NULL)
 {
+#ifndef NDEBUG
+	//Stuff onyl used in debugging
+	initialized=false;
+#endif
 }
 
 ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),implementation(NULL),
-	prototype(o.prototype),actualPrototype(o.prototype)
+	prototype(o.prototype)
 {
 	abort();
 	if(prototype)
@@ -1775,8 +1782,6 @@ ASObject::~ASObject()
 {
 	if(prototype)
 		prototype->decRef();
-
-	assert(prototype==actualPrototype);
 }
 
 int ASObject::_maxlevel()
@@ -1787,6 +1792,23 @@ int ASObject::_maxlevel()
 void ASObject::resetLevel()
 {
 	cur_level=_maxlevel();
+}
+
+Class_base* ASObject::getActualPrototype() const
+{
+	Class_base* ret=prototype;
+	if(ret==NULL)
+	{
+		assert(type==T_CLASS);
+		return NULL;
+	}
+
+	for(int i=prototype->max_level;i>cur_level;i--)
+		ret=ret->super;
+
+	assert(ret->max_level==cur_level);
+	assert(ret);
+	return ret;
 }
 
 void variables_map::initSlot(unsigned int n, int level, const tiny_string& name, const tiny_string& ns)
@@ -1900,13 +1922,8 @@ unsigned int ASObject::numVariables()
 void ASObject::recursiveBuild(const Class_base* cur)
 {
 	if(cur->super)
-	{
-		Class_base* old=actualPrototype;
-		actualPrototype=cur->super;
 		recursiveBuild(cur->super);
-		assert(cur==old);
-		actualPrototype=old;
-	}
+
 	LOG(LOG_TRACE,"Building traits for " << cur->class_name);
 	cur_level=cur->max_level;
 	cur->buildInstanceTraits(this);
@@ -1922,7 +1939,7 @@ void ASObject::recursiveBuild(const Class_base* cur)
 
 void ASObject::handleConstruction(ASObject* const* args, unsigned int argslen, bool buildAndLink)
 {
-/*	if(actualPrototype->class_index==-2)
+/*	if(getActualPrototype()->class_index==-2)
 	{
 		abort();
 		//We have to build the method traits
@@ -1932,29 +1949,31 @@ void ASObject::handleConstruction(ASObject* const* args, unsigned int argslen, b
 			sf->mi->context->buildTrait(this,&sf->mi->body->traits[i]);
 		sf->call(this,args,max_level);
 	}*/
-	assert(actualPrototype->class_index!=-2);
-	assert(buildAndLink==false || actualPrototype==prototype);
+	assert(getActualPrototype()->class_index!=-2);
 
 	if(buildAndLink)
 	{
-		//HACK: suppress implementation handling of variable just now
+		assert(!initialized);
+		//HACK: suppress implementation handling of variables just now
 		IInterface* impl=implementation;
 		implementation=NULL;
-		recursiveBuild(actualPrototype);
+		recursiveBuild(prototype);
 		//And restore it
 		implementation=impl;
 		assert(cur_level==prototype->max_level);
+	#ifndef NDEBUG
+		initialized=true;
+	#endif
 	}
 
-	if(actualPrototype->constructor)
+	Class_base* prot=getActualPrototype();
+	assert(prot->max_level==cur_level);
+	if(prot->constructor)
 	{
-		LOG(LOG_CALLS,"Calling Instance init " << actualPrototype->class_name);
+		LOG(LOG_CALLS,"Calling Instance init " << prot->class_name);
 		//As constructors are not binded, we should change here the level
 
-		int l=cur_level;
-		cur_level=actualPrototype->max_level;
-		actualPrototype->constructor->call(this,args,argslen,actualPrototype->max_level);
-		cur_level=l;
+		prot->constructor->call(this,args,argslen,prot->max_level);
 	}
 }
 

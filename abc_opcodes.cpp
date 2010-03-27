@@ -295,7 +295,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 			//We now suppress special handling
 			LOG(LOG_CALLS,"Proxy::callProperty");
-			ASObject* ret=f->call(obj,proxyArgs,m+1,obj->actualPrototype->max_level);
+			ASObject* ret=f->call(obj,proxyArgs,m+1,obj->getLevel());
 			th->runtime_stack_push(ret);
 
 			obj->decRef();
@@ -786,7 +786,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 
 			//We now suppress special handling
 			LOG(LOG_CALLS,"Proxy::callProperty");
-			f->call(obj,proxyArgs,m+1,obj->actualPrototype->max_level);
+			f->call(obj,proxyArgs,m+1,obj->getLevel());
 
 			obj->decRef();
 			LOG(LOG_CALLS,"End of calling " << *name);
@@ -1272,27 +1272,17 @@ void ABCVm::setSuper(call_context* th, int n)
 	LOG(LOG_CALLS,"setSuper " << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
-	assert(obj->actualPrototype);
-	//Store the old prototype
-	Class_base* old_prototype=obj->actualPrototype;
-
-	//Move the object prototype
-	obj->actualPrototype=old_prototype->super;
 
 	//We modify the cur_level of obj
 	obj->decLevel();
 
-	obj->setVariableByMultiname(*name,value, false);
+	obj->setVariableByMultiname(*name, value, false);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
 	assert(tl.cur_this==obj);
 	tl.cur_this->setLevel(tl.cur_level);
-
-	//Reset prototype to its previous value
-	assert(obj->actualPrototype==old_prototype->super);
-	obj->actualPrototype=old_prototype;
 
 	obj->decRef();
 }
@@ -1303,12 +1293,6 @@ void ABCVm::getSuper(call_context* th, int n)
 	LOG(LOG_CALLS,"getSuper " << *name);
 
 	ASObject* obj=th->runtime_stack_pop();
-	assert(obj->actualPrototype);
-	//Store the old prototype
-	Class_base* old_prototype=obj->actualPrototype;
-
-	//Move the object protoype and level up
-	obj->actualPrototype=old_prototype->super;
 
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
@@ -1344,10 +1328,6 @@ void ABCVm::getSuper(call_context* th, int n)
 		LOG(LOG_NOT_IMPLEMENTED,"NOT found " << name->name_s<< ", pushing Undefined");
 		th->runtime_stack_push(new Undefined);
 	}
-
-	//Reset prototype to its previous value
-	assert(obj->actualPrototype==old_prototype->super);
-	obj->actualPrototype=old_prototype;
 
 	obj->decRef();
 }
@@ -1431,34 +1411,21 @@ void ABCVm::constructSuper(call_context* th, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	if(obj->actualPrototype==NULL)
-	{
-		LOG(LOG_CALLS,"No prototype. Returning");
-		abort();
-		return;
-	}
-
-	//Store the old prototype
-	Class_base* old_prototype=obj->actualPrototype;
-	LOG(LOG_CALLS,"Cur prototype name " << obj->actualPrototype->class_name);
-	//Move the object protoype and level up
-	obj->actualPrototype=old_prototype->super;
-	LOG(LOG_CALLS,"Super prototype name " << obj->actualPrototype->class_name);
-	assert(obj->actualPrototype);
+	assert(obj->getLevel()!=0);
 
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	//Check that current 'this' is the object
 	assert(tl.cur_this==obj);
 	assert(tl.cur_level==obj->getLevel());
-	int level=obj->getLevel();
+
+	LOG(LOG_CALLS,"Cur prototype name " << obj->getActualPrototype()->class_name);
+	//Change current level
 	obj->decLevel();
+	LOG(LOG_CALLS,"Super prototype name " << obj->getActualPrototype()->class_name);
+
 	obj->handleConstruction(args, m, false);
 	LOG(LOG_CALLS,"End super construct ");
-	obj->setLevel(level);
-
-	//Reset prototype to its previous value
-	assert(obj->actualPrototype==old_prototype->super);
-	obj->actualPrototype=old_prototype;
+	obj->setLevel(tl.cur_level);
 
 	obj->decRef();
 	delete[] args;
@@ -1584,7 +1551,15 @@ void ABCVm::initProperty(call_context* th, int n)
 
 	LOG(LOG_CALLS, "initProperty " << *name << ' ' << obj);
 
+	//We have to reset the level before finding a variable
+	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	if(tl.cur_this==obj)
+		obj->resetLevel();
+
 	obj->setVariableByMultiname(*name,value);
+	if(tl.cur_this==obj)
+		obj->setLevel(tl.cur_level);
+
 	obj->decRef();
 }
 
@@ -1598,12 +1573,6 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	LOG(LOG_CALLS,"callSuper " << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
-	assert(obj->actualPrototype);
-	//Store the old prototype
-	Class_base* old_prototype=obj->actualPrototype;
-
-	//Move the object protoype and level up
-	obj->actualPrototype=old_prototype->super;
 
 	//We modify the cur_level of obj
 	obj->decLevel();
@@ -1674,10 +1643,6 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	}
 	LOG(LOG_CALLS,"End of callSuper " << *name);
 
-	//Reset prototype to its previous value
-	assert(obj->actualPrototype==old_prototype->super);
-	obj->actualPrototype=old_prototype;
-
 	obj->decRef();
 	delete[] args;
 }
@@ -1692,13 +1657,6 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	LOG(LOG_CALLS,"callSuperVoid " << *name << ' ' << m);
 
 	ASObject* obj=th->runtime_stack_pop();
-
-	assert(obj->actualPrototype);
-	//Store the old prototype
-	Class_base* old_prototype=obj->actualPrototype;
-
-	//Move the object protoype and level up
-	obj->actualPrototype=old_prototype->super;
 
 	//We modify the cur_level of obj
 	obj->decLevel();
@@ -1757,10 +1715,6 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function");
 	}
 	LOG(LOG_CALLS,"End of callSuperVoid " << *name);
-
-	//Reset prototype to its previous value
-	assert(obj->actualPrototype==old_prototype->super);
-	obj->actualPrototype=old_prototype;
 
 	obj->decRef();
 	delete[] args;
@@ -2178,13 +2132,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 	LOG(LOG_CALLS,"Building class traits");
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
-	{
-		//When we build the traits we set the prototype to itself, so the level is correctly found
-		ret->actualPrototype=ret;
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
-		//Then we clean away this HACK
-		ret->actualPrototype=NULL;
-	}
 
 	//add Constructor the the class methods
 	ret->constructor=new SyntheticFunction(constructor);

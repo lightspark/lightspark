@@ -45,14 +45,17 @@ void URLRequest::sinit(Class_base* c)
 	c->constructor=new Function(_constructor);
 }
 
+void URLRequest::buildTraits(ASObject* o)
+{
+	o->setSetterByQName("url","",new Function(_setUrl));
+	o->setGetterByQName("url","",new Function(_getUrl));
+}
+
 ASFUNCTIONBODY(URLRequest,_constructor)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
 	if(argslen>0 && args[0]->getObjectType()==T_STRING)
 		th->url=args[0]->toString();
-
-	obj->setSetterByQName("url","",new Function(_setUrl));
-	obj->setGetterByQName("url","",new Function(_getUrl));
 	return NULL;
 }
 

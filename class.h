@@ -63,7 +63,6 @@ private:
 	{
 		ASObject* obj=new ASObject;
 		obj->prototype=this;
-		obj->actualPrototype=this;
 		//TODO: Add interface T to ret
 		T* ret=new T;
 		ret->obj=obj;
@@ -87,7 +86,6 @@ public:
 		ASObject* obj=new ASObject;
 		//TODO: Add interface T to ret
 		obj->prototype=c;
-		obj->actualPrototype=c;
 		T* ret=new T(a1);
 		ret->obj=obj;
 		obj->implementation=ret;
@@ -104,7 +102,6 @@ public:
 		ASObject* obj=new ASObject;
 		//TODO: Add interface T to ret
 		obj->prototype=c;
-		obj->actualPrototype=c;
 		T* ret=new T(a1,a2);
 		ret->obj=obj;
 		obj->implementation=ret;

@@ -142,6 +142,7 @@ void Video::Render()
 			//Load the first frame here
 			netStream->copyBuffer(tmpBuffer);
 			sys->addTick(1000/rate,this);
+			sys->setRenderRate(rate);
 		}
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
 

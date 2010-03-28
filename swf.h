@@ -146,6 +146,7 @@ private:
 #endif
 	int frameCount;
 	int secsCount;
+	float renderRate;
 public:
 	void setUrl(const tiny_string& url);
 
@@ -188,6 +189,8 @@ public:
 	void addJob(IThreadJob* j);
 	void addTick(uint32_t tickTime, IThreadJob* job);
 	void addWait(uint32_t waitTime, IThreadJob* job);
+	bool removeJob(IThreadJob* job);
+	void setRenderRate(float rate);
 
 	DownloadManager* downloadManager;
 };

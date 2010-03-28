@@ -76,6 +76,8 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	frameRate/=256;
 
 	pt->root->setFrameRate(frameRate);
+	//TODO: setting render rate should be done when the clip is added to the displaylist
+	sys->setRenderRate(frameRate);
 	pt->root->version=Version;
 	pt->root->fileLenght=FileLength;
 }
@@ -199,6 +201,17 @@ void SystemState::draw()
 	cur_render_thread->draw();
 }
 
+void SystemState::setRenderRate(float rate)
+{
+	if(renderRate>=rate)
+		return;
+	
+	//The requested rate is higher, let's reschedule the job
+	renderRate=rate;
+	removeJob(this);
+	addTick(1000/rate,this);
+}
+
 void SystemState::execute()
 {
 	cur_input_thread->broadcastEvent("enterFrame");
@@ -243,6 +256,11 @@ void SystemState::addTick(uint32_t tickTime, IThreadJob* job)
 void SystemState::addWait(uint32_t waitTime, IThreadJob* job)
 {
 	timerThread->addWait(waitTime,job);
+}
+
+bool SystemState::removeJob(IThreadJob* job)
+{
+	return timerThread->removeJob(job);
 }
 
 ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),parsingTarget(r)

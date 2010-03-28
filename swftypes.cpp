@@ -18,8 +18,9 @@
 **************************************************************************/
 
 #define GL_GLEXT_PROTOTYPES
-#include "abc.h"
+
 #include "swftypes.h"
+#include "abc.h"
 #include "tags.h"
 #include "logger.h"
 #include "actions.h"

@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-//#define __STDC_LIMIT_MACROS
 #include "abc.h"
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
@@ -41,7 +40,6 @@
 #include "flashgeom.h"
 #include "flashexternal.h"
 #include "flashmedia.h"
-#include "compat.h"
 #include "class.h"
 
 using namespace std;

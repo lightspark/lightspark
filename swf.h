@@ -20,8 +20,7 @@
 #ifndef SWF_H
 #define SWF_H
 
-#define __STDC_LIMIT_MACROS
-#define __STDC_CONSTANT_MACROS
+#include "compat.h"
 #include <iostream>
 #include <fstream>
 #include <list>

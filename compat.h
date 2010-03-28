@@ -27,8 +27,25 @@
 #define snprintf _snprintf
 int round ( double f_val );
 #else //GCC
+#ifndef __STDC_LIMIT_MACROS
+#define __STDC_LIMIT_MACROS
+#endif
+
+#ifndef __STDC_CONSTANT_MACROS
+#define __STDC_CONSTANT_MACROS
+#endif
 #include <inttypes.h>
 #define TLSDATA __thread
+#endif
+
+//Ensure compatibility on various targets
+#if defined(__FreeBSD__)
+#include <sys/endian.h>
+#elif defined(__APPLE__)
+#define _BSD_SOURCE
+#include <architecture/byte_order.h>
+#else
+#include <endian.h>
 #endif
 
 void compat_msleep(unsigned int time);

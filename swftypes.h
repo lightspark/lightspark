@@ -20,8 +20,7 @@
 #ifndef SWFTYPES_H
 #define SWFTYPES_H
 
-#define __STDC_LIMIT_MACROS
-#define __STDC_CONSTANT_MACROS
+#include "compat.h"
 #ifdef WIN32
 #include <llvm/System/DataTypes.h>
 #else
@@ -37,7 +36,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <endian.h>
+#include <arpa/inet.h>
 
 namespace lightspark
 {
@@ -210,7 +209,7 @@ public:
 	UI32():val(0){}
 	UI32(uint32_t v):val(v){}
 	operator uint32_t(){ return val; }
-	void bswap() { val=be32toh(val); }
+	void bswap() { val=ntohl(val); }
 };
 
 class UI24
@@ -223,7 +222,7 @@ public:
 	operator uint32_t() const { return val; }
 	void bswap()
 	{
-		val=be32toh(val)>>8; //The most significant byte is discarted
+		val=ntohl(val)>>8; //The most significant byte is discarted
 	}
 };
 
@@ -237,7 +236,7 @@ public:
 	operator int32_t() const { return val; }
 	void bswap() 
 	{
-		val=be32toh(val)>>8; //The most significant byte is discarted
+		val=ntohl(val)>>8; //The most significant byte is discarted
 		//Check for sign extension
 		if(val&0x800000)
 			val|=(0xff000000);
@@ -254,7 +253,7 @@ public:
 	UI16(uint16_t v):val(v){}
 	operator uint16_t() const { return val; }
 	operator UI32() const { return val; }
-	void bswap() { val=be16toh(val); }
+	void bswap() { val=ntohs(val); }
 };
 
 class UI8 

@@ -17,13 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#define __STDC_LIMIT_MACROS
-#define __STDC_CONSTANT_MACROS
 #include <string.h>
 #include <pthread.h>
-#include <SDL.h>
 #include <algorithm>
-
+#include "compat.h"
+#include <SDL.h>
 #include "abc.h"
 #include "flashdisplay.h"
 #include "flashevents.h"
@@ -33,7 +31,6 @@
 #include "streams.h"
 #include "asobjects.h"
 #include "textfile.h"
-#include "compat.h"
 #include "class.h"
 #include "netutils.h"
 
@@ -124,7 +121,7 @@ SystemState::SystemState():RootMovieClip(NULL),frameCount(0),secsCount(0),shutdo
 	sem_init(&terminated,0,0);
 
 	//Get starting time
-#ifndef WIN32
+#ifndef CLOCK_REALTIME
 	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
 	threadPool=new ThreadPool(this);
@@ -205,7 +202,7 @@ void SystemState::execute()
 {
 	cur_input_thread->broadcastEvent("enterFrame");
 	draw();
-#ifndef WIN32
+#ifndef CLOCK_REALTIME
 	clock_gettime(CLOCK_REALTIME,&td);
 	uint32_t diff=timeDiff(ts,td);
 	if(diff>1000)

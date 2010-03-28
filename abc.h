@@ -20,9 +20,7 @@
 #ifndef _SWF_H
 #define _SWF_H
 
-#define __STDC_LIMIT_MACROS
-#define __STDC_CONSTANT_MACROS
-//#include "pstdint.h"
+#include "compat.h"
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/IRBuilder.h>
@@ -37,9 +35,9 @@
 #include <set>
 #include "swf.h"
 
-#ifdef exception_info
+/*#ifdef exception_info
 #undef exception_info
-#endif
+#endif*/
 
 namespace lightspark
 {

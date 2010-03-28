@@ -53,6 +53,7 @@ void Video::sinit(Class_base* c)
 void Video::buildTraits(ASObject* o)
 {
 	o->setGetterByQName("videoWidth","",new Function(_getVideoWidth));
+	o->setGetterByQName("videoHeight","",new Function(_getVideoHeight));
 	o->setGetterByQName("width","",new Function(Video::_getWidth));
 	o->setSetterByQName("width","",new Function(Video::_setWidth));
 	o->setGetterByQName("height","",new Function(Video::_getHeight));
@@ -181,15 +182,6 @@ void Video::Render()
 
 		curBuffer = nextBuffer;
 	}
-/*	else
-	{
-
-		for(unsigned int i=0;i<(videoWidth*videoHeight);i++)
-		{
-			buffer[i]=0xff000000+(i&0xff);
-		}
-	}*/
-
 }
 
 ASFUNCTIONBODY(Video,_constructor)

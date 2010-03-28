@@ -111,7 +111,7 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL),frameCount(0),secsCount(0),shutdown(false),error(false),currentVm(NULL),cur_input_thread(NULL),
+SystemState::SystemState():RootMovieClip(NULL),shutdown(false),error(false),currentVm(NULL),cur_input_thread(NULL),
 	cur_render_thread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
@@ -123,9 +123,6 @@ SystemState::SystemState():RootMovieClip(NULL),frameCount(0),secsCount(0),shutdo
 	sem_init(&terminated,0,0);
 
 	//Get starting time
-#ifdef CLOCK_REALTIME
-	clock_gettime(CLOCK_REALTIME,&ts);
-#endif
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 	loaderInfo=Class<LoaderInfo>::getInstanceS(true);
@@ -195,12 +192,6 @@ void SystemState::wait()
 	sem_wait(&terminated);
 }
 
-void SystemState::draw()
-{
-	assert(cur_render_thread);
-	cur_render_thread->draw();
-}
-
 void SystemState::setRenderRate(float rate)
 {
 	if(renderRate>=rate)
@@ -208,39 +199,14 @@ void SystemState::setRenderRate(float rate)
 	
 	//The requested rate is higher, let's reschedule the job
 	renderRate=rate;
-	removeJob(this);
-	addTick(1000/rate,this);
+	assert(cur_render_thread);
+	removeJob(cur_render_thread);
+	addTick(1000/rate,cur_render_thread);
 }
 
 void SystemState::execute()
 {
 	cur_input_thread->broadcastEvent("enterFrame");
-	draw();
-#ifdef CLOCK_REALTIME
-	clock_gettime(CLOCK_REALTIME,&td);
-	uint32_t diff=timeDiff(ts,td);
-	if(diff>1000)
-	{
-		ts=td;
-		LOG(LOG_NO_INFO,"FPS: " << dec << frameCount);
-		//fps_prof->fps=frameCount;
-		if(frameCount!=getFrameRate())
-		{
-			LOG(LOG_NO_INFO,"Frame rate is drifting");
-		}
-		frameCount=0;
-		secsCount++;
-		//fps_profs.push_back(fps_profiling());
-		//fps_prof=&fps_profs.back();
-		/*if(secsCount>120)
-		{
-			LOG(LOG_NO_INFO,"Exiting");
-			setShutdownFlag();
-		}*/
-	}
-	else
-		frameCount++;
-#endif
 }
 
 void SystemState::addJob(IThreadJob* j)
@@ -537,7 +503,8 @@ void InputThread::broadcastEvent(const tiny_string& t)
 	sem_post(&sem_listeners);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),interactive_buffer(NULL),fbAcquired(false)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),interactive_buffer(NULL),
+					fbAcquired(false),frameCount(0),secsCount(0)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -554,6 +521,8 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	{
 		pthread_create(&t,NULL,(thread_worker)glx_worker,this);
 	}
+
+	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
 }
 
@@ -693,7 +662,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 			if(sys->error)
 			{
-				abort();
+				::abort();
 				/*glXMakeContextCurrent(d, 0, 0, NULL);
 				unsigned int h = p->height/2;
 				//unsigned int w = 3 * p->width/4;
@@ -755,7 +724,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	catch(const char* e)
 	{
 		LOG(LOG_ERROR,"Exception caught " << e);
-		abort();
+		::abort();
 	}
 	glDisable(GL_TEXTURE_2D);
 	delete p;
@@ -921,7 +890,7 @@ void* RenderThread::glx_worker(RenderThread* th)
 	{
 		LOG(LOG_ERROR, "Exception caught " << e);
 		delete[] buffer;
-		abort();
+		::abort();
 	}
 }
 #endif
@@ -1152,7 +1121,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	catch(const char* e)
 	{
 		LOG(LOG_ERROR, "Exception caught " << e);
-		abort();
+		::abort();
 	}
 	return NULL;
 }
@@ -1160,6 +1129,33 @@ void* RenderThread::sdl_worker(RenderThread* th)
 void RenderThread::draw()
 {
 	sem_post(&render);
+#ifdef CLOCK_REALTIME
+	clock_gettime(CLOCK_REALTIME,&td);
+	uint32_t diff=timeDiff(ts,td);
+	if(diff>1000)
+	{
+		ts=td;
+		LOG(LOG_NO_INFO,"FPS: " << dec << frameCount);
+		cerr << frameCount << endl;
+		//fps_prof->fps=frameCount;
+		frameCount=0;
+		secsCount++;
+		//fps_profs.push_back(fps_profiling());
+		//fps_prof=&fps_profs.back();
+		/*if(secsCount>120)
+		{
+			LOG(LOG_NO_INFO,"Exiting");
+			setShutdownFlag();
+		}*/
+	}
+	else
+		frameCount++;
+#endif
+}
+
+void RenderThread::execute()
+{
+	draw();
 }
 
 void RootMovieClip::setFrameCount(int f)

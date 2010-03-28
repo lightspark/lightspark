@@ -189,7 +189,10 @@ bool TimerThread::removeJob(IThreadJob* job)
 		first=false;
 	}
 	if(it==pendingEvents.end())
+	{
+		sem_post(&mutex);
 		return false;
+	}
 
 	//If we are waiting of this event it's not safe to remove it
 	//so we flag it has invalid and the worker thread will remove it

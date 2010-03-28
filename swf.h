@@ -141,11 +141,6 @@ private:
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
 	sem_t terminated;
-#ifndef WIN32
-	timespec ts,td;
-#endif
-	int frameCount;
-	int secsCount;
 	float renderRate;
 public:
 	void setUrl(const tiny_string& url);
@@ -154,7 +149,6 @@ public:
 	bool error;
 	void setShutdownFlag();
 	void execute();
-	void draw();
 	void wait();
 
 	//Be careful, SystemState constructor does some global initialization that must be done
@@ -249,7 +243,7 @@ public:
 	void broadcastEvent(const tiny_string& type);
 };
 
-class RenderThread
+class RenderThread: public IThreadJob
 {
 private:
 	SystemState* m_sys;
@@ -269,17 +263,23 @@ private:
 	GLXPbuffer mPbuffer;
 	Window mWindow;
 	GC mGC;
+
+	timespec ts,td;
 #endif
 	static int load_program();
 	float* interactive_buffer;
 	bool fbAcquired;
+	void execute();
+	void abort(){::abort();}
+	int frameCount;
+	int secsCount;
+	void draw();
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
-	void draw();
 	void wait();
 	float getIdAt(int x, int y);
-	//The calling context MUST preserve current matrix with a wraping pushMatrix, popMatrix combo
+	//The calling context MUST preserve current matrix with a wrapping pushMatrix, popMatrix combo
 	void glAcquireFramebuffer();
 	void glBlitFramebuffer();
 

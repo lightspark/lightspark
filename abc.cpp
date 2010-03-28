@@ -959,7 +959,10 @@ void ABCVm::handleEvent()
 	events_queue.pop_front();
 	sem_post(&event_queue_mutex);
 	if(e.first)
+	{
+		//cerr << e.second->type << endl;
 		e.first->handleEvent(e.second);
+	}
 	else
 	{
 		//Should be handled by the Vm itself

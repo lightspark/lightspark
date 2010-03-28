@@ -54,13 +54,18 @@ LINK_LIBRARIES(${CURL_LIBRARIES})
 
 ENABLE_LANGUAGE(ASM-NASM)
 
+IF(NOT CMAKE_BUILD_TYPE)
+	SET(CMAKE_BUILD_TYPE "Debug")
+ENDIF()
+
 IF(COMPILE_PLUGIN)
 	SUBDIRS(plugin-dir)
 ENDIF(COMPILE_PLUGIN)
 
 IF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
-	SET(CMAKE_CXX_FLAGS "-Wall -g -O0 -D_GLIBCXX_NO_DEBUG -Wnon-virtual-dtor -Woverloaded-virtual -pipe")
-	SET(CMAKE_CXX_FLAGS_RELEASE "-Wall -O3 -DNDEBUG -Wnon-virtual-dtor -Woverloaded-virtual -pipe")
+	SET(CMAKE_CXX_FLAGS "-Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe")
+	SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -D_GLIBCXX_NO_DEBUG")
+	SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 	ADD_LIBRARY(spark STATIC fastpaths.asm swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp)
 ENDIF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)

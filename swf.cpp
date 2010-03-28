@@ -121,7 +121,7 @@ SystemState::SystemState():RootMovieClip(NULL),frameCount(0),secsCount(0),shutdo
 	sem_init(&terminated,0,0);
 
 	//Get starting time
-#ifndef CLOCK_REALTIME
+#ifdef CLOCK_REALTIME
 	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
 	threadPool=new ThreadPool(this);
@@ -203,7 +203,7 @@ void SystemState::execute()
 {
 	cur_input_thread->broadcastEvent("enterFrame");
 	draw();
-#ifndef CLOCK_REALTIME
+#ifdef CLOCK_REALTIME
 	clock_gettime(CLOCK_REALTIME,&td);
 	uint32_t diff=timeDiff(ts,td);
 	if(diff>1000)

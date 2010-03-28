@@ -158,6 +158,7 @@ void SystemState::setParameters(ASObject* p)
 
 SystemState::~SystemState()
 {
+	assert(shutdown);
 	delete timerThread;
 	delete threadPool;
 	delete downloadManager;

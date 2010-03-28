@@ -58,6 +58,8 @@ public:
 	~TimerThread();
 	void addTick(uint32_t tickTime, IThreadJob* job);
 	void addWait(uint32_t waitTime, IThreadJob* job);
+	//Returns if the job has been found or not
+	bool removeJob(IThreadJob* job);
 };
 
 };

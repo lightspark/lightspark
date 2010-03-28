@@ -109,17 +109,17 @@ void* TimerThread::timer_worker(TimerThread* th)
 
 		//Get expiration of first event
 		uint64_t timing=th->pendingEvents.front()->timing;
-		//Wait for the previous absolute time, or a newEvent signal
+		//Wait for the absolute time, or a newEvent signal
 		timespec tmpt=msecsToTimespec(timing);
 		sem_post(&th->mutex);
 		int ret=sem_timedwait(&th->newEvent, &tmpt);
-		if(th->stopped || sys->shutdown)
+		if(th->stopped)
 			pthread_exit(0);
 
 		if(ret==0)
 			continue;
 
-		//The first event is expired
+		//The first event has expired
 		if(errno!=ETIMEDOUT)
 			abort();
 
@@ -139,7 +139,10 @@ void* TimerThread::timer_worker(TimerThread* th)
 		}
 
 		//Now execute the job
-		e->job->run();
+		//NOTE: jobs may be invalid if they has been cancelled in the meantime
+		assert(e->job || !e->isTick);
+		if(e->job)
+			e->job->run();
 
 		//Cleanup
 		if(destroyEvent)
@@ -171,4 +174,37 @@ void TimerThread::addWait(uint32_t waitTime, IThreadJob* job)
 	clock_gettime(CLOCK_REALTIME,&tp);
 	e->timing=timespecToMsecs(tp)+waitTime;
 	insertNewEvent(e);
+}
+
+bool TimerThread::removeJob(IThreadJob* job)
+{
+	sem_wait(&mutex);
+	list<TimingEvent*>::iterator it=pendingEvents.begin();
+	bool first=true;
+	//Find if the job is in the list
+	for(;it!=pendingEvents.end();it++)
+	{
+		if((*it)->job==job)
+			break;
+		first=false;
+	}
+	if(it==pendingEvents.end())
+		return false;
+
+	//If we are waiting of this event it's not safe to remove it
+	//so we flag it has invalid and the worker thread will remove it
+	//this is equivalent, as the event is not going to be fired
+	TimingEvent* e=*it;
+	if(first)
+	{
+		e->job=NULL;
+		e->isTick=false;
+	}
+	else
+	{
+		pendingEvents.erase(it);
+		delete e;
+	}
+	sem_post(&mutex);
+	return true;
 }

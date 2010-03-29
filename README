@@ -26,8 +26,10 @@ To compile this software you need to install development packages for llvm-2.6, 
 To build the software please follow those steps.
 
 1) cd lightspark
-2) cmake -DCMAKE_BUILD_TYPE=Release .
-2) make
+2) mkdir objs
+3) cd objs
+4) cmake -DCMAKE_BUILD_TYPE=Release ..
+5) make
 
 EXECUTION:
 This demo aims at rendering, the runtime generated UI of the new YouTube player. Recently YouTube switched 

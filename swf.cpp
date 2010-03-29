@@ -737,13 +737,11 @@ int RenderThread::load_program()
 	//GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
 	const char *fs = NULL;
-	//fs = dataFileRead("lightspark.frag");
-	fs = dataFileRead("/home/alex/lightspark/" "lightspark.frag");
+	fs = dataFileRead(DATADIR "/lightspark.frag");
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
 
-/*	fs = dataFileRead("lightspark.vert");
-//	fs = dataFileRead("/home/alex/lightspark/lightspark.vert");
+/*	fs = dataFileRead(DATADIR "/lightspark.vert");
 	glShaderSource(v, 1, &fs,NULL);
 	free((void*)fs);*/
 

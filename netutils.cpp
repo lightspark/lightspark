@@ -239,7 +239,7 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	char* headerLine=(char*)buffer;
 
-	std::cerr << "CURL header: " << headerLine << std::endl;
+	std::cerr << "CURL header: " << headerLine;
 
 	if(strncmp(headerLine,"HTTP/1.1 4",10)==0) //HTTP error, let's fail
 		th->setFailed();

@@ -355,10 +355,7 @@ public:
 	ASFUNCTION(charCodeAt);
 	ASFUNCTION(toLowerCase);
 	bool isEqual(bool& ret, ASObject* o);
-	bool isLess(bool& ret, ASObject* o)
-	{
-		abort();
-	}
+	bool isLess(bool& ret, ASObject* o);
 	bool toString(tiny_string& ret);
 	bool toNumber(double& ret);
 };

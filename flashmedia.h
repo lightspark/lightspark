@@ -23,6 +23,7 @@
 #include "asobjects.h"
 #include "flashdisplay.h"
 #include "flashnet.h"
+#include "timer.h"
 
 namespace lightspark
 {
@@ -34,7 +35,7 @@ public:
 	ASFUNCTION(_constructor);
 };
 
-class Video: public DisplayObject, public IThreadJob
+class Video: public DisplayObject, public ITickJob
 {
 private:
 	sem_t mutex;
@@ -46,7 +47,7 @@ private:
 	unsigned int curBuffer;
 	NetStream* netStream;
 	uint8_t* tmpBuffer;
-	void execute();
+	void tick();
 public:
 	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),frameReady(false),videoTexture(0),curBuffer(0),netStream(NULL),tmpBuffer(NULL)
 	{

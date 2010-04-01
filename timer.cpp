@@ -142,7 +142,7 @@ void* TimerThread::timer_worker(TimerThread* th)
 		//NOTE: jobs may be invalid if they has been cancelled in the meantime
 		assert(e->job || !e->isTick);
 		if(e->job)
-			e->job->run();
+			e->job->tick();
 
 		//Cleanup
 		if(destroyEvent)
@@ -150,7 +150,7 @@ void* TimerThread::timer_worker(TimerThread* th)
 	}
 }
 
-void TimerThread::addTick(uint32_t tickTime, IThreadJob* job)
+void TimerThread::addTick(uint32_t tickTime, ITickJob* job)
 {
 	TimingEvent* e=new TimingEvent;
 	e->isTick=true;
@@ -163,7 +163,7 @@ void TimerThread::addTick(uint32_t tickTime, IThreadJob* job)
 	insertNewEvent(e);
 }
 
-void TimerThread::addWait(uint32_t waitTime, IThreadJob* job)
+void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 {
 	TimingEvent* e=new TimingEvent;
 	e->isTick=false;
@@ -176,7 +176,7 @@ void TimerThread::addWait(uint32_t waitTime, IThreadJob* job)
 	insertNewEvent(e);
 }
 
-bool TimerThread::removeJob(IThreadJob* job)
+bool TimerThread::removeJob(ITickJob* job)
 {
 	sem_wait(&mutex);
 	list<TimingEvent*>::iterator it=pendingEvents.begin();

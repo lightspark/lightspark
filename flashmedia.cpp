@@ -61,7 +61,7 @@ void Video::buildTraits(ASObject* o)
 	o->setVariableByQName("attachNetStream","",new Function(attachNetStream));
 }
 
-void Video::execute()
+void Video::tick()
 {
 	sem_wait(&mutex);
 	assert(netStream);

@@ -513,7 +513,6 @@ private:
 	static bool pushTrue();
 	static void dup();
 	static bool in(ASObject*,ASObject*);
-	static bool strictEquals(ASObject*,ASObject*);
 	static bool _not(ASObject*);
 	static bool equals(ASObject*,ASObject*);
 	static number_t negate(ASObject*);
@@ -625,6 +624,10 @@ public:
 	{
 		return method_this_stack.back();
 	}
+
+	//Some opcodes are used inside runtime class implementations
+	static bool strictEquals(ASObject*,ASObject*);
+
 };
 
 class DoABCTag: public ControlTag

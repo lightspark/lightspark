@@ -30,6 +30,15 @@
 namespace lightspark
 {
 
+//Jobs that run on tick are supposed to be very short
+//For longer jobs use ThreadPool
+class ITickJob
+{
+public:
+	virtual void tick()=0;
+	virtual ~ITickJob(){};
+};
+  
 typedef void* (*thread_worker)(void*);
 class TimerThread
 {
@@ -38,7 +47,7 @@ private:
 	{
 	public:
 		bool isTick;
-		IThreadJob* job;
+		ITickJob* job;
 		//Timing are in milliseconds
 		uint64_t timing;
 		uint32_t tickTime;
@@ -56,10 +65,10 @@ private:
 public:
 	TimerThread(SystemState* s);
 	~TimerThread();
-	void addTick(uint32_t tickTime, IThreadJob* job);
-	void addWait(uint32_t waitTime, IThreadJob* job);
+	void addTick(uint32_t tickTime, ITickJob* job);
+	void addWait(uint32_t waitTime, ITickJob* job);
 	//Returns if the job has been found or not
-	bool removeJob(IThreadJob* job);
+	bool removeJob(ITickJob* job);
 };
 
 };

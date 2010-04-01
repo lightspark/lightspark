@@ -84,7 +84,7 @@ struct fps_profiling
 };
 
 //RootMovieClip is used as a ThreadJob for timed rendering purpose
-class RootMovieClip: public MovieClip, public IThreadJob
+class RootMovieClip: public MovieClip, public ITickJob
 {
 friend class ParseThread;
 protected:
@@ -104,7 +104,7 @@ private:
 	sem_t sem_frames;
 	bool toBind;
 	tiny_string bindName;
-	void execute();
+	void tick();
 
 public:
 	RootMovieClip(LoaderInfo* li);
@@ -148,7 +148,7 @@ public:
 	bool shutdown;
 	bool error;
 	void setShutdownFlag();
-	void execute();
+	void tick();
 	void wait();
 
 	//Be careful, SystemState constructor does some global initialization that must be done
@@ -181,9 +181,9 @@ public:
 	void parseParameters(std::istream& i);
 	void setParameters(ASObject* p);
 	void addJob(IThreadJob* j);
-	void addTick(uint32_t tickTime, IThreadJob* job);
-	void addWait(uint32_t waitTime, IThreadJob* job);
-	bool removeJob(IThreadJob* job);
+	void addTick(uint32_t tickTime, ITickJob* job);
+	void addWait(uint32_t waitTime, ITickJob* job);
+	bool removeJob(ITickJob* job);
 	void setRenderRate(float rate);
 
 	DownloadManager* downloadManager;
@@ -243,7 +243,7 @@ public:
 	void broadcastEvent(const tiny_string& type);
 };
 
-class RenderThread: public IThreadJob
+class RenderThread: public ITickJob
 {
 private:
 	SystemState* m_sys;
@@ -269,8 +269,7 @@ private:
 	static int load_program();
 	float* interactive_buffer;
 	bool fbAcquired;
-	void execute();
-	void abort(){::abort();}
+	void tick();
 	int frameCount;
 	int secsCount;
 	void draw();

@@ -138,15 +138,26 @@ ASFUNCTIONBODY(Array,indexOf)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
 	assert(argslen==1);
-	assert(th->data.size()==0);
-	return abstract_i(-1);
+	int ret=-1;
+	ASObject* arg0=args[0];
+	for(unsigned int i=0;i<th->data.size();i++)
+	{
+		assert(th->data[i].type==DATA_OBJECT);
+		if(ABCVm::strictEquals(th->data[i].data,arg0))
+		{
+			ret=i;
+			break;
+		}
+	}
+	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(Array,filter)
 {
 	//TODO: really implement
 	Array* th=static_cast<Array*>(obj->implementation);
-	assert(th->data.size()==0);
+	//assert(th->data.size()==0);
+	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
 	Array* ret=Class<Array>::getInstanceS(true);
 	ret->data=th->data;
 	return ret->obj;
@@ -738,25 +749,22 @@ bool ASString::isEqual(bool& ret, ASObject* r)
 	return true;
 }
 
-/*bool ASString::isGreater(bool& ret, ASObject* o)
+bool ASString::isLess(bool& ret, ASObject* o)
 {
 	//TODO: Implement ECMA-262 11.8.5 algorithm
 	//Number comparison has the priority over strings
 	if(o->getObjectType()==T_INTEGER)
 	{
-		//Check if the string may be converted to integer
-		//TODO: check whole string?
-		if(isdigit(data[0]))
-		{
-			int val1=atoi(data.c_str());
-			int val2=o->toInt();
-			ret= val1 > val2;
-			return true;
-		}
+		number_t a;
+		bool isNumber=toNumber(a);
+		assert(isNumber);
+		number_t b=o->toNumber();
+		ret=a<b;
+		return true;
 	}
 	abort();
 	return true;
-}*/
+}
 
 bool Boolean::isEqual(ASObject* r)
 {

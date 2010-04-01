@@ -204,7 +204,7 @@ void SystemState::setRenderRate(float rate)
 	addTick(1000/rate,cur_render_thread);
 }
 
-void SystemState::execute()
+void SystemState::tick()
 {
 	cur_input_thread->broadcastEvent("enterFrame");
 }
@@ -214,17 +214,17 @@ void SystemState::addJob(IThreadJob* j)
 	threadPool->addJob(j);
 }
 
-void SystemState::addTick(uint32_t tickTime, IThreadJob* job)
+void SystemState::addTick(uint32_t tickTime, ITickJob* job)
 {
 	timerThread->addTick(tickTime,job);
 }
 
-void SystemState::addWait(uint32_t waitTime, IThreadJob* job)
+void SystemState::addWait(uint32_t waitTime, ITickJob* job)
 {
 	timerThread->addWait(waitTime,job);
 }
 
-bool SystemState::removeJob(IThreadJob* job)
+bool SystemState::removeJob(ITickJob* job)
 {
 	return timerThread->removeJob(job);
 }
@@ -1151,7 +1151,7 @@ void RenderThread::draw()
 #endif
 }
 
-void RenderThread::execute()
+void RenderThread::tick()
 {
 	draw();
 }
@@ -1278,7 +1278,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	return ret;
 }
 
-void RootMovieClip::execute()
+void RootMovieClip::tick()
 {
 	//Should go to the next frame
 }

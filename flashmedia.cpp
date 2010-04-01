@@ -61,14 +61,6 @@ void Video::buildTraits(ASObject* o)
 	o->setVariableByQName("attachNetStream","",new Function(attachNetStream));
 }
 
-void Video::tick()
-{
-	sem_wait(&mutex);
-	assert(netStream);
-	netStream->copyBuffer(tmpBuffer);
-	sem_post(&mutex);
-}
-
 void Video::Render()
 {
 	if(!initialized)
@@ -135,21 +127,12 @@ void Video::Render()
 			glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
 			glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[1]);
 			glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
-
-			//HACK: Get the frameRate from the stream
-			double rate=netStream->getFrameRate();
-			//Initialize tmpBuffer
-			tmpBuffer=new uint8_t[videoHeight*videoWidth*4];
-			//Load the first frame here
-			netStream->copyBuffer(tmpBuffer);
-			sys->addTick(1000/rate,this);
-			sys->setRenderRate(rate);
 		}
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
 
-		sem_wait(&mutex);
-		glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, videoWidth*videoHeight*4, tmpBuffer);
-		sem_post(&mutex);
+		uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+		netStream->copyBuffer(buf);
+		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
 		//Enable texture lookup and YUV to RGB conversion

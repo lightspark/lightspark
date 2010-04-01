@@ -24,6 +24,7 @@
 #include "flashevents.h"
 #include "thread_pool.h"
 #include "netutils.h"
+#include "timer.h"
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -103,7 +104,7 @@ public:
 	ASFUNCTION(connect);
 };
 
-class NetStream: public EventDispatcher, public IThreadJob
+class NetStream: public EventDispatcher, public IThreadJob, public ITickJob
 {
 private:
 	enum STREAM_TYPE { FLV_STREAM=0 };
@@ -114,6 +115,7 @@ private:
 	//Counting semphores for buffers
 	sem_t freeBuffers;
 	sem_t usedBuffers;
+	bool empty;
 	uint32_t bufferHead;
 	uint32_t bufferTail;
 	uint32_t bufferSize;
@@ -121,8 +123,12 @@ private:
 	double frameRate;
 	Downloader* downloader;
 	sem_t mutex;
+	//IThreadJob interface for long jobs
 	void execute();
 	void abort();
+	//ITickJob interface to frame advance
+	void tick();
+	
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height);
 public:
 	NetStream();

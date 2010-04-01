@@ -239,7 +239,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():codecContext(NULL),bufferHead(0),bufferTail(0),bufferSize(0),frameCount(0),frameRate(0),downloader(NULL)
+NetStream::NetStream():codecContext(NULL),empty(true),bufferHead(0),bufferTail(0),bufferSize(0),frameCount(0),frameRate(0),downloader(NULL)
 {
 	sem_init(&mutex,0,1);
 	sem_init(&freeBuffers,0,10);
@@ -360,7 +360,23 @@ void NetStream::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint3
 	}
 
 	bufferTail=(bufferTail+1)%10;
+	empty=false;
 	sem_post(&usedBuffers);
+}
+
+void NetStream::tick()
+{
+	//Discard the first frame, if available
+	//We don't want ot block if no frame is available
+	if(sem_trywait(&usedBuffers)!=0)
+		return;
+	//A frame is available
+	sem_wait(&mutex);
+	bufferHead=(bufferHead+1)%10;
+	if(bufferHead==bufferTail)
+		empty=true;
+	sem_post(&freeBuffers);
+	sem_post(&mutex);
 }
 
 void NetStream::execute()
@@ -456,6 +472,8 @@ void NetStream::execute()
 
 						//HACK: initialize frameRate from the container
 						frameRate=tag.frameRate;
+						sys->addTick(1000/frameRate,this);
+						sys->setRenderRate(frameRate);
 						break;
 					}
 					default:
@@ -549,11 +567,12 @@ void NetStream::copyBuffer(uint8_t* dest)
 		width=codecContext->width;
 		height=codecContext->height;
 	}
-	sem_post(&mutex);
 
-	//We don't want ot block if no frame is available
-	if(sem_trywait(&usedBuffers)!=0)
+	if(empty) //No frame available
+	{
+		sem_post(&mutex);
 		return;
+	}
 	//At least a frame is available
 	int offset=0;
 	for(uint32_t y=0;y<height;y++)
@@ -564,8 +583,7 @@ void NetStream::copyBuffer(uint8_t* dest)
 				dest+offset,width);
 		offset+=width*4;
 	}
-	bufferHead=(bufferHead+1)%10;
-	sem_post(&freeBuffers);
+	sem_post(&mutex);
 }
 
 void URLVariables::sinit(Class_base* c)

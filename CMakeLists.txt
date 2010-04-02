@@ -74,7 +74,8 @@ IF(USE_VAAPI)
   INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 
   INCLUDE(FindPkgConfig)
-  pkg_check_modules(LIBVA REQUIRED libva-glx)
+  pkg_check_modules(LIBVA REQUIRED libva-glx libavcodec libswscale)
+
   ADD_DEFINITIONS(-DUSE_VAAPI -DUSE_VAAPI_GLX)
 
   SUBDIRS(libvaapi)

@@ -41,13 +41,10 @@ private:
 	sem_t mutex;
 	uint32_t width, height, videoWidth, videoHeight;
 	bool initialized;
-	bool frameReady;
 	GLuint videoTexture;
-	GLuint videoBuffers[2];
-	unsigned int curBuffer;
 	NetStream* netStream;
 public:
-	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),frameReady(false),videoTexture(0),curBuffer(0),netStream(NULL)
+	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),videoTexture(0),netStream(NULL)
 	{
 		sem_init(&mutex,0,1);
 	}

@@ -239,36 +239,16 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():codecContext(NULL),empty(true),bufferHead(0),bufferTail(0),bufferSize(0),frameCount(0),frameRate(0),downloader(NULL)
+NetStream::NetStream():frameRate(0),downloader(NULL),decoder(NULL)
 {
 	sem_init(&mutex,0,1);
-	sem_init(&freeBuffers,0,10);
-	sem_init(&usedBuffers,0,0);
-	for(int i=0;i<10;i++)
-	{
-		buffers[i][0]=NULL;
-		buffers[i][1]=NULL;
-		buffers[i][2]=NULL;
-	}
 }
 
 NetStream::~NetStream()
 {
 	assert(!executing);
-	for(int i=0;i<10;i++)
-	{
-		if(buffers[i][0])
-		{
-			free(buffers[i][0]);
-			free(buffers[i][1]);
-			free(buffers[i][2]);
-		}
-	}
-	assert(codecContext);
-	av_free(codecContext);
+	delete decoder; 
 	sem_destroy(&mutex);
-	sem_destroy(&freeBuffers);
-	sem_destroy(&usedBuffers);
 }
 
 void NetStream::sinit(Class_base* c)
@@ -333,49 +313,12 @@ NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
 	return ret;
 }
 
-void NetStream::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height)
-{
-	sem_wait(&freeBuffers);
-	if(aborting)
-		throw "Aborting";
-	//Only one thread may access the tail
-	if(buffers[bufferTail][0]==NULL)
-	{
-		posix_memalign((void**)&buffers[bufferTail][0], 16, bufferSize);
-		posix_memalign((void**)&buffers[bufferTail][1], 16, bufferSize/4);
-		posix_memalign((void**)&buffers[bufferTail][2], 16, bufferSize/4);
-	}
-	int offset[3]={0,0,0};
-	for(uint32_t y=0;y<height;y++)
-	{
-		memcpy(buffers[bufferTail][0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),width);
-		offset[0]+=width;
-	}
-	for(uint32_t y=0;y<height/2;y++)
-	{
-		memcpy(buffers[bufferTail][1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),width/2);
-		memcpy(buffers[bufferTail][2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),width/2);
-		offset[1]+=width/2;
-		offset[2]+=width/2;
-	}
-
-	bufferTail=(bufferTail+1)%10;
-	empty=false;
-	sem_post(&usedBuffers);
-}
-
 void NetStream::tick()
 {
 	//Discard the first frame, if available
-	//We don't want ot block if no frame is available
-	if(sem_trywait(&usedBuffers)!=0)
-		return;
-	//A frame is available
 	sem_wait(&mutex);
-	bufferHead=(bufferHead+1)%10;
-	if(bufferHead==bufferTail)
-		empty=true;
-	sem_post(&freeBuffers);
+	if(decoder)
+		decoder->discardFrame();
 	sem_post(&mutex);
 }
 
@@ -384,7 +327,6 @@ void NetStream::execute()
 	//mutex access to downloader
 	istream s(downloader);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
-	AVFrame* frameIn=avcodec_alloc_frame();
 
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
@@ -426,43 +368,13 @@ void NetStream::execute()
 						{
 							sem_wait(&mutex);
 							//The tag is the header, initialize decoding
-							assert(codecContext==NULL); //The context can be set only once
-							//TODO: serialize access to avcodec_open
-							AVCodec* codec=avcodec_find_decoder(CODEC_ID_H264);
-							assert(codec);
-
-							codecContext=avcodec_alloc_context();
-							//If this tag is the header, fill the extradata for the codec
-							codecContext->extradata=tag.packetData;
-							codecContext->extradata_size=tag.packetLen;
+							assert(decoder==NULL); //The decoder can be set only once
+							decoder=new FFMpegDecoder(tag.packetData,tag.packetLen);
 							tag.releaseBuffer();
-
-							if(avcodec_open(codecContext, codec)<0)
-								abort();
 							sem_post(&mutex);
 						}
 						else
-						{
-							//The tag is a data packet, decode it
-							int frameOk=0;
-							avcodec_decode_video(codecContext, frameIn, &frameOk, tag.packetData, tag.packetLen);
-							frameCount++;
-							if(frameOk==0)
-								abort();
-							assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
-
-							const uint32_t height=codecContext->height;
-							const uint32_t width=codecContext->width;
-							assert(frameIn->pts==0);
-
-							const uint32_t size=width*height*4;
-							if(size!=bufferSize)
-							{
-								assert(bufferSize==0);
-								bufferSize=size;
-							}
-							copyFrameToBuffers(frameIn,width,height);
-						}
+							decoder->decodeData(tag.packetData,tag.packetLen);
 						break;
 					}
 					case 18:
@@ -480,6 +392,8 @@ void NetStream::execute()
 						cout << (int)TagType << endl;
 						abort();
 				}
+				if(aborting)
+					throw "Aborting";
 			}
 			while(!done);
 		}
@@ -496,10 +410,11 @@ void NetStream::execute()
 	{
 	}
 
-	av_free(frameIn);
 	sem_wait(&mutex);
 	sys->downloadManager->destroy(downloader);
 	downloader=NULL;
+	delete decoder;
+	decoder=NULL;
 	sem_post(&mutex);
 /*	Event* status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Play.Start");
 	getVm()->addEvent(this, status);
@@ -512,9 +427,10 @@ void NetStream::abort()
 	sem_wait(&mutex);
 	if(downloader)
 		downloader->stop();
+	//Discard a frame, the decoder may be blocked on a full buffer
+	if(decoder)
+		decoder->discardFrame();
 	sem_post(&mutex);
-	sem_post(&freeBuffers);
-	sem_post(&usedBuffers);
 }
 
 ASFUNCTIONBODY(NetStream,getBytesLoaded)
@@ -532,13 +448,12 @@ ASFUNCTIONBODY(NetStream,getTime)
 	return abstract_d(0);
 }
 
-
 uint32_t NetStream::getVideoWidth()
 {
 	sem_wait(&mutex);
 	uint32_t ret=0;
-	if(codecContext)
-		ret=codecContext->width;
+	if(decoder)
+		ret=decoder->getWidth();
 	sem_post(&mutex);
 	return ret;
 }
@@ -547,8 +462,8 @@ uint32_t NetStream::getVideoHeight()
 {
 	sem_wait(&mutex);
 	uint32_t ret=0;
-	if(codecContext)
-		ret=codecContext->height;
+	if(decoder)
+		ret=decoder->getHeight();
 	sem_post(&mutex);
 	return ret;
 }
@@ -558,32 +473,14 @@ double NetStream::getFrameRate()
 	return frameRate;
 }
 
-void NetStream::copyBuffer(uint8_t* dest)
+bool NetStream::copyFrameToBindedTexture()
 {
 	sem_wait(&mutex);
-	uint32_t width=0,height=0;
-	if(codecContext)
-	{
-		width=codecContext->width;
-		height=codecContext->height;
-	}
-
-	if(empty) //No frame available
-	{
-		sem_post(&mutex);
-		return;
-	}
-	//At least a frame is available
-	int offset=0;
-	for(uint32_t y=0;y<height;y++)
-	{
-		fastYUV420ChannelsToBuffer(buffers[bufferHead][0]+(y*width),
-				buffers[bufferHead][1]+((y>>1)*(width>>1)),
-				buffers[bufferHead][2]+((y>>1)*(width>>1)),
-				dest+offset,width);
-		offset+=width*4;
-	}
+	bool ret=false;
+	if(decoder)
+		ret=decoder->copyFrameToBindedTexture();
 	sem_post(&mutex);
+	return ret;
 }
 
 void URLVariables::sinit(Class_base* c)

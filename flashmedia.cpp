@@ -65,9 +65,7 @@ void Video::Render()
 {
 	if(!initialized)
 	{
-		initialized=true;
 		glGenTextures(1,&videoTexture);
-		glGenBuffers(2,videoBuffers);
 
 		//Per texture initialization
 		glBindTexture(GL_TEXTURE_2D, videoTexture);
@@ -76,33 +74,15 @@ void Video::Render()
 		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 		
 		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+		initialized=true;
 	}
 
 	if(netStream)
 	{
 		//Get size
-		uint32_t newWidth=netStream->getVideoWidth();
-		uint32_t newHeight=netStream->getVideoHeight();
+		videoWidth=netStream->getVideoWidth();
+		videoHeight=netStream->getVideoHeight();
 
-		if(videoWidth==0 || videoHeight==0)
-		{
-			videoWidth=newWidth;
-			videoHeight=newHeight;
-		}
-		else
-		{
-			if(videoWidth!=newWidth || videoHeight!=newHeight)
-				abort();
-		}
-
-		//If size is not yet valid
-		if(videoWidth==0 || videoHeight==0)
-			return;
-
-		//Size is validated and has not changed
-
-		//Increment and wrap current buffer index
-		unsigned int nextBuffer = (curBuffer + 1)%2;
 		rt->glAcquireFramebuffer();
 
 		float matrix[16];
@@ -112,31 +92,9 @@ void Video::Render()
 
 		glBindTexture(GL_TEXTURE_2D, videoTexture);
 
-		if(frameReady)
-		{
-			glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
-			//Copy content of the pbo to the texture, 0 is the offset in the pbo
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, videoWidth, videoHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0); 
-		}
-		else
-		{
-			//Initialize texture to video size
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, videoWidth, videoHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL); 
-			//Initialize both PBOs to video size
-			glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);
-			glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
-			glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[1]);
-			glBufferData(GL_PIXEL_UNPACK_BUFFER, videoWidth*videoHeight*4, 0, GL_STREAM_DRAW);
-		}
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
-
-		uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
-		netStream->copyBuffer(buf);
-		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+		bool frameReady=netStream->copyFrameToBindedTexture();
 
 		//Enable texture lookup and YUV to RGB conversion
-
 		if(frameReady)
 		{
 			glColor4f(0,0,0,1);
@@ -158,12 +116,8 @@ void Video::Render()
 			sem_post(&mutex);
 		}
 
-		frameReady=true;
-
 		rt->glBlitFramebuffer();
 		glPopMatrix();
-
-		curBuffer = nextBuffer;
 	}
 }
 
@@ -233,6 +187,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	//Acquire the netStream
 	args[0]->incRef();
 
+	assert(th->netStream==NULL);
 	th->netStream=Class<NetStream>::cast(args[0]->implementation);
 	return NULL;
 }

@@ -38,6 +38,10 @@
 #endif
 #include <SDL.h>
 
+#ifdef USE_VAAPI
+#include "vaapi_utils.h"
+#endif
+
 using namespace std;
 using namespace lightspark;
 
@@ -54,6 +58,7 @@ int main(int argc, char* argv[])
 	char* paramsFileName=NULL;
 	bool useInterpreter=true;
 	bool useJit=false;
+	bool useVaapi=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
 
 	for(int i=1;i<argc;i++)
@@ -103,6 +108,18 @@ int main(int argc, char* argv[])
 			}
 			paramsFileName=argv[i];
 		}
+#ifdef USE_VAAPI
+		else if(strcmp(argv[i],"--hwaccel")==0)
+		{
+			i++;
+			if(i==argc)
+			{
+				fileName=NULL;
+				break;
+			}
+			useVaapi=(strcmp(argv[i],"vaapi")==0);
+		}
+#endif
 		else
 		{
 			//No options flag, so set the swf file name
@@ -160,6 +177,11 @@ int main(int argc, char* argv[])
 			p.close();
 		}
 	}
+
+	sys->useVaapi=useVaapi;
+#ifdef USE_VAAPI
+	gnash::vaapi_set_is_enabled(useVaapi);
+#endif
 
 	zlib_file_filter zf(fileName);
 	istream f(&zf);

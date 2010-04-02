@@ -25,10 +25,7 @@
 #include "thread_pool.h"
 #include "netutils.h"
 #include "timer.h"
-extern "C"
-{
-#include <libavcodec/avcodec.h>
-}
+#include "decoder.h"
 
 namespace lightspark
 {
@@ -110,26 +107,15 @@ private:
 	enum STREAM_TYPE { FLV_STREAM=0 };
 	tiny_string url;
 	STREAM_TYPE classifyStream(std::istream& s);
-	AVCodecContext* codecContext;
-	uint8_t* buffers[10][3];
-	//Counting semphores for buffers
-	sem_t freeBuffers;
-	sem_t usedBuffers;
-	bool empty;
-	uint32_t bufferHead;
-	uint32_t bufferTail;
-	uint32_t bufferSize;
-	uint32_t frameCount;
 	double frameRate;
 	Downloader* downloader;
+	Decoder* decoder;
 	sem_t mutex;
 	//IThreadJob interface for long jobs
 	void execute();
 	void abort();
 	//ITickJob interface to frame advance
 	void tick();
-	
-	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height);
 public:
 	NetStream();
 	~NetStream();
@@ -146,7 +132,7 @@ public:
 	uint32_t getVideoWidth();
 	uint32_t getVideoHeight();
 	double getFrameRate();
-	void copyBuffer(uint8_t* dest);
+	bool copyFrameToBindedTexture();
 };
 
 };

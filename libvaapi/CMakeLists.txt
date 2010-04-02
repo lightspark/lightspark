@@ -30,5 +30,5 @@ IF(USE_VAAPI)
     vaapi_utils.cpp
     )
 
-  SET(CMAKE_CXX_FLAGS "-O2 -finline-functions -Wall -g -pipe -fPIC")
+  SET(CMAKE_CXX_FLAGS "-finline-functions -Wall -pipe -fPIC")
 ENDIF(USE_VAAPI)

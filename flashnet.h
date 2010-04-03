@@ -132,7 +132,7 @@ public:
 	uint32_t getVideoWidth();
 	uint32_t getVideoHeight();
 	double getFrameRate();
-	bool copyFrameToBindedTexture();
+	bool copyFrameToTexture(GLuint tex);
 };
 
 };

@@ -369,7 +369,16 @@ void NetStream::execute()
 							sem_wait(&mutex);
 							//The tag is the header, initialize decoding
 							assert(decoder==NULL); //The decoder can be set only once
-							decoder=new FFMpegDecoder(tag.packetData,tag.packetLen);
+						#ifdef USE_VAAPI
+							if(sys->useVaapi)
+							{
+								decoder=new VaapiDecoder(tag.packetData,tag.packetLen);
+							}
+						#endif
+							{
+								abort();
+								decoder=new FFMpegDecoder(tag.packetData,tag.packetLen);
+							}
 							tag.releaseBuffer();
 							sem_post(&mutex);
 						}
@@ -473,12 +482,12 @@ double NetStream::getFrameRate()
 	return frameRate;
 }
 
-bool NetStream::copyFrameToBindedTexture()
+bool NetStream::copyFrameToTexture(GLuint tex)
 {
 	sem_wait(&mutex);
 	bool ret=false;
 	if(decoder)
-		ret=decoder->copyFrameToBindedTexture();
+		ret=decoder->copyFrameToTexture(tex);
 	sem_post(&mutex);
 	return ret;
 }

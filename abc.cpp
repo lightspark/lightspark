@@ -22,7 +22,6 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/LLVMContext.h>
-#include <llvm/ModuleProvider.h> 
 #include <llvm/Target/TargetData.h>
 #include <llvm/Target/TargetSelect.h>
 #include <llvm/Analysis/Verifier.h>
@@ -1263,19 +1262,17 @@ void ABCVm::Run(ABCVm* th)
 	sys=th->m_sys;
 	iManager=th->int_manager;
 	dManager=th->number_manager;
-	llvm::ExistingModuleProvider* mp=NULL;
 	if(sys->useJit)
 	{
 		llvm::InitializeNativeTarget();
 		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
-		mp = new llvm::ExistingModuleProvider(th->module);
-		llvm::EngineBuilder eb(mp);
+		llvm::EngineBuilder eb(th->module);
 		eb.setEngineKind(llvm::EngineKind::JIT);
 		eb.setOptLevel(llvm::CodeGenOpt::Default);
 		th->ex=eb.create();
 		assert(th->ex);
 
-		th->FPM=new llvm::FunctionPassManager(mp);
+		th->FPM=new llvm::FunctionPassManager(th->module);
 	      
 		th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
 #ifndef NDEBUG
@@ -1314,8 +1311,6 @@ void ABCVm::Run(ABCVm* th)
 	if(sys->useJit)
 	{
 		th->ex->clearAllGlobalMappings();
-		mp->releaseModule();
-		delete mp;
 		delete th->module;
 	}
 }

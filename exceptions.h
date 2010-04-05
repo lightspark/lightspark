@@ -50,5 +50,17 @@ public:
 	}
 };
 
+class UnsupportedException: public LightsparkException
+{
+public:
+	UnsupportedException(const std::string& c, const std::string& u):LightsparkException(c,u)
+	{
+	}
+	const char* what() const throw()
+	{
+		return "Lightspark unsupported operation";
+	}
+};
+
 };
 #endif

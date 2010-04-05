@@ -32,6 +32,7 @@
 #include "swf.h"
 #include "geometry.h"
 #include "class.h"
+#include "exceptions.h"
 
 using namespace std;
 using namespace lightspark;
@@ -89,7 +90,7 @@ bool ASObject::isLess(ASObject* r)
 	if(hasPropertyByQName("valueOf",""))
 	{
 		if(r->hasPropertyByQName("valueOf","")==false)
-			abort();
+			throw RunTimeException("Missing valueof for second operand",sys->getOrigin().raw_buf());
 
 		objAndLevel obj1=getVariableByQName("valueOf","");
 		objAndLevel obj2=r->getVariableByQName("valueOf","");

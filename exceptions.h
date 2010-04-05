@@ -62,5 +62,17 @@ public:
 	}
 };
 
+class ParseException: public LightsparkException
+{
+public:
+	ParseException(const std::string& c, const std::string& u):LightsparkException(c,u)
+	{
+	}
+	const char* what() const throw()
+	{
+		return "Lightspark invalid file";
+	}
+};
+
 };
 #endif

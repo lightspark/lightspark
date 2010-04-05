@@ -232,52 +232,6 @@ tiny_string multiname::qualifiedString() const
 	}
 }
 
-bool Integer::isLess(ASObject* o)
-{
-	if(o->getObjectType()==T_INTEGER)
-	{
-		const Integer* i=static_cast<const Integer*>(o);
-		return val < i->toInt();
-	}
-	else if(o->getObjectType()==T_NUMBER)
-	{
-		const Number* i=static_cast<const Number*>(o);
-		return val < i->toNumber();
-	}
-	else if(o->getObjectType()==T_STRING)
-	{
-		const ASString* s=static_cast<const ASString*>(o->implementation);
-		//Check if the string may be converted to integer
-		//TODO: check whole string?
-		if(isdigit(s->data[0]))
-		{
-			int val2=atoi(s->data.c_str());
-			return val < val2;
-		}
-		else
-			return false;
-	}
-	else
-		return ASObject::isLess(o);
-}
-
-bool Integer::isEqual(ASObject* o)
-{
-	if(o->getObjectType()==T_INTEGER)
-		return val==o->toInt();
-	else if(o->getObjectType()==T_UINTEGER)
-	{
-		//CHECK: somehow wrong
-		return val==o->toInt();
-	}
-	else if(o->getObjectType()==T_NUMBER)
-		return val==o->toInt();
-	else
-	{
-		return ASObject::isEqual(o);
-	}
-}
-
 bool ASObject::isEqual(ASObject* r)
 {
 	assert(ref_count>0);

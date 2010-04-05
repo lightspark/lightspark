@@ -85,7 +85,7 @@ void DoActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, ID
 
 void DoActionTag::Render()
 {
-	//abort();
+	LOG(LOG_NOT_IMPLEMENTED,"AVM1 not supported");
 /*#ifndef WIN32
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);
@@ -158,7 +158,7 @@ void DoInitActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo
 
 void DoInitActionTag::Render()
 {
-	//abort();
+	LOG(LOG_NOT_IMPLEMENTED,"AVM1 not supported");
 /*#ifndef WIN32
 	timespec ts,td;
 	clock_gettime(CLOCK_REALTIME,&ts);

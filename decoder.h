@@ -41,16 +41,15 @@ namespace gnash
 		};
 	};
 };
+using gnash::VaapiSurface;
+using gnash::VaapiSurfaceProxy;
+using gnash::VaapiSurfaceGLX;
+using gnash::media::ffmpeg::VaapiContextFfmpeg;
 #endif
 
 namespace lightspark
 {
 
-using gnash::VaapiSurface;
-using gnash::VaapiSurfaceProxy;
-using gnash::VaapiSurfaceGLX;
-using gnash::media::ffmpeg::VaapiContextFfmpeg;
- 
 class Decoder
 {
 protected:

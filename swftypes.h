@@ -21,7 +21,11 @@
 #define SWFTYPES_H
 
 #include "compat.h"
+#ifdef WIN32
 #include <llvm/System/DataTypes.h>
+#else
+#include <llvm/Support/DataTypes.h>
+#endif
 #include <iostream>
 #include <fstream>
 #include <vector>

@@ -2178,17 +2178,6 @@ ASFUNCTIONBODY(lightspark,parseFloat)
 	}
 }
 
-
-//DEPRECATED: use convert_i
-intptr_t ABCVm::s_toInt(ASObject* o)
-{
-	if(o->getObjectType()!=T_INTEGER)
-		abort();
-	intptr_t ret=o->toInt();
-	o->decRef();
-	return ret;
-}
-
 ASFUNCTIONBODY(lightspark,isNaN)
 {
 	if(args[0]->getObjectType()==T_UNDEFINED)

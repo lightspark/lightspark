@@ -73,7 +73,6 @@ typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
 	{"urShift",(void*)&ABCVm::urShift,ARGS_OBJ_OBJ},
 	{"rShift",(void*)&ABCVm::rShift,ARGS_OBJ_OBJ},
 	{"urShift_io",(void*)&ABCVm::urShift_io,ARGS_INT_OBJ},
-	{"toInt",(void*)&ABCVm::s_toInt,ARGS_OBJ},
 	{"getProperty_i",(void*)&ABCVm::getProperty_i,ARGS_OBJ_OBJ},
 	{"convert_i",(void*)&ABCVm::convert_i,ARGS_OBJ},
 	{"convert_u",(void*)&ABCVm::convert_u,ARGS_OBJ},
@@ -2256,7 +2255,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry e=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(e.second==STACK_INT);
 				else if(e.second==STACK_OBJECT)
-					e.first=Builder.CreateCall(ex->FindFunctionNamed("toInt"),e.first);
+					e.first=Builder.CreateCall(ex->FindFunctionNamed("convert_i"),e.first);
 				else
 					throw UnsupportedException("Unsupported type for lookupswitch",sys->getOrigin().raw_buf());
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);

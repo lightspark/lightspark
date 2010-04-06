@@ -92,7 +92,7 @@ void Video::Render()
 
 		glBindTexture(GL_TEXTURE_2D, videoTexture);
 
-		bool frameReady=netStream->copyFrameToBindedTexture();
+		bool frameReady=netStream->copyFrameToTexture(videoTexture);
 
 		//Enable texture lookup and YUV to RGB conversion
 		if(frameReady)

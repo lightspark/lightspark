@@ -738,6 +738,8 @@ int RenderThread::load_program()
 
 	const char *fs = NULL;
 	fs = dataFileRead(DATADIR "/lightspark.frag");
+	if(fs==NULL)
+		throw RunTimeException("Fragment shader code not found",sys->getOrigin().raw_buf());
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
 

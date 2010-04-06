@@ -32,6 +32,7 @@
 #include "swf.h"
 #include "geometry.h"
 #include "class.h"
+#include "exceptions.h"
 
 using namespace std;
 using namespace lightspark;
@@ -89,7 +90,7 @@ bool ASObject::isLess(ASObject* r)
 	if(hasPropertyByQName("valueOf",""))
 	{
 		if(r->hasPropertyByQName("valueOf","")==false)
-			abort();
+			throw RunTimeException("Missing valueof for second operand",sys->getOrigin().raw_buf());
 
 		objAndLevel obj1=getVariableByQName("valueOf","");
 		objAndLevel obj2=r->getVariableByQName("valueOf","");
@@ -110,7 +111,7 @@ bool ASObject::isLess(ASObject* r)
 	LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	if(prototype)
 		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
-	abort();
+	throw RunTimeException("Not handled less comparison for objects",sys->getOrigin().raw_buf());
 	return false;
 }
 
@@ -231,52 +232,6 @@ tiny_string multiname::qualifiedString() const
 	}
 }
 
-bool Integer::isLess(ASObject* o)
-{
-	if(o->getObjectType()==T_INTEGER)
-	{
-		const Integer* i=static_cast<const Integer*>(o);
-		return val < i->toInt();
-	}
-	else if(o->getObjectType()==T_NUMBER)
-	{
-		const Number* i=static_cast<const Number*>(o);
-		return val < i->toNumber();
-	}
-	else if(o->getObjectType()==T_STRING)
-	{
-		const ASString* s=static_cast<const ASString*>(o->implementation);
-		//Check if the string may be converted to integer
-		//TODO: check whole string?
-		if(isdigit(s->data[0]))
-		{
-			int val2=atoi(s->data.c_str());
-			return val < val2;
-		}
-		else
-			return false;
-	}
-	else
-		return ASObject::isLess(o);
-}
-
-bool Integer::isEqual(ASObject* o)
-{
-	if(o->getObjectType()==T_INTEGER)
-		return val==o->toInt();
-	else if(o->getObjectType()==T_UINTEGER)
-	{
-		//CHECK: somehow wrong
-		return val==o->toInt();
-	}
-	else if(o->getObjectType()==T_NUMBER)
-		return val==o->toInt();
-	else
-	{
-		return ASObject::isEqual(o);
-	}
-}
-
 bool ASObject::isEqual(ASObject* r)
 {
 	assert(ref_count>0);
@@ -314,7 +269,7 @@ bool ASObject::isEqual(ASObject* r)
 	if(hasPropertyByQName("valueOf",""))
 	{
 		if(r->hasPropertyByQName("valueOf","")==false)
-			abort();
+			throw RunTimeException("Not handled less comparison for objects",sys->getOrigin().raw_buf());
 
 		objAndLevel obj1=getVariableByQName("valueOf","");
 		objAndLevel obj2=r->getVariableByQName("valueOf","");
@@ -351,10 +306,8 @@ int ASObject::toInt() const
 		if(implementation->toInt(ret))
 			return ret;
 	}
-	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to Int");
-	cout << "imanager " << iManager->available.size() << endl;
-	cout << "dmanager " << dManager->available.size() << endl;
-	abort();
+	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to int");
+	throw RunTimeException("Cannot converto object to int",sys->getOrigin().raw_buf());
 	return 0;
 }
 
@@ -367,7 +320,7 @@ double ASObject::toNumber() const
 			return ret;
 	}
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to float");
-	abort();
+	throw RunTimeException("Cannot converto object to float",sys->getOrigin().raw_buf());
 	return 0;
 }
 
@@ -598,14 +551,21 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 void variables_map::killObjVar(const multiname& mname, int level)
 {
 	nameAndLevel name("",level);
-	if(mname.name_type==multiname::NAME_INT)
-		name.name=tiny_string(mname.name_i);
-	else if(mname.name_type==multiname::NAME_NUMBER)
-		name.name=tiny_string(mname.name_d);
-	else if(mname.name_type==multiname::NAME_STRING)
-		name.name=mname.name_s;
-	else
-		abort();
+	switch(mname.name_type)
+	{
+		case multiname::NAME_INT:
+			name.name=tiny_string(mname.name_i);
+			break;
+		case multiname::NAME_NUMBER:
+			name.name=tiny_string(mname.name_d);
+			break;
+		case multiname::NAME_STRING:
+			name.name=mname.name_s;
+			break;
+		default:
+			assert("Unexpected name kind" && false);
+	}
+
 
 	const pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	assert(ret.first!=ret.second);
@@ -626,20 +586,26 @@ void variables_map::killObjVar(const multiname& mname, int level)
 		}
 	}
 
-	abort();
+	throw RunTimeException("Variable to kill not found",sys->getOrigin().raw_buf());
 }
 
 obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool create, bool searchPreviusLevels)
 {
 	nameAndLevel name("",level);
-	if(mname.name_type==multiname::NAME_INT)
-		name.name=tiny_string(mname.name_i);
-	else if(mname.name_type==multiname::NAME_NUMBER)
-		name.name=tiny_string(mname.name_d);
-	else if(mname.name_type==multiname::NAME_STRING)
-		name.name=mname.name_s;
-	else
-		abort();
+	switch(mname.name_type)
+	{
+		case multiname::NAME_INT:
+			name.name=tiny_string(mname.name_i);
+			break;
+		case multiname::NAME_NUMBER:
+			name.name=tiny_string(mname.name_d);
+			break;
+		case multiname::NAME_STRING:
+			name.name=mname.name_s;
+			break;
+		default:
+			assert("Unexpected name kind" && false);
+	}
 
 	const var_iterator ret_begin=Variables.lower_bound(name);
 	//This actually look for the first different name, if we accept also previous levels
@@ -890,7 +856,7 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 		if(cur==name)
 		{
 			if(it->second.second.getter)
-				abort();
+				throw UnsupportedException("Getters are not supported in getVariableByString",sys->getOrigin().raw_buf()); 
 			return it->second.second.var;
 		}
 	}
@@ -1681,12 +1647,7 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 	if(HasScale)
 	{
 		int NScaleBits=UB(5,bs);
-		//if(NScaleBits==1)
-		//	__asm__("int $3");
-		FB tmp=FB(NScaleBits,bs);
-		v.ScaleX=tmp;
-		//if(v.ScaleX==0)
-		//	abort();
+		v.ScaleX=FB(NScaleBits,bs);
 		v.ScaleY=FB(NScaleBits,bs);
 	}
 	int HasRotate=UB(1,bs);
@@ -1833,7 +1794,7 @@ void variables_map::initSlot(unsigned int n, int level, const tiny_string& name,
 	}
 
 	//Name not present, no good
-	abort();
+	throw RunTimeException("initSlot on missing variable",sys->getOrigin().raw_buf());
 }
 
 void variables_map::setSlot(unsigned int n,ASObject* o)
@@ -1842,17 +1803,12 @@ void variables_map::setSlot(unsigned int n,ASObject* o)
 	{
 		assert(slots_vars[n-1]!=Variables.end());
 		if(slots_vars[n-1]->second.second.setter)
-			abort();
+			throw UnsupportedException("setSlot has setters",sys->getOrigin().raw_buf());
 		slots_vars[n-1]->second.second.var->decRef();
 		slots_vars[n-1]->second.second.var=o;
 	}
 	else
-	{
-		LOG(LOG_ERROR,"Setting slot out of range");
-		abort();
-		//slots_vars.resize(n);
-		//slots[n-1]=o;
-	}
+		throw RunTimeException("setSlot out of bounds",sys->getOrigin().raw_buf());
 }
 
 obj_var* variables_map::getValueAt(unsigned int index, int& level)
@@ -1869,10 +1825,7 @@ obj_var* variables_map::getValueAt(unsigned int index, int& level)
 		return &it->second.second;
 	}
 	else
-	{
-		LOG(LOG_ERROR,"Index too big");
-		abort();
-	}
+		throw RunTimeException("getValueAt out of bounds",sys->getOrigin().raw_buf());
 }
 
 ASObject* ASObject::getValueAt(int index)
@@ -1909,10 +1862,7 @@ tiny_string variables_map::getNameAt(unsigned int index)
 		return tiny_string(it->first.name);
 	}
 	else
-	{
-		LOG(LOG_ERROR,"Index too big");
-		abort();
-	}
+		throw RunTimeException("getNameAt out of bounds",sys->getOrigin().raw_buf());
 }
 
 unsigned int ASObject::numVariables()

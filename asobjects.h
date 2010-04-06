@@ -25,6 +25,7 @@
 #include "frame.h"
 #include "input.h"
 #include "compat.h"
+#include "exceptions.h"
 
 namespace lightspark
 {
@@ -414,6 +415,7 @@ class Array: public IInterface
 friend class ABCVm;
 protected:
 	std::vector<data_slot> data;
+	void outofbounds() const;
 public:
 	//These utility methods are also used by ByteArray 
 	static bool isValidMultiname(const multiname& name, unsigned int& index);
@@ -438,27 +440,25 @@ public:
 	{
 		if(index<data.size())
 		{
-			if(data[index].data==NULL)
-				abort();
+			assert(data[index].data);
 			return data[index].data;
 		}
 		else
-			abort();
+		{
+			outofbounds();
+			return NULL;
+		}
 	}
 	void set(unsigned int index, ASObject* o)
 	{
 		if(index<data.size())
 		{
-			if(data[index].data)
-			{
-				std::cout << "overwriting" << std::endl;
-				abort();
-			}
+			assert(data[index].data==NULL);
 			data[index].data=o;
 			data[index].type=DATA_OBJECT;
 		}
 		else
-			abort();
+			outofbounds();
 	}
 	int size() const
 	{
@@ -528,10 +528,7 @@ public:
 	UInteger(uint32_t v=0):val(v){type=T_UINTEGER;}
 
 	static void sinit(Class_base* c);
-	tiny_string toString(bool debugMsg)
-	{
-		abort();
-	}
+	tiny_string toString(bool debugMsg);
 	int32_t toInt() const
 	{
 		return val;
@@ -542,13 +539,9 @@ public:
 	}
 	double toNumber() const
 	{
-		abort();
-//		return val;
+		return val;
 	}
-	bool isLess(ASObject* r)
-	{
-		abort();
-	}
+	bool isLess(ASObject* r);
 	bool isEqual(ASObject* o);
 };
 

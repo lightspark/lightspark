@@ -196,7 +196,7 @@ bool VaapiDecoder::copyFrameToTexture(GLuint tex)
 	Decoder::copyFrameToTexture(tex);
 
 	assert(sys->useVaapi);
-	if(tex!=validTexture || glxSurface==NULL) //The destination texture has changes
+	if(tex!=validTexture || glxSurface==NULL) //The destination texture has changed
 	{
 		assert(validTexture==0);
 		delete glxSurface;
@@ -326,6 +326,7 @@ void FFMpegDecoder::setSize(uint32_t w, uint32_t h)
 {
 	if(Decoder::setSize(w,h))
 	{
+		std::cout << "puppa" << std::endl;
 		//Discard all the frames
 		while(discardFrame());
 

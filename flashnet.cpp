@@ -139,8 +139,8 @@ void URLLoader::execute()
 {
 	CurlDownloader curlDownloader(url);
 
-	bool done=curlDownloader.download();
-	if(done)
+	curlDownloader.run();
+	if(!curlDownloader.hasFailed())
 	{
 		if(dataFormat=="binary")
 		{
@@ -374,6 +374,7 @@ void NetStream::execute()
 							{
 								decoder=new VaapiDecoder(tag.packetData,tag.packetLen);
 							}
+							else
 						#endif
 							{
 								decoder=new FFMpegDecoder(tag.packetData,tag.packetLen);

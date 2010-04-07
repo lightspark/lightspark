@@ -177,12 +177,6 @@ CurlDownloader::CurlDownloader(const tiny_string& u)
 	url=tmp2.c_str();
 }
 
-bool CurlDownloader::download()
-{
-	execute();
-	return !failed;
-}
-
 void CurlDownloader::abort()
 {
 	Downloader::stop();

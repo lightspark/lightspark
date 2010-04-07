@@ -74,5 +74,14 @@ public:
 	}
 };
 
+class JobTerminationException: public std::exception
+{
+public:
+	const char* what() const throw()
+	{
+		return "Job terminated";
+	}
+};
+
 };
 #endif

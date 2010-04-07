@@ -16,6 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
+#include <assert.h>
 
 #include "thread_pool.h"
 #include "compat.h"
@@ -23,6 +24,7 @@
 using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
+TLSDATA lightspark::IThreadJob* thisJob=NULL;
 
 ThreadPool::ThreadPool(SystemState* s):stop(false)
 {
@@ -87,7 +89,10 @@ void* ThreadPool::job_worker(void* t)
 		myJob->executing=true;
 		sem_post(&th->mutex);
 
+		assert(thisJob==NULL);
+		thisJob=myJob;
 		myJob->run();
+		thisJob=NULL;
 
 		sem_wait(&th->mutex);
 		myJob->executing=false;
@@ -105,16 +110,3 @@ void ThreadPool::addJob(IThreadJob* j)
 	sem_post(&num_jobs);
 }
 
-void IThreadJob::run()
-{
-	execute();
-}
-
-void IThreadJob::stop()
-{
-	if(executing)
-	{
-		aborting=true;
-		this->abort();
-	}
-}

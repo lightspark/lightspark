@@ -17,41 +17,83 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _THREAD_POOL_H
-#define _THREAD_POOL_H
+#ifndef _THREADING_H
+#define _THREADING_H
 
-#include <deque>
-#include <pthread.h>
 #include <semaphore.h>
 #include <stdlib.h>
-#include "threading.h"
-
-extern TLSDATA lightspark::IThreadJob* thisJob;
+#include "compat.h"
 
 namespace lightspark
 {
 
-#define NUM_THREADS 5
+class Mutex
+{
+friend class Locker;
+private:
+	sem_t sem;
+	const char* name;
+	uint32_t foundBusy;
+	void lock();
+	void unlock();
+public:
+	Mutex(const char* name);
+	~Mutex();
+};
 
-class SystemState;
+class IThreadJob
+{
+friend class ThreadPool;
+friend class Condition;
+private:
+	sem_t terminated; 
+protected:
+	bool executing;
+	bool aborting;
+	virtual void execute()=0;
+	//DEPRECATED: should be pure virtual
+	virtual void abort(){::abort();}
+	Mutex mutex;
+public:
+	IThreadJob();
+	virtual ~IThreadJob();
+	void run();
+	void stop();
+};
 
-class ThreadPool
+class Condition
 {
 private:
-	sem_t mutex;
-	pthread_t threads[NUM_THREADS];
-	IThreadJob* curJobs[NUM_THREADS];
-	std::deque<IThreadJob*> jobs;
-	sem_t num_jobs;
-	static void* job_worker(void*);
-	SystemState* m_sys;
-	bool stop;
+	sem_t sem;
+	//TODO: use atomic incs and decs
+	//uint32_t blocked;
+	//uint32_t maxBlocked;
 public:
-	ThreadPool(SystemState* s);
-	~ThreadPool();
-	void addJob(IThreadJob* j);
+	Condition(uint32_t init);
+	~Condition();
+	void signal();
+	//void signal_all();
+	void wait();
+	bool try_wait();
+};
+
+class Locker
+{
+private:
+	Mutex& _m;
+	const char* message;
+public:
+	Locker(Mutex& m):_m(m)
+	{
+		_m.lock();
+	}
+	~Locker()
+	{
+		_m.unlock();
+	}
 };
 
 };
 
+extern TLSDATA lightspark::IThreadJob* thisJob;
 #endif

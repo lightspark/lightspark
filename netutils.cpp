@@ -217,7 +217,7 @@ void CurlDownloader::execute()
 	else
 		setFailed();
 
-	sem_post(&terminated);
+	sem_post(&(Downloader::terminated));
 }
 
 int CurlDownloader::progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)

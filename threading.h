@@ -53,7 +53,6 @@ protected:
 	virtual void execute()=0;
 	//DEPRECATED: should be pure virtual
 	virtual void abort(){::abort();}
-	Mutex mutex;
 public:
 	IThreadJob();
 	virtual ~IThreadJob();

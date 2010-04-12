@@ -57,17 +57,22 @@ private:
 	pthread_t t;
 	std::list<TimingEvent*> pendingEvents;
 	SystemState* m_sys;
+	ITickJob* currentJob;
 	bool stopped;
 	static void* timer_worker(TimerThread*);
 	static uint64_t timespecToMsecs(timespec t);
 	static timespec msecsToTimespec(uint64_t time);
 	void insertNewEvent(TimingEvent* e);
+	void insertNewEvent_nolock(TimingEvent* e);
+	void dumpJobs();
 public:
 	TimerThread(SystemState* s);
+	void stop();
 	~TimerThread();
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
 	//Returns if the job has been found or not
+	//If the canceled job is currently executing this waits for it to complete
 	bool removeJob(ITickJob* job);
 };
 

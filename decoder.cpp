@@ -42,8 +42,7 @@ bool Decoder::setSize(uint32_t w, uint32_t h)
 	{
 		frameWidth=w;
 		frameHeight=h;
-		//LOG(LOG_NO_INFO,"Video frame size " << frameWidth << 'x' << frameHeight);
-		std::cout << "Video frame size " << frameWidth << 'x' << frameHeight << std::endl;
+		LOG(LOG_NO_INFO,"Video frame size " << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
 		return true;
 	}
@@ -326,7 +325,6 @@ void FFMpegDecoder::setSize(uint32_t w, uint32_t h)
 {
 	if(Decoder::setSize(w,h))
 	{
-		std::cout << "puppa" << std::endl;
 		//Discard all the frames
 		while(discardFrame());
 

@@ -30,6 +30,7 @@
 #include "flashdisplay.h"
 #include "flashtext.h"
 #include "flashutils.h"
+#include "class.h"
 #include <GL/glew.h>
 
 namespace lightspark
@@ -94,7 +95,7 @@ public:
 	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s),loadedFrom(NULL){ }
 	virtual TAGTYPE getType(){ return DICT_TAG; }
 	virtual int getId(){return 0;} 
-	virtual IInterface* instance() const { return NULL; } 
+	virtual IInterface* instance(bool named) const { return NULL; } 
 	void setLoadedFrom(RootMovieClip* r){loadedFrom=r;}
 };
 
@@ -125,8 +126,9 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	IInterface* instance(bool named) const
 	{
+		assert(!named);
 		return new DefineShapeTag(*this);
 	}
 };
@@ -150,8 +152,9 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	IInterface* instance(bool named) const
 	{
+		assert(!named);
 		return new DefineShape2Tag(*this);
 	}
 };
@@ -174,8 +177,9 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	IInterface* instance(bool named) const
 	{
+		assert(!named);
 		return new DefineShape3Tag(*this);
 	}
 };
@@ -201,8 +205,9 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	IInterface* instance(bool named) const
 	{
+		assert(!named);
 		return new DefineShape4Tag(*this);
 	}
 };
@@ -318,14 +323,14 @@ private:
 		bool operator()(const std::pair<PlaceInfo, IDisplayListElem*>& a, const std::pair<PlaceInfo, IDisplayListElem*>& b);
 	};
 
-	UB PlaceFlagHasClipAction;
-	UB PlaceFlagHasClipDepth;
-	UB PlaceFlagHasName;
-	UB PlaceFlagHasRatio;
-	UB PlaceFlagHasColorTransform;
-	UB PlaceFlagHasMatrix;
-	UB PlaceFlagHasCharacter;
-	UB PlaceFlagMove;
+	bool PlaceFlagHasClipAction;
+	bool PlaceFlagHasClipDepth;
+	bool PlaceFlagHasName;
+	bool PlaceFlagHasRatio;
+	bool PlaceFlagHasColorTransform;
+	bool PlaceFlagHasMatrix;
+	bool PlaceFlagHasCharacter;
+	bool PlaceFlagMove;
 	UI16 Depth;
 	UI16 CharacterId;
 	MATRIX Matrix;
@@ -395,7 +400,7 @@ public:
 	}
 	virtual void handleEvent(Event*);
 
-	IInterface* instance() const;
+	IInterface* instance(bool named) const;
 };
 
 class KERNINGRECORD
@@ -412,8 +417,9 @@ public:
 	~DefineBinaryDataTag(){delete[] bytes;}
 	virtual int getId(){return Tag;} 
 
-	IInterface* instance() const
+	IInterface* instance(bool named) const
 	{
+		assert(!named);
 		return new DefineBinaryDataTag(*this);
 	}
 };
@@ -513,8 +519,9 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	IInterface* instance(bool named) const
 	{
+		assert(!named);
 		return new DefineTextTag(*this);
 	}
 };
@@ -528,9 +535,16 @@ public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
 
-	IInterface* instance() const
+	IInterface* instance(bool named) const
 	{
 		DefineSpriteTag* ret=new DefineSpriteTag(*this);
+		if(named)
+		{
+			ret->obj=new ASObject;
+			ret->obj->implementation=ret;
+			ret->obj->prototype=Class<MovieClip>::getClass();
+			ret->obj->prototype->incRef();
+		}
 		ret->bootstrap();
 		return ret;
 	}

@@ -1227,16 +1227,15 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		else
 			localRoot=parent->root;
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
-		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
+		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance(PlaceFlagHasName));
 		assert(toAdd);
 
 		if(toAdd->obj)
 		{
-			abort();
-/*			//We now ask the VM to construct this object
+			//We now ask the VM to construct this object
 			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd->obj,toAdd->obj->prototype);
 			sys->currentVm->addEvent(NULL,e);
-			e->wait();*/
+			e->wait();
 		}
 
 		if(PlaceFlagHasColorTransform)
@@ -1261,13 +1260,13 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 
 	if(PlaceFlagHasName)
 	{
+		assert(parent->obj);
 		//Set a variable on the parent to link this object
 		LOG(LOG_NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
-		if(!(PlaceFlagMove))
+		if(!PlaceFlagMove)
 		{
-			//if(toAdd->constructor)
-			//	toAdd->constructor->call(toAdd,NULL);
-			//parent->setVariableByQName((const char*)Name,"",toAdd);
+			assert(parent->obj);
+			parent->obj->setVariableByQName((const char*)Name,"",toAdd->obj);
 		}
 		else
 			LOG(LOG_ERROR, "Moving of registered objects not really supported");
@@ -1394,8 +1393,9 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	}
 }
 
-IInterface* DefineButton2Tag::instance() const
+IInterface* DefineButton2Tag::instance(bool named) const
 {
+	assert(!named);
 	return new DefineButton2Tag(*this);
 }
 

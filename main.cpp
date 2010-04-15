@@ -183,7 +183,6 @@ int main(int argc, char* argv[])
 	gnash::vaapi_set_is_enabled(useVaapi);
 #endif
 
-	sys->setOrigin(fileName);
 	zlib_file_filter zf(fileName);
 	istream f(&zf);
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );

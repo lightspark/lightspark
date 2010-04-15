@@ -544,6 +544,7 @@ private:
 	static number_t subtract_oi(ASObject*, intptr_t);
 	static number_t subtract_io(intptr_t, ASObject*);
 	static number_t subtract_do(number_t, ASObject*);
+	static intptr_t s_toInt(ASObject*);
 	static void popScope(call_context* th);
 	static ASObject* newActivation(call_context* th, method_info*);
 	static ASObject* coerce_s(ASObject*);

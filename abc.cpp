@@ -41,7 +41,6 @@
 #include "flashexternal.h"
 #include "flashmedia.h"
 #include "class.h"
-#include "exceptions.h"
 
 using namespace std;
 using namespace lightspark;
@@ -63,7 +62,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 	if(dest!=pos)
 	{
 		LOG(LOG_ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
-		throw ParseException("Not complete ABC data",sys->getOrigin().raw_buf());
+		abort();
 	}
 }
 
@@ -273,7 +272,7 @@ int ABCContext::getMultinameRTData(int mi) const
 			break;*/
 		default:
 			LOG(LOG_ERROR,"getMultinameRTData not yet implemented for this kind " << hex << m->kind);
-			throw UnsupportedException("kind not implemented for getMultinameRTData",sys->getOrigin().raw_buf());
+			abort();
 	}
 }
 
@@ -306,7 +305,8 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 			}
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
-				throw UnsupportedException("Multiname to String not implemented",sys->getOrigin().raw_buf());
+				abort();
+				break;
 		}
 		return ret;
 	}
@@ -323,7 +323,8 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 			}
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
-				throw UnsupportedException("Multiname to String not implemented",sys->getOrigin().raw_buf());
+				abort();
+				break;
 		}
 		return ret;
 	}
@@ -451,7 +452,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				break;*/
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
-				throw UnsupportedException("Multiname to String not implemented",sys->getOrigin().raw_buf());
+				abort();
+				break;
 		}
 		return ret;
 	}
@@ -506,7 +508,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else
 				{
-					throw UnsupportedException("getMultiname not completely implemented",sys->getOrigin().raw_buf());
+					abort();
 					//ret->name_s=rt1->toString();
 					//ret->name_type=multiname::NAME_STRING;
 				}
@@ -545,7 +547,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				break;*/
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
-				throw UnsupportedException("Multiname to String not implemented",sys->getOrigin().raw_buf());
+				abort();
+				break;
 		}
 		return ret;
 	}
@@ -580,7 +583,8 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 			}
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
-				throw UnsupportedException("Multiname to String not implemented",sys->getOrigin().raw_buf());
+				abort();
+				break;
 		}
 		return ret;
 	}
@@ -597,7 +601,8 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 			}
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
-				throw UnsupportedException("Multiname to String not implemented",sys->getOrigin().raw_buf());
+				abort();
+				break;
 		}
 		return ret;
 	}
@@ -741,7 +746,8 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				break;*/
 			default:
 				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
-				throw UnsupportedException("Multiname to String not implemented",sys->getOrigin().raw_buf());
+				abort();
+				break;
 		}
 		return ret;
 	}
@@ -833,7 +839,8 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				break;*/
 			default:
 				LOG(LOG_ERROR,"dMultiname to String not yet implemented for this kind " << hex << m->kind);
-				throw UnsupportedException("Multiname to String not implemented",sys->getOrigin().raw_buf());
+				abort();
+				break;
 		}
 		ret->name_s.len();
 		return ret;
@@ -903,7 +910,10 @@ ABCContext::ABCContext(istream& in)
 
 		//Link method body with method signature
 		if(methods[method_body[i].method].body!=NULL)
-			throw ParseException("Duplicated body for function",sys->getOrigin().raw_buf());
+		{
+			LOG(LOG_ERROR,"Duplicate body assigment");
+			abort();
+		}
 		else
 			methods[method_body[i].method].body=&method_body[i];
 	}
@@ -993,10 +1003,7 @@ void ABCVm::handleEvent()
 			{
 				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
 				LOG(LOG_CALLS,"Building instance traits");
-				ev->_class->context->buildInstanceTraits(ev->obj, ev->_class->class_index);
-
-				LOG(LOG_CALLS,"Calling Instance init " << ev->_class->class_name);
-				ev->_class->constructor->call(ev->obj,NULL,0,ev->_class->max_level);
+				ev->obj->handleConstruction(NULL,0,true);
 				ev->sync();
 				break;
 			}
@@ -1008,7 +1015,8 @@ void ABCVm::handleEvent()
 				break;
 			}
 			default:
-				throw UnsupportedException("Not supported event",sys->getOrigin().raw_buf());
+				LOG(LOG_ERROR,"Not supported event");
+				abort();
 		}
 	}
 }
@@ -1037,7 +1045,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 	if(derived_class==NULL)
 	{
 		LOG(LOG_ERROR,"Class " << s << " not found in global");
-		throw RunTimeException("Class not found in global",sys->getOrigin().raw_buf());
+		abort();
 	}
 
 	if(derived_class->getObjectType()==T_DEFINABLE)
@@ -1160,7 +1168,7 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 void ABCVm::not_impl(int n)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "not implement opcode 0x" << hex << n );
-	throw UnsupportedException("Not implemented opcode",sys->getOrigin().raw_buf());
+	abort();
 }
 
 void call_context::runtime_stack_push(ASObject* s)
@@ -1171,8 +1179,10 @@ void call_context::runtime_stack_push(ASObject* s)
 ASObject* call_context::runtime_stack_pop()
 {
 	if(stack_index==0)
-		throw RunTimeException("Empty stack",sys->getOrigin().raw_buf());
-
+	{
+		LOG(LOG_ERROR,"Empty stack");
+		abort();
+	}
 	ASObject* ret=stack[--stack_index];
 	return ret;
 }
@@ -1317,6 +1327,8 @@ tiny_string ABCContext::getString(unsigned int s) const
 
 void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 {
+	if(class_index==-1)
+		return;
 	for(unsigned int i=0;i<instances[class_index].trait_count;i++)
 		buildTrait(obj,&instances[class_index].traits[i],true);
 }
@@ -1339,7 +1351,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			LOG(LOG_CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
-				throw ParseException("Interface trait has to be a NULL body",sys->getOrigin().raw_buf());
+				abort();
 			int level=obj->getLevel();
 
 			obj_var* var=obj->Variables.findObjVar(name,"",level,false,true);
@@ -1365,7 +1377,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			LOG(LOG_CALLS,"Getter trait: " << ns << "::" << name);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
-				throw ParseException("Interface trait has to be a NULL body",sys->getOrigin().raw_buf());
+				abort();
 			int level=obj->getLevel()+1;
 			obj_var* var=NULL;
 
@@ -1397,7 +1409,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			LOG(LOG_CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
-				throw ParseException("Interface trait has to be a NULL body",sys->getOrigin().raw_buf());
+				abort();
 			int level=obj->getLevel()+1;
 			obj_var* var=NULL;
 
@@ -1429,7 +1441,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 //		case traits_info::Slot:
 		default:
 			LOG(LOG_ERROR,"Trait not supported " << name << " " << t->kind);
-			throw UnsupportedException("Trait not supported",sys->getOrigin().raw_buf());
+			abort();
 			//obj->setVariableByQName(name, ns, new Undefined);
 	}
 }
@@ -1456,7 +1468,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 		default:
 		{
 			LOG(LOG_ERROR,"Constant kind " << hex << kind);
-			throw UnsupportedException("Constant trait not supported",sys->getOrigin().raw_buf());
+			abort();
 		}
 	}
 }
@@ -1898,8 +1910,10 @@ istream& lightspark::operator>>(istream& in, namespace_info& v)
 {
 	in >> v.kind >> v.name;
 	if(v.kind!=0x05 && v.kind!=0x08 && v.kind!=0x16 && v.kind!=0x17 && v.kind!=0x18 && v.kind!=0x19 && v.kind!=0x1a)
-		throw UnsupportedException("Unexpected namespace kind",sys->getOrigin().raw_buf());
-
+	{
+		LOG(LOG_ERROR,"Unexpected namespace kind");
+		abort();
+	}
 	return in;
 }
 
@@ -1977,7 +1991,8 @@ istream& lightspark::operator>>(istream& in, multiname_info& v)
 		}
 		default:
 			LOG(LOG_ERROR,"Unexpected multiname kind " << hex << v.kind);
-			throw UnsupportedException("Unexpected namespace kind",sys->getOrigin().raw_buf());
+			abort();
+			break;
 	}
 	return in;
 }
@@ -2100,7 +2115,7 @@ istream& lightspark::operator>>(istream& in, instance_info& v)
 	{
 		in >> v.interfaces[i];
 		if(v.interfaces[i]==0)
-			throw ParseException("Invalid interface specified",sys->getOrigin().raw_buf());
+			abort();
 	}
 
 	in >> v.init;
@@ -2178,6 +2193,17 @@ ASFUNCTIONBODY(lightspark,parseFloat)
 	}
 }
 
+
+//DEPRECATED: use convert_i
+intptr_t ABCVm::s_toInt(ASObject* o)
+{
+	if(o->getObjectType()!=T_INTEGER)
+		abort();
+	intptr_t ret=o->toInt();
+	o->decRef();
+	return ret;
+}
+
 ASFUNCTIONBODY(lightspark,isNaN)
 {
 	if(args[0]->getObjectType()==T_UNDEFINED)
@@ -2192,7 +2218,7 @@ ASFUNCTIONBODY(lightspark,isNaN)
 			return abstract_b(false);
 	}
 	else
-		throw UnsupportedException("Weird argument for isNaN",sys->getOrigin().raw_buf());
+		abort();
 }
 
 ASFUNCTIONBODY(lightspark,unescape)
@@ -2203,7 +2229,7 @@ ASFUNCTIONBODY(lightspark,unescape)
 	for(unsigned int i=0;i<th->data.size();i++)
 	{
 		if(th->data[i]=='%')
-			throw UnsupportedException("Unescape not completely implemented",sys->getOrigin().raw_buf());
+			abort();
 		else
 			ret.push_back(th->data[i]);
 	}

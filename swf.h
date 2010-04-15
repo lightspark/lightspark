@@ -92,7 +92,6 @@ protected:
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
 	bool initialized;
-	tiny_string origin;
 private:
 	RGB Background;
 	std::list < DictionaryTag* > dictionary;
@@ -106,6 +105,7 @@ private:
 	bool toBind;
 	tiny_string bindName;
 	void tick();
+
 public:
 	RootMovieClip(LoaderInfo* li);
 	~RootMovieClip();
@@ -128,8 +128,6 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);
 	void initialize();
-	void setOrigin(const tiny_string& o){origin=o;}
-	const tiny_string& getOrigin(){return origin;}
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);

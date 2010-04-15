@@ -46,7 +46,6 @@ public:
 	void destroy(Downloader* d);
 };
 
-//CurlDownloader can be used as a thread job, standalone or as a streambuf
 class Downloader: public std::streambuf
 {
 private:
@@ -81,6 +80,7 @@ public:
 	}
 };
 
+//CurlDownloader can be used as a thread job, standalone or as a streambuf
 class CurlDownloader: public Downloader, public IThreadJob
 {
 private:
@@ -92,7 +92,6 @@ private:
 	void abort();
 public:
 	CurlDownloader(const tiny_string& u);
-	bool download();
 };
 
 };

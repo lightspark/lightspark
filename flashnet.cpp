@@ -139,8 +139,8 @@ void URLLoader::execute()
 {
 	CurlDownloader curlDownloader(url);
 
-	bool done=curlDownloader.download();
-	if(done)
+	curlDownloader.run();
+	if(!curlDownloader.hasFailed())
 	{
 		if(dataFormat=="binary")
 		{
@@ -313,13 +313,13 @@ NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
 	return ret;
 }
 
+//Tick is called from the timer thread, this happens only if a decoder is available
 void NetStream::tick()
 {
 	//Discard the first frame, if available
-	sem_wait(&mutex);
+	//No mutex needed, ticking can happen only when decoder is valid
 	if(decoder)
 		decoder->discardFrame();
-	sem_post(&mutex);
 }
 
 void NetStream::execute()
@@ -366,21 +366,27 @@ void NetStream::execute()
 
 						if(tag.isHeader())
 						{
-							sem_wait(&mutex);
 							//The tag is the header, initialize decoding
 							assert(decoder==NULL); //The decoder can be set only once
+							//NOTE: there is not need to mutex the decoder, as an async transition from NULL to
+							//valid is not critical
 						#ifdef USE_VAAPI
 							if(sys->useVaapi)
 							{
 								decoder=new VaapiDecoder(tag.packetData,tag.packetLen);
 							}
+							else
 						#endif
 							{
-								abort();
 								decoder=new FFMpegDecoder(tag.packetData,tag.packetLen);
 							}
+							assert(decoder);
+							assert(frameRate!=0);
+							//Now that the decoder is valid, let's start the ticking
+							sys->addTick(1000/frameRate,this);
+							//sys->setRenderRate(frameRate);
+
 							tag.releaseBuffer();
-							sem_post(&mutex);
 						}
 						else
 							decoder->decodeData(tag.packetData,tag.packetLen);
@@ -393,8 +399,6 @@ void NetStream::execute()
 
 						//HACK: initialize frameRate from the container
 						frameRate=tag.frameRate;
-						sys->addTick(1000/frameRate,this);
-						sys->setRenderRate(frameRate);
 						break;
 					}
 					default:
@@ -422,6 +426,9 @@ void NetStream::execute()
 	sem_wait(&mutex);
 	sys->downloadManager->destroy(downloader);
 	downloader=NULL;
+	//This transition is critical, so the mutex is needed
+	//Before deleting stops ticking, removeJobs also spin waits for termination
+	sys->removeJob(this);
 	delete decoder;
 	decoder=NULL;
 	sem_post(&mutex);

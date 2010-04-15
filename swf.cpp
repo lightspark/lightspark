@@ -158,10 +158,11 @@ void SystemState::setParameters(ASObject* p)
 SystemState::~SystemState()
 {
 	assert(shutdown);
-	delete timerThread;
+	timerThread->stop();
 	delete threadPool;
 	delete downloadManager;
 	delete currentVm;
+	delete timerThread;
 
 	//decRef all registered classes
 	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
@@ -738,6 +739,8 @@ int RenderThread::load_program()
 
 	const char *fs = NULL;
 	fs = dataFileRead(DATADIR "/lightspark.frag");
+	if(fs==NULL)
+		throw RunTimeException("Fragment shader code not found",sys->getOrigin().raw_buf());
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
 
@@ -1048,7 +1051,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
-	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
 	SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1); 
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
@@ -1062,6 +1064,10 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		glEnable(GL_TEXTURE_2D);
 		while(1)
 		{
+			sem_wait(&th->render);
+
+			SDL_GL_SwapBuffers( );
+
 			//Before starting rendering, cleanup all the request arrived in the meantime
 			int fakeRenderCount=0;
 			while(sem_trywait(&th->render)==0)
@@ -1074,11 +1080,10 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 
-			sem_wait(&th->render);
 			if(sys->shutdown)
 				pthread_exit(0);
 			SDL_PumpEvents();
-			SDL_GL_SwapBuffers( );
+
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 			//glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 			//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
@@ -1092,6 +1097,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glLoadIdentity();
 			
 			sys->Render();
+
+			glFlush();
 
 			glLoadIdentity();
 
@@ -1113,6 +1120,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
+
+			//Call glFlush to offload work on the GPU
+			glFlush();
 		}
 		glDisable(GL_TEXTURE_2D);
 	}
@@ -1134,7 +1144,6 @@ void RenderThread::draw()
 	{
 		ts=td;
 		LOG(LOG_NO_INFO,"FPS: " << dec << frameCount);
-		cerr << frameCount << endl;
 		//fps_prof->fps=frameCount;
 		frameCount=0;
 		secsCount++;

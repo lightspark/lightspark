@@ -242,26 +242,59 @@ VaapiDecoder::~VaapiDecoder()
 }
 #endif
 
-void FFMpegDecoder::setSize(uint32_t w, uint32_t h)
+extern TLSDATA SystemState* sys;
+
+bool Decoder::setSize(uint32_t w, uint32_t h)
 {
 	if(w!=frameWidth || h!=frameHeight)
 	{
 		frameWidth=w;
 		frameHeight=h;
+		LOG(LOG_NO_INFO,"Video frame size " << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
+		return true;
+	}
+	else
+		return false;
+}
 
-		//As the size chaged, reset the buffer
-		for(int i=0;i<10;i++)
-		{
-			if(buffers[i][0])
-			{
-				free(buffers[i][0]);
-				free(buffers[i][1]);
-				free(buffers[i][2]);
-				buffers[i][0]=NULL;
-				buffers[i][1]=NULL;
-				buffers[i][2]=NULL;
-			}
+bool Decoder::copyFrameToTexture(GLuint tex)
+{
+	if(!resizeGLBuffers)
+		return false;
+
+	//Initialize texture to video size
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, frameWidth, frameHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL); 
+	resizeGLBuffers=false;
+	return true;
+}
+
+#ifdef USE_VAAPI
+void VaapiDecoder::reset_context(AVCodecContext *avctx, VaapiContextFfmpeg *vactx)
+{
+	VaapiContextFfmpeg * const old_vactx = vaapi_get_context(avctx);
+	if (old_vactx)
+		delete old_vactx;
+	vaapi_set_context(avctx, vactx);
+
+	avctx->thread_count = 1;
+	avctx->draw_horiz_band = NULL;
+	if (vactx)
+		avctx->slice_flags = SLICE_FLAG_CODED_ORDER|SLICE_FLAG_ALLOW_FIELD;
+	else
+		avctx->slice_flags = 0;
+}
+
+enum PixelFormat VaapiDecoder::vaapi_get_format(AVCodecContext *avctx, const enum PixelFormat *fmt)
+{
+	VaapiContextFfmpeg * const vactx = vaapi_get_context(avctx);
+
+	if (vactx) {
+		for (int i = 0; fmt[i] != PIX_FMT_NONE; i++) {
+			if (fmt[i] != PIX_FMT_VAAPI_VLD)
+				continue;
+			if (vactx->initDecoder(avctx->width, avctx->height))
+				return fmt[i];
 		}
 
 		sem_destroy(&freeBuffers);
@@ -271,10 +304,196 @@ void FFMpegDecoder::setSize(uint32_t w, uint32_t h)
 		bufferHead=0;
 		bufferTail=0;
 	}
+
+	reset_context(avctx);
+	return avcodec_default_get_format(avctx, fmt);
 }
 
-FFMpegDecoder::FFMpegDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),codecContext(NULL),empty(true),
-		bufferHead(0),bufferTail(0),resizeGLBuffers(false),initialized(false)
+int VaapiDecoder::vaapi_get_buffer(AVCodecContext *avctx, AVFrame *pic)
+{
+	VaapiContextFfmpeg * const vactx = vaapi_get_context(avctx);
+	if (!vactx)
+		return avcodec_default_get_buffer(avctx, pic);
+
+	if (!vactx->initDecoder(avctx->width, avctx->height))
+		return -1;
+
+	VaapiSurfaceFfmpeg * const surface = vactx->getSurface();
+	if (!surface)
+		return -1;
+	vaapi_set_surface(pic, surface);
+
+	static unsigned int pic_num = 0;
+	pic->type = FF_BUFFER_TYPE_USER;
+	pic->age  = ++pic_num - surface->getPicNum();
+	surface->setPicNum(pic_num);
+	return 0;
+}
+
+int VaapiDecoder::vaapi_reget_buffer(AVCodecContext *avctx, AVFrame *pic)
+{
+	VaapiContextFfmpeg * const vactx = vaapi_get_context(avctx);
+
+	if (!vactx)
+		return avcodec_default_reget_buffer(avctx, pic);
+
+	return vaapi_get_buffer(avctx, pic);
+}
+
+void VaapiDecoder::vaapi_release_buffer(AVCodecContext *avctx, AVFrame *pic)
+{
+	VaapiContextFfmpeg * const vactx = vaapi_get_context(avctx);
+	if (!vactx) {
+		avcodec_default_release_buffer(avctx, pic);
+		return;
+	}
+
+	pic->data[0] = NULL;
+	pic->data[1] = NULL;
+	pic->data[2] = NULL;
+	pic->data[3] = NULL;
+}
+
+bool VaapiDecoder::vaapi_init_context(AVCodecContext *avctx, enum CodecID codecId)
+{
+	VaapiContextFfmpeg *vactx = VaapiContextFfmpeg::create(codecId);
+	if (!vactx)
+		return false;
+
+	reset_context(avctx, vactx);
+	avctx->get_format     = vaapi_get_format;
+	avctx->get_buffer     = vaapi_get_buffer;
+	avctx->reget_buffer   = vaapi_reget_buffer;
+	avctx->release_buffer = vaapi_release_buffer;
+	return true;
+}
+
+void VaapiDecoder::copyFrameToSurfaces(const AVFrame* frameIn)
+{
+	assert(sys->useVaapi);
+	freeBuffers.wait();
+
+	//Only one thread may access the tail
+	assert(surfaces[bufferTail]=NULL);
+	VaapiSurfaceFfmpeg * const surface = vaapi_get_surface(frameIn);
+	assert(surface);
+	surfaces[bufferTail]=surface;
+	bufferTail=(bufferTail+1)%10;
+	empty=false;
+
+	usedBuffers.signal();
+}
+
+bool VaapiDecoder::discardFrame()
+{
+	Locker locker(mutex);
+	assert(sys->useVaapi);
+	//We don't want ot block if no frame is available
+	if(!usedBuffers.try_wait())
+		return false;
+
+	VaapiSurfaceProxy const * proxy = surfaces[bufferHead];
+	surfaces[bufferHead]=NULL;
+	assert(proxy);
+	//A frame is available
+	bufferHead=(bufferHead+1)%10;
+	delete proxy;
+
+	if(bufferHead==bufferTail)
+		empty=true;
+	freeBuffers.signal();
+	return true;
+}
+
+bool VaapiDecoder::copyFrameToTexture(GLuint tex)
+{
+	Decoder::copyFrameToTexture(tex);
+
+	assert(sys->useVaapi);
+	if(tex!=validTexture || glxSurface==NULL) //The destination texture has changed
+	{
+		assert(validTexture==0);
+		delete glxSurface;
+		glxSurface=new VaapiSurfaceGLX(GL_TEXTURE_2D, tex);
+		validTexture=tex;
+	}
+	
+	if(!empty)
+	{
+		VaapiSurfaceProxy const * proxy = surfaces[bufferHead];
+		assert(proxy);
+		VaapiSurface* const surface = proxy->get().get();
+		glxSurface->update(surface);
+		return true;
+	}
+
+	return false;
+}
+
+void VaapiDecoder::setSize(uint32_t w, uint32_t h)
+{
+	if(Decoder::setSize(w,h))
+	{
+		//Discard all the frames
+		while(discardFrame());
+	}
+}
+
+bool VaapiDecoder::decodeData(uint8_t* data, uint32_t datalen)
+{
+	assert(sys->useVaapi);
+	int frameOk=0;
+	avcodec_decode_video(codecContext, frameIn, &frameOk, data, datalen);
+	if(frameOk==0)
+		abort();
+	assert(codecContext->pix_fmt==PIX_FMT_VAAPI_VLD);
+
+	const uint32_t height=codecContext->height;
+	const uint32_t width=codecContext->width;
+	assert(frameIn->pts==AV_NOPTS_VALUE);
+
+	setSize(width,height);
+	return true;
+}
+
+VaapiDecoder::VaapiDecoder(uint8_t* initdata, uint32_t datalen):codecContext(NULL),freeBuffers(10),usedBuffers(0),mutex("Decoder"),
+		empty(true),bufferHead(0),bufferTail(0),validTexture(0),glxSurface(NULL)
+{
+	assert(sys->useVaapi);
+	for(int i=0;i<10;i++)
+		surfaces[i]=NULL;
+
+	//The tag is the header, initialize decoding
+	//TODO: serialize access to avcodec_open
+	const enum CodecID codecId=CODEC_ID_H264;
+	AVCodec* codec=avcodec_find_decoder(codecId);
+	assert(codec);
+
+	codecContext=avcodec_alloc_context();
+	//If this tag is the header, fill the extradata for the codec
+	codecContext->extradata=initdata;
+	codecContext->extradata_size=datalen;
+	if(vaapi_init_context(codecContext, codecId)==0)
+		abort();
+
+	if(avcodec_open(codecContext, codec)<0)
+		abort();
+
+	frameIn=avcodec_alloc_frame();
+}
+
+VaapiDecoder::~VaapiDecoder()
+{
+	for(int i=0;i<10;i++)
+		delete surfaces[i];
+	assert(codecContext);
+	av_free(codecContext);
+	av_free(frameIn);
+}
+#endif
+
+FFMpegDecoder::FFMpegDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),codecContext(NULL),freeBuffers(10),usedBuffers(0),
+		mutex("Decoder"),empty(true),bufferHead(0),bufferTail(0),initialized(false)
 {
 	for(int i=0;i<10;i++)
 	{
@@ -282,8 +501,6 @@ FFMpegDecoder::FFMpegDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),c
 		buffers[i][1]=NULL;
 		buffers[i][2]=NULL;
 	}
-	sem_init(&freeBuffers,0,10);
-	sem_init(&usedBuffers,0,0);
 
 	//The tag is the header, initialize decoding
 	//TODO: serialize access to avcodec_open
@@ -316,20 +533,44 @@ FFMpegDecoder::~FFMpegDecoder()
 	assert(codecContext);
 	av_free(codecContext);
 	av_free(frameIn);
-	sem_destroy(&freeBuffers);
-	sem_destroy(&usedBuffers);
 }
 
-void FFMpegDecoder::discardFrame()
+//setSize is called from the routine that inserts new frames
+void FFMpegDecoder::setSize(uint32_t w, uint32_t h)
 {
+	if(Decoder::setSize(w,h))
+	{
+		//Discard all the frames
+		while(discardFrame());
+
+		//As the size chaged, reset the buffer
+		for(int i=0;i<10;i++)
+		{
+			if(buffers[i][0])
+			{
+				free(buffers[i][0]);
+				free(buffers[i][1]);
+				free(buffers[i][2]);
+				buffers[i][0]=NULL;
+				buffers[i][1]=NULL;
+				buffers[i][2]=NULL;
+			}
+		}
+	}
+}
+
+bool FFMpegDecoder::discardFrame()
+{
+	Locker locker(mutex);
 	//We don't want ot block if no frame is available
-	if(sem_trywait(&usedBuffers)!=0)
-		return;
+	if(!usedBuffers.try_wait())
+		return false;
 	//A frame is available
 	bufferHead=(bufferHead+1)%10;
 	if(bufferHead==bufferTail)
 		empty=true;
-	sem_post(&freeBuffers);
+	freeBuffers.signal();
+	return true;
 }
 
 bool FFMpegDecoder::decodeData(uint8_t* data, uint32_t datalen)
@@ -351,7 +592,7 @@ bool FFMpegDecoder::decodeData(uint8_t* data, uint32_t datalen)
 
 void FFMpegDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height)
 {
-	sem_wait(&freeBuffers);
+	freeBuffers.wait();
 	uint32_t bufferSize=width*height*4;
 	//Only one thread may access the tail
 	if(buffers[bufferTail][0]==NULL)
@@ -376,7 +617,7 @@ void FFMpegDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, u
 
 	bufferTail=(bufferTail+1)%10;
 	empty=false;
-	sem_post(&usedBuffers);
+	usedBuffers.signal();
 }
 
 bool FFMpegDecoder::copyFrameToTexture(GLuint tex)
@@ -388,22 +629,20 @@ bool FFMpegDecoder::copyFrameToTexture(GLuint tex)
 	}
 
 	bool ret=false;
-	if(resizeGLBuffers)
+	if(Decoder::copyFrameToTexture(tex))
 	{
-		//Initialize texture to video size
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, frameWidth, frameHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL); 
 		//Initialize both PBOs to video size
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);
 		glBufferData(GL_PIXEL_UNPACK_BUFFER, frameWidth*frameHeight*4, 0, GL_STREAM_DRAW);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[1]);
 		glBufferData(GL_PIXEL_UNPACK_BUFFER, frameWidth*frameHeight*4, 0, GL_STREAM_DRAW);
-		resizeGLBuffers=false;
 	}
 	else
 	{
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
 		//Copy content of the pbo to the texture, 0 is the offset in the pbo
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frameWidth, frameHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0); 
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 		ret=true;
 	}
 

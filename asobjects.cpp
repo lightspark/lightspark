@@ -35,6 +35,7 @@
 #include "swf.h"
 #include "compat.h"
 #include "class.h"
+#include "exceptions.h"
 
 using namespace std;
 using namespace lightspark;
@@ -115,7 +116,7 @@ ASFUNCTIONBODY(Array,shift)
 	if(th->data[0].type==DATA_OBJECT)
 		ret=th->data[0].data;
 	else
-		abort();
+		throw UnsupportedException("Array::shift not completely implemented",sys->getOrigin().raw_buf());
 	th->data.erase(th->data.begin());
 	return ret;
 }
@@ -200,7 +201,7 @@ ASFUNCTIONBODY(Array,_pop)
 	if(th->data.back().type==DATA_OBJECT)
 		ret=th->data.back().data;
 	else
-		abort();
+		throw UnsupportedException("Array::pop not completely implemented",sys->getOrigin().raw_buf());
 	th->data.pop_back();
 	return ret;
 }
@@ -209,7 +210,7 @@ ASFUNCTIONBODY(Array,_sort)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
 	if(th->data.size()>1)
-		abort();
+		throw UnsupportedException("Array::sort not completely implemented",sys->getOrigin().raw_buf());
 	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");
 	return obj;
 }
@@ -220,7 +221,7 @@ ASFUNCTIONBODY(Array,unshift)
 	if(argslen!=1)
 	{
 		LOG(LOG_ERROR,"Multiple unshift");
-		abort();
+		throw UnsupportedException("Array::unshift not completely implemented",sys->getOrigin().raw_buf());
 	}
 	th->data.insert(th->data.begin(),data_slot(args[0]));
 	args[0]->incRef();
@@ -277,10 +278,8 @@ size_t ASXML::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 
 ASFUNCTIONBODY(ASXML,load)
 {
-	//ASXML* th=static_cast<ASXML*>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Called ASXML::load " << args[0]->toString());
-	abort();
-	return new Integer(1);
+	throw UnsupportedException("ASXML::load not completely implemented",sys->getOrigin().raw_buf());
 }
 
 bool Array::isEqual(bool& ret, ASObject* r)
@@ -297,7 +296,7 @@ bool Array::isEqual(bool& ret, ASObject* r)
 		for(int i=0;i<size;i++)
 		{
 			if(data[i].type!=DATA_OBJECT)
-				abort();
+				throw UnsupportedException("Array::isEqual not completely implemented",sys->getOrigin().raw_buf());
 			if(!data[i].data->isEqual(ra->at(i)))
 				ret=false;
 		}
@@ -330,7 +329,7 @@ bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 					out=i->toInt();
 				}
 				else
-					abort();
+					throw UnsupportedException("Array::getVariableByMultiname_i not completely implemented",sys->getOrigin().raw_buf());
 				break;
 			}
 			case DATA_INT:
@@ -429,7 +428,7 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 			index=name.name_d;
 			break;
 		default:
-			abort();
+			throw UnsupportedException("Array::isValidMultiname not completely implemented",sys->getOrigin().raw_buf());
 	}
 	return true;
 }
@@ -521,7 +520,7 @@ bool Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, A
 
 bool Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 {
-	abort();
+	throw UnsupportedException("Array::getVariableByQName not completely implemented",sys->getOrigin().raw_buf());
 	return NULL;
 /*	ASObject* ret;
 	bool number=true;
@@ -634,7 +633,7 @@ ASFUNCTIONBODY(ASString,split)
 		while(start<th->data.size());
 	}
 	else
-		abort();
+		throw UnsupportedException("Array::split not completely implemented",sys->getOrigin().raw_buf());
 
 	return ret->obj;
 }
@@ -676,7 +675,7 @@ tiny_string Array::toString() const
 			ret+=buf;
 		}
 		else
-			abort();
+			throw UnsupportedException("Array::toString not completely implemented",sys->getOrigin().raw_buf());
 
 		if(i!=data.size()-1)
 			ret+=',';
@@ -697,6 +696,11 @@ bool Array::hasNext(unsigned int& index, bool& out)
 	out=index<data.size();
 	index++;
 	return true;
+}
+
+void Array::outofbounds() const
+{
+	throw ParseException("Array access out of bounds",sys->getOrigin().raw_buf());
 }
 
 tiny_string Boolean::toString(bool debugMsg)
@@ -762,7 +766,7 @@ bool ASString::isLess(bool& ret, ASObject* o)
 		ret=a<b;
 		return true;
 	}
-	abort();
+	throw UnsupportedException("String::isLess not completely implemented",sys->getOrigin().raw_buf());
 	return true;
 }
 
@@ -810,6 +814,52 @@ ASFUNCTIONBODY(Integer,_toString)
 	return Class<ASString>::getInstanceS(true,buf)->obj;
 }
 
+bool Integer::isLess(ASObject* o)
+{
+	if(o->getObjectType()==T_INTEGER)
+	{
+		const Integer* i=static_cast<const Integer*>(o);
+		return val < i->toInt();
+	}
+	else if(o->getObjectType()==T_NUMBER)
+	{
+		const Number* i=static_cast<const Number*>(o);
+		return val < i->toNumber();
+	}
+	else if(o->getObjectType()==T_STRING)
+	{
+		const ASString* s=static_cast<const ASString*>(o->implementation);
+		//Check if the string may be converted to integer
+		//TODO: check whole string?
+		if(isdigit(s->data[0]))
+		{
+			int val2=atoi(s->data.c_str());
+			return val < val2;
+		}
+		else
+			return false;
+	}
+	else
+		return ASObject::isLess(o);
+}
+
+bool Integer::isEqual(ASObject* o)
+{
+	if(o->getObjectType()==T_INTEGER)
+		return val==o->toInt();
+	else if(o->getObjectType()==T_UINTEGER)
+	{
+		//CHECK: somehow wrong
+		return val==o->toInt();
+	}
+	else if(o->getObjectType()==T_NUMBER)
+		return val==o->toInt();
+	else
+	{
+		return ASObject::isEqual(o);
+	}
+}
+
 tiny_string Integer::toString(bool debugMsg)
 {
 	char buf[20];
@@ -831,6 +881,28 @@ tiny_string Integer::toString(bool debugMsg)
 	}
 	while(v!=0);
 	return cur;
+}
+
+tiny_string UInteger::toString(bool debugMsg)
+{
+	char buf[20];
+	buf[19]=0;
+	char* cur=buf+19;
+
+	int v=val;
+	do
+	{
+		cur--;
+		*cur='0'+(v%10);
+		v/=10;
+	}
+	while(v!=0);
+	return cur;
+}
+
+bool UInteger::isLess(ASObject* o)
+{
+	throw UnsupportedException("UInteger::isLess is not completely implemented",sys->getOrigin().raw_buf());
 }
 
 bool Number::isEqual(ASObject* o)
@@ -1272,7 +1344,8 @@ ASFUNCTIONBODY(RegExp,_constructor)
 				case 's':
 				case 'm':
 				case 'x':
-					abort();
+					throw UnsupportedException("RegExp not completely implemented",sys->getOrigin().raw_buf());
+
 			}
 		}
 	}
@@ -1308,7 +1381,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	int consumed;
 	bool ret=pcreRE.DoMatch(arg0.raw_buf(),pcrecpp::RE::ANCHOR_START,&consumed,captures,numberOfCaptures);
 	if(ret!=false)
-		abort();
+		throw UnsupportedException("RegExp matched",sys->getOrigin().raw_buf());
 
 	delete[] s;
 	delete[] captures;
@@ -1445,7 +1518,7 @@ ASFUNCTIONBODY(ASString,replace)
 		while(index<(int)ret->data.size());
 	}
 	else
-		abort();
+		throw UnsupportedException("String::replace not completely implemented",sys->getOrigin().raw_buf());
 
 	return ret->obj;
 }
@@ -1648,7 +1721,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 {
 	ASQName* th=static_cast<ASQName*>(obj->implementation);
 	if(argslen!=2)
-		abort();
+		throw UnsupportedException("ArgumentError",sys->getOrigin().raw_buf());
 
 	assert(args[0]->getObjectType()==T_STRING || args[0]->getObjectType()==T_NAMESPACE);
 	assert(args[1]->getObjectType()==T_STRING);
@@ -1668,7 +1741,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 			break;
 		}
 		default:
-			abort();
+			throw UnsupportedException("QName not completely implemented",sys->getOrigin().raw_buf());
 	}
 	th->local_name=args[1]->toString();
 	return NULL;

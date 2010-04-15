@@ -46,7 +46,7 @@ timespec TimerThread::msecsToTimespec(uint64_t time)
 	return ret;
 }
 
-TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false)
+TimerThread::TimerThread(SystemState* s):m_sys(s),currentJob(NULL),stopped(false)
 {
 	sem_init(&mutex,0,1);
 	sem_init(&newEvent,0,0);
@@ -54,26 +54,31 @@ TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false)
 	pthread_create(&t,NULL,(thread_worker)timer_worker,this);
 }
 
+void TimerThread::stop()
+{
+	if(!stopped)
+	{
+		stopped=true;
+		sem_post(&newEvent);
+		pthread_join(t,NULL);
+	}
+}
+
 TimerThread::~TimerThread()
 {
-	stopped=true;
-	sem_post(&newEvent);
-	pthread_join(t,NULL);
-
+	stop();
 	sem_destroy(&mutex);
 	sem_destroy(&newEvent);
 }
 
-void TimerThread::insertNewEvent(TimingEvent* e)
+void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 {
-	sem_wait(&mutex);
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	//If there are no events pending, or this is earlier than the first, signal newEvent
 	if(pendingEvents.empty() || (*it)->timing > e->timing)
 	{
 		pendingEvents.insert(it, e);
 		sem_post(&newEvent);
-		sem_post(&mutex);
 		return;
 	}
 	++it;
@@ -83,13 +88,27 @@ void TimerThread::insertNewEvent(TimingEvent* e)
 		if((*it)->timing > e->timing)
 		{
 			pendingEvents.insert(it, e);
-			sem_post(&mutex);
 			return;
 		}
 	}
 	//Event has to be inserted after all the others
 	pendingEvents.insert(pendingEvents.end(), e);
+}
+
+void TimerThread::insertNewEvent(TimingEvent* e)
+{
+	sem_wait(&mutex);
+	insertNewEvent_nolock(e);
 	sem_post(&mutex);
+}
+
+//Unsafe debugging routine
+void TimerThread::dumpJobs()
+{
+	list<TimingEvent*>::iterator it=pendingEvents.begin();
+	//Find if the job is in the list
+	for(;it!=pendingEvents.end();it++)
+		cout << (*it)->job << endl;
 }
 
 void* TimerThread::timer_worker(TimerThread* th)
@@ -128,21 +147,26 @@ void* TimerThread::timer_worker(TimerThread* th)
 		sem_wait(&th->mutex);
 		TimingEvent* e=th->pendingEvents.front();
 		th->pendingEvents.pop_front();
-		sem_post(&th->mutex);
+
+		th->currentJob=e->job;
 
 		bool destroyEvent=true;
 		if(e->isTick) //Let's schedule the event again
 		{
 			e->timing+=e->tickTime;
-			th->insertNewEvent(e); //newEvent may be signaled, and will be waited by sem_timedwait
+			th->insertNewEvent_nolock(e); //newEvent may be signaled, and will be waited by sem_timedwait
 			destroyEvent=false;
 		}
+
+		sem_post(&th->mutex);
 
 		//Now execute the job
 		//NOTE: jobs may be invalid if they has been cancelled in the meantime
 		assert(e->job || !e->isTick);
 		if(e->job)
 			e->job->tick();
+
+		th->currentJob=NULL;
 
 		//Cleanup
 		if(destroyEvent)
@@ -179,6 +203,7 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 bool TimerThread::removeJob(ITickJob* job)
 {
 	sem_wait(&mutex);
+
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	bool first=true;
 	//Find if the job is in the list
@@ -188,6 +213,17 @@ bool TimerThread::removeJob(ITickJob* job)
 			break;
 		first=false;
 	}
+
+	//Check if we are currently executing this job
+	if(currentJob==job)
+	{
+		//Spin wait until the job ends (per design should be very short)
+		//As we hold the mutex and currentJob is not NULL we are surely executing a job
+		while(currentJob==job);
+
+		//The job ended
+	}
+
 	if(it==pendingEvents.end())
 	{
 		sem_post(&mutex);
@@ -208,6 +244,7 @@ bool TimerThread::removeJob(ITickJob* job)
 		pendingEvents.erase(it);
 		delete e;
 	}
+
 	sem_post(&mutex);
 	return true;
 }

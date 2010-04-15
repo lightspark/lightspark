@@ -177,12 +177,6 @@ CurlDownloader::CurlDownloader(const tiny_string& u)
 	url=tmp2.c_str();
 }
 
-bool CurlDownloader::download()
-{
-	execute();
-	return !failed;
-}
-
 void CurlDownloader::abort()
 {
 	Downloader::stop();
@@ -217,7 +211,7 @@ void CurlDownloader::execute()
 	else
 		setFailed();
 
-	sem_post(&terminated);
+	sem_post(&(Downloader::terminated));
 }
 
 int CurlDownloader::progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)

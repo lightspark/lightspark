@@ -55,8 +55,7 @@ REGISTER_CLASS_NAME(Bitmap);
 
 void LoaderInfo::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -168,8 +167,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 
 void Loader::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -257,8 +255,7 @@ Sprite::Sprite():graphics(NULL)
 
 void Sprite::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -396,8 +393,7 @@ ASFUNCTIONBODY(Sprite,_getGraphics)
 
 void MovieClip::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<Sprite>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -625,8 +621,7 @@ DisplayObject::DisplayObject():loaderInfo(NULL)
 
 void DisplayObject::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -936,8 +931,7 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 
 void DisplayObjectContainer::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -1172,8 +1166,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 
 void Shape::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -1224,8 +1217,7 @@ ASFUNCTIONBODY(Shape,_getGraphics)
 
 void Stage::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -1263,8 +1255,7 @@ ASFUNCTIONBODY(Stage,_getStageHeight)
 
 void Graphics::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 void Graphics::buildTraits(ASObject* o)
@@ -1517,8 +1508,8 @@ void StageAlign::sinit(Class_base* c)
 
 void Bitmap::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
 //	c->constructor=new Function(_constructor);
+	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }

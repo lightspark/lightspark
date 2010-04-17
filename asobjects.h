@@ -61,16 +61,19 @@ private:
 	{
 		return max_level;
 	}
+	void recursiveBuild(ASObject* target);
+	IFunction* constructor;
 
 public:
 	Class_base* super;
-	IFunction* constructor;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
 	tiny_string class_name;
 	int class_index;
 	int max_level;
-	Class_base(const tiny_string& name):use_protected(false),super(NULL),constructor(NULL),context(NULL),class_name(name),class_index(-1),
+	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
+	void setConstructor(IFunction* c);
+	Class_base(const tiny_string& name):use_protected(false),constructor(NULL),super(NULL),context(NULL),class_name(name),class_index(-1),
 		max_level(0) {type=T_CLASS;}
 	~Class_base();
 	virtual IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
@@ -273,7 +276,7 @@ private:
 class SyntheticFunction : public IFunction
 {
 friend class ABCVm;
-friend void ASObject::handleConstruction(ASObject* const* args, unsigned int argslen, bool buildAndLink);
+//friend void ASObject::handleConstruction(ASObject* const* args, unsigned int argslen, bool buildAndLink);
 public:
 	typedef ASObject* (*synt_function)(call_context* cc);
 	SyntheticFunction(method_info* m);

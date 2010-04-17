@@ -92,6 +92,9 @@ RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),frameRate(0),toB
 	loaderInfo=li;
 	//Reset framesLoaded, as there are still not available
 	framesLoaded=0;
+
+	//Root movie clip always has a linked object
+	obj=new ASObject;
 }
 
 RootMovieClip::~RootMovieClip()
@@ -1089,7 +1092,7 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0,width,0,height,-100,0);
-
+	//glTranslatef(0,height/2,0);
 
 	glMatrixMode(GL_MODELVIEW);
 

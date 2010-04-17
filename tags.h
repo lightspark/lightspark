@@ -95,7 +95,7 @@ public:
 	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s),loadedFrom(NULL){ }
 	virtual TAGTYPE getType(){ return DICT_TAG; }
 	virtual int getId(){return 0;} 
-	virtual IInterface* instance(bool named) const { return NULL; } 
+	virtual IInterface* instance() const { return NULL; } 
 	void setLoadedFrom(RootMovieClip* r){loadedFrom=r;}
 };
 
@@ -126,9 +126,8 @@ public:
 		return true;
 	}
 
-	IInterface* instance(bool named) const
+	IInterface* instance() const
 	{
-		assert(!named);
 		return new DefineShapeTag(*this);
 	}
 };
@@ -152,9 +151,8 @@ public:
 		return true;
 	}
 
-	IInterface* instance(bool named) const
+	IInterface* instance() const
 	{
-		assert(!named);
 		return new DefineShape2Tag(*this);
 	}
 };
@@ -177,9 +175,8 @@ public:
 		return true;
 	}
 
-	IInterface* instance(bool named) const
+	IInterface* instance() const
 	{
-		assert(!named);
 		return new DefineShape3Tag(*this);
 	}
 };
@@ -205,9 +202,8 @@ public:
 		return true;
 	}
 
-	IInterface* instance(bool named) const
+	IInterface* instance() const
 	{
-		assert(!named);
 		return new DefineShape4Tag(*this);
 	}
 };
@@ -400,7 +396,7 @@ public:
 	}
 	virtual void handleEvent(Event*);
 
-	IInterface* instance(bool named) const;
+	IInterface* instance() const;
 };
 
 class KERNINGRECORD
@@ -417,10 +413,15 @@ public:
 	~DefineBinaryDataTag(){delete[] bytes;}
 	virtual int getId(){return Tag;} 
 
-	IInterface* instance(bool named) const
+	IInterface* instance() const
 	{
-		assert(!named);
-		return new DefineBinaryDataTag(*this);
+		DefineBinaryDataTag* ret=new DefineBinaryDataTag(*this);
+		//An object is always linked
+		ret->obj=new ASObject;
+		ret->obj->implementation=ret;
+		ret->obj->prototype=Class<ByteArray>::getClass();
+		ret->obj->prototype->incRef();
+		return ret;
 	}
 };
 
@@ -519,9 +520,8 @@ public:
 		return true;
 	}
 
-	IInterface* instance(bool named) const
+	IInterface* instance() const
 	{
-		assert(!named);
 		return new DefineTextTag(*this);
 	}
 };
@@ -535,16 +535,14 @@ public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
 
-	IInterface* instance(bool named) const
+	IInterface* instance() const
 	{
 		DefineSpriteTag* ret=new DefineSpriteTag(*this);
-		if(named)
-		{
-			ret->obj=new ASObject;
-			ret->obj->implementation=ret;
-			ret->obj->prototype=Class<MovieClip>::getClass();
-			ret->obj->prototype->incRef();
-		}
+		//An object is always linked
+		ret->obj=new ASObject;
+		ret->obj->implementation=ret;
+		ret->obj->prototype=Class<MovieClip>::getClass();
+		ret->obj->prototype->incRef();
 		ret->bootstrap();
 		return ret;
 	}

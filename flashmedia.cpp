@@ -32,8 +32,7 @@ REGISTER_CLASS_NAME(Video);
 
 void SoundTransform::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 ASFUNCTIONBODY(SoundTransform,_constructor)
@@ -44,8 +43,7 @@ ASFUNCTIONBODY(SoundTransform,_constructor)
 
 void Video::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }

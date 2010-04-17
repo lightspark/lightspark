@@ -509,7 +509,6 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
 {
-	check();
 	if(implementation && !skip_impl)
 	{
 		if(implementation->setVariableByQName(name,ns,o))
@@ -546,6 +545,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 			obj->var->decRef();
 		obj->var=o;
 	}
+	check();
 }
 
 void variables_map::killObjVar(const multiname& mname, int level)
@@ -1658,8 +1658,8 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 		v.RotateSkew1=FB(NRotateBits,bs);
 	}
 	int NTranslateBits=UB(5,bs);
-	v.TranslateX=SB(NTranslateBits,bs);
-	v.TranslateY=SB(NTranslateBits,bs);
+	v.TranslateX=SB(NTranslateBits,bs)/20;
+	v.TranslateY=SB(NTranslateBits,bs)/20;
 	return stream;
 }
 
@@ -1868,64 +1868,6 @@ tiny_string variables_map::getNameAt(unsigned int index)
 unsigned int ASObject::numVariables()
 {
 	return Variables.size();
-}
-
-void ASObject::recursiveBuild(const Class_base* cur)
-{
-	if(cur->super)
-		recursiveBuild(cur->super);
-
-	LOG(LOG_TRACE,"Building traits for " << cur->class_name);
-	cur_level=cur->max_level;
-	cur->buildInstanceTraits(this);
-
-	//Link the interfaces for this level
-	const vector<Class_base*>& interfaces=cur->getInterfaces();
-	for(unsigned int i=0;i<interfaces.size();i++)
-	{
-		LOG(LOG_CALLS,"Linking with interface " << interfaces[i]->class_name);
-		interfaces[i]->linkInterface(this);
-	}
-}
-
-void ASObject::handleConstruction(ASObject* const* args, unsigned int argslen, bool buildAndLink)
-{
-/*	if(getActualPrototype()->class_index==-2)
-	{
-		abort();
-		//We have to build the method traits
-		SyntheticFunction* sf=static_cast<SyntheticFunction*>(this);
-		LOG(LOG_CALLS,"Building method traits");
-		for(int i=0;i<sf->mi->body->trait_count;i++)
-			sf->mi->context->buildTrait(this,&sf->mi->body->traits[i]);
-		sf->call(this,args,max_level);
-	}*/
-	assert(getActualPrototype()->class_index!=-2);
-
-	if(buildAndLink)
-	{
-		assert(!initialized);
-		//HACK: suppress implementation handling of variables just now
-		IInterface* impl=implementation;
-		implementation=NULL;
-		recursiveBuild(prototype);
-		//And restore it
-		implementation=impl;
-		assert(cur_level==prototype->max_level);
-	#ifndef NDEBUG
-		initialized=true;
-	#endif
-	}
-
-	Class_base* prot=getActualPrototype();
-	assert(prot->max_level==cur_level);
-	if(prot->constructor)
-	{
-		LOG(LOG_CALLS,"Calling Instance init " << prot->class_name);
-		//As constructors are not binded, we should change here the level
-
-		prot->constructor->call(this,args,argslen,prot->max_level);
-	}
 }
 
 std::istream& lightspark::operator>>(std::istream& s, CLIPEVENTFLAGS& v)

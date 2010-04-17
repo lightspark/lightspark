@@ -222,8 +222,7 @@ void Timer::execute()
 
 void Timer::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 ASFUNCTIONBODY(Timer,_constructor)
@@ -331,8 +330,7 @@ ASFUNCTIONBODY(lightspark,getTimer)
 
 void Dictionary::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 void Dictionary::buildTraits(ASObject* o)
@@ -462,8 +460,8 @@ bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 
 void Proxy::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
 	//c->constructor=new Function(_constructor);
+	c->setConstructor(NULL);
 }
 
 bool Proxy::setVariableByMultiname(const multiname& name, ASObject* v)

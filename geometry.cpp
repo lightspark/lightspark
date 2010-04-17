@@ -59,9 +59,9 @@ void GeomShape::Render(int x, int y) const
 		glBegin(GL_TRIANGLES);
 		for(unsigned int i=0;i<interior.size();i++)
 		{
-			glVertex2i(interior[i].v1.x,interior[i].v1.y);
-			glVertex2i(interior[i].v2.x,interior[i].v2.y);
-			glVertex2i(interior[i].v3.x,interior[i].v3.y);
+			glVertex2i(interior[i].v1.x+x,interior[i].v1.y+y);
+			glVertex2i(interior[i].v2.x+x,interior[i].v2.y+y);
+			glVertex2i(interior[i].v3.x+x,interior[i].v3.y+y);
 		}
 		glEnd();
 		filled=true;

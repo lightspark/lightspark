@@ -41,8 +41,7 @@ URLRequest::URLRequest()
 
 void URLRequest::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 void URLRequest::buildTraits(ASObject* o)
@@ -78,8 +77,7 @@ URLLoader::URLLoader():dataFormat("text"),data(NULL)
 
 void URLLoader::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -253,8 +251,7 @@ NetStream::~NetStream()
 
 void NetStream::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -505,8 +502,7 @@ bool NetStream::copyFrameToTexture(GLuint tex)
 
 void URLVariables::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 ASFUNCTIONBODY(URLVariables,_constructor)

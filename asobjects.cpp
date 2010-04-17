@@ -60,8 +60,7 @@ Array::Array()
 
 void Array::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 void Array::buildTraits(ASObject* o)
@@ -585,8 +584,8 @@ ASFUNCTIONBODY(ASString,_getLength)
 
 void ASString::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-//	c->constructor=new Function(_constructor);
+	//c->setConstructor(new Function(_constructor));
+	c->setConstructor(NULL);
 }
 
 void ASString::buildTraits(ASObject* o)
@@ -948,8 +947,7 @@ Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisec
 
 void Date::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 void Date::buildTraits(ASObject* o)
@@ -1313,8 +1311,7 @@ RegExp::RegExp():global(false),ignoreCase(false),lastIndex(0)
 
 void RegExp::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 void RegExp::buildTraits(ASObject* o)
@@ -1560,15 +1557,76 @@ tiny_string Class_base::toString(bool debugMsg)
 	return ret;
 }
 
+void Class_base::recursiveBuild(ASObject* target)
+{
+	if(super)
+		super->recursiveBuild(target);
+
+	LOG(LOG_TRACE,"Building traits for " << class_name);
+	target->setLevel(max_level);
+	buildInstanceTraits(target);
+
+	//Link the interfaces for this level
+	const vector<Class_base*>& interfaces=getInterfaces();
+	for(unsigned int i=0;i<interfaces.size();i++)
+	{
+		LOG(LOG_CALLS,"Linking with interface " << interfaces[i]->class_name);
+		interfaces[i]->linkInterface(target);
+	}
+}
+
+void Class_base::setConstructor(IFunction* c)
+{
+	assert(constructor==NULL);
+	constructor=c;
+}
+
+void Class_base::handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink)
+{
+/*	if(getActualPrototype()->class_index==-2)
+	{
+		abort();
+		//We have to build the method traits
+		SyntheticFunction* sf=static_cast<SyntheticFunction*>(this);
+		LOG(LOG_CALLS,"Building method traits");
+		for(int i=0;i<sf->mi->body->trait_count;i++)
+			sf->mi->context->buildTrait(this,&sf->mi->body->traits[i]);
+		sf->call(this,args,max_level);
+	}*/
+	if(buildAndLink)
+	{
+		assert(!target->initialized);
+		//HACK: suppress implementation handling of variables just now
+		IInterface* impl=target->implementation;
+		target->implementation=NULL;
+		recursiveBuild(target);
+		//And restore it
+		target->implementation=impl;
+		assert(target->getLevel()==max_level);
+	#ifndef NDEBUG
+		target->initialized=true;
+	#endif
+	}
+
+	assert(max_level==target->getLevel());
+	if(constructor)
+	{
+		LOG(LOG_CALLS,"Calling Instance init " << class_name);
+		//As constructors are not binded, we should change here the level
+
+		constructor->call(target,args,argslen,max_level);
+	}
+}
+
+
 IInterface* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 {
 	IInterface* ret=NULL;
 	if(tag)
 	{
-		//Create an unnamed instance, as we set the prototype ourselves
-		ret=tag->instance(false);
-		ret->obj=new ASObject;
-		ret->obj->implementation=ret;
+		ret=tag->instance();
+		//Unlink the prototype, it is set again later
+		ret->obj->prototype->decRef();
 	}
 	else
 	{
@@ -1582,7 +1640,7 @@ IInterface* Class_inherit::getInstance(bool construct, ASObject* const* args, co
 	ret->obj->prototype=this;
 	incRef();
 	if(construct)
-		ret->obj->handleConstruction(args,argslen,true);
+		handleConstruction(ret->obj,args,argslen,true);
 	return ret;
 }
 
@@ -1713,8 +1771,7 @@ tiny_string Class_base::getQualifiedClassName() const
 
 void ASQName::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 ASFUNCTIONBODY(ASQName,_constructor)
@@ -1749,8 +1806,7 @@ ASFUNCTIONBODY(ASQName,_constructor)
 
 void Namespace::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 void Namespace::buildTraits(ASObject* o)

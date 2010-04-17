@@ -57,8 +57,7 @@ Event::Event(const tiny_string& t, ASObject* _t):type(t),target(_t)
 
 void Event::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS(true,"enterFrame")->obj);
 	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS(true,"render")->obj);
 	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS(true,"addedToStage")->obj);
@@ -119,8 +118,7 @@ FocusEvent::FocusEvent():Event("focusEvent")
 
 void FocusEvent::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS(true,"focusIn")->obj);
 	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS(true,"focusOut")->obj);
 	c->setVariableByQName("MOUSE_FOCUS_CHANGE","",Class<ASString>::getInstanceS(true,"mouseFocusChange")->obj);
@@ -142,8 +140,7 @@ ProgressEvent::ProgressEvent():Event("progress"),bytesLoaded(0),bytesTotal(0)
 
 void ProgressEvent::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS(true,"progress")->obj);
 }
 
@@ -213,8 +210,7 @@ EventDispatcher::EventDispatcher():id(0)
 
 void EventDispatcher::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->addImplementedInterface(Class<IEventDispatcher>::getClass());
 }
 
@@ -370,8 +366,7 @@ NetStatusEvent::NetStatusEvent(const tiny_string& l, const tiny_string& c):Event
 
 void NetStatusEvent::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->setVariableByQName("NET_STATUS","",Class<ASString>::getInstanceS(true,"netStatus")->obj);
 }
 
@@ -391,8 +386,7 @@ FullScreenEvent::FullScreenEvent():Event("fullScreenEvent")
 
 void FullScreenEvent::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS(true,"fullScreen")->obj);
 }
 
@@ -407,8 +401,7 @@ KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
 
 void KeyboardEvent::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS(true,"keyDown")->obj);
 	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS(true,"keyUp")->obj);
 }
@@ -424,8 +417,7 @@ TextEvent::TextEvent():Event("textEvent")
 
 void TextEvent::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -442,8 +434,7 @@ ErrorEvent::ErrorEvent()
 
 void ErrorEvent::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<TextEvent>::getClass();
 	c->max_level=c->super->max_level+1;
 
@@ -462,8 +453,7 @@ SecurityErrorEvent::SecurityErrorEvent()
 
 void SecurityErrorEvent::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<ErrorEvent>::getClass();
 	c->max_level=c->super->max_level+1;
 
@@ -482,8 +472,7 @@ AsyncErrorEvent::AsyncErrorEvent()
 
 void AsyncErrorEvent::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<ErrorEvent>::getClass();
 	c->max_level=c->super->max_level+1;
 

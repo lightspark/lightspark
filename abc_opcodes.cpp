@@ -1399,7 +1399,8 @@ void ABCVm::constructSuper(call_context* th, int m)
 	obj->decLevel();
 	LOG(LOG_CALLS,"Super prototype name " << obj->getActualPrototype()->class_name);
 
-	obj->handleConstruction(args, m, false);
+	Class_base* curProt=obj->getActualPrototype();
+	curProt->handleConstruction(obj,args, m, false);
 	LOG(LOG_CALLS,"End super construct ");
 	obj->setLevel(tl.cur_level);
 

@@ -31,8 +31,7 @@ REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle");
 
 void Rectangle::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -138,8 +137,7 @@ ASFUNCTIONBODY(Rectangle,clone)
 
 void ColorTransform::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 ASFUNCTIONBODY(ColorTransform,_constructor)
@@ -187,8 +185,7 @@ ASFUNCTIONBODY(ColorTransform,getColor)
 
 void Point::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 }
 
 void Point::buildTraits(ASObject* o)
@@ -222,8 +219,8 @@ ASFUNCTIONBODY(Point,_getY)
 
 void Transform::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
 	//c->constructor=new Function(_constructor);
+	c->setConstructor(NULL);
 }
 
 void Transform::buildTraits(ASObject* o)

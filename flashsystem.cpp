@@ -29,8 +29,7 @@ REGISTER_CLASS_NAME(Security);
 
 void Capabilities::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->setGetterByQName("language","",new Function(_getLanguage));
 	c->setVariableByQName("version","",Class<ASString>::getInstanceS(true,"UNIX 10,0,0,0")->obj);
 }
@@ -48,8 +47,7 @@ ASFUNCTIONBODY(Capabilities,_getLanguage)
 
 void ApplicationDomain::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);
+	c->setConstructor(new Function(_constructor));
 	c->setGetterByQName("currentDomain","",new Function(_getCurrentDomain));
 }
 
@@ -130,6 +128,6 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 void Security::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
+	c->setConstructor(NULL);
 	c->setVariableByQName("allowDomain","",new Function(undefinedFunction));
 }

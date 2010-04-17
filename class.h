@@ -70,7 +70,7 @@ private:
 		//As we are the prototype we should incRef ourself
 		incRef();
 		if(construct)
-			ret->obj->handleConstruction(args,argslen,true);
+			handleConstruction(ret->obj,args,argslen,true);
 		return ret;
 	}
 public:
@@ -92,7 +92,7 @@ public:
 		//As we are the prototype we should incRef ourself
 		c->incRef();
 		if(construct)
-			obj->handleConstruction(NULL,0,true);
+			c->handleConstruction(obj,NULL,0,true);
 		return ret;
 	}
 	template <typename ARG1, typename ARG2>
@@ -108,7 +108,7 @@ public:
 		//As we are the prototype we should incRef ourself
 		c->incRef();
 		if(construct)
-			obj->handleConstruction(NULL,0,true);
+			c->handleConstruction(obj,NULL,0,true);
 		return ret;
 	}
 	static Class<T>* getClass(const tiny_string& name)

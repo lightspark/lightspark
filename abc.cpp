@@ -94,7 +94,7 @@ void SymbolClassTag::execute(RootMovieClip* root)
 
 	for(int i=0;i<NumSymbols;i++)
 	{
-		LOG(LOG_CALLS,Tags[i] << ' ' << Names[i]);
+		LOG(LOG_CALLS,"Binding " << Tags[i] << ' ' << Names[i]);
 		if(Tags[i]==0)
 		{
 			//We have to bind this root movieclip itself, let's tell it.
@@ -993,7 +993,7 @@ void ABCVm::handleEvent()
 			{
 				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
 				LOG(LOG_CALLS,"Building instance traits");
-				ev->obj->handleConstruction(NULL,0,true);
+				ev->_class->handleConstruction(ev->obj,NULL,0,true);
 				ev->sync();
 				break;
 			}
@@ -1023,7 +1023,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 	//It seems to be acceptable for the same base to be binded multiple times,
 	//We refuse to do it, as it's an undocumented behaviour, but we warn the user
 	//I've seen this behaviour only for youtube
-	if(base->obj!=NULL)
+	if(base->obj!=NULL && !isRoot)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Multiple binding on " << s << ". Not binding");
 		return;
@@ -1055,14 +1055,13 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 
 	if(isRoot)
 	{
-		ASObject* tmp=new ASObject;
-		base->obj=tmp;
-		tmp->prototype=derived_class_tmp;
-		tmp->implementation=base;
-		getVm()->pushObjAndLevel(tmp,derived_class_tmp->max_level);
-		tmp->handleConstruction(args,argslen,true);
+		assert(base->obj);
+		base->obj->prototype=derived_class_tmp;
+		base->obj->implementation=base;
+		getVm()->pushObjAndLevel(base->obj,derived_class_tmp->max_level);
+		derived_class_tmp->handleConstruction(base->obj,args,argslen,true);
 		thisAndLevel tl=getVm()->popObjAndLevel();
-		assert(tl.cur_this==tmp);
+		assert(tl.cur_this==base->obj);
 	}
 	else
 	{
@@ -1706,8 +1705,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				//else fallthrough
 				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				objAndLevel previous_definition=obj->getVariableByQName(name,ns);
-				if(previous_definition.obj)
-					assert(previous_definition.level<obj->getLevel());
+				assert(!previous_definition.obj);
+				//if(previous_definition.obj)
+				//	assert(previous_definition.level<obj->getLevel());
 
 				ASObject* ret;
 				if(deferred_initialization)

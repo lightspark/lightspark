@@ -28,8 +28,8 @@ REGISTER_CLASS_NAME(TextField);
 
 void lightspark::Font::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
 //	c->constructor=new Function(_constructor);
+	c->setConstructor(NULL);
 	c->setVariableByQName("enumerateFonts","",new Function(enumerateFonts));
 }
 
@@ -40,7 +40,7 @@ ASFUNCTIONBODY(lightspark::Font,enumerateFonts)
 
 void TextField::sinit(Class_base* c)
 {
-	assert(c->constructor==NULL);
+	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }

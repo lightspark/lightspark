@@ -446,15 +446,14 @@ protected:
 private:
 	int ref_count;
 	Manager* manager;
-	void recursiveBuild(const Class_base* cur);
 	int cur_level;
 	virtual int _maxlevel();
 
+public:
 #ifndef NDEBUG
 	//Stuff onyl used in debugging
 	bool initialized;
 #endif
-public:
 	IInterface* implementation;
 	Class_base* prototype;
 	void acquireInterface(IInterface* i);
@@ -549,8 +548,6 @@ public:
 
 	virtual bool isEqual(ASObject* r);
 	virtual bool isLess(ASObject* r);
-
-	void handleConstruction(ASObject* const* args, unsigned int argslen, bool buildAndLink);
 
 	//Level handling
 	int getLevel() const

@@ -471,7 +471,9 @@ void DefineTextTag::Render()
 	unsigned int shapes_done=0;
 	int x=0,y=0;
 	float matrix[16];
-	TextMatrix.get4DMatrix(matrix);
+	float textMatrix[16];
+	Matrix.get4DMatrix(matrix);
+	TextMatrix.get4DMatrix(textMatrix);
 
 	//Build a fake FILLSTYLEs
 	FILLSTYLE f;
@@ -482,7 +484,9 @@ void DefineTextTag::Render()
 	clearStyle.Color=RGBA(0,0,0,0);
 	glPushMatrix();
 	glMultMatrixf(matrix);
+	glMultMatrixf(textMatrix);
 	//Shapes are defined in twips, so scale then down
+	glScalef(0.05,0.05,1);
 	glScalef(0.05,0.05,1);
 
 	float scale_cur=1;
@@ -511,7 +515,7 @@ void DefineTextTag::Render()
 				else
 					abort();
 
-				cached[shapes_done].Render(x2/scale_cur,y2/scale_cur);
+				cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
 				shapes_done++;
 				if(shapes_done==cached.size())
 					break;
@@ -632,6 +636,12 @@ void DefineShapeTag::Render()
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);
 
+	/*float fvViewMatrix[ 16 ];
+	glGetFloatv( GL_MODELVIEW_MATRIX, fvViewMatrix );
+	__asm__("int $3");
+	glGetFloatv( GL_PROJECTION_MATRIX, fvViewMatrix );
+	__asm__("int $3");*/
+
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 		it->Render();
@@ -708,9 +718,6 @@ void DefineShape4Tag::Render()
 void DefineShape3Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape3 Render "<< ShapeId);
-//	LOG(LOG_NO_INFO,"DefineShape3 disabled");
-//	return;
-
 /*	if(texture==0)
 	{
 		glPushAttrib(GL_TEXTURE_BIT);
@@ -752,6 +759,7 @@ void DefineShape3Tag::Render()
 	}
 
 	rt->glBlitFramebuffer();
+
 	glPopMatrix();
 }
 
@@ -1181,7 +1189,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		else
 			localRoot=parent->root;
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
-		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance(PlaceFlagHasName));
+		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
 		assert(toAdd);
 
 		if(toAdd->obj)
@@ -1220,7 +1228,8 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		if(!PlaceFlagMove)
 		{
 			assert(parent->obj);
-			parent->obj->setVariableByQName((const char*)Name,"",toAdd->obj);
+			if(toAdd->obj) //TODO: should not happen
+				parent->obj->setVariableByQName((const char*)Name,"",toAdd->obj);
 		}
 		else
 			LOG(LOG_ERROR, "Moving of registered objects not really supported");
@@ -1347,9 +1356,8 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	}
 }
 
-IInterface* DefineButton2Tag::instance(bool named) const
+IInterface* DefineButton2Tag::instance() const
 {
-	assert(!named);
 	return new DefineButton2Tag(*this);
 }
 

@@ -111,8 +111,8 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL),shutdown(false),error(false),currentVm(NULL),cur_input_thread(NULL),
-	cur_render_thread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
+SystemState::SystemState():RootMovieClip(NULL),showProfilingData(false),shutdown(false),error(false),currentVm(NULL),
+	cur_input_thread(NULL),cur_render_thread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -208,6 +208,11 @@ void SystemState::setRenderRate(float rate)
 void SystemState::tick()
 {
 	cur_input_thread->broadcastEvent("enterFrame");
+ 	sem_wait(&mutex);
+	list<ThreadProfile>::iterator it=profilingData.begin();
+	for(;it!=profilingData.end();it++)
+		it->tick();
+	sem_post(&mutex);
 }
 
 void SystemState::addJob(IThreadJob* j)
@@ -228,6 +233,70 @@ void SystemState::addWait(uint32_t waitTime, ITickJob* job)
 bool SystemState::removeJob(ITickJob* job)
 {
 	return timerThread->removeJob(job);
+}
+
+ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
+{
+	sem_wait(&mutex);
+	profilingData.push_back(ThreadProfile(color,100));
+	ThreadProfile* ret=&profilingData.back();
+	sem_post(&mutex);
+	return ret;
+}
+
+void ThreadProfile::setTag(const std::string& t)
+{
+	Locker locker(mutex);
+	if(data.empty())
+		data.push_back(ProfilingData(tickCount,0));
+	
+	data.back().tag=t;
+}
+
+void ThreadProfile::accountTime(uint32_t time)
+{
+	Locker locker(mutex);
+	if(data.empty() || data.back().index!=tickCount)
+		data.push_back(ProfilingData(tickCount, time));
+	else
+		data.back().timing+=time;
+}
+
+void ThreadProfile::tick()
+{
+	Locker locker(mutex);
+	tickCount++;
+	//Purge first sample if the second is already old enough
+	if(data.size()>1 && (tickCount-data[1].index)>uint32_t(len))
+		data.pop_front();
+}
+
+void ThreadProfile::plot(uint32_t max)
+{
+	if(data.size()<=1)
+		return;
+	
+	Locker locker(mutex);
+	RECT size=sys->getFrameSize();
+	int width=size.Xmax/20;
+	int height=size.Ymax/20;
+	
+	
+	int32_t start=tickCount-len;
+	
+	FILLSTYLE::fixedColor(color.Red/255.0f,color.Green/255.0f,color.Blue/255.0f);
+	glBegin(GL_LINE_STRIP);
+		//Plot first sample, maybe out of window
+		int32_t relx=int32_t(data[0].index-start)*width/len;
+		glVertex2i(relx,height-data[0].timing*height/max);
+		
+		//Plot other samples
+		for(unsigned int i=1;i<data.size();i++)
+		{
+			relx=int32_t(data[i].index-start)*width/len;
+			glVertex2i(relx,height-data[i].timing*height/max);
+		}
+	glEnd();
 }
 
 ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),parsingTarget(r)
@@ -383,7 +452,9 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_s:
 						sys->state.stop_FP=true;
 						break;
-
+					case SDLK_p:
+						sys->showProfilingData=!sys->showProfilingData;
+						break;
 					//Ignore any other keystrokes
 					default:
 						break;
@@ -1058,6 +1129,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
 	th->commonGLInit(width, height, t2);
 
+	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	try
 	{
 		//Texturing must be enabled otherwise no tex coord will be sent to the shader
@@ -1065,6 +1137,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		while(1)
 		{
 			sem_wait(&th->render);
+			Chronometer chronometer;
 
 			SDL_GL_SwapBuffers( );
 
@@ -1120,9 +1193,17 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
+			
+			if(sys->showProfilingData)
+			{
+				list<ThreadProfile>::iterator it=sys->profilingData.begin();
+				for(;it!=sys->profilingData.end();it++)
+					it->plot(1000/sys->getFrameRate());
+			}
 
 			//Call glFlush to offload work on the GPU
 			glFlush();
+			profile->accountTime(chronometer.checkpoint());
 		}
 		glDisable(GL_TEXTURE_2D);
 	}

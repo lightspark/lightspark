@@ -123,6 +123,29 @@ public:
 	void setVariableByString(const std::string& s, ASObject* o);*/
 };
 
+class ThreadProfile
+{
+private:
+	Mutex mutex;
+	class ProfilingData
+	{
+	public:
+		uint32_t index;
+		uint32_t timing;
+		std::string tag;
+ 		ProfilingData(uint32_t i, uint32_t t):index(i),timing(t){}
+	};
+	std::deque<ProfilingData> data;
+	RGB color;
+	int32_t len;
+	uint32_t tickCount;
+public:
+	ThreadProfile(const RGB& c,uint32_t l):mutex("ThreadProfile"),color(c),len(l){}
+	void accountTime(uint32_t time);
+	void setTag(const std::string& tag);
+	void tick();
+	void plot(uint32_t max);
+};
 
 class SystemState: public RootMovieClip
 {
@@ -134,6 +157,7 @@ private:
 public:
 	void setUrl(const tiny_string& url);
 
+	bool showProfilingData;
 	bool shutdown;
 	bool error;
 	void setShutdownFlag();
@@ -144,6 +168,11 @@ public:
 	//before any other thread gets started
 	SystemState();
 	~SystemState();
+	
+	//Performance profiling
+	ThreadProfile* allocateProfiler(const RGB& color);
+	std::list<ThreadProfile> profilingData;
+	
 	Stage* stage;
 	ABCVm* currentVm;
 	InputThread* cur_input_thread;

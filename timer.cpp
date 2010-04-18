@@ -30,7 +30,7 @@ using namespace std;
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 
-uint64_t TimerThread::timespecToMsecs(timespec t)
+uint64_t lightspark::timespecToMsecs(timespec t)
 {
 	uint64_t ret=0;
 	ret+=(t.tv_sec*1000);
@@ -38,7 +38,7 @@ uint64_t TimerThread::timespecToMsecs(timespec t)
 	return ret;
 }
 
-timespec TimerThread::msecsToTimespec(uint64_t time)
+timespec lightspark::msecsToTimespec(uint64_t time)
 {
 	timespec ret;
 	ret.tv_sec=time/1000;

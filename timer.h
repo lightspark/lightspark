@@ -38,7 +38,10 @@ public:
 	virtual void tick()=0;
 	virtual ~ITickJob(){};
 };
-  
+
+uint64_t timespecToMsecs(timespec t);
+timespec msecsToTimespec(uint64_t time);
+
 typedef void* (*thread_worker)(void*);
 class TimerThread
 {
@@ -60,8 +63,6 @@ private:
 	ITickJob* currentJob;
 	bool stopped;
 	static void* timer_worker(TimerThread*);
-	static uint64_t timespecToMsecs(timespec t);
-	static timespec msecsToTimespec(uint64_t time);
 	void insertNewEvent(TimingEvent* e);
 	void insertNewEvent_nolock(TimingEvent* e);
 	void dumpJobs();

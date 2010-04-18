@@ -248,3 +248,28 @@ bool TimerThread::removeJob(ITickJob* job)
 	sem_post(&mutex);
 	return true;
 }
+
+Chronometer::Chronometer()
+{
+	timespec tp;
+#ifndef _POSIX_THREAD_CPUTIME
+	#error no thread clock available
+#endif
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
+	start=timespecToMsecs(tp);
+}
+
+uint32_t lightspark::Chronometer::checkpoint()
+{
+	uint64_t newstart;
+	uint32_t ret;
+	timespec tp;
+#ifndef _POSIX_THREAD_CPUTIME
+	#error no thread clock available
+#endif
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
+	newstart=timespecToMsecs(tp);
+	ret=newstart-start;
+	start=newstart;
+	return ret;
+}

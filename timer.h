@@ -77,5 +77,14 @@ public:
 	bool removeJob(ITickJob* job);
 };
 
+class Chronometer
+{
+private:
+	uint64_t start;
+public:
+	Chronometer();
+	uint32_t checkpoint();
+};
+	
 };
 #endif

@@ -1278,12 +1278,17 @@ void ABCVm::Run(ABCVm* th)
 	}
 	th->registerClasses();
 
+	ThreadProfile* profile=sys->allocateProfiler(RGB(0,200,0));
+	profile->setTag("VM");
 	while(1)
 	{
 		sem_wait(&th->sem_event_count);
+		Chronometer chronometer;
 		if(th->shutdown)
 			break;
 		th->handleEvent();
+		profile->accountTime(chronometer.checkpoint());
+		
 	}
 
 	if(sys->useJit)

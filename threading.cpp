@@ -83,7 +83,6 @@ void Mutex::lock()
 
 		//Otherwise log the busy event and do a real wait
 		foundBusy++;
-		LOG(LOG_NO_INFO,"Mutex " << name << " waited " << foundBusy << " times");
 	}
 
 	sem_wait(&sem);

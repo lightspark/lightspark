@@ -41,10 +41,6 @@ void Frame::runScript()
 
 void Frame::Render()
 {
-#ifndef WIN32
-	timespec ts,td;
-	clock_gettime(CLOCK_REALTIME,&ts);
-#endif
 	list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
 
 	//Render objects of this frame;
@@ -67,11 +63,6 @@ void Frame::Render()
 		i->second->Render();
 		//glPopMatrix();
 	}
-
-#ifndef WIN32
-	clock_gettime(CLOCK_REALTIME,&td);
-	sys->fps_prof->render_time+=timeDiff(ts,td);
-#endif
 }
 
 void dumpDisplayList(list<IDisplayListElem*>& l)

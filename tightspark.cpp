@@ -48,7 +48,6 @@ int main(int argc, char* argv[])
 
 	Log::initLogging(LOG_CALLS);
 	sys=new SystemState;
-	sys->fps_prof=new fps_profiling();
 
 	ABCVm vm(sys);
 	sys->currentVm=&vm;

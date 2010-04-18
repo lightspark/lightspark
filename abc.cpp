@@ -1280,19 +1280,10 @@ void ABCVm::Run(ABCVm* th)
 
 	while(1)
 	{
-#ifndef WIN32
-		timespec ts,td;
-		clock_gettime(CLOCK_REALTIME,&ts);
-#endif
 		sem_wait(&th->sem_event_count);
 		if(th->shutdown)
 			break;
 		th->handleEvent();
-		sys->fps_prof->event_count++;
-#ifndef WIN32
-		clock_gettime(CLOCK_REALTIME,&td);
-		sys->fps_prof->event_time+=timeDiff(ts,td);
-#endif
 	}
 
 	if(sys->useJit)

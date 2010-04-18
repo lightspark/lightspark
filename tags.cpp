@@ -438,10 +438,6 @@ void DefineTextTag::Render()
 	LOG(LOG_TRACE,"DefineText Render");
 	if(cached.size()==0)
 	{
-#ifndef WIN32
-		timespec ts,td;
-		clock_gettime(CLOCK_REALTIME,&ts);
-#endif
 		FontTag* font=NULL;
 		int count=0;
 		std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
@@ -466,11 +462,6 @@ void DefineTextTag::Render()
 				count++;
 			}
 		}
-
-#ifndef WIN32
-		clock_gettime(CLOCK_REALTIME,&td);
-		sys->fps_prof->cache_time+=timeDiff(ts,td);
-#endif
 	}
 	rt->glAcquireFramebuffer();
 
@@ -625,21 +616,12 @@ void DefineShapeTag::Render()
 
 	if(cached.size()==0)
 	{
-#ifndef WIN32
-		timespec ts,td;
-		clock_gettime(CLOCK_REALTIME,&ts);
-#endif
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
 		FromShaperecordListToShapeVector(cur,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
-
-#ifndef WIN32
-		clock_gettime(CLOCK_REALTIME,&td);
-		sys->fps_prof->cache_time+=timeDiff(ts,td);
-#endif
 	}
 
 	rt->glAcquireFramebuffer();
@@ -664,22 +646,12 @@ void DefineShape2Tag::Render()
 	LOG(LOG_TRACE,"DefineShape2 Render");
 	if(cached.size()==0)
 	{
-
-#ifndef WIN32
-		timespec ts,td;
-		clock_gettime(CLOCK_REALTIME,&ts);
-#endif
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
 		FromShaperecordListToShapeVector(cur,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
-
-#ifndef WIN32
-		clock_gettime(CLOCK_REALTIME,&td);
-		sys->fps_prof->cache_time+=timeDiff(ts,td);
-#endif
 	}
 
 	rt->glAcquireFramebuffer();
@@ -709,21 +681,12 @@ void DefineShape4Tag::Render()
 
 	if(cached.size()==0)
 	{
-#ifndef WIN32
-		timespec ts,td;
-		clock_gettime(CLOCK_REALTIME,&ts);
-#endif
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
 		FromShaperecordListToShapeVector(cur,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
-
-#ifndef WIN32
-		clock_gettime(CLOCK_REALTIME,&td);
-		sys->fps_prof->cache_time+=timeDiff(ts,td);
-#endif
 	}
 
 	rt->glAcquireFramebuffer();
@@ -765,21 +728,12 @@ void DefineShape3Tag::Render()
 	}*/
 	if(cached.size()==0)
 	{
-#ifndef WIN32
-		timespec ts,td;
-		clock_gettime(CLOCK_REALTIME,&ts);
-#endif
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
 
 		FromShaperecordListToShapeVector(cur,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
-
-#ifndef WIN32
-		clock_gettime(CLOCK_REALTIME,&td);
-		sys->fps_prof->cache_time+=timeDiff(ts,td);
-#endif
 	}
 
 	rt->glAcquireFramebuffer();

@@ -70,19 +70,6 @@ public:
 	const RECT& getFrameSize(){ return FrameSize; }
 };
 
-class ExecutionContext;
-
-struct fps_profiling
-{
-	uint64_t render_time;
-	uint64_t action_time;
-	uint64_t cache_time;
-	uint64_t fps;
-	uint64_t event_count;
-	uint64_t event_time;
-	fps_profiling():render_time(0),action_time(0),cache_time(0),fps(0),event_count(0),event_time(0){}
-};
-
 //RootMovieClip is used as a ThreadJob for timed rendering purpose
 class RootMovieClip: public MovieClip, public ITickJob
 {
@@ -157,7 +144,6 @@ public:
 	//before any other thread gets started
 	SystemState();
 	~SystemState();
-	fps_profiling* fps_prof;
 	Stage* stage;
 	ABCVm* currentVm;
 	InputThread* cur_input_thread;

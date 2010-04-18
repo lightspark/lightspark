@@ -49,8 +49,6 @@ TLSDATA SystemState* sys;
 TLSDATA RenderThread* rt=NULL;
 TLSDATA ParseThread* pt=NULL;
 
-std::vector<fps_profiling> fps_profs;
-
 int main(int argc, char* argv[])
 {
 	char* fileName=NULL;
@@ -146,15 +144,11 @@ int main(int argc, char* argv[])
 	rl.rlim_max=rl.rlim_cur;
 	//setrlimit(RLIMIT_AS,&rl);
 
-	timespec ts,td;
-	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
 
 	Log::initLogging(log_level);
 	//NOTE: see SystemState declaration
 	sys=new SystemState;
-	fps_profs.push_back(fps_profiling());
-	sys->fps_prof=&fps_profs.back();
 
 	//Set a bit of SystemState using parameters
 	if(url)
@@ -207,17 +201,6 @@ int main(int argc, char* argv[])
 	delete pt;
 	delete sys;
 
-	ofstream prof("lightspark.dat");
-	for(unsigned int i=0;i<fps_profs.size();i++)
-		prof << i << ' ' << fps_profs[i].render_time << ' ' << fps_profs[i].action_time << ' ' << 
-			fps_profs[i].cache_time << ' ' << fps_profs[i].fps*10 << ' ' << fps_profs[i].event_count << 
-			' ' << fps_profs[i].event_time << endl;
-	prof.close();
-
-#ifndef WIN32
-	clock_gettime(CLOCK_REALTIME,&td);
-	cout << timeDiff(ts,td) << endl;
-#endif
 	SDL_Quit();
 	return 0;
 }

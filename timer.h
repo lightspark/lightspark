@@ -39,6 +39,7 @@ public:
 	virtual ~ITickJob(){};
 };
 
+uint64_t timespecToUsecs(timespec t);
 uint64_t timespecToMsecs(timespec t);
 timespec msecsToTimespec(uint64_t time);
 

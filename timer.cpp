@@ -38,6 +38,14 @@ uint64_t lightspark::timespecToMsecs(timespec t)
 	return ret;
 }
 
+uint64_t lightspark::timespecToUsecs(timespec t)
+{
+	uint64_t ret=0;
+	ret+=(t.tv_sec*1000000);
+	ret+=(t.tv_nsec/1000);
+	return ret;
+}
+
 timespec lightspark::msecsToTimespec(uint64_t time)
 {
 	timespec ret;
@@ -256,7 +264,7 @@ Chronometer::Chronometer()
 	#error no thread clock available
 #endif
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
-	start=timespecToMsecs(tp);
+	start=timespecToUsecs(tp);
 }
 
 uint32_t lightspark::Chronometer::checkpoint()
@@ -268,7 +276,7 @@ uint32_t lightspark::Chronometer::checkpoint()
 	#error no thread clock available
 #endif
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
-	newstart=timespecToMsecs(tp);
+	newstart=timespecToUsecs(tp);
 	ret=newstart-start;
 	start=newstart;
 	return ret;

@@ -1249,7 +1249,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glUseProgram(0);
 				list<ThreadProfile>::iterator it=sys->profilingData.begin();
 				for(;it!=sys->profilingData.end();it++)
-					it->plot(1000/sys->getFrameRate(),&font);
+					it->plot(1000000/sys->getFrameRate(),&font);
 				glUseProgram(rt->gpu_program);
 			}
 			//Call glFlush to offload work on the GPU

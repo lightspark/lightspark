@@ -328,9 +328,12 @@ void NetStream::execute()
 	istream s(downloader);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 
+	ThreadProfile* profile=sys->allocateProfiler(RGB(0,0,200));
+	profile->setTag("NetStream");
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
+		Chronometer chronometer;
 		STREAM_TYPE t=classifyStream(s);
 		if(t==FLV_STREAM)
 		{
@@ -405,6 +408,7 @@ void NetStream::execute()
 						cout << (int)TagType << endl;
 						abort();
 				}
+				profile->accountTime(chronometer.checkpoint());
 				if(aborting)
 					throw "Aborting";
 			}

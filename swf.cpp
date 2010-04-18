@@ -40,7 +40,6 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 }
 #ifndef WIN32
-//#include <GL/glext.h>
 #include <GL/glx.h>
 #endif
 
@@ -193,6 +192,11 @@ void SystemState::wait()
 	sem_wait(&terminated);
 }
 
+float SystemState::getRenderRate()
+{
+	return renderRate;
+}
+
 void SystemState::setRenderRate(float rate)
 {
 	if(renderRate>=rate)
@@ -267,11 +271,15 @@ void ThreadProfile::tick()
 	Locker locker(mutex);
 	tickCount++;
 	//Purge first sample if the second is already old enough
-	if(data.size()>1 && (tickCount-data[1].index)>uint32_t(len))
+	if(data.size()>2 && (tickCount-data[1].index)>uint32_t(len))
+	{
+		if(!data[0].tag.empty() && data[1].tag.empty())
+			data[0].tag.swap(data[1].tag);
 		data.pop_front();
+	}
 }
 
-void ThreadProfile::plot(uint32_t max)
+void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 {
 	if(data.size()<=1)
 		return;
@@ -281,22 +289,58 @@ void ThreadProfile::plot(uint32_t max)
 	int width=size.Xmax/20;
 	int height=size.Ymax/20;
 	
-	
 	int32_t start=tickCount-len;
+	if(int32_t(data[0].index-start)>0)
+		start=data[0].index;
 	
-	FILLSTYLE::fixedColor(color.Red/255.0f,color.Green/255.0f,color.Blue/255.0f);
+	glPushAttrib(GL_TEXTURE_BIT | GL_LINE_BIT);
+	glColor3ub(color.Red,color.Green,color.Blue);
+	glDisable(GL_TEXTURE_2D);
+	glLineWidth(2);
+
 	glBegin(GL_LINE_STRIP);
-		//Plot first sample, maybe out of window
-		int32_t relx=int32_t(data[0].index-start)*width/len;
-		glVertex2i(relx,height-data[0].timing*height/max);
-		
-		//Plot other samples
-		for(unsigned int i=1;i<data.size();i++)
+		for(unsigned int i=0;i<data.size();i++)
 		{
-			relx=int32_t(data[i].index-start)*width/len;
-			glVertex2i(relx,height-data[i].timing*height/max);
+			int32_t relx=int32_t(data[i].index-start)*width/len;
+			glVertex2i(relx,data[i].timing*height/maxTime);
 		}
 	glEnd();
+	glPopAttrib();
+	
+	//Draw tags
+	string* curTag=NULL;
+	int curTagX=0;
+	int curTagY=maxTime;
+	int curTagLen=0;
+	int curTagH=0;
+	for(unsigned int i=0;i<data.size();i++)
+	{
+		int32_t relx=int32_t(data[i].index-start)*width/len;
+		if(!data[i].tag.empty())
+		{
+			//New tag, flush the old one if present
+			if(curTag)
+				font->Render(curTag->c_str() ,-1,FTPoint(curTagX,max(curTagY-curTagH,0)));
+			//Measure tag
+			FTBBox tagBox=font->BBox(data[i].tag.c_str(),-1);
+			curTagLen=(tagBox.Upper()-tagBox.Lower()).X();
+			curTagH=(tagBox.Upper()-tagBox.Lower()).Y();
+			curTag=&data[i].tag;
+			curTagX=relx;
+			curTagY=maxTime;
+		}
+		if(curTag)
+		{
+			if(relx<(curTagX+curTagLen))
+				curTagY=min(curTagY,data[i].timing*height/maxTime);
+			else
+			{
+				//Tag is before this sample
+				font->Render(curTag->c_str() ,-1,FTPoint(curTagX,max(curTagY-curTagH,0)));
+				curTag=NULL;
+			}
+		}
+	}
 }
 
 ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),parsingTarget(r)
@@ -1044,7 +1088,7 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	glViewport(0,0,width,height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0,width,height,0,-100,0);
+	glOrtho(0,width,0,height,-100,0);
 
 
 	glMatrixMode(GL_MODELVIEW);
@@ -1130,6 +1174,12 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	th->commonGLInit(width, height, t2);
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
+	profile->setTag("Render");
+	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
+	if(font.Error())
+		throw RunTimeException("Unable to load font",sys->getOrigin().raw_buf());
+	
+	font.FaceSize(20);
 	try
 	{
 		//Texturing must be enabled otherwise no tex coord will be sent to the shader
@@ -1184,23 +1234,24 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glBindTexture(GL_TEXTURE_2D,t2[0]);
 			glColor4f(0,0,1,0);
 			glBegin(GL_QUADS);
-				glTexCoord2f(0,1);
-				glVertex2i(0,0);
-				glTexCoord2f(1,1);
-				glVertex2i(width,0);
-				glTexCoord2f(1,0);
-				glVertex2i(width,height);
 				glTexCoord2f(0,0);
+				glVertex2i(0,0);
+				glTexCoord2f(1,0);
+				glVertex2i(width,0);
+				glTexCoord2f(1,1);
+				glVertex2i(width,height);
+				glTexCoord2f(0,1);
 				glVertex2i(0,height);
 			glEnd();
-			
+
 			if(sys->showProfilingData)
 			{
+				glUseProgram(0);
 				list<ThreadProfile>::iterator it=sys->profilingData.begin();
 				for(;it!=sys->profilingData.end();it++)
-					it->plot(1000/sys->getFrameRate());
+					it->plot(1000/sys->getFrameRate(),&font);
+				glUseProgram(rt->gpu_program);
 			}
-
 			//Call glFlush to offload work on the GPU
 			glFlush();
 			profile->accountTime(chronometer.checkpoint());

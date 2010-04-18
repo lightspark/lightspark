@@ -26,6 +26,7 @@
 #include <list>
 #include <map>
 #include <semaphore.h>
+#include <FTGL/ftgl.h>
 #include "swftypes.h"
 #include "frame.h"
 #include "vm.h"
@@ -144,7 +145,7 @@ public:
 	void accountTime(uint32_t time);
 	void setTag(const std::string& tag);
 	void tick();
-	void plot(uint32_t max);
+	void plot(uint32_t max, FTFont* font);
 };
 
 class SystemState: public RootMovieClip
@@ -203,6 +204,7 @@ public:
 	void addWait(uint32_t waitTime, ITickJob* job);
 	bool removeJob(ITickJob* job);
 	void setRenderRate(float rate);
+	float getRenderRate();
 
 	DownloadManager* downloadManager;
 };

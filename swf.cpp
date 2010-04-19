@@ -283,7 +283,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 {
 	if(data.size()<=1)
 		return;
-	
+
 	Locker locker(mutex);
 	RECT size=sys->getFrameSize();
 	int width=size.Xmax/20;
@@ -1247,6 +1247,17 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			if(sys->showProfilingData)
 			{
 				glUseProgram(0);
+				
+				//Draw bars
+				glColor4f(0.7,0.7,0.7,0.7);
+				glBegin(GL_LINES);
+				for(int i=1;i<10;i++)
+				{
+					glVertex2i(0,(i*height/10));
+					glVertex2i(width,(i*height/10));
+				}
+				glEnd();
+				
 				list<ThreadProfile>::iterator it=sys->profilingData.begin();
 				for(;it!=sys->profilingData.end();it++)
 					it->plot(1000000/sys->getFrameRate(),&font);

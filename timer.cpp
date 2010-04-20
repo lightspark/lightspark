@@ -33,24 +33,24 @@ extern TLSDATA RenderThread* rt;
 uint64_t lightspark::timespecToMsecs(timespec t)
 {
 	uint64_t ret=0;
-	ret+=(t.tv_sec*1000);
-	ret+=(t.tv_nsec/1000000);
+	ret+=(t.tv_sec*1000LL);
+	ret+=(t.tv_nsec/1000000LL);
 	return ret;
 }
 
 uint64_t lightspark::timespecToUsecs(timespec t)
 {
 	uint64_t ret=0;
-	ret+=(t.tv_sec*1000000);
-	ret+=(t.tv_nsec/1000);
+	ret+=(t.tv_sec*1000000LL);
+	ret+=(t.tv_nsec/1000LL);
 	return ret;
 }
 
 timespec lightspark::msecsToTimespec(uint64_t time)
 {
 	timespec ret;
-	ret.tv_sec=time/1000;
-	ret.tv_nsec=(time%1000)*1000000;
+	ret.tv_sec=time/1000LL;
+	ret.tv_nsec=(time%1000LL)*1000000LL;
 	return ret;
 }
 

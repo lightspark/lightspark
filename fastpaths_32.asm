@@ -35,16 +35,19 @@ fastYUV420ChannelsToBuffer:
 ;	XMM4 -> V1,V2
 
 ; Save registers
+push ebp
+mov ebp,esp
+
 push edi
 push esi
 push ebx
 
 xor eax,eax
-mov [esp+4],edi
-mov [esp+8],esi
-mov [esp+12],edx
-mov [esp+16],ecx
-mov [esp+20],ebx
+mov edi,[ebp+8]
+mov esi,[ebp+12]
+mov edx,[ebp+16]
+mov ecx,[ebp+20]
+mov ebx,[ebp+24]
 
 outer_loop:
 ; Load 16 bytes/32 pixels from U/V buffers
@@ -125,4 +128,5 @@ loop_end:
 	pop ebx
 	pop esi
 	pop edi
+	pop ebp
 	ret

@@ -235,7 +235,7 @@ bool VaapiDecoder::decodeData(uint8_t* data, uint32_t datalen)
 
 	const uint32_t height=codecContext->height;
 	const uint32_t width=codecContext->width;
-	assert(frameIn->pts==AV_NOPTS_VALUE);
+	assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
 
 	setSize(width,height);
 	copyFrameToSurfaces(frameIn);
@@ -369,7 +369,7 @@ bool FFMpegDecoder::decodeData(uint8_t* data, uint32_t datalen)
 
 	const uint32_t height=codecContext->height;
 	const uint32_t width=codecContext->width;
-	assert(frameIn->pts==AV_NOPTS_VALUE);
+	assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
 
 	setSize(width,height);
 	copyFrameToBuffers(frameIn,width,height);

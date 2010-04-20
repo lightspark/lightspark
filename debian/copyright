@@ -1,7 +1,7 @@
 Name: Lightspark
-Maintainer: Jacopo Corbetta <j.corbetta@sssup.it>
-Source: git://lightspark.git.sourceforge.net/gitroot/lightspark
-Copyright: 2009, Alessandro Pignotti <a.pignotti@sssup.it>
+Maintainer: Alessandro Pignotti <a.pignotti@sssup.it>
+Source: git://github.com/alexp-sssup/lightspark.git
+Copyright: 2009-2010, Alessandro Pignotti <a.pignotti@sssup.it>
 License: GPL-3+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

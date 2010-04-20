@@ -1,3 +1,9 @@
+lightspark (0.2.0-ubuntu1) lucid; urgency=low
+
+  * Youtube support
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Tue, 20 Apr 2010 17:15:05 +0200
+
 lightspark (0.techdemo2) unstable; urgency=low
 
   * Initial Release.

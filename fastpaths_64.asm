@@ -20,7 +20,7 @@
 global fastYUV420ChannelsToBuffer
 
 fastYUV420ChannelsToBuffer:
-; register mappin:
+; register mapping:
 ;	RDI -> Y buffer
 ;	RSI -> U buffer
 ;	RDX -> V buffer
@@ -33,8 +33,6 @@ fastYUV420ChannelsToBuffer:
 ;	XMM2 -> V
 ;	XMM3 -> U1,U2
 ;	XMM4 -> V1,V2
-
-; FFMpeg do not align to 16-byte, so we cannot use 128 aligned loads
 
 xor rax,rax
 

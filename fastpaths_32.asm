@@ -20,7 +20,7 @@
 global fastYUV420ChannelsToBuffer
 
 fastYUV420ChannelsToBuffer:
-; register mappin:
+; register mapping:
 ;	EDI -> Y buffer
 ;	ESI -> U buffer
 ;	EDX -> V buffer

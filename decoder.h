@@ -149,50 +149,5 @@ public:
 };
 #endif
 
-#ifdef USE_VAAPI
-class VaapiDecoder: public Decoder
-{
-private:
-	AVCodecContext* codecContext;
-	VaapiSurfaceProxy* surfaces[10];
-	//Counting semaphores for surfaces
-	sem_t freeBuffers;
-	sem_t usedBuffers;
-	bool empty;
-	uint32_t bufferHead;
-	uint32_t bufferTail;
-	AVFrame* frameIn;
-	GLuint validTexture;
-	VaapiSurfaceGLX* glxSurface;
-	void copyFrameToSurfaces(const AVFrame* frameIn);
-	/* --- VA-API glue --- */
-	static inline VaapiContextFfmpeg *vaapi_get_context(AVCodecContext *avctx)
-	{
-		return static_cast<VaapiContextFfmpeg *>(avctx->hwaccel_context);
-	}
-	static inline void vaapi_set_context(AVCodecContext *avctx, VaapiContextFfmpeg *vactx)
-	{
-		avctx->hwaccel_context = vactx;
-	}
-	/// (Re)set AVCodecContext to sane values 
-	static void reset_context(AVCodecContext *avctx, VaapiContextFfmpeg *vactx = NULL);
-	/// AVCodecContext.get_format() implementation
-	static enum PixelFormat vaapi_get_format(AVCodecContext *avctx, const enum PixelFormat *fmt);
-	/// AVCodecContext.get_buffer() implementation
-	static int vaapi_get_buffer(AVCodecContext *avctx, AVFrame *pic);
-	/// AVCodecContext.reget_buffer() implementation
-	static int vaapi_reget_buffer(AVCodecContext *avctx, AVFrame *pic);
-	/// AVCodecContext.release_buffer() implementation
-	static void vaapi_release_buffer(AVCodecContext *avctx, AVFrame *pic);
-	static bool vaapi_init_context(AVCodecContext *avctx, enum CodecID codecId);
-public:
-	VaapiDecoder(uint8_t* initdata, uint32_t datalen);
-	~VaapiDecoder();
-	bool decodeData(uint8_t* data, uint32_t datalen);
-	void discardFrame();
-	bool copyFrameToTexture(GLuint tex);
-};
-#endif
-
 };
 #endif

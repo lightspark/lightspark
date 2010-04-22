@@ -912,16 +912,16 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 	return s;
 }
 
-void ASObject::check()
+void ASObject::check() const
 {
 	//Put here a bunch of safety check on the object
 	assert(ref_count>0);
 	//Heavyweight stuff
 #ifndef NDEBUG
-	variables_map::var_iterator it=Variables.Variables.begin();
+	variables_map::const_var_iterator it=Variables.Variables.begin();
 	for(;it!=Variables.Variables.end();it++)
 	{
-		variables_map::var_iterator next=it;
+		variables_map::const_var_iterator next=it;
 		next++;
 		if(next==Variables.Variables.end())
 			break;
@@ -1725,7 +1725,7 @@ ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(
 	prototype(NULL)
 {
 #ifndef NDEBUG
-	//Stuff onyl used in debugging
+	//Stuff only used in debugging
 	initialized=false;
 #endif
 }
@@ -1733,7 +1733,7 @@ ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(
 ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),implementation(NULL),
 	prototype(o.prototype)
 {
-	abort();
+	::abort();
 	if(prototype)
 		prototype->incRef();
 

@@ -407,6 +407,7 @@ friend class ABCContext;
 private:
 	std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> > Variables;
 	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::iterator var_iterator;
+	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
 	//Level will be modified with the actual level where the object is found
@@ -463,7 +464,7 @@ public:
 	ASFUNCTION(_setPrototype);
 	ASFUNCTION(_toString);
 	virtual ~ASObject();
-	void check();
+	void check() const;
 	void incRef()
 	{
 		//std::cout << "incref " << this << std::endl;

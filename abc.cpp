@@ -1057,6 +1057,7 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 	{
 		assert(base->obj);
 		base->obj->prototype=derived_class_tmp;
+		derived_class_tmp->incRef();
 		base->obj->implementation=base;
 		getVm()->pushObjAndLevel(base->obj,derived_class_tmp->max_level);
 		derived_class_tmp->handleConstruction(base->obj,args,argslen,true);

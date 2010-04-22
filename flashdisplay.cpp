@@ -545,6 +545,9 @@ void MovieClip::Render()
 {
 	LOG(LOG_TRACE,"Render MovieClip");
 
+	if(!obj->prototype->isSubClass(Class<MovieClip>::getClass()))
+		::abort();
+
 	//Set the id in the secondary color
 	glPushAttrib(GL_CURRENT_BIT);
 	glSecondaryColor3f(id,0,0);

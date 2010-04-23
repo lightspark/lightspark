@@ -1623,19 +1623,15 @@ IInterface* Class_inherit::getInstance(bool construct, ASObject* const* args, co
 {
 	IInterface* ret=NULL;
 	if(tag)
-	{
 		ret=tag->instance();
-		//Unlink the prototype, it is set again later
-		ret->obj->prototype->decRef();
-	}
 	else
 	{
 		assert(super);
 		//Our super should not construct, we are going to do it ourselves
 		ret=super->getInstance(false,NULL,0);
-		//We override the prototype
-		ret->obj->prototype->decRef();
 	}
+	//We override the prototype
+	//ret->obj->prototype->decRef();
 	//As we are the prototype we should incRef ourself
 	ret->obj->prototype=this;
 	incRef();
@@ -1739,6 +1735,7 @@ void Class_base::linkInterface(ASObject* obj) const
 
 bool Class_base::isSubClass(const Class_base* cls) const
 {
+	check();
 	if(cls==this)
 		return true;
 

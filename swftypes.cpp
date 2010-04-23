@@ -494,7 +494,8 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 			setter=setter->getOverride();
 
 		//One argument can be passed without creating an array
-		setter->call(this,&o,1,level);
+		ASObject* ret=setter->call(this,&o,1,level);
+		assert(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
 	}
 	else
@@ -535,7 +536,8 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 
 		IFunction* setter=obj->setter->getOverride();
 		//One argument can be passed without creating an array
-		setter->call(this,&o,1,level);
+		ASObject* ret=setter->call(this,&o,1,level);
+		assert(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
 	}
 	else

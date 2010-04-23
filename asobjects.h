@@ -125,7 +125,7 @@ public:
 class Class_object: public Class_base
 {
 private:
-	Class_object():Class_base("Class"){};
+	Class_object():Class_base("Class"){}
 	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		abort();

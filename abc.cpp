@@ -1238,7 +1238,8 @@ void ABCContext::exec()
 	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(getGlobal(),&scripts[i].traits[j],false);
-	entry->call(getGlobal(),NULL,0,0);
+	ASObject* ret=entry->call(getGlobal(),NULL,0,0);
+	assert(ret==NULL);
 	LOG(LOG_CALLS, "End of Entry Point");
 }
 

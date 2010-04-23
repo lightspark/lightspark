@@ -648,7 +648,9 @@ void ABCVm::construct(call_context* th, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			sf->call(ret,args,m,0);
+			ASObject* ret=sf->call(ret,args,m,0);
+			if(ret)
+				ret->decRef();
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;
@@ -771,7 +773,9 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 
 			//We now suppress special handling
 			LOG(LOG_CALLS,"Proxy::callProperty");
-			f->call(obj,proxyArgs,m+1,obj->getLevel());
+			ASObject* ret=f->call(obj,proxyArgs,m+1,obj->getLevel());
+			if(ret)
+				ret->decRef();
 
 			obj->decRef();
 			LOG(LOG_CALLS,"End of calling " << *name);
@@ -800,16 +804,19 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 			obj->incRef();
 
 			//HACK for Proxy, here till callProperty proxying is implemented
+			ASObject* ret;
 			if(name->ns.size()==1 && name->ns[0].name==flash_proxy)
 			{
 				Proxy* p=dynamic_cast<Proxy*>(obj->implementation);
 				assert(p);
 				p->suppress=true;
-				f->call(obj,args,m,o.level);
+				ASObject* ret=f->call(obj,args,m,o.level);
 				p->suppress=false;
 			}
 			else
-				f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m,o.level);
+			if(ret)
+				ret->decRef();
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
@@ -1652,7 +1659,9 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
 			obj->incRef();
-			f->call(obj,args,m,o.level);
+			ASObject* ret=f->call(obj,args,m,o.level);
+			if(ret)
+				ret->decRef();
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
 		{
@@ -1900,7 +1909,9 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			sf->call(ret,args,m,0);
+			ASObject* ret=sf->call(ret,args,m,0);
+			if(ret)
+				ret->decRef();
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;
@@ -2138,7 +2149,8 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG(LOG_CALLS,"Calling Class init " << ret);
 	ret->incRef();
 	//Class init functions are called with global as this
-	cinit->call(ret,NULL,0,ret->max_level);
+	ASObject* ret2=cinit->call(ret,NULL,0,ret->max_level);
+	assert(ret2==NULL);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
 }

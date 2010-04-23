@@ -319,6 +319,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	assert(o.obj->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
+	o.obj->incRef();
 	return o.obj;
 }
 
@@ -489,7 +490,8 @@ bool Proxy::setVariableByMultiname(const multiname& name, ASObject* v)
 	//We now suppress special handling
 	suppress=true;
 	LOG(LOG_CALLS,"Proxy::setProperty");
-	f->call(obj,args,2,obj->getLevel());
+	ASObject* ret=f->call(obj,args,2,obj->getLevel());
+	assert(ret==NULL);
 	suppress=false;
 	return true;
 }

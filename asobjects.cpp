@@ -1608,13 +1608,14 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	#endif
 	}
 
+	//As constructors are not binded, we should change here the level
 	assert(max_level==target->getLevel());
 	if(constructor)
 	{
 		LOG(LOG_CALLS,"Calling Instance init " << class_name);
-		//As constructors are not binded, we should change here the level
 
-		constructor->call(target,args,argslen,max_level);
+		ASObject* ret=constructor->call(target,args,argslen,max_level);
+		assert(ret==NULL);
 	}
 }
 
@@ -1729,7 +1730,8 @@ void Class_base::linkInterface(ASObject* obj) const
 	if(constructor)
 	{
 		LOG(LOG_CALLS,"Calling interface init for " << class_name);
-		constructor->call(obj,NULL,0,max_level);
+		ASObject* ret=constructor->call(obj,NULL,0,max_level);
+		assert(ret==NULL);
 	}
 }
 

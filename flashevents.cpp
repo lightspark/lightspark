@@ -72,6 +72,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("DEACTIVATE","",Class<ASString>::getInstanceS(true,"deactivate")->obj);
 	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS(true,"change")->obj);
 	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS(true,"resize")->obj);
+	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS(true,"tabChildrenChange")->obj);
 }
 
 void Event::buildTraits(ASObject* o)
@@ -419,6 +420,7 @@ TextEvent::TextEvent():Event("textEvent")
 void TextEvent::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
+	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS(true,"textInput")->obj);
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 }

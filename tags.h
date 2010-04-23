@@ -538,10 +538,21 @@ public:
 	IInterface* instance() const
 	{
 		DefineSpriteTag* ret=new DefineSpriteTag(*this);
-		//An object is always linked
+		assert(ret->obj==NULL);
 		ret->obj=new ASObject;
 		ret->obj->implementation=ret;
-		ret->obj->prototype=Class<MovieClip>::getClass();
+		if(obj)
+		{
+			assert(obj->getObjectType()==T_CLASS);
+			//A class is binded to this tag
+			ret->obj->prototype=static_cast<Class_base*>(obj);
+		}
+		else
+		{
+			//A default object is always linked
+			ret->obj->prototype=Class<MovieClip>::getClass();
+		}
+
 		ret->obj->prototype->incRef();
 		ret->bootstrap();
 		return ret;

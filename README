@@ -22,7 +22,8 @@ Currently only 64bit platforms with SSE2 extension are supported. Support for 32
 be ready soon.
 
 INSTALLATION:
-To compile this software you need to install development packages for llvm-2.6, sdl, opengl and curl
+To compile this software you need to install development packages for llvm-2.6, sdl, opengl, curl, libavcodec, ftgl, libglew
+Install also cmake and nasm.
 To build the software please follow those steps.
 
 1) cd lightspark

@@ -40,7 +40,7 @@ INCLUDE(FindCURL REQUIRED)
 INCLUDE(FindPkgConfig REQUIRED)
 INCLUDE(FindZLIB REQUIRED)
 
-pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcre libpcrecpp libavcodec libxml-2.0 ftgl)
+pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcre libpcrecpp libavcodec libavutil libxml-2.0 ftgl x11)
 
 INCLUDE_DIRECTORIES(${SDL_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${LLVM_INCLUDE_DIR})
@@ -83,7 +83,7 @@ IF(USE_VAAPI)
 ENDIF(USE_VAAPI)
 
 IF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
-	SET(CMAKE_CXX_FLAGS "-Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe")
+	SET(CMAKE_CXX_FLAGS "-Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -lrt -ldl")
 	SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -D_GLIBCXX_NO_DEBUG")
 	SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2 -DNDEBUG")
 	SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")

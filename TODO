@@ -17,3 +17,4 @@ Official TODO Queue:
 -) handle private methods, which should be getted on the same level
 -) stick to current level change or use flag to getVariable.../setVariable
 -) add classes for number, int, and boolean
+-) use fontconfig to avoid dependance on ttf-liberation

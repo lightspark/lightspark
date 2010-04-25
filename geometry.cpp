@@ -220,7 +220,7 @@ void GeomShape::BuildFromEdges(const std::list<FILLSTYLE>* styles)
 	//Tessellate the shape using ear removing algorithm
 	if(closed)
 	{
-		TessellateSimple();
+		TessellateGLU();
 		//MakeStrips();
 	}
 
@@ -402,6 +402,78 @@ inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,c
 	float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
 
 	return (u >= 0) && (v>= 0) && (u + v <= 1);
+}
+
+void GeomShape::TessellateGLU()
+{
+	//NOTE: do not invalidate the contents of outline in this function
+	GLUtesselator* tess=gluNewTess();
+
+	gluTessCallback(tess,GLU_TESS_BEGIN_DATA,(void(*)())GLUCallbackBegin);
+	gluTessCallback(tess,GLU_TESS_VERTEX_DATA,(void(*)())GLUCallbackVertex);
+	gluTessCallback(tess,GLU_TESS_END_DATA,(void(*)())GLUCallbackEnd);
+	gluTessCallback(tess,GLU_TESS_COMBINE_DATA,(void(*)())GLUCallbackCombine);
+	
+	//Let's create a vector of pointers to store temporary coordinates
+	//passed to GLU
+	vector<GLdouble*> tmpCoord;
+	tmpCoord.reserve(outline.size());
+	
+	gluTessBeginPolygon(tess,this);
+		gluTessBeginContour(tess);
+			for(unsigned int i=0;i<outline.size();i++)
+			{
+				GLdouble* loc=new GLdouble[3];
+				loc[0]=outline[i].x;
+				loc[1]=outline[i].y;
+				loc[2]=0;
+				tmpCoord.push_back(loc);
+				//As the data we pass the Vector2 pointer
+				gluTessVertex(tess,loc,&outline[i]);
+			}
+		gluTessEndContour(tess);
+	gluTessEndPolygon(tess);
+	
+	for(unsigned int i=0;i<tmpCoord.size();i++)
+		delete[] tmpCoord[i];
+}
+
+void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
+{
+	if(type==GL_TRIANGLE_FAN)
+	{
+		cout << "fan" << endl;
+		obj->triangle_fans.push_back(vector<Vector2>());
+		obj->curTessTarget=GL_TRIANGLE_FAN;
+	}
+	else if(type==GL_TRIANGLE_STRIP)
+	{
+		cout << "strip" << endl;
+		::abort();
+	}
+	else if(type==GL_TRIANGLE_FAN)
+	{
+		cout << "triangles" << endl;
+		::abort();
+	}
+	else
+		::abort();
+}
+
+void GeomShape::GLUCallbackVertex(Vector2* vertexData, GeomShape* obj)
+{
+	::abort();
+}
+
+void GeomShape::GLUCallbackEnd(GeomShape* obj)
+{
+	::abort();
+}
+
+void GeomShape::GLUCallbackCombine(GLdouble coords[3], void* vertex_data[4], 
+				   GLfloat weight[4], void** outData, GeomShape* obj)
+{
+	::abort();
 }
 
 void GeomShape::TessellateSimple()

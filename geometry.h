@@ -150,15 +150,24 @@ friend class DefineShape2Tag;
 friend class DefineShape3Tag;
 private:
 	void TessellateSimple();
+	void TessellateGLU();
+	static void GLUCallbackBegin(GLenum type, GeomShape* obj);
+	static void GLUCallbackEnd(GeomShape* obj);
+	static void GLUCallbackVertex(Vector2* vertexData, GeomShape* obj);
+	static void GLUCallbackCombine(GLdouble coords[3], void *vertex_data[4], 
+				       GLfloat weight[4], void **outData, GeomShape* obj);
+	GLenum curTessTarget;
 	void MakeStrips();
 	void SetStyles(const std::list<FILLSTYLE>* styles);
 	const FILLSTYLE* style;
 	arrayElem* varray;
 	bool closed;
 public:
-	GeomShape():style(NULL),varray(NULL),closed(false),color(0){}
+	GeomShape():curTessTarget(0),style(NULL),varray(NULL),closed(false),color(0){}
 	std::vector<Triangle> interior;
 	std::vector<std::vector<Vector2> > triangle_strips;
+	std::vector<std::vector<Vector2> > triangle_fans;
+
 	std::vector<Vector2> outline;
 	std::vector<GeomShape> sub_shapes;
 	std::vector<Edge> edges;

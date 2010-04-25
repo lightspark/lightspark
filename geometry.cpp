@@ -54,6 +54,15 @@ void GeomShape::Render(int x, int y) const
 				glVertex2i(triangle_strips[i][j].x+x,triangle_strips[i][j].y+y);
 			glEnd();
 		}
+		
+		//Render the fans
+		for(unsigned int i=0;i<triangle_fans.size();i++)
+		{
+			glBegin(GL_TRIANGLE_FAN);
+			for(unsigned int j=0;j<triangle_fans[i].size();j++)
+				glVertex2i(triangle_fans[i][j].x+x,triangle_fans[i][j].y+y);
+			glEnd();
+		}
 
 		//Render lone triangles
 		glBegin(GL_TRIANGLES);
@@ -63,6 +72,10 @@ void GeomShape::Render(int x, int y) const
 			glVertex2i(interior[i].v2.x+x,interior[i].v2.y+y);
 			glVertex2i(interior[i].v3.x+x,interior[i].v3.y+y);
 		}
+		
+		assert(triangles.size()%3==0);
+		for(unsigned int i=0;i<triangles.size();i++)
+			glVertex2i(triangles[i].x+x,triangles[i].y+y);
 		glEnd();
 		filled=true;
 
@@ -434,12 +447,18 @@ void GeomShape::TessellateGLU()
 		gluTessEndContour(tess);
 	gluTessEndPolygon(tess);
 	
+	//Clean up locations
 	for(unsigned int i=0;i<tmpCoord.size();i++)
 		delete[] tmpCoord[i];
+	
+	//Clean up temporary vertices
+	for(unsigned int i=0;i<tmpVertices.size();i++)
+		delete tmpVertices[i];
 }
 
 void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
 {
+	assert(obj->curTessTarget==0);
 	if(type==GL_TRIANGLE_FAN)
 	{
 		cout << "fan" << endl;
@@ -449,12 +468,13 @@ void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
 	else if(type==GL_TRIANGLE_STRIP)
 	{
 		cout << "strip" << endl;
-		::abort();
+		obj->triangle_strips.push_back(vector<Vector2>());
+		obj->curTessTarget=GL_TRIANGLE_STRIP;
 	}
-	else if(type==GL_TRIANGLE_FAN)
+	else if(type==GL_TRIANGLES)
 	{
 		cout << "triangles" << endl;
-		::abort();
+		obj->curTessTarget=GL_TRIANGLES;
 	}
 	else
 		::abort();
@@ -462,18 +482,33 @@ void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
 
 void GeomShape::GLUCallbackVertex(Vector2* vertexData, GeomShape* obj)
 {
-	::abort();
+	assert(obj->curTessTarget!=0);
+	if(obj->curTessTarget==GL_TRIANGLE_FAN)
+	{
+		obj->triangle_fans.back().push_back(*vertexData);
+	}
+	else if(obj->curTessTarget==GL_TRIANGLE_STRIP)
+	{
+		obj->triangle_strips.back().push_back(*vertexData);
+	}
+	else if(obj->curTessTarget==GL_TRIANGLE_FAN)
+	{
+		obj->triangles.push_back(*vertexData);
+	}
 }
 
 void GeomShape::GLUCallbackEnd(GeomShape* obj)
 {
-	::abort();
+	assert(obj->curTessTarget!=0);
+	obj->curTessTarget=0;
 }
 
 void GeomShape::GLUCallbackCombine(GLdouble coords[3], void* vertex_data[4], 
-				   GLfloat weight[4], void** outData, GeomShape* obj)
+				   GLfloat weight[4], Vector2** outData, GeomShape* obj)
 {
-	::abort();
+	//No real operations, apart from generating a new vertex at the passed coordinates
+	obj->tmpVertices.push_back(new Vector2(coords[0],coords[1]));
+	*outData=obj->tmpVertices.back();
 }
 
 void GeomShape::TessellateSimple()

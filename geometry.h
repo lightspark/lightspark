@@ -155,8 +155,9 @@ private:
 	static void GLUCallbackEnd(GeomShape* obj);
 	static void GLUCallbackVertex(Vector2* vertexData, GeomShape* obj);
 	static void GLUCallbackCombine(GLdouble coords[3], void *vertex_data[4], 
-				       GLfloat weight[4], void **outData, GeomShape* obj);
+				       GLfloat weight[4], Vector2** outData, GeomShape* obj);
 	GLenum curTessTarget;
+	std::vector<Vector2*> tmpVertices;
 	void MakeStrips();
 	void SetStyles(const std::list<FILLSTYLE>* styles);
 	const FILLSTYLE* style;
@@ -165,6 +166,7 @@ private:
 public:
 	GeomShape():curTessTarget(0),style(NULL),varray(NULL),closed(false),color(0){}
 	std::vector<Triangle> interior;
+	std::vector<Vector2> triangles;
 	std::vector<std::vector<Vector2> > triangle_strips;
 	std::vector<std::vector<Vector2> > triangle_fans;
 

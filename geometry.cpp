@@ -66,13 +66,6 @@ void GeomShape::Render(int x, int y) const
 
 		//Render lone triangles
 		glBegin(GL_TRIANGLES);
-		for(unsigned int i=0;i<interior.size();i++)
-		{
-			glVertex2i(interior[i].v1.x+x,interior[i].v1.y+y);
-			glVertex2i(interior[i].v2.x+x,interior[i].v2.y+y);
-			glVertex2i(interior[i].v3.x+x,interior[i].v3.y+y);
-		}
-		
 		assert(triangles.size()%3==0);
 		for(unsigned int i=0;i<triangles.size();i++)
 			glVertex2i(triangles[i].x+x,triangles[i].y+y);
@@ -114,76 +107,12 @@ void GeomShape::Render(int x, int y) const
 		sub_shapes[i].Render();
 }
 
-bool Edge::yIntersect(const Vector2& p, int& x)
-{
-	if(p1.y!=p2.y && p.y==highPoint().y)
-	{
-		x=highPoint().x;
-		return true;
-	}
-	if(p.y<=highPoint().y || p.y>=lowPoint().y)
-		return false;
-	else
-	{
-		Vector2 c=lowPoint()-highPoint();
-		Vector2 d=p-highPoint();
-
-		x=(c.x*d.y)/c.y+highPoint().x;
-		return true;
-	}
-}
-
-FilterIterator::FilterIterator(const std::vector<Vector2>::const_iterator& i, const std::vector<Vector2>::const_iterator& e, int f):it(i),end(e),filter(f)
-{
-	if(it!=end && it->index==filter)
-		it++;
-}
-FilterIterator FilterIterator::operator++(int)
-{
-	FilterIterator copy(*this);
-	it++;
-	if(it!=end && it->index==filter)
-		it++;
-	return copy;
-}
-
-const Vector2& FilterIterator::operator*()
-{
-	return *it;
-}
-
-bool FilterIterator::operator==(FilterIterator& i)
-{
-	return i.it==it;
-}
-
-bool FilterIterator::operator!=(FilterIterator& i)
-{
-	return i.it!=it;
-}
-
 void GeomShape::dumpEdges()
 {
 	ofstream f("edges.dat");
 
 	for(unsigned int i=0;i<outline.size();i++)
 		f << outline[i].x << ' ' << outline[i].y << endl;
-	f.close();
-}
-
-void GeomShape::dumpInterior()
-{
-	ofstream f("interior.dat");
-
-	for(unsigned int i=0;i<interior.size();i++)
-	{
-		f << interior[i].v1.x << ' ' << interior[i].v1.y << endl;
-		f << interior[i].v2.x << ' ' << interior[i].v2.y << endl;
-		f << interior[i].v3.x << ' ' << interior[i].v3.y << endl;
-		f << interior[i].v1.x << ' ' << interior[i].v1.y << endl;
-		f << endl;
-	}
-
 	f.close();
 }
 
@@ -230,12 +159,9 @@ void GeomShape::BuildFromEdges(const std::list<FILLSTYLE>* styles)
 
 	SetStyles(styles);
 
-	//Tessellate the shape using ear removing algorithm
+	//Tessellate the shape using GLU
 	if(closed)
-	{
 		TessellateGLU();
-		//MakeStrips();
-	}
 
 /*	int strips_size=0;
 	for(int i=0;i<triangle_strips.size();i++)
@@ -254,167 +180,6 @@ void GeomShape::BuildFromEdges(const std::list<FILLSTYLE>* styles)
 			used++;
 		}
 	}*/
-}
-
-void GeomShape::MakeStrips()
-{
-	//Try to build triangle strips
-	while(!interior.empty())
-	{
-		std::vector<Vector2> strip[3];
-		std::vector<Triangle> triangles[3];
-
-		triangles[0]=interior;
-		triangles[1]=interior;
-		triangles[2]=interior;
-
-		int j[3]={2,2,2};
-
-		strip[0].push_back(interior[0].v1);
-		strip[0].push_back(interior[0].v2);
-		strip[0].push_back(interior[0].v3);
-
-		strip[1].push_back(interior[0].v3);
-		strip[1].push_back(interior[0].v1);
-		strip[1].push_back(interior[0].v2);
-
-		strip[2].push_back(interior[0].v2);
-		strip[2].push_back(interior[0].v3);
-		strip[2].push_back(interior[0].v1);
-
-		for(int k=0;k<3;k++)
-		{
-			triangles[k].erase(triangles[k].begin());
-			unsigned int i=0;
-			while(1)
-			{
-				if(i==triangles[k].size())
-					break;
-
-				if(strip[k][j[k]]==triangles[k][i].v1 && strip[k][j[k]-1]==triangles[k][i].v2)
-				{
-					strip[k].push_back(triangles[k][i].v3);
-					triangles[k].erase(triangles[k].begin()+i);
-					i=0;
-					j[k]++;
-				}
-				else if(strip[k][j[k]-1]==triangles[k][i].v1 && strip[k][j[k]]==triangles[k][i].v2)
-				{
-					strip[k].push_back(triangles[k][i].v3);
-					triangles[k].erase(triangles[k].begin()+i);
-					i=0;
-					j[k]++;
-				}
-				else if(strip[k][j[k]]==triangles[k][i].v2 && strip[k][j[k]-1]==triangles[k][i].v3)
-				{
-					strip[k].push_back(triangles[k][i].v1);
-					triangles[k].erase(triangles[k].begin()+i);
-					i=0;
-					j[k]++;
-				}
-				else if(strip[k][j[k]-1]==triangles[k][i].v2 && strip[k][j[k]]==triangles[k][i].v3)
-				{
-					strip[k].push_back(triangles[k][i].v1);
-					triangles[k].erase(triangles[k].begin()+i);
-					i=0;
-					j[k]++;
-				}
-				else if(strip[k][j[k]]==triangles[k][i].v3 && strip[k][j[k]-1]==triangles[k][i].v1)
-				{
-					strip[k].push_back(triangles[k][i].v2);
-					triangles[k].erase(triangles[k].begin()+i);
-					i=0;
-					j[k]++;
-				}
-				else if(strip[k][j[k]-1]==triangles[k][i].v3 && strip[k][j[k]]==triangles[k][i].v1)
-				{
-					strip[k].push_back(triangles[k][i].v2);
-					triangles[k].erase(triangles[k].begin()+i);
-					i=0;
-					j[k]++;
-				}
-				else
-					i++;
-			}
-		}
-
-		if(strip[0].size()<=strip[2].size() && 
-			strip[1].size()<=strip[2].size())
-		{
-			triangle_strips.push_back(strip[2]);
-			interior=triangles[2];
-		}
-		else if(strip[0].size()<=strip[1].size() && 
-			strip[2].size()<=strip[1].size())
-		{
-			triangle_strips.push_back(strip[1]);
-			interior=triangles[1];
-		}
-		else if(strip[1].size()<=strip[0].size() && 
-			strip[2].size()<=strip[0].size())
-		{
-			triangle_strips.push_back(strip[0]);
-			interior=triangles[0];
-		}
-	}
-
-}
-
-bool pointInPolygon(FilterIterator start, FilterIterator end, const Vector2& point)
-{
-	if(start==end)
-		return false;
-	FilterIterator jj=start;
-	FilterIterator jj2=start;
-	jj2++;
-
-	int count=0;
-	int dist;
-
-	while(jj2!=end)
-	{
-		Edge e(*jj,*jj2,-1,-1);
-		if(e.yIntersect(point,dist))
-		{
-			if(dist>point.x)
-				count++;
-		}
-		jj=jj2++;
-	}
-	Edge e(*jj,*start,-1,-1);
-	if(e.yIntersect(point,dist))
-	{
-		if(dist>point.x)
-			count++;
-	}
-	return count%2;
-}
-
-void fixIndex(std::vector<Vector2>& points)
-{
-	//Change this to difference between iterator and begin?
-	int size=points.size();
-	for(int i=0;i<size;i++)
-		points[i].index=i;
-}
-
-inline bool pointInTriangle(const Vector2& P,const Vector2& A,const Vector2& B,const Vector2& C)
-{
-	Vector2 v0 = C - A;
-	Vector2 v1 = B - A;
-	Vector2 v2 = P - A;
-
-	long dot00 = v0.dot(v0);
-	long dot01 = v0.dot(v1);
-	long dot02 = v0.dot(v2);
-	long dot11 = v1.dot(v1);
-	long dot12 = v1.dot(v2);
-
-	float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
-	float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-	float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
-
-	return (u >= 0) && (v>= 0) && (u + v <= 1);
 }
 
 void GeomShape::TessellateGLU()
@@ -454,6 +219,9 @@ void GeomShape::TessellateGLU()
 	//Clean up temporary vertices
 	for(unsigned int i=0;i<tmpVertices.size();i++)
 		delete tmpVertices[i];
+	
+	tmpVertices.clear();
+	
 }
 
 void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
@@ -491,7 +259,7 @@ void GeomShape::GLUCallbackVertex(Vector2* vertexData, GeomShape* obj)
 	{
 		obj->triangle_strips.back().push_back(*vertexData);
 	}
-	else if(obj->curTessTarget==GL_TRIANGLE_FAN)
+	else if(obj->curTessTarget==GL_TRIANGLES)
 	{
 		obj->triangles.push_back(*vertexData);
 	}
@@ -509,76 +277,6 @@ void GeomShape::GLUCallbackCombine(GLdouble coords[3], void* vertex_data[4],
 	//No real operations, apart from generating a new vertex at the passed coordinates
 	obj->tmpVertices.push_back(new Vector2(coords[0],coords[1]));
 	*outData=obj->tmpVertices.back();
-}
-
-void GeomShape::TessellateSimple()
-{
-	vector<Vector2> P=outline;
-	unsigned int i=0;
-	int count=0;
-	assert(P.size()>=3);
-	while(P.size()>3)
-	{
-		fixIndex(P);
-		unsigned int a=(i+1)%P.size();
-		unsigned int b=(i-1+P.size())%P.size();
-		FilterIterator ai(P.begin(),P.end(),i);
-		FilterIterator bi(P.end(),P.end(),i);
-		bool not_ear=false;
-
-		//Collinearity test
-		Vector2 t1=P[b]-P[a];
-		Vector2 t2=P[i]-P[a];
-		if(t2.y*t1.x==t2.x*t1.y)
-		{
-			i++;
-			i%=P.size();
-			continue;
-		}
-
-		if(!pointInPolygon(ai,bi,P[i]))
-		{
-			for(unsigned int j=0;j<P.size();j++)
-			{
-				if(j==i || j==a || j==b)
-					continue;
-				if(pointInTriangle(P[j],P[a],P[i],P[b]))
-				{
-					not_ear=true;
-					break;
-				}
-			}
-			if(!not_ear)
-			{
-				interior.push_back(Triangle(P[a],P[i],P[b]));
-				P.erase(P.begin()+i);
-				i=0;
-			}
-			else
-			{
-				i++;
-				i%=P.size();
-			}
-		}
-		else
-		{
-			i++;
-			i%=P.size();
-		}
-		count++;
-
-		//Force loop ending after a way too long time.
-		if(count>30000)
-			break;
-	}
-
-	if(P.size()==3)
-		interior.push_back(Triangle(P[0],P[1],P[2]));
-	else
-	{
-		//Tessellation failed, let's abort it
-		interior.clear();
-	}
 }
 
 //Shape are compared using the minimum vertex

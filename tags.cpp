@@ -580,7 +580,7 @@ DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):Dicti
 
 std::ostream& operator<<(std::ostream& s, const Vector2& p)
 {
-	s << "{ "<< p.x << ',' << p.y << " } [" << p.index  << ']' << std::endl;
+	s << "{ "<< p.x << ',' << p.y << " }" << std::endl;
 	return s;
 }
 
@@ -836,10 +836,10 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 		{
 			if(cur->StraightFlag)
 			{
-				Vector2 p1(startX,startY,count);
+				Vector2 p1(startX,startY);
 				startX+=cur->DeltaX;
 				startY+=cur->DeltaY;
-				Vector2 p2(startX,startY,count+1);
+				Vector2 p2(startX,startY);
 				unsigned int color;
 				for(int k=0;k<2;k++)
 				{
@@ -894,13 +894,13 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 			}
 			else
 			{
-				Vector2 p1(startX,startY,count);
+				Vector2 p1(startX,startY);
 				startX+=cur->ControlDeltaX;
 				startY+=cur->ControlDeltaY;
-				Vector2 p2(startX,startY,count+1);
+				Vector2 p2(startX,startY);
 				startX+=cur->AnchorDeltaX;
 				startY+=cur->AnchorDeltaY;
-				Vector2 p3(startX,startY,count+2);
+				Vector2 p3(startX,startY);
 				unsigned int color;
 				for(int k=0;k<2;k++)
 				{

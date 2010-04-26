@@ -252,14 +252,14 @@ private:
 	static void* sdl_worker(InputThread*);
 	static void* npapi_worker(InputThread*);
 
-	std::multimap< tiny_string, EventDispatcher* > listeners;
+	std::vector<InteractiveObject* > listeners;
 	sem_t sem_listeners;
 
 public:
 	InputThread(SystemState* s,ENGINE e, void* param=NULL);
 	~InputThread();
 	void wait();
-	void addListener(const tiny_string& type, EventDispatcher* tag);
+	void addListener(InteractiveObject* ob);
 	void broadcastEvent(const tiny_string& type);
 };
 

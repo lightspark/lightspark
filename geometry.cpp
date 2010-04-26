@@ -229,19 +229,16 @@ void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
 	assert(obj->curTessTarget==0);
 	if(type==GL_TRIANGLE_FAN)
 	{
-		cout << "fan" << endl;
 		obj->triangle_fans.push_back(vector<Vector2>());
 		obj->curTessTarget=GL_TRIANGLE_FAN;
 	}
 	else if(type==GL_TRIANGLE_STRIP)
 	{
-		cout << "strip" << endl;
 		obj->triangle_strips.push_back(vector<Vector2>());
 		obj->curTessTarget=GL_TRIANGLE_STRIP;
 	}
 	else if(type==GL_TRIANGLES)
 	{
-		cout << "triangles" << endl;
 		obj->curTessTarget=GL_TRIANGLES;
 	}
 	else

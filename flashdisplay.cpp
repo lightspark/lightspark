@@ -42,6 +42,7 @@ extern TLSDATA RenderThread* rt;
 REGISTER_CLASS_NAME(LoaderInfo);
 REGISTER_CLASS_NAME(MovieClip);
 REGISTER_CLASS_NAME(DisplayObject);
+REGISTER_CLASS_NAME(InteractiveObject);
 REGISTER_CLASS_NAME(DisplayObjectContainer);
 REGISTER_CLASS_NAME(Sprite);
 REGISTER_CLASS_NAME(Loader);
@@ -335,6 +336,8 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 void Sprite::Render()
 {
 	assert(obj && obj->prototype);
+	
+	InteractiveObject::RenderProloue();
 
 	rt->glAcquireFramebuffer();
 
@@ -370,6 +373,8 @@ void Sprite::Render()
 	sem_post(&sem_displayList);
 
 	glPopMatrix();
+	
+	InteractiveObject::RenderEpilogue();
 }
 
 ASFUNCTIONBODY(Sprite,_constructor)
@@ -545,9 +550,7 @@ void MovieClip::Render()
 {
 	LOG(LOG_TRACE,"Render MovieClip");
 
-	//Set the id in the secondary color
-	glPushAttrib(GL_CURRENT_BIT);
-	glSecondaryColor3f(id,0,0);
+	InteractiveObject::RenderProloue();
 
 	assert(graphics==NULL);
 
@@ -576,7 +579,7 @@ void MovieClip::Render()
 	sem_post(&sem_displayList);
 
 	glPopMatrix();
-	glPopAttrib();
+	InteractiveObject::RenderEpilogue();
 
 	LOG(LOG_TRACE,"End Render MovieClip");
 }
@@ -666,8 +669,6 @@ void DisplayObject::buildTraits(ASObject* o)
 	o->setGetterByQName("opaqueBackground","",new Function(undefinedFunction));
 	o->setSetterByQName("opaqueBackground","",new Function(undefinedFunction));
 
-	//This is from InteractiveObject
-	o->setSetterByQName("mouseEnabled","",new Function(undefinedFunction));
 }
 
 ASFUNCTIONBODY(DisplayObject,_getAlpha)
@@ -933,7 +934,7 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 void DisplayObjectContainer::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
-	c->super=Class<DisplayObject>::getClass();
+	c->super=Class<InteractiveObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }
 
@@ -952,6 +953,37 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 DisplayObjectContainer::DisplayObjectContainer()
 {
 	sem_init(&sem_displayList,0,1);
+}
+
+InteractiveObject::InteractiveObject():id(0)
+{
+	//Object registered very early are not supported this way (Stage for example)
+	if(sys && sys->cur_input_thread)
+		sys->cur_input_thread->addListener(this);
+}
+
+void InteractiveObject::buildTraits(ASObject* o)
+{
+	o->setSetterByQName("mouseEnabled","",new Function(undefinedFunction));
+}
+
+void InteractiveObject::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->super=Class<DisplayObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void InteractiveObject::RenderProloue()
+{
+	//Set the id in the secondary color
+	glPushAttrib(GL_CURRENT_BIT);
+	glSecondaryColor3f(id,0,0);
+}
+
+void InteractiveObject::RenderEpilogue()
+{
+	glPopAttrib();
 }
 
 void DisplayObjectContainer::dumpDisplayList()

@@ -205,7 +205,7 @@ void IOErrorEvent::sinit(Class_base* c)
 	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS(true,"ioError")->obj);
 }
 
-EventDispatcher::EventDispatcher():id(0)
+EventDispatcher::EventDispatcher()
 {
 }
 
@@ -242,10 +242,6 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	}
 	const tiny_string& eventName=args[0]->toString();
 	IFunction* f=static_cast<IFunction*>(args[1]);
-
-	//TODO: find a nice way to do this
-	if(eventName=="enterFrame")
-		sys->cur_input_thread->addListener(eventName,th);
 
 	std::map<tiny_string,std::list<listener> >::iterator it=th->handlers.insert(make_pair(eventName,list<listener>())).first;
 
@@ -325,7 +321,7 @@ void EventDispatcher::handleEvent(Event* e)
 	map<tiny_string, list<listener> >::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Not handled event " << e->type);
+		LOG(LOG_CALLS,"Not handled event " << e->type);
 		return;
 	}
 

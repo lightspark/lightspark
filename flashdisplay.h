@@ -111,7 +111,20 @@ public:
 	}
 };
 
-class DisplayObjectContainer: public DisplayObject
+class InteractiveObject: public DisplayObject
+{
+protected:
+	float id;
+	void RenderProloue();
+	void RenderEpilogue();
+public:
+	InteractiveObject();
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	void setId(float i){id=i;}
+};
+
+class DisplayObjectContainer: public InteractiveObject
 {
 private:
 	void _addChildAt(DisplayObject* child, unsigned int index);

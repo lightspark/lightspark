@@ -3,7 +3,6 @@ uniform sampler2D g_tex1;
 //We abuse of default varying to pass variou data
 //gl_Color: Selector of current shader function
 //gl_TexCoord[0]: Fill color/Texture coordinate
-//gl_SecondaryColor: interactive id
 
 const mat3 YUVtoRGB = mat3(	1, 1, 1, //First coloumn
 				0, -0.344, 1.772, //Second coloumn
@@ -44,5 +43,4 @@ void main()
 			(tex_lookup_yuv()*gl_Color.w);
 
 	gl_FragData[0]=ret;
-	//gl_FragData[1]=gl_SecondaryColor*ceil(ret.a);
 }

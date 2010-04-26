@@ -517,23 +517,11 @@ void* InputThread::sdl_worker(InputThread* th)
 
 				sem_wait(&th->sem_listeners);
 
-				selected--;
-				int index=int(th->listeners.count("")*selected);
-				
-				pair< multimap<tiny_string, EventDispatcher*>::const_iterator,
-					multimap<tiny_string, EventDispatcher*>::const_iterator > range=
-					th->listeners.equal_range("");
-
-				//Get the selected item
-				multimap<tiny_string, EventDispatcher*>::const_iterator it=range.first;
-				while(index)
-				{
-					it++;
-					index--;
-				}
+				int index=int(th->listeners.size()*selected);
+				index--;
 
 				//Add event to the event queue
-				sys->currentVm->addEvent(it->second,new Event("mouseDown"));
+				sys->currentVm->addEvent(th->listeners[index],new Event("mouseDown"));
 
 				sem_post(&th->sem_listeners);
 				break;
@@ -543,68 +531,35 @@ void* InputThread::sdl_worker(InputThread* th)
 	return NULL;
 }
 
-void InputThread::addListener(const tiny_string& t, EventDispatcher* ob)
+void InputThread::addListener(InteractiveObject* ob)
 {
 	sem_wait(&sem_listeners);
-	LOG(LOG_TRACE,"Adding listener to " << t);
 
-	//the empty string is the *any* event
-	pair< multimap<tiny_string, EventDispatcher*>::const_iterator, 
-		multimap<tiny_string, EventDispatcher*>::const_iterator > range=
-		listeners.equal_range("");
-
-
-	bool already_known=false;
-
-	multimap<tiny_string, EventDispatcher*>::const_iterator it=range.first;
-	int count=0;
-	for(;it!=range.second;it++)
+#ifndef NDEBUG
+	for(unsigned int i=0;i<listeners.size();i++)
 	{
-		count++;
-		if(it->second==ob)
+		if(listeners[i]==ob)
 		{
-			already_known=true;
-			break;
+			//Object is already register, should not happen
+			::abort();
 		}
 	}
-	range=listeners.equal_range(t);
-
-	if(already_known)
-	{
-		//Check if this object is alreasy registered for this event
-		it=range.first;
-		int count=0;
-		for(;it!=range.second;it++)
-		{
-			count++;
-			if(it->second==ob)
-			{
-				LOG(LOG_TRACE,"Already added");
-				sem_post(&sem_listeners);
-				return;
-			}
-		}
-	}
-	else
-		listeners.insert(make_pair("",ob));
-
+#endif
+	
 	//Register the listener
-	listeners.insert(make_pair(t,ob));
-	count++;
+	listeners.push_back(ob);
+	unsigned int count=listeners.size();
 
-	range=listeners.equal_range("");
-	it=range.first;
 	//Set a unique id for listeners in the range [0,1]
 	//count is the number of listeners, this is correct so that no one gets 0
 	float increment=1.0f/count;
 	float cur=increment;
-	for(;it!=range.second;it++)
+	for(unsigned int i=0;i<count;i++)
 	{
-		if(it->second)
-			it->second->setId(cur);
+		listeners[i]->setId(cur);
 		cur+=increment;
 	}
-
+	
 	sem_post(&sem_listeners);
 }
 
@@ -612,12 +567,8 @@ void InputThread::broadcastEvent(const tiny_string& t)
 {
 	sem_wait(&sem_listeners);
 
-	pair< multimap<tiny_string,EventDispatcher*>::const_iterator, 
-		multimap<tiny_string, EventDispatcher*>::const_iterator > range=
-		listeners.equal_range(t);
-
-	for(;range.first!=range.second;range.first++)
-		sys->currentVm->addEvent(range.first->second,Class<Event>::getInstanceS(true,t));
+	for(unsigned int i=0;i<listeners.size();i++)
+		sys->currentVm->addEvent(listeners[i],Class<Event>::getInstanceS(true,t));
 
 	sem_post(&sem_listeners);
 }
@@ -659,6 +610,7 @@ void RenderThread::glAcquireFramebuffer()
 	fbAcquired=true;
 
 	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -805,8 +757,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 				//glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
 				//glReadPixels(0,0,window_width,window_height,GL_RED,GL_FLOAT,th->interactive_buffer);
-
-				glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
 				RGB bg=sys->getBackground();
 				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
@@ -1213,8 +1163,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
 			//glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
 			//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
-
-			glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
 
 			RGB bg=sys->getBackground();
 			//glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);

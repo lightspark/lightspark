@@ -214,13 +214,11 @@ private:
 	std::map<tiny_string,std::list<listener> > handlers;
 	void dumpHandlers();
 public:
-	float id;
 	EventDispatcher();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	virtual ~EventDispatcher(){}
 	void handleEvent(Event* e);
-	void setId(float i){id=i;}
 	bool hasEventListener(const tiny_string& eventName);
 
 	ASFUNCTION(_constructor);

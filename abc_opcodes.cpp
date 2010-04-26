@@ -648,9 +648,9 @@ void ABCVm::construct(call_context* th, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			ASObject* ret=sf->call(ret,args,m,0);
-			if(ret)
-				ret->decRef();
+			ASObject* ret2=sf->call(ret,args,m,0);
+			if(ret2)
+				ret2->decRef();
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;
@@ -810,7 +810,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 				Proxy* p=dynamic_cast<Proxy*>(obj->implementation);
 				assert(p);
 				p->suppress=true;
-				ASObject* ret=f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m,o.level);
 				p->suppress=false;
 			}
 			else
@@ -1909,9 +1909,9 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->incRef();
 			assert(sf->closure_this==NULL);
-			ASObject* ret=sf->call(ret,args,m,0);
-			if(ret)
-				ret->decRef();
+			ASObject* ret2=sf->call(ret,args,m,0);
+			if(ret2)
+				ret2->decRef();
 
 			//Let's see if an AS prototype has been defined on the function
 			ASObject* asp=sf->getVariableByQName("prototype","").obj;

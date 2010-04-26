@@ -113,8 +113,8 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL),showProfilingData(false),shutdown(false),error(false),currentVm(NULL),
-	cur_input_thread(NULL),cur_render_thread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
+SystemState::SystemState():RootMovieClip(NULL),showProfilingData(false),showInteractiveMap(false),shutdown(false),error(false),
+	currentVm(NULL),inputThread(NULL),renderThread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -207,14 +207,14 @@ void SystemState::setRenderRate(float rate)
 	
 	//The requested rate is higher, let's reschedule the job
 	renderRate=rate;
-	assert(cur_render_thread);
-	removeJob(cur_render_thread);
-	addTick(1000/rate,cur_render_thread);
+	assert(renderThread);
+	removeJob(renderThread);
+	addTick(1000/rate,renderThread);
 }
 
 void SystemState::tick()
 {
-	cur_input_thread->broadcastEvent("enterFrame");
+	inputThread->broadcastEvent("enterFrame");
  	sem_wait(&mutex);
 	list<ThreadProfile>::iterator it=profilingData.begin();
 	for(;it!=profilingData.end();it++)
@@ -490,6 +490,12 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 				switch(event.key.keysym.sym)
 				{
+					case SDLK_i:
+						sys->showInteractiveMap=!sys->showInteractiveMap;
+						break;
+					case SDLK_p:
+						sys->showProfilingData=!sys->showProfilingData;
+						break;
 					case SDLK_q:
 						sys->setShutdownFlag();
 						if(sys->currentVm)
@@ -498,9 +504,6 @@ void* InputThread::sdl_worker(InputThread* th)
 						break;
 					case SDLK_s:
 						sys->state.stop_FP=true;
-						break;
-					case SDLK_p:
-						sys->showProfilingData=!sys->showProfilingData;
 						break;
 					//Ignore any other keystrokes
 					default:
@@ -511,7 +514,7 @@ void* InputThread::sdl_worker(InputThread* th)
 			case SDL_MOUSEBUTTONDOWN:
 			{
 
-				float selected=sys->cur_render_thread->getIdAt(event.button.x,event.button.y);
+				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
 				if(selected==0)
 					break;
 
@@ -574,7 +577,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 }
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),interactive_buffer(NULL),
-					fbAcquired(false),frameCount(0),secsCount(0)
+					fbAcquired(false),frameCount(0),secsCount(0),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -604,12 +607,36 @@ RenderThread::~RenderThread()
 	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
 }
 
+void RenderThread::glClearIdBuffer()
+{
+	glDrawBuffer(GL_COLOR_ATTACHMENT2);
+	
+	glDisable(GL_BLEND);
+	glClearColor(0,0,0,1);
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+bool RenderThread::glAcquireIdBuffer()
+{
+	if(currentId!=0)
+	{
+		glDrawBuffer(GL_COLOR_ATTACHMENT2);
+		materialOverride=true;
+		FILLSTYLE::fixedColor(currentId,currentId,currentId);
+		//FILLSTYLE::fixedColor(0,1,0);
+		return true;
+	}
+	
+	return false;
+}
+
 void RenderThread::glAcquireFramebuffer()
 {
 	assert(fbAcquired==false);
 	fbAcquired=true;
 
-	glDrawBuffer(GL_COLOR_ATTACHMENT1_EXT);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1);
+	materialOverride=false;
 	
 	glDisable(GL_BLEND);
 	glClearColor(1,1,1,0);
@@ -624,19 +651,18 @@ void RenderThread::glBlitFramebuffer()
 	glPushMatrix();
 	glEnable(GL_BLEND);
 	glLoadIdentity();
-	GLenum draw_buffers[]={GL_COLOR_ATTACHMENT0_EXT,GL_COLOR_ATTACHMENT2_EXT};
-	glDrawBuffers(2,draw_buffers);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
 	glColor4f(0,0,1,0);
 	glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex2i(0,0);
-		glTexCoord2f(1,1);
-		glVertex2i(rt->width,0);
-		glTexCoord2f(1,0);
-		glVertex2i(rt->width,rt->height);
 		glTexCoord2f(0,0);
+		glVertex2i(0,0);
+		glTexCoord2f(1,0);
+		glVertex2i(rt->width,0);
+		glTexCoord2f(1,1);
+		glVertex2i(rt->width,rt->height);
+		glTexCoord2f(0,1);
 		glVertex2i(0,rt->height);
 	glEnd();
 	glPopMatrix();
@@ -754,8 +780,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			{
 				glXSwapBuffers(d,p->window);
 
-				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
-				//glReadBuffer(GL_COLOR_ATTACHMENT2_EXT);
+				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
+				//glReadBuffer(GL_COLOR_ATTACHMENT2);
 				//glReadPixels(0,0,window_width,window_height,GL_RED,GL_FLOAT,th->interactive_buffer);
 
 				RGB bg=sys->getBackground();
@@ -769,7 +795,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 				glLoadIdentity();
 
-				glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);
 
 				glClearColor(0,0,0,1);
@@ -1042,7 +1068,6 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0,width,0,height,-100,0);
-	//glTranslatef(0,height/2,0);
 
 	glMatrixMode(GL_MODELVIEW);
 
@@ -1088,15 +1113,15 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 	
 	// create a framebuffer object
-	glGenFramebuffersEXT(1, &rt->fboId);
-	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, t2[0], 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,GL_TEXTURE_2D, t2[1], 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT,GL_TEXTURE_2D, t2[2], 0);
+	glGenFramebuffers(1, &rt->fboId);
+	glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, t2[0], 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, t2[1], 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,GL_TEXTURE_2D, t2[2], 0);
 	
 	// check FBO status
-	GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-	if(status != GL_FRAMEBUFFER_COMPLETE_EXT)
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if(status != GL_FRAMEBUFFER_COMPLETE)
 	{
 		//cout << status << endl;
 		abort();
@@ -1160,8 +1185,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				pthread_exit(0);
 			SDL_PumpEvents();
 
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, rt->fboId);
-			//glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+			glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
+			//glReadBuffer(GL_COLOR_ATTACHMENT0);
 			//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
 
 			RGB bg=sys->getBackground();
@@ -1176,22 +1202,22 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			glLoadIdentity();
 
-			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glDrawBuffer(GL_BACK);
 
 			glClearColor(0,0,0,1);
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			glBindTexture(GL_TEXTURE_2D,t2[0]);
+			glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
 			glColor4f(0,0,1,0);
 			glBegin(GL_QUADS);
-				glTexCoord2f(0,0);
-				glVertex2i(0,0);
-				glTexCoord2f(1,0);
-				glVertex2i(width,0);
-				glTexCoord2f(1,1);
-				glVertex2i(width,height);
 				glTexCoord2f(0,1);
+				glVertex2i(0,0);
+				glTexCoord2f(1,1);
+				glVertex2i(width,0);
+				glTexCoord2f(1,0);
+				glVertex2i(width,height);
+				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
 

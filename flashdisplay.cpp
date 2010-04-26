@@ -350,16 +350,11 @@ void Sprite::Render()
 	if(graphics)
 		graphics->Render();
 
-
-/*	FILLSTYLE::fixedColor(0,0,0);
-	glBegin(GL_QUADS);
-		glVertex2i(0,0);
-		glVertex2i(75,0);
-		glVertex2i(75,75);
-		glVertex2i(0,75);
-	glEnd();*/
-
 	rt->glBlitFramebuffer();
+	
+	if(rt->glAcquireIdBuffer() && graphics)
+		graphics->Render();
+	
 	glPopMatrix();
 
 	glPushMatrix();
@@ -958,8 +953,8 @@ DisplayObjectContainer::DisplayObjectContainer()
 InteractiveObject::InteractiveObject():id(0)
 {
 	//Object registered very early are not supported this way (Stage for example)
-	if(sys && sys->cur_input_thread)
-		sys->cur_input_thread->addListener(this);
+	if(sys && sys->inputThread)
+		sys->inputThread->addListener(this);
 }
 
 void InteractiveObject::buildTraits(ASObject* o)
@@ -976,14 +971,13 @@ void InteractiveObject::sinit(Class_base* c)
 
 void InteractiveObject::RenderProloue()
 {
-	//Set the id in the secondary color
-	glPushAttrib(GL_CURRENT_BIT);
-	glSecondaryColor3f(id,0,0);
+	rt->pushId();
+	rt->currentId=id;
 }
 
 void InteractiveObject::RenderEpilogue()
 {
-	glPopAttrib();
+	rt->popId();
 }
 
 void DisplayObjectContainer::dumpDisplayList()
@@ -1212,9 +1206,6 @@ void Shape::buildTraits(ASObject* o)
 void Shape::Render()
 {
 	//If graphics is not yet initialized we have nothing to do
-	//if(obj->prototype->class_name=="PlayIcon")
-	//	__asm__("int $3");
-
 	if(graphics==NULL)
 		return;
 
@@ -1228,6 +1219,10 @@ void Shape::Render()
 	graphics->Render();
 
 	rt->glBlitFramebuffer();
+	
+	if(rt->glAcquireIdBuffer())
+		graphics->Render();
+	
 	glPopMatrix();
 }
 

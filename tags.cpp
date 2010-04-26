@@ -526,6 +526,45 @@ void DefineTextTag::Render()
 	}
 
 	rt->glBlitFramebuffer();
+	
+	if(rt->glAcquireIdBuffer())
+	{
+		float scale_cur=1;
+		for(;it!=TextRecords.end();it++)
+		{
+			if(it->StyleFlagsHasFont)
+			{
+				float scale=it->TextHeight;
+				scale/=1024;
+				glScalef(scale/scale_cur,scale/scale_cur,1);
+				scale_cur=scale;
+			}
+			it2 = it->GlyphEntries.begin();
+			int x2=x,y2=y;
+			x2+=(*it).XOffset;
+			y2+=(*it).YOffset;
+
+			for(;it2!=(it->GlyphEntries.end());it2++)
+			{
+				while(cached[shapes_done].id==count)
+				{
+					if(cached[shapes_done].color==1)
+						cached[shapes_done].style=&f;
+					else if(cached[shapes_done].color==0)
+						cached[shapes_done].style=&clearStyle;
+					else
+						abort();
+
+					cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
+					shapes_done++;
+					if(shapes_done==cached.size())
+						break;
+				}
+				x2+=it2->GlyphAdvance;
+				count++;
+			}
+		}
+	}
 	glPopMatrix();
 }
 
@@ -609,6 +648,12 @@ void DefineMorphShapeTag::Render()
 		it->Render();
 
 	rt->glBlitFramebuffer();
+	if(rt->glAcquireIdBuffer())
+	{
+		std::vector < GeomShape >::iterator it=shapes.begin();
+		for(;it!=shapes.end();it++)
+			it->Render();
+	}
 	glPopMatrix();
 }
 
@@ -636,18 +681,18 @@ void DefineShapeTag::Render()
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);
 
-	/*float fvViewMatrix[ 16 ];
-	glGetFloatv( GL_MODELVIEW_MATRIX, fvViewMatrix );
-	__asm__("int $3");
-	glGetFloatv( GL_PROJECTION_MATRIX, fvViewMatrix );
-	__asm__("int $3");*/
-
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 		it->Render();
 
 	rt->glBlitFramebuffer();
 
+	if(rt->glAcquireIdBuffer())
+	{
+		std::vector < GeomShape >::iterator it=cached.begin();
+		for(;it!=cached.end();it++)
+			it->Render();
+	}
 	glPopMatrix();
 }
 
@@ -680,6 +725,13 @@ void DefineShape2Tag::Render()
 	}
 
 	rt->glBlitFramebuffer();
+	
+	if(rt->glAcquireIdBuffer())
+	{
+		std::vector < GeomShape >::iterator it=cached.begin();
+		for(;it!=cached.end();it++)
+			it->Render();
+	}
 	glPopMatrix();
 }
 
@@ -712,6 +764,13 @@ void DefineShape4Tag::Render()
 		it->Render();
 
 	rt->glBlitFramebuffer();
+	
+	if(rt->glAcquireIdBuffer())
+	{
+		std::vector < GeomShape >::iterator it=cached.begin();
+		for(;it!=cached.end();it++)
+			it->Render();
+	}
 	glPopMatrix();
 }
 
@@ -759,6 +818,13 @@ void DefineShape3Tag::Render()
 	}
 
 	rt->glBlitFramebuffer();
+	
+	if(rt->glAcquireIdBuffer())
+	{
+		std::vector < GeomShape >::iterator it=cached.begin();
+		for(;it!=cached.end();it++)
+			it->Render();
+	}
 
 	glPopMatrix();
 }

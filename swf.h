@@ -48,8 +48,6 @@ namespace lightspark
 class DownloadManager;
 class DisplayListTag;
 class DictionaryTag;
-class PlaceObject2Tag;
-class EventDispatcher;
 class ABCVm;
 class InputThread;
 class RenderThread;
@@ -159,6 +157,7 @@ public:
 	void setUrl(const tiny_string& url);
 
 	bool showProfilingData;
+	bool showInteractiveMap;
 	bool shutdown;
 	bool error;
 	void setShutdownFlag();
@@ -176,8 +175,8 @@ public:
 	
 	Stage* stage;
 	ABCVm* currentVm;
-	InputThread* cur_input_thread;
-	RenderThread* cur_render_thread;
+	InputThread* inputThread;
+	RenderThread* renderThread;
 	//Application starting time in milliseconds
 	uint64_t startTime;
 
@@ -293,6 +292,8 @@ private:
 	int frameCount;
 	int secsCount;
 	void draw();
+	std::vector<float> idStack;
+	
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
@@ -301,6 +302,18 @@ public:
 	//The calling context MUST preserve current matrix with a wrapping pushMatrix, popMatrix combo
 	void glAcquireFramebuffer();
 	void glBlitFramebuffer();
+	
+	void glClearIdBuffer();
+	bool glAcquireIdBuffer();
+	void pushId()
+	{
+		idStack.push_back(currentId);
+	}
+	void popId()
+	{
+		currentId=idStack.back();
+		idStack.pop_back();
+	}
 
 	//OpenGL fragment programs
 	int gpu_program;
@@ -309,6 +322,9 @@ public:
 	GLuint data_tex;
 	int width;
 	int height;
+	
+	float currentId;
+	bool materialOverride;
 };
 
 };

@@ -24,6 +24,8 @@
 #include "swftypes.h"
 #include "logger.h"
 #include "geometry.h"
+#include "swf.h"
+
 
 using namespace std;
 using namespace lightspark;
@@ -32,6 +34,9 @@ using namespace lightspark;
 * *        parameters for the shader
 * * \param x Optional x translation
 * * \param y Optional y translation */
+
+extern TLSDATA RenderThread* rt;
+
 
 void GeomShape::Render(int x, int y) const
 {
@@ -44,7 +49,8 @@ void GeomShape::Render(int x, int y) const
 	bool filled=false;
 	if(closed && color)
 	{
-		style->setFragmentProgram();
+		if(!rt->materialOverride)
+			style->setFragmentProgram();
 
 		//Render the strips
 		for(unsigned int i=0;i<triangle_strips.size();i++)
@@ -92,7 +98,8 @@ void GeomShape::Render(int x, int y) const
 	if(/*graphic.stroked ||*/ !filled && color)
 	{
 		//LOG(TRACE,"Line tracing");
-		FILLSTYLE::fixedColor(0,0,0);
+		if(!rt->materialOverride)
+			FILLSTYLE::fixedColor(0,0,0);
 		std::vector<Vector2>::const_iterator it=outline.begin();
 		if(closed)
 			glBegin(GL_LINE_LOOP);
@@ -162,24 +169,6 @@ void GeomShape::BuildFromEdges(const std::list<FILLSTYLE>* styles)
 	//Tessellate the shape using GLU
 	if(closed)
 		TessellateGLU();
-
-/*	int strips_size=0;
-	for(int i=0;i<triangle_strips.size();i++)
-		strips_size+=triangle_strips[i].size();
-
-	varray=new arrayElem[strips_size];
-
-	int used=0;
-	for(int i=0;i<triangle_strips.size();i++)
-	{
-		for(int j=0;j<triangle_strips[i].size();j++)
-		{
-			varray[used].coord[0]=triangle_strips[i][j].x;
-			varray[used].coord[1]=triangle_strips[i][j].y;
-			style->setVertexData(&varray[used]);
-			used++;
-		}
-	}*/
 }
 
 void GeomShape::TessellateGLU()

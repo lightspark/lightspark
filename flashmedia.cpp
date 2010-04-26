@@ -115,6 +115,18 @@ void Video::Render()
 		}
 
 		rt->glBlitFramebuffer();
+		
+		//Render click sensible area if needed
+		if(rt->glAcquireIdBuffer())
+		{
+			glBegin(GL_QUADS);
+				glVertex2i(0,0);
+				glVertex2i(width,0);
+				glVertex2i(width,height);
+				glVertex2i(0,height);
+			glEnd();
+			
+		}
 		glPopMatrix();
 	}
 }

@@ -188,8 +188,8 @@ int main(int argc, char* argv[])
 	ParseThread* pt = new ParseThread(sys,f);
 	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
-	sys->cur_input_thread=&it;
-	sys->cur_render_thread=&rt;
+	sys->inputThread=&it;
+	sys->renderThread=&rt;
 	sys->downloadManager=new CurlDownloadManager();
 	//Start the parser
 	sys->addJob(pt);

@@ -119,6 +119,7 @@ protected:
 	void RenderEpilogue();
 public:
 	InteractiveObject();
+	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void setId(float i){id=i;}

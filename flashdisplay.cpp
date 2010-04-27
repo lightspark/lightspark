@@ -118,6 +118,7 @@ ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj->implementation);
+	DisplayObjectContainer::_constructor(obj,NULL,0);
 	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(true);
 	return NULL;
 }
@@ -952,9 +953,19 @@ DisplayObjectContainer::DisplayObjectContainer()
 
 InteractiveObject::InteractiveObject():id(0)
 {
+
+}
+
+ASFUNCTIONBODY(InteractiveObject,_constructor)
+{
+	InteractiveObject* th=static_cast<InteractiveObject*>(obj->implementation);
+	EventDispatcher::_constructor(obj,NULL,0);
+	assert(th->id==0);
 	//Object registered very early are not supported this way (Stage for example)
 	if(sys && sys->inputThread)
-		sys->inputThread->addListener(this);
+		sys->inputThread->addListener(th);
+	
+	return NULL;
 }
 
 void InteractiveObject::buildTraits(ASObject* o)
@@ -964,7 +975,7 @@ void InteractiveObject::buildTraits(ASObject* o)
 
 void InteractiveObject::sinit(Class_base* c)
 {
-	c->setConstructor(NULL);
+	c->setConstructor(new Function(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -1007,7 +1018,7 @@ void DisplayObjectContainer::setRoot(RootMovieClip* r)
 
 ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 {
-	DisplayObject::_constructor(obj,NULL,0);
+	InteractiveObject::_constructor(obj,NULL,0);
 	return NULL;
 }
 

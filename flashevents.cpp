@@ -73,6 +73,8 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS(true,"change")->obj);
 	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS(true,"resize")->obj);
 	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS(true,"tabChildrenChange")->obj);
+	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS(true,"tabEnabledChange")->obj);
+	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS(true,"tabIndexChange")->obj);
 }
 
 void Event::buildTraits(ASObject* o)

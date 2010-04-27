@@ -113,8 +113,8 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL),showProfilingData(false),showInteractiveMap(false),shutdown(false),error(false),
-	currentVm(NULL),inputThread(NULL),renderThread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
+SystemState::SystemState():RootMovieClip(NULL),renderRate(0),showProfilingData(false),showInteractiveMap(false),shutdown(false),
+	error(false),currentVm(NULL),inputThread(NULL),renderThread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -513,7 +513,7 @@ void* InputThread::sdl_worker(InputThread* th)
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
-
+				sys->renderThread->requestInput();
 				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
 				if(selected==0)
 					break;
@@ -524,7 +524,7 @@ void* InputThread::sdl_worker(InputThread* th)
 				index--;
 
 				//Add event to the event queue
-				sys->currentVm->addEvent(th->listeners[index],new Event("mouseDown"));
+				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS(true,"mouseDown"));
 
 				sem_post(&th->sem_listeners);
 				break;
@@ -576,12 +576,13 @@ void InputThread::broadcastEvent(const tiny_string& t)
 	sem_post(&sem_listeners);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),interactive_buffer(NULL),
-					fbAcquired(false),frameCount(0),secsCount(0),currentId(0),materialOverride(false)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),
+	interactive_buffer(NULL),fbAcquired(false),frameCount(0),secsCount(0),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
 	sem_init(&render,0,0);
+	sem_init(&inputDone,0,0);
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifndef WIN32
@@ -616,6 +617,13 @@ void RenderThread::glClearIdBuffer()
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
+void RenderThread::requestInput()
+{
+	inputNeeded=true;
+	sem_post(&render);
+	sem_wait(&inputDone);
+}
+
 bool RenderThread::glAcquireIdBuffer()
 {
 	if(currentId!=0)
@@ -623,7 +631,6 @@ bool RenderThread::glAcquireIdBuffer()
 		glDrawBuffer(GL_COLOR_ATTACHMENT2);
 		materialOverride=true;
 		FILLSTYLE::fixedColor(currentId,currentId,currentId);
-		//FILLSTYLE::fixedColor(0,1,0);
 		return true;
 	}
 	
@@ -689,7 +696,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 	rt->width=window_width;
 	rt->height=window_height;
-	th->interactive_buffer=new float[window_width*window_height];
+	th->interactive_buffer=new uint32_t[window_width*window_height];
 	unsigned int t2[3];
 	sys=th->m_sys;
 	rt=th;
@@ -992,7 +999,8 @@ void* RenderThread::glx_worker(RenderThread* th)
 
 float RenderThread::getIdAt(int x, int y)
 {
-	return interactive_buffer[y*width+x];
+	//TODO: use floating point textures
+	return (interactive_buffer[y*width+x]&0xff)/255.0f;
 }
 
 void RootMovieClip::initialize()
@@ -1137,7 +1145,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	int height=size.Ymax/20;
 	rt->width=width;
 	rt->height=height;
-	th->interactive_buffer=new float[width*height];
+	th->interactive_buffer=new uint32_t[width*height];
 	unsigned int t2[3];
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
@@ -1169,6 +1177,14 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			SDL_GL_SwapBuffers( );
 
+			if(th->inputNeeded)
+			{
+				glBindTexture(GL_TEXTURE_2D,t2[2]);
+				glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
+				th->inputNeeded=false;
+				sem_post(&th->inputDone);
+			}
+
 			//Before starting rendering, cleanup all the request arrived in the meantime
 			int fakeRenderCount=0;
 			while(sem_trywait(&th->render)==0)
@@ -1187,12 +1203,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-			//glReadBuffer(GL_COLOR_ATTACHMENT0);
-			//glReadPixels(0,0,width,height,GL_RED,GL_FLOAT,th->interactive_buffer);
-
+			
 			RGB bg=sys->getBackground();
-			//glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-			glClearColor(1,1,1,1);
+			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 			glClear(GL_COLOR_BUFFER_BIT);
 			glLoadIdentity();
 			

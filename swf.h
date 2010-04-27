@@ -139,7 +139,7 @@ private:
 	int32_t len;
 	uint32_t tickCount;
 public:
-	ThreadProfile(const RGB& c,uint32_t l):mutex("ThreadProfile"),color(c),len(l){}
+	ThreadProfile(const RGB& c,uint32_t l):mutex("ThreadProfile"),color(c),len(l),tickCount(0){}
 	void accountTime(uint32_t time);
 	void setTag(const std::string& tag);
 	void tick();
@@ -274,6 +274,8 @@ private:
 	static void* glx_worker(RenderThread*);
 	void commonGLInit(int width, int height, unsigned int t2[3]);
 	sem_t render;
+	sem_t inputDone;
+	bool inputNeeded;
 
 #ifndef WIN32
 	Display* mDisplay;
@@ -286,7 +288,7 @@ private:
 	timespec ts,td;
 #endif
 	static int load_program();
-	float* interactive_buffer;
+	uint32_t* interactive_buffer;
 	bool fbAcquired;
 	void tick();
 	int frameCount;
@@ -302,7 +304,8 @@ public:
 	//The calling context MUST preserve current matrix with a wrapping pushMatrix, popMatrix combo
 	void glAcquireFramebuffer();
 	void glBlitFramebuffer();
-	
+
+	void requestInput();
 	void glClearIdBuffer();
 	bool glAcquireIdBuffer();
 	void pushId()

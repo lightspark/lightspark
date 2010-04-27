@@ -559,7 +559,7 @@ void MovieClip::Render()
 	{
 		assert(state.FP<framesLoaded);
 
-		if(obj->prototype->isSubClass(Class<MovieClip>::getClass()))
+		if(sys->currentVm && obj->prototype->isSubClass(Class<MovieClip>::getClass()))
 			advanceFrame();
 		if(!state.stop_FP)
 			frames[state.FP].runScript();

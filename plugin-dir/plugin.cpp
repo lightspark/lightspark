@@ -19,8 +19,8 @@
 
 #include "plugin.h"
 #include "logger.h"
-//#define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
-#define MIME_TYPES_HANDLED  "application/x-lightspark"
+#define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
+//#define MIME_TYPES_HANDLED  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
 #define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 - Lightspark implementation"
@@ -282,6 +282,9 @@ nsPluginInstance::~nsPluginInstance()
 	//Shutdown the system
 	cerr << "instance dying" << endl;
 	m_sys.setShutdownFlag();
+	m_sys.wait();
+	m_rt->wait();
+	m_it->wait();
 	delete m_rt;
 	delete m_it;
 }
@@ -405,7 +408,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		m_sys.downloadManager=new NPDownloadManager(mInstance);
 		m_sys.addJob(&m_pt);
 
-		// add xt event handler
+		/*// add xt event handler
 		Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);
 		if (xtwidget && mXtwidget != xtwidget)
 		{
@@ -413,7 +416,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			long event_mask = ExposureMask|PointerMotionMask;
 			XSelectInput(mDisplay, mWindow, event_mask);
 			XtAddEventHandler(xtwidget, event_mask, False, (XtEventHandler)xt_event_handler, this);
-		}
+		}*/
 	}
 	//draw();
 	return TRUE;

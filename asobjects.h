@@ -434,6 +434,7 @@ public:
 	ASFUNCTION(_pop);
 	ASFUNCTION(join);
 	ASFUNCTION(shift);
+	ASFUNCTION(splice);
 	ASFUNCTION(_sort);
 	ASFUNCTION(unshift);
 	ASFUNCTION(filter);

@@ -75,6 +75,7 @@ void Array::buildTraits(ASObject* o)
 	o->ASObject::setVariableByQName("concat",AS3,new Function(_concat));
 	o->ASObject::setVariableByQName("indexOf",AS3,new Function(indexOf));
 	o->ASObject::setVariableByQName("filter",AS3,new Function(filter));
+	o->ASObject::setVariableByQName("splice",AS3,new Function(splice));
 }
 
 ASFUNCTIONBODY(Array,_constructor)
@@ -118,6 +119,28 @@ ASFUNCTIONBODY(Array,shift)
 		throw UnsupportedException("Array::shift not completely implemented",sys->getOrigin().raw_buf());
 	th->data.erase(th->data.begin());
 	return ret;
+}
+
+ASFUNCTIONBODY(Array,splice)
+{
+	Array* th=static_cast<Array*>(obj->implementation);
+	
+	assert(argslen==2);
+	
+	int startIndex=args[0]->toInt();
+	unsigned int deleteCount=args[1]->toUInt();
+	
+	assert(startIndex>=0);
+	assert((startIndex+deleteCount)<=th->data.size());
+	
+	Array* ret=Class<Array>::getInstanceS();
+	ret->data.reserve(deleteCount);
+
+	for(unsigned int i=0;i<deleteCount;i++)
+		ret->data.push_back(th->data[startIndex+i]);
+	
+	th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
+	return ret->obj;
 }
 
 ASFUNCTIONBODY(Array,join)

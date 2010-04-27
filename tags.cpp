@@ -1254,7 +1254,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
 		assert(toAdd);
 
-		if(toAdd->obj)
+		if(toAdd->obj && sys->currentVm)
 		{
 			//We now ask the VM to construct this object
 			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd->obj,toAdd->obj->prototype);

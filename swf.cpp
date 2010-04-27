@@ -95,6 +95,13 @@ RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),frameRate(0),toB
 
 	//Root movie clip always has a linked object
 	obj=new ASObject;
+	obj->implementation=this;
+	//We set the protoype to a generic MovieClip
+	if(sys)
+	{
+		obj->prototype=Class<MovieClip>::getClass();
+		obj->prototype->incRef();
+	}
 }
 
 RootMovieClip::~RootMovieClip()
@@ -130,6 +137,9 @@ SystemState::SystemState():RootMovieClip(NULL),renderRate(0),showProfilingData(f
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
 	startTime=compat_msectiming();
+	
+	obj->prototype=Class<MovieClip>::getClass();
+	obj->prototype->incRef();
 }
 
 void SystemState::setUrl(const tiny_string& url)
@@ -464,16 +474,34 @@ void InputThread::wait()
 #ifndef WIN32
 void* InputThread::npapi_worker(InputThread* th)
 {
-/*	sys=th->m_sys;
-	NPAPI_params* p=(NPAPI_params*)in_ptr;
+	sys=th->m_sys;
+	NPAPI_params* p=(NPAPI_params*)th->npapi_params;
 //	Display* d=XOpenDisplay(NULL);
 	XSelectInput(p->display,p->window,PointerMotionMask|ExposureMask);
 
 	XEvent e;
-	while(XWindowEvent(p->display,p->window,PointerMotionMask|ExposureMask, &e))
+	while(1)
 	{
-		exit(-1);
-	}*/
+		XNextEvent(p->display,&e);
+		if(e.type==KeyPress)
+		{
+			char key=XLookupKeysym(&e.xkey,0);
+			cout << "CHAR___ " << key << endl;
+			switch(key)
+			{
+				case 'i':
+					sys->showInteractiveMap=!sys->showInteractiveMap;
+					break;
+				case 'p':
+					sys->showProfilingData=!sys->showProfilingData;
+					break;
+				default:
+					break;
+			}
+		}
+		if(sys->shutdown)
+			pthread_exit(0);
+	}
 	return NULL;
 }
 #endif
@@ -759,18 +787,24 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		printf("Indirect!!\n");
 
 	th->commonGLInit(window_width, window_height, t2);
+	
+	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
+	profile->setTag("Render");
+	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
+	if(font.Error())
+		throw RunTimeException("Unable to load font",sys->getOrigin().raw_buf());
+	
+	font.FaceSize(20);
 
-/*	XGCValues v;
-	v.foreground=BlackPixel(d, 0);
-	v.background=WhitePixel(d, 0);
-	v.font=XLoadFont(d,"9x15");
-	th->mGC=XCreateGC(d,p->window,GCForeground|GCBackground|GCFont,&v);*/
 
 	glEnable(GL_TEXTURE_2D);
 	try
 	{
 		while(1)
 		{
+			sem_wait(&th->render);
+			Chronometer chronometer;
+			
 			//Before starting rendering, cleanup all the request arrived in the meantime
 			int fakeRenderCount=0;
 			while(sem_trywait(&th->render)==0)
@@ -779,9 +813,9 @@ void* RenderThread::npapi_worker(RenderThread* th)
 					pthread_exit(0);
 				fakeRenderCount++;
 			}
+			
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
-			sem_wait(&th->render);
 			if(sys->shutdown)
 				pthread_exit(0);
 
@@ -808,9 +842,16 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			{
 				glXSwapBuffers(d,p->window);
 
+				if(th->inputNeeded)
+				{
+					glBindTexture(GL_TEXTURE_2D,t2[2]);
+					glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
+					th->inputNeeded=false;
+					sem_post(&th->inputDone);
+				}
+
 				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
-				//glReadBuffer(GL_COLOR_ATTACHMENT2);
-				//glReadPixels(0,0,window_width,window_height,GL_RED,GL_FLOAT,th->interactive_buffer);
+				glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 				RGB bg=sys->getBackground();
 				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
@@ -821,6 +862,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				
 				sys->Render();
 
+				glFlush();
+
 				glLoadIdentity();
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -829,19 +872,42 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				glClearColor(0,0,0,1);
 				glClear(GL_COLOR_BUFFER_BIT);
 
-				glBindTexture(GL_TEXTURE_2D,t2[0]);
+				glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
 				glColor4f(0,0,1,0);
 				glBegin(GL_QUADS);
 					glTexCoord2f(0,1);
 					glVertex2i(0,0);
 					glTexCoord2f(1,1);
-					glVertex2i(window_width,0);
+					glVertex2i(th->width,0);
 					glTexCoord2f(1,0);
-					glVertex2i(window_width,window_height);
+					glVertex2i(th->width,th->height);
 					glTexCoord2f(0,0);
-					glVertex2i(0,window_height);
+					glVertex2i(0,th->height);
 				glEnd();
+
+				if(sys->showProfilingData)
+				{
+					glUseProgram(0);
+
+					//Draw bars
+					glColor4f(0.7,0.7,0.7,0.7);
+					glBegin(GL_LINES);
+					for(int i=1;i<10;i++)
+					{
+						glVertex2i(0,(i*th->height/10));
+						glVertex2i(th->width,(i*th->height/10));
+					}
+					glEnd();
+				
+					list<ThreadProfile>::iterator it=sys->profilingData.begin();
+					for(;it!=sys->profilingData.end();it++)
+						it->plot(1000000/sys->getFrameRate(),&font);
+					glUseProgram(rt->gpu_program);
+				}
+				//Call glFlush to offload work on the GPU
+				glFlush();
 			}
+			profile->accountTime(chronometer.checkpoint());
 		}
 	}
 	catch(const char* e)

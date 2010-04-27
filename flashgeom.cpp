@@ -127,7 +127,7 @@ ASFUNCTIONBODY(Rectangle,_setHeight)
 ASFUNCTIONBODY(Rectangle,clone)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
-	Rectangle* ret=Class<Rectangle>::getInstanceS(true);
+	Rectangle* ret=Class<Rectangle>::getInstanceS();
 	ret->x=th->x;
 	ret->y=th->y;
 	ret->width=th->width;

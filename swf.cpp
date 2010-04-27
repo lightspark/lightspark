@@ -127,8 +127,8 @@ SystemState::SystemState():RootMovieClip(NULL),renderRate(0),showProfilingData(f
 	//Get starting time
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
-	loaderInfo=Class<LoaderInfo>::getInstanceS(true);
-	stage=Class<Stage>::getInstanceS(true);
+	loaderInfo=Class<LoaderInfo>::getInstanceS();
+	stage=Class<Stage>::getInstanceS();
 	startTime=compat_msectiming();
 }
 
@@ -147,7 +147,7 @@ void SystemState::parseParameters(istream& i)
 		getline(i,name);
 		getline(i,value);
 
-		ret->setVariableByQName(name.c_str(),"",Class<ASString>::getInstanceS(true,value)->obj);
+		ret->setVariableByQName(name.c_str(),"",Class<ASString>::getInstanceS(value)->obj);
 	}
 	setParameters(ret);
 }
@@ -524,7 +524,7 @@ void* InputThread::sdl_worker(InputThread* th)
 				index--;
 
 				//Add event to the event queue
-				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS(true,"mouseDown"));
+				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown"));
 
 				sem_post(&th->sem_listeners);
 				break;
@@ -571,7 +571,7 @@ void InputThread::broadcastEvent(const tiny_string& t)
 	sem_wait(&sem_listeners);
 
 	for(unsigned int i=0;i<listeners.size();i++)
-		sys->currentVm->addEvent(listeners[i],Class<Event>::getInstanceS(true,t));
+		sys->currentVm->addEvent(listeners[i],Class<Event>::getInstanceS(t));
 
 	sem_post(&sem_listeners);
 }
@@ -1012,7 +1012,7 @@ void RootMovieClip::initialize()
 		if(bindName.len())
 			sys->currentVm->addEvent(NULL,new BindClassEvent(this,bindName));
 		//Now signal the completion for this root
-		sys->currentVm->addEvent(loaderInfo,Class<Event>::getInstanceS(true,"init"));
+		sys->currentVm->addEvent(loaderInfo,Class<Event>::getInstanceS("init"));
 		//Wait for handling of all previous events
 		SynchronizationEvent* sync=new SynchronizationEvent;
 		sys->currentVm->addEvent(NULL, sync);

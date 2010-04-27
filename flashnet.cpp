@@ -68,7 +68,7 @@ ASFUNCTIONBODY(URLRequest,_setUrl)
 ASFUNCTIONBODY(URLRequest,_getUrl)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
-	return Class<ASString>::getInstanceS(true,th->url)->obj;
+	return Class<ASString>::getInstanceS(th->url)->obj;
 }
 
 URLLoader::URLLoader():dataFormat("text"),data(NULL)
@@ -142,7 +142,7 @@ void URLLoader::execute()
 	{
 		if(dataFormat=="binary")
 		{
-			ByteArray* byteArray=Class<ByteArray>::getInstanceS(true);
+			ByteArray* byteArray=Class<ByteArray>::getInstanceS();
 			byteArray->acquireBuffer(curlDownloader.getBuffer(),curlDownloader.getLen());
 			data=byteArray->obj;
 		}
@@ -150,22 +150,22 @@ void URLLoader::execute()
 		{
 			if(curlDownloader.getLen())
 				abort();
-			data=Class<ASString>::getInstanceS(true)->obj;
+			data=Class<ASString>::getInstanceS()->obj;
 		}
 		//Send a complete event for this object
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"complete",obj));
+		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete",obj));
 	}
 	else
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS(true,"ioError",obj));
+		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError",obj));
 	}
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
-	return Class<ASString>::getInstanceS(true,th->dataFormat)->obj;
+	return Class<ASString>::getInstanceS(th->dataFormat)->obj;
 }
 
 ASFUNCTIONBODY(URLLoader,_getData)
@@ -188,9 +188,9 @@ ASFUNCTIONBODY(URLLoader,_setDataFormat)
 
 void URLLoaderDataFormat::sinit(Class_base* c)
 {
-	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS(true,"variables")->obj);
-	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS(true,"text")->obj);
-	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS(true,"binary")->obj);
+	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables")->obj);
+	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text")->obj);
+	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary")->obj);
 }
 
 void SharedObject::sinit(Class_base* c)
@@ -232,7 +232,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
-	Event* status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetConnection.Connect.Success");
+	Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetConnection.Connect.Success");
 	getVm()->addEvent(th, status);
 	return NULL;
 }

@@ -287,7 +287,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			//Create a new array
 			ASObject** proxyArgs=new ASObject*[m+1];
 			//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-			proxyArgs[0]=Class<ASString>::getInstanceS(true,name->name_s)->obj;
+			proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s)->obj;
 			for(int i=0;i<m;i++)
 				proxyArgs[i+1]=args[i];
 			delete[] args;
@@ -735,7 +735,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 			return new Undefined;
 	}
 	obj->decRef();
-	return Class<ASString>::getInstanceS(true,ret)->obj;
+	return Class<ASString>::getInstanceS(ret)->obj;
 }
 
 void ABCVm::callPropVoid(call_context* th, int n, int m)
@@ -766,7 +766,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 			//Create a new array
 			ASObject** proxyArgs=new ASObject*[m+1];
 			//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-			proxyArgs[0]=Class<ASString>::getInstanceS(true,name->name_s)->obj;
+			proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s)->obj;
 			for(int i=0;i<m;i++)
 				proxyArgs[i+1]=args[i];
 			delete[] args;
@@ -972,7 +972,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		LOG(LOG_CALLS,"add " << a << '+' << b);
 		val1->decRef();
 		val2->decRef();
-		return Class<ASString>::getInstanceS(true,a+b)->obj;
+		return Class<ASString>::getInstanceS(a+b)->obj;
 	}
 	else if(val1->getObjectType()==T_NUMBER || val2->getObjectType()==T_NUMBER)
 	{
@@ -1018,7 +1018,7 @@ ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,"add " << a << '+' << b);
-		return Class<ASString>::getInstanceS(true,a+b)->obj;
+		return Class<ASString>::getInstanceS(a+b)->obj;
 	}
 	else if(val2->getObjectType()==T_ARRAY)
 	{
@@ -1061,7 +1061,7 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 		const tiny_string& b=val2->toString();
 		val2->decRef();
 		LOG(LOG_CALLS,"add " << a << '+' << b);
-		return Class<ASString>::getInstanceS(true,a+b)->obj;
+		return Class<ASString>::getInstanceS(a+b)->obj;
 	}
 	else if(val2->getObjectType()==T_ARRAY)
 	{
@@ -2069,7 +2069,7 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 		}
 	}
 
-	ret=Class<ASString>::getInstanceS(true,obj->getNameAt(index->toInt()-1))->obj;
+	ret=Class<ASString>::getInstanceS(obj->getNameAt(index->toInt()-1))->obj;
 	obj->decRef();
 	index->decRef();
 	return ret;
@@ -2263,7 +2263,7 @@ ASObject* ABCVm::pushString(call_context* th, int n)
 {
 	tiny_string s=th->context->getString(n); 
 	LOG(LOG_CALLS, "pushString " << s );
-	return Class<ASString>::getInstanceS(true,s)->obj;
+	return Class<ASString>::getInstanceS(s)->obj;
 }
 
 ASObject* ABCVm::newCatch(call_context* th, int n)
@@ -2275,7 +2275,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 void ABCVm::newArray(call_context* th, int n)
 {
 	LOG(LOG_CALLS, "newArray " << n );
-	Array* ret=Class<Array>::getInstanceS(true);
+	Array* ret=Class<Array>::getInstanceS();
 	ret->resize(n);
 	for(int i=0;i<n;i++)
 		ret->set(n-i-1,th->runtime_stack_pop());

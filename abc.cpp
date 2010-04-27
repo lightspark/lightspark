@@ -1430,14 +1430,14 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	switch(kind)
 	{
 		case 0x01: //String
-			return Class<ASString>::getInstanceS(true,constant_pool.strings[index])->obj;
+			return Class<ASString>::getInstanceS(constant_pool.strings[index])->obj;
 		case 0x03: //Int
 			return new Integer(constant_pool.integer[index]);
 		case 0x06: //Double
 			return new Number(constant_pool.doubles[index]);
 		case 0x08: //Namespace
 			assert(constant_pool.namespaces[index].name);
-			return Class<Namespace>::getInstanceS(true,getString(constant_pool.namespaces[index].name))->obj;
+			return Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name))->obj;
 		case 0x0a: //False
 			return new Boolean(false);
 		case 0x0b: //True
@@ -2200,7 +2200,7 @@ ASFUNCTIONBODY(lightspark,unescape)
 			ret.push_back(th->data[i]);
 	}
 
-	return Class<ASString>::getInstanceS(true,ret)->obj;
+	return Class<ASString>::getInstanceS(ret)->obj;
 }
 
 ASFUNCTIONBODY(lightspark,undefinedFunction)

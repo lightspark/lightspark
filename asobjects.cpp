@@ -131,7 +131,7 @@ ASFUNCTIONBODY(Array,join)
 		if(i!=th->size()-1)
 			ret+=del->toString().raw_buf();
 	}
-	return Class<ASString>::getInstanceS(true,ret)->obj;
+	return Class<ASString>::getInstanceS(ret)->obj;
 }
 
 ASFUNCTIONBODY(Array,indexOf)
@@ -158,7 +158,7 @@ ASFUNCTIONBODY(Array,filter)
 	Array* th=static_cast<Array*>(obj->implementation);
 	//assert(th->data.size()==0);
 	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
-	Array* ret=Class<Array>::getInstanceS(true);
+	Array* ret=Class<Array>::getInstanceS();
 	ret->data=th->data;
 	return ret->obj;
 }
@@ -166,7 +166,7 @@ ASFUNCTIONBODY(Array,filter)
 ASFUNCTIONBODY(Array,_concat)
 {
 	Array* th=static_cast<Array*>(obj->implementation);
-	Array* ret=Class<Array>::getInstanceS(true);
+	Array* ret=Class<Array>::getInstanceS();
 	ret->data=th->data;
 	if(argslen>=1 && args[0]->getObjectType()==T_ARRAY)
 	{
@@ -614,7 +614,7 @@ Array::~Array()
 ASFUNCTIONBODY(ASString,split)
 {
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	Array* ret=Class<Array>::getInstanceS(true);
+	Array* ret=Class<Array>::getInstanceS();
 	ASObject* delimiter=args[0];
 	if(delimiter->getObjectType()==T_STRING)
 	{
@@ -625,7 +625,7 @@ ASFUNCTIONBODY(ASString,split)
 			int match=th->data.find(del->data,start);
 			if(match==-1)
 				match=th->data.size();
-			ASString* s=Class<ASString>::getInstanceS(true,th->data.substr(start,(match-start)));
+			ASString* s=Class<ASString>::getInstanceS(th->data.substr(start,(match-start)));
 			ret->push(s->obj);
 			start=match+del->data.size();
 		}
@@ -648,7 +648,7 @@ ASFUNCTIONBODY(ASString,substr)
 	if(argslen==2)
 		len=args[1]->toInt();
 
-	return Class<ASString>::getInstanceS(true,th->data.substr(start,len))->obj;
+	return Class<ASString>::getInstanceS(th->data.substr(start,len))->obj;
 }
 
 bool Array::toString(tiny_string& ret)
@@ -810,7 +810,7 @@ ASFUNCTIONBODY(Integer,_toString)
 	else if(radix==16)
 		snprintf(buf,20,"%x",th->val);
 
-	return Class<ASString>::getInstanceS(true,buf)->obj;
+	return Class<ASString>::getInstanceS(buf)->obj;
 }
 
 bool Integer::isLess(ASObject* o)
@@ -1136,7 +1136,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 
 	if(mi->needsRest()) //TODO
 	{
-		Array* rest=Class<Array>::getInstanceS(true);
+		Array* rest=Class<Array>::getInstanceS();
 		rest->resize(passedToRest);
 		for(int j=0;j<passedToRest;j++)
 			rest->set(j,args[passedToLocals+j]);
@@ -1409,7 +1409,7 @@ ASFUNCTIONBODY(ASString,slice)
 	int endIndex=0x7fffffff;
 	if(argslen>=2)
 		endIndex=args[1]->toInt();
-	return Class<ASString>::getInstanceS(true,th->data.substr(startIndex,endIndex))->obj;
+	return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex))->obj;
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)
@@ -1460,7 +1460,7 @@ ASFUNCTIONBODY(ASString,indexOf)
 ASFUNCTIONBODY(ASString,toLowerCase)
 {
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	ASString* ret=Class<ASString>::getInstanceS(true);
+	ASString* ret=Class<ASString>::getInstanceS();
 	ret->data=th->data;
 	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::tolower);
 	return ret->obj;
@@ -1469,7 +1469,7 @@ ASFUNCTIONBODY(ASString,toLowerCase)
 ASFUNCTIONBODY(ASString,replace)
 {
 	const ASString* th=static_cast<const ASString*>(obj->implementation);
-	ASString* ret=Class<ASString>::getInstanceS(true,th->data);
+	ASString* ret=Class<ASString>::getInstanceS(th->data);
 	string replaceWith(args[1]->toString().raw_buf());
 	//We have to escape '\\' because that is interpreted by pcrecpp
 	int index=0;
@@ -1523,7 +1523,7 @@ ASFUNCTIONBODY(ASString,replace)
 ASFUNCTIONBODY(ASString,concat)
 {
 	ASString* th=static_cast<ASString*>(obj->implementation);
-	ASString* ret=Class<ASString>::getInstanceS(true,th->data);
+	ASString* ret=Class<ASString>::getInstanceS(th->data);
 	for(unsigned int i=0;i<argslen;i++)
 		ret->data+=args[i]->toString().raw_buf();
 

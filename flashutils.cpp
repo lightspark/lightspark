@@ -210,7 +210,7 @@ void Timer::execute()
 		compat_msleep(delay);
 		if(running)
 		{
-			sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS(true,"timer"));
+			sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS("timer"));
 			//Do not spam timer events until this is done
 			SynchronizationEvent* se=new SynchronizationEvent;
 			sys->currentVm->addEvent(NULL,se);
@@ -267,7 +267,7 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 	else
 		c=static_cast<Class_base*>(target);
 
-	return Class<ASString>::getInstanceS(true,c->getQualifiedClassName())->obj;
+	return Class<ASString>::getInstanceS(c->getQualifiedClassName())->obj;
 }
 
 ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
@@ -285,7 +285,7 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 
 	assert(c);
 
-	return Class<ASString>::getInstanceS(true,c->getQualifiedClassName())->obj;
+	return Class<ASString>::getInstanceS(c->getQualifiedClassName())->obj;
 }
 
 ASFUNCTIONBODY(lightspark,getDefinitionByName)
@@ -361,7 +361,7 @@ bool Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
 	}
 	else if(name.name_type==multiname::NAME_STRING)
 	{
-		data[Class<ASString>::getInstanceS(true,name.name_s)->obj]=o;
+		data[Class<ASString>::getInstanceS(name.name_s)->obj]=o;
 		return true;
 	}
 	else
@@ -485,7 +485,7 @@ bool Proxy::setVariableByMultiname(const multiname& name, ASObject* v)
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 	ASObject* args[2];
-	args[0]=Class<ASString>::getInstanceS(true,name.name_s)->obj;
+	args[0]=Class<ASString>::getInstanceS(name.name_s)->obj;
 	args[1]=v;
 	//We now suppress special handling
 	suppress=true;
@@ -514,7 +514,7 @@ bool Proxy::getVariableByMultiname(const multiname& name, ASObject*& out)
 	IFunction* f=static_cast<IFunction*>(o.obj);
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(true,name.name_s)->obj;
+	ASObject* arg=Class<ASString>::getInstanceS(name.name_s)->obj;
 	//We now suppress special handling
 	suppress=true;
 	LOG(LOG_CALLS,"Proxy::getProperty");

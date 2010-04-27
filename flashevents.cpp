@@ -58,23 +58,23 @@ Event::Event(const tiny_string& t, ASObject* _t):type(t),target(_t)
 void Event::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
-	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS(true,"enterFrame")->obj);
-	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS(true,"render")->obj);
-	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS(true,"addedToStage")->obj);
-	c->setVariableByQName("REMOVED_FROM_STAGE","",Class<ASString>::getInstanceS(true,"removedFromStage")->obj);
-	c->setVariableByQName("INIT","",Class<ASString>::getInstanceS(true,"init")->obj);
-	c->setVariableByQName("CLOSE","",Class<ASString>::getInstanceS(true,"close")->obj);
-	c->setVariableByQName("ADDED","",Class<ASString>::getInstanceS(true,"added")->obj);
-	c->setVariableByQName("COMPLETE","",Class<ASString>::getInstanceS(true,"complete")->obj);
-	c->setVariableByQName("REMOVED","",Class<ASString>::getInstanceS(true,"removed")->obj);
-	c->setVariableByQName("UNLOAD","",Class<ASString>::getInstanceS(true,"unload")->obj);
-	c->setVariableByQName("ACTIVATE","",Class<ASString>::getInstanceS(true,"activate")->obj);
-	c->setVariableByQName("DEACTIVATE","",Class<ASString>::getInstanceS(true,"deactivate")->obj);
-	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS(true,"change")->obj);
-	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS(true,"resize")->obj);
-	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS(true,"tabChildrenChange")->obj);
-	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS(true,"tabEnabledChange")->obj);
-	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS(true,"tabIndexChange")->obj);
+	c->setVariableByQName("ENTER_FRAME","",Class<ASString>::getInstanceS("enterFrame")->obj);
+	c->setVariableByQName("RENDER","",Class<ASString>::getInstanceS("render")->obj);
+	c->setVariableByQName("ADDED_TO_STAGE","",Class<ASString>::getInstanceS("addedToStage")->obj);
+	c->setVariableByQName("REMOVED_FROM_STAGE","",Class<ASString>::getInstanceS("removedFromStage")->obj);
+	c->setVariableByQName("INIT","",Class<ASString>::getInstanceS("init")->obj);
+	c->setVariableByQName("CLOSE","",Class<ASString>::getInstanceS("close")->obj);
+	c->setVariableByQName("ADDED","",Class<ASString>::getInstanceS("added")->obj);
+	c->setVariableByQName("COMPLETE","",Class<ASString>::getInstanceS("complete")->obj);
+	c->setVariableByQName("REMOVED","",Class<ASString>::getInstanceS("removed")->obj);
+	c->setVariableByQName("UNLOAD","",Class<ASString>::getInstanceS("unload")->obj);
+	c->setVariableByQName("ACTIVATE","",Class<ASString>::getInstanceS("activate")->obj);
+	c->setVariableByQName("DEACTIVATE","",Class<ASString>::getInstanceS("deactivate")->obj);
+	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS("change")->obj);
+	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS("resize")->obj);
+	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS("tabChildrenChange")->obj);
+	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange")->obj);
+	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange")->obj);
 }
 
 void Event::buildTraits(ASObject* o)
@@ -112,7 +112,7 @@ ASFUNCTIONBODY(Event,_getTarget)
 ASFUNCTIONBODY(Event,_getType)
 {
 	Event* th=static_cast<Event*>(obj->implementation);
-	return Class<ASString>::getInstanceS(true,th->type)->obj;
+	return Class<ASString>::getInstanceS(th->type)->obj;
 }
 
 FocusEvent::FocusEvent():Event("focusEvent")
@@ -122,10 +122,10 @@ FocusEvent::FocusEvent():Event("focusEvent")
 void FocusEvent::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
-	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS(true,"focusIn")->obj);
-	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS(true,"focusOut")->obj);
-	c->setVariableByQName("MOUSE_FOCUS_CHANGE","",Class<ASString>::getInstanceS(true,"mouseFocusChange")->obj);
-	c->setVariableByQName("KEY_FOCUS_CHANGE","",Class<ASString>::getInstanceS(true,"keyFocusChange")->obj);
+	c->setVariableByQName("FOCUS_IN","",Class<ASString>::getInstanceS("focusIn")->obj);
+	c->setVariableByQName("FOCUS_OUT","",Class<ASString>::getInstanceS("focusOut")->obj);
+	c->setVariableByQName("MOUSE_FOCUS_CHANGE","",Class<ASString>::getInstanceS("mouseFocusChange")->obj);
+	c->setVariableByQName("KEY_FOCUS_CHANGE","",Class<ASString>::getInstanceS("keyFocusChange")->obj);
 }
 
 ASFUNCTIONBODY(FocusEvent,_constructor)
@@ -144,7 +144,7 @@ ProgressEvent::ProgressEvent():Event("progress"),bytesLoaded(0),bytesTotal(0)
 void ProgressEvent::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
-	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS(true,"progress")->obj);
+	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress")->obj);
 }
 
 void ProgressEvent::buildTraits(ASObject* o)
@@ -178,24 +178,24 @@ ASFUNCTIONBODY(ProgressEvent,_getBytesTotal)
 
 void TimerEvent::sinit(Class_base* c)
 {
-	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS(true,"timer")->obj);
-	c->setVariableByQName("TIMER_COMPLETE","",Class<ASString>::getInstanceS(true,"timerComplete")->obj);
+	c->setVariableByQName("TIMER","",Class<ASString>::getInstanceS("timer")->obj);
+	c->setVariableByQName("TIMER_COMPLETE","",Class<ASString>::getInstanceS("timerComplete")->obj);
 }
 
 void MouseEvent::sinit(Class_base* c)
 {
 //	assert(c->constructor==NULL);
 //	c->constructor=new Function(_constructor);
-	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS(true,"click")->obj);
-	c->setVariableByQName("DOUBLE_CLICK","",Class<ASString>::getInstanceS(true,"doubleClick")->obj);
-	c->setVariableByQName("MOUSE_DOWN","",Class<ASString>::getInstanceS(true,"mouseDown")->obj);
-	c->setVariableByQName("MOUSE_OUT","",Class<ASString>::getInstanceS(true,"mouseOut")->obj);
-	c->setVariableByQName("MOUSE_OVER","",Class<ASString>::getInstanceS(true,"mouseOver")->obj);
-	c->setVariableByQName("MOUSE_UP","",Class<ASString>::getInstanceS(true,"mouseUp")->obj);
-	c->setVariableByQName("MOUSE_WHEEL","",Class<ASString>::getInstanceS(true,"mouseWheel")->obj);
-	c->setVariableByQName("MOUSE_MOVE","",Class<ASString>::getInstanceS(true,"mouseMove")->obj);
-	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS(true,"rollOver")->obj);
-	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS(true,"rollOut")->obj);
+	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS("click")->obj);
+	c->setVariableByQName("DOUBLE_CLICK","",Class<ASString>::getInstanceS("doubleClick")->obj);
+	c->setVariableByQName("MOUSE_DOWN","",Class<ASString>::getInstanceS("mouseDown")->obj);
+	c->setVariableByQName("MOUSE_OUT","",Class<ASString>::getInstanceS("mouseOut")->obj);
+	c->setVariableByQName("MOUSE_OVER","",Class<ASString>::getInstanceS("mouseOver")->obj);
+	c->setVariableByQName("MOUSE_UP","",Class<ASString>::getInstanceS("mouseUp")->obj);
+	c->setVariableByQName("MOUSE_WHEEL","",Class<ASString>::getInstanceS("mouseWheel")->obj);
+	c->setVariableByQName("MOUSE_MOVE","",Class<ASString>::getInstanceS("mouseMove")->obj);
+	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS("rollOver")->obj);
+	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut")->obj);
 }
 
 IOErrorEvent::IOErrorEvent()
@@ -204,7 +204,7 @@ IOErrorEvent::IOErrorEvent()
 
 void IOErrorEvent::sinit(Class_base* c)
 {
-	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS(true,"ioError")->obj);
+	c->setVariableByQName("IO_ERROR","",Class<ASString>::getInstanceS("ioError")->obj);
 }
 
 EventDispatcher::EventDispatcher()
@@ -367,15 +367,15 @@ NetStatusEvent::NetStatusEvent(const tiny_string& l, const tiny_string& c):Event
 void NetStatusEvent::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
-	c->setVariableByQName("NET_STATUS","",Class<ASString>::getInstanceS(true,"netStatus")->obj);
+	c->setVariableByQName("NET_STATUS","",Class<ASString>::getInstanceS("netStatus")->obj);
 }
 
 ASFUNCTIONBODY(NetStatusEvent,_constructor)
 {
 	NetStatusEvent* th=Class<NetStatusEvent>::cast(obj->implementation);
 	ASObject* info=new ASObject;
-	info->setVariableByQName("level","",Class<ASString>::getInstanceS(true,th->level)->obj);
-	info->setVariableByQName("code","",Class<ASString>::getInstanceS(true,th->code)->obj);
+	info->setVariableByQName("level","",Class<ASString>::getInstanceS(th->level)->obj);
+	info->setVariableByQName("code","",Class<ASString>::getInstanceS(th->code)->obj);
 	obj->setVariableByQName("info","",info);
 	return NULL;
 }
@@ -387,7 +387,7 @@ FullScreenEvent::FullScreenEvent():Event("fullScreenEvent")
 void FullScreenEvent::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
-	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS(true,"fullScreen")->obj);
+	c->setVariableByQName("FULL_SCREEN","",Class<ASString>::getInstanceS("fullScreen")->obj);
 }
 
 ASFUNCTIONBODY(FullScreenEvent,_constructor)
@@ -402,8 +402,8 @@ KeyboardEvent::KeyboardEvent():Event("keyboardEvent")
 void KeyboardEvent::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
-	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS(true,"keyDown")->obj);
-	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS(true,"keyUp")->obj);
+	c->setVariableByQName("KEY_DOWN","",Class<ASString>::getInstanceS("keyDown")->obj);
+	c->setVariableByQName("KEY_UP","",Class<ASString>::getInstanceS("keyUp")->obj);
 }
 
 ASFUNCTIONBODY(KeyboardEvent,_constructor)
@@ -418,7 +418,7 @@ TextEvent::TextEvent():Event("textEvent")
 void TextEvent::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
-	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS(true,"textInput")->obj);
+	c->setVariableByQName("TEXT_INPUT","",Class<ASString>::getInstanceS("textInput")->obj);
 	c->super=Class<Event>::getClass();
 	c->max_level=c->super->max_level+1;
 }
@@ -439,7 +439,7 @@ void ErrorEvent::sinit(Class_base* c)
 	c->super=Class<TextEvent>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS(true,"error")->obj);
+	c->setVariableByQName("ERROR","",Class<ASString>::getInstanceS("error")->obj);
 }
 
 ASFUNCTIONBODY(ErrorEvent,_constructor)
@@ -458,7 +458,7 @@ void SecurityErrorEvent::sinit(Class_base* c)
 	c->super=Class<ErrorEvent>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS(true,"securityError")->obj);
+	c->setVariableByQName("SECURITY_ERROR","",Class<ASString>::getInstanceS("securityError")->obj);
 }
 
 ASFUNCTIONBODY(SecurityErrorEvent,_constructor)
@@ -477,7 +477,7 @@ void AsyncErrorEvent::sinit(Class_base* c)
 	c->super=Class<ErrorEvent>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("ASYNC_ERROR","",Class<ASString>::getInstanceS(true,"asyncError")->obj);
+	c->setVariableByQName("ASYNC_ERROR","",Class<ASString>::getInstanceS("asyncError")->obj);
 }
 
 ASFUNCTIONBODY(AsyncErrorEvent,_constructor)

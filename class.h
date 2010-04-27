@@ -74,13 +74,13 @@ private:
 		return ret;
 	}
 public:
-	static T* getInstanceS(bool construct)
+	static T* getInstanceS()
 	{
 		Class<T>* c=Class<T>::getClass();
-		return c->getInstance(construct,NULL,0);
+		return c->getInstance(true,NULL,0);
 	}
 	template <typename ARG1>
-	static T* getInstanceS(bool construct, ARG1 a1)
+	static T* getInstanceS(ARG1 a1)
 	{
 		Class<T>* c=Class<T>::getClass();
 		ASObject* obj=new ASObject;
@@ -91,12 +91,11 @@ public:
 		obj->implementation=ret;
 		//As we are the prototype we should incRef ourself
 		c->incRef();
-		if(construct)
-			c->handleConstruction(obj,NULL,0,true);
+		c->handleConstruction(obj,NULL,0,true);
 		return ret;
 	}
 	template <typename ARG1, typename ARG2>
-	static T* getInstanceS(bool construct, ARG1 a1, ARG2 a2)
+	static T* getInstanceS(ARG1 a1, ARG2 a2)
 	{
 		Class<T>* c=Class<T>::getClass();
 		ASObject* obj=new ASObject;
@@ -107,8 +106,7 @@ public:
 		obj->implementation=ret;
 		//As we are the prototype we should incRef ourself
 		c->incRef();
-		if(construct)
-			c->handleConstruction(obj,NULL,0,true);
+		c->handleConstruction(obj,NULL,0,true);
 		return ret;
 	}
 	static Class<T>* getClass(const tiny_string& name)

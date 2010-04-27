@@ -650,7 +650,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool crea
 
 ASFUNCTIONBODY(ASObject,_toString)
 {
-	return Class<ASString>::getInstanceS(true,obj->toString())->obj;
+	return Class<ASString>::getInstanceS(obj->toString())->obj;
 }
 
 ASFUNCTIONBODY(ASObject,_constructor)

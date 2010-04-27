@@ -75,14 +75,14 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
 	EventDispatcher::_constructor(obj,NULL,0);
-	th->sharedEvents=Class<EventDispatcher>::getInstanceS(true);
+	th->sharedEvents=Class<EventDispatcher>::getInstanceS();
 	return NULL;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
-	return Class<ASString>::getInstanceS(true,th->loaderURL)->obj;
+	return Class<ASString>::getInstanceS(th->loaderURL)->obj;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
@@ -95,7 +95,7 @@ ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
 ASFUNCTIONBODY(LoaderInfo,_getUrl)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
-	return Class<ASString>::getInstanceS(true,th->url)->obj;
+	return Class<ASString>::getInstanceS(th->url)->obj;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytesLoaded)
@@ -112,14 +112,14 @@ ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 
 ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 {
-	return Class<ApplicationDomain>::getInstanceS(true)->obj;
+	return Class<ApplicationDomain>::getInstanceS()->obj;
 }
 
 ASFUNCTIONBODY(Loader,_constructor)
 {
 	Loader* th=static_cast<Loader*>(obj->implementation);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
-	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(true);
+	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS();
 	return NULL;
 }
 
@@ -215,7 +215,7 @@ void Loader::execute()
 	}
 	loaded=true;
 	//Add a complete event for this object
-	sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS(true,"complete"));
+	sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("complete"));
 }
 
 void Loader::Render()
@@ -386,7 +386,7 @@ ASFUNCTIONBODY(Sprite,_getGraphics)
 	Sprite* th=static_cast<Sprite*>(obj->implementation);
 	//Probably graphics is not used often, so create it here
 	if(th->graphics==NULL)
-		th->graphics=Class<Graphics>::getInstanceS(true);
+		th->graphics=Class<Graphics>::getInstanceS();
 
 	th->graphics->obj->incRef();
 	return th->graphics->obj;
@@ -740,7 +740,7 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	assert(argslen==1);
 
-	Rectangle* ret=Class<Rectangle>::getInstanceS(true);
+	Rectangle* ret=Class<Rectangle>::getInstanceS();
 	number_t x1,x2,y1,y2;
 	bool r=th->getBounds(x1,x2,y1,y2);
 	if(r)
@@ -1121,7 +1121,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 
 	//Notify the object
 	d->obj->incRef();
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS(true,"added",d->obj));
+	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added",d->obj));
 
 	return d->obj;
 }
@@ -1140,7 +1140,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 
 	//Notify the object
 	d->obj->incRef();
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS(true,"added",d->obj));
+	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added",d->obj));
 
 	return d->obj;
 }
@@ -1248,7 +1248,7 @@ ASFUNCTIONBODY(Shape,_getGraphics)
 	Shape* th=static_cast<Shape*>(obj->implementation);
 	//Probably graphics is not used often, so create it here
 	if(th->graphics==NULL)
-		th->graphics=Class<Graphics>::getInstanceS(true);
+		th->graphics=Class<Graphics>::getInstanceS();
 
 	th->graphics->obj->incRef();
 	return th->graphics->obj;
@@ -1526,23 +1526,23 @@ void Graphics::Render()
 
 void LineScaleMode::sinit(Class_base* c)
 {
-	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS(true,"horizontal")->obj);
-	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS(true,"none")->obj);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS(true,"normal")->obj);
-	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS(true,"vertical")->obj);
+	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS("horizontal")->obj);
+	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none")->obj);
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal")->obj);
+	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS("vertical")->obj);
 }
 
 void StageScaleMode::sinit(Class_base* c)
 {
-	c->setVariableByQName("EXACT_FIT","",Class<ASString>::getInstanceS(true,"exactFit")->obj);
-	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS(true,"noBorder")->obj);
-	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS(true,"noScale")->obj);
-	c->setVariableByQName("SHOW_ALL","",Class<ASString>::getInstanceS(true,"showAll")->obj);
+	c->setVariableByQName("EXACT_FIT","",Class<ASString>::getInstanceS("exactFit")->obj);
+	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS("noBorder")->obj);
+	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS("noScale")->obj);
+	c->setVariableByQName("SHOW_ALL","",Class<ASString>::getInstanceS("showAll")->obj);
 }
 
 void StageAlign::sinit(Class_base* c)
 {
-	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS(true,"TL")->obj);
+	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS("TL")->obj);
 }
 
 void Bitmap::sinit(Class_base* c)

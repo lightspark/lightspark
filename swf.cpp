@@ -604,6 +604,7 @@ RenderThread::~RenderThread()
 {
 	wait();
 	sem_destroy(&render);
+	sem_destroy(&inputDone);
 	delete[] interactive_buffer;
 	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
 }
@@ -1304,6 +1305,7 @@ void RootMovieClip::setFrameCount(int f)
 	totalFrames=f;
 	state.max_FP=f;
 	assert(cur_frame==&frames.back());
+	//Reserving guarantees than the vector is never invalidated
 	frames.reserve(f);
 	cur_frame=&frames.back();
 	sem_post(&sem_frames);
@@ -1372,6 +1374,8 @@ void RootMovieClip::commitFrame(bool another)
 	}
 	else
 		cur_frame=NULL;
+	
+	assert(frames.size()<=frames.capacity());
 
 	if(framesLoaded==1)
 	{

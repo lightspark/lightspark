@@ -600,12 +600,37 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 			sem_post(&sem_displayList);
 			return false;
 		}
-	}
+	}	
 	//TODO: add dynamic dysplay list
-	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[state.FP].displayList.begin();
-	assert(frames[state.FP].displayList.size()==1);
 	sem_post(&sem_displayList);
-	if(it->second->getBounds(xmin,xmax,ymin,ymax))
+	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[state.FP].displayList.begin();
+	
+	bool ret=false;
+	//Find first valid bound
+	for(;it!=frames[state.FP].displayList.end();it++)
+	{
+		if(it->second->getBounds(xmin,xmax,ymin,ymax))
+		{
+			//Now values are valid
+			ret=true;
+			break;
+		}
+	}
+	
+	//Update bounds for all the elements
+	for(;it!=frames[state.FP].displayList.end();it++)
+	{
+		number_t t1,t2,t3,t4;
+		if(it->second->getBounds(t1,t2,t3,t4))
+		{
+			xmin=min(xmin,t1);
+			xmax=min(xmax,t2);
+			ymin=min(ymin,t3);
+			ymax=min(ymax,t4);
+		}
+	}
+	
+	if(ret)
 	{
 		//TODO: take rotation into account
 		Matrix.multiply2D(xmin,ymin,xmin,ymin);

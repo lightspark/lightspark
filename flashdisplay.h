@@ -281,7 +281,7 @@ public:
 
 class MovieClip: public Sprite
 {
-//SERIOUS_TODO: add syncrhonization
+//SERIOUS_TODO: add synchronization
 friend class ParseThread;
 protected:
 	uint32_t framesLoaded;

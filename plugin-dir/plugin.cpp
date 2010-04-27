@@ -256,7 +256,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16 argc, char** argn, char*
 			{
 				cout << varName << ' ' << varValue << endl;
 				params->setVariableByQName(varName.c_str(),"",
-						lightspark::Class<lightspark::ASString>::getInstanceS(true,varValue)->obj);
+						lightspark::Class<lightspark::ASString>::getInstanceS(varValue)->obj);
 			}
 			cur=n2+1;
 		}
@@ -400,10 +400,9 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		m_it=new lightspark::InputThread(&m_sys,lightspark::NPAPI,p2);
 
 		sys=NULL;
-		m_sys.cur_input_thread=m_it;
-		m_sys.cur_render_thread=m_rt;
+		m_sys.inputThread=m_it;
+		m_sys.renderThread=m_rt;
 		m_sys.downloadManager=new NPDownloadManager(mInstance);
-		m_sys.fps_prof=new lightspark::fps_profiling();
 		m_sys.addJob(&m_pt);
 
 		// add xt event handler

@@ -1,3 +1,11 @@
+lightspark (0.2.1-ubuntu1) lucid; urgency=low
+
+  * Mouse input support
+  * Better tesselation
+  * Plugin packaged
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Tue, 27 Apr 2010 17:31:03 +0200
+
 lightspark (0.2.0-ubuntu1) lucid; urgency=low
 
   * Youtube support

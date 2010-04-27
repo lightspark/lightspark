@@ -40,7 +40,7 @@ INCLUDE(FindCURL REQUIRED)
 INCLUDE(FindPkgConfig REQUIRED)
 INCLUDE(FindZLIB REQUIRED)
 
-pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcre libpcrecpp libavcodec libavutil libxml-2.0 ftgl x11)
+pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcrecpp libavcodec libavutil ftgl x11)
 
 INCLUDE_DIRECTORIES(${SDL_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${LLVM_INCLUDE_DIR})
@@ -58,11 +58,28 @@ LINK_LIBRARIES(${CURL_LIBRARIES})
 
 ENABLE_LANGUAGE(ASM-NASM)
 
+SET(CMAKE_CXX_FLAGS "-Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -lrt -ldl")
+SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -D_GLIBCXX_NO_DEBUG")
+SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2 -DNDEBUG")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+SET(CMAKE_CXX_FLAGS_DEBIAN "-O2 -DNDEBUG")
+
 ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark")
 
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Debug")
 ENDIF()
+
+
+SET(LIBSPARK_SOURCES swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp decoder.cpp threading.cpp)
+IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
+	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
+ELSEIF(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_64.asm)
+ELSE()
+	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
+ENDIF()
+
 
 IF(COMPILE_PLUGIN)
 	SUBDIRS(plugin-dir)
@@ -83,23 +100,7 @@ IF(USE_VAAPI)
 ENDIF(USE_VAAPI)
 
 IF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
-	SET(CMAKE_CXX_FLAGS "-Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -lrt -ldl")
-	SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -D_GLIBCXX_NO_DEBUG")
-	SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2 -DNDEBUG")
-	SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-
-	SET(LIBSPARK_SOURCES swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp decoder.cpp threading.cpp)
-
-	IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
-		SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
-	ELSEIF(${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-		SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_64.asm)
-	ELSE()
-		MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
-	ENDIF()
-
 	ADD_LIBRARY(spark STATIC ${LIBSPARK_SOURCES})
-
 ENDIF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
 
 IF(COMPILE_LIGHTSPARK)

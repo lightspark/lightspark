@@ -42,6 +42,7 @@ public:
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_setHeight);
 	ASFUNCTION(clone);
+	const RECT getRect() const;
 };
 
 class Point: public IInterface

@@ -346,7 +346,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 	}
 }
 
-ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),parsingTarget(r)
+ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in)
 {
 	root=r;
 	sem_init(&ended,0,0);
@@ -433,10 +433,10 @@ void RenderThread::wait()
 	terminated=true;
 }
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false)
+InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),mutexListeners("Input listeners"),
+	mutexDragged("Input dragged"),curDragged(NULL)
 {
 	LOG(LOG_NO_INFO,"Creating input thread");
-	sem_init(&sem_listeners,0,1);
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifndef WIN32
@@ -513,20 +513,17 @@ void* InputThread::sdl_worker(InputThread* th)
 			}
 			case SDL_MOUSEBUTTONDOWN:
 			{
+				Locker locker(th->mutexListeners);
 				sys->renderThread->requestInput();
 				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
 				if(selected==0)
 					break;
-
-				sem_wait(&th->sem_listeners);
 
 				int index=int(th->listeners.size()*selected);
 				index--;
 
 				//Add event to the event queue
 				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown"));
-
-				sem_post(&th->sem_listeners);
 				break;
 			}
 		}
@@ -536,7 +533,7 @@ void* InputThread::sdl_worker(InputThread* th)
 
 void InputThread::addListener(InteractiveObject* ob)
 {
-	sem_wait(&sem_listeners);
+	Locker locker(mutexListeners);
 
 #ifndef NDEBUG
 	for(unsigned int i=0;i<listeners.size();i++)
@@ -562,18 +559,41 @@ void InputThread::addListener(InteractiveObject* ob)
 		listeners[i]->setId(cur);
 		cur+=increment;
 	}
-	
-	sem_post(&sem_listeners);
 }
 
 void InputThread::broadcastEvent(const tiny_string& t)
 {
-	sem_wait(&sem_listeners);
+	Locker locker(mutexListeners);
 
 	for(unsigned int i=0;i<listeners.size();i++)
 		sys->currentVm->addEvent(listeners[i],Class<Event>::getInstanceS(t));
+}
 
-	sem_post(&sem_listeners);
+void InputThread::enableDrag(Sprite* s, const lightspark::RECT& limit)
+{
+	Locker locker(mutexDragged);
+	if(s==curDragged)
+		return;
+	
+	if(curDragged) //Stop dragging the previous sprite
+		curDragged->obj->decRef();
+	
+	assert(s && s->obj);
+	//We need to avoid that the object is destroyed
+	s->obj->incRef();
+	
+	curDragged=s;
+	dragLimit=limit;
+}
+
+void InputThread::disableDrag()
+{
+	Locker locker(mutexDragged);
+	if(curDragged)
+	{
+		curDragged->obj->decRef();
+		curDragged=NULL;
+	}
 }
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),

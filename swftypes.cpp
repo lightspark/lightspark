@@ -965,6 +965,10 @@ lightspark::RECT::RECT()
 {
 }
 
+lightspark::RECT::RECT(int a, int b, int c, int d):Xmin(a),Xmax(b),Ymin(c),Ymax(d)
+{
+}
+
 std::ostream& lightspark::operator<<(std::ostream& s, const RECT& r)
 {
 	s << '{' << (int)r.Xmin << ',' << r.Xmax << ',' << r.Ymin << ',' << r.Ymax << '}';
@@ -1044,11 +1048,11 @@ std::istream& lightspark::operator>>(std::istream& stream, STRING& v)
 std::istream& lightspark::operator>>(std::istream& stream, RECT& v)
 {
 	BitStream s(stream);
-	v.NBits=UB(5,s);
-	v.Xmin=SB(v.NBits,s);
-	v.Xmax=SB(v.NBits,s);
-	v.Ymin=SB(v.NBits,s);
-	v.Ymax=SB(v.NBits,s);
+	int nbits=UB(5,s);
+	v.Xmin=SB(nbits,s);
+	v.Xmax=SB(nbits,s);
+	v.Ymin=SB(nbits,s);
+	v.Ymax=SB(nbits,s);
 	return stream;
 }
 

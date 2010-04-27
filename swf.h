@@ -41,7 +41,6 @@
 //#include <windows.h>
 #endif
 
-class zlib_file_filter;
 namespace lightspark
 {
 
@@ -219,9 +218,6 @@ public:
 	int version;
 	ParseThread(RootMovieClip* r,std::istream& in);
 	void wait();
-
-	//DEPRECATED
-	Sprite* parsingTarget;
 };
 
 enum ENGINE { SDL=0, NPAPI, GLX};
@@ -240,7 +236,6 @@ struct NPAPI_params
 };
 #endif
 
-
 class InputThread
 {
 private:
@@ -252,14 +247,19 @@ private:
 	static void* npapi_worker(InputThread*);
 
 	std::vector<InteractiveObject* > listeners;
-	sem_t sem_listeners;
+	Mutex mutexListeners;
+	Mutex mutexDragged;
 
+	Sprite* curDragged;
+	RECT dragLimit;
 public:
 	InputThread(SystemState* s,ENGINE e, void* param=NULL);
 	~InputThread();
 	void wait();
 	void addListener(InteractiveObject* ob);
 	void broadcastEvent(const tiny_string& type);
+	void enableDrag(Sprite* s, const RECT& limit);
+	void disableDrag();
 };
 
 class RenderThread: public ITickJob

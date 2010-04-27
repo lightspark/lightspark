@@ -878,13 +878,13 @@ class RECT
 	friend std::ostream& operator<<(std::ostream& s, const RECT& r);
 	friend std::istream& operator>>(std::istream& stream, RECT& v);
 public:
-	UB NBits;
-	SB Xmin;
-	SB Xmax;
-	SB Ymin;
-	SB Ymax;
+	int Xmin;
+	int Xmax;
+	int Ymin;
+	int Ymax;
 public:
 	RECT();
+	RECT(int xmin, int xmax, int ymin, int ymax);
 };
 
 class MATRIX

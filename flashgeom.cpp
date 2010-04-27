@@ -56,6 +56,11 @@ void Rectangle::buildTraits(ASObject* o)
 	o->setVariableByQName("clone","",new Function(clone));
 }
 
+const RECT Rectangle::getRect() const
+{
+	return RECT(x,y,x+width,y+height);
+}
+
 ASFUNCTIONBODY(Rectangle,_constructor)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj->implementation);

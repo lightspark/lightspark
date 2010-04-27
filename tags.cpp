@@ -218,9 +218,6 @@ void DefineEditTextTag::Render()
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
-	Sprite* target_bak=pt->parsingTarget;
-	pt->parsingTarget=this;
-
 	in >> SpriteID >> FrameCount;
 	totalFrames=FrameCount;
 	framesLoaded=FrameCount;
@@ -272,7 +269,6 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 		abort();
 	}
 
-	pt->parsingTarget=target_bak;
 	LOG(LOG_TRACE,"EndDefineSprite ID: " << SpriteID);
 }
 

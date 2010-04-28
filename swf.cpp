@@ -695,8 +695,16 @@ void RenderThread::glAcquireFramebuffer()
 	materialOverride=false;
 	
 	glDisable(GL_BLEND);
-	glClearColor(1,1,1,0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glPushMatrix();
+	glLoadIdentity();
+	glColor4f(0,0,0,0); //No output is fairly ok to clear
+	glBegin(GL_QUADS);
+		glVertex2i(0,0);
+		glVertex2i(width,0);
+		glVertex2i(width,height);
+		glVertex2i(0,height);
+	glEnd();
+	glPopMatrix();
 }
 
 void RenderThread::glBlitFramebuffer()
@@ -715,11 +723,11 @@ void RenderThread::glBlitFramebuffer()
 		glTexCoord2f(0,0);
 		glVertex2i(0,0);
 		glTexCoord2f(1,0);
-		glVertex2i(rt->width,0);
+		glVertex2i(width,0);
 		glTexCoord2f(1,1);
-		glVertex2i(rt->width,rt->height);
+		glVertex2i(width,height);
 		glTexCoord2f(0,1);
-		glVertex2i(0,rt->height);
+		glVertex2i(0,height);
 	glEnd();
 	glPopMatrix();
 }
@@ -752,8 +760,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 	Display* d=XOpenDisplay(NULL);
 
-    	int a,b;
-    	Bool glx_present=glXQueryVersion(d,&a,&b);
+	int a,b;
+	Bool glx_present=glXQueryVersion(d,&a,&b);
 	if(!glx_present)
 	{
 		printf("glX not present\n");
@@ -920,11 +928,11 @@ void* RenderThread::npapi_worker(RenderThread* th)
 }
 #endif
 
-int RenderThread::load_program()
+bool RenderThread::loadShaderPrograms()
 {
+	//Create render program
 	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
-	//GLuint v = glCreateShader(GL_VERTEX_SHADER);
-
+	
 	const char *fs = NULL;
 	fs = dataFileRead(DATADIR "/lightspark.frag");
 	if(fs==NULL)
@@ -932,25 +940,50 @@ int RenderThread::load_program()
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
 
-/*	fs = dataFileRead(DATADIR "/lightspark.vert");
-	glShaderSource(v, 1, &fs,NULL);
-	free((void*)fs);*/
-
+	bool ret=true;
 	char str[1024];
 	int a;
 	glCompileShader(f);
 	glGetShaderInfoLog(f,1024,&a,str);
-	printf("Fragment shader: %s\n",str);
+	LOG(LOG_NO_INFO,"Fragment shader compilation " << str);
 
-/*	glCompileShader(v);
+	gpu_program = glCreateProgram();
+	glAttachShader(gpu_program,f);
+
+	glLinkProgram(gpu_program);
+	glGetProgramiv(gpu_program,GL_LINK_STATUS,&a);
+	if(a==GL_FALSE)
+	{
+		ret=false;
+		return ret;
+	}
+	
+	//Create the blitter shader
+	GLuint v = glCreateShader(GL_VERTEX_SHADER);
+
+	fs = dataFileRead("lightspark.vert");
+	if(fs==NULL)
+		throw RunTimeException("Vertex shader code not found",sys->getOrigin().raw_buf());
+	glShaderSource(v, 1, &fs,NULL);
+	free((void*)fs);
+
+	glCompileShader(v);
 	glGetShaderInfoLog(v,1024,&a,str);
-	printf("Vertex shader: %s\n",str);*/
+	LOG(LOG_NO_INFO,"Vertex shader compilation " << str);
 
-	int ret = glCreateProgram();
-	glAttachShader(ret,f);
+	blitter_program = glCreateProgram();
+	glAttachShader(blitter_program,v);
+	
+	glLinkProgram(blitter_program);
+	glGetProgramiv(blitter_program,GL_LINK_STATUS,&a);
+	if(a==GL_FALSE)
+	{
+		ret=false;
+		return ret;
+	}
 
-	glLinkProgram(ret);
-	return ret;
+	assert(ret);
+	return true;
 }
 
 #ifndef WIN32
@@ -1047,8 +1080,8 @@ void* RenderThread::glx_worker(RenderThread* th)
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 
-	//Load fragment shaders
-	rt->gpu_program=load_program();
+	//Load shaders
+	rt->loadShaderPrograms();
 	int tex=glGetUniformLocation(rt->gpu_program,"g_tex");
 	glUniform1i(tex,0);
 	glUseProgram(rt->gpu_program);
@@ -1145,8 +1178,8 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 		abort();
 	}
 
-	//Load fragment shaders
-	rt->gpu_program=load_program();
+	//Load shaders
+	rt->loadShaderPrograms();
 
 	int tex=glGetUniformLocation(rt->gpu_program,"g_tex1");
 	glUniform1i(tex,0);
@@ -1364,16 +1397,8 @@ void RenderThread::draw()
 	{
 		ts=td;
 		LOG(LOG_NO_INFO,"FPS: " << dec << frameCount);
-		//fps_prof->fps=frameCount;
 		frameCount=0;
 		secsCount++;
-		//fps_profs.push_back(fps_profiling());
-		//fps_prof=&fps_profs.back();
-		/*if(secsCount>120)
-		{
-			LOG(LOG_NO_INFO,"Exiting");
-			setShutdownFlag();
-		}*/
 	}
 	else
 		frameCount++;

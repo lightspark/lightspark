@@ -287,7 +287,7 @@ private:
 
 	timespec ts,td;
 #endif
-	static int load_program();
+	bool loadShaderPrograms();
 	uint32_t* interactive_buffer;
 	bool fbAcquired;
 	void tick();
@@ -318,8 +318,9 @@ public:
 		idStack.pop_back();
 	}
 
-	//OpenGL fragment programs
+	//OpenGL programs
 	int gpu_program;
+	int blitter_program;
 	GLuint fboId;
 	GLuint spare_tex;
 	GLuint data_tex;

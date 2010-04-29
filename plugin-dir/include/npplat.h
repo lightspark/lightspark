@@ -73,8 +73,6 @@
 #include <Resources.h>
 #include <ToolUtils.h>
 
-#include "jri.h"
-
 // The Mixed Mode procInfos defined in npupp.h assume Think C-
 // style calling conventions.  These conventions are used by
 // Metrowerks with the exception of pointer return types, which

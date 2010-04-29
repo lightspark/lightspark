@@ -60,8 +60,6 @@
 #include "npruntime.h"
 #include "npfunctions.h"
 
-#include "jri.h"
-
 /******************************************************************************************
    plug-in function table macros
  	        for each function in and out of the plugin API we define
@@ -152,7 +150,7 @@ enum {
 								   (ARG1), (ARG2), (ARG3), (ARG4), (ARG5), (ARG6), (ARG7))
 #else
 
-typedef NPError	(* NP_LOADDS NPP_NewUPP)(NPMIMEType pluginType, NPP instance, uint16 mode, int16 argc, char* argn[], char* argv[], NPSavedData* saved);
+typedef NPError	(* NP_LOADDS NPP_NewUPP)(NPMIMEType pluginType, NPP instance, uint16_t mode, int16_t argc, char* argn[], char* argv[], NPSavedData* saved);
 #define NewNPP_NewProc(FUNC)		\
 		((NPP_NewUPP) (FUNC))
 #define CallNPP_NewProc(FUNC, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7)		\
@@ -234,7 +232,7 @@ enum {
 		(NPError)CallUniversalProc((UniversalProcPtr)(FUNC), uppNPP_NewStreamProcInfo, (ARG1), (ARG2), (ARG3), (ARG4), (ARG5))
 #else
 
-typedef NPError	(* NP_LOADDS NPP_NewStreamUPP)(NPP instance, NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype);
+typedef NPError	(* NP_LOADDS NPP_NewStreamUPP)(NPP instance, NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype);
 #define NewNPP_NewStreamProc(FUNC)		\
 		((NPP_NewStreamUPP) (FUNC))
 #define CallNPP_NewStreamProc(FUNC, ARG1, ARG2, ARG3, ARG4, ARG5) \
@@ -288,7 +286,7 @@ enum {
 
 #else
 
-typedef int32 (* NP_LOADDS NPP_WriteReadyUPP)(NPP instance, NPStream* stream);
+typedef int32_t (* NP_LOADDS NPP_WriteReadyUPP)(NPP instance, NPStream* stream);
 #define NewNPP_WriteReadyProc(FUNC)		\
 		((NPP_WriteReadyUPP) (FUNC))
 #define CallNPP_WriteReadyProc(FUNC,  NPParg, NPStreamPtr)		\
@@ -318,7 +316,7 @@ enum {
 
 #else
 
-typedef int32 (* NP_LOADDS NPP_WriteUPP)(NPP instance, NPStream* stream, int32 offset, int32 len, void* buffer);
+typedef int32_t (* NP_LOADDS NPP_WriteUPP)(NPP instance, NPStream* stream, int32_t offset, int32_t len, void* buffer);
 #define NewNPP_WriteProc(FUNC)		\
 		((NPP_WriteUPP) (FUNC))
 #define CallNPP_WriteProc(FUNC,  NPParg, NPStreamPtr, offsetArg, lenArg, bufferPtr)		\
@@ -399,7 +397,7 @@ enum {
 
 #else
 
-typedef int16 (* NP_LOADDS NPP_HandleEventUPP)(NPP instance, void* event);
+typedef int16_t (* NP_LOADDS NPP_HandleEventUPP)(NPP instance, void* event);
 #define NewNPP_HandleEventProc(FUNC)		\
 		((NPP_HandleEventUPP) (FUNC))
 #define CallNPP_HandleEventProc(FUNC,  NPParg, voidPtr)		\
@@ -595,7 +593,7 @@ enum {
 		(NPError)CallUniversalProc((UniversalProcPtr)(FUNC), uppNPN_PostURLNotifyProcInfo, (ARG1), (ARG2), (ARG3), (ARG4), (ARG5), (ARG6), (ARG7))
 #else
 
-typedef NPError (* NP_LOADDS NPN_PostURLNotifyUPP)(NPP instance, const char* url, const char* window, uint32 len, const char* buf, NPBool file, void* notifyData);
+typedef NPError (* NP_LOADDS NPN_PostURLNotifyUPP)(NPP instance, const char* url, const char* window, uint32_t len, const char* buf, NPBool file, void* notifyData);
 #define NewNPN_PostURLNotifyProc(FUNC)		\
 		((NPN_PostURLNotifyUPP) (FUNC))
 #define CallNPN_PostURLNotifyProc(FUNC, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7) \
@@ -649,7 +647,7 @@ enum {
 		(NPError)CallUniversalProc((UniversalProcPtr)(FUNC), uppNPN_PostURLProcInfo, (ARG1), (ARG2), (ARG3), (ARG4), (ARG5), (ARG6))
 #else
 
-typedef NPError (* NP_LOADDS NPN_PostURLUPP)(NPP instance, const char* url, const char* window, uint32 len, const char* buf, NPBool file);
+typedef NPError (* NP_LOADDS NPN_PostURLUPP)(NPP instance, const char* url, const char* window, uint32_t len, const char* buf, NPBool file);
 #define NewNPN_PostURLProc(FUNC)		\
 		((NPN_PostURLUPP) (FUNC))
 #define CallNPN_PostURLProc(FUNC, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6) \
@@ -733,7 +731,7 @@ enum {
 
 #else
 
-typedef int32 (* NP_LOADDS NPN_WriteUPP)(NPP instance, NPStream* stream, int32 len, void* buffer);
+typedef int32_t (* NP_LOADDS NPN_WriteUPP)(NPP instance, NPStream* stream, int32_t len, void* buffer);
 #define NewNPN_WriteProc(FUNC)		\
 		((NPN_WriteUPP) (FUNC))
 #define CallNPN_WriteProc(FUNC, npp, stream, len, buffer)		\
@@ -840,7 +838,7 @@ enum {
 
 #else
 
-typedef void* (* NP_LOADDS NPN_MemAllocUPP)(uint32 size);
+typedef void* (* NP_LOADDS NPN_MemAllocUPP)(uint32_t size);
 #define NewNPN_MemAllocProc(FUNC)		\
 		((NPN_MemAllocUPP) (FUNC))
 #define CallNPN_MemAllocProc(FUNC, ARG1)		\
@@ -893,7 +891,7 @@ enum {
 
 #else
 
-typedef uint32 (* NP_LOADDS NPN_MemFlushUPP)(uint32 size);
+typedef uint32_t (* NP_LOADDS NPN_MemFlushUPP)(uint32_t size);
 #define NewNPN_MemFlushProc(FUNC)		\
 		((NPN_MemFlushUPP) (FUNC))
 #define CallNPN_MemFlushProc(FUNC, ARG1)		\
@@ -925,57 +923,6 @@ typedef void (* NP_LOADDS NPN_ReloadPluginsUPP)(NPBool reloadPages);
 #define NewNPN_ReloadPluginsProc(FUNC)		\
 		((NPN_ReloadPluginsUPP) (FUNC))
 #define CallNPN_ReloadPluginsProc(FUNC, ARG1)		\
-		(*(FUNC))((ARG1))	
-
-#endif
-
-/* NPN_GetJavaEnv */
-
-#if _NPUPP_USE_UPP_
-
-typedef UniversalProcPtr NPN_GetJavaEnvUPP;
-enum {
-	uppNPN_GetJavaEnvProcInfo = kThinkCStackBased
-		| RESULT_SIZE(SIZE_CODE(sizeof(JRIEnv*)))
-};
-
-#define NewNPN_GetJavaEnvProc(FUNC)		\
-		(NPN_GetJavaEnvUPP) NewRoutineDescriptor((ProcPtr)(FUNC), uppNPN_GetJavaEnvProcInfo, GetCurrentArchitecture())
-#define CallNPN_GetJavaEnvProc(FUNC)		\
-		(JRIEnv*)CallUniversalProc((UniversalProcPtr)(FUNC), uppNPN_GetJavaEnvProcInfo)	
-
-#else
-typedef JRIEnv* (* NP_LOADDS NPN_GetJavaEnvUPP)(void);
-#define NewNPN_GetJavaEnvProc(FUNC)		\
-		((NPN_GetJavaEnvUPP) (FUNC))
-#define CallNPN_GetJavaEnvProc(FUNC)		\
-		(*(FUNC))()	
-
-#endif
-
-
-/* NPN_GetJavaPeer */
-
-#if _NPUPP_USE_UPP_
-
-typedef UniversalProcPtr NPN_GetJavaPeerUPP;
-enum {
-	uppNPN_GetJavaPeerProcInfo = kThinkCStackBased
-		| STACK_ROUTINE_PARAMETER(1, SIZE_CODE(sizeof(NPP)))
-		| RESULT_SIZE(SIZE_CODE(sizeof(jref)))
-};
-
-#define NewNPN_GetJavaPeerProc(FUNC)		\
-		(NPN_GetJavaPeerUPP) NewRoutineDescriptor((ProcPtr)(FUNC), uppNPN_GetJavaPeerProcInfo, GetCurrentArchitecture())
-#define CallNPN_GetJavaPeerProc(FUNC, ARG1)		\
-		(jref)CallUniversalProc((UniversalProcPtr)(FUNC), uppNPN_GetJavaPeerProcInfo, (ARG1))	
-
-#else
-
-typedef jref (* NP_LOADDS NPN_GetJavaPeerUPP)(NPP instance);
-#define NewNPN_GetJavaPeerProc(FUNC)		\
-		((NPN_GetJavaPeerUPP) (FUNC))
-#define CallNPN_GetJavaPeerProc(FUNC, ARG1)		\
 		(*(FUNC))((ARG1))	
 
 #endif

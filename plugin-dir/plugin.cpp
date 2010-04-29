@@ -194,7 +194,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 // nsPluginInstance class implementation
 //
-nsPluginInstance::nsPluginInstance(NPP aInstance, int16 argc, char** argn, char** argv) : nsPluginInstanceBase(),
+nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),swf_stream(&swf_buf),
 	m_pt(&m_sys,swf_stream),m_it(NULL),m_rt(NULL)
 {
@@ -422,7 +422,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	return TRUE;
 }
 
-NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype)
+NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
 	//We have to cast the downloadanager to a NPDownloadManager
 	NPDownloadManager* manager=static_cast<NPDownloadManager*>(m_sys.downloadManager);
@@ -440,7 +440,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	return NPERR_NO_ERROR; 
 }
 
-int32 nsPluginInstance::WriteReady(NPStream *stream)
+int32_t nsPluginInstance::WriteReady(NPStream *stream)
 {
 	if(stream->pdata) //This is a Downloader based download
 		return 1024*1024;
@@ -448,7 +448,7 @@ int32 nsPluginInstance::WriteReady(NPStream *stream)
 		return swf_buf.getFree();
 }
 
-int32 nsPluginInstance::Write(NPStream *stream, int32 offset, int32 len, void *buffer)
+int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, void *buffer)
 {
 	if(stream->pdata)
 	{

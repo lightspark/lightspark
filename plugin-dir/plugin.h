@@ -65,7 +65,7 @@ public:
 class nsPluginInstance : public nsPluginInstanceBase
 {
 public:
-	nsPluginInstance(NPP aInstance, int16 argc, char** argn, char** argv);
+	nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv);
 	virtual ~nsPluginInstance();
 
 	NPBool init(NPWindow* aWindow);
@@ -73,10 +73,10 @@ public:
 	NPBool isInitialized() {return mInitialized;}
 	NPError GetValue(NPPVariable variable, void *value);
 	NPError SetWindow(NPWindow* aWindow);
-	NPError NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16* stype); 
+	NPError NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype); 
 	NPError DestroyStream(NPStream *stream, NPError reason);
-	int32   Write(NPStream *stream, int32 offset, int32 len, void *buffer);
-	int32   WriteReady(NPStream *stream);
+	int32_t Write(NPStream *stream, int32_t offset, int32_t len, void *buffer);
+	int32_t WriteReady(NPStream *stream);
 	void    URLNotify(const char* url, NPReason reason, void* notifyData);
 
 	// locals

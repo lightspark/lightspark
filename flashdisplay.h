@@ -157,7 +157,7 @@ class Graphics: public IInterface
 {
 private:
 	//As geometry is used by RenderThread but modified by ABCVm we have to mutex a bit
-	sem_t geometry_mutex;
+	mutable sem_t geometry_mutex;
 	std::vector<GeomShape> geometry;
 	//We need a list to preserve pointers
 	std::list<FILLSTYLE> styles;
@@ -194,13 +194,7 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getGraphics);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		if(graphics)
-			return graphics->getBounds(xmin,xmax,ymin,ymax);
-
-		return false;
-	}
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
 };
 
@@ -263,6 +257,8 @@ public:
 class Sprite: public DisplayObjectContainer
 {
 friend class DisplayObject;
+private:
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 protected:
 	Graphics* graphics;
 public:

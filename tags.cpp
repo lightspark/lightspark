@@ -459,8 +459,6 @@ void DefineTextTag::Render()
 			}
 		}
 	}
-	rt->glAcquireFramebuffer();
-
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	std::vector < GLYPHENTRY >::iterator it2;
 	int count=0;
@@ -484,6 +482,9 @@ void DefineTextTag::Render()
 	//Shapes are defined in twips, so scale then down
 	glScalef(0.05,0.05,1);
 	glScalef(0.05,0.05,1);
+	
+	rt->glAcquireFramebuffer(TextBounds.Xmin,TextBounds.Xmax,
+				 TextBounds.Ymin,TextBounds.Ymax);
 
 	float scale_cur=1;
 	for(;it!=TextRecords.end();it++)
@@ -623,8 +624,8 @@ void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shape
 
 void DefineMorphShapeTag::Render()
 {
-	abort();
-	std::vector < GeomShape > shapes;
+	::abort();
+/*	std::vector < GeomShape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
 
 	FromShaperecordListToShapeVector(cur,shapes);
@@ -632,10 +633,10 @@ void DefineMorphShapeTag::Render()
 //	for(unsigned int i=0;i<shapes.size();i++)
 //		shapes[i].BuildFromEdges(MorphFillStyles.FillStyles);
 
-/*	float matrix[16];
+	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
-	glMultMatrixf(matrix);*/
+	glMultMatrixf(matrix);
 
 	rt->glAcquireFramebuffer();
 
@@ -650,14 +651,12 @@ void DefineMorphShapeTag::Render()
 		for(;it!=shapes.end();it++)
 			it->Render();
 	}
-	glPopMatrix();
+	glPopMatrix();*/
 }
 
 void DefineShapeTag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape Render");
-//	LOG(LOG_NOT_IMPLEMENTED,"DefineShape disabled");
-//	return;
 
 	if(cached.size()==0)
 	{
@@ -669,13 +668,14 @@ void DefineShapeTag::Render()
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 	}
 
-	rt->glAcquireFramebuffer();
-
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);
+
+	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
+				 ShapeBounds.Ymin,ShapeBounds.Ymax);
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -695,6 +695,7 @@ void DefineShapeTag::Render()
 void DefineShape2Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape2 Render");
+
 	if(cached.size()==0)
 	{
 		SHAPERECORD* cur=&(Shapes.ShapeRecords);
@@ -705,14 +706,15 @@ void DefineShape2Tag::Render()
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 	}
 
-	rt->glAcquireFramebuffer();
-
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);
-	
+
+	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
+				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 	{
@@ -734,8 +736,6 @@ void DefineShape2Tag::Render()
 void DefineShape4Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape4 Render");
-//	LOG(LOG_NO_INFO,"DefineShape4 disabled");
-//	return;
 
 	if(cached.size()==0)
 	{
@@ -747,13 +747,14 @@ void DefineShape4Tag::Render()
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 	}
 
-	rt->glAcquireFramebuffer();
-
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);
+
+	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
+				 ShapeBounds.Ymin,ShapeBounds.Ymax);
 	
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -798,13 +799,15 @@ void DefineShape3Tag::Render()
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 	}
 
-	rt->glAcquireFramebuffer();
-
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);
+
+	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
+				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)

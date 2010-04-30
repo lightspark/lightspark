@@ -686,7 +686,7 @@ bool RenderThread::glAcquireIdBuffer()
 	return false;
 }
 
-void RenderThread::glAcquireFramebuffer()
+void RenderThread::glAcquireFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(fbAcquired==false);
 	fbAcquired=true;
@@ -695,16 +695,17 @@ void RenderThread::glAcquireFramebuffer()
 	materialOverride=false;
 	
 	glDisable(GL_BLEND);
-	glPushMatrix();
-	glLoadIdentity();
 	glColor4f(0,0,0,0); //No output is fairly ok to clear
 	glBegin(GL_QUADS);
-		glVertex2i(0,0);
+	/*	glVertex2i(0,0);
 		glVertex2i(width,0);
 		glVertex2i(width,height);
-		glVertex2i(0,height);
+		glVertex2i(0,height);*/
+		glVertex2f(xmin,ymin);
+		glVertex2f(xmax,ymin);
+		glVertex2f(xmax,ymax);
+		glVertex2f(xmin,ymax);
 	glEnd();
-	glPopMatrix();
 }
 
 void RenderThread::glBlitFramebuffer()
@@ -896,6 +897,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				if(sys->showProfilingData)
 				{
 					glUseProgram(0);
+					glDisable(GL_TEXTURE_2D);
 
 					//Draw bars
 					glColor4f(0.7,0.7,0.7,0.7);
@@ -910,6 +912,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 					list<ThreadProfile>::iterator it=sys->profilingData.begin();
 					for(;it!=sys->profilingData.end();it++)
 						it->plot(1000000/sys->getFrameRate(),&font);
+
+					glEnable(GL_TEXTURE_2D);
 					glUseProgram(rt->gpu_program);
 				}
 				//Call glFlush to offload work on the GPU

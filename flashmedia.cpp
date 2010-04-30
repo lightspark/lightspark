@@ -81,12 +81,12 @@ void Video::Render()
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
 
-		rt->glAcquireFramebuffer();
-
 		float matrix[16];
 		Matrix.get4DMatrix(matrix);
 		glPushMatrix();
 		glMultMatrixf(matrix);
+
+		rt->glAcquireFramebuffer(0,width,0,height);
 
 		glBindTexture(GL_TEXTURE_2D, videoTexture);
 
@@ -129,6 +129,15 @@ void Video::Render()
 		}
 		glPopMatrix();
 	}
+}
+
+bool Video::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	xmin=0;
+	xmax=width;
+	ymin=0;
+	ymin=height;
+	return true;
 }
 
 ASFUNCTIONBODY(Video,_constructor)

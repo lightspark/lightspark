@@ -267,7 +267,7 @@ void Sprite::buildTraits(ASObject* o)
 	o->setGetterByQName("graphics","",new Function(_getGraphics));
 }
 
-bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	//Iterate over the displaylist of the current frame
 	sem_wait(&sem_displayList);
@@ -325,6 +325,12 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 			ret=true;
 		}
 	}
+	return ret;
+}
+
+bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	bool ret=boundsRect(xmin,xmax,ymin,ymax);
 	if(ret)
 	{
 		//TODO: take rotation into account
@@ -338,19 +344,24 @@ void Sprite::Render()
 {
 	assert(obj && obj->prototype);
 	
-	InteractiveObject::RenderProloue();
+	number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return;
 
-	rt->glAcquireFramebuffer();
+	InteractiveObject::RenderProloue();
 
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 
+	rt->glAcquireFramebuffer(t1,t2,t3,t4);
+
 	//Draw the dynamically added graphics, if any
 	if(graphics)
 		graphics->Render();
-
+	
 	rt->glBlitFramebuffer();
 	
 	if(rt->glAcquireIdBuffer() && graphics)
@@ -582,40 +593,43 @@ void MovieClip::Render()
 
 bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
+	bool valid=false;
 	//Iterate over the displaylist of the current frame
 	sem_wait(&sem_displayList);
-	if(dynamicDisplayList.empty())
-	{
-		if(framesLoaded==0)
-		{
-			assert(frames.empty());
-			sem_post(&sem_displayList);
-			return false;
-		}
-		
-		assert(state.FP<framesLoaded);
-		assert(frames[state.FP].isInitialized());
-		if(frames[state.FP].displayList.size()==0)
-		{
-			sem_post(&sem_displayList);
-			return false;
-		}
-	}	
-	//TODO: add dynamic dysplay list
-	sem_post(&sem_displayList);
-	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[state.FP].displayList.begin();
 	
-	bool ret=false;
-	//Find first valid bound
-	for(;it!=frames[state.FP].displayList.end();it++)
+	list<IDisplayListElem*>::const_iterator dynit=dynamicDisplayList.begin();
+	for(;dynit!=dynamicDisplayList.end();dynit++)
 	{
-		if(it->second->getBounds(xmin,xmax,ymin,ymax))
+		number_t t1,t2,t3,t4;
+		if((*dynit)->getBounds(t1,t2,t3,t4))
 		{
-			//Now values are valid
-			ret=true;
+			if(valid==false)
+			{
+				xmin=t1;
+				xmax=t2;
+				ymin=t3;
+				ymax=t4;
+				valid=true;
+				//Now values are valid
+				continue;
+			}
+			else
+			{
+				xmin=min(xmin,t1);
+				xmax=min(xmax,t2);
+				ymin=min(ymin,t3);
+				ymax=min(ymax,t4);
+			}
 			break;
 		}
 	}
+	
+	sem_post(&sem_displayList);
+	
+	if(framesLoaded==0) //We end here
+		return valid;
+	
+	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[state.FP].displayList.begin();
 	
 	//Update bounds for all the elements
 	for(;it!=frames[state.FP].displayList.end();it++)
@@ -623,14 +637,28 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 		number_t t1,t2,t3,t4;
 		if(it->second->getBounds(t1,t2,t3,t4))
 		{
-			xmin=min(xmin,t1);
-			xmax=min(xmax,t2);
-			ymin=min(ymin,t3);
-			ymax=min(ymax,t4);
+			if(valid==false)
+			{
+				xmin=t1;
+				xmax=t2;
+				ymin=t3;
+				ymax=t4;
+				valid=true;
+				//Now values are valid
+				continue;
+			}
+			else
+			{
+				xmin=min(xmin,t1);
+				xmax=min(xmax,t2);
+				ymin=min(ymin,t3);
+				ymax=min(ymax,t4);
+			}
+			break;
 		}
 	}
 	
-	if(ret)
+	if(valid)
 	{
 		//TODO: take rotation into account
 		Matrix.multiply2D(xmin,ymin,xmin,ymin);
@@ -1239,18 +1267,39 @@ void Shape::buildTraits(ASObject* o)
 	o->setGetterByQName("graphics","",new Function(_getGraphics));
 }
 
+bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	if(graphics)
+	{
+		bool ret=graphics->getBounds(xmin,xmax,ymin,ymax);
+		if(ret)
+		{
+			Matrix.multiply2D(xmin,ymin,xmin,ymin);
+			Matrix.multiply2D(xmax,ymax,xmax,ymax);
+			return true;
+		}
+	}
+	return false;
+}
+
 void Shape::Render()
 {
 	//If graphics is not yet initialized we have nothing to do
 	if(graphics==NULL)
 		return;
 
-	rt->glAcquireFramebuffer();
+	number_t t1,t2,t3,t4;
+	bool ret=graphics->getBounds(t1,t2,t3,t4);
+
+	if(!ret)
+		return;
 
 	float matrix[16];
 	Matrix.get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
+
+	rt->glAcquireFramebuffer(t1,t2,t3,t4);
 
 	graphics->Render();
 
@@ -1336,8 +1385,12 @@ void Graphics::buildTraits(ASObject* o)
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
+	sem_wait(&geometry_mutex);
 	if(geometry.size()==0)
+	{
+		sem_post(&geometry_mutex);
 		return false;
+	}
 
 	//Initialize values to the first available
 	assert(geometry[0].outline.size()>0);
@@ -1360,6 +1413,7 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 				ymax=v.y;
 		}
 	}
+	sem_post(&geometry_mutex);
 	return true;
 }
 

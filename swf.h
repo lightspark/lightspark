@@ -302,7 +302,7 @@ public:
 	void wait();
 	float getIdAt(int x, int y);
 	//The calling context MUST preserve current matrix with a wrapping pushMatrix, popMatrix combo
-	void glAcquireFramebuffer();
+	void glAcquireFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 	void glBlitFramebuffer();
 
 	void requestInput();

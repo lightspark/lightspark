@@ -82,7 +82,7 @@ void Video::Render()
 		videoHeight=netStream->getVideoHeight();
 
 		float matrix[16];
-		Matrix.get4DMatrix(matrix);
+		getMatrix().get4DMatrix(matrix);
 		glPushMatrix();
 		glMultMatrixf(matrix);
 

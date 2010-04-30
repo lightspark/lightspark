@@ -225,7 +225,7 @@ void Loader::Render()
 
 	glPushMatrix();
 	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+	getMatrix().get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 
@@ -240,8 +240,8 @@ bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 	{
 		if(content->getBounds(xmin,xmax,ymin,ymax))
 		{
-			Matrix.multiply2D(xmin,ymin,xmin,ymin);
-			Matrix.multiply2D(xmax,ymax,xmax,ymax);
+			getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+			getMatrix().multiply2D(xmax,ymax,xmax,ymax);
 			return true;
 		}
 		else
@@ -334,8 +334,8 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 	if(ret)
 	{
 		//TODO: take rotation into account
-		Matrix.multiply2D(xmin,ymin,xmin,ymin);
-		Matrix.multiply2D(xmax,ymax,xmax,ymax);
+		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
 	}
 	return ret;
 }
@@ -352,7 +352,7 @@ void Sprite::Render()
 	InteractiveObject::RenderProloue();
 
 	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+	getMatrix().get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 
@@ -562,7 +562,7 @@ void MovieClip::Render()
 	assert(graphics==NULL);
 
 	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+	getMatrix().get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 
@@ -661,8 +661,8 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	if(valid)
 	{
 		//TODO: take rotation into account
-		Matrix.multiply2D(xmin,ymin,xmin,ymin);
-		Matrix.multiply2D(xmax,ymax,xmax,ymax);
+		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
 		return true;
 	}
 	return false;
@@ -697,6 +697,7 @@ void DisplayObject::buildTraits(ASObject* o)
 	o->setGetterByQName("visible","",new Function(_getVisible));
 	o->setSetterByQName("visible","",new Function(undefinedFunction));
 	o->setGetterByQName("rotation","",new Function(_getRotation));
+	//o->setSetterByQName("rotation","",new Function(_setRotation));
 	o->setSetterByQName("rotation","",new Function(undefinedFunction));
 	o->setGetterByQName("name","",new Function(_getName));
 	o->setGetterByQName("parent","",new Function(_getParent));
@@ -720,6 +721,32 @@ void DisplayObject::buildTraits(ASObject* o)
 
 }
 
+MATRIX IDisplayListElem::getMatrix() const
+{
+	MATRIX ret;
+	if(useMatrix)
+		ret=Matrix;
+	else
+	{
+		ret.TranslateX=tx;
+		ret.TranslateY=ty;
+		ret.ScaleX=sx*cos(rotation*M_PI/180);
+		ret.RotateSkew1=-sx*sin(rotation*M_PI/180);
+		ret.RotateSkew0=sy*sin(rotation*M_PI/180);
+		ret.ScaleY=sy*cos(rotation*M_PI/180);
+	}
+	return ret;
+}
+
+void IDisplayListElem::valFromMatrix()
+{
+	assert(useMatrix);
+	tx=Matrix.TranslateX;
+	ty=Matrix.TranslateY;
+	sx=Matrix.ScaleX;
+	sy=Matrix.ScaleY;
+}
+
 ASFUNCTIONBODY(DisplayObject,_getAlpha)
 {
 	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
@@ -735,56 +762,92 @@ ASFUNCTIONBODY(DisplayObject,_getMask)
 ASFUNCTIONBODY(DisplayObject,_getScaleX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return abstract_d(th->Matrix.ScaleX);
+	if(th->useMatrix)
+		return abstract_d(th->Matrix.ScaleX);
+	else
+		return abstract_d(th->sx);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setScaleX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	assert(argslen==1);
-	th->Matrix.ScaleX=args[0]->toNumber();
+	number_t val=args[0]->toNumber();
+	if(th->useMatrix)
+	{
+		th->valFromMatrix();
+		th->useMatrix=false;
+	}
+	th->sx=val;
 	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScaleY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return abstract_d(th->Matrix.ScaleY);
+	if(th->useMatrix)
+		return abstract_d(th->Matrix.ScaleY);
+	else
+		return abstract_d(th->sy);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setScaleY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	assert(argslen==1);
-	th->Matrix.ScaleY=args[0]->toNumber();
+	number_t val=args[0]->toNumber();
+	if(th->useMatrix)
+	{
+		th->valFromMatrix();
+		th->useMatrix=false;
+	}
+	th->sy=val;
 	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return abstract_d(th->Matrix.TranslateX);
+	if(th->useMatrix)
+		return abstract_d(th->Matrix.TranslateX);
+	else
+		return abstract_d(th->tx);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setX)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	assert(args && argslen==1);
-	th->Matrix.TranslateX=args[0]->toInt();
+	assert(argslen==1);
+	number_t val=args[0]->toNumber();
+	if(th->useMatrix)
+	{
+		th->valFromMatrix();
+		th->useMatrix=false;
+	}
+	th->tx=val;
 	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return abstract_d(th->Matrix.TranslateY);
+	if(th->useMatrix)
+		return abstract_d(th->Matrix.TranslateY);
+	else
+		return abstract_d(th->ty);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setY)
 {
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	assert(args && argslen==1);
-	th->Matrix.TranslateY=args[0]->toInt();
+	assert(argslen==1);
+	number_t val=args[0]->toNumber();
+	if(th->useMatrix)
+	{
+		th->valFromMatrix();
+		th->useMatrix=false;
+	}
+	th->ty=val;
 	return NULL;
 }
 
@@ -862,9 +925,15 @@ ASFUNCTIONBODY(DisplayObject,localToGlobal)
 
 ASFUNCTIONBODY(DisplayObject,_setRotation)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	abort();
-	//th->rotation=args->at(0)->toNumber();
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	assert(argslen==1);
+	number_t val=args[0]->toNumber();
+	if(th->useMatrix)
+	{
+		th->valFromMatrix();
+		th->useMatrix=false;
+	}
+	th->rotation=val;
 	return NULL;
 }
 
@@ -904,8 +973,14 @@ ASFUNCTIONBODY(DisplayObject,_getRoot)
 
 ASFUNCTIONBODY(DisplayObject,_getRotation)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return new Undefined;
+	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//There is no easy way to get rotation from matrix, let's ignore the matrix
+	if(th->useMatrix)
+	{
+		th->valFromMatrix();
+		th->useMatrix=false;
+	}
+	return abstract_d(th->rotation);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getVisible)
@@ -950,7 +1025,12 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 	{
 		number_t newscale=newwidth;
 		newscale/=computed;
-		th->Matrix.ScaleX=newscale;
+		if(th->useMatrix)
+		{
+			th->valFromMatrix();
+			th->useMatrix=false;
+		}
+		th->sx=newscale;
 	}
 	return NULL;
 }
@@ -975,7 +1055,12 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 	{
 		number_t newscale=newheight;
 		newscale/=computed;
-		th->Matrix.ScaleY=newscale;
+		if(th->useMatrix)
+		{
+			th->valFromMatrix();
+			th->useMatrix=false;
+		}
+		th->sy=newscale;
 	}
 	return NULL;
 }
@@ -1274,8 +1359,8 @@ bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& 
 		bool ret=graphics->getBounds(xmin,xmax,ymin,ymax);
 		if(ret)
 		{
-			Matrix.multiply2D(xmin,ymin,xmin,ymin);
-			Matrix.multiply2D(xmax,ymax,xmax,ymax);
+			getMatrix().multiply2D(xmin,ymin,xmin,ymin);
+			getMatrix().multiply2D(xmax,ymax,xmax,ymax);
 			return true;
 		}
 	}
@@ -1295,7 +1380,7 @@ void Shape::Render()
 		return;
 
 	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+	getMatrix().get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 

@@ -965,7 +965,7 @@ bool RenderThread::loadShaderPrograms()
 	//Create the blitter shader
 	GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
-	fs = dataFileRead("lightspark.vert");
+	fs = dataFileRead(DATADIR "/lightspark.vert");
 	if(fs==NULL)
 		throw RunTimeException("Vertex shader code not found",sys->getOrigin().raw_buf());
 	glShaderSource(v, 1, &fs,NULL);

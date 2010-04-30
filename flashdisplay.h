@@ -36,7 +36,19 @@ class DisplayObjectContainer;
 
 class IDisplayListElem: public EventDispatcher
 {
-public:
+friend class DisplayObject;
+friend class Frame;
+private:
+	MATRIX Matrix;
+	bool useMatrix;
+	number_t tx,ty;
+	number_t rotation;
+	number_t sx,sy;
+
+protected:
+	MATRIX getMatrix() const;
+	void valFromMatrix();
+	public:
 	int Depth;
 	UI16 CharacterId;
 	CXFORMWITHALPHA ColorTransform;
@@ -44,11 +56,10 @@ public:
 	UI16 ClipDepth;
 	CLIPACTIONS ClipActions;
 	RootMovieClip* root;
-	MATRIX Matrix;
-	MATRIX* origMatrix;
+
 	DisplayObjectContainer* parent;
 
-	IDisplayListElem():root(NULL),origMatrix(NULL),parent(NULL){}
+	IDisplayListElem():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),root(NULL),parent(NULL){}
 	virtual void Render()=0;
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const=0;
 	virtual void setRoot(RootMovieClip* root)=0;

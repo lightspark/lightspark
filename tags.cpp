@@ -466,7 +466,7 @@ void DefineTextTag::Render()
 	int x=0,y=0;
 	float matrix[16];
 	float textMatrix[16];
-	Matrix.get4DMatrix(matrix);
+	getMatrix().get4DMatrix(matrix);
 	TextMatrix.get4DMatrix(textMatrix);
 
 	//Build a fake FILLSTYLEs
@@ -669,7 +669,7 @@ void DefineShapeTag::Render()
 	}
 
 	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+	getMatrix().get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);
@@ -707,7 +707,7 @@ void DefineShape2Tag::Render()
 	}
 
 	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+	getMatrix().get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);
@@ -748,7 +748,7 @@ void DefineShape4Tag::Render()
 	}
 
 	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+	getMatrix().get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);
@@ -800,7 +800,7 @@ void DefineShape3Tag::Render()
 	}
 
 	float matrix[16];
-	Matrix.get4DMatrix(matrix);
+	getMatrix().get4DMatrix(matrix);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	glScalef(0.05,0.05,1);

@@ -48,20 +48,9 @@ void Frame::Render()
 	{
 		assert(i->second);
 
-		//Sync the original matrix with the current one if needed
-		if(i->second->origMatrix)
-			*(i->second->origMatrix)=i->second->Matrix;
 		//Assign object data from current transformation
 		i->second->Matrix=i->first.Matrix;
-		i->second->origMatrix=&(i->first.Matrix);
-
-		//Apply local transformation
-		/*float matrix[16];
-		i->first.Matrix.get4DMatrix(matrix);
-		glPushMatrix();
-		glMultMatrixf(matrix);*/
 		i->second->Render();
-		//glPopMatrix();
 	}
 }
 

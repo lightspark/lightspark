@@ -51,7 +51,7 @@ else (LLVM_INCLUDE_DIR)
     /opt/llvm/2.7/bin
     /opt/llvm/bin
     /Developer/usr/bin
-    /usr/lib/llvm-2.7/llvm/gcc-4.2/bin
+    /usr/lib/llvm-2.7/bin
     )
 
   find_program(LLVM_GXX_EXECUTABLE
@@ -62,6 +62,7 @@ else (LLVM_INCLUDE_DIR)
     /opt/llvm/bin
     /Developer/usr/bin
     /usr/lib/llvm/llvm/gcc-4.2/bin
+    /usr/lib/llvm-2.7/bin
     )
 
   if(LLVM_GCC_EXECUTABLE)

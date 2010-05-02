@@ -1938,7 +1938,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 	ASObject* obj=th->locals[n];
 	unsigned int cur_index=th->locals[m]->toUInt();
 
-	if(obj->implementation)
+	if(obj->implementation && obj->implEnable)
 	{
 		bool ret;
 		//cur_index is modified with the next index
@@ -2034,7 +2034,7 @@ ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 		throw UnsupportedException("Type mismatch in nextValue",sys->getOrigin().raw_buf());
 
 	ASObject* ret=NULL;
-	if(obj->implementation)
+	if(obj->implementation && obj->implEnable)
 	{ 
 		if(obj->implementation->nextValue(index->toInt()-1,ret))
 		{
@@ -2059,7 +2059,7 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 		throw UnsupportedException("Type mismatch in nextName",sys->getOrigin().raw_buf());
 
 	ASObject* ret=NULL;
-	if(obj->implementation)
+	if(obj->implementation && obj->implEnable)
 	{ 
 		if(obj->implementation->nextName(index->toInt()-1,ret))
 		{

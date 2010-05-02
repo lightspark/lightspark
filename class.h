@@ -61,12 +61,9 @@ private:
 	//This function is instantiated always because of inheritance
 	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
-		ASObject* obj=new ASObject;
-		obj->prototype=this;
 		//TODO: Add interface T to ret
 		T* ret=new T;
-		ret->obj=obj;
-		obj->implementation=ret;
+		ret->obj->prototype=this;
 		//As we are the prototype we should incRef ourself
 		incRef();
 		if(construct)
@@ -83,30 +80,24 @@ public:
 	static T* getInstanceS(ARG1 a1)
 	{
 		Class<T>* c=Class<T>::getClass();
-		ASObject* obj=new ASObject;
 		//TODO: Add interface T to ret
-		obj->prototype=c;
 		T* ret=new T(a1);
-		ret->obj=obj;
-		obj->implementation=ret;
+		ret->obj->prototype=c;
 		//As we are the prototype we should incRef ourself
 		c->incRef();
-		c->handleConstruction(obj,NULL,0,true);
+		c->handleConstruction(ret->obj,NULL,0,true);
 		return ret;
 	}
 	template <typename ARG1, typename ARG2>
 	static T* getInstanceS(ARG1 a1, ARG2 a2)
 	{
 		Class<T>* c=Class<T>::getClass();
-		ASObject* obj=new ASObject;
 		//TODO: Add interface T to ret
-		obj->prototype=c;
 		T* ret=new T(a1,a2);
-		ret->obj=obj;
-		obj->implementation=ret;
+		ret->obj->prototype=c;
 		//As we are the prototype we should incRef ourself
 		c->incRef();
-		c->handleConstruction(obj,NULL,0,true);
+		c->handleConstruction(ret->obj,NULL,0,true);
 		return ret;
 	}
 	static Class<T>* getClass(const tiny_string& name)

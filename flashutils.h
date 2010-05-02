@@ -53,16 +53,16 @@ public:
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
+	bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 	{
 		abort();
 	}
-	bool getVariableByMultiname(const multiname& name, ASObject*& out);
-	bool getVariableByMultiname_i(const multiname& name, intptr_t& out);
-	bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	bool setVariableByMultiname(const multiname& name, ASObject* o);
-	bool setVariableByMultiname_i(const multiname& name, intptr_t value);
-	bool isEqual(bool& ret, ASObject* r);
+	bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
+	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out);
+	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	bool setVariableByMultiname_merge(const multiname& name, ASObject* o);
+	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value);
+	bool isEqual_merge(bool& ret, ASObject* r);
 };
 
 class Timer: public EventDispatcher, public IThreadJob
@@ -92,31 +92,27 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
+	bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 	{
 		abort();
 	}
-	bool getVariableByMultiname(const multiname& name, ASObject*& out);
-	bool getVariableByMultiname_i(const multiname& name, intptr_t& out)
+	bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
+	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 	{
 		abort();
 	}
-	bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
 	{
 		abort();
 	}
-	bool setVariableByMultiname(const multiname& name, ASObject* o);
-	bool setVariableByMultiname_i(const multiname& name, intptr_t value);
-	bool deleteVariableByMultiname(const multiname& name);
-	bool toString(tiny_string& ret)
+	bool setVariableByMultiname_merge(const multiname& name, ASObject* o);
+	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value);
+	bool deleteVariableByMultiname_merge(const multiname& name);
+	bool toString_merge(tiny_string& ret)
 	{
 		return false;
 	}
-	bool isEqual(bool& ret, ASObject* r)
-	{
-		abort();
-	}
-	tiny_string toString() const
+	bool isEqual_merge(bool& ret, ASObject* r)
 	{
 		abort();
 	}
@@ -135,37 +131,33 @@ public:
 	static void sinit(Class_base*);
 //	static void buildTraits(ASObject* o);
 //	ASFUNCTION(_constructor);
-	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
+	bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 	{
 		abort();
 	}
-	bool getVariableByMultiname(const multiname& name, ASObject*& out);
-	bool getVariableByMultiname_i(const multiname& name, intptr_t& out)
+	bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
+	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 	{
 		abort();
 	}
-	bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
 	{
 		abort();
 	}
-	bool setVariableByMultiname(const multiname& name, ASObject* o);
-	bool setVariableByMultiname_i(const multiname& name, intptr_t value)
+	bool setVariableByMultiname_merge(const multiname& name, ASObject* o);
+	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 	{
 		abort();
 	}
-	bool deleteVariableByMultiname(const multiname& name)
+	bool deleteVariableByMultiname_merge(const multiname& name)
 	{
 		abort();
 	}
-	bool toString(tiny_string& ret)
+	bool toString_merge(tiny_string& ret)
 	{
 		return false;
 	}
-	bool isEqual(bool& ret, ASObject* r)
-	{
-		abort();
-	}
-	tiny_string toString() const
+	bool isEqual_merge(bool& ret, ASObject* r)
 	{
 		abort();
 	}

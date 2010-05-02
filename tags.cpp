@@ -1257,7 +1257,8 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
 		assert(toAdd);
 
-		if(toAdd->obj && sys->currentVm)
+		//Object should be constructed even if not binded
+		if(toAdd->obj && toAdd->obj->prototype && sys->currentVm)
 		{
 			//We now ask the VM to construct this object
 			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd->obj,toAdd->obj->prototype);
@@ -1292,7 +1293,6 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		LOG(LOG_NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
 		if(!PlaceFlagMove)
 		{
-			assert(parent->obj);
 			if(toAdd->obj) //TODO: should not happen
 				parent->obj->setVariableByQName((const char*)Name,"",toAdd->obj);
 		}

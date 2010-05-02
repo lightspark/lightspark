@@ -50,7 +50,7 @@ class URLVariables: public IInterface
 public:
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
-	bool toString(tiny_string& ret);
+	bool toString_merge(tiny_string& ret);
 };
 
 class URLLoaderDataFormat: public IInterface

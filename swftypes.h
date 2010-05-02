@@ -439,6 +439,7 @@ protected:
 	//maps variable name to namespace and var
 	variables_map Variables;
 	ASObject(const ASObject& o);
+	ASObject(IInterface* i);
 	SWFOBJECT_TYPE type;
 private:
 	int ref_count;
@@ -451,6 +452,7 @@ public:
 	//Stuff onyl used in debugging
 	bool initialized;
 #endif
+	bool implEnable;
 	IInterface* implementation;
 	Class_base* prototype;
 	void acquireInterface(IInterface* i);
@@ -566,32 +568,32 @@ public:
 	Class_base* getActualPrototype() const;
 };
 
-class IInterface
+class IInterface: public ASObject
 {
 friend void ASObject::acquireInterface(IInterface* i);
 friend class ASObject;
 friend class ABCVm;
 private:
-	virtual bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out);
-	virtual bool getVariableByMultiname(const multiname& name, ASObject*& out);
-	virtual bool getVariableByMultiname_i(const multiname& name, intptr_t& out);
-	virtual bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	virtual bool setVariableByMultiname(const multiname& name, ASObject* o);
-	virtual bool setVariableByMultiname_i(const multiname& name, intptr_t value);
-	virtual bool deleteVariableByMultiname(const multiname& name);
-	virtual bool toString(tiny_string& ret);
-	virtual bool isEqual(bool& ret, ASObject* o);
-	virtual bool isLess(bool& ret, ASObject* o);
-	virtual bool toInt(int& ret);
-	virtual bool toNumber(double& ret);
+	virtual bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out);
+	virtual bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
+	virtual bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out);
+	virtual bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	virtual bool setVariableByMultiname_merge(const multiname& name, ASObject* o);
+	virtual bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value);
+	virtual bool deleteVariableByMultiname_merge(const multiname& name);
+	virtual bool toString_merge(tiny_string& ret);
+	virtual bool isEqual_merge(bool& ret, ASObject* o);
+	virtual bool isLess_merge(bool& ret, ASObject* o);
+	virtual bool toInt_merge(int& ret);
+	virtual bool toNumber_merge(double& ret);
 	virtual bool hasNext(unsigned int& index, bool& out);
 	virtual bool nextName(unsigned int index, ASObject*& out);
 	virtual bool nextValue(unsigned int index, ASObject*& out);
 protected:
 	SWFOBJECT_TYPE type;
 public:
-	ASObject* obj;
-	IInterface():type(T_OBJECT),obj(NULL){}
+	ASObject* const obj;
+	IInterface():ASObject(this),type(T_OBJECT),obj(this){assert(obj->implementation==this);}
 	IInterface(const IInterface& r);
 	virtual ~IInterface(){}
 	static void sinit(Class_base*){}

@@ -91,8 +91,9 @@ class DictionaryTag: public Tag
 protected:
 	std::vector<GeomShape> cached;
 public:
+	Class_base* bindedTo;
 	RootMovieClip* loadedFrom;
-	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s),loadedFrom(NULL){ }
+	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s),bindedTo(NULL),loadedFrom(NULL){ }
 	virtual TAGTYPE getType(){ return DICT_TAG; }
 	virtual int getId(){return 0;} 
 	virtual IInterface* instance() const { return NULL; } 
@@ -417,8 +418,6 @@ public:
 	{
 		DefineBinaryDataTag* ret=new DefineBinaryDataTag(*this);
 		//An object is always linked
-		ret->obj=new ASObject;
-		ret->obj->implementation=ret;
 		ret->obj->prototype=Class<ByteArray>::getClass();
 		ret->obj->prototype->incRef();
 		return ret;
@@ -538,14 +537,12 @@ public:
 	IInterface* instance() const
 	{
 		DefineSpriteTag* ret=new DefineSpriteTag(*this);
-		assert(ret->obj==NULL);
-		ret->obj=new ASObject;
-		ret->obj->implementation=ret;
-		if(obj)
+		assert(ret->obj==ret);
+		//TODO: check
+		if(bindedTo)
 		{
-			assert(obj->getObjectType()==T_CLASS);
 			//A class is binded to this tag
-			ret->obj->prototype=static_cast<Class_base*>(obj);
+			ret->obj->prototype=static_cast<Class_base*>(bindedTo);
 		}
 		else
 		{

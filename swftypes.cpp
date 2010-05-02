@@ -46,7 +46,7 @@ extern TLSDATA Manager* dManager;
 tiny_string ASObject::toString(bool debugMsg)
 {
 	assert(ref_count>0);
-	if(implementation)
+	if(implementation && implEnable)
 	{
 		tiny_string ret;
 		assert(prototype);
@@ -58,7 +58,7 @@ tiny_string ASObject::toString(bool debugMsg)
 			ret+="]";
 			return ret;
 		}
-		if(implementation->toString(ret))
+		if(implementation->toString_merge(ret))
 			return ret;
 	}
 	if(debugMsg==false)
@@ -80,10 +80,10 @@ tiny_string ASObject::toString(bool debugMsg)
 bool ASObject::isLess(ASObject* r)
 {
 	assert(ref_count>0);
-	if(implementation)
+	if(implementation && implEnable)
 	{
 		bool ret;
-		if(implementation->isLess(ret,r))
+		if(implementation->isLess_merge(ret,r))
 			return ret;
 	}
 
@@ -117,11 +117,12 @@ bool ASObject::isLess(ASObject* r)
 
 void ASObject::acquireInterface(IInterface* i)
 {
-	assert(ref_count>0);
+	::abort();
+	/*assert(ref_count>0);
 	assert(i!=implementation);
 	delete implementation;
 	implementation=i;
-	implementation->obj=this;
+	implementation->obj=this;*/
 }
 
 SWFOBJECT_TYPE ASObject::getObjectType() const
@@ -129,68 +130,69 @@ SWFOBJECT_TYPE ASObject::getObjectType() const
 	return (implementation)?(implementation->type):type;
 }
 
-IInterface::IInterface(const IInterface& r):type(r.type),obj(NULL)
+IInterface::IInterface(const IInterface& r):ASObject(r),type(r.type),obj(this)
 {
-	//An IInterface derived class can only be cloned if the obj is a Class
-	assert(r.obj==NULL || r.obj->getObjectType()==T_CLASS);
+	assert(r.obj==&r);
+	assert(implementation==NULL);
+	implementation=this;
 }
 
-bool IInterface::isLess(bool& ret, ASObject* r)
-{
-	return false;
-}
-
-bool IInterface::isEqual(bool& ret, ASObject* r)
+bool IInterface::isLess_merge(bool& ret, ASObject* r)
 {
 	return false;
 }
 
-bool IInterface::toNumber(double& ret)
+bool IInterface::isEqual_merge(bool& ret, ASObject* r)
 {
 	return false;
 }
 
-bool IInterface::toInt(int& ret)
+bool IInterface::toNumber_merge(double& ret)
 {
 	return false;
 }
 
-bool IInterface::toString(tiny_string& ret)
+bool IInterface::toInt_merge(int& ret)
 {
 	return false;
 }
 
-bool IInterface::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
+bool IInterface::toString_merge(tiny_string& ret)
 {
 	return false;
 }
 
-bool IInterface::getVariableByMultiname(const multiname& name, ASObject*& out)
+bool IInterface::getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 {
 	return false;
 }
 
-bool IInterface::getVariableByMultiname_i(const multiname& name, intptr_t& out)
+bool IInterface::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
 	return false;
 }
 
-bool IInterface::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+bool IInterface::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 {
 	return false;
 }
 
-bool IInterface::deleteVariableByMultiname(const multiname& name)
+bool IInterface::setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	return false;
 }
 
-bool IInterface::setVariableByMultiname(const multiname& name, ASObject* o)
+bool IInterface::deleteVariableByMultiname_merge(const multiname& name)
 {
 	return false;
 }
 
-bool IInterface::setVariableByMultiname_i(const multiname& name, intptr_t value)
+bool IInterface::setVariableByMultiname_merge(const multiname& name, ASObject* o)
+{
+	return false;
+}
+
+bool IInterface::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 {
 	return false;
 }
@@ -235,10 +237,10 @@ tiny_string multiname::qualifiedString() const
 bool ASObject::isEqual(ASObject* r)
 {
 	assert(ref_count>0);
-	if(implementation)
+	if(implementation && implEnable)
 	{
 		bool ret;
-		if(implementation->isEqual(ret,r))
+		if(implementation->isEqual_merge(ret,r))
 			return ret;
 	}
 
@@ -300,10 +302,10 @@ unsigned int ASObject::toUInt() const
 
 int ASObject::toInt() const
 {
-	if(implementation)
+	if(implementation && implEnable)
 	{
 		int ret;
-		if(implementation->toInt(ret))
+		if(implementation->toInt_merge(ret))
 			return ret;
 	}
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to int");
@@ -313,10 +315,10 @@ int ASObject::toInt() const
 
 double ASObject::toNumber() const
 {
-	if(implementation)
+	if(implementation && implEnable)
 	{
 		double ret;
-		if(implementation->toNumber(ret))
+		if(implementation->toNumber_merge(ret))
 			return ret;
 	}
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to float");
@@ -408,9 +410,9 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 void ASObject::deleteVariableByMultiname(const multiname& name)
 {
 	assert(ref_count>0);
-	if(implementation)
+	if(implementation && implEnable)
 	{
-		if(implementation->deleteVariableByMultiname(name))
+		if(implementation->deleteVariableByMultiname_merge(name))
 			return;
 	}
 
@@ -454,9 +456,9 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	check();
-	if(implementation)
+	if(implementation && implEnable)
 	{
-		if(implementation->setVariableByMultiname_i(name,value))
+		if(implementation->setVariableByMultiname_i_merge(name,value))
 			return;
 	}
 
@@ -466,9 +468,9 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
 	check();
-	if(implementation)
+	if(implementation && implEnable)
 	{
-		if(implementation->setVariableByMultiname(name,o))
+		if(implementation->setVariableByMultiname_merge(name,o))
 			return;
 	}
 
@@ -510,9 +512,9 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
 {
-	if(implementation && !skip_impl)
+	if(implementation && !skip_impl && implEnable)
 	{
-		if(implementation->setVariableByQName(name,ns,o))
+		if(implementation->setVariableByQName_merge(name,ns,o))
 			return;
 	}
 
@@ -690,10 +692,10 @@ void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_strin
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();
-	if(implementation)
+	if(implementation && implEnable)
 	{
 		intptr_t ret;
-		if(implementation->getVariableByMultiname_i(name,ret))
+		if(implementation->getVariableByMultiname_i_merge(name,ret))
 			return ret;
 	}
 
@@ -705,12 +707,12 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
 	check();
-	if(implementation && !skip_impl)
+	if(implementation && !skip_impl && implEnable)
 	{
 		ASObject* ret;
 		//It seems that various kind of implementation works only with the empty namespace
 		assert(name.ns.size()>0);
-		if(name.ns[0].name=="" && implementation->getVariableByMultiname(name,ret))
+		if(name.ns[0].name=="" && implementation->getVariableByMultiname_merge(name,ret))
 		{
 			//TODO check
 			assert(prototype);
@@ -804,11 +806,11 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 {
 	check();
 
-	if(implementation && !skip_impl)
+	if(implementation && !skip_impl && implEnable)
 	{
 		ASObject* ret;
 		assert(prototype);
-		if(implementation->getVariableByQName(name,ns,ret))
+		if(implementation->getVariableByQName_merge(name,ns,ret))
 		{
 			assert(prototype);
 			return objAndLevel(ret, cur_level);
@@ -1727,7 +1729,7 @@ variables_map::~variables_map()
 	}
 }
 
-ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),implementation(NULL),
+ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),implEnable(true),implementation(NULL),
 	prototype(NULL)
 {
 #ifndef NDEBUG
@@ -1736,12 +1738,25 @@ ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),implementation(NULL),
+ASObject::ASObject(IInterface* i):type(T_OBJECT),ref_count(1),manager(NULL),cur_level(0),implEnable(true),implementation(i),
+	prototype(NULL)
+{
+#ifndef NDEBUG
+	//Stuff only used in debugging
+	initialized=false;
+#endif
+}
+
+ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),implEnable(true),implementation(NULL),
 	prototype(o.prototype)
 {
-	::abort();
 	if(prototype)
 		prototype->incRef();
+
+	#ifndef NDEBUG
+	//Stuff only used in debugging
+	initialized=false;
+	#endif
 
 	assert(o.Variables.size()==0);
 }

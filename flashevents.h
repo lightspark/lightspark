@@ -298,10 +298,10 @@ class ConstructObjectEvent: public SynchronizationEvent
 friend class ABCVm;
 private:
 	Class_base* _class;
-	ASObject* obj;
+	ASObject* _obj;
 	static void sinit(Class_base*);
 public:
-	ConstructObjectEvent(ASObject* o, Class_base* c):SynchronizationEvent("ConstructObjectEvent"),_class(c),obj(o){}
+	ConstructObjectEvent(ASObject* o, Class_base* c):SynchronizationEvent("ConstructObjectEvent"),_class(c),_obj(o){}
 	EVENT_TYPE getEventType() { return CONSTRUCT_OBJECT; }
 };
 

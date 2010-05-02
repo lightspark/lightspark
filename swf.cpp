@@ -93,9 +93,6 @@ RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),frameRate(0),toB
 	//Reset framesLoaded, as there are still not available
 	framesLoaded=0;
 
-	//Root movie clip always has a linked object
-	obj=new ASObject;
-	obj->implementation=this;
 	//We set the protoype to a generic MovieClip
 	if(sys)
 	{
@@ -180,13 +177,8 @@ SystemState::~SystemState()
 	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
 		it->second->decRef();
-
-	if(obj)
-	{
-		obj->implementation=NULL;
-		//TODO: check??
-		delete obj;
-	}
+	
+	assert(obj==this);
 }
 
 void SystemState::setShutdownFlag()

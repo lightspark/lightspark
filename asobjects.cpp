@@ -304,7 +304,7 @@ ASFUNCTIONBODY(ASXML,load)
 	throw UnsupportedException("ASXML::load not completely implemented",sys->getOrigin().raw_buf());
 }
 
-bool Array::isEqual(bool& ret, ASObject* r)
+bool Array::isEqual_merge(bool& ret, ASObject* r)
 {
 	if(r->getObjectType()!=T_ARRAY)
 		ret=false;
@@ -327,7 +327,7 @@ bool Array::isEqual(bool& ret, ASObject* r)
 	return true;
 }
 
-bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
+bool Array::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 {
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
@@ -364,7 +364,7 @@ bool Array::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 		return false;
 }
 
-bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
+bool Array::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
@@ -393,7 +393,7 @@ bool Array::getVariableByMultiname(const multiname& name, ASObject*& out)
 		return false;
 }
 
-bool Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
+bool Array::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 {
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
@@ -455,7 +455,7 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 	return true;
 }
 
-bool Array::setVariableByMultiname(const multiname& name, ASObject* o)
+bool Array::setVariableByMultiname_merge(const multiname& name, ASObject* o)
 {
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
@@ -507,7 +507,7 @@ bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, unsigne
 	return true;
 }
 
-bool Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+bool Array::setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	unsigned int index=0;
 	if(!isValidQName(name,ns,index))
@@ -540,7 +540,7 @@ bool Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, A
 	return true;
 }
 
-bool Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out)
+bool Array::getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 {
 	throw UnsupportedException("Array::getVariableByQName not completely implemented",sys->getOrigin().raw_buf());
 	return NULL;
@@ -674,13 +674,13 @@ ASFUNCTIONBODY(ASString,substr)
 	return Class<ASString>::getInstanceS(th->data.substr(start,len))->obj;
 }
 
-bool Array::toString(tiny_string& ret)
+bool Array::toString_merge(tiny_string& ret)
 {
-	ret=toString();
+	ret=toString_priv();
 	return true;
 }
 
-tiny_string Array::toString() const
+tiny_string Array::toString_priv() const
 {
 	string ret;
 	for(unsigned int i=0;i<data.size();i++)
@@ -730,18 +730,18 @@ tiny_string Boolean::toString(bool debugMsg)
 	return (val)?"true":"false";
 }
 
-tiny_string ASString::toString() const
+tiny_string ASString::toString_priv() const
 {
 	return data.c_str();
 }
 
-bool ASString::toString(tiny_string& ret)
+bool ASString::toString_merge(tiny_string& ret)
 {
-	ret=toString();
+	ret=toString_priv();
 	return true;
 }
 
-bool ASString::toNumber(double& ret)
+bool ASString::toNumber_merge(double& ret)
 {
 	//TODO: implemented conversion that checks for validity
 	ret=atof(data.c_str());
@@ -759,7 +759,7 @@ tiny_string Undefined::toString(bool debugMsg)
 	return "null";
 }
 
-bool ASString::isEqual(bool& ret, ASObject* r)
+bool ASString::isEqual_merge(bool& ret, ASObject* r)
 {
 	if(r->getObjectType()==T_STRING)
 	{
@@ -775,14 +775,14 @@ bool ASString::isEqual(bool& ret, ASObject* r)
 	return true;
 }
 
-bool ASString::isLess(bool& ret, ASObject* o)
+bool ASString::isLess_merge(bool& ret, ASObject* o)
 {
 	//TODO: Implement ECMA-262 11.8.5 algorithm
 	//Number comparison has the priority over strings
 	if(o->getObjectType()==T_INTEGER)
 	{
 		number_t a;
-		bool isNumber=toNumber(a);
+		bool isNumber=toNumber_merge(a);
 		assert(isNumber);
 		number_t b=o->toNumber();
 		ret=a<b;
@@ -1034,7 +1034,7 @@ ASFUNCTIONBODY(Date,valueOf)
 	return new Number(th->toInt());
 }
 
-bool Date::toInt(int& ret)
+bool Date::toInt_merge(int& ret)
 {
 	ret=toInt();
 	return true;
@@ -1055,13 +1055,13 @@ int Date::toInt() const
 	return ret;
 }
 
-bool Date::toString(tiny_string& ret)
+bool Date::toString_merge(tiny_string& ret)
 {
-	ret=toString();
+	ret=toString_priv();
 	return true;
 }
 
-tiny_string Date::toString() const
+tiny_string Date::toString_priv() const
 {
 	return "Wed Dec 31 16:00:00 GMT-0800 1969";
 }
@@ -1620,11 +1620,11 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	{
 		assert(!target->initialized);
 		//HACK: suppress implementation handling of variables just now
-		IInterface* impl=target->implementation;
-		target->implementation=NULL;
+		bool bak=target->implEnable;
+		target->implEnable=false;
 		recursiveBuild(target);
 		//And restore it
-		target->implementation=impl;
+		target->implEnable=bak;
 		assert(target->getLevel()==max_level);
 	#ifndef NDEBUG
 		target->initialized=true;

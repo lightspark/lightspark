@@ -121,7 +121,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	return NULL;
 }
 
-bool ByteArray::getVariableByMultiname(const multiname& name, ASObject*& out)
+bool ByteArray::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
@@ -133,7 +133,7 @@ bool ByteArray::getVariableByMultiname(const multiname& name, ASObject*& out)
 	return true;
 }
 
-bool ByteArray::getVariableByMultiname_i(const multiname& name, intptr_t& out)
+bool ByteArray::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 {
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
@@ -145,7 +145,7 @@ bool ByteArray::getVariableByMultiname_i(const multiname& name, intptr_t& out)
 	return true;
 }
 
-bool ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
+bool ByteArray::setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	unsigned int index=0;
 	if(!Array::isValidQName(name,ns,index))
@@ -154,7 +154,7 @@ bool ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& n
 	abort();
 }
 
-bool ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
+bool ByteArray::setVariableByMultiname_merge(const multiname& name, ASObject* o)
 {
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
@@ -177,7 +177,7 @@ bool ByteArray::setVariableByMultiname(const multiname& name, ASObject* o)
 	return true;
 }
 
-bool ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
+bool ByteArray::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 {
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
@@ -186,7 +186,7 @@ bool ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	abort();
 }
 
-bool ByteArray::isEqual(bool& ret, ASObject* r)
+bool ByteArray::isEqual_merge(bool& ret, ASObject* r)
 {
 	if(r->getObjectType()!=T_OBJECT)
 		return false;
@@ -343,12 +343,12 @@ ASFUNCTIONBODY(Dictionary,_constructor)
 	return NULL;
 }
 
-bool Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
+bool Dictionary::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 {
-	return setVariableByMultiname(name,abstract_i(value));
+	return setVariableByMultiname_merge(name,abstract_i(value));
 }
 
-bool Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
+bool Dictionary::setVariableByMultiname_merge(const multiname& name, ASObject* o)
 {
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
@@ -368,7 +368,7 @@ bool Dictionary::setVariableByMultiname(const multiname& name, ASObject* o)
 		abort();
 }
 
-bool Dictionary::deleteVariableByMultiname(const multiname& name)
+bool Dictionary::deleteVariableByMultiname_merge(const multiname& name)
 {
 	assert(name.name_type==multiname::NAME_OBJECT);
 	map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
@@ -385,7 +385,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 	return true;
 }
 
-bool Dictionary::getVariableByMultiname(const multiname& name, ASObject*& out)
+bool Dictionary::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
@@ -465,7 +465,7 @@ void Proxy::sinit(Class_base* c)
 	c->setConstructor(NULL);
 }
 
-bool Proxy::setVariableByMultiname(const multiname& name, ASObject* v)
+bool Proxy::setVariableByMultiname_merge(const multiname& name, ASObject* v)
 {
 	//If a variable named like this already exist, return that
 	if(obj->hasPropertyByMultiname(name))
@@ -496,7 +496,7 @@ bool Proxy::setVariableByMultiname(const multiname& name, ASObject* v)
 	return true;
 }
 
-bool Proxy::getVariableByMultiname(const multiname& name, ASObject*& out)
+bool Proxy::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
 	if(obj->hasPropertyByMultiname(name))
 		return false;

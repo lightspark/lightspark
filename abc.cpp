@@ -992,7 +992,7 @@ void ABCVm::handleEvent()
 			{
 				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
 				LOG(LOG_CALLS,"Building instance traits");
-				ev->_class->handleConstruction(ev->obj,NULL,0,true);
+				ev->_class->handleConstruction(ev->_obj,NULL,0,true);
 				ev->sync();
 				break;
 			}
@@ -1022,7 +1022,8 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 	//It seems to be acceptable for the same base to be binded multiple times,
 	//We refuse to do it, as it's an undocumented behaviour, but we warn the user
 	//I've seen this behaviour only for youtube
-	if(base->obj!=NULL && !isRoot)
+	DictionaryTag* t=dynamic_cast<DictionaryTag*>(base);
+	if(t && t->bindedTo && !isRoot)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Multiple binding on " << s << ". Not binding");
 		return;
@@ -1065,10 +1066,9 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 	else
 	{
 		//If this is not a root movie clip, then the base has to be a DictionaryTag
-		DictionaryTag* t=dynamic_cast<DictionaryTag*>(base);
 		assert(t);
 
-		base->obj=derived_class_tmp;
+		t->bindedTo=derived_class_tmp;
 		derived_class_tmp->bindTag(t);
 	}
 }

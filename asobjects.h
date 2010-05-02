@@ -340,7 +340,7 @@ public:
 class ASString: public IInterface
 {
 private:
-	tiny_string toString() const;
+	tiny_string toString_priv() const;
 public:
 	std::string data;
 	static void sinit(Class_base* c);
@@ -358,10 +358,10 @@ public:
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);
 	ASFUNCTION(toLowerCase);
-	bool isEqual(bool& ret, ASObject* o);
-	bool isLess(bool& ret, ASObject* o);
-	bool toString(tiny_string& ret);
-	bool toNumber(double& ret);
+	bool isEqual_merge(bool& ret, ASObject* o);
+	bool isLess_merge(bool& ret, ASObject* o);
+	bool toString_merge(tiny_string& ret);
+	bool toNumber_merge(double& ret);
 };
 
 class Null: public ASObject
@@ -476,21 +476,21 @@ public:
 	{
 		data.resize(n);
 	}
-	bool getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& out);
-	bool getVariableByMultiname(const multiname& name, ASObject*& out);
-	bool getVariableByMultiname_i(const multiname& name, intptr_t& out);
-	bool setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	bool setVariableByMultiname(const multiname& name, ASObject* o);
-	bool setVariableByMultiname_i(const multiname& name, intptr_t value);
-	bool toString(tiny_string& ret);
-	bool isEqual(bool& ret, ASObject* r);
+	bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out);
+	bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
+	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out);
+	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	bool setVariableByMultiname_merge(const multiname& name, ASObject* o);
+	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value);
+	bool toString_merge(tiny_string& ret);
+	bool isEqual_merge(bool& ret, ASObject* r);
 	bool hasNext(unsigned int& index, bool& out);
 	bool nextName(unsigned int index, ASObject*& out)
 	{
 		abort();
 	}
 	bool nextValue(unsigned int index, ASObject*& out);
-	tiny_string toString() const;
+	tiny_string toString_priv() const;
 };
 
 class Integer : public ASObject
@@ -625,9 +625,9 @@ public:
 	ASFUNCTION(getHours);
 	ASFUNCTION(getMinutes);
 	ASFUNCTION(valueOf);
-	bool toString(tiny_string& ret);
-	tiny_string toString() const;
-	bool toInt(int& ret);
+	bool toString_merge(tiny_string& ret);
+	tiny_string toString_priv() const;
+	bool toInt_merge(int& ret);
 };
 
 //Internal objects used to store traits declared in scripts and object placed, but not yet valid

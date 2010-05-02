@@ -511,7 +511,7 @@ ASFUNCTIONBODY(URLVariables,_constructor)
 	return NULL;
 }
 
-bool URLVariables::toString(tiny_string& ret)
+bool URLVariables::toString_merge(tiny_string& ret)
 {
 	//Should urlencode
 	abort();

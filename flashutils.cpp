@@ -121,17 +121,20 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	return NULL;
 }
 
-bool ByteArray::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
+objAndLevel ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
+	assert(!skip_impl);
 	assert(implEnable);
+	//It seems that various kind of implementation works only with the empty namespace
+	assert(name.ns.size()>0 && name.ns[0].name=="");
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return false;
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
 
 	assert(index<len);
-	out=abstract_i(bytes[index]);
+	ASObject* ret=abstract_i(bytes[index]);
 
-	return true;
+	return objAndLevel(ret,0);
 }
 
 bool ByteArray::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
@@ -157,12 +160,12 @@ bool ByteArray::setVariableByQName_merge(const tiny_string& name, const tiny_str
 	abort();
 }
 
-bool ByteArray::setVariableByMultiname_merge(const multiname& name, ASObject* o)
+void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
 	assert(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return false;
+		return ASObject::setVariableByMultiname(name,o,enableOverride);
 
 	if(index>=len)
 	{
@@ -178,7 +181,6 @@ bool ByteArray::setVariableByMultiname_merge(const multiname& name, ASObject* o)
 		bytes[index]=o->toInt();
 	else
 		bytes[index]=0;
-	return true;
 }
 
 bool ByteArray::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
@@ -352,10 +354,11 @@ ASFUNCTIONBODY(Dictionary,_constructor)
 bool Dictionary::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 {
 	assert(implEnable);
-	return setVariableByMultiname_merge(name,abstract_i(value));
+	setVariableByMultiname(name,abstract_i(value),true);
+	return true;
 }
 
-bool Dictionary::setVariableByMultiname_merge(const multiname& name, ASObject* o)
+void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
 	assert(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
@@ -365,15 +368,11 @@ bool Dictionary::setVariableByMultiname_merge(const multiname& name, ASObject* o
 		//This is ugly, but at least we are sure that we own name_o
 		multiname* tmp=const_cast<multiname*>(&name);
 		tmp->name_o=NULL;
-		return true;
 	}
 	else if(name.name_type==multiname::NAME_STRING)
-	{
 		data[Class<ASString>::getInstanceS(name.name_s)]=o;
-		return true;
-	}
 	else
-		abort();
+		::abort();
 }
 
 bool Dictionary::deleteVariableByMultiname_merge(const multiname& name)
@@ -394,20 +393,23 @@ bool Dictionary::deleteVariableByMultiname_merge(const multiname& name)
 	return true;
 }
 
-bool Dictionary::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
+objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
+	assert(!skip_impl);
 	assert(implEnable);
+	//It seems that various kind of implementation works only with the empty namespace
+	assert(name.ns.size()>0 && name.ns[0].name=="");
+	ASObject* ret=NULL;
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
 		//From specs, then === operator compare references when working on generic objects
 		map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
 		if(it==data.end())
-			out=new Undefined;
+			ret=new Undefined;
 		else
 		{
-			ASObject* ret=it->second;
+			ret=it->second;
 			ret->incRef();
-			out=ret;
 			//This is ugly, but at least we are sure that we own name_o
 			multiname* tmp=const_cast<multiname*>(&name);
 			tmp->name_o=NULL;
@@ -425,20 +427,19 @@ bool Dictionary::getVariableByMultiname_merge(const multiname& name, ASObject*& 
 				if(name.name_s == s->data.c_str())
 				{
 					//Value found
-					ASObject* ret=it->second;
+					ret=it->second;
 					ret->incRef();
-					out=ret;
-					return true;
+					return objAndLevel(ret,0);
 				}
 			}
 		}
 		//Value not found
-		out=new Undefined;
+		ret=new Undefined;
 	}
 	else
-		abort();
+		::abort();
 
-	return true;
+	return objAndLevel(ret,0);
 }
 
 bool Dictionary::hasNext(unsigned int& index, bool& out)
@@ -478,51 +479,65 @@ void Proxy::sinit(Class_base* c)
 	c->setConstructor(NULL);
 }
 
-bool Proxy::setVariableByMultiname_merge(const multiname& name, ASObject* v)
+void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
 	assert(implEnable);
 	//If a variable named like this already exist, return that
 	if(hasPropertyByMultiname(name))
-		return false;
+	{
+		ASObject::setVariableByMultiname(name,o,enableOverride);
+		return;
+	}
 	if(suppress)
-		return false;
+	{
+		ASObject::setVariableByMultiname(name,o,enableOverride);
+		return;
+	}
 
 	//Check if there is a custom setter defined, skipping implementation to avoid recursive calls
-	objAndLevel o=getVariableByQName("setProperty",flash_proxy,true);
+	objAndLevel proxySetter=getVariableByQName("setProperty",flash_proxy,true);
 
-	if(o.obj==NULL)
-		return false;
+	if(proxySetter.obj==NULL)
+	{
+		ASObject::setVariableByMultiname(name,o,enableOverride);
+		return;
+	}
 
-	assert(o.obj->getObjectType()==T_FUNCTION);
+	assert(proxySetter.obj->getObjectType()==T_FUNCTION);
 
-	IFunction* f=static_cast<IFunction*>(o.obj);
+	IFunction* f=static_cast<IFunction*>(proxySetter.obj);
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 	ASObject* args[2];
 	args[0]=Class<ASString>::getInstanceS(name.name_s);
-	args[1]=v;
+	args[1]=o;
 	//We now suppress special handling
 	suppress=true;
 	LOG(LOG_CALLS,"Proxy::setProperty");
 	ASObject* ret=f->call(this,args,2,getLevel());
 	assert(ret==NULL);
 	suppress=false;
-	return true;
 }
 
-bool Proxy::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
+objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
+	assert(!skip_impl);
 	assert(implEnable);
+	//It seems that various kind of implementation works only with the empty namespace
+	assert(name.ns.size()>0);
+	if(name.ns[0].name!="")
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
+
 	if(hasPropertyByMultiname(name))
-		return false;
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
 	if(suppress)
-		return false;
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
 	objAndLevel o=getVariableByQName("getProperty",flash_proxy,true);
 
 	if(o.obj==NULL)
-		return false;
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
 
 	assert(o.obj->getObjectType()==T_FUNCTION);
 
@@ -533,8 +548,8 @@ bool Proxy::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 	//We now suppress special handling
 	suppress=true;
 	LOG(LOG_CALLS,"Proxy::getProperty");
-	out=f->call(this,&arg,1,getLevel());
-	assert(out);
+	ASObject* ret=f->call(this,&arg,1,getLevel());
+	assert(ret);
 	suppress=false;
-	return true;
+	return objAndLevel(ret,0);
 }

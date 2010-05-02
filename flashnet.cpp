@@ -511,12 +511,15 @@ ASFUNCTIONBODY(URLVariables,_constructor)
 	return NULL;
 }
 
-bool URLVariables::toString_merge(tiny_string& ret)
+tiny_string URLVariables::toString(bool debugMsg)
 {
 	assert(implEnable);
 	//Should urlencode
 	::abort();
+	if(debugMsg)
+		return ASObject::toString(debugMsg);
 	int size=numVariables();
+	tiny_string ret;
 	for(int i=0;i<size;i++)
 	{
 		const tiny_string& tmp=getNameAt(i);
@@ -528,6 +531,6 @@ bool URLVariables::toString_merge(tiny_string& ret)
 		if(i!=size-1)
 			ret+="&";
 	}
-	return true;
+	return ret;
 }
 

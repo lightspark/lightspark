@@ -360,7 +360,7 @@ public:
 	ASFUNCTION(toLowerCase);
 	bool isEqual_merge(bool& ret, ASObject* o);
 	bool isLess_merge(bool& ret, ASObject* o);
-	bool toString_merge(tiny_string& ret);
+	tiny_string toString(bool debugMsg=false);
 	bool toNumber_merge(double& ret);
 };
 
@@ -476,13 +476,13 @@ public:
 	{
 		data.resize(n);
 	}
-	bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out);
-	bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
+	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
+	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride);
 	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out);
 	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	bool setVariableByMultiname_merge(const multiname& name, ASObject* o);
+	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
 	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value);
-	bool toString_merge(tiny_string& ret);
+	tiny_string toString(bool debugMsg=false);
 	bool isEqual_merge(bool& ret, ASObject* r);
 	bool hasNext(unsigned int& index, bool& out);
 	bool nextName(unsigned int index, ASObject*& out)
@@ -626,7 +626,7 @@ public:
 	ASFUNCTION(getHours);
 	ASFUNCTION(getMinutes);
 	ASFUNCTION(valueOf);
-	bool toString_merge(tiny_string& ret);
+	tiny_string toString(bool debugMsg=false);
 	tiny_string toString_priv() const;
 	bool toInt_merge(int& ret);
 };

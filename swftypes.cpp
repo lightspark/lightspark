@@ -46,22 +46,6 @@ extern TLSDATA Manager* dManager;
 tiny_string ASObject::toString(bool debugMsg)
 {
 	assert(ref_count>0);
-	if(implEnable)
-	{
-		tiny_string ret;
-		//When in an internal debug msg, do not print complex objects
-		if(debugMsg)
-		{
-			ret="[object ";
-			ret+=prototype->class_name;
-			ret+="]";
-			return ret;
-		}
-		if(toString_merge(ret))
-			return ret;
-	}
-	if(debugMsg==false)
-		LOG(LOG_NOT_IMPLEMENTED,"Cannot convert object of type " << getObjectType() << " to String");
 	if(debugMsg==false && hasPropertyByQName("toString",""))
 	{
 		objAndLevel obj_toString=getVariableByQName("toString","");
@@ -138,24 +122,6 @@ bool ASObject::toInt_merge(int& ret)
 	return false;
 }
 
-bool ASObject::toString_merge(tiny_string& ret)
-{
-	assert(implEnable);
-	return false;
-}
-
-bool ASObject::getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
-{
-	assert(implEnable);
-	return false;
-}
-
-bool ASObject::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
-{
-	assert(implEnable);
-	return false;
-}
-
 bool ASObject::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 {
 	assert(implEnable);
@@ -169,12 +135,6 @@ bool ASObject::setVariableByQName_merge(const tiny_string& name, const tiny_stri
 }
 
 bool ASObject::deleteVariableByMultiname_merge(const multiname& name)
-{
-	assert(implEnable);
-	return false;
-}
-
-bool ASObject::setVariableByMultiname_merge(const multiname& name, ASObject* o)
 {
 	assert(implEnable);
 	return false;
@@ -460,11 +420,6 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
 	check();
-	if(implEnable)
-	{
-		if(setVariableByMultiname_merge(name,o))
-			return;
-	}
 
 	obj_var* obj=NULL;
 	//It's always correct to use the current level for the object
@@ -699,18 +654,6 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
 	check();
-	if(!skip_impl && implEnable)
-	{
-		ASObject* ret;
-		//It seems that various kind of implementation works only with the empty namespace
-		assert(name.ns.size()>0);
-		if(name.ns[0].name=="" && getVariableByMultiname_merge(name,ret))
-		{
-			//TODO check
-			assert(prototype);
-			return objAndLevel(ret, cur_level);
-		}
-	}
 
 	obj_var* obj=NULL;
 	int level=-1;
@@ -797,15 +740,6 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)
 {
 	check();
-	if(!skip_impl && implEnable)
-	{
-		ASObject* ret;
-		if(getVariableByQName_merge(name,ns,ret))
-		{
-			assert(prototype);
-			return objAndLevel(ret, cur_level);
-		}
-	}
 
 	obj_var* obj=NULL;
 	int level=cur_level;

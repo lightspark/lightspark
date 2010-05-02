@@ -570,14 +570,10 @@ public:
 	static void buildTraits(ASObject* o);
 	
 	//Merge in progress
-	virtual bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out);
-	virtual bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
 	virtual bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out);
 	virtual bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o);
-	virtual bool setVariableByMultiname_merge(const multiname& name, ASObject* o);
 	virtual bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value);
 	virtual bool deleteVariableByMultiname_merge(const multiname& name);
-	virtual bool toString_merge(tiny_string& ret);
 	virtual bool isEqual_merge(bool& ret, ASObject* o);
 	virtual bool isLess_merge(bool& ret, ASObject* o);
 	virtual bool toInt_merge(int& ret);

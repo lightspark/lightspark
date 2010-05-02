@@ -50,7 +50,7 @@ class URLVariables: public ASObject
 public:
 	static void sinit(Class_base*);
 	ASFUNCTION(_constructor);
-	bool toString_merge(tiny_string& ret);
+	tiny_string toString(bool debugMsg=false);
 };
 
 class URLLoaderDataFormat: public ASObject

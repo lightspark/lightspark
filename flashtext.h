@@ -26,7 +26,7 @@
 namespace lightspark
 {
 
-class Font: public IInterface
+class Font: public ASObject
 {
 public:
 	static void sinit(Class_base* c);

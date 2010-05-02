@@ -1420,7 +1420,7 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	}
 }
 
-IInterface* DefineButton2Tag::instance() const
+ASObject* DefineButton2Tag::instance() const
 {
 	return new DefineButton2Tag(*this);
 }

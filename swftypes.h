@@ -52,7 +52,6 @@ typedef double number_t;
 class ASObject;
 class ABCContext;
 class Class_base;
-class IInterface;
 class IFunction;
 struct arrayElem;
 
@@ -439,7 +438,6 @@ protected:
 	//maps variable name to namespace and var
 	variables_map Variables;
 	ASObject(const ASObject& o);
-	ASObject(IInterface* i);
 	SWFOBJECT_TYPE type;
 private:
 	int ref_count;
@@ -568,6 +566,9 @@ public:
 	//Prototype handling
 	Class_base* getActualPrototype() const;
 	
+	static void sinit(Class_base*){}
+	static void buildTraits(ASObject* o);
+	
 	//Merge in progress
 	virtual bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out);
 	virtual bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
@@ -584,14 +585,6 @@ public:
 	virtual bool hasNext(unsigned int& index, bool& out);
 	virtual bool nextName(unsigned int index, ASObject*& out);
 	virtual bool nextValue(unsigned int index, ASObject*& out);
-};
-
-class IInterface: public ASObject
-{
-friend class ABCVm;
-public:
-	static void sinit(Class_base*){}
-	static void buildTraits(ASObject* o);
 };
 
 inline void Manager::put(ASObject* o)

@@ -42,7 +42,7 @@ public:
 class Class_inherit:public Class_base
 {
 private:
-	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen);
 	DictionaryTag const* tag;
 public:
 	Class_inherit(const tiny_string& name):Class_base(name),tag(NULL){}
@@ -136,7 +136,7 @@ class Class<UInteger>: public Class_base
 {
 private:
 	Class<UInteger>():Class_base("uint"){}
-	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		abort();
 		return NULL;

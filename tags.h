@@ -96,7 +96,7 @@ public:
 	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s),bindedTo(NULL),loadedFrom(NULL){ }
 	virtual TAGTYPE getType(){ return DICT_TAG; }
 	virtual int getId(){return 0;} 
-	virtual IInterface* instance() const { return NULL; } 
+	virtual ASObject* instance() const { return NULL; } 
 	void setLoadedFrom(RootMovieClip* r){loadedFrom=r;}
 };
 
@@ -127,7 +127,7 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	ASObject* instance() const
 	{
 		return new DefineShapeTag(*this);
 	}
@@ -152,7 +152,7 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	ASObject* instance() const
 	{
 		return new DefineShape2Tag(*this);
 	}
@@ -176,7 +176,7 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	ASObject* instance() const
 	{
 		return new DefineShape3Tag(*this);
 	}
@@ -203,7 +203,7 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	ASObject* instance() const
 	{
 		return new DefineShape4Tag(*this);
 	}
@@ -397,7 +397,7 @@ public:
 	}
 	virtual void handleEvent(Event*);
 
-	IInterface* instance() const;
+	ASObject* instance() const;
 };
 
 class KERNINGRECORD
@@ -414,7 +414,7 @@ public:
 	~DefineBinaryDataTag(){delete[] bytes;}
 	virtual int getId(){return Tag;} 
 
-	IInterface* instance() const
+	ASObject* instance() const
 	{
 		DefineBinaryDataTag* ret=new DefineBinaryDataTag(*this);
 		//An object is always linked
@@ -519,7 +519,7 @@ public:
 		return true;
 	}
 
-	IInterface* instance() const
+	ASObject* instance() const
 	{
 		return new DefineTextTag(*this);
 	}
@@ -534,7 +534,7 @@ public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
 
-	IInterface* instance() const
+	ASObject* instance() const
 	{
 		DefineSpriteTag* ret=new DefineSpriteTag(*this);
 		//TODO: check

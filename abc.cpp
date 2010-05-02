@@ -103,7 +103,7 @@ void SymbolClassTag::execute(RootMovieClip* root)
 		else
 		{
 			DictionaryTag* t=root->dictionaryLookup(Tags[i]);
-			IInterface* base=dynamic_cast<IInterface*>(t);
+			ASObject* base=dynamic_cast<ASObject*>(t);
 			assert(base!=NULL);
 			sys->currentVm->addEvent(NULL,new BindClassEvent(base,(const char*)Names[i]));
 		}
@@ -131,7 +131,7 @@ thisAndLevel ABCVm::popObjAndLevel()
 void ABCVm::registerClasses()
 {
 	//Register predefined types, ASObject are enough for not implemented classes
-	Global.setVariableByQName("Object","",Class<IInterface>::getClass());
+	Global.setVariableByQName("Object","",Class<ASObject>::getClass());
 	Global.setVariableByQName("Class","",Class_object::getClass());
 	Global.setVariableByQName("Number","",new Number(0.0));
 	Global.setVariableByQName("Boolean","",new Boolean(false));
@@ -160,7 +160,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Loader","flash.display",Class<Loader>::getClass());
 	Global.setVariableByQName("LoaderInfo","flash.display",Class<LoaderInfo>::getClass());
 	Global.setVariableByQName("SimpleButton","flash.display",new ASObject);
-	Global.setVariableByQName("InteractiveObject","flash.display",Class<IInterface>::getClass("InteractiveObject")),
+	Global.setVariableByQName("InteractiveObject","flash.display",Class<ASObject>::getClass("InteractiveObject")),
 	Global.setVariableByQName("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getClass());
 	Global.setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());
 	Global.setVariableByQName("Shape","flash.display",Class<Shape>::getClass());
@@ -169,15 +169,15 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("LineScaleMode","flash.display",Class<LineScaleMode>::getClass());
 	Global.setVariableByQName("StageScaleMode","flash.display",Class<StageScaleMode>::getClass());
 	Global.setVariableByQName("StageAlign","flash.display",Class<StageAlign>::getClass());
-	Global.setVariableByQName("IBitmapDrawable","flash.display",Class<IInterface>::getClass("IBitmapDrawable"));
-	Global.setVariableByQName("BitmapData","flash.display",Class<IInterface>::getClass("BitmapData"));
+	Global.setVariableByQName("IBitmapDrawable","flash.display",Class<ASObject>::getClass("IBitmapDrawable"));
+	Global.setVariableByQName("BitmapData","flash.display",Class<ASObject>::getClass("BitmapData"));
 	Global.setVariableByQName("Bitmap","flash.display",Class<Bitmap>::getClass());
 
-	Global.setVariableByQName("DropShadowFilter","flash.filters",Class<IInterface>::getClass("DropShadowFilter"));
+	Global.setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass("DropShadowFilter"));
 
 	Global.setVariableByQName("TextField","flash.text",Class<TextField>::getClass());
-	Global.setVariableByQName("TextFormat","flash.text",Class<IInterface>::getClass("TextFormat"));
-	Global.setVariableByQName("TextFieldType","flash.text",Class<IInterface>::getClass("TextFieldType"));
+	Global.setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass("TextFormat"));
+	Global.setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass("TextFieldType"));
 	Global.setVariableByQName("Font","flash.text",Class<Font>::getClass());
 
 	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject);
@@ -195,7 +195,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
 	Global.setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass());
-	Global.setVariableByQName("Matrix","flash.geom",Class<IInterface>::getClass("Matrix"));
+	Global.setVariableByQName("Matrix","flash.geom",Class<ASObject>::getClass("Matrix"));
 	Global.setVariableByQName("Transform","flash.geom",Class<Transform>::getClass());
 	Global.setVariableByQName("Point","flash.geom",Class<Point>::getClass());
 
@@ -228,13 +228,13 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());
 	Global.setVariableByQName("Security","flash.system",Class<Security>::getClass());
 	Global.setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());
-	Global.setVariableByQName("LoaderContext","flash.system",Class<IInterface>::getClass("LoaderContext"));
+	Global.setVariableByQName("LoaderContext","flash.system",Class<ASObject>::getClass("LoaderContext"));
 
 	Global.setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getClass());
 	Global.setVariableByQName("Video","flash.media",Class<Video>::getClass());
 
-	Global.setVariableByQName("ContextMenu","flash.ui",Class<IInterface>::getClass("ContextMenu"));
-	Global.setVariableByQName("ContextMenuItem","flash.ui",Class<IInterface>::getClass("ContextMenuItem"));
+	Global.setVariableByQName("ContextMenu","flash.ui",Class<ASObject>::getClass("ContextMenu"));
+	Global.setVariableByQName("ContextMenuItem","flash.ui",Class<ASObject>::getClass("ContextMenuItem"));
 
 	Global.setVariableByQName("isNaN","",new Function(isNaN));
 }
@@ -1017,7 +1017,7 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	sem_post(&event_queue_mutex);
 }
 
-void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* const* args, const unsigned int argslen, bool isRoot)
+void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* const* args, const unsigned int argslen, bool isRoot)
 {
 	//It seems to be acceptable for the same base to be binded multiple times,
 	//We refuse to do it, as it's an undocumented behaviour, but we warn the user

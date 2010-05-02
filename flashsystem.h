@@ -25,7 +25,7 @@
 namespace lightspark
 {
 
-class Capabilities: public IInterface
+class Capabilities: public ASObject
 {
 public:
 	Capabilities(){};
@@ -34,13 +34,13 @@ public:
 	ASFUNCTION(_getLanguage);
 };
 
-class Security: public IInterface
+class Security: public ASObject
 {
 public:
 	static void sinit(Class_base* c);
 };
 
-class ApplicationDomain: public IInterface
+class ApplicationDomain: public ASObject
 {
 public:
 	ApplicationDomain(){}

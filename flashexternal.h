@@ -25,7 +25,7 @@
 namespace lightspark
 {
 
-class ExternalInterface: public IInterface
+class ExternalInterface: public ASObject
 {
 public:
 	static void sinit(Class_base* c);

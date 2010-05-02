@@ -164,7 +164,7 @@ public:
 	ASFUNCTION(contains);
 };
 
-class Graphics: public IInterface
+class Graphics: public ASObject
 {
 private:
 	//As geometry is used by RenderThread but modified by ABCVm we have to mutex a bit
@@ -341,7 +341,7 @@ public:
 	ASFUNCTION(_getStageHeight);
 };
 
-class StageScaleMode: public IInterface
+class StageScaleMode: public ASObject
 {
 public:
 	static void sinit(Class_base* c);
@@ -350,7 +350,7 @@ public:
 	}
 };
 
-class StageAlign: public IInterface
+class StageAlign: public ASObject
 {
 public:
 	static void sinit(Class_base* c);
@@ -359,7 +359,7 @@ public:
 	}
 };
 
-class LineScaleMode: public IInterface
+class LineScaleMode: public ASObject
 {
 public:
 	static void sinit(Class_base* c);

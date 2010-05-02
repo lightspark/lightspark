@@ -30,7 +30,7 @@ namespace lightspark
 {
 const tiny_string flash_proxy="http://www.adobe.com/2006/actionscript/flash/proxy";
 
-class ByteArray: public IInterface
+class ByteArray: public ASObject
 {
 friend class Loader;
 friend class URLLoader;
@@ -82,7 +82,7 @@ public:
 	ASFUNCTION(reset);
 };
 
-class Dictionary: public IInterface
+class Dictionary: public ASObject
 {
 friend class ABCVm;
 private:
@@ -127,7 +127,7 @@ public:
 	bool nextValue(unsigned int index, ASObject*& out);
 };
 
-class Proxy: public IInterface
+class Proxy: public ASObject
 {
 friend class ABCVm;
 private:

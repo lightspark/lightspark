@@ -42,7 +42,7 @@ class Event;
 class method_info;
 struct call_context;
 
-class InterfaceClass: public IInterface
+class InterfaceClass: public ASObject
 {
 protected:
 	static void lookupAndLink(ASObject* o, const tiny_string& name, const tiny_string& interfaceNs);
@@ -76,7 +76,7 @@ public:
 	Class_base(const tiny_string& name):use_protected(false),constructor(NULL),super(NULL),context(NULL),class_name(name),class_index(-1),
 		max_level(0) {type=T_CLASS;}
 	~Class_base();
-	virtual IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
+	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true)
 	{
 		objAndLevel ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride);
@@ -126,7 +126,7 @@ class Class_object: public Class_base
 {
 private:
 	Class_object():Class_base("Class"){}
-	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		abort();
 	}
@@ -145,7 +145,7 @@ class Class_function: public Class_base
 private:
 	IFunction* f;
 	ASObject* asprototype;
-	IInterface* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		abort();
 	}
@@ -337,7 +337,7 @@ public:
 	virtual ~Undefined(){}
 };
 
-class ASString: public IInterface
+class ASString: public ASObject
 {
 private:
 	tiny_string toString_priv() const;
@@ -372,7 +372,7 @@ public:
 	bool isEqual(ASObject* r);
 };
 
-class ASQName: public IInterface
+class ASQName: public ASObject
 {
 friend class ABCContext;
 private:
@@ -384,7 +384,7 @@ public:
 	ASFUNCTION(_constructor);
 };
 
-class Namespace: public IInterface
+class Namespace: public ASObject
 {
 friend class ASQName;
 friend class ABCContext;
@@ -413,7 +413,7 @@ struct data_slot
 	explicit data_slot(intptr_t i):type(DATA_INT),data_i(i){}
 };
 
-class Array: public IInterface
+class Array: public ASObject
 {
 friend class ABCVm;
 protected:
@@ -604,7 +604,7 @@ public:
 	ASFUNCTION(load);
 };
 
-class Date: public IInterface
+class Date: public ASObject
 {
 private:
 	int year;
@@ -661,7 +661,7 @@ public:
 	void define(ASObject* g);
 };
 
-class Math: public IInterface
+class Math: public ASObject
 {
 public:
 	static void sinit(Class_base* c);
@@ -679,7 +679,7 @@ public:
 	ASFUNCTION(pow);
 };
 
-class RegExp: public IInterface
+class RegExp: public ASObject
 {
 friend class ASString;
 private:

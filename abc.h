@@ -593,7 +593,7 @@ private:
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent();
 
-	void buildClassAndInjectBase(const std::string& n, IInterface*, ASObject* const* a, const unsigned int argslen, bool isRoot);
+	void buildClassAndInjectBase(const std::string& n, ASObject*, ASObject* const* a, const unsigned int argslen, bool isRoot);
 
 	Manager* int_manager;
 	Manager* number_manager;

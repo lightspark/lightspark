@@ -30,7 +30,7 @@
 namespace lightspark
 {
 
-class URLRequest: public IInterface
+class URLRequest: public ASObject
 {
 friend class Loader;
 friend class URLLoader;
@@ -45,7 +45,7 @@ public:
 	ASFUNCTION(_setUrl);
 };
 
-class URLVariables: public IInterface
+class URLVariables: public ASObject
 {
 public:
 	static void sinit(Class_base*);
@@ -53,19 +53,19 @@ public:
 	bool toString_merge(tiny_string& ret);
 };
 
-class URLLoaderDataFormat: public IInterface
+class URLLoaderDataFormat: public ASObject
 {
 public:
 	static void sinit(Class_base*);
 };
 
-class SharedObject: public IInterface
+class SharedObject: public ASObject
 {
 public:
 	static void sinit(Class_base*);
 };
 
-class ObjectEncoding: public IInterface
+class ObjectEncoding: public ASObject
 {
 public:
 	static void sinit(Class_base*);

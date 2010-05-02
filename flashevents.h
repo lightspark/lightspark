@@ -35,7 +35,7 @@ enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CON
 class ASObject;
 class ABCContext;
 
-class Event: public IInterface
+class Event: public ASObject
 {
 public:
 	Event():type("Event"),target(NULL){}
@@ -208,7 +208,7 @@ public:
 	static void linkTraits(ASObject* o);
 };
 
-class EventDispatcher: public IInterface
+class EventDispatcher: public ASObject
 {
 private:
 	std::map<tiny_string,std::list<listener> > handlers;
@@ -233,10 +233,10 @@ class BindClassEvent: public Event
 {
 friend class ABCVm;
 private:
-	IInterface* base;
+	ASObject* base;
 	tiny_string class_name;
 public:
-	BindClassEvent(IInterface* b, const tiny_string& c):
+	BindClassEvent(ASObject* b, const tiny_string& c):
 		Event("bindClass"),base(b),class_name(c){}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType(){ return BIND_CLASS;}

@@ -25,7 +25,7 @@
 namespace lightspark
 {
 
-class Rectangle: public IInterface
+class Rectangle: public ASObject
 {
 public:
 	Rectangle():x(0),y(0),width(0),height(0){}
@@ -45,7 +45,7 @@ public:
 	const RECT getRect() const;
 };
 
-class Point: public IInterface
+class Point: public ASObject
 {
 private:
 	number_t x,y;
@@ -58,7 +58,7 @@ public:
 	ASFUNCTION(_getY);
 };
 
-class ColorTransform: public IInterface
+class ColorTransform: public ASObject
 {
 private:
 	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
@@ -70,7 +70,7 @@ public:
 	ASFUNCTION(getColor);
 };
 
-class Transform: public IInterface
+class Transform: public ASObject
 {
 public:
 	static void sinit(Class_base* c);

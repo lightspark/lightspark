@@ -204,7 +204,7 @@ bool ASObject::nextValue(unsigned int index, ASObject*& out)
 	return false;
 }
 
-void IInterface::buildTraits(ASObject* o)
+void ASObject::buildTraits(ASObject* o)
 {
 	if(o->getActualPrototype()->class_name!="IInterface")
 		LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->getActualPrototype()->class_name);
@@ -1720,14 +1720,6 @@ variables_map::~variables_map()
 }
 
 ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),implEnable(true),prototype(NULL)
-{
-#ifndef NDEBUG
-	//Stuff only used in debugging
-	initialized=false;
-#endif
-}
-
-ASObject::ASObject(IInterface* i):type(T_OBJECT),ref_count(1),manager(NULL),cur_level(0),implEnable(true),prototype(NULL)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging

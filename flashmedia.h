@@ -28,7 +28,7 @@
 namespace lightspark
 {
 
-class SoundTransform: public IInterface
+class SoundTransform: public ASObject
 {
 public:
 	static void sinit(Class_base*);

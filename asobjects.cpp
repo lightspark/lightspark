@@ -45,7 +45,7 @@ extern TLSDATA SystemState* sys;
 REGISTER_CLASS_NAME(Array);
 REGISTER_CLASS_NAME2(ASQName,"QName");
 REGISTER_CLASS_NAME(Namespace);
-REGISTER_CLASS_NAME(IInterface);
+REGISTER_CLASS_NAME(ASObject);
 REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
 REGISTER_CLASS_NAME(Math);
@@ -1659,9 +1659,9 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 }
 
 
-IInterface* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 {
-	IInterface* ret=NULL;
+	ASObject* ret=NULL;
 	if(tag)
 		ret=tag->instance();
 	else

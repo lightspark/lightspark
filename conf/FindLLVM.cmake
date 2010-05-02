@@ -39,25 +39,26 @@ else (LLVM_INCLUDE_DIR)
     NAMES llvm-config
     PATHS
     /opt/local/bin
-    /opt/llvm/2.6/bin
+    /opt/llvm/2.7/bin
     /opt/llvm/bin
+    /usr/lib/llvm-2.7/bin
     )
 
   find_program(LLVM_GCC_EXECUTABLE
     NAMES llvm-gcc llvmgcc
     PATHS
     /opt/local/bin
-    /opt/llvm/2.6/bin
+    /opt/llvm/2.7/bin
     /opt/llvm/bin
     /Developer/usr/bin
-    /usr/lib/llvm/llvm/gcc-4.2/bin
+    /usr/lib/llvm-2.7/llvm/gcc-4.2/bin
     )
 
   find_program(LLVM_GXX_EXECUTABLE
     NAMES llvm-g++ llvmg++
     PATHS
     /opt/local/bin
-    /opt/llvm/2.6/bin
+    /opt/llvm/2.7/bin
     /opt/llvm/bin
     /Developer/usr/bin
     /usr/lib/llvm/llvm/gcc-4.2/bin

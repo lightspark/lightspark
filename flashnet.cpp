@@ -52,7 +52,7 @@ void URLRequest::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(URLRequest,_constructor)
 {
-	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
+	URLRequest* th=static_cast<URLRequest*>(obj);
 	if(argslen>0 && args[0]->getObjectType()==T_STRING)
 		th->url=args[0]->toString();
 	return NULL;
@@ -60,14 +60,14 @@ ASFUNCTIONBODY(URLRequest,_constructor)
 
 ASFUNCTIONBODY(URLRequest,_setUrl)
 {
-	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
+	URLRequest* th=static_cast<URLRequest*>(obj);
 	th->url=args[0]->toString();
 	return NULL;
 }
 
 ASFUNCTIONBODY(URLRequest,_getUrl)
 {
-	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
+	URLRequest* th=static_cast<URLRequest*>(obj);
 	return Class<ASString>::getInstanceS(th->url);
 }
 
@@ -98,10 +98,10 @@ ASFUNCTIONBODY(URLLoader,_constructor)
 
 ASFUNCTIONBODY(URLLoader,load)
 {
-	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
+	URLLoader* th=static_cast<URLLoader*>(obj);
 	ASObject* arg=args[0];
 	assert(arg->prototype==Class<URLRequest>::getClass());
-	URLRequest* urlRequest=static_cast<URLRequest*>(arg->implementation);
+	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
 	th->url=urlRequest->url;
 	ASObject* data=arg->getVariableByQName("data","").obj;
 	if(data)
@@ -164,13 +164,13 @@ void URLLoader::execute()
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
 {
-	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
+	URLLoader* th=static_cast<URLLoader*>(obj);
 	return Class<ASString>::getInstanceS(th->dataFormat);
 }
 
 ASFUNCTIONBODY(URLLoader,_getData)
 {
-	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
+	URLLoader* th=static_cast<URLLoader*>(obj);
 	if(th->data==NULL)
 		return new Undefined;
 	
@@ -180,7 +180,7 @@ ASFUNCTIONBODY(URLLoader,_getData)
 
 ASFUNCTIONBODY(URLLoader,_setDataFormat)
 {
-	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
+	URLLoader* th=static_cast<URLLoader*>(obj);
 	assert(args[0]);
 	th->dataFormat=args[0]->toString();
 	return NULL;
@@ -223,7 +223,7 @@ void NetConnection::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(NetConnection,connect)
 {
-	NetConnection* th=Class<NetConnection>::cast(obj->implementation);
+	NetConnection* th=Class<NetConnection>::cast(obj);
 	assert(argslen==1);
 	if(args[0]->getObjectType()!=T_UNDEFINED)
 	{
@@ -271,14 +271,14 @@ ASFUNCTIONBODY(NetStream,_constructor)
 	assert(argslen==1);
 	assert(args[0]->prototype==Class<NetConnection>::getClass());
 
-	NetConnection* netConnection = Class<NetConnection>::cast(args[0]->implementation);
+	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
 	assert(netConnection->isFMS==false);
 	return NULL;
 }
 
 ASFUNCTIONBODY(NetStream,play)
 {
-	NetStream* th=Class<NetStream>::cast(obj->implementation);
+	NetStream* th=Class<NetStream>::cast(obj);
 	assert(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
 	th->url = arg0;
@@ -289,7 +289,7 @@ ASFUNCTIONBODY(NetStream,play)
 
 ASFUNCTIONBODY(NetStream,close)
 {
-	NetStream* th=Class<NetStream>::cast(obj->implementation);
+	NetStream* th=Class<NetStream>::cast(obj);
 	if(th->downloader)
 		th->downloader->stop();
 	th->abort();
@@ -513,6 +513,7 @@ ASFUNCTIONBODY(URLVariables,_constructor)
 
 bool URLVariables::toString_merge(tiny_string& ret)
 {
+	assert(implEnable);
 	//Should urlencode
 	::abort();
 	int size=numVariables();

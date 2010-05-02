@@ -64,13 +64,13 @@ bool TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 
 ASFUNCTIONBODY(TextField,_getWidth)
 {
-	TextField* th=Class<TextField>::cast(obj->implementation);
+	TextField* th=Class<TextField>::cast(obj);
 	return abstract_i(th->width);
 }
 
 ASFUNCTIONBODY(TextField,_setWidth)
 {
-	TextField* th=Class<TextField>::cast(obj->implementation);
+	TextField* th=Class<TextField>::cast(obj);
 	assert(argslen==1);
 	th->width=args[0]->toInt();
 	return NULL;
@@ -78,13 +78,13 @@ ASFUNCTIONBODY(TextField,_setWidth)
 
 ASFUNCTIONBODY(TextField,_getHeight)
 {
-	TextField* th=Class<TextField>::cast(obj->implementation);
+	TextField* th=Class<TextField>::cast(obj);
 	return abstract_i(th->height);
 }
 
 ASFUNCTIONBODY(TextField,_setHeight)
 {
-	TextField* th=Class<TextField>::cast(obj->implementation);
+	TextField* th=Class<TextField>::cast(obj);
 	assert(argslen==1);
 	th->height=args[0]->toInt();
 	return NULL;

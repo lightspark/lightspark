@@ -73,7 +73,7 @@ void LoaderInfo::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(LoaderInfo,_constructor)
 {
-	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
 	th->sharedEvents=Class<EventDispatcher>::getInstanceS();
 	return NULL;
@@ -81,32 +81,32 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 
 ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
 {
-	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	return Class<ASString>::getInstanceS(th->loaderURL);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
 {
-	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	th->sharedEvents->incRef();
 	return th->sharedEvents;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getUrl)
 {
-	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	return Class<ASString>::getInstanceS(th->url);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytesLoaded)
 {
-	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	return abstract_i(th->bytesLoaded);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 {
-	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
+	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	return abstract_i(th->bytesTotal);
 }
 
@@ -117,7 +117,7 @@ ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 
 ASFUNCTIONBODY(Loader,_constructor)
 {
-	Loader* th=static_cast<Loader*>(obj->implementation);
+	Loader* th=static_cast<Loader*>(obj);
 	DisplayObjectContainer::_constructor(obj,NULL,0);
 	th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS();
 	return NULL;
@@ -125,14 +125,14 @@ ASFUNCTIONBODY(Loader,_constructor)
 
 ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
 {
-	Loader* th=static_cast<Loader*>(obj->implementation);
+	Loader* th=static_cast<Loader*>(obj);
 	th->contentLoaderInfo->incRef();
 	return th->contentLoaderInfo;
 }
 
 ASFUNCTIONBODY(Loader,load)
 {
-	Loader* th=static_cast<Loader*>(obj->implementation);
+	Loader* th=static_cast<Loader*>(obj);
 /*	if(th->loading)
 		return NULL;
 	th->loading=true;*/
@@ -142,7 +142,7 @@ ASFUNCTIONBODY(Loader,load)
 		LOG(ERROR,"ArgumentError");
 		abort();
 	}*/
-	URLRequest* r=static_cast<URLRequest*>(args[0]->implementation);
+	URLRequest* r=static_cast<URLRequest*>(args[0]);
 	th->url=r->url;
 	th->source=URL;
 	sys->addJob(th);
@@ -151,13 +151,13 @@ ASFUNCTIONBODY(Loader,load)
 
 ASFUNCTIONBODY(Loader,loadBytes)
 {
-	Loader* th=static_cast<Loader*>(obj->implementation);
+	Loader* th=static_cast<Loader*>(obj);
 	if(th->loading)
 		return NULL;
 	//Find the actual ByteArray object
 	assert(argslen>=1);
 	assert(args[0]->prototype->isSubClass(Class<ByteArray>::getClass()));
-	th->bytes=static_cast<ByteArray*>(args[0]->implementation);
+	th->bytes=static_cast<ByteArray*>(args[0]);
 	if(th->bytes->bytes)
 	{
 		th->loading=true;
@@ -394,7 +394,7 @@ ASFUNCTIONBODY(Sprite,_constructor)
 
 ASFUNCTIONBODY(Sprite,_getGraphics)
 {
-	Sprite* th=static_cast<Sprite*>(obj->implementation);
+	Sprite* th=static_cast<Sprite*>(obj);
 	//Probably graphics is not used often, so create it here
 	if(th->graphics==NULL)
 		th->graphics=Class<Graphics>::getInstanceS();
@@ -485,14 +485,14 @@ ASFUNCTIONBODY(MovieClip,swapDepths)
 
 ASFUNCTIONBODY(MovieClip,stop)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	MovieClip* th=static_cast<MovieClip*>(obj);
 	th->state.stop_FP=true;
 	return NULL;
 }
 
 ASFUNCTIONBODY(MovieClip,nextFrame)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	MovieClip* th=static_cast<MovieClip*>(obj);
 	assert(th->state.FP<th->state.max_FP);
 	sys->currentVm->addEvent(NULL,new FrameChangeEvent(th->state.FP+1,th));
 	return NULL;
@@ -500,21 +500,21 @@ ASFUNCTIONBODY(MovieClip,nextFrame)
 
 ASFUNCTIONBODY(MovieClip,_getFramesLoaded)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based
 	return new Integer(th->framesLoaded);
 }
 
 ASFUNCTIONBODY(MovieClip,_getTotalFrames)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based
 	return new Integer(th->totalFrames);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 {
-	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based
 	return new Integer(th->state.FP+1);
 }
@@ -761,7 +761,7 @@ ASFUNCTIONBODY(DisplayObject,_getMask)
 
 ASFUNCTIONBODY(DisplayObject,_getScaleX)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	if(th->useMatrix)
 		return abstract_d(th->Matrix.ScaleX);
 	else
@@ -770,7 +770,7 @@ ASFUNCTIONBODY(DisplayObject,_getScaleX)
 
 ASFUNCTIONBODY(DisplayObject,_setScaleX)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert(argslen==1);
 	number_t val=args[0]->toNumber();
 	if(th->useMatrix)
@@ -784,7 +784,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleX)
 
 ASFUNCTIONBODY(DisplayObject,_getScaleY)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	if(th->useMatrix)
 		return abstract_d(th->Matrix.ScaleY);
 	else
@@ -793,7 +793,7 @@ ASFUNCTIONBODY(DisplayObject,_getScaleY)
 
 ASFUNCTIONBODY(DisplayObject,_setScaleY)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert(argslen==1);
 	number_t val=args[0]->toNumber();
 	if(th->useMatrix)
@@ -807,7 +807,7 @@ ASFUNCTIONBODY(DisplayObject,_setScaleY)
 
 ASFUNCTIONBODY(DisplayObject,_getX)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	if(th->useMatrix)
 		return abstract_d(th->Matrix.TranslateX);
 	else
@@ -816,7 +816,7 @@ ASFUNCTIONBODY(DisplayObject,_getX)
 
 ASFUNCTIONBODY(DisplayObject,_setX)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert(argslen==1);
 	number_t val=args[0]->toNumber();
 	if(th->useMatrix)
@@ -830,7 +830,7 @@ ASFUNCTIONBODY(DisplayObject,_setX)
 
 ASFUNCTIONBODY(DisplayObject,_getY)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	if(th->useMatrix)
 		return abstract_d(th->Matrix.TranslateY);
 	else
@@ -839,7 +839,7 @@ ASFUNCTIONBODY(DisplayObject,_getY)
 
 ASFUNCTIONBODY(DisplayObject,_setY)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert(argslen==1);
 	number_t val=args[0]->toNumber();
 	if(th->useMatrix)
@@ -853,7 +853,7 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 
 ASFUNCTIONBODY(DisplayObject,_getBounds)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert(argslen==1);
 
 	Rectangle* ret=Class<Rectangle>::getInstanceS();
@@ -888,7 +888,7 @@ ASFUNCTIONBODY(DisplayObject,_constructor)
 
 ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	if(th->loaderInfo)
 	{
 		th->loaderInfo->incRef();
@@ -907,25 +907,25 @@ ASFUNCTIONBODY(DisplayObject,_getStage)
 
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getBlendMode)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,localToGlobal)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_setRotation)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	assert(argslen==1);
 	number_t val=args[0]->toNumber();
 	if(th->useMatrix)
@@ -939,19 +939,19 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 
 ASFUNCTIONBODY(DisplayObject,_setName)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj);
 	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getName)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	//DisplayObject* th=static_cast<DisplayObject*>(obj);
 	return new Undefined;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getParent)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	if(th->parent==NULL)
 		return new Undefined;
 
@@ -961,7 +961,7 @@ ASFUNCTIONBODY(DisplayObject,_getParent)
 
 ASFUNCTIONBODY(DisplayObject,_getRoot)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	if(th->root)
 	{
 		th->root->incRef();
@@ -973,7 +973,7 @@ ASFUNCTIONBODY(DisplayObject,_getRoot)
 
 ASFUNCTIONBODY(DisplayObject,_getRotation)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	//There is no easy way to get rotation from matrix, let's ignore the matrix
 	if(th->useMatrix)
 	{
@@ -1007,14 +1007,14 @@ int DisplayObject::computeWidth()
 
 ASFUNCTIONBODY(DisplayObject,_getWidth)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	int ret=th->computeWidth();
 	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setWidth)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	int newwidth=args[0]->toInt();
 	//Should actually scale the object
 	int computed=th->computeWidth();
@@ -1037,14 +1037,14 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 
 ASFUNCTIONBODY(DisplayObject,_getHeight)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	int ret=th->computeHeight();;
 	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setHeight)
 {
-	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
 	int newheight=args[0]->toInt();
 	//Should actually scale the object
 	int computed=th->computeHeight();
@@ -1096,7 +1096,7 @@ InteractiveObject::InteractiveObject():id(0)
 
 ASFUNCTIONBODY(InteractiveObject,_constructor)
 {
-	InteractiveObject* th=static_cast<InteractiveObject*>(obj->implementation);
+	InteractiveObject* th=static_cast<InteractiveObject*>(obj);
 	EventDispatcher::_constructor(obj,NULL,0);
 	assert(th->id==0);
 	//Object registered very early are not supported this way (Stage for example)
@@ -1162,7 +1162,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 
 ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 {
-	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	return abstract_i(th->dynamicDisplayList.size());
 }
 
@@ -1230,13 +1230,13 @@ bool DisplayObjectContainer::_contains(DisplayObject* d)
 
 ASFUNCTIONBODY(DisplayObjectContainer,contains)
 {
-	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==1);
 	//Validate object type
 	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
-	DisplayObject* d=static_cast<DisplayObject*>(args[0]->implementation);
+	DisplayObject* d=static_cast<DisplayObject*>(args[0]);
 
 	bool ret=th->_contains(d);
 	return abstract_b(ret);
@@ -1245,7 +1245,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 //Only from VM context
 ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 {
-	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==2);
 	//Validate object type
 	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
@@ -1254,7 +1254,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	int index=args[1]->toInt();
 
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args[0]->implementation);
+	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 	th->_addChildAt(d,index);
 
 	//Notify the object
@@ -1266,14 +1266,14 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 
 ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 {
-	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==1);
 	//Validate object type
 	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
 	args[0]->incRef();
 
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args[0]->implementation);
+	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
@@ -1286,12 +1286,12 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 //Only from VM context
 ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 {
-	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==1);
 	//Validate object type
 	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
 	//Cast to object
-	DisplayObject* d=Class<DisplayObject>::cast(args[0]->implementation);
+	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 
 	th->_removeChild(d);
 
@@ -1302,7 +1302,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 //Only from VM context
 ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 {
-	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==1);
 	unsigned int index=args[0]->toInt();
 	assert(index<th->dynamicDisplayList.size());
@@ -1317,13 +1317,13 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 //Only from VM context
 ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 {
-	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj->implementation);
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==1);
 	//Validate object type
 	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
-	DisplayObject* d=static_cast<DisplayObject*>(args[0]->implementation);
+	DisplayObject* d=static_cast<DisplayObject*>(args[0]);
 
 	list<IDisplayListElem*>::const_iterator it=th->dynamicDisplayList.begin();
 	int ret=0;
@@ -1404,7 +1404,7 @@ ASFUNCTIONBODY(Shape,_constructor)
 
 ASFUNCTIONBODY(Shape,_getGraphics)
 {
-	Shape* th=static_cast<Shape*>(obj->implementation);
+	Shape* th=static_cast<Shape*>(obj);
 	//Probably graphics is not used often, so create it here
 	if(th->graphics==NULL)
 		th->graphics=Class<Graphics>::getInstanceS();
@@ -1509,7 +1509,7 @@ ASFUNCTIONBODY(Graphics,_constructor)
 
 ASFUNCTIONBODY(Graphics,clear)
 {
-	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	Graphics* th=static_cast<Graphics*>(obj);
 	sem_wait(&th->geometry_mutex);
 	th->geometry.clear();
 	sem_post(&th->geometry_mutex);
@@ -1520,7 +1520,7 @@ ASFUNCTIONBODY(Graphics,clear)
 
 ASFUNCTIONBODY(Graphics,moveTo)
 {
-	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	Graphics* th=static_cast<Graphics*>(obj);
 	assert(argslen==2);
 
 	//As we are moving, first of all flush the shape
@@ -1533,7 +1533,7 @@ ASFUNCTIONBODY(Graphics,moveTo)
 
 ASFUNCTIONBODY(Graphics,lineTo)
 {
-	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	Graphics* th=static_cast<Graphics*>(obj);
 	assert(argslen==2);
 
 	int x=args[0]->toInt();
@@ -1567,7 +1567,7 @@ void Graphics::flushShape(bool keepStyle)
 
 ASFUNCTIONBODY(Graphics,drawCircle)
 {
-	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	Graphics* th=static_cast<Graphics*>(obj);
 	assert(argslen==3);
 
 	double x=args[0]->toNumber();
@@ -1590,7 +1590,7 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 
 ASFUNCTIONBODY(Graphics,drawRect)
 {
-	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	Graphics* th=static_cast<Graphics*>(obj);
 	assert(argslen==4);
 
 	int x=args[0]->toInt();
@@ -1631,7 +1631,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 
 ASFUNCTIONBODY(Graphics,beginGradientFill)
 {
-	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	Graphics* th=static_cast<Graphics*>(obj);
 	th->styles.push_back(FILLSTYLE());
 	th->styles.back().FillStyleType=0x00;
 	uint32_t color=0;
@@ -1639,7 +1639,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 	if(argslen>=2) //Colors
 	{
 		assert(args[1]->getObjectType()==T_ARRAY);
-		Array* ar=Class<Array>::cast(args[1]->implementation);
+		Array* ar=Class<Array>::cast(args[1]);
 		assert(ar->size()>=1);
 		color=ar->at(0)->toUInt();
 	}
@@ -1650,7 +1650,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 
 ASFUNCTIONBODY(Graphics,beginFill)
 {
-	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	Graphics* th=static_cast<Graphics*>(obj);
 	th->styles.push_back(FILLSTYLE());
 	th->styles.back().FillStyleType=0x00;
 	uint32_t color=0;
@@ -1666,7 +1666,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 
 ASFUNCTIONBODY(Graphics,endFill)
 {
-	Graphics* th=static_cast<Graphics*>(obj->implementation);
+	Graphics* th=static_cast<Graphics*>(obj);
 	assert(th->tmpShape.color);
 	if(!th->tmpShape.outline.empty())
 	{

@@ -63,7 +63,7 @@ const RECT Rectangle::getRect() const
 
 ASFUNCTIONBODY(Rectangle,_constructor)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 
 	if(argslen>=1)
 		th->x=args[0]->toInt();
@@ -79,25 +79,25 @@ ASFUNCTIONBODY(Rectangle,_constructor)
 
 ASFUNCTIONBODY(Rectangle,_getLeft)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 	return abstract_d(th->x);
 }
 
 ASFUNCTIONBODY(Rectangle,_getRight)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 	return abstract_d(th->x + th->width);
 }
 
 ASFUNCTIONBODY(Rectangle,_getWidth)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 	return abstract_d(th->width);
 }
 
 ASFUNCTIONBODY(Rectangle,_setWidth)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 	assert(argslen==1);
 	th->width=args[0]->toNumber();
 	return NULL;
@@ -105,25 +105,25 @@ ASFUNCTIONBODY(Rectangle,_setWidth)
 
 ASFUNCTIONBODY(Rectangle,_getTop)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 	return abstract_d(th->y);
 }
 
 ASFUNCTIONBODY(Rectangle,_getBottom)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 	return abstract_d(th->y + th->height);
 }
 
 ASFUNCTIONBODY(Rectangle,_getHeight)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 	return abstract_d(th->height);
 }
 
 ASFUNCTIONBODY(Rectangle,_setHeight)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 	assert(argslen==1);
 	th->height=args[0]->toNumber();
 	return NULL;
@@ -131,7 +131,7 @@ ASFUNCTIONBODY(Rectangle,_setHeight)
 
 ASFUNCTIONBODY(Rectangle,clone)
 {
-	Rectangle* th=static_cast<Rectangle*>(obj->implementation);
+	Rectangle* th=static_cast<Rectangle*>(obj);
 	Rectangle* ret=Class<Rectangle>::getInstanceS();
 	ret->x=th->x;
 	ret->y=th->y;
@@ -147,7 +147,7 @@ void ColorTransform::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ColorTransform,_constructor)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj->implementation);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
 	if(argslen!=0)
 		abort();
 	//Setting multiplier to default
@@ -165,7 +165,7 @@ ASFUNCTIONBODY(ColorTransform,_constructor)
 
 ASFUNCTIONBODY(ColorTransform,setColor)
 {
-	ColorTransform* th=static_cast<ColorTransform*>(obj->implementation);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
 	if(argslen!=1)
 		abort();
 	uintptr_t tmp=args[0]->toInt();
@@ -201,7 +201,7 @@ void Point::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Point,_constructor)
 {
-	Point* th=static_cast<Point*>(obj->implementation);
+	Point* th=static_cast<Point*>(obj);
 	if(argslen>=1)
 		th->x=args[0]->toInt();
 	if(argslen>=2)
@@ -212,13 +212,13 @@ ASFUNCTIONBODY(Point,_constructor)
 
 ASFUNCTIONBODY(Point,_getX)
 {
-	Point* th=static_cast<Point*>(obj->implementation);
+	Point* th=static_cast<Point*>(obj);
 	return abstract_d(th->x);
 }
 
 ASFUNCTIONBODY(Point,_getY)
 {
-	Point* th=static_cast<Point*>(obj->implementation);
+	Point* th=static_cast<Point*>(obj);
 	return abstract_d(th->y);
 }
 

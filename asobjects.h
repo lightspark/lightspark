@@ -319,7 +319,7 @@ private:
 	bool val;
 public:
 	Boolean(bool v):val(v){type=T_BOOLEAN;}
-	int32_t toInt() const
+	int32_t toInt()
 	{
 		return val;
 	}
@@ -487,6 +487,7 @@ public:
 	bool hasNext(unsigned int& index, bool& out);
 	bool nextName(unsigned int index, ASObject*& out)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool nextValue(unsigned int index, ASObject*& out);
@@ -512,11 +513,11 @@ public:
 	ASFUNCTION(_toString);
 	virtual ~Integer(){}
 	tiny_string toString(bool debugMsg);
-	int32_t toInt() const
+	int32_t toInt()
 	{
 		return val;
 	}
-	double toNumber() const
+	double toNumber()
 	{
 		return val;
 	}
@@ -533,15 +534,15 @@ public:
 
 	static void sinit(Class_base* c);
 	tiny_string toString(bool debugMsg);
-	int32_t toInt() const
+	int32_t toInt()
 	{
 		return val;
 	}
-	uint32_t toUInt() const
+	uint32_t toUInt()
 	{
 		return val;
 	}
-	double toNumber() const
+	double toNumber()
 	{
 		return val;
 	}
@@ -559,11 +560,11 @@ public:
 	Number(double v):val(v){type=T_NUMBER;}
 	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
 	tiny_string toString(bool debugMsg);
-	unsigned int toUInt() const
+	unsigned int toUInt()
 	{
 		return (unsigned int)(val);
 	}
-	int32_t toInt() const
+	int32_t toInt()
 	{
 		if(val<0)
 			return int(val);
@@ -573,7 +574,7 @@ public:
 			return ret;
 		}
 	}
-	double toNumber() const
+	double toNumber()
 	{
 		return val;
 	}
@@ -613,7 +614,7 @@ private:
 	int minute;
 	int second;
 	int millisecond;
-	int32_t toInt() const;
+	int32_t toInt();
 public:
 	Date();
 	static void sinit(Class_base*);

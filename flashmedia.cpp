@@ -142,7 +142,7 @@ bool Video::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& 
 
 ASFUNCTIONBODY(Video,_constructor)
 {
-	Video* th=Class<Video>::cast(obj->implementation);
+	Video* th=Class<Video>::cast(obj);
 	assert(argslen<2);
 	if(0 < argslen)
 		th->width=args[0]->toInt();
@@ -153,25 +153,25 @@ ASFUNCTIONBODY(Video,_constructor)
 
 ASFUNCTIONBODY(Video,_getVideoWidth)
 {
-	Video* th=Class<Video>::cast(obj->implementation);
+	Video* th=Class<Video>::cast(obj);
 	return abstract_i(th->videoWidth);
 }
 
 ASFUNCTIONBODY(Video,_getVideoHeight)
 {
-	Video* th=Class<Video>::cast(obj->implementation);
+	Video* th=Class<Video>::cast(obj);
 	return abstract_i(th->videoHeight);
 }
 
 ASFUNCTIONBODY(Video,_getWidth)
 {
-	Video* th=Class<Video>::cast(obj->implementation);
+	Video* th=Class<Video>::cast(obj);
 	return abstract_i(th->width);
 }
 
 ASFUNCTIONBODY(Video,_setWidth)
 {
-	Video* th=Class<Video>::cast(obj->implementation);
+	Video* th=Class<Video>::cast(obj);
 	assert(argslen==1);
 	sem_wait(&th->mutex);
 	th->width=args[0]->toInt();
@@ -181,13 +181,13 @@ ASFUNCTIONBODY(Video,_setWidth)
 
 ASFUNCTIONBODY(Video,_getHeight)
 {
-	Video* th=Class<Video>::cast(obj->implementation);
+	Video* th=Class<Video>::cast(obj);
 	return abstract_i(th->height);
 }
 
 ASFUNCTIONBODY(Video,_setHeight)
 {
-	Video* th=Class<Video>::cast(obj->implementation);
+	Video* th=Class<Video>::cast(obj);
 	assert(argslen==1);
 	sem_wait(&th->mutex);
 	th->height=args[0]->toInt();
@@ -197,7 +197,7 @@ ASFUNCTIONBODY(Video,_setHeight)
 
 ASFUNCTIONBODY(Video,attachNetStream)
 {
-	Video* th=Class<Video>::cast(obj->implementation);
+	Video* th=Class<Video>::cast(obj);
 	assert(argslen==1);
 	//Validate the parameter
 	if(args[0]->prototype!=Class<NetStream>::getClass())
@@ -207,6 +207,6 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	args[0]->incRef();
 
 	assert(th->netStream==NULL);
-	th->netStream=Class<NetStream>::cast(args[0]->implementation);
+	th->netStream=Class<NetStream>::cast(args[0]);
 	return NULL;
 }

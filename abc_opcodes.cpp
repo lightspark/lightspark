@@ -338,7 +338,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			//HACK for Proxy, here till callProperty proxying is implemented
 			if(name->ns.size()==1 && name->ns[0].name==flash_proxy)
 			{
-				Proxy* p=dynamic_cast<Proxy*>(obj->implementation);
+				Proxy* p=dynamic_cast<Proxy*>(obj);
 				assert(p);
 				p->suppress=true;
 				ret=f->call(obj,args,m,o.level);
@@ -807,7 +807,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 			ASObject* ret;
 			if(name->ns.size()==1 && name->ns[0].name==flash_proxy)
 			{
-				Proxy* p=dynamic_cast<Proxy*>(obj->implementation);
+				Proxy* p=dynamic_cast<Proxy*>(obj);
 				assert(p);
 				p->suppress=true;
 				ret=f->call(obj,args,m,o.level);
@@ -961,7 +961,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	else if(val1->getObjectType()==T_ARRAY)
 	{
 		//Array concatenation
-		Array* ar=static_cast<Array*>(val1->implementation);
+		Array* ar=static_cast<Array*>(val1);
 		ar->push(val2);
 		return val1;
 	}
@@ -1938,11 +1938,11 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 	ASObject* obj=th->locals[n];
 	unsigned int cur_index=th->locals[m]->toUInt();
 
-	if(obj->implementation && obj->implEnable)
+	if(obj && obj->implEnable)
 	{
 		bool ret;
 		//cur_index is modified with the next index
-		if(obj->implementation->hasNext(cur_index,ret))
+		if(obj->hasNext(cur_index,ret))
 		{
 			if(ret)
 			{
@@ -2034,9 +2034,9 @@ ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 		throw UnsupportedException("Type mismatch in nextValue",sys->getOrigin().raw_buf());
 
 	ASObject* ret=NULL;
-	if(obj->implementation && obj->implEnable)
+	if(obj->implEnable)
 	{ 
-		if(obj->implementation->nextValue(index->toInt()-1,ret))
+		if(obj->nextValue(index->toInt()-1,ret))
 		{
 			obj->decRef();
 			index->decRef();
@@ -2059,9 +2059,9 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 		throw UnsupportedException("Type mismatch in nextName",sys->getOrigin().raw_buf());
 
 	ASObject* ret=NULL;
-	if(obj->implementation && obj->implEnable)
+	if(obj->implEnable)
 	{ 
-		if(obj->implementation->nextName(index->toInt()-1,ret))
+		if(obj->nextName(index->toInt()-1,ret))
 		{
 			obj->decRef();
 			index->decRef();

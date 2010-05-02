@@ -395,7 +395,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else if(rt1->getObjectType()==T_QNAME)
 				{
-					ASQName* qname=static_cast<ASQName*>(rt1->implementation);
+					ASQName* qname=static_cast<ASQName*>(rt1);
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -407,7 +407,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else if(rt1->getObjectType()==T_STRING)
 				{
-					ASString* o=static_cast<ASString*>(rt1->implementation);
+					ASString* o=static_cast<ASString*>(rt1);
 					ret->name_s=o->data;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -422,7 +422,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			case 0x0f: //RTQName
 			{
 				assert(rt1->prototype==Class<Namespace>::getClass());
-				Namespace* tmpns=static_cast<Namespace*>(rt1->implementation);
+				Namespace* tmpns=static_cast<Namespace*>(rt1);
 				//TODO: What is the right ns kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
 				ret->name_type=multiname::NAME_STRING;
@@ -481,7 +481,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else if(rt1->getObjectType()==T_QNAME)
 				{
-					ASQName* qname=static_cast<ASQName*>(rt1->implementation);
+					ASQName* qname=static_cast<ASQName*>(rt1);
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -493,7 +493,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else if(rt1->getObjectType()==T_STRING)
 				{
-					ASString* o=static_cast<ASString*>(rt1->implementation);
+					ASString* o=static_cast<ASString*>(rt1);
 					ret->name_s=o->data;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -518,7 +518,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				ret->ns.clear();
 
 				assert(rt1->prototype==Class<Namespace>::getClass());
-				Namespace* tmpns=static_cast<Namespace*>(rt1->implementation);
+				Namespace* tmpns=static_cast<Namespace*>(rt1);
 				//TODO: What is the right ns kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
 				rt1->decRef();
@@ -673,7 +673,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				}
 				else if(n->getObjectType()==T_QNAME)
 				{
-					ASQName* qname=static_cast<ASQName*>(n->implementation);
+					ASQName* qname=static_cast<ASQName*>(n);
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -685,7 +685,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				}
 				else if(n->getObjectType()==T_STRING)
 				{
-					ASString* o=static_cast<ASString*>(n->implementation);
+					ASString* o=static_cast<ASString*>(n);
 					ret->name_s=o->data;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -701,7 +701,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			{
 				ASObject* n=th->runtime_stack_pop();
 				assert(n->prototype==Class<Namespace>::getClass());
-				Namespace* tmpns=static_cast<Namespace*>(n->implementation);
+				Namespace* tmpns=static_cast<Namespace*>(n);
 				//TODO: What is the right ns kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
 				ret->name_type=multiname::NAME_STRING;
@@ -775,7 +775,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				}
 				else if(n->getObjectType()==T_QNAME)
 				{
-					ASQName* qname=static_cast<ASQName*>(n->implementation);
+					ASQName* qname=static_cast<ASQName*>(n);
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -787,7 +787,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				}
 				else if(n->getObjectType()==T_STRING)
 				{
-					ASString* o=static_cast<ASString*>(n->implementation);
+					ASString* o=static_cast<ASString*>(n);
 					ret->name_s=o->data;
 					ret->name_type=multiname::NAME_STRING;
 				}
@@ -806,7 +806,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				ret->ns.clear();
 
 				assert(n->prototype==Class<Namespace>::getClass());
-				Namespace* tmpns=static_cast<Namespace*>(n->implementation);
+				Namespace* tmpns=static_cast<Namespace*>(n);
 				//TODO: What is the right kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
 				n->decRef();
@@ -2188,7 +2188,7 @@ ASFUNCTIONBODY(lightspark,isNaN)
 
 ASFUNCTIONBODY(lightspark,unescape)
 {
-	ASString* th=static_cast<ASString*>(args[0]->implementation);
+	ASString* th=static_cast<ASString*>(args[0]);
 	string ret;
 	ret.reserve(th->data.size());
 	for(unsigned int i=0;i<th->data.size();i++)

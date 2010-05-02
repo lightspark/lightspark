@@ -80,7 +80,7 @@ void Array::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Array,_constructor)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 
 	if(argslen==1)
 	{
@@ -103,13 +103,13 @@ ASFUNCTIONBODY(Array,_constructor)
 
 ASFUNCTIONBODY(Array,_getLength)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	return abstract_i(th->data.size());
 }
 
 ASFUNCTIONBODY(Array,shift)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	if(th->data.empty())
 		return new Undefined;
 	ASObject* ret;
@@ -123,7 +123,7 @@ ASFUNCTIONBODY(Array,shift)
 
 ASFUNCTIONBODY(Array,splice)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	
 	assert(argslen==2);
 	
@@ -145,7 +145,7 @@ ASFUNCTIONBODY(Array,splice)
 
 ASFUNCTIONBODY(Array,join)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	ASObject* del=args[0];
 	string ret;
 	for(int i=0;i<th->size();i++)
@@ -159,7 +159,7 @@ ASFUNCTIONBODY(Array,join)
 
 ASFUNCTIONBODY(Array,indexOf)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	assert(argslen==1);
 	int ret=-1;
 	ASObject* arg0=args[0];
@@ -178,7 +178,7 @@ ASFUNCTIONBODY(Array,indexOf)
 ASFUNCTIONBODY(Array,filter)
 {
 	//TODO: really implement
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	//assert(th->data.size()==0);
 	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
 	Array* ret=Class<Array>::getInstanceS();
@@ -188,13 +188,13 @@ ASFUNCTIONBODY(Array,filter)
 
 ASFUNCTIONBODY(Array,_concat)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	Array* ret=Class<Array>::getInstanceS();
 	ret->data=th->data;
 	if(argslen>=1 && args[0]->getObjectType()==T_ARRAY)
 	{
 		assert(argslen==1);
-		Array* tmp=Class<Array>::cast(args[0]->implementation);
+		Array* tmp=Class<Array>::cast(args[0]);
 		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
 	}
 	else
@@ -218,7 +218,7 @@ ASFUNCTIONBODY(Array,_concat)
 
 ASFUNCTIONBODY(Array,_pop)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	ASObject* ret;
 	if(th->data.back().type==DATA_OBJECT)
 		ret=th->data.back().data;
@@ -230,7 +230,7 @@ ASFUNCTIONBODY(Array,_pop)
 
 ASFUNCTIONBODY(Array,_sort)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	if(th->data.size()>1)
 		throw UnsupportedException("Array::sort not completely implemented",sys->getOrigin().raw_buf());
 	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");
@@ -239,7 +239,7 @@ ASFUNCTIONBODY(Array,_sort)
 
 ASFUNCTIONBODY(Array,unshift)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	if(argslen!=1)
 	{
 		LOG(LOG_ERROR,"Multiple unshift");
@@ -252,7 +252,7 @@ ASFUNCTIONBODY(Array,unshift)
 
 ASFUNCTIONBODY(Array,_push)
 {
-	Array* th=static_cast<Array*>(obj->implementation);
+	Array* th=static_cast<Array*>(obj);
 	for(unsigned int i=0;i<argslen;i++)
 	{
 		th->push(args[i]);
@@ -306,11 +306,12 @@ ASFUNCTIONBODY(ASXML,load)
 
 bool Array::isEqual_merge(bool& ret, ASObject* r)
 {
+	assert(implEnable);
 	if(r->getObjectType()!=T_ARRAY)
 		ret=false;
 	else
 	{
-		const Array* ra=static_cast<const Array*>(r->implementation);
+		const Array* ra=static_cast<const Array*>(r);
 		int size=data.size();
 		if(size!=ra->size())
 			ret=false;
@@ -329,6 +330,7 @@ bool Array::isEqual_merge(bool& ret, ASObject* r)
 
 bool Array::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return false;
@@ -366,6 +368,7 @@ bool Array::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 
 bool Array::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return false;
@@ -395,6 +398,7 @@ bool Array::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 
 bool Array::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return false;
@@ -457,6 +461,7 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 
 bool Array::setVariableByMultiname_merge(const multiname& name, ASObject* o)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
 		return false;
@@ -509,6 +514,7 @@ bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, unsigne
 
 bool Array::setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!isValidQName(name,ns,index))
 		return false;
@@ -542,6 +548,7 @@ bool Array::setVariableByQName_merge(const tiny_string& name, const tiny_string&
 
 bool Array::getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 {
+	assert(implEnable);
 	throw UnsupportedException("Array::getVariableByQName not completely implemented",sys->getOrigin().raw_buf());
 	return NULL;
 /*	ASObject* ret;
@@ -601,7 +608,7 @@ ASString::ASString(const char* s):data(s)
 
 ASFUNCTIONBODY(ASString,_getLength)
 {
-	ASString* th=static_cast<ASString*>(obj->implementation);
+	ASString* th=static_cast<ASString*>(obj);
 	return abstract_i(th->data.size());
 }
 
@@ -636,12 +643,12 @@ Array::~Array()
 
 ASFUNCTIONBODY(ASString,split)
 {
-	ASString* th=static_cast<ASString*>(obj->implementation);
+	ASString* th=static_cast<ASString*>(obj);
 	Array* ret=Class<Array>::getInstanceS();
 	ASObject* delimiter=args[0];
 	if(delimiter->getObjectType()==T_STRING)
 	{
-		ASString* del=static_cast<ASString*>(delimiter->implementation);
+		ASString* del=static_cast<ASString*>(delimiter);
 		unsigned int start=0;
 		do
 		{
@@ -662,7 +669,7 @@ ASFUNCTIONBODY(ASString,split)
 
 ASFUNCTIONBODY(ASString,substr)
 {
-	ASString* th=static_cast<ASString*>(obj->implementation);
+	ASString* th=static_cast<ASString*>(obj);
 	int start=args[0]->toInt();
 	if(start<0)
 		start=th->data.size()+start;
@@ -676,6 +683,7 @@ ASFUNCTIONBODY(ASString,substr)
 
 bool Array::toString_merge(tiny_string& ret)
 {
+	assert(implEnable);
 	ret=toString_priv();
 	return true;
 }
@@ -707,6 +715,7 @@ tiny_string Array::toString_priv() const
 
 bool Array::nextValue(unsigned int index, ASObject*& out)
 {
+	assert(implEnable);
 	assert(index<data.size());
 	assert(data[index].type==DATA_OBJECT);
 	out=data[index].data;
@@ -715,6 +724,7 @@ bool Array::nextValue(unsigned int index, ASObject*& out)
 
 bool Array::hasNext(unsigned int& index, bool& out)
 {
+	assert(implEnable);
 	out=index<data.size();
 	index++;
 	return true;
@@ -737,12 +747,14 @@ tiny_string ASString::toString_priv() const
 
 bool ASString::toString_merge(tiny_string& ret)
 {
+	assert(implEnable);
 	ret=toString_priv();
 	return true;
 }
 
 bool ASString::toNumber_merge(double& ret)
 {
+	assert(implEnable);
 	//TODO: implemented conversion that checks for validity
 	ret=atof(data.c_str());
 	return true;
@@ -761,9 +773,10 @@ tiny_string Undefined::toString(bool debugMsg)
 
 bool ASString::isEqual_merge(bool& ret, ASObject* r)
 {
+	assert(implEnable);
 	if(r->getObjectType()==T_STRING)
 	{
-		const ASString* s=static_cast<const ASString*>(r->implementation);
+		const ASString* s=static_cast<const ASString*>(r);
 		if(s->data==data)
 			ret=true;
 		else
@@ -777,6 +790,7 @@ bool ASString::isEqual_merge(bool& ret, ASObject* r)
 
 bool ASString::isLess_merge(bool& ret, ASObject* o)
 {
+	assert(implEnable);
 	//TODO: Implement ECMA-262 11.8.5 algorithm
 	//Number comparison has the priority over strings
 	if(o->getObjectType()==T_INTEGER)
@@ -840,17 +854,17 @@ bool Integer::isLess(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
-		const Integer* i=static_cast<const Integer*>(o);
+		Integer* i=static_cast<Integer*>(o);
 		return val < i->toInt();
 	}
 	else if(o->getObjectType()==T_NUMBER)
 	{
-		const Number* i=static_cast<const Number*>(o);
+		Number* i=static_cast<Number*>(o);
 		return val < i->toNumber();
 	}
 	else if(o->getObjectType()==T_STRING)
 	{
-		const ASString* s=static_cast<const ASString*>(o->implementation);
+		const ASString* s=static_cast<const ASString*>(o);
 		//Check if the string may be converted to integer
 		//TODO: check whole string?
 		if(isdigit(s->data[0]))
@@ -987,7 +1001,7 @@ void Date::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Date,_constructor)
 {
-	Date* th=static_cast<Date*>(obj->implementation);
+	Date* th=static_cast<Date*>(obj);
 	th->year=1969;
 	th->month=1;
 	th->date=1;
@@ -1006,41 +1020,42 @@ ASFUNCTIONBODY(Date,getTimezoneOffset)
 
 ASFUNCTIONBODY(Date,getFullYear)
 {
-	Date* th=static_cast<Date*>(obj->implementation);
+	Date* th=static_cast<Date*>(obj);
 	return new Number(th->year);
 }
 
 ASFUNCTIONBODY(Date,getHours)
 {
-	Date* th=static_cast<Date*>(obj->implementation);
+	Date* th=static_cast<Date*>(obj);
 	return new Number(th->hour);
 }
 
 ASFUNCTIONBODY(Date,getMinutes)
 {
-	Date* th=static_cast<Date*>(obj->implementation);
+	Date* th=static_cast<Date*>(obj);
 	return new Number(th->minute);
 }
 
 ASFUNCTIONBODY(Date,getTime)
 {
-	Date* th=static_cast<Date*>(obj->implementation);
+	Date* th=static_cast<Date*>(obj);
 	return new Number(th->toInt());
 }
 
 ASFUNCTIONBODY(Date,valueOf)
 {
-	Date* th=static_cast<Date*>(obj->implementation);
+	Date* th=static_cast<Date*>(obj);
 	return new Number(th->toInt());
 }
 
 bool Date::toInt_merge(int& ret)
 {
+	assert(implEnable);
 	ret=toInt();
 	return true;
 }
 
-int Date::toInt() const
+int Date::toInt()
 {
 	int ret=0;
 	//TODO: leap year
@@ -1057,6 +1072,7 @@ int Date::toInt() const
 
 bool Date::toString_merge(tiny_string& ret)
 {
+	assert(implEnable);
 	ret=toString_priv();
 	return true;
 }
@@ -1088,7 +1104,7 @@ ASFUNCTIONBODY(IFunction,apply)
 
 	//Validate parameters
 	assert(args[1]->getObjectType()==T_ARRAY);
-	Array* array=Class<Array>::cast(args[1]->implementation);
+	Array* array=Class<Array>::cast(args[1]);
 
 	int len=array->size();
 	ASObject** new_args=new ASObject*[len];
@@ -1346,7 +1362,7 @@ void RegExp::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(RegExp,_constructor)
 {
-	RegExp* th=static_cast<RegExp*>(obj->implementation);
+	RegExp* th=static_cast<RegExp*>(obj);
 	th->re=args[0]->toString().raw_buf();
 	if(argslen>1)
 	{
@@ -1374,13 +1390,13 @@ ASFUNCTIONBODY(RegExp,_constructor)
 
 ASFUNCTIONBODY(RegExp,_getGlobal)
 {
-	RegExp* th=static_cast<RegExp*>(obj->implementation);
+	RegExp* th=static_cast<RegExp*>(obj);
 	return abstract_b(th->global);
 }
 
 ASFUNCTIONBODY(RegExp,exec)
 {
-	RegExp* th=static_cast<RegExp*>(obj->implementation);
+	RegExp* th=static_cast<RegExp*>(obj);
 	pcrecpp::RE_Options opt;
 	opt.set_caseless(th->ignoreCase);
 
@@ -1411,7 +1427,7 @@ ASFUNCTIONBODY(RegExp,exec)
 
 ASFUNCTIONBODY(RegExp,test)
 {
-	RegExp* th=static_cast<RegExp*>(obj->implementation);
+	RegExp* th=static_cast<RegExp*>(obj);
 	pcrecpp::RE_Options opt;
 	opt.set_caseless(th->ignoreCase);
 
@@ -1425,7 +1441,7 @@ ASFUNCTIONBODY(RegExp,test)
 
 ASFUNCTIONBODY(ASString,slice)
 {
-	ASString* th=static_cast<ASString*>(obj->implementation);
+	ASString* th=static_cast<ASString*>(obj);
 	int startIndex=0;
 	if(argslen>=1)
 		startIndex=args[0]->toInt();
@@ -1439,7 +1455,7 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 {
 	//TODO: should return utf16
 	LOG(LOG_CALLS,"ASString::charCodeAt not really implemented");
-	ASString* th=static_cast<ASString*>(obj->implementation);
+	ASString* th=static_cast<ASString*>(obj);
 	unsigned int index=args[0]->toInt();
 	assert(index>=0 && index<th->data.size());
 	return new Integer(th->data[index]);
@@ -1447,7 +1463,7 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 
 ASFUNCTIONBODY(ASString,indexOf)
 {
-	ASString* th=static_cast<ASString*>(obj->implementation);
+	ASString* th=static_cast<ASString*>(obj);
 	const tiny_string& arg0=args[0]->toString();
 	int startIndex=0;
 	if(argslen>1)
@@ -1482,7 +1498,7 @@ ASFUNCTIONBODY(ASString,indexOf)
 
 ASFUNCTIONBODY(ASString,toLowerCase)
 {
-	ASString* th=static_cast<ASString*>(obj->implementation);
+	ASString* th=static_cast<ASString*>(obj);
 	ASString* ret=Class<ASString>::getInstanceS();
 	ret->data=th->data;
 	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::tolower);
@@ -1491,7 +1507,7 @@ ASFUNCTIONBODY(ASString,toLowerCase)
 
 ASFUNCTIONBODY(ASString,replace)
 {
-	const ASString* th=static_cast<const ASString*>(obj->implementation);
+	const ASString* th=static_cast<const ASString*>(obj);
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
 	string replaceWith(args[1]->toString().raw_buf());
 	//We have to escape '\\' because that is interpreted by pcrecpp
@@ -1512,7 +1528,7 @@ ASFUNCTIONBODY(ASString,replace)
 
 	if(args[0]->prototype==Class<RegExp>::getClass())
 	{
-		RegExp* re=static_cast<RegExp*>(args[0]->implementation);
+		RegExp* re=static_cast<RegExp*>(args[0]);
 
 		pcrecpp::RE_Options opt;
 		opt.set_caseless(re->ignoreCase);
@@ -1524,7 +1540,7 @@ ASFUNCTIONBODY(ASString,replace)
 	}
 	else if(args[0]->getObjectType()==T_STRING)
 	{
-		ASString* s=static_cast<ASString*>(args[0]->implementation);
+		ASString* s=static_cast<ASString*>(args[0]);
 		int index=0;
 		do
 		{
@@ -1545,7 +1561,7 @@ ASFUNCTIONBODY(ASString,replace)
 
 ASFUNCTIONBODY(ASString,concat)
 {
-	ASString* th=static_cast<ASString*>(obj->implementation);
+	ASString* th=static_cast<ASString*>(obj);
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
 	for(unsigned int i=0;i<argslen;i++)
 		ret->data+=args[i]->toString().raw_buf();
@@ -1798,7 +1814,7 @@ void ASQName::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ASQName,_constructor)
 {
-	ASQName* th=static_cast<ASQName*>(obj->implementation);
+	ASQName* th=static_cast<ASQName*>(obj);
 	if(argslen!=2)
 		throw UnsupportedException("ArgumentError",sys->getOrigin().raw_buf());
 
@@ -1809,13 +1825,13 @@ ASFUNCTIONBODY(ASQName,_constructor)
 	{
 		case T_STRING:
 		{
-			ASString* s=static_cast<ASString*>(args[0]->implementation);
+			ASString* s=static_cast<ASString*>(args[0]);
 			th->uri=s->data;
 			break;
 		}
 		case T_NAMESPACE:
 		{
-			Namespace* n=static_cast<Namespace*>(args[0]->implementation);
+			Namespace* n=static_cast<Namespace*>(args[0]);
 			th->uri=n->uri;
 			break;
 		}

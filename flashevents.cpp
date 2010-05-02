@@ -85,7 +85,7 @@ void Event::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(Event,_constructor)
 {
-	Event* th=static_cast<Event*>(obj->implementation);
+	Event* th=static_cast<Event*>(obj);
 	if(argslen>=1)
 	{
 		assert(args[0]->getObjectType()==T_STRING);
@@ -96,7 +96,7 @@ ASFUNCTIONBODY(Event,_constructor)
 
 ASFUNCTIONBODY(Event,_getTarget)
 {
-	Event* th=static_cast<Event*>(obj->implementation);
+	Event* th=static_cast<Event*>(obj);
 	if(th->target)
 	{
 		th->target->incRef();
@@ -111,7 +111,7 @@ ASFUNCTIONBODY(Event,_getTarget)
 
 ASFUNCTIONBODY(Event,_getType)
 {
-	Event* th=static_cast<Event*>(obj->implementation);
+	Event* th=static_cast<Event*>(obj);
 	return Class<ASString>::getInstanceS(th->type);
 }
 
@@ -155,7 +155,7 @@ void ProgressEvent::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(ProgressEvent,_constructor)
 {
-	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
+	ProgressEvent* th=static_cast<ProgressEvent*>(obj);
 	if(argslen>=4)
 		th->bytesLoaded=args[3]->toInt();
 	if(argslen>=5)
@@ -166,13 +166,13 @@ ASFUNCTIONBODY(ProgressEvent,_constructor)
 
 ASFUNCTIONBODY(ProgressEvent,_getBytesLoaded)
 {
-	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
+	ProgressEvent* th=static_cast<ProgressEvent*>(obj);
 	return abstract_d(th->bytesLoaded);
 }
 
 ASFUNCTIONBODY(ProgressEvent,_getBytesTotal)
 {
-	ProgressEvent* th=static_cast<ProgressEvent*>(obj->implementation);
+	ProgressEvent* th=static_cast<ProgressEvent*>(obj);
 	return abstract_d(th->bytesTotal);
 }
 
@@ -236,7 +236,7 @@ void EventDispatcher::dumpHandlers()
 
 ASFUNCTIONBODY(EventDispatcher,addEventListener)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 	{
 		LOG(LOG_ERROR,"Type mismatch");
@@ -262,7 +262,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 
 ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
 	assert(argslen==1 && args[0]->getObjectType()==T_STRING);
 	const tiny_string& eventName=args[0]->toString();
 	bool ret=th->hasEventListener(eventName);
@@ -271,7 +271,7 @@ ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 
 ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 {
-	EventDispatcher* th=static_cast<EventDispatcher*>(obj->implementation);
+	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 	{
 		LOG(LOG_ERROR,"Type mismatch");
@@ -299,11 +299,11 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
-	EventDispatcher* th=Class<EventDispatcher>::cast(obj->implementation);
+	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
 	if(args[0]->prototype==NULL || !(args[0]->prototype->isSubClass(Class<Event>::getClass())))
 		return new Boolean(false);
 
-	Event* e=Class<Event>::cast(args[0]->implementation);
+	Event* e=Class<Event>::cast(args[0]);
 	if(e==NULL || th==NULL)
 		return new Boolean(false);
 	//CHECK: maybe is to be cloned
@@ -372,7 +372,7 @@ void NetStatusEvent::sinit(Class_base* c)
 
 ASFUNCTIONBODY(NetStatusEvent,_constructor)
 {
-	NetStatusEvent* th=Class<NetStatusEvent>::cast(obj->implementation);
+	NetStatusEvent* th=Class<NetStatusEvent>::cast(obj);
 	ASObject* info=new ASObject;
 	info->setVariableByQName("level","",Class<ASString>::getInstanceS(th->level));
 	info->setVariableByQName("code","",Class<ASString>::getInstanceS(th->code));

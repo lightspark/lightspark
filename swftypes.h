@@ -453,9 +453,7 @@ public:
 	bool initialized;
 #endif
 	bool implEnable;
-	IInterface* implementation;
 	Class_base* prototype;
-	void acquireInterface(IInterface* i);
 	ASObject(Manager* m=NULL);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getPrototype);
@@ -539,11 +537,14 @@ public:
 		return Variables.getNameAt(i);
 	}
 	ASObject* getValueAt(int i);
-	SWFOBJECT_TYPE getObjectType() const;
+	SWFOBJECT_TYPE getObjectType() const
+	{
+		return type;
+	}
 	virtual tiny_string toString(bool debugMsg=false);
-	virtual int32_t toInt() const;
-	virtual uint32_t toUInt() const;
-	virtual double toNumber() const;
+	virtual int32_t toInt();
+	virtual uint32_t toUInt();
+	virtual double toNumber();
 
 	virtual bool isEqual(ASObject* r);
 	virtual bool isLess(ASObject* r);
@@ -566,14 +567,8 @@ public:
 
 	//Prototype handling
 	Class_base* getActualPrototype() const;
-};
-
-class IInterface: public ASObject
-{
-friend void ASObject::acquireInterface(IInterface* i);
-friend class ASObject;
-friend class ABCVm;
-private:
+	
+	//Merge in progress
 	virtual bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out);
 	virtual bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
 	virtual bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out);
@@ -589,19 +584,18 @@ private:
 	virtual bool hasNext(unsigned int& index, bool& out);
 	virtual bool nextName(unsigned int index, ASObject*& out);
 	virtual bool nextValue(unsigned int index, ASObject*& out);
-protected:
-	SWFOBJECT_TYPE type;
+};
+
+class IInterface: public ASObject
+{
+friend class ABCVm;
 public:
-	IInterface():ASObject(this),type(T_OBJECT){}
-	IInterface(const IInterface& r);
-	virtual ~IInterface(){}
 	static void sinit(Class_base*){}
 	static void buildTraits(ASObject* o);
 };
 
 inline void Manager::put(ASObject* o)
 {
-	//std::cout << "putting[" << name << "] " << o << std::endl;
 	if(available.size()>15)
 		delete o;
 	else

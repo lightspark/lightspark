@@ -76,13 +76,13 @@ uint8_t* ByteArray::getBuffer(unsigned int size)
 
 ASFUNCTIONBODY(ByteArray,_getPosition)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	ByteArray* th=static_cast<ByteArray*>(obj);
 	return abstract_i(th->position);
 }
 
 ASFUNCTIONBODY(ByteArray,_setPosition)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	ByteArray* th=static_cast<ByteArray*>(obj);
 	int pos=args[0]->toInt();
 	th->position=pos;
 	return NULL;
@@ -90,24 +90,24 @@ ASFUNCTIONBODY(ByteArray,_setPosition)
 
 ASFUNCTIONBODY(ByteArray,_getLength)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	ByteArray* th=static_cast<ByteArray*>(obj);
 	return abstract_i(th->len);
 }
 
 ASFUNCTIONBODY(ByteArray,_getBytesAvailable)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	ByteArray* th=static_cast<ByteArray*>(obj);
 	return abstract_i(th->len-th->position);
 }
 
 ASFUNCTIONBODY(ByteArray,readBytes)
 {
-	ByteArray* th=static_cast<ByteArray*>(obj->implementation);
+	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert(argslen==3);
 	assert(args[0]->prototype==Class<ByteArray>::getClass());
 
-	ByteArray* out=Class<ByteArray>::cast(args[0]->implementation);
+	ByteArray* out=Class<ByteArray>::cast(args[0]);
 	int offset=args[1]->toInt();
 	int length=args[2]->toInt();
 	//TODO: Support offset
@@ -123,6 +123,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 
 bool ByteArray::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return false;
@@ -135,6 +136,7 @@ bool ByteArray::getVariableByMultiname_merge(const multiname& name, ASObject*& o
 
 bool ByteArray::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return false;
@@ -147,6 +149,7 @@ bool ByteArray::getVariableByMultiname_i_merge(const multiname& name, intptr_t& 
 
 bool ByteArray::setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidQName(name,ns,index))
 		return false;
@@ -156,6 +159,7 @@ bool ByteArray::setVariableByQName_merge(const tiny_string& name, const tiny_str
 
 bool ByteArray::setVariableByMultiname_merge(const multiname& name, ASObject* o)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return false;
@@ -179,6 +183,7 @@ bool ByteArray::setVariableByMultiname_merge(const multiname& name, ASObject* o)
 
 bool ByteArray::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 {
+	assert(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return false;
@@ -188,6 +193,7 @@ bool ByteArray::setVariableByMultiname_i_merge(const multiname& name, intptr_t v
 
 bool ByteArray::isEqual_merge(bool& ret, ASObject* r)
 {
+	assert(implEnable);
 	if(r->getObjectType()!=T_OBJECT)
 		return false;
 	
@@ -228,7 +234,7 @@ void Timer::sinit(Class_base* c)
 ASFUNCTIONBODY(Timer,_constructor)
 {
 	EventDispatcher::_constructor(obj,NULL,0);
-	Timer* th=static_cast<Timer*>(obj->implementation);
+	Timer* th=static_cast<Timer*>(obj);
 	obj->setVariableByQName("start","",new Function(start));
 	obj->setVariableByQName("reset","",new Function(reset));
 
@@ -241,7 +247,7 @@ ASFUNCTIONBODY(Timer,_constructor)
 
 ASFUNCTIONBODY(Timer,start)
 {
-	Timer* th=static_cast<Timer*>(obj->implementation);
+	Timer* th=static_cast<Timer*>(obj);
 	th->running=true;
 	sys->addJob(th);
 	return NULL;
@@ -249,7 +255,7 @@ ASFUNCTIONBODY(Timer,start)
 
 ASFUNCTIONBODY(Timer,reset)
 {
-	Timer* th=static_cast<Timer*>(obj->implementation);
+	Timer* th=static_cast<Timer*>(obj);
 	th->running=false;
 	return NULL;
 }
@@ -345,11 +351,13 @@ ASFUNCTIONBODY(Dictionary,_constructor)
 
 bool Dictionary::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 {
+	assert(implEnable);
 	return setVariableByMultiname_merge(name,abstract_i(value));
 }
 
 bool Dictionary::setVariableByMultiname_merge(const multiname& name, ASObject* o)
 {
+	assert(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
 		//We can use the [] operator, as the value is just a pointer and there is no side effect in creating one
@@ -370,6 +378,7 @@ bool Dictionary::setVariableByMultiname_merge(const multiname& name, ASObject* o
 
 bool Dictionary::deleteVariableByMultiname_merge(const multiname& name)
 {
+	assert(implEnable);
 	assert(name.name_type==multiname::NAME_OBJECT);
 	map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
 	assert(it!=data.end());
@@ -387,6 +396,7 @@ bool Dictionary::deleteVariableByMultiname_merge(const multiname& name)
 
 bool Dictionary::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
+	assert(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
 		//From specs, then === operator compare references when working on generic objects
@@ -411,7 +421,7 @@ bool Dictionary::getVariableByMultiname_merge(const multiname& name, ASObject*& 
 		{
 			if(it->first->getObjectType()==T_STRING)
 			{
-				ASString* s=Class<ASString>::cast(it->first->implementation);
+				ASString* s=Class<ASString>::cast(it->first);
 				if(name.name_s == s->data.c_str())
 				{
 					//Value found
@@ -433,6 +443,7 @@ bool Dictionary::getVariableByMultiname_merge(const multiname& name, ASObject*& 
 
 bool Dictionary::hasNext(unsigned int& index, bool& out)
 {
+	assert(implEnable);
 	out=index<data.size();
 	index++;
 	return true;
@@ -440,6 +451,7 @@ bool Dictionary::hasNext(unsigned int& index, bool& out)
 
 bool Dictionary::nextName(unsigned int index, ASObject*& out)
 {
+	assert(implEnable);
 	assert(index<data.size());
 	map<ASObject*,ASObject*>::iterator it=data.begin();
 	for(unsigned int i=0;i<index;i++)
@@ -450,6 +462,7 @@ bool Dictionary::nextName(unsigned int index, ASObject*& out)
 
 bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 {
+	assert(implEnable);
 	abort();
 /*	assert(index<data.size());
 	map<ASObject*,ASObject*>::iterator it=data.begin();
@@ -467,6 +480,7 @@ void Proxy::sinit(Class_base* c)
 
 bool Proxy::setVariableByMultiname_merge(const multiname& name, ASObject* v)
 {
+	assert(implEnable);
 	//If a variable named like this already exist, return that
 	if(hasPropertyByMultiname(name))
 		return false;
@@ -498,6 +512,7 @@ bool Proxy::setVariableByMultiname_merge(const multiname& name, ASObject* v)
 
 bool Proxy::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
+	assert(implEnable);
 	if(hasPropertyByMultiname(name))
 		return false;
 	if(suppress)

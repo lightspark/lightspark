@@ -55,6 +55,7 @@ public:
 	static void buildTraits(ASObject* o);
 	bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
@@ -94,15 +95,18 @@ public:
 	ASFUNCTION(_constructor);
 	bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
 	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool setVariableByMultiname_merge(const multiname& name, ASObject* o);
@@ -110,10 +114,12 @@ public:
 	bool deleteVariableByMultiname_merge(const multiname& name);
 	bool toString_merge(tiny_string& ret)
 	{
+		assert(implEnable);
 		return false;
 	}
 	bool isEqual_merge(bool& ret, ASObject* r)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool hasNext(unsigned int& index, bool& out);
@@ -133,44 +139,54 @@ public:
 //	ASFUNCTION(_constructor);
 	bool getVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject*& out)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool getVariableByMultiname_merge(const multiname& name, ASObject*& out);
 	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool setVariableByMultiname_merge(const multiname& name, ASObject* o);
 	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool deleteVariableByMultiname_merge(const multiname& name)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool toString_merge(tiny_string& ret)
 	{
+		assert(implEnable);
 		return false;
 	}
 	bool isEqual_merge(bool& ret, ASObject* r)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool hasNext(unsigned int& index, bool& out)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool nextName(unsigned int index, ASObject*& out)
 	{
+		assert(implEnable);
 		abort();
 	}
 	bool nextValue(unsigned int index, ASObject*& out)
 	{
+		assert(implEnable);
 		abort();
 	}
 };

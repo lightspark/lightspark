@@ -96,8 +96,8 @@ RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),frameRate(0),toB
 	//We set the protoype to a generic MovieClip
 	if(sys)
 	{
-		obj->prototype=Class<MovieClip>::getClass();
-		obj->prototype->incRef();
+		prototype=Class<MovieClip>::getClass();
+		prototype->incRef();
 	}
 }
 
@@ -135,8 +135,8 @@ SystemState::SystemState():RootMovieClip(NULL),renderRate(0),showProfilingData(f
 	stage=Class<Stage>::getInstanceS();
 	startTime=compat_msectiming();
 	
-	obj->prototype=Class<MovieClip>::getClass();
-	obj->prototype->incRef();
+	prototype=Class<MovieClip>::getClass();
+	prototype->incRef();
 }
 
 void SystemState::setUrl(const tiny_string& url)
@@ -154,14 +154,14 @@ void SystemState::parseParameters(istream& i)
 		getline(i,name);
 		getline(i,value);
 
-		ret->setVariableByQName(name.c_str(),"",Class<ASString>::getInstanceS(value)->obj);
+		ret->setVariableByQName(name.c_str(),"",Class<ASString>::getInstanceS(value));
 	}
 	setParameters(ret);
 }
 
 void SystemState::setParameters(ASObject* p)
 {
-	loaderInfo->obj->setVariableByQName("parameters","",p);
+	loaderInfo->setVariableByQName("parameters","",p);
 }
 
 SystemState::~SystemState()
@@ -177,8 +177,6 @@ SystemState::~SystemState()
 	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
 		it->second->decRef();
-	
-	assert(obj==this);
 }
 
 void SystemState::setShutdownFlag()
@@ -596,11 +594,11 @@ void InputThread::enableDrag(Sprite* s, const lightspark::RECT& limit)
 		return;
 	
 	if(curDragged) //Stop dragging the previous sprite
-		curDragged->obj->decRef();
+		curDragged->decRef();
 	
-	assert(s && s->obj);
+	assert(s);
 	//We need to avoid that the object is destroyed
-	s->obj->incRef();
+	s->incRef();
 	
 	curDragged=s;
 	dragLimit=limit;
@@ -611,7 +609,7 @@ void InputThread::disableDrag()
 	Locker locker(mutexDragged);
 	if(curDragged)
 	{
-		curDragged->obj->decRef();
+		curDragged->decRef();
 		curDragged=NULL;
 	}
 }

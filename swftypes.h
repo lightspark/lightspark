@@ -592,8 +592,7 @@ private:
 protected:
 	SWFOBJECT_TYPE type;
 public:
-	ASObject* const obj;
-	IInterface():ASObject(this),type(T_OBJECT),obj(this){assert(obj->implementation==this);}
+	IInterface():ASObject(this),type(T_OBJECT){}
 	IInterface(const IInterface& r);
 	virtual ~IInterface(){}
 	static void sinit(Class_base*){}

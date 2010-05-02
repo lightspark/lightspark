@@ -63,11 +63,11 @@ private:
 	{
 		//TODO: Add interface T to ret
 		T* ret=new T;
-		ret->obj->prototype=this;
+		ret->prototype=this;
 		//As we are the prototype we should incRef ourself
 		incRef();
 		if(construct)
-			handleConstruction(ret->obj,args,argslen,true);
+			handleConstruction(ret,args,argslen,true);
 		return ret;
 	}
 public:
@@ -82,10 +82,10 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		//TODO: Add interface T to ret
 		T* ret=new T(a1);
-		ret->obj->prototype=c;
+		ret->prototype=c;
 		//As we are the prototype we should incRef ourself
 		c->incRef();
-		c->handleConstruction(ret->obj,NULL,0,true);
+		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
 	template <typename ARG1, typename ARG2>
@@ -94,10 +94,10 @@ public:
 		Class<T>* c=Class<T>::getClass();
 		//TODO: Add interface T to ret
 		T* ret=new T(a1,a2);
-		ret->obj->prototype=c;
+		ret->prototype=c;
 		//As we are the prototype we should incRef ourself
 		c->incRef();
-		c->handleConstruction(ret->obj,NULL,0,true);
+		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
 	static Class<T>* getClass(const tiny_string& name)

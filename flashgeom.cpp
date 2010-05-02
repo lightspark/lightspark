@@ -137,7 +137,7 @@ ASFUNCTIONBODY(Rectangle,clone)
 	ret->y=th->y;
 	ret->width=th->width;
 	ret->height=th->height;
-	return ret->obj;
+	return ret;
 }
 
 void ColorTransform::sinit(Class_base* c)

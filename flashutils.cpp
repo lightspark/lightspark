@@ -267,7 +267,7 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 	else
 		c=static_cast<Class_base*>(target);
 
-	return Class<ASString>::getInstanceS(c->getQualifiedClassName())->obj;
+	return Class<ASString>::getInstanceS(c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
@@ -285,7 +285,7 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 
 	assert(c);
 
-	return Class<ASString>::getInstanceS(c->getQualifiedClassName())->obj;
+	return Class<ASString>::getInstanceS(c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY(lightspark,getDefinitionByName)
@@ -361,7 +361,7 @@ bool Dictionary::setVariableByMultiname_merge(const multiname& name, ASObject* o
 	}
 	else if(name.name_type==multiname::NAME_STRING)
 	{
-		data[Class<ASString>::getInstanceS(name.name_s)->obj]=o;
+		data[Class<ASString>::getInstanceS(name.name_s)]=o;
 		return true;
 	}
 	else
@@ -468,13 +468,13 @@ void Proxy::sinit(Class_base* c)
 bool Proxy::setVariableByMultiname_merge(const multiname& name, ASObject* v)
 {
 	//If a variable named like this already exist, return that
-	if(obj->hasPropertyByMultiname(name))
+	if(hasPropertyByMultiname(name))
 		return false;
 	if(suppress)
 		return false;
 
 	//Check if there is a custom setter defined, skipping implementation to avoid recursive calls
-	objAndLevel o=obj->getVariableByQName("setProperty",flash_proxy,true);
+	objAndLevel o=getVariableByQName("setProperty",flash_proxy,true);
 
 	if(o.obj==NULL)
 		return false;
@@ -485,12 +485,12 @@ bool Proxy::setVariableByMultiname_merge(const multiname& name, ASObject* v)
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 	ASObject* args[2];
-	args[0]=Class<ASString>::getInstanceS(name.name_s)->obj;
+	args[0]=Class<ASString>::getInstanceS(name.name_s);
 	args[1]=v;
 	//We now suppress special handling
 	suppress=true;
 	LOG(LOG_CALLS,"Proxy::setProperty");
-	ASObject* ret=f->call(obj,args,2,obj->getLevel());
+	ASObject* ret=f->call(this,args,2,getLevel());
 	assert(ret==NULL);
 	suppress=false;
 	return true;
@@ -498,13 +498,13 @@ bool Proxy::setVariableByMultiname_merge(const multiname& name, ASObject* v)
 
 bool Proxy::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 {
-	if(obj->hasPropertyByMultiname(name))
+	if(hasPropertyByMultiname(name))
 		return false;
 	if(suppress)
 		return false;
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
-	objAndLevel o=obj->getVariableByQName("getProperty",flash_proxy,true);
+	objAndLevel o=getVariableByQName("getProperty",flash_proxy,true);
 
 	if(o.obj==NULL)
 		return false;
@@ -514,11 +514,11 @@ bool Proxy::getVariableByMultiname_merge(const multiname& name, ASObject*& out)
 	IFunction* f=static_cast<IFunction*>(o.obj);
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-	ASObject* arg=Class<ASString>::getInstanceS(name.name_s)->obj;
+	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
 	//We now suppress special handling
 	suppress=true;
 	LOG(LOG_CALLS,"Proxy::getProperty");
-	out=f->call(obj,&arg,1,obj->getLevel());
+	out=f->call(this,&arg,1,getLevel());
 	assert(out);
 	suppress=false;
 	return true;

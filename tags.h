@@ -418,8 +418,8 @@ public:
 	{
 		DefineBinaryDataTag* ret=new DefineBinaryDataTag(*this);
 		//An object is always linked
-		ret->obj->prototype=Class<ByteArray>::getClass();
-		ret->obj->prototype->incRef();
+		ret->prototype=Class<ByteArray>::getClass();
+		ret->prototype->incRef();
 		return ret;
 	}
 };
@@ -537,20 +537,19 @@ public:
 	IInterface* instance() const
 	{
 		DefineSpriteTag* ret=new DefineSpriteTag(*this);
-		assert(ret->obj==ret);
 		//TODO: check
 		if(bindedTo)
 		{
 			//A class is binded to this tag
-			ret->obj->prototype=static_cast<Class_base*>(bindedTo);
+			ret->prototype=static_cast<Class_base*>(bindedTo);
 		}
 		else
 		{
 			//A default object is always linked
-			ret->obj->prototype=Class<MovieClip>::getClass();
+			ret->prototype=Class<MovieClip>::getClass();
 		}
 
-		ret->obj->prototype->incRef();
+		ret->prototype->incRef();
 		ret->bootstrap();
 		return ret;
 	}

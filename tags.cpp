@@ -1258,10 +1258,10 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		assert(toAdd);
 
 		//Object should be constructed even if not binded
-		if(toAdd->obj && toAdd->obj->prototype && sys->currentVm)
+		if(toAdd->prototype && sys->currentVm)
 		{
 			//We now ask the VM to construct this object
-			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd->obj,toAdd->obj->prototype);
+			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->prototype);
 			sys->currentVm->addEvent(NULL,e);
 			e->wait();
 		}
@@ -1288,13 +1288,12 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 
 	if(PlaceFlagHasName)
 	{
-		assert(parent->obj);
 		//Set a variable on the parent to link this object
 		LOG(LOG_NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
 		if(!PlaceFlagMove)
 		{
-			if(toAdd->obj) //TODO: should not happen
-				parent->obj->setVariableByQName((const char*)Name,"",toAdd->obj);
+			assert(toAdd);
+			parent->setVariableByQName((const char*)Name,"",toAdd);
 		}
 		else
 			LOG(LOG_ERROR, "Moving of registered objects not really supported");

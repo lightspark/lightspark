@@ -68,7 +68,7 @@ ASFUNCTIONBODY(URLRequest,_setUrl)
 ASFUNCTIONBODY(URLRequest,_getUrl)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj->implementation);
-	return Class<ASString>::getInstanceS(th->url)->obj;
+	return Class<ASString>::getInstanceS(th->url);
 }
 
 URLLoader::URLLoader():dataFormat("text"),data(NULL)
@@ -144,28 +144,28 @@ void URLLoader::execute()
 		{
 			ByteArray* byteArray=Class<ByteArray>::getInstanceS();
 			byteArray->acquireBuffer(curlDownloader.getBuffer(),curlDownloader.getLen());
-			data=byteArray->obj;
+			data=byteArray;
 		}
 		else if(dataFormat=="text")
 		{
 			if(curlDownloader.getLen())
 				abort();
-			data=Class<ASString>::getInstanceS()->obj;
+			data=Class<ASString>::getInstanceS();
 		}
 		//Send a complete event for this object
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete",obj));
+		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete",this));
 	}
 	else
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError",obj));
+		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError",this));
 	}
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj->implementation);
-	return Class<ASString>::getInstanceS(th->dataFormat)->obj;
+	return Class<ASString>::getInstanceS(th->dataFormat);
 }
 
 ASFUNCTIONBODY(URLLoader,_getData)
@@ -188,9 +188,9 @@ ASFUNCTIONBODY(URLLoader,_setDataFormat)
 
 void URLLoaderDataFormat::sinit(Class_base* c)
 {
-	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables")->obj);
-	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text")->obj);
-	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary")->obj);
+	c->setVariableByQName("VARIABLES","",Class<ASString>::getInstanceS("variables"));
+	c->setVariableByQName("TEXT","",Class<ASString>::getInstanceS("text"));
+	c->setVariableByQName("BINARY","",Class<ASString>::getInstanceS("binary"));
 }
 
 void SharedObject::sinit(Class_base* c)
@@ -514,16 +514,16 @@ ASFUNCTIONBODY(URLVariables,_constructor)
 bool URLVariables::toString_merge(tiny_string& ret)
 {
 	//Should urlencode
-	abort();
-	int size=obj->numVariables();
+	::abort();
+	int size=numVariables();
 	for(int i=0;i<size;i++)
 	{
-		const tiny_string& tmp=obj->getNameAt(i);
+		const tiny_string& tmp=getNameAt(i);
 		if(tmp=="")
 			abort();
 		ret+=tmp;
 		ret+="=";
-		ret+=obj->getValueAt(i)->toString();
+		ret+=getValueAt(i)->toString();
 		if(i!=size-1)
 			ret+="&";
 	}

@@ -1055,13 +1055,13 @@ void ABCVm::buildClassAndInjectBase(const string& s, IInterface* base,ASObject* 
 
 	if(isRoot)
 	{
-		assert(base->obj);
-		base->obj->prototype=derived_class_tmp;
+		assert(base);
+		base->prototype=derived_class_tmp;
 		derived_class_tmp->incRef();
-		getVm()->pushObjAndLevel(base->obj,derived_class_tmp->max_level);
-		derived_class_tmp->handleConstruction(base->obj,args,argslen,true);
+		getVm()->pushObjAndLevel(base,derived_class_tmp->max_level);
+		derived_class_tmp->handleConstruction(base,args,argslen,true);
 		thisAndLevel tl=getVm()->popObjAndLevel();
-		assert(tl.cur_this==base->obj);
+		assert(tl.cur_this==base);
 	}
 	else
 	{
@@ -1429,14 +1429,14 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	switch(kind)
 	{
 		case 0x01: //String
-			return Class<ASString>::getInstanceS(constant_pool.strings[index])->obj;
+			return Class<ASString>::getInstanceS(constant_pool.strings[index]);
 		case 0x03: //Int
 			return new Integer(constant_pool.integer[index]);
 		case 0x06: //Double
 			return new Number(constant_pool.doubles[index]);
 		case 0x08: //Namespace
 			assert(constant_pool.namespaces[index].name);
-			return Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name))->obj;
+			return Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name));
 		case 0x0a: //False
 			return new Boolean(false);
 		case 0x0b: //True
@@ -2199,7 +2199,7 @@ ASFUNCTIONBODY(lightspark,unescape)
 			ret.push_back(th->data[i]);
 	}
 
-	return Class<ASString>::getInstanceS(ret)->obj;
+	return Class<ASString>::getInstanceS(ret);
 }
 
 ASFUNCTIONBODY(lightspark,undefinedFunction)

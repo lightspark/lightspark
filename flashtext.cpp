@@ -35,7 +35,7 @@ void lightspark::Font::sinit(Class_base* c)
 
 ASFUNCTIONBODY(lightspark::Font,enumerateFonts)
 {
-	return Class<Array>::getInstanceS()->obj;
+	return Class<Array>::getInstanceS();
 }
 
 void TextField::sinit(Class_base* c)

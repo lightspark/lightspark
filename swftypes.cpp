@@ -130,9 +130,8 @@ SWFOBJECT_TYPE ASObject::getObjectType() const
 	return (implementation)?(implementation->type):type;
 }
 
-IInterface::IInterface(const IInterface& r):ASObject(r),type(r.type),obj(this)
+IInterface::IInterface(const IInterface& r):ASObject(r),type(r.type)
 {
-	assert(r.obj==&r);
 	assert(implementation==NULL);
 	implementation=this;
 }
@@ -652,7 +651,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool crea
 
 ASFUNCTIONBODY(ASObject,_toString)
 {
-	return Class<ASString>::getInstanceS(obj->toString())->obj;
+	return Class<ASString>::getInstanceS(obj->toString());
 }
 
 ASFUNCTIONBODY(ASObject,_constructor)

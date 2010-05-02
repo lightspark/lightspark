@@ -82,20 +82,20 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
-	return Class<ASString>::getInstanceS(th->loaderURL)->obj;
+	return Class<ASString>::getInstanceS(th->loaderURL);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
-	th->sharedEvents->obj->incRef();
-	return th->sharedEvents->obj;
+	th->sharedEvents->incRef();
+	return th->sharedEvents;
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getUrl)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj->implementation);
-	return Class<ASString>::getInstanceS(th->url)->obj;
+	return Class<ASString>::getInstanceS(th->url);
 }
 
 ASFUNCTIONBODY(LoaderInfo,_getBytesLoaded)
@@ -112,7 +112,7 @@ ASFUNCTIONBODY(LoaderInfo,_getBytesTotal)
 
 ASFUNCTIONBODY(LoaderInfo,_getApplicationDomain)
 {
-	return Class<ApplicationDomain>::getInstanceS()->obj;
+	return Class<ApplicationDomain>::getInstanceS();
 }
 
 ASFUNCTIONBODY(Loader,_constructor)
@@ -126,8 +126,8 @@ ASFUNCTIONBODY(Loader,_constructor)
 ASFUNCTIONBODY(Loader,_getContentLoaderInfo)
 {
 	Loader* th=static_cast<Loader*>(obj->implementation);
-	th->contentLoaderInfo->obj->incRef();
-	return th->contentLoaderInfo->obj;
+	th->contentLoaderInfo->incRef();
+	return th->contentLoaderInfo;
 }
 
 ASFUNCTIONBODY(Loader,load)
@@ -204,7 +204,7 @@ void Loader::execute()
 		assert(memcmp(bytes->bytes,"CWS",3)==0);
 
 		//The loaderInfo of the content is out contentLoaderInfo
-		contentLoaderInfo->obj->incRef();
+		contentLoaderInfo->incRef();
 		local_root=new RootMovieClip(contentLoaderInfo);
 		zlib_bytes_filter zf(bytes->bytes,bytes->len);
 		istream s(&zf);
@@ -342,7 +342,7 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 void Sprite::Render()
 {
-	assert(obj && obj->prototype);
+	assert(prototype);
 	
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
@@ -399,8 +399,8 @@ ASFUNCTIONBODY(Sprite,_getGraphics)
 	if(th->graphics==NULL)
 		th->graphics=Class<Graphics>::getInstanceS();
 
-	th->graphics->obj->incRef();
-	return th->graphics->obj;
+	th->graphics->incRef();
+	return th->graphics;
 }
 
 void MovieClip::sinit(Class_base* c)
@@ -570,7 +570,7 @@ void MovieClip::Render()
 	{
 		assert(state.FP<framesLoaded);
 
-		if(sys->currentVm && obj->prototype->isSubClass(Class<MovieClip>::getClass()))
+		if(sys->currentVm && prototype->isSubClass(Class<MovieClip>::getClass()))
 			advanceFrame();
 		if(!state.stop_FP)
 			frames[state.FP].runScript();
@@ -875,7 +875,7 @@ ASFUNCTIONBODY(DisplayObject,_getBounds)
 		ret->y=0;
 		ret->height=0;
 	}
-	return ret->obj;
+	return ret;
 }
 
 ASFUNCTIONBODY(DisplayObject,_constructor)
@@ -891,8 +891,8 @@ ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	if(th->loaderInfo)
 	{
-		th->loaderInfo->obj->incRef();
-		return th->loaderInfo->obj;
+		th->loaderInfo->incRef();
+		return th->loaderInfo;
 	}
 	else
 		return new Undefined;
@@ -901,8 +901,8 @@ ASFUNCTIONBODY(DisplayObject,_getLoaderInfo)
 ASFUNCTIONBODY(DisplayObject,_getStage)
 {
 	assert(sys->stage);
-	sys->stage->obj->incRef();
-	return sys->stage->obj;
+	sys->stage->incRef();
+	return sys->stage;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getScale9Grid)
@@ -955,8 +955,8 @@ ASFUNCTIONBODY(DisplayObject,_getParent)
 	if(th->parent==NULL)
 		return new Undefined;
 
-	th->parent->obj->incRef();
-	return th->parent->obj;
+	th->parent->incRef();
+	return th->parent;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getRoot)
@@ -964,8 +964,8 @@ ASFUNCTIONBODY(DisplayObject,_getRoot)
 	DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
 	if(th->root)
 	{
-		th->root->obj->incRef();
-		return th->root->obj;
+		th->root->incRef();
+		return th->root;
 	}
 	else
 		return new Undefined;
@@ -1135,8 +1135,8 @@ void DisplayObjectContainer::dumpDisplayList()
 	list<IDisplayListElem*>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();it++)
 	{
-		if((*it)->obj)
-			cout << (*it)->obj->prototype->class_name << endl;
+		if(*it)
+			cout << (*it)->prototype->class_name << endl;
 		else
 			cout << "UNKNOWN" << endl;
 	}
@@ -1258,10 +1258,10 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	th->_addChildAt(d,index);
 
 	//Notify the object
-	d->obj->incRef();
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added",d->obj));
+	d->incRef();
+	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added",d));
 
-	return d->obj;
+	return d;
 }
 
 ASFUNCTIONBODY(DisplayObjectContainer,addChild)
@@ -1277,10 +1277,10 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
-	d->obj->incRef();
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added",d->obj));
+	d->incRef();
+	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added",d));
 
-	return d->obj;
+	return d;
 }
 
 //Only from VM context
@@ -1296,7 +1296,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 	th->_removeChild(d);
 
 	//As we return the child we don't decRef it
-	return d->obj;
+	return d;
 }
 
 //Only from VM context
@@ -1310,8 +1310,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildAt)
 	for(unsigned int i=0;i<index;i++)
 		it++;
 
-	(*it)->obj->incRef();
-	return (*it)->obj;
+	(*it)->incRef();
+	return *it;
 }
 
 //Only from VM context
@@ -1409,8 +1409,8 @@ ASFUNCTIONBODY(Shape,_getGraphics)
 	if(th->graphics==NULL)
 		th->graphics=Class<Graphics>::getInstanceS();
 
-	th->graphics->obj->incRef();
-	return th->graphics->obj;
+	th->graphics->incRef();
+	return th->graphics;
 }
 
 void Stage::sinit(Class_base* c)
@@ -1690,23 +1690,23 @@ void Graphics::Render()
 
 void LineScaleMode::sinit(Class_base* c)
 {
-	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS("horizontal")->obj);
-	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none")->obj);
-	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal")->obj);
-	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS("vertical")->obj);
+	c->setVariableByQName("HORIZONTAL","",Class<ASString>::getInstanceS("horizontal"));
+	c->setVariableByQName("NONE","",Class<ASString>::getInstanceS("none"));
+	c->setVariableByQName("NORMAL","",Class<ASString>::getInstanceS("normal"));
+	c->setVariableByQName("VERTICAL","",Class<ASString>::getInstanceS("vertical"));
 }
 
 void StageScaleMode::sinit(Class_base* c)
 {
-	c->setVariableByQName("EXACT_FIT","",Class<ASString>::getInstanceS("exactFit")->obj);
-	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS("noBorder")->obj);
-	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS("noScale")->obj);
-	c->setVariableByQName("SHOW_ALL","",Class<ASString>::getInstanceS("showAll")->obj);
+	c->setVariableByQName("EXACT_FIT","",Class<ASString>::getInstanceS("exactFit"));
+	c->setVariableByQName("NO_BORDER","",Class<ASString>::getInstanceS("noBorder"));
+	c->setVariableByQName("NO_SCALE","",Class<ASString>::getInstanceS("noScale"));
+	c->setVariableByQName("SHOW_ALL","",Class<ASString>::getInstanceS("showAll"));
 }
 
 void StageAlign::sinit(Class_base* c)
 {
-	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS("TL")->obj);
+	c->setVariableByQName("TOP_LEFT","",Class<ASString>::getInstanceS("TL"));
 }
 
 void Bitmap::sinit(Class_base* c)

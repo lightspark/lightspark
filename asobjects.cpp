@@ -140,7 +140,7 @@ ASFUNCTIONBODY(Array,splice)
 		ret->data.push_back(th->data[startIndex+i]);
 	
 	th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
-	return ret->obj;
+	return ret;
 }
 
 ASFUNCTIONBODY(Array,join)
@@ -154,7 +154,7 @@ ASFUNCTIONBODY(Array,join)
 		if(i!=th->size()-1)
 			ret+=del->toString().raw_buf();
 	}
-	return Class<ASString>::getInstanceS(ret)->obj;
+	return Class<ASString>::getInstanceS(ret);
 }
 
 ASFUNCTIONBODY(Array,indexOf)
@@ -183,7 +183,7 @@ ASFUNCTIONBODY(Array,filter)
 	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
 	Array* ret=Class<Array>::getInstanceS();
 	ret->data=th->data;
-	return ret->obj;
+	return ret;
 }
 
 ASFUNCTIONBODY(Array,_concat)
@@ -213,7 +213,7 @@ ASFUNCTIONBODY(Array,_concat)
 			ret->data[i].data->incRef();
 	}
 	
-	return ret->obj;
+	return ret;
 }
 
 ASFUNCTIONBODY(Array,_pop)
@@ -649,7 +649,7 @@ ASFUNCTIONBODY(ASString,split)
 			if(match==-1)
 				match=th->data.size();
 			ASString* s=Class<ASString>::getInstanceS(th->data.substr(start,(match-start)));
-			ret->push(s->obj);
+			ret->push(s);
 			start=match+del->data.size();
 		}
 		while(start<th->data.size());
@@ -657,7 +657,7 @@ ASFUNCTIONBODY(ASString,split)
 	else
 		throw UnsupportedException("Array::split not completely implemented",sys->getOrigin().raw_buf());
 
-	return ret->obj;
+	return ret;
 }
 
 ASFUNCTIONBODY(ASString,substr)
@@ -671,7 +671,7 @@ ASFUNCTIONBODY(ASString,substr)
 	if(argslen==2)
 		len=args[1]->toInt();
 
-	return Class<ASString>::getInstanceS(th->data.substr(start,len))->obj;
+	return Class<ASString>::getInstanceS(th->data.substr(start,len));
 }
 
 bool Array::toString_merge(tiny_string& ret)
@@ -833,7 +833,7 @@ ASFUNCTIONBODY(Integer,_toString)
 	else if(radix==16)
 		snprintf(buf,20,"%x",th->val);
 
-	return Class<ASString>::getInstanceS(buf)->obj;
+	return Class<ASString>::getInstanceS(buf);
 }
 
 bool Integer::isLess(ASObject* o)
@@ -1164,7 +1164,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 		for(int j=0;j<passedToRest;j++)
 			rest->set(j,args[passedToLocals+j]);
 
-		cc->locals[i+1]=rest->obj;
+		cc->locals[i+1]=rest;
 	}
 	//Parameters are ready
 
@@ -1432,7 +1432,7 @@ ASFUNCTIONBODY(ASString,slice)
 	int endIndex=0x7fffffff;
 	if(argslen>=2)
 		endIndex=args[1]->toInt();
-	return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex))->obj;
+	return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex));
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)
@@ -1486,7 +1486,7 @@ ASFUNCTIONBODY(ASString,toLowerCase)
 	ASString* ret=Class<ASString>::getInstanceS();
 	ret->data=th->data;
 	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::tolower);
-	return ret->obj;
+	return ret;
 }
 
 ASFUNCTIONBODY(ASString,replace)
@@ -1540,7 +1540,7 @@ ASFUNCTIONBODY(ASString,replace)
 	else
 		throw UnsupportedException("String::replace not completely implemented",sys->getOrigin().raw_buf());
 
-	return ret->obj;
+	return ret;
 }
 
 ASFUNCTIONBODY(ASString,concat)
@@ -1550,7 +1550,7 @@ ASFUNCTIONBODY(ASString,concat)
 	for(unsigned int i=0;i<argslen;i++)
 		ret->data+=args[i]->toString().raw_buf();
 
-	return ret->obj;
+	return ret;
 }
 
 Class_base::~Class_base()
@@ -1655,12 +1655,12 @@ IInterface* Class_inherit::getInstance(bool construct, ASObject* const* args, co
 		ret=super->getInstance(false,NULL,0);
 	}
 	//We override the prototype
-	//ret->obj->prototype->decRef();
+	ret->prototype->decRef();
 	//As we are the prototype we should incRef ourself
-	ret->obj->prototype=this;
+	ret->prototype=this;
 	incRef();
 	if(construct)
-		handleConstruction(ret->obj,args,argslen,true);
+		handleConstruction(ret,args,argslen,true);
 	return ret;
 }
 

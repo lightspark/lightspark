@@ -31,18 +31,18 @@ void Capabilities::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
 	c->setGetterByQName("language","",new Function(_getLanguage));
-	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0")->obj);
+	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"));
 }
 
 ASFUNCTIONBODY(Capabilities,_constructor)
 {
-	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS("AVMPlus")->obj);
+	obj->setVariableByQName("playerType","",Class<ASString>::getInstanceS("AVMPlus"));
 	return NULL;
 }
 
 ASFUNCTIONBODY(Capabilities,_getLanguage)
 {
-	return Class<ASString>::getInstanceS("en")->obj;
+	return Class<ASString>::getInstanceS("en");
 }
 
 void ApplicationDomain::sinit(Class_base* c)
@@ -64,7 +64,7 @@ ASFUNCTIONBODY(ApplicationDomain,_constructor)
 
 ASFUNCTIONBODY(ApplicationDomain,_getCurrentDomain)
 {
-	return Class<ApplicationDomain>::getInstanceS()->obj;
+	return Class<ApplicationDomain>::getInstanceS();
 }
 
 ASFUNCTIONBODY(ApplicationDomain,hasDefinition)

@@ -570,7 +570,7 @@ public:
 	static void sinit(Class_base*){}
 	static void buildTraits(ASObject* o);
 	
-	//Merge in progress
+	//TODO: Rework this stuff
 	virtual bool hasNext(unsigned int& index, bool& out);
 	virtual bool nextName(unsigned int index, ASObject*& out);
 	virtual bool nextValue(unsigned int index, ASObject*& out);

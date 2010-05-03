@@ -78,6 +78,7 @@ private:
 	tiny_string url;
 	ASObject* data;
 	void execute();
+	void threadAbort();
 public:
 	URLLoader();
 	static void sinit(Class_base*);
@@ -113,7 +114,7 @@ private:
 	sem_t mutex;
 	//IThreadJob interface for long jobs
 	void execute();
-	void abort();
+	void threadAbort();
 	//ITickJob interface to frame advance
 	void tick();
 public:

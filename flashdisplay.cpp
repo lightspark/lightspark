@@ -186,7 +186,7 @@ void Loader::execute()
 	LOG(LOG_NOT_IMPLEMENTED,"Loader async execution " << url);
 	if(source==URL)
 	{
-		abort();
+		threadAbort();
 		/*local_root=new RootMovieClip;
 		zlib_file_filter zf;
 		zf.open(url.raw_buf(),ios_base::in);
@@ -216,6 +216,12 @@ void Loader::execute()
 	loaded=true;
 	//Add a complete event for this object
 	sys->currentVm->addEvent(contentLoaderInfo,Class<Event>::getInstanceS("complete"));
+}
+
+void Loader::threadAbort()
+{
+	//TODO: implement
+	::abort();
 }
 
 void Loader::Render()

@@ -409,12 +409,18 @@ void ParseThread::execute()
 	catch(const char* s)
 	{
 		LOG(LOG_ERROR,"Exception caught: " << s);
-		abort();
+		threadAbort();
 	}
 	root->check();
 	pt=NULL;
 
 	sem_post(&ended);
+}
+
+void ParseThread::threadAbort()
+{
+	//TODO: implement
+	::abort();
 }
 
 void ParseThread::wait()

@@ -51,8 +51,7 @@ protected:
 	bool executing;
 	bool aborting;
 	virtual void execute()=0;
-	//DEPRECATED: should be pure virtual
-	virtual void abort(){::abort();}
+	virtual void threadAbort()=0;
 public:
 	IThreadJob();
 	virtual ~IThreadJob();

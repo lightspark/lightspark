@@ -71,6 +71,7 @@ class Timer: public EventDispatcher, public IThreadJob
 {
 private:
 	void execute();
+	void threadAbort();
 protected:
 	uint32_t delay;
 	uint32_t repeatCount;
@@ -132,11 +133,7 @@ public:
 class Proxy: public ASObject
 {
 friend class ABCVm;
-private:
-	//Deprecated
-	bool suppress;
 public:
-	Proxy():suppress(false){}
 	static void sinit(Class_base*);
 //	static void buildTraits(ASObject* o);
 //	ASFUNCTION(_constructor);

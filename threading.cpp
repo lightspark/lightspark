@@ -57,7 +57,7 @@ void IThreadJob::stop()
 	if(executing)
 	{
 		aborting=true;
-		this->abort();
+		this->threadAbort();
 	}
 }
 

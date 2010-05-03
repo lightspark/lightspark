@@ -177,7 +177,7 @@ CurlDownloader::CurlDownloader(const tiny_string& u)
 	url=tmp2.c_str();
 }
 
-void CurlDownloader::abort()
+void CurlDownloader::threadAbort()
 {
 	Downloader::stop();
 }

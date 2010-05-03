@@ -213,6 +213,7 @@ private:
 	std::istream& f;
 	sem_t ended;
 	void execute();
+	void threadAbort();
 public:
 	RootMovieClip* root;
 	int version;

@@ -149,7 +149,7 @@ void URLLoader::execute()
 		else if(dataFormat=="text")
 		{
 			if(curlDownloader.getLen())
-				abort();
+				threadAbort();
 			data=Class<ASString>::getInstanceS();
 		}
 		//Send a complete event for this object
@@ -160,6 +160,12 @@ void URLLoader::execute()
 		//Notify an error during loading
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError",this));
 	}
+}
+
+void URLLoader::threadAbort()
+{
+	//TODO: implement
+	::abort();
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
@@ -292,7 +298,7 @@ ASFUNCTIONBODY(NetStream,close)
 	NetStream* th=Class<NetStream>::cast(obj);
 	if(th->downloader)
 		th->downloader->stop();
-	th->abort();
+	th->threadAbort();
 	return NULL;
 }
 
@@ -304,7 +310,7 @@ NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
 	if(strncmp(buf,"FLV",3)==0)
 		ret=FLV_STREAM;
 	else
-		abort();
+		threadAbort();
 
 	s.seekg(0);
 	return ret;
@@ -336,7 +342,7 @@ void NetStream::execute()
 		{
 			FLV_HEADER h(s);
 			if(!h.isValid())
-				abort();
+				threadAbort();
 
 			unsigned int prevSize=0;
 			bool done=false;
@@ -403,7 +409,7 @@ void NetStream::execute()
 					}
 					default:
 						cout << (int)TagType << endl;
-						abort();
+						threadAbort();
 				}
 				profile->accountTime(chronometer.checkpoint());
 				if(aborting)
@@ -412,13 +418,13 @@ void NetStream::execute()
 			while(!done);
 		}
 		else
-			abort();
+			threadAbort();
 
 	}
 	catch(exception& e)
 	{
 		cout << e.what() << endl;
-		abort();
+		threadAbort();
 	}
 	catch(const char*)
 	{
@@ -439,7 +445,7 @@ void NetStream::execute()
 	getVm()->addEvent(this, status);*/
 }
 
-void NetStream::abort()
+void NetStream::threadAbort()
 {
 	sem_wait(&mutex);
 	if(downloader)

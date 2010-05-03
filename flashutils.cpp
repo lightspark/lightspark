@@ -236,6 +236,12 @@ void Timer::execute()
 	}
 }
 
+void Timer::threadAbort()
+{
+	running=false;
+	::abort();
+}
+
 void Timer::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
@@ -489,12 +495,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 {
 	assert(implEnable);
 	//If a variable named like this already exist, return that
-	if(hasPropertyByMultiname(name))
-	{
-		ASObject::setVariableByMultiname(name,o,enableOverride);
-		return;
-	}
-	if(suppress)
+	if(hasPropertyByMultiname(name) || !implEnable)
 	{
 		ASObject::setVariableByMultiname(name,o,enableOverride);
 		return;
@@ -518,25 +519,19 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 	args[0]=Class<ASString>::getInstanceS(name.name_s);
 	args[1]=o;
 	//We now suppress special handling
-	suppress=true;
+	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::setProperty");
 	ASObject* ret=f->call(this,args,2,getLevel());
 	assert(ret==NULL);
-	suppress=false;
+	implEnable=true;
 }
 
 objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
 	assert(!skip_impl);
-	assert(implEnable);
 	//It seems that various kind of implementation works only with the empty namespace
 	assert(name.ns.size()>0);
-	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
-
-	if(hasPropertyByMultiname(name))
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
-	if(suppress)
+	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable)
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
@@ -552,10 +547,10 @@ objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl,
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
 	//We now suppress special handling
-	suppress=true;
+	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::getProperty");
 	ASObject* ret=f->call(this,&arg,1,getLevel());
 	assert(ret);
-	suppress=false;
+	implEnable=true;
 	return objAndLevel(ret,0);
 }

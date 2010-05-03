@@ -247,6 +247,7 @@ private:
 	ByteArray* bytes;
 	LoaderInfo* contentLoaderInfo;
 	void execute();
+	void threadAbort();
 public:
 	Loader():local_root(NULL),loading(false),loaded(false),content(NULL)
 	{

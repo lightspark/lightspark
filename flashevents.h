@@ -46,7 +46,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getType);
 	ASFUNCTION(_getTarget);
-	virtual EVENT_TYPE getEventType() {return EVENT;} //DEPRECATED
+	virtual EVENT_TYPE getEventType() {return EVENT;}
 	tiny_string type;
 	ASObject* target;
 };

@@ -340,9 +340,10 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			{
 				Proxy* p=dynamic_cast<Proxy*>(obj);
 				assert(p);
-				p->suppress=true;
+				assert(p->implEnable);
+				p->implEnable=false;
 				ret=f->call(obj,args,m,o.level);
-				p->suppress=false;
+				p->implEnable=true;
 			}
 			else
 				ret=f->call(obj,args,m,o.level);
@@ -809,9 +810,10 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 			{
 				Proxy* p=dynamic_cast<Proxy*>(obj);
 				assert(p);
-				p->suppress=true;
+				assert(p->implEnable);
+				p->implEnable=false;
 				ret=f->call(obj,args,m,o.level);
-				p->suppress=false;
+				p->implEnable=true;
 			}
 			else
 				ret=f->call(obj,args,m,o.level);

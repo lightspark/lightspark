@@ -104,5 +104,11 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 		if(parent->root==parent)
 			parent->root->initialize();
 		//Now the bindings are effective also for our parent (the root)
+		
+		//As part of initialization set the transformation matrix for the child objects
+		list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
+
+		for(;i!=displayList.end();i++)
+			i->second->Matrix=i->first.Matrix;
 	}
 }

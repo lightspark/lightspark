@@ -552,11 +552,9 @@ void MovieClip::advanceFrame()
 
 void MovieClip::bootstrap()
 {
-	if(framesLoaded>0)
-	{
-		assert(frames.size()>=1);
-		frames[0].init(this,displayList);
-	}
+	assert(framesLoaded>0);
+	assert(frames.size()>=1);
+	frames[0].init(this,displayList);
 }
 
 void MovieClip::Render()
@@ -703,8 +701,7 @@ void DisplayObject::buildTraits(ASObject* o)
 	o->setGetterByQName("visible","",new Function(_getVisible));
 	o->setSetterByQName("visible","",new Function(undefinedFunction));
 	o->setGetterByQName("rotation","",new Function(_getRotation));
-	//o->setSetterByQName("rotation","",new Function(_setRotation));
-	o->setSetterByQName("rotation","",new Function(undefinedFunction));
+	o->setSetterByQName("rotation","",new Function(_setRotation));
 	o->setGetterByQName("name","",new Function(_getName));
 	o->setGetterByQName("parent","",new Function(_getParent));
 	o->setGetterByQName("root","",new Function(_getRoot));

@@ -256,7 +256,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 			{
 				cout << varName << ' ' << varValue << endl;
 				params->setVariableByQName(varName.c_str(),"",
-						lightspark::Class<lightspark::ASString>::getInstanceS(varValue)->obj);
+						lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
 			}
 			cur=n2+1;
 		}

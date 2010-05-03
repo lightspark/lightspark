@@ -571,8 +571,6 @@ public:
 	static void buildTraits(ASObject* o);
 	
 	//Merge in progress
-	virtual bool toInt_merge(int& ret);
-	virtual bool toNumber_merge(double& ret);
 	virtual bool hasNext(unsigned int& index, bool& out);
 	virtual bool nextName(unsigned int index, ASObject*& out);
 	virtual bool nextValue(unsigned int index, ASObject*& out);

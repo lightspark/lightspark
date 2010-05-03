@@ -92,18 +92,6 @@ bool ASObject::isLess(ASObject* r)
 	return false;
 }
 
-bool ASObject::toNumber_merge(double& ret)
-{
-	assert(implEnable);
-	return false;
-}
-
-bool ASObject::toInt_merge(int& ret)
-{
-	assert(implEnable);
-	return false;
-}
-
 bool ASObject::hasNext(unsigned int& index, bool& out)
 {
 	assert(implEnable);
@@ -206,12 +194,6 @@ unsigned int ASObject::toUInt()
 
 int ASObject::toInt()
 {
-	if(implEnable)
-	{
-		int ret;
-		if(toInt_merge(ret))
-			return ret;
-	}
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to int");
 	throw RunTimeException("Cannot converto object to int",sys->getOrigin().raw_buf());
 	return 0;
@@ -219,12 +201,6 @@ int ASObject::toInt()
 
 double ASObject::toNumber()
 {
-	if(implEnable)
-	{
-		double ret;
-		if(toNumber_merge(ret))
-			return ret;
-	}
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to float");
 	throw RunTimeException("Cannot converto object to float",sys->getOrigin().raw_buf());
 	return 0;

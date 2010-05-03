@@ -758,12 +758,11 @@ tiny_string ASString::toString(bool debugMsg)
 	return toString_priv();
 }
 
-bool ASString::toNumber_merge(double& ret)
+double ASString::toNumber()
 {
 	assert(implEnable);
-	//TODO: implemented conversion that checks for validity
-	ret=atof(data.c_str());
-	return true;
+	//TODO: implement conversion that checks for validity
+	return atof(data.c_str());
 }
 
 ASFUNCTIONBODY(Undefined,call)
@@ -797,9 +796,7 @@ bool ASString::isLess(ASObject* r)
 	//Number comparison has the priority over strings
 	if(r->getObjectType()==T_INTEGER)
 	{
-		number_t a;
-		bool isNumber=toNumber_merge(a);
-		assert(isNumber);
+		number_t a=toNumber();
 		number_t b=r->toNumber();
 		return a<b;
 	}
@@ -1049,7 +1046,7 @@ ASFUNCTIONBODY(Date,valueOf)
 	return new Number(th->toInt());
 }
 
-bool Date::toInt_merge(int& ret)
+bool Date::toInt(int& ret)
 {
 	assert(implEnable);
 	ret=toInt();

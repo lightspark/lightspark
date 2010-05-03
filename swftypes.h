@@ -544,6 +544,7 @@ public:
 	virtual uint32_t toUInt();
 	virtual double toNumber();
 
+	//Comparison operators
 	virtual bool isEqual(ASObject* r);
 	virtual bool isLess(ASObject* r);
 
@@ -570,8 +571,6 @@ public:
 	static void buildTraits(ASObject* o);
 	
 	//Merge in progress
-	virtual bool isEqual_merge(bool& ret, ASObject* o);
-	virtual bool isLess_merge(bool& ret, ASObject* o);
 	virtual bool toInt_merge(int& ret);
 	virtual bool toNumber_merge(double& ret);
 	virtual bool hasNext(unsigned int& index, bool& out);

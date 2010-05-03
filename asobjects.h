@@ -358,8 +358,8 @@ public:
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);
 	ASFUNCTION(toLowerCase);
-	bool isEqual_merge(bool& ret, ASObject* o);
-	bool isLess_merge(bool& ret, ASObject* o);
+	bool isEqual(ASObject* r);
+	bool isLess(ASObject* r);
 	tiny_string toString(bool debugMsg=false);
 	bool toNumber_merge(double& ret);
 };
@@ -483,7 +483,7 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	tiny_string toString(bool debugMsg=false);
-	bool isEqual_merge(bool& ret, ASObject* r);
+	bool isEqual(ASObject* r);
 	bool hasNext(unsigned int& index, bool& out);
 	bool nextName(unsigned int index, ASObject*& out)
 	{

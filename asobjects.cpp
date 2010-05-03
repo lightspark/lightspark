@@ -304,28 +304,27 @@ ASFUNCTIONBODY(ASXML,load)
 	throw UnsupportedException("ASXML::load not completely implemented",sys->getOrigin().raw_buf());
 }
 
-bool Array::isEqual_merge(bool& ret, ASObject* r)
+bool Array::isEqual(ASObject* r)
 {
 	assert(implEnable);
 	if(r->getObjectType()!=T_ARRAY)
-		ret=false;
+		return false;
 	else
 	{
 		const Array* ra=static_cast<const Array*>(r);
 		int size=data.size();
 		if(size!=ra->size())
-			ret=false;
+			return false;
 
 		for(int i=0;i<size;i++)
 		{
 			if(data[i].type!=DATA_OBJECT)
 				throw UnsupportedException("Array::isEqual not completely implemented",sys->getOrigin().raw_buf());
 			if(!data[i].data->isEqual(ra->at(i)))
-				ret=false;
+				return false;
 		}
-		ret=true;
+		return true;
 	}
-	return true;
 }
 
 intptr_t Array::getVariableByMultiname_i(const multiname& name)
@@ -778,36 +777,31 @@ tiny_string Undefined::toString(bool debugMsg)
 	return "null";
 }
 
-bool ASString::isEqual_merge(bool& ret, ASObject* r)
+bool ASString::isEqual(ASObject* r)
 {
 	assert(implEnable);
+	//TODO: check conversion
 	if(r->getObjectType()==T_STRING)
 	{
 		const ASString* s=static_cast<const ASString*>(r);
-		if(s->data==data)
-			ret=true;
-		else
-			ret=false;
+		return s->data==data;
 	}
 	else
-		ret=false;
-
-	return true;
+		return false;
 }
 
-bool ASString::isLess_merge(bool& ret, ASObject* o)
+bool ASString::isLess(ASObject* r)
 {
 	assert(implEnable);
 	//TODO: Implement ECMA-262 11.8.5 algorithm
 	//Number comparison has the priority over strings
-	if(o->getObjectType()==T_INTEGER)
+	if(r->getObjectType()==T_INTEGER)
 	{
 		number_t a;
 		bool isNumber=toNumber_merge(a);
 		assert(isNumber);
-		number_t b=o->toNumber();
-		ret=a<b;
-		return true;
+		number_t b=r->toNumber();
+		return a<b;
 	}
 	throw UnsupportedException("String::isLess not completely implemented",sys->getOrigin().raw_buf());
 	return true;

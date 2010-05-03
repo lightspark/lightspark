@@ -63,12 +63,6 @@ tiny_string ASObject::toString(bool debugMsg)
 bool ASObject::isLess(ASObject* r)
 {
 	assert(ref_count>0);
-	if(implEnable)
-	{
-		bool ret;
-		if(isLess_merge(ret,r))
-			return ret;
-	}
 
 	if(hasPropertyByQName("valueOf",""))
 	{
@@ -95,18 +89,6 @@ bool ASObject::isLess(ASObject* r)
 	if(prototype)
 		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
 	throw RunTimeException("Not handled less comparison for objects",sys->getOrigin().raw_buf());
-	return false;
-}
-
-bool ASObject::isLess_merge(bool& ret, ASObject* r)
-{
-	assert(implEnable);
-	return false;
-}
-
-bool ASObject::isEqual_merge(bool& ret, ASObject* r)
-{
-	assert(implEnable);
 	return false;
 }
 
@@ -165,12 +147,6 @@ tiny_string multiname::qualifiedString() const
 bool ASObject::isEqual(ASObject* r)
 {
 	assert(ref_count>0);
-	if(implEnable)
-	{
-		bool ret;
-		if(isEqual_merge(ret,r))
-			return ret;
-	}
 
 	//if we are comparing the same object the answer is true
 	if(this==r)

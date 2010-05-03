@@ -201,12 +201,12 @@ void ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	::abort();
 }
 
-bool ByteArray::isEqual_merge(bool& ret, ASObject* r)
+bool ByteArray::isEqual(ASObject* r)
 {
 	assert(implEnable);
-	if(r->getObjectType()!=T_OBJECT)
-		return false;
-	
+	/*if(r->getObjectType()!=T_OBJECT)
+		return false;*/
+
 	::abort();
 }
 

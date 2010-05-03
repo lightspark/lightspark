@@ -64,7 +64,7 @@ public:
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false);
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
-	bool isEqual_merge(bool& ret, ASObject* r);
+	bool isEqual(ASObject* r);
 };
 
 class Timer: public EventDispatcher, public IThreadJob
@@ -119,10 +119,10 @@ public:
 		assert(implEnable);
 		return ASObject::toString(debugMsg);
 	}
-	bool isEqual_merge(bool& ret, ASObject* r)
+	bool isEqual(ASObject* r)
 	{
 		assert(implEnable);
-		abort();
+		::abort();
 	}
 	bool hasNext(unsigned int& index, bool& out);
 	bool nextName(unsigned int index, ASObject*& out);
@@ -176,10 +176,10 @@ public:
 		assert(implEnable);
 		return ASObject::toString(debugMsg);
 	}
-	bool isEqual_merge(bool& ret, ASObject* r)
+	bool isEqual(ASObject* r)
 	{
 		assert(implEnable);
-		abort();
+		::abort();
 	}
 	bool hasNext(unsigned int& index, bool& out)
 	{

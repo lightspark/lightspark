@@ -60,10 +60,10 @@ public:
 		return objAndLevel(NULL,0);
 	}
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
-	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out);
-	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	intptr_t getVariableByMultiname_i(const multiname& name);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false);
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
-	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value);
+	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	bool isEqual_merge(bool& ret, ASObject* r);
 };
 
@@ -101,19 +101,19 @@ public:
 		return objAndLevel(NULL,0);
 	}
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
-	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
+	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert(implEnable);
-		abort();
+		::abort();
 	}
-	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false)
 	{
 		assert(implEnable);
-		abort();
+		::abort();
 	}
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
-	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value);
-	bool deleteVariableByMultiname_merge(const multiname& name);
+	void setVariableByMultiname_i(const multiname& name, intptr_t value);
+	void deleteVariableByMultiname(const multiname& name);
 	tiny_string toString(bool debugMsg=false)
 	{
 		assert(implEnable);
@@ -148,26 +148,28 @@ public:
 		return objAndLevel(NULL,0);
 	}
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
-	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
+	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert(implEnable);
-		abort();
+		::abort();
 	}
-	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false)
 	{
-		assert(implEnable);
-		abort();
+		if(!implEnable || skip_impl)
+			ASObject::setVariableByQName(name,ns,o,find_back,skip_impl);
+		else
+			::abort();
 	}
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
-	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
+	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
 		assert(implEnable);
-		abort();
+		::abort();
 	}
-	bool deleteVariableByMultiname_merge(const multiname& name)
+	void deleteVariableByMultiname(const multiname& name)
 	{
 		assert(implEnable);
-		abort();
+		::abort();
 	}
 	tiny_string toString(bool debugMsg=false)
 	{

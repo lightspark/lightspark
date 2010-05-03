@@ -137,27 +137,32 @@ objAndLevel ByteArray::getVariableByMultiname(const multiname& name, bool skip_i
 	return objAndLevel(ret,0);
 }
 
-bool ByteArray::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
+intptr_t ByteArray::getVariableByMultiname_i(const multiname& name)
 {
 	assert(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return false;
+		return ASObject::getVariableByMultiname_i(name);
 
 	assert(index<len);
-	out=bytes[index];
-
-	return true;
+	return bytes[index];
 }
 
-bool ByteArray::setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
+void ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
 {
-	assert(implEnable);
+	if(!implEnable || skip_impl)
+	{
+		ASObject::setVariableByQName(name,ns,o,find_back,skip_impl);
+		return;
+	}
+	
 	unsigned int index=0;
 	if(!Array::isValidQName(name,ns,index))
-		return false;
-
-	abort();
+	{
+		ASObject::setVariableByQName(name,ns,o,find_back,skip_impl);
+		return;
+	}
+	::abort();
 }
 
 void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
@@ -183,14 +188,17 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, bool 
 		bytes[index]=0;
 }
 
-bool ByteArray::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
+void ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	assert(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return false;
+	{
+		ASObject::setVariableByMultiname_i(name,value);
+		return;
+	}
 
-	abort();
+	::abort();
 }
 
 bool ByteArray::isEqual_merge(bool& ret, ASObject* r)
@@ -199,7 +207,7 @@ bool ByteArray::isEqual_merge(bool& ret, ASObject* r)
 	if(r->getObjectType()!=T_OBJECT)
 		return false;
 	
-	abort();
+	::abort();
 }
 
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
@@ -351,11 +359,10 @@ ASFUNCTIONBODY(Dictionary,_constructor)
 	return NULL;
 }
 
-bool Dictionary::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
+void Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	assert(implEnable);
-	setVariableByMultiname(name,abstract_i(value),true);
-	return true;
+	Dictionary::setVariableByMultiname(name,abstract_i(value),true);
 }
 
 void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
@@ -375,7 +382,7 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool
 		::abort();
 }
 
-bool Dictionary::deleteVariableByMultiname_merge(const multiname& name)
+void Dictionary::deleteVariableByMultiname(const multiname& name)
 {
 	assert(implEnable);
 	assert(name.name_type==multiname::NAME_OBJECT);
@@ -390,7 +397,6 @@ bool Dictionary::deleteVariableByMultiname_merge(const multiname& name)
 	//This is ugly, but at least we are sure that we own name_o
 	multiname* tmp=const_cast<multiname*>(&name);
 	tmp->name_o=NULL;
-	return true;
 }
 
 objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)

@@ -478,10 +478,10 @@ public:
 	}
 	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride);
-	bool getVariableByMultiname_i_merge(const multiname& name, intptr_t& out);
-	bool setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	intptr_t getVariableByMultiname_i(const multiname& name);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false);
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
-	bool setVariableByMultiname_i_merge(const multiname& name, intptr_t value);
+	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual_merge(bool& ret, ASObject* r);
 	bool hasNext(unsigned int& index, bool& out);

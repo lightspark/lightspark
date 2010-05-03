@@ -122,30 +122,6 @@ bool ASObject::toInt_merge(int& ret)
 	return false;
 }
 
-bool ASObject::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
-{
-	assert(implEnable);
-	return false;
-}
-
-bool ASObject::setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
-{
-	assert(implEnable);
-	return false;
-}
-
-bool ASObject::deleteVariableByMultiname_merge(const multiname& name)
-{
-	assert(implEnable);
-	return false;
-}
-
-bool ASObject::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
-{
-	assert(implEnable);
-	return false;
-}
-
 bool ASObject::hasNext(unsigned int& index, bool& out)
 {
 	assert(implEnable);
@@ -362,11 +338,6 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 void ASObject::deleteVariableByMultiname(const multiname& name)
 {
 	assert(ref_count>0);
-	if(implEnable)
-	{
-		if(deleteVariableByMultiname_merge(name))
-			return;
-	}
 
 	//Find out if the variable is declared more than once
 	obj_var* obj=NULL;
@@ -408,12 +379,6 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	check();
-	if(implEnable)
-	{
-		if(setVariableByMultiname_i_merge(name,value))
-			return;
-	}
-
 	setVariableByMultiname(name,abstract_i(value));
 }
 
@@ -459,12 +424,6 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
 {
-	if(!skip_impl && implEnable)
-	{
-		if(setVariableByQName_merge(name,ns,o))
-			return;
-	}
-
 	obj_var* obj=NULL;
 	//It's always correct to use the current level for the object
 	//NOTE: we assume that [gs]etSuper and setProperty correctly manipulate the cur_level
@@ -639,12 +598,6 @@ void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_strin
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();
-	if(implEnable)
-	{
-		intptr_t ret;
-		if(getVariableByMultiname_i_merge(name,ret))
-			return ret;
-	}
 
 	ASObject* ret=getVariableByMultiname(name).obj;
 	assert(ret);

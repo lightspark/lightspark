@@ -328,12 +328,12 @@ bool Array::isEqual_merge(bool& ret, ASObject* r)
 	return true;
 }
 
-bool Array::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
+intptr_t Array::getVariableByMultiname_i(const multiname& name)
 {
 	assert(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return false;
+		return ASObject::getVariableByMultiname_i(name);
 
 	if(index<data.size())
 	{
@@ -345,25 +345,23 @@ bool Array::getVariableByMultiname_i_merge(const multiname& name, intptr_t& out)
 				if(data[index].data->getObjectType()==T_INTEGER)
 				{
 					Integer* i=static_cast<Integer*>(data[index].data);
-					out=i->toInt();
+					return i->toInt();
 				}
 				else if(data[index].data->getObjectType()==T_NUMBER)
 				{
 					Number* i=static_cast<Number*>(data[index].data);
-					out=i->toInt();
+					return i->toInt();
 				}
 				else
-					throw UnsupportedException("Array::getVariableByMultiname_i not completely implemented",sys->getOrigin().raw_buf());
-				break;
+					throw UnsupportedException("Array::getVariableByMultiname_i not completely implemented",
+								   sys->getOrigin().raw_buf());
 			}
 			case DATA_INT:
-				out=data[index].data_i;
-				break;
+				return data[index].data_i;
 		}
-		return true;
 	}
-	else
-		return false;
+	
+	return ASObject::getVariableByMultiname_i(name);
 }
 
 objAndLevel Array::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
@@ -403,12 +401,15 @@ objAndLevel Array::getVariableByMultiname(const multiname& name, bool skip_impl,
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
 }
 
-bool Array::setVariableByMultiname_i_merge(const multiname& name, intptr_t value)
+void Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	assert(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return false;
+	{
+		ASObject::setVariableByMultiname_i(name,value);
+		return;
+	}
 
 	if(index>=data.capacity())
 	{
@@ -423,8 +424,6 @@ bool Array::setVariableByMultiname_i_merge(const multiname& name, intptr_t value
 		data[index].data->decRef();
 	data[index].data_i=value;
 	data[index].type=DATA_INT;
-
-	return true;
 }
 
 bool Array::isValidMultiname(const multiname& name, unsigned int& index)
@@ -518,12 +517,15 @@ bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, unsigne
 	return true;
 }
 
-bool Array::setVariableByQName_merge(const tiny_string& name, const tiny_string& ns, ASObject* o)
+void Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
 {
 	assert(implEnable);
 	unsigned int index=0;
 	if(!isValidQName(name,ns,index))
-		return false;
+	{
+		ASObject::setVariableByQName(name,ns,o,find_back,skip_impl);
+		return;
+	}
 
 	if(index>=data.capacity())
 	{
@@ -549,7 +551,6 @@ bool Array::setVariableByQName_merge(const tiny_string& name, const tiny_string&
 		data[index].data=o;
 		data[index].type=DATA_OBJECT;
 	}
-	return true;
 }
 
 objAndLevel Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)

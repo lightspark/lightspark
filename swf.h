@@ -37,6 +37,10 @@
 #ifndef WIN32
 #include <X11/Xlib.h>
 #include <GL/glx.h>
+namespace X11Intrinsic
+{
+#include <X11/Intrinsic.h>
+};
 #else
 //#include <windows.h>
 #endif
@@ -245,7 +249,7 @@ private:
 	pthread_t t;
 	bool terminated;
 	static void* sdl_worker(InputThread*);
-	static void* npapi_worker(InputThread*);
+	static void npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, Boolean* b);
 
 	std::vector<InteractiveObject* > listeners;
 	Mutex mutexListeners;

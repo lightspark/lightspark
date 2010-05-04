@@ -22,7 +22,6 @@
 
 /* Xlib/Xt stuff */
 #include <X11/Xlib.h>
-#include <X11/Intrinsic.h>
 #include <X11/cursorfont.h>
 
 #include <iostream>
@@ -91,7 +90,6 @@ private:
 
 	Window mWindow;
 	Display *mDisplay;
-	Widget mXtwidget;
 	int mX, mY;
 	int mWidth, mHeight;
 	Visual* mVisual;

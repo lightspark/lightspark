@@ -195,7 +195,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
-	mInstance(aInstance),mInitialized(FALSE),mWindow(0),mXtwidget(0),swf_stream(&swf_buf),
+	mInstance(aInstance),mInitialized(FALSE),mWindow(0),swf_stream(&swf_buf),
 	m_pt(&m_sys,swf_stream),m_it(NULL),m_rt(NULL)
 {
 	//Find flashvars argument
@@ -283,29 +283,12 @@ nsPluginInstance::~nsPluginInstance()
 	cerr << "instance dying" << endl;
 	m_sys.setShutdownFlag();
 	m_sys.wait();
-	m_rt->wait();
-	m_it->wait();
+	if(m_rt)
+		m_rt->wait();
+	if(m_it)
+		m_it->wait();
 	delete m_rt;
 	delete m_it;
-}
-
-void xt_event_handler(Widget xtwidget, nsPluginInstance *plugin, XEvent *xevent, Boolean *b)
-{
-	switch (xevent->type)
-	{
-		case Expose:
-			// get rid of all other exposure events
-			if (plugin)
-			{
-				//while(XCheckTypedWindowEvent(plugin->Display(), plugin->Window(), Expose, xevent));
-				plugin->draw();
-			}
-		case MotionNotify:
-			//cout << "Motion" << endl;
-			break;
-		default:
-			break;
-	}
 }
 
 void nsPluginInstance::draw()
@@ -407,16 +390,6 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		m_sys.renderThread=m_rt;
 		m_sys.downloadManager=new NPDownloadManager(mInstance);
 		m_sys.addJob(&m_pt);
-
-		/*// add xt event handler
-		Widget xtwidget = XtWindowToWidget(mDisplay, mWindow);
-		if (xtwidget && mXtwidget != xtwidget)
-		{
-			mXtwidget = xtwidget;
-			long event_mask = ExposureMask|PointerMotionMask;
-			XSelectInput(mDisplay, mWindow, event_mask);
-			XtAddEventHandler(xtwidget, event_mask, False, (XtEventHandler)xt_event_handler, this);
-		}*/
 	}
 	//draw();
 	return TRUE;

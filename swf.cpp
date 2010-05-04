@@ -439,18 +439,30 @@ void RenderThread::wait()
 	terminated=true;
 }
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),mutexListeners("Input listeners"),
-	mutexDragged("Input dragged"),curDragged(NULL)
+InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),npapi_params(NULL),t(0),terminated(false),
+	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL)
 {
 	LOG(LOG_NO_INFO,"Creating input thread");
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifndef WIN32
-	else
+	else if(e==NPAPI)
 	{
 		npapi_params=(NPAPI_params*)param;
-		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
+		//Under NPAPI is a bad idea to handle input in another thread
+		//pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
+		
+		//Let's hook into the Xt event handling of the browser
+		X11Intrinsic::Widget xtwidget = X11Intrinsic::XtWindowToWidget(npapi_params->display, npapi_params->window);
+		assert(xtwidget);
+
+		//mXtwidget = xtwidget;
+		long event_mask = ExposureMask|PointerMotionMask|ButtonPressMask|KeyPressMask;
+		XSelectInput(npapi_params->display, npapi_params->window, event_mask);
+		X11Intrinsic::XtAddEventHandler(xtwidget, event_mask, False, (X11Intrinsic::XtEventHandler)npapi_worker, this);
 	}
+	else
+		::abort();
 #endif
 }
 
@@ -463,44 +475,32 @@ void InputThread::wait()
 {
 	if(terminated)
 		return;
-	pthread_join(t,NULL);
+	if(t)
+		pthread_join(t,NULL);
 	terminated=true;
 }
 
-#ifndef WIN32
-void* InputThread::npapi_worker(InputThread* th)
+void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, lightspark::Boolean* b)
 {
-	sys=th->m_sys;
-	NPAPI_params* p=(NPAPI_params*)th->npapi_params;
-//	Display* d=XOpenDisplay(NULL);
-	XSelectInput(p->display,p->window,PointerMotionMask|ExposureMask);
-
-	XEvent e;
-	while(1)
+	if(xevent->type==KeyPress)
 	{
-		XNextEvent(p->display,&e);
-		if(e.type==KeyPress)
+		int key=XLookupKeysym(&xevent->xkey,0);
+		cout << "CHAR___ " << key << endl;
+		switch(key)
 		{
-			char key=XLookupKeysym(&e.xkey,0);
-			cout << "CHAR___ " << key << endl;
-			switch(key)
-			{
-				case 'i':
-					sys->showInteractiveMap=!sys->showInteractiveMap;
-					break;
-				case 'p':
-					sys->showProfilingData=!sys->showProfilingData;
-					break;
-				default:
-					break;
-			}
+			case 'i':
+				th->m_sys->showInteractiveMap=!th->m_sys->showInteractiveMap;
+				break;
+			case 'p':
+				th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
+				break;
+			default:
+				break;
 		}
-		if(sys->shutdown)
-			pthread_exit(0);
 	}
-	return NULL;
+	else
+		cout << "TYPE " << dec << xevent->type << endl;
 }
-#endif
 
 void* InputThread::sdl_worker(InputThread* th)
 {

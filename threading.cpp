@@ -33,7 +33,8 @@ IThreadJob::IThreadJob():executing(false),aborting(false)
 
 IThreadJob::~IThreadJob()
 {
-	sem_wait(&terminated);
+	if(executing)
+		sem_wait(&terminated);
 	sem_destroy(&terminated);
 }
 

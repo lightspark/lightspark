@@ -765,6 +765,14 @@ double ASString::toNumber()
 	return atof(data.c_str());
 }
 
+int32_t ASString::toInt()
+{
+	assert(implEnable);
+	if(data.empty() || !isdigit(data[0]))
+		return 0;
+	return atoi(data.c_str());
+}
+
 ASFUNCTIONBODY(Undefined,call)
 {
 	LOG(LOG_CALLS,"Undefined function");

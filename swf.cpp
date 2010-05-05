@@ -81,7 +81,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	pt->root->fileLenght=FileLength;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),frameRate(0),toBind(false)
+RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),frameRate(0),toBind(false)
 {
 	root=this;
 	sem_init(&mutex,0,1);
@@ -94,7 +94,7 @@ RootMovieClip::RootMovieClip(LoaderInfo* li):initialized(false),frameRate(0),toB
 	framesLoaded=0;
 
 	//We set the protoype to a generic MovieClip
-	if(sys)
+	if(!isSys)
 	{
 		prototype=Class<MovieClip>::getClass();
 		prototype->incRef();
@@ -117,7 +117,7 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL),renderRate(0),showProfilingData(false),showInteractiveMap(false),shutdown(false),
+SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),showProfilingData(false),showInteractiveMap(false),shutdown(false),
 	error(false),currentVm(NULL),inputThread(NULL),renderThread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization

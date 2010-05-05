@@ -39,6 +39,7 @@
 #include "flashgeom.h"
 #include "flashexternal.h"
 #include "flashmedia.h"
+#include "flashxml.h"
 #include "class.h"
 #include "exceptions.h"
 
@@ -180,7 +181,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass("TextFieldType"));
 	Global.setVariableByQName("Font","flash.text",Class<Font>::getClass());
 
-	Global.setVariableByQName("XMLDocument","flash.xml",new ASObject);
+	Global.setVariableByQName("XMLDocument","flash.xml",Class<XMLDocument>::getClass());
 
 	Global.setVariableByQName("ExternalInterface","flash.external",Class<ExternalInterface>::getClass());
 

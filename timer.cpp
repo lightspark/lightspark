@@ -127,10 +127,12 @@ void* TimerThread::timer_worker(TimerThread* th)
 		//Wait until a time expires
 		sem_wait(&th->mutex);
 		//Check if there is any event
-		if(th->pendingEvents.empty())
+		while(th->pendingEvents.empty())
 		{
 			sem_post(&th->mutex);
 			sem_wait(&th->newEvent);
+			if(th->stopped)
+				pthread_exit(0);
 			sem_wait(&th->mutex);
 		}
 

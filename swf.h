@@ -96,7 +96,7 @@ private:
 	tiny_string bindName;
 	void tick();
 public:
-	RootMovieClip(LoaderInfo* li);
+	RootMovieClip(LoaderInfo* li, bool isSys=false);
 	~RootMovieClip();
 	unsigned int version;
 	unsigned int fileLenght;

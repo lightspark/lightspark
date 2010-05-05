@@ -362,6 +362,7 @@ public:
 	bool isLess(ASObject* r);
 	tiny_string toString(bool debugMsg=false);
 	double toNumber();
+	int32_t toInt();
 };
 
 class Null: public ASObject

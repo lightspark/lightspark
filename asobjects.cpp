@@ -129,9 +129,12 @@ ASFUNCTIONBODY(Array,splice)
 	
 	int startIndex=args[0]->toInt();
 	unsigned int deleteCount=args[1]->toUInt();
+	int totalSize=th->data.size();
 	
-	assert(startIndex>=0);
-	assert((startIndex+deleteCount)<=th->data.size());
+	//A negative startIndex is relative to the end
+	assert(abs(startIndex)<totalSize);
+	startIndex=(startIndex+totalSize)%totalSize;
+	assert((startIndex+deleteCount)<=totalSize);
 	
 	Array* ret=Class<Array>::getInstanceS();
 	ret->data.reserve(deleteCount);

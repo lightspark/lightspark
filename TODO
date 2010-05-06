@@ -18,3 +18,4 @@ Official TODO Queue:
 -) stick to current level change or use flag to getVariable.../setVariable
 -) add classes for number, int, and boolean
 -) use fontconfig to avoid dependance on ttf-liberation
+-) Support mozilla Out of process plugin mode - Waiting for Xt support from mozila

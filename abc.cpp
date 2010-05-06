@@ -1668,10 +1668,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			{
 				ret=obj->getVariableByQName(name,ns).obj;
 				assert(ret==NULL);
+				
+				if(deferred_initialization)
+					ret=new ScriptDefinable(deferred_initialization);
+				else
+					ret=new Undefined;
 
-				assert(deferred_initialization==NULL);
-
-				ret=new Undefined;
 				obj->setVariableByQName(name, ns, ret, false);
 			}
 			LOG(LOG_CALLS,"Const "<<name<<" type "<< *getMultiname(t->type_name,NULL));

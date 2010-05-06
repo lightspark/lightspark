@@ -53,7 +53,7 @@ TLSDATA Manager* dManager=NULL;
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 {
 	int dest=in.tellg();
-	dest+=getSize();
+	dest+=h.getLength();
 	in >> Flags >> Name;
 	LOG(LOG_CALLS,"DoABCTag Name: " << Name);
 

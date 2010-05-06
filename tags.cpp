@@ -46,107 +46,172 @@ Tag* TagFactory::readTag()
 {
 	RECORDHEADER h;
 	f >> h;
-	LOG(LOG_TRACE,"Reading tag type: " << (h>>6));
-	switch(h>>6)
+	
+	unsigned int expectedLen=h.getLength();
+	unsigned int start=f.tellg();
+	Tag* ret=NULL;
+	LOG(LOG_TRACE,"Reading tag type: " << h.getTagType());
+	switch(h.getTagType())
 	{
 		case 0:
 			LOG(LOG_TRACE, "EndTag at position " << f.tellg());
-			return new EndTag(h,f);
+			ret=new EndTag(h,f);
+			break;
 		case 1:
-			return new ShowFrameTag(h,f);
+			ret=new ShowFrameTag(h,f);
+			break;
 		case 2:
-			return new DefineShapeTag(h,f);
+			ret=new DefineShapeTag(h,f);
+			break;
 	//	case 4:
-	//		return new PlaceObjectTag(h,f);
+	//		ret=new PlaceObjectTag(h,f);
 		case 9:
-			return new SetBackgroundColorTag(h,f);
+			ret=new SetBackgroundColorTag(h,f);
+			break;
 		case 10:
-			return new DefineFontTag(h,f);
+			ret=new DefineFontTag(h,f);
+			break;
 		case 11:
-			return new DefineTextTag(h,f);
+			ret=new DefineTextTag(h,f);
+			break;
 		case 12:
-			return new DoActionTag(h,f);
+			ret=new DoActionTag(h,f);
+			break;
 		case 13:
-			return new DefineFontInfoTag(h,f);
+			ret=new DefineFontInfoTag(h,f);
+			break;
 		case 14:
-			return new DefineSoundTag(h,f);
+			ret=new DefineSoundTag(h,f);
+			break;
 		case 15:
-			return new StartSoundTag(h,f);
+			ret=new StartSoundTag(h,f);
+			break;
 		case 19:
-			return new SoundStreamBlockTag(h,f);
+			ret=new SoundStreamBlockTag(h,f);
+			break;
 		case 20:
-			return new DefineBitsLosslessTag(h,f);
+			ret=new DefineBitsLosslessTag(h,f);
+			break;
 		case 21:
-			return new DefineBitsJPEG2Tag(h,f);
+			ret=new DefineBitsJPEG2Tag(h,f);
+			break;
 		case 22:
-			return new DefineShape2Tag(h,f);
+			ret=new DefineShape2Tag(h,f);
+			break;
 		case 24:
-			return new ProtectTag(h,f);
+			ret=new ProtectTag(h,f);
+			break;
 		case 26:
-			return new PlaceObject2Tag(h,f);
+			ret=new PlaceObject2Tag(h,f);
+			break;
 		case 28:
-			return new RemoveObject2Tag(h,f);
+			ret=new RemoveObject2Tag(h,f);
+			break;
 		case 32:
-			return new DefineShape3Tag(h,f);
+			ret=new DefineShape3Tag(h,f);
+			break;
 		case 34:
-			return new DefineButton2Tag(h,f);
+			ret=new DefineButton2Tag(h,f);
+			break;
 		case 36:
-			return new DefineBitsLossless2Tag(h,f);
+			ret=new DefineBitsLossless2Tag(h,f);
+			break;
 		case 37:
-			return new DefineEditTextTag(h,f);
+			ret=new DefineEditTextTag(h,f);
+			break;
 		case 39:
-			return new DefineSpriteTag(h,f);
+			ret=new DefineSpriteTag(h,f);
+			break;
 		case 41:
-			return new SerialNumberTag(h,f);
+			ret=new SerialNumberTag(h,f);
+			break;
 		case 43:
-			return new FrameLabelTag(h,f);
+			ret=new FrameLabelTag(h,f);
+			break;
 		case 45:
-			return new SoundStreamHead2Tag(h,f);
+			ret=new SoundStreamHead2Tag(h,f);
+			break;
 		case 46:
-			return new DefineMorphShapeTag(h,f);
+			ret=new DefineMorphShapeTag(h,f);
+			break;
 		case 48:
-			return new DefineFont2Tag(h,f);
+			ret=new DefineFont2Tag(h,f);
+			break;
 		case 56:
-			return new ExportAssetsTag(h,f);
+			ret=new ExportAssetsTag(h,f);
+			break;
 		case 59:
-			return new DoInitActionTag(h,f);
+			ret=new DoInitActionTag(h,f);
+			break;
 		case 60:
-			return new DefineVideoStreamTag(h,f);
+			ret=new DefineVideoStreamTag(h,f);
+			break;
 		case 65:
-			return new ScriptLimitsTag(h,f);
+			ret=new ScriptLimitsTag(h,f);
+			break;
 		case 69:
-			return new FileAttributesTag(h,f);
+			ret=new FileAttributesTag(h,f);
+			break;
 		case 73:
-			return new DefineFontAlignZonesTag(h,f);
+			ret=new DefineFontAlignZonesTag(h,f);
+			break;
 		case 74:
-			return new CSMTextSettingsTag(h,f);
+			ret=new CSMTextSettingsTag(h,f);
+			break;
 		case 75:
-			return new DefineFont3Tag(h,f);
+			ret=new DefineFont3Tag(h,f);
+			break;
 		case 76:
-			return new SymbolClassTag(h,f);
+			ret=new SymbolClassTag(h,f);
+			break;
 		case 77:
-			return new MetadataTag(h,f);
+			ret=new MetadataTag(h,f);
+			break;
 		case 78:
-			return new DefineScalingGridTag(h,f);
+			ret=new DefineScalingGridTag(h,f);
+			break;
 		case 82:
-			return new DoABCTag(h,f);
+			ret=new DoABCTag(h,f);
+			break;
 		case 83:
-			return new DefineShape4Tag(h,f);
+			ret=new DefineShape4Tag(h,f);
+			break;
 		case 86:
-			return new DefineSceneAndFrameLabelDataTag(h,f);
+			ret=new DefineSceneAndFrameLabelDataTag(h,f);
+			break;
 		case 87:
-			return new DefineBinaryDataTag(h,f);
+			ret=new DefineBinaryDataTag(h,f);
+			break;
 		case 88:
-			return new DefineFontNameTag(h,f);
+			ret=new DefineFontNameTag(h,f);
+			break;
 		default:
-			LOG(LOG_NOT_IMPLEMENTED,"Unsupported tag type " << (h>>6));
-			return new UnimplementedTag(h,f);
+			LOG(LOG_NOT_IMPLEMENTED,"Unsupported tag type " << h.getTagType());
+			ret=new UnimplementedTag(h,f);
 	}
+	
+	unsigned int end=f.tellg();
+	
+	unsigned int actualLen=end-start;
+	
+	if(actualLen<expectedLen)
+	{
+		LOG(LOG_ERROR,"Error while reading tag. Size=" << actualLen << " expected: " << expectedLen);
+		ignore(f,expectedLen-actualLen);
+	}
+	else if(actualLen>expectedLen)
+	{
+		LOG(LOG_ERROR,"Error while reading tag. Size=" << actualLen << " expected: " << expectedLen);
+		::abort();
+	}
+	
+	return ret;
 }
 
 RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	in >> Depth;
+	LOG(LOG_TRACE,"RemoveObject2 Depth: " << Depth);
 }
 
 void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& ls)
@@ -388,10 +453,80 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	ignore(in,KerningCount*4);
 }
 
+DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
+{
+	LOG(LOG_TRACE,"DefineFont3");
+	in >> FontID;
+	BitStream bs(in);
+	FontFlagsHasLayout = UB(1,bs);
+	FontFlagsShiftJIS = UB(1,bs);
+	FontFlagsSmallText = UB(1,bs);
+	FontFlagsANSI = UB(1,bs);
+	FontFlagsWideOffsets = UB(1,bs);
+	FontFlagsWideCodes = UB(1,bs);
+	FontFlagsItalic = UB(1,bs);
+	FontFlagsBold = UB(1,bs);
+	in >> LanguageCode >> FontNameLen;
+	for(int i=0;i<FontNameLen;i++)
+	{
+		UI8 t;
+		in >> t;
+		FontName.push_back(t);
+	}
+	in >> NumGlyphs;
+	UI16 t;
+	if(FontFlagsWideOffsets)
+	{
+		LOG(LOG_ERROR,"Not supported wide font offsets...Aborting");
+	}
+	else
+	{
+		for(int i=0;i<NumGlyphs;i++)
+		{
+			in >> t;
+			OffsetTable.push_back(t);
+		}
+		in >> t;
+		CodeTableOffset=t;
+	}
+	for(int i=0;i<NumGlyphs;i++)
+	{
+		SHAPE t;
+		in >> t;
+		GlyphShapeTable.push_back(t);
+	}
+	for(int i=0;i<NumGlyphs;i++)
+	{
+		UI16 t;
+		in >> t;
+		CodeTable.push_back(t);
+	}
+	if(FontFlagsHasLayout)
+	{
+		in >> FontAscent >> FontDescent >> FontLeading;
+
+		for(int i=0;i<NumGlyphs;i++)
+		{
+			SI16 t;
+			in >> t;
+			FontAdvanceTable.push_back(t);
+		}
+		for(int i=0;i<NumGlyphs;i++)
+		{
+			RECT t;
+			in >> t;
+			FontBoundsTable.push_back(t);
+		}
+		in >> KerningCount;
+	}
+	//TODO: implment Kerning support
+	ignore(in,KerningCount*4);
+}
+
 DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 {
 	int dest=in.tellg();
-	dest+=getSize();
+	dest+=h.getLength();
 	in >> CharacterId >> BitmapFormat >> BitmapWidth >> BitmapHeight;
 
 	if(BitmapFormat==3)
@@ -404,7 +539,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):Dictio
 DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
 {
 	int dest=in.tellg();
-	dest+=getSize();
+	dest+=h.getLength();
 	in >> CharacterId >> BitmapFormat >> BitmapWidth >> BitmapHeight;
 
 	if(BitmapFormat==3)
@@ -608,7 +743,7 @@ int crossProd(const Vector2& a, const Vector2& b)
 DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	int dest=in.tellg();
-	dest+=getSize();
+	dest+=h.getLength();
 	in >> CharacterId >> StartBounds >> EndBounds >> Offset >> MorphFillStyles >> MorphLineStyles >> StartEdges >> EndEdges;
 	if(in.tellg()<dest)
 		ignore(in,dest-in.tellg());
@@ -1495,7 +1630,7 @@ void DefineVideoStreamTag::Render()
 DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s)
 {
 	LOG(LOG_TRACE,"DefineBinaryDataTag");
-	int size=getSize();
+	int size=h.getLength();
 	s >> Tag >> Reserved;
 	size -= sizeof(Tag)+sizeof(Reserved);
 	bytes=new uint8_t[size];

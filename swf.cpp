@@ -117,8 +117,9 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),showProfilingData(false),showInteractiveMap(false),shutdown(false),
-	error(false),currentVm(NULL),inputThread(NULL),renderThread(NULL),useInterpreter(true),useJit(false),downloadManager(NULL)
+SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),showProfilingData(false),showInteractiveMap(false),
+	showDebug(false), shutdown(false),error(false),currentVm(NULL),inputThread(NULL),renderThread(NULL),useInterpreter(true),
+ 	useJit(false), downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -514,20 +515,23 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 				switch(event.key.keysym.sym)
 				{
+					case SDLK_d:
+						th->m_sys->showDebug=!th->m_sys->showDebug;
+						break;
 					case SDLK_i:
-						sys->showInteractiveMap=!sys->showInteractiveMap;
+						th->m_sys->showInteractiveMap=!th->m_sys->showInteractiveMap;
 						break;
 					case SDLK_p:
-						sys->showProfilingData=!sys->showProfilingData;
+						th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 						break;
 					case SDLK_q:
-						sys->setShutdownFlag();
-						if(sys->currentVm)
+						th->m_sys->setShutdownFlag();
+						if(th->m_sys->currentVm)
 							LOG(LOG_CALLS,"We still miss " << sys->currentVm->getEventQueueSize() << " events");
 						pthread_exit(0);
 						break;
 					case SDLK_s:
-						sys->state.stop_FP=true;
+						th->m_sys->state.stop_FP=true;
 						break;
 					//Ignore any other keystrokes
 					default:
@@ -1317,7 +1321,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 
-			if(sys->shutdown)
+			if(th->m_sys->shutdown)
 				pthread_exit(0);
 			SDL_PumpEvents();
 
@@ -1329,7 +1333,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glClear(GL_COLOR_BUFFER_BIT);
 			glLoadIdentity();
 			
-			sys->Render();
+			th->m_sys->Render();
 
 			glFlush();
 
@@ -1353,8 +1357,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glTexCoord2f(0,0);
 				glVertex2i(0,height);
 			glEnd();
+			
+			if(th->m_sys->showDebug)
+				th->m_sys->debugRender(true);
 
-			if(sys->showProfilingData)
+			if(th->m_sys->showProfilingData)
 			{
 				glUseProgram(0);
 				
@@ -1368,10 +1375,10 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				}
 				glEnd();
 				
-				list<ThreadProfile>::iterator it=sys->profilingData.begin();
-				for(;it!=sys->profilingData.end();it++)
+				list<ThreadProfile>::iterator it=th->m_sys->profilingData.begin();
+				for(;it!=th->m_sys->profilingData.end();it++)
 					it->plot(1000000/sys->getFrameRate(),&font);
-				glUseProgram(rt->gpu_program);
+				glUseProgram(th->gpu_program);
 			}
 			//Call glFlush to offload work on the GPU
 			glFlush();

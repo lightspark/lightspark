@@ -40,10 +40,10 @@ public:
 	bool operator<(const Vector2& v) const {return (y==v.y)?(x < v.x):(y < v.y);}
 	const Vector2 operator-(const Vector2& v)const { return Vector2(x-v.x,y-v.y);}
 	const Vector2 operator+(const Vector2& v)const { return Vector2(x+v.x,y+v.y);}
+	Vector2& operator+=(const Vector2& v){ x+=v.x; y+=v.y; return *this;}
 	const Vector2 operator*(int p)const { return Vector2(x*p,y*p);}
 	Vector2& operator/=(int v) { x/=v; y/=v; return *this;}
 	int dot(const Vector2& r) const { return x*r.x+y*r.y;}
-
 };
 
 #include "packed_begin.h"

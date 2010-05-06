@@ -44,30 +44,15 @@ class Tag
 {
 protected:
 	RECORDHEADER Header;
-	SI32 Length;
+	void skip(std::istream& in) const
+	{
+		ignore(in,Header.getLength());
+	}
 public:
 	Tag(RECORDHEADER h, std::istream& s):Header(h)
 	{
-		if((Header&0x3f)==0x3f)
-		{
-			s >> Length;
-		}
 	}
-	SI32 getSize()
-	{
-		if((Header&0x3f)==0x3f)
-			return Length;
-		else
-			return Header&0x3f;
-	}
-	void skip(std::istream& in)
-	{
-		if((Header&0x3f)==0x3f)
-			ignore(in,Length);
-		else
-			ignore(in,Header&0x3f);
-	}
-	virtual TAGTYPE getType(){ return TAG; }
+	virtual TAGTYPE getType() const{ return TAG; }
 	virtual ~Tag(){}
 };
 
@@ -75,14 +60,14 @@ class EndTag:public Tag
 {
 public:
 	EndTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
-	virtual TAGTYPE getType() { return END_TAG; }
+	virtual TAGTYPE getType() const{ return END_TAG; }
 };
 
 class DisplayListTag: public Tag
 {
 public:
 	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
-	virtual TAGTYPE getType(){ return DISPLAY_LIST_TAG; }
+	virtual TAGTYPE getType() const{ return DISPLAY_LIST_TAG; }
 	virtual void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list)=0;
 };
 
@@ -94,7 +79,7 @@ public:
 	Class_base* bindedTo;
 	RootMovieClip* loadedFrom;
 	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s),bindedTo(NULL),loadedFrom(NULL){ }
-	virtual TAGTYPE getType(){ return DICT_TAG; }
+	virtual TAGTYPE getType()const{ return DICT_TAG; }
 	virtual int getId(){return 0;} 
 	virtual ASObject* instance() const { return NULL; } 
 	void setLoadedFrom(RootMovieClip* r){loadedFrom=r;}
@@ -104,7 +89,7 @@ class ControlTag: public Tag
 {
 public:
 	ControlTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
-	virtual TAGTYPE getType(){ return CONTROL_TAG; }
+	virtual TAGTYPE getType()const{ return CONTROL_TAG; }
 	virtual void execute(RootMovieClip* root)=0;
 };
 
@@ -283,7 +268,7 @@ class ShowFrameTag: public Tag
 {
 public:
 	ShowFrameTag(RECORDHEADER h, std::istream& in);
-	virtual TAGTYPE getType(){ return SHOW_TAG; }
+	virtual TAGTYPE getType()const{ return SHOW_TAG; }
 };
 
 /*class PlaceObjectTag: public Tag
@@ -431,7 +416,6 @@ protected:
 public:
 	FontTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s){}
 	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph)=0;
-	virtual TAGTYPE getType(){ return DICT_TAG; }
 };
 
 class DefineFontTag: public FontTag
@@ -456,7 +440,7 @@ public:
 class DefineFont2Tag: public FontTag
 {
 	friend class DefineTextTag; 
-protected:
+private:
 	std::vector<UI32> OffsetTable;
 	std::vector < SHAPE > GlyphShapeTable;
 	UB FontFlagsHasLayout;
@@ -487,10 +471,35 @@ public:
 	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };
 
-class DefineFont3Tag: public DefineFont2Tag
+class DefineFont3Tag: public FontTag
 {
+private:
+	std::vector<UI32> OffsetTable;
+	std::vector < SHAPE > GlyphShapeTable;
+	UB FontFlagsHasLayout;
+	UB FontFlagsShiftJIS;
+	UB FontFlagsSmallText;
+	UB FontFlagsANSI;
+	UB FontFlagsWideOffsets;
+	UB FontFlagsWideCodes;
+	UB FontFlagsItalic;
+	UB FontFlagsBold;
+	LANGCODE LanguageCode;
+	UI8 FontNameLen;
+	std::vector <UI8> FontName;
+	UI16 NumGlyphs;
+	UI32 CodeTableOffset;
+	std::vector <UI16> CodeTable;
+	SI16 FontAscent;
+	SI16 FontDescent;
+	SI16 FontLeading;
+	std::vector < SI16 > FontAdvanceTable;
+	std::vector < RECT > FontBoundsTable;
+	UI16 KerningCount;
+	std::vector <KERNINGRECORD> FontKerningTable;
+
 public:
-	DefineFont3Tag(RECORDHEADER h, std::istream& in):DefineFont2Tag(h,in){}
+	DefineFont3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return FontID; }
 	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph);
 };

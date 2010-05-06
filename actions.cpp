@@ -55,10 +55,7 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
 {
 	LOG(LOG_CALLS,"DoActionTag");
 	int dest=in.tellg();
-	if((h&0x3f)==0x3f)
-		dest+=Length;
-	else
-		dest+=h&0x3f;
+	dest+=h.getLength();
 
 	while(1)
 	{
@@ -128,10 +125,7 @@ DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTa
 {
 	LOG(LOG_CALLS,"DoInitActionTag");
 	int dest=in.tellg();
-	if((h&0x3f)==0x3f)
-		dest+=Length;
-	else
-		dest+=h&0x3f;
+	dest+=h.getLength();
 	in >> SpriteID;
 	while(1)
 	{

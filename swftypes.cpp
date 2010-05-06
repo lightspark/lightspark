@@ -1153,6 +1153,25 @@ std::istream& lightspark::operator>>(std::istream& s, GRADIENT& v)
 	return s;
 }
 
+std::istream& lightspark::operator>>(std::istream& s, FOCALGRADIENT& v)
+{
+	BitStream bs(s);
+	v.SpreadMode=UB(2,bs);
+	v.InterpolationMode=UB(2,bs);
+	v.NumGradient=UB(4,bs);
+	GRADRECORD gr;
+	gr.version=v.version;
+	for(int i=0;i<v.NumGradient;i++)
+	{
+		s >> gr;
+		v.GradientRecords.push_back(gr);
+	}
+	sort(v.GradientRecords.begin(),v.GradientRecords.end());
+	//TODO: support FocalPoint
+	s.read((char*)&v.FocalPoint,2);
+	return s;
+}
+
 inline RGBA medianColor(const RGBA& a, const RGBA& b, float factor)
 {
 	return RGBA(a.Red+(b.Red-a.Red)*factor,
@@ -1320,11 +1339,15 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 		else
 			s >> v.Color;
 	}
-	else if(v.FillStyleType==0x10 || v.FillStyleType==0x12)
+	else if(v.FillStyleType==0x10 || v.FillStyleType==0x12 || v.FillStyleType==0x13)
 	{
 		s >> v.GradientMatrix;
 		v.Gradient.version=v.version;
-		s >> v.Gradient;
+		v.FocalGradient.version=v.version;
+		if(v.FillStyleType==0x13)
+			s >> v.FocalGradient;
+		else
+			s >> v.Gradient;
 	}
 	else if(v.FillStyleType==0x41 || v.FillStyleType==0x42 || v.FillStyleType==0x43)
 	{

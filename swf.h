@@ -161,6 +161,7 @@ public:
 
 	bool showProfilingData;
 	bool showInteractiveMap;
+	bool showDebug;
 	bool shutdown;
 	bool error;
 	void setShutdownFlag();

@@ -43,19 +43,13 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFontInfo Tag");
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
+	skip(in);
 }
 
 StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"StartSound Tag");
-	if((h&0x3f)==0x3f)
-		ignore(in,Length);
-	else
-		ignore(in,h&0x3f);
+	skip(in);
 }
 
 SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
@@ -126,6 +120,6 @@ CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h,i
 
 UnimplementedTag::UnimplementedTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Unimplemented Tag " << (h>>6));
+	LOG(LOG_NOT_IMPLEMENTED,"Unimplemented Tag " << h.getTagType());
 	skip(in);
 }

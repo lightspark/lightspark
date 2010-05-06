@@ -63,6 +63,10 @@ protected:
 	virtual void Render()=0;
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const=0;
 	virtual void setRoot(RootMovieClip* root)=0;
+	virtual Vector2 debugRender(bool deep)
+	{
+		::abort();
+	}
 };
 
 class DisplayObject: public IDisplayListElem
@@ -320,6 +324,7 @@ public:
 
 	//IDisplayListElem interface
 	void Render();
+	Vector2 debugRender(bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void check()
 	{

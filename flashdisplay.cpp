@@ -595,6 +595,49 @@ void MovieClip::Render()
 	LOG(LOG_TRACE,"End Render MovieClip");
 }
 
+Vector2 MovieClip::debugRender(bool deep)
+{
+	Vector2 ret(0,0);
+	if(!deep)
+	{
+		FILLSTYLE::fixedColor(0.8,0,0);
+		glBegin(GL_LINE_LOOP);
+			glVertex2i(0,0);
+			glVertex2i(100,0);
+			glVertex2i(100,100);
+			glVertex2i(0,100);
+		glEnd();
+		ret+=Vector2(100,100);
+	}
+	else
+	{
+		glPushMatrix();
+		if(framesLoaded)
+		{
+			assert(state.FP<framesLoaded);
+			list<pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[state.FP].displayList.begin();
+	
+			for(;it!=frames[state.FP].displayList.end();it++)
+			{
+				Vector2 off=it->second->debugRender(false);
+				glTranslatef(off.x,0,0);
+				ret+=off;
+			}
+		}
+
+		sem_wait(&sem_displayList);
+		/*list<IDisplayListElem*>::iterator j=dynamicDisplayList.begin();
+		for(;j!=dynamicDisplayList.end();j++)
+			(*j)->Render();*/
+		assert(dynamicDisplayList.empty());
+		sem_post(&sem_displayList);
+
+		glPopMatrix();
+	}
+	
+	return ret;
+}
+
 bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	bool valid=false;

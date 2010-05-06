@@ -203,7 +203,7 @@ private:
 public:
 	UI32():val(0){}
 	UI32(uint32_t v):val(v){}
-	operator uint32_t(){ return val; }
+	operator uint32_t() const{ return val; }
 	void bswap() { val=ntohl(val); }
 };
 
@@ -636,7 +636,28 @@ public:
 	operator int16_t(){ return val; }
 };
 
-typedef UI16 RECORDHEADER;
+//TODO: Really implement or suppress
+typedef UI32 SI32;
+
+class RECORDHEADER
+{
+friend std::istream& operator>>(std::istream& s, RECORDHEADER& v);
+private:
+	UI16 CodeAndLen;
+	SI32 Length;
+public:
+	unsigned int getLength() const
+	{
+		if((CodeAndLen&0x3f)==0x3f)
+			return Length;
+		else
+			return CodeAndLen&0x3f;
+	}
+	unsigned int getTagType() const
+	{
+		return CodeAndLen>>6;
+	}
+};
 
 class RGB
 {
@@ -666,8 +687,6 @@ public:
 		return *this;
 	}
 };
-
-typedef UI32 SI32;
 
 typedef UI8 LANGCODE;
 
@@ -725,6 +744,14 @@ inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 	// "Wacky format" is 45670123. Thanks to Ghash for reversing :-)
 	s.read(((char*)&v.val)+4,4);
 	s.read(((char*)&v.val),4);
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, RECORDHEADER& v)
+{
+	s >> v.CodeAndLen;
+	if((v.CodeAndLen&0x3f)==0x3f)
+		s >> v.Length;
 	return s;
 }
 
@@ -900,10 +927,22 @@ class GRADIENT
 	friend std::istream& operator>>(std::istream& s, GRADIENT& v);
 public:
 	int version;
-	UB SpreadMode;
-	UB InterpolationMode;
-	UB NumGradient;
+	int SpreadMode;
+	int InterpolationMode;
+	int NumGradient;
 	std::vector<GRADRECORD> GradientRecords;
+};
+
+class FOCALGRADIENT
+{
+	friend std::istream& operator>>(std::istream& s, FOCALGRADIENT& v);
+public:
+	int version;
+	int SpreadMode;
+	int InterpolationMode;
+	int NumGradient;
+	std::vector<GRADRECORD> GradientRecords;
+	float FocalPoint;
 };
 
 class FILLSTYLEARRAY;
@@ -925,6 +964,7 @@ private:
 	RGBA Color;
 	MATRIX GradientMatrix;
 	GRADIENT Gradient;
+	FOCALGRADIENT FocalGradient;
 	UI16 BitmapId;
 	MATRIX BitmapMatrix;
 
@@ -1241,6 +1281,8 @@ std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
 std::istream& operator>>(std::istream& stream, GLYPHENTRY& v);
 std::istream& operator>>(std::istream& stream, STRING& v);
 std::istream& operator>>(std::istream& stream, BUTTONRECORD& v);
+std::istream& operator>>(std::istream& stream, RECORDHEADER& v);
+
 
 };
 #endif

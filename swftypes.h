@@ -1027,17 +1027,11 @@ public:
 class LINESTYLEARRAY
 {
 public:
-	LINESTYLEARRAY():LineStyles(NULL),LineStyles2(NULL){}
-	~LINESTYLEARRAY()
-	{
-		delete[] LineStyles;
-		delete[] LineStyles2;
-	}
 	void appendStyles(const LINESTYLEARRAY& r);
 	int version;
 	UI8 LineStyleCount;
-	LINESTYLE* LineStyles;
-	LINESTYLE2* LineStyles2;
+	std::list<LINESTYLE> LineStyles;
+	std::list<LINESTYLE2> LineStyles2;
 };
 
 class MORPHLINESTYLEARRAY

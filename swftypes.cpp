@@ -903,23 +903,11 @@ void LINESTYLEARRAY::appendStyles(const LINESTYLEARRAY& r)
 {
 	unsigned int count = LineStyleCount + r.LineStyleCount;
 
+	assert(r.version==version);
 	if(version<4)
-	{
-		LINESTYLE* s=new LINESTYLE[count];
-		memcpy(s,LineStyles,LineStyleCount*sizeof(LINESTYLE));
-		memcpy(s+LineStyleCount,r.LineStyles,r.LineStyleCount*sizeof(LINESTYLE));
-		//Now swap the old and new arrays
-		delete[] LineStyles;
-		LineStyles=s;
-	}
+		LineStyles.insert(LineStyles.end(),r.LineStyles.begin(),r.LineStyles.end());
 	else
-	{
-		LINESTYLE2* s=new LINESTYLE2[count];
-		memcpy(s,LineStyles2,LineStyleCount*sizeof(LINESTYLE2));
-		memcpy(s+LineStyleCount,r.LineStyles2,r.LineStyleCount*sizeof(LINESTYLE2));
-		delete[] LineStyles2;
-		LineStyles2=s;
-	}
+		LineStyles2.insert(LineStyles2.end(),r.LineStyles2.begin(),r.LineStyles2.end());
 	LineStyleCount = count;
 }
 
@@ -930,18 +918,22 @@ std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 		LOG(LOG_ERROR,"Line array extended not supported");
 	if(v.version<4)
 	{
-		v.LineStyles=new LINESTYLE[v.LineStyleCount];
 		for(int i=0;i<v.LineStyleCount;i++)
 		{
-			v.LineStyles[i].version=v.version;
-			s >> v.LineStyles[i];
+			LINESTYLE tmp;
+			tmp.version=v.version;
+			s >> tmp;
+			v.LineStyles.push_back(tmp);
 		}
 	}
 	else
 	{
-		v.LineStyles2=new LINESTYLE2[v.LineStyleCount];
 		for(int i=0;i<v.LineStyleCount;i++)
-			s >> v.LineStyles2[i];
+		{
+			LINESTYLE2 tmp;
+			s >> tmp;
+			v.LineStyles2.push_back(tmp);
+		}
 	}
 	return s;
 }

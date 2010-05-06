@@ -281,6 +281,16 @@ void DefineEditTextTag::Render()
 	LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag: Render");
 }
 
+ASObject* DefineEditTextTag::instance() const
+{
+	DefineEditTextTag* ret=new DefineEditTextTag(*this);
+	//TODO: check
+	assert(bindedTo==NULL);
+	ret->prototype=Class<TextField>::getClass();
+	ret->prototype->incRef();
+	return ret;
+}
+
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	in >> SpriteID >> FrameCount;
@@ -335,6 +345,25 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	}
 
 	LOG(LOG_TRACE,"EndDefineSprite ID: " << SpriteID);
+}
+
+ASObject* DefineSpriteTag::instance() const
+{
+	DefineSpriteTag* ret=new DefineSpriteTag(*this);
+	//TODO: check
+	if(bindedTo)
+	{
+		//A class is binded to this tag
+		ret->prototype=bindedTo;
+	}
+	else
+	{
+		//A default object is always linked
+		ret->prototype=Class<MovieClip>::getClass();
+	}
+	ret->prototype->incRef();
+	ret->bootstrap();
+	return ret;
 }
 
 void lightspark::ignore(istream& i, int count)
@@ -1659,3 +1688,34 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	}
 }
 
+DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+{
+	LOG(LOG_TRACE,"DefineSound Tag");
+	in >> SoundId;
+	BitStream bs(in);
+	SoundFormat=UB(4,bs);
+	SoundRate=UB(2,bs);
+	SoundSize=UB(1,bs);
+	SoundType=UB(1,bs);
+	in >> SoundSampleCount;
+	//TODO: read and parse actual sound data
+	ignore(in,h.getLength()-7);
+}
+
+ASObject* DefineSoundTag::instance() const
+{
+	DefineSoundTag* ret=new DefineSoundTag(*this);
+	//TODO: check
+	if(bindedTo)
+	{
+		//A class is binded to this tag
+		ret->prototype=bindedTo;
+	}
+	else
+	{
+		//A default object is always linked
+		ret->prototype=Class<Sound>::getClass();
+	}
+	ret->prototype->incRef();
+	return ret;
+}

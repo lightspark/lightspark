@@ -28,6 +28,14 @@
 namespace lightspark
 {
 
+class Sound: public EventDispatcher
+{
+public:
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+};
+
 class SoundTransform: public ASObject
 {
 public:

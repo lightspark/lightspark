@@ -233,6 +233,7 @@ void ABCVm::registerClasses()
 
 	Global.setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getClass());
 	Global.setVariableByQName("Video","flash.media",Class<Video>::getClass());
+	Global.setVariableByQName("Sound","flash.media",Class<Sound>::getClass());
 
 	Global.setVariableByQName("ContextMenu","flash.ui",Class<ASObject>::getClass("ContextMenu"));
 	Global.setVariableByQName("ContextMenuItem","flash.ui",Class<ASObject>::getClass("ContextMenuItem"));

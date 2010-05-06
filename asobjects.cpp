@@ -1671,7 +1671,10 @@ ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, cons
 {
 	ASObject* ret=NULL;
 	if(tag)
+	{
 		ret=tag->instance();
+		assert(ret);
+	}
 	else
 	{
 		assert(super);

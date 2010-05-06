@@ -29,6 +29,7 @@ extern TLSDATA RenderThread* rt;
 
 REGISTER_CLASS_NAME(SoundTransform);
 REGISTER_CLASS_NAME(Video);
+REGISTER_CLASS_NAME(Sound);
 
 void SoundTransform::sinit(Class_base* c)
 {
@@ -208,5 +209,21 @@ ASFUNCTIONBODY(Video,attachNetStream)
 
 	assert(th->netStream==NULL);
 	th->netStream=Class<NetStream>::cast(args[0]);
+	return NULL;
+}
+
+void Sound::sinit(Class_base* c)
+{
+	c->setConstructor(new Function(_constructor));
+	c->super=Class<EventDispatcher>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void Sound::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(Sound,_constructor)
+{
 	return NULL;
 }

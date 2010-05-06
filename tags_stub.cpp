@@ -34,12 +34,6 @@ ProtectTag::ProtectTag(RECORDHEADER h, istream& in):ControlTag(h,in)
 	skip(in);
 }
 
-DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"DefineSound Tag");
-	skip(in);
-}
-
 DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFontInfo Tag");

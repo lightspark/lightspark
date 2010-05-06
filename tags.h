@@ -30,6 +30,7 @@
 #include "flashdisplay.h"
 #include "flashtext.h"
 #include "flashutils.h"
+#include "flashmedia.h"
 #include "class.h"
 #include <GL/glew.h>
 
@@ -80,8 +81,8 @@ public:
 	RootMovieClip* loadedFrom;
 	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s),bindedTo(NULL),loadedFrom(NULL){ }
 	virtual TAGTYPE getType()const{ return DICT_TAG; }
-	virtual int getId(){return 0;} 
-	virtual ASObject* instance() const { return NULL; } 
+	virtual int getId()=0;
+	virtual ASObject* instance() const { return NULL; };
 	void setLoadedFrom(RootMovieClip* r){loadedFrom=r;}
 };
 
@@ -212,7 +213,7 @@ public:
 };
 
 
-class DefineEditTextTag: public DictionaryTag, public ASObject
+class DefineEditTextTag: public DictionaryTag, public TextField
 {
 private:
 	UI16 CharacterID;
@@ -250,12 +251,22 @@ public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
 	virtual int getId(){ return CharacterID; }
 	virtual void Render();
+	ASObject* instance() const;
 };
 
-class DefineSoundTag: public Tag
+class DefineSoundTag: public DictionaryTag, public Sound
 {
+private:
+	UI16 SoundId;
+	char SoundFormat;
+	char SoundRate;
+	char SoundSize;
+	char SoundType;
+	UI32 SoundSampleCount;
 public:
 	DefineSoundTag(RECORDHEADER h, std::istream& s);
+	virtual int getId() { return SoundId; }
+	ASObject* instance() const;
 };
 
 class StartSoundTag: public Tag
@@ -542,26 +553,7 @@ private:
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
-
-	ASObject* instance() const
-	{
-		DefineSpriteTag* ret=new DefineSpriteTag(*this);
-		//TODO: check
-		if(bindedTo)
-		{
-			//A class is binded to this tag
-			ret->prototype=static_cast<Class_base*>(bindedTo);
-		}
-		else
-		{
-			//A default object is always linked
-			ret->prototype=Class<MovieClip>::getClass();
-		}
-
-		ret->prototype->incRef();
-		ret->bootstrap();
-		return ret;
-	}
+	ASObject* instance() const;
 };
 
 class ProtectTag: public ControlTag

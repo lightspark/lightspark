@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
 
 	if(fileName==NULL)
 	{
-		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf] [--disable-interpreter|-ni] [--log-level|-l 0-4] [--parameters-file|-p params-file] <file.swf>" << endl;
+		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf] [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] [--parameters-file|-p params-file] <file.swf>" << endl;
 		exit(-1);
 	}
 

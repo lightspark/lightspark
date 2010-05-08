@@ -434,6 +434,7 @@ friend int main(int argc, char* argv[]);
 private:
 	SystemState* m_sys;
 	pthread_t t;
+	bool terminated;
 
 	llvm::Module* module;
 

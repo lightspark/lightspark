@@ -1143,6 +1143,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method();
+		assert(val);
 	}
 
 	assert(mi->needsArgs()==false);

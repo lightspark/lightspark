@@ -401,7 +401,9 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
-				else if(rt1->getObjectType()==T_OBJECT)
+				else if(rt1->getObjectType()==T_OBJECT 
+						|| rt1->getObjectType()==T_CLASS
+						|| rt1->getObjectType()==T_FUNCTION)
 				{
 					ret->name_o=rt1;
 					ret->name_type=multiname::NAME_OBJECT;
@@ -415,6 +417,8 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else
 				{
+					
+					throw UnsupportedException("Multiname to String not implemented",sys->getOrigin().raw_buf());
 					//ret->name_s=rt1->toString();
 					//ret->name_type=multiname::NAME_STRING;
 				}
@@ -487,7 +491,9 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
-				else if(rt1->getObjectType()==T_OBJECT)
+				else if(rt1->getObjectType()==T_OBJECT 
+						|| rt1->getObjectType()==T_CLASS
+						|| rt1->getObjectType()==T_FUNCTION)
 				{
 					ret->name_o=rt1;
 					ret->name_type=multiname::NAME_OBJECT;
@@ -781,7 +787,9 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
-				else if(n->getObjectType()==T_OBJECT)
+				else if(n->getObjectType()==T_OBJECT 
+						|| n->getObjectType()==T_CLASS
+						|| n->getObjectType()==T_FUNCTION)
 				{
 					ret->name_o=n;
 					ret->name_type=multiname::NAME_OBJECT;
@@ -910,7 +918,7 @@ ABCContext::ABCContext(istream& in)
 	}
 }
 
-ABCVm::ABCVm(SystemState* s):m_sys(s),shutdown(false)
+ABCVm::ABCVm(SystemState* s):m_sys(s),terminated(false),shutdown(false)
 {
 	sem_init(&event_queue_mutex,0,1);
 	sem_init(&sem_event_count,0,0);
@@ -926,8 +934,7 @@ ABCVm::~ABCVm()
 {
 	//signal potentially blocking semaphores
 	sem_post(&sem_event_count);
-	if(pthread_join(t,NULL)!=0)
-		abort();
+	wait();
 	sem_destroy(&sem_event_count);
 	sem_destroy(&event_queue_mutex);
 	//assert(Global.ref_count==0);
@@ -935,7 +942,12 @@ ABCVm::~ABCVm()
 
 void ABCVm::wait()
 {
-	pthread_join(t,NULL);
+	if(!terminated)
+	{
+		if(pthread_join(t,NULL)!=0)
+			abort();
+		terminated=true;
+	}
 }
 
 int ABCVm::getEventQueueSize()
@@ -1239,7 +1251,8 @@ void ABCContext::exec()
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(getGlobal(),&scripts[i].traits[j],false);
 	ASObject* ret=entry->call(getGlobal(),NULL,0,0);
-	assert(ret==NULL);
+	if(ret)
+		ret->decRef();
 	LOG(LOG_CALLS, "End of Entry Point");
 }
 
@@ -1283,11 +1296,10 @@ void ABCVm::Run(ABCVm* th)
 	{
 		sem_wait(&th->sem_event_count);
 		Chronometer chronometer;
+		th->handleEvent();
 		if(th->shutdown)
 			break;
-		th->handleEvent();
 		profile->accountTime(chronometer.checkpoint());
-		
 	}
 
 	if(sys->useJit)

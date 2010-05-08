@@ -479,7 +479,8 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//pop
 				pop();
 				ASObject* o=context->runtime_stack_pop();
-				o->decRef();
+				if(o)
+					o->decRef();
 				break;
 			}
 			case 0x2a:

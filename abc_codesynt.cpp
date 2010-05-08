@@ -1655,7 +1655,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(Log::getLevel()>=LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
-					Builder.CreateCall2(ex->FindFunctionNamed("kill"), context, constant);
+					Builder.CreateCall(ex->FindFunctionNamed("kill"), constant);
 				}
 				int i=t;
 				if(static_locals[i].second==STACK_OBJECT)
@@ -1822,7 +1822,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(Log::getLevel()>=LOG_CALLS)
 				{
 					constant = llvm::ConstantInt::get(int_type, t);
-					Builder.CreateCall2(ex->FindFunctionNamed("jump"), context, constant);
+					Builder.CreateCall(ex->FindFunctionNamed("jump"), constant);
 				}
 				int here=code.tellg();
 				int dest=here+t;

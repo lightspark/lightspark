@@ -1517,6 +1517,7 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 
 std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 {
+	assert(v.buttonVersion==2);
 	BitStream bs(stream);
 
 	UB(2,bs);
@@ -1532,9 +1533,57 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 
 	stream >> v.CharacterID >> v.PlaceDepth >> v.PlaceMatrix >> v.ColorTransform;
 
-	if(v.ButtonHasFilterList | v.ButtonHasBlendMode)
-		LOG(LOG_ERROR,"Button record not yet totally supported");
+	if(v.ButtonHasFilterList)
+		stream >> v.FilterList;
 
+	if(v.ButtonHasBlendMode)
+	{
+		LOG(LOG_ERROR,"Button record not yet totally supported");
+	}
+
+	return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, FILTERLIST& v)
+{
+	stream >> v.NumberOfFilters;
+	v.Filters.resize(v.NumberOfFilters);
+
+	for(int i=0;i<v.NumberOfFilters;i++)
+		stream >> v.Filters[i];
+	
+	return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
+{
+	stream >> v.FilterID;
+	switch(v.FilterID)
+	{
+		case 0:
+			stream >> v.DropShadowFilter;
+			break;
+		case 2:
+			stream >> v.GlowFilter;
+			break;
+		default:
+			LOG(LOG_ERROR,"Unsupported Filter Id " << (int)v.FilterID);
+			::abort();
+	}
+	return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, GLOWFILTER& v)
+{
+	//TODO: implement GLOWFILTER parsing
+	ignore(stream,4+4+4+2+1);
+	return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, DROPSHADOWFILTER& v)
+{
+	//TODO: implement DROPSHADOWFILTER parsing
+	ignore(stream,4+4+4+4+4+2+1);
 	return stream;
 }
 

@@ -40,6 +40,7 @@ namespace lightspark
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,END_TAG};
 
 void ignore(std::istream& i, int count);
+void FromShaperecordListToShapeVector(SHAPERECORD* cur, std::vector<GeomShape>& shapes);
 
 class Tag
 {
@@ -195,7 +196,7 @@ public:
 	}
 };
 
-class DefineMorphShapeTag: public DictionaryTag
+class DefineMorphShapeTag: public DictionaryTag, public MorphShape
 {
 private:
 	UI16 CharacterId;
@@ -210,6 +211,7 @@ public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render();
+	virtual ASObject* instance() const;
 };
 
 

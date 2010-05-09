@@ -222,6 +222,7 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, IDisplay
 	{
 		if(it->second->Depth==Depth)
 		{
+			it->second->decRef();
 			ls.erase(it);
 			break;
 		}
@@ -764,11 +765,6 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DictionaryTag
 	in >> Shapes;
 }
 
-int crossProd(const Vector2& a, const Vector2& b)
-{
-	return a.x*b.y-a.y*b.x;
-}
-
 DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	int dest=in.tellg();
@@ -784,11 +780,18 @@ std::ostream& operator<<(std::ostream& s, const Vector2& p)
 	return s;
 }
 
-void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shapes);
+ASObject* DefineMorphShapeTag::instance() const
+{
+	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
+	assert(bindedTo==NULL);
+	ret->prototype=Class<MorphShape>::getClass();
+	ret->prototype->incRef();
+	return ret;
+}
 
 void DefineMorphShapeTag::Render()
 {
-	::abort();
+	//TODO: implement morph shape support
 /*	std::vector < GeomShape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
 
@@ -1051,7 +1054,7 @@ void FromShaperecordListToDump(SHAPERECORD* cur)
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes */
 
-void FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shapes)
+void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shapes)
 {
 	int startX=0;
 	int startY=0;
@@ -1446,6 +1449,8 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 			list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=
 				lower_bound< list<pair<PlaceInfo, IDisplayListElem*> >::iterator, int, list_orderer>
 				(ls.begin(),ls.end(),Depth,list_orderer());
+			//As we are inserting the object in the list we need to incref it
+			toAdd->incRef();
 			ls.insert(it,make_pair(infos,toAdd));
 		}
 	}
@@ -1483,8 +1488,10 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 			}
 			else
 			{
+				it->second->decRef();
 				ls.erase(it);
 				list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
+				toAdd->incRef();
 				ls.insert(it,make_pair(infos,toAdd));
 			}
 		}
@@ -1563,7 +1570,7 @@ DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryT
 	TrackAsMenu=UB(1,bs);
 	in >> ActionOffset;
 
-	BUTTONRECORD br;
+	BUTTONRECORD br(2);
 
 	do
 	{

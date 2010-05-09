@@ -231,7 +231,7 @@ void Timer::execute()
 			SynchronizationEvent* se=new SynchronizationEvent;
 			sys->currentVm->addEvent(NULL,se);
 			se->wait();
-			delete se;
+			se->decRef();
 		}
 	}
 }

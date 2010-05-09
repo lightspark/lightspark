@@ -47,6 +47,7 @@ REGISTER_CLASS_NAME(DisplayObjectContainer);
 REGISTER_CLASS_NAME(Sprite);
 REGISTER_CLASS_NAME(Loader);
 REGISTER_CLASS_NAME(Shape);
+REGISTER_CLASS_NAME(MorphShape);
 REGISTER_CLASS_NAME(Stage);
 REGISTER_CLASS_NAME(Graphics);
 REGISTER_CLASS_NAME(LineScaleMode);
@@ -544,7 +545,11 @@ void MovieClip::advanceFrame()
 		frames[state.next_FP].init(this,displayList);
 		state.FP=state.next_FP;
 		if(!state.stop_FP && framesLoaded>0)
+		{
 			state.next_FP=min(state.FP+1,framesLoaded-1);
+			//DEBUG: stop frame advancement
+			state.next_FP=min(state.next_FP,0);
+		}
 		state.explicit_FP=false;
 	}
 
@@ -1135,9 +1140,23 @@ DisplayObjectContainer::DisplayObjectContainer()
 	sem_init(&sem_displayList,0,1);
 }
 
+DisplayObjectContainer::~DisplayObjectContainer()
+{
+	//Release every child
+	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();it++)
+		(*it)->decRef();
+	sem_destroy(&sem_displayList);
+}
+
 InteractiveObject::InteractiveObject():id(0)
 {
+}
 
+InteractiveObject::~InteractiveObject()
+{
+	if(sys && sys->inputThread)
+		sys->inputThread->removeListener(this);
 }
 
 ASFUNCTIONBODY(InteractiveObject,_constructor)
@@ -1240,6 +1259,8 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		for(unsigned int i=0;i<index;i++)
 			it++;
 		dynamicDisplayList.insert(it,child);
+		//We acquire a reference to the child
+		child->incRef();
 	}
 	sem_post(&sem_displayList);
 }
@@ -1253,6 +1274,8 @@ void DisplayObjectContainer::_removeChild(IDisplayListElem* child)
 	list<IDisplayListElem*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 	assert(it!=dynamicDisplayList.end());
 	dynamicDisplayList.erase(it);
+	//We can release the reference to the child
+	child->decRef();
 	sem_post(&sem_displayList);
 	child->parent=NULL;
 }
@@ -1457,6 +1480,24 @@ ASFUNCTIONBODY(Shape,_getGraphics)
 
 	th->graphics->incRef();
 	return th->graphics;
+}
+
+void MorphShape::sinit(Class_base* c)
+{
+	c->setConstructor(new Function(_constructor));
+	c->super=Class<DisplayObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void MorphShape::buildTraits(ASObject* o)
+{
+	//No traits
+}
+
+ASFUNCTIONBODY(MorphShape,_constructor)
+{
+	DisplayObject::_constructor(obj,NULL,0);
+	return NULL;
 }
 
 void Stage::sinit(Class_base* c)

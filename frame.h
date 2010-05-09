@@ -50,6 +50,7 @@ public:
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
 	Frame():script(NULL),initialized(false){}
+	~Frame();
 	void Render();
 	void setLabel(STRING l);
 	void setScript(IFunction* s){script=s;}

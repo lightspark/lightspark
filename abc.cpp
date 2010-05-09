@@ -74,6 +74,7 @@ void DoABCTag::execute(RootMovieClip*)
 	SynchronizationEvent* se=new SynchronizationEvent;
 	sys->currentVm->addEvent(NULL,se);
 	se->wait();
+	se->decRef();
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
@@ -961,10 +962,12 @@ void ABCVm::handleEvent()
 	pair<EventDispatcher*,Event*> e=events_queue.front();
 	events_queue.pop_front();
 	sem_post(&event_queue_mutex);
+	e.second->check();
 	if(e.first)
 	{
 		//cerr << e.second->type << endl;
 		e.first->handleEvent(e.second);
+		e.first->decRef();
 	}
 	else
 	{
@@ -1021,11 +1024,18 @@ void ABCVm::handleEvent()
 				throw UnsupportedException("Not supported event",sys->getOrigin().raw_buf());
 		}
 	}
+	e.second->decRef();
 }
 
+/*! \brief enqueue an event, a reference is acquired
+* * \param obj EventDispatcher that will receive the event
+* * \param ev event that will be sent */
 void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 {
 	sem_wait(&event_queue_mutex);
+	if(obj)
+		obj->incRef();
+	ev->incRef();
 	events_queue.push_back(pair<EventDispatcher*,Event*>(obj, ev));
 	sem_post(&sem_event_count);
 	sem_post(&event_queue_mutex);

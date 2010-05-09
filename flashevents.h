@@ -40,7 +40,7 @@ class Event: public ASObject
 public:
 	Event():type("Event"),target(NULL){}
 	Event(const tiny_string& t, ASObject* _t=NULL);
-	virtual ~Event(){}
+	virtual ~Event();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

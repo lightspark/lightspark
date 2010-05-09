@@ -449,6 +449,7 @@ public:
 #ifndef NDEBUG
 	//Stuff onyl used in debugging
 	bool initialized;
+	int getRefCount(){ return ref_count; }
 #endif
 	bool implEnable;
 	Class_base* prototype;
@@ -1176,13 +1177,34 @@ class CXFORM
 {
 };
 
+class DROPSHADOWFILTER
+{
+};
+
+class GLOWFILTER
+{
+};
+
+class FILTER
+{
+public:
+	UI8 FilterID;
+	GLOWFILTER GlowFilter;
+	DROPSHADOWFILTER DropShadowFilter;
+};
+
 class FILTERLIST
 {
+public:
+	UI8 NumberOfFilters;
+	std::vector<FILTER> Filters;
 };
 
 class BUTTONRECORD
 {
 public:
+	BUTTONRECORD(int v):buttonVersion(v){}
+	int buttonVersion;
 	UB ButtonReserved;
 	UB ButtonHasBlendMode;
 	UB ButtonHasFilterList;
@@ -1276,6 +1298,10 @@ std::istream& operator>>(std::istream& stream, GLYPHENTRY& v);
 std::istream& operator>>(std::istream& stream, STRING& v);
 std::istream& operator>>(std::istream& stream, BUTTONRECORD& v);
 std::istream& operator>>(std::istream& stream, RECORDHEADER& v);
+std::istream& operator>>(std::istream& stream, FILTERLIST& v);
+std::istream& operator>>(std::istream& stream, FILTER& v);
+std::istream& operator>>(std::istream& stream, DROPSHADOWFILTER& v);
+std::istream& operator>>(std::istream& stream, GLOWFILTER& v);
 
 
 };

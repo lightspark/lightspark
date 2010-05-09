@@ -134,6 +134,7 @@ protected:
 	void RenderEpilogue();
 public:
 	InteractiveObject();
+	virtual ~InteractiveObject();
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -156,6 +157,7 @@ public:
 	void dumpDisplayList();
 	void _removeChild(IDisplayListElem*);
 	DisplayObjectContainer();
+	virtual ~DisplayObjectContainer();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -211,6 +213,16 @@ public:
 	ASFUNCTION(_getGraphics);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
+};
+
+class MorphShape: public DisplayObject
+{
+public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	//bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
+	//void Render();
 };
 
 class LoaderInfo: public EventDispatcher

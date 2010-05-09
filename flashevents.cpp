@@ -55,6 +55,11 @@ Event::Event(const tiny_string& t, ASObject* _t):type(t),target(_t)
 {
 }
 
+Event::~Event()
+{
+//	cout << "Destroying event type " << type << " this " << this << endl;
+}
+
 void Event::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));
@@ -277,7 +282,6 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		LOG(LOG_ERROR,"Type mismatch");
 		abort();
 	}
-//	sys->cur_input_thread->addListener(args[0]->toString(),th);
 
 	map<tiny_string, list<listener> >::iterator h=th->handlers.find(args[0]->toString());
 	if(h==th->handlers.end())
@@ -307,7 +311,7 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 	if(e==NULL || th==NULL)
 		return new Boolean(false);
 	//CHECK: maybe is to be cloned
-	args[0]->incRef();
+	e->incRef();
 	assert(e->type!="");
 	th->handleEvent(e);
 	return new Boolean(true);
@@ -320,6 +324,8 @@ ASFUNCTIONBODY(EventDispatcher,_constructor)
 
 void EventDispatcher::handleEvent(Event* e)
 {
+	check();
+	e->check();
 	map<tiny_string, list<listener> >::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
@@ -346,8 +352,8 @@ void EventDispatcher::handleEvent(Event* e)
 		//And now no more, f can also be deleted
 		tmpListener[i].f->decRef();
 	}
-	e->decRef();
 	
+	e->check();
 	//If the number of handlers now if 0, then purge the entry from the map
 	//TODO
 }

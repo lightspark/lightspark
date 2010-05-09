@@ -21,7 +21,6 @@
 #include "frame.h"
 #include "tags.h"
 #include <list>
-#include <time.h>
 #include "swf.h"
 #include "compat.h"
 #include <GL/glew.h>
@@ -29,9 +28,19 @@
 using namespace std;
 using namespace lightspark;
 
-long lightspark::timeDiff(timespec& s, timespec& d);
-
 extern TLSDATA SystemState* sys;
+
+Frame::~Frame()
+{
+	list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
+
+	//Decrease the refcount of childs
+	for(;i!=displayList.end();i++)
+	{
+		assert(i->second);
+		i->second->decRef();
+	}
+}
 
 void Frame::runScript()
 {
@@ -87,7 +96,7 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 				SynchronizationEvent* s=new SynchronizationEvent;
 				sys->currentVm->addEvent(NULL, s);
 				s->wait();
-				delete s;
+				s->decRef();
 				//Now the bindings are effective for all tags
 			}
 		}
@@ -98,6 +107,10 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 			(*it)->execute(parent, d);
 		blueprint.clear();
 		displayList=d;
+		//Acquire a new reference to every child
+		list <pair<PlaceInfo, IDisplayListElem*> >::const_iterator dit=displayList.begin();
+		for(;dit!=displayList.end();dit++)
+			dit->second->incRef();
 		initialized=true;
 
 		//Root movie clips are initialized now, after the first frame is really ready 

@@ -564,14 +564,9 @@ void InputThread::addListener(InteractiveObject* ob)
 	Locker locker(mutexListeners);
 
 #ifndef NDEBUG
-	for(unsigned int i=0;i<listeners.size();i++)
-	{
-		if(listeners[i]==ob)
-		{
-			//Object is already register, should not happen
-			::abort();
-		}
-	}
+	vector<InteractiveObject*>::const_iterator it=find(listeners.begin(),listeners.end(),ob);
+	//Object is already register, should not happen
+	assert(it==listeners.end());
 #endif
 	
 	//Register the listener
@@ -589,12 +584,39 @@ void InputThread::addListener(InteractiveObject* ob)
 	}
 }
 
+void InputThread::removeListener(InteractiveObject* ob)
+{
+	Locker locker(mutexListeners);
+
+	vector<InteractiveObject*>::iterator it=find(listeners.begin(),listeners.end(),ob);
+	assert(it!=listeners.end());
+	
+	//Unregister the listener
+	listeners.erase(it);
+	
+	unsigned int count=listeners.size();
+
+	//Set a unique id for listeners in the range [0,1]
+	//count is the number of listeners, this is correct so that no one gets 0
+	float increment=1.0f/count;
+	float cur=increment;
+	for(unsigned int i=0;i<count;i++)
+	{
+		listeners[i]->setId(cur);
+		cur+=increment;
+	}
+}
+
 void InputThread::broadcastEvent(const tiny_string& t)
 {
 	Locker locker(mutexListeners);
 
+	Event* e=Class<Event>::getInstanceS(t);
 	for(unsigned int i=0;i<listeners.size();i++)
-		sys->currentVm->addEvent(listeners[i],Class<Event>::getInstanceS(t));
+		sys->currentVm->addEvent(listeners[i],e);
+	
+	e->check();
+	e->decRef();
 }
 
 void InputThread::enableDrag(Sprite* s, const lightspark::RECT& limit)
@@ -1141,6 +1163,7 @@ void RootMovieClip::initialize()
 		SynchronizationEvent* sync=new SynchronizationEvent;
 		sys->currentVm->addEvent(NULL, sync);
 		sync->wait();
+		sync->decRef();
 	}
 }
 
@@ -1364,7 +1387,12 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			if(th->m_sys->showProfilingData)
 			{
 				glUseProgram(0);
-				
+
+				glColor3f(0,0,0);
+				char frameBuf[20];
+				snprintf(frameBuf,20,"Frame %u",th->m_sys->state.FP);
+				font.Render(frameBuf,-1,FTPoint(0,0));
+
 				//Draw bars
 				glColor4f(0.7,0.7,0.7,0.7);
 				glBegin(GL_LINES);

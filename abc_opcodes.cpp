@@ -861,8 +861,8 @@ bool ABCVm::ifTrue(ASObject* obj1)
 
 intptr_t ABCVm::modulo(ASObject* val1, ASObject* val2)
 {
-	int num1=val1->toInt();
-	int num2=val2->toInt();
+	uint32_t num1=val1->toUInt();
+	uint32_t num2=val2->toUInt();
 
 	val1->decRef();
 	val2->decRef();

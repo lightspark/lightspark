@@ -600,12 +600,13 @@ void MovieClip::Render()
 	LOG(LOG_TRACE,"End Render MovieClip");
 }
 
-Vector2 MovieClip::debugRender(bool deep)
+Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 {
 	Vector2 ret(0,0);
 	if(!deep)
 	{
-		FILLSTYLE::fixedColor(0.8,0,0);
+		glColor3f(0.8,0,0);
+		font->Render("MovieClip",-1,FTPoint(0,50));
 		glBegin(GL_LINE_LOOP);
 			glVertex2i(0,0);
 			glVertex2i(100,0);
@@ -624,7 +625,7 @@ Vector2 MovieClip::debugRender(bool deep)
 	
 			for(;it!=frames[state.FP].displayList.end();it++)
 			{
-				Vector2 off=it->second->debugRender(false);
+				Vector2 off=it->second->debugRender(font, false);
 				glTranslatef(off.x,0,0);
 				ret+=off;
 			}

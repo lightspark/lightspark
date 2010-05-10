@@ -159,9 +159,13 @@ private:
 public:
 	void setUrl(const tiny_string& url);
 
+	//Interative analysis flags
 	bool showProfilingData;
 	bool showInteractiveMap;
 	bool showDebug;
+	int xOffset;
+	int yOffset;
+	
 	bool shutdown;
 	bool error;
 	void setShutdownFlag();

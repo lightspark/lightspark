@@ -118,8 +118,8 @@ void RootMovieClip::bindToName(const tiny_string& n)
 }
 
 SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),showProfilingData(false),showInteractiveMap(false),
-	showDebug(false), shutdown(false),error(false),currentVm(NULL),inputThread(NULL),renderThread(NULL),useInterpreter(true),
- 	useJit(false), downloadManager(NULL)
+	showDebug(false),xOffset(0),yOffset(0),shutdown(false),error(false),currentVm(NULL),inputThread(NULL),
+	renderThread(NULL),useInterpreter(true),useJit(false), downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -533,6 +533,18 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_s:
 						th->m_sys->state.stop_FP=true;
 						break;
+					case SDLK_DOWN:
+						th->m_sys->yOffset-=10;
+						break;
+					case SDLK_UP:
+						th->m_sys->yOffset+=10;
+						break;
+					case SDLK_LEFT:
+						th->m_sys->xOffset-=10;
+						break;
+					case SDLK_RIGHT:
+						th->m_sys->xOffset+=10;
+						break;
 					//Ignore any other keystrokes
 					default:
 						break;
@@ -719,10 +731,6 @@ void RenderThread::glAcquireFramebuffer(number_t xmin, number_t xmax, number_t y
 	glDisable(GL_BLEND);
 	glColor4f(0,0,0,0); //No output is fairly ok to clear
 	glBegin(GL_QUADS);
-	/*	glVertex2i(0,0);
-		glVertex2i(width,0);
-		glVertex2i(width,height);
-		glVertex2i(0,height);*/
 		glVertex2f(xmin,ymin);
 		glVertex2f(xmax,ymin);
 		glVertex2f(xmax,ymax);
@@ -1355,6 +1363,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 			glClear(GL_COLOR_BUFFER_BIT);
 			glLoadIdentity();
+			glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
 			
 			th->m_sys->Render();
 
@@ -1382,7 +1391,13 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glEnd();
 			
 			if(th->m_sys->showDebug)
-				th->m_sys->debugRender(true);
+			{
+				glUseProgram(0);
+				glDisable(GL_TEXTURE_2D);
+				th->m_sys->debugRender(&font, true);
+				glEnable(GL_TEXTURE_2D);
+				glUseProgram(th->gpu_program);
+			}
 
 			if(th->m_sys->showProfilingData)
 			{

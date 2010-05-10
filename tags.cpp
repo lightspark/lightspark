@@ -282,6 +282,19 @@ void DefineEditTextTag::Render()
 	LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag: Render");
 }
 
+Vector2 DefineEditTextTag::debugRender(FTFont* font, bool deep)
+{
+	assert(!deep);
+	glColor3f(0,0.8,0);
+	glBegin(GL_LINE_LOOP);
+		glVertex2i(0,0);
+		glVertex2i(100,0);
+		glVertex2i(100,100);
+		glVertex2i(0,100);
+	glEnd();
+	return Vector2(100,100);
+}
+
 ASObject* DefineEditTextTag::instance() const
 {
 	DefineEditTextTag* ret=new DefineEditTextTag(*this);
@@ -365,6 +378,24 @@ ASObject* DefineSpriteTag::instance() const
 	ret->prototype->incRef();
 	ret->bootstrap();
 	return ret;
+}
+
+Vector2 DefineSpriteTag::debugRender(FTFont* font, bool deep)
+{
+	if(deep)
+		return MovieClip::debugRender(font,deep);
+	
+	glColor3f(0.5,0,0);
+	char buf[20];
+	snprintf(buf,20,"Sprite id=%u",(int)SpriteID);
+	font->Render(buf,-1,FTPoint(0,50));
+	glBegin(GL_LINE_LOOP);
+		glVertex2i(0,0);
+		glVertex2i(50,0);
+		glVertex2i(50,100);
+		glVertex2i(0,100);
+	glEnd();
+	return Vector2(50,100);
 }
 
 void lightspark::ignore(istream& i, int count)
@@ -730,6 +761,22 @@ void DefineTextTag::Render()
 	glPopMatrix();
 }
 
+Vector2 DefineTextTag::debugRender(FTFont* font, bool deep)
+{
+	assert(!deep);
+	glColor3f(0,0.4,0.4);
+	char buf[20];
+	snprintf(buf,20,"Text id=%u",(int)CharacterId);
+	font->Render(buf,-1,FTPoint(0,50));
+	glBegin(GL_LINE_LOOP);
+		glVertex2i(0,0);
+		glVertex2i(100,0);
+		glVertex2i(100,100);
+		glVertex2i(0,100);
+	glEnd();
+	return Vector2(100,100);
+}
+
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
 {
 	LOG(LOG_TRACE,"DefineShapeTag");
@@ -857,6 +904,22 @@ void DefineShapeTag::Render()
 			it->Render();
 	}
 	glPopMatrix();
+}
+
+Vector2 DefineShapeTag::debugRender(FTFont* font, bool deep)
+{
+	assert(!deep);
+	glColor3f(0,0,0.8);
+	char buf[20];
+	snprintf(buf,20,"Shape id=%u",(int)ShapeId);
+	font->Render(buf,-1,FTPoint(0,50));
+	glBegin(GL_LINE_LOOP);
+		glVertex2i(0,0);
+		glVertex2i(100,0);
+		glVertex2i(100,100);
+		glVertex2i(0,100);
+	glEnd();
+	return Vector2(100,100);
 }
 
 void DefineShape2Tag::Render()
@@ -1638,6 +1701,19 @@ void DefineButton2Tag::Render()
 		for(unsigned int j=0;j<Actions[i].Actions.size();j++)
 			Actions[i].Actions[j]->Execute();
 	}*/
+}
+
+Vector2 DefineButton2Tag::debugRender(FTFont* font, bool deep)
+{
+	assert(!deep);
+	glColor3f(0,0,0);
+	glBegin(GL_LINE_LOOP);
+		glVertex2i(0,0);
+		glVertex2i(100,0);
+		glVertex2i(100,100);
+		glVertex2i(0,100);
+	glEnd();
+	return Vector2(100,100);
 }
 
 DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)

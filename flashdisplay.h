@@ -20,6 +20,8 @@
 #ifndef _FLASH_DISPLAY_H
 #define _FLASH_DISPLAY_H
 
+#include <FTGL/ftgl.h>
+
 #include "swftypes.h"
 #include "flashevents.h"
 #include "flashutils.h"
@@ -63,7 +65,7 @@ protected:
 	virtual void Render()=0;
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const=0;
 	virtual void setRoot(RootMovieClip* root)=0;
-	virtual Vector2 debugRender(bool deep)
+	virtual Vector2 debugRender(FTFont* font, bool deep)
 	{
 		::abort();
 	}
@@ -336,7 +338,11 @@ public:
 
 	//IDisplayListElem interface
 	void Render();
-	Vector2 debugRender(bool deep);
+	
+	/*! \brief Should be run with the default fragment/vertex program on
+	* * \param font An FT font used for debug messages
+	* * \param deep Flag to enable propagation of the debugRender to children */
+	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void check()
 	{

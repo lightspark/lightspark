@@ -105,6 +105,7 @@ public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
+	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		//Apply transformation with the current matrix
@@ -253,6 +254,7 @@ public:
 	DefineEditTextTag(RECORDHEADER h, std::istream& s);
 	virtual int getId(){ return CharacterID; }
 	virtual void Render();
+	virtual Vector2 debugRender(FTFont* font, bool deep);
 	ASObject* instance() const;
 };
 
@@ -389,6 +391,7 @@ public:
 	DefineButton2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ButtonId; }
 	virtual void Render();
+	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		abort();
@@ -533,6 +536,7 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render();
+	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		getMatrix().multiply2D(TextBounds.Xmin/20,TextBounds.Ymin/20,xmin,ymin);
@@ -540,7 +544,6 @@ public:
 		//TODO: adapt for rotation
 		return true;
 	}
-
 	ASObject* instance() const
 	{
 		return new DefineTextTag(*this);
@@ -555,7 +558,8 @@ private:
 public:
 	DefineSpriteTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return SpriteID; }
-	ASObject* instance() const;
+	virtual Vector2 debugRender(FTFont* font, bool deep);
+	virtual ASObject* instance() const;
 };
 
 class ProtectTag: public ControlTag

@@ -111,20 +111,6 @@ void GeomShape::Render(int x, int y) const
 	}
 }
 
-/*bool GeomShape::isOutlineClosed(const std::vector< Vector2 >& outline) const
-{
-	return outline
-}*/
-
-/*void GeomShape::dumpEdges()
-{
-	ofstream f("edges.dat");
-
-	for(unsigned int i=0;i<outline.size();i++)
-		f << outline[i].x << ' ' << outline[i].y << endl;
-	f.close();
-}*/
-
 void GeomShape::SetStyles(const std::list<FILLSTYLE>* styles)
 {
 	static FILLSTYLE* clearStyle=NULL;
@@ -172,6 +158,7 @@ void GeomShape::TessellateGLU()
 	gluTessCallback(tess,GLU_TESS_VERTEX_DATA,(void(*)())GLUCallbackVertex);
 	gluTessCallback(tess,GLU_TESS_END_DATA,(void(*)())GLUCallbackEnd);
 	gluTessCallback(tess,GLU_TESS_COMBINE_DATA,(void(*)())GLUCallbackCombine);
+	gluTessProperty(tess,GLU_TESS_WINDING_RULE,GLU_TESS_WINDING_ODD);
 	
 	//Let's create a vector of pointers to store temporary coordinates
 	//passed to GLU
@@ -261,14 +248,73 @@ void GeomShape::GLUCallbackCombine(GLdouble coords[3], void* vertex_data[4],
 	*outData=obj->tmpVertices.back();
 }
 
-/*//Shape are compared using the minimum vertex
-bool GeomShape::operator<(const GeomShape& r) const
+void ShapesBuilder::joinOutlines()
 {
-	Vector2 vl=*min_element(outline.begin(),outline.end());
-	Vector2 vr=*min_element(r.outline.begin(),r.outline.end());
+	map< unsigned int, vector< vector<Vector2> > >::iterator it=shapesMap.begin();
+	
+	for(;it!=shapesMap.end();it++)
+	{
+		vector< vector<Vector2> >& outlinesForColor=it->second;
+		//Repack outlines of the same color, avoiding excessive copying
+		for(int i=0;i<int(outlinesForColor.size());i++)
+		{
+			assert(outlinesForColor[i].size()>=2);
+			//Already closed paths are ok
+			if(outlinesForColor[i].front()==outlinesForColor[i].back())
+				continue;
+			for(int j=outlinesForColor.size()-1;j>=0;j--)
+			{
+				if(j==i || outlinesForColor[j].empty())
+					continue;
+				if(outlinesForColor[i].front()==outlinesForColor[j].back())
+				{
+					//Copy all the vertex but the origin in this one
+					outlinesForColor[j].insert(outlinesForColor[j].end(),
+									outlinesForColor[i].begin()+1,
+									outlinesForColor[i].end());
+					//Invalidate the origin, but not the high level vector
+					outlinesForColor[i].clear();
+					break;
+				}
+			}
+		}
+	}
+}
 
-	if(vl<vr)
-		return true;
-	else
-		return false;
-}*/
+void ShapesBuilder::extendOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2)
+{
+	assert(color);
+	vector< vector<Vector2> >& outlinesForColor=shapesMap[color];
+	//Search a suitable outline to attach this new vertex
+	for(unsigned int i=0;i<outlinesForColor.size();i++)
+	{
+		assert(outlinesForColor[i].size()>=2);
+		if(outlinesForColor[i].front()==outlinesForColor[i].back())
+			continue;
+		if(outlinesForColor[i].back()==v1)
+		{
+			outlinesForColor[i].push_back(v2);
+			return;
+		}
+	}
+	//No suitable outline found, create one
+	outlinesForColor.push_back(vector<Vector2>());
+	outlinesForColor.back().reserve(2);
+	outlinesForColor.back().push_back(v1);
+	outlinesForColor.back().push_back(v2);
+}
+
+void ShapesBuilder::outputShapes(vector< GeomShape >& shapes)
+{
+	//Let's join shape pieces together
+	joinOutlines();
+
+	map< unsigned int, vector< vector<Vector2> > >::iterator it=shapesMap.begin();
+
+	for(;it!=shapesMap.end();it++)
+	{
+		shapes.push_back(GeomShape());
+		shapes.back().outlines.swap(it->second);
+		shapes.back().color=it->first;
+	}
+}

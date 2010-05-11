@@ -22,9 +22,7 @@
 #include <list>
 #include <iostream>
 #include <vector>
-/*#ifdef WIN32
-#include <windows.h>
-#endif*/
+#include <map>
 #include <GL/glew.h>
 
 namespace lightspark
@@ -72,7 +70,6 @@ private:
 	void SetStyles(const std::list<FILLSTYLE>* styles);
 	const FILLSTYLE* style;
 	arrayElem* varray;
-	bool isOutlineClosed(const std::vector<Vector2>& outline) const;
 	bool hasFill;
 public:
 	GeomShape():curTessTarget(0),style(NULL),varray(NULL),hasFill(false),color(0){}
@@ -84,14 +81,18 @@ public:
 
 	unsigned int color;
 
-	//DEBUG
-	void dumpEdges();
-
 	void Render(int x=0, int y=0) const;
 	void BuildFromEdges(const std::list<FILLSTYLE>* styles);
+};
 
-	bool operator<(const GeomShape& r) const;
-
+class ShapesBuilder
+{
+private:
+	std::map< unsigned int, std::vector< std::vector<Vector2> > > shapesMap;
+	void joinOutlines();
+public:
+	void extendOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2);
+	void outputShapes(std::vector<GeomShape>& shapes);
 };
 
 class GlyphShape: public GeomShape

@@ -95,7 +95,7 @@ void GeomShape::Render(int x, int y) const
 		glDisableClientState(GL_VERTEX_ARRAY);*/
 	}
 
-	//if(/*graphic.stroked ||*/ !filled && color)
+	if(/*graphic.stroked ||*/ !filled && color)
 	{
 		//LOG(TRACE,"Line tracing");
 		if(!rt->materialOverride)
@@ -248,10 +248,14 @@ void GeomShape::GLUCallbackCombine(GLdouble coords[3], void* vertex_data[4],
 	*outData=obj->tmpVertices.back();
 }
 
+bool ShapesBuilder::isOutlineEmpty(const std::vector< Vector2 >& outline)
+{
+	return outline.empty();
+}
+
 void ShapesBuilder::joinOutlines()
 {
 	map< unsigned int, vector< vector<Vector2> > >::iterator it=shapesMap.begin();
-	
 	for(;it!=shapesMap.end();it++)
 	{
 		vector< vector<Vector2> >& outlinesForColor=it->second;
@@ -276,8 +280,24 @@ void ShapesBuilder::joinOutlines()
 					outlinesForColor[i].clear();
 					break;
 				}
+				else if(outlinesForColor[i].back()==outlinesForColor[j].back())
+				{
+					//CHECK: this works for adjacent shapes of the same color?
+					//Copy all the vertex but the origin in this one
+					outlinesForColor[j].insert(outlinesForColor[j].end(),
+									outlinesForColor[i].rbegin()+1,
+									outlinesForColor[i].rend());
+					//Invalidate the origin, but not the high level vector
+					outlinesForColor[i].clear();
+					break;
+				}
 			}
 		}
+		
+		//Kill all the empty outlines
+		outlinesForColor.erase(remove_if(outlinesForColor.begin(),outlinesForColor.end(), isOutlineEmpty),
+				       outlinesForColor.end());
+		assert(!outlinesForColor.empty());
 	}
 }
 

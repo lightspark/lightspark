@@ -90,6 +90,7 @@ class ShapesBuilder
 private:
 	std::map< unsigned int, std::vector< std::vector<Vector2> > > shapesMap;
 	void joinOutlines();
+	static bool isOutlineEmpty(const std::vector<Vector2>& outline);
 public:
 	void extendOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2);
 	void outputShapes(std::vector<GeomShape>& shapes);

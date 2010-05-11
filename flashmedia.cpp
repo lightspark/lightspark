@@ -115,7 +115,7 @@ void Video::Render()
 			sem_post(&mutex);
 		}
 
-		rt->glBlitFramebuffer();
+		rt->glBlitFramebuffer(0,width,0,height);
 		
 		//Render click sensible area if needed
 		if(rt->glAcquireIdBuffer())

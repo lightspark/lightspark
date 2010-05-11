@@ -369,7 +369,7 @@ void Sprite::Render()
 	if(graphics)
 		graphics->Render();
 	
-	rt->glBlitFramebuffer();
+	rt->glBlitFramebuffer(t1,t2,t3,t4);
 	
 	if(rt->glAcquireIdBuffer() && graphics)
 		graphics->Render();
@@ -1458,7 +1458,7 @@ void Shape::Render()
 
 	graphics->Render();
 
-	rt->glBlitFramebuffer();
+	rt->glBlitFramebuffer(t1,t2,t3,t4);
 	
 	if(rt->glAcquireIdBuffer())
 		graphics->Render();

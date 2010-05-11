@@ -738,29 +738,24 @@ void RenderThread::glAcquireFramebuffer(number_t xmin, number_t xmax, number_t y
 	glEnd();
 }
 
-void RenderThread::glBlitFramebuffer()
+void RenderThread::glBlitFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(fbAcquired==true);
 	fbAcquired=false;
 
-	glPushMatrix();
+	//Use the blittler program to blit only the used buffer
+	glUseProgram(blitter_program);
 	glEnable(GL_BLEND);
-	glLoadIdentity();
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
-	glColor4f(0,0,1,0);
 	glBegin(GL_QUADS);
-		glTexCoord2f(0,0);
-		glVertex2i(0,0);
-		glTexCoord2f(1,0);
-		glVertex2i(width,0);
-		glTexCoord2f(1,1);
-		glVertex2i(width,height);
-		glTexCoord2f(0,1);
-		glVertex2i(0,height);
+		glVertex2f(xmin,ymin);
+		glVertex2f(xmax,ymin);
+		glVertex2f(xmax,ymax);
+		glVertex2f(xmin,ymax);
 	glEnd();
-	glPopMatrix();
+	glUseProgram(gpu_program);
 }
 
 #ifndef WIN32

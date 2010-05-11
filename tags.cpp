@@ -718,7 +718,8 @@ void DefineTextTag::Render()
 		}
 	}
 
-	rt->glBlitFramebuffer();
+	rt->glBlitFramebuffer(TextBounds.Xmin,TextBounds.Xmax,
+				 TextBounds.Ymin,TextBounds.Ymax);
 	
 	if(rt->glAcquireIdBuffer())
 	{
@@ -895,7 +896,8 @@ void DefineShapeTag::Render()
 	for(;it!=cached.end();it++)
 		it->Render();
 
-	rt->glBlitFramebuffer();
+	rt->glBlitFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
+				 ShapeBounds.Ymin,ShapeBounds.Ymax);
 
 	if(rt->glAcquireIdBuffer())
 	{
@@ -952,7 +954,8 @@ void DefineShape2Tag::Render()
 		it->Render();
 	}
 
-	rt->glBlitFramebuffer();
+	rt->glBlitFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
+				 ShapeBounds.Ymin,ShapeBounds.Ymax);
 	
 	if(rt->glAcquireIdBuffer())
 	{
@@ -990,7 +993,8 @@ void DefineShape4Tag::Render()
 	for(;it!=cached.end();it++)
 		it->Render();
 
-	rt->glBlitFramebuffer();
+	rt->glBlitFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
+				 ShapeBounds.Ymin,ShapeBounds.Ymax);
 	
 	if(rt->glAcquireIdBuffer())
 	{
@@ -1046,7 +1050,8 @@ void DefineShape3Tag::Render()
 		it->Render();
 	}
 
-	rt->glBlitFramebuffer();
+	rt->glBlitFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
+				 ShapeBounds.Ymin,ShapeBounds.Ymax);
 	
 	if(rt->glAcquireIdBuffer())
 	{

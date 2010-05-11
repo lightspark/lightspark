@@ -312,9 +312,9 @@ public:
 	~RenderThread();
 	void wait();
 	float getIdAt(int x, int y);
-	//The calling context MUST preserve current matrix with a wrapping pushMatrix, popMatrix combo
+	//The calling context MUST call this function with the transformation matrix ready
 	void glAcquireFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
-	void glBlitFramebuffer();
+	void glBlitFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 
 	void requestInput();
 	void glClearIdBuffer();

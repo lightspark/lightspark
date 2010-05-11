@@ -1565,7 +1565,8 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 		return false;
 	}
 
-	//Initialize values to the first available
+	::abort();
+	/*//Initialize values to the first available
 	assert(geometry[0].outline.size()>0);
 	xmin=xmax=geometry[0].outline[0].x;
 	ymin=ymax=geometry[0].outline[0].y;
@@ -1585,7 +1586,7 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 			else if(v.y>ymax)
 				ymax=v.y;
 		}
-	}
+	}*/
 	sem_post(&geometry_mutex);
 	return true;
 }
@@ -1626,19 +1627,21 @@ ASFUNCTIONBODY(Graphics,lineTo)
 
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
+	::abort();
 
-	//If this is the first line, add also the starting point
+	/*//If this is the first line, add also the starting point
 	if(th->tmpShape.outline.size()==0)
 		th->tmpShape.outline.push_back(Vector2(th->curX,th->curY));
 
-	th->tmpShape.outline.push_back(Vector2(x,y));
+	th->tmpShape.outline.push_back(Vector2(x,y));*/
 
 	return NULL;
 }
 
 void Graphics::flushShape(bool keepStyle)
 {
-	if(!tmpShape.outline.empty())
+	::abort();
+	/*if(!tmpShape.outline.empty())
 	{
 		if(tmpShape.color)
 			tmpShape.BuildFromEdges(&styles);
@@ -1650,7 +1653,7 @@ void Graphics::flushShape(bool keepStyle)
 		tmpShape=GeomShape();
 		if(keepStyle)
 			tmpShape.color=oldcolor;
-	}
+	}*/
 }
 
 ASFUNCTIONBODY(Graphics,drawCircle)
@@ -1663,13 +1666,14 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	double radius=args[2]->toNumber();
 
 	th->flushShape(true);
+	::abort();
 
-	//Well, right now let's build a square anyway
+	/*//Well, right now let's build a square anyway
 	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));
 	th->tmpShape.outline.push_back(Vector2(x+radius,y-radius));
 	th->tmpShape.outline.push_back(Vector2(x+radius,y+radius));
 	th->tmpShape.outline.push_back(Vector2(x-radius,y+radius));
-	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));
+	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));*/
 
 	th->flushShape(true);
 
@@ -1687,8 +1691,9 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	int height=args[3]->toInt();
 
 	th->flushShape(true);
+	::abort();
 
-	if(width==0 && height==0)
+	/*if(width==0 && height==0)
 	{
 		th->tmpShape.outline.push_back(Vector2(x,y));
 	}
@@ -1710,7 +1715,7 @@ ASFUNCTIONBODY(Graphics,drawRect)
 		th->tmpShape.outline.push_back(Vector2(x+width,y+height));
 		th->tmpShape.outline.push_back(Vector2(x,y+height));
 		th->tmpShape.outline.push_back(Vector2(x,y));
-	}
+	}*/
 
 	th->flushShape(true);
 
@@ -1756,11 +1761,12 @@ ASFUNCTIONBODY(Graphics,endFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert(th->tmpShape.color);
-	if(!th->tmpShape.outline.empty())
+	::abort();
+	/*if(!th->tmpShape.outline.empty())
 	{
 		if(th->tmpShape.outline.front()!=th->tmpShape.outline.back())
 			th->tmpShape.outline.push_back(th->tmpShape.outline.front());
-	}
+	}*/
 	th->flushShape(false);
 	return NULL;
 }

@@ -1113,6 +1113,78 @@ void FromShaperecordListToDump(SHAPERECORD* cur)
 	f.close();
 }
 
+class ShapesBuilder
+{
+private:
+	map< unsigned int, vector< vector<Vector2> > > shapesMap;
+public:
+	void extendOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2)
+	{
+		assert(color);
+		vector< vector<Vector2> >& outlinesForColor=shapesMap[color];
+		//Search a suitable outline to attach this new vertex
+		for(unsigned int i=0;i<outlinesForColor.size();i++)
+		{
+			assert(outlinesForColor[i].size()>=2);
+			if(outlinesForColor[i].front()==outlinesForColor[i].back())
+				continue;
+			if(outlinesForColor[i].back()==v1)
+			{
+				outlinesForColor[i].push_back(v2);
+				return;
+			}
+		}
+		//No suitable outline found, create one
+		outlinesForColor.push_back(vector<Vector2>());
+		outlinesForColor.back().reserve(2);
+		outlinesForColor.back().push_back(v1);
+		outlinesForColor.back().push_back(v2);
+	}
+	void joinOutlines()
+	{
+		map< unsigned int, vector< vector<Vector2> > >::iterator it=shapesMap.begin();
+		
+		for(;it!=shapesMap.end();it++)
+		{
+			vector< vector<Vector2> >& outlinesForColor=it->second;
+			//Repack outlines of the same color, avoiding excessive copying
+			for(int i=0;i<int(outlinesForColor.size());i++)
+			{
+				assert(outlinesForColor[i].size()>=2);
+				//Already closed paths are ok
+				if(outlinesForColor[i].front()==outlinesForColor[i].back())
+					continue;
+				for(int j=outlinesForColor.size()-1;j>=0;j--)
+				{
+					if(j==i || outlinesForColor[j].empty())
+						continue;
+					if(outlinesForColor[i].front()==outlinesForColor[j].back())
+					{
+						//Copy all the vertex but the origin in this one
+						outlinesForColor[j].insert(outlinesForColor[j].end(),
+									   outlinesForColor[i].begin()+1,
+									   outlinesForColor[i].end());
+						//Invalidate the origin, but not the high level vector
+						outlinesForColor[i].clear();
+						break;
+					}
+				}
+			}
+		}
+	}
+	void outputShapes(vector<GeomShape>& shapes)
+	{
+		map< unsigned int, vector< vector<Vector2> > >::iterator it=shapesMap.begin();
+		
+		for(;it!=shapesMap.end();it++)
+		{
+			shapes.push_back(GeomShape());
+			shapes.back().outlines.swap(it->second);
+			shapes.back().color=it->first;
+		}
+	}
+};
+
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes */
@@ -1121,9 +1193,10 @@ void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomS
 {
 	int startX=0;
 	int startY=0;
-	int count=0;
-	int color0=0;
-	int color1=0;
+	unsigned int color0=0;
+	unsigned int color1=0;
+
+	ShapesBuilder shapesBuilder;
 
 	while(cur)
 	{
@@ -1135,57 +1208,11 @@ void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomS
 				startX+=cur->DeltaX;
 				startY+=cur->DeltaY;
 				Vector2 p2(startX,startY);
-				unsigned int color;
-				for(int k=0;k<2;k++)
-				{
-					bool new_shape=true;
-					if(k==0)
-						color=color0;
-					else
-						color=color1;
-
-					for(unsigned int i=0;i<shapes.size();i++)
-					{
-						if(shapes[i].color==color)
-						{
-							if(shapes[i].outline.back()==p1)
-							{
-								shapes[i].outline.push_back(p2);
-								new_shape=false;
-								break;
-							}
-							else if(shapes[i].outline.front()==p2)
-							{
-								shapes[i].outline.insert(shapes[i].outline.begin(),p1);
-								new_shape=false;
-								break;
-							}
-
-							if(shapes[i].outline.back()==p2 &&
-								!(*(shapes[i].outline.rbegin()+1)==p1))
-							{
-								shapes[i].outline.push_back(p1);
-								new_shape=false;
-								break;
-							}
-							else if(shapes[i].outline.front()==p1 &&
-								!(shapes[i].outline[1]==p2)) 
-							{
-								shapes[i].outline.insert(shapes[i].outline.begin(),p2);
-								new_shape=false;
-								break;
-							}
-						}
-					}
-					if(new_shape)
-					{
-						shapes.push_back(GeomShape());
-						shapes.back().outline.push_back(p1);
-						shapes.back().outline.push_back(p2);
-						shapes.back().color=color;
-					}
-				}
-				count++;
+				
+				if(color0)
+					shapesBuilder.extendOutlineForColor(color0,p1,p2);
+				if(color1)
+					shapesBuilder.extendOutlineForColor(color1,p1,p2);
 			}
 			else
 			{
@@ -1196,62 +1223,17 @@ void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomS
 				startX+=cur->AnchorDeltaX;
 				startY+=cur->AnchorDeltaY;
 				Vector2 p3(startX,startY);
-				unsigned int color;
-				for(int k=0;k<2;k++)
+
+				if(color0)
 				{
-					bool new_shape=true;
-					if(k==0)
-						color=color0;
-					else
-						color=color1;
-
-					for(unsigned int i=0;i<shapes.size();i++)
-					{
-						if(shapes[i].color==color)
-						{
-							if(shapes[i].outline.back()==p1)
-							{
-								shapes[i].outline.push_back(p2);
-								shapes[i].outline.push_back(p3);
-								new_shape=false;
-								break;
-							}
-							else if(shapes[i].outline.front()==p3)
-							{
-								shapes[i].outline.insert(shapes[i].outline.begin(),p2);
-								shapes[i].outline.insert(shapes[i].outline.begin(),p1);
-								new_shape=false;
-								break;
-							}
-
-							if(shapes[i].outline.back()==p3 &&
-								!(*(shapes[i].outline.rbegin()+1)==p2))
-							{
-								shapes[i].outline.push_back(p2);
-								shapes[i].outline.push_back(p1);
-								new_shape=false;
-								break;
-							}
-							else if(shapes[i].outline.front()==p1 &&
-								!(shapes[i].outline[1]==p2))
-							{
-								shapes[i].outline.insert(shapes[i].outline.begin(),p2);
-								shapes[i].outline.insert(shapes[i].outline.begin(),p3);
-								new_shape=false;
-								break;
-							}
-						}
-					}
-					if(new_shape)
-					{
-						shapes.push_back(GeomShape());
-						shapes.back().outline.push_back(p1);
-						shapes.back().outline.push_back(p2);
-						shapes.back().outline.push_back(p3);
-						shapes.back().color=color;
-					}
+					shapesBuilder.extendOutlineForColor(color0,p1,p2);
+					shapesBuilder.extendOutlineForColor(color0,p2,p3);
 				}
-				count+=2;
+				if(color1)
+				{
+					shapesBuilder.extendOutlineForColor(color1,p1,p2);
+					shapesBuilder.extendOutlineForColor(color1,p2,p3);
+				}
 			}
 		}
 		else
@@ -1260,7 +1242,6 @@ void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomS
 			{
 				startX=cur->MoveDeltaX;
 				startY=cur->MoveDeltaY;
-				count++;
 			}
 /*			if(cur->StateLineStyle)
 			{
@@ -1280,51 +1261,9 @@ void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomS
 	}
 
 	//Let's join shape pieces together
-	for(unsigned int i=0;i<shapes.size();i++)
-	{
-		for(unsigned int j=i+1;j<shapes.size();j++)
-		{
-			if(shapes[i].color==shapes[j].color)
-			{
-				if(shapes[i].outline.back()==shapes[j].outline.front())
-				{
-					shapes[i].outline.insert(shapes[i].outline.end(),
-							shapes[j].outline.begin()+1,shapes[j].outline.end());
-					shapes.erase(shapes.begin()+j);
-					j--;
-					continue;
-				}
-				else if(shapes[i].outline.front()==shapes[j].outline.back())
-				{
-					shapes[i].outline.insert(shapes[i].outline.begin(),
-							shapes[j].outline.begin(),shapes[j].outline.end()-1);
-					shapes.erase(shapes.begin()+j);
-					j--;
-					continue;
-				}
-				else if(shapes[i].outline.back()==shapes[j].outline.back() &&    //This should not match with
-						shapes[i].outline[shapes[i].outline.size()-2]!=	//the reverse of the same edge
-						shapes[j].outline[shapes[j].outline.size()-2])
-				{
-					shapes[i].outline.insert(shapes[i].outline.end(),
-							shapes[j].outline.rbegin()+1,shapes[j].outline.rend());
-					shapes.erase(shapes.begin()+j);
-					j--;
-					continue;
-				}
-				else if(shapes[i].outline.front()==shapes[j].outline.front() &&
-						shapes[i].outline[1]!=shapes[j].outline[1])
-				{
-					shapes[i].outline.insert(shapes[i].outline.begin(),
-							shapes[j].outline.rbegin(),shapes[j].outline.rend()-1);
-					shapes.erase(shapes.begin()+j);
-					j--;
-					continue;
-				}
-			}
-		}
-	}
-	sort(shapes.begin(),shapes.end());
+	shapesBuilder.joinOutlines();
+	
+	shapesBuilder.outputShapes(shapes);
 }
 
 void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)

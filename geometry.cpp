@@ -40,14 +40,14 @@ extern TLSDATA RenderThread* rt;
 
 void GeomShape::Render(int x, int y) const
 {
-	if(outline.empty())
+	if(outlines.empty())
 	{
 		LOG(LOG_TRACE,"No edges in this shape");
 		return;
 	}
 
 	bool filled=false;
-	if(closed && color)
+	if(hasFill && color)
 	{
 		if(!rt->materialOverride)
 			style->setFragmentProgram();
@@ -95,33 +95,35 @@ void GeomShape::Render(int x, int y) const
 		glDisableClientState(GL_VERTEX_ARRAY);*/
 	}
 
-	if(/*graphic.stroked ||*/ !filled && color)
+	//if(/*graphic.stroked ||*/ !filled && color)
 	{
 		//LOG(TRACE,"Line tracing");
 		if(!rt->materialOverride)
 			FILLSTYLE::fixedColor(0,0,0);
-		std::vector<Vector2>::const_iterator it=outline.begin();
-		if(closed)
-			glBegin(GL_LINE_LOOP);
-		else
+		for(unsigned int i=0;i<outlines.size();i++)
+		{
+			std::vector<Vector2>::const_iterator it=outlines[i].begin();
 			glBegin(GL_LINE_STRIP);
-		for(;it!=outline.end();it++)
-			glVertex2i(it->x+x,it->y+y);
-		glEnd();
+			for(;it!=outlines[i].end();it++)
+				glVertex2i(it->x+x,it->y+y);
+			glEnd();
+		}
 	}
-
-	for(unsigned int i=0;i<sub_shapes.size();i++)
-		sub_shapes[i].Render();
 }
 
-void GeomShape::dumpEdges()
+/*bool GeomShape::isOutlineClosed(const std::vector< Vector2 >& outline) const
+{
+	return outline
+}*/
+
+/*void GeomShape::dumpEdges()
 {
 	ofstream f("edges.dat");
 
 	for(unsigned int i=0;i<outline.size();i++)
 		f << outline[i].x << ' ' << outline[i].y << endl;
 	f.close();
-}
+}*/
 
 void GeomShape::SetStyles(const std::list<FILLSTYLE>* styles)
 {
@@ -153,22 +155,12 @@ void GeomShape::SetStyles(const std::list<FILLSTYLE>* styles)
 
 void GeomShape::BuildFromEdges(const std::list<FILLSTYLE>* styles)
 {
-	if(outline.empty())
+	if(outlines.empty())
 		return;
-
-	if(outline.size()>1 && outline.front()==outline.back())
-	{
-		closed=true;
-		outline.pop_back();
-	}
-	else
-		closed=false;
 
 	SetStyles(styles);
 
-	//Tessellate the shape using GLU
-	if(closed)
-		TessellateGLU();
+	TessellateGLU();
 }
 
 void GeomShape::TessellateGLU()
@@ -184,21 +176,28 @@ void GeomShape::TessellateGLU()
 	//Let's create a vector of pointers to store temporary coordinates
 	//passed to GLU
 	vector<GLdouble*> tmpCoord;
-	tmpCoord.reserve(outline.size());
-	
 	gluTessBeginPolygon(tess,this);
+	for(unsigned int i=0;i<outlines.size();i++)
+	{
+		//Check if the contour is closed
+		if(outlines[i].front()==outlines[i].back())
+			hasFill=true;
+		else
+			continue;
 		gluTessBeginContour(tess);
-			for(unsigned int i=0;i<outline.size();i++)
+			//First and last vertex are automatically linked
+			for(unsigned int j=1;j<outlines[i].size();j++)
 			{
 				GLdouble* loc=new GLdouble[3];
-				loc[0]=outline[i].x;
-				loc[1]=outline[i].y;
+				loc[0]=outlines[i][j].x;
+				loc[1]=outlines[i][j].y;
 				loc[2]=0;
 				tmpCoord.push_back(loc);
 				//As the data we pass the Vector2 pointer
-				gluTessVertex(tess,loc,&outline[i]);
+				gluTessVertex(tess,loc,&outlines[i][j]);
 			}
 		gluTessEndContour(tess);
+	}
 	gluTessEndPolygon(tess);
 	
 	//Clean up locations
@@ -208,9 +207,6 @@ void GeomShape::TessellateGLU()
 	//Clean up temporary vertices
 	for(unsigned int i=0;i<tmpVertices.size();i++)
 		delete tmpVertices[i];
-	
-	tmpVertices.clear();
-	
 }
 
 void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
@@ -265,7 +261,7 @@ void GeomShape::GLUCallbackCombine(GLdouble coords[3], void* vertex_data[4],
 	*outData=obj->tmpVertices.back();
 }
 
-//Shape are compared using the minimum vertex
+/*//Shape are compared using the minimum vertex
 bool GeomShape::operator<(const GeomShape& r) const
 {
 	Vector2 vl=*min_element(outline.begin(),outline.end());
@@ -275,4 +271,4 @@ bool GeomShape::operator<(const GeomShape& r) const
 		return true;
 	else
 		return false;
-}
+}*/

@@ -72,15 +72,15 @@ private:
 	void SetStyles(const std::list<FILLSTYLE>* styles);
 	const FILLSTYLE* style;
 	arrayElem* varray;
-	bool closed;
+	bool isOutlineClosed(const std::vector<Vector2>& outline) const;
+	bool hasFill;
 public:
-	GeomShape():curTessTarget(0),style(NULL),varray(NULL),closed(false),color(0){}
+	GeomShape():curTessTarget(0),style(NULL),varray(NULL),hasFill(false),color(0){}
 	std::vector<Vector2> triangles;
 	std::vector<std::vector<Vector2> > triangle_strips;
 	std::vector<std::vector<Vector2> > triangle_fans;
 
-	std::vector<Vector2> outline;
-	std::vector<GeomShape> sub_shapes;
+	std::vector<std::vector<Vector2> > outlines;
 
 	unsigned int color;
 

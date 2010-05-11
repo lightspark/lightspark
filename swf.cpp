@@ -1320,10 +1320,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	{
 		//Texturing must be enabled otherwise no tex coord will be sent to the shader
 		glEnable(GL_TEXTURE_2D);
+		Chronometer chronometer;
 		while(1)
 		{
 			sem_wait(&th->render);
-			Chronometer chronometer;
+			chronometer.checkpoint();
 
 			SDL_GL_SwapBuffers( );
 
@@ -1368,12 +1369,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glDrawBuffer(GL_BACK);
-
-			glClearColor(0,0,0,1);
-			glClear(GL_COLOR_BUFFER_BIT);
+			glUseProgram(0);
 
 			glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
-			glColor4f(0,0,1,0);
 			glBegin(GL_QUADS);
 				glTexCoord2f(0,1);
 				glVertex2i(0,0);
@@ -1387,17 +1385,13 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			
 			if(th->m_sys->showDebug)
 			{
-				glUseProgram(0);
 				glDisable(GL_TEXTURE_2D);
 				th->m_sys->debugRender(&font, true);
 				glEnable(GL_TEXTURE_2D);
-				glUseProgram(th->gpu_program);
 			}
 
 			if(th->m_sys->showProfilingData)
 			{
-				glUseProgram(0);
-
 				glColor3f(0,0,0);
 				char frameBuf[20];
 				snprintf(frameBuf,20,"Frame %u",th->m_sys->state.FP);
@@ -1416,10 +1410,10 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				list<ThreadProfile>::iterator it=th->m_sys->profilingData.begin();
 				for(;it!=th->m_sys->profilingData.end();it++)
 					it->plot(1000000/sys->getFrameRate(),&font);
-				glUseProgram(th->gpu_program);
 			}
 			//Call glFlush to offload work on the GPU
 			glFlush();
+			glUseProgram(th->gpu_program);
 			profile->accountTime(chronometer.checkpoint());
 		}
 		glDisable(GL_TEXTURE_2D);

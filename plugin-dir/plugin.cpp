@@ -26,6 +26,7 @@
 //#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r00 - Lightspark implementation"
 #define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r00"
 #include "class.h"
+#include <gtk/gtk.h>
 
 using namespace std;
 
@@ -161,6 +162,9 @@ NPError NS_PluginGetValue(NPPVariable aVariable, void *aValue)
 			break;
 		case NPPVpluginDescriptionString:
 			*((char **)aValue) = (char*)PLUGIN_DESCRIPTION;
+			break;
+		case NPPVpluginNeedsXEmbed:
+			*((bool *)aValue) = true;
 			break;
 		default:
 			err = NPERR_INVALID_PARAM;
@@ -326,6 +330,7 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
   switch (aVariable) {
     case NPPVpluginNameString:
     case NPPVpluginDescriptionString:
+    case NPPVpluginNeedsXEmbed:
       return NS_PluginGetValue(aVariable, aValue) ;
       break;
     default:
@@ -377,14 +382,15 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		}
 		if(p->width==0 || p->height==0)
 			abort();
-		m_rt=new lightspark::RenderThread(&m_sys,lightspark::NPAPI,p);
+
+		m_rt=new lightspark::RenderThread(&m_sys,lightspark::GTKPLUG,p);
 
 		if(m_it!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		m_it=new lightspark::InputThread(&m_sys,lightspark::NPAPI,p2);
+		m_it=new lightspark::InputThread(&m_sys,lightspark::GTKPLUG,p2);
 
 		sys=NULL;
 		m_sys.inputThread=m_it;

@@ -45,6 +45,10 @@ namespace X11Intrinsic
 //#include <windows.h>
 #endif
 
+#ifdef COMPILE_PLUGIN
+#include <gtk/gtk.h>
+#endif
+
 namespace lightspark
 {
 
@@ -230,11 +234,12 @@ public:
 	void wait();
 };
 
-enum ENGINE { SDL=0, NPAPI, GLX};
-#ifndef WIN32
+enum ENGINE { SDL=0, NPAPI, GLX, GTKPLUG};
+#ifdef COMPILE_PLUGIN
 struct NPAPI_params
 {
 	Display* display;
+	GtkWidget* container;
 	VisualID visual;
 	Window window;
 	int width;
@@ -250,11 +255,14 @@ class InputThread
 {
 private:
 	SystemState* m_sys;
-	NPAPI_params* npapi_params;
 	pthread_t t;
 	bool terminated;
 	static void* sdl_worker(InputThread*);
+	#ifdef COMPILE_PLUGIN
+	NPAPI_params* npapi_params;
 	static void npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, Boolean* b);
+	static gboolean gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
+	#endif
 
 	std::vector<InteractiveObject* > listeners;
 	Mutex mutexListeners;
@@ -277,12 +285,15 @@ class RenderThread: public ITickJob
 {
 private:
 	SystemState* m_sys;
-	NPAPI_params* npapi_params;
 	pthread_t t;
 	bool terminated;
 	static void* sdl_worker(RenderThread*);
-	static void* npapi_worker(RenderThread*);
 	static void* glx_worker(RenderThread*);
+	#ifdef COMPILE_PLUGIN
+	NPAPI_params* npapi_params;
+	static void* npapi_worker(RenderThread*);
+	static void* gtkplug_worker(RenderThread*);
+	#endif
 	void commonGLInit(int width, int height, unsigned int t2[3]);
 	sem_t render;
 	sem_t inputDone;

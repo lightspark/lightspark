@@ -43,6 +43,11 @@ extern "C" {
 #include <GL/glx.h>
 #endif
 
+#ifdef COMPILE_PLUGIN
+#include <gdk/gdkgl.h>
+#include <gtk/gtkglwidget.h>
+#endif
+
 using namespace std;
 using namespace lightspark;
 
@@ -440,13 +445,13 @@ void RenderThread::wait()
 	terminated=true;
 }
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),npapi_params(NULL),t(0),terminated(false),
+InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),terminated(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL)
 {
 	LOG(LOG_NO_INFO,"Creating input thread");
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
-#ifndef WIN32
+#ifdef COMPILE_PLUGIN
 	else if(e==NPAPI)
 	{
 		npapi_params=(NPAPI_params*)param;
@@ -462,9 +467,13 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),npapi_pa
 		XSelectInput(npapi_params->display, npapi_params->window, event_mask);
 		X11Intrinsic::XtAddEventHandler(xtwidget, event_mask, False, (X11Intrinsic::XtEventHandler)npapi_worker, this);
 	}
+	else if(e==GTKPLUG)
+	{
+		cout << "input plug" << endl;
+	}
+#endif
 	else
 		::abort();
-#endif
 }
 
 InputThread::~InputThread()
@@ -667,17 +676,17 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	sem_init(&inputDone,0,0);
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
-#ifndef WIN32
+#ifdef COMPILE_PLUGIN
+	else if(e==GTKPLUG)
+	{
+		npapi_params=(NPAPI_params*)params;
+		pthread_create(&t,NULL,(thread_worker)gtkplug_worker,this);
+	}
 	else if(e==NPAPI)
 	{
 		npapi_params=(NPAPI_params*)params;
 		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
 	}
-	else if(e==GLX)
-	{
-		pthread_create(&t,NULL,(thread_worker)glx_worker,this);
-	}
-
 	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
 }
@@ -758,6 +767,187 @@ void RenderThread::glBlitFramebuffer(number_t xmin, number_t xmax, number_t ymin
 	glUseProgram(gpu_program);
 }
 
+//#ifdef COMPILE_PLUGIN
+void* RenderThread::gtkplug_worker(RenderThread* th)
+{
+	sys=th->m_sys;
+	rt=th;
+	NPAPI_params* p=th->npapi_params;
+
+	RECT size=sys->getFrameSize();
+	int swf_width=size.Xmax/20;
+	int swf_height=size.Ymax/20;
+
+	int window_width=p->width;
+	int window_height=p->height;
+
+	float scalex=window_width;
+	scalex/=swf_width;
+	float scaley=window_height;
+	scaley/=swf_height;
+
+	rt->width=window_width;
+	rt->height=window_height;
+	th->interactive_buffer=new uint32_t[window_width*window_height];
+	unsigned int t2[3];
+	gdk_threads_enter();
+	GtkWidget* container=gtk_plug_new((GdkNativeWindow)p->window);;
+	gtk_widget_show(container);
+	gdk_gl_init(0, 0);
+	GdkGLConfig* glConfig=gdk_gl_config_new_by_mode((GdkGLConfigMode)(GDK_GL_MODE_RGBA|GDK_GL_MODE_DOUBLE|GDK_GL_MODE_DEPTH));
+	assert(glConfig);
+	
+	GtkWidget* drawing_area = gtk_drawing_area_new ();
+	//gtk_widget_set_size_request (drawing_area, 0, 0);
+
+	gtk_widget_set_gl_capability (drawing_area,glConfig,NULL,TRUE,GDK_GL_RGBA_TYPE);
+	gtk_widget_show (drawing_area);
+	gtk_container_add (GTK_CONTAINER (container), drawing_area);
+	GdkGLContext *glContext = gtk_widget_get_gl_context (drawing_area);
+	GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);	
+	bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
+	assert(ret);
+	th->commonGLInit(window_width, window_height, t2);
+	gdk_gl_drawable_gl_end(glDrawable);
+	gdk_threads_leave();
+
+	while(1)
+	{
+		gdk_threads_enter();
+		bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
+		assert(ret);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDrawBuffer(GL_BACK);
+		glClearColor(0,0,1,1);
+		glClear(GL_COLOR_BUFFER_BIT);
+		gdk_gl_drawable_swap_buffers(glDrawable);
+		gdk_gl_drawable_gl_end(glDrawable);
+		gdk_threads_leave();
+		if(sys->shutdown)
+			pthread_exit(0);
+		sleep(1);
+	}
+	
+	return NULL;
+	/*ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
+	profile->setTag("Render");
+	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
+	if(font.Error())
+		throw RunTimeException("Unable to load font",sys->getOrigin().raw_buf());
+	
+	font.FaceSize(20);
+
+	glEnable(GL_TEXTURE_2D);
+	try
+	{
+		while(1)
+		{
+			sem_wait(&th->render);
+			Chronometer chronometer;
+			
+			//Before starting rendering, cleanup all the request arrived in the meantime
+			int fakeRenderCount=0;
+			while(sem_trywait(&th->render)==0)
+			{
+				if(sys->shutdown)
+					pthread_exit(0);
+				fakeRenderCount++;
+			}
+			
+			if(fakeRenderCount)
+				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
+			if(sys->shutdown)
+				pthread_exit(0);
+
+			if(sys->error)
+			{
+				::abort();
+			}
+			else
+			{
+				glXSwapBuffers(d,p->window);
+
+				if(th->inputNeeded)
+				{
+					glBindTexture(GL_TEXTURE_2D,t2[2]);
+					glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
+					th->inputNeeded=false;
+					sem_post(&th->inputDone);
+				}
+
+				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
+				glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+				RGB bg=sys->getBackground();
+				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
+				glClearDepth(0xffff);
+				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+				glLoadIdentity();
+				glScalef(scalex,scaley,1);
+				
+				sys->Render();
+
+				glFlush();
+
+				glLoadIdentity();
+
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glDrawBuffer(GL_BACK);
+
+				glClearColor(0,0,0,1);
+				glClear(GL_COLOR_BUFFER_BIT);
+
+				glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
+				glColor4f(0,0,1,0);
+				glBegin(GL_QUADS);
+					glTexCoord2f(0,1);
+					glVertex2i(0,0);
+					glTexCoord2f(1,1);
+					glVertex2i(th->width,0);
+					glTexCoord2f(1,0);
+					glVertex2i(th->width,th->height);
+					glTexCoord2f(0,0);
+					glVertex2i(0,th->height);
+				glEnd();
+
+				if(sys->showProfilingData)
+				{
+					glUseProgram(0);
+					glDisable(GL_TEXTURE_2D);
+
+					//Draw bars
+					glColor4f(0.7,0.7,0.7,0.7);
+					glBegin(GL_LINES);
+					for(int i=1;i<10;i++)
+					{
+						glVertex2i(0,(i*th->height/10));
+						glVertex2i(th->width,(i*th->height/10));
+					}
+					glEnd();
+				
+					list<ThreadProfile>::iterator it=sys->profilingData.begin();
+					for(;it!=sys->profilingData.end();it++)
+						it->plot(1000000/sys->getFrameRate(),&font);
+
+					glEnable(GL_TEXTURE_2D);
+					glUseProgram(rt->gpu_program);
+				}
+				//Call glFlush to offload work on the GPU
+				glFlush();
+			}
+			profile->accountTime(chronometer.checkpoint());
+		}
+	}
+	catch(const char* e)
+	{
+		LOG(LOG_ERROR,"Exception caught " << e);
+		::abort();
+	}
+	glDisable(GL_TEXTURE_2D);
+	delete p;**/
+}
+//#endif
+
 #ifndef WIN32
 void* RenderThread::npapi_worker(RenderThread* th)
 {
@@ -781,8 +971,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	rt->height=window_height;
 	th->interactive_buffer=new uint32_t[window_width*window_height];
 	unsigned int t2[3];
-	sys=th->m_sys;
-	rt=th;
 
 	Display* d=XOpenDisplay(NULL);
 
@@ -829,7 +1017,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		throw RunTimeException("Unable to load font",sys->getOrigin().raw_buf());
 	
 	font.FaceSize(20);
-
 
 	glEnable(GL_TEXTURE_2D);
 	try
@@ -1205,7 +1392,8 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	if (GLEW_OK != err)
 	{
 		LOG(LOG_ERROR,"Cannot initialize GLEW");
-		abort();
+		cout << glewGetErrorString(err) << endl;
+		::abort();
 	}
 
 	//Load shaders

@@ -427,6 +427,16 @@ public:
 	void dumpVariables();
 };
 
+//Atomic operations: placeholder until C++0x is supported in GCCl
+inline void atomic_increment(int* operand)
+{
+    __asm__ volatile ("lock xaddl %1, (%0)" : : "r" (operand), "r"(1));
+}
+inline void atomic_decrement(int* operand)
+{
+    __asm__ volatile ("lock xaddl %1, (%0)" : : "r" (operand), "r"(-1));
+}
+
 class ASObject
 {
 friend class Manager;
@@ -463,14 +473,14 @@ public:
 	void incRef()
 	{
 		//std::cout << "incref " << this << std::endl;
-		ref_count++;
+		atomic_increment(&ref_count);
 		assert(ref_count>0);
 	}
 	void decRef()
 	{
 		//std::cout << "decref " << this << std::endl;
 		assert(ref_count>0);
-		ref_count--;
+		atomic_decrement(&ref_count);
 		if(ref_count==0)
 		{
 			if(manager)
@@ -488,7 +498,7 @@ public:
 	}
 	void fake_decRef()
 	{
-		ref_count--;
+		atomic_decrement(&ref_count);
 	}
 	static void s_incRef(ASObject* o)
 	{

@@ -965,8 +965,10 @@ void ABCVm::handleEvent()
 	e.second->check();
 	if(e.first)
 	{
-		//cerr << e.second->type << endl;
-		e.first->handleEvent(e.second);
+		if(e.second->type!="enterFrame")
+			e.first->handleEvent(e.second);
+		else
+			cout << "enterFrame ref " << e.second->getRefCount() << endl;
 		e.first->decRef();
 	}
 	else
@@ -1037,8 +1039,8 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 		obj->incRef();
 	ev->incRef();
 	events_queue.push_back(pair<EventDispatcher*,Event*>(obj, ev));
-	sem_post(&sem_event_count);
 	sem_post(&event_queue_mutex);
+	sem_post(&sem_event_count);
 }
 
 void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* const* args, const unsigned int argslen, bool isRoot)

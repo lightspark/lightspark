@@ -583,11 +583,14 @@ void* InputThread::sdl_worker(InputThread* th)
 				if(selected==0)
 					break;
 
-				int index=int(th->listeners.size()*selected);
+				int index=lrint(th->listeners.size()*selected);
 				index--;
 
 				//Add event to the event queue
 				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown"));
+				//And select that object for debugging (if needed)
+				if(sys->showDebug)
+					sys->renderThread->selectedDebug=th->listeners[index];
 				break;
 			}
 		}
@@ -645,12 +648,12 @@ void InputThread::removeListener(InteractiveObject* ob)
 
 void InputThread::broadcastEvent(const tiny_string& t)
 {
-	Locker locker(mutexListeners);
-
 	Event* e=Class<Event>::getInstanceS(t);
+	Locker locker(mutexListeners);
+	assert(e->getRefCount()==1);
 	for(unsigned int i=0;i<listeners.size();i++)
 		sys->currentVm->addEvent(listeners[i],e);
-	
+	//while(e->getRefCount()>1){sleep(1);}
 	e->check();
 	e->decRef();
 }
@@ -683,7 +686,8 @@ void InputThread::disableDrag()
 }
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),
-	interactive_buffer(NULL),fbAcquired(false),frameCount(0),secsCount(0),currentId(0),materialOverride(false)
+	interactive_buffer(NULL),fbAcquired(false),frameCount(0),secsCount(0),selectedDebug(NULL),currentId(0),
+	materialOverride(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -871,11 +875,17 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 
 			glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
+			//Clear the id buffer
+			glDrawBuffer(GL_COLOR_ATTACHMENT2);
+			glClearColor(1,0,0,1);
+			glClear(GL_COLOR_BUFFER_BIT);
 			
+			//Clear the back buffer
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 			glClear(GL_COLOR_BUFFER_BIT);
+
 			glLoadIdentity();
 			glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
 			glScalef(scalex,scaley,1);
@@ -1547,11 +1557,18 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			SDL_PumpEvents();
 
 			glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 			
+			//Clear the id buffer
+			glDrawBuffer(GL_COLOR_ATTACHMENT2);
+			glClearColor(0,0,0,0);
+			glClear(GL_COLOR_BUFFER_BIT);
+			
+			//Clear the back buffer
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 			RGB bg=sys->getBackground();
 			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 			glClear(GL_COLOR_BUFFER_BIT);
+			
 			glLoadIdentity();
 			glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
 			
@@ -1564,6 +1581,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glDrawBuffer(GL_BACK);
 			glUseProgram(0);
+			glDisable(GL_BLEND);
 
 			glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
 			glBegin(GL_QUADS);
@@ -1580,7 +1598,10 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			if(th->m_sys->showDebug)
 			{
 				glDisable(GL_TEXTURE_2D);
-				th->m_sys->debugRender(&font, true);
+				if(th->selectedDebug)
+					th->selectedDebug->debugRender(&font, true);
+				else
+					th->m_sys->debugRender(&font, true);
 				glEnable(GL_TEXTURE_2D);
 			}
 
@@ -1608,6 +1629,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			//Call glFlush to offload work on the GPU
 			glFlush();
 			glUseProgram(th->gpu_program);
+			glEnable(GL_BLEND);
 			profile->accountTime(chronometer.checkpoint());
 		}
 		glDisable(GL_TEXTURE_2D);

@@ -548,7 +548,7 @@ void MovieClip::advanceFrame()
 		{
 			state.next_FP=min(state.FP+1,framesLoaded-1);
 			//DEBUG: stop frame advancement
-			state.next_FP=min(state.next_FP,0);
+			state.next_FP=min(state.next_FP,1);
 		}
 		state.explicit_FP=false;
 	}

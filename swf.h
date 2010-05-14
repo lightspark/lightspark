@@ -349,6 +349,7 @@ public:
 	int width;
 	int height;
 	
+	InteractiveObject* selectedDebug;
 	float currentId;
 	bool materialOverride;
 };

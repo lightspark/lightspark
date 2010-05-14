@@ -469,7 +469,15 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),ter
 	}
 	else if(e==GTKPLUG)
 	{
-		cout << "input plug" << endl;
+		gdk_threads_enter();
+		npapi_params=(NPAPI_params*)param;
+		GtkWidget* container=npapi_params->container;
+		gtk_widget_set_can_focus(container,True);
+		gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
+						GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
+						GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
+		g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), this);
+		gdk_threads_leave();
 	}
 #endif
 	else
@@ -488,6 +496,13 @@ void InputThread::wait()
 	if(t)
 		pthread_join(t,NULL);
 	terminated=true;
+}
+
+//This is a GTK event handler and the gdk lock is already acquired
+gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
+{
+	cout << "Event" << endl;
+	return False;
 }
 
 void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, lightspark::Boolean* b)
@@ -791,7 +806,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	th->interactive_buffer=new uint32_t[window_width*window_height];
 	unsigned int t2[3];
 	gdk_threads_enter();
-	GtkWidget* container=gtk_plug_new((GdkNativeWindow)p->window);;
+	GtkWidget* container=p->container;
 	gtk_widget_show(container);
 	gdk_gl_init(0, 0);
 	GdkGLConfig* glConfig=gdk_gl_config_new_by_mode((GdkGLConfigMode)(GDK_GL_MODE_RGBA|GDK_GL_MODE_DOUBLE|GDK_GL_MODE_DEPTH));
@@ -808,28 +823,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
 	assert(ret);
 	th->commonGLInit(window_width, window_height, t2);
-	gdk_gl_drawable_gl_end(glDrawable);
-	gdk_threads_leave();
-
-	while(1)
-	{
-		gdk_threads_enter();
-		bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-		assert(ret);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glDrawBuffer(GL_BACK);
-		glClearColor(0,0,1,1);
-		glClear(GL_COLOR_BUFFER_BIT);
-		gdk_gl_drawable_swap_buffers(glDrawable);
-		gdk_gl_drawable_gl_end(glDrawable);
-		gdk_threads_leave();
-		if(sys->shutdown)
-			pthread_exit(0);
-		sleep(1);
-	}
-	
-	return NULL;
-	/*ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
+	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
 	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
 	if(font.Error())
@@ -838,13 +832,32 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	font.FaceSize(20);
 
 	glEnable(GL_TEXTURE_2D);
+	gdk_gl_drawable_gl_end(glDrawable);
+	gdk_threads_leave();
+	Chronometer chronometer;
 	try
 	{
 		while(1)
 		{
 			sem_wait(&th->render);
-			Chronometer chronometer;
-			
+			if(th->m_sys->shutdown)
+				pthread_exit(0);
+
+			chronometer.checkpoint();
+
+			gdk_threads_enter();
+			bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
+			assert(ret);
+			gdk_gl_drawable_swap_buffers(glDrawable);
+
+			if(th->inputNeeded)
+			{
+				glBindTexture(GL_TEXTURE_2D,t2[2]);
+				glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
+				th->inputNeeded=false;
+				sem_post(&th->inputDone);
+			}
+
 			//Before starting rendering, cleanup all the request arrived in the meantime
 			int fakeRenderCount=0;
 			while(sem_trywait(&th->render)==0)
@@ -853,88 +866,77 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 					pthread_exit(0);
 				fakeRenderCount++;
 			}
-			
+
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
-			if(sys->shutdown)
-				pthread_exit(0);
 
-			if(sys->error)
+			glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
+			
+			RGB bg=sys->getBackground();
+			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
+			glClear(GL_COLOR_BUFFER_BIT);
+			glLoadIdentity();
+			glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
+			glScalef(scalex,scaley,1);
+			
+			th->m_sys->Render();
+
+			glFlush();
+
+			glLoadIdentity();
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glDrawBuffer(GL_BACK);
+			glUseProgram(0);
+
+			glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
+			glBegin(GL_QUADS);
+				glTexCoord2f(0,1);
+				glVertex2i(0,0);
+				glTexCoord2f(1,1);
+				glVertex2i(th->width,0);
+				glTexCoord2f(1,0);
+				glVertex2i(th->width,th->height);
+				glTexCoord2f(0,0);
+				glVertex2i(0,th->height);
+			glEnd();
+			
+			if(th->m_sys->showDebug)
 			{
-				::abort();
+				glDisable(GL_TEXTURE_2D);
+				th->m_sys->debugRender(&font, true);
+				glEnable(GL_TEXTURE_2D);
 			}
-			else
+
+			if(th->m_sys->showProfilingData)
 			{
-				glXSwapBuffers(d,p->window);
+				glColor3f(0,0,0);
+				char frameBuf[20];
+				snprintf(frameBuf,20,"Frame %u",th->m_sys->state.FP);
+				font.Render(frameBuf,-1,FTPoint(0,0));
 
-				if(th->inputNeeded)
+				//Draw bars
+				glColor4f(0.7,0.7,0.7,0.7);
+				glBegin(GL_LINES);
+				for(int i=1;i<10;i++)
 				{
-					glBindTexture(GL_TEXTURE_2D,t2[2]);
-					glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
-					th->inputNeeded=false;
-					sem_post(&th->inputDone);
+					glVertex2i(0,(i*th->height/10));
+					glVertex2i(th->width,(i*th->height/10));
 				}
-
-				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
-				glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-				RGB bg=sys->getBackground();
-				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
-				glClearDepth(0xffff);
-				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-				glLoadIdentity();
-				glScalef(scalex,scaley,1);
-				
-				sys->Render();
-
-				glFlush();
-
-				glLoadIdentity();
-
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glDrawBuffer(GL_BACK);
-
-				glClearColor(0,0,0,1);
-				glClear(GL_COLOR_BUFFER_BIT);
-
-				glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
-				glColor4f(0,0,1,0);
-				glBegin(GL_QUADS);
-					glTexCoord2f(0,1);
-					glVertex2i(0,0);
-					glTexCoord2f(1,1);
-					glVertex2i(th->width,0);
-					glTexCoord2f(1,0);
-					glVertex2i(th->width,th->height);
-					glTexCoord2f(0,0);
-					glVertex2i(0,th->height);
 				glEnd();
-
-				if(sys->showProfilingData)
-				{
-					glUseProgram(0);
-					glDisable(GL_TEXTURE_2D);
-
-					//Draw bars
-					glColor4f(0.7,0.7,0.7,0.7);
-					glBegin(GL_LINES);
-					for(int i=1;i<10;i++)
-					{
-						glVertex2i(0,(i*th->height/10));
-						glVertex2i(th->width,(i*th->height/10));
-					}
-					glEnd();
 				
-					list<ThreadProfile>::iterator it=sys->profilingData.begin();
-					for(;it!=sys->profilingData.end();it++)
-						it->plot(1000000/sys->getFrameRate(),&font);
-
-					glEnable(GL_TEXTURE_2D);
-					glUseProgram(rt->gpu_program);
-				}
-				//Call glFlush to offload work on the GPU
-				glFlush();
+				list<ThreadProfile>::iterator it=th->m_sys->profilingData.begin();
+				for(;it!=th->m_sys->profilingData.end();it++)
+					it->plot(1000000/sys->getFrameRate(),&font);
 			}
+			//Call glFlush to offload work on the GPU
+			glFlush();
+			glUseProgram(th->gpu_program);
+
+			gdk_gl_drawable_gl_end(glDrawable);
+			gdk_threads_leave();
+
 			profile->accountTime(chronometer.checkpoint());
 		}
 	}
@@ -943,8 +945,12 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		LOG(LOG_ERROR,"Exception caught " << e);
 		::abort();
 	}
+	ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
+	assert(ret);
 	glDisable(GL_TEXTURE_2D);
-	delete p;**/
+	gdk_gl_drawable_gl_end(glDrawable);
+	delete p;
+	return NULL;
 }
 //#endif
 

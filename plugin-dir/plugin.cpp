@@ -374,6 +374,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p->window=mWindow;
 		p->width=mWidth;
 		p->height=mHeight;
+		p->container=gtk_plug_new((GdkNativeWindow)p->window);
 		lightspark::NPAPI_params* p2=new lightspark::NPAPI_params(*p);
 		if(m_rt!=NULL)
 		{

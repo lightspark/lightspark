@@ -541,6 +541,9 @@ public:
 	{
 		getMatrix().multiply2D(TextBounds.Xmin/20,TextBounds.Ymin/20,xmin,ymin);
 		getMatrix().multiply2D(TextBounds.Xmax/20,TextBounds.Ymax/20,xmax,ymax);
+		
+		TextMatrix.multiply2D(xmin,ymin,xmin,ymin);
+		TextMatrix.multiply2D(xmax,ymax,xmax,ymax);
 		//TODO: adapt for rotation
 		return true;
 	}

@@ -498,12 +498,14 @@ void InputThread::wait()
 	terminated=true;
 }
 
+#ifdef COMPILE_PLUGIN
 //This is a GTK event handler and the gdk lock is already acquired
 gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
 {
 	cout << "Event" << endl;
 	return False;
 }
+#endif
 
 void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, lightspark::Boolean* b)
 {
@@ -789,7 +791,7 @@ void RenderThread::glBlitFramebuffer(number_t xmin, number_t xmax, number_t ymin
 	glUseProgram(gpu_program);
 }
 
-//#ifdef COMPILE_PLUGIN
+#ifdef COMPILE_PLUGIN
 void* RenderThread::gtkplug_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -965,7 +967,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	delete p;
 	return NULL;
 }
-//#endif
+#endif
 
 #ifndef WIN32
 void* RenderThread::npapi_worker(RenderThread* th)

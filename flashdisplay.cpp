@@ -775,6 +775,11 @@ void DisplayObject::buildTraits(ASObject* o)
 
 }
 
+void IDisplayListElem::setMatrix(const lightspark::MATRIX& m)
+{
+	Matrix=m;
+}
+
 MATRIX IDisplayListElem::getMatrix() const
 {
 	MATRIX ret;

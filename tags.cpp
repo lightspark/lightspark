@@ -1348,6 +1348,9 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		//Object should be constructed even if not binded
 		if(toAdd->prototype && sys->currentVm)
 		{
+			//Object expect to have the matrix set when created
+			if(PlaceFlagHasMatrix)
+				toAdd->setMatrix(Matrix);
 			//We now ask the VM to construct this object
 			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->prototype);
 			sys->currentVm->addEvent(NULL,e);

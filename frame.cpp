@@ -58,7 +58,7 @@ void Frame::Render()
 		assert(i->second);
 
 		//Assign object data from current transformation
-		i->second->Matrix=i->first.Matrix;
+		i->second->setMatrix(i->first.Matrix);
 		i->second->Render();
 	}
 }
@@ -122,6 +122,6 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 		list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
 
 		for(;i!=displayList.end();i++)
-			i->second->Matrix=i->first.Matrix;
+			i->second->setMatrix(i->first.Matrix);
 	}
 }

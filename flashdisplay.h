@@ -39,7 +39,6 @@ class DisplayObjectContainer;
 class IDisplayListElem: public EventDispatcher
 {
 friend class DisplayObject;
-friend class Frame;
 private:
 	MATRIX Matrix;
 	bool useMatrix;
@@ -69,6 +68,8 @@ protected:
 	{
 		::abort();
 	}
+public:
+	void setMatrix(const MATRIX& m);
 };
 
 class DisplayObject: public IDisplayListElem

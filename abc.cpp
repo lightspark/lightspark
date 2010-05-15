@@ -965,10 +965,7 @@ void ABCVm::handleEvent()
 	e.second->check();
 	if(e.first)
 	{
-		if(e.second->type!="enterFrame")
-			e.first->handleEvent(e.second);
-		else
-			cout << "enterFrame ref " << e.second->getRefCount() << endl;
+		e.first->handleEvent(e.second);
 		e.first->decRef();
 	}
 	else

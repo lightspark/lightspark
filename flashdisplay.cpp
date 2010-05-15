@@ -545,11 +545,7 @@ void MovieClip::advanceFrame()
 		frames[state.next_FP].init(this,displayList);
 		state.FP=state.next_FP;
 		if(!state.stop_FP && framesLoaded>0)
-		{
 			state.next_FP=min(state.FP+1,framesLoaded-1);
-			//DEBUG: stop frame advancement
-			state.next_FP=min(state.next_FP,1);
-		}
 		state.explicit_FP=false;
 	}
 
@@ -627,7 +623,12 @@ Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 			{
 				Vector2 off=it->second->debugRender(font, false);
 				glTranslatef(off.x,0,0);
-				ret+=off;
+				ret.x+=off.x;
+				if(ret.x*20>sys->getFrameSize().Xmax)
+				{
+					glTranslatef(-ret.x,off.y,0);
+					ret.x=0;
+				}
 			}
 		}
 

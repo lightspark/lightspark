@@ -131,6 +131,7 @@ public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
+	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		//Apply transformation with the current matrix
@@ -157,6 +158,7 @@ public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
+	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		getMatrix().multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
@@ -563,6 +565,7 @@ public:
 	virtual int getId(){ return SpriteID; }
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	virtual ASObject* instance() const;
+	virtual void Render();
 };
 
 class ProtectTag: public ControlTag

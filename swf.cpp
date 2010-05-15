@@ -581,7 +581,10 @@ void* InputThread::sdl_worker(InputThread* th)
 				sys->renderThread->requestInput();
 				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
 				if(selected==0)
+				{
+					sys->renderThread->selectedDebug=NULL;
 					break;
+				}
 
 				int index=lrint(th->listeners.size()*selected);
 				index--;

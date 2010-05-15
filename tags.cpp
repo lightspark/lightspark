@@ -286,6 +286,10 @@ Vector2 DefineEditTextTag::debugRender(FTFont* font, bool deep)
 {
 	assert(!deep);
 	glColor3f(0,0.8,0);
+	char buf[20];
+	snprintf(buf,20,"EditText id=%u",(int)CharacterID);
+	font->Render(buf,-1,FTPoint(0,50));
+	
 	glBegin(GL_LINE_LOOP);
 		glVertex2i(0,0);
 		glVertex2i(100,0);
@@ -380,6 +384,11 @@ ASObject* DefineSpriteTag::instance() const
 	return ret;
 }
 
+void DefineSpriteTag::Render()
+{
+	lightspark::MovieClip::Render();
+}
+
 Vector2 DefineSpriteTag::debugRender(FTFont* font, bool deep)
 {
 	if(deep)
@@ -389,13 +398,14 @@ Vector2 DefineSpriteTag::debugRender(FTFont* font, bool deep)
 	char buf[20];
 	snprintf(buf,20,"Sprite id=%u",(int)SpriteID);
 	font->Render(buf,-1,FTPoint(0,50));
+	FTBBox tagBox=font->BBox(buf,-1);
 	glBegin(GL_LINE_LOOP);
 		glVertex2i(0,0);
-		glVertex2i(50,0);
-		glVertex2i(50,100);
+		glVertex2i(tagBox.Upper().X(),0);
+		glVertex2i(tagBox.Upper().X(),100);
 		glVertex2i(0,100);
 	glEnd();
-	return Vector2(50,100);
+	return Vector2(tagBox.Upper().X(),100);
 }
 
 void lightspark::ignore(istream& i, int count)
@@ -968,6 +978,22 @@ void DefineShape2Tag::Render()
 	glPopMatrix();
 }
 
+Vector2 DefineShape2Tag::debugRender(FTFont* font, bool deep)
+{
+	assert(!deep);
+	glColor3f(0,0.8,0.8);
+	char buf[20];
+	snprintf(buf,20,"Shape2 id=%u",(int)ShapeId);
+	font->Render(buf,-1,FTPoint(0,50));
+	glBegin(GL_LINE_LOOP);
+		glVertex2i(0,0);
+		glVertex2i(100,0);
+		glVertex2i(100,100);
+		glVertex2i(0,100);
+	glEnd();
+	return Vector2(100,100);
+}
+
 void DefineShape4Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape4 Render");
@@ -1063,6 +1089,22 @@ void DefineShape3Tag::Render()
 	}
 
 	glPopMatrix();
+}
+
+Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)
+{
+	assert(!deep);
+	glColor3f(0.8,0,0.8);
+	char buf[20];
+	snprintf(buf,20,"Shape3 id=%u",(int)ShapeId);
+	font->Render(buf,-1,FTPoint(0,50));
+	glBegin(GL_LINE_LOOP);
+		glVertex2i(0,0);
+		glVertex2i(100,0);
+		glVertex2i(100,100);
+		glVertex2i(0,100);
+	glEnd();
+	return Vector2(100,100);
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
@@ -1522,7 +1564,10 @@ void DefineButton2Tag::Render()
 Vector2 DefineButton2Tag::debugRender(FTFont* font, bool deep)
 {
 	assert(!deep);
-	glColor3f(0,0,0);
+	glColor3f(0.8,0.8,0.8);
+	char buf[20];
+	snprintf(buf,20,"Button2 id=%u",(int)CharacterId);
+	font->Render(buf,-1,FTPoint(0,50));
 	glBegin(GL_LINE_LOOP);
 		glVertex2i(0,0);
 		glVertex2i(100,0);

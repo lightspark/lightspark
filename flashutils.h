@@ -117,8 +117,10 @@ public:
 	void deleteVariableByMultiname(const multiname& name);
 	tiny_string toString(bool debugMsg=false)
 	{
-		assert(implEnable);
-		return ASObject::toString(debugMsg);
+		if(debugMsg)
+			return ASObject::toString(debugMsg);
+		else
+			::abort();
 	}
 	bool isEqual(ASObject* r)
 	{
@@ -170,8 +172,10 @@ public:
 	}
 	tiny_string toString(bool debugMsg=false)
 	{
-		assert(implEnable);
-		return ASObject::toString(debugMsg);
+		if(debugMsg)
+			return ASObject::toString(debugMsg);
+		else
+			::abort();
 	}
 	bool isEqual(ASObject* r)
 	{

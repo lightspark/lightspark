@@ -28,10 +28,9 @@ namespace lightspark
 
 class LightsparkException: public std::exception
 {
-private:
+public:
 	std::string cause;
 	std::string url;
-public:
 	LightsparkException(const std::string& c, const std::string u):cause(c),url(u)
 	{
 	}

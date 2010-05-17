@@ -1,9 +1,5 @@
-OpenGL:
-	vertex shader per depth
-	clipping (si può fare il test, ma non l'aggiornamento del buffer -> via shader ?);
-
-
 Official TODO Queue:
+-) Clipping
 -) Onor sandboxing
 -) Onor framerate
 -) Onor script limits
@@ -18,5 +14,6 @@ Official TODO Queue:
 -) stick to current level change or use flag to getVariable.../setVariable
 -) add classes for number, int, and boolean
 -) use fontconfig to avoid dependance on ttf-liberation
--) Support mozilla Out of process plugin mode - Waiting for Xt support from mozila
 -) Add Named Objects to frames and not to clips
+-) Support mozilla Out of process plugin mode - Waiting for multithreaded GTK support from mozilla
+-) Conditional scaling of FontGlyph based on version

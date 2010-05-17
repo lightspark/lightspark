@@ -1572,7 +1572,6 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 		return false;
 	}
 
-	::abort();
 	/*//Initialize values to the first available
 	assert(geometry[0].outline.size()>0);
 	xmin=xmax=geometry[0].outline[0].x;
@@ -1595,7 +1594,8 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 		}
 	}*/
 	sem_post(&geometry_mutex);
-	return true;
+	//return true;
+	return false;
 }
 
 ASFUNCTIONBODY(Graphics,_constructor)
@@ -1634,7 +1634,6 @@ ASFUNCTIONBODY(Graphics,lineTo)
 
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
-	::abort();
 
 	/*//If this is the first line, add also the starting point
 	if(th->tmpShape.outline.size()==0)
@@ -1647,7 +1646,6 @@ ASFUNCTIONBODY(Graphics,lineTo)
 
 void Graphics::flushShape(bool keepStyle)
 {
-	::abort();
 	/*if(!tmpShape.outline.empty())
 	{
 		if(tmpShape.color)
@@ -1673,7 +1671,6 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	double radius=args[2]->toNumber();
 
 	th->flushShape(true);
-	::abort();
 
 	/*//Well, right now let's build a square anyway
 	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));
@@ -1698,7 +1695,6 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	int height=args[3]->toInt();
 
 	th->flushShape(true);
-	::abort();
 
 	/*if(width==0 && height==0)
 	{
@@ -1768,7 +1764,6 @@ ASFUNCTIONBODY(Graphics,endFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert(th->tmpShape.color);
-	::abort();
 	/*if(!th->tmpShape.outline.empty())
 	{
 		if(th->tmpShape.outline.front()!=th->tmpShape.outline.back())

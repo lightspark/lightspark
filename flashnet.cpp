@@ -413,7 +413,7 @@ void NetStream::execute()
 				}
 				profile->accountTime(chronometer.checkpoint());
 				if(aborting)
-					throw "Aborting";
+					throw JobTerminationException();
 			}
 			while(!done);
 		}
@@ -421,12 +421,12 @@ void NetStream::execute()
 			threadAbort();
 
 	}
-	catch(exception& e)
+	catch(LightsparkException& e)
 	{
 		cout << e.what() << endl;
 		threadAbort();
 	}
-	catch(const char*)
+	catch(JobTerminationException& e)
 	{
 	}
 

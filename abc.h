@@ -614,7 +614,7 @@ public:
 	~ABCVm();
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
-	void addEvent(EventDispatcher*,Event*);
+	bool addEvent(EventDispatcher*,Event*);
 	int getEventQueueSize();
 	void wait();
 

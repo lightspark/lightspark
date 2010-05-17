@@ -74,7 +74,7 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_strin
 void NPDownloadManager::destroy(lightspark::Downloader* d)
 {
 	//First of all, wait for termination
-	if(!sys->shutdown)
+	if(!sys->isShuttingDown())
 		d->wait();
 	sem_wait(&mutex);
 	list<pair<lightspark::tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
@@ -163,9 +163,9 @@ NPError NS_PluginGetValue(NPPVariable aVariable, void *aValue)
 		case NPPVpluginDescriptionString:
 			*((char **)aValue) = (char*)PLUGIN_DESCRIPTION;
 			break;
-		case NPPVpluginNeedsXEmbed:
+/*		case NPPVpluginNeedsXEmbed:
 			*((bool *)aValue) = true;
-			break;
+			break;*/
 		default:
 			err = NPERR_INVALID_PARAM;
 			break;
@@ -208,65 +208,68 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	{
 		if(argn[i]==NULL || argv[i]==NULL)
 			continue;
-		if(strcmp(argn[i],"flashvars")!=0)
-			continue;
-
-		lightspark::ASObject* params=new lightspark::ASObject;
-		//Add arguments to SystemState
-		std::string vars(argv[i]);
-		uint32_t cur=0;
-		while(cur<vars.size())
+		if(strcmp(argn[i],"flashvars")==0)
 		{
-			int n1=vars.find('=',cur);
-			if(n1==-1) //Incomplete parameters string, ignore the last
-				break;
-
-			int n2=vars.find('&',n1+1);
-			if(n2==-1)
-				n2=vars.size();
-
-			std::string varName=vars.substr(cur,(n1-cur));
-
-			//The variable value has to be urldecoded
-			bool ok=true;
-			std::string varValue;
-			varValue.reserve(n2-n1); //The maximum lenght
-			for(int j=n1+1;j<n2;j++)
+			lightspark::ASObject* params=new lightspark::ASObject;
+			//Add arguments to SystemState
+			std::string vars(argv[i]);
+			uint32_t cur=0;
+			while(cur<vars.size())
 			{
-				if(vars[j]!='%')
-					varValue.push_back(vars[j]);
-				else
+				int n1=vars.find('=',cur);
+				if(n1==-1) //Incomplete parameters string, ignore the last
+					break;
+
+				int n2=vars.find('&',n1+1);
+				if(n2==-1)
+					n2=vars.size();
+
+				std::string varName=vars.substr(cur,(n1-cur));
+
+				//The variable value has to be urldecoded
+				bool ok=true;
+				std::string varValue;
+				varValue.reserve(n2-n1); //The maximum lenght
+				for(int j=n1+1;j<n2;j++)
 				{
-					if((n2-j)<3) //Not enough characters
+					if(vars[j]!='%')
+						varValue.push_back(vars[j]);
+					else
 					{
-						ok=false;
-						break;
-					}
+						if((n2-j)<3) //Not enough characters
+						{
+							ok=false;
+							break;
+						}
 
-					int t1=hexToInt(vars[j+1]);
-					int t2=hexToInt(vars[j+2]);
-					if(t1==-1 || t2==-1)
-					{
-						ok=false;
-						break;
-					}
+						int t1=hexToInt(vars[j+1]);
+						int t2=hexToInt(vars[j+2]);
+						if(t1==-1 || t2==-1)
+						{
+							ok=false;
+							break;
+						}
 
-					int c=(t1*16)+t2;
-					varValue.push_back(c);
-					j+=2;
+						int c=(t1*16)+t2;
+						varValue.push_back(c);
+						j+=2;
+					}
 				}
-			}
 
-			if(ok)
-			{
-				cout << varName << ' ' << varValue << endl;
-				params->setVariableByQName(varName.c_str(),"",
-						lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
+				if(ok)
+				{
+					cout << varName << ' ' << varValue << endl;
+					params->setVariableByQName(varName.c_str(),"",
+							lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
+				}
+				cur=n2+1;
 			}
-			cur=n2+1;
+			sys->setParameters(params);
 		}
-		sys->setParameters(params);
-		break;
+		else if(strcmp(argn[i],"src")==0)
+		{
+			sys->setOrigin(argv[i]);
+		}
 	}
 }
 
@@ -374,7 +377,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p->window=mWindow;
 		p->width=mWidth;
 		p->height=mHeight;
-		p->container=gtk_plug_new((GdkNativeWindow)p->window);
+		//p->container=gtk_plug_new((GdkNativeWindow)p->window);
 		lightspark::NPAPI_params* p2=new lightspark::NPAPI_params(*p);
 		if(m_rt!=NULL)
 		{
@@ -384,14 +387,14 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		if(p->width==0 || p->height==0)
 			abort();
 
-		m_rt=new lightspark::RenderThread(&m_sys,lightspark::GTKPLUG,p);
+		m_rt=new lightspark::RenderThread(&m_sys,lightspark::NPAPI,p);
 
 		if(m_it!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		m_it=new lightspark::InputThread(&m_sys,lightspark::GTKPLUG,p2);
+		m_it=new lightspark::InputThread(&m_sys,lightspark::NPAPI,p2);
 
 		sys=NULL;
 		m_sys.inputThread=m_it;

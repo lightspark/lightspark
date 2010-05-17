@@ -1038,6 +1038,7 @@ public:
 class LINESTYLEARRAY
 {
 public:
+	LINESTYLEARRAY():version(-1){}
 	void appendStyles(const LINESTYLEARRAY& r);
 	int version;
 	UI8 LineStyleCount;
@@ -1055,6 +1056,7 @@ public:
 class FILLSTYLEARRAY
 {
 public:
+	FILLSTYLEARRAY():version(-1){}
 	void appendStyles(const FILLSTYLEARRAY& r);
 	int version;
 	UI8 FillStyleCount;
@@ -1150,6 +1152,7 @@ class SHAPE
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 public:
 	SHAPE():fillOffset(0),lineOffset(0){}
+	virtual ~SHAPE(){}
 	UB NumFillBits;
 	UB NumLineBits;
 	unsigned int fillOffset;

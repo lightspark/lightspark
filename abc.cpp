@@ -934,6 +934,7 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),terminated(false),shutdown(false)
 ABCVm::~ABCVm()
 {
 	//signal potentially blocking semaphores
+	shutdown=true;
 	sem_post(&sem_event_count);
 	wait();
 	sem_destroy(&sem_event_count);
@@ -1029,8 +1030,11 @@ void ABCVm::handleEvent()
 /*! \brief enqueue an event, a reference is acquired
 * * \param obj EventDispatcher that will receive the event
 * * \param ev event that will be sent */
-void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
+bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 {
+	//If the system should terminate new event are not accepted
+	if(m_sys->shouldTerminate())
+		return false;
 	sem_wait(&event_queue_mutex);
 	if(obj)
 		obj->incRef();
@@ -1038,6 +1042,7 @@ void ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	events_queue.push_back(pair<EventDispatcher*,Event*>(obj, ev));
 	sem_post(&event_queue_mutex);
 	sem_post(&sem_event_count);
+	return true;
 }
 
 void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* const* args, const unsigned int argslen, bool isRoot)
@@ -1270,7 +1275,7 @@ void ABCVm::Run(ABCVm* th)
 	sys=th->m_sys;
 	iManager=th->int_manager;
 	dManager=th->number_manager;
-	if(sys->useJit)
+	if(th->m_sys->useJit)
 	{
 		llvm::InitializeNativeTarget();
 		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context);
@@ -1299,19 +1304,33 @@ void ABCVm::Run(ABCVm* th)
 	}
 	th->registerClasses();
 
-	ThreadProfile* profile=sys->allocateProfiler(RGB(0,200,0));
+	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(0,200,0));
 	profile->setTag("VM");
-	while(1)
+	//When aborting execution remaining events should be handled
+	bool bailOut=false;
+	while(!bailOut || !th->events_queue.empty())
 	{
-		sem_wait(&th->sem_event_count);
-		Chronometer chronometer;
-		th->handleEvent();
-		if(th->shutdown)
-			break;
-		profile->accountTime(chronometer.checkpoint());
+		try
+		{
+			sem_wait(&th->sem_event_count);
+			if(th->shutdown)
+			{
+				bailOut=true;
+				//If the queue is empty stop immediately
+				if(th->events_queue.empty())
+					break;
+			}
+			Chronometer chronometer;
+			th->handleEvent();
+			profile->accountTime(chronometer.checkpoint());
+		}
+		catch(LightsparkException& e)
+		{
+			th->m_sys->setError(e.cause);
+			bailOut=true;
+		}
 	}
-
-	if(sys->useJit)
+	if(th->m_sys->useJit)
 	{
 		th->ex->clearAllGlobalMappings();
 		delete th->module;

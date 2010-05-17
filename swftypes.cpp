@@ -902,6 +902,7 @@ std::istream& lightspark::operator>>(std::istream& s, RGBA& v)
 void LINESTYLEARRAY::appendStyles(const LINESTYLEARRAY& r)
 {
 	unsigned int count = LineStyleCount + r.LineStyleCount;
+	assert(version!=-1);
 
 	assert(r.version==version);
 	if(version<4)
@@ -913,6 +914,7 @@ void LINESTYLEARRAY::appendStyles(const LINESTYLEARRAY& r)
 
 std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 {
+	assert(v.version!=-1);
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
 		LOG(LOG_ERROR,"Line array extended not supported");
@@ -953,6 +955,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 
 void FILLSTYLEARRAY::appendStyles(const FILLSTYLEARRAY& r)
 {
+	assert(version!=-1);
 	unsigned int count = FillStyleCount + r.FillStyleCount;
 
 	FillStyles.insert(FillStyles.end(),r.FillStyles.begin(),r.FillStyles.end());
@@ -961,6 +964,7 @@ void FILLSTYLEARRAY::appendStyles(const FILLSTYLEARRAY& r)
 
 std::istream& lightspark::operator>>(std::istream& s, FILLSTYLEARRAY& v)
 {
+	assert(v.version!=-1);
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
 		LOG(LOG_ERROR,"Fill array extended not supported");
@@ -1449,7 +1453,9 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 		}
 		if(StateNewStyles)
 		{
-			SHAPEWITHSTYLE* ps=static_cast<SHAPEWITHSTYLE*>(parent);
+			SHAPEWITHSTYLE* ps=dynamic_cast<SHAPEWITHSTYLE*>(parent);
+			if(ps==NULL)
+				throw ParseException("Malformed SWF file",sys->getOrigin().raw_buf());
 			bs.pos=0;
 			FILLSTYLEARRAY a;
 			a.version=ps->FillStyles.version;

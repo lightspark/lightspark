@@ -1216,7 +1216,8 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			default:
 				LOG(LOG_ERROR,"Not intepreted instruction @" << code.tellg());
 				LOG(LOG_ERROR,"dump " << hex << (unsigned int)opcode);
-				throw ParseException("Not implemented instruction in intepreter",sys->getOrigin().raw_buf());
+				throw ParseException("Not implemented instruction in interpreter",
+							sys->getOrigin().raw_buf());
 		}
 	}
 

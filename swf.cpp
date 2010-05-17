@@ -17,7 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <string.h>
+#include <string>
+#include <sstream>
 #include <pthread.h>
 #include <algorithm>
 #include "compat.h"
@@ -122,8 +123,8 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
-SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),showProfilingData(false),showInteractiveMap(false),
-	showDebug(false),xOffset(0),yOffset(0),shutdown(false),error(false),currentVm(NULL),inputThread(NULL),
+SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),showProfilingData(false),
+	showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),inputThread(NULL),
 	renderThread(NULL),useInterpreter(true),useJit(false), downloadManager(NULL)
 {
 	//Do needed global initialization
@@ -183,6 +184,30 @@ SystemState::~SystemState()
 	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
 		it->second->decRef();
+}
+
+bool SystemState::isOnError() const
+{
+	return error;
+}
+
+bool SystemState::isShuttingDown() const
+{
+	return shutdown;
+}
+
+bool SystemState::shouldTerminate() const
+{
+	return shutdown || error;
+}
+
+void SystemState::setError(string& c)
+{
+	error=true;
+	errorCause=c;
+	timerThread->stop();
+	if(renderThread)
+		renderThread->draw();
 }
 
 void SystemState::setShutdownFlag()
@@ -383,6 +408,7 @@ void ParseThread::execute()
 					else
 						root->revertFrame();
 					done=true;
+					root->check();
 					break;
 				}
 				case DICT_TAG:
@@ -408,16 +434,14 @@ void ParseThread::execute()
 					//Not yet implemented tag, ignore it
 					break;
 			}
-			if(sys->shutdown)
-				pthread_exit(0);
+			if(sys->shouldTerminate() || aborting)
+				break;
 		}
 	}
-	catch(const char* s)
+	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception caught: " << s);
-		threadAbort();
+		sys->setError(e.cause);
 	}
-	root->check();
 	pt=NULL;
 
 	sem_post(&ended);
@@ -505,7 +529,6 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 	cout << "Event" << endl;
 	return False;
 }
-#endif
 
 void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, lightspark::Boolean* b)
 {
@@ -528,6 +551,7 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 	else
 		cout << "TYPE " << dec << xevent->type << endl;
 }
+#endif
 
 void* InputThread::sdl_worker(InputThread* th)
 {
@@ -849,7 +873,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		while(1)
 		{
 			sem_wait(&th->render);
-			if(th->m_sys->shutdown)
+			if(th->m_sys->isShuttingDown())
 				pthread_exit(0);
 
 			chronometer.checkpoint();
@@ -871,7 +895,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			int fakeRenderCount=0;
 			while(sem_trywait(&th->render)==0)
 			{
-				if(sys->shutdown)
+				if(th->m_sys->isShuttingDown())
 					pthread_exit(0);
 				fakeRenderCount++;
 			}
@@ -969,7 +993,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 }
 #endif
 
-#ifndef WIN32
+#ifdef COMPILE_PLUGIN
 void* RenderThread::npapi_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -1051,34 +1075,43 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			int fakeRenderCount=0;
 			while(sem_trywait(&th->render)==0)
 			{
-				if(sys->shutdown)
+				if(th->m_sys->isShuttingDown())
 					pthread_exit(0);
 				fakeRenderCount++;
 			}
 			
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
-			if(sys->shutdown)
+			if(th->m_sys->isShuttingDown())
 				pthread_exit(0);
 
-			if(sys->error)
+			if(th->m_sys->isOnError())
 			{
-				::abort();
-				/*glXMakeContextCurrent(d, 0, 0, NULL);
-				unsigned int h = p->height/2;
-				//unsigned int w = 3 * p->width/4;
-				int x = 0;
-				int y = h/2;
-				GC gc = XCreateGC(d, p->window, 0, NULL);
-				const char *string = "ERROR";
-				int l = strlen(string);
-				int fmba = mFontInfo->max_bounds.ascent;
-				int fmbd = mFontInfo->max_bounds.descent;
-				int fh = fmba + fmbd;
-				y += fh;
-				x += 32;
-				XDrawString(d, p->window, gc, x, y, string, l);
-				XFreeGC(d, gc);*/
+				glUseProgram(0);
+
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glDrawBuffer(GL_BACK);
+				glLoadIdentity();
+
+				glClearColor(0,0,0,1);
+				glClear(GL_COLOR_BUFFER_BIT);
+				glColor3f(0.8,0.8,0.8);
+					    
+				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
+					    -1,FTPoint(0,th->height/2));
+
+				stringstream errorMsg;
+				errorMsg << "SWF file: " << th->m_sys->getOrigin();
+				font.Render(errorMsg.str().c_str(),
+					    -1,FTPoint(0,th->height/2-20));
+					    
+				errorMsg.str("");
+				errorMsg << "Cause: " << th->m_sys->errorCause;
+				font.Render(errorMsg.str().c_str(),
+					    -1,FTPoint(0,th->height/2-40));
+				
+				glFlush();
+				glXSwapBuffers(d,p->window);
 			}
 			else
 			{
@@ -1338,7 +1371,7 @@ void* RenderThread::glx_worker(RenderThread* th)
 
 			sys->Render();
 
-			if(sys->shutdown)
+			if(sys->isShuttingDown())
 			{
 				delete[] buffer;
 				pthread_exit(0);
@@ -1549,7 +1582,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			int fakeRenderCount=0;
 			while(sem_trywait(&th->render)==0)
 			{
-				if(sys->shutdown)
+				if(th->m_sys->isShuttingDown())
 					pthread_exit(0);
 				fakeRenderCount++;
 			}
@@ -1557,7 +1590,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 
-			if(th->m_sys->shutdown)
+			if(th->m_sys->isShuttingDown())
 				pthread_exit(0);
 			SDL_PumpEvents();
 

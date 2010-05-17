@@ -160,6 +160,8 @@ private:
 	TimerThread* timerThread;
 	sem_t terminated;
 	float renderRate;
+	bool error;
+	bool shutdown;
 public:
 	void setUrl(const tiny_string& url);
 
@@ -170,8 +172,11 @@ public:
 	int xOffset;
 	int yOffset;
 	
-	bool shutdown;
-	bool error;
+	std::string errorCause;
+	void setError(std::string& c);
+	bool shouldTerminate() const;
+	bool isShuttingDown() const;
+	bool isOnError() const;
 	void setShutdownFlag();
 	void tick();
 	void wait();
@@ -315,13 +320,13 @@ private:
 	void tick();
 	int frameCount;
 	int secsCount;
-	void draw();
 	std::vector<float> idStack;
 	
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
 	void wait();
+	void draw();
 	float getIdAt(int x, int y);
 	//The calling context MUST call this function with the transformation matrix ready
 	void glAcquireFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);

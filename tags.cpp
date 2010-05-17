@@ -691,7 +691,7 @@ void DefineTextTag::Render()
 	rt->glAcquireFramebuffer(TextBounds.Xmin,TextBounds.Xmax,
 				 TextBounds.Ymin,TextBounds.Ymax);
 	glPushMatrix();
-	//The next 1/20 scale is neede by DefineFont3. Should be conditional
+	//The next 1/20 scale is needed by DefineFont3. Should be conditional
 	glScalef(0.05,0.05,1);
 	float scale_cur=1;
 	for(;it!=TextRecords.end();it++)

@@ -207,7 +207,11 @@ void SystemState::setError(string& c)
 	errorCause=c;
 	timerThread->stop();
 	if(renderThread)
+	{
+		//Disable timed rendering
+		removeJob(renderThread);
 		renderThread->draw();
+	}
 }
 
 void SystemState::setShutdownFlag()
@@ -530,26 +534,41 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 	return False;
 }
 
-void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, lightspark::Boolean* b)
+void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, X11Intrinsic::Boolean* b)
 {
-	if(xevent->type==KeyPress)
+	switch(xevent->type)
 	{
-		int key=XLookupKeysym(&xevent->xkey,0);
-		cout << "CHAR___ " << key << endl;
-		switch(key)
+		case KeyPress:
 		{
-			case 'i':
-				th->m_sys->showInteractiveMap=!th->m_sys->showInteractiveMap;
-				break;
-			case 'p':
-				th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
-				break;
-			default:
-				break;
+			int key=XLookupKeysym(&xevent->xkey,0);
+			switch(key)
+			{
+				case 'd':
+					th->m_sys->showDebug=!th->m_sys->showDebug;
+					break;
+				case 'i':
+					th->m_sys->showInteractiveMap=!th->m_sys->showInteractiveMap;
+					break;
+				case 'p':
+					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
+					break;
+				default:
+					break;
+			}
+			*b=False;
+			break;
 		}
+		case Expose:
+			//Signal the renderThread
+			th->m_sys->renderThread->draw();
+			*b=False;
+			break;
+		default:
+			*b=True;
+#ifndef NDEBUG
+			cout << "TYPE " << dec << xevent->type << endl;
+#endif
 	}
-	else
-		cout << "TYPE " << dec << xevent->type << endl;
 }
 #endif
 
@@ -1023,7 +1042,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	Bool glx_present=glXQueryVersion(d,&a,&b);
 	if(!glx_present)
 	{
-		printf("glX not present\n");
+		LOG(LOG_ERROR,"glX not present");
 		return NULL;
 	}
 	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_VISUAL_ID,p->visual,GLX_DEPTH_SIZE,24,None};
@@ -1040,10 +1059,13 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		int id;
 		glXGetFBConfigAttrib(d,fb[i],GLX_VISUAL_ID,&id);
 		if(id==(int)p->visual)
-		{
-			printf("good id %x\n",id);
 			break;
-		}
+	}
+	if(i==a)
+	{
+		//No suitable id found
+		LOG(LOG_ERROR,"No suitable graphics configuration available");
+		return NULL;
 	}
 	th->mFBConfig=fb[i];
 	XFree(fb);

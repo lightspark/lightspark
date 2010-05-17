@@ -27,7 +27,6 @@ using namespace std;
 
 sync_stream::sync_stream():head(0),tail(0),wait_notfull(false),wait_notempty(false),buf_size(1024*1024)
 {
-	printf("syn stream\n");
 	buffer=new char[buf_size];
 	sem_init(&mutex,0,1);
 	sem_init(&notfull,0,0);

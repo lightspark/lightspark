@@ -265,7 +265,7 @@ private:
 	static void* sdl_worker(InputThread*);
 	#ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
-	static void npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, Boolean* b);
+	static void npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, X11Intrinsic::Boolean* b);
 	static gboolean gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
 	#endif
 

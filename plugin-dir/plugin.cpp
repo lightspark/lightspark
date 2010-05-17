@@ -24,7 +24,7 @@
 #define PLUGIN_NAME    "Shockwave Flash"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
 //#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r00 - Lightspark implementation"
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r00"
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r03"
 #include "class.h"
 #include <gtk/gtk.h>
 
@@ -208,7 +208,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	{
 		if(argn[i]==NULL || argv[i]==NULL)
 			continue;
-		if(strcmp(argn[i],"flashvars")==0)
+		if(strcasecmp(argn[i],"flashvars")==0)
 		{
 			lightspark::ASObject* params=new lightspark::ASObject;
 			//Add arguments to SystemState
@@ -258,7 +258,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 
 				if(ok)
 				{
-					cout << varName << ' ' << varValue << endl;
+					//cout << varName << ' ' << varValue << endl;
 					params->setVariableByQName(varName.c_str(),"",
 							lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
 				}
@@ -266,7 +266,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 			}
 			sys->setParameters(params);
 		}
-		else if(strcmp(argn[i],"src")==0)
+		else if(strcasecmp(argn[i],"src")==0)
 		{
 			sys->setOrigin(argv[i]);
 		}
@@ -288,7 +288,7 @@ int nsPluginInstance::hexToInt(char c)
 nsPluginInstance::~nsPluginInstance()
 {
 	//Shutdown the system
-	cerr << "instance dying" << endl;
+	//cerr << "instance dying" << endl;
 	m_sys.setShutdownFlag();
 	m_sys.wait();
 	if(m_rt)
@@ -411,8 +411,8 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	//We have to cast the downloadanager to a NPDownloadManager
 	NPDownloadManager* manager=static_cast<NPDownloadManager*>(m_sys.downloadManager);
 	lightspark::Downloader* dl=manager->getDownloaderForUrl(stream->url);
-	cerr << "Newstream for " << stream->url << endl;
-	cerr << stream->headers << endl;
+	LOG(LOG_NO_INFO,"Newstream for " << stream->url);
+	//cerr << stream->headers << endl;
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;

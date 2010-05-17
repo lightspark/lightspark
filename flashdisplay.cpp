@@ -553,6 +553,8 @@ void MovieClip::advanceFrame()
 
 void MovieClip::bootstrap()
 {
+	if(totalFrames==0)
+		return;
 	assert(framesLoaded>0);
 	assert(frames.size()>=1);
 	frames[0].init(this,displayList);

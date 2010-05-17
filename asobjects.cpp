@@ -947,7 +947,17 @@ tiny_string UInteger::toString(bool debugMsg)
 
 bool UInteger::isLess(ASObject* o)
 {
-	throw UnsupportedException("UInteger::isLess is not completely implemented",sys->getOrigin().raw_buf());
+	if(o->getObjectType()==T_INTEGER)
+	{
+		uint32_t val1=val;
+		int32_t val2=o->toInt();
+		if(val2<0)
+			return false;
+		else
+			return val1<(uint32_t)val2;
+	}
+	else
+		throw UnsupportedException("UInteger::isLess is not completely implemented",sys->getOrigin().raw_buf());
 }
 
 bool Number::isEqual(ASObject* o)

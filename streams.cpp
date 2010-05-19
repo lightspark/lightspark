@@ -19,6 +19,7 @@
 
 #include "streams.h"
 #include "logger.h"
+#include "exceptions.h"
 #include <cstdlib>
 #include <cstring>
 #include <assert.h>
@@ -197,7 +198,7 @@ zlib_filter::int_type zlib_filter::underflow()
 				break;
 			}
 			else
-				abort();
+				throw lightspark::ParseException("Unexpected Zlib error");
 		}
 		while(strm.avail_out!=0);
 		int available=4096-strm.avail_out;

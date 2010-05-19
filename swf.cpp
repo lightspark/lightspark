@@ -879,7 +879,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	profile->setTag("Render");
 	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
 	if(font.Error())
-		throw RunTimeException("Unable to load font",sys->getOrigin().raw_buf());
+		throw RunTimeException("Unable to load font");
 	
 	font.FaceSize(20);
 
@@ -1081,7 +1081,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	profile->setTag("Render");
 	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
 	if(font.Error())
-		throw RunTimeException("Unable to load font",sys->getOrigin().raw_buf());
+		throw RunTimeException("Unable to load font");
 	
 	font.FaceSize(20);
 
@@ -1228,7 +1228,7 @@ bool RenderThread::loadShaderPrograms()
 	const char *fs = NULL;
 	fs = dataFileRead(DATADIR "/lightspark.frag");
 	if(fs==NULL)
-		throw RunTimeException("Fragment shader code not found",sys->getOrigin().raw_buf());
+		throw RunTimeException("Fragment shader code not found");
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
 
@@ -1255,7 +1255,7 @@ bool RenderThread::loadShaderPrograms()
 
 	fs = dataFileRead(DATADIR "/lightspark.vert");
 	if(fs==NULL)
-		throw RunTimeException("Vertex shader code not found",sys->getOrigin().raw_buf());
+		throw RunTimeException("Vertex shader code not found");
 	glShaderSource(v, 1, &fs,NULL);
 	free((void*)fs);
 
@@ -1577,7 +1577,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	profile->setTag("Render");
 	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
 	if(font.Error())
-		throw RunTimeException("Unable to load font",sys->getOrigin().raw_buf());
+		throw RunTimeException("Unable to load font");
 	
 	font.FaceSize(20);
 	try

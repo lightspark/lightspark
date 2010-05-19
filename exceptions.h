@@ -23,6 +23,12 @@
 #include <exception>
 #include <string>
 
+#define assert_and_throw(cond) if(!(cond)) \
+{					\
+	throw AssertionException(##cond); \
+}
+
+
 namespace lightspark
 {
 
@@ -30,8 +36,7 @@ class LightsparkException: public std::exception
 {
 public:
 	std::string cause;
-	std::string url;
-	LightsparkException(const std::string& c, const std::string u):cause(c),url(u)
+	LightsparkException(const std::string& c):cause(c)
 	{
 	}
 	~LightsparkException() throw(){}
@@ -40,7 +45,7 @@ public:
 class RunTimeException: public LightsparkException
 {
 public:
-	RunTimeException(const std::string& c, const std::string& u):LightsparkException(c,u)
+	RunTimeException(const std::string& c):LightsparkException(c)
 	{
 	}
 	const char* what() const throw()
@@ -52,7 +57,7 @@ public:
 class UnsupportedException: public LightsparkException
 {
 public:
-	UnsupportedException(const std::string& c, const std::string& u):LightsparkException(c,u)
+	UnsupportedException(const std::string& c):LightsparkException(c)
 	{
 	}
 	const char* what() const throw()
@@ -64,12 +69,24 @@ public:
 class ParseException: public LightsparkException
 {
 public:
-	ParseException(const std::string& c, const std::string& u):LightsparkException(c,u)
+	ParseException(const std::string& c):LightsparkException(c)
 	{
 	}
 	const char* what() const throw()
 	{
 		return "Lightspark invalid file";
+	}
+};
+
+class AssertionException: public LightsparkException
+{
+public:
+	AssertionException(const std::string& c):LightsparkException(c)
+	{
+	}
+	const char* what() const throw()
+	{
+		return "Lightspark hit an unexpected condition";
 	}
 };
 

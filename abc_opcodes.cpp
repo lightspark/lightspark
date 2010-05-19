@@ -143,7 +143,7 @@ void ABCVm::coerce_a()
 
 ASObject* ABCVm::checkfilter(ASObject* o)
 {
-	throw UnsupportedException("checkfilter not implemented",sys->getOrigin().raw_buf());
+	throw UnsupportedException("checkfilter not implemented");
 }
 
 ASObject* ABCVm::coerce_s(ASObject* o)
@@ -363,7 +363,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 				th->runtime_stack_push(args[0]);
 			}
 			else
-				throw UnsupportedException("Class invoked with more than an argument",sys->getOrigin().raw_buf());
+				throw UnsupportedException("Class invoked with more than an argument");
 		}
 	}
 	else
@@ -430,7 +430,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 		else if(ret.obj->getObjectType()==T_DEFINABLE)
 		{
 			//LOG(ERROR,"Property " << name << " is not yet valid");
-			throw UnsupportedException("Definable not supported in getProperty",sys->getOrigin().raw_buf());
+			throw UnsupportedException("Definable not supported in getProperty");
 			/*Definable* d=static_cast<Definable*>(ret.obj);
 			d->define(obj);
 			ret=obj->getVariableByMultiname(*name,owner);
@@ -621,7 +621,7 @@ void ABCVm::construct(call_context* th, int m)
 
 	if(obj->getObjectType()==T_DEFINABLE)
 	{
-		throw UnsupportedException("Definable not supported in construct",sys->getOrigin().raw_buf());
+		throw UnsupportedException("Definable not supported in construct");
 	/*	LOG(LOG_CALLS,"Deferred definition of property " << name);
 		Definable* d=static_cast<Definable*>(o);
 		d->define(obj);
@@ -664,7 +664,7 @@ void ABCVm::construct(call_context* th, int m)
 		}
 	}
 	else
-		throw UnsupportedException("This object is not supported in construct",sys->getOrigin().raw_buf());
+		throw UnsupportedException("This object is not supported in construct");
 
 	obj->decRef();
 	LOG(LOG_CALLS,"End of constructing " << ret);
@@ -674,7 +674,7 @@ void ABCVm::construct(call_context* th, int m)
 
 void ABCVm::constructGenericType(call_context* th, int m)
 {
-	throw UnsupportedException("constructGenericType not implement",sys->getOrigin().raw_buf());
+	throw UnsupportedException("constructGenericType not implement");
 	LOG(LOG_CALLS, "constructGenericType " << m);
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
@@ -826,7 +826,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 					((obj->prototype)?obj->prototype->class_name:"Object"));
 		}
 		else
-			throw UnsupportedException("Not callable object in callPropVoid",sys->getOrigin().raw_buf());
+			throw UnsupportedException("Not callable object in callPropVoid");
 	}
 	else
 	{
@@ -1024,7 +1024,7 @@ ASObject* ABCVm::add_oi(ASObject* val2, intptr_t val1)
 	}
 	else if(val2->getObjectType()==T_ARRAY)
 	{
-		throw UnsupportedException("Array add not supported in add_oi",sys->getOrigin().raw_buf());
+		throw UnsupportedException("Array add not supported in add_oi");
 		/*//Array concatenation
 		ASArray* ar=static_cast<ASArray*>(val1);
 		ar->push(val2);
@@ -1067,7 +1067,7 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 	}
 	else if(val2->getObjectType()==T_ARRAY)
 	{
-		throw UnsupportedException("Array add not supported in add_od",sys->getOrigin().raw_buf());
+		throw UnsupportedException("Array add not supported in add_od");
 		/*//Array concatenation
 		ASArray* ar=static_cast<ASArray*>(val1);
 		ar->push(val2);
@@ -1247,7 +1247,7 @@ bool ABCVm::ifNGE(ASObject* obj2, ASObject* obj1)
 
 void ABCVm::_throw(call_context* th)
 {
-	throw UnsupportedException("throw not implemented",sys->getOrigin().raw_buf());
+	throw UnsupportedException("throw not implemented");
 }
 
 void ABCVm::setSuper(call_context* th, int n)
@@ -1374,7 +1374,7 @@ void ABCVm::getLex(call_context* th, int n)
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
 			else if(o->getObjectType()==T_FUNCTION)
-				throw UnsupportedException("Functions are not yet gettable in getLex",sys->getOrigin().raw_buf());
+				throw UnsupportedException("Functions are not yet gettable in getLex");
 
 			th->runtime_stack_push(o);
 			o->incRef();
@@ -1618,7 +1618,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 			//}
 		}*/
 		else
-			throw UnsupportedException("Not callable object in callSuper",sys->getOrigin().raw_buf());
+			throw UnsupportedException("Not callable object in callSuper");
 	}
 	else
 	{
@@ -1693,7 +1693,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 			//}
 		}*/
 		else
-			throw UnsupportedException("Not callable object in callSuperVoid",sys->getOrigin().raw_buf());
+			throw UnsupportedException("Not callable object in callSuperVoid");
 	}
 	else
 	{
@@ -1878,7 +1878,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		obj->setLevel(tl.cur_level);
 
 	if(o==NULL)
-		throw RunTimeException("Could not resolve property in constructProp",sys->getOrigin().raw_buf());
+		throw RunTimeException("Could not resolve property in constructProp");
 
 	//The get protocol expects that we incRef the var
 	o->incRef();
@@ -1926,7 +1926,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		}
 	}
 	else
-		throw RunTimeException("Cannot construct such an object in constructProp",sys->getOrigin().raw_buf());
+		throw RunTimeException("Cannot construct such an object in constructProp");
 
 	th->runtime_stack_push(ret);
 	obj->decRef();
@@ -2006,7 +2006,7 @@ void ABCVm::newObject(call_context* th, int n)
 
 void ABCVm::getDescendants(call_context* th, int n)
 {
-	throw UnsupportedException("getDescendants not supported",sys->getOrigin().raw_buf());
+	throw UnsupportedException("getDescendants not supported");
 /*	LOG(LOG_CALLS,"newObject " << n);
 	ASObject* ret=new ASObject;
 	for(int i=0;i<n;i++)
@@ -2033,7 +2033,7 @@ ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 {
 	LOG(LOG_CALLS,"nextValue");
 	if(index->getObjectType()!=T_INTEGER)
-		throw UnsupportedException("Type mismatch in nextValue",sys->getOrigin().raw_buf());
+		throw UnsupportedException("Type mismatch in nextValue");
 
 	ASObject* ret=NULL;
 	if(obj->implEnable)
@@ -2058,7 +2058,7 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 {
 	LOG(LOG_CALLS,"nextName");
 	if(index->getObjectType()!=T_INTEGER)
-		throw UnsupportedException("Type mismatch in nextName",sys->getOrigin().raw_buf());
+		throw UnsupportedException("Type mismatch in nextName");
 
 	ASObject* ret=NULL;
 	if(obj->implEnable)

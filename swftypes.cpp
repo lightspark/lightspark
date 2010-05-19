@@ -67,7 +67,7 @@ bool ASObject::isLess(ASObject* r)
 	if(hasPropertyByQName("valueOf",""))
 	{
 		if(r->hasPropertyByQName("valueOf","")==false)
-			throw RunTimeException("Missing valueof for second operand",sys->getOrigin().raw_buf());
+			throw RunTimeException("Missing valueof for second operand");
 
 		objAndLevel obj1=getVariableByQName("valueOf","");
 		objAndLevel obj2=r->getVariableByQName("valueOf","");
@@ -88,7 +88,7 @@ bool ASObject::isLess(ASObject* r)
 	LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	if(prototype)
 		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
-	throw RunTimeException("Not handled less comparison for objects",sys->getOrigin().raw_buf());
+	throw RunTimeException("Not handled less comparison for objects");
 	return false;
 }
 
@@ -163,7 +163,7 @@ bool ASObject::isEqual(ASObject* r)
 	if(hasPropertyByQName("valueOf",""))
 	{
 		if(r->hasPropertyByQName("valueOf","")==false)
-			throw RunTimeException("Not handled less comparison for objects",sys->getOrigin().raw_buf());
+			throw RunTimeException("Not handled less comparison for objects");
 
 		objAndLevel obj1=getVariableByQName("valueOf","");
 		objAndLevel obj2=r->getVariableByQName("valueOf","");
@@ -195,14 +195,14 @@ unsigned int ASObject::toUInt()
 int ASObject::toInt()
 {
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to int");
-	throw RunTimeException("Cannot converto object to int",sys->getOrigin().raw_buf());
+	throw RunTimeException("Cannot converto object to int");
 	return 0;
 }
 
 double ASObject::toNumber()
 {
 	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to float");
-	throw RunTimeException("Cannot converto object to float",sys->getOrigin().raw_buf());
+	throw RunTimeException("Cannot converto object to float");
 	return 0;
 }
 
@@ -448,7 +448,7 @@ void variables_map::killObjVar(const multiname& mname, int level)
 		}
 	}
 
-	throw RunTimeException("Variable to kill not found",sys->getOrigin().raw_buf());
+	throw RunTimeException("Variable to kill not found");
 }
 
 obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool create, bool searchPreviusLevels)
@@ -689,7 +689,7 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 		if(cur==name)
 		{
 			if(it->second.second.getter)
-				throw UnsupportedException("Getters are not supported in getVariableByString",sys->getOrigin().raw_buf()); 
+				throw UnsupportedException("Getters are not supported in getVariableByString"); 
 			return it->second.second.var;
 		}
 	}
@@ -1455,7 +1455,7 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
 		{
 			SHAPEWITHSTYLE* ps=dynamic_cast<SHAPEWITHSTYLE*>(parent);
 			if(ps==NULL)
-				throw ParseException("Malformed SWF file",sys->getOrigin().raw_buf());
+				throw ParseException("Malformed SWF file");
 			bs.pos=0;
 			FILLSTYLEARRAY a;
 			a.version=ps->FillStyles.version;
@@ -1703,7 +1703,7 @@ void variables_map::initSlot(unsigned int n, int level, const tiny_string& name,
 	}
 
 	//Name not present, no good
-	throw RunTimeException("initSlot on missing variable",sys->getOrigin().raw_buf());
+	throw RunTimeException("initSlot on missing variable");
 }
 
 void variables_map::setSlot(unsigned int n,ASObject* o)
@@ -1712,12 +1712,12 @@ void variables_map::setSlot(unsigned int n,ASObject* o)
 	{
 		assert(slots_vars[n-1]!=Variables.end());
 		if(slots_vars[n-1]->second.second.setter)
-			throw UnsupportedException("setSlot has setters",sys->getOrigin().raw_buf());
+			throw UnsupportedException("setSlot has setters");
 		slots_vars[n-1]->second.second.var->decRef();
 		slots_vars[n-1]->second.second.var=o;
 	}
 	else
-		throw RunTimeException("setSlot out of bounds",sys->getOrigin().raw_buf());
+		throw RunTimeException("setSlot out of bounds");
 }
 
 obj_var* variables_map::getValueAt(unsigned int index, int& level)
@@ -1734,7 +1734,7 @@ obj_var* variables_map::getValueAt(unsigned int index, int& level)
 		return &it->second.second;
 	}
 	else
-		throw RunTimeException("getValueAt out of bounds",sys->getOrigin().raw_buf());
+		throw RunTimeException("getValueAt out of bounds");
 }
 
 ASObject* ASObject::getValueAt(int index)
@@ -1771,7 +1771,7 @@ tiny_string variables_map::getNameAt(unsigned int index)
 		return tiny_string(it->first.name);
 	}
 	else
-		throw RunTimeException("getNameAt out of bounds",sys->getOrigin().raw_buf());
+		throw RunTimeException("getNameAt out of bounds");
 }
 
 unsigned int ASObject::numVariables()

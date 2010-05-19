@@ -520,7 +520,7 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 
 		//Let's sync with the expected values...
 		if(static_locals[i].second!=expected[i])
-			throw RunTimeException("Locals are not as expected",sys->getOrigin().raw_buf());
+			throw RunTimeException("Locals are not as expected");
 
 		if(dest_block.locals_reset[i])
 		{
@@ -1045,7 +1045,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					else if(actual_type==STACK_BOOLEAN)
 						static_stack_types.push_back(make_pair(local_ip,STACK_OBJECT));
 					else
-						throw UnsupportedException("Unsuppoted casting for getproperty",sys->getOrigin().raw_buf());
+						throw UnsupportedException("Unsuppoted casting for getproperty");
 					break;
 				}
 				case 0x68: //initproperty
@@ -1194,7 +1194,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 						cur_block->checkProactiveCasting(local_ip,STACK_NUMBER);
 					}
 					else
-						throw UnsupportedException("Unsuppoted types for add",sys->getOrigin().raw_buf());
+						throw UnsupportedException("Unsuppoted types for add");
 
 					break;
 				}
@@ -1243,7 +1243,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					else if(t1==STACK_NUMBER && t2==STACK_NUMBER)
 						static_stack_types.push_back(make_pair(local_ip,STACK_INT));
 					else
-						throw UnsupportedException("Unsuppoted types for modulo",sys->getOrigin().raw_buf());
+						throw UnsupportedException("Unsuppoted types for modulo");
 					cur_block->checkProactiveCasting(local_ip,STACK_INT);
 					break;
 				}
@@ -2212,7 +2212,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					cond=Builder.CreateCall2(ex->FindFunctionNamed("ifStrictNE"), v1.first, v2.first);
 				}
 				else
-					throw UnsupportedException("Unsupported types for ifStrictNE",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported types for ifStrictNE");
 
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
@@ -2257,7 +2257,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(e.second==STACK_OBJECT)
 					e.first=Builder.CreateCall(ex->FindFunctionNamed("convert_i"),e.first);
 				else
-					throw UnsupportedException("Unsupported type for lookupswitch",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for lookupswitch");
 				syncStacks(ex,Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
 				//Generate epilogue for default dest
@@ -2634,7 +2634,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(e.second==STACK_BOOLEAN)
 					e.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),e.first);
 				else
-					throw UnsupportedException("Unsupported type for returnvalue",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for returnvalue");
 				for(unsigned int i=0;i<static_locals.size();i++)
 				{
 					if(static_locals[i].second==STACK_OBJECT)
@@ -2856,7 +2856,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					else if(rt1.second==STACK_OBJECT)
 						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, rt1.first, constant);
 					else
-						throw UnsupportedException("Unsupported type for setproperty",sys->getOrigin().raw_buf());
+						throw UnsupportedException("Unsupported type for setproperty");
 				}
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(value.second==STACK_INT)
@@ -2915,7 +2915,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 						Builder.CreateCall(ex->FindFunctionNamed("getLocal_short"), constant);
 				}
 				else
-					throw UnsupportedException("Unsupported type for getlocal",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for getlocal");
 
 				break;
 			}
@@ -2988,7 +2988,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					else if(rt1.second==STACK_OBJECT)
 						name = Builder.CreateCall3(ex->FindFunctionNamed("getMultiname"), reint_context, rt1.first, constant);
 					else
-						throw UnsupportedException("Unsupported type for getproperty",sys->getOrigin().raw_buf());
+						throw UnsupportedException("Unsupported type for getproperty");
 				}
 				stack_entry obj=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 
@@ -3004,7 +3004,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				}
 				else
-					throw UnsupportedException("Unsupported type for getproperty",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for getproperty");
 				break;
 			}
 			case 0x68:
@@ -3062,7 +3062,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(v1.second==STACK_BOOLEAN && v2.second==STACK_OBJECT)
 					v1.first=Builder.CreateCall(ex->FindFunctionNamed("abstract_b"),v1.first);
 				else
-					throw UnsupportedException("Unsupported type for setSlot",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for setSlot");
 
 				Builder.CreateCall3(ex->FindFunctionNamed("setSlot"), v1.first, v2.first, constant);
 				break;
@@ -3217,7 +3217,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateAdd(v1.first,constant);
 				}
 				else
-					throw UnsupportedException("Unsupported type for increment",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for increment");
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
@@ -3259,7 +3259,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				else if(v1.second==STACK_BOOLEAN)
 					value=Builder.CreateNot(v1.first);
 				else
-					throw UnsupportedException("Unsupported type for not",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for not");
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;
 			}
@@ -3337,7 +3337,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
 				}
 				else
-					throw UnsupportedException("Unsupported type for add",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for add");
 
 				break;
 			}
@@ -3475,7 +3475,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				if(v1.second==STACK_INT && v2.second==STACK_NUMBER)
 				{
-					throw UnsupportedException("Unsupported type for modulo",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for modulo");
 					v1.first=Builder.CreateSIToFP(v1.first,number_type);
 					value=Builder.CreateCall2(ex->FindFunctionNamed("modulo"), v1.first, v2.first);
 					static_stack_push(static_stack,stack_entry(value,STACK_NUMBER));
@@ -3582,7 +3582,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateCall2(ex->FindFunctionNamed("urShift"), v1.first, v2.first);
 				}
 				else
-					throw UnsupportedException("Unsupported type for urShift",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for urShift");
 
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
@@ -3780,7 +3780,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateAdd(v1.first,constant);
 				}
 				else
-					throw UnsupportedException("Unsupported type for increment_i",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for increment_i");
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
@@ -3797,7 +3797,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 					value=Builder.CreateSub(v1.first,constant);
 				}
 				else
-					throw UnsupportedException("Unsupported type for decrement_i",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for decrement_i");
 				static_stack_push(static_stack,stack_entry(value,STACK_INT));
 				break;
 			}
@@ -3864,7 +3864,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 						Builder.CreateCall(ex->FindFunctionNamed("getLocal_short"), constant);
 				}
 				else
-					throw UnsupportedException("Unsupported type for getlocal",sys->getOrigin().raw_buf());
+					throw UnsupportedException("Unsupported type for getlocal");
 
 				break;
 			}
@@ -3944,7 +3944,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 		if(it2->second.BB->getTerminator()==NULL)
 		{
 			cout << "start at " << it2->first << endl;
-			throw RunTimeException("Missing terminator",sys->getOrigin().raw_buf());
+			throw RunTimeException("Missing terminator");
 		}
 	}
 

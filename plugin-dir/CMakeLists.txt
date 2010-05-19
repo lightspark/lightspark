@@ -47,6 +47,6 @@ TARGET_LINK_LIBRARIES(lightsparkplugin ${lib_pthread} ${lib_glew} ${EXTRA_LIBS_L
 SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES LINK_FLAGS "-Wl,--as-needed")
 #UNIX?
 IF(UNIX)
-	INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/liblightsparkplugin.so DESTINATION /usr/lib/mozilla/plugins)
+	INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/liblightsparkplugin.so DESTINATION ${PLUGIN_DIRECTORY})
 ENDIF(UNIX)
 

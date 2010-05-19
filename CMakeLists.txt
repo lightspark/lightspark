@@ -26,6 +26,7 @@ SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the Firefox Plugin?")
+SET(PLUGIN_DIRECTORY "/usr/lib/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
 

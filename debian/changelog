@@ -1,3 +1,9 @@
+lightspark (0.3.3-ubuntu1) lucid; urgency=low
+
+  * Enable assertions in relese builds
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Wed, 19 May 2010 05:26:49 +0200
+
 lightspark (0.3.2-ubuntu1) lucid; urgency=low
 
   * Enable debug output in release

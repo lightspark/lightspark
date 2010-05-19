@@ -1293,7 +1293,7 @@ void ABCVm::Run(ABCVm* th)
 		th->FPM=new llvm::FunctionPassManager(th->module);
 	      
 		th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
-#ifndef NDEBUG
+#ifdef EXPENSIVE_DEBUG
 		//This is pretty heavy, do not enable in release
 		th->FPM->add(llvm::createVerifierPass());
 #endif

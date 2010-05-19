@@ -750,7 +750,7 @@ void ASObject::check() const
 	//Put here a bunch of safety check on the object
 	assert(ref_count>0);
 	//Heavyweight stuff
-#ifndef NDEBUG
+#ifdef EXPENSIVE_DEBUG
 	variables_map::const_var_iterator it=Variables.Variables.begin();
 	for(;it!=Variables.Variables.end();it++)
 	{

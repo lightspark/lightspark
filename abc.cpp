@@ -1218,7 +1218,7 @@ ASObject* call_context::runtime_stack_peek()
 call_context::call_context(method_info* th, int level, ASObject* const* args, const unsigned int num_args)
 {
 	locals=new ASObject*[th->body->local_count+1];
-	locals_size=th->body->local_count;
+	locals_size=th->body->local_count+1;
 	memset(locals,0,sizeof(ASObject*)*locals_size);
 	if(args)
 		memcpy(locals+1,args,num_args*sizeof(ASObject*));

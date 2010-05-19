@@ -427,14 +427,15 @@ public:
 	void dumpVariables();
 };
 
-//Atomic operations: placeholder until C++0x is supported in GCCl
+//Atomic operations: placeholders until C++0x is supported in GCC
 inline void atomic_increment(int* operand)
 {
-    __asm__ volatile ("lock xaddl %1, (%0)" : : "r" (operand), "r"(1));
+	__asm__ __volatile__ ("lock incl (%0)" : : "r" (operand));
 }
+
 inline void atomic_decrement(int* operand)
 {
-    __asm__ volatile ("lock xaddl %1, (%0)" : : "r" (operand), "r"(-1));
+	__asm__ __volatile__ ("lock decl (%0)" : : "r" (operand));
 }
 
 class ASObject
@@ -450,7 +451,7 @@ protected:
 	ASObject(const ASObject& o);
 	SWFOBJECT_TYPE type;
 private:
-	int ref_count;
+	int32_t ref_count;
 	Manager* manager;
 	int cur_level;
 	virtual int _maxlevel();

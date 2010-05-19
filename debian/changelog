@@ -1,3 +1,17 @@
+lightspark (0.3.2-ubuntu1) lucid; urgency=low
+
+  * Enable debug output in release
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Tue, 18 May 2010 21:25:44 +0200
+
+lightspark (0.3.1-ubuntu3) lucid; urgency=low
+
+  * Beta release
+  * Improved robustness
+  * Apply filtering to video
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Tue, 18 May 2010 01:37:37 +0200
+
 lightspark (0.2.1-ubuntu1) lucid; urgency=low
 
   * Mouse input support

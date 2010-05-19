@@ -376,16 +376,7 @@ void NetStream::execute()
 							assert(decoder==NULL); //The decoder can be set only once
 							//NOTE: there is not need to mutex the decoder, as an async transition from NULL to
 							//valid is not critical
-						#ifdef USE_VAAPI
-							if(sys->useVaapi)
-							{
-								decoder=new VaapiDecoder(tag.packetData,tag.packetLen);
-							}
-							else
-						#endif
-							{
-								decoder=new FFMpegDecoder(tag.packetData,tag.packetLen);
-							}
+							decoder=new FFMpegDecoder(tag.packetData,tag.packetLen);
 							assert(decoder);
 							assert(frameRate!=0);
 							//Now that the decoder is valid, let's start the ticking

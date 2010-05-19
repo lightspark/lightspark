@@ -211,7 +211,6 @@ public:
 	//Flags for command line options
 	bool useInterpreter;
 	bool useJit;
-	bool useVaapi;
 
 	void parseParameters(std::istream& i);
 	void setParameters(ASObject* p);

@@ -680,7 +680,8 @@ void InputThread::removeListener(InteractiveObject* ob)
 	Locker locker(mutexListeners);
 
 	vector<InteractiveObject*>::iterator it=find(listeners.begin(),listeners.end(),ob);
-	assert(it!=listeners.end());
+	if(it==listeners.end()) //Listener not found
+		return;
 	
 	//Unregister the listener
 	listeners.erase(it);
@@ -1625,80 +1626,113 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				pthread_exit(0);
 			SDL_PumpEvents();
 
-			glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
-			
-			//Clear the id buffer
-			glDrawBuffer(GL_COLOR_ATTACHMENT2);
-			glClearColor(0,0,0,0);
-			glClear(GL_COLOR_BUFFER_BIT);
-			
-			//Clear the back buffer
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-			RGB bg=sys->getBackground();
-			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-			glClear(GL_COLOR_BUFFER_BIT);
-			
-			glLoadIdentity();
-			glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
-			
-			th->m_sys->Render();
-
-			glFlush();
-
-			glLoadIdentity();
-
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glDrawBuffer(GL_BACK);
-			glUseProgram(0);
-			glDisable(GL_BLEND);
-
-			glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
-			glBegin(GL_QUADS);
-				glTexCoord2f(0,1);
-				glVertex2i(0,0);
-				glTexCoord2f(1,1);
-				glVertex2i(width,0);
-				glTexCoord2f(1,0);
-				glVertex2i(width,height);
-				glTexCoord2f(0,0);
-				glVertex2i(0,height);
-			glEnd();
-			
-			if(th->m_sys->showDebug)
+			if(th->m_sys->isOnError())
 			{
-				glDisable(GL_TEXTURE_2D);
-				if(th->selectedDebug)
-					th->selectedDebug->debugRender(&font, true);
-				else
-					th->m_sys->debugRender(&font, true);
-				glEnable(GL_TEXTURE_2D);
+				glUseProgram(0);
+
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glDrawBuffer(GL_BACK);
+				glLoadIdentity();
+
+				glClearColor(0,0,0,1);
+				glClear(GL_COLOR_BUFFER_BIT);
+				glColor3f(0.8,0.8,0.8);
+					    
+				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
+						-1,FTPoint(0,th->height/2));
+
+				stringstream errorMsg;
+				errorMsg << "SWF file: " << th->m_sys->getOrigin();
+				font.Render(errorMsg.str().c_str(),
+						-1,FTPoint(0,th->height/2-20));
+					    
+				errorMsg.str("");
+				errorMsg << "Cause: " << th->m_sys->errorCause;
+				font.Render(errorMsg.str().c_str(),
+						-1,FTPoint(0,th->height/2-40));
+
+				font.Render("Press 'Q' to exit",-1,FTPoint(0,th->height/2-60));
+				
+				glFlush();
+				SDL_GL_SwapBuffers( );
 			}
-
-			if(th->m_sys->showProfilingData)
+			else
 			{
-				glColor3f(0,0,0);
-				char frameBuf[20];
-				snprintf(frameBuf,20,"Frame %u",th->m_sys->state.FP);
-				font.Render(frameBuf,-1,FTPoint(0,0));
+				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
+				
+				//Clear the id buffer
+				glDrawBuffer(GL_COLOR_ATTACHMENT2);
+				glClearColor(0,0,0,0);
+				glClear(GL_COLOR_BUFFER_BIT);
+				
+				//Clear the back buffer
+				glDrawBuffer(GL_COLOR_ATTACHMENT0);
+				RGB bg=sys->getBackground();
+				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
+				glClear(GL_COLOR_BUFFER_BIT);
+				
+				glLoadIdentity();
+				glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
+				
+				th->m_sys->Render();
 
-				//Draw bars
-				glColor4f(0.7,0.7,0.7,0.7);
-				glBegin(GL_LINES);
-				for(int i=1;i<10;i++)
-				{
-					glVertex2i(0,(i*height/10));
-					glVertex2i(width,(i*height/10));
-				}
+				glFlush();
+
+				glLoadIdentity();
+
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glDrawBuffer(GL_BACK);
+				glUseProgram(0);
+				glDisable(GL_BLEND);
+
+				glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
+				glBegin(GL_QUADS);
+					glTexCoord2f(0,1);
+					glVertex2i(0,0);
+					glTexCoord2f(1,1);
+					glVertex2i(width,0);
+					glTexCoord2f(1,0);
+					glVertex2i(width,height);
+					glTexCoord2f(0,0);
+					glVertex2i(0,height);
 				glEnd();
 				
-				list<ThreadProfile>::iterator it=th->m_sys->profilingData.begin();
-				for(;it!=th->m_sys->profilingData.end();it++)
-					it->plot(1000000/sys->getFrameRate(),&font);
+				if(th->m_sys->showDebug)
+				{
+					glDisable(GL_TEXTURE_2D);
+					if(th->selectedDebug)
+						th->selectedDebug->debugRender(&font, true);
+					else
+						th->m_sys->debugRender(&font, true);
+					glEnable(GL_TEXTURE_2D);
+				}
+
+				if(th->m_sys->showProfilingData)
+				{
+					glColor3f(0,0,0);
+					char frameBuf[20];
+					snprintf(frameBuf,20,"Frame %u",th->m_sys->state.FP);
+					font.Render(frameBuf,-1,FTPoint(0,0));
+
+					//Draw bars
+					glColor4f(0.7,0.7,0.7,0.7);
+					glBegin(GL_LINES);
+					for(int i=1;i<10;i++)
+					{
+						glVertex2i(0,(i*height/10));
+						glVertex2i(width,(i*height/10));
+					}
+					glEnd();
+					
+					list<ThreadProfile>::iterator it=th->m_sys->profilingData.begin();
+					for(;it!=th->m_sys->profilingData.end();it++)
+						it->plot(1000000/sys->getFrameRate(),&font);
+				}
+				//Call glFlush to offload work on the GPU
+				glFlush();
+				glUseProgram(th->gpu_program);
+				glEnable(GL_BLEND);
 			}
-			//Call glFlush to offload work on the GPU
-			glFlush();
-			glUseProgram(th->gpu_program);
-			glEnable(GL_BLEND);
 			profile->accountTime(chronometer.checkpoint());
 		}
 		glDisable(GL_TEXTURE_2D);
@@ -1852,7 +1886,8 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	if(it==dictionary.end())
 	{
 		LOG(LOG_ERROR,"No such Id on dictionary " << id);
-		abort();
+		sem_post(&mutex);
+		throw RunTimeException("Could not find an object on the dictionary");
 	}
 	DictionaryTag* ret=*it;
 	sem_post(&mutex);

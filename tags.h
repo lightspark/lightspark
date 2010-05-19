@@ -461,14 +461,14 @@ class DefineFont2Tag: public FontTag
 private:
 	std::vector<UI32> OffsetTable;
 	std::vector < SHAPE > GlyphShapeTable;
-	UB FontFlagsHasLayout;
-	UB FontFlagsShiftJIS;
-	UB FontFlagsSmallText;
-	UB FontFlagsANSI;
-	UB FontFlagsWideOffsets;
-	UB FontFlagsWideCodes;
-	UB FontFlagsItalic;
-	UB FontFlagsBold;
+	bool FontFlagsHasLayout;
+	bool FontFlagsShiftJIS;
+	bool FontFlagsSmallText;
+	bool FontFlagsANSI;
+	bool FontFlagsWideOffsets;
+	bool FontFlagsWideCodes;
+	bool FontFlagsItalic;
+	bool FontFlagsBold;
 	LANGCODE LanguageCode;
 	UI8 FontNameLen;
 	std::vector <UI8> FontName;

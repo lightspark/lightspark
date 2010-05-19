@@ -60,7 +60,6 @@ SET(CMAKE_CXX_FLAGS_DEBIAN "-O2")
 
 ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark")
 
-
 SET(LIBSPARK_SOURCES swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp decoder.cpp threading.cpp flashxml.cpp)
 IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
@@ -94,7 +93,7 @@ IF(COMPILE_LIGHTSPARK)
 	IF(UNIX)
 		INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lightspark.frag DESTINATION ${DATADIR}/lightspark)
 		INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lightspark.vert DESTINATION ${DATADIR}/lightspark)
-		INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/lightspark DESTINATION ${BINDIR})
+		INSTALL(TARGETS lightspark DESTINATION ${BINDIR})
 	ENDIF(UNIX)
 ENDIF(COMPILE_LIGHTSPARK)
 

@@ -93,10 +93,15 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 			if(sys->currentVm)
 			{
 				//We stop execution until execution engine catches up
-				SynchronizationEvent* s=new SynchronizationEvent;
-				sys->currentVm->addEvent(NULL, s);
-				s->wait();
-				s->decRef();
+				SynchronizationEvent* se=new SynchronizationEvent;
+				bool added=sys->currentVm->addEvent(NULL, se);
+				if(!added)
+				{
+					se->decRef();
+					throw RunTimeException("Could not add event");
+				}
+				se->wait();
+				se->decRef();
 				//Now the bindings are effective for all tags
 			}
 		}

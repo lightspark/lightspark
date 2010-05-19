@@ -229,7 +229,12 @@ void Timer::execute()
 			sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS("timer"));
 			//Do not spam timer events until this is done
 			SynchronizationEvent* se=new SynchronizationEvent;
-			sys->currentVm->addEvent(NULL,se);
+			bool added=sys->currentVm->addEvent(NULL,se);
+			if(!added)
+			{
+				se->decRef();
+				throw RunTimeException("Could not add event");
+			}
 			se->wait();
 			se->decRef();
 		}

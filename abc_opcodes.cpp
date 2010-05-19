@@ -2094,7 +2094,7 @@ void ABCVm::newClass(call_context* th, int n)
 	//Null is a "valid" base class
 	if(tmp->getObjectType()!=T_NULL)
 	{
-		assert(tmp->getObjectType()==T_CLASS);
+		assert_and_throw(tmp->getObjectType()==T_CLASS);
 		ret->super=static_cast<Class_base*>(tmp);
 		ret->max_level=ret->super->max_level+1;
 		ret->setLevel(ret->max_level);

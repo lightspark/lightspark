@@ -72,7 +72,12 @@ void DoABCTag::execute(RootMovieClip*)
 	LOG(LOG_CALLS,"ABC Exec " << Name);
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
 	SynchronizationEvent* se=new SynchronizationEvent;
-	sys->currentVm->addEvent(NULL,se);
+	bool added=sys->currentVm->addEvent(NULL,se);
+	if(!added)
+	{
+		se->decRef();
+		throw RunTimeException("Could not add event");
+	}
 	se->wait();
 	se->decRef();
 }

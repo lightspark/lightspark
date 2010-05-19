@@ -203,14 +203,18 @@ bool SystemState::shouldTerminate() const
 
 void SystemState::setError(string& c)
 {
-	error=true;
-	errorCause=c;
-	timerThread->stop();
-	if(renderThread)
+	//We record only the first error for easier fix and reporting
+	if(!error)
 	{
-		//Disable timed rendering
-		removeJob(renderThread);
-		renderThread->draw();
+		error=true;
+		errorCause=c;
+		timerThread->stop();
+		if(renderThread)
+		{
+			//Disable timed rendering
+			removeJob(renderThread);
+			renderThread->draw();
+		}
 	}
 }
 
@@ -1426,10 +1430,15 @@ void RootMovieClip::initialize()
 		//Now signal the completion for this root
 		sys->currentVm->addEvent(loaderInfo,Class<Event>::getInstanceS("init"));
 		//Wait for handling of all previous events
-		SynchronizationEvent* sync=new SynchronizationEvent;
-		sys->currentVm->addEvent(NULL, sync);
-		sync->wait();
-		sync->decRef();
+		SynchronizationEvent* se=new SynchronizationEvent;
+		bool added=sys->currentVm->addEvent(NULL, se);
+		if(!added)
+		{
+			se->decRef();
+			throw RunTimeException("Could not add event");
+		}
+		se->wait();
+		se->decRef();
 	}
 }
 

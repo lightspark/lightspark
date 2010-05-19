@@ -25,7 +25,7 @@
 
 #define assert_and_throw(cond) if(!(cond)) \
 {					\
-	throw AssertionException(##cond); \
+	throw AssertionException(#cond); \
 }
 
 

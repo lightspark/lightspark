@@ -656,6 +656,7 @@ void DefineTextTag::Render()
 			it2 = it->GlyphEntries.begin();
 			for(;it2!=(it->GlyphEntries.end());it2++)
 			{
+				//TODO: refactor to cache glyphs
 				vector<GeomShape> new_shapes;
 				font->genGlyphShape(new_shapes,it2->GlyphIndex);
 				for(unsigned int i=0;i<new_shapes.size();i++)
@@ -667,8 +668,6 @@ void DefineTextTag::Render()
 	}
 	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
 	std::vector < GLYPHENTRY >::iterator it2;
-	int count=0;
-	unsigned int shapes_done=0;
 	int x=0,y=0;
 	float matrix[16];
 	float textMatrix[16];
@@ -694,6 +693,8 @@ void DefineTextTag::Render()
 	//The next 1/20 scale is needed by DefineFont3. Should be conditional
 	glScalef(0.05,0.05,1);
 	float scale_cur=1;
+	int count=0;
+	unsigned int shapes_done=0;
 	for(;it!=TextRecords.end();it++)
 	{
 		if(it->StyleFlagsHasFont)
@@ -710,7 +711,7 @@ void DefineTextTag::Render()
 
 		for(;it2!=(it->GlyphEntries.end());it2++)
 		{
-			while(cached[shapes_done].id==count)
+			while(shapes_done<cached.size() && cached[shapes_done].id==count)
 			{
 				if(cached[shapes_done].color==1)
 					cached[shapes_done].style=&f;
@@ -736,6 +737,8 @@ void DefineTextTag::Render()
 	if(rt->glAcquireIdBuffer())
 	{
 		float scale_cur=1;
+		int count=0;
+		unsigned int shapes_done=0;
 		for(;it!=TextRecords.end();it++)
 		{
 			if(it->StyleFlagsHasFont)
@@ -752,7 +755,7 @@ void DefineTextTag::Render()
 
 			for(;it2!=(it->GlyphEntries.end());it2++)
 			{
-				while(cached[shapes_done].id==count)
+				while(shapes_done<cached.size() &&  cached[shapes_done].id==count)
 				{
 					if(cached[shapes_done].color==1)
 						cached[shapes_done].style=&f;

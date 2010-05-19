@@ -569,7 +569,7 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 			break;
 		default:
 			*b=True;
-#ifndef NDEBUG
+#ifdef EXPENSIVE_DEBUG
 			cout << "TYPE " << dec << xevent->type << endl;
 #endif
 	}

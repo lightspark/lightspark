@@ -552,13 +552,20 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 		FontName.push_back(t);
 	}
 	in >> NumGlyphs;
-	UI16 t;
 	if(FontFlagsWideOffsets)
 	{
-		LOG(LOG_ERROR,"Not supported wide font offsets...Aborting");
+		UI32 t;
+		for(int i=0;i<NumGlyphs;i++)
+		{
+			in >> t;
+			OffsetTable.push_back(t);
+		}
+		in >> t;
+		CodeTableOffset=t;
 	}
 	else
 	{
+		UI16 t;
 		for(int i=0;i<NumGlyphs;i++)
 		{
 			in >> t;

@@ -1,3 +1,10 @@
+lightspark (0.3.5-ubuntu1) lucid; urgency=low
+
+  * A fix in SWF parsing
+  * Show debug message also in standalone version
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Thu, 20 May 2010 02:02:18 +0200
+
 lightspark (0.3.4-ubuntu1) lucid; urgency=low
 
   * Fixed a bug triggered by compiler optimizations

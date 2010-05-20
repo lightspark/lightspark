@@ -1,7 +1,7 @@
 ;**************************************************************************
 ;    Lightspark, a free flash player implementation
 ;
-;    Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
+;    Copyright (C) 2009,2010 Alessandro Pignotti (a.pignotti@sssup.it)
 ;
 ;    This program is free software: you can redistribute it and/or modify
 ;    it under the terms of the GNU General Public License as published by
@@ -16,6 +16,11 @@
 ;    You should have received a copy of the GNU General Public License
 ;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;**************************************************************************
+
+%ifidn __OUTPUT_FORMAT__,elf64
+section .note.GNU-stack noalloc noexec nowrite progbits
+%endif
+section .text
 
 global fastYUV420ChannelsToBuffer
 

@@ -1,0 +1,3 @@
+Version 0.3.6
+-------------
+Be more careful about glew initialization

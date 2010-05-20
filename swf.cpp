@@ -470,11 +470,11 @@ void RenderThread::wait()
 {
 	if(terminated)
 		return;
-	//Signal potentially blocing semaphore
+	terminated=true;
+	//Signal potentially blocking semaphore
 	sem_post(&render);
 	int ret=pthread_join(t,NULL);
 	assert(ret==0);
-	terminated=true;
 }
 
 InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),terminated(false),

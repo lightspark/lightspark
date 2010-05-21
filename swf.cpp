@@ -1482,6 +1482,7 @@ void RootMovieClip::Render()
 void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 {
 	//Now we can initialize GLEW
+	glewExperimental = GL_TRUE;
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{

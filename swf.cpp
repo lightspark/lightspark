@@ -76,9 +76,9 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	}
 	pt->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
-	LOG(LOG_NO_INFO,"FrameRate " << (FrameRate/256) << '.' << (FrameRate%256));
 	float frameRate=FrameRate;
 	frameRate/=256;
+	LOG(LOG_NO_INFO,"FrameRate " << frameRate);
 
 	pt->root->setFrameRate(frameRate);
 	//TODO: setting render rate should be done when the clip is added to the displaylist

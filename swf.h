@@ -235,6 +235,7 @@ public:
 	RootMovieClip* root;
 	int version;
 	ParseThread(RootMovieClip* r,std::istream& in);
+	~ParseThread();
 	void wait();
 };
 

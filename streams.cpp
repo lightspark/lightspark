@@ -34,6 +34,13 @@ sync_stream::sync_stream():head(0),tail(0),wait_notfull(false),wait_notempty(fal
 	sem_init(&notempty,0,0);
 }
 
+sync_stream::~sync_stream()
+{
+	sem_destroy(&mutex);
+	sem_destroy(&notfull);
+	sem_destroy(&notempty);
+}
+
 int sync_stream::provideBuffer(int limit)
 {
 	sem_wait(&mutex);

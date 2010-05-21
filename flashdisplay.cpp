@@ -1567,12 +1567,9 @@ void Graphics::buildTraits(ASObject* o)
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	sem_wait(&geometry_mutex);
+	Locker locker(geometryMutex);
 	if(geometry.size()==0)
-	{
-		sem_post(&geometry_mutex);
 		return false;
-	}
 
 	/*//Initialize values to the first available
 	assert(geometry[0].outline.size()>0);
@@ -1595,7 +1592,6 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 				ymax=v.y;
 		}
 	}*/
-	sem_post(&geometry_mutex);
 	//return true;
 	return false;
 }
@@ -1608,9 +1604,10 @@ ASFUNCTIONBODY(Graphics,_constructor)
 ASFUNCTIONBODY(Graphics,clear)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	sem_wait(&th->geometry_mutex);
-	th->geometry.clear();
-	sem_post(&th->geometry_mutex);
+	{
+		Locker locker(th->geometryMutex);
+		th->geometry.clear();
+	}
 	th->tmpShape=GeomShape();
 	th->styles.clear();
 	return NULL;
@@ -1778,12 +1775,10 @@ ASFUNCTIONBODY(Graphics,endFill)
 void Graphics::Render()
 {
 	//Should probably flush the shape
-	sem_wait(&geometry_mutex);
+	Locker locker(geometryMutex);
 
 	for(unsigned int i=0;i<geometry.size();i++)
 		geometry[i].Render();
-
-	sem_post(&geometry_mutex);
 }
 
 void LineScaleMode::sinit(Class_base* c)

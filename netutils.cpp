@@ -42,6 +42,8 @@ void CurlDownloadManager::destroy(Downloader* d)
 
 Downloader::~Downloader()
 {
+	sem_destroy(&available);
+	sem_destroy(&mutex);
 	sem_destroy(&terminated);
 }
 

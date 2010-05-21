@@ -48,6 +48,7 @@ class sync_stream: public zlib_filter
 {
 public:
 	sync_stream();
+	~sync_stream();
 	uint32_t write(char* buf, int len);
 	uint32_t getFree();
 private:

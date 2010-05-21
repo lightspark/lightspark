@@ -177,7 +177,7 @@ class Graphics: public ASObject
 {
 private:
 	//As geometry is used by RenderThread but modified by ABCVm we have to mutex a bit
-	mutable sem_t geometry_mutex;
+	mutable Mutex geometryMutex;
 	std::vector<GeomShape> geometry;
 	//We need a list to preserve pointers
 	std::list<FILLSTYLE> styles;
@@ -185,9 +185,8 @@ private:
 	int curX, curY;
 	void flushShape(bool keepStyle);
 public:
-	Graphics():curX(0),curY(0)
+	Graphics():geometryMutex("geometryMutex"),curX(0),curY(0)
 	{
-		sem_init(&geometry_mutex,0,1);
 	}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

@@ -54,6 +54,7 @@ private:
 public:
 //	Stack stack;
 	VirtualMachine();
+	~VirtualMachine();
 	void setConstantPool(std::vector<STRING>& p);
 	STRING getConstantByIndex(int index);
 //	ASObject Global;

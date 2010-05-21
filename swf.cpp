@@ -184,6 +184,8 @@ SystemState::~SystemState()
 	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
 		it->second->decRef();
+
+	sem_destroy(&terminated);
 }
 
 bool SystemState::isOnError() const
@@ -389,6 +391,11 @@ ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in)
 {
 	root=r;
 	sem_init(&ended,0,0);
+}
+
+ParseThread::~ParseThread()
+{
+	sem_destroy(&ended);
 }
 
 void ParseThread::execute()

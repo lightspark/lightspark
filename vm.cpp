@@ -34,6 +34,11 @@ VirtualMachine::VirtualMachine()
 	//Global.setVariableByQName("MovieClip","",new MovieClip);
 }
 
+VirtualMachine::~VirtualMachine()
+{
+	sem_destroy(&mutex);
+}
+
 void VirtualMachine::setConstantPool(vector<STRING>& p)
 {
 	//sem_wait(&mutex);

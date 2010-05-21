@@ -20,6 +20,7 @@
 #include "logger.h"
 
 sem_t Log::mutex;
+bool Log::loggingInited = false;
 LOG_LEVEL Log::log_level=LOG_NO_INFO;
 const char* Log::level_names[]={"INFO","ERROR","NOT_IMPLEMENTED","CALLS","TRACE"};
 
@@ -49,6 +50,10 @@ std::ostream& Log::operator()()
 
 void Log::initLogging(LOG_LEVEL l)
 {
-	sem_init(&mutex,0,1);
-	log_level=l;
+	if(!loggingInited)
+	{
+		loggingInited=true;
+		sem_init(&mutex,0,1);
+		log_level=l;
+	}
 }

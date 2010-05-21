@@ -38,6 +38,7 @@ class Log
 {
 private:
 	static sem_t mutex;
+	static bool loggingInited;
 	LOG_LEVEL cur_level;
 	bool valid;
 	static const char* level_names[];

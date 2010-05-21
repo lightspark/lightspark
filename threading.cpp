@@ -103,6 +103,7 @@ Condition::~Condition()
 {
 	//On destrucion unblocks the blocked thread
 	signal();
+	sem_destroy(&sem);
 }
 
 void Condition::wait()

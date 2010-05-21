@@ -111,7 +111,7 @@ void SymbolClassTag::execute(RootMovieClip* root)
 		{
 			DictionaryTag* t=root->dictionaryLookup(Tags[i]);
 			ASObject* base=dynamic_cast<ASObject*>(t);
-			assert(base!=NULL);
+			assert_and_throw(base!=NULL);
 			sys->currentVm->addEvent(NULL,new BindClassEvent(base,(const char*)Names[i]));
 		}
 	}
@@ -358,7 +358,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			case 0x07:
 			{
 				const namespace_info* n=&th->context->constant_pool.namespaces[m->ns];
-				assert(n->name);
+				assert_and_throw(n->name);
 				ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
 
 				ret->name_s=th->context->getString(m->name);
@@ -433,7 +433,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			}
 			case 0x0f: //RTQName
 			{
-				assert(rt1->prototype==Class<Namespace>::getClass());
+				assert_and_throw(rt1->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(rt1);
 				//TODO: What is the right ns kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
@@ -531,7 +531,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				//Reset the namespaces
 				ret->ns.clear();
 
-				assert(rt1->prototype==Class<Namespace>::getClass());
+				assert_and_throw(rt1->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(rt1);
 				//TODO: What is the right ns kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
@@ -714,7 +714,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			case 0x0f: //RTQName
 			{
 				ASObject* n=th->runtime_stack_pop();
-				assert(n->prototype==Class<Namespace>::getClass());
+				assert_and_throw(n->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(n);
 				//TODO: What is the right ns kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
@@ -725,7 +725,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			}
 			case 0x1d:
 			{
-				assert(m->param_types.size()==1);
+				assert_and_throw(m->param_types.size()==1);
 				multiname_info* td=&constant_pool.multinames[m->type_definition];
 				//multiname_info* p=&constant_pool.multinames[m->param_types[0]];
 				const namespace_info* n=&constant_pool.namespaces[td->ns];
@@ -821,7 +821,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				//Reset the namespaces
 				ret->ns.clear();
 
-				assert(n->prototype==Class<Namespace>::getClass());
+				assert_and_throw(n->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(n);
 				//TODO: What is the right kind?
 				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
@@ -1077,29 +1077,29 @@ void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* c
 		d->define(&Global);
 		LOG(LOG_CALLS,"End of deferred init of class " << s);
 		derived_class=Global.getVariableByString(s);
-		assert(derived_class);
+		assert_and_throw(derived_class);
 	}
 
-	assert(derived_class->getObjectType()==T_CLASS);
+	assert_and_throw(derived_class->getObjectType()==T_CLASS);
 
 	//Now the class is valid, check that it's not a builtin one
-	assert(static_cast<Class_base*>(derived_class)->class_index!=-1);
+	assert_and_throw(static_cast<Class_base*>(derived_class)->class_index!=-1);
 	Class_inherit* derived_class_tmp=static_cast<Class_inherit*>(derived_class);
 
 	if(isRoot)
 	{
-		assert(base);
+		assert_and_throw(base);
 		base->prototype=derived_class_tmp;
 		derived_class_tmp->incRef();
 		getVm()->pushObjAndLevel(base,derived_class_tmp->max_level);
 		derived_class_tmp->handleConstruction(base,args,argslen,true);
 		thisAndLevel tl=getVm()->popObjAndLevel();
-		assert(tl.cur_this==base);
+		assert_and_throw(tl.cur_this==base);
 	}
 	else
 	{
 		//If this is not a root movie clip, then the base has to be a DictionaryTag
-		assert(t);
+		assert_and_throw(t);
 
 		t->bindedTo=derived_class_tmp;
 		derived_class_tmp->bindTag(t);
@@ -1229,7 +1229,7 @@ call_context::call_context(method_info* th, int level, ASObject* const* args, co
 
 call_context::~call_context()
 {
-	assert(stack_index==0);
+	assert_and_throw(stack_index==0);
 
 	for(int i=0;i<locals_size;i++)
 	{
@@ -1288,7 +1288,7 @@ void ABCVm::Run(ABCVm* th)
 		eb.setEngineKind(llvm::EngineKind::JIT);
 		eb.setOptLevel(llvm::CodeGenOpt::Default);
 		th->ex=eb.create();
-		assert(th->ex);
+		assert_and_throw(th->ex);
 
 		th->FPM=new llvm::FunctionPassManager(th->module);
 	      
@@ -1362,7 +1362,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 {
 	const multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
-	assert(mname->ns.size()==1);
+	assert_and_throw(mname->ns.size()==1);
 
 	const tiny_string& name=mname->name_s;
 	const tiny_string& ns=mname->ns[0].name;
@@ -1383,8 +1383,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 
 			if(var)
 			{
-				assert(var);
-				assert(var->var);
+				assert_and_throw(var->var);
 
 				var->var->incRef();
 				obj->setVariableByQName(name,ns,var->var,false);
@@ -1415,8 +1414,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 
 			if(var)
 			{
-				assert(var);
-				assert(var->getter);
+				assert_and_throw(var->getter);
 
 				var->getter->incRef();
 				obj->setGetterByQName(name,ns,var->getter);
@@ -1447,8 +1445,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 
 			if(var)
 			{
-				assert(var);
-				assert(var->setter);
+				assert_and_throw(var->setter);
 
 				var->setter->incRef();
 				obj->setSetterByQName(name,ns,var->setter);
@@ -1482,7 +1479,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 		case 0x06: //Double
 			return new Number(constant_pool.doubles[index]);
 		case 0x08: //Namespace
-			assert(constant_pool.namespaces[index].name);
+			assert_and_throw(constant_pool.namespaces[index].name);
 			return Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name));
 		case 0x0a: //False
 			return new Boolean(false);
@@ -1502,7 +1499,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 {
 	const multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
-	assert(mname->ns.size()==1);
+	assert_and_throw(mname->ns.size()==1);
 
 	const tiny_string& name=mname->name_s;
 	const tiny_string& ns=mname->ns[0].name;
@@ -1547,7 +1544,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				Class_base* cur=prot->super;
 				for(int i=(obj->getLevel()-1);i>=0;i--)
 				{
-					assert(cur);
+					assert_and_throw(cur);
 					if(cur->use_protected)
 					{
 						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,false);
@@ -1572,11 +1569,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				obj_var* var=obj->Variables.findObjVar(name,ns,i,false,false);
 				if(var)
 				{
-					assert(t->kind&0x20);
+					assert_and_throw(t->kind&0x20);
 					if(var->getter)
 					{
 						//Ok, we are overriding this getter
-						assert(var->getter->isOverridden()==false);
+						assert_and_throw(var->getter->isOverridden()==false);
 						var->getter->override(f);
 						break;
 					}
@@ -1603,7 +1600,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				Class_base* cur=prot->super;
 				for(int i=(obj->getLevel()-1);i>=0;i--)
 				{
-					assert(cur);
+					assert_and_throw(cur);
 					if(cur->use_protected)
 					{
 						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,true);
@@ -1628,11 +1625,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				obj_var* var=obj->Variables.findObjVar(name,ns,i,false,true);
 				if(var)
 				{
-					assert(t->kind&0x20);
+					assert_and_throw(t->kind&0x20);
 					if(var->setter)
 					{
 						//Ok, we are overriding this getter
-						assert(var->setter->isOverridden()==false);
+						assert_and_throw(var->setter->isOverridden()==false);
 						var->setter->override(f);
 						break;
 					}
@@ -1658,7 +1655,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				Class_base* cur=prot->super;
 				for(int i=(obj->getLevel()-1);i>=0;i--)
 				{
-					assert(cur);
+					assert_and_throw(cur);
 					if(cur->use_protected)
 					{
 						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,false);
@@ -1680,10 +1677,10 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				obj_var* var=obj->Variables.findObjVar(name,ns,level,false,true);
 				if(var)
 				{
-					assert(var->var->getObjectType()==T_FUNCTION);
+					assert_and_throw(var->var->getObjectType()==T_FUNCTION);
 					IFunction* oldf=static_cast<IFunction*>(var->var);
 					//Ok, we are overriding this method
-					assert(oldf->isOverridden()==false);
+					assert_and_throw(oldf->isOverridden()==false);
 					oldf->override(f);
 				}
 			}
@@ -1713,7 +1710,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			else
 			{
 				ret=obj->getVariableByQName(name,ns).obj;
-				assert(ret==NULL);
+				assert_and_throw(ret==NULL);
 				
 				if(deferred_initialization)
 					ret=new ScriptDefinable(deferred_initialization);
@@ -1750,9 +1747,9 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				//else fallthrough
 				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
 				objAndLevel previous_definition=obj->getVariableByQName(name,ns);
-				assert(!previous_definition.obj);
+				assert_and_throw(!previous_definition.obj);
 				//if(previous_definition.obj)
-				//	assert(previous_definition.level<obj->getLevel());
+				//	assert_and_throw(previous_definition.level<obj->getLevel());
 
 				ASObject* ret;
 				if(deferred_initialization)
@@ -1789,7 +1786,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 ASObject* method_info::getOptional(unsigned int i)
 {
-	assert(i<options.size());
+	assert_and_throw(i<options.size());
 	return context->getConstant(options[i].kind,options[i].val);
 }
 

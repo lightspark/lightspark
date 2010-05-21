@@ -71,7 +71,7 @@ ASFUNCTIONBODY(TextField,_getWidth)
 ASFUNCTIONBODY(TextField,_setWidth)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	assert(argslen==1);
+	assert_and_throw(argslen==1);
 	th->width=args[0]->toInt();
 	return NULL;
 }
@@ -85,7 +85,7 @@ ASFUNCTIONBODY(TextField,_getHeight)
 ASFUNCTIONBODY(TextField,_setHeight)
 {
 	TextField* th=Class<TextField>::cast(obj);
-	assert(argslen==1);
+	assert_and_throw(argslen==1);
 	th->height=args[0]->toInt();
 	return NULL;
 }

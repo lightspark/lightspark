@@ -144,7 +144,7 @@ bool Video::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& 
 ASFUNCTIONBODY(Video,_constructor)
 {
 	Video* th=Class<Video>::cast(obj);
-	assert(argslen<2);
+	assert_and_throw(argslen<2);
 	if(0 < argslen)
 		th->width=args[0]->toInt();
 	if(1 < argslen)
@@ -173,7 +173,7 @@ ASFUNCTIONBODY(Video,_getWidth)
 ASFUNCTIONBODY(Video,_setWidth)
 {
 	Video* th=Class<Video>::cast(obj);
-	assert(argslen==1);
+	assert_and_throw(argslen==1);
 	sem_wait(&th->mutex);
 	th->width=args[0]->toInt();
 	sem_post(&th->mutex);
@@ -189,7 +189,7 @@ ASFUNCTIONBODY(Video,_getHeight)
 ASFUNCTIONBODY(Video,_setHeight)
 {
 	Video* th=Class<Video>::cast(obj);
-	assert(argslen==1);
+	assert_and_throw(argslen==1);
 	sem_wait(&th->mutex);
 	th->height=args[0]->toInt();
 	sem_post(&th->mutex);
@@ -199,7 +199,7 @@ ASFUNCTIONBODY(Video,_setHeight)
 ASFUNCTIONBODY(Video,attachNetStream)
 {
 	Video* th=Class<Video>::cast(obj);
-	assert(argslen==1);
+	assert_and_throw(argslen==1);
 	//Validate the parameter
 	if(args[0]->prototype!=Class<NetStream>::getClass())
 		::abort();
@@ -207,7 +207,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	//Acquire the netStream
 	args[0]->incRef();
 
-	assert(th->netStream==NULL);
+	assert_and_throw(th->netStream==NULL);
 	th->netStream=Class<NetStream>::cast(args[0]);
 	return NULL;
 }

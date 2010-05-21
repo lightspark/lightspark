@@ -353,7 +353,10 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	mWidth = aWindow->width;
 	mHeight = aWindow->height;
 	if(mHeight==0 || mHeight==0)
-		assert(false);
+	{
+		LOG(LOG_ERROR,"No size in SetWindow");
+		return FALSE;
+	}
 	if (mWindow == (Window) aWindow->window)
 	{
 		// The page with the plugin is being resized.

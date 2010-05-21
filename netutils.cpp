@@ -55,7 +55,7 @@ Downloader::Downloader():buffer(NULL),len(0),tail(0),waiting(false),failed(false
 void Downloader::setLen(uint32_t l)
 {
 	len=l;
-	assert(buffer==NULL);
+	assert_and_throw(buffer==NULL);
 	buffer=new uint8_t[len];
 	setg((char*)buffer,(char*)buffer,(char*)buffer);
 }
@@ -102,7 +102,7 @@ void Downloader::wait()
 Downloader::int_type Downloader::underflow()
 {
 	sem_wait(&mutex);
-	assert(gptr()==egptr());
+	assert_and_throw(gptr()==egptr());
 	unsigned int firstIndex=tail;
 
 	if((buffer+tail)==(uint8_t*)egptr()) //We have no more bytes
@@ -143,7 +143,7 @@ Downloader::int_type Downloader::underflow()
 
 Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode mode)
 {
-	assert(mode==std::ios_base::in);
+	assert_and_throw(mode==std::ios_base::in);
 	sem_wait(&mutex);
 	setg((char*)buffer,(char*)buffer+pos,(char*)buffer+tail);
 	sem_post(&mutex);
@@ -152,8 +152,8 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 
 Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode mode)
 {
-	assert(mode==std::ios_base::in);
-	assert(off==0);
+	assert_and_throw(mode==std::ios_base::in);
+	assert_and_throw(off==0);
 	pos_type ret=gptr()-eback();
 	return ret;
 }

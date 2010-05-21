@@ -23,9 +23,12 @@
 #include <exception>
 #include <string>
 
+#define STRINGIFY(n) #n
+#define TOSTRING(x) STRINGIFY(x)
+
 #define assert_and_throw(cond) if(!(cond)) \
 {					\
-	throw AssertionException(#cond); \
+	throw AssertionException(#cond " " __FILE__ ":" TOSTRING(__LINE__)); \
 }
 
 

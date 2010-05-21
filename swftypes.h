@@ -31,7 +31,7 @@
 #include "logger.h"
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+#include "exceptions.h"
 #include <arpa/inet.h>
 
 namespace lightspark
@@ -73,7 +73,7 @@ public:
 			isStatic=false;
 			buf=new char[4096];
 		}
-		assert(strlen(s)<=4096);
+		assert_and_throw(strlen(s)<=4096);
 		strcpy(buf,s);
 	}
 	tiny_string(const tiny_string& r):buf(_buf_static),isStatic(true)
@@ -83,7 +83,7 @@ public:
 			isStatic=false;
 			buf=new char[4096];
 		}
-		assert(strlen(r.buf)<=4096);
+		assert_and_throw(strlen(r.buf)<=4096);
 		strcpy(buf,r.buf);
 	}
 	~tiny_string()
@@ -104,7 +104,7 @@ public:
 		if(s.len()>(TS_SIZE-1))
 		{
 			isStatic=false;
-			assert(s.len()<=4096);
+			assert_and_throw(s.len()<=4096);
 			buf=new char[4096];
 		}
 		//Lenght is already checked
@@ -116,7 +116,7 @@ public:
 		if(s.size()>(TS_SIZE-1))
 		{
 			isStatic=false;
-			assert(s.size()<=4096);
+			assert_and_throw(s.size()<=4096);
 			buf=new char[4096];
 		}
 		//Lenght is already checked
@@ -128,7 +128,7 @@ public:
 		if(strlen(s)>(TS_SIZE-1))
 		{
 			isStatic=false;
-			assert(strlen(s)<=4096);
+			assert_and_throw(strlen(s)<=4096);
 			buf=new char[4096];
 		}
 		//Lenght is already checked
@@ -137,13 +137,13 @@ public:
 	}
 	tiny_string& operator+=(const char* s)
 	{
-		assert((strlen(buf)+strlen(s)+1)<TS_SIZE);
+		assert_and_throw((strlen(buf)+strlen(s)+1)<TS_SIZE);
 		strcat(buf,s);
 		return *this;
 	}
 	tiny_string& operator+=(const tiny_string& r)
 	{
-		assert((strlen(buf)+strlen(r.buf)+1)<TS_SIZE);
+		assert_and_throw((strlen(buf)+strlen(r.buf)+1)<TS_SIZE);
 		strcat(buf,r.buf);
 		return *this;
 	}
@@ -188,7 +188,7 @@ public:
 	tiny_string substr(int start, int end) const
 	{
 		tiny_string ret;
-		assert((end-start+1)<TS_SIZE);
+		assert_and_throw((end-start+1)<TS_SIZE);
 		strncpy(ret.buf,buf+start,end-start);
 		ret.buf[end-start]=0;
 		return ret;
@@ -475,12 +475,12 @@ public:
 	{
 		//std::cout << "incref " << this << std::endl;
 		atomic_increment(&ref_count);
-		assert(ref_count>0);
+		assert_and_throw(ref_count>0);
 	}
 	void decRef()
 	{
 		//std::cout << "decref " << this << std::endl;
-		assert(ref_count>0);
+		assert_and_throw(ref_count>0);
 		atomic_decrement(&ref_count);
 		if(ref_count==0)
 		{
@@ -567,7 +567,7 @@ public:
 	}
 	void decLevel()
 	{
-		assert(cur_level>0);
+		assert_and_throw(cur_level>0);
 		cur_level--;
 	}
 	void setLevel(int l)
@@ -724,14 +724,14 @@ inline std::istream& operator>>(std::istream& s, UI16& v)
 
 inline std::istream& operator>>(std::istream& s, UI24& v)
 {
-	assert(v.val==0);
+	assert_and_throw(v.val==0);
 	s.read((char*)&v.val,3);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, SI24& v)
 {
-	assert(v.val==0);
+	assert_and_throw(v.val==0);
 	s.read((char*)&v.val,3);
 	//Check for sign extesion
 	if(v.val&0x800000)

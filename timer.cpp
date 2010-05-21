@@ -19,6 +19,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "timer.h"
 #include "compat.h"

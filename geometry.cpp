@@ -72,7 +72,6 @@ void GeomShape::Render(int x, int y) const
 
 		//Render lone triangles
 		glBegin(GL_TRIANGLES);
-		assert(triangles.size()%3==0);
 		for(unsigned int i=0;i<triangles.size();i++)
 			glVertex2i(triangles[i].x+x,triangles[i].y+y);
 		glEnd();
@@ -198,7 +197,7 @@ void GeomShape::TessellateGLU()
 
 void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
 {
-	assert(obj->curTessTarget==0);
+	assert_and_throw(obj->curTessTarget==0);
 	if(type==GL_TRIANGLE_FAN)
 	{
 		obj->triangle_fans.push_back(vector<Vector2>());
@@ -219,7 +218,7 @@ void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
 
 void GeomShape::GLUCallbackVertex(Vector2* vertexData, GeomShape* obj)
 {
-	assert(obj->curTessTarget!=0);
+	assert_and_throw(obj->curTessTarget!=0);
 	if(obj->curTessTarget==GL_TRIANGLE_FAN)
 	{
 		obj->triangle_fans.back().push_back(*vertexData);
@@ -236,7 +235,9 @@ void GeomShape::GLUCallbackVertex(Vector2* vertexData, GeomShape* obj)
 
 void GeomShape::GLUCallbackEnd(GeomShape* obj)
 {
-	assert(obj->curTessTarget!=0);
+	assert_and_throw(obj->curTessTarget!=0);
+	if(obj->curTessTarget==GL_TRIANGLES)
+		assert_and_throw(obj->triangles.size()%3==0);
 	obj->curTessTarget=0;
 }
 
@@ -262,7 +263,7 @@ void ShapesBuilder::joinOutlines()
 		//Repack outlines of the same color, avoiding excessive copying
 		for(int i=0;i<int(outlinesForColor.size());i++)
 		{
-			assert(outlinesForColor[i].size()>=2);
+			assert_and_throw(outlinesForColor[i].size()>=2);
 			//Already closed paths are ok
 			if(outlinesForColor[i].front()==outlinesForColor[i].back())
 				continue;
@@ -297,18 +298,18 @@ void ShapesBuilder::joinOutlines()
 		//Kill all the empty outlines
 		outlinesForColor.erase(remove_if(outlinesForColor.begin(),outlinesForColor.end(), isOutlineEmpty),
 				       outlinesForColor.end());
-		assert(!outlinesForColor.empty());
+		assert_and_throw(!outlinesForColor.empty());
 	}
 }
 
 void ShapesBuilder::extendOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2)
 {
-	assert(color);
+	assert_and_throw(color);
 	vector< vector<Vector2> >& outlinesForColor=shapesMap[color];
 	//Search a suitable outline to attach this new vertex
 	for(unsigned int i=0;i<outlinesForColor.size();i++)
 	{
-		assert(outlinesForColor[i].size()>=2);
+		assert_and_throw(outlinesForColor[i].size()>=2);
 		if(outlinesForColor[i].front()==outlinesForColor[i].back())
 			continue;
 		if(outlinesForColor[i].back()==v1)

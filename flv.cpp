@@ -62,7 +62,7 @@ FLV_HEADER::FLV_HEADER(std::istream& in):dataOffset(0),_hasAudio(false),_hasVide
 
 	DataOffset.bswap();
 	dataOffset = DataOffset;
-	assert(dataOffset==9);
+	assert_and_throw(dataOffset==9);
 }
 
 VideoTag::VideoTag(istream& s)
@@ -83,7 +83,7 @@ VideoTag::VideoTag(istream& s)
 	
 	UI24 StreamID;
 	s >> StreamID;
-	assert(StreamID==0);
+	assert_and_throw(StreamID==0);
 }
 
 ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
@@ -192,7 +192,7 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 	if(frameType!=1 && frameType!=2)
 		abort();
 
-	assert(codecId==7);
+	assert_and_throw(codecId==7);
 
 	//AVCVideoPacket
 	UI8 packetType;
@@ -205,12 +205,12 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 		case 1: //NALU
 			break;
 		default:
-			assert(false && "Unexpected packet type");
+			throw UnsupportedException("Unexpected packet type in FLV");
 	}
 
 	SI24 CompositionTime;
 	s >> CompositionTime;
-	assert(CompositionTime==0); //TODO: what are composition times
+	assert_and_throw(CompositionTime==0); //TODO: what are composition times
 
 	//Compute lenght of raw data
 	packetLen=dataSize-5;

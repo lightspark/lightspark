@@ -292,7 +292,7 @@ public:
 	}
 	void acquireScope(const std::vector<ASObject*>& scope)
 	{
-		assert(func_scope.empty());
+		assert_and_throw(func_scope.empty());
 		func_scope=scope;
 		for(unsigned int i=0;i<func_scope.size();i++)
 			func_scope[i]->incRef();
@@ -445,7 +445,7 @@ public:
 	{
 		if(index<data.size())
 		{
-			assert(data[index].data);
+			assert_and_throw(data[index].data);
 			return data[index].data;
 		}
 		else
@@ -458,7 +458,7 @@ public:
 	{
 		if(index<data.size())
 		{
-			assert(data[index].data==NULL);
+			assert_and_throw(data[index].data==NULL);
 			data[index].data=o;
 			data[index].type=DATA_OBJECT;
 		}
@@ -488,8 +488,8 @@ public:
 	bool hasNext(unsigned int& index, bool& out);
 	bool nextName(unsigned int index, ASObject*& out)
 	{
-		assert(implEnable);
-		abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("nextName not supported in Array");
 	}
 	bool nextValue(unsigned int index, ASObject*& out);
 	tiny_string toString_priv() const;

@@ -55,8 +55,8 @@ public:
 	static void buildTraits(ASObject* o);
 	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
 	{
-		assert(implEnable);
-		::abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("getVariableByName not supported for ByteArray");
 		return objAndLevel(NULL,0);
 	}
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
@@ -97,20 +97,20 @@ public:
 	ASFUNCTION(_constructor);
 	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
 	{
-		assert(implEnable);
-		::abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("getVariableByQName not supported for Dictionary");
 		return objAndLevel(NULL,0);
 	}
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
-		assert(implEnable);
-		::abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("getVariableByMultiName_i not supported for Dictionary");
 	}
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false)
 	{
-		assert(implEnable);
-		::abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("setVariableByQName not supported for Dictionary");
 	}
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
@@ -124,8 +124,8 @@ public:
 	}
 	bool isEqual(ASObject* r)
 	{
-		assert(implEnable);
-		::abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("isEqual not supported for Dictionary");
 	}
 	bool hasNext(unsigned int& index, bool& out);
 	bool nextName(unsigned int index, ASObject*& out);
@@ -149,8 +149,8 @@ public:
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
-		assert(implEnable);
-		::abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("getVariableByMultiName_i not supported for Proxy");
 	}
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false)
 	{
@@ -162,40 +162,40 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
-		assert(implEnable);
-		::abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("setVariableByMultiName_i not supported for Proxy");
 	}
 	void deleteVariableByMultiname(const multiname& name)
 	{
-		assert(implEnable);
-		::abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("deleteVariableByMultiName not supported for Proxy");
 	}
 	tiny_string toString(bool debugMsg=false)
 	{
 		if(debugMsg)
 			return ASObject::toString(debugMsg);
 		else
-			::abort();
+			throw UnsupportedException("Proxy is missing some stuff");
 	}
 	bool isEqual(ASObject* r)
 	{
-		assert(implEnable);
-		::abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("Proxy is missing some stuff");
 	}
 	bool hasNext(unsigned int& index, bool& out)
 	{
-		assert(implEnable);
-		abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("Proxy is missing some stuff");
 	}
 	bool nextName(unsigned int index, ASObject*& out)
 	{
-		assert(implEnable);
-		abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("Proxy is missing some stuff");
 	}
 	bool nextValue(unsigned int index, ASObject*& out)
 	{
-		assert(implEnable);
-		abort();
+		assert_and_throw(implEnable);
+		throw UnsupportedException("Proxy is missing some stuff");
 	}
 };
 

@@ -81,7 +81,7 @@ protected:
 	{
 		if(root!=r)
 		{
-			assert(root==NULL);
+			assert_and_throw(root==NULL);
 			root=r;
 		}
 	}
@@ -347,7 +347,7 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void check()
 	{
-		assert(frames.size()==framesLoaded);
+		assert_and_throw(frames.size()==framesLoaded);
 	}
 };
 

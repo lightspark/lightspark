@@ -453,6 +453,8 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 		dl->terminate();
 	}
+	else
+		LOG(LOG_NO_INFO, "DestroyStream on main stream?");
 	return NPERR_NO_ERROR;
 }
 

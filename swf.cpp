@@ -1061,9 +1061,14 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 	if(!fb)
 	{
-		attrib[0]=0;
+		attrib[4]=None;
 		fb=glXChooseFBConfig(d, 0, NULL, &a);
-		LOG(LOG_ERROR,"Falling back to no depth and no stencil");
+		LOG(LOG_ERROR,"Falling back to no depth buffer");
+	}
+	if(!fb)
+	{
+		LOG(LOG_ERROR,"Could not find any GLX configuration");
+		::abort();
 	}
 	int i;
 	for(i=0;i<a;i++)
@@ -1576,8 +1581,8 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if(status != GL_FRAMEBUFFER_COMPLETE)
 	{
-		//cout << status << endl;
-		abort();
+		LOG(LOG_ERROR,"Incomplete FBO status " << status << "... Aborting");
+		::abort();
 	}
 }
 

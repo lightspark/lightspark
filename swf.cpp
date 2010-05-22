@@ -1057,11 +1057,11 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		LOG(LOG_ERROR,"glX not present");
 		return NULL;
 	}
-	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_VISUAL_ID,p->visual,GLX_DEPTH_SIZE,24,None};
+	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_DEPTH_SIZE,24,None};
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 	if(!fb)
 	{
-		attrib[4]=None;
+		attrib[2]=None;
 		fb=glXChooseFBConfig(d, 0, NULL, &a);
 		LOG(LOG_ERROR,"Falling back to no depth buffer");
 	}

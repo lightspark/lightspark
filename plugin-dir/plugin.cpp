@@ -126,8 +126,6 @@ void NPDownloader::dlStartCallback(void* t)
 	cerr << "Start download for " << th->url << endl;
 	th->started=true;
 	NPError e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
-	//NPError e=NPN_GetURLNotify(th->instance, "http://www.google.com", "_blank", th);
-	//NPError e=NPN_GetURL(instance, "http://www.google.com", "_blank");
 	if(e!=NPERR_NO_ERROR)
 		abort();
 }

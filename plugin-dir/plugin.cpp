@@ -268,6 +268,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 			sys->setOrigin(argv[i]);
 		}
 	}
+	m_sys.downloadManager=new NPDownloadManager(mInstance);
+	m_sys.addJob(&m_pt);
 }
 
 int nsPluginInstance::hexToInt(char c)
@@ -286,6 +288,8 @@ nsPluginInstance::~nsPluginInstance()
 {
 	//Shutdown the system
 	//cerr << "instance dying" << endl;
+	swf_buf.destroy();
+	m_pt.stop();
 	m_sys.setShutdownFlag();
 	m_sys.wait();
 	if(m_rt)
@@ -399,8 +403,6 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		sys=NULL;
 		m_sys.inputThread=m_it;
 		m_sys.renderThread=m_rt;
-		m_sys.downloadManager=new NPDownloadManager(mInstance);
-		m_sys.addJob(&m_pt);
 	}
 	//draw();
 	return TRUE;

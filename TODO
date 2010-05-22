@@ -17,3 +17,4 @@ Official TODO Queue:
 -) Add Named Objects to frames and not to clips
 -) Support mozilla Out of process plugin mode - Waiting for multithreaded GTK support from mozilla
 -) Conditional scaling of FontGlyph based on version
+-) Why std::istream catches our exeptions?

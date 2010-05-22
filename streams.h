@@ -35,7 +35,7 @@ private:
 	char buffer[4096];
 	int available;
 	virtual int provideBuffer(int limit)=0;
-	void initialize();
+	bool initialize();
 protected:
 	char in_buf[4096];
 	virtual int_type underflow();
@@ -48,6 +48,7 @@ class sync_stream: public zlib_filter
 {
 public:
 	sync_stream();
+	void destroy();
 	~sync_stream();
 	uint32_t write(char* buf, int len);
 	uint32_t getFree();
@@ -62,6 +63,7 @@ private:
 	bool wait_notfull;
 	bool wait_notempty;
 	const int buf_size;
+	bool failed;
 };
 
 class zlib_file_filter:public zlib_filter

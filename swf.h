@@ -71,7 +71,7 @@ public:
 	RECT FrameSize;
 	UI16 FrameRate;
 	UI16 FrameCount;
-public:
+	bool valid;
 	SWF_HEADER(std::istream& in);
 	const RECT& getFrameSize(){ return FrameSize; }
 };
@@ -82,11 +82,12 @@ class RootMovieClip: public MovieClip, public ITickJob
 friend class ParseThread;
 protected:
 	sem_t mutex;
-	//Semaphore to wait for new frames to be available
-	sem_t new_frame;
 	bool initialized;
 	tiny_string origin;
 private:
+	//Semaphore to wait for new frames to be available
+	sem_t new_frame;
+	bool parsingIsFailed;
 	RGB Background;
 	std::list < DictionaryTag* > dictionary;
 	//frameSize and frameRate are valid only after the header has been parsed
@@ -118,6 +119,7 @@ public:
 	void commitFrame(bool another);
 	void revertFrame();
 	void Render();
+	void parsingFailed();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);
 	void initialize();

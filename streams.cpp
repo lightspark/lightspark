@@ -26,7 +26,7 @@
 
 using namespace std;
 
-sync_stream::sync_stream():head(0),tail(0),wait_notfull(false),wait_notempty(false),buf_size(1024*1024)
+sync_stream::sync_stream():head(0),tail(0),wait_notfull(false),wait_notempty(false),buf_size(1024*1024),failed(false)
 {
 	buffer=new char[buf_size];
 	sem_init(&mutex,0,1);
@@ -41,6 +41,13 @@ sync_stream::~sync_stream()
 	sem_destroy(&notempty);
 }
 
+void sync_stream::destroy()
+{
+	failed=true;
+	sem_post(&notfull);
+	sem_post(&notempty);
+}
+
 int sync_stream::provideBuffer(int limit)
 {
 	sem_wait(&mutex);
@@ -49,6 +56,8 @@ int sync_stream::provideBuffer(int limit)
 		wait_notempty=true;
 		sem_post(&mutex);
 		sem_wait(&notempty);
+		if(failed)
+			return 0;
 	}
 
 	int available=(tail-head+buf_size)%buf_size;
@@ -82,6 +91,8 @@ uint32_t sync_stream::write(char* buf, int len)
 		wait_notfull=true;
 		sem_post(&mutex);
 		sem_wait(&notfull);
+		if(failed)
+			return 0;
 	}
 
 	if((head-tail+buf_size-1)%buf_size<len)
@@ -120,16 +131,17 @@ zlib_filter::zlib_filter():consumed(0),available(0)
 {
 }
 
-void zlib_filter::initialize()
+bool zlib_filter::initialize()
 {
 	//Should check that this is called only once
 	available=provideBuffer(8);
-	assert(available==8);
+	if(available!=8)
+		return false;
 	//We read only the first 8 bytes, as those are always uncompressed
 
 	//Now check the signature
 	if(in_buf[1]!='W' || in_buf[2]!='S')
-		abort();
+		return false;
 	if(in_buf[0]=='F')
 		compressed=false;
 	else if(in_buf[0]=='C')
@@ -148,13 +160,14 @@ void zlib_filter::initialize()
 		}
 	}
 	else
-		abort();
+		return false;
 
 	//Ok, it seems to be a valid SWF, from now, if the file is compressed, data has to be inflated
 
 	//Copy the in_buf to the out buffer
 	memcpy(buffer,in_buf,8);
 	setg(buffer,buffer,buffer+available);
+	return true;
 }
 
 zlib_filter::int_type zlib_filter::underflow()
@@ -167,8 +180,11 @@ zlib_filter::int_type zlib_filter::underflow()
 	//The first time
 	if(consumed==0)
 	{
-		initialize();
-		return (unsigned char)buffer[0];
+		bool ret=initialize();
+		if(ret)
+			return (unsigned char)buffer[0];
+		else
+			throw lightspark::ParseException("Not an SWF file");
 	}
 
 	if(!compressed)

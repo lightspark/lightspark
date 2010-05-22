@@ -56,7 +56,7 @@ extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
 
-SWF_HEADER::SWF_HEADER(istream& in)
+SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 {
 	in >> Signature[0] >> Signature[1] >> Signature[2];
 
@@ -72,7 +72,7 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	else
 	{
 		LOG(LOG_NO_INFO,"No SWF file signature found");
-		abort();
+		return;
 	}
 	pt->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
@@ -85,9 +85,10 @@ SWF_HEADER::SWF_HEADER(istream& in)
 	sys->setRenderRate(frameRate);
 	pt->root->version=Version;
 	pt->root->fileLenght=FileLength;
+	valid=true;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),frameRate(0),toBind(false)
+RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),parsingIsFailed(false),frameRate(0),toBind(false)
 {
 	root=this;
 	sem_init(&mutex,0,1);
@@ -114,6 +115,15 @@ RootMovieClip::~RootMovieClip()
 	sem_destroy(&new_frame);
 	sem_destroy(&sem_valid_rate);
 	sem_destroy(&sem_valid_size);
+}
+
+void RootMovieClip::parsingFailed()
+{
+	//The parsing is failed, we have no change to be ever valid
+	parsingIsFailed=true;
+	sem_post(&new_frame);
+	sem_post(&sem_valid_size);
+	sem_post(&sem_valid_rate);
 }
 
 void RootMovieClip::bindToName(const tiny_string& n)
@@ -404,6 +414,8 @@ void ParseThread::execute()
 	try
 	{
 		SWF_HEADER h(f);
+		if(!h.valid)
+			throw ParseException("Not an SWF file");
 		root->setFrameSize(h.getFrameSize());
 		root->setFrameCount(h.FrameCount);
 
@@ -455,6 +467,8 @@ void ParseThread::execute()
 	}
 	catch(LightsparkException& e)
 	{
+		LOG(LOG_ERROR,"Exception in ParseThread " << e.what());
+		root->parsingFailed();
 		sys->setError(e.cause);
 	}
 	pt=NULL;
@@ -464,8 +478,8 @@ void ParseThread::execute()
 
 void ParseThread::threadAbort()
 {
-	//TODO: implement
-	::abort();
+	//Tell the our RootMovieClip that the parsing is ending
+	root->parsingFailed();
 }
 
 void ParseThread::wait()
@@ -1484,6 +1498,8 @@ void RootMovieClip::Render()
 
 		sem_post(&sem_frames);
 		sem_wait(&new_frame);
+		if(parsingIsFailed)
+			return;
 		sem_wait(&sem_frames);
 	}
 
@@ -1549,6 +1565,7 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
+	while(glGetError()!=GL_NO_ERROR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
 	glBindTexture(GL_TEXTURE_2D,t2[1]);
@@ -1582,6 +1599,11 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	if(status != GL_FRAMEBUFFER_COMPLETE)
 	{
 		LOG(LOG_ERROR,"Incomplete FBO status " << status << "... Aborting");
+		while(err!=GL_NO_ERROR)
+		{
+			LOG(LOG_ERROR,"GL errors during initialization: " << err);
+			err=glGetError();
+		}
 		::abort();
 	}
 }

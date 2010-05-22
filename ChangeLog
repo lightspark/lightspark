@@ -1,3 +1,8 @@
+Version 0.3.8
+-------------
+
+Solved deadlock issues when using FlashBlock
+
 Version 0.3.7
 -------------
 

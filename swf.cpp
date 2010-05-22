@@ -1062,7 +1062,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	if(!fb)
 	{
 		attrib[2]=None;
-		fb=glXChooseFBConfig(d, 0, NULL, &a);
+		fb=glXChooseFBConfig(d, 0, attrib, &a);
 		LOG(LOG_ERROR,"Falling back to no depth buffer");
 	}
 	if(!fb)

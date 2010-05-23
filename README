@@ -31,6 +31,7 @@ To build the software please follow those steps.
 3) cd objs
 4) cmake -DCMAKE_BUILD_TYPE=Release -DCOMPILE_PLUGIN=1 ..
 5) make
+6) sudo make install
 
 DEBUG MODe:
 To enable debug mode change the cmake command like this:
@@ -48,6 +49,6 @@ to Flash 10 and AS3 to serve some HD content, while maintaining the old AS2 base
 	./youtube-args-dumper.sh http://www.youtube.com/watch?v=4N2YWRJ-ppo > ../yt-args
 	cd ..
 -) Execute the file, this will render the usual UI of the YouTube player and decoded video, no sound is played yet
-	./lightspark --parameters-file yt-args watch_as3-vfl155676.swf
+	lightspark --parameters-file yt-args watch_as3-vfl155676.swf
 
 Press 'Q' on Lightspark window to close the application

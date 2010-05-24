@@ -105,7 +105,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
 	assert(argslen==3);
-	assert(args[0]->prototype==Class<ByteArray>::getClass());
+	assert(args[0]->getPrototype()==Class<ByteArray>::getClass());
 
 	ByteArray* out=Class<ByteArray>::cast(args[0]);
 	int offset=args[1]->toInt();
@@ -288,8 +288,8 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
-		assert(target->prototype);
-		c=target->prototype;
+		assert(target->getPrototype());
+		c=target->getPrototype();
 	}
 	else
 		c=static_cast<Class_base*>(target);
@@ -304,8 +304,8 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
-		assert(target->prototype);
-		c=target->prototype->super;
+		assert(target->getPrototype());
+		c=target->getPrototype()->super;
 	}
 	else
 		c=static_cast<Class_base*>(target)->super;

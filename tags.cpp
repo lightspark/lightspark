@@ -304,8 +304,7 @@ ASObject* DefineEditTextTag::instance() const
 	DefineEditTextTag* ret=new DefineEditTextTag(*this);
 	//TODO: check
 	assert(bindedTo==NULL);
-	ret->prototype=Class<TextField>::getClass();
-	ret->prototype->incRef();
+	ret->setPrototype(Class<TextField>::getClass());
 	return ret;
 }
 
@@ -372,14 +371,10 @@ ASObject* DefineSpriteTag::instance() const
 	if(bindedTo)
 	{
 		//A class is binded to this tag
-		ret->prototype=bindedTo;
+		ret->setPrototype(bindedTo);
 	}
 	else
-	{
-		//A default object is always linked
-		ret->prototype=Class<MovieClip>::getClass();
-	}
-	ret->prototype->incRef();
+		ret->setPrototype(Class<MovieClip>::getClass());
 	ret->bootstrap();
 	return ret;
 }
@@ -861,8 +856,7 @@ ASObject* DefineMorphShapeTag::instance() const
 {
 	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
 	assert(bindedTo==NULL);
-	ret->prototype=Class<MorphShape>::getClass();
-	ret->prototype->incRef();
+	ret->setPrototype(Class<MorphShape>::getClass());
 	return ret;
 }
 
@@ -1363,13 +1357,13 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		assert(toAdd);
 
 		//Object should be constructed even if not binded
-		if(toAdd->prototype && sys->currentVm)
+		if(toAdd->getPrototype() && sys->currentVm)
 		{
 			//Object expect to have the matrix set when created
 			if(PlaceFlagHasMatrix)
 				toAdd->setMatrix(Matrix);
 			//We now ask the VM to construct this object
-			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->prototype);
+			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->getPrototype());
 			sys->currentVm->addEvent(NULL,e);
 			e->wait();
 		}
@@ -1673,13 +1667,9 @@ ASObject* DefineSoundTag::instance() const
 	if(bindedTo)
 	{
 		//A class is binded to this tag
-		ret->prototype=bindedTo;
+		ret->setPrototype(bindedTo);
 	}
 	else
-	{
-		//A default object is always linked
-		ret->prototype=Class<Sound>::getClass();
-	}
-	ret->prototype->incRef();
+		ret->setPrototype(Class<Sound>::getClass());
 	return ret;
 }

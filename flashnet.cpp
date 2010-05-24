@@ -100,13 +100,13 @@ ASFUNCTIONBODY(URLLoader,load)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj);
 	ASObject* arg=args[0];
-	assert(arg->prototype==Class<URLRequest>::getClass());
+	assert(arg->getPrototype()==Class<URLRequest>::getClass());
 	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
 	th->url=urlRequest->url;
 	ASObject* data=arg->getVariableByQName("data","").obj;
 	if(data)
 	{
-		if(data->prototype==Class<URLVariables>::getClass())
+		if(data->getPrototype()==Class<URLVariables>::getClass())
 			::abort();
 		else
 		{
@@ -275,7 +275,7 @@ ASFUNCTIONBODY(NetStream,_constructor)
 {
 	LOG(LOG_CALLS,"NetStream constructor");
 	assert(argslen==1);
-	assert(args[0]->prototype==Class<NetConnection>::getClass());
+	assert(args[0]->getPrototype()==Class<NetConnection>::getClass());
 
 	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
 	assert(netConnection->isFMS==false);

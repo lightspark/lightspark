@@ -157,7 +157,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 		return NULL;
 	//Find the actual ByteArray object
 	assert(argslen>=1);
-	assert(args[0]->prototype->isSubClass(Class<ByteArray>::getClass()));
+	assert(args[0]->getPrototype()->isSubClass(Class<ByteArray>::getClass()));
 	th->bytes=static_cast<ByteArray*>(args[0]);
 	if(th->bytes->bytes)
 	{
@@ -349,8 +349,6 @@ bool Sprite::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 
 void Sprite::Render()
 {
-	assert(prototype);
-	
 	number_t t1,t2,t3,t4;
 	bool notEmpty=boundsRect(t1,t2,t3,t4);
 	if(!notEmpty)
@@ -577,7 +575,7 @@ void MovieClip::Render()
 	{
 		assert(state.FP<framesLoaded);
 
-		if((sys->currentVm && prototype->isSubClass(Class<MovieClip>::getClass())) ||
+		if((sys->currentVm && getPrototype()->isSubClass(Class<MovieClip>::getClass())) ||
 			sys->currentVm==NULL)
 			advanceFrame();
 		if(!state.stop_FP)
@@ -1211,7 +1209,7 @@ void DisplayObjectContainer::dumpDisplayList()
 	for(;it!=dynamicDisplayList.end();it++)
 	{
 		if(*it)
-			cout << (*it)->prototype->class_name << endl;
+			cout << (*it)->getPrototype()->class_name << endl;
 		else
 			cout << "UNKNOWN" << endl;
 	}
@@ -1312,7 +1310,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,contains)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==1);
 	//Validate object type
-	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	assert(args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args[0]);
@@ -1327,7 +1325,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==2);
 	//Validate object type
-	assert_and_throw(args[0] && args[0]->prototype && args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->getPrototype() && 
+		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 	args[0]->incRef();
 
 	int index=args[1]->toInt();
@@ -1348,7 +1347,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==1);
 	//Validate object type
-	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	assert(args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 	args[0]->incRef();
 
 	//Cast to object
@@ -1368,7 +1367,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChild)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==1);
 	//Validate object type
-	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	assert(args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 	//Cast to object
 	DisplayObject* d=Class<DisplayObject>::cast(args[0]);
 
@@ -1399,7 +1398,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,getChildIndex)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==1);
 	//Validate object type
-	assert(args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	assert(args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 
 	//Cast to object
 	DisplayObject* d=static_cast<DisplayObject*>(args[0]);

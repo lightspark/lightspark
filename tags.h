@@ -420,9 +420,7 @@ public:
 	ASObject* instance() const
 	{
 		DefineBinaryDataTag* ret=new DefineBinaryDataTag(*this);
-		//An object is always linked
-		ret->prototype=Class<ByteArray>::getClass();
-		ret->prototype->incRef();
+		ret->setPrototype(Class<ByteArray>::getClass());
 		return ret;
 	}
 };

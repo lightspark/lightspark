@@ -21,6 +21,7 @@
 #define ASOBJECTS_H
 #include <vector>
 #include <list>
+#include <set>
 #include "swftypes.h"
 #include "frame.h"
 #include "input.h"
@@ -63,6 +64,8 @@ private:
 	}
 	void recursiveBuild(ASObject* target);
 	IFunction* constructor;
+	//Naive garbage collection until reference cycles are detected
+	std::set<ASObject*> referencedObjects;
 
 public:
 	Class_base* super;
@@ -120,6 +123,8 @@ public:
 	bool isSubClass(const Class_base* cls) const;
 	tiny_string getQualifiedClassName() const;
 	tiny_string toString(bool debugMsg);
+	void abandonObject(ASObject* ob);
+	void acquireObject(ASObject* ob);
 };
 
 class Class_object: public Class_base

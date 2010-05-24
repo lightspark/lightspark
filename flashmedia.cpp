@@ -201,7 +201,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	Video* th=Class<Video>::cast(obj);
 	assert_and_throw(argslen==1);
 	//Validate the parameter
-	if(args[0]->prototype!=Class<NetStream>::getClass())
+	if(args[0]->getPrototype()!=Class<NetStream>::getClass())
 		::abort();
 
 	//Acquire the netStream

@@ -1628,7 +1628,7 @@ variables_map::~variables_map()
 	}
 }
 
-ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),implEnable(true),prototype(NULL)
+ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),prototype(NULL),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1636,7 +1636,7 @@ ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(
 #endif
 }
 
-ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),implEnable(true),prototype(o.prototype)
+ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cur_level(0),prototype(o.prototype),implEnable(true)
 {
 	if(prototype)
 		prototype->incRef();
@@ -1647,6 +1647,21 @@ ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cu
 	#endif
 
 	assert(o.Variables.size()==0);
+}
+
+void ASObject::setPrototype(Class_base* c)
+{
+	if(prototype)
+	{
+		prototype->abandonObject(this);
+		prototype->decRef();
+	}
+	prototype=c;
+	if(prototype)
+	{
+		prototype->acquireObject(this);
+		prototype->incRef();
+	}
 }
 
 ASObject::~ASObject()

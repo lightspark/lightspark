@@ -102,10 +102,7 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),pars
 
 	//We set the protoype to a generic MovieClip
 	if(!isSys)
-	{
-		prototype=Class<MovieClip>::getClass();
-		prototype->incRef();
-	}
+		setPrototype(Class<MovieClip>::getClass());
 }
 
 RootMovieClip::~RootMovieClip()

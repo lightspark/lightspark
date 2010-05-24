@@ -304,7 +304,7 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
 	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
-	if(args[0]->prototype==NULL || !(args[0]->prototype->isSubClass(Class<Event>::getClass())))
+	if(args[0]->getPrototype()==NULL || !(args[0]->getPrototype()->isSubClass(Class<Event>::getClass())))
 		return new Boolean(false);
 
 	Event* e=Class<Event>::cast(args[0]);

@@ -457,6 +457,7 @@ private:
 	Manager* manager;
 	int cur_level;
 	virtual int _maxlevel();
+	Class_base* prototype;
 
 public:
 #ifndef NDEBUG
@@ -465,7 +466,8 @@ public:
 	int getRefCount(){ return ref_count; }
 #endif
 	bool implEnable;
-	Class_base* prototype;
+	void setPrototype(Class_base* c);
+	Class_base* getPrototype() const { return prototype; }
 	ASObject(Manager* m=NULL);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getPrototype);

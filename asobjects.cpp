@@ -1542,7 +1542,7 @@ ASFUNCTIONBODY(ASString,replace)
 
 	assert(argslen==2 && args[1]->getObjectType()==T_STRING);
 
-	if(args[0]->prototype==Class<RegExp>::getClass())
+	if(args[0]->getPrototype()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
@@ -1674,6 +1674,17 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	}
 }
 
+void Class_base::acquireObject(ASObject* ob)
+{
+	bool ret=referencedObjects.insert(ob).second;
+	assert(ret);
+}
+
+void Class_base::abandonObject(ASObject* ob)
+{
+	set<ASObject>::size_type ret=referencedObjects.erase(ob);
+	assert(ret==1);
+}
 
 ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 {
@@ -1690,10 +1701,7 @@ ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, cons
 		ret=super->getInstance(false,NULL,0);
 	}
 	//We override the prototype
-	ret->prototype->decRef();
-	//As we are the prototype we should incRef ourself
-	ret->prototype=this;
-	incRef();
+	ret->setPrototype(this);
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
 	return ret;

@@ -61,11 +61,8 @@ private:
 	//This function is instantiated always because of inheritance
 	T* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
-		//TODO: Add interface T to ret
 		T* ret=new T;
-		ret->prototype=this;
-		//As we are the prototype we should incRef ourself
-		incRef();
+		ret->setPrototype(this);
 		if(construct)
 			handleConstruction(ret,args,argslen,true);
 		return ret;
@@ -80,11 +77,8 @@ public:
 	static T* getInstanceS(ARG1 a1)
 	{
 		Class<T>* c=Class<T>::getClass();
-		//TODO: Add interface T to ret
 		T* ret=new T(a1);
-		ret->prototype=c;
-		//As we are the prototype we should incRef ourself
-		c->incRef();
+		ret->setPrototype(c);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}
@@ -92,11 +86,8 @@ public:
 	static T* getInstanceS(ARG1 a1, ARG2 a2)
 	{
 		Class<T>* c=Class<T>::getClass();
-		//TODO: Add interface T to ret
 		T* ret=new T(a1,a2);
-		ret->prototype=c;
-		//As we are the prototype we should incRef ourself
-		c->incRef();
+		ret->setPrototype(c);
 		c->handleConstruction(ret,NULL,0,true);
 		return ret;
 	}

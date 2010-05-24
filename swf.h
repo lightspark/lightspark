@@ -302,6 +302,7 @@ private:
 	static void* gtkplug_worker(RenderThread*);
 	#endif
 	void commonGLInit(int width, int height, unsigned int t2[3]);
+	void commonGLDeinit(unsigned int t2[3]);
 	sem_t render;
 	sem_t inputDone;
 	bool inputNeeded;

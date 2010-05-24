@@ -1327,7 +1327,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert(argslen==2);
 	//Validate object type
-	assert_and_throw(args[0] && args[0]-prototype && args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->prototype && args[0]->prototype->isSubClass(Class<DisplayObject>::getClass()));
 	args[0]->incRef();
 
 	int index=args[1]->toInt();

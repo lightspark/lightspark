@@ -90,8 +90,8 @@ friend class ABCVm;
 private:
 	std::map<ASObject*,ASObject*> data;
 public:
-	Dictionary(){};
-	virtual ~Dictionary(){};
+	Dictionary(){}
+	virtual ~Dictionary();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

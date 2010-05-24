@@ -356,6 +356,13 @@ ASFUNCTIONBODY(lightspark,getTimer)
 	return abstract_i(ret);
 }
 
+Dictionary::~Dictionary()
+{
+	std::map<ASObject*,ASObject*>::iterator it=data.begin();
+	for(;it!=data.end();it++)
+		it->second->decRef();
+}
+
 void Dictionary::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));

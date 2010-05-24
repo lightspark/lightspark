@@ -1034,6 +1034,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	glDisable(GL_TEXTURE_2D);
 	gdk_gl_drawable_gl_end(glDrawable);
 	delete p;
+	th->commonGLDeinit(t2);
 	return NULL;
 }
 #endif
@@ -1247,6 +1248,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		::abort();
 	}
 	glDisable(GL_TEXTURE_2D);
+	th->commonGLDeinit(t2);
+	glXMakeContextCurrent(d,None,None,NULL);
+	glXDestroyContext(d,th->mContext);
+	XCloseDisplay(d);
 	delete p;
 }
 #endif
@@ -1317,7 +1322,7 @@ bool RenderThread::loadShaderPrograms()
 	return true;
 }
 
-#ifndef WIN32
+#if 0
 void* RenderThread::glx_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -1507,6 +1512,14 @@ void RootMovieClip::Render()
 	sem_post(&sem_frames);
 }
 
+void RenderThread::commonGLDeinit(unsigned int t2[3])
+{
+	glDeleteTextures(1,&rt->data_tex);
+	glDeleteTextures(3,t2);
+	glBindFramebuffer(GL_FRAMEBUFFER,0);
+	glDeleteFramebuffers(1,&rt->fboId);
+}
+
 void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 {
 	//Now we can initialize GLEW
@@ -1619,7 +1632,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	rt->height=height;
 	th->interactive_buffer=new uint32_t[width*height];
 	unsigned int t2[3];
-	SDL_Init(SDL_INIT_VIDEO);
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
@@ -1790,6 +1802,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		LOG(LOG_ERROR, "Exception caught " << e);
 		::abort();
 	}
+	th->commonGLDeinit(t2);
 	return NULL;
 }
 
@@ -1848,6 +1861,7 @@ void RootMovieClip::setFrameRate(float f)
 {
 	frameRate=f;
 	//Now frame rate is valid, start the rendering
+
 	sys->addTick(1000/f,this);
 	sem_post(&sem_valid_rate);
 }

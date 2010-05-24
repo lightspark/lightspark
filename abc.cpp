@@ -933,6 +933,7 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),terminated(false),shutdown(false)
 	number_manager=new Manager;
 	//Push a dummy default context
 	pushObjAndLevel(new ASObject,0);
+	LOG(LOG_NO_INFO,"Global is " << &Global);
 	pthread_create(&t,NULL,(thread_worker)Run,this);
 }
 
@@ -944,7 +945,6 @@ ABCVm::~ABCVm()
 	wait();
 	sem_destroy(&sem_event_count);
 	sem_destroy(&event_queue_mutex);
-	//assert(Global.ref_count==0);
 }
 
 void ABCVm::wait()
@@ -1324,6 +1324,8 @@ void ABCVm::Run(ABCVm* th)
 				//If the queue is empty stop immediately
 				if(th->events_queue.empty())
 					break;
+				else
+					LOG(LOG_NO_INFO,th->events_queue.size() << " events missing before exit");
 			}
 			Chronometer chronometer;
 			th->handleEvent();

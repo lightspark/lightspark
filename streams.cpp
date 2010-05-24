@@ -207,8 +207,7 @@ zlib_filter::int_type zlib_filter::underflow()
 				if(real_count==0)
 				{
 					//File is not big enough
-					LOG(LOG_ERROR,"Unexpected end of file");
-					abort();
+					throw lightspark::ParseException("Unexpected end of file");
 				}
 				strm.next_in=(unsigned char*)in_buf;
 				strm.avail_in=real_count;

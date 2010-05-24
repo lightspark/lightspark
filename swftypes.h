@@ -363,7 +363,9 @@ class Manager
 friend class ASObject;
 private:
 	std::vector<ASObject*> available;
+	uint32_t max;
 public:
+	Manager(uint32_t m):max(m){}
 template<class T>
 	T* get();
 	void put(ASObject* o);
@@ -590,7 +592,7 @@ public:
 
 inline void Manager::put(ASObject* o)
 {
-	if(available.size()>15)
+	if(available.size()>max)
 		delete o;
 	else
 		available.push_back(o);

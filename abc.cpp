@@ -929,8 +929,8 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),terminated(false),shutdown(false)
 	sem_init(&event_queue_mutex,0,1);
 	sem_init(&sem_event_count,0,0);
 	m_sys=s;
-	int_manager=new Manager;
-	number_manager=new Manager;
+	int_manager=new Manager(15);
+	number_manager=new Manager(15);
 	//Push a dummy default context
 	pushObjAndLevel(new ASObject,0);
 	LOG(LOG_NO_INFO,"Global is " << &Global);

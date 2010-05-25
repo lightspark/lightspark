@@ -1352,6 +1352,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->getPrototype());
 			sys->currentVm->addEvent(NULL,e);
 			e->wait();
+			e->decRef();
 		}
 
 		if(PlaceFlagHasColorTransform)

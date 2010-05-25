@@ -507,21 +507,21 @@ ASFUNCTIONBODY(MovieClip,_getFramesLoaded)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based
-	return new Integer(th->framesLoaded);
+	return abstract_i(th->framesLoaded);
 }
 
 ASFUNCTIONBODY(MovieClip,_getTotalFrames)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based
-	return new Integer(th->totalFrames);
+	return abstract_i(th->totalFrames);
 }
 
 ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
 	//currentFrame is 1-based
-	return new Integer(th->state.FP+1);
+	return abstract_i(th->state.FP+1);
 }
 
 ASFUNCTIONBODY(MovieClip,_constructor)

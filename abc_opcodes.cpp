@@ -641,12 +641,14 @@ void ABCVm::construct(call_context* th, int m)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
 		assert(sf);
-		ret=new ASObject;
+		ret=Class<ASObject>::getInstanceS();
 		if(sf->mi->body)
 		{
+			ret->initialized=false;
 			LOG(LOG_CALLS,"Building method traits");
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+			ret->initialized=true;
 			ret->incRef();
 			assert(sf->closure_this==NULL);
 			ASObject* ret2=sf->call(ret,args,m,0);
@@ -1903,12 +1905,14 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(o);
 		assert(sf);
-		ret=new ASObject;
+		ret=Class<ASObject>::getInstanceS();
 		if(sf->mi->body)
 		{
+			ret->initialized=false;
 			LOG(LOG_CALLS,"Building method traits");
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+			ret->initialized=true;
 			ret->incRef();
 			assert(sf->closure_this==NULL);
 			ASObject* ret2=sf->call(ret,args,m,0);
@@ -1992,7 +1996,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 void ABCVm::newObject(call_context* th, int n)
 {
 	LOG(LOG_CALLS,"newObject " << n);
-	ASObject* ret=new ASObject;
+	ASObject* ret=Class<ASObject>::getInstanceS();
 	for(int i=0;i<n;i++)
 	{
 		ASObject* value=th->runtime_stack_pop();
@@ -2107,7 +2111,6 @@ void ABCVm::newClass(call_context* th, int n)
 	//and the created class
 	cinit->addToScope(ret);
 
-
 	LOG(LOG_CALLS,"Building class traits");
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
@@ -2168,9 +2171,11 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 	LOG(LOG_CALLS,"newActivation");
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
-	ASObject* act=new ASObject;
+	ASObject* act=Class<ASObject>::getInstanceS();
+	act->initialized=false;
 	for(unsigned int i=0;i<info->body->trait_count;i++)
 		th->context->buildTrait(act,&info->body->traits[i],false);
+	act->initialized=true;
 
 	return act;
 }

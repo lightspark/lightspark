@@ -117,7 +117,9 @@ void SymbolClassTag::execute(RootMovieClip* root)
 			DictionaryTag* t=root->dictionaryLookup(Tags[i]);
 			ASObject* base=dynamic_cast<ASObject*>(t);
 			assert_and_throw(base!=NULL);
-			sys->currentVm->addEvent(NULL,new BindClassEvent(base,(const char*)Names[i]));
+			BindClassEvent* e=new BindClassEvent(base,(const char*)Names[i]);
+			sys->currentVm->addEvent(NULL,e);
+			e->decRef();
 		}
 	}
 }
@@ -145,10 +147,10 @@ void ABCVm::registerClasses()
 	//Register predefined types, ASObject are enough for not implemented classes
 	Global.setVariableByQName("Object","",Class<ASObject>::getClass());
 	Global.setVariableByQName("Class","",Class_object::getClass());
-	Global.setVariableByQName("Number","",new Number(0.0));
-	Global.setVariableByQName("Boolean","",new Boolean(false));
-	Global.setVariableByQName("NaN","",new Number(numeric_limits<double>::quiet_NaN()));
-	Global.setVariableByQName("Infinity","",new Number(numeric_limits<double>::infinity()));
+	Global.setVariableByQName("Number","",Class<Number>::getClass());
+	Global.setVariableByQName("Boolean","",Class<Boolean>::getClass());
+	Global.setVariableByQName("NaN","",abstract_d(numeric_limits<double>::quiet_NaN()));
+	Global.setVariableByQName("Infinity","",abstract_d(numeric_limits<double>::infinity()));
 	Global.setVariableByQName("String","",Class<ASString>::getClass());
 	Global.setVariableByQName("Array","",Class<Array>::getClass());
 	Global.setVariableByQName("Function","",Class_function::getClass());
@@ -157,7 +159,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("Date","",Class<Date>::getClass());
 	Global.setVariableByQName("RegExp","",Class<RegExp>::getClass());
 	Global.setVariableByQName("QName","",Class<ASQName>::getClass());
-	Global.setVariableByQName("uint","",Class<UInteger>::getClass("uint"));
+	Global.setVariableByQName("uint","",Class<UInteger>::getClass());
 
 	Global.setVariableByQName("print","",Class<IFunction>::getFunction(print));
 	Global.setVariableByQName("trace","",Class<IFunction>::getFunction(print));
@@ -1489,9 +1491,9 @@ ASObject* ABCContext::getConstant(int kind, int index)
 			assert_and_throw(constant_pool.namespaces[index].name);
 			return Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name));
 		case 0x0a: //False
-			return new Boolean(false);
+			return abstract_b(false);
 		case 0x0b: //True
-			return new Boolean(true);
+			return abstract_b(true);
 		case 0x0c: //Null
 			return new Null;
 		default:
@@ -2207,9 +2209,7 @@ ASFUNCTIONBODY(lightspark,parseInt)
 	if(args[0]->getObjectType()==T_UNDEFINED)
 		return new Undefined;
 	else
-	{
-		return new Integer(atoi(args[0]->toString().raw_buf()));
-	}
+		return abstract_i(atoi(args[0]->toString().raw_buf()));
 }
 
 ASFUNCTIONBODY(lightspark,parseFloat)
@@ -2217,9 +2217,7 @@ ASFUNCTIONBODY(lightspark,parseFloat)
 	if(args[0]->getObjectType()==T_UNDEFINED)
 		return new Undefined;
 	else
-	{
-		return new Number(atof(args[0]->toString().raw_buf()));
-	}
+		return abstract_d(atof(args[0]->toString().raw_buf()));
 }
 
 ASFUNCTIONBODY(lightspark,isNaN)

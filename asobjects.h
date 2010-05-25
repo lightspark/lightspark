@@ -361,16 +361,19 @@ public:
 class Boolean: public ASObject
 {
 friend bool Boolean_concrete(ASObject* obj);
+CLASSBUILDABLE(Boolean);
 private:
 	bool val;
-public:
+	Boolean(){}
 	Boolean(bool v):val(v){type=T_BOOLEAN;}
+public:
 	int32_t toInt()
 	{
 		return val;
 	}
 	bool isEqual(ASObject* r);
 	tiny_string toString(bool debugMsg);
+	static void buildTraits(ASObject* o){};
 };
 
 class Undefined : public ASObject
@@ -552,17 +555,16 @@ friend class Array;
 friend class ABCVm;
 friend class ABCContext;
 friend ASObject* abstract_i(intptr_t i);
+CLASSBUILDABLE(Integer);
 private:
 	int32_t val;
+	Integer(int32_t v=0):val(v){type=T_INTEGER;}
+	Integer(Manager* m):ASObject(m),val(0){type=T_INTEGER;}
 public:
-	Integer(int32_t v=0):val(v){type=T_INTEGER;
-		setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString));
-	}
-	Integer(Manager* m):ASObject(m),val(0){type=T_INTEGER;
-		setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString));
-	}
+	static void buildTraits(ASObject* o){
+		o->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString));
+	};
 	ASFUNCTION(_toString);
-	virtual ~Integer(){}
 	tiny_string toString(bool debugMsg);
 	int32_t toInt()
 	{
@@ -605,11 +607,13 @@ class Number : public ASObject
 {
 friend ASObject* abstract_d(number_t i);
 friend class ABCContext;
+CLASSBUILDABLE(Number);
 private:
 	double val;
-public:
+	Number(){}
 	Number(double v):val(v){type=T_NUMBER;}
 	Number(Manager* m):ASObject(m),val(0){type=T_NUMBER;}
+public:
 	tiny_string toString(bool debugMsg);
 	unsigned int toUInt()
 	{
@@ -629,9 +633,9 @@ public:
 	{
 		return val;
 	}
-//	operator double() const {return val;}
 	bool isLess(ASObject* o);
 	bool isEqual(ASObject* o);
+	static void buildTraits(ASObject* o){};
 };
 
 class ASMovieClipLoader: public ASObject
@@ -680,7 +684,7 @@ public:
 	ASFUNCTION(valueOf);
 	tiny_string toString(bool debugMsg=false);
 	tiny_string toString_priv() const;
-	bool toInt(int& ret);
+	//bool toInt(int& ret);
 };
 
 //Internal objects used to store traits declared in scripts and object placed, but not yet valid

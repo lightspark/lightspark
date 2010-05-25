@@ -802,8 +802,8 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 		npapi_params=(NPAPI_params*)params;
 		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
 	}
-	clock_gettime(CLOCK_REALTIME,&ts);
 #endif
+	clock_gettime(CLOCK_REALTIME,&ts);
 }
 
 RenderThread::~RenderThread()

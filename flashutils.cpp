@@ -358,9 +358,12 @@ ASFUNCTIONBODY(lightspark,getTimer)
 
 Dictionary::~Dictionary()
 {
-	std::map<ASObject*,ASObject*>::iterator it=data.begin();
-	for(;it!=data.end();it++)
-		it->second->decRef();
+	if(!sys->finalizingDestruction)
+	{
+		std::map<ASObject*,ASObject*>::iterator it=data.begin();
+		for(;it!=data.end();it++)
+			it->second->decRef();
+	}
 }
 
 void Dictionary::sinit(Class_base* c)

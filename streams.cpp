@@ -127,8 +127,14 @@ uint32_t sync_stream::getFree()
 	return freeBytes;
 }
 
-zlib_filter::zlib_filter():consumed(0),available(0)
+zlib_filter::zlib_filter():compressed(false),consumed(0),available(0)
 {
+}
+
+zlib_filter::~zlib_filter()
+{
+	if(compressed)
+		inflateEnd(&strm);
 }
 
 bool zlib_filter::initialize()

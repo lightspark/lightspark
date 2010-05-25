@@ -42,6 +42,7 @@ protected:
 	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 public:
 	zlib_filter();
+	~zlib_filter();
 };
 
 class sync_stream: public zlib_filter

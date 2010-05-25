@@ -271,7 +271,7 @@ ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 	assert(argslen==1 && args[0]->getObjectType()==T_STRING);
 	const tiny_string& eventName=args[0]->toString();
 	bool ret=th->hasEventListener(eventName);
-	return new Boolean(ret);
+	return abstract_b(ret);
 }
 
 ASFUNCTIONBODY(EventDispatcher,removeEventListener)
@@ -305,16 +305,16 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 {
 	EventDispatcher* th=Class<EventDispatcher>::cast(obj);
 	if(args[0]->getPrototype()==NULL || !(args[0]->getPrototype()->isSubClass(Class<Event>::getClass())))
-		return new Boolean(false);
+		return abstract_b(false);
 
 	Event* e=Class<Event>::cast(args[0]);
 	if(e==NULL || th==NULL)
-		return new Boolean(false);
+		return abstract_b(false);
 	//CHECK: maybe is to be cloned
 	e->incRef();
 	assert(e->type!="");
 	th->handleEvent(e);
-	return new Boolean(true);
+	return abstract_b(true);
 }
 
 ASFUNCTIONBODY(EventDispatcher,_constructor)

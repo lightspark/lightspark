@@ -33,5 +33,5 @@ void ExternalInterface::sinit(Class_base* c)
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)
 {
-	return new Boolean(false);
+	return abstract_b(false);
 }

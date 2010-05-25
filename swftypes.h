@@ -619,7 +619,7 @@ T* Manager::get()
 	}
 	else
 	{
-		T* ret=new T(this);
+		T* ret=Class<T>::getInstanceS(this);
 		//std::cout << "newing" << ret << std::endl;
 		return ret;
 	}

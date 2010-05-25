@@ -205,9 +205,9 @@ void SharedObject::sinit(Class_base* c)
 
 void ObjectEncoding::sinit(Class_base* c)
 {
-	c->setVariableByQName("AMF0","",new Integer(0));
-	c->setVariableByQName("AMF3","",new Integer(3));
-	c->setVariableByQName("DEFAULT","",new Integer(3));
+	c->setVariableByQName("AMF0","",abstract_i(0));
+	c->setVariableByQName("AMF3","",abstract_i(3));
+	c->setVariableByQName("DEFAULT","",abstract_i(3));
 };
 
 NetConnection::NetConnection():isFMS(false)

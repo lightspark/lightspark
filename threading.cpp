@@ -70,7 +70,7 @@ Mutex::Mutex(const char* n):name(n),foundBusy(0)
 Mutex::~Mutex()
 {
 	if(name)
-		LOG(LOG_NO_INFO,"Mutex " << name << " waited " << foundBusy << " times");
+		LOG(LOG_TRACE,"Mutex " << name << " waited " << foundBusy << " times");
 	sem_destroy(&sem);
 }
 

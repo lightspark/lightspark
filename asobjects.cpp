@@ -43,6 +43,10 @@ extern TLSDATA SystemState* sys;
 REGISTER_CLASS_NAME(Array);
 REGISTER_CLASS_NAME2(ASQName,"QName");
 REGISTER_CLASS_NAME2(IFunction,"Function");
+REGISTER_CLASS_NAME2(UInteger,"uint");
+REGISTER_CLASS_NAME(Boolean);
+REGISTER_CLASS_NAME(Integer);
+REGISTER_CLASS_NAME(Number);
 REGISTER_CLASS_NAME(Namespace);
 REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
@@ -1031,45 +1035,45 @@ ASFUNCTIONBODY(Date,_constructor)
 ASFUNCTIONBODY(Date,getTimezoneOffset)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"getTimezoneOffset");
-	return new Number(120);
+	return abstract_d(120);
 }
 
 ASFUNCTIONBODY(Date,getFullYear)
 {
 	Date* th=static_cast<Date*>(obj);
-	return new Number(th->year);
+	return abstract_d(th->year);
 }
 
 ASFUNCTIONBODY(Date,getHours)
 {
 	Date* th=static_cast<Date*>(obj);
-	return new Number(th->hour);
+	return abstract_d(th->hour);
 }
 
 ASFUNCTIONBODY(Date,getMinutes)
 {
 	Date* th=static_cast<Date*>(obj);
-	return new Number(th->minute);
+	return abstract_d(th->minute);
 }
 
 ASFUNCTIONBODY(Date,getTime)
 {
 	Date* th=static_cast<Date*>(obj);
-	return new Number(th->toInt());
+	return abstract_d(th->toInt());
 }
 
 ASFUNCTIONBODY(Date,valueOf)
 {
 	Date* th=static_cast<Date*>(obj);
-	return new Number(th->toInt());
+	return abstract_d(th->toInt());
 }
 
-bool Date::toInt(int& ret)
+/*bool Date::toInt(int& ret)
 {
 	assert(implEnable);
 	ret=toInt();
 	return true;
-}
+}*/
 
 int Date::toInt()
 {
@@ -1251,7 +1255,7 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args,int num_args, int 
 
 void Math::sinit(Class_base* c)
 {
-	c->setVariableByQName("PI","",new Number(M_PI));
+	c->setVariableByQName("PI","",abstract_d(M_PI));
 	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
 	c->setVariableByQName("atan2","",Class<IFunction>::getFunction(atan2));
 	c->setVariableByQName("max","",Class<IFunction>::getFunction(_max));
@@ -1452,7 +1456,7 @@ ASFUNCTIONBODY(RegExp,test)
 	const tiny_string& arg0=args[0]->toString();
 
 	bool ret=pcreRE.PartialMatch(arg0.raw_buf());
-	return new Boolean(ret);
+	return abstract_b(ret);
 }
 
 ASFUNCTIONBODY(ASString,slice)
@@ -1474,7 +1478,7 @@ ASFUNCTIONBODY(ASString,charCodeAt)
 	ASString* th=static_cast<ASString*>(obj);
 	unsigned int index=args[0]->toInt();
 	assert(index>=0 && index<th->data.size());
-	return new Integer(th->data[index]);
+	return abstract_i(th->data[index]);
 }
 
 ASFUNCTIONBODY(ASString,indexOf)
@@ -1507,9 +1511,9 @@ ASFUNCTIONBODY(ASString,indexOf)
 	}
 
 	if(!found)
-		return new Integer(-1);
+		return abstract_i(-1);
 	else
-		return new Integer(i);
+		return abstract_i(i);
 }
 
 ASFUNCTIONBODY(ASString,toLowerCase)

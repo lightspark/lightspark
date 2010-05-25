@@ -125,39 +125,5 @@ public:
 	}
 };
 
-//Specialized class for uint
-template<>
-class Class<UInteger>: public Class_base
-{
-private:
-	Class<UInteger>():Class_base("uint"){}
-	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
-	{
-		abort();
-		return NULL;
-	}
-public:
-	static Class<UInteger>* getClass(const tiny_string& name)
-	{
-		std::map<tiny_string, Class_base*>::iterator it=sys->classes.find(name);
-		Class<UInteger>* ret=NULL;
-		if(it==sys->classes.end()) //This class is not yet in the map, create it
-		{
-			ret=new Class<UInteger>;
-			UInteger::sinit(ret);
-			sys->classes.insert(std::make_pair(name,ret));
-		}
-		else
-			ret=static_cast<Class<UInteger>*>(it->second);
-
-		ret->incRef();
-		return ret;
-	}
-	void buildInstanceTraits(ASObject* o) const
-	{
-		abort();
-	}
-};
-
 };
 #endif

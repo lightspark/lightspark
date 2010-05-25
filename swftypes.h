@@ -427,6 +427,7 @@ private:
 	~variables_map();
 public:
 	void dumpVariables();
+	void destroyContents();
 };
 
 //Atomic operations: placeholders until C++0x is supported in GCC
@@ -1082,37 +1083,36 @@ class SHAPERECORD
 {
 public:
 	SHAPE* parent;
-	UB TypeFlag;
-	UB StateNewStyles;
-	UB StateLineStyle;
-	UB StateFillStyle1;
-	UB StateFillStyle0;
-	UB StateMoveTo;
+	bool TypeFlag;
+	bool StateNewStyles;
+	bool StateLineStyle;
+	bool StateFillStyle1;
+	bool StateFillStyle0;
+	bool StateMoveTo;
 
-	UB MoveBits;
-	SB MoveDeltaX;
-	SB MoveDeltaY;
+	uint32_t MoveBits;
+	int32_t MoveDeltaX;
+	int32_t MoveDeltaY;
 
 	unsigned int FillStyle1;
 	unsigned int FillStyle0;
 	unsigned int LineStyle;
 
 	//Edge record
-	UB StraightFlag;
-	UB NumBits;
-	UB GeneralLineFlag;
-	UB VertLineFlag;
-	SB DeltaX;
-	SB DeltaY;
+	bool StraightFlag;
+	uint32_t NumBits;
+	bool GeneralLineFlag;
+	bool VertLineFlag;
+	int32_t DeltaX;
+	int32_t DeltaY;
 
-	SB ControlDeltaX;
-	SB ControlDeltaY;
-	SB AnchorDeltaX;
-	SB AnchorDeltaY;
+	int32_t ControlDeltaX;
+	int32_t ControlDeltaY;
+	int32_t AnchorDeltaX;
+	int32_t AnchorDeltaY;
 
-	SHAPERECORD* next;
-
-	SHAPERECORD():next(0){};
+//	SHAPERECORD():TypeFlag(false),StateNewStyles(false),StateLineStyle(false),StateFillStyle1(false),StateFillStyle0(false),
+//		StateMoveTo(false),MoveDeltaX(0),MoveDeltaY(0),DeltaX(0),DeltaY(0){};
 	SHAPERECORD(SHAPE* p,BitStream& bs);
 };
 
@@ -1157,12 +1157,12 @@ class SHAPE
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 public:
 	SHAPE():fillOffset(0),lineOffset(0){}
-	virtual ~SHAPE(){}
+	virtual ~SHAPE(){};
 	UB NumFillBits;
 	UB NumLineBits;
 	unsigned int fillOffset;
 	unsigned int lineOffset;
-	SHAPERECORD ShapeRecords;
+	std::vector<SHAPERECORD> ShapeRecords;
 };
 
 class SHAPEWITHSTYLE : public SHAPE

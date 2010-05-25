@@ -67,6 +67,11 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 	}
 }
 
+DoABCTag::~DoABCTag()
+{
+	delete context;
+}
+
 void DoABCTag::execute(RootMovieClip*)
 {
 	LOG(LOG_CALLS,"ABC Exec " << Name);
@@ -1089,8 +1094,8 @@ void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* c
 	if(isRoot)
 	{
 		assert_and_throw(base);
-		base->prototype=derived_class_tmp;
-		derived_class_tmp->incRef();
+		//Let's override the class
+		base->setPrototype(derived_class_tmp);
 		getVm()->pushObjAndLevel(base,derived_class_tmp->max_level);
 		derived_class_tmp->handleConstruction(base,args,argslen,true);
 		thisAndLevel tl=getVm()->popObjAndLevel();

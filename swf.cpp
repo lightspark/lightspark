@@ -132,7 +132,7 @@ void RootMovieClip::bindToName(const tiny_string& n)
 
 SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),showProfilingData(false),
 	showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),inputThread(NULL),
-	renderThread(NULL),useInterpreter(true),useJit(false), downloadManager(NULL)
+	renderThread(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false), downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -149,8 +149,7 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	stage=Class<Stage>::getInstanceS();
 	startTime=compat_msectiming();
 	
-	prototype=Class<MovieClip>::getClass();
-	prototype->incRef();
+	setPrototype(Class<MovieClip>::getClass());
 }
 
 void SystemState::setUrl(const tiny_string& url)
@@ -187,10 +186,35 @@ SystemState::~SystemState()
 	delete currentVm;
 	delete timerThread;
 
-	//decRef all registered classes
+	//decRef all our object before destroying classes
+	Variables.destroyContents();
+	loaderInfo->decRef();
+	loaderInfo=NULL;
+
+	//We are already being destroyed, make our prototype abandon us
+	setPrototype(NULL);
+	
+	//Destroy the contents of all the classes
 	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
-		it->second->decRef();
+		it->second->cleanUp();
+
+	//Also destroy all frames
+	frames.clear();
+	
+	finalizingDestruction=true;
+	//Destroy all registered classes
+	it=classes.begin();
+	for(;it!=classes.end();++it)
+	{
+		//DEPRECATED: to force garbage collection we delete all the classes
+		delete it->second;
+		//it->second->decRef()
+	}
+
+	//Also destroy all tags
+	for(unsigned int i=0;i<tagsStorage.size();i++)
+		delete tagsStorage[i];
 
 	sem_destroy(&terminated);
 }
@@ -422,6 +446,7 @@ void ParseThread::execute()
 		while(!done)
 		{
 			Tag* tag=factory.readTag();
+			sys->tagsStorage.push_back(tag);
 			switch(tag->getType())
 			{
 				case END_TAG:

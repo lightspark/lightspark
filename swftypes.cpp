@@ -997,19 +997,13 @@ std::istream& lightspark::operator>>(std::istream& s, SHAPE& v)
 	BitStream bs(s);
 	v.NumFillBits=UB(4,bs);
 	v.NumLineBits=UB(4,bs);
-	v.ShapeRecords=SHAPERECORD(&v,bs);
-	if(v.ShapeRecords.TypeFlag + v.ShapeRecords.StateNewStyles+v.ShapeRecords.StateLineStyle+v.ShapeRecords.StateFillStyle1+
-			v.ShapeRecords.StateFillStyle0+v.ShapeRecords.StateMoveTo)
+	do
 	{
-		SHAPERECORD* cur=&(v.ShapeRecords);
-		while(1)
-		{
-			cur->next=new SHAPERECORD(&v,bs);
-			cur=cur->next;
-			if(cur->TypeFlag+cur->StateNewStyles+cur->StateLineStyle+cur->StateFillStyle1+cur->StateFillStyle0+cur->StateMoveTo==0)
-				break;
-		}
+		v.ShapeRecords.push_back(SHAPERECORD(&v,bs));
 	}
+	while(v.ShapeRecords.back().TypeFlag || v.ShapeRecords.back().StateNewStyles || v.ShapeRecords.back().StateLineStyle || 
+			v.ShapeRecords.back().StateFillStyle1 || v.ShapeRecords.back().StateFillStyle0 || 
+			v.ShapeRecords.back().StateMoveTo);
 	return s;
 }
 
@@ -1021,19 +1015,13 @@ std::istream& lightspark::operator>>(std::istream& s, SHAPEWITHSTYLE& v)
 	BitStream bs(s);
 	v.NumFillBits=UB(4,bs);
 	v.NumLineBits=UB(4,bs);
-	v.ShapeRecords=SHAPERECORD(&v,bs);
-	if(v.ShapeRecords.TypeFlag+v.ShapeRecords.StateNewStyles+v.ShapeRecords.StateLineStyle+v.ShapeRecords.StateFillStyle1+
-			v.ShapeRecords.StateFillStyle0+v.ShapeRecords.StateMoveTo)
+	do
 	{
-		SHAPERECORD* cur=&(v.ShapeRecords);
-		while(1)
-		{
-			cur->next=new SHAPERECORD(&v,bs);
-			cur=cur->next;
-			if(cur->TypeFlag+cur->StateNewStyles+cur->StateLineStyle+cur->StateFillStyle1+cur->StateFillStyle0+cur->StateMoveTo==0)
-				break;
-		}
+		v.ShapeRecords.push_back(SHAPERECORD(&v,bs));
 	}
+	while(v.ShapeRecords.back().TypeFlag || v.ShapeRecords.back().StateNewStyles || v.ShapeRecords.back().StateLineStyle || 
+			v.ShapeRecords.back().StateFillStyle1 || v.ShapeRecords.back().StateFillStyle0 || 
+			v.ShapeRecords.back().StateMoveTo);
 	return s;
 }
 
@@ -1393,7 +1381,8 @@ GLYPHENTRY::GLYPHENTRY(TEXTRECORD* p,BitStream& bs):parent(p)
 	GlyphAdvance = SB(parent->parent->AdvanceBits,bs);
 }
 
-SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),next(0)
+SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),TypeFlag(false),StateNewStyles(false),StateLineStyle(false),StateFillStyle1(false),
+	StateFillStyle0(false),StateMoveTo(false),MoveDeltaX(0),MoveDeltaY(0),DeltaX(0),DeltaY(0)
 {
 	TypeFlag = UB(1,bs);
 	if(TypeFlag)
@@ -1616,6 +1605,13 @@ void DictionaryDefinable::define(ASObject* g)
 
 variables_map::~variables_map()
 {
+	destroyContents();
+}
+
+void variables_map::destroyContents()
+{
+	if(sys->finalizingDestruction) //Objects are being destroyed by the relative classes
+		return;
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
 	{
@@ -1626,6 +1622,7 @@ variables_map::~variables_map()
 		if(it->second.second.getter)
 			it->second.second.getter->decRef();
 	}
+	Variables.clear();
 }
 
 ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),prototype(NULL),implEnable(true)
@@ -1666,8 +1663,11 @@ void ASObject::setPrototype(Class_base* c)
 
 ASObject::~ASObject()
 {
-	if(prototype)
+	if(prototype && !sys->finalizingDestruction)
+	{
 		prototype->decRef();
+		prototype->abandonObject(this);
+	}
 }
 
 int ASObject::_maxlevel()

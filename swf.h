@@ -58,6 +58,7 @@ class DictionaryTag;
 class ABCVm;
 class InputThread;
 class RenderThread;
+class Tag;
 
 typedef void* (*thread_worker)(void*);
 long timeDiff(timespec& s, timespec& d);
@@ -201,6 +202,8 @@ public:
 
 	//Class map
 	std::map<tiny_string, Class_base*> classes;
+	bool finalizingDestruction;
+	std::vector<Tag*> tagsStorage;
 
 	//DEBUG
 	std::vector<tiny_string> events_name;

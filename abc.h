@@ -639,6 +639,7 @@ private:
 	pthread_t thread;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
+	~DoABCTag();
 	void execute(RootMovieClip* root);
 };
 

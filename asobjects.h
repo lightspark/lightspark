@@ -123,8 +123,11 @@ public:
 	bool isSubClass(const Class_base* cls) const;
 	tiny_string getQualifiedClassName() const;
 	tiny_string toString(bool debugMsg);
+	
+	//DEPRECATED: naive garbage collector
 	void abandonObject(ASObject* ob);
 	void acquireObject(ASObject* ob);
+	void cleanUp();
 };
 
 class Class_object: public Class_base

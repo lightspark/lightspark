@@ -727,6 +727,12 @@ DisplayObject::DisplayObject():loaderInfo(NULL)
 {
 }
 
+DisplayObject::~DisplayObject()
+{
+	if(loaderInfo && !sys->finalizingDestruction)
+		loaderInfo->decRef();
+}
+
 void DisplayObject::sinit(Class_base* c)
 {
 	c->setConstructor(new Function(_constructor));

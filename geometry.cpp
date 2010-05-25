@@ -193,6 +193,8 @@ void GeomShape::TessellateGLU()
 	//Clean up temporary vertices
 	for(unsigned int i=0;i<tmpVertices.size();i++)
 		delete tmpVertices[i];
+
+	gluDeleteTess(tess);
 }
 
 void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)

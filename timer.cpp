@@ -76,6 +76,9 @@ void TimerThread::stop()
 TimerThread::~TimerThread()
 {
 	stop();
+	list<TimingEvent*>::iterator it=pendingEvents.begin();
+	for(;it!=pendingEvents.end();it++)
+		delete *it;
 	sem_destroy(&mutex);
 	sem_destroy(&newEvent);
 }

@@ -40,7 +40,7 @@ namespace lightspark
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,END_TAG};
 
 void ignore(std::istream& i, int count);
-void FromShaperecordListToShapeVector(SHAPERECORD* cur, std::vector<GeomShape>& shapes);
+void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomShape>& shapes);
 
 class Tag
 {

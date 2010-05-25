@@ -303,7 +303,7 @@ ASObject* DefineEditTextTag::instance() const
 {
 	DefineEditTextTag* ret=new DefineEditTextTag(*this);
 	//TODO: check
-	assert(bindedTo==NULL);
+	assert_and_throw(bindedTo==NULL);
 	ret->setPrototype(Class<TextField>::getClass());
 	return ret;
 }
@@ -323,6 +323,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	do
 	{
 		tag=factory.readTag();
+		sys->tagsStorage.push_back(tag);
 		switch(tag->getType())
 		{
 			case DICT_TAG:
@@ -569,11 +570,10 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 		in >> t;
 		CodeTableOffset=t;
 	}
+	GlyphShapeTable.resize(NumGlyphs);
 	for(int i=0;i<NumGlyphs;i++)
 	{
-		SHAPE t;
-		in >> t;
-		GlyphShapeTable.push_back(t);
+		in >> GlyphShapeTable[i];
 	}
 	for(int i=0;i<NumGlyphs;i++)
 	{
@@ -855,7 +855,7 @@ std::ostream& operator<<(std::ostream& s, const Vector2& p)
 ASObject* DefineMorphShapeTag::instance() const
 {
 	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
-	assert(bindedTo==NULL);
+	assert_and_throw(bindedTo==NULL);
 	ret->setPrototype(Class<MorphShape>::getClass());
 	return ret;
 }
@@ -898,9 +898,7 @@ void DefineShapeTag::Render()
 
 	if(cached.size()==0)
 	{
-		SHAPERECORD* cur=&(Shapes.ShapeRecords);
-
-		FromShaperecordListToShapeVector(cur,cached);
+		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
@@ -953,9 +951,7 @@ void DefineShape2Tag::Render()
 
 	if(cached.size()==0)
 	{
-		SHAPERECORD* cur=&(Shapes.ShapeRecords);
-
-		FromShaperecordListToShapeVector(cur,cached);
+		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
@@ -973,7 +969,7 @@ void DefineShape2Tag::Render()
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 	{
-		assert(it->color <= Shapes.FillStyles.FillStyleCount);
+		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
 		it->Render();
 	}
 
@@ -1011,9 +1007,7 @@ void DefineShape4Tag::Render()
 
 	if(cached.size()==0)
 	{
-		SHAPERECORD* cur=&(Shapes.ShapeRecords);
-
-		FromShaperecordListToShapeVector(cur,cached);
+		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
@@ -1064,9 +1058,7 @@ void DefineShape3Tag::Render()
 	}*/
 	if(cached.size()==0)
 	{
-		SHAPERECORD* cur=&(Shapes.ShapeRecords);
-
-		FromShaperecordListToShapeVector(cur,cached);
+		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
 
 		for(unsigned int i=0;i<cached.size();i++)
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
@@ -1085,7 +1077,7 @@ void DefineShape3Tag::Render()
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 	{
-		assert(it->color <= Shapes.FillStyles.FillStyleCount);
+		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
 		it->Render();
 	}
 
@@ -1122,7 +1114,7 @@ Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes */
 
-void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomShape>& shapes)
+void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& shapeRecords, vector<GeomShape>& shapes)
 {
 	int startX=0;
 	int startY=0;
@@ -1131,8 +1123,9 @@ void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomS
 
 	ShapesBuilder shapesBuilder;
 
-	while(cur)
+	for(unsigned int i=0;i<shapeRecords.size();i++)
 	{
+		const SHAPERECORD* cur=&shapeRecords[i];
 		if(cur->TypeFlag)
 		{
 			if(cur->StraightFlag)
@@ -1190,7 +1183,6 @@ void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomS
 				color0=cur->FillStyle0;
 			}
 		}
-		cur=cur->next;
 	}
 
 	shapesBuilder.outputShapes(shapes);
@@ -1199,9 +1191,7 @@ void lightspark::FromShaperecordListToShapeVector(SHAPERECORD* cur, vector<GeomS
 void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
-	SHAPERECORD* cur=&(shape.ShapeRecords);
-
-	FromShaperecordListToShapeVector(cur,s);
+	FromShaperecordListToShapeVector(shape.ShapeRecords,cached);
 
 	for(unsigned int i=0;i<s.size();i++)
 		s[i].BuildFromEdges(NULL);
@@ -1241,9 +1231,7 @@ void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
-	SHAPERECORD* cur=&(shape.ShapeRecords);
-
-	FromShaperecordListToShapeVector(cur,s);
+	FromShaperecordListToShapeVector(shape.ShapeRecords,cached);
 
 	for(unsigned int i=0;i<s.size();i++)
 		s[i].BuildFromEdges(NULL);
@@ -1283,9 +1271,7 @@ void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
-	SHAPERECORD* cur=&(shape.ShapeRecords);
-
-	FromShaperecordListToShapeVector(cur,s);
+	FromShaperecordListToShapeVector(shape.ShapeRecords,cached);
 
 	for(unsigned int i=0;i<s.size();i++)
 		s[i].BuildFromEdges(NULL);
@@ -1354,7 +1340,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 			localRoot=parent->root;
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
 		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
-		assert(toAdd);
+		assert_and_throw(toAdd);
 
 		//Object should be constructed even if not binded
 		if(toAdd->getPrototype() && sys->currentVm)
@@ -1396,7 +1382,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		LOG(LOG_NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
 		if(!PlaceFlagMove)
 		{
-			assert(toAdd);
+			assert_and_throw(toAdd);
 			parent->setVariableByQName((const char*)Name,"",toAdd);
 		}
 		else
@@ -1433,6 +1419,9 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		else
 			LOG(LOG_ERROR,"no char to move at depth " << Depth << " name " << Name);
 	}
+
+	if(toAdd)
+		toAdd->decRef();
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)

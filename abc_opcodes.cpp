@@ -2155,6 +2155,7 @@ void ABCVm::newClass(call_context* th, int n)
 	assert(ret2==NULL);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
+	cinit->decRef();
 }
 
 void ABCVm::swap()

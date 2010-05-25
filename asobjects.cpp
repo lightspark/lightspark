@@ -1592,6 +1592,16 @@ Class_base::~Class_base()
 
 	if(super)
 		super->decRef();
+	
+	//Destroy all the object reference by us
+	if(!referencedObjects.empty())
+	{
+		cout << "Class " << class_name << " references " << referencedObjects.size() << endl;
+		set<ASObject*>::iterator it=referencedObjects.begin();
+		for(;it!=referencedObjects.end();it++)
+			delete *it;
+	}
+	
 }
 
 void Class_base::addImplementedInterface(const multiname& i)
@@ -1683,7 +1693,29 @@ void Class_base::acquireObject(ASObject* ob)
 void Class_base::abandonObject(ASObject* ob)
 {
 	set<ASObject>::size_type ret=referencedObjects.erase(ob);
-	assert(ret==1);
+	if(ret!=1)
+	{
+		cout << ret << endl;
+		cout << class_name << endl;
+		cout << "Merda merda" << endl;
+		::abort();
+	}
+}
+
+void Class_base::cleanUp()
+{
+	Variables.destroyContents();
+	if(constructor)
+	{
+		constructor->decRef();
+		constructor=NULL;
+	}
+
+	if(super)
+	{
+		super->decRef();
+		super=NULL;
+	}
 }
 
 ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)

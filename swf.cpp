@@ -688,6 +688,14 @@ void* InputThread::sdl_worker(InputThread* th)
 					sys->renderThread->selectedDebug=th->listeners[index];
 				break;
 			}
+			case SDL_QUIT:
+			{
+				th->m_sys->setShutdownFlag();
+				if(th->m_sys->currentVm)
+					LOG(LOG_CALLS,"We still miss " << sys->currentVm->getEventQueueSize() << " events");
+				pthread_exit(0);
+				break;
+			}
 		}
 	}
 	return NULL;

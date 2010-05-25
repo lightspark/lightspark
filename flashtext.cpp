@@ -28,9 +28,9 @@ REGISTER_CLASS_NAME(TextField);
 
 void lightspark::Font::sinit(Class_base* c)
 {
-//	c->constructor=new Function(_constructor);
+//	c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
-	c->setVariableByQName("enumerateFonts","",new Function(enumerateFonts));
+	c->setVariableByQName("enumerateFonts","",Class<IFunction>::getFunction(enumerateFonts));
 }
 
 ASFUNCTIONBODY(lightspark::Font,enumerateFonts)
@@ -47,10 +47,10 @@ void TextField::sinit(Class_base* c)
 
 void TextField::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("width","",new Function(TextField::_getWidth));
-	o->setSetterByQName("width","",new Function(TextField::_setWidth));
-	o->setGetterByQName("height","",new Function(TextField::_getHeight));
-	o->setSetterByQName("height","",new Function(TextField::_setHeight));
+	o->setGetterByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth));
+	o->setSetterByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth));
+	o->setGetterByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight));
+	o->setSetterByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight));
 }
 
 bool TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

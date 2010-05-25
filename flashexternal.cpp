@@ -27,8 +27,8 @@ REGISTER_CLASS_NAME(ExternalInterface);
 void ExternalInterface::sinit(Class_base* c)
 {
 /*	assert(c->constructor==NULL);
-	c->constructor=new Function(_constructor);*/
-	c->setGetterByQName("available","",new Function(_getAvailable));
+	c->constructor=Class<IFunction>::getFunction(_constructor);*/
+	c->setGetterByQName("available","",Class<IFunction>::getFunction(_getAvailable));
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)

@@ -53,11 +53,11 @@ void ByteArray::sinit(Class_base* c)
 
 void ByteArray::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("length","",new Function(_getLength));
-	o->setGetterByQName("bytesAvailable","",new Function(_getBytesAvailable));
-	o->setGetterByQName("position","",new Function(_getPosition));
-	o->setSetterByQName("position","",new Function(_setPosition));
-	o->setVariableByQName("readBytes","",new Function(readBytes));
+	o->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
+	o->setGetterByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable));
+	o->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition));
+	o->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition));
+	o->setVariableByQName("readBytes","",Class<IFunction>::getFunction(readBytes));
 }
 
 uint8_t* ByteArray::getBuffer(unsigned int size)
@@ -249,15 +249,15 @@ void Timer::threadAbort()
 
 void Timer::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 
 ASFUNCTIONBODY(Timer,_constructor)
 {
 	EventDispatcher::_constructor(obj,NULL,0);
 	Timer* th=static_cast<Timer*>(obj);
-	obj->setVariableByQName("start","",new Function(start));
-	obj->setVariableByQName("reset","",new Function(reset));
+	obj->setVariableByQName("start","",Class<IFunction>::getFunction(start));
+	obj->setVariableByQName("reset","",Class<IFunction>::getFunction(reset));
 
 	th->delay=args[0]->toInt();
 	if(argslen>=2)
@@ -365,7 +365,7 @@ Dictionary::~Dictionary()
 
 void Dictionary::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 
 void Dictionary::buildTraits(ASObject* o)
@@ -499,7 +499,7 @@ bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 
 void Proxy::sinit(Class_base* c)
 {
-	//c->constructor=new Function(_constructor);
+	//c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
 }
 

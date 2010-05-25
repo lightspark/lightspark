@@ -29,8 +29,8 @@ REGISTER_CLASS_NAME(Security);
 
 void Capabilities::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
-	c->setGetterByQName("language","",new Function(_getLanguage));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setGetterByQName("language","",Class<IFunction>::getFunction(_getLanguage));
 	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"));
 }
 
@@ -47,14 +47,14 @@ ASFUNCTIONBODY(Capabilities,_getLanguage)
 
 void ApplicationDomain::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
-	c->setGetterByQName("currentDomain","",new Function(_getCurrentDomain));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setGetterByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain));
 }
 
 void ApplicationDomain::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("hasDefinition","",new Function(hasDefinition));
-	o->setVariableByQName("getDefinition","",new Function(getDefinition));
+	o->setVariableByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition));
+	o->setVariableByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition));
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_constructor)
@@ -129,5 +129,5 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 void Security::sinit(Class_base* c)
 {
 	c->setConstructor(NULL);
-	c->setVariableByQName("allowDomain","",new Function(undefinedFunction));
+	c->setVariableByQName("allowDomain","",Class<IFunction>::getFunction(undefinedFunction));
 }

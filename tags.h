@@ -117,7 +117,9 @@ public:
 
 	ASObject* instance() const
 	{
-		return new DefineShapeTag(*this);
+		DefineShapeTag* ret=new DefineShapeTag(*this);
+		ret->setPrototype(Class<Shape>::getClass());
+		return ret;
 	}
 };
 
@@ -143,7 +145,9 @@ public:
 
 	ASObject* instance() const
 	{
-		return new DefineShape2Tag(*this);
+		DefineShape2Tag* ret=new DefineShape2Tag(*this);
+		ret->setPrototype(Class<Shape>::getClass());
+		return ret;
 	}
 };
 
@@ -168,7 +172,9 @@ public:
 
 	ASObject* instance() const
 	{
-		return new DefineShape3Tag(*this);
+		DefineShape3Tag* ret=new DefineShape3Tag(*this);
+		ret->setPrototype(Class<Shape>::getClass());
+		return ret;
 	}
 };
 
@@ -195,7 +201,9 @@ public:
 
 	ASObject* instance() const
 	{
-		return new DefineShape4Tag(*this);
+		DefineShape4Tag* ret=new DefineShape4Tag(*this);
+		ret->setPrototype(Class<Shape>::getClass());
+		return ret;
 	}
 };
 

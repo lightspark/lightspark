@@ -207,7 +207,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 			continue;
 		if(strcasecmp(argn[i],"flashvars")==0)
 		{
-			lightspark::ASObject* params=new lightspark::ASObject;
+			lightspark::ASObject* params=lightspark::Class<lightspark::ASObject>::getInstanceS();
 			//Add arguments to SystemState
 			std::string vars(argv[i]);
 			uint32_t cur=0;

@@ -34,11 +34,14 @@ Frame::~Frame()
 {
 	list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
 
-	//Decrease the refcount of childs
-	for(;i!=displayList.end();i++)
+	if(sys && !sys->finalizingDestruction)
 	{
-		assert(i->second);
-		i->second->decRef();
+		//Decrease the refcount of childs
+		for(;i!=displayList.end();i++)
+		{
+			assert(i->second);
+			i->second->decRef();
+		}
 	}
 }
 

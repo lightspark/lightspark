@@ -31,29 +31,29 @@ REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle");
 
 void Rectangle::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 
 void Rectangle::buildTraits(ASObject* o)
 {
-	IFunction* left=new Function(_getLeft);
+	IFunction* left=Class<IFunction>::getFunction(_getLeft);
 	o->setGetterByQName("left","",left);
 	left->incRef();
 	o->setGetterByQName("x","",left);
-	o->setGetterByQName("right","",new Function(_getRight));
-	o->setGetterByQName("width","",new Function(_getWidth));
-	o->setSetterByQName("width","",new Function(_setWidth));
+	o->setGetterByQName("right","",Class<IFunction>::getFunction(_getRight));
+	o->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth));
+	o->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth));
 
-	IFunction* top=new Function(_getTop);
+	IFunction* top=Class<IFunction>::getFunction(_getTop);
 	o->setGetterByQName("top","",top);
 	top->incRef();
 	o->setGetterByQName("y","",top);
 
-	o->setGetterByQName("bottom","",new Function(_getBottom));
-	o->setGetterByQName("height","",new Function(_getHeight));
-	o->setSetterByQName("height","",new Function(_setHeight));
+	o->setGetterByQName("bottom","",Class<IFunction>::getFunction(_getBottom));
+	o->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight));
+	o->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight));
 
-	o->setVariableByQName("clone","",new Function(clone));
+	o->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
 }
 
 const RECT Rectangle::getRect() const
@@ -142,7 +142,7 @@ ASFUNCTIONBODY(Rectangle,clone)
 
 void ColorTransform::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 
 ASFUNCTIONBODY(ColorTransform,_constructor)
@@ -190,13 +190,13 @@ ASFUNCTIONBODY(ColorTransform,getColor)
 
 void Point::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 
 void Point::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("x","",new Function(_getX));
-	o->setGetterByQName("y","",new Function(_getY));
+	o->setGetterByQName("x","",Class<IFunction>::getFunction(_getX));
+	o->setGetterByQName("y","",Class<IFunction>::getFunction(_getY));
 }
 
 ASFUNCTIONBODY(Point,_constructor)
@@ -224,12 +224,12 @@ ASFUNCTIONBODY(Point,_getY)
 
 void Transform::sinit(Class_base* c)
 {
-	//c->constructor=new Function(_constructor);
+	//c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
 }
 
 void Transform::buildTraits(ASObject* o)
 {
-	o->setSetterByQName("colorTransform","",new Function(undefinedFunction));
+	o->setSetterByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction));
 }
 

@@ -33,7 +33,7 @@ REGISTER_CLASS_NAME(Sound);
 
 void SoundTransform::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 
 ASFUNCTIONBODY(SoundTransform,_constructor)
@@ -44,20 +44,20 @@ ASFUNCTIONBODY(SoundTransform,_constructor)
 
 void Video::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }
 
 void Video::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("videoWidth","",new Function(_getVideoWidth));
-	o->setGetterByQName("videoHeight","",new Function(_getVideoHeight));
-	o->setGetterByQName("width","",new Function(Video::_getWidth));
-	o->setSetterByQName("width","",new Function(Video::_setWidth));
-	o->setGetterByQName("height","",new Function(Video::_getHeight));
-	o->setSetterByQName("height","",new Function(Video::_setHeight));
-	o->setVariableByQName("attachNetStream","",new Function(attachNetStream));
+	o->setGetterByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth));
+	o->setGetterByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight));
+	o->setGetterByQName("width","",Class<IFunction>::getFunction(Video::_getWidth));
+	o->setSetterByQName("width","",Class<IFunction>::getFunction(Video::_setWidth));
+	o->setGetterByQName("height","",Class<IFunction>::getFunction(Video::_getHeight));
+	o->setSetterByQName("height","",Class<IFunction>::getFunction(Video::_setHeight));
+	o->setVariableByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream));
 }
 
 void Video::Render()
@@ -214,7 +214,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 
 void Sound::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
 }

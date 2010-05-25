@@ -160,7 +160,7 @@ void SystemState::setUrl(const tiny_string& url)
 
 void SystemState::parseParameters(istream& i)
 {
-	ASObject* ret=new ASObject;
+	ASObject* ret=Class<ASObject>::getInstanceS();
 	while(!i.eof())
 	{
 		string name,value;

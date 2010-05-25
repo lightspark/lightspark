@@ -42,6 +42,9 @@ namespace lightspark
 #define ASFUNCTIONBODY(c,name) \
 	ASObject* c::name(ASObject* obj, ASObject* const* args, const unsigned int argslen)
 
+#define CLASSBUILDABLE(className) \
+	friend class Class<className>; 
+
 enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEFINED=4, T_NULL=5, T_STRING=6, 
 	T_DEFINABLE=7, T_BOOLEAN=8, T_ARRAY=9, T_CLASS=10, T_QNAME=11, T_NAMESPACE=12, T_UINTEGER=13, T_PROXY=14};
 
@@ -51,8 +54,9 @@ typedef double number_t;
 
 class ASObject;
 class ABCContext;
-class Class_base;
 class IFunction;
+class Class_base;
+template<class T> class Class;
 struct arrayElem;
 
 class tiny_string
@@ -446,12 +450,15 @@ class ASObject
 friend class Manager;
 friend class ABCVm;
 friend class ABCContext;
-friend class SystemState;
+friend class Class_base; //Needed for forced cleanup
+CLASSBUILDABLE(ASObject);
 protected:
 	//ASObject* asprototype; //HUMM.. ok the prototype, actually class, should be renamed
 	//maps variable name to namespace and var
 	variables_map Variables;
+	ASObject(Manager* m=NULL);
 	ASObject(const ASObject& o);
+	virtual ~ASObject();
 	SWFOBJECT_TYPE type;
 private:
 	int32_t ref_count;
@@ -469,12 +476,10 @@ public:
 	bool implEnable;
 	void setPrototype(Class_base* c);
 	Class_base* getPrototype() const { return prototype; }
-	ASObject(Manager* m=NULL);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getPrototype);
 	ASFUNCTION(_setPrototype);
 	ASFUNCTION(_toString);
-	virtual ~ASObject();
 	void check() const;
 	void incRef()
 	{

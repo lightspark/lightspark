@@ -35,10 +35,6 @@
 #include <set>
 #include "swf.h"
 
-/*#ifdef exception_info
-#undef exception_info
-#endif*/
-
 namespace lightspark
 {
 
@@ -142,6 +138,7 @@ struct multiname_info
 	std::vector<u30> param_types;
 	multiname* cached;
 	multiname_info():cached(NULL){}
+	~multiname_info(){delete cached;}
 };
 
 struct cpool_info

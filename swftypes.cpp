@@ -37,6 +37,8 @@
 using namespace std;
 using namespace lightspark;
 
+REGISTER_CLASS_NAME(ASObject);
+
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
@@ -616,7 +618,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 		//Check if we should do lazy definition
 		if(name.name_s=="toString")
 		{
-			ASObject* ret=new Function(ASObject::_toString);
+			ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
 			setVariableByQName("toString","",ret);
 			//Added at level 0, as Object is always the base
 			return objAndLevel(ret,0);
@@ -630,7 +632,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 		{
 			//Create on the fly a Function
 			//HACK: both call and apply should be included in the Function object
-			return objAndLevel(new Function(IFunction::apply),0);
+			return objAndLevel(Class<IFunction>::getFunction(IFunction::apply),0);
 		}
 
 		//It has not been found yet, ask the prototype

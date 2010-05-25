@@ -32,7 +32,7 @@ REGISTER_CLASS_NAME(XMLDocument);
 
 void XMLDocument::sinit(Class_base* c)
 {
-	c->setConstructor(new Function(_constructor));
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }

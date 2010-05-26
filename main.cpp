@@ -176,8 +176,8 @@ int main(int argc, char* argv[])
 	it.wait();
 	rt.wait();
 	pt->wait();
-	delete pt;
 	delete sys;
+	delete pt;
 
 	SDL_Quit();
 	return 0;

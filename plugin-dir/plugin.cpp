@@ -198,9 +198,10 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
-	mInstance(aInstance),mInitialized(FALSE),mWindow(0),swf_stream(&swf_buf),
-	m_pt(&m_sys,swf_stream),m_it(NULL),m_rt(NULL)
+	mInstance(aInstance),mInitialized(FALSE),mWindow(0),swf_stream(&swf_buf),m_it(NULL),m_rt(NULL)
 {
+	m_sys=new lightspark::SystemState;
+	m_pt=new lightspark::ParseThread(m_sys,swf_stream);
 	//Find flashvars argument
 	for(int i=0;i<argc;i++)
 	{
@@ -262,15 +263,15 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 				}
 				cur=n2+1;
 			}
-			sys->setParameters(params);
+			m_sys->setParameters(params);
 		}
 		else if(strcasecmp(argn[i],"src")==0)
 		{
-			sys->setOrigin(argv[i]);
+			m_sys->setOrigin(argv[i]);
 		}
 	}
-	m_sys.downloadManager=new NPDownloadManager(mInstance);
-	m_sys.addJob(&m_pt);
+	m_sys->downloadManager=new NPDownloadManager(mInstance);
+	m_sys->addJob(m_pt);
 }
 
 int nsPluginInstance::hexToInt(char c)
@@ -288,16 +289,18 @@ int nsPluginInstance::hexToInt(char c)
 nsPluginInstance::~nsPluginInstance()
 {
 	//Shutdown the system
-	sys=&m_sys;
+	sys=m_sys;
 	//cerr << "instance dying" << endl;
 	swf_buf.destroy();
-	m_pt.stop();
-	m_sys.setShutdownFlag();
-	m_sys.wait();
+	m_pt->stop();
+	m_sys->setShutdownFlag();
+	m_sys->wait();
 	if(m_rt)
 		m_rt->wait();
 	if(m_it)
 		m_it->wait();
+	delete m_sys;
+	delete m_pt;
 	delete m_rt;
 	delete m_it;
 }
@@ -393,18 +396,18 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		if(p->width==0 || p->height==0)
 			abort();
 
-		m_rt=new lightspark::RenderThread(&m_sys,lightspark::NPAPI,p);
+		m_rt=new lightspark::RenderThread(m_sys,lightspark::NPAPI,p);
 
 		if(m_it!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		m_it=new lightspark::InputThread(&m_sys,lightspark::NPAPI,p2);
+		m_it=new lightspark::InputThread(m_sys,lightspark::NPAPI,p2);
 
 		sys=NULL;
-		m_sys.inputThread=m_it;
-		m_sys.renderThread=m_rt;
+		m_sys->inputThread=m_it;
+		m_sys->renderThread=m_rt;
 	}
 	//draw();
 	return TRUE;
@@ -413,7 +416,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
 	//We have to cast the downloadanager to a NPDownloadManager
-	NPDownloadManager* manager=static_cast<NPDownloadManager*>(m_sys.downloadManager);
+	NPDownloadManager* manager=static_cast<NPDownloadManager*>(m_sys->downloadManager);
 	lightspark::Downloader* dl=manager->getDownloaderForUrl(stream->url);
 	LOG(LOG_NO_INFO,"Newstream for " << stream->url);
 	//cerr << stream->headers << endl;

@@ -99,8 +99,8 @@ private:
 	std::istream swf_stream;
 	sync_stream swf_buf;
 
-	lightspark::SystemState m_sys;
-	lightspark::ParseThread m_pt;
+	lightspark::SystemState* m_sys;
+	lightspark::ParseThread* m_pt;
 	lightspark::InputThread* m_it;
 	lightspark::RenderThread* m_rt;
 };

@@ -1265,10 +1265,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			profile->accountTime(chronometer.checkpoint());
 		}
 	}
-	catch(const char* e)
+	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception caught " << e);
-		::abort();
+		LOG(LOG_ERROR,"Exception in RenderThread " << e.what());
+		sys->setError(e.cause);
 	}
 	glDisable(GL_TEXTURE_2D);
 	th->commonGLDeinit(t2);
@@ -1820,10 +1820,10 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		}
 		glDisable(GL_TEXTURE_2D);
 	}
-	catch(const char* e)
+	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR, "Exception caught " << e);
-		::abort();
+		LOG(LOG_ERROR,"Exception in RenderThread " << e.what());
+		sys->setError(e.cause);
 	}
 	th->commonGLDeinit(t2);
 	return NULL;

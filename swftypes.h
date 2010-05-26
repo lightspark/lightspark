@@ -31,6 +31,7 @@
 #include "logger.h"
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "exceptions.h"
 #include <arpa/inet.h>
 
@@ -485,7 +486,7 @@ public:
 	{
 		//std::cout << "incref " << this << std::endl;
 		atomic_increment(&ref_count);
-		assert_and_throw(ref_count>0);
+		assert(ref_count>0);
 	}
 	void decRef()
 	{

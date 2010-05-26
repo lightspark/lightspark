@@ -1384,6 +1384,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		if(!PlaceFlagMove)
 		{
 			assert_and_throw(toAdd);
+			toAdd->incRef();
 			parent->setVariableByQName((const char*)Name,"",toAdd);
 		}
 		else

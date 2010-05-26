@@ -190,6 +190,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 {
   if(aPlugin)
     delete (nsPluginInstance *)aPlugin;
+  sys=NULL;
 }
 
 ////////////////////////////////////////
@@ -287,6 +288,7 @@ int nsPluginInstance::hexToInt(char c)
 nsPluginInstance::~nsPluginInstance()
 {
 	//Shutdown the system
+	sys=&m_sys;
 	//cerr << "instance dying" << endl;
 	swf_buf.destroy();
 	m_pt.stop();

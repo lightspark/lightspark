@@ -358,6 +358,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 			setter=setter->getOverride();
 
 		//One argument can be passed without creating an array
+		incRef();
 		ASObject* ret=setter->call(this,&o,1,level);
 		assert_and_throw(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
@@ -392,6 +393,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 		LOG(LOG_CALLS,"Calling the setter");
 
 		IFunction* setter=obj->setter->getOverride();
+		incRef();
 		//One argument can be passed without creating an array
 		ASObject* ret=setter->call(this,&o,1,level);
 		assert_and_throw(ret==NULL);
@@ -593,6 +595,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 			IFunction* getter=obj->getter;
 			if(enableOverride)
 				getter=getter->getOverride();
+			incRef();
 			ASObject* ret=getter->call(this,NULL,0,level);
 			LOG(LOG_CALLS,"End of getter");
 			assert_and_throw(ret);
@@ -654,6 +657,7 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 			//Call the getter
 			LOG(LOG_CALLS,"Calling the getter");
 			IFunction* getter=obj->getter->getOverride();
+			incRef();
 			ASObject* ret=getter->call(this,NULL,0,level);
 			LOG(LOG_CALLS,"End of getter");
 			//The variable is already owned by the caller
@@ -1337,6 +1341,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 	else
 	{
 		LOG(LOG_ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
+		throw ParseException("Not supported fill style");
 	}
 	return s;
 }
@@ -1560,7 +1565,7 @@ std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
 			break;
 		default:
 			LOG(LOG_ERROR,"Unsupported Filter Id " << (int)v.FilterID);
-			::abort();
+			throw ParseException("Unsupported Filter Id");
 	}
 	return stream;
 }
@@ -1760,6 +1765,7 @@ ASObject* ASObject::getValueAt(int index)
 		//Call the getter
 		LOG(LOG_CALLS,"Calling the getter");
 		IFunction* getter=obj->getter->getOverride();
+		incRef();
 		ret=getter->call(this,NULL,0,level);
 		ret->fake_decRef();
 		LOG(LOG_CALLS,"End of getter");

@@ -1243,13 +1243,15 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args,int num_args, int 
 	if(bound && closure_this)
 	{
 		LOG(LOG_CALLS,"Calling with closure " << this);
-		ret=val(closure_this,args,num_args);
+		obj->decRef();
+		obj=closure_this;
+		obj->incRef();
 	}
-	else
-		ret=val(obj,args,num_args);
+	ret=val(obj,args,num_args);
 
 	for(int i=0;i<num_args;i++)
 		args[i]->decRef();
+	obj->decRef();
 	return ret;
 }
 
@@ -1682,7 +1684,7 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	if(constructor)
 	{
 		LOG(LOG_CALLS,"Calling Instance init " << class_name);
-
+		target->incRef();
 		ASObject* ret=constructor->call(target,args,argslen,max_level);
 		assert(ret==NULL);
 	}

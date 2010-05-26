@@ -422,7 +422,6 @@ private:
 	UI32 Reserved;
 public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s);
-	~DefineBinaryDataTag(){delete[] bytes;}
 	virtual int getId(){return Tag;} 
 
 	ASObject* instance() const

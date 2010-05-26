@@ -199,10 +199,11 @@ SystemState::~SystemState()
 	for(;it!=classes.end();++it)
 		it->second->cleanUp();
 
+	finalizingDestruction=true;
+	
 	//Also destroy all frames
 	frames.clear();
-	
-	finalizingDestruction=true;
+
 	//Destroy all registered classes
 	it=classes.begin();
 	for(;it!=classes.end();++it)

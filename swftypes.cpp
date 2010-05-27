@@ -1239,7 +1239,8 @@ void FILLSTYLE::setFragmentProgram() const
 		float r,g,b,a;
 	};
 
-	glBindTexture(GL_TEXTURE_2D,rt->data_tex);
+	//TODO: CHECK do we need to do this when the tex is not being used?
+	rt->dataTex.bind();
 
 	if(FillStyleType==0x00)
 	{
@@ -1302,7 +1303,8 @@ void FILLSTYLE::setFragmentProgram() const
 
 void FILLSTYLE::fixedColor(float r, float g, float b)
 {
-	glBindTexture(GL_TEXTURE_2D,rt->data_tex);
+	//TODO: CHECK: do we need to this here?
+	rt->dataTex.bind();
 
 	//Let's abuse of glColor and glTexCoord to transport
 	//custom information

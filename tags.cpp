@@ -1041,21 +1041,6 @@ void DefineShape4Tag::Render()
 void DefineShape3Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape3 Render "<< ShapeId);
-/*	if(texture==0)
-	{
-		glPushAttrib(GL_TEXTURE_BIT);
-		glGenTextures(1,&texture);
-		glBindTexture(GL_TEXTURE_2D,texture);
-
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, (ShapeBounds.Xmax-ShapeBounds.Xmin)/10, 
-				(ShapeBounds.Ymax-ShapeBounds.Ymin)/10, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-		glPopAttrib();
-	}*/
 	if(cached.size()==0)
 	{
 		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);

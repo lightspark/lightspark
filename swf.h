@@ -32,6 +32,7 @@
 #include "vm.h"
 #include "flashdisplay.h"
 #include "timer.h"
+#include "graphics.h"
 
 #include <GL/glew.h>
 #ifndef WIN32
@@ -244,7 +245,7 @@ public:
 	void wait();
 };
 
-enum ENGINE { SDL=0, NPAPI, GLX, GTKPLUG};
+enum ENGINE { SDL=0, NPAPI, GTKPLUG};
 #ifdef COMPILE_PLUGIN
 struct NPAPI_params
 {
@@ -298,14 +299,13 @@ private:
 	pthread_t t;
 	bool terminated;
 	static void* sdl_worker(RenderThread*);
-	static void* glx_worker(RenderThread*);
 	#ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
 	static void* npapi_worker(RenderThread*);
 	static void* gtkplug_worker(RenderThread*);
 	#endif
-	void commonGLInit(int width, int height, unsigned int t2[3]);
-	void commonGLDeinit(unsigned int t2[3]);
+	void commonGLInit(int width, int height);
+	void commonGLDeinit();
 	sem_t render;
 	sem_t inputDone;
 	bool inputNeeded;
@@ -355,8 +355,10 @@ public:
 	int gpu_program;
 	int blitter_program;
 	GLuint fboId;
-	GLuint spare_tex;
-	GLuint data_tex;
+	TextureBuffer dataTex;
+	TextureBuffer mainTex;
+	TextureBuffer tempTex;
+	TextureBuffer inputTex;
 	int width;
 	int height;
 	

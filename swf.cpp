@@ -782,8 +782,8 @@ void InputThread::disableDrag()
 }
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),
-	interactive_buffer(NULL),fbAcquired(false),frameCount(0),secsCount(0),selectedDebug(NULL),currentId(0),
-	materialOverride(false)
+	interactive_buffer(NULL),fbAcquired(false),frameCount(0),secsCount(0),dataTex(false),mainTex(false),tempTex(false),
+	inputTex(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -872,7 +872,7 @@ void RenderThread::glBlitFramebuffer(number_t xmin, number_t xmax, number_t ymin
 	glEnable(GL_BLEND);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	glBindTexture(GL_TEXTURE_2D,rt->spare_tex);
+	rt->tempTex.bind();
 	glBegin(GL_QUADS);
 		glVertex2f(xmin,ymin);
 		glVertex2f(xmax,ymin);
@@ -904,7 +904,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	rt->width=window_width;
 	rt->height=window_height;
 	th->interactive_buffer=new uint32_t[window_width*window_height];
-	unsigned int t2[3];
 	gdk_threads_enter();
 	GtkWidget* container=p->container;
 	gtk_widget_show(container);
@@ -922,7 +921,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);	
 	bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
 	assert(ret);
-	th->commonGLInit(window_width, window_height, t2);
+	th->commonGLInit(window_width, window_height);
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
 	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
@@ -952,7 +951,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 			if(th->inputNeeded)
 			{
-				glBindTexture(GL_TEXTURE_2D,t2[2]);
+				th->inputTex.bind();
 				glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
 				th->inputNeeded=false;
 				sem_post(&th->inputDone);
@@ -996,7 +995,8 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			glDrawBuffer(GL_BACK);
 			glUseProgram(0);
 
-			glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
+			TextureBuffer* curBuf=((th->m_sys->showInteractiveMap)?&th->inputTex:&th->mainTex);
+			curBuf->bind();
 			glBegin(GL_QUADS);
 				glTexCoord2f(0,1);
 				glVertex2i(0,0);
@@ -1056,7 +1056,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	glDisable(GL_TEXTURE_2D);
 	gdk_gl_drawable_gl_end(glDrawable);
 	delete p;
-	th->commonGLDeinit(t2);
+	th->commonGLDeinit();
 	return NULL;
 }
 #endif
@@ -1083,8 +1083,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	rt->width=window_width;
 	rt->height=window_height;
 	th->interactive_buffer=new uint32_t[window_width*window_height];
-	unsigned int t2[3];
-
+	
 	Display* d=XOpenDisplay(NULL);
 
 	int a,b;
@@ -1129,7 +1128,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");
 
-	th->commonGLInit(window_width, window_height, t2);
+	th->commonGLInit(window_width, window_height);
 	
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
@@ -1195,7 +1194,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 				if(th->inputNeeded)
 				{
-					glBindTexture(GL_TEXTURE_2D,t2[2]);
+					th->inputTex.bind();
 					glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
 					th->inputNeeded=false;
 					sem_post(&th->inputDone);
@@ -1223,7 +1222,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 				glClearColor(0,0,0,1);
 				glClear(GL_COLOR_BUFFER_BIT);
 
-				glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
+				TextureBuffer* curBuf=((th->m_sys->showInteractiveMap)?&th->inputTex:&th->mainTex);
+				curBuf->bind();
 				glColor4f(0,0,1,0);
 				glBegin(GL_QUADS);
 					glTexCoord2f(0,1);
@@ -1270,7 +1270,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		sys->setError(e.cause);
 	}
 	glDisable(GL_TEXTURE_2D);
-	th->commonGLDeinit(t2);
+	th->commonGLDeinit();
 	glXMakeContextCurrent(d,None,None,NULL);
 	glXDestroyContext(d,th->mContext);
 	XCloseDisplay(d);
@@ -1345,137 +1345,6 @@ bool RenderThread::loadShaderPrograms()
 	return true;
 }
 
-#if 0
-void* RenderThread::glx_worker(RenderThread* th)
-{
-	sys=th->m_sys;
-	rt=th;
-
-	RECT size=sys->getFrameSize();
-	int width=size.Xmax/10;
-	int height=size.Ymax/10;
-
-	int attrib[20];
-	attrib[0]=GLX_RGBA;
-	attrib[1]=GLX_DOUBLEBUFFER;
-	attrib[2]=GLX_DEPTH_SIZE;
-	attrib[3]=24;
-	attrib[4]=GLX_RED_SIZE;
-	attrib[5]=8;
-	attrib[6]=GLX_GREEN_SIZE;
-	attrib[7]=8;
-	attrib[8]=GLX_BLUE_SIZE;
-	attrib[9]=8;
-	attrib[10]=GLX_ALPHA_SIZE;
-	attrib[11]=8;
-
-	attrib[12]=None;
-
-	XVisualInfo *vi;
-	XSetWindowAttributes swa;
-	Colormap cmap; 
-	th->mDisplay = XOpenDisplay(0);
-	vi = glXChooseVisual(th->mDisplay, DefaultScreen(th->mDisplay), attrib);
-
-	int a;
-	attrib[0]=GLX_VISUAL_ID;
-	attrib[1]=vi->visualid;
-	attrib[2]=GLX_DEPTH_SIZE;
-	attrib[3]=24;
-	attrib[4]=GLX_RED_SIZE;
-	attrib[5]=8;
-	attrib[6]=GLX_GREEN_SIZE;
-	attrib[7]=8;
-	attrib[8]=GLX_BLUE_SIZE;
-	attrib[9]=8;
-	attrib[10]=GLX_ALPHA_SIZE;
-	attrib[11]=8;
-	attrib[12]=GLX_DRAWABLE_TYPE;
-	attrib[13]=GLX_PBUFFER_BIT;
-
-	attrib[14]=None;
-	GLXFBConfig* fb=glXChooseFBConfig(th->mDisplay, 0, attrib, &a);
-
-	//We create a pair of context, window and offscreen
-	th->mContext = glXCreateContext(th->mDisplay, vi, 0, GL_TRUE);
-
-	attrib[0]=GLX_PBUFFER_WIDTH;
-	attrib[1]=width;
-	attrib[2]=GLX_PBUFFER_HEIGHT;
-	attrib[3]=height;
-	attrib[4]=None;
-	th->mPbuffer = glXCreatePbuffer(th->mDisplay, fb[0], attrib);
-
-	XFree(fb);
-
-	cmap = XCreateColormap(th->mDisplay, RootWindow(th->mDisplay, vi->screen), vi->visual, AllocNone);
-	swa.colormap = cmap; 
-	swa.border_pixel = 0; 
-	swa.event_mask = StructureNotifyMask; 
-
-	th->mWindow = XCreateWindow(th->mDisplay, RootWindow(th->mDisplay, vi->screen), 100, 100, width, height, 0, vi->depth, 
-			InputOutput, vi->visual, CWBorderPixel|CWEventMask|CWColormap, &swa);
-	
-	XMapWindow(th->mDisplay, th->mWindow);
-	glXMakeContextCurrent(th->mDisplay, th->mWindow, th->mWindow, th->mContext); 
-
-	glEnable( GL_DEPTH_TEST );
-	glDepthFunc(GL_LEQUAL);
-
-	glViewport(0,0,width,height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0,width,height,0,-100,0);
-	glScalef(0.1,0.1,1);
-
-	glMatrixMode(GL_MODELVIEW);
-
-	unsigned int t;
-	glGenTextures(1,&t);
-
-	glBindTexture(GL_TEXTURE_1D,t);
-
-	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-
-	//Load shaders
-	rt->loadShaderPrograms();
-	int tex=glGetUniformLocation(rt->gpu_program,"g_tex");
-	glUniform1i(tex,0);
-	glUseProgram(rt->gpu_program);
-
-	float* buffer=new float[640*240];
-	try
-	{
-		while(1)
-		{
-			sem_wait(&th->render);
-			glXSwapBuffers(th->mDisplay,th->mWindow);
-			RGB bg=sys->getBackground();
-			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
-			glClearDepth(0xffff);
-			glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-			glLoadIdentity();
-
-			sys->Render();
-
-			if(sys->isShuttingDown())
-			{
-				delete[] buffer;
-				pthread_exit(0);
-			}
-		}
-	}
-	catch(const char* e)
-	{
-		LOG(LOG_ERROR, "Exception caught " << e);
-		delete[] buffer;
-		::abort();
-	}
-}
-#endif
-
 float RenderThread::getIdAt(int x, int y)
 {
 	//TODO: use floating point textures
@@ -1534,15 +1403,13 @@ void RootMovieClip::Render()
 	MovieClip::Render();
 }
 
-void RenderThread::commonGLDeinit(unsigned int t2[3])
+void RenderThread::commonGLDeinit()
 {
-	glDeleteTextures(1,&rt->data_tex);
-	glDeleteTextures(3,t2);
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	glDeleteFramebuffers(1,&rt->fboId);
 }
 
-void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
+void RenderThread::commonGLInit(int width, int height)
 {
 	//Now we can initialize GLEW
 	glewExperimental = GL_TRUE;
@@ -1560,12 +1427,12 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	}
 
 	//Load shaders
-	rt->loadShaderPrograms();
+	loadShaderPrograms();
 
-	int tex=glGetUniformLocation(rt->gpu_program,"g_tex1");
+	int tex=glGetUniformLocation(gpu_program,"g_tex1");
 	glUniform1i(tex,0);
 
-	glUseProgram(rt->gpu_program);
+	glUseProgram(gpu_program);
 
 	glDisable(GL_DEPTH_TEST);
 	glDepthFunc(GL_ALWAYS);
@@ -1579,55 +1446,24 @@ void RenderThread::commonGLInit(int width, int height, unsigned int t2[3])
 	glOrtho(0,width,0,height,-100,0);
 
 	glMatrixMode(GL_MODELVIEW);
-
-	GLuint dt;
-	glGenTextures(1,&dt);
-	rt->data_tex=dt;
-
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D,dt);
 
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
- 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	dataTex.init();
 
- 	glGenTextures(3,t2);
-	glBindTexture(GL_TEXTURE_2D,t2[0]);
+	mainTex.init(width, height, GL_NEAREST);
 
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+	tempTex.init(width, height, GL_NEAREST);
 
-	while(glGetError()!=GL_NO_ERROR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-	glBindTexture(GL_TEXTURE_2D,t2[1]);
-	rt->spare_tex=t2[1];
-
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-	glBindTexture(GL_TEXTURE_2D,t2[2]);
-
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	inputTex.init(width, height, GL_NEAREST);
 	
+	//Default to replace
+	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	// create a framebuffer object
-	glGenFramebuffers(1, &rt->fboId);
-	glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, t2[0], 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, t2[1], 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,GL_TEXTURE_2D, t2[2], 0);
+	glGenFramebuffers(1, &fboId);
+	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, mainTex.getId(), 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, tempTex.getId(), 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,GL_TEXTURE_2D, inputTex.getId(), 0);
 	
 	// check FBO status
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -1653,7 +1489,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	rt->width=width;
 	rt->height=height;
 	th->interactive_buffer=new uint32_t[width*height];
-	unsigned int t2[3];
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
@@ -1663,7 +1498,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
 	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
-	th->commonGLInit(width, height, t2);
+	th->commonGLInit(width, height);
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
@@ -1686,7 +1521,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 			if(th->inputNeeded)
 			{
-				glBindTexture(GL_TEXTURE_2D,t2[2]);
+				th->inputTex.bind();
 				glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
 				th->inputNeeded=false;
 				sem_post(&th->inputDone);
@@ -1767,7 +1602,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glUseProgram(0);
 				glDisable(GL_BLEND);
 
-				glBindTexture(GL_TEXTURE_2D,((sys->showInteractiveMap)?t2[2]:t2[0]));
+				TextureBuffer* curBuf=((th->m_sys->showInteractiveMap)?&th->inputTex:&th->mainTex);
+				curBuf->bind();
 				glBegin(GL_QUADS);
 					glTexCoord2f(0,1);
 					glVertex2i(0,0);
@@ -1824,7 +1660,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		LOG(LOG_ERROR,"Exception in RenderThread " << e.what());
 		sys->setError(e.cause);
 	}
-	th->commonGLDeinit(t2);
+	th->commonGLDeinit();
 	return NULL;
 }
 

@@ -487,7 +487,7 @@ double NetStream::getFrameRate()
 	return frameRate;
 }
 
-bool NetStream::copyFrameToTexture(GLuint tex)
+bool NetStream::copyFrameToTexture(TextureBuffer& tex)
 {
 	sem_wait(&mutex);
 	bool ret=false;

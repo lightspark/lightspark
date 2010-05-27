@@ -24,6 +24,7 @@
 #include "decoder.h"
 #include "fastpaths.h"
 #include "swf.h"
+#include "graphics.h"
 
 using namespace lightspark;
 
@@ -43,13 +44,13 @@ bool Decoder::setSize(uint32_t w, uint32_t h)
 		return false;
 }
 
-bool Decoder::copyFrameToTexture(GLuint tex)
+bool Decoder::copyFrameToTexture(TextureBuffer& tex)
 {
 	if(!resizeGLBuffers)
 		return false;
 
 	//Initialize texture to video size
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, frameWidth, frameHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL); 
+	tex.resize(frameWidth, frameHeight);
 	resizeGLBuffers=false;
 	return true;
 }
@@ -182,7 +183,7 @@ void FFMpegDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, u
 	usedBuffers.signal();
 }
 
-bool FFMpegDecoder::copyFrameToTexture(GLuint tex)
+bool FFMpegDecoder::copyFrameToTexture(TextureBuffer& tex)
 {
 	if(!initialized)
 	{
@@ -203,7 +204,7 @@ bool FFMpegDecoder::copyFrameToTexture(GLuint tex)
 	{
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
 		//Copy content of the pbo to the texture, 0 is the offset in the pbo
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, frameWidth, frameHeight, GL_BGRA, GL_UNSIGNED_BYTE, 0); 
+		tex.setBGRAData(0, frameWidth, frameHeight);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 		ret=true;
 	}

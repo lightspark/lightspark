@@ -64,15 +64,7 @@ void Video::Render()
 {
 	if(!initialized)
 	{
-		glGenTextures(1,&videoTexture);
-
-		//Per texture initialization
-		glBindTexture(GL_TEXTURE_2D, videoTexture);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP);
-		
-		glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+		videoTexture.init(0,0,GL_LINEAR);
 		initialized=true;
 	}
 
@@ -89,9 +81,8 @@ void Video::Render()
 
 		rt->glAcquireFramebuffer(0,width,0,height);
 
-		glBindTexture(GL_TEXTURE_2D, videoTexture);
-
 		bool frameReady=netStream->copyFrameToTexture(videoTexture);
+		videoTexture.bind();
 
 		//Enable texture lookup and YUV to RGB conversion
 		if(frameReady)

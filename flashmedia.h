@@ -24,6 +24,7 @@
 #include "flashdisplay.h"
 #include "flashnet.h"
 #include "timer.h"
+#include "graphics.h"
 
 namespace lightspark
 {
@@ -49,10 +50,10 @@ private:
 	sem_t mutex;
 	uint32_t width, height, videoWidth, videoHeight;
 	bool initialized;
-	GLuint videoTexture;
+	TextureBuffer videoTexture;
 	NetStream* netStream;
 public:
-	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),videoTexture(0),netStream(NULL)
+	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),videoTexture(false),netStream(NULL)
 	{
 		sem_init(&mutex,0,1);
 	}

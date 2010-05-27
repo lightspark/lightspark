@@ -133,7 +133,7 @@ public:
 	uint32_t getVideoWidth();
 	uint32_t getVideoHeight();
 	double getFrameRate();
-	bool copyFrameToTexture(GLuint tex);
+	bool copyFrameToTexture(TextureBuffer& tex);
 };
 
 };

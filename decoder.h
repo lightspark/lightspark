@@ -22,6 +22,7 @@
 
 #include <GL/gl.h>
 #include "threading.h"
+#include "graphics.h"
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -45,7 +46,7 @@ public:
 	virtual bool discardFrame()=0;
 	//NOTE: the base implementation returns true if resizing of buffers should be done
 	//This should be called in every derived implementation
-	virtual bool copyFrameToTexture(GLuint tex)=0;
+	virtual bool copyFrameToTexture(TextureBuffer& tex)=0;
 	uint32_t getWidth()
 	{
 		return frameWidth;
@@ -79,7 +80,7 @@ public:
 	~FFMpegDecoder();
 	bool decodeData(uint8_t* data, uint32_t datalen);
 	bool discardFrame();
-	bool copyFrameToTexture(GLuint tex);
+	bool copyFrameToTexture(TextureBuffer& tex);
 };
 
 };

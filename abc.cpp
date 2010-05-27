@@ -1326,8 +1326,9 @@ void ABCVm::Run(ABCVm* th)
 		{
 			sem_wait(&th->sem_event_count);
 			if(th->shutdown)
-			{
 				bailOut=true;
+			if(bailOut)
+			{
 				//If the queue is empty stop immediately
 				if(th->events_queue.empty())
 					break;
@@ -1340,6 +1341,7 @@ void ABCVm::Run(ABCVm* th)
 		}
 		catch(LightsparkException& e)
 		{
+			LOG(LOG_ERROR,"Error in VM " << e.cause);
 			th->m_sys->setError(e.cause);
 			bailOut=true;
 		}

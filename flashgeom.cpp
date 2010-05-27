@@ -98,7 +98,7 @@ ASFUNCTIONBODY(Rectangle,_getWidth)
 ASFUNCTIONBODY(Rectangle,_setWidth)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	assert(argslen==1);
+	assert_and_throw(argslen==1);
 	th->width=args[0]->toNumber();
 	return NULL;
 }
@@ -124,7 +124,7 @@ ASFUNCTIONBODY(Rectangle,_getHeight)
 ASFUNCTIONBODY(Rectangle,_setHeight)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
-	assert(argslen==1);
+	assert_and_throw(argslen==1);
 	th->height=args[0]->toNumber();
 	return NULL;
 }
@@ -148,26 +148,46 @@ void ColorTransform::sinit(Class_base* c)
 ASFUNCTIONBODY(ColorTransform,_constructor)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	if(argslen!=0)
-		abort();
-	//Setting multiplier to default
-	th->redMultiplier=1.0;
-	th->greenMultiplier=1.0;
-	th->blueMultiplier=1.0;
-	th->alphaMultiplier=1.0;
-	//Setting offset to the input value
-	th->redOffset=0.0;
-	th->greenOffset=0.0;
-	th->blueOffset=0.0;
-	th->alphaOffset=0.0;
+	assert_and_throw(argslen<=8);
+	if(0 < argslen)
+		th->redMultiplier=args[0]->toNumber();
+	else
+		th->redMultiplier=1.0;
+	if(1 < argslen)
+		th->greenMultiplier=args[1]->toNumber();
+	else
+		th->greenMultiplier=1.0;
+	if(2 < argslen)
+		th->blueMultiplier=args[2]->toNumber();
+	else
+		th->blueMultiplier=1.0;
+	if(3 < argslen)
+		th->alphaMultiplier=args[3]->toNumber();
+	else
+		th->alphaMultiplier=1.0;
+	if(4 < argslen)
+		th->redOffset=args[4]->toNumber();
+	else
+		th->redOffset=0.0;
+	if(5 < argslen)
+		th->greenOffset=args[5]->toNumber();
+	else
+		th->greenOffset=0.0;
+	if(6 < argslen)
+		th->blueOffset=args[6]->toNumber();
+	else
+		th->blueOffset=0.0;
+	if(7 < argslen)
+		th->alphaOffset=args[7]->toNumber();
+	else
+		th->alphaOffset=0.0;
 	return NULL;
 }
 
 ASFUNCTIONBODY(ColorTransform,setColor)
 {
 	ColorTransform* th=static_cast<ColorTransform*>(obj);
-	if(argslen!=1)
-		abort();
+	assert_and_throw(argslen==1);
 	uintptr_t tmp=args[0]->toInt();
 	//Setting multiplier to 0
 	th->redMultiplier=0;
@@ -184,7 +204,7 @@ ASFUNCTIONBODY(ColorTransform,setColor)
 
 ASFUNCTIONBODY(ColorTransform,getColor)
 {
-	abort();
+	assert_and_throw(false && "getColor not implemented");
 	return NULL;
 }
 

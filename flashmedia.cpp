@@ -144,7 +144,7 @@ bool Video::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& 
 ASFUNCTIONBODY(Video,_constructor)
 {
 	Video* th=Class<Video>::cast(obj);
-	assert_and_throw(argslen<2);
+	assert_and_throw(argslen<=2);
 	if(0 < argslen)
 		th->width=args[0]->toInt();
 	if(1 < argslen)

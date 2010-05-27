@@ -100,7 +100,7 @@ ASFUNCTIONBODY(URLLoader,load)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj);
 	ASObject* arg=args[0];
-	assert(arg->getPrototype()==Class<URLRequest>::getClass());
+	assert_and_throw(arg->getPrototype()==Class<URLRequest>::getClass());
 	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
 	th->url=urlRequest->url;
 	ASObject* data=arg->getVariableByQName("data","").obj;
@@ -128,7 +128,7 @@ ASFUNCTIONBODY(URLLoader,load)
 			th->url+=tmp2.c_str();
 		}
 	}
-	assert(th->dataFormat=="binary" || th->dataFormat=="text");
+	assert_and_throw(th->dataFormat=="binary" || th->dataFormat=="text");
 	sys->addJob(th);
 	return NULL;
 }
@@ -187,7 +187,7 @@ ASFUNCTIONBODY(URLLoader,_getData)
 ASFUNCTIONBODY(URLLoader,_setDataFormat)
 {
 	URLLoader* th=static_cast<URLLoader*>(obj);
-	assert(args[0]);
+	assert_and_throw(args[0]);
 	th->dataFormat=args[0]->toString();
 	return NULL;
 }
@@ -230,7 +230,7 @@ void NetConnection::buildTraits(ASObject* o)
 ASFUNCTIONBODY(NetConnection,connect)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj);
-	assert(argslen==1);
+	assert_and_throw(argslen==1);
 	if(args[0]->getObjectType()!=T_UNDEFINED)
 	{
 		th->isFMS=true;
@@ -274,18 +274,18 @@ void NetStream::buildTraits(ASObject* o)
 ASFUNCTIONBODY(NetStream,_constructor)
 {
 	LOG(LOG_CALLS,"NetStream constructor");
-	assert(argslen==1);
-	assert(args[0]->getPrototype()==Class<NetConnection>::getClass());
+	assert_and_throw(argslen==1);
+	assert_and_throw(args[0]->getPrototype()==Class<NetConnection>::getClass());
 
 	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
-	assert(netConnection->isFMS==false);
+	assert_and_throw(netConnection->isFMS==false);
 	return NULL;
 }
 
 ASFUNCTIONBODY(NetStream,play)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
-	assert(argslen==1);
+	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
 	th->url = arg0;
 	th->downloader=sys->downloadManager->download(th->url);
@@ -351,7 +351,7 @@ void NetStream::execute()
 				UI32 PreviousTagSize;
 				s >> PreviousTagSize;
 				PreviousTagSize.bswap();
-				assert(PreviousTagSize==prevSize);
+				assert_and_throw(PreviousTagSize==prevSize);
 
 				//Check tag type and read it
 				UI8 TagType;
@@ -368,17 +368,17 @@ void NetStream::execute()
 					{
 						VideoDataTag tag(s);
 						prevSize=tag.getTotalLen();
-						assert(tag.codecId==7);
+						assert_and_throw(tag.codecId==7);
 
 						if(tag.isHeader())
 						{
 							//The tag is the header, initialize decoding
-							assert(decoder==NULL); //The decoder can be set only once
+							assert_and_throw(decoder==NULL); //The decoder can be set only once
 							//NOTE: there is not need to mutex the decoder, as an async transition from NULL to
 							//valid is not critical
 							decoder=new FFMpegDecoder(tag.packetData,tag.packetLen);
 							assert(decoder);
-							assert(frameRate!=0);
+							assert_and_throw(frameRate!=0);
 							//Now that the decoder is valid, let's start the ticking
 							sys->addTick(1000/frameRate,this);
 							//sys->setRenderRate(frameRate);
@@ -504,13 +504,13 @@ void URLVariables::sinit(Class_base* c)
 
 ASFUNCTIONBODY(URLVariables,_constructor)
 {
-	assert(argslen==0);
+	assert_and_throw(argslen==0);
 	return NULL;
 }
 
 tiny_string URLVariables::toString(bool debugMsg)
 {
-	assert(implEnable);
+	assert_and_throw(implEnable);
 	//Should urlencode
 	::abort();
 	if(debugMsg)

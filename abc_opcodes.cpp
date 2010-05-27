@@ -280,7 +280,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 		if(o.obj)
 		{
-			assert(o.obj->getObjectType()==T_FUNCTION);
+			assert_and_throw(o.obj->getObjectType()==T_FUNCTION);
 
 			IFunction* f=static_cast<IFunction*>(o.obj);
 
@@ -323,7 +323,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			LOG(LOG_CALLS,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o.obj);
 			d->define(obj);
-			assert(obj==getGlobal());
+			assert_and_throw(obj==getGlobal());
 			o=obj->getVariableByMultiname(*name);
 		}
 
@@ -339,8 +339,8 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			if(name->ns.size()==1 && name->ns[0].name==flash_proxy)
 			{
 				Proxy* p=dynamic_cast<Proxy*>(obj);
-				assert(p);
-				assert(p->implEnable);
+				assert_and_throw(p);
+				assert_and_throw(p->implEnable);
 				p->implEnable=false;
 				ret=f->call(obj,args,m,o.level);
 				p->implEnable=true;
@@ -640,7 +640,7 @@ void ABCVm::construct(call_context* th, int m)
 	else if(obj->getObjectType()==T_FUNCTION)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
-		assert(sf);
+		assert_and_throw(sf);
 		ret=Class<ASObject>::getInstanceS();
 		if(sf->mi->body)
 		{
@@ -650,7 +650,7 @@ void ABCVm::construct(call_context* th, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->initialized=true;
 			ret->incRef();
-			assert(sf->closure_this==NULL);
+			assert_and_throw(sf->closure_this==NULL);
 			ASObject* ret2=sf->call(ret,args,m,0);
 			if(ret2)
 				ret2->decRef();
@@ -698,7 +698,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 
 	LOG(LOG_CALLS,"Constructing");
 	Class_base* o_class=static_cast<Class_base*>(obj);
-	assert(o_class->getObjectType()==T_CLASS);
+	assert_and_throw(o_class->getObjectType()==T_CLASS);
 	ASObject* ret=o_class->getInstance(true,args,m);
 
 	obj->decRef();
@@ -762,7 +762,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 
 		if(o.obj)
 		{
-			assert(o.obj->getObjectType()==T_FUNCTION);
+			assert_and_throw(o.obj->getObjectType()==T_FUNCTION);
 
 			IFunction* f=static_cast<IFunction*>(o.obj);
 
@@ -811,8 +811,8 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 			if(name->ns.size()==1 && name->ns[0].name==flash_proxy)
 			{
 				Proxy* p=dynamic_cast<Proxy*>(obj);
-				assert(p);
-				assert(p->implEnable);
+				assert_and_throw(p);
+				assert_and_throw(p->implEnable);
 				p->implEnable=false;
 				ret=f->call(obj,args,m,o.level);
 				p->implEnable=true;
@@ -884,7 +884,7 @@ number_t ABCVm::subtract_oi(ASObject* val2, intptr_t val1)
 
 number_t ABCVm::subtract_do(number_t val2, ASObject* val1)
 {
-	assert(val1->getObjectType()!=T_UNDEFINED);
+	assert_and_throw(val1->getObjectType()!=T_UNDEFINED);
 	number_t num2=val2;
 	number_t num1=val1->toNumber();
 
@@ -1268,7 +1268,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
-	assert(tl.cur_this==obj);
+	assert_and_throw(tl.cur_this==obj);
 	tl.cur_this->setLevel(tl.cur_level);
 
 	obj->decRef();
@@ -1283,7 +1283,7 @@ void ABCVm::getSuper(call_context* th, int n)
 
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
-	assert(tl.cur_this==obj);
+	assert_and_throw(tl.cur_this==obj);
 
 	//We modify the cur_level of obj
 	obj->decLevel();
@@ -1293,7 +1293,7 @@ void ABCVm::getSuper(call_context* th, int n)
 
 	tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
-	assert(tl.cur_this==obj);
+	assert_and_throw(tl.cur_this==obj);
 	//And the reset it using the stack
 	tl.cur_this->setLevel(tl.cur_level);
 
@@ -1304,7 +1304,7 @@ void ABCVm::getSuper(call_context* th, int n)
 			LOG(LOG_CALLS,"We got an object not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
-			assert(obj==getGlobal());
+			assert_and_throw(obj==getGlobal());
 			o=obj->getVariableByMultiname(*name).obj;
 		}
 		o->incRef();
@@ -1352,7 +1352,7 @@ void ABCVm::getLex(call_context* th, int n)
 				LOG(LOG_CALLS,"Deferred definition of property " << *name);
 				Definable* d=static_cast<Definable*>(o);
 				d->define(*it);
-				assert(*it==getGlobal());
+				assert_and_throw(*it==getGlobal());
 				o=(*it)->getVariableByMultiname(*name).obj;
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
@@ -1398,12 +1398,12 @@ void ABCVm::constructSuper(call_context* th, int m)
 
 	ASObject* obj=th->runtime_stack_pop();
 
-	assert(obj->getLevel()!=0);
+	assert_and_throw(obj->getLevel()!=0);
 
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	//Check that current 'this' is the object
-	assert(tl.cur_this==obj);
-	assert(tl.cur_level==obj->getLevel());
+	assert_and_throw(tl.cur_this==obj);
+	assert_and_throw(tl.cur_level==obj->getLevel());
 
 	LOG(LOG_CALLS,"Cur prototype name " << obj->getActualPrototype()->class_name);
 	//Change current level
@@ -1450,7 +1450,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 		ret=getGlobal();
 	}
 
-	assert(ret);
+	assert_and_throw(ret);
 	ret->incRef();
 	return ret;
 }
@@ -1492,7 +1492,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 		}
 	}
 
-	assert(ret);
+	assert_and_throw(ret);
 	ret->incRef();
 	return ret;
 }
@@ -1570,7 +1570,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
-	assert(tl.cur_this==obj);
+	assert_and_throw(tl.cur_this==obj);
 	tl.cur_this->setLevel(tl.cur_level);
 
 	if(o.obj)
@@ -1653,7 +1653,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
-	assert(tl.cur_this==obj);
+	assert_and_throw(tl.cur_this==obj);
 	tl.cur_this->setLevel(tl.cur_level);
 
 	if(o.obj)
@@ -1716,14 +1716,14 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	Class_base* c=NULL;
 	if(obj->prototype)
 	{
-		assert(type->getObjectType()==T_CLASS);
+		assert_and_throw(type->getObjectType()==T_CLASS);
 		c=static_cast<Class_base*>(type);
 
 		objc=obj->prototype;
 	}
 	else if(obj->getObjectType()==T_CLASS)
 	{
-		assert(type->getObjectType()==T_CLASS);
+		assert_and_throw(type->getObjectType()==T_CLASS);
 		c=static_cast<Class_base*>(type);
 
 		//Special case for Class
@@ -1767,9 +1767,9 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,"asTypelate");
-	assert(obj->getObjectType()!=T_FUNCTION);
+	assert_and_throw(obj->getObjectType()!=T_FUNCTION);
 
-	assert(type->getObjectType()==T_CLASS);
+	assert_and_throw(type->getObjectType()==T_CLASS);
 	Class_base* c=static_cast<Class_base*>(type);
 
 	Class_base* objc;
@@ -1904,7 +1904,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	else if(o->getObjectType()==T_FUNCTION)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(o);
-		assert(sf);
+		assert_and_throw(sf);
 		ret=Class<ASObject>::getInstanceS();
 		if(sf->mi->body)
 		{
@@ -1914,7 +1914,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 			ret->initialized=true;
 			ret->incRef();
-			assert(sf->closure_this==NULL);
+			assert_and_throw(sf->closure_this==NULL);
 			ASObject* ret2=sf->call(ret,args,m,0);
 			if(ret2)
 				ret2->decRef();
@@ -2086,13 +2086,13 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG(LOG_CALLS, "newClass " << n );
 	method_info* constructor=&th->context->methods[th->context->instances[n].init];
 	int name_index=th->context->instances[n].name;
-	assert(name_index);
+	assert_and_throw(name_index);
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
 
 	Class_base* ret=new Class_inherit(mname->name_s);
 	ASObject* tmp=th->runtime_stack_pop();
 
-	assert(th->context);
+	assert_and_throw(th->context);
 	ret->context=th->context;
 
 	//Null is a "valid" base class
@@ -2147,7 +2147,7 @@ void ABCVm::newClass(call_context* th, int n)
 			d->define(getGlobal());
 			LOG(LOG_CALLS,"End of deferred init of class " << *name);
 			obj=getGlobal()->getVariableByMultiname(*name).obj;
-			assert(obj);
+			assert_and_throw(obj);
 		}
 	}
 
@@ -2155,7 +2155,7 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->incRef();
 	//Class init functions are called with global as this
 	ASObject* ret2=cinit->call(ret,NULL,0,ret->max_level);
-	assert(ret2==NULL);
+	assert_and_throw(ret2==NULL);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
 	cinit->decRef();

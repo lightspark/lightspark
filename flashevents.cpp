@@ -93,7 +93,7 @@ ASFUNCTIONBODY(Event,_constructor)
 	Event* th=static_cast<Event*>(obj);
 	if(argslen>=1)
 	{
-		assert(args[0]->getObjectType()==T_STRING);
+		assert_and_throw(args[0]->getObjectType()==T_STRING);
 		th->type=args[0]->toString();
 	}
 	return NULL;
@@ -268,7 +268,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
-	assert(argslen==1 && args[0]->getObjectType()==T_STRING);
+	assert_and_throw(argslen==1 && args[0]->getObjectType()==T_STRING);
 	const tiny_string& eventName=args[0]->toString();
 	bool ret=th->hasEventListener(eventName);
 	return abstract_b(ret);
@@ -312,7 +312,7 @@ ASFUNCTIONBODY(EventDispatcher,dispatchEvent)
 		return abstract_b(false);
 	//CHECK: maybe is to be cloned
 	e->incRef();
-	assert(e->type!="");
+	assert_and_throw(e->type!="");
 	th->handleEvent(e);
 	return abstract_b(true);
 }
@@ -348,7 +348,7 @@ void EventDispatcher::handleEvent(Event* e)
 		//If the f is a class method, both the 'this' and level are ignored
 		ASObject* const arg0=e;
 		ASObject* ret=tmpListener[i].f->call(this,&arg0,1,0);
-		assert(ret==NULL);
+		assert_and_throw(ret==NULL);
 		//And now no more, f can also be deleted
 		tmpListener[i].f->decRef();
 	}

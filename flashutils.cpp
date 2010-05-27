@@ -37,7 +37,7 @@ ByteArray::ByteArray():bytes(NULL),len(0),position(0)
 
 ByteArray::ByteArray(const ByteArray& b):ASObject(b),len(b.len),position(b.position)
 {
-	assert(position==0);
+	assert_and_throw(position==0);
 	bytes=new uint8_t[len];
 	memcpy(bytes,b.bytes,len);
 }
@@ -69,7 +69,7 @@ uint8_t* ByteArray::getBuffer(unsigned int size)
 	}
 	else
 	{
-		assert(size<=len);
+		assert_and_throw(size<=len);
 	}
 	return bytes;
 }
@@ -104,8 +104,8 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 {
 	ByteArray* th=static_cast<ByteArray*>(obj);
 	//Validate parameters
-	assert(argslen==3);
-	assert(args[0]->getPrototype()==Class<ByteArray>::getClass());
+	assert_and_throw(argslen==3);
+	assert_and_throw(args[0]->getPrototype()==Class<ByteArray>::getClass());
 
 	ByteArray* out=Class<ByteArray>::cast(args[0]);
 	int offset=args[1]->toInt();
@@ -123,15 +123,15 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 
 objAndLevel ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
-	assert(!skip_impl);
-	assert(implEnable);
+	assert_and_throw(!skip_impl);
+	assert_and_throw(implEnable);
 	//It seems that various kind of implementation works only with the empty namespace
-	assert(name.ns.size()>0 && name.ns[0].name=="");
+	assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
 
-	assert(index<len);
+	assert_and_throw(index<len);
 	ASObject* ret=abstract_i(bytes[index]);
 
 	return objAndLevel(ret,0);
@@ -139,12 +139,12 @@ objAndLevel ByteArray::getVariableByMultiname(const multiname& name, bool skip_i
 
 intptr_t ByteArray::getVariableByMultiname_i(const multiname& name)
 {
-	assert(implEnable);
+	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return ASObject::getVariableByMultiname_i(name);
 
-	assert(index<len);
+	assert_and_throw(index<len);
 	return bytes[index];
 }
 
@@ -162,12 +162,12 @@ void ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& n
 		ASObject::setVariableByQName(name,ns,o,find_back,skip_impl);
 		return;
 	}
-	::abort();
+	throw UnsupportedException("ByteArray::setVariableByQName not completely implemented");
 }
 
 void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
-	assert(implEnable);
+	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 		return ASObject::setVariableByMultiname(name,o,enableOverride);
@@ -190,7 +190,7 @@ void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, bool 
 
 void ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
-	assert(implEnable);
+	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
 	{
@@ -198,12 +198,12 @@ void ByteArray::setVariableByMultiname_i(const multiname& name, intptr_t value)
 		return;
 	}
 
-	::abort();
+	throw UnsupportedException("ByteArray::setVariableByMultiname_i not completely implemented");
 }
 
 bool ByteArray::isEqual(ASObject* r)
 {
-	assert(implEnable);
+	assert_and_throw(implEnable);
 	/*if(r->getObjectType()!=T_OBJECT)
 		return false;*/
 
@@ -288,7 +288,7 @@ ASFUNCTIONBODY(lightspark,getQualifiedClassName)
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
-		assert(target->getPrototype());
+		assert_and_throw(target->getPrototype());
 		c=target->getPrototype();
 	}
 	else
@@ -304,20 +304,20 @@ ASFUNCTIONBODY(lightspark,getQualifiedSuperclassName)
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
-		assert(target->getPrototype());
+		assert_and_throw(target->getPrototype());
 		c=target->getPrototype()->super;
 	}
 	else
 		c=static_cast<Class_base*>(target)->super;
 
-	assert(c);
+	assert_and_throw(c);
 
 	return Class<ASString>::getInstanceS(c->getQualifiedClassName());
 }
 
 ASFUNCTIONBODY(lightspark,getDefinitionByName)
 {
-	assert(args && argslen==1);
+	assert_and_throw(args && argslen==1);
 	const tiny_string& tmp=args[0]->toString();
 	tiny_string name,ns;
 
@@ -326,7 +326,6 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
 	objAndLevel o=getGlobal()->getVariableByQName(name,ns);
 
-	//assert(owner);
 	//TODO: should raise an exception, for now just return undefined
 	if(o.obj==NULL)
 	{
@@ -343,7 +342,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 		o=getGlobal()->getVariableByQName(name,ns);
 	}
 
-	assert(o.obj->getObjectType()==T_CLASS);
+	assert_and_throw(o.obj->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
 	o.obj->incRef();
@@ -382,13 +381,13 @@ ASFUNCTIONBODY(Dictionary,_constructor)
 
 void Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
-	assert(implEnable);
+	assert_and_throw(implEnable);
 	Dictionary::setVariableByMultiname(name,abstract_i(value),true);
 }
 
 void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
-	assert(implEnable);
+	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
 		//We can use the [] operator, as the value is just a pointer and there is no side effect in creating one
@@ -405,10 +404,10 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool
 
 void Dictionary::deleteVariableByMultiname(const multiname& name)
 {
-	assert(implEnable);
-	assert(name.name_type==multiname::NAME_OBJECT);
+	assert_and_throw(implEnable);
+	assert_and_throw(name.name_type==multiname::NAME_OBJECT);
 	map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
-	assert(it!=data.end());
+	assert_and_throw(it!=data.end());
 
 	ASObject* ret=it->second;
 	ret->decRef();
@@ -422,10 +421,10 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 
 objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
-	assert(!skip_impl);
-	assert(implEnable);
+	assert_and_throw(!skip_impl);
+	assert_and_throw(implEnable);
 	//It seems that various kind of implementation works only with the empty namespace
-	assert(name.ns.size()>0 && name.ns[0].name=="");
+	assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
 	ASObject* ret=NULL;
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
@@ -471,7 +470,7 @@ objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_
 
 bool Dictionary::hasNext(unsigned int& index, bool& out)
 {
-	assert(implEnable);
+	assert_and_throw(implEnable);
 	out=index<data.size();
 	index++;
 	return true;
@@ -479,8 +478,8 @@ bool Dictionary::hasNext(unsigned int& index, bool& out)
 
 bool Dictionary::nextName(unsigned int index, ASObject*& out)
 {
-	assert(implEnable);
-	assert(index<data.size());
+	assert_and_throw(implEnable);
+	assert_and_throw(index<data.size());
 	map<ASObject*,ASObject*>::iterator it=data.begin();
 	for(unsigned int i=0;i<index;i++)
 		it++;
@@ -490,8 +489,8 @@ bool Dictionary::nextName(unsigned int index, ASObject*& out)
 
 bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 {
-	assert(implEnable);
-	abort();
+	assert_and_throw(implEnable);
+	throw UnsupportedException("Dictionary::nextValue not implmented");
 /*	assert(index<data.size());
 	map<ASObject*,ASObject*>::iterator it=data.begin();
 	for(int i=0;i<index;i++)
@@ -508,7 +507,7 @@ void Proxy::sinit(Class_base* c)
 
 void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
-	assert(implEnable);
+	assert_and_throw(implEnable);
 	//If a variable named like this already exist, return that
 	if(hasPropertyByMultiname(name) || !implEnable)
 	{
@@ -525,7 +524,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 		return;
 	}
 
-	assert(proxySetter.obj->getObjectType()==T_FUNCTION);
+	assert_and_throw(proxySetter.obj->getObjectType()==T_FUNCTION);
 
 	IFunction* f=static_cast<IFunction*>(proxySetter.obj);
 
@@ -537,15 +536,15 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::setProperty");
 	ASObject* ret=f->call(this,args,2,getLevel());
-	assert(ret==NULL);
+	assert_and_throw(ret==NULL);
 	implEnable=true;
 }
 
 objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
 {
-	assert(!skip_impl);
+	assert_and_throw(!skip_impl);
 	//It seems that various kind of implementation works only with the empty namespace
-	assert(name.ns.size()>0);
+	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable)
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
 
@@ -555,7 +554,7 @@ objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl,
 	if(o.obj==NULL)
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
 
-	assert(o.obj->getObjectType()==T_FUNCTION);
+	assert_and_throw(o.obj->getObjectType()==T_FUNCTION);
 
 	IFunction* f=static_cast<IFunction*>(o.obj);
 
@@ -565,7 +564,7 @@ objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl,
 	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::getProperty");
 	ASObject* ret=f->call(this,&arg,1,getLevel());
-	assert(ret);
+	assert_and_throw(ret);
 	implEnable=true;
 	return objAndLevel(ret,0);
 }

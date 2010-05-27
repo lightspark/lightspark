@@ -248,7 +248,8 @@ zlib_filter::pos_type zlib_filter::seekoff(off_type off, ios_base::seekdir dir,i
 zlib_file_filter::zlib_file_filter(const char* file_name)
 {
 	f=fopen(file_name,"rb");
-	assert(f!=NULL);
+	if(f==NULL)
+		throw lightspark::RunTimeException("File does not exists");
 }
 
 int zlib_file_filter::provideBuffer(int limit)

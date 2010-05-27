@@ -88,7 +88,7 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 		//Only the root movie clip can have control tags
 		if(!controls.empty())
 		{
-			assert(parent->root==parent);
+			assert_and_throw(parent->root==parent);
 			for(unsigned int i=0;i<controls.size();i++)
 				controls[i]->execute(parent->root);
 			controls.clear();

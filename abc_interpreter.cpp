@@ -71,7 +71,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//kill
 				u30 t;
 				code >> t;
-				assert(context->locals[t]);
+				assert_and_throw(context->locals[t]);
 				context->locals[t]->decRef();
 				context->locals[t]=new Undefined;
 				break;
@@ -405,7 +405,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				}
 
 				ASObject* index_obj=context->runtime_stack_pop();
-				assert(index_obj->getObjectType()==T_INTEGER);
+				assert_and_throw(index_obj->getObjectType()==T_INTEGER);
 				unsigned int index=index_obj->toUInt();
 
 				int dest=defaultdest;
@@ -756,7 +756,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//getlocal
 				u30 i;
 				code >> i;
-				assert(context->locals[i]);
+				assert_and_throw(context->locals[i]);
 				context->locals[i]->incRef();
 				LOG(LOG_CALLS, "getLocal " << i << ": " << context->locals[i]->toString(true) );
 				context->runtime_stack_push(context->locals[i]);
@@ -769,7 +769,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code >> i;
 				LOG(LOG_CALLS, "setLocal " << i );
 				ASObject* obj=context->runtime_stack_pop();
-				assert(obj);
+				assert_and_throw(obj);
 				if(context->locals[i])
 					context->locals[i]->decRef();
 				context->locals[i]=obj;
@@ -1181,7 +1181,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			{
 				//getlocal_n
 				int i=opcode&3;
-				assert(context->locals[i]);
+				assert_and_throw(context->locals[i]);
 				LOG(LOG_CALLS, "getLocal " << i << ": " << context->locals[i]->toString(true) );
 				context->locals[i]->incRef();
 				context->runtime_stack_push(context->locals[i]);
@@ -1198,7 +1198,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				ASObject* obj=context->runtime_stack_pop();
 				if(context->locals[i])
 					context->locals[i]->decRef();
-				assert(obj);
+				assert_and_throw(obj);
 				context->locals[i]=obj;
 				break;
 			}

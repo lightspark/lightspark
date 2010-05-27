@@ -124,7 +124,7 @@ void RootMovieClip::parsingFailed()
 
 void RootMovieClip::bindToName(const tiny_string& n)
 {
-	assert(toBind==false);
+	assert_and_throw(toBind==false);
 	toBind=true;
 	bindName=n;
 }
@@ -517,7 +517,7 @@ void RenderThread::wait()
 	//Signal potentially blocking semaphore
 	sem_post(&render);
 	int ret=pthread_join(t,NULL);
-	assert(ret==0);
+	assert_and_throw(ret==0);
 }
 
 InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),terminated(false),
@@ -535,7 +535,7 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),ter
 		
 		//Let's hook into the Xt event handling of the browser
 		X11Intrinsic::Widget xtwidget = X11Intrinsic::XtWindowToWidget(npapi_params->display, npapi_params->window);
-		assert(xtwidget);
+		assert_and_throw(xtwidget);
 
 		//mXtwidget = xtwidget;
 		long event_mask = ExposureMask|PointerMotionMask|ButtonPressMask|KeyPressMask;
@@ -700,7 +700,7 @@ void InputThread::addListener(InteractiveObject* ob)
 #ifndef NDEBUG
 	vector<InteractiveObject*>::const_iterator it=find(listeners.begin(),listeners.end(),ob);
 	//Object is already register, should not happen
-	assert(it==listeners.end());
+	assert_and_throw(it==listeners.end());
 #endif
 	
 	//Register the listener
@@ -909,7 +909,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	gtk_widget_show(container);
 	gdk_gl_init(0, 0);
 	GdkGLConfig* glConfig=gdk_gl_config_new_by_mode((GdkGLConfigMode)(GDK_GL_MODE_RGBA|GDK_GL_MODE_DOUBLE|GDK_GL_MODE_DEPTH));
-	assert(glConfig);
+	assert_and_throw(glConfig);
 	
 	GtkWidget* drawing_area = gtk_drawing_area_new ();
 	//gtk_widget_set_size_request (drawing_area, 0, 0);
@@ -920,7 +920,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	GdkGLContext *glContext = gtk_widget_get_gl_context (drawing_area);
 	GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);	
 	bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-	assert(ret);
+	assert_and_throw(ret);
 	th->commonGLInit(window_width, window_height);
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
@@ -946,7 +946,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 			gdk_threads_enter();
 			bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-			assert(ret);
+			assert_and_throw(ret);
 			gdk_gl_drawable_swap_buffers(glDrawable);
 
 			if(th->inputNeeded)
@@ -1052,7 +1052,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		::abort();
 	}
 	ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-	assert(ret);
+	assert_and_throw(ret);
 	glDisable(GL_TEXTURE_2D);
 	gdk_gl_drawable_gl_end(glDrawable);
 	delete p;
@@ -1692,7 +1692,8 @@ void RootMovieClip::setFrameCount(int f)
 	Locker l(mutexFrames);
 	totalFrames=f;
 	state.max_FP=f;
-	assert(cur_frame==&frames.back());
+	//TODO, maybe the next is a regular assert
+	assert_and_throw(cur_frame==&frames.back());
 	//Reserving guarantees than the vector is never invalidated
 	frames.reserve(f);
 	cur_frame=&frames.back();
@@ -1701,7 +1702,7 @@ void RootMovieClip::setFrameCount(int f)
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)
 {
 	frameSize=f;
-	assert(f.Xmin==0 && f.Ymin==0);
+	assert_and_throw(f.Xmin==0 && f.Ymin==0);
 	sem_post(&sem_valid_size);
 }
 
@@ -1762,8 +1763,8 @@ void RootMovieClip::commitFrame(bool another)
 	}
 	else
 		cur_frame=NULL;
-	
-	assert(frames.size()<=frames.capacity());
+
+	assert_and_throw(frames.size()<=frames.capacity());
 
 	if(framesLoaded==1)
 	{
@@ -1776,7 +1777,8 @@ void RootMovieClip::commitFrame(bool another)
 void RootMovieClip::revertFrame()
 {
 	Locker l(mutexFrames);
-	assert(frames.size() && framesLoaded==(frames.size()-1));
+	//TODO: The next should be a regular assert
+	assert_and_throw(frames.size() && framesLoaded==(frames.size()-1));
 	frames.pop_back();
 	cur_frame=NULL;
 }

@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <stdlib.h>
 #include <math.h>
-#include <assert.h>
 #include "swf.h"
 #include "geometry.h"
 #include "class.h"
@@ -55,7 +54,7 @@ tiny_string ASObject::toString(bool debugMsg)
 		{
 			IFunction* f_toString=static_cast<IFunction*>(obj_toString.obj);
 			ASObject* ret=f_toString->call(this,NULL,0,obj_toString.level);
-			assert(ret->getObjectType()==T_STRING);
+			assert_and_throw(ret->getObjectType()==T_STRING);
 			return ret->toString();
 		}
 	}
@@ -263,7 +262,7 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 	if(obj->getter!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
-		assert(o==obj->getter);
+		assert_and_throw(o==obj->getter);
 		return;
 	}
 	obj->getter=o;

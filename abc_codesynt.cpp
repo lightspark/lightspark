@@ -487,7 +487,7 @@ void method_info::abstract_value(llvm::ExecutionEngine* ex, llvm::IRBuilder<>& b
 			e.first=builder.CreateCall(ex->FindFunctionNamed("abstract_b"),e.first);
 			break;
 		default:
-			assert("Unexpected object type to abstract"&& false);
+			throw RunTimeException("Unexpected object type to abstract");
 	}
 	
 }
@@ -563,7 +563,7 @@ inline void method_info::syncLocals(llvm::ExecutionEngine* ex,llvm::IRBuilder<>&
 				builder.CreateStore(v,t);
 			}
 			else
-				assert("Unexpected object type" && false);
+				throw RunTimeException("Unexpected object type");
 		}
 	}
 }
@@ -1464,7 +1464,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 					cur.locals_start_obj[i]=Builder.CreateAlloca(bool_type);
 					break;
 				default:
-					assert("Unsupported object type" && false);
+					throw RunTimeException("Unsupported object type");
 			}
 		}
 	}
@@ -3183,7 +3183,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, "synt astypelate" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				assert(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT);
+				assert_and_throw(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("asTypelate"),v1.first,v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
@@ -3750,7 +3750,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				LOG(LOG_TRACE, "synt istypelate" );
 				stack_entry v1=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
 				stack_entry v2=static_stack_pop(Builder,static_stack,dynamic_stack,dynamic_stack_index);
-				assert(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT);
+				assert_and_throw(v1.second==STACK_OBJECT && v2.second==STACK_OBJECT);
 				value=Builder.CreateCall2(ex->FindFunctionNamed("isTypelate"),v1.first,v2.first);
 				static_stack_push(static_stack,stack_entry(value,STACK_BOOLEAN));
 				break;

@@ -1044,7 +1044,7 @@ void ABCVm::handleEvent()
 * * \param ev event that will be sent */
 bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 {
-	//If the system should terminate new event are not accepted
+	//If the system should terminate new events are not accepted
 	if(m_sys->shouldTerminate())
 		return false;
 	sem_wait(&event_queue_mutex);

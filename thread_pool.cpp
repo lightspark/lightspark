@@ -19,7 +19,10 @@
 #include <assert.h>
 
 #include "thread_pool.h"
+#include "exceptions.h"
 #include "compat.h"
+#include "logger.h"
+#include "swf.h"
 
 using namespace lightspark;
 
@@ -91,7 +94,15 @@ void* ThreadPool::job_worker(void* t)
 
 		assert(thisJob==NULL);
 		thisJob=myJob;
-		myJob->run();
+		try
+		{
+			myJob->run();
+		}
+		catch(LightsparkException& e)
+		{
+			LOG(LOG_ERROR,"Exception in ThreadPool " << e.what());
+			sys->setError(e.cause);
+		}
 		thisJob=NULL;
 
 		sem_wait(&th->mutex);

@@ -1350,7 +1350,12 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 				toAdd->setMatrix(Matrix);
 			//We now ask the VM to construct this object
 			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->getPrototype());
-			sys->currentVm->addEvent(NULL,e);
+			bool added=sys->currentVm->addEvent(NULL,e);
+			if(!added)
+			{
+				e->decRef();
+				throw RunTimeException("Could not add event");
+			}
 			e->wait();
 			e->decRef();
 		}

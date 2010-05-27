@@ -684,7 +684,6 @@ public:
 	ASFUNCTION(valueOf);
 	tiny_string toString(bool debugMsg=false);
 	tiny_string toString_priv() const;
-	//bool toInt(int& ret);
 };
 
 //Internal objects used to store traits declared in scripts and object placed, but not yet valid

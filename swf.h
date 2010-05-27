@@ -97,7 +97,7 @@ private:
 	mutable sem_t sem_valid_size;
 	mutable sem_t sem_valid_rate;
 	//Frames mutex (shared with drawing thread)
-	sem_t sem_frames;
+	Mutex mutexFrames;
 	bool toBind;
 	tiny_string bindName;
 	void tick();

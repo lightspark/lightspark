@@ -88,11 +88,11 @@ SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 	valid=true;
 }
 
-RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),parsingIsFailed(false),frameRate(0),toBind(false)
+RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),parsingIsFailed(false),frameRate(0),mutexFrames("mutexFrame"),
+	toBind(false)
 {
 	root=this;
 	sem_init(&mutex,0,1);
-	sem_init(&sem_frames,0,1);
 	sem_init(&new_frame,0,0);
 	sem_init(&sem_valid_size,0,0);
 	sem_init(&sem_valid_rate,0,0);
@@ -108,7 +108,6 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),pars
 RootMovieClip::~RootMovieClip()
 {
 	sem_destroy(&mutex);
-	sem_destroy(&sem_frames);
 	sem_destroy(&new_frame);
 	sem_destroy(&sem_valid_rate);
 	sem_destroy(&sem_valid_size);
@@ -1276,6 +1275,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	glXDestroyContext(d,th->mContext);
 	XCloseDisplay(d);
 	delete p;
+	return NULL;
 }
 #endif
 
@@ -1517,22 +1517,21 @@ bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 
 void RootMovieClip::Render()
 {
-	sem_wait(&sem_frames);
+	Locker l(mutexFrames);
 	while(1)
 	{
 		//Check if the next frame we are going to play is available
 		if(state.next_FP<frames.size())
 			break;
 
-		sem_post(&sem_frames);
+		l.unlock();
 		sem_wait(&new_frame);
 		if(parsingIsFailed)
 			return;
-		sem_wait(&sem_frames);
+		l.lock();
 	}
 
 	MovieClip::Render();
-	sem_post(&sem_frames);
 }
 
 void RenderThread::commonGLDeinit(unsigned int t2[3])
@@ -1854,14 +1853,13 @@ void RenderThread::tick()
 
 void RootMovieClip::setFrameCount(int f)
 {
-	sem_wait(&sem_frames);
+	Locker l(mutexFrames);
 	totalFrames=f;
 	state.max_FP=f;
 	assert(cur_frame==&frames.back());
 	//Reserving guarantees than the vector is never invalidated
 	frames.reserve(f);
 	cur_frame=&frames.back();
-	sem_post(&sem_frames);
 }
 
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)
@@ -1919,7 +1917,7 @@ void RootMovieClip::addToFrame(ControlTag* t)
 
 void RootMovieClip::commitFrame(bool another)
 {
-	sem_wait(&sem_frames);
+	Locker l(mutexFrames);
 	framesLoaded=frames.size();
 	if(another)
 	{
@@ -1937,16 +1935,14 @@ void RootMovieClip::commitFrame(bool another)
 		bootstrap();
 	}
 	sem_post(&new_frame);
-	sem_post(&sem_frames);
 }
 
 void RootMovieClip::revertFrame()
 {
-	sem_wait(&sem_frames);
+	Locker l(mutexFrames);
 	assert(frames.size() && framesLoaded==(frames.size()-1));
 	frames.pop_back();
 	cur_frame=NULL;
-	sem_post(&sem_frames);
 }
 
 RGB RootMovieClip::getBackground()

@@ -89,6 +89,14 @@ public:
 	{
 		_m.unlock();
 	}
+	void lock()
+	{
+		_m.lock();
+	}
+	void unlock()
+	{
+		_m.unlock();
+	}
 };
 
 };

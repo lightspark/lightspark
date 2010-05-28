@@ -745,9 +745,12 @@ void DefineTextTag::Render()
 	
 	if(rt->glAcquireIdBuffer())
 	{
+		//The next 1/20 scale is needed by DefineFont3. Should be conditional
+		glScalef(0.05,0.05,1);
 		float scale_cur=1;
 		int count=0;
 		unsigned int shapes_done=0;
+		it= TextRecords.begin();
 		for(;it!=TextRecords.end();it++)
 		{
 			if(it->StyleFlagsHasFont)
@@ -1176,7 +1179,7 @@ void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& sha
 void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
-	FromShaperecordListToShapeVector(shape.ShapeRecords,cached);
+	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
 	for(unsigned int i=0;i<s.size();i++)
 		s[i].BuildFromEdges(NULL);
@@ -1216,7 +1219,7 @@ void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
-	FromShaperecordListToShapeVector(shape.ShapeRecords,cached);
+	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
 	for(unsigned int i=0;i<s.size();i++)
 		s[i].BuildFromEdges(NULL);
@@ -1256,7 +1259,7 @@ void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
 {
 	SHAPE& shape=GlyphShapeTable[glyph];
-	FromShaperecordListToShapeVector(shape.ShapeRecords,cached);
+	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
 	for(unsigned int i=0;i<s.size();i++)
 		s[i].BuildFromEdges(NULL);

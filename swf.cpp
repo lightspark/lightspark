@@ -783,7 +783,7 @@ void InputThread::disableDrag()
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),
 	interactive_buffer(NULL),fbAcquired(false),frameCount(0),secsCount(0),dataTex(false),mainTex(false),tempTex(false),
-	inputTex(false),selectedDebug(NULL),currentId(0),materialOverride(false)
+	inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -1224,6 +1224,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 				TextureBuffer* curBuf=((th->m_sys->showInteractiveMap)?&th->inputTex:&th->mainTex);
 				curBuf->bind();
+				curBuf->setTexScale(th->fragmentTexScaleUniform);
 				glColor4f(0,0,1,0);
 				glBegin(GL_QUADS);
 					glTexCoord2f(0,1);
@@ -1429,10 +1430,6 @@ void RenderThread::commonGLInit(int width, int height)
 	//Load shaders
 	loadShaderPrograms();
 
-	glUseProgram(gpu_program);
-	int tex=glGetUniformLocation(gpu_program,"g_tex1");
-	glUniform1i(tex,0);
-
 	glDisable(GL_DEPTH_TEST);
 	glDepthFunc(GL_ALWAYS);
 
@@ -1454,7 +1451,22 @@ void RenderThread::commonGLInit(int width, int height)
 	tempTex.init(width, height, GL_NEAREST);
 
 	inputTex.init(width, height, GL_NEAREST);
-	
+
+	//Set uniforms
+	cleanGLErrors();
+	glUseProgram(blitter_program);
+	int texScale=glGetUniformLocation(blitter_program,"texScale");
+	mainTex.setTexScale(texScale);
+	cleanGLErrors();
+
+	glUseProgram(gpu_program);
+	cleanGLErrors();
+	int tex=glGetUniformLocation(gpu_program,"g_tex1");
+	glUniform1i(tex,0);
+	fragmentTexScaleUniform=glGetUniformLocation(gpu_program,"texScale");
+	glUniform2f(fragmentTexScaleUniform,1,1);
+	cleanGLErrors();
+
 	//Default to replace
 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 	// create a framebuffer object
@@ -1598,11 +1610,12 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);
-				glUseProgram(0);
 				glDisable(GL_BLEND);
 
 				TextureBuffer* curBuf=((th->m_sys->showInteractiveMap)?&th->inputTex:&th->mainTex);
 				curBuf->bind();
+				curBuf->setTexScale(th->fragmentTexScaleUniform);
+				glColor4f(0,0,1,0);
 				glBegin(GL_QUADS);
 					glTexCoord2f(0,1);
 					glVertex2i(0,0);
@@ -1616,6 +1629,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				
 				if(th->m_sys->showDebug)
 				{
+					glUseProgram(0);
 					glDisable(GL_TEXTURE_2D);
 					if(th->selectedDebug)
 						th->selectedDebug->debugRender(&font, true);
@@ -1626,6 +1640,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 				if(th->m_sys->showProfilingData)
 				{
+					glUseProgram(0);
 					glColor3f(0,0,0);
 					char frameBuf[20];
 					snprintf(frameBuf,20,"Frame %u",th->m_sys->state.FP);

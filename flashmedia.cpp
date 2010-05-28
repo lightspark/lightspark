@@ -83,6 +83,7 @@ void Video::Render()
 
 		bool frameReady=netStream->copyFrameToTexture(videoTexture);
 		videoTexture.bind();
+		videoTexture.setTexScale(rt->fragmentTexScaleUniform);
 
 		//Enable texture lookup and YUV to RGB conversion
 		if(frameReady)

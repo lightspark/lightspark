@@ -361,6 +361,8 @@ public:
 	TextureBuffer inputTex;
 	int width;
 	int height;
+	bool hasNPOTTextures;
+	GLuint fragmentTexScaleUniform;
 	
 	InteractiveObject* selectedDebug;
 	float currentId;

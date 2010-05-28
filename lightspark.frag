@@ -1,4 +1,5 @@
 uniform sampler2D g_tex1;
+uniform vec2 texScale;
 
 //We abuse of default varying to pass variou data
 //gl_Color: Selector of current shader function
@@ -24,13 +25,13 @@ vec4 linear_gradient()
 
 vec4 tex_lookup()
 {
-	return texture2D(g_tex1,gl_TexCoord[0].xy);
+	return texture2D(g_tex1,gl_TexCoord[0].xy*texScale);
 }
 
 vec4 tex_lookup_yuv()
 {
 	//Pixel format is VUYA
-	vec4 val=texture2D(g_tex1,gl_TexCoord[0].xy).bgra-vec4(0,0.5,0.5,0);
+	vec4 val=texture2D(g_tex1,gl_TexCoord[0].xy*texScale).bgra-vec4(0,0.5,0.5,0);
 	val.rgb=YUVtoRGB*(val.rgb);
 	return val;
 }

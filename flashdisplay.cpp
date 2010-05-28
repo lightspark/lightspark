@@ -296,10 +296,10 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 		{
 			if(ret==true)
 			{
-				xmin = min(xmin,txmin);
-				xmax = max(xmax,txmax);
-				ymin = min(ymin,txmin);
-				ymax = max(ymax,tymax);
+				xmin = imin(xmin,txmin);
+				xmax = imax(xmax,txmax);
+				ymin = imin(ymin,txmin);
+				ymax = imax(ymax,tymax);
 			}
 			else
 			{
@@ -319,10 +319,10 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 		{
 			if(ret==true)
 			{
-				xmin = min(xmin,txmin);
-				xmax = max(xmax,txmax);
-				ymin = min(ymin,txmin);
-				ymax = max(ymax,tymax);
+				xmin = imin(xmin,txmin);
+				xmax = imax(xmax,txmax);
+				ymin = imin(ymin,txmin);
+				ymax = imax(ymax,tymax);
 			}
 			else
 			{
@@ -545,7 +545,7 @@ void MovieClip::advanceFrame()
 		frames[state.next_FP].init(this,displayList);
 		state.FP=state.next_FP;
 		if(!state.stop_FP && framesLoaded>0)
-			state.next_FP=min(state.FP+1,framesLoaded-1);
+			state.next_FP=imin(state.FP+1,framesLoaded-1);
 		state.explicit_FP=false;
 	}
 
@@ -672,10 +672,10 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 			}
 			else
 			{
-				xmin=min(xmin,t1);
-				xmax=min(xmax,t2);
-				ymin=min(ymin,t3);
-				ymax=min(ymax,t4);
+				xmin=imin(xmin,t1);
+				xmax=imax(xmax,t2);
+				ymin=imin(ymin,t3);
+				ymax=imax(ymax,t4);
 			}
 			break;
 		}
@@ -706,10 +706,10 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 			}
 			else
 			{
-				xmin=min(xmin,t1);
-				xmax=min(xmax,t2);
-				ymin=min(ymin,t3);
-				ymax=min(ymax,t4);
+				xmin=imin(xmin,t1);
+				xmax=imax(xmax,t2);
+				ymin=imin(ymin,t3);
+				ymax=imax(ymax,t4);
 			}
 			break;
 		}

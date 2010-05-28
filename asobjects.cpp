@@ -417,7 +417,7 @@ void Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	if(index>=data.capacity())
 	{
 		//Heuristic, we increse the array 20%
-		int new_size=max(index+1,data.size()*2);
+		int new_size=imax(index+1,data.size()*2);
 		data.reserve(new_size);
 	}
 	if(index>=data.size())
@@ -478,7 +478,7 @@ void Array::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 	if(index>=data.capacity())
 	{
 		//Heuristic, we increse the array 20%
-		int new_size=max(index+1,data.size()*2);
+		int new_size=imax(index+1,data.size()*2);
 		data.reserve(new_size);
 	}
 	if(index>=data.size())
@@ -533,7 +533,7 @@ void Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, A
 	if(index>=data.capacity())
 	{
 		//Heuristic, we increse the array 20%
-		int new_size=max(index+1,data.size()*2);
+		int new_size=imax(index+1,data.size()*2);
 		data.reserve(new_size);
 	}
 	if(index>=data.size())
@@ -1157,7 +1157,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 
 	//Prepare arguments
 	int args_len=mi->numArgs();
-	int passedToLocals=min(numArgs,args_len);
+	int passedToLocals=imin(numArgs,args_len);
 	int passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
 	int realLevel=(bound)?closure_level:level;
 

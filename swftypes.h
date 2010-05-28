@@ -368,9 +368,9 @@ class Manager
 friend class ASObject;
 private:
 	std::vector<ASObject*> available;
-	uint32_t max;
+	uint32_t maxCache;
 public:
-	Manager(uint32_t m):max(m){}
+	Manager(uint32_t m):maxCache(m){}
 template<class T>
 	T* get();
 	void put(ASObject* o);
@@ -601,7 +601,7 @@ public:
 
 inline void Manager::put(ASObject* o)
 {
-	if(available.size()>max)
+	if(available.size()>maxCache)
 		delete o;
 	else
 		available.push_back(o);
@@ -778,16 +778,6 @@ inline std::istream& operator>>(std::istream& s, RECORDHEADER& v)
 	return s;
 }
 
-inline int min(int a,int b)
-{
-	return (a<b)?a:b;
-}
-
-inline int max(int a,int b)
-{
-	return (a>b)?a:b;
-}
-
 class BitStream
 {
 public:
@@ -863,8 +853,8 @@ public:
 		int i=0;
 		while(!s)
 		{
-			buf[i]=stream.readBits(min(s,8));
-			s-=min(s,8);
+			buf[i]=stream.readBits(imin(s,8));
+			s-=imin(s,8);
 			i++;
 		}*/
 		if(s>32)

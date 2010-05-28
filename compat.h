@@ -22,10 +22,12 @@
 
 //Define cross platform helpers
 #ifdef WIN32
+#include <winsock2.h>
 #include <windows.h>
 #define TLSDATA __declspec( thread )
 #define snprintf _snprintf
 int round ( double f_val );
+#define isnan(x) _isnan(x)
 #else //GCC
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS
@@ -44,6 +46,21 @@ int round ( double f_val );
 #elif defined(__APPLE__)
 #define _BSD_SOURCE
 #include <architecture/byte_order.h>
+#elif defined(WIN32)
+#ifdef _MSC_VER
+typedef __int64 int64_t;
+typedef unsigned __int64 uint64_t;
+/*
+typedef signed int int32_t;
+typedef unsigned int uint32_t;
+typedef short int16_t;
+typedef unsigned short uint16_t;
+typedef signed char int8_t;
+typedef unsigned char uint8_t;
+typedef signed int ssize_t;
+*/
+#endif
+
 #else
 #include <endian.h>
 #endif
@@ -51,6 +68,16 @@ int round ( double f_val );
 void compat_msleep(unsigned int time);
 
 uint64_t compat_msectiming();
+
+inline int imin(int a, int b)
+{
+	return (a<b)?a:b;
+}
+
+inline int imax(int a, int b)
+{
+	return (a>b)?a:b;
+}
 
 inline double dmin(double a,double b)
 {

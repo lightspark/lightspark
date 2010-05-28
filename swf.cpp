@@ -395,7 +395,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 		{
 			//New tag, flush the old one if present
 			if(curTag)
-				font->Render(curTag->c_str() ,-1,FTPoint(curTagX,max(curTagY-curTagH,0)));
+				font->Render(curTag->c_str() ,-1,FTPoint(curTagX,imax(curTagY-curTagH,0)));
 			//Measure tag
 			FTBBox tagBox=font->BBox(data[i].tag.c_str(),-1);
 			curTagLen=(tagBox.Upper()-tagBox.Lower()).X();
@@ -407,11 +407,11 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 		if(curTag)
 		{
 			if(relx<(curTagX+curTagLen))
-				curTagY=min(curTagY,data[i].timing*height/maxTime);
+				curTagY=imin(curTagY,data[i].timing*height/maxTime);
 			else
 			{
 				//Tag is before this sample
-				font->Render(curTag->c_str() ,-1,FTPoint(curTagX,max(curTagY-curTagH,0)));
+				font->Render(curTag->c_str() ,-1,FTPoint(curTagX,imax(curTagY-curTagH,0)));
 				curTag=NULL;
 			}
 		}

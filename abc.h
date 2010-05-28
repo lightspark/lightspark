@@ -17,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _SWF_H
-#define _SWF_H
+#ifndef _ABC_H
+#define _ABC_H
 
 #include "compat.h"
 #include <llvm/Module.h>
@@ -213,7 +213,7 @@ typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
 class method_info
 {
 friend std::istream& operator>>(std::istream& in, method_info& v);
-friend class block_info;
+friend struct block_info;
 private:
 	enum { NEED_ARGUMENTS=1,NEED_REST=4, HAS_OPTIONAL=8};
 	u30 param_count;
@@ -265,9 +265,9 @@ public:
 	ABCContext* context;
 	method_body_info* body;
 	SyntheticFunction::synt_function synt_method();
-	bool needsArgs() { return flags&NEED_ARGUMENTS;}
-	bool needsRest() { return flags&NEED_REST;}
-	bool hasOptional() { return flags&HAS_OPTIONAL;}
+	bool needsArgs() { return (flags & NEED_ARGUMENTS) != 0;}
+	bool needsRest() { return (flags & NEED_REST) != 0;}
+	bool hasOptional() { return (flags & HAS_OPTIONAL) != 0;}
 	ASObject* getOptional(unsigned int i);
 	int numArgs() { return param_count; }
 	method_info():option_count(0),f(NULL),context(NULL),body(NULL)

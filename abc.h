@@ -589,7 +589,7 @@ private:
 	//Event handling
 	bool shutdown;
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
-	void handleEvent();
+	void handleEvent(std::pair<EventDispatcher*,Event*> e);
 
 	void buildClassAndInjectBase(const std::string& n, ASObject*, ASObject* const* a, const unsigned int argslen, bool isRoot);
 

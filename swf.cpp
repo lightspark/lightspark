@@ -1429,10 +1429,9 @@ void RenderThread::commonGLInit(int width, int height)
 	//Load shaders
 	loadShaderPrograms();
 
+	glUseProgram(gpu_program);
 	int tex=glGetUniformLocation(gpu_program,"g_tex1");
 	glUniform1i(tex,0);
-
-	glUseProgram(gpu_program);
 
 	glDisable(GL_DEPTH_TEST);
 	glDepthFunc(GL_ALWAYS);

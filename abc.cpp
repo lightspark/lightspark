@@ -49,6 +49,7 @@ using namespace lightspark;
 extern TLSDATA SystemState* sys;
 TLSDATA Manager* iManager=NULL;
 TLSDATA Manager* dManager=NULL;
+TLSDATA bool isVmThread=false;;
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
 {
@@ -969,12 +970,8 @@ int ABCVm::getEventQueueSize()
 	return events_queue.size();
 }
 
-void ABCVm::handleEvent()
+void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 {
-	sem_wait(&event_queue_mutex);
-	pair<EventDispatcher*,Event*> e=events_queue.front();
-	events_queue.pop_front();
-	sem_post(&event_queue_mutex);
 	e.second->check();
 	if(e.first)
 	{
@@ -1047,6 +1044,16 @@ bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	//If the system should terminate new events are not accepted
 	if(m_sys->shouldTerminate())
 		return false;
+	//If the event is a synchronization and we are running in the VM context
+	//we should handle it immidiately to avoid deadlock
+	if(isVmThread && (ev->getEventType()==SYNC || ev->getEventType()==CONSTRUCT_OBJECT))
+	{
+		assert(obj==NULL);
+		ev->incRef();
+		handleEvent(pair<EventDispatcher*,Event*>(NULL, ev));
+		return true;
+	}
+
 	sem_wait(&event_queue_mutex);
 	if(obj)
 		obj->incRef();
@@ -1285,6 +1292,7 @@ void ABCContext::exec()
 void ABCVm::Run(ABCVm* th)
 {
 	sys=th->m_sys;
+	isVmThread=true;
 	iManager=th->int_manager;
 	dManager=th->number_manager;
 	if(th->m_sys->useJit)
@@ -1336,7 +1344,11 @@ void ABCVm::Run(ABCVm* th)
 					LOG(LOG_NO_INFO,th->events_queue.size() << " events missing before exit");
 			}
 			Chronometer chronometer;
-			th->handleEvent();
+			sem_wait(&th->event_queue_mutex);
+			pair<EventDispatcher*,Event*> e=th->events_queue.front();
+			th->events_queue.pop_front();
+			sem_post(&th->event_queue_mutex);
+			th->handleEvent(e);
 			profile->accountTime(chronometer.checkpoint());
 		}
 		catch(LightsparkException& e)

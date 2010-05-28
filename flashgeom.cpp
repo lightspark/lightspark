@@ -56,9 +56,9 @@ void Rectangle::buildTraits(ASObject* o)
 	o->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
 }
 
-const RECT Rectangle::getRect() const
+const lightspark::RECT Rectangle::getRect() const
 {
-	return RECT(x,y,x+width,y+height);
+	return lightspark::RECT(x,y,x+width,y+height);
 }
 
 ASFUNCTIONBODY(Rectangle,_constructor)
@@ -252,4 +252,3 @@ void Transform::buildTraits(ASObject* o)
 {
 	o->setSetterByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction));
 }
-

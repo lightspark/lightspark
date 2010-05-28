@@ -121,6 +121,7 @@ public:
 			return ASObject::toString(debugMsg);
 		else
 			::abort();
+		return "";
 	}
 	bool isEqual(ASObject* r)
 	{

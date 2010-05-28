@@ -32,7 +32,7 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_OBJECT, CHANGE_FRAME };
 
-class ASObject;
+//class ASObject;
 class ABCContext;
 
 class Event: public ASObject

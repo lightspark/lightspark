@@ -208,6 +208,7 @@ bool ByteArray::isEqual(ASObject* r)
 		return false;*/
 
 	::abort();
+	return false;
 }
 
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
@@ -498,6 +499,7 @@ bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 		it++;
 	out=it->first;
 	return true;*/
+	return false;
 }
 
 void Proxy::sinit(Class_base* c)

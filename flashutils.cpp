@@ -270,6 +270,7 @@ ASFUNCTIONBODY(Timer,start)
 {
 	Timer* th=static_cast<Timer*>(obj);
 	th->running=true;
+	th->incRef();
 	sys->addJob(th);
 	return NULL;
 }

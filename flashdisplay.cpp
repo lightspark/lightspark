@@ -146,6 +146,7 @@ ASFUNCTIONBODY(Loader,load)
 	URLRequest* r=static_cast<URLRequest*>(args[0]);
 	th->url=r->url;
 	th->source=URL;
+	th->incRef();
 	sys->addJob(th);
 	return NULL;
 }
@@ -163,6 +164,7 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	{
 		th->loading=true;
 		th->source=BYTES;
+		th->incRef();
 		sys->addJob(th);
 	}
 	return NULL;

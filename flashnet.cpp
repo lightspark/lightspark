@@ -129,6 +129,7 @@ ASFUNCTIONBODY(URLLoader,load)
 		}
 	}
 	assert_and_throw(th->dataFormat=="binary" || th->dataFormat=="text");
+	th->incRef();
 	sys->addJob(th);
 	return NULL;
 }
@@ -289,6 +290,7 @@ ASFUNCTIONBODY(NetStream,play)
 	const tiny_string& arg0=args[0]->toString();
 	th->url = arg0;
 	th->downloader=sys->downloadManager->download(th->url);
+	th->incRef();
 	sys->addJob(th);
 	return NULL;
 }

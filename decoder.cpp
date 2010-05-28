@@ -160,9 +160,13 @@ void FFMpegDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, u
 	//Only one thread may access the tail
 	if(buffers[bufferTail][0]==NULL)
 	{
+#ifdef WIN32
+		//FIXME!!
+#else
 		posix_memalign((void**)&buffers[bufferTail][0], 16, bufferSize);
 		posix_memalign((void**)&buffers[bufferTail][1], 16, bufferSize/4);
 		posix_memalign((void**)&buffers[bufferTail][2], 16, bufferSize/4);
+#endif
 	}
 	int offset[3]={0,0,0};
 	for(uint32_t y=0;y<height;y++)

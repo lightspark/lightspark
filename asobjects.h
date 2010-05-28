@@ -139,6 +139,7 @@ private:
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		abort();
+		return NULL;
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{
@@ -158,6 +159,7 @@ private:
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		abort();
+		return NULL;
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{
@@ -205,7 +207,6 @@ public:
 	{
 		abort();
 	}
-
 	static Class_function* getClass();
 };
 

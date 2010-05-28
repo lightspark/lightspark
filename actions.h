@@ -60,6 +60,7 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		abort();
+		return false;
 	}
 };
 
@@ -78,6 +79,7 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		abort();
+		return false;
 	}
 };
 
@@ -144,6 +146,7 @@ public:
 	ASObject* call(ASObject* obj, ASObject* const* args,int num_args, int level)
 	{
 		abort();
+		return false;
 	}
 	STRING getName(){ return FunctionName; }
 };
@@ -181,6 +184,7 @@ public:
 	ASObject* call(ASObject* obj, ASObject* const* args,int num_args, int level)
 	{
 		abort();
+		return false;
 	}
 	STRING getName(){ return FunctionName; }
 	IFunction* toFunction(){ return this; }

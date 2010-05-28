@@ -681,7 +681,6 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	ASObject** args=new ASObject*[m];
 	for(int i=0;i<m;i++)
 		args[m-i-1]=th->runtime_stack_pop();
-	__asm__("int $3");
 
 	ASObject* obj=th->runtime_stack_pop();
 

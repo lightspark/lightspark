@@ -24,6 +24,12 @@
 
 #include "compat.h"
 
+#ifdef WIN32
+#define NORETURN __attribute__((noreturn))
+#else
+#define NORETURN __declspec(noreturn)
+#endif
+
 void compat_msleep(unsigned int time)
 {
 #ifdef WIN32
@@ -42,7 +48,11 @@ int round(double f)
 
 uint64_t compat_msectiming()
 {
+#ifdef WIN32
+	return GetTickCount64();
+#else
 	timespec t;
 	clock_gettime(CLOCK_MONOTONIC,&t);
 	return (t.tv_sec*1000 + t.tv_nsec/1000000);
+#endif
 }

@@ -67,7 +67,9 @@ protected:
 	virtual Vector2 debugRender(FTFont* font, bool deep)
 	{
 		::abort();
+		return Vector2(0,0);
 	}
+
 public:
 	void setMatrix(const MATRIX& m);
 };
@@ -127,6 +129,7 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		abort();
+		return false;
 	}
 };
 

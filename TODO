@@ -18,3 +18,4 @@ Official TODO Queue:
 -) Conditional scaling of FontGlyph based on version
 -) Why std::istream catches our exeptions?
 -) Add a finally interface to Jobs so they may decRef themselves
+-) Add conditional usage of NPOT textures

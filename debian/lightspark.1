@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH LIGHTSPARK 1 "June 28, 2009"
+.TH LIGHTSPARK 1 "May 29, 2010"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -18,21 +18,40 @@
 .SH NAME
 lightspark \- a free Flash player
 .SH SYNOPSIS
-.B lightspark
-.RI [ options ] " file.swf" ...
+.B lightspark 
+[--url|-u http://loader.url/file.swf] [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] [--parameters-file|-p params-file] file.swf
 .SH DESCRIPTION
-This manual page documents briefly the
-.B lightspark
-standalone player.
+.B Lightspark
+is a free, modern Flash Player implementation, this documents the options accepted by the standalone version of the program.
 .PP
 .\" TeX users may be more comfortable with the \fB<whatever>\fP and
 .\" \fI<whatever>\fP escape sequences to invode bold face and italics,
 .\" respectively.
-\fBlightspark\fP is a modern Adobe Flash player.
-It is currently in a very experimantal phase. This is the standalone player.
+The player is currently in Beta, support for any particular SWF file is not guaranteed
 .PP
 You might wish to see the project website at http://lightspark.sf.net or our 
 technical blog at http://allievi.sssup.it/techblog
+.SH OPTIONS
+.HP 
+\fB\-\-url\fP loader.url/file.swf, \fB\-u\fP loader.url/file.swf
+.IP
+Pretends to be loading the file from an url
+.HP 
+\fB\-\-disable-interpreter\fP, \fB\-ni\fP
+.IP
+Disable the ActionScript interpreter
+.HP 
+\fB\-\-enable-jit\fP, \fB\-j\fP
+.IP
+Enable the ActionScript JIT compilation engine
+.HP 
+\fB\-\-log-level\fP 0-4, \fB\-l\fP 0-4
+.IP
+Sets the verbosity of the output, the default is 2
+.HP
+\fB\-\-parameters-file\fP params-file, \fB\-p\fP params-file
+.IP
+Load flash parameters from file. Every odd line will be interpreted as a parameter name, with the following one as the value.
 .SH AUTHOR
 lightspark was written by Alessandro Pignotti.
 .PP

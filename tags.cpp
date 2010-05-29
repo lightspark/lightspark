@@ -202,7 +202,7 @@ Tag* TagFactory::readTag()
 	else if(actualLen>expectedLen)
 	{
 		LOG(LOG_ERROR,"Error while reading tag. Size=" << actualLen << " expected: " << expectedLen);
-		::abort();
+		throw ParseException("Malformed SWF file");
 	}
 	
 	return ret;

@@ -51,6 +51,8 @@ public:
 	void setTexScale(GLuint uniformLocation);
 	void setBGRAData(uint8_t* bgraData, uint32_t w, uint32_t h);
 	void resize(uint32_t width, uint32_t height);
+	uint32_t getAllocWidth() const { return allocWidth;}
+	uint32_t getAllocHeight() const { return allocHeight;}
 };
 
 };

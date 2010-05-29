@@ -38,10 +38,8 @@ vec4 tex_lookup_yuv()
 
 void main()
 {
-	vec4 ret=(solid_color()*gl_Color.x)+
+	gl_FragColor=(solid_color()*gl_Color.x)+
 			(linear_gradient()*gl_Color.y)+
 			(tex_lookup()*gl_Color.z)+
 			(tex_lookup_yuv()*gl_Color.w);
-
-	gl_FragData[0]=ret;
 }

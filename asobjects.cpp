@@ -70,7 +70,7 @@ void Array::buildTraits(ASObject* o)
 	o->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 	o->ASObject::setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
 	o->ASObject::setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
-	o->ASObject::setVariableByQName("unshift","",Class<IFunction>::getFunction(unshift));
+	o->ASObject::setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
 	o->ASObject::setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
 	o->ASObject::setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
 	o->ASObject::setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
@@ -245,14 +245,12 @@ ASFUNCTIONBODY(Array,_sort)
 ASFUNCTIONBODY(Array,unshift)
 {
 	Array* th=static_cast<Array*>(obj);
-	if(argslen!=1)
+	for(int i=0;i<argslen;i++)
 	{
-		LOG(LOG_ERROR,"Multiple unshift");
-		throw UnsupportedException("Array::unshift not completely implemented");
+		th->data.insert(th->data.begin(),data_slot(args[i],DATA_OBJECT));
+		args[i]->incRef();
 	}
-	th->data.insert(th->data.begin(),data_slot(args[0]));
-	args[0]->incRef();
-	return abstract_i(th->size());
+	return abstract_i(th->size());;
 }
 
 ASFUNCTIONBODY(Array,_push)
@@ -1182,6 +1180,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 
 	//Fixup missing parameters
 	unsigned int missing_params=args_len-i;
+	assert(missing_params<=mi->option_count);
 	assert_and_throw(missing_params<=mi->option_count);
 	int starting_options=mi->option_count-missing_params;
 

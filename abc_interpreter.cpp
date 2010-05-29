@@ -603,6 +603,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				break;
 			}
 			case 0x46:
+			case 0x4c: //callproplex seems to be exactly like callproperty
 			{
 				//callproperty
 				u30 t,t2;

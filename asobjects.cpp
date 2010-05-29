@@ -1124,8 +1124,12 @@ ASFUNCTIONBODY(IFunction,apply)
 	int len=array->size();
 	ASObject** new_args=new ASObject*[len];
 	for(int i=0;i<len;i++)
+	{
 		new_args[i]=array->at(i);
+		new_args[i]->incRef();
+	}
 
+	args[0]->incRef();
 	ASObject* ret=th->call(args[0],new_args,len,0);
 	delete[] new_args;
 	return ret;

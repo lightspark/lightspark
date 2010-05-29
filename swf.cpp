@@ -1046,10 +1046,10 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			profile->accountTime(chronometer.checkpoint());
 		}
 	}
-	catch(const char* e)
+	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception caught " << e);
-		::abort();
+		LOG(LOG_ERROR,"Exception in RenderThread " << e.what() << " " << e.cause);
+		sys->setError(e.cause);
 	}
 	ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
 	assert_and_throw(ret);

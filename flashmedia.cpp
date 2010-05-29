@@ -194,7 +194,7 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	assert_and_throw(argslen==1);
 	//Validate the parameter
 	if(args[0]->getPrototype()!=Class<NetStream>::getClass())
-		::abort();
+		throw RunTimeException("Type mismatch in Video::attachNetStream");
 
 	//Acquire the netStream
 	args[0]->incRef();

@@ -77,7 +77,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 	if(added==0)
 		return;
 	if((tail+added)>len)
-		::abort();
+		throw RunTimeException("Downloaded file is too big");
 	sem_wait(&mutex);
 	memcpy(buffer + tail,buf,added);
 	tail+=added;

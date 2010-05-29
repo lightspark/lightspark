@@ -327,9 +327,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 		switch(tag->getType())
 		{
 			case DICT_TAG:
-				LOG(LOG_ERROR,"Dictionary tag inside a sprite. Should not happen.");
-				abort();
-				break;
+				throw ParseException("Dictionary tag inside a sprite. Should not happen.");
 			case DISPLAY_LIST_TAG:
 				addToFrame(static_cast<DisplayListTag*>(tag));
 				empty=false;
@@ -342,10 +340,9 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				break;
 			}
 			case CONTROL_TAG:
-				LOG(LOG_ERROR,"Control tag inside a sprite. Should not happen.");
-				abort();
-				break;
+				throw ParseException("Control tag inside a sprite. Should not happen.");
 			case TAG:
+				LOG(LOG_NOT_IMPLEMENTED,"Unclassified tag inside Sprite?");
 				break;
 			case END_TAG:
 				done=true;
@@ -359,7 +356,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	if(frames.size()!=FrameCount)
 	{
 		LOG(LOG_ERROR,"Inconsistent frame count " << FrameCount);
-		abort();
+		throw ParseException("Invalid frame count in Sprite");
 	}
 
 	LOG(LOG_TRACE,"EndDefineSprite ID: " << SpriteID);
@@ -687,9 +684,6 @@ void DefineTextTag::Render()
 	FILLSTYLE f;
 	f.FillStyleType=0x00;
 	f.Color=it->TextColor;
-	FILLSTYLE clearStyle;
-	clearStyle.FillStyleType=0x00;
-	clearStyle.Color=RGBA(0,0,0,0);
 	glPushMatrix();
 	glMultMatrixf(matrix);
 	glMultMatrixf(textMatrix);
@@ -722,12 +716,8 @@ void DefineTextTag::Render()
 		{
 			while(shapes_done<cached.size() && cached[shapes_done].id==count)
 			{
-				if(cached[shapes_done].color==1)
-					cached[shapes_done].style=&f;
-				else if(cached[shapes_done].color==0)
-					cached[shapes_done].style=&clearStyle;
-				else
-					abort();
+				assert_and_throw(cached[shapes_done].color==1)
+				cached[shapes_done].style=&f;
 
 				cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
 				shapes_done++;
@@ -769,12 +759,8 @@ void DefineTextTag::Render()
 			{
 				while(shapes_done<cached.size() &&  cached[shapes_done].id==count)
 				{
-					if(cached[shapes_done].color==1)
-						cached[shapes_done].style=&f;
-					else if(cached[shapes_done].color==0)
-						cached[shapes_done].style=&clearStyle;
-					else
-						abort();
+					assert_and_throw(cached[shapes_done].color==1)
+					cached[shapes_done].style=&f;
 
 					cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
 					shapes_done++;
@@ -1302,10 +1288,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		{
 			infos=it->first;
 			if(!PlaceFlagMove)
-			{
-				LOG(LOG_ERROR,"Depth already used already on displaylist");
-				abort();
-			}
+				throw ParseException("Depth already used already on displaylist");
 			break;
 		}
 	}
@@ -1454,8 +1437,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	if(PlaceFlagHasClipAction)
 		in >> ClipActions;
 
-	if(PlaceFlagHasCharacter && CharacterId==0)
-		abort();
+	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0))
 }
 
 void SetBackgroundColorTag::execute(RootMovieClip* root)

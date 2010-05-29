@@ -161,10 +161,7 @@ bool zlib_filter::initialize()
 		strm.next_in = Z_NULL;
 		int ret = inflateInit(&strm);
 		if (ret != Z_OK)
-		{
-			LOG(LOG_ERROR,"Failed to initialize ZLib");
-			abort();
-		}
+			throw lightspark::RunTimeException("Failed to initialize ZLib");
 	}
 	else
 		return false;

@@ -961,7 +961,9 @@ void ABCVm::wait()
 	if(!terminated)
 	{
 		if(pthread_join(t,NULL)!=0)
-			abort();
+		{
+			LOG(LOG_ERROR,"pthread_join in ABCVm failed");
+		}
 		terminated=true;
 	}
 }

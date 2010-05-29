@@ -45,7 +45,7 @@ ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 		in >> Tags[i] >> Names[i];
 		DictionaryTag* d=pt->root->dictionaryLookup(Tags[i]);
 		if(d==NULL)
-			abort();
+			throw ParseException("ExportAssetsTag: id not defined in Dictionary");
 		//TODO:new interface based model
 		//pt->root->setVariableByString(Names[i],d->instance());
 	}

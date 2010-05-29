@@ -243,10 +243,8 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
-	{
-		LOG(LOG_ERROR,"Type mismatch");
-		abort();
-	}
+		throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
+
 	const tiny_string& eventName=args[0]->toString();
 	IFunction* f=static_cast<IFunction*>(args[1]);
 
@@ -278,10 +276,7 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
-	{
-		LOG(LOG_ERROR,"Type mismatch");
-		abort();
-	}
+		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 
 	map<tiny_string, list<listener> >::iterator h=th->handlers.find(args[0]->toString());
 	if(h==th->handlers.end())

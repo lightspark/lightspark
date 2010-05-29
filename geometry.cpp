@@ -125,7 +125,7 @@ void GeomShape::SetStyles(const std::list<FILLSTYLE>* styles)
 		if(color)
 		{
 			if(color > styles->size())
-				abort();
+				throw RunTimeException("Not enough styles in GeomShape::SetStyles");
 
 			//Simulate array access :-(
 			list<FILLSTYLE>::const_iterator it=styles->begin();

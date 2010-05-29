@@ -1699,9 +1699,7 @@ void Class_base::abandonObject(ASObject* ob)
 	set<ASObject>::size_type ret=referencedObjects.erase(ob);
 	if(ret!=1)
 	{
-		cout << ret << endl;
-		cout << class_name << endl;
-		::abort();
+		LOG(LOG_ERROR,"Failure in reference counting");
 	}
 }
 

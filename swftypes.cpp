@@ -1585,27 +1585,6 @@ std::istream& lightspark::operator>>(std::istream& stream, DROPSHADOWFILTER& v)
 	return stream;
 }
 
-void DictionaryDefinable::define(ASObject* g)
-{
-	abort();
-/*	DictionaryTag* t=p->root->dictionaryLookup(dict_id);
-	ASObject* o=dynamic_cast<ASObject*>(t);
-	if(o==NULL)
-	{
-		//Should not happen in real live
-		ASObject* ret=new ASObject;
-		g->setVariableByName(p->Name,new ASObject);
-	}
-	else
-	{
-		ASObject* ret=o->clone();
-		if(ret->constructor)
-			ret->constructor->call(ret,NULL);
-		p->setWrapped(ret);
-		g->setVariableByName(p->Name,ret);
-	}*/
-}
-
 variables_map::~variables_map()
 {
 	destroyContents();

@@ -112,7 +112,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	int length=args[2]->toInt();
 	//TODO: Support offset
 	if(offset!=0)
-		abort();
+		throw UnsupportedException("offset in ByteArray::readBytes");
 
 	uint8_t* buf=out->getBuffer(length);
 	memcpy(buf,th->bytes+th->position,length);
@@ -207,7 +207,7 @@ bool ByteArray::isEqual(ASObject* r)
 	/*if(r->getObjectType()!=T_OBJECT)
 		return false;*/
 
-	::abort();
+	throw UnsupportedException("ByteArray::isEqual");
 	return false;
 }
 
@@ -245,7 +245,7 @@ void Timer::execute()
 void Timer::threadAbort()
 {
 	running=false;
-	::abort();
+	throw UnsupportedException("Timer::threadAbort");
 }
 
 void Timer::sinit(Class_base* c)
@@ -401,7 +401,7 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool
 	else if(name.name_type==multiname::NAME_STRING)
 		data[Class<ASString>::getInstanceS(name.name_s)]=o;
 	else
-		::abort();
+		throw UnsupportedException("Unsupported name kind in Dictionary::setVariableByMultiname");
 }
 
 void Dictionary::deleteVariableByMultiname(const multiname& name)
@@ -465,7 +465,7 @@ objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_
 		ret=new Undefined;
 	}
 	else
-		::abort();
+		throw UnsupportedException("Unsupported name kind on Dictionary::getVariableByMultiname");
 
 	return objAndLevel(ret,0);
 }

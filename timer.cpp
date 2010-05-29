@@ -153,8 +153,12 @@ void* TimerThread::timer_worker(TimerThread* th)
 			continue;
 
 		//The first event has expired
-		if(errno!=ETIMEDOUT)
-			abort();
+		int err=errno;
+		if(err!=ETIMEDOUT)
+		{
+			LOG(LOG_ERROR,"Unexpected failure of sem_timedwait.. Trying yo go on. errno=" << err);
+			continue;
+		}
 
 		//Note: it may happen that between the sem_timewait and this code another event gets inserted in the front. In this 
 		//case it's not an error to execute it now, as it's expiration time is the first anyway and before the one expired

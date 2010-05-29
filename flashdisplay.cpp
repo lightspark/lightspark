@@ -137,7 +137,7 @@ ASFUNCTIONBODY(Loader,load)
 /*	if(th->loading)
 		return NULL;
 	th->loading=true;*/
-	::abort();
+	throw UnsupportedException("Loader::load");
 /*	if(args->at(0)->getClassName()!="URLRequest")
 	{
 		LOG(ERROR,"ArgumentError");
@@ -224,7 +224,7 @@ void Loader::execute()
 void Loader::threadAbort()
 {
 	//TODO: implement
-	::abort();
+	throw UnsupportedException("Loader::threadAbort");
 }
 
 void Loader::Render()
@@ -441,7 +441,7 @@ void MovieClip::addToFrame(DisplayListTag* t)
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)
 {
-	abort();
+	throw UnsupportedException("MovieClip::addFrameScript");
 /*	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
 	if(args->size()%2)
 	{

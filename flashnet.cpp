@@ -107,7 +107,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	if(data)
 	{
 		if(data->getPrototype()==Class<URLVariables>::getClass())
-			::abort();
+			throw RunTimeException("Type mismatch in URLLoader::load");
 		else
 		{
 			const tiny_string& tmp=data->toString();
@@ -166,7 +166,7 @@ void URLLoader::execute()
 void URLLoader::threadAbort()
 {
 	//TODO: implement
-	::abort();
+	throw UnsupportedException("URLLoader::threadAbort");
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)
@@ -235,7 +235,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	if(args[0]->getObjectType()!=T_UNDEFINED)
 	{
 		th->isFMS=true;
-		abort();
+		throw UnsupportedException("NetConnection::connect to FMS");
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
@@ -514,7 +514,7 @@ tiny_string URLVariables::toString(bool debugMsg)
 {
 	assert_and_throw(implEnable);
 	//Should urlencode
-	::abort();
+	throw UnsupportedException("URLVariables::toString");
 	if(debugMsg)
 		return ASObject::toString(debugMsg);
 	int size=numVariables();
@@ -523,7 +523,7 @@ tiny_string URLVariables::toString(bool debugMsg)
 	{
 		const tiny_string& tmp=getNameAt(i);
 		if(tmp=="")
-			abort();
+			throw UnsupportedException("URLVariables::toString");
 		ret+=tmp;
 		ret+="=";
 		ret+=getValueAt(i)->toString();

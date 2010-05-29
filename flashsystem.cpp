@@ -113,7 +113,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	//Check if the object has to be defined
 	if(o.obj->getObjectType()==T_DEFINABLE)
 	{
-		abort();
+		throw UnsupportedException("Defininable in ApplicationDomain::getDefinition");
 /*		LOG(LOG_CALLS,"We got an object not yet valid");
 		Definable* d=static_cast<Definable*>(o.obj);
 		d->define(sys->currentVm->last_context->Global);

@@ -91,7 +91,7 @@ public:
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
-		abort();
+		throw UnsupportedException("Class_base::getVariableByMultiname_i");
 		return 0;
 /*		intptr_t ret=ASObject::getVariableByMultiname(name);
 		if(==NULL && super)
@@ -138,12 +138,12 @@ private:
 	Class_object():Class_base("Class"){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
-		abort();
+		throw RunTimeException("Class_object::getInstance");
 		return NULL;
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{
-		abort();
+		throw RunTimeException("Class_object::buildInstanceTraits");
 	}
 public:
 	static Class_object* getClass();
@@ -158,12 +158,12 @@ private:
 	ASObject* asprototype;
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
-		abort();
+		throw RunTimeException("Class_function::getInstance");
 		return NULL;
 	}
 	void buildInstanceTraits(ASObject* o) const
 	{
-		abort();
+		throw RunTimeException("Class_function::buildInstanceTraits");
 	}
 public:
 	//Class_function is both used as the prototype for each function and as the Function classs object
@@ -181,7 +181,7 @@ public:
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
-		abort();
+		throw UnsupportedException("Class_function::getVariableByMultiname_i");
 		return 0;
 /*		intptr_t ret=ASObject::getVariableByMultiname(name);
 		if(ret==NULL && super)
@@ -197,15 +197,15 @@ public:
 	}
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
-		abort();
+		throw UnsupportedException("Class_function::setVariableByMultiname_i");
 	}
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 	{
-		abort();
+		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false)
 	{
-		abort();
+		throw UnsupportedException("Class_function::setVariableByQName");
 	}
 	static Class_function* getClass();
 };
@@ -282,7 +282,7 @@ public:
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
 	{
-		abort();
+		throw UnsupportedException("Function::isEqual");
 	}
 };
 
@@ -333,7 +333,7 @@ private:
 	Class<IFunction>():Class_base("Function"){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
-		abort();
+		throw UnsupportedException("Class<IFunction>::getInstance");
 		return NULL;
 	}
 public:
@@ -703,18 +703,6 @@ public:
 	ScriptDefinable(IFunction* _f):f(_f){}
 	//The global object will be passed from the calling context
 	void define(ASObject* g){ f->call(g,NULL,0,0); }
-};
-
-class PlaceObject2Tag;
-
-class DictionaryDefinable: public Definable
-{
-private:
-	int dict_id;
-	PlaceObject2Tag* p;
-public:
-	DictionaryDefinable(int d, PlaceObject2Tag* _p):dict_id(d),p(_p){}
-	void define(ASObject* g);
 };
 
 class Math: public ASObject

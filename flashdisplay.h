@@ -124,11 +124,11 @@ public:
 	ASFUNCTION(localToGlobal);
 	void Render()
 	{
-		abort();
+		throw RunTimeException("DisplayObject::Render");
 	}
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
-		abort();
+		throw RunTimeException("DisplayObject::getBounds");
 		return false;
 	}
 };

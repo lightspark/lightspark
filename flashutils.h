@@ -120,7 +120,7 @@ public:
 		if(debugMsg)
 			return ASObject::toString(debugMsg);
 		else
-			::abort();
+			throw UnsupportedException("Dictionary::toString");
 		return "";
 	}
 	bool isEqual(ASObject* r)
@@ -144,7 +144,7 @@ public:
 	{
 		if(!implEnable || skip_impl)
 			return ASObject::getVariableByQName(name,ns,skip_impl);
-		::abort();
+		throw RunTimeException("Proxy::getVariableByQName");
 		return objAndLevel(NULL,0);
 	}
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
@@ -158,7 +158,7 @@ public:
 		if(!implEnable || skip_impl)
 			ASObject::setVariableByQName(name,ns,o,find_back,skip_impl);
 		else
-			::abort();
+			throw RunTimeException("Proxy::setVariableByQName");
 	}
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)

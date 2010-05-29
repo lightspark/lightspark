@@ -95,7 +95,7 @@ ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 	UI8 Type;
 	s >> Type;
 	if(Type!=2)
-		abort();
+		throw ParseException("Unexpected type in FLV");
 
 	ScriptDataString String(s);
 	methodName=String.getString();
@@ -103,7 +103,7 @@ ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 
 	s >> Type;
 	if(Type!=8)
-		abort();
+		throw ParseException("Unexpected type in FLV");
 
 	ScriptECMAArray ecmaArray(s);
 	frameRate=ecmaArray.frameRate;
@@ -174,8 +174,8 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s):frameRate(0)
 				return;
 			}
 			default:
+				throw ParseException("Unexpected type in FLV");
 				//cout << (int)Type << endl;
-				abort();
 		}
 	}
 }
@@ -190,7 +190,7 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 	codecId=(typeAndCodec&0xf);
 
 	if(frameType!=1 && frameType!=2)
-		abort();
+		throw ParseException("Unexpected frameType in FLV");
 
 	assert_and_throw(codecId==7);
 

@@ -77,7 +77,7 @@ FFMpegDecoder::FFMpegDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),c
 	codecContext->extradata_size=datalen;
 
 	if(avcodec_open(codecContext, codec)<0)
-		abort();
+		throw RunTimeException("Cannot open decoder");
 
 	frameIn=avcodec_alloc_frame();
 }
@@ -141,7 +141,7 @@ bool FFMpegDecoder::decodeData(uint8_t* data, uint32_t datalen)
 	int frameOk=0;
 	avcodec_decode_video(codecContext, frameIn, &frameOk, data, datalen);
 	if(frameOk==0)
-		abort();
+		throw RunTimeException("Cannot decode frame");
 	assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
 
 	const uint32_t height=codecContext->height;

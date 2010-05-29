@@ -60,7 +60,7 @@ ThreadPool::~ThreadPool()
 	for(int i=0;i<NUM_THREADS;i++)
 	{
 		if(pthread_join(threads[i],NULL)!=0)
-			abort();
+			LOG(LOG_ERROR,"pthread_join failed in ~ThreadPool");
 	}
 
 	sem_destroy(&num_jobs);

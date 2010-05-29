@@ -404,7 +404,7 @@ public:
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
-		abort();
+		throw UnsupportedException("DefineButton2Tag::getBounds");
 	}
 	virtual void handleEvent(Event*);
 

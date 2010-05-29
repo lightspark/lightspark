@@ -47,7 +47,6 @@ void lightspark::cleanGLErrors()
 	if(glErrorCount)
 	{
 		LOG(LOG_ERROR,"Ignoring " << glErrorCount << " openGL errors");
-		__asm__("int $3");
 	}
 #else
 	while(glGetError()!=GL_NO_ERROR);

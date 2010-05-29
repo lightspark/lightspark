@@ -1426,6 +1426,9 @@ void RenderThread::commonGLInit(int width, int height)
 		::abort();
 	}
 
+	if(GLEW_ARB_texture_non_power_of_two)
+		hasNPOTTextures=true;
+
 	//Load shaders
 	loadShaderPrograms();
 

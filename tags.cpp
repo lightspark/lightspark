@@ -672,7 +672,9 @@ void DefineTextTag::Render()
 			}
 		}
 	}
-	std::vector < TEXTRECORD >::iterator it= TextRecords.begin();
+	std::vector < TEXTRECORD >::iterator it=TextRecords.begin();
+	if(it==TextRecords.end()) //Nothing to draw
+		return;
 	std::vector < GLYPHENTRY >::iterator it2;
 	int x=0,y=0;
 	float matrix[16];

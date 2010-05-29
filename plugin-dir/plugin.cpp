@@ -23,8 +23,7 @@
 //#define MIME_TYPES_HANDLED  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
-//#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r00 - Lightspark implementation"
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r03"
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r04_Lightspark"
 #include "class.h"
 #include <gtk/gtk.h>
 

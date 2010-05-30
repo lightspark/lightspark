@@ -232,15 +232,9 @@ void Loader::Render()
 	if(!loaded)
 		return;
 
-	glPushMatrix();
-	float matrix[16];
-	getMatrix().get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
-
+	MatrixApplier ma(getMatrix());
 	local_root->Render();
-
-	glPopMatrix();
+	ma.unapply();
 }
 
 bool Loader::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -358,10 +352,7 @@ void Sprite::Render()
 
 	InteractiveObject::RenderProloue();
 
-	float matrix[16];
-	getMatrix().get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
+	MatrixApplier ma(getMatrix());
 
 	rt->glAcquireFramebuffer(t1,t2,t3,t4);
 
@@ -374,11 +365,6 @@ void Sprite::Render()
 	if(rt->glAcquireIdBuffer() && graphics)
 		graphics->Render();
 	
-	glPopMatrix();
-
-	glPushMatrix();
-	glMultMatrixf(matrix);
-
 	sem_wait(&sem_displayList);
 	//Now draw also the display list
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
@@ -386,7 +372,7 @@ void Sprite::Render()
 		(*it)->Render();
 	sem_post(&sem_displayList);
 
-	glPopMatrix();
+	ma.unapply();
 	
 	InteractiveObject::RenderEpilogue();
 }
@@ -568,10 +554,7 @@ void MovieClip::Render()
 
 	assert_and_throw(graphics==NULL);
 
-	float matrix[16];
-	getMatrix().get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
+	MatrixApplier ma(getMatrix());
 
 	if(framesLoaded)
 	{
@@ -593,7 +576,7 @@ void MovieClip::Render()
 		(*j)->Render();
 	sem_post(&sem_displayList);
 
-	glPopMatrix();
+	ma.unapply();
 	InteractiveObject::RenderEpilogue();
 
 	LOG(LOG_TRACE,"End Render MovieClip");
@@ -616,7 +599,7 @@ Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 	}
 	else
 	{
-		glPushMatrix();
+		MatrixApplier ma;
 		if(framesLoaded)
 		{
 			assert_and_throw(state.FP<framesLoaded);
@@ -642,7 +625,7 @@ Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 		assert_and_throw(dynamicDisplayList.empty());
 		sem_post(&sem_displayList);
 
-		glPopMatrix();
+		ma.unapply();
 	}
 	
 	return ret;
@@ -1469,10 +1452,7 @@ void Shape::Render()
 	if(!ret)
 		return;
 
-	float matrix[16];
-	getMatrix().get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
+	MatrixApplier ma(getMatrix());
 
 	rt->glAcquireFramebuffer(t1,t2,t3,t4);
 
@@ -1482,8 +1462,8 @@ void Shape::Render()
 	
 	if(rt->glAcquireIdBuffer())
 		graphics->Render();
-	
-	glPopMatrix();
+
+	ma.unapply();
 }
 
 ASFUNCTIONBODY(Shape,_constructor)

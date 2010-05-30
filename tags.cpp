@@ -677,24 +677,20 @@ void DefineTextTag::Render()
 		return;
 	std::vector < GLYPHENTRY >::iterator it2;
 	int x=0,y=0;
-	float matrix[16];
-	float textMatrix[16];
-	getMatrix().get4DMatrix(matrix);
-	TextMatrix.get4DMatrix(textMatrix);
 
 	//Build a fake FILLSTYLEs
 	FILLSTYLE f;
 	f.FillStyleType=0x00;
 	f.Color=it->TextColor;
-	glPushMatrix();
-	glMultMatrixf(matrix);
-	glMultMatrixf(textMatrix);
+	MatrixApplier ma(getMatrix());
+	ma.concat(TextMatrix);
 	//Shapes are defined in twips, so scale then down
 	glScalef(0.05,0.05,1);
 	
 	rt->glAcquireFramebuffer(TextBounds.Xmin,TextBounds.Xmax,
 				 TextBounds.Ymin,TextBounds.Ymax);
-	glPushMatrix();
+
+	MatrixApplier ma2;
 	//The next 1/20 scale is needed by DefineFont3. Should be conditional
 	glScalef(0.05,0.05,1);
 	float scale_cur=1;
@@ -730,7 +726,7 @@ void DefineTextTag::Render()
 			count++;
 		}
 	}
-	glPopMatrix();
+	ma2.unapply();
 
 	rt->glBlitFramebuffer(TextBounds.Xmin,TextBounds.Xmax,
 				 TextBounds.Ymin,TextBounds.Ymax);
@@ -774,7 +770,7 @@ void DefineTextTag::Render()
 			}
 		}
 	}
-	glPopMatrix();
+	ma.unapply();
 }
 
 Vector2 DefineTextTag::debugRender(FTFont* font, bool deep)
@@ -895,10 +891,7 @@ void DefineShapeTag::Render()
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 	}
 
-	float matrix[16];
-	getMatrix().get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
+	MatrixApplier ma(getMatrix());
 	glScalef(0.05,0.05,1);
 
 	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
@@ -917,7 +910,7 @@ void DefineShapeTag::Render()
 		for(;it!=cached.end();it++)
 			it->Render();
 	}
-	glPopMatrix();
+	ma.unapply();
 }
 
 Vector2 DefineShapeTag::debugRender(FTFont* font, bool deep)
@@ -948,10 +941,7 @@ void DefineShape2Tag::Render()
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 	}
 
-	float matrix[16];
-	getMatrix().get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
+	MatrixApplier ma(getMatrix());
 	glScalef(0.05,0.05,1);
 
 	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
@@ -973,7 +963,7 @@ void DefineShape2Tag::Render()
 		for(;it!=cached.end();it++)
 			it->Render();
 	}
-	glPopMatrix();
+	ma.unapply();
 }
 
 Vector2 DefineShape2Tag::debugRender(FTFont* font, bool deep)
@@ -1004,10 +994,7 @@ void DefineShape4Tag::Render()
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 	}
 
-	float matrix[16];
-	getMatrix().get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
+	MatrixApplier ma(getMatrix());
 	glScalef(0.05,0.05,1);
 
 	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
@@ -1026,7 +1013,7 @@ void DefineShape4Tag::Render()
 		for(;it!=cached.end();it++)
 			it->Render();
 	}
-	glPopMatrix();
+	ma.unapply();
 }
 
 void DefineShape3Tag::Render()
@@ -1040,10 +1027,7 @@ void DefineShape3Tag::Render()
 			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
 	}
 
-	float matrix[16];
-	getMatrix().get4DMatrix(matrix);
-	glPushMatrix();
-	glMultMatrixf(matrix);
+	MatrixApplier ma(getMatrix());
 	glScalef(0.05,0.05,1);
 
 	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
@@ -1067,7 +1051,7 @@ void DefineShape3Tag::Render()
 			it->Render();
 	}
 
-	glPopMatrix();
+	ma.unapply();
 }
 
 Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)

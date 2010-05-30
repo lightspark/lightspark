@@ -21,7 +21,9 @@
 #define _GRAPHICS_H
 
 #include <GL/glew.h>
+#include <vector>
 #include "compat.h"
+#include "swftypes.h"
 
 namespace lightspark
 {
@@ -53,6 +55,21 @@ public:
 	void resize(uint32_t width, uint32_t height);
 	uint32_t getAllocWidth() const { return allocWidth;}
 	uint32_t getAllocHeight() const { return allocHeight;}
+};
+
+class MatrixApplier
+{
+private:
+	struct packedMatrix
+	{
+		float data[4][4];
+	};
+	std::vector<packedMatrix> savedStack;
+public:
+	MatrixApplier();
+	MatrixApplier(const MATRIX& m);
+	void concat(const MATRIX& m);
+	void unapply();
 };
 
 };

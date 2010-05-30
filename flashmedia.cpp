@@ -74,10 +74,7 @@ void Video::Render()
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
 
-		float matrix[16];
-		getMatrix().get4DMatrix(matrix);
-		glPushMatrix();
-		glMultMatrixf(matrix);
+		MatrixApplier ma(getMatrix());
 
 		rt->glAcquireFramebuffer(0,width,0,height);
 
@@ -120,7 +117,7 @@ void Video::Render()
 			glEnd();
 			
 		}
-		glPopMatrix();
+		ma.unapply();
 	}
 }
 

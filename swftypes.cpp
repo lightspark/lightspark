@@ -825,7 +825,7 @@ std::ostream& operator<<(std::ostream& s, const RGB& r)
 	return s;
 }
 
-void MATRIX::get4DMatrix(float matrix[16])
+void MATRIX::get4DMatrix(float matrix[16]) const
 {
 	memset(matrix,0,sizeof(float)*16);
 	matrix[0]=ScaleX;
@@ -847,7 +847,7 @@ void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yo
 	yout=xin*RotateSkew0 + yin*ScaleY + TranslateY;
 }
 
-void MATRIX::getTranslation(int& x, int& y)
+void MATRIX::getTranslation(int& x, int& y) const
 {
 	x=TranslateX;
 	y=TranslateY;

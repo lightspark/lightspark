@@ -243,3 +243,42 @@ lightspark::TextureBuffer::~TextureBuffer()
 {
 	glDeleteTextures(1,&texId);
 }
+
+MatrixApplier::MatrixApplier()
+{
+	//First of all try to preserve current matrix
+	glPushMatrix();
+	if(glGetError()==GL_STACK_OVERFLOW)
+		throw RunTimeException("GL matrix stack exceeded");
+
+	//TODO: implement smart stack flush
+	//Save all the current stack, compute using SSE the final matrix and push that one
+	//Maybe mulps, shuffle and parallel add
+	//On unapply the stack will be reset as before
+}
+
+MatrixApplier::MatrixApplier(const MATRIX& m)
+{
+	//First of all try to preserve current matrix
+	glPushMatrix();
+	if(glGetError()==GL_STACK_OVERFLOW)
+	{
+		::abort();
+	}
+
+	float matrix[16];
+	m.get4DMatrix(matrix);
+	glMultMatrixf(matrix);
+}
+
+void MatrixApplier::concat(const MATRIX& m)
+{
+	float matrix[16];
+	m.get4DMatrix(matrix);
+	glMultMatrixf(matrix);
+}
+
+void MatrixApplier::unapply()
+{
+	glPopMatrix();
+}

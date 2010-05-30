@@ -52,7 +52,7 @@ TLSDATA Manager* iManager=NULL;
 TLSDATA Manager* dManager=NULL;
 TLSDATA bool isVmThread=false;;
 
-DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
+DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -89,7 +89,7 @@ void DoABCTag::execute(RootMovieClip*)
 	se->decRef();
 }
 
-SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h,in)
+SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
 {
 	LOG(LOG_TRACE,"SymbolClassTag");
 	in >> NumSymbols;

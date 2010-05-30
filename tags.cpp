@@ -152,6 +152,9 @@ Tag* TagFactory::readTag()
 		case 69:
 			ret=new FileAttributesTag(h,f);
 			break;
+		case 70:
+			ret=new PlaceObject3Tag(h,f);
+			break;
 		case 73:
 			ret=new DefineFontAlignZonesTag(h,f);
 			break;
@@ -208,7 +211,7 @@ Tag* TagFactory::readTag()
 	return ret;
 }
 
-RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 {
 	in >> Depth;
 	LOG(LOG_TRACE,"RemoveObject2 Depth: " << Depth);
@@ -229,12 +232,12 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, IDisplay
 	}
 }
 
-SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):ControlTag(h,in)
+SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	in >> BackgroundColor;
 }
 
-DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	//setVariableByName("text",SWFObject(new Integer(0)));
 	in >> CharacterID >> Bounds;
@@ -308,7 +311,7 @@ ASObject* DefineEditTextTag::instance() const
 	return ret;
 }
 
-DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	in >> SpriteID >> FrameCount;
 	totalFrames=FrameCount;
@@ -410,7 +413,7 @@ void lightspark::ignore(istream& i, int count)
 	delete[] buf;
 }
 
-DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
+DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h)
 {
 	LOG(LOG_TRACE,"DefineFont");
 	in >> FontID;
@@ -435,7 +438,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	}
 }
 
-DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
+DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 {
 	LOG(LOG_TRACE,"DefineFont2");
 	in >> FontID;
@@ -524,7 +527,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	ignore(in,KerningCount*4);
 }
 
-DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
+DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 {
 	LOG(LOG_TRACE,"DefineFont3");
 	in >> FontID;
@@ -600,7 +603,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h,in)
 	ignore(in,KerningCount*4);
 }
 
-DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
+DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -613,7 +616,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in):Dictio
 	ignore(in,dest-in.tellg());
 }
 
-DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
+DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):DictionaryTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -626,7 +629,7 @@ DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):Dict
 	ignore(in,dest-in.tellg());
 }
 
-DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h,in)
+DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
 	LOG(LOG_TRACE,"DefineText ID " << CharacterId);
@@ -789,21 +792,21 @@ Vector2 DefineTextTag::debugRender(FTFont* font, bool deep)
 	return Vector2(100,100);
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_TRACE,"DefineShapeTag");
 	Shapes.version=1;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_TRACE,"DefineShape2Tag");
 	Shapes.version=2;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_TRACE,"DefineShape3Tag");
 	Shapes.version=3;
@@ -811,7 +814,7 @@ DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DictionaryTag
 	texture=0;
 }
 
-DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_TRACE,"DefineShape4Tag");
 	Shapes.version=4;
@@ -824,7 +827,7 @@ DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DictionaryTag
 	in >> Shapes;
 }
 
-DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
@@ -1239,7 +1242,7 @@ void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
 	//Should check fill state
 }
 
-ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,"ShowFrame");
 }
@@ -1388,7 +1391,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		toAdd->decRef();
 }
 
-PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 {
 	LOG(LOG_TRACE,"PlaceObject2");
 
@@ -1426,12 +1429,198 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0))
 }
 
+void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDisplayListElem*> >& ls)
+{
+	//TODO: support clipping, blending, filters, caching
+	if(ClipDepth!=0)
+		return;
+
+	PlaceInfo infos;
+	//Find if this id is already on the list
+	list < pair<PlaceInfo, IDisplayListElem*> >::iterator it=ls.begin();
+	for(;it!=ls.end();it++)
+	{
+		if(it->second->Depth==Depth)
+		{
+			infos=it->first;
+			if(!PlaceFlagMove)
+				throw ParseException("Depth already used already on displaylist");
+			break;
+		}
+	}
+
+	if(PlaceFlagHasMatrix)
+		infos.Matrix=Matrix;
+
+	IDisplayListElem* toAdd=NULL;
+	if(PlaceFlagHasCharacter)
+	{
+		//As the transformation matrix can change every frame
+		//it is saved in a side data structure
+		//and assigned to the internal struture every frame
+		LOG(LOG_TRACE,"Placing ID " << CharacterId);
+		RootMovieClip* localRoot=NULL;
+		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
+		if(parentDict)
+			localRoot=parentDict->loadedFrom;
+		else
+			localRoot=parent->root;
+		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
+		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
+		assert_and_throw(toAdd);
+
+		//Object should be constructed even if not binded
+		if(toAdd->getPrototype() && sys->currentVm)
+		{
+			//Object expect to have the matrix set when created
+			if(PlaceFlagHasMatrix)
+				toAdd->setMatrix(Matrix);
+			//We now ask the VM to construct this object
+			ConstructObjectEvent* e=new ConstructObjectEvent(toAdd,toAdd->getPrototype());
+			bool added=sys->currentVm->addEvent(NULL,e);
+			if(!added)
+			{
+				e->decRef();
+				throw RunTimeException("Could not add event");
+			}
+			e->wait();
+			e->decRef();
+		}
+
+		if(PlaceFlagHasColorTransform)
+			toAdd->ColorTransform=ColorTransform;
+
+		if(PlaceFlagHasRatio)
+			toAdd->Ratio=Ratio;
+
+		if(PlaceFlagHasClipDepth)
+			toAdd->ClipDepth=ClipDepth;
+
+		toAdd->root=parent->root;
+		toAdd->Depth=Depth;
+		if(!PlaceFlagMove)
+		{
+			list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=
+				lower_bound< list<pair<PlaceInfo, IDisplayListElem*> >::iterator, int, list_orderer>
+				(ls.begin(),ls.end(),Depth,list_orderer());
+			//As we are inserting the object in the list we need to incref it
+			toAdd->incRef();
+			ls.insert(it,make_pair(infos,toAdd));
+		}
+	}
+
+	if(PlaceFlagHasName)
+	{
+		//Set a variable on the parent to link this object
+		LOG(LOG_NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
+		if(!PlaceFlagMove)
+		{
+			assert_and_throw(toAdd);
+			toAdd->incRef();
+			parent->setVariableByQName((const char*)Name,"",toAdd);
+		}
+		else
+			LOG(LOG_ERROR, "Moving of registered objects not really supported");
+	}
+
+	//Move the object if relevant
+	if(PlaceFlagMove)
+	{
+		if(it!=ls.end())
+		{
+			if(!PlaceFlagHasCharacter)
+			{
+				//if(it2->PlaceFlagHasClipAction)
+				if(PlaceFlagHasColorTransform)
+					it->second->ColorTransform=ColorTransform;
+
+				if(PlaceFlagHasRatio)
+					it->second->Ratio=Ratio;
+
+				if(PlaceFlagHasClipDepth)
+					it->second->ClipDepth=ClipDepth;
+				it->first=infos;
+			}
+			else
+			{
+				it->second->decRef();
+				ls.erase(it);
+				list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
+				toAdd->incRef();
+				ls.insert(it,make_pair(infos,toAdd));
+			}
+		}
+		else
+			LOG(LOG_ERROR,"no char to move at depth " << Depth << " name " << Name);
+	}
+
+	if(toAdd)
+		toAdd->decRef();
+}
+
+PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in):PlaceObject2Tag(h)
+{
+	LOG(LOG_TRACE,"PlaceObject3");
+
+	BitStream bs(in);
+	PlaceFlagHasClipAction=UB(1,bs);
+	PlaceFlagHasClipDepth=UB(1,bs);
+	PlaceFlagHasName=UB(1,bs);
+	PlaceFlagHasRatio=UB(1,bs);
+	PlaceFlagHasColorTransform=UB(1,bs);
+	PlaceFlagHasMatrix=UB(1,bs);
+	PlaceFlagHasCharacter=UB(1,bs);
+	PlaceFlagMove=UB(1,bs);
+	UB(3,bs); //Reserved
+	PlaceFlagHasImage=UB(1,bs);
+	PlaceFlagHasClassName=UB(1,bs);
+	PlaceFlagHasCacheAsBitmap=UB(1,bs);
+	PlaceFlagHasBlendMode=UB(1,bs);
+	PlaceFlagHasFilterList=UB(1,bs);
+
+	in >> Depth;
+	if(PlaceFlagHasClassName || (PlaceFlagHasImage && PlaceFlagHasCharacter))
+		throw ParseException("ClassName in PlaceObject3 not yet supported");
+
+	if(PlaceFlagHasCharacter)
+		in >> CharacterId;
+
+	if(PlaceFlagHasMatrix)
+		in >> Matrix;
+
+	if(PlaceFlagHasColorTransform)
+		in >> ColorTransform;
+
+	if(PlaceFlagHasRatio)
+		in >> Ratio;
+
+	if(PlaceFlagHasName)
+		in >> Name;
+
+	if(PlaceFlagHasClipDepth)
+		in >> ClipDepth;
+
+	if(PlaceFlagHasFilterList)
+		in >> SurfaceFilterList;
+
+	if(PlaceFlagHasBlendMode)
+		in >> BlendMode;
+
+	if(PlaceFlagHasCacheAsBitmap)
+		in >> BitmapCache;
+
+	if(PlaceFlagHasClipAction)
+		in >> ClipActions;
+
+	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0))
+}
+
 void SetBackgroundColorTag::execute(RootMovieClip* root)
 {
 	root->setBackground(BackgroundColor);
 }
 
-FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 {
 	in >> Name;
 	if(pt->version>=6)
@@ -1448,7 +1637,7 @@ void FrameLabelTag::execute(MovieClip* parent, list < pair< PlaceInfo, IDisplayL
 	//sys.currentClip->frames[sys.currentClip->state.FP].setLabel(Name);
 }
 
-DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in),IdleToOverUp(false)
+DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),IdleToOverUp(false)
 {
 	state=BUTTON_UP;
 	in >> ButtonId;
@@ -1543,7 +1732,7 @@ Vector2 DefineButton2Tag::debugRender(FTFont* font, bool deep)
 	return Vector2(100,100);
 }
 
-DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_NO_INFO,"DefineVideoStreamTag");
 	in >> CharacterID >> NumFrames >> Width >> Height;
@@ -1566,7 +1755,7 @@ void DefineVideoStreamTag::Render()
 	glEnd();
 }
 
-DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s)
+DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):DictionaryTag(h)
 {
 	LOG(LOG_TRACE,"DefineBinaryDataTag");
 	int size=h.getLength();
@@ -1577,7 +1766,7 @@ DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):Diction
 	s.read((char*)bytes,size);
 }
 
-FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,"FileAttributesTag Tag");
 	BitStream bs(in);
@@ -1598,7 +1787,7 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	}
 }
 
-DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h,in)
+DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_TRACE,"DefineSound Tag");
 	in >> SoundId;

@@ -51,7 +51,7 @@ protected:
 		ignore(in,Header.getLength());
 	}
 public:
-	Tag(RECORDHEADER h, std::istream& s):Header(h)
+	Tag(RECORDHEADER h):Header(h)
 	{
 	}
 	virtual TAGTYPE getType() const{ return TAG; }
@@ -61,14 +61,14 @@ public:
 class EndTag:public Tag
 {
 public:
-	EndTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
+	EndTag(RECORDHEADER h, std::istream& s):Tag(h){}
 	virtual TAGTYPE getType() const{ return END_TAG; }
 };
 
 class DisplayListTag: public Tag
 {
 public:
-	DisplayListTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
+	DisplayListTag(RECORDHEADER h):Tag(h){}
 	virtual TAGTYPE getType() const{ return DISPLAY_LIST_TAG; }
 	virtual void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list)=0;
 };
@@ -80,7 +80,7 @@ protected:
 public:
 	Class_base* bindedTo;
 	RootMovieClip* loadedFrom;
-	DictionaryTag(RECORDHEADER h,std::istream& s):Tag(h,s),bindedTo(NULL),loadedFrom(NULL){ }
+	DictionaryTag(RECORDHEADER h):Tag(h),bindedTo(NULL),loadedFrom(NULL){ }
 	virtual TAGTYPE getType()const{ return DICT_TAG; }
 	virtual int getId()=0;
 	virtual ASObject* instance() const { return NULL; };
@@ -90,7 +90,7 @@ public:
 class ControlTag: public Tag
 {
 public:
-	ControlTag(RECORDHEADER h, std::istream& s):Tag(h,s){}
+	ControlTag(RECORDHEADER h):Tag(h){}
 	virtual TAGTYPE getType()const{ return CONTROL_TAG; }
 	virtual void execute(RootMovieClip* root)=0;
 };
@@ -319,9 +319,7 @@ public:
 
 class PlaceObject2Tag: public DisplayListTag
 {
-private:
-	//static bool list_orderer(const std::pair<PlaceInfo, IDisplayListElem*>& a, int d);
-	//static bool list_orderer(int d, const std::pair<PlaceInfo, IDisplayListElem*>& a);
+protected:
 	class list_orderer
 	{
 	public:
@@ -345,16 +343,30 @@ private:
 	UI16 Ratio;
 	UI16 ClipDepth;
 	CLIPACTIONS ClipActions;
+	PlaceObject2Tag(RECORDHEADER h):DisplayListTag(h){}
 
 public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
 	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
-/*	void setWrapped(ASObject* w)
-	{
-		wrapped=w;
-	}*/
+};
 
+class PlaceObject3Tag: public PlaceObject2Tag
+{
+private:
+	bool PlaceFlagHasImage;
+	bool PlaceFlagHasClassName;
+	bool PlaceFlagHasCacheAsBitmap;
+	bool PlaceFlagHasBlendMode;
+	bool PlaceFlagHasFilterList;
+	STRING ClassName;
+	FILTERLIST SurfaceFilterList;
+	UI8 BlendMode;
+	UI8 BitmapCache;
+
+public:
+	PlaceObject3Tag(RECORDHEADER h, std::istream& in);
+	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
 };
 
 class FrameLabelTag: public DisplayListTag
@@ -437,7 +449,7 @@ class FontTag: public DictionaryTag
 protected:
 	UI16 FontID;
 public:
-	FontTag(RECORDHEADER h,std::istream& s):DictionaryTag(h,s){}
+	FontTag(RECORDHEADER h):DictionaryTag(h){}
 	virtual void genGlyphShape(std::vector<GeomShape>& s, int glyph)=0;
 };
 

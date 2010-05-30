@@ -28,91 +28,91 @@ using namespace lightspark;
 extern TLSDATA ParseThread* pt;
 void lightspark::ignore(istream& i, int count);
 
-ProtectTag::ProtectTag(RECORDHEADER h, istream& in):ControlTag(h,in)
+ProtectTag::ProtectTag(RECORDHEADER h, istream& in):ControlTag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Protect Tag");
 	skip(in);
 }
 
-DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFontInfo Tag");
 	skip(in);
 }
 
-StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"StartSound Tag");
 	skip(in);
 }
 
-SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
+SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SoundStreamHead2 Tag");
 	skip(in);
 }
 
-DefineFontNameTag::DefineFontNameTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+DefineFontNameTag::DefineFontNameTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFontNameTag Tag");
 	skip(in);
 }
 
-DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFontAlignZonesTag Tag");
 	skip(in);
 }
 
-MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"MetadataTag Tag");
 	skip(in);
 }
 
-DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Tag(h,in)
+DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineBitsJPEG2Tag Tag");
 	skip(in);
 }
 
-ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ScriptLimitsTag Tag");
 	skip(in);
 }
 
-DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	in >> CharacterId >> Splitter;
 	LOG(LOG_NOT_IMPLEMENTED,"DefineScalingGridTag Tag on ID " << CharacterId);
 }
 
-SerialNumberTag::SerialNumberTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+SerialNumberTag::SerialNumberTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SerialNumberTag Tag");
 	skip(in);
 }
 
-SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SoundStreamBlockTag");
 	skip(in);
 }
 
-DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineSceneAndFrameLabelDataTag");
 	skip(in);
 }
 
-CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"CSMTextSettingsTag");
 	skip(in);
 }
 
-UnimplementedTag::UnimplementedTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+UnimplementedTag::UnimplementedTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Unimplemented Tag " << h.getTagType());
 	skip(in);

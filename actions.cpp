@@ -34,7 +34,7 @@ long lightspark::timeDiff(timespec& s, timespec& d);
 
 void lightspark::ignore(istream& i, int count);
 
-ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
+ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NO_INFO,"ExportAssetsTag Tag");
 	in >> Count;
@@ -51,7 +51,7 @@ ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h,in)
 	}
 }
 
-DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 {
 	LOG(LOG_CALLS,"DoActionTag");
 	int dest=in.tellg();
@@ -121,7 +121,7 @@ void DoActionTag::Render()
 #endif*/
 }
 
-DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h,in)
+DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 {
 	LOG(LOG_CALLS,"DoInitActionTag");
 	int dest=in.tellg();

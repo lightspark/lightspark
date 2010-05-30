@@ -438,12 +438,12 @@ public:
 //Atomic operations: placeholders until C++0x is supported in GCC
 inline void atomic_increment(int* operand)
 {
-	__asm__ __volatile__ ("lock incl (%0)" : : "r" (operand));
+	__asm__ ("lock incl %0" : "+m" (*operand):);
 }
 
 inline void atomic_decrement(int* operand)
 {
-	__asm__ __volatile__ ("lock decl (%0)" : : "r" (operand));
+	__asm__ ("lock decl %0" : "+m" (*operand):);
 }
 
 class ASObject

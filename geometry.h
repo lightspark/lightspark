@@ -94,6 +94,7 @@ private:
 public:
 	void extendOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2);
 	void outputShapes(std::vector<GeomShape>& shapes);
+	void clear();
 };
 
 class GlyphShape: public GeomShape

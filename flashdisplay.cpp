@@ -1558,33 +1558,48 @@ void Graphics::buildTraits(ASObject* o)
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	Locker locker(geometryMutex);
+	Locker locker2(geometryMutex);
+	//If the geometry has been modified we have to generate it again
+	if(!validGeometry)
+	{
+		validGeometry=true;
+		Locker locker(builderMutex);
+		geometry.clear();
+		builder.outputShapes(geometry);
+		for(unsigned int i=0;i<geometry.size();i++)
+			geometry[i].BuildFromEdges(&styles);
+	}
 	if(geometry.size()==0)
 		return false;
 
-	/*//Initialize values to the first available
-	assert_and_throw(geometry[0].outline.size()>0);
-	xmin=xmax=geometry[0].outline[0].x;
-	ymin=ymax=geometry[0].outline[0].y;
-
+	//Initialize values to the first available
+	bool initialized=false;
 	for(unsigned int i=0;i<geometry.size();i++)
 	{
-		for(unsigned int j=0;j<geometry[i].outline.size();j++)
+		for(unsigned int j=0;j<geometry[i].outlines.size();j++)
 		{
-			const Vector2& v=geometry[i].outline[j];
-			if(v.x<xmin)
-				xmin=v.x;
-			else if(v.x>xmax)
-				xmax=v.x;
-
-			if(v.y<ymin)
-				ymin=v.y;
-			else if(v.y>ymax)
-				ymax=v.y;
+			for(unsigned int k=0;k<geometry[i].outlines[j].size();k++)
+			{
+				const Vector2& v=geometry[i].outlines[j][k];
+				if(initialized)
+				{
+					xmin=imin(v.x,xmin);
+					xmax=imax(v.x,xmax);
+					ymin=imin(v.y,ymin);
+					ymax=imax(v.y,ymax);
+				}
+				else
+				{
+					xmin=v.x;
+					xmax=v.x;
+					ymin=v.y;
+					ymax=v.y;
+					initialized=true;
+				}
+			}
 		}
-	}*/
-	//return true;
-	return false;
+	}
+	return initialized;
 }
 
 ASFUNCTIONBODY(Graphics,_constructor)
@@ -1596,10 +1611,10 @@ ASFUNCTIONBODY(Graphics,clear)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	{
-		Locker locker(th->geometryMutex);
-		th->geometry.clear();
+		Locker locker(th->builderMutex);
+		th->builder.clear();
+		th->validGeometry=false;
 	}
-	th->tmpShape=GeomShape();
 	th->styles.clear();
 	return NULL;
 }
@@ -1608,9 +1623,6 @@ ASFUNCTIONBODY(Graphics,moveTo)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	assert_and_throw(argslen==2);
-
-	//As we are moving, first of all flush the shape
-	th->flushShape(true);
 
 	th->curX=args[0]->toInt();
 	th->curY=args[1]->toInt();
@@ -1625,30 +1637,15 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
 
-	/*//If this is the first line, add also the starting point
-	if(th->tmpShape.outline.size()==0)
-		th->tmpShape.outline.push_back(Vector2(th->curX,th->curY));
-
-	th->tmpShape.outline.push_back(Vector2(x,y));*/
-
-	return NULL;
-}
-
-void Graphics::flushShape(bool keepStyle)
-{
-	/*if(!tmpShape.outline.empty())
 	{
-		if(tmpShape.color)
-			tmpShape.BuildFromEdges(&styles);
+		Locker locker(th->builderMutex);
+		th->builder.extendOutlineForColor(th->styles.size(),Vector2(th->curX,th->curY),Vector2(x,y));
+		th->validGeometry=false;
+	}
 
-		sem_wait(&geometry_mutex);
-		int oldcolor=tmpShape.color;
-		geometry.push_back(tmpShape);
-		sem_post(&geometry_mutex);
-		tmpShape=GeomShape();
-		if(keepStyle)
-			tmpShape.color=oldcolor;
-	}*/
+	th->curX=x;
+	th->curY=y;
+	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,drawCircle)
@@ -1660,17 +1657,20 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	double y=args[1]->toNumber();
 	double radius=args[2]->toNumber();
 
-	th->flushShape(true);
+	//Well, right now let's build a square anyway
+	const Vector2 a(x-radius,y-radius);
+	const Vector2 b(x+radius,y-radius);
+	const Vector2 c(x+radius,y+radius);
+	const Vector2 d(x-radius,y+radius);
 
-	/*//Well, right now let's build a square anyway
-	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));
-	th->tmpShape.outline.push_back(Vector2(x+radius,y-radius));
-	th->tmpShape.outline.push_back(Vector2(x+radius,y+radius));
-	th->tmpShape.outline.push_back(Vector2(x-radius,y+radius));
-	th->tmpShape.outline.push_back(Vector2(x-radius,y-radius));*/
-
-	th->flushShape(true);
-
+	{
+		Locker locker(th->builderMutex);
+		th->builder.extendOutlineForColor(th->styles.size(),a,b);
+		th->builder.extendOutlineForColor(th->styles.size(),b,c);
+		th->builder.extendOutlineForColor(th->styles.size(),c,d);
+		th->builder.extendOutlineForColor(th->styles.size(),d,a);
+		th->validGeometry=false;
+	}
 	return NULL;
 }
 
@@ -1684,34 +1684,19 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	int width=args[2]->toInt();
 	int height=args[3]->toInt();
 
-	th->flushShape(true);
+	const Vector2 a(x,y);
+	const Vector2 b(x+width,y);
+	const Vector2 c(x+width,y+height);
+	const Vector2 d(x,y+height);
 
-	/*if(width==0 && height==0)
 	{
-		th->tmpShape.outline.push_back(Vector2(x,y));
+		Locker locker(th->builderMutex);
+		th->builder.extendOutlineForColor(th->styles.size(),a,b);
+		th->builder.extendOutlineForColor(th->styles.size(),b,c);
+		th->builder.extendOutlineForColor(th->styles.size(),c,d);
+		th->builder.extendOutlineForColor(th->styles.size(),d,a);
+		th->validGeometry=false;
 	}
-	else if(width==0)
-	{
-		th->tmpShape.outline.push_back(Vector2(x,y));
-		th->tmpShape.outline.push_back(Vector2(x,y+height));
-	}
-	else if(height==0)
-	{
-		th->tmpShape.outline.push_back(Vector2(x,y));
-		th->tmpShape.outline.push_back(Vector2(x+width,y));
-	}
-	else
-	{
-		//Build a shape and add it to the geometry vector
-		th->tmpShape.outline.push_back(Vector2(x,y));
-		th->tmpShape.outline.push_back(Vector2(x+width,y));
-		th->tmpShape.outline.push_back(Vector2(x+width,y+height));
-		th->tmpShape.outline.push_back(Vector2(x,y+height));
-		th->tmpShape.outline.push_back(Vector2(x,y));
-	}*/
-
-	th->flushShape(true);
-
 	return NULL;
 }
 
@@ -1730,7 +1715,6 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		color=ar->at(0)->toUInt();
 	}
 	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
-	th->tmpShape.color = th->styles.size(); //Colors are 1-indexed
 	return NULL;
 }
 
@@ -1746,27 +1730,30 @@ ASFUNCTIONBODY(Graphics,beginFill)
 	if(argslen>=2)
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
 	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
-	th->tmpShape.color = th->styles.size(); //Colors are 1-indexed
 	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,endFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	assert_and_throw(th->tmpShape.color);
-	/*if(!th->tmpShape.outline.empty())
-	{
-		if(th->tmpShape.outline.front()!=th->tmpShape.outline.back())
-			th->tmpShape.outline.push_back(th->tmpShape.outline.front());
-	}*/
-	th->flushShape(false);
+	//TODO: close the path if open
 	return NULL;
 }
 
 void Graphics::Render()
 {
-	//Should probably flush the shape
-	Locker locker(geometryMutex);
+	Locker locker2(geometryMutex);
+	//If the geometry has been modified we have to generate it again
+	if(!validGeometry)
+	{
+		validGeometry=true;
+		Locker locker(builderMutex);
+		cout << "Generating geometry" << endl;
+		geometry.clear();
+		builder.outputShapes(geometry);
+		for(unsigned int i=0;i<geometry.size();i++)
+			geometry[i].BuildFromEdges(&styles);
+	}
 
 	for(unsigned int i=0;i<geometry.size();i++)
 		geometry[i].Render();

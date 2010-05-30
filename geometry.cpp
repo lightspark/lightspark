@@ -112,29 +112,17 @@ void GeomShape::Render(int x, int y) const
 
 void GeomShape::SetStyles(const std::list<FILLSTYLE>* styles)
 {
-	static FILLSTYLE* clearStyle=NULL;
-	if(!clearStyle)
-	{
-		clearStyle=new FILLSTYLE;
-		clearStyle->FillStyleType=0x00;
-		clearStyle->Color=RGBA(0,0,0,0);
-	}
-
 	if(styles)
 	{
-		if(color)
-		{
-			if(color > styles->size())
-				throw RunTimeException("Not enough styles in GeomShape::SetStyles");
+		assert_and_throw(color);
+		if(color > styles->size())
+			throw RunTimeException("Not enough styles in GeomShape::SetStyles");
 
-			//Simulate array access :-(
-			list<FILLSTYLE>::const_iterator it=styles->begin();
-			for(unsigned int i=0;i<(color-1);i++)
-				it++;
-			style=&(*it);
-		}
-		else
-			style=clearStyle;
+		//Simulate array access :-(
+		list<FILLSTYLE>::const_iterator it=styles->begin();
+		for(unsigned int i=0;i<(color-1);i++)
+			it++;
+		style=&(*it);
 	}
 }
 
@@ -254,6 +242,11 @@ void GeomShape::GLUCallbackCombine(GLdouble coords[3], void* vertex_data[4],
 bool ShapesBuilder::isOutlineEmpty(const std::vector< Vector2 >& outline)
 {
 	return outline.empty();
+}
+
+void ShapesBuilder::clear()
+{
+	shapesMap.clear();
 }
 
 void ShapesBuilder::joinOutlines()

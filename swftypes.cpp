@@ -112,7 +112,7 @@ bool ASObject::nextValue(unsigned int index, ASObject*& out)
 
 void ASObject::buildTraits(ASObject* o)
 {
-	if(o->getActualPrototype()->class_name!="IInterface")
+	if(o->getActualPrototype()->class_name!="ASObject")
 		LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->getActualPrototype()->class_name);
 }
 

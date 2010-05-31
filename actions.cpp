@@ -381,7 +381,8 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			t=new ActionIf(in);
 			break;
 		default:
-			LOG(LOG_NOT_IMPLEMENTED,"Unsupported ActionCode " << (int)ActionCode);
+			LOG(LOG_NOT_IMPLEMENTED,"Unsupported ActionCode " << (int)ActionCode << " with length " << (int)Length << " bytes");
+			ignore(in,Length);
 			t=NULL;
 			break;
 	}

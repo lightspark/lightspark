@@ -1528,6 +1528,7 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 	assert_and_throw(v.buttonVersion==2);
 	BitStream bs(stream);
 
+	UB(2,bs);
 	v.ButtonHasBlendMode=UB(1,bs);
 	v.ButtonHasFilterList=UB(1,bs);
 	v.ButtonStateHitTest=UB(1,bs);

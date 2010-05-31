@@ -418,6 +418,7 @@ void MovieClip::buildTraits(ASObject* o)
 	o->setGetterByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames));
 	o->setGetterByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded));
 	o->setVariableByQName("stop","",Class<IFunction>::getFunction(stop));
+	o->setVariableByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop));
 	o->setVariableByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame));
 }
 
@@ -432,6 +433,16 @@ MovieClip::MovieClip():framesLoaded(1),totalFrames(1),cur_frame(NULL)
 void MovieClip::addToFrame(DisplayListTag* t)
 {
 	cur_frame->blueprint.push_back(t);
+}
+
+uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const
+{
+	for(uint32_t i=0;i<framesLoaded;i++)
+	{
+		if(frames[i].Label==l)
+			return i;
+	}
+	return 0xffffffff;
 }
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)
@@ -492,6 +503,27 @@ ASFUNCTIONBODY(MovieClip,stop)
 	return NULL;
 }
 
+ASFUNCTIONBODY(MovieClip,gotoAndStop)
+{
+	MovieClip* th=static_cast<MovieClip*>(obj);
+	assert_and_throw(argslen==1);
+	if(args[0]->getObjectType()==T_STRING)
+	{
+		uint32_t dest=th->getFrameIdByLabel(args[0]->toString());
+		if(dest==0xffffffff)
+			throw RunTimeException("MovieClip::gotoAndStop frame does not exists");
+		th->state.next_FP=dest;
+	}
+	else
+		th->state.next_FP=args[0]->toInt();
+
+	//TODO: check, should wrap around?
+	th->state.next_FP%=th->state.max_FP;
+	th->state.explicit_FP=true;
+	th->state.stop_FP=true;
+	return NULL;
+}
+
 ASFUNCTIONBODY(MovieClip,nextFrame)
 {
 	MovieClip* th=static_cast<MovieClip*>(obj);
@@ -533,11 +565,13 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 
 void MovieClip::advanceFrame()
 {
-	if(!state.stop_FP || state.explicit_FP /*&& (class_name=="MovieClip")*/)
+	if(!state.stop_FP || state.explicit_FP)
 	{
 		//Before assigning the next_FP we initialize the frame
 		assert_and_throw(state.next_FP<frames.size());
-		frames[state.next_FP].init(this,displayList);
+		//Should initialize all the frames from the current to the next
+		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
+			frames[i].init(this,displayList);
 		state.FP=state.next_FP;
 		if(!state.stop_FP && framesLoaded>0)
 			state.next_FP=imin(state.FP+1,framesLoaded-1);

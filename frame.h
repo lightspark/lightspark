@@ -41,10 +41,10 @@ public:
 class Frame
 {
 private:
-	STRING Label;
 	IFunction* script;
 	bool initialized;
 public:
+	tiny_string Label;
 	std::list<DisplayListTag*> blueprint;
 	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
 	//A temporary vector for control tags
@@ -52,7 +52,6 @@ public:
 	Frame():script(NULL),initialized(false){}
 	~Frame();
 	void Render();
-	void setLabel(STRING l);
 	void setScript(IFunction* s){script=s;}
 	void runScript();
 	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& d);

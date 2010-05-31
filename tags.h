@@ -37,7 +37,7 @@
 namespace lightspark
 {
 
-enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,END_TAG};
+enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,END_TAG};
 
 void ignore(std::istream& i, int count);
 void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomShape>& shapes);
@@ -369,13 +369,12 @@ public:
 	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
 };
 
-class FrameLabelTag: public DisplayListTag
+class FrameLabelTag: public Tag
 {
-private:
-	STRING Name;
 public:
+	STRING Name;
 	FrameLabelTag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
+	virtual TAGTYPE getType()const{ return FRAMELABEL_TAG; }
 };
 
 class SetBackgroundColorTag: public ControlTag

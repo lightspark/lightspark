@@ -327,7 +327,6 @@ protected:
 public:
 	std::vector<Frame> frames;
 	RunState state;
-public:
 	MovieClip();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -336,6 +335,7 @@ public:
 	ASFUNCTION(createEmptyMovieClip);
 	ASFUNCTION(addFrameScript);
 	ASFUNCTION(stop);
+	ASFUNCTION(gotoAndStop);
 	ASFUNCTION(nextFrame);
 	ASFUNCTION(_getCurrentFrame);
 	ASFUNCTION(_getTotalFrames);
@@ -344,6 +344,7 @@ public:
 	virtual void addToFrame(DisplayListTag* r);
 
 	void advanceFrame();
+	uint32_t getFrameIdByLabel(const tiny_string& l) const;
 
 	//IDisplayListElem interface
 	void Render();

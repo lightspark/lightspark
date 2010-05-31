@@ -118,6 +118,7 @@ public:
 	DictionaryTag* dictionaryLookup(int id);
 	void addToFrame(DisplayListTag* t);
 	void addToFrame(ControlTag* t);
+	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);
 	void revertFrame();
 	void Render();

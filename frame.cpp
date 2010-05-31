@@ -75,11 +75,6 @@ void dumpDisplayList(list<IDisplayListElem*>& l)
 	}
 }
 
-void Frame::setLabel(STRING l)
-{
-	Label=l;
-}
-
 void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& d)
 {
 	if(!initialized)

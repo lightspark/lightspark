@@ -291,13 +291,13 @@ public:
 		}
 		return true;
 	}
-	STRING operator+(const STRING& s)
+	/*STRING operator+(const STRING& s)
 	{
 		STRING ret(*this);
 		for(unsigned int i=0;i<s.String.size();i++)
 			ret.String.push_back(s.String[i]);
 		return ret;
-	}
+	}*/
 	bool isNull() const
 	{
 		return !String.size();

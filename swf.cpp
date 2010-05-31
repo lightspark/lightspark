@@ -479,6 +479,10 @@ void ParseThread::execute()
 					root->addToFrame(static_cast<ControlTag*>(tag));
 					empty=false;
 					break;
+				case FRAMELABEL_TAG:
+					root->labelCurrentFrame(static_cast<FrameLabelTag*>(tag)->Name);
+					empty=false;
+					break;
 				case TAG:
 					//Not yet implemented tag, ignore it
 					break;
@@ -489,7 +493,7 @@ void ParseThread::execute()
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception in ParseThread " << e.what());
+		LOG(LOG_ERROR,"Exception in ParseThread " << e.cause);
 		root->parsingFailed();
 		sys->setError(e.cause);
 	}
@@ -1682,7 +1686,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception in RenderThread " << e.what());
+		LOG(LOG_ERROR,"Exception in RenderThread " << e.cause);
 		sys->setError(e.cause);
 	}
 	th->commonGLDeinit();
@@ -1770,6 +1774,12 @@ void RootMovieClip::addToFrame(DisplayListTag* t)
 	sem_wait(&mutex);
 	MovieClip::addToFrame(t);
 	sem_post(&mutex);
+}
+
+void RootMovieClip::labelCurrentFrame(const STRING& name)
+{
+	Locker l(mutexFrames);
+	frames.back().Label=(const char*)name;
 }
 
 void RootMovieClip::addToFrame(ControlTag* t)

@@ -344,6 +344,10 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 			}
 			case CONTROL_TAG:
 				throw ParseException("Control tag inside a sprite. Should not happen.");
+			case FRAMELABEL_TAG:
+				frames.back().Label=(const char*)static_cast<FrameLabelTag*>(tag)->Name;
+				empty=false;
+				break;
 			case TAG:
 				LOG(LOG_NOT_IMPLEMENTED,"Unclassified tag inside Sprite?");
 				break;
@@ -1644,7 +1648,7 @@ void SetBackgroundColorTag::execute(RootMovieClip* root)
 	root->setBackground(BackgroundColor);
 }
 
-FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
+FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	in >> Name;
 	if(pt->version>=6)
@@ -1653,12 +1657,6 @@ FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 		if(NamedAnchor==1)
 			in >> NamedAnchor;
 	}
-}
-
-void FrameLabelTag::execute(MovieClip* parent, list < pair< PlaceInfo, IDisplayListElem*> >& ls)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"TODO: FrameLabel exec");
-	//sys.currentClip->frames[sys.currentClip->state.FP].setLabel(Name);
 }
 
 DefineButton2Tag::DefineButton2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h),IdleToOverUp(false)

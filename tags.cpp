@@ -50,7 +50,7 @@ Tag* TagFactory::readTag()
 	unsigned int expectedLen=h.getLength();
 	unsigned int start=f.tellg();
 	Tag* ret=NULL;
-	LOG(LOG_TRACE,"Reading tag type: " << h.getTagType());
+	LOG(LOG_TRACE,"Reading tag type: " << h.getTagType() << " at byte " << start << " with length " << expectedLen << " bytes");
 	switch(h.getTagType())
 	{
 		case 0:

@@ -1528,7 +1528,6 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 	assert_and_throw(v.buttonVersion==2);
 	BitStream bs(stream);
 
-	UB(2,bs);
 	v.ButtonHasBlendMode=UB(1,bs);
 	v.ButtonHasFilterList=UB(1,bs);
 	v.ButtonStateHitTest=UB(1,bs);
@@ -1545,9 +1544,7 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 		stream >> v.FilterList;
 
 	if(v.ButtonHasBlendMode)
-	{
-		LOG(LOG_ERROR,"Button record not yet totally supported");
-	}
+        stream >> v.BlendMode;
 
 	return stream;
 }
@@ -1571,8 +1568,26 @@ std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
 		case 0:
 			stream >> v.DropShadowFilter;
 			break;
+		case 1:
+			stream >> v.BlurFilter;
+			break;
 		case 2:
 			stream >> v.GlowFilter;
+			break;
+		case 3:
+			stream >> v.BevelFilter;
+			break;
+		case 4:
+			stream >> v.GradientGlowFilter;
+			break;
+		case 5:
+			stream >> v.ConvolutionFilter;
+			break;
+		case 6:
+			stream >> v.ColorMatrixFilter;
+			break;
+		case 7:
+			stream >> v.GradientBevelFilter;
 			break;
 		default:
 			LOG(LOG_ERROR,"Unsupported Filter Id " << (int)v.FilterID);
@@ -1583,15 +1598,149 @@ std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
 
 std::istream& lightspark::operator>>(std::istream& stream, GLOWFILTER& v)
 {
-	//TODO: implement GLOWFILTER parsing
-	ignore(stream,4+4+4+2+1);
+	stream >> v.GlowColor;
+	stream >> v.BlurX;
+	stream >> v.BlurY;
+	stream >> v.Strength;
+	BitStream bs(stream);
+	v.InnerGlow = UB(1,bs);
+	v.Knockout = UB(1,bs);
+	v.CompositeSource = UB(1,bs);
+	UB(5,bs);
+
 	return stream;
 }
 
 std::istream& lightspark::operator>>(std::istream& stream, DROPSHADOWFILTER& v)
 {
-	//TODO: implement DROPSHADOWFILTER parsing
-	ignore(stream,4+4+4+4+4+2+1);
+	stream >> v.DropShadowColor;
+	stream >> v.BlurX;
+	stream >> v.BlurY;
+	stream >> v.Angle;
+	stream >> v.Distance;
+	stream >> v.Strength;
+	BitStream bs(stream);
+	v.InnerShadow = UB(1,bs);
+	v.Knockout = UB(1,bs);
+	v.CompositeSource = UB(1,bs);
+	UB(5,bs);
+
+	return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, BLURFILTER& v)
+{
+	stream >> v.BlurX;
+	stream >> v.BlurY;
+	BitStream bs(stream);
+	v.Passes = UB(5,bs);
+	UB(3,bs);
+
+	return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, BEVELFILTER& v)
+{
+	stream >> v.ShadowColor;
+	stream >> v.HighlightColor;
+	stream >> v.BlurX;
+	stream >> v.BlurY;
+	stream >> v.Angle;
+	stream >> v.Distance;
+	stream >> v.Strength;
+	BitStream bs(stream);
+	v.InnerShadow = UB(1,bs);
+	v.Knockout = UB(1,bs);
+	v.CompositeSource = UB(1,bs);
+	v.OnTop = UB(1,bs);
+	UB(4,bs);
+
+	return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, GRADIENTGLOWFILTER& v)
+{
+	stream >> v.NumColors;
+	for(int i = 0; i < v.NumColors; i++)
+	{
+		RGBA color;
+		stream >> color;
+		v.GradientColors.push_back(color);
+	}
+	for(int i = 0; i < v.NumColors; i++)
+	{
+		UI8 ratio;
+		stream >> ratio;
+		v.GradientRatio.push_back(ratio);
+	}
+	stream >> v.BlurX;
+	stream >> v.BlurY;
+	stream >> v.Strength;
+	BitStream bs(stream);
+	v.InnerGlow = UB(1,bs);
+	v.Knockout = UB(1,bs);
+	v.CompositeSource = UB(1,bs);
+	UB(5,bs);
+
+	return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, CONVOLUTIONFILTER& v)
+{
+	stream >> v.MatrixX;
+	stream >> v.MatrixY;
+	stream >> v.Divisor;
+	stream >> v.Bias;
+	for(int i = 0; i < v.MatrixX * v.MatrixY; i++)
+	{
+		FLOAT f;
+		stream >> f;
+		v.Matrix.push_back(f);
+	}
+	stream >> v.DefaultColor;
+	BitStream bs(stream);
+	v.Clamp = UB(1,bs);
+	v.PreserveAlpha = UB(1,bs);
+	UB(6,bs);
+
+	return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, COLORMATRIXFILTER& v)
+{
+	for (int i = 0; i < 20; i++)
+		stream >> v.Matrix[i];
+
+    return stream;
+}
+
+std::istream& lightspark::operator>>(std::istream& stream, GRADIENTBEVELFILTER& v)
+{
+	stream >> v.NumColors;
+	for(int i = 0; i < v.NumColors; i++)
+	{
+		RGBA color;
+		stream >> color;
+		v.GradientColors.push_back(color);
+	}
+	for(int i = 0; i < v.NumColors; i++)
+	{
+		UI8 ratio;
+		stream >> ratio;
+		v.GradientRatio.push_back(ratio);
+	}
+	stream >> v.BlurX;
+	stream >> v.BlurY;
+	stream >> v.Angle;
+	stream >> v.Distance;
+	stream >> v.Strength;
+	BitStream bs(stream);
+	v.InnerShadow = UB(1,bs);
+	v.Knockout = UB(1,bs);
+	v.CompositeSource = UB(1,bs);
+	v.OnTop = UB(1,bs);
+	UB(4,bs);
+
 	return stream;
 }
 

@@ -662,6 +662,12 @@ public:
 //TODO: Really implement or suppress
 typedef UI32 SI32;
 
+//TODO: Really implement or suppress
+typedef UI32 FIXED;
+
+//TODO: Really implement or suppress
+typedef UI16 FIXED8;
+
 class RECORDHEADER
 {
 friend std::istream& operator>>(std::istream& s, RECORDHEADER& v);
@@ -1193,18 +1199,123 @@ class CXFORM
 
 class DROPSHADOWFILTER
 {
+public:
+    RGBA DropShadowColor;
+    FIXED BlurX;
+    FIXED BlurY;
+    FIXED Angle;
+    FIXED Distance;
+    FIXED8 Strength;
+    bool InnerShadow;
+    bool Knockout;
+    bool CompositeSource;
+    UB Passes;
+};
+
+class BLURFILTER
+{
+public:
+	FIXED BlurX;
+	FIXED BlurY;
+	UB Passes;
 };
 
 class GLOWFILTER
 {
+public:
+    RGBA GlowColor;
+    FIXED BlurX;
+    FIXED BlurY;
+    FIXED8 Strength;
+    bool InnerGlow;
+    bool Knockout;
+    bool CompositeSource;
+    UB Passes;
+};
+
+class BEVELFILTER
+{
+public:
+    RGBA ShadowColor;
+    RGBA HighlightColor;
+    FIXED BlurX;
+    FIXED BlurY;
+    FIXED Angle;
+    FIXED Distance;
+    FIXED8 Strength;
+    bool InnerShadow;
+    bool Knockout;
+    bool CompositeSource;
+    bool OnTop;
+    UB Passes;
+};
+
+class GRADIENTGLOWFILTER
+{
+public:
+    UI8 NumColors;
+    std::vector<RGBA> GradientColors;
+    std::vector<UI8> GradientRatio;
+    FIXED BlurX;
+    FIXED BlurY;
+    FIXED Angle;
+    FIXED Distance;
+    FIXED8 Strength;
+    bool InnerGlow;
+    bool Knockout;
+    bool CompositeSource;
+    UB Passes;
+};
+
+class CONVOLUTIONFILTER
+{
+public:
+    UI8 MatrixX;
+    UI8 MatrixY;
+    FLOAT Divisor;
+    FLOAT Bias;
+    std::vector<FLOAT> Matrix;
+    RGBA DefaultColor;
+    bool Clamp;
+    bool PreserveAlpha;
+};
+
+class COLORMATRIXFILTER
+{
+public:
+    FLOAT Matrix[20];
+};
+
+class GRADIENTBEVELFILTER
+{
+public:
+    UI8 NumColors;
+    std::vector<RGBA> GradientColors;
+    std::vector<UI8> GradientRatio;
+    FIXED BlurX;
+    FIXED BlurY;
+    FIXED Angle;
+    FIXED Distance;
+    FIXED8 Strength;
+    bool InnerShadow;
+    bool Knockout;
+    bool CompositeSource;
+    bool OnTop;
+    UB Passes;
 };
 
 class FILTER
 {
 public:
 	UI8 FilterID;
-	GLOWFILTER GlowFilter;
 	DROPSHADOWFILTER DropShadowFilter;
+	BLURFILTER BlurFilter;
+	GLOWFILTER GlowFilter;
+	BEVELFILTER BevelFilter;
+	GRADIENTGLOWFILTER GradientGlowFilter;
+	CONVOLUTIONFILTER ConvolutionFilter;
+	COLORMATRIXFILTER ColorMatrixFilter;
+	GRADIENTBEVELFILTER GradientBevelFilter;
 };
 
 class FILTERLIST
@@ -1315,7 +1426,13 @@ std::istream& operator>>(std::istream& stream, RECORDHEADER& v);
 std::istream& operator>>(std::istream& stream, FILTERLIST& v);
 std::istream& operator>>(std::istream& stream, FILTER& v);
 std::istream& operator>>(std::istream& stream, DROPSHADOWFILTER& v);
+std::istream& operator>>(std::istream& stream, BLURFILTER& v);
 std::istream& operator>>(std::istream& stream, GLOWFILTER& v);
+std::istream& operator>>(std::istream& stream, BEVELFILTER& v);
+std::istream& operator>>(std::istream& stream, GRADIENTGLOWFILTER& v);
+std::istream& operator>>(std::istream& stream, CONVOLUTIONFILTER& v);
+std::istream& operator>>(std::istream& stream, COLORMATRIXFILTER& v);
+std::istream& operator>>(std::istream& stream, GRADIENTBEVELFILTER& v);
 
 
 };

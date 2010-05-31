@@ -760,8 +760,10 @@ void InputThread::broadcastEvent(const tiny_string& t)
 	Locker locker(mutexListeners);
 	assert(e->getRefCount()==1);
 	for(unsigned int i=0;i<listeners.size();i++)
-		sys->currentVm->addEvent(listeners[i],e);
-	//while(e->getRefCount()>1){sleep(1);}
+	{
+		if(listeners[i]->getObjectType()==T_MOVIECLIP)
+			sys->currentVm->addEvent(listeners[i],e);
+	}
 	e->check();
 	e->decRef();
 }

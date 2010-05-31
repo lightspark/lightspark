@@ -419,6 +419,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else if(rt1->getObjectType()==T_OBJECT 
 						|| rt1->getObjectType()==T_CLASS
+						|| rt1->getObjectType()==T_MOVIECLIP
 						|| rt1->getObjectType()==T_FUNCTION)
 				{
 					ret->name_o=rt1;
@@ -509,6 +510,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				}
 				else if(rt1->getObjectType()==T_OBJECT 
 						|| rt1->getObjectType()==T_CLASS
+						|| rt1->getObjectType()==T_MOVIECLIP
 						|| rt1->getObjectType()==T_FUNCTION)
 				{
 					ret->name_o=rt1;
@@ -701,7 +703,10 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 					ret->name_s=qname->local_name;
 					ret->name_type=multiname::NAME_STRING;
 				}
-				else if(n->getObjectType()==T_OBJECT)
+				else if(n->getObjectType()==T_OBJECT ||
+						n->getObjectType()==T_CLASS ||
+						n->getObjectType()==T_MOVIECLIP ||
+						n->getObjectType()==T_FUNCTION)
 				{
 					ret->name_o=n;
 					ret->name_type=multiname::NAME_OBJECT;
@@ -805,6 +810,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				}
 				else if(n->getObjectType()==T_OBJECT 
 						|| n->getObjectType()==T_CLASS
+						|| n->getObjectType()==T_MOVIECLIP
 						|| n->getObjectType()==T_FUNCTION)
 				{
 					ret->name_o=n;
@@ -1153,7 +1159,8 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		LOG(LOG_CALLS,"Boolean to bool " << b->val);
 		return b->val;
 	}
-	else if(obj->getObjectType()==T_OBJECT)
+	else if(obj->getObjectType()==T_OBJECT ||
+			obj->getObjectType()==T_MOVIECLIP)
 	{
 		LOG(LOG_CALLS,"Object to bool");
 		return true;

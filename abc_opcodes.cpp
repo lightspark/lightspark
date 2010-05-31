@@ -718,6 +718,7 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 		case T_OBJECT:
 		case T_NULL:
 		case T_ARRAY:
+		case T_MOVIECLIP:
 			ret="object";
 			break;
 		case T_BOOLEAN:
@@ -1820,7 +1821,7 @@ bool ABCVm::ifStrictEq(ASObject* obj2, ASObject* obj1)
 {
 	LOG(LOG_CALLS,"ifStrictEq");
 	//If we are dealing with objects, check the prototype
-	if(obj1->getObjectType()==T_OBJECT && obj2->getObjectType()==T_OBJECT)
+	if(obj1->prototype && obj2->prototype)
 	{
 		if(obj1->prototype!=obj2->prototype)
 			return false;

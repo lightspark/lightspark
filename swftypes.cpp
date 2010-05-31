@@ -58,7 +58,17 @@ tiny_string ASObject::toString(bool debugMsg)
 			return ret->toString();
 		}
 	}
-	return "[object Object]";
+
+	if(getPrototype())
+	{
+		tiny_string ret;
+		ret+="[object ";
+		ret+=getPrototype()->class_name;
+		ret+="]";
+		return ret;
+	}
+	else
+		return "[object Object]";
 }
 
 bool ASObject::isLess(ASObject* r)

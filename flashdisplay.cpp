@@ -232,6 +232,11 @@ void Loader::Render()
 	if(!loaded)
 		return;
 
+	if(alpha==0.0)
+		return;
+	if(!visible)
+		return;
+
 	MatrixApplier ma(getMatrix());
 	local_root->Render();
 	ma.unapply();
@@ -350,6 +355,10 @@ void Sprite::Render()
 	if(!notEmpty)
 		return;
 
+	if(alpha==0.0)
+		return;
+	if(!visible)
+		return;
 	InteractiveObject::RenderProloue();
 
 	MatrixApplier ma(getMatrix());
@@ -362,9 +371,9 @@ void Sprite::Render()
 	
 	rt->glBlitFramebuffer(t1,t2,t3,t4);
 	
-	if(rt->glAcquireIdBuffer() && graphics)
+	if(graphics && rt->glAcquireIdBuffer())
 		graphics->Render();
-	
+
 	sem_wait(&sem_displayList);
 	//Now draw also the display list
 	list<IDisplayListElem*>::iterator it=dynamicDisplayList.begin();
@@ -550,6 +559,10 @@ void MovieClip::Render()
 {
 	LOG(LOG_TRACE,"Render MovieClip");
 
+	if(alpha==0.0)
+		return;
+	if(!visible)
+		return;
 	InteractiveObject::RenderProloue();
 
 	assert_and_throw(graphics==NULL);
@@ -708,7 +721,7 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	return false;
 }
 
-DisplayObject::DisplayObject():loaderInfo(NULL)
+DisplayObject::DisplayObject():loaderInfo(NULL),alpha(1.0),visible(true)
 {
 }
 
@@ -741,7 +754,7 @@ void DisplayObject::buildTraits(ASObject* o)
 	o->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight));
 	o->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight));
 	o->setGetterByQName("visible","",Class<IFunction>::getFunction(_getVisible));
-	o->setSetterByQName("visible","",Class<IFunction>::getFunction(undefinedFunction));
+	o->setSetterByQName("visible","",Class<IFunction>::getFunction(_setVisible));
 	o->setGetterByQName("rotation","",Class<IFunction>::getFunction(_getRotation));
 	o->setSetterByQName("rotation","",Class<IFunction>::getFunction(_setRotation));
 	o->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
@@ -758,7 +771,7 @@ void DisplayObject::buildTraits(ASObject* o)
 	o->setGetterByQName("mask","",Class<IFunction>::getFunction(_getMask));
 	o->setSetterByQName("mask","",Class<IFunction>::getFunction(undefinedFunction));
 	o->setGetterByQName("alpha","",Class<IFunction>::getFunction(_getAlpha));
-	o->setSetterByQName("alpha","",Class<IFunction>::getFunction(undefinedFunction));
+	o->setSetterByQName("alpha","",Class<IFunction>::getFunction(_setAlpha));
 	o->setGetterByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction));
 	o->setSetterByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction));
 	o->setGetterByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction));
@@ -796,10 +809,22 @@ void IDisplayListElem::valFromMatrix()
 	sy=Matrix.ScaleY;
 }
 
+ASFUNCTIONBODY(DisplayObject,_setAlpha)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen==1);
+	number_t val=args[0]->toNumber();
+	//Clip val
+	val=dmax(0,val);
+	val=dmin(val,1);
+	th->alpha=val;
+	return NULL;
+}
+
 ASFUNCTIONBODY(DisplayObject,_getAlpha)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return abstract_d(1);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	return abstract_d(th->alpha);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getMask)
@@ -1032,10 +1057,18 @@ ASFUNCTIONBODY(DisplayObject,_getRotation)
 	return abstract_d(th->rotation);
 }
 
+ASFUNCTIONBODY(DisplayObject,_setVisible)
+{
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen==1);
+	th->visible=Boolean_concrete(args[0]);
+	return NULL;
+}
+
 ASFUNCTIONBODY(DisplayObject,_getVisible)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj->implementation);
-	return abstract_b(true);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	return abstract_b(th->visible);
 }
 
 int DisplayObject::computeHeight()
@@ -1444,6 +1477,11 @@ void Shape::Render()
 {
 	//If graphics is not yet initialized we have nothing to do
 	if(graphics==NULL)
+		return;
+
+	if(alpha==0.0)
+		return;
+	if(!visible)
 		return;
 
 	number_t t1,t2,t3,t4;

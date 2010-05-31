@@ -74,6 +74,7 @@ void Array::buildTraits(ASObject* o)
 	o->ASObject::setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
 	o->ASObject::setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
 	o->ASObject::setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
+//	o->ASObject::setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
 	o->ASObject::setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
 	o->ASObject::setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	o->ASObject::setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
@@ -239,6 +240,16 @@ ASFUNCTIONBODY(Array,_sort)
 	if(th->data.size()>1)
 		throw UnsupportedException("Array::sort not completely implemented");
 	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");
+	return obj;
+}
+
+ASFUNCTIONBODY(Array,sortOn)
+{
+	Array* th=static_cast<Array*>(obj);
+	__asm__("int $3");
+/*	if(th->data.size()>1)
+		throw UnsupportedException("Array::sort not completely implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");*/
 	return obj;
 }
 

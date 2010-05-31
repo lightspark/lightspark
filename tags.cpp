@@ -647,6 +647,10 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 void DefineTextTag::Render()
 {
 	LOG(LOG_TRACE,"DefineText Render");
+	if(alpha==0)
+		return;
+	if(!visible)
+		return;
 	if(cached.size()==0)
 	{
 		FontTag* font=NULL;
@@ -852,6 +856,10 @@ ASObject* DefineMorphShapeTag::instance() const
 
 void DefineMorphShapeTag::Render()
 {
+	if(alpha==0)
+		return;
+	if(!visible)
+		return;
 	//TODO: implement morph shape support
 /*	std::vector < GeomShape > shapes;
 	SHAPERECORD* cur=&(EndEdges.ShapeRecords);
@@ -885,6 +893,10 @@ void DefineMorphShapeTag::Render()
 void DefineShapeTag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape Render");
+	if(alpha==0)
+		return;
+	if(!visible)
+		return;
 
 	if(cached.size()==0)
 	{
@@ -935,6 +947,10 @@ Vector2 DefineShapeTag::debugRender(FTFont* font, bool deep)
 void DefineShape2Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape2 Render");
+	if(alpha==0)
+		return;
+	if(!visible)
+		return;
 
 	if(cached.size()==0)
 	{
@@ -988,6 +1004,10 @@ Vector2 DefineShape2Tag::debugRender(FTFont* font, bool deep)
 void DefineShape4Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape4 Render");
+	if(alpha==0)
+		return;
+	if(!visible)
+		return;
 
 	if(cached.size()==0)
 	{
@@ -1022,6 +1042,10 @@ void DefineShape4Tag::Render()
 void DefineShape3Tag::Render()
 {
 	LOG(LOG_TRACE,"DefineShape3 Render "<< ShapeId);
+	if(alpha==0)
+		return;
+	if(!visible)
+		return;
 	if(cached.size()==0)
 	{
 		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
@@ -1681,6 +1705,10 @@ void DefineButton2Tag::handleEvent(Event* e)
 void DefineButton2Tag::Render()
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineButton2Tag::Render");
+	if(alpha==0)
+		return;
+	if(!visible)
+		return;
 	/*	for(unsigned int i=0;i<Characters.size();i++)
 	{
 		if(Characters[i].ButtonStateUp && state==BUTTON_UP)
@@ -1746,6 +1774,10 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):Dic
 void DefineVideoStreamTag::Render()
 {
 	LOG(LOG_NO_INFO,"DefineVideoStreamTag Render");
+/*	if(alpha==0)
+		return;
+	if(!visible)
+		return;*/
 	glColor4f(1,0,0,0);
 	glBegin(GL_QUADS);
 		glVertex2i(0,0);

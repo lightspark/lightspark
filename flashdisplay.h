@@ -49,7 +49,7 @@ private:
 protected:
 	MATRIX getMatrix() const;
 	void valFromMatrix();
-	public:
+public:
 	int Depth;
 	UI16 CharacterId;
 	CXFORMWITHALPHA ColorTransform;
@@ -89,6 +89,8 @@ protected:
 	}
 	int computeWidth();
 	int computeHeight();
+	float alpha;
+	bool visible;
 public:
 	DisplayObject();
 	~DisplayObject();
@@ -96,12 +98,14 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getVisible);
+	ASFUNCTION(_setVisible);
 	ASFUNCTION(_getStage);
 	ASFUNCTION(_getX);
 	ASFUNCTION(_setX);
 	ASFUNCTION(_getY);
 	ASFUNCTION(_setY);
 	ASFUNCTION(_getMask);
+	ASFUNCTION(_setAlpha);
 	ASFUNCTION(_getAlpha);
 	ASFUNCTION(_getScaleX);
 	ASFUNCTION(_setScaleX);

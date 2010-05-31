@@ -492,6 +492,7 @@ public:
 	ASFUNCTION(unshift);
 	ASFUNCTION(splice);
 	ASFUNCTION(_sort);
+	ASFUNCTION(sortOn);
 	ASFUNCTION(filter);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(_getLength);

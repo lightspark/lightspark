@@ -5,11 +5,9 @@ Official TODO Queue:
 -) Onor script limits
 -) Implement ScalingGrid for correct positioning of some objects
 -) Implement gradient mapping
--) Limited clear of the spare buffer
 -) Texture caching
 -) Click passthrough on transparent objects
 -) Understand the semantics of nextname on methods and the like
--) Check that setGetter, setSetter and initSlot are used only during initialization
 -) handle private methods, which should be getted on the same level
 -) stick to current level change or use flag to getVariable.../setVariable
 -) use fontconfig to avoid dependance on ttf-liberation
@@ -18,4 +16,4 @@ Official TODO Queue:
 -) Conditional scaling of FontGlyph based on version
 -) Why std::istream catches our exeptions?
 -) Add a finally interface to Jobs so they may decRef themselves
--) Add conditional usage of NPOT textures
+-) Add support for read only strings in tiny_string

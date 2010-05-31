@@ -46,6 +46,12 @@ StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):Tag(h)
 	skip(in);
 }
 
+SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"SoundStreamHead Tag");
+	skip(in);
+}
+
 SoundStreamHead2Tag::SoundStreamHead2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SoundStreamHead2 Tag");

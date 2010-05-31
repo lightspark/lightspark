@@ -289,6 +289,12 @@ public:
 	StartSoundTag(RECORDHEADER h, std::istream& s);
 };
 
+class SoundStreamHeadTag: public Tag
+{
+public:
+	SoundStreamHeadTag(RECORDHEADER h, std::istream& s);
+};
+
 class ShowFrameTag: public Tag
 {
 public:

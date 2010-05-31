@@ -86,6 +86,9 @@ Tag* TagFactory::readTag()
 		case 15:
 			ret=new StartSoundTag(h,f);
 			break;
+		case 18:
+			ret=new SoundStreamHeadTag(h,f);
+			break;
 		case 19:
 			ret=new SoundStreamBlockTag(h,f);
 			break;

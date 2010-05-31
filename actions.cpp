@@ -211,7 +211,6 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x07:
 			t=new ActionStop;
 			break;
-			return t;
 		case 0x0b:
 			t=new ActionSubtract;
 			return t;
@@ -238,6 +237,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			break;
 		case 0x1d:
 			t=new ActionSetVariable;
+			break;
+		case 0x20:
+			t=new ActionSetTarget2;
 			break;
 		case 0x21:
 			t=new ActionStringAdd;
@@ -358,6 +360,12 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			break;
 		case 0x88:
 			t=new ActionConstantPool(in);
+			break;
+		case 0x8b:
+			t=new ActionSetTarget(in);
+			break;
+		case 0x8c:
+			t=new ActionGoToLabel(in);
 			break;
 //		case 0x8e:
 //			t=new ActionDefineFunction2(in,this);
@@ -1049,6 +1057,11 @@ void ActionSetVariable::Execute()
 	rt->currentClip->setVariableByQName(varName,"",obj);*/
 }
 
+void ActionSetTarget2::Execute()
+{
+	abort();
+}
+
 void ActionGetVariable::Execute()
 {
 	abort();
@@ -1117,6 +1130,16 @@ ActionConstantPool::ActionConstantPool(std::istream& in)
 		in >> s;
 		ConstantPool.push_back(s);
 	}
+}
+
+ActionSetTarget::ActionSetTarget(std::istream& in)
+{
+	in >> TargetName;
+}
+
+ActionGoToLabel::ActionGoToLabel(std::istream& in)
+{
+	in >> Label;
 }
 
 ActionStoreRegister::ActionStoreRegister(std::istream& in)
@@ -1325,6 +1348,16 @@ void ActionConstantPool::Execute()
 {
 	LOG(LOG_CALLS,"ActionConstantPool");
 	//rt->vm.setConstantPool(ConstantPool);	
+}
+
+void ActionSetTarget::Execute()
+{
+	abort();
+}
+
+void ActionGoToLabel::Execute()
+{
+	LOG(LOG_CALLS,"ActionGoToLabel");
 }
 
 std::istream& lightspark::operator >>(std::istream& stream, BUTTONCONDACTION& v)

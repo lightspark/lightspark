@@ -262,6 +262,26 @@ public:
 	void print(){ LOG(LOG_TRACE,"ActionConstantPool");}
 };
 
+class ActionSetTarget: public ActionTag
+{
+private:
+	STRING TargetName;
+public:
+	ActionSetTarget(std::istream& in);  
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionSetTarget");}
+}; 
+
+class ActionGoToLabel : public ActionTag
+{
+private:
+	STRING Label;
+public:
+	ActionGoToLabel(std::istream& in);
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionGoToLabel");}
+};
+
 class ActionStringAdd: public ActionTag
 {
 public:
@@ -554,6 +574,13 @@ class ActionSetVariable: public ActionTag
 public:
 	void Execute();
 	void print(){ LOG(LOG_TRACE,"ActionSetVariable");}
+};
+
+class ActionSetTarget2: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionSetTarget2");}
 };
 
 class ActionNotImplemented: public ActionTag

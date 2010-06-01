@@ -363,13 +363,14 @@ void Sprite::Render()
 
 	MatrixApplier ma(getMatrix());
 
-	rt->glAcquireFramebuffer(t1,t2,t3,t4);
-
 	//Draw the dynamically added graphics, if any
 	if(graphics)
+	{
+		//Should clean only the bounds of the graphics
+		rt->glAcquireFramebuffer(t1,t2,t3,t4);
 		graphics->Render();
-	
-	rt->glBlitFramebuffer(t1,t2,t3,t4);
+		rt->glBlitFramebuffer(t1,t2,t3,t4);
+	}
 	
 	if(graphics && rt->glAcquireIdBuffer())
 		graphics->Render();

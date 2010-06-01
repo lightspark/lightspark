@@ -102,6 +102,8 @@ private:
 	bool toBind;
 	tiny_string bindName;
 	void tick();
+	Mutex mutexChildrenClips;
+	std::set<MovieClip*> childrenClips;
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
 	~RootMovieClip();
@@ -132,6 +134,8 @@ public:
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
 	void setVariableByString(const std::string& s, ASObject* o);*/
+	void registerChildClip(MovieClip* clip);
+	void unregisterChildClip(MovieClip* clip);
 };
 
 class ThreadProfile

@@ -49,6 +49,7 @@ private:
 protected:
 	MATRIX getMatrix() const;
 	void valFromMatrix();
+	RootMovieClip* root;
 public:
 	int Depth;
 	UI16 CharacterId;
@@ -56,7 +57,6 @@ public:
 	UI16 Ratio;
 	UI16 ClipDepth;
 	CLIPACTIONS ClipActions;
-	RootMovieClip* root;
 
 	DisplayObjectContainer* parent;
 
@@ -64,6 +64,7 @@ public:
 	virtual void Render()=0;
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const=0;
 	virtual void setRoot(RootMovieClip* root)=0;
+	RootMovieClip* getRoot() { return root; }
 	virtual Vector2 debugRender(FTFont* font, bool deep)
 	{
 		::abort();
@@ -79,14 +80,7 @@ class DisplayObject: public IDisplayListElem
 friend class DisplayObjectContainer;
 protected:
 	LoaderInfo* loaderInfo;
-	void setRoot(RootMovieClip* r)
-	{
-		if(root!=r)
-		{
-			assert_and_throw(root==NULL);
-			root=r;
-		}
-	}
+	void setRoot(RootMovieClip* r);
 	int computeWidth();
 	int computeHeight();
 	float alpha;
@@ -348,6 +342,7 @@ public:
 
 	//IDisplayListElem interface
 	void Render();
+	void setRoot(RootMovieClip* r);
 	
 	/*! \brief Should be run with the default fragment/vertex program on
 	* * \param font An FT font used for debug messages

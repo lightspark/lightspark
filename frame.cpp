@@ -83,9 +83,9 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 		//Only the root movie clip can have control tags
 		if(!controls.empty())
 		{
-			assert_and_throw(parent->root==parent);
+			assert_and_throw(parent->getRoot()==parent);
 			for(unsigned int i=0;i<controls.size();i++)
-				controls[i]->execute(parent->root);
+				controls[i]->execute(parent->getRoot());
 			controls.clear();
 
 			if(sys->currentVm)
@@ -117,8 +117,8 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 		initialized=true;
 
 		//Root movie clips are initialized now, after the first frame is really ready 
-		if(parent->root==parent)
-			parent->root->initialize();
+		if(parent->getRoot()==parent)
+			parent->getRoot()->initialize();
 		//Now the bindings are effective also for our parent (the root)
 		
 		//As part of initialization set the transformation matrix for the child objects

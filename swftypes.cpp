@@ -798,8 +798,8 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
-		cerr << it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << 
-			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter << endl;
+		LOG(LOG_NO_INFO,it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << 
+			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter);
 }
 
 lightspark::RECT::RECT()
@@ -1305,7 +1305,7 @@ void FILLSTYLE::setFragmentProgram() const
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Style not implmented");
+		LOG(LOG_NOT_IMPLEMENTED,"Style not implemented");
 		FILLSTYLE::fixedColor(0.5,0.5,0);
 	}
 }

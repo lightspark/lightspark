@@ -241,6 +241,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	//When the URI is undefined the connect is successful (tested on Adobe player)
 	Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetConnection.Connect.Success");
 	getVm()->addEvent(th, status);
+	status->decRef();
 	return NULL;
 }
 
@@ -386,6 +387,12 @@ void NetStream::execute()
 							//sys->setRenderRate(frameRate);
 
 							tag.releaseBuffer();
+							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
+							getVm()->addEvent(this, status);
+							status->decRef();
+							status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Buffer.Full");
+							getVm()->addEvent(this, status);
+							status->decRef();
 						}
 						else
 							decoder->decodeData(tag.packetData,tag.packetLen);
@@ -432,10 +439,6 @@ void NetStream::execute()
 	delete decoder;
 	decoder=NULL;
 	sem_post(&mutex);
-/*	Event* status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Play.Start");
-	getVm()->addEvent(this, status);
-	status=Class<NetStatusEvent>::getInstanceS(true, "status", "NetStream.Buffer.Full");
-	getVm()->addEvent(this, status);*/
 }
 
 void NetStream::threadAbort()

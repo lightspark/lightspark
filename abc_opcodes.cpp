@@ -330,7 +330,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		//If o is already a function call it
 		if(o.obj->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o.obj);
+			IFunction* f=static_cast<IFunction*>(o.obj)->getOverride();
 			//Methods has to be runned with their own class this
 			//The owner has to be increffed
 			obj->incRef();

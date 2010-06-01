@@ -89,7 +89,7 @@ SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 }
 
 RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),parsingIsFailed(false),frameRate(0),mutexFrames("mutexFrame"),
-	toBind(false)
+	toBind(false),mutexChildrenClips("mutexChildrenClips")
 {
 	root=this;
 	sem_init(&mutex,0,1);
@@ -127,6 +127,20 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	assert_and_throw(toBind==false);
 	toBind=true;
 	bindName=n;
+}
+
+void RootMovieClip::registerChildClip(MovieClip* clip)
+{
+	Locker l(mutexChildrenClips);
+	clip->incRef();
+	childrenClips.insert(clip);
+}
+
+void RootMovieClip::unregisterChildClip(MovieClip* clip)
+{
+	Locker l(mutexChildrenClips);
+	childrenClips.erase(clip);
+	clip->decRef();
 }
 
 SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),showProfilingData(false),
@@ -1852,7 +1866,22 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 
 void RootMovieClip::tick()
 {
-	//Should go to the next frame
+	advanceFrame();
+	//Get a copy of the current childs
+	vector<MovieClip*> curChildren;
+	{
+		Locker l(mutexChildrenClips);
+		curChildren.reserve(childrenClips.size());
+		curChildren.insert(curChildren.end(),childrenClips.begin(),childrenClips.end());
+		for(uint32_t i=0;i<curChildren.size();i++)
+			curChildren[i]->incRef();
+	}
+	//Advance all the children, and release the reference
+	for(uint32_t i=0;i<curChildren.size();i++)
+	{
+		curChildren[i]->advanceFrame();
+		curChildren[i]->decRef();
+	}
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

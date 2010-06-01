@@ -1325,7 +1325,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		if(parentDict)
 			localRoot=parentDict->loadedFrom;
 		else
-			localRoot=parent->root;
+			localRoot=parent->getRoot();
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
 		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
 		assert_and_throw(toAdd);
@@ -1357,7 +1357,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		if(PlaceFlagHasClipDepth)
 			toAdd->ClipDepth=ClipDepth;
 
-		toAdd->root=parent->root;
+		toAdd->setRoot(parent->getRoot());
 		toAdd->Depth=Depth;
 		if(!PlaceFlagMove)
 		{
@@ -1492,7 +1492,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		if(parentDict)
 			localRoot=parentDict->loadedFrom;
 		else
-			localRoot=parent->root;
+			localRoot=parent->getRoot();
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
 		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
 		assert_and_throw(toAdd);
@@ -1524,7 +1524,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		if(PlaceFlagHasClipDepth)
 			toAdd->ClipDepth=ClipDepth;
 
-		toAdd->root=parent->root;
+		toAdd->setRoot(parent->getRoot());
 		toAdd->Depth=Depth;
 		if(!PlaceFlagMove)
 		{

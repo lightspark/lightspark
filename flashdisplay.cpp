@@ -581,6 +581,17 @@ void MovieClip::advanceFrame()
 
 }
 
+void MovieClip::setRoot(RootMovieClip* r)
+{
+	if(r==root)
+		return;
+	if(root)
+		root->unregisterChildClip(this);
+	DisplayObjectContainer::setRoot(r);
+	if(root)
+		root->registerChildClip(this);
+}
+
 void MovieClip::bootstrap()
 {
 	if(totalFrames==0)
@@ -603,18 +614,17 @@ void MovieClip::Render()
 	assert_and_throw(graphics==NULL);
 
 	MatrixApplier ma(getMatrix());
+	//Save current frame, this may change during rendering
+	uint32_t curFP=state.FP;
 
 	if(framesLoaded)
 	{
-		assert_and_throw(state.FP<framesLoaded);
+		assert_and_throw(curFP<framesLoaded);
 
-		if((sys->currentVm && getPrototype()->isSubClass(Class<MovieClip>::getClass())) ||
-			sys->currentVm==NULL)
-			advanceFrame();
 		if(!state.stop_FP)
-			frames[state.FP].runScript();
+			frames[curFP].runScript();
 
-		frames[state.FP].Render();
+		frames[curFP].Render();
 	}
 
 	//Render objects added at runtime
@@ -651,9 +661,10 @@ Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 		if(framesLoaded)
 		{
 			assert_and_throw(state.FP<framesLoaded);
-			list<pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[state.FP].displayList.begin();
+			int curFP=state.FP;
+			list<pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[curFP].displayList.begin();
 	
-			for(;it!=frames[state.FP].displayList.end();it++)
+			for(;it!=frames[curFP].displayList.end();it++)
 			{
 				Vector2 off=it->second->debugRender(font, false);
 				glTranslatef(off.x,0,0);
@@ -716,11 +727,12 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	
 	if(framesLoaded==0) //We end here
 		return valid;
-	
-	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[state.FP].displayList.begin();
+
+	uint32_t curFP=state.FP;
+	std::list<std::pair<PlaceInfo, IDisplayListElem*> >::const_iterator it=frames[curFP].displayList.begin();
 	
 	//Update bounds for all the elements
-	for(;it!=frames[state.FP].displayList.end();it++)
+	for(;it!=frames[curFP].displayList.end();it++)
 	{
 		number_t t1,t2,t3,t4;
 		if(it->second->getBounds(t1,t2,t3,t4))
@@ -842,6 +854,15 @@ void IDisplayListElem::valFromMatrix()
 	ty=Matrix.TranslateY;
 	sx=Matrix.ScaleX;
 	sy=Matrix.ScaleY;
+}
+
+void DisplayObject::setRoot(RootMovieClip* r)
+{
+	if(root!=r)
+	{
+		assert_and_throw(root==NULL);
+		root=r;
+	}
 }
 
 ASFUNCTIONBODY(DisplayObject,_setAlpha)
@@ -1339,7 +1360,7 @@ void DisplayObjectContainer::_removeChild(IDisplayListElem* child)
 	if(child->parent==NULL)
 		return; //Should throw an ArgumentError
 	assert_and_throw(child->parent==this);
-	assert_and_throw(child->root==root);
+	assert_and_throw(child->getRoot()==root);
 
 	sem_wait(&sem_displayList);
 	list<IDisplayListElem*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);

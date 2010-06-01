@@ -253,6 +253,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x24:
 			t=new ActionCloneSprite;
 			break;
+		case 0x26:
+			t=new ActionTrace;
+			break;
 		case 0x2b:
 			t=new ActionCastOp;
 			break;
@@ -291,6 +294,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			break;
 		case 0x44:
 			t=new ActionTypeOf;
+			break;
+		case 0x46:
+			t=new ActionEnumerate;
 			break;
 		case 0x47:
 			t=new ActionAdd2;
@@ -663,6 +669,11 @@ void ActionTypeOf::Execute()
 	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionTypeOf");
 }
 
+void ActionEnumerate::Execute()
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionEnumerate");
+}
+
 void ActionGetTime::Execute()
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionGetTime");
@@ -757,6 +768,11 @@ void ActionAdd2::Execute()
 void ActionCloneSprite::Execute()
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionCloneSprite");
+}
+
+void ActionTrace::Execute()
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionTrace");
 }
 
 void ActionDefineLocal::Execute()

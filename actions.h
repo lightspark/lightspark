@@ -401,6 +401,13 @@ public:
 	void print(){ LOG(LOG_TRACE,"ActionCloneSprite");}
 };
 
+class ActionTrace: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionTrace");}
+};
+
 class ActionImplementsOp: public ActionTag
 {
 public:
@@ -455,6 +462,13 @@ class ActionTypeOf: public ActionTag
 public:
 	void Execute();
 	void print(){ LOG(LOG_TRACE,"ActionTypeOf");}
+};
+
+class ActionEnumerate: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionEnumerate");}
 };
 
 class ActionGetTime: public ActionTag

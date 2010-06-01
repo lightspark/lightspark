@@ -364,6 +364,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x67:
 			t=new ActionGreater;
 			break;
+		case 0x68:
+			t=new ActionStringGreater;
+			break;
 		case 0x69:
 			t=new ActionExtends;
 			break;
@@ -770,6 +773,11 @@ void ActionGreater::Execute()
 		LOG(LOG_CALLS,"Not Greater");
 		rt->vm.stack.push(new Integer(0));
 	}*/
+}
+
+void ActionStringGreater::Execute()
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionStringGreater");
 }
 
 void ActionAdd2::Execute()

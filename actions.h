@@ -576,6 +576,13 @@ public:
 	void print(){ LOG(LOG_TRACE,"ActionGreater");}
 };
 
+class ActionStringGreater: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionStringGreater");}
+};
+
 class ActionLess2: public ActionTag
 {
 public:

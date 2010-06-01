@@ -232,6 +232,9 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 		case 0x17:
 			t=new ActionPop;
 			break;
+		case 0x18:
+			t=new ActionToInteger;
+			break;
 		case 0x1c:
 			t=new ActionGetVariable;
 			break;
@@ -342,6 +345,15 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			break;
 		case 0x60:
 			t=new ActionBitAnd;
+			break;
+		case 0x61:
+			t=new ActionBitOr;
+			break;
+		case 0x62:
+			t=new ActionBitXor;
+			break;
+		case 0x63:
+			t=new ActionBitLShift;
 			break;
 		case 0x64:
 			t=new ActionBitRShift;
@@ -694,6 +706,21 @@ void ActionBitAnd::Execute()
 	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionBitAnd");
 }
 
+void ActionBitOr::Execute()
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionBitOr");
+}
+
+void ActionBitXor::Execute()
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionBitXor");
+}
+
+void ActionBitLShift::Execute()
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionBitLShift");
+}
+
 void ActionBitRShift::Execute()
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Exec: ActionBitRShift");
@@ -825,6 +852,11 @@ void ActionPop::Execute()
 	abort();
 //	tiny_string popped=rt->vm.stack.pop()->toString();
 //	LOG(LOG_CALLS,"ActionPop: " << popped);
+}
+
+void ActionToInteger::Execute()
+{
+	LOG(LOG_NOT_IMPLEMENTED,"ActionToInteger");
 }
 
 void ActionCallMethod::Execute()

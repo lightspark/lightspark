@@ -373,6 +373,13 @@ public:
 	void print(){ LOG(LOG_TRACE,"ActionPop");}
 };
 
+class ActionToInteger: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionToInteger");}
+};
+
 class ActionNot: public ActionTag
 {
 public:
@@ -525,6 +532,27 @@ class ActionBitAnd: public ActionTag
 public:
 	void Execute();
 	void print(){ LOG(LOG_TRACE,"ActionBitAnd");}
+};
+
+class ActionBitOr: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionBitOr");}
+};
+
+class ActionBitXor: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionBitXor");}
+};
+
+class ActionBitLShift: public ActionTag
+{
+public:
+	void Execute();
+	void print(){ LOG(LOG_TRACE,"ActionBitLShift");}
 };
 
 class ActionBitRShift: public ActionTag

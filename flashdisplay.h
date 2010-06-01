@@ -36,9 +36,9 @@ class DisplayListTag;
 class LoaderInfo;
 class DisplayObjectContainer;
 
-class IDisplayListElem: public EventDispatcher
+class DisplayObject: public EventDispatcher
 {
-friend class DisplayObject;
+friend class DisplayObjectContainer;
 private:
 	MATRIX Matrix;
 	bool useMatrix;
@@ -50,6 +50,11 @@ protected:
 	MATRIX getMatrix() const;
 	void valFromMatrix();
 	RootMovieClip* root;
+	LoaderInfo* loaderInfo;
+	int computeWidth();
+	int computeHeight();
+	float alpha;
+	bool visible;
 public:
 	int Depth;
 	UI16 CharacterId;
@@ -57,37 +62,26 @@ public:
 	UI16 Ratio;
 	UI16 ClipDepth;
 	CLIPACTIONS ClipActions;
-
 	DisplayObjectContainer* parent;
-
-	IDisplayListElem():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),root(NULL),parent(NULL){}
-	virtual void Render()=0;
-	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const=0;
-	virtual void setRoot(RootMovieClip* root)=0;
+	DisplayObject();
+	~DisplayObject();
+	virtual void Render()
+	{
+		throw RunTimeException("DisplayObject::Render");
+	}
+	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	{
+		throw RunTimeException("DisplayObject::getBounds");
+		return false;
+	}
+	virtual void setRoot(RootMovieClip* root);
 	RootMovieClip* getRoot() { return root; }
 	virtual Vector2 debugRender(FTFont* font, bool deep)
 	{
 		::abort();
 		return Vector2(0,0);
 	}
-
-public:
 	void setMatrix(const MATRIX& m);
-};
-
-class DisplayObject: public IDisplayListElem
-{
-friend class DisplayObjectContainer;
-protected:
-	LoaderInfo* loaderInfo;
-	void setRoot(RootMovieClip* r);
-	int computeWidth();
-	int computeHeight();
-	float alpha;
-	bool visible;
-public:
-	DisplayObject();
-	~DisplayObject();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
@@ -120,15 +114,6 @@ public:
 	ASFUNCTION(_setRotation);
 	ASFUNCTION(_setName);
 	ASFUNCTION(localToGlobal);
-	void Render()
-	{
-		throw RunTimeException("DisplayObject::Render");
-	}
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		throw RunTimeException("DisplayObject::getBounds");
-		return false;
-	}
 };
 
 class InteractiveObject: public DisplayObject
@@ -153,14 +138,14 @@ private:
 	bool _contains(DisplayObject* d);
 protected:
 	//This is shared between RenderThread and VM
-	std::list < IDisplayListElem* > dynamicDisplayList;
+	std::list < DisplayObject* > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable sem_t sem_displayList;
 	void setRoot(RootMovieClip* r);
 public:
 	void dumpDisplayList();
-	void _removeChild(IDisplayListElem*);
+	void _removeChild(DisplayObject*);
 	DisplayObjectContainer();
 	virtual ~DisplayObjectContainer();
 	static void sinit(Class_base* c);
@@ -315,7 +300,7 @@ friend class ParseThread;
 protected:
 	uint32_t framesLoaded;
 	uint32_t totalFrames;
-	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
+	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	Frame* cur_frame;
 	void bootstrap();
 public:
@@ -340,7 +325,7 @@ public:
 	void advanceFrame();
 	uint32_t getFrameIdByLabel(const tiny_string& l) const;
 
-	//IDisplayListElem interface
+	//DisplayObject interface
 	void Render();
 	void setRoot(RootMovieClip* r);
 	

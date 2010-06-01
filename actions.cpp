@@ -74,7 +74,7 @@ DoActionTag::DoActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 	}
 }
 
-void DoActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& ls)
+void DoActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& ls)
 {
 	Depth=0x20000;
 	ls.push_back(make_pair(PlaceInfo(),this));
@@ -144,7 +144,7 @@ DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTa
 	}
 }
 
-void DoInitActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& ls)
+void DoInitActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& ls)
 {
 	Depth=0x10000;
 	ls.push_back(make_pair(PlaceInfo(),this));

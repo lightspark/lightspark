@@ -217,9 +217,9 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 	LOG(LOG_TRACE,"RemoveObject2 Depth: " << Depth);
 }
 
-void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& ls)
+void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& ls)
 {
-	list <pair<PlaceInfo, IDisplayListElem*> >::iterator it=ls.begin();
+	list <pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
 
 	for(;it!=ls.end();it++)
 	{
@@ -1275,22 +1275,22 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 	LOG(LOG_TRACE,"ShowFrame");
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(const pair<PlaceInfo, IDisplayListElem*>& a, int d)
+bool PlaceObject2Tag::list_orderer::operator ()(const pair<PlaceInfo, DisplayObject*>& a, int d)
 {
 	return a.second->Depth<d;
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(int d, const pair<PlaceInfo, IDisplayListElem*>& a)
+bool PlaceObject2Tag::list_orderer::operator ()(int d, const pair<PlaceInfo, DisplayObject*>& a)
 {
 	return d<a.second->Depth;
 }
 
-bool PlaceObject2Tag::list_orderer::operator ()(const std::pair<PlaceInfo, IDisplayListElem*>& a, const std::pair<PlaceInfo, IDisplayListElem*>& b)
+bool PlaceObject2Tag::list_orderer::operator ()(const std::pair<PlaceInfo, DisplayObject*>& a, const std::pair<PlaceInfo, DisplayObject*>& b)
 {
 	return a.second->Depth < b.second->Depth;
 }
 
-void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDisplayListElem*> >& ls)
+void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, DisplayObject*> >& ls)
 {
 	//TODO: support clipping
 	if(ClipDepth!=0)
@@ -1298,7 +1298,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 
 	PlaceInfo infos;
 	//Find if this id is already on the list
-	list < pair<PlaceInfo, IDisplayListElem*> >::iterator it=ls.begin();
+	list < pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
 	for(;it!=ls.end();it++)
 	{
 		if(it->second->Depth==Depth)
@@ -1313,7 +1313,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 	if(PlaceFlagHasMatrix)
 		infos.Matrix=Matrix;
 
-	IDisplayListElem* toAdd=NULL;
+	DisplayObject* toAdd=NULL;
 	if(PlaceFlagHasCharacter)
 	{
 		//As the transformation matrix can change every frame
@@ -1327,7 +1327,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		else
 			localRoot=parent->getRoot();
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
-		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
+		toAdd=dynamic_cast<DisplayObject*>(dict->instance());
 		assert_and_throw(toAdd);
 
 		//Object should be constructed even if not binded
@@ -1361,8 +1361,8 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		toAdd->Depth=Depth;
 		if(!PlaceFlagMove)
 		{
-			list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=
-				lower_bound< list<pair<PlaceInfo, IDisplayListElem*> >::iterator, int, list_orderer>
+			list<pair<PlaceInfo, DisplayObject*> >::iterator it=
+				lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
 				(ls.begin(),ls.end(),Depth,list_orderer());
 			//As we are inserting the object in the list we need to incref it
 			toAdd->incRef();
@@ -1406,7 +1406,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 			{
 				it->second->decRef();
 				ls.erase(it);
-				list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
+				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
 				toAdd->incRef();
 				ls.insert(it,make_pair(infos,toAdd));
 			}
@@ -1457,7 +1457,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTa
 	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0))
 }
 
-void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDisplayListElem*> >& ls)
+void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, DisplayObject*> >& ls)
 {
 	//TODO: support clipping, blending, filters, caching
 	if(ClipDepth!=0)
@@ -1465,7 +1465,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 
 	PlaceInfo infos;
 	//Find if this id is already on the list
-	list < pair<PlaceInfo, IDisplayListElem*> >::iterator it=ls.begin();
+	list < pair<PlaceInfo, DisplayObject*> >::iterator it=ls.begin();
 	for(;it!=ls.end();it++)
 	{
 		if(it->second->Depth==Depth)
@@ -1480,7 +1480,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 	if(PlaceFlagHasMatrix)
 		infos.Matrix=Matrix;
 
-	IDisplayListElem* toAdd=NULL;
+	DisplayObject* toAdd=NULL;
 	if(PlaceFlagHasCharacter)
 	{
 		//As the transformation matrix can change every frame
@@ -1494,7 +1494,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		else
 			localRoot=parent->getRoot();
 		DictionaryTag* dict=localRoot->dictionaryLookup(CharacterId);
-		toAdd=dynamic_cast<IDisplayListElem*>(dict->instance());
+		toAdd=dynamic_cast<DisplayObject*>(dict->instance());
 		assert_and_throw(toAdd);
 
 		//Object should be constructed even if not binded
@@ -1528,8 +1528,8 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 		toAdd->Depth=Depth;
 		if(!PlaceFlagMove)
 		{
-			list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=
-				lower_bound< list<pair<PlaceInfo, IDisplayListElem*> >::iterator, int, list_orderer>
+			list<pair<PlaceInfo, DisplayObject*> >::iterator it=
+				lower_bound< list<pair<PlaceInfo, DisplayObject*> >::iterator, int, list_orderer>
 				(ls.begin(),ls.end(),Depth,list_orderer());
 			//As we are inserting the object in the list we need to incref it
 			toAdd->incRef();
@@ -1573,7 +1573,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, IDispla
 			{
 				it->second->decRef();
 				ls.erase(it);
-				list<pair<PlaceInfo, IDisplayListElem*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
+				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
 				toAdd->incRef();
 				ls.insert(it,make_pair(infos,toAdd));
 			}

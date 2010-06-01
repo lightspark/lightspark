@@ -29,7 +29,7 @@ namespace lightspark
 class RootMovieClip;
 class DisplayListTag;
 class ControlTag;
-class IDisplayListElem;
+class DisplayObject;
 class MovieClip;
 
 class PlaceInfo
@@ -46,7 +46,7 @@ private:
 public:
 	tiny_string Label;
 	std::list<DisplayListTag*> blueprint;
-	std::list<std::pair<PlaceInfo, IDisplayListElem*> > displayList;
+	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
 	Frame():script(NULL),initialized(false){}
@@ -54,7 +54,7 @@ public:
 	void Render();
 	void setScript(IFunction* s){script=s;}
 	void runScript();
-	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& d);
+	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
 	bool isInitialized() const { return initialized; }
 };
 };

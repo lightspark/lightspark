@@ -32,7 +32,7 @@ extern TLSDATA SystemState* sys;
 
 Frame::~Frame()
 {
-	list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
+	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
 	if(sys && !sys->finalizingDestruction)
 	{
@@ -53,7 +53,7 @@ void Frame::runScript()
 
 void Frame::Render()
 {
-	list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
+	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
 	//Render objects of this frame;
 	for(;i!=displayList.end();i++)
@@ -66,16 +66,16 @@ void Frame::Render()
 	}
 }
 
-void dumpDisplayList(list<IDisplayListElem*>& l)
+void dumpDisplayList(list<DisplayObject*>& l)
 {
-	list<IDisplayListElem*>::iterator it=l.begin();
+	list<DisplayObject*>::iterator it=l.begin();
 	for(;it!=l.end();it++)
 	{
 		cout << *it << endl;
 	}
 }
 
-void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& d)
+void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 {
 	if(!initialized)
 	{
@@ -111,7 +111,7 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 		blueprint.clear();
 		displayList=d;
 		//Acquire a new reference to every child
-		list <pair<PlaceInfo, IDisplayListElem*> >::const_iterator dit=displayList.begin();
+		list <pair<PlaceInfo, DisplayObject*> >::const_iterator dit=displayList.begin();
 		for(;dit!=displayList.end();dit++)
 			dit->second->incRef();
 		initialized=true;
@@ -122,7 +122,7 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, IDisplayListElem*> >& 
 		//Now the bindings are effective also for our parent (the root)
 		
 		//As part of initialization set the transformation matrix for the child objects
-		list <pair<PlaceInfo, IDisplayListElem*> >::iterator i=displayList.begin();
+		list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 
 		for(;i!=displayList.end();i++)
 			i->second->setMatrix(i->first.Matrix);

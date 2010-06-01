@@ -70,7 +70,7 @@ class DisplayListTag: public Tag
 public:
 	DisplayListTag(RECORDHEADER h):Tag(h){}
 	virtual TAGTYPE getType() const{ return DISPLAY_LIST_TAG; }
-	virtual void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list)=0;
+	virtual void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list)=0;
 };
 
 class DictionaryTag: public Tag
@@ -314,7 +314,7 @@ private:
 
 public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
+	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
 };
 
 class PlaceObject2Tag: public DisplayListTag
@@ -323,9 +323,9 @@ protected:
 	class list_orderer
 	{
 	public:
-		bool operator()(const std::pair<PlaceInfo, IDisplayListElem*>& a, int d);
-		bool operator()(int d, const std::pair<PlaceInfo, IDisplayListElem*>& a);
-		bool operator()(const std::pair<PlaceInfo, IDisplayListElem*>& a, const std::pair<PlaceInfo, IDisplayListElem*>& b);
+		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, int d);
+		bool operator()(int d, const std::pair<PlaceInfo, DisplayObject*>& a);
+		bool operator()(const std::pair<PlaceInfo, DisplayObject*>& a, const std::pair<PlaceInfo, DisplayObject*>& b);
 	};
 
 	bool PlaceFlagHasClipAction;
@@ -348,7 +348,7 @@ protected:
 public:
 	STRING Name;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
+	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
 };
 
 class PlaceObject3Tag: public PlaceObject2Tag
@@ -366,7 +366,7 @@ private:
 
 public:
 	PlaceObject3Tag(RECORDHEADER h, std::istream& in);
-	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, IDisplayListElem*> >& list);
+	void execute(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& list);
 };
 
 class FrameLabelTag: public Tag

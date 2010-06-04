@@ -367,13 +367,18 @@ void Sprite::Render()
 	if(graphics)
 	{
 		//Should clean only the bounds of the graphics
-		rt->glAcquireFramebuffer(t1,t2,t3,t4);
+		if(!isSimple())
+			rt->glAcquireTempBuffer(t1,t2,t3,t4);
 		graphics->Render();
-		rt->glBlitFramebuffer(t1,t2,t3,t4);
+		if(!isSimple())
+			rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
 	
 	if(graphics && rt->glAcquireIdBuffer())
+	{
 		graphics->Render();
+		rt->glReleaseIdBuffer();
+	}
 
 	sem_wait(&sem_displayList);
 	//Now draw also the display list
@@ -856,6 +861,12 @@ void DisplayObject::valFromMatrix()
 	ty=Matrix.TranslateY;
 	sx=Matrix.ScaleX;
 	sy=Matrix.ScaleY;
+}
+
+bool DisplayObject::isSimple() const
+{
+	//TODO: Check filters
+	return alpha==1.0;
 }
 
 void DisplayObject::setRoot(RootMovieClip* r)
@@ -1550,14 +1561,19 @@ void Shape::Render()
 
 	MatrixApplier ma(getMatrix());
 
-	rt->glAcquireFramebuffer(t1,t2,t3,t4);
+	if(!isSimple())
+		rt->glAcquireTempBuffer(t1,t2,t3,t4);
 
 	graphics->Render();
 
-	rt->glBlitFramebuffer(t1,t2,t3,t4);
+	if(!isSimple())
+		rt->glBlitTempBuffer(t1,t2,t3,t4);
 	
 	if(rt->glAcquireIdBuffer())
+	{
 		graphics->Render();
+		rt->glReleaseIdBuffer();
+	}
 
 	ma.unapply();
 }

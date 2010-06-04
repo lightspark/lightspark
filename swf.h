@@ -327,7 +327,7 @@ private:
 #endif
 	bool loadShaderPrograms();
 	uint32_t* interactive_buffer;
-	bool fbAcquired;
+	bool tempBufferAcquired;
 	void tick();
 	int frameCount;
 	int secsCount;
@@ -340,12 +340,12 @@ public:
 	void draw();
 	float getIdAt(int x, int y);
 	//The calling context MUST call this function with the transformation matrix ready
-	void glAcquireFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
-	void glBlitFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
+	void glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
+	void glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 
 	void requestInput();
-	void glClearIdBuffer();
 	bool glAcquireIdBuffer();
+	void glReleaseIdBuffer();
 	void pushId()
 	{
 		idStack.push_back(currentId);

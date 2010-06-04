@@ -810,7 +810,7 @@ void InputThread::disableDrag()
 }
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),
-	interactive_buffer(NULL),fbAcquired(false),frameCount(0),secsCount(0),dataTex(false),mainTex(false),tempTex(false),
+	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),dataTex(false),mainTex(false),tempTex(false),
 	inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
@@ -843,15 +843,6 @@ RenderThread::~RenderThread()
 	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
 }
 
-void RenderThread::glClearIdBuffer()
-{
-	glDrawBuffer(GL_COLOR_ATTACHMENT2);
-	
-	glDisable(GL_BLEND);
-	glClearColor(0,0,0,1);
-	glClear(GL_COLOR_BUFFER_BIT);
-}
-
 void RenderThread::requestInput()
 {
 	inputNeeded=true;
@@ -861,6 +852,7 @@ void RenderThread::requestInput()
 
 bool RenderThread::glAcquireIdBuffer()
 {
+	//TODO: PERF: on the id buffer stuff are drawn more than once
 	if(currentId!=0)
 	{
 		glDrawBuffer(GL_COLOR_ATTACHMENT2);
@@ -872,10 +864,16 @@ bool RenderThread::glAcquireIdBuffer()
 	return false;
 }
 
-void RenderThread::glAcquireFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
+void RenderThread::glReleaseIdBuffer()
 {
-	assert(fbAcquired==false);
-	fbAcquired=true;
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	materialOverride=false;
+}
+
+void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
+{
+	assert(tempBufferAcquired==false);
+	tempBufferAcquired=true;
 
 	glDrawBuffer(GL_COLOR_ATTACHMENT1);
 	materialOverride=false;
@@ -890,10 +888,10 @@ void RenderThread::glAcquireFramebuffer(number_t xmin, number_t xmax, number_t y
 	glEnd();
 }
 
-void RenderThread::glBlitFramebuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
+void RenderThread::glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
-	assert(fbAcquired==true);
-	fbAcquired=false;
+	assert(tempBufferAcquired==true);
+	tempBufferAcquired=false;
 
 	//Use the blittler program to blit only the used buffer
 	glUseProgram(blitter_program);

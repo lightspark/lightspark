@@ -76,7 +76,8 @@ void Video::Render()
 
 		MatrixApplier ma(getMatrix());
 
-		rt->glAcquireFramebuffer(0,width,0,height);
+		if(!isSimple())
+			rt->glAcquireTempBuffer(0,width,0,height);
 
 		bool frameReady=netStream->copyFrameToTexture(videoTexture);
 		videoTexture.bind();
@@ -104,7 +105,8 @@ void Video::Render()
 			sem_post(&mutex);
 		}
 
-		rt->glBlitFramebuffer(0,width,0,height);
+		if(!isSimple())
+			rt->glBlitTempBuffer(0,width,0,height);
 		
 		//Render click sensible area if needed
 		if(rt->glAcquireIdBuffer())
@@ -115,7 +117,7 @@ void Video::Render()
 				glVertex2i(width,height);
 				glVertex2i(0,height);
 			glEnd();
-			
+			rt->glReleaseIdBuffer();
 		}
 		ma.unapply();
 	}

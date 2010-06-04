@@ -697,9 +697,9 @@ void DefineTextTag::Render()
 	ma.concat(TextMatrix);
 	//Shapes are defined in twips, so scale then down
 	glScalef(0.05,0.05,1);
-	
-	rt->glAcquireFramebuffer(TextBounds.Xmin,TextBounds.Xmax,
-				 TextBounds.Ymin,TextBounds.Ymax);
+
+	if(!isSimple())
+		rt->glAcquireTempBuffer(TextBounds.Xmin,TextBounds.Xmax, TextBounds.Ymin,TextBounds.Ymax);
 
 	MatrixApplier ma2;
 	//The next 1/20 scale is needed by DefineFont3. Should be conditional
@@ -739,8 +739,8 @@ void DefineTextTag::Render()
 	}
 	ma2.unapply();
 
-	rt->glBlitFramebuffer(TextBounds.Xmin,TextBounds.Xmax,
-				 TextBounds.Ymin,TextBounds.Ymax);
+	if(!isSimple())
+		rt->glBlitTempBuffer(TextBounds.Xmin,TextBounds.Xmax,TextBounds.Ymin,TextBounds.Ymax);
 	
 	if(rt->glAcquireIdBuffer())
 	{
@@ -780,6 +780,7 @@ void DefineTextTag::Render()
 				count++;
 			}
 		}
+		rt->glReleaseIdBuffer();
 	}
 	ma.unapply();
 }
@@ -890,6 +891,7 @@ void DefineMorphShapeTag::Render()
 		std::vector < GeomShape >::iterator it=shapes.begin();
 		for(;it!=shapes.end();it++)
 			it->Render();
+		rt->glReleaseIdBuffer();
 	}
 	glPopMatrix();*/
 }
@@ -913,21 +915,22 @@ void DefineShapeTag::Render()
 	MatrixApplier ma(getMatrix());
 	glScalef(0.05,0.05,1);
 
-	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
-				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+	if(!isSimple())
+		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 		it->Render();
 
-	rt->glBlitFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
-				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+	if(!isSimple())
+		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 
 	if(rt->glAcquireIdBuffer())
 	{
 		std::vector < GeomShape >::iterator it=cached.begin();
 		for(;it!=cached.end();it++)
 			it->Render();
+		rt->glReleaseIdBuffer();
 	}
 	ma.unapply();
 }
@@ -967,8 +970,8 @@ void DefineShape2Tag::Render()
 	MatrixApplier ma(getMatrix());
 	glScalef(0.05,0.05,1);
 
-	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
-				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+	if(!isSimple())
+		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
@@ -977,14 +980,15 @@ void DefineShape2Tag::Render()
 		it->Render();
 	}
 
-	rt->glBlitFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
-				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+	if(!isSimple())
+		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 	
 	if(rt->glAcquireIdBuffer())
 	{
 		std::vector < GeomShape >::iterator it=cached.begin();
 		for(;it!=cached.end();it++)
 			it->Render();
+		rt->glReleaseIdBuffer();
 	}
 	ma.unapply();
 }
@@ -1024,21 +1028,22 @@ void DefineShape4Tag::Render()
 	MatrixApplier ma(getMatrix());
 	glScalef(0.05,0.05,1);
 
-	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
-				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+	if(!isSimple())
+		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 	
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 		it->Render();
 
-	rt->glBlitFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
-				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+	if(!isSimple())
+		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 	
 	if(rt->glAcquireIdBuffer())
 	{
 		std::vector < GeomShape >::iterator it=cached.begin();
 		for(;it!=cached.end();it++)
 			it->Render();
+		rt->glReleaseIdBuffer();
 	}
 	ma.unapply();
 }
@@ -1061,8 +1066,8 @@ void DefineShape3Tag::Render()
 	MatrixApplier ma(getMatrix());
 	glScalef(0.05,0.05,1);
 
-	rt->glAcquireFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
-				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+	if(!isSimple())
+		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 
 
 	std::vector < GeomShape >::iterator it=cached.begin();
@@ -1072,14 +1077,15 @@ void DefineShape3Tag::Render()
 		it->Render();
 	}
 
-	rt->glBlitFramebuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,
-				 ShapeBounds.Ymin,ShapeBounds.Ymax);
+	if(!isSimple())
+		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 	
 	if(rt->glAcquireIdBuffer())
 	{
 		std::vector < GeomShape >::iterator it=cached.begin();
 		for(;it!=cached.end();it++)
 			it->Render();
+		rt->glReleaseIdBuffer();
 	}
 
 	ma.unapply();

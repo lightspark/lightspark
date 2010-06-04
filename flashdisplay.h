@@ -53,6 +53,7 @@ protected:
 	LoaderInfo* loaderInfo;
 	int computeWidth();
 	int computeHeight();
+	bool isSimple() const;
 	float alpha;
 	bool visible;
 public:

@@ -306,6 +306,13 @@ void SystemState::tick()
 	for(;it!=profilingData.end();it++)
 		it->tick();
 	sem_post(&mutex);
+	//Enter frame should be sent to the stage too
+	if(stage->hasEventListener("enterFrame"))
+	{
+		Event* e=Class<Event>::getInstanceS("enterFrame");
+		getVm()->addEvent(stage,e);
+		e->decRef();
+	}
 }
 
 void SystemState::addJob(IThreadJob* j)

@@ -211,6 +211,7 @@ public:
 class EventDispatcher: public ASObject
 {
 private:
+	Mutex handlersMutex;
 	std::map<tiny_string,std::list<listener> > handlers;
 	void dumpHandlers();
 public:

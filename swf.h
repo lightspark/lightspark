@@ -211,14 +211,6 @@ public:
 	bool finalizingDestruction;
 	std::vector<Tag*> tagsStorage;
 
-	//DEBUG
-	std::vector<tiny_string> events_name;
-	void dumpEvents()
-	{
-		for(unsigned int i=0;i<events_name.size();i++)
-			std::cout << events_name[i] << std::endl;
-	}
-
 	//Flags for command line options
 	bool useInterpreter;
 	bool useJit;

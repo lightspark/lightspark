@@ -775,20 +775,6 @@ void InputThread::removeListener(InteractiveObject* ob)
 	}
 }
 
-void InputThread::broadcastEvent(const tiny_string& t)
-{
-	Event* e=Class<Event>::getInstanceS(t);
-	Locker locker(mutexListeners);
-	assert(e->getRefCount()==1);
-	for(unsigned int i=0;i<listeners.size();i++)
-	{
-		if(listeners[i]->getObjectType()==T_MOVIECLIP)
-			sys->currentVm->addEvent(listeners[i],e);
-	}
-	e->check();
-	e->decRef();
-}
-
 void InputThread::enableDrag(Sprite* s, const lightspark::RECT& limit)
 {
 	Locker locker(mutexDragged);

@@ -284,7 +284,6 @@ public:
 	void wait();
 	void addListener(InteractiveObject* ob);
 	void removeListener(InteractiveObject* ob);
-	void broadcastEvent(const tiny_string& type);
 	void enableDrag(Sprite* s, const RECT& limit);
 	void disableDrag();
 };

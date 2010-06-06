@@ -718,7 +718,6 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 		case T_OBJECT:
 		case T_NULL:
 		case T_ARRAY:
-		case T_MOVIECLIP:
 			ret="object";
 			break;
 		case T_BOOLEAN:

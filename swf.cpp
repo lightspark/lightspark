@@ -300,7 +300,7 @@ void SystemState::setRenderRate(float rate)
 
 void SystemState::tick()
 {
-	inputThread->broadcastEvent("enterFrame");
+	RootMovieClip::tick();
  	sem_wait(&mutex);
 	list<ThreadProfile>::iterator it=profilingData.begin();
 	for(;it!=profilingData.end();it++)
@@ -1768,9 +1768,6 @@ lightspark::RECT RootMovieClip::getFrameSize() const
 void RootMovieClip::setFrameRate(float f)
 {
 	frameRate=f;
-	//Now frame rate is valid, start the rendering
-
-	sys->addTick(1000/f,this);
 	sem_post(&sem_valid_rate);
 }
 
@@ -1826,6 +1823,13 @@ void RootMovieClip::commitFrame(bool another)
 	{
 		//Let's initialize the first frame of this movieclip
 		bootstrap();
+		//TODO Should dispatch INIT here
+		//Root movie clips are initialized now, after the first frame is really ready 
+		initialize();
+		//Now the bindings are effective
+
+		//When the first frame is committed the frame rate is known
+		sys->addTick(1000/frameRate,this);
 	}
 	sem_post(&new_frame);
 }
@@ -1872,6 +1876,9 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 void RootMovieClip::tick()
 {
 	advanceFrame();
+	Event* e=Class<Event>::getInstanceS("enterFrame");
+	if(hasEventListener("enterFrame"))
+		getVm()->addEvent(this,e);
 	//Get a copy of the current childs
 	vector<MovieClip*> curChildren;
 	{
@@ -1885,8 +1892,11 @@ void RootMovieClip::tick()
 	for(uint32_t i=0;i<curChildren.size();i++)
 	{
 		curChildren[i]->advanceFrame();
+		if(curChildren[i]->hasEventListener("enterFrame"))
+			getVm()->addEvent(curChildren[i],e);
 		curChildren[i]->decRef();
 	}
+	e->decRef();
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

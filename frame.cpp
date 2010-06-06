@@ -116,11 +116,6 @@ void Frame::init(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& d)
 			dit->second->incRef();
 		initialized=true;
 
-		//Root movie clips are initialized now, after the first frame is really ready 
-		if(parent->getRoot()==parent)
-			parent->getRoot()->initialize();
-		//Now the bindings are effective also for our parent (the root)
-		
 		//As part of initialization set the transformation matrix for the child objects
 		list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
 

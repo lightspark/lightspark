@@ -572,10 +572,15 @@ ASFUNCTIONBODY(MovieClip,_constructor)
 
 void MovieClip::advanceFrame()
 {
-	if(!state.stop_FP || state.explicit_FP)
+	if((!state.stop_FP || state.explicit_FP) && totalFrames!=0 && getPrototype()->isSubClass(Class<MovieClip>::getClass()))
 	{
+		//If we have not yet loaded enough frames delay advancement
+		if(state.next_FP>=framesLoaded)
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"Not enough frames loaded");
+			return;
+		}
 		//Before assigning the next_FP we initialize the frame
-		assert_and_throw(state.next_FP<frames.size());
 		//Should initialize all the frames from the current to the next
 		for(uint32_t i=(state.FP+1);i<=state.next_FP;i++)
 			frames[i].init(this,displayList);

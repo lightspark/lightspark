@@ -86,6 +86,7 @@ protected:
 	sem_t mutex;
 	bool initialized;
 	tiny_string origin;
+	void tick();
 private:
 	//Semaphore to wait for new frames to be available
 	sem_t new_frame;
@@ -101,7 +102,6 @@ private:
 	Mutex mutexFrames;
 	bool toBind;
 	tiny_string bindName;
-	void tick();
 	Mutex mutexChildrenClips;
 	std::set<MovieClip*> childrenClips;
 public:

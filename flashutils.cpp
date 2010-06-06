@@ -400,8 +400,12 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool
 	}
 	else if(name.name_type==multiname::NAME_STRING)
 		data[Class<ASString>::getInstanceS(name.name_s)]=o;
+	else if(name.name_type==multiname::NAME_INT)
+		data[abstract_i(name.name_i)]=o;
 	else
+	{
 		throw UnsupportedException("Unsupported name kind in Dictionary::setVariableByMultiname");
+	}
 }
 
 void Dictionary::deleteVariableByMultiname(const multiname& name)

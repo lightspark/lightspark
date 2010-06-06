@@ -1173,6 +1173,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	int passedToLocals=imin(numArgs,args_len);
 	int passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
 	int realLevel=(bound)?closure_level:level;
+	if(realLevel==-1) //If realLevel is not set, keep the object level
+		realLevel=obj->getLevel();
 
 	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
 	int i=passedToLocals;

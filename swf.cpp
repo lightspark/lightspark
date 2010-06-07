@@ -1174,7 +1174,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	profile->setTag("Render");
 	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
 	if(font.Error())
+	{
+		LOG(LOG_ERROR,"Unable to load ttf-liberation font");
 		throw RunTimeException("Unable to load font");
+	}
 	
 	font.FaceSize(20);
 

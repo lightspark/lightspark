@@ -1545,7 +1545,7 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 		stream >> v.FilterList;
 
 	if(v.ButtonHasBlendMode)
-        stream >> v.BlendMode;
+		stream >> v.BlendMode;
 
 	return stream;
 }

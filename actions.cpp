@@ -213,7 +213,7 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 			break;
 		case 0x0b:
 			t=new ActionSubtract;
-			return t;
+			break;
 		case 0x0c:
 			t=new ActionMultiply;
 			break;

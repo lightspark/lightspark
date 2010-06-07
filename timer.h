@@ -70,6 +70,7 @@ private:
 public:
 	TimerThread(SystemState* s);
 	void stop();
+	void wait();
 	~TimerThread();
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);

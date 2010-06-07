@@ -69,8 +69,13 @@ void TimerThread::stop()
 	{
 		stopped=true;
 		sem_post(&newEvent);
-		pthread_join(t,NULL);
 	}
+}
+
+void TimerThread::wait()
+{
+	stop();
+	pthread_join(t,NULL);
 }
 
 TimerThread::~TimerThread()

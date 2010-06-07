@@ -18,7 +18,7 @@ This demo already includes a lot of cool features
 -) Framework to handle ActionScript asynchronous events.
 
 NOTE:
-Currently only 64bit platforms with SSE2 extension are supported. Support for 32bit and previous processor will
+Currently only 64bit and 32bit platforms with SSE2 extension are supported. Support for previous processor will
 be ready soon.
 
 INSTALLATION:

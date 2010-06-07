@@ -470,7 +470,7 @@ private:
 
 public:
 #ifndef NDEBUG
-	//Stuff onyl used in debugging
+	//Stuff only used in debugging
 	bool initialized;
 	int getRefCount(){ return ref_count; }
 #endif

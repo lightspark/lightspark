@@ -196,7 +196,7 @@ void SystemState::setParameters(ASObject* p)
 SystemState::~SystemState()
 {
 	assert(shutdown);
-	timerThread->stop();
+	timerThread->wait();
 	delete threadPool;
 	delete downloadManager;
 	delete currentVm;

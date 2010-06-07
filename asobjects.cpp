@@ -256,7 +256,7 @@ ASFUNCTIONBODY(Array,sortOn)
 ASFUNCTIONBODY(Array,unshift)
 {
 	Array* th=static_cast<Array*>(obj);
-	for(int i=0;i<argslen;i++)
+	for(uint32_t i=0;i<argslen;i++)
 	{
 		th->data.insert(th->data.begin(),data_slot(args[i],DATA_OBJECT));
 		args[i]->incRef();
@@ -1166,8 +1166,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 		assert_and_throw(val);
 	}
 
-	assert_and_throw(mi->needsArgs()==false);
-
 	//Prepare arguments
 	int args_len=mi->numArgs();
 	int passedToLocals=imin(numArgs,args_len);
@@ -1177,7 +1175,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 		realLevel=obj->getLevel();
 
 	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
-	int i=passedToLocals;
+	uint32_t i=passedToLocals;
 	cc->scope_stack=func_scope;
 	for(unsigned int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
@@ -1202,9 +1200,11 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 		cc->locals[i+1]=mi->getOptional(j);
 		i++;
 	}
-	
-	assert_and_throw(i==mi->numArgs());
 
+	uint32_t allArgs=mi->numArgs();
+	assert_and_throw(i==allArgs);
+
+	assert_and_throw(mi->needsArgs()==false || mi->needsRest()==false);
 	if(mi->needsRest()) //TODO
 	{
 		Array* rest=Class<Array>::getInstanceS();
@@ -1214,8 +1214,22 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 
 		cc->locals[i+1]=rest;
 	}
-	//Parameters are ready
+	else if(mi->needsArgs())
+	{
+		Array* argumentsArray=Class<Array>::getInstanceS();
+		argumentsArray->resize(allArgs);
+		for(uint32_t j=0;j<allArgs;j++)
+		{
+			cc->locals[j+1]->incRef();
+			argumentsArray->set(j,cc->locals[j+1]);
+		}
+		//Add ourself as the callee property
+		incRef();
+		argumentsArray->setVariableByQName("callee","",this);
 
+		cc->locals[i+1]=argumentsArray;
+	}
+	//Parameters are ready
 
 	//As we are changing execution context (e.g. 'this' and level), reset the level of the current
 	//object and add the new 'this' and level to the stack

@@ -45,6 +45,7 @@ private:
 	number_t tx,ty;
 	number_t rotation;
 	number_t sx,sy;
+	bool onStage;
 
 protected:
 	MATRIX getMatrix() const;
@@ -76,6 +77,7 @@ public:
 		return false;
 	}
 	virtual void setRoot(RootMovieClip* root);
+	virtual void setOnStage(bool staged);
 	RootMovieClip* getRoot() { return root; }
 	virtual Vector2 debugRender(FTFont* font, bool deep)
 	{
@@ -144,6 +146,7 @@ protected:
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable sem_t sem_displayList;
 	void setRoot(RootMovieClip* r);
+	void setOnStage(bool staged);
 public:
 	void dumpDisplayList();
 	void _removeChild(DisplayObject*);

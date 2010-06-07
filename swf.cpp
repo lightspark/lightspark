@@ -160,9 +160,12 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	timerThread=new TimerThread(this);
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
+	parent=stage;
 	startTime=compat_msectiming();
 	
 	setPrototype(Class<MovieClip>::getClass());
+
+	setOnStage(true);
 }
 
 void SystemState::setUrl(const tiny_string& url)
@@ -546,7 +549,7 @@ void RenderThread::wait()
 }
 
 InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),terminated(false),
-	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL)
+	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {
 	LOG(LOG_NO_INFO,"Creating input thread");
 	if(e==SDL)
@@ -706,6 +709,7 @@ void* InputThread::sdl_worker(InputThread* th)
 				int index=lrint(th->listeners.size()*selected);
 				index--;
 
+				th->lastMouseDownTarget=th->listeners[index];
 				//Add event to the event queue
 				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown",true));
 				//And select that object for debugging (if needed)
@@ -723,7 +727,13 @@ void* InputThread::sdl_worker(InputThread* th)
 				index--;
 
 				//Add event to the event queue
-				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseUp",true));
+				getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseUp",true));
+				//Also send the click event
+				if(th->lastMouseDownTarget==th->listeners[index])
+				{
+					getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("click",true));
+					th->lastMouseDownTarget=NULL;
+				}
 				break;
 			}
 			case SDL_QUIT:

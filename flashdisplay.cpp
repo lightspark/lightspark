@@ -778,7 +778,7 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 	return false;
 }
 
-DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),root(NULL),loaderInfo(NULL),
+DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),onStage(false),root(NULL),loaderInfo(NULL),
 	alpha(1.0),visible(true),parent(NULL)
 {
 }
@@ -879,6 +879,29 @@ void DisplayObject::setRoot(RootMovieClip* r)
 	{
 		assert_and_throw(root==NULL);
 		root=r;
+	}
+}
+
+void DisplayObject::setOnStage(bool staged)
+{
+	if(staged!=onStage)
+	{
+		//Our stage condition changed, send event
+		onStage=staged;
+		if(getVm()==NULL)
+			return;
+		if(onStage==true && hasEventListener("addedToStage"))
+		{
+			Event* e=Class<Event>::getInstanceS("addedToStage");
+			getVm()->addEvent(this,e);
+			e->decRef();
+		}
+		else if(onStage==false && hasEventListener("removedFromStage"))
+		{
+			Event* e=Class<Event>::getInstanceS("removedFromStage");
+			getVm()->addEvent(this,e);
+			e->decRef();
+		}
 	}
 }
 
@@ -1326,6 +1349,18 @@ void DisplayObjectContainer::setRoot(RootMovieClip* r)
 	}
 }
 
+void DisplayObjectContainer::setOnStage(bool staged)
+{
+	if(staged!=onStage)
+	{
+		DisplayObject::setOnStage(staged);
+		//Notify childern
+		list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+		for(;it!=dynamicDisplayList.end();it++)
+			(*it)->setOnStage(staged);
+	}
+}
+
 ASFUNCTIONBODY(DisplayObjectContainer,_constructor)
 {
 	InteractiveObject::_constructor(obj,NULL,0);
@@ -1369,7 +1404,9 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		//We acquire a reference to the child
 		child->incRef();
 	}
+
 	sem_post(&sem_displayList);
+	child->setOnStage(onStage);
 }
 
 void DisplayObjectContainer::_removeChild(DisplayObject* child)
@@ -1384,9 +1421,10 @@ void DisplayObjectContainer::_removeChild(DisplayObject* child)
 	assert_and_throw(it!=dynamicDisplayList.end());
 	dynamicDisplayList.erase(it);
 	//We can release the reference to the child
-	child->decRef();
 	sem_post(&sem_displayList);
 	child->parent=NULL;
+	child->setOnStage(false);
+	child->decRef();
 }
 
 bool DisplayObjectContainer::_contains(DisplayObject* d)

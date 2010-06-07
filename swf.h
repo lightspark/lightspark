@@ -277,6 +277,7 @@ private:
 	Mutex mutexDragged;
 
 	Sprite* curDragged;
+	InteractiveObject* lastMouseDownTarget;
 	RECT dragLimit;
 public:
 	InputThread(SystemState* s,ENGINE e, void* param=NULL);

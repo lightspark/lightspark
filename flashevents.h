@@ -213,13 +213,13 @@ class EventDispatcher: public ASObject
 private:
 	Mutex handlersMutex;
 	std::map<tiny_string,std::list<listener> > handlers;
-	void dumpHandlers();
 public:
 	EventDispatcher();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	virtual ~EventDispatcher(){}
 	void handleEvent(Event* e);
+	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
 
 	ASFUNCTION(_constructor);

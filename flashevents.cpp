@@ -245,6 +245,17 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
 
+	bool useCapture=false;
+	int priority=0;
+
+	if(argslen>=3)
+		useCapture=Boolean_concrete(args[2]);
+	if(argslen>=4)
+		priority=args[3]->toInt();
+
+	if(useCapture || priority!=0)
+		LOG(LOG_NOT_IMPLEMENTED,"Not implemented mode for addEventListener");
+
 	const tiny_string& eventName=args[0]->toString();
 	IFunction* f=static_cast<IFunction*>(args[1]);
 

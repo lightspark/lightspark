@@ -1319,7 +1319,10 @@ bool RenderThread::loadShaderPrograms()
 	const char *fs = NULL;
 	fs = dataFileRead(DATADIR "/lightspark.frag");
 	if(fs==NULL)
+	{
+		LOG(LOG_ERROR,"Shader " DATADIR "/lightspark.frag not found");
 		throw RunTimeException("Fragment shader code not found");
+	}
 	assert(glShaderSource);
 	glShaderSource(f, 1, &fs,NULL);
 	free((void*)fs);
@@ -1353,7 +1356,10 @@ bool RenderThread::loadShaderPrograms()
 
 	fs = dataFileRead(DATADIR "/lightspark.vert");
 	if(fs==NULL)
+	{
+		LOG(LOG_ERROR,"Shader " DATADIR "/lightspark.vert not found");
 		throw RunTimeException("Vertex shader code not found");
+	}
 	glShaderSource(v, 1, &fs,NULL);
 	free((void*)fs);
 

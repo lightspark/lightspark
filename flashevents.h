@@ -38,8 +38,8 @@ class ABCContext;
 class Event: public ASObject
 {
 public:
-	Event():type("Event"),target(NULL),currentTarget(NULL){}
-	Event(const tiny_string& t);
+	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false){}
+	Event(const tiny_string& t, bool b=false);
 	virtual ~Event();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -52,6 +52,7 @@ public:
 	//and the handling is serialized
 	ASObject* target;
 	ASObject* currentTarget;
+	bool bubbles;
 };
 
 class KeyboardEvent: public Event

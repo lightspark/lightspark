@@ -707,10 +707,23 @@ void* InputThread::sdl_worker(InputThread* th)
 				index--;
 
 				//Add event to the event queue
-				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown"));
+				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown",true));
 				//And select that object for debugging (if needed)
 				if(sys->showDebug)
 					sys->renderThread->selectedDebug=th->listeners[index];
+				break;
+			}
+			case SDL_MOUSEBUTTONUP:
+			{
+				Locker locker(th->mutexListeners);
+				sys->renderThread->requestInput();
+				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
+
+				int index=lrint(th->listeners.size()*selected);
+				index--;
+
+				//Add event to the event queue
+				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseUp",true));
 				break;
 			}
 			case SDL_QUIT:

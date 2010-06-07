@@ -989,7 +989,7 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 		event->currentTarget=e.first;
 		e.first->handleEvent(event);
 		//Do bubbling phase
-		if(e.first->prototype->isSubClass(Class<DisplayObject>::getClass()))
+		if(event->bubbles && e.first->prototype->isSubClass(Class<DisplayObject>::getClass()))
 		{
 			DisplayObjectContainer* cur=static_cast<DisplayObject*>(e.first)->parent;
 			while(cur)

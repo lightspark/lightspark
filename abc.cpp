@@ -981,7 +981,24 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 	e.second->check();
 	if(e.first)
 	{
-		e.first->handleEvent(e.second);
+		//TODO: implement capture phase
+		//Do target phase
+		Event* event=e.second;
+		assert_and_throw(event->target==NULL);
+		event->target=e.first;
+		event->currentTarget=e.first;
+		e.first->handleEvent(event);
+		//Do bubbling phase
+		if(e.first->prototype->isSubClass(Class<DisplayObject>::getClass()))
+		{
+			DisplayObjectContainer* cur=static_cast<DisplayObject*>(e.first)->parent;
+			while(cur)
+			{
+				event->currentTarget=cur;
+				cur->handleEvent(event);
+				cur=cur->parent;
+			}
+		}
 		e.first->decRef();
 	}
 	else

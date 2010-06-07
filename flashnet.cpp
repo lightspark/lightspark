@@ -154,12 +154,12 @@ void URLLoader::execute()
 			data=Class<ASString>::getInstanceS();
 		}
 		//Send a complete event for this object
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete",this));
+		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete"));
 	}
 	else
 	{
 		//Notify an error during loading
-		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError",this));
+		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
 	}
 }
 

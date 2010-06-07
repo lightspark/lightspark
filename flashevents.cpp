@@ -51,7 +51,7 @@ void IEventDispatcher::linkTraits(ASObject* o)
 	lookupAndLink(o,"dispatchEvent","flash.events:IEventDispatcher");
 }
 
-Event::Event(const tiny_string& t, ASObject* _t):type(t),target(_t)
+Event::Event(const tiny_string& t):type(t),target(NULL),currentTarget(NULL)
 {
 }
 

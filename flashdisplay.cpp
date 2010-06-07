@@ -1438,7 +1438,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChildAt)
 
 	//Notify the object
 	d->incRef();
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added",d));
+	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
 
 	return d;
 }
@@ -1457,7 +1457,7 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 
 	//Notify the object
 	d->incRef();
-	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added",d));
+	sys->currentVm->addEvent(d,Class<Event>::getInstanceS("added"));
 
 	return d;
 }

@@ -1201,8 +1201,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 		i++;
 	}
 
-	uint32_t allArgs=mi->numArgs();
-	assert_and_throw(i==allArgs);
+	assert_and_throw(i==args_len);
 
 	assert_and_throw(mi->needsArgs()==false || mi->needsRest()==false);
 	if(mi->needsRest()) //TODO
@@ -1217,12 +1216,14 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	else if(mi->needsArgs())
 	{
 		Array* argumentsArray=Class<Array>::getInstanceS();
-		argumentsArray->resize(allArgs);
-		for(uint32_t j=0;j<allArgs;j++)
+		argumentsArray->resize(args_len+passedToRest);
+		for(uint32_t j=0;j<args_len;j++)
 		{
 			cc->locals[j+1]->incRef();
 			argumentsArray->set(j,cc->locals[j+1]);
 		}
+		for(uint32_t j=0;j<passedToRest;j++)
+			argumentsArray->set(j+args_len,args[passedToLocals+j]);
 		//Add ourself as the callee property
 		incRef();
 		argumentsArray->setVariableByQName("callee","",this);

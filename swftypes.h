@@ -481,6 +481,7 @@ public:
 	ASFUNCTION(_getPrototype);
 	ASFUNCTION(_setPrototype);
 	ASFUNCTION(_toString);
+	ASFUNCTION(hasOwnProperty);
 	void check() const;
 	void incRef()
 	{

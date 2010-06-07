@@ -521,6 +521,13 @@ ASFUNCTIONBODY(ASObject,_toString)
 	return Class<ASString>::getInstanceS(obj->toString());
 }
 
+ASFUNCTIONBODY(ASObject,hasOwnProperty)
+{
+	assert_and_throw(argslen==1);
+	bool ret=obj->hasPropertyByQName(args[0]->toString(),"");
+	return abstract_b(ret);
+}
+
 ASFUNCTIONBODY(ASObject,_constructor)
 {
 	return NULL;
@@ -627,6 +634,13 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 		{
 			ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
 			setVariableByQName("toString","",ret);
+			//Added at level 0, as Object is always the base
+			return objAndLevel(ret,0);
+		}
+		else if(name.name_s=="hasOwnProperty")
+		{
+			ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
+			setVariableByQName("hasOwnProperty","",ret);
 			//Added at level 0, as Object is always the base
 			return objAndLevel(ret,0);
 		}

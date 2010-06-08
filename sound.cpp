@@ -24,33 +24,13 @@
 using namespace lightspark;
 using namespace std;
 
-void successCB(pa_stream* stream, int success, void* userData)
-{
-	uintptr_t val=(uintptr_t)userData;
-	if(val!=0x1)
-		return;
-
-	cout << "Success " << success << endl;
-	uint64_t usec=0;
-	int neg=0;
-	pa_stream_get_latency(stream,&usec,&neg);
-	cout << "usec " << usec << endl;
-	cout << "neg " << neg << endl;
-}
-
-void streamCB(pa_stream* stream, void* c)
+void SoundManager::streamStatusCB(pa_stream* stream, SoundManager* th)
 {
 	if(pa_stream_get_state(stream)!=PA_STREAM_READY)
 		return;
-	pa_stream_update_timing_info(stream, successCB, (void*)0x1);
-	//Create a fake buffer
-	char* data=new char[44100*10];
-	for(int i=0;i<441000;i++)
-		data[i]=sin(i*M_PI/90)*100;
-	pa_stream_write(stream, data, 441000, NULL, 0, PA_SEEK_RELATIVE);
 }
 
-void statusCB(pa_context* context, void* mainLoop)
+void SoundManager::contextStatusCB(pa_context* context, SoundManager* th)
 {
 	if(pa_context_get_state(context)!=PA_CONTEXT_READY)
 		return;
@@ -58,31 +38,51 @@ void statusCB(pa_context* context, void* mainLoop)
 	ss.format=PA_SAMPLE_U8;
 	ss.rate=44100;
 	ss.channels=1;
-	pa_stream* stream=pa_stream_new(context, "puppa", &ss, NULL);
-	pa_stream_connect_playback(stream, NULL, NULL, PA_STREAM_NOFLAGS, NULL, NULL);
-	pa_stream_set_state_callback(stream, streamCB,NULL);
+	pa_buffer_attr attrs;
+	attrs.maxlength=(uint32_t)-1;
+	attrs.prebuf=(uint32_t)-1;
+	attrs.tlength=pa_usec_to_bytes(40000,&ss);
+	attrs.fragsize=(uint32_t)-1;
+	attrs.minreq=(uint32_t)-1;
+	th->stream=pa_stream_new(context, "puppa", &ss, NULL);
+	pa_stream_connect_playback(th->stream, NULL, &attrs, 
+			(pa_stream_flags)(PA_STREAM_ADJUST_LATENCY | PA_STREAM_AUTO_TIMING_UPDATE | PA_STREAM_INTERPOLATE_TIMING), NULL, NULL);
+	pa_stream_set_state_callback(th->stream, (pa_stream_notify_cb_t)streamStatusCB, NULL);
 }
 
-SoundManager::SoundManager()
+SoundManager::SoundManager():stream(NULL)
 {
 	mainLoop=pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start(mainLoop);
 
 	pa_threaded_mainloop_lock(mainLoop);
-	pa_context* context=pa_context_new(pa_threaded_mainloop_get_api(mainLoop),"Lightspark");
-	pa_context_set_state_callback(context, statusCB, mainLoop);
+	context=pa_context_new(pa_threaded_mainloop_get_api(mainLoop),"Lightspark");
+	pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
 	pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
 	pa_threaded_mainloop_unlock(mainLoop);
-	/*pa_threaded_mainloop_lock(mainLoop);
-	pa_stream_disconnect(stream);
-	pa_stream_unref(stream);
-	pa_context_disconnect(context);
-	pa_context_unref(context);
-	pa_threaded_mainloop_unlock(mainLoop);*/
+}
+
+uint32_t SoundManager::getLatency()
+{
+	if(stream==NULL)
+		return 0;
+
+	uint64_t usec=0;
+	int neg=0;
+	pa_stream_get_latency(stream,&usec,&neg);
+	cout << "usec " << usec << endl;
+
+	return usec/1000;
 }
 
 SoundManager::~SoundManager()
 {
+	pa_threaded_mainloop_lock(mainLoop);
+	pa_stream_disconnect(stream);
+	pa_stream_unref(stream);
+	pa_context_disconnect(context);
+	pa_context_unref(context);
+	pa_threaded_mainloop_unlock(mainLoop);
 	pa_threaded_mainloop_stop(mainLoop);
 	pa_threaded_mainloop_free(mainLoop);
 }

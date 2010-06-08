@@ -26,8 +26,13 @@ class SoundManager
 {
 private:
 	pa_threaded_mainloop* mainLoop;
+	pa_stream* stream;
+	pa_context* context;
+	static void contextStatusCB(pa_context* context, SoundManager* th);
+	static void streamStatusCB(pa_stream* stream, SoundManager* th);
 public:
 	SoundManager();
+	uint32_t getLatency();
 	~SoundManager();
 };
 

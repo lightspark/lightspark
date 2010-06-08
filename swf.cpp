@@ -145,7 +145,7 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 
 SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),showProfilingData(false),
 	showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),inputThread(NULL),
-	renderThread(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false), downloadManager(NULL)
+	renderThread(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -158,6 +158,7 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	//Get starting time
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
+	soundManager=new SoundManager;
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
 	parent=stage;
@@ -197,6 +198,7 @@ SystemState::~SystemState()
 {
 	assert(shutdown);
 	timerThread->wait();
+	delete soundManager;
 	delete threadPool;
 	delete downloadManager;
 	delete currentVm;

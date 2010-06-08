@@ -33,6 +33,7 @@
 #include "flashdisplay.h"
 #include "timer.h"
 #include "graphics.h"
+#include "sound.h"
 
 #include <GL/glew.h>
 #ifndef WIN32
@@ -167,6 +168,7 @@ class SystemState: public RootMovieClip
 private:
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
+	SoundManager* soundManager;
 	sem_t terminated;
 	float renderRate;
 	bool error;

@@ -83,5 +83,15 @@ public:
 	bool copyFrameToTexture(TextureBuffer& tex);
 };
 
+class AudioDecoder
+{
+};
+
+class FFMpegAudioDecoder: public AudioDecoder
+{
+public:
+	FFMpegAudioDecoder();
+};
+
 };
 #endif

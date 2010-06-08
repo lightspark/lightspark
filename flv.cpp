@@ -230,8 +230,25 @@ VideoDataTag::~VideoDataTag()
 AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s)
 {
 	unsigned int start=s.tellg();
-	UI8 flags;
-	s >> flags;
+	BitStream bs(s);
+	SoundFormat=(FLV_AUDIO_CODEC)(int)UB(4,bs);
+	switch(UB(2,bs))
+	{
+		case 0:
+			SoundRate=5500;
+			break;
+		case 1:
+			SoundRate=11000;
+			break;
+		case 2:
+			SoundRate=22000;
+			break;
+		case 3:
+			SoundRate=44000;
+			break;
+	}
+	is16bit=UB(1,bs);
+	isStereo=UB(1,bs);
 
 	int len=dataSize-1;
 	char* buf=new char[len];

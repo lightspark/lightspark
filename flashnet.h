@@ -110,7 +110,7 @@ private:
 	STREAM_TYPE classifyStream(std::istream& s);
 	double frameRate;
 	Downloader* downloader;
-	Decoder* decoder;
+	VideoDecoder* decoder;
 	sem_t mutex;
 	//IThreadJob interface for long jobs
 	void execute();

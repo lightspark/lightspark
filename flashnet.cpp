@@ -379,7 +379,7 @@ void NetStream::execute()
 							assert_and_throw(decoder==NULL); //The decoder can be set only once
 							//NOTE: there is not need to mutex the decoder, as an async transition from NULL to
 							//valid is not critical
-							decoder=new FFMpegDecoder(tag.packetData,tag.packetLen);
+							decoder=new FFMpegVideoDecoder(tag.packetData,tag.packetLen);
 							assert(decoder);
 							assert_and_throw(frameRate!=0);
 							//Now that the decoder is valid, let's start the ticking

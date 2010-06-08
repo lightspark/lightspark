@@ -31,7 +31,7 @@ extern "C"
 namespace lightspark
 {
 
-class Decoder
+class VideoDecoder
 {
 private:
 	bool resizeGLBuffers;
@@ -40,8 +40,8 @@ protected:
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);
 public:
-	Decoder():resizeGLBuffers(false),frameWidth(0),frameHeight(0){}
-	virtual ~Decoder(){}
+	VideoDecoder():resizeGLBuffers(false),frameWidth(0),frameHeight(0){}
+	virtual ~VideoDecoder(){}
 	virtual bool decodeData(uint8_t* data, uint32_t datalen)=0;
 	virtual bool discardFrame()=0;
 	//NOTE: the base implementation returns true if resizing of buffers should be done
@@ -57,7 +57,7 @@ public:
 	}
 };
 
-class FFMpegDecoder: public Decoder
+class FFMpegVideoDecoder: public VideoDecoder
 {
 private:
 	GLuint videoBuffers[2];
@@ -76,8 +76,8 @@ private:
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height);
 	void setSize(uint32_t w, uint32_t h);
 public:
-	FFMpegDecoder(uint8_t* initdata, uint32_t datalen);
-	~FFMpegDecoder();
+	FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen);
+	~FFMpegVideoDecoder();
 	bool decodeData(uint8_t* data, uint32_t datalen);
 	bool discardFrame();
 	bool copyFrameToTexture(TextureBuffer& tex);

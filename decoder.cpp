@@ -30,7 +30,7 @@ using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
 
-bool Decoder::setSize(uint32_t w, uint32_t h)
+bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 {
 	if(w!=frameWidth || h!=frameHeight)
 	{
@@ -44,7 +44,7 @@ bool Decoder::setSize(uint32_t w, uint32_t h)
 		return false;
 }
 
-bool Decoder::copyFrameToTexture(TextureBuffer& tex)
+bool VideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 {
 	if(!resizeGLBuffers)
 		return false;
@@ -55,8 +55,8 @@ bool Decoder::copyFrameToTexture(TextureBuffer& tex)
 	return true;
 }
 
-FFMpegDecoder::FFMpegDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),codecContext(NULL),freeBuffers(10),usedBuffers(0),
-		mutex("Decoder"),empty(true),bufferHead(0),bufferTail(0),initialized(false)
+FFMpegVideoDecoder::FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),codecContext(NULL),freeBuffers(10),usedBuffers(0),
+		mutex("VideoDecoder"),empty(true),bufferHead(0),bufferTail(0),initialized(false)
 {
 	for(int i=0;i<10;i++)
 	{
@@ -82,7 +82,7 @@ FFMpegDecoder::FFMpegDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),c
 	frameIn=avcodec_alloc_frame();
 }
 
-FFMpegDecoder::~FFMpegDecoder()
+FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
 	for(int i=0;i<10;i++)
 	{
@@ -99,9 +99,9 @@ FFMpegDecoder::~FFMpegDecoder()
 }
 
 //setSize is called from the routine that inserts new frames
-void FFMpegDecoder::setSize(uint32_t w, uint32_t h)
+void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 {
-	if(Decoder::setSize(w,h))
+	if(VideoDecoder::setSize(w,h))
 	{
 		//Discard all the frames
 		while(discardFrame());
@@ -122,7 +122,7 @@ void FFMpegDecoder::setSize(uint32_t w, uint32_t h)
 	}
 }
 
-bool FFMpegDecoder::discardFrame()
+bool FFMpegVideoDecoder::discardFrame()
 {
 	Locker locker(mutex);
 	//We don't want ot block if no frame is available
@@ -136,7 +136,7 @@ bool FFMpegDecoder::discardFrame()
 	return true;
 }
 
-bool FFMpegDecoder::decodeData(uint8_t* data, uint32_t datalen)
+bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen)
 {
 	int frameOk=0;
 	avcodec_decode_video(codecContext, frameIn, &frameOk, data, datalen);
@@ -153,7 +153,7 @@ bool FFMpegDecoder::decodeData(uint8_t* data, uint32_t datalen)
 	return true;
 }
 
-void FFMpegDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height)
+void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height)
 {
 	freeBuffers.wait();
 	uint32_t bufferSize=width*height*4;
@@ -187,7 +187,7 @@ void FFMpegDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, u
 	usedBuffers.signal();
 }
 
-bool FFMpegDecoder::copyFrameToTexture(TextureBuffer& tex)
+bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 {
 	if(!initialized)
 	{
@@ -196,7 +196,7 @@ bool FFMpegDecoder::copyFrameToTexture(TextureBuffer& tex)
 	}
 
 	bool ret=false;
-	if(Decoder::copyFrameToTexture(tex))
+	if(VideoDecoder::copyFrameToTexture(tex))
 	{
 		//Initialize both PBOs to video size
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);

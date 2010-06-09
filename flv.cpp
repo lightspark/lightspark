@@ -227,7 +227,7 @@ VideoDataTag::~VideoDataTag()
 	delete[] packetData;
 }
 
-AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s)
+AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 {
 	unsigned int start=s.tellg();
 	BitStream bs(s);
@@ -250,12 +250,25 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s)
 	is16bit=UB(1,bs);
 	isStereo=UB(1,bs);
 
-	int len=dataSize-1;
-	char* buf=new char[len];
-	s.read(buf,len);
-	delete[] buf;
+	uint32_t headerConsumed=1;
+	//Special handling for AAC data
+	if(SoundFormat==AAC)
+	{
+		UI8 t;
+		s >> t;
+		_isHeader=(t==0);
+		headerConsumed++;
+	}
+	packetLen=dataSize-headerConsumed;
+	packetData=new uint8_t[packetLen];
+	s.read((char*)packetData,packetLen);
 
 	//Compute totalLen
 	unsigned int end=s.tellg();
 	totalLen=(end-start)+11;
+}
+
+AudioDataTag::~AudioDataTag()
+{
+	delete[] packetData;
 }

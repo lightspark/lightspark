@@ -21,8 +21,11 @@
 #define _DECODER_H
 
 #include <GL/gl.h>
+#include <list>
+#include <inttypes.h>
 #include "threading.h"
 #include "graphics.h"
+#include "flv.h"
 extern "C"
 {
 #include <libavcodec/avcodec.h>
@@ -85,12 +88,30 @@ public:
 
 class AudioDecoder
 {
+protected:
+	class FrameSamples
+	{
+	public:
+		//Worst case buffer size, 1 second
+		int16_t samples[AVCODEC_MAX_AUDIO_FRAME_SIZE/2];
+		uint32_t len;
+		FrameSamples():len(AVCODEC_MAX_AUDIO_FRAME_SIZE){}
+	};
+	std::list<FrameSamples> samplesList;
+public:
+	virtual ~AudioDecoder(){};
+//	virtual bool discardFrame()=0;
+	virtual bool decodeData(uint8_t* data, uint32_t datalen)=0;
 };
 
 class FFMpegAudioDecoder: public AudioDecoder
 {
+private:
+	AVCodecContext* codecContext;
 public:
-	FFMpegAudioDecoder();
+	FFMpegAudioDecoder(FLV_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
+//	bool discardFrame();
+	bool decodeData(uint8_t* data, uint32_t datalen);
 };
 
 };

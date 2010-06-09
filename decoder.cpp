@@ -27,6 +27,7 @@
 #include "graphics.h"
 
 using namespace lightspark;
+using namespace std;
 
 extern TLSDATA SystemState* sys;
 
@@ -238,4 +239,41 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 		curBuffer=nextBuffer;
 	}
 	return ret;
+}
+
+FFMpegAudioDecoder::FFMpegAudioDecoder(FLV_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen)
+{
+	CodecID codecId;
+	switch(audioCodec)
+	{
+		case AAC:
+			codecId=CODEC_ID_AAC;
+			break;
+		default:
+			::abort();
+	}
+	AVCodec* codec=avcodec_find_decoder(codecId);
+	assert(codec);
+
+	codecContext=avcodec_alloc_context();
+
+	if(initdata)
+	{
+		codecContext->extradata=initdata;
+		codecContext->extradata_size=datalen;
+	}
+
+	if(avcodec_open(codecContext, codec)<0)
+		throw RunTimeException("Cannot open decoder");
+}
+
+bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
+{
+	FrameSamples s;
+	memset((char*)s.samples,0,AVCODEC_MAX_AUDIO_FRAME_SIZE);
+	int maxLen=s.len;
+	int ret=avcodec_decode_audio2(codecContext, s.samples, &maxLen, data, datalen);
+	cout << ret << endl;
+	__asm__("int $3");
+	s.len=maxLen;
 }

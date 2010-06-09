@@ -1149,7 +1149,7 @@ SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL
 //	class_index=-2;
 }
 
-ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numArgs, int level)
+ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs, int level)
 {
 	const int hit_threshold=10;
 	if(mi->body==NULL)
@@ -1167,9 +1167,9 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	}
 
 	//Prepare arguments
-	int args_len=mi->numArgs();
+	uint32_t args_len=mi->numArgs();
 	int passedToLocals=imin(numArgs,args_len);
-	int passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
+	uint32_t passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
 	int realLevel=(bound)?closure_level:level;
 	if(realLevel==-1) //If realLevel is not set, keep the object level
 		realLevel=obj->getLevel();
@@ -1208,7 +1208,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	{
 		Array* rest=Class<Array>::getInstanceS();
 		rest->resize(passedToRest);
-		for(int j=0;j<passedToRest;j++)
+		for(uint32_t j=0;j<passedToRest;j++)
 			rest->set(j,args[passedToLocals+j]);
 
 		cc->locals[i+1]=rest;
@@ -1264,7 +1264,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	return ret;
 }
 
-ASObject* Function::call(ASObject* obj, ASObject* const* args,int num_args, int level)
+ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level)
 {
 	ASObject* ret;
 	if(bound && closure_this)
@@ -1276,7 +1276,7 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args,int num_args, int 
 	}
 	ret=val(obj,args,num_args);
 
-	for(int i=0;i<num_args;i++)
+	for(uint32_t i=0;i<num_args;i++)
 		args[i]->decRef();
 	obj->decRef();
 	return ret;

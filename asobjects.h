@@ -222,7 +222,7 @@ protected:
 	IFunction* overriden_by;
 public:
 	ASFUNCTION(apply);
-	virtual ASObject* call(ASObject* obj, ASObject* const* args,int num_args, int level)=0;
+	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level)=0;
 	IFunction* bind(ASObject* c, int level)
 	{
 		if(!bound)
@@ -278,7 +278,7 @@ private:
 		return new Function(*this);
 	}
 public:
-	ASObject* call(ASObject* obj, ASObject* const* args, int num_args, int level);
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level);
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
 	{
@@ -302,7 +302,7 @@ private:
 		return new SyntheticFunction(*this);
 	}
 public:
-	ASObject* call(ASObject* obj, ASObject* const* args,int num_args, int level);
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level);
 	IFunction* toFunction();
 	std::vector<ASObject*> func_scope;
 	bool isEqual(ASObject* r)

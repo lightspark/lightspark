@@ -245,7 +245,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():frameRate(0),downloader(NULL),decoder(NULL)
+NetStream::NetStream():frameRate(0),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL)
 {
 	sem_init(&mutex,0,1);
 }
@@ -253,7 +253,8 @@ NetStream::NetStream():frameRate(0),downloader(NULL),decoder(NULL)
 NetStream::~NetStream()
 {
 	assert(!executing);
-	delete decoder; 
+	delete videoDecoder; 
+	delete audioDecoder; 
 	sem_destroy(&mutex);
 }
 
@@ -324,8 +325,10 @@ void NetStream::tick()
 {
 	//Discard the first frame, if available
 	//No mutex needed, ticking can happen only when decoder is valid
-	if(decoder)
-		decoder->discardFrame();
+	if(videoDecoder)
+		videoDecoder->discardFrame();
+//	if(audioDecoder)
+//		audioDecoder->discardFrame();
 }
 
 void NetStream::execute()
@@ -365,6 +368,32 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
+						if(audioDecoder)
+						{
+							assert_and_throw(audioCodec==tag.SoundFormat);
+							audioDecoder->decodeData(tag.packetData,tag.packetLen);
+						}
+						else
+						{
+							audioCodec=tag.SoundFormat;
+							switch(tag.SoundFormat)
+							{
+								case AAC:
+									if(tag.isHeader())
+									{
+										audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,
+												tag.packetData, tag.packetLen);
+									}
+									else
+									{
+										audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,NULL, 0);
+										audioDecoder->decodeData(tag.packetData,tag.packetLen);
+									}
+									break;
+								default:
+									throw RunTimeException("Unsupported SoundFormat");
+							}
+						}
 						break;
 					}
 					case 9:
@@ -376,11 +405,11 @@ void NetStream::execute()
 						if(tag.isHeader())
 						{
 							//The tag is the header, initialize decoding
-							assert_and_throw(decoder==NULL); //The decoder can be set only once
+							assert_and_throw(videoDecoder==NULL); //The decoder can be set only once
 							//NOTE: there is not need to mutex the decoder, as an async transition from NULL to
 							//valid is not critical
-							decoder=new FFMpegVideoDecoder(tag.packetData,tag.packetLen);
-							assert(decoder);
+							videoDecoder=new FFMpegVideoDecoder(tag.packetData,tag.packetLen);
+							assert(videoDecoder);
 							assert_and_throw(frameRate!=0);
 							//Now that the decoder is valid, let's start the ticking
 							sys->addTick(1000/frameRate,this);
@@ -395,7 +424,7 @@ void NetStream::execute()
 							status->decRef();
 						}
 						else
-							decoder->decodeData(tag.packetData,tag.packetLen);
+							videoDecoder->decodeData(tag.packetData,tag.packetLen);
 						break;
 					}
 					case 18:
@@ -408,7 +437,7 @@ void NetStream::execute()
 						break;
 					}
 					default:
-						cout << (int)TagType << endl;
+						LOG(LOG_ERROR,"Unexpected tag type " << (int)TagType << " in FLV");
 						threadAbort();
 				}
 				profile->accountTime(chronometer.checkpoint());
@@ -436,8 +465,10 @@ void NetStream::execute()
 	//This transition is critical, so the mutex is needed
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);
-	delete decoder;
-	decoder=NULL;
+	delete videoDecoder;
+	delete audioDecoder;
+	videoDecoder=NULL;
+	audioDecoder=NULL;
 	sem_post(&mutex);
 }
 
@@ -447,8 +478,10 @@ void NetStream::threadAbort()
 	if(downloader)
 		downloader->stop();
 	//Discard a frame, the decoder may be blocked on a full buffer
-	if(decoder)
-		decoder->discardFrame();
+	if(videoDecoder)
+		videoDecoder->discardFrame();
+//	if(audioDecoder)
+//		audioDecoder->discardFrame();
 	sem_post(&mutex);
 }
 
@@ -471,8 +504,8 @@ uint32_t NetStream::getVideoWidth()
 {
 	sem_wait(&mutex);
 	uint32_t ret=0;
-	if(decoder)
-		ret=decoder->getWidth();
+	if(videoDecoder)
+		ret=videoDecoder->getWidth();
 	sem_post(&mutex);
 	return ret;
 }
@@ -481,8 +514,8 @@ uint32_t NetStream::getVideoHeight()
 {
 	sem_wait(&mutex);
 	uint32_t ret=0;
-	if(decoder)
-		ret=decoder->getHeight();
+	if(videoDecoder)
+		ret=videoDecoder->getHeight();
 	sem_post(&mutex);
 	return ret;
 }
@@ -496,8 +529,8 @@ bool NetStream::copyFrameToTexture(TextureBuffer& tex)
 {
 	sem_wait(&mutex);
 	bool ret=false;
-	if(decoder)
-		ret=decoder->copyFrameToTexture(tex);
+	if(videoDecoder)
+		ret=videoDecoder->copyFrameToTexture(tex);
 	sem_post(&mutex);
 	return ret;
 }

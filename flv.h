@@ -103,12 +103,17 @@ public:
 class AudioDataTag: public VideoTag
 {
 private:
+	bool _isHeader;
+public:
 	FLV_AUDIO_CODEC SoundFormat;
 	uint32_t SoundRate;
 	bool is16bit;
 	bool isStereo;
-public:
+	uint8_t* packetData;
+	uint32_t packetLen;
 	AudioDataTag(std::istream& s);
+	~AudioDataTag();
+	bool isHeader() const { return _isHeader; }
 };
 
 };

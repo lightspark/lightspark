@@ -951,7 +951,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	GtkWidget* container=p->container;
 	gtk_widget_show(container);
 	gdk_gl_init(0, 0);
-	GdkGLConfig* glConfig=gdk_gl_config_new_by_mode((GdkGLConfigMode)(GDK_GL_MODE_RGBA|GDK_GL_MODE_DOUBLE|GDK_GL_MODE_DEPTH));
+	GdkGLConfig* glConfig=gdk_gl_config_new_by_mode((GdkGLConfigMode)(GDK_GL_MODE_RGBA|GDK_GL_MODE_DOUBLE));
 	assert_and_throw(glConfig);
 	
 	GtkWidget* drawing_area = gtk_drawing_area_new ();
@@ -1135,13 +1135,13 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		LOG(LOG_ERROR,"glX not present");
 		return NULL;
 	}
-	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_DEPTH_SIZE,24,None};
+	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_DOUBLEBUFFER,True,None};
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 	if(!fb)
 	{
 		attrib[2]=None;
 		fb=glXChooseFBConfig(d, 0, attrib, &a);
-		LOG(LOG_ERROR,"Falling back to no depth buffer");
+		LOG(LOG_ERROR,"Falling back to no double buffering");
 	}
 	if(!fb)
 	{
@@ -1250,8 +1250,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 
 				RGB bg=sys->getBackground();
 				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
-				glClearDepth(0xffff);
-				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+				glClear(GL_COLOR_BUFFER_BIT);
 				glLoadIdentity();
 				glScalef(scalex,scaley,1);
 				
@@ -1485,9 +1484,6 @@ void RenderThread::commonGLInit(int width, int height)
 	//Load shaders
 	loadShaderPrograms();
 
-	glDisable(GL_DEPTH_TEST);
-	glDepthFunc(GL_ALWAYS);
-
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
 	
@@ -1559,7 +1555,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
 	SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1); 
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );

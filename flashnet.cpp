@@ -368,7 +368,7 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
-						if(audioDecoder)
+						/*if(audioDecoder)
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
 							audioDecoder->decodeData(tag.packetData,tag.packetLen);
@@ -393,7 +393,7 @@ void NetStream::execute()
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
 							}
-						}
+						}*/
 						break;
 					}
 					case 9:

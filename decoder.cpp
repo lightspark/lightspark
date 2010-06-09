@@ -56,16 +56,9 @@ bool VideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 	return true;
 }
 
-FFMpegVideoDecoder::FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),codecContext(NULL),freeBuffers(10),usedBuffers(0),
-		mutex("VideoDecoder"),empty(true),bufferHead(0),bufferTail(0),initialized(false)
+FFMpegVideoDecoder::FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),codecContext(NULL),
+	mutex("VideoDecoder"),initialized(false)
 {
-	for(int i=0;i<10;i++)
-	{
-		buffers[i][0]=NULL;
-		buffers[i][1]=NULL;
-		buffers[i][2]=NULL;
-	}
-
 	//The tag is the header, initialize decoding
 	//TODO: serialize access to avcodec_open
 	const enum CodecID codecId=CODEC_ID_H264;
@@ -85,15 +78,6 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen):curB
 
 FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
-	for(int i=0;i<10;i++)
-	{
-		if(buffers[i][0])
-		{
-			free(buffers[i][0]);
-			free(buffers[i][1]);
-			free(buffers[i][2]);
-		}
-	}
 	assert(codecContext);
 	av_free(codecContext);
 	av_free(frameIn);
@@ -108,18 +92,8 @@ void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 		while(discardFrame());
 
 		//As the size chaged, reset the buffer
-		for(int i=0;i<10;i++)
-		{
-			if(buffers[i][0])
-			{
-				free(buffers[i][0]);
-				free(buffers[i][1]);
-				free(buffers[i][2]);
-				buffers[i][0]=NULL;
-				buffers[i][1]=NULL;
-				buffers[i][2]=NULL;
-			}
-		}
+		uint32_t bufferSize=frameWidth*frameHeight*4;
+		buffers.regen(YUVBufferGenerator(bufferSize));
 	}
 }
 
@@ -127,14 +101,7 @@ bool FFMpegVideoDecoder::discardFrame()
 {
 	Locker locker(mutex);
 	//We don't want ot block if no frame is available
-	if(!usedBuffers.try_wait())
-		return false;
-	//A frame is available
-	bufferHead=(bufferHead+1)%10;
-	if(bufferHead==bufferTail)
-		empty=true;
-	freeBuffers.signal();
-	return true;
+	return buffers.nonBlockingPopFront();
 }
 
 bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen)
@@ -150,42 +117,29 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen)
 	assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
 
 	setSize(width,height);
-	copyFrameToBuffers(frameIn,width,height);
+	copyFrameToBuffers(frameIn);
 	return true;
 }
 
-void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height)
+void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn)
 {
-	freeBuffers.wait();
-	uint32_t bufferSize=width*height*4;
+	YUVBuffer& curTail=buffers.acquireLast();
 	//Only one thread may access the tail
-	if(buffers[bufferTail][0]==NULL)
-	{
-#ifdef WIN32
-		//FIXME!!
-#else
-		posix_memalign((void**)&buffers[bufferTail][0], 16, bufferSize);
-		posix_memalign((void**)&buffers[bufferTail][1], 16, bufferSize/4);
-		posix_memalign((void**)&buffers[bufferTail][2], 16, bufferSize/4);
-#endif
-	}
 	int offset[3]={0,0,0};
-	for(uint32_t y=0;y<height;y++)
+	for(uint32_t y=0;y<frameHeight;y++)
 	{
-		memcpy(buffers[bufferTail][0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),width);
-		offset[0]+=width;
+		memcpy(curTail.ch[0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),frameWidth);
+		offset[0]+=frameWidth;
 	}
-	for(uint32_t y=0;y<height/2;y++)
+	for(uint32_t y=0;y<frameHeight/2;y++)
 	{
-		memcpy(buffers[bufferTail][1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),width/2);
-		memcpy(buffers[bufferTail][2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),width/2);
-		offset[1]+=width/2;
-		offset[2]+=width/2;
+		memcpy(curTail.ch[1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),frameWidth/2);
+		memcpy(curTail.ch[2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),frameWidth/2);
+		offset[1]+=frameWidth/2;
+		offset[2]+=frameWidth/2;
 	}
 
-	bufferTail=(bufferTail+1)%10;
-	empty=false;
-	usedBuffers.signal();
+	buffers.commitLast();
 }
 
 bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
@@ -214,7 +168,7 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 		ret=true;
 	}
 
-	if(!empty)
+	if(!buffers.isEmpty())
 	{
 		//Increment and wrap current buffer index
 		unsigned int nextBuffer = (curBuffer + 1)%2;
@@ -226,10 +180,9 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 		int offset=0;
 		for(uint32_t y=0;y<frameHeight;y++)
 		{
-			fastYUV420ChannelsToBuffer(buffers[bufferHead][0]+(y*frameWidth),
-					buffers[bufferHead][1]+((y>>1)*(frameWidth>>1)),
-					buffers[bufferHead][2]+((y>>1)*(frameWidth>>1)),
-					buf+offset,frameWidth);
+			YUVBuffer& cur=buffers.front();
+			fastYUV420ChannelsToBuffer(cur.ch[0]+(y*frameWidth),cur.ch[1]+((y>>1)*(frameWidth>>1)),
+					cur.ch[2]+((y>>1)*(frameWidth>>1)),buf+offset,frameWidth);
 			offset+=frameWidth*4;
 		}
 
@@ -239,6 +192,23 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 		curBuffer=nextBuffer;
 	}
 	return ret;
+}
+
+void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
+{
+	if(buf.ch[0])
+	{
+		free(buf.ch[0]);
+		free(buf.ch[1]);
+		free(buf.ch[2]);
+	}
+#ifdef WIN32
+	//FIXME!!
+#else
+	posix_memalign((void**)&buf.ch[0], 16, bufferSize);
+	posix_memalign((void**)&buf.ch[1], 16, bufferSize/4);
+	posix_memalign((void**)&buf.ch[2], 16, bufferSize/4);
+#endif
 }
 
 FFMpegAudioDecoder::FFMpegAudioDecoder(FLV_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen)

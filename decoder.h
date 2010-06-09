@@ -63,20 +63,37 @@ public:
 class FFMpegVideoDecoder: public VideoDecoder
 {
 private:
+	class YUVBuffer
+	{
+	public:
+		uint8_t* ch[3];
+		YUVBuffer(){ch[0]=NULL;ch[1]=NULL;ch[2]=NULL;}
+		~YUVBuffer()
+		{
+			if(ch[0])
+			{
+				free(ch[0]);
+				free(ch[1]);
+				free(ch[2]);
+			}
+		}
+	};
+	class YUVBufferGenerator
+	{
+	private:
+		uint32_t bufferSize;
+	public:
+		YUVBufferGenerator(uint32_t b):bufferSize(b){}
+		void init(YUVBuffer& buf) const;
+	};
 	GLuint videoBuffers[2];
 	unsigned int curBuffer;
 	AVCodecContext* codecContext;
-	uint8_t* buffers[10][3];
-	//Counting semaphores for buffers
-	Condition freeBuffers;
-	Condition usedBuffers;
+	BlockingCircularQueue<YUVBuffer,10> buffers;
 	Mutex mutex;
-	bool empty;
-	uint32_t bufferHead;
-	uint32_t bufferTail;
 	bool initialized;
 	AVFrame* frameIn;
-	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height);
+	void copyFrameToBuffers(const AVFrame* frameIn);
 	void setSize(uint32_t w, uint32_t h);
 public:
 	FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen);

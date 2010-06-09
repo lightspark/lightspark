@@ -99,6 +99,66 @@ public:
 	}
 };
 
+template<class T, uint32_t size>
+class BlockingCircularQueue
+{
+private:
+	T queue[size];
+	//Counting semaphores for the queue
+	Condition freeBuffers;
+	Condition usedBuffers;
+	bool empty;
+	uint32_t bufferHead;
+	uint32_t bufferTail;
+public:
+	BlockingCircularQueue():freeBuffers(size),usedBuffers(0),empty(true),bufferHead(0),bufferTail(0)
+	{
+	}
+	template<class GENERATOR>
+	BlockingCircularQueue(const GENERATOR& g):freeBuffers(size),usedBuffers(0),empty(true),bufferHead(0),bufferTail(0)
+	{
+		for(uint32_t i=0;i<size;i++)
+			g.init(queue[i]);
+	}
+	bool isEmpty() const { return empty; }
+	T& front()
+	{
+		assert(!empty);
+		return queue[bufferHead];
+	}
+	bool nonBlockingPopFront()
+	{
+		//We don't want to block if empty
+		if(!usedBuffers.try_wait())
+			return false;
+		//A frame is available
+		bufferHead=(bufferHead+1)%10;
+		if(bufferHead==bufferTail)
+			empty=true;
+		freeBuffers.signal();
+		return true;
+	}
+	T& acquireLast()
+	{
+		freeBuffers.wait();
+		uint32_t ret=bufferTail;
+		bufferTail=(bufferTail+1)%10;
+		return queue[ret];
+	}
+	void commitLast()
+	{
+		empty=false;
+		usedBuffers.signal();
+	}
+	template<class GENERATOR>
+	void regen(const GENERATOR& g)
+	{
+		for(uint32_t i=0;i<size;i++)
+			g.init(queue[i]);
+	}
+
+};
+
 };
 
 extern TLSDATA lightspark::IThreadJob* thisJob;

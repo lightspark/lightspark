@@ -198,11 +198,11 @@ SystemState::~SystemState()
 {
 	assert(shutdown);
 	timerThread->wait();
-	delete soundManager;
 	delete threadPool;
 	delete downloadManager;
 	delete currentVm;
 	delete timerThread;
+	delete soundManager;
 
 	//decRef all our object before destroying classes
 	Variables.destroyContents();

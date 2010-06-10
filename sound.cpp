@@ -24,33 +24,74 @@
 using namespace lightspark;
 using namespace std;
 
-void SoundManager::streamStatusCB(pa_stream* stream, SoundManager* th)
+void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 {
+//	Locker l(th->manager->streamsMutex);
 	if(pa_stream_get_state(stream)!=PA_STREAM_READY)
 		return;
+	th->streamReady=true;
 }
 
-void SoundManager::contextStatusCB(pa_context* context, SoundManager* th)
+void SoundManager::streamWriteCB(pa_stream* stream, size_t nbytes, SoundStream* th)
 {
-	if(pa_context_get_state(context)!=PA_CONTEXT_READY)
-		return;
+	cout << "writeCB" << endl;
+}
+
+void SoundManager::freeStream(uint32_t id)
+{
+//	Locker l(streamsMutex);
+	pa_threaded_mainloop_lock(mainLoop);
+	assert(streams[id-1]);
+	pa_stream* toDelete=streams[id-1]->stream;
+	pa_stream_disconnect(toDelete);
+	pa_stream_unref(toDelete);
+	delete streams[id-1];
+	streams[id-1]=NULL;
+	pa_threaded_mainloop_unlock(mainLoop);
+}
+
+uint32_t SoundManager::createStream(AudioDecoder* decoder)
+{
+//	Locker l(streamsMutex);
+	while(!contextReady);
+	pa_threaded_mainloop_lock(mainLoop);
+	uint32_t index=0;
+	for(;index<streams.size();index++)
+	{
+		if(streams[index]==NULL)
+			break;
+	}
+	if(index==streams.size())
+		streams.push_back(new SoundStream(this));
 	pa_sample_spec ss;
-	ss.format=PA_SAMPLE_U8;
+	ss.format=PA_SAMPLE_S16LE;
 	ss.rate=44100;
-	ss.channels=1;
+	ss.channels=2;
 	pa_buffer_attr attrs;
 	attrs.maxlength=(uint32_t)-1;
 	attrs.prebuf=(uint32_t)-1;
 	attrs.tlength=pa_usec_to_bytes(40000,&ss);
 	attrs.fragsize=(uint32_t)-1;
 	attrs.minreq=(uint32_t)-1;
-	th->stream=pa_stream_new(context, "puppa", &ss, NULL);
-	pa_stream_connect_playback(th->stream, NULL, &attrs, 
+	streams[index]->stream=pa_stream_new(context, "SoundStream", &ss, NULL);
+	streams[index]->decoder=decoder;
+	pa_stream_set_state_callback(streams[index]->stream, (pa_stream_notify_cb_t)streamStatusCB, streams[index]);
+	pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
+	pa_stream_connect_playback(streams[index]->stream, NULL, &attrs, 
 			(pa_stream_flags)(PA_STREAM_ADJUST_LATENCY | PA_STREAM_AUTO_TIMING_UPDATE | PA_STREAM_INTERPOLATE_TIMING), NULL, NULL);
-	pa_stream_set_state_callback(th->stream, (pa_stream_notify_cb_t)streamStatusCB, NULL);
+
+	pa_threaded_mainloop_unlock(mainLoop);
+	return index+1;
 }
 
-SoundManager::SoundManager():stream(NULL)
+void SoundManager::contextStatusCB(pa_context* context, SoundManager* th)
+{
+	if(pa_context_get_state(context)!=PA_CONTEXT_READY)
+		return;
+	th->contextReady=true;
+}
+
+SoundManager::SoundManager():streamsMutex("streamsMutex"),contextReady(false)
 {
 	mainLoop=pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start(mainLoop);
@@ -62,24 +103,9 @@ SoundManager::SoundManager():stream(NULL)
 	pa_threaded_mainloop_unlock(mainLoop);
 }
 
-uint32_t SoundManager::getLatency()
-{
-	if(stream==NULL)
-		return 0;
-
-	uint64_t usec=0;
-	int neg=0;
-	pa_stream_get_latency(stream,&usec,&neg);
-	cout << "usec " << usec << endl;
-
-	return usec/1000;
-}
-
 SoundManager::~SoundManager()
 {
 	pa_threaded_mainloop_lock(mainLoop);
-	pa_stream_disconnect(stream);
-	pa_stream_unref(stream);
 	pa_context_disconnect(context);
 	pa_context_unref(context);
 	pa_threaded_mainloop_unlock(mainLoop);

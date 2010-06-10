@@ -243,7 +243,7 @@ bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
 	memset((char*)s.samples,0,AVCODEC_MAX_AUDIO_FRAME_SIZE);
 	int maxLen=s.len;
 	int ret=avcodec_decode_audio2(codecContext, s.samples, &maxLen, data, datalen);
-	cout << ret << endl;
-	__asm__("int $3");
+	assert_and_throw(ret==datalen);
 	s.len=maxLen;
+	return true;
 }

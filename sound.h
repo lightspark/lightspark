@@ -17,7 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#ifndef SOUND_H
+#define SOUND_H
+
+#include "compat.h"
 #include <pulse/pulseaudio.h>
+#include "decoder.h"
 
 namespace lightspark
 {
@@ -25,15 +30,30 @@ namespace lightspark
 class SoundManager
 {
 private:
+	class SoundStream
+	{
+	public:
+		pa_stream* stream;
+		AudioDecoder* decoder;
+		SoundManager* manager;
+		bool streamReady;
+		SoundStream(SoundManager* m):stream(NULL),decoder(NULL),manager(m),streamReady(false){}
+	};
 	pa_threaded_mainloop* mainLoop;
-	pa_stream* stream;
 	pa_context* context;
 	static void contextStatusCB(pa_context* context, SoundManager* th);
-	static void streamStatusCB(pa_stream* stream, SoundManager* th);
+	static void streamStatusCB(pa_stream* stream, SoundStream* th);
+	static void streamWriteCB(pa_stream* stream, size_t nbytes, SoundStream* th);
+	Mutex streamsMutex;
+	std::vector<SoundStream*> streams;
+	bool contextReady;
 public:
 	SoundManager();
-	uint32_t getLatency();
+	uint32_t createStream(AudioDecoder* decoder);
+	void freeStream(uint32_t id);
 	~SoundManager();
 };
 
 };
+
+#endif

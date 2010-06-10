@@ -17,9 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "swf.h"
 #include "netutils.h"
 #include "compat.h"
-#include "swf.h"
 #include <curl/curl.h>
 #include <string>
 #include <iostream>

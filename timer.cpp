@@ -17,13 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "swf.h"
 #include <errno.h>
 #include <stdlib.h>
 #include <assert.h>
 
 #include "timer.h"
 #include "compat.h"
-#include "swf.h"
 
 using namespace lightspark;
 using namespace std;

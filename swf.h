@@ -168,7 +168,6 @@ class SystemState: public RootMovieClip
 private:
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
-	SoundManager* soundManager;
 	sem_t terminated;
 	float renderRate;
 	bool error;
@@ -205,6 +204,7 @@ public:
 	ABCVm* currentVm;
 	InputThread* inputThread;
 	RenderThread* renderThread;
+	SoundManager* soundManager;
 	//Application starting time in milliseconds
 	uint64_t startTime;
 

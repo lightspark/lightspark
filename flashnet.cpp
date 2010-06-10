@@ -340,6 +340,7 @@ void NetStream::execute()
 	ThreadProfile* profile=sys->allocateProfiler(RGB(0,0,200));
 	profile->setTag("NetStream");
 	//We need to catch possible EOF and other error condition in the non reliable stream
+	uint32_t soundStreamId=0;
 	try
 	{
 		Chronometer chronometer;
@@ -368,7 +369,7 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
-						/*if(audioDecoder)
+						if(audioDecoder)
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
 							audioDecoder->decodeData(tag.packetData,tag.packetLen);
@@ -379,21 +380,15 @@ void NetStream::execute()
 							switch(tag.SoundFormat)
 							{
 								case AAC:
-									if(tag.isHeader())
-									{
-										audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,
-												tag.packetData, tag.packetLen);
-									}
-									else
-									{
-										audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,NULL, 0);
-										audioDecoder->decodeData(tag.packetData,tag.packetLen);
-									}
+									assert_and_throw(tag.isHeader())
+									audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,
+											tag.packetData, tag.packetLen);
 									break;
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
 							}
-						}*/
+						}
+						soundStreamId=sys->soundManager->createStream(audioDecoder);
 						break;
 					}
 					case 9:
@@ -465,6 +460,7 @@ void NetStream::execute()
 	//This transition is critical, so the mutex is needed
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);
+	sys->soundManager->freeStream(soundStreamId);
 	delete videoDecoder;
 	delete audioDecoder;
 	videoDecoder=NULL;

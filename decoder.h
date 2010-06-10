@@ -20,7 +20,7 @@
 #ifndef _DECODER_H
 #define _DECODER_H
 
-#include <GL/gl.h>
+#include <GL/glew.h>
 #include <list>
 #include <inttypes.h>
 #include "threading.h"

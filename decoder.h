@@ -108,20 +108,22 @@ protected:
 	class FrameSamples
 	{
 	public:
-		int16_t samples[AVCODEC_MAX_AUDIO_FRAME_SIZE/2];
+		int16_t samples[AVCODEC_MAX_AUDIO_FRAME_SIZE/2] __attribute__ ((aligned (16)));
+		int16_t* current;
 		uint32_t len;
-		FrameSamples():len(AVCODEC_MAX_AUDIO_FRAME_SIZE){}
+		FrameSamples():current(samples),len(AVCODEC_MAX_AUDIO_FRAME_SIZE){}
 	};
 	class FrameSamplesGenerator
 	{
 	public:
-		void init(FrameSamples& f) const {f.len=0;}
+		void init(FrameSamples& f) const {f.len=AVCODEC_MAX_AUDIO_FRAME_SIZE;}
 	};
-	BlockingCircularQueue<FrameSamples,10> samplesBuffer;
+	BlockingCircularQueue<FrameSamples,30> samplesBuffer;
 public:
 	virtual ~AudioDecoder(){};
 	virtual bool decodeData(uint8_t* data, uint32_t datalen)=0;
-	virtual uint32_t copyFrame(int16_t* dest)=0;
+	virtual uint32_t copyFrame(int16_t* dest, uint32_t len)=0;
+	bool discardFrame();
 };
 
 class FFMpegAudioDecoder: public AudioDecoder
@@ -131,7 +133,7 @@ private:
 public:
 	FFMpegAudioDecoder(FLV_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
 	bool decodeData(uint8_t* data, uint32_t datalen);
-	uint32_t copyFrame(int16_t* dest);
+	uint32_t copyFrame(int16_t* dest, uint32_t len);
 };
 
 };

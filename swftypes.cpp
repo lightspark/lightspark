@@ -1794,10 +1794,10 @@ ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cu
 	if(prototype)
 		prototype->incRef();
 
-	#ifndef NDEBUG
+#ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
-	#endif
+#endif
 
 	assert_and_throw(o.Variables.size()==0);
 }

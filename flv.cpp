@@ -214,7 +214,8 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 	//Compute lenght of raw data
 	packetLen=dataSize-5;
-	packetData=new uint8_t[packetLen];
+	posix_memalign((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
+
 	s.read((char*)packetData,packetLen);
 
 	//Compute totalLen
@@ -224,7 +225,7 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 VideoDataTag::~VideoDataTag()
 {
-	delete[] packetData;
+	free(packetData);
 }
 
 AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
@@ -260,7 +261,7 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 		headerConsumed++;
 	}
 	packetLen=dataSize-headerConsumed;
-	packetData=new uint8_t[packetLen];
+	posix_memalign((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
 	s.read((char*)packetData,packetLen);
 
 	//Compute totalLen
@@ -270,5 +271,5 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 
 AudioDataTag::~AudioDataTag()
 {
-	delete[] packetData;
+	free(packetData);
 }

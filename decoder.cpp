@@ -239,31 +239,34 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(FLV_AUDIO_CODEC audioCodec, uint8_t* init
 
 bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
 {
-	FrameSamples s;
-	memset((char*)s.samples,0,AVCODEC_MAX_AUDIO_FRAME_SIZE);
-	int maxLen=s.len;
-	int ret=avcodec_decode_audio2(codecContext, s.samples, &maxLen, data, datalen);
+	FrameSamples& curTail=samplesBuffer.acquireLast();
+	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+	uint32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
 	assert_and_throw(ret==datalen);
-	s.len=maxLen;
+	curTail.len=maxLen;
+	curTail.current=curTail.samples;
+	samplesBuffer.commitLast();
 	return true;
 }
 
-uint32_t FFMpegAudioDecoder::copyFrame(int16_t* dest)
+uint32_t FFMpegAudioDecoder::copyFrame(int16_t* dest, uint32_t len)
 {
-/*	if(samplesBuffer.isEmpty())
-		return 0;
+	assert(dest);
+	while(samplesBuffer.isEmpty());
 	//Check if we have to just return the size
-	uint32_t ret=samplesBuffer.front().len;
-	if(dest)
-	{
-		memcpy(dest,samplesBuffer.front().samples,ret);
+	uint32_t frameSize=min(samplesBuffer.front().len,len)/2;
+	memcpy(dest,samplesBuffer.front().current,frameSize);
+	samplesBuffer.front().len-=frameSize;
+	if(samplesBuffer.front().len==0)
 		samplesBuffer.nonBlockingPopFront();
-	}
-	return ret;*/
-	if(dest)
-	{
-		for(uint32_t i=0;i<512;i++)
-			dest[i]=sin(i*M_PI/90)*20000;
-	}
-	return 1024;
+	else
+		samplesBuffer.front().current+=frameSize/2;
+	return frameSize;
 }
+
+bool AudioDecoder::discardFrame()
+{
+	//We don't want ot block if no frame is available
+	return samplesBuffer.nonBlockingPopFront();
+}
+

@@ -47,10 +47,13 @@ private:
 	Mutex streamsMutex;
 	std::vector<SoundStream*> streams;
 	volatile bool contextReady;
+	bool stopped;
 public:
 	SoundManager();
 	uint32_t createStream(AudioDecoder* decoder);
 	void freeStream(uint32_t id);
+	void fillAndSinc();
+	void stop();
 	~SoundManager();
 };
 

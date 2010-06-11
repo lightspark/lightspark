@@ -327,8 +327,8 @@ void NetStream::tick()
 	//No mutex needed, ticking can happen only when decoder is valid
 	if(videoDecoder)
 		videoDecoder->discardFrame();
-//	if(audioDecoder)
-//		audioDecoder->discardFrame();
+	if(audioDecoder)
+		audioDecoder->discardFrame();
 }
 
 void NetStream::execute()
@@ -387,8 +387,8 @@ void NetStream::execute()
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
 							}
+							soundStreamId=sys->soundManager->createStream(audioDecoder);
 						}
-						soundStreamId=sys->soundManager->createStream(audioDecoder);
 						break;
 					}
 					case 9:
@@ -476,8 +476,8 @@ void NetStream::threadAbort()
 	//Discard a frame, the decoder may be blocked on a full buffer
 	if(videoDecoder)
 		videoDecoder->discardFrame();
-//	if(audioDecoder)
-//		audioDecoder->discardFrame();
+	if(audioDecoder)
+		audioDecoder->discardFrame();
 	sem_post(&mutex);
 }
 

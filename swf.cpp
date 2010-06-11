@@ -198,6 +198,7 @@ SystemState::~SystemState()
 {
 	assert(shutdown);
 	timerThread->wait();
+	//soundManager->stop();
 	delete threadPool;
 	delete downloadManager;
 	delete currentVm;

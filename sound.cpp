@@ -32,18 +32,19 @@ void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 	th->streamReady=true;
 }
 
-void SoundManager::streamWriteCB(pa_stream* stream, size_t nbytes, SoundStream* th)
+void SoundManager::fillAndSinc()
+{
+}
+
+void SoundManager::streamWriteCB(pa_stream* stream, size_t frameSize, SoundStream* th)
 {
 	//Get buffer size
-	uint32_t frameSize=th->decoder->copyFrame(NULL);
-	size_t actualSize=frameSize;
+	cout << "___ frameSize " << frameSize << endl;
 	int16_t* dest;
-	pa_stream_begin_write(stream, (void**)&dest, &actualSize);
-	assert_and_throw(actualSize==frameSize);
-	uint32_t retSize=th->decoder->copyFrame(dest);
-	assert(retSize==actualSize);
+	pa_stream_begin_write(stream, (void**)&dest, &frameSize);
+	uint32_t retSize=th->decoder->copyFrame(dest, frameSize);
+	cout << "___ retSize " << retSize << endl;
 	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
-	cout << "retSize " << retSize << endl;
 }
 
 void SoundManager::freeStream(uint32_t id)
@@ -100,7 +101,7 @@ void SoundManager::contextStatusCB(pa_context* context, SoundManager* th)
 	th->contextReady=true;
 }
 
-SoundManager::SoundManager():streamsMutex("streamsMutex"),contextReady(false)
+SoundManager::SoundManager():streamsMutex("streamsMutex"),contextReady(false),stopped(false)
 {
 	mainLoop=pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start(mainLoop);
@@ -114,10 +115,24 @@ SoundManager::SoundManager():streamsMutex("streamsMutex"),contextReady(false)
 
 SoundManager::~SoundManager()
 {
-	pa_threaded_mainloop_lock(mainLoop);
-	pa_context_disconnect(context);
-	pa_context_unref(context);
-	pa_threaded_mainloop_unlock(mainLoop);
-	pa_threaded_mainloop_stop(mainLoop);
-	pa_threaded_mainloop_free(mainLoop);
+	stop();
+}
+
+void SoundManager::stop()
+{
+	if(!stopped)
+	{
+		stopped=true;
+		pa_threaded_mainloop_lock(mainLoop);
+		for(uint32_t i=0;i<streams.size();i++)
+		{
+			if(streams[i])
+				freeStream(i+1);
+		}
+		pa_context_disconnect(context);
+		pa_context_unref(context);
+		pa_threaded_mainloop_unlock(mainLoop);
+		pa_threaded_mainloop_stop(mainLoop);
+		pa_threaded_mainloop_free(mainLoop);
+	}
 }

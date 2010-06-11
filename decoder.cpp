@@ -247,3 +247,23 @@ bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
 	s.len=maxLen;
 	return true;
 }
+
+uint32_t FFMpegAudioDecoder::copyFrame(int16_t* dest)
+{
+/*	if(samplesBuffer.isEmpty())
+		return 0;
+	//Check if we have to just return the size
+	uint32_t ret=samplesBuffer.front().len;
+	if(dest)
+	{
+		memcpy(dest,samplesBuffer.front().samples,ret);
+		samplesBuffer.nonBlockingPopFront();
+	}
+	return ret;*/
+	if(dest)
+	{
+		for(uint32_t i=0;i<512;i++)
+			dest[i]=sin(i*M_PI/90)*20000;
+	}
+	return 1024;
+}

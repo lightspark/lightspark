@@ -34,7 +34,16 @@ void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 
 void SoundManager::streamWriteCB(pa_stream* stream, size_t nbytes, SoundStream* th)
 {
-	cout << "writeCB" << endl;
+	//Get buffer size
+	uint32_t frameSize=th->decoder->copyFrame(NULL);
+	size_t actualSize=frameSize;
+	int16_t* dest;
+	pa_stream_begin_write(stream, (void**)&dest, &actualSize);
+	assert_and_throw(actualSize==frameSize);
+	uint32_t retSize=th->decoder->copyFrame(dest);
+	assert(retSize==actualSize);
+	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
+	cout << "retSize " << retSize << endl;
 }
 
 void SoundManager::freeStream(uint32_t id)

@@ -120,8 +120,8 @@ protected:
 	BlockingCircularQueue<FrameSamples,10> samplesBuffer;
 public:
 	virtual ~AudioDecoder(){};
-//	virtual bool discardFrame()=0;
 	virtual bool decodeData(uint8_t* data, uint32_t datalen)=0;
+	virtual uint32_t copyFrame(int16_t* dest)=0;
 };
 
 class FFMpegAudioDecoder: public AudioDecoder
@@ -130,8 +130,8 @@ private:
 	AVCodecContext* codecContext;
 public:
 	FFMpegAudioDecoder(FLV_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
-//	bool discardFrame();
 	bool decodeData(uint8_t* data, uint32_t datalen);
+	uint32_t copyFrame(int16_t* dest);
 };
 
 };

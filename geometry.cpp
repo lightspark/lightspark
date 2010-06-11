@@ -141,10 +141,10 @@ void GeomShape::TessellateGLU()
 	//NOTE: do not invalidate the contents of outline in this function
 	GLUtesselator* tess=gluNewTess();
 
-	gluTessCallback(tess,GLU_TESS_BEGIN_DATA,(void(*)())GLUCallbackBegin);
-	gluTessCallback(tess,GLU_TESS_VERTEX_DATA,(void(*)())GLUCallbackVertex);
-	gluTessCallback(tess,GLU_TESS_END_DATA,(void(*)())GLUCallbackEnd);
-	gluTessCallback(tess,GLU_TESS_COMBINE_DATA,(void(*)())GLUCallbackCombine);
+	gluTessCallback(tess,GLU_TESS_BEGIN_DATA,(void(CALLBACK *)())GLUCallbackBegin);
+	gluTessCallback(tess,GLU_TESS_VERTEX_DATA,(void(CALLBACK *)())GLUCallbackVertex);
+	gluTessCallback(tess,GLU_TESS_END_DATA,(void(CALLBACK *)())GLUCallbackEnd);
+	gluTessCallback(tess,GLU_TESS_COMBINE_DATA,(void(CALLBACK *)())GLUCallbackCombine);
 	gluTessProperty(tess,GLU_TESS_WINDING_RULE,GLU_TESS_WINDING_ODD);
 	
 	//Let's create a vector of pointers to store temporary coordinates

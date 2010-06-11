@@ -24,6 +24,8 @@
 #ifdef WIN32
 #include <winsock2.h>
 #include <windows.h>
+#undef min
+#undef max
 #define TLSDATA __declspec( thread )
 #define snprintf _snprintf
 int round ( double f_val );
@@ -60,7 +62,7 @@ typedef unsigned char uint8_t;
 typedef signed int ssize_t;
 */
 #endif
-
+#define isnan(x) _isnan(x)
 #else
 #include <endian.h>
 #endif

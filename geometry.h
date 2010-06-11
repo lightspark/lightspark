@@ -32,6 +32,7 @@ class Vector2
 {
 public:
 	int x,y;
+	Vector2():x(0),y(0){}
 	Vector2(int a, int b):x(a),y(b){}
 	bool operator==(const Vector2& v)const{return v.x==x && v.y==y;}
 	bool operator!=(const Vector2& v)const{return v.x!=x || v.y!=y;}
@@ -43,6 +44,8 @@ public:
 	Vector2& operator/=(int v) { x/=v; y/=v; return *this;}
 	int dot(const Vector2& r) const { return x*r.x+y*r.y;}
 };
+
+//#if defined(GL) && !defined(WIN32)
 
 #include "packed_begin.h"
 struct arrayElem
@@ -104,6 +107,8 @@ public:
 	int id;
 };
 
-};
+//#endif
+
+}; // end namespace lightspark
 
 #endif

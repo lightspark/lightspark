@@ -20,6 +20,9 @@
 #include "flv.h"
 #include "swftypes.h"
 
+// FIXME !!
+#define be64toh(x) (x)
+
 using namespace lightspark;
 using namespace std;
 

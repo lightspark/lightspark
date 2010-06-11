@@ -29,6 +29,9 @@ REGISTER_CLASS_NAME(ColorTransform);
 REGISTER_CLASS_NAME(Point);
 REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle");
 
+namespace lightspark
+{
+
 void Rectangle::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
@@ -252,3 +255,5 @@ void Transform::buildTraits(ASObject* o)
 {
 	o->setSetterByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction));
 }
+
+};

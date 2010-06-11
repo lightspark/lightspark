@@ -33,7 +33,7 @@
 #include "asobjects.h"
 #include "textfile.h"
 #include "class.h"
-#include "netutils.h"
+//#include "netutils.h"
 
 #include <GL/glew.h>
 #include <curl/curl.h>
@@ -48,6 +48,8 @@ extern "C" {
 #include <gdk/gdkgl.h>
 #include <gtk/gtkglwidget.h>
 #endif
+
+#define DATADIRECTORY ""
 
 using namespace std;
 using namespace lightspark;
@@ -548,7 +550,7 @@ void RenderThread::wait()
 	assert_and_throw(ret==0);
 }
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),terminated(false),
+InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {
 	LOG(LOG_NO_INFO,"Creating input thread");
@@ -596,7 +598,7 @@ void InputThread::wait()
 {
 	if(terminated)
 		return;
-	if(t)
+	if(t.p)
 		pthread_join(t,NULL);
 	terminated=true;
 }
@@ -706,7 +708,8 @@ void* InputThread::sdl_worker(InputThread* th)
 					break;
 				}
 
-				int index=lrint(th->listeners.size()*selected);
+//				int index=lrint(th->listeners.size()*selected);
+				int index=round(th->listeners.size()*selected);
 				index--;
 
 				th->lastMouseDownTarget=th->listeners[index];
@@ -723,7 +726,7 @@ void* InputThread::sdl_worker(InputThread* th)
 				sys->renderThread->requestInput();
 				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
 
-				int index=lrint(th->listeners.size()*selected);
+				int index=round(th->listeners.size()*selected);
 				index--;
 
 				//Add event to the event queue
@@ -847,7 +850,9 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
 	}
 #endif
+#ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&ts);
+#endif
 }
 
 RenderThread::~RenderThread()
@@ -1330,10 +1335,10 @@ bool RenderThread::loadShaderPrograms()
 	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
 	
 	const char *fs = NULL;
-	fs = dataFileRead(DATADIR "/lightspark.frag");
+	fs = dataFileRead(DATADIRECTORY "/lightspark.frag");
 	if(fs==NULL)
 	{
-		LOG(LOG_ERROR,"Shader " DATADIR "/lightspark.frag not found");
+		LOG(LOG_ERROR,"Shader " DATADIRECTORY "/lightspark.frag not found");
 		throw RunTimeException("Fragment shader code not found");
 	}
 	assert(glShaderSource);
@@ -1367,10 +1372,10 @@ bool RenderThread::loadShaderPrograms()
 	//Create the blitter shader
 	GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
-	fs = dataFileRead(DATADIR "/lightspark.vert");
+	fs = dataFileRead(DATADIRECTORY "/lightspark.vert");
 	if(fs==NULL)
 	{
-		LOG(LOG_ERROR,"Shader " DATADIR "/lightspark.vert not found");
+		LOG(LOG_ERROR,"Shader " DATADIRECTORY "/lightspark.vert not found");
 		throw RunTimeException("Vertex shader code not found");
 	}
 	glShaderSource(v, 1, &fs,NULL);

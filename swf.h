@@ -26,6 +26,7 @@
 #include <list>
 #include <map>
 #include <semaphore.h>
+#include <GL/glew.h>
 #include <FTGL/ftgl.h>
 #include "swftypes.h"
 #include "frame.h"
@@ -34,7 +35,6 @@
 #include "timer.h"
 #include "graphics.h"
 
-#include <GL/glew.h>
 #ifndef WIN32
 #include <X11/Xlib.h>
 #include <GL/glx.h>
@@ -43,7 +43,7 @@ namespace X11Intrinsic
 #include <X11/Intrinsic.h>
 };
 #else
-//#include <windows.h>
+#include <windows.h>
 #endif
 
 #ifdef COMPILE_PLUGIN

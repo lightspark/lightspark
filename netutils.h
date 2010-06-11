@@ -21,7 +21,9 @@
 #define _NET_UTILS_H
 
 #include <streambuf>
+#ifndef WIN32
 #include <inttypes.h>
+#endif
 #include "swftypes.h"
 
 #include "thread_pool.h"
@@ -43,7 +45,7 @@ class CurlDownloadManager:public DownloadManager
 {
 public:
 	Downloader* download(const tiny_string& u);
-	void destroy(Downloader* d);
+  void destroy(Downloader* d);
 };
 
 class Downloader: public std::streambuf

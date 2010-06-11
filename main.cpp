@@ -37,6 +37,9 @@
 #include <windows.h>
 #endif
 #include <SDL.h>
+#ifdef WIN32
+#undef main
+#endif
 
 using namespace std;
 using namespace lightspark;
@@ -168,7 +171,7 @@ int main(int argc, char* argv[])
 	InputThread it(sys,SDL,NULL);
 	sys->inputThread=&it;
 	sys->renderThread=&rt;
-	sys->downloadManager=new CurlDownloadManager();
+  sys->downloadManager=new CurlDownloadManager();
 	//Start the parser
 	sys->addJob(pt);
 

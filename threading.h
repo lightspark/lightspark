@@ -22,6 +22,7 @@
 
 #include <semaphore.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "compat.h"
 
 namespace lightspark

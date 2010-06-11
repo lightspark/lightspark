@@ -77,7 +77,7 @@ private:
 	void setSize(uint32_t w, uint32_t h);
 public:
 	FFMpegDecoder(uint8_t* initdata, uint32_t datalen);
-	~FFMpegDecoder();
+  ~FFMpegDecoder();
 	bool decodeData(uint8_t* data, uint32_t datalen);
 	bool discardFrame();
 	bool copyFrameToTexture(TextureBuffer& tex);

@@ -28,6 +28,9 @@ using namespace lightspark;
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 
+namespace lightspark
+{
+
 REGISTER_CLASS_NAME(XMLDocument);
 
 void XMLDocument::sinit(Class_base* c)
@@ -47,3 +50,4 @@ ASFUNCTIONBODY(XMLDocument,_constructor)
 	return NULL;
 }
 
+}; // end namespace lightspark

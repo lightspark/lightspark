@@ -35,6 +35,10 @@
 #include <set>
 #include "swf.h"
 
+#if defined(WIN32) && defined(exception_info)
+#undef exception_info
+#endif
+
 namespace lightspark
 {
 

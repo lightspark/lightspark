@@ -33,7 +33,11 @@
 #include <string.h>
 #include <assert.h>
 #include "exceptions.h"
+#ifndef WIN32
 #include <arpa/inet.h>
+#else
+//#include "winsock2.h"
+#endif
 
 namespace lightspark
 {
@@ -438,12 +442,20 @@ public:
 //Atomic operations: placeholders until C++0x is supported in GCC
 inline void atomic_increment(int* operand)
 {
+#ifndef WIN32
 	__asm__ ("lock incl %0" : "+m" (*operand):);
+#else
+	__asm lock inc operand;
+#endif                                                      }
 }
 
 inline void atomic_decrement(int* operand)
 {
+#ifndef WIN32
 	__asm__ ("lock decl %0" : "+m" (*operand):);
+#else
+	__asm lock dec operand;
+#endif
 }
 
 class ASObject
@@ -689,10 +701,12 @@ public:
 	}
 };
 
+#undef RGB
+
 class RGB
 {
 public:
-	RGB(){};
+	RGB():Red(0),Green(0),Blue(0){};
 	RGB(int r,int g, int b):Red(r),Green(g),Blue(b){};
 	UI8 Red;
 	UI8 Green;
@@ -1435,6 +1449,6 @@ std::istream& operator>>(std::istream& stream, CONVOLUTIONFILTER& v);
 std::istream& operator>>(std::istream& stream, COLORMATRIXFILTER& v);
 std::istream& operator>>(std::istream& stream, GRADIENTBEVELFILTER& v);
 
-
 };
+
 #endif

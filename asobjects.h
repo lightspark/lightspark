@@ -112,6 +112,7 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o)
 	{
 		abort();
+    return new ASObject();
 	}
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true)
 	{

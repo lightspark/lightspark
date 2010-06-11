@@ -23,6 +23,7 @@
 
 #include "timer.h"
 #include "compat.h"
+#include <winternl.h>
 #include "swf.h"
 
 using namespace lightspark;
@@ -205,7 +206,13 @@ void TimerThread::addTick(uint32_t tickTime, ITickJob* job)
 	e->tickTime=tickTime;
 	timespec tp;
 	//Get current clock to schedule next wakeup
+
+#ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&tp);
+#else
+  tp.tv_sec = 0; // FIXME!!
+  tp.tv_nsec = 0;
+#endif
 	e->timing=timespecToMsecs(tp)+tickTime;
 	insertNewEvent(e);
 }
@@ -218,7 +225,12 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 	e->tickTime=0;
 	timespec tp;
 	//Get current clock to schedule next wakeup
+#ifndef WIN32
 	clock_gettime(CLOCK_REALTIME,&tp);
+#else
+  tp.tv_sec = 0; // FIXME!!
+  tp.tv_nsec = 0;
+#endif
 	e->timing=timespecToMsecs(tp)+waitTime;
 	insertNewEvent(e);
 }
@@ -276,9 +288,12 @@ Chronometer::Chronometer()
 {
 	timespec tp;
 #ifndef _POSIX_THREAD_CPUTIME
-	#error no thread clock available
-#endif
+//	#error no thread clock available
+  tp.tv_sec = 0; // FIXME!!
+  tp.tv_nsec = 0;
+#else
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
+#endif
 	start=timespecToUsecs(tp);
 }
 
@@ -288,9 +303,12 @@ uint32_t lightspark::Chronometer::checkpoint()
 	uint32_t ret;
 	timespec tp;
 #ifndef _POSIX_THREAD_CPUTIME
-	#error no thread clock available
-#endif
+//	#error no thread clock available
+  tp.tv_sec = 0; // FIXME!!
+  tp.tv_nsec = 0;
+#else
 	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
+#endif
 	newstart=timespecToUsecs(tp);
 	ret=newstart-start;
 	start=newstart;

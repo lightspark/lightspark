@@ -24,6 +24,7 @@
 #include <vector>
 #include <iostream>
 #include "swftypes.h"
+#include <GL/glew.h>
 #include "input.h"
 #include "geometry.h"
 #include "asobjects.h"
@@ -32,7 +33,6 @@
 #include "flashutils.h"
 #include "flashmedia.h"
 #include "class.h"
-#include <GL/glew.h>
 
 namespace lightspark
 {

@@ -21,7 +21,6 @@
 #define _DECODER_H
 
 #include <GL/glew.h>
-#include <list>
 #include <inttypes.h>
 #include "threading.h"
 #include "graphics.h"
@@ -109,12 +108,16 @@ protected:
 	class FrameSamples
 	{
 	public:
-		//Worst case buffer size, 1 second
 		int16_t samples[AVCODEC_MAX_AUDIO_FRAME_SIZE/2];
 		uint32_t len;
 		FrameSamples():len(AVCODEC_MAX_AUDIO_FRAME_SIZE){}
 	};
-	std::list<FrameSamples> samplesList;
+	class FrameSamplesGenerator
+	{
+	public:
+		void init(FrameSamples& f) const {f.len=0;}
+	};
+	BlockingCircularQueue<FrameSamples,10> samplesBuffer;
 public:
 	virtual ~AudioDecoder(){};
 //	virtual bool discardFrame()=0;

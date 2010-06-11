@@ -36,7 +36,7 @@ private:
 		pa_stream* stream;
 		AudioDecoder* decoder;
 		SoundManager* manager;
-		bool streamReady;
+		volatile bool streamReady;
 		SoundStream(SoundManager* m):stream(NULL),decoder(NULL),manager(m),streamReady(false){}
 	};
 	pa_threaded_mainloop* mainLoop;
@@ -46,7 +46,7 @@ private:
 	static void streamWriteCB(pa_stream* stream, size_t nbytes, SoundStream* th);
 	Mutex streamsMutex;
 	std::vector<SoundStream*> streams;
-	bool contextReady;
+	volatile bool contextReady;
 public:
 	SoundManager();
 	uint32_t createStream(AudioDecoder* decoder);

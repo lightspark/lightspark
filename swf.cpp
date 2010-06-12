@@ -1891,28 +1891,37 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 
 void RootMovieClip::tick()
 {
-	advanceFrame();
-	Event* e=Class<Event>::getInstanceS("enterFrame");
-	if(hasEventListener("enterFrame"))
-		getVm()->addEvent(this,e);
-	//Get a copy of the current childs
-	vector<MovieClip*> curChildren;
+	//Frame advancement may cause exceptions
+	try
 	{
-		Locker l(mutexChildrenClips);
-		curChildren.reserve(childrenClips.size());
-		curChildren.insert(curChildren.end(),childrenClips.begin(),childrenClips.end());
+		advanceFrame();
+		Event* e=Class<Event>::getInstanceS("enterFrame");
+		if(hasEventListener("enterFrame"))
+			getVm()->addEvent(this,e);
+		//Get a copy of the current childs
+		vector<MovieClip*> curChildren;
+		{
+			Locker l(mutexChildrenClips);
+			curChildren.reserve(childrenClips.size());
+			curChildren.insert(curChildren.end(),childrenClips.begin(),childrenClips.end());
+			for(uint32_t i=0;i<curChildren.size();i++)
+				curChildren[i]->incRef();
+		}
+		//Advance all the children, and release the reference
 		for(uint32_t i=0;i<curChildren.size();i++)
-			curChildren[i]->incRef();
+		{
+			curChildren[i]->advanceFrame();
+			if(curChildren[i]->hasEventListener("enterFrame"))
+				getVm()->addEvent(curChildren[i],e);
+			curChildren[i]->decRef();
+		}
+		e->decRef();
 	}
-	//Advance all the children, and release the reference
-	for(uint32_t i=0;i<curChildren.size();i++)
+	catch(LightsparkException& e)
 	{
-		curChildren[i]->advanceFrame();
-		if(curChildren[i]->hasEventListener("enterFrame"))
-			getVm()->addEvent(curChildren[i],e);
-		curChildren[i]->decRef();
+		LOG(LOG_ERROR,"Exception in RootMovieClip::tick " << e.cause);
+		sys->setError(e.cause);
 	}
-	e->decRef();
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

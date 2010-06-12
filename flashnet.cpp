@@ -455,6 +455,10 @@ void NetStream::execute()
 	catch(JobTerminationException& e)
 	{
 	}
+	catch(exception& e)
+	{
+		LOG(LOG_ERROR, "Exception in reading: "<<e.what());
+	}
 
 	sem_wait(&mutex);
 	sys->downloadManager->destroy(downloader);

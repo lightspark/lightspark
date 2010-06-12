@@ -20,6 +20,7 @@
 #ifndef __PLUGIN_H__
 #define __PLUGIN_H__
 
+#include "swf.h"
 /* Xlib/Xt stuff */
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
@@ -28,7 +29,6 @@
 #include <sstream>
 
 #include "pluginbase.h"
-#include "swf.h"
 #include "streams.h"
 #include "netutils.h"
 #include <GL/glx.h>

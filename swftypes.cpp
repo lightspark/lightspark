@@ -1278,13 +1278,15 @@ void FILLSTYLE::setFragmentProgram() const
 	{
 		//LOG(TRACE,"Fill gradient");
 
+#if 0
 		color_entry buffer[256];
 		unsigned int grad_index=0;
 		RGBA color_l(0,0,0,1);
 		int index_l=0;
 		RGBA color_r(Gradient.GradientRecords[0].Color);
 		int index_r=Gradient.GradientRecords[0].Ratio;
-		/*glColor4f(0,1,0,0);
+
+		glColor4f(0,1,0,0);
 
 		for(int i=0;i<256;i++)
 		{
@@ -1308,7 +1310,10 @@ void FILLSTYLE::setFragmentProgram() const
 		}
 
 		glBindTexture(GL_TEXTURE_2D,rt->data_tex);
-		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);*/
+		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);
+#else
+		RGBA color_r(Gradient.GradientRecords[0].Color);
+#endif
 
 		//HACK: TODO: revamp gradient support
 		glColor4f(1,0,0,0);

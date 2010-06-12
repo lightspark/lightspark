@@ -244,6 +244,7 @@ bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
 	uint32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
 	assert_and_throw(ret==datalen);
 	curTail.len=maxLen;
+	assert(maxLen%2==0);
 	curTail.current=curTail.samples;
 	samplesBuffer.commitLast();
 	return true;
@@ -252,9 +253,10 @@ bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
 uint32_t FFMpegAudioDecoder::copyFrame(int16_t* dest, uint32_t len)
 {
 	assert(dest);
-	while(samplesBuffer.isEmpty());
+	if(samplesBuffer.isEmpty())
+		return 0;
 	//Check if we have to just return the size
-	uint32_t frameSize=min(samplesBuffer.front().len,len)/2;
+	uint32_t frameSize=min(samplesBuffer.front().len,len);
 	memcpy(dest,samplesBuffer.front().current,frameSize);
 	samplesBuffer.front().len-=frameSize;
 	if(samplesBuffer.front().len==0)

@@ -32,18 +32,42 @@ void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 	th->streamReady=true;
 }
 
-void SoundManager::fillAndSinc()
+void SoundManager::fillAndSinc(uint32_t id)
 {
+	//Get buffer size
+	assert(streams[id-1]);
+	if(streams[id-1]->streamReady==false)
+		return;
+	pa_stream* stream=streams[id-1]->stream;
+	while(1)
+	{
+		pa_threaded_mainloop_lock(mainLoop);
+		size_t frameSize=pa_stream_writable_size(stream);
+		if(frameSize==0)
+		{
+			pa_threaded_mainloop_unlock(mainLoop);
+			break;
+		}
+		int16_t* dest;
+		pa_stream_begin_write(stream, (void**)&dest, &frameSize);
+		uint32_t retSize=streams[id-1]->decoder->copyFrame(dest, frameSize);
+		if(retSize==frameSize || retSize==0) //The buffer has been filled or there is no data currently
+		{
+			pa_stream_cancel_write(stream);
+			pa_threaded_mainloop_unlock(mainLoop);
+			break;
+		}
+		pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
+		pa_threaded_mainloop_unlock(mainLoop);
+	}
 }
 
 void SoundManager::streamWriteCB(pa_stream* stream, size_t frameSize, SoundStream* th)
 {
 	//Get buffer size
-	cout << "___ frameSize " << frameSize << endl;
 	int16_t* dest;
 	pa_stream_begin_write(stream, (void**)&dest, &frameSize);
 	uint32_t retSize=th->decoder->copyFrame(dest, frameSize);
-	cout << "___ retSize " << retSize << endl;
 	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
 }
 

@@ -113,6 +113,7 @@ private:
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
 	FLV_AUDIO_CODEC audioCodec;
+	uint32_t soundStreamId;
 	//TODO: add other audio data
 	sem_t mutex;
 	//IThreadJob interface for long jobs

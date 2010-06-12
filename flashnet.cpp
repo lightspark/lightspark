@@ -245,7 +245,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():frameRate(0),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL)
+NetStream::NetStream():frameRate(0),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0)
 {
 	sem_init(&mutex,0,1);
 }
@@ -327,8 +327,11 @@ void NetStream::tick()
 	//No mutex needed, ticking can happen only when decoder is valid
 	if(videoDecoder)
 		videoDecoder->discardFrame();
-	if(audioDecoder)
-		audioDecoder->discardFrame();
+	if(soundStreamId)
+	{
+		assert(audioDecoder);
+		sys->soundManager->fillAndSinc(soundStreamId);
+	}
 }
 
 void NetStream::execute()
@@ -340,7 +343,6 @@ void NetStream::execute()
 	ThreadProfile* profile=sys->allocateProfiler(RGB(0,0,200));
 	profile->setTag("NetStream");
 	//We need to catch possible EOF and other error condition in the non reliable stream
-	uint32_t soundStreamId=0;
 	try
 	{
 		Chronometer chronometer;

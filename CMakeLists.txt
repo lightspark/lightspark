@@ -40,7 +40,7 @@ INCLUDE(FindCURL REQUIRED)
 INCLUDE(FindPkgConfig REQUIRED)
 INCLUDE(FindZLIB REQUIRED)
 
-pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcrecpp libavcodec libavutil ftgl x11 libpulse)
+pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcrecpp libavcodec libavutil ftgl x11 libpulse fontconfig)
 
 INCLUDE_DIRECTORIES(${SDL_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${LLVM_INCLUDE_DIR})

@@ -26,6 +26,7 @@
 #include <list>
 #include <map>
 #include <semaphore.h>
+#include <string>
 #include <FTGL/ftgl.h>
 #include "swftypes.h"
 #include "frame.h"
@@ -308,6 +309,7 @@ private:
 	sem_t render;
 	sem_t inputDone;
 	bool inputNeeded;
+	std::string fontPath;
 
 #ifndef WIN32
 	Display* mDisplay;

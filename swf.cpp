@@ -42,6 +42,7 @@ extern "C" {
 }
 #ifndef WIN32
 #include <GL/glx.h>
+#include <fontconfig/fontconfig.h>
 #endif
 
 #ifdef COMPILE_PLUGIN
@@ -835,6 +836,33 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	m_sys=s;
 	sem_init(&render,0,0);
 	sem_init(&inputDone,0,0);
+
+#ifdef WIN32
+	fontPath = "TimesNewRoman.ttf"
+#else
+	FcPattern *pat, *match;
+	FcResult result = FcResultMatch;
+	char *font = NULL;
+
+	pat = FcPatternCreate();
+	FcPatternAddString(pat, FC_FAMILY, (const FcChar8 *)"Serif");
+	FcConfigSubstitute(NULL, pat, FcMatchPattern);
+	FcDefaultSubstitute(pat);
+	match = FcFontMatch(NULL, pat, &result);
+	FcPatternDestroy(pat);
+
+	if (result != FcResultMatch)
+	{
+		LOG(LOG_ERROR,"Unable to find suitable Serif font");
+		throw RunTimeException("Unable to find Serif font");
+	}
+
+	FcPatternGetString(match, FC_FILE, 0, (FcChar8 **) &font);
+	fontPath = font;
+	FcPatternDestroy(match);
+	LOG(LOG_NO_INFO, "Font File is " << fontPath);
+#endif
+
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifdef COMPILE_PLUGIN
@@ -967,7 +995,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	th->commonGLInit(window_width, window_height);
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
+	FTTextureFont font(rt->fontPath.c_str());
 	if(font.Error())
 		throw RunTimeException("Unable to load font");
 	
@@ -1174,10 +1202,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
+	FTTextureFont font(rt->fontPath.c_str());
 	if(font.Error())
 	{
-		LOG(LOG_ERROR,"Unable to load ttf-liberation font");
+		LOG(LOG_ERROR,"Unable to load serif font");
 		throw RunTimeException("Unable to load font");
 	}
 	
@@ -1564,7 +1592,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
+	FTTextureFont font(rt->fontPath.c_str());
 	if(font.Error())
 		throw RunTimeException("Unable to load font");
 	

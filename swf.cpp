@@ -970,7 +970,10 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	profile->setTag("Render");
 	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
 	if(font.Error())
+	{
+		LOG(LOG_ERROR,"Unable to find /usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
 		throw RunTimeException("Unable to load font");
+	}
 	
 	font.FaceSize(20);
 

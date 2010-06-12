@@ -217,6 +217,7 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 	posix_memalign((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
 
 	s.read((char*)packetData,packetLen);
+	memset(packetData+packetLen,0,16);
 
 	//Compute totalLen
 	unsigned int end=s.tellg();
@@ -263,6 +264,7 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 	packetLen=dataSize-headerConsumed;
 	posix_memalign((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
 	s.read((char*)packetData,packetLen);
+	memset(packetData+packetLen,0,16);
 
 	//Compute totalLen
 	unsigned int end=s.tellg();

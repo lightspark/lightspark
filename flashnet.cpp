@@ -449,7 +449,7 @@ void NetStream::execute()
 	}
 	catch(LightsparkException& e)
 	{
-		cout << e.what() << endl;
+		cout << e.cause << endl;
 		threadAbort();
 	}
 	catch(JobTerminationException& e)

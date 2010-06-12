@@ -26,10 +26,13 @@ using namespace std;
 
 void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 {
-//	Locker l(th->manager->streamsMutex);
-	if(pa_stream_get_state(stream)!=PA_STREAM_READY)
-		return;
-	th->streamReady=true;
+	if(pa_stream_get_state(stream)==PA_STREAM_READY)
+		th->streamReady=true;
+	else if(pa_stream_get_state(stream)==PA_STREAM_TERMINATED)
+	{
+		assert(stream==th->stream);
+		th->streamDead=true;
+	}
 }
 
 void SoundManager::fillAndSinc(uint32_t id)
@@ -73,20 +76,23 @@ void SoundManager::streamWriteCB(pa_stream* stream, size_t frameSize, SoundStrea
 
 void SoundManager::freeStream(uint32_t id)
 {
-//	Locker l(streamsMutex);
 	pa_threaded_mainloop_lock(mainLoop);
 	assert(streams[id-1]);
 	pa_stream* toDelete=streams[id-1]->stream;
 	pa_stream_disconnect(toDelete);
-	pa_stream_unref(toDelete);
-	delete streams[id-1];
+	//Do not delete the stream now, let's wait termination
+	SoundStream* s=streams[id-1];
 	streams[id-1]=NULL;
 	pa_threaded_mainloop_unlock(mainLoop);
+	while(s->streamDead==false);
+	pa_threaded_mainloop_lock(mainLoop);
+	pa_stream_unref(s->stream);
+	pa_threaded_mainloop_unlock(mainLoop);
+	delete s;
 }
 
 uint32_t SoundManager::createStream(AudioDecoder* decoder)
 {
-//	Locker l(streamsMutex);
 	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
 	uint32_t index=0;
@@ -125,7 +131,7 @@ void SoundManager::contextStatusCB(pa_context* context, SoundManager* th)
 	th->contextReady=true;
 }
 
-SoundManager::SoundManager():streamsMutex("streamsMutex"),contextReady(false),stopped(false)
+SoundManager::SoundManager():contextReady(false),stopped(false)
 {
 	mainLoop=pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start(mainLoop);

@@ -37,14 +37,14 @@ private:
 		AudioDecoder* decoder;
 		SoundManager* manager;
 		volatile bool streamReady;
-		SoundStream(SoundManager* m):stream(NULL),decoder(NULL),manager(m),streamReady(false){}
+		volatile bool streamDead;
+		SoundStream(SoundManager* m):stream(NULL),decoder(NULL),manager(m),streamReady(false),streamDead(false){}
 	};
 	pa_threaded_mainloop* mainLoop;
 	pa_context* context;
 	static void contextStatusCB(pa_context* context, SoundManager* th);
 	static void streamStatusCB(pa_stream* stream, SoundStream* th);
 	static void streamWriteCB(pa_stream* stream, size_t nbytes, SoundStream* th);
-	Mutex streamsMutex;
 	std::vector<SoundStream*> streams;
 	volatile bool contextReady;
 	bool stopped;

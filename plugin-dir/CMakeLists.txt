@@ -19,14 +19,12 @@
 #**************************************************************************
 
 
-INCLUDE(FindPkgConfig)
-pkg_check_modules(MOZ_PLUGIN REQUIRED nspr mozilla-plugin)
-INCLUDE_DIRECTORIES(${MOZ_PLUGIN_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES("include")
 INCLUDE_DIRECTORIES("..")
 
+pkg_check_modules(MOZ_PLUGIN REQUIRED nspr mozilla-plugin)
+INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS} ${MOZ_PLUGIN_INCLUDE_DIRS})
 ADD_DEFINITIONS(-DMOZ_X11 -DCOMPILE_PLUGIN)
-
 IF(UNIX)
 	ADD_DEFINITIONS(-DXP_UNIX)
 ENDIF(UNIX)

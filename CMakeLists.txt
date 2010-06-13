@@ -21,8 +21,8 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
+# Name & Version
 PROJECT(LIGHTSPARK)
-
 SET(MAJOR_VERSION "0")
 SET(MINOR_VERSION "5")
 SET(PATCH_VERSION "0")
@@ -63,11 +63,14 @@ IF(NOT CMAKE_BUILD_TYPE)
       FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
+# Some directory shortcuts
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
 
+# nasm for assembly optimizations
 INCLUDE(CMakeASM-NASMCompiler)
+ENABLE_LANGUAGE(ASM-NASM)
 
-#LIBRARIES
+# Libraries we need
 INCLUDE(FindLLVM REQUIRED)
 INCLUDE(FindSDL REQUIRED)
 INCLUDE(FindCURL REQUIRED)
@@ -92,7 +95,11 @@ INCLUDE_DIRECTORIES(${SOUND_LIBS_INCLUDE_DIRS})
 SET(CMAKE_EXE_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread -Wl,--as-needed ${LLVM_LDFLAGS}")
 SET(CMAKE_SHARED_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread -Wl,--as-needed ${LLVM_LDFLAGS} -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/lightspark.expmap")
 
-ENABLE_LANGUAGE(ASM-NASM)
+IF(COMPILE_PLUGIN)
+	pkg_check_modules(GTK REQUIRED gtk+-2.0 gtkglext-1.0)
+	INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS})
+	ADD_DEFINITIONS(-DMOZ_X11 -DCOMPILE_PLUGIN)
+ENDIF(COMPILE_PLUGIN)
 
 # Compiler defaults flags for different profiles
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden")
@@ -103,6 +110,7 @@ SET(CMAKE_CXX_FLAGS_DEBIAN "-O2")
 
 ADD_DEFINITIONS(-DDATADIR="share/lightspark")
 
+# liblightspark.so sources
 SET(LIBSPARK_SOURCES swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp decoder.cpp threading.cpp flashxml.cpp graphics.cpp sound.cpp)
 IF(${i386})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
@@ -110,26 +118,19 @@ ELSEIF(${x86_64})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_64.asm)
 ENDIF(${i386})
 
-# Build instructions
-IF(COMPILE_PLUGIN)
-	pkg_check_modules(GTK REQUIRED gtk+-2.0 gtkglext-1.0)
-	INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS})
-	ADD_SUBDIRECTORY(plugin-dir)
-	ADD_DEFINITIONS(-DMOZ_X11 -DCOMPILE_PLUGIN)
-ENDIF(COMPILE_PLUGIN)
+# liblightspark.so target
+ADD_LIBRARY(spark SHARED ${LIBSPARK_SOURCES})
+SET_TARGET_PROPERTIES(spark PROPERTIES OUTPUT_NAME lightspark)
+TARGET_LINK_LIBRARIES(spark ${SOUND_LIBS_LIBRARIES} ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${SDL_LIBRARY} ${CURL_LIBRARIES} ${GTK_LIBRARIES})
 
-IF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
-	ADD_LIBRARY(spark SHARED ${LIBSPARK_SOURCES})
-	TARGET_LINK_LIBRARIES(spark ${SOUND_LIBS_LIBRARIES} ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${SDL_LIBRARY} ${CURL_LIBRARIES} ${GTK_LIBRARIES})
-	SET_TARGET_PROPERTIES(spark PROPERTIES OUTPUT_NAME lightspark)
-	SET_TARGET_PROPERTIES(spark PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
-	SET_TARGET_PROPERTIES(spark PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
+SET_TARGET_PROPERTIES(spark PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
+SET_TARGET_PROPERTIES(spark PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
 
-	IF(UNIX)
-		INSTALL(TARGETS spark LIBRARY DESTINATION ${LIBDIR})
-	ENDIF(UNIX)
-ENDIF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
+IF(UNIX)
+	INSTALL(TARGETS spark LIBRARY DESTINATION ${LIBDIR})
+ENDIF(UNIX)
 
+# lightspark executable target
 IF(COMPILE_LIGHTSPARK)
 	ADD_EXECUTABLE(lightspark main.cpp)
 	TARGET_LINK_LIBRARIES(lightspark spark)
@@ -141,6 +142,7 @@ IF(COMPILE_LIGHTSPARK)
 	ENDIF(UNIX)
 ENDIF(COMPILE_LIGHTSPARK)
 
+# tightspark executable target
 IF(COMPILE_TIGHTSPARK)
 	ADD_EXECUTABLE(tightspark tightspark.cpp)
 	TARGET_LINK_LIBRARIES(tightspark spark)
@@ -149,4 +151,9 @@ IF(COMPILE_TIGHTSPARK)
 		INSTALL(TARGETS tightspark RUNTIME DESTINATION ${BINDIR})
 	ENDIF(UNIX)
 ENDIF(COMPILE_TIGHTSPARK)
+
+# Firefox plugin
+IF(COMPILE_PLUGIN)
+	ADD_SUBDIRECTORY(plugin-dir)
+ENDIF(COMPILE_PLUGIN)
 

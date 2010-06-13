@@ -43,7 +43,7 @@ void XMLDocument::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(XMLDocument,_constructor)
 {
-	XMLDocument* th=static_cast<XMLDocument*>(obj);
+//	XMLDocument* th=static_cast<XMLDocument*>(obj);
 	return NULL;
 }
 

@@ -245,7 +245,7 @@ ASFUNCTIONBODY(Array,_sort)
 
 ASFUNCTIONBODY(Array,sortOn)
 {
-	Array* th=static_cast<Array*>(obj);
+//	Array* th=static_cast<Array*>(obj);
 	__asm__("int $3");
 /*	if(th->data.size()>1)
 		throw UnsupportedException("Array::sort not completely implemented");

@@ -1889,7 +1889,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 
 ASFUNCTIONBODY(Graphics,endFill)
 {
-	Graphics* th=static_cast<Graphics*>(obj);
+//	Graphics* th=static_cast<Graphics*>(obj);
 	//TODO: close the path if open
 	return NULL;
 }

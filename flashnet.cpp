@@ -466,7 +466,8 @@ void NetStream::execute()
 	//This transition is critical, so the mutex is needed
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);
-	sys->soundManager->freeStream(soundStreamId);
+	if(soundStreamId)
+		sys->soundManager->freeStream(soundStreamId);
 	delete videoDecoder;
 	delete audioDecoder;
 	videoDecoder=NULL;

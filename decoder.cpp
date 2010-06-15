@@ -235,6 +235,10 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(FLV_AUDIO_CODEC audioCodec, uint8_t* init
 
 	if(avcodec_open(codecContext, codec)<0)
 		throw RunTimeException("Cannot open decoder");
+
+	//assert_and_throw(codecContext->channels==2);
+	cout << codecContext->sample_rate << endl;
+	//assert_and_throw(codecContext->sample_rate==44000);
 }
 
 bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)

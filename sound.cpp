@@ -35,7 +35,7 @@ void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 	}
 }
 
-void SoundManager::fillAndSinc(uint32_t id)
+void SoundManager::fillAndSinc(uint32_t id, uint64_t seek)
 {
 	//Get buffer size
 	assert(streams[id-1]);
@@ -45,6 +45,12 @@ void SoundManager::fillAndSinc(uint32_t id)
 	while(1)
 	{
 		pa_threaded_mainloop_lock(mainLoop);
+		const pa_timing_info* info=pa_stream_get_timing_info(stream);
+		if(info)
+		{
+			cout << "Write index " << info->write_index << endl;
+			cout << "Read index " << info->read_index << endl;
+		}
 		size_t frameSize=pa_stream_writable_size(stream);
 		if(frameSize==0)
 		{
@@ -62,6 +68,7 @@ void SoundManager::fillAndSinc(uint32_t id)
 		}
 		pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
 		pa_threaded_mainloop_unlock(mainLoop);
+		seek+=retSize;
 	}
 }
 
@@ -91,6 +98,21 @@ void SoundManager::freeStream(uint32_t id)
 	delete s;
 }
 
+void puppa3()
+{
+	cout << "____overflow!!!!" << endl;
+}
+
+void puppa()
+{
+	cout << "____underflow!!!!" << endl;
+}
+
+void puppa2()
+{
+	cout << "____started!!!!" << endl;
+}
+
 uint32_t SoundManager::createStream(AudioDecoder* decoder)
 {
 	while(!contextReady);
@@ -110,15 +132,20 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 	pa_buffer_attr attrs;
 	attrs.maxlength=(uint32_t)-1;
 	attrs.prebuf=(uint32_t)-1;
-	attrs.tlength=pa_usec_to_bytes(40000,&ss);
+	//attrs.tlength=pa_usec_to_bytes(40000,&ss);
+	//attrs.tlength=pa_usec_to_bytes(400000,&ss);
+	attrs.tlength=(uint32_t)-1;
 	attrs.fragsize=(uint32_t)-1;
 	attrs.minreq=(uint32_t)-1;
 	streams[index]->stream=pa_stream_new(context, "SoundStream", &ss, NULL);
 	streams[index]->decoder=decoder;
 	pa_stream_set_state_callback(streams[index]->stream, (pa_stream_notify_cb_t)streamStatusCB, streams[index]);
 	pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
+	pa_stream_set_underflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)puppa, NULL);
+	pa_stream_set_overflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)puppa3, NULL);
+	pa_stream_set_started_callback(streams[index]->stream, (pa_stream_notify_cb_t)puppa2, NULL);
 	pa_stream_connect_playback(streams[index]->stream, NULL, &attrs, 
-			(pa_stream_flags)(PA_STREAM_ADJUST_LATENCY | PA_STREAM_AUTO_TIMING_UPDATE | PA_STREAM_INTERPOLATE_TIMING), NULL, NULL);
+			(pa_stream_flags)(PA_STREAM_AUTO_TIMING_UPDATE | PA_STREAM_INTERPOLATE_TIMING), NULL, NULL);
 
 	pa_threaded_mainloop_unlock(mainLoop);
 	return index+1;

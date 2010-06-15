@@ -185,7 +185,7 @@ void SystemState::parseParameters(istream& i)
 		getline(i,name);
 		getline(i,value);
 
-		ret->setVariableByQName(name.c_str(),"",Class<ASString>::getInstanceS(value));
+		ret->setVariableByQName(name,"",Class<ASString>::getInstanceS(value));
 	}
 	setParameters(ret);
 }

@@ -1388,12 +1388,9 @@ void ABCVm::Run(ABCVm* th)
 	}
 }
 
-tiny_string ABCContext::getString(unsigned int s) const
+const tiny_string& ABCContext::getString(unsigned int s) const
 {
-	if(s)
-		return constant_pool.strings[s];
-	else
-		return "";
+	return constant_pool.strings[s];
 }
 
 void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
@@ -1973,7 +1970,7 @@ istream& lightspark::operator>>(istream& in, string_info& v)
 		if(t&0x80)
 			LOG(LOG_NOT_IMPLEMENTED,"Multibyte not handled");
 	}
-	v.val=tmp.c_str();
+	v.val=tmp;
 	return in;
 }
 

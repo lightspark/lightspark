@@ -109,6 +109,7 @@ private:
 	tiny_string url;
 	STREAM_TYPE classifyStream(std::istream& s);
 	double frameRate;
+	uint64_t frameCount;
 	Downloader* downloader;
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;

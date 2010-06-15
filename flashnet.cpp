@@ -245,7 +245,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():frameRate(0),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0)
+NetStream::NetStream():frameRate(0),frameCount(0),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0)
 {
 	sem_init(&mutex,0,1);
 }
@@ -323,14 +323,18 @@ NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
 //Tick is called from the timer thread, this happens only if a decoder is available
 void NetStream::tick()
 {
+	frameCount++;
 	//Discard the first frame, if available
 	//No mutex needed, ticking can happen only when decoder is valid
 	if(videoDecoder)
 		videoDecoder->discardFrame();
 	if(soundStreamId)
 	{
+		//The expected latency is frameRate
+		cout << "FrameCount " << frameCount << endl;
+		cout << "Expected index " << uint64_t(frameCount*44100/frameRate*4) << endl;
 		assert(audioDecoder);
-		sys->soundManager->fillAndSinc(soundStreamId);
+		sys->soundManager->fillAndSinc(soundStreamId, uint64_t(frameCount*44100/frameRate*4));
 	}
 }
 

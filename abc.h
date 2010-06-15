@@ -113,7 +113,7 @@ private:
 	u30 size;
 	tiny_string val;
 public:
-	operator tiny_string() const{return val;}
+	operator const tiny_string&() const{return val;}
 };
 
 struct namespace_info
@@ -385,7 +385,7 @@ friend class ABCVm;
 friend class method_info;
 private:
 	method_info* get_method(unsigned int m);
-	tiny_string getString(unsigned int s) const;
+	const tiny_string& getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
 	static multiname* s_getMultiname(call_context*, ASObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);

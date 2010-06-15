@@ -240,6 +240,7 @@ ASFUNCTIONBODY(Array,_sort)
 	if(th->data.size()>1)
 		throw UnsupportedException("Array::sort not completely implemented");
 	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");
+	obj->incRef();
 	return obj;
 }
 
@@ -250,6 +251,7 @@ ASFUNCTIONBODY(Array,sortOn)
 /*	if(th->data.size()>1)
 		throw UnsupportedException("Array::sort not completely implemented");
 	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");*/
+	obj->incRef();
 	return obj;
 }
 
@@ -733,7 +735,7 @@ tiny_string Array::toString_priv() const
 		if(i!=data.size()-1)
 			ret+=',';
 	}
-	return ret.c_str();
+	return ret;
 }
 
 bool Array::nextValue(unsigned int index, ASObject*& out)
@@ -765,7 +767,7 @@ tiny_string Boolean::toString(bool debugMsg)
 
 tiny_string ASString::toString_priv() const
 {
-	return data.c_str();
+	return data;
 }
 
 tiny_string ASString::toString(bool debugMsg)
@@ -938,7 +940,7 @@ tiny_string Integer::toString(bool debugMsg)
 		v/=10;
 	}
 	while(v!=0);
-	return cur;
+	return tiny_string(cur,true); //Create a copy
 }
 
 tiny_string UInteger::toString(bool debugMsg)
@@ -955,7 +957,7 @@ tiny_string UInteger::toString(bool debugMsg)
 		v/=10;
 	}
 	while(v!=0);
-	return cur;
+	return tiny_string(cur,true); //Create a copy
 }
 
 bool UInteger::isLess(ASObject* o)
@@ -1007,7 +1009,7 @@ tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];
 	snprintf(buf,20,"%g",val);
-	return buf;
+	return tiny_string(buf,true);
 }
 
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)

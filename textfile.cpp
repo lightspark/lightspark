@@ -43,8 +43,8 @@ char *textFileRead(const char *fn)
 			rewind(fp);
 			if (count > 0)
 			{
-				content = (char *)malloc(sizeof(char) * (count+1));
-				count = fread(content,sizeof(char),count,fp);
+				content = (char *) malloc(count + 1);
+				count = fread(content, 1, count, fp);
 				content[count] = '\0';
 			}
 			fclose(fp);
@@ -74,13 +74,23 @@ int textFileWrite(const char *fn, char *s)
 
 char *dataFileRead(const char *fn)
 {
-#ifdef LIGHTSPARK_PKG_BUILD
-	char buf[PATH_MAX] = "/usr/share/lightspark/";
-	strcat(buf, fn);
-	return textFileRead(buf);
-#else
-	return textFileRead(fn);
-#endif
+	char *ret;
+	char buf[PATH_MAX];
+	const char *paths[] = { 
+		".",
+		"..",
+		DATADIR,
+		"/usr/share/lightspark",
+	};
+
+	for (unsigned int i = 0; i < sizeof(paths)/sizeof(paths[0]); i++) {
+		sprintf(buf, "%s/%s", paths[i], fn);
+		ret = textFileRead(buf);
+		if (ret)
+			return ret;
+	}
+
+	return ret;
 }
 
 

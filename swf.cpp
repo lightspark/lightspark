@@ -1367,10 +1367,10 @@ bool RenderThread::loadShaderPrograms()
 	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
 	
 	const char *fs = NULL;
-	fs = dataFileRead(DATADIR "/lightspark.frag");
+	fs = dataFileRead("lightspark.frag");
 	if(fs==NULL)
 	{
-		LOG(LOG_ERROR,"Shader " DATADIR "/lightspark.frag not found");
+		LOG(LOG_ERROR,"Shader lightspark.frag not found");
 		throw RunTimeException("Fragment shader code not found");
 	}
 	assert(glShaderSource);
@@ -1404,10 +1404,10 @@ bool RenderThread::loadShaderPrograms()
 	//Create the blitter shader
 	GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
-	fs = dataFileRead(DATADIR "/lightspark.vert");
+	fs = dataFileRead("lightspark.vert");
 	if(fs==NULL)
 	{
-		LOG(LOG_ERROR,"Shader " DATADIR "/lightspark.vert not found");
+		LOG(LOG_ERROR,"Shader lightspark.vert not found");
 		throw RunTimeException("Vertex shader code not found");
 	}
 	glShaderSource(v, 1, &fs,NULL);

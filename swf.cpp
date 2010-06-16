@@ -159,7 +159,9 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	//Get starting time
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
+#ifdef ENABLE_SOUND
 	soundManager=new SoundManager;
+#endif
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
 	parent=stage;
@@ -204,7 +206,9 @@ SystemState::~SystemState()
 	delete downloadManager;
 	delete currentVm;
 	delete timerThread;
+#ifdef ENABLE_SOUND
 	delete soundManager;
+#endif
 
 	//decRef all our object before destroying classes
 	Variables.destroyContents();

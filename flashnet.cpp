@@ -333,8 +333,10 @@ void NetStream::tick()
 		//The expected latency is frameRate
 		cout << "FrameCount " << frameCount << endl;
 		cout << "Expected index " << uint64_t(frameCount*44100/frameRate*4) << endl;
+#ifdef ENABLE_SOUND
 		assert(audioDecoder);
 		sys->soundManager->fillAndSinc(soundStreamId, uint64_t(frameCount*44100/frameRate*4));
+#endif
 	}
 }
 
@@ -393,7 +395,9 @@ void NetStream::execute()
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
 							}
+#ifdef ENABLE_SOUND
 							soundStreamId=sys->soundManager->createStream(audioDecoder);
+#endif
 						}
 						break;
 					}
@@ -470,8 +474,10 @@ void NetStream::execute()
 	//This transition is critical, so the mutex is needed
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);
+#if ENABLE_SOUND
 	if(soundStreamId)
 		sys->soundManager->freeStream(soundStreamId);
+#endif
 	delete videoDecoder;
 	delete audioDecoder;
 	videoDecoder=NULL;

@@ -20,6 +20,8 @@
 #ifndef SOUND_H
 #define SOUND_H
 
+#ifdef ENABLE_SOUND
+
 #include "compat.h"
 #include <pulse/pulseaudio.h>
 #include "decoder.h"
@@ -59,4 +61,5 @@ public:
 
 };
 
+#endif
 #endif

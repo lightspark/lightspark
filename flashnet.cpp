@@ -377,6 +377,7 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
+#ifdef ENABLE_SOUND
 						if(audioDecoder)
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
@@ -395,10 +396,9 @@ void NetStream::execute()
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
 							}
-#ifdef ENABLE_SOUND
 							soundStreamId=sys->soundManager->createStream(audioDecoder);
-#endif
 						}
+#endif
 						break;
 					}
 					case 9:
@@ -474,14 +474,14 @@ void NetStream::execute()
 	//This transition is critical, so the mutex is needed
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);
+	delete videoDecoder;
+	videoDecoder=NULL;
 #if ENABLE_SOUND
 	if(soundStreamId)
 		sys->soundManager->freeStream(soundStreamId);
-#endif
-	delete videoDecoder;
 	delete audioDecoder;
-	videoDecoder=NULL;
 	audioDecoder=NULL;
+#endif
 	sem_post(&mutex);
 }
 

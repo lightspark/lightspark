@@ -21,6 +21,7 @@
 #include <string.h>
 #include "sound.h"
 
+#ifdef ENABLE_SOUND
 using namespace lightspark;
 using namespace std;
 
@@ -193,3 +194,4 @@ void SoundManager::stop()
 		pa_threaded_mainloop_free(mainLoop);
 	}
 }
+#endif

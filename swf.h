@@ -205,7 +205,9 @@ public:
 	ABCVm* currentVm;
 	InputThread* inputThread;
 	RenderThread* renderThread;
+#ifdef ENABLE_SOUND
 	SoundManager* soundManager;
+#endif
 	//Application starting time in milliseconds
 	uint64_t startTime;
 

@@ -27,17 +27,29 @@ SET(MAJOR_VERSION "0")
 SET(MINOR_VERSION "5")
 SET(PATCH_VERSION "0")
 
+# Find out CPU architecture
+IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
+	SET(i386 1)
+        SET(LIB_ARCH "lib")
+ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|amd64")
+	SET(x86_64 1)
+        SET(LIB_ARCH "lib64")
+ELSE()
+	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
+ENDIF()
+
+
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the Firefox Plugin?")
-SET(PLUGIN_DIRECTORY "${CMAKE_INSTALL_PREFIX}/lib/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
+SET(PLUGIN_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${LIB_ARCH}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
 
 SET(BINDIR "${CMAKE_INSTALL_PREFIX}/bin")
 SET(DATADIR "${CMAKE_INSTALL_PREFIX}/share")
-SET(LIBDIR "${CMAKE_INSTALL_PREFIX}/lib")
+SET(LIBDIR "${CMAKE_INSTALL_PREFIX}/${LIB_ARCH}")
 
 INCLUDE(CMakeASM-NASMCompiler)
 
@@ -47,6 +59,7 @@ INCLUDE(FindSDL REQUIRED)
 INCLUDE(FindCURL REQUIRED)
 INCLUDE(FindPkgConfig REQUIRED)
 INCLUDE(FindZLIB REQUIRED)
+INCLUDE(FindThreads REQUIRED)
 
 pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcrecpp libavcodec libavutil ftgl x11 libpulse glu fontconfig glew)
 
@@ -54,10 +67,11 @@ INCLUDE_DIRECTORIES(${SDL_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${LLVM_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${Threads_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${EXTRA_LIBS_INCLUDE_DIRS})
 
-SET(CMAKE_EXE_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread -Wl,--as-needed ${LLVM_LDFLAGS}")
-SET(CMAKE_SHARED_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread -Wl,--as-needed ${LLVM_LDFLAGS}")
+SET(CMAKE_EXE_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread ${LLVM_LDFLAGS}  -Wl,--as-needed")
+SET(CMAKE_SHARED_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread ${LLVM_LDFLAGS} -Wl,--as-needed")
 
 ENABLE_LANGUAGE(ASM-NASM)
 
@@ -70,9 +84,9 @@ SET(CMAKE_CXX_FLAGS_DEBIAN "-O2")
 ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark")
 
 SET(LIBSPARK_SOURCES swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp decoder.cpp threading.cpp flashxml.cpp graphics.cpp sound.cpp)
-IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
+IF(${i386})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
-ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|amd64")
+ELSEIF(${x86_64})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_64.asm)
 ELSE()
 	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
@@ -105,7 +119,7 @@ IF(COMPILE_LIGHTSPARK)
 	IF(UNIX)
 		INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lightspark.frag DESTINATION ${DATADIR}/lightspark)
 		INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/lightspark.vert DESTINATION ${DATADIR}/lightspark)
-		INSTALL(TARGETS lightspark DESTINATION ${BINDIR})
+		INSTALL(TARGETS lightspark RUNTIME DESTINATION ${BINDIR})
 	ENDIF(UNIX)
 ENDIF(COMPILE_LIGHTSPARK)
 
@@ -114,7 +128,7 @@ IF(COMPILE_TIGHTSPARK)
 	TARGET_LINK_LIBRARIES(tightspark spark)
 
 	IF(UNIX)
-		INSTALL(TARGETS tightspark DESTINATION ${BINDIR})
+		INSTALL(TARGETS tightspark RUNTIME DESTINATION ${BINDIR})
 	ENDIF(UNIX)
 ENDIF(COMPILE_TIGHTSPARK)
 

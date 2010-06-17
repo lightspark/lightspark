@@ -999,6 +999,9 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 				cur=cur->parent;
 			}
 		}
+		//Reset events so they might be recycled
+		event->currentTarget=NULL;
+		event->target=NULL;
 		e.first->decRef();
 	}
 	else

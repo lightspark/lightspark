@@ -77,7 +77,7 @@ uint32_t TextureBuffer::nearestPOT(uint32_t a) const
 	return ret;
 }
 
-TextureBuffer::TextureBuffer(bool initNow, uint32_t w, uint32_t h, GLenum f):
+TextureBuffer::TextureBuffer(bool initNow, uint32_t w, uint32_t h, GLenum f):texId(0),
 		filtering(f),allocWidth(0),allocHeight(0),width(w),height(h),inited(false)
 {
 	if(initNow)
@@ -91,7 +91,9 @@ void TextureBuffer::init()
 	cleanGLErrors();
 	
 	setAllocSize(width,height);
+	assert(texId==0);
 	glGenTextures(1,&texId);
+	assert(texId!=0);
 	assert(glGetError()!=GL_INVALID_OPERATION);
 	
 	assert(filtering==GL_NEAREST || filtering==GL_LINEAR);
@@ -131,7 +133,9 @@ void TextureBuffer::init(uint32_t w, uint32_t h, GLenum f)
 	height=h;
 	filtering=f;
 	
+	assert(texId==0);
 	glGenTextures(1,&texId);
+	assert(texId!=0);
 	assert(glGetError()!=GL_INVALID_OPERATION);
 	
 	assert(filtering==GL_NEAREST || filtering==GL_LINEAR);
@@ -241,7 +245,8 @@ void TextureBuffer::unbind()
 
 lightspark::TextureBuffer::~TextureBuffer()
 {
-	glDeleteTextures(1,&texId);
+	if(texId)
+		glDeleteTextures(1,&texId);
 }
 
 MatrixApplier::MatrixApplier()

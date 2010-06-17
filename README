@@ -33,9 +33,11 @@ To build the software please follow those steps.
 5) make
 6) sudo make install
 
-DEBUG MODe:
+DEBUG MODE:
 To enable debug mode change the cmake command like this:
 4b) cmake -DCMAKE_BUILD_TYPE=Debug -DCOMPILE_PLUGIN=1
+
+Sound support may be disabled passing to cmake the following option: -DENABLE_SOUND=0
 
 EXECUTION:
 This demo aims at rendering, the runtime generated UI of the new YouTube player. Recently YouTube switched 

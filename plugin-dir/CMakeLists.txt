@@ -31,7 +31,7 @@ ENDIF(UNIX)
 
 ADD_LIBRARY(lightsparkplugin SHARED np_entry.cpp npn_gate.cpp npp_gate.cpp plugin.cpp)
 
-TARGET_LINK_LIBRARIES(lightsparkplugin spark ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES}
+TARGET_LINK_LIBRARIES(lightsparkplugin spark ${SOUND_LIBS_LIBRARIES} ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES}
 		${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${SDL_LIBRARY} ${CURL_LIBRARIES} ${GTK_LIBRARIES})
 SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES LINK_FLAGS "-Wl,--as-needed")
 #UNIX?

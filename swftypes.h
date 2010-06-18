@@ -471,7 +471,7 @@ inline void atomic_decrement(int* operand)
 	__asm__ ("lock decl %0" : "+m" (*operand):);
 }
 
-class ASObject
+class DLL_PUBLIC ASObject
 {
 friend class Manager;
 friend class ABCVm;
@@ -552,11 +552,7 @@ public:
 		if(o && o!=o2)
 			o->decRef();
 	}
-	virtual ASObject* getVariableByString(const std::string& name)
-	{
-		ASObject* ret=Variables.getVariableByString(name);
-		return ret;
-	}
+	virtual ASObject* getVariableByString(const std::string& name);
 	//The enableOverride parameter is set to false in setSuper, getSuper and callSuper
 	virtual objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true );
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
@@ -564,7 +560,7 @@ public:
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
 	virtual void deleteVariableByMultiname(const multiname& name);
-	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false);
+	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o,bool find_back=true, bool skip_impl=false);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	bool hasPropertyByMultiname(const multiname& name);
@@ -573,11 +569,11 @@ public:
 	{
 		return Variables.getSlot(n);
 	}
-	virtual void setSlot(unsigned int n,ASObject* o)
+	void setSlot(unsigned int n,ASObject* o)
 	{
 		Variables.setSlot(n,o);
 	}
-	virtual void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
+	void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
 	virtual unsigned int numVariables();
 	tiny_string getNameAt(int i)
 	{

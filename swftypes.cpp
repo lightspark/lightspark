@@ -560,6 +560,11 @@ void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_strin
 	Variables.initSlot(n,cur_level,name,ns);
 }
 
+ASObject* ASObject::getVariableByString(const std::string& name)
+{
+	ASObject* ret=Variables.getVariableByString(name);
+	return ret;
+}
 //In all the getter function we first ask the interface, so that special handling (e.g. Array)
 //can be done
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name)

@@ -35,7 +35,7 @@ enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CON
 //class ASObject;
 class ABCContext;
 
-class Event: public ASObject
+class DLL_PUBLIC Event: public ASObject
 {
 public:
 	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false){}

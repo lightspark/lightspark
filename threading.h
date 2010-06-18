@@ -27,7 +27,7 @@
 namespace lightspark
 {
 
-class Mutex
+class DLL_PUBLIC Mutex
 {
 friend class Locker;
 private:
@@ -56,7 +56,7 @@ public:
 	IThreadJob();
 	virtual ~IThreadJob();
 	void run();
-	void stop();
+	void stop() DLL_PUBLIC;
 };
 
 class Condition
@@ -75,7 +75,7 @@ public:
 	bool try_wait();
 };
 
-class Locker
+class DLL_PUBLIC Locker
 {
 private:
 	Mutex& _m;

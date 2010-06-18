@@ -29,9 +29,9 @@
 
 using namespace std;
 
-__thread lightspark::SystemState* sys;
-TLSDATA lightspark::RenderThread* rt=NULL;
-TLSDATA lightspark::ParseThread* pt=NULL;
+TLSDATA DLL_PUBLIC lightspark::SystemState* sys;
+TLSDATA DLL_PUBLIC lightspark::RenderThread* rt=NULL;
+TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
 
 NPDownloadManager::NPDownloadManager(NPP i):instance(i)
 {

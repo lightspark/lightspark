@@ -41,9 +41,9 @@
 using namespace std;
 using namespace lightspark;
 
-TLSDATA SystemState* sys;
-TLSDATA RenderThread* rt=NULL;
-TLSDATA ParseThread* pt=NULL;
+TLSDATA DLL_PUBLIC SystemState* sys;
+TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
+TLSDATA DLL_PUBLIC ParseThread* pt=NULL;
 
 int main(int argc, char* argv[])
 {

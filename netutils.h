@@ -39,14 +39,14 @@ public:
 	virtual ~DownloadManager(){}
 };
 
-class CurlDownloadManager:public DownloadManager
+class DLL_PUBLIC CurlDownloadManager:public DownloadManager
 {
 public:
 	Downloader* download(const tiny_string& u);
 	void destroy(Downloader* d);
 };
 
-class Downloader: public std::streambuf
+class DLL_PUBLIC Downloader: public std::streambuf
 {
 private:
 	sem_t mutex;

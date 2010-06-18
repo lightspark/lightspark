@@ -412,7 +412,7 @@ public:
 	void getOptionalConstant(const option_detail& opt);
 	multiname* getMultiname(unsigned int m, call_context* th);
 	void buildInstanceTraits(ASObject* obj, int class_index);
-	ABCContext(std::istream& in);
+	ABCContext(std::istream& in) DLL_PUBLIC;
 	void exec();
 };
 
@@ -607,13 +607,13 @@ public:
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
 	llvm::LLVMContext llvm_context;
-	ABCVm(SystemState* s);
-	~ABCVm();
+	ABCVm(SystemState* s) DLL_PUBLIC;
+	~ABCVm() DLL_PUBLIC;
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
-	bool addEvent(EventDispatcher*,Event*);
+	bool addEvent(EventDispatcher*,Event*) DLL_PUBLIC;
 	int getEventQueueSize();
-	void wait();
+	void wait() DLL_PUBLIC;
 
 	void pushObjAndLevel(ASObject* o, int l);
 	thisAndLevel popObjAndLevel();

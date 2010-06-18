@@ -174,7 +174,7 @@ private:
 	bool error;
 	bool shutdown;
 public:
-	void setUrl(const tiny_string& url);
+	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
 	//Interative analysis flags
 	bool showProfilingData;
@@ -188,13 +188,13 @@ public:
 	bool shouldTerminate() const;
 	bool isShuttingDown() const;
 	bool isOnError() const;
-	void setShutdownFlag();
+	void setShutdownFlag() DLL_PUBLIC;
 	void tick();
-	void wait();
+	void wait() DLL_PUBLIC;
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
-	SystemState();
+	SystemState() DLL_PUBLIC;
 	~SystemState();
 	
 	//Performance profiling
@@ -220,9 +220,9 @@ public:
 	bool useInterpreter;
 	bool useJit;
 
-	void parseParameters(std::istream& i);
-	void setParameters(ASObject* p);
-	void addJob(IThreadJob* j);
+	void parseParameters(std::istream& i) DLL_PUBLIC;
+	void setParameters(ASObject* p) DLL_PUBLIC;
+	void addJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
 	bool removeJob(ITickJob* job);
@@ -242,9 +242,9 @@ private:
 public:
 	RootMovieClip* root;
 	int version;
-	ParseThread(RootMovieClip* r,std::istream& in);
+	ParseThread(RootMovieClip* r,std::istream& in) DLL_PUBLIC;
 	~ParseThread();
-	void wait();
+	void wait() DLL_PUBLIC;
 };
 
 enum ENGINE { SDL=0, NPAPI, GTKPLUG};
@@ -285,9 +285,9 @@ private:
 	InteractiveObject* lastMouseDownTarget;
 	RECT dragLimit;
 public:
-	InputThread(SystemState* s,ENGINE e, void* param=NULL);
-	~InputThread();
-	void wait();
+	InputThread(SystemState* s,ENGINE e, void* param=NULL) DLL_PUBLIC;
+	~InputThread() DLL_PUBLIC;
+	void wait() DLL_PUBLIC;
 	void addListener(InteractiveObject* ob);
 	void removeListener(InteractiveObject* ob);
 	void enableDrag(Sprite* s, const RECT& limit);
@@ -332,9 +332,9 @@ private:
 	std::vector<float> idStack;
 	
 public:
-	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
-	~RenderThread();
-	void wait();
+	RenderThread(SystemState* s,ENGINE e, void* param=NULL) DLL_PUBLIC;
+	~RenderThread() DLL_PUBLIC;
+	void wait() DLL_PUBLIC;
 	void draw();
 	float getIdAt(int x, int y);
 	//The calling context MUST call this function with the transformation matrix ready

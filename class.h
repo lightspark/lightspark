@@ -27,7 +27,7 @@ namespace lightspark
 {
 
 template<typename T>
-class ClassName
+class DLL_PUBLIC ClassName
 {
 public:
 	static const char* name;

@@ -15,5 +15,4 @@ Official TODO Queue:
 -) Conditional scaling of FontGlyph based on version
 -) Why std::istream catches our exeptions?
 -) Add a finally interface to Jobs so they may decRef themselves
--) Add support for read only strings in tiny_string
--) Move enterFrame dispatching to each RootMovieClip tick 
+-) Destroy TextureBuffer textures inside the rendering context

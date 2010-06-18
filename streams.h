@@ -25,6 +25,7 @@
 #include <semaphore.h>
 #include <inttypes.h>
 #include "zlib.h"
+#include "compat.h"
 
 class zlib_filter: public std::streambuf
 {
@@ -41,11 +42,11 @@ protected:
 	virtual int_type underflow();
 	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 public:
-	zlib_filter();
-	~zlib_filter();
+	zlib_filter() DLL_PUBLIC;
+	~zlib_filter() DLL_PUBLIC;
 };
 
-class sync_stream: public zlib_filter
+class DLL_PUBLIC sync_stream: public zlib_filter
 {
 public:
 	sync_stream();
@@ -67,7 +68,7 @@ private:
 	bool failed;
 };
 
-class zlib_file_filter:public zlib_filter
+class DLL_PUBLIC zlib_file_filter:public zlib_filter
 {
 private:
 	FILE* f;

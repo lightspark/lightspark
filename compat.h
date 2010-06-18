@@ -65,6 +65,22 @@ typedef signed int ssize_t;
 #include <endian.h>
 #endif
 
+#if defined _WIN32 || defined __CYGWIN__
+	#ifdef __GNUC__
+		#define DLL_PUBLIC __attribute__((dllexport))
+	#else
+		#define DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+	#endif
+	#define DLL_LOCAL
+#else
+	#if __GNUC__ >= 4
+		#define DLL_PUBLIC __attribute__ ((visibility("default")))
+		#define DLL_LOCAL  __attribute__ ((visibility("hidden")))
+	#else
+		#error GCC version less than 4
+	#endif
+#endif
+
 void compat_msleep(unsigned int time);
 
 uint64_t compat_msectiming();

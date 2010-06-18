@@ -27,30 +27,32 @@ SET(MAJOR_VERSION "0")
 SET(MINOR_VERSION "5")
 SET(PATCH_VERSION "0")
 
-# Find out CPU architecture
+# Find out CPU architecture ...
+# we could also use IF(CMAKE_SIZEOF_VOID_P EQUAL 4) to determine if it's a 32 or a 64bit arch
+# Enforcing the value of LIB_SUFFIX because some distributions use it and some not when packaging, but FHS 2.3 defines it 
 IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 	SET(i386 1)
-        SET(LIB_ARCH "lib")
+        SET(LIB_SUFFIX "")
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|amd64")
 	SET(x86_64 1)
-        SET(LIB_ARCH "lib64")
+	SET(LIB_SUFFIX "64")
 ELSE()
 	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
 ENDIF()
 
+# Using relative folders, cmake happens by itself CMAKE_INSTALL_PREFIX
+SET(BINDIR "bin")
+SET(DATADIR "share")
+SET(LIBDIR "lib${LIB_SUFFIX}")
 
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the Firefox Plugin?")
 SET(ENABLE_SOUND TRUE CACHE BOOL "Enable sound?")
-SET(PLUGIN_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${LIB_ARCH}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
+SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
-
-SET(BINDIR "${CMAKE_INSTALL_PREFIX}/bin")
-SET(DATADIR "${CMAKE_INSTALL_PREFIX}/share")
-SET(LIBDIR "${CMAKE_INSTALL_PREFIX}/${LIB_ARCH}")
 
 INCLUDE(CMakeASM-NASMCompiler)
 
@@ -87,7 +89,7 @@ SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
 SET(CMAKE_CXX_FLAGS_DEBIAN "-O2")
 
-ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark")
+ADD_DEFINITIONS(-DDATADIR="share/lightspark")
 
 SET(LIBSPARK_SOURCES swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp decoder.cpp threading.cpp flashxml.cpp graphics.cpp sound.cpp)
 IF(${i386})
@@ -113,7 +115,7 @@ IF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
 	SET_TARGET_PROPERTIES(spark PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
 
 	IF(UNIX)
-		INSTALL(TARGETS spark DESTINATION ${LIBDIR})
+		INSTALL(TARGETS spark LIBRARY DESTINATION ${LIBDIR})
 	ENDIF(UNIX)
 ENDIF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
 

@@ -1791,6 +1791,8 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int x=args[0]->toInt();
 	int y=args[1]->toInt();
 
+	//TODO: support line styles to avoid this
+	if(th->styles.size())
 	{
 		Locker locker(th->builderMutex);
 		th->builder.extendOutlineForColor(th->styles.size(),Vector2(th->curX,th->curY),Vector2(x,y));
@@ -1817,6 +1819,8 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	const Vector2 c(x+radius,y+radius);
 	const Vector2 d(x-radius,y+radius);
 
+	//TODO: support line styles to avoid this
+	if(th->styles.size())
 	{
 		Locker locker(th->builderMutex);
 		th->builder.extendOutlineForColor(th->styles.size(),a,b);
@@ -1843,6 +1847,8 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	const Vector2 c(x+width,y+height);
 	const Vector2 d(x,y+height);
 
+	//TODO: support line styles to avoid this
+	if(th->styles.size())
 	{
 		Locker locker(th->builderMutex);
 		th->builder.extendOutlineForColor(th->styles.size(),a,b);

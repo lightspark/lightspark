@@ -34,11 +34,15 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLeft);
+	ASFUNCTION(_setLeft);
 	ASFUNCTION(_getRight);
+	ASFUNCTION(_setRight);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getTop);
+	ASFUNCTION(_setTop);
 	ASFUNCTION(_getBottom);
+	ASFUNCTION(_setBottom);
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_setHeight);
 	ASFUNCTION(clone);

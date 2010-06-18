@@ -899,6 +899,11 @@ bool Integer::isLess(ASObject* o)
 		else
 			return false;
 	}
+	else if(o->getObjectType()==T_BOOLEAN)
+	{
+		Boolean* i=static_cast<Boolean*>(o);
+		return val < i->toInt();
+	}
 	else
 		return ASObject::isLess(o);
 }

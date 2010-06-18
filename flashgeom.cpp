@@ -36,20 +36,30 @@ void Rectangle::sinit(Class_base* c)
 
 void Rectangle::buildTraits(ASObject* o)
 {
-	IFunction* left=Class<IFunction>::getFunction(_getLeft);
-	o->setGetterByQName("left","",left);
-	left->incRef();
-	o->setGetterByQName("x","",left);
+	IFunction* gleft=Class<IFunction>::getFunction(_getLeft);
+	o->setGetterByQName("left","",gleft);
+	gleft->incRef();
+	o->setGetterByQName("x","",gleft);
+	IFunction* sleft=Class<IFunction>::getFunction(_setLeft);
+	o->setSetterByQName("left","",sleft);
+	sleft->incRef();
+	o->setSetterByQName("x","",sleft);
 	o->setGetterByQName("right","",Class<IFunction>::getFunction(_getRight));
+	o->setSetterByQName("right","",Class<IFunction>::getFunction(_setRight));
 	o->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth));
 	o->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth));
 
-	IFunction* top=Class<IFunction>::getFunction(_getTop);
-	o->setGetterByQName("top","",top);
-	top->incRef();
-	o->setGetterByQName("y","",top);
+	IFunction* gtop=Class<IFunction>::getFunction(_getTop);
+	o->setGetterByQName("top","",gtop);
+	gtop->incRef();
+	o->setGetterByQName("y","",gtop);
+	IFunction* stop=Class<IFunction>::getFunction(_setTop);
+	o->setSetterByQName("top","",stop);
+	stop->incRef();
+	o->setSetterByQName("y","",stop);
 
 	o->setGetterByQName("bottom","",Class<IFunction>::getFunction(_getBottom));
+	o->setSetterByQName("bottom","",Class<IFunction>::getFunction(_setBottom));
 	o->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight));
 	o->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight));
 
@@ -83,10 +93,26 @@ ASFUNCTIONBODY(Rectangle,_getLeft)
 	return abstract_d(th->x);
 }
 
+ASFUNCTIONBODY(Rectangle,_setLeft)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj);
+	assert_and_throw(argslen==1);
+	th->x=args[0]->toNumber();
+	return NULL;
+}
+
 ASFUNCTIONBODY(Rectangle,_getRight)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
 	return abstract_d(th->x + th->width);
+}
+
+ASFUNCTIONBODY(Rectangle,_setRight)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj);
+	assert_and_throw(argslen==1);
+	th->width=(args[0]->toNumber()-th->x);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Rectangle,_getWidth)
@@ -109,10 +135,26 @@ ASFUNCTIONBODY(Rectangle,_getTop)
 	return abstract_d(th->y);
 }
 
+ASFUNCTIONBODY(Rectangle,_setTop)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj);
+	assert_and_throw(argslen==1);
+	th->y=args[0]->toNumber();
+	return NULL;
+}
+
 ASFUNCTIONBODY(Rectangle,_getBottom)
 {
 	Rectangle* th=static_cast<Rectangle*>(obj);
 	return abstract_d(th->y + th->height);
+}
+
+ASFUNCTIONBODY(Rectangle,_setBottom)
+{
+	Rectangle* th=static_cast<Rectangle*>(obj);
+	assert_and_throw(argslen==1);
+	th->height=(args[0]->toNumber()-th->y);
+	return NULL;
 }
 
 ASFUNCTIONBODY(Rectangle,_getHeight)

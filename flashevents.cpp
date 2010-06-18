@@ -49,6 +49,7 @@ void IEventDispatcher::linkTraits(ASObject* o)
 	lookupAndLink(o,"addEventListener","flash.events:IEventDispatcher");
 	lookupAndLink(o,"removeEventListener","flash.events:IEventDispatcher");
 	lookupAndLink(o,"dispatchEvent","flash.events:IEventDispatcher");
+	lookupAndLink(o,"hasEventListener","flash.events:IEventDispatcher");
 }
 
 Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NULL),bubbles(b)

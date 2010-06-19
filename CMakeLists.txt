@@ -90,7 +90,7 @@ INCLUDE_DIRECTORIES(${EXTRA_LIBS_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${SOUND_LIBS_INCLUDE_DIRS})
 
 SET(CMAKE_EXE_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread -Wl,--as-needed ${LLVM_LDFLAGS}")
-SET(CMAKE_SHARED_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread -Wl,--as-needed ${LLVM_LDFLAGS}")
+SET(CMAKE_SHARED_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread -Wl,--as-needed ${LLVM_LDFLAGS} -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/lightspark.expmap")
 
 ENABLE_LANGUAGE(ASM-NASM)
 

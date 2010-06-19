@@ -172,8 +172,6 @@ public:
 	tiny_string class_name;
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true)
 	{
-		if(name.name_s=="borderSkin")
-			std::cerr << "Looking for borderSkin on " << this << std::endl;
 		objAndLevel ret=Class_base::getVariableByMultiname(name,skip_impl, enableOverride);
 		if(ret.obj==NULL && asprototype)
 			ret=asprototype->getVariableByMultiname(name,skip_impl, enableOverride);

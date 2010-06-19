@@ -1,0 +1,23 @@
+{
+global:
+	extern "C++" {
+		lightspark::*;
+		Log::*;
+		*zlib_file_filter*;
+		*zlib_filter*;
+		*sync_stream*;
+		*lightspark::CurlDownloadManager*;
+		*lightspark::Downloader*;
+		*lightspark::Class_base*;
+		*lightspark::Event*;
+		rt;
+		sys;
+		pt;
+		NP_*;
+	};
+local:
+	extern "C++" {
+		*std::*;
+	};
+	*;
+};

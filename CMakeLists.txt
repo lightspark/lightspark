@@ -27,30 +27,43 @@ SET(MAJOR_VERSION "0")
 SET(MINOR_VERSION "5")
 SET(PATCH_VERSION "0")
 
-# Find out CPU architecture
+# Find out CPU architecture ...
+# we could also use IF(CMAKE_SIZEOF_VOID_P EQUAL 4) to determine if it's a 32 or a 64bit arch
+#
+# Setting the value of LIB_SUFFIX if not specified (We could build 32bit version on 64bit)
+# However, some distro don't implement FHS the same way
+# Suse, Redhat put 64bit libs in /lib64; Debian use /lib for 64bit, but specifies /lib32 for 32bit libs
+# See FHS 2.3 for Lib directories under each architecture 
 IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 	SET(i386 1)
-        SET(LIB_ARCH "lib")
+        SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 64")
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|amd64")
 	SET(x86_64 1)
-        SET(LIB_ARCH "lib64")
+	SET(LIB_SUFFIX "64" CACHE STRING "Choose the suffix of the lib folder (if any) : None 64")
 ELSE()
 	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
-ENDIF()
+ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 
+# Using relative folders, cmake happens by itself CMAKE_INSTALL_PREFIX
+SET(BINDIR "bin")
+SET(DATADIR "share")
+SET(LIBDIR "lib${LIB_SUFFIX}")
 
+# Setting variables
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the Firefox Plugin?")
 SET(ENABLE_SOUND TRUE CACHE BOOL "Enable sound?")
-SET(PLUGIN_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${LIB_ARCH}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
+SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
+# We could have more complete profile options like RelWithDebInfo MinSizeRel
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are: None Debug Release Profile Debian"
+      FORCE)
+ENDIF(NOT CMAKE_BUILD_TYPE)
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
-
-SET(BINDIR "${CMAKE_INSTALL_PREFIX}/bin")
-SET(DATADIR "${CMAKE_INSTALL_PREFIX}/share")
-SET(LIBDIR "${CMAKE_INSTALL_PREFIX}/${LIB_ARCH}")
 
 INCLUDE(CMakeASM-NASMCompiler)
 
@@ -81,23 +94,23 @@ SET(CMAKE_SHARED_LINKER_FLAGS "-lGLEW -lrt -ldl -lpthread -Wl,--as-needed ${LLVM
 
 ENABLE_LANGUAGE(ASM-NASM)
 
+# Compiler defaults flags for different profiles
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden")
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
 SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
 SET(CMAKE_CXX_FLAGS_DEBIAN "-O2")
 
-ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark")
+ADD_DEFINITIONS(-DDATADIR="share/lightspark")
 
 SET(LIBSPARK_SOURCES swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp decoder.cpp threading.cpp flashxml.cpp graphics.cpp sound.cpp)
 IF(${i386})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
 ELSEIF(${x86_64})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_64.asm)
-ELSE()
-	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
-ENDIF()
+ENDIF(${i386})
 
+# Build instructions
 IF(COMPILE_PLUGIN)
 	pkg_check_modules(GTK REQUIRED gtk+-2.0 gtkglext-1.0)
 	INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS})
@@ -113,7 +126,7 @@ IF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
 	SET_TARGET_PROPERTIES(spark PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
 
 	IF(UNIX)
-		INSTALL(TARGETS spark DESTINATION ${LIBDIR})
+		INSTALL(TARGETS spark LIBRARY DESTINATION ${LIBDIR})
 	ENDIF(UNIX)
 ENDIF(COMPILE_LIGHTSPARK OR COMPILE_TIGHTSPARK)
 

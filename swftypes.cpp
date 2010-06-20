@@ -473,6 +473,9 @@ obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool crea
 		case multiname::NAME_STRING:
 			name.name=mname.name_s;
 			break;
+		case multiname::NAME_OBJECT:
+			name.name=mname.name_o->toString();
+			break;
 		default:
 			assert_and_throw("Unexpected name kind" && false);
 	}

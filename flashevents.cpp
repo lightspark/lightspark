@@ -223,6 +223,8 @@ void EventDispatcher::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->addImplementedInterface(Class<IEventDispatcher>::getClass());
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 }
 
 void EventDispatcher::buildTraits(ASObject* o)

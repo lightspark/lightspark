@@ -158,6 +158,7 @@ public:
 	ASFUNCTION(_getNumChildren);
 	ASFUNCTION(addChild);
 	ASFUNCTION(removeChild);
+	ASFUNCTION(removeChildAt);
 	ASFUNCTION(addChildAt);
 	ASFUNCTION(getChildIndex);
 	ASFUNCTION(getChildAt);

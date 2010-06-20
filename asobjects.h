@@ -730,6 +730,7 @@ private:
 	std::string re;
 	bool global;
 	bool ignoreCase;
+	bool extended;
 	int lastIndex;
 	RegExp();
 public:

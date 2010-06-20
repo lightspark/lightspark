@@ -1400,7 +1400,7 @@ bool Null::isEqual(ASObject* r)
 		return false;
 }
 
-RegExp::RegExp():global(false),ignoreCase(false),lastIndex(0)
+RegExp::RegExp():global(false),ignoreCase(false),extended(false),lastIndex(0)
 {
 }
 
@@ -1433,9 +1433,11 @@ ASFUNCTIONBODY(RegExp,_constructor)
 				case 'i':
 					th->ignoreCase=true;
 					break;
+				case 'x':
+					th->extended=true;
+					break;
 				case 's':
 				case 'm':
-				case 'x':
 					throw UnsupportedException("RegExp not completely implemented");
 
 			}
@@ -1455,6 +1457,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	RegExp* th=static_cast<RegExp*>(obj);
 	pcrecpp::RE_Options opt;
 	opt.set_caseless(th->ignoreCase);
+	opt.set_extended(th->extended);
 
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert_and_throw(th->lastIndex==0);
@@ -1486,6 +1489,7 @@ ASFUNCTIONBODY(RegExp,test)
 	RegExp* th=static_cast<RegExp*>(obj);
 	pcrecpp::RE_Options opt;
 	opt.set_caseless(th->ignoreCase);
+	opt.set_extended(th->extended);
 
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert_and_throw(th->lastIndex==0);
@@ -1588,6 +1592,7 @@ ASFUNCTIONBODY(ASString,replace)
 
 		pcrecpp::RE_Options opt;
 		opt.set_caseless(re->ignoreCase);
+		opt.set_extended(re->extended);
 		pcrecpp::RE pcreRE(re->re,opt);
 		if(re->global)
 			pcreRE.GlobalReplace(replaceWith,&ret->data);

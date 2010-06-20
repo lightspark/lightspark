@@ -492,6 +492,8 @@ private:
 	int cur_level;
 	virtual int _maxlevel();
 	Class_base* prototype;
+	obj_var* findGettable(const multiname& name, int& level) DLL_LOCAL;
+	obj_var* findSettable(const multiname& name, int& level) DLL_LOCAL;
 
 public:
 #ifndef NDEBUG

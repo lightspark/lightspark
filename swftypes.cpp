@@ -341,15 +341,37 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	setVariableByMultiname(name,abstract_i(value));
 }
 
+obj_var* ASObject::findSettable(const multiname& name, int& level)
+{
+	assert(level==cur_level);
+	obj_var* ret=NULL;
+	int max_level=cur_level;
+	for(int i=max_level;i>=0;i--)
+	{
+		//The variable i is automatically moved to the right level
+		ret=Variables.findObjVar(name,i,false,true);
+		if(ret)
+		{
+			//It seems valid for a class to redefine only the getter, so if we can't find
+			//something to get, just go to the previous level
+			if(ret->setter || ret->var)
+			{
+				level=i;
+				break;
+			}
+		}
+	}
+	return ret;
+}
+
 void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
 	check();
 
-	obj_var* obj=NULL;
 	//It's always correct to use the current level for the object
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level
 	int level=cur_level;
-	obj=Variables.findObjVar(name,level,false,true);
+	obj_var* obj=findSettable(name,level);
 
 	if(obj==NULL)
 	{
@@ -579,28 +601,35 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+obj_var* ASObject::findGettable(const multiname& name, int& level)
 {
-	check();
-
-	obj_var* obj=NULL;
-	int level=-1;
+	assert(level==cur_level);
+	obj_var* ret=NULL;
 	int max_level=cur_level;
 	for(int i=max_level;i>=0;i--)
 	{
 		//The variable i is automatically moved to the right level
-		obj=Variables.findObjVar(name,i,false,true);
-		if(obj)
+		ret=Variables.findObjVar(name,i,false,true);
+		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, just go to the previous level
-			if(obj->getter || obj->var)
+			if(ret->getter || ret->var)
 			{
 				level=i;
 				break;
 			}
 		}
 	}
+	return ret;
+}
+
+objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+{
+	check();
+
+	int level=cur_level;
+	obj_var* obj=findGettable(name,level);
 
 	if(obj!=NULL)
 	{

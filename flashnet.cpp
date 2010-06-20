@@ -291,6 +291,7 @@ ASFUNCTIONBODY(NetStream,play)
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
 	th->url = arg0;
+	assert_and_throw(th->downloader==NULL);
 	th->downloader=sys->downloadManager->download(th->url);
 	th->incRef();
 	sys->addJob(th);
@@ -300,8 +301,7 @@ ASFUNCTIONBODY(NetStream,play)
 ASFUNCTIONBODY(NetStream,close)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
-	if(th->downloader)
-		th->downloader->stop();
+	//The downloader is stopped in threadAbort
 	th->threadAbort();
 	return NULL;
 }

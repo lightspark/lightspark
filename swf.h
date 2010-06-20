@@ -186,7 +186,7 @@ public:
 	std::string errorCause;
 	void setError(std::string& c);
 	bool shouldTerminate() const;
-	bool isShuttingDown() const;
+	bool isShuttingDown() const DLL_PUBLIC;
 	bool isOnError() const;
 	void setShutdownFlag() DLL_PUBLIC;
 	void tick();

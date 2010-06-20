@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-
+# Dependencies
 INCLUDE_DIRECTORIES("include")
 INCLUDE_DIRECTORIES("..")
 
@@ -29,10 +29,10 @@ IF(UNIX)
 	ADD_DEFINITIONS(-DXP_UNIX)
 ENDIF(UNIX)
 
+# Firefox plugin target
 ADD_LIBRARY(lightsparkplugin SHARED np_entry.cpp npn_gate.cpp npp_gate.cpp plugin.cpp)
-TARGET_LINK_LIBRARIES(lightsparkplugin spark ${SOUND_LIBS_LIBRARIES} ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES}
-		${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${SDL_LIBRARY} ${CURL_LIBRARIES} ${GTK_LIBRARIES})
-#UNIX?
+TARGET_LINK_LIBRARIES(lightsparkplugin spark ${MOZ_PLUGIN_LIBRARIES} ${GTK_LIBRARIES})
+
 IF(UNIX)
 	INSTALL(TARGETS lightsparkplugin LIBRARY DESTINATION ${PLUGIN_DIRECTORY})
 ENDIF(UNIX)

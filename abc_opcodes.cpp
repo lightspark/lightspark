@@ -2124,6 +2124,10 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->constructor=new SyntheticFunction(constructor);
 	ret->class_index=n;
 
+	//Set the constructor variable to the class itself (this is accessed by object using the protoype)
+	ret->incRef();
+	ret->setVariableByQName("constructor","",ret);
+
 	//Add protected namespace if needed
 	if((th->context->instances[n].flags)&0x08)
 	{

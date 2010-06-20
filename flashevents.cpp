@@ -79,6 +79,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS("change"));
 	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS("resize"));
 	c->setVariableByQName("MOUSE_LEAVE","",Class<ASString>::getInstanceS("mouseLeave"));
+	c->setVariableByQName("SELECT","",Class<ASString>::getInstanceS("select"));
 	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS("tabChildrenChange"));
 	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"));
 	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"));

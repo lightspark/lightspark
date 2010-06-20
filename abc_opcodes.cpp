@@ -1729,9 +1729,15 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		if(c->class_name=="Class")
 		{
 			type->decRef();
-			return obj;
+			obj->decRef();
+			return true;
 		}
-		objc=static_cast<Class_base*>(obj);
+		else
+		{
+			type->decRef();
+			obj->decRef();
+			return false;
+		}
 	}
 	else
 	{

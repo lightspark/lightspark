@@ -22,7 +22,9 @@ Currently only 64bit and 32bit platforms with SSE2 extension are supported. Supp
 be ready soon.
 
 INSTALLATION:
-To compile this software you need to install development packages for llvm-2.7, sdl, opengl, curl, libavcodec, ftgl, libglew, fontconfig
+To compile this software you need to install development packages for llvm-2.7, sdl, opengl, curl, zlib, libavcodec, ftgl, libglew, fontconfig.
+If sound is enabled (on by default), you need the development package for pulseaudio-libs.
+If the browser plugin is enabled (off by default), you need the development package for xulrunner.
 Install also cmake and nasm
 To build the software please follow those steps.
 

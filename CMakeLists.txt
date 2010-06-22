@@ -56,7 +56,6 @@ SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the Firefox Plugin?")
 SET(ENABLE_SOUND TRUE CACHE BOOL "Enable sound?")
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
-# We could have more complete profile options like RelWithDebInfo MinSizeRel
 IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo Profile Debian"
@@ -125,7 +124,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-vi
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
 SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
-#SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2")
 SET(CMAKE_CXX_FLAGS_DEBIAN "-O2")
 
 ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark")

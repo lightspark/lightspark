@@ -348,6 +348,7 @@ void NetStream::execute()
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(0,0,200));
 	profile->setTag("NetStream");
+	bool tickStarted=false;
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
@@ -415,11 +416,6 @@ void NetStream::execute()
 							//valid is not critical
 							videoDecoder=new FFMpegVideoDecoder(tag.packetData,tag.packetLen);
 							assert(videoDecoder);
-							assert_and_throw(frameRate!=0);
-							//Now that the decoder is valid, let's start the ticking
-							sys->addTick(1000/frameRate,this);
-							//sys->setRenderRate(frameRate);
-
 							tag.releaseBuffer();
 							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
 							getVm()->addEvent(this, status);
@@ -430,6 +426,14 @@ void NetStream::execute()
 						}
 						else
 							videoDecoder->decodeData(tag.packetData,tag.packetLen);
+
+						if(!tickStarted && videoDecoder->isValid())
+						{
+							tickStarted=true;
+							assert(videoDecoder->frameRate);
+							frameRate=videoDecoder->frameRate;
+							sys->addTick(1000/frameRate,this);
+						}
 						break;
 					}
 					case 18:
@@ -437,8 +441,13 @@ void NetStream::execute()
 						ScriptDataTag tag(s);
 						prevSize=tag.getTotalLen();
 
-						//HACK: initialize frameRate from the container
-						frameRate=tag.frameRate;
+						//The frameRate of the container overrides the stream
+						if(tag.frameRate)
+						{
+							frameRate=tag.frameRate;
+							tickStarted=true;
+							sys->addTick(1000/frameRate,this);
+						}
 						break;
 					}
 					default:

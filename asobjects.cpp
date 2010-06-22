@@ -1474,14 +1474,25 @@ ASFUNCTIONBODY(RegExp,exec)
 		captures[i]=new pcrecpp::Arg(&s[i]);
 
 	int consumed;
-	bool ret=pcreRE.DoMatch(arg0.raw_buf(),pcrecpp::RE::ANCHOR_START,&consumed,captures,numberOfCaptures);
-	if(ret!=false)
-		throw UnsupportedException("RegExp matched");
+	bool matched=pcreRE.DoMatch(arg0.raw_buf(),pcrecpp::RE::ANCHOR_START,&consumed,captures,numberOfCaptures);
+	ASObject* ret;
+	if(matched)
+	{
+		Array* a=Class<Array>::getInstanceS();
+		for(int i=0;i<numberOfCaptures;i++)
+			a->push(Class<ASString>::getInstanceS(s[i]));
+		args[0]->incRef();
+		a->setVariableByQName("input","",args[0]);
+		ret=a;
+		//TODO: add index field (not possible with current PCRECPP
+	}
+	else
+		ret=new Null;
 
-	delete[] s;
 	delete[] captures;
+	delete[] s;
 
-	return new Null;
+	return ret;
 }
 
 ASFUNCTIONBODY(RegExp,test)

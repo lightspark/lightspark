@@ -22,7 +22,9 @@ Currently only 64bit and 32bit platforms with SSE2 extension are supported. Supp
 be ready soon.
 
 INSTALLATION:
-To compile this software you need to install development packages for llvm-2.7, sdl, opengl, curl, libavcodec, ftgl, libglew, fontconfig
+To compile this software you need to install development packages for llvm-2.7, sdl, opengl, curl, zlib, libavcodec, ftgl, libglew, fontconfig.
+If sound is enabled (on by default), you need the development package for pulseaudio-libs.
+If the browser plugin is enabled (off by default), you need the development package for xulrunner.
 Install also cmake and nasm
 To build the software please follow those steps.
 
@@ -44,13 +46,13 @@ This demo aims at rendering, the runtime generated UI of the new YouTube player.
 to Flash 10 and AS3 to serve some HD content, while maintaining the old AS2 based player for lower quality content.
 
 -) First of all download the YouTube player SWF file.
-	wget http://s.ytimg.com/yt/swf/watch_as3-vfl155676.swf
+	wget http://s.ytimg.com/yt/swf/watch_as3-vfl172193.swf
 -) The player works by gathering the parameters from the Javascript in the page. Lightspark support loading parameters from a text file
    using the --parameters-file command line. Create a suitable parameters file using the following commands
 	cd scripts
 	./youtube-args-dumper.sh http://www.youtube.com/watch?v=4N2YWRJ-ppo > ../yt-args
 	cd ..
 -) Execute the file, this will render the usual UI of the YouTube player and decoded video, no sound is played yet
-	lightspark --parameters-file yt-args watch_as3-vfl155676.swf
+	lightspark --parameters-file yt-args watch_as3-vfl172193.swf
 
 Press 'Q' on Lightspark window to close the application

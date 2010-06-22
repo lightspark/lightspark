@@ -38,11 +38,13 @@ class VideoDecoder
 private:
 	bool resizeGLBuffers;
 protected:
+	enum STATUS { PREINIT=0, INIT, VALID};
+	STATUS status;
 	uint32_t frameWidth;
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);
 public:
-	VideoDecoder():resizeGLBuffers(false),frameWidth(0),frameHeight(0){}
+	VideoDecoder():resizeGLBuffers(false),status(PREINIT),frameWidth(0),frameHeight(0),frameRate(0){}
 	virtual ~VideoDecoder(){}
 	virtual bool decodeData(uint8_t* data, uint32_t datalen)=0;
 	virtual bool discardFrame()=0;
@@ -57,6 +59,8 @@ public:
 	{
 		return frameHeight;
 	}
+	bool isValid() { return status==VALID; }
+	float frameRate;
 };
 
 class FFMpegVideoDecoder: public VideoDecoder

@@ -124,7 +124,7 @@ ScriptDataString::ScriptDataString(std::istream& s)
 	s.read(buf,Length);
 	buf[Length]=0;
 
-	val=buf;
+	val=tiny_string(buf,true);
 
 	delete[] buf;
 }

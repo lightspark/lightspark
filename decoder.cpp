@@ -73,6 +73,16 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen):curB
 	if(avcodec_open(codecContext, codec)<0)
 		throw RunTimeException("Cannot open decoder");
 
+	if(codecContext->time_base.num!=0)
+	{
+		//time_base = 1/framerate
+		frameRate=codecContext->time_base.den;
+		frameRate/=codecContext->time_base.num;
+		status=VALID;
+	}
+	else
+		status=INIT;
+
 	frameIn=avcodec_alloc_frame();
 }
 
@@ -114,6 +124,14 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen)
 
 	const uint32_t height=codecContext->height;
 	const uint32_t width=codecContext->width;
+	if(status==INIT && codecContext->time_base.num!=0)
+	{
+		//time_base = 1/framerate
+		frameRate=codecContext->time_base.den;
+		frameRate/=codecContext->time_base.num;
+		status=VALID;
+	}
+
 	assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
 
 	setSize(width,height);
@@ -168,6 +186,7 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 		ret=true;
 	}
 
+	Locker locker(mutex);
 	if(!buffers.isEmpty())
 	{
 		//Increment and wrap current buffer index

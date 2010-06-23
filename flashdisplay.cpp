@@ -277,40 +277,37 @@ void Sprite::buildTraits(ASObject* o)
 
 bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	//Iterate over the displaylist of the current frame
-	sem_wait(&sem_displayList);
-	if(dynamicDisplayList.empty() && graphics==NULL)
-	{
-		sem_post(&sem_displayList);
-		return false;
-	}
-
 	bool ret=false;
-	//TODO: Check bounds calculation
-	list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();it++)
 	{
-		number_t txmin,txmax,tymin,tymax;
-		if((*it)->getBounds(txmin,txmax,tymin,tymax))
+		Locker l(mutexDisplayList);
+		if(dynamicDisplayList.empty() && graphics==NULL)
+			return false;
+
+		//TODO: Check bounds calculation
+		list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+		for(;it!=dynamicDisplayList.end();it++)
 		{
-			if(ret==true)
+			number_t txmin,txmax,tymin,tymax;
+			if((*it)->getBounds(txmin,txmax,tymin,tymax))
 			{
-				xmin = imin(xmin,txmin);
-				xmax = imax(xmax,txmax);
-				ymin = imin(ymin,txmin);
-				ymax = imax(ymax,tymax);
+				if(ret==true)
+				{
+					xmin = imin(xmin,txmin);
+					xmax = imax(xmax,txmax);
+					ymin = imin(ymin,txmin);
+					ymax = imax(ymax,tymax);
+				}
+				else
+				{
+					xmin=txmin;
+					xmax=txmax;
+					ymin=tymin;
+					ymax=tymax;
+				}
+				ret=true;
 			}
-			else
-			{
-				xmin=txmin;
-				xmax=txmax;
-				ymin=tymin;
-				ymax=tymax;
-			}
-			ret=true;
 		}
 	}
-	sem_post(&sem_displayList);
 	if(graphics)
 	{
 		number_t txmin,txmax,tymin,tymax;
@@ -380,12 +377,13 @@ void Sprite::Render()
 		rt->glReleaseIdBuffer();
 	}
 
-	sem_wait(&sem_displayList);
-	//Now draw also the display list
-	list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();it++)
-		(*it)->Render();
-	sem_post(&sem_displayList);
+	{
+		Locker l(mutexDisplayList);
+		//Now draw also the display list
+		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
+		for(;it!=dynamicDisplayList.end();it++)
+			(*it)->Render();
+	}
 
 	ma.unapply();
 	
@@ -637,12 +635,13 @@ void MovieClip::Render()
 		frames[curFP].Render();
 	}
 
-	//Render objects added at runtime
-	sem_wait(&sem_displayList);
-	list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
-	for(;j!=dynamicDisplayList.end();j++)
-		(*j)->Render();
-	sem_post(&sem_displayList);
+	{
+		//Render objects added at runtime
+		Locker l(mutexDisplayList);
+		list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
+		for(;j!=dynamicDisplayList.end();j++)
+			(*j)->Render();
+	}
 
 	ma.unapply();
 	InteractiveObject::RenderEpilogue();
@@ -687,12 +686,13 @@ Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 			}
 		}
 
-		sem_wait(&sem_displayList);
-		/*list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
-		for(;j!=dynamicDisplayList.end();j++)
-			(*j)->Render();*/
-		assert_and_throw(dynamicDisplayList.empty());
-		sem_post(&sem_displayList);
+		{
+			Locker l(mutexDisplayList);
+			/*list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
+			for(;j!=dynamicDisplayList.end();j++)
+				(*j)->Render();*/
+			assert_and_throw(dynamicDisplayList.empty());
+		}
 
 		ma.unapply();
 	}
@@ -703,41 +703,41 @@ Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	bool valid=false;
-	//Iterate over the displaylist of the current frame
-	sem_wait(&sem_displayList);
-	
-	list<DisplayObject*>::const_iterator dynit=dynamicDisplayList.begin();
-	for(;dynit!=dynamicDisplayList.end();dynit++)
 	{
-		number_t t1,t2,t3,t4;
-		if((*dynit)->getBounds(t1,t2,t3,t4))
+		Locker l(mutexDisplayList);
+		
+		list<DisplayObject*>::const_iterator dynit=dynamicDisplayList.begin();
+		for(;dynit!=dynamicDisplayList.end();dynit++)
 		{
-			if(valid==false)
+			number_t t1,t2,t3,t4;
+			if((*dynit)->getBounds(t1,t2,t3,t4))
 			{
-				xmin=t1;
-				xmax=t2;
-				ymin=t3;
-				ymax=t4;
-				valid=true;
-				//Now values are valid
-				continue;
+				if(valid==false)
+				{
+					xmin=t1;
+					xmax=t2;
+					ymin=t3;
+					ymax=t4;
+					valid=true;
+					//Now values are valid
+					continue;
+				}
+				else
+				{
+					xmin=imin(xmin,t1);
+					xmax=imax(xmax,t2);
+					ymin=imin(ymin,t3);
+					ymax=imax(ymax,t4);
+				}
+				break;
 			}
-			else
-			{
-				xmin=imin(xmin,t1);
-				xmax=imax(xmax,t2);
-				ymin=imin(ymin,t3);
-				ymax=imax(ymax,t4);
-			}
-			break;
 		}
 	}
-	
-	sem_post(&sem_displayList);
 	
 	if(framesLoaded==0) //We end here
 		return valid;
 
+	//Iterate over the displaylist of the current frame
 	uint32_t curFP=state.FP;
 	std::list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[curFP].displayList.begin();
 	
@@ -1263,9 +1263,8 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 	o->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
-DisplayObjectContainer::DisplayObjectContainer()
+DisplayObjectContainer::DisplayObjectContainer():mutexDisplayList("mutexDisplayList")
 {
-	sem_init(&sem_displayList,0,1);
 }
 
 DisplayObjectContainer::~DisplayObjectContainer()
@@ -1277,7 +1276,6 @@ DisplayObjectContainer::~DisplayObjectContainer()
 		for(;it!=dynamicDisplayList.end();it++)
 			(*it)->decRef();
 	}
-	sem_destroy(&sem_displayList);
 }
 
 InteractiveObject::InteractiveObject():id(0)
@@ -1388,25 +1386,25 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 	}
 	child->parent=this;
 
-	sem_wait(&sem_displayList);
 	//Set the root of the movie to this container
 	child->setRoot(root);
 
-	//We insert the object in the back of the list
-	if(index==numeric_limits<unsigned int>::max())
-		dynamicDisplayList.push_back(child);
-	else
 	{
-		assert_and_throw(index<=dynamicDisplayList.size());
-		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
-		for(unsigned int i=0;i<index;i++)
-			it++;
-		dynamicDisplayList.insert(it,child);
-		//We acquire a reference to the child
-		child->incRef();
+		Locker l(mutexDisplayList);
+		//We insert the object in the back of the list
+		if(index==numeric_limits<unsigned int>::max())
+			dynamicDisplayList.push_back(child);
+		else
+		{
+			assert_and_throw(index<=dynamicDisplayList.size());
+			list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
+			for(unsigned int i=0;i<index;i++)
+				it++;
+			dynamicDisplayList.insert(it,child);
+			//We acquire a reference to the child
+			child->incRef();
+		}
 	}
-
-	sem_post(&sem_displayList);
 	child->setOnStage(onStage);
 }
 
@@ -1417,12 +1415,13 @@ void DisplayObjectContainer::_removeChild(DisplayObject* child)
 	assert_and_throw(child->parent==this);
 	assert_and_throw(child->getRoot()==root);
 
-	sem_wait(&sem_displayList);
-	list<DisplayObject*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
-	assert_and_throw(it!=dynamicDisplayList.end());
-	dynamicDisplayList.erase(it);
+	Locker l(mutexDisplayList);
+	{
+		list<DisplayObject*>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
+		assert_and_throw(it!=dynamicDisplayList.end());
+		dynamicDisplayList.erase(it);
+	}
 	//We can release the reference to the child
-	sem_post(&sem_displayList);
 	child->parent=NULL;
 	child->setOnStage(false);
 	child->decRef();
@@ -1525,19 +1524,18 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 	//Validate object type
 	int32_t index=args[0]->toInt();
 
-	sem_wait(&th->sem_displayList);
-	if(index>=int(th->dynamicDisplayList.size()) || index<0)
+	DisplayObject* child;
 	{
-		sem_post(&th->sem_displayList);
-		return NULL;
+		Locker l(th->mutexDisplayList);
+		if(index>=int(th->dynamicDisplayList.size()) || index<0)
+			return NULL;
+		list<DisplayObject*>::iterator it=th->dynamicDisplayList.begin();
+		for(int32_t i=0;i<index;i++)
+			it++;
+		child=*it;
+		th->dynamicDisplayList.erase(it);
 	}
-	list<DisplayObject*>::iterator it=th->dynamicDisplayList.begin();
-	for(int32_t i=0;i<index;i++)
-		it++;
-	DisplayObject* child=*it;
-	th->dynamicDisplayList.erase(it);
 	//We can release the reference to the child
-	sem_post(&th->sem_displayList);
 	child->parent=NULL;
 	child->setOnStage(false);
 

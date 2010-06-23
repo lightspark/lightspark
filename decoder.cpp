@@ -132,7 +132,7 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen)
 
 	const uint32_t height=codecContext->height;
 	const uint32_t width=codecContext->width;
-	if(status==INIT && codecContext->time_base.num!=0)
+	if(status==INIT && codecContext->time_base.num!=0 && height && width)
 	{
 		//time_base = 1/framerate
 		frameRate=codecContext->time_base.den;
@@ -170,6 +170,8 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn)
 
 bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 {
+	if(!isValid())
+		return false;
 	if(!initialized)
 	{
 		glGenBuffers(2,videoBuffers);

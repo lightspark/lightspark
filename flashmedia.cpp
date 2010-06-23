@@ -69,8 +69,9 @@ void Video::Render()
 	}
 
 	sem_wait(&mutex);
-	if(netStream)
+	if(netStream && netStream->lockIfReady())
 	{
+		//All operations here should be non blocking
 		//Get size
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
@@ -119,6 +120,7 @@ void Video::Render()
 			rt->glReleaseIdBuffer();
 		}
 		ma.unapply();
+		netStream->unlock();
 	}
 	sem_post(&mutex);
 }

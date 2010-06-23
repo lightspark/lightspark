@@ -245,7 +245,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():frameRate(0),frameCount(0),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0)
+NetStream::NetStream():frameRate(0),frameCount(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0)
 {
 	sem_init(&mutex,0,1);
 }
@@ -253,6 +253,8 @@ NetStream::NetStream():frameRate(0),frameCount(0),downloader(NULL),videoDecoder(
 NetStream::~NetStream()
 {
 	assert(!executing);
+	if(tickStarted)
+		sys->removeJob(this);
 	delete videoDecoder; 
 	delete audioDecoder; 
 	sem_destroy(&mutex);
@@ -340,6 +342,31 @@ void NetStream::tick()
 	}
 }
 
+bool NetStream::isReady() const
+{
+	bool ret=true;
+	if(videoDecoder)
+		ret&=videoDecoder->isValid();
+	else
+		return false;
+	//TODO: also per audioDecoder
+	return ret;
+}
+
+bool NetStream::lockIfReady()
+{
+	sem_wait(&mutex);
+	bool ret=isReady();
+	if(!ret) //If the data is not valid so not release the lock to keep the condition
+		sem_post(&mutex);
+	return ret;
+}
+
+void NetStream::unlock()
+{
+	sem_post(&mutex);
+}
+
 void NetStream::execute()
 {
 	//mutex access to downloader
@@ -348,7 +375,6 @@ void NetStream::execute()
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(0,0,200));
 	profile->setTag("NetStream");
-	bool tickStarted=false;
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
@@ -412,10 +438,7 @@ void NetStream::execute()
 						{
 							//The tag is the header, initialize decoding
 							assert_and_throw(videoDecoder==NULL); //The decoder can be set only once
-							//NOTE: there is not need to mutex the decoder, as an async transition from NULL to
-							//valid is not critical
 							videoDecoder=new FFMpegVideoDecoder(tag.packetData,tag.packetLen);
-							assert(videoDecoder);
 							tag.releaseBuffer();
 							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
 							getVm()->addEvent(this, status);
@@ -426,14 +449,6 @@ void NetStream::execute()
 						}
 						else
 							videoDecoder->decodeData(tag.packetData,tag.packetLen);
-
-						if(!tickStarted && videoDecoder->isValid())
-						{
-							tickStarted=true;
-							assert(videoDecoder->frameRate);
-							frameRate=videoDecoder->frameRate;
-							sys->addTick(1000/frameRate,this);
-						}
 						break;
 					}
 					case 18:
@@ -453,6 +468,13 @@ void NetStream::execute()
 					default:
 						LOG(LOG_ERROR,"Unexpected tag type " << (int)TagType << " in FLV");
 						threadAbort();
+				}
+				if(!tickStarted && isReady())
+				{
+					tickStarted=true;
+					assert(videoDecoder->frameRate);
+					frameRate=videoDecoder->frameRate;
+					sys->addTick(1000/frameRate,this);
 				}
 				profile->accountTime(chronometer.checkpoint());
 				if(aborting)
@@ -483,6 +505,7 @@ void NetStream::execute()
 	//This transition is critical, so the mutex is needed
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);
+	tickStarted=false;
 	delete videoDecoder;
 	videoDecoder=NULL;
 #if ENABLE_SOUND
@@ -522,39 +545,28 @@ ASFUNCTIONBODY(NetStream,getTime)
 	return abstract_d(0);
 }
 
-uint32_t NetStream::getVideoWidth()
+uint32_t NetStream::getVideoWidth() const
 {
-	sem_wait(&mutex);
-	uint32_t ret=0;
-	if(videoDecoder)
-		ret=videoDecoder->getWidth();
-	sem_post(&mutex);
-	return ret;
+	assert(isReady());
+	return videoDecoder->getWidth();
 }
 
-uint32_t NetStream::getVideoHeight()
+uint32_t NetStream::getVideoHeight() const
 {
-	sem_wait(&mutex);
-	uint32_t ret=0;
-	if(videoDecoder)
-		ret=videoDecoder->getHeight();
-	sem_post(&mutex);
-	return ret;
+	assert(isReady());
+	return videoDecoder->getHeight();
 }
 
 double NetStream::getFrameRate()
 {
+	assert(isReady());
 	return frameRate;
 }
 
 bool NetStream::copyFrameToTexture(TextureBuffer& tex)
 {
-	sem_wait(&mutex);
-	bool ret=false;
-	if(videoDecoder)
-		ret=videoDecoder->copyFrameToTexture(tex);
-	sem_post(&mutex);
-	return ret;
+	assert(isReady());
+	return videoDecoder->copyFrameToTexture(tex);
 }
 
 void URLVariables::sinit(Class_base* c)

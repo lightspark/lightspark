@@ -45,7 +45,7 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 		return false;
 }
 
-bool VideoDecoder::copyFrameToTexture(TextureBuffer& tex)
+bool VideoDecoder::resizeIfNeeded(TextureBuffer& tex)
 {
 	if(!resizeGLBuffers)
 		return false;
@@ -53,6 +53,25 @@ bool VideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 	//Initialize texture to video size
 	tex.resize(frameWidth, frameHeight);
 	resizeGLBuffers=false;
+	return true;
+}
+
+bool FFMpegVideoDecoder::fillDataAndCheckValidity()
+{
+	if(codecContext->time_base.num!=0)
+	{
+		//time_base = 1/framerate
+		frameRate=codecContext->time_base.den;
+		frameRate/=codecContext->time_base.num;
+	}
+	else
+		return false;
+
+	if(codecContext->width!=0 && codecContext->height!=0)
+		setSize(codecContext->width, codecContext->height);
+	else
+		return false;
+
 	return true;
 }
 
@@ -73,13 +92,8 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen):curB
 	if(avcodec_open(codecContext, codec)<0)
 		throw RunTimeException("Cannot open decoder");
 
-	if(codecContext->time_base.num!=0)
-	{
-		//time_base = 1/framerate
-		frameRate=codecContext->time_base.den;
-		frameRate/=codecContext->time_base.num;
+	if(fillDataAndCheckValidity())
 		status=VALID;
-	}
 	else
 		status=INIT;
 
@@ -130,19 +144,11 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen)
 		throw RunTimeException("Cannot decode frame");
 	assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
 
-	const uint32_t height=codecContext->height;
-	const uint32_t width=codecContext->width;
-	if(status==INIT && codecContext->time_base.num!=0 && height && width)
-	{
-		//time_base = 1/framerate
-		frameRate=codecContext->time_base.den;
-		frameRate/=codecContext->time_base.num;
+	if(status==INIT && fillDataAndCheckValidity())
 		status=VALID;
-	}
 
 	assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
 
-	setSize(width,height);
 	copyFrameToBuffers(frameIn);
 	return true;
 }
@@ -170,8 +176,7 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn)
 
 bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 {
-	if(!isValid())
-		return false;
+	assert(isValid());
 	if(!initialized)
 	{
 		glGenBuffers(2,videoBuffers);
@@ -179,7 +184,7 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 	}
 
 	bool ret=false;
-	if(VideoDecoder::copyFrameToTexture(tex))
+	if(VideoDecoder::resizeIfNeeded(tex))
 	{
 		//Initialize both PBOs to video size
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);

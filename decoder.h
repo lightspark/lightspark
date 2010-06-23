@@ -43,6 +43,7 @@ protected:
 	uint32_t frameWidth;
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);
+	bool resizeIfNeeded(TextureBuffer& tex);
 public:
 	VideoDecoder():resizeGLBuffers(false),status(PREINIT),frameWidth(0),frameHeight(0),frameRate(0){}
 	virtual ~VideoDecoder(){}
@@ -98,6 +99,7 @@ private:
 	AVFrame* frameIn;
 	void copyFrameToBuffers(const AVFrame* frameIn);
 	void setSize(uint32_t w, uint32_t h);
+	bool fillDataAndCheckValidity();
 public:
 	FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen);
 	~FFMpegVideoDecoder();

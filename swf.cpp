@@ -1003,7 +1003,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	FTTextureFont font(rt->fontPath.c_str());
 	if(font.Error())
 	{
-		LOG(LOG_ERROR,"Unable to find /usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
+		LOG(LOG_ERROR,"Unable to load serif font");
 		throw RunTimeException("Unable to load font");
 	}
 	

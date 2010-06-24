@@ -636,6 +636,20 @@ DefineBitsLossless2Tag::DefineBitsLossless2Tag(RECORDHEADER h, istream& in):Dict
 	ignore(in,dest-in.tellg());
 }
 
+ASObject* DefineBitsLossless2Tag::instance() const
+{
+	DefineBitsLossless2Tag* ret=new DefineBitsLossless2Tag(*this);
+	//TODO: check
+	if(bindedTo)
+	{
+		//A class is binded to this tag
+		ret->setPrototype(bindedTo);
+	}
+	else
+		ret->setPrototype(Class<Bitmap>::getClass());
+	return ret;
+}
+
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;

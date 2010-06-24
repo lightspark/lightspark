@@ -630,6 +630,11 @@ public:
 	DefineBitsLossless2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual ASObject* instance() const;
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	{
+		return false;
+	}
+	virtual void Render();
 };
 
 class DefineScalingGridTag: public Tag

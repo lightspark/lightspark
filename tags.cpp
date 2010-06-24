@@ -650,6 +650,11 @@ ASObject* DefineBitsLossless2Tag::instance() const
 	return ret;
 }
 
+void DefineBitsLossless2Tag::Render()
+{
+	LOG(LOG_NOT_IMPLEMENTED,"DefineBitsLossless2Tag::Render");
+}
+
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;

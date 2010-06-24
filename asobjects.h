@@ -280,7 +280,10 @@ public:
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
 	{
-		throw UnsupportedException("Function::isEqual");
+		Function* f=dynamic_cast<Function*>(r);
+		if(f==NULL)
+			return false;
+		return val==f->val;
 	}
 };
 

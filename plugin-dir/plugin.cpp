@@ -23,7 +23,8 @@
 //#define MIME_TYPES_HANDLED  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r04_Lightspark"
+//#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r04_Lightspark"
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r50"
 #include "class.h"
 #include <gtk/gtk.h>
 
@@ -415,8 +416,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
 	//We have to cast the downloadanager to a NPDownloadManager
-	NPDownloadManager* manager=static_cast<NPDownloadManager*>(m_sys->downloadManager);
-	lightspark::Downloader* dl=manager->getDownloaderForUrl(stream->url);
+	lightspark::Downloader* dl=(lightspark::Downloader*)stream->notifyData;
 	LOG(LOG_NO_INFO,"Newstream for " << stream->url);
 	//cout << stream->headers << endl;
 	if(dl)

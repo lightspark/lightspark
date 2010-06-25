@@ -38,15 +38,13 @@ class NPDownloader;
 class NPDownloadManager: public lightspark::DownloadManager
 {
 private:
-	std::list<std::pair<lightspark::tiny_string,NPDownloader*> > pendingLoads;
 	NPP instance;
-	sem_t mutex;
+	//sem_t mutex;
 public:
 	NPDownloadManager(NPP i);
 	~NPDownloadManager();
 	lightspark::Downloader* download(const lightspark::tiny_string& u);
 	void destroy(lightspark::Downloader* d);
-	NPDownloader* getDownloaderForUrl(const char* u);
 };
 
 class NPDownloader: public lightspark::Downloader

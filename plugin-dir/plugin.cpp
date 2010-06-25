@@ -36,19 +36,14 @@ TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
 
 NPDownloadManager::NPDownloadManager(NPP i):instance(i)
 {
-	sem_init(&mutex,0,1);
 }
 
 NPDownloadManager::~NPDownloadManager()
 {
-	if(!pendingLoads.empty())
-		abort();
-	sem_destroy(&mutex);
 }
 
 lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& u)
 {
-	sem_wait(&mutex);
 	//TODO: Url encode the string
 	std::string tmp2;
 	tmp2.reserve(u.len()*2);
@@ -66,8 +61,6 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_strin
 	lightspark::tiny_string url=tmp2.c_str();
 	//Register this download
 	NPDownloader* ret=new NPDownloader(instance, url);
-	pendingLoads.push_back(make_pair(url,ret));
-	sem_post(&mutex);
 	return ret;
 }
 
@@ -76,38 +69,7 @@ void NPDownloadManager::destroy(lightspark::Downloader* d)
 	//First of all, wait for termination
 	if(!sys->isShuttingDown())
 		d->wait();
-	sem_wait(&mutex);
-	list<pair<lightspark::tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
-	for(;it!=pendingLoads.end();it++)
-	{
-		if(it->second==d)
-		{
-			pendingLoads.erase(it);
-			break;
-		}
-	}
-	sem_post(&mutex);
-
 	delete d;
-}
-
-NPDownloader* NPDownloadManager::getDownloaderForUrl(const char* u)
-{
-	sem_wait(&mutex);
-	list<pair<lightspark::tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
-	NPDownloader* ret=NULL;
-	for(;it!=pendingLoads.end();it++)
-	{
-		cout << it->first << endl;
-		if(it->first==u)
-		{
-			ret=it->second;
-			pendingLoads.erase(it);
-			break;
-		}
-	}
-	sem_post(&mutex);
-	return ret;
 }
 
 NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i),url(u),started(false)

@@ -418,7 +418,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	NPDownloadManager* manager=static_cast<NPDownloadManager*>(m_sys->downloadManager);
 	lightspark::Downloader* dl=manager->getDownloaderForUrl(stream->url);
 	LOG(LOG_NO_INFO,"Newstream for " << stream->url);
-	//cerr << stream->headers << endl;
+	//cout << stream->headers << endl;
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;
@@ -467,15 +467,18 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
-	cerr << "URLnotify" << notifyData << endl;
-	cerr << url << endl;
-	cerr << reason << endl;
-	cerr << notifyData << endl;
-/*	if(reason!=NPRES_USER_BREAK)
+	cout << "URLnotify " << url << endl;
+	switch(reason)
 	{
-		cerr << url << endl;
-		cerr << reason << endl;
-		cerr << notifyData << endl;
-		abort();
-	}*/
+		case NPRES_DONE:
+			cout << "Done" <<endl;
+			break;
+		case NPRES_USER_BREAK:
+			cout << "User Break" <<endl;
+			break;
+		case NPRES_NETWORK_ERR:
+			cout << "Network Error" <<endl;
+			break;
+	}
+	//TODO: should notify the Downloader if failing
 }

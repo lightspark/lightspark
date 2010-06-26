@@ -34,11 +34,11 @@ private:
 	sem_t sem;
 	const char* name;
 	uint32_t foundBusy;
-	void lock();
-	void unlock();
 public:
 	Mutex(const char* name);
 	~Mutex();
+	void lock();
+	void unlock();
 };
 
 class IThreadJob

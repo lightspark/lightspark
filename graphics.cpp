@@ -24,6 +24,8 @@
 #include "logger.h"
 #include "exceptions.h"
 
+#include <iostream>
+
 using namespace lightspark;
 extern TLSDATA RenderThread* rt;
 

@@ -836,8 +836,8 @@ void InputThread::disableDrag()
 }
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),
-	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),dataTex(false),mainTex(false),tempTex(false),
-	inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
+	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),
+	mainTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -894,6 +894,26 @@ RenderThread::~RenderThread()
 	sem_destroy(&inputDone);
 	delete[] interactive_buffer;
 	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
+}
+
+void RenderThread::addResource(GLResource* res)
+{
+	managedResources.insert(res);
+}
+
+void RenderThread::removeResource(GLResource* res)
+{
+	managedResources.erase(res);
+}
+
+void RenderThread::acquireResourceMutex()
+{
+	mutexResources.lock();
+}
+
+void RenderThread::releaseResourceMutex()
+{
+	mutexResources.unlock();
 }
 
 void RenderThread::requestInput()
@@ -1241,7 +1261,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 			if(th->m_sys->isShuttingDown())
-				pthread_exit(0);
+				break;
 
 			if(th->m_sys->isOnError())
 			{
@@ -1353,6 +1373,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		sys->setError(e.cause);
 	}
 	glDisable(GL_TEXTURE_2D);
+	//Before destroying the context shutdown all the GLResources
+	set<GLResource*>::const_iterator it=th->managedResources.begin();
+	for(;it!=th->managedResources.end();it++)
+		(*it)->shutdown();
 	th->commonGLDeinit();
 	glXMakeContextCurrent(d,None,None,NULL);
 	glXDestroyContext(d,th->mContext);

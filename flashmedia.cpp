@@ -62,11 +62,17 @@ void Video::buildTraits(ASObject* o)
 
 Video::~Video()
 {
-	rt->acquireResourceMutex();
-	rt->removeResource(&videoTexture);
+	if(rt)
+	{
+		rt->acquireResourceMutex();
+		rt->removeResource(&videoTexture);
+	}
 	videoTexture.shutdown();
-	rt->releaseResourceMutex();
-	sem_destroy(&mutex);
+	if(rt)
+	{
+		rt->releaseResourceMutex();
+		sem_destroy(&mutex);
+	}
 }
 
 void Video::Render()

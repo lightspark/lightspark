@@ -239,9 +239,12 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 #ifdef WIN32
 	//FIXME!!
 #else
-	posix_memalign((void**)&buf.ch[0], 16, bufferSize);
-	posix_memalign((void**)&buf.ch[1], 16, bufferSize/4);
-	posix_memalign((void**)&buf.ch[2], 16, bufferSize/4);
+	int ret=posix_memalign((void**)&buf.ch[0], 16, bufferSize);
+	assert(ret==0);
+	ret=posix_memalign((void**)&buf.ch[1], 16, bufferSize/4);
+	assert(ret==0);
+	ret=posix_memalign((void**)&buf.ch[2], 16, bufferSize/4);
+	assert(ret==0);
 #endif
 }
 

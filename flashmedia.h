@@ -57,10 +57,7 @@ public:
 	{
 		sem_init(&mutex,0,1);
 	}
-	~Video()
-	{
-		sem_destroy(&mutex);
-	}
+	~Video();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);

@@ -556,6 +556,8 @@ void RenderThread::wait()
 	assert_and_throw(ret==0);
 }
 
+
+
 InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),terminated(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {

@@ -30,7 +30,16 @@ namespace lightspark
 
 void cleanGLErrors();
 
-class TextureBuffer
+class GLResource
+{
+public:
+	/**
+		Should be used to cleanly destroy GL resources inside the render thread
+	*/
+	virtual void shutdown()=0;
+};
+
+class TextureBuffer: public GLResource
 {
 private:
 	GLuint texId;
@@ -48,6 +57,7 @@ public:
 	GLuint getId() {return texId;}
 	void init();
 	void init(uint32_t width, uint32_t height, GLenum filtering=GL_NEAREST);
+	void shutdown();
 	void bind();
 	void unbind();
 	void setTexScale(GLuint uniformLocation);

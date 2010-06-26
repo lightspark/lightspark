@@ -243,10 +243,18 @@ void TextureBuffer::unbind()
 	assert(glGetError()==GL_NO_ERROR);
 }
 
-lightspark::TextureBuffer::~TextureBuffer()
+void TextureBuffer::shutdown()
 {
-	if(texId)
+	if(inited)
+	{
 		glDeleteTextures(1,&texId);
+		inited=false;
+	}
+}
+
+TextureBuffer::~TextureBuffer()
+{
+	shutdown();
 }
 
 MatrixApplier::MatrixApplier()

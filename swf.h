@@ -317,9 +317,7 @@ private:
 	Display* mDisplay;
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
-	GLXPbuffer mPbuffer;
 	Window mWindow;
-	GC mGC;
 
 	timespec ts,td;
 #endif
@@ -330,7 +328,8 @@ private:
 	int frameCount;
 	int secsCount;
 	std::vector<float> idStack;
-	
+	Mutex mutexResources;
+	std::set<GLResource*> managedResources;
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL) DLL_PUBLIC;
 	~RenderThread() DLL_PUBLIC;
@@ -340,6 +339,26 @@ public:
 	//The calling context MUST call this function with the transformation matrix ready
 	void glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 	void glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
+	/**
+		Add a GLResource to the managed pool
+		@param res The GLResource to be manged
+		@pre running inside the renderthread OR the resourceMutex is acquired
+	*/
+	void addResource(GLResource* res);
+	/**
+		Remove a GLResource from the managed pool
+		@param res The GLResource to stop managing
+		@pre running inside the renderthread OR the resourceMutex is acquired
+	*/
+	void removeResource(GLResource* res);
+	/**
+		Acquire the resource mutex to do resource cleanup
+	*/
+	void acquireResourceMutex();
+	/**
+		Release the resource mutex
+	*/
+	void releaseResourceMutex();
 
 	void requestInput();
 	bool glAcquireIdBuffer();

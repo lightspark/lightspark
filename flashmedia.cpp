@@ -60,11 +60,21 @@ void Video::buildTraits(ASObject* o)
 	o->setVariableByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream));
 }
 
+Video::~Video()
+{
+	rt->acquireResourceMutex();
+	rt->removeResource(&videoTexture);
+	videoTexture.shutdown();
+	rt->releaseResourceMutex();
+	sem_destroy(&mutex);
+}
+
 void Video::Render()
 {
 	if(!initialized)
 	{
 		videoTexture.init(0,0,GL_LINEAR);
+		rt->addResource(&videoTexture);
 		initialized=true;
 	}
 

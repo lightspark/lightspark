@@ -46,12 +46,14 @@ void SoundManager::fillAndSinc(uint32_t id, uint64_t seek)
 	while(1)
 	{
 		pa_threaded_mainloop_lock(mainLoop);
+#ifdef EXPENSIVE_DEBUG
 		const pa_timing_info* info=pa_stream_get_timing_info(stream);
 		if(info)
 		{
 			cout << "Write index " << info->write_index << endl;
 			cout << "Read index " << info->read_index << endl;
 		}
+#endif
 		size_t frameSize=pa_stream_writable_size(stream);
 		if(frameSize==0)
 		{

@@ -212,7 +212,14 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 
 		//At least a frame is available
 		YUVBuffer& cur=buffers.front();
-		fastYUV420ChannelsToBuffer(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
+		//If the width is compatible with full aligned accesses use the aligned version of the packer
+		if(frameWidth%32==0)
+			fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
+		else
+		{
+			memset(buf,0xff,frameHeight*frameWidth*4);
+			fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
+		}
 
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);

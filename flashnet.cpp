@@ -21,7 +21,6 @@
 #include "flashnet.h"
 #include "class.h"
 #include "flv.h"
-#include "fastpaths.h"
 
 using namespace std;
 using namespace lightspark;

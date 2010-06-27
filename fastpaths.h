@@ -25,7 +25,7 @@
 extern "C"
 {
 //Packing of YUV channels in a single buffer (YUVA)
-void fastYUV420ChannelsToBuffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t size);
+void fastYUV420ChannelsToBuffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t width, uint32_t height);
 }
 
 #endif

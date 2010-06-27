@@ -30,8 +30,11 @@ fastYUV420ChannelsToBuffer:
 ;	RSI -> U buffer
 ;	RDX -> V buffer
 ;	RCX -> out buffer
-;	R8  -> size (in pixels)
-;	EAX -> count of pixels
+;	R8  -> width (in pixels)
+;	R9  -> height (in pixels)
+;	EAX -> used pixels of the line
+;	R10 -> used lines
+;	R11 -> temp
 
 ;	XMM0 -> Y1,Y2
 ;	XMM1 -> U
@@ -39,7 +42,8 @@ fastYUV420ChannelsToBuffer:
 ;	XMM3 -> U1,U2
 ;	XMM4 -> V1,V2
 
-xor rax,rax
+xor eax,eax
+xor r10,r10
 
 outer_loop:
 ; Load 16 bytes/32 pixels from U/V buffers
@@ -66,7 +70,7 @@ inner_loop_after_dup:
 	movapd xmm0,[rdi]
 	add rdi,16
 
-; Sub used pixels from size and move pointers
+; Account used pixels
 	add eax,16
 
 ; Unpack the low part of Y and U1 [YUYU]
@@ -107,11 +111,26 @@ inner_loop_after_dup:
 
 ; Check for end
 	cmp eax,r8d
-	je loop_end
+	je line_end
 
 ; Check if we have to reload only Y (16 aligned) or all the buffers (32 aligned)
 	test eax,0x10
 	jnz inner_loop
+	jmp outer_loop
+line_end:
+; Account a line, reset eax to zero and rewind U and V buffer pointer on odd lines
+	inc r10
+	cmp r10,r9
+; Exit if this is the last line
+	je loop_end
+	xor eax,eax
+	test r10d,0x1
+	jz outer_loop
+	; r11 = frameWidth/2
+	mov r11, r8
+	shr r11, 0x1
+	sub rsi, r11
+	sub rdx, r11
 	jmp outer_loop
 
 loop_end:

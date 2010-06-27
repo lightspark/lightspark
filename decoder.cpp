@@ -211,14 +211,8 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 		uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
 
 		//At least a frame is available
-		int offset=0;
-		for(uint32_t y=0;y<frameHeight;y++)
-		{
-			YUVBuffer& cur=buffers.front();
-			fastYUV420ChannelsToBuffer(cur.ch[0]+(y*frameWidth),cur.ch[1]+((y>>1)*(frameWidth>>1)),
-					cur.ch[2]+((y>>1)*(frameWidth>>1)),buf+offset,frameWidth);
-			offset+=frameWidth*4;
-		}
+		YUVBuffer& cur=buffers.front();
+		fastYUV420ChannelsToBuffer(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
 
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);

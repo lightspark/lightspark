@@ -30,8 +30,8 @@ fastYUV420ChannelsToBuffer:
 ;	ESI -> U buffer
 ;	EDX -> V buffer
 ;	ECX -> out buffer
-;	EBX  -> size (in pixels)
-;	EAX -> count of pixels
+;	EAX -> used pixels of the line
+;	EBX -> used lines
 
 ;	XMM0 -> Y1,Y2
 ;	XMM1 -> U
@@ -48,11 +48,11 @@ push esi
 push ebx
 
 xor eax,eax
+xor ebx,ebx
 mov edi,[ebp+8]
 mov esi,[ebp+12]
 mov edx,[ebp+16]
 mov ecx,[ebp+20]
-mov ebx,[ebp+24]
 
 outer_loop:
 ; Load 16 bytes/32 pixels from U/V buffers
@@ -119,14 +119,30 @@ inner_loop_after_dup:
 	add ecx,64
 
 ; Check for end
-	cmp eax,ebx
-	je loop_end
+	cmp eax,[ebp+24]
+	je line_end
 
 ; Check if we have to reload only Y (16 aligned) or all the buffers (32 aligned)
 	test eax,0x10
 	jnz inner_loop
 	jmp outer_loop
 
+line_end:
+; Account a line, reset eax to zero and rewind U and V buffer pointer on odd lines
+	inc ebx
+	cmp ebx,[ebp+28]
+; Exit if this is the last line
+	je loop_end
+	xor eax,eax
+	test ebx,0x1
+	jz outer_loop
+	; eax = frameWidth/2
+	mov eax, [ebp+28]
+	shr eax, 0x1
+	sub rsi, eax
+	sub rdx, eax
+	xor eax,eax
+	jmp outer_loop
 loop_end:
 ; Commit stores
 	sfence

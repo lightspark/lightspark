@@ -332,8 +332,10 @@ void NetStream::tick()
 	if(soundStreamId)
 	{
 		//The expected latency is frameRate
+#ifdef EXPENSIVE_DEBUG
 		cout << "FrameCount " << frameCount << endl;
 		cout << "Expected index " << uint64_t(frameCount*44100/frameRate*4) << endl;
+#endif
 #ifdef ENABLE_SOUND
 		assert(audioDecoder);
 		sys->soundManager->fillAndSinc(soundStreamId, uint64_t(frameCount*44100/frameRate*4));

@@ -648,6 +648,55 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 			th->m_sys->renderThread->draw();
 			*b=False;
 			break;
+		case ButtonPress:
+			cout << "Press" << endl;
+			*b=False;
+			break;
+/*			case SDL_MOUSEBUTTONDOWN:
+			{
+				Locker locker(th->mutexListeners);
+				sys->renderThread->requestInput();
+				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
+				if(selected==0)
+				{
+					sys->renderThread->selectedDebug=NULL;
+					break;
+				}
+
+				int index=lrint(th->listeners.size()*selected);
+				index--;
+
+				th->lastMouseDownTarget=th->listeners[index];
+				//Add event to the event queue
+				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown",true));
+				//And select that object for debugging (if needed)
+				if(sys->showDebug)
+					sys->renderThread->selectedDebug=th->listeners[index];
+				break;
+			}*/
+		case ButtonRelease:
+			cout << "Release" << endl;
+			*b=False;
+			break;
+/*			case SDL_MOUSEBUTTONUP:
+			{
+				Locker locker(th->mutexListeners);
+				sys->renderThread->requestInput();
+				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
+
+				int index=lrint(th->listeners.size()*selected);
+				index--;
+
+				//Add event to the event queue
+				getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseUp",true));
+				//Also send the click event
+				if(th->lastMouseDownTarget==th->listeners[index])
+				{
+					getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("click",true));
+					th->lastMouseDownTarget=NULL;
+				}
+				break;
+			}*/
 		default:
 			*b=True;
 #ifdef EXPENSIVE_DEBUG

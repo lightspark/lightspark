@@ -76,13 +76,13 @@ ASFUNCTIONBODY(Rectangle,_constructor)
 	Rectangle* th=static_cast<Rectangle*>(obj);
 
 	if(argslen>=1)
-		th->x=args[0]->toInt();
+		th->x=args[0]->toNumber();
 	if(argslen>=2)
-		th->y=args[1]->toInt();
+		th->y=args[1]->toNumber();
 	if(argslen>=3)
-		th->width=args[2]->toInt();
+		th->width=args[2]->toNumber();
 	if(argslen>=4)
-		th->height=args[3]->toInt();
+		th->height=args[3]->toNumber();
 
 	return NULL;
 }
@@ -265,9 +265,9 @@ ASFUNCTIONBODY(Point,_constructor)
 {
 	Point* th=static_cast<Point*>(obj);
 	if(argslen>=1)
-		th->x=args[0]->toInt();
+		th->x=args[0]->toNumber();
 	if(argslen>=2)
-		th->y=args[1]->toInt();
+		th->y=args[1]->toNumber();
 
 	return NULL;
 }

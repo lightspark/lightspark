@@ -140,8 +140,8 @@ line_end:
 	; eax = frameWidth/2
 	mov eax, [ebp+28]
 	shr eax, 0x1
-	sub rsi, eax
-	sub rdx, eax
+	sub esi, eax
+	sub edx, eax
 	xor eax,eax
 	jmp outer_loop
 loop_end:

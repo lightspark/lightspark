@@ -138,7 +138,7 @@ line_end:
 	test ebx,0x1
 	jz outer_loop
 	; eax = frameWidth/2
-	mov eax, [ebp+28]
+	mov eax, [ebp+24]
 	shr eax, 0x1
 	sub esi, eax
 	sub edx, eax
@@ -263,7 +263,7 @@ line_end2:
 ; Exit if this is the last line
 	je loop_end2
 ; Reset the U and V pointers to the right place
-	mov eax, [ebp+28]
+	mov eax, [ebp+24]
 	shr eax, 0x1
 	add eax, 0xf
 	and eax, 0x7ffffff0
@@ -272,7 +272,7 @@ line_end2:
 	xor eax,eax
 	test ebx,0x1
 	jnz outer_loop2
-	mov eax, [ebp+28]
+	mov eax, [ebp+24]
 	shr eax, 0x1
 	add esi, eax
 	add edx, eax

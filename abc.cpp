@@ -48,8 +48,6 @@ using namespace std;
 using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
-TLSDATA Manager* iManager=NULL;
-TLSDATA Manager* dManager=NULL;
 TLSDATA bool isVmThread=false;;
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -1319,8 +1317,6 @@ void ABCVm::Run(ABCVm* th)
 {
 	sys=th->m_sys;
 	isVmThread=true;
-	iManager=th->int_manager;
-	dManager=th->number_manager;
 	if(th->m_sys->useJit)
 	{
 		llvm::InitializeNativeTarget();

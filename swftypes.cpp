@@ -41,8 +41,6 @@ REGISTER_CLASS_NAME(ASObject);
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
-extern TLSDATA Manager* iManager;
-extern TLSDATA Manager* dManager;
 
 tiny_string ASObject::toString(bool debugMsg)
 {
@@ -2045,7 +2043,7 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 
 ASObject* lightspark::abstract_d(number_t i)
 {
-	Number* ret=dManager->get<Number>();
+	Number* ret=getVm()->number_manager->get<Number>();
 	ret->val=i;
 	return ret;
 }
@@ -2057,7 +2055,7 @@ ASObject* lightspark::abstract_b(bool i)
 
 ASObject* lightspark::abstract_i(intptr_t i)
 {
-	Integer* ret=iManager->get<Integer>();
+	Integer* ret=getVm()->int_manager->get<Integer>();
 	ret->val=i;
 	return ret;
 }

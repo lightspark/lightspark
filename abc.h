@@ -593,17 +593,14 @@ private:
 
 	void buildClassAndInjectBase(const std::string& n, ASObject*, ASObject* const* a, const unsigned int argslen, bool isRoot);
 
-	Manager* int_manager;
-	Manager* number_manager;
-
-	//Interpreter
-
 	//These are used to keep track of the current 'this' for class methods, and relative level
 	//It's sane to have them per-Vm, as anyway the vm is single by specs, single threaded
 	std::vector<thisAndLevel> method_this_stack;
 
 public:
 	ASObject Global;
+	Manager* int_manager;
+	Manager* number_manager;
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
 	llvm::LLVMContext llvm_context;

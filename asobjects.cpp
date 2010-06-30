@@ -791,17 +791,6 @@ int32_t ASString::toInt()
 	return atoi(data.c_str());
 }
 
-ASFUNCTIONBODY(Undefined,call)
-{
-	LOG(LOG_CALLS,"Undefined function");
-	return NULL;
-}
-
-tiny_string Undefined::toString(bool debugMsg)
-{
-	return "null";
-}
-
 bool ASString::isEqual(ASObject* r)
 {
 	assert_and_throw(implEnable);
@@ -843,6 +832,22 @@ bool Boolean::isEqual(ASObject* r)
 	}
 }
 
+Undefined::Undefined()
+{
+	type=T_UNDEFINED;
+}
+
+ASFUNCTIONBODY(Undefined,call)
+{
+	LOG(LOG_CALLS,"Undefined function");
+	return NULL;
+}
+
+tiny_string Undefined::toString(bool debugMsg)
+{
+	return "undefined";
+}
+
 bool Undefined::isEqual(ASObject* r)
 {
 	if(r->getObjectType()==T_UNDEFINED)
@@ -853,9 +858,14 @@ bool Undefined::isEqual(ASObject* r)
 		return false;
 }
 
-Undefined::Undefined()
+int Undefined::toInt()
 {
-	type=T_UNDEFINED;
+	return 0;
+}
+
+double Undefined::toNumber()
+{
+	return NAN;
 }
 
 ASFUNCTIONBODY(Integer,_toString)

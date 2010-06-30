@@ -384,6 +384,8 @@ public:
 	ASFUNCTION(call);
 	Undefined();
 	tiny_string toString(bool debugMsg);
+	int toInt();
+	double toNumber();
 	bool isEqual(ASObject* r);
 	virtual ~Undefined(){}
 };

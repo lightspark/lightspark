@@ -26,6 +26,7 @@
 #include <iomanip>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <limits>
 
 #include "abc.h"
 #include "asobjects.h"
@@ -865,7 +866,7 @@ int Undefined::toInt()
 
 double Undefined::toNumber()
 {
-	return NAN;
+	return numeric_limits<double>::quiet_NaN();
 }
 
 ASFUNCTIONBODY(Integer,_toString)

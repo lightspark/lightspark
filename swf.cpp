@@ -664,7 +664,7 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 
 				th->lastMouseDownTarget=th->listeners[index];
 				//Add event to the event queue
-				th->m_sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown",true));
+				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
 				//And select that object for debugging (if needed)
 				if(th->m_sys->showDebug)
 					th->m_sys->renderThread->selectedDebug=th->listeners[index];
@@ -684,11 +684,11 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 				index--;
 
 				//Add event to the event queue
-				getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseUp",true));
+				getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseUp",true));
 				//Also send the click event
 				if(th->lastMouseDownTarget==th->listeners[index])
 				{
-					getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("click",true));
+					getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("click",true));
 					th->lastMouseDownTarget=NULL;
 				}
 			}
@@ -770,7 +770,7 @@ void* InputThread::sdl_worker(InputThread* th)
 
 				th->lastMouseDownTarget=th->listeners[index];
 				//Add event to the event queue
-				th->m_sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown",true));
+				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
 				//And select that object for debugging (if needed)
 				if(th->m_sys->showDebug)
 					th->m_sys->renderThread->selectedDebug=th->listeners[index];
@@ -788,11 +788,11 @@ void* InputThread::sdl_worker(InputThread* th)
 				index--;
 
 				//Add event to the event queue
-				getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseUp",true));
+				getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseUp",true));
 				//Also send the click event
 				if(th->lastMouseDownTarget==th->listeners[index])
 				{
-					getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("click",true));
+					getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("click",true));
 					th->lastMouseDownTarget=NULL;
 				}
 				break;

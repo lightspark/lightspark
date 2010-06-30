@@ -13,7 +13,7 @@ This demo already includes a lot of cool features
 
 -) GLSL based rendering of fill styles (eg. gradients)
 -) LLVM based ActionScript execution. Code is compiled just in time
--) A few tricks are also played to decrease the stack traffic tipical of stack machines.
+-) A few tricks are also played to decrease the stack traffic typical of stack machines.
 -) First, although simple, framerate timing
 -) Framework to handle ActionScript asynchronous events.
 
@@ -29,14 +29,17 @@ Install also cmake and nasm
 To build the software please follow those steps.
 
 1) cd lightspark
-2) cmake -DCMAKE_BUILD_TYPE=Release -DCOMPILE_PLUGIN=1
-3) make
-4) sudo make install
+2) mkdir objs
+3) cd objs
+4) cmake -DCMAKE_BUILD_TYPE=Release -DCOMPILE_PLUGIN=1 ..
+5) make
+6) sudo make install
 
 DEBUG MODE:
 To enable debug mode change the cmake command like this:
-2b) cmake -DCMAKE_BUILD_TYPE=Debug -DCOMPILE_PLUGIN=1
+4b) cmake -DCMAKE_BUILD_TYPE=Debug -DCOMPILE_PLUGIN=1
 
+CMAKE_BUILD_TYPE available: Debug Release RelWithDebInfo Profile Debian
 Sound support may be disabled passing to cmake the following option: -DENABLE_SOUND=0
 
 EXECUTION:

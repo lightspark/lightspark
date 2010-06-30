@@ -145,6 +145,10 @@ MouseEvent::MouseEvent():Event("mouseEvent")
 {
 }
 
+MouseEvent::MouseEvent(const tiny_string& t, bool b):Event(t,b)
+{
+}
+
 ProgressEvent::ProgressEvent():Event("progress"),bytesLoaded(0),bytesTotal(0)
 {
 }
@@ -204,6 +208,13 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("MOUSE_MOVE","",Class<ASString>::getInstanceS("mouseMove"));
 	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS("rollOver"));
 	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut"));
+}
+
+void MouseEvent::buildTraits(ASObject* o)
+{
+	//TODO: really handle local[XY]
+	o->setVariableByQName("localX","",abstract_d(0));
+	o->setVariableByQName("localY","",abstract_d(0));
 }
 
 IOErrorEvent::IOErrorEvent()

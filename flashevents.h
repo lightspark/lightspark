@@ -186,10 +186,9 @@ class MouseEvent: public Event
 {
 public:
 	MouseEvent();
+	MouseEvent(const tiny_string& t, bool b=true);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
+	static void buildTraits(ASObject* o);
 	EVENT_TYPE getEventType(){ return MOUSE_EVENT;}
 };
 

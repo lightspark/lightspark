@@ -1,3 +1,9 @@
+lightspark (0.4.2~rc1-0ubuntu1) lucid; urgency=low
+
+  * New release candidate
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Thu, 01 Jul 2010 03:20:36 +0200
+
 lightspark (0.4.1-0ubuntu1) lucid; urgency=low
 
   * New release

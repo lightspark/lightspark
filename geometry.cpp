@@ -293,7 +293,6 @@ void ShapesBuilder::joinOutlines()
 		//Kill all the empty outlines
 		outlinesForColor.erase(remove_if(outlinesForColor.begin(),outlinesForColor.end(), isOutlineEmpty),
 				       outlinesForColor.end());
-		assert_and_throw(!outlinesForColor.empty());
 	}
 }
 

@@ -24,8 +24,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 # Name & Version
 PROJECT(LIGHTSPARK)
 SET(MAJOR_VERSION "0")
-SET(MINOR_VERSION "5")
-SET(PATCH_VERSION "0")
+SET(MINOR_VERSION "4")
+SET(PATCH_VERSION "2")
 
 # Find out CPU architecture ...
 # we could also use IF(CMAKE_SIZEOF_VOID_P EQUAL 4) to determine if it's a 32 or a 64bit arch

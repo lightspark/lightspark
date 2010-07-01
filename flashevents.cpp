@@ -198,6 +198,8 @@ void MouseEvent::sinit(Class_base* c)
 {
 //	assert(c->constructor==NULL);
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS("click"));
 	c->setVariableByQName("DOUBLE_CLICK","",Class<ASString>::getInstanceS("doubleClick"));
 	c->setVariableByQName("MOUSE_DOWN","",Class<ASString>::getInstanceS("mouseDown"));

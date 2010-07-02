@@ -54,7 +54,7 @@ public:
 	SoundManager();
 	uint32_t createStream(AudioDecoder* decoder);
 	void freeStream(uint32_t id);
-	void fillAndSinc(uint32_t id, uint64_t seek);
+	void fillAndSync(uint32_t id, uint64_t seek);
 	void stop();
 	~SoundManager();
 };

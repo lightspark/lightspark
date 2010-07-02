@@ -36,7 +36,7 @@ void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 	}
 }
 
-void SoundManager::fillAndSinc(uint32_t id, uint64_t seek)
+void SoundManager::fillAndSync(uint32_t id, uint64_t seek)
 {
 	//Get buffer size
 	assert(streams[id-1]);

@@ -338,7 +338,7 @@ void NetStream::tick()
 #endif
 #ifdef ENABLE_SOUND
 		assert(audioDecoder);
-		sys->soundManager->fillAndSinc(soundStreamId, uint64_t(frameCount*44100/frameRate*4));
+		sys->soundManager->fillAndSync(soundStreamId, uint64_t(frameCount*44100/frameRate*4));
 #endif
 	}
 }

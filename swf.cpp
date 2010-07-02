@@ -259,7 +259,7 @@ bool SystemState::shouldTerminate() const
 	return shutdown || error;
 }
 
-void SystemState::setError(string& c)
+void SystemState::setError(const string& c)
 {
 	//We record only the first error for easier fix and reporting
 	if(!error)
@@ -1601,7 +1601,6 @@ void RenderThread::commonGLInit(int width, int height)
 		LOG(LOG_ERROR,"Video card does not support OpenGL 2.0... Aborting");
 		::abort();
 	}
-
 	if(GLEW_ARB_texture_non_power_of_two)
 		hasNPOTTextures=true;
 
@@ -1650,8 +1649,18 @@ void RenderThread::commonGLInit(int width, int height)
 	glGenFramebuffers(1, &fboId);
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, mainTex.getId(), 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, tempTex.getId(), 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,GL_TEXTURE_2D, inputTex.getId(), 0);
+	//Verify if we have more than an attachment available (1 is guaranteed)
+	GLint numberOfAttachments=0;
+	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &numberOfAttachments);
+	if(numberOfAttachments>=3)
+	{
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, tempTex.getId(), 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,GL_TEXTURE_2D, inputTex.getId(), 0);
+	}
+	else
+	{
+		m_sys->setError("Non enough color attachments available");
+	}
 	
 	// check FBO status
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);

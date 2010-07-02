@@ -184,7 +184,7 @@ public:
 	int yOffset;
 	
 	std::string errorCause;
-	void setError(std::string& c);
+	void setError(const std::string& c);
 	bool shouldTerminate() const;
 	bool isShuttingDown() const DLL_PUBLIC;
 	bool isOnError() const;

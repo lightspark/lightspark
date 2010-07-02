@@ -1580,6 +1580,9 @@ void RenderThread::commonGLDeinit()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	glDeleteFramebuffers(1,&rt->fboId);
+	dataTex.shutdown();
+	mainTex.shutdown();
+	tempTex.shutdown();
 }
 
 void RenderThread::commonGLInit(int width, int height)

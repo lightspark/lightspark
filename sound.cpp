@@ -28,11 +28,11 @@ using namespace std;
 void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 {
 	if(pa_stream_get_state(stream)==PA_STREAM_READY)
-		th->streamReady=true;
+		th->streamStatus=SoundStream::STREAM_READY;
 	else if(pa_stream_get_state(stream)==PA_STREAM_TERMINATED)
 	{
 		assert(stream==th->stream);
-		th->streamReady=false;
+		th->streamStatus=SoundStream::STREAM_DEAD;
 	}
 }
 
@@ -42,7 +42,7 @@ void SoundManager::fillAndSync(uint32_t id, uint64_t seek)
 	assert(streams[id-1]);
 	if(noServer==false)
 	{
-		if(streams[id-1]->streamReady==false)
+		if(streams[id-1]->streamStatus!=SoundStream::STREAM_READY)
 			return;
 		pa_stream* stream=streams[id-1]->stream;
 		while(1)
@@ -113,7 +113,7 @@ void SoundManager::freeStream(uint32_t id)
 	//Do not delete the stream now, let's wait termination
 	streams[id-1]=NULL;
 	pa_threaded_mainloop_unlock(mainLoop);
-	while(s->streamReady==true);
+	while(s->streamStatus!=SoundStream::STREAM_DEAD);
 	pa_threaded_mainloop_lock(mainLoop);
 	if(s->stream)
 		pa_stream_unref(s->stream);
@@ -171,6 +171,11 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 		pa_stream_set_started_callback(streams[index]->stream, (pa_stream_notify_cb_t)puppa2, NULL);
 		pa_stream_connect_playback(streams[index]->stream, NULL, &attrs, 
 				(pa_stream_flags)(PA_STREAM_AUTO_TIMING_UPDATE | PA_STREAM_INTERPOLATE_TIMING), NULL, NULL);
+	}
+	else
+	{
+		//Create the stream as dead
+		streams[index]->streamStatus=SoundStream::STREAM_DEAD;
 	}
 	pa_threaded_mainloop_unlock(mainLoop);
 	return index+1;

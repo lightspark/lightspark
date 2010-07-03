@@ -119,7 +119,7 @@ inner_loop_after_dup:
 	movntdq [ecx+48],xmm0
 	add ecx,64
 
-; Check for end
+; Check for end (always 16 aligned)
 	cmp eax,[ebp+24]
 	je line_end
 
@@ -247,9 +247,9 @@ inner_loop_after_dup2:
 	movntdq [ecx+48],xmm0
 	add ecx,64
 
-; Check for end
+; Be careful, this may be unaligned to 16
 	cmp eax,[ebp+24]
-	je line_end2
+	jge line_end2
 
 ; Check if we have to reload only Y (16 aligned) or all the buffers (32 aligned)
 	test eax,0x10
@@ -262,6 +262,11 @@ line_end2:
 	cmp ebx,[ebp+28]
 ; Exit if this is the last line
 	je loop_end2
+; Reset the Y pointer to the right place
+	mov eax, [ebp+24]
+	neg eax
+	and eax, 0xf
+	sub edi, eax
 ; Reset the U and V pointers to the right place
 	mov eax, [ebp+24]
 	shr eax, 0x1

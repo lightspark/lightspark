@@ -50,6 +50,8 @@ bool VideoDecoder::resizeIfNeeded(TextureBuffer& tex)
 	if(!resizeGLBuffers)
 		return false;
 
+	//Request a sane alignment
+	tex.setRequestedAlignment(16,1);
 	//Initialize texture to video size
 	tex.resize(frameWidth, frameHeight);
 	resizeGLBuffers=false;
@@ -184,19 +186,21 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 	}
 
 	bool ret=false;
+	//Align width to 16 bytes (4 pixels), the alignment protocol is also respected when resizing texture
+	const uint32_t alignedWidth=(frameWidth+15)&0xfffffff0;
 	if(VideoDecoder::resizeIfNeeded(tex))
 	{
-		//Initialize both PBOs to video size
+		//Initialize both PBOs to video size, the width is aligned to 16
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, frameWidth*frameHeight*4, 0, GL_STREAM_DRAW);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4, 0, GL_STREAM_DRAW);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[1]);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, frameWidth*frameHeight*4, 0, GL_STREAM_DRAW);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4, 0, GL_STREAM_DRAW);
 	}
 	else
 	{
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
 		//Copy content of the pbo to the texture, 0 is the offset in the pbo
-		tex.setBGRAData(0, frameWidth, frameHeight);
+		tex.setBGRAData(0, alignedWidth, frameHeight);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 		ret=true;
 	}
@@ -216,10 +220,7 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 		if(frameWidth%32==0)
 			fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
 		else
-		{
-			memset(buf,0xff,frameHeight*frameWidth*4);
 			fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
-		}
 
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);

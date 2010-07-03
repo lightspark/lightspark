@@ -886,7 +886,7 @@ void InputThread::disableDrag()
 	}
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),inputDisabled(false),
 	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),
 	mainTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
@@ -976,6 +976,8 @@ void RenderThread::requestInput()
 
 bool RenderThread::glAcquireIdBuffer()
 {
+	if(inputDisabled)
+		return false;
 	//TODO: PERF: on the id buffer stuff are drawn more than once
 	if(currentId!=0)
 	{
@@ -1659,7 +1661,8 @@ void RenderThread::commonGLInit(int width, int height)
 	}
 	else
 	{
-		m_sys->setError("Non enough color attachments available");
+		LOG(LOG_ERROR,"Non enough color attachments available, input disabled");
+		inputDisabled=true;
 	}
 	
 	// check FBO status

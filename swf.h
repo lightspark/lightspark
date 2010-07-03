@@ -311,6 +311,7 @@ private:
 	sem_t render;
 	sem_t inputDone;
 	bool inputNeeded;
+	bool inputDisabled;
 	std::string fontPath;
 
 #ifndef WIN32

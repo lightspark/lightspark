@@ -61,11 +61,25 @@ void TextureBuffer::setAllocSize(uint32_t w, uint32_t h)
 	{
 		allocWidth=w;
 		allocHeight=h;
+		//Now adjust for the requested alignment
+		if((allocWidth%horizontalAlignment))
+		{
+			allocWidth+=horizontalAlignment;
+			allocWidth-=(allocWidth%horizontalAlignment);
+		}
+		if((allocHeight%verticalAlignment))
+		{
+			allocHeight+=verticalAlignment;
+			allocHeight-=(allocHeight%verticalAlignment);
+		}
 	}
 	else
 	{
 		allocWidth=nearestPOT(w);
 		allocHeight=nearestPOT(h);
+		//Assert that the requested alignment is satisfied
+		assert((allocWidth%horizontalAlignment)==0);
+		assert((allocHeight%verticalAlignment)==0);
 	}
 }
 
@@ -79,8 +93,8 @@ uint32_t TextureBuffer::nearestPOT(uint32_t a) const
 	return ret;
 }
 
-TextureBuffer::TextureBuffer(bool initNow, uint32_t w, uint32_t h, GLenum f):texId(0),
-		filtering(f),allocWidth(0),allocHeight(0),width(w),height(h),inited(false)
+TextureBuffer::TextureBuffer(bool initNow, uint32_t w, uint32_t h, GLenum f):texId(0),filtering(f),allocWidth(0),allocHeight(0),
+	width(w),height(h),horizontalAlignment(1),verticalAlignment(1),inited(false)
 {
 	if(initNow)
 		init();
@@ -216,6 +230,13 @@ void TextureBuffer::setBGRAData(uint8_t* bgraData, uint32_t w, uint32_t h)
 #ifdef EXPENSIVE_DEBUG
 	cleanGLErrors();
 #endif
+}
+
+void TextureBuffer::setRequestedAlignment(uint32_t w, uint32_t h)
+{
+	assert(w && h);
+	horizontalAlignment=w;
+	verticalAlignment=h;
 }
 
 void TextureBuffer::setTexScale(GLuint uniformLocation)

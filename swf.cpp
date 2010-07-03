@@ -1356,14 +1356,6 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			{
 				glXSwapBuffers(d,p->window);
 
-				if(th->inputNeeded)
-				{
-					th->inputTex.bind();
-					glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
-					th->inputNeeded=false;
-					sem_post(&th->inputDone);
-				}
-
 				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
 				glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -1585,6 +1577,7 @@ void RenderThread::commonGLDeinit()
 	dataTex.shutdown();
 	mainTex.shutdown();
 	tempTex.shutdown();
+	inputTex.shutdown();
 }
 
 void RenderThread::commonGLInit(int width, int height)

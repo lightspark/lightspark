@@ -205,6 +205,7 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_callback);
 		curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, this);
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 		//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		res = curl_easy_perform(curl);
 		if(res!=0)

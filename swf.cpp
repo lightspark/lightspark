@@ -1092,7 +1092,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		{
 			sem_wait(&th->render);
 			if(th->m_sys->isShuttingDown())
-				pthread_exit(0);
+				break;
 
 			chronometer.checkpoint();
 
@@ -1114,7 +1114,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			while(sem_trywait(&th->render)==0)
 			{
 				if(th->m_sys->isShuttingDown())
-					pthread_exit(0);
+					break;
 				fakeRenderCount++;
 			}
 
@@ -1313,7 +1313,7 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			while(sem_trywait(&th->render)==0)
 			{
 				if(th->m_sys->isShuttingDown())
-					pthread_exit(0);
+					break;
 				fakeRenderCount++;
 			}
 			
@@ -1727,7 +1727,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			while(sem_trywait(&th->render)==0)
 			{
 				if(th->m_sys->isShuttingDown())
-					pthread_exit(0);
+					break;
 				fakeRenderCount++;
 			}
 
@@ -1735,7 +1735,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 
 			if(th->m_sys->isShuttingDown())
-				pthread_exit(0);
+				break;
 			SDL_PumpEvents();
 
 			if(th->m_sys->isOnError())

@@ -4,6 +4,7 @@ Version 0.4.2:
 	* Use fontconfig to select fonts
 	* Nore efficient handling of read only strings
 	* Greater compatibility with youtube videos
+	* Better compatibility with radeon cards
 
 Version 0.4.1:
 	* Optimized rendering of simple graphics

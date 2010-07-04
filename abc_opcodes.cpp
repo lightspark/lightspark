@@ -644,11 +644,15 @@ void ABCVm::construct(call_context* th, int m)
 		ret=Class<ASObject>::getInstanceS();
 		if(sf->mi->body)
 		{
+#ifndef NDEBUG
 			ret->initialized=false;
+#endif
 			LOG(LOG_CALLS,"Building method traits");
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+#ifndef NDEBUG
 			ret->initialized=true;
+#endif
 			ret->incRef();
 			assert_and_throw(sf->closure_this==NULL);
 			ASObject* ret2=sf->call(ret,args,m,0);
@@ -1913,11 +1917,15 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		ret=Class<ASObject>::getInstanceS();
 		if(sf->mi->body)
 		{
+#ifndef NDEBUG
 			ret->initialized=false;
+#endif
 			LOG(LOG_CALLS,"Building method traits");
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+#ifndef NDEBUG
 			ret->initialized=true;
+#endif
 			ret->incRef();
 			assert_and_throw(sf->closure_this==NULL);
 			ASObject* ret2=sf->call(ret,args,m,0);
@@ -2181,10 +2189,14 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act=Class<ASObject>::getInstanceS();
+#ifndef NDEBUG
 	act->initialized=false;
+#endif
 	for(unsigned int i=0;i<info->body->trait_count;i++)
 		th->context->buildTrait(act,&info->body->traits[i],false);
+#ifndef NDEBUG
 	act->initialized=true;
+#endif
 
 	return act;
 }

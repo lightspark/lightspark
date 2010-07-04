@@ -263,7 +263,9 @@ bool ASObject::hasPropertyByMultiname(const multiname& name)
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	check();
+#ifndef NDEBUG
 	assert_and_throw(!initialized);
+#endif
 	//Getters are inserted with the current level of the prototype chain
 	int level=cur_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
@@ -279,7 +281,9 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	check();
+#ifndef NDEBUG
 	assert_and_throw(!initialized);
+#endif
 	//Setters are inserted with the current level of the prototype chain
 	int level=cur_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
@@ -579,7 +583,9 @@ ASFUNCTIONBODY(ASObject,_setPrototype)
 void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns)
 {
 	//Should be correct to use the level on the prototype chain
+#ifndef NDEBUG
 	assert_and_throw(!initialized);
+#endif
 	Variables.initSlot(n,cur_level,name,ns);
 }
 

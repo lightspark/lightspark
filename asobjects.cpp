@@ -1727,7 +1727,9 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	}*/
 	if(buildAndLink)
 	{
+	#ifndef NDEBUG
 		assert_and_throw(!target->initialized);
+	#endif
 		//HACK: suppress implementation handling of variables just now
 		bool bak=target->implEnable;
 		target->implEnable=false;

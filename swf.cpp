@@ -653,7 +653,7 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 			break;
 		case ButtonPress:
 		{
-			cout << "Press" << endl;
+			//cout << "Press" << endl;
 			Locker locker(th->mutexListeners);
 			th->m_sys->renderThread->requestInput();
 			float selected=th->m_sys->renderThread->getIdAt(xevent->xbutton.x,xevent->xbutton.y);
@@ -674,7 +674,7 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 		}
 		case ButtonRelease:
 		{
-			cout << "Release" << endl;
+			//cout << "Release" << endl;
 			Locker locker(th->mutexListeners);
 			sys->renderThread->requestInput();
 			float selected=sys->renderThread->getIdAt(xevent->xbutton.x,xevent->xbutton.y);

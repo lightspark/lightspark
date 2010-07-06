@@ -1,26 +1,3 @@
-Lightspark third Technical demo README
-
-First of all I'd like to thank you for testing the lightspark project,
-the current status is kind of stable, although not ready for end users
-
-Be aware that the following feature are not yet supported or stable enough to be include in the demo
-
--) Sound support
--) Input support
--) Antialiasing
-
-This demo already includes a lot of cool features
-
--) GLSL based rendering of fill styles (eg. gradients)
--) LLVM based ActionScript execution. Code is compiled just in time
--) A few tricks are also played to decrease the stack traffic typical of stack machines.
--) First, although simple, framerate timing
--) Framework to handle ActionScript asynchronous events.
-
-NOTE:
-Currently only 64bit and 32bit platforms with SSE2 extension are supported. Support for previous processor will
-be ready soon.
-
 INSTALLATION:
 To compile this software you need to install development packages for llvm-2.7, sdl, opengl, curl, zlib, libavcodec, ftgl, libglew, fontconfig.
 If sound is enabled (on by default), you need the development package for pulseaudio-libs.
@@ -43,17 +20,20 @@ CMAKE_BUILD_TYPE available: Debug Release RelWithDebInfo Profile Debian
 Sound support may be disabled passing to cmake the following option: -DENABLE_SOUND=0
 
 EXECUTION:
-This demo aims at rendering, the runtime generated UI of the new YouTube player. Recently YouTube switched 
-to Flash 10 and AS3 to serve some HD content, while maintaining the old AS2 based player for lower quality content.
+Using make install lightspark is installed in the system wide firefox plugin path and firefox should show it in about:plugins and in the 
+Tools->Add-Ons->Plugins window.
 
--) First of all download the YouTube player SWF file.
-	wget http://s.ytimg.com/yt/swf/watch_as3-vfl172193.swf
--) The player works by gathering the parameters from the Javascript in the page. Lightspark support loading parameters from a text file
-   using the --parameters-file command line. Create a suitable parameters file using the following commands
-	cd scripts
-	./youtube-args-dumper.sh http://www.youtube.com/watch?v=4N2YWRJ-ppo > ../yt-args
-	cd ..
--) Execute the file, this will render the usual UI of the YouTube player and decoded video, no sound is played yet
-	lightspark --parameters-file yt-args watch_as3-vfl172193.swf
+Lightspark register itself as the plugin for application/x-shockwave-flash and for application/x-lightspark, so should be recognisable in the
+about:plugins page. It's description string is "Shockwave Flash 10.0 r<current version>", now r42.
 
-Press 'Q' on Lightspark window to close the application
+Firefox is not able to deal very well with multiple plugins for the same MIME type, if you only see a black box where a flash app should be try
+to move away of the plugin directory any other flash plugin you have installed.
+
+TEST:
+You may try it on some known-to-work movies:
+
+http://www.youtube.com/watch?v=ca20NEt4VSQ
+http://www.youtube.com/watch?v=4N2YWRJ-ppo
+http://www.youtube.com/watch?v=XITHbsUUlYI
+http://www.youtube.com/watch?v=-j7c0u9yZ8M
+http://www.youtube.com/watch?v=G4S9tV8ZLcE

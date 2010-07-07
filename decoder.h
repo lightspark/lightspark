@@ -131,6 +131,11 @@ protected:
 	enum STATUS { PREINIT=0, INIT, VALID};
 	STATUS status;
 public:
+	/**
+	  	The AudioDecoder contains audio buffers that must be aligned to 16 bytes, so we redefine the allocator
+	*/
+	void* operator new(size_t);
+	void operator delete(void*);
 	AudioDecoder():status(PREINIT),sampleRate(0){}
 	virtual ~AudioDecoder(){};
 	virtual bool decodeData(uint8_t* data, uint32_t datalen)=0;

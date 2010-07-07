@@ -252,6 +252,19 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 #endif
 }
 
+void* AudioDecoder::operator new(size_t s)
+{
+	void* retAddr=NULL;
+	int ret=posix_memalign(&retAddr, 16, s);
+	assert(ret==0);
+	assert(retAddr);
+	return retAddr;
+}
+void AudioDecoder::operator delete(void* addr)
+{
+	free(addr);
+}
+
 FFMpegAudioDecoder::FFMpegAudioDecoder(FLV_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen)
 {
 	CodecID codecId;

@@ -60,7 +60,10 @@ public:
 	{
 		return frameHeight;
 	}
-	bool isValid() { return status==VALID; }
+	bool isValid() const
+	{
+		return status==VALID;
+	}
 	float frameRate;
 };
 
@@ -125,17 +128,27 @@ protected:
 		void init(FrameSamples& f) const {f.len=AVCODEC_MAX_AUDIO_FRAME_SIZE;}
 	};
 	BlockingCircularQueue<FrameSamples,30> samplesBuffer;
+	enum STATUS { PREINIT=0, INIT, VALID};
+	STATUS status;
 public:
+	AudioDecoder():status(PREINIT),sampleRate(0){}
 	virtual ~AudioDecoder(){};
 	virtual bool decodeData(uint8_t* data, uint32_t datalen)=0;
 	virtual uint32_t copyFrame(int16_t* dest, uint32_t len)=0;
 	bool discardFrame();
+	bool isValid() const
+	{
+		return status==VALID;
+	}
+	uint32_t sampleRate;
+	uint32_t channelCount;
 };
 
 class FFMpegAudioDecoder: public AudioDecoder
 {
 private:
 	AVCodecContext* codecContext;
+	bool fillDataAndCheckValidity();
 public:
 	FFMpegAudioDecoder(FLV_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
 	bool decodeData(uint8_t* data, uint32_t datalen);

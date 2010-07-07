@@ -146,6 +146,7 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 		if(streams[index]==NULL)
 			break;
 	}
+	assert(decoder->isValid());
 	if(index==streams.size())
 		streams.push_back(new SoundStream(this));
 	streams[index]->decoder=decoder;
@@ -153,8 +154,8 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 	{
 		pa_sample_spec ss;
 		ss.format=PA_SAMPLE_S16LE;
-		ss.rate=44100;
-		ss.channels=2;
+		ss.rate=decoder->sampleRate;
+		ss.channels=decoder->channelCount;
 		pa_buffer_attr attrs;
 		attrs.maxlength=(uint32_t)-1;
 		attrs.prebuf=(uint32_t)-1;

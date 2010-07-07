@@ -201,6 +201,8 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
 		//Copy content of the pbo to the texture, 0 is the offset in the pbo
 		tex.setBGRAData(0, alignedWidth, frameHeight);
+		//Now texture width has become alignedWidth, reset it to the right value
+		tex.resize(frameWidth,frameHeight);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 		ret=true;
 	}
@@ -275,9 +277,31 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(FLV_AUDIO_CODEC audioCodec, uint8_t* init
 	if(avcodec_open(codecContext, codec)<0)
 		throw RunTimeException("Cannot open decoder");
 
-	//assert_and_throw(codecContext->channels==2);
-	cout << codecContext->sample_rate << endl;
-	//assert_and_throw(codecContext->sample_rate==44000);
+	if(fillDataAndCheckValidity())
+		status=VALID;
+	else
+		status=INIT;
+}
+
+bool FFMpegAudioDecoder::fillDataAndCheckValidity()
+{
+	if(codecContext->sample_rate!=0)
+	{
+		cout << codecContext->sample_rate << endl;
+		sampleRate=codecContext->sample_rate;
+	}
+	else
+		return false;
+
+	if(codecContext->channels!=0)
+	{
+		cout << "Channels " << codecContext->channels << endl;
+		channelCount=codecContext->channels;
+	}
+	else
+		return false;
+
+	return true;
 }
 
 bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
@@ -294,6 +318,10 @@ bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
 	uint32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
 #endif
 	assert_and_throw(ret==datalen);
+
+	if(status==INIT && fillDataAndCheckValidity())
+		status=VALID;
+
 	curTail.len=maxLen;
 	assert(maxLen%2==0);
 	curTail.current=curTail.samples;

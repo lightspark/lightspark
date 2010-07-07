@@ -345,12 +345,10 @@ void NetStream::tick()
 
 bool NetStream::isReady() const
 {
-	bool ret=true;
-	if(videoDecoder)
-		ret&=videoDecoder->isValid();
-	else
+	if(videoDecoder==NULL && audioDecoder==NULL)
 		return false;
-	//TODO: also per audioDecoder
+
+	bool ret=videoDecoder->isValid() && audioDecoder->isValid();
 	return ret;
 }
 
@@ -410,6 +408,8 @@ void NetStream::execute()
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
 							audioDecoder->decodeData(tag.packetData,tag.packetLen);
+							if(soundStreamId==0 && audioDecoder->isValid())
+								soundStreamId=sys->soundManager->createStream(audioDecoder);
 						}
 						else
 						{
@@ -424,7 +424,8 @@ void NetStream::execute()
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
 							}
-							soundStreamId=sys->soundManager->createStream(audioDecoder);
+							if(audioDecoder->isValid())
+								soundStreamId=sys->soundManager->createStream(audioDecoder);
 						}
 #endif
 						break;

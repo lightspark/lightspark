@@ -1,7 +1,7 @@
 /**************************************************************************
     Lighspark, a free flash player implementation
 
-    Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -20,11 +20,11 @@
 #include "plugin.h"
 #include "logger.h"
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
-//#define MIME_TYPES_HANDLED  "application/x-lightspark"
+#define FAKE_MIME_TYPE  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
-#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
-//#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r04_Lightspark"
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r50"
+#define FAKE_PLUGIN_NAME    "Lightspark player"
+#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME//";"FAKE_MIME_TYPE":swf:"PLUGIN_NAME
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r42"
 #include "class.h"
 #include <gtk/gtk.h>
 

@@ -182,48 +182,39 @@ void TextureBuffer::init(uint32_t w, uint32_t h, GLenum f)
 
 void TextureBuffer::resize(uint32_t w, uint32_t h)
 {
-	setAllocSize(w,h);
-	width=w;
-	height=h;
-	
-	cleanGLErrors();
-
-	glBindTexture(GL_TEXTURE_2D,texId);
-	//Allocate the texture
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-	GLenum err=glGetError();
-	assert(err!=GL_INVALID_OPERATION);
-	if(err==GL_INVALID_VALUE)
+	if(width!=w || height!=h)
 	{
-		LOG(LOG_ERROR,"GL_INVALID_VALUE after glTexImage2D, width=" << allocWidth << " height=" << allocHeight);
-		throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::init");
+		if(w>allocWidth || h>allocHeight) //Destination texture should be reallocated
+		{
+			glBindTexture(GL_TEXTURE_2D,texId);
+			LOG(LOG_CALLS,"Reallocating texture to size " << w << 'x' << h);
+			setAllocSize(w,h);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+			GLenum err=glGetError();
+			assert(err!=GL_INVALID_OPERATION);
+			if(err==GL_INVALID_VALUE)
+			{
+				LOG(LOG_ERROR,"GL_INVALID_VALUE after glTexImage2D, width=" << allocWidth << " height=" << allocHeight);
+				throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::setBGRAData");
+			}
+		}
+		width=w;
+		height=h;
+#ifdef EXPENSIVE_DEBUG
+		cleanGLErrors();
+#endif
 	}
-	glBindTexture(GL_TEXTURE_2D,0);
-	
-	cleanGLErrors();
 }
 
 void TextureBuffer::setBGRAData(uint8_t* bgraData, uint32_t w, uint32_t h)
 {
 	cleanGLErrors();
 
-	glBindTexture(GL_TEXTURE_2D,texId);
-	if(w>allocWidth || h>allocHeight) //Destination texture should be reallocated
-	{
-		LOG(LOG_CALLS,"Reallocating texture to size " << w << 'x' << h);
-		setAllocSize(w,h);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
-		GLenum err=glGetError();
-		assert(err!=GL_INVALID_OPERATION);
-		if(err==GL_INVALID_VALUE)
-		{
-			LOG(LOG_ERROR,"GL_INVALID_VALUE after glTexImage2D, width=" << allocWidth << " height=" << allocHeight);
-			throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::setBGRAData");
-		}
-	}
+	//First of all resize the texture (if needed)
+	resize(w, h);
 
-	width=w;
-	height=h;
+	glBindTexture(GL_TEXTURE_2D,texId);
+
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, bgraData);
 	assert(glGetError()==GL_NO_ERROR);
 	

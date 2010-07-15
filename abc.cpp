@@ -1315,7 +1315,9 @@ void ABCContext::exec()
 
 void ABCVm::Run(ABCVm* th)
 {
+	//Spin wait until the VM is aknowledged by the SystemState
 	sys=th->m_sys;
+	while(getVm()!=th);
 	isVmThread=true;
 	if(th->m_sys->useJit)
 	{

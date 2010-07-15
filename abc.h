@@ -209,6 +209,10 @@ struct block_info
 };
 
 typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
+inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)
+{
+	return std::make_pair(v, t);
+}
 
 class method_info
 {

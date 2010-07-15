@@ -636,7 +636,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 {
 	bool stop;
 	stringstream code(body->code);
-	vector<stack_entry> static_locals(body->local_count,stack_entry(NULL,STACK_NONE));
+	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
 	llvm::LLVMContext& llvm_context=getVm()->llvm_context;
 	llvm::ExecutionEngine* ex=getVm()->ex;
 	const llvm::Type* int_type=ex->getTargetData()->getIntPtrType(llvm_context);
@@ -1544,7 +1544,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 
 	//Let's reset the stream
 	stringstream code(body->code);
-	vector<stack_entry> static_locals(body->local_count,stack_entry(NULL,STACK_NONE));
+	vector<stack_entry> static_locals(body->local_count,make_stack_entry(NULL,STACK_NONE));
 	block_info* cur_block=NULL;
 
 	static_stack.clear();

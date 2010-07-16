@@ -5,6 +5,7 @@ Version 0.4.2:
 	* Nore efficient handling of read only strings
 	* Greater compatibility with youtube videos
 	* Better compatibility with radeon cards
+	* Sound synchronization
 
 Version 0.4.1:
 	* Optimized rendering of simple graphics

@@ -638,7 +638,6 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, X11Intrinsic::Boolean* b)
 {
 	//Set sys to this SystemState
-	assert(sys==NULL);
 	sys=th->m_sys;
 	switch(xevent->type)
 	{

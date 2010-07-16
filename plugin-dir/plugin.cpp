@@ -150,9 +150,9 @@ nsPluginInstanceBase * NS_NewPluginInstance(nsPluginCreateData * aCreateDataStru
 
 void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 {
-  if(aPlugin)
-    delete (nsPluginInstance *)aPlugin;
-  sys=NULL;
+	if(aPlugin)
+		delete (nsPluginInstance *)aPlugin;
+	sys=NULL;
 }
 
 ////////////////////////////////////////
@@ -234,6 +234,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	}
 	m_sys->downloadManager=new NPDownloadManager(mInstance);
 	m_sys->addJob(m_pt);
+	//The sys var should be NULL in this thread
+	sys=NULL;
 }
 
 int nsPluginInstance::hexToInt(char c)
@@ -367,7 +369,6 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		}
 		m_it=new lightspark::InputThread(m_sys,lightspark::NPAPI,p2);
 
-		sys=NULL;
 		m_sys->inputThread=m_it;
 		m_sys->setRenderThread(m_rt);
 	}

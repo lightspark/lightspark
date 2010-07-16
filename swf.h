@@ -173,6 +173,8 @@ private:
 	float renderRate;
 	bool error;
 	bool shutdown;
+	RenderThread* renderThread;
+	void startRenderTicks();
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -191,6 +193,8 @@ public:
 	void setShutdownFlag() DLL_PUBLIC;
 	void tick();
 	void wait() DLL_PUBLIC;
+	RenderThread* getRenderThread() const { return renderThread; }
+	void setRenderThread(RenderThread* r) DLL_PUBLIC;
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
@@ -204,7 +208,6 @@ public:
 	Stage* stage;
 	ABCVm* currentVm;
 	InputThread* inputThread;
-	RenderThread* renderThread;
 #ifdef ENABLE_SOUND
 	SoundManager* soundManager;
 #endif

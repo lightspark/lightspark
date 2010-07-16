@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
 	RenderThread rt(sys,SDL,NULL);
 	InputThread it(sys,SDL,NULL);
 	sys->inputThread=&it;
-	sys->renderThread=&rt;
+	sys->setRenderThread(&rt);
 	sys->downloadManager=new CurlDownloadManager();
 	//Start the parser
 	sys->addJob(pt);

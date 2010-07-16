@@ -144,9 +144,9 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 	clip->decRef();
 }
 
-SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),showProfilingData(false),
-	showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),inputThread(NULL),
-	renderThread(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
+SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),renderThread(NULL),
+	showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	inputThread(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -297,6 +297,23 @@ float SystemState::getRenderRate()
 	return renderRate;
 }
 
+void SystemState::startRenderTicks()
+{
+	assert(renderThread);
+	assert(renderRate);
+	removeJob(renderThread);
+	addTick(1000/renderRate,renderThread);
+}
+
+void SystemState::setRenderThread(RenderThread* t)
+{
+	assert(renderThread==NULL);
+	renderThread=t;
+	//If the render rate is known start the render ticks
+	if(renderRate)
+		startRenderTicks();
+}
+
 void SystemState::setRenderRate(float rate)
 {
 	if(renderRate>=rate)
@@ -304,9 +321,8 @@ void SystemState::setRenderRate(float rate)
 	
 	//The requested rate is higher, let's reschedule the job
 	renderRate=rate;
-	assert(renderThread);
-	removeJob(renderThread);
-	addTick(1000/rate,renderThread);
+	if(renderThread)
+		startRenderTicks();
 }
 
 void SystemState::tick()
@@ -648,15 +664,15 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 		}
 		case Expose:
 			//Signal the renderThread
-			th->m_sys->renderThread->draw();
+			th->m_sys->getRenderThread()->draw();
 			*b=False;
 			break;
 		case ButtonPress:
 		{
 			//cout << "Press" << endl;
 			Locker locker(th->mutexListeners);
-			th->m_sys->renderThread->requestInput();
-			float selected=th->m_sys->renderThread->getIdAt(xevent->xbutton.x,xevent->xbutton.y);
+			th->m_sys->getRenderThread()->requestInput();
+			float selected=th->m_sys->getRenderThread()->getIdAt(xevent->xbutton.x,xevent->xbutton.y);
 			if(selected!=0)
 			{
 				int index=lrint(th->listeners.size()*selected);
@@ -667,7 +683,7 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
 				//And select that object for debugging (if needed)
 				if(th->m_sys->showDebug)
-					th->m_sys->renderThread->selectedDebug=th->listeners[index];
+					th->m_sys->getRenderThread()->selectedDebug=th->listeners[index];
 			}
 			*b=False;
 			break;
@@ -676,8 +692,8 @@ void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEven
 		{
 			//cout << "Release" << endl;
 			Locker locker(th->mutexListeners);
-			sys->renderThread->requestInput();
-			float selected=sys->renderThread->getIdAt(xevent->xbutton.x,xevent->xbutton.y);
+			th->m_sys->getRenderThread()->requestInput();
+			float selected=th->m_sys->getRenderThread()->getIdAt(xevent->xbutton.x,xevent->xbutton.y);
 			if(selected!=0)
 			{
 				int index=lrint(th->listeners.size()*selected);
@@ -757,11 +773,11 @@ void* InputThread::sdl_worker(InputThread* th)
 			case SDL_MOUSEBUTTONDOWN:
 			{
 				Locker locker(th->mutexListeners);
-				th->m_sys->renderThread->requestInput();
-				float selected=th->m_sys->renderThread->getIdAt(event.button.x,event.button.y);
+				th->m_sys->getRenderThread()->requestInput();
+				float selected=th->m_sys->getRenderThread()->getIdAt(event.button.x,event.button.y);
 				if(selected==0)
 				{
-					th->m_sys->renderThread->selectedDebug=NULL;
+					th->m_sys->getRenderThread()->selectedDebug=NULL;
 					break;
 				}
 
@@ -773,14 +789,14 @@ void* InputThread::sdl_worker(InputThread* th)
 				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
 				//And select that object for debugging (if needed)
 				if(th->m_sys->showDebug)
-					th->m_sys->renderThread->selectedDebug=th->listeners[index];
+					th->m_sys->getRenderThread()->selectedDebug=th->listeners[index];
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
 			{
 				Locker locker(th->mutexListeners);
-				th->m_sys->renderThread->requestInput();
-				float selected=th->m_sys->renderThread->getIdAt(event.button.x,event.button.y);
+				th->m_sys->getRenderThread()->requestInput();
+				float selected=th->m_sys->getRenderThread()->getIdAt(event.button.x,event.button.y);
 				if(selected==0)
 					break;
 

@@ -369,7 +369,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
 		sys=NULL;
 		m_sys->inputThread=m_it;
-		m_sys->renderThread=m_rt;
+		m_sys->setRenderThread(m_rt);
 	}
 	//draw();
 	return TRUE;

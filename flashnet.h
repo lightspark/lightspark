@@ -109,14 +109,13 @@ private:
 	tiny_string url;
 	STREAM_TYPE classifyStream(std::istream& s);
 	double frameRate;
-	uint64_t frameCount;
 	bool tickStarted;
 	Downloader* downloader;
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
 	FLV_AUDIO_CODEC audioCodec;
 	uint32_t soundStreamId;
-	//TODO: add other audio data
+	uint32_t streamTime;
 	sem_t mutex;
 	//IThreadJob interface for long jobs
 	void execute();

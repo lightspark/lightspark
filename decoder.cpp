@@ -123,6 +123,17 @@ void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 	}
 }
 
+void FFMpegVideoDecoder::skipUntil(uint32_t time)
+{
+	while(1)
+	{
+		if(buffers.front().time>=time)
+			break;
+		if(discardFrame()==false)
+			break;
+	}
+}
+
 bool FFMpegVideoDecoder::discardFrame()
 {
 	Locker locker(mutex);
@@ -130,7 +141,7 @@ bool FFMpegVideoDecoder::discardFrame()
 	return buffers.nonBlockingPopFront();
 }
 
-bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen)
+bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
 {
 	int frameOk=0;
 #if HAVE_AVCODEC_DECODE_VIDEO2
@@ -151,11 +162,11 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen)
 
 	assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
 
-	copyFrameToBuffers(frameIn);
+	copyFrameToBuffers(frameIn, time);
 	return true;
 }
 
-void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn)
+void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t time)
 {
 	YUVBuffer& curTail=buffers.acquireLast();
 	//Only one thread may access the tail
@@ -172,6 +183,7 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn)
 		offset[1]+=frameWidth/2;
 		offset[2]+=frameWidth/2;
 	}
+	curTail.time=time;
 
 	buffers.commitLast();
 }
@@ -265,6 +277,71 @@ void AudioDecoder::operator delete(void* addr)
 	free(addr);
 }
 
+bool AudioDecoder::discardFrame()
+{
+	//We don't want ot block if no frame is available
+	return samplesBuffer.nonBlockingPopFront();
+}
+
+uint32_t AudioDecoder::copyFrame(int16_t* dest, uint32_t len)
+{
+	assert(dest);
+	if(samplesBuffer.isEmpty())
+		return 0;
+	//Check if we have to just return the size
+	uint32_t frameSize=min(samplesBuffer.front().len,len);
+	memcpy(dest,samplesBuffer.front().current,frameSize);
+	samplesBuffer.front().len-=frameSize;
+	if(samplesBuffer.front().len==0)
+		samplesBuffer.nonBlockingPopFront();
+	else
+	{
+		samplesBuffer.front().current+=frameSize/2;
+		samplesBuffer.front().time+=frameSize/getBytesPerMSec();
+	}
+	return frameSize;
+}
+
+uint32_t AudioDecoder::getFrontTime() const
+{
+	assert(!samplesBuffer.isEmpty());
+	return samplesBuffer.front().time;
+}
+
+void AudioDecoder::skipUntil(uint32_t time, uint32_t usecs)
+{
+	assert(isValid());
+//	while(1) //Should loop, but currently only usec adjustements are requested
+	{
+		if(samplesBuffer.isEmpty())
+			return;
+		FrameSamples& cur=samplesBuffer.front();
+		assert(time==cur.time);
+		if(usecs==0) //Nothing to skip
+			return;
+		//Check how many bytes are needed to fill the gap
+		uint32_t bytesToDiscard=(time-cur.time)*getBytesPerMSec()+usecs*getBytesPerMSec()/1000;
+		bytesToDiscard&=0xfffffffe;
+
+		if(cur.len<=bytesToDiscard) //The whole frame is droppable
+			discardFrame();
+		else
+		{
+			assert((bytesToDiscard%2)==0);
+			cur.len-=bytesToDiscard;
+			cur.current+=(bytesToDiscard/2);
+			cur.time=time;
+			return;
+		}
+	}
+}
+
+void AudioDecoder::skipAll()
+{
+	while(!samplesBuffer.isEmpty())
+		discardFrame();
+}
+
 FFMpegAudioDecoder::FFMpegAudioDecoder(FLV_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen)
 {
 	CodecID codecId;
@@ -317,7 +394,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 	return true;
 }
 
-bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
+uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
 {
 	FrameSamples& curTail=samplesBuffer.acquireLast();
 	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
@@ -338,29 +415,8 @@ bool FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen)
 	curTail.len=maxLen;
 	assert(maxLen%2==0);
 	curTail.current=curTail.samples;
+	curTail.time=time;
 	samplesBuffer.commitLast();
-	return true;
-}
-
-uint32_t FFMpegAudioDecoder::copyFrame(int16_t* dest, uint32_t len)
-{
-	assert(dest);
-	if(samplesBuffer.isEmpty())
-		return 0;
-	//Check if we have to just return the size
-	uint32_t frameSize=min(samplesBuffer.front().len,len);
-	memcpy(dest,samplesBuffer.front().current,frameSize);
-	samplesBuffer.front().len-=frameSize;
-	if(samplesBuffer.front().len==0)
-		samplesBuffer.nonBlockingPopFront();
-	else
-		samplesBuffer.front().current+=frameSize/2;
-	return frameSize;
-}
-
-bool AudioDecoder::discardFrame()
-{
-	//We don't want ot block if no frame is available
-	return samplesBuffer.nonBlockingPopFront();
+	return maxLen;
 }
 

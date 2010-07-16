@@ -377,7 +377,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 {
 	if(codecContext->sample_rate!=0)
 	{
-		cout << codecContext->sample_rate << endl;
+		LOG(LOG_NO_INFO,"Audio sample rate " << codecContext->sample_rate);
 		sampleRate=codecContext->sample_rate;
 	}
 	else
@@ -385,7 +385,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 
 	if(codecContext->channels!=0)
 	{
-		cout << "Channels " << codecContext->channels << endl;
+		LOG(LOG_NO_INFO, "Audio channels " << codecContext->channels);
 		channelCount=codecContext->channels;
 	}
 	else

@@ -161,6 +161,13 @@ public:
 		for(uint32_t i=0;i<size;i++)
 			g.init(queue[i]);
 	}
+	uint32_t len() const
+	{
+		uint32_t tmp=(bufferTail+size-bufferHead)%size;
+		if(tmp==0 && !empty)
+			tmp=size;
+		return tmp;
+	}
 
 };
 

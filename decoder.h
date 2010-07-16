@@ -98,7 +98,7 @@ private:
 	GLuint videoBuffers[2];
 	unsigned int curBuffer;
 	AVCodecContext* codecContext;
-	BlockingCircularQueue<YUVBuffer,10> buffers;
+	BlockingCircularQueue<YUVBuffer,20> buffers;
 	Mutex mutex;
 	bool initialized;
 	AVFrame* frameIn;

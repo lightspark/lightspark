@@ -1074,7 +1074,7 @@ bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	{
 		assert(obj==NULL);
 		ev->incRef();
-		handleEvent(make_pair<EventDispatcher*,Event*>(NULL, ev));
+		handleEvent(make_pair<EventDispatcher*>(NULL, ev));
 		return true;
 	}
 

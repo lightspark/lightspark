@@ -47,6 +47,13 @@ Description: Experimental high-performance SWF (Adobe Flash) player
  .
  Common data for standalone and plugin version
 
+Package: lightspark-common-dbg
+Section: debug
+Architecture: i386 amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}, lightspark-common
+Description: debuging symbols for lightspark
+ Debug symbols for lightspark and associated libraries
+
 Package: mozilla-plugin-lightspark
 Architecture: i386 amd64
 Xb-Npp-Applications: ec8030f7-c20a-464f-9b0e-13a3a9e97384

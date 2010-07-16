@@ -126,13 +126,18 @@ public:
 		assert(!empty);
 		return queue[bufferHead];
 	}
+	const T& front() const
+	{
+		assert(!empty);
+		return queue[bufferHead];
+	}
 	bool nonBlockingPopFront()
 	{
 		//We don't want to block if empty
 		if(!usedBuffers.try_wait())
 			return false;
 		//A frame is available
-		bufferHead=(bufferHead+1)%10;
+		bufferHead=(bufferHead+1)%size;
 		if(bufferHead==bufferTail)
 			empty=true;
 		freeBuffers.signal();
@@ -142,7 +147,7 @@ public:
 	{
 		freeBuffers.wait();
 		uint32_t ret=bufferTail;
-		bufferTail=(bufferTail+1)%10;
+		bufferTail=(bufferTail+1)%size;
 		return queue[ret];
 	}
 	void commitLast()

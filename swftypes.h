@@ -784,7 +784,7 @@ inline std::istream& operator>>(std::istream& s, FLOAT& v)
 
 inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 {
-	// "Wacky format" is 45670123. Thanks to Ghash for reversing :-)
+	// "Wacky format" is 45670123. Thanks to Gnash for reversing :-)
 	s.read(((char*)&v.val)+4,4);
 	s.read(((char*)&v.val),4);
 	return s;

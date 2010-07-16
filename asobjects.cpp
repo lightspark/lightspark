@@ -1652,6 +1652,12 @@ ASFUNCTIONBODY(ASString,concat)
 	return ret;
 }
 
+Class_base::Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
+	context(NULL),class_name(name),class_index(-1),max_level(0)
+{
+	type=T_CLASS;
+}
+
 Class_base::~Class_base()
 {
 	if(constructor)

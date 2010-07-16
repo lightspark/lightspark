@@ -120,7 +120,8 @@ IF(COMPILE_PLUGIN)
 ENDIF(COMPILE_PLUGIN)
 
 # Compiler defaults flags for different profiles
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -std=c++0x")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x")
+
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
 SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")

@@ -27,7 +27,7 @@
 namespace lightspark
 {
 
-class DLL_PUBLIC Mutex
+class Mutex
 {
 friend class Locker;
 private:
@@ -75,7 +75,7 @@ public:
 	bool try_wait();
 };
 
-class DLL_PUBLIC Locker
+class Locker
 {
 private:
 	Mutex& _m;

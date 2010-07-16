@@ -34,8 +34,6 @@ namespace lightspark
 	class SystemState;
 };
 
-extern TLSDATA lightspark::SystemState* sys;
-
 namespace lightspark
 {
 const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
@@ -78,8 +76,7 @@ public:
 	int max_level;
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
-	Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
-		context(NULL),class_name(name),class_index(-1),max_level(0) {type=T_CLASS;}
+	Class_base(const tiny_string& name);
 	~Class_base();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true)

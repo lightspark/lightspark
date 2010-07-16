@@ -248,7 +248,11 @@ ASFUNCTIONBODY(Array,_sort)
 ASFUNCTIONBODY(Array,sortOn)
 {
 //	Array* th=static_cast<Array*>(obj);
+#if defined(__i386__) || defined(__x86_64__)
 	__asm__("int $3");
+#elif defined(__powerpc__) || defined(__POWERPC__)
+	__asm__("trap");
+#endif
 /*	if(th->data.size()>1)
 		throw UnsupportedException("Array::sort not completely implemented");
 	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");*/

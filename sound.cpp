@@ -36,58 +36,93 @@ void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 	}
 }
 
-void SoundManager::fillAndSync(uint32_t id, uint64_t seek)
+void SoundManager::fillAndSync(uint32_t id, uint32_t streamTime)
 {
-	//Get buffer size
 	assert(streams[id-1]);
 	if(noServer==false)
 	{
-		if(streams[id-1]->streamStatus!=SoundStream::STREAM_READY)
+		if(streams[id-1]->streamStatus!=SoundStream::STREAM_READY) //The stream is not yet ready, delay upload
+			return;
+		if(!streams[id-1]->decoder->hasDecodedFrames()) //No decoded data available yet, delay upload
 			return;
 		pa_stream* stream=streams[id-1]->stream;
-		while(1)
+		pa_threaded_mainloop_lock(mainLoop);
+		int16_t* dest;
+		//Get buffer size
+		size_t frameSize=pa_stream_writable_size(stream);
+		if(frameSize==0) //The server can't accept any data now
 		{
-			pa_threaded_mainloop_lock(mainLoop);
-#ifdef EXPENSIVE_DEBUG
-			const pa_timing_info* info=pa_stream_get_timing_info(stream);
-			if(info)
-			{
-				cout << "Write index " << info->write_index << endl;
-				cout << "Read index " << info->read_index << endl;
-			}
-#endif
-			size_t frameSize=pa_stream_writable_size(stream);
-			if(frameSize==0)
-			{
-				pa_threaded_mainloop_unlock(mainLoop);
-				break;
-			}
-			int16_t* dest;
-			pa_stream_begin_write(stream, (void**)&dest, &frameSize);
-			uint32_t retSize=streams[id-1]->decoder->copyFrame(dest, frameSize);
-			if(retSize==0) //There is no more data
-			{
-				pa_stream_cancel_write(stream);
-				pa_threaded_mainloop_unlock(mainLoop);
-				break;
-			}
-			pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
 			pa_threaded_mainloop_unlock(mainLoop);
-			//seek+=retSize;
+			return;
 		}
-	}
-	else
-	{
-		//Let's create a large buffer to flush audio
-		int16_t* dest=new int16_t[1024*1024];
-		while(1)
+		//Request updated timing info
+		pa_operation* timeUpdate=pa_stream_update_timing_info(stream, NULL, NULL);
+		pa_threaded_mainloop_unlock(mainLoop);
+		while(pa_operation_get_state(timeUpdate)!=PA_OPERATION_DONE);
+		pa_threaded_mainloop_lock(mainLoop);
+		pa_operation_unref(timeUpdate);
+
+		//Get the latency of the stream, in usecs
+		pa_usec_t latency;
+		int negative;
+		int ret=pa_stream_get_latency(stream, &latency, &negative);
+		if(ret!=0) //Latency update failed, abort upload
 		{
-			uint32_t retSize=streams[id-1]->decoder->copyFrame(dest, 1024*1024*2);
-			//cout << "Trashing " << retSize << " bytes of audio" << endl;
-			if(retSize==0)
-				break;
+			LOG(LOG_ERROR, "Upload of samples to pulse failed");
+			pa_threaded_mainloop_unlock(mainLoop);
+			return;
 		}
-		delete[] dest;
+		assert(negative==0);
+		//Transform latency in milliseconds
+		latency/=1000; //This is the time that will pass before the first written samples will be played
+		uint32_t frontTime=streams[id-1]->decoder->getFrontTime();
+		int32_t frontLatency=frontTime-streamTime; //This is the time that should pass before playing the first available samples
+		//The first sample we write will be played after latency ms. So we want to skip until streamTime+latency
+		int32_t gapTime=latency-frontLatency; //This is the gap in the two latencies
+		//The idea is to skip or add some samples to adapt to the expected latency
+		//Currently the correction unit is an arbitrary 150 usecs. Would be way better to use a complex poles based control
+		//and distributing a bit new/removed samples
+		if(gapTime==0);
+		else if(gapTime>0)
+			streams[id-1]->decoder->skipUntil(frontTime, 150);
+		else
+		{
+			uint32_t bytesNeededToFillTheGap=0;
+			bytesNeededToFillTheGap=150*streams[id-1]->decoder->getBytesPerMSec()/1000;
+			bytesNeededToFillTheGap&=0xfffffffe;
+			int16_t* tmp=new int16_t[bytesNeededToFillTheGap/2];
+			memset(tmp,0,bytesNeededToFillTheGap);
+			pa_stream_write(stream, tmp, bytesNeededToFillTheGap, NULL, 0, PA_SEEK_RELATIVE);
+			delete[] tmp;
+		}
+
+		//Write data until we have space on the server and we have data available
+		uint32_t totalWritten=0;
+		pa_stream_begin_write(stream, (void**)&dest, &frameSize);
+		do
+		{
+			uint32_t retSize=streams[id-1]->decoder->copyFrame(dest+(totalWritten/2), frameSize);
+			if(retSize==0) //There is no more data
+				break;
+			totalWritten+=retSize;
+			frameSize-=retSize;
+		}
+		while(frameSize);
+
+		if(totalWritten)
+		{
+			pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
+			pa_stream_cork(stream, 0, NULL, NULL); //Start the stream, just in case it's still stopped
+		}
+		else
+			pa_stream_cancel_write(stream);
+
+		pa_threaded_mainloop_unlock(mainLoop);
+	}
+	else //No sound server available
+	{
+		//Just skip all the contents
+		streams[id-1]->decoder->skipAll();
 	}
 }
 
@@ -121,17 +156,17 @@ void SoundManager::freeStream(uint32_t id)
 	delete s;
 }
 
-void puppa3()
+void overflow_notify()
 {
 	cout << "____overflow!!!!" << endl;
 }
 
-void puppa()
+void underflow_notify()
 {
 	cout << "____underflow!!!!" << endl;
 }
 
-void puppa2()
+void started_notify()
 {
 	cout << "____started!!!!" << endl;
 }
@@ -158,20 +193,18 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 		ss.channels=decoder->channelCount;
 		pa_buffer_attr attrs;
 		attrs.maxlength=(uint32_t)-1;
-		attrs.prebuf=(uint32_t)-1;
-		//attrs.tlength=pa_usec_to_bytes(40000,&ss);
-		//attrs.tlength=pa_usec_to_bytes(400000,&ss);
+		attrs.prebuf=0;
 		attrs.tlength=(uint32_t)-1;
 		attrs.fragsize=(uint32_t)-1;
 		attrs.minreq=(uint32_t)-1;
 		streams[index]->stream=pa_stream_new(context, "SoundStream", &ss, NULL);
 		pa_stream_set_state_callback(streams[index]->stream, (pa_stream_notify_cb_t)streamStatusCB, streams[index]);
-		pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
-		pa_stream_set_underflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)puppa, NULL);
-		pa_stream_set_overflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)puppa3, NULL);
-		pa_stream_set_started_callback(streams[index]->stream, (pa_stream_notify_cb_t)puppa2, NULL);
+		//pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
+		pa_stream_set_underflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)underflow_notify, NULL);
+		pa_stream_set_overflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)overflow_notify, NULL);
+		pa_stream_set_started_callback(streams[index]->stream, (pa_stream_notify_cb_t)started_notify, NULL);
 		pa_stream_connect_playback(streams[index]->stream, NULL, &attrs, 
-				(pa_stream_flags)(PA_STREAM_AUTO_TIMING_UPDATE | PA_STREAM_INTERPOLATE_TIMING), NULL, NULL);
+			(pa_stream_flags)(PA_STREAM_START_CORKED), NULL, NULL);
 	}
 	else
 	{

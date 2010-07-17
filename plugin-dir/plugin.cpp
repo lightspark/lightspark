@@ -27,6 +27,7 @@
 #define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r42"
 #include "class.h"
 #include <gtk/gtk.h>
+#include <gdk/gdkx.h>
 
 using namespace std;
 
@@ -122,9 +123,9 @@ NPError NS_PluginGetValue(NPPVariable aVariable, void *aValue)
 		case NPPVpluginDescriptionString:
 			*((char **)aValue) = (char*)PLUGIN_DESCRIPTION;
 			break;
-/*		case NPPVpluginNeedsXEmbed:
+		case NPPVpluginNeedsXEmbed:
 			*((bool *)aValue) = true;
-			break;*/
+			break;
 		default:
 			err = NPERR_INVALID_PARAM;
 			break;
@@ -347,10 +348,16 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
 		p->display=mDisplay;
 		p->visual=XVisualIDFromVisual(mVisual);
-		p->window=mWindow;
+		p->container=gtk_plug_new((GdkNativeWindow)mWindow);
+		gtk_widget_show(p->container);
+		GtkWidget* area=gtk_drawing_area_new();
+		gtk_widget_set_double_buffered(area, FALSE);
+		gtk_container_add((GtkContainer*)p->container, area);
+		gtk_widget_show(area);
+		p->window=GDK_WINDOW_XWINDOW(area->window);
 		p->width=mWidth;
 		p->height=mHeight;
-		//p->container=gtk_plug_new((GdkNativeWindow)p->window);
+		cout << "X Window " << hex << p->window << dec << endl;
 		lightspark::NPAPI_params* p2=new lightspark::NPAPI_params(*p);
 		if(m_rt!=NULL)
 		{
@@ -360,14 +367,14 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		if(p->width==0 || p->height==0)
 			abort();
 
-		m_rt=new lightspark::RenderThread(m_sys,lightspark::NPAPI,p);
+		m_rt=new lightspark::RenderThread(m_sys,lightspark::GTKPLUG,p);
 
 		if(m_it!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		m_it=new lightspark::InputThread(m_sys,lightspark::NPAPI,p2);
+		m_it=new lightspark::InputThread(m_sys,lightspark::GTKPLUG,p2);
 
 		m_sys->inputThread=m_it;
 		m_sys->setRenderThread(m_rt);

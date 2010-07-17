@@ -47,6 +47,7 @@ extern "C" {
 
 #ifdef COMPILE_PLUGIN
 #include <gdk/gdkgl.h>
+#include <gdk/gdkkeysyms.h>
 #include <gtk/gtkglwidget.h>
 #endif
 
@@ -598,7 +599,6 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),ter
 	}
 	else if(e==GTKPLUG)
 	{
-		gdk_threads_enter();
 		npapi_params=(NPAPI_params*)param;
 		GtkWidget* container=npapi_params->container;
 		gtk_widget_set_can_focus(container,True);
@@ -606,7 +606,6 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),ter
 						GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
 						GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
 		g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), this);
-		gdk_threads_leave();
 	}
 #endif
 	else
@@ -631,8 +630,88 @@ void InputThread::wait()
 //This is a GTK event handler and the gdk lock is already acquired
 gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
 {
-	cout << "Event" << endl;
-	return False;
+	//Set sys to this SystemState
+	sys=th->m_sys;
+	gboolean ret=FALSE;
+	switch(event->type)
+	{
+		case GDK_KEY_PRESS:
+		{
+			cout << "key press" << endl;
+			switch(event->key.keyval)
+			{
+				case GDK_i:
+					th->m_sys->showInteractiveMap=!th->m_sys->showInteractiveMap;
+					break;
+				case GDK_p:
+					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
+					break;
+				default:
+					break;
+			}
+			ret=TRUE;
+			break;
+		}
+		case GDK_EXPOSE:
+		{
+			//Signal the renderThread
+			th->m_sys->getRenderThread()->draw();
+			ret=TRUE;
+			break;
+		}
+		case GDK_BUTTON_PRESS:
+		{
+			//Grab focus
+			gtk_widget_grab_focus(widget);
+			//cout << "Press" << endl;
+			Locker locker(th->mutexListeners);
+			th->m_sys->getRenderThread()->requestInput();
+			float selected=th->m_sys->getRenderThread()->getIdAt(event->button.x,event->button.y);
+			if(selected!=0)
+			{
+				int index=lrint(th->listeners.size()*selected);
+				index--;
+
+				th->lastMouseDownTarget=th->listeners[index];
+				//Add event to the event queue
+				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
+				//And select that object for debugging (if needed)
+				if(th->m_sys->showDebug)
+					th->m_sys->getRenderThread()->selectedDebug=th->listeners[index];
+			}
+			ret=TRUE;
+			break;
+		}
+		case GDK_BUTTON_RELEASE:
+		{
+			//cout << "Release" << endl;
+			Locker locker(th->mutexListeners);
+			th->m_sys->getRenderThread()->requestInput();
+			float selected=th->m_sys->getRenderThread()->getIdAt(event->button.x,event->button.y);
+			if(selected!=0)
+			{
+				int index=lrint(th->listeners.size()*selected);
+				index--;
+
+				//Add event to the event queue
+				getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseUp",true));
+				//Also send the click event
+				if(th->lastMouseDownTarget==th->listeners[index])
+				{
+					getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("click",true));
+					th->lastMouseDownTarget=NULL;
+				}
+			}
+			ret=TRUE;
+			break;
+		}
+		default:
+#ifdef EXPENSIVE_DEBUG
+			cout << "GDKTYPE " << event->type << endl;
+#endif
+			break;
+	}
+	return ret;
 }
 
 void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, X11Intrinsic::Boolean* b)
@@ -939,12 +1018,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifdef COMPILE_PLUGIN
-	else if(e==GTKPLUG)
-	{
-		npapi_params=(NPAPI_params*)params;
-		pthread_create(&t,NULL,(thread_worker)gtkplug_worker,this);
-	}
-	else if(e==NPAPI)
+	else if(e==NPAPI || e==GTKPLUG)
 	{
 		npapi_params=(NPAPI_params*)params;
 		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
@@ -1070,10 +1144,8 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 	rt->width=window_width;
 	rt->height=window_height;
-	gdk_threads_enter();
-	GtkWidget* container=p->container;
-	gtk_widget_show(container);
-	gdk_gl_init(0, 0);
+	return NULL;
+/*	gdk_gl_init(0, 0);
 	GdkGLConfig* glConfig=gdk_gl_config_new_by_mode((GdkGLConfigMode)(GDK_GL_MODE_RGBA|GDK_GL_MODE_DOUBLE));
 	assert_and_throw(glConfig);
 	
@@ -1101,7 +1173,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 	glEnable(GL_TEXTURE_2D);
 	gdk_gl_drawable_gl_end(glDrawable);
-	gdk_threads_leave();
 	Chronometer chronometer;
 	try
 	{
@@ -1113,7 +1184,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 			chronometer.checkpoint();
 
-			gdk_threads_enter();
 			bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
 			assert_and_throw(ret);
 			gdk_gl_drawable_swap_buffers(glDrawable);
@@ -1210,7 +1280,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			glUseProgram(th->gpu_program);
 
 			gdk_gl_drawable_gl_end(glDrawable);
-			gdk_threads_leave();
 
 			profile->accountTime(chronometer.checkpoint());
 		}
@@ -1226,7 +1295,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	gdk_gl_drawable_gl_end(glDrawable);
 	delete p;
 	th->commonGLDeinit();
-	return NULL;
+	return NULL;*/
 }
 #endif
 
@@ -1292,7 +1361,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	XFree(fb);
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	glXMakeContextCurrent(d, p->window, p->window, th->mContext);
+	GLXWindow glxWin=glXCreateWindow(d, th->mFBConfig, p->window, NULL);
+	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");
 
@@ -1365,11 +1435,11 @@ void* RenderThread::npapi_worker(RenderThread* th)
 					    -1,FTPoint(0,th->height/2-40));
 				
 				glFlush();
-				glXSwapBuffers(d,p->window);
+				glXSwapBuffers(d,glxWin);
 			}
 			else
 			{
-				glXSwapBuffers(d,p->window);
+				glXSwapBuffers(d,glxWin);
 
 				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
 				glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -1446,7 +1516,8 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	for(;it!=th->managedResources.end();it++)
 		(*it)->shutdown();
 	th->commonGLDeinit();
-	glXMakeContextCurrent(d,None,None,NULL);
+	glXMakeCurrent(d,None,NULL);
+	glXDestroyWindow(d, glxWin);
 	glXDestroyContext(d,th->mContext);
 	XCloseDisplay(d);
 	delete p;

@@ -351,7 +351,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p->display=mDisplay;
 		p->visual=XVisualIDFromVisual(mVisual);
 		mContainer=gtk_plug_new((GdkNativeWindow)mWindow);
-		p->container=gtk_plug_new((GdkNativeWindow)mWindow);
+		p->container=mContainer;
 		gtk_widget_show(p->container);
 		GtkWidget* area=gtk_drawing_area_new();
 		gtk_widget_set_double_buffered(area, FALSE);

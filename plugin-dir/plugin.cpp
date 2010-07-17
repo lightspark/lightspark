@@ -161,7 +161,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
-	mInstance(aInstance),mInitialized(FALSE),mWindow(0),swf_stream(&swf_buf),m_it(NULL),m_rt(NULL)
+	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),swf_stream(&swf_buf),m_it(NULL),m_rt(NULL)
 {
 	m_sys=new lightspark::SystemState;
 	m_pt=new lightspark::ParseThread(m_sys,swf_stream);
@@ -268,6 +268,8 @@ nsPluginInstance::~nsPluginInstance()
 	delete m_pt;
 	delete m_rt;
 	delete m_it;
+//	if(mContainer)
+//		gtk_widget_destroy(mContainer);
 }
 
 void nsPluginInstance::draw()
@@ -348,6 +350,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
 		p->display=mDisplay;
 		p->visual=XVisualIDFromVisual(mVisual);
+		mContainer=gtk_plug_new((GdkNativeWindow)mWindow);
 		p->container=gtk_plug_new((GdkNativeWindow)mWindow);
 		gtk_widget_show(p->container);
 		GtkWidget* area=gtk_drawing_area_new();

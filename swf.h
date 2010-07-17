@@ -38,12 +38,7 @@
 
 #include <GL/glew.h>
 #ifndef WIN32
-#include <X11/Xlib.h>
 #include <GL/glx.h>
-namespace X11Intrinsic
-{
-#include <X11/Intrinsic.h>
-};
 #else
 //#include <windows.h>
 #endif
@@ -250,7 +245,7 @@ public:
 	void wait() DLL_PUBLIC;
 };
 
-enum ENGINE { SDL=0, NPAPI, GTKPLUG};
+enum ENGINE { SDL=0, GTKPLUG};
 #ifdef COMPILE_PLUGIN
 struct NPAPI_params
 {
@@ -276,7 +271,6 @@ private:
 	static void* sdl_worker(InputThread*);
 	#ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
-	static void npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, X11Intrinsic::Boolean* b);
 	static gboolean gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
 	#endif
 
@@ -306,7 +300,6 @@ private:
 	static void* sdl_worker(RenderThread*);
 	#ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
-	static void* npapi_worker(RenderThread*);
 	static void* gtkplug_worker(RenderThread*);
 	#endif
 	void commonGLInit(int width, int height);

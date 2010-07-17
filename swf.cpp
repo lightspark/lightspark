@@ -46,9 +46,7 @@ extern "C" {
 #endif
 
 #ifdef COMPILE_PLUGIN
-#include <gdk/gdkgl.h>
 #include <gdk/gdkkeysyms.h>
-#include <gtk/gtkglwidget.h>
 #endif
 
 using namespace std;
@@ -582,21 +580,6 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),ter
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifdef COMPILE_PLUGIN
-	else if(e==NPAPI)
-	{
-		npapi_params=(NPAPI_params*)param;
-		//Under NPAPI is a bad idea to handle input in another thread
-		//pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
-		
-		//Let's hook into the Xt event handling of the browser
-		X11Intrinsic::Widget xtwidget = X11Intrinsic::XtWindowToWidget(npapi_params->display, npapi_params->window);
-		assert_and_throw(xtwidget);
-
-		//mXtwidget = xtwidget;
-		long event_mask = ExposureMask|PointerMotionMask|ButtonPressMask|ButtonReleaseMask|KeyPressMask;
-		XSelectInput(npapi_params->display, npapi_params->window, event_mask);
-		X11Intrinsic::XtAddEventHandler(xtwidget, event_mask, False, (X11Intrinsic::XtEventHandler)npapi_worker, this);
-	}
 	else if(e==GTKPLUG)
 	{
 		npapi_params=(NPAPI_params*)param;
@@ -711,92 +694,9 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 #endif
 			break;
 	}
-	return ret;
-}
-
-void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, X11Intrinsic::Boolean* b)
-{
-	//Set sys to this SystemState
-	sys=th->m_sys;
-	switch(xevent->type)
-	{
-		case KeyPress:
-		{
-			int key=XLookupKeysym(&xevent->xkey,0);
-			switch(key)
-			{
-				case 'd':
-					th->m_sys->showDebug=!th->m_sys->showDebug;
-					break;
-				case 'i':
-					th->m_sys->showInteractiveMap=!th->m_sys->showInteractiveMap;
-					break;
-				case 'p':
-					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
-					break;
-				default:
-					break;
-			}
-			*b=False;
-			break;
-		}
-		case Expose:
-			//Signal the renderThread
-			th->m_sys->getRenderThread()->draw();
-			*b=False;
-			break;
-		case ButtonPress:
-		{
-			//cout << "Press" << endl;
-			Locker locker(th->mutexListeners);
-			th->m_sys->getRenderThread()->requestInput();
-			float selected=th->m_sys->getRenderThread()->getIdAt(xevent->xbutton.x,xevent->xbutton.y);
-			if(selected!=0)
-			{
-				int index=lrint(th->listeners.size()*selected);
-				index--;
-
-				th->lastMouseDownTarget=th->listeners[index];
-				//Add event to the event queue
-				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
-				//And select that object for debugging (if needed)
-				if(th->m_sys->showDebug)
-					th->m_sys->getRenderThread()->selectedDebug=th->listeners[index];
-			}
-			*b=False;
-			break;
-		}
-		case ButtonRelease:
-		{
-			//cout << "Release" << endl;
-			Locker locker(th->mutexListeners);
-			th->m_sys->getRenderThread()->requestInput();
-			float selected=th->m_sys->getRenderThread()->getIdAt(xevent->xbutton.x,xevent->xbutton.y);
-			if(selected!=0)
-			{
-				int index=lrint(th->listeners.size()*selected);
-				index--;
-
-				//Add event to the event queue
-				getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseUp",true));
-				//Also send the click event
-				if(th->lastMouseDownTarget==th->listeners[index])
-				{
-					getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("click",true));
-					th->lastMouseDownTarget=NULL;
-				}
-			}
-			*b=False;
-			break;
-		}
-		default:
-			*b=True;
-#ifdef EXPENSIVE_DEBUG
-			cout << "TYPE " << dec << xevent->type << endl;
-#endif
-	}
 	//Reset sys to null
 	sys=NULL;
+	return ret;
 }
 #endif
 
@@ -1018,10 +918,10 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifdef COMPILE_PLUGIN
-	else if(e==NPAPI || e==GTKPLUG)
+	else if(e==GTKPLUG)
 	{
 		npapi_params=(NPAPI_params*)params;
-		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
+		pthread_create(&t,NULL,(thread_worker)gtkplug_worker,this);
 	}
 #endif
 	clock_gettime(CLOCK_REALTIME,&ts);
@@ -1125,182 +1025,6 @@ void RenderThread::glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin,
 
 #ifdef COMPILE_PLUGIN
 void* RenderThread::gtkplug_worker(RenderThread* th)
-{
-	sys=th->m_sys;
-	rt=th;
-	NPAPI_params* p=th->npapi_params;
-
-	RECT size=sys->getFrameSize();
-	int swf_width=size.Xmax/20;
-	int swf_height=size.Ymax/20;
-
-	int window_width=p->width;
-	int window_height=p->height;
-
-	float scalex=window_width;
-	scalex/=swf_width;
-	float scaley=window_height;
-	scaley/=swf_height;
-
-	rt->width=window_width;
-	rt->height=window_height;
-	return NULL;
-/*	gdk_gl_init(0, 0);
-	GdkGLConfig* glConfig=gdk_gl_config_new_by_mode((GdkGLConfigMode)(GDK_GL_MODE_RGBA|GDK_GL_MODE_DOUBLE));
-	assert_and_throw(glConfig);
-	
-	GtkWidget* drawing_area = gtk_drawing_area_new ();
-	//gtk_widget_set_size_request (drawing_area, 0, 0);
-
-	gtk_widget_set_gl_capability (drawing_area,glConfig,NULL,TRUE,GDK_GL_RGBA_TYPE);
-	gtk_widget_show (drawing_area);
-	gtk_container_add (GTK_CONTAINER (container), drawing_area);
-	GdkGLContext *glContext = gtk_widget_get_gl_context (drawing_area);
-	GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);	
-	bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-	assert_and_throw(ret);
-	th->commonGLInit(window_width, window_height);
-	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
-	profile->setTag("Render");
-	FTTextureFont font(rt->fontPath.c_str());
-	if(font.Error())
-	{
-		LOG(LOG_ERROR,"Unable to load serif font");
-		throw RunTimeException("Unable to load font");
-	}
-	
-	font.FaceSize(20);
-
-	glEnable(GL_TEXTURE_2D);
-	gdk_gl_drawable_gl_end(glDrawable);
-	Chronometer chronometer;
-	try
-	{
-		while(1)
-		{
-			sem_wait(&th->render);
-			if(th->m_sys->isShuttingDown())
-				break;
-
-			chronometer.checkpoint();
-
-			bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-			assert_and_throw(ret);
-			gdk_gl_drawable_swap_buffers(glDrawable);
-
-			if(th->inputNeeded)
-			{
-				th->inputTex.bind();
-				glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
-				th->inputNeeded=false;
-				sem_post(&th->inputDone);
-			}
-
-			//Before starting rendering, cleanup all the request arrived in the meantime
-			int fakeRenderCount=0;
-			while(sem_trywait(&th->render)==0)
-			{
-				if(th->m_sys->isShuttingDown())
-					break;
-				fakeRenderCount++;
-			}
-
-			if(fakeRenderCount)
-				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
-
-			glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
-			//Clear the id buffer
-			glDrawBuffer(GL_COLOR_ATTACHMENT2);
-			glClearColor(1,0,0,1);
-			glClear(GL_COLOR_BUFFER_BIT);
-			
-			//Clear the back buffer
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-			RGB bg=sys->getBackground();
-			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			glLoadIdentity();
-			glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
-			glScalef(scalex,scaley,1);
-			
-			th->m_sys->Render();
-
-			glFlush();
-
-			glLoadIdentity();
-
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glDrawBuffer(GL_BACK);
-			glUseProgram(0);
-
-			TextureBuffer* curBuf=((th->m_sys->showInteractiveMap)?&th->inputTex:&th->mainTex);
-			curBuf->bind();
-			glBegin(GL_QUADS);
-				glTexCoord2f(0,1);
-				glVertex2i(0,0);
-				glTexCoord2f(1,1);
-				glVertex2i(th->width,0);
-				glTexCoord2f(1,0);
-				glVertex2i(th->width,th->height);
-				glTexCoord2f(0,0);
-				glVertex2i(0,th->height);
-			glEnd();
-			
-			if(th->m_sys->showDebug)
-			{
-				glDisable(GL_TEXTURE_2D);
-				th->m_sys->debugRender(&font, true);
-				glEnable(GL_TEXTURE_2D);
-			}
-
-			if(th->m_sys->showProfilingData)
-			{
-				glColor3f(0,0,0);
-				char frameBuf[20];
-				snprintf(frameBuf,20,"Frame %u",th->m_sys->state.FP);
-				font.Render(frameBuf,-1,FTPoint(0,0));
-
-				//Draw bars
-				glColor4f(0.7,0.7,0.7,0.7);
-				glBegin(GL_LINES);
-				for(int i=1;i<10;i++)
-				{
-					glVertex2i(0,(i*th->height/10));
-					glVertex2i(th->width,(i*th->height/10));
-				}
-				glEnd();
-				
-				list<ThreadProfile>::iterator it=th->m_sys->profilingData.begin();
-				for(;it!=th->m_sys->profilingData.end();it++)
-					it->plot(1000000/sys->getFrameRate(),&font);
-			}
-			//Call glFlush to offload work on the GPU
-			glFlush();
-			glUseProgram(th->gpu_program);
-
-			gdk_gl_drawable_gl_end(glDrawable);
-
-			profile->accountTime(chronometer.checkpoint());
-		}
-	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR,"Exception in RenderThread " << e.what() << " " << e.cause);
-		sys->setError(e.cause);
-	}
-	ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-	assert_and_throw(ret);
-	glDisable(GL_TEXTURE_2D);
-	gdk_gl_drawable_gl_end(glDrawable);
-	delete p;
-	th->commonGLDeinit();
-	return NULL;*/
-}
-#endif
-
-#ifdef COMPILE_PLUGIN
-void* RenderThread::npapi_worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;

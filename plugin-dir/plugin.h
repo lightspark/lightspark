@@ -21,10 +21,6 @@
 #define __PLUGIN_H__
 
 #include "swf.h"
-/* Xlib/Xt stuff */
-#include <X11/Xlib.h>
-#include <X11/cursorfont.h>
-
 #include <iostream>
 #include <sstream>
 
@@ -86,6 +82,7 @@ private:
 	NPP mInstance;
 	NPBool mInitialized;
 
+	GtkWidget* mContainer;
 	Window mWindow;
 	Display *mDisplay;
 	int mX, mY;

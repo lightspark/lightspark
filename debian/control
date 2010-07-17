@@ -51,7 +51,7 @@ Package: lightspark-common-dbg
 Section: debug
 Architecture: i386 amd64
 Depends: ${shlibs:Depends}, ${misc:Depends}, lightspark-common
-Description: debuging symbols for lightspark
+Description: debugging symbols for lightspark
  Debug symbols for lightspark and associated libraries
 
 Package: mozilla-plugin-lightspark

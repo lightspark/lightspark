@@ -34,12 +34,25 @@ SET(PATCH_VERSION "2")
 # However, some distro don't implement FHS the same way
 # Suse, Redhat put 64bit libs in /lib64; Debian use /lib for 64bit, but specifies /lib32 for 32bit libs
 # See FHS 2.3 for Lib directories under each architecture 
+
+# Some directory shortcuts
+SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
+INCLUDE(CMakeASM-NASMCompiler)
+
 IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 	SET(i386 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 32")
+	# nasm for assembly optimizations
+	ENABLE_LANGUAGE(ASM-NASM)
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|amd64")
 	SET(x86_64 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 64")
+	# nasm for assembly optimizations
+	ENABLE_LANGUAGE(ASM-NASM)
+ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc")
+	SET(ppc 1)
+	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None ppc")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maltivec")
 ELSE()
 	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
 ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
@@ -60,13 +73,6 @@ IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
 		"Choose the type of build, options are: Debug Release RelWithDebInfo Profile Debian" FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
-
-# Some directory shortcuts
-SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
-
-# nasm for assembly optimizations
-INCLUDE(CMakeASM-NASMCompiler)
-ENABLE_LANGUAGE(ASM-NASM)
 
 # Libraries we need
 INCLUDE(FindLLVM REQUIRED)
@@ -140,6 +146,8 @@ IF(${i386})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
 ELSEIF(${x86_64})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_64.asm)
+ELSEIF(${ppc})
+	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_ppc.cpp)
 ENDIF(${i386})
 
 # liblightspark.so target

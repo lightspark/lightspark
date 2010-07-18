@@ -164,17 +164,12 @@ int main(int argc, char* argv[])
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	ParseThread* pt = new ParseThread(sys,f);
-	RenderThread rt(sys,SDL,NULL);
-	InputThread it(sys,SDL,NULL);
-	sys->inputThread=&it;
-	sys->setRenderThread(&rt);
+	sys->setParamsAndEngine(SDL, NULL);
 	sys->downloadManager=new CurlDownloadManager();
 	//Start the parser
 	sys->addJob(pt);
 
 	sys->wait();
-	it.wait();
-	rt.wait();
 	pt->wait();
 	delete sys;
 	delete pt;

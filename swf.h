@@ -159,6 +159,23 @@ public:
 	void plot(uint32_t max, FTFont* font);
 };
 
+enum ENGINE { NONE=0, SDL, GTKPLUG};
+#ifdef COMPILE_PLUGIN
+struct NPAPI_params
+{
+	Display* display;
+	GtkWidget* container;
+	VisualID visual;
+	Window window;
+	int width;
+	int height;
+};
+#else
+struct NPAPI_params
+{
+};
+#endif
+
 class SystemState: public RootMovieClip
 {
 private:
@@ -169,7 +186,15 @@ private:
 	bool error;
 	bool shutdown;
 	RenderThread* renderThread;
+	InputThread* inputThread;
+	NPAPI_params npapiParams;
+	ENGINE engine;
 	void startRenderTicks();
+	void createEngines();
+	/**
+	  	Version of the main SWF file
+	*/
+	uint32_t version;
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -189,7 +214,9 @@ public:
 	void tick();
 	void wait() DLL_PUBLIC;
 	RenderThread* getRenderThread() const { return renderThread; }
-	void setRenderThread(RenderThread* r) DLL_PUBLIC;
+	InputThread* getInputThread() const { return inputThread; }
+	void setParamsAndEngine(ENGINE e, NPAPI_params* p) DLL_PUBLIC;
+	void setVersion(uint32_t v);
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
@@ -202,7 +229,6 @@ public:
 	
 	Stage* stage;
 	ABCVm* currentVm;
-	InputThread* inputThread;
 #ifdef ENABLE_SOUND
 	SoundManager* soundManager;
 #endif
@@ -245,23 +271,6 @@ public:
 	void wait() DLL_PUBLIC;
 };
 
-enum ENGINE { SDL=0, GTKPLUG};
-#ifdef COMPILE_PLUGIN
-struct NPAPI_params
-{
-	Display* display;
-	GtkWidget* container;
-	VisualID visual;
-	Window window;
-	int width;
-	int height;
-};
-#else
-struct NPAPI_params
-{
-};
-#endif
-
 class InputThread
 {
 private:
@@ -269,10 +278,10 @@ private:
 	pthread_t t;
 	bool terminated;
 	static void* sdl_worker(InputThread*);
-	#ifdef COMPILE_PLUGIN
+#ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
 	static gboolean gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
-	#endif
+#endif
 
 	std::vector<InteractiveObject* > listeners;
 	Mutex mutexListeners;
@@ -282,9 +291,9 @@ private:
 	InteractiveObject* lastMouseDownTarget;
 	RECT dragLimit;
 public:
-	InputThread(SystemState* s,ENGINE e, void* param=NULL) DLL_PUBLIC;
-	~InputThread() DLL_PUBLIC;
-	void wait() DLL_PUBLIC;
+	InputThread(SystemState* s,ENGINE e, void* param=NULL);
+	~InputThread();
+	void wait();
 	void addListener(InteractiveObject* ob);
 	void removeListener(InteractiveObject* ob);
 	void enableDrag(Sprite* s, const RECT& limit);
@@ -298,10 +307,10 @@ private:
 	pthread_t t;
 	bool terminated;
 	static void* sdl_worker(RenderThread*);
-	#ifdef COMPILE_PLUGIN
+#ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
 	static void* gtkplug_worker(RenderThread*);
-	#endif
+#endif
 	void commonGLInit(int width, int height);
 	void commonGLDeinit();
 	sem_t render;
@@ -328,9 +337,9 @@ private:
 	Mutex mutexResources;
 	std::set<GLResource*> managedResources;
 public:
-	RenderThread(SystemState* s,ENGINE e, void* param=NULL) DLL_PUBLIC;
-	~RenderThread() DLL_PUBLIC;
-	void wait() DLL_PUBLIC;
+	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
+	~RenderThread();
+	void wait();
 	void draw();
 	float getIdAt(int x, int y);
 	//The calling context MUST call this function with the transformation matrix ready

@@ -75,6 +75,8 @@ SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 		return;
 	}
 	pt->version=Version;
+	if(sys==pt->root) //If this is the main movie clip set the global version
+		sys->setVersion(Version);
 	in >> FrameSize >> FrameRate >> FrameCount;
 	float frameRate=FrameRate;
 	frameRate/=256;
@@ -144,8 +146,8 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 }
 
 SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),renderThread(NULL),
-	showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
-	inputThread(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
+	inputThread(NULL),engine(NONE),version(0),showProfilingData(false),showInteractiveMap(false),showDebug(false),
+	xOffset(0),yOffset(0),currentVm(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -289,6 +291,13 @@ void SystemState::setShutdownFlag()
 void SystemState::wait()
 {
 	sem_wait(&terminated);
+	if(renderThread)
+		renderThread->wait();
+	if(inputThread)
+		inputThread->wait();
+
+	delete renderThread;
+	delete inputThread;
 }
 
 float SystemState::getRenderRate()
@@ -304,24 +313,50 @@ void SystemState::startRenderTicks()
 	addTick(1000/renderRate,renderThread);
 }
 
-void SystemState::setRenderThread(RenderThread* t)
+void SystemState::createEngines()
 {
-	assert(renderThread==NULL);
-	renderThread=t;
+	assert(renderThread==NULL && inputThread==NULL);
+	renderThread=new RenderThread(this, engine, &npapiParams);
+	inputThread=new InputThread(this, engine, &npapiParams);
 	//If the render rate is known start the render ticks
 	if(renderRate)
 		startRenderTicks();
 }
 
+void SystemState::setVersion(uint32_t v)
+{
+	sem_wait(&mutex);
+	version=v;
+	if(engine)
+		createEngines();
+	sem_post(&mutex);
+}
+
+void SystemState::setParamsAndEngine(ENGINE e, NPAPI_params* p)
+{
+	sem_wait(&mutex);
+	if(p)
+		npapiParams=*p;
+	engine=e;
+	if(version)
+		createEngines();
+	sem_post(&mutex);
+}
+
 void SystemState::setRenderRate(float rate)
 {
+	sem_wait(&mutex);
 	if(renderRate>=rate)
+	{
+		sem_post(&mutex);
 		return;
+	}
 	
 	//The requested rate is higher, let's reschedule the job
 	renderRate=rate;
 	if(renderThread)
 		startRenderTicks();
+	sem_post(&mutex);
 }
 
 void SystemState::tick()
@@ -570,8 +605,6 @@ void RenderThread::wait()
 	int ret=pthread_join(t,NULL);
 	assert_and_throw(ret==0);
 }
-
-
 
 InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),terminated(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
@@ -1242,7 +1275,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	glXDestroyWindow(d, glxWin);
 	glXDestroyContext(d,th->mContext);
 	XCloseDisplay(d);
-	delete p;
 	return NULL;
 }
 #endif

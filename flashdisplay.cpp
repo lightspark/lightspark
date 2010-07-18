@@ -1284,8 +1284,8 @@ InteractiveObject::InteractiveObject():id(0)
 
 InteractiveObject::~InteractiveObject()
 {
-	if(sys && sys->inputThread)
-		sys->inputThread->removeListener(this);
+	if(sys && sys->getInputThread())
+		sys->getInputThread()->removeListener(this);
 }
 
 ASFUNCTIONBODY(InteractiveObject,_constructor)
@@ -1294,8 +1294,8 @@ ASFUNCTIONBODY(InteractiveObject,_constructor)
 	EventDispatcher::_constructor(obj,NULL,0);
 	assert_and_throw(th->id==0);
 	//Object registered very early are not supported this way (Stage for example)
-	if(sys && sys->inputThread)
-		sys->inputThread->addListener(th);
+	if(sys && sys->getInputThread())
+		sys->getInputThread()->addListener(th);
 	
 	return NULL;
 }

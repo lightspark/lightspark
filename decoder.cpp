@@ -125,6 +125,8 @@ void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 
 void FFMpegVideoDecoder::skipUntil(uint32_t time)
 {
+	if(buffers.isEmpty())
+		return;
 	while(1)
 	{
 		if(buffers.front().time>=time)

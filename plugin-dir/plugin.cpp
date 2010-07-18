@@ -161,7 +161,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
-	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),swf_stream(&swf_buf),m_it(NULL),m_rt(NULL)
+	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),swf_stream(&swf_buf)
 {
 	m_sys=new lightspark::SystemState;
 	m_pt=new lightspark::ParseThread(m_sys,swf_stream);
@@ -260,16 +260,8 @@ nsPluginInstance::~nsPluginInstance()
 	m_pt->stop();
 	m_sys->setShutdownFlag();
 	m_sys->wait();
-	if(m_rt)
-		m_rt->wait();
-	if(m_it)
-		m_it->wait();
 	delete m_sys;
 	delete m_pt;
-	delete m_rt;
-	delete m_it;
-//	if(mContainer)
-//		gtk_widget_destroy(mContainer);
 }
 
 void nsPluginInstance::draw()
@@ -361,26 +353,21 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p->width=mWidth;
 		p->height=mHeight;
 		cout << "X Window " << hex << p->window << dec << endl;
-		lightspark::NPAPI_params* p2=new lightspark::NPAPI_params(*p);
-		if(m_rt!=NULL)
+		if(m_sys->getRenderThread()!=NULL)
 		{
 			cout << "destroy old context" << endl;
 			abort();
 		}
 		if(p->width==0 || p->height==0)
 			abort();
-
-		m_rt=new lightspark::RenderThread(m_sys,lightspark::GTKPLUG,p);
-
-		if(m_it!=NULL)
+		if(m_sys->getInputThread()!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		m_it=new lightspark::InputThread(m_sys,lightspark::GTKPLUG,p2);
 
-		m_sys->inputThread=m_it;
-		m_sys->setRenderThread(m_rt);
+		m_sys->setParamsAndEngine(lightspark::GTKPLUG,p);
+		delete p;
 	}
 	//draw();
 	return TRUE;
@@ -396,11 +383,22 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	{
 		cerr << "via NPDownloader" << endl;
 		dl->setLen(stream->end);
+		*stype=NP_NORMAL;
+	}
+	else
+	{
+		//This is the main file
+		*stype=NP_ASFILE;
 	}
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
-	*stype=NP_NORMAL;
 	return NPERR_NO_ERROR; 
+}
+
+void nsPluginInstance::StreamAsFile(NPStream* stream, const char* fname)
+{
+	assert(stream->notifyData==NULL);
+	cout << "Complete file downloaded as " << fname << endl;
 }
 
 int32_t nsPluginInstance::WriteReady(NPStream *stream)

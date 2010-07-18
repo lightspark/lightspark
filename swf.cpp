@@ -694,8 +694,6 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 #endif
 			break;
 	}
-	//Reset sys to null
-	sys=NULL;
 	return ret;
 }
 #endif

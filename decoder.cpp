@@ -127,10 +127,11 @@ void FFMpegVideoDecoder::skipUntil(uint32_t time)
 {
 	while(1)
 	{
+		if(buffers.isEmpty())
+			return;
 		if(buffers.front().time>=time)
 			break;
-		if(discardFrame()==false)
-			break;
+		discardFrame();
 	}
 }
 

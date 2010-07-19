@@ -353,11 +353,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		mContainer=gtk_plug_new((GdkNativeWindow)mWindow);
 		p->container=mContainer;
 		gtk_widget_show(p->container);
-		GtkWidget* area=gtk_drawing_area_new();
-		gtk_widget_set_double_buffered(area, FALSE);
-		gtk_container_add((GtkContainer*)p->container, area);
-		gtk_widget_show(area);
-		p->window=GDK_WINDOW_XWINDOW(area->window);
+		p->window=GDK_WINDOW_XWINDOW(mContainer->window);
 		p->width=mWidth;
 		p->height=mHeight;
 		cout << "X Window " << hex << p->window << dec << endl;

@@ -240,6 +240,8 @@ SystemState::~SystemState()
 	for(unsigned int i=0;i<tagsStorage.size();i++)
 		delete tagsStorage[i];
 
+	delete renderThread;
+	delete inputThread;
 	sem_destroy(&terminated);
 }
 
@@ -805,6 +807,7 @@ void* InputThread::sdl_worker(InputThread* th)
 void InputThread::addListener(InteractiveObject* ob)
 {
 	Locker locker(mutexListeners);
+	assert(ob);
 
 #ifndef NDEBUG
 	vector<InteractiveObject*>::const_iterator it=find(listeners.begin(),listeners.end(),ob);
@@ -1083,7 +1086,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	XFree(fb);
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	GLXWindow glxWin=glXCreateWindow(d, th->mFBConfig, p->window, NULL);
+	GLXWindow glxWin=p->window;
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");
@@ -1239,7 +1242,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		(*it)->shutdown();
 	th->commonGLDeinit();
 	glXMakeCurrent(d,None,NULL);
-	glXDestroyWindow(d, glxWin);
 	glXDestroyContext(d,th->mContext);
 	XCloseDisplay(d);
 	delete p;

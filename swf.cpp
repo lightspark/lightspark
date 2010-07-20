@@ -240,8 +240,6 @@ SystemState::~SystemState()
 	for(unsigned int i=0;i<tagsStorage.size();i++)
 		delete tagsStorage[i];
 
-	delete renderThread;
-	delete inputThread;
 	sem_destroy(&terminated);
 }
 

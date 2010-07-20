@@ -331,7 +331,7 @@ void NetStream::tick()
 	videoDecoder->skipUntil(streamTime);
 	if(soundStreamId)
 	{
-#ifdef ENABLE_SOUND
+#ifdef AUDIO_BACKEND
 		assert(audioDecoder);
 		sys->soundManager->fillAndSync(soundStreamId, streamTime);
 #endif
@@ -400,7 +400,7 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
-#ifdef ENABLE_SOUND
+#ifdef AUDIO_BACKEND
 						if(audioDecoder)
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
@@ -511,7 +511,7 @@ void NetStream::execute()
 	tickStarted=false;
 	delete videoDecoder;
 	videoDecoder=NULL;
-#if ENABLE_SOUND
+#if AUDIO_BACKEND
 	if(soundStreamId)
 		sys->soundManager->freeStream(soundStreamId);
 	delete audioDecoder;

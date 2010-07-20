@@ -19,9 +19,9 @@
 
 #include <iostream>
 #include <string.h>
-#include "sound.h"
+#include "../sound.h"
 
-#ifdef ENABLE_SOUND
+#ifdef AUDIO_BACKEND
 using namespace lightspark;
 using namespace std;
 

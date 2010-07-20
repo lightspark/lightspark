@@ -20,11 +20,11 @@
 #ifndef SOUND_H
 #define SOUND_H
 
-#ifdef ENABLE_SOUND
+#ifdef AUDIO_BACKEND
 
-#include "compat.h"
+#include "../compat.h"
 #include <pulse/pulseaudio.h>
-#include "decoder.h"
+#include "../decoder.h"
 
 namespace lightspark
 {

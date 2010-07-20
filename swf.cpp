@@ -161,7 +161,7 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	//Get starting time
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
-#ifdef ENABLE_SOUND
+#ifdef AUDIO_BACKEND
 	soundManager=new SoundManager;
 #endif
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
@@ -217,7 +217,7 @@ SystemState::~SystemState()
 	delete downloadManager;
 	delete currentVm;
 	delete timerThread;
-#ifdef ENABLE_SOUND
+#ifdef AUDIO_BACKEND
 	delete soundManager;
 #endif
 

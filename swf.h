@@ -34,7 +34,7 @@
 #include "flashdisplay.h"
 #include "timer.h"
 #include "graphics.h"
-#include "sound.h"
+#include "audio-backends/sound.h"
 
 #include <GL/glew.h>
 #ifndef WIN32
@@ -239,7 +239,7 @@ public:
 	
 	Stage* stage;
 	ABCVm* currentVm;
-#ifdef ENABLE_SOUND
+#ifdef AUDIO_BACKEND
 	SoundManager* soundManager;
 #endif
 	//Application starting time in milliseconds

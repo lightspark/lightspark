@@ -126,7 +126,7 @@ Tag* TagFactory::readTag()
 			ret=new DefineSpriteTag(h,f);
 			break;
 		case 41:
-			ret=new SerialNumberTag(h,f);
+			ret=new ProductInfoTag(h,f);
 			break;
 		case 43:
 			ret=new FrameLabelTag(h,f);
@@ -1683,6 +1683,22 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in):PlaceObject2T
 void SetBackgroundColorTag::execute(RootMovieClip* root)
 {
 	root->setBackground(BackgroundColor);
+}
+
+ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+   LOG(LOG_TRACE,"ProductInfoTag Tag");
+
+   in >> ProductId >> Edition >> MajorVersion >> MinorVersion >> 
+      MinorBuild >> MajorBuild >> CompileTimeLo >> CompileTimeHi;
+
+   unsigned long long longlongTime = (CompileTimeHi * 4294967296) + CompileTimeLo;
+
+   LOG(LOG_NO_INFO,"SWF Info:" << 
+      "\r\n\tProductId: " << ProductId <<
+      "\r\n\tEdition: " << Edition <<
+      "\r\n\tVersion: " << UI32(MajorVersion) << "." << UI32(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
+      "\r\n\tCompileTime: " << longlongTime);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)

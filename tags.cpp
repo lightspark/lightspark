@@ -1685,6 +1685,22 @@ void SetBackgroundColorTag::execute(RootMovieClip* root)
 	root->setBackground(BackgroundColor);
 }
 
+ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+   LOG(LOG_TRACE,"ProductInfoTag Tag");
+   in >> ProductId >> Edition >> MajorVersion >> MinorVersion >> 
+      MajorBuild >> MinorBuild >> CompileTime;
+   LOG(LOG_NO_INFO,"SWF Info:" << 
+      "\r\n\tProductId: " << ProductId <<
+      "\r\n\tEdition: " << Edition <<
+      "\r\n\tMajorVersion: " << MajorVersion <<
+      "\r\n\tMinorVersion: " << MinorVersion <<
+      "\r\n\tMinorBuild: " << MinorBuild <<
+      "\r\n\tMajorBuild: " << MajorBuild <<
+      "\r\n\tCompileTime: " << CompileTime <<
+      );
+}
+
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	in >> Name;

@@ -88,12 +88,6 @@ DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag
 	LOG(LOG_NOT_IMPLEMENTED,"DefineScalingGridTag Tag on ID " << CharacterId);
 }
 
-ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"ProductInfoTag Tag");
-	skip(in);
-}
-
 SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"SoundStreamBlockTag");

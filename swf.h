@@ -190,11 +190,20 @@ private:
 	NPAPI_params npapiParams;
 	ENGINE engine;
 	void startRenderTicks();
+	/**
+		Create the rendering and input engines
+
+		@pre engine and version are known. The mutex is held
+	*/
 	void createEngines();
 	/**
 	  	Version of the main SWF file
 	*/
 	uint32_t version;
+	//Useful to wait for complete download of the SWF
+	Condition fileDumpAvailable;
+	tiny_string dumpedSWFPath;
+	bool waitingForDump;
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -217,6 +226,7 @@ public:
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(ENGINE e, NPAPI_params* p) DLL_PUBLIC;
 	void setVersion(uint32_t v);
+	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started

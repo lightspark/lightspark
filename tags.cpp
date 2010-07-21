@@ -1910,7 +1910,12 @@ DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
    LOG(LOG_TRACE,"DebugIDTag Tag");
    for(int i = 0; i < 16; i++)
       in >> DebugId[i];
-   LOG(LOG_NO_INFO,"DebugId " << DebugId);
+
+   LOG(LOG_NO_INFO,"DebugId " << 
+      DebugId[0] << DebugId[1] << DebugId[2] << DebugId[3] << "-" <<
+      DebugId[4] << DebugId[5] << DebugId[6] << DebugId[7] << "-" <<
+      DebugId[8] << DebugId[9] << DebugId[10] << DebugId[11] << "-" <<
+      DebugId[12] << DebugId[13] << DebugId[14] << DebugId[15]);
 }
 
 EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)

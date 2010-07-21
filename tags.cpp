@@ -1886,7 +1886,7 @@ ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
    LOG(LOG_TRACE,"ScriptLimitsTag Tag");
    in >> MaxRecursionDepth >> ScriptTimeoutSeconds;
-   LOG(LOG_NO_INFO,"ScriptLimits MaxRecusionDeath: " << MaxRecursionDepth << ", ScriptTimeoutSeconds: " << ScriptTimeoutSeconds);
+   LOG(LOG_NO_INFO,"MaxRecusionDepth: " << MaxRecursionDepth << ", ScriptTimeoutSeconds: " << ScriptTimeoutSeconds);
 }
 
 DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)

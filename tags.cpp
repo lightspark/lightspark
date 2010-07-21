@@ -126,7 +126,7 @@ Tag* TagFactory::readTag()
 			ret=new DefineSpriteTag(h,f);
 			break;
 		case 41:
-			ret=new SerialNumberTag(h,f);
+			ret=new ProductInfoTag(h,f);
 			break;
 		case 43:
 			ret=new FrameLabelTag(h,f);

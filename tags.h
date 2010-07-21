@@ -713,11 +713,10 @@ public:
 	ScriptLimitsTag(RECORDHEADER h, std::istream& in);
 };
 
-//Documented by gnash
-class SerialNumberTag: public Tag
+class ProductInfoTag: public Tag
 {
 public:
-	SerialNumberTag(RECORDHEADER h, std::istream& in);
+	ProductInfoTag(RECORDHEADER h, std::istream& in);
 };
 
 class FileAttributesTag: public Tag

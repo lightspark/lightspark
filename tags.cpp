@@ -1871,8 +1871,8 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
    LOG(LOG_TRACE,"DebugIDTag Tag");
-   assert_and_throw((h.getLength() == 16) && "DebugIDTag not implemented properly");
-   in >> DebugId;
+   for(int i = 0; i < 16; i++)
+      in >> DebugId[i];
    LOG(LOG_NO_INFO,"DebugId " << DebugId);
 }
 

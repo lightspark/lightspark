@@ -1692,7 +1692,7 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
    in >> ProductId >> Edition >> MajorVersion >> MinorVersion >> 
       MinorBuild >> MajorBuild >> CompileTimeLo >> CompileTimeHi;
 
-   unsigned long long longlongTime = (CompileTimeHi * 4294967296) + CompileTimeLo;
+   unsigned long long longlongTime = (CompileTimeHi << 32) + CompileTimeLo;
 
    LOG(LOG_NO_INFO,"SWF Info:" << 
       "\r\n\tProductId: " << ProductId <<
@@ -1911,12 +1911,14 @@ DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
    for(int i = 0; i < 16; i++)
       in >> DebugId[i];
 
+   //Note the switch to hex formatting on the ostream, and switch back to dec
    LOG(LOG_NO_INFO,"DebugId " << hex <<
       UI32(DebugId[0]) << UI32(DebugId[1]) << UI32(DebugId[2]) << UI32(DebugId[3]) << "-" <<
       UI32(DebugId[4]) << UI32(DebugId[5]) << "-" <<
       UI32(DebugId[6]) << UI32(DebugId[7]) << "-" <<
       UI32(DebugId[8]) << UI32(DebugId[9]) << "-" <<
-      UI32(DebugId[10]) << UI32(DebugId[11]) << UI32(DebugId[12]) << UI32(DebugId[13]) << UI32(DebugId[14]) << UI32(DebugId[15]));
+      UI32(DebugId[10]) << UI32(DebugId[11]) << UI32(DebugId[12]) << UI32(DebugId[13]) << UI32(DebugId[14]) << UI32(DebugId[15]) <<
+      dec);
 }
 
 EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)

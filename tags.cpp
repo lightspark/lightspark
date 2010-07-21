@@ -1692,11 +1692,13 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
    in >> ProductId >> Edition >> MajorVersion >> MinorVersion >> 
       MinorBuild >> MajorBuild >> CompileTimeLo >> CompileTimeHi;
 
+   unsigned long long longlongTime = (CompileTimeHi * 4294967296) + CompileTimeLo;
+
    LOG(LOG_NO_INFO,"SWF Info:" << 
       "\r\n\tProductId: " << ProductId <<
       "\r\n\tEdition: " << Edition <<
       "\r\n\tVersion: " << MajorVersion << "." << MinorVersion << "." << MajorBuild << "." << MinorBuild <<
-      "\r\n\tCompileTime: " << (CompileTimeHi * 4294967296) + CompileTimeLo);
+      "\r\n\tCompileTime: " << longlongTime);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)

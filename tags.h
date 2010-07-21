@@ -739,6 +739,9 @@ public:
 
 class EnableDebugger2Tag: public Tag
 {
+private:
+   UI16 ReservedWord;
+   STRING DebugPassword;
 public:
    EnableDebugger2Tag(RECORDHEADER h, std::istream& in);
 };

@@ -118,12 +118,6 @@ CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h)
 	skip(in);
 }
 
-EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-   LOG(LOG_NOT_IMPLEMENTED,"EnableDebugger2Tag Tag, Size: " << h.getLength());
-   skip(in);
-}
-
 UnimplementedTag::UnimplementedTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Unimplemented Tag " << h.getTagType());

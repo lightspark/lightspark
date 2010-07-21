@@ -118,9 +118,9 @@ CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h)
 	skip(in);
 }
 
-EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)
+EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-   LOG(LOG_NOT_IMPLEMENTED,"EnableDebuggerTag Tag");
+   LOG(LOG_NOT_IMPLEMENTED,"EnableDebugger2Tag Tag, Size: " << h.getLength());
    skip(in);
 }
 

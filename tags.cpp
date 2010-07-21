@@ -1876,6 +1876,15 @@ DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
    LOG(LOG_NO_INFO,"DebugId " << DebugId);
 }
 
+EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+   LOG(LOG_TRACE,"EnableDebuggerTag Tag");
+   DebugPassword = "";
+   if(h.getLength() > 0)
+      in >> DebugPassword;
+   LOG(LOG_NO_INFO,"Debugger enabled, password: " << DebugPassword);
+}
+
 ASObject* DefineSoundTag::instance() const
 {
 	DefineSoundTag* ret=new DefineSoundTag(*this);

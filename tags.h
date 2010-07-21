@@ -731,6 +731,14 @@ public:
 
 class EnableDebuggerTag: public Tag
 {
+private:
+   STRING DebugPassword;
+public:
+   EnableDebuggerTag(RECORDHEADER h, std::istream& in);
+};
+
+class EnableDebugger2Tag: public Tag
+{
 public:
    EnableDebuggerTag(RECORDHEADER h, std::istream& in);
 };

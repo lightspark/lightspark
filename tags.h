@@ -729,6 +729,31 @@ public:
 	FileAttributesTag(RECORDHEADER h, std::istream& in);
 };
 
+class EnableDebuggerTag: public Tag
+{
+private:
+   STRING DebugPassword;
+public:
+   EnableDebuggerTag(RECORDHEADER h, std::istream& in);
+};
+
+class EnableDebugger2Tag: public Tag
+{
+private:
+   UI16 ReservedWord;
+   STRING DebugPassword;
+public:
+   EnableDebugger2Tag(RECORDHEADER h, std::istream& in);
+};
+
+class DebugIDTag: public Tag
+{
+private:
+   UI8 DebugId[16];
+public:
+   DebugIDTag(RECORDHEADER h, std::istream& in);
+};
+
 class TagFactory
 {
 private:

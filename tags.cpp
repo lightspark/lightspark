@@ -143,12 +143,21 @@ Tag* TagFactory::readTag()
 		case 56:
 			ret=new ExportAssetsTag(h,f);
 			break;
+      case 58:
+         ret=new EnableDebuggerTag(h,f);
+         break;
 		case 59:
 			ret=new DoInitActionTag(h,f);
 			break;
 		case 60:
 			ret=new DefineVideoStreamTag(h,f);
 			break;
+      case 63:
+         ret=new DebugIDTag(h,f);
+         break;
+      case 64:
+         ret=new EnableDebugger2Tag(h,f);
+         break;
 		case 65:
 			ret=new ScriptLimitsTag(h,f);
 			break;
@@ -1857,6 +1866,34 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 	in >> SoundSampleCount;
 	//TODO: read and parse actual sound data
 	ignore(in,h.getLength()-7);
+}
+
+DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+   LOG(LOG_TRACE,"DebugIDTag Tag");
+   for(int i = 0; i < 16; i++)
+      in >> DebugId[i];
+   LOG(LOG_NO_INFO,"DebugId " << DebugId);
+}
+
+EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+   LOG(LOG_TRACE,"EnableDebuggerTag Tag");
+   DebugPassword = "";
+   if(h.getLength() > 0)
+      in >> DebugPassword;
+   LOG(LOG_NO_INFO,"Debugger enabled, password: " << DebugPassword);
+}
+
+EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+   LOG(LOG_TRACE,"EnableDebugger2Tag Tag");
+   in >> ReservedWord;
+
+   DebugPassword = "";
+   if(h.getLength() > sizeof(ReservedWord))
+      in >> DebugPassword;
+   LOG(LOG_NO_INFO,"Debugger enabled, reserved: " << ReservedWord << ", password: " << DebugPassword);
 }
 
 ASObject* DefineSoundTag::instance() const

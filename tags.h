@@ -740,7 +740,7 @@ public:
 class EnableDebugger2Tag: public Tag
 {
 public:
-   EnableDebuggerTag(RECORDHEADER h, std::istream& in);
+   EnableDebugger2Tag(RECORDHEADER h, std::istream& in);
 };
 
 class DebugIDTag: public Tag

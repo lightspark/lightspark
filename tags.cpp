@@ -156,7 +156,7 @@ Tag* TagFactory::readTag()
          ret=new DebugIDTag(h,f);
          break;
       case 64:
-         ret=new EnableDebuggerTag(h,f);
+         ret=new EnableDebugger2Tag(h,f);
          break;
 		case 65:
 			ret=new ScriptLimitsTag(h,f);

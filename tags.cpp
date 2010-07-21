@@ -143,12 +143,21 @@ Tag* TagFactory::readTag()
 		case 56:
 			ret=new ExportAssetsTag(h,f);
 			break;
+      case 58:
+         ret=new EnableDebuggerTag(h,f);
+         break;
 		case 59:
 			ret=new DoInitActionTag(h,f);
 			break;
 		case 60:
 			ret=new DefineVideoStreamTag(h,f);
 			break;
+      case 63:
+         ret=new DebugIDTag(h,f);
+         break;
+      case 64:
+         ret=new EnableDebuggerTag(h,f);
+         break;
 		case 65:
 			ret=new ScriptLimitsTag(h,f);
 			break;

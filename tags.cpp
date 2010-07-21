@@ -1697,8 +1697,7 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
       "\r\n\tMinorVersion: " << MinorVersion <<
       "\r\n\tMinorBuild: " << MinorBuild <<
       "\r\n\tMajorBuild: " << MajorBuild <<
-      "\r\n\tCompileTime: " << CompileTime <<
-      );
+      "\r\n\tCompileTime: " << CompileTime);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)

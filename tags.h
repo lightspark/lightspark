@@ -722,7 +722,7 @@ private:
    UI8 MinorVersion;
    UI32 MinorBuild;
    UI32 MajorBuild;
-   UI32 CompileTime;
+   UI32 CompileTimeHi, CompileTimeLo;
 public:
 	ProductInfoTag(RECORDHEADER h, std::istream& in);
 };

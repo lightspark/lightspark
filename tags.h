@@ -737,6 +737,8 @@ public:
 
 class DebugIDTag: public Tag
 {
+private:
+   UI16 DebugId;
 public:
    DebugIDTag(RECORDHEADER h, std::istream& in);
 };

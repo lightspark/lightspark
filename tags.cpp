@@ -1870,23 +1870,23 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 
 ASObject* DefineSoundTag::instance() const
 {
-   DefineSoundTag* ret=new DefineSoundTag(*this);
-   //TODO: check
-   if(bindedTo)
-   {
-      //A class is binded to this tag
-      ret->setPrototype(bindedTo);
-   }
-   else
-      ret->setPrototype(Class<Sound>::getClass());
-   return ret;
+	DefineSoundTag* ret=new DefineSoundTag(*this);
+	//TODO: check
+	if(bindedTo)
+	{
+		//A class is binded to this tag
+		ret->setPrototype(bindedTo);
+	}
+	else
+		ret->setPrototype(Class<Sound>::getClass());
+	return ret;
 }
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-   LOG(LOG_TRACE,"ScriptLimitsTag Tag");
-   in >> MaxRecursionDepth >> ScriptTimeoutSeconds;
-   LOG(LOG_NO_INFO,"MaxRecusionDepth: " << MaxRecursionDepth << ", ScriptTimeoutSeconds: " << ScriptTimeoutSeconds);
+	LOG(LOG_TRACE,"ScriptLimitsTag Tag");
+	in >> MaxRecursionDepth >> ScriptTimeoutSeconds;
+	LOG(LOG_NO_INFO,"MaxRecusionDepth: " << MaxRecursionDepth << ", ScriptTimeoutSeconds: " << ScriptTimeoutSeconds);
 }
 
 DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)

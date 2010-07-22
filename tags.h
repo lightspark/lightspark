@@ -707,8 +707,8 @@ public:
 class ScriptLimitsTag: public Tag
 {
 private:
-   UI16 MaxRecursionDepth;
-   UI16 ScriptTimeoutSeconds;
+	UI16 MaxRecursionDepth;
+	UI16 ScriptTimeoutSeconds;
 public:
 	ScriptLimitsTag(RECORDHEADER h, std::istream& in);
 };
@@ -716,13 +716,13 @@ public:
 class ProductInfoTag: public Tag
 {
 private:
-   UI32 ProductId;
-   UI32 Edition;
-   UI8 MajorVersion;
-   UI8 MinorVersion;
-   UI32 MinorBuild;
-   UI32 MajorBuild;
-   UI32 CompileTimeHi, CompileTimeLo;
+	UI32 ProductId;
+	UI32 Edition;
+	UI8 MajorVersion;
+	UI8 MinorVersion;
+	UI32 MinorBuild;
+	UI32 MajorBuild;
+	UI32 CompileTimeHi, CompileTimeLo;
 public:
 	ProductInfoTag(RECORDHEADER h, std::istream& in);
 };
@@ -742,26 +742,26 @@ public:
 class EnableDebuggerTag: public Tag
 {
 private:
-   STRING DebugPassword;
+	STRING DebugPassword;
 public:
-   EnableDebuggerTag(RECORDHEADER h, std::istream& in);
+	EnableDebuggerTag(RECORDHEADER h, std::istream& in);
 };
 
 class EnableDebugger2Tag: public Tag
 {
 private:
-   UI16 ReservedWord;
-   STRING DebugPassword;
+	UI16 ReservedWord;
+	STRING DebugPassword;
 public:
-   EnableDebugger2Tag(RECORDHEADER h, std::istream& in);
+	EnableDebugger2Tag(RECORDHEADER h, std::istream& in);
 };
 
 class DebugIDTag: public Tag
 {
 private:
-   UI8 DebugId[16];
+	UI8 DebugId[16];
 public:
-   DebugIDTag(RECORDHEADER h, std::istream& in);
+	DebugIDTag(RECORDHEADER h, std::istream& in);
 };
 
 class TagFactory

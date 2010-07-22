@@ -160,15 +160,17 @@ public:
 };
 
 enum ENGINE { NONE=0, SDL, GTKPLUG};
+typedef void(*helper_t)(void*);
 #ifdef COMPILE_PLUGIN
 struct NPAPI_params
 {
-	Display* display;
 	GtkWidget* container;
 	VisualID visual;
 	Window window;
 	int width;
 	int height;
+	void (*helper)(void* th, helper_t func, void* privArg);
+	void* helperArg;
 };
 #else
 struct NPAPI_params
@@ -179,6 +181,17 @@ struct NPAPI_params
 class SystemState: public RootMovieClip
 {
 private:
+	class EngineCreator: public IThreadJob
+	{
+	public:
+		EngineCreator()
+		{
+			destroyMe=true;
+		}
+		void execute();
+		void threadAbort();
+	};
+	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
 	sem_t terminated;
@@ -291,6 +304,7 @@ private:
 #ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
 	static gboolean gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
+	static void delayedCreation(InputThread* th);
 #endif
 
 	std::vector<InteractiveObject* > listeners;

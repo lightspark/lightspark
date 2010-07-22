@@ -309,6 +309,12 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 
 }
 
+void nsPluginInstance::AsyncHelper(void* th_void, helper_t func, void* privArg)
+{
+	nsPluginInstance* th=(nsPluginInstance*)th_void;
+	NPN_PluginThreadAsyncCall(th->mInstance, func, privArg);
+}
+
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 {
 	if(aWindow == NULL)
@@ -340,7 +346,6 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 
 		lightspark::NPAPI_params* p=new lightspark::NPAPI_params;
 
-		p->display=mDisplay;
 		p->visual=XVisualIDFromVisual(mVisual);
 		mContainer=gtk_plug_new((GdkNativeWindow)mWindow);
 		p->container=mContainer;
@@ -348,6 +353,8 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p->window=GDK_WINDOW_XWINDOW(mContainer->window);
 		p->width=mWidth;
 		p->height=mHeight;
+		p->helper=AsyncHelper;
+		p->helperArg=this;
 		cout << "X Window " << hex << p->window << dec << endl;
 		if(m_sys->getRenderThread()!=NULL)
 		{

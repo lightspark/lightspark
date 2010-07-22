@@ -325,10 +325,11 @@ NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
 //Tick is called from the timer thread, this happens only if a decoder is available
 void NetStream::tick()
 {
-	streamTime+=1000/frameRate;
 	//Advance video and audio to current time
 	//No mutex needed, ticking can happen only when stream is completely ready
+	//Video presentation has a latency of one frame, so use the previous frame time, before incrementing
 	videoDecoder->skipUntil(streamTime);
+	streamTime+=1000/frameRate;
 	if(soundStreamId)
 	{
 #ifdef ENABLE_SOUND

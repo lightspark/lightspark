@@ -46,8 +46,9 @@ class IThreadJob
 friend class ThreadPool;
 friend class Condition;
 private:
-	sem_t terminated; 
+	sem_t terminated;
 protected:
+	bool destroyMe;
 	bool executing;
 	bool aborting;
 	virtual void execute()=0;

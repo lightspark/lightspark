@@ -322,8 +322,20 @@ void SystemState::startRenderTicks()
 	addTick(1000/renderRate,renderThread);
 }
 
+void SystemState::EngineCreator::execute()
+{
+	sys->createEngines();
+}
+
+void SystemState::EngineCreator::threadAbort()
+{
+	assert(sys->shutdown);
+	sys->fileDumpAvailable.signal();
+}
+
 void SystemState::createEngines()
 {
+	sem_wait(&mutex);
 	assert(renderThread==NULL && inputThread==NULL);
 	//Check if we should fall back on gnash
 	if(version<=8) //TODO: or not using ABC
@@ -344,6 +356,7 @@ void SystemState::createEngines()
 	//If the render rate is known start the render ticks
 	if(renderRate)
 		startRenderTicks();
+	sem_post(&mutex);
 }
 
 void SystemState::setVersion(uint32_t v)
@@ -351,7 +364,7 @@ void SystemState::setVersion(uint32_t v)
 	sem_wait(&mutex);
 	version=v;
 	if(engine)
-		createEngines();
+		addJob(new EngineCreator);
 	sem_post(&mutex);
 }
 
@@ -362,7 +375,7 @@ void SystemState::setParamsAndEngine(ENGINE e, NPAPI_params* p)
 		npapiParams=*p;
 	engine=e;
 	if(version)
-		createEngines();
+		addJob(new EngineCreator);
 	sem_post(&mutex);
 }
 
@@ -639,16 +652,21 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),ter
 	else if(e==GTKPLUG)
 	{
 		npapi_params=(NPAPI_params*)param;
-		GtkWidget* container=npapi_params->container;
-		gtk_widget_set_can_focus(container,True);
-		gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-						GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
-						GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
-		g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), this);
+		npapi_params->helper(npapi_params->helperArg, (helper_t)delayedCreation, this);
 	}
 #endif
 	else
 		::abort();
+}
+
+void InputThread::delayedCreation(InputThread* th)
+{
+	GtkWidget* container=th->npapi_params->container;
+	gtk_widget_set_can_focus(container,True);
+	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
+					GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
+					GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
+	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), th);
 }
 
 InputThread::~InputThread()
@@ -676,7 +694,7 @@ gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputTh
 	{
 		case GDK_KEY_PRESS:
 		{
-			cout << "key press" << endl;
+			//cout << "key press" << endl;
 			switch(event->key.keyval)
 			{
 				case GDK_i:
@@ -1137,6 +1155,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		return NULL;
 	}
 	th->mFBConfig=fb[i];
+	cout << "Chosen config " << hex << fb[i] << dec << endl;
 	XFree(fb);
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);

@@ -30,6 +30,7 @@
 #include <GL/glx.h>
 
 class NPDownloader;
+typedef void(*helper_t)(void*);
 
 class NPDownloadManager: public lightspark::DownloadManager
 {
@@ -79,6 +80,7 @@ public:
 
 private:
 	int hexToInt(char c);
+	static void AsyncHelper(void* th, helper_t func, void* privArg);
 
 	NPP mInstance;
 	NPBool mInitialized;

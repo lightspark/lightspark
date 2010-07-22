@@ -713,11 +713,18 @@ public:
 	ScriptLimitsTag(RECORDHEADER h, std::istream& in);
 };
 
-//Documented by gnash
-class SerialNumberTag: public Tag
+class ProductInfoTag: public Tag
 {
+private:
+   UI32 ProductId;
+   UI32 Edition;
+   UI8 MajorVersion;
+   UI8 MinorVersion;
+   UI32 MinorBuild;
+   UI32 MajorBuild;
+   UI32 CompileTimeHi, CompileTimeLo;
 public:
-	SerialNumberTag(RECORDHEADER h, std::istream& in);
+	ProductInfoTag(RECORDHEADER h, std::istream& in);
 };
 
 class FileAttributesTag: public Tag

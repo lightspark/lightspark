@@ -146,8 +146,9 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 }
 
 SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),renderThread(NULL),
-	inputThread(NULL),engine(NONE),version(0),showProfilingData(false),showInteractiveMap(false),showDebug(false),
-	xOffset(0),yOffset(0),currentVm(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
+	inputThread(NULL),engine(NONE),version(0),fileDumpAvailable(0),waitingForDump(false),showProfilingData(false),
+	showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),finalizingDestruction(false),
+	useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -171,6 +172,15 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	setPrototype(Class<MovieClip>::getClass());
 
 	setOnStage(true);
+}
+
+void SystemState::setDownloadedPath(const tiny_string& p)
+{
+	dumpedSWFPath=p;
+	sem_wait(&mutex);
+	if(waitingForDump)
+		fileDumpAvailable.signal();
+	sem_post(&mutex);
 }
 
 void SystemState::setUrl(const tiny_string& url)
@@ -242,6 +252,8 @@ SystemState::~SystemState()
 	for(unsigned int i=0;i<tagsStorage.size();i++)
 		delete tagsStorage[i];
 
+	delete renderThread;
+	delete inputThread;
 	sem_destroy(&terminated);
 }
 
@@ -295,9 +307,6 @@ void SystemState::wait()
 		renderThread->wait();
 	if(inputThread)
 		inputThread->wait();
-
-	delete renderThread;
-	delete inputThread;
 }
 
 float SystemState::getRenderRate()
@@ -316,6 +325,20 @@ void SystemState::startRenderTicks()
 void SystemState::createEngines()
 {
 	assert(renderThread==NULL && inputThread==NULL);
+	//Check if we should fall back on gnash
+	if(version<=8) //TODO: or not using ABC
+	{
+		if(dumpedSWFPath.len()==0) //The path is not known yet
+		{
+			waitingForDump=true;
+			sem_post(&mutex);
+			fileDumpAvailable.wait();
+			sem_wait(&mutex);
+			if(shutdown)
+				return;
+		}
+		cout << "Should invoke gnash on " << dumpedSWFPath << endl;
+	}
 	renderThread=new RenderThread(this, engine, &npapiParams);
 	inputThread=new InputThread(this, engine, &npapiParams);
 	//If the render rate is known start the render ticks
@@ -838,6 +861,7 @@ void* InputThread::sdl_worker(InputThread* th)
 void InputThread::addListener(InteractiveObject* ob)
 {
 	Locker locker(mutexListeners);
+	assert(ob);
 
 #ifndef NDEBUG
 	vector<InteractiveObject*>::const_iterator it=find(listeners.begin(),listeners.end(),ob);
@@ -1116,7 +1140,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	XFree(fb);
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	GLXWindow glxWin=glXCreateWindow(d, th->mFBConfig, p->window, NULL);
+	GLXWindow glxWin=p->window;
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");
@@ -1272,7 +1296,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		(*it)->shutdown();
 	th->commonGLDeinit();
 	glXMakeCurrent(d,None,NULL);
-	glXDestroyWindow(d, glxWin);
 	glXDestroyContext(d,th->mContext);
 	XCloseDisplay(d);
 	return NULL;

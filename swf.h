@@ -34,7 +34,7 @@
 #include "flashdisplay.h"
 #include "timer.h"
 #include "graphics.h"
-#include "audio-backends/sound.h"
+#include "soundManager.h"
 
 #include <GL/glew.h>
 #ifndef WIN32

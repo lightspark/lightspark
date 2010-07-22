@@ -19,7 +19,7 @@
 
 #include <iostream>
 #include <string.h>
-#include "../sound.h"
+#include "sound.h"
 
 #ifdef AUDIO_BACKEND
 using namespace lightspark;

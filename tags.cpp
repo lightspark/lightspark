@@ -1946,7 +1946,6 @@ EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,"MetadataTag Tag");
-	STRING temp;
-	in >> temp;
-	LOG(LOG_NO_INFO,"MetaData: " << temp);
+	in >> XmlString;
+	LOG(LOG_NO_INFO,"MetaData: " << XmlString);
 }

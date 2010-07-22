@@ -732,13 +732,13 @@ public:
 class EnableDebuggerTag: public Tag
 {
 public:
-   EnableDebuggerTag(RECORDHEADER h, std::istream& in);
+	EnableDebuggerTag(RECORDHEADER h, std::istream& in);
 };
 
 class DebugIDTag: public Tag
 {
 public:
-   DebugIDTag(RECORDHEADER h, std::istream& in);
+	DebugIDTag(RECORDHEADER h, std::istream& in);
 };
 
 class TagFactory

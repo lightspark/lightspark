@@ -120,14 +120,14 @@ CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h)
 
 DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-   LOG(LOG_NOT_IMPLEMENTED,"DebugIDTag Tag");
-   skip(in);
+	LOG(LOG_NOT_IMPLEMENTED,"DebugIDTag Tag");
+	skip(in);
 }
 
 EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-   LOG(LOG_NOT_IMPLEMENTED,"EnableDebuggerTag Tag");
-   skip(in);
+	LOG(LOG_NOT_IMPLEMENTED,"EnableDebuggerTag Tag");
+	skip(in);
 }
 
 UnimplementedTag::UnimplementedTag(RECORDHEADER h, std::istream& in):Tag(h)

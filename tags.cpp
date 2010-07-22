@@ -156,7 +156,7 @@ Tag* TagFactory::readTag()
 			ret=new DebugIDTag(h,f);
 			break;
 		case 64:
-			ret=new EnableDebuggerTag(h,f);
+			ret=new EnableDebugger2Tag(h,f);
 			break;
 		case 65:
 			ret=new ScriptLimitsTag(h,f);
@@ -1874,6 +1874,26 @@ DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
 	for(int i = 0; i < 16; i++)
 		in >> DebugId[i];
 	LOG(LOG_NO_INFO,"DebugId " << DebugId);
+}
+
+EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_TRACE,"EnableDebuggerTag Tag");
+	DebugPassword = "";
+	if(h.getLength() > 0)
+		in >> DebugPassword;
+	LOG(LOG_NO_INFO,"Debugger enabled, password: " << DebugPassword);
+}
+
+EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_TRACE,"EnableDebugger2Tag Tag");
+	in >> ReservedWord;
+
+	DebugPassword = "";
+	if(h.getLength() > sizeof(ReservedWord))
+		in >> DebugPassword;
+	LOG(LOG_NO_INFO,"Debugger enabled, reserved: " << ReservedWord << ", password: " << DebugPassword);
 }
 
 ASObject* DefineSoundTag::instance() const

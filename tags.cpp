@@ -1687,18 +1687,20 @@ void SetBackgroundColorTag::execute(RootMovieClip* root)
 
 ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-   LOG(LOG_TRACE,"ProductInfoTag Tag");
+	LOG(LOG_TRACE,"ProductInfoTag Tag");
 
-   in >> ProductId >> Edition >> MajorVersion >> MinorVersion >> 
-      MinorBuild >> MajorBuild >> CompileTimeLo >> CompileTimeHi;
+	in >> ProductId >> Edition >> MajorVersion >> MinorVersion >> 
+	MinorBuild >> MajorBuild >> CompileTimeLo >> CompileTimeHi;
 
-   unsigned long long longlongTime = (CompileTimeHi * 4294967296) + CompileTimeLo;
+	uint64_t longlongTime = CompileTimeHi;
+	longlongTime<<=32;
+	longlongTime|=CompileTimeLo;
 
-   LOG(LOG_NO_INFO,"SWF Info:" << 
-      "\r\n\tProductId: " << ProductId <<
-      "\r\n\tEdition: " << Edition <<
-      "\r\n\tVersion: " << UI32(MajorVersion) << "." << UI32(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
-      "\r\n\tCompileTime: " << longlongTime);
+	LOG(LOG_NO_INFO,"SWF Info:" << 
+	"\r\n\tProductId: " << ProductId <<
+	"\r\n\tEdition: " << Edition <<
+	"\r\n\tVersion: " << UI32(MajorVersion) << "." << UI32(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
+	"\r\n\tCompileTime: " << longlongTime);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)

@@ -716,13 +716,13 @@ public:
 class ProductInfoTag: public Tag
 {
 private:
-   UI32 ProductId;
-   UI32 Edition;
-   UI8 MajorVersion;
-   UI8 MinorVersion;
-   UI32 MinorBuild;
-   UI32 MajorBuild;
-   UI32 CompileTimeHi, CompileTimeLo;
+	UI32 ProductId;
+	UI32 Edition;
+	UI8 MajorVersion;
+	UI8 MinorVersion;
+	UI32 MinorBuild;
+	UI32 MajorBuild;
+	UI32 CompileTimeHi, CompileTimeLo;
 public:
 	ProductInfoTag(RECORDHEADER h, std::istream& in);
 };

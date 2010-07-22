@@ -1942,3 +1942,11 @@ EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 		in >> DebugPassword;
 	LOG(LOG_NO_INFO,"Debugger enabled, reserved: " << ReservedWord << ", password: " << DebugPassword);
 }
+
+MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_TRACE,"MetadataTag Tag");
+	STRING temp;
+	in >> temp;
+	LOG(LOG_NO_INFO,"MetaData: " << temp);
+}

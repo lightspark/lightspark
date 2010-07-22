@@ -694,6 +694,17 @@ public:
 
 class MetadataTag: public Tag
 {
+private:
+	UI16 Width;
+	UI16 Height;
+	UI16 WidthPercent; // Float?
+	UI16 HeightPercent;
+	UI16 ScriptRecursionLimit;
+	UI16 ScriptTimeLimit;
+	UI16 FrameRate;
+	RGBA BackgroundColor;
+	STRING PageTitle;
+
 public:
 	MetadataTag(RECORDHEADER h, std::istream& in);
 };

@@ -70,12 +70,6 @@ DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& i
 	skip(in);
 }
 
-MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"MetadataTag Tag");
-	skip(in);
-}
-
 DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineBitsJPEG2Tag Tag");

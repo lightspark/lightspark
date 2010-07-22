@@ -1868,6 +1868,27 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 	ignore(in,h.getLength()-7);
 }
 
+ASObject* DefineSoundTag::instance() const
+{
+   DefineSoundTag* ret=new DefineSoundTag(*this);
+   //TODO: check
+   if(bindedTo)
+   {
+      //A class is binded to this tag
+      ret->setPrototype(bindedTo);
+   }
+   else
+      ret->setPrototype(Class<Sound>::getClass());
+   return ret;
+}
+
+ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+   LOG(LOG_TRACE,"ScriptLimitsTag Tag");
+   in >> MaxRecursionDepth >> ScriptTimeoutSeconds;
+   LOG(LOG_NO_INFO,"MaxRecusionDepth: " << MaxRecursionDepth << ", ScriptTimeoutSeconds: " << ScriptTimeoutSeconds);
+}
+
 DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,"DebugIDTag Tag");
@@ -1894,18 +1915,4 @@ EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 	if(h.getLength() > sizeof(ReservedWord))
 		in >> DebugPassword;
 	LOG(LOG_NO_INFO,"Debugger enabled, reserved: " << ReservedWord << ", password: " << DebugPassword);
-}
-
-ASObject* DefineSoundTag::instance() const
-{
-	DefineSoundTag* ret=new DefineSoundTag(*this);
-	//TODO: check
-	if(bindedTo)
-	{
-		//A class is binded to this tag
-		ret->setPrototype(bindedTo);
-	}
-	else
-		ret->setPrototype(Class<Sound>::getClass());
-	return ret;
 }

@@ -706,6 +706,9 @@ public:
 
 class ScriptLimitsTag: public Tag
 {
+private:
+   UI16 MaxRecursionDepth;
+   UI16 ScriptTimeoutSeconds;
 public:
 	ScriptLimitsTag(RECORDHEADER h, std::istream& in);
 };

@@ -126,7 +126,7 @@ Tag* TagFactory::readTag()
 			ret=new DefineSpriteTag(h,f);
 			break;
 		case 41:
-			ret=new SerialNumberTag(h,f);
+			ret=new ProductInfoTag(h,f);
 			break;
 		case 43:
 			ret=new FrameLabelTag(h,f);
@@ -143,11 +143,20 @@ Tag* TagFactory::readTag()
 		case 56:
 			ret=new ExportAssetsTag(h,f);
 			break;
+		case 58:
+			ret=new EnableDebuggerTag(h,f);
+			break;
 		case 59:
 			ret=new DoInitActionTag(h,f);
 			break;
 		case 60:
 			ret=new DefineVideoStreamTag(h,f);
+			break;
+		case 63:
+			ret=new DebugIDTag(h,f);
+			break;
+		case 64:
+			ret=new EnableDebugger2Tag(h,f);
 			break;
 		case 65:
 			ret=new ScriptLimitsTag(h,f);
@@ -1676,6 +1685,24 @@ void SetBackgroundColorTag::execute(RootMovieClip* root)
 	root->setBackground(BackgroundColor);
 }
 
+ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_TRACE,"ProductInfoTag Tag");
+
+	in >> ProductId >> Edition >> MajorVersion >> MinorVersion >> 
+	MinorBuild >> MajorBuild >> CompileTimeLo >> CompileTimeHi;
+
+	uint64_t longlongTime = CompileTimeHi;
+	longlongTime<<=32;
+	longlongTime|=CompileTimeLo;
+
+	LOG(LOG_NO_INFO,"SWF Info:" << 
+	"\r\n\tProductId: " << ProductId <<
+	"\r\n\tEdition: " << Edition <<
+	"\r\n\tVersion: " << UI32(MajorVersion) << "." << UI32(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
+	"\r\n\tCompileTime: " << longlongTime);
+}
+
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	in >> Name;
@@ -1871,4 +1898,47 @@ ASObject* DefineSoundTag::instance() const
 	else
 		ret->setPrototype(Class<Sound>::getClass());
 	return ret;
+}
+
+ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_TRACE,"ScriptLimitsTag Tag");
+	in >> MaxRecursionDepth >> ScriptTimeoutSeconds;
+	LOG(LOG_NO_INFO,"MaxRecusionDepth: " << MaxRecursionDepth << ", ScriptTimeoutSeconds: " << ScriptTimeoutSeconds);
+}
+
+DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_TRACE,"DebugIDTag Tag");
+	for(int i = 0; i < 16; i++)
+		in >> DebugId[i];
+
+	//Note the switch to hex formatting on the ostream, and switch back to dec
+	LOG(LOG_NO_INFO,"DebugId " << hex <<
+		UI32(DebugId[0]) << UI32(DebugId[1]) << UI32(DebugId[2]) << UI32(DebugId[3]) << "-" <<
+		UI32(DebugId[4]) << UI32(DebugId[5]) << "-" <<
+		UI32(DebugId[6]) << UI32(DebugId[7]) << "-" <<
+		UI32(DebugId[8]) << UI32(DebugId[9]) << "-" <<
+		UI32(DebugId[10]) << UI32(DebugId[11]) << UI32(DebugId[12]) << UI32(DebugId[13]) << UI32(DebugId[14]) << UI32(DebugId[15]) <<
+		dec);
+}
+
+EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_TRACE,"EnableDebuggerTag Tag");
+	DebugPassword = "";
+	if(h.getLength() > 0)
+		in >> DebugPassword;
+	LOG(LOG_NO_INFO,"Debugger enabled, password: " << DebugPassword);
+}
+
+EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
+{
+	LOG(LOG_TRACE,"EnableDebugger2Tag Tag");
+	in >> ReservedWord;
+
+	DebugPassword = "";
+	if(h.getLength() > sizeof(ReservedWord))
+		in >> DebugPassword;
+	LOG(LOG_NO_INFO,"Debugger enabled, reserved: " << ReservedWord << ", password: " << DebugPassword);
 }

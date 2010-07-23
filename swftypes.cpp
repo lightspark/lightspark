@@ -92,6 +92,11 @@ bool ASObject::isLess(ASObject* r)
 		LOG(LOG_CALLS,"Overloaded isLess");
 		return ret1->isLess(ret2);
 	}
+	else if(r->getObjectType()==T_UNDEFINED)
+	{
+		//If the other object is undefined, it is always less than us
+		return true;
+	}
 
 	LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	if(prototype)

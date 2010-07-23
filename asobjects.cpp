@@ -148,7 +148,10 @@ ASFUNCTIONBODY(Array,splice)
 
 	//Insert requested values starting at startIndex
 	for(unsigned int i=2,n=0;i<argslen;i++,n++)
+	{
+		args[i]->incRef();
 		th->data.insert(th->data.begin()+startIndex+n,data_slot(args[i]));
+	}
 
 	return ret;
 }

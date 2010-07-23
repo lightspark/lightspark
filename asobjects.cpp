@@ -129,8 +129,6 @@ ASFUNCTIONBODY(Array,splice)
 {
 	Array* th=static_cast<Array*>(obj);
 	
-	assert_and_throw(argslen==2);
-	
 	int startIndex=args[0]->toInt();
 	int deleteCount=args[1]->toUInt();
 	int totalSize=th->data.size();
@@ -147,6 +145,11 @@ ASFUNCTIONBODY(Array,splice)
 		ret->data.push_back(th->data[startIndex+i]);
 	
 	th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
+
+	//Insert requested values starting at startIndex
+	for(int i=2,n=0;i<argslen;i++,n++)
+		th->data.insert(th->data.begin()+startIndex+n,args[i]);
+
 	return ret;
 }
 

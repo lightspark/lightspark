@@ -147,8 +147,8 @@ ASFUNCTIONBODY(Array,splice)
 	th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
 
 	//Insert requested values starting at startIndex
-	for(int i=2,n=0;i<argslen;i++,n++)
-		th->data.insert(th->data.begin()+startIndex+n,args[i]);
+	for(unsigned int i=2,n=0;i<argslen;i++,n++)
+		th->data.insert(th->data.begin()+startIndex+n,data_slot(args[i]));
 
 	return ret;
 }

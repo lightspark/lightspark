@@ -637,6 +637,12 @@ void ABCVm::construct(call_context* th, int m)
 		Class_base* o_class=static_cast<Class_base*>(obj);
 		ret=o_class->getInstance(true,args,m);
 	}
+	else if(obj->getObjectType()==T_NULL)
+	{
+		//Inc ref count to make up for decremnt later
+		obj->incRef();
+		ret=obj;
+	}
 	else if(obj->getObjectType()==T_FUNCTION)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);

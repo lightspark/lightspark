@@ -34,6 +34,11 @@ SET(PATCH_VERSION "2")
 # However, some distro don't implement FHS the same way
 # Suse, Redhat put 64bit libs in /lib64; Debian use /lib for 64bit, but specifies /lib32 for 32bit libs
 # See FHS 2.3 for Lib directories under each architecture 
+
+# Some directory shortcuts
+SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
+INCLUDE(CMakeASM-NASMCompiler)
+
 IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 	SET(i386 1)
         SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 32")
@@ -48,6 +53,11 @@ ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 SET(BINDIR "bin")
 SET(DATADIR "share")
 SET(LIBDIR "lib${LIB_SUFFIX}")
+SET(PRIVATELIBDIR "lib/lightspark")
+
+# The library is searched in its private library directory
+SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${PRIVATELIBDIR}")
 
 # Setting variables
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix" FORCE)
@@ -154,7 +164,7 @@ SET_TARGET_PROPERTIES(spark PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION
 SET_TARGET_PROPERTIES(spark PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
 
 IF(UNIX)
-	INSTALL(TARGETS spark LIBRARY DESTINATION ${LIBDIR})
+	INSTALL(TARGETS spark LIBRARY DESTINATION ${PRIVATELIBDIR})
 ENDIF(UNIX)
 
 # lightspark executable target

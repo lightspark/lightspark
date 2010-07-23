@@ -637,6 +637,12 @@ void ABCVm::construct(call_context* th, int m)
 		Class_base* o_class=static_cast<Class_base*>(obj);
 		ret=o_class->getInstance(true,args,m);
 	}
+	else if(obj->getObjectType()==T_NULL)
+	{
+		//Inc ref count to make up for decremnt later
+		obj->incRef();
+		ret=obj;
+	}
 	else if(obj->getObjectType()==T_FUNCTION)
 	{
 		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
@@ -670,7 +676,10 @@ void ABCVm::construct(call_context* th, int m)
 		}
 	}
 	else
+	{
+		LOG(LOG_ERROR,"Object type " << obj->getObjectType() << " not supported in construct");
 		throw UnsupportedException("This object is not supported in construct");
+	}
 
 	obj->decRef();
 	LOG(LOG_CALLS,"End of constructing " << ret);

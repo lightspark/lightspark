@@ -1,3 +1,9 @@
+lightspark (0.4.2.1-0ubuntu1) lucid; urgency=low
+
+  * Small bugfix release
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Sat, 24 Jul 2010 00:35:58 +0200
+
 lightspark (0.4.2-0ubuntu1) lucid; urgency=low
 
   * New release

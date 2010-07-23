@@ -340,7 +340,7 @@ void NetStream::tick()
 
 bool NetStream::isReady() const
 {
-	if(videoDecoder==NULL && audioDecoder==NULL)
+	if(videoDecoder==NULL || audioDecoder==NULL)
 		return false;
 
 	bool ret=videoDecoder->isValid() && audioDecoder->isValid();

@@ -331,7 +331,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	if(o.obj==NULL)
 	{
 		LOG(LOG_ERROR,"Definition for '" << ns << " :: " << name << "' not found.");
-		throw RunTimeException("Class definition not found");
+		return new Null;
 	}
 
 	//Check if the object has to be defined

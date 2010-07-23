@@ -670,7 +670,10 @@ void ABCVm::construct(call_context* th, int m)
 		}
 	}
 	else
+	{
+		LOG(LOG_ERROR,"Object type " << obj->getObjectType() << " not supported in construct");
 		throw UnsupportedException("This object is not supported in construct");
+	}
 
 	obj->decRef();
 	LOG(LOG_CALLS,"End of constructing " << ret);

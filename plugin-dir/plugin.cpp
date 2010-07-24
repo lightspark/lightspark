@@ -372,7 +372,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 			cout << "destroy old input" << endl;
 			abort();
 		}
-
+		XSync(mDisplay, False);
 		m_sys->setParamsAndEngine(lightspark::GTKPLUG,p);
 		delete p;
 	}

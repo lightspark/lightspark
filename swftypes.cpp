@@ -1832,7 +1832,7 @@ void variables_map::destroyContents()
 	Variables.clear();
 }
 
-ASObject::ASObject(Manager* m):type(T_OBJECT),ref_count(1),manager(m),cur_level(0),prototype(NULL),implEnable(true)
+ASObject::ASObject(Manager* m):type(T_UNDEFINED),ref_count(1),manager(m),cur_level(0),prototype(NULL),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1892,7 +1892,7 @@ Class_base* ASObject::getActualPrototype() const
 	Class_base* ret=prototype;
 	if(ret==NULL)
 	{
-		assert_and_throw(type==T_CLASS||type==T_OBJECT);
+		assert_and_throw(type==T_CLASS);
 		return NULL;
 	}
 

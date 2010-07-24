@@ -401,7 +401,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 void nsPluginInstance::StreamAsFile(NPStream* stream, const char* fname)
 {
 	assert(stream->notifyData==NULL);
-	cout << "Complete file downloaded as " << fname << endl;
+	m_sys->setDownloadedPath(fname);
 }
 
 int32_t nsPluginInstance::WriteReady(NPStream *stream)

@@ -1206,6 +1206,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
 	GLXWindow glxWin=p->window;
+	compat_msleep(1000);
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");

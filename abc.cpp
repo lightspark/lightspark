@@ -1690,12 +1690,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			method_info* m=&methods[t->method];
 			IFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
-			if(obj->getObjectType()==T_UNDEFINED)
-			{
-				LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name << " is undefined");
-				break;
-			}
-
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
 			Class_base* prot=obj->getActualPrototype();

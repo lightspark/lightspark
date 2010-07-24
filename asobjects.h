@@ -754,6 +754,11 @@ private:
 public:
 	ASError(const tiny_string& error_message = "", int id = 0) : message(error_message), name("Error"), errorID(id) {}
 	ASFUNCTION(getStackTrace);
+	ASFUNCTION(_setName);
+	ASFUNCTION(_getName);
+	ASFUNCTION(_setMessage);
+	ASFUNCTION(_getMessage);
+	ASFUNCTION(_getErrorID);
 	tiny_string toString(bool debugMsg=false);
 	static void buildTraits(ASObject* o);
 };

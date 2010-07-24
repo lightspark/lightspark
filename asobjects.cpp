@@ -1670,9 +1670,48 @@ tiny_string ASError::toString(bool debugMsg)
 	return message.len() > 0 ? message : "Error";
 }
 
+ASFUNCTIONBODY(ASError,_getErrorId)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return abstract_i(th->errorId);
+}
+
+ASFUNCTIONBODY(ASError,_setName)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	assert_and_throw(argslen==1);
+	th->name = args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ASError,_getName)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return Class<ASString>::getInstanceS(th->name);
+}
+
+ASFUNCTIONBODY(ASError,_setMessage)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	assert_and_throw(argslen==1);
+	th->message = args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ASError,_getMessage)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return Class<ASString>::getInstanceS(th->message);
+}
+
 void ASError::buildTraits(ASObject* o)
 {
 	o->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
+	o->setGetterByQName("errorID",AS3,Class<IFunction>::getFunction(_getErrorID));
+	o->setGetterByQName("message",AS3,Class<IFunction>::getFunction(_getMessage));
+	o->setSetterByQName("message",AS3,Class<IFunction>::getFunction(_setMessage));
+	o->setGetterByQName("name",AS3,Class<IFunction>::getFunction(_getName));
+	o->setSetterByQName("name",AS3,Class<IFunction>::getFunction(_setName));
 }
 
 Class_base::Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),

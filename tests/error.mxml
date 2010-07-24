@@ -8,15 +8,15 @@
 <mx:Script>
 <![CDATA[
 	private function appComplete():void {
-	   //http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/Error.html
+		//http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/Error.html
 		var err:Error = new Error();
-      trace(err.toString());    // Error
+		trace(err.toString());    // Error
+	
+		err = new Error("New Error Message");
+		trace(err.toString());    // Error: New Error Message
 
-      err = new Error("New Error Message");
-      trace(err.toString());    // Error: New Error Message
-
-      err.message = "Another New Error Message";
-      trace(err.toString());    // Error: Another New Error Message
+		err.message = "Another New Error Message";
+		trace(err.toString());    // Error: Another New Error Message
 	}
 ]]>
 </mx:Script>

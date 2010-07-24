@@ -1657,6 +1657,24 @@ ASFUNCTIONBODY(ASString,concat)
 	return ret;
 }
 
+ASFUNCTIONBODY(ASError,getStackTrace)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	ASString* ret=Class<ASString>::getInstanceS();
+	LOG(LOG_NOT_IMPLEMENTED,"Error.getStackTrace not yet implemented.");
+	return ret;
+}
+
+tiny_string ASError::toString(bool debugMsg)
+{
+	return message.len() > 0 ? message : "Error";
+}
+
+void ASError::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
+}
+
 Class_base::Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
 	context(NULL),class_name(name),class_index(-1),max_level(0)
 {

@@ -744,6 +744,20 @@ public:
 	ASFUNCTION(_getGlobal);
 };
 
+class ASError: public ASObject
+{
+CLASSBUILDABLE(ASError)	;
+private:
+	tiny_string message;
+	tiny_string name;
+	int errorID;
+public:
+	ASError(const tiny_string& error_message = "", int id = 0) : message(error_message), name("Error"), errorID(id) {}
+	ASFUNCTION(getStackTrace);
+	tiny_string toString(bool debugMsg=false);
+	static void buildTraits(ASObject* o);
+};
+
 };
 
 #endif

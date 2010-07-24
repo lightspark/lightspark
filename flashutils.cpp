@@ -331,7 +331,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	if(o.obj==NULL)
 	{
 		LOG(LOG_ERROR,"Definition for '" << ns << " :: " << name << "' not found.");
-		return new Null;
+		return new Undefined;
 	}
 
 	//Check if the object has to be defined

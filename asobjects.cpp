@@ -1661,7 +1661,7 @@ ASFUNCTIONBODY(ASString,concat)
 ASFUNCTIONBODY(ASError,getStackTrace)
 {
 	ASError* th=static_cast<ASError*>(obj);
-	ASString* ret=Class<ASString>::getInstanceS();
+	ASString* ret=Class<ASString>::getInstanceS(th->toString(true));
 	LOG(LOG_NOT_IMPLEMENTED,"Error.getStackTrace not yet implemented.");
 	return ret;
 }

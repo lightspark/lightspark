@@ -349,7 +349,11 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		p->visual=XVisualIDFromVisual(mVisual);
 		mContainer=gtk_plug_new((GdkNativeWindow)mWindow);
 		p->container=mContainer;
+		//Realize the widget now, as we need the window
+		gtk_widget_realize(p->container);
+		//Show it now
 		gtk_widget_show(p->container);
+		gtk_widget_map(p->container);
 		p->window=GDK_WINDOW_XWINDOW(mContainer->window);
 		p->width=mWidth;
 		p->height=mHeight;

@@ -1697,10 +1697,10 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 	longlongTime|=CompileTimeLo;
 
 	LOG(LOG_NO_INFO,"SWF Info:" << 
-	"\r\n\tProductId: " << ProductId <<
-	"\r\n\tEdition: " << Edition <<
-	"\r\n\tVersion: " << UI32(MajorVersion) << "." << UI32(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
-	"\r\n\tCompileTime: " << longlongTime);
+	endl << "\tProductId: " << ProductId <<
+	endl << "\tEdition: " << Edition <<
+	endl << "\tVersion: " << UI32(MajorVersion) << "." << UI32(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
+	endl << "\tCompileTime: " << longlongTime);
 }
 
 FrameLabelTag::FrameLabelTag(RECORDHEADER h, std::istream& in):Tag(h)

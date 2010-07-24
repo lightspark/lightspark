@@ -1673,7 +1673,7 @@ tiny_string ASError::toString(bool debugMsg)
 ASFUNCTIONBODY(ASError,_getErrorID)
 {
 	ASError* th=static_cast<ASError*>(obj);
-	return abstract_i(th->errorId);
+	return abstract_i(th->errorID);
 }
 
 ASFUNCTIONBODY(ASError,_setName)

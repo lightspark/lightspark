@@ -746,7 +746,7 @@ public:
 
 class ASError: public ASObject
 {
-CLASSBUILDABLE(ASError)	;
+CLASSBUILDABLE(ASError);
 private:
 	tiny_string message;
 	tiny_string name;

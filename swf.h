@@ -206,17 +206,15 @@ private:
 	/**
 		Create the rendering and input engines
 
-		@pre engine and version are known. The mutex is held
+		@pre engine and useAVM2 are known
 	*/
 	void createEngines();
-	/**
-	  	Version of the main SWF file
-	*/
-	uint32_t version;
 	//Useful to wait for complete download of the SWF
 	Condition fileDumpAvailable;
 	tiny_string dumpedSWFPath;
 	bool waitingForDump;
+	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
+	VMVERSION vmVersion;
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -238,8 +236,8 @@ public:
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(ENGINE e, NPAPI_params* p) DLL_PUBLIC;
-	void setVersion(uint32_t v);
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
+	void needsAVM2(bool n);
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
@@ -289,6 +287,7 @@ private:
 public:
 	RootMovieClip* root;
 	int version;
+	bool useAVM2;
 	ParseThread(RootMovieClip* r,std::istream& in) DLL_PUBLIC;
 	~ParseThread();
 	void wait() DLL_PUBLIC;

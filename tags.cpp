@@ -162,6 +162,12 @@ Tag* TagFactory::readTag()
 			ret=new ScriptLimitsTag(h,f);
 			break;
 		case 69:
+			//FileAttributes tag is mandatory on version>=8 and must be the first tag
+			if(pt->version>=8)
+			{
+				if(!firstTag)
+					LOG(LOG_ERROR,"FileAttributes tag not in the beginning");
+			}
 			ret=new FileAttributesTag(h,f);
 			break;
 		case 70:
@@ -204,7 +210,12 @@ Tag* TagFactory::readTag()
 			LOG(LOG_NOT_IMPLEMENTED,"Unsupported tag type " << h.getTagType());
 			ret=new UnimplementedTag(h,f);
 	}
-	
+
+	//Check if this clip is the main clip and if AVM2 has been enabled by a FileAttributes tag
+	if(firstTag && pt->root==sys)
+		sys->needsAVM2(pt->useAVM2);
+	firstTag=false;
+
 	unsigned int end=f.tellg();
 	
 	unsigned int actualLen=end-start;
@@ -1864,12 +1875,8 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 	UseNetwork=UB(1,bs);
 	UB(24,bs);
 
-	//We do not need more than a Vm
-	if(ActionScript3 && sys->currentVm==NULL)
-	{
-		LOG(LOG_NO_INFO,"Creating VM");
-		sys->currentVm=new ABCVm(sys);
-	}
+	if(ActionScript3)
+		pt->useAVM2=true;
 }
 
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)

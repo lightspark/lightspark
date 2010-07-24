@@ -75,8 +75,6 @@ SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 		return;
 	}
 	pt->version=Version;
-	if(sys==pt->root) //If this is the main movie clip set the global version
-		sys->setVersion(Version);
 	in >> FrameSize >> FrameRate >> FrameCount;
 	float frameRate=FrameRate;
 	frameRate/=256;
@@ -146,9 +144,9 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 }
 
 SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),renderThread(NULL),
-	inputThread(NULL),engine(NONE),version(0),fileDumpAvailable(0),waitingForDump(false),showProfilingData(false),
-	showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),finalizingDestruction(false),
-	useInterpreter(true),useJit(false),downloadManager(NULL)
+	inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),
+	showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -338,18 +336,19 @@ void SystemState::createEngines()
 	sem_wait(&mutex);
 	assert(renderThread==NULL && inputThread==NULL);
 	//Check if we should fall back on gnash
-	if(version<=8) //TODO: or not using ABC
+	if(vmVersion!=AVM2)
 	{
 		if(dumpedSWFPath.len()==0) //The path is not known yet
 		{
 			waitingForDump=true;
 			sem_post(&mutex);
 			fileDumpAvailable.wait();
-			sem_wait(&mutex);
 			if(shutdown)
 				return;
+			sem_wait(&mutex);
 		}
 		cout << "Should invoke gnash on " << dumpedSWFPath << endl;
+		cout << "version " << version << endl;
 	}
 	renderThread=new RenderThread(this, engine, &npapiParams);
 	inputThread=new InputThread(this, engine, &npapiParams);
@@ -359,10 +358,19 @@ void SystemState::createEngines()
 	sem_post(&mutex);
 }
 
-void SystemState::setVersion(uint32_t v)
+void SystemState::needsAVM2(bool n)
 {
 	sem_wait(&mutex);
-	version=v;
+	assert(currentVm==NULL);
+	//Create the virtual machine if needed
+	if(n)
+	{
+		vmVersion=AVM2;
+		LOG(LOG_NO_INFO,"Creating VM");
+		currentVm=new ABCVm(this);
+	}
+	else
+		vmVersion=AVM1;
 	if(engine)
 		addJob(new EngineCreator);
 	sem_post(&mutex);
@@ -374,7 +382,7 @@ void SystemState::setParamsAndEngine(ENGINE e, NPAPI_params* p)
 	if(p)
 		npapiParams=*p;
 	engine=e;
-	if(version)
+	if(vmVersion)
 		addJob(new EngineCreator);
 	sem_post(&mutex);
 }
@@ -536,7 +544,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 	}
 }
 
-ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in)
+ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),root(NULL),version(0),useAVM2(false)
 {
 	root=r;
 	sem_init(&ended,0,0);

@@ -221,6 +221,7 @@ private:
 	bool waitingForDump;
 	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
 	VMVERSION vmVersion;
+	pid_t childPid;
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 

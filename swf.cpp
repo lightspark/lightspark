@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <pthread.h>
+#include <sys/wait.h>
 #include <algorithm>
 #include "compat.h"
 #include <SDL.h>
@@ -144,7 +145,7 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 }
 
 SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
-	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),
+	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
 	showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
 	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
@@ -230,6 +231,12 @@ void SystemState::stopEngines()
 
 SystemState::~SystemState()
 {
+	//Kill our child process if any
+	if(childPid)
+	{
+		kill(childPid, SIGTERM);
+		waitpid(childPid, NULL, 0);
+	}
 	assert(shutdown);
 	//The thread pool should be stopped before everything
 	delete threadPool;
@@ -363,16 +370,19 @@ void SystemState::createEngines()
 				return;
 			sem_wait(&mutex);
 		}
-		cout << "Should invoke gnash on " << dumpedSWFPath << endl;
-		cout << "version " << version << endl;
+		LOG(LOG_NO_INFO,"Invoking gnash");
 		pid_t childPid=fork();
 		if(childPid==-1)
 		{
 			LOG(LOG_ERROR,"Child process creation failed, lightspark continues");
+			childPid=0;
 		}
 		else if(childPid==0) //Child process scope
 		{
-			LOG(LOG_NO_INFO,"Child stuff");
+			char *const args[3] = {strdup("gnash"), strdup(dumpedSWFPath.raw_buf()), NULL};
+			execve("/usr/bin/gnash", args, environ);
+			//If we are are execve failed, print an error and die
+			LOG(LOG_ERROR,"Execve failed, content will not be rendered");
 			exit(0);
 		}
 		else //Parent process scope

@@ -53,11 +53,7 @@ ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 SET(BINDIR "bin")
 SET(DATADIR "share")
 SET(LIBDIR "lib${LIB_SUFFIX}")
-SET(PRIVATELIBDIR "lib/lightspark")
-
-# The library is searched in its private library directory
-SET(CMAKE_SKIP_BUILD_RPATH FALSE)
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${PRIVATELIBDIR}")
+SET(PRIVATELIBDIR "${LIBDIR}/lightspark")
 
 # Setting variables
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix" FORCE)
@@ -67,9 +63,9 @@ SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the Firefox Plugin?")
 SET(ENABLE_SOUND TRUE CACHE BOOL "Enable sound?")
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
 IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
-      "Choose the type of build, options are: Debug Release RelWithDebInfo Profile Debian"
-      FORCE)
+	SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+		"Choose the type of build, options are: Debug Release RelWithDebInfo Profile Debian"
+		FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
 # Some directory shortcuts
@@ -78,6 +74,9 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
 # nasm for assembly optimizations
 INCLUDE(CMakeASM-NASMCompiler)
 ENABLE_LANGUAGE(ASM-NASM)
+# The library is searched in its private library directory
+SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${PRIVATELIBDIR}")
 
 # Libraries we need
 INCLUDE(FindLLVM REQUIRED)

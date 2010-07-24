@@ -64,7 +64,7 @@ SET(LIBDIR "lib${LIB_SUFFIX}")
 SET(PRIVATELIBDIR "${LIBDIR}/lightspark")
 
 # Setting variables
-SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix" FORCE)
+SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the Firefox Plugin?")

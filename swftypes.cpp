@@ -1892,7 +1892,7 @@ Class_base* ASObject::getActualPrototype() const
 	Class_base* ret=prototype;
 	if(ret==NULL)
 	{
-		assert_and_throw(type==T_CLASS||type==T_OBJECT);
+		assert_and_throw(type==T_CLASS);
 		return NULL;
 	}
 

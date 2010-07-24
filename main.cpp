@@ -130,8 +130,14 @@ int main(int argc, char* argv[])
 #endif
 
 	Log::initLogging(log_level);
+	zlib_file_filter zf(fileName);
+	istream f(&zf);
+	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+	cout.exceptions( ios::failbit | ios::badbit);
+	cerr.exceptions( ios::failbit | ios::badbit);
+	ParseThread* pt = new ParseThread(NULL,f);
 	//NOTE: see SystemState declaration
-	sys=new SystemState;
+	sys=new SystemState(pt);
 
 	//Set a bit of SystemState using parameters
 	if(url)
@@ -156,14 +162,8 @@ int main(int argc, char* argv[])
 	}
 
 	sys->setOrigin(fileName);
-	zlib_file_filter zf(fileName);
-	istream f(&zf);
-	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
-	cout.exceptions( ios::failbit | ios::badbit);
-	cerr.exceptions( ios::failbit | ios::badbit);
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
-	ParseThread* pt = new ParseThread(sys,f);
 	sys->setParamsAndEngine(SDL, NULL);
 	sys->downloadManager=new CurlDownloadManager();
 	//Start the parser

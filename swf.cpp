@@ -143,8 +143,8 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 	clip->decRef();
 }
 
-SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),renderThread(NULL),
-	inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),
+SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
+	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),
 	showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
 	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
@@ -157,6 +157,8 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	sem_init(&terminated,0,0);
 
 	//Get starting time
+	if(parseThread) //ParseThread may be null in tightspark
+		parseThread->root=this;
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 #ifdef ENABLE_SOUND
@@ -206,18 +208,32 @@ void SystemState::setParameters(ASObject* p)
 	loaderInfo->setVariableByQName("parameters","",p);
 }
 
+void SystemState::stopEngines()
+{
+	//Stops the thread that is parsing us
+	parseThread->stop();
+	parseThread->wait();
+	threadPool->stop();
+	if(timerThread)
+		timerThread->wait();
+	delete downloadManager;
+	downloadManager=NULL;
+	delete currentVm;
+	currentVm=NULL;
+	delete timerThread;
+	timerThread=NULL;
+#ifdef ENABLE_SOUND
+	delete soundManager;
+	soundManager=NULL;
+#endif
+}
+
 SystemState::~SystemState()
 {
 	assert(shutdown);
-	timerThread->wait();
-	//soundManager->stop();
+	//The thread pool should be stopped before everything
 	delete threadPool;
-	delete downloadManager;
-	delete currentVm;
-	delete timerThread;
-#ifdef ENABLE_SOUND
-	delete soundManager;
-#endif
+	stopEngines();
 
 	//decRef all our object before destroying classes
 	Variables.destroyContents();
@@ -349,6 +365,23 @@ void SystemState::createEngines()
 		}
 		cout << "Should invoke gnash on " << dumpedSWFPath << endl;
 		cout << "version " << version << endl;
+		pid_t childPid=fork();
+		if(childPid==-1)
+		{
+			LOG(LOG_ERROR,"Child process creation failed, lightspark continues");
+		}
+		else if(childPid==0) //Child process scope
+		{
+			LOG(LOG_NO_INFO,"Child stuff");
+			exit(0);
+		}
+		else //Parent process scope
+		{
+			sem_post(&mutex);
+			//Engines should not be started, stop everything
+			stopEngines();
+			return;
+		}
 	}
 	renderThread=new RenderThread(this, engine, &npapiParams);
 	inputThread=new InputThread(this, engine, &npapiParams);
@@ -544,7 +577,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 	}
 }
 
-ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),root(NULL),version(0),useAVM2(false)
+ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),isEnded(false),root(NULL),version(0),useAVM2(false)
 {
 	root=r;
 	sem_init(&ended,0,0);
@@ -566,7 +599,8 @@ void ParseThread::execute()
 		root->setFrameSize(h.getFrameSize());
 		root->setFrameCount(h.FrameCount);
 
-		TagFactory factory(f);
+		//Create a top level TagFactory
+		TagFactory factory(f, true);
 		bool done=false;
 		bool empty=true;
 		while(!done)
@@ -636,7 +670,11 @@ void ParseThread::threadAbort()
 
 void ParseThread::wait()
 {
-	sem_wait(&ended);
+	if(!isEnded)
+	{
+		sem_wait(&ended);
+		isEnded=true;
+	}
 }
 
 void RenderThread::wait()

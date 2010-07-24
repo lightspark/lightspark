@@ -56,6 +56,7 @@ class DictionaryTag;
 class ABCVm;
 class InputThread;
 class RenderThread;
+class ParseThread;
 class Tag;
 
 typedef void* (*thread_worker)(void*);
@@ -194,6 +195,7 @@ private:
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
+	ParseThread* parseThread;
 	sem_t terminated;
 	float renderRate;
 	bool error;
@@ -209,6 +211,10 @@ private:
 		@pre engine and useAVM2 are known
 	*/
 	void createEngines();
+	/**
+	  	Destroys all the engines used in lightspark: timer, thread pool, vm...
+	*/
+	void stopEngines();
 	//Useful to wait for complete download of the SWF
 	Condition fileDumpAvailable;
 	tiny_string dumpedSWFPath;
@@ -241,7 +247,7 @@ public:
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
-	SystemState() DLL_PUBLIC;
+	SystemState(ParseThread* p) DLL_PUBLIC;
 	~SystemState();
 	
 	//Performance profiling
@@ -282,6 +288,7 @@ class ParseThread: public IThreadJob
 private:
 	std::istream& f;
 	sem_t ended;
+	bool isEnded;
 	void execute();
 	void threadAbort();
 public:

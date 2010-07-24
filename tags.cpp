@@ -212,7 +212,7 @@ Tag* TagFactory::readTag()
 	}
 
 	//Check if this clip is the main clip and if AVM2 has been enabled by a FileAttributes tag
-	if(firstTag && pt->root==sys)
+	if(topLevel && firstTag && pt->root==sys)
 		sys->needsAVM2(pt->useAVM2);
 	firstTag=false;
 
@@ -342,7 +342,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	state.max_FP=FrameCount;
 
 	LOG(LOG_TRACE,"DefineSprite ID: " << SpriteID);
-	TagFactory factory(in);
+	//Create a non top level TagFactory
+	TagFactory factory(in, false);
 	Tag* tag;
 	bool done=false;
 	bool empty=true;

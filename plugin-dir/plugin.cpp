@@ -163,8 +163,8 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),swf_stream(&swf_buf)
 {
-	m_sys=new lightspark::SystemState;
-	m_pt=new lightspark::ParseThread(m_sys,swf_stream);
+	m_pt=new lightspark::ParseThread(NULL,swf_stream);
+	m_sys=new lightspark::SystemState(m_pt);
 	//Find flashvars argument
 	for(int i=0;i<argc;i++)
 	{

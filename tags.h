@@ -694,6 +694,8 @@ public:
 
 class MetadataTag: public Tag
 {
+private:
+	STRING XmlString;
 public:
 	MetadataTag(RECORDHEADER h, std::istream& in);
 };

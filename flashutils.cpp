@@ -328,6 +328,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
 	objAndLevel o=getGlobal()->getVariableByQName(name,ns);
 
+	//TODO: should raise an exception, for now just return undefined	
 	if(o.obj==NULL)
 	{
 		LOG(LOG_ERROR,"Definition for '" << ns << " :: " << name << "' not found.");

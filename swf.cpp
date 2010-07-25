@@ -371,7 +371,7 @@ void SystemState::createEngines()
 			sem_wait(&mutex);
 		}
 		LOG(LOG_NO_INFO,"Invoking gnash");
-		pid_t childPid=fork();
+		childPid=fork();
 		if(childPid==-1)
 		{
 			LOG(LOG_ERROR,"Child process creation failed, lightspark continues");

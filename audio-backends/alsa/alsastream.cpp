@@ -19,7 +19,7 @@
 
 #include <iostream>
 #include <string.h>
-#include "sound.h"
+#include "alsastream.h"
 
 #ifdef AUDIO_BACKEND
 using namespace lightspark;
@@ -234,7 +234,7 @@ void SoundManager::contextStatusCB(pa_context* context, SoundManager* th)
 
 SoundManager::SoundManager():contextReady(false),noServer(false),stopped(false)
 {
-	mainLoop=pa_threaded_mainloop_new();
+	this->mainLoop=pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start(mainLoop);
 
 	pa_threaded_mainloop_lock(mainLoop);

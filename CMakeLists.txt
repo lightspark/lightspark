@@ -64,12 +64,12 @@ SET(LIBDIR "lib${LIB_SUFFIX}")
 SET(PRIVATELIBDIR "${LIBDIR}/lightspark")
 
 # Setting variables
-SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix" FORCE)
+SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /usr/local (UNIX) and C:\Program Files (Windows)")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
-SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the Firefox Plugin?")
-SET(AUDIO_BACKEND "pulse" CACHE STRING "Choose audio backend: none pulse alsa" FORCE)
-SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
+SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the browser plugin?")
+SET(AUDIO_BACKEND "pulse" CACHE STRING "Choose audio backend: none pulse alsa, default is pulse")
+SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Install browser plugin directory")
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
 		"Choose the type of build, options are: Debug Release RelWithDebInfo Profile Debian" FORCE)

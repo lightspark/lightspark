@@ -1,5 +1,5 @@
 #**************************************************************************
-#    Lightspark, a free flash player implementation
+#    Lightaudiobackend, a free flash player implementation
 #
 #    Copyright (C) 2010  Giacomo Spigler <g.spigler@sssup.it>
 #    Copyright (C) 2010  Alessandro Pignotti <a.pignotti@sssup.it>
@@ -19,14 +19,16 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-include_directories(.)
+INCLUDE_DIRECTORIES(.)
+SET(LIBPULSE_SOURCES ${LIBPULSE_SOURCES} openalstream.cpp)
 
-IF(${AUDIO_BACKEND} MATCHES "pulse")
-    add_subdirectory(pulse)
-ELSEIF(${AUDIO_BACKEND} MATCHES "alsa")
-    add_subdirectory(alsa)
-ELSEIF(${AUDIO_BACKEND} MATCHES "openal")
-    add_subdirectory(openal)
-ELSE(${AUDIO_BACKEND} MATCHES "pulse")
-    add_subdirectory(dummy)
-ENDIF(${AUDIO_BACKEND} MATCHES "pulse")
+
+## liblightaudiobackend-audiopulse.so target
+#ADD_LIBRARY(audiobackend SHARED ${LIBPULSE_SOURCES})
+#SET_TARGET_PROPERTIES(audiobackend PROPERTIES OUTPUT_NAME lightspark-pulsebackend)
+#TARGET_LINK_LIBRARIES(audiobackend ${SOUND_LIBS_LIBRARIES} ${EXTRA_LIBS_LIBRARIES} ${LIBAVCODEC_LIBRARIES} ${ZLIB_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${SDL_LIBRARY} ${CURL_LIBRARIES} ${GTK_LIBRARIES} ${lib_glew})
+#SET_TARGET_PROPERTIES(audiobackend PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS} -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/../../lightspark-pulsebackend.expmap")
+#SET_TARGET_PROPERTIES(audiobackend PROPERTIES LINK_INTERFACE_LIBRARIES "")
+#
+#SET_TARGET_PROPERTIES(audiobackend PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
+#SET_TARGET_PROPERTIES(audiobackend PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")

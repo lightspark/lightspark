@@ -20,7 +20,7 @@
 #**************************************************************************
 
 INCLUDE_DIRECTORIES(.)
-SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} sound.cpp)
+SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} alsastream.cpp)
 
 
 # liblightaudiobackend-audiopulse.so target

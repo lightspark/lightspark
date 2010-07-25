@@ -190,8 +190,85 @@ void SystemState::setUrl(const tiny_string& url)
 	loaderInfo->loaderURL=url;
 }
 
-void SystemState::parseParameters(istream& i)
+int SystemState::hexToInt(char c)
 {
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(c>='a' && c<='f')
+		return c-'a'+10;
+	else if(c>='A' && c<='F')
+		return c-'A'+10;
+	else
+		return -1;
+}
+
+void SystemState::parseParametersFromFlashvars(const char* v)
+{
+	ASObject* params=Class<ASObject>::getInstanceS();
+	//Add arguments to SystemState
+	string vars(v);
+	uint32_t cur=0;
+	while(cur<vars.size())
+	{
+		int n1=vars.find('=',cur);
+		if(n1==-1) //Incomplete parameters string, ignore the last
+			break;
+
+		int n2=vars.find('&',n1+1);
+		if(n2==-1)
+			n2=vars.size();
+
+		string varName=vars.substr(cur,(n1-cur));
+
+		//The variable value has to be urldecoded
+		bool ok=true;
+		string varValue;
+		varValue.reserve(n2-n1); //The maximum lenght
+		for(int j=n1+1;j<n2;j++)
+		{
+			if(vars[j]!='%')
+				varValue.push_back(vars[j]);
+			else
+			{
+				if((n2-j)<3) //Not enough characters
+				{
+					ok=false;
+					break;
+				}
+
+				int t1=hexToInt(vars[j+1]);
+				int t2=hexToInt(vars[j+2]);
+				if(t1==-1 || t2==-1)
+				{
+					ok=false;
+					break;
+				}
+
+				int c=(t1*16)+t2;
+				varValue.push_back(c);
+				j+=2;
+			}
+		}
+
+		if(ok)
+		{
+			//cout << varName << ' ' << varValue << endl;
+			params->setVariableByQName(varName.c_str(),"",
+					lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
+		}
+		cur=n2+1;
+	}
+	setParameters(params);
+}
+
+void SystemState::parseParametersFromFile(const char* f)
+{
+	ifstream i(f);
+	if(!i)
+	{
+		LOG(LOG_ERROR,"Parameters file not found");
+		return;
+	}
 	ASObject* ret=Class<ASObject>::getInstanceS();
 	while(!i.eof())
 	{
@@ -202,6 +279,7 @@ void SystemState::parseParameters(istream& i)
 		ret->setVariableByQName(name,"",Class<ASString>::getInstanceS(value));
 	}
 	setParameters(ret);
+	i.close();
 }
 
 void SystemState::setParameters(ASObject* p)

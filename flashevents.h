@@ -32,10 +32,9 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0,BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT, FUNCTION, CONTEXT_INIT, CONSTRUCT_OBJECT, CHANGE_FRAME };
 
-//class ASObject;
 class ABCContext;
 
-class DLL_PUBLIC Event: public ASObject
+class Event: public ASObject
 {
 public:
 	Event():type("Event"),target(NULL),currentTarget(NULL),bubbles(false){}
@@ -249,7 +248,7 @@ public:
 class ShutdownEvent: public Event
 {
 public:
-	ShutdownEvent():Event("shutdownEvent"){}
+	ShutdownEvent() DLL_PUBLIC;
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return SHUTDOWN; }
 };
@@ -291,7 +290,7 @@ friend class ABCVm;
 private:
 	ABCContext* context;
 public:
-	ABCContextInitEvent(ABCContext* c):Event("ABCContextInitEvent"),context(c){}
+	ABCContextInitEvent(ABCContext* c) DLL_PUBLIC;
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return CONTEXT_INIT; }
 };

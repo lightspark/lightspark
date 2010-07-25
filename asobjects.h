@@ -48,7 +48,7 @@ protected:
 	static void lookupAndLink(ASObject* o, const tiny_string& name, const tiny_string& interfaceNs);
 };
 
-class DLL_PUBLIC Class_base: public ASObject
+class Class_base: public ASObject
 {
 friend class ABCVm;
 friend class ABCContext;
@@ -387,7 +387,7 @@ public:
 	virtual ~Undefined(){}
 };
 
-class DLL_PUBLIC ASString: public ASObject
+class ASString: public ASObject
 {
 CLASSBUILDABLE(ASString);
 private:

@@ -79,7 +79,6 @@ public:
 	void draw();
 
 private:
-	int hexToInt(char c);
 	static void AsyncHelper(void* th, helper_t func, void* privArg);
 
 	NPP mInstance;

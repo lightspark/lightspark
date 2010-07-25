@@ -152,14 +152,7 @@ int main(int argc, char* argv[])
 	sys->useInterpreter=useInterpreter;
 	sys->useJit=useJit;
 	if(paramsFileName)
-	{
-		ifstream p(paramsFileName);
-		if(p)
-		{
-			sys->parseParameters(p);
-			p.close();
-		}
-	}
+		sys->parseParametersFromFile(paramsFileName);
 
 	sys->setOrigin(fileName);
 	

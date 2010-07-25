@@ -224,6 +224,8 @@ private:
 	VMVERSION vmVersion;
 	pid_t childPid;
 	bool useGnashFallback;
+	void setParameters(ASObject* p);
+	static int hexToInt(char c);
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -275,8 +277,8 @@ public:
 	bool useInterpreter;
 	bool useJit;
 
-	void parseParameters(std::istream& i) DLL_PUBLIC;
-	void setParameters(ASObject* p) DLL_PUBLIC;
+	void parseParametersFromFile(const char* f) DLL_PUBLIC;
+	void parseParametersFromFlashvars(const char* vars) DLL_PUBLIC;
 	void addJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);

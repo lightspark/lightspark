@@ -174,61 +174,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 			continue;
 		if(strcasecmp(argn[i],"flashvars")==0)
 		{
-			lightspark::ASObject* params=lightspark::Class<lightspark::ASObject>::getInstanceS();
-			//Add arguments to SystemState
-			std::string vars(argv[i]);
-			uint32_t cur=0;
-			while(cur<vars.size())
-			{
-				int n1=vars.find('=',cur);
-				if(n1==-1) //Incomplete parameters string, ignore the last
-					break;
-
-				int n2=vars.find('&',n1+1);
-				if(n2==-1)
-					n2=vars.size();
-
-				std::string varName=vars.substr(cur,(n1-cur));
-
-				//The variable value has to be urldecoded
-				bool ok=true;
-				std::string varValue;
-				varValue.reserve(n2-n1); //The maximum lenght
-				for(int j=n1+1;j<n2;j++)
-				{
-					if(vars[j]!='%')
-						varValue.push_back(vars[j]);
-					else
-					{
-						if((n2-j)<3) //Not enough characters
-						{
-							ok=false;
-							break;
-						}
-
-						int t1=hexToInt(vars[j+1]);
-						int t2=hexToInt(vars[j+2]);
-						if(t1==-1 || t2==-1)
-						{
-							ok=false;
-							break;
-						}
-
-						int c=(t1*16)+t2;
-						varValue.push_back(c);
-						j+=2;
-					}
-				}
-
-				if(ok)
-				{
-					//cout << varName << ' ' << varValue << endl;
-					params->setVariableByQName(varName.c_str(),"",
-							lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
-				}
-				cur=n2+1;
-			}
-			m_sys->setParameters(params);
+			m_sys->parseParametersFromFlashvars(argv[i]);
 		}
 		else if(strcasecmp(argn[i],"src")==0)
 		{
@@ -239,18 +185,6 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	m_sys->addJob(m_pt);
 	//The sys var should be NULL in this thread
 	sys=NULL;
-}
-
-int nsPluginInstance::hexToInt(char c)
-{
-	if(c>='0' && c<='9')
-		return c-'0';
-	else if(c>='a' && c<='f')
-		return c-'a'+10;
-	else if(c>='A' && c<='F')
-		return c-'A'+10;
-	else
-		return -1;
 }
 
 nsPluginInstance::~nsPluginInstance()

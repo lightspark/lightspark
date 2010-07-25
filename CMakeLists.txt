@@ -39,6 +39,17 @@ IF(NOT GCC_IS_4_4)
 	MESSAGE(FATAL_ERROR "GCC 4.4+ is required.")
 ENDIF(NOT GCC_IS_4_4)
 
+# Find put the path of the gnash executable, if available
+FIND_PROGRAM(GNASH_EXE_PATH NAMES gnash)
+
+IF(GNASH_EXE_PATH)
+	MESSAGE(STATUS "Found gnash path: ${GNASH_EXE_PATH}")
+ELSE()
+# Set a default path
+	MESSAGE(STATUS "Gnash not found")
+	SET(GNASH_EXE_PATH "/usr/bin/gnash")
+ENDIF()
+
 # Find out CPU architecture ...
 # we could also use IF(CMAKE_SIZEOF_VOID_P EQUAL 4) to determine if it's a 32 or a 64bit arch
 #
@@ -150,7 +161,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
 SET(CMAKE_CXX_FLAGS_DEBIAN "-O2 -DNDEBUG")
 
-ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark")
+ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark" -DGNASH_PATH="${GNASH_EXE_PATH}")
 
 # Setting the output directories, so we can build all profiles without mixmatching
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/bin")

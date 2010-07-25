@@ -354,9 +354,18 @@ void SystemState::EngineCreator::threadAbort()
 	sys->fileDumpAvailable.signal();
 }
 
+#ifndef GNASH_PATH
+#error No GNASH_PATH defined
+#endif
+
 void SystemState::enableGnashFallback()
 {
-	useGnashFallback=true;
+	//Check if the gnash standalone executable is available
+	cout << "Looking for gnash in " << GNASH_PATH << endl;
+	ifstream f(GNASH_PATH);
+	if(f)
+		useGnashFallback=true;
+	f.close();
 }
 
 void SystemState::createEngines()
@@ -385,7 +394,7 @@ void SystemState::createEngines()
 		else if(childPid==0) //Child process scope
 		{
 			char *const args[3] = {strdup("gnash"), strdup(dumpedSWFPath.raw_buf()), NULL};
-			execve("/usr/bin/gnash", args, environ);
+			execve(GNASH_PATH, args, environ);
 			//If we are are execve failed, print an error and die
 			LOG(LOG_ERROR,"Execve failed, content will not be rendered");
 			exit(0);

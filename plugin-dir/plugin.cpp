@@ -31,7 +31,7 @@
 
 using namespace std;
 
-TLSDATA DLL_PUBLIC lightspark::SystemState* sys;
+TLSDATA DLL_PUBLIC lightspark::SystemState* sys=NULL;
 TLSDATA DLL_PUBLIC lightspark::RenderThread* rt=NULL;
 TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
 

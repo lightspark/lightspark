@@ -165,6 +165,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 {
 	m_pt=new lightspark::ParseThread(NULL,swf_stream);
 	m_sys=new lightspark::SystemState(m_pt);
+	//As this is the plugin, enable fallback on Gnash for older clips
+	m_sys->enableGnashFallback();
 	//Find flashvars argument
 	for(int i=0;i<argc;i++)
 	{

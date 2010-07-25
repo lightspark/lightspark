@@ -146,7 +146,7 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 
 SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
-	showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
 	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
@@ -354,12 +354,17 @@ void SystemState::EngineCreator::threadAbort()
 	sys->fileDumpAvailable.signal();
 }
 
+void SystemState::enableGnashFallback()
+{
+	useGnashFallback=true;
+}
+
 void SystemState::createEngines()
 {
 	sem_wait(&mutex);
 	assert(renderThread==NULL && inputThread==NULL);
 	//Check if we should fall back on gnash
-	if(vmVersion!=AVM2)
+	if(useGnashFallback && vmVersion!=AVM2)
 	{
 		if(dumpedSWFPath.len()==0) //The path is not known yet
 		{

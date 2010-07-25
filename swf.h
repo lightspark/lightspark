@@ -219,9 +219,11 @@ private:
 	Condition fileDumpAvailable;
 	tiny_string dumpedSWFPath;
 	bool waitingForDump;
+	//Data for handling Gnash fallback
 	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
 	VMVERSION vmVersion;
 	pid_t childPid;
+	bool useGnashFallback;
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -244,6 +246,7 @@ public:
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(ENGINE e, NPAPI_params* p) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
+	void enableGnashFallback() DLL_PUBLIC;
 	void needsAVM2(bool n);
 
 	//Be careful, SystemState constructor does some global initialization that must be done

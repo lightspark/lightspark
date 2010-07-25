@@ -54,7 +54,7 @@ Xb-Npp-MimeType: application/x-shockwave-flash
 Xb-Npp-Name: Lightspark SWF Player
 Xb-Npp-Description: High performance SWF Player
 Xb-Npp-File: liblightsparkplugin.so
-Depends: ${shlibs:Depends}, ${misc:Depends}, liblightspark42
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Experimental high-performance SWF (Adobe Flash) player
  Lightspark is a free Flash player for Linux which aims for high-performance
  by using modern technologies such as JIT compilation and OpenGL shaders.

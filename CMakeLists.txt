@@ -25,7 +25,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT(LIGHTSPARK)
 SET(MAJOR_VERSION "0")
 SET(MINOR_VERSION "4")
-SET(PATCH_VERSION "2")
+SET(PATCH_VERSION "3")
 
 # Find out CPU architecture ...
 # we could also use IF(CMAKE_SIZEOF_VOID_P EQUAL 4) to determine if it's a 32 or a 64bit arch
@@ -64,7 +64,7 @@ SET(LIBDIR "lib${LIB_SUFFIX}")
 SET(PRIVATELIBDIR "${LIBDIR}/lightspark")
 
 # Setting variables
-SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install prefix" FORCE)
+SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /usr/local (UNIX) and C:\Program Files (Windows)")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the Firefox Plugin?")

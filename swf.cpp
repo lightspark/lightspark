@@ -715,16 +715,6 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),ter
 		::abort();
 }
 
-void InputThread::delayedCreation(InputThread* th)
-{
-	GtkWidget* container=th->npapi_params->container;
-	gtk_widget_set_can_focus(container,True);
-	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-					GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
-					GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
-	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), th);
-}
-
 InputThread::~InputThread()
 {
 	wait();
@@ -740,6 +730,16 @@ void InputThread::wait()
 }
 
 #ifdef COMPILE_PLUGIN
+void InputThread::delayedCreation(InputThread* th)
+{
+	GtkWidget* container=th->npapi_params->container;
+	gtk_widget_set_can_focus(container,True);
+	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
+					GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
+					GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
+	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), th);
+}
+
 //This is a GTK event handler and the gdk lock is already acquired
 gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
 {

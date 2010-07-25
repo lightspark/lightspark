@@ -6,7 +6,8 @@
 override_dh_auto_configure:
 	dh_auto_configure -- \
 	    -DCOMPILE_PLUGIN=1 \
-	    -DCMAKE_BUILD_TYPE=Debian
+	    -DCMAKE_BUILD_TYPE=Debian \
+	    -DCMAKE_INSTALL_PREFIX=/usr
 
 override_dh_strip:
 	dh_strip --dbg-package=lightspark-dbg

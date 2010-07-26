@@ -632,45 +632,65 @@ void ABCVm::construct(call_context* th, int m)
 	LOG(LOG_CALLS,"Constructing");
 
 	ASObject* ret;
-	if(obj->getObjectType()==T_CLASS)
+	switch(obj->getObjectType())
 	{
-		Class_base* o_class=static_cast<Class_base*>(obj);
-		ret=o_class->getInstance(true,args,m);
-	}
-	else if(obj->getObjectType()==T_FUNCTION)
-	{
-		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
-		assert_and_throw(sf);
-		ret=Class<ASObject>::getInstanceS();
-		if(sf->mi->body)
+		case T_CLASS:
 		{
-#ifndef NDEBUG
-			ret->initialized=false;
-#endif
-			LOG(LOG_CALLS,"Building method traits");
-			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
-#ifndef NDEBUG
-			ret->initialized=true;
-#endif
-			ret->incRef();
-			assert_and_throw(sf->closure_this==NULL);
-			ASObject* ret2=sf->call(ret,args,m,0);
-			if(ret2)
-				ret2->decRef();
-
-			//Let's see if an AS prototype has been defined on the function
-			ASObject* asp=sf->getVariableByQName("prototype","").obj;
-			if(asp)
-				asp->incRef();
-
-			//Now add our prototype
-			sf->incRef();
-			ret->prototype=new Class_function(sf,asp);
+			Class_base* o_class=static_cast<Class_base*>(obj);
+			ret=o_class->getInstance(true,args,m);
 		}
+		break;
+
+		case T_UNDEFINED:
+		case T_NULL:
+		{
+			//Inc ref count to make up for decremnt later
+			obj->incRef();
+			ret=obj;
+		}
+		break;
+
+		case T_FUNCTION:
+		{
+			SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
+			assert_and_throw(sf);
+			ret=Class<ASObject>::getInstanceS();
+			if(sf->mi->body)
+			{
+#ifndef NDEBUG
+				ret->initialized=false;
+#endif
+				LOG(LOG_CALLS,"Building method traits");
+				for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
+					th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+#ifndef NDEBUG
+				ret->initialized=true;
+#endif
+				ret->incRef();
+				assert_and_throw(sf->closure_this==NULL);
+				ASObject* ret2=sf->call(ret,args,m,0);
+				if(ret2)
+					ret2->decRef();
+
+				//Let's see if an AS prototype has been defined on the function
+				ASObject* asp=sf->getVariableByQName("prototype","").obj;
+				if(asp)
+					asp->incRef();
+
+				//Now add our prototype
+				sf->incRef();
+				ret->prototype=new Class_function(sf,asp);
+			}
+		}
+		break;
+
+		default:
+		{
+			LOG(LOG_ERROR,"Object type " << obj->getObjectType() << " not supported in construct");
+			throw UnsupportedException("This object is not supported in construct");
+		}
+		break;
 	}
-	else
-		throw UnsupportedException("This object is not supported in construct");
 
 	obj->decRef();
 	LOG(LOG_CALLS,"End of constructing " << ret);

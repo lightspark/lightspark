@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 #include <pthread.h>
+#include <sys/wait.h>
 #include <algorithm>
 #include "compat.h"
 #include <SDL.h>
@@ -75,8 +76,6 @@ SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 		return;
 	}
 	pt->version=Version;
-	if(sys==pt->root) //If this is the main movie clip set the global version
-		sys->setVersion(Version);
 	in >> FrameSize >> FrameRate >> FrameCount;
 	float frameRate=FrameRate;
 	frameRate/=256;
@@ -145,10 +144,10 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 	clip->decRef();
 }
 
-SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),renderThread(NULL),
-	inputThread(NULL),engine(NONE),version(0),fileDumpAvailable(0),waitingForDump(false),showProfilingData(false),
-	showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),finalizingDestruction(false),
-	useInterpreter(true),useJit(false),downloadManager(NULL)
+SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
+	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
+	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -159,6 +158,8 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	sem_init(&terminated,0,0);
 
 	//Get starting time
+	if(parseThread) //ParseThread may be null in tightspark
+		parseThread->root=this;
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 #ifdef AUDIO_BACKEND
@@ -189,8 +190,85 @@ void SystemState::setUrl(const tiny_string& url)
 	loaderInfo->loaderURL=url;
 }
 
-void SystemState::parseParameters(istream& i)
+int SystemState::hexToInt(char c)
 {
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(c>='a' && c<='f')
+		return c-'a'+10;
+	else if(c>='A' && c<='F')
+		return c-'A'+10;
+	else
+		return -1;
+}
+
+void SystemState::parseParametersFromFlashvars(const char* v)
+{
+	ASObject* params=Class<ASObject>::getInstanceS();
+	//Add arguments to SystemState
+	string vars(v);
+	uint32_t cur=0;
+	while(cur<vars.size())
+	{
+		int n1=vars.find('=',cur);
+		if(n1==-1) //Incomplete parameters string, ignore the last
+			break;
+
+		int n2=vars.find('&',n1+1);
+		if(n2==-1)
+			n2=vars.size();
+
+		string varName=vars.substr(cur,(n1-cur));
+
+		//The variable value has to be urldecoded
+		bool ok=true;
+		string varValue;
+		varValue.reserve(n2-n1); //The maximum lenght
+		for(int j=n1+1;j<n2;j++)
+		{
+			if(vars[j]!='%')
+				varValue.push_back(vars[j]);
+			else
+			{
+				if((n2-j)<3) //Not enough characters
+				{
+					ok=false;
+					break;
+				}
+
+				int t1=hexToInt(vars[j+1]);
+				int t2=hexToInt(vars[j+2]);
+				if(t1==-1 || t2==-1)
+				{
+					ok=false;
+					break;
+				}
+
+				int c=(t1*16)+t2;
+				varValue.push_back(c);
+				j+=2;
+			}
+		}
+
+		if(ok)
+		{
+			//cout << varName << ' ' << varValue << endl;
+			params->setVariableByQName(varName.c_str(),"",
+					lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
+		}
+		cur=n2+1;
+	}
+	setParameters(params);
+}
+
+void SystemState::parseParametersFromFile(const char* f)
+{
+	ifstream i(f);
+	if(!i)
+	{
+		LOG(LOG_ERROR,"Parameters file not found");
+		return;
+	}
 	ASObject* ret=Class<ASObject>::getInstanceS();
 	while(!i.eof())
 	{
@@ -201,6 +279,7 @@ void SystemState::parseParameters(istream& i)
 		ret->setVariableByQName(name,"",Class<ASString>::getInstanceS(value));
 	}
 	setParameters(ret);
+	i.close();
 }
 
 void SystemState::setParameters(ASObject* p)
@@ -208,18 +287,37 @@ void SystemState::setParameters(ASObject* p)
 	loaderInfo->setVariableByQName("parameters","",p);
 }
 
+void SystemState::stopEngines()
+{
+	//Stops the thread that is parsing us
+	parseThread->stop();
+	parseThread->wait();
+	threadPool->stop();
+	if(timerThread)
+		timerThread->wait();
+	delete downloadManager;
+	downloadManager=NULL;
+	delete currentVm;
+	currentVm=NULL;
+	delete timerThread;
+	timerThread=NULL;
+	delete audioManager;
+	soundManager=NULL;
+#endif
+}
+
 SystemState::~SystemState()
 {
+	//Kill our child process if any
+	if(childPid)
+	{
+		kill(childPid, SIGTERM);
+		waitpid(childPid, NULL, 0);
+	}
 	assert(shutdown);
-	timerThread->wait();
-//	soundManager->stop();
+	//The thread pool should be stopped before everything
 	delete threadPool;
-	delete downloadManager;
-	delete currentVm;
-	delete timerThread;
-#ifdef AUDIO_BACKEND
-	delete audioManager;
-#endif
+	stopEngines();
 
 	//decRef all our object before destroying classes
 	Variables.destroyContents();
@@ -333,23 +431,58 @@ void SystemState::EngineCreator::threadAbort()
 	sys->fileDumpAvailable.signal();
 }
 
+#ifndef GNASH_PATH
+#error No GNASH_PATH defined
+#endif
+
+void SystemState::enableGnashFallback()
+{
+	//Check if the gnash standalone executable is available
+	cout << "Looking for gnash in " << GNASH_PATH << endl;
+	ifstream f(GNASH_PATH);
+	if(f)
+		useGnashFallback=true;
+	f.close();
+}
+
 void SystemState::createEngines()
 {
 	sem_wait(&mutex);
 	assert(renderThread==NULL && inputThread==NULL);
 	//Check if we should fall back on gnash
-	if(version<=8) //TODO: or not using ABC
+	if(useGnashFallback && vmVersion!=AVM2)
 	{
 		if(dumpedSWFPath.len()==0) //The path is not known yet
 		{
 			waitingForDump=true;
 			sem_post(&mutex);
 			fileDumpAvailable.wait();
-			sem_wait(&mutex);
 			if(shutdown)
 				return;
+			sem_wait(&mutex);
 		}
-		cout << "Should invoke gnash on " << dumpedSWFPath << endl;
+		LOG(LOG_NO_INFO,"Invoking gnash");
+		childPid=fork();
+		if(childPid==-1)
+		{
+			LOG(LOG_ERROR,"Child process creation failed, lightspark continues");
+			childPid=0;
+		}
+		else if(childPid==0) //Child process scope
+		{
+			char *const args[3] = {strdup("gnash"), strdup(dumpedSWFPath.raw_buf()), NULL};
+			execve(GNASH_PATH, args, environ);
+			//If we are are execve failed, print an error and die
+			LOG(LOG_ERROR,"Execve failed, content will not be rendered");
+			exit(0);
+		}
+		else //Parent process scope
+		{
+			sem_post(&mutex);
+			//Engines should not be started, stop everything
+			stopEngines();
+			return;
+		}
 	}
 	renderThread=new RenderThread(this, engine, &npapiParams);
 	inputThread=new InputThread(this, engine, &npapiParams);
@@ -359,10 +492,19 @@ void SystemState::createEngines()
 	sem_post(&mutex);
 }
 
-void SystemState::setVersion(uint32_t v)
+void SystemState::needsAVM2(bool n)
 {
 	sem_wait(&mutex);
-	version=v;
+	assert(currentVm==NULL);
+	//Create the virtual machine if needed
+	if(n)
+	{
+		vmVersion=AVM2;
+		LOG(LOG_NO_INFO,"Creating VM");
+		currentVm=new ABCVm(this);
+	}
+	else
+		vmVersion=AVM1;
 	if(engine)
 		addJob(new EngineCreator);
 	sem_post(&mutex);
@@ -374,7 +516,7 @@ void SystemState::setParamsAndEngine(ENGINE e, NPAPI_params* p)
 	if(p)
 		npapiParams=*p;
 	engine=e;
-	if(version)
+	if(vmVersion)
 		addJob(new EngineCreator);
 	sem_post(&mutex);
 }
@@ -536,7 +678,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 	}
 }
 
-ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in)
+ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),isEnded(false),root(NULL),version(0),useAVM2(false)
 {
 	root=r;
 	sem_init(&ended,0,0);
@@ -558,7 +700,8 @@ void ParseThread::execute()
 		root->setFrameSize(h.getFrameSize());
 		root->setFrameCount(h.FrameCount);
 
-		TagFactory factory(f);
+		//Create a top level TagFactory
+		TagFactory factory(f, true);
 		bool done=false;
 		bool empty=true;
 		while(!done)
@@ -628,7 +771,11 @@ void ParseThread::threadAbort()
 
 void ParseThread::wait()
 {
-	sem_wait(&ended);
+	if(!isEnded)
+	{
+		sem_wait(&ended);
+		isEnded=true;
+	}
 }
 
 void RenderThread::wait()
@@ -659,16 +806,6 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),ter
 		::abort();
 }
 
-void InputThread::delayedCreation(InputThread* th)
-{
-	GtkWidget* container=th->npapi_params->container;
-	gtk_widget_set_can_focus(container,True);
-	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-					GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
-					GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
-	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), th);
-}
-
 InputThread::~InputThread()
 {
 	wait();
@@ -684,6 +821,16 @@ void InputThread::wait()
 }
 
 #ifdef COMPILE_PLUGIN
+void InputThread::delayedCreation(InputThread* th)
+{
+	GtkWidget* container=th->npapi_params->container;
+	gtk_widget_set_can_focus(container,True);
+	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
+					GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
+					GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
+	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), th);
+}
+
 //This is a GTK event handler and the gdk lock is already acquired
 gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
 {

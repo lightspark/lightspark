@@ -56,6 +56,7 @@ class DictionaryTag;
 class ABCVm;
 class InputThread;
 class RenderThread;
+class ParseThread;
 class Tag;
 
 typedef void* (*thread_worker)(void*);
@@ -194,6 +195,7 @@ private:
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
+	ParseThread* parseThread;
 	sem_t terminated;
 	float renderRate;
 	bool error;
@@ -206,17 +208,24 @@ private:
 	/**
 		Create the rendering and input engines
 
-		@pre engine and version are known. The mutex is held
+		@pre engine and useAVM2 are known
 	*/
 	void createEngines();
 	/**
-	  	Version of the main SWF file
+	  	Destroys all the engines used in lightspark: timer, thread pool, vm...
 	*/
-	uint32_t version;
+	void stopEngines();
 	//Useful to wait for complete download of the SWF
 	Condition fileDumpAvailable;
 	tiny_string dumpedSWFPath;
 	bool waitingForDump;
+	//Data for handling Gnash fallback
+	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
+	VMVERSION vmVersion;
+	pid_t childPid;
+	bool useGnashFallback;
+	void setParameters(ASObject* p);
+	static int hexToInt(char c);
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -238,12 +247,13 @@ public:
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(ENGINE e, NPAPI_params* p) DLL_PUBLIC;
-	void setVersion(uint32_t v);
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
+	void enableGnashFallback() DLL_PUBLIC;
+	void needsAVM2(bool n);
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
-	SystemState() DLL_PUBLIC;
+	SystemState(ParseThread* p) DLL_PUBLIC;
 	~SystemState();
 	
 	//Performance profiling
@@ -267,8 +277,8 @@ public:
 	bool useInterpreter;
 	bool useJit;
 
-	void parseParameters(std::istream& i) DLL_PUBLIC;
-	void setParameters(ASObject* p) DLL_PUBLIC;
+	void parseParametersFromFile(const char* f) DLL_PUBLIC;
+	void parseParametersFromFlashvars(const char* vars) DLL_PUBLIC;
 	void addJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
@@ -284,11 +294,13 @@ class ParseThread: public IThreadJob
 private:
 	std::istream& f;
 	sem_t ended;
+	bool isEnded;
 	void execute();
 	void threadAbort();
 public:
 	RootMovieClip* root;
 	int version;
+	bool useAVM2;
 	ParseThread(RootMovieClip* r,std::istream& in) DLL_PUBLIC;
 	~ParseThread();
 	void wait() DLL_PUBLIC;

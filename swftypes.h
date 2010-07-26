@@ -461,7 +461,7 @@ public:
 	void destroyContents();
 };
 
-class DLL_PUBLIC ASObject
+class ASObject
 {
 friend class Manager;
 friend class ABCVm;

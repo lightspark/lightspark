@@ -53,6 +53,7 @@ REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
 REGISTER_CLASS_NAME(Math);
 REGISTER_CLASS_NAME(ASString);
+REGISTER_CLASS_NAME(ASError);
 
 Array::Array()
 {
@@ -129,8 +130,6 @@ ASFUNCTIONBODY(Array,splice)
 {
 	Array* th=static_cast<Array*>(obj);
 	
-	assert_and_throw(argslen==2);
-	
 	int startIndex=args[0]->toInt();
 	int deleteCount=args[1]->toUInt();
 	int totalSize=th->data.size();
@@ -147,6 +146,14 @@ ASFUNCTIONBODY(Array,splice)
 		ret->data.push_back(th->data[startIndex+i]);
 	
 	th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
+
+	//Insert requested values starting at startIndex
+	for(unsigned int i=2,n=0;i<argslen;i++,n++)
+	{
+		args[i]->incRef();
+		th->data.insert(th->data.begin()+startIndex+n,data_slot(args[i]));
+	}
+
 	return ret;
 }
 
@@ -1649,6 +1656,63 @@ ASFUNCTIONBODY(ASString,concat)
 		ret->data+=args[i]->toString().raw_buf();
 
 	return ret;
+}
+
+ASFUNCTIONBODY(ASError,getStackTrace)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	ASString* ret=Class<ASString>::getInstanceS(th->toString(true));
+	LOG(LOG_NOT_IMPLEMENTED,"Error.getStackTrace not yet implemented.");
+	return ret;
+}
+
+tiny_string ASError::toString(bool debugMsg)
+{
+	return message.len() > 0 ? message : "Error";
+}
+
+ASFUNCTIONBODY(ASError,_getErrorID)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return abstract_i(th->errorID);
+}
+
+ASFUNCTIONBODY(ASError,_setName)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	assert_and_throw(argslen==1);
+	th->name = args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ASError,_getName)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return Class<ASString>::getInstanceS(th->name);
+}
+
+ASFUNCTIONBODY(ASError,_setMessage)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	assert_and_throw(argslen==1);
+	th->message = args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ASError,_getMessage)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return Class<ASString>::getInstanceS(th->message);
+}
+
+void ASError::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
+	o->setGetterByQName("errorID",AS3,Class<IFunction>::getFunction(_getErrorID));
+	o->setGetterByQName("message",AS3,Class<IFunction>::getFunction(_getMessage));
+	o->setSetterByQName("message",AS3,Class<IFunction>::getFunction(_setMessage));
+	o->setGetterByQName("name",AS3,Class<IFunction>::getFunction(_getName));
+	o->setSetterByQName("name",AS3,Class<IFunction>::getFunction(_setName));
 }
 
 Class_base::Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),

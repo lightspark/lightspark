@@ -25,7 +25,30 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT(LIGHTSPARK)
 SET(MAJOR_VERSION "0")
 SET(MINOR_VERSION "4")
-SET(PATCH_VERSION "2")
+SET(PATCH_VERSION "3")
+
+# GCC 4.4+ is required, GCC_VERSION macro taken from GCC manual
+INCLUDE(CheckCSourceCompiles)
+CHECK_C_SOURCE_COMPILES("
+#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#if GCC_VERSION < 40400
+#error
+#endif
+int main() { return 0; }" GCC_IS_4_4)
+IF(NOT GCC_IS_4_4)
+	MESSAGE(FATAL_ERROR "GCC 4.4+ is required.")
+ENDIF(NOT GCC_IS_4_4)
+
+# Find put the path of the gnash executable, if available
+FIND_PROGRAM(GNASH_EXE_PATH NAMES gnash)
+
+IF(GNASH_EXE_PATH)
+	MESSAGE(STATUS "Found gnash path: ${GNASH_EXE_PATH}")
+ELSE()
+# Set a default path
+	MESSAGE(STATUS "Gnash not found")
+	SET(GNASH_EXE_PATH "/usr/bin/gnash")
+ENDIF()
 
 # Find out CPU architecture ...
 # we could also use IF(CMAKE_SIZEOF_VOID_P EQUAL 4) to determine if it's a 32 or a 64bit arch
@@ -64,7 +87,7 @@ SET(LIBDIR "lib${LIB_SUFFIX}")
 SET(PRIVATELIBDIR "${LIBDIR}/lightspark")
 
 # Setting variables
-SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /usr/local (UNIX) and C:\Program Files (Windows)")
+SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /usr/local (UNIX) and C:\\Program Files (Windows)")
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK TRUE CACHE BOOL "Compile Tightspark?")
 SET(COMPILE_PLUGIN FALSE CACHE BOOL "Compile the browser plugin?")
@@ -148,7 +171,7 @@ SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
 SET(CMAKE_CXX_FLAGS_DEBIAN "-O2 -DNDEBUG")
 
-ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark")
+ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark" -DGNASH_PATH="${GNASH_EXE_PATH}")
 
 # Setting the output directories, so we can build all profiles without mixmatching
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/bin")

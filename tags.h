@@ -770,8 +770,10 @@ class TagFactory
 {
 private:
 	std::istream& f;
+	bool firstTag;
+	bool topLevel;
 public:
-	TagFactory(std::istream& in):f(in){}
+	TagFactory(std::istream& in, bool t):f(in),firstTag(true),topLevel(t){}
 	Tag* readTag();
 };
 

@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 
 	Log::initLogging(log_level);
 	//NOTE: see SystemState declaration
-	sys=new SystemState;
+	sys=new SystemState(NULL);
 
 	//Set a bit of SystemState using parameters
 	//One of useInterpreter or useJit must be enabled

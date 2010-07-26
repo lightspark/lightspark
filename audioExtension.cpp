@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2010 Alexandre Demers (papouta@hotmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -16,32 +17,33 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
+ 
 
 #include <iostream>
 #include <string.h>
-#include "pulsestream.h"
+#include "audioExtension.h"
 
 #ifdef AUDIO_BACKEND
 using namespace lightspark;
 using namespace std;
 
-void PulseStream::AudioExtension::streamStatusCB(pa_stream* stream, SoundStream* th)
+/*void AudioExtension::streamStatusCB(pa_stream* stream, AudioStream* th)
 {
 	if(pa_stream_get_state(stream)==PA_STREAM_READY)
-		th->streamStatus=SoundStream::STREAM_READY;
+		th->streamStatus=AudioStream::STREAM_READY;
 	else if(pa_stream_get_state(stream)==PA_STREAM_TERMINATED)
 	{
 		assert(stream==th->stream);
-		th->streamStatus=SoundStream::STREAM_DEAD;
+		th->streamStatus=AudioStream::STREAM_DEAD;
 	}
 }
-
-void PulseStream::AudioExtension::fillAndSync(uint32_t id, uint32_t streamTime)
+*/
+void AudioExtension::fillAndSync(uint32_t id, uint32_t streamTime)
 {
 	assert(streams[id-1]);
-	if(noServer==false)
+/*	if(noServer==false)
 	{
-		if(streams[id-1]->streamStatus!=SoundStream::STREAM_READY) //The stream is not yet ready, delay upload
+		if(streams[id-1]->streamStatus!=AudioStream::STREAM_READY) //The stream is not yet ready, delay upload
 			return;
 		if(!streams[id-1]->decoder->hasDecodedFrames()) //No decoded data available yet, delay upload
 			return;
@@ -120,13 +122,13 @@ void PulseStream::AudioExtension::fillAndSync(uint32_t id, uint32_t streamTime)
 		pa_threaded_mainloop_unlock(mainLoop);
 	}
 	else //No sound server available
-	{
+*///	{
 		//Just skip all the contents
 		streams[id-1]->decoder->skipAll();
-	}
+//	}
 }
 
-void PulseStream::AudioExtension::streamWriteCB(pa_stream* stream, size_t frameSize, SoundStream* th)
+/*void AudioExtension::streamWriteCB(pa_stream* stream, size_t frameSize, AudioStream* th)
 {
 	//Get buffer size
 	int16_t* dest;
@@ -134,11 +136,10 @@ void PulseStream::AudioExtension::streamWriteCB(pa_stream* stream, size_t frameS
 	uint32_t retSize=th->decoder->copyFrame(dest, frameSize);
 	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
 }
-
-void PulseStream::AudioExtension::freeStream(uint32_t id)
+*/
+void AudioExtension::freeStream(uint32_t id)
 {
-	pa_threaded_mainloop_lock(mainLoop);
-	SoundStream* s=streams[id-1];
+/*	pa_threaded_mainloop_lock(mainLoop);
 	assert(s);
 	if(noServer==false)
 	{
@@ -148,11 +149,12 @@ void PulseStream::AudioExtension::freeStream(uint32_t id)
 	//Do not delete the stream now, let's wait termination
 	streams[id-1]=NULL;
 	pa_threaded_mainloop_unlock(mainLoop);
-	while(s->streamStatus!=SoundStream::STREAM_DEAD);
+	while(s->streamStatus!=AudioStream::STREAM_DEAD);
 	pa_threaded_mainloop_lock(mainLoop);
 	if(s->stream)
 		pa_stream_unref(s->stream);
 	pa_threaded_mainloop_unlock(mainLoop);
+*/	AudioStream* s=streams[id-1];
 	delete s;
 }
 
@@ -171,19 +173,19 @@ void started_notify()
 	cout << "____started!!!!" << endl;
 }
 
-uint32_t PulseStream::AudioExtension::createStream(AudioDecoder* decoder)
+uint32_t AudioExtension::createStream(AudioDecoder* decoder)
 {
-	while(!contextReady);
+/*	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
-	uint32_t index=0;
-	for(;index<streams.size();index++)
+*/	uint32_t index=0;
+/*	for(;index<streams.size();index++)
 	{
 		if(streams[index]==NULL)
 			break;
 	}
 	assert(decoder->isValid());
 	if(index==streams.size())
-		streams.push_back(new SoundStream(this));
+		streams.push_back(new AudioStream(this));
 	streams[index]->decoder=decoder;
 	if(noServer==false)
 	{
@@ -197,7 +199,7 @@ uint32_t PulseStream::AudioExtension::createStream(AudioDecoder* decoder)
 		attrs.tlength=(uint32_t)-1;
 		attrs.fragsize=(uint32_t)-1;
 		attrs.minreq=(uint32_t)-1;
-		streams[index]->stream=pa_stream_new(context, "SoundStream", &ss, NULL);
+		streams[index]->stream=pa_stream_new(context, "AudioStream", &ss, NULL);
 		pa_stream_set_state_callback(streams[index]->stream, (pa_stream_notify_cb_t)streamStatusCB, streams[index]);
 		//pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
 		pa_stream_set_underflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)underflow_notify, NULL);
@@ -209,13 +211,13 @@ uint32_t PulseStream::AudioExtension::createStream(AudioDecoder* decoder)
 	else
 	{
 		//Create the stream as dead
-		streams[index]->streamStatus=SoundStream::STREAM_DEAD;
+		streams[index]->streamStatus=AudioStream::STREAM_DEAD;
 	}
 	pa_threaded_mainloop_unlock(mainLoop);
-	return index+1;
+*/	return index+1;
 }
 
-void PulseStream::AudioExtension::contextStatusCB(pa_context* context, AudioExtension* th)
+/*void AudioExtension::contextStatusCB(pa_context* context, AudioExtension* th)
 {
 	switch(pa_context_get_state(context))
 	{
@@ -231,10 +233,10 @@ void PulseStream::AudioExtension::contextStatusCB(pa_context* context, AudioExte
 			break;
 	}
 }
-
-PulseStream::AudioExtension::AudioExtension():contextReady(false),noServer(false),stopped(false)
+*/
+AudioExtension::AudioExtension():contextReady(false),noServer(false),stopped(false)
 {
-	mainLoop=pa_threaded_mainloop_new();
+/*	mainLoop=pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start(mainLoop);
 
 	pa_threaded_mainloop_lock(mainLoop);
@@ -242,19 +244,19 @@ PulseStream::AudioExtension::AudioExtension():contextReady(false),noServer(false
 	pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
 	pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
 	pa_threaded_mainloop_unlock(mainLoop);
-}
+*/}
 
-PulseStream::AudioExtension::~AudioExtension()
+AudioExtension::~AudioExtension()
 {
 	stop();
 }
 
-void PulseStream::AudioExtension::stop()
+void AudioExtension::stop()
 {
 	if(!stopped)
 	{
 		stopped=true;
-		pa_threaded_mainloop_lock(mainLoop);
+/*		pa_threaded_mainloop_lock(mainLoop);
 		for(uint32_t i=0;i<streams.size();i++)
 		{
 			if(streams[i])
@@ -265,6 +267,7 @@ void PulseStream::AudioExtension::stop()
 		pa_threaded_mainloop_unlock(mainLoop);
 		pa_threaded_mainloop_stop(mainLoop);
 		pa_threaded_mainloop_free(mainLoop);
-	}
+*/	}
 }
+
 #endif

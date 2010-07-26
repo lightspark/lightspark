@@ -162,7 +162,7 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
 #ifdef AUDIO_BACKEND
-	soundManager=new SoundManager;
+	audioManager=new AudioManager;
 #endif
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
@@ -212,13 +212,13 @@ SystemState::~SystemState()
 {
 	assert(shutdown);
 	timerThread->wait();
-	//soundManager->stop();
+//	soundManager->stop();
 	delete threadPool;
 	delete downloadManager;
 	delete currentVm;
 	delete timerThread;
 #ifdef AUDIO_BACKEND
-	delete soundManager;
+	delete audioManager;
 #endif
 
 	//decRef all our object before destroying classes

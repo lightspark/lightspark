@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2010 Alexandre Demers (papouta@hotmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -16,49 +17,50 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
+ 
 
-#ifndef PULSESTREAM_H
-#define PULSESTREAM_H
+#ifndef AUDIOEXTENSION_H
+#define AUDIOEXTENSION_H
 
 #ifdef AUDIO_BACKEND
 
-//#include "../../compat.h"
-#include <pulse/pulseaudio.h>
-#include "../audioExtension.h"
-//#include "../../decoder.h"
+#include "compat.h"
+#include "decoder.h"
+#include "audioExtension.h"
 
 namespace lightspark
 {
 
-class PulseStream::AudioExtension
+class AudioExtension
 {
 private:
-	class SoundStream
+	class AudioStream
 	{
 	public:
 		enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
-		pa_stream* stream;
+//		pa_stream* stream;
 		AudioDecoder* decoder;
-		SoundManager* manager;
+		AudioExtension* manager;
 		volatile STREAM_STATUS streamStatus;
-		SoundStream(SoundManager* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+//		AudioStream(AudioExtension* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+		AudioStream(AudioExtension* m):decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
 	};
-	pa_threaded_mainloop* mainLoop;
-	pa_context* context;
-	static void contextStatusCB(pa_context* context, SoundManager* th);
-	static void streamStatusCB(pa_stream* stream, SoundStream* th);
-	static void streamWriteCB(pa_stream* stream, size_t nbytes, SoundStream* th);
-	std::vector<SoundStream*> streams;
+//	pa_threaded_mainloop* mainLoop;
+//	pa_context* context;
+//	static void contextStatusCB(pa_context* context, AudioExtension* th);
+//	static void streamStatusCB(pa_stream* stream, AudioStream* th);
+//	static void streamWriteCB(pa_stream* stream, size_t nbytes, AudioStream* th);
+	std::vector<AudioStream*> streams;
 	volatile bool contextReady;
 	volatile bool noServer;
 	bool stopped;
 public:
-	SoundManager();
+	AudioExtension();
 	uint32_t createStream(AudioDecoder* decoder);
 	void freeStream(uint32_t id);
 	void fillAndSync(uint32_t id, uint32_t streamTime);
 	void stop();
-	~SoundManager();
+	~AudioExtension();
 };
 
 };

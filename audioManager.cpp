@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2010 Alexandre Demers (papouta@hotmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -19,29 +20,29 @@
 
 #include <iostream>
 #include <string.h>
-#include "soundManager.h"
+#include "audioManager.h"
 
 #ifdef AUDIO_BACKEND
 using namespace lightspark;
 using namespace std;
 
-/*void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
+/*void AudioManager::streamStatusCB(pa_stream* stream, AudioStream* th)
 {
 	if(pa_stream_get_state(stream)==PA_STREAM_READY)
-		th->streamStatus=SoundStream::STREAM_READY;
+		th->streamStatus=AudioStream::STREAM_READY;
 	else if(pa_stream_get_state(stream)==PA_STREAM_TERMINATED)
 	{
 		assert(stream==th->stream);
-		th->streamStatus=SoundStream::STREAM_DEAD;
+		th->streamStatus=AudioStream::STREAM_DEAD;
 	}
 }
 */
-void SoundManager::fillAndSync(uint32_t id, uint32_t streamTime)
+void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 {
 	assert(streams[id-1]);
 /*	if(noServer==false)
 	{
-		if(streams[id-1]->streamStatus!=SoundStream::STREAM_READY) //The stream is not yet ready, delay upload
+		if(streams[id-1]->streamStatus!=AudioStream::STREAM_READY) //The stream is not yet ready, delay upload
 			return;
 		if(!streams[id-1]->decoder->hasDecodedFrames()) //No decoded data available yet, delay upload
 			return;
@@ -126,7 +127,7 @@ void SoundManager::fillAndSync(uint32_t id, uint32_t streamTime)
 //	}
 }
 
-/*void SoundManager::streamWriteCB(pa_stream* stream, size_t frameSize, SoundStream* th)
+/*void AudioManager::streamWriteCB(pa_stream* stream, size_t frameSize, AudioStream* th)
 {
 	//Get buffer size
 	int16_t* dest;
@@ -135,7 +136,7 @@ void SoundManager::fillAndSync(uint32_t id, uint32_t streamTime)
 	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
 }
 */
-void SoundManager::freeStream(uint32_t id)
+void AudioManager::freeStream(uint32_t id)
 {
 /*	pa_threaded_mainloop_lock(mainLoop);
 	assert(s);
@@ -147,12 +148,12 @@ void SoundManager::freeStream(uint32_t id)
 	//Do not delete the stream now, let's wait termination
 	streams[id-1]=NULL;
 	pa_threaded_mainloop_unlock(mainLoop);
-	while(s->streamStatus!=SoundStream::STREAM_DEAD);
+	while(s->streamStatus!=AudioStream::STREAM_DEAD);
 	pa_threaded_mainloop_lock(mainLoop);
 	if(s->stream)
 		pa_stream_unref(s->stream);
 	pa_threaded_mainloop_unlock(mainLoop);
-*/	SoundStream* s=streams[id-1];
+*/	AudioStream* s=streams[id-1];
 	delete s;
 }
 
@@ -171,7 +172,7 @@ void started_notify()
 	cout << "____started!!!!" << endl;
 }
 
-uint32_t SoundManager::createStream(AudioDecoder* decoder)
+uint32_t AudioManager::createStream(AudioDecoder* decoder)
 {
 /*	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
@@ -183,7 +184,7 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 	}
 	assert(decoder->isValid());
 	if(index==streams.size())
-		streams.push_back(new SoundStream(this));
+		streams.push_back(new AudioStream(this));
 	streams[index]->decoder=decoder;
 	if(noServer==false)
 	{
@@ -197,7 +198,7 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 		attrs.tlength=(uint32_t)-1;
 		attrs.fragsize=(uint32_t)-1;
 		attrs.minreq=(uint32_t)-1;
-		streams[index]->stream=pa_stream_new(context, "SoundStream", &ss, NULL);
+		streams[index]->stream=pa_stream_new(context, "AudioStream", &ss, NULL);
 		pa_stream_set_state_callback(streams[index]->stream, (pa_stream_notify_cb_t)streamStatusCB, streams[index]);
 		//pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
 		pa_stream_set_underflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)underflow_notify, NULL);
@@ -209,13 +210,13 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 	else
 	{
 		//Create the stream as dead
-		streams[index]->streamStatus=SoundStream::STREAM_DEAD;
+		streams[index]->streamStatus=AudioStream::STREAM_DEAD;
 	}
 	pa_threaded_mainloop_unlock(mainLoop);
 */	return index+1;
 }
 
-/*void SoundManager::contextStatusCB(pa_context* context, SoundManager* th)
+/*void AudioManager::contextStatusCB(pa_context* context, AudioManager* th)
 {
 	switch(pa_context_get_state(context))
 	{
@@ -232,7 +233,7 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 	}
 }
 */
-SoundManager::SoundManager():contextReady(false),noServer(false),stopped(false)
+AudioManager::AudioManager():contextReady(false),noServer(false),stopped(false)
 {
 /*	mainLoop=pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start(mainLoop);
@@ -244,12 +245,12 @@ SoundManager::SoundManager():contextReady(false),noServer(false),stopped(false)
 	pa_threaded_mainloop_unlock(mainLoop);
 */}
 
-SoundManager::~SoundManager()
+AudioManager::~AudioManager()
 {
 	stop();
 }
 
-void SoundManager::stop()
+void AudioManager::stop()
 {
 	if(!stopped)
 	{

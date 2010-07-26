@@ -36,7 +36,9 @@
 #include "netutils.h"
 
 #include <GL/glew.h>
+#ifdef ENABLE_CURL
 #include <curl/curl.h>
+#endif
 extern "C" {
 #include <libavcodec/avcodec.h>
 }

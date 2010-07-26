@@ -302,7 +302,7 @@ void SystemState::stopEngines()
 	delete timerThread;
 	timerThread=NULL;
 	delete audioManager;
-	soundManager=NULL;
+	audioManager=NULL;
 #endif
 }
 

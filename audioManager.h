@@ -21,8 +21,6 @@
 #ifndef AUDIOMANAGER_H
 #define AUDIOMANAGER_H
 
-#ifdef AUDIO_BACKEND
-
 #include "compat.h"
 #include "decoder.h"
 #include "audioExtension.h"
@@ -64,5 +62,4 @@ public:
 
 };
 
-#endif
 #endif

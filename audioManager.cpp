@@ -22,7 +22,13 @@
 #include <string.h>
 #include "audioManager.h"
 
-#ifdef AUDIO_BACKEND
+#if defined WIN32
+  #include <windows.h>
+#else
+  #include <dlfcn.h>
+  #include <sys/types.h>
+#endif
+
 using namespace lightspark;
 using namespace std;
 
@@ -233,6 +239,28 @@ uint32_t AudioManager::createStream(AudioDecoder* decoder)
 	}
 }
 */
+
+/****************
+It should search for a list of audio plugin lib files (liblightsparkaudio-AUDIOAPI.so)
+If it finds any
+  Verify they are valid plugin
+  If true, list the audio API in a list of audiobackends
+  Else nothing
+Else nothing
+
+Then, ut should read a config file containing the user's defined audio API choosen as audio backend
+If no file or none selected
+  default to none
+  SET noServer(true)
+  SET stopped(true)
+  SET contextReady(false)
+Else
+  Select and load the good audio plugin lib files
+  SET noServer(false)
+  SET stopped(true)
+  SET contextReady(false)
+
+*****************/
 AudioManager::AudioManager():contextReady(false),noServer(false),stopped(false)
 {
 /*	mainLoop=pa_threaded_mainloop_new();
@@ -245,11 +273,21 @@ AudioManager::AudioManager():contextReady(false),noServer(false),stopped(false)
 	pa_threaded_mainloop_unlock(mainLoop);
 */}
 
+/**************************
+stop AudioManager
+***************************/
 AudioManager::~AudioManager()
 {
 	stop();
 }
 
+/**************************
+If !stopped
+  Stop, unload and close the audio plugin lib file
+  SET noServer(true)
+  SET stopped(true)
+  SET contextReady(false)
+***************************/
 void AudioManager::stop()
 {
 	if(!stopped)
@@ -268,5 +306,3 @@ void AudioManager::stop()
 		pa_threaded_mainloop_free(mainLoop);
 */	}
 }
-
-#endif

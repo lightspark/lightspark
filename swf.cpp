@@ -439,7 +439,6 @@ void SystemState::EngineCreator::threadAbort()
 void SystemState::enableGnashFallback()
 {
 	//Check if the gnash standalone executable is available
-	cout << "Looking for gnash in " << GNASH_PATH << endl;
 	ifstream f(GNASH_PATH);
 	if(f)
 		useGnashFallback=true;
@@ -451,7 +450,7 @@ void SystemState::createEngines()
 	sem_wait(&mutex);
 	assert(renderThread==NULL && inputThread==NULL);
 	//Check if we should fall back on gnash
-	if(useGnashFallback && vmVersion!=AVM2)
+	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
 	{
 		if(dumpedSWFPath.len()==0) //The path is not known yet
 		{
@@ -471,7 +470,26 @@ void SystemState::createEngines()
 		}
 		else if(childPid==0) //Child process scope
 		{
-			char *const args[3] = {strdup("gnash"), strdup(dumpedSWFPath.raw_buf()), NULL};
+			//Allocate some buffers to store gnash arguments
+			char bufXid[32];
+			char bufWidth[32];
+			char bufHeight[32];
+			snprintf(bufXid,32,"%lu",npapiParams.window);
+			snprintf(bufWidth,32,"%u",npapiParams.width);
+			snprintf(bufHeight,32,"%u",npapiParams.height);
+			char *const args[] =
+			{
+				strdup("gnash"), //argv[0]
+				strdup("-x"), //Xid
+				bufXid,
+				strdup("-j"), //Width
+				bufWidth,
+				strdup("-k"), //Height
+				bufHeight,
+				strdup("-vv"),
+				strdup(dumpedSWFPath.raw_buf()), //SWF file
+				NULL
+			};
 			execve(GNASH_PATH, args, environ);
 			//If we are are execve failed, print an error and die
 			LOG(LOG_ERROR,"Execve failed, content will not be rendered");

@@ -280,37 +280,34 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		mDepth = ws_info->depth;
 		mColormap = ws_info->colormap;
 
-		lightspark::NPAPI_params* p=new lightspark::NPAPI_params;
+		lightspark::NPAPI_params p;
 
-		p->visual=XVisualIDFromVisual(mVisual);
+		p.visual=XVisualIDFromVisual(mVisual);
 		mContainer=gtk_plug_new((GdkNativeWindow)mWindow);
-		p->container=mContainer;
+		p.container=mContainer;
 		//Realize the widget now, as we need the window
-		gtk_widget_realize(p->container);
+		gtk_widget_realize(p.container);
 		//Show it now
-		gtk_widget_show(p->container);
-		gtk_widget_map(p->container);
-		p->window=GDK_WINDOW_XWINDOW(mContainer->window);
-		p->width=mWidth;
-		p->height=mHeight;
-		p->helper=AsyncHelper;
-		p->helperArg=this;
-		cout << "X Window " << hex << p->window << dec << endl;
+		gtk_widget_show(p.container);
+		gtk_widget_map(p.container);
+		p.window=GDK_WINDOW_XWINDOW(mContainer->window);
+		p.width=mWidth;
+		p.height=mHeight;
+		p.helper=AsyncHelper;
+		p.helperArg=this;
+		cout << "X Window " << hex << p.window << dec << endl;
 		if(m_sys->getRenderThread()!=NULL)
 		{
 			cout << "destroy old context" << endl;
 			abort();
 		}
-		if(p->width==0 || p->height==0)
-			abort();
 		if(m_sys->getInputThread()!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
 		XSync(mDisplay, False);
-		m_sys->setParamsAndEngine(lightspark::GTKPLUG,p);
-		delete p;
+		m_sys->setParamsAndEngine(lightspark::GTKPLUG,&p);
 	}
 	//draw();
 	return TRUE;

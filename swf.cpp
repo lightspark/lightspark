@@ -48,6 +48,7 @@ extern "C" {
 
 #ifdef COMPILE_PLUGIN
 #include <gdk/gdkkeysyms.h>
+#include <gdk/gdkx.h>
 #endif
 
 using namespace std;
@@ -445,6 +446,31 @@ void SystemState::enableGnashFallback()
 	f.close();
 }
 
+#ifdef COMPILE_PLUGIN
+
+void SystemState::delayedCreation(SystemState* th)
+{
+	NPAPI_params& p=th->npapiParams;
+	//Create a plug in the XEmbed window
+	p.container=gtk_plug_new((GdkNativeWindow)p.window);
+	//Realize the widget now, as we need the X window
+	gtk_widget_realize(p.container);
+	//Show it now
+	gtk_widget_show(p.container);
+	gtk_widget_map(p.container);
+	p.window=GDK_WINDOW_XWINDOW(p.container->window);
+	XSync(p.display, False);
+	sem_wait(&th->mutex);
+	th->renderThread=new RenderThread(th, th->engine, &th->npapiParams);
+	th->inputThread=new InputThread(th, th->engine, &th->npapiParams);
+	//If the render rate is known start the render ticks
+	if(th->renderRate)
+		th->startRenderTicks();
+	sem_post(&th->mutex);
+}
+
+#endif
+
 void SystemState::createEngines()
 {
 	sem_wait(&mutex);
@@ -503,11 +529,18 @@ void SystemState::createEngines()
 			return;
 		}
 	}
-	renderThread=new RenderThread(this, engine, &npapiParams);
-	inputThread=new InputThread(this, engine, &npapiParams);
-	//If the render rate is known start the render ticks
-	if(renderRate)
-		startRenderTicks();
+	else if(engine==GTKPLUG) //The engines must be created int the context of the main thread
+	{
+		npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
+	}
+	else //SDL engine
+	{
+		renderThread=new RenderThread(this, engine, NULL);
+		inputThread=new InputThread(this, engine, NULL);
+		//If the render rate is known start the render ticks
+		if(renderRate)
+			startRenderTicks();
+	}
 	sem_post(&mutex);
 }
 
@@ -818,7 +851,12 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),ter
 	else if(e==GTKPLUG)
 	{
 		npapi_params=(NPAPI_params*)param;
-		npapi_params->helper(npapi_params->helperArg, (helper_t)delayedCreation, this);
+		GtkWidget* container=npapi_params->container;
+		gtk_widget_set_can_focus(container,True);
+		gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
+						GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
+						GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
+		g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), this);
 	}
 #endif
 	else
@@ -840,16 +878,6 @@ void InputThread::wait()
 }
 
 #ifdef COMPILE_PLUGIN
-void InputThread::delayedCreation(InputThread* th)
-{
-	GtkWidget* container=th->npapi_params->container;
-	gtk_widget_set_can_focus(container,True);
-	gtk_widget_add_events(container,GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
-					GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
-					GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
-	g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), th);
-}
-
 //This is a GTK event handler and the gdk lock is already acquired
 gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
 {

@@ -165,6 +165,7 @@ typedef void(*helper_t)(void*);
 #ifdef COMPILE_PLUGIN
 struct NPAPI_params
 {
+	Display* display;
 	GtkWidget* container;
 	VisualID visual;
 	Window window;
@@ -214,6 +215,9 @@ private:
 	/**
 	  	Destroys all the engines used in lightspark: timer, thread pool, vm...
 	*/
+#ifdef COMPILE_PLUGIN
+	static void delayedCreation(SystemState* th);
+#endif
 	void stopEngines();
 	//Useful to wait for complete download of the SWF
 	Condition fileDumpAvailable;

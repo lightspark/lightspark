@@ -512,6 +512,8 @@ void SystemState::createEngines()
 				bufWidth,
 				strdup("-k"), //Height
 				bufHeight,
+				strdup("-u"), //SWF url
+				strdup(origin.raw_buf()),
 				strdup("-vv"),
 				strdup(dumpedSWFPath.raw_buf()), //SWF file
 				NULL

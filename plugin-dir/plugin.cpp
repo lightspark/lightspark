@@ -173,10 +173,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		{
 			m_sys->parseParametersFromFlashvars(argv[i]);
 		}
-		else if(strcasecmp(argn[i],"src")==0)
-		{
-			m_sys->setOrigin(argv[i]);
-		}
+		//The SWF file url should be getted from NewStream
 	}
 	m_sys->downloadManager=new NPDownloadManager(mInstance);
 	m_sys->addJob(m_pt);
@@ -319,6 +316,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	else
 	{
 		//This is the main file
+		m_sys->setOrigin(stream->url);
 		*stype=NP_ASFILE;
 	}
 	//The downloader is set as the private data for this stream

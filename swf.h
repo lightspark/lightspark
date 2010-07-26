@@ -229,6 +229,10 @@ private:
 	pid_t childPid;
 	bool useGnashFallback;
 	void setParameters(ASObject* p);
+	/*
+	   	Used to keep a copy of the FlashVars, it's useful when gnash fallback is used
+	*/
+	std::string rawParameters;
 	static int hexToInt(char c);
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;

@@ -205,6 +205,8 @@ int SystemState::hexToInt(char c)
 
 void SystemState::parseParametersFromFlashvars(const char* v)
 {
+	if(useGnashFallback) //Save a copy of the string
+		rawParameters=v;
 	ASObject* params=Class<ASObject>::getInstanceS();
 	//Add arguments to SystemState
 	string vars(v);
@@ -503,6 +505,8 @@ void SystemState::createEngines()
 			snprintf(bufXid,32,"%lu",npapiParams.window);
 			snprintf(bufWidth,32,"%u",npapiParams.width);
 			snprintf(bufHeight,32,"%u",npapiParams.height);
+			string params("FlashVars=");
+			params+=rawParameters;
 			char *const args[] =
 			{
 				strdup("gnash"), //argv[0]
@@ -514,6 +518,8 @@ void SystemState::createEngines()
 				bufHeight,
 				strdup("-u"), //SWF url
 				strdup(origin.raw_buf()),
+				strdup("-P"), //SWF parameters
+				strdup(params.c_str()),
 				strdup("-vv"),
 				strdup(dumpedSWFPath.raw_buf()), //SWF file
 				NULL

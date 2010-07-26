@@ -162,9 +162,7 @@ SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p)
 		parseThread->root=this;
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
-#ifdef AUDIO_BACKEND
 	audioManager=new AudioManager;
-#endif
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
 	parent=stage;
@@ -303,7 +301,6 @@ void SystemState::stopEngines()
 	timerThread=NULL;
 	delete audioManager;
 	audioManager=NULL;
-#endif
 }
 
 SystemState::~SystemState()

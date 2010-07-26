@@ -23,7 +23,11 @@
 
 #include "compat.h"
 #include "decoder.h"
-#include "audioExtension.h"
+#include "plugins/audio/audioPlugin.h"
+
+//convenience typedef for the pointers to the 2 functions we expect to find in the plugins
+typedef IPlugin* (*PLUGIN_FACTORY)();
+typedef void (*PLUGIN_CLEANUP)(IPlugin*);
 
 namespace lightspark
 {

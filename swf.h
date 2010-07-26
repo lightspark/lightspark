@@ -262,9 +262,7 @@ public:
 	
 	Stage* stage;
 	ABCVm* currentVm;
-#ifdef AUDIO_BACKEND
 	AudioManager* audioManager;
-#endif
 	//Application starting time in milliseconds
 	uint64_t startTime;
 

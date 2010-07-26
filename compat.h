@@ -22,15 +22,15 @@
 
 //Define cross platform helpers
 #ifdef WIN32
-#include <winsock2.h>
-#include <windows.h>
-#define TLSDATA __declspec( thread )
-#define snprintf _snprintf
-int round ( double f_val );
-#define isnan(x) _isnan(x)
+  #include <winsock2.h>
+  #include <windows.h>
+  #define TLSDATA __declspec( thread )
+  #define snprintf _snprintf
+  int round ( double f_val );
+  #define isnan(x) _isnan(x)
 #else //GCC
-#ifndef __STDC_LIMIT_MACROS
-#define __STDC_LIMIT_MACROS
+  #ifndef __STDC_LIMIT_MACROS
+  #define __STDC_LIMIT_MACROS
 #endif
 
 #ifndef __STDC_CONSTANT_MACROS
@@ -42,27 +42,27 @@ int round ( double f_val );
 
 //Ensure compatibility on various targets
 #if defined(__FreeBSD__)
-#include <sys/endian.h>
+  #include <sys/endian.h>
 #elif defined(__APPLE__)
-#define _BSD_SOURCE
-#include <architecture/byte_order.h>
+  #define _BSD_SOURCE
+  #include <architecture/byte_order.h>
 #elif defined(WIN32)
-#ifdef _MSC_VER
-typedef __int64 int64_t;
-typedef unsigned __int64 uint64_t;
-/*
-typedef signed int int32_t;
-typedef unsigned int uint32_t;
-typedef short int16_t;
-typedef unsigned short uint16_t;
-typedef signed char int8_t;
-typedef unsigned char uint8_t;
-typedef signed int ssize_t;
-*/
-#endif
+  #ifdef _MSC_VER
+    typedef __int64 int64_t;
+    typedef unsigned __int64 uint64_t;
+    /*
+    typedef signed int int32_t;
+    typedef unsigned int uint32_t;
+    typedef short int16_t;
+    typedef unsigned short uint16_t;
+    typedef signed char int8_t;
+    typedef unsigned char uint8_t;
+    typedef signed int ssize_t;
+    */
+  #endif
 
 #else
-#include <endian.h>
+  #include <endian.h>
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__

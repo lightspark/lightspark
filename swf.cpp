@@ -203,6 +203,11 @@ int SystemState::hexToInt(char c)
 		return -1;
 }
 
+void SystemState::setCookies(const char* c)
+{
+	rawCookies=c;
+}
+
 void SystemState::parseParametersFromFlashvars(const char* v)
 {
 	if(useGnashFallback) //Save a copy of the string

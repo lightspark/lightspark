@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "compat.h"
 #include "asobjects.h"
 #include "swf.h"
 

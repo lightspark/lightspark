@@ -20,12 +20,12 @@
 #ifndef _STREAMS_H
 #define _STREAMS_H
 
+#include "compat.h"
 #include <streambuf>
 #include <fstream>
 #include <semaphore.h>
 #include <inttypes.h>
 #include "zlib.h"
-#include "compat.h"
 
 class zlib_filter: public std::streambuf
 {

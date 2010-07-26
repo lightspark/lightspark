@@ -214,7 +214,7 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 	//Compute lenght of raw data
 	packetLen=dataSize-5;
-	int ret=posix_memalign((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
+	int ret=aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
 	assert(ret==0);
 
 	s.read((char*)packetData,packetLen);
@@ -227,7 +227,7 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 VideoDataTag::~VideoDataTag()
 {
-	free(packetData);
+	aligned_free(packetData);
 }
 
 AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
@@ -263,7 +263,7 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 		headerConsumed++;
 	}
 	packetLen=dataSize-headerConsumed;
-	int ret=posix_memalign((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
+	int ret=aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
 	assert(ret==0);
 	s.read((char*)packetData,packetLen);
 	memset(packetData+packetLen,0,16);
@@ -275,5 +275,5 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 
 AudioDataTag::~AudioDataTag()
 {
-	free(packetData);
+	aligned_free(packetData);
 }

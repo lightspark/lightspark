@@ -270,14 +270,14 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 void* AudioDecoder::operator new(size_t s)
 {
 	void* retAddr=NULL;
-	int ret=posix_memalign(&retAddr, 16, s);
+	int ret=aligned_malloc(&retAddr, 16, s);
 	assert(ret==0);
 	assert(retAddr);
 	return retAddr;
 }
 void AudioDecoder::operator delete(void* addr)
 {
-	free(addr);
+	aligned_free(addr);
 }
 
 bool AudioDecoder::discardFrame()

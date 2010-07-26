@@ -20,6 +20,7 @@
 #ifndef TAGS_H
 #define TAGS_H
 
+#include "compat.h"
 #include <list>
 #include <vector>
 #include <iostream>

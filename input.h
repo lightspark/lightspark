@@ -19,6 +19,7 @@
 
 #ifndef INPUT_H
 #define INPUT_H
+#include "compat.h"
 #include <map>
 #include <string>
 

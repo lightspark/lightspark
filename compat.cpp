@@ -20,15 +20,14 @@
 #ifndef WIN32
 #include <unistd.h>
 #include <time.h>
+#include <sys/wait.h>
 #endif
 
 #include "compat.h"
+#include <string>
+#include <stdlib.h>
 
-#ifdef WIN32
-#define NORETURN __attribute__((noreturn))
-#else
-#define NORETURN __declspec(noreturn)
-#endif
+using namespace std;
 
 void compat_msleep(unsigned int time)
 {
@@ -56,3 +55,93 @@ uint64_t compat_msectiming()
 	return (t.tv_sec*1000 + t.tv_nsec/1000000);
 #endif
 }
+
+
+#ifndef WIN32
+#include "timer.h"
+
+uint64_t compat_get_current_time_ms()
+{
+	timespec tp;
+	//Get current clock to schedule next wakeup
+	clock_gettime(CLOCK_REALTIME,&tp);
+	return lightspark::timespecToMsecs(tp);
+}
+
+uint64_t compat_get_thread_cputime_us()
+{
+	timespec tp;
+#ifndef _POSIX_THREAD_CPUTIME
+	#error no thread clock available
+#endif
+	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
+	return lightspark::timespecToUsecs(tp);
+}
+
+int aligned_malloc(void **memptr, size_t alignment, size_t size)
+{
+	return posix_memalign(memptr, alignment, size);
+}
+void aligned_free(void *mem)
+{
+	return free(mem);
+}
+
+int kill_child(pid_t childPid)
+{
+	kill(childPid, SIGTERM);
+	waitpid(childPid, NULL, 0);
+	return 0;
+}
+
+
+#else
+#define EPOCH_BIAS  116444736000000000i64 // Number of 100 nanosecond units from 1/1/1601 to 1/1/1970
+static uint64_t get_corrected_wintime()
+{
+	// Gets time in 100 nanosecond units
+	FILETIME ft;
+	GetSystemTimeAsFileTime(&ft);
+	ULARGE_INTEGER ret;
+	ret.HighPart = ft.dwHighDateTime;
+	ret.LowPart = ft.dwLowDateTime;
+
+	// Compensates epoch difference
+	return ret.QuadPart - EPOCH_BIAS;
+}
+uint64_t compat_get_current_time_ms()
+{
+	// Note: we could also use _ftime here
+	uint64_t ret = get_corrected_wintime();
+	return ret / 10000i64;
+}
+uint64_t compat_get_current_time_us()
+{
+	uint64_t ret = get_corrected_wintime();
+	return ret / 10i64;
+}
+
+uint64_t compat_get_thread_cputime_us()
+{
+	// WINTODO: On Vista/7 we might want to use the processor cycles API
+	FILETIME CreationTime, ExitTime, KernelTime, UserTime;
+	GetThreadTimes(GetCurrentThread(), &CreationTime, &ExitTime, &KernelTime, &UserTime);
+
+	uint64_t ret;
+	ULARGE_INTEGER u;
+	u.HighPart = KernelTime.dwHighDateTime;
+	u.LowPart = KernelTime.dwLowDateTime;
+	ret = u.QuadPart / 10i64;
+	u.HighPart = UserTime.dwHighDateTime;
+	u.LowPart = UserTime.dwLowDateTime;
+	ret += u.QuadPart / 10i64;
+	return ret;
+}
+
+int kill_child(pid_t pid)
+{
+	DebugBreak();
+	return -1;
+}
+
+#endif

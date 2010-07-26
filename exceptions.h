@@ -20,6 +20,7 @@
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
+#include "compat.h"
 #include <exception>
 #include <string>
 

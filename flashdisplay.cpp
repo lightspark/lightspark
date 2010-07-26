@@ -33,6 +33,7 @@
 #include <GL/glew.h>
 #include <fstream>
 #include <limits>
+#include <cmath>
 using namespace std;
 using namespace lightspark;
 

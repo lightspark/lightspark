@@ -36,8 +36,6 @@
 using namespace std;
 using namespace lightspark;
 
-long lightspark::timeDiff(timespec& s, timespec& d);
-
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;

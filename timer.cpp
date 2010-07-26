@@ -203,10 +203,7 @@ void TimerThread::addTick(uint32_t tickTime, ITickJob* job)
 	e->isTick=true;
 	e->job=job;
 	e->tickTime=tickTime;
-	timespec tp;
-	//Get current clock to schedule next wakeup
-	clock_gettime(CLOCK_REALTIME,&tp);
-	e->timing=timespecToMsecs(tp)+tickTime;
+	e->timing=compat_get_current_time_ms()+tickTime;
 	insertNewEvent(e);
 }
 
@@ -216,10 +213,7 @@ void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
 	e->isTick=false;
 	e->job=job;
 	e->tickTime=0;
-	timespec tp;
-	//Get current clock to schedule next wakeup
-	clock_gettime(CLOCK_REALTIME,&tp);
-	e->timing=timespecToMsecs(tp)+waitTime;
+	e->timing=compat_get_current_time_ms()+waitTime;
 	insertNewEvent(e);
 }
 
@@ -274,24 +268,15 @@ bool TimerThread::removeJob(ITickJob* job)
 
 Chronometer::Chronometer()
 {
-	timespec tp;
-#ifndef _POSIX_THREAD_CPUTIME
-	#error no thread clock available
-#endif
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
-	start=timespecToUsecs(tp);
+	start = compat_get_thread_cputime_us();
 }
 
 uint32_t lightspark::Chronometer::checkpoint()
 {
 	uint64_t newstart;
 	uint32_t ret;
-	timespec tp;
-#ifndef _POSIX_THREAD_CPUTIME
-	#error no thread clock available
-#endif
-	clock_gettime(CLOCK_THREAD_CPUTIME_ID,&tp);
-	newstart=timespecToUsecs(tp);
+	newstart=compat_get_thread_cputime_us();
+	assert((newstart-start) < UINT32_MAX);
 	ret=newstart-start;
 	start=newstart;
 	return ret;

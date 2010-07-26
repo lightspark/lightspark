@@ -20,6 +20,7 @@
 #ifndef _FLASH_SYSTEM_H
 #define _FLASH_SYSTEM_H
 
+#include "compat.h"
 #include "asobjects.h"
 
 namespace lightspark

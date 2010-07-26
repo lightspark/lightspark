@@ -20,6 +20,7 @@
 #ifndef _FAST_PATHS_H
 #define _FAST_PATHS_H
 
+#include "compat.h"
 #include <inttypes.h>
 
 extern "C"

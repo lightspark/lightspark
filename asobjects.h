@@ -19,13 +19,13 @@
 
 #ifndef ASOBJECTS_H
 #define ASOBJECTS_H
+#include "compat.h"
 #include <vector>
 #include <list>
 #include <set>
 #include "swftypes.h"
 #include "frame.h"
 #include "input.h"
-#include "compat.h"
 #include "exceptions.h"
 #include "threading.h"
 

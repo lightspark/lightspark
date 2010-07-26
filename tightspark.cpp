@@ -20,7 +20,10 @@
 #include "abc.h"
 
 #include <fstream>
+#ifndef _WIN32
+// WINTODO: Proper CMake check
 #include <sys/resource.h>
+#endif
 #include "compat.h"
 
 using namespace std;

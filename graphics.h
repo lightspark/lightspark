@@ -20,9 +20,9 @@
 #ifndef _GRAPHICS_H
 #define _GRAPHICS_H
 
+#include "compat.h"
 #include <GL/glew.h>
 #include <vector>
-#include "compat.h"
 #include "swftypes.h"
 
 namespace lightspark

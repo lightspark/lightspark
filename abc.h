@@ -38,9 +38,6 @@
 namespace lightspark
 {
 
-#define likely(x)	__builtin_expect(!!(x), 1)
-#define unlikely(x)	__builtin_expect(!!(x), 0)
-
 class s24
 {
 friend std::istream& operator>>(std::istream& in, s24& v);

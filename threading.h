@@ -20,9 +20,10 @@
 #ifndef _THREADING_H
 #define _THREADING_H
 
+#include "compat.h"
 #include <semaphore.h>
 #include <stdlib.h>
-#include "compat.h"
+#include <assert.h>
 
 namespace lightspark
 {

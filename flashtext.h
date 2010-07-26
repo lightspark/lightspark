@@ -20,6 +20,7 @@
 #ifndef _FLASH_TEXT_H
 #define _FLASH_TEXT_H
 
+#include "compat.h"
 #include "asobjects.h"
 #include "flashdisplay.h"
 

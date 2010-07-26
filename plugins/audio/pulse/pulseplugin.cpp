@@ -2,7 +2,6 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
-    Copyright (C) 2010 Alexandre Demers (papouta@hotmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -20,19 +19,13 @@
 
 #include <iostream>
 #include <string.h>
-#include "audioManager.h"
+#include "pulseplugin.h"
 
-#if defined WIN32
-  #include <windows.h>
-#else
-  #include <dlfcn.h>
-  #include <sys/types.h>
-#endif
-
+#ifdef AUDIO_BACKEND
 using namespace lightspark;
 using namespace std;
 
-/*void AudioManager::streamStatusCB(pa_stream* stream, AudioStream* th)
+void PulsePlugin::streamStatusCB(pa_stream* stream, AudioStream* th)
 {
 	if(pa_stream_get_state(stream)==PA_STREAM_READY)
 		th->streamStatus=AudioStream::STREAM_READY;
@@ -42,11 +35,11 @@ using namespace std;
 		th->streamStatus=AudioStream::STREAM_DEAD;
 	}
 }
-*/
-void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
+
+void PulsePlugin::fillAndSync(uint32_t id, uint32_t streamTime)
 {
 	assert(streams[id-1]);
-/*	if(noServer==false)
+	if(noServer==false)
 	{
 		if(streams[id-1]->streamStatus!=AudioStream::STREAM_READY) //The stream is not yet ready, delay upload
 			return;
@@ -127,13 +120,13 @@ void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 		pa_threaded_mainloop_unlock(mainLoop);
 	}
 	else //No sound server available
-*///	{
+	{
 		//Just skip all the contents
 		streams[id-1]->decoder->skipAll();
-//	}
+	}
 }
 
-/*void AudioManager::streamWriteCB(pa_stream* stream, size_t frameSize, AudioStream* th)
+void PulsePlugin::streamWriteCB(pa_stream* stream, size_t frameSize, AudioStream* th)
 {
 	//Get buffer size
 	int16_t* dest;
@@ -141,10 +134,11 @@ void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 	uint32_t retSize=th->decoder->copyFrame(dest, frameSize);
 	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
 }
-*/
-void AudioManager::freeStream(uint32_t id)
+
+void PulsePlugin::freeStream(uint32_t id)
 {
-/*	pa_threaded_mainloop_lock(mainLoop);
+	pa_threaded_mainloop_lock(mainLoop);
+	AudioStream* s=streams[id-1];
 	assert(s);
 	if(noServer==false)
 	{
@@ -159,7 +153,6 @@ void AudioManager::freeStream(uint32_t id)
 	if(s->stream)
 		pa_stream_unref(s->stream);
 	pa_threaded_mainloop_unlock(mainLoop);
-*/	AudioStream* s=streams[id-1];
 	delete s;
 }
 
@@ -178,12 +171,12 @@ void started_notify()
 	cout << "____started!!!!" << endl;
 }
 
-uint32_t AudioManager::createStream(AudioDecoder* decoder)
+uint32_t PulsePlugin::createStream(AudioDecoder* decoder)
 {
-/*	while(!contextReady);
+	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
-*/	uint32_t index=0;
-/*	for(;index<streams.size();index++)
+	uint32_t index=0;
+	for(;index<streams.size();index++)
 	{
 		if(streams[index]==NULL)
 			break;
@@ -219,10 +212,10 @@ uint32_t AudioManager::createStream(AudioDecoder* decoder)
 		streams[index]->streamStatus=AudioStream::STREAM_DEAD;
 	}
 	pa_threaded_mainloop_unlock(mainLoop);
-*/	return index+1;
+	return index+1;
 }
 
-/*void AudioManager::contextStatusCB(pa_context* context, AudioManager* th)
+void PulsePlugin::contextStatusCB(pa_context* context, AudioPlugin* th)
 {
 	switch(pa_context_get_state(context))
 	{
@@ -238,32 +231,10 @@ uint32_t AudioManager::createStream(AudioDecoder* decoder)
 			break;
 	}
 }
-*/
 
-/****************
-It should search for a list of audio plugin lib files (liblightsparkaudio-AUDIOAPI.so)
-If it finds any
-  Verify they are valid plugin
-  If true, list the audio API in a list of audiobackends
-  Else nothing
-Else nothing
-
-Then, ut should read a config file containing the user's defined audio API choosen as audio backend
-If no file or none selected
-  default to none
-  SET noServer(true)
-  SET stopped(true)
-  SET contextReady(false)
-Else
-  Select and load the good audio plugin lib files
-  SET noServer(false)
-  SET stopped(true)
-  SET contextReady(false)
-
-*****************/
-AudioManager::AudioManager():contextReady(false),noServer(false),stopped(false)
+PulsePlugin::AudioPlugin():contextReady(false),noServer(false),stopped(false)
 {
-/*	mainLoop=pa_threaded_mainloop_new();
+	mainLoop=pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start(mainLoop);
 
 	pa_threaded_mainloop_lock(mainLoop);
@@ -271,29 +242,19 @@ AudioManager::AudioManager():contextReady(false),noServer(false),stopped(false)
 	pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
 	pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
 	pa_threaded_mainloop_unlock(mainLoop);
-*/}
+}
 
-/**************************
-stop AudioManager
-***************************/
-AudioManager::~AudioManager()
+PulsePlugin::~AudioPlugin()
 {
 	stop();
 }
 
-/**************************
-If !stopped
-  Stop, unload and close the audio plugin lib file
-  SET noServer(true)
-  SET stopped(true)
-  SET contextReady(false)
-***************************/
-void AudioManager::stop()
+void PulsePlugin::stop()
 {
 	if(!stopped)
 	{
 		stopped=true;
-/*		pa_threaded_mainloop_lock(mainLoop);
+		pa_threaded_mainloop_lock(mainLoop);
 		for(uint32_t i=0;i<streams.size();i++)
 		{
 			if(streams[i])
@@ -304,75 +265,22 @@ void AudioManager::stop()
 		pa_threaded_mainloop_unlock(mainLoop);
 		pa_threaded_mainloop_stop(mainLoop);
 		pa_threaded_mainloop_free(mainLoop);
-*/	}
+	}
 }
 
-/***************************
-Find liblightspartAUDIOplugin libraries
-Load
-****************************/
-void AudioManager::ListAudioPlugins()
+extern "C"
 {
-/*//       //get the program's directory
-//       char dir [MAX_PATH];
-//       GetModuleFileName (NULL, dir, MAX_PATH);
+  // Plugin factory function
+  DLL_PUBLIC IPlugin* Create_Plugin ()
+  {
+    return new PulsePlugin ();
+  }
  
-       //eliminate the file name (to get just the directory)
-       char* p = strrchr(dir, '\\');
-       *(p + 1) = 0;
- 
-       //find all libraries in the plugins subdirectory
-       char search_parms [MAX_PATH];
-       strcpy_s (search_parms, MAX_PATH, dir);
-       strcat_s (search_parms, MAX_PATH, "plugins\\*.dll");
- 
-       WIN32_FIND_DATA find_data;
-       HANDLE h_find = ::FindFirstFile (search_parms, &find_data);
-       BOOL f_ok = TRUE;
-       while (h_find != INVALID_HANDLE_VALUE && f_ok)
-       {
-              //load each library and look for the functions expected to initialize
-              char plugin_full_name [MAX_PATH];
-              strcpy_s(plugin_full_name, MAX_PATH, dir);
-              strcat_s(plugin_full_name, MAX_PATH, "plugins\\");
-              strcat_s(plugin_full_name, MAX_PATH, find_data.cFileName);
- 
-              HMODULE h_mod = LoadLibrary(plugin_full_name);
-              if (h_mod != NULL)
-              {
-                     PLUGIN_FACTORY p_factory_function = (PLUGIN_FACTORY) GetProcAddress(h_mod, "Create_Plugin");
-                     PLUGIN_CLEANUP p_cleanup_function = (PLUGIN_CLEANUP) GetProcAddress(h_mod, "Release_Plugin");
- 
-                     if (p_factory_function != NULL && p_cleanup_function != NULL)
-                     {
-                           //The library has the functions and should be what we are looking for
- 
-                           //invoke the factory to create the plugin object
-                           IPlugin* p_plugin = (*p_factory_function)();
- 
-                           //Get some more info about the plugin to be sure what it is
-			   if((p_plugin->get_HostApplication() == "Lightspark") && p_plugin->get_PluginType())
-			   {
-			     printf("Plugin %s is loaded from file %s.\n", p_plugin->get_PluginName(), find_data.cFileName);
-			     printf("Plugin of type %s\n", p_plugin->get_PluginType());
-			     this->addToAudioPluginsList();
-			   }
-			   else
-			   {
-			     printf("Not the kind of plugin the application is looking for.\n");
-			     printf("Plugin of type %s built for application %s.",p_plugin->get_PluginType(), p_plugin->get_HostApplication());
-			   }
-                          
-                           //done, cleanup the plugin by invoking its cleanup function
-                           (*p_cleanup_function) (p_plugin);
-                     }
- 
-                     ::FreeLibrary (h_mod);
-              }
- 
-              //go for the next DLL
-              f_ok = ::FindNextFile (h_find, &find_data);
-       }
- 
-       return 0;
-*/}
+  // Plugin cleanup function
+  DLL_PUBLIC void Release_Plugin (IPlugin* p_plugin)
+  {
+    //delete the previously created object
+    delete p_plugin;
+  }
+}
+#endif

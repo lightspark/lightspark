@@ -81,6 +81,22 @@
 	#endif
 #endif
 
+#if defined WIN32
+  #define LibHandle HMODULE
+#else
+  #define LibHandle void*
+#endif
+
+/***********
+Used for compatibility for loading library between Windows and POSIX
+************/
+LibHandle LoadLib(char* filename);
+
+void* ExtractLibContent(LibHandle hLib, char* WhatToExtract);
+
+void CloseLib(LibHandle hLib);
+/*****************/
+
 void compat_msleep(unsigned int time);
 
 uint64_t compat_msectiming();

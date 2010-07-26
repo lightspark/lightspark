@@ -17,17 +17,20 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef WIN32
-#include <unistd.h>
-#include <time.h>
+#if defined WIN32
+  #include <windows.h>
+#else
+  #include <unistd.h>
+  #include <time.h>
+  #include <dlfcn.h>
 #endif
 
 #include "compat.h"
 
 #ifdef WIN32
-#define NORETURN __attribute__((noreturn))
+  #define NORETURN __attribute__((noreturn))
 #else
-#define NORETURN __declspec(noreturn)
+  #define NORETURN __declspec(noreturn)
 #endif
 
 void compat_msleep(unsigned int time)
@@ -55,4 +58,31 @@ uint64_t compat_msectiming()
 	clock_gettime(CLOCK_MONOTONIC,&t);
 	return (t.tv_sec*1000 + t.tv_nsec/1000000);
 #endif
+}
+
+LibHandle LoadLib(char* filename)
+{
+  #if defined WIN32
+    return LoadLibrary(filename);
+  #else
+    return dlopen(filename, RTLD_LAZY);
+  #endif
+}
+
+void* ExtractLibContent(LibHandle hLib, char* WhatToExtract)
+{
+  #if defined WIN32
+    return GetProcAdress(hLib, WhatToExtract);
+  #else
+    return dlsym(hLib, WhatToExtract);
+  #endif
+}
+
+void CloseLib(LibHandle hLib)
+{
+  #if defined WIN32
+    FreeLibrary(hLib);
+  #else
+    dlclose(hLib);
+  #endif
 }

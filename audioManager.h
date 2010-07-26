@@ -34,34 +34,54 @@ namespace lightspark
 
 class AudioManager
 {
-private:
-	class AudioStream
-	{
-	public:
-		enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
-//		pa_stream* stream;
-		AudioDecoder* decoder;
-		AudioManager* manager;
-		volatile STREAM_STATUS streamStatus;
-//		AudioStream(AudioManager* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
-		AudioStream(AudioManager* m):decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
-	};
-//	pa_threaded_mainloop* mainLoop;
-//	pa_context* context;
-//	static void contextStatusCB(pa_context* context, AudioManager* th);
-//	static void streamStatusCB(pa_stream* stream, AudioStream* th);
-//	static void streamWriteCB(pa_stream* stream, size_t nbytes, AudioStream* th);
-	std::vector<AudioStream*> streams;
-	volatile bool contextReady;
-	volatile bool noServer;
-	bool stopped;
-public:
-	AudioManager();
-	uint32_t createStream(AudioDecoder* decoder);
-	void freeStream(uint32_t id);
-	void fillAndSync(uint32_t id, uint32_t streamTime);
-	void stop();
-	~AudioManager();
+  private:
+    class PluginInfo
+    {
+      private:
+	char* plugin_name;
+	char* audiobackend_name;
+	PluginInfo* PreviousLibrary;
+	PluginInfo* NextLibrary;
+      public:
+	PluginInfo();
+	~PluginInfo();
+    };
+    PluginInfo* AudioPluginsList;
+    PluginInfo* FirstAudioPlugin;
+    PluginInfo* LastAudioPlugin;
+    PluginInfo* SelectedAudioPlugin;
+    
+    class AudioStream
+    {
+      public:
+	enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
+//	pa_stream* stream;
+	AudioDecoder* decoder;
+	AudioManager* manager;
+	volatile STREAM_STATUS streamStatus;
+//	AudioStream(AudioManager* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+	AudioStream(AudioManager* m):decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+    };
+//    pa_threaded_mainloop* mainLoop;
+//    pa_context* context;
+//    static void contextStatusCB(pa_context* context, AudioManager* th);
+//    static void streamStatusCB(pa_stream* stream, AudioStream* th);
+//    static void streamWriteCB(pa_stream* stream, size_t nbytes, AudioStream* th);
+    void LoadAudioPlugin();
+    void AddAudioPluginToList();
+    void ListAudioPlugins();
+    std::vector<AudioStream*> streams;
+    volatile bool contextReady;
+    volatile bool noServer;
+    bool stopped;
+  public:
+    AudioManager();
+    uint32_t createStream(AudioDecoder* decoder);
+    void freeStream(uint32_t id);
+    void fillAndSync(uint32_t id, uint32_t streamTime);
+    void stop();
+    void set_audiobackend();
+    ~AudioManager();
 };
 
 };

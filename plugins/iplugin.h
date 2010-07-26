@@ -26,11 +26,13 @@ class IPlugin
 {
   private:
     enum PLUGIN_TYPES { UNDEFINED=0, AUDIO=1 };
-    PLUGIN_TYPES plugin_type;
-    char* plugin_name;
+    PLUGIN_TYPES plugin_type; //type of plugin of PLUGIN_TYPES
+    char* plugin_name; //name of the plugin
+    char* host_application; //name of the application the plugin is created for
   public:
     virtual char* get_PluginType();
-    virtual const char* get_plugin_name();
+    virtual const char* get_PluginName();
+    virtual char* get_HostApplication();
     virtual ~IPlugin();
 
 };
@@ -44,5 +46,4 @@ extern "C" IPlugin* Create_Plugin ();
 Plugin cleanup function
 extern "C" void Release_Plugin (IPlugin* p_plugin);
 ***************************/
-
 #endif

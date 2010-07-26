@@ -1,0 +1,42 @@
+#**************************************************************************
+#    Lightspark, a free flash player implementation
+#
+#    Copyright (C) 2010  Giacomo Spigler <g.spigler@sssup.it>
+#    Copyright (C) 2010  Alessandro Pignotti <a.pignotti@sssup.it>
+#    Copyright (C) 2010  Alexandre Demers <papouta@hotmail.com>
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Lesser General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Lesser General Public License for more details.
+#
+#   You should have received a copy of the GNU Lesser General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#**************************************************************************
+
+# Compiler defaults flags for different profiles
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x")
+
+SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
+SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
+SET(CMAKE_CXX_FLAGS_DEBIAN "-O2 -DNDEBUG")
+
+INCLUDE_DIRECTORIES(.)
+INCLUDE_DIRECTORIES("..")
+SET(LIBPULSE_SOURCES pulseplugin.cpp)
+
+# liblightsparkpulseplugin.so target
+ADD_LIBRARY(pulseplugin SHARED ${LIBPULSE_SOURCES})
+SET_TARGET_PROPERTIES(pulseplugin PROPERTIES OUTPUT_NAME lightsparkpulseplugin)
+SET_TARGET_PROPERTIES(pulseplugin PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
+SET_TARGET_PROPERTIES(pulseplugin PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
+#TARGET_LINK_LIBRARIES(pulseplugin ${SOUND_LIBS_LIBRARIES} ${EXTRA_LIBS_LIBRARIES} ${LIBAVCODEC_LIBRARIES} ${ZLIB_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${SDL_LIBRARY} ${CURL_LIBRARIES} ${GTK_LIBRARIES} ${lib_glew})
+#SET_TARGET_PROPERTIES(pulseplugin PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS} -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/../../../../lightspark-pulseplugin.expmap")
+#SET_TARGET_PROPERTIES(pulseplugin PROPERTIES LINK_INTERFACE_LIBRARIES "")

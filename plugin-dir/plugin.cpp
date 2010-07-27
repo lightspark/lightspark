@@ -307,10 +307,10 @@ string nsPluginInstance::getPageURL() const
 	// Get the window object.
 	NPObject* sWindowObj;
 	NPN_GetValue(mInstance, NPNVWindowNPObject, &sWindowObj);
-	// Create a "location" identifier.
-	NPIdentifier identifier = NPN_GetStringIdentifier( "location" );
 	// Declare a local variant value.
 	NPVariant variantValue;
+	// Create a "location" identifier.
+	NPIdentifier identifier = NPN_GetStringIdentifier( "location" );
 	// Get the location property from the window object (which is another object).
 	bool b1 = NPN_GetProperty(mInstance, sWindowObj, identifier, &variantValue);
 	NPN_ReleaseObject(sWindowObj);
@@ -325,10 +325,10 @@ string nsPluginInstance::getPageURL() const
 	NPObject *locationObj = variantValue.value.objectValue;
 	// Create a "href" identifier.
 	identifier = NPN_GetStringIdentifier( "href" );
-	// Get the location property from the location object.
-	bool b2 = NPN_GetProperty(mInstance, locationObj, identifier, &variantValue);
+	// Get the href property from the location object.
+	b1 = NPN_GetProperty(mInstance, locationObj, identifier, &variantValue);
 	NPN_ReleaseObject(locationObj);
-	if(!b2)
+	if(!b1)
 		return "";
 	if(!NPVARIANT_IS_STRING(variantValue))
 	{
@@ -336,7 +336,6 @@ string nsPluginInstance::getPageURL() const
 		return "";
 	}
 	NPString url=NPVARIANT_TO_STRING(variantValue);
-	NPN_ReleaseVariantValue(&variantValue);
 	//TODO: really handle UTF8 url!!
 	for(unsigned int i=0;i<url.UTF8Length;i++)
 	{
@@ -346,7 +345,9 @@ string nsPluginInstance::getPageURL() const
 			return "";
 		}
 	}
-	return string(url.UTF8Characters, url.UTF8Length);
+	string ret(url.UTF8Characters, url.UTF8Length);
+	NPN_ReleaseVariantValue(&variantValue);
+	return ret;
 }
 
 

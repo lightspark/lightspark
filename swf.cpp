@@ -154,6 +154,7 @@ SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p)
 	curl_global_init(CURL_GLOBAL_ALL);
 	avcodec_register_all();
 
+	cookiesFileName[0]=0;
 	//Create the thread pool
 	sys=this;
 	sem_init(&terminated,0,0);
@@ -323,6 +324,9 @@ SystemState::~SystemState()
 		kill(childPid, SIGTERM);
 		waitpid(childPid, NULL, 0);
 	}
+	//Delete the temporary cookies file
+	if(cookiesFileName[0])
+		unlink(cookiesFileName);
 	assert(shutdown);
 	//The thread pool should be stopped before everything
 	delete threadPool;
@@ -495,6 +499,18 @@ void SystemState::createEngines()
 			sem_wait(&mutex);
 		}
 		LOG(LOG_NO_INFO,"Invoking gnash");
+		//Dump the cookies to a temporary file
+		strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
+		int file=mkstemp(cookiesFileName);
+		if(file!=-1)
+		{
+			write(file,"Set-Cookie: ", 12);
+			write(file,rawCookies.c_str(),rawCookies.size());
+			close(file);
+			setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
+		}
+		else
+			cookiesFileName[0]=0;
 		childPid=fork();
 		if(childPid==-1)
 		{
@@ -542,7 +558,8 @@ void SystemState::createEngines()
 			return;
 		}
 	}
-	else if(engine==GTKPLUG) //The engines must be created int the context of the main thread
+
+	if(engine==GTKPLUG) //The engines must be created int the context of the main thread
 	{
 		npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
 	}

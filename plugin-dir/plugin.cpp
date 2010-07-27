@@ -173,10 +173,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		{
 			m_sys->parseParametersFromFlashvars(argv[i]);
 		}
-		else if(strcasecmp(argn[i],"src")==0)
-		{
-			m_sys->setOrigin(argv[i]);
-		}
+		//The SWF file url should be getted from NewStream
 	}
 	m_sys->downloadManager=new NPDownloadManager(mInstance);
 	m_sys->addJob(m_pt);
@@ -304,6 +301,56 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	return TRUE;
 }
 
+string nsPluginInstance::getPageURL() const
+{
+	//Copied from https://developer.mozilla.org/en/Getting_the_page_URL_in_NPAPI_plugin 
+	// Get the window object.
+	NPObject* sWindowObj;
+	NPN_GetValue(mInstance, NPNVWindowNPObject, &sWindowObj);
+	// Declare a local variant value.
+	NPVariant variantValue;
+	// Create a "location" identifier.
+	NPIdentifier identifier = NPN_GetStringIdentifier( "location" );
+	// Get the location property from the window object (which is another object).
+	bool b1 = NPN_GetProperty(mInstance, sWindowObj, identifier, &variantValue);
+	NPN_ReleaseObject(sWindowObj);
+	if(!b1)
+		return "";
+	if(!NPVARIANT_IS_OBJECT(variantValue))
+	{
+		NPN_ReleaseVariantValue(&variantValue);
+		return "";
+	}
+	// Get a pointer to the "location" object.
+	NPObject *locationObj = variantValue.value.objectValue;
+	// Create a "href" identifier.
+	identifier = NPN_GetStringIdentifier( "href" );
+	// Get the href property from the location object.
+	b1 = NPN_GetProperty(mInstance, locationObj, identifier, &variantValue);
+	NPN_ReleaseObject(locationObj);
+	if(!b1)
+		return "";
+	if(!NPVARIANT_IS_STRING(variantValue))
+	{
+		NPN_ReleaseVariantValue(&variantValue);
+		return "";
+	}
+	NPString url=NPVARIANT_TO_STRING(variantValue);
+	//TODO: really handle UTF8 url!!
+	for(unsigned int i=0;i<url.UTF8Length;i++)
+	{
+		if(url.UTF8Characters[i]&0x80)
+		{
+			LOG(LOG_ERROR,"Cannot handle UTF8 URLs");
+			return "";
+		}
+	}
+	string ret(url.UTF8Characters, url.UTF8Length);
+	NPN_ReleaseVariantValue(&variantValue);
+	return ret;
+}
+
+
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
 	//We have to cast the downloadanager to a NPDownloadManager
@@ -319,7 +366,23 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	else
 	{
 		//This is the main file
+		m_sys->setOrigin(stream->url);
 		*stype=NP_ASFILE;
+		//Let's get the cookies now, they might be useful
+		uint32_t len = 0;
+		char *data = 0;
+		const string& url(getPageURL());
+		if(!url.empty())
+		{
+			//Skip the protocol slashes
+			int protocolEnd=url.find("//");
+			//Find the first slash after the protocol ones
+			int urlEnd=url.find("/",protocolEnd+2);
+			NPN_GetValueForURL(mInstance, NPNURLVCookie, url.substr(0,urlEnd+1).c_str(), &data, &len);
+			string packedCookies(data, len);
+			NPN_MemFree(data);
+			m_sys->setCookies(packedCookies.c_str());
+		}
 	}
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;

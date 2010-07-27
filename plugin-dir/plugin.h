@@ -36,7 +36,6 @@ class NPDownloadManager: public lightspark::DownloadManager
 {
 private:
 	NPP instance;
-	//sem_t mutex;
 public:
 	NPDownloadManager(NPP i);
 	~NPDownloadManager();
@@ -80,6 +79,7 @@ public:
 
 private:
 	static void AsyncHelper(void* th, helper_t func, void* privArg);
+	std::string getPageURL() const;
 
 	NPP mInstance;
 	NPBool mInitialized;

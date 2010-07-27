@@ -1,5 +1,8 @@
 lightspark: An open source flash player implementation
 
+Version 0.4.2.2:
+	* Fallback on Gnash for older clips
+
 Version 0.4.2.1:
 	* Small bugfix
 

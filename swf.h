@@ -229,7 +229,13 @@ private:
 	pid_t childPid;
 	bool useGnashFallback;
 	void setParameters(ASObject* p);
+	/*
+	   	Used to keep a copy of the FlashVars, it's useful when gnash fallback is used
+	*/
+	std::string rawParameters;
+	std::string rawCookies;
 	static int hexToInt(char c);
+	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -281,6 +287,7 @@ public:
 
 	void parseParametersFromFile(const char* f) DLL_PUBLIC;
 	void parseParametersFromFlashvars(const char* vars) DLL_PUBLIC;
+	void setCookies(const char* c) DLL_PUBLIC;
 	void addJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);

@@ -117,6 +117,11 @@ static NPError fillNetscapeFunctionTable(NPNetscapeFuncs* aNPNFuncs)
   NPNFuncs.invalidateregion = aNPNFuncs->invalidateregion;
   NPNFuncs.forceredraw      = aNPNFuncs->forceredraw;
   NPNFuncs.pluginthreadasynccall = aNPNFuncs->pluginthreadasynccall;
+  NPNFuncs.getvalueforurl   = aNPNFuncs->getvalueforurl;
+  NPNFuncs.getstringidentifier = aNPNFuncs->getstringidentifier;
+  NPNFuncs.releasevariantvalue = aNPNFuncs->releasevariantvalue;
+  NPNFuncs.getproperty      = aNPNFuncs->getproperty;
+  NPNFuncs.releaseobject    = aNPNFuncs->releaseobject;
 
   return NPERR_NO_ERROR;
 }

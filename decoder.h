@@ -70,6 +70,7 @@ public:
 	float frameRate;
 };
 
+#ifdef ENABLE_LIBAVCODEC
 class FFMpegVideoDecoder: public VideoDecoder
 {
 private:
@@ -115,6 +116,7 @@ public:
 	void skipUntil(uint32_t time);
 	bool copyFrameToTexture(TextureBuffer& tex);
 };
+#endif
 
 class AudioDecoder
 {
@@ -175,6 +177,7 @@ public:
 	uint32_t channelCount;
 };
 
+#ifdef ENABLE_LIBAVCODEC
 class FFMpegAudioDecoder: public AudioDecoder
 {
 private:
@@ -184,6 +187,7 @@ public:
 	FFMpegAudioDecoder(FLV_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
 	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 };
+#endif
 
 };
 #endif

@@ -413,6 +413,7 @@ void NetStream::execute()
 						else
 						{
 							audioCodec=tag.SoundFormat;
+#ifdef ENABLE_LIBAVCODEC
 							switch(tag.SoundFormat)
 							{
 								case AAC:
@@ -425,6 +426,9 @@ void NetStream::execute()
 							}
 							if(audioDecoder->isValid())
 								soundStreamId=sys->soundManager->createStream(audioDecoder);
+#else
+							throw new RunTimeException("ENABLE_LIBAVCODEC is not defined; stream playback disabled.");
+#endif
 						}
 #endif
 						break;
@@ -437,7 +441,7 @@ void NetStream::execute()
 						decodedTime=videoFrameCount*1000/frameRate;
 						videoFrameCount++;
 						assert_and_throw(tag.codecId==7);
-
+#ifdef ENABLE_LIBAVCODEC
 						if(tag.isHeader())
 						{
 							//The tag is the header, initialize decoding
@@ -453,6 +457,9 @@ void NetStream::execute()
 						}
 						else
 							videoDecoder->decodeData(tag.packetData,tag.packetLen, decodedTime);
+#else
+						throw new RunTimeException("ENABLE_LIBAVCODEC is not defined; stream playback disabled.");
+#endif
 						break;
 					}
 					case 18:

@@ -498,7 +498,7 @@ void SystemState::createEngines()
 				return;
 			sem_wait(&mutex);
 		}
-		LOG(LOG_NO_INFO,"Invoking gnash");
+		LOG(LOG_NO_INFO,"Invoking gnash!");
 		//Dump the cookies to a temporary file
 		strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
 		int file=mkstemp(cookiesFileName);

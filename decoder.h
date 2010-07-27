@@ -30,6 +30,8 @@ extern "C"
 {
 #include <libavcodec/avcodec.h>
 }
+#else
+#define AVCODEC_MAX_AUDIO_FRAME_SIZE 2
 #endif
 
 namespace lightspark

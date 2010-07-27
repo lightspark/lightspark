@@ -36,7 +36,9 @@
 #include "netutils.h"
 
 #include <GL/glew.h>
+#ifdef ENABLE_CURL
 #include <curl/curl.h>
+#endif
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
@@ -151,7 +153,9 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
+#ifdef ENABLE_CURL
 	curl_global_init(CURL_GLOBAL_ALL);
+#endif
 	avcodec_register_all();
 
 	//Create the thread pool

@@ -39,9 +39,11 @@
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
 #endif
+#ifdef ENABLE_LIBAVCODEC
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
+#endif
 #ifndef WIN32
 #include <GL/glx.h>
 #include <fontconfig/fontconfig.h>
@@ -156,7 +158,9 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 #ifdef ENABLE_CURL
 	curl_global_init(CURL_GLOBAL_ALL);
 #endif
+#ifdef ENABLE_LIBAVCODEC
 	avcodec_register_all();
+#endif
 
 	//Create the thread pool
 	sys=this;

@@ -25,10 +25,12 @@
 #include "threading.h"
 #include "graphics.h"
 #include "flv.h"
+#ifdef ENABLE_LIBAVCODEC
 extern "C"
 {
 #include <libavcodec/avcodec.h>
 }
+#endif
 
 namespace lightspark
 {

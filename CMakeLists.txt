@@ -200,7 +200,6 @@ ENDIF(UNIX)
 # lightspark executable target
 IF(COMPILE_LIGHTSPARK)
 	ADD_EXECUTABLE(lightspark main.cpp)
-#	TARGET_LINK_LIBRARIES(lightspark spark audiobackend)
 	TARGET_LINK_LIBRARIES(lightspark spark)
 	TARGET_LINK_LIBRARIES(lightspark ${SDL_LIBRARY})
 

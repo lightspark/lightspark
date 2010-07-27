@@ -25,9 +25,9 @@
 #include "decoder.h"
 #include "plugins/audio/audioPlugin.h"
 
-//convenience typedef for the pointers to the 2 functions we expect to find in the plugins
-typedef IPlugin* (*PLUGIN_FACTORY)();
-typedef void (*PLUGIN_CLEANUP)(IPlugin*);
+//convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
+typedef IPlugin *(*PLUGIN_FACTORY)();
+typedef void (*PLUGIN_CLEANUP)(IPlugin *);
 
 namespace lightspark
 {
@@ -38,45 +38,48 @@ class AudioManager
     class PluginInfo
     {
       private:
-	char* plugin_name;
-	char* audiobackend_name;
-	PluginInfo* PreviousLibrary;
-	PluginInfo* NextLibrary;
+	char *plugin_name;
+	char *audiobackend_name;
+	PluginInfo *PreviousLibrary;
+	PluginInfo *NextLibrary;
       public:
 	PluginInfo();
 	~PluginInfo();
     };
-    PluginInfo* AudioPluginsList;
-    PluginInfo* FirstAudioPlugin;
-    PluginInfo* LastAudioPlugin;
-    PluginInfo* SelectedAudioPlugin;
+    PluginInfo *AudioPluginsList;
+    PluginInfo *FirstAudioPlugin;
+    PluginInfo *LastAudioPlugin;
+    PluginInfo *SelectedAudioPlugin;
     
-    class AudioStream
+/*    class AudioStream
     {
       public:
 	enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
-//	pa_stream* stream;
-	AudioDecoder* decoder;
-	AudioManager* manager;
+	pa_stream *stream;
+	AudioDecoder *decoder;
+	AudioManager *manager;
 	volatile STREAM_STATUS streamStatus;
-//	AudioStream(AudioManager* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
-	AudioStream(AudioManager* m):decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+	AudioStream(AudioManager *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
     };
-//    pa_threaded_mainloop* mainLoop;
-//    pa_context* context;
-//    static void contextStatusCB(pa_context* context, AudioManager* th);
-//    static void streamStatusCB(pa_stream* stream, AudioStream* th);
-//    static void streamWriteCB(pa_stream* stream, size_t nbytes, AudioStream* th);
-    void LoadAudioPlugin();
-    void AddAudioPluginToList();
-    void ListAudioPlugins();
+    pa_threaded_mainloop *mainLoop;
+    pa_context *context;
     std::vector<AudioStream*> streams;
+    static void contextStatusCB(pa_context *context, AudioManager *th);
+    static void streamStatusCB(pa_stream *stream, AudioStream *th);
+    static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
+*/
+    LibHandle hSelectedAudioPluginLib;
+    AudioPlugin o_AudioPlugin;
     volatile bool contextReady;
     volatile bool noServer;
     bool stopped;
+    void AddAudioPluginToList();
+    void FindAudioPlugins();
+    void LoadAudioPlugin();
+
   public:
     AudioManager();
-    uint32_t createStream(AudioDecoder* decoder);
+    uint32_t createStream(AudioDecoder *decoder);
     void freeStream(uint32_t id);
     void fillAndSync(uint32_t id, uint32_t streamTime);
     void stop();

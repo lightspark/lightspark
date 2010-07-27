@@ -32,17 +32,12 @@
 using namespace lightspark;
 using namespace std;
 
-/*void AudioManager::streamStatusCB(pa_stream* stream, AudioStream* th)
+//void AudioManager::streamStatusCB(pa_stream *stream, AudioStream *th)
+void AudioManager::streamStatusCB(AudioStream *th)
 {
-	if(pa_stream_get_state(stream)==PA_STREAM_READY)
-		th->streamStatus=AudioStream::STREAM_READY;
-	else if(pa_stream_get_state(stream)==PA_STREAM_TERMINATED)
-	{
-		assert(stream==th->stream);
-		th->streamStatus=AudioStream::STREAM_DEAD;
-	}
+  o_AudioPlugin.streamStatusCB(AudioStream *th);
 }
-*/
+
 void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 {
 	assert(streams[id-1]);
@@ -52,9 +47,9 @@ void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 			return;
 		if(!streams[id-1]->decoder->hasDecodedFrames()) //No decoded data available yet, delay upload
 			return;
-		pa_stream* stream=streams[id-1]->stream;
+		pa_stream *stream=streams[id-1]->stream;
 		pa_threaded_mainloop_lock(mainLoop);
-		int16_t* dest;
+		int16_t *dest;
 		//Get buffer size
 		size_t frameSize=pa_stream_writable_size(stream);
 		if(frameSize==0) //The server can't accept any data now
@@ -63,7 +58,7 @@ void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 			return;
 		}
 		//Request updated timing info
-		pa_operation* timeUpdate=pa_stream_update_timing_info(stream, NULL, NULL);
+		pa_operation *timeUpdate=pa_stream_update_timing_info(stream, NULL, NULL);
 		pa_threaded_mainloop_unlock(mainLoop);
 		while(pa_operation_get_state(timeUpdate)!=PA_OPERATION_DONE);
 		pa_threaded_mainloop_lock(mainLoop);
@@ -97,7 +92,7 @@ void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 			uint32_t bytesNeededToFillTheGap=0;
 			bytesNeededToFillTheGap=150*streams[id-1]->decoder->getBytesPerMSec()/1000;
 			bytesNeededToFillTheGap&=0xfffffffe;
-			int16_t* tmp=new int16_t[bytesNeededToFillTheGap/2];
+			int16_t *tmp=new int16_t[bytesNeededToFillTheGap/2];
 			memset(tmp,0,bytesNeededToFillTheGap);
 			pa_stream_write(stream, tmp, bytesNeededToFillTheGap, NULL, 0, PA_SEEK_RELATIVE);
 			delete[] tmp;
@@ -133,10 +128,10 @@ void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 //	}
 }
 
-/*void AudioManager::streamWriteCB(pa_stream* stream, size_t frameSize, AudioStream* th)
+/*void AudioManager::streamWriteCB(pa_stream *stream, size_t frameSize, AudioStream *th)
 {
 	//Get buffer size
-	int16_t* dest;
+	int16_t *dest;
 	pa_stream_begin_write(stream, (void**)&dest, &frameSize);
 	uint32_t retSize=th->decoder->copyFrame(dest, frameSize);
 	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
@@ -148,7 +143,7 @@ void AudioManager::freeStream(uint32_t id)
 	assert(s);
 	if(noServer==false)
 	{
-		pa_stream* toDelete=s->stream;
+		pa_stream *toDelete=s->stream;
 		pa_stream_disconnect(toDelete);
 	}
 	//Do not delete the stream now, let's wait termination
@@ -159,7 +154,7 @@ void AudioManager::freeStream(uint32_t id)
 	if(s->stream)
 		pa_stream_unref(s->stream);
 	pa_threaded_mainloop_unlock(mainLoop);
-*/	AudioStream* s=streams[id-1];
+*/	AudioStream *s=streams[id-1];
 	delete s;
 }
 
@@ -178,7 +173,7 @@ void started_notify()
 	cout << "____started!!!!" << endl;
 }
 
-uint32_t AudioManager::createStream(AudioDecoder* decoder)
+uint32_t AudioManager::createStream(AudioDecoder *decoder)
 {
 /*	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
@@ -222,7 +217,7 @@ uint32_t AudioManager::createStream(AudioDecoder* decoder)
 */	return index+1;
 }
 
-/*void AudioManager::contextStatusCB(pa_context* context, AudioManager* th)
+/*void AudioManager::contextStatusCB(pa_context *context, AudioManager *th)
 {
 	switch(pa_context_get_state(context))
 	{
@@ -311,14 +306,14 @@ void AudioManager::stop()
 Find liblightspartAUDIOplugin libraries
 Load
 ****************************/
-void AudioManager::ListAudioPlugins()
+void AudioManager::FindAudioPlugins()
 {
 /*//       //get the program's directory
 //       char dir [MAX_PATH];
 //       GetModuleFileName (NULL, dir, MAX_PATH);
  
        //eliminate the file name (to get just the directory)
-       char* p = strrchr(dir, '\\');
+       char *p = strrchr(dir, '\\');
        *(p + 1) = 0;
  
        //find all libraries in the plugins subdirectory
@@ -348,7 +343,7 @@ void AudioManager::ListAudioPlugins()
                            //The library has the functions and should be what we are looking for
  
                            //invoke the factory to create the plugin object
-                           IPlugin* p_plugin = (*p_factory_function)();
+                           IPlugin *p_plugin = (*p_factory_function)();
  
                            //Get some more info about the plugin to be sure what it is
 			   if((p_plugin->get_HostApplication() == "Lightspark") && p_plugin->get_PluginType())

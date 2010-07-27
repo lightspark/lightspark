@@ -23,7 +23,7 @@
 #define AUDIOPLUGIN_H
 
 #include "../../compat.h"
-//#include "../../decoder.h"
+#include "../../decoder.h"
 #include "../iplugin.h"
 
 namespace lightspark
@@ -34,31 +34,33 @@ Abstract class for audio plugin implementation
 ***********************/
 class AudioPlugin : IPlugin
 {
-private:
-	class AudioStream
+  private:
+	enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
+	volatile STREAM_STATUS streamStatus;
+	AudioDecoder *decoder;
+/*	virtual class AudioStream
 	{
 	public:
-		enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
-//		pa_stream* stream;
-//		AudioDecoder* decoder;
-//		AudioPlugin* manager;
-		volatile STREAM_STATUS streamStatus;
-//		AudioStream(AudioPlugin* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
-//		AudioStream(AudioPlugin* m):decoder(NULL),streamStatus(STREAM_STARTING){}
+//		enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
+		pa_stream *stream;
+//		AudioDecoder *decoder;
+		AudioPlugin *manager;
+//		volatile STREAM_STATUS streamStatus;
+		virtual AudioStream(AudioPlugin *m){}
 	};
-//	pa_threaded_mainloop* mainLoop;
-//	pa_context* context;
-//	static void contextStatusCB(pa_context* context, AudioPlugin* th);
-//	static void streamStatusCB(pa_stream* stream, AudioStream* th);
-//	static void streamWriteCB(pa_stream* stream, size_t nbytes, AudioStream* th);
-	char* audiobackend_name;
+*///	pa_threaded_mainloop *mainLoop;
+//	pa_context *context;
 //	std::vector<AudioStream*> streams;
-//	volatile bool contextReady;
-//	volatile bool noServer;
-//	bool stopped;
-public:
-	virtual const char* Get_AudioBackend_name();
-//	virtual uint32_t createStream(AudioDecoder* decoder);
+	char *audiobackend_name;
+//	virtual static void contextStatusCB(pa_context *context, AudioPlugin *th);
+//	virtual static void streamStatusCB(pa_stream *stream, AudioStream *th);
+//	virtual static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
+	virtual void contextStatusCB(AudioPlugin *th);
+	virtual void streamStatusCB();
+	virtual void streamWriteCB(size_t nbytes);
+  public:
+	virtual const char *Get_AudioBackend_name();
+	virtual uint32_t createStream(AudioDecoder *decoder);
 	virtual void freeStream(uint32_t id);
 	virtual void fillAndSync(uint32_t id, uint32_t streamTime);
 	virtual void stop();

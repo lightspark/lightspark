@@ -638,8 +638,8 @@ void ABCVm::construct(call_context* th, int m)
 		{
 			Class_base* o_class=static_cast<Class_base*>(obj);
 			ret=o_class->getInstance(true,args,m);
+			break;
 		}
-		break;
 
 		case T_UNDEFINED:
 		case T_NULL:
@@ -647,8 +647,8 @@ void ABCVm::construct(call_context* th, int m)
 			//Inc ref count to make up for decremnt later
 			obj->incRef();
 			ret=obj;
+			break;
 		}
-		break;
 
 		case T_FUNCTION:
 		{
@@ -681,15 +681,15 @@ void ABCVm::construct(call_context* th, int m)
 				sf->incRef();
 				ret->prototype=new Class_function(sf,asp);
 			}
+			break;
 		}
-		break;
 
 		default:
 		{
 			LOG(LOG_ERROR,"Object type " << obj->getObjectType() << " not supported in construct");
 			throw UnsupportedException("This object is not supported in construct");
+			break;
 		}
-		break;
 	}
 
 	obj->decRef();

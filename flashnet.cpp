@@ -418,8 +418,12 @@ void NetStream::execute()
 							{
 								case AAC:
 									assert_and_throw(tag.isHeader())
+#ifdef ENABLE_LIBAVCODEC
 									audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,
 											tag.packetData, tag.packetLen);
+#else
+									audioDecoder=new NullAudioDecoder();
+#endif
 									break;
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
@@ -443,7 +447,11 @@ void NetStream::execute()
 						{
 							//The tag is the header, initialize decoding
 							assert_and_throw(videoDecoder==NULL); //The decoder can be set only once
+#ifdef ENABLE_LIBAVCODEC
 							videoDecoder=new FFMpegVideoDecoder(tag.packetData,tag.packetLen);
+#else
+							videoDecoder=new NullVideoDecoder();
+#endif
 							tag.releaseBuffer();
 							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
 							getVm()->addEvent(this, status);

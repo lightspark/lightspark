@@ -20,9 +20,11 @@
 #include "swf.h"
 #include "netutils.h"
 #include "compat.h"
-#include <curl/curl.h>
 #include <string>
 #include <iostream>
+#ifdef ENABLE_CURL
+#include <curl/curl.h>
+#endif
 
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
@@ -191,6 +193,7 @@ void CurlDownloader::execute()
 		setFailed();
 		return;
 	}
+#ifdef ENABLE_CURL
 	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
@@ -214,7 +217,11 @@ void CurlDownloader::execute()
 	}
 	else
 		setFailed();
-
+#else
+	//ENABLE_CURL not defined
+	setFailed();
+	LOG(LOG_ERROR,"CURL not enabled in this build. Downloader will always fail.");
+#endif
 	sem_post(&(Downloader::terminated));
 }
 

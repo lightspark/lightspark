@@ -413,22 +413,22 @@ void NetStream::execute()
 						else
 						{
 							audioCodec=tag.SoundFormat;
-#ifdef ENABLE_LIBAVCODEC
 							switch(tag.SoundFormat)
 							{
 								case AAC:
 									assert_and_throw(tag.isHeader())
+#ifdef ENABLE_LIBAVCODEC
 									audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,
 											tag.packetData, tag.packetLen);
+#else
+									audioDecoder=new NullAudioDecoder();
+#endif
 									break;
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
 							}
 							if(audioDecoder->isValid())
 								soundStreamId=sys->soundManager->createStream(audioDecoder);
-#else
-							throw new RunTimeException("ENABLE_LIBAVCODEC is not defined; stream playback disabled.");
-#endif
 						}
 #endif
 						break;
@@ -441,12 +441,16 @@ void NetStream::execute()
 						decodedTime=videoFrameCount*1000/frameRate;
 						videoFrameCount++;
 						assert_and_throw(tag.codecId==7);
-#ifdef ENABLE_LIBAVCODEC
+
 						if(tag.isHeader())
 						{
 							//The tag is the header, initialize decoding
 							assert_and_throw(videoDecoder==NULL); //The decoder can be set only once
+#ifdef ENABLE_LIBAVCODEC
 							videoDecoder=new FFMpegVideoDecoder(tag.packetData,tag.packetLen);
+#else
+							videoDecoder=new NullVideoDecoder();
+#endif
 							tag.releaseBuffer();
 							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
 							getVm()->addEvent(this, status);
@@ -457,9 +461,6 @@ void NetStream::execute()
 						}
 						else
 							videoDecoder->decodeData(tag.packetData,tag.packetLen, decodedTime);
-#else
-						throw new RunTimeException("ENABLE_LIBAVCODEC is not defined; stream playback disabled.");
-#endif
 						break;
 					}
 					case 18:

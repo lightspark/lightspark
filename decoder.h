@@ -72,6 +72,15 @@ public:
 	float frameRate;
 };
 
+class NullVideoDecoder: public VideoDecoder
+{
+public:
+	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
+	bool discardFrame(){return false;}
+	void skipUntil(uint32_t time){}
+	bool copyFrameToTexture(TextureBuffer& tex){return false;}
+};
+
 #ifdef ENABLE_LIBAVCODEC
 class FFMpegVideoDecoder: public VideoDecoder
 {
@@ -177,6 +186,12 @@ public:
 	}
 	uint32_t sampleRate;
 	uint32_t channelCount;
+};
+
+class NullAudioDecoder: public AudioDecoder
+{
+public:
+	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return 0;}
 };
 
 #ifdef ENABLE_LIBAVCODEC

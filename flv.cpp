@@ -19,7 +19,7 @@
 
 #include "flv.h"
 #include "swftypes.h"
-
+#include "pthread.h"
 // FIXME !!
 #define be64toh(x) (x)
 
@@ -127,7 +127,7 @@ ScriptDataString::ScriptDataString(std::istream& s)
 	s.read(buf,Length);
 	buf[Length]=0;
 
-	val=buf;
+	val=tiny_string(buf,true);
 
 	delete[] buf;
 }
@@ -217,8 +217,14 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 	//Compute lenght of raw data
 	packetLen=dataSize-5;
-	packetData=new uint8_t[packetLen];
+#ifndef WIN32
+	int ret=posix_memalign((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
+	assert(ret==0);
+#else
+  packetData=new uint8_t[packetLen];
+#endif
 	s.read((char*)packetData,packetLen);
+	memset(packetData+packetLen,0,16);
 
 	//Compute totalLen
 	unsigned int end=s.tellg();
@@ -227,21 +233,57 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 VideoDataTag::~VideoDataTag()
 {
-	delete[] packetData;
+	free(packetData);
 }
 
-AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s)
+AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 {
 	unsigned int start=s.tellg();
-	UI8 flags;
-	s >> flags;
+	BitStream bs(s);
+	SoundFormat=(FLV_AUDIO_CODEC)(int)UB(4,bs);
+	switch(UB(2,bs))
+	{
+		case 0:
+			SoundRate=5500;
+			break;
+		case 1:
+			SoundRate=11000;
+			break;
+		case 2:
+			SoundRate=22000;
+			break;
+		case 3:
+			SoundRate=44000;
+			break;
+	}
+	is16bit=UB(1,bs);
+	isStereo=UB(1,bs);
 
-	int len=dataSize-1;
-	char* buf=new char[len];
-	s.read(buf,len);
-	delete[] buf;
+	uint32_t headerConsumed=1;
+	//Special handling for AAC data
+	if(SoundFormat==AAC)
+	{
+		UI8 t;
+		s >> t;
+		_isHeader=(t==0);
+		headerConsumed++;
+	}
+	packetLen=dataSize-headerConsumed;
+#ifndef WIN32
+	int ret=posix_memalign((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
+	assert(ret==0);
+#else
+  packetData=new uint8_t[packetLen];
+#endif
+	s.read((char*)packetData,packetLen);
+	memset(packetData+packetLen,0,16);
 
 	//Compute totalLen
 	unsigned int end=s.tellg();
 	totalLen=(end-start)+11;
+}
+
+AudioDataTag::~AudioDataTag()
+{
+	free(packetData);
 }

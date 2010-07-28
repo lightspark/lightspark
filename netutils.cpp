@@ -17,9 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "swf.h"
 #include "netutils.h"
 #include "compat.h"
-#include "swf.h"
 #include <curl/curl.h>
 #include <string>
 #include <iostream>
@@ -176,7 +176,7 @@ CurlDownloader::CurlDownloader(const tiny_string& u)
 		else
 			tmp2.push_back(u[i]);
 	}
-	url=tmp2.c_str();
+	url=tmp2;
 }
 
 void CurlDownloader::threadAbort()
@@ -205,6 +205,8 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_callback);
 		curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, this);
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+		//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		res = curl_easy_perform(curl);
 		if(res!=0)
 			setFailed();
@@ -239,6 +241,8 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 
 	if(strncmp(headerLine,"HTTP/1.1 4",10)==0) //HTTP error, let's fail
 		th->setFailed();
+//	else if(strncmp(headerLine,"HTTP/1.1 3",10)==0) //HTTP redirect
+//		__asm__("int $3");
 	else if(strncmp(headerLine,"Content-Length: ",16)==0)
 	{
 		//Now read the length and allocate the byteArray

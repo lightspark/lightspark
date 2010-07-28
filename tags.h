@@ -629,6 +629,12 @@ private:
 public:
 	DefineBitsLossless2Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
+	virtual ASObject* instance() const;
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	{
+		return false;
+	}
+	virtual void Render();
 };
 
 class DefineScalingGridTag: public Tag
@@ -688,6 +694,8 @@ public:
 
 class MetadataTag: public Tag
 {
+private:
+	STRING XmlString;
 public:
 	MetadataTag(RECORDHEADER h, std::istream& in);
 };
@@ -700,15 +708,25 @@ public:
 
 class ScriptLimitsTag: public Tag
 {
+private:
+	UI16 MaxRecursionDepth;
+	UI16 ScriptTimeoutSeconds;
 public:
 	ScriptLimitsTag(RECORDHEADER h, std::istream& in);
 };
 
-//Documented by gnash
-class SerialNumberTag: public Tag
+class ProductInfoTag: public Tag
 {
+private:
+	UI32 ProductId;
+	UI32 Edition;
+	UI8 MajorVersion;
+	UI8 MinorVersion;
+	UI32 MinorBuild;
+	UI32 MajorBuild;
+	UI32 CompileTimeHi, CompileTimeLo;
 public:
-	SerialNumberTag(RECORDHEADER h, std::istream& in);
+	ProductInfoTag(RECORDHEADER h, std::istream& in);
 };
 
 class FileAttributesTag: public Tag
@@ -723,12 +741,39 @@ public:
 	FileAttributesTag(RECORDHEADER h, std::istream& in);
 };
 
+class EnableDebuggerTag: public Tag
+{
+private:
+	STRING DebugPassword;
+public:
+	EnableDebuggerTag(RECORDHEADER h, std::istream& in);
+};
+
+class EnableDebugger2Tag: public Tag
+{
+private:
+	UI16 ReservedWord;
+	STRING DebugPassword;
+public:
+	EnableDebugger2Tag(RECORDHEADER h, std::istream& in);
+};
+
+class DebugIDTag: public Tag
+{
+private:
+	UI8 DebugId[16];
+public:
+	DebugIDTag(RECORDHEADER h, std::istream& in);
+};
+
 class TagFactory
 {
 private:
 	std::istream& f;
+	bool firstTag;
+	bool topLevel;
 public:
-	TagFactory(std::istream& in):f(in){}
+	TagFactory(std::istream& in, bool t):f(in),firstTag(true),topLevel(t){}
 	Tag* readTag();
 };
 

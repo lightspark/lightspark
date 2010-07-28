@@ -20,33 +20,27 @@
 #ifndef __PLUGIN_H__
 #define __PLUGIN_H__
 
-/* Xlib/Xt stuff */
-#include <X11/Xlib.h>
-#include <X11/cursorfont.h>
-
+#include "swf.h"
 #include <iostream>
 #include <sstream>
 
 #include "pluginbase.h"
-#include "swf.h"
 #include "streams.h"
 #include "netutils.h"
 #include <GL/glx.h>
 
 class NPDownloader;
+typedef void(*helper_t)(void*);
 
 class NPDownloadManager: public lightspark::DownloadManager
 {
 private:
-	std::list<std::pair<lightspark::tiny_string,NPDownloader*> > pendingLoads;
 	NPP instance;
-	sem_t mutex;
 public:
 	NPDownloadManager(NPP i);
 	~NPDownloadManager();
 	lightspark::Downloader* download(const lightspark::tiny_string& u);
 	void destroy(lightspark::Downloader* d);
-	NPDownloader* getDownloaderForUrl(const char* u);
 };
 
 class NPDownloader: public lightspark::Downloader
@@ -77,17 +71,20 @@ public:
 	int32_t Write(NPStream *stream, int32_t offset, int32_t len, void *buffer);
 	int32_t WriteReady(NPStream *stream);
 	void    URLNotify(const char* url, NPReason reason, void* notifyData);
+	void    StreamAsFile(NPStream* stream, const char* fname);
 
 	// locals
 	const char * getVersion();
 	void draw();
 
 private:
-	int hexToInt(char c);
+	static void AsyncHelper(void* th, helper_t func, void* privArg);
+	std::string getPageURL() const;
 
 	NPP mInstance;
 	NPBool mInitialized;
 
+	GtkWidget* mContainer;
 	Window mWindow;
 	Display *mDisplay;
 	int mX, mY;
@@ -101,8 +98,6 @@ private:
 
 	lightspark::SystemState* m_sys;
 	lightspark::ParseThread* m_pt;
-	lightspark::InputThread* m_it;
-	lightspark::RenderThread* m_rt;
 };
 
 #endif // __PLUGIN_H__

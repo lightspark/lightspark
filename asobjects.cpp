@@ -26,6 +26,7 @@
 #include <iomanip>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <limits>
 
 #include "abc.h"
 #include "asobjects.h"
@@ -52,6 +53,7 @@ REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
 REGISTER_CLASS_NAME(Math);
 REGISTER_CLASS_NAME(ASString);
+REGISTER_CLASS_NAME(ASError);
 
 Array::Array()
 {
@@ -128,8 +130,6 @@ ASFUNCTIONBODY(Array,splice)
 {
 	Array* th=static_cast<Array*>(obj);
 	
-	assert_and_throw(argslen==2);
-	
 	int startIndex=args[0]->toInt();
 	int deleteCount=args[1]->toUInt();
 	int totalSize=th->data.size();
@@ -146,6 +146,14 @@ ASFUNCTIONBODY(Array,splice)
 		ret->data.push_back(th->data[startIndex+i]);
 	
 	th->data.erase(th->data.begin()+startIndex,th->data.begin()+startIndex+deleteCount);
+
+	//Insert requested values starting at startIndex
+	for(unsigned int i=2,n=0;i<argslen;i++,n++)
+	{
+		args[i]->incRef();
+		th->data.insert(th->data.begin()+startIndex+n,data_slot(args[i]));
+	}
+
 	return ret;
 }
 
@@ -240,20 +248,17 @@ ASFUNCTIONBODY(Array,_sort)
 	if(th->data.size()>1)
 		throw UnsupportedException("Array::sort not completely implemented");
 	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");
+	obj->incRef();
 	return obj;
 }
 
 ASFUNCTIONBODY(Array,sortOn)
 {
-	Array* th=static_cast<Array*>(obj);
-#ifndef WIN32
-	__asm__("int $3");
-#else
-  __asm int 3;
-#endif
+//	Array* th=static_cast<Array*>(obj);
 /*	if(th->data.size()>1)
 		throw UnsupportedException("Array::sort not completely implemented");
 	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");*/
+	obj->incRef();
 	return obj;
 }
 
@@ -737,7 +742,7 @@ tiny_string Array::toString_priv() const
 		if(i!=data.size()-1)
 			ret+=',';
 	}
-	return ret.c_str();
+	return ret;
 }
 
 bool Array::nextValue(unsigned int index, ASObject*& out)
@@ -769,7 +774,7 @@ tiny_string Boolean::toString(bool debugMsg)
 
 tiny_string ASString::toString_priv() const
 {
-	return data.c_str();
+	return data;
 }
 
 tiny_string ASString::toString(bool debugMsg)
@@ -791,17 +796,6 @@ int32_t ASString::toInt()
 	if(data.empty() || !isdigit(data[0]))
 		return 0;
 	return atoi(data.c_str());
-}
-
-ASFUNCTIONBODY(Undefined,call)
-{
-	LOG(LOG_CALLS,"Undefined function");
-	return NULL;
-}
-
-tiny_string Undefined::toString(bool debugMsg)
-{
-	return "null";
 }
 
 bool ASString::isEqual(ASObject* r)
@@ -845,6 +839,22 @@ bool Boolean::isEqual(ASObject* r)
 	}
 }
 
+Undefined::Undefined()
+{
+	type=T_UNDEFINED;
+}
+
+ASFUNCTIONBODY(Undefined,call)
+{
+	LOG(LOG_CALLS,"Undefined function");
+	return NULL;
+}
+
+tiny_string Undefined::toString(bool debugMsg)
+{
+	return "undefined";
+}
+
 bool Undefined::isEqual(ASObject* r)
 {
 	if(r->getObjectType()==T_UNDEFINED)
@@ -855,9 +865,14 @@ bool Undefined::isEqual(ASObject* r)
 		return false;
 }
 
-Undefined::Undefined()
+int Undefined::toInt()
 {
-	type=T_UNDEFINED;
+	return 0;
+}
+
+double Undefined::toNumber()
+{
+	return numeric_limits<double>::quiet_NaN();
 }
 
 ASFUNCTIONBODY(Integer,_toString)
@@ -901,6 +916,11 @@ bool Integer::isLess(ASObject* o)
 		else
 			return false;
 	}
+	else if(o->getObjectType()==T_BOOLEAN)
+	{
+		Boolean* i=static_cast<Boolean*>(o);
+		return val < i->toInt();
+	}
 	else
 		return ASObject::isLess(o);
 }
@@ -942,7 +962,7 @@ tiny_string Integer::toString(bool debugMsg)
 		v/=10;
 	}
 	while(v!=0);
-	return cur;
+	return tiny_string(cur,true); //Create a copy
 }
 
 tiny_string UInteger::toString(bool debugMsg)
@@ -959,7 +979,7 @@ tiny_string UInteger::toString(bool debugMsg)
 		v/=10;
 	}
 	while(v!=0);
-	return cur;
+	return tiny_string(cur,true); //Create a copy
 }
 
 bool UInteger::isLess(ASObject* o)
@@ -1011,7 +1031,7 @@ tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];
 	snprintf(buf,20,"%g",val);
-	return buf;
+	return tiny_string(buf,true);
 }
 
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
@@ -1153,7 +1173,7 @@ SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL
 //	class_index=-2;
 }
 
-ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numArgs, int level)
+ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs, int level)
 {
 	const int hit_threshold=10;
 	if(mi->body==NULL)
@@ -1171,9 +1191,9 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	}
 
 	//Prepare arguments
-	int args_len=mi->numArgs();
+	uint32_t args_len=mi->numArgs();
 	int passedToLocals=imin(numArgs,args_len);
-	int passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
+	uint32_t passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
 	int realLevel=(bound)?closure_level:level;
 	if(realLevel==-1) //If realLevel is not set, keep the object level
 		realLevel=obj->getLevel();
@@ -1212,7 +1232,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	{
 		Array* rest=Class<Array>::getInstanceS();
 		rest->resize(passedToRest);
-		for(int j=0;j<passedToRest;j++)
+		for(uint32_t j=0;j<passedToRest;j++)
 			rest->set(j,args[passedToLocals+j]);
 
 		cc->locals[i+1]=rest;
@@ -1268,7 +1288,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, int numA
 	return ret;
 }
 
-ASObject* Function::call(ASObject* obj, ASObject* const* args,int num_args, int level)
+ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level)
 {
 	ASObject* ret;
 	if(bound && closure_this)
@@ -1280,7 +1300,7 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args,int num_args, int 
 	}
 	ret=val(obj,args,num_args);
 
-	for(int i=0;i<num_args;i++)
+	for(uint32_t i=0;i<num_args;i++)
 		args[i]->decRef();
 	obj->decRef();
 	return ret;
@@ -1397,7 +1417,7 @@ bool Null::isEqual(ASObject* r)
 		return false;
 }
 
-RegExp::RegExp():global(false),ignoreCase(false),lastIndex(0)
+RegExp::RegExp():global(false),ignoreCase(false),extended(false),lastIndex(0)
 {
 }
 
@@ -1430,9 +1450,11 @@ ASFUNCTIONBODY(RegExp,_constructor)
 				case 'i':
 					th->ignoreCase=true;
 					break;
+				case 'x':
+					th->extended=true;
+					break;
 				case 's':
 				case 'm':
-				case 'x':
 					throw UnsupportedException("RegExp not completely implemented");
 
 			}
@@ -1452,6 +1474,7 @@ ASFUNCTIONBODY(RegExp,exec)
 	RegExp* th=static_cast<RegExp*>(obj);
 	pcrecpp::RE_Options opt;
 	opt.set_caseless(th->ignoreCase);
+	opt.set_extended(th->extended);
 
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert_and_throw(th->lastIndex==0);
@@ -1468,14 +1491,25 @@ ASFUNCTIONBODY(RegExp,exec)
 		captures[i]=new pcrecpp::Arg(&s[i]);
 
 	int consumed;
-	bool ret=pcreRE.DoMatch(arg0.raw_buf(),pcrecpp::RE::ANCHOR_START,&consumed,captures,numberOfCaptures);
-	if(ret!=false)
-		throw UnsupportedException("RegExp matched");
+	bool matched=pcreRE.DoMatch(arg0.raw_buf(),pcrecpp::RE::ANCHOR_START,&consumed,captures,numberOfCaptures);
+	ASObject* ret;
+	if(matched)
+	{
+		Array* a=Class<Array>::getInstanceS();
+		for(int i=0;i<numberOfCaptures;i++)
+			a->push(Class<ASString>::getInstanceS(s[i]));
+		args[0]->incRef();
+		a->setVariableByQName("input","",args[0]);
+		ret=a;
+		//TODO: add index field (not possible with current PCRECPP
+	}
+	else
+		ret=new Null;
 
-	delete[] s;
 	delete[] captures;
+	delete[] s;
 
-	return new Null;
+	return ret;
 }
 
 ASFUNCTIONBODY(RegExp,test)
@@ -1483,6 +1517,7 @@ ASFUNCTIONBODY(RegExp,test)
 	RegExp* th=static_cast<RegExp*>(obj);
 	pcrecpp::RE_Options opt;
 	opt.set_caseless(th->ignoreCase);
+	opt.set_extended(th->extended);
 
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert_and_throw(th->lastIndex==0);
@@ -1585,6 +1620,7 @@ ASFUNCTIONBODY(ASString,replace)
 
 		pcrecpp::RE_Options opt;
 		opt.set_caseless(re->ignoreCase);
+		opt.set_extended(re->extended);
 		pcrecpp::RE pcreRE(re->re,opt);
 		if(re->global)
 			pcreRE.GlobalReplace(replaceWith,&ret->data);
@@ -1620,6 +1656,69 @@ ASFUNCTIONBODY(ASString,concat)
 		ret->data+=args[i]->toString().raw_buf();
 
 	return ret;
+}
+
+ASFUNCTIONBODY(ASError,getStackTrace)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	ASString* ret=Class<ASString>::getInstanceS(th->toString(true));
+	LOG(LOG_NOT_IMPLEMENTED,"Error.getStackTrace not yet implemented.");
+	return ret;
+}
+
+tiny_string ASError::toString(bool debugMsg)
+{
+	return message.len() > 0 ? message : "Error";
+}
+
+ASFUNCTIONBODY(ASError,_getErrorID)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return abstract_i(th->errorID);
+}
+
+ASFUNCTIONBODY(ASError,_setName)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	assert_and_throw(argslen==1);
+	th->name = args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ASError,_getName)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return Class<ASString>::getInstanceS(th->name);
+}
+
+ASFUNCTIONBODY(ASError,_setMessage)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	assert_and_throw(argslen==1);
+	th->message = args[0]->toString();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ASError,_getMessage)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	return Class<ASString>::getInstanceS(th->message);
+}
+
+void ASError::buildTraits(ASObject* o)
+{
+	o->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
+	o->setGetterByQName("errorID",AS3,Class<IFunction>::getFunction(_getErrorID));
+	o->setGetterByQName("message",AS3,Class<IFunction>::getFunction(_getMessage));
+	o->setSetterByQName("message",AS3,Class<IFunction>::getFunction(_setMessage));
+	o->setGetterByQName("name",AS3,Class<IFunction>::getFunction(_getName));
+	o->setSetterByQName("name",AS3,Class<IFunction>::getFunction(_setName));
+}
+
+Class_base::Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
+	context(NULL),class_name(name),class_index(-1),max_level(0)
+{
+	type=T_CLASS;
 }
 
 Class_base::~Class_base()
@@ -1697,7 +1796,9 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	}*/
 	if(buildAndLink)
 	{
+	#ifndef NDEBUG
 		assert_and_throw(!target->initialized);
+	#endif
 		//HACK: suppress implementation handling of variables just now
 		bool bak=target->implEnable;
 		target->implEnable=false;

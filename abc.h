@@ -25,7 +25,7 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/IRBuilder.h>
 #include <llvm/PassManagers.h> 
-#include <llvm/LLVMContext.h> 
+#include <llvm/LLVMContext.h>
 #include "tags.h"
 #include "frame.h"
 #include "logger.h"
@@ -117,7 +117,7 @@ private:
 	u30 size;
 	tiny_string val;
 public:
-	operator tiny_string() const{return val;}
+	operator const tiny_string&() const{return val;}
 };
 
 struct namespace_info
@@ -213,6 +213,10 @@ struct block_info
 };
 
 typedef std::pair<llvm::Value*, STACK_TYPE> stack_entry;
+inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)
+{
+	return std::make_pair(v, t);
+}
 
 class method_info
 {
@@ -389,7 +393,7 @@ friend class ABCVm;
 friend class method_info;
 private:
 	method_info* get_method(unsigned int m);
-	tiny_string getString(unsigned int s) const;
+	const tiny_string& getString(unsigned int s) const;
 	//Qname getQname(unsigned int m, call_context* th=NULL) const;
 	static multiname* s_getMultiname(call_context*, ASObject*, int m);
 	static multiname* s_getMultiname_i(call_context*, uintptr_t i , int m);
@@ -416,7 +420,7 @@ public:
 	void getOptionalConstant(const option_detail& opt);
 	multiname* getMultiname(unsigned int m, call_context* th);
 	void buildInstanceTraits(ASObject* obj, int class_index);
-	ABCContext(std::istream& in);
+	DLL_PUBLIC ABCContext(std::istream& in);
 	void exec();
 };
 
@@ -597,27 +601,24 @@ private:
 
 	void buildClassAndInjectBase(const std::string& n, ASObject*, ASObject* const* a, const unsigned int argslen, bool isRoot);
 
-	Manager* int_manager;
-	Manager* number_manager;
-
-	//Interpreter
-
 	//These are used to keep track of the current 'this' for class methods, and relative level
 	//It's sane to have them per-Vm, as anyway the vm is single by specs, single threaded
 	std::vector<thisAndLevel> method_this_stack;
 
 public:
 	ASObject Global;
+	Manager* int_manager;
+	Manager* number_manager;
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
 	llvm::LLVMContext llvm_context;
-	ABCVm(SystemState* s);
-	~ABCVm();
+	DLL_PUBLIC ABCVm(SystemState* s);
+	DLL_PUBLIC ~ABCVm();
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
-	bool addEvent(EventDispatcher*,Event*);
+	DLL_PUBLIC bool addEvent(EventDispatcher*,Event*);
 	int getEventQueueSize();
-	void wait();
+	DLL_PUBLIC void wait();
 
 	void pushObjAndLevel(ASObject* o, int l);
 	thisAndLevel popObjAndLevel();

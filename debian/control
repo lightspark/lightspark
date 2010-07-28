@@ -2,7 +2,7 @@ Source: lightspark
 Section: utils
 Priority: optional
 Maintainer: Alessandro Pignotti <a.pignotti@sssup.it>
-Build-Depends: cmake, cdbs, nasm, debhelper (>= 7), llvm-dev (>= 2.7) | llvm-2.7-dev, libsdl1.2-dev, libgl1-mesa-dev, libxext-dev, libcurl4-gnutls-dev | libcurl4-openssl-dev, libxml2-dev, zlib1g-dev, libnspr4-dev, libavcodec-dev, libpcre3-dev, libftgl-dev, libglew1.5-dev, xulrunner-dev, libgtkglext1-dev
+Build-Depends: g++ (>=4.4), gnash, cmake, cdbs, nasm, debhelper (>= 7), llvm-dev (>= 2.7) | llvm-2.7-dev, libsdl1.2-dev, libgl1-mesa-dev, libxext-dev, libcurl4-gnutls-dev | libcurl4-openssl-dev, libxml2-dev, zlib1g-dev, libnspr4-dev, libavcodec-dev, libpcre3-dev, libftgl-dev, libglew1.5-dev, xulrunner-dev, libffi-dev
 Build-Conflicts: llvm (=2.6)
 Standards-Version: 3.8.4
 Homepage: http://lightspark.sf.net
@@ -11,13 +11,13 @@ Vcs-Browser: http://github.com/alexp-sssup/lightspark
 
 Package: lightspark
 Architecture: i386 amd64
-Depends: ${shlibs:Depends}, ${misc:Depends}, ttf-liberation
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Experimental high-performance SWF (Adobe Flash) player
  Lightspark is a free Flash player for Linux which aims for high-performance
  by using modern technologies such as JIT compilation and OpenGL shaders.
  .
- The project is currently in an alpha status, we provide the standalone
- player and mozilla plugin for testing purposes only.
+ The project is currently in an beta status, users are invited to test lightspark 
+ and report any issue
  .
  Nice features:
  * JIT compilation of ActionScript to native x86 bytecode
@@ -27,20 +27,42 @@ Description: Experimental high-performance SWF (Adobe Flash) player
    hardware. Designed from scratch after the official Flash documentation was
    released.
 
-Package: mozilla-plugin-lightspark
+Package: lightspark-common
+Architecture: i386 amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Experimental high-performance SWF (Adobe Flash) player
+ Lightspark is a free Flash player for Linux which aims for high-performance
+ by using modern technologies such as JIT compilation and OpenGL shaders.
+ .
+ The project is currently in an beta status, users are invited to test lightspark 
+ and report any issue
+ .
+ Nice features:
+ * JIT compilation of ActionScript to native x86 bytecode
+ * Hardware accelerated rendering using OpenGL shaders (GLSL)
+ * Aims to support current-generation ActionScript 3
+ * A new, clean, codebase exploiting multithreading and optimized for modern
+   hardware. Designed from scratch after the official Flash documentation was
+   released.
+ .
+ Common library and data
+
+Package: browser-plugin-lightspark
 Architecture: i386 amd64
 Xb-Npp-Applications: ec8030f7-c20a-464f-9b0e-13a3a9e97384
 Xb-Npp-MimeType: application/x-shockwave-flash
 Xb-Npp-Name: Lightspark SWF Player
 Xb-Npp-Description: High performance SWF Player
 Xb-Npp-File: liblightsparkplugin.so
-Depends: ${shlibs:Depends}, ${misc:Depends}, lightspark
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: gnash
+Conflicts: mozilla-plugin-gnash, flashplugin-installer, flashplugin-nonfree
 Description: Experimental high-performance SWF (Adobe Flash) player
  Lightspark is a free Flash player for Linux which aims for high-performance
  by using modern technologies such as JIT compilation and OpenGL shaders.
  .
- The project is currently in an alpha status, we provide the standalone
- player and mozilla plugin for testing purposes only.
+ The project is currently in an beta status, users are invited to test lightspark 
+ and report any issue
  .
  Nice features:
  * JIT compilation of ActionScript to native x86 bytecode
@@ -51,3 +73,29 @@ Description: Experimental high-performance SWF (Adobe Flash) player
    released.
  .
  Mozilla plugin package
+
+
+Package: lightspark-dbg
+Section: debug
+Priority: extra
+Architecture: i386 amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}, 
+ lightspark (= ${binary:Version}) |
+ browser-plugin-lightspark (= ${binary:Version}) |
+ lightspark-common (= ${binary:Version})
+Description: High-performance SWF player (experimental) - Debug symbols
+ Lightspark is a free Flash player for Linux which aims for high-performance
+ by using modern technologies such as JIT compilation and OpenGL shaders.
+ .
+ The project is currently in an beta status, users are invited to test lightspark 
+ and report any issue
+ .
+ Nice features:
+  * JIT compilation of ActionScript to native x86 bytecode
+  * Hardware accelerated rendering using OpenGL shaders (GLSL)
+  * Aims to support current-generation ActionScript 3
+  * A new, clean, codebase exploiting multithreading and optimized for modern
+    hardware. Designed from scratch after the official Flash documentation was
+    released.
+ .
+ This package contains the debug symbols.

@@ -26,7 +26,7 @@
 using namespace lightspark;
 
 //NOTE: thread jobs can be run only once
-IThreadJob::IThreadJob():executing(false),aborting(false)
+IThreadJob::IThreadJob():destroyMe(false),executing(false),aborting(false)
 {
 	sem_init(&terminated, 0, 0);
 }

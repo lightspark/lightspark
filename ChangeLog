@@ -1,40 +1,43 @@
-Version 0.4.1
--------------
+lightspark: An open source flash player implementation
 
-Optimized rendering of simple graphics
-First youtube support
+Version 0.4.2.2:
+	* Fallback on Gnash for older clips
 
-Version 0.4.0 RC3
--------------
+Version 0.4.2.1:
+	* Small bugfix
 
-Also use NPOT if available
+Version 0.4.2:
+	* Use fontconfig to select fonts
+	* Nore efficient handling of read only strings
+	* Greater compatibility with youtube videos
+	* Better compatibility with radeon cards
+	* Sound synchronization
+	* Chrome/Chromium support
+	* Firefox's OOPP support
 
-Version 0.4.0 RC2
--------------
+Version 0.4.1:
+	* Optimized rendering of simple graphics
+	* First youtube support
 
-Better support for older intel cards
+Version 0.4.0 RC3:
+	* Also use NPOT if available
 
-Version 0.4.0 RC1
--------------
+Version 0.4.0 RC2:
+	* Better support for older intel cards
 
-Better stability, the plugin should not crash
-Use Power-Of-Two sized textures for better compatibility
+Version 0.4.0 RC1:
+	* Better stability, the plugin should not crash
+	* Use Power-Of-Two sized textures for better compatibility
 
-Version 0.3.9
--------------
+Version 0.3.9:
+	* More complete cleanup of GL resources
 
-More complete cleanup of GL resources
+Version 0.3.8:
+	* Solved deadlock issues when using FlashBlock
 
-Version 0.3.8
--------------
+Version 0.3.7:
+	* Improved stability and relaxed graphics requirements
 
-Solved deadlock issues when using FlashBlock
+Version 0.3.6:
+	* Be more careful about glew initialization
 
-Version 0.3.7
--------------
-
-Improved stability and relaxed graphics requirements
-
-Version 0.3.6
--------------
-Be more careful about glew initialization

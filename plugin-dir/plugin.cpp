@@ -1,7 +1,7 @@
 /**************************************************************************
     Lighspark, a free flash player implementation
 
-    Copyright (C) 2009  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -20,34 +20,28 @@
 #include "plugin.h"
 #include "logger.h"
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
-//#define MIME_TYPES_HANDLED  "application/x-lightspark"
+#define FAKE_MIME_TYPE  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
-#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r04_Lightspark"
-#include "class.h"
-#include <gtk/gtk.h>
+#define FAKE_PLUGIN_NAME    "Lightspark player"
+#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME//";"FAKE_MIME_TYPE":swf:"PLUGIN_NAME
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r42"
 
 using namespace std;
 
-__thread lightspark::SystemState* sys;
-TLSDATA lightspark::RenderThread* rt=NULL;
-TLSDATA lightspark::ParseThread* pt=NULL;
+TLSDATA DLL_PUBLIC lightspark::SystemState* sys=NULL;
+TLSDATA DLL_PUBLIC lightspark::RenderThread* rt=NULL;
+TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
 
 NPDownloadManager::NPDownloadManager(NPP i):instance(i)
 {
-	sem_init(&mutex,0,1);
 }
 
 NPDownloadManager::~NPDownloadManager()
 {
-	if(!pendingLoads.empty())
-		abort();
-	sem_destroy(&mutex);
 }
 
 lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& u)
 {
-	sem_wait(&mutex);
 	//TODO: Url encode the string
 	std::string tmp2;
 	tmp2.reserve(u.len()*2);
@@ -65,8 +59,6 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_strin
 	lightspark::tiny_string url=tmp2.c_str();
 	//Register this download
 	NPDownloader* ret=new NPDownloader(instance, url);
-	pendingLoads.push_back(make_pair(url,ret));
-	sem_post(&mutex);
 	return ret;
 }
 
@@ -75,38 +67,7 @@ void NPDownloadManager::destroy(lightspark::Downloader* d)
 	//First of all, wait for termination
 	if(!sys->isShuttingDown())
 		d->wait();
-	sem_wait(&mutex);
-	list<pair<lightspark::tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
-	for(;it!=pendingLoads.end();it++)
-	{
-		if(it->second==d)
-		{
-			pendingLoads.erase(it);
-			break;
-		}
-	}
-	sem_post(&mutex);
-
 	delete d;
-}
-
-NPDownloader* NPDownloadManager::getDownloaderForUrl(const char* u)
-{
-	sem_wait(&mutex);
-	list<pair<lightspark::tiny_string,NPDownloader*> >::iterator it=pendingLoads.begin();
-	NPDownloader* ret=NULL;
-	for(;it!=pendingLoads.end();it++)
-	{
-		cout << it->first << endl;
-		if(it->first==u)
-		{
-			ret=it->second;
-			pendingLoads.erase(it);
-			break;
-		}
-	}
-	sem_post(&mutex);
-	return ret;
 }
 
 NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i),url(u),started(false)
@@ -159,9 +120,9 @@ NPError NS_PluginGetValue(NPPVariable aVariable, void *aValue)
 		case NPPVpluginDescriptionString:
 			*((char **)aValue) = (char*)PLUGIN_DESCRIPTION;
 			break;
-/*		case NPPVpluginNeedsXEmbed:
+		case NPPVpluginNeedsXEmbed:
 			*((bool *)aValue) = true;
-			break;*/
+			break;
 		default:
 			err = NPERR_INVALID_PARAM;
 			break;
@@ -187,9 +148,9 @@ nsPluginInstanceBase * NS_NewPluginInstance(nsPluginCreateData * aCreateDataStru
 
 void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 {
-  if(aPlugin)
-    delete (nsPluginInstance *)aPlugin;
-  sys=NULL;
+	if(aPlugin)
+		delete (nsPluginInstance *)aPlugin;
+	sys=NULL;
 }
 
 ////////////////////////////////////////
@@ -197,10 +158,12 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 // nsPluginInstance class implementation
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
-	mInstance(aInstance),mInitialized(FALSE),mWindow(0),swf_stream(&swf_buf),m_it(NULL),m_rt(NULL)
+	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),swf_stream(&swf_buf)
 {
-	m_sys=new lightspark::SystemState;
-	m_pt=new lightspark::ParseThread(m_sys,swf_stream);
+	m_pt=new lightspark::ParseThread(NULL,swf_stream);
+	m_sys=new lightspark::SystemState(m_pt);
+	//As this is the plugin, enable fallback on Gnash for older clips
+	m_sys->enableGnashFallback();
 	//Find flashvars argument
 	for(int i=0;i<argc;i++)
 	{
@@ -208,81 +171,14 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 			continue;
 		if(strcasecmp(argn[i],"flashvars")==0)
 		{
-			lightspark::ASObject* params=lightspark::Class<lightspark::ASObject>::getInstanceS();
-			//Add arguments to SystemState
-			std::string vars(argv[i]);
-			uint32_t cur=0;
-			while(cur<vars.size())
-			{
-				int n1=vars.find('=',cur);
-				if(n1==-1) //Incomplete parameters string, ignore the last
-					break;
-
-				int n2=vars.find('&',n1+1);
-				if(n2==-1)
-					n2=vars.size();
-
-				std::string varName=vars.substr(cur,(n1-cur));
-
-				//The variable value has to be urldecoded
-				bool ok=true;
-				std::string varValue;
-				varValue.reserve(n2-n1); //The maximum lenght
-				for(int j=n1+1;j<n2;j++)
-				{
-					if(vars[j]!='%')
-						varValue.push_back(vars[j]);
-					else
-					{
-						if((n2-j)<3) //Not enough characters
-						{
-							ok=false;
-							break;
-						}
-
-						int t1=hexToInt(vars[j+1]);
-						int t2=hexToInt(vars[j+2]);
-						if(t1==-1 || t2==-1)
-						{
-							ok=false;
-							break;
-						}
-
-						int c=(t1*16)+t2;
-						varValue.push_back(c);
-						j+=2;
-					}
-				}
-
-				if(ok)
-				{
-					//cout << varName << ' ' << varValue << endl;
-					params->setVariableByQName(varName.c_str(),"",
-							lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
-				}
-				cur=n2+1;
-			}
-			m_sys->setParameters(params);
+			m_sys->parseParametersFromFlashvars(argv[i]);
 		}
-		else if(strcasecmp(argn[i],"src")==0)
-		{
-			m_sys->setOrigin(argv[i]);
-		}
+		//The SWF file url should be getted from NewStream
 	}
 	m_sys->downloadManager=new NPDownloadManager(mInstance);
 	m_sys->addJob(m_pt);
-}
-
-int nsPluginInstance::hexToInt(char c)
-{
-	if(c>='0' && c<='9')
-		return c-'0';
-	else if(c>='a' && c<='f')
-		return c-'a'+10;
-	else if(c>='A' && c<='F')
-		return c-'A'+10;
-	else
-		return -1;
+	//The sys var should be NULL in this thread
+	sys=NULL;
 }
 
 nsPluginInstance::~nsPluginInstance()
@@ -294,14 +190,8 @@ nsPluginInstance::~nsPluginInstance()
 	m_pt->stop();
 	m_sys->setShutdownFlag();
 	m_sys->wait();
-	if(m_rt)
-		m_rt->wait();
-	if(m_it)
-		m_it->wait();
 	delete m_sys;
 	delete m_pt;
-	delete m_rt;
-	delete m_it;
 }
 
 void nsPluginInstance::draw()
@@ -349,6 +239,12 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 
 }
 
+void nsPluginInstance::AsyncHelper(void* th_void, helper_t func, void* privArg)
+{
+	nsPluginInstance* th=(nsPluginInstance*)th_void;
+	NPN_PluginThreadAsyncCall(th->mInstance, func, privArg);
+}
+
 NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 {
 	if(aWindow == NULL)
@@ -378,56 +274,125 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		mDepth = ws_info->depth;
 		mColormap = ws_info->colormap;
 
-		lightspark::NPAPI_params* p=new lightspark::NPAPI_params;
+		lightspark::NPAPI_params p;
 
-		p->display=mDisplay;
-		p->visual=XVisualIDFromVisual(mVisual);
-		p->window=mWindow;
-		p->width=mWidth;
-		p->height=mHeight;
-		//p->container=gtk_plug_new((GdkNativeWindow)p->window);
-		lightspark::NPAPI_params* p2=new lightspark::NPAPI_params(*p);
-		if(m_rt!=NULL)
+		p.visual=XVisualIDFromVisual(mVisual);
+		p.container=NULL;
+		p.display=mDisplay;
+		p.window=mWindow;
+		p.width=mWidth;
+		p.height=mHeight;
+		p.helper=AsyncHelper;
+		p.helperArg=this;
+		cout << "X Window " << hex << p.window << dec << endl;
+		if(m_sys->getRenderThread()!=NULL)
 		{
 			cout << "destroy old context" << endl;
 			abort();
 		}
-		if(p->width==0 || p->height==0)
-			abort();
-
-		m_rt=new lightspark::RenderThread(m_sys,lightspark::NPAPI,p);
-
-		if(m_it!=NULL)
+		if(m_sys->getInputThread()!=NULL)
 		{
 			cout << "destroy old input" << endl;
 			abort();
 		}
-		m_it=new lightspark::InputThread(m_sys,lightspark::NPAPI,p2);
-
-		sys=NULL;
-		m_sys->inputThread=m_it;
-		m_sys->renderThread=m_rt;
+		m_sys->setParamsAndEngine(lightspark::GTKPLUG,&p);
 	}
 	//draw();
 	return TRUE;
 }
 
+string nsPluginInstance::getPageURL() const
+{
+	//Copied from https://developer.mozilla.org/en/Getting_the_page_URL_in_NPAPI_plugin 
+	// Get the window object.
+	NPObject* sWindowObj;
+	NPN_GetValue(mInstance, NPNVWindowNPObject, &sWindowObj);
+	// Declare a local variant value.
+	NPVariant variantValue;
+	// Create a "location" identifier.
+	NPIdentifier identifier = NPN_GetStringIdentifier( "location" );
+	// Get the location property from the window object (which is another object).
+	bool b1 = NPN_GetProperty(mInstance, sWindowObj, identifier, &variantValue);
+	NPN_ReleaseObject(sWindowObj);
+	if(!b1)
+		return "";
+	if(!NPVARIANT_IS_OBJECT(variantValue))
+	{
+		NPN_ReleaseVariantValue(&variantValue);
+		return "";
+	}
+	// Get a pointer to the "location" object.
+	NPObject *locationObj = variantValue.value.objectValue;
+	// Create a "href" identifier.
+	identifier = NPN_GetStringIdentifier( "href" );
+	// Get the href property from the location object.
+	b1 = NPN_GetProperty(mInstance, locationObj, identifier, &variantValue);
+	NPN_ReleaseObject(locationObj);
+	if(!b1)
+		return "";
+	if(!NPVARIANT_IS_STRING(variantValue))
+	{
+		NPN_ReleaseVariantValue(&variantValue);
+		return "";
+	}
+	NPString url=NPVARIANT_TO_STRING(variantValue);
+	//TODO: really handle UTF8 url!!
+	for(unsigned int i=0;i<url.UTF8Length;i++)
+	{
+		if(url.UTF8Characters[i]&0x80)
+		{
+			LOG(LOG_ERROR,"Cannot handle UTF8 URLs");
+			return "";
+		}
+	}
+	string ret(url.UTF8Characters, url.UTF8Length);
+	NPN_ReleaseVariantValue(&variantValue);
+	return ret;
+}
+
+
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
 	//We have to cast the downloadanager to a NPDownloadManager
-	NPDownloadManager* manager=static_cast<NPDownloadManager*>(m_sys->downloadManager);
-	lightspark::Downloader* dl=manager->getDownloaderForUrl(stream->url);
+	lightspark::Downloader* dl=(lightspark::Downloader*)stream->notifyData;
 	LOG(LOG_NO_INFO,"Newstream for " << stream->url);
-	//cerr << stream->headers << endl;
+	//cout << stream->headers << endl;
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;
 		dl->setLen(stream->end);
+		*stype=NP_NORMAL;
+	}
+	else
+	{
+		//This is the main file
+		m_sys->setOrigin(stream->url);
+		*stype=NP_ASFILE;
+		//Let's get the cookies now, they might be useful
+		uint32_t len = 0;
+		char *data = 0;
+		const string& url(getPageURL());
+		if(!url.empty())
+		{
+			//Skip the protocol slashes
+			int protocolEnd=url.find("//");
+			//Find the first slash after the protocol ones
+			int urlEnd=url.find("/",protocolEnd+2);
+			NPN_GetValueForURL(mInstance, NPNURLVCookie, url.substr(0,urlEnd+1).c_str(), &data, &len);
+			string packedCookies(data, len);
+			NPN_MemFree(data);
+			m_sys->setCookies(packedCookies.c_str());
+		}
 	}
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
-	*stype=NP_NORMAL;
 	return NPERR_NO_ERROR; 
+}
+
+void nsPluginInstance::StreamAsFile(NPStream* stream, const char* fname)
+{
+	assert(stream->notifyData==NULL);
+	m_sys->setDownloadedPath(fname);
 }
 
 int32_t nsPluginInstance::WriteReady(NPStream *stream)
@@ -467,15 +432,18 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
-	cerr << "URLnotify" << notifyData << endl;
-	cerr << url << endl;
-	cerr << reason << endl;
-	cerr << notifyData << endl;
-/*	if(reason!=NPRES_USER_BREAK)
+	cout << "URLnotify " << url << endl;
+	switch(reason)
 	{
-		cerr << url << endl;
-		cerr << reason << endl;
-		cerr << notifyData << endl;
-		abort();
-	}*/
+		case NPRES_DONE:
+			cout << "Done" <<endl;
+			break;
+		case NPRES_USER_BREAK:
+			cout << "User Break" <<endl;
+			break;
+		case NPRES_NETWORK_ERR:
+			cout << "Network Error" <<endl;
+			break;
+	}
+	//TODO: should notify the Downloader if failing
 }

@@ -1,3 +1,39 @@
+lightspark (0.4.2.2-0ubuntu1) lucid; urgency=low
+
+  * New point release
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Tue, 27 Jul 2010 04:54:57 +0200
+
+lightspark (0.4.2.1-0ubuntu1) lucid; urgency=low
+
+  * Small bugfix release
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Sat, 24 Jul 2010 00:35:58 +0200
+
+lightspark (0.4.2-0ubuntu1) lucid; urgency=low
+
+  * New release
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Tue, 20 Jul 2010 04:14:06 +0200
+
+lightspark (0.4.2~rc3-0ubuntu1) lucid; urgency=low
+
+  * New release candidate
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Fri, 16 Jul 2010 22:24:42 +0200
+
+lightspark (0.4.2~rc2-0ubuntu1) lucid; urgency=low
+
+  * New release candidate
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Sat, 03 Jul 2010 23:56:37 +0200
+
+lightspark (0.4.2~rc1-0ubuntu1) lucid; urgency=low
+
+  * New release candidate
+
+ -- Alessandro Pignotti <a.pignotti@sssup.it>  Thu, 01 Jul 2010 03:20:36 +0200
+
 lightspark (0.4.1-0ubuntu1) lucid; urgency=low
 
   * New release

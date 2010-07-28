@@ -26,7 +26,7 @@
 #include <list>
 #include <map>
 #include <semaphore.h>
-#include <GL/glew.h>
+#include <string>
 #include <FTGL/ftgl.h>
 #include "swftypes.h"
 #include "frame.h"
@@ -34,14 +34,10 @@
 #include "flashdisplay.h"
 #include "timer.h"
 #include "graphics.h"
+#include "sound.h"
 
 #ifndef WIN32
-#include <X11/Xlib.h>
 #include <GL/glx.h>
-namespace X11Intrinsic
-{
-#include <X11/Intrinsic.h>
-};
 #else
 #include <windows.h>
 #endif
@@ -59,6 +55,7 @@ class DictionaryTag;
 class ABCVm;
 class InputThread;
 class RenderThread;
+class ParseThread;
 class Tag;
 
 typedef void* (*thread_worker)(void*);
@@ -162,17 +159,84 @@ public:
 	void plot(uint32_t max, FTFont* font);
 };
 
+enum ENGINE { NONE=0, SDL, GTKPLUG};
+typedef void(*helper_t)(void*);
+#ifdef COMPILE_PLUGIN
+struct NPAPI_params
+{
+	Display* display;
+	GtkWidget* container;
+	VisualID visual;
+	Window window;
+	int width;
+	int height;
+	void (*helper)(void* th, helper_t func, void* privArg);
+	void* helperArg;
+};
+#else
+struct NPAPI_params
+{
+};
+#endif
+
 class SystemState: public RootMovieClip
 {
 private:
+	class EngineCreator: public IThreadJob
+	{
+	public:
+		EngineCreator()
+		{
+			destroyMe=true;
+		}
+		void execute();
+		void threadAbort();
+	};
+	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	TimerThread* timerThread;
+	ParseThread* parseThread;
 	sem_t terminated;
 	float renderRate;
 	bool error;
 	bool shutdown;
+	RenderThread* renderThread;
+	InputThread* inputThread;
+	NPAPI_params npapiParams;
+	ENGINE engine;
+	void startRenderTicks();
+	/**
+		Create the rendering and input engines
+
+		@pre engine and useAVM2 are known
+	*/
+	void createEngines();
+	/**
+	  	Destroys all the engines used in lightspark: timer, thread pool, vm...
+	*/
+#ifdef COMPILE_PLUGIN
+	static void delayedCreation(SystemState* th);
+#endif
+	void stopEngines();
+	//Useful to wait for complete download of the SWF
+	Condition fileDumpAvailable;
+	tiny_string dumpedSWFPath;
+	bool waitingForDump;
+	//Data for handling Gnash fallback
+	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
+	VMVERSION vmVersion;
+	pid_t childPid;
+	bool useGnashFallback;
+	void setParameters(ASObject* p);
+	/*
+	   	Used to keep a copy of the FlashVars, it's useful when gnash fallback is used
+	*/
+	std::string rawParameters;
+	std::string rawCookies;
+	static int hexToInt(char c);
+	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
 public:
-	void setUrl(const tiny_string& url);
+	DLL_PUBLIC void setUrl(const tiny_string& url);
 
 	//Interative analysis flags
 	bool showProfilingData;
@@ -182,17 +246,23 @@ public:
 	int yOffset;
 	
 	std::string errorCause;
-	void setError(std::string& c);
+	void setError(const std::string& c);
 	bool shouldTerminate() const;
-	bool isShuttingDown() const;
+	DLL_PUBLIC bool isShuttingDown() const;
 	bool isOnError() const;
-	void setShutdownFlag();
+	DLL_PUBLIC void setShutdownFlag();
 	void tick();
-	void wait();
+	DLL_PUBLIC void wait();
+	RenderThread* getRenderThread() const { return renderThread; }
+	InputThread* getInputThread() const { return inputThread; }
+	DLL_PUBLIC void setParamsAndEngine(ENGINE e, NPAPI_params* p);
+	DLL_PUBLIC void setDownloadedPath(const tiny_string& p);
+	DLL_PUBLIC void enableGnashFallback();
+	void needsAVM2(bool n);
 
 	//Be careful, SystemState constructor does some global initialization that must be done
 	//before any other thread gets started
-	SystemState();
+	DLL_PUBLIC SystemState(ParseThread* p);
 	~SystemState();
 	
 	//Performance profiling
@@ -201,8 +271,9 @@ public:
 	
 	Stage* stage;
 	ABCVm* currentVm;
-	InputThread* inputThread;
-	RenderThread* renderThread;
+#ifdef ENABLE_SOUND
+	SoundManager* soundManager;
+#endif
 	//Application starting time in milliseconds
 	uint64_t startTime;
 
@@ -215,9 +286,10 @@ public:
 	bool useInterpreter;
 	bool useJit;
 
-	void parseParameters(std::istream& i);
-	void setParameters(ASObject* p);
-	void addJob(IThreadJob* j);
+	DLL_PUBLIC void parseParametersFromFile(const char* f);
+	DLL_PUBLIC void parseParametersFromFlashvars(const char* vars);
+	DLL_PUBLIC void setCookies(const char* c);
+	DLL_PUBLIC void addJob(IThreadJob* j);
 	void addTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
 	bool removeJob(ITickJob* job);
@@ -232,32 +304,17 @@ class ParseThread: public IThreadJob
 private:
 	std::istream& f;
 	sem_t ended;
+	bool isEnded;
 	void execute();
 	void threadAbort();
 public:
 	RootMovieClip* root;
 	int version;
-	ParseThread(RootMovieClip* r,std::istream& in);
+	bool useAVM2;
+	DLL_PUBLIC ParseThread(RootMovieClip* r,std::istream& in);
 	~ParseThread();
-	void wait();
+	DLL_PUBLIC void wait();
 };
-
-enum ENGINE { SDL=0, NPAPI, GTKPLUG};
-#ifdef COMPILE_PLUGIN
-struct NPAPI_params
-{
-	Display* display;
-	GtkWidget* container;
-	VisualID visual;
-	Window window;
-	int width;
-	int height;
-};
-#else
-struct NPAPI_params
-{
-};
-#endif
 
 class InputThread
 {
@@ -266,11 +323,11 @@ private:
 	pthread_t t;
 	bool terminated;
 	static void* sdl_worker(InputThread*);
-	#ifdef COMPILE_PLUGIN
+#ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
-	static void npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, X11Intrinsic::Boolean* b);
 	static gboolean gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
-	#endif
+	static void delayedCreation(InputThread* th);
+#endif
 
 	std::vector<InteractiveObject* > listeners;
 	Mutex mutexListeners;
@@ -296,24 +353,23 @@ private:
 	pthread_t t;
 	bool terminated;
 	static void* sdl_worker(RenderThread*);
-	#ifdef COMPILE_PLUGIN
+#ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;
-	static void* npapi_worker(RenderThread*);
 	static void* gtkplug_worker(RenderThread*);
-	#endif
+#endif
 	void commonGLInit(int width, int height);
 	void commonGLDeinit();
 	sem_t render;
 	sem_t inputDone;
 	bool inputNeeded;
+	bool inputDisabled;
+	std::string fontPath;
 
 #ifndef WIN32
 	Display* mDisplay;
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
-	GLXPbuffer mPbuffer;
 	Window mWindow;
-	GC mGC;
 
 	timespec ts,td;
 #endif
@@ -324,7 +380,8 @@ private:
 	int frameCount;
 	int secsCount;
 	std::vector<float> idStack;
-	
+	Mutex mutexResources;
+	std::set<GLResource*> managedResources;
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
@@ -334,6 +391,26 @@ public:
 	//The calling context MUST call this function with the transformation matrix ready
 	void glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 	void glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
+	/**
+		Add a GLResource to the managed pool
+		@param res The GLResource to be manged
+		@pre running inside the renderthread OR the resourceMutex is acquired
+	*/
+	void addResource(GLResource* res);
+	/**
+		Remove a GLResource from the managed pool
+		@param res The GLResource to stop managing
+		@pre running inside the renderthread OR the resourceMutex is acquired
+	*/
+	void removeResource(GLResource* res);
+	/**
+		Acquire the resource mutex to do resource cleanup
+	*/
+	void acquireResourceMutex();
+	/**
+		Release the resource mutex
+	*/
+	void releaseResourceMutex();
 
 	void requestInput();
 	bool glAcquireIdBuffer();

@@ -29,7 +29,7 @@ using namespace lightspark;
 extern TLSDATA SystemState* sys;
 TLSDATA lightspark::IThreadJob* thisJob=NULL;
 
-ThreadPool::ThreadPool(SystemState* s):stop(false)
+ThreadPool::ThreadPool(SystemState* s):stopFlag(false)
 {
 	m_sys=s;
 	sem_init(&mutex,0,1);
@@ -41,13 +41,18 @@ ThreadPool::ThreadPool(SystemState* s):stop(false)
 	}
 }
 
-ThreadPool::~ThreadPool()
+void ThreadPool::stop()
 {
-	stop=true;
+	stopFlag=true;
 	//Signal an event for all the threads
 	for(int i=0;i<NUM_THREADS;i++)
 		sem_post(&num_jobs);
 
+}
+
+ThreadPool::~ThreadPool()
+{
+	stop();
 	//Now abort any job that is still executing
 	sem_wait(&mutex);
 	for(int i=0;i<NUM_THREADS;i++)
@@ -83,7 +88,7 @@ void* ThreadPool::job_worker(void* t)
 	while(1)
 	{
 		sem_wait(&th->num_jobs);
-		if(th->stop)
+		if(th->stopFlag)
 			pthread_exit(0);
 		sem_wait(&th->mutex);
 		IThreadJob* myJob=th->jobs.front();
@@ -108,6 +113,8 @@ void* ThreadPool::job_worker(void* t)
 		sem_wait(&th->mutex);
 		myJob->executing=false;
 		th->curJobs[index]=NULL;
+		if(myJob->destroyMe)
+			delete myJob;
 		sem_post(&th->mutex);
 	}
 	return NULL;

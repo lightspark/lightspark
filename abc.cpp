@@ -48,8 +48,6 @@ using namespace std;
 using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
-TLSDATA Manager* iManager=NULL;
-TLSDATA Manager* dManager=NULL;
 TLSDATA bool isVmThread=false;;
 
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -162,6 +160,7 @@ void ABCVm::registerClasses()
 	Global.setVariableByQName("RegExp","",Class<RegExp>::getClass());
 	Global.setVariableByQName("QName","",Class<ASQName>::getClass());
 	Global.setVariableByQName("uint","",Class<UInteger>::getClass());
+	Global.setVariableByQName("Error","",Class<ASError>::getClass());
 
 	Global.setVariableByQName("print","",Class<IFunction>::getFunction(print));
 	Global.setVariableByQName("trace","",Class<IFunction>::getFunction(print));
@@ -999,6 +998,9 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 				cur=cur->parent;
 			}
 		}
+		//Reset events so they might be recycled
+		event->currentTarget=NULL;
+		event->target=NULL;
 		e.first->decRef();
 	}
 	else
@@ -1073,7 +1075,7 @@ bool ABCVm::addEvent(EventDispatcher* obj ,Event* ev)
 	{
 		assert(obj==NULL);
 		ev->incRef();
-		handleEvent(pair<EventDispatcher*,Event*>(NULL, ev));
+		handleEvent(make_pair<EventDispatcher*>(NULL, ev));
 		return true;
 	}
 
@@ -1314,10 +1316,10 @@ void ABCContext::exec()
 
 void ABCVm::Run(ABCVm* th)
 {
+	//Spin wait until the VM is aknowledged by the SystemState
 	sys=th->m_sys;
+	while(getVm()!=th);
 	isVmThread=true;
-	iManager=th->int_manager;
-	dManager=th->number_manager;
 	if(th->m_sys->useJit)
 	{
 		llvm::InitializeNativeTarget();
@@ -1388,12 +1390,9 @@ void ABCVm::Run(ABCVm* th)
 	}
 }
 
-tiny_string ABCContext::getString(unsigned int s) const
+const tiny_string& ABCContext::getString(unsigned int s) const
 {
-	if(s)
-		return constant_pool.strings[s];
-	else
-		return "";
+	return constant_pool.strings[s];
 }
 
 void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
@@ -1973,7 +1972,7 @@ istream& lightspark::operator>>(istream& in, string_info& v)
 		if(t&0x80)
 			LOG(LOG_NOT_IMPLEMENTED,"Multibyte not handled");
 	}
-	v.val=tmp.c_str();
+	v.val=tmp;
 	return in;
 }
 

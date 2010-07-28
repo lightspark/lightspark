@@ -41,8 +41,6 @@ REGISTER_CLASS_NAME(ASObject);
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
-extern TLSDATA Manager* iManager;
-extern TLSDATA Manager* dManager;
 
 tiny_string ASObject::toString(bool debugMsg)
 {
@@ -93,6 +91,11 @@ bool ASObject::isLess(ASObject* r)
 
 		LOG(LOG_CALLS,"Overloaded isLess");
 		return ret1->isLess(ret2);
+	}
+	else if(r->getObjectType()==T_UNDEFINED)
+	{
+		//If the other object is undefined, it is always less than us
+		return true;
 	}
 
 	LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
@@ -265,7 +268,9 @@ bool ASObject::hasPropertyByMultiname(const multiname& name)
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	check();
+#ifndef NDEBUG
 	assert_and_throw(!initialized);
+#endif
 	//Getters are inserted with the current level of the prototype chain
 	int level=cur_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
@@ -281,7 +286,9 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
 {
 	check();
+#ifndef NDEBUG
 	assert_and_throw(!initialized);
+#endif
 	//Setters are inserted with the current level of the prototype chain
 	int level=cur_level;
 	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
@@ -341,15 +348,37 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	setVariableByMultiname(name,abstract_i(value));
 }
 
+obj_var* ASObject::findSettable(const multiname& name, int& level)
+{
+	assert(level==cur_level);
+	obj_var* ret=NULL;
+	int max_level=cur_level;
+	for(int i=max_level;i>=0;i--)
+	{
+		//The variable i is automatically moved to the right level
+		ret=Variables.findObjVar(name,i,false,true);
+		if(ret)
+		{
+			//It seems valid for a class to redefine only the getter, so if we can't find
+			//something to get, just go to the previous level
+			if(ret->setter || ret->var)
+			{
+				level=i;
+				break;
+			}
+		}
+	}
+	return ret;
+}
+
 void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
 {
 	check();
 
-	obj_var* obj=NULL;
 	//It's always correct to use the current level for the object
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level
 	int level=cur_level;
-	obj=Variables.findObjVar(name,level,false,true);
+	obj_var* obj=findSettable(name,level);
 
 	if(obj==NULL)
 	{
@@ -473,6 +502,9 @@ obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool crea
 		case multiname::NAME_STRING:
 			name.name=mname.name_s;
 			break;
+		case multiname::NAME_OBJECT:
+			name.name=mname.name_o->toString();
+			break;
 		default:
 			assert_and_throw("Unexpected name kind" && false);
 	}
@@ -556,10 +588,17 @@ ASFUNCTIONBODY(ASObject,_setPrototype)
 void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns)
 {
 	//Should be correct to use the level on the prototype chain
+#ifndef NDEBUG
 	assert_and_throw(!initialized);
+#endif
 	Variables.initSlot(n,cur_level,name,ns);
 }
 
+ASObject* ASObject::getVariableByString(const std::string& name)
+{
+	ASObject* ret=Variables.getVariableByString(name);
+	return ret;
+}
 //In all the getter function we first ask the interface, so that special handling (e.g. Array)
 //can be done
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
@@ -571,28 +610,35 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+obj_var* ASObject::findGettable(const multiname& name, int& level)
 {
-	check();
-
-	obj_var* obj=NULL;
-	int level=-1;
+	assert(level==cur_level);
+	obj_var* ret=NULL;
 	int max_level=cur_level;
 	for(int i=max_level;i>=0;i--)
 	{
 		//The variable i is automatically moved to the right level
-		obj=Variables.findObjVar(name,i,false,true);
-		if(obj)
+		ret=Variables.findObjVar(name,i,false,true);
+		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, just go to the previous level
-			if(obj->getter || obj->var)
+			if(ret->getter || ret->var)
 			{
 				level=i;
 				break;
 			}
 		}
 	}
+	return ret;
+}
+
+objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+{
+	check();
+
+	int level=cur_level;
+	obj_var* obj=findGettable(name,level);
 
 	if(obj!=NULL)
 	{
@@ -1278,13 +1324,15 @@ void FILLSTYLE::setFragmentProgram() const
 	{
 		//LOG(TRACE,"Fill gradient");
 
+#if 0
 		color_entry buffer[256];
 		unsigned int grad_index=0;
 		RGBA color_l(0,0,0,1);
 		int index_l=0;
 		RGBA color_r(Gradient.GradientRecords[0].Color);
 		int index_r=Gradient.GradientRecords[0].Ratio;
-		/*glColor4f(0,1,0,0);
+
+		glColor4f(0,1,0,0);
 
 		for(int i=0;i<256;i++)
 		{
@@ -1308,7 +1356,10 @@ void FILLSTYLE::setFragmentProgram() const
 		}
 
 		glBindTexture(GL_TEXTURE_2D,rt->data_tex);
-		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);*/
+		glTexImage2D(GL_TEXTURE_2D,0,4,256,1,0,GL_RGBA,GL_FLOAT,buffer);
+#else
+		RGBA color_r(Gradient.GradientRecords[0].Color);
+#endif
 
 		//HACK: TODO: revamp gradient support
 		glColor4f(1,0,0,0);
@@ -1794,10 +1845,10 @@ ASObject::ASObject(const ASObject& o):type(o.type),ref_count(1),manager(NULL),cu
 	if(prototype)
 		prototype->incRef();
 
-	#ifndef NDEBUG
+#ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
-	#endif
+#endif
 
 	assert_and_throw(o.Variables.size()==0);
 }
@@ -2003,7 +2054,7 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 
 ASObject* lightspark::abstract_d(number_t i)
 {
-	Number* ret=dManager->get<Number>();
+	Number* ret=getVm()->number_manager->get<Number>();
 	ret->val=i;
 	return ret;
 }
@@ -2015,7 +2066,7 @@ ASObject* lightspark::abstract_b(bool i)
 
 ASObject* lightspark::abstract_i(intptr_t i)
 {
-	Integer* ret=iManager->get<Integer>();
+	Integer* ret=getVm()->int_manager->get<Integer>();
 	ret->val=i;
 	return ret;
 }

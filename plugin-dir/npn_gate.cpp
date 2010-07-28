@@ -35,10 +35,35 @@ void NPN_Version(int* plugin_major, int* plugin_minor, int* netscape_major, int*
   *netscape_minor = LOBYTE(NPNFuncs.version);
 }
 
+//TODO: understand the Call... wrappers and npupp.h
 void NPN_PluginThreadAsyncCall(NPP instance, void (*func) (void *), void *userData)
 {
-//TODO: understand the Call... wrappers and npupp.h
   NPNFuncs.pluginthreadasynccall(instance, func, userData);
+}
+
+NPError NPN_GetValueForURL(NPP instance, NPNURLVariable variable, const char *url, char **value, uint32_t *len)
+{
+  return NPNFuncs.getvalueforurl(instance, variable, url, value, len);
+}
+
+NPIdentifier NPN_GetStringIdentifier(const NPUTF8 *name)
+{
+  return NPNFuncs.getstringidentifier(name);
+}
+
+void NPN_ReleaseVariantValue(NPVariant *variant)
+{
+  return NPNFuncs.releasevariantvalue(variant);
+}
+
+bool NPN_GetProperty(NPP npp, NPObject *npobj, NPIdentifier propertyName, NPVariant *result)
+{
+  return NPNFuncs.getproperty(npp, npobj, propertyName, result);
+}
+
+void NPN_ReleaseObject(NPObject *npobj)
+{
+  NPNFuncs.releaseobject(npobj);
 }
 
 NPError NPN_GetURLNotify(NPP instance, const char *url, const char *target, void* notifyData)

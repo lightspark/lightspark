@@ -20,6 +20,9 @@
 #include <string>
 #include <sstream>
 #include <pthread.h>
+#ifndef WIN32
+#include <sys/wait.h>
+#endif
 #include <algorithm>
 #include "compat.h"
 #include <SDL.h>
@@ -42,11 +45,12 @@ extern "C" {
 }
 #ifndef WIN32
 #include <GL/glx.h>
+#include <fontconfig/fontconfig.h>
 #endif
 
 #ifdef COMPILE_PLUGIN
-#include <gdk/gdkgl.h>
-#include <gtk/gtkglwidget.h>
+#include <gdk/gdkkeysyms.h>
+#include <gdk/gdkx.h>
 #endif
 
 #define DATADIRECTORY ""
@@ -145,21 +149,28 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 	clip->decRef();
 }
 
-SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),shutdown(false),showProfilingData(false),
-	showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),inputThread(NULL),
-	renderThread(NULL),finalizingDestruction(false),useInterpreter(true),useJit(false), downloadManager(NULL)
+SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
+	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
+	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
 	curl_global_init(CURL_GLOBAL_ALL);
 	avcodec_register_all();
 
+	cookiesFileName[0]=0;
 	//Create the thread pool
 	sys=this;
 	sem_init(&terminated,0,0);
 
 	//Get starting time
+	if(parseThread) //ParseThread may be null in tightspark
+		parseThread->root=this;
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
+#ifdef ENABLE_SOUND
+	soundManager=new SoundManager;
+#endif
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
 	parent=stage;
@@ -170,14 +181,107 @@ SystemState::SystemState():RootMovieClip(NULL,true),renderRate(0),error(false),s
 	setOnStage(true);
 }
 
+void SystemState::setDownloadedPath(const tiny_string& p)
+{
+	dumpedSWFPath=p;
+	sem_wait(&mutex);
+	if(waitingForDump)
+		fileDumpAvailable.signal();
+	sem_post(&mutex);
+}
+
 void SystemState::setUrl(const tiny_string& url)
 {
 	loaderInfo->url=url;
 	loaderInfo->loaderURL=url;
 }
 
-void SystemState::parseParameters(istream& i)
+int SystemState::hexToInt(char c)
 {
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(c>='a' && c<='f')
+		return c-'a'+10;
+	else if(c>='A' && c<='F')
+		return c-'A'+10;
+	else
+		return -1;
+}
+
+void SystemState::setCookies(const char* c)
+{
+	rawCookies=c;
+}
+
+void SystemState::parseParametersFromFlashvars(const char* v)
+{
+	if(useGnashFallback) //Save a copy of the string
+		rawParameters=v;
+	ASObject* params=Class<ASObject>::getInstanceS();
+	//Add arguments to SystemState
+	string vars(v);
+	uint32_t cur=0;
+	while(cur<vars.size())
+	{
+		int n1=vars.find('=',cur);
+		if(n1==-1) //Incomplete parameters string, ignore the last
+			break;
+
+		int n2=vars.find('&',n1+1);
+		if(n2==-1)
+			n2=vars.size();
+
+		string varName=vars.substr(cur,(n1-cur));
+
+		//The variable value has to be urldecoded
+		bool ok=true;
+		string varValue;
+		varValue.reserve(n2-n1); //The maximum lenght
+		for(int j=n1+1;j<n2;j++)
+		{
+			if(vars[j]!='%')
+				varValue.push_back(vars[j]);
+			else
+			{
+				if((n2-j)<3) //Not enough characters
+				{
+					ok=false;
+					break;
+				}
+
+				int t1=hexToInt(vars[j+1]);
+				int t2=hexToInt(vars[j+2]);
+				if(t1==-1 || t2==-1)
+				{
+					ok=false;
+					break;
+				}
+
+				int c=(t1*16)+t2;
+				varValue.push_back(c);
+				j+=2;
+			}
+		}
+
+		if(ok)
+		{
+			//cout << varName << ' ' << varValue << endl;
+			params->setVariableByQName(varName.c_str(),"",
+					lightspark::Class<lightspark::ASString>::getInstanceS(varValue));
+		}
+		cur=n2+1;
+	}
+	setParameters(params);
+}
+
+void SystemState::parseParametersFromFile(const char* f)
+{
+	ifstream i(f);
+	if(!i)
+	{
+		LOG(LOG_ERROR,"Parameters file not found");
+		return;
+	}
 	ASObject* ret=Class<ASObject>::getInstanceS();
 	while(!i.eof())
 	{
@@ -185,9 +289,10 @@ void SystemState::parseParameters(istream& i)
 		getline(i,name);
 		getline(i,value);
 
-		ret->setVariableByQName(name.c_str(),"",Class<ASString>::getInstanceS(value));
+		ret->setVariableByQName(name,"",Class<ASString>::getInstanceS(value));
 	}
 	setParameters(ret);
+	i.close();
 }
 
 void SystemState::setParameters(ASObject* p)
@@ -195,14 +300,43 @@ void SystemState::setParameters(ASObject* p)
 	loaderInfo->setVariableByQName("parameters","",p);
 }
 
+void SystemState::stopEngines()
+{
+	//Stops the thread that is parsing us
+	parseThread->stop();
+	parseThread->wait();
+	threadPool->stop();
+	if(timerThread)
+		timerThread->wait();
+	delete downloadManager;
+	downloadManager=NULL;
+	delete currentVm;
+	currentVm=NULL;
+	delete timerThread;
+	timerThread=NULL;
+#ifdef ENABLE_SOUND
+	delete soundManager;
+	soundManager=NULL;
+#endif
+}
+
 SystemState::~SystemState()
 {
+	//Kill our child process if any
+	if(childPid)
+	{
+#ifndef WIN32
+		kill(childPid, SIGTERM);
+		waitpid(childPid, NULL, 0);
+#endif
+	}
+	//Delete the temporary cookies file
+	if(cookiesFileName[0])
+		unlink(cookiesFileName);
 	assert(shutdown);
-	timerThread->wait();
+	//The thread pool should be stopped before everything
 	delete threadPool;
-	delete downloadManager;
-	delete currentVm;
-	delete timerThread;
+	stopEngines();
 
 	//decRef all our object before destroying classes
 	Variables.destroyContents();
@@ -235,6 +369,8 @@ SystemState::~SystemState()
 	for(unsigned int i=0;i<tagsStorage.size();i++)
 		delete tagsStorage[i];
 
+	delete renderThread;
+	delete inputThread;
 	sem_destroy(&terminated);
 }
 
@@ -253,7 +389,7 @@ bool SystemState::shouldTerminate() const
 	return shutdown || error;
 }
 
-void SystemState::setError(string& c)
+void SystemState::setError(const string& c)
 {
 	//We record only the first error for easier fix and reporting
 	if(!error)
@@ -284,6 +420,10 @@ void SystemState::setShutdownFlag()
 void SystemState::wait()
 {
 	sem_wait(&terminated);
+	if(renderThread)
+		renderThread->wait();
+	if(inputThread)
+		inputThread->wait();
 }
 
 float SystemState::getRenderRate()
@@ -291,16 +431,209 @@ float SystemState::getRenderRate()
 	return renderRate;
 }
 
+void SystemState::startRenderTicks()
+{
+	assert(renderThread);
+	assert(renderRate);
+	removeJob(renderThread);
+	addTick(1000/renderRate,renderThread);
+}
+
+void SystemState::EngineCreator::execute()
+{
+	sys->createEngines();
+}
+
+void SystemState::EngineCreator::threadAbort()
+{
+	assert(sys->shutdown);
+	sys->fileDumpAvailable.signal();
+}
+
+#ifndef WIN32
+
+#ifndef GNASH_PATH
+#error No GNASH_PATH defined
+#endif
+
+void SystemState::enableGnashFallback()
+{
+	//Check if the gnash standalone executable is available
+	ifstream f(GNASH_PATH);
+	if(f)
+		useGnashFallback=true;
+	f.close();
+}
+
+#endif
+
+#ifdef COMPILE_PLUGIN
+
+void SystemState::delayedCreation(SystemState* th)
+{
+	NPAPI_params& p=th->npapiParams;
+	//Create a plug in the XEmbed window
+	p.container=gtk_plug_new((GdkNativeWindow)p.window);
+	//Realize the widget now, as we need the X window
+	gtk_widget_realize(p.container);
+	//Show it now
+	gtk_widget_show(p.container);
+	gtk_widget_map(p.container);
+	p.window=GDK_WINDOW_XWINDOW(p.container->window);
+	XSync(p.display, False);
+	sem_wait(&th->mutex);
+	th->renderThread=new RenderThread(th, th->engine, &th->npapiParams);
+	th->inputThread=new InputThread(th, th->engine, &th->npapiParams);
+	//If the render rate is known start the render ticks
+	if(th->renderRate)
+		th->startRenderTicks();
+	sem_post(&th->mutex);
+}
+
+#endif
+
+#ifndef WIN32
+
+void SystemState::createEngines()
+{
+	sem_wait(&mutex);
+	assert(renderThread==NULL && inputThread==NULL);
+	//Check if we should fall back on gnash
+	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
+	{
+		if(dumpedSWFPath.len()==0) //The path is not known yet
+		{
+			waitingForDump=true;
+			sem_post(&mutex);
+			fileDumpAvailable.wait();
+			if(shutdown)
+				return;
+			sem_wait(&mutex);
+		}
+		LOG(LOG_NO_INFO,"Invoking gnash!");
+		//Dump the cookies to a temporary file
+		strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
+		int file=mkstemp(cookiesFileName);
+		if(file!=-1)
+		{
+			write(file,"Set-Cookie: ", 12);
+			write(file,rawCookies.c_str(),rawCookies.size());
+			close(file);
+			setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
+		}
+		else
+			cookiesFileName[0]=0;
+		childPid=fork();
+		if(childPid==-1)
+		{
+			LOG(LOG_ERROR,"Child process creation failed, lightspark continues");
+			childPid=0;
+		}
+		else if(childPid==0) //Child process scope
+		{
+			//Allocate some buffers to store gnash arguments
+			char bufXid[32];
+			char bufWidth[32];
+			char bufHeight[32];
+			snprintf(bufXid,32,"%lu",npapiParams.window);
+			snprintf(bufWidth,32,"%u",npapiParams.width);
+			snprintf(bufHeight,32,"%u",npapiParams.height);
+			string params("FlashVars=");
+			params+=rawParameters;
+			char *const args[] =
+			{
+				strdup("gnash"), //argv[0]
+				strdup("-x"), //Xid
+				bufXid,
+				strdup("-j"), //Width
+				bufWidth,
+				strdup("-k"), //Height
+				bufHeight,
+				strdup("-u"), //SWF url
+				strdup(origin.raw_buf()),
+				strdup("-P"), //SWF parameters
+				strdup(params.c_str()),
+				strdup("-vv"),
+				strdup(dumpedSWFPath.raw_buf()), //SWF file
+				NULL
+			};
+			execve(GNASH_PATH, args, environ);
+			//If we are are execve failed, print an error and die
+			LOG(LOG_ERROR,"Execve failed, content will not be rendered");
+			exit(0);
+		}
+		else //Parent process scope
+		{
+			sem_post(&mutex);
+			//Engines should not be started, stop everything
+			stopEngines();
+			return;
+		}
+	}
+
+	if(engine==GTKPLUG) //The engines must be created int the context of the main thread
+	{
+		npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
+	}
+	else //SDL engine
+	{
+		renderThread=new RenderThread(this, engine, NULL);
+		inputThread=new InputThread(this, engine, NULL);
+		//If the render rate is known start the render ticks
+		if(renderRate)
+			startRenderTicks();
+	}
+	sem_post(&mutex);
+}
+#else
+void SystemState::createEngines()
+{
+}
+#endif
+
+void SystemState::needsAVM2(bool n)
+{
+	sem_wait(&mutex);
+	assert(currentVm==NULL);
+	//Create the virtual machine if needed
+	if(n)
+	{
+		vmVersion=AVM2;
+		LOG(LOG_NO_INFO,"Creating VM");
+		currentVm=new ABCVm(this);
+	}
+	else
+		vmVersion=AVM1;
+	if(engine)
+		addJob(new EngineCreator);
+	sem_post(&mutex);
+}
+
+void SystemState::setParamsAndEngine(ENGINE e, NPAPI_params* p)
+{
+	sem_wait(&mutex);
+	if(p)
+		npapiParams=*p;
+	engine=e;
+	if(vmVersion)
+		addJob(new EngineCreator);
+	sem_post(&mutex);
+}
+
 void SystemState::setRenderRate(float rate)
 {
+	sem_wait(&mutex);
 	if(renderRate>=rate)
+	{
+		sem_post(&mutex);
 		return;
+	}
 	
 	//The requested rate is higher, let's reschedule the job
 	renderRate=rate;
-	assert(renderThread);
-	removeJob(renderThread);
-	addTick(1000/rate,renderThread);
+	if(renderThread)
+		startRenderTicks();
+	sem_post(&mutex);
 }
 
 void SystemState::tick()
@@ -444,7 +777,7 @@ void ThreadProfile::plot(uint32_t maxTime, FTFont* font)
 	}
 }
 
-ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in)
+ParseThread::ParseThread(RootMovieClip* r,istream& in):f(in),isEnded(false),root(NULL),version(0),useAVM2(false)
 {
 	root=r;
 	sem_init(&ended,0,0);
@@ -466,7 +799,8 @@ void ParseThread::execute()
 		root->setFrameSize(h.getFrameSize());
 		root->setFrameCount(h.FrameCount);
 
-		TagFactory factory(f);
+		//Create a top level TagFactory
+		TagFactory factory(f, true);
 		bool done=false;
 		bool empty=true;
 		while(!done)
@@ -536,7 +870,11 @@ void ParseThread::threadAbort()
 
 void ParseThread::wait()
 {
-	sem_wait(&ended);
+	if(!isEnded)
+	{
+		sem_wait(&ended);
+		isEnded=true;
+	}
 }
 
 void RenderThread::wait()
@@ -557,24 +895,8 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminat
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifdef COMPILE_PLUGIN
-	else if(e==NPAPI)
-	{
-		npapi_params=(NPAPI_params*)param;
-		//Under NPAPI is a bad idea to handle input in another thread
-		//pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
-		
-		//Let's hook into the Xt event handling of the browser
-		X11Intrinsic::Widget xtwidget = X11Intrinsic::XtWindowToWidget(npapi_params->display, npapi_params->window);
-		assert_and_throw(xtwidget);
-
-		//mXtwidget = xtwidget;
-		long event_mask = ExposureMask|PointerMotionMask|ButtonPressMask|KeyPressMask;
-		XSelectInput(npapi_params->display, npapi_params->window, event_mask);
-		X11Intrinsic::XtAddEventHandler(xtwidget, event_mask, False, (X11Intrinsic::XtEventHandler)npapi_worker, this);
-	}
 	else if(e==GTKPLUG)
 	{
-		gdk_threads_enter();
 		npapi_params=(NPAPI_params*)param;
 		GtkWidget* container=npapi_params->container;
 		gtk_widget_set_can_focus(container,True);
@@ -582,7 +904,6 @@ InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminat
 						GDK_POINTER_MOTION_MASK | GDK_SCROLL_MASK | GDK_EXPOSURE_MASK | GDK_VISIBILITY_NOTIFY_MASK |
 						GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK);
 		g_signal_connect(G_OBJECT(container), "event", G_CALLBACK(gtkplug_worker), this);
-		gdk_threads_leave();
 	}
 #endif
 	else
@@ -607,45 +928,88 @@ void InputThread::wait()
 //This is a GTK event handler and the gdk lock is already acquired
 gboolean InputThread::gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th)
 {
-	cout << "Event" << endl;
-	return False;
-}
-
-void InputThread::npapi_worker(X11Intrinsic::Widget xt_w, InputThread* th, XEvent* xevent, X11Intrinsic::Boolean* b)
-{
-	switch(xevent->type)
+	//Set sys to this SystemState
+	sys=th->m_sys;
+	gboolean ret=FALSE;
+	switch(event->type)
 	{
-		case KeyPress:
+		case GDK_KEY_PRESS:
 		{
-			int key=XLookupKeysym(&xevent->xkey,0);
-			switch(key)
+			//cout << "key press" << endl;
+			switch(event->key.keyval)
 			{
-				case 'd':
-					th->m_sys->showDebug=!th->m_sys->showDebug;
-					break;
-				case 'i':
+				case GDK_i:
 					th->m_sys->showInteractiveMap=!th->m_sys->showInteractiveMap;
 					break;
-				case 'p':
+				case GDK_p:
 					th->m_sys->showProfilingData=!th->m_sys->showProfilingData;
 					break;
 				default:
 					break;
 			}
-			*b=False;
+			ret=TRUE;
 			break;
 		}
-		case Expose:
+		case GDK_EXPOSE:
+		{
 			//Signal the renderThread
-			th->m_sys->renderThread->draw();
-			*b=False;
+			th->m_sys->getRenderThread()->draw();
+			ret=TRUE;
 			break;
+		}
+		case GDK_BUTTON_PRESS:
+		{
+			//Grab focus
+			gtk_widget_grab_focus(widget);
+			//cout << "Press" << endl;
+			Locker locker(th->mutexListeners);
+			th->m_sys->getRenderThread()->requestInput();
+			float selected=th->m_sys->getRenderThread()->getIdAt(event->button.x,event->button.y);
+			if(selected!=0)
+			{
+				int index=lrint(th->listeners.size()*selected);
+				index--;
+
+				th->lastMouseDownTarget=th->listeners[index];
+				//Add event to the event queue
+				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
+				//And select that object for debugging (if needed)
+				if(th->m_sys->showDebug)
+					th->m_sys->getRenderThread()->selectedDebug=th->listeners[index];
+			}
+			ret=TRUE;
+			break;
+		}
+		case GDK_BUTTON_RELEASE:
+		{
+			//cout << "Release" << endl;
+			Locker locker(th->mutexListeners);
+			th->m_sys->getRenderThread()->requestInput();
+			float selected=th->m_sys->getRenderThread()->getIdAt(event->button.x,event->button.y);
+			if(selected!=0)
+			{
+				int index=lrint(th->listeners.size()*selected);
+				index--;
+
+				//Add event to the event queue
+				getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseUp",true));
+				//Also send the click event
+				if(th->lastMouseDownTarget==th->listeners[index])
+				{
+					getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("click",true));
+					th->lastMouseDownTarget=NULL;
+				}
+			}
+			ret=TRUE;
+			break;
+		}
 		default:
-			*b=True;
 #ifdef EXPENSIVE_DEBUG
-			cout << "TYPE " << dec << xevent->type << endl;
+			cout << "GDKTYPE " << event->type << endl;
 #endif
+			break;
 	}
+	return ret;
 }
 #endif
 
@@ -700,11 +1064,11 @@ void* InputThread::sdl_worker(InputThread* th)
 			case SDL_MOUSEBUTTONDOWN:
 			{
 				Locker locker(th->mutexListeners);
-				sys->renderThread->requestInput();
-				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
+				th->m_sys->getRenderThread()->requestInput();
+				float selected=th->m_sys->getRenderThread()->getIdAt(event.button.x,event.button.y);
 				if(selected==0)
 				{
-					sys->renderThread->selectedDebug=NULL;
+					th->m_sys->getRenderThread()->selectedDebug=NULL;
 					break;
 				}
 
@@ -714,27 +1078,29 @@ void* InputThread::sdl_worker(InputThread* th)
 
 				th->lastMouseDownTarget=th->listeners[index];
 				//Add event to the event queue
-				sys->currentVm->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseDown",true));
+				th->m_sys->currentVm->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseDown",true));
 				//And select that object for debugging (if needed)
-				if(sys->showDebug)
-					sys->renderThread->selectedDebug=th->listeners[index];
+				if(th->m_sys->showDebug)
+					th->m_sys->getRenderThread()->selectedDebug=th->listeners[index];
 				break;
 			}
 			case SDL_MOUSEBUTTONUP:
 			{
 				Locker locker(th->mutexListeners);
-				sys->renderThread->requestInput();
-				float selected=sys->renderThread->getIdAt(event.button.x,event.button.y);
+				th->m_sys->getRenderThread()->requestInput();
+				float selected=th->m_sys->getRenderThread()->getIdAt(event.button.x,event.button.y);
+				if(selected==0)
+					break;
 
 				int index=round(th->listeners.size()*selected);
 				index--;
 
 				//Add event to the event queue
-				getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("mouseUp",true));
+				getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("mouseUp",true));
 				//Also send the click event
 				if(th->lastMouseDownTarget==th->listeners[index])
 				{
-					getVm()->addEvent(th->listeners[index],Class<Event>::getInstanceS("click",true));
+					getVm()->addEvent(th->listeners[index],Class<MouseEvent>::getInstanceS("click",true));
 					th->lastMouseDownTarget=NULL;
 				}
 				break;
@@ -755,6 +1121,7 @@ void* InputThread::sdl_worker(InputThread* th)
 void InputThread::addListener(InteractiveObject* ob)
 {
 	Locker locker(mutexListeners);
+	assert(ob);
 
 #ifndef NDEBUG
 	vector<InteractiveObject*>::const_iterator it=find(listeners.begin(),listeners.end(),ob);
@@ -828,14 +1195,41 @@ void InputThread::disableDrag()
 	}
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),
-	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),dataTex(false),mainTex(false),tempTex(false),
-	inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),inputDisabled(false),
+	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),
+	mainTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
 	sem_init(&render,0,0);
 	sem_init(&inputDone,0,0);
+
+#ifdef WIN32
+	fontPath = "TimesNewRoman.ttf";
+#else
+	FcPattern *pat, *match;
+	FcResult result = FcResultMatch;
+	char *font = NULL;
+
+	pat = FcPatternCreate();
+	FcPatternAddString(pat, FC_FAMILY, (const FcChar8 *)"Serif");
+	FcConfigSubstitute(NULL, pat, FcMatchPattern);
+	FcDefaultSubstitute(pat);
+	match = FcFontMatch(NULL, pat, &result);
+	FcPatternDestroy(pat);
+
+	if (result != FcResultMatch)
+	{
+		LOG(LOG_ERROR,"Unable to find suitable Serif font");
+		throw RunTimeException("Unable to find Serif font");
+	}
+
+	FcPatternGetString(match, FC_FILE, 0, (FcChar8 **) &font);
+	fontPath = font;
+	FcPatternDestroy(match);
+	LOG(LOG_NO_INFO, "Font File is " << fontPath);
+#endif
+
 	if(e==SDL)
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
 #ifdef COMPILE_PLUGIN
@@ -843,11 +1237,6 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	{
 		npapi_params=(NPAPI_params*)params;
 		pthread_create(&t,NULL,(thread_worker)gtkplug_worker,this);
-	}
-	else if(e==NPAPI)
-	{
-		npapi_params=(NPAPI_params*)params;
-		pthread_create(&t,NULL,(thread_worker)npapi_worker,this);
 	}
 #endif
 #ifndef WIN32
@@ -864,6 +1253,26 @@ RenderThread::~RenderThread()
 	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
 }
 
+void RenderThread::addResource(GLResource* res)
+{
+	managedResources.insert(res);
+}
+
+void RenderThread::removeResource(GLResource* res)
+{
+	managedResources.erase(res);
+}
+
+void RenderThread::acquireResourceMutex()
+{
+	mutexResources.lock();
+}
+
+void RenderThread::releaseResourceMutex()
+{
+	mutexResources.unlock();
+}
+
 void RenderThread::requestInput()
 {
 	inputNeeded=true;
@@ -873,6 +1282,8 @@ void RenderThread::requestInput()
 
 bool RenderThread::glAcquireIdBuffer()
 {
+	if(inputDisabled)
+		return false;
 	//TODO: PERF: on the id buffer stuff are drawn more than once
 	if(currentId!=0)
 	{
@@ -950,184 +1361,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 	rt->width=window_width;
 	rt->height=window_height;
-	gdk_threads_enter();
-	GtkWidget* container=p->container;
-	gtk_widget_show(container);
-	gdk_gl_init(0, 0);
-	GdkGLConfig* glConfig=gdk_gl_config_new_by_mode((GdkGLConfigMode)(GDK_GL_MODE_RGBA|GDK_GL_MODE_DOUBLE|GDK_GL_MODE_DEPTH));
-	assert_and_throw(glConfig);
-	
-	GtkWidget* drawing_area = gtk_drawing_area_new ();
-	//gtk_widget_set_size_request (drawing_area, 0, 0);
-
-	gtk_widget_set_gl_capability (drawing_area,glConfig,NULL,TRUE,GDK_GL_RGBA_TYPE);
-	gtk_widget_show (drawing_area);
-	gtk_container_add (GTK_CONTAINER (container), drawing_area);
-	GdkGLContext *glContext = gtk_widget_get_gl_context (drawing_area);
-	GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);	
-	bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-	assert_and_throw(ret);
-	th->commonGLInit(window_width, window_height);
-	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
-	profile->setTag("Render");
-	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
-	if(font.Error())
-		throw RunTimeException("Unable to load font");
-	
-	font.FaceSize(20);
-
-	glEnable(GL_TEXTURE_2D);
-	gdk_gl_drawable_gl_end(glDrawable);
-	gdk_threads_leave();
-	Chronometer chronometer;
-	try
-	{
-		while(1)
-		{
-			sem_wait(&th->render);
-			if(th->m_sys->isShuttingDown())
-				pthread_exit(0);
-
-			chronometer.checkpoint();
-
-			gdk_threads_enter();
-			bool ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-			assert_and_throw(ret);
-			gdk_gl_drawable_swap_buffers(glDrawable);
-
-			if(th->inputNeeded)
-			{
-				th->inputTex.bind();
-				glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
-				th->inputNeeded=false;
-				sem_post(&th->inputDone);
-			}
-
-			//Before starting rendering, cleanup all the request arrived in the meantime
-			int fakeRenderCount=0;
-			while(sem_trywait(&th->render)==0)
-			{
-				if(th->m_sys->isShuttingDown())
-					pthread_exit(0);
-				fakeRenderCount++;
-			}
-
-			if(fakeRenderCount)
-				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
-
-			glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
-			//Clear the id buffer
-			glDrawBuffer(GL_COLOR_ATTACHMENT2);
-			glClearColor(1,0,0,1);
-			glClear(GL_COLOR_BUFFER_BIT);
-			
-			//Clear the back buffer
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-			RGB bg=sys->getBackground();
-			glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-			glClear(GL_COLOR_BUFFER_BIT);
-
-			glLoadIdentity();
-			glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
-			glScalef(scalex,scaley,1);
-			
-			th->m_sys->Render();
-
-			glFlush();
-
-			glLoadIdentity();
-
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glDrawBuffer(GL_BACK);
-			glUseProgram(0);
-
-			TextureBuffer* curBuf=((th->m_sys->showInteractiveMap)?&th->inputTex:&th->mainTex);
-			curBuf->bind();
-			glBegin(GL_QUADS);
-				glTexCoord2f(0,1);
-				glVertex2i(0,0);
-				glTexCoord2f(1,1);
-				glVertex2i(th->width,0);
-				glTexCoord2f(1,0);
-				glVertex2i(th->width,th->height);
-				glTexCoord2f(0,0);
-				glVertex2i(0,th->height);
-			glEnd();
-			
-			if(th->m_sys->showDebug)
-			{
-				glDisable(GL_TEXTURE_2D);
-				th->m_sys->debugRender(&font, true);
-				glEnable(GL_TEXTURE_2D);
-			}
-
-			if(th->m_sys->showProfilingData)
-			{
-				glColor3f(0,0,0);
-				char frameBuf[20];
-				snprintf(frameBuf,20,"Frame %u",th->m_sys->state.FP);
-				font.Render(frameBuf,-1,FTPoint(0,0));
-
-				//Draw bars
-				glColor4f(0.7,0.7,0.7,0.7);
-				glBegin(GL_LINES);
-				for(int i=1;i<10;i++)
-				{
-					glVertex2i(0,(i*th->height/10));
-					glVertex2i(th->width,(i*th->height/10));
-				}
-				glEnd();
-				
-				list<ThreadProfile>::iterator it=th->m_sys->profilingData.begin();
-				for(;it!=th->m_sys->profilingData.end();it++)
-					it->plot(1000000/sys->getFrameRate(),&font);
-			}
-			//Call glFlush to offload work on the GPU
-			glFlush();
-			glUseProgram(th->gpu_program);
-
-			gdk_gl_drawable_gl_end(glDrawable);
-			gdk_threads_leave();
-
-			profile->accountTime(chronometer.checkpoint());
-		}
-	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR,"Exception in RenderThread " << e.what() << " " << e.cause);
-		sys->setError(e.cause);
-	}
-	ret=gdk_gl_drawable_gl_begin(glDrawable,glContext);
-	assert_and_throw(ret);
-	glDisable(GL_TEXTURE_2D);
-	gdk_gl_drawable_gl_end(glDrawable);
-	delete p;
-	th->commonGLDeinit();
-	return NULL;
-}
-#endif
-
-#ifdef COMPILE_PLUGIN
-void* RenderThread::npapi_worker(RenderThread* th)
-{
-	sys=th->m_sys;
-	rt=th;
-	NPAPI_params* p=th->npapi_params;
-
-	RECT size=sys->getFrameSize();
-	int swf_width=size.Xmax/20;
-	int swf_height=size.Ymax/20;
-
-	int window_width=p->width;
-	int window_height=p->height;
-
-	float scalex=window_width;
-	scalex/=swf_width;
-	float scaley=window_height;
-	scaley/=swf_height;
-
-	rt->width=window_width;
-	rt->height=window_height;
 	
 	Display* d=XOpenDisplay(NULL);
 
@@ -1138,13 +1371,13 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		LOG(LOG_ERROR,"glX not present");
 		return NULL;
 	}
-	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_DEPTH_SIZE,24,None};
+	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_DOUBLEBUFFER,True,None};
 	GLXFBConfig* fb=glXChooseFBConfig(d, 0, attrib, &a);
 	if(!fb)
 	{
 		attrib[2]=None;
 		fb=glXChooseFBConfig(d, 0, attrib, &a);
-		LOG(LOG_ERROR,"Falling back to no depth buffer");
+		LOG(LOG_ERROR,"Falling back to no double buffering");
 	}
 	if(!fb)
 	{
@@ -1166,10 +1399,12 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		return NULL;
 	}
 	th->mFBConfig=fb[i];
+	cout << "Chosen config " << hex << fb[i] << dec << endl;
 	XFree(fb);
 
 	th->mContext = glXCreateNewContext(d,th->mFBConfig,GLX_RGBA_TYPE ,NULL,1);
-	glXMakeContextCurrent(d, p->window, p->window, th->mContext);
+	GLXWindow glxWin=p->window;
+	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");
 
@@ -1177,10 +1412,10 @@ void* RenderThread::npapi_worker(RenderThread* th)
 	
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
+	FTTextureFont font(rt->fontPath.c_str());
 	if(font.Error())
 	{
-		LOG(LOG_ERROR,"Unable to load ttf-liberation font");
+		LOG(LOG_ERROR,"Unable to load serif font");
 		throw RunTimeException("Unable to load font");
 	}
 	
@@ -1194,19 +1429,27 @@ void* RenderThread::npapi_worker(RenderThread* th)
 			sem_wait(&th->render);
 			Chronometer chronometer;
 			
+			if(th->inputNeeded)
+			{
+				th->inputTex.bind();
+				glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
+				th->inputNeeded=false;
+				sem_post(&th->inputDone);
+			}
+
 			//Before starting rendering, cleanup all the request arrived in the meantime
 			int fakeRenderCount=0;
 			while(sem_trywait(&th->render)==0)
 			{
 				if(th->m_sys->isShuttingDown())
-					pthread_exit(0);
+					break;
 				fakeRenderCount++;
 			}
 			
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 			if(th->m_sys->isShuttingDown())
-				pthread_exit(0);
+				break;
 
 			if(th->m_sys->isOnError())
 			{
@@ -1234,27 +1477,18 @@ void* RenderThread::npapi_worker(RenderThread* th)
 					    -1,FTPoint(0,th->height/2-40));
 				
 				glFlush();
-				glXSwapBuffers(d,p->window);
+				glXSwapBuffers(d,glxWin);
 			}
 			else
 			{
-				glXSwapBuffers(d,p->window);
-
-				if(th->inputNeeded)
-				{
-					th->inputTex.bind();
-					glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA,GL_UNSIGNED_BYTE,th->interactive_buffer);
-					th->inputNeeded=false;
-					sem_post(&th->inputDone);
-				}
+				glXSwapBuffers(d,glxWin);
 
 				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
 				glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 				RGB bg=sys->getBackground();
 				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
-				glClearDepth(0xffff);
-				glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+				glClear(GL_COLOR_BUFFER_BIT);
 				glLoadIdentity();
 				glScalef(scalex,scaley,1);
 				
@@ -1319,11 +1553,14 @@ void* RenderThread::npapi_worker(RenderThread* th)
 		sys->setError(e.cause);
 	}
 	glDisable(GL_TEXTURE_2D);
+	//Before destroying the context shutdown all the GLResources
+	set<GLResource*>::const_iterator it=th->managedResources.begin();
+	for(;it!=th->managedResources.end();it++)
+		(*it)->shutdown();
 	th->commonGLDeinit();
-	glXMakeContextCurrent(d,None,None,NULL);
+	glXMakeCurrent(d,None,NULL);
 	glXDestroyContext(d,th->mContext);
 	XCloseDisplay(d);
-	delete p;
 	return NULL;
 }
 #endif
@@ -1335,10 +1572,10 @@ bool RenderThread::loadShaderPrograms()
 	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
 	
 	const char *fs = NULL;
-	fs = dataFileRead(DATADIRECTORY "/lightspark.frag");
+	fs = dataFileRead("lightspark.frag");
 	if(fs==NULL)
 	{
-		LOG(LOG_ERROR,"Shader " DATADIRECTORY "/lightspark.frag not found");
+		LOG(LOG_ERROR,"Shader lightspark.frag not found");
 		throw RunTimeException("Fragment shader code not found");
 	}
 	assert(glShaderSource);
@@ -1372,10 +1609,10 @@ bool RenderThread::loadShaderPrograms()
 	//Create the blitter shader
 	GLuint v = glCreateShader(GL_VERTEX_SHADER);
 
-	fs = dataFileRead(DATADIRECTORY "/lightspark.vert");
+  fs = dataFileRead("lightspark.vert");
 	if(fs==NULL)
 	{
-		LOG(LOG_ERROR,"Shader " DATADIRECTORY "/lightspark.vert not found");
+		LOG(LOG_ERROR,"Shader lightspark.vert not found");
 		throw RunTimeException("Vertex shader code not found");
 	}
 	glShaderSource(v, 1, &fs,NULL);
@@ -1463,6 +1700,10 @@ void RenderThread::commonGLDeinit()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	glDeleteFramebuffers(1,&rt->fboId);
+	dataTex.shutdown();
+	mainTex.shutdown();
+	tempTex.shutdown();
+	inputTex.shutdown();
 }
 
 void RenderThread::commonGLInit(int width, int height)
@@ -1481,15 +1722,11 @@ void RenderThread::commonGLInit(int width, int height)
 		LOG(LOG_ERROR,"Video card does not support OpenGL 2.0... Aborting");
 		::abort();
 	}
-
 	if(GLEW_ARB_texture_non_power_of_two)
 		hasNPOTTextures=true;
 
 	//Load shaders
 	loadShaderPrograms();
-
-	glDisable(GL_DEPTH_TEST);
-	glDepthFunc(GL_ALWAYS);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
@@ -1533,8 +1770,19 @@ void RenderThread::commonGLInit(int width, int height)
 	glGenFramebuffers(1, &fboId);
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, mainTex.getId(), 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, tempTex.getId(), 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,GL_TEXTURE_2D, inputTex.getId(), 0);
+	//Verify if we have more than an attachment available (1 is guaranteed)
+	GLint numberOfAttachments=0;
+	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &numberOfAttachments);
+	if(numberOfAttachments>=3)
+	{
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, tempTex.getId(), 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,GL_TEXTURE_2D, inputTex.getId(), 0);
+	}
+	else
+	{
+		LOG(LOG_ERROR,"Non enough color attachments available, input disabled");
+		inputDisabled=true;
+	}
 	
 	// check FBO status
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -1562,7 +1810,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 	SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
 	SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1); 
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
@@ -1572,7 +1819,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font("/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf");
+	FTTextureFont font(rt->fontPath.c_str());
 	if(font.Error())
 		throw RunTimeException("Unable to load font");
 	
@@ -1602,7 +1849,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			while(sem_trywait(&th->render)==0)
 			{
 				if(th->m_sys->isShuttingDown())
-					pthread_exit(0);
+					break;
 				fakeRenderCount++;
 			}
 
@@ -1610,7 +1857,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
 
 			if(th->m_sys->isShuttingDown())
-				pthread_exit(0);
+				break;
 			SDL_PumpEvents();
 
 			if(th->m_sys->isOnError())
@@ -1898,28 +2145,37 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 
 void RootMovieClip::tick()
 {
-	advanceFrame();
-	Event* e=Class<Event>::getInstanceS("enterFrame");
-	if(hasEventListener("enterFrame"))
-		getVm()->addEvent(this,e);
-	//Get a copy of the current childs
-	vector<MovieClip*> curChildren;
+	//Frame advancement may cause exceptions
+	try
 	{
-		Locker l(mutexChildrenClips);
-		curChildren.reserve(childrenClips.size());
-		curChildren.insert(curChildren.end(),childrenClips.begin(),childrenClips.end());
+		advanceFrame();
+		Event* e=Class<Event>::getInstanceS("enterFrame");
+		if(hasEventListener("enterFrame"))
+			getVm()->addEvent(this,e);
+		//Get a copy of the current childs
+		vector<MovieClip*> curChildren;
+		{
+			Locker l(mutexChildrenClips);
+			curChildren.reserve(childrenClips.size());
+			curChildren.insert(curChildren.end(),childrenClips.begin(),childrenClips.end());
+			for(uint32_t i=0;i<curChildren.size();i++)
+				curChildren[i]->incRef();
+		}
+		//Advance all the children, and release the reference
 		for(uint32_t i=0;i<curChildren.size();i++)
-			curChildren[i]->incRef();
+		{
+			curChildren[i]->advanceFrame();
+			if(curChildren[i]->hasEventListener("enterFrame"))
+				getVm()->addEvent(curChildren[i],e);
+			curChildren[i]->decRef();
+		}
+		e->decRef();
 	}
-	//Advance all the children, and release the reference
-	for(uint32_t i=0;i<curChildren.size();i++)
+	catch(LightsparkException& e)
 	{
-		curChildren[i]->advanceFrame();
-		if(curChildren[i]->hasEventListener("enterFrame"))
-			getVm()->addEvent(curChildren[i],e);
-		curChildren[i]->decRef();
+		LOG(LOG_ERROR,"Exception in RootMovieClip::tick " << e.cause);
+		sys->setError(e.cause);
 	}
-	e->decRef();
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

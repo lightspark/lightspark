@@ -109,14 +109,20 @@ private:
 	tiny_string url;
 	STREAM_TYPE classifyStream(std::istream& s);
 	double frameRate;
+	bool tickStarted;
 	Downloader* downloader;
-	Decoder* decoder;
+	VideoDecoder* videoDecoder;
+	AudioDecoder* audioDecoder;
+	FLV_AUDIO_CODEC audioCodec;
+	uint32_t soundStreamId;
+	uint32_t streamTime;
 	sem_t mutex;
 	//IThreadJob interface for long jobs
 	void execute();
 	void threadAbort();
 	//ITickJob interface to frame advance
 	void tick();
+	bool isReady() const;
 public:
 	NetStream();
 	~NetStream();
@@ -130,10 +136,47 @@ public:
 	ASFUNCTION(getTime);
 
 	//Interface for video
-	uint32_t getVideoWidth();
-	uint32_t getVideoHeight();
+	/**
+	  	Get the frame width
+
+		@pre lock on the object should be acquired and object should be ready
+		@return the frame width
+	*/
+	uint32_t getVideoWidth() const;
+	/**
+	  	Get the frame height
+
+		@pre lock on the object should be acquired and object should be ready
+		@return the frame height
+	*/
+	uint32_t getVideoHeight() const;
+	/**
+	  	Get the frame rate
+
+		@pre lock on the object should be acquired and object should be ready
+		@return the frame rate
+	*/
 	double getFrameRate();
+	/**
+	  	copy the current frame to a texture
+
+		@pre lock on the object should be acquired and object should be ready
+		@param tex the TextureBuffer to copy in
+		@return true if a new frame has been copied
+	*/
 	bool copyFrameToTexture(TextureBuffer& tex);
+	/**
+	  	Acquire the mutex to guarantee validity of data
+
+		@return true if the lock has been acquired
+	*/
+	bool lockIfReady();
+	/**
+	  	Release the lock
+
+		@pre the object should be locked
+	*/
+	void unlock();
 };
 
 };

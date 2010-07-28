@@ -60,16 +60,34 @@ void Video::buildTraits(ASObject* o)
 	o->setVariableByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream));
 }
 
+Video::~Video()
+{
+	if(rt)
+	{
+		rt->acquireResourceMutex();
+		rt->removeResource(&videoTexture);
+	}
+	videoTexture.shutdown();
+	if(rt)
+	{
+		rt->releaseResourceMutex();
+		sem_destroy(&mutex);
+	}
+}
+
 void Video::Render()
 {
 	if(!initialized)
 	{
 		videoTexture.init(0,0,GL_LINEAR);
+		rt->addResource(&videoTexture);
 		initialized=true;
 	}
 
-	if(netStream)
+	sem_wait(&mutex);
+	if(netStream && netStream->lockIfReady())
 	{
+		//All operations here should be non blocking
 		//Get size
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
@@ -88,7 +106,6 @@ void Video::Render()
 		{
 			glColor4f(0,0,0,1);
 			//width and height should not change now
-			sem_wait(&mutex);
 			glBegin(GL_QUADS);
 				glTexCoord2f(0,0);
 				glVertex2i(0,0);
@@ -102,7 +119,6 @@ void Video::Render()
 				glTexCoord2f(0,1);
 				glVertex2i(0,height);
 			glEnd();
-			sem_post(&mutex);
 		}
 
 		if(!isSimple())
@@ -120,7 +136,9 @@ void Video::Render()
 			rt->glReleaseIdBuffer();
 		}
 		ma.unapply();
+		netStream->unlock();
 	}
+	sem_post(&mutex);
 }
 
 bool Video::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -191,6 +209,14 @@ ASFUNCTIONBODY(Video,attachNetStream)
 {
 	Video* th=Class<Video>::cast(obj);
 	assert_and_throw(argslen==1);
+	if(args[0]->getObjectType()==T_NULL) //Drop the connection
+	{
+		sem_wait(&th->mutex);
+		th->netStream=NULL;
+		sem_post(&th->mutex);
+		return NULL;
+	}
+
 	//Validate the parameter
 	if(args[0]->getPrototype()!=Class<NetStream>::getClass())
 		throw RunTimeException("Type mismatch in Video::attachNetStream");
@@ -199,7 +225,9 @@ ASFUNCTIONBODY(Video,attachNetStream)
 	args[0]->incRef();
 
 	assert_and_throw(th->netStream==NULL);
+	sem_wait(&th->mutex);
 	th->netStream=Class<NetStream>::cast(args[0]);
+	sem_post(&th->mutex);
 	return NULL;
 }
 

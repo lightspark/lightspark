@@ -70,21 +70,9 @@ DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& i
 	skip(in);
 }
 
-MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"MetadataTag Tag");
-	skip(in);
-}
-
 DefineBitsJPEG2Tag::DefineBitsJPEG2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"DefineBitsJPEG2Tag Tag");
-	skip(in);
-}
-
-ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"ScriptLimitsTag Tag");
 	skip(in);
 }
 
@@ -92,12 +80,6 @@ DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag
 {
 	in >> CharacterId >> Splitter;
 	LOG(LOG_NOT_IMPLEMENTED,"DefineScalingGridTag Tag on ID " << CharacterId);
-}
-
-SerialNumberTag::SerialNumberTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"SerialNumberTag Tag");
-	skip(in);
 }
 
 SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in):Tag(h)

@@ -24,8 +24,29 @@
 
 extern "C"
 {
-//Packing of YUV channels in a single buffer (YUVA)
-void fastYUV420ChannelsToBuffer(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t size);
+/**
+	Packing of YUV channels in a single buffer (YUVA). Full aligned version
+
+	@param y Planar Y buffer
+	@param u Planar U buffer
+	@param u Planar V buffer
+	@param out Destination YUV0 buffer
+	@param width Frame width in pixels
+	@param height Frame width in pixels
+	@pre The first pixel of all frame lines must be 16 bytes aligned. Use fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned if not.
+*/
+void fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t width, uint32_t height);
+/**
+	Packing of YUV channels in a single buffer (YUVA). Unaligned version
+
+	@param y Planar Y buffer
+	@param u Planar U buffer
+	@param u Planar V buffer
+	@param out Destination YUV0 buffer
+	@param width Frame width in pixels
+	@param height Frame width in pixels
+*/
+void fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* out, uint32_t width, uint32_t height);
 }
 
 #endif

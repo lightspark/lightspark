@@ -49,6 +49,7 @@ void IEventDispatcher::linkTraits(ASObject* o)
 	lookupAndLink(o,"addEventListener","flash.events:IEventDispatcher");
 	lookupAndLink(o,"removeEventListener","flash.events:IEventDispatcher");
 	lookupAndLink(o,"dispatchEvent","flash.events:IEventDispatcher");
+	lookupAndLink(o,"hasEventListener","flash.events:IEventDispatcher");
 }
 
 Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NULL),bubbles(b)
@@ -78,6 +79,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("CHANGE","",Class<ASString>::getInstanceS("change"));
 	c->setVariableByQName("RESIZE","",Class<ASString>::getInstanceS("resize"));
 	c->setVariableByQName("MOUSE_LEAVE","",Class<ASString>::getInstanceS("mouseLeave"));
+	c->setVariableByQName("SELECT","",Class<ASString>::getInstanceS("select"));
 	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS("tabChildrenChange"));
 	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"));
 	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"));
@@ -143,6 +145,10 @@ MouseEvent::MouseEvent():Event("mouseEvent")
 {
 }
 
+MouseEvent::MouseEvent(const tiny_string& t, bool b):Event(t,b)
+{
+}
+
 ProgressEvent::ProgressEvent():Event("progress"),bytesLoaded(0),bytesTotal(0)
 {
 }
@@ -192,6 +198,8 @@ void MouseEvent::sinit(Class_base* c)
 {
 //	assert(c->constructor==NULL);
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
+	c->super=Class<Event>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("CLICK","",Class<ASString>::getInstanceS("click"));
 	c->setVariableByQName("DOUBLE_CLICK","",Class<ASString>::getInstanceS("doubleClick"));
 	c->setVariableByQName("MOUSE_DOWN","",Class<ASString>::getInstanceS("mouseDown"));
@@ -202,6 +210,13 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableByQName("MOUSE_MOVE","",Class<ASString>::getInstanceS("mouseMove"));
 	c->setVariableByQName("ROLL_OVER","",Class<ASString>::getInstanceS("rollOver"));
 	c->setVariableByQName("ROLL_OUT","",Class<ASString>::getInstanceS("rollOut"));
+}
+
+void MouseEvent::buildTraits(ASObject* o)
+{
+	//TODO: really handle local[XY]
+	o->setVariableByQName("localX","",abstract_d(0));
+	o->setVariableByQName("localY","",abstract_d(0));
 }
 
 IOErrorEvent::IOErrorEvent()
@@ -221,6 +236,8 @@ void EventDispatcher::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->addImplementedInterface(Class<IEventDispatcher>::getClass());
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 }
 
 void EventDispatcher::buildTraits(ASObject* o)
@@ -507,3 +524,10 @@ ASFUNCTIONBODY(AsyncErrorEvent,_constructor)
 	return NULL;
 }
 
+ABCContextInitEvent::ABCContextInitEvent(ABCContext* c):Event("ABCContextInitEvent"),context(c)
+{
+}
+
+ShutdownEvent::ShutdownEvent():Event("shutdownEvent")
+{
+}

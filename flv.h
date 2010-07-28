@@ -26,6 +26,8 @@
 namespace lightspark
 {
 
+enum FLV_AUDIO_CODEC { LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10 };
+
 class FLV_HEADER
 {
 private:
@@ -100,8 +102,18 @@ public:
 
 class AudioDataTag: public VideoTag
 {
+private:
+	bool _isHeader;
 public:
+	FLV_AUDIO_CODEC SoundFormat;
+	uint32_t SoundRate;
+	bool is16bit;
+	bool isStereo;
+	uint8_t* packetData;
+	uint32_t packetLen;
 	AudioDataTag(std::istream& s);
+	~AudioDataTag();
+	bool isHeader() const { return _isHeader; }
 };
 
 };

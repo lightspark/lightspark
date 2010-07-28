@@ -144,7 +144,7 @@ protected:
 	std::list < DisplayObject* > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
-	mutable sem_t sem_displayList;
+	mutable Mutex mutexDisplayList;
 	void setRoot(RootMovieClip* r);
 	void setOnStage(bool staged);
 public:
@@ -158,6 +158,7 @@ public:
 	ASFUNCTION(_getNumChildren);
 	ASFUNCTION(addChild);
 	ASFUNCTION(removeChild);
+	ASFUNCTION(removeChildAt);
 	ASFUNCTION(addChildAt);
 	ASFUNCTION(getChildIndex);
 	ASFUNCTION(getChildAt);

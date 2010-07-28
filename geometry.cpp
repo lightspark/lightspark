@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "swf.h"
 #include <fstream>
 #include <math.h>
 #include <algorithm>
@@ -24,7 +25,6 @@
 #include "swftypes.h"
 #include "logger.h"
 #include "geometry.h"
-#include "swf.h"
 
 
 using namespace std;
@@ -293,7 +293,6 @@ void ShapesBuilder::joinOutlines()
 		//Kill all the empty outlines
 		outlinesForColor.erase(remove_if(outlinesForColor.begin(),outlinesForColor.end(), isOutlineEmpty),
 				       outlinesForColor.end());
-		assert_and_throw(!outlinesForColor.empty());
 	}
 }
 

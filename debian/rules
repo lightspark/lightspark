@@ -1,7 +1,28 @@
 #!/usr/bin/make -f
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/cmake.mk
+%:
+	dh --parallel $@
 
-DEB_CMAKE_INSTALL_PREFIX = /usr
-DEB_CMAKE_EXTRA_FLAGS = -DCOMPILE_PLUGIN=1 -DCMAKE_BUILD_TYPE=Debian
+override_dh_auto_configure:
+	dh_auto_configure -- \
+	    -DCOMPILE_PLUGIN=1 \
+	    -DCMAKE_BUILD_TYPE=Debian \
+	    -DCMAKE_INSTALL_PREFIX=/usr
+
+override_dh_strip:
+	dh_strip --dbg-package=lightspark-dbg
+
+override_dh_install:
+	dh_install --list-missing
+
+override_dh_shlibdeps:
+	export LD_LIBRARY_PATH="$(CURDIR)/debian/lightspark-common/usr/lib/lightspark:$$LD_LIBRARY_PATH" ; \
+	    dh_shlibdeps -Llightspark-common \
+	    -pbrowser-plugin-lightspark -plightspark \
+	    -- -Ldebian/common.shlibs
+
+	dh_shlibdeps --remaining-packages
+
+override_dh_makeshlibs:
+	dh_makeshlibs -X/usr/lib/lightspark
+

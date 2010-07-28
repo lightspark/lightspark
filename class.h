@@ -23,6 +23,12 @@
 #ifndef CLASS_H
 #define CLASS_H
 
+#ifndef WIN32
+extern DLL_PUBLIC TLSDATA lightspark::SystemState* sys;
+#else
+extern TLSDATA lightspark::SystemState* sys;
+#endif
+
 namespace lightspark
 {
 
@@ -78,7 +84,7 @@ public:
 		return c->getInstance(true,NULL,0);
 	}
 	template <typename ARG1>
-	static T* getInstanceS(ARG1 a1)
+	static T* getInstanceS(const ARG1& a1)
 	{
 		Class<T>* c=Class<T>::getClass();
 		T* ret=new T(a1);
@@ -87,7 +93,7 @@ public:
 		return ret;
 	}
 	template <typename ARG1, typename ARG2>
-	static T* getInstanceS(ARG1 a1, ARG2 a2)
+	static T* getInstanceS(const ARG1& a1, const ARG2& a2)
 	{
 		Class<T>* c=Class<T>::getClass();
 		T* ret=new T(a1,a2);

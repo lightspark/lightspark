@@ -35,11 +35,11 @@ private:
 	sem_t sem;
 	const char* name;
 	uint32_t foundBusy;
-	void lock();
-	void unlock();
 public:
 	Mutex(const char* name);
 	~Mutex();
+	void lock();
+	void unlock();
 };
 
 class IThreadJob
@@ -47,8 +47,9 @@ class IThreadJob
 friend class ThreadPool;
 friend class Condition;
 private:
-	sem_t terminated; 
+	sem_t terminated;
 protected:
+	bool destroyMe;
 	bool executing;
 	bool aborting;
 	virtual void execute()=0;
@@ -57,7 +58,7 @@ public:
 	IThreadJob();
 	virtual ~IThreadJob();
 	void run();
-	void stop();
+	DLL_PUBLIC void stop();
 };
 
 class Condition
@@ -98,6 +99,78 @@ public:
 	{
 		_m.unlock();
 	}
+};
+
+template<class T, uint32_t size>
+class BlockingCircularQueue
+{
+private:
+	T queue[size];
+	//Counting semaphores for the queue
+	Condition freeBuffers;
+	Condition usedBuffers;
+	bool empty;
+	uint32_t bufferHead;
+	uint32_t bufferTail;
+public:
+	BlockingCircularQueue():freeBuffers(size),usedBuffers(0),empty(true),bufferHead(0),bufferTail(0)
+	{
+	}
+	template<class GENERATOR>
+	BlockingCircularQueue(const GENERATOR& g):freeBuffers(size),usedBuffers(0),empty(true),bufferHead(0),bufferTail(0)
+	{
+		for(uint32_t i=0;i<size;i++)
+			g.init(queue[i]);
+	}
+	bool isEmpty() const { return empty; }
+	T& front()
+	{
+		assert(!empty);
+		return queue[bufferHead];
+	}
+	const T& front() const
+	{
+		assert(!empty);
+		return queue[bufferHead];
+	}
+	bool nonBlockingPopFront()
+	{
+		//We don't want to block if empty
+		if(!usedBuffers.try_wait())
+			return false;
+		//A frame is available
+		bufferHead=(bufferHead+1)%size;
+		if(bufferHead==bufferTail)
+			empty=true;
+		freeBuffers.signal();
+		return true;
+	}
+	T& acquireLast()
+	{
+		freeBuffers.wait();
+		uint32_t ret=bufferTail;
+		bufferTail=(bufferTail+1)%size;
+		return queue[ret];
+	}
+	void commitLast()
+	{
+		empty=false;
+		usedBuffers.signal();
+	}
+	template<class GENERATOR>
+	void regen(const GENERATOR& g)
+	{
+		for(uint32_t i=0;i<size;i++)
+			g.init(queue[i]);
+	}
+	uint32_t len() const
+	{
+		uint32_t tmp=(bufferTail+size-bufferHead)%size;
+		if(tmp==0 && !empty)
+			tmp=size;
+		return tmp;
+	}
+
 };
 
 };

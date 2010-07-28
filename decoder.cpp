@@ -27,10 +27,11 @@
 #include "graphics.h"
 
 using namespace lightspark;
+using namespace std;
 
 extern TLSDATA SystemState* sys;
 
-bool Decoder::setSize(uint32_t w, uint32_t h)
+bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 {
 	if(w!=frameWidth || h!=frameHeight)
 	{
@@ -44,27 +45,41 @@ bool Decoder::setSize(uint32_t w, uint32_t h)
 		return false;
 }
 
-bool Decoder::copyFrameToTexture(TextureBuffer& tex)
+bool VideoDecoder::resizeIfNeeded(TextureBuffer& tex)
 {
 	if(!resizeGLBuffers)
 		return false;
 
+	//Request a sane alignment
+	tex.setRequestedAlignment(16,1);
 	//Initialize texture to video size
 	tex.resize(frameWidth, frameHeight);
 	resizeGLBuffers=false;
 	return true;
 }
 
-FFMpegDecoder::FFMpegDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),codecContext(NULL),freeBuffers(10),usedBuffers(0),
-		mutex("Decoder"),empty(true),bufferHead(0),bufferTail(0),initialized(false)
+bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 {
-	for(int i=0;i<10;i++)
+	if(codecContext->time_base.num!=0)
 	{
-		buffers[i][0]=NULL;
-		buffers[i][1]=NULL;
-		buffers[i][2]=NULL;
+		//time_base = 1/framerate
+		frameRate=codecContext->time_base.den;
+		frameRate/=codecContext->time_base.num;
 	}
+	else
+		return false;
 
+	if(codecContext->width!=0 && codecContext->height!=0)
+		setSize(codecContext->width, codecContext->height);
+	else
+		return false;
+
+	return true;
+}
+
+FFMpegVideoDecoder::FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),codecContext(NULL),
+	mutex("VideoDecoder"),initialized(false)
+{
 	//The tag is the header, initialize decoding
 	//TODO: serialize access to avcodec_open
 	const enum CodecID codecId=CODEC_ID_H264;
@@ -79,116 +94,104 @@ FFMpegDecoder::FFMpegDecoder(uint8_t* initdata, uint32_t datalen):curBuffer(0),c
 	if(avcodec_open(codecContext, codec)<0)
 		throw RunTimeException("Cannot open decoder");
 
+	if(fillDataAndCheckValidity())
+		status=VALID;
+	else
+		status=INIT;
+
 	frameIn=avcodec_alloc_frame();
 }
 
-FFMpegDecoder::~FFMpegDecoder()
+FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
-	for(int i=0;i<10;i++)
-	{
-		if(buffers[i][0])
-		{
-			free(buffers[i][0]);
-			free(buffers[i][1]);
-			free(buffers[i][2]);
-		}
-	}
 	assert(codecContext);
 	av_free(codecContext);
 	av_free(frameIn);
 }
 
 //setSize is called from the routine that inserts new frames
-void FFMpegDecoder::setSize(uint32_t w, uint32_t h)
+void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 {
-	if(Decoder::setSize(w,h))
+	if(VideoDecoder::setSize(w,h))
 	{
 		//Discard all the frames
 		while(discardFrame());
 
 		//As the size chaged, reset the buffer
-		for(int i=0;i<10;i++)
-		{
-			if(buffers[i][0])
-			{
-				free(buffers[i][0]);
-				free(buffers[i][1]);
-				free(buffers[i][2]);
-				buffers[i][0]=NULL;
-				buffers[i][1]=NULL;
-				buffers[i][2]=NULL;
-			}
-		}
+		uint32_t bufferSize=frameWidth*frameHeight*4;
+		buffers.regen(YUVBufferGenerator(bufferSize));
 	}
 }
 
-bool FFMpegDecoder::discardFrame()
+void FFMpegVideoDecoder::skipUntil(uint32_t time)
+{
+	while(1)
+	{
+		if(buffers.isEmpty())
+			return;
+		if(buffers.front().time>=time)
+			break;
+		discardFrame();
+	}
+}
+
+bool FFMpegVideoDecoder::discardFrame()
 {
 	Locker locker(mutex);
 	//We don't want ot block if no frame is available
-	if(!usedBuffers.try_wait())
-		return false;
-	//A frame is available
-	bufferHead=(bufferHead+1)%10;
-	if(bufferHead==bufferTail)
-		empty=true;
-	freeBuffers.signal();
-	return true;
+	return buffers.nonBlockingPopFront();
 }
 
-bool FFMpegDecoder::decodeData(uint8_t* data, uint32_t datalen)
+bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
 {
 	int frameOk=0;
+#if HAVE_AVCODEC_DECODE_VIDEO2
+	AVPacket pkt;
+	av_init_packet(&pkt);
+	pkt.data= data;
+	pkt.size= datalen;
+	avcodec_decode_video2(codecContext, frameIn, &frameOk, &pkt);
+#else
 	avcodec_decode_video(codecContext, frameIn, &frameOk, data, datalen);
+#endif
 	if(frameOk==0)
 		throw RunTimeException("Cannot decode frame");
 	assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
 
-	const uint32_t height=codecContext->height;
-	const uint32_t width=codecContext->width;
+	if(status==INIT && fillDataAndCheckValidity())
+		status=VALID;
+
 	assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
 
-	setSize(width,height);
-	copyFrameToBuffers(frameIn,width,height);
+	copyFrameToBuffers(frameIn, time);
 	return true;
 }
 
-void FFMpegDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t width, uint32_t height)
+void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t time)
 {
-	freeBuffers.wait();
-	uint32_t bufferSize=width*height*4;
+	YUVBuffer& curTail=buffers.acquireLast();
 	//Only one thread may access the tail
-	if(buffers[bufferTail][0]==NULL)
-	{
-#ifdef WIN32
-		//FIXME!!
-#else
-		posix_memalign((void**)&buffers[bufferTail][0], 16, bufferSize);
-		posix_memalign((void**)&buffers[bufferTail][1], 16, bufferSize/4);
-		posix_memalign((void**)&buffers[bufferTail][2], 16, bufferSize/4);
-#endif
-	}
 	int offset[3]={0,0,0};
-	for(uint32_t y=0;y<height;y++)
+	for(uint32_t y=0;y<frameHeight;y++)
 	{
-		memcpy(buffers[bufferTail][0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),width);
-		offset[0]+=width;
+		memcpy(curTail.ch[0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),frameWidth);
+		offset[0]+=frameWidth;
 	}
-	for(uint32_t y=0;y<height/2;y++)
+	for(uint32_t y=0;y<frameHeight/2;y++)
 	{
-		memcpy(buffers[bufferTail][1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),width/2);
-		memcpy(buffers[bufferTail][2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),width/2);
-		offset[1]+=width/2;
-		offset[2]+=width/2;
+		memcpy(curTail.ch[1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),frameWidth/2);
+		memcpy(curTail.ch[2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),frameWidth/2);
+		offset[1]+=frameWidth/2;
+		offset[2]+=frameWidth/2;
 	}
+	curTail.time=time;
 
-	bufferTail=(bufferTail+1)%10;
-	empty=false;
-	usedBuffers.signal();
+	buffers.commitLast();
 }
 
-bool FFMpegDecoder::copyFrameToTexture(TextureBuffer& tex)
+bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 {
+	assert(isValid());
 	if(!initialized)
 	{
 		glGenBuffers(2,videoBuffers);
@@ -196,24 +199,29 @@ bool FFMpegDecoder::copyFrameToTexture(TextureBuffer& tex)
 	}
 
 	bool ret=false;
-	if(Decoder::copyFrameToTexture(tex))
+	//Align width to 16 bytes (4 pixels), the alignment protocol is also respected when resizing texture
+	const uint32_t alignedWidth=(frameWidth+15)&0xfffffff0;
+	if(VideoDecoder::resizeIfNeeded(tex))
 	{
-		//Initialize both PBOs to video size
+		//Initialize both PBOs to video size, the width is aligned to 16
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, frameWidth*frameHeight*4, 0, GL_STREAM_DRAW);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4, 0, GL_STREAM_DRAW);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[1]);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, frameWidth*frameHeight*4, 0, GL_STREAM_DRAW);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4, 0, GL_STREAM_DRAW);
 	}
 	else
 	{
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
 		//Copy content of the pbo to the texture, 0 is the offset in the pbo
-		tex.setBGRAData(0, frameWidth, frameHeight);
+		tex.setBGRAData(0, alignedWidth, frameHeight);
+		//Now texture width has become alignedWidth, reset it to the right value
+		tex.resize(frameWidth,frameHeight);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 		ret=true;
 	}
 
-	if(!empty)
+	Locker locker(mutex);
+	if(!buffers.isEmpty())
 	{
 		//Increment and wrap current buffer index
 		unsigned int nextBuffer = (curBuffer + 1)%2;
@@ -222,15 +230,12 @@ bool FFMpegDecoder::copyFrameToTexture(TextureBuffer& tex)
 		uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
 
 		//At least a frame is available
-		int offset=0;
-		for(uint32_t y=0;y<frameHeight;y++)
-		{
-			fastYUV420ChannelsToBuffer(buffers[bufferHead][0]+(y*frameWidth),
-					buffers[bufferHead][1]+((y>>1)*(frameWidth>>1)),
-					buffers[bufferHead][2]+((y>>1)*(frameWidth>>1)),
-					buf+offset,frameWidth);
-			offset+=frameWidth*4;
-		}
+		YUVBuffer& cur=buffers.front();
+		//If the width is compatible with full aligned accesses use the aligned version of the packer
+		if(frameWidth%32==0)
+			fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
+		else
+			fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
 
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -239,3 +244,184 @@ bool FFMpegDecoder::copyFrameToTexture(TextureBuffer& tex)
 	}
 	return ret;
 }
+
+void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
+{
+	if(buf.ch[0])
+	{
+		free(buf.ch[0]);
+		free(buf.ch[1]);
+		free(buf.ch[2]);
+	}
+#ifdef WIN32
+	//FIXME!!
+#else
+	int ret=posix_memalign((void**)&buf.ch[0], 16, bufferSize);
+	assert(ret==0);
+	ret=posix_memalign((void**)&buf.ch[1], 16, bufferSize/4);
+	assert(ret==0);
+	ret=posix_memalign((void**)&buf.ch[2], 16, bufferSize/4);
+	assert(ret==0);
+#endif
+}
+
+void* AudioDecoder::operator new(size_t s)
+{
+	void* retAddr=NULL;
+#ifndef WIN32
+	int ret=posix_memalign(&retAddr, 16, s);
+#else
+  int ret = (int) retAddr;
+#endif
+	assert(ret==0);
+	assert(retAddr);
+	return retAddr;
+}
+void AudioDecoder::operator delete(void* addr)
+{
+	free(addr);
+}
+
+bool AudioDecoder::discardFrame()
+{
+	//We don't want ot block if no frame is available
+	return samplesBuffer.nonBlockingPopFront();
+}
+
+uint32_t AudioDecoder::copyFrame(int16_t* dest, uint32_t len)
+{
+	assert(dest);
+	if(samplesBuffer.isEmpty())
+		return 0;
+	//Check if we have to just return the size
+	uint32_t frameSize=min(samplesBuffer.front().len,len);
+	memcpy(dest,samplesBuffer.front().current,frameSize);
+	samplesBuffer.front().len-=frameSize;
+	if(samplesBuffer.front().len==0)
+		samplesBuffer.nonBlockingPopFront();
+	else
+	{
+		samplesBuffer.front().current+=frameSize/2;
+		samplesBuffer.front().time+=frameSize/getBytesPerMSec();
+	}
+	return frameSize;
+}
+
+uint32_t AudioDecoder::getFrontTime() const
+{
+	assert(!samplesBuffer.isEmpty());
+	return samplesBuffer.front().time;
+}
+
+void AudioDecoder::skipUntil(uint32_t time, uint32_t usecs)
+{
+	assert(isValid());
+//	while(1) //Should loop, but currently only usec adjustements are requested
+	{
+		if(samplesBuffer.isEmpty())
+			return;
+		FrameSamples& cur=samplesBuffer.front();
+		assert(time==cur.time);
+		if(usecs==0) //Nothing to skip
+			return;
+		//Check how many bytes are needed to fill the gap
+		uint32_t bytesToDiscard=(time-cur.time)*getBytesPerMSec()+usecs*getBytesPerMSec()/1000;
+		bytesToDiscard&=0xfffffffe;
+
+		if(cur.len<=bytesToDiscard) //The whole frame is droppable
+			discardFrame();
+		else
+		{
+			assert((bytesToDiscard%2)==0);
+			cur.len-=bytesToDiscard;
+			cur.current+=(bytesToDiscard/2);
+			cur.time=time;
+			return;
+		}
+	}
+}
+
+void AudioDecoder::skipAll()
+{
+	while(!samplesBuffer.isEmpty())
+		discardFrame();
+}
+
+FFMpegAudioDecoder::FFMpegAudioDecoder(FLV_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen)
+{
+	CodecID codecId;
+	switch(audioCodec)
+	{
+		case AAC:
+			codecId=CODEC_ID_AAC;
+			break;
+		default:
+			::abort();
+	}
+	AVCodec* codec=avcodec_find_decoder(codecId);
+	assert(codec);
+
+	codecContext=avcodec_alloc_context();
+
+	if(initdata)
+	{
+		codecContext->extradata=initdata;
+		codecContext->extradata_size=datalen;
+	}
+
+	if(avcodec_open(codecContext, codec)<0)
+		throw RunTimeException("Cannot open decoder");
+
+	if(fillDataAndCheckValidity())
+		status=VALID;
+	else
+		status=INIT;
+}
+
+bool FFMpegAudioDecoder::fillDataAndCheckValidity()
+{
+	if(codecContext->sample_rate!=0)
+	{
+		LOG(LOG_NO_INFO,"Audio sample rate " << codecContext->sample_rate);
+		sampleRate=codecContext->sample_rate;
+	}
+	else
+		return false;
+
+	if(codecContext->channels!=0)
+	{
+		LOG(LOG_NO_INFO, "Audio channels " << codecContext->channels);
+		channelCount=codecContext->channels;
+	}
+	else
+		return false;
+
+	return true;
+}
+
+uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
+{
+	FrameSamples& curTail=samplesBuffer.acquireLast();
+	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+#if HAVE_AVCODEC_DECODE_AUDIO3
+	AVPacket pkt;
+	av_init_packet(&pkt);
+	pkt.data=data;
+	pkt.size=datalen;
+	uint32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
+#else
+	uint32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
+#endif
+	assert_and_throw(ret==datalen);
+
+	if(status==INIT && fillDataAndCheckValidity())
+		status=VALID;
+
+	curTail.len=maxLen;
+	assert(maxLen%2==0);
+	curTail.current=curTail.samples;
+	curTail.time=time;
+	samplesBuffer.commitLast();
+	return maxLen;
+}
+

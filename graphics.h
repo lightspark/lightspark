@@ -30,7 +30,17 @@ namespace lightspark
 
 void cleanGLErrors();
 
-class TextureBuffer
+class GLResource
+{
+public:
+	/**
+		Should be used to cleanly destroy GL resources inside the render thread
+	*/
+	virtual void shutdown()=0;
+	virtual ~GLResource() {}
+};
+
+class TextureBuffer: public GLResource
 {
 private:
 	GLuint texId;
@@ -39,20 +49,84 @@ private:
 	uint32_t allocHeight;
 	uint32_t width;
 	uint32_t height;
+	uint32_t horizontalAlignment;
+	uint32_t verticalAlignment;
 	bool inited;
 	uint32_t nearestPOT(uint32_t a) const;
 	void setAllocSize(uint32_t w, uint32_t h);
 public:
+	/**
+	  	TextureBuffer constructor
+
+		@param initNow Create right now the texture (can be true only if created inside the Render Thread)
+		@param width The requested width
+		@param height The requested height
+		@param filtering The requested texture filtering from OpenGL enumeration
+	*/
 	TextureBuffer(bool initNow, uint32_t width=0, uint32_t height=0, GLenum filtering=GL_NEAREST);
+	/**
+	  	TextureBuffer destructor
+
+		Destroys the GL resources allocated for this texture
+		@pre Should be run inside the RenderThread or shutdown should be already run
+	*/
 	~TextureBuffer();
+	/**
+	   	Return the texture id
+
+		@ret The OpenGL texture id
+	*/
 	GLuint getId() {return texId;}
+	/**
+	  	Initialize the texture from the values stored
+
+		@pre Running inside the RenderThread
+	*/
 	void init();
+	/**
+	  	Initialize the texture using new values
+
+		@param width The requested width
+		@param height The requested height
+		@param filtering The requested texture filtering from OpenGL enumeration
+		@pre Running inside the RenderThread
+	*/
 	void init(uint32_t width, uint32_t height, GLenum filtering=GL_NEAREST);
+	/**
+	  	Frees the GL resources
+
+		@pre Running inside the RenderThread
+	*/
+	void shutdown();
+	/**
+		Bind as the current texture
+
+		@pre Running inside the RenderThread
+	*/
 	void bind();
+	/**
+		Unbind the current texture
+
+		@pre Running inside the RenderThread
+	*/
 	void unbind();
+	/**
+		Set the given uniform with the coordinate scale of the current texture
+
+		@pre Running inside the RenderThread
+	*/
 	void setTexScale(GLuint uniformLocation);
+	/**
+		Load data inside the texture
+
+		@pre Running inside the RenderThread
+	*/
 	void setBGRAData(uint8_t* bgraData, uint32_t w, uint32_t h);
 	void resize(uint32_t width, uint32_t height);
+	/**
+		Request a minimum alignment for width and height
+	*/
+	void setRequestedAlignment(uint32_t w, uint32_t h);
 	uint32_t getAllocWidth() const { return allocWidth;}
 	uint32_t getAllocHeight() const { return allocHeight;}
 };

@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\curl-7.20.1\include;..\..\..\ffmpeg\include;..\..\..\freetype-2.1.10\include;..\..\..\ftgl-2.1.3~rc5\src\;..\..\..\llvm\include\;..\..\..\glew-1.5.4\include;..\..\..\pcre-8.02;..\..\..\pThreads\include;..\..\..\SDL-1.2.14\include;..\..\..\zlib-1.2.5;"
+				AdditionalIncludeDirectories="..\..;..\..\..\curl-7.20.1\include;..\..\..\ffmpeg\include;..\..\..\freetype-2.1.10\include;..\..\..\ftgl-2.1.3~rc5\src\;..\..\..\llvm\include\;..\..\..\glew-1.5.4\include;..\..\..\pcre-8.02;..\..\..\pThreads\include;..\..\..\SDL-1.2.14\include;..\..\..\zlib-1.2.5;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;PCRE_STATIC;VPCOMPAT"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

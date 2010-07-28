@@ -632,41 +632,65 @@ void ABCVm::construct(call_context* th, int m)
 	LOG(LOG_CALLS,"Constructing");
 
 	ASObject* ret;
-	if(obj->getObjectType()==T_CLASS)
+	switch(obj->getObjectType())
 	{
-		Class_base* o_class=static_cast<Class_base*>(obj);
-		ret=o_class->getInstance(true,args,m);
-	}
-	else if(obj->getObjectType()==T_FUNCTION)
-	{
-		SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
-		assert_and_throw(sf);
-		ret=Class<ASObject>::getInstanceS();
-		if(sf->mi->body)
+		case T_CLASS:
 		{
-			ret->initialized=false;
-			LOG(LOG_CALLS,"Building method traits");
-			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
-			ret->initialized=true;
-			ret->incRef();
-			assert_and_throw(sf->closure_this==NULL);
-			ASObject* ret2=sf->call(ret,args,m,0);
-			if(ret2)
-				ret2->decRef();
-
-			//Let's see if an AS prototype has been defined on the function
-			ASObject* asp=sf->getVariableByQName("prototype","").obj;
-			if(asp)
-				asp->incRef();
-
-			//Now add our prototype
-			sf->incRef();
-			ret->prototype=new Class_function(sf,asp);
+			Class_base* o_class=static_cast<Class_base*>(obj);
+			ret=o_class->getInstance(true,args,m);
 		}
+		break;
+
+		case T_UNDEFINED:
+		case T_NULL:
+		{
+			//Inc ref count to make up for decremnt later
+			obj->incRef();
+			ret=obj;
+		}
+		break;
+
+		case T_FUNCTION:
+		{
+			SyntheticFunction* sf=dynamic_cast<SyntheticFunction*>(obj);
+			assert_and_throw(sf);
+			ret=Class<ASObject>::getInstanceS();
+			if(sf->mi->body)
+			{
+#ifndef NDEBUG
+				ret->initialized=false;
+#endif
+				LOG(LOG_CALLS,"Building method traits");
+				for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
+					th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+#ifndef NDEBUG
+				ret->initialized=true;
+#endif
+				ret->incRef();
+				assert_and_throw(sf->closure_this==NULL);
+				ASObject* ret2=sf->call(ret,args,m,0);
+				if(ret2)
+					ret2->decRef();
+
+				//Let's see if an AS prototype has been defined on the function
+				ASObject* asp=sf->getVariableByQName("prototype","").obj;
+				if(asp)
+					asp->incRef();
+
+				//Now add our prototype
+				sf->incRef();
+				ret->prototype=new Class_function(sf,asp);
+			}
+		}
+		break;
+
+		default:
+		{
+			LOG(LOG_ERROR,"Object type " << obj->getObjectType() << " not supported in construct");
+			throw UnsupportedException("This object is not supported in construct");
+		}
+		break;
 	}
-	else
-		throw UnsupportedException("This object is not supported in construct");
 
 	obj->decRef();
 	LOG(LOG_CALLS,"End of constructing " << ret);
@@ -1729,9 +1753,15 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		if(c->class_name=="Class")
 		{
 			type->decRef();
-			return obj;
+			obj->decRef();
+			return true;
 		}
-		objc=static_cast<Class_base*>(obj);
+		else
+		{
+			type->decRef();
+			obj->decRef();
+			return false;
+		}
 	}
 	else
 	{
@@ -1907,11 +1937,15 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		ret=Class<ASObject>::getInstanceS();
 		if(sf->mi->body)
 		{
+#ifndef NDEBUG
 			ret->initialized=false;
+#endif
 			LOG(LOG_CALLS,"Building method traits");
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
 				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+#ifndef NDEBUG
 			ret->initialized=true;
+#endif
 			ret->incRef();
 			assert_and_throw(sf->closure_this==NULL);
 			ASObject* ret2=sf->call(ret,args,m,0);
@@ -2118,6 +2152,10 @@ void ABCVm::newClass(call_context* th, int n)
 	ret->constructor=new SyntheticFunction(constructor);
 	ret->class_index=n;
 
+	//Set the constructor variable to the class itself (this is accessed by object using the protoype)
+	ret->incRef();
+	ret->setVariableByQName("constructor","",ret);
+
 	//Add protected namespace if needed
 	if((th->context->instances[n].flags)&0x08)
 	{
@@ -2171,10 +2209,14 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 	//TODO: Should create a real activation object
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act=Class<ASObject>::getInstanceS();
+#ifndef NDEBUG
 	act->initialized=false;
+#endif
 	for(unsigned int i=0;i<info->body->trait_count;i++)
 		th->context->buildTrait(act,&info->body->traits[i],false);
+#ifndef NDEBUG
 	act->initialized=true;
+#endif
 
 	return act;
 }

@@ -34,8 +34,6 @@ namespace lightspark
 	class SystemState;
 };
 
-extern TLSDATA lightspark::SystemState* sys;
-
 namespace lightspark
 {
 const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
@@ -78,8 +76,7 @@ public:
 	int max_level;
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
-	Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
-		context(NULL),class_name(name),class_index(-1),	max_level(0) {type=T_CLASS;}
+	Class_base(const tiny_string& name);
 	~Class_base();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true)
@@ -173,8 +170,6 @@ public:
 	tiny_string class_name;
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true)
 	{
-		if(name.name_s=="borderSkin")
-			std::cerr << "Looking for borderSkin on " << this << std::endl;
 		objAndLevel ret=Class_base::getVariableByMultiname(name,skip_impl, enableOverride);
 		if(ret.obj==NULL && asprototype)
 			ret=asprototype->getVariableByMultiname(name,skip_impl, enableOverride);
@@ -223,7 +218,7 @@ protected:
 	IFunction* overriden_by;
 public:
 	ASFUNCTION(apply);
-	virtual ASObject* call(ASObject* obj, ASObject* const* args,int num_args, int level)=0;
+	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level)=0;
 	IFunction* bind(ASObject* c, int level)
 	{
 		if(!bound)
@@ -279,11 +274,14 @@ private:
 		return new Function(*this);
 	}
 public:
-	ASObject* call(ASObject* obj, ASObject* const* args, int num_args, int level);
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level);
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
 	{
-		throw UnsupportedException("Function::isEqual");
+		Function* f=dynamic_cast<Function*>(r);
+		if(f==NULL)
+			return false;
+		return val==f->val;
 	}
 };
 
@@ -303,7 +301,7 @@ private:
 		return new SyntheticFunction(*this);
 	}
 public:
-	ASObject* call(ASObject* obj, ASObject* const* args,int num_args, int level);
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level);
 	IFunction* toFunction();
 	std::vector<ASObject*> func_scope;
 	bool isEqual(ASObject* r)
@@ -384,6 +382,8 @@ public:
 	ASFUNCTION(call);
 	Undefined();
 	tiny_string toString(bool debugMsg);
+	int toInt();
+	double toNumber();
 	bool isEqual(ASObject* r);
 	virtual ~Undefined(){}
 };
@@ -733,6 +733,7 @@ private:
 	std::string re;
 	bool global;
 	bool ignoreCase;
+	bool extended;
 	int lastIndex;
 	RegExp();
 public:
@@ -742,6 +743,25 @@ public:
 	ASFUNCTION(exec);
 	ASFUNCTION(test);
 	ASFUNCTION(_getGlobal);
+};
+
+class ASError: public ASObject
+{
+CLASSBUILDABLE(ASError);
+private:
+	tiny_string message;
+	tiny_string name;
+	int errorID;
+public:
+	ASError(const tiny_string& error_message = "", int id = 0) : message(error_message), name("Error"), errorID(id) {}
+	ASFUNCTION(getStackTrace);
+	ASFUNCTION(_setName);
+	ASFUNCTION(_getName);
+	ASFUNCTION(_setMessage);
+	ASFUNCTION(_getMessage);
+	ASFUNCTION(_getErrorID);
+	tiny_string toString(bool debugMsg=false);
+	static void buildTraits(ASObject* o);
 };
 
 };

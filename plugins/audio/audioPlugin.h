@@ -46,11 +46,11 @@ class AudioPlugin : IPlugin
     bool GetServerStatus();
     bool IsContextReady();
     bool IsStopped();
-    virtual uint32_t createStream(AudioDecoder *decoder);
-    virtual void freeStream(uint32_t id);
-    virtual void fillAndSync(uint32_t id, uint32_t streamTime);
-    virtual void stop();
-    virtual ~AudioPlugin();
+    virtual uint32_t createStream(AudioDecoder *decoder) = 0;
+    virtual void freeStream(uint32_t id) = 0;
+    virtual void fillAndSync(uint32_t id, uint32_t streamTime) = 0;
+    virtual void stop() = 0;
+    virtual ~AudioPlugin() = 0;
 };
 
 };

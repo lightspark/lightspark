@@ -40,7 +40,7 @@ void AudioManager::streamStatusCB(AudioStream *th)
 
 void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 {
-  o_AudioPlugin.fillAndSync(id, streamTime);
+  o_AudioPlugin->fillAndSync(id, streamTime);
 /*	assert(streams[id-1]);
 	if(o_AudioPlugin.GetServerStatus()==false)
 	{
@@ -141,7 +141,7 @@ void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 */
 void AudioManager::freeStream(uint32_t id)
 {
-  o_AudioPlugin.freeStream(id);
+  o_AudioPlugin->freeStream(id);
 /*	pa_threaded_mainloop_lock(mainLoop);
 	assert(s);
 	if(noServer==false)
@@ -178,7 +178,7 @@ void started_notify()
 
 uint32_t AudioManager::createStream(AudioDecoder *decoder)
 {
-  return o_AudioPlugin.createStream(decoder);
+  return o_AudioPlugin->createStream(decoder);
 /*	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
 	uint32_t index=0;
@@ -277,7 +277,7 @@ AudioManager::~AudioManager()
 
 void AudioManager::stop()
 {
-  o_AudioPlugin.stop();
+  o_AudioPlugin->stop();
 /*	if(!stopped)
 	{
 		stopped=true;

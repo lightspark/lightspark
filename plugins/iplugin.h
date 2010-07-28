@@ -22,6 +22,8 @@
 #ifndef IPLUGIN_H
 #define IPLUGIN_H
 
+#include "../compat.h"
+
 enum PLUGIN_TYPES { UNDEFINED=0, AUDIO=1 };
 
 class IPlugin
@@ -31,17 +33,18 @@ class IPlugin
   public:
     PLUGIN_TYPES GetPluginType();
     void SetPluginType(PLUGIN_TYPES);
-    virtual ~IPlugin();
+    virtual ~IPlugin() = 0;
 };
 
 /*************************
 Extern "C" functions that each plugin must implement in order to be recognized as a plugin by us.
+It allows us to share a common interface between plugins and the application.
  
 Plugin factory function
-extern "C" IPlugin* Create_Plugin ();
+extern "C" IPlugin* Create_Plugin();
 
 Plugin cleanup function
-extern "C" void Release_Plugin (IPlugin* p_plugin);
+extern "C" void Release_Plugin(IPlugin* p_plugin);
 ***************************/
 
 #endif

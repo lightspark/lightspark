@@ -29,19 +29,3 @@ void IPlugin::SetPluginType(PLUGIN_TYPES Type)
 {
   pluginType = Type;
 }
-
-extern "C"
-{
-  // Plugin factory function
-  DLL_PUBLIC IPlugin* Create_Plugin ()
-  {
-    return new PulsePlugin ();
-  }
- 
-  // Plugin cleanup function
-  DLL_PUBLIC void Release_Plugin (IPlugin* p_plugin)
-  {
-    //delete the previously created object
-    delete p_plugin;
-  }
-}

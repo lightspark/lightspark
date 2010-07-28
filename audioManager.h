@@ -72,7 +72,7 @@ class AudioManager
     bool stopped;
 */
     LibHandle hSelectedAudioPluginLib;
-    AudioPlugin o_AudioPlugin;
+    AudioPlugin *o_AudioPlugin;
     void AddAudioPluginToList();
     void FindAudioPlugins();
     void LoadAudioPlugin();

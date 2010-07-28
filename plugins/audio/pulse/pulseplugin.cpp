@@ -232,19 +232,20 @@ void PulsePlugin::contextStatusCB(pa_context* context, AudioPlugin* th)
 	}
 }
 
-PulsePlugin::AudioPlugin():contextReady(false),noServer(false),stopped(false)
+PulsePlugin::PulsePlugin():audiobackend_name("PulseAudio"),contextReady(false),noServer(false),stopped(false)
 {
-	mainLoop=pa_threaded_mainloop_new();
-	pa_threaded_mainloop_start(mainLoop);
-
-	pa_threaded_mainloop_lock(mainLoop);
-	context=pa_context_new(pa_threaded_mainloop_get_api(mainLoop),"Lightspark");
-	pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
-	pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
-	pa_threaded_mainloop_unlock(mainLoop);
+  
+  mainLoop=pa_threaded_mainloop_new();
+  pa_threaded_mainloop_start(mainLoop);
+  
+  pa_threaded_mainloop_lock(mainLoop);
+  context=pa_context_new(pa_threaded_mainloop_get_api(mainLoop),"Lightspark");
+  pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
+  pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
+  pa_threaded_mainloop_unlock(mainLoop);
 }
 
-PulsePlugin::~AudioPlugin()
+PulsePlugin::~PulsePlugin()
 {
 	stop();
 }
@@ -268,19 +269,4 @@ void PulsePlugin::stop()
 	}
 }
 
-extern "C"
-{
-  // Plugin factory function
-  DLL_PUBLIC IPlugin* Create_Plugin ()
-  {
-    return new PulsePlugin ();
-  }
- 
-  // Plugin cleanup function
-  DLL_PUBLIC void Release_Plugin (IPlugin* p_plugin)
-  {
-    //delete the previously created object
-    delete p_plugin;
-  }
-}
 #endif

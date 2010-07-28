@@ -32,16 +32,17 @@
 using namespace lightspark;
 using namespace std;
 
-//void AudioManager::streamStatusCB(pa_stream *stream, AudioStream *th)
+/*//void AudioManager::streamStatusCB(pa_stream *stream, AudioStream *th)
 void AudioManager::streamStatusCB(AudioStream *th)
 {
-  o_AudioPlugin.streamStatusCB(AudioStream *th);
-}
+  o_AudioPlugin.streamStatusCB(th);
+}*/
 
 void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 {
-	assert(streams[id-1]);
-/*	if(noServer==false)
+  o_AudioPlugin.fillAndSync(id, streamTime);
+/*	assert(streams[id-1]);
+	if(o_AudioPlugin.GetServerStatus()==false)
 	{
 		if(streams[id-1]->streamStatus!=AudioStream::STREAM_READY) //The stream is not yet ready, delay upload
 			return;
@@ -122,10 +123,11 @@ void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 		pa_threaded_mainloop_unlock(mainLoop);
 	}
 	else //No sound server available
-*///	{
+	{
 		//Just skip all the contents
 		streams[id-1]->decoder->skipAll();
-//	}
+	}
+*/
 }
 
 /*void AudioManager::streamWriteCB(pa_stream *stream, size_t frameSize, AudioStream *th)
@@ -139,6 +141,7 @@ void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 */
 void AudioManager::freeStream(uint32_t id)
 {
+  o_AudioPlugin.freeStream(id);
 /*	pa_threaded_mainloop_lock(mainLoop);
 	assert(s);
 	if(noServer==false)
@@ -154,11 +157,11 @@ void AudioManager::freeStream(uint32_t id)
 	if(s->stream)
 		pa_stream_unref(s->stream);
 	pa_threaded_mainloop_unlock(mainLoop);
-*/	AudioStream *s=streams[id-1];
+	AudioStream *s=streams[id-1];
 	delete s;
-}
+*/}
 
-void overflow_notify()
+/*void overflow_notify()
 {
 	cout << "____overflow!!!!" << endl;
 }
@@ -171,14 +174,15 @@ void underflow_notify()
 void started_notify()
 {
 	cout << "____started!!!!" << endl;
-}
+}*/
 
 uint32_t AudioManager::createStream(AudioDecoder *decoder)
 {
+  return o_AudioPlugin.createStream(decoder);
 /*	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
-*/	uint32_t index=0;
-/*	for(;index<streams.size();index++)
+	uint32_t index=0;
+	for(;index<streams.size();index++)
 	{
 		if(streams[index]==NULL)
 			break;
@@ -214,8 +218,8 @@ uint32_t AudioManager::createStream(AudioDecoder *decoder)
 		streams[index]->streamStatus=AudioStream::STREAM_DEAD;
 	}
 	pa_threaded_mainloop_unlock(mainLoop);
-*/	return index+1;
-}
+	return index+1;
+*/}
 
 /*void AudioManager::contextStatusCB(pa_context *context, AudioManager *th)
 {
@@ -246,17 +250,12 @@ Else nothing
 Then, ut should read a config file containing the user's defined audio API choosen as audio backend
 If no file or none selected
   default to none
-  SET noServer(true)
-  SET stopped(true)
-  SET contextReady(false)
 Else
   Select and load the good audio plugin lib files
-  SET noServer(false)
-  SET stopped(true)
-  SET contextReady(false)
 
 *****************/
-AudioManager::AudioManager():contextReady(false),noServer(false),stopped(false)
+//AudioManager::AudioManager():contextReady(false),noServer(false),stopped(false)
+AudioManager::AudioManager()
 {
 /*	mainLoop=pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start(mainLoop);
@@ -273,22 +272,16 @@ stop AudioManager
 ***************************/
 AudioManager::~AudioManager()
 {
-	stop();
+  delete &o_AudioPlugin;
 }
 
-/**************************
-If !stopped
-  Stop, unload and close the audio plugin lib file
-  SET noServer(true)
-  SET stopped(true)
-  SET contextReady(false)
-***************************/
 void AudioManager::stop()
 {
-	if(!stopped)
+  o_AudioPlugin.stop();
+/*	if(!stopped)
 	{
 		stopped=true;
-/*		pa_threaded_mainloop_lock(mainLoop);
+		pa_threaded_mainloop_lock(mainLoop);
 		for(uint32_t i=0;i<streams.size();i++)
 		{
 			if(streams[i])
@@ -299,11 +292,11 @@ void AudioManager::stop()
 		pa_threaded_mainloop_unlock(mainLoop);
 		pa_threaded_mainloop_stop(mainLoop);
 		pa_threaded_mainloop_free(mainLoop);
-*/	}
+	}*/
 }
 
 /***************************
-Find liblightspartAUDIOplugin libraries
+Find liblightsparkAUDIOplugin libraries
 Load
 ****************************/
 void AudioManager::FindAudioPlugins()

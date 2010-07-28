@@ -18,41 +18,30 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef AUDIOPLUGIN_H
-#define AUDIOPLUGIN_H
+#include "iplugin.h"
 
-#include "../../compat.h"
-#include "../../decoder.h"
-#include "../iplugin.h"
-
-namespace lightspark
+PLUGIN_TYPES IPlugin::GetPluginType()
 {
+  return pluginType;
+}
 
-/**********************
-Abstract class for audio plugin implementation
-***********************/
-class AudioPlugin : IPlugin
+void IPlugin::SetPluginType(PLUGIN_TYPES Type)
 {
-  private:
-    class AudioStream; //Will be implemented per plugin
-    const char *audiobackend_name;
-    std::vector<AudioStream*> streams;
-    volatile bool contextReady;
-    volatile bool noServer;
-    bool stopped;
-  public:
-    AudioPlugin();
-    const char *Get_AudioBackend_name();
-    bool GetServerStatus();
-    bool IsContextReady();
-    bool IsStopped();
-    virtual uint32_t createStream(AudioDecoder *decoder);
-    virtual void freeStream(uint32_t id);
-    virtual void fillAndSync(uint32_t id, uint32_t streamTime);
-    virtual void stop();
-    virtual ~AudioPlugin();
-};
+  pluginType = Type;
+}
 
-};
-
-#endif
+extern "C"
+{
+  // Plugin factory function
+  DLL_PUBLIC IPlugin* Create_Plugin ()
+  {
+    return new PulsePlugin ();
+  }
+ 
+  // Plugin cleanup function
+  DLL_PUBLIC void Release_Plugin (IPlugin* p_plugin)
+  {
+    //delete the previously created object
+    delete p_plugin;
+  }
+}

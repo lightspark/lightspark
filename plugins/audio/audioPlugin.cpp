@@ -18,41 +18,31 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef AUDIOPLUGIN_H
-#define AUDIOPLUGIN_H
+#include "audioPlugin.h"
 
-#include "../../compat.h"
-#include "../../decoder.h"
-#include "../iplugin.h"
+using namespace lightspark;
 
-namespace lightspark
+AudioPlugin::AudioPlugin()
 {
+  SetPluginType(AUDIO);
+}
 
-/**********************
-Abstract class for audio plugin implementation
-***********************/
-class AudioPlugin : IPlugin
+const char* AudioPlugin::Get_AudioBackend_name()
 {
-  private:
-    class AudioStream; //Will be implemented per plugin
-    const char *audiobackend_name;
-    std::vector<AudioStream*> streams;
-    volatile bool contextReady;
-    volatile bool noServer;
-    bool stopped;
-  public:
-    AudioPlugin();
-    const char *Get_AudioBackend_name();
-    bool GetServerStatus();
-    bool IsContextReady();
-    bool IsStopped();
-    virtual uint32_t createStream(AudioDecoder *decoder);
-    virtual void freeStream(uint32_t id);
-    virtual void fillAndSync(uint32_t id, uint32_t streamTime);
-    virtual void stop();
-    virtual ~AudioPlugin();
-};
+  return audiobackend_name;
+}
 
-};
+bool AudioPlugin::GetServerStatus()
+{
+  return noServer;
+}
 
-#endif
+bool AudioPlugin::IsContextReady()
+{
+  return contextReady;
+}
+
+bool lightspark::AudioPlugin::IsStopped()
+{
+  return stopped;
+}

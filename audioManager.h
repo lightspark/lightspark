@@ -67,12 +67,12 @@ class AudioManager
     static void contextStatusCB(pa_context *context, AudioManager *th);
     static void streamStatusCB(pa_stream *stream, AudioStream *th);
     static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
-*/
-    LibHandle hSelectedAudioPluginLib;
-    AudioPlugin o_AudioPlugin;
     volatile bool contextReady;
     volatile bool noServer;
     bool stopped;
+*/
+    LibHandle hSelectedAudioPluginLib;
+    AudioPlugin o_AudioPlugin;
     void AddAudioPluginToList();
     void FindAudioPlugins();
     void LoadAudioPlugin();

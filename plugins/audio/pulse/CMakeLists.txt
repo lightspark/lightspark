@@ -33,7 +33,7 @@ INCLUDE_DIRECTORIES("..")
 pkg_check_modules(LIBAVCODEC REQUIRED libavcodec)
 INCLUDE_DIRECTORIES(${LIBAVCODEC_INCLUDE_DIRS})
 
-SET(LIBPULSE_SOURCES pulseplugin.cpp)
+SET(LIBPULSE_SOURCES pulseplugin.cpp ../audioPlugin.cpp ../../iplugin.cpp)
 
 # liblightsparkpulseplugin.so target
 ADD_LIBRARY(pulseplugin SHARED ${LIBPULSE_SOURCES})

@@ -22,7 +22,7 @@
 
 #include <pulse/pulseaudio.h>
 #include "../audioPlugin.h"
-//#include "../../../decoder.h"
+#include "../../../decoder.h"
 #include "../../../compat.h"
 
 namespace lightspark
@@ -36,25 +36,23 @@ private:
 	public:
 		enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
 		pa_stream* stream;
-//		AudioDecoder* decoder;
-//		PulsePlugin* manager;
+		AudioDecoder* decoder;
+		PulsePlugin* manager;
 		volatile STREAM_STATUS streamStatus;
-//		AudioStream(PulsePlugin* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+		AudioStream(PulsePlugin* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
 	};
 	pa_threaded_mainloop* mainLoop;
 	pa_context* context;
 	static void contextStatusCB(pa_context* context, PulsePlugin* th);
 	static void streamStatusCB(pa_stream* stream, AudioStream* th);
 	static void streamWriteCB(pa_stream* stream, size_t nbytes, AudioStream* th);
-	char* audiobackend_name;
-	char* plugin_name;
 //	std::vector<AudioStream*> streams;
 //	volatile bool contextReady;
 //	volatile bool noServer;
 //	bool stopped;
 public:
 	PulsePlugin();
-//	uint32_t createStream(AudioDecoder* decoder);
+	uint32_t createStream(AudioDecoder* decoder);
 	void freeStream(uint32_t id);
 	void fillAndSync(uint32_t id, uint32_t streamTime);
 	void stop();

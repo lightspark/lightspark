@@ -497,6 +497,7 @@ void SystemState::createEngines()
 	//Check if we should fall back on gnash
 	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
 	{
+#ifdef COMPILE_PLUGIN
 		if(dumpedSWFPath.len()==0) //The path is not known yet
 		{
 			waitingForDump=true;
@@ -565,11 +566,19 @@ void SystemState::createEngines()
 			stopEngines();
 			return;
 		}
+#else 
+		//COMPILE_PLUGIN not defined
+		throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
+#endif
 	}
 
 	if(engine==GTKPLUG) //The engines must be created int the context of the main thread
 	{
+#ifdef COMPILE_PLUGIN
 		npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
+#else
+		throw new UnsupportedException("Plugin engine not available when not built with COMPILE_PLUGIN");
+#endif
 	}
 	else //SDL engine
 	{

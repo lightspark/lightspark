@@ -25,10 +25,14 @@
 #include "threading.h"
 #include "graphics.h"
 #include "flv.h"
+#ifdef ENABLE_LIBAVCODEC
 extern "C"
 {
 #include <libavcodec/avcodec.h>
 }
+#else
+#define AVCODEC_MAX_AUDIO_FRAME_SIZE 2
+#endif
 
 namespace lightspark
 {
@@ -68,6 +72,16 @@ public:
 	float frameRate;
 };
 
+class NullVideoDecoder: public VideoDecoder
+{
+public:
+	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
+	bool discardFrame(){return false;}
+	void skipUntil(uint32_t time){}
+	bool copyFrameToTexture(TextureBuffer& tex){return false;}
+};
+
+#ifdef ENABLE_LIBAVCODEC
 class FFMpegVideoDecoder: public VideoDecoder
 {
 private:
@@ -113,6 +127,7 @@ public:
 	void skipUntil(uint32_t time);
 	bool copyFrameToTexture(TextureBuffer& tex);
 };
+#endif
 
 class AudioDecoder
 {
@@ -173,6 +188,18 @@ public:
 	uint32_t channelCount;
 };
 
+class NullAudioDecoder: public AudioDecoder
+{
+public:
+	NullAudioDecoder()
+	{
+		sampleRate=44100;
+		channelCount=2;
+	}
+	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return 0;}
+};
+
+#ifdef ENABLE_LIBAVCODEC
 class FFMpegAudioDecoder: public AudioDecoder
 {
 private:
@@ -182,6 +209,7 @@ public:
 	FFMpegAudioDecoder(FLV_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
 	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 };
+#endif
 
 };
 #endif

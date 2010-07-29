@@ -37,10 +37,14 @@
 #include "netutils.h"
 
 #include <GL/glew.h>
+#ifdef ENABLE_CURL
 #include <curl/curl.h>
+#endif
+#ifdef ENABLE_LIBAVCODEC
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
+#endif
 #ifndef WIN32
 #include <GL/glx.h>
 #include <fontconfig/fontconfig.h>
@@ -151,8 +155,12 @@ SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p)
 	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
 {
 	//Do needed global initialization
+#ifdef ENABLE_CURL
 	curl_global_init(CURL_GLOBAL_ALL);
+#endif
+#ifdef ENABLE_LIBAVCODEC
 	avcodec_register_all();
+#endif
 
 	cookiesFileName[0]=0;
 	//Create the thread pool

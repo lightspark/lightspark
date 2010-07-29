@@ -191,6 +191,11 @@ public:
 class NullAudioDecoder: public AudioDecoder
 {
 public:
+	NullAudioDecoder()
+	{
+		sampleRate=44100;
+		channelCount=2;
+	}
 	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return 0;}
 };
 

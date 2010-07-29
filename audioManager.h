@@ -23,7 +23,13 @@
 
 #include "compat.h"
 #include "decoder.h"
+#include <string.h>
+#include <boost/filesystem.hpp>
+
 #include "plugins/audio/audioPlugin.h"
+
+namespace bfs=boost::filesystem;
+using namespace std;
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
 typedef IPlugin *(*PLUGIN_FACTORY)();
@@ -51,26 +57,6 @@ class AudioManager
     PluginInfo *LastAudioPlugin;
     PluginInfo *SelectedAudioPlugin;
     
-/*    class AudioStream
-    {
-      public:
-	enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
-	pa_stream *stream;
-	AudioDecoder *decoder;
-	AudioManager *manager;
-	volatile STREAM_STATUS streamStatus;
-	AudioStream(AudioManager *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
-    };
-    pa_threaded_mainloop *mainLoop;
-    pa_context *context;
-    std::vector<AudioStream*> streams;
-    static void contextStatusCB(pa_context *context, AudioManager *th);
-    static void streamStatusCB(pa_stream *stream, AudioStream *th);
-    static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
-    volatile bool contextReady;
-    volatile bool noServer;
-    bool stopped;
-*/
     LibHandle hSelectedAudioPluginLib;
     AudioPlugin *o_AudioPlugin;
     void AddAudioPluginToList();
@@ -86,6 +72,8 @@ class AudioManager
     void set_audiobackend();
     ~AudioManager();
 };
+
+//int find_files(const bfs::path &folder, const string &file, bfs::path &pathToSend);
 
 };
 

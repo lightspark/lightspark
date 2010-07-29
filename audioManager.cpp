@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <string.h>
+#include <boost/filesystem.hpp> //will be part of the next C++ release
 #include "audioManager.h"
 
 #if defined WIN32
@@ -31,12 +32,14 @@
 
 using namespace lightspark;
 using namespace std;
+using namespace boost::filesystem;
 
 /*//void AudioManager::streamStatusCB(pa_stream *stream, AudioStream *th)
 void AudioManager::streamStatusCB(AudioStream *th)
 {
   o_AudioPlugin.streamStatusCB(th);
 }*/
+int find_files(const path &folder, const string &file, path &pathToSend);
 
 void AudioManager::fillAndSync(uint32_t id, uint32_t streamTime)
 {
@@ -301,6 +304,20 @@ Load
 ****************************/
 void AudioManager::FindAudioPlugins()
 {
+  //Search for all files under ${DATADIR}/plugins
+  //Verify if they are plugins
+  //If true, add to list of plugins
+  string froot(DATADIR), fplugins("/lightspark/plugins");
+  const path plugins_folder = froot + fplugins;
+  const string file_name = "liblightspark*plugin";
+  path path_found;
+
+  #if defined DEBUG
+    cout << "Looking for plugins under " << plugins_folder << " for file_name " << file_name << endl;
+  #endif
+
+  find_files(plugins_folder, file_name, path_found);
+  
 /*//       //get the program's directory
 //       char dir [MAX_PATH];
 //       GetModuleFileName (NULL, dir, MAX_PATH);
@@ -364,3 +381,32 @@ void AudioManager::FindAudioPlugins()
  
        return 0;
 */}
+
+int find_files(const path &folder, const string &file, path &pathToSend)
+{
+    
+  if(!exists(folder))
+  {
+    cout << "The plugins folder doesn't exists under " << folder << endl;
+  }
+  else
+  {
+    directory_iterator end_itr; //end of iteration
+    for( directory_iterator itr(folder); itr != end_itr; ++itr )
+    {
+      if(is_directory(itr->status()))
+      {
+	if(find_files(itr->path(), file, pathToSend))
+	{
+	  return true;
+	}
+      }
+      else if(itr->leaf() == file) // see below
+      {
+	pathToSend = itr->path();
+	return true;
+      }
+    }
+  }
+  return false;
+}

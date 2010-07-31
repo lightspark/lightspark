@@ -60,7 +60,7 @@ uint64_t compat_msectiming()
 #endif
 }
 
-LibHandle LoadLib(char* filename)
+HLIB LoadLib(char* filename)
 {
   #if defined WIN32
     return LoadLibrary(filename);
@@ -69,7 +69,7 @@ LibHandle LoadLib(char* filename)
   #endif
 }
 
-void* ExtractLibContent(LibHandle hLib, char* WhatToExtract)
+void* ExtractLibContent(HLIB hLib, char* WhatToExtract)
 {
   #if defined WIN32
     return GetProcAdress(hLib, WhatToExtract);
@@ -78,7 +78,7 @@ void* ExtractLibContent(LibHandle hLib, char* WhatToExtract)
   #endif
 }
 
-void CloseLib(LibHandle hLib)
+void CloseLib(HLIB hLib)
 {
   #if defined WIN32
     FreeLibrary(hLib);

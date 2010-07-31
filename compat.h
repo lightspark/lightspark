@@ -82,19 +82,19 @@
 #endif
 
 #if defined WIN32
-  #define LibHandle HMODULE
+  #define HLIB HMODULE
 #else
-  #define LibHandle void*
+  #define HLIB void*
 #endif
 
 /***********
 Used for compatibility for loading library between Windows and POSIX
 ************/
-LibHandle LoadLib(char* filename);
+HLIB LoadLib(char *filename);
 
-void* ExtractLibContent(LibHandle hLib, char* WhatToExtract);
+void* ExtractLibContent(HLIB hLib, char *WhatToExtract);
 
-void CloseLib(LibHandle hLib);
+void CloseLib(HLIB hLib);
 /*****************/
 
 void compat_msleep(unsigned int time);

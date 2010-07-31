@@ -20,12 +20,27 @@
 
 #include "iplugin.h"
 
-PLUGIN_TYPES IPlugin::GetPluginType()
+IPlugin::IPlugin()
+  : pluginType(UNDEFINED)
+{
+}
+
+void IPlugin::set_pluginType(PLUGIN_TYPES definedType)
+{
+  pluginType = definedType;
+}
+
+void IPlugin::set_pluginName(char* definedName)
+{
+  pluginName = definedName;
+}
+
+/*PLUGIN_TYPES IPlugin::get_pluginType()
 {
   return pluginType;
 }
 
-void IPlugin::SetPluginType(PLUGIN_TYPES Type)
+char *IPlugin::get_pluginName()
 {
-  pluginType = Type;
-}
+  return pluginName;
+}*/

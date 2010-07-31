@@ -28,11 +28,15 @@ enum PLUGIN_TYPES { UNDEFINED=0, AUDIO=1 };
 
 class IPlugin
 {
-  private:
+  protected:
     PLUGIN_TYPES pluginType; //type of plugin of PLUGIN_TYPES
+    char *pluginName; //name of the plugin
   public:
-    PLUGIN_TYPES GetPluginType();
-    void SetPluginType(PLUGIN_TYPES);
+    IPlugin();
+    virtual char *get_pluginName() = 0;
+    void set_pluginName(char *definedName = "undefined");
+    virtual PLUGIN_TYPES get_pluginType() = 0;
+    void set_pluginType(PLUGIN_TYPES definedType = UNDEFINED);
     virtual ~IPlugin() = 0;
 };
 

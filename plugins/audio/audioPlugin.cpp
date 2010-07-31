@@ -23,16 +23,16 @@
 using namespace lightspark;
 
 AudioPlugin::AudioPlugin()
+//  : pluginType(AUDIO)
 {
-  SetPluginType(AUDIO);
 }
 
-const char* AudioPlugin::Get_AudioBackend_name()
+const char* AudioPlugin::get_audioBackend_name()
 {
   return audiobackend_name;
 }
 
-bool AudioPlugin::GetServerStatus()
+bool AudioPlugin::get_serverStatus()
 {
   return noServer;
 }
@@ -42,7 +42,17 @@ bool AudioPlugin::IsContextReady()
   return contextReady;
 }
 
-bool lightspark::AudioPlugin::IsStopped()
+bool AudioPlugin::IsStopped()
 {
   return stopped;
+}
+
+char* AudioPlugin::get_pluginName()
+{
+ return pluginName;
+}
+
+PLUGIN_TYPES AudioPlugin::get_pluginType()
+{
+  return pluginType;
 }

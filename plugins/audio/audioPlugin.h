@@ -33,7 +33,7 @@ Abstract class for audio plugin implementation
 ***********************/
 class AudioPlugin : IPlugin
 {
-  private:
+  protected:
     class AudioStream; //Will be implemented per plugin
     const char *audiobackend_name;
     std::vector<AudioStream*> streams;
@@ -42,8 +42,11 @@ class AudioPlugin : IPlugin
     bool stopped;
   public:
     AudioPlugin();
-    const char *Get_AudioBackend_name();
-    bool GetServerStatus();
+    const char *get_audioBackend_name();
+    bool get_serverStatus();
+    PLUGIN_TYPES get_pluginType();
+    void set_pluginType(PLUGIN_TYPES definedtype = AUDIO);
+    char *get_pluginName();
     bool IsContextReady();
     bool IsStopped();
     virtual uint32_t createStream(AudioDecoder *decoder) = 0;

@@ -28,7 +28,6 @@
 
 #include "plugins/audio/audioPlugin.h"
 
-namespace bfs=boost::filesystem;
 using namespace std;
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
@@ -43,37 +42,43 @@ class AudioManager
   private:
     class PluginInfo
     {
-      private:
+//      private:
+      public:
 	char *plugin_name;
 	char *audiobackend_name;
-	PluginInfo *PreviousLibrary;
-	PluginInfo *NextLibrary;
-      public:
+	char *plugin_path;
+	bool enabled;
+	HLIB hAudioPlugin;
+	PluginInfo *PreviousPluginLib;
+	PluginInfo *NextPluginLib;
+//      public:
 	PluginInfo();
 	~PluginInfo();
     };
-    PluginInfo *AudioPluginsList;
-    PluginInfo *FirstAudioPlugin;
-    PluginInfo *LastAudioPlugin;
+    class PluginList
+    {
+      public:
+	PluginInfo *FirstAudioPlugin;
+	PluginInfo *LastAudioPlugin;
+    };
+    HLIB hSelectedAudioPluginLib;
+    PluginList *AudioPluginsList;
     PluginInfo *SelectedAudioPlugin;
     
-    LibHandle hSelectedAudioPluginLib;
     AudioPlugin *o_AudioPlugin;
-    void AddAudioPluginToList();
+    void AddAudioPluginToList(const HLIB h_pluginToAdd, const char *pathToPlugin);
     void FindAudioPlugins();
     void LoadAudioPlugin();
 
   public:
     AudioManager();
-    uint32_t createStream(AudioDecoder *decoder);
-    void freeStream(uint32_t id);
-    void fillAndSync(uint32_t id, uint32_t streamTime);
-    void stop();
+    uint32_t createStreamPlugin(AudioDecoder *decoder);
+    void freeStreamPlugin(uint32_t id);
+    void fillAndSyncPlugin(uint32_t id, uint32_t streamTime);
+    void stopPlugin();
     void set_audiobackend();
     ~AudioManager();
 };
-
-//int find_files(const bfs::path &folder, const string &file, bfs::path &pathToSend);
 
 };
 

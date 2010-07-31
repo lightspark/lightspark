@@ -25,7 +25,7 @@
 using namespace lightspark;
 using namespace std;
 
-void PulsePlugin::streamStatusCB(pa_stream* stream, AudioStream* th)
+void PulsePlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
 {
 	if(pa_stream_get_state(stream)==PA_STREAM_READY)
 		th->streamStatus=AudioStream::STREAM_READY;
@@ -45,9 +45,9 @@ void PulsePlugin::fillAndSync(uint32_t id, uint32_t streamTime)
 			return;
 		if(!streams[id-1]->decoder->hasDecodedFrames()) //No decoded data available yet, delay upload
 			return;
-		pa_stream* stream=streams[id-1]->stream;
+		pa_stream *stream=streams[id-1]->stream;
 		pa_threaded_mainloop_lock(mainLoop);
-		int16_t* dest;
+		int16_t *dest;
 		//Get buffer size
 		size_t frameSize=pa_stream_writable_size(stream);
 		if(frameSize==0) //The server can't accept any data now
@@ -56,7 +56,7 @@ void PulsePlugin::fillAndSync(uint32_t id, uint32_t streamTime)
 			return;
 		}
 		//Request updated timing info
-		pa_operation* timeUpdate=pa_stream_update_timing_info(stream, NULL, NULL);
+		pa_operation *timeUpdate=pa_stream_update_timing_info(stream, NULL, NULL);
 		pa_threaded_mainloop_unlock(mainLoop);
 		while(pa_operation_get_state(timeUpdate)!=PA_OPERATION_DONE);
 		pa_threaded_mainloop_lock(mainLoop);
@@ -90,7 +90,7 @@ void PulsePlugin::fillAndSync(uint32_t id, uint32_t streamTime)
 			uint32_t bytesNeededToFillTheGap=0;
 			bytesNeededToFillTheGap=150*streams[id-1]->decoder->getBytesPerMSec()/1000;
 			bytesNeededToFillTheGap&=0xfffffffe;
-			int16_t* tmp=new int16_t[bytesNeededToFillTheGap/2];
+			int16_t *tmp=new int16_t[bytesNeededToFillTheGap/2];
 			memset(tmp,0,bytesNeededToFillTheGap);
 			pa_stream_write(stream, tmp, bytesNeededToFillTheGap, NULL, 0, PA_SEEK_RELATIVE);
 			delete[] tmp;
@@ -126,10 +126,10 @@ void PulsePlugin::fillAndSync(uint32_t id, uint32_t streamTime)
 	}
 }
 
-void PulsePlugin::streamWriteCB(pa_stream* stream, size_t frameSize, AudioStream* th)
+void PulsePlugin::streamWriteCB(pa_stream *stream, size_t frameSize, AudioStream *th)
 {
 	//Get buffer size
-	int16_t* dest;
+	int16_t *dest;
 	pa_stream_begin_write(stream, (void**)&dest, &frameSize);
 	uint32_t retSize=th->decoder->copyFrame(dest, frameSize);
 	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
@@ -138,11 +138,11 @@ void PulsePlugin::streamWriteCB(pa_stream* stream, size_t frameSize, AudioStream
 void PulsePlugin::freeStream(uint32_t id)
 {
 	pa_threaded_mainloop_lock(mainLoop);
-	AudioStream* s=streams[id-1];
+	AudioStream *s=streams[id-1];
 	assert(s);
 	if(noServer==false)
 	{
-		pa_stream* toDelete=s->stream;
+		pa_stream *toDelete=s->stream;
 		pa_stream_disconnect(toDelete);
 	}
 	//Do not delete the stream now, let's wait termination
@@ -171,7 +171,7 @@ void started_notify()
 	cout << "____started!!!!" << endl;
 }
 
-uint32_t PulsePlugin::createStream(AudioDecoder* decoder)
+uint32_t PulsePlugin::createStream(AudioDecoder *decoder)
 {
 	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
@@ -215,7 +215,7 @@ uint32_t PulsePlugin::createStream(AudioDecoder* decoder)
 	return index+1;
 }
 
-void PulsePlugin::contextStatusCB(pa_context* context, AudioPlugin* th)
+void PulsePlugin::contextStatusCB(pa_context *context, AudioPlugin *th)
 {
 	switch(pa_context_get_state(context))
 	{
@@ -232,10 +232,12 @@ void PulsePlugin::contextStatusCB(pa_context* context, AudioPlugin* th)
 	}
 }
 
-PulsePlugin::PulsePlugin():audiobackend_name("PulseAudio"),contextReady(false),noServer(false),stopped(false)
+PulsePlugin::PulsePlugin()
+  : pluginType(AUDIO), pluginName("Pulse (no input support)"), audiobackend_name("PulseAudio"),
+//  : pluginName("Pulse (no input support)"), audiobackend_name("PulseAudio"),
+    contextReady(false), noServer(false), stopped(false)
 {
-  
-  mainLoop=pa_threaded_mainloop_new();
+  mainLoop = pa_threaded_mainloop_new();
   pa_threaded_mainloop_start(mainLoop);
   
   pa_threaded_mainloop_lock(mainLoop);

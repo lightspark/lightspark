@@ -20,6 +20,7 @@
 #ifndef VM_H
 #define VM_H
 
+#include "compat.h"
 #include <semaphore.h>
 #include <vector>
 #include "swftypes.h"

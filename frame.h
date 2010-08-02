@@ -20,6 +20,7 @@
 #ifndef _FRAME_H
 #define _FRAME_H
 
+#include "compat.h"
 #include <list>
 #include "swftypes.h"
 

@@ -30,8 +30,6 @@ extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
 
-long lightspark::timeDiff(timespec& s, timespec& d);
-
 void lightspark::ignore(istream& i, int count);
 
 ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in):Tag(h)
@@ -83,10 +81,8 @@ void DoActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo, Di
 void DoActionTag::Render()
 {
 	LOG(LOG_NOT_IMPLEMENTED,"AVM1 not supported");
-/*#ifndef WIN32
-	timespec ts,td;
-	clock_gettime(CLOCK_REALTIME,&ts);
-#endif
+/*
+	ts = get_current_time_ms();
 	ExecutionContext* exec_bak=rt->execContext;
 	rt->execContext=this;
 	for(unsigned int i=0;i<actions.size();i++)
@@ -115,10 +111,9 @@ void DoActionTag::Render()
 		}
 	}
 	rt->execContext=exec_bak;
-#ifndef WIN32
-	clock_gettime(CLOCK_REALTIME,&td);
-	sys->fps_prof->action_time=timeDiff(ts,td);
-#endif*/
+	td = get_current_time_ms();
+	sys->fps_prof->action_time=td-ts;
+*/
 }
 
 DoInitActionTag::DoInitActionTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
@@ -153,10 +148,8 @@ void DoInitActionTag::execute(MovieClip* parent, std::list < std::pair<PlaceInfo
 void DoInitActionTag::Render()
 {
 	LOG(LOG_NOT_IMPLEMENTED,"AVM1 not supported");
-/*#ifndef WIN32
-	timespec ts,td;
-	clock_gettime(CLOCK_REALTIME,&ts);
-#endif
+/*
+	ts = get_current_time_ms();
 	ExecutionContext* exec_bak=rt->execContext;
 	rt->execContext=this;
 	for(unsigned int i=0;i<actions.size();i++)
@@ -185,10 +178,9 @@ void DoInitActionTag::Render()
 		}
 	}
 	rt->execContext=exec_bak;
-#ifndef WIN32
-	clock_gettime(CLOCK_REALTIME,&td);
-	sys->fps_prof->action_time=timeDiff(ts,td);
-#endif*/
+	td=get_current_time_ms();
+	sys->fps_prof->action_time=td-ts;
+*/
 }
 
 ACTIONRECORDHEADER::ACTIONRECORDHEADER(std::istream& in)

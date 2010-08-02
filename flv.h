@@ -20,6 +20,7 @@
 #ifndef FLV_H
 #define FLV_H
 
+#include "compat.h"
 #include <istream>
 #include "swftypes.h"
 

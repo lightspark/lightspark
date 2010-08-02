@@ -20,6 +20,7 @@
 #ifndef _FLASH_GEOM_H
 #define _FLASH_GEOM_H
 
+#include "compat.h"
 #include "asobjects.h"
 
 namespace lightspark

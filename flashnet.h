@@ -20,6 +20,7 @@
 #ifndef _FLASH_NET_H
 #define _FLASH_NET_H
 
+#include "compat.h"
 #include "asobjects.h"
 #include "flashevents.h"
 #include "thread_pool.h"

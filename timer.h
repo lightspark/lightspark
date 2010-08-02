@@ -20,6 +20,7 @@
 #ifndef _TIMER_H
 #define _TIMER_H
 
+#include "compat.h"
 #include <list>
 #include <pthread.h>
 #include <time.h>

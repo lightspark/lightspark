@@ -20,10 +20,10 @@
 #ifndef _FLASH_EVENTS_H
 #define _FLASH_EVENTS_H
 
+#include "compat.h"
 #include "asobjects.h"
 #include <string>
 #include <semaphore.h>
-#include "compat.h"
 
 #undef MOUSE_EVENT
 

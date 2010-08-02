@@ -33,8 +33,10 @@
 #include <string.h>
 #include <assert.h>
 #include "exceptions.h"
+#ifndef WIN32
+// TODO: Proper CMake check
 #include <arpa/inet.h>
-#include <stdatomic.h>
+#endif
 
 namespace lightspark
 {
@@ -477,7 +479,7 @@ protected:
 	virtual ~ASObject();
 	SWFOBJECT_TYPE type;
 private:
-	std::atomic<int32_t> ref_count;
+	ATOMIC_INT32(ref_count);
 	Manager* manager;
 	int cur_level;
 	virtual int _maxlevel();
@@ -503,14 +505,17 @@ public:
 	void incRef()
 	{
 		//std::cout << "incref " << this << std::endl;
-		ref_count.fetch_add(1);
+		ATOMIC_INCREMENT(ref_count);
 		assert(ref_count>0);
 	}
 	void decRef()
 	{
 		//std::cout << "decref " << this << std::endl;
 		assert_and_throw(ref_count>0);
-		ref_count.fetch_sub(1);
+		ATOMIC_DECREMENT(ref_count);
+		// Note: The check is not done atomically, but this should be OK anyway due to
+		//       how threads pass these objects between them. Be careful if you pass
+		//       around objects and then decRef them.
 		if(ref_count==0)
 		{
 			if(manager)
@@ -528,7 +533,7 @@ public:
 	}
 	void fake_decRef()
 	{
-		ref_count.fetch_sub(1);
+		ATOMIC_DECREMENT(ref_count);
 	}
 	static void s_incRef(ASObject* o)
 	{

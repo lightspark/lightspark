@@ -20,10 +20,10 @@
 #ifndef _NET_UTILS_H
 #define _NET_UTILS_H
 
+#include "compat.h"
 #include <streambuf>
 #include <inttypes.h>
 #include "swftypes.h"
-
 #include "thread_pool.h"
 
 namespace lightspark

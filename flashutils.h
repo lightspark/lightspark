@@ -20,6 +20,7 @@
 #ifndef _FLASH_UTILS_H
 #define _FLASH_UTILS_H
 
+#include "compat.h"
 #include "swftypes.h"
 #include "flashevents.h"
 #include "thread_pool.h"

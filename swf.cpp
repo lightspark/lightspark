@@ -20,9 +20,7 @@
 #include <string>
 #include <sstream>
 #include <pthread.h>
-#include <sys/wait.h>
 #include <algorithm>
-#include "compat.h"
 #include <SDL.h>
 #include "abc.h"
 #include "flashdisplay.h"
@@ -39,6 +37,8 @@
 #include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
+
+#include "compat.h"
 #endif
 #ifdef ENABLE_LIBAVCODEC
 extern "C" {
@@ -325,8 +325,7 @@ SystemState::~SystemState()
 	//Kill our child process if any
 	if(childPid)
 	{
-		kill(childPid, SIGTERM);
-		waitpid(childPid, NULL, 0);
+		kill_child(childPid);
 	}
 	//Delete the temporary cookies file
 	if(cookiesFileName[0])
@@ -490,10 +489,10 @@ void SystemState::createEngines()
 {
 	sem_wait(&mutex);
 	assert(renderThread==NULL && inputThread==NULL);
+#ifdef COMPILE_PLUGIN
 	//Check if we should fall back on gnash
 	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
 	{
-#ifdef COMPILE_PLUGIN
 		if(dumpedSWFPath.len()==0) //The path is not known yet
 		{
 			waitingForDump=true;
@@ -562,11 +561,11 @@ void SystemState::createEngines()
 			stopEngines();
 			return;
 		}
-#else 
-		//COMPILE_PLUGIN not defined
-		throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
-#endif
 	}
+#else 
+	//COMPILE_PLUGIN not defined
+	throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
+#endif
 
 	if(engine==GTKPLUG) //The engines must be created int the context of the main thread
 	{
@@ -884,7 +883,7 @@ void RenderThread::wait()
 	assert_and_throw(ret==0);
 }
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),t(0),terminated(false),
+InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {
 	LOG(LOG_NO_INFO,"Creating input thread");
@@ -915,8 +914,7 @@ void InputThread::wait()
 {
 	if(terminated)
 		return;
-	if(t)
-		pthread_join(t,NULL);
+	pthread_join(t,NULL);
 	terminated=true;
 }
 
@@ -1200,7 +1198,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	sem_init(&inputDone,0,0);
 
 #ifdef WIN32
-	fontPath = "TimesNewRoman.ttf"
+	fontPath = "TimesNewRoman.ttf";
 #else
 	FcPattern *pat, *match;
 	FcResult result = FcResultMatch;
@@ -1234,7 +1232,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 		pthread_create(&t,NULL,(thread_worker)gtkplug_worker,this);
 	}
 #endif
-	clock_gettime(CLOCK_REALTIME,&ts);
+	time_s = compat_get_current_time_ms();
 }
 
 RenderThread::~RenderThread()
@@ -1980,19 +1978,17 @@ void* RenderThread::sdl_worker(RenderThread* th)
 void RenderThread::draw()
 {
 	sem_post(&render);
-#ifdef CLOCK_REALTIME
-	clock_gettime(CLOCK_REALTIME,&td);
-	uint32_t diff=timeDiff(ts,td);
+	time_d = compat_get_current_time_ms();
+	uint64_t diff=time_d-time_s;
 	if(diff>1000)
 	{
-		ts=td;
+		time_s=time_d;
 		LOG(LOG_NO_INFO,"FPS: " << dec << frameCount);
 		frameCount=0;
 		secsCount++;
 	}
 	else
 		frameCount++;
-#endif
 }
 
 void RenderThread::tick()
@@ -2228,16 +2224,4 @@ void RootMovieClip::setVariableByString(const string& s, ASObject* o)
 	target->setVariableByQName(sub.c_str(),"",o);
 }*/
 
-long lightspark::timeDiff(timespec& s, timespec& d)
-{
-	timespec temp;
-	if ((d.tv_nsec-s.tv_nsec)<0) {
-		temp.tv_sec = d.tv_sec-s.tv_sec-1;
-		temp.tv_nsec = 1000000000+d.tv_nsec-s.tv_nsec;
-	} else {
-		temp.tv_sec = d.tv_sec-s.tv_sec;
-		temp.tv_nsec = d.tv_nsec-s.tv_nsec;
-	}
-	return temp.tv_sec*1000+(temp.tv_nsec)/1000000;
-}
 

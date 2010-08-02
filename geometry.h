@@ -19,6 +19,7 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
+#include "compat.h"
 #include <list>
 #include <iostream>
 #include <vector>
@@ -60,10 +61,10 @@ friend class DefineShape2Tag;
 friend class DefineShape3Tag;
 private:
 	void TessellateGLU();
-	static void GLUCallbackBegin(GLenum type, GeomShape* obj);
-	static void GLUCallbackEnd(GeomShape* obj);
-	static void GLUCallbackVertex(Vector2* vertexData, GeomShape* obj);
-	static void GLUCallbackCombine(GLdouble coords[3], void *vertex_data[4], 
+	static void CALLBACK GLUCallbackBegin(GLenum type, GeomShape* obj);
+	static void CALLBACK GLUCallbackEnd(GeomShape* obj);
+	static void CALLBACK GLUCallbackVertex(Vector2* vertexData, GeomShape* obj);
+	static void CALLBACK GLUCallbackCombine(GLdouble coords[3], void *vertex_data[4], 
 				       GLfloat weight[4], Vector2** outData, GeomShape* obj);
 	GLenum curTessTarget;
 	std::vector<Vector2*> tmpVertices;

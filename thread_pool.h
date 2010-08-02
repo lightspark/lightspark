@@ -20,6 +20,7 @@
 #ifndef _THREAD_POOL_H
 #define _THREAD_POOL_H
 
+#include "compat.h"
 #include <deque>
 #include <pthread.h>
 #include <semaphore.h>

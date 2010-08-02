@@ -141,10 +141,10 @@ void GeomShape::TessellateGLU()
 	//NOTE: do not invalidate the contents of outline in this function
 	GLUtesselator* tess=gluNewTess();
 
-	gluTessCallback(tess,GLU_TESS_BEGIN_DATA,(void(*)())GLUCallbackBegin);
-	gluTessCallback(tess,GLU_TESS_VERTEX_DATA,(void(*)())GLUCallbackVertex);
-	gluTessCallback(tess,GLU_TESS_END_DATA,(void(*)())GLUCallbackEnd);
-	gluTessCallback(tess,GLU_TESS_COMBINE_DATA,(void(*)())GLUCallbackCombine);
+	gluTessCallback(tess,GLU_TESS_BEGIN_DATA,(void(CALLBACK *)())GLUCallbackBegin);
+	gluTessCallback(tess,GLU_TESS_VERTEX_DATA,(void(CALLBACK *)())GLUCallbackVertex);
+	gluTessCallback(tess,GLU_TESS_END_DATA,(void(CALLBACK *)())GLUCallbackEnd);
+	gluTessCallback(tess,GLU_TESS_COMBINE_DATA,(void(CALLBACK *)())GLUCallbackCombine);
 	gluTessProperty(tess,GLU_TESS_WINDING_RULE,GLU_TESS_WINDING_ODD);
 	
 	//Let's create a vector of pointers to store temporary coordinates
@@ -185,7 +185,7 @@ void GeomShape::TessellateGLU()
 	gluDeleteTess(tess);
 }
 
-void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
+void CALLBACK GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
 {
 	assert_and_throw(obj->curTessTarget==0);
 	if(type==GL_TRIANGLE_FAN)
@@ -206,7 +206,7 @@ void GeomShape::GLUCallbackBegin(GLenum type, GeomShape* obj)
 		::abort();
 }
 
-void GeomShape::GLUCallbackVertex(Vector2* vertexData, GeomShape* obj)
+void CALLBACK GeomShape::GLUCallbackVertex(Vector2* vertexData, GeomShape* obj)
 {
 	assert_and_throw(obj->curTessTarget!=0);
 	if(obj->curTessTarget==GL_TRIANGLE_FAN)
@@ -223,7 +223,7 @@ void GeomShape::GLUCallbackVertex(Vector2* vertexData, GeomShape* obj)
 	}
 }
 
-void GeomShape::GLUCallbackEnd(GeomShape* obj)
+void CALLBACK GeomShape::GLUCallbackEnd(GeomShape* obj)
 {
 	assert_and_throw(obj->curTessTarget!=0);
 	if(obj->curTessTarget==GL_TRIANGLES)
@@ -231,7 +231,7 @@ void GeomShape::GLUCallbackEnd(GeomShape* obj)
 	obj->curTessTarget=0;
 }
 
-void GeomShape::GLUCallbackCombine(GLdouble coords[3], void* vertex_data[4], 
+void CALLBACK GeomShape::GLUCallbackCombine(GLdouble coords[3], void* vertex_data[4], 
 				   GLfloat weight[4], Vector2** outData, GeomShape* obj)
 {
 	//No real operations, apart from generating a new vertex at the passed coordinates

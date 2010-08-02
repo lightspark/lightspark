@@ -20,10 +20,12 @@ Credits:
 	www.lighthouse3d.com
 **************************************************************************/
 
+#include "textfile.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include "compat.h"
 
 char *textFileRead(const char *fn)
 {

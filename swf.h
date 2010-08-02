@@ -60,7 +60,6 @@ class ParseThread;
 class Tag;
 
 typedef void* (*thread_worker)(void*);
-long timeDiff(timespec& s, timespec& d);
 
 class SWF_HEADER
 {
@@ -369,9 +368,9 @@ private:
 	GLXFBConfig mFBConfig;
 	GLXContext mContext;
 	Window mWindow;
-
-	timespec ts,td;
 #endif
+	uint64_t time_s, time_d;
+
 	bool loadShaderPrograms();
 	uint32_t* interactive_buffer;
 	bool tempBufferAcquired;

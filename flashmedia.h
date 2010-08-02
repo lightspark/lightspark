@@ -20,6 +20,7 @@
 #ifndef _FLASH_MEDIA_H
 #define _FLASH_MEDIA_H
 
+#include "compat.h"
 #include "asobjects.h"
 #include "flashdisplay.h"
 #include "flashnet.h"

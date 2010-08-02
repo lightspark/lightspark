@@ -21,14 +21,63 @@
 #define COMPAT_H
 
 //Define cross platform helpers
+// TODO: This should be reworked to use CMake feature detection where possible
+
 #ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
   #include <winsock2.h>
   #include <windows.h>
-  #define TLSDATA __declspec( thread )
+#include <intrin.h>
+#undef min
+#undef max
+#undef RGB
+#undef exception_info // Let's hope MS functions always use _exception_info
   #define snprintf _snprintf
-  int round ( double f_val );
-  #define isnan(x) _isnan(x)
+#define isnan _isnan
+
+// No real functionality for now
+typedef int pid_t;
+
+// WINTODO: Hopefully, the MSVC instrinsics are similar enough
+//          to what the standard mandates
+#ifdef _MSC_VER
+#define ATOMIC_INT32(x) __declspec(align(4)) long x
+#define ATOMIC_INCREMENT(x) InterlockedIncrement(&x)
+#define ATOMIC_DECREMENT(x) InterlockedDecrement(&x)
+
+#define TLSDATA __declspec( thread )
+
+// Current Windows is always little-endian
+#define be64toh(x) _byteswap_uint64(x)
+
+#include <malloc.h>
+inline int aligned_malloc(void **memptr, size_t alignment, size_t size)
+{
+	*memptr = _aligned_malloc(size, alignment);
+	return (*memptr != NULL) ? 0: -1;
+}
+inline void aligned_free(void *mem)
+{
+	_aligned_free(mem);
+}
+
+// Emulate these functions
+int round(double f);
+long lrint(double f);
+
+
+// WINTODO: Should be set by CMake?
+#define PATH_MAX 260
+#define DATADIR "."
+#define GNASH_PATH "NONEXISTENT_PATH_GNASH_SUPPORT_DISABLED"
+
+#else
+#error At the moment, only Visual C++ is supported on Windows
+#endif
+
+
 #else //GCC
+
   #ifndef __STDC_LIMIT_MACROS
   #define __STDC_LIMIT_MACROS
 #endif
@@ -36,8 +85,17 @@
 #ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS
 #endif
-#include <inttypes.h>
+
 #define TLSDATA __thread
+#define CALLBACK
+
+#include <stdatomic.h>
+#define ATOMIC_INT32(x) std::atomic<int32_t> x
+#define ATOMIC_INCREMENT(x) x.fetch_add(1)
+#define ATOMIC_DECREMENT(x) x.fetch_sub(1)
+
+int aligned_malloc(void **memptr, size_t alignment, size_t size);
+void aligned_free(void *mem);
 #endif
 
 //Ensure compatibility on various targets
@@ -46,22 +104,7 @@
 #elif defined(__APPLE__)
   #define _BSD_SOURCE
   #include <architecture/byte_order.h>
-#elif defined(WIN32)
-  #ifdef _MSC_VER
-    typedef __int64 int64_t;
-    typedef unsigned __int64 uint64_t;
-    /*
-    typedef signed int int32_t;
-    typedef unsigned int uint32_t;
-    typedef short int16_t;
-    typedef unsigned short uint16_t;
-    typedef signed char int8_t;
-    typedef unsigned char uint8_t;
-    typedef signed int ssize_t;
-    */
-  #endif
-
-#else
+#elif !defined(WIN32)
   #include <endian.h>
 #endif
 
@@ -83,7 +126,7 @@
 
 #if defined WIN32
   #define HLIB HMODULE
-#else
+#else //should only define HMODULE for Unix... To modify
   #define HLIB void*
 #endif
 
@@ -96,10 +139,6 @@ void* ExtractLibContent(HLIB hLib, char *WhatToExtract);
 
 void CloseLib(HLIB hLib);
 /*****************/
-
-void compat_msleep(unsigned int time);
-
-uint64_t compat_msectiming();
 
 inline int imin(int a, int b)
 {
@@ -120,5 +159,15 @@ inline double dmax(double a,double b)
 {
 	return (a>b)?a:b;
 }
+
+#include <cstdint>
+#include <sys/types.h>
+std::uint64_t compat_msectiming();
+void compat_msleep(unsigned int time);
+std::uint64_t compat_get_current_time_ms();
+std::uint64_t compat_get_current_time_us();
+std::uint64_t compat_get_thread_cputime_us();
+
+int kill_child(pid_t p);
 
 #endif

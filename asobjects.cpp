@@ -630,6 +630,11 @@ ASString::ASString(const char* s):data(s)
 	type=T_STRING;
 }
 
+ASString::ASString(const char* s, uint32_t len):data(s, len)
+{
+	type=T_STRING;
+}
+
 /*ASFUNCTIONBODY(ASString,_constructor)
 {
 }*/

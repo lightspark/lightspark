@@ -149,9 +149,8 @@ void URLLoader::execute()
 		}
 		else if(dataFormat=="text")
 		{
-			if(curlDownloader.getLen())
-				threadAbort();
-			data=Class<ASString>::getInstanceS();
+			data=Class<ASString>::getInstanceS((const char *)curlDownloader.getBuffer(),
+                                                           curlDownloader.getLen());
 		}
 		//Send a complete event for this object
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete"));

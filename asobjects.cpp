@@ -71,6 +71,7 @@ void Array::buildTraits(ASObject* o)
 {
 	o->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 	o->ASObject::setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
+	o->ASObject::setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
 	o->ASObject::setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
 	o->ASObject::setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
 	o->ASObject::setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));

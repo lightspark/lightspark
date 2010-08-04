@@ -384,6 +384,7 @@ public:
 	int toInt();
 	double toNumber();
 	bool isEqual(ASObject* r);
+	bool isLess(ASObject* r);
 	virtual ~Undefined(){}
 };
 

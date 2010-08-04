@@ -861,6 +861,14 @@ tiny_string Undefined::toString(bool debugMsg)
 	return "undefined";
 }
 
+bool Undefined::isLess(ASObject* r)
+{
+	//ECMA-262 complaiant
+	//As undefined became NaN when converted to number the operation is undefined
+	//And undefined must return false
+	return false;
+}
+
 bool Undefined::isEqual(ASObject* r)
 {
 	if(r->getObjectType()==T_UNDEFINED)
@@ -1026,6 +1034,11 @@ bool Number::isLess(ASObject* o)
 	{
 		const Number* i=static_cast<const Number*>(o);
 		return val<i->val;
+	}
+	else if(o->getObjectType()==T_UNDEFINED)
+	{
+		//Undefined is NaN, so the result is undefined and so false
+		return false;
 	}
 	else
 	{

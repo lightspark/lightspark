@@ -911,12 +911,15 @@ void RenderThread::wait()
 	assert_and_throw(ret==0);
 }
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),
+InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),threaded(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {
 	LOG(LOG_NO_INFO,"Creating input thread");
 	if(e==SDL)
+	{
+		threaded=true;
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
+	}
 #ifdef COMPILE_PLUGIN
 	else if(e==GTKPLUG)
 	{
@@ -942,7 +945,8 @@ void InputThread::wait()
 {
 	if(terminated)
 		return;
-	pthread_join(t,NULL);
+	if(threaded)
+		pthread_join(t,NULL);
 	terminated=true;
 }
 

@@ -326,6 +326,7 @@ private:
 	SystemState* m_sys;
 	pthread_t t;
 	bool terminated;
+	bool threaded;
 	static void* sdl_worker(InputThread*);
 #ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;

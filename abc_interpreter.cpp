@@ -541,6 +541,17 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				context->runtime_stack_push(i);
 				break;
 			}
+			case 0x2e:
+			{
+				//pushuint
+				u30 t;
+				code >> t;
+				pushUInt(context, t);
+
+				ASObject* i=abstract_i(context->context->constant_pool.uinteger[t]);
+				context->runtime_stack_push(i);
+				break;
+			}
 			case 0x2f:
 			{
 				//pushdouble

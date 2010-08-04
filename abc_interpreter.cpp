@@ -1142,6 +1142,19 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				context->runtime_stack_push(ret);
 				break;
 			}
+			case 0xb2:
+			{
+				//istype
+				u30 t;
+				code >> t;
+				multiname* name=context->context->getMultiname(t,context);
+
+				ASObject* v1=context->runtime_stack_pop();
+
+				ASObject* ret=abstract_b(isType(v1, name));
+				context->runtime_stack_push(ret);
+				break;
+			}
 			case 0xb3:
 			{
 				//istypelate

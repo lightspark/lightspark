@@ -1730,6 +1730,77 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	delete[] args;
 }
 
+bool ABCVm::isType(ASObject* obj, multiname* name)
+{
+	LOG(LOG_CALLS, "isType " << *name);
+
+	objAndLevel ret=getGlobal()->getVariableByMultiname(*name);
+	if(!ret.obj) //Could not retrieve type
+	{
+		LOG(LOG_ERROR,"Cannot retrieve type");
+		return false;
+	}
+
+	ASObject* type=ret.obj;
+	bool real_ret=false;
+	Class_base* objc=NULL;
+	Class_base* c=NULL;
+	if(obj->prototype)
+	{
+		assert_and_throw(type->getObjectType()==T_CLASS);
+		c=static_cast<Class_base*>(type);
+
+		objc=obj->prototype;
+	}
+	else if(obj->getObjectType()==T_CLASS)
+	{
+		assert_and_throw(type->getObjectType()==T_CLASS);
+		c=static_cast<Class_base*>(type);
+
+		//Special case for Class
+		if(c->class_name=="Class")
+		{
+			type->decRef();
+			obj->decRef();
+			return true;
+		}
+		else
+		{
+			type->decRef();
+			obj->decRef();
+			return false;
+		}
+	}
+	else
+	{
+		//Special cases
+		if(obj->getObjectType()==T_FUNCTION && type==Class_function::getClass())
+			return true;
+
+		real_ret=obj->getObjectType()==type->getObjectType();
+		LOG(LOG_CALLS,"isTypelate on non classed object " << real_ret);
+		if(real_ret==false)
+		{
+			//TODO: obscene hack, check casting of stuff
+			if(obj->getObjectType()==T_INTEGER && type->getObjectType()==T_NUMBER)
+			{
+				cout << "HACK for Integer" << endl;
+				real_ret=true;
+			}
+		}
+		obj->decRef();
+		type->decRef();
+		return real_ret;
+	}
+
+	real_ret=objc->isSubClass(c);
+	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?" ":"not ") 
+			<< "subclass of " << c->class_name);
+	obj->decRef();
+	type->decRef();
+	return real_ret;
+}
+
 bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 {
 	LOG(LOG_CALLS,"isTypelate");

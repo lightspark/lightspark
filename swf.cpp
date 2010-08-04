@@ -317,15 +317,18 @@ void SystemState::setParameters(ASObject* p)
 void SystemState::stopEngines()
 {
 	//Stops the thread that is parsing us
-	parseThread->stop();
-	parseThread->wait();
-	threadPool->stop();
+	if(parseThread)
+	{
+		parseThread->stop();
+		parseThread->wait();
+	}
+	if(threadPool)
+		threadPool->stop();
 	if(timerThread)
 		timerThread->wait();
 	delete downloadManager;
 	downloadManager=NULL;
-	delete currentVm;
-	currentVm=NULL;
+	currentVm->shutdown();
 	delete timerThread;
 	timerThread=NULL;
 #ifdef ENABLE_SOUND
@@ -347,6 +350,7 @@ SystemState::~SystemState()
 	assert(shutdown);
 	//The thread pool should be stopped before everything
 	delete threadPool;
+	threadPool=NULL;
 	stopEngines();
 
 	//decRef all our object before destroying classes
@@ -375,6 +379,8 @@ SystemState::~SystemState()
 		delete it->second;
 		//it->second->decRef()
 	}
+	//The Vm must be destroyed this late to clean all managed integers and numbers
+	delete currentVm;
 
 	//Also destroy all tags
 	for(unsigned int i=0;i<tagsStorage.size();i++)
@@ -420,9 +426,14 @@ void SystemState::setError(const string& c)
 void SystemState::setShutdownFlag()
 {
 	sem_wait(&mutex);
-	shutdown=true;
 	if(currentVm)
-		currentVm->addEvent(NULL,new ShutdownEvent());
+	{
+		ShutdownEvent* e=new ShutdownEvent;
+		currentVm->addEvent(NULL,e);
+		e->decRef();
+	}
+	//Set the flag after sending the event, otherwise it's ignored by the VM
+	shutdown=true;
 
 	sem_post(&terminated);
 	sem_post(&mutex);
@@ -435,6 +446,8 @@ void SystemState::wait()
 		renderThread->wait();
 	if(inputThread)
 		inputThread->wait();
+	if(currentVm)
+		currentVm->wait();
 }
 
 float SystemState::getRenderRate()

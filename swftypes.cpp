@@ -92,11 +92,6 @@ bool ASObject::isLess(ASObject* r)
 		LOG(LOG_CALLS,"Overloaded isLess");
 		return ret1->isLess(ret2);
 	}
-	else if(r->getObjectType()==T_UNDEFINED)
-	{
-		//If the other object is undefined, it is always less than us
-		return true;
-	}
 
 	LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	if(prototype)
@@ -269,7 +264,7 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 {
 	check();
 #ifndef NDEBUG
-	assert_and_throw(!initialized);
+	assert(!initialized);
 #endif
 	//Getters are inserted with the current level of the prototype chain
 	int level=cur_level;
@@ -589,7 +584,7 @@ void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_strin
 {
 	//Should be correct to use the level on the prototype chain
 #ifndef NDEBUG
-	assert_and_throw(!initialized);
+	assert(!initialized);
 #endif
 	Variables.initSlot(n,cur_level,name,ns);
 }

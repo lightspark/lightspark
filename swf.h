@@ -296,6 +296,10 @@ public:
 	void setRenderRate(float rate);
 	float getRenderRate();
 
+	//Stuff to be done once for process and not for plugin instance
+	static void staticInit() DLL_PUBLIC;
+	static void staticDeinit() DLL_PUBLIC;
+
 	DownloadManager* downloadManager;
 };
 

@@ -83,6 +83,7 @@ int main(int argc, char* argv[])
 	}
 
 	Log::initLogging(log_level);
+	SystemState::staticInit();
 	//NOTE: see SystemState declaration
 	sys=new SystemState(NULL);
 
@@ -125,4 +126,5 @@ int main(int argc, char* argv[])
 	//Clean up (mostly useful to clean up valgrind logs)
 	for(unsigned int i=0;i<contexts.size();i++)
 		delete contexts[i];
+	SystemState::staticDeinit();
 }

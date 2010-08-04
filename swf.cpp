@@ -328,7 +328,8 @@ void SystemState::stopEngines()
 		timerThread->wait();
 	delete downloadManager;
 	downloadManager=NULL;
-	currentVm->shutdown();
+	if(currentVm)
+		currentVm->shutdown();
 	delete timerThread;
 	timerThread=NULL;
 #ifdef ENABLE_SOUND

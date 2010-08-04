@@ -817,7 +817,7 @@ bool ASString::isEqual(ASObject* r)
 		return false;
 }
 
-bool ASString::isLess(ASObject* r)
+TRISTATE ASString::isLess(ASObject* r)
 {
 	assert_and_throw(implEnable);
 	//TODO: Implement ECMA-262 11.8.5 algorithm
@@ -826,10 +826,10 @@ bool ASString::isLess(ASObject* r)
 	{
 		number_t a=toNumber();
 		number_t b=r->toNumber();
-		return a<b;
+		return (a<b)?TTRUE:TFALSE;
 	}
 	throw UnsupportedException("String::isLess not completely implemented");
-	return true;
+	return TTRUE;
 }
 
 bool Boolean::isEqual(ASObject* r)
@@ -861,12 +861,11 @@ tiny_string Undefined::toString(bool debugMsg)
 	return "undefined";
 }
 
-bool Undefined::isLess(ASObject* r)
+TRISTATE Undefined::isLess(ASObject* r)
 {
 	//ECMA-262 complaiant
 	//As undefined became NaN when converted to number the operation is undefined
-	//And undefined must return false
-	return false;
+	return TUNDEFINED;
 }
 
 bool Undefined::isEqual(ASObject* r)
@@ -905,17 +904,17 @@ ASFUNCTIONBODY(Integer,_toString)
 	return Class<ASString>::getInstanceS(buf);
 }
 
-bool Integer::isLess(ASObject* o)
+TRISTATE Integer::isLess(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
 		Integer* i=static_cast<Integer*>(o);
-		return val < i->toInt();
+		return (val < i->toInt())?TTRUE:TFALSE;
 	}
 	else if(o->getObjectType()==T_NUMBER)
 	{
 		Number* i=static_cast<Number*>(o);
-		return val < i->toNumber();
+		return (val < i->toNumber())?TTRUE:TFALSE;
 	}
 	else if(o->getObjectType()==T_STRING)
 	{
@@ -925,15 +924,15 @@ bool Integer::isLess(ASObject* o)
 		if(isdigit(s->data[0]))
 		{
 			int val2=atoi(s->data.c_str());
-			return val < val2;
+			return (val < val2)?TTRUE:TFALSE;
 		}
 		else
-			return false;
+			return TFALSE;
 	}
 	else if(o->getObjectType()==T_BOOLEAN)
 	{
 		Boolean* i=static_cast<Boolean*>(o);
-		return val < i->toInt();
+		return (val < i->toInt())?TTRUE:TFALSE;
 	}
 	else
 		return ASObject::isLess(o);
@@ -996,16 +995,16 @@ tiny_string UInteger::toString(bool debugMsg)
 	return tiny_string(cur,true); //Create a copy
 }
 
-bool UInteger::isLess(ASObject* o)
+TRISTATE UInteger::isLess(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
 		uint32_t val1=val;
 		int32_t val2=o->toInt();
 		if(val2<0)
-			return false;
+			return TFALSE;
 		else
-			return val1<(uint32_t)val2;
+			return (val1<(uint32_t)val2)?TTRUE:TFALSE;
 	}
 	else
 		throw UnsupportedException("UInteger::isLess is not completely implemented");
@@ -1023,22 +1022,22 @@ bool Number::isEqual(ASObject* o)
 	}
 }
 
-bool Number::isLess(ASObject* o)
+TRISTATE Number::isLess(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
 	{
 		const Integer* i=static_cast<const Integer*>(o);
-		return val<i->val;
+		return (val<i->val)?TTRUE:TFALSE;
 	}
 	else if(o->getObjectType()==T_NUMBER)
 	{
 		const Number* i=static_cast<const Number*>(o);
-		return val<i->val;
+		return (val<i->val)?TTRUE:TFALSE;
 	}
 	else if(o->getObjectType()==T_UNDEFINED)
 	{
-		//Undefined is NaN, so the result is undefined and so false
-		return false;
+		//Undefined is NaN, so the result is undefined
+		return TUNDEFINED;
 	}
 	else
 	{

@@ -54,6 +54,8 @@ enum SWFOBJECT_TYPE { T_OBJECT=0, T_INTEGER=1, T_NUMBER=2, T_FUNCTION=3, T_UNDEF
 
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_UINT,STACK_NUMBER,STACK_BOOLEAN};
 
+enum TRISTATE { TFALSE=0, TTRUE, TUNDEFINED };
+
 typedef double number_t;
 
 class ASObject;
@@ -588,7 +590,7 @@ public:
 
 	//Comparison operators
 	virtual bool isEqual(ASObject* r);
-	virtual bool isLess(ASObject* r);
+	virtual TRISTATE isLess(ASObject* r);
 
 	//Level handling
 	int getLevel() const

@@ -69,7 +69,7 @@ tiny_string ASObject::toString(bool debugMsg)
 		return "[object Object]";
 }
 
-bool ASObject::isLess(ASObject* r)
+TRISTATE ASObject::isLess(ASObject* r)
 {
 	check();
 	if(hasPropertyByQName("valueOf",""))
@@ -97,7 +97,7 @@ bool ASObject::isLess(ASObject* r)
 	if(prototype)
 		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
 	throw RunTimeException("Not handled less comparison for objects");
-	return false;
+	return TFALSE;
 }
 
 bool ASObject::hasNext(unsigned int& index, bool& out)

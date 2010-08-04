@@ -219,7 +219,7 @@ private:
 #endif
 	void stopEngines();
 	//Useful to wait for complete download of the SWF
-	Condition fileDumpAvailable;
+	Semaphore fileDumpAvailable;
 	tiny_string dumpedSWFPath;
 	bool waitingForDump;
 	//Data for handling Gnash fallback

@@ -2219,6 +2219,15 @@ void ABCVm::newClass(call_context* th, int n)
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
+	//Class objects also contains all the methods/getters/setters declared for instances
+	instance_info* cur=&th->context->instances[n];
+	for(unsigned int i=0;i<cur->trait_count;i++)
+	{
+		int kind=cur->traits[i].kind&0xf;
+		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
+			th->context->buildTrait(ret,&cur->traits[i],false);
+	}
+
 	//add Constructor the the class methods
 	ret->constructor=new SyntheticFunction(constructor);
 	ret->class_index=n;

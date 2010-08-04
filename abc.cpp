@@ -1425,8 +1425,17 @@ void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 {
 	if(class_index==-1)
 		return;
+
+	//Build only the traits that has not been build in the class
 	for(unsigned int i=0;i<instances[class_index].trait_count;i++)
-		buildTrait(obj,&instances[class_index].traits[i],true);
+	{
+		int kind=instances[class_index].traits[i].kind&0xf;
+		if(kind==traits_info::Slot || kind==traits_info::Class ||
+			kind==traits_info::Function || kind==traits_info::Const)
+		{
+			buildTrait(obj,&instances[class_index].traits[i],true);
+		}
+	}
 }
 
 void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
@@ -1613,14 +1622,15 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
-				for(int i=(obj->getLevel()-1);i>=0;i--)
+				while(cur)
 				{
-					assert_and_throw(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,false);
+						int l=cur->max_level;
+						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,l,false,true);
 						if(var)
 						{
+							assert(var->getter);
 							//A superclass defined a protected method that we have to override.
 							//TODO: incref variable?
 							obj->setGetterByQName(name,cur->protected_ns,f);
@@ -1630,14 +1640,17 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				}
 			}
 
+			assert(!bind);
 			if(bind)
 				f->bind(obj,obj->getLevel());
 			obj->setGetterByQName(name,ns,f);
 
 			//Iterate to find a getter
-			for(int i=(obj->getLevel()-1);i>=0;i--)
+			Class_base* cur=prot->super;
+			while(cur)
 			{
-				obj_var* var=obj->Variables.findObjVar(name,ns,i,false,false);
+				int l=cur->max_level;
+				obj_var* var=cur->Variables.findObjVar(name,ns,l,false,true);
 				if(var)
 				{
 					assert_and_throw(t->kind&0x20);
@@ -1649,6 +1662,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 						break;
 					}
 				}
+				cur=cur->super;
 			}
 			
 			LOG(LOG_TRACE,"End Getter trait: " << ns << "::" << name);
@@ -1669,14 +1683,15 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
-				for(int i=(obj->getLevel()-1);i>=0;i--)
+				while(cur)
 				{
-					assert_and_throw(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,true);
+						int l=cur->max_level;
+						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,l,false,true);
 						if(var)
 						{
+							assert(var->setter);
 							//A superclass defined a protected method that we have to override.
 							//TODO: incref variable?
 							obj->setSetterByQName(name,cur->protected_ns,f);
@@ -1686,14 +1701,17 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				}
 			}
 
+			assert(!bind);
 			if(bind)
 				f->bind(obj,obj->getLevel());
 			obj->setSetterByQName(name,ns,f);
 			
 			//Iterate to find a setter
-			for(int i=(obj->getLevel()-1);i>=0;i--)
+			Class_base* cur=prot->super;
+			while(cur)
 			{
-				obj_var* var=obj->Variables.findObjVar(name,ns,i,false,true);
+				int l=cur->max_level;
+				obj_var* var=cur->Variables.findObjVar(name,ns,l,false,true);
 				if(var)
 				{
 					assert_and_throw(t->kind&0x20);
@@ -1705,6 +1723,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 						break;
 					}
 				}
+				cur=cur->super;
 			}
 			
 			LOG(LOG_TRACE,"End Setter trait: " << ns << "::" << name);
@@ -1724,17 +1743,18 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
-				for(int i=(obj->getLevel()-1);i>=0;i--)
+				while(cur)
 				{
-					assert_and_throw(cur);
 					if(cur->use_protected)
 					{
-						obj_var* var=obj->Variables.findObjVar(name,cur->protected_ns,i,false,false);
+						int l=cur->max_level;
+						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,l,false,true);
 						if(var)
 						{
+							assert(var->var);
 							//A superclass defined a protected method that we have to override.
 							//TODO: incref variable?
-							obj->setVariableByQName(name,cur->protected_ns,f,false);
+							obj->setSetterByQName(name,cur->protected_ns,f);
 						}
 					}
 					cur=cur->super;
@@ -1744,18 +1764,25 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			//NOTE: it is legal to define function with the same name at different levels, handle this somehow
 			if(t->kind&0x20)
 			{
-				int level=obj->getLevel()-1;
-				obj_var* var=obj->Variables.findObjVar(name,ns,level,false,true);
-				if(var)
+				Class_base* cur=prot->super;
+				while(cur)
 				{
-					assert_and_throw(var->var->getObjectType()==T_FUNCTION);
-					IFunction* oldf=static_cast<IFunction*>(var->var);
-					//Ok, we are overriding this method
-					assert_and_throw(oldf->isOverridden()==false);
-					oldf->override(f);
+					int l=cur->max_level;
+					obj_var* var=cur->Variables.findObjVar(name,ns,l,false,true);
+					if(var)
+					{
+						assert(var->var);
+						assert_and_throw(var->var->getObjectType()==T_FUNCTION);
+						IFunction* oldf=static_cast<IFunction*>(var->var);
+						//Ok, we are overriding this method
+						assert_and_throw(oldf->isOverridden()==false);
+						oldf->override(f);
+					}
+					cur=cur->super;
 				}
 			}
 
+			assert(!bind);
 			if(bind)
 				f->bind(obj,obj->getLevel());
 			obj->setVariableByQName(name,ns,f,false);

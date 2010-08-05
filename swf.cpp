@@ -448,7 +448,7 @@ void SystemState::wait()
 	if(inputThread)
 		inputThread->wait();
 	if(currentVm)
-		currentVm->wait();
+		currentVm->shutdown();
 }
 
 float SystemState::getRenderRate()

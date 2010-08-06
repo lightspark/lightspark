@@ -406,11 +406,6 @@ ASObject* DefineSpriteTag::instance() const
 	return ret;
 }
 
-void DefineSpriteTag::Render()
-{
-	lightspark::MovieClip::Render();
-}
-
 Vector2 DefineSpriteTag::debugRender(FTFont* font, bool deep)
 {
 	if(deep)
@@ -689,6 +684,66 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 	}
 }
 
+void DefineTextTag::inputRender()
+{
+	if(alpha==0)
+		return;
+	if(!visible)
+		return;
+	std::vector < TEXTRECORD >::iterator it=TextRecords.begin();
+	if(it==TextRecords.end()) //Nothing to draw
+		return;
+	std::vector < GLYPHENTRY >::iterator it2;
+	int x=0,y=0;
+
+	//Build a fake FILLSTYLEs
+	FILLSTYLE f;
+	f.FillStyleType=0x00;
+	f.Color=it->TextColor;
+	MatrixApplier ma(getMatrix());
+	ma.concat(TextMatrix);
+	//Shapes are defined in twips, so scale then down
+	glScalef(0.05,0.05,1);
+	
+	//The next 1/20 scale is needed by DefineFont3. Should be conditional
+	glScalef(0.05,0.05,1);
+	float scale_cur=1;
+	int count=0;
+	unsigned int shapes_done=0;
+	it= TextRecords.begin();
+	for(;it!=TextRecords.end();it++)
+	{
+		if(it->StyleFlagsHasFont)
+		{
+			float scale=it->TextHeight;
+			scale/=1024;
+			glScalef(scale/scale_cur,scale/scale_cur,1);
+			scale_cur=scale;
+		}
+		it2 = it->GlyphEntries.begin();
+		int x2=x,y2=y;
+		x2+=(*it).XOffset;
+		y2+=(*it).YOffset;
+
+		for(;it2!=(it->GlyphEntries.end());it2++)
+		{
+			while(shapes_done<cached.size() &&  cached[shapes_done].id==count)
+			{
+				assert_and_throw(cached[shapes_done].color==1)
+				cached[shapes_done].style=&f;
+
+				cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
+				shapes_done++;
+				if(shapes_done==cached.size())
+					break;
+			}
+			x2+=it2->GlyphAdvance;
+			count++;
+		}
+	}
+	ma.unapply();
+}
+
 void DefineTextTag::Render()
 {
 	LOG(LOG_TRACE,"DefineText Render");
@@ -742,7 +797,6 @@ void DefineTextTag::Render()
 	if(!isSimple())
 		rt->glAcquireTempBuffer(TextBounds.Xmin,TextBounds.Xmax, TextBounds.Ymin,TextBounds.Ymax);
 
-	MatrixApplier ma2;
 	//The next 1/20 scale is needed by DefineFont3. Should be conditional
 	glScalef(0.05,0.05,1);
 	float scale_cur=1;
@@ -778,51 +832,9 @@ void DefineTextTag::Render()
 			count++;
 		}
 	}
-	ma2.unapply();
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(TextBounds.Xmin,TextBounds.Xmax,TextBounds.Ymin,TextBounds.Ymax);
-	
-	if(rt->glAcquireIdBuffer())
-	{
-		//The next 1/20 scale is needed by DefineFont3. Should be conditional
-		glScalef(0.05,0.05,1);
-		float scale_cur=1;
-		int count=0;
-		unsigned int shapes_done=0;
-		it= TextRecords.begin();
-		for(;it!=TextRecords.end();it++)
-		{
-			if(it->StyleFlagsHasFont)
-			{
-				float scale=it->TextHeight;
-				scale/=1024;
-				glScalef(scale/scale_cur,scale/scale_cur,1);
-				scale_cur=scale;
-			}
-			it2 = it->GlyphEntries.begin();
-			int x2=x,y2=y;
-			x2+=(*it).XOffset;
-			y2+=(*it).YOffset;
-
-			for(;it2!=(it->GlyphEntries.end());it2++)
-			{
-				while(shapes_done<cached.size() &&  cached[shapes_done].id==count)
-				{
-					assert_and_throw(cached[shapes_done].color==1)
-					cached[shapes_done].style=&f;
-
-					cached[shapes_done].Render(x2/scale_cur*20,y2/scale_cur*20);
-					shapes_done++;
-					if(shapes_done==cached.size())
-						break;
-				}
-				x2+=it2->GlyphAdvance;
-				count++;
-			}
-		}
-		rt->glReleaseIdBuffer();
-	}
 	ma.unapply();
 }
 
@@ -849,22 +861,21 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
+DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DefineShapeTag(h)
 {
 	LOG(LOG_TRACE,"DefineShape2Tag");
 	Shapes.version=2;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
-DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
+DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DefineShape2Tag(h)
 {
 	LOG(LOG_TRACE,"DefineShape3Tag");
 	Shapes.version=3;
 	in >> ShapeId >> ShapeBounds >> Shapes;
-	texture=0;
 }
 
-DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
+DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3Tag(h)
 {
 	LOG(LOG_TRACE,"DefineShape4Tag");
 	Shapes.version=4;
@@ -937,9 +948,27 @@ void DefineMorphShapeTag::Render()
 	glPopMatrix();*/
 }
 
+void DefineShapeTag::inputRender()
+{
+	if(alpha==0)
+		return;
+	if(!visible)
+		return;
+
+	MatrixApplier ma(getMatrix());
+	glScalef(0.05,0.05,1);
+
+	std::vector < GeomShape >::iterator it=cached.begin();
+	for(;it!=cached.end();it++)
+	{
+		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
+		it->Render();
+	}
+	ma.unapply();
+}
+
 void DefineShapeTag::Render()
 {
-	LOG(LOG_TRACE,"DefineShape Render");
 	if(alpha==0)
 		return;
 	if(!visible)
@@ -961,18 +990,14 @@ void DefineShapeTag::Render()
 
 	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
+	{
+		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
 		it->Render();
+	}
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 
-	if(rt->glAcquireIdBuffer())
-	{
-		std::vector < GeomShape >::iterator it=cached.begin();
-		for(;it!=cached.end();it++)
-			it->Render();
-		rt->glReleaseIdBuffer();
-	}
 	ma.unapply();
 }
 
@@ -992,48 +1017,6 @@ Vector2 DefineShapeTag::debugRender(FTFont* font, bool deep)
 	return Vector2(100,100);
 }
 
-void DefineShape2Tag::Render()
-{
-	LOG(LOG_TRACE,"DefineShape2 Render");
-	if(alpha==0)
-		return;
-	if(!visible)
-		return;
-
-	if(cached.size()==0)
-	{
-		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
-
-		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
-	}
-
-	MatrixApplier ma(getMatrix());
-	glScalef(0.05,0.05,1);
-
-	if(!isSimple())
-		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-
-	std::vector < GeomShape >::iterator it=cached.begin();
-	for(;it!=cached.end();it++)
-	{
-		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
-		it->Render();
-	}
-
-	if(!isSimple())
-		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-	
-	if(rt->glAcquireIdBuffer())
-	{
-		std::vector < GeomShape >::iterator it=cached.begin();
-		for(;it!=cached.end();it++)
-			it->Render();
-		rt->glReleaseIdBuffer();
-	}
-	ma.unapply();
-}
-
 Vector2 DefineShape2Tag::debugRender(FTFont* font, bool deep)
 {
 	assert(!deep);
@@ -1048,88 +1031,6 @@ Vector2 DefineShape2Tag::debugRender(FTFont* font, bool deep)
 		glVertex2i(0,100);
 	glEnd();
 	return Vector2(100,100);
-}
-
-void DefineShape4Tag::Render()
-{
-	LOG(LOG_TRACE,"DefineShape4 Render");
-	if(alpha==0)
-		return;
-	if(!visible)
-		return;
-
-	if(cached.size()==0)
-	{
-		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
-
-		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
-	}
-
-	MatrixApplier ma(getMatrix());
-	glScalef(0.05,0.05,1);
-
-	if(!isSimple())
-		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-	
-	std::vector < GeomShape >::iterator it=cached.begin();
-	for(;it!=cached.end();it++)
-		it->Render();
-
-	if(!isSimple())
-		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-	
-	if(rt->glAcquireIdBuffer())
-	{
-		std::vector < GeomShape >::iterator it=cached.begin();
-		for(;it!=cached.end();it++)
-			it->Render();
-		rt->glReleaseIdBuffer();
-	}
-	ma.unapply();
-}
-
-void DefineShape3Tag::Render()
-{
-	LOG(LOG_TRACE,"DefineShape3 Render "<< ShapeId);
-	if(alpha==0)
-		return;
-	if(!visible)
-		return;
-	if(cached.size()==0)
-	{
-		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
-
-		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
-	}
-
-	MatrixApplier ma(getMatrix());
-	glScalef(0.05,0.05,1);
-
-	if(!isSimple())
-		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-
-
-	std::vector < GeomShape >::iterator it=cached.begin();
-	for(;it!=cached.end();it++)
-	{
-		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
-		it->Render();
-	}
-
-	if(!isSimple())
-		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-	
-	if(rt->glAcquireIdBuffer())
-	{
-		std::vector < GeomShape >::iterator it=cached.begin();
-		for(;it!=cached.end();it++)
-			it->Render();
-		rt->glReleaseIdBuffer();
-	}
-
-	ma.unapply();
 }
 
 Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)

@@ -75,6 +75,30 @@ Video::~Video()
 	}
 }
 
+void Video::inputRender()
+{
+	sem_wait(&mutex);
+	if(netStream && netStream->lockIfReady())
+	{
+		//All operations here should be non blocking
+		//Get size
+		videoWidth=netStream->getVideoWidth();
+		videoHeight=netStream->getVideoHeight();
+
+		MatrixApplier ma(getMatrix());
+
+		glBegin(GL_QUADS);
+			glVertex2i(0,0);
+			glVertex2i(width,0);
+			glVertex2i(width,height);
+			glVertex2i(0,height);
+		glEnd();
+		ma.unapply();
+		netStream->unlock();
+	}
+	sem_post(&mutex);
+}
+
 void Video::Render()
 {
 	if(!initialized)
@@ -124,17 +148,6 @@ void Video::Render()
 		if(!isSimple())
 			rt->glBlitTempBuffer(0,width,0,height);
 		
-		//Render click sensible area if needed
-		if(rt->glAcquireIdBuffer())
-		{
-			glBegin(GL_QUADS);
-				glVertex2i(0,0);
-				glVertex2i(width,0);
-				glVertex2i(width,height);
-				glVertex2i(0,height);
-			glEnd();
-			rt->glReleaseIdBuffer();
-		}
 		ma.unapply();
 		netStream->unlock();
 	}

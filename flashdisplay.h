@@ -72,6 +72,10 @@ public:
 	{
 		throw RunTimeException("DisplayObject::Render");
 	}
+	virtual void inputRender()
+	{
+		Render();
+	}
 	virtual bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		throw RunTimeException("DisplayObject::getBounds");
@@ -209,6 +213,7 @@ public:
 	ASFUNCTION(_getGraphics);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
+	void inputRender();
 };
 
 class MorphShape: public DisplayObject
@@ -297,6 +302,7 @@ public:
 	}
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
+	void inputRender();
 };
 
 class MovieClip: public Sprite
@@ -333,6 +339,7 @@ public:
 
 	//DisplayObject interface
 	void Render();
+	void inputRender();
 	void setRoot(RootMovieClip* r);
 	
 	/*! \brief Should be run with the default fragment/vertex program on

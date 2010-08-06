@@ -357,7 +357,6 @@ void Sprite::Render()
 		return;
 	if(!visible)
 		return;
-	InteractiveObject::RenderProloue();
 
 	MatrixApplier ma(getMatrix());
 
@@ -372,18 +371,35 @@ void Sprite::Render()
 			rt->glBlitTempBuffer(t1,t2,t3,t4);
 	}
 	
-	if(graphics && rt->glAcquireIdBuffer())
-	{
-		graphics->Render();
-		rt->glReleaseIdBuffer();
-	}
-
 	{
 		Locker l(mutexDisplayList);
 		//Now draw also the display list
 		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
 		for(;it!=dynamicDisplayList.end();it++)
 			(*it)->Render();
+	}
+	ma.unapply();
+}
+
+void Sprite::inputRender()
+{
+	if(alpha==0.0)
+		return;
+	if(!visible)
+		return;
+	InteractiveObject::RenderProloue();
+
+	MatrixApplier ma(getMatrix());
+
+	if(graphics)
+		graphics->Render();
+
+	{
+		Locker l(mutexDisplayList);
+		//Now draw also the display list
+		list<DisplayObject*>::iterator it=dynamicDisplayList.begin();
+		for(;it!=dynamicDisplayList.end();it++)
+			(*it)->inputRender();
 	}
 
 	ma.unapply();
@@ -612,14 +628,10 @@ void MovieClip::bootstrap()
 
 void MovieClip::Render()
 {
-	LOG(LOG_TRACE,"Render MovieClip");
-
 	if(alpha==0.0)
 		return;
 	if(!visible)
 		return;
-	InteractiveObject::RenderProloue();
-
 	assert_and_throw(graphics==NULL);
 
 	MatrixApplier ma(getMatrix());
@@ -645,9 +657,42 @@ void MovieClip::Render()
 	}
 
 	ma.unapply();
-	InteractiveObject::RenderEpilogue();
+}
 
-	LOG(LOG_TRACE,"End Render MovieClip");
+void MovieClip::inputRender()
+{
+	if(alpha==0.0)
+		return;
+	if(!visible)
+		return;
+	InteractiveObject::RenderProloue();
+
+	assert_and_throw(graphics==NULL);
+
+	MatrixApplier ma(getMatrix());
+	//Save current frame, this may change during rendering
+	uint32_t curFP=state.FP;
+
+	if(framesLoaded)
+	{
+		assert_and_throw(curFP<framesLoaded);
+
+		if(!state.stop_FP)
+			frames[curFP].runScript();
+
+		frames[curFP].inputRender();
+	}
+
+	{
+		//Render objects added at runtime
+		Locker l(mutexDisplayList);
+		list<DisplayObject*>::iterator j=dynamicDisplayList.begin();
+		for(;j!=dynamicDisplayList.end();j++)
+			(*j)->inputRender();
+	}
+
+	ma.unapply();
+	InteractiveObject::RenderEpilogue();
 }
 
 Vector2 MovieClip::debugRender(FTFont* font, bool deep)
@@ -1317,6 +1362,7 @@ void InteractiveObject::RenderProloue()
 {
 	rt->pushId();
 	rt->currentId=id;
+	FILLSTYLE::fixedColor(id,id,id);
 }
 
 void InteractiveObject::RenderEpilogue()
@@ -1640,12 +1686,23 @@ void Shape::Render()
 	if(!isSimple())
 		rt->glBlitTempBuffer(t1,t2,t3,t4);
 	
-	if(rt->glAcquireIdBuffer())
-	{
-		graphics->Render();
-		rt->glReleaseIdBuffer();
-	}
+	ma.unapply();
+}
 
+void Shape::inputRender()
+{
+	//If graphics is not yet initialized we have nothing to do
+	if(graphics==NULL)
+		return;
+
+	if(alpha==0.0)
+		return;
+	if(!visible)
+		return;
+
+	MatrixApplier ma(getMatrix());
+
+	graphics->Render();
 	ma.unapply();
 }
 

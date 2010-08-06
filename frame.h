@@ -53,6 +53,7 @@ public:
 	Frame():script(NULL),initialized(false){}
 	~Frame();
 	void Render();
+	void inputRender();
 	void setScript(IFunction* s){script=s;}
 	void runScript();
 	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);

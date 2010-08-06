@@ -1304,28 +1304,6 @@ void RenderThread::requestInput()
 	sem_wait(&inputDone);
 }
 
-bool RenderThread::glAcquireIdBuffer()
-{
-	if(inputDisabled)
-		return false;
-	//TODO: PERF: on the id buffer stuff are drawn more than once
-	if(currentId!=0)
-	{
-		glDrawBuffer(GL_COLOR_ATTACHMENT2);
-		materialOverride=true;
-		FILLSTYLE::fixedColor(currentId,currentId,currentId);
-		return true;
-	}
-	
-	return false;
-}
-
-void RenderThread::glReleaseIdBuffer()
-{
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	materialOverride=false;
-}
-
 void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(tempBufferAcquired==false);
@@ -1522,6 +1500,17 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 				glLoadIdentity();
 
+/*				//Now draw the input layer
+				if(!th->inputDisabled)
+				{
+					glDrawBuffer(GL_COLOR_ATTACHMENT2);
+					th->materialOverride=true;
+					th->m_sys->inputRender();
+					th->materialOverride=false;
+				}*/
+
+				//Now blit everything
+				glLoadIdentity();
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);
 
@@ -1938,6 +1927,17 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 				glLoadIdentity();
 
+				//Now draw the input layer
+				if(!th->inputDisabled)
+				{
+					glDrawBuffer(GL_COLOR_ATTACHMENT2);
+					th->materialOverride=true;
+					th->m_sys->inputRender();
+					th->materialOverride=false;
+				}
+
+				//Now blit everything
+				glLoadIdentity();
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);
 				glDisable(GL_BLEND);

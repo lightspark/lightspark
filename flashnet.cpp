@@ -402,16 +402,7 @@ void NetStream::execute()
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
 #ifdef ENABLE_SOUND
-						if(audioDecoder)
-						{
-							assert_and_throw(audioCodec==tag.SoundFormat);
-							uint32_t decodedBytes=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
-							if(soundStreamId==0 && audioDecoder->isValid())
-								soundStreamId=sys->soundManager->createStream(audioDecoder);
-							//Adjust timing
-							decodedTime+=decodedBytes/audioDecoder->getBytesPerMSec();
-						}
-						else
+						if(audioDecoder==NULL)
 						{
 							audioCodec=tag.SoundFormat;
 							switch(tag.SoundFormat)
@@ -425,11 +416,23 @@ void NetStream::execute()
 									audioDecoder=new NullAudioDecoder();
 #endif
 									break;
+								case MP3:
+									audioDecoder=new NullAudioDecoder();
+									break;
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
 							}
 							if(audioDecoder->isValid())
 								soundStreamId=sys->soundManager->createStream(audioDecoder);
+						}
+						else
+						{
+							assert_and_throw(audioCodec==tag.SoundFormat);
+							uint32_t decodedBytes=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
+							if(soundStreamId==0 && audioDecoder->isValid())
+								soundStreamId=sys->soundManager->createStream(audioDecoder);
+							//Adjust timing
+							decodedTime+=decodedBytes/audioDecoder->getBytesPerMSec();
 						}
 #endif
 						break;
@@ -441,18 +444,30 @@ void NetStream::execute()
 						//Reset the current time, the video flow driver the stream
 						decodedTime=videoFrameCount*1000/frameRate;
 						videoFrameCount++;
-						assert_and_throw(tag.codecId==7);
 
-						if(tag.isHeader())
+						if(videoDecoder==NULL)
 						{
-							//The tag is the header, initialize decoding
-							assert_and_throw(videoDecoder==NULL); //The decoder can be set only once
+							//If the isHeader flag is on then the decoder becomes the owner of the data
+							if(tag.isHeader())
+							{
+								//The tag is the header, initialize decoding
 #ifdef ENABLE_LIBAVCODEC
-							videoDecoder=new FFMpegVideoDecoder(tag.packetData,tag.packetLen);
+								videoDecoder=new FFMpegVideoDecoder(tag.codec,tag.packetData,tag.packetLen, frameRate);
 #else
-							videoDecoder=new NullVideoDecoder();
+								videoDecoder=new NullVideoDecoder();
 #endif
-							tag.releaseBuffer();
+								tag.releaseBuffer();
+							}
+							else if(videoDecoder==NULL)
+							{
+								//First packet but no special handling
+#ifdef ENABLE_LIBAVCODEC
+								videoDecoder=new FFMpegVideoDecoder(tag.codec,NULL,0,frameRate);
+#else
+								videoDecoder=new NullVideoDecoder();
+#endif
+								videoDecoder->decodeData(tag.packetData,tag.packetLen, decodedTime);
+							}
 							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
 							getVm()->addEvent(this, status);
 							status->decRef();

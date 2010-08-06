@@ -187,38 +187,55 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 	s >> typeAndCodec;
 
 	frameType=(typeAndCodec>>4);
-	codecId=(typeAndCodec&0xf);
+	int codecId=(typeAndCodec&0xf);
 
 	if(frameType!=1 && frameType!=2)
 		throw ParseException("Unexpected frameType in FLV");
 
-	assert_and_throw(codecId==7);
+	assert_and_throw(codecId==7 || codecId==2);
 
-	//AVCVideoPacket
-	UI8 packetType;
-	s >> packetType;
-	switch(packetType)
+	if(codecId==2)
 	{
-		case 0: //Sequence header
-			_isHeader=true;
-			break;
-		case 1: //NALU
-			break;
-		default:
-			throw UnsupportedException("Unexpected packet type in FLV");
+		codec=H263;
+		//H263 video packet
+		//Is everything raw?
+		//Compute lenght of raw data
+		packetLen=dataSize-1;
+		int ret=aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
+		assert(ret==0);
+
+		s.read((char*)packetData,packetLen);
+		memset(packetData+packetLen,0,16);
 	}
+	else if(codecId==7)
+	{
+		codec=H264;
+		//AVCVideoPacket
+		UI8 packetType;
+		s >> packetType;
+		switch(packetType)
+		{
+			case 0: //Sequence header
+				_isHeader=true;
+				break;
+			case 1: //NALU
+				break;
+			default:
+				throw UnsupportedException("Unexpected packet type in FLV");
+		}
 
-	SI24 CompositionTime;
-	s >> CompositionTime;
-	assert_and_throw(CompositionTime==0); //TODO: what are composition times
+		SI24 CompositionTime;
+		s >> CompositionTime;
+		assert_and_throw(CompositionTime==0); //TODO: what are composition times
 
-	//Compute lenght of raw data
-	packetLen=dataSize-5;
-	int ret=aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
-	assert(ret==0);
+		//Compute lenght of raw data
+		packetLen=dataSize-5;
+		int ret=aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
+		assert(ret==0);
 
-	s.read((char*)packetData,packetLen);
-	memset(packetData+packetLen,0,16);
+		s.read((char*)packetData,packetLen);
+		memset(packetData+packetLen,0,16);
+	}
 
 	//Compute totalLen
 	unsigned int end=s.tellg();
@@ -234,7 +251,7 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 {
 	unsigned int start=s.tellg();
 	BitStream bs(s);
-	SoundFormat=(FLV_AUDIO_CODEC)(int)UB(4,bs);
+	SoundFormat=(LS_AUDIO_CODEC)(int)UB(4,bs);
 	switch(UB(2,bs))
 	{
 		case 0:

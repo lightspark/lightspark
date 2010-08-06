@@ -25,7 +25,6 @@
 #include <inttypes.h>
 #include "threading.h"
 #include "graphics.h"
-#include "flv.h"
 #ifdef ENABLE_LIBAVCODEC
 extern "C"
 {
@@ -40,6 +39,9 @@ extern "C"
 
 namespace lightspark
 {
+
+enum LS_VIDEO_CODEC { H264=0, H263 };
+enum LS_AUDIO_CODEC { LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10 };
 
 class VideoDecoder
 {
@@ -79,6 +81,7 @@ public:
 class NullVideoDecoder: public VideoDecoder
 {
 public:
+	NullVideoDecoder() {status=VALID;}
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}
@@ -124,7 +127,7 @@ private:
 	void setSize(uint32_t w, uint32_t h);
 	bool fillDataAndCheckValidity();
 public:
-	FFMpegVideoDecoder(uint8_t* initdata, uint32_t datalen);
+	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, float frameRateHint);
 	~FFMpegVideoDecoder();
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 	bool discardFrame();
@@ -204,6 +207,7 @@ class NullAudioDecoder: public AudioDecoder
 public:
 	NullAudioDecoder()
 	{
+		status=VALID;
 		sampleRate=44100;
 		channelCount=2;
 	}
@@ -217,7 +221,7 @@ private:
 	AVCodecContext* codecContext;
 	bool fillDataAndCheckValidity();
 public:
-	FFMpegAudioDecoder(FLV_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
+	FFMpegAudioDecoder(LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
 	uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 };
 #endif

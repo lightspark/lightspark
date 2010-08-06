@@ -114,7 +114,7 @@ private:
 	Downloader* downloader;
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
-	FLV_AUDIO_CODEC audioCodec;
+	LS_AUDIO_CODEC audioCodec;
 	uint32_t soundStreamId;
 	uint32_t streamTime;
 	sem_t mutex;

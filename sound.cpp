@@ -36,7 +36,36 @@ void SoundManager::streamStatusCB(pa_stream* stream, SoundStream* th)
 	}
 }
 
-void SoundManager::fillAndSync(uint32_t id, uint32_t streamTime)
+bool SoundManager::isTimingAvailable() const
+{
+	return noServer==false;
+}
+
+uint32_t SoundManager::getPlayedTime(uint32_t id)
+{
+	assert(streams[id-1]);
+	assert(noServer==false);
+
+	if(streams[id-1]->streamStatus!=SoundStream::STREAM_READY) //The stream is not yet ready, delay upload
+		return 0;
+	pa_stream* stream=streams[id-1]->stream;
+
+	pa_threaded_mainloop_lock(mainLoop);
+	//Request updated timing info
+	pa_operation* timeUpdate=pa_stream_update_timing_info(stream, NULL, NULL);
+	pa_threaded_mainloop_unlock(mainLoop);
+	while(pa_operation_get_state(timeUpdate)!=PA_OPERATION_DONE);
+	pa_threaded_mainloop_lock(mainLoop);
+	pa_operation_unref(timeUpdate);
+
+	pa_usec_t time;
+	pa_stream_get_time(stream, &time);
+
+	pa_threaded_mainloop_unlock(mainLoop);
+	return time/1000;
+}
+
+void SoundManager::fill(uint32_t id)
 {
 	assert(streams[id-1]);
 	if(noServer==false)
@@ -55,47 +84,6 @@ void SoundManager::fillAndSync(uint32_t id, uint32_t streamTime)
 			pa_threaded_mainloop_unlock(mainLoop);
 			return;
 		}
-		//Request updated timing info
-		pa_operation* timeUpdate=pa_stream_update_timing_info(stream, NULL, NULL);
-		pa_threaded_mainloop_unlock(mainLoop);
-		while(pa_operation_get_state(timeUpdate)!=PA_OPERATION_DONE);
-		pa_threaded_mainloop_lock(mainLoop);
-		pa_operation_unref(timeUpdate);
-
-		//Get the latency of the stream, in usecs
-		pa_usec_t latency;
-		int negative;
-		int ret=pa_stream_get_latency(stream, &latency, &negative);
-		if(ret!=0) //Latency update failed, abort upload
-		{
-			LOG(LOG_ERROR, "Upload of samples to pulse failed");
-			pa_threaded_mainloop_unlock(mainLoop);
-			return;
-		}
-		assert(negative==0);
-		//Transform latency in milliseconds
-		latency/=1000; //This is the time that will pass before the first written samples will be played
-		uint32_t frontTime=streams[id-1]->decoder->getFrontTime();
-		int32_t frontLatency=frontTime-streamTime; //This is the time that should pass before playing the first available samples
-		//The first sample we write will be played after latency ms. So we want to skip until streamTime+latency
-		int32_t gapTime=latency-frontLatency; //This is the gap in the two latencies
-		//The idea is to skip or add some samples to adapt to the expected latency
-		//Currently the correction unit is an arbitrary 150 usecs. Would be way better to use a complex poles based control
-		//and distributing a bit new/removed samples
-		if(gapTime==0);
-		else if(gapTime>0)
-			streams[id-1]->decoder->skipUntil(frontTime, 150);
-		else
-		{
-			uint32_t bytesNeededToFillTheGap=0;
-			bytesNeededToFillTheGap=150*streams[id-1]->decoder->getBytesPerMSec()/1000;
-			bytesNeededToFillTheGap&=0xfffffffe;
-			int16_t* tmp=new int16_t[bytesNeededToFillTheGap/2];
-			memset(tmp,0,bytesNeededToFillTheGap);
-			pa_stream_write(stream, tmp, bytesNeededToFillTheGap, NULL, 0, PA_SEEK_RELATIVE);
-			delete[] tmp;
-		}
-
 		//Write data until we have space on the server and we have data available
 		uint32_t totalWritten=0;
 		pa_stream_begin_write(stream, (void**)&dest, &frameSize);

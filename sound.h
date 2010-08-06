@@ -55,8 +55,13 @@ public:
 	SoundManager();
 	uint32_t createStream(AudioDecoder* decoder);
 	void freeStream(uint32_t id);
-	void fillAndSync(uint32_t id, uint32_t streamTime);
+	void fill(uint32_t id);
 	void stop();
+	bool isTimingAvailable() const;
+	/**
+		Get the elapsed time in milliseconds for the stream streamId
+	*/
+	uint32_t getPlayedTime(uint32_t streamId);
 	~SoundManager();
 };
 

@@ -80,17 +80,7 @@ SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 		LOG(LOG_NO_INFO,"No SWF file signature found");
 		return;
 	}
-	pt->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
-	float frameRate=FrameRate;
-	frameRate/=256;
-	LOG(LOG_NO_INFO,"FrameRate " << frameRate);
-
-	pt->root->setFrameRate(frameRate);
-	//TODO: setting render rate should be done when the clip is added to the displaylist
-	sys->setRenderRate(frameRate);
-	pt->root->version=Version;
-	pt->root->fileLenght=FileLength;
 	valid=true;
 }
 
@@ -821,6 +811,15 @@ void ParseThread::execute()
 		SWF_HEADER h(f);
 		if(!h.valid)
 			throw ParseException("Not an SWF file");
+		version=h.Version;
+		root->version=h.Version;
+		root->fileLenght=h.FileLength;
+		float frameRate=h.FrameRate;
+		frameRate/=256;
+		LOG(LOG_NO_INFO,"FrameRate " << frameRate);
+		root->setFrameRate(frameRate);
+		//TODO: setting render rate should be done when the clip is added to the displaylist
+		sys->setRenderRate(frameRate);
 		root->setFrameSize(h.getFrameSize());
 		root->setFrameCount(h.FrameCount);
 

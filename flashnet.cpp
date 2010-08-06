@@ -380,6 +380,7 @@ void NetStream::execute()
 	uint32_t decodedAudioBytes=0;
 	//The decoded time is computed from the decodedAudioBytes to avoid drifts
 	uint32_t decodedTime=0;
+	bool waitForFlush=true;
 	try
 	{
 		Chronometer chronometer;
@@ -530,21 +531,26 @@ void NetStream::execute()
 	{
 		cout << e.cause << endl;
 		threadAbort();
+		waitForFlush=false;
 	}
 	catch(JobTerminationException& e)
 	{
+		waitForFlush=false;
 	}
 	catch(exception& e)
 	{
 		LOG(LOG_ERROR, "Exception in reading: "<<e.what());
 	}
 
-	//Put the decoders in the flushing state and wait for the complete consumption of contents
-	audioDecoder->setFlushing();
-	videoDecoder->setFlushing();
-	
-	audioDecoder->waitFlushed();
-	videoDecoder->waitFlushed();
+	if(waitForFlush)
+	{
+		//Put the decoders in the flushing state and wait for the complete consumption of contents
+		audioDecoder->setFlushing();
+		videoDecoder->setFlushing();
+		
+		audioDecoder->waitFlushed();
+		videoDecoder->waitFlushed();
+	}
 
 	sem_wait(&mutex);
 	sys->downloadManager->destroy(downloader);

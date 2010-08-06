@@ -136,10 +136,7 @@ void SoundManager::streamWriteCB(pa_stream* stream, size_t askedData, SoundStrea
 	while(frameSize);
 
 	if(totalWritten)
-	{
 		pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
-		pa_stream_cork(stream, 0, NULL, NULL); //Start the stream, just in case it's still stopped
-	}
 	else
 		pa_stream_cancel_write(stream);
 	//If the server asked for more data we have to sent it the inefficient way
@@ -160,6 +157,7 @@ void SoundManager::streamWriteCB(pa_stream* stream, size_t askedData, SoundStrea
 		pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
 		delete[] dest;
 	}
+	pa_stream_cork(stream, 0, NULL, NULL); //Start the stream, just in case it's still stopped
 }
 
 void SoundManager::freeStream(uint32_t id)

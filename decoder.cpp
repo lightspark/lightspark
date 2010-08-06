@@ -370,6 +370,9 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(LS_AUDIO_CODEC audioCodec, uint8_t* initd
 		case AAC:
 			codecId=CODEC_ID_AAC;
 			break;
+		case MP3:
+			codecId=CODEC_ID_MP3;
+			break;
 		default:
 			::abort();
 	}

@@ -336,9 +336,13 @@ void NetStream::tick()
 	}
 	else
 		streamTime+=1000/frameRate;
-	videoDecoder->skipUntil(streamTime);
-	if(soundStreamId)
+	//Video has a latency of one frame
+	videoDecoder->skipUntil(streamTime/*-(1000/frameRate)*/);
+/*	if(soundStreamId && audioDecoder->almostFull())
+	{
+		cout << "fill on full" << endl;
 		sys->soundManager->fill(soundStreamId);
+	}*/
 }
 
 bool NetStream::isReady() const
@@ -374,7 +378,6 @@ void NetStream::execute()
 	profile->setTag("NetStream");
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	uint32_t decodedTime=0;
-	uint32_t videoFrameCount=0;
 	try
 	{
 		Chronometer chronometer;
@@ -403,6 +406,7 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
+						uint32_t decodedBytes=0;
 #ifdef ENABLE_SOUND
 						if(audioDecoder==NULL)
 						{
@@ -417,9 +421,17 @@ void NetStream::execute()
 #else
 									audioDecoder=new NullAudioDecoder();
 #endif
+									tag.releaseBuffer();
 									break;
 								case MP3:
+#ifdef ENABLE_LIBAVCODEC
+									audioDecoder=new FFMpegAudioDecoder(tag.SoundFormat,NULL,0);
+#else
 									audioDecoder=new NullAudioDecoder();
+#endif
+									decodedBytes=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
+									//Adjust timing
+									decodedTime+=decodedBytes/audioDecoder->getBytesPerMSec();
 									break;
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
@@ -430,7 +442,7 @@ void NetStream::execute()
 						else
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
-							uint32_t decodedBytes=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
+							decodedBytes=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
 							if(soundStreamId==0 && audioDecoder->isValid())
 								soundStreamId=sys->soundManager->createStream(audioDecoder);
 							//Adjust timing
@@ -443,9 +455,7 @@ void NetStream::execute()
 					{
 						VideoDataTag tag(s);
 						prevSize=tag.getTotalLen();
-						//Reset the current time, the video flow driver the stream
-						decodedTime=videoFrameCount*1000/frameRate;
-						videoFrameCount++;
+						//The audio time drives the stream
 
 						if(videoDecoder==NULL)
 						{

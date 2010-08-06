@@ -113,6 +113,11 @@ public:
 	uint32_t packetLen;
 	AudioDataTag(std::istream& s);
 	~AudioDataTag();
+	void releaseBuffer()
+	{
+		packetData=NULL;
+		packetLen=0;
+	}
 	bool isHeader() const { return _isHeader; }
 };
 

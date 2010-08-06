@@ -119,7 +119,7 @@ private:
 	GLuint videoBuffers[2];
 	unsigned int curBuffer;
 	AVCodecContext* codecContext;
-	BlockingCircularQueue<YUVBuffer,20> buffers;
+	BlockingCircularQueue<YUVBuffer,200> buffers;
 	Mutex mutex;
 	bool initialized;
 	AVFrame* frameIn;
@@ -160,7 +160,7 @@ protected:
 	public:
 		void init(FrameSamples& f) const {f.len=MAX_AUDIO_FRAME_SIZE;}
 	};
-	BlockingCircularQueue<FrameSamples,30> samplesBuffer;
+	BlockingCircularQueue<FrameSamples,300> samplesBuffer;
 	enum STATUS { PREINIT=0, INIT, VALID};
 	STATUS status;
 public:
@@ -197,6 +197,11 @@ public:
 	bool isValid() const
 	{
 		return status==VALID;
+	}
+	bool almostFull()
+	{
+		if((300-samplesBuffer.len())<=10)
+			return true;
 	}
 	uint32_t sampleRate;
 	uint32_t channelCount;

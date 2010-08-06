@@ -388,7 +388,9 @@ SystemState::~SystemState()
 		delete tagsStorage[i];
 
 	delete renderThread;
+	renderThread=NULL;
 	delete inputThread;
+	inputThread=NULL;
 	sem_destroy(&terminated);
 }
 

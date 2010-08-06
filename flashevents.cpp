@@ -379,7 +379,8 @@ void EventDispatcher::handleEvent(Event* e)
 		//If the f is a class method, both the 'this' and level are ignored
 		ASObject* const arg0=e;
 		ASObject* ret=tmpListener[i].f->call(this,&arg0,1,0);
-		assert_and_throw(ret==NULL);
+		if(ret)
+			ret->decRef();
 		//And now no more, f can also be deleted
 		tmpListener[i].f->decRef();
 	}

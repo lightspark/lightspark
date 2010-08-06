@@ -72,10 +72,10 @@ void SoundManager::fill(uint32_t id)
 	{
 		if(streams[id-1]->streamStatus!=SoundStream::STREAM_READY) //The stream is not yet ready, delay upload
 			return;
+		pa_threaded_mainloop_lock(mainLoop);
 		if(!streams[id-1]->decoder->hasDecodedFrames()) //No decoded data available yet, delay upload
 			return;
 		pa_stream* stream=streams[id-1]->stream;
-		pa_threaded_mainloop_lock(mainLoop);
 		int16_t* dest;
 		//Get buffer size
 		size_t frameSize=pa_stream_writable_size(stream);
@@ -97,6 +97,7 @@ void SoundManager::fill(uint32_t id)
 		}
 		while(frameSize);
 
+		cout << "Filled " << totalWritten << endl;
 		if(totalWritten)
 		{
 			pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
@@ -116,11 +117,34 @@ void SoundManager::fill(uint32_t id)
 
 void SoundManager::streamWriteCB(pa_stream* stream, size_t frameSize, SoundStream* th)
 {
-	//Get buffer size
 	int16_t* dest;
+	//Get buffer size
+	if(frameSize==0) //The server can't accept any data now
+		return;
+	//Write data until we have space on the server and we have data available
+	uint32_t totalWritten=0;
 	pa_stream_begin_write(stream, (void**)&dest, &frameSize);
-	uint32_t retSize=th->decoder->copyFrame(dest, frameSize);
-	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
+	cout << "Frame size " << frameSize << endl;
+	do
+	{
+		uint32_t retSize=th->decoder->copyFrame(dest+(totalWritten/2), frameSize);
+		if(retSize==0) //There is no more data
+			break;
+		totalWritten+=retSize;
+		frameSize-=retSize;
+	}
+	while(frameSize);
+
+	cout << "Callback wrote " << totalWritten << endl;
+	cout << pa_stream_is_suspended(stream) << endl;
+	cout << pa_stream_is_corked(stream) << endl;
+	if(totalWritten)
+	{
+		pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
+		pa_stream_cork(stream, 0, NULL, NULL); //Start the stream, just in case it's still stopped
+	}
+	else
+		pa_stream_cancel_write(stream);
 }
 
 void SoundManager::freeStream(uint32_t id)
@@ -187,7 +211,7 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 		attrs.minreq=(uint32_t)-1;
 		streams[index]->stream=pa_stream_new(context, "SoundStream", &ss, NULL);
 		pa_stream_set_state_callback(streams[index]->stream, (pa_stream_notify_cb_t)streamStatusCB, streams[index]);
-		//pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
+		pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
 		pa_stream_set_underflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)underflow_notify, NULL);
 		pa_stream_set_overflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)overflow_notify, NULL);
 		pa_stream_set_started_callback(streams[index]->stream, (pa_stream_notify_cb_t)started_notify, NULL);

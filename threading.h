@@ -61,7 +61,7 @@ public:
 	void stop() DLL_PUBLIC;
 };
 
-class Condition
+class Semaphore
 {
 private:
 	sem_t sem;
@@ -69,8 +69,8 @@ private:
 	//uint32_t blocked;
 	//uint32_t maxBlocked;
 public:
-	Condition(uint32_t init);
-	~Condition();
+	Semaphore(uint32_t init);
+	~Semaphore();
 	void signal();
 	//void signal_all();
 	void wait();
@@ -107,8 +107,8 @@ class BlockingCircularQueue
 private:
 	T queue[size];
 	//Counting semaphores for the queue
-	Condition freeBuffers;
-	Condition usedBuffers;
+	Semaphore freeBuffers;
+	Semaphore usedBuffers;
 	bool empty;
 	uint32_t bufferHead;
 	uint32_t bufferTail;

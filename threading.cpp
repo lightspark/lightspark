@@ -94,29 +94,29 @@ void Mutex::unlock()
 	sem_post(&sem);
 }
 
-Condition::Condition(uint32_t init)//:blocked(0),maxBlocked(max)
+Semaphore::Semaphore(uint32_t init)//:blocked(0),maxBlocked(max)
 {
 	sem_init(&sem,0,init);
 }
 
-Condition::~Condition()
+Semaphore::~Semaphore()
 {
 	//On destrucion unblocks the blocked thread
 	signal();
 	sem_destroy(&sem);
 }
 
-void Condition::wait()
+void Semaphore::wait()
 {
 	sem_wait(&sem);
 }
 
-bool Condition::try_wait()
+bool Semaphore::try_wait()
 {
 	return sem_trywait(&sem)==0;
 }
 
-void Condition::signal()
+void Semaphore::signal()
 {
 	sem_post(&sem);
 }

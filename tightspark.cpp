@@ -38,10 +38,11 @@ extern int count_alloc;
 
 int main(int argc, char* argv[])
 {
-	char* fileName=NULL;
+	std::vector<char*> fileNames;
 	bool useInterpreter=true;
 	bool useJit=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
+	bool error=false;
 
 	for(int i=1;i<argc;i++)
 	{
@@ -61,7 +62,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=NULL;
+				error=true;
 				break;
 			}
 
@@ -69,24 +70,20 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			//No options flag, so set the swf file name
-			if(fileName) //If already set, exit in error status
-			{
-				fileName=NULL;
-				break;
-			}
-			fileName=argv[i];
+			//More than a file is allowed in tightspark
+			fileNames.push_back(argv[i]);
 		}
 	}
 
 
-	if(fileName==NULL)
+	if(fileNames.empty() || error)
 	{
-		cout << "Usage: " << argv[0] << " [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] <file.abc>" << endl;
+		cout << "Usage: " << argv[0] << " [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] <file.abc> [<file2.abc>]" << endl;
 		exit(-1);
 	}
 
 	Log::initLogging(log_level);
+	SystemState::staticInit();
 	//NOTE: see SystemState declaration
 	sys=new SystemState(NULL);
 
@@ -100,7 +97,7 @@ int main(int argc, char* argv[])
 	sys->useInterpreter=useInterpreter;
 	sys->useJit=useJit;
 
-	sys->setOrigin(fileName);
+	sys->setOrigin(fileNames[0]);
 
 #ifndef WIN32
 	struct rlimit rl;
@@ -110,11 +107,24 @@ int main(int argc, char* argv[])
 	//setrlimit(RLIMIT_AS,&rl);
 #endif
 
-	ABCVm vm(sys);
-	sys->currentVm=&vm;
-	ifstream f(fileName);
-	ABCContext* context=new ABCContext(f);
-	vm.addEvent(NULL,new ABCContextInitEvent(context));
-	vm.addEvent(NULL,new ShutdownEvent);
-	vm.wait();
+	ABCVm* vm=new ABCVm(sys);
+	sys->currentVm=vm;
+	vector<ABCContext*> contexts;
+	for(unsigned int i=0;i<fileNames.size();i++)
+	{
+		ifstream f(fileNames[i]);
+		ABCContext* context=new ABCContext(f);
+		contexts.push_back(context);
+		f.close();
+		ABCContextInitEvent* e=new ABCContextInitEvent(context);
+		vm->addEvent(NULL,e);
+		e->decRef();
+	}
+	sys->setShutdownFlag();
+	sys->wait();
+	delete sys;
+	//Clean up (mostly useful to clean up valgrind logs)
+	for(unsigned int i=0;i<contexts.size();i++)
+		delete contexts[i];
+	SystemState::staticDeinit();
 }

@@ -149,10 +149,7 @@ void RootMovieClip::unregisterChildClip(MovieClip* clip)
 	clip->decRef();
 }
 
-SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
-	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
-	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
-	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
+void SystemState::staticInit()
 {
 	//Do needed global initialization
 #ifdef ENABLE_CURL
@@ -161,7 +158,20 @@ SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p)
 #ifdef ENABLE_LIBAVCODEC
 	avcodec_register_all();
 #endif
+}
 
+void SystemState::staticDeinit()
+{
+#ifdef ENABLE_CURL
+	curl_global_cleanup();
+#endif
+}
+
+SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
+	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
+	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
+{
 	cookiesFileName[0]=0;
 	//Create the thread pool
 	sys=this;
@@ -305,15 +315,19 @@ void SystemState::setParameters(ASObject* p)
 void SystemState::stopEngines()
 {
 	//Stops the thread that is parsing us
-	parseThread->stop();
-	parseThread->wait();
-	threadPool->stop();
+	if(parseThread)
+	{
+		parseThread->stop();
+		parseThread->wait();
+	}
+	if(threadPool)
+		threadPool->stop();
 	if(timerThread)
 		timerThread->wait();
 	delete downloadManager;
 	downloadManager=NULL;
-	delete currentVm;
-	currentVm=NULL;
+	if(currentVm)
+		currentVm->shutdown();
 	delete timerThread;
 	timerThread=NULL;
 	delete audioManager;
@@ -333,6 +347,7 @@ SystemState::~SystemState()
 	assert(shutdown);
 	//The thread pool should be stopped before everything
 	delete threadPool;
+	threadPool=NULL;
 	stopEngines();
 
 	//decRef all our object before destroying classes
@@ -361,6 +376,8 @@ SystemState::~SystemState()
 		delete it->second;
 		//it->second->decRef()
 	}
+	//The Vm must be destroyed this late to clean all managed integers and numbers
+	delete currentVm;
 
 	//Also destroy all tags
 	for(unsigned int i=0;i<tagsStorage.size();i++)
@@ -406,9 +423,14 @@ void SystemState::setError(const string& c)
 void SystemState::setShutdownFlag()
 {
 	sem_wait(&mutex);
-	shutdown=true;
 	if(currentVm)
-		currentVm->addEvent(NULL,new ShutdownEvent());
+	{
+		ShutdownEvent* e=new ShutdownEvent;
+		currentVm->addEvent(NULL,e);
+		e->decRef();
+	}
+	//Set the flag after sending the event, otherwise it's ignored by the VM
+	shutdown=true;
 
 	sem_post(&terminated);
 	sem_post(&mutex);
@@ -421,6 +443,8 @@ void SystemState::wait()
 		renderThread->wait();
 	if(inputThread)
 		inputThread->wait();
+	if(currentVm)
+		currentVm->wait();
 }
 
 float SystemState::getRenderRate()
@@ -883,12 +907,15 @@ void RenderThread::wait()
 	assert_and_throw(ret==0);
 }
 
-InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),
+InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),threaded(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {
 	LOG(LOG_NO_INFO,"Creating input thread");
 	if(e==SDL)
+	{
+		threaded=true;
 		pthread_create(&t,NULL,(thread_worker)sdl_worker,this);
+	}
 #ifdef COMPILE_PLUGIN
 	else if(e==GTKPLUG)
 	{
@@ -914,7 +941,8 @@ void InputThread::wait()
 {
 	if(terminated)
 		return;
-	pthread_join(t,NULL);
+	if(threaded)
+		pthread_join(t,NULL);
 	terminated=true;
 }
 

@@ -23,7 +23,7 @@
 #define FAKE_MIME_TYPE  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
 #define FAKE_PLUGIN_NAME    "Lightspark player"
-#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME//";"FAKE_MIME_TYPE":swf:"PLUGIN_NAME
+#define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME";"FAKE_MIME_TYPE":swfls:"FAKE_PLUGIN_NAME
 #define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r42"
 
 using namespace std;
@@ -101,11 +101,13 @@ char* NPP_GetMIMEDescription(void)
 NPError NS_PluginInitialize()
 {
 	Log::initLogging(LOG_ERROR);
+	lightspark::SystemState::staticInit();
 	return NPERR_NO_ERROR;
 }
 
 void NS_PluginShutdown()
 {
+	lightspark::SystemState::staticDeinit();
 }
 
 // get values per plugin

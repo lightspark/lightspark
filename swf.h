@@ -219,7 +219,7 @@ private:
 #endif
 	void stopEngines();
 	//Useful to wait for complete download of the SWF
-	Condition fileDumpAvailable;
+	Semaphore fileDumpAvailable;
 	tiny_string dumpedSWFPath;
 	bool waitingForDump;
 	//Data for handling Gnash fallback
@@ -294,6 +294,10 @@ public:
 	void setRenderRate(float rate);
 	float getRenderRate();
 
+	//Stuff to be done once for process and not for plugin instance
+	static void staticInit() DLL_PUBLIC;
+	static void staticDeinit() DLL_PUBLIC;
+
 	DownloadManager* downloadManager;
 };
 
@@ -320,6 +324,7 @@ private:
 	SystemState* m_sys;
 	pthread_t t;
 	bool terminated;
+	bool threaded;
 	static void* sdl_worker(InputThread*);
 #ifdef COMPILE_PLUGIN
 	NPAPI_params* npapi_params;

@@ -136,6 +136,7 @@ int main(int argc, char* argv[])
 	cout.exceptions( ios::failbit | ios::badbit);
 	cerr.exceptions( ios::failbit | ios::badbit);
 	ParseThread* pt = new ParseThread(NULL,f);
+	SystemState::staticInit();
 	//NOTE: see SystemState declaration
 	sys=new SystemState(pt);
 
@@ -167,6 +168,7 @@ int main(int argc, char* argv[])
 	delete sys;
 	delete pt;
 
+	SystemState::staticDeinit();
 	SDL_Quit();
 	return 0;
 }

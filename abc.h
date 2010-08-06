@@ -428,7 +428,6 @@ class ABCVm
 {
 friend class ABCContext;
 friend class method_info;
-friend int main(int argc, char* argv[]);
 private:
 	SystemState* m_sys;
 	pthread_t t;
@@ -588,7 +587,7 @@ private:
 	sem_t sem_event_count;
 
 	//Event handling
-	bool shutdown;
+	bool shuttingdown;
 	std::deque<std::pair<EventDispatcher*,Event*> > events_queue;
 	void handleEvent(std::pair<EventDispatcher*,Event*> e);
 
@@ -599,19 +598,25 @@ private:
 	std::vector<thisAndLevel> method_this_stack;
 
 public:
-	ASObject Global;
+	ASObject* Global;
 	Manager* int_manager;
 	Manager* number_manager;
 	llvm::ExecutionEngine* ex;
 	llvm::FunctionPassManager* FPM;
 	llvm::LLVMContext llvm_context;
 	ABCVm(SystemState* s) DLL_PUBLIC;
-	~ABCVm() DLL_PUBLIC;
+	/**
+		Destroys the VM
+
+		@pre shutdown must have been called
+	*/
+	~ABCVm();
 	static void Run(ABCVm* th);
 	static ASObject* executeFunction(SyntheticFunction* function, call_context* context);
 	bool addEvent(EventDispatcher*,Event*) DLL_PUBLIC;
 	int getEventQueueSize();
-	void wait() DLL_PUBLIC;
+	void shutdown();
+	void wait();
 
 	void pushObjAndLevel(ASObject* o, int l);
 	thisAndLevel popObjAndLevel();
@@ -660,7 +665,7 @@ ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned 
 
 inline ASObject* getGlobal()
 {
-	return &sys->currentVm->Global;
+	return sys->currentVm->Global;
 }
 
 inline ABCVm* getVm()

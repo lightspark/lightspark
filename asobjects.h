@@ -384,6 +384,7 @@ public:
 	int toInt();
 	double toNumber();
 	bool isEqual(ASObject* r);
+	bool isLess(ASObject* r);
 	virtual ~Undefined(){}
 };
 
@@ -396,6 +397,7 @@ private:
 	ASString(const std::string& s);
 	ASString(const tiny_string& s);
 	ASString(const char* s);
+	ASString(const char* s, uint32_t len);
 public:
 	std::string data;
 	static void sinit(Class_base* c);

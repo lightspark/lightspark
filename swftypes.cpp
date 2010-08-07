@@ -118,6 +118,10 @@ bool ASObject::nextValue(unsigned int index, ASObject*& out)
 	return false;
 }
 
+void ASObject::sinit(Class_base* c)
+{
+}
+
 void ASObject::buildTraits(ASObject* o)
 {
 	if(o->getActualPrototype()->class_name!="ASObject")
@@ -671,14 +675,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 	else
 	{
 		//Check if we should do lazy definition
-		if(name.name_s=="toString")
-		{
-			ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
-			setVariableByQName("toString","",ret);
-			//Added at level 0, as Object is always the base
-			return objAndLevel(ret,0);
-		}
-		else if(name.name_s=="hasOwnProperty")
+		if(name.name_s=="hasOwnProperty")
 		{
 			ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
 			setVariableByQName("hasOwnProperty","",ret);
@@ -698,8 +695,8 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 		}
 
 		//It has not been found yet, ask the prototype
-		if(prototype)
-			return prototype->getVariableByMultiname(name,skip_impl);
+		if(getActualPrototype())
+			return getActualPrototype()->getVariableByMultiname(name,skip_impl);
 	}
 
 	//If it has not been found

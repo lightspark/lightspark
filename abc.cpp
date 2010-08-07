@@ -1617,7 +1617,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
-			Class_base* prot=obj->getActualPrototype();
+			Class_base* prot=NULL;
+			if(obj->getObjectType()==T_CLASS)
+				prot=static_cast<Class_base*>(obj);
+			else
+				prot=obj->getActualPrototype();
 			if(prot && t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
@@ -1645,7 +1649,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				f->bind(obj,obj->getLevel());
 			obj->setGetterByQName(name,ns,f);
 
-			//Iterate to find a getter
+/*			//Iterate to find a getter
 			Class_base* cur=prot->super;
 			while(cur)
 			{
@@ -1663,7 +1667,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 					}
 				}
 				cur=cur->super;
-			}
+			}*/
 			
 			LOG(LOG_TRACE,"End Getter trait: " << ns << "::" << name);
 			break;
@@ -1678,7 +1682,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
-			Class_base* prot=obj->getActualPrototype();
+			Class_base* prot=NULL;
+			if(obj->getObjectType()==T_CLASS)
+				prot=static_cast<Class_base*>(obj);
+			else
+				prot=obj->getActualPrototype();
 			if(prot && t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
@@ -1706,7 +1714,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				f->bind(obj,obj->getLevel());
 			obj->setSetterByQName(name,ns,f);
 			
-			//Iterate to find a setter
+/*			//Iterate to find a setter
 			Class_base* cur=prot->super;
 			while(cur)
 			{
@@ -1724,7 +1732,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 					}
 				}
 				cur=cur->super;
-			}
+			}*/
 			
 			LOG(LOG_TRACE,"End Setter trait: " << ns << "::" << name);
 			break;
@@ -1738,7 +1746,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
-			Class_base* prot=obj->getActualPrototype();
+			Class_base* prot=NULL;
+			if(obj->getObjectType()==T_CLASS)
+				prot=static_cast<Class_base*>(obj);
+			else
+				prot=obj->getActualPrototype();
 			if(prot && t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
@@ -1762,7 +1774,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			}
 
 			//NOTE: it is legal to define function with the same name at different levels, handle this somehow
-			if(t->kind&0x20)
+/*			if(t->kind&0x20)
 			{
 				Class_base* cur=prot->super;
 				while(cur)
@@ -1780,7 +1792,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 					}
 					cur=cur->super;
 				}
-			}
+			}*/
 
 			assert(!bind);
 			if(bind)

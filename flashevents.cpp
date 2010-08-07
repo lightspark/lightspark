@@ -238,16 +238,17 @@ void EventDispatcher::sinit(Class_base* c)
 	c->addImplementedInterface(Class<IEventDispatcher>::getClass());
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
+
+	c->setVariableByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener));
+	c->setVariableByQName("hasEventListener","",Class<IFunction>::getFunction(_hasEventListener));
+	c->setVariableByQName("removeEventListener","",Class<IFunction>::getFunction(removeEventListener));
+	c->setVariableByQName("dispatchEvent","",Class<IFunction>::getFunction(dispatchEvent));
+
+	IEventDispatcher::linkTraits(c);
 }
 
 void EventDispatcher::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener));
-	o->setVariableByQName("hasEventListener","",Class<IFunction>::getFunction(_hasEventListener));
-	o->setVariableByQName("removeEventListener","",Class<IFunction>::getFunction(removeEventListener));
-	o->setVariableByQName("dispatchEvent","",Class<IFunction>::getFunction(dispatchEvent));
-
-	IEventDispatcher::linkTraits(o);
 }
 
 void EventDispatcher::dumpHandlers()

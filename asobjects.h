@@ -31,11 +31,6 @@
 
 namespace lightspark
 {
-	class SystemState;
-};
-
-namespace lightspark
-{
 const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
 
 class Event;

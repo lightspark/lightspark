@@ -1670,6 +1670,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	//We modify the cur_level of obj
 	obj->decLevel();
 
+	__asm__("int $3");
 	//We should skip the special implementation of get
 	objAndLevel o=obj->getVariableByMultiname(*name, true);
 
@@ -2219,6 +2220,7 @@ void ABCVm::newClass(call_context* th, int n)
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
+	__asm__("int $3");
 	//Class objects also contains all the methods/getters/setters declared for instances
 	instance_info* cur=&th->context->instances[n];
 	for(unsigned int i=0;i<cur->trait_count;i++)

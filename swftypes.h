@@ -621,7 +621,7 @@ public:
 	//Prototype handling
 	Class_base* getActualPrototype() const;
 	
-	static void sinit(Class_base*){}
+	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	
 	//TODO: Rework this stuff

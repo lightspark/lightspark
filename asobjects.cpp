@@ -1954,7 +1954,7 @@ const std::vector<Class_base*>& Class_base::getInterfaces() const
 	return interfaces_added;
 }
 
-void Class_base::linkInterface(ASObject* obj) const
+void Class_base::linkInterface(Class_base* c) const
 {
 	if(class_index==-1)
 	{
@@ -1963,7 +1963,7 @@ void Class_base::linkInterface(ASObject* obj) const
 	}
 	//Recursively link interfaces implemented by this interface
 	for(unsigned int i=0;i<getInterfaces().size();i++)
-		getInterfaces()[i]->linkInterface(obj);
+		getInterfaces()[i]->linkInterface(c);
 
 	assert_and_throw(context);
 
@@ -1971,13 +1971,13 @@ void Class_base::linkInterface(ASObject* obj) const
 	for(unsigned int j=0;j<context->instances[class_index].trait_count;j++)
 	{
 		traits_info* t=&context->instances[class_index].traits[j];
-		context->linkTrait(obj,t);
+		context->linkTrait(c,t);
 	}
 
 	if(constructor)
 	{
 		LOG(LOG_CALLS,"Calling interface init for " << class_name);
-		ASObject* ret=constructor->call(obj,NULL,0,max_level);
+		ASObject* ret=constructor->call(c,NULL,0,max_level);
 		assert_and_throw(ret==NULL);
 	}
 }

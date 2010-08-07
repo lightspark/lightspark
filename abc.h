@@ -409,7 +409,7 @@ public:
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
 	void buildTrait(ASObject* obj, const traits_info* t, bool bind, IFunction* deferred_initialization=NULL);
-	void linkTrait(ASObject* obj, const traits_info* t);
+	void linkTrait(Class_base* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
 	multiname* getMultiname(unsigned int m, call_context* th);
 	void buildInstanceTraits(ASObject* obj, int class_index);

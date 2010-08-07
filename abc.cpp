@@ -1439,7 +1439,7 @@ void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 	}
 }
 
-void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
+void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 {
 	const multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname
@@ -1460,8 +1460,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			obj_var* var=NULL;
-			assert(obj->getObjectType()==T_CLASS);
-			Class_base* cur=static_cast<Class_base*>(obj);
+			Class_base* cur=c;
 			while(cur)
 			{
 				int level=cur->getLevel();
@@ -1475,7 +1474,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				assert_and_throw(var->var);
 
 				var->var->incRef();
-				obj->setVariableByQName(name,ns,var->var,false);
+				c->setVariableByQName(name,ns,var->var,false);
 			}
 			else
 			{
@@ -1493,8 +1492,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			obj_var* var=NULL;
-			assert(obj->getObjectType()==T_CLASS);
-			Class_base* cur=static_cast<Class_base*>(obj);
+			Class_base* cur=c;
 			while(cur)
 			{
 				int level=cur->getLevel();
@@ -1508,7 +1506,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				assert_and_throw(var->getter);
 
 				var->getter->incRef();
-				obj->setGetterByQName(name,ns,var->getter);
+				c->setGetterByQName(name,ns,var->getter);
 			}
 			else
 			{
@@ -1526,8 +1524,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			obj_var* var=NULL;
-			assert(obj->getObjectType()==T_CLASS);
-			Class_base* cur=static_cast<Class_base*>(obj);
+			Class_base* cur=c;
 			while(cur)
 			{
 				int level=cur->getLevel();
@@ -1541,7 +1538,7 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 				assert_and_throw(var->setter);
 
 				var->setter->incRef();
-				obj->setSetterByQName(name,ns,var->setter);
+				c->setSetterByQName(name,ns,var->setter);
 			}
 			else
 			{

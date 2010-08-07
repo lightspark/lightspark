@@ -124,20 +124,18 @@ void aligned_free(void *mem);
 	#endif
 #endif
 
-#if defined WIN32
-  #define HLIB HMODULE
-#else //should only define HMODULE for Unix... To modify
-  #define HLIB void*
+#ifndef WIN32
+  #define HMODULE void*
 #endif
 
 /***********
 Used for compatibility for loading library between Windows and POSIX
 ************/
-HLIB LoadLib(char *filename);
+HMODULE LoadLib(const char *filename);
 
-void* ExtractLibContent(HLIB hLib, char *WhatToExtract);
+void* ExtractLibContent(HMODULE hLib, char *WhatToExtract);
 
-void CloseLib(HLIB hLib);
+void CloseLib(HMODULE hLib);
 /*****************/
 
 inline int imin(int a, int b)

@@ -59,7 +59,7 @@ uint64_t compat_msectiming()
 #endif
 }
 
-HLIB LoadLib(char* filename)
+HMODULE LoadLib(const char *filename)
 {
   #if defined WIN32
     return LoadLibrary(filename);
@@ -68,7 +68,7 @@ HLIB LoadLib(char* filename)
   #endif
 }
 
-void* ExtractLibContent(HLIB hLib, char* WhatToExtract)
+void* ExtractLibContent(HMODULE hLib, char* WhatToExtract)
 {
   #if defined WIN32
     return GetProcAdress(hLib, WhatToExtract);
@@ -77,7 +77,7 @@ void* ExtractLibContent(HLIB hLib, char* WhatToExtract)
   #endif
 }
 
-void CloseLib(HLIB hLib)
+void CloseLib(HMODULE hLib)
 {
   #if defined WIN32
     FreeLibrary(hLib);

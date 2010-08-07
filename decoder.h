@@ -43,19 +43,38 @@ namespace lightspark
 enum LS_VIDEO_CODEC { H264=0, H263 };
 enum LS_AUDIO_CODEC { LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10 };
 
-class VideoDecoder
+class Decoder
+{
+protected:
+	enum STATUS { PREINIT=0, INIT, VALID, FLUSHED};
+	STATUS status;
+	bool flushing;
+	Semaphore flushed;
+public:
+	Decoder():status(PREINIT),flushing(false),flushed(0){}
+	virtual ~Decoder(){}
+	bool isValid() const
+	{
+		return status==VALID;
+	}
+	virtual void setFlushing()=0;
+	void waitFlushed()
+	{
+		flushed.wait();
+	}
+};
+
+class VideoDecoder: public Decoder
 {
 private:
 	bool resizeGLBuffers;
 protected:
-	enum STATUS { PREINIT=0, INIT, VALID};
-	STATUS status;
 	uint32_t frameWidth;
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);
 	bool resizeIfNeeded(TextureBuffer& tex);
 public:
-	VideoDecoder():resizeGLBuffers(false),status(PREINIT),frameWidth(0),frameHeight(0),frameRate(0){}
+	VideoDecoder():resizeGLBuffers(false),frameWidth(0),frameHeight(0),frameRate(0){}
 	virtual ~VideoDecoder(){}
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
@@ -71,10 +90,6 @@ public:
 	{
 		return frameHeight;
 	}
-	bool isValid() const
-	{
-		return status==VALID;
-	}
 	float frameRate;
 };
 
@@ -86,6 +101,10 @@ public:
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}
 	bool copyFrameToTexture(TextureBuffer& tex){return false;}
+	void setFlushing()
+	{
+		flushing=true;
+	}
 };
 
 #ifdef ENABLE_LIBAVCODEC
@@ -133,10 +152,19 @@ public:
 	bool discardFrame();
 	void skipUntil(uint32_t time);
 	bool copyFrameToTexture(TextureBuffer& tex);
+	void setFlushing()
+	{
+		flushing=true;
+		if(buffers.isEmpty())
+		{
+			status=FLUSHED;
+			flushed.signal();
+		}
+	}
 };
 #endif
 
-class AudioDecoder
+class AudioDecoder: public Decoder
 {
 protected:
 	class FrameSamples
@@ -161,15 +189,13 @@ protected:
 		void init(FrameSamples& f) const {f.len=MAX_AUDIO_FRAME_SIZE;}
 	};
 	BlockingCircularQueue<FrameSamples,150> samplesBuffer;
-	enum STATUS { PREINIT=0, INIT, VALID};
-	STATUS status;
 public:
 	/**
 	  	The AudioDecoder contains audio buffers that must be aligned to 16 bytes, so we redefine the allocator
 	*/
 	void* operator new(size_t);
 	void operator delete(void*);
-	AudioDecoder():status(PREINIT),sampleRate(0){}
+	AudioDecoder():sampleRate(0){}
 	virtual ~AudioDecoder(){};
 	virtual uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	bool hasDecodedFrames() const
@@ -194,14 +220,14 @@ public:
 	*/
 	void skipAll();
 	bool discardFrame();
-	bool isValid() const
+	void setFlushing()
 	{
-		return status==VALID;
-	}
-	bool almostFull()
-	{
-		if((150-samplesBuffer.len())<=10)
-			return true;
+		flushing=true;
+		if(samplesBuffer.isEmpty())
+		{
+			status=FLUSHED;
+			flushed.signal();
+		}
 	}
 	uint32_t sampleRate;
 	uint32_t channelCount;

@@ -33,7 +33,6 @@
 #include "flashutils.h"
 #include "flashmedia.h"
 #include "class.h"
-#include <GL/glew.h>
 
 namespace lightspark
 {
@@ -98,14 +97,16 @@ public:
 
 class DefineShapeTag: public DictionaryTag, public DisplayObject
 {
-private:
+protected:
 	UI16 ShapeId;
 	RECT ShapeBounds;
 	SHAPEWITHSTYLE Shapes;
+	DefineShapeTag(RECORDHEADER h):DictionaryTag(h){};
 public:
 	DefineShapeTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
 	virtual void Render();
+	virtual void inputRender();
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
@@ -124,26 +125,13 @@ public:
 	}
 };
 
-class DefineShape2Tag: public DictionaryTag, public DisplayObject
+class DefineShape2Tag: public DefineShapeTag
 {
-private:
-	UI16 ShapeId;
-	RECT ShapeBounds;
-	SHAPEWITHSTYLE Shapes;
+protected:
+	DefineShape2Tag(RECORDHEADER h):DefineShapeTag(h){};
 public:
 	DefineShape2Tag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return ShapeId; }
-	virtual void Render();
 	virtual Vector2 debugRender(FTFont* font, bool deep);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		//Apply transformation with the current matrix
-		getMatrix().multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
-		getMatrix().multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
-		//TODO: adapt for rotation
-		return true;
-	}
-
 	ASObject* instance() const
 	{
 		DefineShape2Tag* ret=new DefineShape2Tag(*this);
@@ -152,25 +140,14 @@ public:
 	}
 };
 
-class DefineShape3Tag: public DictionaryTag, public DisplayObject
+class DefineShape3Tag: public DefineShape2Tag
 {
-private:
-	UI16 ShapeId;
-	RECT ShapeBounds;
-	SHAPEWITHSTYLE Shapes;
-	GLuint texture;
+protected:
+	DefineShape3Tag(RECORDHEADER h):DefineShape2Tag(h){};
 public:
 	DefineShape3Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual void Render();
 	virtual Vector2 debugRender(FTFont* font, bool deep);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		getMatrix().multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
-		getMatrix().multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
-		return true;
-	}
-
 	ASObject* instance() const
 	{
 		DefineShape3Tag* ret=new DefineShape3Tag(*this);
@@ -179,27 +156,16 @@ public:
 	}
 };
 
-class DefineShape4Tag: public DictionaryTag, public DisplayObject
+class DefineShape4Tag: public DefineShape3Tag
 {
 private:
-	UI16 ShapeId;
-	RECT ShapeBounds;
 	RECT EdgeBounds;
 	UB UsesFillWindingRule;
 	UB UsesNonScalingStrokes;
 	UB UsesScalingStrokes;
-	SHAPEWITHSTYLE Shapes;
 public:
 	DefineShape4Tag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return ShapeId; }
-	virtual void Render();
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		getMatrix().multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
-		getMatrix().multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
-		return true;
-	}
-
 	ASObject* instance() const
 	{
 		DefineShape4Tag* ret=new DefineShape4Tag(*this);
@@ -561,6 +527,7 @@ public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
 	virtual int getId(){ return CharacterId; }
 	virtual void Render();
+	virtual void inputRender();
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
@@ -588,7 +555,6 @@ public:
 	virtual int getId(){ return SpriteID; }
 	virtual Vector2 debugRender(FTFont* font, bool deep);
 	virtual ASObject* instance() const;
-	virtual void Render();
 };
 
 class ProtectTag: public ControlTag

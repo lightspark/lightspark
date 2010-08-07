@@ -80,17 +80,7 @@ SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 		LOG(LOG_NO_INFO,"No SWF file signature found");
 		return;
 	}
-	pt->version=Version;
 	in >> FrameSize >> FrameRate >> FrameCount;
-	float frameRate=FrameRate;
-	frameRate/=256;
-	LOG(LOG_NO_INFO,"FrameRate " << frameRate);
-
-	pt->root->setFrameRate(frameRate);
-	//TODO: setting render rate should be done when the clip is added to the displaylist
-	sys->setRenderRate(frameRate);
-	pt->root->version=Version;
-	pt->root->fileLenght=FileLength;
 	valid=true;
 }
 
@@ -821,6 +811,15 @@ void ParseThread::execute()
 		SWF_HEADER h(f);
 		if(!h.valid)
 			throw ParseException("Not an SWF file");
+		version=h.Version;
+		root->version=h.Version;
+		root->fileLenght=h.FileLength;
+		float frameRate=h.FrameRate;
+		frameRate/=256;
+		LOG(LOG_NO_INFO,"FrameRate " << frameRate);
+		root->setFrameRate(frameRate);
+		//TODO: setting render rate should be done when the clip is added to the displaylist
+		sys->setRenderRate(frameRate);
 		root->setFrameSize(h.getFrameSize());
 		root->setFrameCount(h.FrameCount);
 
@@ -1305,28 +1304,6 @@ void RenderThread::requestInput()
 	sem_wait(&inputDone);
 }
 
-bool RenderThread::glAcquireIdBuffer()
-{
-	if(inputDisabled)
-		return false;
-	//TODO: PERF: on the id buffer stuff are drawn more than once
-	if(currentId!=0)
-	{
-		glDrawBuffer(GL_COLOR_ATTACHMENT2);
-		materialOverride=true;
-		FILLSTYLE::fixedColor(currentId,currentId,currentId);
-		return true;
-	}
-	
-	return false;
-}
-
-void RenderThread::glReleaseIdBuffer()
-{
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-	materialOverride=false;
-}
-
 void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
 	assert(tempBufferAcquired==false);
@@ -1523,6 +1500,17 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 				glLoadIdentity();
 
+/*				//Now draw the input layer
+				if(!th->inputDisabled)
+				{
+					glDrawBuffer(GL_COLOR_ATTACHMENT2);
+					th->materialOverride=true;
+					th->m_sys->inputRender();
+					th->materialOverride=false;
+				}*/
+
+				//Now blit everything
+				glLoadIdentity();
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);
 
@@ -1939,6 +1927,17 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 				glLoadIdentity();
 
+				//Now draw the input layer
+				if(!th->inputDisabled)
+				{
+					glDrawBuffer(GL_COLOR_ATTACHMENT2);
+					th->materialOverride=true;
+					th->m_sys->inputRender();
+					th->materialOverride=false;
+				}
+
+				//Now blit everything
+				glLoadIdentity();
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);
 				glDisable(GL_BLEND);

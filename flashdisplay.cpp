@@ -1302,7 +1302,8 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setVariableByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt));
 	c->setVariableByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt));
 	c->setVariableByQName("contains","",Class<IFunction>::getFunction(contains));
-	c->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
+	//c->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
+	//c->setGetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 void DisplayObjectContainer::buildTraits(ASObject* o)
@@ -1348,7 +1349,6 @@ ASFUNCTIONBODY(InteractiveObject,_constructor)
 
 void InteractiveObject::buildTraits(ASObject* o)
 {
-	o->setSetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 void InteractiveObject::sinit(Class_base* c)
@@ -1356,6 +1356,8 @@ void InteractiveObject::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	//c->setSetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
+	//c->setGetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 void InteractiveObject::RenderProloue()

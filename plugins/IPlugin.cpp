@@ -18,37 +18,30 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "IPlugin.h"
 
-#ifndef IPLUGIN_H
-#define IPLUGIN_H
-
-#include "../compat.h"
-
-enum PLUGIN_TYPES { UNDEFINED=0, AUDIO=1 };
-
-class IPlugin
+IPlugin::IPlugin()
+  : pluginType(UNDEFINED), pluginName("undefined")
 {
-  protected:
-    PLUGIN_TYPES pluginType; //type of plugin of PLUGIN_TYPES
-    char *pluginName; //name of the plugin
-  public:
-    IPlugin();
-    virtual char *get_pluginName() = 0;
-    void set_pluginName(char *definedName = "undefined");
-    virtual PLUGIN_TYPES get_pluginType() = 0;
-    void set_pluginType(PLUGIN_TYPES definedType = UNDEFINED);
-    virtual ~IPlugin() = 0;
-};
+}
 
-/*************************
-Extern "C" functions that each plugin must implement in order to be recognized as a plugin by us.
-It allows us to share a common interface between plugins and the application.
- 
-Plugin factory function
-extern "C" IPlugin* Create_Plugin();
+/*void IPlugin::set_pluginType(PLUGIN_TYPES definedType)
+{
+  pluginType = definedType;
+}*/
 
-Plugin cleanup function
-extern "C" void Release_Plugin(IPlugin* p_plugin);
-***************************/
+/*void IPlugin::set_pluginName(string definedName)
+{
+  pluginName = definedName;
+}
+*/
 
-#endif
+/*PLUGIN_TYPES IPlugin::get_pluginType()
+{
+  return pluginType;
+}
+
+char *IPlugin::get_pluginName()
+{
+  return pluginName;
+}*/

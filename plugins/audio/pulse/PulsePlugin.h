@@ -21,22 +21,19 @@
 #define PULSEPLUGIN_H
 
 #include <pulse/pulseaudio.h>
-#include "../audioPlugin.h"
+#include "../AudioPlugin.h"
 #include "../../../decoder.h"
 #include "../../../compat.h"
 
-namespace lightspark
+class PulsePlugin : public AudioPlugin 
 {
-
-class PulsePlugin : AudioPlugin 
-{
-private:
+  private:
 	class AudioStream
 	{
 	public:
 		enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
 		pa_stream *stream;
-		AudioDecoder *decoder;
+		lightspark::AudioDecoder *decoder;
 		PulsePlugin *manager;
 		volatile STREAM_STATUS streamStatus;
 		AudioStream(PulsePlugin *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
@@ -50,16 +47,13 @@ private:
 //	volatile bool contextReady;
 //	volatile bool noServer;
 //	bool stopped;
-public:
+  public:
 	PulsePlugin();
-	void set_pluginName(char *definedName = "Pulse (no input support)");
-	uint32_t createStream(AudioDecoder *decoder);
+	uint32_t createStream(lightspark::AudioDecoder *decoder);
 	void freeStream(uint32_t id);
 	void fillAndSync(uint32_t id, uint32_t streamTime);
 	void stop();
 	~PulsePlugin();
-};
-
 };
 
 #endif

@@ -19,11 +19,26 @@
 
 #include <iostream>
 #include <string.h>
-#include "pulseplugin.h"
+#include "PulsePlugin.h"
+#include "../AudioPlugin.h"
 
 #ifdef AUDIO_BACKEND
 using namespace lightspark;
 using namespace std;
+
+PulsePlugin::PulsePlugin()
+  : pluginType(AUDIO), pluginName("Pulse (no input support)"), audiobackend_name("PulseAudio"),
+    contextReady(false), noServer(false), stopped(false)
+{
+  mainLoop = pa_threaded_mainloop_new();
+  pa_threaded_mainloop_start(mainLoop);
+  
+  pa_threaded_mainloop_lock(mainLoop);
+  context=pa_context_new(pa_threaded_mainloop_get_api(mainLoop),"Lightspark");
+  pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
+  pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
+  pa_threaded_mainloop_unlock(mainLoop);
+}
 
 void PulsePlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
 {
@@ -230,21 +245,6 @@ void PulsePlugin::contextStatusCB(pa_context *context, AudioPlugin *th)
 		default:
 			break;
 	}
-}
-
-PulsePlugin::PulsePlugin()
-  : pluginType(AUDIO), pluginName("Pulse (no input support)"), audiobackend_name("PulseAudio"),
-//  : pluginName("Pulse (no input support)"), audiobackend_name("PulseAudio"),
-    contextReady(false), noServer(false), stopped(false)
-{
-  mainLoop = pa_threaded_mainloop_new();
-  pa_threaded_mainloop_start(mainLoop);
-  
-  pa_threaded_mainloop_lock(mainLoop);
-  context=pa_context_new(pa_threaded_mainloop_get_api(mainLoop),"Lightspark");
-  pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
-  pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
-  pa_threaded_mainloop_unlock(mainLoop);
 }
 
 PulsePlugin::~PulsePlugin()

@@ -18,16 +18,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "audioPlugin.h"
+#include "AudioPlugin.h"
 
 using namespace lightspark;
 
 AudioPlugin::AudioPlugin()
-//  : pluginType(AUDIO)
+//  : pluginType(AUDIO) //Why? Oh, why?
 {
 }
 
-const char* AudioPlugin::get_audioBackend_name()
+const string AudioPlugin::get_audioBackend_name()
 {
   return audiobackend_name;
 }
@@ -37,17 +37,17 @@ bool AudioPlugin::get_serverStatus()
   return noServer;
 }
 
-bool AudioPlugin::IsContextReady()
+bool AudioPlugin::Is_ContextReady()
 {
   return contextReady;
 }
 
-bool AudioPlugin::IsStopped()
+bool AudioPlugin::Is_Stopped()
 {
   return stopped;
 }
 
-char* AudioPlugin::get_pluginName()
+const string AudioPlugin::get_pluginName()
 {
  return pluginName;
 }

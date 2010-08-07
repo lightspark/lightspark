@@ -18,29 +18,38 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "iplugin.h"
 
-IPlugin::IPlugin()
-  : pluginType(UNDEFINED)
-{
-}
+#ifndef IPLUGIN_H
+#define IPLUGIN_H
 
-void IPlugin::set_pluginType(PLUGIN_TYPES definedType)
-{
-  pluginType = definedType;
-}
+#include <iostream>
+#include "../compat.h"
 
-void IPlugin::set_pluginName(char* definedName)
-{
-  pluginName = definedName;
-}
+using namespace std;
 
-/*PLUGIN_TYPES IPlugin::get_pluginType()
-{
-  return pluginType;
-}
+enum PLUGIN_TYPES { UNDEFINED, AUDIO };
 
-char *IPlugin::get_pluginName()
+class IPlugin
 {
-  return pluginName;
-}*/
+  public:
+    IPlugin();
+    virtual const string get_pluginName() = 0;
+    virtual PLUGIN_TYPES get_pluginType() = 0;
+    virtual ~IPlugin() = 0;
+  protected:
+    PLUGIN_TYPES pluginType; //type of plugin of PLUGIN_TYPES
+    const string pluginName; //name of the plugin
+};
+
+/*************************
+Extern "C" functions that each plugin must implement in order to be recognized as a plugin by us.
+It allows us to share a common interface between plugins and the application.
+ 
+Plugin factory function
+extern "C" IPlugin* Create_Plugin();
+
+Plugin cleanup function
+extern "C" void Release_Plugin(IPlugin* p_plugin);
+***************************/
+
+#endif

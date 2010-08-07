@@ -418,8 +418,6 @@ public:
 	void releaseResourceMutex();
 
 	void requestInput();
-	bool glAcquireIdBuffer();
-	void glReleaseIdBuffer();
 	void pushId()
 	{
 		idStack.push_back(currentId);

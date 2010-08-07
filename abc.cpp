@@ -208,6 +208,7 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("getQualifiedSuperclassName","flash.utils",Class<IFunction>::getFunction(getQualifiedSuperclassName));
 	Global->setVariableByQName("getDefinitionByName","flash.utils",Class<IFunction>::getFunction(getDefinitionByName));
 	Global->setVariableByQName("getTimer","flash.utils",Class<IFunction>::getFunction(getTimer));
+	Global->setVariableByQName("IExternalizable","flash.utils",Class<ASObject>::getClass("IExternalizable"));
 
 	Global->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
 	Global->setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass());
@@ -1457,10 +1458,18 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
-			int level=obj->getLevel();
 
-			obj_var* var=obj->Variables.findObjVar(name,"",level,false,true);
-
+			obj_var* var=NULL;
+			assert(obj->getObjectType()==T_CLASS);
+			Class_base* cur=static_cast<Class_base*>(obj);
+			while(cur)
+			{
+				int level=cur->getLevel();
+				var=cur->Variables.findObjVar(name,"",level,false,true);
+				if(var)
+					break;
+				cur=cur->super;
+			}
 			if(var)
 			{
 				assert_and_throw(var->var);
@@ -1482,16 +1491,18 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
-			int level=obj->getLevel()+1;
+
 			obj_var* var=NULL;
-
-			do
+			assert(obj->getObjectType()==T_CLASS);
+			Class_base* cur=static_cast<Class_base*>(obj);
+			while(cur)
 			{
-				level--;
-				var=obj->Variables.findObjVar(name,"",level,false,true);
+				int level=cur->getLevel();
+				var=cur->Variables.findObjVar(name,"",level,false,true);
+				if(var && var->getter)
+					break;
+				cur=cur->super;
 			}
-			while(var!=NULL && var->getter==NULL);
-
 			if(var)
 			{
 				assert_and_throw(var->getter);
@@ -1513,16 +1524,18 @@ void ABCContext::linkTrait(ASObject* obj, const traits_info* t)
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
-			int level=obj->getLevel()+1;
+
 			obj_var* var=NULL;
-
-			do
+			assert(obj->getObjectType()==T_CLASS);
+			Class_base* cur=static_cast<Class_base*>(obj);
+			while(cur)
 			{
-				level--;
-				var=obj->Variables.findObjVar(name,"",level,false,true);
+				int level=cur->getLevel();
+				var=cur->Variables.findObjVar(name,"",level,false,true);
+				if(var && var->setter)
+					break;
+				cur=cur->super;
 			}
-			while(var!=NULL && var->setter==NULL);
-
 			if(var)
 			{
 				assert_and_throw(var->setter);
@@ -1636,7 +1649,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 						{
 							assert(var->getter);
 							//A superclass defined a protected method that we have to override.
-							//TODO: incref variable?
+							f->incRef();
 							obj->setGetterByQName(name,cur->protected_ns,f);
 						}
 					}
@@ -1644,9 +1657,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				}
 			}
 
-			assert(!bind);
-			if(bind)
-				f->bind(obj,obj->getLevel());
+			f->bindLevel(obj->getLevel());
 			obj->setGetterByQName(name,ns,f);
 
 /*			//Iterate to find a getter
@@ -1701,7 +1712,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 						{
 							assert(var->setter);
 							//A superclass defined a protected method that we have to override.
-							//TODO: incref variable?
+							f->incRef();
 							obj->setSetterByQName(name,cur->protected_ns,f);
 						}
 					}
@@ -1709,9 +1720,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				}
 			}
 
-			assert(!bind);
-			if(bind)
-				f->bind(obj,obj->getLevel());
+			f->bindLevel(obj->getLevel());
 			obj->setSetterByQName(name,ns,f);
 			
 /*			//Iterate to find a setter
@@ -1765,8 +1774,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 						{
 							assert(var->var);
 							//A superclass defined a protected method that we have to override.
-							//TODO: incref variable?
-							obj->setSetterByQName(name,cur->protected_ns,f);
+							f->incRef();
+							obj->setVariableByQName(name,cur->protected_ns,f);
 						}
 					}
 					cur=cur->super;
@@ -1794,9 +1803,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				}
 			}*/
 
-			assert(!bind);
-			if(bind)
-				f->bind(obj,obj->getLevel());
+			f->bindLevel(obj->getLevel());
 			obj->setVariableByQName(name,ns,f,false);
 			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);
 			break;

@@ -74,11 +74,11 @@ public:
 	Class_base(const tiny_string& name);
 	~Class_base();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true)
+	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true, ASObject* base=NULL)
 	{
-		objAndLevel ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride);
+		objAndLevel ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride, base);
 		if(ret.obj==NULL && super)
-			ret=super->getVariableByMultiname(name, skip_impl, enableOverride);
+			ret=super->getVariableByMultiname(name, skip_impl, enableOverride, base);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -162,11 +162,11 @@ public:
 	Class_function():Class_base("Function"),f(NULL),asprototype(NULL){}
 	Class_function(IFunction* _f, ASObject* _p):Class_base("Function"),f(_f),asprototype(_p){}
 	tiny_string class_name;
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true)
+	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL)
 	{
-		objAndLevel ret=Class_base::getVariableByMultiname(name,skip_impl, enableOverride);
+		objAndLevel ret=Class_base::getVariableByMultiname(name,skip_impl, enableOverride, base);
 		if(ret.obj==NULL && asprototype)
-			ret=asprototype->getVariableByMultiname(name,skip_impl, enableOverride);
+			ret=asprototype->getVariableByMultiname(name,skip_impl, enableOverride, base);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -189,7 +189,7 @@ public:
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname_i");
 	}
-	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
+	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base=NULL)
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
@@ -234,6 +234,10 @@ public:
 			incRef();
 			return this;
 		}
+	}
+	void bindLevel(int l)
+	{
+		closure_level=l;
 	}
 	void override(IFunction* f)
 	{
@@ -530,10 +534,10 @@ public:
 		data.resize(n);
 	}
 	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride);
+	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false);
-	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
+	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r);

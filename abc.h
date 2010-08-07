@@ -571,6 +571,7 @@ private:
 
 	//Internal utilities
 	static void method_reset(method_info* th);
+	static void newClassRecursiveLink(Class_base* target, Class_base* c);
 
 	//Opcode tables
 	void register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len);

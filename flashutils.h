@@ -60,10 +60,10 @@ public:
 		throw UnsupportedException("getVariableByName not supported for ByteArray");
 		return objAndLevel(NULL,0);
 	}
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
+	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false);
-	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
+	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	bool isEqual(ASObject* r);
 };
@@ -102,7 +102,7 @@ public:
 		throw UnsupportedException("getVariableByQName not supported for Dictionary");
 		return objAndLevel(NULL,0);
 	}
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
+	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);
@@ -113,7 +113,7 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("setVariableByQName not supported for Dictionary");
 	}
-	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
+	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	void deleteVariableByMultiname(const multiname& name);
 	tiny_string toString(bool debugMsg=false)
@@ -148,7 +148,7 @@ public:
 		throw RunTimeException("Proxy::getVariableByQName");
 		return objAndLevel(NULL,0);
 	}
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true);
+	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);
@@ -161,7 +161,7 @@ public:
 		else
 			throw RunTimeException("Proxy::setVariableByQName");
 	}
-	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
+	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
 		assert_and_throw(implEnable);

@@ -176,7 +176,7 @@ public:
 	{
 		ASObject::buildTraits(o);
 	}
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true);
+	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true, ASObject* base=NULL);
 };
 
 };

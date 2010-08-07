@@ -1670,7 +1670,6 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	//We modify the cur_level of obj
 	obj->decLevel();
 
-	__asm__("int $3");
 	//We should skip the special implementation of get
 	objAndLevel o=obj->getVariableByMultiname(*name, true);
 
@@ -2186,6 +2185,19 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 	return ret;
 }
 
+void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
+{
+	if(c->super)
+		newClassRecursiveLink(target, c->super);
+
+	const vector<Class_base*>& interfaces=c->getInterfaces();
+	for(unsigned int i=0;i<interfaces.size();i++)
+	{
+		LOG(LOG_CALLS,"Linking with interface " << interfaces[i]->class_name);
+		interfaces[i]->linkInterface(target);
+	}
+}
+
 void ABCVm::newClass(call_context* th, int n)
 {
 	LOG(LOG_CALLS, "newClass " << n );
@@ -2220,7 +2232,14 @@ void ABCVm::newClass(call_context* th, int n)
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
-	__asm__("int $3");
+	//Add protected namespace if needed
+	if((th->context->instances[n].flags)&0x08)
+	{
+		ret->use_protected=true;
+		int ns=th->context->instances[n].protectedNs;
+		ret->protected_ns=th->context->getString(th->context->constant_pool.namespaces[ns].name);
+	}
+
 	//Class objects also contains all the methods/getters/setters declared for instances
 	instance_info* cur=&th->context->instances[n];
 	for(unsigned int i=0;i<cur->trait_count;i++)
@@ -2237,14 +2256,6 @@ void ABCVm::newClass(call_context* th, int n)
 	//Set the constructor variable to the class itself (this is accessed by object using the protoype)
 	ret->incRef();
 	ret->setVariableByQName("constructor","",ret);
-
-	//Add protected namespace if needed
-	if((th->context->instances[n].flags)&0x08)
-	{
-		ret->use_protected=true;
-		int ns=th->context->instances[n].protectedNs;
-		ret->protected_ns=th->context->getString(th->context->constant_pool.namespaces[ns].name);
-	}
 
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->context->instances[n].interface_count;i++)
@@ -2268,6 +2279,12 @@ void ABCVm::newClass(call_context* th, int n)
 			obj=getGlobal()->getVariableByMultiname(*name).obj;
 			assert_and_throw(obj);
 		}
+	}
+	//If the class is not an interface itself, link the traits
+	if(!((th->context->instances[n].flags)&0x04))
+	{
+		//Link all the interfaces for this class and all the bases
+		newClassRecursiveLink(ret, ret);
 	}
 
 	LOG(LOG_CALLS,"Calling Class init " << ret);

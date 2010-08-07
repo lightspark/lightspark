@@ -370,7 +370,7 @@ obj_var* ASObject::findSettable(const multiname& name, int& level)
 	return ret;
 }
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
 {
 	check();
 
@@ -379,11 +379,24 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 	int level=cur_level;
 	obj_var* obj=findSettable(name,level);
 
+	if(obj==NULL && prototype)
+	{
+		Class_base* cur=getActualPrototype();
+		while(cur)
+		{
+			int level=cur->getLevel();
+			obj=cur->findSettable(name,level);
+			if(obj)
+				break;
+			cur=cur->super;
+		}
+	}
 	if(obj==NULL)
 	{
 		assert_and_throw(level==cur_level);
 		obj=Variables.findObjVar(name,level,true,false);
 	}
+	//TODO: what about prototypes??
 
 	if(obj->setter)
 	{
@@ -395,8 +408,9 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 			setter=setter->getOverride();
 
 		//One argument can be passed without creating an array
-		incRef();
-		ASObject* ret=setter->call(this,&o,1,level);
+		ASObject* target=(base)?base:this;
+		target->incRef();
+		ASObject* ret=setter->call(target,&o,1,level);
 		assert_and_throw(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
 	}
@@ -632,7 +646,7 @@ obj_var* ASObject::findGettable(const multiname& name, int& level)
 	return ret;
 }
 
-objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	check();
 
@@ -656,8 +670,9 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 			IFunction* getter=obj->getter;
 			if(enableOverride)
 				getter=getter->getOverride();
-			incRef();
-			ASObject* ret=getter->call(this,NULL,0,level);
+			ASObject* target=(base)?base:this;
+			target->incRef();
+			ASObject* ret=getter->call(target,NULL,0,level);
 			LOG(LOG_CALLS,"End of getter");
 			assert_and_throw(ret);
 			//The returned value is already owned by the caller
@@ -695,8 +710,11 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 		}
 
 		//It has not been found yet, ask the prototype
-		if(getActualPrototype())
-			return getActualPrototype()->getVariableByMultiname(name,skip_impl);
+		if(prototype && getActualPrototype())
+		{
+			objAndLevel ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,true,this);
+			return ret;
+		}
 	}
 
 	//If it has not been found

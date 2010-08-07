@@ -386,18 +386,18 @@ intptr_t Array::getVariableByMultiname_i(const multiname& name)
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-objAndLevel Array::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+objAndLevel Array::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 		
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 
 	if(index<data.size())
 	{
@@ -420,7 +420,7 @@ objAndLevel Array::getVariableByMultiname(const multiname& name, bool skip_impl,
 		return objAndLevel(ret,0);
 	}
 	else
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 }
 
 void Array::setVariableByMultiname_i(const multiname& name, intptr_t value)
@@ -487,12 +487,12 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 	return true;
 }
 
-void Array::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
+void Array::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,enableOverride);
+		return ASObject::setVariableByMultiname(name,o,enableOverride,base);
 
 	if(index>=data.capacity())
 	{
@@ -1212,7 +1212,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	uint32_t args_len=mi->numArgs();
 	int passedToLocals=imin(numArgs,args_len);
 	uint32_t passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
-	int realLevel=(bound)?closure_level:level;
+	int realLevel=(closure_level!=-1)?closure_level:level;
 	if(realLevel==-1) //If realLevel is not set, keep the object level
 		realLevel=obj->getLevel();
 
@@ -1784,14 +1784,6 @@ void Class_base::recursiveBuild(ASObject* target)
 	LOG(LOG_TRACE,"Building traits for " << class_name);
 	target->setLevel(max_level);
 	buildInstanceTraits(target);
-
-	//Link the interfaces for this level
-	const vector<Class_base*>& interfaces=getInterfaces();
-	for(unsigned int i=0;i<interfaces.size();i++)
-	{
-		LOG(LOG_CALLS,"Linking with interface " << interfaces[i]->class_name);
-		interfaces[i]->linkInterface(target);
-	}
 }
 
 void Class_base::setConstructor(IFunction* c)
@@ -1947,6 +1939,8 @@ const std::vector<Class_base*>& Class_base::getInterfaces() const
 		for(unsigned int i=0;i<interfaces.size();i++)
 		{
 			ASObject* interface_obj=getGlobal()->getVariableByMultiname(interfaces[i]).obj;
+			if(!(interface_obj && interface_obj->getObjectType()==T_CLASS))
+				__asm__("int $3");
 			assert_and_throw(interface_obj && interface_obj->getObjectType()==T_CLASS);
 			Class_base* inter=static_cast<Class_base*>(interface_obj);
 

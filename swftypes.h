@@ -563,11 +563,11 @@ public:
 	}
 	virtual ASObject* getVariableByString(const std::string& name);
 	//The enableOverride parameter is set to false in setSuper, getSuper and callSuper
-	virtual objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true );
+	virtual objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
 	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
-	virtual void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
+	virtual void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
 	virtual void deleteVariableByMultiname(const multiname& name);
 	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o,bool find_back=true, bool skip_impl=false);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);

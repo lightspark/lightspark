@@ -1500,14 +1500,14 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 				glLoadIdentity();
 
-/*				//Now draw the input layer
+				//Now draw the input layer
 				if(!th->inputDisabled)
 				{
 					glDrawBuffer(GL_COLOR_ATTACHMENT2);
 					th->materialOverride=true;
 					th->m_sys->inputRender();
 					th->materialOverride=false;
-				}*/
+				}
 
 				//Now blit everything
 				glLoadIdentity();

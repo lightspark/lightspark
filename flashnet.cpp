@@ -336,13 +336,7 @@ void NetStream::tick()
 	else
 #endif
 		streamTime+=1000/frameRate;
-	//Video has a latency of one frame
-	videoDecoder->skipUntil(streamTime/*-(1000/frameRate)*/);
-/*	if(soundStreamId && audioDecoder->almostFull())
-	{
-		cout << "fill on full" << endl;
-		sys->soundManager->fill(soundStreamId);
-	}*/
+	videoDecoder->skipUntil(streamTime);
 }
 
 bool NetStream::isReady() const
@@ -516,6 +510,9 @@ void NetStream::execute()
 						frameRate=videoDecoder->frameRate;
 					}
 					sys->addTick(1000/frameRate,this);
+					//Also ask for a render rate equal to the video one (capped at 24)
+					float localRenderRate=dmin(frameRate,24);
+					sys->setRenderRate(localRenderRate);
 				}
 				profile->accountTime(chronometer.checkpoint());
 				if(aborting)

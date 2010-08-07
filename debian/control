@@ -2,7 +2,7 @@ Source: lightspark
 Section: utils
 Priority: optional
 Maintainer: Alessandro Pignotti <a.pignotti@sssup.it>
-Build-Depends: g++ (>=4.4), gnash, cmake, cdbs, nasm, debhelper (>= 7), llvm-dev (>= 2.7) | llvm-2.7-dev, libsdl1.2-dev, libgl1-mesa-dev, libxext-dev, libcurl4-gnutls-dev | libcurl4-openssl-dev, libxml2-dev, zlib1g-dev, libnspr4-dev, libavcodec-dev, libpcre3-dev, libftgl-dev, libglew1.5-dev, xulrunner-dev, libffi-dev
+Build-Depends: g++ (>=4.4), gnash, cmake, cdbs, nasm, debhelper (>= 7), llvm-dev (>= 2.7) | llvm-2.7-dev, libsdl1.2-dev, libgl1-mesa-dev, libxext-dev, libcurl4-gnutls-dev | libcurl4-openssl-dev, libxml2-dev, zlib1g-dev, libnspr4-dev, libavcodec-dev, libpcre3-dev, libftgl-dev, libglew1.5-dev, xulrunner-dev (>=1.9.2), libffi-dev
 Build-Conflicts: llvm (=2.6)
 Standards-Version: 3.8.4
 Homepage: http://lightspark.sf.net

@@ -161,7 +161,7 @@ void* TimerThread::timer_worker(TimerThread* th)
 		int err=errno;
 		if(err!=ETIMEDOUT)
 		{
-			LOG(LOG_ERROR,"Unexpected failure of sem_timedwait.. Trying yo go on. errno=" << err);
+			LOG(LOG_ERROR,"Unexpected failure of sem_timedwait.. Trying to go on. errno=" << err);
 			continue;
 		}
 
@@ -231,15 +231,10 @@ bool TimerThread::removeJob(ITickJob* job)
 		first=false;
 	}
 
-	//Check if we are currently executing this job
-	if(currentJob==job)
-	{
-		//Spin wait until the job ends (per design should be very short)
-		//As we hold the mutex and currentJob is not NULL we are surely executing a job
-		while(currentJob==job);
-
-		//The job ended
-	}
+	//Spin wait until the job ends (per design should be very short)
+	//As we hold the mutex and currentJob is not NULL we are surely executing a job
+	while(currentJob==job);
+	//The job ended
 
 	if(it==pendingEvents.end())
 	{

@@ -1487,7 +1487,8 @@ ASFUNCTIONBODY(DisplayObjectContainer,addChild)
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	assert_and_throw(argslen==1);
 	//Validate object type
-	assert_and_throw(args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
+	assert_and_throw(args[0] && args[0]->getPrototype() && 
+		args[0]->getPrototype()->isSubClass(Class<DisplayObject>::getClass()));
 	args[0]->incRef();
 
 	//Cast to object

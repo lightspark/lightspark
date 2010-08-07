@@ -384,7 +384,7 @@ public:
 	int toInt();
 	double toNumber();
 	bool isEqual(ASObject* r);
-	bool isLess(ASObject* r);
+	TRISTATE isLess(ASObject* r);
 	virtual ~Undefined(){}
 };
 
@@ -412,7 +412,7 @@ public:
 	ASFUNCTION(charCodeAt);
 	ASFUNCTION(toLowerCase);
 	bool isEqual(ASObject* r);
-	bool isLess(ASObject* r);
+	TRISTATE isLess(ASObject* r);
 	tiny_string toString(bool debugMsg=false);
 	double toNumber();
 	int32_t toInt();
@@ -578,7 +578,7 @@ public:
 	{
 		return val;
 	}
-	bool isLess(ASObject* r);
+	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
 };
 
@@ -603,7 +603,7 @@ public:
 	{
 		return val;
 	}
-	bool isLess(ASObject* r);
+	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
 };
 
@@ -637,7 +637,7 @@ public:
 	{
 		return val;
 	}
-	bool isLess(ASObject* o);
+	TRISTATE isLess(ASObject* o);
 	bool isEqual(ASObject* o);
 	static void buildTraits(ASObject* o){};
 };

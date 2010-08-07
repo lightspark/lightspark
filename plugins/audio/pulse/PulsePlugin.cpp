@@ -51,17 +51,46 @@ void PulsePlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
 	}
 }
 
-void PulsePlugin::fillAndSync(uint32_t id, uint32_t streamTime)
+bool PulsePlugin::isTimingAvailable() const
+{
+	return noServer==false;
+}
+
+uint32_t SoundManager::getPlayedTime(uint32_t id)
+{
+	assert(streams[id-1]);
+	assert(noServer==false);
+
+	if(streams[id-1]->streamStatus!=SoundStream::STREAM_READY) //The stream is not yet ready, delay upload
+		return 0;
+	pa_stream* stream=streams[id-1]->stream;
+
+	pa_threaded_mainloop_lock(mainLoop);
+	//Request updated timing info
+	pa_operation* timeUpdate=pa_stream_update_timing_info(stream, NULL, NULL);
+	pa_threaded_mainloop_unlock(mainLoop);
+	while(pa_operation_get_state(timeUpdate)!=PA_OPERATION_DONE);
+	pa_threaded_mainloop_lock(mainLoop);
+	pa_operation_unref(timeUpdate);
+
+	pa_usec_t time;
+	pa_stream_get_time(stream, &time);
+
+	pa_threaded_mainloop_unlock(mainLoop);
+	return time/1000;
+}
+
+void SoundManager::fill(uint32_t id)
 {
 	assert(streams[id-1]);
 	if(noServer==false)
 	{
 		if(streams[id-1]->streamStatus!=AudioStream::STREAM_READY) //The stream is not yet ready, delay upload
 			return;
+		pa_threaded_mainloop_lock(mainLoop);
 		if(!streams[id-1]->decoder->hasDecodedFrames()) //No decoded data available yet, delay upload
 			return;
 		pa_stream *stream=streams[id-1]->stream;
-		pa_threaded_mainloop_lock(mainLoop);
 		int16_t *dest;
 		//Get buffer size
 		size_t frameSize=pa_stream_writable_size(stream);
@@ -70,47 +99,6 @@ void PulsePlugin::fillAndSync(uint32_t id, uint32_t streamTime)
 			pa_threaded_mainloop_unlock(mainLoop);
 			return;
 		}
-		//Request updated timing info
-		pa_operation *timeUpdate=pa_stream_update_timing_info(stream, NULL, NULL);
-		pa_threaded_mainloop_unlock(mainLoop);
-		while(pa_operation_get_state(timeUpdate)!=PA_OPERATION_DONE);
-		pa_threaded_mainloop_lock(mainLoop);
-		pa_operation_unref(timeUpdate);
-
-		//Get the latency of the stream, in usecs
-		pa_usec_t latency;
-		int negative;
-		int ret=pa_stream_get_latency(stream, &latency, &negative);
-		if(ret!=0) //Latency update failed, abort upload
-		{
-			LOG(LOG_ERROR, "Upload of samples to pulse failed");
-			pa_threaded_mainloop_unlock(mainLoop);
-			return;
-		}
-		assert(negative==0);
-		//Transform latency in milliseconds
-		latency/=1000; //This is the time that will pass before the first written samples will be played
-		uint32_t frontTime=streams[id-1]->decoder->getFrontTime();
-		int32_t frontLatency=frontTime-streamTime; //This is the time that should pass before playing the first available samples
-		//The first sample we write will be played after latency ms. So we want to skip until streamTime+latency
-		int32_t gapTime=latency-frontLatency; //This is the gap in the two latencies
-		//The idea is to skip or add some samples to adapt to the expected latency
-		//Currently the correction unit is an arbitrary 150 usecs. Would be way better to use a complex poles based control
-		//and distributing a bit new/removed samples
-		if(gapTime==0);
-		else if(gapTime>0)
-			streams[id-1]->decoder->skipUntil(frontTime, 150);
-		else
-		{
-			uint32_t bytesNeededToFillTheGap=0;
-			bytesNeededToFillTheGap=150*streams[id-1]->decoder->getBytesPerMSec()/1000;
-			bytesNeededToFillTheGap&=0xfffffffe;
-			int16_t *tmp=new int16_t[bytesNeededToFillTheGap/2];
-			memset(tmp,0,bytesNeededToFillTheGap);
-			pa_stream_write(stream, tmp, bytesNeededToFillTheGap, NULL, 0, PA_SEEK_RELATIVE);
-			delete[] tmp;
-		}
-
 		//Write data until we have space on the server and we have data available
 		uint32_t totalWritten=0;
 		pa_stream_begin_write(stream, (void**)&dest, &frameSize);
@@ -124,6 +112,7 @@ void PulsePlugin::fillAndSync(uint32_t id, uint32_t streamTime)
 		}
 		while(frameSize);
 
+		cout << "Filled " << totalWritten << endl;
 		if(totalWritten)
 		{
 			pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
@@ -143,11 +132,34 @@ void PulsePlugin::fillAndSync(uint32_t id, uint32_t streamTime)
 
 void PulsePlugin::streamWriteCB(pa_stream *stream, size_t frameSize, AudioStream *th)
 {
-	//Get buffer size
 	int16_t *dest;
+	//Get buffer size
+	if(frameSize==0) //The server can't accept any data now
+		return;
+	//Write data until we have space on the server and we have data available
+	uint32_t totalWritten=0;
 	pa_stream_begin_write(stream, (void**)&dest, &frameSize);
-	uint32_t retSize=th->decoder->copyFrame(dest, frameSize);
-	pa_stream_write(stream, dest, retSize, NULL, 0, PA_SEEK_RELATIVE);
+	cout << "Frame size " << frameSize << endl;
+	do
+	{
+		uint32_t retSize=th->decoder->copyFrame(dest+(totalWritten/2), frameSize);
+		if(retSize==0) //There is no more data
+			break;
+		totalWritten+=retSize;
+		frameSize-=retSize;
+	}
+	while(frameSize);
+
+	cout << "Callback wrote " << totalWritten << endl;
+	cout << pa_stream_is_suspended(stream) << endl;
+	cout << pa_stream_is_corked(stream) << endl;
+	if(totalWritten)
+	{
+		pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
+		pa_stream_cork(stream, 0, NULL, NULL); //Start the stream, just in case it's still stopped
+	}
+	else
+		pa_stream_cancel_write(stream);
 }
 
 void PulsePlugin::freeStream(uint32_t id)
@@ -214,7 +226,7 @@ uint32_t PulsePlugin::createStream(AudioDecoder *decoder)
 		attrs.minreq=(uint32_t)-1;
 		streams[index]->stream=pa_stream_new(context, "AudioStream", &ss, NULL);
 		pa_stream_set_state_callback(streams[index]->stream, (pa_stream_notify_cb_t)streamStatusCB, streams[index]);
-		//pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
+		pa_stream_set_write_callback(streams[index]->stream, (pa_stream_request_cb_t)streamWriteCB, streams[index]);
 		pa_stream_set_underflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)underflow_notify, NULL);
 		pa_stream_set_overflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)overflow_notify, NULL);
 		pa_stream_set_started_callback(streams[index]->stream, (pa_stream_notify_cb_t)started_notify, NULL);
@@ -245,6 +257,18 @@ void PulsePlugin::contextStatusCB(pa_context *context, AudioPlugin *th)
 		default:
 			break;
 	}
+}
+
+SoundManager::SoundManager():contextReady(false),noServer(false),stopped(false)
+{
+	mainLoop=pa_threaded_mainloop_new();
+	pa_threaded_mainloop_start(mainLoop);
+
+	pa_threaded_mainloop_lock(mainLoop);
+	context=pa_context_new(pa_threaded_mainloop_get_api(mainLoop),"Lightspark");
+	pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
+	pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
+	pa_threaded_mainloop_unlock(mainLoop);
 }
 
 PulsePlugin::~PulsePlugin()

@@ -519,6 +519,7 @@ private:
 	static void _throw(call_context* th);
 	static ASObject* asTypelate(ASObject* type, ASObject* obj);
 	static bool isTypelate(ASObject* type, ASObject* obj);
+	static bool isType(ASObject* obj, multiname* name);
 	static void swap();
 	static ASObject* add(ASObject*,ASObject*);
 	static ASObject* add_oi(ASObject*,intptr_t);

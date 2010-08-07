@@ -503,7 +503,7 @@ uintptr_t ABCVm::decrement_i(ASObject* o)
 bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
-	bool ret=!(obj1->isLess(obj2));
+	bool ret=!(obj1->isLess(obj2)==TTRUE);
 	LOG(LOG_CALLS,"ifNLT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
@@ -514,7 +514,7 @@ bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1)
 bool ABCVm::ifLT(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
-	bool ret=obj1->isLess(obj2);
+	bool ret=(obj1->isLess(obj2)==TTRUE);
 	LOG(LOG_CALLS,"ifLT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
@@ -1210,7 +1210,7 @@ ASObject* ABCVm::pushNaN()
 bool ABCVm::ifGT(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
-	bool ret=obj2->isLess(obj1);
+	bool ret=(obj2->isLess(obj1)==TTRUE);
 	LOG(LOG_CALLS,"ifGT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
@@ -1222,7 +1222,7 @@ bool ABCVm::ifNGT(ASObject* obj2, ASObject* obj1)
 {
 
 	//Real comparision demanded to object
-	bool ret=!obj2->isLess(obj1);
+	bool ret=!(obj2->isLess(obj1)==TTRUE);
 	LOG(LOG_CALLS,"ifNGT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
@@ -1233,7 +1233,7 @@ bool ABCVm::ifNGT(ASObject* obj2, ASObject* obj1)
 bool ABCVm::ifLE(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
-	bool ret=!obj2->isLess(obj1);
+	bool ret=(obj2->isLess(obj1)==TFALSE);
 	LOG(LOG_CALLS,"ifLE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
@@ -1243,7 +1243,7 @@ bool ABCVm::ifLE(ASObject* obj2, ASObject* obj1)
 bool ABCVm::ifNLE(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
-	bool ret=obj2->isLess(obj1);
+	bool ret=!(obj2->isLess(obj1)==TFALSE);
 	LOG(LOG_CALLS,"ifNLE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
@@ -1253,7 +1253,7 @@ bool ABCVm::ifNLE(ASObject* obj2, ASObject* obj1)
 bool ABCVm::ifGE(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
-	bool ret=!obj1->isLess(obj2);
+	bool ret=(obj1->isLess(obj2)==TFALSE);
 	LOG(LOG_CALLS,"ifGE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
@@ -1263,7 +1263,7 @@ bool ABCVm::ifGE(ASObject* obj2, ASObject* obj1)
 bool ABCVm::ifNGE(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
-	bool ret=obj1->isLess(obj2);
+	bool ret=!(obj1->isLess(obj2)==TFALSE);
 	LOG(LOG_CALLS,"ifNGE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
@@ -1525,7 +1525,7 @@ bool ABCVm::greaterThan(ASObject* obj1, ASObject* obj2)
 	LOG(LOG_CALLS,"greaterThan");
 
 	//Real comparision demanded to object
-	bool ret=obj2->isLess(obj1);
+	bool ret=(obj2->isLess(obj1)==TTRUE);
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1536,7 +1536,7 @@ bool ABCVm::greaterEquals(ASObject* obj1, ASObject* obj2)
 	LOG(LOG_CALLS,"greaterEquals");
 
 	//Real comparision demanded to object
-	bool ret=!obj1->isLess(obj2);
+	bool ret=(obj1->isLess(obj2)==TFALSE);
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1547,7 +1547,7 @@ bool ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 	LOG(LOG_CALLS,"lessEquals");
 
 	//Real comparision demanded to object
-	bool ret=!obj2->isLess(obj1);
+	bool ret=(obj2->isLess(obj1)==TFALSE);
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1728,6 +1728,77 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 
 	obj->decRef();
 	delete[] args;
+}
+
+bool ABCVm::isType(ASObject* obj, multiname* name)
+{
+	LOG(LOG_CALLS, "isType " << *name);
+
+	objAndLevel ret=getGlobal()->getVariableByMultiname(*name);
+	if(!ret.obj) //Could not retrieve type
+	{
+		LOG(LOG_ERROR,"Cannot retrieve type");
+		return false;
+	}
+
+	ASObject* type=ret.obj;
+	bool real_ret=false;
+	Class_base* objc=NULL;
+	Class_base* c=NULL;
+	if(obj->prototype)
+	{
+		assert_and_throw(type->getObjectType()==T_CLASS);
+		c=static_cast<Class_base*>(type);
+
+		objc=obj->prototype;
+	}
+	else if(obj->getObjectType()==T_CLASS)
+	{
+		assert_and_throw(type->getObjectType()==T_CLASS);
+		c=static_cast<Class_base*>(type);
+
+		//Special case for Class
+		if(c->class_name=="Class")
+		{
+			type->decRef();
+			obj->decRef();
+			return true;
+		}
+		else
+		{
+			type->decRef();
+			obj->decRef();
+			return false;
+		}
+	}
+	else
+	{
+		//Special cases
+		if(obj->getObjectType()==T_FUNCTION && type==Class_function::getClass())
+			return true;
+
+		real_ret=obj->getObjectType()==type->getObjectType();
+		LOG(LOG_CALLS,"isTypelate on non classed object " << real_ret);
+		if(real_ret==false)
+		{
+			//TODO: obscene hack, check casting of stuff
+			if(obj->getObjectType()==T_INTEGER && type->getObjectType()==T_NUMBER)
+			{
+				cout << "HACK for Integer" << endl;
+				real_ret=true;
+			}
+		}
+		obj->decRef();
+		type->decRef();
+		return real_ret;
+	}
+
+	real_ret=objc->isSubClass(c);
+	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?" ":"not ") 
+			<< "subclass of " << c->class_name);
+	obj->decRef();
+	type->decRef();
+	return real_ret;
 }
 
 bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
@@ -2233,7 +2304,7 @@ bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 	LOG(LOG_CALLS,"lessThan");
 
 	//Real comparision demanded to object
-	bool ret=obj1->isLess(obj2);
+	bool ret=(obj1->isLess(obj2)==TTRUE);
 	obj1->decRef();
 	obj2->decRef();
 	return ret;

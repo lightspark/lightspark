@@ -384,7 +384,9 @@ SystemState::~SystemState()
 		delete tagsStorage[i];
 
 	delete renderThread;
+	renderThread=NULL;
 	delete inputThread;
+	inputThread=NULL;
 	sem_destroy(&terminated);
 }
 
@@ -444,7 +446,7 @@ void SystemState::wait()
 	if(inputThread)
 		inputThread->wait();
 	if(currentVm)
-		currentVm->wait();
+		currentVm->shutdown();
 }
 
 float SystemState::getRenderRate()

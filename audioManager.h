@@ -26,9 +26,10 @@
 #include <string.h>
 #include <boost/filesystem.hpp>
 
-#include "plugins/audio/audioPlugin.h"
+#include "plugins/audio/IAudioPlugin.h"
 
 using namespace std;
+using namespace boost::filesystem;
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
 typedef IPlugin *(*PLUGIN_FACTORY)();
@@ -44,29 +45,23 @@ class AudioManager
     {
 //      private:
       public:
-	char *plugin_name;
-	char *audiobackend_name;
-	char *plugin_path;
-	bool enabled;
-	HLIB hAudioPlugin;
-	PluginInfo *PreviousPluginLib;
-	PluginInfo *NextPluginLib;
+	string plugin_name;		//plugin_name
+	string audiobackend_name;	//audiobackend
+	path plugin_path;		//full path to the plugin file
+	bool enabled;			//should it be enabled (loaded)?
+	HMODULE hAudioPlugin;		//if enabled, this is the handle to the loaded lib
+//	PluginInfo *PreviousPluginLib;
+//	PluginInfo *NextPluginLib;
 //      public:
-	PluginInfo();
-	~PluginInfo();
+//	PluginInfo();
+//	~PluginInfo();
     };
-    class PluginList
-    {
-      public:
-	PluginInfo *FirstAudioPlugin;
-	PluginInfo *LastAudioPlugin;
-    };
-    HLIB hSelectedAudioPluginLib;
-    PluginList *AudioPluginsList;
+    HMODULE hSelectedAudioPluginLib;
+    vector<PluginInfo> AudioPluginsList;
     PluginInfo *SelectedAudioPlugin;
     
-    AudioPlugin *o_AudioPlugin;
-    void AddAudioPluginToList(const HLIB h_pluginToAdd, const char *pathToPlugin);
+    IAudioPlugin *o_AudioPlugin;
+    void AddAudioPluginToList(string AudioBackend_name, string pathToPlugin);
     void FindAudioPlugins();
     void LoadAudioPlugin();
 

@@ -17,11 +17,13 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
+#define BOOST_FILESYSTEM_NO_DEPRECATED
 
+#include "audioManager.h"
 #include <iostream>
 #include <string.h>
-#include <boost/filesystem.hpp> //will be part of the next C++ release
-#include "audioManager.h"
+#include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
 
 #if defined WIN32
   #include <windows.h>
@@ -33,8 +35,8 @@
 using namespace lightspark;
 using namespace std;
 using namespace boost::filesystem;
+using namespace boost;
 
-int find_files(const path &folder, const string &file, path &pathToSend);
 
 void AudioManager::fillAndSyncPlugin(uint32_t id, uint32_t streamTime)
 {
@@ -71,6 +73,7 @@ Else
 
 AudioManager::AudioManager()
 {
+  FindAudioPlugins();
 }
 
 /**************************
@@ -92,124 +95,57 @@ Load
 ****************************/
 void AudioManager::FindAudioPlugins()
 {
-  //Search for all files under ${DATADIR}/plugins
-  //Verify if they are plugins
-  //If true, add to list of plugins
-  string froot(DATADIR), fplugins("/lightspark/plugins");
+  //Search for all files under ${PRIVATELIBDIR}/plugins
+  //Verify if they are audio plugins
+  //If true, add to list of audio plugins
+  string froot(PRIVATELIBDIR), fplugins("/plugins"); //LS should always look in the plugins folder, nowhere else
   const path plugins_folder = froot + fplugins;
-  const string file_name = "liblightspark*plugin";
-  path path_found;
+  regex file_pattern("liblightspark*plugin.*"); //pattern of ls plugins
 
   #if defined DEBUG
-    cout << "Looking for plugins under " << plugins_folder << " for file_name " << file_name << endl;
+    cout << "Looking for plugins under " << plugins_folder << " for file_name " << file_pattern << endl;
   #endif
 
-  find_files(plugins_folder, file_name, path_found);
-  
-  
-/*//       //get the program's directory
-//       char dir [MAX_PATH];
-//       GetModuleFileName (NULL, dir, MAX_PATH);
- 
-  //eliminate the file name (to get just the directory)
-  char *p = strrchr(dir, '\\');
-  *(p + 1) = 0;
- 
-  //find all libraries in the plugins subdirectory
-  char search_parms [MAX_PATH];
-  strcpy_s (search_parms, MAX_PATH, dir);
-  strcat_s (search_parms, MAX_PATH, "plugins\\*.dll");
- 
-  WIN32_FIND_DATA find_data;
-  HANDLE h_find = ::FindFirstFile (search_parms, &find_data);
-  BOOL f_ok = TRUE;
-  while (h_find != INVALID_HANDLE_VALUE && f_ok)
+  if(!is_directory(plugins_folder))
   {
-*/    //load each library and look for the functions expected to initialize
-    char *plugin_full_name;
-/*    strcpy_s(plugin_full_name, MAX_PATH, dir);
-      strcat_s(plugin_full_name, MAX_PATH, "plugins\\");
-      strcat_s(plugin_full_name, MAX_PATH, find_data.cFileName);
-*/ 
-    HLIB h_plugin = LoadLib(plugin_full_name);
-    if (h_plugin != NULL)
-    {
-      PLUGIN_FACTORY p_factory_function = (PLUGIN_FACTORY) ExtractLibContent(h_plugin, "Create_Plugin");
-      PLUGIN_CLEANUP p_cleanup_function = (PLUGIN_CLEANUP) ExtractLibContent(h_plugin, "Release_Plugin");
- 
-      if (p_factory_function != NULL && p_cleanup_function != NULL)
-      {
-	//The library has the functions and should be what we are looking for
-        //invoke the factory to create the plugin object
-        IPlugin *p_plugin = (*p_factory_function)();
- 
-        //Get some more info about the plugin to be sure what it is
-//			   if(!(p_plugin->GetPluginType() == PLUGIN_TYPES UNKNOWN))
-        if(true)
-	{
-//	  printf("Plugin %s is loaded from file %s.\n", p_plugin->Get_PluginName(), find_data.cFileName);
-//	  printf("Plugin of type %d\n", p_plugin->Get_PluginType());
-	  printf("Plugin %s of type %d\n",p_plugin->get_pluginName(), p_plugin->get_pluginType());
-	  this->AddAudioPluginToList(h_plugin, plugin_full_name);
-	}
-                          
-        //done, cleanup the plugin by invoking its cleanup function
-        (*p_cleanup_function) (p_plugin);
-      }
-      else
-      {
-	printf("Not the kind of plugin the application is looking for.\n");
-      }
- 
-      CloseLib(h_plugin);
-    }
- 
-/*  //go for the next DLL
-   f_ok = ::FindNextFile (h_find, &find_data);
- }
- 
- return 0;
-*/}
-
-void AudioManager::AddAudioPluginToList(const HLIB h_pluginToAdd, const char *pathToPlugin)
-{
-/*  if(this->AudioPluginsList->FirstAudioPlugin == NULL)
-  {
-    this->AudioPluginsList->FirstAudioPlugin-> = p_pluginToAdd->;
-    this->AudioPluginsList->LastAudioPlugin = this->AudioPluginsList->FirstAudioPlugin;
+    cout << "The plugins folder doesn't exists under " << plugins_folder << endl;
   }
   else
   {
-    this->AudioPluginsList->LastAudioPlugin->NextPluginLib = p_pluginToAdd;
-    this->AudioPluginsList->LastAudioPlugin
-  }
-*/}
-
-int find_files(const path &folder, const string &file, path &pathToSend)
-{
-    
-  if(!exists(folder))
-  {
-    cout << "The plugins folder doesn't exists under " << folder << endl;
-  }
-  else
-  {
-    directory_iterator end_itr; //end of iteration
-    for( directory_iterator itr(folder); itr != end_itr; ++itr )
+    for(recursive_directory_iterator itr(plugins_folder), end_itr; itr != end_itr; ++itr)
     {
-      if(is_directory(itr->status()))
+      if(is_regular_file(itr->status())) //Is it a real file? This will remove symlink
       {
-	if(find_files(itr->path(), file, pathToSend))
+	string leaf_name = itr->path().filename();
+	if(regex_match(leaf_name, file_pattern)) // Does it answer to the desired pattern?
 	{
-	  return true;
+	  //Try to load the file and see if it's an audio plugin
+	  HMODULE h_plugin = LoadLib(leaf_name.c_str());
+	  if(h_plugin != NULL) // Is it a library?
+	  {
+	    PLUGIN_FACTORY p_factory_function = (PLUGIN_FACTORY) ExtractLibContent(h_plugin, "Create_Plugin");
+	    PLUGIN_CLEANUP p_cleanup_function = (PLUGIN_CLEANUP) ExtractLibContent(h_plugin, "Release_Plugin");
+	    if (p_factory_function != NULL && p_cleanup_function != NULL) //Does it contain the LS IPlugin?
+	    {
+	      IPlugin *p_plugin = (*p_factory_function)(); //Instanciate the plugin
+	      if(p_plugin->get_pluginType() == AUDIO) //Is it really an AUDIO plugin?
+	      {
+		IAudioPlugin *p_audioplugin = static_cast<IAudioPlugin *>(p_plugin);
+		#if defined DEBUG
+		  printf("Plugin %s of type %d\n", p_audioplugin->get_pluginName(), p_audioplugin->get_pluginType());
+		#endif
+		string e("test");
+		AddAudioPluginToList(p_audioplugin->get_audioBackend_name(), itr->path().string()); //Add the filename the audio plugins list
+	      }
+	    }
+	  }
+	  CloseLib(h_plugin);
 	}
-      }
-      else if(itr->leaf() == file) // see below
-      {
-	pathToSend = itr->path();
-	return true;
       }
     }
   }
-  return false;
+}
+
+void AudioManager::AddAudioPluginToList(string AudioBackend_name, string PathToPlugin)
+{
 }

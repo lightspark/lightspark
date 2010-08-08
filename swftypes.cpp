@@ -218,31 +218,25 @@ double ASObject::toNumber()
 	return 0;
 }
 
-obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, int& level, bool create, bool searchPreviusLevels)
+obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, bool create, bool searchPreviusLevels)
 {
-	nameAndLevel name(n,level);
+	nameAndLevel name(n);
 	const var_iterator ret_begin=Variables.lower_bound(name);
 	//This actually look for the first different name, if we accept also previous levels
 	//Otherwise we are just doing equal_range
-	if(searchPreviusLevels)
-		name.level=0;
 	const var_iterator ret_end=Variables.upper_bound(name);
-	name.level=level;
 
 	var_iterator ret=ret_begin;
 	for(;ret!=ret_end;ret++)
 	{
 		if(ret->second.first==ns)
-		{
-			level=ret->first.level;
 			return &ret->second.second;
-		}
 	}
 
 	//Name not present, insert it if we have to create it
 	if(create)
 	{
-		var_iterator inserted=Variables.insert(ret_begin,make_pair(nameAndLevel(n,level), make_pair(ns, obj_var() ) ) );
+		var_iterator inserted=Variables.insert(ret_begin,make_pair(nameAndLevel(n), make_pair(ns, obj_var() ) ) );
 		return &inserted->second.second;
 	}
 	else
@@ -253,15 +247,13 @@ bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns
 {
 	check();
 	//We look in all the object's levels
-	int level=(prototype)?(prototype->max_level):0;
-	bool ret=(Variables.findObjVar(name, ns, level, false, true)!=NULL);
+	bool ret=(Variables.findObjVar(name, ns, false, true)!=NULL);
 	if(!ret) //Try the classes
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			int level=cur->cur_level;
-			ret=(cur->Variables.findObjVar(name, ns, level, false, true)!=NULL);
+			ret=(cur->Variables.findObjVar(name, ns, false, true)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;
@@ -274,15 +266,13 @@ bool ASObject::hasPropertyByMultiname(const multiname& name)
 {
 	check();
 	//We look in all the object's levels
-	int level=(prototype)?(prototype->max_level):0;
-	bool ret=(Variables.findObjVar(name, level, false, true)!=NULL);
+	bool ret=(Variables.findObjVar(name, false, true)!=NULL);
 	if(!ret) //Try the classes
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			int level=cur->cur_level;
-			ret=(cur->Variables.findObjVar(name, level, false, true)!=NULL);
+			ret=(cur->Variables.findObjVar(name, false, true)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;
@@ -297,9 +287,8 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
-	//Getters are inserted with the current level of the prototype chain
-	int level=cur_level;
-	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
+	assert(getObjectType()==T_CLASS);
+	obj_var* obj=Variables.findObjVar(name,ns,true,false);
 	if(obj->getter!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
@@ -315,9 +304,8 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 #ifndef NDEBUG
 	assert_and_throw(!initialized);
 #endif
-	//Setters are inserted with the current level of the prototype chain
-	int level=cur_level;
-	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
+	assert(getObjectType()==T_CLASS);
+	obj_var* obj=Variables.findObjVar(name,ns,true,false);
 	if(obj->setter!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
@@ -331,31 +319,12 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(ref_count>0);
 
-	//Find out if the variable is declared more than once
-	obj_var* obj=NULL;
-	int level;
-	unsigned int count=0;
-	//We search in every level
-	int max_level=(prototype)?prototype->max_level:0;
-	for(int i=max_level;i>=0;i--)
-	{
-		//We stick to the old iteration mode, as we need to count
-		obj=Variables.findObjVar(name,max_level,false,false);
-		if(obj)
-		{
-			count++;
-			level=i;
-		}
-	}
-	//if it's not present it's ok
-	if(count==0)
+	obj_var* obj=Variables.findObjVar(name,false,false);
+	if(obj==NULL)
 		return;
 
-	assert_and_throw(count==1);
-
 	//Now dereference the values
-	//TODO: maybe we can look on the previous levels
-	obj=Variables.findObjVar(name,level,false,false);
+	obj=Variables.findObjVar(name,false,false);
 	if(obj->var)
 		obj->var->decRef();
 	if(obj->getter)
@@ -364,7 +333,7 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 		obj->setter->decRef();
 
 	//Now kill the variable
-	Variables.killObjVar(name,level);
+	Variables.killObjVar(name);
 }
 
 //In all setter we first pass the value to the interface to see if special handling is possible
@@ -374,25 +343,15 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	setVariableByMultiname(name,abstract_i(value));
 }
 
-obj_var* ASObject::findSettable(const multiname& name, int& level)
+obj_var* ASObject::findSettable(const multiname& name)
 {
-	assert(level==cur_level);
-	obj_var* ret=NULL;
-	int max_level=cur_level;
-	for(int i=max_level;i>=0;i--)
+	obj_var* ret=Variables.findObjVar(name,false,true);
+	if(ret)
 	{
-		//The variable i is automatically moved to the right level
-		ret=Variables.findObjVar(name,i,false,true);
-		if(ret)
-		{
-			//It seems valid for a class to redefine only the getter, so if we can't find
-			//something to get, just go to the previous level
-			if(ret->setter || ret->var)
-			{
-				level=i;
-				break;
-			}
-		}
+		//It seems valid for a class to redefine only the getter, so if we can't find
+		//something to get, it's ok
+		if(!(ret->setter || ret->var))
+			ret=NULL;
 	}
 	return ret;
 }
@@ -401,29 +360,23 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 {
 	check();
 
-	//It's always correct to use the current level for the object
-	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level
-	int level=cur_level;
-	obj_var* obj=findSettable(name,level);
+	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualPrototype)
+	obj_var* obj=findSettable(name);
 
 	if(obj==NULL && prototype)
 	{
 		Class_base* cur=getActualPrototype();
 		while(cur)
 		{
-			int level=cur->getLevel();
-			obj=cur->findSettable(name,level);
+			//TODO: should be only findSetter
+			obj=cur->findSettable(name);
 			if(obj)
 				break;
 			cur=cur->super;
 		}
 	}
 	if(obj==NULL)
-	{
-		assert_and_throw(level==cur_level);
-		obj=Variables.findObjVar(name,level,true,false);
-	}
-	//TODO: what about prototypes??
+		obj=Variables.findObjVar(name,true,false);
 
 	if(obj->setter)
 	{
@@ -437,7 +390,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 		//One argument can be passed without creating an array
 		ASObject* target=(base)?base:this;
 		target->incRef();
-		ASObject* ret=setter->call(target,&o,1,level);
+		ASObject* ret=setter->call(target,&o,1,-1);
 		assert_and_throw(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
 	}
@@ -452,18 +405,11 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
 {
-	obj_var* obj=NULL;
-	//It's always correct to use the current level for the object
 	//NOTE: we assume that [gs]etSuper and setProperty correctly manipulate the cur_level
-	int level=cur_level;
-	obj=Variables.findObjVar(name,ns,level,false,find_back);
+	obj_var* obj=Variables.findObjVar(name,ns,false,find_back);
 
 	if(obj==NULL)
-	{
-		//When the var is not found level should not be modified
-		assert_and_throw(cur_level==level);
-		obj=Variables.findObjVar(name,ns,level,true,false);
-	}
+		obj=Variables.findObjVar(name,ns,true,false);
 
 	if(obj->setter)
 	{
@@ -473,7 +419,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 		IFunction* setter=obj->setter->getOverride();
 		incRef();
 		//One argument can be passed without creating an array
-		ASObject* ret=setter->call(this,&o,1,level);
+		ASObject* ret=setter->call(this,&o,1,-1);
 		assert_and_throw(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
 	}
@@ -487,9 +433,9 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	check();
 }
 
-void variables_map::killObjVar(const multiname& mname, int level)
+void variables_map::killObjVar(const multiname& mname)
 {
-	nameAndLevel name("",level);
+	nameAndLevel name("");
 	switch(mname.name_type)
 	{
 		case multiname::NAME_INT:
@@ -528,9 +474,9 @@ void variables_map::killObjVar(const multiname& mname, int level)
 	throw RunTimeException("Variable to kill not found");
 }
 
-obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool create, bool searchPreviusLevels)
+obj_var* variables_map::findObjVar(const multiname& mname, bool create, bool searchPreviusLevels)
 {
-	nameAndLevel name("",level);
+	nameAndLevel name("");
 	switch(mname.name_type)
 	{
 		case multiname::NAME_INT:
@@ -552,10 +498,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool crea
 	const var_iterator ret_begin=Variables.lower_bound(name);
 	//This actually look for the first different name, if we accept also previous levels
 	//Otherwise we are just doing equal_range
-	if(searchPreviusLevels)
-		name.level=0;
 	const var_iterator ret_end=Variables.upper_bound(name);
-	name.level=level;
 
 	var_iterator ret=ret_begin;
 	for(;ret!=ret_end;ret++)
@@ -564,10 +507,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool crea
 		assert_and_throw(!mname.ns.empty());
 		//We can use binary search, as the namespace are ordered
 		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.first))
-		{
-			level=ret->first.level;
 			return &ret->second.second;
-		}
 	}
 
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
@@ -650,25 +590,15 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 	return ret->toInt();
 }
 
-obj_var* ASObject::findGettable(const multiname& name, int& level)
+obj_var* ASObject::findGettable(const multiname& name)
 {
-	assert(level==cur_level);
-	obj_var* ret=NULL;
-	int max_level=cur_level;
-	for(int i=max_level;i>=0;i--)
+	obj_var* ret=Variables.findObjVar(name,false,true);
+	if(ret)
 	{
-		//The variable i is automatically moved to the right level
-		ret=Variables.findObjVar(name,i,false,true);
-		if(ret)
-		{
-			//It seems valid for a class to redefine only the setter, so if we can't find
-			//something to get, just go to the previous level
-			if(ret->getter || ret->var)
-			{
-				level=i;
-				break;
-			}
-		}
+		//It seems valid for a class to redefine only the setter, so if we can't find
+		//something to get, it's ok
+		if(!(ret->getter || ret->var))
+			ret=NULL;
 	}
 	return ret;
 }
@@ -677,12 +607,10 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 {
 	check();
 
-	int level=cur_level;
-	obj_var* obj=findGettable(name,level);
+	obj_var* obj=findGettable(name);
 
 	if(obj!=NULL)
 	{
-		assert_and_throw(level!=-1);
 		if(obj->getter)
 		{
 			//Call the getter
@@ -699,19 +627,19 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 			if(enableOverride)
 				getter=getter->getOverride();
 			target->incRef();
-			ASObject* ret=getter->call(target,NULL,0,level);
+			ASObject* ret=getter->call(target,NULL,0,-1);
 			LOG(LOG_CALLS,"End of getter");
 			assert_and_throw(ret);
 			//The returned value is already owned by the caller
 			ret->fake_decRef();
 			//TODO: check
-			return objAndLevel(ret,level);
+			return objAndLevel(ret,-1);
 		}
 		else
 		{
 			assert_and_throw(!obj->setter);
 			assert_and_throw(obj->var);
-			return objAndLevel(obj->var,level);
+			return objAndLevel(obj->var,-1);
 		}
 	}
 	else
@@ -754,7 +682,7 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 
 	obj_var* obj=NULL;
 	int level=cur_level;
-	obj=Variables.findObjVar(name,ns,level,false,true);
+	obj=Variables.findObjVar(name,ns,false,true);
 
 	if(obj!=NULL)
 	{
@@ -895,7 +823,7 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
-		LOG(LOG_NO_INFO,it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << 
+		LOG(LOG_NO_INFO,"[" << it->second.first << "] "<< it->first.name << " " << 
 			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter);
 }
 
@@ -1946,7 +1874,7 @@ void variables_map::initSlot(unsigned int n, int level, const tiny_string& name,
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
 
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name,level));
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name));
 	if(ret.first!=ret.second)
 	{
 		//Check if this namespace is already present
@@ -1989,7 +1917,7 @@ obj_var* variables_map::getValueAt(unsigned int index, int& level)
 		for(unsigned int i=0;i<index;i++)
 			it++;
 
-		level=it->first.level;
+		level=-1;
 		return &it->second.second;
 	}
 	else

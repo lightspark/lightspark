@@ -1463,8 +1463,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			Class_base* cur=c;
 			while(cur)
 			{
-				int level=cur->getLevel();
-				var=cur->Variables.findObjVar(name,"",level,false,true);
+				var=cur->Variables.findObjVar(name,"",false,true);
 				if(var)
 					break;
 				cur=cur->super;
@@ -1495,8 +1494,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			Class_base* cur=c;
 			while(cur)
 			{
-				int level=cur->getLevel();
-				var=cur->Variables.findObjVar(name,"",level,false,true);
+				var=cur->Variables.findObjVar(name,"",false,true);
 				if(var && var->getter)
 					break;
 				cur=cur->super;
@@ -1527,8 +1525,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			Class_base* cur=c;
 			while(cur)
 			{
-				int level=cur->getLevel();
-				var=cur->Variables.findObjVar(name,"",level,false,true);
+				var=cur->Variables.findObjVar(name,"",false,true);
 				if(var && var->setter)
 					break;
 				cur=cur->super;
@@ -1640,8 +1637,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				{
 					if(cur->use_protected)
 					{
-						int l=cur->max_level;
-						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,l,false,true);
+						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,false,true);
 						if(var)
 						{
 							assert(var->getter);
@@ -1703,8 +1699,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				{
 					if(cur->use_protected)
 					{
-						int l=cur->max_level;
-						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,l,false,true);
+						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,false,true);
 						if(var)
 						{
 							assert(var->setter);
@@ -1765,8 +1760,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				{
 					if(cur->use_protected)
 					{
-						int l=cur->max_level;
-						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,l,false,true);
+						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,false,true);
 						if(var)
 						{
 							assert(var->var);

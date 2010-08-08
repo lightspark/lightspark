@@ -428,15 +428,11 @@ class nameAndLevel
 {
 public:
 	tiny_string name;
-	int level;
-	nameAndLevel(const char* s, int l):name(s),level(l){}
-	nameAndLevel(const tiny_string& n, int l):name(n),level(l){}
+	nameAndLevel(const char* s):name(s){}
+	nameAndLevel(const tiny_string& n):name(n){}
 	bool operator<(const nameAndLevel& r) const
 	{
-		if(name==r.name)
-			return level>r.level; //This forces the ordering in descending order
-		else
-			return name<r.name;
+		return name<r.name;
 	}
 };
 
@@ -453,9 +449,9 @@ private:
 	std::vector<var_iterator> slots_vars;
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
 	//Level will be modified with the actual level where the object is found
-	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int& level, bool create, bool searchPreviusLevels);
-	obj_var* findObjVar(const multiname& mname, int& level, bool create, bool searchPreviusLevels);
-	void killObjVar(const multiname& mname, int level);
+	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create, bool searchPreviusLevels);
+	obj_var* findObjVar(const multiname& mname, bool create, bool searchPreviusLevels);
+	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
 		return slots_vars[n-1]->second.second.var;
@@ -496,8 +492,8 @@ private:
 	int cur_level;
 	virtual int _maxlevel();
 	Class_base* prototype;
-	obj_var* findGettable(const multiname& name, int& level) DLL_LOCAL;
-	obj_var* findSettable(const multiname& name, int& level) DLL_LOCAL;
+	obj_var* findGettable(const multiname& name) DLL_LOCAL;
+	obj_var* findSettable(const multiname& name) DLL_LOCAL;
 
 public:
 #ifndef NDEBUG
@@ -609,6 +605,7 @@ public:
 	}
 	void decLevel()
 	{
+		assert(cur_level>0);
 		assert_and_throw(cur_level>0);
 		cur_level--;
 	}

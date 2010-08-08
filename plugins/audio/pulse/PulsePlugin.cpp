@@ -130,16 +130,16 @@ void SoundManager::fill(uint32_t id)
 	}
 }
 
-void PulsePlugin::streamWriteCB(pa_stream *stream, size_t frameSize, AudioStream *th)
+void PulsePlugin::streamWriteCB(pa_stream *stream, size_t askedData, AudioStream *th)
 {
 	int16_t *dest;
 	//Get buffer size
-	if(frameSize==0) //The server can't accept any data now
-		return;
+	size_t frameSize=askedData;
 	//Write data until we have space on the server and we have data available
 	uint32_t totalWritten=0;
 	pa_stream_begin_write(stream, (void**)&dest, &frameSize);
-	cout << "Frame size " << frameSize << endl;
+	if(frameSize==0) //The server can't accept any data now
+		return;
 	do
 	{
 		uint32_t retSize=th->decoder->copyFrame(dest+(totalWritten/2), frameSize);
@@ -150,16 +150,29 @@ void PulsePlugin::streamWriteCB(pa_stream *stream, size_t frameSize, AudioStream
 	}
 	while(frameSize);
 
-	cout << "Callback wrote " << totalWritten << endl;
-	cout << pa_stream_is_suspended(stream) << endl;
-	cout << pa_stream_is_corked(stream) << endl;
 	if(totalWritten)
-	{
 		pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
-		pa_stream_cork(stream, 0, NULL, NULL); //Start the stream, just in case it's still stopped
-	}
 	else
 		pa_stream_cancel_write(stream);
+	//If the server asked for more data we have to sent it the inefficient way
+	if(totalWritten<askedData)
+	{
+		uint32_t rest=askedData-totalWritten;
+		totalWritten=0;
+		dest=new int16_t[rest];
+		do
+		{
+			uint32_t retSize=th->decoder->copyFrame(dest+(totalWritten/2), rest);
+			if(retSize==0) //There is no more data
+				break;
+			totalWritten+=retSize;
+			rest-=retSize;
+		}
+		while(rest);
+		pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
+		delete[] dest;
+	}
+	pa_stream_cork(stream, 0, NULL, NULL); //Start the stream, just in case it's still stopped
 }
 
 void PulsePlugin::freeStream(uint32_t id)

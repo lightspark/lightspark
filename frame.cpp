@@ -51,6 +51,21 @@ void Frame::runScript()
 		sys->currentVm->addEvent(NULL,new FunctionEvent(script));
 }
 
+void Frame::inputRender()
+{
+	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();
+
+	//Render objects of this frame;
+	for(;i!=displayList.end();i++)
+	{
+		assert(i->second);
+
+		//Assign object data from current transformation
+		i->second->setMatrix(i->first.Matrix);
+		i->second->inputRender();
+	}
+}
+
 void Frame::Render()
 {
 	list <pair<PlaceInfo, DisplayObject*> >::iterator i=displayList.begin();

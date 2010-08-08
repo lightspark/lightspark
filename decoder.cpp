@@ -156,7 +156,13 @@ bool FFMpegVideoDecoder::discardFrame()
 {
 	Locker locker(mutex);
 	//We don't want ot block if no frame is available
-	return buffers.nonBlockingPopFront();
+	bool ret=buffers.nonBlockingPopFront();
+	if(flushing && buffers.isEmpty()) //End of our work
+	{
+		status=FLUSHED;
+		flushed.signal();
+	}
+	return ret;
 }
 
 bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
@@ -299,7 +305,13 @@ void AudioDecoder::operator delete(void* addr)
 bool AudioDecoder::discardFrame()
 {
 	//We don't want ot block if no frame is available
-	return samplesBuffer.nonBlockingPopFront();
+	bool ret=samplesBuffer.nonBlockingPopFront();
+	if(flushing && samplesBuffer.isEmpty()) //End of our work
+	{
+		status=FLUSHED;
+		flushed.signal();
+	}
+	return ret;
 }
 
 uint32_t AudioDecoder::copyFrame(int16_t* dest, uint32_t len)
@@ -307,12 +319,18 @@ uint32_t AudioDecoder::copyFrame(int16_t* dest, uint32_t len)
 	assert(dest);
 	if(samplesBuffer.isEmpty())
 		return 0;
-	//Check if we have to just return the size
 	uint32_t frameSize=min(samplesBuffer.front().len,len);
 	memcpy(dest,samplesBuffer.front().current,frameSize);
 	samplesBuffer.front().len-=frameSize;
 	if(samplesBuffer.front().len==0)
+	{
 		samplesBuffer.nonBlockingPopFront();
+		if(flushing && samplesBuffer.isEmpty()) //End of our work
+		{
+			status=FLUSHED;
+			flushed.signal();
+		}
+	}
 	else
 	{
 		samplesBuffer.front().current+=frameSize/2;

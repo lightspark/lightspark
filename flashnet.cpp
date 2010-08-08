@@ -327,22 +327,16 @@ void NetStream::tick()
 {
 	//Advance video and audio to current time, follow the audio stream time
 	//No mutex needed, ticking can happen only when stream is completely ready
+#ifdef AUDIO_BACKEND
 	if(soundStreamId && sys->soundManager->isTimingAvailable())
 	{
-#ifdef AUDIO_BACKEND
 		assert(audioDecoder);
 		streamTime=sys->soundManager->getPlayedTime(soundStreamId);
-#endif
 	}
 	else
+#endif
 		streamTime+=1000/frameRate;
-	//Video has a latency of one frame
-	videoDecoder->skipUntil(streamTime/*-(1000/frameRate)*/);
-/*	if(soundStreamId && audioDecoder->almostFull())
-	{
-		cout << "fill on full" << endl;
-		sys->soundManager->fill(soundStreamId);
-	}*/
+	videoDecoder->skipUntil(streamTime);
 }
 
 bool NetStream::isReady() const
@@ -377,7 +371,10 @@ void NetStream::execute()
 	ThreadProfile* profile=sys->allocateProfiler(RGB(0,0,200));
 	profile->setTag("NetStream");
 	//We need to catch possible EOF and other error condition in the non reliable stream
+	uint32_t decodedAudioBytes=0;
+	//The decoded time is computed from the decodedAudioBytes to avoid drifts
 	uint32_t decodedTime=0;
+	bool waitForFlush=true;
 	try
 	{
 		Chronometer chronometer;
@@ -406,7 +403,6 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
-						uint32_t decodedBytes=0;
 #ifdef AUDIO_BACKEND
 						if(audioDecoder==NULL)
 						{
@@ -429,9 +425,9 @@ void NetStream::execute()
 #else
 									audioDecoder=new NullAudioDecoder();
 #endif
-									decodedBytes=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
+									decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
 									//Adjust timing
-									decodedTime+=decodedBytes/audioDecoder->getBytesPerMSec();
+									decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
 									break;
 								default:
 									throw RunTimeException("Unsupported SoundFormat");
@@ -442,11 +438,11 @@ void NetStream::execute()
 						else
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
-							decodedBytes=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
+							decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
 							if(soundStreamId==0 && audioDecoder->isValid())
 								soundStreamId=sys->soundManager->createStream(audioDecoder);
 							//Adjust timing
-							decodedTime+=decodedBytes/audioDecoder->getBytesPerMSec();
+							decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
 						}
 #endif
 						break;
@@ -514,6 +510,9 @@ void NetStream::execute()
 						frameRate=videoDecoder->frameRate;
 					}
 					sys->addTick(1000/frameRate,this);
+					//Also ask for a render rate equal to the video one (capped at 24)
+					float localRenderRate=dmin(frameRate,24);
+					sys->setRenderRate(localRenderRate);
 				}
 				profile->accountTime(chronometer.checkpoint());
 				if(aborting)
@@ -529,13 +528,25 @@ void NetStream::execute()
 	{
 		cout << e.cause << endl;
 		threadAbort();
+		waitForFlush=false;
 	}
 	catch(JobTerminationException& e)
 	{
+		waitForFlush=false;
 	}
 	catch(exception& e)
 	{
 		LOG(LOG_ERROR, "Exception in reading: "<<e.what());
+	}
+
+	if(waitForFlush)
+	{
+		//Put the decoders in the flushing state and wait for the complete consumption of contents
+		audioDecoder->setFlushing();
+		videoDecoder->setFlushing();
+		
+		audioDecoder->waitFlushed();
+		videoDecoder->waitFlushed();
 	}
 
 	sem_wait(&mutex);

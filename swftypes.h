@@ -70,7 +70,7 @@ class tiny_string
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
 private:
 	enum TYPE { READONLY=0, STATIC, DYNAMIC };
-	#define TS_SIZE 256
+	#define TS_SIZE 64
 	char _buf_static[TS_SIZE];
 	char* buf;
 	TYPE type;
@@ -162,22 +162,32 @@ public:
 	}
 	tiny_string& operator+=(const char* s)
 	{
-		assert_and_throw((strlen(buf)+strlen(s)+1)<TS_SIZE);
+		assert_and_throw((strlen(buf)+strlen(s)+1)<=4096);
 		if(type==READONLY)
 		{
 			char* tmp=buf;
 			makePrivateCopy(tmp);
+		}
+		if(type==STATIC && (strlen(buf)+strlen(s)+1)>TS_SIZE)
+		{
+			createBuffer();
+			strcpy(buf,_buf_static);
 		}
 		strcat(buf,s);
 		return *this;
 	}
 	tiny_string& operator+=(const tiny_string& r)
 	{
-		assert_and_throw((strlen(buf)+strlen(r.buf)+1)<TS_SIZE);
+		assert_and_throw((strlen(buf)+strlen(r.buf)+1)<=4096);
 		if(type==READONLY)
 		{
 			char* tmp=buf;
 			makePrivateCopy(tmp);
+		}
+		if(type==STATIC && (strlen(buf)+strlen(r.buf)+1)>TS_SIZE)
+		{
+			createBuffer();
+			strcpy(buf,_buf_static);
 		}
 		strcat(buf,r.buf);
 		return *this;

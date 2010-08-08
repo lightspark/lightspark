@@ -220,32 +220,19 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 	position=0;
 }
 
-void Timer::execute()
+void Timer::tick()
 {
-	while(running)
+	TimerEvent* e=Class<TimerEvent>::getInstanceS("timer");
+	sys->currentVm->addEvent(this,e);
+	e->decRef();
+	if(repeatCount==0)
+		sys->addWait(delay,this);
+	else
 	{
-		compat_msleep(delay);
-		if(running)
-		{
-			sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS("timer"));
-			//Do not spam timer events until this is done
-			SynchronizationEvent* se=new SynchronizationEvent;
-			bool added=sys->currentVm->addEvent(NULL,se);
-			if(!added)
-			{
-				se->decRef();
-				throw RunTimeException("Could not add event");
-			}
-			se->wait();
-			se->decRef();
-		}
+		repeatCount--;
+		if(repeatCount)
+			sys->addWait(delay,this);
 	}
-}
-
-void Timer::threadAbort()
-{
-	running=false;
-	throw UnsupportedException("Timer::threadAbort");
 }
 
 void Timer::sinit(Class_base* c)
@@ -274,7 +261,7 @@ ASFUNCTIONBODY(Timer,start)
 	Timer* th=static_cast<Timer*>(obj);
 	th->running=true;
 	th->incRef();
-	sys->addJob(th);
+	sys->addWait(th->delay,th);
 	return NULL;
 }
 

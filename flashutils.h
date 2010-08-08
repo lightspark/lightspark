@@ -24,6 +24,7 @@
 #include "swftypes.h"
 #include "flashevents.h"
 #include "thread_pool.h"
+#include "timer.h"
 
 #include <map>
 
@@ -68,11 +69,10 @@ public:
 	bool isEqual(ASObject* r);
 };
 
-class Timer: public EventDispatcher, public IThreadJob
+class Timer: public EventDispatcher, public ITickJob
 {
 private:
-	void execute();
-	void threadAbort();
+	void tick();
 protected:
 	uint32_t delay;
 	uint32_t repeatCount;

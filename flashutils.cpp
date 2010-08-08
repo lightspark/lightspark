@@ -544,7 +544,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::setProperty");
-	ASObject* ret=f->call(this,args,2,getLevel());
+	ASObject* ret=f->call(this,args,2);
 	assert_and_throw(ret==NULL);
 	implEnable=true;
 }
@@ -572,7 +572,7 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, b
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::getProperty");
-	ASObject* ret=f->call(this,&arg,1,getLevel());
+	ASObject* ret=f->call(this,&arg,1);
 	assert_and_throw(ret);
 	implEnable=true;
 	return ret;

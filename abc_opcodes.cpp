@@ -294,7 +294,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 			//We now suppress special handling
 			LOG(LOG_CALLS,"Proxy::callProperty");
-			ASObject* ret=f->call(obj,proxyArgs,m+1,obj->getLevel());
+			ASObject* ret=f->call(obj,proxyArgs,m+1);
 			th->runtime_stack_push(ret);
 
 			obj->decRef();
@@ -342,11 +342,11 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 				assert_and_throw(p);
 				assert_and_throw(p->implEnable);
 				p->implEnable=false;
-				ret=f->call(obj,args,m,-1);
+				ret=f->call(obj,args,m);
 				p->implEnable=true;
 			}
 			else
-				ret=f->call(obj,args,m,-1);
+				ret=f->call(obj,args,m);
 			th->runtime_stack_push(ret);
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
@@ -668,7 +668,7 @@ void ABCVm::construct(call_context* th, int m)
 #endif
 				ret->incRef();
 				assert_and_throw(sf->closure_this==NULL);
-				ASObject* ret2=sf->call(ret,args,m,0);
+				ASObject* ret2=sf->call(ret,args,m);
 				if(ret2)
 					ret2->decRef();
 
@@ -799,7 +799,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 
 			//We now suppress special handling
 			LOG(LOG_CALLS,"Proxy::callProperty");
-			ASObject* ret=f->call(obj,proxyArgs,m+1,obj->getLevel());
+			ASObject* ret=f->call(obj,proxyArgs,m+1);
 			if(ret)
 				ret->decRef();
 
@@ -837,11 +837,11 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 				assert_and_throw(p);
 				assert_and_throw(p->implEnable);
 				p->implEnable=false;
-				ret=f->call(obj,args,m,-1);
+				ret=f->call(obj,args,m);
 				p->implEnable=true;
 			}
 			else
-				ret=f->call(obj,args,m,-1);
+				ret=f->call(obj,args,m);
 			if(ret)
 				ret->decRef();
 		}
@@ -1603,7 +1603,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 		{
 			IFunction* f=static_cast<IFunction*>(o);
 			obj->incRef();
-			ASObject* ret=f->call(obj,args,m,-1);
+			ASObject* ret=f->call(obj,args,m);
 			th->runtime_stack_push(ret);
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
@@ -1686,7 +1686,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		{
 			IFunction* f=static_cast<IFunction*>(o);
 			obj->incRef();
-			ASObject* ret=f->call(obj,args,m,-1);
+			ASObject* ret=f->call(obj,args,m);
 			if(ret)
 				ret->decRef();
 		}
@@ -2019,7 +2019,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 #endif
 			ret->incRef();
 			assert_and_throw(sf->closure_this==NULL);
-			ASObject* ret2=sf->call(ret,args,m,0);
+			ASObject* ret2=sf->call(ret,args,m);
 			if(ret2)
 				ret2->decRef();
 
@@ -2290,7 +2290,7 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG(LOG_CALLS,"Calling Class init " << ret);
 	ret->incRef();
 	//Class init functions are called with global as this
-	ASObject* ret2=cinit->call(ret,NULL,0,ret->max_level);
+	ASObject* ret2=cinit->call(ret,NULL,0);
 	assert_and_throw(ret2==NULL);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
@@ -2352,7 +2352,7 @@ void ABCVm::call(call_context* th, int m)
 	{
 		IFunction* func=static_cast<IFunction*>(f);
 		//TODO: check for correct level, member function are already binded
-		ASObject* ret=func->call(obj,args,m,0);
+		ASObject* ret=func->call(obj,args,m);
 		//Push the value only if not null
 		if(ret)
 			th->runtime_stack_push(ret);

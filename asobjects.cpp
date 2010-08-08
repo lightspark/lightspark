@@ -1193,7 +1193,7 @@ ASFUNCTIONBODY(IFunction,apply)
 	}
 
 	args[0]->incRef();
-	ASObject* ret=th->call(args[0],new_args,len,0);
+	ASObject* ret=th->call(args[0],new_args,len);
 	delete[] new_args;
 	return ret;
 }
@@ -1203,7 +1203,7 @@ SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL
 //	class_index=-2;
 }
 
-ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs, int level)
+ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs)
 {
 	const int hit_threshold=10;
 	if(mi->body==NULL)
@@ -1224,9 +1224,8 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	uint32_t args_len=mi->numArgs();
 	int passedToLocals=imin(numArgs,args_len);
 	uint32_t passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
-	int realLevel=(closure_level!=-1)?closure_level:level;
-	if(realLevel==-1) //If realLevel is not set, keep the object level
-		realLevel=obj->getLevel();
+	//We use the stored level or the object's level
+	int realLevel=(closure_level!=-1)?closure_level:obj->getLevel();
 
 	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
 	uint32_t i=passedToLocals;
@@ -1318,7 +1317,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	return ret;
 }
 
-ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level)
+ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args)
 {
 	ASObject* ret;
 	if(bound && closure_this)
@@ -1843,7 +1842,7 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	{
 		LOG(LOG_CALLS,"Calling Instance init " << class_name);
 		target->incRef();
-		ASObject* ret=constructor->call(target,args,argslen,max_level);
+		ASObject* ret=constructor->call(target,args,argslen);
 		assert_and_throw(ret==NULL);
 	}
 }
@@ -1991,7 +1990,7 @@ void Class_base::linkInterface(Class_base* c) const
 	if(constructor)
 	{
 		LOG(LOG_CALLS,"Calling interface init for " << class_name);
-		ASObject* ret=constructor->call(c,NULL,0,max_level);
+		ASObject* ret=constructor->call(c,NULL,0);
 		assert_and_throw(ret==NULL);
 	}
 }

@@ -51,7 +51,7 @@ tiny_string ASObject::toString(bool debugMsg)
 		if(obj_toString->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f_toString=static_cast<IFunction*>(obj_toString);
-			ASObject* ret=f_toString->call(this,NULL,0,-1);
+			ASObject* ret=f_toString->call(this,NULL,0);
 			assert_and_throw(ret->getObjectType()==T_STRING);
 			return ret->toString();
 		}
@@ -86,8 +86,8 @@ TRISTATE ASObject::isLess(ASObject* r)
 		IFunction* f1=static_cast<IFunction*>(obj1);
 		IFunction* f2=static_cast<IFunction*>(obj2);
 
-		ASObject* ret1=f1->call(this,NULL,0,-1);
-		ASObject* ret2=f2->call(r,NULL,0,-1);
+		ASObject* ret1=f1->call(this,NULL,0);
+		ASObject* ret2=f2->call(r,NULL,0);
 
 		LOG(LOG_CALLS,"Overloaded isLess");
 		return ret1->isLess(ret2);
@@ -96,7 +96,6 @@ TRISTATE ASObject::isLess(ASObject* r)
 	LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	if(prototype)
 		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
-	__asm__("int $3");
 	throw RunTimeException("Not handled less comparison for objects");
 	return TFALSE;
 }
@@ -164,7 +163,7 @@ bool ASObject::isEqual(ASObject* r)
 		assert_and_throw(func_equals->getObjectType()==T_FUNCTION);
 		IFunction* func=static_cast<IFunction*>(func_equals);
 
-		ASObject* ret=func->call(this,&r,1,-1);
+		ASObject* ret=func->call(this,&r,1);
 		assert_and_throw(ret->getObjectType()==T_BOOLEAN);
 
 		LOG(LOG_CALLS,"Overloaded isEqual");
@@ -186,8 +185,8 @@ bool ASObject::isEqual(ASObject* r)
 		IFunction* f1=static_cast<IFunction*>(obj1);
 		IFunction* f2=static_cast<IFunction*>(obj2);
 
-		ASObject* ret1=f1->call(this,NULL,0,-1);
-		ASObject* ret2=f2->call(r,NULL,0,-1);
+		ASObject* ret1=f1->call(this,NULL,0);
+		ASObject* ret2=f2->call(r,NULL,0);
 
 		LOG(LOG_CALLS,"Overloaded isEqual");
 		return ret1->isEqual(ret2);
@@ -390,7 +389,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 		//One argument can be passed without creating an array
 		ASObject* target=(base)?base:this;
 		target->incRef();
-		ASObject* ret=setter->call(target,&o,1,-1);
+		ASObject* ret=setter->call(target,&o,1);
 		assert_and_throw(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
 	}
@@ -419,7 +418,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 		IFunction* setter=obj->setter->getOverride();
 		incRef();
 		//One argument can be passed without creating an array
-		ASObject* ret=setter->call(this,&o,1,-1);
+		ASObject* ret=setter->call(this,&o,1);
 		assert_and_throw(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
 	}
@@ -627,7 +626,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 			if(enableOverride)
 				getter=getter->getOverride();
 			target->incRef();
-			ASObject* ret=getter->call(target,NULL,0,-1);
+			ASObject* ret=getter->call(target,NULL,0);
 			LOG(LOG_CALLS,"End of getter");
 			assert_and_throw(ret);
 			//The returned value is already owned by the caller
@@ -680,7 +679,6 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 	check();
 
 	obj_var* obj=NULL;
-	int level=cur_level;
 	obj=Variables.findObjVar(name,ns,false);
 
 	if(obj!=NULL)
@@ -691,7 +689,7 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 			LOG(LOG_CALLS,"Calling the getter");
 			IFunction* getter=obj->getter->getOverride();
 			incRef();
-			ASObject* ret=getter->call(this,NULL,0,level);
+			ASObject* ret=getter->call(this,NULL,0);
 			LOG(LOG_CALLS,"End of getter");
 			//The variable is already owned by the caller
 			ret->fake_decRef();
@@ -1933,7 +1931,7 @@ ASObject* ASObject::getValueAt(int index)
 		LOG(LOG_CALLS,"Calling the getter");
 		IFunction* getter=obj->getter->getOverride();
 		incRef();
-		ret=getter->call(this,NULL,0,-1);
+		ret=getter->call(this,NULL,0);
 		ret->fake_decRef();
 		LOG(LOG_CALLS,"End of getter");
 	}

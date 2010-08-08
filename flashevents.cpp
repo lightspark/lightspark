@@ -379,9 +379,9 @@ void EventDispatcher::handleEvent(Event* e)
 		e->incRef();
 		//tmpListener is now also owned by the vector
 		tmpListener[i].f->incRef();
-		//If the f is a class method, both the 'this' and level are ignored
+		//If the f is a class method, the 'this' is ignored
 		ASObject* const arg0=e;
-		ASObject* ret=tmpListener[i].f->call(this,&arg0,1,0);
+		ASObject* ret=tmpListener[i].f->call(this,&arg0,1);
 		if(ret)
 			ret->decRef();
 		//And now no more, f can also be deleted

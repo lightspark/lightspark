@@ -1598,8 +1598,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 		case traits_info::Class:
 		{
 			//Check if this already defined in upper levels
-			objAndLevel tmpo=obj->getVariableByQName(name,ns,true);
-			if(tmpo.obj)
+			ASObject* tmpo=obj->getVariableByQName(name,ns,true);
+			if(tmpo)
 				return;
 
 			ASObject* ret;
@@ -1802,8 +1802,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 		case traits_info::Const:
 		{
 			//Check if this already defined in upper levels
-			objAndLevel tmpo=obj->getVariableByQName(name,ns,true);
-			if(tmpo.obj)
+			ASObject* tmpo=obj->getVariableByQName(name,ns,true);
+			if(tmpo)
 				return;
 
 			ASObject* ret;
@@ -1817,7 +1817,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			}
 			else
 			{
-				ret=obj->getVariableByQName(name,ns).obj;
+				ret=obj->getVariableByQName(name,ns);
 				assert_and_throw(ret==NULL);
 				
 				if(deferred_initialization)
@@ -1835,8 +1835,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 		case traits_info::Slot:
 		{
 			//Check if this already defined in upper levels
-			objAndLevel tmpo=obj->getVariableByQName(name,ns,true);
-			if(tmpo.obj)
+			ASObject* tmpo=obj->getVariableByQName(name,ns,true);
+			if(tmpo)
 				return;
 
 			multiname* type=getMultiname(t->type_name,NULL);
@@ -1854,8 +1854,8 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			{
 				//else fallthrough
 				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
-				objAndLevel previous_definition=obj->getVariableByQName(name,ns);
-				assert_and_throw(!previous_definition.obj);
+				ASObject* previous_definition=obj->getVariableByQName(name,ns);
+				assert_and_throw(!previous_definition);
 				//if(previous_definition.obj)
 				//	assert_and_throw(previous_definition.level<obj->getLevel());
 

@@ -103,7 +103,7 @@ ASFUNCTIONBODY(URLLoader,load)
 	assert_and_throw(arg->getPrototype()==Class<URLRequest>::getClass());
 	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
 	th->url=urlRequest->url;
-	ASObject* data=arg->getVariableByQName("data","").obj;
+	ASObject* data=arg->getVariableByQName("data","");
 	if(data)
 	{
 		if(data->getPrototype()==Class<URLVariables>::getClass())

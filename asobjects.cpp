@@ -386,7 +386,7 @@ intptr_t Array::getVariableByMultiname_i(const multiname& name)
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-objAndLevel Array::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	if(skip_impl || !implEnable)
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
@@ -417,7 +417,7 @@ objAndLevel Array::getVariableByMultiname(const multiname& name, bool skip_impl,
 				ret->fake_decRef();
 				break;
 		}
-		return objAndLevel(ret);
+		return ret;
 	}
 	else
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
@@ -575,11 +575,11 @@ void Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, A
 	}
 }
 
-objAndLevel Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)
+ASObject* Array::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)
 {
 	assert_and_throw(implEnable);
 	throw UnsupportedException("Array::getVariableByQName not completely implemented");
-	return objAndLevel(NULL);
+	return NULL;
 /*	ASObject* ret;
 	bool number=true;
 	owner=NULL;
@@ -1954,9 +1954,7 @@ const std::vector<Class_base*>& Class_base::getInterfaces() const
 		//Recursively get interfaces implemented by this interface
 		for(unsigned int i=0;i<interfaces.size();i++)
 		{
-			ASObject* interface_obj=getGlobal()->getVariableByMultiname(interfaces[i]).obj;
-			if(!(interface_obj && interface_obj->getObjectType()==T_CLASS))
-				__asm__("int $3");
+			ASObject* interface_obj=getGlobal()->getVariableByMultiname(interfaces[i]);
 			assert_and_throw(interface_obj && interface_obj->getObjectType()==T_CLASS);
 			Class_base* inter=static_cast<Class_base*>(interface_obj);
 
@@ -2083,7 +2081,7 @@ ASFUNCTIONBODY(Namespace,_constructor)
 
 void InterfaceClass::lookupAndLink(ASObject* o, const tiny_string& name, const tiny_string& interfaceNs)
 {
-	ASObject* ret=o->getVariableByQName(name,"").obj;
+	ASObject* ret=o->getVariableByQName(name,"");
 	assert_and_throw(ret);
 	ret->incRef();
 	o->setVariableByQName(name,interfaceNs,ret);

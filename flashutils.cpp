@@ -121,7 +121,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	return NULL;
 }
 
-objAndLevel ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+ASObject* ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(!skip_impl);
 	assert_and_throw(implEnable);
@@ -134,7 +134,7 @@ objAndLevel ByteArray::getVariableByMultiname(const multiname& name, bool skip_i
 	assert_and_throw(index<len);
 	ASObject* ret=abstract_i(bytes[index]);
 
-	return objAndLevel(ret);
+	return ret;
 }
 
 intptr_t ByteArray::getVariableByMultiname_i(const multiname& name)
@@ -328,29 +328,29 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	stringToQName(tmp,name,ns);
 
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
-	objAndLevel o=getGlobal()->getVariableByQName(name,ns);
+	ASObject* o=getGlobal()->getVariableByQName(name,ns);
 
 	//TODO: should raise an exception, for now just return undefined	
-	if(o.obj==NULL)
+	if(o==NULL)
 	{
 		LOG(LOG_ERROR,"Definition for '" << ns << " :: " << name << "' not found.");
 		return new Undefined;
 	}
 
 	//Check if the object has to be defined
-	if(o.obj->getObjectType()==T_DEFINABLE)
+	if(o->getObjectType()==T_DEFINABLE)
 	{
 		LOG(LOG_CALLS,"We got an object not yet valid");
-		Definable* d=static_cast<Definable*>(o.obj);
+		Definable* d=static_cast<Definable*>(o);
 		d->define(getGlobal());
 		o=getGlobal()->getVariableByQName(name,ns);
 	}
 
-	assert_and_throw(o.obj->getObjectType()==T_CLASS);
+	assert_and_throw(o->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
-	o.obj->incRef();
-	return o.obj;
+	o->incRef();
+	return o;
 }
 
 ASFUNCTIONBODY(lightspark,getTimer)
@@ -427,7 +427,7 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 	tmp->name_o=NULL;
 }
 
-objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(!skip_impl);
 	assert_and_throw(implEnable);
@@ -463,7 +463,7 @@ objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_
 					//Value found
 					ret=it->second;
 					ret->incRef();
-					return objAndLevel(ret);
+					return ret;
 				}
 			}
 		}
@@ -473,7 +473,7 @@ objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_
 	else
 		throw UnsupportedException("Unsupported name kind on Dictionary::getVariableByMultiname");
 
-	return objAndLevel(ret);
+	return ret;
 }
 
 bool Dictionary::hasNext(unsigned int& index, bool& out)
@@ -525,17 +525,17 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 	}
 
 	//Check if there is a custom setter defined, skipping implementation to avoid recursive calls
-	objAndLevel proxySetter=getVariableByQName("setProperty",flash_proxy,true);
+	ASObject* proxySetter=getVariableByQName("setProperty",flash_proxy,true);
 
-	if(proxySetter.obj==NULL)
+	if(proxySetter==NULL)
 	{
 		ASObject::setVariableByMultiname(name,o,enableOverride);
 		return;
 	}
 
-	assert_and_throw(proxySetter.obj->getObjectType()==T_FUNCTION);
+	assert_and_throw(proxySetter->getObjectType()==T_FUNCTION);
 
-	IFunction* f=static_cast<IFunction*>(proxySetter.obj);
+	IFunction* f=static_cast<IFunction*>(proxySetter);
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 	ASObject* args[2];
@@ -549,7 +549,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 	implEnable=true;
 }
 
-objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(!skip_impl);
 	//It seems that various kind of implementation works only with the empty namespace
@@ -558,14 +558,14 @@ objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl,
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
-	objAndLevel o=getVariableByQName("getProperty",flash_proxy,true);
+	ASObject* o=getVariableByQName("getProperty",flash_proxy,true);
 
-	if(o.obj==NULL)
+	if(o==NULL)
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 
-	assert_and_throw(o.obj->getObjectType()==T_FUNCTION);
+	assert_and_throw(o->getObjectType()==T_FUNCTION);
 
-	IFunction* f=static_cast<IFunction*>(o.obj);
+	IFunction* f=static_cast<IFunction*>(o);
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
@@ -575,5 +575,5 @@ objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl,
 	ASObject* ret=f->call(this,&arg,1,getLevel());
 	assert_and_throw(ret);
 	implEnable=true;
-	return objAndLevel(ret);
+	return ret;
 }

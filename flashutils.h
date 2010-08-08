@@ -54,13 +54,13 @@ public:
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByName not supported for ByteArray");
-		return objAndLevel(NULL);
+		return NULL;
 	}
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false);
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
@@ -96,13 +96,13 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByQName not supported for Dictionary");
-		return objAndLevel(NULL);
+		return NULL;
 	}
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);
@@ -141,14 +141,14 @@ public:
 	static void sinit(Class_base*);
 //	static void buildTraits(ASObject* o);
 //	ASFUNCTION(_constructor);
-	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
 	{
 		if(!implEnable || skip_impl)
 			return ASObject::getVariableByQName(name,ns,skip_impl);
 		throw RunTimeException("Proxy::getVariableByQName");
-		return objAndLevel(NULL);
+		return NULL;
 	}
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{
 		assert_and_throw(implEnable);

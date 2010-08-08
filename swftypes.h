@@ -416,13 +416,6 @@ template<class T>
 	void put(ASObject* o);
 };
 
-class objAndLevel
-{
-public:
-	ASObject* obj;
-	objAndLevel(ASObject* o):obj(o){}
-};
-
 class nameAndLevel
 {
 public:
@@ -557,9 +550,9 @@ public:
 	}
 	virtual ASObject* getVariableByString(const std::string& name);
 	//The enableOverride parameter is set to false in setSuper, getSuper and callSuper
-	virtual objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
+	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
-	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
+	virtual ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
 	virtual void deleteVariableByMultiname(const multiname& name);
@@ -603,7 +596,6 @@ public:
 	}
 	void decLevel()
 	{
-		assert(cur_level>0);
 		assert_and_throw(cur_level>0);
 		cur_level--;
 	}

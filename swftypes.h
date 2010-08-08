@@ -456,6 +456,7 @@ friend class Manager;
 friend class ABCVm;
 friend class ABCContext;
 friend class Class_base; //Needed for forced cleanup
+friend class IFunction; //Needed for clone
 CLASSBUILDABLE(ASObject);
 protected:
 	//ASObject* asprototype; //HUMM.. ok the prototype, actually class, should be renamed

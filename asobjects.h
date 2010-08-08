@@ -227,6 +227,8 @@ public:
 			{
 				//Generate a copy
 				ret=clone();
+				ret->prototype=NULL; //Drop the prototype and set it ex novo
+				ret->setPrototype(getPrototype());
 			}
 			ret->bound=true;
 			ret->closure_this=c;

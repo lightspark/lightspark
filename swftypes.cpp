@@ -219,11 +219,10 @@ double ASObject::toNumber()
 
 obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, bool create)
 {
-	nameAndLevel name(n);
-	const var_iterator ret_begin=Variables.lower_bound(name);
+	const var_iterator ret_begin=Variables.lower_bound(n);
 	//This actually look for the first different name, if we accept also previous levels
 	//Otherwise we are just doing equal_range
-	const var_iterator ret_end=Variables.upper_bound(name);
+	const var_iterator ret_end=Variables.upper_bound(n);
 
 	var_iterator ret=ret_begin;
 	for(;ret!=ret_end;ret++)
@@ -235,7 +234,7 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, 
 	//Name not present, insert it if we have to create it
 	if(create)
 	{
-		var_iterator inserted=Variables.insert(ret_begin,make_pair(nameAndLevel(n), make_pair(ns, obj_var() ) ) );
+		var_iterator inserted=Variables.insert(ret_begin,make_pair(n, make_pair(ns, obj_var() ) ) );
 		return &inserted->second.second;
 	}
 	else
@@ -434,17 +433,17 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 
 void variables_map::killObjVar(const multiname& mname)
 {
-	nameAndLevel name("");
+	tiny_string name;
 	switch(mname.name_type)
 	{
 		case multiname::NAME_INT:
-			name.name=tiny_string(mname.name_i);
+			name=tiny_string(mname.name_i);
 			break;
 		case multiname::NAME_NUMBER:
-			name.name=tiny_string(mname.name_d);
+			name=tiny_string(mname.name_d);
 			break;
 		case multiname::NAME_STRING:
-			name.name=mname.name_s;
+			name=mname.name_s;
 			break;
 		default:
 			assert_and_throw("Unexpected name kind" && false);
@@ -475,20 +474,20 @@ void variables_map::killObjVar(const multiname& mname)
 
 obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 {
-	nameAndLevel name("");
+	tiny_string name;
 	switch(mname.name_type)
 	{
 		case multiname::NAME_INT:
-			name.name=tiny_string(mname.name_i);
+			name=tiny_string(mname.name_i);
 			break;
 		case multiname::NAME_NUMBER:
-			name.name=tiny_string(mname.name_d);
+			name=tiny_string(mname.name_d);
 			break;
 		case multiname::NAME_STRING:
-			name.name=mname.name_s;
+			name=mname.name_s;
 			break;
 		case multiname::NAME_OBJECT:
-			name.name=mname.name_o->toString();
+			name=mname.name_o->toString();
 			break;
 		default:
 			assert_and_throw("Unexpected name kind" && false);
@@ -717,7 +716,7 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 		string cur(it->second.first.raw_buf());
 		if(!cur.empty())
 			cur+='.';
-		cur+=it->first.name.raw_buf();
+		cur+=it->first.raw_buf();
 		if(cur==name)
 		{
 			if(it->second.second.getter)
@@ -792,14 +791,14 @@ void ASObject::check() const
 			break;
 
 		//No double definition of a single variable should exist
-		if(it->first.name==next->first.name && it->second.first==next->second.first)
+		if(it->first==next->first && it->second.first==next->second.first)
 		{
 			if(it->second.second.var==NULL && next->second.second.var==NULL)
 				continue;
 
 			if(it->second.second.var==NULL || next->second.second.var==NULL)
 			{
-				cout << it->first.name << endl;
+				cout << it->first << endl;
 				cout << it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter << endl;
 				cout << next->second.second.var << ' ' << next->second.second.setter << ' ' << next->second.second.getter << endl;
 				abort();
@@ -807,7 +806,7 @@ void ASObject::check() const
 
 			if(it->second.second.var->getObjectType()!=T_FUNCTION || next->second.second.var->getObjectType()!=T_FUNCTION)
 			{
-				cout << it->first.name << endl;
+				cout << it->first << endl;
 				abort();
 			}
 		}
@@ -820,7 +819,7 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
-		LOG(LOG_NO_INFO,"[" << it->second.first << "] "<< it->first.name << " " << 
+		LOG(LOG_NO_INFO,"[" << it->second.first << "] "<< it->first << " " << 
 			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter);
 }
 
@@ -1871,7 +1870,7 @@ void variables_map::initSlot(unsigned int n, const tiny_string& name, const tiny
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
 
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name));
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	if(ret.first!=ret.second)
 	{
 		//Check if this namespace is already present
@@ -1951,7 +1950,7 @@ tiny_string variables_map::getNameAt(unsigned int index)
 		for(unsigned int i=0;i<index;i++)
 			it++;
 
-		return tiny_string(it->first.name);
+		return it->first;
 	}
 	else
 		throw RunTimeException("getNameAt out of bounds");

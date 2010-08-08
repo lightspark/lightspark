@@ -232,7 +232,6 @@ public:
 			ret->closure_this=c;
 			if(c)
 				c->incRef();
-			//ret->closure_level=level;
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}

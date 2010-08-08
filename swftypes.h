@@ -416,18 +416,6 @@ template<class T>
 	void put(ASObject* o);
 };
 
-class nameAndLevel
-{
-public:
-	tiny_string name;
-	nameAndLevel(const char* s):name(s){}
-	nameAndLevel(const tiny_string& n):name(n){}
-	bool operator<(const nameAndLevel& r) const
-	{
-		return name<r.name;
-	}
-};
-
 class variables_map
 {
 //ASObject knows how to use its variable_map
@@ -435,9 +423,9 @@ friend class ASObject;
 //ABCContext uses findObjVar when building and linking traits
 friend class ABCContext;
 private:
-	std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> > Variables;
-	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::iterator var_iterator;
-	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::const_iterator const_var_iterator;
+	std::multimap<tiny_string,std::pair<tiny_string, obj_var> > Variables;
+	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
+	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
 	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create);

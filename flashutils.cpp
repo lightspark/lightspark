@@ -49,15 +49,15 @@ ByteArray::~ByteArray()
 
 void ByteArray::sinit(Class_base* c)
 {
+	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
+	c->setGetterByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable));
+	c->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition));
+	c->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition));
+	c->setVariableByQName("readBytes","",Class<IFunction>::getFunction(readBytes));
 }
 
 void ByteArray::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
-	o->setGetterByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable));
-	o->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition));
-	o->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition));
-	o->setVariableByQName("readBytes","",Class<IFunction>::getFunction(readBytes));
 }
 
 uint8_t* ByteArray::getBuffer(unsigned int size)
@@ -121,7 +121,7 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	return NULL;
 }
 
-objAndLevel ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+ASObject* ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(!skip_impl);
 	assert_and_throw(implEnable);
@@ -129,12 +129,12 @@ objAndLevel ByteArray::getVariableByMultiname(const multiname& name, bool skip_i
 	assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride,base);
 
 	assert_and_throw(index<len);
 	ASObject* ret=abstract_i(bytes[index]);
 
-	return objAndLevel(ret,0);
+	return ret;
 }
 
 intptr_t ByteArray::getVariableByMultiname_i(const multiname& name)
@@ -148,29 +148,29 @@ intptr_t ByteArray::getVariableByMultiname_i(const multiname& name)
 	return bytes[index];
 }
 
-void ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
+void ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl)
 {
 	if(!implEnable || skip_impl)
 	{
-		ASObject::setVariableByQName(name,ns,o,find_back,skip_impl);
+		ASObject::setVariableByQName(name,ns,o,skip_impl);
 		return;
 	}
 	
 	unsigned int index=0;
 	if(!Array::isValidQName(name,ns,index))
 	{
-		ASObject::setVariableByQName(name,ns,o,find_back,skip_impl);
+		ASObject::setVariableByQName(name,ns,o,skip_impl);
 		return;
 	}
 	throw UnsupportedException("ByteArray::setVariableByQName not completely implemented");
 }
 
-void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
+void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,enableOverride);
+		return ASObject::setVariableByMultiname(name,o,enableOverride,base);
 
 	if(index>=len)
 	{
@@ -220,37 +220,26 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 	position=0;
 }
 
-void Timer::execute()
+void Timer::tick()
 {
-	while(running)
+	TimerEvent* e=Class<TimerEvent>::getInstanceS("timer");
+	sys->currentVm->addEvent(this,e);
+	e->decRef();
+	if(repeatCount==0)
+		sys->addWait(delay,this);
+	else
 	{
-		compat_msleep(delay);
-		if(running)
-		{
-			sys->currentVm->addEvent(this,Class<TimerEvent>::getInstanceS("timer"));
-			//Do not spam timer events until this is done
-			SynchronizationEvent* se=new SynchronizationEvent;
-			bool added=sys->currentVm->addEvent(NULL,se);
-			if(!added)
-			{
-				se->decRef();
-				throw RunTimeException("Could not add event");
-			}
-			se->wait();
-			se->decRef();
-		}
+		repeatCount--;
+		if(repeatCount)
+			sys->addWait(delay,this);
 	}
-}
-
-void Timer::threadAbort()
-{
-	running=false;
-	throw UnsupportedException("Timer::threadAbort");
 }
 
 void Timer::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<EventDispatcher>::getClass();
+	c->max_level=c->super->max_level+1;
 }
 
 ASFUNCTIONBODY(Timer,_constructor)
@@ -272,7 +261,7 @@ ASFUNCTIONBODY(Timer,start)
 	Timer* th=static_cast<Timer*>(obj);
 	th->running=true;
 	th->incRef();
-	sys->addJob(th);
+	sys->addWait(th->delay,th);
 	return NULL;
 }
 
@@ -326,29 +315,29 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	stringToQName(tmp,name,ns);
 
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
-	objAndLevel o=getGlobal()->getVariableByQName(name,ns);
+	ASObject* o=getGlobal()->getVariableByQName(name,ns);
 
 	//TODO: should raise an exception, for now just return undefined	
-	if(o.obj==NULL)
+	if(o==NULL)
 	{
 		LOG(LOG_ERROR,"Definition for '" << ns << " :: " << name << "' not found.");
 		return new Undefined;
 	}
 
 	//Check if the object has to be defined
-	if(o.obj->getObjectType()==T_DEFINABLE)
+	if(o->getObjectType()==T_DEFINABLE)
 	{
 		LOG(LOG_CALLS,"We got an object not yet valid");
-		Definable* d=static_cast<Definable*>(o.obj);
+		Definable* d=static_cast<Definable*>(o);
 		d->define(getGlobal());
 		o=getGlobal()->getVariableByQName(name,ns);
 	}
 
-	assert_and_throw(o.obj->getObjectType()==T_CLASS);
+	assert_and_throw(o->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
-	o.obj->incRef();
-	return o.obj;
+	o->incRef();
+	return o;
 }
 
 ASFUNCTIONBODY(lightspark,getTimer)
@@ -387,7 +376,7 @@ void Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	Dictionary::setVariableByMultiname(name,abstract_i(value),true);
 }
 
-void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
+void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
@@ -425,7 +414,7 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 	tmp->name_o=NULL;
 }
 
-objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(!skip_impl);
 	assert_and_throw(implEnable);
@@ -461,7 +450,7 @@ objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_
 					//Value found
 					ret=it->second;
 					ret->incRef();
-					return objAndLevel(ret,0);
+					return ret;
 				}
 			}
 		}
@@ -471,7 +460,7 @@ objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_
 	else
 		throw UnsupportedException("Unsupported name kind on Dictionary::getVariableByMultiname");
 
-	return objAndLevel(ret,0);
+	return ret;
 }
 
 bool Dictionary::hasNext(unsigned int& index, bool& out)
@@ -512,28 +501,28 @@ void Proxy::sinit(Class_base* c)
 	c->setConstructor(NULL);
 }
 
-void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
+void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(implEnable);
 	//If a variable named like this already exist, return that
 	if(hasPropertyByMultiname(name) || !implEnable)
 	{
-		ASObject::setVariableByMultiname(name,o,enableOverride);
+		ASObject::setVariableByMultiname(name,o,enableOverride,base);
 		return;
 	}
 
 	//Check if there is a custom setter defined, skipping implementation to avoid recursive calls
-	objAndLevel proxySetter=getVariableByQName("setProperty",flash_proxy,true);
+	ASObject* proxySetter=getVariableByQName("setProperty",flash_proxy,true);
 
-	if(proxySetter.obj==NULL)
+	if(proxySetter==NULL)
 	{
 		ASObject::setVariableByMultiname(name,o,enableOverride);
 		return;
 	}
 
-	assert_and_throw(proxySetter.obj->getObjectType()==T_FUNCTION);
+	assert_and_throw(proxySetter->getObjectType()==T_FUNCTION);
 
-	IFunction* f=static_cast<IFunction*>(proxySetter.obj);
+	IFunction* f=static_cast<IFunction*>(proxySetter);
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 	ASObject* args[2];
@@ -542,36 +531,36 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::setProperty");
-	ASObject* ret=f->call(this,args,2,getLevel());
+	ASObject* ret=f->call(this,args,2);
 	assert_and_throw(ret==NULL);
 	implEnable=true;
 }
 
-objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	assert_and_throw(!skip_impl);
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
-	objAndLevel o=getVariableByQName("getProperty",flash_proxy,true);
+	ASObject* o=getVariableByQName("getProperty",flash_proxy,true);
 
-	if(o.obj==NULL)
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride);
+	if(o==NULL)
+		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 
-	assert_and_throw(o.obj->getObjectType()==T_FUNCTION);
+	assert_and_throw(o->getObjectType()==T_FUNCTION);
 
-	IFunction* f=static_cast<IFunction*>(o.obj);
+	IFunction* f=static_cast<IFunction*>(o);
 
 	//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
 	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
 	//We now suppress special handling
 	implEnable=false;
 	LOG(LOG_CALLS,"Proxy::getProperty");
-	ASObject* ret=f->call(this,&arg,1,getLevel());
+	ASObject* ret=f->call(this,&arg,1);
 	assert_and_throw(ret);
 	implEnable=true;
-	return objAndLevel(ret,0);
+	return ret;
 }

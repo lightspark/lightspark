@@ -128,5 +128,56 @@ public:
 	}
 };
 
+template<>
+class Class<ASObject>: public Class_base
+{
+private:
+	Class<ASObject>(const tiny_string& name):Class_base(name){}
+	//This function is instantiated always because of inheritance
+	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
+	{
+		ASObject* ret=new ASObject;
+		ret->setPrototype(this);
+		if(construct)
+			handleConstruction(ret,args,argslen,true);
+		return ret;
+	}
+public:
+	static ASObject* getInstanceS()
+	{
+		Class<ASObject>* c=Class<ASObject>::getClass();
+		return c->getInstance(true,NULL,0);
+	}
+	static Class<ASObject>* getClass(const tiny_string& name)
+	{
+		std::map<tiny_string, Class_base*>::iterator it=sys->classes.find(name);
+		Class<ASObject>* ret=NULL;
+		if(it==sys->classes.end()) //This class is not yet in the map, create it
+		{
+			ret=new Class<ASObject>(name);
+			ASObject::sinit(ret);
+			sys->classes.insert(std::make_pair(name,ret));
+		}
+		else
+			ret=static_cast<Class<ASObject>*>(it->second);
+
+		ret->incRef();
+		return ret;
+	}
+	static Class<ASObject>* getClass()
+	{
+		return getClass(ClassName<ASObject>::name);
+	}
+	static ASObject* cast(ASObject* o)
+	{
+		return static_cast<ASObject*>(o);
+	}
+	void buildInstanceTraits(ASObject* o) const
+	{
+		ASObject::buildTraits(o);
+	}
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true, ASObject* base=NULL);
+};
+
 };
 #endif

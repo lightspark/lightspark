@@ -416,30 +416,6 @@ template<class T>
 	void put(ASObject* o);
 };
 
-class objAndLevel
-{
-public:
-	ASObject* obj;
-	int level;
-	objAndLevel(ASObject* o, int l):obj(o),level(l){}
-};
-
-class nameAndLevel
-{
-public:
-	tiny_string name;
-	int level;
-	nameAndLevel(const char* s, int l):name(s),level(l){}
-	nameAndLevel(const tiny_string& n, int l):name(n),level(l){}
-	bool operator<(const nameAndLevel& r) const
-	{
-		if(name==r.name)
-			return level>r.level; //This forces the ordering in descending order
-		else
-			return name<r.name;
-	}
-};
-
 class variables_map
 {
 //ASObject knows how to use its variable_map
@@ -447,28 +423,27 @@ friend class ASObject;
 //ABCContext uses findObjVar when building and linking traits
 friend class ABCContext;
 private:
-	std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> > Variables;
-	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::iterator var_iterator;
-	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::const_iterator const_var_iterator;
+	std::multimap<tiny_string,std::pair<tiny_string, obj_var> > Variables;
+	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
+	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
-	//Level will be modified with the actual level where the object is found
-	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, int& level, bool create, bool searchPreviusLevels);
-	obj_var* findObjVar(const multiname& mname, int& level, bool create, bool searchPreviusLevels);
-	void killObjVar(const multiname& mname, int level);
+	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create);
+	obj_var* findObjVar(const multiname& mname, bool create);
+	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
 		return slots_vars[n-1]->second.second.var;
 	}
 	void setSlot(unsigned int n,ASObject* o);
-	void initSlot(unsigned int n,int level, const tiny_string& name, const tiny_string& ns);
+	void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
 	ASObject* getVariableByString(const std::string& name);
 	int size() const
 	{
 		return Variables.size();
 	}
 	tiny_string getNameAt(unsigned int i);
-	obj_var* getValueAt(unsigned int i, int& level);
+	obj_var* getValueAt(unsigned int i);
 	~variables_map();
 public:
 	void dumpVariables();
@@ -481,6 +456,7 @@ friend class Manager;
 friend class ABCVm;
 friend class ABCContext;
 friend class Class_base; //Needed for forced cleanup
+friend class IFunction; //Needed for clone
 CLASSBUILDABLE(ASObject);
 protected:
 	//ASObject* asprototype; //HUMM.. ok the prototype, actually class, should be renamed
@@ -496,8 +472,8 @@ private:
 	int cur_level;
 	virtual int _maxlevel();
 	Class_base* prototype;
-	obj_var* findGettable(const multiname& name, int& level) DLL_LOCAL;
-	obj_var* findSettable(const multiname& name, int& level) DLL_LOCAL;
+	obj_var* findGettable(const multiname& name) DLL_LOCAL;
+	obj_var* findSettable(const multiname& name) DLL_LOCAL;
 
 public:
 #ifndef NDEBUG
@@ -563,13 +539,13 @@ public:
 	}
 	virtual ASObject* getVariableByString(const std::string& name);
 	//The enableOverride parameter is set to false in setSuper, getSuper and callSuper
-	virtual objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true );
+	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
-	virtual objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
+	virtual ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
-	virtual void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
+	virtual void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
 	virtual void deleteVariableByMultiname(const multiname& name);
-	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o,bool find_back=true, bool skip_impl=false);
+	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o,bool skip_impl=false);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	bool hasPropertyByMultiname(const multiname& name);
@@ -621,7 +597,7 @@ public:
 	//Prototype handling
 	Class_base* getActualPrototype() const;
 	
-	static void sinit(Class_base*){}
+	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	
 	//TODO: Rework this stuff

@@ -276,13 +276,13 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
 	{
 		//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-		objAndLevel o=obj->getVariableByQName("callProperty",flash_proxy,true);
+		ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
 
-		if(o.obj)
+		if(o)
 		{
-			assert_and_throw(o.obj->getObjectType()==T_FUNCTION);
+			assert_and_throw(o->getObjectType()==T_FUNCTION);
 
-			IFunction* f=static_cast<IFunction*>(o.obj);
+			IFunction* f=static_cast<IFunction*>(o);
 
 			//Create a new array
 			ASObject** proxyArgs=new ASObject*[m+1];
@@ -294,7 +294,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 
 			//We now suppress special handling
 			LOG(LOG_CALLS,"Proxy::callProperty");
-			ASObject* ret=f->call(obj,proxyArgs,m+1,obj->getLevel());
+			ASObject* ret=f->call(obj,proxyArgs,m+1);
 			th->runtime_stack_push(ret);
 
 			obj->decRef();
@@ -310,27 +310,27 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		obj->resetLevel();
 
 	//We should skip the special implementation of get
-	objAndLevel o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name, true);
 
 	if(tl.cur_this==obj)
 		obj->setLevel(tl.cur_level);
 
-	if(o.obj)
+	if(o)
 	{
 		//Run the deferred initialization if needed
-		if(o.obj->getObjectType()==T_DEFINABLE)
+		if(o->getObjectType()==T_DEFINABLE)
 		{
 			LOG(LOG_CALLS,"We got a function not yet valid");
-			Definable* d=static_cast<Definable*>(o.obj);
+			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
 			assert_and_throw(obj==getGlobal());
 			o=obj->getVariableByMultiname(*name);
 		}
 
 		//If o is already a function call it
-		if(o.obj->getObjectType()==T_FUNCTION)
+		if(o->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o.obj)->getOverride();
+			IFunction* f=static_cast<IFunction*>(o)->getOverride();
 			//Methods has to be runned with their own class this
 			//The owner has to be increffed
 			obj->incRef();
@@ -342,14 +342,14 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 				assert_and_throw(p);
 				assert_and_throw(p->implEnable);
 				p->implEnable=false;
-				ret=f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m);
 				p->implEnable=true;
 			}
 			else
-				ret=f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m);
 			th->runtime_stack_push(ret);
 		}
-		else if(o.obj->getObjectType()==T_UNDEFINED)
+		else if(o->getObjectType()==T_UNDEFINED)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function on obj " << ((obj->prototype)?obj->prototype->class_name:"Object"));
 			th->runtime_stack_push(new Undefined);
@@ -398,12 +398,12 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	if(tl.cur_this==obj)
 		obj->resetLevel();
 
-	objAndLevel ret=obj->getVariableByMultiname(*name);
+	ASObject* ret=obj->getVariableByMultiname(*name);
 
 	if(tl.cur_this==obj)
 		obj->setLevel(tl.cur_level);
 	
-	if(ret.obj==NULL)
+	if(ret==NULL)
 	{
 		if(obj->prototype)
 		{
@@ -418,16 +418,16 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	else
 	{
 		//If we are getting a function object attach the the current scope
-		if(ret.obj->getObjectType()==T_FUNCTION)
+		if(ret->getObjectType()==T_FUNCTION)
 		{
 			//TODO: maybe also the level should be binded
 			LOG(LOG_CALLS,"Attaching this to function " << name);
-			IFunction* f=static_cast<IFunction*>(ret.obj)->bind(obj,ret.level);
+			IFunction* f=static_cast<IFunction*>(ret)->bind(obj,-1);
 			obj->decRef();
 			//No incref is needed, as the function is a new instance
 			return f;
 		}
-		else if(ret.obj->getObjectType()==T_DEFINABLE)
+		else if(ret->getObjectType()==T_DEFINABLE)
 		{
 			//LOG(ERROR,"Property " << name << " is not yet valid");
 			throw UnsupportedException("Definable not supported in getProperty");
@@ -437,9 +437,9 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 			ret->incRef();*/
 		}
 	}
-	ret.obj->incRef();
+	ret->incRef();
 	obj->decRef();
-	return ret.obj;
+	return ret;
 }
 
 number_t ABCVm::divide(ASObject* val2, ASObject* val1)
@@ -668,12 +668,12 @@ void ABCVm::construct(call_context* th, int m)
 #endif
 				ret->incRef();
 				assert_and_throw(sf->closure_this==NULL);
-				ASObject* ret2=sf->call(ret,args,m,0);
+				ASObject* ret2=sf->call(ret,args,m);
 				if(ret2)
 					ret2->decRef();
 
 				//Let's see if an AS prototype has been defined on the function
-				ASObject* asp=sf->getVariableByQName("prototype","").obj;
+				ASObject* asp=sf->getVariableByQName("prototype","");
 				if(asp)
 					asp->incRef();
 
@@ -781,13 +781,13 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
 	{
 		//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-		objAndLevel o=obj->getVariableByQName("callProperty",flash_proxy,true);
+		ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
 
-		if(o.obj)
+		if(o)
 		{
-			assert_and_throw(o.obj->getObjectType()==T_FUNCTION);
+			assert_and_throw(o->getObjectType()==T_FUNCTION);
 
-			IFunction* f=static_cast<IFunction*>(o.obj);
+			IFunction* f=static_cast<IFunction*>(o);
 
 			//Create a new array
 			ASObject** proxyArgs=new ASObject*[m+1];
@@ -799,7 +799,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 
 			//We now suppress special handling
 			LOG(LOG_CALLS,"Proxy::callProperty");
-			ASObject* ret=f->call(obj,proxyArgs,m+1,obj->getLevel());
+			ASObject* ret=f->call(obj,proxyArgs,m+1);
 			if(ret)
 				ret->decRef();
 
@@ -816,17 +816,17 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		obj->resetLevel();
 
 	//We should skip the special implementation of get
-	objAndLevel o=obj->getVariableByMultiname(*name,true);
+	ASObject* o=obj->getVariableByMultiname(*name,true);
 
 	if(tl.cur_this==obj)
 		obj->setLevel(tl.cur_level);
 
-	if(o.obj)
+	if(o)
 	{
 		//If o is already a function call it, otherwise find the Call method
-		if(o.obj->getObjectType()==T_FUNCTION)
+		if(o->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o.obj)->getOverride();
+			IFunction* f=static_cast<IFunction*>(o)->getOverride();
 			obj->incRef();
 
 			//HACK for Proxy, here till callProperty proxying is implemented
@@ -837,15 +837,15 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 				assert_and_throw(p);
 				assert_and_throw(p->implEnable);
 				p->implEnable=false;
-				ret=f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m);
 				p->implEnable=true;
 			}
 			else
-				ret=f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m);
 			if(ret)
 				ret->decRef();
 		}
-		else if(o.obj->getObjectType()==T_UNDEFINED)
+		else if(o->getObjectType()==T_UNDEFINED)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function " << *name << " on obj " << 
 					((obj->prototype)?obj->prototype->class_name:"Object"));
@@ -1312,7 +1312,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	obj->decLevel();
 
 	//Should we skip implementation? I think it's reasonable
-	ASObject* o=obj->getVariableByMultiname(*name, true, false).obj;
+	ASObject* o=obj->getVariableByMultiname(*name, true, false);
 
 	tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
@@ -1328,7 +1328,7 @@ void ABCVm::getSuper(call_context* th, int n)
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
 			assert_and_throw(obj==getGlobal());
-			o=obj->getVariableByMultiname(*name).obj;
+			o=obj->getVariableByMultiname(*name);
 		}
 		o->incRef();
 		th->runtime_stack_push(o);
@@ -1356,18 +1356,18 @@ void ABCVm::getLex(call_context* th, int n)
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		objAndLevel tmpo=(*it)->getVariableByMultiname(*name);
+		ASObject* tmpo=(*it)->getVariableByMultiname(*name);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
-		o=tmpo.obj;
+		o=tmpo;
 		if(o)
 		{
 			//If we are getting a function object attach the the current scope
 			if(o->getObjectType()==T_FUNCTION)
 			{
 				LOG(LOG_CALLS,"Attaching this to function " << name);
-				IFunction* f=static_cast<IFunction*>(o)->bind(*it,tmpo.level);
+				IFunction* f=static_cast<IFunction*>(o)->bind(*it,-1);
 				o=f;
 			}
 			else if(o->getObjectType()==T_DEFINABLE)
@@ -1376,7 +1376,7 @@ void ABCVm::getLex(call_context* th, int n)
 				Definable* d=static_cast<Definable*>(o);
 				d->define(*it);
 				assert_and_throw(*it==getGlobal());
-				o=(*it)->getVariableByMultiname(*name).obj;
+				o=(*it)->getVariableByMultiname(*name);
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
 			th->runtime_stack_push(o);
@@ -1387,7 +1387,7 @@ void ABCVm::getLex(call_context* th, int n)
 	if(o==NULL)
 	{
 		LOG(LOG_CALLS, "NOT found, trying Global" );
-		o=getGlobal()->getVariableByMultiname(*name).obj;
+		o=getGlobal()->getVariableByMultiname(*name);
 		if(o)
 		{
 			if(o->getObjectType()==T_DEFINABLE)
@@ -1395,7 +1395,7 @@ void ABCVm::getLex(call_context* th, int n)
 				LOG(LOG_CALLS,"Deferred definition of property " << *name);
 				Definable* d=static_cast<Definable*>(o);
 				d->define(getGlobal());
-				o=getGlobal()->getVariableByMultiname(*name).obj;
+				o=getGlobal()->getVariableByMultiname(*name);
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
 			else if(o->getObjectType()==T_FUNCTION)
@@ -1448,7 +1448,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	LOG(LOG_CALLS, "findProperty " << *name );
 
 	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	objAndLevel o(NULL,0);
+	ASObject* o=NULL;
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	for(;it!=th->scope_stack.rend();it++)
@@ -1460,14 +1460,14 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
-		if(o.obj)
+		if(o)
 		{
 			//We have to return the object, not the property
 			ret=*it;
 			break;
 		}
 	}
-	if(o.obj==NULL)
+	if(o==NULL)
 	{
 		LOG(LOG_CALLS, "NOT found, pushing global" );
 		ret=getGlobal();
@@ -1484,7 +1484,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	LOG(LOG_CALLS, "findPropStrict " << *name );
 
 	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	objAndLevel o(NULL,0);
+	ASObject* o=NULL;
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 
@@ -1495,18 +1495,18 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 		o=(*it)->getVariableByMultiname(*name);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
-		if(o.obj)
+		if(o)
 		{
 			//We have to return the object, not the property
 			ret=*it;
 			break;
 		}
 	}
-	if(o.obj==NULL)
+	if(o==NULL)
 	{
 		LOG(LOG_CALLS, "NOT found, trying Global" );
 		o=getGlobal()->getVariableByMultiname(*name);
-		if(o.obj)
+		if(o)
 			ret=getGlobal();
 		else
 		{
@@ -1588,7 +1588,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	obj->decLevel();
 
 	//We should skip the special implementation of get
-	objAndLevel o=obj->getVariableByMultiname(*name, true, false);
+	ASObject* o=obj->getVariableByMultiname(*name, true, false);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -1596,17 +1596,17 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	assert_and_throw(tl.cur_this==obj);
 	tl.cur_this->setLevel(tl.cur_level);
 
-	if(o.obj)
+	if(o)
 	{
 		//If o is already a function call it, otherwise find the Call method
-		if(o.obj->getObjectType()==T_FUNCTION)
+		if(o->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o.obj);
+			IFunction* f=static_cast<IFunction*>(o);
 			obj->incRef();
-			ASObject* ret=f->call(obj,args,m,o.level);
+			ASObject* ret=f->call(obj,args,m);
 			th->runtime_stack_push(ret);
 		}
-		else if(o.obj->getObjectType()==T_UNDEFINED)
+		else if(o->getObjectType()==T_UNDEFINED)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function");
 			th->runtime_stack_push(new Undefined);
@@ -1671,7 +1671,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	obj->decLevel();
 
 	//We should skip the special implementation of get
-	objAndLevel o=obj->getVariableByMultiname(*name, true);
+	ASObject* o=obj->getVariableByMultiname(*name, true);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -1679,18 +1679,18 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 	assert_and_throw(tl.cur_this==obj);
 	tl.cur_this->setLevel(tl.cur_level);
 
-	if(o.obj)
+	if(o)
 	{
 		//If o is already a function call it, otherwise find the Call method
-		if(o.obj->getObjectType()==T_FUNCTION)
+		if(o->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o.obj);
+			IFunction* f=static_cast<IFunction*>(o);
 			obj->incRef();
-			ASObject* ret=f->call(obj,args,m,o.level);
+			ASObject* ret=f->call(obj,args,m);
 			if(ret)
 				ret->decRef();
 		}
-		else if(o.obj->getObjectType()==T_UNDEFINED)
+		else if(o->getObjectType()==T_UNDEFINED)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function");
 		}
@@ -1734,14 +1734,14 @@ bool ABCVm::isType(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, "isType " << *name);
 
-	objAndLevel ret=getGlobal()->getVariableByMultiname(*name);
-	if(!ret.obj) //Could not retrieve type
+	ASObject* ret=getGlobal()->getVariableByMultiname(*name);
+	if(!ret) //Could not retrieve type
 	{
 		LOG(LOG_ERROR,"Cannot retrieve type");
 		return false;
 	}
 
-	ASObject* type=ret.obj;
+	ASObject* type=ret;
 	bool real_ret=false;
 	Class_base* objc=NULL;
 	Class_base* c=NULL;
@@ -1974,7 +1974,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	if(tl.cur_this==obj)
 		obj->resetLevel();
 
-	ASObject* o=obj->getVariableByMultiname(*name).obj;
+	ASObject* o=obj->getVariableByMultiname(*name);
 
 	if(tl.cur_this==obj)
 		obj->setLevel(tl.cur_level);
@@ -1990,7 +1990,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		LOG(LOG_CALLS,"Deferred definition of property " << *name);
 		Definable* d=static_cast<Definable*>(o);
 		d->define(obj);
-		o=obj->getVariableByMultiname(*name).obj;
+		o=obj->getVariableByMultiname(*name);
 		LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 	}
 
@@ -2019,12 +2019,12 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 #endif
 			ret->incRef();
 			assert_and_throw(sf->closure_this==NULL);
-			ASObject* ret2=sf->call(ret,args,m,0);
+			ASObject* ret2=sf->call(ret,args,m);
 			if(ret2)
 				ret2->decRef();
 
 			//Let's see if an AS prototype has been defined on the function
-			ASObject* asp=sf->getVariableByQName("prototype","").obj;
+			ASObject* asp=sf->getVariableByQName("prototype","");
 			if(asp)
 				asp->incRef();
 
@@ -2185,6 +2185,19 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 	return ret;
 }
 
+void ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
+{
+	if(c->super)
+		newClassRecursiveLink(target, c->super);
+
+	const vector<Class_base*>& interfaces=c->getInterfaces();
+	for(unsigned int i=0;i<interfaces.size();i++)
+	{
+		LOG(LOG_CALLS,"Linking with interface " << interfaces[i]->class_name);
+		interfaces[i]->linkInterface(target);
+	}
+}
+
 void ABCVm::newClass(call_context* th, int n)
 {
 	LOG(LOG_CALLS, "newClass " << n );
@@ -2219,14 +2232,6 @@ void ABCVm::newClass(call_context* th, int n)
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
 		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
-	//add Constructor the the class methods
-	ret->constructor=new SyntheticFunction(constructor);
-	ret->class_index=n;
-
-	//Set the constructor variable to the class itself (this is accessed by object using the protoype)
-	ret->incRef();
-	ret->setVariableByQName("constructor","",ret);
-
 	//Add protected namespace if needed
 	if((th->context->instances[n].flags)&0x08)
 	{
@@ -2235,6 +2240,23 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->protected_ns=th->context->getString(th->context->constant_pool.namespaces[ns].name);
 	}
 
+	//Class objects also contains all the methods/getters/setters declared for instances
+	instance_info* cur=&th->context->instances[n];
+	for(unsigned int i=0;i<cur->trait_count;i++)
+	{
+		int kind=cur->traits[i].kind&0xf;
+		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
+			th->context->buildTrait(ret,&cur->traits[i],false);
+	}
+
+	//add Constructor the the class methods
+	ret->constructor=new SyntheticFunction(constructor);
+	ret->class_index=n;
+
+	//Set the constructor variable to the class itself (this is accessed by object using the protoype)
+	ret->incRef();
+	ret->setVariableByQName("constructor","",ret);
+
 	//add implemented interfaces
 	for(unsigned int i=0;i<th->context->instances[n].interface_count;i++)
 	{
@@ -2242,7 +2264,7 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->addImplementedInterface(*name);
 
 		//Make the class valid if needed
-		ASObject* obj=getGlobal()->getVariableByMultiname(*name).obj;
+		ASObject* obj=getGlobal()->getVariableByMultiname(*name);
 
 		//Named only interfaces seems to be allowed 
 		if(obj==NULL)
@@ -2254,15 +2276,21 @@ void ABCVm::newClass(call_context* th, int n)
 			Definable* d=static_cast<Definable*>(obj);
 			d->define(getGlobal());
 			LOG(LOG_CALLS,"End of deferred init of class " << *name);
-			obj=getGlobal()->getVariableByMultiname(*name).obj;
+			obj=getGlobal()->getVariableByMultiname(*name);
 			assert_and_throw(obj);
 		}
+	}
+	//If the class is not an interface itself, link the traits
+	if(!((th->context->instances[n].flags)&0x04))
+	{
+		//Link all the interfaces for this class and all the bases
+		newClassRecursiveLink(ret, ret);
 	}
 
 	LOG(LOG_CALLS,"Calling Class init " << ret);
 	ret->incRef();
 	//Class init functions are called with global as this
-	ASObject* ret2=cinit->call(ret,NULL,0,ret->max_level);
+	ASObject* ret2=cinit->call(ret,NULL,0);
 	assert_and_throw(ret2==NULL);
 	LOG(LOG_CALLS,"End of Class init " << ret);
 	th->runtime_stack_push(ret);
@@ -2324,7 +2352,7 @@ void ABCVm::call(call_context* th, int m)
 	{
 		IFunction* func=static_cast<IFunction*>(f);
 		//TODO: check for correct level, member function are already binded
-		ASObject* ret=func->call(obj,args,m,0);
+		ASObject* ret=func->call(obj,args,m);
 		//Push the value only if not null
 		if(ret)
 			th->runtime_stack_push(ret);

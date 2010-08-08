@@ -2787,7 +2787,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				if(rtdata==0)
 				{
 					multiname* name=this->context->getMultiname(t,NULL);
-					if(getGlobal()->getVariableByMultiname(*name).obj!=NULL)
+					if(getGlobal()->getVariableByMultiname(*name)!=NULL)
 					{
 						//Ok, let's push global at runtime
 						value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"));

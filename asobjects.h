@@ -31,11 +31,6 @@
 
 namespace lightspark
 {
-	class SystemState;
-};
-
-namespace lightspark
-{
 const tiny_string AS3="http://adobe.com/AS3/2006/builtin";
 
 class Event;
@@ -79,11 +74,11 @@ public:
 	Class_base(const tiny_string& name);
 	~Class_base();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true)
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true, ASObject* base=NULL)
 	{
-		objAndLevel ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride);
-		if(ret.obj==NULL && super)
-			ret=super->getVariableByMultiname(name, skip_impl, enableOverride);
+		ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride, base);
+		if(ret==NULL && super)
+			ret=super->getVariableByMultiname(name, skip_impl, enableOverride, base);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -95,10 +90,10 @@ public:
 			ret=super->getVariableByMultiname(name);
 		return ret;*/
 	}
-	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
 	{
-		objAndLevel ret=ASObject::getVariableByQName(name,ns,skip_impl);
-		if(ret.obj==NULL && super)
+		ASObject* ret=ASObject::getVariableByQName(name,ns,skip_impl);
+		if(ret==NULL && super)
 			ret=super->getVariableByQName(name,ns,skip_impl);
 		return ret;
 	}
@@ -118,7 +113,7 @@ public:
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
 	const std::vector<Class_base*>& getInterfaces() const;
-	void linkInterface(ASObject* obj) const;
+	void linkInterface(Class_base* c) const;
 	bool isSubClass(const Class_base* cls) const;
 	tiny_string getQualifiedClassName() const;
 	tiny_string toString(bool debugMsg);
@@ -167,11 +162,11 @@ public:
 	Class_function():Class_base("Function"),f(NULL),asprototype(NULL){}
 	Class_function(IFunction* _f, ASObject* _p):Class_base("Function"),f(_f),asprototype(_p){}
 	tiny_string class_name;
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true)
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL)
 	{
-		objAndLevel ret=Class_base::getVariableByMultiname(name,skip_impl, enableOverride);
-		if(ret.obj==NULL && asprototype)
-			ret=asprototype->getVariableByMultiname(name,skip_impl, enableOverride);
+		ASObject* ret=Class_base::getVariableByMultiname(name,skip_impl, enableOverride, base);
+		if(ret==NULL && asprototype)
+			ret=asprototype->getVariableByMultiname(name,skip_impl, enableOverride, base);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -183,10 +178,10 @@ public:
 			ret=super->getVariableByMultiname(name);
 		return ret;*/
 	}
-	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
 	{
-		objAndLevel ret=Class_base::getVariableByQName(name,ns,skip_impl);
-		if(ret.obj==NULL && asprototype)
+		ASObject* ret=Class_base::getVariableByQName(name,ns,skip_impl);
+		if(ret==NULL && asprototype)
 			ret=asprototype->getVariableByQName(name,ns,skip_impl);
 		return ret;
 	}
@@ -194,11 +189,11 @@ public:
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname_i");
 	}
-	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
+	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base=NULL)
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false)
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false)
 	{
 		throw UnsupportedException("Class_function::setVariableByQName");
 	}
@@ -217,20 +212,28 @@ protected:
 	IFunction* overriden_by;
 public:
 	ASFUNCTION(apply);
-	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level)=0;
+	virtual ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args)=0;
 	IFunction* bind(ASObject* c, int level)
 	{
 		if(!bound)
 		{
-			//If binding with null we are not a class method
-			IFunction* ret;
-			incRef();
-			ret=this;
+			IFunction* ret=NULL;
+			if(c==NULL)
+			{
+				//If binding with null we are generated from newFunction, don't copy
+				ret=this;
+			}
+			else
+			{
+				//Generate a copy
+				ret=clone();
+				ret->prototype=NULL; //Drop the prototype and set it ex novo
+				ret->setPrototype(getPrototype());
+			}
 			ret->bound=true;
 			ret->closure_this=c;
 			if(c)
 				c->incRef();
-			ret->closure_level=level;
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}
@@ -239,6 +242,10 @@ public:
 			incRef();
 			return this;
 		}
+	}
+	void bindLevel(int l)
+	{
+		closure_level=l;
 	}
 	void override(IFunction* f)
 	{
@@ -273,7 +280,7 @@ private:
 		return new Function(*this);
 	}
 public:
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level);
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* toFunction();
 	bool isEqual(ASObject* r)
 	{
@@ -300,7 +307,7 @@ private:
 		return new SyntheticFunction(*this);
 	}
 public:
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, int level);
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args);
 	IFunction* toFunction();
 	std::vector<ASObject*> func_scope;
 	bool isEqual(ASObject* r)
@@ -534,11 +541,11 @@ public:
 	{
 		data.resize(n);
 	}
-	objAndLevel getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
-	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride);
+	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back=true, bool skip_impl=false);
-	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false);
+	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r);
@@ -565,9 +572,8 @@ private:
 	Integer(int32_t v=0):val(v){type=T_INTEGER;}
 	Integer(Manager* m):ASObject(m),val(0){type=T_INTEGER;}
 public:
-	static void buildTraits(ASObject* o){
-		o->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString));
-	};
+	static void buildTraits(ASObject* o){};
+	static void sinit(Class_base* c);
 	ASFUNCTION(_toString);
 	tiny_string toString(bool debugMsg);
 	int32_t toInt()
@@ -640,6 +646,7 @@ public:
 	TRISTATE isLess(ASObject* o);
 	bool isEqual(ASObject* o);
 	static void buildTraits(ASObject* o){};
+	static void sinit(Class_base* c);
 };
 
 class ASMovieClipLoader: public ASObject
@@ -705,7 +712,7 @@ private:
 public:
 	ScriptDefinable(IFunction* _f):f(_f){}
 	//The global object will be passed from the calling context
-	void define(ASObject* g){ f->call(g,NULL,0,0); }
+	void define(ASObject* g){ f->call(g,NULL,0); }
 };
 
 class Math: public ASObject
@@ -762,6 +769,7 @@ public:
 	ASFUNCTION(_getMessage);
 	ASFUNCTION(_getErrorID);
 	tiny_string toString(bool debugMsg=false);
+	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
 

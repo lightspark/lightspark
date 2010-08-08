@@ -61,16 +61,16 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderUrl));
+	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getUrl));
+	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
+	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
+	c->setGetterByQName("applicationDomain","",Class<IFunction>::getFunction(_getApplicationDomain));
+	c->setGetterByQName("sharedEvents","",Class<IFunction>::getFunction(_getSharedEvents));
 }
 
 void LoaderInfo::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderUrl));
-	o->setGetterByQName("url","",Class<IFunction>::getFunction(_getUrl));
-	o->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
-	o->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
-	o->setGetterByQName("applicationDomain","",Class<IFunction>::getFunction(_getApplicationDomain));
-	o->setGetterByQName("sharedEvents","",Class<IFunction>::getFunction(_getSharedEvents));
 }
 
 ASFUNCTIONBODY(LoaderInfo,_constructor)
@@ -176,13 +176,13 @@ void Loader::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo));
+	c->setVariableByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes));
+//	c->setVariableByQName("load","",Class<IFunction>::getFunction(load));
 }
 
 void Loader::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("contentLoaderInfo","",Class<IFunction>::getFunction(_getContentLoaderInfo));
-	o->setVariableByQName("loadBytes","",Class<IFunction>::getFunction(loadBytes));
-//	obj->setVariableByQName("load","",Class<IFunction>::getFunction(load));
 }
 
 void Loader::execute()
@@ -269,11 +269,11 @@ void Sprite::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics));
 }
 
 void Sprite::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics));
 }
 
 bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -431,16 +431,16 @@ void MovieClip::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<Sprite>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("currentFrame","",Class<IFunction>::getFunction(_getCurrentFrame));
+	c->setGetterByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames));
+	c->setGetterByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded));
+	c->setVariableByQName("stop","",Class<IFunction>::getFunction(stop));
+	c->setVariableByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop));
+	c->setVariableByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame));
 }
 
 void MovieClip::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("currentFrame","",Class<IFunction>::getFunction(_getCurrentFrame));
-	o->setGetterByQName("totalFrames","",Class<IFunction>::getFunction(_getTotalFrames));
-	o->setGetterByQName("framesLoaded","",Class<IFunction>::getFunction(_getFramesLoaded));
-	o->setVariableByQName("stop","",Class<IFunction>::getFunction(stop));
-	o->setVariableByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop));
-	o->setVariableByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame));
 }
 
 MovieClip::MovieClip():framesLoaded(1),totalFrames(1),cur_frame(NULL)
@@ -840,46 +840,46 @@ void DisplayObject::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo));
+	c->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth));
+	c->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth));
+	c->setGetterByQName("scaleX","",Class<IFunction>::getFunction(_getScaleX));
+	c->setSetterByQName("scaleX","",Class<IFunction>::getFunction(_setScaleX));
+	c->setGetterByQName("scaleY","",Class<IFunction>::getFunction(_getScaleY));
+	c->setSetterByQName("scaleY","",Class<IFunction>::getFunction(_setScaleY));
+	c->setGetterByQName("x","",Class<IFunction>::getFunction(_getX));
+	c->setSetterByQName("x","",Class<IFunction>::getFunction(_setX));
+	c->setGetterByQName("y","",Class<IFunction>::getFunction(_getY));
+	c->setSetterByQName("y","",Class<IFunction>::getFunction(_setY));
+	c->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight));
+	c->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight));
+	c->setGetterByQName("visible","",Class<IFunction>::getFunction(_getVisible));
+	c->setSetterByQName("visible","",Class<IFunction>::getFunction(_setVisible));
+	c->setGetterByQName("rotation","",Class<IFunction>::getFunction(_getRotation));
+	c->setSetterByQName("rotation","",Class<IFunction>::getFunction(_setRotation));
+	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
+	c->setGetterByQName("parent","",Class<IFunction>::getFunction(_getParent));
+	c->setGetterByQName("root","",Class<IFunction>::getFunction(_getRoot));
+	c->setGetterByQName("blendMode","",Class<IFunction>::getFunction(_getBlendMode));
+	c->setSetterByQName("blendMode","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setGetterByQName("scale9Grid","",Class<IFunction>::getFunction(_getScale9Grid));
+	c->setSetterByQName("scale9Grid","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setGetterByQName("stage","",Class<IFunction>::getFunction(_getStage));
+	c->setVariableByQName("getBounds","",Class<IFunction>::getFunction(_getBounds));
+	c->setVariableByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal));
+	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
+	c->setGetterByQName("mask","",Class<IFunction>::getFunction(_getMask));
+	c->setSetterByQName("mask","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setGetterByQName("alpha","",Class<IFunction>::getFunction(_getAlpha));
+	c->setSetterByQName("alpha","",Class<IFunction>::getFunction(_setAlpha));
+	c->setGetterByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setSetterByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setGetterByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setSetterByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 void DisplayObject::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("loaderInfo","",Class<IFunction>::getFunction(_getLoaderInfo));
-	o->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth));
-	o->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth));
-	o->setGetterByQName("scaleX","",Class<IFunction>::getFunction(_getScaleX));
-	o->setSetterByQName("scaleX","",Class<IFunction>::getFunction(_setScaleX));
-	o->setGetterByQName("scaleY","",Class<IFunction>::getFunction(_getScaleY));
-	o->setSetterByQName("scaleY","",Class<IFunction>::getFunction(_setScaleY));
-	o->setGetterByQName("x","",Class<IFunction>::getFunction(_getX));
-	o->setSetterByQName("x","",Class<IFunction>::getFunction(_setX));
-	o->setGetterByQName("y","",Class<IFunction>::getFunction(_getY));
-	o->setSetterByQName("y","",Class<IFunction>::getFunction(_setY));
-	o->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight));
-	o->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight));
-	o->setGetterByQName("visible","",Class<IFunction>::getFunction(_getVisible));
-	o->setSetterByQName("visible","",Class<IFunction>::getFunction(_setVisible));
-	o->setGetterByQName("rotation","",Class<IFunction>::getFunction(_getRotation));
-	o->setSetterByQName("rotation","",Class<IFunction>::getFunction(_setRotation));
-	o->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	o->setGetterByQName("parent","",Class<IFunction>::getFunction(_getParent));
-	o->setGetterByQName("root","",Class<IFunction>::getFunction(_getRoot));
-	o->setGetterByQName("blendMode","",Class<IFunction>::getFunction(_getBlendMode));
-	o->setSetterByQName("blendMode","",Class<IFunction>::getFunction(undefinedFunction));
-	o->setGetterByQName("scale9Grid","",Class<IFunction>::getFunction(_getScale9Grid));
-	o->setSetterByQName("scale9Grid","",Class<IFunction>::getFunction(undefinedFunction));
-	o->setGetterByQName("stage","",Class<IFunction>::getFunction(_getStage));
-	o->setVariableByQName("getBounds","",Class<IFunction>::getFunction(_getBounds));
-	o->setVariableByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal));
-	o->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
-	o->setGetterByQName("mask","",Class<IFunction>::getFunction(_getMask));
-	o->setSetterByQName("mask","",Class<IFunction>::getFunction(undefinedFunction));
-	o->setGetterByQName("alpha","",Class<IFunction>::getFunction(_getAlpha));
-	o->setSetterByQName("alpha","",Class<IFunction>::getFunction(_setAlpha));
-	o->setGetterByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction));
-	o->setSetterByQName("cacheAsBitmap","",Class<IFunction>::getFunction(undefinedFunction));
-	o->setGetterByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction));
-	o->setSetterByQName("opaqueBackground","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 void DisplayObject::setMatrix(const lightspark::MATRIX& m)
@@ -1294,19 +1294,20 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<InteractiveObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren));
+	c->setVariableByQName("getChildIndex","",Class<IFunction>::getFunction(getChildIndex));
+	c->setVariableByQName("getChildAt","",Class<IFunction>::getFunction(getChildAt));
+	c->setVariableByQName("addChild","",Class<IFunction>::getFunction(addChild));
+	c->setVariableByQName("removeChild","",Class<IFunction>::getFunction(removeChild));
+	c->setVariableByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt));
+	c->setVariableByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt));
+	c->setVariableByQName("contains","",Class<IFunction>::getFunction(contains));
+	//c->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
+	//c->setGetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 void DisplayObjectContainer::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren));
-	o->setVariableByQName("getChildIndex","",Class<IFunction>::getFunction(getChildIndex));
-	o->setVariableByQName("getChildAt","",Class<IFunction>::getFunction(getChildAt));
-	o->setVariableByQName("addChild","",Class<IFunction>::getFunction(addChild));
-	o->setVariableByQName("removeChild","",Class<IFunction>::getFunction(removeChild));
-	o->setVariableByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt));
-	o->setVariableByQName("addChildAt","",Class<IFunction>::getFunction(addChildAt));
-	o->setVariableByQName("contains","",Class<IFunction>::getFunction(contains));
-	o->setSetterByQName("mouseChildren","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 DisplayObjectContainer::DisplayObjectContainer():mutexDisplayList("mutexDisplayList")
@@ -1348,7 +1349,6 @@ ASFUNCTIONBODY(InteractiveObject,_constructor)
 
 void InteractiveObject::buildTraits(ASObject* o)
 {
-	o->setSetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 void InteractiveObject::sinit(Class_base* c)
@@ -1356,6 +1356,8 @@ void InteractiveObject::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	//c->setSetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
+	//c->setGetterByQName("mouseEnabled","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 void InteractiveObject::RenderProloue()
@@ -1637,11 +1639,11 @@ void Shape::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics));
 }
 
 void Shape::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("graphics","",Class<IFunction>::getFunction(_getGraphics));
 }
 
 bool Shape::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -1746,12 +1748,12 @@ void Stage::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObjectContainer>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth));
+	c->setGetterByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight));
 }
 
 void Stage::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth));
-	o->setGetterByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight));
 }
 
 Stage::Stage()
@@ -1782,18 +1784,18 @@ ASFUNCTIONBODY(Stage,_getStageHeight)
 void Graphics::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setVariableByQName("clear","",Class<IFunction>::getFunction(clear));
+	c->setVariableByQName("drawRect","",Class<IFunction>::getFunction(drawRect));
+	c->setVariableByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle));
+	c->setVariableByQName("moveTo","",Class<IFunction>::getFunction(moveTo));
+	c->setVariableByQName("lineTo","",Class<IFunction>::getFunction(lineTo));
+	c->setVariableByQName("beginFill","",Class<IFunction>::getFunction(beginFill));
+	c->setVariableByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill));
+	c->setVariableByQName("endFill","",Class<IFunction>::getFunction(endFill));
 }
 
 void Graphics::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("clear","",Class<IFunction>::getFunction(clear));
-	o->setVariableByQName("drawRect","",Class<IFunction>::getFunction(drawRect));
-	o->setVariableByQName("drawCircle","",Class<IFunction>::getFunction(drawCircle));
-	o->setVariableByQName("moveTo","",Class<IFunction>::getFunction(moveTo));
-	o->setVariableByQName("lineTo","",Class<IFunction>::getFunction(lineTo));
-	o->setVariableByQName("beginFill","",Class<IFunction>::getFunction(beginFill));
-	o->setVariableByQName("beginGradientFill","",Class<IFunction>::getFunction(beginGradientFill));
-	o->setVariableByQName("endFill","",Class<IFunction>::getFunction(endFill));
 }
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

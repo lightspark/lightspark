@@ -409,7 +409,7 @@ public:
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
 	void buildTrait(ASObject* obj, const traits_info* t, bool bind, IFunction* deferred_initialization=NULL);
-	void linkTrait(ASObject* obj, const traits_info* t);
+	void linkTrait(Class_base* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
 	multiname* getMultiname(unsigned int m, call_context* th);
 	void buildInstanceTraits(ASObject* obj, int class_index);
@@ -571,6 +571,7 @@ private:
 
 	//Internal utilities
 	static void method_reset(method_info* th);
+	static void newClassRecursiveLink(Class_base* target, Class_base* c);
 
 	//Opcode tables
 	void register_table(const llvm::Type* ret_type,typed_opcode_handler* table, int table_len);

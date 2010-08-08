@@ -83,12 +83,13 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS("tabChildrenChange"));
 	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"));
 	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"));
+
+	c->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget));
+	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType));
 }
 
 void Event::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget));
-	o->setGetterByQName("type","",Class<IFunction>::getFunction(_getType));
 }
 
 ASFUNCTIONBODY(Event,_constructor)
@@ -157,12 +158,13 @@ void ProgressEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"));
+
+	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
+	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
 }
 
 void ProgressEvent::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
-	o->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
 }
 
 ASFUNCTIONBODY(ProgressEvent,_constructor)
@@ -238,16 +240,17 @@ void EventDispatcher::sinit(Class_base* c)
 	c->addImplementedInterface(Class<IEventDispatcher>::getClass());
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
+
+	c->setVariableByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener));
+	c->setVariableByQName("hasEventListener","",Class<IFunction>::getFunction(_hasEventListener));
+	c->setVariableByQName("removeEventListener","",Class<IFunction>::getFunction(removeEventListener));
+	c->setVariableByQName("dispatchEvent","",Class<IFunction>::getFunction(dispatchEvent));
+
+	IEventDispatcher::linkTraits(c);
 }
 
 void EventDispatcher::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener));
-	o->setVariableByQName("hasEventListener","",Class<IFunction>::getFunction(_hasEventListener));
-	o->setVariableByQName("removeEventListener","",Class<IFunction>::getFunction(removeEventListener));
-	o->setVariableByQName("dispatchEvent","",Class<IFunction>::getFunction(dispatchEvent));
-
-	IEventDispatcher::linkTraits(o);
 }
 
 void EventDispatcher::dumpHandlers()
@@ -376,9 +379,9 @@ void EventDispatcher::handleEvent(Event* e)
 		e->incRef();
 		//tmpListener is now also owned by the vector
 		tmpListener[i].f->incRef();
-		//If the f is a class method, both the 'this' and level are ignored
+		//If the f is a class method, the 'this' is ignored
 		ASObject* const arg0=e;
-		ASObject* ret=tmpListener[i].f->call(this,&arg0,1,0);
+		ASObject* ret=tmpListener[i].f->call(this,&arg0,1);
 		if(ret)
 			ret->decRef();
 		//And now no more, f can also be deleted

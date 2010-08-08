@@ -47,11 +47,11 @@ tiny_string ASObject::toString(bool debugMsg)
 	check();
 	if(debugMsg==false && hasPropertyByQName("toString",""))
 	{
-		objAndLevel obj_toString=getVariableByQName("toString","");
-		if(obj_toString.obj->getObjectType()==T_FUNCTION)
+		ASObject* obj_toString=getVariableByQName("toString","");
+		if(obj_toString->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f_toString=static_cast<IFunction*>(obj_toString.obj);
-			ASObject* ret=f_toString->call(this,NULL,0,obj_toString.level);
+			IFunction* f_toString=static_cast<IFunction*>(obj_toString);
+			ASObject* ret=f_toString->call(this,NULL,0);
 			assert_and_throw(ret->getObjectType()==T_STRING);
 			return ret->toString();
 		}
@@ -77,17 +77,17 @@ TRISTATE ASObject::isLess(ASObject* r)
 		if(r->hasPropertyByQName("valueOf","")==false)
 			throw RunTimeException("Missing valueof for second operand");
 
-		objAndLevel obj1=getVariableByQName("valueOf","");
-		objAndLevel obj2=r->getVariableByQName("valueOf","");
+		ASObject* obj1=getVariableByQName("valueOf","");
+		ASObject* obj2=r->getVariableByQName("valueOf","");
 
-		assert_and_throw(obj1.obj!=NULL && obj2.obj!=NULL);
+		assert_and_throw(obj1!=NULL && obj2!=NULL);
 
-		assert_and_throw(obj1.obj->getObjectType()==T_FUNCTION && obj2.obj->getObjectType()==T_FUNCTION);
-		IFunction* f1=static_cast<IFunction*>(obj1.obj);
-		IFunction* f2=static_cast<IFunction*>(obj2.obj);
+		assert_and_throw(obj1->getObjectType()==T_FUNCTION && obj2->getObjectType()==T_FUNCTION);
+		IFunction* f1=static_cast<IFunction*>(obj1);
+		IFunction* f2=static_cast<IFunction*>(obj2);
 
-		ASObject* ret1=f1->call(this,NULL,0,obj1.level);
-		ASObject* ret2=f2->call(r,NULL,0,obj2.level);
+		ASObject* ret1=f1->call(this,NULL,0);
+		ASObject* ret2=f2->call(r,NULL,0);
 
 		LOG(LOG_CALLS,"Overloaded isLess");
 		return ret1->isLess(ret2);
@@ -116,6 +116,10 @@ bool ASObject::nextValue(unsigned int index, ASObject*& out)
 {
 	assert_and_throw(implEnable);
 	return false;
+}
+
+void ASObject::sinit(Class_base* c)
+{
 }
 
 void ASObject::buildTraits(ASObject* o)
@@ -152,14 +156,14 @@ bool ASObject::isEqual(ASObject* r)
 
 	if(hasPropertyByQName("equals",""))
 	{
-		objAndLevel func_equals=getVariableByQName("equals","");
+		ASObject* func_equals=getVariableByQName("equals","");
 
-		assert_and_throw(func_equals.obj!=NULL);
+		assert_and_throw(func_equals!=NULL);
 
-		assert_and_throw(func_equals.obj->getObjectType()==T_FUNCTION);
-		IFunction* func=static_cast<IFunction*>(func_equals.obj);
+		assert_and_throw(func_equals->getObjectType()==T_FUNCTION);
+		IFunction* func=static_cast<IFunction*>(func_equals);
 
-		ASObject* ret=func->call(this,&r,1,func_equals.level);
+		ASObject* ret=func->call(this,&r,1);
 		assert_and_throw(ret->getObjectType()==T_BOOLEAN);
 
 		LOG(LOG_CALLS,"Overloaded isEqual");
@@ -172,17 +176,17 @@ bool ASObject::isEqual(ASObject* r)
 		if(r->hasPropertyByQName("valueOf","")==false)
 			throw RunTimeException("Not handled less comparison for objects");
 
-		objAndLevel obj1=getVariableByQName("valueOf","");
-		objAndLevel obj2=r->getVariableByQName("valueOf","");
+		ASObject* obj1=getVariableByQName("valueOf","");
+		ASObject* obj2=r->getVariableByQName("valueOf","");
 
-		assert_and_throw(obj1.obj!=NULL && obj2.obj!=NULL);
+		assert_and_throw(obj1!=NULL && obj2!=NULL);
 
-		assert_and_throw(obj1.obj->getObjectType()==T_FUNCTION && obj2.obj->getObjectType()==T_FUNCTION);
-		IFunction* f1=static_cast<IFunction*>(obj1.obj);
-		IFunction* f2=static_cast<IFunction*>(obj2.obj);
+		assert_and_throw(obj1->getObjectType()==T_FUNCTION && obj2->getObjectType()==T_FUNCTION);
+		IFunction* f1=static_cast<IFunction*>(obj1);
+		IFunction* f2=static_cast<IFunction*>(obj2);
 
-		ASObject* ret1=f1->call(this,NULL,0,obj1.level);
-		ASObject* ret2=f2->call(r,NULL,0,obj2.level);
+		ASObject* ret1=f1->call(this,NULL,0);
+		ASObject* ret2=f2->call(r,NULL,0);
 
 		LOG(LOG_CALLS,"Overloaded isEqual");
 		return ret1->isEqual(ret2);
@@ -213,31 +217,24 @@ double ASObject::toNumber()
 	return 0;
 }
 
-obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, int& level, bool create, bool searchPreviusLevels)
+obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, bool create)
 {
-	nameAndLevel name(n,level);
-	const var_iterator ret_begin=Variables.lower_bound(name);
+	const var_iterator ret_begin=Variables.lower_bound(n);
 	//This actually look for the first different name, if we accept also previous levels
 	//Otherwise we are just doing equal_range
-	if(searchPreviusLevels)
-		name.level=0;
-	const var_iterator ret_end=Variables.upper_bound(name);
-	name.level=level;
+	const var_iterator ret_end=Variables.upper_bound(n);
 
 	var_iterator ret=ret_begin;
 	for(;ret!=ret_end;ret++)
 	{
 		if(ret->second.first==ns)
-		{
-			level=ret->first.level;
 			return &ret->second.second;
-		}
 	}
 
 	//Name not present, insert it if we have to create it
 	if(create)
 	{
-		var_iterator inserted=Variables.insert(ret_begin,make_pair(nameAndLevel(n,level), make_pair(ns, obj_var() ) ) );
+		var_iterator inserted=Variables.insert(ret_begin,make_pair(n, make_pair(ns, obj_var() ) ) );
 		return &inserted->second.second;
 	}
 	else
@@ -248,16 +245,38 @@ bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns
 {
 	check();
 	//We look in all the object's levels
-	int level=(prototype)?(prototype->max_level):0;
-	return (Variables.findObjVar(name, ns, level, false, true)!=NULL);
+	bool ret=(Variables.findObjVar(name, ns, false)!=NULL);
+	if(!ret) //Try the classes
+	{
+		Class_base* cur=prototype;
+		while(cur)
+		{
+			ret=(cur->Variables.findObjVar(name, ns, false)!=NULL);
+			if(ret)
+				break;
+			cur=cur->super;
+		}
+	}
+	return ret;
 }
 
 bool ASObject::hasPropertyByMultiname(const multiname& name)
 {
 	check();
 	//We look in all the object's levels
-	int level=(prototype)?(prototype->max_level):0;
-	return (Variables.findObjVar(name, level, false, true)!=NULL);
+	bool ret=(Variables.findObjVar(name, false)!=NULL);
+	if(!ret) //Try the classes
+	{
+		Class_base* cur=prototype;
+		while(cur)
+		{
+			ret=(cur->Variables.findObjVar(name, false)!=NULL);
+			if(ret)
+				break;
+			cur=cur->super;
+		}
+	}
+	return ret;
 }
 
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
@@ -266,9 +285,8 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
-	//Getters are inserted with the current level of the prototype chain
-	int level=cur_level;
-	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
+	assert(getObjectType()==T_CLASS);
+	obj_var* obj=Variables.findObjVar(name,ns,true);
 	if(obj->getter!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
@@ -284,9 +302,8 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 #ifndef NDEBUG
 	assert_and_throw(!initialized);
 #endif
-	//Setters are inserted with the current level of the prototype chain
-	int level=cur_level;
-	obj_var* obj=Variables.findObjVar(name,ns,level,true,false);
+	assert(getObjectType()==T_CLASS);
+	obj_var* obj=Variables.findObjVar(name,ns,true);
 	if(obj->setter!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
@@ -300,31 +317,12 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(ref_count>0);
 
-	//Find out if the variable is declared more than once
-	obj_var* obj=NULL;
-	int level;
-	unsigned int count=0;
-	//We search in every level
-	int max_level=(prototype)?prototype->max_level:0;
-	for(int i=max_level;i>=0;i--)
-	{
-		//We stick to the old iteration mode, as we need to count
-		obj=Variables.findObjVar(name,max_level,false,false);
-		if(obj)
-		{
-			count++;
-			level=i;
-		}
-	}
-	//if it's not present it's ok
-	if(count==0)
+	obj_var* obj=Variables.findObjVar(name,false);
+	if(obj==NULL)
 		return;
 
-	assert_and_throw(count==1);
-
 	//Now dereference the values
-	//TODO: maybe we can look on the previous levels
-	obj=Variables.findObjVar(name,level,false,false);
+	obj=Variables.findObjVar(name,false);
 	if(obj->var)
 		obj->var->decRef();
 	if(obj->getter)
@@ -333,7 +331,7 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 		obj->setter->decRef();
 
 	//Now kill the variable
-	Variables.killObjVar(name,level);
+	Variables.killObjVar(name);
 }
 
 //In all setter we first pass the value to the interface to see if special handling is possible
@@ -343,43 +341,40 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	setVariableByMultiname(name,abstract_i(value));
 }
 
-obj_var* ASObject::findSettable(const multiname& name, int& level)
+obj_var* ASObject::findSettable(const multiname& name)
 {
-	assert(level==cur_level);
-	obj_var* ret=NULL;
-	int max_level=cur_level;
-	for(int i=max_level;i>=0;i--)
+	obj_var* ret=Variables.findObjVar(name,false);
+	if(ret)
 	{
-		//The variable i is automatically moved to the right level
-		ret=Variables.findObjVar(name,i,false,true);
-		if(ret)
-		{
-			//It seems valid for a class to redefine only the getter, so if we can't find
-			//something to get, just go to the previous level
-			if(ret->setter || ret->var)
-			{
-				level=i;
-				break;
-			}
-		}
+		//It seems valid for a class to redefine only the getter, so if we can't find
+		//something to get, it's ok
+		if(!(ret->setter || ret->var))
+			ret=NULL;
 	}
 	return ret;
 }
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride)
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
 {
 	check();
 
-	//It's always correct to use the current level for the object
-	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level
-	int level=cur_level;
-	obj_var* obj=findSettable(name,level);
+	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualPrototype)
+	obj_var* obj=findSettable(name);
 
-	if(obj==NULL)
+	if(obj==NULL && prototype)
 	{
-		assert_and_throw(level==cur_level);
-		obj=Variables.findObjVar(name,level,true,false);
+		Class_base* cur=getActualPrototype();
+		while(cur)
+		{
+			//TODO: should be only findSetter
+			obj=cur->findSettable(name);
+			if(obj)
+				break;
+			cur=cur->super;
+		}
 	}
+	if(obj==NULL)
+		obj=Variables.findObjVar(name,true);
 
 	if(obj->setter)
 	{
@@ -391,8 +386,9 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 			setter=setter->getOverride();
 
 		//One argument can be passed without creating an array
-		incRef();
-		ASObject* ret=setter->call(this,&o,1,level);
+		ASObject* target=(base)?base:this;
+		target->incRef();
+		ASObject* ret=setter->call(target,&o,1);
 		assert_and_throw(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
 	}
@@ -405,20 +401,13 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 	}
 }
 
-void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
+void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl)
 {
-	obj_var* obj=NULL;
-	//It's always correct to use the current level for the object
 	//NOTE: we assume that [gs]etSuper and setProperty correctly manipulate the cur_level
-	int level=cur_level;
-	obj=Variables.findObjVar(name,ns,level,false,find_back);
+	obj_var* obj=Variables.findObjVar(name,ns,false);
 
 	if(obj==NULL)
-	{
-		//When the var is not found level should not be modified
-		assert_and_throw(cur_level==level);
-		obj=Variables.findObjVar(name,ns,level,true,false);
-	}
+		obj=Variables.findObjVar(name,ns,true);
 
 	if(obj->setter)
 	{
@@ -428,7 +417,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 		IFunction* setter=obj->setter->getOverride();
 		incRef();
 		//One argument can be passed without creating an array
-		ASObject* ret=setter->call(this,&o,1,level);
+		ASObject* ret=setter->call(this,&o,1);
 		assert_and_throw(ret==NULL);
 		LOG(LOG_CALLS,"End of setter");
 	}
@@ -442,19 +431,19 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	check();
 }
 
-void variables_map::killObjVar(const multiname& mname, int level)
+void variables_map::killObjVar(const multiname& mname)
 {
-	nameAndLevel name("",level);
+	tiny_string name;
 	switch(mname.name_type)
 	{
 		case multiname::NAME_INT:
-			name.name=tiny_string(mname.name_i);
+			name=tiny_string(mname.name_i);
 			break;
 		case multiname::NAME_NUMBER:
-			name.name=tiny_string(mname.name_d);
+			name=tiny_string(mname.name_d);
 			break;
 		case multiname::NAME_STRING:
-			name.name=mname.name_s;
+			name=mname.name_s;
 			break;
 		default:
 			assert_and_throw("Unexpected name kind" && false);
@@ -483,22 +472,22 @@ void variables_map::killObjVar(const multiname& mname, int level)
 	throw RunTimeException("Variable to kill not found");
 }
 
-obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool create, bool searchPreviusLevels)
+obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 {
-	nameAndLevel name("",level);
+	tiny_string name;
 	switch(mname.name_type)
 	{
 		case multiname::NAME_INT:
-			name.name=tiny_string(mname.name_i);
+			name=tiny_string(mname.name_i);
 			break;
 		case multiname::NAME_NUMBER:
-			name.name=tiny_string(mname.name_d);
+			name=tiny_string(mname.name_d);
 			break;
 		case multiname::NAME_STRING:
-			name.name=mname.name_s;
+			name=mname.name_s;
 			break;
 		case multiname::NAME_OBJECT:
-			name.name=mname.name_o->toString();
+			name=mname.name_o->toString();
 			break;
 		default:
 			assert_and_throw("Unexpected name kind" && false);
@@ -507,10 +496,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool crea
 	const var_iterator ret_begin=Variables.lower_bound(name);
 	//This actually look for the first different name, if we accept also previous levels
 	//Otherwise we are just doing equal_range
-	if(searchPreviusLevels)
-		name.level=0;
 	const var_iterator ret_end=Variables.upper_bound(name);
-	name.level=level;
 
 	var_iterator ret=ret_begin;
 	for(;ret!=ret_end;ret++)
@@ -519,10 +505,7 @@ obj_var* variables_map::findObjVar(const multiname& mname, int& level, bool crea
 		assert_and_throw(!mname.ns.empty());
 		//We can use binary search, as the namespace are ordered
 		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.first))
-		{
-			level=ret->first.level;
 			return &ret->second.second;
-		}
 	}
 
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
@@ -586,7 +569,7 @@ void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_strin
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
-	Variables.initSlot(n,cur_level,name,ns);
+	Variables.initSlot(n,name,ns);
 }
 
 ASObject* ASObject::getVariableByString(const std::string& name)
@@ -600,50 +583,39 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 {
 	check();
 
-	ASObject* ret=getVariableByMultiname(name).obj;
+	ASObject* ret=getVariableByMultiname(name);
 	assert_and_throw(ret);
 	return ret->toInt();
 }
 
-obj_var* ASObject::findGettable(const multiname& name, int& level)
+obj_var* ASObject::findGettable(const multiname& name)
 {
-	assert(level==cur_level);
-	obj_var* ret=NULL;
-	int max_level=cur_level;
-	for(int i=max_level;i>=0;i--)
+	obj_var* ret=Variables.findObjVar(name,false);
+	if(ret)
 	{
-		//The variable i is automatically moved to the right level
-		ret=Variables.findObjVar(name,i,false,true);
-		if(ret)
-		{
-			//It seems valid for a class to redefine only the setter, so if we can't find
-			//something to get, just go to the previous level
-			if(ret->getter || ret->var)
-			{
-				level=i;
-				break;
-			}
-		}
+		//It seems valid for a class to redefine only the setter, so if we can't find
+		//something to get, it's ok
+		if(!(ret->getter || ret->var))
+			ret=NULL;
 	}
 	return ret;
 }
 
-objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride)
+ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
 	check();
 
-	int level=cur_level;
-	obj_var* obj=findGettable(name,level);
+	obj_var* obj=findGettable(name);
 
 	if(obj!=NULL)
 	{
-		assert_and_throw(level!=-1);
 		if(obj->getter)
 		{
 			//Call the getter
-			if(prototype)
+			ASObject* target=(base)?base:this;
+			if(target->prototype)
 			{
-				LOG(LOG_CALLS,"Calling the getter on type " << prototype->class_name);
+				LOG(LOG_CALLS,"Calling the getter on type " << target->prototype->class_name);
 			}
 			else
 			{
@@ -652,67 +624,61 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 			IFunction* getter=obj->getter;
 			if(enableOverride)
 				getter=getter->getOverride();
-			incRef();
-			ASObject* ret=getter->call(this,NULL,0,level);
+			target->incRef();
+			ASObject* ret=getter->call(target,NULL,0);
 			LOG(LOG_CALLS,"End of getter");
 			assert_and_throw(ret);
 			//The returned value is already owned by the caller
 			ret->fake_decRef();
-			//TODO: check
-			return objAndLevel(ret,level);
+			return ret;
 		}
 		else
 		{
 			assert_and_throw(!obj->setter);
 			assert_and_throw(obj->var);
-			return objAndLevel(obj->var,level);
+			return obj->var;
 		}
 	}
 	else
 	{
 		//Check if we should do lazy definition
-		if(name.name_s=="toString")
-		{
-			ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
-			setVariableByQName("toString","",ret);
-			//Added at level 0, as Object is always the base
-			return objAndLevel(ret,0);
-		}
-		else if(name.name_s=="hasOwnProperty")
+		if(name.name_s=="hasOwnProperty")
 		{
 			ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
 			setVariableByQName("hasOwnProperty","",ret);
 			//Added at level 0, as Object is always the base
-			return objAndLevel(ret,0);
+			return ret;
 		}
 		else if(getObjectType()==T_FUNCTION && name.name_s=="call")
 		{
 			//Fake returning the function itself
-			return objAndLevel(this,0);
+			return this;
 		}
 		else if(getObjectType()==T_FUNCTION && name.name_s=="apply")
 		{
 			//Create on the fly a Function
 			//HACK: both call and apply should be included in the Function object
-			return objAndLevel(Class<IFunction>::getFunction(IFunction::apply),0);
+			return Class<IFunction>::getFunction(IFunction::apply);
 		}
 
 		//It has not been found yet, ask the prototype
-		if(prototype)
-			return prototype->getVariableByMultiname(name,skip_impl);
+		if(prototype && getActualPrototype())
+		{
+			ASObject* ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,true,this);
+			return ret;
+		}
 	}
 
 	//If it has not been found
-	return objAndLevel(NULL,0);
+	return NULL;
 }
 
-objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)
+ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)
 {
 	check();
 
 	obj_var* obj=NULL;
-	int level=cur_level;
-	obj=Variables.findObjVar(name,ns,level,false,true);
+	obj=Variables.findObjVar(name,ns,false);
 
 	if(obj!=NULL)
 	{
@@ -722,23 +688,23 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 			LOG(LOG_CALLS,"Calling the getter");
 			IFunction* getter=obj->getter->getOverride();
 			incRef();
-			ASObject* ret=getter->call(this,NULL,0,level);
+			ASObject* ret=getter->call(this,NULL,0);
 			LOG(LOG_CALLS,"End of getter");
 			//The variable is already owned by the caller
 			ret->fake_decRef();
-			return objAndLevel(ret,level);
+			return ret;
 		}
 		else
-			return objAndLevel(obj->var,level);
+			return obj->var;
 	}
 	else if(prototype)
 	{
-		objAndLevel ret=prototype->getVariableByQName(name,ns);
-		if(ret.obj)
+		ASObject* ret=prototype->getVariableByQName(name,ns);
+		if(ret)
 			return ret;
 	}
 
-	return objAndLevel(NULL,0);
+	return NULL;
 }
 
 ASObject* variables_map::getVariableByString(const std::string& name)
@@ -750,7 +716,7 @@ ASObject* variables_map::getVariableByString(const std::string& name)
 		string cur(it->second.first.raw_buf());
 		if(!cur.empty())
 			cur+='.';
-		cur+=it->first.name.raw_buf();
+		cur+=it->first.raw_buf();
 		if(cur==name)
 		{
 			if(it->second.second.getter)
@@ -825,14 +791,14 @@ void ASObject::check() const
 			break;
 
 		//No double definition of a single variable should exist
-		if(it->first.name==next->first.name && it->second.first==next->second.first)
+		if(it->first==next->first && it->second.first==next->second.first)
 		{
 			if(it->second.second.var==NULL && next->second.second.var==NULL)
 				continue;
 
 			if(it->second.second.var==NULL || next->second.second.var==NULL)
 			{
-				cout << it->first.name << endl;
+				cout << it->first << endl;
 				cout << it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter << endl;
 				cout << next->second.second.var << ' ' << next->second.second.setter << ' ' << next->second.second.getter << endl;
 				abort();
@@ -840,7 +806,7 @@ void ASObject::check() const
 
 			if(it->second.second.var->getObjectType()!=T_FUNCTION || next->second.second.var->getObjectType()!=T_FUNCTION)
 			{
-				cout << it->first.name << endl;
+				cout << it->first << endl;
 				abort();
 			}
 		}
@@ -853,7 +819,7 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
-		LOG(LOG_NO_INFO,it->first.level << ": [" << it->second.first << "] "<< it->first.name << " " << 
+		LOG(LOG_NO_INFO,"[" << it->second.first << "] "<< it->first << " " << 
 			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter);
 }
 
@@ -1899,12 +1865,12 @@ Class_base* ASObject::getActualPrototype() const
 	return ret;
 }
 
-void variables_map::initSlot(unsigned int n, int level, const tiny_string& name, const tiny_string& ns)
+void variables_map::initSlot(unsigned int n, const tiny_string& name, const tiny_string& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
 
-	pair<var_iterator, var_iterator> ret=Variables.equal_range(nameAndLevel(name,level));
+	pair<var_iterator, var_iterator> ret=Variables.equal_range(name);
 	if(ret.first!=ret.second)
 	{
 		//Check if this namespace is already present
@@ -1937,7 +1903,7 @@ void variables_map::setSlot(unsigned int n,ASObject* o)
 		throw RunTimeException("setSlot out of bounds");
 }
 
-obj_var* variables_map::getValueAt(unsigned int index, int& level)
+obj_var* variables_map::getValueAt(unsigned int index)
 {
 	//TODO: CHECK behavious on overridden methods
 	if(index<Variables.size())
@@ -1947,7 +1913,6 @@ obj_var* variables_map::getValueAt(unsigned int index, int& level)
 		for(unsigned int i=0;i<index;i++)
 			it++;
 
-		level=it->first.level;
 		return &it->second.second;
 	}
 	else
@@ -1956,8 +1921,7 @@ obj_var* variables_map::getValueAt(unsigned int index, int& level)
 
 ASObject* ASObject::getValueAt(int index)
 {
-	int level;
-	obj_var* obj=Variables.getValueAt(index,level);
+	obj_var* obj=Variables.getValueAt(index);
 	assert_and_throw(obj);
 	ASObject* ret;
 	if(obj->getter)
@@ -1966,7 +1930,7 @@ ASObject* ASObject::getValueAt(int index)
 		LOG(LOG_CALLS,"Calling the getter");
 		IFunction* getter=obj->getter->getOverride();
 		incRef();
-		ret=getter->call(this,NULL,0,level);
+		ret=getter->call(this,NULL,0);
 		ret->fake_decRef();
 		LOG(LOG_CALLS,"End of getter");
 	}
@@ -1986,7 +1950,7 @@ tiny_string variables_map::getNameAt(unsigned int index)
 		for(unsigned int i=0;i<index;i++)
 			it++;
 
-		return tiny_string(it->first.name);
+		return it->first;
 	}
 	else
 		throw RunTimeException("getNameAt out of bounds");

@@ -48,13 +48,15 @@ ASFUNCTIONBODY(Capabilities,_getLanguage)
 void ApplicationDomain::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	//Static
 	c->setGetterByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain));
+	//Instance
+	c->setVariableByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition));
+	c->setVariableByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition));
 }
 
 void ApplicationDomain::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition));
-	o->setVariableByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition));
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_constructor)
@@ -76,21 +78,21 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 	stringToQName(tmp,name,ns);
 
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
-	objAndLevel o=getGlobal()->getVariableByQName(name,ns);
-	if(o.obj==NULL)
+	ASObject* o=getGlobal()->getVariableByQName(name,ns);
+	if(o==NULL)
 		return abstract_b(false);
 	else
 	{
 		//Check if the object has to be defined
-		if(o.obj->getObjectType()==T_DEFINABLE)
+		if(o->getObjectType()==T_DEFINABLE)
 		{
 			LOG(LOG_CALLS,"We got an object not yet valid");
-			Definable* d=static_cast<Definable*>(o.obj);
+			Definable* d=static_cast<Definable*>(o);
 			d->define(getGlobal());
 			o=getGlobal()->getVariableByQName(name,ns);
 		}
 
-		if(o.obj->getObjectType()!=T_CLASS)
+		if(o->getObjectType()!=T_CLASS)
 			return abstract_b(false);
 
 		LOG(LOG_CALLS,"Found definition for " << ns << " :: " << name);
@@ -107,11 +109,11 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	stringToQName(tmp,name,ns);
 
 	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
-	objAndLevel o=getGlobal()->getVariableByQName(name,ns);
-	assert(o.obj);
+	ASObject* o=getGlobal()->getVariableByQName(name,ns);
+	assert_and_throw(o);
 
 	//Check if the object has to be defined
-	if(o.obj->getObjectType()==T_DEFINABLE)
+	if(o->getObjectType()==T_DEFINABLE)
 	{
 		throw UnsupportedException("Defininable in ApplicationDomain::getDefinition");
 /*		LOG(LOG_CALLS,"We got an object not yet valid");
@@ -120,10 +122,10 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 		o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);*/
 	}
 
-	assert(o.obj->getObjectType()==T_CLASS);
+	assert(o->getObjectType()==T_CLASS);
 
 	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
-	return o.obj;
+	return o;
 }
 
 void Security::sinit(Class_base* c)

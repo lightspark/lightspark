@@ -363,12 +363,20 @@ private:
 	static void* gtkplug_worker(RenderThread*);
 #endif
 	void commonGLInit(int width, int height);
+	void commonGLResize(int width, int height);
 	void commonGLDeinit();
 	sem_t render;
 	sem_t inputDone;
 	bool inputNeeded;
 	bool inputDisabled;
 	std::string fontPath;
+	bool resizeNeeded;
+	uint32_t newWidth;
+	uint32_t newHeight;
+	float scaleX;
+	float scaleY;
+	int offsetX;
+	int offsetY;
 
 #ifndef WIN32
 	Display* mDisplay;
@@ -418,6 +426,7 @@ public:
 	void releaseResourceMutex();
 
 	void requestInput();
+	void requestResize(uint32_t w, uint32_t h);
 	void pushId()
 	{
 		idStack.push_back(currentId);
@@ -444,6 +453,9 @@ public:
 	InteractiveObject* selectedDebug;
 	float currentId;
 	bool materialOverride;
+
+	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=0, NO_SCALE=0, SHOW_ALL };
+	SCALE_MODE scaleMode;
 };
 
 };

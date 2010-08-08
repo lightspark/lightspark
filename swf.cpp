@@ -1131,6 +1131,11 @@ void* InputThread::sdl_worker(InputThread* th)
 				}
 				break;
 			}
+			case SDL_VIDEORESIZE:
+			{
+				th->m_sys->getRenderThread()->requestResize(event.resize.w, event.resize.h);
+				break;
+			}
 			case SDL_QUIT:
 			{
 				th->m_sys->setShutdownFlag();
@@ -1222,8 +1227,9 @@ void InputThread::disableDrag()
 }
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),inputDisabled(false),
-	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),
-	mainTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
+	resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),tempBufferAcquired(false),
+	frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),mainTex(false),tempTex(false),inputTex(false),
+	hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false),scaleMode(SHOW_ALL)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -1811,6 +1817,67 @@ void RenderThread::commonGLInit(int width, int height)
 	}
 }
 
+void RenderThread::commonGLResize(int width, int height)
+{
+	//Get the size of the content
+	RECT r=m_sys->getFrameSize();
+	r.Xmax/=20;
+	r.Ymax/=20;
+	//Now compute the scalings and offsets
+	switch(scaleMode)
+	{
+		case SHOW_ALL:
+			//Compute both scaling
+			scaleX=width;
+			scaleX/=r.Xmax;
+			scaleY=height;
+			scaleY/=r.Ymax;
+			//Enlarge with no distortion
+			if(scaleX<scaleY)
+			{
+				//Uniform scaling for Y
+				scaleY=scaleX;
+				//Apply the offset
+				offsetY=(height-r.Ymax*scaleY)/2;
+				offsetX=0;
+			}
+			else
+			{
+				//Uniform scaling for Y
+				scaleX=scaleY;
+				//Apply the offset
+				offsetX=(width-r.Xmax*scaleX)/2;
+				offsetY=0;
+			}
+			break;
+		default:
+			::abort();
+	}
+	glViewport(0,0,width,height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0,width,0,height,-100,0);
+
+	glMatrixMode(GL_MODELVIEW);
+
+	mainTex.resize(width, height);
+
+	tempTex.resize(width, height);
+
+	inputTex.resize(width, height);
+	//Rellocate buffer for texture readback
+	delete[] interactive_buffer;
+	interactive_buffer=new uint32_t[inputTex.getAllocWidth()*inputTex.getAllocHeight()];
+}
+
+void RenderThread::requestResize(uint32_t w, uint32_t h)
+{
+	newWidth=w;
+	newHeight=h;
+	resizeNeeded=true;
+	sem_post(&render);
+}
+
 void* RenderThread::sdl_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -1827,7 +1894,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1); 
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
-	SDL_SetVideoMode( width, height, 24, SDL_OPENGL );
+	SDL_SetVideoMode(width, height, 24, SDL_OPENGL|SDL_RESIZABLE);
 	th->commonGLInit(width, height);
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
@@ -1848,6 +1915,16 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			chronometer.checkpoint();
 
 			SDL_GL_SwapBuffers( );
+			if(th->resizeNeeded)
+			{
+				width=th->newWidth;
+				th->newWidth=0;
+				height=th->newHeight;
+				th->newHeight=0;
+				th->resizeNeeded=false;
+				SDL_SetVideoMode(width, height, 24, SDL_OPENGL|SDL_RESIZABLE);
+				th->commonGLResize(width, height);
+			}
 
 			if(th->inputNeeded)
 			{
@@ -1919,6 +1996,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glClear(GL_COLOR_BUFFER_BIT);
 				
 				glLoadIdentity();
+				glTranslatef(th->offsetX,th->offsetY,0);
+				glScalef(th->scaleX,th->scaleY,1);
 				glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
 				
 				th->m_sys->Render();

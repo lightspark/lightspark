@@ -218,14 +218,13 @@ public:
 		if(!bound)
 		{
 			//If binding with null we are not a class method
-			IFunction* ret;
-			incRef();
-			ret=this;
+			//Generate a copy
+			IFunction* ret=clone();
 			ret->bound=true;
 			ret->closure_this=c;
 			if(c)
 				c->incRef();
-			ret->closure_level=level;
+			//ret->closure_level=level;
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}
@@ -564,9 +563,8 @@ private:
 	Integer(int32_t v=0):val(v){type=T_INTEGER;}
 	Integer(Manager* m):ASObject(m),val(0){type=T_INTEGER;}
 public:
-	static void buildTraits(ASObject* o){
-		o->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(Integer::_toString));
-	};
+	static void buildTraits(ASObject* o){};
+	static void sinit(Class_base* c);
 	ASFUNCTION(_toString);
 	tiny_string toString(bool debugMsg);
 	int32_t toInt()
@@ -639,6 +637,7 @@ public:
 	TRISTATE isLess(ASObject* o);
 	bool isEqual(ASObject* o);
 	static void buildTraits(ASObject* o){};
+	static void sinit(Class_base* c);
 };
 
 class ASMovieClipLoader: public ASObject
@@ -761,6 +760,7 @@ public:
 	ASFUNCTION(_getMessage);
 	ASFUNCTION(_getErrorID);
 	tiny_string toString(bool debugMsg=false);
+	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };
 

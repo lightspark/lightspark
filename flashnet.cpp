@@ -42,12 +42,12 @@ URLRequest::URLRequest()
 void URLRequest::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setSetterByQName("url","",Class<IFunction>::getFunction(_setUrl));
+	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getUrl));
 }
 
 void URLRequest::buildTraits(ASObject* o)
 {
-	o->setSetterByQName("url","",Class<IFunction>::getFunction(_setUrl));
-	o->setGetterByQName("url","",Class<IFunction>::getFunction(_getUrl));
 }
 
 ASFUNCTIONBODY(URLRequest,_constructor)
@@ -80,14 +80,14 @@ void URLLoader::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat));
+	c->setGetterByQName("data","",Class<IFunction>::getFunction(_getData));
+	c->setSetterByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat));
+	c->setVariableByQName("load","",Class<IFunction>::getFunction(load));
 }
 
 void URLLoader::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat));
-	o->setGetterByQName("data","",Class<IFunction>::getFunction(_getData));
-	o->setSetterByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat));
-	o->setVariableByQName("load","",Class<IFunction>::getFunction(load));
 }
 
 ASFUNCTIONBODY(URLLoader,_constructor)
@@ -220,11 +220,11 @@ void NetConnection::sinit(Class_base* c)
 	//c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setVariableByQName("connect","",Class<IFunction>::getFunction(connect));
 }
 
 void NetConnection::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("connect","",Class<IFunction>::getFunction(connect));
 }
 
 ASFUNCTIONBODY(NetConnection,connect)
@@ -264,15 +264,15 @@ void NetStream::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setVariableByQName("play","",Class<IFunction>::getFunction(play));
+	c->setVariableByQName("close","",Class<IFunction>::getFunction(close));
+	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(getBytesLoaded));
+	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(getBytesTotal));
+	c->setGetterByQName("time","",Class<IFunction>::getFunction(getTime));
 }
 
 void NetStream::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("play","",Class<IFunction>::getFunction(play));
-	o->setVariableByQName("close","",Class<IFunction>::getFunction(close));
-	o->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(getBytesLoaded));
-	o->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(getBytesTotal));
-	o->setGetterByQName("time","",Class<IFunction>::getFunction(getTime));
 }
 
 ASFUNCTIONBODY(NetStream,_constructor)

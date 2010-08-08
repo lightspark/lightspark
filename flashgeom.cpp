@@ -32,38 +32,38 @@ REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle");
 void Rectangle::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	IFunction* gleft=Class<IFunction>::getFunction(_getLeft);
+	c->setGetterByQName("left","",gleft);
+	gleft->incRef();
+	c->setGetterByQName("x","",gleft);
+	IFunction* sleft=Class<IFunction>::getFunction(_setLeft);
+	c->setSetterByQName("left","",sleft);
+	sleft->incRef();
+	c->setSetterByQName("x","",sleft);
+	c->setGetterByQName("right","",Class<IFunction>::getFunction(_getRight));
+	c->setSetterByQName("right","",Class<IFunction>::getFunction(_setRight));
+	c->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth));
+	c->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth));
+
+	IFunction* gtop=Class<IFunction>::getFunction(_getTop);
+	c->setGetterByQName("top","",gtop);
+	gtop->incRef();
+	c->setGetterByQName("y","",gtop);
+	IFunction* stop=Class<IFunction>::getFunction(_setTop);
+	c->setSetterByQName("top","",stop);
+	stop->incRef();
+	c->setSetterByQName("y","",stop);
+
+	c->setGetterByQName("bottom","",Class<IFunction>::getFunction(_getBottom));
+	c->setSetterByQName("bottom","",Class<IFunction>::getFunction(_setBottom));
+	c->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight));
+	c->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight));
+
+	c->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
 }
 
 void Rectangle::buildTraits(ASObject* o)
 {
-	IFunction* gleft=Class<IFunction>::getFunction(_getLeft);
-	o->setGetterByQName("left","",gleft);
-	gleft->incRef();
-	o->setGetterByQName("x","",gleft);
-	IFunction* sleft=Class<IFunction>::getFunction(_setLeft);
-	o->setSetterByQName("left","",sleft);
-	sleft->incRef();
-	o->setSetterByQName("x","",sleft);
-	o->setGetterByQName("right","",Class<IFunction>::getFunction(_getRight));
-	o->setSetterByQName("right","",Class<IFunction>::getFunction(_setRight));
-	o->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth));
-	o->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth));
-
-	IFunction* gtop=Class<IFunction>::getFunction(_getTop);
-	o->setGetterByQName("top","",gtop);
-	gtop->incRef();
-	o->setGetterByQName("y","",gtop);
-	IFunction* stop=Class<IFunction>::getFunction(_setTop);
-	o->setSetterByQName("top","",stop);
-	stop->incRef();
-	o->setSetterByQName("y","",stop);
-
-	o->setGetterByQName("bottom","",Class<IFunction>::getFunction(_getBottom));
-	o->setSetterByQName("bottom","",Class<IFunction>::getFunction(_setBottom));
-	o->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight));
-	o->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight));
-
-	o->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
 }
 
 const lightspark::RECT Rectangle::getRect() const
@@ -253,12 +253,12 @@ ASFUNCTIONBODY(ColorTransform,getColor)
 void Point::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setGetterByQName("x","",Class<IFunction>::getFunction(_getX));
+	c->setGetterByQName("y","",Class<IFunction>::getFunction(_getY));
 }
 
 void Point::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("x","",Class<IFunction>::getFunction(_getX));
-	o->setGetterByQName("y","",Class<IFunction>::getFunction(_getY));
 }
 
 ASFUNCTIONBODY(Point,_constructor)
@@ -288,9 +288,9 @@ void Transform::sinit(Class_base* c)
 {
 	//c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
+	c->setSetterByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction));
 }
 
 void Transform::buildTraits(ASObject* o)
 {
-	o->setSetterByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction));
 }

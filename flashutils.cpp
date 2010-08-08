@@ -49,15 +49,15 @@ ByteArray::~ByteArray()
 
 void ByteArray::sinit(Class_base* c)
 {
+	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
+	c->setGetterByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable));
+	c->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition));
+	c->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition));
+	c->setVariableByQName("readBytes","",Class<IFunction>::getFunction(readBytes));
 }
 
 void ByteArray::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
-	o->setGetterByQName("bytesAvailable","",Class<IFunction>::getFunction(_getBytesAvailable));
-	o->setGetterByQName("position","",Class<IFunction>::getFunction(_getPosition));
-	o->setSetterByQName("position","",Class<IFunction>::getFunction(_setPosition));
-	o->setVariableByQName("readBytes","",Class<IFunction>::getFunction(readBytes));
 }
 
 uint8_t* ByteArray::getBuffer(unsigned int size)

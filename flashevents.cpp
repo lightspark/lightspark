@@ -83,12 +83,13 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("TAB_CHILDREN_CHANGE","",Class<ASString>::getInstanceS("tabChildrenChange"));
 	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"));
 	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"));
+
+	c->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget));
+	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType));
 }
 
 void Event::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget));
-	o->setGetterByQName("type","",Class<IFunction>::getFunction(_getType));
 }
 
 ASFUNCTIONBODY(Event,_constructor)
@@ -157,12 +158,13 @@ void ProgressEvent::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"));
+
+	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
+	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
 }
 
 void ProgressEvent::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
-	o->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
 }
 
 ASFUNCTIONBODY(ProgressEvent,_constructor)

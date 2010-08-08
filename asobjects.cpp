@@ -65,23 +65,23 @@ Array::Array()
 void Array::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
+	c->ASObject::setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
+	c->ASObject::setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
+	c->ASObject::setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
+	c->ASObject::setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
+	c->ASObject::setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
+	c->ASObject::setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
+	c->ASObject::setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
+//	c->ASObject::setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
+	c->ASObject::setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
+	c->ASObject::setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	c->ASObject::setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
+	c->ASObject::setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
 }
 
 void Array::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
-	o->ASObject::setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
-	o->ASObject::setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
-	o->ASObject::setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
-	o->ASObject::setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
-	o->ASObject::setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
-	o->ASObject::setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
-	o->ASObject::setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
-//	o->ASObject::setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
-	o->ASObject::setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
-	o->ASObject::setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
-	o->ASObject::setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
-	o->ASObject::setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
 }
 
 ASFUNCTIONBODY(Array,_constructor)
@@ -650,20 +650,20 @@ void ASString::sinit(Class_base* c)
 {
 	//c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setConstructor(NULL);
+	c->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
+	c->setVariableByQName("split",AS3,Class<IFunction>::getFunction(split));
+	c->setVariableByQName("substr",AS3,Class<IFunction>::getFunction(substr));
+	c->setVariableByQName("replace",AS3,Class<IFunction>::getFunction(replace));
+	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(concat));
+	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	c->setVariableByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt));
+	c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
+	c->setVariableByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase));
+	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 }
 
 void ASString::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
-	o->setVariableByQName("split",AS3,Class<IFunction>::getFunction(split));
-	o->setVariableByQName("substr",AS3,Class<IFunction>::getFunction(substr));
-	o->setVariableByQName("replace",AS3,Class<IFunction>::getFunction(replace));
-	o->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(concat));
-	o->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
-	o->setVariableByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt));
-	o->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
-	o->setVariableByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase));
-	o->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 }
 
 Array::~Array()
@@ -978,6 +978,12 @@ tiny_string Integer::toString(bool debugMsg)
 	return tiny_string(cur,true); //Create a copy
 }
 
+void Integer::sinit(Class_base* c)
+{
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
 tiny_string UInteger::toString(bool debugMsg)
 {
 	char buf[20];
@@ -1052,6 +1058,12 @@ tiny_string Number::toString(bool debugMsg)
 	return tiny_string(buf,true);
 }
 
+void Number::sinit(Class_base* c)
+{
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
 {
 }
@@ -1059,18 +1071,18 @@ Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisec
 void Date::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setVariableByQName("getTimezoneOffset","",Class<IFunction>::getFunction(getTimezoneOffset));
+	c->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf));
+	c->setVariableByQName("getTime",AS3,Class<IFunction>::getFunction(getTime));
+	c->setVariableByQName("getFullYear","",Class<IFunction>::getFunction(getFullYear));
+	c->setVariableByQName("getHours",AS3,Class<IFunction>::getFunction(getHours));
+	c->setVariableByQName("getMinutes",AS3,Class<IFunction>::getFunction(getMinutes));
+	c->setVariableByQName("getSeconds",AS3,Class<IFunction>::getFunction(getMinutes));
+	//o->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(ASObject::_toString));
 }
 
 void Date::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("getTimezoneOffset","",Class<IFunction>::getFunction(getTimezoneOffset));
-	o->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf));
-	o->setVariableByQName("getTime",AS3,Class<IFunction>::getFunction(getTime));
-	o->setVariableByQName("getFullYear","",Class<IFunction>::getFunction(getFullYear));
-	o->setVariableByQName("getHours",AS3,Class<IFunction>::getFunction(getHours));
-	o->setVariableByQName("getMinutes",AS3,Class<IFunction>::getFunction(getMinutes));
-	o->setVariableByQName("getSeconds",AS3,Class<IFunction>::getFunction(getMinutes));
-	//o->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(ASObject::_toString));
 }
 
 ASFUNCTIONBODY(Date,_constructor)
@@ -1442,13 +1454,13 @@ RegExp::RegExp():global(false),ignoreCase(false),extended(false),lastIndex(0)
 void RegExp::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(exec));
+	c->setVariableByQName("test",AS3,Class<IFunction>::getFunction(test));
+	c->setGetterByQName("global","",Class<IFunction>::getFunction(_getGlobal));
 }
 
 void RegExp::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(exec));
-	o->setVariableByQName("test",AS3,Class<IFunction>::getFunction(test));
-	o->setGetterByQName("global","",Class<IFunction>::getFunction(_getGlobal));
 }
 
 ASFUNCTIONBODY(RegExp,_constructor)
@@ -1723,14 +1735,18 @@ ASFUNCTIONBODY(ASError,_getMessage)
 	return Class<ASString>::getInstanceS(th->message);
 }
 
+void ASError::sinit(Class_base* c)
+{
+	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
+	c->setGetterByQName("errorID",AS3,Class<IFunction>::getFunction(_getErrorID));
+	c->setGetterByQName("message",AS3,Class<IFunction>::getFunction(_getMessage));
+	c->setSetterByQName("message",AS3,Class<IFunction>::getFunction(_setMessage));
+	c->setGetterByQName("name",AS3,Class<IFunction>::getFunction(_getName));
+	c->setSetterByQName("name",AS3,Class<IFunction>::getFunction(_setName));
+}
+
 void ASError::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	o->setGetterByQName("errorID",AS3,Class<IFunction>::getFunction(_getErrorID));
-	o->setGetterByQName("message",AS3,Class<IFunction>::getFunction(_getMessage));
-	o->setSetterByQName("message",AS3,Class<IFunction>::getFunction(_setMessage));
-	o->setGetterByQName("name",AS3,Class<IFunction>::getFunction(_getName));
-	o->setSetterByQName("name",AS3,Class<IFunction>::getFunction(_setName));
 }
 
 Class_base::Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
@@ -2078,6 +2094,8 @@ void UInteger::sinit(Class_base* c)
 	//TODO: add in the JIT support for unsigned number
 	//Right now we pretend to be signed, to make comparisons work
 	c->setVariableByQName("MAX_VALUE","",new UInteger(0x7fffffff));
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 }
 
 bool UInteger::isEqual(ASObject* o)

@@ -96,6 +96,7 @@ TRISTATE ASObject::isLess(ASObject* r)
 	LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
 	if(prototype)
 		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
+	__asm__("int $3");
 	throw RunTimeException("Not handled less comparison for objects");
 	return TFALSE;
 }
@@ -253,7 +254,20 @@ bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns
 	check();
 	//We look in all the object's levels
 	int level=(prototype)?(prototype->max_level):0;
-	return (Variables.findObjVar(name, ns, level, false, true)!=NULL);
+	bool ret=(Variables.findObjVar(name, ns, level, false, true)!=NULL);
+	if(!ret) //Try the classes
+	{
+		Class_base* cur=prototype;
+		while(cur)
+		{
+			int level=cur->cur_level;
+			ret=(cur->Variables.findObjVar(name, ns, level, false, true)!=NULL);
+			if(ret)
+				break;
+			cur=cur->super;
+		}
+	}
+	return ret;
 }
 
 bool ASObject::hasPropertyByMultiname(const multiname& name)
@@ -261,7 +275,20 @@ bool ASObject::hasPropertyByMultiname(const multiname& name)
 	check();
 	//We look in all the object's levels
 	int level=(prototype)?(prototype->max_level):0;
-	return (Variables.findObjVar(name, level, false, true)!=NULL);
+	bool ret=(Variables.findObjVar(name, level, false, true)!=NULL);
+	if(!ret) //Try the classes
+	{
+		Class_base* cur=prototype;
+		while(cur)
+		{
+			int level=cur->cur_level;
+			ret=(cur->Variables.findObjVar(name, level, false, true)!=NULL);
+			if(ret)
+				break;
+			cur=cur->super;
+		}
+	}
+	return ret;
 }
 
 void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
@@ -659,9 +686,10 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 		if(obj->getter)
 		{
 			//Call the getter
-			if(prototype)
+			ASObject* target=(base)?base:this;
+			if(target->prototype)
 			{
-				LOG(LOG_CALLS,"Calling the getter on type " << prototype->class_name);
+				LOG(LOG_CALLS,"Calling the getter on type " << target->prototype->class_name);
 			}
 			else
 			{
@@ -670,7 +698,6 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 			IFunction* getter=obj->getter;
 			if(enableOverride)
 				getter=getter->getOverride();
-			ASObject* target=(base)?base:this;
 			target->incRef();
 			ASObject* ret=getter->call(target,NULL,0,level);
 			LOG(LOG_CALLS,"End of getter");

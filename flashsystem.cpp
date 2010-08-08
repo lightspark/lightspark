@@ -48,13 +48,15 @@ ASFUNCTIONBODY(Capabilities,_getLanguage)
 void ApplicationDomain::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	//Static
 	c->setGetterByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain));
+	//Instance
+	c->setVariableByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition));
+	c->setVariableByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition));
 }
 
 void ApplicationDomain::buildTraits(ASObject* o)
 {
-	o->setVariableByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition));
-	o->setVariableByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition));
 }
 
 ASFUNCTIONBODY(ApplicationDomain,_constructor)

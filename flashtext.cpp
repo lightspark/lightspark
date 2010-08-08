@@ -43,14 +43,14 @@ void TextField::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth));
+	c->setSetterByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth));
+	c->setGetterByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight));
+	c->setSetterByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight));
 }
 
 void TextField::buildTraits(ASObject* o)
 {
-	o->setGetterByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth));
-	o->setSetterByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth));
-	o->setGetterByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight));
-	o->setSetterByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight));
 }
 
 bool TextField::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

@@ -217,14 +217,22 @@ public:
 	{
 		if(!bound)
 		{
-			//If binding with null we are not a class method
-			//Generate a copy
-			IFunction* ret=clone();
+			IFunction* ret=NULL;
+			if(c==NULL)
+			{
+				//If binding with null we are generated from newFunction, don't copy
+				ret=this;
+			}
+			else
+			{
+				//Generate a copy
+				ret=clone();
+			}
 			ret->bound=true;
 			ret->closure_this=c;
 			if(c)
 				c->incRef();
-			//ret->closure_level=level;
+			ret->closure_level=level;
 			//std::cout << "Binding " << ret << std::endl;
 			return ret;
 		}

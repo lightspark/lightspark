@@ -175,7 +175,7 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("Loader","flash.display",Class<Loader>::getClass());
 	Global->setVariableByQName("LoaderInfo","flash.display",Class<LoaderInfo>::getClass());
 	Global->setVariableByQName("SimpleButton","flash.display",Class<ASObject>::getClass("SimpleButton"));
-	Global->setVariableByQName("InteractiveObject","flash.display",Class<InteractiveObject>::getClass()),
+	Global->setVariableByQName("InteractiveObject","flash.display",Class<InteractiveObject>::getClass());
 	Global->setVariableByQName("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getClass());
 	Global->setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());
 	Global->setVariableByQName("Shape","flash.display",Class<Shape>::getClass());
@@ -1473,7 +1473,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				assert_and_throw(var->var);
 
 				var->var->incRef();
-				c->setVariableByQName(name,ns,var->var,false);
+				c->setVariableByQName(name,ns,var->var);
 			}
 			else
 			{
@@ -1608,7 +1608,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			else
 				ret=new Undefined;
 
-			obj->setVariableByQName(name, ns, ret, false);
+			obj->setVariableByQName(name, ns, ret);
 			
 			LOG(LOG_CALLS,"Class slot "<< t->slot_id << " type Class name " << ns << "::" << name << " id " << t->classi);
 			if(t->slot_id)
@@ -1795,7 +1795,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			}*/
 
 			f->bindLevel(obj->getLevel());
-			obj->setVariableByQName(name,ns,f,false);
+			obj->setVariableByQName(name,ns,f);
 			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);
 			break;
 		}
@@ -1811,7 +1811,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			if(t->vindex)
 			{
 				ret=getConstant(t->vkind,t->vindex);
-				obj->setVariableByQName(name, ns, ret, false);
+				obj->setVariableByQName(name, ns, ret);
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, name, ns);
 			}
@@ -1825,7 +1825,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				else
 					ret=new Undefined;
 
-				obj->setVariableByQName(name, ns, ret, false);
+				obj->setVariableByQName(name, ns, ret);
 			}
 			LOG(LOG_CALLS,"Const "<<name<<" type "<< *getMultiname(t->type_name,NULL));
 			if(t->slot_id)
@@ -1843,7 +1843,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			if(t->vindex)
 			{
 				ASObject* ret=getConstant(t->vkind,t->vindex);
-				obj->setVariableByQName(name, ns, ret, false);
+				obj->setVariableByQName(name, ns, ret);
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, name, ns);
 
@@ -1878,7 +1878,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 					else
 						ret=new Undefined;
 				}
-				obj->setVariableByQName(name, ns, ret, false);
+				obj->setVariableByQName(name, ns, ret);
 
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, name,ns );
@@ -1887,7 +1887,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 		}
 		default:
 			LOG(LOG_ERROR,"Trait not supported " << name << " " << t->kind);
-			obj->setVariableByQName(name, ns, new Undefined, false);
+			obj->setVariableByQName(name, ns, new Undefined);
 	}
 }
 

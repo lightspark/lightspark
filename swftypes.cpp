@@ -403,14 +403,13 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 	}
 }
 
-void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
+void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl)
 {
 	//NOTE: we assume that [gs]etSuper and setProperty correctly manipulate the cur_level
 	obj_var* obj=Variables.findObjVar(name,ns,false);
 
 	if(obj==NULL)
 		obj=Variables.findObjVar(name,ns,true);
-	//assert(find_back==false);
 
 	if(obj->setter)
 	{

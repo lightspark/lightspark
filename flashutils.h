@@ -58,7 +58,7 @@ public:
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByName not supported for ByteArray");
-		return objAndLevel(NULL,0);
+		return objAndLevel(NULL);
 	}
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name);
@@ -100,7 +100,7 @@ public:
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByQName not supported for Dictionary");
-		return objAndLevel(NULL,0);
+		return objAndLevel(NULL);
 	}
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -146,7 +146,7 @@ public:
 		if(!implEnable || skip_impl)
 			return ASObject::getVariableByQName(name,ns,skip_impl);
 		throw RunTimeException("Proxy::getVariableByQName");
-		return objAndLevel(NULL,0);
+		return objAndLevel(NULL);
 	}
 	objAndLevel getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name)

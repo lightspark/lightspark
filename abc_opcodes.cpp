@@ -342,11 +342,11 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 				assert_and_throw(p);
 				assert_and_throw(p->implEnable);
 				p->implEnable=false;
-				ret=f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m,-1);
 				p->implEnable=true;
 			}
 			else
-				ret=f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m,-1);
 			th->runtime_stack_push(ret);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
@@ -422,7 +422,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 		{
 			//TODO: maybe also the level should be binded
 			LOG(LOG_CALLS,"Attaching this to function " << name);
-			IFunction* f=static_cast<IFunction*>(ret.obj)->bind(obj,ret.level);
+			IFunction* f=static_cast<IFunction*>(ret.obj)->bind(obj,-1);
 			obj->decRef();
 			//No incref is needed, as the function is a new instance
 			return f;
@@ -837,11 +837,11 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 				assert_and_throw(p);
 				assert_and_throw(p->implEnable);
 				p->implEnable=false;
-				ret=f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m,-1);
 				p->implEnable=true;
 			}
 			else
-				ret=f->call(obj,args,m,o.level);
+				ret=f->call(obj,args,m,-1);
 			if(ret)
 				ret->decRef();
 		}
@@ -1367,7 +1367,7 @@ void ABCVm::getLex(call_context* th, int n)
 			if(o->getObjectType()==T_FUNCTION)
 			{
 				LOG(LOG_CALLS,"Attaching this to function " << name);
-				IFunction* f=static_cast<IFunction*>(o)->bind(*it,tmpo.level);
+				IFunction* f=static_cast<IFunction*>(o)->bind(*it,-1);
 				o=f;
 			}
 			else if(o->getObjectType()==T_DEFINABLE)
@@ -1448,7 +1448,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	LOG(LOG_CALLS, "findProperty " << *name );
 
 	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	objAndLevel o(NULL,0);
+	objAndLevel o(NULL);
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	for(;it!=th->scope_stack.rend();it++)
@@ -1484,7 +1484,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	LOG(LOG_CALLS, "findPropStrict " << *name );
 
 	vector<ASObject*>::reverse_iterator it=th->scope_stack.rbegin();
-	objAndLevel o(NULL,0);
+	objAndLevel o(NULL);
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 
@@ -1603,7 +1603,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
 			obj->incRef();
-			ASObject* ret=f->call(obj,args,m,o.level);
+			ASObject* ret=f->call(obj,args,m,-1);
 			th->runtime_stack_push(ret);
 		}
 		else if(o.obj->getObjectType()==T_UNDEFINED)
@@ -1686,7 +1686,7 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 		{
 			IFunction* f=static_cast<IFunction*>(o.obj);
 			obj->incRef();
-			ASObject* ret=f->call(obj,args,m,o.level);
+			ASObject* ret=f->call(obj,args,m,-1);
 			if(ret)
 				ret->decRef();
 		}

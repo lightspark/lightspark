@@ -51,7 +51,7 @@ tiny_string ASObject::toString(bool debugMsg)
 		if(obj_toString.obj->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f_toString=static_cast<IFunction*>(obj_toString.obj);
-			ASObject* ret=f_toString->call(this,NULL,0,obj_toString.level);
+			ASObject* ret=f_toString->call(this,NULL,0,-1);
 			assert_and_throw(ret->getObjectType()==T_STRING);
 			return ret->toString();
 		}
@@ -86,8 +86,8 @@ TRISTATE ASObject::isLess(ASObject* r)
 		IFunction* f1=static_cast<IFunction*>(obj1.obj);
 		IFunction* f2=static_cast<IFunction*>(obj2.obj);
 
-		ASObject* ret1=f1->call(this,NULL,0,obj1.level);
-		ASObject* ret2=f2->call(r,NULL,0,obj2.level);
+		ASObject* ret1=f1->call(this,NULL,0,-1);
+		ASObject* ret2=f2->call(r,NULL,0,-1);
 
 		LOG(LOG_CALLS,"Overloaded isLess");
 		return ret1->isLess(ret2);
@@ -164,7 +164,7 @@ bool ASObject::isEqual(ASObject* r)
 		assert_and_throw(func_equals.obj->getObjectType()==T_FUNCTION);
 		IFunction* func=static_cast<IFunction*>(func_equals.obj);
 
-		ASObject* ret=func->call(this,&r,1,func_equals.level);
+		ASObject* ret=func->call(this,&r,1,-1);
 		assert_and_throw(ret->getObjectType()==T_BOOLEAN);
 
 		LOG(LOG_CALLS,"Overloaded isEqual");
@@ -186,8 +186,8 @@ bool ASObject::isEqual(ASObject* r)
 		IFunction* f1=static_cast<IFunction*>(obj1.obj);
 		IFunction* f2=static_cast<IFunction*>(obj2.obj);
 
-		ASObject* ret1=f1->call(this,NULL,0,obj1.level);
-		ASObject* ret2=f2->call(r,NULL,0,obj2.level);
+		ASObject* ret1=f1->call(this,NULL,0,-1);
+		ASObject* ret2=f2->call(r,NULL,0,-1);
 
 		LOG(LOG_CALLS,"Overloaded isEqual");
 		return ret1->isEqual(ret2);
@@ -633,13 +633,13 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 			//The returned value is already owned by the caller
 			ret->fake_decRef();
 			//TODO: check
-			return objAndLevel(ret,-1);
+			return objAndLevel(ret);
 		}
 		else
 		{
 			assert_and_throw(!obj->setter);
 			assert_and_throw(obj->var);
-			return objAndLevel(obj->var,-1);
+			return objAndLevel(obj->var);
 		}
 	}
 	else
@@ -650,18 +650,18 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 			ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
 			setVariableByQName("hasOwnProperty","",ret);
 			//Added at level 0, as Object is always the base
-			return objAndLevel(ret,0);
+			return objAndLevel(ret);
 		}
 		else if(getObjectType()==T_FUNCTION && name.name_s=="call")
 		{
 			//Fake returning the function itself
-			return objAndLevel(this,0);
+			return objAndLevel(this);
 		}
 		else if(getObjectType()==T_FUNCTION && name.name_s=="apply")
 		{
 			//Create on the fly a Function
 			//HACK: both call and apply should be included in the Function object
-			return objAndLevel(Class<IFunction>::getFunction(IFunction::apply),0);
+			return objAndLevel(Class<IFunction>::getFunction(IFunction::apply));
 		}
 
 		//It has not been found yet, ask the prototype
@@ -673,7 +673,7 @@ objAndLevel ASObject::getVariableByMultiname(const multiname& name, bool skip_im
 	}
 
 	//If it has not been found
-	return objAndLevel(NULL,0);
+	return objAndLevel(NULL);
 }
 
 objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)
@@ -696,10 +696,10 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 			LOG(LOG_CALLS,"End of getter");
 			//The variable is already owned by the caller
 			ret->fake_decRef();
-			return objAndLevel(ret,level);
+			return objAndLevel(ret);
 		}
 		else
-			return objAndLevel(obj->var,level);
+			return objAndLevel(obj->var);
 	}
 	else if(prototype)
 	{
@@ -708,7 +708,7 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 			return ret;
 	}
 
-	return objAndLevel(NULL,0);
+	return objAndLevel(NULL);
 }
 
 ASObject* variables_map::getVariableByString(const std::string& name)

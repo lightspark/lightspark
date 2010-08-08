@@ -417,7 +417,7 @@ objAndLevel Array::getVariableByMultiname(const multiname& name, bool skip_impl,
 				ret->fake_decRef();
 				break;
 		}
-		return objAndLevel(ret,0);
+		return objAndLevel(ret);
 	}
 	else
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
@@ -579,7 +579,7 @@ objAndLevel Array::getVariableByQName(const tiny_string& name, const tiny_string
 {
 	assert_and_throw(implEnable);
 	throw UnsupportedException("Array::getVariableByQName not completely implemented");
-	return objAndLevel(NULL,0);
+	return objAndLevel(NULL);
 /*	ASObject* ret;
 	bool number=true;
 	owner=NULL;

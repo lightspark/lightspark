@@ -134,7 +134,7 @@ objAndLevel ByteArray::getVariableByMultiname(const multiname& name, bool skip_i
 	assert_and_throw(index<len);
 	ASObject* ret=abstract_i(bytes[index]);
 
-	return objAndLevel(ret,0);
+	return objAndLevel(ret);
 }
 
 intptr_t ByteArray::getVariableByMultiname_i(const multiname& name)
@@ -463,7 +463,7 @@ objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_
 					//Value found
 					ret=it->second;
 					ret->incRef();
-					return objAndLevel(ret,0);
+					return objAndLevel(ret);
 				}
 			}
 		}
@@ -473,7 +473,7 @@ objAndLevel Dictionary::getVariableByMultiname(const multiname& name, bool skip_
 	else
 		throw UnsupportedException("Unsupported name kind on Dictionary::getVariableByMultiname");
 
-	return objAndLevel(ret,0);
+	return objAndLevel(ret);
 }
 
 bool Dictionary::hasNext(unsigned int& index, bool& out)
@@ -575,5 +575,5 @@ objAndLevel Proxy::getVariableByMultiname(const multiname& name, bool skip_impl,
 	ASObject* ret=f->call(this,&arg,1,getLevel());
 	assert_and_throw(ret);
 	implEnable=true;
-	return objAndLevel(ret,0);
+	return objAndLevel(ret);
 }

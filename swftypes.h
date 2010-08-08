@@ -420,8 +420,7 @@ class objAndLevel
 {
 public:
 	ASObject* obj;
-	int level;
-	objAndLevel(ASObject* o, int l):obj(o),level(l){}
+	objAndLevel(ASObject* o):obj(o){}
 };
 
 class nameAndLevel

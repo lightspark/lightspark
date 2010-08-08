@@ -447,23 +447,22 @@ private:
 	typedef std::multimap<nameAndLevel,std::pair<tiny_string, obj_var> >::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
-	//Level will be modified with the actual level where the object is found
-	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create, bool searchPreviusLevels);
-	obj_var* findObjVar(const multiname& mname, bool create, bool searchPreviusLevels);
+	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create);
+	obj_var* findObjVar(const multiname& mname, bool create);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
 		return slots_vars[n-1]->second.second.var;
 	}
 	void setSlot(unsigned int n,ASObject* o);
-	void initSlot(unsigned int n,int level, const tiny_string& name, const tiny_string& ns);
+	void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
 	ASObject* getVariableByString(const std::string& name);
 	int size() const
 	{
 		return Variables.size();
 	}
 	tiny_string getNameAt(unsigned int i);
-	obj_var* getValueAt(unsigned int i, int& level);
+	obj_var* getValueAt(unsigned int i);
 	~variables_map();
 public:
 	void dumpVariables();

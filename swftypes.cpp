@@ -218,7 +218,7 @@ double ASObject::toNumber()
 	return 0;
 }
 
-obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, bool create, bool searchPreviusLevels)
+obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, bool create)
 {
 	nameAndLevel name(n);
 	const var_iterator ret_begin=Variables.lower_bound(name);
@@ -247,13 +247,13 @@ bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns
 {
 	check();
 	//We look in all the object's levels
-	bool ret=(Variables.findObjVar(name, ns, false, true)!=NULL);
+	bool ret=(Variables.findObjVar(name, ns, false)!=NULL);
 	if(!ret) //Try the classes
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			ret=(cur->Variables.findObjVar(name, ns, false, true)!=NULL);
+			ret=(cur->Variables.findObjVar(name, ns, false)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;
@@ -266,13 +266,13 @@ bool ASObject::hasPropertyByMultiname(const multiname& name)
 {
 	check();
 	//We look in all the object's levels
-	bool ret=(Variables.findObjVar(name, false, true)!=NULL);
+	bool ret=(Variables.findObjVar(name, false)!=NULL);
 	if(!ret) //Try the classes
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			ret=(cur->Variables.findObjVar(name, false, true)!=NULL);
+			ret=(cur->Variables.findObjVar(name, false)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;
@@ -288,7 +288,7 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 	assert(!initialized);
 #endif
 	assert(getObjectType()==T_CLASS);
-	obj_var* obj=Variables.findObjVar(name,ns,true,false);
+	obj_var* obj=Variables.findObjVar(name,ns,true);
 	if(obj->getter!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
@@ -305,7 +305,7 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 	assert_and_throw(!initialized);
 #endif
 	assert(getObjectType()==T_CLASS);
-	obj_var* obj=Variables.findObjVar(name,ns,true,false);
+	obj_var* obj=Variables.findObjVar(name,ns,true);
 	if(obj->setter!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
@@ -319,12 +319,12 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(ref_count>0);
 
-	obj_var* obj=Variables.findObjVar(name,false,false);
+	obj_var* obj=Variables.findObjVar(name,false);
 	if(obj==NULL)
 		return;
 
 	//Now dereference the values
-	obj=Variables.findObjVar(name,false,false);
+	obj=Variables.findObjVar(name,false);
 	if(obj->var)
 		obj->var->decRef();
 	if(obj->getter)
@@ -345,7 +345,7 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 
 obj_var* ASObject::findSettable(const multiname& name)
 {
-	obj_var* ret=Variables.findObjVar(name,false,true);
+	obj_var* ret=Variables.findObjVar(name,false);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
@@ -376,7 +376,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 		}
 	}
 	if(obj==NULL)
-		obj=Variables.findObjVar(name,true,false);
+		obj=Variables.findObjVar(name,true);
 
 	if(obj->setter)
 	{
@@ -406,10 +406,11 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool find_back, bool skip_impl)
 {
 	//NOTE: we assume that [gs]etSuper and setProperty correctly manipulate the cur_level
-	obj_var* obj=Variables.findObjVar(name,ns,false,find_back);
+	obj_var* obj=Variables.findObjVar(name,ns,false);
 
 	if(obj==NULL)
-		obj=Variables.findObjVar(name,ns,true,false);
+		obj=Variables.findObjVar(name,ns,true);
+	//assert(find_back==false);
 
 	if(obj->setter)
 	{
@@ -474,7 +475,7 @@ void variables_map::killObjVar(const multiname& mname)
 	throw RunTimeException("Variable to kill not found");
 }
 
-obj_var* variables_map::findObjVar(const multiname& mname, bool create, bool searchPreviusLevels)
+obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 {
 	nameAndLevel name("");
 	switch(mname.name_type)
@@ -571,7 +572,7 @@ void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_strin
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
-	Variables.initSlot(n,cur_level,name,ns);
+	Variables.initSlot(n,name,ns);
 }
 
 ASObject* ASObject::getVariableByString(const std::string& name)
@@ -592,7 +593,7 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 
 obj_var* ASObject::findGettable(const multiname& name)
 {
-	obj_var* ret=Variables.findObjVar(name,false,true);
+	obj_var* ret=Variables.findObjVar(name,false);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -682,7 +683,7 @@ objAndLevel ASObject::getVariableByQName(const tiny_string& name, const tiny_str
 
 	obj_var* obj=NULL;
 	int level=cur_level;
-	obj=Variables.findObjVar(name,ns,false,true);
+	obj=Variables.findObjVar(name,ns,false);
 
 	if(obj!=NULL)
 	{
@@ -1869,7 +1870,7 @@ Class_base* ASObject::getActualPrototype() const
 	return ret;
 }
 
-void variables_map::initSlot(unsigned int n, int level, const tiny_string& name, const tiny_string& ns)
+void variables_map::initSlot(unsigned int n, const tiny_string& name, const tiny_string& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
@@ -1907,7 +1908,7 @@ void variables_map::setSlot(unsigned int n,ASObject* o)
 		throw RunTimeException("setSlot out of bounds");
 }
 
-obj_var* variables_map::getValueAt(unsigned int index, int& level)
+obj_var* variables_map::getValueAt(unsigned int index)
 {
 	//TODO: CHECK behavious on overridden methods
 	if(index<Variables.size())
@@ -1917,7 +1918,6 @@ obj_var* variables_map::getValueAt(unsigned int index, int& level)
 		for(unsigned int i=0;i<index;i++)
 			it++;
 
-		level=-1;
 		return &it->second.second;
 	}
 	else
@@ -1926,8 +1926,7 @@ obj_var* variables_map::getValueAt(unsigned int index, int& level)
 
 ASObject* ASObject::getValueAt(int index)
 {
-	int level;
-	obj_var* obj=Variables.getValueAt(index,level);
+	obj_var* obj=Variables.getValueAt(index);
 	assert_and_throw(obj);
 	ASObject* ret;
 	if(obj->getter)
@@ -1936,7 +1935,7 @@ ASObject* ASObject::getValueAt(int index)
 		LOG(LOG_CALLS,"Calling the getter");
 		IFunction* getter=obj->getter->getOverride();
 		incRef();
-		ret=getter->call(this,NULL,0,level);
+		ret=getter->call(this,NULL,0,-1);
 		ret->fake_decRef();
 		LOG(LOG_CALLS,"End of getter");
 	}

@@ -1,5 +1,11 @@
 lightspark: An open source flash player implementation
 
+Version 0.4.3 RC1:
+	* Faster rendering of the input layer
+	* Reduced memory consumption
+	* Support for H263/MP3 videos
+	* Smoother playback of audio and video
+
 Version 0.4.2.3:
 	* Bugfix release
 

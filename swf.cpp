@@ -1349,15 +1349,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	rt=th;
 	NPAPI_params* p=th->npapi_params;
 
-	RECT size=sys->getFrameSize();
-	int swf_width=size.Xmax/20;
-	int swf_height=size.Ymax/20;
-
-	float scalex=p->width;
-	scalex/=swf_width;
-	float scaley=p->height;
-	scaley/=swf_height;
-
 	th->windowWidth=p->width;
 	th->windowHeight=p->height;
 	
@@ -1505,7 +1496,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
 				glClear(GL_COLOR_BUFFER_BIT);
 				glLoadIdentity();
-				glScalef(scalex,scaley,1);
 				glTranslatef(th->offsetX,th->offsetY,0);
 				glScalef(th->scaleX,th->scaleY,1);
 				

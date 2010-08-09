@@ -639,34 +639,11 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 			return obj->var;
 		}
 	}
-	else
+	else if(prototype && getActualPrototype())
 	{
-		//Check if we should do lazy definition
-		if(name.name_s=="hasOwnProperty")
-		{
-			ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
-			setVariableByQName("hasOwnProperty","",ret);
-			//Added at level 0, as Object is always the base
-			return ret;
-		}
-		else if(getObjectType()==T_FUNCTION && name.name_s=="call")
-		{
-			//Fake returning the function itself
-			return this;
-		}
-		else if(getObjectType()==T_FUNCTION && name.name_s=="apply")
-		{
-			//Create on the fly a Function
-			//HACK: both call and apply should be included in the Function object
-			return Class<IFunction>::getFunction(IFunction::apply);
-		}
-
 		//It has not been found yet, ask the prototype
-		if(prototype && getActualPrototype())
-		{
-			ASObject* ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,true,this);
-			return ret;
-		}
+		ASObject* ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,true,this);
+		return ret;
 	}
 
 	//If it has not been found

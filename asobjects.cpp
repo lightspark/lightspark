@@ -1947,6 +1947,8 @@ Class_object* Class_object::getClass()
 
 void IFunction::sinit(Class_base* c)
 {
+	c->setVariableByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call));
+	c->setVariableByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply));
 }
 
 Class_function* Class_function::getClass()
@@ -1959,7 +1961,6 @@ Class_function* Class_function::getClass()
 	{
 		ret=new Class_function();
 		sys->classes.insert(std::make_pair("Function",ret));
-		IFunction::sinit(ret);
 	}
 	else
 		ret=static_cast<Class_function*>(it->second);
@@ -2141,8 +2142,8 @@ Class<IFunction>* Class<IFunction>::getClass()
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
-		IFunction::sinit(ret);
 		sys->classes.insert(std::make_pair(ClassName<IFunction>::name,ret));
+		IFunction::sinit(ret);
 	}
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);

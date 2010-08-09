@@ -2224,7 +2224,7 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	method_info* m=&th->context->methods[th->context->classes[n].cinit];
-	SyntheticFunction* cinit=new SyntheticFunction(m);
+	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(m);
 	//cinit must inherit the current scope
 	cinit->acquireScope(th->scope_stack);
 	//and the created class
@@ -2252,7 +2252,7 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 
 	//add Constructor the the class methods
-	ret->constructor=new SyntheticFunction(constructor);
+	ret->constructor=Class<IFunction>::getSyntheticFunction(constructor);
 	ret->class_index=n;
 
 	//Set the constructor variable to the class itself (this is accessed by object using the protoype)
@@ -2391,7 +2391,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	LOG(LOG_CALLS,"newFunction " << n);
 
 	method_info* m=&th->context->methods[n];
-	SyntheticFunction* f=new SyntheticFunction(m);
+	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 	f->func_scope=th->scope_stack;
 	for(unsigned int i=0;i<f->func_scope.size();i++)
 		f->func_scope[i]->incRef();

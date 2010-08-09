@@ -93,8 +93,6 @@ private:
 	//frameSize and frameRate are valid only after the header has been parsed
 	RECT frameSize;
 	float frameRate;
-	mutable sem_t sem_valid_size;
-	mutable sem_t sem_valid_rate;
 	//Frames mutex (shared with drawing thread)
 	Mutex mutexFrames;
 	bool toBind;
@@ -301,6 +299,9 @@ public:
 	static void staticDeinit() DLL_PUBLIC;
 
 	DownloadManager* downloadManager;
+
+	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };
+	SCALE_MODE scaleMode;
 };
 
 class ParseThread: public IThreadJob
@@ -445,17 +446,14 @@ public:
 	TextureBuffer mainTex;
 	TextureBuffer tempTex;
 	TextureBuffer inputTex;
-	int width;
-	int height;
+	uint32_t windowWidth;
+	uint32_t windowHeight;
 	bool hasNPOTTextures;
 	GLuint fragmentTexScaleUniform;
 	
 	InteractiveObject* selectedDebug;
 	float currentId;
 	bool materialOverride;
-
-	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=0, NO_SCALE=0, SHOW_ALL };
-	SCALE_MODE scaleMode;
 };
 
 };

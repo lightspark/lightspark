@@ -90,8 +90,6 @@ RootMovieClip::RootMovieClip(LoaderInfo* li, bool isSys):initialized(false),pars
 	root=this;
 	sem_init(&mutex,0,1);
 	sem_init(&new_frame,0,0);
-	sem_init(&sem_valid_size,0,0);
-	sem_init(&sem_valid_rate,0,0);
 	loaderInfo=li;
 	//Reset framesLoaded, as there are still not available
 	framesLoaded=0;
@@ -105,8 +103,6 @@ RootMovieClip::~RootMovieClip()
 {
 	sem_destroy(&mutex);
 	sem_destroy(&new_frame);
-	sem_destroy(&sem_valid_rate);
-	sem_destroy(&sem_valid_size);
 }
 
 void RootMovieClip::parsingFailed()
@@ -114,8 +110,6 @@ void RootMovieClip::parsingFailed()
 	//The parsing is failed, we have no change to be ever valid
 	parsingIsFailed=true;
 	sem_post(&new_frame);
-	sem_post(&sem_valid_size);
-	sem_post(&sem_valid_rate);
 }
 
 void RootMovieClip::bindToName(const tiny_string& n)
@@ -160,7 +154,7 @@ void SystemState::staticDeinit()
 SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
 	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
-	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL)
+	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
 	//Create the thread pool
@@ -1229,7 +1223,7 @@ void InputThread::disableDrag()
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),inputDisabled(false),
 	resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),tempBufferAcquired(false),
 	frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),mainTex(false),tempTex(false),inputTex(false),
-	hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false),scaleMode(SHOW_ALL)
+	hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,"RenderThread this=" << this);
 	m_sys=s;
@@ -1359,16 +1353,13 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	int swf_width=size.Xmax/20;
 	int swf_height=size.Ymax/20;
 
-	int window_width=p->width;
-	int window_height=p->height;
-
-	float scalex=window_width;
+	float scalex=p->width;
 	scalex/=swf_width;
-	float scaley=window_height;
+	float scaley=p->height;
 	scaley/=swf_height;
 
-	rt->width=window_width;
-	rt->height=window_height;
+	th->windowWidth=p->width;
+	th->windowHeight=p->height;
 	
 	Display* d=XOpenDisplay(NULL);
 
@@ -1416,11 +1407,12 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	if(!glXIsDirect(d,th->mContext))
 		printf("Indirect!!\n");
 
-	th->commonGLInit(window_width, window_height);
+	th->commonGLInit(th->windowWidth, th->windowHeight);
+	th->commonGLResize(th->windowWidth, th->windowHeight);
 	
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font(rt->fontPath.c_str());
+	FTTextureFont font(th->fontPath.c_str());
 	if(font.Error())
 	{
 		LOG(LOG_ERROR,"Unable to load serif font");
@@ -1437,6 +1429,21 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			sem_wait(&th->render);
 			Chronometer chronometer;
 			
+			if(th->resizeNeeded)
+			{
+				if(th->windowWidth!=th->newWidth ||
+					th->windowHeight!=th->newHeight)
+				{
+					th->windowWidth=th->newWidth;
+					th->windowHeight=th->newHeight;
+					LOG(LOG_ERROR,"Window resize not supported in plugin");
+				}
+				th->newWidth=0;
+				th->newHeight=0;
+				th->resizeNeeded=false;
+				th->commonGLResize(th->windowWidth, th->windowHeight);
+			}
+
 			if(th->inputNeeded)
 			{
 				th->inputTex.bind();
@@ -1472,17 +1479,17 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				glColor3f(0.8,0.8,0.8);
 					    
 				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
-					    -1,FTPoint(0,th->height/2));
+					    -1,FTPoint(0,th->windowHeight/2));
 
 				stringstream errorMsg;
 				errorMsg << "SWF file: " << th->m_sys->getOrigin();
 				font.Render(errorMsg.str().c_str(),
-					    -1,FTPoint(0,th->height/2-20));
+					    -1,FTPoint(0,th->windowHeight/2-20));
 					    
 				errorMsg.str("");
 				errorMsg << "Cause: " << th->m_sys->errorCause;
 				font.Render(errorMsg.str().c_str(),
-					    -1,FTPoint(0,th->height/2-40));
+					    -1,FTPoint(0,th->windowHeight/2-40));
 				
 				glFlush();
 				glXSwapBuffers(d,glxWin);
@@ -1491,7 +1498,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			{
 				glXSwapBuffers(d,glxWin);
 
-				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
+				glBindFramebuffer(GL_FRAMEBUFFER, th->fboId);
 				glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 				RGB bg=sys->getBackground();
@@ -1499,21 +1506,26 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				glClear(GL_COLOR_BUFFER_BIT);
 				glLoadIdentity();
 				glScalef(scalex,scaley,1);
+				glTranslatef(th->offsetX,th->offsetY,0);
+				glScalef(th->scaleX,th->scaleY,1);
 				
 				sys->Render();
 
 				glFlush();
 
-				glLoadIdentity();
-
 				//Now draw the input layer
 				if(!th->inputDisabled)
 				{
 					glDrawBuffer(GL_COLOR_ATTACHMENT2);
+					glClearColor(0,0,0,0);
+					glClear(GL_COLOR_BUFFER_BIT);
+
 					th->materialOverride=true;
 					th->m_sys->inputRender();
 					th->materialOverride=false;
 				}
+
+				glLoadIdentity();
 
 				//Now blit everything
 				glLoadIdentity();
@@ -1531,11 +1543,11 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 					glTexCoord2f(0,1);
 					glVertex2i(0,0);
 					glTexCoord2f(1,1);
-					glVertex2i(th->width,0);
+					glVertex2i(th->windowWidth,0);
 					glTexCoord2f(1,0);
-					glVertex2i(th->width,th->height);
+					glVertex2i(th->windowWidth,th->windowHeight);
 					glTexCoord2f(0,0);
-					glVertex2i(0,th->height);
+					glVertex2i(0,th->windowHeight);
 				glEnd();
 
 				if(sys->showProfilingData)
@@ -1548,8 +1560,8 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 					glBegin(GL_LINES);
 					for(int i=1;i<10;i++)
 					{
-						glVertex2i(0,(i*th->height/10));
-						glVertex2i(th->width,(i*th->height/10));
+						glVertex2i(0,(i*th->windowHeight/10));
+						glVertex2i(th->windowWidth,(i*th->windowHeight/10));
 					}
 					glEnd();
 				
@@ -1558,7 +1570,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 						it->plot(1000000/sys->getFrameRate(),&font);
 
 					glEnable(GL_TEXTURE_2D);
-					glUseProgram(rt->gpu_program);
+					glUseProgram(th->gpu_program);
 				}
 				//Call glFlush to offload work on the GPU
 				glFlush();
@@ -1749,14 +1761,9 @@ void RenderThread::commonGLInit(int width, int height)
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
-	
-	glViewport(0,0,width,height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0,width,0,height,-100,0);
 
-	glMatrixMode(GL_MODELVIEW);
 	glActiveTexture(GL_TEXTURE0);
+	//Viewport setup and interactive_buffer allocation is left for GLResize	
 
 	dataTex.init();
 
@@ -1765,8 +1772,6 @@ void RenderThread::commonGLInit(int width, int height)
 	tempTex.init(width, height, GL_NEAREST);
 
 	inputTex.init(width, height, GL_NEAREST);
-	//Allocated buffer for texture readback
-	interactive_buffer=new uint32_t[inputTex.getAllocWidth()*inputTex.getAllocHeight()];
 
 	//Set uniforms
 	cleanGLErrors();
@@ -1817,20 +1822,20 @@ void RenderThread::commonGLInit(int width, int height)
 	}
 }
 
-void RenderThread::commonGLResize(int width, int height)
+void RenderThread::commonGLResize(int w, int h)
 {
 	//Get the size of the content
 	RECT r=m_sys->getFrameSize();
 	r.Xmax/=20;
 	r.Ymax/=20;
 	//Now compute the scalings and offsets
-	switch(scaleMode)
+	switch(m_sys->scaleMode)
 	{
-		case SHOW_ALL:
+		case SystemState::SHOW_ALL:
 			//Compute both scaling
-			scaleX=width;
+			scaleX=windowWidth;
 			scaleX/=r.Xmax;
-			scaleY=height;
+			scaleY=windowHeight;
 			scaleY/=r.Ymax;
 			//Enlarge with no distortion
 			if(scaleX<scaleY)
@@ -1838,33 +1843,70 @@ void RenderThread::commonGLResize(int width, int height)
 				//Uniform scaling for Y
 				scaleY=scaleX;
 				//Apply the offset
-				offsetY=(height-r.Ymax*scaleY)/2;
+				offsetY=(windowHeight-r.Ymax*scaleY)/2;
 				offsetX=0;
 			}
 			else
 			{
-				//Uniform scaling for Y
+				//Uniform scaling for X
 				scaleX=scaleY;
 				//Apply the offset
-				offsetX=(width-r.Xmax*scaleX)/2;
+				offsetX=(windowWidth-r.Xmax*scaleX)/2;
 				offsetY=0;
 			}
 			break;
-		default:
-			::abort();
+		case SystemState::NO_BORDER:
+			//Compute both scaling
+			scaleX=windowWidth;
+			scaleX/=r.Xmax;
+			scaleY=windowHeight;
+			scaleY/=r.Ymax;
+			//Enlarge with no distortion
+			if(scaleX>scaleY)
+			{
+				//Uniform scaling for Y
+				scaleY=scaleX;
+				//Apply the offset
+				offsetY=(windowHeight-r.Ymax*scaleY)/2;
+				offsetX=0;
+			}
+			else
+			{
+				//Uniform scaling for X
+				scaleX=scaleY;
+				//Apply the offset
+				offsetX=(windowWidth-r.Xmax*scaleX)/2;
+				offsetY=0;
+			}
+			break;
+		case SystemState::EXACT_FIT:
+			//Compute both scaling
+			scaleX=windowWidth;
+			scaleX/=r.Xmax;
+			scaleY=windowHeight;
+			scaleY/=r.Ymax;
+			offsetX=0;
+			offsetY=0;
+			break;
+		case SystemState::NO_SCALE:
+			scaleX=1;
+			scaleY=1;
+			offsetX=0;
+			offsetY=0;
+			break;
 	}
-	glViewport(0,0,width,height);
+	glViewport(0,0,windowWidth,windowHeight);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0,width,0,height,-100,0);
+	glOrtho(0,windowWidth,0,windowHeight,-100,0);
 
 	glMatrixMode(GL_MODELVIEW);
 
-	mainTex.resize(width, height);
+	mainTex.resize(windowWidth, windowHeight);
 
-	tempTex.resize(width, height);
+	tempTex.resize(windowWidth, windowHeight);
 
-	inputTex.resize(width, height);
+	inputTex.resize(windowWidth, windowHeight);
 	//Rellocate buffer for texture readback
 	delete[] interactive_buffer;
 	interactive_buffer=new uint32_t[inputTex.getAllocWidth()*inputTex.getAllocHeight()];
@@ -1883,10 +1925,10 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	sys=th->m_sys;
 	rt=th;
 	RECT size=sys->getFrameSize();
-	int width=size.Xmax/20;
-	int height=size.Ymax/20;
-	rt->width=width;
-	rt->height=height;
+	int initialWidth=size.Xmax/20;
+	int initialHeight=size.Ymax/20;
+	th->windowWidth=initialWidth;
+	th->windowHeight=initialHeight;
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
@@ -1894,12 +1936,13 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL, 1); 
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
-	SDL_SetVideoMode(width, height, 24, SDL_OPENGL|SDL_RESIZABLE);
-	th->commonGLInit(width, height);
+	SDL_SetVideoMode(th->windowWidth, th->windowHeight, 24, SDL_OPENGL|SDL_RESIZABLE);
+	th->commonGLInit(th->windowWidth, th->windowHeight);
+	th->commonGLResize(th->windowWidth, th->windowHeight);
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
-	FTTextureFont font(rt->fontPath.c_str());
+	FTTextureFont font(th->fontPath.c_str());
 	if(font.Error())
 		throw RunTimeException("Unable to load font");
 	
@@ -1917,13 +1960,17 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			SDL_GL_SwapBuffers( );
 			if(th->resizeNeeded)
 			{
-				width=th->newWidth;
+				if(th->windowWidth!=th->newWidth ||
+					th->windowHeight!=th->newHeight)
+				{
+					th->windowWidth=th->newWidth;
+					th->windowHeight=th->newHeight;
+					SDL_SetVideoMode(th->windowWidth, th->windowHeight, 24, SDL_OPENGL|SDL_RESIZABLE);
+				}
 				th->newWidth=0;
-				height=th->newHeight;
 				th->newHeight=0;
 				th->resizeNeeded=false;
-				SDL_SetVideoMode(width, height, 24, SDL_OPENGL|SDL_RESIZABLE);
-				th->commonGLResize(width, height);
+				th->commonGLResize(th->windowWidth, th->windowHeight);
 			}
 
 			if(th->inputNeeded)
@@ -1963,31 +2010,26 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glColor3f(0.8,0.8,0.8);
 					    
 				font.Render("We're sorry, Lightspark encountered a yet unsupported Flash file",
-						-1,FTPoint(0,th->height/2));
+						-1,FTPoint(0,th->windowHeight/2));
 
 				stringstream errorMsg;
 				errorMsg << "SWF file: " << th->m_sys->getOrigin();
 				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->height/2-20));
+						-1,FTPoint(0,th->windowHeight/2-20));
 					    
 				errorMsg.str("");
 				errorMsg << "Cause: " << th->m_sys->errorCause;
 				font.Render(errorMsg.str().c_str(),
-						-1,FTPoint(0,th->height/2-40));
+						-1,FTPoint(0,th->windowHeight/2-40));
 
-				font.Render("Press 'Q' to exit",-1,FTPoint(0,th->height/2-60));
+				font.Render("Press 'Q' to exit",-1,FTPoint(0,th->windowHeight/2-60));
 				
 				glFlush();
 				SDL_GL_SwapBuffers( );
 			}
 			else
 			{
-				glBindFramebuffer(GL_FRAMEBUFFER, rt->fboId);
-				
-				//Clear the id buffer
-				glDrawBuffer(GL_COLOR_ATTACHMENT2);
-				glClearColor(0,0,0,0);
-				glClear(GL_COLOR_BUFFER_BIT);
+				glBindFramebuffer(GL_FRAMEBUFFER, th->fboId);
 				
 				//Clear the back buffer
 				glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -2004,17 +2046,20 @@ void* RenderThread::sdl_worker(RenderThread* th)
 
 				glFlush();
 
-				glLoadIdentity();
-
 				//Now draw the input layer
 				if(!th->inputDisabled)
 				{
 					glDrawBuffer(GL_COLOR_ATTACHMENT2);
+					glClearColor(0,0,0,0);
+					glClear(GL_COLOR_BUFFER_BIT);
+				
 					th->materialOverride=true;
 					th->m_sys->inputRender();
 					th->materialOverride=false;
 				}
 
+				glFlush();
+				glLoadIdentity();
 				//Now blit everything
 				glLoadIdentity();
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -2029,11 +2074,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 					glTexCoord2f(0,1);
 					glVertex2i(0,0);
 					glTexCoord2f(1,1);
-					glVertex2i(width,0);
+					glVertex2i(th->windowWidth,0);
 					glTexCoord2f(1,0);
-					glVertex2i(width,height);
+					glVertex2i(th->windowWidth,th->windowHeight);
 					glTexCoord2f(0,0);
-					glVertex2i(0,height);
+					glVertex2i(0,th->windowHeight);
 				glEnd();
 				
 				if(th->m_sys->showDebug)
@@ -2060,8 +2105,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 					glBegin(GL_LINES);
 					for(int i=1;i<10;i++)
 					{
-						glVertex2i(0,(i*height/10));
-						glVertex2i(width,(i*height/10));
+						glVertex2i(0,(i*th->windowHeight/10));
+						glVertex2i(th->windowWidth,(i*th->windowWidth/10));
 					}
 					glEnd();
 					
@@ -2124,31 +2169,21 @@ void RootMovieClip::setFrameSize(const lightspark::RECT& f)
 {
 	frameSize=f;
 	assert_and_throw(f.Xmin==0 && f.Ymin==0);
-	sem_post(&sem_valid_size);
 }
 
 lightspark::RECT RootMovieClip::getFrameSize() const
 {
-	//This is a sync semaphore the first time and then a mutex
-	sem_wait(&sem_valid_size);
-	lightspark::RECT ret=frameSize;
-	sem_post(&sem_valid_size);
-	return ret;
+	return frameSize;
 }
 
 void RootMovieClip::setFrameRate(float f)
 {
 	frameRate=f;
-	sem_post(&sem_valid_rate);
 }
 
 float RootMovieClip::getFrameRate() const
 {
-	//This is a sync semaphore the first time and then a mutex
-	sem_wait(&sem_valid_rate);
-	float ret=frameRate;
-	sem_post(&sem_valid_rate);
-	return ret;
+	return frameRate;
 }
 
 void RootMovieClip::addToDictionary(DictionaryTag* r)

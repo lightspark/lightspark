@@ -186,7 +186,7 @@ protected:
 	class FrameSamplesGenerator
 	{
 	public:
-		void init(FrameSamples& f) const {f.len=MAX_AUDIO_FRAME_SIZE;}
+		void init(FrameSamples& f) const {f.len=0;}
 	};
 	BlockingCircularQueue<FrameSamples,150> samplesBuffer;
 public:

@@ -1193,7 +1193,38 @@ ASFUNCTIONBODY(IFunction,apply)
 	}
 
 	args[0]->incRef();
-	ASObject* ret=th->call(args[0],new_args,len);
+	bool overrideThis=true;
+	//Only allow overriding if the type of args[0] is a subclass of closure_this
+	if(!(th->closure_this && th->closure_this->prototype && args[0]->prototype && args[0]->prototype->isSubClass(th->closure_this->prototype)) ||
+		args[0]->prototype==NULL)
+	{
+		overrideThis=false;
+	}
+	ASObject* ret=th->call(args[0],new_args,len,overrideThis);
+	delete[] new_args;
+	return ret;
+}
+
+ASFUNCTIONBODY(IFunction,_call)
+{
+	IFunction* th=static_cast<IFunction*>(obj);
+	assert_and_throw(argslen>=1);
+	ASObject** new_args=new ASObject*[argslen-1];
+	for(unsigned int i=1;i<argslen;i++)
+	{
+		new_args[i-1]=args[i];
+		new_args[i-1]->incRef();
+	}
+
+	args[0]->incRef();
+	bool overrideThis=true;
+	//Only allow overriding if the type of args[0] is a subclass of closure_this
+	if(!(th->closure_this && th->closure_this->prototype && args[0]->prototype && args[0]->prototype->isSubClass(th->closure_this->prototype)) ||
+		args[0]->prototype==NULL)
+	{
+		overrideThis=false;
+	}
+	ASObject* ret=th->call(args[0],new_args,argslen-1,overrideThis);
 	delete[] new_args;
 	return ret;
 }
@@ -1203,7 +1234,7 @@ SyntheticFunction::SyntheticFunction(method_info* m):hit_count(0),mi(m),val(NULL
 //	class_index=-2;
 }
 
-ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs)
+ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t numArgs, bool thisOverride)
 {
 	const int hit_threshold=10;
 	if(mi->body==NULL)
@@ -1233,7 +1264,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	for(unsigned int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
 
-	if(bound && closure_this)
+	if(bound && closure_this && !thisOverride)
 	{
 		LOG(LOG_CALLS,"Calling with closure " << this);
 		obj=closure_this;
@@ -1317,10 +1348,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	return ret;
 }
 
-ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args)
+ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride)
 {
 	ASObject* ret;
-	if(bound && closure_this)
+	if(bound && closure_this && !thisOverride)
 	{
 		LOG(LOG_CALLS,"Calling with closure " << this);
 		obj->decRef();
@@ -1928,6 +1959,12 @@ Class_object* Class_object::getClass()
 	return ret;
 }
 
+void IFunction::sinit(Class_base* c)
+{
+	c->setVariableByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call));
+	c->setVariableByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply));
+}
+
 Class_function* Class_function::getClass()
 {
 	//We check if we are registered in the class map
@@ -2119,8 +2156,8 @@ Class<IFunction>* Class<IFunction>::getClass()
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
-		IFunction::sinit(ret);
 		sys->classes.insert(std::make_pair(ClassName<IFunction>::name,ret));
+		IFunction::sinit(ret);
 	}
 	else
 		ret=static_cast<Class<IFunction>*>(it->second);

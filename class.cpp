@@ -27,12 +27,20 @@ ASObject* Class<ASObject>::getVariableByMultiname(const multiname& name, bool sk
 	//No super here, ever
 	if(!ret)
 	{
+		//Check if we should do lazy definition
 		if(name.name_s=="toString")
 		{
 			ASObject* ret=Class<IFunction>::getFunction(ASObject::_toString);
 			setVariableByQName("toString","",ret);
 			return ret;
 		}
+		else if(name.name_s=="hasOwnProperty")
+		{
+			ASObject* ret=Class<IFunction>::getFunction(ASObject::hasOwnProperty);
+			setVariableByQName("hasOwnProperty","",ret);
+			return ret;
+		}
+
 	}
 	return ret;
 }

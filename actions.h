@@ -144,7 +144,7 @@ public:
 	ActionDefineFunction(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 	void print(){ LOG(LOG_TRACE,"ActionDefineFunction");}
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args)
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false)
 	{
 		abort();
 		return false;
@@ -182,7 +182,7 @@ public:
 	ActionDefineFunction2(std::istream& in,ACTIONRECORDHEADER* h);
 	void Execute();
 	void print(){ LOG(LOG_TRACE,"ActionDefineFunction2");}
-	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args)
+	ASObject* call(ASObject* obj, ASObject* const* args, uint32_t num_args, bool thisOverride=false)
 	{
 		abort();
 		return false;

@@ -1750,6 +1750,8 @@ void Stage::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setGetterByQName("stageWidth","",Class<IFunction>::getFunction(_getStageWidth));
 	c->setGetterByQName("stageHeight","",Class<IFunction>::getFunction(_getStageHeight));
+	c->setGetterByQName("scaleMode","",Class<IFunction>::getFunction(_getScaleMode));
+	c->setSetterByQName("scaleMode","",Class<IFunction>::getFunction(_setScaleMode));
 }
 
 void Stage::buildTraits(ASObject* o)
@@ -1767,18 +1769,65 @@ ASFUNCTIONBODY(Stage,_constructor)
 
 ASFUNCTIONBODY(Stage,_getStageWidth)
 {
-	//Stage* th=static_cast<Stage*>(obj->implementation);
-	RECT size=sys->getFrameSize();
-	int width=size.Xmax/20;
+	//Stage* th=static_cast<Stage*>(obj);
+	uint32_t width;
+	if(sys->scaleMode==SystemState::NO_SCALE && sys->getRenderThread())
+		width=sys->getRenderThread()->windowWidth;
+	else
+	{
+		RECT size=sys->getFrameSize();
+		width=size.Xmax/20;
+	}
 	return abstract_d(width);
 }
 
 ASFUNCTIONBODY(Stage,_getStageHeight)
 {
-	//Stage* th=static_cast<Stage*>(obj->implementation);
-	RECT size=sys->getFrameSize();
-	int height=size.Ymax/20;
+	//Stage* th=static_cast<Stage*>(obj);
+	uint32_t height;
+	if(sys->scaleMode==SystemState::NO_SCALE && sys->getRenderThread())
+		height=sys->getRenderThread()->windowHeight;
+	else
+	{
+		RECT size=sys->getFrameSize();
+		height=size.Ymax/20;
+	}
 	return abstract_d(height);
+}
+
+ASFUNCTIONBODY(Stage,_getScaleMode)
+{
+	//Stage* th=static_cast<Stage*>(obj);
+	switch(sys->scaleMode)
+	{
+		case SystemState::EXACT_FIT:
+			return Class<ASString>::getInstanceS("exactFit");
+		case SystemState::SHOW_ALL:
+			return Class<ASString>::getInstanceS("showAll");
+		case SystemState::NO_BORDER:
+			return Class<ASString>::getInstanceS("noBorder");
+		case SystemState::NO_SCALE:
+			return Class<ASString>::getInstanceS("noScale");
+	}
+}
+
+ASFUNCTIONBODY(Stage,_setScaleMode)
+{
+	//Stage* th=static_cast<Stage*>(obj);
+	const tiny_string& arg0=args[0]->toString();
+	if(arg0=="exactFit")
+		sys->scaleMode=SystemState::EXACT_FIT;
+	else if(arg0=="showAll")	
+		sys->scaleMode=SystemState::SHOW_ALL;
+	else if(arg0=="noBorder")	
+		sys->scaleMode=SystemState::NO_BORDER;
+	else if(arg0=="noScale")	
+		sys->scaleMode=SystemState::NO_SCALE;
+	
+	RenderThread* rt=sys->getRenderThread();
+	if(rt)
+		rt->requestResize(rt->windowWidth, rt->windowHeight);
+	return NULL;
 }
 
 void Graphics::sinit(Class_base* c)

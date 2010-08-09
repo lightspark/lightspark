@@ -181,7 +181,7 @@ protected:
 		int16_t* current;
 		uint32_t len;
 		uint32_t time;
-		FrameSamples():current(samples),len(MAX_AUDIO_FRAME_SIZE),time(0){}
+		FrameSamples():current(samples),len(0),time(0){}
 	};
 	class FrameSamplesGenerator
 	{

@@ -48,11 +48,13 @@ class AudioPlugin : public IAudioPlugin
     const string get_pluginName();
     bool Is_ContextReady();
     bool Is_Stopped();
-/*    virtual uint32_t createStream(lightspark::AudioDecoder *decoder) = 0;
-    virtual void freeStream(uint32_t id) = 0;
-    virtual void fillAndSync(uint32_t id, uint32_t streamTime) = 0;
-    virtual void stop() = 0;
-    virtual ~AudioPlugin() = 0;
-*/};
+//    virtual uint32_t createStream(lightspark::AudioDecoder *decoder) = 0;
+//    virtual void freeStream(uint32_t id) = 0;
+//    virtual void fill(uint32_t id) = 0;
+//    virtual void stop() = 0;
+    bool isTimingAvailable() const;
+//    virtual uint32_t getPlayedTime(uint32_t streamId) = 0;
+//    virtual ~AudioPlugin() = 0;
+};
 
 #endif

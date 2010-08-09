@@ -51,17 +51,12 @@ void PulsePlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
 	}
 }
 
-bool PulsePlugin::isTimingAvailable() const
-{
-	return noServer==false;
-}
-
-uint32_t SoundManager::getPlayedTime(uint32_t id)
+uint32_t PulsePlugin::getPlayedTime(uint32_t id)
 {
 	assert(streams[id-1]);
 	assert(noServer==false);
 
-	if(streams[id-1]->streamStatus!=SoundStream::STREAM_READY) //The stream is not yet ready, delay upload
+	if(streams[id-1]->streamStatus!=AudioStream::STREAM_READY) //The stream is not yet ready, delay upload
 		return 0;
 	pa_stream* stream=streams[id-1]->stream;
 
@@ -80,7 +75,7 @@ uint32_t SoundManager::getPlayedTime(uint32_t id)
 	return time/1000;
 }
 
-void SoundManager::fill(uint32_t id)
+void PulsePlugin::fill(uint32_t id)
 {
 	assert(streams[id-1]);
 	if(noServer==false)
@@ -270,18 +265,6 @@ void PulsePlugin::contextStatusCB(pa_context *context, AudioPlugin *th)
 		default:
 			break;
 	}
-}
-
-SoundManager::SoundManager():contextReady(false),noServer(false),stopped(false)
-{
-	mainLoop=pa_threaded_mainloop_new();
-	pa_threaded_mainloop_start(mainLoop);
-
-	pa_threaded_mainloop_lock(mainLoop);
-	context=pa_context_new(pa_threaded_mainloop_get_api(mainLoop),"Lightspark");
-	pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
-	pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
-	pa_threaded_mainloop_unlock(mainLoop);
 }
 
 PulsePlugin::~PulsePlugin()

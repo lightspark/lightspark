@@ -38,9 +38,9 @@ using namespace boost::filesystem;
 using namespace boost;
 
 
-void AudioManager::fillAndSyncPlugin(uint32_t id, uint32_t streamTime)
+void AudioManager::fillPlugin(uint32_t id)
 {
-  o_AudioPlugin->fillAndSync(id, streamTime);
+  o_AudioPlugin->fill(id);
 }
 
 void AudioManager::freeStreamPlugin(uint32_t id)
@@ -53,6 +53,25 @@ uint32_t AudioManager::createStreamPlugin(AudioDecoder *decoder)
   return o_AudioPlugin->createStream(decoder);
 }
 
+uint32_t AudioManager::getPlayedTimePlugin(uint32_t streamId)
+{
+  return o_AudioPlugin->getPlayedTime(streamId);
+}
+
+bool AudioManager::isTimingAvailablePlugin() const
+{
+  return o_AudioPlugin->isTimingAvailable();
+}
+
+void AudioManager::select_audiobackend()
+{
+
+}
+
+void AudioManager::LoadAudioPlugin()
+{
+
+}
 
 /****************
 AudioManager::AudioManager

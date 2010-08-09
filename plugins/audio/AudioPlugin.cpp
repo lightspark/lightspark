@@ -56,3 +56,8 @@ PLUGIN_TYPES AudioPlugin::get_pluginType()
 {
   return pluginType;
 }
+
+bool AudioPlugin::isTimingAvailable() const
+{
+  return noServer==false;
+}

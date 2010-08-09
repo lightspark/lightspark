@@ -69,9 +69,11 @@ class AudioManager
     AudioManager();
     uint32_t createStreamPlugin(AudioDecoder *decoder);
     void freeStreamPlugin(uint32_t id);
-    void fillAndSyncPlugin(uint32_t id, uint32_t streamTime);
+    void fillPlugin(uint32_t id);
     void stopPlugin();
-    void set_audiobackend();
+    bool isTimingAvailablePlugin() const;
+    uint32_t getPlayedTimePlugin(uint32_t streamId);
+    void select_audiobackend();
     ~AudioManager();
 };
 

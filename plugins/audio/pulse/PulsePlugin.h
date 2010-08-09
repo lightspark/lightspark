@@ -54,9 +54,6 @@ class PulsePlugin : public AudioPlugin
 	void fill(uint32_t id);
 	void stop();
 	bool isTimingAvailable() const;
-	/**
-		Get the elapsed time in milliseconds for the stream streamId
-	*/
 	uint32_t getPlayedTime(uint32_t streamId);
 	~PulsePlugin();
 };

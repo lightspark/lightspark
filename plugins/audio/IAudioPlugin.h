@@ -50,8 +50,13 @@ class IAudioPlugin : public IPlugin
     virtual bool Is_Stopped() = 0;
     virtual uint32_t createStream(lightspark::AudioDecoder *decoder) = 0;
     virtual void freeStream(uint32_t id) = 0;
-    virtual void fillAndSync(uint32_t id, uint32_t streamTime) = 0;
+    virtual void fill(uint32_t id) = 0;
     virtual void stop() = 0;
+    virtual bool isTimingAvailable() const = 0;
+    /*
+      Get the elapsed time in milliseconds for the stream streamId
+    */
+    virtual uint32_t getPlayedTime(uint32_t streamId) = 0;
     virtual ~IAudioPlugin() = 0;
 };
 

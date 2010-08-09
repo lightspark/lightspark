@@ -162,6 +162,7 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : nsPluginInstanceBase(),
 	mInstance(aInstance),mInitialized(FALSE),mContainer(NULL),mWindow(0),swf_stream(&swf_buf)
 {
+	sys=NULL;
 	m_pt=new lightspark::ParseThread(NULL,swf_stream);
 	m_sys=new lightspark::SystemState(m_pt);
 	//As this is the plugin, enable fallback on Gnash for older clips
@@ -194,6 +195,7 @@ nsPluginInstance::~nsPluginInstance()
 	m_sys->wait();
 	delete m_sys;
 	delete m_pt;
+	sys=NULL;
 }
 
 void nsPluginInstance::draw()

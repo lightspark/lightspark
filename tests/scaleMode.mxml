@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_test_template"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	private var clickCount:uint;
+	private var color:uint;
+	private var squareWidth:uint;
+	private var squareHeight:uint;
+	private function drawRect():void {
+		rect.graphics.clear();
+		rect.graphics.beginFill(color);
+		rect.graphics.drawRect(0,0,squareWidth,squareHeight);
+		rect.graphics.endFill();
+	}
+	private function rectClick(e:Event):void
+	{
+		clickCount++;
+		clickCount%=4;
+		if(clickCount==0)
+		{
+			color=0xff8060;
+			stage.scaleMode=StageScaleMode.SHOW_ALL;
+		}
+		else if(clickCount==1)
+		{
+			color=0x80ff60;
+			stage.scaleMode=StageScaleMode.NO_BORDER;
+		}
+		else if(clickCount==2)
+		{
+			color=0x8060ff;
+			stage.scaleMode=StageScaleMode.EXACT_FIT;
+		}
+		else if(clickCount==3)
+		{
+			color=0x802080;
+			stage.scaleMode=StageScaleMode.NO_SCALE;
+		}
+		drawRect();
+	}
+	private function appComplete():void {
+		clickCount=0;
+		stage.scaleMode=StageScaleMode.SHOW_ALL;
+		color=0xff8060;
+		squareWidth=stage.stageWidth/2;
+		squareHeight=stage.stageHeight/2;
+		rect.addEventListener(MouseEvent.CLICK,rectClick);
+		drawRect();
+	}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="rect" />
+
+</mx:Application>

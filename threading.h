@@ -81,22 +81,27 @@ class Locker
 {
 private:
 	Mutex& _m;
-	const char* message;
+	bool acquired;
 public:
-	Locker(Mutex& m):_m(m)
+	Locker(Mutex& m):_m(m),acquired(true)
 	{
 		_m.lock();
 	}
 	~Locker()
 	{
-		_m.unlock();
+		if(acquired)
+			_m.unlock();
 	}
 	void lock()
 	{
+		assert(acquired==false);
+		acquired=true;
 		_m.lock();
 	}
 	void unlock()
 	{
+		assert(acquired==true);
+		acquired=false;
 		_m.unlock();
 	}
 };

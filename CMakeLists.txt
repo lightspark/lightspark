@@ -117,22 +117,29 @@ if(Boost_FOUND)
 endif(Boost_FOUND)
 
 pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcrecpp libavutil ftgl x11 glu fontconfig glew)
+
 ADD_SUBDIRECTORY(plugins)
+
 IF(${AUDIO_BACKEND} MATCHES "pulse")
-  pkg_check_modules(SOUND_LIBS REQUIRED libpulse)
+  pkg_check_modules(PULSE_LIBS REQUIRED libpulse)
   include_directories(plugins/audio/pulse)
 #  add_subdirectory(plugins/audio/pulse)
 ENDIF(${AUDIO_BACKEND} MATCHES "pulse")
 IF(${AUDIO_BACKEND} MATCHES "alsa")
-  pkg_check_modules(SOUND_LIBS REQUIRED libalsa)
+  pkg_check_modules(ALSA_LIBS REQUIRED alsa)
 #  include_directories(/plugins/audio/alsa)
 ##  add_subdirectory(plugins/audio/alsa)
 ENDIF(${AUDIO_BACKEND} MATCHES "alsa")
 IF(${AUDIO_BACKEND} MATCHES "openal")
-  pkg_check_modules(SOUND_LIBS REQUIRED libopenal)
+  pkg_check_modules(OPENAL_LIBS REQUIRED openal)
 #  include_directories(/plugins/audio/openal)
 ##  add_subdirectory(plugins/audio/openal)
 ENDIF(${AUDIO_BACKEND} MATCHES "openal")
+IF(AUDIO_BACKEND)
+  SET(SOUND_LIBS ${PULSE_LIBS} ${ALSA_LIBS} ${OPENAL_LIBS})
+  ADD_DEFINITIONS(-DAUDIO_BACKEND ${AUDIO_BACKEND})
+ENDIF(AUDIO_BACKEND)
+
 
 IF(ENABLE_LIBAVCODEC)
 	# Compatibility checks for ffmpeg deprecated functions

@@ -5,7 +5,8 @@ set -e
 case "$1" in
 	configure)
 		for p in iceape iceweasel mozilla firefox xulrunner midbrowser xulrunner-addons; do 
-			if [ -d /usr/lib/$p/plugins ] then
+			if [ -d /usr/lib/$p/plugins ]
+			then
 				update-alternatives --install "/usr/lib/$p/plugins/flashplugin-alternative.so" "$p-flashplugin" /usr/lib/lightspark/liblightsparkplugin.so 60;
 			fi
 		done

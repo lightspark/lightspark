@@ -167,6 +167,8 @@ bool FFMpegVideoDecoder::discardFrame()
 
 bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
 {
+	if(datalen==0)
+		return false;
 	int frameOk=0;
 #if HAVE_AVCODEC_DECODE_VIDEO2
 	AVPacket pkt;

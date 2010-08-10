@@ -372,6 +372,7 @@ void NetStream::execute()
 	profile->setTag("NetStream");
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	uint32_t decodedAudioBytes=0;
+	uint32_t decodedVideoFrames=0;
 	//The decoded time is computed from the decodedAudioBytes to avoid drifts
 	uint32_t decodedTime=0;
 	bool waitForFlush=true;
@@ -451,7 +452,8 @@ void NetStream::execute()
 					{
 						VideoDataTag tag(s);
 						prevSize=tag.getTotalLen();
-						//The audio time drives the stream
+						//If the framerate is known give the right timing, otherwise use decodedTime from audio
+						uint32_t frameTime=(frameRate!=0.0)?(decodedVideoFrames*1000/frameRate):decodedTime;
 
 						if(videoDecoder==NULL)
 						{
@@ -474,7 +476,8 @@ void NetStream::execute()
 #else
 								videoDecoder=new NullVideoDecoder();
 #endif
-								videoDecoder->decodeData(tag.packetData,tag.packetLen, decodedTime);
+								videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
+								decodedVideoFrames++;
 							}
 							Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Start");
 							getVm()->addEvent(this, status);
@@ -484,7 +487,10 @@ void NetStream::execute()
 							status->decRef();
 						}
 						else
-							videoDecoder->decodeData(tag.packetData,tag.packetLen, decodedTime);
+						{
+							videoDecoder->decodeData(tag.packetData,tag.packetLen, frameTime);
+							decodedVideoFrames++;
+						}
 						break;
 					}
 					case 18:

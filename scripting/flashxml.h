@@ -21,7 +21,7 @@
 #define _FLASH_XML_H
 
 #include "compat.h"
-#include "swftypes.h"
+#include "asobject.h"
 
 namespace lightspark
 {

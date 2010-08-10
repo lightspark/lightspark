@@ -21,7 +21,7 @@
 #define _FLASH_NET_H
 
 #include "compat.h"
-#include "asobjects.h"
+#include "asobject.h"
 #include "flashevents.h"
 #include "thread_pool.h"
 #include "netutils.h"

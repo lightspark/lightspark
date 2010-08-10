@@ -21,7 +21,8 @@
 #define _FLASH_EVENTS_H
 
 #include "compat.h"
-#include "asobjects.h"
+#include "asobject.h"
+#include "toplevel.h"
 #include <string>
 #include <semaphore.h>
 

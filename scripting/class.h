@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #include "compat.h"
-#include "asobjects.h"
+#include "asobject.h"
 #include "swf.h"
 
 #ifndef CLASS_H

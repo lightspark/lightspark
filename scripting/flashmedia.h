@@ -21,7 +21,7 @@
 #define _FLASH_MEDIA_H
 
 #include "compat.h"
-#include "asobjects.h"
+#include "asobject.h"
 #include "flashdisplay.h"
 #include "flashnet.h"
 #include "timer.h"

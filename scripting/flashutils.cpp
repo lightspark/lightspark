@@ -19,7 +19,7 @@
 
 #include "abc.h"
 #include "flashutils.h"
-#include "asobjects.h"
+#include "asobject.h"
 #include "class.h"
 #include "compat.h"
 

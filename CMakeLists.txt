@@ -188,31 +188,31 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESS
 
 # liblightspark.so sources
 SET(LIBSPARK_SOURCES 
+		asobject.cpp
+		compat.cpp
+		decoder.cpp
+		frame.cpp
+		flv.cpp
+		geometry.cpp
+		graphics.cpp
+		input.cpp
+		logger.cpp
+		netutils.cpp
+		sound.cpp
+		streams.cpp
 		swf.cpp
 		swftypes.cpp
 		tags.cpp
-		geometry.cpp
-		frame.cpp
-		input.cpp
-		streams.cpp
 		tags_stub.cpp
-		logger.cpp
 		textfile.cpp
 		thread_pool.cpp
-		compat.cpp
-		flv.cpp
-		netutils.cpp
-		timer.cpp
-		decoder.cpp
 		threading.cpp
-		graphics.cpp
-		sound.cpp
+		timer.cpp
 		scripting/abc.cpp
 		scripting/abc_codesynt.cpp
 		scripting/abc_interpreter.cpp
 		scripting/abc_opcodes.cpp
 		scripting/actions.cpp
-		scripting/asobjects.cpp
 		scripting/class.cpp
 		scripting/flashdisplay.cpp
 		scripting/flashevents.cpp
@@ -224,6 +224,7 @@ SET(LIBSPARK_SOURCES
 		scripting/flashtext.cpp
 		scripting/flashutils.cpp
 		scripting/flashxml.cpp
+		scripting/toplevel.cpp
 		scripting/vm.cpp)
 IF(${i386})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
@@ -276,6 +277,6 @@ ENDIF(COMPILE_TIGHTSPARK)
 
 # Browser plugin
 IF(COMPILE_PLUGIN)
-	ADD_SUBDIRECTORY(plugin-dir)
+	ADD_SUBDIRECTORY(plugin)
 ENDIF(COMPILE_PLUGIN)
 

@@ -21,7 +21,7 @@
 #define _FLASH_TEXT_H
 
 #include "compat.h"
-#include "asobjects.h"
+#include "asobject.h"
 #include "flashdisplay.h"
 
 namespace lightspark

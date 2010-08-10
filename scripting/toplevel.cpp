@@ -29,7 +29,7 @@
 #include <limits>
 
 #include "abc.h"
-#include "asobjects.h"
+#include "toplevel.h"
 #include "flashevents.h"
 #include "swf.h"
 #include "compat.h"
@@ -2168,4 +2168,72 @@ Class<IFunction>* Class<IFunction>::getClass()
 
 	ret->incRef();
 	return ret;
+}
+
+//We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
+bool lightspark::Boolean_concrete(ASObject* obj)
+{
+	if(obj->getObjectType()==T_STRING)
+	{
+		LOG(LOG_CALLS,"String to bool");
+		const tiny_string& s=obj->toString();
+		if(s.len()==0)
+			return false;
+		else
+			return true;
+	}
+	else if(obj->getObjectType()==T_BOOLEAN)
+	{
+		Boolean* b=static_cast<Boolean*>(obj);
+		LOG(LOG_CALLS,"Boolean to bool " << b->val);
+		return b->val;
+	}
+	else if(obj->getObjectType()==T_OBJECT)
+	{
+		LOG(LOG_CALLS,"Object to bool");
+		return true;
+	}
+	else if(obj->getObjectType()==T_CLASS)
+	{
+		LOG(LOG_CALLS,"Class to bool");
+		return true;
+	}
+	else if(obj->getObjectType()==T_ARRAY)
+	{
+		LOG(LOG_CALLS,"Array to bool");
+		return true;
+	}
+	else if(obj->getObjectType()==T_UNDEFINED)
+	{
+		LOG(LOG_CALLS,"Undefined to bool");
+		return false;
+	}
+	else if(obj->getObjectType()==T_NULL)
+	{
+		LOG(LOG_CALLS,"Null to bool");
+		return false;
+	}
+	else if(obj->getObjectType()==T_NUMBER)
+	{
+		LOG(LOG_CALLS,"Number to bool");
+		double val=obj->toNumber();
+		if(val==0 || isnan(val))
+			return false;
+		else
+			return true;
+	}
+	else if(obj->getObjectType()==T_INTEGER)
+	{
+		LOG(LOG_CALLS,"Integer to bool");
+		int32_t val=obj->toInt();
+		if(val==0)
+			return false;
+		else
+			return true;
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Boolean conversion for type " << obj->getObjectType() << endl);
+		return false;
+	}
 }

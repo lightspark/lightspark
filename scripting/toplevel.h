@@ -17,13 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef ASOBJECTS_H
-#define ASOBJECTS_H
+#ifndef TOPLEVEL_H
+#define TOPLEVEL_H
 #include "compat.h"
 #include <vector>
-#include <list>
 #include <set>
-#include "swftypes.h"
+#include "asobject.h"
 #include "frame.h"
 #include "input.h"
 #include "exceptions.h"
@@ -775,6 +774,7 @@ public:
 	static void buildTraits(ASObject* o);
 };
 
+bool Boolean_concrete(ASObject* obj);
 };
 
 #endif

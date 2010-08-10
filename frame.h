@@ -27,11 +27,11 @@
 namespace lightspark
 {
 
-class RootMovieClip;
 class DisplayListTag;
 class ControlTag;
 class DisplayObject;
 class MovieClip;
+class IFunction;
 
 class PlaceInfo
 {

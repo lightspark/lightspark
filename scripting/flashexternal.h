@@ -21,7 +21,7 @@
 #define _FLASH_EXTERNAL_H
 
 #include "compat.h"
-#include "asobjects.h"
+#include "asobject.h"
 
 namespace lightspark
 {

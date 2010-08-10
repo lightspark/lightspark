@@ -19,6 +19,8 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-include_directories(.)
+include_directories(".")
 INCLUDE_DIRECTORIES("..")
-add_subdirectory(audio)
+if(SOUND_ENABLE)
+  add_subdirectory(audio)
+endif(SOUND_ENABLE)

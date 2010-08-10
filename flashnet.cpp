@@ -327,11 +327,11 @@ void NetStream::tick()
 {
 	//Advance video and audio to current time, follow the audio stream time
 	//No mutex needed, ticking can happen only when stream is completely ready
-#ifdef AUDIO_BACKEND
-	if(soundStreamId && sys->soundManager->isTimingAvailable())
+#ifdef SOUND_ENABLE
+	if(soundStreamId && sys->audioManager->isTimingAvailablePlugin())
 	{
 		assert(audioDecoder);
-		streamTime=sys->soundManager->getPlayedTime(soundStreamId);
+		streamTime=sys->audioManager->getPlayedTimePlugin(soundStreamId);
 	}
 	else
 #endif
@@ -403,7 +403,7 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
-#ifdef AUDIO_BACKEND
+//#ifdef SOUND_ENABLE
 						if(audioDecoder==NULL)
 						{
 							audioCodec=tag.SoundFormat;
@@ -433,18 +433,18 @@ void NetStream::execute()
 									throw RunTimeException("Unsupported SoundFormat");
 							}
 							if(audioDecoder->isValid())
-								soundStreamId=sys->soundManager->createStream(audioDecoder);
+								soundStreamId=sys->audioManager->createStreamPlugin(audioDecoder);
 						}
 						else
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
 							decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
 							if(soundStreamId==0 && audioDecoder->isValid())
-								soundStreamId=sys->soundManager->createStream(audioDecoder);
+								soundStreamId=sys->audioManager->createStreamPlugin(audioDecoder);
 							//Adjust timing
 							decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
 						}
-#endif
+//#endif
 						break;
 					}
 					case 9:
@@ -558,9 +558,9 @@ void NetStream::execute()
 	tickStarted=false;
 	delete videoDecoder;
 	videoDecoder=NULL;
-#if AUDIO_BACKEND
+#if SOUND_ENABLE
 	if(soundStreamId)
-		sys->soundManager->freeStream(soundStreamId);
+		sys->audioManager->freeStreamPlugin(soundStreamId);
 	delete audioDecoder;
 	audioDecoder=NULL;
 #endif

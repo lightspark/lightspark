@@ -24,6 +24,7 @@
 #include "../../compat.h"
 #include "../../decoder.h"
 #include "../IPlugin.h"
+#include <iostream>
 
 using namespace std;
 
@@ -34,14 +35,15 @@ class IAudioPlugin : public IPlugin
 {
   protected:
     class AudioStream; //Will be implemented per plugin
-    const string audiobackend_name;
-    PLUGIN_TYPES pluginType;
+    string audiobackend_name;
     vector<AudioStream*> streams;
     volatile bool contextReady;
     volatile bool noServer;
     bool stopped;
   public:
-    IAudioPlugin();
+    IAudioPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "undefined",
+		 string init_audiobackend = "undefined", bool init_contextReady = false,
+		 bool init_noServer = false, bool init_stopped = false);
     virtual const string get_audioBackend_name() = 0;
     virtual bool get_serverStatus() = 0;
     virtual PLUGIN_TYPES get_pluginType() = 0;

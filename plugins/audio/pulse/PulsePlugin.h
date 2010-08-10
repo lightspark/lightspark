@@ -24,6 +24,10 @@
 #include "../AudioPlugin.h"
 #include "../../../decoder.h"
 #include "../../../compat.h"
+#include <iostream>
+
+using namespace std;
+
 
 class PulsePlugin : public AudioPlugin 
 {
@@ -43,12 +47,14 @@ class PulsePlugin : public AudioPlugin
 	static void contextStatusCB(pa_context *context, PulsePlugin *th);
 	static void streamStatusCB(pa_stream *stream, AudioStream *th);
 	static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
-//	std::vector<AudioStream*> streams;
+	vector<AudioStream*> streams;
 //	volatile bool contextReady;
 //	volatile bool noServer;
 //	bool stopped;
   public:
-	PulsePlugin();
+	PulsePlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "Pulse plugin output only",
+		    string init_audiobackend = "pulse", bool init_contextReady = false,
+		    bool init_noServer = false, bool init_stopped = false);
 	uint32_t createStream(lightspark::AudioDecoder *decoder);
 	void freeStream(uint32_t id);
 	void fill(uint32_t id);

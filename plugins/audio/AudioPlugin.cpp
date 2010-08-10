@@ -22,9 +22,11 @@
 
 using namespace lightspark;
 
-AudioPlugin::AudioPlugin()
-//  : pluginType(AUDIO) //Why? Oh, why?
+AudioPlugin::AudioPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
+			 bool init_contextReady, bool init_noServer, bool init_stopped)
+: IAudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
 {
+
 }
 
 const string AudioPlugin::get_audioBackend_name()

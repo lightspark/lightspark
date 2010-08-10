@@ -19,27 +19,40 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-# Compiler defaults flags for different profiles
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x")
-
-SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
-SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
-SET(CMAKE_CXX_FLAGS_DEBIAN "-O2 -DNDEBUG")
+## Compiler defaults flags for different profiles
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x")
+#
+#SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
+#SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
+#SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+#SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
+#SET(CMAKE_CXX_FLAGS_DEBIAN "-O2 -DNDEBUG")
+#SET(CMAKE_CXX_FLAGS_LEANDEBUG "-g -O2")
 
 INCLUDE_DIRECTORIES(".")
 INCLUDE_DIRECTORIES("..")
-pkg_check_modules(LIBAVCODEC REQUIRED libavcodec)
-INCLUDE_DIRECTORIES(${LIBAVCODEC_INCLUDE_DIRS})
 
-SET(LIBPULSE_SOURCES PulsePlugin.cpp ../AudioPlugin.cpp ../../IPlugin.cpp)
+pkg_check_modules(PULSE_LIBS REQUIRED libpulse)
+INCLUDE_DIRECTORIES(${PULSE_LIBS_INCLUDE_DIRS})
+if(!Boost_FOUND)
+  find_package(Boost COMPONENTS filesystem system regex)
+  if(Boost_FOUND)
+    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+  endif(Boost_FOUND)
+endif(!Boost_FOUND)
+ADD_DEFINITIONS(-DPULSE_BACKEND=TRUE)
+#SET(SOUND_LIBRARIES ${SOUND_LIBRARIES} ${PULSE_LIBS_LIBRAIRES})
+#pkg_check_modules(LIBAVCODEC REQUIRED libavcodec)
+#INCLUDE_DIRECTORIES(${LIBAVCODEC_INCLUDE_DIRS})
+
+SET(PULSEPLUGIN_SOURCES PulsePlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp ../AudioPlugin.cpp)
 
 # liblightsparkpulseplugin.so target
-ADD_LIBRARY(pulseplugin SHARED ${LIBPULSE_SOURCES})
-SET_TARGET_PROPERTIES(pulseplugin PROPERTIES OUTPUT_NAME lightsparkpulseplugin)
-SET_TARGET_PROPERTIES(pulseplugin PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
-SET_TARGET_PROPERTIES(pulseplugin PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
+ADD_LIBRARY(pulseplugin SHARED ${PULSEPLUGIN_SOURCES})
+TARGET_LINK_LIBRARIES(pulseplugin ${PULSE_LIBS_LIBRARIES} ${Boost_LIBRARIES})
+#SET_TARGET_PROPERTIES(pulseplugin PROPERTIES OUTPUT_NAME lightsparkpulseplugin)
+#SET_TARGET_PROPERTIES(pulseplugin PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
+#SET_TARGET_PROPERTIES(pulseplugin PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
 
 IF(UNIX)
 	INSTALL(TARGETS pulseplugin LIBRARY DESTINATION ${PRIVATELIBDIR}/plugins)

@@ -24,6 +24,7 @@
 #include "../../compat.h"
 #include "../../decoder.h"
 #include "IAudioPlugin.h"
+#include <iostream>
 
 using namespace std;
 
@@ -32,29 +33,18 @@ Abstract class for audio plugin implementation
 ***********************/
 class AudioPlugin : public IAudioPlugin
 {
-/*  protected:
-    class AudioStream; //Will be implemented per plugin
-    const string audiobackend_name;
-    PLUGIN_TYPES pluginType;
-    vector<AudioStream*> streams;
-    volatile bool contextReady;
-    volatile bool noServer;
-    bool stopped;
-*/  public:
-    AudioPlugin();
+  public:
+    AudioPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "generic audio plugin",
+		string init_audiobackend = "undefined backend", bool init_contextReady = false,
+		bool init_noServer = false, bool init_stopped = false);
     const string get_audioBackend_name();
     bool get_serverStatus();
     PLUGIN_TYPES get_pluginType();
     const string get_pluginName();
     bool Is_ContextReady();
     bool Is_Stopped();
-//    virtual uint32_t createStream(lightspark::AudioDecoder *decoder) = 0;
-//    virtual void freeStream(uint32_t id) = 0;
-//    virtual void fill(uint32_t id) = 0;
-//    virtual void stop() = 0;
     bool isTimingAvailable() const;
-//    virtual uint32_t getPlayedTime(uint32_t streamId) = 0;
-//    virtual ~AudioPlugin() = 0;
+    virtual ~AudioPlugin() = 0;
 };
 
 #endif

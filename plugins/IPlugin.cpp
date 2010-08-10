@@ -20,28 +20,9 @@
 
 #include "IPlugin.h"
 
-IPlugin::IPlugin()
-  : pluginType(UNDEFINED), pluginName("undefined")
+IPlugin::IPlugin(PLUGIN_TYPES init_Type, string init_Name)
+//  : pluginType(UNDEFINED), pluginName("undefined")
 {
+  pluginType = init_Type;
+  pluginName = init_Name;
 }
-
-/*void IPlugin::set_pluginType(PLUGIN_TYPES definedType)
-{
-  pluginType = definedType;
-}*/
-
-/*void IPlugin::set_pluginName(string definedName)
-{
-  pluginName = definedName;
-}
-*/
-
-/*PLUGIN_TYPES IPlugin::get_pluginType()
-{
-  return pluginType;
-}
-
-char *IPlugin::get_pluginName()
-{
-  return pluginName;
-}*/

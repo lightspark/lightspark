@@ -19,15 +19,15 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-include_directories(.)
+include_directories(".")
 INCLUDE_DIRECTORIES("..")
 
 IF(${AUDIO_BACKEND} MATCHES "pulse")
     add_subdirectory(pulse)
-ELSEIF(${AUDIO_BACKEND} MATCHES "alsa")
-    add_subdirectory(alsa)
-ELSEIF(${AUDIO_BACKEND} MATCHES "openal")
-    add_subdirectory(openal)
-ELSE(${AUDIO_BACKEND} MATCHES "pulse")
-    add_subdirectory(dummy)
 ENDIF(${AUDIO_BACKEND} MATCHES "pulse")
+IF(${AUDIO_BACKEND} MATCHES "alsa")
+    add_subdirectory(alsa)
+ENDIF(${AUDIO_BACKEND} MATCHES "alsa")
+IF(${AUDIO_BACKEND} MATCHES "openal")
+    add_subdirectory(openal)
+ENDIF(${AUDIO_BACKEND} MATCHES "openal")

@@ -18,17 +18,16 @@
 **************************************************************************/
 
 #include <iostream>
-#include <string.h>
 #include "PulsePlugin.h"
 #include "../AudioPlugin.h"
 
-#ifdef AUDIO_BACKEND
+#ifdef PULSE_BACKEND
 using namespace lightspark;
 using namespace std;
 
-PulsePlugin::PulsePlugin()
-  : pluginType(AUDIO), pluginName("Pulse (no input support)"), audiobackend_name("PulseAudio"),
-    contextReady(false), noServer(false), stopped(false)
+PulsePlugin::PulsePlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
+	    bool init_contextReady, bool init_noServer, bool init_stopped)
+  : AudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
 {
   mainLoop = pa_threaded_mainloop_new();
   pa_threaded_mainloop_start(mainLoop);
@@ -250,7 +249,7 @@ uint32_t PulsePlugin::createStream(AudioDecoder *decoder)
 	return index+1;
 }
 
-void PulsePlugin::contextStatusCB(pa_context *context, AudioPlugin *th)
+void PulsePlugin::contextStatusCB(pa_context *context, PulsePlugin *th)
 {
 	switch(pa_context_get_state(context))
 	{

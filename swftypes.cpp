@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "swf.h"
-#include "geometry.h"
+#include "backends/geometry.h"
 #include "scripting/class.h"
 #include "exceptions.h"
 

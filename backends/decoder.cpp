@@ -22,7 +22,7 @@
 #include <GL/glew.h>
 
 #include "decoder.h"
-#include "fastpaths.h"
+#include "platforms/fastpaths.h"
 #include "swf.h"
 #include "graphics.h"
 

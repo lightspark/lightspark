@@ -24,9 +24,9 @@
 #include "asobject.h"
 #include "flashevents.h"
 #include "thread_pool.h"
-#include "netutils.h"
+#include "backends/netutils.h"
 #include "timer.h"
-#include "decoder.h"
+#include "backends/decoder.h"
 
 namespace lightspark
 {

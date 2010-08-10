@@ -26,7 +26,7 @@
 
 #include "pluginbase.h"
 #include "parsing/streams.h"
-#include "netutils.h"
+#include "backends/netutils.h"
 #include <GL/glx.h>
 
 class NPDownloader;

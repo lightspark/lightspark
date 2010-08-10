@@ -25,7 +25,7 @@
 #include "flashdisplay.h"
 #include "flashnet.h"
 #include "timer.h"
-#include "graphics.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {

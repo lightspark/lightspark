@@ -29,9 +29,9 @@
 #include "logger.h"
 #include "parsing/streams.h"
 #include "asobject.h"
-#include "textfile.h"
+#include "parsing/textfile.h"
 #include "scripting/class.h"
-#include "netutils.h"
+#include "backends/netutils.h"
 
 #include <GL/glew.h>
 #ifdef ENABLE_CURL

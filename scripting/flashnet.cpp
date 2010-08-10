@@ -21,7 +21,6 @@
 #include "flashnet.h"
 #include "class.h"
 #include "parsing/flv.h"
-#include "decoder.h"
 
 using namespace std;
 using namespace lightspark;

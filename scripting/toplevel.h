@@ -24,7 +24,6 @@
 #include <set>
 #include "asobject.h"
 #include "frame.h"
-#include "input.h"
 #include "exceptions.h"
 #include "threading.h"
 

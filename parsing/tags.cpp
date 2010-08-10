@@ -23,10 +23,9 @@
 #include "scripting/abc.h"
 #include "tags.h"
 #include "scripting/actions.h"
-#include "geometry.h"
+#include "backends/geometry.h"
 #include "swftypes.h"
 #include "swf.h"
-#include "input.h"
 #include "logger.h"
 #include "frame.h"
 #include <GL/glew.h>

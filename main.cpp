@@ -20,7 +20,7 @@
 #include "swf.h"
 #include "logger.h"
 #include "parsing/streams.h"
-#include "netutils.h"
+#include "backends/netutils.h"
 #ifndef WIN32
 #include <sys/resource.h>
 #endif

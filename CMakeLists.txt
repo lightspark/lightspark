@@ -190,24 +190,24 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESS
 SET(LIBSPARK_SOURCES 
 		asobject.cpp
 		compat.cpp
-		decoder.cpp
 		frame.cpp
-		geometry.cpp
-		graphics.cpp
-		input.cpp
 		logger.cpp
-		netutils.cpp
-		sound.cpp
 		swf.cpp
 		swftypes.cpp
-		textfile.cpp
 		thread_pool.cpp
 		threading.cpp
 		timer.cpp
+		backends/decoder.cpp
+		backends/geometry.cpp
+		backends/graphics.cpp
+		backends/input.cpp
+		backends/netutils.cpp
+		backends/sound.cpp
 		parsing/flv.cpp
 		parsing/streams.cpp
 		parsing/tags.cpp
 		parsing/tags_stub.cpp
+		parsing/textfile.cpp
 		scripting/abc.cpp
 		scripting/abc_codesynt.cpp
 		scripting/abc_interpreter.cpp
@@ -227,11 +227,11 @@ SET(LIBSPARK_SOURCES
 		scripting/toplevel.cpp
 		scripting/vm.cpp)
 IF(${i386})
-	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
+	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_32.asm)
 ELSEIF(${x86_64})
-	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_64.asm)
+	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_64.asm)
 ELSEIF(${ppc})
-	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_ppc.cpp)
+	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_ppc.cpp)
 ENDIF(${i386})
 
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})

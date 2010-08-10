@@ -23,7 +23,7 @@
 #include "compat.h"
 #include <istream>
 #include "swftypes.h"
-#include "decoder.h"
+#include "backends/decoder.h"
 
 namespace lightspark
 {

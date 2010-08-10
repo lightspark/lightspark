@@ -32,8 +32,8 @@
 #include "frame.h"
 #include "scripting/flashdisplay.h"
 #include "timer.h"
-#include "graphics.h"
-#include "sound.h"
+#include "backends/graphics.h"
+#include "backends/sound.h"
 
 #include <GL/glew.h>
 #ifndef WIN32

@@ -27,7 +27,7 @@
 #include "flashevents.h"
 #include "flashutils.h"
 #include "thread_pool.h"
-#include "geometry.h"
+#include "backends/geometry.h"
 
 namespace lightspark
 {

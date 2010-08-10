@@ -335,7 +335,10 @@ void NetStream::tick()
 	}
 	else
 #endif
+	{
 		streamTime+=1000/frameRate;
+		audioDecoder->skipAll();
+	}
 	videoDecoder->skipUntil(streamTime);
 }
 

@@ -65,6 +65,8 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 	{
 		frameRate=codecContext->time_base.den;
 		frameRate/=codecContext->time_base.num;
+		if(videoCodec==H264) //H264 has half ticks (usually?)
+			frameRate/=2;
 	}
 	else if(frameRate==0)
 		return false;
@@ -77,12 +79,13 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 	return true;
 }
 
-FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, float frameRateHint):curBuffer(0),codecContext(NULL),
+FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):curBuffer(0),codecContext(NULL),
 	mutex("VideoDecoder"),initialized(false)
 {
 	//The tag is the header, initialize decoding
 	codecContext=avcodec_alloc_context();
 	AVCodec* codec=NULL;
+	videoCodec=codecId;
 	if(codecId==H264)
 	{
 		//TODO: serialize access to avcodec_open
@@ -145,7 +148,7 @@ void FFMpegVideoDecoder::skipUntil(uint32_t time)
 	while(1)
 	{
 		if(buffers.isEmpty())
-			return;
+			break;
 		if(buffers.front().time>=time)
 			break;
 		discardFrame();
@@ -167,6 +170,8 @@ bool FFMpegVideoDecoder::discardFrame()
 
 bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
 {
+	if(datalen==0)
+		return false;
 	int frameOk=0;
 #if HAVE_AVCODEC_DECODE_VIDEO2
 	AVPacket pkt;

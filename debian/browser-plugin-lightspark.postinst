@@ -1,0 +1,31 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+	configure)
+		for p in iceape iceweasel mozilla firefox xulrunner midbrowser xulrunner-addons; do 
+			if [ -d /usr/lib/$p/plugins ]
+			then
+				update-alternatives --install "/usr/lib/$p/plugins/flashplugin-alternative.so" "$p-flashplugin" /usr/lib/lightspark/liblightsparkplugin.so 60;
+			fi
+		done
+		for a in `find /usr/lib/firefox-3.*/.autoreg || true`; do
+			touch $a
+		done
+	;;
+	abort-upgrade|abort-remove|abort-deconfigure)
+		echo "postinst called with argument \`$1'" >&2
+		exit 1
+	;;
+
+	*)
+		echo "postinst called with unknown argument \`$1'" >&2
+		exit 1
+	;;
+esac
+
+#DEBHELPER
+
+exit 0
+

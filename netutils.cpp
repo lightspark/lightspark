@@ -248,8 +248,7 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 
 	if(strncmp(headerLine,"HTTP/1.1 4",10)==0) //HTTP error, let's fail
 		th->setFailed();
-//	else if(strncmp(headerLine,"HTTP/1.1 3",10)==0) //HTTP redirect
-//		__asm__("int $3");
+//	else if(strncmp(headerLine,"HTTP/1.1 3",10)==0); //HTTP redirect
 	else if(strncmp(headerLine,"Content-Length: ",16)==0)
 	{
 		//Now read the length and allocate the byteArray

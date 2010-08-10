@@ -7,6 +7,7 @@ override_dh_auto_configure:
 	dh_auto_configure -- \
 	    -DCOMPILE_PLUGIN=1 \
 	    -DCMAKE_BUILD_TYPE=Debian \
+	    -DENABLE_DEBIAN_ALTERNATIVES=1 \
 	    -DCMAKE_INSTALL_PREFIX=/usr
 
 override_dh_strip:

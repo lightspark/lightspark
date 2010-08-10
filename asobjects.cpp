@@ -198,6 +198,11 @@ ASFUNCTIONBODY(Array,filter)
 	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
 	Array* ret=Class<Array>::getInstanceS();
 	ret->data=th->data;
+	for(unsigned int i=0;i<ret->data.size();i++)
+	{
+		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
+			ret->data[i].data->incRef();
+	}
 	return ret;
 }
 
@@ -206,9 +211,8 @@ ASFUNCTIONBODY(Array,_concat)
 	Array* th=static_cast<Array*>(obj);
 	Array* ret=Class<Array>::getInstanceS();
 	ret->data=th->data;
-	if(argslen>=1 && args[0]->getObjectType()==T_ARRAY)
+	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
 	{
-		assert_and_throw(argslen==1);
 		Array* tmp=Class<Array>::cast(args[0]);
 		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
 	}

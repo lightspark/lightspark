@@ -55,7 +55,7 @@ public:
 	virtual ~Decoder(){}
 	bool isValid() const
 	{
-		return status==VALID;
+		return status>=VALID;
 	}
 	virtual void setFlushing()=0;
 	void waitFlushed()
@@ -73,6 +73,7 @@ protected:
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);
 	bool resizeIfNeeded(TextureBuffer& tex);
+	LS_VIDEO_CODEC videoCodec;
 public:
 	VideoDecoder():resizeGLBuffers(false),frameWidth(0),frameHeight(0),frameRate(0){}
 	virtual ~VideoDecoder(){}
@@ -90,7 +91,7 @@ public:
 	{
 		return frameHeight;
 	}
-	float frameRate;
+	double frameRate;
 };
 
 class NullVideoDecoder: public VideoDecoder
@@ -146,7 +147,7 @@ private:
 	void setSize(uint32_t w, uint32_t h);
 	bool fillDataAndCheckValidity();
 public:
-	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, float frameRateHint);
+	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint);
 	~FFMpegVideoDecoder();
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 	bool discardFrame();
@@ -186,7 +187,7 @@ protected:
 	class FrameSamplesGenerator
 	{
 	public:
-		void init(FrameSamples& f) const {f.len=MAX_AUDIO_FRAME_SIZE;}
+		void init(FrameSamples& f) const {f.len=0;}
 	};
 	BlockingCircularQueue<FrameSamples,150> samplesBuffer;
 public:

@@ -174,8 +174,8 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s):frameRate(0)
 				return;
 			}
 			default:
+				cout << (int)Type << endl;
 				throw ParseException("Unexpected type in FLV");
-				//cout << (int)Type << endl;
 		}
 	}
 }
@@ -219,6 +219,7 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 				_isHeader=true;
 				break;
 			case 1: //NALU
+			case 2: //End of sequence
 				break;
 			default:
 				throw UnsupportedException("Unexpected packet type in FLV");

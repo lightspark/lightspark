@@ -2092,7 +2092,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 					for(int i=1;i<10;i++)
 					{
 						glVertex2i(0,(i*th->windowHeight/10));
-						glVertex2i(th->windowWidth,(i*th->windowWidth/10));
+						glVertex2i(th->windowWidth,(i*th->windowHeight/10));
 					}
 					glEnd();
 					

@@ -1,2 +1,2 @@
 usr/share/lightspark/
-usr/lib/lightspark
+usr/lib/lightspark/liblightspark.so*

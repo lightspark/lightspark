@@ -28,6 +28,7 @@
 #include <math.h>
 #include "swf.h"
 #include "backends/geometry.h"
+#include "backends/rendering.h"
 #include "scripting/class.h"
 #include "exceptions.h"
 

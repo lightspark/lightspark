@@ -23,6 +23,7 @@
 #include "graphics.h"
 #include "logger.h"
 #include "exceptions.h"
+#include "backends/rendering.h"
 
 #include <iostream>
 

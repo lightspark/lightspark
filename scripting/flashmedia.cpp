@@ -20,6 +20,7 @@
 #include "flashmedia.h"
 #include "class.h"
 #include <iostream>
+#include "backends/rendering.h"
 
 using namespace lightspark;
 using namespace std;

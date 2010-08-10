@@ -29,6 +29,7 @@
 #include "parsing/streams.h"
 #include "compat.h"
 #include "class.h"
+#include "backends/rendering.h"
 
 #include <GL/glew.h>
 #include <fstream>

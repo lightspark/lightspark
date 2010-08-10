@@ -25,7 +25,7 @@
 #include "swftypes.h"
 #include "logger.h"
 #include "geometry.h"
-
+#include "backends/rendering.h"
 
 using namespace std;
 using namespace lightspark;

@@ -24,6 +24,7 @@
 #include "tags.h"
 #include "scripting/actions.h"
 #include "backends/geometry.h"
+#include "backends/rendering.h"
 #include "swftypes.h"
 #include "swf.h"
 #include "logger.h"

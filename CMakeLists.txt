@@ -165,6 +165,10 @@ IF(ENABLE_CURL)
 	ADD_DEFINITIONS(-DENABLE_CURL)
 ENDIF(ENABLE_CURL)
 
+IF(ENABLE_DEBIAN_ALTERNATIVES)
+	SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
+ENDIF(ENABLE_DEBIAN_ALTERNATIVES)
+
 # Compiler defaults flags for different profiles
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x")
 

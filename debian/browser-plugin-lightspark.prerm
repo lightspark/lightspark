@@ -1,0 +1,24 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+        remove|upgrade|deconfigure)
+                for p in iceape iceweasel mozilla firefox xulrunner midbrowser xulrunner-addons; do 
+                       update-alternatives --remove "$p-flashplugin" /usr/lib/lightspark/liblightsparkplugin.so || true;
+                done
+                ;;
+        failed-upgrade)
+		echo "error (failed-upgrade): prerm called with argument \`$1'" >&2
+                exit 1
+		;;
+        *)
+                echo "prerm called with unknown argument \`$1'" >&2
+                exit 1
+                ;;
+esac
+
+#DEBHELPER#
+
+exit 0
+

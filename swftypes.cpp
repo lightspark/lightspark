@@ -21,7 +21,6 @@
 
 #include "swftypes.h"
 #include "scripting/abc.h"
-#include "tags.h"
 #include "logger.h"
 #include <string.h>
 #include <algorithm>

@@ -192,22 +192,22 @@ SET(LIBSPARK_SOURCES
 		compat.cpp
 		decoder.cpp
 		frame.cpp
-		flv.cpp
 		geometry.cpp
 		graphics.cpp
 		input.cpp
 		logger.cpp
 		netutils.cpp
 		sound.cpp
-		streams.cpp
 		swf.cpp
 		swftypes.cpp
-		tags.cpp
-		tags_stub.cpp
 		textfile.cpp
 		thread_pool.cpp
 		threading.cpp
 		timer.cpp
+		parsing/flv.cpp
+		parsing/streams.cpp
+		parsing/tags.cpp
+		parsing/tags_stub.cpp
 		scripting/abc.cpp
 		scripting/abc_codesynt.cpp
 		scripting/abc_interpreter.cpp

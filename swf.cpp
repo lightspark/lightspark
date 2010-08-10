@@ -27,7 +27,7 @@
 #include "scripting/flashevents.h"
 #include "swf.h"
 #include "logger.h"
-#include "streams.h"
+#include "parsing/streams.h"
 #include "asobject.h"
 #include "textfile.h"
 #include "scripting/class.h"

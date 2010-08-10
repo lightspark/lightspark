@@ -19,7 +19,7 @@
 
 #include "scripting/abc.h"
 #include "frame.h"
-#include "tags.h"
+#include "parsing/tags.h"
 #include <list>
 #include "swf.h"
 #include "compat.h"

@@ -26,7 +26,7 @@
 #include "flashgeom.h"
 #include "flashnet.h"
 #include "flashsystem.h"
-#include "streams.h"
+#include "parsing/streams.h"
 #include "compat.h"
 #include "class.h"
 

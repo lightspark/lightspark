@@ -19,7 +19,7 @@
 
 #include "swf.h"
 #include "logger.h"
-#include "streams.h"
+#include "parsing/streams.h"
 #include "netutils.h"
 #ifndef WIN32
 #include <sys/resource.h>

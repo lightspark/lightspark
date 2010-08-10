@@ -25,7 +25,7 @@
 #include <sstream>
 
 #include "pluginbase.h"
-#include "streams.h"
+#include "parsing/streams.h"
 #include "netutils.h"
 #include <GL/glx.h>
 

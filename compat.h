@@ -77,7 +77,6 @@ long lrint(double f);
 
 
 #else //GCC
-
 #ifndef __STDC_LIMIT_MACROS
 #define __STDC_LIMIT_MACROS
 #endif

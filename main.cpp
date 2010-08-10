@@ -18,20 +18,14 @@
 **************************************************************************/
 
 #include "swf.h"
-#include "tags.h"
-#include "actions.h"
-#include "frame.h"
-#include "geometry.h"
 #include "logger.h"
 #include "streams.h"
 #include "netutils.h"
-#include <time.h>
 #ifndef WIN32
 #include <sys/resource.h>
 #endif
 #include <iostream>
 #include <fstream>
-#include <list>
 
 #ifdef WIN32
 #include <windows.h>

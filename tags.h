@@ -27,12 +27,11 @@
 #include "swftypes.h"
 #include "input.h"
 #include "geometry.h"
-#include "asobjects.h"
-#include "flashdisplay.h"
-#include "flashtext.h"
-#include "flashutils.h"
-#include "flashmedia.h"
-#include "class.h"
+#include "scripting/flashdisplay.h"
+#include "scripting/flashtext.h"
+#include "scripting/flashutils.h"
+#include "scripting/flashmedia.h"
+#include "scripting/class.h"
 
 namespace lightspark
 {

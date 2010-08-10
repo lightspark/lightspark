@@ -187,7 +187,44 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESS
 #SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/objs/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/lib${LIB_SUFFIX}" CACHE PATH "Static libraries output directory")
 
 # liblightspark.so sources
-SET(LIBSPARK_SOURCES swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp decoder.cpp threading.cpp flashxml.cpp graphics.cpp sound.cpp class.cpp)
+SET(LIBSPARK_SOURCES 
+		swf.cpp
+		swftypes.cpp
+		tags.cpp
+		geometry.cpp
+		frame.cpp
+		input.cpp
+		streams.cpp
+		tags_stub.cpp
+		logger.cpp
+		textfile.cpp
+		thread_pool.cpp
+		compat.cpp
+		flv.cpp
+		netutils.cpp
+		timer.cpp
+		decoder.cpp
+		threading.cpp
+		graphics.cpp
+		sound.cpp
+		scripting/abc.cpp
+		scripting/abc_codesynt.cpp
+		scripting/abc_interpreter.cpp
+		scripting/abc_opcodes.cpp
+		scripting/actions.cpp
+		scripting/asobjects.cpp
+		scripting/class.cpp
+		scripting/flashdisplay.cpp
+		scripting/flashevents.cpp
+		scripting/flashexternal.cpp
+		scripting/flashgeom.cpp
+		scripting/flashmedia.cpp
+		scripting/flashnet.cpp
+		scripting/flashsystem.cpp
+		scripting/flashtext.cpp
+		scripting/flashutils.cpp
+		scripting/flashxml.cpp
+		scripting/vm.cpp)
 IF(${i386})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
 ELSEIF(${x86_64})
@@ -195,6 +232,9 @@ ELSEIF(${x86_64})
 ELSEIF(${ppc})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_ppc.cpp)
 ENDIF(${i386})
+
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
 
 # liblightspark.so target
 ADD_LIBRARY(spark SHARED ${LIBSPARK_SOURCES})

@@ -22,16 +22,16 @@
 #include <pthread.h>
 #include <algorithm>
 #include <SDL.h>
-#include "abc.h"
-#include "flashdisplay.h"
-#include "flashevents.h"
+#include "scripting/abc.h"
+#include "scripting/flashdisplay.h"
+#include "scripting/flashevents.h"
 #include "swf.h"
 #include "logger.h"
-#include "actions.h"
+//#include "actions.h"
 #include "streams.h"
-#include "asobjects.h"
+#include "scripting/asobjects.h"
 #include "textfile.h"
-#include "class.h"
+#include "scripting/class.h"
 #include "netutils.h"
 
 #include <GL/glew.h>

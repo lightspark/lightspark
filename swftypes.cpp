@@ -20,17 +20,16 @@
 #define GL_GLEXT_PROTOTYPES
 
 #include "swftypes.h"
-#include "abc.h"
+#include "scripting/abc.h"
 #include "tags.h"
 #include "logger.h"
-#include "actions.h"
 #include <string.h>
 #include <algorithm>
 #include <stdlib.h>
 #include <math.h>
 #include "swf.h"
 #include "geometry.h"
-#include "class.h"
+#include "scripting/class.h"
 #include "exceptions.h"
 
 using namespace std;

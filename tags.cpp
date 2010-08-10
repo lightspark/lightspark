@@ -20,9 +20,9 @@
 #include <vector>
 #include <list>
 #include <algorithm>
-#include "abc.h"
+#include "scripting/abc.h"
 #include "tags.h"
-#include "actions.h"
+#include "scripting/actions.h"
 #include "geometry.h"
 #include "swftypes.h"
 #include "swf.h"

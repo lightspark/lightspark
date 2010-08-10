@@ -30,8 +30,7 @@
 #include <FTGL/ftgl.h>
 #include "swftypes.h"
 #include "frame.h"
-#include "vm.h"
-#include "flashdisplay.h"
+#include "scripting/flashdisplay.h"
 #include "timer.h"
 #include "graphics.h"
 #include "sound.h"

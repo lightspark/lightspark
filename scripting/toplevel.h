@@ -553,11 +553,7 @@ public:
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r);
 	bool hasNext(unsigned int& index, bool& out);
-	bool nextName(unsigned int index, ASObject*& out)
-	{
-		assert_and_throw(implEnable);
-		throw UnsupportedException("nextName not supported in Array");
-	}
+	bool nextName(unsigned int index, ASObject*& out);
 	bool nextValue(unsigned int index, ASObject*& out);
 	tiny_string toString_priv() const;
 };

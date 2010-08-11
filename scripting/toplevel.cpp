@@ -890,6 +890,14 @@ bool Array::hasNext(unsigned int& index, bool& out)
 	return true;
 }
 
+bool Array::nextName(unsigned int index, ASObject*& out)
+{
+	assert_and_throw(implEnable);
+	assert_and_throw(index<data.size());
+	out=abstract_i(index);
+	return true;
+}
+
 void Array::outofbounds() const
 {
 	throw ParseException("Array access out of bounds");
@@ -1938,7 +1946,7 @@ Class_base::~Class_base()
 
 ASObject* Class_base::generator(ASObject* const* args, const unsigned int argslen)
 {
-	ASObject::generator(NULL, args, argslen);
+	return ASObject::generator(NULL, args, argslen);
 }
 
 void Class_base::addImplementedInterface(const multiname& i)

@@ -457,8 +457,31 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 		//Value not found
 		ret=new Undefined;
 	}
+	else if(name.name_type==multiname::NAME_INT)
+	{
+		//Ok, we need to do the slow lookup on every object and check for === comparison
+		map<ASObject*, ASObject*>::iterator it=data.begin();
+		for(;it!=data.end();it++)
+		{
+			if(it->first->getObjectType()==T_INTEGER)
+			{
+				Integer* i=Class<Integer>::cast(it->first);
+				if(name.name_i == i->toInt())
+				{
+					//Value found
+					ret=it->second;
+					ret->incRef();
+					return ret;
+				}
+			}
+		}
+		//Value not found
+		ret=new Undefined;
+	}
 	else
+	{
 		throw UnsupportedException("Unsupported name kind on Dictionary::getVariableByMultiname");
+	}
 
 	return ret;
 }

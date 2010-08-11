@@ -784,7 +784,6 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	{
 		//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
 		ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
-
 		if(o)
 		{
 			assert_and_throw(o->getObjectType()==T_FUNCTION);
@@ -1494,7 +1493,8 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
-		o=(*it)->getVariableByMultiname(*name);
+		//Skip special behaviour
+		o=(*it)->getVariableByMultiname(*name, true);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 		if(o)

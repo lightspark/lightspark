@@ -561,10 +561,9 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 
 ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
-	assert_and_throw(!skip_impl);
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable)
+	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable || skip_impl)
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls

@@ -119,7 +119,7 @@ endif(Boost_FOUND)
 pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcrecpp libavutil ftgl x11 glu fontconfig glew)
 
 IF(AUDIO_BACKEND)
-  ADD_DEFINITIONS(-DAUDIO_BACKEND="${AUDIO_BACKEND}" -DSOUND_ENABLE=TRUE)
+  ADD_DEFINITIONS(-DAUDIO_BACKEND="${AUDIO_BACKEND}" -DENABLE_SOUND=TRUE)
 ENDIF(AUDIO_BACKEND)
 
 IF(ENABLE_LIBAVCODEC)
@@ -241,7 +241,6 @@ ELSEIF(${ppc})
 	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_ppc.cpp)
 ENDIF(${i386})
 
-#To verify what it does and if needed...
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
 
 # liblightspark.so target

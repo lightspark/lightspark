@@ -326,7 +326,7 @@ void NetStream::tick()
 {
 	//Advance video and audio to current time, follow the audio stream time
 	//No mutex needed, ticking can happen only when stream is completely ready
-#ifdef SOUND_ENABLE
+#ifdef ENABLE_SOUND
 	if(soundStreamId && sys->audioManager->isTimingAvailablePlugin())
 	{
 		assert(audioDecoder);

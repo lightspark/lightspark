@@ -191,10 +191,11 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass("DropShadowFilter"));
 	Global->setVariableByQName("BitmapFilter","flash.filters",Class<ASObject>::getClass("BitmapFilter"));
 
-	Global->setVariableByQName("TextField","flash.text",Class<TextField>::getClass());
-	Global->setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass("TextFormat"));
-	Global->setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass("TextFieldType"));
 	Global->setVariableByQName("Font","flash.text",Class<Font>::getClass());
+	Global->setVariableByQName("StyleSheet","flash.text",Class<ASObject>::getClass("StyleSheet"));
+	Global->setVariableByQName("TextField","flash.text",Class<TextField>::getClass());
+	Global->setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass("TextFieldType"));
+	Global->setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass("TextFormat"));
 
 	Global->setVariableByQName("XMLDocument","flash.xml",Class<XMLDocument>::getClass());
 

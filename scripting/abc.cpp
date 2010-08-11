@@ -2265,6 +2265,13 @@ ASFUNCTIONBODY(lightspark,isNaN)
 		else
 			return abstract_b(false);
 	}
+	else if(args[0]->getObjectType()==T_BOOLEAN)
+		return abstract_b(false);
+	else if(args[0]->getObjectType()==T_STRING)
+	{
+		double n=args[0]->toNumber();
+		return abstract_b(isnan(n));
+	}
 	else
 		throw UnsupportedException("Weird argument for isNaN");
 }

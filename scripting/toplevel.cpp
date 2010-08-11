@@ -862,7 +862,11 @@ tiny_string ASString::toString(bool debugMsg)
 double ASString::toNumber()
 {
 	assert_and_throw(implEnable);
-	//TODO: implement conversion that checks for validity
+	for(unsigned int i=0;i<data.size();i++)
+	{
+		if(data[i]<'0' || data[i]>'9') //not a number
+			return numeric_limits<double>::quiet_NaN();
+	}
 	return atof(data.c_str());
 }
 

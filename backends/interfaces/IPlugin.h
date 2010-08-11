@@ -23,7 +23,7 @@
 #define IPLUGIN_H
 
 #include <iostream>
-#include "../compat.h"
+#include "../../compat.h"
 
 using namespace std;
 

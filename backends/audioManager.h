@@ -26,7 +26,7 @@
 #include <string.h>
 #include <boost/filesystem.hpp>
 
-#include "plugins/audio/IAudioPlugin.h"
+#include "interfaces/audio/IAudioPlugin.h"
 
 using namespace std;
 using namespace boost::filesystem;

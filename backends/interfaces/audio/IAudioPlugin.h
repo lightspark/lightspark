@@ -21,7 +21,7 @@
 #ifndef IAUDIOPLUGIN_H
 #define IAUDIOPLUGIN_H
 
-#include "../../compat.h"
+#include "../../../compat.h"
 #include "../../decoder.h"
 #include "../IPlugin.h"
 #include <iostream>

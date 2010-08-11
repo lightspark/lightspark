@@ -737,6 +737,7 @@ ASFUNCTIONBODY(ASString,match)
 		}
 		else
 			ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
+		pcre_free(pcreRE);
 	}
 	else
 	{
@@ -753,23 +754,74 @@ ASFUNCTIONBODY(ASString,split)
 	ASString* th=static_cast<ASString*>(obj);
 	Array* ret=Class<Array>::getInstanceS();
 	ASObject* delimiter=args[0];
-	if(delimiter->getObjectType()==T_STRING)
+	if(delimiter->getObjectType()==T_UNDEFINED)
 	{
-		ASString* del=static_cast<ASString*>(delimiter);
+		ret->push(Class<ASString>::getInstanceS(th->data));
+		return ret;
+	}
+
+	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
+	{
+		RegExp* re=static_cast<RegExp*>(args[0]);
+
+		const char* error;
+		int offset;
+		int options=0;
+		if(re->ignoreCase)
+			options|=PCRE_CASELESS;
+		if(re->extended)
+			options|=PCRE_EXTENDED;
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &offset,NULL);
+		if(error)
+			return ret;
+		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+		int capturingGroups;
+		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+		if(infoOk!=0)
+		{
+			pcre_free(pcreRE);
+			return ret;
+		}
+		assert_and_throw(capturingGroups<10);
+		int ovector[30];
+		offset=0;
+		unsigned int end;
+		do
+		{
+			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
+			end=ovector[0];
+			if(rc<=0)
+				end=th->data.size();
+			ASString* s=Class<ASString>::getInstanceS(th->data.substr(offset,end-offset));
+			ret->push(s);
+			offset=ovector[1];
+			//Insert capturing groups
+			for(int i=1;i<rc;i++)
+			{
+				ASString* s=Class<ASString>::getInstanceS(th->data.substr(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
+				ret->push(s);
+			}
+		}
+		while(end<th->data.size());
+		pcre_free(pcreRE);
+	}
+	else
+	{
+		const tiny_string& del=args[0]->toString();
 		unsigned int start=0;
 		do
 		{
-			int match=th->data.find(del->data,start);
+			int match=th->data.find(del.raw_buf(),start);
+			if(del.len()==0)
+				match++;
 			if(match==-1)
 				match=th->data.size();
 			ASString* s=Class<ASString>::getInstanceS(th->data.substr(start,(match-start)));
 			ret->push(s);
-			start=match+del->data.size();
+			start=match+del.len();
 		}
 		while(start<th->data.size());
 	}
-	else
-		throw UnsupportedException("Array::split not completely implemented");
 
 	return ret;
 }

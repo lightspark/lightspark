@@ -70,7 +70,7 @@ ASFUNCTIONBODY(URLRequest,_getUrl)
 	return Class<ASString>::getInstanceS(th->url);
 }
 
-URLLoader::URLLoader():dataFormat("text"),data(NULL)
+URLLoader::URLLoader():dataFormat("text"),data(NULL),downloader(NULL),executingAbort(false)
 {
 }
 
@@ -135,21 +135,21 @@ ASFUNCTIONBODY(URLLoader,load)
 
 void URLLoader::execute()
 {
-	CurlDownloader curlDownloader(url);
+	downloader=new CurlDownloader(url);
 
-	curlDownloader.run();
-	if(!curlDownloader.hasFailed())
+	downloader->run();
+	if(!downloader->hasFailed())
 	{
 		if(dataFormat=="binary")
 		{
 			ByteArray* byteArray=Class<ByteArray>::getInstanceS();
-			byteArray->acquireBuffer(curlDownloader.getBuffer(),curlDownloader.getLen());
+			byteArray->acquireBuffer(downloader->getBuffer(),downloader->getLen());
 			data=byteArray;
 		}
 		else if(dataFormat=="text")
 		{
-			data=Class<ASString>::getInstanceS((const char *)curlDownloader.getBuffer(),
-                                                           curlDownloader.getLen());
+			data=Class<ASString>::getInstanceS((const char *)downloader->getBuffer(),
+								downloader->getLen());
 		}
 		//Send a complete event for this object
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete"));
@@ -159,12 +159,21 @@ void URLLoader::execute()
 		//Notify an error during loading
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
 	}
+
+	//Save the pointer locally
+	CurlDownloader* tmp=downloader;
+	downloader=NULL;
+	while(executingAbort); //If threadAbort has been executed it may have stopped the downloader or not.
+				//If it has not been executed the downloader is now NULL
+	delete tmp;
 }
 
 void URLLoader::threadAbort()
 {
-	//TODO: implement
-	throw UnsupportedException("URLLoader::threadAbort");
+	executingAbort=true;
+	if(downloader)
+		downloader->Downloader::stop();
+	executingAbort=false;
 }
 
 ASFUNCTIONBODY(URLLoader,_getDataFormat)

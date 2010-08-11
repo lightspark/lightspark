@@ -78,6 +78,8 @@ private:
 	tiny_string dataFormat;
 	tiny_string url;
 	ASObject* data;
+	CurlDownloader* downloader;
+	volatile bool executingAbort;
 	void execute();
 	void threadAbort();
 public:

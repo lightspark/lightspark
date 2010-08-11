@@ -21,6 +21,7 @@
 #include <algorithm>
 //#include <libxml/parser.h>
 #include <pcrecpp.h>
+#include <pcre.h>
 #include <string.h>
 #include <sstream>
 #include <iomanip>
@@ -640,9 +641,13 @@ ASString::ASString(const char* s, uint32_t len):data(s, len)
 	type=T_STRING;
 }
 
-/*ASFUNCTIONBODY(ASString,_constructor)
+ASFUNCTIONBODY(ASString,_constructor)
 {
-}*/
+	ASString* th=static_cast<ASString*>(obj);
+	if(args && args[0])
+		th->data=args[0]->toString().raw_buf();
+	return NULL;
+}
 
 ASFUNCTIONBODY(ASString,_getLength)
 {
@@ -652,13 +657,13 @@ ASFUNCTIONBODY(ASString,_getLength)
 
 void ASString::sinit(Class_base* c)
 {
-	//c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setConstructor(NULL);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 	c->setVariableByQName("split",AS3,Class<IFunction>::getFunction(split));
 	c->setVariableByQName("substr",AS3,Class<IFunction>::getFunction(substr));
 	c->setVariableByQName("replace",AS3,Class<IFunction>::getFunction(replace));
 	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(concat));
+	c->setVariableByQName("match",AS3,Class<IFunction>::getFunction(match));
 	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	c->setVariableByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt));
 	c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
@@ -680,6 +685,58 @@ Array::~Array()
 				data[i].data->decRef();
 		}
 	}
+}
+
+ASFUNCTIONBODY(ASString,match)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	if(args[0]==NULL || args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
+		return new Null;
+	Array* ret=NULL;
+	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
+	{
+		RegExp* re=static_cast<RegExp*>(args[0]);
+
+		const char* error;
+		int offset;
+		int options=0;
+		if(re->ignoreCase)
+			options|=PCRE_CASELESS;
+		if(re->extended)
+			options|=PCRE_EXTENDED;
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &offset,NULL);
+		if(error)
+			return new Null;
+		int ovector[9];
+		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), 0, 0, ovector, 9);
+		if(rc<=0)
+		{
+			//No matches or error
+			pcre_free(pcreRE);
+			return new Null;
+		}
+		ret=Class<Array>::getInstanceS();
+		if(re->global)
+		{
+			do
+			{
+				int offset=ovector[1];
+				ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
+				rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 9);
+			}
+			while(rc>0);
+		}
+		else
+			ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
+	}
+	else
+	{
+		ret=Class<Array>::getInstanceS();
+		const tiny_string& arg0=args[0]->toString();
+		if(th->data.find(arg0.raw_buf())!=th->data.npos) //Match found
+			ret->push(Class<ASString>::getInstanceS(arg0));
+	}
+	return ret;
 }
 
 ASFUNCTIONBODY(ASString,split)
@@ -1565,7 +1622,7 @@ ASFUNCTIONBODY(RegExp,exec)
 		args[0]->incRef();
 		a->setVariableByQName("input","",args[0]);
 		ret=a;
-		//TODO: add index field (not possible with current PCRECPP
+		//TODO: add index field (not possible with current PCRECPP)
 	}
 	else
 		ret=new Null;

@@ -410,10 +410,12 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(split);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(replace);
 	ASFUNCTION(concat);
 	ASFUNCTION(slice);
+	ASFUNCTION(match);
 	ASFUNCTION(substr);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);

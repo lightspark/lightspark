@@ -2230,12 +2230,6 @@ istream& lightspark::operator>>(istream& in, cpool_info& v)
 	return in;
 }
 
-ASFUNCTIONBODY(lightspark,_int)
-{
-	//Int is specified as 32bit
-	return abstract_i(args[0]->toInt()&0xffffffff);
-}
-
 ASFUNCTIONBODY(lightspark,parseInt)
 {
 	if(args[0]->getObjectType()==T_UNDEFINED)

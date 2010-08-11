@@ -660,7 +660,6 @@ public:
 ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* _int(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 

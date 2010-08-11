@@ -1030,6 +1030,12 @@ ASFUNCTIONBODY(Integer,_toString)
 	return Class<ASString>::getInstanceS(buf);
 }
 
+ASFUNCTIONBODY(Integer,generator)
+{
+	//Int is specified as 32bit
+	return abstract_i(args[0]->toInt()&0xffffffff);
+}
+
 TRISTATE Integer::isLess(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)

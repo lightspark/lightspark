@@ -589,6 +589,7 @@ public:
 	}
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
+	ASFUNCTION(generator);
 };
 
 class UInteger: public ASObject

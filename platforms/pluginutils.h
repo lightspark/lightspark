@@ -17,48 +17,36 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FRAME_H
-#define _FRAME_H
+#ifndef PLUGINUTILS_H
+#define PLUGINUTILS_H
 
-#include "compat.h"
-#include <list>
-#include "swftypes.h"
+#ifdef COMPILE_PLUGIN
+#include <X11/Xlib.h>
+#include <gtk/gtk.h>
+#endif
 
 namespace lightspark
 {
 
-class DisplayListTag;
-class ControlTag;
-class DisplayObject;
-class MovieClip;
-class IFunction;
-
-class PlaceInfo
+enum ENGINE { NONE=0, SDL, GTKPLUG};
+typedef void(*helper_t)(void*);
+#ifdef COMPILE_PLUGIN
+struct NPAPI_params
 {
-public:
-	MATRIX Matrix;
+	Display* display;
+	GtkWidget* container;
+	VisualID visual;
+	Window window;
+	int width;
+	int height;
+	void (*helper)(void* th, helper_t func, void* privArg);
+	void* helperArg;
 };
-
-class Frame
+#else
+struct NPAPI_params
 {
-private:
-	IFunction* script;
-	bool initialized;
-public:
-	tiny_string Label;
-	std::list<DisplayListTag*> blueprint;
-	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
-	//A temporary vector for control tags
-	std::vector < ControlTag* > controls;
-	Frame():script(NULL),initialized(false){}
-	~Frame();
-	void Render();
-	void inputRender();
-	void setScript(IFunction* s){script=s;}
-	void runScript();
-	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
-	bool isInitialized() const { return initialized; }
 };
-};
+#endif
 
+};
 #endif

@@ -17,48 +17,41 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FRAME_H
-#define _FRAME_H
+#ifndef _FLASH_TEXT_H
+#define _FLASH_TEXT_H
 
 #include "compat.h"
-#include <list>
-#include "swftypes.h"
+#include "asobject.h"
+#include "flashdisplay.h"
 
 namespace lightspark
 {
 
-class DisplayListTag;
-class ControlTag;
-class DisplayObject;
-class MovieClip;
-class IFunction;
-
-class PlaceInfo
+class Font: public ASObject
 {
 public:
-	MATRIX Matrix;
+	static void sinit(Class_base* c);
+//	static void buildTraits(ASObject* o);
+	ASFUNCTION(enumerateFonts);
 };
 
-class Frame
+class TextField: public DisplayObject
 {
 private:
-	IFunction* script;
-	bool initialized;
+	intptr_t width;
+	intptr_t height;
 public:
-	tiny_string Label;
-	std::list<DisplayListTag*> blueprint;
-	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
-	//A temporary vector for control tags
-	std::vector < ControlTag* > controls;
-	Frame():script(NULL),initialized(false){}
-	~Frame();
+	TextField():width(0),height(0){}
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void Render();
-	void inputRender();
-	void setScript(IFunction* s){script=s;}
-	void runScript();
-	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
-	bool isInitialized() const { return initialized; }
+	ASFUNCTION(_getWidth);
+	ASFUNCTION(_setWidth);
+	ASFUNCTION(_getHeight);
+	ASFUNCTION(_setHeight);
 };
+
 };
 
 #endif

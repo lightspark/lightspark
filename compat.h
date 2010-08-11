@@ -25,14 +25,14 @@
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
-  #include <winsock2.h>
-  #include <windows.h>
+#include <winsock2.h>
+#include <windows.h>
 #include <intrin.h>
 #undef min
 #undef max
 #undef RGB
 #undef exception_info // Let's hope MS functions always use _exception_info
-  #define snprintf _snprintf
+#define snprintf _snprintf
 #define isnan _isnan
 
 // No real functionality for now
@@ -77,9 +77,8 @@ long lrint(double f);
 
 
 #else //GCC
-
-  #ifndef __STDC_LIMIT_MACROS
-  #define __STDC_LIMIT_MACROS
+#ifndef __STDC_LIMIT_MACROS
+#define __STDC_LIMIT_MACROS
 #endif
 
 #ifndef __STDC_CONSTANT_MACROS
@@ -100,21 +99,18 @@ void aligned_free(void *mem);
 
 //Ensure compatibility on various targets
 #if defined(__FreeBSD__)
-  #include <sys/endian.h>
+#include <sys/endian.h>
 #elif defined(__APPLE__)
-  #define _BSD_SOURCE
-  #include <architecture/byte_order.h>
+#define _BSD_SOURCE
+#include <architecture/byte_order.h>
 #elif !defined(WIN32)
-  #include <endian.h>
+#include <endian.h>
 #endif
 
 #if defined _WIN32 || defined __CYGWIN__
-	#ifdef __GNUC__
-		#define DLL_PUBLIC __attribute__((dllexport))
-	#else
-		#define DLL_PUBLIC __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
-	#endif
-	#define DLL_LOCAL
+// No DLLs, for now
+#   define DLL_PUBLIC
+#	define DLL_LOCAL
 #else
 	#if __GNUC__ >= 4
 		#define DLL_PUBLIC __attribute__ ((visibility("default")))
@@ -123,20 +119,6 @@ void aligned_free(void *mem);
 		#error GCC version less than 4
 	#endif
 #endif
-
-#ifndef WIN32
-  #define HMODULE void*
-#endif
-
-/***********
-Used for compatibility for loading library between Windows and POSIX
-************/
-HMODULE LoadLib(const char *filename);
-
-void* ExtractLibContent(HMODULE hLib, char *WhatToExtract);
-
-void CloseLib(HMODULE hLib);
-/*****************/
 
 inline int imin(int a, int b)
 {

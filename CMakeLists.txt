@@ -193,14 +193,56 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESS
 #SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/objs/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/lib${LIB_SUFFIX}" CACHE PATH "Static libraries output directory")
 
 # liblightspark.so sources
-SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} swf.cpp swftypes.cpp tags.cpp geometry.cpp actions.cpp frame.cpp input.cpp streams.cpp tags_stub.cpp logger.cpp vm.cpp asobjects.cpp abc.cpp abc_codesynt.cpp abc_opcodes.cpp flashdisplay.cpp flashevents.cpp textfile.cpp thread_pool.cpp flashgeom.cpp flashnet.cpp flashsystem.cpp flashutils.cpp compat.cpp abc_interpreter.cpp flashexternal.cpp flashtext.cpp flashmedia.cpp flv.cpp netutils.cpp timer.cpp decoder.cpp threading.cpp flashxml.cpp graphics.cpp audioManager.cpp class.cpp)
+SET(LIBSPARK_SOURCES 
+		asobject.cpp
+		compat.cpp
+		frame.cpp
+		logger.cpp
+		swf.cpp
+		swftypes.cpp
+		thread_pool.cpp
+		threading.cpp
+		timer.cpp
+		backends/decoder.cpp
+		backends/geometry.cpp
+		backends/graphics.cpp
+		backends/input.cpp
+		backends/netutils.cpp
+		backends/rendering.cpp
+		backends/audioManager.cpp
+		parsing/flv.cpp
+		parsing/streams.cpp
+		parsing/tags.cpp
+		parsing/tags_stub.cpp
+		parsing/textfile.cpp
+		scripting/abc.cpp
+		scripting/abc_codesynt.cpp
+		scripting/abc_interpreter.cpp
+		scripting/abc_opcodes.cpp
+		scripting/actions.cpp
+		scripting/class.cpp
+		scripting/flashdisplay.cpp
+		scripting/flashevents.cpp
+		scripting/flashexternal.cpp
+		scripting/flashgeom.cpp
+		scripting/flashmedia.cpp
+		scripting/flashnet.cpp
+		scripting/flashsystem.cpp
+		scripting/flashtext.cpp
+		scripting/flashutils.cpp
+		scripting/flashxml.cpp
+		scripting/toplevel.cpp
+		scripting/vm.cpp)
 IF(${i386})
-	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_32.asm)
+	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_32.asm)
 ELSEIF(${x86_64})
-	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_64.asm)
+	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_64.asm)
 ELSEIF(${ppc})
-	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} fastpaths_ppc.cpp)
+	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_ppc.cpp)
 ENDIF(${i386})
+
+#To verify what it does and if needed...
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
 
 # liblightspark.so target
 ADD_LIBRARY(spark SHARED ${LIBSPARK_SOURCES})
@@ -244,7 +286,7 @@ ENDIF(COMPILE_TIGHTSPARK)
 
 # Browser plugin
 IF(COMPILE_PLUGIN)
-  ADD_SUBDIRECTORY(plugin-dir)
+  ADD_SUBDIRECTORY(plugin)
 ENDIF(COMPILE_PLUGIN)
 
 #Audio backend plugins

@@ -17,48 +17,52 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FRAME_H
-#define _FRAME_H
+#ifndef INPUT_H
+#define INPUT_H
 
 #include "compat.h"
-#include <list>
+#include "threading.h"
+#include "platforms/pluginutils.h"
 #include "swftypes.h"
+#include <vector>
 
 namespace lightspark
 {
 
-class DisplayListTag;
-class ControlTag;
-class DisplayObject;
-class MovieClip;
-class IFunction;
+class SystemState;
+class InteractiveObject;
+class Sprite;
 
-class PlaceInfo
-{
-public:
-	MATRIX Matrix;
-};
-
-class Frame
+class InputThread
 {
 private:
-	IFunction* script;
-	bool initialized;
+	SystemState* m_sys;
+	pthread_t t;
+	bool terminated;
+	bool threaded;
+	static void* sdl_worker(InputThread*);
+#ifdef COMPILE_PLUGIN
+	NPAPI_params* npapi_params;
+	static gboolean gtkplug_worker(GtkWidget *widget, GdkEvent *event, InputThread* th);
+	static void delayedCreation(InputThread* th);
+#endif
+
+	std::vector<InteractiveObject* > listeners;
+	Mutex mutexListeners;
+	Mutex mutexDragged;
+
+	Sprite* curDragged;
+	InteractiveObject* lastMouseDownTarget;
+	RECT dragLimit;
 public:
-	tiny_string Label;
-	std::list<DisplayListTag*> blueprint;
-	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
-	//A temporary vector for control tags
-	std::vector < ControlTag* > controls;
-	Frame():script(NULL),initialized(false){}
-	~Frame();
-	void Render();
-	void inputRender();
-	void setScript(IFunction* s){script=s;}
-	void runScript();
-	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
-	bool isInitialized() const { return initialized; }
-};
+	InputThread(SystemState* s,ENGINE e, void* param=NULL);
+	~InputThread();
+	void wait();
+	void addListener(InteractiveObject* ob);
+	void removeListener(InteractiveObject* ob);
+	void enableDrag(Sprite* s, const RECT& limit);
+	void disableDrag();
 };
 
+};
 #endif

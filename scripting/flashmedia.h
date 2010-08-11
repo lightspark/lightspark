@@ -17,48 +17,63 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FRAME_H
-#define _FRAME_H
+#ifndef _FLASH_MEDIA_H
+#define _FLASH_MEDIA_H
 
 #include "compat.h"
-#include <list>
-#include "swftypes.h"
+#include "asobject.h"
+#include "flashdisplay.h"
+#include "flashnet.h"
+#include "timer.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {
 
-class DisplayListTag;
-class ControlTag;
-class DisplayObject;
-class MovieClip;
-class IFunction;
-
-class PlaceInfo
+class Sound: public EventDispatcher
 {
 public:
-	MATRIX Matrix;
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
 };
 
-class Frame
+class SoundTransform: public ASObject
+{
+public:
+	static void sinit(Class_base*);
+	ASFUNCTION(_constructor);
+};
+
+class Video: public DisplayObject
 {
 private:
-	IFunction* script;
+	sem_t mutex;
+	uint32_t width, height, videoWidth, videoHeight;
 	bool initialized;
+	TextureBuffer videoTexture;
+	NetStream* netStream;
 public:
-	tiny_string Label;
-	std::list<DisplayListTag*> blueprint;
-	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
-	//A temporary vector for control tags
-	std::vector < ControlTag* > controls;
-	Frame():script(NULL),initialized(false){}
-	~Frame();
+	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),videoTexture(false),netStream(NULL)
+	{
+		sem_init(&mutex,0,1);
+	}
+	~Video();
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getVideoWidth);
+	ASFUNCTION(_getVideoHeight);
+	ASFUNCTION(_getWidth);
+	ASFUNCTION(_setWidth);
+	ASFUNCTION(_getHeight);
+	ASFUNCTION(_setHeight);
+	ASFUNCTION(attachNetStream);
 	void Render();
 	void inputRender();
-	void setScript(IFunction* s){script=s;}
-	void runScript();
-	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
-	bool isInitialized() const { return initialized; }
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 };
+
 };
 
 #endif

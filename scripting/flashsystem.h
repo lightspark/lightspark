@@ -17,48 +17,41 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef _FRAME_H
-#define _FRAME_H
+#ifndef _FLASH_SYSTEM_H
+#define _FLASH_SYSTEM_H
 
 #include "compat.h"
-#include <list>
-#include "swftypes.h"
+#include "asobject.h"
 
 namespace lightspark
 {
 
-class DisplayListTag;
-class ControlTag;
-class DisplayObject;
-class MovieClip;
-class IFunction;
-
-class PlaceInfo
+class Capabilities: public ASObject
 {
 public:
-	MATRIX Matrix;
+	Capabilities(){};
+	static void sinit(Class_base* c);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getLanguage);
 };
 
-class Frame
+class Security: public ASObject
 {
-private:
-	IFunction* script;
-	bool initialized;
 public:
-	tiny_string Label;
-	std::list<DisplayListTag*> blueprint;
-	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
-	//A temporary vector for control tags
-	std::vector < ControlTag* > controls;
-	Frame():script(NULL),initialized(false){}
-	~Frame();
-	void Render();
-	void inputRender();
-	void setScript(IFunction* s){script=s;}
-	void runScript();
-	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
-	bool isInitialized() const { return initialized; }
-};
+	static void sinit(Class_base* c);
 };
 
+class ApplicationDomain: public ASObject
+{
+public:
+	ApplicationDomain(){}
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
+	ASFUNCTION(_getCurrentDomain);
+	ASFUNCTION(hasDefinition);
+	ASFUNCTION(getDefinition);
+};
+
+};
 #endif

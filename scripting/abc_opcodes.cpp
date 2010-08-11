@@ -356,17 +356,14 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function on obj " << ((obj->prototype)?obj->prototype->class_name:"Object"));
 			th->runtime_stack_push(new Undefined);
 		}
-		else
+		else if(o->getObjectType()==T_CLASS)
 		{
-			if(m==1) //Assume this is a constructor
-			{
-				LOG(LOG_CALLS,"Passthorugh of " << args[0]);
-				args[0]->incRef();
-				th->runtime_stack_push(args[0]);
-			}
-			else
-				throw UnsupportedException("Class invoked with more than an argument");
+			Class_base* c=static_cast<Class_base*>(o);
+			ASObject* ret=c->generator(args, m);
+			th->runtime_stack_push(ret);
 		}
+		else
+			throw UnsupportedException("Unexpected object to call");
 	}
 	else
 	{

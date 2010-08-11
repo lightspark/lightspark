@@ -115,6 +115,7 @@ public:
 	bool isSubClass(const Class_base* cls) const;
 	tiny_string getQualifiedClassName() const;
 	tiny_string toString(bool debugMsg);
+	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
 	
 	//DEPRECATED: naive garbage collector
 	void abandonObject(ASObject* ob);

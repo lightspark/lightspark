@@ -126,6 +126,10 @@ public:
 	{
 		T::buildTraits(o);
 	}
+	ASObject* generator(ASObject* const* args, const unsigned int argslen)
+	{
+		return T::generator(NULL, args, argslen);
+	}
 };
 
 template<>

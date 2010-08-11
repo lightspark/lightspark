@@ -161,12 +161,12 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("QName","",Class<ASQName>::getClass());
 	Global->setVariableByQName("uint","",Class<UInteger>::getClass());
 	Global->setVariableByQName("Error","",Class<ASError>::getClass());
+	Global->setVariableByQName("int","",Class<Integer>::getClass());
 
 	Global->setVariableByQName("print","",Class<IFunction>::getFunction(print));
 	Global->setVariableByQName("trace","",Class<IFunction>::getFunction(print));
 	Global->setVariableByQName("parseInt","",Class<IFunction>::getFunction(parseInt));
 	Global->setVariableByQName("parseFloat","",Class<IFunction>::getFunction(parseFloat));
-	Global->setVariableByQName("int","",Class<IFunction>::getFunction(_int));
 	Global->setVariableByQName("unescape","",Class<IFunction>::getFunction(unescape));
 	Global->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 

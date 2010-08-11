@@ -225,6 +225,7 @@ public:
 	virtual int32_t toInt();
 	virtual uint32_t toUInt();
 	virtual double toNumber();
+	ASFUNCTION(generator);
 
 	//Comparison operators
 	virtual bool isEqual(ASObject* r);

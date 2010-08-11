@@ -916,7 +916,7 @@ double ASString::toNumber()
 	assert_and_throw(implEnable);
 	for(unsigned int i=0;i<data.size();i++)
 	{
-		if(data[i]<'0' || data[i]>'9') //not a number
+		if(!(data[i]>='0' && data[i]<='9' && data[i]!='.')) //not a number
 			return numeric_limits<double>::quiet_NaN();
 	}
 	return atof(data.c_str());
@@ -1928,6 +1928,11 @@ Class_base::~Class_base()
 			delete *it;
 	}
 	
+}
+
+ASObject* Class_base::generator(ASObject* const* args, const unsigned int argslen)
+{
+	ASObject::generator(NULL, args, argslen);
 }
 
 void Class_base::addImplementedInterface(const multiname& i)

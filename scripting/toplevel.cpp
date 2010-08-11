@@ -707,8 +707,17 @@ ASFUNCTIONBODY(ASString,match)
 		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &offset,NULL);
 		if(error)
 			return new Null;
-		int ovector[9];
-		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), 0, 0, ovector, 9);
+		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+		int capturingGroups;
+		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+		if(infoOk!=0)
+		{
+			pcre_free(pcreRE);
+			return new Null;
+		}
+		assert_and_throw(capturingGroups<10);
+		int ovector[30];
+		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), 0, 0, ovector, 30);
 		if(rc<=0)
 		{
 			//No matches or error

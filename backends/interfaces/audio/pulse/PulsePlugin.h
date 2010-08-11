@@ -56,10 +56,11 @@ class PulsePlugin : public AudioPlugin
 		    string init_audiobackend = "pulse", bool init_contextReady = false,
 		    bool init_noServer = false, bool init_stopped = false);
 	uint32_t createStream(lightspark::AudioDecoder *decoder);
+	bool Is_Connected();
 	void freeStream(uint32_t id);
 	void fill(uint32_t id);
 	void stop();
-	bool isTimingAvailable() const;
+//	bool isTimingAvailable() const;
 	uint32_t getPlayedTime(uint32_t streamId);
 	~PulsePlugin();
 };

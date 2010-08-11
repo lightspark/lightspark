@@ -84,7 +84,6 @@ ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
 SET(BINDIR "bin")
 SET(DATADIR "share")
 SET(LIBDIR "lib${LIB_SUFFIX}")
-SET(PRIVATELIBDIR "${LIBDIR}/lightspark")
 
 # Setting variables
 SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /usr/local (UNIX) and C:\\Program Files (Windows)")
@@ -102,7 +101,8 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 
 # The library is searched in its private library directory
 SET(CMAKE_SKIP_BUILD_RPATH FALSE)
-SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${PRIVATELIBDIR}")
+SET(PRIVATELIBDIR "${CMAKE_INSTALL_PREFIX}/${LIBDIR}/lightspark")
+SET(CMAKE_INSTALL_RPATH "${PRIVATELIBDIR}")
 
 # Libraries we need
 INCLUDE(FindLLVM REQUIRED)

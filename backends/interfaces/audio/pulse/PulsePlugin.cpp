@@ -39,6 +39,18 @@ PulsePlugin::PulsePlugin(PLUGIN_TYPES init_Type, string init_Name, string init_a
   pa_threaded_mainloop_unlock(mainLoop);
 }
 
+bool PulsePlugin::Is_Connected()
+{
+  if(mainLoop == NULL)
+  {
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
 void PulsePlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
 {
 	if(pa_stream_get_state(stream)==PA_STREAM_READY)
@@ -290,20 +302,17 @@ void PulsePlugin::stop()
 	}
 }
 
-extern "C"
+// Plugin factory function
+extern "C" DLL_PUBLIC IPlugin *create()
 {
-  // Plugin factory function
-  DLL_PUBLIC IPlugin *Create_Plugin()
-  {
-    return new PulsePlugin();
-  }
- 
-  // Plugin cleanup function
-  DLL_PUBLIC void Release_Plugin(IPlugin *p_plugin)
-  {
-    //delete the previously created object
-    delete p_plugin;
-  }
+  return new PulsePlugin();
+}
+
+// Plugin cleanup function
+extern "C" DLL_PUBLIC void release(IPlugin *p_plugin)
+{
+  //delete the previously created object
+  delete p_plugin;
 }
 
 #endif

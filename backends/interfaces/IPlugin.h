@@ -46,10 +46,10 @@ Extern "C" functions that each plugin must implement in order to be recognized a
 It allows us to share a common interface between plugins and the application.
  
 Plugin factory function
-extern "C" IPlugin* Create_Plugin();
+extern "C" IPlugin* create();
 
 Plugin cleanup function
-extern "C" void Release_Plugin(IPlugin* p_plugin);
+extern "C" void release(IPlugin* p_plugin);
 ***************************/
 
 #endif

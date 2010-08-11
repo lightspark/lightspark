@@ -43,25 +43,20 @@ class AudioManager
   private:
     class PluginInfo
     {
-//      private:
       public:
+	AudioManager *manager;
 	string plugin_name;		//plugin_name
 	string audiobackend_name;	//audiobackend
-	path plugin_path;		//full path to the plugin file
-	bool enabled;			//should it be enabled (loaded)?
-	HMODULE hAudioPlugin;		//if enabled, this is the handle to the loaded lib
-//	PluginInfo *PreviousPluginLib;
-//	PluginInfo *NextPluginLib;
-//      public:
-//	PluginInfo();
-//	~PluginInfo();
+	string plugin_path;		//full path to the plugin file
+	bool enabled;			//should it be enabled (if the audio backend is present)?
+	PluginInfo(AudioManager *m): manager(m), plugin_name("undefined"), audiobackend_name("undefined"), plugin_path(""), enabled(false){}
     };
     HMODULE hSelectedAudioPluginLib;
-    vector<PluginInfo> AudioPluginsList;
+    vector<PluginInfo *>AudioPluginsList;
     PluginInfo *SelectedAudioPlugin;
     
     IAudioPlugin *o_AudioPlugin;
-    void AddAudioPluginToList(string AudioBackend_name, string pathToPlugin);
+    void AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPlugin);
     void FindAudioPlugins();
     void LoadAudioPlugin();
 

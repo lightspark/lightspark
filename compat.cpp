@@ -59,22 +59,36 @@ uint64_t compat_msectiming()
 #endif
 }
 
-HMODULE LoadLib(const char *filename)
+HMODULE LoadLib(const string filename)
 {
-  #if defined WIN32
-    return LoadLibrary(filename);
-  #else
-    return dlopen(filename, RTLD_LAZY);
-  #endif
+  HMODULE ret;
+#if defined WIN32
+    ret = LoadLibrary(filename.c_str());
+#else
+  dlerror(); //clearing any remaining error
+  ret = dlopen(filename.c_str(), RTLD_LAZY);
+  if(!ret)
+  {
+    cerr << "Cannot open plugin: " << dlerror() << endl;
+  }
+#endif
+  return ret;
 }
 
-void* ExtractLibContent(HMODULE hLib, char* WhatToExtract)
+void *ExtractLibContent(HMODULE hLib, string WhatToExtract)
 {
-  #if defined WIN32
-    return GetProcAdress(hLib, WhatToExtract);
-  #else
-    return dlsym(hLib, WhatToExtract);
-  #endif
+  void *ret;
+#if defined WIN32
+  ret = GetProcAdress(hLib, WhatToExtract.c_str());
+#else
+  dlerror(); //clearing any remaining error
+  ret = dlsym(hLib, WhatToExtract.c_str());
+  if(!ret)
+  {
+    cerr << "Cannot load symbol: " << dlerror() << endl;
+  }
+#endif
+  return ret;
 }
 
 void CloseLib(HMODULE hLib)
@@ -84,6 +98,7 @@ void CloseLib(HMODULE hLib)
   #else
     dlclose(hLib);
   #endif
+  hLib = NULL;
 }
 
 

@@ -117,9 +117,10 @@ void AudioManager::FindAudioPlugins()
   //Search for all files under ${PRIVATELIBDIR}/plugins
   //Verify if they are audio plugins
   //If true, add to list of audio plugins
-  string froot(PRIVATELIBDIR), fplugins("/plugins"); //LS should always look in the plugins folder, nowhere else
+  string froot(PRIVATELIBDIR), fplugins("/plugins/"); //LS should always look in the plugins folder, nowhere else
   const path plugins_folder = froot + fplugins;
-  regex file_pattern("liblightspark*plugin.*"); //pattern of ls plugins
+  const string pattern("liblightsparkpulseplugin.so");
+  regex file_pattern(pattern); //pattern of ls plugins
 
   #if defined DEBUG
     cout << "Looking for plugins under " << plugins_folder << " for file_name " << file_pattern << endl;
@@ -133,17 +134,18 @@ void AudioManager::FindAudioPlugins()
   {
     for(recursive_directory_iterator itr(plugins_folder), end_itr; itr != end_itr; ++itr)
     {
-      if(is_regular_file(itr->status())) //Is it a real file? This will remove symlink
+      if(is_regular_file(itr.status())) //Is it a real file? This will remove symlink
       {
 	string leaf_name = itr->path().filename();
 	if(regex_match(leaf_name, file_pattern)) // Does it answer to the desired pattern?
 	{
+	  string fullpath = plugins_folder.directory_string() + leaf_name;
 	  //Try to load the file and see if it's an audio plugin
-	  HMODULE h_plugin = LoadLib(leaf_name.c_str());
-	  if(h_plugin != NULL) // Is it a library?
+	  if(HMODULE h_plugin = LoadLib(fullpath))
 	  {
-	    PLUGIN_FACTORY p_factory_function = (PLUGIN_FACTORY) ExtractLibContent(h_plugin, "Create_Plugin");
-	    PLUGIN_CLEANUP p_cleanup_function = (PLUGIN_CLEANUP) ExtractLibContent(h_plugin, "Release_Plugin");
+	    PLUGIN_FACTORY p_factory_function = (PLUGIN_FACTORY) ExtractLibContent(h_plugin, "create");
+	    PLUGIN_CLEANUP p_cleanup_function = (PLUGIN_CLEANUP) ExtractLibContent(h_plugin, "release");
+	    
 	    if (p_factory_function != NULL && p_cleanup_function != NULL) //Does it contain the LS IPlugin?
 	    {
 	      IPlugin *p_plugin = (*p_factory_function)(); //Instanciate the plugin
@@ -153,18 +155,52 @@ void AudioManager::FindAudioPlugins()
 		#if defined DEBUG
 		  printf("Plugin %s of type %d\n", p_audioplugin->get_pluginName(), p_audioplugin->get_pluginType());
 		#endif
-		string e("test");
-		AddAudioPluginToList(p_audioplugin->get_audioBackend_name(), itr->path().string()); //Add the filename the audio plugins list
+		AddAudioPluginToList(p_audioplugin, fullpath); //Add the plugin info to the audio plugins list
 	      }
+	      
+	      (*p_cleanup_function)(p_plugin);
+	      CloseLib(h_plugin);
+	    }
+	    else //If doesn't implement our IPlugin interface entry points, close it
+	    {
+	      CloseLib(h_plugin);
 	    }
 	  }
-	  CloseLib(h_plugin);
 	}
       }
     }
   }
 }
 
-void AudioManager::AddAudioPluginToList(string AudioBackend_name, string PathToPlugin)
+void AudioManager::AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPlugin)
 {
+  //Verify if the plugin is already in the list
+  uint32_t index=0;
+  for(;index<AudioPluginsList.size();index++)
+  {
+    if(AudioPluginsList[index]->plugin_path==pathToPlugin) //If true, plugin is already in the list, we have nothing to do
+    {
+      return;
+    }
+  }
+  
+  if(index==AudioPluginsList.size())
+  {
+    AudioPluginsList.push_back(new PluginInfo(this));
+  }
+  AudioPluginsList[index]->audiobackend_name = audioplug->get_audioBackend_name();
+  AudioPluginsList[index]->plugin_name = audioplug->get_pluginName();
+  AudioPluginsList[index]->plugin_path = pathToPlugin;
+  if(audioplug->Is_Connected())
+  {
+    AudioPluginsList[index]->enabled = true;
+  }
+  else //else, the backend is not present, so we disable the plugin
+  {
+    AudioPluginsList[index]->enabled = false;
+  }
+#if defined DEBUG
+    cout << "This is the plugin " << index  << " to be added: " << AudioPluginsList[index]->plugin_name << endl;
+#endif
+  
 }

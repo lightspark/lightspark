@@ -120,6 +120,16 @@ void aligned_free(void *mem);
 	#endif
 #endif
 
+/***********
+Used for compatibility for loading library between Windows and POSIX
+************/
+HMODULE LoadLib(const char *filename);
+
+void* ExtractLibContent(HMODULE hLib, char *WhatToExtract);
+
+void CloseLib(HMODULE hLib);
+/*****************/
+
 inline int imin(int a, int b)
 {
 	return (a<b)?a:b;

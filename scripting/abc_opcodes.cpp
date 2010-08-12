@@ -1354,7 +1354,8 @@ void ABCVm::getLex(call_context* th, int n)
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		ASObject* tmpo=(*it)->getVariableByMultiname(*name);
+		//Skip implementation
+		ASObject* tmpo=(*it)->getVariableByMultiname(*name, true);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 
@@ -1454,7 +1455,8 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
 
-		o=(*it)->getVariableByMultiname(*name);
+		//Skip implementation
+		o=(*it)->getVariableByMultiname(*name, true);
 		if(*it==tl.cur_this)
 			tl.cur_this->setLevel(tl.cur_level);
 

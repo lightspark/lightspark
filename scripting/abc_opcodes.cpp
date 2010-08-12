@@ -1776,31 +1776,33 @@ bool ABCVm::isType(ASObject* obj, multiname* name)
 	bool real_ret=false;
 	Class_base* objc=NULL;
 	Class_base* c=NULL;
+	c=static_cast<Class_base*>(type);
+	//Special case numeric types
+	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
+	{
+		obj->decRef();
+		if(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass())
+			return true;
+		else
+			return false;
+	}
+
 	if(obj->prototype)
 	{
 		assert_and_throw(type->getObjectType()==T_CLASS);
-		c=static_cast<Class_base*>(type);
 
 		objc=obj->prototype;
 	}
 	else if(obj->getObjectType()==T_CLASS)
 	{
 		assert_and_throw(type->getObjectType()==T_CLASS);
-		c=static_cast<Class_base*>(type);
 
 		//Special case for Class
+		obj->decRef();
 		if(c->class_name=="Class")
-		{
-			type->decRef();
-			obj->decRef();
 			return true;
-		}
 		else
-		{
-			type->decRef();
-			obj->decRef();
 			return false;
-		}
 	}
 	else
 	{
@@ -1809,26 +1811,15 @@ bool ABCVm::isType(ASObject* obj, multiname* name)
 			return true;
 
 		real_ret=obj->getObjectType()==type->getObjectType();
-		LOG(LOG_CALLS,"isTypelate on non classed object " << real_ret);
-		if(real_ret==false)
-		{
-			//TODO: obscene hack, check casting of stuff
-			if(obj->getObjectType()==T_INTEGER && type->getObjectType()==T_NUMBER)
-			{
-				cout << "HACK for Integer" << endl;
-				real_ret=true;
-			}
-		}
+		LOG(LOG_CALLS,"isType on non classed object " << real_ret);
 		obj->decRef();
-		type->decRef();
 		return real_ret;
 	}
 
 	real_ret=objc->isSubClass(c);
-	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?" ":"not ") 
+	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?"":"not ") 
 			<< "subclass of " << c->class_name);
 	obj->decRef();
-	type->decRef();
 	return real_ret;
 }
 
@@ -1839,17 +1830,25 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 
 	Class_base* objc=NULL;
 	Class_base* c=NULL;
+	c=static_cast<Class_base*>(type);
+	//Special case numeric types
+	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
+	{
+		obj->decRef();
+		bool ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
+		type->decRef();
+		return ret;
+	}
+
 	if(obj->prototype)
 	{
 		assert_and_throw(type->getObjectType()==T_CLASS);
-		c=static_cast<Class_base*>(type);
 
 		objc=obj->prototype;
 	}
 	else if(obj->getObjectType()==T_CLASS)
 	{
 		assert_and_throw(type->getObjectType()==T_CLASS);
-		c=static_cast<Class_base*>(type);
 
 		//Special case for Class
 		if(c->class_name=="Class")
@@ -1873,22 +1872,13 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 
 		real_ret=obj->getObjectType()==type->getObjectType();
 		LOG(LOG_CALLS,"isTypelate on non classed object " << real_ret);
-		if(real_ret==false)
-		{
-			//TODO: obscene hack, check casting of stuff
-			if(obj->getObjectType()==T_INTEGER && type->getObjectType()==T_NUMBER)
-			{
-				cout << "HACK for Integer" << endl;
-				real_ret=true;
-			}
-		}
 		obj->decRef();
 		type->decRef();
 		return real_ret;
 	}
 
 	real_ret=objc->isSubClass(c);
-	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?" ":"not ") 
+	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?"":"not ") 
 			<< "subclass of " << c->class_name);
 	obj->decRef();
 	type->decRef();

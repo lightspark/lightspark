@@ -269,20 +269,58 @@ bool Array::sortComparator(const data_slot& d1, const data_slot& d2)
 	return s1<s2;
 }
 
+bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_slot& d2)
+{
+	ASObject* objs[2];
+	if(d1.type==DATA_INT)
+		objs[0]=abstract_i(d1.data_i);
+	else if(d1.type==DATA_OBJECT && d1.data)
+	{
+		objs[0]=d1.data;
+		objs[0]->incRef();
+	}
+	else
+		objs[0]=new Undefined;
+
+	if(d2.type==DATA_INT)
+		objs[1]=abstract_i(d2.data_i);
+	else if(d2.type==DATA_OBJECT && d2.data)
+	{
+		objs[1]=d1.data;
+		objs[1]->incRef();
+	}
+	else
+		objs[1]=new Undefined;
+
+	assert(comparator);
+	ASObject* ret=comparator->call(NULL, objs, 2);
+	assert_and_throw(ret);
+	return (ret->toInt()<0); //Less
+}
+
 ASFUNCTIONBODY(Array,_sort)
 {
 	Array* th=static_cast<Array*>(obj);
-	for(int i=0;i<argslen;i++)
+	IFunction* comp=NULL;
+	for(uint32_t i=0;i<argslen;i++)
 	{
 		if(args[i]->getObjectType()==T_FUNCTION) //Comparison func
-			throw UnsupportedException("Array::sort not completely implemented");
+		{
+			assert_and_throw(comp==NULL);
+			comp=static_cast<IFunction*>(args[i]);
+		}
 		else
 		{
 			if(args[i]->toInt()!=0) //Options?
 				throw UnsupportedException("Array::sort not completely implemented");
 		}
 	}
-	sort(th->data.begin(),th->data.end(),sortComparator);
+	
+	if(comp)
+		sort(th->data.begin(),th->data.end(),sortComparatorWrapper(comp));
+	else
+		sort(th->data.begin(),th->data.end(),sortComparator);
+
 	obj->incRef();
 	return obj;
 }
@@ -1235,6 +1273,13 @@ void Number::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	//Must create and link the number the hard way
+	Number* ninf=new Number(-numeric_limits<double>::infinity());
+	Number* pinf=new Number(numeric_limits<double>::infinity());
+	ninf->setPrototype(c);
+	pinf->setPrototype(c);
+	c->setVariableByQName("NEGATIVE_INFINITY","",ninf);
+	c->setVariableByQName("POSITIVE_INFINITY","",pinf);
 }
 
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)

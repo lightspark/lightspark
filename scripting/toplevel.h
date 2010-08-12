@@ -491,6 +491,14 @@ protected:
 	Array();
 private:
 	static bool sortComparator(const data_slot& d1, const data_slot& d2);
+	class sortComparatorWrapper
+	{
+	private:
+		IFunction* comparator;
+	public:
+		sortComparatorWrapper(IFunction* c):comparator(c){}
+		bool operator()(const data_slot& d1, const data_slot& d2);
+	};
 public:
 	//These utility methods are also used by ByteArray 
 	static bool isValidMultiname(const multiname& name, unsigned int& index);

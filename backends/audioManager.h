@@ -21,6 +21,8 @@
 #ifndef AUDIOMANAGER_H
 #define AUDIOMANAGER_H
 
+#ifdef ENABLE_SOUND
+
 #include "compat.h"
 #include "decoder.h"
 #include <string.h>
@@ -74,4 +76,5 @@ class AudioManager
 
 };
 
+#endif
 #endif

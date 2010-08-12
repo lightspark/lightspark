@@ -32,6 +32,7 @@
   #include <sys/types.h>
 #endif
 
+#ifdef ENABLE_SOUND
 using namespace lightspark;
 using namespace std;
 using namespace boost::filesystem;
@@ -158,7 +159,7 @@ void AudioManager::FindAudioPlugins()
   //If true, add to list of audio plugins
   string froot(PRIVATELIBDIR), fplugins("/plugins/"); //LS should always look in the plugins folder, nowhere else
   const path plugins_folder = froot + fplugins;
-  const string pattern("liblightsparkpulseplugin.so");
+  const string pattern("liblightspark+[A-Za-z]+plugin.so");
   regex file_pattern(pattern); //pattern of ls plugins
 
   #if defined DEBUG
@@ -242,3 +243,5 @@ void AudioManager::AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPl
     cout << "This is the plugin " << index  << " added with backend: " << AudioPluginsList[index]->audiobackend_name << endl;
 #endif 
 }
+
+#endif

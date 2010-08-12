@@ -415,7 +415,7 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
-//#ifdef SOUND_ENABLE
+#ifdef ENABLE_SOUND
 						if(audioDecoder==NULL)
 						{
 							audioCodec=tag.SoundFormat;
@@ -456,7 +456,7 @@ void NetStream::execute()
 							//Adjust timing
 							decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
 						}
-//#endif
+#endif
 						break;
 					}
 					case 9:
@@ -554,6 +554,7 @@ void NetStream::execute()
 	catch(exception& e)
 	{
 		LOG(LOG_ERROR, "Exception in reading: "<<e.what());
+//		waitForFlush=false; //added, because shouldn't it be false for any error?
 	}
 
 	if(waitForFlush)
@@ -575,7 +576,7 @@ void NetStream::execute()
 	tickStarted=false;
 	delete videoDecoder;
 	videoDecoder=NULL;
-#if SOUND_ENABLE
+#if ENABLE_SOUND
 	if(soundStreamId)
 		sys->audioManager->freeStreamPlugin(soundStreamId);
 	delete audioDecoder;

@@ -243,7 +243,9 @@ public:
 	
 	Stage* stage;
 	ABCVm* currentVm;
+#ifdef ENABLE_SOUND
 	AudioManager* audioManager;
+#endif
 	//Application starting time in milliseconds
 	uint64_t startTime;
 

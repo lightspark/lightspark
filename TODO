@@ -12,3 +12,4 @@ Official TODO Queue:
 -) Add Named Objects to frames and not to clips
 -) Conditional scaling of FontGlyph based on version
 -) Add a finally interface to Jobs so they may decRef themselves
+-) Avoid primitive objects in Dictionary

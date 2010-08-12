@@ -248,12 +248,41 @@ ASFUNCTIONBODY(Array,_pop)
 	return ret;
 }
 
+bool Array::sortComparator(const data_slot& d1, const data_slot& d2)
+{
+	//Comparison is always in lexicographic order
+	tiny_string s1;
+	tiny_string s2;
+	if(d1.type==DATA_INT)
+		s1=tiny_string(d1.data_i);
+	else if(d1.type==DATA_OBJECT && d1.data)
+		s1=d1.data->toString();
+	else
+		s1="undefined";
+	if(d2.type==DATA_INT)
+		s2=tiny_string(d2.data_i);
+	else if(d2.type==DATA_OBJECT && d2.data)
+		s2=d2.data->toString();
+	else
+		s2="undefined";
+
+	return s1<s2;
+}
+
 ASFUNCTIONBODY(Array,_sort)
 {
 	Array* th=static_cast<Array*>(obj);
-	if(th->data.size()>1)
-		throw UnsupportedException("Array::sort not completely implemented");
-	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");
+	for(int i=0;i<argslen;i++)
+	{
+		if(args[i]->getObjectType()==T_FUNCTION) //Comparison func
+			throw UnsupportedException("Array::sort not completely implemented");
+		else
+		{
+			if(args[i]->toInt()!=0) //Options?
+				throw UnsupportedException("Array::sort not completely implemented");
+		}
+	}
+	sort(th->data.begin(),th->data.end(),sortComparator);
 	obj->incRef();
 	return obj;
 }

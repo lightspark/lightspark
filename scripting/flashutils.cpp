@@ -463,10 +463,31 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 		map<ASObject*, ASObject*>::iterator it=data.begin();
 		for(;it!=data.end();it++)
 		{
-			if(it->first->getObjectType()==T_INTEGER)
+			SWFOBJECT_TYPE type=it->first->getObjectType();
+			if(type==T_INTEGER || type==T_UINTEGER || type==T_NUMBER)
 			{
-				Integer* i=Class<Integer>::cast(it->first);
-				if(name.name_i == i->toInt())
+				if(name.name_i == it->first->toNumber())
+				{
+					//Value found
+					ret=it->second;
+					ret->incRef();
+					return ret;
+				}
+			}
+		}
+		//Value not found
+		ret=new Undefined;
+	}
+	else if(name.name_type==multiname::NAME_NUMBER)
+	{
+		//Ok, we need to do the slow lookup on every object and check for === comparison
+		map<ASObject*, ASObject*>::iterator it=data.begin();
+		for(;it!=data.end();it++)
+		{
+			SWFOBJECT_TYPE type=it->first->getObjectType();
+			if(type==T_INTEGER || type==T_UINTEGER || type==T_NUMBER)
+			{
+				if(name.name_d == it->first->toNumber())
 				{
 					//Value found
 					ret=it->second;

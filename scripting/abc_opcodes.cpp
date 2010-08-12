@@ -1175,8 +1175,30 @@ bool ABCVm::equals(ASObject* val2, ASObject* val1)
 
 bool ABCVm::strictEqualImpl(ASObject* obj1, ASObject* obj2)
 {
-	if(obj1->getObjectType()!=obj2->getObjectType())
-		return false;
+	SWFOBJECT_TYPE type1=obj1->getObjectType();
+	SWFOBJECT_TYPE type2=obj2->getObjectType();
+	if(type1!=type2)
+	{
+		//Type conversions are ok only for numeric types
+		switch(type1)
+		{
+			case T_NUMBER:
+			case T_INTEGER:
+			case T_UINTEGER:
+				break;
+			default:
+				return false;
+		}
+		switch(type2)
+		{
+			case T_NUMBER:
+			case T_INTEGER:
+			case T_UINTEGER:
+				break;
+			default:
+				return false;
+		}
+	}
 	return obj1->isEqual(obj2);
 }
 

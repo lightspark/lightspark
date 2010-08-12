@@ -776,6 +776,11 @@ public:
 };
 
 bool Boolean_concrete(ASObject* obj);
+ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* isFinite(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 };
 
 #endif

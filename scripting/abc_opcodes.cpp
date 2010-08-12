@@ -1173,12 +1173,20 @@ bool ABCVm::equals(ASObject* val2, ASObject* val1)
 	return ret;
 }
 
+bool ABCVm::strictEqualImpl(ASObject* obj1, ASObject* obj2)
+{
+	if(obj1->getObjectType()!=obj2->getObjectType())
+		return false;
+	return obj1->isEqual(obj2);
+}
+
 bool ABCVm::strictEquals(ASObject* obj2, ASObject* obj1)
 {
 	LOG(LOG_CALLS, "strictEquals" );
-	if(obj1->getObjectType()!=obj2->getObjectType())
-		return false;
-	return equals(obj2,obj1);
+	bool ret=strictEqualImpl(obj1, obj2);
+	obj1->decRef();
+	obj2->decRef();
+	return ret;
 }
 
 void ABCVm::dup()

@@ -182,7 +182,7 @@ ASFUNCTIONBODY(Array,indexOf)
 	for(unsigned int i=0;i<th->data.size();i++)
 	{
 		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		if(ABCVm::strictEquals(th->data[i].data,arg0))
+		if(ABCVm::strictEqualImpl(th->data[i].data,arg0))
 		{
 			ret=i;
 			break;
@@ -2399,3 +2399,72 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		return false;
 	}
 }
+
+ASFUNCTIONBODY(lightspark,parseInt)
+{
+	if(args[0]->getObjectType()==T_UNDEFINED)
+		return new Undefined;
+	else
+		return abstract_i(atoi(args[0]->toString().raw_buf()));
+}
+
+ASFUNCTIONBODY(lightspark,parseFloat)
+{
+	if(args[0]->getObjectType()==T_UNDEFINED)
+		return new Undefined;
+	else
+		return abstract_d(atof(args[0]->toString().raw_buf()));
+}
+
+ASFUNCTIONBODY(lightspark,isNaN)
+{
+	if(args[0]->getObjectType()==T_UNDEFINED)
+		return abstract_b(true);
+	else if(args[0]->getObjectType()==T_INTEGER)
+		return abstract_b(false);
+	else if(args[0]->getObjectType()==T_NUMBER)
+	{
+		if(isnan(args[0]->toNumber()))
+			return abstract_b(true);
+		else
+			return abstract_b(false);
+	}
+	else if(args[0]->getObjectType()==T_BOOLEAN)
+		return abstract_b(false);
+	else if(args[0]->getObjectType()==T_STRING)
+	{
+		double n=args[0]->toNumber();
+		return abstract_b(isnan(n));
+	}
+	else
+		throw UnsupportedException("Weird argument for isNaN");
+}
+
+ASFUNCTIONBODY(lightspark,isFinite)
+{
+	if(args[0]->getObjectType()==T_NUMBER)
+	{
+		if(isfinite(args[0]->toNumber()))
+			return abstract_b(true);
+		else
+			return abstract_b(false);
+	}
+	else
+		throw UnsupportedException("Weird argument for isNaN");
+}
+
+ASFUNCTIONBODY(lightspark,unescape)
+{
+	ASString* th=static_cast<ASString*>(args[0]);
+	string ret;
+	ret.reserve(th->data.size());
+	for(unsigned int i=0;i<th->data.size();i++)
+	{
+		if(th->data[i]=='%')
+			throw UnsupportedException("Unescape not completely implemented");
+		else
+			ret.push_back(th->data[i]);
+	}
+	return Class<ASString>::getInstanceS(ret);
+}
+

@@ -420,7 +420,9 @@ public:
 	ASFUNCTION(substr);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);
+	ASFUNCTION(charAt);
 	ASFUNCTION(toLowerCase);
+	ASFUNCTION(toUpperCase);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	tiny_string toString(bool debugMsg=false);

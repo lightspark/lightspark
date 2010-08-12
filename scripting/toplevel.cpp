@@ -666,8 +666,10 @@ void ASString::sinit(Class_base* c)
 	c->setVariableByQName("match",AS3,Class<IFunction>::getFunction(match));
 	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	c->setVariableByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt));
+	c->setVariableByQName("charAt",AS3,Class<IFunction>::getFunction(charAt));
 	c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
 	c->setVariableByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase));
+	c->setVariableByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase));
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 }
 
@@ -953,17 +955,19 @@ bool ASString::isEqual(ASObject* r)
 
 TRISTATE ASString::isLess(ASObject* r)
 {
+	//ECMA-262 11.8.5 algorithm
 	assert_and_throw(implEnable);
-	//TODO: Implement ECMA-262 11.8.5 algorithm
-	//Number comparison has the priority over strings
-	if(r->getObjectType()==T_INTEGER)
+	if(getObjectType()==T_STRING && r->getObjectType()==T_STRING)
 	{
-		number_t a=toNumber();
-		number_t b=r->toNumber();
-		return (a<b)?TTRUE:TFALSE;
+		ASString* rstr=Class<ASString>::cast(r);
+		return (data<rstr->data)?TTRUE:TFALSE;
 	}
-	throw UnsupportedException("String::isLess not completely implemented");
-	return TTRUE;
+	number_t a=toNumber();
+	number_t b=r->toNumber();
+	if(isnan(a) || isnan(b))
+		return TUNDEFINED;
+	//TODO: Should we special handle infinite values?
+	return (a<b)?TTRUE:TFALSE;
 }
 
 bool Boolean::isEqual(ASObject* r)
@@ -1739,6 +1743,16 @@ ASFUNCTIONBODY(ASString,slice)
 	return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex));
 }
 
+ASFUNCTIONBODY(ASString,charAt)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	int index=args[0]->toInt();
+	int maxIndex=th->data.size();
+	if(index<0 || index>=maxIndex)
+		return Class<ASString>::getInstanceS();
+	return Class<ASString>::getInstanceS(th->data.c_str()+index, 1);
+}
+
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
 	//TODO: should return utf16
@@ -1787,9 +1801,16 @@ ASFUNCTIONBODY(ASString,indexOf)
 ASFUNCTIONBODY(ASString,toLowerCase)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	ASString* ret=Class<ASString>::getInstanceS();
-	ret->data=th->data;
+	ASString* ret=Class<ASString>::getInstanceS(th->data);
 	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::tolower);
+	return ret;
+}
+
+ASFUNCTIONBODY(ASString,toUpperCase)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	ASString* ret=Class<ASString>::getInstanceS(th->data);
+	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::toupper);
 	return ret;
 }
 

@@ -19,9 +19,15 @@
 **************************************************************************/
 
 #include "IPlugin.h"
-
+/*
 IPlugin::IPlugin(PLUGIN_TYPES init_Type, string init_Name)
 {
   pluginType = init_Type;
   pluginName = init_Name;
+}
+*/
+
+IPlugin::~IPlugin()
+{
+
 }

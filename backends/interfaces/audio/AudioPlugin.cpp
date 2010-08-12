@@ -24,9 +24,14 @@ using namespace lightspark;
 
 AudioPlugin::AudioPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
 			 bool init_contextReady, bool init_noServer, bool init_stopped)
-: IAudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
+//: IAudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
 {
-
+  pluginType = init_Type;
+  pluginName = init_Name;
+  audiobackend_name = init_audiobackend;
+  contextReady = init_contextReady;
+  init_noServer = init_noServer;
+  stopped = init_stopped;
 }
 
 const string AudioPlugin::get_audioBackend_name()
@@ -62,4 +67,9 @@ PLUGIN_TYPES AudioPlugin::get_pluginType()
 bool AudioPlugin::isTimingAvailable() const
 {
   return noServer==false;
+}
+
+AudioPlugin::~AudioPlugin()
+{
+
 }

@@ -27,8 +27,15 @@ using namespace std;
 
 PulsePlugin::PulsePlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
 	    bool init_contextReady, bool init_noServer, bool init_stopped)
-  : AudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
+//  : AudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
 {
+  pluginType = init_Type;
+  pluginName = init_Name;
+  audiobackend_name = init_audiobackend;
+  contextReady = init_contextReady;
+  init_noServer = init_noServer;
+  stopped = init_stopped;
+
   mainLoop = pa_threaded_mainloop_new();
   pa_threaded_mainloop_start(mainLoop);
   
@@ -280,26 +287,28 @@ void PulsePlugin::contextStatusCB(pa_context *context, PulsePlugin *th)
 
 PulsePlugin::~PulsePlugin()
 {
-	stop();
+  stop();
 }
 
 void PulsePlugin::stop()
 {
-	if(!stopped)
-	{
-		stopped=true;
-		pa_threaded_mainloop_lock(mainLoop);
-		for(uint32_t i=0;i<streams.size();i++)
-		{
-			if(streams[i])
-				freeStream(i+1);
-		}
-		pa_context_disconnect(context);
-		pa_context_unref(context);
-		pa_threaded_mainloop_unlock(mainLoop);
-		pa_threaded_mainloop_stop(mainLoop);
-		pa_threaded_mainloop_free(mainLoop);
-	}
+  if(!stopped)
+  {
+    stopped=true;
+    pa_threaded_mainloop_lock(mainLoop);
+    for(uint32_t i=0;i<streams.size();i++)
+    {
+      if(streams[i])
+      {
+	  freeStream(i+1);
+      }
+    }
+    pa_context_disconnect(context);
+    pa_context_unref(context);
+    pa_threaded_mainloop_unlock(mainLoop);
+    pa_threaded_mainloop_stop(mainLoop);
+    pa_threaded_mainloop_free(mainLoop);
+  }
 }
 
 // Plugin factory function

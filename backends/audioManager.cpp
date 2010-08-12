@@ -51,8 +51,9 @@ Else
 
 AudioManager::AudioManager()
 {
+  SelectedAudioPlugin = -1; //Make sure it doesn't point anywhere in the list
   FindAudioPlugins();
-//string DesiredAudio = get_audioConfig();
+//string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
   string DesiredAudio = "pulse";
   select_audiobackend(DesiredAudio);
 }
@@ -92,41 +93,53 @@ void AudioManager::select_audiobackend(string selected_backend)
       if(SelectedAudioPlugin != index) //Unload and/or load plugin only if the plugin is not the same as selected
       {
 	//Unload previous plugin and release handle
-	if(!o_AudioPlugin) //If there is already a backend loaded, unload it
-	{
-	    delete o_AudioPlugin;
-	    SelectedAudioPlugin = -1;
-	    CloseLib(hSelectedAudioPluginLib);;
-	}
+	UnloadPlugin();
 	
 	//Load selected plugin and instanciate it
-	if(hSelectedAudioPluginLib = LoadLib(AudioPluginsList[index]->plugin_path))
-	{
-	  PLUGIN_FACTORY p_factory_function = (PLUGIN_FACTORY) ExtractLibContent(hSelectedAudioPluginLib, "create");
-	  if(p_factory_function != NULL) //Does it contain the LS IPlugin?
-	  {
-  //	    IPlugin *p_tempplugin = ;
-	    o_AudioPlugin = static_cast<IAudioPlugin *>((*p_factory_function)()); //Instanciate the plugin
-	    SelectedAudioPlugin = index;
-	  }
-	}
+	LoadPlugin(AudioPluginsList[index]->plugin_path, index);
       }
       break;
     }
   }
 }
 
-/*void AudioManager::LoadAudioPlugin()
+//Takes care to load and instanciate anything related to the plugin
+void AudioManager::LoadPlugin(string pluginPath, uint32_t index)
 {
+  if(hSelectedAudioPluginLib = LoadLib(pluginPath))
+  {
+    PLUGIN_FACTORY p_factory_function = (PLUGIN_FACTORY) ExtractLibContent(hSelectedAudioPluginLib, "create");
+    if(p_factory_function != NULL) //Does it contain the LS IPlugin?
+    {
+      o_AudioPlugin = static_cast<IAudioPlugin *>((*p_factory_function)()); //Instanciate the plugin
+      SelectedAudioPlugin = index;
+    }
+  }
+}
 
-}*/
+//Takes care of unloading and releasing anything related to the plugin
+void AudioManager::UnloadPlugin()
+{
+  if(o_AudioPlugin && hSelectedAudioPluginLib) //If there is already a backend loaded, unload it
+  {
+    PLUGIN_CLEANUP p_cleanup_function = (PLUGIN_CLEANUP) ExtractLibContent(hSelectedAudioPluginLib, "release");
+    if(p_cleanup_function != NULL)
+    {
+      p_cleanup_function(o_AudioPlugin);
+      o_AudioPlugin = NULL;
+    }
+    SelectedAudioPlugin = -1; //Unselecting any entry in the plugins list
+    CloseLib(hSelectedAudioPluginLib);
+  }
+}
+
 
 /**************************
 stop AudioManager
 ***************************/
 AudioManager::~AudioManager()
 {
-  delete &o_AudioPlugin;
+  UnloadPlugin(); //Unload, release the plugin if any and close plugin if needed
 }
 
 void AudioManager::stopPlugin()
@@ -149,7 +162,7 @@ void AudioManager::FindAudioPlugins()
   regex file_pattern(pattern); //pattern of ls plugins
 
   #if defined DEBUG
-    cout << "Looking for plugins under " << plugins_folder << " for file_name " << file_pattern << endl;
+    cout << "Looking for plugins under " << plugins_folder << " for file_name " << pattern << endl;
   #endif
 
   if(!is_directory(plugins_folder))
@@ -225,7 +238,7 @@ void AudioManager::AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPl
   {
     AudioPluginsList[index]->enabled = false;
   }
-//#if defined DEBUG
+#if defined DEBUG
     cout << "This is the plugin " << index  << " added with backend: " << AudioPluginsList[index]->audiobackend_name << endl;
-//#endif 
+#endif 
 }

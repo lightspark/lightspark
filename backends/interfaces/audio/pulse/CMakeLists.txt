@@ -41,9 +41,6 @@ if(!Boost_FOUND)
   endif(Boost_FOUND)
 endif(!Boost_FOUND)
 ADD_DEFINITIONS(-DPULSE_BACKEND=TRUE)
-#SET(SOUND_LIBRARIES ${SOUND_LIBRARIES} ${PULSE_LIBS_LIBRAIRES})
-#pkg_check_modules(LIBAVCODEC REQUIRED libavcodec)
-#INCLUDE_DIRECTORIES(${LIBAVCODEC_INCLUDE_DIRS})
 
 SET(PULSEPLUGIN_SOURCES PulsePlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp ../AudioPlugin.cpp)
 

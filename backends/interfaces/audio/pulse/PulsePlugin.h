@@ -48,9 +48,6 @@ class PulsePlugin : public AudioPlugin
 	static void streamStatusCB(pa_stream *stream, AudioStream *th);
 	static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
 	vector<AudioStream*> streams;
-//	volatile bool contextReady;
-//	volatile bool noServer;
-//	bool stopped;
   public:
 	PulsePlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "Pulse plugin output only",
 		    string init_audiobackend = "pulse", bool init_contextReady = false,
@@ -60,7 +57,6 @@ class PulsePlugin : public AudioPlugin
 	void freeStream(uint32_t id);
 	void fill(uint32_t id);
 	void stop();
-//	bool isTimingAvailable() const;
 	uint32_t getPlayedTime(uint32_t streamId);
 	~PulsePlugin();
 };

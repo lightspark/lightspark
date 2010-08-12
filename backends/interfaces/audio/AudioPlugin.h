@@ -44,7 +44,7 @@ class AudioPlugin : public IAudioPlugin
     bool Is_ContextReady();
     bool Is_Stopped();
     bool isTimingAvailable() const;
-    virtual ~AudioPlugin() = 0;
+    virtual ~AudioPlugin();
 };
 
 #endif

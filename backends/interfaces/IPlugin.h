@@ -32,10 +32,10 @@ enum PLUGIN_TYPES { UNDEFINED=0, AUDIO };
 class IPlugin
 {
   public:
-    IPlugin(PLUGIN_TYPES init_Type = UNDEFINED, string init_Name = "undefined");
+//    IPlugin(PLUGIN_TYPES init_Type = UNDEFINED, string init_Name = "undefined");
     virtual const string get_pluginName() = 0;
     virtual PLUGIN_TYPES get_pluginType() = 0;
-    virtual ~IPlugin() = 0;
+    virtual ~IPlugin();
   protected:
     PLUGIN_TYPES pluginType; //type of plugin of PLUGIN_TYPES
     string pluginName; //name of the plugin

@@ -57,7 +57,8 @@ class AudioManager
     IAudioPlugin *o_AudioPlugin;
     void FindAudioPlugins();
     void AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPlugin);
-//    void LoadAudioPlugin();
+    void LoadPlugin(string pluginPath, uint32_t index);
+    void UnloadPlugin();
 
   public:
     AudioManager();

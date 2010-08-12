@@ -38,6 +38,25 @@ using namespace boost::filesystem;
 using namespace boost;
 
 
+/****************
+AudioManager::AudioManager
+*****************
+It should search for a list of audio plugin lib files (liblightsparkAUDIOAPIplugin.so)
+Then, it should read a config file containing the user's defined audio API choosen as audio backend
+If no file or none selected
+  default to none
+Else
+  Select and load the good audio plugin lib files
+*****************/
+
+AudioManager::AudioManager()
+{
+  FindAudioPlugins();
+//string DesiredAudio = get_audioConfig();
+  string DesiredAudio = "pulse";
+  select_audiobackend(DesiredAudio);
+}
+
 void AudioManager::fillPlugin(uint32_t id)
 {
   o_AudioPlugin->fill(id);
@@ -63,37 +82,44 @@ bool AudioManager::isTimingAvailablePlugin() const
   return o_AudioPlugin->isTimingAvailable();
 }
 
-void AudioManager::select_audiobackend()
+void AudioManager::select_audiobackend(string selected_backend)
 {
-
+  uint32_t index=0;
+  for(;index<AudioPluginsList.size();index++) //Find the desired plugin in the list and load it
+  {
+    if(AudioPluginsList[index]->audiobackend_name==selected_backend) //If true, backend is available
+    {
+      if(SelectedAudioPlugin != index) //Unload and/or load plugin only if the plugin is not the same as selected
+      {
+	//Unload previous plugin and release handle
+	if(!o_AudioPlugin) //If there is already a backend loaded, unload it
+	{
+	    delete o_AudioPlugin;
+	    SelectedAudioPlugin = -1;
+	    CloseLib(hSelectedAudioPluginLib);;
+	}
+	
+	//Load selected plugin and instanciate it
+	if(hSelectedAudioPluginLib = LoadLib(AudioPluginsList[index]->plugin_path))
+	{
+	  PLUGIN_FACTORY p_factory_function = (PLUGIN_FACTORY) ExtractLibContent(hSelectedAudioPluginLib, "create");
+	  if(p_factory_function != NULL) //Does it contain the LS IPlugin?
+	  {
+  //	    IPlugin *p_tempplugin = ;
+	    o_AudioPlugin = static_cast<IAudioPlugin *>((*p_factory_function)()); //Instanciate the plugin
+	    SelectedAudioPlugin = index;
+	  }
+	}
+      }
+      break;
+    }
+  }
 }
 
-void AudioManager::LoadAudioPlugin()
+/*void AudioManager::LoadAudioPlugin()
 {
 
-}
-
-/****************
-AudioManager::AudioManager
-*****************
-It should search for a list of audio plugin lib files (liblightsparkaudio-AUDIOAPI.so)
-If it finds any
-  Verify they are valid plugin
-  If true, list the audio API in a list of audiobackends
-  Else nothing
-Else nothing
-
-Then, ut should read a config file containing the user's defined audio API choosen as audio backend
-If no file or none selected
-  default to none
-Else
-  Select and load the good audio plugin lib files
-*****************/
-
-AudioManager::AudioManager()
-{
-  FindAudioPlugins();
-}
+}*/
 
 /**************************
 stop AudioManager
@@ -199,8 +225,7 @@ void AudioManager::AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPl
   {
     AudioPluginsList[index]->enabled = false;
   }
-#if defined DEBUG
-    cout << "This is the plugin " << index  << " to be added: " << AudioPluginsList[index]->plugin_name << endl;
-#endif
-  
+//#if defined DEBUG
+    cout << "This is the plugin " << index  << " added with backend: " << AudioPluginsList[index]->audiobackend_name << endl;
+//#endif 
 }

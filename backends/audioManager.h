@@ -53,12 +53,11 @@ class AudioManager
     };
     HMODULE hSelectedAudioPluginLib;
     vector<PluginInfo *>AudioPluginsList;
-    PluginInfo *SelectedAudioPlugin;
-    
+    int SelectedAudioPlugin;
     IAudioPlugin *o_AudioPlugin;
-    void AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPlugin);
     void FindAudioPlugins();
-    void LoadAudioPlugin();
+    void AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPlugin);
+//    void LoadAudioPlugin();
 
   public:
     AudioManager();
@@ -68,7 +67,7 @@ class AudioManager
     void stopPlugin();
     bool isTimingAvailablePlugin() const;
     uint32_t getPlayedTimePlugin(uint32_t streamId);
-    void select_audiobackend();
+    void select_audiobackend(string selected_backend);
     ~AudioManager();
 };
 

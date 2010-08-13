@@ -146,14 +146,16 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s):frameRate(0)
 		{
 			case 0: //double (big-endian)
 			{
-				uint64_t tmp;
-				s.read((char*)&tmp,8);
-				tmp=be64toh(tmp);
-				double d=*(reinterpret_cast<double*>(&tmp));
-				//cout << d << endl;
+				union
+				{
+					uint64_t i;
+					double d;
+				} tmp;
+				s.read((char*)&tmp.i,8);
+				tmp.i=be64toh(tmp.i);
 				//HACK, extract fps information
 				if(varName.getString()=="framerate")
-					frameRate=d;
+					frameRate=tmp.d;
 				break;
 			}
 			case 1:

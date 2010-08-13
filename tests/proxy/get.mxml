@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_test_template"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	import TestProxy;
+	private function appComplete():void {
+		rect.graphics.beginFill(0x80ff60);
+		rect.graphics.drawRect(30,0,150,100);
+		rect.graphics.endFill();
+
+		rect2.graphics.beginFill(0xff8060);
+		rect2.graphics.drawRect(50,60,170,120);
+		rect2.graphics.endFill();
+
+		var t:TestProxy=new TestProxy;
+		trace("Getting existing data");
+		trace(t["data"]);
+		trace("Getting not existing data");
+		trace(t["data2"]);
+		trace("Getting something else");
+		trace(t["data3"]);
+	}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="rect" />
+<mx:UIComponent id="rect2" />
+
+</mx:Application>

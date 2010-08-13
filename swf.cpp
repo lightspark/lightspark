@@ -570,7 +570,10 @@ void SystemState::createEngines()
 	}
 #else 
 	//COMPILE_PLUGIN not defined
-	throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
+	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
+	{
+		throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
+	}
 #endif
 
 	if(engine==GTKPLUG) //The engines must be created int the context of the main thread

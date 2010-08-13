@@ -1496,9 +1496,9 @@ ASObject* ABCContext::getConstant(int kind, int index)
 		case 0x01: //String
 			return Class<ASString>::getInstanceS(constant_pool.strings[index]);
 		case 0x03: //Int
-			return new Integer(constant_pool.integer[index]);
+			return abstract_i(constant_pool.integer[index]);
 		case 0x06: //Double
-			return new Number(constant_pool.doubles[index]);
+			return abstract_d(constant_pool.doubles[index]);
 		case 0x08: //Namespace
 			assert_and_throw(constant_pool.namespaces[index].name);
 			return Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name));

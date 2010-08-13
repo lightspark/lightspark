@@ -739,6 +739,7 @@ public:
 	ASFUNCTION(ceil);
 	ASFUNCTION(round);
 	ASFUNCTION(sqrt);
+	ASFUNCTION(log);
 	ASFUNCTION(random);
 	ASFUNCTION(_max);
 	ASFUNCTION(_min);

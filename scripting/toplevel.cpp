@@ -946,8 +946,15 @@ bool Array::nextValue(unsigned int index, ASObject*& out)
 {
 	assert_and_throw(implEnable);
 	assert_and_throw(index<data.size());
-	assert_and_throw(data[index].type==DATA_OBJECT);
-	out=data[index].data;
+	if(data[index].type==DATA_OBJECT)
+		out=data[index].data;
+	else if(data[index].type==DATA_INT)
+	{
+		out=abstract_i(data[index].data_i);
+		out->fake_decRef();
+	}
+	else
+		throw UnsupportedException("Unexpeted data type");
 	return true;
 }
 
@@ -1173,7 +1180,7 @@ tiny_string Integer::toString(bool debugMsg)
 	{
 		//This can be a slow path, as it not used for array access
 		snprintf(buf,20,"%i",val);
-		return buf;
+		return tiny_string(buf,true);
 	}
 	buf[19]=0;
 	char* cur=buf+19;
@@ -1587,6 +1594,7 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 void Math::sinit(Class_base* c)
 {
 	c->setVariableByQName("PI","",abstract_d(M_PI));
+	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518));
 	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
 	c->setVariableByQName("atan2","",Class<IFunction>::getFunction(atan2));
 	c->setVariableByQName("max","",Class<IFunction>::getFunction(_max));
@@ -1594,6 +1602,7 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("abs","",Class<IFunction>::getFunction(abs));
 	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
 	c->setVariableByQName("cos","",Class<IFunction>::getFunction(cos));
+	c->setVariableByQName("log","",Class<IFunction>::getFunction(log));
 	c->setVariableByQName("floor","",Class<IFunction>::getFunction(floor));
 	c->setVariableByQName("ceil","",Class<IFunction>::getFunction(ceil));
 	c->setVariableByQName("round","",Class<IFunction>::getFunction(round));
@@ -1645,19 +1654,25 @@ ASFUNCTIONBODY(Math,abs)
 ASFUNCTIONBODY(Math,ceil)
 {
 	double n=args[0]->toNumber();
-	return abstract_i(::ceil(n));
+	return abstract_d(::ceil(n));
+}
+
+ASFUNCTIONBODY(Math,log)
+{
+	double n=args[0]->toNumber();
+	return abstract_d(::log(n));
 }
 
 ASFUNCTIONBODY(Math,floor)
 {
 	double n=args[0]->toNumber();
-	return abstract_i(::floor(n));
+	return abstract_d(::floor(n));
 }
 
 ASFUNCTIONBODY(Math,round)
 {
 	double n=args[0]->toNumber();
-	return abstract_i(::round(n));
+	return abstract_d(::round(n));
 }
 
 ASFUNCTIONBODY(Math,sqrt)

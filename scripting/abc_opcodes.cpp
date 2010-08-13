@@ -1781,10 +1781,9 @@ bool ABCVm::isType(ASObject* obj, multiname* name)
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
 	{
 		obj->decRef();
-		if(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass())
-			return true;
-		else
-			return false;
+		real_ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
+		LOG(LOG_CALLS,"Numeric type is " << ((real_ret)?"":"not ") << "subclass of " << c->class_name);
+		return real_ret;
 	}
 
 	if(obj->prototype)
@@ -1835,9 +1834,10 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
 	{
 		obj->decRef();
-		bool ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
+		real_ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
+		LOG(LOG_CALLS,"Numeric type is " << ((real_ret)?"":"not ") << "subclass of " << c->class_name);
 		type->decRef();
-		return ret;
+		return real_ret;
 	}
 
 	if(obj->prototype)
@@ -1892,6 +1892,20 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 
 	assert_and_throw(type->getObjectType()==T_CLASS);
 	Class_base* c=static_cast<Class_base*>(type);
+	//Special case numeric types
+	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
+	{
+		bool real_ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
+		LOG(LOG_CALLS,"Numeric type is " << ((real_ret)?"":"not ") << "subclass of " << c->class_name);
+		type->decRef();
+		if(real_ret)
+			return obj;
+		else
+		{
+			obj->decRef();
+			return new Null;
+		}
+	}
 
 	Class_base* objc;
 	if(obj->prototype)

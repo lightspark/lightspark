@@ -304,19 +304,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			//Methods has to be runned with their own class this
 			//The owner has to be increffed
 			obj->incRef();
-			ASObject* ret=NULL;
-			//HACK for Proxy, here till callProperty proxying is implemented
-			if(name->ns.size()==1 && name->ns[0].name==flash_proxy)
-			{
-				Proxy* p=dynamic_cast<Proxy*>(obj);
-				assert_and_throw(p);
-				assert_and_throw(p->implEnable);
-				p->implEnable=false;
-				ret=f->call(obj,args,m);
-				p->implEnable=true;
-			}
-			else
-				ret=f->call(obj,args,m);
+			ASObject* ret=f->call(obj,args,m);
 			th->runtime_stack_push(ret);
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
@@ -795,19 +783,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 			IFunction* f=static_cast<IFunction*>(o)->getOverride();
 			obj->incRef();
 
-			//HACK for Proxy, here till callProperty proxying is implemented
-			ASObject* ret;
-			if(name->ns.size()==1 && name->ns[0].name==flash_proxy)
-			{
-				Proxy* p=dynamic_cast<Proxy*>(obj);
-				assert_and_throw(p);
-				assert_and_throw(p->implEnable);
-				p->implEnable=false;
-				ret=f->call(obj,args,m);
-				p->implEnable=true;
-			}
-			else
-				ret=f->call(obj,args,m);
+			ASObject* ret=f->call(obj,args,m);
 			if(ret)
 				ret->decRef();
 		}

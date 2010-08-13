@@ -274,38 +274,6 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	if(obj->prototype)
 		LOG(LOG_CALLS,obj->prototype->class_name);
 
-	//If the object is a Proxy subclass, invoke the callProperty
-	if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
-	{
-		//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-		ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
-
-		if(o)
-		{
-			assert_and_throw(o->getObjectType()==T_FUNCTION);
-
-			IFunction* f=static_cast<IFunction*>(o);
-
-			//Create a new array
-			ASObject** proxyArgs=new ASObject*[m+1];
-			//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-			proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
-			for(int i=0;i<m;i++)
-				proxyArgs[i+1]=args[i];
-			delete[] args;
-
-			//We now suppress special handling
-			LOG(LOG_CALLS,"Proxy::callProperty");
-			ASObject* ret=f->call(obj,proxyArgs,m+1);
-			th->runtime_stack_push(ret);
-
-			obj->decRef();
-			LOG(LOG_CALLS,"End of calling " << *name);
-			delete[] proxyArgs;
-			return;
-		}
-	}
-
 	//We have to reset the level, as we may be getting a function defined at a lower level
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	if(tl.cur_this==obj)
@@ -367,6 +335,38 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 	}
 	else
 	{
+		//If the object is a Proxy subclass, try to invoke callProperty
+		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
+		{
+			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
+			ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
+
+			if(o)
+			{
+				assert_and_throw(o->getObjectType()==T_FUNCTION);
+
+				IFunction* f=static_cast<IFunction*>(o);
+
+				//Create a new array
+				ASObject** proxyArgs=new ASObject*[m+1];
+				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
+				proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
+				for(int i=0;i<m;i++)
+					proxyArgs[i+1]=args[i];
+				delete[] args;
+
+				//We now suppress special handling
+				LOG(LOG_CALLS,"Proxy::callProperty");
+				ASObject* ret=f->call(obj,proxyArgs,m+1);
+				th->runtime_stack_push(ret);
+
+				obj->decRef();
+				LOG(LOG_CALLS,"End of calling " << *name);
+				delete[] proxyArgs;
+				return;
+			}
+		}
+
 		LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function " << *name << " on obj " << 
 				((obj->prototype)?obj->prototype->class_name:"Object"));
 		th->runtime_stack_push(new Undefined);
@@ -776,38 +776,6 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	if(obj->prototype)
 		LOG(LOG_CALLS, obj->prototype->class_name);
 
-	//If the object is a Proxy subclass, invoke the callProperty
-	if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
-	{
-		//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-		ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
-		if(o)
-		{
-			assert_and_throw(o->getObjectType()==T_FUNCTION);
-
-			IFunction* f=static_cast<IFunction*>(o);
-
-			//Create a new array
-			ASObject** proxyArgs=new ASObject*[m+1];
-			//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
-			proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
-			for(int i=0;i<m;i++)
-				proxyArgs[i+1]=args[i];
-			delete[] args;
-
-			//We now suppress special handling
-			LOG(LOG_CALLS,"Proxy::callProperty");
-			ASObject* ret=f->call(obj,proxyArgs,m+1);
-			if(ret)
-				ret->decRef();
-
-			obj->decRef();
-			LOG(LOG_CALLS,"End of calling " << *name);
-			delete[] proxyArgs;
-			return;
-		}
-	}
-
 	//We have to reset the level, as we may be getting a function defined at a lower level
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	if(tl.cur_this==obj)
@@ -853,6 +821,38 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 	}
 	else
 	{
+		//If the object is a Proxy subclass, try to use callProperty
+		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
+		{
+			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
+			ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
+			if(o)
+			{
+				assert_and_throw(o->getObjectType()==T_FUNCTION);
+
+				IFunction* f=static_cast<IFunction*>(o);
+
+				//Create a new array
+				ASObject** proxyArgs=new ASObject*[m+1];
+				//Well, I don't how to pass multiname to an as function. I'll just pass the name as a string
+				proxyArgs[0]=Class<ASString>::getInstanceS(name->name_s);
+				for(int i=0;i<m;i++)
+					proxyArgs[i+1]=args[i];
+				delete[] args;
+
+				//We now suppress special handling
+				LOG(LOG_CALLS,"Proxy::callProperty");
+				ASObject* ret=f->call(obj,proxyArgs,m+1);
+				if(ret)
+					ret->decRef();
+
+				obj->decRef();
+				LOG(LOG_CALLS,"End of calling " << *name);
+				delete[] proxyArgs;
+				return;
+			}
+		}
+
 		if(obj->prototype)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function " << name->name_s << " on obj type " << obj->prototype->class_name);

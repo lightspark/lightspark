@@ -7,14 +7,11 @@ import flash.utils.flash_proxy;
 public class TestProxy extends Proxy
 {
 	public var data:int = 0;
-	override flash_proxy function getProperty(name:*):*
+	override flash_proxy function setProperty(name:*, value:*):void
 	{
-		trace("getProperty get existent "+data);
-		
+		trace("setProperty exec");
 		if(name=="data2")
-			return 1;
-		else
-			return 2;
+			data=value;
 	}
 }
 

@@ -549,7 +549,6 @@ void Proxy::sinit(Class_base* c)
 
 void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
 {
-	assert_and_throw(implEnable);
 	//If a variable named like this already exist, return that
 	if(hasPropertyByMultiname(name) || !implEnable)
 	{

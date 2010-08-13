@@ -565,6 +565,7 @@ private:
 	static uintptr_t decrement(ASObject*);
 	static uintptr_t decrement_i(ASObject*);
 	static ASObject* getGlobalScope();
+	static bool strictEquals(ASObject*,ASObject*);
 	//Utility
 	static void not_impl(int p);
 	ASFUNCTION(print);
@@ -627,8 +628,7 @@ public:
 		return method_this_stack.back();
 	}
 
-	//Some opcodes are used inside runtime class implementations
-	static bool strictEquals(ASObject*,ASObject*);
+	static bool strictEqualImpl(ASObject*, ASObject*);
 
 };
 
@@ -656,12 +656,6 @@ public:
 	void execute(RootMovieClip* root);
 };
 
-
-ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* _int(ASObject* obj,ASObject* const* args, const unsigned int argslen);
-ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 inline ASObject* getGlobal()
@@ -673,7 +667,6 @@ inline ABCVm* getVm()
 {
 	return sys->currentVm;
 }
-
 
 std::istream& operator>>(std::istream& in, u8& v);
 std::istream& operator>>(std::istream& in, u16& v);

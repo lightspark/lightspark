@@ -161,12 +161,12 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("QName","",Class<ASQName>::getClass());
 	Global->setVariableByQName("uint","",Class<UInteger>::getClass());
 	Global->setVariableByQName("Error","",Class<ASError>::getClass());
+	Global->setVariableByQName("int","",Class<Integer>::getClass());
 
 	Global->setVariableByQName("print","",Class<IFunction>::getFunction(print));
 	Global->setVariableByQName("trace","",Class<IFunction>::getFunction(print));
 	Global->setVariableByQName("parseInt","",Class<IFunction>::getFunction(parseInt));
 	Global->setVariableByQName("parseFloat","",Class<IFunction>::getFunction(parseFloat));
-	Global->setVariableByQName("int","",Class<IFunction>::getFunction(_int));
 	Global->setVariableByQName("unescape","",Class<IFunction>::getFunction(unescape));
 	Global->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 
@@ -191,10 +191,11 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass("DropShadowFilter"));
 	Global->setVariableByQName("BitmapFilter","flash.filters",Class<ASObject>::getClass("BitmapFilter"));
 
-	Global->setVariableByQName("TextField","flash.text",Class<TextField>::getClass());
-	Global->setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass("TextFormat"));
-	Global->setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass("TextFieldType"));
 	Global->setVariableByQName("Font","flash.text",Class<Font>::getClass());
+	Global->setVariableByQName("StyleSheet","flash.text",Class<ASObject>::getClass("StyleSheet"));
+	Global->setVariableByQName("TextField","flash.text",Class<TextField>::getClass());
+	Global->setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass("TextFieldType"));
+	Global->setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass("TextFormat"));
 
 	Global->setVariableByQName("XMLDocument","flash.xml",Class<XMLDocument>::getClass());
 
@@ -255,6 +256,7 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("ContextMenuItem","flash.ui",Class<ASObject>::getClass("ContextMenuItem"));
 
 	Global->setVariableByQName("isNaN","",Class<IFunction>::getFunction(isNaN));
+	Global->setVariableByQName("isFinite","",Class<IFunction>::getFunction(isFinite));
 }
 
 //This function is used at compile time
@@ -1494,9 +1496,9 @@ ASObject* ABCContext::getConstant(int kind, int index)
 		case 0x01: //String
 			return Class<ASString>::getInstanceS(constant_pool.strings[index]);
 		case 0x03: //Int
-			return new Integer(constant_pool.integer[index]);
+			return abstract_i(constant_pool.integer[index]);
 		case 0x06: //Double
-			return new Number(constant_pool.doubles[index]);
+			return abstract_d(constant_pool.doubles[index]);
 		case 0x08: //Namespace
 			assert_and_throw(constant_pool.namespaces[index].name);
 			return Class<Namespace>::getInstanceS(getString(constant_pool.namespaces[index].name));
@@ -2227,61 +2229,6 @@ istream& lightspark::operator>>(istream& in, cpool_info& v)
 		in >> v.multinames[i];
 
 	return in;
-}
-
-ASFUNCTIONBODY(lightspark,_int)
-{
-	//Int is specified as 32bit
-	return abstract_i(args[0]->toInt()&0xffffffff);
-}
-
-ASFUNCTIONBODY(lightspark,parseInt)
-{
-	if(args[0]->getObjectType()==T_UNDEFINED)
-		return new Undefined;
-	else
-		return abstract_i(atoi(args[0]->toString().raw_buf()));
-}
-
-ASFUNCTIONBODY(lightspark,parseFloat)
-{
-	if(args[0]->getObjectType()==T_UNDEFINED)
-		return new Undefined;
-	else
-		return abstract_d(atof(args[0]->toString().raw_buf()));
-}
-
-ASFUNCTIONBODY(lightspark,isNaN)
-{
-	if(args[0]->getObjectType()==T_UNDEFINED)
-		return abstract_b(true);
-	else if(args[0]->getObjectType()==T_INTEGER)
-		return abstract_b(false);
-	else if(args[0]->getObjectType()==T_NUMBER)
-	{
-		if(isnan(args[0]->toNumber()))
-			return abstract_b(true);
-		else
-			return abstract_b(false);
-	}
-	else
-		throw UnsupportedException("Weird argument for isNaN");
-}
-
-ASFUNCTIONBODY(lightspark,unescape)
-{
-	ASString* th=static_cast<ASString*>(args[0]);
-	string ret;
-	ret.reserve(th->data.size());
-	for(unsigned int i=0;i<th->data.size();i++)
-	{
-		if(th->data[i]=='%')
-			throw UnsupportedException("Unescape not completely implemented");
-		else
-			ret.push_back(th->data[i]);
-	}
-
-	return Class<ASString>::getInstanceS(ret);
 }
 
 ASFUNCTIONBODY(lightspark,undefinedFunction)

@@ -493,6 +493,15 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 		return NULL;
 }
 
+ASFUNCTIONBODY(ASObject,generator)
+{
+	//By default we assume it's a passtrough cast
+	assert_and_throw(argslen==1);
+	LOG(LOG_CALLS,"Passthorugh of " << args[0]);
+	args[0]->incRef();
+	return args[0];
+}
+
 ASFUNCTIONBODY(ASObject,_toString)
 {
 	return Class<ASString>::getInstanceS(obj->toString());

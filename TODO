@@ -9,10 +9,7 @@ Official TODO Queue:
 -) Click passthrough on transparent objects
 -) Understand the semantics of nextname on methods and the like
 -) handle private methods, which should be getted on the same level
--) stick to current level change or use flag to getVariable.../setVariable
 -) Add Named Objects to frames and not to clips
--) Support mozilla Out of process plugin mode - Waiting for multithreaded GTK support from mozilla
 -) Conditional scaling of FontGlyph based on version
--) Why std::istream catches our exeptions?
 -) Add a finally interface to Jobs so they may decRef themselves
--) Destroy TextureBuffer textures inside the rendering context
+-) Avoid primitive objects in Dictionary

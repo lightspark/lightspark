@@ -391,6 +391,8 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool
 		data[Class<ASString>::getInstanceS(name.name_s)]=o;
 	else if(name.name_type==multiname::NAME_INT)
 		data[abstract_i(name.name_i)]=o;
+	else if(name.name_type==multiname::NAME_NUMBER)
+		data[abstract_d(name.name_d)]=o;
 	else
 	{
 		throw UnsupportedException("Unsupported name kind in Dictionary::setVariableByMultiname");
@@ -457,8 +459,52 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 		//Value not found
 		ret=new Undefined;
 	}
+	else if(name.name_type==multiname::NAME_INT)
+	{
+		//Ok, we need to do the slow lookup on every object and check for === comparison
+		map<ASObject*, ASObject*>::iterator it=data.begin();
+		for(;it!=data.end();it++)
+		{
+			SWFOBJECT_TYPE type=it->first->getObjectType();
+			if(type==T_INTEGER || type==T_UINTEGER || type==T_NUMBER)
+			{
+				if(name.name_i == it->first->toNumber())
+				{
+					//Value found
+					ret=it->second;
+					ret->incRef();
+					return ret;
+				}
+			}
+		}
+		//Value not found
+		ret=new Undefined;
+	}
+	else if(name.name_type==multiname::NAME_NUMBER)
+	{
+		//Ok, we need to do the slow lookup on every object and check for === comparison
+		map<ASObject*, ASObject*>::iterator it=data.begin();
+		for(;it!=data.end();it++)
+		{
+			SWFOBJECT_TYPE type=it->first->getObjectType();
+			if(type==T_INTEGER || type==T_UINTEGER || type==T_NUMBER)
+			{
+				if(name.name_d == it->first->toNumber())
+				{
+					//Value found
+					ret=it->second;
+					ret->incRef();
+					return ret;
+				}
+			}
+		}
+		//Value not found
+		ret=new Undefined;
+	}
 	else
+	{
 		throw UnsupportedException("Unsupported name kind on Dictionary::getVariableByMultiname");
+	}
 
 	return ret;
 }
@@ -538,10 +584,9 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 
 ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
 {
-	assert_and_throw(!skip_impl);
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
-	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable)
+	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable || skip_impl)
 		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls

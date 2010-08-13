@@ -21,6 +21,7 @@
 #include <algorithm>
 //#include <libxml/parser.h>
 #include <pcrecpp.h>
+#include <pcre.h>
 #include <string.h>
 #include <sstream>
 #include <iomanip>
@@ -181,7 +182,7 @@ ASFUNCTIONBODY(Array,indexOf)
 	for(unsigned int i=0;i<th->data.size();i++)
 	{
 		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		if(ABCVm::strictEquals(th->data[i].data,arg0))
+		if(ABCVm::strictEqualImpl(th->data[i].data,arg0))
 		{
 			ret=i;
 			break;
@@ -247,12 +248,79 @@ ASFUNCTIONBODY(Array,_pop)
 	return ret;
 }
 
+bool Array::sortComparator(const data_slot& d1, const data_slot& d2)
+{
+	//Comparison is always in lexicographic order
+	tiny_string s1;
+	tiny_string s2;
+	if(d1.type==DATA_INT)
+		s1=tiny_string(d1.data_i);
+	else if(d1.type==DATA_OBJECT && d1.data)
+		s1=d1.data->toString();
+	else
+		s1="undefined";
+	if(d2.type==DATA_INT)
+		s2=tiny_string(d2.data_i);
+	else if(d2.type==DATA_OBJECT && d2.data)
+		s2=d2.data->toString();
+	else
+		s2="undefined";
+
+	return s1<s2;
+}
+
+bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_slot& d2)
+{
+	ASObject* objs[2];
+	if(d1.type==DATA_INT)
+		objs[0]=abstract_i(d1.data_i);
+	else if(d1.type==DATA_OBJECT && d1.data)
+	{
+		objs[0]=d1.data;
+		objs[0]->incRef();
+	}
+	else
+		objs[0]=new Undefined;
+
+	if(d2.type==DATA_INT)
+		objs[1]=abstract_i(d2.data_i);
+	else if(d2.type==DATA_OBJECT && d2.data)
+	{
+		objs[1]=d1.data;
+		objs[1]->incRef();
+	}
+	else
+		objs[1]=new Undefined;
+
+	assert(comparator);
+	ASObject* ret=comparator->call(NULL, objs, 2);
+	assert_and_throw(ret);
+	return (ret->toInt()<0); //Less
+}
+
 ASFUNCTIONBODY(Array,_sort)
 {
 	Array* th=static_cast<Array*>(obj);
-	if(th->data.size()>1)
-		throw UnsupportedException("Array::sort not completely implemented");
-	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");
+	IFunction* comp=NULL;
+	for(uint32_t i=0;i<argslen;i++)
+	{
+		if(args[i]->getObjectType()==T_FUNCTION) //Comparison func
+		{
+			assert_and_throw(comp==NULL);
+			comp=static_cast<IFunction*>(args[i]);
+		}
+		else
+		{
+			if(args[i]->toInt()!=0) //Options?
+				throw UnsupportedException("Array::sort not completely implemented");
+		}
+	}
+	
+	if(comp)
+		sort(th->data.begin(),th->data.end(),sortComparatorWrapper(comp));
+	else
+		sort(th->data.begin(),th->data.end(),sortComparator);
+
 	obj->incRef();
 	return obj;
 }
@@ -640,9 +708,13 @@ ASString::ASString(const char* s, uint32_t len):data(s, len)
 	type=T_STRING;
 }
 
-/*ASFUNCTIONBODY(ASString,_constructor)
+ASFUNCTIONBODY(ASString,_constructor)
 {
-}*/
+	ASString* th=static_cast<ASString*>(obj);
+	if(args && args[0])
+		th->data=args[0]->toString().raw_buf();
+	return NULL;
+}
 
 ASFUNCTIONBODY(ASString,_getLength)
 {
@@ -652,17 +724,19 @@ ASFUNCTIONBODY(ASString,_getLength)
 
 void ASString::sinit(Class_base* c)
 {
-	//c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setConstructor(NULL);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 	c->setVariableByQName("split",AS3,Class<IFunction>::getFunction(split));
 	c->setVariableByQName("substr",AS3,Class<IFunction>::getFunction(substr));
 	c->setVariableByQName("replace",AS3,Class<IFunction>::getFunction(replace));
 	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(concat));
+	c->setVariableByQName("match",AS3,Class<IFunction>::getFunction(match));
 	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	c->setVariableByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt));
+	c->setVariableByQName("charAt",AS3,Class<IFunction>::getFunction(charAt));
 	c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
 	c->setVariableByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase));
+	c->setVariableByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase));
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 }
 
@@ -682,28 +756,141 @@ Array::~Array()
 	}
 }
 
+ASFUNCTIONBODY(ASString,match)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	if(args[0]==NULL || args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
+		return new Null;
+	Array* ret=NULL;
+	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
+	{
+		RegExp* re=static_cast<RegExp*>(args[0]);
+
+		const char* error;
+		int offset;
+		int options=0;
+		if(re->ignoreCase)
+			options|=PCRE_CASELESS;
+		if(re->extended)
+			options|=PCRE_EXTENDED;
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &offset,NULL);
+		if(error)
+			return new Null;
+		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+		int capturingGroups;
+		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+		if(infoOk!=0)
+		{
+			pcre_free(pcreRE);
+			return new Null;
+		}
+		assert_and_throw(capturingGroups<10);
+		int ovector[30];
+		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), 0, 0, ovector, 30);
+		if(rc<=0)
+		{
+			//No matches or error
+			pcre_free(pcreRE);
+			return new Null;
+		}
+		ret=Class<Array>::getInstanceS();
+		if(re->global)
+		{
+			do
+			{
+				int offset=ovector[1];
+				ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
+				rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 9);
+			}
+			while(rc>0);
+		}
+		else
+			ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
+		pcre_free(pcreRE);
+	}
+	else
+	{
+		ret=Class<Array>::getInstanceS();
+		const tiny_string& arg0=args[0]->toString();
+		if(th->data.find(arg0.raw_buf())!=th->data.npos) //Match found
+			ret->push(Class<ASString>::getInstanceS(arg0));
+	}
+	return ret;
+}
+
 ASFUNCTIONBODY(ASString,split)
 {
 	ASString* th=static_cast<ASString*>(obj);
 	Array* ret=Class<Array>::getInstanceS();
 	ASObject* delimiter=args[0];
-	if(delimiter->getObjectType()==T_STRING)
+	if(delimiter->getObjectType()==T_UNDEFINED)
 	{
-		ASString* del=static_cast<ASString*>(delimiter);
+		ret->push(Class<ASString>::getInstanceS(th->data));
+		return ret;
+	}
+
+	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
+	{
+		RegExp* re=static_cast<RegExp*>(args[0]);
+
+		const char* error;
+		int offset;
+		int options=0;
+		if(re->ignoreCase)
+			options|=PCRE_CASELESS;
+		if(re->extended)
+			options|=PCRE_EXTENDED;
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &offset,NULL);
+		if(error)
+			return ret;
+		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+		int capturingGroups;
+		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+		if(infoOk!=0)
+		{
+			pcre_free(pcreRE);
+			return ret;
+		}
+		assert_and_throw(capturingGroups<10);
+		int ovector[30];
+		offset=0;
+		unsigned int end;
+		do
+		{
+			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
+			end=ovector[0];
+			if(rc<=0)
+				end=th->data.size();
+			ASString* s=Class<ASString>::getInstanceS(th->data.substr(offset,end-offset));
+			ret->push(s);
+			offset=ovector[1];
+			//Insert capturing groups
+			for(int i=1;i<rc;i++)
+			{
+				ASString* s=Class<ASString>::getInstanceS(th->data.substr(ovector[i*2],ovector[i*2+1]-ovector[i*2]));
+				ret->push(s);
+			}
+		}
+		while(end<th->data.size());
+		pcre_free(pcreRE);
+	}
+	else
+	{
+		const tiny_string& del=args[0]->toString();
 		unsigned int start=0;
 		do
 		{
-			int match=th->data.find(del->data,start);
+			int match=th->data.find(del.raw_buf(),start);
+			if(del.len()==0)
+				match++;
 			if(match==-1)
 				match=th->data.size();
 			ASString* s=Class<ASString>::getInstanceS(th->data.substr(start,(match-start)));
 			ret->push(s);
-			start=match+del->data.size();
+			start=match+del.len();
 		}
 		while(start<th->data.size());
 	}
-	else
-		throw UnsupportedException("Array::split not completely implemented");
 
 	return ret;
 }
@@ -759,8 +946,15 @@ bool Array::nextValue(unsigned int index, ASObject*& out)
 {
 	assert_and_throw(implEnable);
 	assert_and_throw(index<data.size());
-	assert_and_throw(data[index].type==DATA_OBJECT);
-	out=data[index].data;
+	if(data[index].type==DATA_OBJECT)
+		out=data[index].data;
+	else if(data[index].type==DATA_INT)
+	{
+		out=abstract_i(data[index].data_i);
+		out->fake_decRef();
+	}
+	else
+		throw UnsupportedException("Unexpeted data type");
 	return true;
 }
 
@@ -769,6 +963,14 @@ bool Array::hasNext(unsigned int& index, bool& out)
 	assert_and_throw(implEnable);
 	out=index<data.size();
 	index++;
+	return true;
+}
+
+bool Array::nextName(unsigned int index, ASObject*& out)
+{
+	assert_and_throw(implEnable);
+	assert_and_throw(index<data.size());
+	out=abstract_i(index);
 	return true;
 }
 
@@ -796,7 +998,11 @@ tiny_string ASString::toString(bool debugMsg)
 double ASString::toNumber()
 {
 	assert_and_throw(implEnable);
-	//TODO: implement conversion that checks for validity
+	for(unsigned int i=0;i<data.size();i++)
+	{
+		if(!(data[i]>='0' && data[i]<='9' && data[i]!='.')) //not a number
+			return numeric_limits<double>::quiet_NaN();
+	}
 	return atof(data.c_str());
 }
 
@@ -823,17 +1029,19 @@ bool ASString::isEqual(ASObject* r)
 
 TRISTATE ASString::isLess(ASObject* r)
 {
+	//ECMA-262 11.8.5 algorithm
 	assert_and_throw(implEnable);
-	//TODO: Implement ECMA-262 11.8.5 algorithm
-	//Number comparison has the priority over strings
-	if(r->getObjectType()==T_INTEGER)
+	if(getObjectType()==T_STRING && r->getObjectType()==T_STRING)
 	{
-		number_t a=toNumber();
-		number_t b=r->toNumber();
-		return (a<b)?TTRUE:TFALSE;
+		ASString* rstr=Class<ASString>::cast(r);
+		return (data<rstr->data)?TTRUE:TFALSE;
 	}
-	throw UnsupportedException("String::isLess not completely implemented");
-	return TTRUE;
+	number_t a=toNumber();
+	number_t b=r->toNumber();
+	if(isnan(a) || isnan(b))
+		return TUNDEFINED;
+	//TODO: Should we special handle infinite values?
+	return (a<b)?TTRUE:TFALSE;
 }
 
 bool Boolean::isEqual(ASObject* r)
@@ -908,6 +1116,12 @@ ASFUNCTIONBODY(Integer,_toString)
 	return Class<ASString>::getInstanceS(buf);
 }
 
+ASFUNCTIONBODY(Integer,generator)
+{
+	//Int is specified as 32bit
+	return abstract_i(args[0]->toInt()&0xffffffff);
+}
+
 TRISTATE Integer::isLess(ASObject* o)
 {
 	if(o->getObjectType()==T_INTEGER)
@@ -966,7 +1180,7 @@ tiny_string Integer::toString(bool debugMsg)
 	{
 		//This can be a slow path, as it not used for array access
 		snprintf(buf,20,"%i",val);
-		return buf;
+		return tiny_string(buf,true);
 	}
 	buf[19]=0;
 	char* cur=buf+19;
@@ -1066,6 +1280,13 @@ void Number::sinit(Class_base* c)
 {
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
+	//Must create and link the number the hard way
+	Number* ninf=new Number(-numeric_limits<double>::infinity());
+	Number* pinf=new Number(numeric_limits<double>::infinity());
+	ninf->setPrototype(c);
+	pinf->setPrototype(c);
+	c->setVariableByQName("NEGATIVE_INFINITY","",ninf);
+	c->setVariableByQName("POSITIVE_INFINITY","",pinf);
 }
 
 Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisecond(-1)
@@ -1279,7 +1500,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	//Fixup missing parameters
 	unsigned int missing_params=args_len-i;
-	assert(missing_params<=mi->option_count);
 	assert_and_throw(missing_params<=mi->option_count);
 	int starting_options=mi->option_count-missing_params;
 
@@ -1373,6 +1593,7 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 void Math::sinit(Class_base* c)
 {
 	c->setVariableByQName("PI","",abstract_d(M_PI));
+	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518));
 	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
 	c->setVariableByQName("atan2","",Class<IFunction>::getFunction(atan2));
 	c->setVariableByQName("max","",Class<IFunction>::getFunction(_max));
@@ -1380,6 +1601,7 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("abs","",Class<IFunction>::getFunction(abs));
 	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
 	c->setVariableByQName("cos","",Class<IFunction>::getFunction(cos));
+	c->setVariableByQName("log","",Class<IFunction>::getFunction(log));
 	c->setVariableByQName("floor","",Class<IFunction>::getFunction(floor));
 	c->setVariableByQName("ceil","",Class<IFunction>::getFunction(ceil));
 	c->setVariableByQName("round","",Class<IFunction>::getFunction(round));
@@ -1431,19 +1653,25 @@ ASFUNCTIONBODY(Math,abs)
 ASFUNCTIONBODY(Math,ceil)
 {
 	double n=args[0]->toNumber();
-	return abstract_i(::ceil(n));
+	return abstract_d(::ceil(n));
+}
+
+ASFUNCTIONBODY(Math,log)
+{
+	double n=args[0]->toNumber();
+	return abstract_d(::log(n));
 }
 
 ASFUNCTIONBODY(Math,floor)
 {
 	double n=args[0]->toNumber();
-	return abstract_i(::floor(n));
+	return abstract_d(::floor(n));
 }
 
 ASFUNCTIONBODY(Math,round)
 {
 	double n=args[0]->toNumber();
-	return abstract_i(::round(n));
+	return abstract_d(::round(n));
 }
 
 ASFUNCTIONBODY(Math,sqrt)
@@ -1565,7 +1793,7 @@ ASFUNCTIONBODY(RegExp,exec)
 		args[0]->incRef();
 		a->setVariableByQName("input","",args[0]);
 		ret=a;
-		//TODO: add index field (not possible with current PCRECPP
+		//TODO: add index field (not possible with current PCRECPP)
 	}
 	else
 		ret=new Null;
@@ -1601,6 +1829,16 @@ ASFUNCTIONBODY(ASString,slice)
 	if(argslen>=2)
 		endIndex=args[1]->toInt();
 	return Class<ASString>::getInstanceS(th->data.substr(startIndex,endIndex));
+}
+
+ASFUNCTIONBODY(ASString,charAt)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	int index=args[0]->toInt();
+	int maxIndex=th->data.size();
+	if(index<0 || index>=maxIndex)
+		return Class<ASString>::getInstanceS();
+	return Class<ASString>::getInstanceS(th->data.c_str()+index, 1);
 }
 
 ASFUNCTIONBODY(ASString,charCodeAt)
@@ -1651,9 +1889,16 @@ ASFUNCTIONBODY(ASString,indexOf)
 ASFUNCTIONBODY(ASString,toLowerCase)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	ASString* ret=Class<ASString>::getInstanceS();
-	ret->data=th->data;
+	ASString* ret=Class<ASString>::getInstanceS(th->data);
 	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::tolower);
+	return ret;
+}
+
+ASFUNCTIONBODY(ASString,toUpperCase)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	ASString* ret=Class<ASString>::getInstanceS(th->data);
+	transform(th->data.begin(), th->data.end(), ret->data.begin(), ::toupper);
 	return ret;
 }
 
@@ -1806,6 +2051,11 @@ Class_base::~Class_base()
 			delete *it;
 	}
 	
+}
+
+ASObject* Class_base::generator(ASObject* const* args, const unsigned int argslen)
+{
+	return ASObject::generator(NULL, args, argslen);
 }
 
 void Class_base::addImplementedInterface(const multiname& i)
@@ -2237,3 +2487,72 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 		return false;
 	}
 }
+
+ASFUNCTIONBODY(lightspark,parseInt)
+{
+	if(args[0]->getObjectType()==T_UNDEFINED)
+		return new Undefined;
+	else
+		return abstract_i(atoi(args[0]->toString().raw_buf()));
+}
+
+ASFUNCTIONBODY(lightspark,parseFloat)
+{
+	if(args[0]->getObjectType()==T_UNDEFINED)
+		return new Undefined;
+	else
+		return abstract_d(atof(args[0]->toString().raw_buf()));
+}
+
+ASFUNCTIONBODY(lightspark,isNaN)
+{
+	if(args[0]->getObjectType()==T_UNDEFINED)
+		return abstract_b(true);
+	else if(args[0]->getObjectType()==T_INTEGER)
+		return abstract_b(false);
+	else if(args[0]->getObjectType()==T_NUMBER)
+	{
+		if(isnan(args[0]->toNumber()))
+			return abstract_b(true);
+		else
+			return abstract_b(false);
+	}
+	else if(args[0]->getObjectType()==T_BOOLEAN)
+		return abstract_b(false);
+	else if(args[0]->getObjectType()==T_STRING)
+	{
+		double n=args[0]->toNumber();
+		return abstract_b(isnan(n));
+	}
+	else
+		throw UnsupportedException("Weird argument for isNaN");
+}
+
+ASFUNCTIONBODY(lightspark,isFinite)
+{
+	if(args[0]->getObjectType()==T_NUMBER)
+	{
+		if(isfinite(args[0]->toNumber()))
+			return abstract_b(true);
+		else
+			return abstract_b(false);
+	}
+	else
+		throw UnsupportedException("Weird argument for isNaN");
+}
+
+ASFUNCTIONBODY(lightspark,unescape)
+{
+	ASString* th=static_cast<ASString*>(args[0]);
+	string ret;
+	ret.reserve(th->data.size());
+	for(unsigned int i=0;i<th->data.size();i++)
+	{
+		if(th->data[i]=='%')
+			throw UnsupportedException("Unescape not completely implemented");
+		else
+			ret.push_back(th->data[i]);
+	}
+	return Class<ASString>::getInstanceS(ret);
+}
+

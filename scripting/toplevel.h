@@ -115,6 +115,7 @@ public:
 	bool isSubClass(const Class_base* cls) const;
 	tiny_string getQualifiedClassName() const;
 	tiny_string toString(bool debugMsg);
+	virtual ASObject* generator(ASObject* const* args, const unsigned int argslen);
 	
 	//DEPRECATED: naive garbage collector
 	void abandonObject(ASObject* ob);
@@ -410,14 +411,18 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(split);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLength);
 	ASFUNCTION(replace);
 	ASFUNCTION(concat);
 	ASFUNCTION(slice);
+	ASFUNCTION(match);
 	ASFUNCTION(substr);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(charCodeAt);
+	ASFUNCTION(charAt);
 	ASFUNCTION(toLowerCase);
+	ASFUNCTION(toUpperCase);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	tiny_string toString(bool debugMsg=false);
@@ -484,6 +489,16 @@ protected:
 	std::vector<data_slot> data;
 	void outofbounds() const;
 	Array();
+private:
+	static bool sortComparator(const data_slot& d1, const data_slot& d2);
+	class sortComparatorWrapper
+	{
+	private:
+		IFunction* comparator;
+	public:
+		sortComparatorWrapper(IFunction* c):comparator(c){}
+		bool operator()(const data_slot& d1, const data_slot& d2);
+	};
 public:
 	//These utility methods are also used by ByteArray 
 	static bool isValidMultiname(const multiname& name, unsigned int& index);
@@ -550,11 +565,7 @@ public:
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r);
 	bool hasNext(unsigned int& index, bool& out);
-	bool nextName(unsigned int index, ASObject*& out)
-	{
-		assert_and_throw(implEnable);
-		throw UnsupportedException("nextName not supported in Array");
-	}
+	bool nextName(unsigned int index, ASObject*& out);
 	bool nextValue(unsigned int index, ASObject*& out);
 	tiny_string toString_priv() const;
 };
@@ -586,6 +597,7 @@ public:
 	}
 	TRISTATE isLess(ASObject* r);
 	bool isEqual(ASObject* o);
+	ASFUNCTION(generator);
 };
 
 class UInteger: public ASObject
@@ -727,6 +739,7 @@ public:
 	ASFUNCTION(ceil);
 	ASFUNCTION(round);
 	ASFUNCTION(sqrt);
+	ASFUNCTION(log);
 	ASFUNCTION(random);
 	ASFUNCTION(_max);
 	ASFUNCTION(_min);
@@ -774,6 +787,11 @@ public:
 };
 
 bool Boolean_concrete(ASObject* obj);
+ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* isFinite(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 };
 
 #endif

@@ -1500,7 +1500,6 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	//Fixup missing parameters
 	unsigned int missing_params=args_len-i;
-	assert(missing_params<=mi->option_count);
 	assert_and_throw(missing_params<=mi->option_count);
 	int starting_options=mi->option_count-missing_params;
 

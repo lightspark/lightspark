@@ -1805,6 +1805,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 
 	Class_base* objc=NULL;
 	Class_base* c=NULL;
+	assert_and_throw(type->getObjectType()==T_CLASS);
 	c=static_cast<Class_base*>(type);
 	//Special case numeric types
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
@@ -2068,14 +2069,14 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 			if(ret)
 			{
 				th->locals[m]->decRef();
-				th->locals[m]=new Integer(cur_index);
+				th->locals[m]=abstract_i(cur_index);
 			}
 			else
 			{
 				th->locals[n]->decRef();
 				th->locals[n]=new Null;
 				th->locals[m]->decRef();
-				th->locals[m]=new Integer(0);
+				th->locals[m]=abstract_i(0);
 			}
 			return ret;
 		}
@@ -2182,7 +2183,7 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 	ASObject* ret=NULL;
 	if(obj->implEnable)
 	{ 
-		if(obj->nextName(index->toInt()-1,ret))
+		if(obj->nextName(index->toInt(),ret))
 		{
 			obj->decRef();
 			index->decRef();

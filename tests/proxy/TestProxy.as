@@ -34,6 +34,18 @@ public class TestProxy extends Proxy
 		
 		return "no func";
 	}
+	override flash_proxy function nextNameIndex (index:int):int
+	{
+		trace("nextNameIndex "+index);
+		if(index<3)
+			return index+1;
+		return 0;
+	}
+	override flash_proxy function nextName(index:int):String
+	{
+		trace("nextName "+index);
+		return String(10+index);
+	}
 }
 
 }

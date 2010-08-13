@@ -184,16 +184,8 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("Proxy is missing some stuff");
 	}
-	bool hasNext(unsigned int& index, bool& out)
-	{
-		assert_and_throw(implEnable);
-		throw UnsupportedException("Proxy is missing some stuff");
-	}
-	bool nextName(unsigned int index, ASObject*& out)
-	{
-		assert_and_throw(implEnable);
-		throw UnsupportedException("Proxy is missing some stuff");
-	}
+	bool hasNext(unsigned int& index, bool& out);
+	bool nextName(unsigned int index, ASObject*& out);
 	bool nextValue(unsigned int index, ASObject*& out)
 	{
 		assert_and_throw(implEnable);

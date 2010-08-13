@@ -968,6 +968,8 @@ bool Array::hasNext(unsigned int& index, bool& out)
 
 bool Array::nextName(unsigned int index, ASObject*& out)
 {
+	assert(index>0);
+	index--;
 	assert_and_throw(implEnable);
 	assert_and_throw(index<data.size());
 	out=abstract_i(index);

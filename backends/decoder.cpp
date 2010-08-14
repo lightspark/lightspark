@@ -297,8 +297,10 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 void* AudioDecoder::operator new(size_t s)
 {
 	void* retAddr=NULL;
+#ifndef NDEBUG
 	int ret=aligned_malloc(&retAddr, 16, s);
 	assert(ret==0);
+#endif
 	assert(retAddr);
 	return retAddr;
 }

@@ -2373,9 +2373,17 @@ void ABCVm::call(call_context* th, int m)
 		obj->decRef();
 		f->decRef();
 	}
+	else if(f->getObjectType()==T_CLASS)
+	{
+		assert_and_throw(m==1);
+		Class_base* c=static_cast<Class_base*>(f);
+		ASObject* ret=c->generator(args,1);
+		assert_and_throw(ret);
+		th->runtime_stack_push(ret);
+	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Function not good");
+		LOG(LOG_NOT_IMPLEMENTED,"Function not good " << f->getObjectType());
 		th->runtime_stack_push(new Undefined);
 	}
 	LOG(LOG_CALLS,"End of call " << m << ' ' << f);

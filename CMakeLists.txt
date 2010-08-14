@@ -29,26 +29,28 @@ SET(PATCH_VERSION "3")
 
 # GCC 4.4+ is required, GCC_VERSION macro taken from GCC manual
 INCLUDE(CheckCSourceCompiles)
-CHECK_C_SOURCE_COMPILES("
-#define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-#if GCC_VERSION < 40400
-#error
-#endif
-int main() { return 0; }" GCC_IS_4_4)
-IF(NOT GCC_IS_4_4)
-	MESSAGE(FATAL_ERROR "GCC 4.4+ is required.")
-ENDIF(NOT GCC_IS_4_4)
+IF(CMAKE_COMPILER_IS_GNUCC)
+   CHECK_C_SOURCE_COMPILES("
+   #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+   #if GCC_VERSION < 40400
+   #error
+   #ENDIF
+   int main() { return 0; }" GCC_IS_4_4)
+   IF(NOT GCC_IS_4_4)
+	  MESSAGE(FATAL_ERROR "GCC 4.4+ is required.")
+   ENDIF(NOT GCC_IS_4_4)
+ENDIF()
 
 # Find put the path of the gnash executable, if available
 FIND_PROGRAM(GNASH_EXE_PATH NAMES gnash)
 
 IF(GNASH_EXE_PATH)
 	MESSAGE(STATUS "Found gnash path: ${GNASH_EXE_PATH}")
-ELSE()
+ELSE(GNASH_EXE_PATH)
 # Set a default path
 	MESSAGE(STATUS "Gnash not found")
 	SET(GNASH_EXE_PATH "/usr/bin/gnash")
-ENDIF()
+ENDIF(GNASH_EXE_PATH)
 
 # Find out CPU architecture ...
 # we could also use IF(CMAKE_SIZEOF_VOID_P EQUAL 4) to determine if it's a 32 or a 64bit arch
@@ -60,30 +62,41 @@ ENDIF()
 
 # Some directory shortcuts
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
-INCLUDE(CMakeASM-NASMCompiler)
-
-IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
+# If we're gcc, then use nasm to get fastpath.  If MSVC, just use inline asm to get around
+# CMake issues 
+IF(CMAKE_COMPILER_IS_GNUCC)
+   INCLUDE(CMakeASM-NASMCompiler)
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
+IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 	SET(i386 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 32")
 	# nasm for assembly optimizations
-	ENABLE_LANGUAGE(ASM-NASM)
-ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64|amd64")
+	IF(CMAKE_COMPILER_IS_GNUCC)
+	   ENABLE_LANGUAGE(ASM-NASM)        
+	ENDIF(CMAKE_COMPILER_IS_GNUCC)
+ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x86_64$|^amd64$")
 	SET(x86_64 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 64")
 	# nasm for assembly optimizations
-	ENABLE_LANGUAGE(ASM-NASM)
+	IF(CMAKE_COMPILER_IS_GNUCC)
+	  ENABLE_LANGUAGE(ASM-NASM)
+	ENDIF(CMAKE_COMPILER_IS_GNUCC)
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc")
 	SET(ppc 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None ppc")
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -maltivec")
-ELSE()
+ELSE(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 	MESSAGE(SEND_ERROR "Platform ${CMAKE_SYSTEM_PROCESSOR} not supported")
-ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "i[3-6]86")
+ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 
 # Using relative folders, cmake happens by itself CMAKE_INSTALL_PREFIX
-SET(BINDIR "bin")
-SET(DATADIR "share")
-SET(LIBDIR "lib${LIB_SUFFIX}")
+IF(UNIX)
+   SET(BINDIR "bin")
+   SET(DATADIR "share")
+   SET(LIBDIR "lib${LIB_SUFFIX}")
+   SET(PRIVATELIBDIR "${CMAKE_INSTALL_PREFIX}/${LIBDIR}/lightspark")
+   SET(CMAKE_INSTALL_RPATH "${PRIVATELIBDIR}")
+ENDIF(UNIX)
 
 # Setting variables
 SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /usr/local (UNIX) and C:\\Program Files (Windows)")
@@ -107,28 +120,48 @@ SET(CMAKE_INSTALL_RPATH "${PRIVATELIBDIR}")
 # Libraries we need
 INCLUDE(FindLLVM REQUIRED)
 INCLUDE(FindSDL REQUIRED)
-INCLUDE(FindPkgConfig REQUIRED)
 INCLUDE(FindZLIB REQUIRED)
-INCLUDE(FindThreads REQUIRED)
+INCLUDE(FindFreetype REQUIRED)
+INCLUDE(FindOpenGL REQUIRED)
+INCLUDE(FindPCRECPP REQUIRED)
+INCLUDE(FindFTGL REQUIRED)
+INCLUDE(FindGLEW REQUIRED)
+
+if(WIN32)
+  INCLUDE(FindPThreads REQUIRED)
+ELSE(WIN32)
+  INCLUDE(FindThreads REQUIRED)
+ENDIF(WIN32)
 
 find_package(Boost COMPONENTS filesystem system regex)
 if(Boost_FOUND)
   INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-endif(Boost_FOUND)
+ENDIF(Boost_FOUND)
 
-pkg_check_modules(EXTRA_LIBS REQUIRED gl libpcrecpp libavutil ftgl x11 glu fontconfig glew)
+IF(UNIX)
+  INCLUDE(FindPkgConfig REQUIRED)
+  pkg_check_modules(EXTRA_LIBS REQUIRED x11 fontconfig)
+ENDIF()
 
-IF(AUDIO_BACKEND)
-  ADD_DEFINITIONS(-DAUDIO_BACKEND="${AUDIO_BACKEND}" -DENABLE_SOUND=TRUE)
-ENDIF(AUDIO_BACKEND)
+IF(WIN32)
+  INCLUDE(FindWin32Stdint REQUIRED)
+  INCLUDE_DIRECTORIES(${STDINT_INCLUDE_DIRS})
+  SET (EXTRA_LIBS_LIBRARIES ${EXTRA_LIBS_LIBRARIES} WS2_32.lib)
+ENDIF()
+
+IF(UNIX)
+  IF(AUDIO_BACKEND)
+    ADD_DEFINITIONS(-DAUDIO_BACKEND="${AUDIO_BACKEND}" -DENABLE_SOUND=TRUE)
+  ENDIF(AUDIO_BACKEND)
+ENDIF(UNIX)
 
 IF(ENABLE_LIBAVCODEC)
 	# Compatibility checks for ffmpeg deprecated functions
-	pkg_check_modules(LIBAVCODEC REQUIRED libavcodec)
+	INCLUDE(FindFFMpeg REQUIRED)
 	INCLUDE(CheckFunctionExists REQUIRED)
 	SET(CMAKE_REQUIRED_FLAGS ${LIBAVCODEC_CFLAGS})
-	SET(CMAKE_REQUIRED_INCLUDES ${LIBAVCODEC_INCLUDE_DIRS})
-	SET(CMAKE_REQUIRED_LIBRARIES ${LIBAVCODEC_LIBRARIES})
+	SET(CMAKE_REQUIRED_INCLUDES ${FFMPEG_INCLUDE_DIRS})
+	SET(CMAKE_REQUIRED_LIBRARIES ${FFMPEG_LIBRARIES})
 	CHECK_FUNCTION_EXISTS(avcodec_decode_video2 HAVE_AVCODEC_DECODE_VIDEO2)
 	CHECK_FUNCTION_EXISTS(avcodec_decode_audio3 HAVE_AVCODEC_DECODE_AUDIO3)
 	SET(CMAKE_REQUIRED_FLAGS)
@@ -147,115 +180,137 @@ INCLUDE_DIRECTORIES(${SDL_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${LLVM_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${ZLIB_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${Threads_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${FREETYPE_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${PCRECPP_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${FTGL_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${GLEW_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${EXTRA_LIBS_INCLUDE_DIRS})
 
 IF(ENABLE_LIBAVCODEC)
-	INCLUDE_DIRECTORIES(${LIBAVCODEC_INCLUDE_DIRS})
-	SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${LIBAVCODEC_LIBRARIES})
+  INCLUDE_DIRECTORIES(${FFMPEG_INCLUDE_DIRS})
+  SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${FFMPEG_LIBRARIES})
 ENDIF(ENABLE_LIBAVCODEC)	
-#INCLUDE_DIRECTORIES(${SOUND_INCLUDE_DIRS})
 
-SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--no-undefined")
-SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed")
+IF(CMAKE_COMPILER_IS_GNUCC)
+  SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--no-undefined")
+  SET(CMAKE_SHARED_LINKER_FLAGS "-Wl,--as-needed")
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
+LINK_DIRECTORIES(${LLVM_LIB_DIR})
 
 IF(COMPILE_PLUGIN)
-	pkg_check_modules(GTK REQUIRED gtk+-2.0)
-	INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS})
-	ADD_DEFINITIONS(-DMOZ_X11 -DCOMPILE_PLUGIN)
+  pkg_check_modules(GTK REQUIRED gtk+-2.0)
+  INCLUDE_DIRECTORIES(${GTK_INCLUDE_DIRS})
+  ADD_DEFINITIONS(-DMOZ_X11 -DCOMPILE_PLUGIN)
 ENDIF(COMPILE_PLUGIN)
 
 IF(ENABLE_CURL)
-	INCLUDE(FindCURL REQUIRED)
-	INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
-	SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${CURL_LIBRARIES})
-	ADD_DEFINITIONS(-DENABLE_CURL)
+  INCLUDE(FindCURL REQUIRED)
+  INCLUDE_DIRECTORIES(${CURL_INCLUDE_DIR})
+  SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${CURL_LIBRARIES})
+  ADD_DEFINITIONS(-DENABLE_CURL)
 ENDIF(ENABLE_CURL)
 
 IF(ENABLE_DEBIAN_ALTERNATIVES)
-	SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
+  SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
 ENDIF(ENABLE_DEBIAN_ALTERNATIVES)
 
 # Compiler defaults flags for different profiles
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x")
+IF(CMAKE_COMPILER_IS_GNUCC)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++0x")
+  SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
+  SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
+  SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+  SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
+  SET(CMAKE_CXX_FLAGS_DEBIAN "-O2 -DNDEBUG")
+  SET(CMAKE_CXX_FLAGS_LEANDEBUG "-g -O2")
+  ADD_DEFINITIONS(-DDATADIR="${DATADIR}/lightspark" -DGNASH_PATH="${GNASH_EXE_PATH}" -DPRIVATELIBDIR="${PRIVATELIBDIR}")
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
-SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
-SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
-SET(CMAKE_CXX_FLAGS_DEBIAN "-O2 -DNDEBUG")
-SET(CMAKE_CXX_FLAGS_LEANDEBUG "-g -O2")
-
-ADD_DEFINITIONS(-DDATADIR="${DATADIR}/lightspark" -DGNASH_PATH="${GNASH_EXE_PATH}" -DPRIVATELIBDIR="${PRIVATELIBDIR}")
+IF(MSVC)
+  ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -DVPCOMPAT -DPTW32_STATIC_LIB -DPCRE_STATIC)
+ENDIF(MSVC)
 
 # Setting the output directories, so we can build all profiles without mixmatching
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/bin")
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/lib${LIB_SUFFIX}")
-#SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/objs/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/lib${LIB_SUFFIX}" CACHE PATH "Static libraries output directory")
+IF(CMAKE_COMPILER_IS_GNUCC)
+  SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/bin")
+  SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/lib${LIB_SUFFIX}")
+  #SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/objs/${CMAKE_SYSTEM_PROCESSOR}/${CMAKE_BUILD_TYPE}/lib${LIB_SUFFIX}" CACHE PATH "Static libraries output directory")
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 # liblightspark.so sources
 SET(LIBSPARK_SOURCES 
-		asobject.cpp
-		compat.cpp
-		frame.cpp
-		logger.cpp
-		swf.cpp
-		swftypes.cpp
-		thread_pool.cpp
-		threading.cpp
-		timer.cpp
-		backends/decoder.cpp
-		backends/geometry.cpp
-		backends/graphics.cpp
-		backends/input.cpp
-		backends/netutils.cpp
-		backends/rendering.cpp
-		backends/audioManager.cpp
-		parsing/flv.cpp
-		parsing/streams.cpp
-		parsing/tags.cpp
-		parsing/tags_stub.cpp
-		parsing/textfile.cpp
-		scripting/abc.cpp
-		scripting/abc_codesynt.cpp
-		scripting/abc_interpreter.cpp
-		scripting/abc_opcodes.cpp
-		scripting/actions.cpp
-		scripting/class.cpp
-		scripting/flashdisplay.cpp
-		scripting/flashevents.cpp
-		scripting/flashexternal.cpp
-		scripting/flashgeom.cpp
-		scripting/flashmedia.cpp
-		scripting/flashnet.cpp
-		scripting/flashsystem.cpp
-		scripting/flashtext.cpp
-		scripting/flashutils.cpp
-		scripting/flashxml.cpp
-		scripting/toplevel.cpp
-		scripting/vm.cpp)
+  asobject.cpp
+  compat.cpp
+  frame.cpp
+  logger.cpp
+  swf.cpp
+  swftypes.cpp
+  thread_pool.cpp
+  threading.cpp
+  timer.cpp
+  backends/decoder.cpp
+  backends/geometry.cpp
+  backends/graphics.cpp
+  backends/input.cpp
+  backends/netutils.cpp
+  backends/rendering.cpp
+  backends/audioManager.cpp
+  parsing/flv.cpp
+  parsing/streams.cpp
+  parsing/tags.cpp
+  parsing/tags_stub.cpp
+  parsing/textfile.cpp
+  scripting/abc.cpp
+  scripting/abc_codesynt.cpp
+  scripting/abc_interpreter.cpp
+  scripting/abc_opcodes.cpp
+  scripting/actions.cpp
+  scripting/class.cpp
+  scripting/flashdisplay.cpp
+  scripting/flashevents.cpp
+  scripting/flashexternal.cpp
+  scripting/flashgeom.cpp
+  scripting/flashmedia.cpp
+  scripting/flashnet.cpp
+  scripting/flashsystem.cpp
+  scripting/flashtext.cpp
+  scripting/flashutils.cpp
+  scripting/flashxml.cpp
+  scripting/toplevel.cpp
+  scripting/vm.cpp)
 IF(${i386})
-	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_32.asm)
+  IF(CMAKE_COMPILER_IS_GNUCC)
+    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_32.asm)
+  ELSE (CMAKE_COMPILER_IS_GNUCC)
+    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_32vc.cpp)
+  ENDIF(CMAKE_COMPILER_IS_GNUCC)
 ELSEIF(${x86_64})
-	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_64.asm)
+  #Why is there a particular faspaths_32vc but none for 64 bit?
+  SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_64.asm)
 ELSEIF(${ppc})
-	SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_ppc.cpp)
+  SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/fastpaths_ppc.cpp)
 ENDIF(${i386})
 
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
 
 # liblightspark.so target
-ADD_LIBRARY(spark SHARED ${LIBSPARK_SOURCES})
-SET_TARGET_PROPERTIES(spark PROPERTIES OUTPUT_NAME lightspark)
-#TARGET_LINK_LIBRARIES(spark ${SOUND_LIBRARIES} ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES} ${Boost_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${SDL_LIBRARY} ${OPTIONAL_LIBRARIES} ${GTK_LIBRARIES} ${lib_glew})
-TARGET_LINK_LIBRARIES(spark ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES} ${Boost_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${SDL_LIBRARY} ${OPTIONAL_LIBRARIES} ${GTK_LIBRARIES} ${lib_glew})
-SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS} -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/lightspark.expmap")
-SET_TARGET_PROPERTIES(spark PROPERTIES LINK_INTERFACE_LIBRARIES "")
+IF(CMAKE_COMPILER_IS_GNUCC)
+  ADD_LIBRARY(spark SHARED ${LIBSPARK_SOURCES})
+  SET_TARGET_PROPERTIES(spark PROPERTIES OUTPUT_NAME lightspark)
+  SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "${LLVM_LDFLAGS} -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/lightspark.expmap")
+  SET_TARGET_PROPERTIES(spark PROPERTIES LINK_INTERFACE_LIBRARIES "")
+ELSE (CMAKE_COMPILER_IS_GNUCC)
+  ADD_LIBRARY(spark STATIC ${LIBSPARK_SOURCES})
+ENDIF (CMAKE_COMPILER_IS_GNUCC)
 
+TARGET_LINK_LIBRARIES(spark ${EXTRA_LIBS_LIBRARIES} ${ZLIB_LIBRARIES} ${Boost_LIBRARIES} ${LLVM_LIBS_CORE} ${LLVM_LIBS_JIT} ${SDL_LIBRARY} ${OPTIONAL_LIBRARIES} ${GTK_LIBRARIES} ${lib_glew})
 SET_TARGET_PROPERTIES(spark PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")
 SET_TARGET_PROPERTIES(spark PROPERTIES SOVERSION "${MAJOR_VERSION}.${MINOR_VERSION}")
 
 IF(UNIX)
-	INSTALL(TARGETS spark LIBRARY DESTINATION ${PRIVATELIBDIR})
+  INSTALL(TARGETS spark LIBRARY DESTINATION ${PRIVATELIBDIR})
 ENDIF(UNIX)
 
 # lightspark executable target

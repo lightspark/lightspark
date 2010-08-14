@@ -31,6 +31,9 @@
 #include <windows.h>
 #endif
 #include <SDL.h>
+#ifdef WIN32
+#undef main
+#endif
 
 using namespace std;
 using namespace lightspark;

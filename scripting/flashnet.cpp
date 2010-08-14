@@ -218,7 +218,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("DEFAULT","",abstract_i(3));
 };
 
-NetConnection::NetConnection():isFMS(false)
+NetConnection::NetConnection():isFMS(false),isLocal(false)
 {
 }
 
@@ -239,7 +239,12 @@ ASFUNCTIONBODY(NetConnection,connect)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj);
 	assert_and_throw(argslen==1);
-	if(args[0]->getObjectType()!=T_UNDEFINED)
+	if(args[0]->getObjectType()==T_NULL)
+	{
+		th->isLocal=true;
+		throw UnsupportedException("NetConnection::connect to local file");
+	}
+	else if(args[0]->getObjectType()!=T_UNDEFINED)
 	{
 		th->isFMS=true;
 		throw UnsupportedException("NetConnection::connect to FMS");
@@ -291,6 +296,7 @@ ASFUNCTIONBODY(NetStream,_constructor)
 
 	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
 	assert_and_throw(netConnection->isFMS==false);
+	assert_and_throw(netConnection->isLocal==false);
 	return NULL;
 }
 

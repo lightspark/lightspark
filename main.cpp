@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 	}
 	else {
 		LOG(LOG_ERROR, "Running in local-with-filesystem sandbox");
-		//sys->downloadManager=new LocalDownloadManager();
+		sys->downloadManager=new LocalDownloadManager();
 	}
 
 	//Start the parser

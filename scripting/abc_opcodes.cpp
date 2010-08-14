@@ -2370,7 +2370,6 @@ void ABCVm::call(call_context* th, int m)
 			th->runtime_stack_push(ret);
 		else
 			th->runtime_stack_push(new Undefined);
-		obj->decRef();
 		f->decRef();
 	}
 	else if(f->getObjectType()==T_CLASS)

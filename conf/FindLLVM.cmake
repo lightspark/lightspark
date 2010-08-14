@@ -14,9 +14,12 @@
 # LLVM_LIBS_JIT_OBJECTS : objects you need to add to your source when using LLVM JIT
 
 if (MSVC)
-  set(LLVM_ROOT "C:/Program Files/LLVM")
+  set(LLVM_ROOT "$ENV{LLVM_ROOT}")
+  if ("${LLVM_ROOT}" STREQUAL "")
+     set(LLVM_ROOT "C:/Program Files/LLVM")
+  endif ()
   if (NOT IS_DIRECTORY ${LLVM_ROOT})
-    message(FATAL_ERROR "Could NOT find LLVM")
+    message(FATAL_ERROR "Could NOT find LLVM at: " ${LLVM_ROOT})
   endif ()
 
   message(STATUS "Found LLVM: ${LLVM_ROOT}")
@@ -26,7 +29,7 @@ if (MSVC)
 
   set(LLVM_COMPILE_FLAGS "")
   set(LLVM_LDFLAGS "")
-  set(LLVM_LIBS_CORE LLVMLinker LLVMArchive LLVMBitWriter LLVMBitReader LLVMInstrumentation LLVMScalarOpts LLVMipo LLVMTransformUtils LLVMipa LLVMAnalysis LLVMTarget LLVMMC LLVMCore LLVMSupport LLVMSystem)
+  set(LLVM_LIBS_CORE LLVMLinker LLVMArchive LLVMBitWriter LLVMBitReader LLVMInstrumentation LLVMScalarOpts LLVMipo LLVMTransformUtils LLVMipa LLVMAnalysis LLVMTarget LLVMMC LLVMCore LLVMSupport LLVMSystem LLVMInstCombine)
   set(LLVM_LIBS_JIT LLVMX86AsmParser LLVMX86AsmPrinter LLVMX86CodeGen LLVMSelectionDAG LLVMAsmPrinter LLVMX86Info LLVMJIT LLVMExecutionEngine LLVMCodeGen LLVMScalarOpts LLVMTransformUtils LLVMipa LLVMAnalysis LLVMTarget LLVMMC LLVMCore LLVMSupport LLVMSystem)
   set(LLVM_LIBS_JIT_OBJECTS "")
 endif (MSVC)
@@ -78,7 +81,7 @@ else (LLVM_INCLUDE_DIR)
   if(LLVM_CONFIG_EXECUTABLE)
     MESSAGE(STATUS "LLVM llvm-config found at: ${LLVM_CONFIG_EXECUTABLE}")
   else(LLVM_CONFIG_EXECUTABLE)
-    MESSAGE(FATAL_ERROR "Could NOT find LLVM")
+    MESSAGE(FATAL_ERROR "Could NOT find LLVM executable")
   endif(LLVM_CONFIG_EXECUTABLE)
 
   MACRO(FIND_LLVM_LIBS LLVM_CONFIG_EXECUTABLE _libname_ LIB_VAR OBJECT_VAR)

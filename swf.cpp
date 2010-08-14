@@ -339,7 +339,7 @@ SystemState::~SystemState()
 	setPrototype(NULL);
 	
 	//Destroy the contents of all the classes
-	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
+	std::map<QName, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
 		it->second->cleanUp();
 

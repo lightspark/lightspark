@@ -25,6 +25,8 @@
 using namespace lightspark;
 using namespace std;
 
+REGISTER_CLASS_NAME2(ASObject,"Object","");
+
 tiny_string ASObject::toString(bool debugMsg)
 {
 	check();
@@ -44,7 +46,7 @@ tiny_string ASObject::toString(bool debugMsg)
 	{
 		tiny_string ret;
 		ret+="[object ";
-		ret+=getPrototype()->class_name;
+		ret+=getPrototype()->class_name.name;
 		ret+="]";
 		return ret;
 	}
@@ -107,7 +109,7 @@ void ASObject::sinit(Class_base* c)
 
 void ASObject::buildTraits(ASObject* o)
 {
-	if(o->getActualPrototype()->class_name!="ASObject")
+	if(o->getActualPrototype()->class_name.name!="Object")
 		LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->getActualPrototype()->class_name);
 }
 

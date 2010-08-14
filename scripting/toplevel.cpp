@@ -79,6 +79,7 @@ void Array::sinit(Class_base* c)
 	c->ASObject::setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	c->ASObject::setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
 	c->ASObject::setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
+	c->ASObject::setVariableByQName("NUMERIC","",abstract_i(NUMERIC));
 }
 
 void Array::buildTraits(ASObject* o)
@@ -248,25 +249,46 @@ ASFUNCTIONBODY(Array,_pop)
 	return ret;
 }
 
-bool Array::sortComparator(const data_slot& d1, const data_slot& d2)
+bool Array::sortComparatorDefault::operator()(const data_slot& d1, const data_slot& d2)
 {
-	//Comparison is always in lexicographic order
-	tiny_string s1;
-	tiny_string s2;
-	if(d1.type==DATA_INT)
-		s1=tiny_string(d1.data_i);
-	else if(d1.type==DATA_OBJECT && d1.data)
-		s1=d1.data->toString();
-	else
-		s1="undefined";
-	if(d2.type==DATA_INT)
-		s2=tiny_string(d2.data_i);
-	else if(d2.type==DATA_OBJECT && d2.data)
-		s2=d2.data->toString();
-	else
-		s2="undefined";
+	if(isNumeric)
+	{
+		number_t a=numeric_limits<double>::quiet_NaN();
+		number_t b=numeric_limits<double>::quiet_NaN();
+		if(d1.type==DATA_INT)
+			a=d1.data_i;
+		else if(d1.type==DATA_OBJECT && d1.data)
+			a=d1.data->toNumber();
+		
+		if(d2.type==DATA_INT)
+			b=d2.data_i;
+		else if(d2.type==DATA_OBJECT && d2.data)
+			b=d2.data->toNumber();
 
-	return s1<s2;
+		if(isnan(a) || isnan(b))
+			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
+		return a<b;
+	}
+	else
+	{
+		//Comparison is always in lexicographic order
+		tiny_string s1;
+		tiny_string s2;
+		if(d1.type==DATA_INT)
+			s1=tiny_string(d1.data_i);
+		else if(d1.type==DATA_OBJECT && d1.data)
+			s1=d1.data->toString();
+		else
+			s1="undefined";
+		if(d2.type==DATA_INT)
+			s2=tiny_string(d2.data_i);
+		else if(d2.type==DATA_OBJECT && d2.data)
+			s2=d2.data->toString();
+		else
+			s2="undefined";
+
+		return s1<s2;
+	}
 }
 
 bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_slot& d2)
@@ -302,6 +324,7 @@ ASFUNCTIONBODY(Array,_sort)
 {
 	Array* th=static_cast<Array*>(obj);
 	IFunction* comp=NULL;
+	bool isNumeric=false;
 	for(uint32_t i=0;i<argslen;i++)
 	{
 		if(args[i]->getObjectType()==T_FUNCTION) //Comparison func
@@ -311,7 +334,10 @@ ASFUNCTIONBODY(Array,_sort)
 		}
 		else
 		{
-			if(args[i]->toInt()!=0) //Options?
+			uint32_t options=args[i]->toInt();
+			if(options&NUMERIC)
+				isNumeric=true;
+			if(options&(~NUMERIC))
 				throw UnsupportedException("Array::sort not completely implemented");
 		}
 	}
@@ -319,7 +345,7 @@ ASFUNCTIONBODY(Array,_sort)
 	if(comp)
 		sort(th->data.begin(),th->data.end(),sortComparatorWrapper(comp));
 	else
-		sort(th->data.begin(),th->data.end(),sortComparator);
+		sort(th->data.begin(),th->data.end(),sortComparatorDefault(isNumeric));
 
 	obj->incRef();
 	return obj;

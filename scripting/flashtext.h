@@ -52,6 +52,18 @@ public:
 	ASFUNCTION(_setHeight);
 };
 
+class StyleSheet: public EventDispatcher
+{
+private:
+	std::map<tiny_string, ASObject*> styles;
+public:
+	StyleSheet(){}
+	ASFUNCTION(setStyle);
+	ASFUNCTION(_getStyleNames);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
 };
 
 #endif

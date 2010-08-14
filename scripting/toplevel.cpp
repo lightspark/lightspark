@@ -315,7 +315,7 @@ bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_sl
 		objs[1]=new Undefined;
 
 	assert(comparator);
-	ASObject* ret=comparator->call(NULL, objs, 2);
+	ASObject* ret=comparator->call(new Null, objs, 2);
 	assert_and_throw(ret);
 	return (ret->toInt()<0); //Less
 }

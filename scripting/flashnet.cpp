@@ -242,7 +242,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	if(args[0]->getObjectType()==T_NULL)
 	{
 		th->isLocal=true;
-		throw UnsupportedException("NetConnection::connect to local file");
+		//throw UnsupportedException("NetConnection::connect to local file");
 	}
 	else if(args[0]->getObjectType()!=T_UNDEFINED)
 	{
@@ -296,7 +296,7 @@ ASFUNCTIONBODY(NetStream,_constructor)
 
 	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
 	assert_and_throw(netConnection->isFMS==false);
-	assert_and_throw(netConnection->isLocal==false);
+	//assert_and_throw(netConnection->isLocal==false);
 	return NULL;
 }
 

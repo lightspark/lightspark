@@ -42,11 +42,17 @@ TLSDATA DLL_PUBLIC SystemState* sys;
 TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
 TLSDATA DLL_PUBLIC ParseThread* pt=NULL;
 
+enum SECURITY_SANDBOXTYPE
+{ SECURITY_SANDBOX_REMOTE, SECURITY_SANDBOX_LOCAL_WITH_FILE, 
+	SECURITY_SANDBOX_LOCAL_WITH_NETWORK, SECURITY_SANDBOX_LOCAL_TRUSTED
+};
+
 int main(int argc, char* argv[])
 {
 	char* fileName=NULL;
 	char* url=NULL;
 	char* paramsFileName=NULL;
+	SECURITY_SANDBOXTYPE securitySandboxType=SECURITY_SANDBOX_REMOTE;
 	bool useInterpreter=true;
 	bool useJit=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
@@ -98,6 +104,28 @@ int main(int argc, char* argv[])
 			}
 			paramsFileName=argv[i];
 		}
+		else if(strcmp(argv[i],"-s")==0 || 
+			strcmp(argv[i],"--security-sandbox")==0)
+		{
+			i++;
+			if(i==argc)
+			{
+				fileName=NULL;
+				break;
+			}
+			if(strncmp(argv[i], "remote", 6)) {
+				securitySandboxType = SECURITY_SANDBOX_REMOTE;
+			}
+			else if(strncmp(argv[i], "local-with-filesystem", 21)) {
+				securitySandboxType = SECURITY_SANDBOX_LOCAL_WITH_FILE;
+			}
+			else if(strncmp(argv[i], "local-with-networking", 21)) {
+				securitySandboxType = SECURITY_SANDBOX_LOCAL_WITH_NETWORK;
+			}
+			else if(strncmp(argv[i], "local-trusted", 13)) {
+				securitySandboxType = SECURITY_SANDBOX_LOCAL_TRUSTED;
+			}
+		}
 		else
 		{
 			//No options flag, so set the swf file name
@@ -113,7 +141,7 @@ int main(int argc, char* argv[])
 
 	if(fileName==NULL)
 	{
-		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf] [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] [--parameters-file|-p params-file] <file.swf>" << endl;
+		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf] [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] [--parameters-file|-p params-file] [--security-sandbox|-s sandbox] <file.swf>" << endl;
 		exit(-1);
 	}
 
@@ -156,7 +184,19 @@ int main(int argc, char* argv[])
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	sys->setParamsAndEngine(SDL, NULL);
-	sys->downloadManager=new CurlDownloadManager();
+
+	//SECURITY_SANDBOX_LOCAL_TRUSTED should actually be able to use both local and network files
+	if(securitySandboxType == SECURITY_SANDBOX_REMOTE || 
+			securitySandboxType == SECURITY_SANDBOX_LOCAL_WITH_NETWORK ||
+			securitySandboxType == SECURITY_SANDBOX_LOCAL_TRUSTED) {
+		LOG(LOG_ERROR, "Running in remote sandbox");
+		sys->downloadManager=new CurlDownloadManager();
+	}
+	else {
+		LOG(LOG_ERROR, "Running in local-with-filesystem sandbox");
+		//sys->downloadManager=new LocalDownloadManager();
+	}
+
 	//Start the parser
 	sys->addJob(pt);
 

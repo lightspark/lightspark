@@ -519,6 +519,8 @@ bool Dictionary::hasNext(unsigned int& index, bool& out)
 
 bool Dictionary::nextName(unsigned int index, ASObject*& out)
 {
+	assert(index>0);
+	index--;
 	assert_and_throw(implEnable);
 	assert_and_throw(index<data.size());
 	map<ASObject*,ASObject*>::iterator it=data.begin();
@@ -549,7 +551,6 @@ void Proxy::sinit(Class_base* c)
 
 void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
 {
-	assert_and_throw(implEnable);
 	//If a variable named like this already exist, return that
 	if(hasPropertyByMultiname(name) || !implEnable)
 	{
@@ -608,4 +609,36 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, b
 	assert_and_throw(ret);
 	implEnable=true;
 	return ret;
+}
+
+bool Proxy::hasNext(unsigned int& index, bool& out)
+{
+	assert_and_throw(implEnable);
+	LOG(LOG_CALLS, "Proxy::hasNext");
+	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
+	ASObject* o=getVariableByQName("nextNameIndex",flash_proxy,true);
+	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
+	IFunction* f=static_cast<IFunction*>(o);
+	ASObject* arg=abstract_i(index);
+	incRef();
+	ASObject* ret=f->call(this,&arg,1);
+	index=ret->toInt();
+	ret->decRef();
+	out=(index!=0);
+	return true;
+}
+
+bool Proxy::nextName(unsigned int index, ASObject*& out)
+{
+	assert(index>0);
+	assert_and_throw(implEnable);
+	LOG(LOG_CALLS, "Proxy::nextName");
+	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
+	ASObject* o=getVariableByQName("nextName",flash_proxy,true);
+	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
+	IFunction* f=static_cast<IFunction*>(o);
+	ASObject* arg=abstract_i(index);
+	incRef();
+	out=f->call(this,&arg,1);
+	return true;
 }

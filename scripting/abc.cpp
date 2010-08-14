@@ -161,6 +161,8 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("QName","",Class<ASQName>::getClass());
 	Global->setVariableByQName("uint","",Class<UInteger>::getClass());
 	Global->setVariableByQName("Error","",Class<ASError>::getClass());
+	Global->setVariableByQName("XML","",Class<ASObject>::getClass("XML"));
+	Global->setVariableByQName("XMLList","",Class<ASObject>::getClass("XMLList"));
 	Global->setVariableByQName("int","",Class<Integer>::getClass());
 
 	Global->setVariableByQName("print","",Class<IFunction>::getFunction(print));

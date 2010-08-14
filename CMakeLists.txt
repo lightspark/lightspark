@@ -149,8 +149,8 @@ ENDIF(ENABLE_SOUND)
 ENDIF ()
 
 IF(ENABLE_LIBAVCODEC)
+	pkg_check_modules(FFMPEG REQUIRED libavcodec)
 	# Compatibility checks for ffmpeg deprecated functions
-	INCLUDE(FindFFMpeg REQUIRED)
 	INCLUDE(CheckFunctionExists REQUIRED)
 	SET(CMAKE_REQUIRED_FLAGS ${LIBAVCODEC_CFLAGS})
 	SET(CMAKE_REQUIRED_INCLUDES ${FFMPEG_INCLUDE_DIRS})

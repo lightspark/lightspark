@@ -60,6 +60,7 @@ protected:
 	bool visible;
 public:
 	int Depth;
+	tiny_string name;
 	UI16 CharacterId;
 	CXFORMWITHALPHA ColorTransform;
 	UI16 Ratio;
@@ -115,12 +116,12 @@ public:
 	ASFUNCTION(_setHeight);
 	ASFUNCTION(_getRotation);
 	ASFUNCTION(_getName);
+	ASFUNCTION(_setName);
 	ASFUNCTION(_getParent);
 	ASFUNCTION(_getRoot);
 	ASFUNCTION(_getBlendMode);
 	ASFUNCTION(_getScale9Grid);
 	ASFUNCTION(_setRotation);
-	ASFUNCTION(_setName);
 	ASFUNCTION(localToGlobal);
 };
 
@@ -167,6 +168,7 @@ public:
 	ASFUNCTION(addChildAt);
 	ASFUNCTION(getChildIndex);
 	ASFUNCTION(getChildAt);
+	ASFUNCTION(getChildByName);
 	ASFUNCTION(contains);
 };
 

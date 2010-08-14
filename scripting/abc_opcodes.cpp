@@ -1384,7 +1384,6 @@ void ABCVm::getLex(call_context* th, int n)
 				o=(*it)->getVariableByMultiname(*name);
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
-			cout << "Found on " << o << endl;
 			th->runtime_stack_push(o);
 			o->incRef();
 			return;

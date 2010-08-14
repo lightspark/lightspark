@@ -32,7 +32,6 @@ namespace lightspark
 class Downloader;
 
 class DownloadManager
-
 {
 public:
 	virtual Downloader* download(const tiny_string& u)=0;

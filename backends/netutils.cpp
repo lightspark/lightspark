@@ -46,9 +46,9 @@ void CurlDownloadManager::destroy(Downloader* d)
 
 Downloader* LocalDownloadManager::download(const tiny_string& u)
 {
-	CurlDownloader* curlDownloader=new CurlDownloader(u);
-	sys->addJob(curlDownloader);
-	return curlDownloader;
+	LocalDownloader* localDownloader=new LocalDownloader(u);
+	sys->addJob(localDownloader);
+	return localDownloader;
 }
 
 void LocalDownloadManager::destroy(Downloader* d)
@@ -298,9 +298,8 @@ void LocalDownloader::execute()
 	}
 	else {
 		std::ifstream file;
-		const char * fileName = url.raw_buf();
-		file.open(fileName, std::ifstream::in);
-		delete url.raw_buf();
+		LOG(LOG_NO_INFO, "LocalDownloader::execute: reading local file: " << url.raw_buf());
+		file.open(url.raw_buf(), std::ifstream::in);
 
 		if(file.is_open()) {
 			file.seekg(0, std::ios::end);
@@ -310,19 +309,25 @@ void LocalDownloader::execute()
 			size_t buffSize = 8192;
 			char * buffer = new char[buffSize];
 
-			while(file.good()) {
+			bool failed = 0;
+			while(!file.eof()) {
+				if(file.fail() || hasFailed()) {
+					failed = 1;
+					break;
+				}
 				file.read(buffer, buffSize);
 				append((uint8_t *) buffer, file.gcount());
 			}
-			if(file.fail()) {
+			if(failed) {
 				setFailed();
-				LOG(LOG_ERROR, "Reading from local file failed");
+				LOG(LOG_ERROR, "LocalDownloader::execute: reading from local file failed: " << url.raw_buf());
 			}
 			file.close();
+			delete buffer;
 		}
 		else {
 				setFailed();
-				LOG(LOG_ERROR, "Could not open local file");
+				LOG(LOG_ERROR, "LocalDownloader::execute: could not open local file: " << url.raw_buf());
 		}
 	}
 	sem_post(&(Downloader::terminated));

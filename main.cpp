@@ -42,17 +42,12 @@ TLSDATA DLL_PUBLIC SystemState* sys;
 TLSDATA DLL_PUBLIC RenderThread* rt=NULL;
 TLSDATA DLL_PUBLIC ParseThread* pt=NULL;
 
-enum SECURITY_SANDBOXTYPE
-{ SECURITY_SANDBOX_REMOTE, SECURITY_SANDBOX_LOCAL_WITH_FILE, 
-	SECURITY_SANDBOX_LOCAL_WITH_NETWORK, SECURITY_SANDBOX_LOCAL_TRUSTED
-};
-
 int main(int argc, char* argv[])
 {
 	char* fileName=NULL;
 	char* url=NULL;
 	char* paramsFileName=NULL;
-	SECURITY_SANDBOXTYPE securitySandboxType=SECURITY_SANDBOX_REMOTE;
+	SECURITY_SANDBOXTYPE sandboxType=SECURITY_SANDBOX_REMOTE;
 	bool useInterpreter=true;
 	bool useJit=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
@@ -113,17 +108,17 @@ int main(int argc, char* argv[])
 				fileName=NULL;
 				break;
 			}
-			if(strncmp(argv[i], "remote", 6)) {
-				securitySandboxType = SECURITY_SANDBOX_REMOTE;
+			if(strncmp(argv[i], "remote", 6) == 0) {
+				sandboxType = SECURITY_SANDBOX_REMOTE;
 			}
-			else if(strncmp(argv[i], "local-with-filesystem", 21)) {
-				securitySandboxType = SECURITY_SANDBOX_LOCAL_WITH_FILE;
+			else if(strncmp(argv[i], "local-with-filesystem", 21) == 0) {
+				sandboxType = SECURITY_SANDBOX_LOCAL_WITH_FILE;
 			}
-			else if(strncmp(argv[i], "local-with-networking", 21)) {
-				securitySandboxType = SECURITY_SANDBOX_LOCAL_WITH_NETWORK;
+			else if(strncmp(argv[i], "local-with-networking", 21) == 0) {
+				sandboxType = SECURITY_SANDBOX_LOCAL_WITH_NETWORK;
 			}
-			else if(strncmp(argv[i], "local-trusted", 13)) {
-				securitySandboxType = SECURITY_SANDBOX_LOCAL_TRUSTED;
+			else if(strncmp(argv[i], "local-trusted", 13) == 0) {
+				sandboxType = SECURITY_SANDBOX_LOCAL_TRUSTED;
 			}
 		}
 		else
@@ -184,16 +179,17 @@ int main(int argc, char* argv[])
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	sys->setParamsAndEngine(SDL, NULL);
+	sys->setSandboxType(sandboxType);
 
 	//SECURITY_SANDBOX_LOCAL_TRUSTED should actually be able to use both local and network files
-	if(securitySandboxType == SECURITY_SANDBOX_REMOTE || 
-			securitySandboxType == SECURITY_SANDBOX_LOCAL_WITH_NETWORK ||
-			securitySandboxType == SECURITY_SANDBOX_LOCAL_TRUSTED) {
-		LOG(LOG_ERROR, "Running in remote sandbox");
+	if(sandboxType == SECURITY_SANDBOX_REMOTE || 
+			sandboxType == SECURITY_SANDBOX_LOCAL_WITH_NETWORK ||
+			sandboxType == SECURITY_SANDBOX_LOCAL_TRUSTED) {
+		LOG(LOG_NO_INFO, "Running in remote sandbox");
 		sys->downloadManager=new CurlDownloadManager();
 	}
 	else {
-		LOG(LOG_ERROR, "Running in local-with-filesystem sandbox");
+		LOG(LOG_NO_INFO, "Running in local-with-filesystem sandbox");
 		sys->downloadManager=new LocalDownloadManager();
 	}
 

@@ -69,6 +69,11 @@ public:
 	const RECT& getFrameSize(){ return FrameSize; }
 };
 
+enum SECURITY_SANDBOXTYPE
+{ SECURITY_SANDBOX_REMOTE, SECURITY_SANDBOX_LOCAL_WITH_FILE, 
+	SECURITY_SANDBOX_LOCAL_WITH_NETWORK, SECURITY_SANDBOX_LOCAL_TRUSTED
+};
+
 //RootMovieClip is used as a ThreadJob for timed rendering purpose
 class RootMovieClip: public MovieClip, public ITickJob
 {
@@ -93,6 +98,7 @@ private:
 	tiny_string bindName;
 	Mutex mutexChildrenClips;
 	std::set<MovieClip*> childrenClips;
+	SECURITY_SANDBOXTYPE sandboxType;
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
 	~RootMovieClip();
@@ -125,6 +131,9 @@ public:
 	void setVariableByString(const std::string& s, ASObject* o);*/
 	void registerChildClip(MovieClip* clip);
 	void unregisterChildClip(MovieClip* clip);
+
+	void setSandboxType(SECURITY_SANDBOXTYPE t) { sandboxType = t; }
+	SECURITY_SANDBOXTYPE getSandboxType() { return sandboxType; }
 };
 
 class ThreadProfile

@@ -859,6 +859,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setGetterByQName("rotation","",Class<IFunction>::getFunction(_getRotation));
 	c->setSetterByQName("rotation","",Class<IFunction>::getFunction(_setRotation));
 	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
+	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 	c->setGetterByQName("parent","",Class<IFunction>::getFunction(_getParent));
 	c->setGetterByQName("root","",Class<IFunction>::getFunction(_getRoot));
 	c->setGetterByQName("blendMode","",Class<IFunction>::getFunction(_getBlendMode));
@@ -868,7 +869,6 @@ void DisplayObject::sinit(Class_base* c)
 	c->setGetterByQName("stage","",Class<IFunction>::getFunction(_getStage));
 	c->setVariableByQName("getBounds","",Class<IFunction>::getFunction(_getBounds));
 	c->setVariableByQName("localToGlobal","",Class<IFunction>::getFunction(localToGlobal));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 	c->setGetterByQName("mask","",Class<IFunction>::getFunction(_getMask));
 	c->setSetterByQName("mask","",Class<IFunction>::getFunction(undefinedFunction));
 	c->setGetterByQName("alpha","",Class<IFunction>::getFunction(_getAlpha));
@@ -1156,14 +1156,16 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 
 ASFUNCTIONBODY(DisplayObject,_setName)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj);
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen==1);
+	th->name=args[0]->toString();
 	return NULL;
 }
 
 ASFUNCTIONBODY(DisplayObject,_getName)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return new Undefined;
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	return Class<ASString>::getInstanceS(th->name);
 }
 
 ASFUNCTIONBODY(DisplayObject,_getParent)
@@ -1298,6 +1300,7 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setGetterByQName("numChildren","",Class<IFunction>::getFunction(_getNumChildren));
 	c->setVariableByQName("getChildIndex","",Class<IFunction>::getFunction(getChildIndex));
 	c->setVariableByQName("getChildAt","",Class<IFunction>::getFunction(getChildAt));
+	c->setVariableByQName("getChildByName","",Class<IFunction>::getFunction(getChildByName));
 	c->setVariableByQName("addChild","",Class<IFunction>::getFunction(addChild));
 	c->setVariableByQName("removeChild","",Class<IFunction>::getFunction(removeChild));
 	c->setVariableByQName("removeChildAt","",Class<IFunction>::getFunction(removeChildAt));
@@ -1592,6 +1595,29 @@ ASFUNCTIONBODY(DisplayObjectContainer,removeChildAt)
 
 	//As we return the child we don't decRef it
 	return child;
+}
+
+//Only from VM context
+ASFUNCTIONBODY(DisplayObjectContainer,getChildByName)
+{
+	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
+	assert_and_throw(argslen==1);
+	const tiny_string& wantedName=args[0]->toString();
+	list<DisplayObject*>::iterator it=th->dynamicDisplayList.begin();
+	ASObject* ret=NULL;
+	for(;it!=th->dynamicDisplayList.end();it++)
+	{
+		if((*it)->name==wantedName)
+		{
+			ret=*it;
+			break;
+		}
+	}
+	if(ret)
+		ret->incRef();
+	else
+		ret=new Undefined;
+	return ret;
 }
 
 //Only from VM context

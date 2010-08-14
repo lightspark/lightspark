@@ -490,7 +490,15 @@ protected:
 	void outofbounds() const;
 	Array();
 private:
-	static bool sortComparator(const data_slot& d1, const data_slot& d2);
+	enum CONSTANTS { NUMERIC=16 };
+	class sortComparatorDefault
+	{
+	private:
+		bool isNumeric;
+	public:
+		sortComparatorDefault(bool n):isNumeric(n){}
+		bool operator()(const data_slot& d1, const data_slot& d2);
+	};
 	class sortComparatorWrapper
 	{
 	private:

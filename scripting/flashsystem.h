@@ -49,8 +49,6 @@ public:
 
 class Security: public ASObject
 {
-private:
-	static bool _exactSettings;
 public:
 	static void sinit(Class_base* c);
 	ASFUNCTION(_getExactSettings);

@@ -10,8 +10,9 @@
 	private var video:Video;
 	private var stream_ns:NetStream;
 	//This is the URL for HTTP pseudo-streaming. A sourceforge hardlink should be placed here later.
-	private var netVideoURL:String = "PUT URL HERE";
-	//This is the path for a local file. This file will be selected if you run lightspark with the "-s local-with-filesystem" runtime switch.
+	private var netVideoURL:String = "http://lightspark.sourceforge.net/bigbuckbunny.flv";
+	//This is the path for a local file. 
+	//This file will be selected if you run lightspark with the "-s local-with-filesystem" runtime switch.
 	private var localVideoPath:String = "bigbuckbunny.flv";
 	private var dbg:String;
 	private function appComplete():void {
@@ -44,7 +45,10 @@
 		//http://www.adobe.com/devnet/flashplayer/articles/hd_video_flash_player_03.html
 
 		var connect_nc:NetConnection = new NetConnection();
-		if(Security.sandboxType == Security.REMOTE || Security.sandboxType == Security.LOCAL_TRUSTED || Security.sandboxType == Security.LOCAL_WITH_NETWORK) {
+		if(Security.sandboxType == Security.REMOTE || 
+			Security.sandboxType == Security.LOCAL_TRUSTED || 
+			Security.sandboxType == Security.LOCAL_WITH_NETWORK) 
+		{
 			dbg = "Test: Running in remote sandbox: using HTTP pseudo-streaming";
 			connect_nc.connect(undefined); //Undefined = HTTP pseudo-streaming
 		}
@@ -81,7 +85,10 @@
 	private function playClick(e:Event):void {
 		dbg = "Test: Play button clicked";
 		trace(dbg);
-		if(Security.sandboxType == Security.REMOTE || Security.sandboxType == Security.LOCAL_TRUSTED || Security.sandboxType == Security.LOCAL_WITH_NETWORK) {
+		if(Security.sandboxType == Security.REMOTE || 
+			Security.sandboxType == Security.LOCAL_TRUSTED || 
+			Security.sandboxType == Security.LOCAL_WITH_NETWORK)
+		{
 			dbg = "Test: Running in remote sandbox: playing from HTTP";
 			stream_ns.play(netVideoURL);
 		}

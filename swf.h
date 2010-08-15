@@ -216,6 +216,8 @@ private:
 	std::string rawCookies;
 	static int hexToInt(char c);
 	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
+	bool exactSecuritySettings;
+	bool exactSecuritySettingsLocked;
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -285,6 +287,11 @@ public:
 
 	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };
 	SCALE_MODE scaleMode;
+
+	bool getExactSecuritySettings() {	return exactSecuritySettings;	}
+	void setExactSecuritySettings(bool t)	{ exactSecuritySettings = t; }
+	bool getExactSecuritySettingsLocked() {	return exactSecuritySettingsLocked;	}
+	void lockExactSecuritySettings(bool t)	{ exactSecuritySettings = true; }
 };
 
 class ParseThread: public IThreadJob

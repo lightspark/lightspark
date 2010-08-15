@@ -43,7 +43,8 @@
 
 		//Check values of constants
 		var cons:String;
-		if(Security.REMOTE == "remote") {
+		if(Security.REMOTE == "remote")
+		{
 			cons = "Test: Security.REMOTE == 'remote' ---> OK";
 		}
 		else {
@@ -51,7 +52,8 @@
 		}
 		trace(cons.toString());
 
-		if(Security.LOCAL_WITH_FILE == "localWithFile") {
+		if(Security.LOCAL_WITH_FILE == "localWithFile")
+		{
 			cons = "Test: Security.LOCAL_WITH_FILE == 'localWithFile' ---> OK";
 		}
 		else {
@@ -59,7 +61,8 @@
 		}
 		trace(cons.toString());
 
-		if(Security.LOCAL_WITH_NETWORK == "localWithNetwork") {
+		if(Security.LOCAL_WITH_NETWORK == "localWithNetwork")
+		{
 			cons = "Test: Security.LOCAL_WITH_NETWORK == 'localWithNetwork' ---> OK";
 		}
 		else {
@@ -67,7 +70,8 @@
 		}
 		trace(cons.toString());
 
-		if(Security.LOCAL_TRUSTED == "localTrusted") {
+		if(Security.LOCAL_TRUSTED == "localTrusted")
+		{
 			cons = "Test: Security.LOCAL_TRUSTED == 'localTrusted' ---> OK";
 		}
 		else {

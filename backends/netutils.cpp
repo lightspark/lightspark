@@ -295,7 +295,8 @@ void LocalDownloader::execute()
 		LOG(LOG_NO_INFO, "LocalDownloader::execute: reading local file: " << url.raw_buf());
 		file.open(url.raw_buf(), std::ifstream::in);
 
-		if(file.is_open()) {
+		if(file.is_open())
+		{
 			file.seekg(0, std::ios::end);
 			setLen(file.tellg());
 			file.seekg(0, std::ios::beg);
@@ -304,15 +305,18 @@ void LocalDownloader::execute()
 			char * buffer = new char[buffSize];
 
 			bool failed = 0;
-			while(!file.eof()) {
-				if(file.fail() || hasFailed()) {
+			while(!file.eof())
+			{
+				if(file.fail() || hasFailed())
+				{
 					failed = 1;
 					break;
 				}
 				file.read(buffer, buffSize);
 				append((uint8_t *) buffer, file.gcount());
 			}
-			if(failed) {
+			if(failed)
+			{
 				setFailed();
 				LOG(LOG_ERROR, "LocalDownloader::execute: reading from local file failed: " << url.raw_buf());
 			}

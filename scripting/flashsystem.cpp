@@ -130,7 +130,6 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	return o;
 }
 
-bool Security::_exactSettings = true;
 void Security::sinit(Class_base* c)
 {
 	//Fully static class
@@ -149,16 +148,21 @@ void Security::sinit(Class_base* c)
 }
 ASFUNCTIONBODY(Security,_getExactSettings)
 {
-	return abstract_b(_exactSettings);
+	return abstract_b(sys->getExactSecuritySettings());
 }
 ASFUNCTIONBODY(Security,_setExactSettings)
 {
 	assert(args && argslen==1);
-	if(args[0]->getObjectType() != T_BOOLEAN) {
+	if(sys->getExactSecuritySettingsLocked())
+	{
+		throw UnsupportedException("SecurityError");
+	}
+	if(args[0]->getObjectType() != T_BOOLEAN)
+	{
 		throw UnsupportedException("ArgumentError");
 	}
 	Boolean* i = static_cast<Boolean*>(args[0]);
-	_exactSettings = i->toInt() ? true : false;
+	sys->setExactSecuritySettings(i->toInt() ? true : false);
 	return NULL;
 }
 ASFUNCTIONBODY(Security,_getSandboxType)

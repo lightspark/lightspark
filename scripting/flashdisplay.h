@@ -309,14 +309,14 @@ public:
 
 class MovieClip: public Sprite
 {
-//SERIOUS_TODO: add synchronization
-friend class ParseThread;
+private:
+	uint32_t totalFrames;
 protected:
 	uint32_t framesLoaded;
-	uint32_t totalFrames;
 	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	Frame* cur_frame;
 	void bootstrap();
+	std::vector<IFunction*> frameScripts;
 public:
 	std::vector<Frame> frames;
 	RunState state;
@@ -338,6 +338,7 @@ public:
 
 	void advanceFrame();
 	uint32_t getFrameIdByLabel(const tiny_string& l) const;
+	void setTotalFrames(uint32_t t);
 
 	//DisplayObject interface
 	void Render();
@@ -357,10 +358,6 @@ public:
 
 class Stage: public DisplayObjectContainer
 {
-private:
-	//Taken directly from SystemState
-	//uintptr_t width;
-	//uintptr_t height;
 public:
 	Stage();
 	static void sinit(Class_base* c);

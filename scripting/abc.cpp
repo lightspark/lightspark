@@ -1038,13 +1038,13 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 				ev->sync();
 				break;
 			}
-			/*case FUNCTION:
+			case FUNCTION:
 			{
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second);
 				//We hope the method is binded
-				ev->f->call(NULL,NULL);
+				ev->f->call(NULL,NULL,0);
 				break;
-			}*/
+			}
 			case CONTEXT_INIT:
 			{
 				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second);

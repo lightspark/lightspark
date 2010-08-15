@@ -260,7 +260,7 @@ friend class ABCVm;
 private:
 	IFunction* f;
 public:
-	FunctionEvent(IFunction* _f):Event("functionEvent"),f(_f){}
+	FunctionEvent(IFunction* _f):Event("FunctionEvent"),f(_f){}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return FUNCTION; }
 };

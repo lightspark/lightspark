@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_test_template"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import flash.system.Security;
+	import flash.system.Capabilities;
+	private function appComplete():void {
+		//http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/Security.html
+
+		//Check Security.exactSettings setter/getter
+		var exac:String;
+		if(Security.exactSettings == true) { //Check default value == true
+			exac = "Test: Security.exactSettings default value == true --> OK";
+		}
+		else {
+			exac = "Test: Security.exactSettings default value != true --> NOT OK";
+		}
+		trace(exac);
+
+		Security.exactSettings = false;
+		if(Security.exactSettings == false) { //Check setting to false works
+			exac = "Test: Security.exactSettings == false --> OK";
+		}
+		else {
+			exac = "Test: Security.exactSettings != false --> NOT OK";
+		}
+		trace(exac);
+
+		Security.exactSettings = true;
+		if(Security.exactSettings == true) { //Check setting to true works
+			exac = "Test: Security.exactSettings == true --> OK";
+		}
+		else {
+			exac = "Test: Security.exactSettings != true --> NOT OK";
+		}
+		trace(exac);
+
+
+		//Check values of constants
+		var cons:String;
+		if(Security.REMOTE == "remote") {
+			cons = "Test: Security.REMOTE == 'remote' ---> OK";
+		}
+		else {
+			cons = "Test: Security.REMOTE != 'remote' ---> NOT OK!!!";
+		}
+		trace(cons.toString());
+
+		if(Security.LOCAL_WITH_FILE == "localWithFile") {
+			cons = "Test: Security.LOCAL_WITH_FILE == 'localWithFile' ---> OK";
+		}
+		else {
+			cons = "Test: Security.LOCAL_WITH_FILE != 'localWithFile' ---> NOT OK!!!";
+		}
+		trace(cons.toString());
+
+		if(Security.LOCAL_WITH_NETWORK == "localWithNetwork") {
+			cons = "Test: Security.LOCAL_WITH_NETWORK == 'localWithNetwork' ---> OK";
+		}
+		else {
+			cons = "Test: Security.LOCAL_WITH_NETWORK != 'localWithNetwork' ---> NOT OK!!!";
+		}
+		trace(cons.toString());
+
+		if(Security.LOCAL_TRUSTED == "localTrusted") {
+			cons = "Test: Security.LOCAL_TRUSTED == 'localTrusted' ---> OK";
+		}
+		else {
+			cons = "Test: Security.LOCAL_TRUSTED != 'localTrusted' ---> NOT OK!!!";
+		}
+		trace(cons.toString());
+
+		//Show security sandbox type by color
+		var tp:String;
+		var color:uint;
+		if(Security.sandboxType == Security.REMOTE) { //Red = remote
+			tp = "Test: Sandbox type: remote";
+			color = 0x800000;
+		}
+		else if(Security.sandboxType == Security.LOCAL_WITH_FILE) { //Green = local-with-filesystem
+			tp = "Test: Sandbox type: localWithFile";
+			color = 0x008000;
+		}
+		else if(Security.sandboxType == Security.LOCAL_WITH_NETWORK) { //Blue = local-with-network
+			tp = "Test: Sandbox type: localWithNetwork";
+			color = 0x000080;
+		}
+		else if(Security.sandboxType == Security.LOCAL_TRUSTED) { //Gray = local-trusted
+			tp = "Test: Sandbox type: localTrusted";
+			color = 0x808080;
+		}
+		trace(tp);
+		
+		rect.graphics.beginFill(color);
+		rect.graphics.drawRect(30,0,150,100);
+		rect.graphics.endFill();
+
+	}
+]]>
+</mx:Script>
+<mx:UIComponent id="rect"/>
+
+</mx:Application>
+

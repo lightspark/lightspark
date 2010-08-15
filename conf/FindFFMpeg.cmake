@@ -7,7 +7,7 @@
 #  FFMPEG_FOUND        - True if ffmpeg found.
 
 # Look for the header file.
-FIND_PATH(FFMPEG_INCLUDE_DIR NAMES libavcodec/avcodec.h)
+FIND_PATH(FFMPEG_INCLUDE_DIR NAMES libavcodec/avcodec.h /usr/include/ffmpeg)
 MARK_AS_ADVANCED(FFMPEG_INCLUDE_DIR)
 
 # Look for the library.

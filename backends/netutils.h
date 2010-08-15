@@ -46,6 +46,14 @@ public:
 	void destroy(Downloader* d);
 };
 
+class DLL_PUBLIC LocalDownloadManager:public DownloadManager
+{
+public:
+	Downloader* download(const tiny_string& u);
+	void destroy(Downloader* d);
+};
+
+
 class DLL_PUBLIC Downloader: public std::streambuf
 {
 private:
@@ -92,6 +100,20 @@ private:
 	void threadAbort();
 public:
 	CurlDownloader(const tiny_string& u);
+};
+
+//LocalDownloader can be used as a thread job, standalone or as a streambuf
+class LocalDownloader: public Downloader, public IThreadJob
+{
+private:
+	tiny_string url;
+	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
+	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
+	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
+	void execute();
+	void threadAbort();
+public:
+	LocalDownloader(const tiny_string& u);
 };
 
 };

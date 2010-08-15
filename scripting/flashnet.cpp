@@ -137,6 +137,7 @@ ASFUNCTIONBODY(URLLoader,load)
 
 void URLLoader::execute()
 {
+	//TODO: add local file support to URLLoader
 	downloader=new CurlDownloader(url);
 
 	downloader->run();
@@ -244,12 +245,19 @@ ASFUNCTIONBODY(NetConnection,connect)
 	if(args[0]->getObjectType()==T_NULL)
 	{
 		th->isLocal=true;
-		throw UnsupportedException("NetConnection::connect to local file");
+		if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE || sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK) {
+			throw UnsupportedException("SecurityError: connect to local file");
+		}
 	}
 	else if(args[0]->getObjectType()!=T_UNDEFINED)
 	{
 		th->isFMS=true;
 		throw UnsupportedException("NetConnection::connect to FMS");
+	}
+	else {
+		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_FILE) {
+			throw UnsupportedException("SecurityError: connect to network");
+		}
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
@@ -298,7 +306,7 @@ ASFUNCTIONBODY(NetStream,_constructor)
 
 	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
 	assert_and_throw(netConnection->isFMS==false);
-	assert_and_throw(netConnection->isLocal==false);
+	//assert_and_throw(netConnection->isLocal==false);
 	return NULL;
 }
 
@@ -321,6 +329,7 @@ ASFUNCTIONBODY(NetStream,close)
 	NetStream* th=Class<NetStream>::cast(obj);
 	//The downloader is stopped in threadAbort
 	th->threadAbort();
+	LOG(LOG_NO_INFO, "NetStream::close called");
 	return NULL;
 }
 

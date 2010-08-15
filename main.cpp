@@ -108,16 +108,20 @@ int main(int argc, char* argv[])
 				fileName=NULL;
 				break;
 			}
-			if(strncmp(argv[i], "remote", 6) == 0) {
+			if(strncmp(argv[i], "remote", 6) == 0)
+			{
 				sandboxType = SECURITY_SANDBOX_REMOTE;
 			}
-			else if(strncmp(argv[i], "local-with-filesystem", 21) == 0) {
+			else if(strncmp(argv[i], "local-with-filesystem", 21) == 0)
+			{
 				sandboxType = SECURITY_SANDBOX_LOCAL_WITH_FILE;
 			}
-			else if(strncmp(argv[i], "local-with-networking", 21) == 0) {
+			else if(strncmp(argv[i], "local-with-networking", 21) == 0)
+			{
 				sandboxType = SECURITY_SANDBOX_LOCAL_WITH_NETWORK;
 			}
-			else if(strncmp(argv[i], "local-trusted", 13) == 0) {
+			else if(strncmp(argv[i], "local-trusted", 13) == 0)
+			{
 				sandboxType = SECURITY_SANDBOX_LOCAL_TRUSTED;
 			}
 		}
@@ -136,7 +140,9 @@ int main(int argc, char* argv[])
 
 	if(fileName==NULL)
 	{
-		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf] [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4] [--parameters-file|-p params-file] [--security-sandbox|-s sandbox] <file.swf>" << endl;
+		cout << "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" << 
+			" [--disable-interpreter|-ni] [--enable-jit|-j] [--log-level|-l 0-4]" << 
+			" [--parameters-file|-p params-file] [--security-sandbox|-s sandbox] <file.swf>" << endl;
 		exit(-1);
 	}
 
@@ -184,7 +190,8 @@ int main(int argc, char* argv[])
 	//SECURITY_SANDBOX_LOCAL_TRUSTED should actually be able to use both local and network files
 	if(sandboxType == SECURITY_SANDBOX_REMOTE || 
 			sandboxType == SECURITY_SANDBOX_LOCAL_WITH_NETWORK ||
-			sandboxType == SECURITY_SANDBOX_LOCAL_TRUSTED) {
+			sandboxType == SECURITY_SANDBOX_LOCAL_TRUSTED)
+	{
 		LOG(LOG_NO_INFO, "Running in remote sandbox");
 		sys->downloadManager=new CurlDownloadManager();
 	}

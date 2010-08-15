@@ -245,7 +245,8 @@ ASFUNCTIONBODY(NetConnection,connect)
 	if(args[0]->getObjectType()==T_NULL)
 	{
 		th->isLocal=true;
-		if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE || sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK) {
+		if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE || sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK)
+		{
 			throw UnsupportedException("SecurityError: connect to local file");
 		}
 	}
@@ -255,7 +256,8 @@ ASFUNCTIONBODY(NetConnection,connect)
 		throw UnsupportedException("NetConnection::connect to FMS");
 	}
 	else {
-		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_FILE) {
+		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_FILE)
+		{
 			throw UnsupportedException("SecurityError: connect to network");
 		}
 	}

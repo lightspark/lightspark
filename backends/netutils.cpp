@@ -275,13 +275,7 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 LocalDownloader::LocalDownloader(const tiny_string& u)
 {
 	//TODO: Make sure we don't need to urlencode local file string
-	std::string tmp2;
-	tmp2.reserve(u.len()*2);
-	for(int i=0;i<u.len();i++)
-	{
-		tmp2.push_back(u[i]);
-	}
-	url=tmp2;
+	url=u;
 }
 
 void LocalDownloader::threadAbort()
@@ -301,7 +295,8 @@ void LocalDownloader::execute()
 		LOG(LOG_NO_INFO, "LocalDownloader::execute: reading local file: " << url.raw_buf());
 		file.open(url.raw_buf(), std::ifstream::in);
 
-		if(file.is_open()) {
+		if(file.is_open())
+		{
 			file.seekg(0, std::ios::end);
 			setLen(file.tellg());
 			file.seekg(0, std::ios::beg);
@@ -310,15 +305,18 @@ void LocalDownloader::execute()
 			char * buffer = new char[buffSize];
 
 			bool failed = 0;
-			while(!file.eof()) {
-				if(file.fail() || hasFailed()) {
+			while(!file.eof())
+			{
+				if(file.fail() || hasFailed())
+				{
 					failed = 1;
 					break;
 				}
 				file.read(buffer, buffSize);
 				append((uint8_t *) buffer, file.gcount());
 			}
-			if(failed) {
+			if(failed)
+			{
 				setFailed();
 				LOG(LOG_ERROR, "LocalDownloader::execute: reading from local file failed: " << url.raw_buf());
 			}

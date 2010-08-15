@@ -230,7 +230,8 @@ const char * nsPluginInstance::getVersion()
 NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 {
   NPError err = NPERR_NO_ERROR;
-  switch (aVariable) {
+  switch (aVariable)
+	{
     case NPPVpluginNameString:
     case NPPVpluginDescriptionString:
     case NPPVpluginNeedsXEmbed:

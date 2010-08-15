@@ -35,12 +35,6 @@ public:
 	ASFUNCTION(_getLanguage);
 };
 
-class Security: public ASObject
-{
-public:
-	static void sinit(Class_base* c);
-};
-
 class ApplicationDomain: public ASObject
 {
 public:
@@ -51,6 +45,19 @@ public:
 	ASFUNCTION(_getCurrentDomain);
 	ASFUNCTION(hasDefinition);
 	ASFUNCTION(getDefinition);
+};
+
+class Security: public ASObject
+{
+public:
+	static void sinit(Class_base* c);
+	ASFUNCTION(_getExactSettings);
+	ASFUNCTION(_setExactSettings);
+	ASFUNCTION(_getSandboxType);
+	ASFUNCTION(allowDomain);
+	ASFUNCTION(allowInsecureDomain);
+	ASFUNCTION(loadPolicyFile);
+	ASFUNCTION(showSettings);
 };
 
 };

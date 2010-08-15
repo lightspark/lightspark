@@ -1608,7 +1608,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				Builder.CreateCall(ex->FindFunctionNamed("throw"), context);
 				//Right now we set up like we do for retunrvoid
 				last_is_branch=true;
-				constant = llvm::ConstantInt::get(int_type, NULL);
+				constant = llvm::ConstantInt::get(int_type, 0);
 				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
 				for(unsigned int i=0;i<static_locals.size();i++)
 				{
@@ -2603,7 +2603,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 				//returnvoid
 				LOG(LOG_TRACE, "synt returnvoid" );
 				last_is_branch=true;
-				constant = llvm::ConstantInt::get(int_type, NULL);
+				constant = llvm::ConstantInt::get(int_type, 0);
 				value = llvm::ConstantExpr::getIntToPtr(constant, llvm::PointerType::getUnqual(int_type));
 				for(unsigned int i=0;i<static_locals.size();i++)
 				{

@@ -203,12 +203,8 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 		//Is everything raw?
 		//Compute lenght of raw data
 		packetLen=dataSize-1;
-#ifndef NDEBUG
 		int ret=aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
 		assert(ret==0);
-#else
-		aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
-#endif
 
 		s.read((char*)packetData,packetLen);
 		memset(packetData+packetLen,0,16);
@@ -237,10 +233,8 @@ VideoDataTag::VideoDataTag(istream& s):VideoTag(s),_isHeader(false),packetData(N
 
 		//Compute lenght of raw data
 		packetLen=dataSize-5;
-#ifndef NDEBUG
 		int ret=aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
 		assert(ret==0);
-#endif
 
 		s.read((char*)packetData,packetLen);
 		memset(packetData+packetLen,0,16);
@@ -289,12 +283,8 @@ AudioDataTag::AudioDataTag(std::istream& s):VideoTag(s),_isHeader(false)
 		headerConsumed++;
 	}
 	packetLen=dataSize-headerConsumed;
-#ifndef NDEBUG
 	int ret=aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
 	assert(ret==0);
-#else
-	aligned_malloc((void**)&packetData, 16, packetLen+16); //Ensure no overrun happens when doing aligned reads
-#endif
 	s.read((char*)packetData,packetLen);
 	memset(packetData+packetLen,0,16);
 

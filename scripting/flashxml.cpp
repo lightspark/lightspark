@@ -28,6 +28,8 @@ using namespace lightspark;
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 
+SET_NAMESPACE("flash.xml");
+
 REGISTER_CLASS_NAME(XMLDocument);
 
 void XMLDocument::sinit(Class_base* c)

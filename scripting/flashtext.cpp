@@ -23,7 +23,9 @@
 using namespace std;
 using namespace lightspark;
 
-REGISTER_CLASS_NAME2(lightspark::Font,"Font");
+SET_NAMESPACE("flash.text");
+
+REGISTER_CLASS_NAME2(lightspark::Font,"Font","flash.text");
 REGISTER_CLASS_NAME(TextField);
 REGISTER_CLASS_NAME(StyleSheet);
 

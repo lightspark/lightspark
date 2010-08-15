@@ -25,6 +25,8 @@
 using namespace std;
 using namespace lightspark;
 
+SET_NAMESPACE("flash.net");
+
 REGISTER_CLASS_NAME(URLLoader);
 REGISTER_CLASS_NAME(URLLoaderDataFormat);
 REGISTER_CLASS_NAME(URLRequest);

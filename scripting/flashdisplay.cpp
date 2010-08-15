@@ -41,6 +41,8 @@ using namespace lightspark;
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 
+SET_NAMESPACE("flash.display");
+
 REGISTER_CLASS_NAME(LoaderInfo);
 REGISTER_CLASS_NAME(MovieClip);
 REGISTER_CLASS_NAME(DisplayObject);
@@ -2110,4 +2112,9 @@ void Bitmap::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
+}
+
+bool Bitmap::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	return false;
 }

@@ -259,7 +259,7 @@ public:
 	uint64_t startTime;
 
 	//Class map
-	std::map<tiny_string, Class_base*> classes;
+	std::map<QName, Class_base*> classes;
 	bool finalizingDestruction;
 	std::vector<Tag*> tagsStorage;
 

@@ -42,10 +42,12 @@ using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
 
+SET_NAMESPACE("");
+
 REGISTER_CLASS_NAME(Array);
-REGISTER_CLASS_NAME2(ASQName,"QName");
-REGISTER_CLASS_NAME2(IFunction,"Function");
-REGISTER_CLASS_NAME2(UInteger,"uint");
+REGISTER_CLASS_NAME2(ASQName,"QName","");
+REGISTER_CLASS_NAME2(IFunction,"Function","");
+REGISTER_CLASS_NAME2(UInteger,"uint","");
 REGISTER_CLASS_NAME(Boolean);
 REGISTER_CLASS_NAME(Integer);
 REGISTER_CLASS_NAME(Number);
@@ -2056,7 +2058,7 @@ void ASError::buildTraits(ASObject* o)
 {
 }
 
-Class_base::Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
+Class_base::Class_base(const QName& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
 	context(NULL),class_name(name),class_index(-1),max_level(0)
 {
 	type=T_CLASS;
@@ -2099,7 +2101,7 @@ void Class_base::addImplementedInterface(Class_base* i)
 tiny_string Class_base::toString(bool debugMsg)
 {
 	tiny_string ret="[Class ";
-	ret+=class_name;
+	ret+=class_name.name;
 	ret+="]";
 	return ret;
 }
@@ -2227,12 +2229,12 @@ Class_object* Class_object::getClass()
 {
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
-	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Class");
+	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName("Class",""));
 	Class_object* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class_object();
-		sys->classes.insert(std::make_pair("Class",ret));
+		sys->classes.insert(std::make_pair(QName("Class",""),ret));
 	}
 	else
 		ret=static_cast<Class_object*>(it->second);
@@ -2251,12 +2253,12 @@ Class_function* Class_function::getClass()
 {
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
-	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Function");
+	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName("Function",""));
 	Class_function* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class_function();
-		sys->classes.insert(std::make_pair("Function",ret));
+		sys->classes.insert(std::make_pair(QName("Function",""),ret));
 	}
 	else
 		ret=static_cast<Class_function*>(it->second);
@@ -2335,8 +2337,9 @@ bool Class_base::isSubClass(const Class_base* cls) const
 
 tiny_string Class_base::getQualifiedClassName() const
 {
+	//TODO: use also the namespace
 	if(class_index==-1)
-		return class_name;
+		return class_name.name;
 	else
 	{
 		assert_and_throw(context);
@@ -2433,12 +2436,12 @@ bool UInteger::isEqual(ASObject* o)
 
 Class<IFunction>* Class<IFunction>::getClass()
 {
-	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find(ClassName<IFunction>::name);
+	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));
 	Class<IFunction>* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
-		sys->classes.insert(std::make_pair(ClassName<IFunction>::name,ret));
+		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
 		IFunction::sinit(ret);
 	}
 	else

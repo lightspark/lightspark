@@ -309,7 +309,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		}
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function on obj " << ((obj->prototype)?obj->prototype->class_name:"Object"));
+			LOG(LOG_NOT_IMPLEMENTED,"We got a Undefined function on obj " << ((obj->prototype)?obj->prototype->class_name.name:"Object"));
 			th->runtime_stack_push(new Undefined);
 		}
 		else if(o->getObjectType()==T_CLASS)
@@ -356,7 +356,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		}
 
 		LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function " << *name << " on obj " << 
-				((obj->prototype)?obj->prototype->class_name:"Object"));
+				((obj->prototype)?obj->prototype->class_name.name:"Object"));
 		th->runtime_stack_push(new Undefined);
 	}
 	LOG(LOG_CALLS,"End of calling " << *name);
@@ -790,7 +790,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		else if(o->getObjectType()==T_UNDEFINED)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"Calling an undefined function " << *name << " on obj " << 
-					((obj->prototype)?obj->prototype->class_name:"Object"));
+					((obj->prototype)?obj->prototype->class_name.name:"Object"));
 		}
 		else
 			throw UnsupportedException("Not callable object in callPropVoid");
@@ -1774,7 +1774,7 @@ bool ABCVm::isType(ASObject* obj, multiname* name)
 
 		//Special case for Class
 		obj->decRef();
-		if(c->class_name=="Class")
+		if(c->class_name.name=="Class" && c->class_name.ns=="")
 			return true;
 		else
 			return false;
@@ -1828,7 +1828,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		assert_and_throw(type->getObjectType()==T_CLASS);
 
 		//Special case for Class
-		if(c->class_name=="Class")
+		if(c->class_name.name=="Class" && c->class_name.ns=="")
 		{
 			type->decRef();
 			obj->decRef();
@@ -1890,7 +1890,7 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	else if(obj->getObjectType()==T_CLASS)
 	{
 		//Special case for Class
-		if(c->class_name=="Class")
+		if(c->class_name.name=="Class" && c->class_name.ns=="")
 		{
 			type->decRef();
 			return obj;
@@ -1931,19 +1931,16 @@ bool ABCVm::ifEq(ASObject* obj1, ASObject* obj2)
 
 bool ABCVm::ifStrictEq(ASObject* obj2, ASObject* obj1)
 {
-	LOG(LOG_CALLS,"ifStrictEq");
+	bool ret;
 	//If we are dealing with objects, check the prototype
-	if(obj1->prototype && obj2->prototype)
-	{
-		if(obj1->prototype!=obj2->prototype)
-			return false;
-	}
+	if(obj1->prototype && obj2->prototype && obj1->prototype!=obj2->prototype)
+			ret=false;
+	else if(obj1->getObjectType()!=obj2->getObjectType())
+			ret=false;
 	else
-	{
-		if(obj1->getObjectType()!=obj2->getObjectType())
-			return false;
-	}
-	return ifEq(obj2,obj1);
+		ret=ifEq(obj2,obj1);
+	LOG(LOG_CALLS,"ifStrictEq "<<ret);
+	return ret;
 }
 
 bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
@@ -2218,7 +2215,8 @@ void ABCVm::newClass(call_context* th, int n)
 	assert_and_throw(name_index);
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
 
-	Class_base* ret=new Class_inherit(mname->name_s);
+	assert_and_throw(mname->ns.size()==1);
+	Class_base* ret=new Class_inherit(QName(mname->name_s,mname->ns[0]));
 	ASObject* tmp=th->runtime_stack_pop();
 
 	assert_and_throw(th->context);

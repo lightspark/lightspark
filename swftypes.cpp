@@ -35,8 +35,6 @@
 using namespace std;
 using namespace lightspark;
 
-REGISTER_CLASS_NAME(ASObject);
-
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 extern TLSDATA ParseThread* pt;
@@ -55,6 +53,12 @@ tiny_string multiname::qualifiedString() const
 		ret+=name_s;
 		return ret;
 	}
+}
+
+std::ostream& lightspark::operator<<(std::ostream& s, const QName& r)
+{
+	s << r.ns << ':' << r.name;
+	return s;
 }
 
 std::ostream& lightspark::operator<<(std::ostream& s, const tiny_string& r)

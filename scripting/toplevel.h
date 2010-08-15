@@ -64,12 +64,12 @@ public:
 	Class_base* super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
-	tiny_string class_name;
+	QName class_name;
 	int class_index;
 	int max_level;
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
-	Class_base(const tiny_string& name);
+	Class_base(const QName& name);
 	~Class_base();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true, ASObject* base=NULL)
@@ -126,7 +126,7 @@ public:
 class Class_object: public Class_base
 {
 private:
-	Class_object():Class_base("Class"){}
+	Class_object():Class_base(QName("Class","")){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		throw RunTimeException("Class_object::getInstance");
@@ -158,8 +158,8 @@ private:
 	}
 public:
 	//Class_function is both used as the prototype for each function and as the Function classs object
-	Class_function():Class_base("Function"),f(NULL),asprototype(NULL){}
-	Class_function(IFunction* _f, ASObject* _p):Class_base("Function"),f(_f),asprototype(_p){}
+	Class_function():Class_base(QName("Function","")),f(NULL),asprototype(NULL){}
+	Class_function(IFunction* _f, ASObject* _p):Class_base(QName("Function","")),f(_f),asprototype(_p){}
 	tiny_string class_name;
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL)
 	{
@@ -336,7 +336,7 @@ template<>
 class Class<IFunction>: public Class_base
 {
 private:
-	Class<IFunction>():Class_base("Function"){}
+	Class<IFunction>():Class_base(QName("Function","")){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		throw UnsupportedException("Class<IFunction>::getInstance");

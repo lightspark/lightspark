@@ -22,6 +22,8 @@
 
 using namespace lightspark;
 
+SET_NAMESPACE("flash.external");
+
 REGISTER_CLASS_NAME(ExternalInterface);
 
 void ExternalInterface::sinit(Class_base* c)

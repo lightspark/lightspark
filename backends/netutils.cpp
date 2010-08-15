@@ -275,13 +275,7 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 LocalDownloader::LocalDownloader(const tiny_string& u)
 {
 	//TODO: Make sure we don't need to urlencode local file string
-	std::string tmp2;
-	tmp2.reserve(u.len()*2);
-	for(int i=0;i<u.len();i++)
-	{
-		tmp2.push_back(u[i]);
-	}
-	url=tmp2;
+	url=u;
 }
 
 void LocalDownloader::threadAbort()

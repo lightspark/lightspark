@@ -30,7 +30,7 @@
 		trace(ret);
 		
 		var re2:RegExp=new RegExp("[pb]l","g")
-		trace("Replaceing using global RegExp and func");
+		trace("Replacing using global RegExp and func");
 		ret=str.replace(re2,func1);
 		trace(ret);
 	}

@@ -49,14 +49,13 @@
 			Security.sandboxType == Security.LOCAL_TRUSTED || 
 			Security.sandboxType == Security.LOCAL_WITH_NETWORK) 
 		{
-			dbg = "Test: Running in remote sandbox: using HTTP pseudo-streaming";
+			trace("Running in remote sandbox: using HTTP pseudo-streaming");
 			connect_nc.connect(undefined); //Undefined = HTTP pseudo-streaming
 		}
 		else {
-			dbg = "Test: Running in local sandbox: using local file";
+			trace("Running in local sandbox: using local file");
 			connect_nc.connect(null); //Null parameter = local file
 		}	
-		trace(dbg);
 
 		stream_ns = new NetStream(connect_nc);
 		stream_ns.client = this; //Needed, otherwise will generate a compile warning
@@ -65,14 +64,13 @@
 		{
 			if(p_evt.info.code == "NetStream.Play.FileStructureInvalid")
 			{
-				dbg = "Test: File structure invalid";
+				trace("File structure invalid");
 			}
 			else if(p_evt.info.code == "NetStream.Play.NoSupportedTrackFound")
 			{
-				dbg = "Test: File doesn't contain supported tracks";
+				trace("File doesn't contain supported tracks");
 			}
 		}
-		trace(dbg);
 
 		stream_ns.addEventListener(NetStatusEvent.NET_STATUS, netStatusHandler);
 
@@ -83,38 +81,32 @@
 
 	}
 	private function playClick(e:Event):void {
-		dbg = "Test: Play button clicked";
-		trace(dbg);
+		trace("Play button clicked");
 		if(Security.sandboxType == Security.REMOTE || 
 			Security.sandboxType == Security.LOCAL_TRUSTED || 
 			Security.sandboxType == Security.LOCAL_WITH_NETWORK)
 		{
-			dbg = "Test: Running in remote sandbox: playing from HTTP";
+			trace("Running in remote sandbox: playing from HTTP");
 			stream_ns.play(netVideoURL);
 		}
 		else {
-			dbg = "Test: Running in remote sandbox: playing local file";
+			trace("Running in remote sandbox: playing local file");
 			stream_ns.play(localVideoPath);
 		}
-		trace(dbg);
 	}
 	private function pauseClick(e:Event):void {
-		dbg = "Test: Pause button clicked";
-		trace(dbg);
+		trace("Pause button clicked");
 		stream_ns.togglePause();
 	}
 	private function stopClick(e:Event):void {
-		dbg = "Test: Stop button clicked";
-		trace(dbg);
+		trace("Stop button clicked");
 		stream_ns.close();
 	}
 	private function seekClick(e:Event):void {
-		dbg = "Test: Seek button clicked";
-		trace(dbg);
+		trace("Seek button clicked");
 	}
 	private function videoClick(e:Event):void {
-		dbg = "Test: Video clicked";
-		trace(dbg);
+		trace("Video clicked");
 	}
 ]]>
 </mx:Script>

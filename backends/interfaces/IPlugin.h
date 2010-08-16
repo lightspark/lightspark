@@ -27,18 +27,20 @@
 
 using namespace std;
 
-enum PLUGIN_TYPES { UNDEFINED=0, AUDIO };
+enum PLUGIN_TYPES { UNDEFINED=0, AUDIO, VIDEO };
 
 class IPlugin
 {
   public:
 //    IPlugin(PLUGIN_TYPES init_Type = UNDEFINED, string init_Name = "undefined");
     virtual const string get_pluginName() = 0;
-    virtual PLUGIN_TYPES get_pluginType() = 0;
+    virtual const PLUGIN_TYPES get_pluginType() = 0;
+    virtual const string get_backendName() = 0;
     virtual ~IPlugin();
   protected:
-    PLUGIN_TYPES pluginType; //type of plugin of PLUGIN_TYPES
-    string pluginName; //name of the plugin
+    PLUGIN_TYPES pluginType;	//type of plugin of PLUGIN_TYPES
+    string pluginName;		//name of the plugin
+    string backendName;		//backend supported by the plugin
 };
 
 /*************************

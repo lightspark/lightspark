@@ -32,7 +32,8 @@
 #include "scripting/flashdisplay.h"
 #include "timer.h"
 #include "backends/graphics.h"
-#include "backends/audioManager.h"
+#include "backends/audio.h"
+#include "backends/pluginmanager.h"
 
 #include "platforms/pluginutils.h"
 
@@ -243,6 +244,8 @@ public:
 	
 	Stage* stage;
 	ABCVm* currentVm;
+
+	PluginManager *pluginManager;
 #ifdef ENABLE_SOUND
 	AudioManager* audioManager;
 #endif

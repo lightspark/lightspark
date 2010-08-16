@@ -28,15 +28,15 @@ AudioPlugin::AudioPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_a
 {
   pluginType = init_Type;
   pluginName = init_Name;
-  audiobackend_name = init_audiobackend;
+  backendName = init_audiobackend;
   contextReady = init_contextReady;
   init_noServer = init_noServer;
   stopped = init_stopped;
 }
 
-const string AudioPlugin::get_audioBackend_name()
+const string AudioPlugin::get_backendName()
 {
-  return audiobackend_name;
+  return backendName;
 }
 
 bool AudioPlugin::get_serverStatus()

@@ -35,7 +35,7 @@ class IAudioPlugin : public IPlugin
 {
   protected:
     class AudioStream; //Will be implemented per plugin
-    string audiobackend_name;
+//    string audiobackend_name;
     vector<AudioStream*> streams;
     volatile bool contextReady;
     volatile bool noServer;
@@ -44,8 +44,8 @@ class IAudioPlugin : public IPlugin
 /*    IAudioPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "undefined",
 		 string init_audiobackend = "undefined", bool init_contextReady = false,
 		 bool init_noServer = false, bool init_stopped = false);
-*/    virtual bool Is_Connected() = 0;
-    virtual const string get_audioBackend_name() = 0;
+*/
+    virtual bool Is_Connected() = 0;
     virtual bool get_serverStatus() = 0;
     virtual PLUGIN_TYPES get_pluginType() = 0;
     virtual const string get_pluginName() = 0;

@@ -2,7 +2,6 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
-    Copyright (C) 2010 Alexandre Demers (papouta@hotmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -18,8 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef AUDIOMANAGER_H
-#define AUDIOMANAGER_H
+#ifndef AUDIO_H
+#define AUDIO_H
 
 #ifdef ENABLE_SOUND
 
@@ -43,24 +42,14 @@ namespace lightspark
 class AudioManager
 {
   private:
-    class PluginInfo
-    {
-      public:
-	AudioManager *manager;
-	string plugin_name;		//plugin_name
-	string audiobackend_name;	//audiobackend
-	string plugin_path;		//full path to the plugin file
-	bool enabled;			//should it be enabled (if the audio backend is present)?
-	PluginInfo(AudioManager *m): manager(m), plugin_name("undefined"), audiobackend_name("undefined"), plugin_path(""), enabled(false){}
-    };
+    vector<string *>audioplugins_list;
+    string SelectedAudioPlugin;
     HMODULE hSelectedAudioPluginLib;
-    vector<PluginInfo *>AudioPluginsList;
-    int SelectedAudioPlugin;
     IAudioPlugin *o_AudioPlugin;
-    void FindAudioPlugins();
-    void AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPlugin);
-    void LoadPlugin(string pluginPath, uint32_t index);
-    void UnloadPlugin();
+    void get_audioplugins_list();
+    void refresh_audioplugins_list();
+    void load_audioplugin();
+    void release_audioplugin();
 
   public:
     AudioManager();

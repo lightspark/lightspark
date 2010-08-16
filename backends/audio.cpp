@@ -2,7 +2,6 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2009,2010  Alessandro Pignotti (a.pignotti@sssup.it)
-    Copyright (C) 2010 Alexandre Demers (papouta@hotmail.com)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -19,12 +18,13 @@
 **************************************************************************/
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 
-#include "audioManager.h"
+#include "audio.h"
 #include <iostream>
 #include <string.h>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 
+//Needed or not with compat.h and compat.cpp?
 #if defined WIN32
   #include <windows.h>
 #else
@@ -104,20 +104,13 @@ void AudioManager::select_audiobackend(string selected_backend)
   }
 }
 
-//Takes care to load and instanciate anything related to the plugin
+/*//Takes care to load and instanciate anything related to the plugin
 void AudioManager::LoadPlugin(string pluginPath, uint32_t index)
 {
-  if(hSelectedAudioPluginLib = LoadLib(pluginPath))
-  {
-    PLUGIN_FACTORY p_factory_function = (PLUGIN_FACTORY) ExtractLibContent(hSelectedAudioPluginLib, "create");
-    if(p_factory_function != NULL) //Does it contain the LS IPlugin?
-    {
-      o_AudioPlugin = static_cast<IAudioPlugin *>((*p_factory_function)()); //Instanciate the plugin
-      SelectedAudioPlugin = index;
-    }
-  }
 }
+*/
 
+/*
 //Takes care of unloading and releasing anything related to the plugin
 void AudioManager::UnloadPlugin()
 {
@@ -133,7 +126,7 @@ void AudioManager::UnloadPlugin()
     CloseLib(hSelectedAudioPluginLib);
   }
 }
-
+*/
 
 /**************************
 stop AudioManager
@@ -150,8 +143,8 @@ void AudioManager::stopPlugin()
 
 /***************************
 Find liblightsparkAUDIOplugin libraries
-Load
 ****************************/
+/*
 void AudioManager::FindAudioPlugins()
 {
   //Search for all files under ${PRIVATELIBDIR}/plugins
@@ -211,7 +204,8 @@ void AudioManager::FindAudioPlugins()
     }
   }
 }
-
+*/
+/*
 void AudioManager::AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPlugin)
 {
   //Verify if the plugin is already in the list
@@ -243,5 +237,5 @@ void AudioManager::AddAudioPluginToList(IAudioPlugin *audioplug, string pathToPl
     cout << "This is the plugin " << index  << " added with backend: " << AudioPluginsList[index]->audiobackend_name << endl;
 #endif 
 }
-
+*/
 #endif

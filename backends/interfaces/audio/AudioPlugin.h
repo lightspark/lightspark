@@ -35,9 +35,9 @@ class AudioPlugin : public IAudioPlugin
 {
   public:
     AudioPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "generic audio plugin",
-		string init_audiobackend = "undefined backend", bool init_contextReady = false,
+		string init_backend = "undefined", bool init_contextReady = false,
 		bool init_noServer = false, bool init_stopped = false);
-    const string get_audioBackend_name();
+    const string get_backendName();
     bool get_serverStatus();
     PLUGIN_TYPES get_pluginType();
     const string get_pluginName();

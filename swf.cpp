@@ -158,6 +158,9 @@ SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p)
 		parseThread->root=this;
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
+	
+//	pluginManager = new PluginManager;
+//	pluginManager->startCheck();
 #ifdef ENABLE_SOUND
 	audioManager=new AudioManager;
 #endif

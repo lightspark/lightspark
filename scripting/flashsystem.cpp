@@ -146,10 +146,12 @@ void Security::sinit(Class_base* c)
 	c->setVariableByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile));
 	c->setVariableByQName("showSettings","",Class<IFunction>::getFunction(showSettings));
 }
+
 ASFUNCTIONBODY(Security,_getExactSettings)
 {
 	return abstract_b(sys->getExactSecuritySettings());
 }
+
 ASFUNCTIONBODY(Security,_setExactSettings)
 {
 	assert(args && argslen==1);
@@ -165,6 +167,7 @@ ASFUNCTIONBODY(Security,_setExactSettings)
 	sys->setExactSecuritySettings(Boolean_concrete(args[0]));
 	return NULL;
 }
+
 ASFUNCTIONBODY(Security,_getSandboxType)
 {
 	if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE)
@@ -178,21 +181,25 @@ ASFUNCTIONBODY(Security,_getSandboxType)
 	assert(false);
 	return NULL;
 }
+
 ASFUNCTIONBODY(Security, allowDomain)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Security::allowDomain");
 	return NULL;
 }
+
 ASFUNCTIONBODY(Security, allowInsecureDomain)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Security::allowInsecureDomain");
 	return NULL;
 }
+
 ASFUNCTIONBODY(Security, loadPolicyFile)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Security::loadPolicyFile");
 	return NULL;
 }
+
 ASFUNCTIONBODY(Security, showSettings)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Security::showSettings");

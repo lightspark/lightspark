@@ -942,7 +942,7 @@ void RootMovieClip::Render()
 void RootMovieClip::setFrameCount(int f)
 {
 	Locker l(mutexFrames);
-	totalFrames=f;
+	setTotalFrames(f);
 	state.max_FP=f;
 	//TODO, maybe the next is a regular assert
 	assert_and_throw(cur_frame==&frames.back());

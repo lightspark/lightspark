@@ -74,43 +74,168 @@
 			trace("SecurityError.name != 'SecurityError' but '", secErr.name, "' --> NOT OK!!!");
 		}
 
-		/*
-		try {
-			throw new Error();
+		var argErr:ArgumentError = new ArgumentError();
+		if(argErr.message == "ArgumentError")
+		{
+			trace("Default ArgumentError.message == 'ArgumentError' --> OK");
 		}
-		catch(e:SecurityError) {
-			trace("Try-catch for Error didn't work, SecurityError shouldn't match error --> NOT OK!!!");
+		else
+		{
+			trace("Default ArgumentError.message != 'ArgumentError' but '", argErr.message, "' --> NOT OK!!!");
 		}
-		catch(e:Error) {
-			trace("Try-catch for Error worked, Error matched --> OK");
+		if(argErr.name == "ArgumentError")
+		{
+			trace("ArgumentError.name == 'ArgumentError' --> OK");
 		}
-		finally {
-			trace("Try-catch for Error didn't work, Error didn't match --> NOT OK!!!");
-		}
-
-		try {
-			throw new SecurityError();
-		}
-		catch(e:SecurityError) {
-			trace("Try-catch for SecurityError worked, SecurityError matched --> OK");
-		}
-		catch(e:Error) {
-			trace("Try-catch for SecurityError didn't work, SecurityError didn't match --> NOT OK!!!");
-		}
-		finally {
-			trace("Try-catch for SecurityError didn't work, neither SecurityError nor Error matched --> NOT OK!!!");
+		else
+		{
+			trace("ArgumentError.name != 'ArgumentError' but '", argErr.name, "' --> NOT OK!!!");
 		}
 
-		try {
-			throw new SecurityError();
+		var defErr:DefinitionError = new DefinitionError();
+		if(defErr.message == "DefinitionError")
+		{
+			trace("Default DefinitionError.message == 'DefinitionError' --> OK");
 		}
-		catch(e:Error) {
-			trace("Try-catch for SecurityError worked, Error matched --> OK");
+		else
+		{
+			trace("Default DefinitionError.message != 'DefinitionError' but '", defErr.message, "' --> NOT OK!!!");
 		}
-		finally {
-			trace("Try-catch for SecurityError didn't work, Error didn't match --> NOT OK!!!");
+		if(defErr.name == "DefinitionError")
+		{
+			trace("DefinitionError.name == 'DefinitionError' --> OK");
 		}
-		*/
+		else
+		{
+			trace("DefinitionError.name != 'DefinitionError' but '", defErr.name, "' --> NOT OK!!!");
+		}
+
+		var evalErr:EvalError = new EvalError();
+		if(evalErr.message == "EvalError")
+		{
+			trace("Default EvalError.message == 'EvalError' --> OK");
+		}
+		else
+		{
+			trace("Default EvalError.message != 'EvalError' but '", evalErr.message, "' --> NOT OK!!!");
+		}
+		if(evalErr.name == "EvalError")
+		{
+			trace("EvalError.name == 'EvalError' --> OK");
+		}
+		else
+		{
+			trace("EvalError.name != 'EvalError' but '", evalErr.name, "' --> NOT OK!!!");
+		}
+
+		var rangeErr:RangeError = new RangeError();
+		if(rangeErr.message == "RangeError")
+		{
+			trace("Default RangeError.message == 'RangeError' --> OK");
+		}
+		else
+		{
+			trace("Default RangeError.message != 'RangeError' but '", rangeErr.message, "' --> NOT OK!!!");
+		}
+		if(rangeErr.name == "RangeError")
+		{
+			trace("RangeError.name == 'RangeError' --> OK");
+		}
+		else
+		{
+			trace("RangeError.name != 'RangeError' but '", rangeErr.name, "' --> NOT OK!!!");
+		}
+
+		var refErr:ReferenceError = new ReferenceError();
+		if(refErr.message == "ReferenceError")
+		{
+			trace("Default ReferenceError.message == 'ReferenceError' --> OK");
+		}
+		else
+		{
+			trace("Default ReferenceError.message != 'ReferenceError' but '", refErr.message, "' --> NOT OK!!!");
+		}
+		if(refErr.name == "ReferenceError")
+		{
+			trace("ReferenceError.name == 'ReferenceError' --> OK");
+		}
+		else
+		{
+			trace("ReferenceError.name != 'ReferenceError' but '", refErr.name, "' --> NOT OK!!!");
+		}
+
+		var syntaxErr:SyntaxError = new SyntaxError();
+		if(syntaxErr.message == "SyntaxError")
+		{
+			trace("Default SyntaxError.message == 'SyntaxError' --> OK");
+		}
+		else
+		{
+			trace("Default SyntaxError.message != 'SyntaxError' but '", syntaxErr.message, "' --> NOT OK!!!");
+		}
+		if(syntaxErr.name == "SyntaxError")
+		{
+			trace("SyntaxError.name == 'SyntaxError' --> OK");
+		}
+		else
+		{
+			trace("SyntaxError.name != 'SyntaxError' but '", syntaxErr.name, "' --> NOT OK!!!");
+		}
+
+		var typeErr:TypeError = new TypeError();
+		if(typeErr.message == "TypeError")
+		{
+			trace("Default TypeError.message == 'TypeError' --> OK");
+		}
+		else
+		{
+			trace("Default TypeError.message != 'TypeError' but '", typeErr.message, "' --> NOT OK!!!");
+		}
+		if(typeErr.name == "TypeError")
+		{
+			trace("TypeError.name == 'TypeError' --> OK");
+		}
+		else
+		{
+			trace("TypeError.name != 'TypeError' but '", typeErr.name, "' --> NOT OK!!!");
+		}
+
+		var verifyErr:VerifyError = new VerifyError();
+		if(verifyErr.message == "VerifyError")
+		{
+			trace("Default VerifyError.message == 'VerifyError' --> OK");
+		}
+		else
+		{
+			trace("Default VerifyError.message != 'VerifyError' but '", verifyErr.message, "' --> NOT OK!!!");
+		}
+		if(verifyErr.name == "VerifyError")
+		{
+			trace("VerifyError.name == 'VerifyError' --> OK");
+		}
+		else
+		{
+			trace("VerifyError.name != 'VerifyError' but '", verifyErr.name, "' --> NOT OK!!!");
+		}
+
+		var URIErr:URIError = new URIError();
+		if(URIErr.message == "URIError")
+		{
+			trace("Default URIError.message == 'URIError' --> OK");
+		}
+		else
+		{
+			trace("Default URIError.message != 'URIError' but '", URIErr.message, "' --> NOT OK!!!");
+		}
+		if(URIErr.name == "URIError")
+		{
+			trace("URIError.name == 'URIError' --> OK");
+		}
+		else
+		{
+			trace("URIError.name != 'URIError' but '", URIErr.name, "' --> NOT OK!!!");
+		}
+
 	}
 ]]>
 </mx:Script>

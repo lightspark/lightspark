@@ -171,6 +171,15 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("uint","",Class<UInteger>::getClass());
 	Global->setVariableByQName("Error","",Class<ASError>::getClass());
 	Global->setVariableByQName("SecurityError","",Class<ASSecurityError>::getClass());
+	Global->setVariableByQName("ArgumentError","",Class<ASArgumentError>::getClass());
+	Global->setVariableByQName("DefinitionError","",Class<ASDefinitionError>::getClass());
+	Global->setVariableByQName("EvalError","",Class<ASEvalError>::getClass());
+	Global->setVariableByQName("RangeError","",Class<ASRangeError>::getClass());
+	Global->setVariableByQName("ReferenceError","",Class<ASReferenceError>::getClass());
+	Global->setVariableByQName("SyntaxError","",Class<ASSyntaxError>::getClass());
+	Global->setVariableByQName("TypeError","",Class<ASTypeError>::getClass());
+	Global->setVariableByQName("URIError","",Class<ASURIError>::getClass());
+	Global->setVariableByQName("VerifyError","",Class<ASVerifyError>::getClass());
 	Global->setVariableByQName("XML","",Class<ASObject>::getClass(QName("XML","")));
 	Global->setVariableByQName("XMLList","",Class<ASObject>::getClass(QName("XMLList","")));
 	Global->setVariableByQName("int","",Class<Integer>::getClass());

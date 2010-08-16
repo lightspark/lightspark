@@ -31,7 +31,6 @@ class DisplayListTag;
 class ControlTag;
 class DisplayObject;
 class MovieClip;
-class IFunction;
 
 class PlaceInfo
 {
@@ -42,7 +41,6 @@ public:
 class Frame
 {
 private:
-	IFunction* script;
 	bool initialized;
 public:
 	tiny_string Label;
@@ -50,12 +48,10 @@ public:
 	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	//A temporary vector for control tags
 	std::vector < ControlTag* > controls;
-	Frame():script(NULL),initialized(false){}
+	Frame():initialized(false){}
 	~Frame();
 	void Render();
 	void inputRender();
-	void setScript(IFunction* s){script=s;}
-	void runScript();
 	void init(MovieClip* parent, std::list < std::pair<PlaceInfo, DisplayObject*> >& d);
 	bool isInitialized() const { return initialized; }
 };

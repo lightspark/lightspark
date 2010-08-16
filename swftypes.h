@@ -224,6 +224,21 @@ public:
 	}
 };
 
+class QName
+{
+public:
+	tiny_string ns;
+	tiny_string name;
+	QName(const tiny_string& _name, const tiny_string& _ns):ns(_ns),name(_name){}
+	bool operator<(const QName& r) const
+	{
+		if(ns==r.ns)
+			return name<r.name;
+		else
+			return ns<r.ns;
+	}
+};
+
 class UI32
 {
 friend std::istream& operator>>(std::istream& s, UI32& v);
@@ -1148,6 +1163,7 @@ std::ostream& operator<<(std::ostream& s, const RGBA& r);
 std::ostream& operator<<(std::ostream& s, const STRING& r);
 std::ostream& operator<<(std::ostream& s, const multiname& r);
 std::ostream& operator<<(std::ostream& s, const tiny_string& r) DLL_PUBLIC;
+std::ostream& operator<<(std::ostream& s, const QName& r);
 
 std::istream& operator>>(std::istream& s, RECT& v);
 std::istream& operator>>(std::istream& s, CLIPEVENTFLAGS& v);

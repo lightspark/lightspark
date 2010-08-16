@@ -28,6 +28,8 @@ using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
 
+SET_NAMESPACE("flash.events");
+
 REGISTER_CLASS_NAME(IEventDispatcher);
 REGISTER_CLASS_NAME(EventDispatcher);
 REGISTER_CLASS_NAME(Event);

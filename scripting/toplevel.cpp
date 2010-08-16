@@ -19,7 +19,6 @@
 
 #include <list>
 #include <algorithm>
-//#include <libxml/parser.h>
 #include <pcrecpp.h>
 #include <pcre.h>
 #include <string.h>
@@ -42,10 +41,12 @@ using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
 
+SET_NAMESPACE("");
+
 REGISTER_CLASS_NAME(Array);
-REGISTER_CLASS_NAME2(ASQName,"QName");
-REGISTER_CLASS_NAME2(IFunction,"Function");
-REGISTER_CLASS_NAME2(UInteger,"uint");
+REGISTER_CLASS_NAME2(ASQName,"QName","");
+REGISTER_CLASS_NAME2(IFunction,"Function","");
+REGISTER_CLASS_NAME2(UInteger,"uint","");
 REGISTER_CLASS_NAME(Boolean);
 REGISTER_CLASS_NAME(Integer);
 REGISTER_CLASS_NAME(Number);
@@ -315,7 +316,7 @@ bool Array::sortComparatorWrapper::operator()(const data_slot& d1, const data_sl
 		objs[1]=new Undefined;
 
 	assert(comparator);
-	ASObject* ret=comparator->call(NULL, objs, 2);
+	ASObject* ret=comparator->call(new Null, objs, 2);
 	assert_and_throw(ret);
 	return (ret->toInt()<0); //Less
 }
@@ -793,13 +794,13 @@ ASFUNCTIONBODY(ASString,match)
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
 		const char* error;
-		int offset;
+		int errorOffset;
 		int options=0;
 		if(re->ignoreCase)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &offset,NULL);
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &errorOffset,NULL);
 		if(error)
 			return new Null;
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -812,27 +813,25 @@ ASFUNCTIONBODY(ASString,match)
 		}
 		assert_and_throw(capturingGroups<10);
 		int ovector[30];
-		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), 0, 0, ovector, 30);
-		if(rc<=0)
+		int offset=0;
+		do
 		{
-			//No matches or error
-			pcre_free(pcreRE);
-			return new Null;
-		}
-		ret=Class<Array>::getInstanceS();
-		if(re->global)
-		{
-			do
+			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
+			if(rc<=0)
 			{
-				int offset=ovector[1];
-				ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
-				rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 9);
+				//No matches or error
+				pcre_free(pcreRE);
+				if(ret==NULL)
+					return new Null;
+				else
+					return ret;
 			}
-			while(rc>0);
-		}
-		else
+			if(ret==NULL)
+				ret=Class<Array>::getInstanceS();
 			ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
-		pcre_free(pcreRE);
+			offset=ovector[1];
+		}
+		while(re->global);
 	}
 	else
 	{
@@ -1932,55 +1931,98 @@ ASFUNCTIONBODY(ASString,toUpperCase)
 
 ASFUNCTIONBODY(ASString,replace)
 {
-	const ASString* th=static_cast<const ASString*>(obj);
+	ASString* th=static_cast<const ASString*>(obj);
+	enum REPLACE_TYPE { STRING=0, FUNC };
+	REPLACE_TYPE type=(args[1]->getObjectType()==T_FUNCTION)?FUNC:STRING;
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
-	string replaceWith(args[1]->toString().raw_buf());
-	//We have to escape '\\' because that is interpreted by pcrecpp
-	int index=0;
-	do
+	assert_and_throw(argslen==2);
+
+	string replaceWith;
+	if(type==STRING)
 	{
-		index=replaceWith.find("\\",index);
-		if(index==-1) //No result
-			break;
-		replaceWith.replace(index,1,"\\\\");
+		replaceWith=args[1]->toString().raw_buf();
+		//We have to escape '\\' because that is interpreted by pcrecpp
+		int index=0;
+		do
+		{
+			index=replaceWith.find("\\",index);
+			if(index==-1) //No result
+				break;
+			replaceWith.replace(index,1,"\\\\");
 
-		//Increment index to jump over the added character
-		index+=2;
+			//Increment index to jump over the added character
+			index+=2;
+		}
+		while(index<(int)ret->data.size());
+
+		//Look if special substitution are needed
+		assert_and_throw(replaceWith.find('$')==replaceWith.npos);
 	}
-	while(index<(int)ret->data.size());
-
-	assert_and_throw(argslen==2 && args[1]->getObjectType()==T_STRING);
 
 	if(args[0]->getPrototype()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
-		pcrecpp::RE_Options opt;
-		opt.set_caseless(re->ignoreCase);
-		opt.set_extended(re->extended);
-		pcrecpp::RE pcreRE(re->re,opt);
-		if(re->global)
-			pcreRE.GlobalReplace(replaceWith,&ret->data);
-		else
-			pcreRE.Replace(replaceWith,&ret->data);
-	}
-	else if(args[0]->getObjectType()==T_STRING)
-	{
-		ASString* s=static_cast<ASString*>(args[0]);
-		int index=0;
+		const char* error;
+		int errorOffset;
+		int options=0;
+		if(re->ignoreCase)
+			options|=PCRE_CASELESS;
+		if(re->extended)
+			options|=PCRE_EXTENDED;
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &errorOffset,NULL);
+		if(error)
+			return ret;
+		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+		int capturingGroups;
+		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+		if(infoOk!=0)
+		{
+			pcre_free(pcreRE);
+			return ret;
+		}
+		//assert_and_throw(capturingGroups<10);
+		assert_and_throw(capturingGroups==0);
+		int ovector[30];
+		int offset=0;
+		int retDiff=0;
 		do
 		{
-			index=ret->data.find(s->data,index);
-			if(index==-1) //No result
-				break;
-			ret->data.replace(index,s->data.size(),replaceWith);
-			index+=(replaceWith.size()-s->data.size());
-
+			int rc=pcre_exec(pcreRE, NULL, ret->data.c_str(), ret->data.size(), offset, 0, ovector, 30);
+			if(rc<=0)
+			{
+				//No matches or error
+				pcre_free(pcreRE);
+				return ret;
+			}
+			if(type==FUNC)
+			{
+				//Get the replace for this match
+				IFunction* f=static_cast<IFunction*>(args[1]);
+				ASObject* subargs[3];
+				subargs[0]=Class<ASString>::getInstanceS(ret->data.substr(ovector[0],ovector[1]-ovector[0]));
+				subargs[1]=abstract_i(ovector[0]-retDiff);
+				th->incRef();
+				subargs[2]=th;
+				ASObject* ret=f->call(NULL, subargs, 3);
+				replaceWith=ret->toString().raw_buf();
+				ret->decRef();
+			}
+			ret->data.replace(ovector[0],ovector[1]-ovector[0],replaceWith);
+			offset=ovector[0]+replaceWith.size();
+			retDiff+=replaceWith.size()-(ovector[1]-ovector[0]);
 		}
-		while(index<(int)ret->data.size());
+		while(re->global);
 	}
 	else
-		throw UnsupportedException("String::replace not completely implemented");
+	{
+		const tiny_string& s=args[0]->toString();
+		int index=ret->data.find(s.raw_buf(),0);
+		if(index==-1) //No result
+			return ret;
+		assert_and_throw(type==STRING);
+		ret->data.replace(index,s.len(),replaceWith);
+	}
 
 	return ret;
 }
@@ -2056,7 +2098,7 @@ void ASError::buildTraits(ASObject* o)
 {
 }
 
-Class_base::Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
+Class_base::Class_base(const QName& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
 	context(NULL),class_name(name),class_index(-1),max_level(0)
 {
 	type=T_CLASS;
@@ -2099,7 +2141,7 @@ void Class_base::addImplementedInterface(Class_base* i)
 tiny_string Class_base::toString(bool debugMsg)
 {
 	tiny_string ret="[Class ";
-	ret+=class_name;
+	ret+=class_name.name;
 	ret+="]";
 	return ret;
 }
@@ -2227,12 +2269,12 @@ Class_object* Class_object::getClass()
 {
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
-	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Class");
+	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName("Class",""));
 	Class_object* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class_object();
-		sys->classes.insert(std::make_pair("Class",ret));
+		sys->classes.insert(std::make_pair(QName("Class",""),ret));
 	}
 	else
 		ret=static_cast<Class_object*>(it->second);
@@ -2251,12 +2293,12 @@ Class_function* Class_function::getClass()
 {
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
-	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Function");
+	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName("Function",""));
 	Class_function* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class_function();
-		sys->classes.insert(std::make_pair("Function",ret));
+		sys->classes.insert(std::make_pair(QName("Function",""),ret));
 	}
 	else
 		ret=static_cast<Class_function*>(it->second);
@@ -2335,8 +2377,9 @@ bool Class_base::isSubClass(const Class_base* cls) const
 
 tiny_string Class_base::getQualifiedClassName() const
 {
+	//TODO: use also the namespace
 	if(class_index==-1)
-		return class_name;
+		return class_name.name;
 	else
 	{
 		assert_and_throw(context);
@@ -2433,12 +2476,12 @@ bool UInteger::isEqual(ASObject* o)
 
 Class<IFunction>* Class<IFunction>::getClass()
 {
-	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find(ClassName<IFunction>::name);
+	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));
 	Class<IFunction>* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
-		sys->classes.insert(std::make_pair(ClassName<IFunction>::name,ret));
+		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
 		IFunction::sinit(ret);
 	}
 	else

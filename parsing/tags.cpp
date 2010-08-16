@@ -335,7 +335,7 @@ ASObject* DefineEditTextTag::instance() const
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	in >> SpriteID >> FrameCount;
-	totalFrames=FrameCount;
+	setTotalFrames(FrameCount);
 	framesLoaded=FrameCount;
 	state.max_FP=FrameCount;
 

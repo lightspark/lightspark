@@ -20,10 +20,8 @@
 #include "scripting/abc.h"
 #include "frame.h"
 #include "parsing/tags.h"
-#include <list>
 #include "swf.h"
 #include "compat.h"
-#include <GL/glew.h>
 
 using namespace std;
 using namespace lightspark;
@@ -43,12 +41,6 @@ Frame::~Frame()
 			i->second->decRef();
 		}
 	}
-}
-
-void Frame::runScript()
-{
-	if(script)
-		sys->currentVm->addEvent(NULL,new FunctionEvent(script));
 }
 
 void Frame::inputRender()

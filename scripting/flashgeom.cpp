@@ -24,10 +24,12 @@
 using namespace lightspark;
 using namespace std;
 
+SET_NAMESPACE("flash.geom");
+
 REGISTER_CLASS_NAME(Transform);
 REGISTER_CLASS_NAME(ColorTransform);
 REGISTER_CLASS_NAME(Point);
-REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle");
+REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle","flash.geom");
 
 void Rectangle::sinit(Class_base* c)
 {

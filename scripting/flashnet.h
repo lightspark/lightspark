@@ -97,7 +97,10 @@ class NetConnection: public EventDispatcher
 {
 friend class NetStream;
 private:
+	//The connection is to a flash media server
 	bool isFMS;
+	//The connection is to a local file
+	bool isLocal;
 public:
 	NetConnection();
 	static void sinit(Class_base*);

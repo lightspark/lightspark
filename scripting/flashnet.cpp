@@ -25,6 +25,8 @@
 using namespace std;
 using namespace lightspark;
 
+SET_NAMESPACE("flash.net");
+
 REGISTER_CLASS_NAME(URLLoader);
 REGISTER_CLASS_NAME(URLLoaderDataFormat);
 REGISTER_CLASS_NAME(URLRequest);
@@ -135,6 +137,7 @@ ASFUNCTIONBODY(URLLoader,load)
 
 void URLLoader::execute()
 {
+	//TODO: add local file support to URLLoader
 	downloader=new CurlDownloader(url);
 
 	downloader->run();
@@ -218,7 +221,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("DEFAULT","",abstract_i(3));
 };
 
-NetConnection::NetConnection():isFMS(false)
+NetConnection::NetConnection():isFMS(false),isLocal(false)
 {
 }
 
@@ -239,10 +242,24 @@ ASFUNCTIONBODY(NetConnection,connect)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj);
 	assert_and_throw(argslen==1);
-	if(args[0]->getObjectType()!=T_UNDEFINED)
+	if(args[0]->getObjectType()==T_NULL)
+	{
+		th->isLocal=true;
+		if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE || sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK)
+		{
+			throw UnsupportedException("SecurityError: connect to local file");
+		}
+	}
+	else if(args[0]->getObjectType()!=T_UNDEFINED)
 	{
 		th->isFMS=true;
 		throw UnsupportedException("NetConnection::connect to FMS");
+	}
+	else {
+		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_FILE)
+		{
+			throw UnsupportedException("SecurityError: connect to network");
+		}
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
@@ -291,6 +308,7 @@ ASFUNCTIONBODY(NetStream,_constructor)
 
 	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
 	assert_and_throw(netConnection->isFMS==false);
+	//assert_and_throw(netConnection->isLocal==false);
 	return NULL;
 }
 
@@ -313,6 +331,7 @@ ASFUNCTIONBODY(NetStream,close)
 	NetStream* th=Class<NetStream>::cast(obj);
 	//The downloader is stopped in threadAbort
 	th->threadAbort();
+	LOG(LOG_NO_INFO, "NetStream::close called");
 	return NULL;
 }
 

@@ -41,6 +41,8 @@ using namespace lightspark;
 extern TLSDATA SystemState* sys;
 extern TLSDATA RenderThread* rt;
 
+SET_NAMESPACE("flash.display");
+
 REGISTER_CLASS_NAME(LoaderInfo);
 REGISTER_CLASS_NAME(MovieClip);
 REGISTER_CLASS_NAME(DisplayObject);
@@ -438,18 +440,26 @@ void MovieClip::sinit(Class_base* c)
 	c->setVariableByQName("stop","",Class<IFunction>::getFunction(stop));
 	c->setVariableByQName("gotoAndStop","",Class<IFunction>::getFunction(gotoAndStop));
 	c->setVariableByQName("nextFrame","",Class<IFunction>::getFunction(nextFrame));
+	c->setVariableByQName("addFrameScript","",Class<IFunction>::getFunction(addFrameScript));
 }
 
 void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip():framesLoaded(1),totalFrames(1),cur_frame(NULL)
+MovieClip::MovieClip():totalFrames(1),framesLoaded(1),cur_frame(NULL)
 {
 	//It's ok to initialize here framesLoaded=1, as it is valid and empty
 	//RooMovieClip() will reset it, as stuff loaded dynamically needs frames to be committed
 	frames.push_back(Frame());
 	cur_frame=&frames.back();
+}
+
+void MovieClip::setTotalFrames(uint32_t t)
+{
+	assert(totalFrames==1);
+	totalFrames=t;
+	frameScripts.resize(totalFrames,NULL);
 }
 
 void MovieClip::addToFrame(DisplayListTag* t)
@@ -469,27 +479,21 @@ uint32_t MovieClip::getFrameIdByLabel(const tiny_string& l) const
 
 ASFUNCTIONBODY(MovieClip,addFrameScript)
 {
-	throw UnsupportedException("MovieClip::addFrameScript");
-/*	MovieClip* th=static_cast<MovieClip*>(obj->implementation);
-	if(args->size()%2)
+	MovieClip* th=Class<MovieClip>::cast(obj);
+	assert_and_throw(argslen==2);
+	uint32_t frame=args[0]->toInt();
+	if(frame>=th->totalFrames)
+		return NULL;
+	if(args[1]->getObjectType()!=T_FUNCTION)
 	{
-		LOG(LOG_ERROR,"Invalid arguments to addFrameScript");
-		abort();
+		LOG(LOG_ERROR,"Not a function");
+		return NULL;
 	}
-	for(int i=0;i<args->size();i+=2)
-	{
-		int f=args->at(i+0)->toInt();
-		IFunction* g=args->at(i+1)->toFunction();
-
-		//Should wait for frames to be received
-		if(f>=framesLoaded)
-		{
-			LOG(LOG_ERROR,"Invalid frame number passed to addFrameScript");
-			abort();
-		}
-
-		th->frames[f].setScript(g);
-	}*/
+	IFunction* f=static_cast<IFunction*>(args[1]);
+	f->incRef();
+	
+	assert(th->frameScripts.size()==th->totalFrames);
+	th->frameScripts[frame]=f;
 	return NULL;
 }
 
@@ -577,11 +581,10 @@ ASFUNCTIONBODY(MovieClip,_getCurrentFrame)
 
 ASFUNCTIONBODY(MovieClip,_constructor)
 {
-	//MovieClip* th=static_cast<MovieClip*>(obj->implementation);
+	//MovieClip* th=Class<MovieClip>::cast(obj);
 	Sprite::_constructor(obj,NULL,0);
 /*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(swapDepths));
-	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(createEmptyMovieClip));
-	th->setVariableByQName("addFrameScript","",Class<IFunction>::getFunction(addFrameScript));*/
+	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(createEmptyMovieClip));*/
 	return NULL;
 }
 
@@ -603,6 +606,8 @@ void MovieClip::advanceFrame()
 		if(!state.stop_FP && framesLoaded>0)
 			state.next_FP=imin(state.FP+1,framesLoaded-1);
 		state.explicit_FP=false;
+		if(frameScripts[state.FP])
+			getVm()->addEvent(NULL,new FunctionEvent(frameScripts[state.FP]));
 	}
 
 }
@@ -642,10 +647,6 @@ void MovieClip::Render()
 	if(framesLoaded)
 	{
 		assert_and_throw(curFP<framesLoaded);
-
-		if(!state.stop_FP)
-			frames[curFP].runScript();
-
 		frames[curFP].Render();
 	}
 
@@ -677,10 +678,6 @@ void MovieClip::inputRender()
 	if(framesLoaded)
 	{
 		assert_and_throw(curFP<framesLoaded);
-
-		if(!state.stop_FP)
-			frames[curFP].runScript();
-
 		frames[curFP].inputRender();
 	}
 
@@ -2110,4 +2107,9 @@ void Bitmap::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
+}
+
+bool Bitmap::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	return false;
 }

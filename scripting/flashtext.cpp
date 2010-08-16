@@ -23,8 +23,11 @@
 using namespace std;
 using namespace lightspark;
 
-REGISTER_CLASS_NAME2(lightspark::Font,"Font");
+SET_NAMESPACE("flash.text");
+
+REGISTER_CLASS_NAME2(lightspark::Font,"Font","flash.text");
 REGISTER_CLASS_NAME(TextField);
+REGISTER_CLASS_NAME(StyleSheet);
 
 void lightspark::Font::sinit(Class_base* c)
 {
@@ -94,4 +97,40 @@ void TextField::Render()
 {
 	//TODO: implement
 	LOG(LOG_NOT_IMPLEMENTED,"TextField::Render");
+}
+
+void StyleSheet::sinit(Class_base* c)
+{
+	c->setConstructor(NULL);
+	c->super=Class<EventDispatcher>::getClass();
+	c->max_level=c->super->max_level+1;
+	c->setGetterByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames));
+	c->setVariableByQName("setStyle","",Class<IFunction>::getFunction(setStyle));
+}
+
+void StyleSheet::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(StyleSheet,setStyle)
+{
+	StyleSheet* th=Class<StyleSheet>::cast(obj);
+	assert_and_throw(argslen==2);
+	const tiny_string& arg0=args[0]->toString();
+	if(th->styles.find(arg0)!=th->styles.end()) //Style already exists
+		th->styles[arg0]->decRef();
+	th->styles[arg0]=args[1];
+	args[1]->incRef(); //TODO: should make a copy, see reference
+	return NULL;
+}
+
+ASFUNCTIONBODY(StyleSheet,_getStyleNames)
+{
+	StyleSheet* th=Class<StyleSheet>::cast(obj);
+	assert_and_throw(argslen==0);
+	Array* ret=Class<Array>::getInstanceS();
+	map<tiny_string, ASObject*>::const_iterator it=th->styles.begin();
+	for(;it!=th->styles.end();it++)
+		ret->push(Class<ASString>::getInstanceS(it->first));
+	return ret;
 }

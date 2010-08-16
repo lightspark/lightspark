@@ -145,7 +145,7 @@ void SystemState::staticDeinit()
 
 SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
-	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	useGnashFallback(false),exactSecuritySettings(true),exactSecuritySettingsLocked(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
 	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
@@ -342,7 +342,7 @@ SystemState::~SystemState()
 	setPrototype(NULL);
 	
 	//Destroy the contents of all the classes
-	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
+	std::map<QName, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
 		it->second->cleanUp();
 
@@ -945,7 +945,7 @@ void RootMovieClip::Render()
 void RootMovieClip::setFrameCount(int f)
 {
 	Locker l(mutexFrames);
-	totalFrames=f;
+	setTotalFrames(f);
 	state.max_FP=f;
 	//TODO, maybe the next is a regular assert
 	assert_and_throw(cur_frame==&frames.back());

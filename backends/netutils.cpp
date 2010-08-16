@@ -22,12 +22,14 @@
 #include "compat.h"
 #include <string>
 #include <iostream>
+#include <fstream>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
 #endif
 
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
+
 
 Downloader* CurlDownloadManager::download(const tiny_string& u)
 {
@@ -37,6 +39,19 @@ Downloader* CurlDownloadManager::download(const tiny_string& u)
 }
 
 void CurlDownloadManager::destroy(Downloader* d)
+{
+	d->wait();
+	delete d;
+}
+
+Downloader* LocalDownloadManager::download(const tiny_string& u)
+{
+	LocalDownloader* localDownloader=new LocalDownloader(u);
+	sys->addJob(localDownloader);
+	return localDownloader;
+}
+
+void LocalDownloadManager::destroy(Downloader* d)
 {
 	d->wait();
 	delete d;
@@ -255,5 +270,64 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 		th->setLen(atoi(headerLine+16));
 	}
 	return size*nmemb;
+}
+
+LocalDownloader::LocalDownloader(const tiny_string& u)
+{
+	//TODO: Make sure we don't need to urlencode local file string
+	url=u;
+}
+
+void LocalDownloader::threadAbort()
+{
+	Downloader::stop();
+}
+
+void LocalDownloader::execute()
+{
+	if(url.len()==0)
+	{
+		setFailed();
+		return;
+	}
+	else {
+		std::ifstream file;
+		LOG(LOG_NO_INFO, "LocalDownloader::execute: reading local file: " << url.raw_buf());
+		file.open(url.raw_buf(), std::ifstream::in);
+
+		if(file.is_open())
+		{
+			file.seekg(0, std::ios::end);
+			setLen(file.tellg());
+			file.seekg(0, std::ios::beg);
+
+			size_t buffSize = 8192;
+			char * buffer = new char[buffSize];
+
+			bool failed = 0;
+			while(!file.eof())
+			{
+				if(file.fail() || hasFailed())
+				{
+					failed = 1;
+					break;
+				}
+				file.read(buffer, buffSize);
+				append((uint8_t *) buffer, file.gcount());
+			}
+			if(failed)
+			{
+				setFailed();
+				LOG(LOG_ERROR, "LocalDownloader::execute: reading from local file failed: " << url.raw_buf());
+			}
+			file.close();
+			delete buffer;
+		}
+		else {
+				setFailed();
+				LOG(LOG_ERROR, "LocalDownloader::execute: could not open local file: " << url.raw_buf());
+		}
+	}
+	sem_post(&(Downloader::terminated));
 }
 

@@ -85,7 +85,8 @@ char *dataFileRead(const char *fn)
 		"/usr/share/lightspark",
 	};
 
-	for (unsigned int i = 0; i < sizeof(paths)/sizeof(paths[0]); i++) {
+	for (unsigned int i = 0; i < sizeof(paths)/sizeof(paths[0]); i++)
+	{
 		sprintf(buf, "%s/%s", paths[i], fn);
 		ret = textFileRead(buf);
 		if (ret)

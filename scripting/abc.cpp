@@ -130,6 +130,15 @@ ASFUNCTIONBODY(ABCVm,print)
 	return new Null;
 }
 
+ASFUNCTIONBODY(ABCVm,trace)
+{
+	for(intptr_t i = 0; i< argslen;i++) {
+		cerr << args[i]->toString();
+	}
+	cerr << endl;
+	return new Null;
+}
+
 void ABCVm::pushObjAndLevel(ASObject* o, int l)
 {
 	method_this_stack.push_back(thisAndLevel(o,l));
@@ -161,12 +170,13 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("QName","",Class<ASQName>::getClass());
 	Global->setVariableByQName("uint","",Class<UInteger>::getClass());
 	Global->setVariableByQName("Error","",Class<ASError>::getClass());
+	Global->setVariableByQName("SecurityError","",Class<ASSecurityError>::getClass());
 	Global->setVariableByQName("XML","",Class<ASObject>::getClass(QName("XML","")));
 	Global->setVariableByQName("XMLList","",Class<ASObject>::getClass(QName("XMLList","")));
 	Global->setVariableByQName("int","",Class<Integer>::getClass());
 
 	Global->setVariableByQName("print","",Class<IFunction>::getFunction(print));
-	Global->setVariableByQName("trace","",Class<IFunction>::getFunction(print));
+	Global->setVariableByQName("trace","",Class<IFunction>::getFunction(trace));
 	Global->setVariableByQName("parseInt","",Class<IFunction>::getFunction(parseInt));
 	Global->setVariableByQName("parseFloat","",Class<IFunction>::getFunction(parseFloat));
 	Global->setVariableByQName("unescape","",Class<IFunction>::getFunction(unescape));

@@ -569,6 +569,7 @@ private:
 	//Utility
 	static void not_impl(int p);
 	ASFUNCTION(print);
+	ASFUNCTION(trace);
 
 	//Internal utilities
 	static void method_reset(method_info* th);

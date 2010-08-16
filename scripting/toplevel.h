@@ -777,12 +777,14 @@ public:
 class ASError: public ASObject
 {
 CLASSBUILDABLE(ASError);
-private:
+protected:
 	tiny_string message;
-	tiny_string name;
+private:
 	int errorID;
+	tiny_string name;
 public:
-	ASError(const tiny_string& error_message = "", int id = 0) : message(error_message), name("Error"), errorID(id) {}
+	ASError(const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error") : message(error_message), errorID(id), name(error_name){};
+	ASFUNCTION(_constructor);
 	ASFUNCTION(getStackTrace);
 	ASFUNCTION(_setName);
 	ASFUNCTION(_getName);
@@ -790,6 +792,17 @@ public:
 	ASFUNCTION(_getMessage);
 	ASFUNCTION(_getErrorID);
 	tiny_string toString(bool debugMsg=false);
+	ASFUNCTION(_toString);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class ASSecurityError: public ASError
+{
+CLASSBUILDABLE(ASSecurityError);
+public:
+	ASSecurityError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "SecurityError"){}
+	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 };

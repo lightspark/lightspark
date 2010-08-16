@@ -161,8 +161,8 @@ ASFUNCTIONBODY(Security,_setExactSettings)
 	{
 		throw UnsupportedException("ArgumentError");
 	}
-	Boolean* i = static_cast<Boolean*>(args[0]);
-	sys->setExactSecuritySettings(i->toInt() ? true : false);
+	//Boolean* i = static_cast<Boolean*>(args[0]);
+	sys->setExactSecuritySettings(Boolean_concrete(args[0]));
 	return NULL;
 }
 ASFUNCTIONBODY(Security,_getSandboxType)

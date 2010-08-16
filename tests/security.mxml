@@ -17,7 +17,7 @@
 			trace("Security.exactSettings default value == true --> OK");
 		}
 		else {
-			trace("Security.exactSettings default value != true --> NOT OK");
+			trace("Security.exactSettings default value != true --> NOT OK!!!");
 		}
 
 		Security.exactSettings = false;
@@ -25,7 +25,7 @@
 			trace("Security.exactSettings == false --> OK");
 		}
 		else {
-			trace("Security.exactSettings != false --> NOT OK");
+			trace("Security.exactSettings != false --> NOT OK!!!");
 		}
 
 		Security.exactSettings = true;
@@ -33,7 +33,7 @@
 			trace("Security.exactSettings == true --> OK");
 		}
 		else {
-			trace("Security.exactSettings != true --> NOT OK");
+			trace("Security.exactSettings != true --> NOT OK!!!");
 		}
 
 

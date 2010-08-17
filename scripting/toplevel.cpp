@@ -1977,8 +1977,7 @@ ASFUNCTIONBODY(ASString,replace)
 			pcre_free(pcreRE);
 			return ret;
 		}
-		//assert_and_throw(capturingGroups<10);
-		assert_and_throw(capturingGroups==0);
+		assert_and_throw(capturingGroups<10);
 		int ovector[30];
 		int offset=0;
 		int retDiff=0;
@@ -1995,12 +1994,14 @@ ASFUNCTIONBODY(ASString,replace)
 			{
 				//Get the replace for this match
 				IFunction* f=static_cast<IFunction*>(args[1]);
-				ASObject* subargs[3];
+				ASObject* subargs[3+capturingGroups];
 				subargs[0]=Class<ASString>::getInstanceS(ret->data.substr(ovector[0],ovector[1]-ovector[0]));
-				subargs[1]=abstract_i(ovector[0]-retDiff);
+				for(int i=0;i<capturingGroups;i++)
+					subargs[i+1]=Class<ASString>::getInstanceS(ret->data.substr(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
+				subargs[capturingGroups+1]=abstract_i(ovector[0]-retDiff);
 				th->incRef();
-				subargs[2]=th;
-				ASObject* ret=f->call(NULL, subargs, 3);
+				subargs[capturingGroups+2]=th;
+				ASObject* ret=f->call(NULL, subargs, 3+capturingGroups);
 				replaceWith=ret->toString().raw_buf();
 				ret->decRef();
 			}

@@ -102,7 +102,8 @@ public:
 			createBuffer();
 			assert_and_throw(r.size()<=4096);
 			//Comment this assertion and uncomment the following lines to just crop the strings
-			//if(r.size()>4096) {
+			//if(r.size()>4096)
+			//{
 			//	LOG(LOG_NO_INFO, "tiny_string::tiny_string(): std::string is too big for tiny_string, cropping: " << r.size() <<">"<<4096);
 			//	strcpy(buf,r.substr(0,4096).c_str());
 			//	return;
@@ -139,7 +140,8 @@ public:
 			createBuffer();
 			assert_and_throw(s.size()<=4096);
 			//Comment this assertion and uncomment the following lines to just crop the strings
-			//if(s.size()>4096) {
+			//if(s.size()>4096)
+			//{
 			//	LOG(LOG_NO_INFO, "tiny_string::operator=(): std::string is too big for tiny_string, cropping: " << s.size() <<">"<<4096);
 			//	strcpy(buf,s.substr(0,4096).c_str());
 			//  return *this;

@@ -88,7 +88,8 @@ public:
 	{
 		return allowBufferRealloc;
 	}
-	void setAllowBufferRealloc(bool allow) {
+	void setAllowBufferRealloc(bool allow)
+	{
 		allowBufferRealloc = allow;
 	}
 	uint32_t getLen()

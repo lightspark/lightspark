@@ -59,7 +59,8 @@ void LocalDownloadManager::destroy(Downloader* d)
 
 Downloader::~Downloader()
 {
-	if(buffer != NULL) {
+	if(buffer != NULL)
+	{
 		free(buffer);
 	}
 	sem_destroy(&available);
@@ -112,9 +113,11 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 {
 	if(added==0)
 		return;
-	if((tail+added)>len) {
+	if((tail+added)>len)
+	{
 		//Only grow the buffer when aligned
-		if(getAllowBufferRealloc()) {
+		if(getAllowBufferRealloc())
+		{
 			LOG(LOG_NO_INFO, "Downloaded file bigger than buffer: " << 
 					tail+added << ">" << len << ", reallocating buffer.");
 			//TODO: Confirm whats best: allocate more memory at a time, at the risk of allocating too much
@@ -284,11 +287,13 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	size_t added=size*nmemb;
-	if(th->getLen() == 0) {
+	if(th->getLen() == 0)
+	{
 		//If the HTTP request doesn't contain a Content-Length header, allow growing the buffer
 		th->setAllowBufferRealloc(true);
 	}
-	if(th->getRequestStatus() != 3) {
+	if(th->getRequestStatus() != 3)
+	{
 		th->append((uint8_t*)buffer,added);
 	}
 	return added;
@@ -321,7 +326,8 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 	{
 		//Now read the length and allocate the byteArray
 		//Only read the length when we're not redirecting
-		if(th->getRequestStatus()/100 != 3) {
+		if(th->getRequestStatus()/100 != 3)
+		{
 			th->setLen(atoi(headerLine+16));
 		}
 	}

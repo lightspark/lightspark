@@ -132,7 +132,8 @@ ASFUNCTIONBODY(ABCVm,print)
 
 ASFUNCTIONBODY(ABCVm,trace)
 {
-	for(intptr_t i = 0; i< argslen;i++) {
+	for(intptr_t i = 0; i< argslen;i++)
+	{
 		cerr << args[i]->toString();
 		if(i > 0)
 			cerr << " ";

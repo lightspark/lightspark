@@ -13,10 +13,12 @@
 		try {
 			throw new Error();
 		}
-		catch(e:SecurityError) {
+		catch(e:SecurityError)
+		{
 			trace("Try-catch for Error didn't work, SecurityError shouldn't match error --> NOT OK!!!");
 		}
-		catch(e:Error) {
+		catch(e:Error)
+		{
 			trace("Try-catch for Error worked, Error matched --> OK");
 		}
 		finally {
@@ -26,10 +28,12 @@
 		try {
 			throw new SecurityError();
 		}
-		catch(e:SecurityError) {
+		catch(e:SecurityError)
+		{
 			trace("Try-catch for SecurityError worked, SecurityError matched --> OK");
 		}
-		catch(e:Error) {
+		catch(e:Error)
+		{
 			trace("Try-catch for SecurityError didn't work, SecurityError didn't match --> NOT OK!!!");
 		}
 		finally {
@@ -39,7 +43,8 @@
 		try {
 			throw new SecurityError();
 		}
-		catch(e:Error) {
+		catch(e:Error)
+		{
 			trace("Try-catch for SecurityError worked, Error matched --> OK");
 		}
 		finally {

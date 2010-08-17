@@ -54,7 +54,8 @@ void URLRequest::buildTraits(ASObject* o)
 ASFUNCTIONBODY(URLRequest,_constructor)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj);
-	if(argslen>0 && args[0]->getObjectType()==T_STRING) {
+	if(argslen>0 && args[0]->getObjectType()==T_STRING)
+	{
 		th->url=args[0]->toString();
 	}
 	return NULL;
@@ -106,14 +107,17 @@ ASFUNCTIONBODY(URLLoader,load)
 	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
 	th->url=urlRequest->url;
 	//Check for URLRequest.url != null
-	if(th->url.len() == 0) {
+	if(th->url.len() == 0)
+	{
 		throw UnsupportedException("TypeError");
 	}
 
-	if(th->url.substr(0, min(th->url.len(), 7)) == "file://") {
+	if(th->url.substr(0, min(th->url.len(), 7)) == "file://")
+	{
 		th->isLocal = true;
 		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK ||
-				sys->getSandboxType() == SECURITY_SANDBOX_REMOTE) {
+				sys->getSandboxType() == SECURITY_SANDBOX_REMOTE)
+		{
 			throw UnsupportedException("SecurityError: connect to local file");
 		}
 	}
@@ -156,7 +160,8 @@ ASFUNCTIONBODY(URLLoader,load)
 void URLLoader::execute()
 {
 	//TODO: support httpStatus, progress, securityError, open events
-	if(isLocal) {
+	if(isLocal)
+	{
 		tiny_string fileName = url.substr(7, url.len());
 		downloader=new LocalDownloader(fileName);
 		static_cast<LocalDownloader*>(downloader)->run();

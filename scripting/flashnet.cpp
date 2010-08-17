@@ -155,7 +155,7 @@ ASFUNCTIONBODY(URLLoader,load)
 
 void URLLoader::execute()
 {
-	//TODO: add local file support to URLLoader
+	//TODO: support httpStatus, progress, securityError, open events
 	if(isLocal) {
 		tiny_string fileName = url.substr(7, url.len());
 		downloader=new LocalDownloader(fileName);

@@ -67,7 +67,7 @@ Downloader::~Downloader()
 	sem_destroy(&terminated);
 }
 
-Downloader::Downloader():buffer(NULL),len(0),tail(0),waiting(false),failed(false)
+Downloader::Downloader():buffer(NULL),allowBufferRealloc(false),len(0),tail(0),waiting(false),failed(false)
 {
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
@@ -77,17 +77,24 @@ Downloader::Downloader():buffer(NULL),len(0),tail(0),waiting(false),failed(false
 void Downloader::setLen(uint32_t l)
 {
 	len=l;
-	//assert_and_throw(buffer==NULL);
-	if(buffer == NULL) {
+	//Create buffer
+	if(buffer == NULL)
+	{
 		buffer= (uint8_t*) calloc(len, sizeof(uint8_t));
 		setg((char*)buffer,(char*)buffer,(char*)buffer);
 	}
-	//Realloc
-	else {
+	//Realloc, only if allowed
+	else if(getAllowBufferRealloc())
+	{
+		//Remember the relative positions of the input pointers
 		intptr_t curPos = (intptr_t) (gptr()-eback());
 		intptr_t curLen = (intptr_t) (egptr()-eback());
 		buffer = (uint8_t*) realloc(buffer, len);
+		//Do some pointer arithmetic to point the input pointers to the right places in the new buffer
 		setg((char*)buffer,(char*)(buffer+curPos),(char*)(buffer+curLen));
+	}
+	else {
+		assert_and_throw(buffer==NULL);
 	}
 }
 
@@ -106,10 +113,18 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 	if(added==0)
 		return;
 	if((tail+added)>len) {
-		LOG(LOG_NO_INFO, "Downloaded file bigger than buffer: " << 
-				tail+added << ">" << len << ", reallocating buffer");
-		setLen(tail+added);
-		//throw RunTimeException("Downloaded file is too big");
+		//Only grow the buffer when aligned
+		if(getAllowBufferRealloc()) {
+			LOG(LOG_NO_INFO, "Downloaded file bigger than buffer: " << 
+					tail+added << ">" << len << ", reallocating buffer.");
+			//TODO: Confirm whats best: allocate more memory at a time, at the risk of allocating too much
+			//			or allocate exactly the amount needed, at the risk of having to reallocate a lot
+			setLen(len+4096);
+		}
+		//The real data is longer than the provided Content-Length header
+		else {
+			throw RunTimeException("Downloaded file is too big");
+		}
 	}
 	sem_wait(&mutex);
 	memcpy(buffer + tail,buf,added);
@@ -269,6 +284,10 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	size_t added=size*nmemb;
+	if(th->getLen() == 0) {
+		//If the HTTP request doesn't contain a Content-Length header, allow growing the buffer
+		th->setAllowBufferRealloc(true);
+	}
 	if(th->getRequestStatus() != 3) {
 		th->append((uint8_t*)buffer,added);
 	}
@@ -282,21 +301,27 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 
 	std::cerr << "CURL header: " << headerLine;
 
-	if(strncmp(headerLine,"HTTP/1.1 4",10)==0) { //HTTP error, let's fail
-		th->setRequestStatus(4);
-		th->setFailed();
-	}
-	else if(strncmp(headerLine,"HTTP/1.1 3",10)==0) { //HTTP redirect
-		th->setRequestStatus(3);
-	}
-	else if(strncmp(headerLine,"HTTP/1.1 2",10)==0) { //HTTP OK
-		th->setRequestStatus(2);
+	if(strncmp(headerLine,"HTTP/1.1 ",9)==0) 
+	{
+		char* status = new char[3];
+		strncpy(status, headerLine+9, 3);
+		th->setRequestStatus(atoi(status));
+		delete[] status;
+		if(th->getRequestStatus()/100 == 4 || th->getRequestStatus()/100 == 5 || 
+				th->getRequestStatus()/100 == 6)
+		//HTTP error or server error or proxy error, let's fail
+		//TODO: don't we need to return the data anyway?
+		{
+			th->setFailed();
+		}
+		else if(th->getRequestStatus()/100 == 3); //HTTP redirect
+		else if(th->getRequestStatus()/100 == 2); //HTTP OK
 	}
 	else if(strncmp(headerLine,"Content-Length: ",16)==0)
 	{
 		//Now read the length and allocate the byteArray
 		//Only read the length when we're not redirecting
-		if(th->getRequestStatus() != 3) {
+		if(th->getRequestStatus()/100 != 3) {
 			th->setLen(atoi(headerLine+16));
 		}
 	}
@@ -330,6 +355,7 @@ void LocalDownloader::execute()
 			setLen(file.tellg());
 			file.seekg(0, std::ios::beg);
 
+			//TODO: Maybe this size should be a macro or something.
 			size_t buffSize = 8192;
 			char * buffer = new char[buffSize];
 

@@ -55,17 +55,17 @@ REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
 REGISTER_CLASS_NAME(Math);
 REGISTER_CLASS_NAME(ASString);
-REGISTER_CLASS_NAME(ASError);
-REGISTER_CLASS_NAME(ASSecurityError);
-REGISTER_CLASS_NAME(ASArgumentError);
-REGISTER_CLASS_NAME(ASDefinitionError);
-REGISTER_CLASS_NAME(ASEvalError);
-REGISTER_CLASS_NAME(ASRangeError);
-REGISTER_CLASS_NAME(ASReferenceError);
-REGISTER_CLASS_NAME(ASSyntaxError);
-REGISTER_CLASS_NAME(ASTypeError);
-REGISTER_CLASS_NAME(ASURIError);
-REGISTER_CLASS_NAME(ASVerifyError);
+REGISTER_CLASS_NAME2(ASError, "Error", "");
+REGISTER_CLASS_NAME(SecurityError);
+REGISTER_CLASS_NAME(ArgumentError);
+REGISTER_CLASS_NAME(DefinitionError);
+REGISTER_CLASS_NAME(EvalError);
+REGISTER_CLASS_NAME(RangeError);
+REGISTER_CLASS_NAME(ReferenceError);
+REGISTER_CLASS_NAME(SyntaxError);
+REGISTER_CLASS_NAME(TypeError);
+REGISTER_CLASS_NAME(URIError);
+REGISTER_CLASS_NAME(VerifyError);
 
 Array::Array()
 {
@@ -2060,12 +2060,6 @@ tiny_string ASError::toString(bool debugMsg)
 	return message.len() > 0 ? message : name;
 }
 
-ASFUNCTIONBODY(ASError,_toString)
-{
-	ASError* th=static_cast<ASError*>(obj);
-	return Class<ASString>::getInstanceS(th->toString(false));
-}
-
 ASFUNCTIONBODY(ASError,_getErrorID)
 {
 	ASError* th=static_cast<ASError*>(obj);
@@ -2131,10 +2125,10 @@ void ASError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASSecurityError,_constructor)
+ASFUNCTIONBODY(SecurityError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASSecurityError* th=static_cast<ASSecurityError*>(obj);
+	SecurityError* th=static_cast<SecurityError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2142,26 +2136,19 @@ ASFUNCTIONBODY(ASSecurityError,_constructor)
 	return NULL;
 }
 
-void ASSecurityError::sinit(Class_base* c)
+void SecurityError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASSecurityError::buildTraits(ASObject* o)
+void SecurityError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASArgumentError,_constructor)
+ASFUNCTIONBODY(ArgumentError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASArgumentError* th=static_cast<ASArgumentError*>(obj);
+	ArgumentError* th=static_cast<ArgumentError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2169,26 +2156,19 @@ ASFUNCTIONBODY(ASArgumentError,_constructor)
 	return NULL;
 }
 
-void ASArgumentError::sinit(Class_base* c)
+void ArgumentError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASArgumentError::buildTraits(ASObject* o)
+void ArgumentError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASDefinitionError,_constructor)
+ASFUNCTIONBODY(DefinitionError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASDefinitionError* th=static_cast<ASDefinitionError*>(obj);
+	DefinitionError* th=static_cast<DefinitionError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2196,26 +2176,19 @@ ASFUNCTIONBODY(ASDefinitionError,_constructor)
 	return NULL;
 }
 
-void ASDefinitionError::sinit(Class_base* c)
+void DefinitionError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASDefinitionError::buildTraits(ASObject* o)
+void DefinitionError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASEvalError,_constructor)
+ASFUNCTIONBODY(EvalError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASEvalError* th=static_cast<ASEvalError*>(obj);
+	EvalError* th=static_cast<EvalError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2223,26 +2196,19 @@ ASFUNCTIONBODY(ASEvalError,_constructor)
 	return NULL;
 }
 
-void ASEvalError::sinit(Class_base* c)
+void EvalError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASEvalError::buildTraits(ASObject* o)
+void EvalError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASRangeError,_constructor)
+ASFUNCTIONBODY(RangeError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASRangeError* th=static_cast<ASRangeError*>(obj);
+	RangeError* th=static_cast<RangeError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2250,26 +2216,19 @@ ASFUNCTIONBODY(ASRangeError,_constructor)
 	return NULL;
 }
 
-void ASRangeError::sinit(Class_base* c)
+void RangeError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASRangeError::buildTraits(ASObject* o)
+void RangeError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASReferenceError,_constructor)
+ASFUNCTIONBODY(ReferenceError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASReferenceError* th=static_cast<ASReferenceError*>(obj);
+	ReferenceError* th=static_cast<ReferenceError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2277,26 +2236,19 @@ ASFUNCTIONBODY(ASReferenceError,_constructor)
 	return NULL;
 }
 
-void ASReferenceError::sinit(Class_base* c)
+void ReferenceError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASReferenceError::buildTraits(ASObject* o)
+void ReferenceError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASSyntaxError,_constructor)
+ASFUNCTIONBODY(SyntaxError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASSyntaxError* th=static_cast<ASSyntaxError*>(obj);
+	SyntaxError* th=static_cast<SyntaxError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2304,26 +2256,19 @@ ASFUNCTIONBODY(ASSyntaxError,_constructor)
 	return NULL;
 }
 
-void ASSyntaxError::sinit(Class_base* c)
+void SyntaxError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASSyntaxError::buildTraits(ASObject* o)
+void SyntaxError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASTypeError,_constructor)
+ASFUNCTIONBODY(TypeError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASTypeError* th=static_cast<ASTypeError*>(obj);
+	TypeError* th=static_cast<TypeError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2331,26 +2276,19 @@ ASFUNCTIONBODY(ASTypeError,_constructor)
 	return NULL;
 }
 
-void ASTypeError::sinit(Class_base* c)
+void TypeError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASTypeError::buildTraits(ASObject* o)
+void TypeError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASURIError,_constructor)
+ASFUNCTIONBODY(URIError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASURIError* th=static_cast<ASURIError*>(obj);
+	URIError* th=static_cast<URIError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2358,26 +2296,19 @@ ASFUNCTIONBODY(ASURIError,_constructor)
 	return NULL;
 }
 
-void ASURIError::sinit(Class_base* c)
+void URIError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASURIError::buildTraits(ASObject* o)
+void URIError::buildTraits(ASObject* o)
 {
 }
 
-ASFUNCTIONBODY(ASVerifyError,_constructor)
+ASFUNCTIONBODY(VerifyError,_constructor)
 {
 	assert(args && argslen<=1);
-	ASVerifyError* th=static_cast<ASVerifyError*>(obj);
+	VerifyError* th=static_cast<VerifyError*>(obj);
 	if(argslen == 1)
 	{
 		th->message = args[0]->toString();
@@ -2385,19 +2316,12 @@ ASFUNCTIONBODY(ASVerifyError,_constructor)
 	return NULL;
 }
 
-void ASVerifyError::sinit(Class_base* c)
+void VerifyError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
-	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
-void ASVerifyError::buildTraits(ASObject* o)
+void VerifyError::buildTraits(ASObject* o)
 {
 }
 
@@ -2930,3 +2854,30 @@ ASFUNCTIONBODY(lightspark,unescape)
 	return Class<ASString>::getInstanceS(ret);
 }
 
+ASFUNCTIONBODY(lightspark,print)
+{
+	if(args[0]->getObjectType() == T_STRING) {
+		ASString* str = static_cast<ASString*>(args[0]);
+		cerr << str->data << endl;
+	}
+	else
+		cerr << args[0]->toString() << endl;
+	return NULL;
+}
+
+ASFUNCTIONBODY(lightspark,trace)
+{
+	for(intptr_t i = 0; i< argslen;i++)
+	{
+		if(args[i]->getObjectType() == T_STRING) {
+			ASString* str = static_cast<ASString*>(args[i]);
+			cerr << str->data;
+		}
+		else
+			cerr << args[i]->toString();
+		if(i > 0)
+			cerr << " ";
+	}
+	cerr << endl;
+	return NULL;
+}

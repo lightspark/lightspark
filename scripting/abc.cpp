@@ -124,34 +124,6 @@ void SymbolClassTag::execute(RootMovieClip* root)
 	}
 }
 
-ASFUNCTIONBODY(ABCVm,print)
-{
-	if(args[0]->getObjectType() == T_STRING) {
-		ASString* str = static_cast<ASString*>(args[0]);
-		cerr << str->data << endl;
-	}
-	else
-		cerr << args[0]->toString() << endl;
-	return new Null;
-}
-
-ASFUNCTIONBODY(ABCVm,trace)
-{
-	for(intptr_t i = 0; i< argslen;i++)
-	{
-		if(args[i]->getObjectType() == T_STRING) {
-			ASString* str = static_cast<ASString*>(args[i]);
-			cerr << str->data;
-		}
-		else
-			cerr << args[i]->toString();
-		if(i > 0)
-			cerr << " ";
-	}
-	cerr << endl;
-	return new Null;
-}
-
 void ABCVm::pushObjAndLevel(ASObject* o, int l)
 {
 	method_this_stack.push_back(thisAndLevel(o,l));
@@ -183,16 +155,16 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("QName","",Class<ASQName>::getClass());
 	Global->setVariableByQName("uint","",Class<UInteger>::getClass());
 	Global->setVariableByQName("Error","",Class<ASError>::getClass());
-	Global->setVariableByQName("SecurityError","",Class<ASSecurityError>::getClass());
-	Global->setVariableByQName("ArgumentError","",Class<ASArgumentError>::getClass());
-	Global->setVariableByQName("DefinitionError","",Class<ASDefinitionError>::getClass());
-	Global->setVariableByQName("EvalError","",Class<ASEvalError>::getClass());
-	Global->setVariableByQName("RangeError","",Class<ASRangeError>::getClass());
-	Global->setVariableByQName("ReferenceError","",Class<ASReferenceError>::getClass());
-	Global->setVariableByQName("SyntaxError","",Class<ASSyntaxError>::getClass());
-	Global->setVariableByQName("TypeError","",Class<ASTypeError>::getClass());
-	Global->setVariableByQName("URIError","",Class<ASURIError>::getClass());
-	Global->setVariableByQName("VerifyError","",Class<ASVerifyError>::getClass());
+	Global->setVariableByQName("SecurityError","",Class<SecurityError>::getClass());
+	Global->setVariableByQName("ArgumentError","",Class<ArgumentError>::getClass());
+	Global->setVariableByQName("DefinitionError","",Class<DefinitionError>::getClass());
+	Global->setVariableByQName("EvalError","",Class<EvalError>::getClass());
+	Global->setVariableByQName("RangeError","",Class<RangeError>::getClass());
+	Global->setVariableByQName("ReferenceError","",Class<ReferenceError>::getClass());
+	Global->setVariableByQName("SyntaxError","",Class<SyntaxError>::getClass());
+	Global->setVariableByQName("TypeError","",Class<TypeError>::getClass());
+	Global->setVariableByQName("URIError","",Class<URIError>::getClass());
+	Global->setVariableByQName("VerifyError","",Class<VerifyError>::getClass());
 	Global->setVariableByQName("XML","",Class<ASObject>::getClass(QName("XML","")));
 	Global->setVariableByQName("XMLList","",Class<ASObject>::getClass(QName("XMLList","")));
 	Global->setVariableByQName("int","",Class<Integer>::getClass());

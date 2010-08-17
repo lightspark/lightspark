@@ -142,18 +142,18 @@ void SoundManager::streamWriteCB(pa_stream* stream, size_t askedData, SoundStrea
 	//If the server asked for more data we have to sent it the inefficient way
 	if(totalWritten<askedData)
 	{
-		uint32_t rest=askedData-totalWritten;
+		uint32_t restBytes=askedData-totalWritten;
 		totalWritten=0;
-		dest=new int16_t[rest];
+		dest=new int16_t[restBytes/2];
 		do
 		{
-			uint32_t retSize=th->decoder->copyFrame(dest+(totalWritten/2), rest);
+			uint32_t retSize=th->decoder->copyFrame(dest+(totalWritten/2), restBytes);
 			if(retSize==0) //There is no more data
 				break;
 			totalWritten+=retSize;
-			rest-=retSize;
+			restBytes-=retSize;
 		}
-		while(rest);
+		while(restBytes);
 		pa_stream_write(stream, dest, totalWritten, NULL, 0, PA_SEEK_RELATIVE);
 		delete[] dest;
 	}

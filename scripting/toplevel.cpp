@@ -1941,20 +1941,6 @@ ASFUNCTIONBODY(ASString,replace)
 	if(type==STRING)
 	{
 		replaceWith=args[1]->toString().raw_buf();
-		//We have to escape '\\' because that is interpreted by pcrecpp
-		int index=0;
-		do
-		{
-			index=replaceWith.find("\\",index);
-			if(index==-1) //No result
-				break;
-			replaceWith.replace(index,1,"\\\\");
-
-			//Increment index to jump over the added character
-			index+=2;
-		}
-		while(index<(int)ret->data.size());
-
 		//Look if special substitution are needed
 		assert_and_throw(replaceWith.find('$')==replaceWith.npos);
 	}

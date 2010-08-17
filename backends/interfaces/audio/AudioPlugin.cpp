@@ -59,7 +59,7 @@ const string AudioPlugin::get_pluginName()
  return pluginName;
 }
 
-PLUGIN_TYPES AudioPlugin::get_pluginType()
+const PLUGIN_TYPES AudioPlugin::get_pluginType()
 {
   return pluginType;
 }

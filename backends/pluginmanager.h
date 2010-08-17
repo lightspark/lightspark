@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <iostream>
 #include <boost/filesystem.hpp>
+#include "../threading.h"
 
 #include "interfaces/IPlugin.h"
 
@@ -35,28 +36,7 @@ typedef void (*PLUGIN_CLEANUP)(IPlugin *);
 
 namespace lightspark
 {
-
-class PluginManager : public PluginModule
-{
-  private:
-    vector<PluginModule *>plugins_list;
-    void FindPlugins();
-    void AddPluginToList(IPlugin *o_plugin, string pathToPlugin);
-    void RemovePluginFromList(string plugin_path);
-    int32_t FindPluginInList(string desiredname = "", string desiredbackend = "", string desiredpath = "",
-			      HMODULE hdesiredLoadPlugin, IPlugin *o_desiredPlugin);
-    void LoadPlugin(uint32_t desiredindex);
-    void UnloadPlugin(uint32_t desiredIndex);
-
-  public:
-    PluginManager();
-    vector<string *> get_backendsList(PLUGIN_TYPES typeSearched);
-    IPlugin *get_plugin(string desiredBackend);
-    void release_plugin(IPlugin *o_plugin);
-    void startCheck();
-    ~PluginManager();
-};
-
+  
 class PluginModule
 {
   protected:
@@ -73,6 +53,26 @@ class PluginModule
     ~PluginModule();
 };
 
+class PluginManager : public PluginModule, public IThreadJob
+{
+  private:
+    vector<PluginModule *>plugins_list;
+    void FindPlugins();
+    void AddPluginToList(IPlugin *o_plugin, string pathToPlugin);
+    void RemovePluginFromList(string plugin_path);
+    int32_t FindPluginInList(string desiredname = "", string desiredbackend = "", string desiredpath = "",
+			      HMODULE hdesiredLoadPlugin = NULL, IPlugin *o_desiredPlugin = NULL);
+    void LoadPlugin(uint32_t desiredindex);
+    void UnloadPlugin(uint32_t desiredIndex);
+
+  public:
+    PluginManager();
+    vector<string *> get_backendsList(PLUGIN_TYPES typeSearched);
+    IPlugin *get_plugin(string desiredBackend);
+    void release_plugin(IPlugin *o_plugin);
+    void startCheck();
+    ~PluginManager();
+};
 }
 
 #endif

@@ -39,7 +39,7 @@ class AudioPlugin : public IAudioPlugin
 		bool init_noServer = false, bool init_stopped = false);
     const string get_backendName();
     bool get_serverStatus();
-    PLUGIN_TYPES get_pluginType();
+    const PLUGIN_TYPES get_pluginType();
     const string get_pluginName();
     bool Is_ContextReady();
     bool Is_Stopped();

@@ -47,7 +47,7 @@ class IAudioPlugin : public IPlugin
 */
     virtual bool Is_Connected() = 0;
     virtual bool get_serverStatus() = 0;
-    virtual PLUGIN_TYPES get_pluginType() = 0;
+//    virtual PLUGIN_TYPES get_pluginType() = 0;
     virtual const string get_pluginName() = 0;
     virtual bool Is_ContextReady() = 0;
     virtual bool Is_Stopped() = 0;

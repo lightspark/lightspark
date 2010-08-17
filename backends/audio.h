@@ -39,15 +39,13 @@ typedef void (*PLUGIN_CLEANUP)(IPlugin *);
 namespace lightspark
 {
 
-class AudioManager
+class AudioManager: public IThreadJob
 {
   private:
     vector<string *>audioplugins_list;
     string SelectedAudioPlugin;
     HMODULE hSelectedAudioPluginLib;
     IAudioPlugin *o_AudioPlugin;
-    void get_audioplugins_list();
-    void refresh_audioplugins_list();
     void load_audioplugin();
     void release_audioplugin();
 
@@ -60,6 +58,8 @@ class AudioManager
     bool isTimingAvailablePlugin() const;
     uint32_t getPlayedTimePlugin(uint32_t streamId);
     void select_audiobackend(string selected_backend);
+    void get_audioplugins_list();
+    void refresh_audioplugins_list();
     ~AudioManager();
 };
 

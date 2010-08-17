@@ -134,6 +134,8 @@ ASFUNCTIONBODY(ABCVm,trace)
 {
 	for(intptr_t i = 0; i< argslen;i++) {
 		cerr << args[i]->toString();
+		if(i > 0)
+			cerr << " ";
 	}
 	cerr << endl;
 	return new Null;

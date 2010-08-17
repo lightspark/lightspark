@@ -59,6 +59,9 @@ void LocalDownloadManager::destroy(Downloader* d)
 
 Downloader::~Downloader()
 {
+	if(buffer != NULL) {
+		free(buffer);
+	}
 	sem_destroy(&available);
 	sem_destroy(&mutex);
 	sem_destroy(&terminated);
@@ -74,9 +77,18 @@ Downloader::Downloader():buffer(NULL),len(0),tail(0),waiting(false),failed(false
 void Downloader::setLen(uint32_t l)
 {
 	len=l;
-	assert_and_throw(buffer==NULL);
-	buffer=new uint8_t[len];
-	setg((char*)buffer,(char*)buffer,(char*)buffer);
+	//assert_and_throw(buffer==NULL);
+	if(buffer == NULL) {
+		buffer= (uint8_t*) calloc(len, sizeof(uint8_t));
+		setg((char*)buffer,(char*)buffer,(char*)buffer);
+	}
+	//Realloc
+	else {
+		intptr_t curPos = (intptr_t) (gptr()-eback());
+		intptr_t curLen = (intptr_t) (egptr()-eback());
+		buffer = (uint8_t*) realloc(buffer, len);
+		setg((char*)buffer,(char*)(buffer+curPos),(char*)(buffer+curLen));
+	}
 }
 
 void Downloader::setFailed()
@@ -93,8 +105,12 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 {
 	if(added==0)
 		return;
-	if((tail+added)>len)
-		throw RunTimeException("Downloaded file is too big");
+	if((tail+added)>len) {
+		LOG(LOG_NO_INFO, "Downloaded file bigger than buffer: " << 
+				tail+added << ">" << len << ", reallocating buffer");
+		setLen(tail+added);
+		//throw RunTimeException("Downloaded file is too big");
+	}
 	sem_wait(&mutex);
 	memcpy(buffer + tail,buf,added);
 	tail+=added;
@@ -194,6 +210,7 @@ CurlDownloader::CurlDownloader(const tiny_string& u)
 			tmp2.push_back(u[i]);
 	}
 	url=tmp2;
+	requestStatus = 0;
 }
 
 void CurlDownloader::threadAbort()
@@ -224,6 +241,8 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, this);
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+		//Its probably a good idea to limit redirections, 100 should be more than enough
+		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 100);
 		//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		res = curl_easy_perform(curl);
 		if(res!=0)
@@ -250,7 +269,9 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	size_t added=size*nmemb;
-	th->append((uint8_t*)buffer,added);
+	if(th->getRequestStatus() != 3) {
+		th->append((uint8_t*)buffer,added);
+	}
 	return added;
 }
 
@@ -261,21 +282,29 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 
 	std::cerr << "CURL header: " << headerLine;
 
-	if(strncmp(headerLine,"HTTP/1.1 4",10)==0) //HTTP error, let's fail
+	if(strncmp(headerLine,"HTTP/1.1 4",10)==0) { //HTTP error, let's fail
+		th->setRequestStatus(4);
 		th->setFailed();
-//	else if(strncmp(headerLine,"HTTP/1.1 3",10)==0); //HTTP redirect
+	}
+	else if(strncmp(headerLine,"HTTP/1.1 3",10)==0) { //HTTP redirect
+		th->setRequestStatus(3);
+	}
+	else if(strncmp(headerLine,"HTTP/1.1 2",10)==0) { //HTTP OK
+		th->setRequestStatus(2);
+	}
 	else if(strncmp(headerLine,"Content-Length: ",16)==0)
 	{
 		//Now read the length and allocate the byteArray
-		th->setLen(atoi(headerLine+16));
+		//Only read the length when we're not redirecting
+		if(th->getRequestStatus() != 3) {
+			th->setLen(atoi(headerLine+16));
+		}
 	}
 	return size*nmemb;
 }
 
-LocalDownloader::LocalDownloader(const tiny_string& u)
+LocalDownloader::LocalDownloader(const tiny_string& u) : url(u)
 {
-	//TODO: Make sure we don't need to urlencode local file string
-	url=u;
 }
 
 void LocalDownloader::threadAbort()

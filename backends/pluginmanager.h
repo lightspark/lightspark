@@ -23,7 +23,6 @@
 #include "compat.h"
 #include <iostream>
 #include <boost/filesystem.hpp>
-#include "../threading.h"
 
 #include "interfaces/IPlugin.h"
 
@@ -36,43 +35,46 @@ typedef void (*PLUGIN_CLEANUP)(IPlugin *);
 
 namespace lightspark
 {
+
+class PluginModule;
   
-class PluginModule
-{
-  protected:
-    string plugin_name;		//plugin name
-    PLUGIN_TYPES plugin_type;	//plugin type to be able to filter them
-    string backend_name;	//backend (can be something like pulseaudio, opengl, ffmpeg)
-    string plugin_path;		//full path to the plugin file
-    bool enabled;		//should it be enabled (if the audio backend is present)?
-    HMODULE h_LoadedPlugin;	//when loaded, handle to the plugin so we can unload it later
-    IPlugin *o_LoadedPlugin;	//when instanciated, object to the class
-
-  public:
-    PluginModule();
-    ~PluginModule();
-};
-
-class PluginManager : public PluginModule, public IThreadJob
+class PluginManager
 {
   private:
-    vector<PluginModule *>plugins_list;
-    void FindPlugins();
-    void AddPluginToList(IPlugin *o_plugin, string pathToPlugin);
-    void RemovePluginFromList(string plugin_path);
-    int32_t FindPluginInList(string desiredname = "", string desiredbackend = "", string desiredpath = "",
+    vector<PluginModule *> pluginsList;
+    void findPlugins();
+    void addPluginToList(IPlugin *o_plugin, string pathToPlugin);
+    void removePluginFromList(string plugin_path);
+    int32_t findPluginInList(string desiredname = "", string desiredbackend = "", string desiredpath = "",
 			      HMODULE hdesiredLoadPlugin = NULL, IPlugin *o_desiredPlugin = NULL);
-    void LoadPlugin(uint32_t desiredindex);
-    void UnloadPlugin(uint32_t desiredIndex);
+    void loadPlugin(uint32_t desiredindex);
+    void unloadPlugin(uint32_t desiredIndex);
 
   public:
     PluginManager();
     vector<string *> get_backendsList(PLUGIN_TYPES typeSearched);
     IPlugin *get_plugin(string desiredBackend);
     void release_plugin(IPlugin *o_plugin);
-    void startCheck();
     ~PluginManager();
 };
+
+class PluginModule
+{
+  friend class PluginManager;
+  protected:
+    string pluginName;		//plugin name
+    PLUGIN_TYPES pluginType;	//plugin type to be able to filter them
+    string backendName;	//backend (can be something like pulseaudio, opengl, ffmpeg)
+    string pluginPath;		//full path to the plugin file
+    bool enabled;		//should it be enabled (if the audio backend is present)?
+    HMODULE hLoadedPlugin;	//when loaded, handle to the plugin so we can unload it later
+    IPlugin *oLoadedPlugin;	//when instanciated, object to the class
+
+  public:
+    PluginModule();
+    ~PluginModule();
+};
+
 }
 
 #endif

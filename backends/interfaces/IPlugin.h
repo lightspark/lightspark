@@ -27,7 +27,7 @@
 
 using namespace std;
 
-enum PLUGIN_TYPES { UNDEFINED=0, AUDIO, VIDEO };
+enum PLUGIN_TYPES { UNDEFINED=0, AUDIO, VIDEO, DECODER, ENCODER };
 
 class IPlugin
 {

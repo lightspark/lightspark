@@ -258,7 +258,7 @@ public:
 
 	PluginManager *pluginManager;
 #ifdef ENABLE_SOUND
-	AudioManager* audioManager;
+	AudioManager *audioManager;
 #endif
 	//Application starting time in milliseconds
 	uint64_t startTime;

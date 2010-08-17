@@ -24,9 +24,10 @@
 
 #include "compat.h"
 #include "decoder.h"
-#include <string.h>
+#include <iostream>
 #include <boost/filesystem.hpp>
 
+#include "pluginmanager.h"
 #include "interfaces/audio/IAudioPlugin.h"
 
 using namespace std;
@@ -39,26 +40,27 @@ typedef void (*PLUGIN_CLEANUP)(IPlugin *);
 namespace lightspark
 {
 
-class AudioManager: public IThreadJob
+class AudioManager
 {
   private:
     vector<string *>audioplugins_list;
-    string SelectedAudioPlugin;
-    HMODULE hSelectedAudioPluginLib;
     IAudioPlugin *o_AudioPlugin;
-    void load_audioplugin();
+    string selectedAudioBackend;
+    void load_audioplugin(string selected_backend);
     void release_audioplugin();
+    PluginManager *pluginManager;
+    
 
   public:
-    AudioManager();
+    AudioManager(PluginManager *sharePluginManager);
     uint32_t createStreamPlugin(AudioDecoder *decoder);
     void freeStreamPlugin(uint32_t id);
     void fillPlugin(uint32_t id);
     void stopPlugin();
     bool isTimingAvailablePlugin() const;
     uint32_t getPlayedTimePlugin(uint32_t streamId);
-    void select_audiobackend(string selected_backend);
-    void get_audioplugins_list();
+    void set_audiobackend(string desired_backend);
+    void get_audioBackendsList();
     void refresh_audioplugins_list();
     ~AudioManager();
 };

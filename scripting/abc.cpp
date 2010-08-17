@@ -126,7 +126,12 @@ void SymbolClassTag::execute(RootMovieClip* root)
 
 ASFUNCTIONBODY(ABCVm,print)
 {
-	cerr << args[0]->toString() << endl;
+	if(args[0]->getObjectType() == T_STRING) {
+		ASString* str = static_cast<ASString*>(args[0]);
+		cerr << str->data << endl;
+	}
+	else
+		cerr << args[0]->toString() << endl;
 	return new Null;
 }
 
@@ -134,7 +139,12 @@ ASFUNCTIONBODY(ABCVm,trace)
 {
 	for(intptr_t i = 0; i< argslen;i++)
 	{
-		cerr << args[i]->toString();
+		if(args[i]->getObjectType() == T_STRING) {
+			ASString* str = static_cast<ASString*>(args[i]);
+			cerr << str->data;
+		}
+		else
+			cerr << args[i]->toString();
 		if(i > 0)
 			cerr << " ";
 	}

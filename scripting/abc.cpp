@@ -237,6 +237,7 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("IEventDispatcher","flash.events",Class<IEventDispatcher>::getClass());
 	Global->setVariableByQName("FocusEvent","flash.events",Class<FocusEvent>::getClass());
 	Global->setVariableByQName("NetStatusEvent","flash.events",Class<NetStatusEvent>::getClass());
+	Global->setVariableByQName("HTTPStatusEvent","flash.events",Class<HTTPStatusEvent>::getClass());
 	Global->setVariableByQName("KeyboardEvent","flash.events",Class<KeyboardEvent>::getClass());
 
 	Global->setVariableByQName("LocalConnection","flash.net",Class<ASObject>::getClass(QName("LocalConnection","flash.net")));

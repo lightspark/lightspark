@@ -103,6 +103,15 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class HTTPStatusEvent: public Event
+{
+public:
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+};
+
 class TextEvent: public Event
 {
 public:

@@ -39,6 +39,7 @@ REGISTER_CLASS_NAME(ProgressEvent);
 REGISTER_CLASS_NAME(IOErrorEvent);
 REGISTER_CLASS_NAME(FocusEvent);
 REGISTER_CLASS_NAME(NetStatusEvent);
+REGISTER_CLASS_NAME(HTTPStatusEvent);
 REGISTER_CLASS_NAME(FullScreenEvent);
 REGISTER_CLASS_NAME(KeyboardEvent);
 REGISTER_CLASS_NAME(TextEvent);
@@ -537,3 +538,10 @@ ABCContextInitEvent::ABCContextInitEvent(ABCContext* c):Event("ABCContextInitEve
 ShutdownEvent::ShutdownEvent():Event("shutdownEvent")
 {
 }
+
+void HTTPStatusEvent::sinit(Class_base* c)
+{
+//	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"));
+}
+

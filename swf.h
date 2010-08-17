@@ -214,7 +214,6 @@ private:
 	*/
 	std::string rawParameters;
 	std::string rawCookies;
-	static int hexToInt(char c);
 	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
 	bool exactSecuritySettings;
 	bool exactSecuritySettingsLocked;

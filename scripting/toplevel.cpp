@@ -774,6 +774,7 @@ void ASString::sinit(Class_base* c)
 	c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
 	c->setVariableByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase));
 	c->setVariableByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase));
+	c->setVariableByQName("fromCharCode",AS3,Class<IFunction>::getFunction(fromCharCode));
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 }
 
@@ -1646,6 +1647,18 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("pow","",Class<IFunction>::getFunction(pow));
 }
 
+int Math::hexToInt(char c)
+{
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(c>='a' && c<='f')
+		return c-'a'+10;
+	else if(c>='A' && c<='F')
+		return c-'A'+10;
+	else
+		return -1;
+}
+
 ASFUNCTIONBODY(Math,atan2)
 {
 	double n1=args[0]->toNumber();
@@ -1939,6 +1952,16 @@ ASFUNCTIONBODY(ASString,toUpperCase)
 	return ret;
 }
 
+ASFUNCTIONBODY(ASString,fromCharCode)
+{
+	assert_and_throw(argslen==1);
+	int ret=args[0]->toInt();
+	if(ret>127)
+		LOG(LOG_NOT_IMPLEMENTED,"Unicode not supported in String::fromCharCode");
+	char buf[2] = { (char)ret, 0};
+	return Class<ASString>::getInstanceS(buf);
+}
+
 ASFUNCTIONBODY(ASString,replace)
 {
 	ASString* th=static_cast<const ASString*>(obj);
@@ -2001,7 +2024,7 @@ ASFUNCTIONBODY(ASString,replace)
 				subargs[capturingGroups+1]=abstract_i(ovector[0]-retDiff);
 				th->incRef();
 				subargs[capturingGroups+2]=th;
-				ASObject* ret=f->call(NULL, subargs, 3+capturingGroups);
+				ASObject* ret=f->call(new Null, subargs, 3+capturingGroups);
 				replaceWith=ret->toString().raw_buf();
 				ret->decRef();
 			}
@@ -2798,7 +2821,24 @@ ASFUNCTIONBODY(lightspark,parseInt)
 	if(args[0]->getObjectType()==T_UNDEFINED)
 		return new Undefined;
 	else
-		return abstract_i(atoi(args[0]->toString().raw_buf()));
+	{
+		const tiny_string& val=args[0]->toString();
+		const char* cur=val.raw_buf();
+		int ret=0;
+		if(strncmp(cur,"0x",2)==0) // Should be an exadecimal number
+		{
+			cur+=2;
+			while(*cur)
+			{
+				ret<<=4; //*16
+				ret+=Math::hexToInt(*cur);
+				cur++;
+			}
+		}
+		else
+			ret=atoi(cur);
+		return abstract_i(ret);
+	}
 }
 
 ASFUNCTIONBODY(lightspark,parseFloat)

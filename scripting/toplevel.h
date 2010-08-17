@@ -423,6 +423,7 @@ public:
 	ASFUNCTION(charAt);
 	ASFUNCTION(toLowerCase);
 	ASFUNCTION(toUpperCase);
+	ASFUNCTION(fromCharCode);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	tiny_string toString(bool debugMsg=false);
@@ -752,6 +753,7 @@ public:
 	ASFUNCTION(_max);
 	ASFUNCTION(_min);
 	ASFUNCTION(pow);
+	static int hexToInt(char c);
 };
 
 class RegExp: public ASObject

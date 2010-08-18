@@ -1684,16 +1684,15 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476));
 	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951));
 
-	//TODO: add missing function below
 	// public methods
 	c->setVariableByQName("abs","",Class<IFunction>::getFunction(abs));
-	//c->setVariableByQName("acos","",Class<IFunction>::getFunction(acos));
-	//c->setVariableByQName("asin","",Class<IFunction>::getFunction(asin));
-	//c->setVariableByQName("atan","",Class<IFunction>::getFunction(atan));
+	c->setVariableByQName("acos","",Class<IFunction>::getFunction(acos));
+	c->setVariableByQName("asin","",Class<IFunction>::getFunction(asin));
+	c->setVariableByQName("atan","",Class<IFunction>::getFunction(atan));
 	c->setVariableByQName("atan2","",Class<IFunction>::getFunction(atan2));
 	c->setVariableByQName("ceil","",Class<IFunction>::getFunction(ceil));
 	c->setVariableByQName("cos","",Class<IFunction>::getFunction(cos));
-	//c->setVariableByQName("exp","",Class<IFunction>::getFunction(exp));
+	c->setVariableByQName("exp","",Class<IFunction>::getFunction(exp));
 	c->setVariableByQName("floor","",Class<IFunction>::getFunction(floor));
 	c->setVariableByQName("log","",Class<IFunction>::getFunction(log));
 	c->setVariableByQName("max","",Class<IFunction>::getFunction(_max));
@@ -1703,7 +1702,7 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("round","",Class<IFunction>::getFunction(round));
 	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
 	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
-	//c->setVariableByQName("tan","",Class<IFunction>::getFunction(tan));
+	c->setVariableByQName("tan","",Class<IFunction>::getFunction(tan));
 }
 
 int Math::hexToInt(char c)
@@ -1739,6 +1738,33 @@ ASFUNCTIONBODY(Math,_min)
 	return abstract_d(dmin(n1,n2));
 }
 
+ASFUNCTIONBODY(Math,exp)
+{
+	double n=args[0]->toNumber();
+	return abstract_d(::exp(n));
+}
+
+ASFUNCTIONBODY(Math,acos)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::acos(n));
+}
+
+ASFUNCTIONBODY(Math,asin)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::asin(n));
+}
+
+ASFUNCTIONBODY(Math,atan)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::atan(n));
+}
+
 ASFUNCTIONBODY(Math,cos)
 {
 	//Angle is in radians
@@ -1751,6 +1777,13 @@ ASFUNCTIONBODY(Math,sin)
 	//Angle is in radians
 	double n=args[0]->toNumber();
 	return abstract_d(::sin(n));
+}
+
+ASFUNCTIONBODY(Math,tan)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::tan(n));
 }
 
 ASFUNCTIONBODY(Math,abs)

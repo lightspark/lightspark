@@ -85,19 +85,19 @@ void Array::sinit(Class_base* c)
 
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
-	c->ASObject::setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
-	c->ASObject::setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
-	c->ASObject::setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
-	c->ASObject::setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
-	c->ASObject::setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
-	c->ASObject::setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
-	c->ASObject::setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
-//	c->ASObject::setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
-	c->ASObject::setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
-	c->ASObject::setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
-	c->ASObject::setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
-	c->ASObject::setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
-	c->ASObject::setVariableByQName("NUMERIC","",abstract_i(NUMERIC));
+	c->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
+	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
+	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
+	c->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
+	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
+	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
+	c->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
+//	c->setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
+	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
+	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	c->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
+	c->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
+	c->setVariableByQName("NUMERIC","",abstract_i(NUMERIC));
 }
 
 void Array::buildTraits(ASObject* o)

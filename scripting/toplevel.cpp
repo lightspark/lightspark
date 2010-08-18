@@ -1697,7 +1697,7 @@ ASFUNCTIONBODY(Math,sin)
 ASFUNCTIONBODY(Math,abs)
 {
 	double n=args[0]->toNumber();
-	return abstract_d(::abs(n));
+	return abstract_d(::fabs(n));
 }
 
 ASFUNCTIONBODY(Math,ceil)

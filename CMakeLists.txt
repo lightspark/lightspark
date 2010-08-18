@@ -34,7 +34,7 @@ IF(CMAKE_COMPILER_IS_GNUCC)
    #define GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
    #if GCC_VERSION < 40400
    #error
-   #ENDIF
+   #endif
    int main() { return 0; }" GCC_IS_4_4)
    IF(NOT GCC_IS_4_4)
 	  MESSAGE(FATAL_ERROR "GCC 4.4+ is required.")

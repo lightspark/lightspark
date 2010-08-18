@@ -742,19 +742,26 @@ class Math: public ASObject
 {
 public:
 	static void sinit(Class_base* c);
-	ASFUNCTION(atan2);
+
 	ASFUNCTION(abs);
-	ASFUNCTION(sin);
-	ASFUNCTION(cos);
-	ASFUNCTION(floor);
+	ASFUNCTION(acos);
+	ASFUNCTION(asin);
+	ASFUNCTION(atan);
+	ASFUNCTION(atan2);
 	ASFUNCTION(ceil);
-	ASFUNCTION(round);
-	ASFUNCTION(sqrt);
+	ASFUNCTION(cos);
+	ASFUNCTION(exp);
+	ASFUNCTION(floor);
 	ASFUNCTION(log);
-	ASFUNCTION(random);
 	ASFUNCTION(_max);
 	ASFUNCTION(_min);
 	ASFUNCTION(pow);
+	ASFUNCTION(random);
+	ASFUNCTION(round);
+	ASFUNCTION(sin);
+	ASFUNCTION(sqrt);
+	ASFUNCTION(tan);
+
 	static int hexToInt(char c);
 };
 

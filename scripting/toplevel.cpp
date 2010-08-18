@@ -1439,7 +1439,7 @@ int Date::toInt()
 {
 	int ret=0;
 
-	ret+=(year-1990)*365 + ((year-1989)/4 - (year-1901)/100) + (year-1601)/400;
+	ret+=((year-1990)*365 + ((year-1989)/4 - (year-1901)/100) + (year-1601)/400)*24*3600*1000;
 
 	bool isLeapYear;
 	for(int j = 1; j < month; j++)

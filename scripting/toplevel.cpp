@@ -1674,21 +1674,36 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 
 void Math::sinit(Class_base* c)
 {
-	c->setVariableByQName("PI","",abstract_d(M_PI));
+	// public constants
+	c->setVariableByQName("E","",abstract_d(2.71828182845905));
+	c->setVariableByQName("LN10","",abstract_d(2.302585092994046));
+	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453));
 	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518));
-	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
+	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387));
+	c->setVariableByQName("PI","",abstract_d(3.141592653589793));
+	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476));
+	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951));
+
+	//TODO: add missing function below
+	// public methods
+	c->setVariableByQName("abs","",Class<IFunction>::getFunction(abs));
+	//c->setVariableByQName("acos","",Class<IFunction>::getFunction(acos));
+	//c->setVariableByQName("asin","",Class<IFunction>::getFunction(asin));
+	//c->setVariableByQName("atan","",Class<IFunction>::getFunction(atan));
 	c->setVariableByQName("atan2","",Class<IFunction>::getFunction(atan2));
+	c->setVariableByQName("ceil","",Class<IFunction>::getFunction(ceil));
+	c->setVariableByQName("cos","",Class<IFunction>::getFunction(cos));
+	//c->setVariableByQName("exp","",Class<IFunction>::getFunction(exp));
+	c->setVariableByQName("floor","",Class<IFunction>::getFunction(floor));
+	c->setVariableByQName("log","",Class<IFunction>::getFunction(log));
 	c->setVariableByQName("max","",Class<IFunction>::getFunction(_max));
 	c->setVariableByQName("min","",Class<IFunction>::getFunction(_min));
-	c->setVariableByQName("abs","",Class<IFunction>::getFunction(abs));
-	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
-	c->setVariableByQName("cos","",Class<IFunction>::getFunction(cos));
-	c->setVariableByQName("log","",Class<IFunction>::getFunction(log));
-	c->setVariableByQName("floor","",Class<IFunction>::getFunction(floor));
-	c->setVariableByQName("ceil","",Class<IFunction>::getFunction(ceil));
-	c->setVariableByQName("round","",Class<IFunction>::getFunction(round));
-	c->setVariableByQName("random","",Class<IFunction>::getFunction(random));
 	c->setVariableByQName("pow","",Class<IFunction>::getFunction(pow));
+	c->setVariableByQName("random","",Class<IFunction>::getFunction(random));
+	c->setVariableByQName("round","",Class<IFunction>::getFunction(round));
+	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
+	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
+	//c->setVariableByQName("tan","",Class<IFunction>::getFunction(tan));
 }
 
 int Math::hexToInt(char c)

@@ -1832,6 +1832,7 @@ ASFUNCTIONBODY(Math,pow)
 ASFUNCTIONBODY(Math,random)
 {
 	double ret=rand();
+	srand(time(NULL));
 	ret/=RAND_MAX;
 	return abstract_d(ret);
 }

@@ -706,7 +706,6 @@ private:
 	Date();
 	bool getIsLeapYear(int year);
 	int getDaysInMonth(int month, bool isLeapYear);
-	int getDaysInYear(bool isLeapYear);
 public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

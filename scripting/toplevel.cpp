@@ -1404,7 +1404,7 @@ bool Date::getIsLeapYear(int year)
 
 int Date::getDaysInMonth(int month, bool isLeapYear)
 {
-	enum { JANUARY = 31, FEBRUARY, MARCH, APRIL, MAY, JUNE, JULY, AUGUST, SEPTEMBER, OCTOBER, NOVEMBER, DECEMBER };
+	enum { JANUARY = 1, FEBRUARY, MARCH, APRIL, MAY, JUNE, JULY, AUGUST, SEPTEMBER, OCTOBER, NOVEMBER, DECEMBER };
 
 	int days;
 
@@ -1435,27 +1435,17 @@ int Date::getDaysInMonth(int month, bool isLeapYear)
 	return days;
 }
 
-int Date::getDaysInYear(bool isLeapYear)
-{
-	return isLeapYear ? 366 : 365;
-}
-
 int Date::toInt()
 {
-	bool isLeapYear;
-
 	int ret=0;
 
-	// calculations aware of the leap year
-	for(int i = 1990; i < year; i++)
-	{
-		isLeapYear = getIsLeapYear(i);
-		ret+=getDaysInYear(isLeapYear)*24*3600*1000;
+	ret+=(year-1990)*365 + ((year-1989)/4 - (year-1901)/100) + (year-1601)/400;
 
-		for(int j = 1; j < month; j++)
-		{
-			ret+=getDaysInMonth(j, isLeapYear)*24*3600*1000;
-		}
+	bool isLeapYear;
+	for(int j = 1; j < month; j++)
+	{
+		isLeapYear = getIsLeapYear(year);
+		ret+=getDaysInMonth(j, isLeapYear)*24*3600*1000;
 	}
 
 	ret+=(date-1)*24*3600*1000;

@@ -59,10 +59,8 @@ typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
 	{"bitAnd_oi",(void*)&ABCVm::bitAnd_oi,ARGS_OBJ_INT},
 	{"pushByte",(void*)&ABCVm::pushByte,ARGS_INT},
 	{"pushShort",(void*)&ABCVm::pushShort,ARGS_INT},
-	{"increment",(void*)&ABCVm::increment,ARGS_OBJ},
-	{"increment_i",(void*)&ABCVm::increment_i,ARGS_OBJ},
-	{"decrement",(void*)&ABCVm::decrement,ARGS_OBJ},
 	{"decrement_i",(void*)&ABCVm::decrement_i,ARGS_OBJ},
+	{"increment_i",(void*)&ABCVm::increment_i,ARGS_OBJ},
 	{"bitNot",(void*)&ABCVm::bitNot,ARGS_OBJ},
 	{"bitXor",(void*)&ABCVm::bitXor,ARGS_OBJ_OBJ},
 	{"bitOr",(void*)&ABCVm::bitOr,ARGS_OBJ_OBJ},
@@ -79,6 +77,8 @@ typed_opcode_handler ABCVm::opcode_table_uintptr_t[]={
 };
 
 typed_opcode_handler ABCVm::opcode_table_number_t[]={
+	{"increment",(void*)&ABCVm::increment,ARGS_OBJ},
+	{"decrement",(void*)&ABCVm::decrement,ARGS_OBJ},
 	{"multiply",(void*)&ABCVm::multiply,ARGS_OBJ_OBJ},
 	{"multiply_oi",(void*)&ABCVm::multiply_oi,ARGS_OBJ_INT},
 	{"divide",(void*)&ABCVm::divide,ARGS_OBJ_OBJ},

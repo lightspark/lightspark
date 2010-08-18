@@ -1711,8 +1711,6 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
 	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
 	c->setVariableByQName("tan","",Class<IFunction>::getFunction(tan));
-
-	srand(time(NULL));
 }
 
 int Math::hexToInt(char c)

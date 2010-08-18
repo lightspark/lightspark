@@ -53,6 +53,7 @@ AudioManager::AudioManager(PluginManager *sharedPluginManager)
 {
   pluginManager = sharedPluginManager;
   selectedAudioBackend = "";
+  oAudioPlugin = NULL;
 //string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
   string DesiredAudio = "pulse";
   set_audiobackend(DesiredAudio);
@@ -60,27 +61,27 @@ AudioManager::AudioManager(PluginManager *sharedPluginManager)
 
 void AudioManager::fillPlugin(uint32_t id)
 {
-  o_AudioPlugin->fill(id);
+  oAudioPlugin->fill(id);
 }
 
 void AudioManager::freeStreamPlugin(uint32_t id)
 {
-  o_AudioPlugin->freeStream(id);
+  oAudioPlugin->freeStream(id);
 }
 
 uint32_t AudioManager::createStreamPlugin(AudioDecoder *decoder)
 {
-  return o_AudioPlugin->createStream(decoder);
+  return oAudioPlugin->createStream(decoder);
 }
 
 uint32_t AudioManager::getPlayedTimePlugin(uint32_t streamId)
 {
-  return o_AudioPlugin->getPlayedTime(streamId);
+  return oAudioPlugin->getPlayedTime(streamId);
 }
 
 bool AudioManager::isTimingAvailablePlugin() const
 {
-  return o_AudioPlugin->isTimingAvailable();
+  return oAudioPlugin->isTimingAvailable();
 }
 
 void AudioManager::set_audiobackend(string desired_backend)
@@ -105,14 +106,27 @@ void AudioManager::refresh_audioplugins_list()
 
 void AudioManager::release_audioplugin()
 {
-  o_AudioPlugin->stop();
-  pluginManager->release_plugin(o_AudioPlugin);
+  if(oAudioPlugin != NULL)
+  {
+    oAudioPlugin->stop();
+    pluginManager->release_plugin(oAudioPlugin);
+  }
 }
 
 void AudioManager::load_audioplugin(string selected_backend)
 {
   release_audioplugin();
-  o_AudioPlugin = static_cast<IAudioPlugin *>(pluginManager->get_plugin(selected_backend));
+  oAudioPlugin = static_cast<IAudioPlugin *>(pluginManager->get_plugin(selected_backend));
+//#if defined DEBUG
+  if(oAudioPlugin != NULL)
+  {
+  cout << "The following audio plugin has been loaded: " << oAudioPlugin->get_pluginName() << endl;
+  }
+  else
+  {
+    cout << "The desired backend (" << selected_backend << ") could not be loaded." << endl;
+  }
+//#endif
 }
 
 /**************************
@@ -126,7 +140,7 @@ AudioManager::~AudioManager()
 
 void AudioManager::stopPlugin()
 {
-  o_AudioPlugin->stop();
+  oAudioPlugin->stop();
 }
 
 #endif

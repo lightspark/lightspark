@@ -35,7 +35,12 @@ PulsePlugin::PulsePlugin(PLUGIN_TYPES init_Type, string init_Name, string init_a
   contextReady = init_contextReady;
   init_noServer = init_noServer;
   stopped = init_stopped;
+  
+  start();
+}
 
+void PulsePlugin::start()
+{
   mainLoop = pa_threaded_mainloop_new();
   pa_threaded_mainloop_start(mainLoop);
   
@@ -45,6 +50,7 @@ PulsePlugin::PulsePlugin(PLUGIN_TYPES init_Type, string init_Name, string init_a
   pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
   pa_threaded_mainloop_unlock(mainLoop);
 }
+
 
 bool PulsePlugin::Is_Connected()
 {

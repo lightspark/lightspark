@@ -44,7 +44,7 @@ class AudioManager
 {
   private:
     vector<string *>audioplugins_list;
-    IAudioPlugin *o_AudioPlugin;
+    IAudioPlugin *oAudioPlugin;
     string selectedAudioBackend;
     void load_audioplugin(string selected_backend);
     void release_audioplugin();

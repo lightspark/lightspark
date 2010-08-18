@@ -604,7 +604,7 @@ void NetStream::execute()
 	catch(exception& e)
 	{
 		LOG(LOG_ERROR, "Exception in reading: "<<e.what());
-//		waitForFlush=false; //added, because shouldn't it be false for any error?
+		waitForFlush=false; //added, because shouldn't it be false for any error?
 	}
 
 	if(waitForFlush)

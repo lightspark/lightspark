@@ -40,7 +40,7 @@ using namespace boost;
 
 PluginManager::PluginManager()
 {
-
+  findPlugins();
 }
 
 /*****************
@@ -127,8 +127,8 @@ void PluginManager::findPlugins()
 vector<string *> PluginManager::get_backendsList(PLUGIN_TYPES typeSearched)
 {
   vector<string *> retrievedList;
-  uint32_t count;
-  for(uint32_t index; index < pluginsList.size(); index++)
+  uint32_t count = 0;
+  for(uint32_t index = 0; index < pluginsList.size(); index++)
   {
     if(pluginsList[index]->pluginType == typeSearched)
     {
@@ -149,6 +149,7 @@ IPlugin *PluginManager::get_plugin(string desiredBackend)
   int32_t index = findPluginInList("", desiredBackend, "", NULL, NULL);
   if( index >= 0 )
   {
+    loadPlugin(index);
     return pluginsList[index]->oLoadedPlugin;
   }
   else
@@ -163,7 +164,7 @@ need it anymore. The PluginManager releases it (delete and unload).
 *******************/
 void PluginManager::release_plugin(IPlugin* o_plugin)
 {
-  for(uint32_t index; index < pluginsList.size(); index++)
+  for(uint32_t index = 0; index < pluginsList.size(); index++)
   {
     if(pluginsList[index]->oLoadedPlugin == o_plugin)
     {
@@ -183,18 +184,21 @@ void PluginManager::addPluginToList(IPlugin *o_plugin, string pathToPlugin)
   {
     return;
   }
-  
-  if(index == pluginsList.size())
+  else
   {
-    pluginsList.push_back(new PluginModule());
-  }
-  pluginsList[index]->pluginName = o_plugin->get_pluginName();
-  pluginsList[index]->backendName = o_plugin->get_backendName();
-  pluginsList[index]->pluginPath = pathToPlugin;
-  pluginsList[index]->enabled = false;
-#if defined DEBUG
+    index = 0;
+    if(pluginsList.size() == (uint32_t)(index))
+    {
+      pluginsList.push_back(new PluginModule());
+    }
+    pluginsList[index]->pluginName = o_plugin->get_pluginName();
+    pluginsList[index]->backendName = o_plugin->get_backendName();
+    pluginsList[index]->pluginPath = pathToPlugin;
+    pluginsList[index]->enabled = false;
+//  #if defined DEBUG
     cout << "This is the plugin " << index  << " added with backend: " << pluginsList[index]->backendName << endl;
-#endif 
+//  #endif
+  }
 }
 
 /**********************
@@ -218,7 +222,7 @@ If found, returns the location in the list (index). Else, returns -1 (which can'
 int32_t PluginManager::findPluginInList(string desiredname, string desiredbackend,
 					string desiredpath, void* hdesiredloadPlugin, IPlugin* o_desiredPlugin)
 {
-  for(int32_t index; index < pluginsList.size(); index++)
+  for(uint32_t index = 0; index < pluginsList.size(); index++)
   {
     if((desiredname != "") && (pluginsList[index]->pluginName == desiredname))
     {

@@ -36,6 +36,7 @@ class IAudioPlugin : public IPlugin
   protected:
     class AudioStream; //Will be implemented per plugin
 //    string audiobackend_name;
+    virtual void start() = 0;
     vector<AudioStream*> streams;
     volatile bool contextReady;
     volatile bool noServer;

@@ -1703,6 +1703,8 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
 	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
 	c->setVariableByQName("tan","",Class<IFunction>::getFunction(tan));
+
+	srand(time(NULL));
 }
 
 int Math::hexToInt(char c)
@@ -1832,7 +1834,6 @@ ASFUNCTIONBODY(Math,pow)
 ASFUNCTIONBODY(Math,random)
 {
 	double ret=rand();
-	srand(time(NULL));
 	ret/=RAND_MAX;
 	return abstract_d(ret);
 }

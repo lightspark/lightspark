@@ -57,7 +57,11 @@ public:
 	Class_inherit(const QName& name):Class_base(name),tag(NULL)
 	{
 		bool ret=sys->classes.insert(std::make_pair(name,this)).second;
-		assert_and_throw(ret && "Class name collision found");
+		if(!ret)
+		{
+			LOG(LOG_ERROR,"Class name collision at: " << name);
+			throw RunTimeException("Class name collision");
+		}
 	}
 	void buildInstanceTraits(ASObject* o) const;
 	void bindTag(DictionaryTag const* t)

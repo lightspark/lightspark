@@ -22,6 +22,7 @@
 #include "asobject.h"
 #include "class.h"
 #include "compat.h"
+#include <sstream>
 
 using namespace std;
 using namespace lightspark;
@@ -532,14 +533,32 @@ bool Dictionary::nextName(unsigned int index, ASObject*& out)
 bool Dictionary::nextValue(unsigned int index, ASObject*& out)
 {
 	assert_and_throw(implEnable);
-	throw UnsupportedException("Dictionary::nextValue not implmented");
-/*	assert(index<data.size());
+	assert(index<data.size());
 	map<ASObject*,ASObject*>::iterator it=data.begin();
-	for(int i=0;i<index;i++)
+	for(unsigned int i=0;i<index;i++)
 		it++;
-	out=it->first;
-	return true;*/
-	return false;
+	out=it->second;
+	return true;
+}
+
+tiny_string Dictionary::toString(bool debugMsg)
+{
+	if(debugMsg)
+		return ASObject::toString(debugMsg);
+		
+	std::stringstream retstr;
+	retstr << "{";
+	map<ASObject*,ASObject*>::iterator it=data.begin();
+	while(it != data.end())
+	{
+		if(it != data.begin())
+			retstr << ", ";
+		retstr << "{" << it->first->toString() << ", " << it->second->toString() << "}";
+		it++;
+	}
+	retstr << "}";
+	
+	return retstr.str();
 }
 
 void Proxy::sinit(Class_base* c)

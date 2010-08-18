@@ -115,7 +115,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 		return;
 	if((tail+added)>len)
 	{
-		//Only grow the buffer when aligned
+		//Only grow the buffer when allowed
 		if(getAllowBufferRealloc())
 		{
 			LOG(LOG_NO_INFO, "Downloaded file bigger than buffer: " << 

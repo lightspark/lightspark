@@ -55,7 +55,17 @@ REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
 REGISTER_CLASS_NAME(Math);
 REGISTER_CLASS_NAME(ASString);
-REGISTER_CLASS_NAME(ASError);
+REGISTER_CLASS_NAME2(ASError, "Error", "");
+REGISTER_CLASS_NAME(SecurityError);
+REGISTER_CLASS_NAME(ArgumentError);
+REGISTER_CLASS_NAME(DefinitionError);
+REGISTER_CLASS_NAME(EvalError);
+REGISTER_CLASS_NAME(RangeError);
+REGISTER_CLASS_NAME(ReferenceError);
+REGISTER_CLASS_NAME(SyntaxError);
+REGISTER_CLASS_NAME(TypeError);
+REGISTER_CLASS_NAME(URIError);
+REGISTER_CLASS_NAME(VerifyError);
 
 Array::Array()
 {
@@ -764,6 +774,7 @@ void ASString::sinit(Class_base* c)
 	c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
 	c->setVariableByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase));
 	c->setVariableByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase));
+	c->setVariableByQName("fromCharCode",AS3,Class<IFunction>::getFunction(fromCharCode));
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 }
 
@@ -1636,6 +1647,18 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("pow","",Class<IFunction>::getFunction(pow));
 }
 
+int Math::hexToInt(char c)
+{
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(c>='a' && c<='f')
+		return c-'a'+10;
+	else if(c>='A' && c<='F')
+		return c-'A'+10;
+	else
+		return -1;
+}
+
 ASFUNCTIONBODY(Math,atan2)
 {
 	double n1=args[0]->toNumber();
@@ -1929,6 +1952,16 @@ ASFUNCTIONBODY(ASString,toUpperCase)
 	return ret;
 }
 
+ASFUNCTIONBODY(ASString,fromCharCode)
+{
+	assert_and_throw(argslen==1);
+	int ret=args[0]->toInt();
+	if(ret>127)
+		LOG(LOG_NOT_IMPLEMENTED,"Unicode not supported in String::fromCharCode");
+	char buf[2] = { (char)ret, 0};
+	return Class<ASString>::getInstanceS(buf);
+}
+
 ASFUNCTIONBODY(ASString,replace)
 {
 	ASString* th=static_cast<const ASString*>(obj);
@@ -1967,8 +2000,7 @@ ASFUNCTIONBODY(ASString,replace)
 			pcre_free(pcreRE);
 			return ret;
 		}
-		//assert_and_throw(capturingGroups<10);
-		assert_and_throw(capturingGroups==0);
+		assert_and_throw(capturingGroups<10);
 		int ovector[30];
 		int offset=0;
 		int retDiff=0;
@@ -1985,12 +2017,14 @@ ASFUNCTIONBODY(ASString,replace)
 			{
 				//Get the replace for this match
 				IFunction* f=static_cast<IFunction*>(args[1]);
-				ASObject* subargs[3];
+				ASObject* subargs[3+capturingGroups];
 				subargs[0]=Class<ASString>::getInstanceS(ret->data.substr(ovector[0],ovector[1]-ovector[0]));
-				subargs[1]=abstract_i(ovector[0]-retDiff);
+				for(int i=0;i<capturingGroups;i++)
+					subargs[i+1]=Class<ASString>::getInstanceS(ret->data.substr(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
+				subargs[capturingGroups+1]=abstract_i(ovector[0]-retDiff);
 				th->incRef();
-				subargs[2]=th;
-				ASObject* ret=f->call(NULL, subargs, 3);
+				subargs[capturingGroups+2]=th;
+				ASObject* ret=f->call(new Null, subargs, 3+capturingGroups);
 				replaceWith=ret->toString().raw_buf();
 				ret->decRef();
 			}
@@ -2033,7 +2067,7 @@ ASFUNCTIONBODY(ASError,getStackTrace)
 
 tiny_string ASError::toString(bool debugMsg)
 {
-	return message.len() > 0 ? message : "Error";
+	return message.len() > 0 ? message : name;
 }
 
 ASFUNCTIONBODY(ASError,_getErrorID)
@@ -2067,20 +2101,257 @@ ASFUNCTIONBODY(ASError,_setMessage)
 ASFUNCTIONBODY(ASError,_getMessage)
 {
 	ASError* th=static_cast<ASError*>(obj);
-	return Class<ASString>::getInstanceS(th->message);
+	return Class<ASString>::getInstanceS(th->toString(false));
+}
+
+ASFUNCTIONBODY(ASError,_constructor)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	assert_and_throw(argslen <= 2);
+	if(argslen >= 1)
+	{
+		th->message = args[0]->toString();
+	}
+	if(argslen == 2)
+	{
+		th->errorID = static_cast<Integer*>(args[0])->toInt();
+	}
+	return NULL;
 }
 
 void ASError::sinit(Class_base* c)
 {
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setGetterByQName("errorID",AS3,Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message",AS3,Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message",AS3,Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name",AS3,Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name",AS3,Class<IFunction>::getFunction(_setName));
+	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
+	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
+	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
+	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
+	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
+	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
 void ASError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(SecurityError,_constructor)
+{
+	assert(args && argslen<=1);
+	SecurityError* th=static_cast<SecurityError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void SecurityError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void SecurityError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(ArgumentError,_constructor)
+{
+	assert(args && argslen<=1);
+	ArgumentError* th=static_cast<ArgumentError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void ArgumentError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void ArgumentError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(DefinitionError,_constructor)
+{
+	assert(args && argslen<=1);
+	DefinitionError* th=static_cast<DefinitionError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void DefinitionError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void DefinitionError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(EvalError,_constructor)
+{
+	assert(args && argslen<=1);
+	EvalError* th=static_cast<EvalError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void EvalError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void EvalError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(RangeError,_constructor)
+{
+	assert(args && argslen<=1);
+	RangeError* th=static_cast<RangeError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void RangeError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void RangeError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(ReferenceError,_constructor)
+{
+	assert(args && argslen<=1);
+	ReferenceError* th=static_cast<ReferenceError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void ReferenceError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void ReferenceError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(SyntaxError,_constructor)
+{
+	assert(args && argslen<=1);
+	SyntaxError* th=static_cast<SyntaxError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void SyntaxError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void SyntaxError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(TypeError,_constructor)
+{
+	assert(args && argslen<=1);
+	TypeError* th=static_cast<TypeError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void TypeError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void TypeError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(URIError,_constructor)
+{
+	assert(args && argslen<=1);
+	URIError* th=static_cast<URIError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void URIError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void URIError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(VerifyError,_constructor)
+{
+	assert(args && argslen<=1);
+	VerifyError* th=static_cast<VerifyError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void VerifyError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void VerifyError::buildTraits(ASObject* o)
 {
 }
 
@@ -2550,7 +2821,24 @@ ASFUNCTIONBODY(lightspark,parseInt)
 	if(args[0]->getObjectType()==T_UNDEFINED)
 		return new Undefined;
 	else
-		return abstract_i(atoi(args[0]->toString().raw_buf()));
+	{
+		const tiny_string& val=args[0]->toString();
+		const char* cur=val.raw_buf();
+		int ret=0;
+		if(strncmp(cur,"0x",2)==0) // Should be an exadecimal number
+		{
+			cur+=2;
+			while(*cur)
+			{
+				ret<<=4; //*16
+				ret+=Math::hexToInt(*cur);
+				cur++;
+			}
+		}
+		else
+			ret=atoi(cur);
+		return abstract_i(ret);
+	}
 }
 
 ASFUNCTIONBODY(lightspark,parseFloat)
@@ -2613,3 +2901,30 @@ ASFUNCTIONBODY(lightspark,unescape)
 	return Class<ASString>::getInstanceS(ret);
 }
 
+ASFUNCTIONBODY(lightspark,print)
+{
+	if(args[0]->getObjectType() == T_STRING) {
+		ASString* str = static_cast<ASString*>(args[0]);
+		cerr << str->data << endl;
+	}
+	else
+		cerr << args[0]->toString() << endl;
+	return NULL;
+}
+
+ASFUNCTIONBODY(lightspark,trace)
+{
+	for(intptr_t i = 0; i< argslen;i++)
+	{
+		if(args[i]->getObjectType() == T_STRING) {
+			ASString* str = static_cast<ASString*>(args[i]);
+			cerr << str->data;
+		}
+		else
+			cerr << args[i]->toString();
+		if(i > 0)
+			cerr << " ";
+	}
+	cerr << endl;
+	return NULL;
+}

@@ -28,10 +28,13 @@
 		trace("Replacing using non global RegExp");
 		ret=str.replace(re,"ll");
 		trace(ret);
-		
 		var re2:RegExp=new RegExp("[pb]l","g")
 		trace("Replacing using global RegExp and func");
 		ret=str.replace(re2,func1);
+		trace(ret);
+		var re3:RegExp=new RegExp("(([pb])l)","g")
+		trace("Replacing using global RegExp, func and capturing groups");
+		ret=str.replace(re3,func1);
 		trace(ret);
 	}
 ]]>

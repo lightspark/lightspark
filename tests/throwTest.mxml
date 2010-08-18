@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<mx:Application name="error_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	private function appComplete():void {
+		//http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/Error.html
+		//Throw isn't supported yet
+		try {
+			throw new Error();
+		}
+		catch(e:SecurityError)
+		{
+			trace("Try-catch for Error didn't work, SecurityError shouldn't match error --> NOT OK!!!");
+		}
+		catch(e:Error)
+		{
+			trace("Try-catch for Error worked, Error matched --> OK");
+		}
+		finally {
+			trace("Try-catch for Error didn't work, Error didn't match --> NOT OK!!!");
+		}
+
+		try {
+			throw new SecurityError();
+		}
+		catch(e:SecurityError)
+		{
+			trace("Try-catch for SecurityError worked, SecurityError matched --> OK");
+		}
+		catch(e:Error)
+		{
+			trace("Try-catch for SecurityError didn't work, SecurityError didn't match --> NOT OK!!!");
+		}
+		finally {
+			trace("Try-catch for SecurityError didn't work, neither SecurityError nor Error matched --> NOT OK!!!");
+		}
+
+		try {
+			throw new SecurityError();
+		}
+		catch(e:Error)
+		{
+			trace("Try-catch for SecurityError worked, Error matched --> OK");
+		}
+		finally {
+			trace("Try-catch for SecurityError didn't work, Error didn't match --> NOT OK!!!");
+		}
+	}
+]]>
+</mx:Script>
+
+</mx:Application>
+

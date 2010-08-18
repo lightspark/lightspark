@@ -55,7 +55,9 @@ ASFUNCTIONBODY(URLRequest,_constructor)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj);
 	if(argslen>0 && args[0]->getObjectType()==T_STRING)
+	{
 		th->url=args[0]->toString();
+	}
 	return NULL;
 }
 
@@ -104,6 +106,26 @@ ASFUNCTIONBODY(URLLoader,load)
 	assert_and_throw(arg->getPrototype()==Class<URLRequest>::getClass());
 	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
 	th->url=urlRequest->url;
+	//Check for URLRequest.url != null
+	if(th->url.len() == 0)
+	{
+		throw UnsupportedException("TypeError");
+	}
+
+	if(th->url.substr(0, min(th->url.len(), 7)) == "file://")
+	{
+		th->isLocal = true;
+		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK ||
+				sys->getSandboxType() == SECURITY_SANDBOX_REMOTE)
+		{
+			throw UnsupportedException("SecurityError: connect to local file");
+		}
+	}
+	else {
+		th->isLocal = false;
+		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_FILE)
+			throw UnsupportedException("SecurityError: connect to network");
+	}
 	ASObject* data=arg->getVariableByQName("data","");
 	if(data)
 	{
@@ -137,10 +159,18 @@ ASFUNCTIONBODY(URLLoader,load)
 
 void URLLoader::execute()
 {
-	//TODO: add local file support to URLLoader
-	downloader=new CurlDownloader(url);
+	//TODO: support httpStatus, progress, securityError, open events
+	if(isLocal)
+	{
+		tiny_string fileName = url.substr(7, url.len());
+		downloader=new LocalDownloader(fileName);
+		static_cast<LocalDownloader*>(downloader)->run();
+	}
+	else {
+		downloader=new CurlDownloader(url);
+		static_cast<CurlDownloader*>(downloader)->run();
+	}
 
-	downloader->run();
 	if(!downloader->hasFailed())
 	{
 		if(dataFormat=="binary")
@@ -164,7 +194,7 @@ void URLLoader::execute()
 	}
 
 	//Save the pointer locally
-	CurlDownloader* tmp=downloader;
+	Downloader* tmp=downloader;
 	downloader=NULL;
 	while(executingAbort); //If threadAbort has been executed it may have stopped the downloader or not.
 				//If it has not been executed the downloader is now NULL
@@ -245,7 +275,8 @@ ASFUNCTIONBODY(NetConnection,connect)
 	if(args[0]->getObjectType()==T_NULL)
 	{
 		th->isLocal=true;
-		if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE || sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK)
+		if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE ||
+				sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK)
 		{
 			throw UnsupportedException("SecurityError: connect to local file");
 		}
@@ -331,7 +362,7 @@ ASFUNCTIONBODY(NetStream,close)
 	NetStream* th=Class<NetStream>::cast(obj);
 	//The downloader is stopped in threadAbort
 	th->threadAbort();
-	LOG(LOG_NO_INFO, "NetStream::close called");
+	LOG(LOG_CALLS, "NetStream::close called");
 	return NULL;
 }
 

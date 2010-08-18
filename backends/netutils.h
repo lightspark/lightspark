@@ -59,6 +59,8 @@ class DLL_PUBLIC Downloader: public std::streambuf
 private:
 	sem_t mutex;
 	uint8_t* buffer;
+	//Whether to allow reallocating of the buffer to grow it
+	bool allowBufferRealloc;
 	uint32_t len;
 	uint32_t tail;
 	bool waiting;
@@ -82,6 +84,14 @@ public:
 	{
 		return buffer;
 	}
+	bool getAllowBufferRealloc()
+	{
+		return allowBufferRealloc;
+	}
+	void setAllowBufferRealloc(bool allow)
+	{
+		allowBufferRealloc = allow;
+	}
 	uint32_t getLen()
 	{
 		return len;
@@ -93,12 +103,16 @@ class CurlDownloader: public Downloader, public IThreadJob
 {
 private:
 	tiny_string url;
+	//Used to detect redirects, we'll need this later anyway (e.g.: HTTPStatusEvent)
+	uint32_t requestStatus;
 	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
 	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 	void execute();
 	void threadAbort();
 public:
+	uint32_t getRequestStatus() { return requestStatus; }
+	void setRequestStatus(uint32_t status) { requestStatus = status; }
 	CurlDownloader(const tiny_string& u);
 };
 

@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_test_template"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	private var loader:URLLoader;
+	private var req:URLRequest;
+	//This is the path for a local file. 
+	private var localFilePath:String = "file://test.txt";
+	//This shouldn't be allowed when we implement allowed domains, security policy files
+	private var remoteFilePath:String = "http://lightspark.sourceforge.net";
+	private function appComplete():void {
+		if(Security.sandboxType == Security.REMOTE || 
+			Security.sandboxType == Security.LOCAL_WITH_NETWORK) 
+		{
+			trace("Testing remote file loading first");
+			req = new URLRequest(remoteFilePath);
+		}
+		else {
+			trace("Testing remote file loading first");
+			req = new URLRequest(localFilePath);
+		}
+		loader = new URLLoader();
+		loader.addEventListener(IOErrorEvent.IO_ERROR, errorHandler);
+		loader.addEventListener(Event.COMPLETE, firstLoaderCompleteHandler);
+		loader.load(req);
+	}
+	private function errorHandler(e:Event):void {
+		trace("An error occured");
+	}
+	private function firstLoaderCompleteHandler(e:Event):void {
+		trace("Loading completed, printing data:");
+		trace("-----------------------------------------------------------------------");
+		trace(loader.data);
+		trace("-----------------------------------------------------------------------");
+		
+		if(Security.sandboxType == Security.REMOTE || 
+			Security.sandboxType == Security.LOCAL_WITH_NETWORK) 
+		{
+			trace("Testing local file loading next");
+			req = new URLRequest(localFilePath);
+		}
+		else {
+			trace("Testing remote file loading next");
+			req = new URLRequest(remoteFilePath);
+		}
+		loader = new URLLoader();
+		loader.addEventListener(IOErrorEvent.IO_ERROR, errorHandler);
+		loader.addEventListener(Event.COMPLETE, secondLoaderCompleteHandler);
+		loader.load(req);
+	}
+	private function secondLoaderCompleteHandler(e:Event):void {
+		trace("Loading completed, printing data:");
+		trace("-----------------------------------------------------------------------");
+		trace(loader.data);
+		trace("-----------------------------------------------------------------------");
+	}
+]]>
+</mx:Script>
+
+
+<mx:UIComponent id="loadRect" />
+
+</mx:Application>

@@ -14,7 +14,6 @@
 	//This is the path for a local file. 
 	//This file will be selected if you run lightspark with the "-s local-with-filesystem" runtime switch.
 	private var localVideoPath:String = "bigbuckbunny.flv";
-	private var dbg:String;
 	private function appComplete():void {
 		playRect.graphics.beginFill(0x80ff60);
 		playRect.graphics.drawRect(10,250,50,50);

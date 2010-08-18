@@ -77,14 +77,16 @@ Array::Array()
 void Array::sinit(Class_base* c)
 {
 	// public constants
-	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(1));
-	c->setVariableByQName("DESCENDING","",abstract_d(2));
-	c->setVariableByQName("NUMERIC","",abstract_d(16));
-	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(8));
-	c->setVariableByQName("UNIQUESORT","",abstract_d(4));
+	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE));
+	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING));
+	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC));
+	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY));
+	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT));
 
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
+
 	c->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
 	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
 	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
@@ -97,7 +99,6 @@ void Array::sinit(Class_base* c)
 	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	c->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
 	c->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
-	c->setVariableByQName("NUMERIC","",abstract_i(NUMERIC));
 }
 
 void Array::buildTraits(ASObject* o)

@@ -1499,6 +1499,8 @@ ASObject* ABCContext::getConstant(int kind, int index)
 {
 	switch(kind)
 	{
+		case 0x00: //Undefined
+			return new Undefined;
 		case 0x01: //String
 			return Class<ASString>::getInstanceS(constant_pool.strings[index]);
 		case 0x03: //Int

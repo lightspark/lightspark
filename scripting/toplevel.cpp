@@ -76,6 +76,13 @@ Array::Array()
 
 void Array::sinit(Class_base* c)
 {
+	// public constants
+	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(1));
+	c->setVariableByQName("DESCENDING","",abstract_d(2));
+	c->setVariableByQName("NUMERIC","",abstract_d(16));
+	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(8));
+	c->setVariableByQName("UNIQUESORT","",abstract_d(4));
+
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 	c->ASObject::setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));

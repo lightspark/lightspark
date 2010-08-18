@@ -1397,13 +1397,57 @@ ASFUNCTIONBODY(Date,valueOf)
 	return abstract_d(th->toInt());
 }
 
+bool Date::getIsLeapYear(int year)
+{
+	return ( ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0) );
+}
+
+int Date::getDaysInMonth(int month, bool isLeapYear)
+{
+	enum { JANUARY = 1, FEBRUARY, MARCH, APRIL, MAY, JUNE, JULY, AUGUST, SEPTEMBER, OCTOBER, NOVEMBER, DECEMBER };
+
+	int days;
+
+	switch(month)
+	{
+	case FEBRUARY:
+		days = isLeapYear ? 29 : 28;
+		break;
+	case JANUARY:
+	case MARCH:
+	case MAY:
+	case JULY:
+	case AUGUST:
+	case OCTOBER:
+	case DECEMBER:
+		days = 31;
+		break;
+	case APRIL:
+	case JUNE:
+	case SEPTEMBER:
+	case NOVEMBER:
+		days = 30;
+		break;
+	default:
+		days = -1;
+	}
+
+	return days;
+}
+
 int Date::toInt()
 {
 	int ret=0;
-	//TODO: leap year
-	ret+=(year-1990)*365*24*3600*1000;
-	//TODO: month length
-	ret+=(month-1)*30*24*3600*1000;
+
+	ret+=((year-1990)*365 + ((year-1989)/4 - (year-1901)/100) + (year-1601)/400)*24*3600*1000;
+
+	bool isLeapYear;
+	for(int j = 1; j < month; j++)
+	{
+		isLeapYear = getIsLeapYear(year);
+		ret+=getDaysInMonth(j, isLeapYear)*24*3600*1000;
+	}
+
 	ret+=(date-1)*24*3600*1000;
 	ret+=hour*3600*1000;
 	ret+=minute*60*1000;
@@ -1697,7 +1741,7 @@ ASFUNCTIONBODY(Math,sin)
 ASFUNCTIONBODY(Math,abs)
 {
 	double n=args[0]->toNumber();
-	return abstract_d(::abs(n));
+	return abstract_d(::fabs(n));
 }
 
 ASFUNCTIONBODY(Math,ceil)

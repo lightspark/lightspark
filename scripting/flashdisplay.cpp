@@ -2147,6 +2147,17 @@ void Matrix::buildTraits(ASObject* o)
 {
 }
 
+tiny_string Matrix::toString(bool debugMsg)
+{
+	assert_and_throw(implEnable);
+	
+	char buf[128];
+	snprintf(buf,128,"(a=%f, b=%f, c=%f, d=%f, tx=%f, ty=%f)",
+		a, b, c, d, tx, ty);
+	
+	return buf;
+}
+
 ASFUNCTIONBODY(Matrix,_get_a)
 {
 	Matrix* th=static_cast<Matrix*>(obj);

@@ -407,6 +407,9 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	
+	//Overloads
+	tiny_string toString(bool debugMsg=false);
+	
 	//Properties
 	ASFUNCTION(_get_a);
 	ASFUNCTION(_get_b);

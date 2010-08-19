@@ -19,6 +19,10 @@ NOTE: Please use a naming scheme as follow:
       For toplevel classes: tests/CLASSNAME_test.mxml (CLASSNAME is the exact name of the class/function)
 			For other classes: tests/NAMESPACE_CLASSNAME_test.mxml (NAMESPACE is for example "net" for "flash.net" classes/functions, e.g.: tests/net_NetStream_test.mxml)
 			Please group all tests for one class in one file.
-			You can ignore this guideline if the testcase isn't suitable for testing with the Tests class. (e.g.: testing video playing, StageScaleMode testing etc...)
+
+NOTE:	Tests that aren't suitable for testing with the Tests class should be put in tests/other. (e.g.: testing video playing, StageScaleMode testing etc...)
+      The naming schemes still apply to these testcases though.
+
+NOTE:	Tests for unimplemented features should be placed in tests/unimplemented.
 
 TIP: redirect lightspark's output to /dev/null (> /dev null) to only see trace/test output.

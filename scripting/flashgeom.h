@@ -85,7 +85,7 @@ public:
 
 class Matrix: public ASObject
 {
-	double a, b, c, d, tx, ty;
+	number_t a, b, c, d, tx, ty;
 public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

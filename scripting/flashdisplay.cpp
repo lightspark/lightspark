@@ -63,6 +63,7 @@ REGISTER_CLASS_NAME(LineScaleMode);
 REGISTER_CLASS_NAME(StageScaleMode);
 REGISTER_CLASS_NAME(StageAlign);
 REGISTER_CLASS_NAME(Bitmap);
+REGISTER_CLASS_NAME(Matrix);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -2117,4 +2118,115 @@ void Bitmap::sinit(Class_base* c)
 bool Bitmap::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	return false;
+}
+
+void Matrix::sinit(Class_base* c)
+{
+//	c->constructor=Class<IFunction>::getFunction(_constructor);
+	c->setConstructor(NULL);
+	
+	//Properties
+	c->setGetterByQName("a","",Class<IFunction>::getFunction(_get_a));
+	c->setGetterByQName("b","",Class<IFunction>::getFunction(_get_b));
+	c->setGetterByQName("c","",Class<IFunction>::getFunction(_get_c));
+	c->setGetterByQName("d","",Class<IFunction>::getFunction(_get_d));
+	c->setGetterByQName("tx","",Class<IFunction>::getFunction(_get_tx));
+	c->setGetterByQName("ty","",Class<IFunction>::getFunction(_get_ty));
+	
+	c->setSetterByQName("a","",Class<IFunction>::getFunction(_set_a));
+	c->setSetterByQName("b","",Class<IFunction>::getFunction(_set_b));
+	c->setSetterByQName("c","",Class<IFunction>::getFunction(_set_c));
+	c->setSetterByQName("d","",Class<IFunction>::getFunction(_set_d));
+	c->setSetterByQName("tx","",Class<IFunction>::getFunction(_set_tx));
+	c->setSetterByQName("ty","",Class<IFunction>::getFunction(_set_ty));
+	
+	//Methods
+}
+
+void Matrix::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(Matrix,_get_a)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	return abstract_d(th->a);
+}
+
+ASFUNCTIONBODY(Matrix,_set_a)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	assert_and_throw(argslen==1);
+	th->a = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,_get_b)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	return abstract_d(th->b);
+}
+
+ASFUNCTIONBODY(Matrix,_set_b)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	assert_and_throw(argslen==1);
+	th->b = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,_get_c)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	return abstract_d(th->c);
+}
+
+ASFUNCTIONBODY(Matrix,_set_c)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	assert_and_throw(argslen==1);
+	th->c = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,_get_d)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	return abstract_d(th->d);
+}
+
+ASFUNCTIONBODY(Matrix,_set_d)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	assert_and_throw(argslen==1);
+	th->d = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,_get_tx)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	return abstract_d(th->tx);
+}
+
+ASFUNCTIONBODY(Matrix,_set_tx)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	assert_and_throw(argslen==1);
+	th->tx = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,_get_ty)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	return abstract_d(th->ty);
+}
+
+ASFUNCTIONBODY(Matrix,_set_ty)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	assert_and_throw(argslen==1);
+	th->ty = args[0]->toNumber();
+	return NULL;
 }

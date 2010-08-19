@@ -224,7 +224,7 @@ void ABCVm::registerClasses()
 
 	builtin->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
 	builtin->setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass());
-	builtin->setVariableByQName("Matrix","flash.geom",Class<ASObject>::getClass(QName("Matrix","flash.geom")));
+	builtin->setVariableByQName("Matrix","flash.geom",Class<Matrix>::getClass());
 	builtin->setVariableByQName("Transform","flash.geom",Class<Transform>::getClass());
 	builtin->setVariableByQName("Point","flash.geom",Class<Point>::getClass());
 

@@ -300,7 +300,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0),streamTime(0)
+NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0),streamTime(0),paused(0)
 {
 	sem_init(&mutex,0,1);
 }
@@ -320,8 +320,14 @@ void NetStream::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"));
+	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"));
 	c->setVariableByQName("play","",Class<IFunction>::getFunction(play));
+	c->setVariableByQName("resume","",Class<IFunction>::getFunction(resume));
+	c->setVariableByQName("pause","",Class<IFunction>::getFunction(pause));
+	c->setVariableByQName("togglePause","",Class<IFunction>::getFunction(togglePause));
 	c->setVariableByQName("close","",Class<IFunction>::getFunction(close));
+	c->setVariableByQName("seek","",Class<IFunction>::getFunction(seek));
 	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(getBytesLoaded));
 	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(getBytesTotal));
 	c->setGetterByQName("time","",Class<IFunction>::getFunction(getTime));
@@ -357,12 +363,47 @@ ASFUNCTIONBODY(NetStream,play)
 	return NULL;
 }
 
+ASFUNCTIONBODY(NetStream,resume)
+{
+	NetStream* th=Class<NetStream>::cast(obj);
+	th->paused = 0;
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,pause)
+{
+	NetStream* th=Class<NetStream>::cast(obj);
+	th->paused = 1;
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,togglePause)
+{
+	NetStream* th=Class<NetStream>::cast(obj);
+	if(th->paused)
+	{
+		th->resume(obj, NULL, 0);
+	}
+	else
+	{
+		th->pause(obj, NULL, 0);
+	}
+	return NULL;
+}
+
 ASFUNCTIONBODY(NetStream,close)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
 	//The downloader is stopped in threadAbort
 	th->threadAbort();
 	LOG(LOG_CALLS, "NetStream::close called");
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,seek)
+{
+	//NetStream* th=Class<NetStream>::cast(obj);
+	assert_and_throw(argslen == 1);
 	return NULL;
 }
 
@@ -583,7 +624,9 @@ void NetStream::execute()
 				}
 				profile->accountTime(chronometer.checkpoint());
 				if(aborting)
+				{
 					throw JobTerminationException();
+				}
 			}
 			while(!done);
 		}

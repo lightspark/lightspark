@@ -130,6 +130,7 @@ private:
 	//ITickJob interface to frame advance
 	void tick();
 	bool isReady() const;
+	bool paused;
 public:
 	NetStream();
 	~NetStream();
@@ -137,7 +138,11 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(play);
+	ASFUNCTION(resume);
+	ASFUNCTION(pause);
+	ASFUNCTION(togglePause);
 	ASFUNCTION(close);
+	ASFUNCTION(seek);
 	ASFUNCTION(getBytesLoaded);
 	ASFUNCTION(getBytesTotal);
 	ASFUNCTION(getTime);

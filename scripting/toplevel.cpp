@@ -1747,7 +1747,7 @@ ASFUNCTIONBODY(Math,_min)
 	double n2=args[1]->toNumber();
 	double smallest = dmin(n1, n2);
 
-	if(argslen == 3)
+	if(argslen > 2)
 	{
 		//Validate parameters
 		assert_and_throw(args[2]->getObjectType() == T_ARRAY);

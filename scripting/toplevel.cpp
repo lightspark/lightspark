@@ -1760,7 +1760,7 @@ ASFUNCTIONBODY(Math,_min)
 		}
 	}
 
-	return smallest;
+	return abstract_d(smallest);
 }
 
 ASFUNCTIONBODY(Math,exp)

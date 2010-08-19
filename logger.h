@@ -27,13 +27,13 @@
 enum LOG_LEVEL { LOG_NO_INFO=0, LOG_ERROR=1, LOG_NOT_IMPLEMENTED=2,LOG_CALLS=3,LOG_TRACE=4};
 
 #define LOG(level,esp)					\
-{							\
+do {							\
 	if(level<=Log::getLevel())			\
 	{						\
 		Log l(level);				\
 		l() << esp << std::endl;		\
 	}						\
-}
+} while(0)
 
 class Log
 {

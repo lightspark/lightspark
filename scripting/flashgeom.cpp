@@ -257,6 +257,7 @@ void Point::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setGetterByQName("x","",Class<IFunction>::getFunction(_getX));
 	c->setGetterByQName("y","",Class<IFunction>::getFunction(_getY));
+	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getlength));
 	c->setSetterByQName("x","",Class<IFunction>::getFunction(_setX));
 	c->setSetterByQName("y","",Class<IFunction>::getFunction(_setY));
 }
@@ -312,6 +313,13 @@ ASFUNCTIONBODY(Point,_setY)
 	assert_and_throw(argslen==1);
 	th->y = args[0]->toNumber();
 	return NULL;
+}
+
+ASFUNCTIONBODY(Point,_getlength)
+{
+	Point* th=static_cast<Point*>(obj);
+	assert_and_throw(argslen==0);
+	return abstract_d(::sqrt(th->x * th->x + th->y * th->y));
 }
 
 void Transform::sinit(Class_base* c)

@@ -2139,7 +2139,8 @@ void Matrix::sinit(Class_base* c)
 	c->setSetterByQName("tx","",Class<IFunction>::getFunction(_set_tx));
 	c->setSetterByQName("ty","",Class<IFunction>::getFunction(_set_ty));
 	
-	//Methods
+	//Methods 
+	c->setVariableByQName("identity","",Class<IFunction>::getFunction(identity));
 }
 
 ASFUNCTIONBODY(Matrix,_constructor)
@@ -2264,5 +2265,16 @@ ASFUNCTIONBODY(Matrix,_set_ty)
 	Matrix* th=static_cast<Matrix*>(obj);
 	assert_and_throw(argslen==1);
 	th->ty = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,identity)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	assert_and_throw(argslen==0);
+	
+	th->a = 1.0; th->c = 0.0; th->tx = 0.0;
+	th->b = 0.0; th->d = 0.0; th->ty = 0.0;
+		
 	return NULL;
 }

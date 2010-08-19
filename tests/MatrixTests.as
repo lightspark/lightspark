@@ -33,6 +33,10 @@ package
 
 			var matrix_2:Matrix = new Matrix(1, 2, 3, 4, 5, 6);
 			trace(matrix_2);  // (a=1, b=2, c=3, d=4, tx=5, ty=6)
+
+			//Test 4
+			matrix_2.identity();
+			trace(matrix_2);  // (a=1, b=0, c=0, d=1, tx=0, ty=0)
 		}
 	}
 }

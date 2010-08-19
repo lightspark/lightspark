@@ -265,6 +265,16 @@ void Point::buildTraits(ASObject* o)
 {
 }
 
+tiny_string Point::toString(bool debugMsg)
+{
+	assert_and_throw(implEnable);
+	
+	char buf[512];
+	snprintf(buf,512,"(a=%f, b=%f)",x,y);
+	
+	return tiny_string(buf);
+}
+
 ASFUNCTIONBODY(Point,_constructor)
 {
 	Point* th=static_cast<Point*>(obj);

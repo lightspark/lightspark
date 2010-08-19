@@ -58,6 +58,7 @@ public:
 	Point():x(0),y(0){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	tiny_string toString(bool debugMsg=false);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getX);
 	ASFUNCTION(_getY);

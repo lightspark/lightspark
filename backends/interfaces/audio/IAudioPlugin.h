@@ -28,13 +28,14 @@
 
 using namespace std;
 
+
 /**********************
 Abstract class for audio plugin implementation
 ***********************/
 class IAudioPlugin : public IPlugin
 {
   protected:
-    class AudioStream; //Will be implemented per plugin
+    class AudioStream; //Early declaration, it will be implemented per plugin
 //    string audiobackend_name;
     virtual void start() = 0;
     vector<AudioStream*> streams;

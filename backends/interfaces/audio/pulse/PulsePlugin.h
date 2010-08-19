@@ -35,12 +35,12 @@ class PulsePlugin : public AudioPlugin
 	class AudioStream
 	{
 	public:
-		enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
-		pa_stream *stream;
-		lightspark::AudioDecoder *decoder;
-		PulsePlugin *manager;
-		volatile STREAM_STATUS streamStatus;
-		AudioStream(PulsePlugin *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+	   enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
+	   pa_stream *stream;
+	   lightspark::AudioDecoder *decoder;
+	   PulsePlugin *manager;
+	   volatile STREAM_STATUS streamStatus;
+	   AudioStream(PulsePlugin *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
 	};
 	pa_threaded_mainloop *mainLoop;
 	pa_context *context;

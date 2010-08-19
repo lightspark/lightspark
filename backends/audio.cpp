@@ -117,7 +117,7 @@ void AudioManager::load_audioplugin(string selected_backend)
 {
   release_audioplugin();
   oAudioPlugin = static_cast<IAudioPlugin *>(pluginManager->get_plugin(selected_backend));
-//#if defined DEBUG
+#if defined DEBUG
   if(oAudioPlugin != NULL)
   {
   cout << "The following audio plugin has been loaded: " << oAudioPlugin->get_pluginName() << endl;
@@ -126,7 +126,7 @@ void AudioManager::load_audioplugin(string selected_backend)
   {
     cout << "The desired backend (" << selected_backend << ") could not be loaded." << endl;
   }
-//#endif
+#endif
 }
 
 /**************************

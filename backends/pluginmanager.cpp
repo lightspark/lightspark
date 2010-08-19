@@ -77,9 +77,9 @@ void PluginManager::findPlugins()
   const string pattern("liblightspark+[A-Za-z]+plugin.so");
   regex file_pattern(pattern); //pattern of ls plugins
 
-  #if defined DEBUG
-    cout << "Looking for plugins under " << plugins_folder << " for pattern " << pattern << endl;
-  #endif
+#if defined DEBUG
+  cout << "Looking for plugins under " << plugins_folder << " for pattern " << pattern << endl;
+#endif
 
   if(!is_directory(plugins_folder))
   {
@@ -195,9 +195,9 @@ void PluginManager::addPluginToList(IPlugin *o_plugin, string pathToPlugin)
     pluginsList[index]->backendName = o_plugin->get_backendName();
     pluginsList[index]->pluginPath = pathToPlugin;
     pluginsList[index]->enabled = false;
-//  #if defined DEBUG
+  #if defined DEBUG
     cout << "This is the plugin " << index  << " added with backend: " << pluginsList[index]->backendName << endl;
-//  #endif
+  #endif
   }
 }
 

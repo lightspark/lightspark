@@ -1745,7 +1745,7 @@ ASFUNCTIONBODY(Math,_min)
 
 	double n1=args[0]->toNumber();
 //	double n2=args[1]->toNumber();
-	double smallest = n1
+	double smallest = n1;
 
 		//Validate parameters
 		//assert_and_throw(args[2]->getObjectType() == T_ARRAY);

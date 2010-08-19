@@ -1756,7 +1756,7 @@ ASFUNCTIONBODY(Math,_min)
 		{
 			smallest = dmin(smallest, args[i]->toNumber());
 		}
-	}
+	//}
 
 	return abstract_d(smallest);
 }

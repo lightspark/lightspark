@@ -1735,15 +1735,27 @@ ASFUNCTIONBODY(Math,atan2)
 ASFUNCTIONBODY(Math,_max)
 {
 	double n1=args[0]->toNumber();
-	double n2=args[1]->toNumber();
-	return abstract_d(dmax(n1,n2));
+	double largest = n1;
+
+	for(unsigned int i = 1; i < argslen; i++)
+	{
+		largest = dmax(largest, args[i]->toNumber());
+	}
+
+	return abstract_d(largest);
 }
 
 ASFUNCTIONBODY(Math,_min)
 {
 	double n1=args[0]->toNumber();
-	double n2=args[1]->toNumber();
-	return abstract_d(dmin(n1,n2));
+	double smallest = n1;
+
+	for(unsigned int i = 1; i < argslen; i++)
+	{
+		smallest = dmin(smallest, args[i]->toNumber());
+	}
+
+	return abstract_d(smallest);
 }
 
 ASFUNCTIONBODY(Math,exp)

@@ -12,8 +12,6 @@ package {
 			var point2:Point = new Point(6, 8);
 			trace(point2); // (x=6, y=8)
 			
-			trace(point2.length); // 9.16515138991168
-			
 			trace(Point.interpolate(point1, point2, 0.5)); // (x=3, y=4)
 			
 			trace(Point.distance(point1, point2)); // 10

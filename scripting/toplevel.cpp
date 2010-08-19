@@ -1741,8 +1741,25 @@ ASFUNCTIONBODY(Math,_max)
 
 ASFUNCTIONBODY(Math,_min)
 {
+	assert_and_throw(args_len<=3);
+
 	double n1=args[0]->toNumber();
 	double n2=args[1]->toNumber();
+	double smallest = dmin(n1, n2);
+
+	if(args_len == 3)
+	{
+		//Validate parameters
+		assert_and_throw(args[2]->getObjectType() == T_ARRAY);
+		Array* rest = Class<Array>::cast(args[2]);
+		int restlen = rest->size();
+
+		for(int i = 0; i < restlen; i++)
+		{
+			smallest = dmin(smallest, rest->at(i)->toNumber());
+		}
+	}
+
 	return abstract_d(dmin(n1,n2));
 }
 

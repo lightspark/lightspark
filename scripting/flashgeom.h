@@ -66,6 +66,7 @@ public:
 	ASFUNCTION(_setY);
 	ASFUNCTION(_getlength);
 	ASFUNCTION(interpolate);
+	ASFUNCTION(distance);
 };
 
 class ColorTransform: public ASObject

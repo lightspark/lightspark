@@ -281,6 +281,11 @@ tiny_string Point::toString(bool debugMsg)
 	return tiny_string(buf);
 }
 
+number_t Point::len() const
+{
+	return sqrt(x*x + y*y);
+}
+
 ASFUNCTIONBODY(Point,_constructor)
 {
 	Point* th=static_cast<Point*>(obj);
@@ -324,7 +329,7 @@ ASFUNCTIONBODY(Point,_getlength)
 {
 	Point* th=static_cast<Point*>(obj);
 	assert_and_throw(argslen==0);
-	return abstract_d(::sqrt(th->x * th->x + th->y * th->y));
+	return abstract_d(th->len());
 }
 
 ASFUNCTIONBODY(Point,interpolate)
@@ -344,9 +349,8 @@ ASFUNCTIONBODY(Point,distance)
 	assert_and_throw(argslen==2);
 	Point* pt1=static_cast<Point*>(args[0]);
 	Point* pt2=static_cast<Point*>(args[1]);
-	number_t x = pt2->x - pt1->x;
-	number_t y = pt2->y - pt2->y;
-	return abstract_d(sqrt(x * x + y * y));
+	Point temp(pt2->x - pt1->x, pt2->y - pt1->x);
+	return abstract_d(temp.len());
 }
 
 ASFUNCTIONBODY(Point,add)

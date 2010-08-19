@@ -267,6 +267,7 @@ void Point::sinit(Class_base* c)
 	c->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
 	c->setVariableByQName("equals","",Class<IFunction>::getFunction(equals));
 	c->setVariableByQName("normalize","",Class<IFunction>::getFunction(normalize));
+	c->setVariableByQName("offset","",Class<IFunction>::getFunction(offset));
 }
 
 void Point::buildTraits(ASObject* o)
@@ -405,6 +406,18 @@ ASFUNCTIONBODY(Point,normalize)
 	th->x = th->x * thickness / len;
 	th->y = th->y * thickness / len;
 	return NULL;
+}
+
+ASFUNCTIONBODY(Point,offset)
+{
+	Point* th=static_cast<Point*>(obj);
+	assert_and_throw(argslen==2);
+	number_t dx = args[0]->toNumber();
+	number_t dy = args[1]->toNumber();
+	Point* ret=Class<Point>::getInstanceS();
+	ret->x = th->x + dx;
+	ret->y = th->y + dy;
+	return ret;
 }
 
 void Transform::sinit(Class_base* c)

@@ -72,6 +72,7 @@ public:
 	ASFUNCTION(clone);
 	ASFUNCTION(equals);
 	ASFUNCTION(normalize);
+	ASFUNCTION(offset);
 	
 	number_t len() const;
 };

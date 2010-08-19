@@ -28,7 +28,7 @@ package {
 			
 			trace(point2.subtract(point3)); // (x=4.5, y=6)
 			
-			trace(point1.offset(2, 3)); // 
+			trace(point1.offset(2, 3)); // (x=8, y=11)
 			
 			var angle:Number = Math.PI * 2 * (30 / 360); // 30°
 			trace(Point.polar(4, angle)) // (x=3.464101615137755, y=1.9999999999999998)   

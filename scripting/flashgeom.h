@@ -82,5 +82,39 @@ public:
 	static void buildTraits(ASObject* o);
 };
 
+
+class Matrix: public ASObject
+{
+	double a, b, c, d, tx, ty;
+public:
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	
+	//Overloads
+	tiny_string toString(bool debugMsg=false);
+	
+	ASFUNCTION(_constructor);
+	
+	//Methods
+	ASFUNCTION(identity);
+	ASFUNCTION(rotate);
+	ASFUNCTION(scale);
+	ASFUNCTION(translate);
+	
+	//Properties
+	ASFUNCTION(_get_a);
+	ASFUNCTION(_get_b);
+	ASFUNCTION(_get_c);
+	ASFUNCTION(_get_d);
+	ASFUNCTION(_get_tx);
+	ASFUNCTION(_get_ty);
+	ASFUNCTION(_set_a);
+	ASFUNCTION(_set_b);
+	ASFUNCTION(_set_c);
+	ASFUNCTION(_set_d);
+	ASFUNCTION(_set_tx);
+	ASFUNCTION(_set_ty);
+};
+
 };
 #endif

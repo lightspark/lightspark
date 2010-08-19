@@ -2142,6 +2142,7 @@ void Matrix::sinit(Class_base* c)
 	//Methods 
 	c->setVariableByQName("identity","",Class<IFunction>::getFunction(identity));
 	c->setVariableByQName("rotate","",Class<IFunction>::getFunction(rotate));
+	c->setVariableByQName("scale","",Class<IFunction>::getFunction(scale));
 }
 
 ASFUNCTIONBODY(Matrix,_constructor)
@@ -2287,6 +2288,18 @@ ASFUNCTIONBODY(Matrix,rotate)
 	double angle = args[0]->toNumber();
 	th->a = ::cos(angle); th->c = -::sin(angle); th->tx = 0.0;
 	th->b = ::sin(angle); th->d =  ::cos(angle); th->ty = 0.0;
+		
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,scale)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	assert_and_throw(argslen==2);
+	double sx = args[0]->toNumber();
+	double sy = args[1]->toNumber();
+	th->a = sx;   th->c = 0.0; th->tx = 0.0;
+	th->b = 0.0;  th->d = sy;  th->ty = 0.0;
 		
 	return NULL;
 }

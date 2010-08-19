@@ -43,6 +43,11 @@ package
 			
 			matrix_2.rotate(Math.PI / 2);
 			trace(matrix_2); // (a=0, b=-1, c=1, d=0, tx=0, ty=0)
+			
+			//Test 6
+			
+			matrix_2.scale(4, 2);
+			trace(matrix_2); // (a=4, b=0, c=0, d=2, tx=0, ty=0)
 		}
 	}
 }

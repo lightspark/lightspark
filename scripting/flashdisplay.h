@@ -415,6 +415,7 @@ public:
 	//Methods
 	ASFUNCTION(identity);
 	ASFUNCTION(rotate);
+	ASFUNCTION(scale);
 	
 	//Properties
 	ASFUNCTION(_get_a);

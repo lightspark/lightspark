@@ -265,6 +265,7 @@ void Point::sinit(Class_base* c)
 	c->setVariableByQName("add","",Class<IFunction>::getFunction(add));
 	c->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
 	c->setVariableByQName("equals","",Class<IFunction>::getFunction(equals));
+	c->setVariableByQName("normalize","",Class<IFunction>::getFunction(normalize));
 }
 
 void Point::buildTraits(ASObject* o)
@@ -380,6 +381,18 @@ ASFUNCTIONBODY(Point,equals)
 	assert_and_throw(argslen==1);
 	Point* toCompare=static_cast<Point*>(args[0]);
 	return abstract_b((th->x == toCompare->x) & (th->y == toCompare->y));
+}
+
+ASFUNCTIONBODY(Point,normalize)
+{
+	Point* th=static_cast<Point*>(obj);
+	assert_and_throw(argslen<2);
+	number_t thickness = argslen > 0 ? args[0]->toNumber() : 1.0;
+	number_t len = th->len();
+	//What if len == 0?
+	th->x = th->x * thickness / len;
+	th->y = th->y * thickness / len;
+	return NULL;
 }
 
 void Transform::sinit(Class_base* c)

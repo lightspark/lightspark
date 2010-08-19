@@ -70,6 +70,8 @@ public:
 	ASFUNCTION(add);
 	ASFUNCTION(clone);
 	ASFUNCTION(equals);
+	ASFUNCTION(normalize);
+	
 	number_t len() const;
 };
 

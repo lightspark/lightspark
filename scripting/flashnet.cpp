@@ -122,7 +122,8 @@ ASFUNCTIONBODY(URLLoader,load)
 			throw UnsupportedException("SecurityError: connect to local file");
 		}
 	}
-	else {
+	else
+	{
 		th->isLocal = false;
 		if(sys->sandboxType == Security::LOCAL_WITH_FILE)
 			throw UnsupportedException("SecurityError: connect to network");
@@ -167,7 +168,8 @@ void URLLoader::execute()
 		downloader=new LocalDownloader(fileName);
 		static_cast<LocalDownloader*>(downloader)->run();
 	}
-	else {
+	else
+	{
 		downloader=new CurlDownloader(url);
 		static_cast<CurlDownloader*>(downloader)->run();
 	}

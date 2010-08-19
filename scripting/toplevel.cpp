@@ -2058,7 +2058,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	int ret=args[0]->toInt();
 	if(ret>127)
 		LOG(LOG_NOT_IMPLEMENTED,"Unicode not supported in String::fromCharCode");
-	char buf[2] = { (char)ret, 0};
+	char buf[2] = { (char)ret, 0 };
 	return Class<ASString>::getInstanceS(buf);
 }
 
@@ -3003,7 +3003,8 @@ ASFUNCTIONBODY(lightspark,unescape)
 
 ASFUNCTIONBODY(lightspark,print)
 {
-	if(args[0]->getObjectType() == T_STRING) {
+	if(args[0]->getObjectType() == T_STRING)
+	{
 		ASString* str = static_cast<ASString*>(args[0]);
 		cerr << str->data << endl;
 	}
@@ -3019,7 +3020,8 @@ ASFUNCTIONBODY(lightspark,trace)
 		if(i > 0)
 			cerr << " ";
 
-		if(args[i]->getObjectType() == T_STRING) {
+		if(args[i]->getObjectType() == T_STRING)
+		{
 			ASString* str = static_cast<ASString*>(args[i]);
 			cerr << str->data;
 		}

@@ -137,7 +137,8 @@ private:
 		void init(YUVBuffer& buf) const;
 	};
 	GLuint videoBuffers[2];
-	unsigned int curBuffer;
+	uint32_t curBuffer;
+	uint32_t curBufferOffset;
 	AVCodecContext* codecContext;
 	BlockingCircularQueue<YUVBuffer,80> buffers;
 	Mutex mutex;

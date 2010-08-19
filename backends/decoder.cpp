@@ -79,8 +79,8 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 	return true;
 }
 
-FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):curBuffer(0),codecContext(NULL),
-	mutex("VideoDecoder"),initialized(false)
+FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):curBuffer(0),curBufferOffset(0),
+	codecContext(NULL),mutex("VideoDecoder"),initialized(false)
 {
 	//The tag is the header, initialize decoding
 	codecContext=avcodec_alloc_context();
@@ -231,17 +231,17 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 	const uint32_t alignedWidth=(frameWidth+15)&0xfffffff0;
 	if(VideoDecoder::resizeIfNeeded(tex))
 	{
-		//Initialize both PBOs to video size, the width is aligned to 16
+		//Initialize both PBOs to video size, the width is aligned to 16, add some padding to ensure space to align the buffer
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4, 0, GL_STREAM_DRAW);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4+16, 0, GL_STREAM_DRAW);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[1]);
-		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4, 0, GL_STREAM_DRAW);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER, alignedWidth*frameHeight*4+16, 0, GL_STREAM_DRAW);
 	}
 	else
 	{
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
 		//Copy content of the pbo to the texture, 0 is the offset in the pbo
-		tex.setBGRAData(0, alignedWidth, frameHeight);
+		tex.setBGRAData((uint8_t*)curBufferOffset, alignedWidth, frameHeight);
 		//Now texture width has become alignedWidth, reset it to the right value
 		tex.resize(frameWidth,frameHeight);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -256,18 +256,20 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[nextBuffer]);
 		uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+		uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
 
 		//At least a frame is available
 		YUVBuffer& cur=buffers.front();
 		//If the width is compatible with full aligned accesses use the aligned version of the packer
 		if(frameWidth%32==0)
-			fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
+			fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],alignedBuf,frameWidth,frameHeight);
 		else
-			fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],buf,frameWidth,frameHeight);
+			fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],alignedBuf,frameWidth,frameHeight);
 
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
+		curBufferOffset=alignedBuf-buf;
 		curBuffer=nextBuffer;
 	}
 	return ret;

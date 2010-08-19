@@ -263,6 +263,7 @@ void Point::sinit(Class_base* c)
 	c->setVariableByQName("interpolate","",Class<IFunction>::getFunction(interpolate));
 	c->setVariableByQName("distance","",Class<IFunction>::getFunction(distance));
 	c->setVariableByQName("add","",Class<IFunction>::getFunction(add));
+	c->setVariableByQName("subtract","",Class<IFunction>::getFunction(subtract));
 	c->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
 	c->setVariableByQName("equals","",Class<IFunction>::getFunction(equals));
 	c->setVariableByQName("normalize","",Class<IFunction>::getFunction(normalize));
@@ -360,8 +361,19 @@ ASFUNCTIONBODY(Point,add)
 	assert_and_throw(argslen==1);
 	Point* v=static_cast<Point*>(args[0]);
 	Point* ret=Class<Point>::getInstanceS();
-	ret->x = v->x + th->x;
-	ret->y = v->y + th->y;
+	ret->x = th->x + v->x;
+	ret->y = th->y + v->y;
+	return ret;
+}
+
+ASFUNCTIONBODY(Point,subtract)
+{
+	Point* th=static_cast<Point*>(obj);
+	assert_and_throw(argslen==1);
+	Point* v=static_cast<Point*>(args[0]);
+	Point* ret=Class<Point>::getInstanceS();
+	ret->x = th->x - v->x;
+	ret->y = th->y - v->y;
 	return ret;
 }
 

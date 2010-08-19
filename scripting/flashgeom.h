@@ -68,6 +68,7 @@ public:
 	ASFUNCTION(interpolate);
 	ASFUNCTION(distance);
 	ASFUNCTION(add);
+	ASFUNCTION(subtract);
 	ASFUNCTION(clone);
 	ASFUNCTION(equals);
 	ASFUNCTION(normalize);

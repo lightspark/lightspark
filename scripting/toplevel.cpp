@@ -2960,14 +2960,15 @@ ASFUNCTIONBODY(lightspark,trace)
 {
 	for(intptr_t i = 0; i< argslen;i++)
 	{
+		if(i > 0)
+			cerr << " ";
+
 		if(args[i]->getObjectType() == T_STRING) {
 			ASString* str = static_cast<ASString*>(args[i]);
 			cerr << str->data;
 		}
 		else
 			cerr << args[i]->toString();
-		if(i > 0)
-			cerr << " ";
 	}
 	cerr << endl;
 	return NULL;

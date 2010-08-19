@@ -76,21 +76,29 @@ Array::Array()
 
 void Array::sinit(Class_base* c)
 {
+	// public constants
+	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE));
+	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING));
+	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC));
+	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY));
+	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT));
+
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
-	c->ASObject::setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
-	c->ASObject::setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
-	c->ASObject::setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
-	c->ASObject::setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
-	c->ASObject::setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
-	c->ASObject::setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
-	c->ASObject::setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
-//	c->ASObject::setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
-	c->ASObject::setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
-	c->ASObject::setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
-	c->ASObject::setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
-	c->ASObject::setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
-	c->ASObject::setVariableByQName("NUMERIC","",abstract_i(NUMERIC));
+
+	c->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
+	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
+	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
+	c->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
+	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
+	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
+	c->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
+//	c->setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
+	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
+	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	c->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
+	c->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
 }
 
 void Array::buildTraits(ASObject* o)
@@ -1674,21 +1682,35 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 
 void Math::sinit(Class_base* c)
 {
-	c->setVariableByQName("PI","",abstract_d(M_PI));
+	// public constants
+	c->setVariableByQName("E","",abstract_d(2.71828182845905));
+	c->setVariableByQName("LN10","",abstract_d(2.302585092994046));
+	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453));
 	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518));
-	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
+	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387));
+	c->setVariableByQName("PI","",abstract_d(3.141592653589793));
+	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476));
+	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951));
+
+	// public methods
+	c->setVariableByQName("abs","",Class<IFunction>::getFunction(abs));
+	c->setVariableByQName("acos","",Class<IFunction>::getFunction(acos));
+	c->setVariableByQName("asin","",Class<IFunction>::getFunction(asin));
+	c->setVariableByQName("atan","",Class<IFunction>::getFunction(atan));
 	c->setVariableByQName("atan2","",Class<IFunction>::getFunction(atan2));
+	c->setVariableByQName("ceil","",Class<IFunction>::getFunction(ceil));
+	c->setVariableByQName("cos","",Class<IFunction>::getFunction(cos));
+	c->setVariableByQName("exp","",Class<IFunction>::getFunction(exp));
+	c->setVariableByQName("floor","",Class<IFunction>::getFunction(floor));
+	c->setVariableByQName("log","",Class<IFunction>::getFunction(log));
 	c->setVariableByQName("max","",Class<IFunction>::getFunction(_max));
 	c->setVariableByQName("min","",Class<IFunction>::getFunction(_min));
-	c->setVariableByQName("abs","",Class<IFunction>::getFunction(abs));
-	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
-	c->setVariableByQName("cos","",Class<IFunction>::getFunction(cos));
-	c->setVariableByQName("log","",Class<IFunction>::getFunction(log));
-	c->setVariableByQName("floor","",Class<IFunction>::getFunction(floor));
-	c->setVariableByQName("ceil","",Class<IFunction>::getFunction(ceil));
-	c->setVariableByQName("round","",Class<IFunction>::getFunction(round));
-	c->setVariableByQName("random","",Class<IFunction>::getFunction(random));
 	c->setVariableByQName("pow","",Class<IFunction>::getFunction(pow));
+	c->setVariableByQName("random","",Class<IFunction>::getFunction(random));
+	c->setVariableByQName("round","",Class<IFunction>::getFunction(round));
+	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
+	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
+	c->setVariableByQName("tan","",Class<IFunction>::getFunction(tan));
 }
 
 int Math::hexToInt(char c)
@@ -1724,6 +1746,33 @@ ASFUNCTIONBODY(Math,_min)
 	return abstract_d(dmin(n1,n2));
 }
 
+ASFUNCTIONBODY(Math,exp)
+{
+	double n=args[0]->toNumber();
+	return abstract_d(::exp(n));
+}
+
+ASFUNCTIONBODY(Math,acos)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::acos(n));
+}
+
+ASFUNCTIONBODY(Math,asin)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::asin(n));
+}
+
+ASFUNCTIONBODY(Math,atan)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::atan(n));
+}
+
 ASFUNCTIONBODY(Math,cos)
 {
 	//Angle is in radians
@@ -1736,6 +1785,13 @@ ASFUNCTIONBODY(Math,sin)
 	//Angle is in radians
 	double n=args[0]->toNumber();
 	return abstract_d(::sin(n));
+}
+
+ASFUNCTIONBODY(Math,tan)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::tan(n));
 }
 
 ASFUNCTIONBODY(Math,abs)

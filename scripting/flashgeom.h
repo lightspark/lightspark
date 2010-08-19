@@ -69,6 +69,7 @@ public:
 	ASFUNCTION(distance);
 	ASFUNCTION(add);
 	ASFUNCTION(clone);
+	ASFUNCTION(equals);
 };
 
 class ColorTransform: public ASObject

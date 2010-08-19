@@ -166,6 +166,8 @@ void* InputThread::sdl_worker(InputThread* th)
 	SDL_Event event;
 	while(SDL_WaitEvent(&event))
 	{
+		if(sys->isShuttingDown())
+			break;
 		switch(event.type)
 		{
 			case SDL_KEYDOWN:

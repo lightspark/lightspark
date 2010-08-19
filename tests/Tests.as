@@ -44,6 +44,7 @@
 
 package
 {
+	import flash.system.fscommand;
 	public class Tests
 	{
 		private static var testCount:uint = 0;
@@ -244,7 +245,7 @@ package
 				}
 			}
 		}
-		public static function report(visual:*=null, name:String=null):void
+		public static function report(visual:*=null, name:String=null, dontQuit:Boolean=false):void
 		{
 			if(failures.length > 0)
 			{
@@ -276,6 +277,14 @@ package
 					visual.graphics.endFill();
 				}
 			}
+			if(dontQuit != true)
+			{
+				terminate();
+			}
+		}
+		public static function terminate():void
+		{
+			fscommand("quit");
 		}
 	}
 }

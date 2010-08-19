@@ -263,6 +263,7 @@ void Point::sinit(Class_base* c)
 	c->setVariableByQName("interpolate","",Class<IFunction>::getFunction(interpolate));
 	c->setVariableByQName("distance","",Class<IFunction>::getFunction(distance));
 	c->setVariableByQName("add","",Class<IFunction>::getFunction(add));
+	c->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
 }
 
 void Point::buildTraits(ASObject* o)
@@ -355,6 +356,16 @@ ASFUNCTIONBODY(Point,add)
 	Point* ret=Class<Point>::getInstanceS();
 	ret->x = v->x + th->x;
 	ret->y = v->y + th->y;
+	return ret;
+}
+
+ASFUNCTIONBODY(Point,clone)
+{
+	Point* th=static_cast<Point*>(obj);
+	assert_and_throw(argslen==0);
+	Point* ret=Class<Point>::getInstanceS();
+	ret->x = th->x;
+	ret->y = th->y;
 	return ret;
 }
 

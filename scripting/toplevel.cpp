@@ -1741,13 +1741,13 @@ ASFUNCTIONBODY(Math,_max)
 
 ASFUNCTIONBODY(Math,_min)
 {
-	assert_and_throw(args_len<=3);
+	assert_and_throw(argslen<=3);
 
 	double n1=args[0]->toNumber();
 	double n2=args[1]->toNumber();
 	double smallest = dmin(n1, n2);
 
-	if(args_len == 3)
+	if(argslen == 3)
 	{
 		//Validate parameters
 		assert_and_throw(args[2]->getObjectType() == T_ARRAY);

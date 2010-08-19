@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
-<mx:Application name="lightspark_test_template"
+<mx:Application name="lightspark_net_NetStream_test"
 	xmlns:mx="http://www.adobe.com/2006/mxml"
 	layout="absolute"
 	applicationComplete="appComplete();"
 	backgroundColor="white">
 
 <mx:Script>
-<![CDATA[
+	<![CDATA[
 	private var video:Video;
 	private var stream_ns:NetStream;
 	//This is the URL for HTTP pseudo-streaming. A sourceforge hardlink should be placed here later.
@@ -14,13 +14,21 @@
 	//This is the path for a local file. 
 	//This file will be selected if you run lightspark with the "-s local-with-filesystem" runtime switch.
 	private var localVideoPath:String = "bigbuckbunny.flv";
-	private function appComplete():void {
+	private var paused:Boolean = false;
+	private function appComplete():void
+	{
 		playRect.graphics.beginFill(0x80ff60);
-		playRect.graphics.drawRect(10,250,50,50);
+		playRect.graphics.moveTo(20, 250);
+		playRect.graphics.lineTo(60, 275);
+		playRect.graphics.lineTo(20, 300);
+		playRect.graphics.lineTo(20, 250);
 		playRect.graphics.endFill();
 
 		pauseRect.graphics.beginFill(0xff8060);
 		pauseRect.graphics.drawRect(70,250,20,50);
+		pauseRect.graphics.endFill();
+		pauseRect.graphics.beginFill(0xffffff);
+		pauseRect.graphics.drawRect(91,250,8,50);
 		pauseRect.graphics.endFill();
 		pauseRect.graphics.beginFill(0xff8060);
 		pauseRect.graphics.drawRect(100,250,20,50);
@@ -30,8 +38,15 @@
 		stopRect.graphics.drawRect(130,250,50,50);
 		stopRect.graphics.endFill();
 
-		seekRect.graphics.beginFill(0x6080ff);
-		seekRect.graphics.drawRect(190,250,50,50);
+		seekRect.graphics.beginFill(0x0080ff);
+		seekRect.graphics.moveTo(190, 250);
+		seekRect.graphics.lineTo(210, 275);
+		seekRect.graphics.lineTo(190, 300);
+		seekRect.graphics.lineTo(190, 250);
+		seekRect.graphics.moveTo(215, 250);
+		seekRect.graphics.lineTo(235, 275);
+		seekRect.graphics.lineTo(215, 300);
+		seekRect.graphics.lineTo(215, 250);
 		seekRect.graphics.endFill();
 		
 		playRect.addEventListener(MouseEvent.CLICK,playClick);
@@ -45,16 +60,19 @@
 
 		var connect_nc:NetConnection = new NetConnection();
 		if(Security.sandboxType == Security.REMOTE || 
-			Security.sandboxType == Security.LOCAL_TRUSTED || 
 			Security.sandboxType == Security.LOCAL_WITH_NETWORK) 
 		{
 			trace("Running in remote sandbox: using HTTP pseudo-streaming");
-			connect_nc.connect(undefined); //Undefined = HTTP pseudo-streaming
 		}
-		else {
-			trace("Running in local sandbox: using local file");
-			connect_nc.connect(null); //Null parameter = local file
-		}	
+		else if(Security.sandboxType == Security.LOCAL_TRUSTED)
+		{
+			trace("Running in local-trusted sandbox: using local file");
+		}
+		else
+		{
+			trace("Running in local-with-filesystem sandbox: NetConnection.connect not allowed. This test should fail.");
+		}
+		connect_nc.connect(null); //Undefined = HTTP pseudo-streaming
 
 		stream_ns = new NetStream(connect_nc);
 		stream_ns.client = this; //Needed, otherwise will generate a compile warning
@@ -79,35 +97,50 @@
 		video.addEventListener(MouseEvent.CLICK,videoClick);
 
 	}
-	private function playClick(e:Event):void {
+	private function playClick(e:Event):void
+	{
 		trace("Play button clicked");
 		if(Security.sandboxType == Security.REMOTE || 
-			Security.sandboxType == Security.LOCAL_TRUSTED || 
 			Security.sandboxType == Security.LOCAL_WITH_NETWORK)
 		{
 			trace("Running in remote sandbox: playing from HTTP");
 			stream_ns.play(netVideoURL);
 		}
-		else {
+		else
+		{
 			trace("Running in remote sandbox: playing local file");
 			stream_ns.play(localVideoPath);
 		}
 	}
-	private function pauseClick(e:Event):void {
-		trace("Pause button clicked");
-		stream_ns.togglePause();
+	private function pauseClick(e:Event):void
+	{
+		if(!paused)
+		{
+			paused = true;
+			trace("Pause button clicked, pausing");
+			stream_ns.pause();
+		}
+		else
+		{
+			paused = false;
+			trace("Pause button clicked, resuming");
+			stream_ns.resume();
+		}
 	}
-	private function stopClick(e:Event):void {
+	private function stopClick(e:Event):void
+	{
 		trace("Stop button clicked");
 		stream_ns.close();
 	}
-	private function seekClick(e:Event):void {
+	private function seekClick(e:Event):void
+	{
 		trace("Seek button clicked");
 	}
-	private function videoClick(e:Event):void {
+	private function videoClick(e:Event):void
+	{
 		trace("Video clicked");
 	}
-]]>
+	]]>
 </mx:Script>
 
 

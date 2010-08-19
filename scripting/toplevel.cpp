@@ -76,21 +76,29 @@ Array::Array()
 
 void Array::sinit(Class_base* c)
 {
+	// public constants
+	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE));
+	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING));
+	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC));
+	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY));
+	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT));
+
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
-	c->ASObject::setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
-	c->ASObject::setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
-	c->ASObject::setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
-	c->ASObject::setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
-	c->ASObject::setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
-	c->ASObject::setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
-	c->ASObject::setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
-//	c->ASObject::setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
-	c->ASObject::setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
-	c->ASObject::setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
-	c->ASObject::setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
-	c->ASObject::setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
-	c->ASObject::setVariableByQName("NUMERIC","",abstract_i(NUMERIC));
+
+	c->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
+	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
+	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
+	c->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
+	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
+	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
+	c->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
+//	c->setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
+	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
+	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	c->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
+	c->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
 }
 
 void Array::buildTraits(ASObject* o)
@@ -1703,8 +1711,6 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
 	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
 	c->setVariableByQName("tan","",Class<IFunction>::getFunction(tan));
-
-	srand(time(NULL));
 }
 
 int Math::hexToInt(char c)
@@ -2052,7 +2058,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	int ret=args[0]->toInt();
 	if(ret>127)
 		LOG(LOG_NOT_IMPLEMENTED,"Unicode not supported in String::fromCharCode");
-	char buf[2] = { (char)ret, 0};
+	char buf[2] = { (char)ret, 0 };
 	return Class<ASString>::getInstanceS(buf);
 }
 
@@ -2997,7 +3003,8 @@ ASFUNCTIONBODY(lightspark,unescape)
 
 ASFUNCTIONBODY(lightspark,print)
 {
-	if(args[0]->getObjectType() == T_STRING) {
+	if(args[0]->getObjectType() == T_STRING)
+	{
 		ASString* str = static_cast<ASString*>(args[0]);
 		cerr << str->data << endl;
 	}
@@ -3010,14 +3017,16 @@ ASFUNCTIONBODY(lightspark,trace)
 {
 	for(intptr_t i = 0; i< argslen;i++)
 	{
-		if(args[i]->getObjectType() == T_STRING) {
+		if(i > 0)
+			cerr << " ";
+
+		if(args[i]->getObjectType() == T_STRING)
+		{
 			ASString* str = static_cast<ASString*>(args[i]);
 			cerr << str->data;
 		}
 		else
 			cerr << args[i]->toString();
-		if(i > 0)
-			cerr << " ";
 	}
 	cerr << endl;
 	return NULL;

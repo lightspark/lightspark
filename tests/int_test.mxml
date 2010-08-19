@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_int_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		Tests.assertEquals(int(3.2), 3, "int(3.2)", true);
+		Tests.assertEquals(int(3.8), 3, "int(3.8)", true);
+		Tests.assertEquals(int("3.2"), 3, "int(\"3.2\")", true);
+		Tests.assertEquals(int("3.8"), 3, "int(\"3.8\")", true);
+		Tests.assertEquals(int(true), 1, "int(true)", true);
+		Tests.assertEquals(int(false), 0, "int(false)", true);
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

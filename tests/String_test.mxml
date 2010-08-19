@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_String_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private var callbackArgs:Array;
+	private function appComplete():void
+	{
+		//Match tests
+		var str:String = new String("matchablemat");
+		var ret:Array = str.match("mat");
+		Tests.assertArrayEquals(["mat"], ret, "match(): normal string match", true);
+		
+		var re:RegExp = new RegExp("ma*t|a[a-z]*e","")
+		ret = str.match(re);
+		Tests.assertArrayEquals(["mat"], ret, "match(): non-global regexp match", true);
+		
+		var re2:RegExp = new RegExp("ma*t|a[a-z]*e","g")
+		ret = str.match(re2);
+		Tests.assertArrayEquals(["mat", "able", "mat"], ret, "match(): global regexp match", true);
+
+
+		//Replace tests
+		str = new String("replaceable");
+		var ret2:String = str.replace("l","ll");
+		Tests.assertEquals("repllaceable", ret2, "replace(): normal string replace with string", true);
+		
+		re = new RegExp("[pb]l")
+		ret2 = str.replace(re,"ll");
+		Tests.assertEquals("rellaceable", ret2, "replace(): non-global regexp replace with string", true);
+
+		re2 = new RegExp("[pb]l","g")
+		callbackArgs = new Array();
+		ret2 = str.replace(re2,func1);
+		Tests.assertEquals("refuncaceafunce", ret2, "replace(): non-global regexp replace with function", true);
+		Tests.assertArrayEquals([["pl", 2, "replaceable"], ["bl", 8, "replaceable"]], callbackArgs, 
+			"replace(): non-global regexp replace with function callback arguments", true);
+
+		var re3:RegExp = new RegExp("(([pb])l)","g");
+		callbackArgs = new Array();
+		ret2 = str.replace(re3,func1);
+		Tests.assertEquals("refuncaceafunce", ret2, "replace(): non-global regexp replace with function", true);
+		Tests.assertArrayEquals([["pl","pl","p",2,"replaceable"],["bl","bl","b",8,"replaceable"]], callbackArgs,
+			"replace(): global regexp replace with capturing groups with function callback arguments", true);
+
+
+		//Split tests
+		str = new String("splittable");
+		var ret3:Array = str.split("l");
+		Tests.assertArrayEquals(["sp", "ittab", "e"], ret3, "split(): normal string split", true);
+		
+		re = new RegExp("[pb]l","")
+		ret3 = str.split(re);
+		Tests.assertArrayEquals(["s", "itta", "e"], ret3, "split(): non capturing regexp split", true);
+		
+		re = new RegExp("[pb](l)","")
+		ret3 = str.split(re);
+		Tests.assertArrayEquals(["s", "l", "itta", "l", "e"], ret3, "split(): capturing regexp split", true);
+
+		re = new RegExp("^$","")
+		ret3 = str.split(re);
+		Tests.assertArrayEquals(["splittable"], ret3, "split(): null matching regexp split", true);
+
+		ret3 = str.split("");
+		Tests.assertArrayEquals(["s", "p", "l", "i", "t", "t", "a", "b", "l", "e"], ret3, "split(): empty string split", true);
+
+		Tests.report(visual, this.name);
+	}
+	private function func1():String
+	{
+		callbackArgs.push(arguments);
+		return "func";
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

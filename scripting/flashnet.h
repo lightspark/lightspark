@@ -69,6 +69,7 @@ public:
 class ObjectEncoding: public ASObject
 {
 public:
+	enum ENCODING { AMF0=0, AMF3=3, DEFAULT=3 };
 	static void sinit(Class_base*);
 };
 
@@ -98,15 +99,26 @@ class NetConnection: public EventDispatcher
 {
 friend class NetStream;
 private:
+	//Indicates whether the application is connected to a server through a persistent RMTP connection/HTTP server with Flash Remoting
+	bool _connected;
 	//The connection is to a flash media server
 	bool isFMS;
-	//The connection is to a local file
-	bool isLocal;
+	ObjectEncoding::ENCODING objectEncoding;
+	tiny_string protocol;
+	tiny_string uri;
 public:
 	NetConnection();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(connect);
+	ASFUNCTION(_getConnected);
+	ASFUNCTION(_getDefaultObjectEncoding);
+	ASFUNCTION(_setDefaultObjectEncoding);
+	ASFUNCTION(_getObjectEncoding);
+	ASFUNCTION(_setObjectEncoding);
+	ASFUNCTION(_getProtocol);
+	ASFUNCTION(_getUri);
 };
 
 class NetStream: public EventDispatcher, public IThreadJob, public ITickJob
@@ -130,6 +142,10 @@ private:
 	//ITickJob interface to frame advance
 	void tick();
 	bool isReady() const;
+	bool paused;
+	enum CONNECTION_TYPE { CONNECT_TO_FMS=0, DIRECT_CONNECTIONS };
+	CONNECTION_TYPE peerID;
+	bool isLocal;
 public:
 	NetStream();
 	~NetStream();
@@ -137,10 +153,14 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(play);
+	ASFUNCTION(resume);
+	ASFUNCTION(pause);
+	ASFUNCTION(togglePause);
 	ASFUNCTION(close);
-	ASFUNCTION(getBytesLoaded);
-	ASFUNCTION(getBytesTotal);
-	ASFUNCTION(getTime);
+	ASFUNCTION(seek);
+	ASFUNCTION(_getBytesLoaded);
+	ASFUNCTION(_getBytesTotal);
+	ASFUNCTION(_getTime);
 
 	//Interface for video
 	/**

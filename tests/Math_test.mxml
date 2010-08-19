@@ -5,7 +5,7 @@ lightspark_CLASSNAME_test or lightspark_FUNCTIONNAME_test for toplevel tests
 lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test for non-toplevel tests
 (e.g.: lightspark_net_NetStream_test or lightspark_Array_test)
 -->
-<mx:Application name="lightspark_NAME_test"
+<mx:Application name="lightspark_Math_test"
 	xmlns:mx="http://www.adobe.com/2006/mxml"
 	layout="absolute"
 	applicationComplete="appComplete();"
@@ -16,6 +16,17 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 	import Tests;
 	private function appComplete():void
 	{
+		Tests.assertEquals(1, Math.cos(0), "Math.cos", true);
+		Tests.assertEquals(1.0, Math.cos(0), "Math.cos", true);
+
+		Tests.assertEquals(0, Math.sin(0), "Math.sin", true);
+		Tests.assertEquals(0.0, Math.sin(0), "Math.sin", true);
+
+		Tests.assertEquals(0, Math.tan(0), "Math.tan", true);
+		Tests.assertEquals(0.0, Math.tan(0), "Math.tan", true);
+
+		Tests.assertEquals(Math.SQRT2, Math.sqrt(2), "Math.sqrt", true);
+
 		Tests.report(visual, this.name);
 	}
 	]]>

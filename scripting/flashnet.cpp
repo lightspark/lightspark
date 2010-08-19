@@ -21,6 +21,7 @@
 #include "flashnet.h"
 #include "class.h"
 #include "parsing/flv.h"
+#include "scripting/flashsystem.h"
 
 using namespace std;
 using namespace lightspark;
@@ -115,15 +116,16 @@ ASFUNCTIONBODY(URLLoader,load)
 	if(th->url.substr(0, min(th->url.len(), 7)) == "file://")
 	{
 		th->isLocal = true;
-		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK ||
-				sys->getSandboxType() == SECURITY_SANDBOX_REMOTE)
+		if(sys->sandboxType == Security::LOCAL_WITH_NETWORK ||
+				sys->sandboxType == Security::REMOTE)
 		{
 			throw UnsupportedException("SecurityError: connect to local file");
 		}
 	}
-	else {
+	else
+	{
 		th->isLocal = false;
-		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_FILE)
+		if(sys->sandboxType == Security::LOCAL_WITH_FILE)
 			throw UnsupportedException("SecurityError: connect to network");
 	}
 	ASObject* data=arg->getVariableByQName("data","");
@@ -166,7 +168,8 @@ void URLLoader::execute()
 		downloader=new LocalDownloader(fileName);
 		static_cast<LocalDownloader*>(downloader)->run();
 	}
-	else {
+	else
+	{
 		downloader=new CurlDownloader(url);
 		static_cast<CurlDownloader*>(downloader)->run();
 	}
@@ -246,51 +249,82 @@ void SharedObject::sinit(Class_base* c)
 
 void ObjectEncoding::sinit(Class_base* c)
 {
-	c->setVariableByQName("AMF0","",abstract_i(0));
-	c->setVariableByQName("AMF3","",abstract_i(3));
-	c->setVariableByQName("DEFAULT","",abstract_i(3));
+	c->setVariableByQName("AMF0","",abstract_i(AMF0));
+	c->setVariableByQName("AMF3","",abstract_i(AMF3));
+	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT));
 };
 
-NetConnection::NetConnection():isFMS(false),isLocal(false)
+NetConnection::NetConnection():isFMS(false)
 {
 }
 
 void NetConnection::sinit(Class_base* c)
 {
 	//assert(c->constructor==NULL);
-	//c->constructor=Class<IFunction>::getFunction(_constructor);
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("connect","",Class<IFunction>::getFunction(connect));
+	c->setGetterByQName("connected","",Class<IFunction>::getFunction(_getConnected));
+	c->setGetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding));
+	c->setSetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding));
+	sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::DEFAULT;
+	c->setGetterByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding));
+	c->setSetterByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding));
+	c->setGetterByQName("protocol","",Class<IFunction>::getFunction(_getProtocol));
+	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getUri));
 }
 
 void NetConnection::buildTraits(ASObject* o)
 {
 }
 
+ASFUNCTIONBODY(NetConnection, _constructor)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	th->objectEncoding = sys->staticNetConnectionDefaultObjectEncoding;
+	return NULL;
+}
 ASFUNCTIONBODY(NetConnection,connect)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj);
-	assert_and_throw(argslen==1);
-	if(args[0]->getObjectType()==T_NULL)
+	//This takes 1 required parameter and an unspecified number of optional parameters
+	assert_and_throw(argslen>0);
+	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.
+	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 	{
-		th->isLocal=true;
-		if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE ||
-				sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK)
+		th->_connected = false;
+		th->isFMS=false;
+		th->protocol = "";
+		//This seems strange:
+		//LOCAL_WITH_FILE may not use connect(), even if it tries to connect to a local file.
+		//I'm following the specification to the letter
+		if(sys->sandboxType == Security::LOCAL_WITH_FILE)
 		{
-			throw UnsupportedException("SecurityError: connect to local file");
+			throw UnsupportedException("SecurityError: NetStream.connect from LOCAL_WITH_FILE sandbox");
 		}
 	}
-	else if(args[0]->getObjectType()!=T_UNDEFINED)
+	//String argument means Flash Remoting/Flash Media Server
+	else
 	{
+		th->_connected = false;
 		th->isFMS=true;
-		throw UnsupportedException("NetConnection::connect to FMS");
-	}
-	else {
-		if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_FILE)
+		ASString* command = static_cast<ASString*>(args[0]);
+		tiny_string commandStr = command->toString();
+		if(commandStr.substr(0, 7) == "rtmpte:")
 		{
-			throw UnsupportedException("SecurityError: connect to network");
+			th->protocol = commandStr.substr(0,6);
 		}
+		else if(commandStr.substr(0, 6) == "rtmpe:" || commandStr.substr(0, 6) == "rtmps:" ||
+				commandStr.substr(0, 6) == "rtmpt:" || commandStr.substr(0, 6) == "rtmfp:")
+		{
+			th->protocol = commandStr.substr(0,5);
+		}
+		else
+		{
+			th->protocol = commandStr.substr(0,4);
+		}
+		throw UnsupportedException("NetConnection::connect to FMS");
 	}
 
 	//When the URI is undefined the connect is successful (tested on Adobe player)
@@ -300,7 +334,69 @@ ASFUNCTIONBODY(NetConnection,connect)
 	return NULL;
 }
 
-NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0),streamTime(0)
+ASFUNCTIONBODY(NetConnection,_getConnected)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	return abstract_b(th->_connected);
+}
+
+ASFUNCTIONBODY(NetConnection,_getDefaultObjectEncoding)
+{
+	return abstract_i(sys->staticNetConnectionDefaultObjectEncoding);
+}
+
+ASFUNCTIONBODY(NetConnection,_setDefaultObjectEncoding)
+{
+	assert_and_throw(argslen == 1);
+	int32_t value = args[0]->toInt();
+	if(value == 0)
+		sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF0;
+	else
+		sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF3;
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetConnection,_getObjectEncoding)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	return abstract_i(th->objectEncoding);
+}
+
+ASFUNCTIONBODY(NetConnection,_setObjectEncoding)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	assert_and_throw(argslen == 1);
+	if(th->_connected)
+	{
+		throw UnsupportedException("ReferenceError: set NetConnection.objectEncoding after connect");
+	}
+	int32_t value = args[0]->toInt();
+	if(value == 0)
+		th->objectEncoding = ObjectEncoding::AMF0; 
+	else
+		th->objectEncoding = ObjectEncoding::AMF3; 
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetConnection,_getProtocol)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	if(th->_connected)
+		return Class<ASString>::getInstanceS(th->protocol);
+	else
+		throw UnsupportedException("ArgumentError: get NetConnection.protocol before connect");
+}
+
+ASFUNCTIONBODY(NetConnection,_getUri)
+{
+	NetConnection* th=Class<NetConnection>::cast(obj);
+	if(th->_connected)
+		return Class<ASString>::getInstanceS(th->uri);
+	else
+		return new Undefined;
+}
+
+NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0),streamTime(0),paused(0)
 {
 	sem_init(&mutex,0,1);
 }
@@ -320,11 +416,17 @@ void NetStream::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
+	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"));
+	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"));
 	c->setVariableByQName("play","",Class<IFunction>::getFunction(play));
+	c->setVariableByQName("resume","",Class<IFunction>::getFunction(resume));
+	c->setVariableByQName("pause","",Class<IFunction>::getFunction(pause));
+	c->setVariableByQName("togglePause","",Class<IFunction>::getFunction(togglePause));
 	c->setVariableByQName("close","",Class<IFunction>::getFunction(close));
-	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(getBytesLoaded));
-	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(getBytesTotal));
-	c->setGetterByQName("time","",Class<IFunction>::getFunction(getTime));
+	c->setVariableByQName("seek","",Class<IFunction>::getFunction(seek));
+	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
+	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
+	c->setGetterByQName("time","",Class<IFunction>::getFunction(_getTime));
 }
 
 void NetStream::buildTraits(ASObject* o)
@@ -334,12 +436,28 @@ void NetStream::buildTraits(ASObject* o)
 ASFUNCTIONBODY(NetStream,_constructor)
 {
 	LOG(LOG_CALLS,"NetStream constructor");
-	assert_and_throw(argslen==1);
+	assert_and_throw(argslen>=1 && argslen <=2);
 	assert_and_throw(args[0]->getPrototype()==Class<NetConnection>::getClass());
 
+	NetStream* th=Class<NetStream>::cast(obj);
 	NetConnection* netConnection = Class<NetConnection>::cast(args[0]);
+	if(argslen == 2)
+	{
+		if(args[1]->getObjectType() == T_STRING)
+		{
+			tiny_string value = Class<ASString>::cast(args[1])->toString();
+			if(value == "directConnections")
+				th->peerID = DIRECT_CONNECTIONS;
+			else
+				th->peerID = CONNECT_TO_FMS;
+		}
+		else if(args[1]->getObjectType() == T_NULL)
+			th->peerID = CONNECT_TO_FMS;
+		else
+			throw UnsupportedException("ArgumentError: NetStream constructor: peerID");
+	}
+
 	assert_and_throw(netConnection->isFMS==false);
-	//assert_and_throw(netConnection->isLocal==false);
 	return NULL;
 }
 
@@ -350,10 +468,42 @@ ASFUNCTIONBODY(NetStream,play)
 	const tiny_string& arg0=args[0]->toString();
 	th->url = arg0;
 	assert_and_throw(th->downloader==NULL);
+	if(th->url.substr(0, min(th->url.len(), 7)) == "htt://")
+		th->isLocal = false;
+	else
+		th->isLocal = true;
 	th->downloader=sys->downloadManager->download(th->url);
 	th->streamTime=0;
 	th->incRef();
 	sys->addJob(th);
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,resume)
+{
+	NetStream* th=Class<NetStream>::cast(obj);
+	th->paused = 0;
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,pause)
+{
+	NetStream* th=Class<NetStream>::cast(obj);
+	th->paused = 1;
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,togglePause)
+{
+	NetStream* th=Class<NetStream>::cast(obj);
+	if(th->paused)
+	{
+		th->resume(obj, NULL, 0);
+	}
+	else
+	{
+		th->pause(obj, NULL, 0);
+	}
 	return NULL;
 }
 
@@ -363,6 +513,13 @@ ASFUNCTIONBODY(NetStream,close)
 	//The downloader is stopped in threadAbort
 	th->threadAbort();
 	LOG(LOG_CALLS, "NetStream::close called");
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,seek)
+{
+	//NetStream* th=Class<NetStream>::cast(obj);
+	assert_and_throw(argslen == 1);
 	return NULL;
 }
 
@@ -583,7 +740,9 @@ void NetStream::execute()
 				}
 				profile->accountTime(chronometer.checkpoint());
 				if(aborting)
+				{
 					throw JobTerminationException();
+				}
 			}
 			while(!done);
 		}
@@ -647,17 +806,17 @@ void NetStream::threadAbort()
 	sem_post(&mutex);
 }
 
-ASFUNCTIONBODY(NetStream,getBytesLoaded)
+ASFUNCTIONBODY(NetStream,_getBytesLoaded)
 {
 	return abstract_i(0);
 }
 
-ASFUNCTIONBODY(NetStream,getBytesTotal)
+ASFUNCTIONBODY(NetStream,_getBytesTotal)
 {
 	return abstract_i(100);
 }
 
-ASFUNCTIONBODY(NetStream,getTime)
+ASFUNCTIONBODY(NetStream,_getTime)
 {
 	return abstract_d(0);
 }

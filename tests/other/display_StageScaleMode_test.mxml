@@ -1,17 +1,21 @@
 <?xml version="1.0"?>
-<mx:Application name="lightspark_test_template"
+<mx:Application name="lightspark_display_StageScaleMode_test"
 	xmlns:mx="http://www.adobe.com/2006/mxml"
 	layout="absolute"
 	applicationComplete="appComplete();"
 	backgroundColor="white">
 
+<!--
+This test is not well suited for using Tests
+-->
 <mx:Script>
-<![CDATA[
+	<![CDATA[
 	private var clickCount:uint;
 	private var color:uint;
 	private var squareWidth:uint;
 	private var squareHeight:uint;
-	private function drawRect():void {
+	private function drawRect():void
+	{
 		rect.graphics.clear();
 		rect.graphics.beginFill(color);
 		rect.graphics.drawRect(0,0,squareWidth,squareHeight);
@@ -43,7 +47,8 @@
 		}
 		drawRect();
 	}
-	private function appComplete():void {
+	private function appComplete():void
+	{
 		clickCount=0;
 		stage.scaleMode=StageScaleMode.SHOW_ALL;
 		color=0xff8060;
@@ -52,7 +57,7 @@
 		rect.addEventListener(MouseEvent.CLICK,rectClick);
 		drawRect();
 	}
-]]>
+	]]>
 </mx:Script>
 
 <mx:UIComponent id="rect" />

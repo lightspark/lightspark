@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_Error_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		//http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/Error.html
+		var err:Error = new Error();
+		Tests.assertEquals(err.message, "Error", "Error(): default Error.message");
+		Tests.assertEquals(err.name, "Error", "Error(): default Error.name");
+
+		err = new Error("a");
+		Tests.assertEquals(err.message, "a", "Error(message:String): message");
+
+		err.message = "b";
+		Tests.assertEquals(err.message, "b", "Error.message: setter");
+		Tests.assertEquals(err.message, err.toString(), "Error.message == err.toString()");
+
+		var secErr:SecurityError = new SecurityError();
+		Tests.assertEquals(secErr.message, "SecurityError", "SecurityError(): default SecurityError.message");
+		Tests.assertEquals(secErr.name, "SecurityError", "SecurityError(): default SecurityError.name");
+
+		var argErr:ArgumentError = new ArgumentError();
+		Tests.assertEquals(argErr.message, "ArgumentError", "ArgumentError(): default ArgumentError.message");
+		Tests.assertEquals(argErr.name, "ArgumentError", "ArgumentError(): default ArgumentError.name");
+
+		var defErr:DefinitionError = new DefinitionError();
+		Tests.assertEquals(defErr.message, "DefinitionError", "DefinitionError(): default DefinitionError.message");
+		Tests.assertEquals(defErr.name, "DefinitionError", "DefinitionError(): default DefinitionError.name");
+
+		var evalErr:EvalError = new EvalError();
+		Tests.assertEquals(evalErr.message, "EvalError", "EvalError(): default EvalError.message");
+		Tests.assertEquals(evalErr.name, "EvalError", "EvalError(): default EvalError.name");
+
+		var rangeErr:RangeError = new RangeError();
+		Tests.assertEquals(rangeErr.message, "RangeError", "RangeError(): default RangeError.message");
+		Tests.assertEquals(rangeErr.name, "RangeError", "RangeError(): default RangeError.name");
+
+		var refErr:ReferenceError = new ReferenceError();
+		Tests.assertEquals(refErr.message, "ReferenceError", "ReferenceError(): default ReferenceError.message");
+		Tests.assertEquals(refErr.name, "ReferenceError", "ReferenceError(): default ReferenceError.name");
+
+		var syntaxErr:SyntaxError = new SyntaxError();
+		Tests.assertEquals(syntaxErr.message, "SyntaxError", "SyntaxError(): default SyntaxError.message");
+		Tests.assertEquals(syntaxErr.name, "SyntaxError", "SyntaxError(): default SyntaxError.name");
+
+		var typeErr:TypeError = new TypeError();
+		Tests.assertEquals(typeErr.message, "TypeError", "TypeError(): default TypeError.message");
+		Tests.assertEquals(typeErr.name, "TypeError", "TypeError(): default TypeError.name");
+
+		var verifyErr:VerifyError = new VerifyError();
+		Tests.assertEquals(verifyErr.message, "VerifyError", "VerifyError(): default VerifyError.message");
+		Tests.assertEquals(verifyErr.name, "VerifyError", "VerifyError(): default VerifyError.name");
+
+		var URIErr:URIError = new URIError();
+		Tests.assertEquals(URIErr.message, "URIError", "URIError(): default URIError.message");
+		Tests.assertEquals(URIErr.name, "URIError", "URIError(): default URIError.name");
+
+		Tests.report(visual, this.name);
+	}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

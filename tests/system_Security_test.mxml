@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_system_Security_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import flash.system.Capabilities;
+	import flash.system.Security;
+	private function appComplete():void
+	{
+		//http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/Security.html
+
+		//Check Security.exactSettings setter/getter
+		Tests.assertTrue(Security.exactSettings, "exactSettings: default value");
+
+		Security.exactSettings = false;
+		Tests.assertFalse(Security.exactSettings, "exactSettings: setter, false");
+		Security.exactSettings = true;
+		Tests.assertTrue(Security.exactSettings, "exactSettings: setter, true");
+
+		//Check values of constants
+		Tests.assertEquals("remote", Security.REMOTE, "REMOTE: value");
+		Tests.assertEquals("localWithFile", Security.LOCAL_WITH_FILE, "LOCAL_WITH_FILE: value");
+		Tests.assertEquals("localWithNetwork", Security.LOCAL_WITH_NETWORK, "LOCAL_WITH_NETWORK: value");
+		Tests.assertEquals("localTrusted", Security.LOCAL_TRUSTED, "LOCAL_TRUSTED: value");
+
+		//Show security sandbox type by color
+		var color:uint;
+		Tests.info("Sandbox type: " + Security.sandboxType);
+		if(Security.sandboxType == Security.REMOTE) //Red = remote
+		{
+			color = 0x800000;
+		}
+		else if(Security.sandboxType == Security.LOCAL_WITH_FILE) //Green = local-with-filesystem
+		{
+			color = 0x008000;
+		}
+		else if(Security.sandboxType == Security.LOCAL_WITH_NETWORK) //Blue = local-with-network
+		{
+			color = 0x000080;
+		}
+		else if(Security.sandboxType == Security.LOCAL_TRUSTED) //Gray = local-trusted
+		{
+			color = 0x808080;
+		}
+		
+		rect.graphics.beginFill(color);
+		rect.graphics.drawRect(30,0,150,100);
+		rect.graphics.endFill();
+
+		Tests.report(visual, this.name);
+	}
+]]>
+</mx:Script>
+<mx:UIComponent id="rect"/>
+<mx:UIComponent id="visual"/>
+
+</mx:Application>
+

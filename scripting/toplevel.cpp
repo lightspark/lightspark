@@ -1734,8 +1734,7 @@ ASFUNCTIONBODY(Math,atan2)
 
 ASFUNCTIONBODY(Math,_max)
 {
-	double n1=args[0]->toNumber();
-	double largest = n1;
+	double largest = args[0]->toNumber();
 
 	for(unsigned int i = 1; i < argslen; i++)
 	{
@@ -1747,8 +1746,7 @@ ASFUNCTIONBODY(Math,_max)
 
 ASFUNCTIONBODY(Math,_min)
 {
-	double n1=args[0]->toNumber();
-	double smallest = n1;
+	double smallest = args[0]->toNumber();
 
 	for(unsigned int i = 1; i < argslen; i++)
 	{

@@ -554,7 +554,7 @@ ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl, b
 		return ret;
 	}
 	else
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
+		return new Undefined;
 }
 
 void Array::setVariableByMultiname_i(const multiname& name, intptr_t value)

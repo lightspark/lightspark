@@ -12,7 +12,7 @@
 	import Tests;
 	private function appComplete():void
 	{
-		Tests.assertTrue(flash.display.Sprite is flash.display.DisplayObject, "'is' keyword: flash.display.Sprite is flash.display.DisplayObject");
+		Tests.assertFalse(flash.display.Sprite is flash.display.DisplayObject, "'is' keyword: flash.display.Sprite is flash.display.DisplayObject");
 		Tests.assertTrue(this is flash.display.DisplayObject, "'is' keyword: this is flash.display.DisplayObject");
 
 		Tests.report(visual, name);

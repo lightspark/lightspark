@@ -145,7 +145,7 @@ void SystemState::staticDeinit()
 
 SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
-	useGnashFallback(false),exactSecuritySettings(true),exactSecuritySettingsLocked(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
 	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;

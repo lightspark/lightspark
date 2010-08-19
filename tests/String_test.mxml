@@ -69,7 +69,7 @@
 		ret3 = str.split("");
 		Tests.assertArrayEquals(["s", "p", "l", "i", "t", "t", "a", "b", "l", "e"], ret3, "split(): empty string split", true);
 
-		Tests.report(visual);
+		Tests.report(visual, this.name);
 	}
 	private function func1():String
 	{

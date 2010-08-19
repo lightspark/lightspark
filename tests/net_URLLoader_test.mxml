@@ -69,7 +69,7 @@
 	private function finishUp():void
 	{
 		if((Security.sandboxType == Security.LOCAL_TRUSTED && received == 2) || (Security.sandboxType != Security.LOCAL_TRUSTED && received == 1))
-			Tests.report(visual);
+			Tests.report(visual, this.name);
 	}
 	]]>
 </mx:Script>

@@ -55,7 +55,7 @@
 			Tests.assertDontReach("Error wasn't caught SecurityError")
 		}
 
-		Tests.report(visual);
+		Tests.report(visual, this.name);
 	}
 ]]>
 </mx:Script>

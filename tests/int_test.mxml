@@ -17,7 +17,7 @@
 		Tests.assertEquals(int(true), 1, "int(true)", true);
 		Tests.assertEquals(int(false), 0, "int(false)", true);
 
-		Tests.report(visual);
+		Tests.report(visual, this.name);
 	}
 	]]>
 </mx:Script>

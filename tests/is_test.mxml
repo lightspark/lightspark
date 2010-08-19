@@ -15,7 +15,7 @@
 		Tests.assertTrue(flash.display.Sprite is flash.display.DisplayObject, "'is' keyword: flash.display.Sprite is flash.display.DisplayObject");
 		Tests.assertTrue(this is flash.display.DisplayObject, "'is' keyword: this is flash.display.DisplayObject");
 
-		Tests.report(visual);
+		Tests.report(visual, name);
 	}
 ]]>
 </mx:Script>

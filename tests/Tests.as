@@ -244,7 +244,7 @@ package
 				}
 			}
 		}
-		public static function report(visual:*=null):void
+		public static function report(visual:*=null, name:String=null):void
 		{
 			if(failures.length > 0)
 			{
@@ -255,7 +255,7 @@ package
 					trace("---------------------------------------------------------");
 				}
 				trace("=========================================================");
-				trace("FAILURE");
+				trace("FAILURE (" + (name == null ? "unnamed test" : name) + ")");
 				if(visual != null && visual.graphics != null)
 				{
 					visual.graphics.beginFill(0xFF0000);
@@ -267,7 +267,7 @@ package
 			else
 			{
 				trace("=====================No failures (" + testCount + ")=====================");
-				trace("SUCCESS");
+				trace("SUCCESS (" + (name == null ? "unnamed test" : name) + ")");
 				if(visual != null && visual.graphics != null)
 				{
 					visual.graphics.beginFill(0x00FF00);

@@ -24,7 +24,7 @@
 		Tests.assertEquals(1, t["data2"], "Proxy: not existing data");
 		Tests.assertEquals(2, t["data3"], "Proxy: undefined data (something else)");
 
-		Tests.report(visual);
+		Tests.report(visual, this.name);
 	}
  ]]>
 </mx:Script>

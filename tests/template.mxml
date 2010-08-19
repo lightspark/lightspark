@@ -16,7 +16,7 @@ lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test fo
 	import Tests;
 	private function appComplete():void
 	{
-		Tests.report(visual);
+		Tests.report(visual, this.name);
 	}
 	]]>
 </mx:Script>

@@ -34,7 +34,7 @@
 		a.sort(Array.NUMERIC);
 		Tests.assertArrayEquals(a, new Array("3", 12, 76), "sort(): numeric sort", true);
 
-		Tests.report(visual);
+		Tests.report(visual, this.name);
 	}
 	]]>
 </mx:Script>

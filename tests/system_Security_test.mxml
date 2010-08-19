@@ -52,7 +52,7 @@
 		rect.graphics.drawRect(30,0,150,100);
 		rect.graphics.endFill();
 
-		Tests.report(visual);
+		Tests.report(visual, this.name);
 	}
 ]]>
 </mx:Script>

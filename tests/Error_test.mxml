@@ -62,7 +62,7 @@
 		Tests.assertEquals(URIErr.message, "URIError", "URIError(): default URIError.message");
 		Tests.assertEquals(URIErr.name, "URIError", "URIError(): default URIError.name");
 
-		Tests.report(visual);
+		Tests.report(visual, this.name);
 	}
 ]]>
 </mx:Script>

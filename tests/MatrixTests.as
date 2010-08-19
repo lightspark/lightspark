@@ -35,8 +35,14 @@ package
 			trace(matrix_2);  // (a=1, b=2, c=3, d=4, tx=5, ty=6)
 
 			//Test 4
+			
 			matrix_2.identity();
 			trace(matrix_2);  // (a=1, b=0, c=0, d=1, tx=0, ty=0)
+			
+			//Test 5
+			
+			matrix_2.rotate(Math.PI / 2);
+			trace(matrix_2); // (a=0, b=-1, c=1, d=0, tx=0, ty=0)
 		}
 	}
 }

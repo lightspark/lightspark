@@ -2143,6 +2143,7 @@ void Matrix::sinit(Class_base* c)
 	c->setVariableByQName("identity","",Class<IFunction>::getFunction(identity));
 	c->setVariableByQName("rotate","",Class<IFunction>::getFunction(rotate));
 	c->setVariableByQName("scale","",Class<IFunction>::getFunction(scale));
+	c->setVariableByQName("translate","",Class<IFunction>::getFunction(translate));
 }
 
 ASFUNCTIONBODY(Matrix,_constructor)
@@ -2300,6 +2301,18 @@ ASFUNCTIONBODY(Matrix,scale)
 	double sy = args[1]->toNumber();
 	th->a = sx;   th->c = 0.0; th->tx = 0.0;
 	th->b = 0.0;  th->d = sy;  th->ty = 0.0;
+		
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,translate)
+{
+	Matrix* th=static_cast<Matrix*>(obj);
+	assert_and_throw(argslen==2);
+	double dx = args[0]->toNumber();
+	double dy = args[1]->toNumber();
+	th->tx += dx;
+	th->ty += dy;
 		
 	return NULL;
 }

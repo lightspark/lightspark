@@ -48,6 +48,15 @@ package
 			
 			matrix_2.scale(4, 2);
 			trace(matrix_2); // (a=4, b=0, c=0, d=2, tx=0, ty=0)
+			
+			//Test 7
+			
+			matrix_2.identity();
+			trace(matrix_2);  // (a=1, b=0, c=0, d=1, tx=0, ty=0)
+			matrix_2.translate(4, 2);
+			trace(matrix_2);  // (a=1, b=0, c=0, d=1, tx=4, ty=2)
+			matrix_2.translate(-2, 2);
+			trace(matrix_2);  // (a=1, b=0, c=0, d=1, tx=2, ty=4)
 		}
 	}
 }

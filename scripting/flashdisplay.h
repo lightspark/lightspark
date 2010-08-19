@@ -416,6 +416,7 @@ public:
 	ASFUNCTION(identity);
 	ASFUNCTION(rotate);
 	ASFUNCTION(scale);
+	ASFUNCTION(translate);
 	
 	//Properties
 	ASFUNCTION(_get_a);

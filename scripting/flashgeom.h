@@ -73,6 +73,7 @@ public:
 	ASFUNCTION(equals);
 	ASFUNCTION(normalize);
 	ASFUNCTION(offset);
+	ASFUNCTION(polar);
 	
 	number_t len() const;
 };

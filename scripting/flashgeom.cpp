@@ -268,6 +268,7 @@ void Point::sinit(Class_base* c)
 	c->setVariableByQName("equals","",Class<IFunction>::getFunction(equals));
 	c->setVariableByQName("normalize","",Class<IFunction>::getFunction(normalize));
 	c->setVariableByQName("offset","",Class<IFunction>::getFunction(offset));
+	c->setVariableByQName("polar","",Class<IFunction>::getFunction(polar));
 }
 
 void Point::buildTraits(ASObject* o)
@@ -417,6 +418,17 @@ ASFUNCTIONBODY(Point,offset)
 	Point* ret=Class<Point>::getInstanceS();
 	ret->x = th->x + dx;
 	ret->y = th->y + dy;
+	return ret;
+}
+
+ASFUNCTIONBODY(Point,polar)
+{
+	assert_and_throw(argslen==2);
+	number_t len = args[0]->toNumber();
+	number_t angle = args[1]->toNumber();
+	Point* ret=Class<Point>::getInstanceS();
+	ret->x = len * cos(angle);
+	ret->y = len * sin(angle);
 	return ret;
 }
 

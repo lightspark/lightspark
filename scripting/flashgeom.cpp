@@ -260,6 +260,7 @@ void Point::sinit(Class_base* c)
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getlength));
 	c->setSetterByQName("x","",Class<IFunction>::getFunction(_setX));
 	c->setSetterByQName("y","",Class<IFunction>::getFunction(_setY));
+	c->setVariableByQName("interpolate","",Class<IFunction>::getFunction(interpolate));
 }
 
 void Point::buildTraits(ASObject* o)
@@ -320,6 +321,18 @@ ASFUNCTIONBODY(Point,_getlength)
 	Point* th=static_cast<Point*>(obj);
 	assert_and_throw(argslen==0);
 	return abstract_d(::sqrt(th->x * th->x + th->y * th->y));
+}
+
+ASFUNCTIONBODY(Point,interpolate)
+{
+	assert_and_throw(argslen==3);
+	Point* pt1=static_cast<Point*>(args[0]);
+	Point* pt2=static_cast<Point*>(args[1]);
+	number_t f=args[2]->toNumber();
+	Point* ret=Class<Point>::getInstanceS();
+	ret->x = pt1->x + pt2->x * f;
+	ret->y = pt1->y + pt2->y * f;
+	return ret;
 }
 
 void Transform::sinit(Class_base* c)

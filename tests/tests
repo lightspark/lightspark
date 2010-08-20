@@ -63,24 +63,49 @@ while [ $# -ne 0 ]; do
 done
 
 if [ $COMPILE ]; then
-	echo -n "Compiling: ";
-	echo $TESTS_SRC;
-	echo "Compiler: $MXMLC";
+	echo -n "Compiling: " 1>&2;
+	echo $TESTS_SRC 1>&2;
+	echo "Compiler: $MXMLC" 1>&2;
 	for test in $TESTS_SRC; do
 		$MXMLC -static-link-runtime-shared-libraries $test;
 	done
 	if [ $QUIT ]; then
 		exit;
 	fi
-	echo -e "\n";
+	echo -e "\n" 1>&2;
 fi
 
-echo -n "Running tests: ";
-echo $TESTS;
+echo -n "Running tests: " 1>&2;
+echo $TESTS 1>&2;
 
-FAILURECOUNT=0;
-SUCCESSCOUNT=0;
-TESTCOUNT=0;
+FAILURECOUNT=0; SUCCESSCOUNT=0; TESTCOUNT=0;
+
+#Colors used for colorization
+CLEAR='\\\e[0m';
+RED='\\\e[0;31m'; REDB='\\\e[1;31m'; REDU='\\\e[2;31m';
+GREEN='\\\e[0;32m'; GREENB='\\\e[1;32m'; GREENU='\\\e[2;32m';
+YELLOW='\\\e[0;33m';
+BLUE='\\\e[0;34m'; LIGHTBLUE='\\\e[0;36m'; LIGHTBLUEB='\\\e[1;36m';
+PURPLEB='\\\e[1;34m'; PINK='\\\e[0;35m'; PINKB='\\\e[1;35m';
+
+#Signatures for matching
+BARCHAR="=";
+ASSERTSUCCESSCHAR='\.'; ASSERTFAILEDCHAR='F'; ASSERTARRAYCHAR='A';
+ASSERTMSGBRACKETOPEN='\['; ASSERTMSGBRACKETCLOSE='\]';
+FILEBRACKETOPEN='('; FILEBRACKETCLOSE=')';
+
+FAILURESTITLE='Failures';
+FAILURETITLE='FAILURE';
+FAILEDASSERTIONTITLE='Failed assertion';
+EXPECTEDTITLE='Expected'; ACTUALTITLE='Actual';
+ARRAY1TITLE='Array 1'; ARRAY2TITLE='Array 2';
+
+NOFAILURESTITLE='No failures';
+SUCCESSTITLE='SUCCESS';
+
+INFOPREFIX='\[INFO\]';
+CURLPREFIX='CURL header';
+INDENTPREFIX='\t';
 for test in $TESTS; do
 	sleep 0.25;
 
@@ -99,13 +124,15 @@ for test in $TESTS; do
 
 	if [ $QUIET ]; then
 		lines=`echo "$lines" |
-			sed -n -e '/=*\(No failures\|Failures\)=*/,/SUCCESS.*\|FAILURE.*/p'
+			sed -n -e "/${BARCHAR}*\(${NOFAILURESTITLE}\|${FAILURESTITLE}\)${BARCHAR}*/,/${SUCCESSTITLE}.*\|${FAILURETITLE}.*/p"
 			`
 	fi
 	
 	if [ $FAILURES ]; then
 		lines=`echo "$lines" |
-			sed -n -e '/=*\(Failures\)=*/,/FAILURE.*/p' -e '/^F \[.*$/p' -e '/^A .*F.* \[$/p'
+			sed -n -e "/${BARCHAR}*\(${FAILURESTITLE}\)${BARCHAR}*/,/${FAILURETITLE}.*/p" \
+				-e "/^${ASSERTFAILEDCHAR} ${ASSERTMSGBRACKETOPEN}.*$/p" \
+				-e "/^${ASSERTARRAYCHAR} .*${ASSERTFAILECHAR}.* \[$/p"
 			`
 	fi
 
@@ -115,31 +142,31 @@ for test in $TESTS; do
 
 	if [ $COLORS ]; then
 		lines=`echo "$lines" | sed \
-			-e 's/^\[INFO\]\(.*\)$/\\\e[0;34m[INFO]\\\e[0m\\\e[1;34m\1\\\e[0m/' \
-			-e 's/^CURL header\(.*\)$/\\\e[1;35mCURL header\\\e[0m\\\e[0;35m\1\\\e[0m/' \
+			-e "s/^\(${INFOPREFIX}\)\(.*\)$/${BLUE}\1${PURPLEB}\2${CLEAR}/" \
+			-e "s/^\(${CURLPREFIX}\)\(.*\)$/${PINK}\1${PINK}\2${CLEAR}/" \
 \
-			-e '/A /{
-			s/F/\\\e[1;31mF\\\e[0m/g
-			}' \
-			-e 's/^F \(\[.*\)$/\\\e[1;31mF \\\e[0;31m\1\\\e[0m/g' \
-			-e 's/\(=*\)Failures\(.*\)/\\\e[1;31m\1Failures\2\\\e[0m/' \
-			-e 's/Failed assertion:\(.*\)/\\\e[0;31mFailed assertion:\1\\\e[0m/' \
-			-e 's/\t\(Expected\|Actual\|Array [1-2]\): \(.*\)/\t\\\e[0;31m\1: \\\e[0m\\\e[2;31m\2\\\e[0m/' \
-			-e 's/^\(=*\)$/\\\e[1;31m\1\\\e[0m/' \
-			-e 's/\FAILURE \((.*)\)/\\\e[1;31mFAILURE \\\e[0;33m\1\\\e[0m/' \
-			-e '/Failed assertion:.*/{
+			-e "/${ASSERTARRAYCHAR} /{
+			s/${ASSERTFAILEDCHAR}/${REDB}\0${CLEAR}/g
+			}" \
+			-e "s/^\(${ASSERTFAILEDCHAR}\) \(${ASSERTMSGBRACKETOPEN}.*${ASSERTMSGBRACKETCLOSE}\)$/${REDB}\1 ${RED}\2${CLEAR}/g" \
+			-e "s/\(${BARCHAR}*\)\(${FAILURESTITLE}\)\(.*\)/${REDB}\1\2\3${CLEAR}/" \
+			-e "s/\(${FAILEDASSERTIONTITLE}\):\(.*\)/${RED}\1:\2${CLEAR}/" \
+			-e "s/${INDENTPREFIX}\(${EXPECTEDTITLE}\|${ACTUALTITLE}\|${ARRAY1TITLE}\|${ARRAY2TITLE}\): \(.*\)/${INDENTPREFIX}${RED}\1: ${REDU}\2${CLEAR}/" \
+			-e "s/^\(${BARCHAR}*\)$/${REDB}\1${CLEAR}/" \
+			-e "s/\(${FAILURETITLE}\) \(${FILEBRACKETOPEN}.*${FILEBRACKETCLOSE}\)/${REDB}\1 ${YELLOW}\2${CLEAR}/" \
+			-e "/${FAILEDASSERTIONTITLE}:.*/{
 			N
-			s/\t\(.*\)/\t\\\e[1;31m\1\\\e[0m/
-			}' \
+			s/${INDENTPREFIX}\(.*\)/${INDENTPREFIX}${REDB}\1${CLEAR}/
+			}" \
 \
-			-e '/A /{
-			s/\./\\\e[1;32m.\\\e[0m/g
-			}' \
-			-e 's/^\. \(\[.*\)$/\\\e[1;32m. \\\e[0;32m\1\\\e[0m/' \
-			-e 's/\(=*\)No failures\(.*\)/\\\e[1;32m\1No failures\2\\\e[0m/' \
-			-e 's/\SUCCESS \((.*)\)/\\\e[1;32mSUCCESS \\\e[0;33m\1\\\e[0m/' \
+			-e "/${ASSERTARRAYCHAR} /{
+			s/\(${ASSERTSUCCESSCHAR}\)/${GREENB}\1${CLEAR}/g
+			}" \
+			-e "s/^\(${ASSERTSUCCESSCHAR}\) \(\[.*\)$/${GREENB}\1 ${GREEN}\2${CLEAR}/" \
+			-e "s/\(${BARCHAR}*\)\(${NOFAILURESTITLE}\)\(.*\)/${GREENB}\1\2\3${CLEAR}/" \
+			-e "s/\(${SUCCESSTITLE}\) \(${FILEBRACKETOPEN}.*${FILEBRACKETCLOSE}\)/${GREENB}\1 ${YELLOW}\2${CLEAR}/" \
 \
-			-e 's/^A \(.*\)\(\[.*\]\)$/\\\e[1;36mA \\\e[0m\1\\\e[0;36m\2\\\e[0m/' \
+			-e "s/^\(${ASSERTARRAYCHAR}\) \(.*\)\(${ASSERTMSGBRACKETOPEN}.*${ASSERTMSGBRACKETCLOSE}\)$/${LIGHTBLUEB}\1 ${CLEAR}\2${LIGHTBLUE}\3${CLEAR}/" \
 			`
 	fi
 
@@ -147,7 +174,7 @@ for test in $TESTS; do
 done
 
 if [ $COLORS ]; then
-	echo -e "Tests run: $TESTCOUNT, \e[1;32m$SUCCESSCOUNT successful\e[0m and \e[1;31m$FAILURECOUNT failed\e[0m"
+	echo -e "Tests run: $TESTCOUNT, \e[1;32m$SUCCESSCOUNT successful\e[0m and \e[1;31m$FAILURECOUNT failed\e[0m" 1>&2
 else
-	echo -e "Tests run: $TESTCOUNT, $SUCCESSCOUNT successful and $FAILURECOUNT failed"
+	echo -e "Tests run: $TESTCOUNT, $SUCCESSCOUNT successful and $FAILURECOUNT failed" 1>&2
 fi

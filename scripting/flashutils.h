@@ -116,14 +116,7 @@ public:
 	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	void deleteVariableByMultiname(const multiname& name);
-	tiny_string toString(bool debugMsg=false)
-	{
-		if(debugMsg)
-			return ASObject::toString(debugMsg);
-		else
-			throw UnsupportedException("Dictionary::toString");
-		return "";
-	}
+	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r)
 	{
 		assert_and_throw(implEnable);

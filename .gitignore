@@ -2,6 +2,7 @@
 # Linux make
 #
 i686/*
+x86_64
 
 #
 # CMAKE

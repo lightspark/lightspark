@@ -155,7 +155,7 @@ typed_opcode_handler ABCVm::opcode_table_voidptr[]={
 	{"pushUndefined",(void*)&ABCVm::pushUndefined,ARGS_NONE},
 	{"getProperty",(void*)&ABCVm::getProperty,ARGS_OBJ_OBJ},
 	{"asTypelate",(void*)&ABCVm::asTypelate,ARGS_OBJ_OBJ},
-	{"getGlobalScope",(void*)&ABCVm::getGlobalScope,ARGS_NONE},
+	{"getGlobalScope",(void*)&ABCVm::getGlobalScope,ARGS_CONTEXT},
 	{"findPropStrict",(void*)&ABCVm::findPropStrict,ARGS_CONTEXT_INT},
 	{"findProperty",(void*)&ABCVm::findProperty,ARGS_CONTEXT_INT},
 	{"getMultiname",(void*)&ABCContext::s_getMultiname,ARGS_OBJ_OBJ_INT},
@@ -2946,7 +2946,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 			{
 				//getglobalscope
 				LOG(LOG_TRACE, "synt getglobalscope" );
-				value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"));
+				value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"), context);
 				static_stack_push(static_stack,stack_entry(value,STACK_OBJECT));
 				break;
 			}

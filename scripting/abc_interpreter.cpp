@@ -790,7 +790,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			case 0x64:
 			{
 				//getglobalscope
-				context->runtime_stack_push(getGlobalScope());
+				context->runtime_stack_push(getGlobalScope(context));
 				break;
 			}
 			case 0x65:

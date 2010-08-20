@@ -953,7 +953,8 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),terminated(false),shuttingdown(false)
 	m_sys=s;
 	int_manager=new Manager(15);
 	number_manager=new Manager(15);
-	Global=Class<ASObject>::getInstanceS();
+	Global=new GlobalObject;
+	Global->setPrototype(Class<ASObject>::getClass());
 	LOG(LOG_NO_INFO,"Global is " << Global);
 	//Push a dummy default context
 	pushObjAndLevel(Class<ASObject>::getInstanceS(),0);
@@ -1245,38 +1246,54 @@ call_context::~call_context()
 void ABCContext::exec()
 {
 	//Take script entries and declare their traits
-	//TODO: check entrypoint concept
-#ifndef NDEBUG
-	getGlobal()->initialized=false;
-#endif
 	unsigned int i=0;
 	for(;i<scripts.size()-1;i++)
 	{
 		LOG(LOG_CALLS, "Script N: " << i );
 		method_info* m=get_method(scripts[i].init);
 
+		//Creating a new global for this script
+		ASObject* global=Class<ASObject>::getInstanceS();
+#ifndef NDEBUG
+		global->initialized=false;
+#endif
 		LOG(LOG_CALLS, "Building script traits: " << scripts[i].trait_count );
 		SyntheticFunction* mf=Class<IFunction>::getSyntheticFunction(m);
-		mf->addToScope(getGlobal());
+		mf->addToScope(global);
 
 		for(unsigned int j=0;j<scripts[i].trait_count;j++)
-			buildTrait(getGlobal(),&scripts[i].traits[j],false,mf);
+			buildTrait(global,&scripts[i].traits[j],mf);
+
+#ifndef NDEBUG
+		global->initialized=true;
+#endif
+		//Register it as one of the global scopes
+		getGlobal()->registerGlobalScope(global);
 	}
 	//The last script entry has to be run
 	LOG(LOG_CALLS, "Last script (Entry Point)");
 	method_info* m=get_method(scripts[i].init);
 	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(m);
-	entry->addToScope(getGlobal());
+	//Creating a new global for the last script
+	ASObject* global=Class<ASObject>::getInstanceS();
+#ifndef NDEBUG
+		global->initialized=false;
+#endif
+	entry->addToScope(global);
 
 	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
-		buildTrait(getGlobal(),&scripts[i].traits[j],false);
-	ASObject* ret=entry->call(getGlobal(),NULL,0);
+		buildTrait(global,&scripts[i].traits[j]);
+
+#ifndef NDEBUG
+		global->initialized=true;
+#endif
+	//Register it as one of the global scopes
+	getGlobal()->registerGlobalScope(global);
+
+	ASObject* ret=entry->call(global,NULL,0);
 	if(ret)
 		ret->decRef();
-#ifndef NDEBUG
-	getGlobal()->initialized=true;
-#endif
 	LOG(LOG_CALLS, "End of Entry Point");
 }
 
@@ -1376,7 +1393,7 @@ void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 		if(kind==traits_info::Slot || kind==traits_info::Class ||
 			kind==traits_info::Function || kind==traits_info::Const)
 		{
-			buildTrait(obj,&instances[class_index].traits[i],true);
+			buildTrait(obj,&instances[class_index].traits[i]);
 		}
 	}
 }
@@ -1526,7 +1543,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	}
 }
 
-void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFunction* deferred_initialization)
+void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization)
 {
 	const multiname* mname=getMultiname(t->name,NULL);
 	//Should be a Qname

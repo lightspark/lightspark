@@ -735,7 +735,7 @@ private:
 public:
 	ScriptDefinable(IFunction* _f):f(_f){}
 	//The global object will be passed from the calling context
-	void define(ASObject* g){ f->call(g,NULL,0); }
+	void define(ASObject* g){ f->call(new Null,NULL,0); }
 };
 
 class Math: public ASObject
@@ -905,6 +905,13 @@ public:
 	ASFUNCTION(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+};
+
+class GlobalObject: public ASObject
+{
+public:
+	void registerGlobalScope(ASObject* scope);
+	std::vector<ASObject*> globalScopes;
 };
 
 bool Boolean_concrete(ASObject* obj);

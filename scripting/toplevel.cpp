@@ -2878,6 +2878,26 @@ Class<IFunction>* Class<IFunction>::getClass()
 	return ret;
 }
 
+void GlobalObject::registerGlobalScope(ASObject* scope)
+{
+	globalScopes.push_back(scope);
+}
+
+/*ASObject* GlobalObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+{
+	ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride, base);
+	if(ret==NULL)
+	{
+		for(uint32_t i=0;i<globalScopes.size();i++)
+		{
+			ret=globalScopes[i]->getVariableByMultiname(name, skip_impl, enableOverride, base);
+			if(ret)
+				break;
+		}
+	}
+	return ret;
+}*/
+
 //We follow the Boolean() algorithm, but return a concrete result, not a Boolean object
 bool lightspark::Boolean_concrete(ASObject* obj)
 {

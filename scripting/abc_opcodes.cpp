@@ -461,9 +461,9 @@ void ABCVm::pushScope(call_context* th)
 	th->scope_stack.push_back(t);
 }
 
-ASObject* ABCVm::getGlobalScope()
+ASObject* ABCVm::getGlobalScope(call_context* th)
 {
-	ASObject* ret=getGlobal();
+	ASObject* ret=th->scope_stack[0];
 	LOG(LOG_CALLS,"getGlobalScope: " << ret);
 	ret->incRef();
 	return ret;
@@ -649,7 +649,7 @@ void ABCVm::construct(call_context* th, int m)
 #endif
 				LOG(LOG_CALLS,"Building method traits");
 				for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-					th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+					th->context->buildTrait(ret,&sf->mi->body->traits[i]);
 #ifndef NDEBUG
 				ret->initialized=true;
 #endif
@@ -1512,10 +1512,23 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	if(o==NULL)
 	{
 		LOG(LOG_CALLS, "NOT found, trying Global" );
-		o=getGlobal()->getVariableByMultiname(*name);
-		if(o)
-			ret=getGlobal();
-		else
+		GlobalObject* global=getGlobal();
+		for(uint32_t i=0;i<global->globalScopes.size();i++)
+		{
+			o=global->globalScopes[i]->getVariableByMultiname(*name);
+			if(o)
+			{
+				ret=global->globalScopes[i];
+				break;
+			}
+		}
+		if(o==NULL) //Ask Global itself
+		{
+			o=global->getVariableByMultiname(*name);
+			if(o)
+				ret=global;
+		}
+		if(o==NULL)
 		{
 			LOG(LOG_NOT_IMPLEMENTED, "NOT found, pushing Undefined");
 			ret=new Undefined;
@@ -2022,7 +2035,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 #endif
 			LOG(LOG_CALLS,"Building method traits");
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
+				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
 #ifndef NDEBUG
 			ret->initialized=true;
 #endif
@@ -2240,7 +2253,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 	LOG(LOG_CALLS,"Building class traits");
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
-		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
+		th->context->buildTrait(ret,&th->context->classes[n].traits[i]);
 
 	//Add protected namespace if needed
 	if((th->context->instances[n].flags)&0x08)
@@ -2256,7 +2269,7 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		int kind=cur->traits[i].kind&0xf;
 		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
-			th->context->buildTrait(ret,&cur->traits[i],false);
+			th->context->buildTrait(ret,&cur->traits[i]);
 	}
 
 	//add Constructor the the class methods
@@ -2322,7 +2335,7 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 	act->initialized=false;
 #endif
 	for(unsigned int i=0;i<info->body->trait_count;i++)
-		th->context->buildTrait(act,&info->body->traits[i],false);
+		th->context->buildTrait(act,&info->body->traits[i]);
 #ifndef NDEBUG
 	act->initialized=true;
 #endif

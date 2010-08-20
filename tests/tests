@@ -67,12 +67,12 @@ if [ $COMPILE ]; then
 	echo $TESTS_SRC;
 	echo "Compiler: $MXMLC";
 	for test in $TESTS_SRC; do
-		$MXMLC $test;
+		$MXMLC -static-link-runtime-shared-libraries $test;
 	done
 	if [ $QUIT ]; then
 		exit;
 	fi
-	echo -e "\n\n";
+	echo -e "\n";
 fi
 
 echo -n "Running tests: ";
@@ -99,40 +99,51 @@ for test in $TESTS; do
 
 	if [ $QUIET ]; then
 		lines=`echo "$lines" |
-			sed '/^\(A .*\|\. \[.*\|F \[.*\|\[INFO\].*\|CURL header.*\)$/d'
+			sed -n -e '/=*\(No failures\|Failures\)=*/,/SUCCESS.*\|FAILURE.*/p'
 			`
 	fi
 	
 	if [ $FAILURES ]; then
 		lines=`echo "$lines" |
-			sed '/^\(=*No failures.*\|SUCCESS.*\|\. \[.*\|A \.* \[.*\)$/d'`
-	fi
-
-	if [ $COLORS ]; then
-		lines=`echo "$lines" |
-			sed 's/^\[INFO\]\(.*\)$/\\\e[0;34m[INFO]\\\e[0m\\\e[1;34m\1\\\e[0m/' |
-			sed 's/^CURL header\(.*\)$/\\\e[1;35mCURL header\\\e[0m\\\e[0;35m\1\\\e[0m/' |
-
-
-			sed 's/^F \(\[.*\)$/\\\e[1;31mF \\\e[0;31m\1\\\e[0m/g' |
-			sed 's/\(=*\)Failures\(.*\)/\\\e[1;31m\1Failures\2\\\e[0m/' |
-			sed 's/Failed assertion:\(.*\)/\\\e[0;31mFailed assertion:\1\\\e[0m/' |
-			sed 's/\t\(Expected\|Actual\): \(.*\)/\t\\\e[0;31m\1: \\\e[0m\\\e[2;31m\2\\\e[0m/' |
-			sed 's/^\(=*\)$/\\\e[1;31m\1\\\e[0m/' |
-			sed 's/\FAILURE \((.*)\)/\\\e[1;31mFAILURE \\\e[0;33m\1\\\e[0m/' |
-
-			sed 's/^\. \(\[.*\)$/\\\e[1;32m. \\\e[0;32m\1\\\e[0m/' |
-			sed 's/\(=*\)No failures\(.*\)/\\\e[1;32m\1No failures\2\\\e[0m/' |
-			sed 's/\SUCCESS \((.*)\)/\\\e[1;32mSUCCESS \\\e[0;33m\1\\\e[0m/' |
-
-			sed 's/^A \(.*\)$/\\\e[1;36mA \\\e[0m\1/'
+			sed -n -e '/=*\(Failures\)=*/,/FAILURE.*/p' -e '/^F \[.*$/p' -e '/^A .*F.* \[$/p'
 			`
 	fi
 
-	#We need to check if the line isn't too short, if it is, it's probably empty
-	if [ ${#lines} -gt 14 ]; then
-		echo -e "$lines\n";
+	if [ ${#lines} -eq 0 ]; then
+		continue;
 	fi
+
+	if [ $COLORS ]; then
+		lines=`echo "$lines" | sed \
+			-e 's/^\[INFO\]\(.*\)$/\\\e[0;34m[INFO]\\\e[0m\\\e[1;34m\1\\\e[0m/' \
+			-e 's/^CURL header\(.*\)$/\\\e[1;35mCURL header\\\e[0m\\\e[0;35m\1\\\e[0m/' \
+\
+			-e '/A /{
+			s/F/\\\e[1;31mF\\\e[0m/g
+			}' \
+			-e 's/^F \(\[.*\)$/\\\e[1;31mF \\\e[0;31m\1\\\e[0m/g' \
+			-e 's/\(=*\)Failures\(.*\)/\\\e[1;31m\1Failures\2\\\e[0m/' \
+			-e 's/Failed assertion:\(.*\)/\\\e[0;31mFailed assertion:\1\\\e[0m/' \
+			-e 's/\t\(Expected\|Actual\|Array [1-2]\): \(.*\)/\t\\\e[0;31m\1: \\\e[0m\\\e[2;31m\2\\\e[0m/' \
+			-e 's/^\(=*\)$/\\\e[1;31m\1\\\e[0m/' \
+			-e 's/\FAILURE \((.*)\)/\\\e[1;31mFAILURE \\\e[0;33m\1\\\e[0m/' \
+			-e '/Failed assertion:.*/{
+			N
+			s/\t\(.*\)/\t\\\e[1;31m\1\\\e[0m/
+			}' \
+\
+			-e '/A /{
+			s/\./\\\e[1;32m.\\\e[0m/g
+			}' \
+			-e 's/^\. \(\[.*\)$/\\\e[1;32m. \\\e[0;32m\1\\\e[0m/' \
+			-e 's/\(=*\)No failures\(.*\)/\\\e[1;32m\1No failures\2\\\e[0m/' \
+			-e 's/\SUCCESS \((.*)\)/\\\e[1;32mSUCCESS \\\e[0;33m\1\\\e[0m/' \
+\
+			-e 's/^A \(.*\)\(\[.*\]\)$/\\\e[1;36mA \\\e[0m\1\\\e[0;36m\2\\\e[0m/' \
+			`
+	fi
+
+	echo -e "$lines\n";
 done
 
 if [ $COLORS ]; then

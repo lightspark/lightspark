@@ -19,7 +19,7 @@ DEBUG MODE:
 To enable debug mode change the cmake command like this:
 4b) cmake -DCMAKE_BUILD_TYPE=Debug -DCOMPILE_PLUGIN=1
 
-CMAKE_BUILD_TYPE available: Debug Release RelWithDebInfo Profile Debian
+CMAKE_BUILD_TYPE available: Debug Release RelWithDebInfo Profile
 Sound support may be disabled using the following option: -DENABLE_SOUND=0
 
 EXECUTION:

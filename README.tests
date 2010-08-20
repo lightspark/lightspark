@@ -11,6 +11,9 @@ To compile tests inside the tests/ directory use the following command:
 $FLEX_ROOT/bin/mxmlc -static-link-runtime-shared-libraries test.mxml -output test.swf
 
 
+NOTE: Use the ./tests script in tests/ to run the tests in an automated way.
+      Run "./tests --help" inside tests/ to see its usage.
+
 NOTE: Use template.mxml as a template for new testcases.
 
 NOTE: We've provided a simple Tests class which should be used where possible to test general behaviour of AS classes. See Tests.as for its usage.
@@ -24,5 +27,3 @@ NOTE:	Tests that aren't suitable for testing with the Tests class should be put 
       The naming schemes still apply to these testcases though.
 
 NOTE:	Tests for unimplemented features should be placed in tests/unimplemented.
-
-TIP: redirect lightspark's output to /dev/null (> /dev null) to only see trace/test output.

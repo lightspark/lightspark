@@ -68,6 +68,16 @@ void Rectangle::buildTraits(ASObject* o)
 {
 }
 
+tiny_string Rectangle::toString(bool debugMsg)
+{
+	assert_and_throw(implEnable);
+	
+	char buf[512];
+	snprintf(buf,512,"(x=%f, y=%f, w=%f, h=%f)",x,y,width,height);
+	
+	return tiny_string(buf);
+}
+
 const lightspark::RECT Rectangle::getRect() const
 {
 	return lightspark::RECT(x,y,x+width,y+height);

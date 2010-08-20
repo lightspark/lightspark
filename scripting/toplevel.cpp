@@ -1170,36 +1170,56 @@ ASFUNCTIONBODY(Integer,generator)
 
 TRISTATE Integer::isLess(ASObject* o)
 {
-	if(o->getObjectType()==T_INTEGER)
+	switch(o->getObjectType())
 	{
-		Integer* i=static_cast<Integer*>(o);
-		return (val < i->toInt())?TTRUE:TFALSE;
+		case T_INTEGER:
+			{
+				Integer* i=static_cast<Integer*>(o);
+				return (val < i->toInt())?TTRUE:TFALSE;
+			}
+			break;
+		
+		case T_NUMBER:
+			{
+				Number* i=static_cast<Number*>(o);
+				return (val < i->toNumber())?TTRUE:TFALSE;
+			}
+			break;
+		
+		case T_STRING:
+			{
+				const ASString* s=static_cast<const ASString*>(o);
+				//Check if the string may be converted to integer
+				//TODO: check whole string?
+				if(isdigit(s->data[0]))
+				{
+					int val2=atoi(s->data.c_str());
+					return (val < val2)?TTRUE:TFALSE;
+				}
+				else
+					return TFALSE;
+			}
+			break;
+		
+		case T_BOOLEAN:
+			{
+				Boolean* i=static_cast<Boolean*>(o);
+				return (val < i->toInt())?TTRUE:TFALSE;
+			}
+			break;
+		
+		case T_UNDEFINED:
+			{
+				return TFALSE;
+			}
+			break;
+			
+		default:
+			break;
 	}
-	else if(o->getObjectType()==T_NUMBER)
-	{
-		Number* i=static_cast<Number*>(o);
-		return (val < i->toNumber())?TTRUE:TFALSE;
-	}
-	else if(o->getObjectType()==T_STRING)
-	{
-		const ASString* s=static_cast<const ASString*>(o);
-		//Check if the string may be converted to integer
-		//TODO: check whole string?
-		if(isdigit(s->data[0]))
-		{
-			int val2=atoi(s->data.c_str());
-			return (val < val2)?TTRUE:TFALSE;
-		}
-		else
-			return TFALSE;
-	}
-	else if(o->getObjectType()==T_BOOLEAN)
-	{
-		Boolean* i=static_cast<Boolean*>(o);
-		return (val < i->toInt())?TTRUE:TFALSE;
-	}
-	else
-		return ASObject::isLess(o);
+	
+	//If unhandled by switch, kick up to parent
+	return ASObject::isLess(o);
 }
 
 bool Integer::isEqual(ASObject* o)

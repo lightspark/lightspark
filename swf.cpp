@@ -31,6 +31,7 @@
 #include "backends/netutils.h"
 #include "backends/rendering.h"
 
+#include "SDL.h"
 #include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
@@ -412,6 +413,12 @@ void SystemState::setShutdownFlag()
 void SystemState::wait()
 {
 	sem_wait(&terminated);
+	SDL_Event event;
+	event.type = SDL_USEREVENT;
+	event.user.code = SHUTDOWN;
+	event.user.data1 = 0;
+	event.user.data1 = 0;
+	SDL_PushEvent(&event);
 	if(renderThread)
 		renderThread->wait();
 	if(inputThread)

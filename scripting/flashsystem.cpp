@@ -208,3 +208,15 @@ ASFUNCTIONBODY(Security, showSettings)
 	LOG(LOG_NOT_IMPLEMENTED, "Security::showSettings");
 	return NULL;
 }
+
+ASFUNCTIONBODY(lightspark, fscommand)
+{
+	assert_and_throw(argslen >= 1 && argslen <= 2);
+	assert_and_throw(args[0]->getObjectType() == T_STRING);
+	tiny_string command = Class<ASString>::cast(args[0])->toString();
+	if(command == "quit")
+	{
+		sys->setShutdownFlag();
+	}
+	return NULL;
+}

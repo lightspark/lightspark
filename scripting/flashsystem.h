@@ -66,5 +66,7 @@ public:
 	ASFUNCTION(showSettings);
 };
 
+ASObject* fscommand(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+
 };
 #endif

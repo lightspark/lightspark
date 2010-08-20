@@ -444,7 +444,7 @@ ActionDefineFunction::ActionDefineFunction(istream& in,ACTIONRECORDHEADER* h)
 	{
 		ACTIONRECORDHEADER ah(in);
 		if(ah.ActionCode==0)
-			LOG(LOG_ERROR,"End action in function")
+			LOG(LOG_ERROR,"End action in function");
 		else
 			functionActions.push_back(ah.createTag(in));
 		if(functionActions.back()==NULL)
@@ -560,7 +560,7 @@ ActionDefineFunction2::ActionDefineFunction2(istream& in,ACTIONRECORDHEADER* h)
 	{
 		ACTIONRECORDHEADER ah(in);
 		if(ah.ActionCode==0)
-			LOG(LOG_ERROR,"End action in function")
+			LOG(LOG_ERROR,"End action in function");
 		else
 			functionActions.push_back(ah.createTag(in));
 		if(functionActions.back()==NULL)

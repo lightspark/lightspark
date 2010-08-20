@@ -83,22 +83,34 @@ void Array::sinit(Class_base* c)
 	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY));
 	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT));
 
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-
+	// properties
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 
-	c->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
-	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
-	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
-	c->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
-	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
-	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
-	c->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
-//	c->setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
+	// public functions
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
-	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	//c->setVariableByQName("every",AS3,Class<IFunction>::getFunction(every));
 	c->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
+	//c->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(forEach));
+	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
+	//c->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf));
+	//c->setVariableByQName("map",AS3,Class<IFunction>::getFunction(map));
+	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
+	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
+	//c->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(reverse));
+	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
+	//c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
+	//c->setVariableByQName("some",AS3,Class<IFunction>::getFunction(some));
+	c->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
+	//c->setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
 	c->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
+	//c->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(toLocaleString));
+	//c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(toString));
+	c->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
+
+	// workaround, pop was encountered not in the AS3 namespace before, need to investigate it further
+	c->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
 }
 
 void Array::buildTraits(ASObject* o)
@@ -126,6 +138,51 @@ ASFUNCTIONBODY(Array,_constructor)
 		}
 	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(Array,_concat)
+{
+	Array* th=static_cast<Array*>(obj);
+	Array* ret=Class<Array>::getInstanceS();
+	ret->data=th->data;
+	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
+	{
+		Array* tmp=Class<Array>::cast(args[0]);
+		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
+	}
+	else
+	{
+		//Insert the arguments in the array
+		ret->data.reserve(ret->data.size()+argslen);
+		for(unsigned int i=0;i<argslen;i++)
+			ret->push(args[i]);
+	}
+
+	//All the elements in the new array should be increffed, as args will be deleted and
+	//this array could die too
+	for(unsigned int i=0;i<ret->data.size();i++)
+	{
+		if(ret->data[i].type==DATA_OBJECT)
+			ret->data[i].data->incRef();
+	}
+	
+	return ret;
+}
+
+ASFUNCTIONBODY(Array,filter)
+{
+	//TODO: really implement
+	Array* th=static_cast<Array*>(obj);
+	//assert_and_throw(th->data.size()==0);
+	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
+	Array* ret=Class<Array>::getInstanceS();
+	ret->data=th->data;
+	for(unsigned int i=0;i<ret->data.size();i++)
+	{
+		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
+			ret->data[i].data->incRef();
+	}
+	return ret;
 }
 
 ASFUNCTIONBODY(Array,_getLength)
@@ -211,50 +268,6 @@ ASFUNCTIONBODY(Array,indexOf)
 	return abstract_i(ret);
 }
 
-ASFUNCTIONBODY(Array,filter)
-{
-	//TODO: really implement
-	Array* th=static_cast<Array*>(obj);
-	//assert_and_throw(th->data.size()==0);
-	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
-	Array* ret=Class<Array>::getInstanceS();
-	ret->data=th->data;
-	for(unsigned int i=0;i<ret->data.size();i++)
-	{
-		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
-			ret->data[i].data->incRef();
-	}
-	return ret;
-}
-
-ASFUNCTIONBODY(Array,_concat)
-{
-	Array* th=static_cast<Array*>(obj);
-	Array* ret=Class<Array>::getInstanceS();
-	ret->data=th->data;
-	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
-	{
-		Array* tmp=Class<Array>::cast(args[0]);
-		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
-	}
-	else
-	{
-		//Insert the arguments in the array
-		ret->data.reserve(ret->data.size()+argslen);
-		for(unsigned int i=0;i<argslen;i++)
-			ret->push(args[i]);
-	}
-
-	//All the elements in the new array should be increffed, as args will be deleted and
-	//this array could die too
-	for(unsigned int i=0;i<ret->data.size();i++)
-	{
-		if(ret->data[i].type==DATA_OBJECT)
-			ret->data[i].data->incRef();
-	}
-	
-	return ret;
-}
 
 ASFUNCTIONBODY(Array,_pop)
 {

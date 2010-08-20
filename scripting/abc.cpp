@@ -44,6 +44,10 @@
 #include "class.h"
 #include "exceptions.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -55,14 +59,14 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	int dest=in.tellg();
 	dest+=h.getLength();
 	in >> Flags >> Name;
-	LOG(LOG_CALLS,"DoABCTag Name: " << Name);
+	LOG(LOG_CALLS,_("DoABCTag Name: ") << Name);
 
 	context=new ABCContext(in);
 
 	int pos=in.tellg();
 	if(dest!=pos)
 	{
-		LOG(LOG_ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
+		LOG(LOG_ERROR,_("Corrupted ABC data: missing ") << dest-in.tellg());
 		throw ParseException("Not complete ABC data");
 	}
 }
@@ -74,7 +78,7 @@ DoABCTag::~DoABCTag()
 
 void DoABCTag::execute(RootMovieClip*)
 {
-	LOG(LOG_CALLS,"ABC Exec " << Name);
+	LOG(LOG_CALLS,_("ABC Exec ") << Name);
 	sys->currentVm->addEvent(NULL,new ABCContextInitEvent(context));
 	SynchronizationEvent* se=new SynchronizationEvent;
 	bool added=sys->currentVm->addEvent(NULL,se);
@@ -89,7 +93,7 @@ void DoABCTag::execute(RootMovieClip*)
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
 {
-	LOG(LOG_TRACE,"SymbolClassTag");
+	LOG(LOG_TRACE,_("SymbolClassTag"));
 	in >> NumSymbols;
 
 	Tags.resize(NumSymbols);
@@ -101,11 +105,11 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
 
 void SymbolClassTag::execute(RootMovieClip* root)
 {
-	LOG(LOG_TRACE,"SymbolClassTag Exec");
+	LOG(LOG_TRACE,_("SymbolClassTag Exec"));
 
 	for(int i=0;i<NumSymbols;i++)
 	{
-		LOG(LOG_CALLS,"Binding " << Tags[i] << ' ' << Names[i]);
+		LOG(LOG_CALLS,_("Binding ") << Tags[i] << ' ' << Names[i]);
 		if(Tags[i]==0)
 		{
 			//We have to bind this root movieclip itself, let's tell it.
@@ -284,22 +288,22 @@ int ABCContext::getMultinameRTData(int mi) const
 		case 0x1b:
 			return 1;
 /*		case 0x0d:
-			LOG(CALLS, "QNameA");
+			LOG(CALLS, _("QNameA"));
 			break;
 		case 0x10:
-			LOG(CALLS, "RTQNameA");
+			LOG(CALLS, _("RTQNameA"));
 			break;
 		case 0x11:
-			LOG(CALLS, "RTQNameL");
+			LOG(CALLS, _("RTQNameL"));
 			break;
 		case 0x12:
-			LOG(CALLS, "RTQNameLA");
+			LOG(CALLS, _("RTQNameLA"));
 			break;
 		case 0x1c:
-			LOG(CALLS, "MultinameLA");
+			LOG(CALLS, _("MultinameLA"));
 			break;*/
 		default:
-			LOG(LOG_ERROR,"getMultinameRTData not yet implemented for this kind " << hex << m->kind);
+			LOG(LOG_ERROR,_("getMultinameRTData not yet implemented for this kind ") << hex << m->kind);
 			throw UnsupportedException("kind not implemented for getMultinameRTData");
 	}
 }
@@ -332,7 +336,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -349,7 +353,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -463,25 +467,25 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				break;
 			}
 	/*		case 0x0d:
-				LOG(CALLS, "QNameA");
+				LOG(CALLS, _("QNameA"));
 				break;
 			case 0x10:
-				LOG(CALLS, "RTQNameA");
+				LOG(CALLS, _("RTQNameA"));
 				break;
 			case 0x11:
-				LOG(CALLS, "RTQNameL");
+				LOG(CALLS, _("RTQNameL"));
 				break;
 			case 0x12:
-				LOG(CALLS, "RTQNameLA");
+				LOG(CALLS, _("RTQNameLA"));
 				break;
 			case 0x0e:
-				LOG(CALLS, "MultinameA");
+				LOG(CALLS, _("MultinameA"));
 				break;
 			case 0x1c:
-				LOG(CALLS, "MultinameLA");
+				LOG(CALLS, _("MultinameLA"));
 				break;*/
 			default:
-				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -559,25 +563,25 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				break;
 			}
 	/*		case 0x0d:
-				LOG(CALLS, "QNameA");
+				LOG(CALLS, _("QNameA"));
 				break;
 			case 0x10:
-				LOG(CALLS, "RTQNameA");
+				LOG(CALLS, _("RTQNameA"));
 				break;
 			case 0x11:
-				LOG(CALLS, "RTQNameL");
+				LOG(CALLS, _("RTQNameL"));
 				break;
 			case 0x12:
-				LOG(CALLS, "RTQNameLA");
+				LOG(CALLS, _("RTQNameLA"));
 				break;
 			case 0x0e:
-				LOG(CALLS, "MultinameA");
+				LOG(CALLS, _("MultinameA"));
 				break;
 			case 0x1c:
-				LOG(CALLS, "MultinameLA");
+				LOG(CALLS, _("MultinameLA"));
 				break;*/
 			default:
-				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -612,7 +616,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -629,7 +633,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -757,25 +761,25 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				break;
 			}
 	/*		case 0x0d:
-				LOG(CALLS, "QNameA");
+				LOG(CALLS, _("QNameA"));
 				break;
 			case 0x10:
-				LOG(CALLS, "RTQNameA");
+				LOG(CALLS, _("RTQNameA"));
 				break;
 			case 0x11:
-				LOG(CALLS, "RTQNameL");
+				LOG(CALLS, _("RTQNameL"));
 				break;
 			case 0x12:
-				LOG(CALLS, "RTQNameLA");
+				LOG(CALLS, _("RTQNameLA"));
 				break;
 			case 0x0e:
-				LOG(CALLS, "MultinameA");
+				LOG(CALLS, _("MultinameA"));
 				break;
 			case 0x1c:
-				LOG(CALLS, "MultinameLA");
+				LOG(CALLS, _("MultinameLA"));
 				break;*/
 			default:
-				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -851,25 +855,25 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				break;
 			}
 	/*		case 0x0d:
-				LOG(CALLS, "QNameA");
+				LOG(CALLS, _("QNameA"));
 				break;
 			case 0x10:
-				LOG(CALLS, "RTQNameA");
+				LOG(CALLS, _("RTQNameA"));
 				break;
 			case 0x11:
-				LOG(CALLS, "RTQNameL");
+				LOG(CALLS, _("RTQNameL"));
 				break;
 			case 0x12:
-				LOG(CALLS, "RTQNameLA");
+				LOG(CALLS, _("RTQNameLA"));
 				break;
 			case 0x0e:
-				LOG(CALLS, "MultinameA");
+				LOG(CALLS, _("MultinameA"));
 				break;
 			case 0x1c:
-				LOG(CALLS, "MultinameLA");
+				LOG(CALLS, _("MultinameLA"));
 				break;*/
 			default:
-				LOG(LOG_ERROR,"dMultiname to String not yet implemented for this kind " << hex << m->kind);
+				LOG(LOG_ERROR,_("dMultiname to String not yet implemented for this kind ") << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		ret->name_s.len();
@@ -880,7 +884,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 ABCContext::ABCContext(istream& in)
 {
 	in >> minor >> major;
-	LOG(LOG_CALLS,"ABCVm version " << major << '.' << minor);
+	LOG(LOG_CALLS,_("ABCVm version ") << major << '.' << minor);
 	in >> constant_pool;
 
 	in >> method_count;
@@ -901,24 +905,24 @@ ABCContext::ABCContext(istream& in)
 	for(unsigned int i=0;i<class_count;i++)
 	{
 		in >> instances[i];
-		LOG(LOG_CALLS,"Class " << *getMultiname(instances[i].name,NULL));
-		LOG(LOG_CALLS,"Flags:");
+		LOG(LOG_CALLS,_("Class ") << *getMultiname(instances[i].name,NULL));
+		LOG(LOG_CALLS,_("Flags:"));
 		if((instances[i].flags)&0x01)
-			LOG(LOG_CALLS,"\tSealed");
+			LOG(LOG_CALLS,_("\tSealed"));
 		if((instances[i].flags)&0x02)
-			LOG(LOG_CALLS,"\tFinal");
+			LOG(LOG_CALLS,_("\tFinal"));
 		if((instances[i].flags)&0x04)
-			LOG(LOG_CALLS,"\tInterface");
+			LOG(LOG_CALLS,_("\tInterface"));
 		if((instances[i].flags)&0x08)
-			LOG(LOG_CALLS,"\tProtectedNS " << getString(constant_pool.namespaces[instances[i].protectedNs].name));
+			LOG(LOG_CALLS,_("\tProtectedNS ") << getString(constant_pool.namespaces[instances[i].protectedNs].name));
 		if(instances[i].supername)
-			LOG(LOG_CALLS,"Super " << *getMultiname(instances[i].supername,NULL));
+			LOG(LOG_CALLS,_("Super ") << *getMultiname(instances[i].supername,NULL));
 		if(instances[i].interface_count)
 		{
-			LOG(LOG_CALLS,"Implements");
+			LOG(LOG_CALLS,_("Implements"));
 			for(unsigned int j=0;j<instances[i].interfaces.size();j++)
 			{
-				LOG(LOG_CALLS,"\t" << *getMultiname(instances[i].interfaces[j],NULL));
+				LOG(LOG_CALLS,_("\t") << *getMultiname(instances[i].interfaces[j],NULL));
 			}
 		}
 		LOG(LOG_CALLS,endl);
@@ -954,7 +958,7 @@ ABCVm::ABCVm(SystemState* s):m_sys(s),terminated(false),shuttingdown(false)
 	int_manager=new Manager(15);
 	number_manager=new Manager(15);
 	Global=Class<ASObject>::getInstanceS();
-	LOG(LOG_NO_INFO,"Global is " << Global);
+	LOG(LOG_NO_INFO,_("Global is ") << Global);
 	//Push a dummy default context
 	pushObjAndLevel(Class<ASObject>::getInstanceS(),0);
 	pthread_create(&t,NULL,(thread_worker)Run,this);
@@ -982,7 +986,7 @@ void ABCVm::wait()
 	{
 		if(pthread_join(t,NULL)!=0)
 		{
-			LOG(LOG_ERROR,"pthread_join in ABCVm failed");
+			LOG(LOG_ERROR,_("pthread_join in ABCVm failed"));
 		}
 		terminated=true;
 	}
@@ -1030,9 +1034,9 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 			{
 				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second);
 				bool isRoot= ev->base==sys;
-				LOG(LOG_CALLS,"Binding of " << ev->class_name);
+				LOG(LOG_CALLS,_("Binding of ") << ev->class_name);
 				buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base,NULL,0,isRoot);
-				LOG(LOG_CALLS,"End of binding of " << ev->class_name);
+				LOG(LOG_CALLS,_("End of binding of ") << ev->class_name);
 				break;
 			}
 			case SHUTDOWN:
@@ -1060,7 +1064,7 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 			case CONSTRUCT_OBJECT:
 			{
 				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
-				LOG(LOG_CALLS,"Building instance traits");
+				LOG(LOG_CALLS,_("Building instance traits"));
 				ev->_class->handleConstruction(ev->_obj,NULL,0,true);
 				ev->sync();
 				break;
@@ -1115,24 +1119,24 @@ void ABCVm::buildClassAndInjectBase(const string& s, ASObject* base, ASObject* c
 	DictionaryTag* t=dynamic_cast<DictionaryTag*>(base);
 	if(t && t->bindedTo && !isRoot)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Multiple binding on " << s << ". Not binding");
+		LOG(LOG_NOT_IMPLEMENTED,_("Multiple binding on ") << s << _(". Not binding"));
 		return;
 	}
 
-	LOG(LOG_CALLS,"Setting class name to " << s);
+	LOG(LOG_CALLS,_("Setting class name to ") << s);
 	ASObject* derived_class=Global->getVariableByString(s);
 	if(derived_class==NULL)
 	{
-		LOG(LOG_ERROR,"Class " << s << " not found in global");
+		LOG(LOG_ERROR,_("Class ") << s << _(" not found in global"));
 		throw RunTimeException("Class not found in global");
 	}
 
 	if(derived_class->getObjectType()==T_DEFINABLE)
 	{
-		LOG(LOG_CALLS,"Class " << s << " is not yet valid");
+		LOG(LOG_CALLS,_("Class ") << s << _(" is not yet valid"));
 		Definable* d=static_cast<Definable*>(derived_class);
 		d->define(Global);
-		LOG(LOG_CALLS,"End of deferred init of class " << s);
+		LOG(LOG_CALLS,_("End of deferred init of class ") << s);
 		derived_class=Global->getVariableByString(s);
 		assert_and_throw(derived_class);
 	}
@@ -1169,14 +1173,14 @@ inline method_info* ABCContext::get_method(unsigned int m)
 		return &methods[m];
 	else
 	{
-		LOG(LOG_ERROR,"Requested invalid method");
+		LOG(LOG_ERROR,_("Requested invalid method"));
 		return NULL;
 	}
 }
 
 void ABCVm::not_impl(int n)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "not implement opcode 0x" << hex << n );
+	LOG(LOG_NOT_IMPLEMENTED, _("not implement opcode 0x") << hex << n );
 	throw UnsupportedException("Not implemented opcode");
 }
 
@@ -1198,7 +1202,7 @@ ASObject* call_context::runtime_stack_peek()
 {
 	if(stack_index==0)
 	{
-		LOG(LOG_ERROR,"Empty stack");
+		LOG(LOG_ERROR,_("Empty stack"));
 		return NULL;
 	}
 	return stack[stack_index-1];
@@ -1222,7 +1226,7 @@ call_context::~call_context()
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(stack_index)
 	{
-		LOG(LOG_ERROR,"Stack not clean at the end of function");
+		LOG(LOG_ERROR,_("Stack not clean at the end of function"));
 		for(uint32_t i=0;i<stack_index;i++)
 		{
 			if(stack[i]) //Values might be NULL when using callproperty to call a void returning function
@@ -1252,10 +1256,10 @@ void ABCContext::exec()
 	unsigned int i=0;
 	for(;i<scripts.size()-1;i++)
 	{
-		LOG(LOG_CALLS, "Script N: " << i );
+		LOG(LOG_CALLS, _("Script N: ") << i );
 		method_info* m=get_method(scripts[i].init);
 
-		LOG(LOG_CALLS, "Building script traits: " << scripts[i].trait_count );
+		LOG(LOG_CALLS, _("Building script traits: ") << scripts[i].trait_count );
 		SyntheticFunction* mf=Class<IFunction>::getSyntheticFunction(m);
 		mf->addToScope(getGlobal());
 
@@ -1263,12 +1267,12 @@ void ABCContext::exec()
 			buildTrait(getGlobal(),&scripts[i].traits[j],false,mf);
 	}
 	//The last script entry has to be run
-	LOG(LOG_CALLS, "Last script (Entry Point)");
+	LOG(LOG_CALLS, _("Last script (Entry Point)"));
 	method_info* m=get_method(scripts[i].init);
 	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(m);
 	entry->addToScope(getGlobal());
 
-	LOG(LOG_CALLS, "Building entry script traits: " << scripts[i].trait_count );
+	LOG(LOG_CALLS, _("Building entry script traits: ") << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
 		buildTrait(getGlobal(),&scripts[i].traits[j],false);
 	ASObject* ret=entry->call(getGlobal(),NULL,0);
@@ -1277,7 +1281,7 @@ void ABCContext::exec()
 #ifndef NDEBUG
 	getGlobal()->initialized=true;
 #endif
-	LOG(LOG_CALLS, "End of Entry Point");
+	LOG(LOG_CALLS, _("End of Entry Point"));
 }
 
 void ABCVm::Run(ABCVm* th)
@@ -1333,7 +1337,7 @@ void ABCVm::Run(ABCVm* th)
 				if(th->events_queue.empty())
 					break;
 				else
-					LOG(LOG_NO_INFO,th->events_queue.size() << " events missing before exit");
+					LOG(LOG_NO_INFO,th->events_queue.size() << _(" events missing before exit"));
 			}
 			Chronometer chronometer;
 			sem_wait(&th->event_queue_mutex);
@@ -1347,7 +1351,7 @@ void ABCVm::Run(ABCVm* th)
 		}
 		catch(LightsparkException& e)
 		{
-			LOG(LOG_ERROR,"Error in VM " << e.cause);
+			LOG(LOG_ERROR,_("Error in VM ") << e.cause);
 			th->m_sys->setError(e.cause);
 			bailOut=true;
 		}
@@ -1390,13 +1394,13 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 	const tiny_string& name=mname->name_s;
 	const tiny_string& ns=mname->ns[0].name;
 	if(t->kind>>4)
-		LOG(LOG_CALLS,"Next slot has flags " << (t->kind>>4));
+		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 	switch(t->kind&0xf)
 	{
 		//Link the methods to the implementations
 		case traits_info::Method:
 		{
-			LOG(LOG_CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,_("Method trait: ") << ns << _("::") << name << _(" #") << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -1419,15 +1423,15 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"Method not linkable");
+				LOG(LOG_NOT_IMPLEMENTED,_("Method not linkable"));
 			}
 
-			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,_("End Method trait: ") << ns << _("::") << name);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(LOG_CALLS,"Getter trait: " << ns << "::" << name);
+			LOG(LOG_CALLS,_("Getter trait: ") << ns << _("::") << name);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -1450,15 +1454,15 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"Getter not linkable");
+				LOG(LOG_NOT_IMPLEMENTED,_("Getter not linkable"));
 			}
 			
-			LOG(LOG_TRACE,"End Getter trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,_("End Getter trait: ") << ns << _("::") << name);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(LOG_CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,_("Setter trait: ") << ns << _("::") << name << _(" #") << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -1481,17 +1485,17 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"Setter not linkable");
+				LOG(LOG_NOT_IMPLEMENTED,_("Setter not linkable"));
 			}
 			
-			LOG(LOG_TRACE,"End Setter trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,_("End Setter trait: ") << ns << _("::") << name);
 			break;
 		}
 //		case traits_info::Class:
 //		case traits_info::Const:
 //		case traits_info::Slot:
 		default:
-			LOG(LOG_ERROR,"Trait not supported " << name << " " << t->kind);
+			LOG(LOG_ERROR,_("Trait not supported ") << name << _(" ") << t->kind);
 			throw UnsupportedException("Trait not supported");
 			//obj->setVariableByQName(name, ns, new Undefined);
 	}
@@ -1520,7 +1524,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 			return new Null;
 		default:
 		{
-			LOG(LOG_ERROR,"Constant kind " << hex << kind);
+			LOG(LOG_ERROR,_("Constant kind ") << hex << kind);
 			throw UnsupportedException("Constant trait not supported");
 		}
 	}
@@ -1536,7 +1540,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 	const tiny_string& ns=mname->ns[0].name;
 
 	if(t->kind>>4)
-		LOG(LOG_CALLS,"Next slot has flags " << (t->kind>>4));
+		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 	switch(t->kind&0xf)
 	{
 		case traits_info::Class:
@@ -1554,14 +1558,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 			obj->setVariableByQName(name, ns, ret);
 			
-			LOG(LOG_CALLS,"Class slot "<< t->slot_id << " type Class name " << ns << "::" << name << " id " << t->classi);
+			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << ns << _("::") << name << _(" id ") << t->classi);
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, name, ns);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(LOG_CALLS,"Getter trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,_("Getter trait: ") << ns << _("::") << name << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			IFunction* f=Class<IFunction>::getSyntheticFunction(m);
@@ -1617,12 +1621,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				cur=cur->super;
 			}*/
 			
-			LOG(LOG_TRACE,"End Getter trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,_("End Getter trait: ") << ns << _("::") << name);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(LOG_CALLS,"Setter trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,_("Setter trait: ") << ns << _("::") << name << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 
@@ -1679,12 +1683,12 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				cur=cur->super;
 			}*/
 			
-			LOG(LOG_TRACE,"End Setter trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,_("End Setter trait: ") << ns << _("::") << name);
 			break;
 		}
 		case traits_info::Method:
 		{
-			LOG(LOG_CALLS,"Method trait: " << ns << "::" << name << " #" << t->method);
+			LOG(LOG_CALLS,_("Method trait: ") << ns << _("::") << name << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			IFunction* f=Class<IFunction>::getSyntheticFunction(m);
@@ -1740,7 +1744,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 			f->bindLevel(obj->getLevel());
 			obj->setVariableByQName(name,ns,f);
-			LOG(LOG_TRACE,"End Method trait: " << ns << "::" << name);
+			LOG(LOG_TRACE,_("End Method trait: ") << ns << _("::") << name);
 			break;
 		}
 		case traits_info::Const:
@@ -1771,7 +1775,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 
 				obj->setVariableByQName(name, ns, ret);
 			}
-			LOG(LOG_CALLS,"Const "<<name<<" type "<< *getMultiname(t->type_name,NULL));
+			LOG(LOG_CALLS,_("Const ")<<name<<_(" type ")<< *getMultiname(t->type_name,NULL));
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, name,ns );
 			break;
@@ -1791,13 +1795,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 				if(t->slot_id)
 					obj->initSlot(t->slot_id, name, ns);
 
-				LOG(LOG_CALLS,"Slot " << t->slot_id << ' ' <<name<<" type "<<*type);
+				LOG(LOG_CALLS,_("Slot ") << t->slot_id << ' ' <<name<<_(" type ")<<*type);
 				break;
 			}
 			else
 			{
 				//else fallthrough
-				LOG(LOG_CALLS,"Slot "<< t->slot_id<<  " vindex 0 "<<name<<" type "<<*type);
+				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ")<<name<<_(" type ")<<*type);
 				ASObject* previous_definition=obj->getVariableByQName(name,ns);
 				assert_and_throw(!previous_definition);
 				//if(previous_definition.obj)
@@ -1830,7 +1834,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool bind, IFun
 			}
 		}
 		default:
-			LOG(LOG_ERROR,"Trait not supported " << name << " " << t->kind);
+			LOG(LOG_ERROR,_("Trait not supported ") << name << _(" ") << t->kind);
 			obj->setVariableByQName(name, ns, new Undefined);
 	}
 }
@@ -1858,7 +1862,7 @@ istream& lightspark::operator>>(istream& in, u32& v)
 		if(i==35)
 		{
 			if(t>15)
-				LOG(LOG_ERROR,"parsing u32 " << (int)t);
+				LOG(LOG_ERROR,_("parsing u32 ") << (int)t);
 			break;
 		}
 	}
@@ -1883,7 +1887,7 @@ istream& lightspark::operator>>(istream& in, s32& v)
 		{
 			if(t>15)
 			{
-				LOG(LOG_ERROR,"parsing s32");
+				LOG(LOG_ERROR,_("parsing s32"));
 			}
 			break;
 		}
@@ -1933,11 +1937,11 @@ istream& lightspark::operator>>(istream& in, u30& v)
 		v.val|=(t<<i);
 		i+=7;
 		if(i>29)
-			LOG(LOG_ERROR,"parsing u30");
+			LOG(LOG_ERROR,_("parsing u30"));
 	}
 	while(t2&0x80);
 	if(v.val&0xc0000000)
-			LOG(LOG_ERROR,"parsing u30");
+			LOG(LOG_ERROR,_("parsing u30"));
 	return in;
 }
 
@@ -1977,7 +1981,7 @@ istream& lightspark::operator>>(istream& in, string_info& v)
 		in.read((char*)&t,1);
 		tmp.push_back(t);
 		if(t&0x80)
-			LOG(LOG_NOT_IMPLEMENTED,"Multibyte not handled");
+			LOG(LOG_NOT_IMPLEMENTED,_("Multibyte not handled"));
 	}
 	v.val=tmp;
 	return in;
@@ -2020,7 +2024,7 @@ istream& lightspark::operator >>(istream& in, ns_set_info& v)
 	{
 		in >> v.ns[i];
 		if(v.ns[i]==0)
-			LOG(LOG_ERROR,"0 not allowed");
+			LOG(LOG_ERROR,_("0 not allowed"));
 	}
 	return in;
 }
@@ -2065,7 +2069,7 @@ istream& lightspark::operator>>(istream& in, multiname_info& v)
 			break;
 		}
 		default:
-			LOG(LOG_ERROR,"Unexpected multiname kind " << hex << v.kind);
+			LOG(LOG_ERROR,_("Unexpected multiname kind ") << hex << v.kind);
 			throw UnsupportedException("Unexpected namespace kind");
 	}
 	return in;
@@ -2089,7 +2093,7 @@ istream& lightspark::operator>>(istream& in, method_info& v)
 		{
 			in >> v.options[i].val >> v.options[i].kind;
 			if(v.options[i].kind>0x1a)
-				LOG(LOG_ERROR,"Unexpected options type");
+				LOG(LOG_ERROR,_("Unexpected options type"));
 		}
 	}
 	if(v.flags&0x80)
@@ -2157,7 +2161,7 @@ istream& lightspark::operator>>(istream& in, traits_info& v)
 			in >> v.disp_id >> v.method;
 			break;
 		default:
-			LOG(LOG_ERROR,"Unexpected kind " << v.kind);
+			LOG(LOG_ERROR,_("Unexpected kind ") << v.kind);
 			break;
 	}
 
@@ -2243,6 +2247,6 @@ istream& lightspark::operator>>(istream& in, cpool_info& v)
 
 ASFUNCTIONBODY(lightspark,undefinedFunction)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Function not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,_("Function not implemented"));
 	return NULL;
 }

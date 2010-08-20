@@ -38,6 +38,11 @@
 
 #include "compat.h"
 #endif
+
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 #ifdef ENABLE_LIBAVCODEC
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -62,15 +67,15 @@ SWF_HEADER::SWF_HEADER(istream& in):valid(false)
 	in >> Version >> FileLength;
 	if(Signature[0]=='F' && Signature[1]=='W' && Signature[2]=='S')
 	{
-		LOG(LOG_NO_INFO, "Uncompressed SWF file: Version " << (int)Version << " Length " << FileLength);
+		LOG(LOG_NO_INFO, _("Uncompressed SWF file: Version ") << (int)Version << _(" Length ") << FileLength);
 	}
 	else if(Signature[0]=='C' && Signature[1]=='W' && Signature[2]=='S')
 	{
-		LOG(LOG_NO_INFO, "Compressed SWF file: Version " << (int)Version << " Length " << FileLength);
+		LOG(LOG_NO_INFO, _("Compressed SWF file: Version ") << (int)Version << _(" Length ") << FileLength);
 	}
 	else
 	{
-		LOG(LOG_NO_INFO,"No SWF file signature found");
+		LOG(LOG_NO_INFO,_("No SWF file signature found"));
 		return;
 	}
 	in >> FrameSize >> FrameRate >> FrameCount;
@@ -261,7 +266,7 @@ void SystemState::parseParametersFromFile(const char* f)
 	ifstream i(f);
 	if(!i)
 	{
-		LOG(LOG_ERROR,"Parameters file not found");
+		LOG(LOG_ERROR,_("Parameters file not found"));
 		return;
 	}
 	ASObject* ret=Class<ASObject>::getInstanceS();
@@ -506,7 +511,7 @@ void SystemState::createEngines()
 				return;
 			sem_wait(&mutex);
 		}
-		LOG(LOG_NO_INFO,"Invoking gnash!");
+		LOG(LOG_NO_INFO,_("Invoking gnash!"));
 		//Dump the cookies to a temporary file
 		strcpy(cookiesFileName,"/tmp/lightsparkcookiesXXXXXX");
 		int file=mkstemp(cookiesFileName);
@@ -522,7 +527,7 @@ void SystemState::createEngines()
 		childPid=fork();
 		if(childPid==-1)
 		{
-			LOG(LOG_ERROR,"Child process creation failed, lightspark continues");
+			LOG(LOG_ERROR,_("Child process creation failed, lightspark continues"));
 			childPid=0;
 		}
 		else if(childPid==0) //Child process scope
@@ -555,7 +560,7 @@ void SystemState::createEngines()
 			};
 			execve(GNASH_PATH, args, environ);
 			//If we are are execve failed, print an error and die
-			LOG(LOG_ERROR,"Execve failed, content will not be rendered");
+			LOG(LOG_ERROR,_("Execve failed, content will not be rendered"));
 			exit(0);
 		}
 		else //Parent process scope
@@ -601,7 +606,7 @@ void SystemState::needsAVM2(bool n)
 	if(n)
 	{
 		vmVersion=AVM2;
-		LOG(LOG_NO_INFO,"Creating VM");
+		LOG(LOG_NO_INFO,_("Creating VM"));
 		currentVm=new ABCVm(this);
 	}
 	else
@@ -803,7 +808,7 @@ void ParseThread::execute()
 		root->fileLenght=h.FileLength;
 		float frameRate=h.FrameRate;
 		frameRate/=256;
-		LOG(LOG_NO_INFO,"FrameRate " << frameRate);
+		LOG(LOG_NO_INFO,_("FrameRate ") << frameRate);
 		root->setFrameRate(frameRate);
 		//TODO: setting render rate should be done when the clip is added to the displaylist
 		sys->setRenderRate(frameRate);
@@ -822,7 +827,7 @@ void ParseThread::execute()
 			{
 				case END_TAG:
 				{
-					LOG(LOG_NO_INFO,"End of parsing @ " << f.tellg());
+					LOG(LOG_NO_INFO,_("End of parsing @ ") << f.tellg());
 					if(!empty)
 						root->commitFrame(false);
 					else
@@ -864,7 +869,7 @@ void ParseThread::execute()
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception in ParseThread " << e.cause);
+		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
 		root->parsingFailed();
 		sys->setError(e.cause);
 	}
@@ -1057,7 +1062,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	}
 	if(it==dictionary.end())
 	{
-		LOG(LOG_ERROR,"No such Id on dictionary " << id);
+		LOG(LOG_ERROR,_("No such Id on dictionary ") << id);
 		sem_post(&mutex);
 		throw RunTimeException("Could not find an object on the dictionary");
 	}
@@ -1096,7 +1101,7 @@ void RootMovieClip::tick()
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception in RootMovieClip::tick " << e.cause);
+		LOG(LOG_ERROR,_("Exception in RootMovieClip::tick ") << e.cause);
 		sys->setError(e.cause);
 	}
 }

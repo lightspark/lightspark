@@ -20,6 +20,10 @@
 #include "flv.h"
 #include "swftypes.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 using namespace std;
 
@@ -34,12 +38,12 @@ FLV_HEADER::FLV_HEADER(std::istream& in):dataOffset(0),_hasAudio(false),_hasVide
 	
 	if(Signature[0]=='F' && Signature[1]=='L' && Signature[2]=='V')
 	{
-		LOG(LOG_NO_INFO, "FLV file: Version " << (int)Version);
+		LOG(LOG_NO_INFO, _("FLV file: Version ") << (int)Version);
 		valid=true;
 	}
 	else
 	{
-		LOG(LOG_NO_INFO,"No FLV file signature found");
+		LOG(LOG_NO_INFO,_("No FLV file signature found"));
 		valid=false;
 		return;
 	}

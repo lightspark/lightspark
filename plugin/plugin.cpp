@@ -26,6 +26,10 @@
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME";"FAKE_MIME_TYPE":swfls:"FAKE_PLUGIN_NAME
 #define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r423"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 
 TLSDATA DLL_PUBLIC lightspark::SystemState* sys=NULL;
@@ -262,7 +266,7 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 	mHeight = aWindow->height;
 	if(mHeight==0 || mHeight==0)
 	{
-		LOG(LOG_ERROR,"No size in SetWindow");
+		LOG(LOG_ERROR,_("No size in SetWindow"));
 		return FALSE;
 	}
 	if (mWindow == (Window) aWindow->window)
@@ -347,7 +351,7 @@ string nsPluginInstance::getPageURL() const
 	{
 		if(url.UTF8Characters[i]&0x80)
 		{
-			LOG(LOG_ERROR,"Cannot handle UTF8 URLs");
+			LOG(LOG_ERROR,_("Cannot handle UTF8 URLs"));
 			return "";
 		}
 	}
@@ -361,7 +365,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 {
 	//We have to cast the downloadanager to a NPDownloadManager
 	lightspark::Downloader* dl=(lightspark::Downloader*)stream->notifyData;
-	LOG(LOG_NO_INFO,"Newstream for " << stream->url);
+	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
 	//cout << stream->headers << endl;
 	if(dl)
 	{
@@ -432,7 +436,7 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 		dl->terminate();
 	}
 	else
-		LOG(LOG_NO_INFO, "DestroyStream on main stream?");
+		LOG(LOG_NO_INFO, _("DestroyStream on main stream?"));
 	return NPERR_NO_ERROR;
 }
 

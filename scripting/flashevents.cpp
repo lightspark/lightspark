@@ -23,6 +23,10 @@
 #include "compat.h"
 #include "class.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -116,7 +120,7 @@ ASFUNCTIONBODY(Event,_getTarget)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Target for event " << th->type);
+		LOG(LOG_NOT_IMPLEMENTED,_("Target for event ") << th->type);
 		return new Undefined;
 	}
 }
@@ -278,7 +282,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 		priority=args[3]->toInt();
 
 	if(useCapture || priority!=0)
-		LOG(LOG_NOT_IMPLEMENTED,"Not implemented mode for addEventListener");
+		LOG(LOG_NOT_IMPLEMENTED,_("Not implemented mode for addEventListener"));
 
 	const tiny_string& eventName=args[0]->toString();
 	IFunction* f=static_cast<IFunction*>(args[1]);
@@ -289,7 +293,7 @@ ASFUNCTIONBODY(EventDispatcher,addEventListener)
 
 		if(find(it->second.begin(),it->second.end(),f)!=it->second.end())
 		{
-			LOG(LOG_CALLS,"Weird event reregistration");
+			LOG(LOG_CALLS,_("Weird event reregistration"));
 			return NULL;
 		}
 
@@ -320,7 +324,7 @@ ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 		map<tiny_string, list<listener> >::iterator h=th->handlers.find(args[0]->toString());
 		if(h==th->handlers.end())
 		{
-			LOG(LOG_CALLS,"Event not found");
+			LOG(LOG_CALLS,_("Event not found"));
 			return NULL;
 		}
 
@@ -365,11 +369,11 @@ void EventDispatcher::handleEvent(Event* e)
 	map<tiny_string, list<listener> >::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
 	{
-		LOG(LOG_CALLS,"Not handled event " << e->type);
+		LOG(LOG_CALLS,_("Not handled event ") << e->type);
 		return;
 	}
 
-	LOG(LOG_CALLS, "Handling event " << h->first);
+	LOG(LOG_CALLS, _("Handling event ") << h->first);
 
 	//Create a temporary copy of the listeners, as the list can be modified during the calls
 	vector<listener> tmpListener(h->second.begin(),h->second.end());

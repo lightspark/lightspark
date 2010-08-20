@@ -26,6 +26,10 @@
 #endif
 #include "compat.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -91,7 +95,7 @@ int main(int argc, char* argv[])
 	//One of useInterpreter or useJit must be enabled
 	if(!(useInterpreter || useJit))
 	{
-		LOG(LOG_ERROR,"No execution model enabled");
+		LOG(LOG_ERROR,_("No execution model enabled"));
 		exit(-1);
 	}
 	sys->useInterpreter=useInterpreter;

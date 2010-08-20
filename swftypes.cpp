@@ -32,6 +32,10 @@
 #include "scripting/class.h"
 #include "exceptions.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -234,7 +238,7 @@ std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 	assert_and_throw(v.version!=-1);
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
-		LOG(LOG_ERROR,"Line array extended not supported");
+		LOG(LOG_ERROR,_("Line array extended not supported"));
 	if(v.version<4)
 	{
 		for(int i=0;i<v.LineStyleCount;i++)
@@ -261,7 +265,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 {
 	s >> v.LineStyleCount;
 	if(v.LineStyleCount==0xff)
-		LOG(LOG_ERROR,"Line array extended not supported");
+		LOG(LOG_ERROR,_("Line array extended not supported"));
 	v.LineStyles=new MORPHLINESTYLE[v.LineStyleCount];
 	for(int i=0;i<v.LineStyleCount;i++)
 	{
@@ -284,7 +288,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLEARRAY& v)
 	assert_and_throw(v.version!=-1);
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
-		LOG(LOG_ERROR,"Fill array extended not supported");
+		LOG(LOG_ERROR,_("Fill array extended not supported"));
 
 	v.FillStyles.resize(v.FillStyleCount);
 	list<FILLSTYLE>::iterator it=v.FillStyles.begin();
@@ -300,7 +304,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLEARRAY& v)
 {
 	s >> v.FillStyleCount;
 	if(v.FillStyleCount==0xff)
-		LOG(LOG_ERROR,"Fill array extended not supported");
+		LOG(LOG_ERROR,_("Fill array extended not supported"));
 	v.FillStyles=new MORPHFILLSTYLE[v.FillStyleCount];
 	for(int i=0;i<v.FillStyleCount;i++)
 	{
@@ -391,7 +395,7 @@ std::istream& lightspark::operator>>(std::istream& in, TEXTRECORD& v)
 	v.TextRecordType=UB(1,bs);
 	v.StyleFlagsReserved=UB(3,bs);
 	if(v.StyleFlagsReserved)
-		LOG(LOG_ERROR,"Reserved bits not so reserved");
+		LOG(LOG_ERROR,_("Reserved bits not so reserved"));
 	v.StyleFlagsHasFont=UB(1,bs);
 	v.StyleFlagsHasColor=UB(1,bs);
 	v.StyleFlagsHasYOffset=UB(1,bs);
@@ -485,7 +489,7 @@ void FILLSTYLE::setVertexData(arrayElem* elem)
 {
 	if(FillStyleType==0x00)
 	{
-		//LOG(TRACE,"Fill color");
+		//LOG(TRACE,_("Fill color"));
 		elem->colors[0]=1;
 		elem->colors[1]=0;
 		elem->colors[2]=0;
@@ -497,7 +501,7 @@ void FILLSTYLE::setVertexData(arrayElem* elem)
 	}
 	else if(FillStyleType==0x10)
 	{
-		//LOG(TRACE,"Fill gradient");
+		//LOG(TRACE,_("Fill gradient"));
 		elem->colors[0]=0;
 		elem->colors[1]=1;
 		elem->colors[2]=0;
@@ -534,7 +538,7 @@ void FILLSTYLE::setVertexData(arrayElem* elem)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Reverting to fixed function");
+		LOG(LOG_NOT_IMPLEMENTED,_("Reverting to fixed function"));
 		elem->colors[0]=1;
 		elem->colors[1]=0;
 		elem->colors[2]=0;
@@ -560,7 +564,7 @@ void FILLSTYLE::setFragmentProgram() const
 
 	if(FillStyleType==0x00)
 	{
-		//LOG(TRACE,"Fill color");
+		//LOG(TRACE,_("Fill color"));
 		glColor4f(1,0,0,0);
 		glTexCoord4f(float(Color.Red)/256.0f,
 			float(Color.Green)/256.0f,
@@ -569,7 +573,7 @@ void FILLSTYLE::setFragmentProgram() const
 	}
 	else if(FillStyleType==0x10)
 	{
-		//LOG(TRACE,"Fill gradient");
+		//LOG(TRACE,_("Fill gradient"));
 
 #if 0
 		color_entry buffer[256];
@@ -617,7 +621,7 @@ void FILLSTYLE::setFragmentProgram() const
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Style not implemented");
+		LOG(LOG_NOT_IMPLEMENTED,_("Style not implemented"));
 		FILLSTYLE::fixedColor(0.5,0.5,0);
 	}
 }
@@ -663,7 +667,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 	}
 	else
 	{
-		LOG(LOG_ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
+		LOG(LOG_ERROR,_("Not supported fill style ") << (int)v.FillStyleType << _("... Aborting"));
 		throw ParseException("Not supported fill style");
 	}
 	return s;
@@ -695,7 +699,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	}
 	else
 	{
-		LOG(LOG_ERROR,"Not supported fill style " << (int)v.FillStyleType << "... Aborting");
+		LOG(LOG_ERROR,_("Not supported fill style ") << (int)v.FillStyleType << _("... Aborting"));
 	}
 	return s;
 }
@@ -903,7 +907,7 @@ std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
 			stream >> v.GradientBevelFilter;
 			break;
 		default:
-			LOG(LOG_ERROR,"Unsupported Filter Id " << (int)v.FilterID);
+			LOG(LOG_ERROR,_("Unsupported Filter Id ") << (int)v.FilterID);
 			throw ParseException("Unsupported Filter Id");
 	}
 	return stream;
@@ -1083,7 +1087,7 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONRECORD& v)
 	if(v.EventFlags.isNull())
 		return s;
 	s >> v.ActionRecordSize;
-	LOG(LOG_NOT_IMPLEMENTED,"Skipping " << v.ActionRecordSize << " of action data");
+	LOG(LOG_NOT_IMPLEMENTED,_("Skipping ") << v.ActionRecordSize << _(" of action data"));
 	ignore(s,v.ActionRecordSize);
 	return s;
 }

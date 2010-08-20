@@ -23,6 +23,10 @@
 #include "exceptions.h"
 #include "logger.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 
 //NOTE: thread jobs can be run only once
@@ -47,7 +51,7 @@ void IThreadJob::run()
 	}
 	catch(JobTerminationException& ex)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Job terminated");
+		LOG(LOG_NOT_IMPLEMENTED,_("Job terminated"));
 	}
 
 	sem_post(&terminated);
@@ -70,7 +74,7 @@ Mutex::Mutex(const char* n):name(n),foundBusy(0)
 Mutex::~Mutex()
 {
 	if(name)
-		LOG(LOG_TRACE,"Mutex " << name << " waited " << foundBusy << " times");
+		LOG(LOG_TRACE,_("Mutex ") << name << _(" waited ") << foundBusy << _(" times"));
 	sem_destroy(&sem);
 }
 

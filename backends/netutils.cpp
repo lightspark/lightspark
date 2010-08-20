@@ -27,6 +27,10 @@
 #include <curl/curl.h>
 #endif
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
 
@@ -119,7 +123,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 		//Only grow the buffer when allowed
 		if(getAllowBufferRealloc())
 		{
-			LOG(LOG_NO_INFO, "Downloaded file bigger than buffer: " << 
+			LOG(LOG_NO_INFO, _("Downloaded file bigger than buffer: ") << 
 					tail+added << ">" << len << ", reallocating buffer.");
 			//TODO: Confirm whats best: allocate more memory at a time, at the risk of allocating too much
 			//			or allocate exactly the amount needed, at the risk of having to reallocate a lot
@@ -274,7 +278,7 @@ void CurlDownloader::execute()
 #else
 	//ENABLE_CURL not defined
 	setFailed();
-	LOG(LOG_ERROR,"CURL not enabled in this build. Downloader will always fail.");
+	LOG(LOG_ERROR,_("CURL not enabled in this build. Downloader will always fail."));
 #endif
 	sem_post(&(Downloader::terminated));
 }
@@ -355,7 +359,7 @@ void LocalDownloader::execute()
 	else
 	{
 		std::ifstream file;
-		LOG(LOG_NO_INFO, "LocalDownloader::execute: reading local file: " << url.raw_buf());
+		LOG(LOG_NO_INFO, _("LocalDownloader::execute: reading local file: ") << url.raw_buf());
 		file.open(url.raw_buf(), std::ifstream::in);
 
 		if(file.is_open())
@@ -382,7 +386,7 @@ void LocalDownloader::execute()
 			if(failed)
 			{
 				setFailed();
-				LOG(LOG_ERROR, "LocalDownloader::execute: reading from local file failed: " << url.raw_buf());
+				LOG(LOG_ERROR, _("LocalDownloader::execute: reading from local file failed: ") << url.raw_buf());
 			}
 			file.close();
 			delete buffer;
@@ -390,7 +394,7 @@ void LocalDownloader::execute()
 		else
 		{
 				setFailed();
-				LOG(LOG_ERROR, "LocalDownloader::execute: could not open local file: " << url.raw_buf());
+				LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
 		}
 	}
 	sem_post(&(Downloader::terminated));

@@ -22,6 +22,10 @@
 #include "scripting/toplevel.h"
 #include <algorithm>
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 using namespace std;
 
@@ -74,13 +78,13 @@ TRISTATE ASObject::isLess(ASObject* r)
 		ASObject* ret1=f1->call(this,NULL,0);
 		ASObject* ret2=f2->call(r,NULL,0);
 
-		LOG(LOG_CALLS,"Overloaded isLess");
+		LOG(LOG_CALLS,_("Overloaded isLess"));
 		return ret1->isLess(ret2);
 	}
 
-	LOG(LOG_NOT_IMPLEMENTED,"Less than comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	LOG(LOG_NOT_IMPLEMENTED,_("Less than comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
 	if(prototype)
-		LOG(LOG_NOT_IMPLEMENTED,"Type " << prototype->class_name);
+		LOG(LOG_NOT_IMPLEMENTED,_("Type ") << prototype->class_name);
 	throw RunTimeException("Not handled less comparison for objects");
 	return TFALSE;
 }
@@ -110,7 +114,7 @@ void ASObject::sinit(Class_base* c)
 void ASObject::buildTraits(ASObject* o)
 {
 	if(o->getActualPrototype()->class_name.name!="Object")
-		LOG(LOG_NOT_IMPLEMENTED,"Add buildTraits for class " << o->getActualPrototype()->class_name);
+		LOG(LOG_NOT_IMPLEMENTED,_("Add buildTraits for class ") << o->getActualPrototype()->class_name);
 }
 
 bool ASObject::isEqual(ASObject* r)
@@ -135,7 +139,7 @@ bool ASObject::isEqual(ASObject* r)
 		ASObject* ret=func->call(this,&r,1);
 		assert_and_throw(ret->getObjectType()==T_BOOLEAN);
 
-		LOG(LOG_CALLS,"Overloaded isEqual");
+		LOG(LOG_CALLS,_("Overloaded isEqual"));
 		return Boolean_concrete(ret);
 	}
 
@@ -157,13 +161,13 @@ bool ASObject::isEqual(ASObject* r)
 		ASObject* ret1=f1->call(this,NULL,0);
 		ASObject* ret2=f2->call(r,NULL,0);
 
-		LOG(LOG_CALLS,"Overloaded isEqual");
+		LOG(LOG_CALLS,_("Overloaded isEqual"));
 		return ret1->isEqual(ret2);
 	}
 
-	LOG(LOG_CALLS,"Equal comparison between type "<<getObjectType()<< " and type " << r->getObjectType());
+	LOG(LOG_CALLS,_("Equal comparison between type ")<<getObjectType()<< _(" and type ") << r->getObjectType());
 	if(prototype)
-		LOG(LOG_CALLS,"Type " << prototype->class_name);
+		LOG(LOG_CALLS,_("Type ") << prototype->class_name);
 	return false;
 }
 
@@ -174,14 +178,14 @@ unsigned int ASObject::toUInt()
 
 int ASObject::toInt()
 {
-	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to int");
+	LOG(LOG_ERROR,_("Cannot convert object of type ") << getObjectType() << _(" to int"));
 	throw RunTimeException("Cannot converto object to int");
 	return 0;
 }
 
 double ASObject::toNumber()
 {
-	LOG(LOG_ERROR,"Cannot convert object of type " << getObjectType() << " to float");
+	LOG(LOG_ERROR,_("Cannot convert object of type ") << getObjectType() << _(" to float"));
 	throw RunTimeException("Cannot converto object to float");
 	return 0;
 }
@@ -348,7 +352,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 	if(obj->setter)
 	{
 		//Call the setter
-		LOG(LOG_CALLS,"Calling the setter");
+		LOG(LOG_CALLS,_("Calling the setter"));
 		//Overriding function is automatically done by using cur_level
 		IFunction* setter=obj->setter;
 		if(enableOverride)
@@ -359,7 +363,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 		target->incRef();
 		ASObject* ret=setter->call(target,&o,1);
 		assert_and_throw(ret==NULL);
-		LOG(LOG_CALLS,"End of setter");
+		LOG(LOG_CALLS,_("End of setter"));
 	}
 	else
 	{
@@ -381,14 +385,14 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	if(obj->setter)
 	{
 		//Call the setter
-		LOG(LOG_CALLS,"Calling the setter");
+		LOG(LOG_CALLS,_("Calling the setter"));
 
 		IFunction* setter=obj->setter->getOverride();
 		incRef();
 		//One argument can be passed without creating an array
 		ASObject* ret=setter->call(this,&o,1);
 		assert_and_throw(ret==NULL);
-		LOG(LOG_CALLS,"End of setter");
+		LOG(LOG_CALLS,_("End of setter"));
 	}
 	else
 	{
@@ -499,7 +503,7 @@ ASFUNCTIONBODY(ASObject,generator)
 {
 	//By default we assume it's a passtrough cast
 	assert_and_throw(argslen==1);
-	LOG(LOG_CALLS,"Passthorugh of " << args[0]);
+	LOG(LOG_CALLS,_("Passthorugh of ") << args[0]);
 	args[0]->incRef();
 	return args[0];
 }
@@ -594,18 +598,18 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 			ASObject* target=(base)?base:this;
 			if(target->prototype)
 			{
-				LOG(LOG_CALLS,"Calling the getter on type " << target->prototype->class_name);
+				LOG(LOG_CALLS,_("Calling the getter on type ") << target->prototype->class_name);
 			}
 			else
 			{
-				LOG(LOG_CALLS,"Calling the getter");
+				LOG(LOG_CALLS,_("Calling the getter"));
 			}
 			IFunction* getter=obj->getter;
 			if(enableOverride)
 				getter=getter->getOverride();
 			target->incRef();
 			ASObject* ret=getter->call(target,NULL,0);
-			LOG(LOG_CALLS,"End of getter");
+			LOG(LOG_CALLS,_("End of getter"));
 			assert_and_throw(ret);
 			//The returned value is already owned by the caller
 			ret->fake_decRef();
@@ -641,11 +645,11 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 		if(obj->getter)
 		{
 			//Call the getter
-			LOG(LOG_CALLS,"Calling the getter");
+			LOG(LOG_CALLS,_("Calling the getter"));
 			IFunction* getter=obj->getter->getOverride();
 			incRef();
 			ASObject* ret=getter->call(this,NULL,0);
-			LOG(LOG_CALLS,"End of getter");
+			LOG(LOG_CALLS,_("End of getter"));
 			//The variable is already owned by the caller
 			ret->fake_decRef();
 			return ret;
@@ -727,7 +731,7 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
-		LOG(LOG_NO_INFO,"[" << it->second.first << "] "<< it->first << " " << 
+		LOG(LOG_NO_INFO,_("[") << it->second.first << _("] ")<< it->first << _(" ") << 
 			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter);
 }
 
@@ -887,12 +891,12 @@ ASObject* ASObject::getValueAt(int index)
 	if(obj->getter)
 	{
 		//Call the getter
-		LOG(LOG_CALLS,"Calling the getter");
+		LOG(LOG_CALLS,_("Calling the getter"));
 		IFunction* getter=obj->getter->getOverride();
 		incRef();
 		ret=getter->call(this,NULL,0);
 		ret->fake_decRef();
-		LOG(LOG_CALLS,"End of getter");
+		LOG(LOG_CALLS,_("End of getter"));
 	}
 	else
 		ret=obj->var;

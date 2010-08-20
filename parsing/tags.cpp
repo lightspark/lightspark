@@ -31,6 +31,10 @@
 #include "frame.h"
 #include <GL/glew.h>
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 #undef RGB
 
 using namespace std;
@@ -48,11 +52,11 @@ Tag* TagFactory::readTag()
 	unsigned int expectedLen=h.getLength();
 	unsigned int start=f.tellg();
 	Tag* ret=NULL;
-	LOG(LOG_TRACE,"Reading tag type: " << h.getTagType() << " at byte " << start << " with length " << expectedLen << " bytes");
+	LOG(LOG_TRACE,_("Reading tag type: ") << h.getTagType() << _(" at byte ") << start << _(" with length ") << expectedLen << _(" bytes"));
 	switch(h.getTagType())
 	{
 		case 0:
-			LOG(LOG_TRACE, "EndTag at position " << f.tellg());
+			LOG(LOG_TRACE, _("EndTag at position ") << f.tellg());
 			ret=new EndTag(h,f);
 			break;
 		case 1:
@@ -164,7 +168,7 @@ Tag* TagFactory::readTag()
 			if(pt->version>=8)
 			{
 				if(!firstTag)
-					LOG(LOG_ERROR,"FileAttributes tag not in the beginning");
+					LOG(LOG_ERROR,_("FileAttributes tag not in the beginning"));
 			}
 			ret=new FileAttributesTag(h,f);
 			break;
@@ -205,7 +209,7 @@ Tag* TagFactory::readTag()
 			ret=new DefineFontNameTag(h,f);
 			break;
 		default:
-			LOG(LOG_NOT_IMPLEMENTED,"Unsupported tag type " << h.getTagType());
+			LOG(LOG_NOT_IMPLEMENTED,_("Unsupported tag type ") << h.getTagType());
 			ret=new UnimplementedTag(h,f);
 	}
 
@@ -220,12 +224,12 @@ Tag* TagFactory::readTag()
 	
 	if(actualLen<expectedLen)
 	{
-		LOG(LOG_ERROR,"Error while reading tag " << h.getTagType() << ". Size=" << actualLen << " expected: " << expectedLen);
+		LOG(LOG_ERROR,_("Error while reading tag ") << h.getTagType() << _(". Size=") << actualLen << _(" expected: ") << expectedLen);
 		ignore(f,expectedLen-actualLen);
 	}
 	else if(actualLen>expectedLen)
 	{
-		LOG(LOG_ERROR,"Error while reading tag " << h.getTagType() << ". Size=" << actualLen << " expected: " << expectedLen);
+		LOG(LOG_ERROR,_("Error while reading tag ") << h.getTagType() << _(". Size=") << actualLen << _(" expected: ") << expectedLen);
 		throw ParseException("Malformed SWF file");
 	}
 	
@@ -235,7 +239,7 @@ Tag* TagFactory::readTag()
 RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 {
 	in >> Depth;
-	LOG(LOG_TRACE,"RemoveObject2 Depth: " << Depth);
+	LOG(LOG_TRACE,_("RemoveObject2 Depth: ") << Depth);
 }
 
 void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayObject*> >& ls)
@@ -262,7 +266,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 {
 	//setVariableByName("text",SWFObject(new Integer(0)));
 	in >> CharacterID >> Bounds;
-	LOG(LOG_TRACE,"DefineEditTextTag ID " << CharacterID);
+	LOG(LOG_TRACE,_("DefineEditTextTag ID ") << CharacterID);
 	BitStream bs(in);
 	HasText=UB(1,bs);
 	WordWrap=UB(1,bs);
@@ -296,14 +300,14 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in):Dictionar
 		in >> Align >> LeftMargin >> RightMargin >> Indent >> Leading;
 	}
 	in >> VariableName;
-	LOG(LOG_NOT_IMPLEMENTED,"Sync to variable name " << VariableName);
+	LOG(LOG_NOT_IMPLEMENTED,_("Sync to variable name ") << VariableName);
 	if(HasText)
 		in >> InitialText;
 }
 
 void DefineEditTextTag::Render()
 {
-	LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag: Render");
+	LOG(LOG_NOT_IMPLEMENTED,_("DefineEditTextTag: Render"));
 }
 
 Vector2 DefineEditTextTag::debugRender(FTFont* font, bool deep)
@@ -339,7 +343,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 	framesLoaded=FrameCount;
 	state.max_FP=FrameCount;
 
-	LOG(LOG_TRACE,"DefineSprite ID: " << SpriteID);
+	LOG(LOG_TRACE,_("DefineSprite ID: ") << SpriteID);
 	//Create a non top level TagFactory
 	TagFactory factory(in, false);
 	Tag* tag;
@@ -371,7 +375,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 				empty=false;
 				break;
 			case TAG:
-				LOG(LOG_NOT_IMPLEMENTED,"Unclassified tag inside Sprite?");
+				LOG(LOG_NOT_IMPLEMENTED,_("Unclassified tag inside Sprite?"));
 				break;
 			case END_TAG:
 				done=true;
@@ -384,11 +388,11 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in):DictionaryTag
 
 	if(frames.size()!=FrameCount)
 	{
-		LOG(LOG_ERROR,"Inconsistent frame count " << FrameCount);
+		LOG(LOG_ERROR,_("Inconsistent frame count ") << FrameCount);
 		throw ParseException("Invalid frame count in Sprite");
 	}
 
-	LOG(LOG_TRACE,"EndDefineSprite ID: " << SpriteID);
+	LOG(LOG_TRACE,_("EndDefineSprite ID: ") << SpriteID);
 }
 
 ASObject* DefineSpriteTag::instance() const
@@ -436,7 +440,7 @@ void lightspark::ignore(istream& i, int count)
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h)
 {
-	LOG(LOG_TRACE,"DefineFont");
+	LOG(LOG_TRACE,_("DefineFont"));
 	in >> FontID;
 
 	UI16 t;
@@ -461,7 +465,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in):FontTag(h)
 
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 {
-	LOG(LOG_TRACE,"DefineFont2");
+	LOG(LOG_TRACE,_("DefineFont2"));
 	in >> FontID;
 	BitStream bs(in);
 	FontFlagsHasLayout = UB(1,bs);
@@ -550,7 +554,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 
 DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in):FontTag(h)
 {
-	LOG(LOG_TRACE,"DefineFont3");
+	LOG(LOG_TRACE,_("DefineFont3"));
 	in >> FontID;
 	BitStream bs(in);
 	FontFlagsHasLayout = UB(1,bs);
@@ -666,13 +670,13 @@ ASObject* DefineBitsLossless2Tag::instance() const
 
 void DefineBitsLossless2Tag::Render()
 {
-	LOG(LOG_NOT_IMPLEMENTED,"DefineBitsLossless2Tag::Render");
+	LOG(LOG_NOT_IMPLEMENTED,_("DefineBitsLossless2Tag::Render"));
 }
 
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in):DictionaryTag(h)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
-	LOG(LOG_TRACE,"DefineText ID " << CharacterId);
+	LOG(LOG_TRACE,_("DefineText ID ") << CharacterId);
 
 	TEXTRECORD t(this);
 	while(1)
@@ -746,7 +750,7 @@ void DefineTextTag::inputRender()
 
 void DefineTextTag::Render()
 {
-	LOG(LOG_TRACE,"DefineText Render");
+	LOG(LOG_TRACE,_("DefineText Render"));
 	if(alpha==0)
 		return;
 	if(!visible)
@@ -764,7 +768,7 @@ void DefineTextTag::Render()
 				DictionaryTag* it3=loadedFrom->dictionaryLookup(it->FontID);
 				font=dynamic_cast<FontTag*>(it3);
 				if(font==NULL)
-					LOG(LOG_ERROR,"Should be a FontTag");
+					LOG(LOG_ERROR,_("Should be a FontTag"));
 			}
 			it2 = it->GlyphEntries.begin();
 			for(;it2!=(it->GlyphEntries.end());it2++)
@@ -856,28 +860,28 @@ Vector2 DefineTextTag::debugRender(FTFont* font, bool deep)
 
 DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
-	LOG(LOG_TRACE,"DefineShapeTag");
+	LOG(LOG_TRACE,_("DefineShapeTag"));
 	Shapes.version=1;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in):DefineShapeTag(h)
 {
-	LOG(LOG_TRACE,"DefineShape2Tag");
+	LOG(LOG_TRACE,_("DefineShape2Tag"));
 	Shapes.version=2;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
 DefineShape3Tag::DefineShape3Tag(RECORDHEADER h, std::istream& in):DefineShape2Tag(h)
 {
-	LOG(LOG_TRACE,"DefineShape3Tag");
+	LOG(LOG_TRACE,_("DefineShape3Tag"));
 	Shapes.version=3;
 	in >> ShapeId >> ShapeBounds >> Shapes;
 }
 
 DefineShape4Tag::DefineShape4Tag(RECORDHEADER h, std::istream& in):DefineShape3Tag(h)
 {
-	LOG(LOG_TRACE,"DefineShape4Tag");
+	LOG(LOG_TRACE,_("DefineShape4Tag"));
 	Shapes.version=4;
 	in >> ShapeId >> ShapeBounds >> EdgeBounds;
 	BitStream bs(in);
@@ -1144,12 +1148,12 @@ void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 		if(i->state.validFill0)
 		{
 			if(i->state.fill0!=1)
-				LOG(ERROR,"Not valid fill style for font");
+				LOG(ERROR,_("Not valid fill style for font"));
 		}
 
 		if(i->state.validFill1)
 		{
-			LOG(ERROR,"Not valid fill style for font");
+			LOG(ERROR,_("Not valid fill style for font"));
 		}
 
 		if(i->state.validStroke)
@@ -1157,7 +1161,7 @@ void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 			if(i->state.stroke)
 			{
 				s.back().graphic.stroked=true;
-				LOG(ERROR,"Not valid stroke style for font");
+				LOG(ERROR,_("Not valid stroke style for font"));
 //				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
 			}
 			else
@@ -1184,12 +1188,12 @@ void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 		if(i->state.validFill0)
 		{
 			if(i->state.fill0!=1)
-				LOG(ERROR,"Not valid fill style for font");
+				LOG(ERROR,_("Not valid fill style for font"));
 		}
 
 		if(i->state.validFill1)
 		{
-			LOG(ERROR,"Not valid fill style for font");
+			LOG(ERROR,_("Not valid fill style for font"));
 		}
 
 		if(i->state.validStroke)
@@ -1197,7 +1201,7 @@ void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 			if(i->state.stroke)
 			{
 				s.back().graphic.stroked=true;
-				LOG(ERROR,"Not valid stroke style for font");
+				LOG(ERROR,_("Not valid stroke style for font"));
 //				shapes.back().graphic.stroke_color=Shapes.LineStyles.LineStyles[i->state->stroke-1].Color;
 			}
 			else
@@ -1220,7 +1224,7 @@ void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
 
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	LOG(LOG_TRACE,"ShowFrame");
+	LOG(LOG_TRACE,_("ShowFrame"));
 }
 
 bool PlaceObject2Tag::list_orderer::operator ()(const pair<PlaceInfo, DisplayObject*>& a, int d)
@@ -1267,7 +1271,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 		//As the transformation matrix can change every frame
 		//it is saved in a side data structure
 		//and assigned to the internal struture every frame
-		LOG(LOG_TRACE,"Placing ID " << CharacterId);
+		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
 		if(parentDict)
@@ -1321,7 +1325,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 	if(PlaceFlagHasName)
 	{
 		//Set a variable on the parent to link this object
-		LOG(LOG_NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
+		LOG(LOG_NO_INFO,_("Registering ID ") << CharacterId << _(" with name ") << Name);
 		if(!PlaceFlagMove)
 		{
 			assert_and_throw(toAdd);
@@ -1329,7 +1333,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			parent->setVariableByQName((const char*)Name,"",toAdd);
 		}
 		else
-			LOG(LOG_ERROR, "Moving of registered objects not really supported");
+			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
 	}
 
 	//Move the object if relevant
@@ -1360,7 +1364,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			}
 		}
 		else
-			LOG(LOG_ERROR,"no char to move at depth " << Depth << " name " << Name);
+			LOG(LOG_ERROR,_("no char to move at depth ") << Depth << _(" name ") << Name);
 	}
 
 	if(toAdd)
@@ -1369,7 +1373,7 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 {
-	LOG(LOG_TRACE,"PlaceObject2");
+	LOG(LOG_TRACE,_("PlaceObject2"));
 
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
@@ -1434,7 +1438,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 		//As the transformation matrix can change every frame
 		//it is saved in a side data structure
 		//and assigned to the internal struture every frame
-		LOG(LOG_TRACE,"Placing ID " << CharacterId);
+		LOG(LOG_TRACE,_("Placing ID ") << CharacterId);
 		RootMovieClip* localRoot=NULL;
 		DictionaryTag* parentDict=dynamic_cast<DictionaryTag*>(parent);
 		if(parentDict)
@@ -1488,7 +1492,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 	if(PlaceFlagHasName)
 	{
 		//Set a variable on the parent to link this object
-		LOG(LOG_NO_INFO,"Registering ID " << CharacterId << " with name " << Name);
+		LOG(LOG_NO_INFO,_("Registering ID ") << CharacterId << _(" with name ") << Name);
 		if(!PlaceFlagMove)
 		{
 			assert_and_throw(toAdd);
@@ -1496,7 +1500,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			parent->setVariableByQName((const char*)Name,"",toAdd);
 		}
 		else
-			LOG(LOG_ERROR, "Moving of registered objects not really supported");
+			LOG(LOG_ERROR, _("Moving of registered objects not really supported"));
 	}
 
 	//Move the object if relevant
@@ -1527,7 +1531,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			}
 		}
 		else
-			LOG(LOG_ERROR,"no char to move at depth " << Depth << " name " << Name);
+			LOG(LOG_ERROR,_("no char to move at depth ") << Depth << _(" name ") << Name);
 	}
 
 	if(toAdd)
@@ -1536,7 +1540,7 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 
 PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in):PlaceObject2Tag(h)
 {
-	LOG(LOG_TRACE,"PlaceObject3");
+	LOG(LOG_TRACE,_("PlaceObject3"));
 
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
@@ -1598,7 +1602,7 @@ void SetBackgroundColorTag::execute(RootMovieClip* root)
 
 ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	LOG(LOG_TRACE,"ProductInfoTag Tag");
+	LOG(LOG_TRACE,_("ProductInfoTag Tag"));
 
 	in >> ProductId >> Edition >> MajorVersion >> MinorVersion >> 
 	MinorBuild >> MajorBuild >> CompileTimeLo >> CompileTimeHi;
@@ -1607,7 +1611,7 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 	longlongTime<<=32;
 	longlongTime|=CompileTimeLo;
 
-	LOG(LOG_NO_INFO,"SWF Info:" << 
+	LOG(LOG_NO_INFO,_("SWF Info:") << 
 	endl << "\tProductId: " << ProductId <<
 	endl << "\tEdition: " << Edition <<
 	endl << "\tVersion: " << UI32(MajorVersion) << "." << UI32(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
@@ -1668,7 +1672,7 @@ void DefineButton2Tag::handleEvent(Event* e)
 
 void DefineButton2Tag::Render()
 {
-	LOG(LOG_NOT_IMPLEMENTED,"DefineButton2Tag::Render");
+	LOG(LOG_NOT_IMPLEMENTED,_("DefineButton2Tag::Render"));
 	if(alpha==0)
 		return;
 	if(!visible)
@@ -1686,7 +1690,7 @@ void DefineButton2Tag::Render()
 		DictionaryTag* r=sys->dictionaryLookup(Characters[i].CharacterID);
 		IRenderObject* c=dynamic_cast<IRenderObject*>(r);
 		if(c==NULL)
-			LOG(ERROR,"Rendering something strange");
+			LOG(ERROR,_("Rendering something strange"));
 		float matrix[16];
 		Characters[i].PlaceMatrix.get4DMatrix(matrix);
 		glPushMatrix();
@@ -1726,7 +1730,7 @@ Vector2 DefineButton2Tag::debugRender(FTFont* font, bool deep)
 
 DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
-	LOG(LOG_NO_INFO,"DefineVideoStreamTag");
+	LOG(LOG_NO_INFO,_("DefineVideoStreamTag"));
 	in >> CharacterID >> NumFrames >> Width >> Height;
 	BitStream bs(in);
 	UB(4,bs);
@@ -1737,7 +1741,7 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):Dic
 
 void DefineVideoStreamTag::Render()
 {
-	LOG(LOG_NO_INFO,"DefineVideoStreamTag Render");
+	LOG(LOG_NO_INFO,_("DefineVideoStreamTag Render"));
 /*	if(alpha==0)
 		return;
 	if(!visible)
@@ -1753,7 +1757,7 @@ void DefineVideoStreamTag::Render()
 
 DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):DictionaryTag(h)
 {
-	LOG(LOG_TRACE,"DefineBinaryDataTag");
+	LOG(LOG_TRACE,_("DefineBinaryDataTag"));
 	int size=h.getLength();
 	s >> Tag >> Reserved;
 	size -= sizeof(Tag)+sizeof(Reserved);
@@ -1764,7 +1768,7 @@ DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s):Diction
 
 FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	LOG(LOG_TRACE,"FileAttributesTag Tag");
+	LOG(LOG_TRACE,_("FileAttributesTag Tag"));
 	BitStream bs(in);
 	UB(1,bs);
 	UseDirectBlit=UB(1,bs);
@@ -1781,7 +1785,7 @@ FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 
 DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
-	LOG(LOG_TRACE,"DefineSound Tag");
+	LOG(LOG_TRACE,_("DefineSound Tag"));
 	in >> SoundId;
 	BitStream bs(in);
 	SoundFormat=UB(4,bs);
@@ -1809,19 +1813,19 @@ ASObject* DefineSoundTag::instance() const
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	LOG(LOG_TRACE,"ScriptLimitsTag Tag");
+	LOG(LOG_TRACE,_("ScriptLimitsTag Tag"));
 	in >> MaxRecursionDepth >> ScriptTimeoutSeconds;
-	LOG(LOG_NO_INFO,"MaxRecusionDepth: " << MaxRecursionDepth << ", ScriptTimeoutSeconds: " << ScriptTimeoutSeconds);
+	LOG(LOG_NO_INFO,_("MaxRecusionDepth: ") << MaxRecursionDepth << _(", ScriptTimeoutSeconds: ") << ScriptTimeoutSeconds);
 }
 
 DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	LOG(LOG_TRACE,"DebugIDTag Tag");
+	LOG(LOG_TRACE,_("DebugIDTag Tag"));
 	for(int i = 0; i < 16; i++)
 		in >> DebugId[i];
 
 	//Note the switch to hex formatting on the ostream, and switch back to dec
-	LOG(LOG_NO_INFO,"DebugId " << hex <<
+	LOG(LOG_NO_INFO,_("DebugId ") << hex <<
 		UI32(DebugId[0]) << UI32(DebugId[1]) << UI32(DebugId[2]) << UI32(DebugId[3]) << "-" <<
 		UI32(DebugId[4]) << UI32(DebugId[5]) << "-" <<
 		UI32(DebugId[6]) << UI32(DebugId[7]) << "-" <<
@@ -1832,27 +1836,27 @@ DebugIDTag::DebugIDTag(RECORDHEADER h, std::istream& in):Tag(h)
 
 EnableDebuggerTag::EnableDebuggerTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	LOG(LOG_TRACE,"EnableDebuggerTag Tag");
+	LOG(LOG_TRACE,_("EnableDebuggerTag Tag"));
 	DebugPassword = "";
 	if(h.getLength() > 0)
 		in >> DebugPassword;
-	LOG(LOG_NO_INFO,"Debugger enabled, password: " << DebugPassword);
+	LOG(LOG_NO_INFO,_("Debugger enabled, password: ") << DebugPassword);
 }
 
 EnableDebugger2Tag::EnableDebugger2Tag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	LOG(LOG_TRACE,"EnableDebugger2Tag Tag");
+	LOG(LOG_TRACE,_("EnableDebugger2Tag Tag"));
 	in >> ReservedWord;
 
 	DebugPassword = "";
 	if(h.getLength() > sizeof(ReservedWord))
 		in >> DebugPassword;
-	LOG(LOG_NO_INFO,"Debugger enabled, reserved: " << ReservedWord << ", password: " << DebugPassword);
+	LOG(LOG_NO_INFO,_("Debugger enabled, reserved: ") << ReservedWord << _(", password: ") << DebugPassword);
 }
 
 MetadataTag::MetadataTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
-	LOG(LOG_TRACE,"MetadataTag Tag");
+	LOG(LOG_TRACE,_("MetadataTag Tag"));
 	in >> XmlString;
-	LOG(LOG_NO_INFO,"MetaData: " << XmlString);
+	LOG(LOG_NO_INFO,_("MetaData: ") << XmlString);
 }

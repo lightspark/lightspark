@@ -26,6 +26,10 @@
 #include "swf.h"
 #include "graphics.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 using namespace std;
 
@@ -37,7 +41,7 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 	{
 		frameWidth=w;
 		frameHeight=h;
-		LOG(LOG_NO_INFO,"Video frame size " << frameWidth << 'x' << frameHeight);
+		LOG(LOG_NO_INFO,_("Video frame size ") << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
 		return true;
 	}
@@ -433,7 +437,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 {
 	if(codecContext->sample_rate!=0)
 	{
-		LOG(LOG_NO_INFO,"Audio sample rate " << codecContext->sample_rate);
+		LOG(LOG_NO_INFO,_("Audio sample rate ") << codecContext->sample_rate);
 		sampleRate=codecContext->sample_rate;
 	}
 	else
@@ -441,7 +445,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 
 	if(codecContext->channels!=0)
 	{
-		LOG(LOG_NO_INFO, "Audio channels " << codecContext->channels);
+		LOG(LOG_NO_INFO, _("Audio channels ") << codecContext->channels);
 		channelCount=codecContext->channels;
 	}
 	else

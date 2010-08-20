@@ -67,159 +67,159 @@ package
 						res = false;
 					}
 				}
-				trace(outp);
+				trace(outp,"[" + (msg == null ? "assertArrayEquals" : msg) + "]");
 				if(res != true && msg == null)
-					failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertArrayEquals\n\tArray 1: " + arr1 + "\n\tArray 2: " + arr2);
+					failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertArrayEquals\n\tArray 1: " + arr1 + "\n\tArray 2: " + arr2);
 				else if(res != true && msg != null)
-					failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tArray 1: " + arr1 + "\n\tArray 2: " + arr2);
+					failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tArray 1: " + arr1 + "\n\tArray 2: " + arr2);
 			}
 			else if(msg == null)
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertArrayEquals\n\tLength array 1: " + arr1.length + "\n\tLength array 2: " + arr2.length);
+				trace("F [" + (msg == null ? "assertArrayEquals" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertArrayEquals\n\tLength array 1: " + arr1.length + "\n\tLength array 2: " + arr2.length);
 			}
 			else
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tArray 1: " + arr1 + "\n\tArray 2: " + arr2);
+				trace("F [" + (msg == null ? "assertArrayEquals" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tArray 1: " + arr1 + "\n\tArray 2: " + arr2);
 			}
 		}
 		public static function assertEqualsDelta(expected:*, actual:*, delta:Number, msg:String=null, strict:Boolean=false):void
 		{
 			testCount++;
 			if(Math.abs(expected-actual) < Math.abs(delta) && (!strict || (typeof expected == typeof actual)))
-				trace(".");
+				trace(". [" + (msg == null ? "assertEqualsDelta" : msg) + "]");
 			else if(msg == null)
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertEqualsDelta\n\tExpected: " + expected + "\n\tDelta: " + delta + "\n\tActual: " + actual);
+				trace("F [" + (msg == null ? "assertEqualsDelta" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertEqualsDelta\n\tExpected: " + expected + "\n\tDelta: " + delta + "\n\tActual: " + actual);
 			}
 			else
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: " + expected + "\n\tDelta: " + delta + "\n\tActual: " + actual);
+				trace("F [" + (msg == null ? "assertEqualsDelta" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: " + expected + "\n\tDelta: " + delta + "\n\tActual: " + actual);
 			}
 		}
 		public static function assertEquals(expected:*, actual:*, msg:String=null, strict:Boolean=false):void
 		{
 			testCount++;
 			if( (!strict && expected == actual) || (strict && expected === actual) )
-				trace(".");
+				trace(". [" + (msg == null ? "assertEquals" : msg) + "]");
 			else if(msg == null)
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertEquals\n\tExpected: " + expected + "\n\tActual: " + actual);
+				trace("F [" + (msg == null ? "assertEquals" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertEquals\n\tExpected: " + expected + "\n\tActual: " + actual);
 			}
 			else
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: " + expected + "\n\tActual: " + actual);
+				trace("F [" + (msg == null ? "assertEquals" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: " + expected + "\n\tActual: " + actual);
 			}
 		}
 		public static function assertTrue(cond:*,msg:String=null, strict:Boolean=false):void
 		{
 			testCount++;
 			if( (!strict && cond == true) || (strict && cond === true) )
-				trace(".");
+				trace(". [" + (msg == null ? "assertTrue" : msg) + "]");
 			else if(msg == null)
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertTrue\n\tExpected: true\n\tActual: " + cond);
+				trace("F [" + (msg == null ? "assertTrue" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertTrue\n\tExpected: true\n\tActual: " + cond);
 			}
 			else
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: true\n\tActual: " + cond);
+				trace("F [" + (msg == null ? "assertTrue" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: true\n\tActual: " + cond);
 			}
 		}
 		public static function assertFalse(cond:*,msg:String=null, strict:Boolean=false):void
 		{
 			testCount++;
 			if( (!strict && cond == false) || (strict && cond === false) )
-				trace(".");
+				trace(". [" + (msg == null ? "assertFalse" : msg) + "]");
 			else if(msg == null)
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertFalse\n\tExpected: false\n\tActual: " + cond);
+				trace("F [" + (msg == null ? "assertFalse" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertFalse\n\tExpected: false\n\tActual: " + cond);
 			}
 			else
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: false\n\tActual: " + cond);
+				trace("F [" + (msg == null ? "assertFalse" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: false\n\tActual: " + cond);
 			}
 		}
 		public static function assertNull(obj:*, msg:String=null, strict:Boolean=false):void
 		{
 			testCount++;
 			if( (!strict && obj == null) || (strict && obj === null) )
-				trace(".");
+				trace(". [" + (msg == null ? "assertNull" : msg) + "]");
 			else if(msg == null)
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertNull\n\tExpected: null\n\tActual: " + obj);
+				trace("F [" + (msg == null ? "assertNull" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertNull\n\tExpected: null\n\tActual: " + obj);
 			}
 			else
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: null\n\tActual: " + obj);
+				trace("F [" + (msg == null ? "assertNull" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: null\n\tActual: " + obj);
 			}
 		}
 		public static function assertNotNull(obj:*, msg:String=null, strict:Boolean=false):void
 		{
 			testCount++;
 			if( (!strict && obj != null) || (strict && obj !== null) )
-				trace(".");
+				trace(". [" + (msg == null ? "assertNotNull" : msg) + "]");
 			else if(msg == null)
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertNotNull\n\tExpected: not null\n\tActual: " + obj);
+				trace("F [" + (msg == null ? "assertNotNull" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertNotNull\n\tExpected: not null\n\tActual: " + obj);
 			}
 			else
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: not null\n\tActual: " + obj);
+				trace("F [" + (msg == null ? "assertNotNull" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: not null\n\tActual: " + obj);
 			}
 		}
 		public static function assertUndefined(obj:*, msg:String=null, strict:Boolean=false):void
 		{
 			testCount++;
 			if( (!strict && obj == undefined) || (strict && obj === undefined) )
-				trace(".");
+				trace(". [" + (msg == null ? "assertUndefined" : msg) + "]");
 			else if(msg == null)
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertUndefined\n\tExpected: undefined\n\tActual: " + obj);
+				trace("F [" + (msg == null ? "assertUndefined" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertUndefined\n\tExpected: undefined\n\tActual: " + obj);
 			}
 			else
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: undefined\n\tActual: " + obj);
+				trace("F [" + (msg == null ? "assertUndefined" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: undefined\n\tActual: " + obj);
 			}
 		}
 		public static function assertNotUndefined(obj:*, msg:String=null, strict:Boolean=false):void
 		{
 			testCount++;
 			if( (!strict && obj != undefined) || (strict && obj !== undefined) )
-				trace(".");
+				trace(". [" + (msg == null ? "assertNotUndefined" : msg) + "]");
 			else if(msg == null)
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\tassertNotUndefined\n\tExpected: not undefined\n\tActual: " + obj);
+				trace("F [" + (msg == null ? "assertNotUndefined" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertNotUndefined\n\tExpected: not undefined\n\tActual: " + obj);
 			}
 			else
 			{
-				trace("F");
-				failures.push("Failed test:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: not undefined\n\tActual: " + obj);
+				trace("F [" + (msg == null ? "assertNotUndefined" : msg) + "]");
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: not undefined\n\tActual: " + obj);
 			}
 		}
 		public static function assertDontReach(msg:String=null):void
 		{
 			testCount++;
-			trace("F");
+			trace("F [" + (msg == null ? "assertDontReach" : msg) + "]");
 			if(msg == null)
-				failures.push("Failed test:\n\tassertDontReach");
+				failures.push("Failed assertion:\n\tassertDontReach");
 			else
-				failures.push("Failed test:\n\t" + msg);
+				failures.push("Failed assertion:\n\t" + msg);
 		}
 		public static function error(...msgs):void
 		{
@@ -252,8 +252,7 @@ package
 				trace("=====================Failures (" + failures.length + "/" + testCount + ")=====================");
 				for(var i:uint = 0; i < failures.length; i++)
 				{
-					trace(failures[i]);
-					trace("---------------------------------------------------------");
+					trace( (i > 0 ? "\n" : "") + failures[i]);
 				}
 				trace("=========================================================");
 				trace("FAILURE (" + (name == null ? "unnamed test" : name) + ")");

@@ -1,0 +1,142 @@
+#!/bin/bash
+
+#Set you lightspark executable path here
+LIGHTSPARK="lightspark"
+#Set your MXMLC compiler path here
+MXMLC="mxmlc"
+#If you prefer no colors, you can permanently set the default here
+COLORS=1;
+
+TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
+TESTS=`ls -1 *swf 2> /dev/null`;
+
+while [ $# -ne 0 ]; do
+	if [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "-u" ] || [ $1 == "--usage" ]; then
+		echo "Usage: [-q|--quiet] [-nc|--no-colors] [-f|--failures] [-c|--compile] [-cq|--compile-quit] [-m|--mxmlc] [-e|--executable] [-d|--debug] [-l|--log-level level] [-t|--tests tests]";
+		echo "Parameter meanings:";
+		echo -e "\t-q|--quiet\t\tonly output reports";
+		echo -e "\t-nc|--no-colors\t\tdisable colorization (you can permanently set the default inside this script)";
+		echo -e "\t-f|--failures\t\tonly display failures (best used with --quiet)";
+		echo -e "\t-c|--compile\t\trecompile file(s) first";
+		echo -e "\t-cq|--compile-quit\trecompile and quit";
+		echo -e "\t-m|--mxmlc\t\tpath to mxmlc (you can permanently set the path inside this script)";
+		echo -e "\t-e|--executable\t\tpath to lightspark executable (you can permanently set the path inside this script)";
+		echo -e "\t-d|--debug\t\tDon't redirect stdout from lightspark to /dev/null (output gets cached in a variable so this isn't so useful)";
+		echo -e "\t-l|--log-level\t\tLightspark log-level";
+		echo -e "\t-t|--tests\t\tfiles to compile/test, must be last parameter (otherwise compile/test all files in this directory)";
+		echo "Examples:";
+		echo -e "\t./tests -q -f\t\tTests all files, only reporting failures"
+		echo -e "\t./tests -q -c -t FILE\tRecompiles the file and runs it, only showing reports"
+		echo -e "\t./tests -cq\t\tRecompiles all files in the directory"
+		exit;
+	elif [ $1 == "-q" ] || [ $1 == "--quiet" ]; then
+		QUIET=1;
+	elif [ $1 == "-nc" ] || [ $1 == "--no-colors" ]; then
+		COLORS=0;
+	elif [ $1 == "-f" ] || [ $1 == "--failures" ]; then
+		FAILURES=1;
+	elif [ $1 == "-c" ] || [ $1 == "--compile" ]; then
+		COMPILE=1;
+	elif [ $1 == "-cq" ] || [ $1 == "--compile-quit" ]; then
+		COMPILE=1;
+		QUIT=1;
+	elif [ $1 == "-m" ] || [ $1 == "--mxmlc" ]; then
+		MXMLC=$2;
+		shift;
+	elif [ $1 == "-e" ] || [ $1 == "--executable" ]; then
+		LIGHTSPARK=$2;
+		shift;
+	elif [ $1 == "-d" ] || [ $1 == "--debug" ]; then
+		DEBUG=1
+	elif [ $1 == "-l" ] || [ $1 == "--log-level" ]; then
+		LOGLEVEL="-l $2"
+		shift
+	elif [ $1 == "-t" ] || [ $1 == "--tests" ]; then
+		shift;
+		TESTS_SRC=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.mxml /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.mxml/g'`;
+		TESTS_SRC=`ls -1 $TESTS_SRC`;
+		TESTS=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.swf /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.swf/g'`;
+		TESTS=`ls -1 $TESTS`;
+		break;
+	fi;
+	shift;
+done
+
+if [ $COMPILE ]; then
+	echo -n "Compiling: ";
+	echo $TESTS_SRC;
+	echo "Compiler: $MXMLC";
+	for test in $TESTS_SRC; do
+		$MXMLC $test;
+	done
+	if [ $QUIT ]; then
+		exit;
+	fi
+	echo -e "\n\n";
+fi
+
+echo -n "Running tests: ";
+echo $TESTS;
+
+FAILURECOUNT=0;
+SUCCESSCOUNT=0;
+TESTCOUNT=0;
+for test in $TESTS; do
+	sleep 0.25;
+
+	if [ $DEBUG ]; then
+		lines=`$LIGHTSPARK $LOGLEVEL $test 2>&1`;
+	else
+		lines=`$LIGHTSPARK $LOGLEVEL $test 2>&1 >/dev/null`;
+	fi
+
+	TESTCOUNT=`expr $TESTCOUNT + 1`;
+	if [ "`echo $lines | grep 'FAILURE'`" != "" ]; then
+		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
+	elif [ "`echo $lines | grep 'SUCCESS'`" != "" ]; then
+		SUCCESSCOUNT=`expr $SUCCESSCOUNT + 1`;
+	fi
+
+	if [ $QUIET ]; then
+		lines=`echo "$lines" |
+			sed '/^\(A .*\|\. \[.*\|F \[.*\|\[INFO\].*\|CURL header.*\)$/d'
+			`
+	fi
+	
+	if [ $FAILURES ]; then
+		lines=`echo "$lines" |
+			sed '/^\(=*No failures.*\|SUCCESS.*\|\. \[.*\|A \.* \[.*\)$/d'`
+	fi
+
+	if [ $COLORS ]; then
+		lines=`echo "$lines" |
+			sed 's/^\[INFO\]\(.*\)$/\\\e[0;34m[INFO]\\\e[0m\\\e[1;34m\1\\\e[0m/' |
+			sed 's/^CURL header\(.*\)$/\\\e[1;35mCURL header\\\e[0m\\\e[0;35m\1\\\e[0m/' |
+
+
+			sed 's/^F \(\[.*\)$/\\\e[1;31mF \\\e[0;31m\1\\\e[0m/g' |
+			sed 's/\(=*\)Failures\(.*\)/\\\e[1;31m\1Failures\2\\\e[0m/' |
+			sed 's/Failed assertion:\(.*\)/\\\e[0;31mFailed assertion:\1\\\e[0m/' |
+			sed 's/\t\(Expected\|Actual\): \(.*\)/\t\\\e[0;31m\1: \\\e[0m\\\e[2;31m\2\\\e[0m/' |
+			sed 's/^\(=*\)$/\\\e[1;31m\1\\\e[0m/' |
+			sed 's/\FAILURE \((.*)\)/\\\e[1;31mFAILURE \\\e[0;33m\1\\\e[0m/' |
+
+			sed 's/^\. \(\[.*\)$/\\\e[1;32m. \\\e[0;32m\1\\\e[0m/' |
+			sed 's/\(=*\)No failures\(.*\)/\\\e[1;32m\1No failures\2\\\e[0m/' |
+			sed 's/\SUCCESS \((.*)\)/\\\e[1;32mSUCCESS \\\e[0;33m\1\\\e[0m/' |
+
+			sed 's/^A \(.*\)$/\\\e[1;36mA \\\e[0m\1/'
+			`
+	fi
+
+	#We need to check if the line isn't too short, if it is, it's probably empty
+	if [ ${#lines} -gt 14 ]; then
+		echo -e "$lines\n";
+	fi
+done
+
+if [ $COLORS ]; then
+	echo -e "Tests run: $TESTCOUNT, \e[1;32m$SUCCESSCOUNT successful\e[0m and \e[1;31m$FAILURECOUNT failed\e[0m"
+else
+	echo -e "Tests run: $TESTCOUNT, $SUCCESSCOUNT successful and $FAILURECOUNT failed"
+fi

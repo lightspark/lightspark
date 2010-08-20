@@ -250,6 +250,7 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("SharedObject","flash.net",Class<SharedObject>::getClass());
 	Global->setVariableByQName("ObjectEncoding","flash.net",Class<ObjectEncoding>::getClass());
 
+	Global->setVariableByQName("fscommand","flash.system",Class<IFunction>::getFunction(fscommand));
 	Global->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());
 	Global->setVariableByQName("Security","flash.system",Class<Security>::getClass());
 	Global->setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());

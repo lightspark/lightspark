@@ -50,6 +50,12 @@ public:
 class Security: public ASObject
 {
 public:
+	enum SANDBOXTYPE
+	{ REMOTE=0, 
+		LOCAL_WITH_FILE, 
+		LOCAL_WITH_NETWORK,
+		LOCAL_TRUSTED
+	};
 	static void sinit(Class_base* c);
 	ASFUNCTION(_getExactSettings);
 	ASFUNCTION(_setExactSettings);
@@ -59,6 +65,8 @@ public:
 	ASFUNCTION(loadPolicyFile);
 	ASFUNCTION(showSettings);
 };
+
+ASObject* fscommand(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 };
 #endif

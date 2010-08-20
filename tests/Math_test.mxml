@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<!--
+NOTE: name attribute should be:
+lightspark_CLASSNAME_test or lightspark_FUNCTIONNAME_test for toplevel tests
+lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test for non-toplevel tests
+(e.g.: lightspark_net_NetStream_test or lightspark_Array_test)
+-->
+<mx:Application name="lightspark_Math_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		Tests.assertEquals(1, Math.abs(1), "Math.abs positive", true);
+		Tests.assertEquals(1, Math.abs(-1), "Math.abs negative", true);
+
+		Tests.assertEquals(0, Math.acos(1), "Math.acos 1", true);
+		Tests.assertEquals(Math.PI, Math.acos(-1), "Math.acos -1", true);
+
+		Tests.assertEquals(0, Math.asin(0), "Math.asin 0", true);
+		Tests.assertEquals(Math.PI/2, Math.asin(1), "Math.asin 1", true);
+
+		Tests.assertEquals(0, Math.atan(0), "Math.atan", true);
+
+		Tests.assertEquals(0, Math.atan2(0, 0), "Math.atan2 0, 0", true);
+		Tests.assertEquals(Math.PI, Math.atan2(0, -0), "Math.atan2 0, -0", true);
+
+		Tests.assertEquals(0, Math.ceil(0), "Math.ceil 0", true);
+		Tests.assertEquals(1, Math.ceil(0.1), "Math.ceil 0.1", true);
+		Tests.assertEquals(31337, Math.ceil(31336.8), "Math.ceil 31336.8", true);
+
+		Tests.assertEquals(1, Math.cos(0), "Math.cos 0", true);
+		Tests.assertEquals(1.0, Math.cos(0), "Math.cos float", true);
+
+		Tests.assertEquals(1, Math.exp(0), "Math.exp 0", true);
+		Tests.assertEquals(Math.E, Math.exp(1), "Math.exp 1", true);
+
+		Tests.assertEquals(0, Math.floor(0.9), "Math.floor 0.9", true);
+		Tests.assertEquals(31337, Math.floor(31337.9), "Math.floor 31337.9", true);
+
+		Tests.assertEquals(Math.LN10, Math.log(10), "Math.log 10", true);
+		Tests.assertEquals(Math.LN2, Math.log(2), "Math.log 2", true);
+		Tests.assertEquals(Math.LOG2E, 1/Math.log(2), "1/Math.log 2", true);
+		Tests.assertEquals(Math.LOG10E, 1/Math.log(10), "1/Math.log 10", true);
+
+		Tests.assertEquals(9, Math.max(9, 8, 7, 6, 5, 4, 3, 2, 1, 0), "Math.max descending", true);
+		Tests.assertEquals(01134, Math.max(0, 1, 2, 3, 01134), "Math.max ascending", true);
+
+		Tests.assertEquals(1, Math.min(9, 8, 7, 6, 5, 4, 3, 2, 1), "Math.min descending", true);
+		Tests.assertEquals(0, Math.min(0, 1, 2, 3, 01134), "Math.min ascending", true);
+
+		var me:int = 1; var awesome:int = 99999;
+		Tests.assertEquals(me, Math.pow(me, awesome), "Math.pow me^awesome=me", true);
+		Tests.assertEquals(Math.SQRT1_2, Math.pow(1/2, 0.5), "Math.pow sqrt", true);
+
+		var notrandom:Number = Math.random();
+		Tests.assertTrue(0 <= notrandom && notrandom < 1, "Math.random bounds", true);
+
+		Tests.assertEquals(0, Math.round(0), "Math.round 0", true);
+		Tests.assertEquals(1, Math.round(0.5), "Math.round 0.5", true);
+		Tests.assertEquals(2, Math.round(1.777), "Math.round up", true);
+
+		Tests.assertEquals(0, Math.sin(0), "Math.sin 0", true);
+		Tests.assertEquals(0.0, Math.sin(0), "Math.sin float", true);
+
+		Tests.assertEquals(Math.SQRT2, Math.sqrt(2), "Math.sqrt 2", true);
+		Tests.assertEquals(Math.SQRT1_2, Math.sqrt(0.5), "Math.sqrt .5", true);
+
+		Tests.assertEquals(0, Math.tan(0), "Math.tan 0", true);
+		Tests.assertEquals(0.0, Math.tan(0), "Math.tan float", true);
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

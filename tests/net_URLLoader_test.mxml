@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_net_URLLoader_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private var remoteLoader:URLLoader;
+	private var localLoader:URLLoader;
+	
+	//This is the path for a local file. 
+	private var localFilePath:String = "file://test.data";
+	//Should contain "Local data\n"
+
+	//This shouldn't be allowed when we implement allowed domains, security policy files
+	private var remoteFilePath:String = "http://ls.localhost/test.data";
+	//Should contain "Remote data\n"
+
+	private var received:uint = 0;
+	private function appComplete():void
+	{
+		if(Security.sandboxType == Security.REMOTE || 
+			Security.sandboxType == Security.LOCAL_WITH_NETWORK ||
+			Security.sandboxType == Security.LOCAL_TRUSTED) 
+			{
+			Tests.info("Sandbox allows loading remote files");
+			remoteLoader = new URLLoader();
+			remoteLoader.addEventListener(IOErrorEvent.IO_ERROR, remoteErrorHandler);
+			remoteLoader.addEventListener(Event.COMPLETE, remoteLoaderCompleteHandler);
+			remoteLoader.load(new URLRequest(remoteFilePath));
+		}
+		if(Security.sandboxType == Security.LOCAL_WITH_FILE ||
+			Security.sandboxType == Security.LOCAL_TRUSTED)
+			{
+			Tests.info("Sandbox allows loading local files");
+			localLoader = new URLLoader();
+			localLoader.addEventListener(IOErrorEvent.IO_ERROR, localErrorHandler);
+			localLoader.addEventListener(Event.COMPLETE, localLoaderCompleteHandler);
+			localLoader.load(new URLRequest(localFilePath));
+		}
+	}
+	private function remoteErrorHandler(e:Event):void
+	{
+		Tests.assertDontReach("IOErrorEvent.IO_ERROR: an error ocurred (remote)");
+		received++
+		finishUp();
+	}
+	private function localErrorHandler(e:Event):void
+	{
+		Tests.assertDontReach("IOErrorEvent.IO_ERROR: an error ocurred (local)");
+		received++
+		finishUp();
+	}
+	private function remoteLoaderCompleteHandler(e:Event):void
+	{
+		Tests.assertEquals("Remote data\n", remoteLoader.data, "Event.COMPLETE: data received");
+		received++
+		finishUp();
+	}
+	private function localLoaderCompleteHandler(e:Event):void
+	{
+		Tests.assertEquals("Local data\n", localLoader.data, "Event.COMPLETE: data received");
+		received++
+		finishUp();
+	}
+	private function finishUp():void
+	{
+		if((Security.sandboxType == Security.LOCAL_TRUSTED && received == 2) || (Security.sandboxType != Security.LOCAL_TRUSTED && received == 1))
+			Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

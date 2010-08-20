@@ -491,7 +491,7 @@ protected:
 	void outofbounds() const;
 	Array();
 private:
-	enum CONSTANTS { NUMERIC=16 };
+	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	class sortComparatorDefault
 	{
 	private:
@@ -516,6 +516,7 @@ public:
 	virtual ~Array();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
+
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_push);
 	ASFUNCTION(_concat);
@@ -529,6 +530,7 @@ public:
 	ASFUNCTION(filter);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(_getLength);
+
 	ASObject* at(unsigned int index) const
 	{
 		if(index<data.size())
@@ -742,19 +744,26 @@ class Math: public ASObject
 {
 public:
 	static void sinit(Class_base* c);
-	ASFUNCTION(atan2);
+
 	ASFUNCTION(abs);
-	ASFUNCTION(sin);
-	ASFUNCTION(cos);
-	ASFUNCTION(floor);
+	ASFUNCTION(acos);
+	ASFUNCTION(asin);
+	ASFUNCTION(atan);
+	ASFUNCTION(atan2);
 	ASFUNCTION(ceil);
-	ASFUNCTION(round);
-	ASFUNCTION(sqrt);
+	ASFUNCTION(cos);
+	ASFUNCTION(exp);
+	ASFUNCTION(floor);
 	ASFUNCTION(log);
-	ASFUNCTION(random);
 	ASFUNCTION(_max);
 	ASFUNCTION(_min);
 	ASFUNCTION(pow);
+	ASFUNCTION(random);
+	ASFUNCTION(round);
+	ASFUNCTION(sin);
+	ASFUNCTION(sqrt);
+	ASFUNCTION(tan);
+
 	static int hexToInt(char c);
 };
 

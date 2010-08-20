@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_throw_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		//http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/Error.html
+		//Throw isn't supported yet
+		try
+		{
+			throw new Error();
+		}
+		catch(e:SecurityError)
+		{
+			Tests.assertDontReach("Error was caught by SecurityError")
+		}
+		catch(e:Error)
+		{
+			Tests.assertTrue(true)
+		}
+		finally
+		{
+			Tests.assertDontReach("Error wasn't caught")
+		}
+
+		try
+		{
+			throw new SecurityError();
+		}
+		catch(e:SecurityError)
+		{
+			Tests.assertTrue(true);
+		}
+		finally
+		{
+			Tests.assertDontReach("SecurityError wasn't caught")
+		}
+
+		try
+		{
+			throw new SecurityError();
+		}
+		catch(e:Error)
+		{
+			Tests.assertTrue(true);
+		}
+		finally
+		{
+			Tests.assertDontReach("Error wasn't caught SecurityError")
+		}
+
+		Tests.report(visual, this.name);
+	}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>
+

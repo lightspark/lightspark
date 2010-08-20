@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_TestProxy_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	import TestProxy;
+	private function appComplete():void
+	{
+		var t:TestProxy = new TestProxy;
+		var values:Array = new Array;
+		for(var p:String in t)
+		{
+			values.push(p);
+		}
+
+		Tests.assertArrayEquals([11, 12, 13], values, "Proxy: enumeration");
+
+		Tests.assertEquals(0, t["data"], "Proxy: existing data");
+		Tests.assertEquals(1, t["data2"], "Proxy: not existing data");
+		Tests.assertEquals(2, t["data3"], "Proxy: undefined data (something else)");
+
+		Tests.report(visual, this.name);
+	}
+ ]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

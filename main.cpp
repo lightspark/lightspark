@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 	char* fileName=NULL;
 	char* url=NULL;
 	char* paramsFileName=NULL;
-	SECURITY_SANDBOXTYPE sandboxType=SECURITY_SANDBOX_REMOTE;
+	Security::SANDBOXTYPE sandboxType=Security::REMOTE;
 	bool useInterpreter=true;
 	bool useJit=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
@@ -110,19 +110,19 @@ int main(int argc, char* argv[])
 			}
 			if(strncmp(argv[i], "remote", 6) == 0)
 			{
-				sandboxType = SECURITY_SANDBOX_REMOTE;
+				sandboxType = Security::REMOTE;
 			}
 			else if(strncmp(argv[i], "local-with-filesystem", 21) == 0)
 			{
-				sandboxType = SECURITY_SANDBOX_LOCAL_WITH_FILE;
+				sandboxType = Security::LOCAL_WITH_FILE;
 			}
 			else if(strncmp(argv[i], "local-with-networking", 21) == 0)
 			{
-				sandboxType = SECURITY_SANDBOX_LOCAL_WITH_NETWORK;
+				sandboxType = Security::LOCAL_WITH_NETWORK;
 			}
 			else if(strncmp(argv[i], "local-trusted", 13) == 0)
 			{
-				sandboxType = SECURITY_SANDBOX_LOCAL_TRUSTED;
+				sandboxType = Security::LOCAL_TRUSTED;
 			}
 		}
 		else
@@ -185,12 +185,11 @@ int main(int argc, char* argv[])
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	sys->setParamsAndEngine(SDL, NULL);
-	sys->setSandboxType(sandboxType);
+	sys->sandboxType = sandboxType;
 
-	//SECURITY_SANDBOX_LOCAL_TRUSTED should actually be able to use both local and network files
-	if(sandboxType == SECURITY_SANDBOX_REMOTE || 
-			sandboxType == SECURITY_SANDBOX_LOCAL_WITH_NETWORK ||
-			sandboxType == SECURITY_SANDBOX_LOCAL_TRUSTED)
+	//Security::LOCAL_TRUSTED should actually be able to use both local and network files
+	if(sandboxType == Security::REMOTE || 
+			sandboxType == Security::LOCAL_WITH_NETWORK)
 	{
 		LOG(LOG_NO_INFO, "Running in remote sandbox");
 		sys->downloadManager=new CurlDownloadManager();

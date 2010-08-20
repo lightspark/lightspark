@@ -94,7 +94,8 @@ void Downloader::setLen(uint32_t l)
 		//Do some pointer arithmetic to point the input pointers to the right places in the new buffer
 		setg((char*)buffer,(char*)(buffer+curPos),(char*)(buffer+curLen));
 	}
-	else {
+	else
+	{
 		assert_and_throw(buffer==NULL);
 	}
 }
@@ -125,7 +126,8 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 			setLen(len+4096);
 		}
 		//The real data is longer than the provided Content-Length header
-		else {
+		else
+		{
 			throw RunTimeException("Downloaded file is too big");
 		}
 	}
@@ -350,7 +352,8 @@ void LocalDownloader::execute()
 		setFailed();
 		return;
 	}
-	else {
+	else
+	{
 		std::ifstream file;
 		LOG(LOG_NO_INFO, "LocalDownloader::execute: reading local file: " << url.raw_buf());
 		file.open(url.raw_buf(), std::ifstream::in);
@@ -384,7 +387,8 @@ void LocalDownloader::execute()
 			file.close();
 			delete buffer;
 		}
-		else {
+		else
+		{
 				setFailed();
 				LOG(LOG_ERROR, "LocalDownloader::execute: could not open local file: " << url.raw_buf());
 		}

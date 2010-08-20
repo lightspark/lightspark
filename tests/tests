@@ -1,0 +1,180 @@
+#!/bin/bash
+
+#Set you lightspark executable path here
+LIGHTSPARK="lightspark"
+#Set your MXMLC compiler path here
+MXMLC="mxmlc"
+#If you prefer no colors, you can permanently set the default here
+COLORS=1;
+
+TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
+TESTS=`ls -1 *swf 2> /dev/null`;
+
+while [ $# -ne 0 ]; do
+	if [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "-u" ] || [ $1 == "--usage" ]; then
+		echo "Usage: [-q|--quiet] [-nc|--no-colors] [-f|--failures] [-c|--compile] [-cq|--compile-quit] [-m|--mxmlc] [-e|--executable] [-d|--debug] [-l|--log-level level] [-t|--tests tests]";
+		echo "Parameter meanings:";
+		echo -e "\t-q|--quiet\t\tonly output reports";
+		echo -e "\t-nc|--no-colors\t\tdisable colorization (you can permanently set the default inside this script)";
+		echo -e "\t-f|--failures\t\tonly display failures (best used with --quiet)";
+		echo -e "\t-c|--compile\t\trecompile file(s) first";
+		echo -e "\t-cq|--compile-quit\trecompile and quit";
+		echo -e "\t-m|--mxmlc\t\tpath to mxmlc (you can permanently set the path inside this script)";
+		echo -e "\t-e|--executable\t\tpath to lightspark executable (you can permanently set the path inside this script)";
+		echo -e "\t-d|--debug\t\tDon't redirect stdout from lightspark to /dev/null (output gets cached in a variable so this isn't so useful)";
+		echo -e "\t-l|--log-level\t\tLightspark log-level";
+		echo -e "\t-t|--tests\t\tfiles to compile/test, must be last parameter (otherwise compile/test all files in this directory)";
+		echo "Examples:";
+		echo -e "\t./tests -q -f\t\tTests all files, only reporting failures"
+		echo -e "\t./tests -q -c -t FILE\tRecompiles the file and runs it, only showing reports"
+		echo -e "\t./tests -cq\t\tRecompiles all files in the directory"
+		exit;
+	elif [ $1 == "-q" ] || [ $1 == "--quiet" ]; then
+		QUIET=1;
+	elif [ $1 == "-nc" ] || [ $1 == "--no-colors" ]; then
+		COLORS=0;
+	elif [ $1 == "-f" ] || [ $1 == "--failures" ]; then
+		FAILURES=1;
+	elif [ $1 == "-c" ] || [ $1 == "--compile" ]; then
+		COMPILE=1;
+	elif [ $1 == "-cq" ] || [ $1 == "--compile-quit" ]; then
+		COMPILE=1;
+		QUIT=1;
+	elif [ $1 == "-m" ] || [ $1 == "--mxmlc" ]; then
+		MXMLC=$2;
+		shift;
+	elif [ $1 == "-e" ] || [ $1 == "--executable" ]; then
+		LIGHTSPARK=$2;
+		shift;
+	elif [ $1 == "-d" ] || [ $1 == "--debug" ]; then
+		DEBUG=1
+	elif [ $1 == "-l" ] || [ $1 == "--log-level" ]; then
+		LOGLEVEL="-l $2"
+		shift
+	elif [ $1 == "-t" ] || [ $1 == "--tests" ]; then
+		shift;
+		TESTS_SRC=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.mxml /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.mxml/g'`;
+		TESTS_SRC=`ls -1 $TESTS_SRC`;
+		TESTS=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.swf /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.swf/g'`;
+		TESTS=`ls -1 $TESTS`;
+		break;
+	fi;
+	shift;
+done
+
+if [ $COMPILE ]; then
+	echo -n "Compiling: " 1>&2;
+	echo $TESTS_SRC 1>&2;
+	echo "Compiler: $MXMLC" 1>&2;
+	for test in $TESTS_SRC; do
+		$MXMLC -static-link-runtime-shared-libraries $test;
+	done
+	if [ $QUIT ]; then
+		exit;
+	fi
+	echo -e "\n" 1>&2;
+fi
+
+echo -n "Running tests: " 1>&2;
+echo $TESTS 1>&2;
+
+FAILURECOUNT=0; SUCCESSCOUNT=0; TESTCOUNT=0;
+
+#Colors used for colorization
+CLEAR='\\\e[0m';
+RED='\\\e[0;31m'; REDB='\\\e[1;31m'; REDU='\\\e[2;31m';
+GREEN='\\\e[0;32m'; GREENB='\\\e[1;32m'; GREENU='\\\e[2;32m';
+YELLOW='\\\e[0;33m';
+BLUE='\\\e[0;34m'; LIGHTBLUE='\\\e[0;36m'; LIGHTBLUEB='\\\e[1;36m';
+PURPLEB='\\\e[1;34m'; PINK='\\\e[0;35m'; PINKB='\\\e[1;35m';
+
+#Signatures for matching
+BARCHAR="=";
+ASSERTSUCCESSCHAR='\.'; ASSERTFAILEDCHAR='F'; ASSERTARRAYCHAR='A';
+ASSERTMSGBRACKETOPEN='\['; ASSERTMSGBRACKETCLOSE='\]';
+FILEBRACKETOPEN='('; FILEBRACKETCLOSE=')';
+
+FAILURESTITLE='Failures';
+FAILURETITLE='FAILURE';
+FAILEDASSERTIONTITLE='Failed assertion';
+EXPECTEDTITLE='Expected'; ACTUALTITLE='Actual';
+ARRAY1TITLE='Array 1'; ARRAY2TITLE='Array 2';
+
+NOFAILURESTITLE='No failures';
+SUCCESSTITLE='SUCCESS';
+
+INFOPREFIX='\[INFO\]';
+CURLPREFIX='CURL header';
+INDENTPREFIX='\t';
+for test in $TESTS; do
+	sleep 0.25;
+
+	if [ $DEBUG ]; then
+		lines=`$LIGHTSPARK $LOGLEVEL $test 2>&1`;
+	else
+		lines=`$LIGHTSPARK $LOGLEVEL $test 2>&1 >/dev/null`;
+	fi
+
+	TESTCOUNT=`expr $TESTCOUNT + 1`;
+	if [ "`echo $lines | grep 'FAILURE'`" != "" ]; then
+		FAILURECOUNT=`expr $FAILURECOUNT + 1`;
+	elif [ "`echo $lines | grep 'SUCCESS'`" != "" ]; then
+		SUCCESSCOUNT=`expr $SUCCESSCOUNT + 1`;
+	fi
+
+	if [ $QUIET ]; then
+		lines=`echo "$lines" |
+			sed -n -e "/${BARCHAR}*\(${NOFAILURESTITLE}\|${FAILURESTITLE}\)${BARCHAR}*/,/${SUCCESSTITLE}.*\|${FAILURETITLE}.*/p"
+			`
+	fi
+	
+	if [ $FAILURES ]; then
+		lines=`echo "$lines" |
+			sed -n -e "/${BARCHAR}*\(${FAILURESTITLE}\)${BARCHAR}*/,/${FAILURETITLE}.*/p" \
+				-e "/^${ASSERTFAILEDCHAR} ${ASSERTMSGBRACKETOPEN}.*$/p" \
+				-e "/^${ASSERTARRAYCHAR} .*${ASSERTFAILECHAR}.* \[$/p"
+			`
+	fi
+
+	if [ ${#lines} -eq 0 ]; then
+		continue;
+	fi
+
+	if [ $COLORS ]; then
+		lines=`echo "$lines" | sed \
+			-e "s/^\(${INFOPREFIX}\)\(.*\)$/${BLUE}\1${PURPLEB}\2${CLEAR}/" \
+			-e "s/^\(${CURLPREFIX}\)\(.*\)$/${PINK}\1${PINK}\2${CLEAR}/" \
+\
+			-e "/${ASSERTARRAYCHAR} /{
+			s/${ASSERTFAILEDCHAR}/${REDB}\0${CLEAR}/g
+			}" \
+			-e "s/^\(${ASSERTFAILEDCHAR}\) \(${ASSERTMSGBRACKETOPEN}.*${ASSERTMSGBRACKETCLOSE}\)$/${REDB}\1 ${RED}\2${CLEAR}/g" \
+			-e "s/\(${BARCHAR}*\)\(${FAILURESTITLE}\)\(.*\)/${REDB}\1\2\3${CLEAR}/" \
+			-e "s/\(${FAILEDASSERTIONTITLE}\):\(.*\)/${RED}\1:\2${CLEAR}/" \
+			-e "s/${INDENTPREFIX}\(${EXPECTEDTITLE}\|${ACTUALTITLE}\|${ARRAY1TITLE}\|${ARRAY2TITLE}\): \(.*\)/${INDENTPREFIX}${RED}\1: ${REDU}\2${CLEAR}/" \
+			-e "s/^\(${BARCHAR}*\)$/${REDB}\1${CLEAR}/" \
+			-e "s/\(${FAILURETITLE}\) \(${FILEBRACKETOPEN}.*${FILEBRACKETCLOSE}\)/${REDB}\1 ${YELLOW}\2${CLEAR}/" \
+			-e "/${FAILEDASSERTIONTITLE}:.*/{
+			N
+			s/${INDENTPREFIX}\(.*\)/${INDENTPREFIX}${REDB}\1${CLEAR}/
+			}" \
+\
+			-e "/${ASSERTARRAYCHAR} /{
+			s/\(${ASSERTSUCCESSCHAR}\)/${GREENB}\1${CLEAR}/g
+			}" \
+			-e "s/^\(${ASSERTSUCCESSCHAR}\) \(\[.*\)$/${GREENB}\1 ${GREEN}\2${CLEAR}/" \
+			-e "s/\(${BARCHAR}*\)\(${NOFAILURESTITLE}\)\(.*\)/${GREENB}\1\2\3${CLEAR}/" \
+			-e "s/\(${SUCCESSTITLE}\) \(${FILEBRACKETOPEN}.*${FILEBRACKETCLOSE}\)/${GREENB}\1 ${YELLOW}\2${CLEAR}/" \
+\
+			-e "s/^\(${ASSERTARRAYCHAR}\) \(.*\)\(${ASSERTMSGBRACKETOPEN}.*${ASSERTMSGBRACKETCLOSE}\)$/${LIGHTBLUEB}\1 ${CLEAR}\2${LIGHTBLUE}\3${CLEAR}/" \
+			`
+	fi
+
+	echo -e "$lines\n";
+done
+
+if [ $COLORS ]; then
+	echo -e "Tests run: $TESTCOUNT, \e[1;32m$SUCCESSCOUNT successful\e[0m and \e[1;31m$FAILURECOUNT failed\e[0m" 1>&2
+else
+	echo -e "Tests run: $TESTCOUNT, $SUCCESSCOUNT successful and $FAILURECOUNT failed" 1>&2
+fi

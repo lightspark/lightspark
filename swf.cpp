@@ -31,6 +31,7 @@
 #include "backends/netutils.h"
 #include "backends/rendering.h"
 
+#include "SDL.h"
 #include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
@@ -134,6 +135,9 @@ void SystemState::staticInit()
 #ifdef ENABLE_LIBAVCODEC
 	avcodec_register_all();
 #endif
+
+	// seed the random number generator
+	srand(time(NULL));
 }
 
 void SystemState::staticDeinit()
@@ -145,7 +149,7 @@ void SystemState::staticDeinit()
 
 SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
-	useGnashFallback(false),exactSecuritySettings(true),exactSecuritySettingsLocked(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
 	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
@@ -415,6 +419,12 @@ void SystemState::setShutdownFlag()
 void SystemState::wait()
 {
 	sem_wait(&terminated);
+	SDL_Event event;
+	event.type = SDL_USEREVENT;
+	event.user.code = SHUTDOWN;
+	event.user.data1 = 0;
+	event.user.data1 = 0;
+	SDL_PushEvent(&event);
 	if(renderThread)
 		renderThread->wait();
 	if(inputThread)

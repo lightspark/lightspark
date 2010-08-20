@@ -224,7 +224,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	GLXWindow glxWin=p->window;
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
-		printf("Indirect!!\n");
+		cout << "Indirect!!" << endl;
 
 	th->commonGLInit(th->windowWidth, th->windowHeight);
 	th->commonGLResize(th->windowWidth, th->windowHeight);

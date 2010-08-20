@@ -76,21 +76,41 @@ Array::Array()
 
 void Array::sinit(Class_base* c)
 {
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	// public constants
+	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE));
+	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING));
+	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC));
+	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY));
+	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT));
+
+	// properties
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
-	c->ASObject::setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
-	c->ASObject::setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
-	c->ASObject::setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
-	c->ASObject::setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
-	c->ASObject::setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
-	c->ASObject::setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
-	c->ASObject::setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
-//	c->ASObject::setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
-	c->ASObject::setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
-	c->ASObject::setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
-	c->ASObject::setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
-	c->ASObject::setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
-	c->ASObject::setVariableByQName("NUMERIC","",abstract_i(NUMERIC));
+
+	// public functions
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
+	//c->setVariableByQName("every",AS3,Class<IFunction>::getFunction(every));
+	c->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
+	//c->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(forEach));
+	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
+	//c->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf));
+	//c->setVariableByQName("map",AS3,Class<IFunction>::getFunction(map));
+	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
+	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
+	//c->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(reverse));
+	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
+	//c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
+	//c->setVariableByQName("some",AS3,Class<IFunction>::getFunction(some));
+	c->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
+	//c->setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
+	c->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
+	//c->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(toLocaleString));
+	//c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(toString));
+	c->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
+
+	// workaround, pop was encountered not in the AS3 namespace before, need to investigate it further
+	c->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
 }
 
 void Array::buildTraits(ASObject* o)
@@ -118,6 +138,51 @@ ASFUNCTIONBODY(Array,_constructor)
 		}
 	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(Array,_concat)
+{
+	Array* th=static_cast<Array*>(obj);
+	Array* ret=Class<Array>::getInstanceS();
+	ret->data=th->data;
+	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
+	{
+		Array* tmp=Class<Array>::cast(args[0]);
+		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
+	}
+	else
+	{
+		//Insert the arguments in the array
+		ret->data.reserve(ret->data.size()+argslen);
+		for(unsigned int i=0;i<argslen;i++)
+			ret->push(args[i]);
+	}
+
+	//All the elements in the new array should be increffed, as args will be deleted and
+	//this array could die too
+	for(unsigned int i=0;i<ret->data.size();i++)
+	{
+		if(ret->data[i].type==DATA_OBJECT)
+			ret->data[i].data->incRef();
+	}
+	
+	return ret;
+}
+
+ASFUNCTIONBODY(Array,filter)
+{
+	//TODO: really implement
+	Array* th=static_cast<Array*>(obj);
+	//assert_and_throw(th->data.size()==0);
+	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
+	Array* ret=Class<Array>::getInstanceS();
+	ret->data=th->data;
+	for(unsigned int i=0;i<ret->data.size();i++)
+	{
+		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
+			ret->data[i].data->incRef();
+	}
+	return ret;
 }
 
 ASFUNCTIONBODY(Array,_getLength)
@@ -203,50 +268,6 @@ ASFUNCTIONBODY(Array,indexOf)
 	return abstract_i(ret);
 }
 
-ASFUNCTIONBODY(Array,filter)
-{
-	//TODO: really implement
-	Array* th=static_cast<Array*>(obj);
-	//assert_and_throw(th->data.size()==0);
-	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
-	Array* ret=Class<Array>::getInstanceS();
-	ret->data=th->data;
-	for(unsigned int i=0;i<ret->data.size();i++)
-	{
-		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
-			ret->data[i].data->incRef();
-	}
-	return ret;
-}
-
-ASFUNCTIONBODY(Array,_concat)
-{
-	Array* th=static_cast<Array*>(obj);
-	Array* ret=Class<Array>::getInstanceS();
-	ret->data=th->data;
-	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
-	{
-		Array* tmp=Class<Array>::cast(args[0]);
-		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
-	}
-	else
-	{
-		//Insert the arguments in the array
-		ret->data.reserve(ret->data.size()+argslen);
-		for(unsigned int i=0;i<argslen;i++)
-			ret->push(args[i]);
-	}
-
-	//All the elements in the new array should be increffed, as args will be deleted and
-	//this array could die too
-	for(unsigned int i=0;i<ret->data.size();i++)
-	{
-		if(ret->data[i].type==DATA_OBJECT)
-			ret->data[i].data->incRef();
-	}
-	
-	return ret;
-}
 
 ASFUNCTIONBODY(Array,_pop)
 {
@@ -1162,36 +1183,56 @@ ASFUNCTIONBODY(Integer,generator)
 
 TRISTATE Integer::isLess(ASObject* o)
 {
-	if(o->getObjectType()==T_INTEGER)
+	switch(o->getObjectType())
 	{
-		Integer* i=static_cast<Integer*>(o);
-		return (val < i->toInt())?TTRUE:TFALSE;
+		case T_INTEGER:
+			{
+				Integer* i=static_cast<Integer*>(o);
+				return (val < i->toInt())?TTRUE:TFALSE;
+			}
+			break;
+		
+		case T_NUMBER:
+			{
+				Number* i=static_cast<Number*>(o);
+				return (val < i->toNumber())?TTRUE:TFALSE;
+			}
+			break;
+		
+		case T_STRING:
+			{
+				const ASString* s=static_cast<const ASString*>(o);
+				//Check if the string may be converted to integer
+				//TODO: check whole string?
+				if(isdigit(s->data[0]))
+				{
+					int val2=atoi(s->data.c_str());
+					return (val < val2)?TTRUE:TFALSE;
+				}
+				else
+					return TFALSE;
+			}
+			break;
+		
+		case T_BOOLEAN:
+			{
+				Boolean* i=static_cast<Boolean*>(o);
+				return (val < i->toInt())?TTRUE:TFALSE;
+			}
+			break;
+		
+		case T_UNDEFINED:
+			{
+				return TFALSE;
+			}
+			break;
+			
+		default:
+			break;
 	}
-	else if(o->getObjectType()==T_NUMBER)
-	{
-		Number* i=static_cast<Number*>(o);
-		return (val < i->toNumber())?TTRUE:TFALSE;
-	}
-	else if(o->getObjectType()==T_STRING)
-	{
-		const ASString* s=static_cast<const ASString*>(o);
-		//Check if the string may be converted to integer
-		//TODO: check whole string?
-		if(isdigit(s->data[0]))
-		{
-			int val2=atoi(s->data.c_str());
-			return (val < val2)?TTRUE:TFALSE;
-		}
-		else
-			return TFALSE;
-	}
-	else if(o->getObjectType()==T_BOOLEAN)
-	{
-		Boolean* i=static_cast<Boolean*>(o);
-		return (val < i->toInt())?TTRUE:TFALSE;
-	}
-	else
-		return ASObject::isLess(o);
+	
+	//If unhandled by switch, kick up to parent
+	return ASObject::isLess(o);
 }
 
 bool Integer::isEqual(ASObject* o)
@@ -1674,21 +1715,35 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 
 void Math::sinit(Class_base* c)
 {
-	c->setVariableByQName("PI","",abstract_d(M_PI));
+	// public constants
+	c->setVariableByQName("E","",abstract_d(2.71828182845905));
+	c->setVariableByQName("LN10","",abstract_d(2.302585092994046));
+	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453));
 	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518));
-	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
+	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387));
+	c->setVariableByQName("PI","",abstract_d(3.141592653589793));
+	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476));
+	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951));
+
+	// public methods
+	c->setVariableByQName("abs","",Class<IFunction>::getFunction(abs));
+	c->setVariableByQName("acos","",Class<IFunction>::getFunction(acos));
+	c->setVariableByQName("asin","",Class<IFunction>::getFunction(asin));
+	c->setVariableByQName("atan","",Class<IFunction>::getFunction(atan));
 	c->setVariableByQName("atan2","",Class<IFunction>::getFunction(atan2));
+	c->setVariableByQName("ceil","",Class<IFunction>::getFunction(ceil));
+	c->setVariableByQName("cos","",Class<IFunction>::getFunction(cos));
+	c->setVariableByQName("exp","",Class<IFunction>::getFunction(exp));
+	c->setVariableByQName("floor","",Class<IFunction>::getFunction(floor));
+	c->setVariableByQName("log","",Class<IFunction>::getFunction(log));
 	c->setVariableByQName("max","",Class<IFunction>::getFunction(_max));
 	c->setVariableByQName("min","",Class<IFunction>::getFunction(_min));
-	c->setVariableByQName("abs","",Class<IFunction>::getFunction(abs));
-	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
-	c->setVariableByQName("cos","",Class<IFunction>::getFunction(cos));
-	c->setVariableByQName("log","",Class<IFunction>::getFunction(log));
-	c->setVariableByQName("floor","",Class<IFunction>::getFunction(floor));
-	c->setVariableByQName("ceil","",Class<IFunction>::getFunction(ceil));
-	c->setVariableByQName("round","",Class<IFunction>::getFunction(round));
-	c->setVariableByQName("random","",Class<IFunction>::getFunction(random));
 	c->setVariableByQName("pow","",Class<IFunction>::getFunction(pow));
+	c->setVariableByQName("random","",Class<IFunction>::getFunction(random));
+	c->setVariableByQName("round","",Class<IFunction>::getFunction(round));
+	c->setVariableByQName("sin","",Class<IFunction>::getFunction(sin));
+	c->setVariableByQName("sqrt","",Class<IFunction>::getFunction(sqrt));
+	c->setVariableByQName("tan","",Class<IFunction>::getFunction(tan));
 }
 
 int Math::hexToInt(char c)
@@ -1712,16 +1767,53 @@ ASFUNCTIONBODY(Math,atan2)
 
 ASFUNCTIONBODY(Math,_max)
 {
-	double n1=args[0]->toNumber();
-	double n2=args[1]->toNumber();
-	return abstract_d(dmax(n1,n2));
+	double largest = args[0]->toNumber();
+
+	for(unsigned int i = 1; i < argslen; i++)
+	{
+		largest = dmax(largest, args[i]->toNumber());
+	}
+
+	return abstract_d(largest);
 }
 
 ASFUNCTIONBODY(Math,_min)
 {
-	double n1=args[0]->toNumber();
-	double n2=args[1]->toNumber();
-	return abstract_d(dmin(n1,n2));
+	double smallest = args[0]->toNumber();
+
+	for(unsigned int i = 1; i < argslen; i++)
+	{
+		smallest = dmin(smallest, args[i]->toNumber());
+	}
+
+	return abstract_d(smallest);
+}
+
+ASFUNCTIONBODY(Math,exp)
+{
+	double n=args[0]->toNumber();
+	return abstract_d(::exp(n));
+}
+
+ASFUNCTIONBODY(Math,acos)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::acos(n));
+}
+
+ASFUNCTIONBODY(Math,asin)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::asin(n));
+}
+
+ASFUNCTIONBODY(Math,atan)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::atan(n));
 }
 
 ASFUNCTIONBODY(Math,cos)
@@ -1736,6 +1828,13 @@ ASFUNCTIONBODY(Math,sin)
 	//Angle is in radians
 	double n=args[0]->toNumber();
 	return abstract_d(::sin(n));
+}
+
+ASFUNCTIONBODY(Math,tan)
+{
+	//Angle is in radians
+	double n=args[0]->toNumber();
+	return abstract_d(::tan(n));
 }
 
 ASFUNCTIONBODY(Math,abs)
@@ -2002,7 +2101,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	int ret=args[0]->toInt();
 	if(ret>127)
 		LOG(LOG_NOT_IMPLEMENTED,"Unicode not supported in String::fromCharCode");
-	char buf[2] = { (char)ret, 0};
+	char buf[2] = { (char)ret, 0 };
 	return Class<ASString>::getInstanceS(buf);
 }
 
@@ -2947,7 +3046,8 @@ ASFUNCTIONBODY(lightspark,unescape)
 
 ASFUNCTIONBODY(lightspark,print)
 {
-	if(args[0]->getObjectType() == T_STRING) {
+	if(args[0]->getObjectType() == T_STRING)
+	{
 		ASString* str = static_cast<ASString*>(args[0]);
 		cerr << str->data << endl;
 	}
@@ -2960,14 +3060,16 @@ ASFUNCTIONBODY(lightspark,trace)
 {
 	for(intptr_t i = 0; i< argslen;i++)
 	{
-		if(args[i]->getObjectType() == T_STRING) {
+		if(i > 0)
+			cerr << " ";
+
+		if(args[i]->getObjectType() == T_STRING)
+		{
 			ASString* str = static_cast<ASString*>(args[i]);
 			cerr << str->data;
 		}
 		else
 			cerr << args[i]->toString();
-		if(i > 0)
-			cerr << " ";
 	}
 	cerr << endl;
 	return NULL;

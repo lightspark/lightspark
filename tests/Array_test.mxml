@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_Array_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var array:Array = new Array();
+		Tests.assertArrayEquals([], array, "Array(): no-argument constructor, 0 elements", true);
+		array.push("test1");
+		Tests.assertArrayEquals(["test1"], array, "push(): first element", true);
+		array.push(2.5);
+		Tests.assertArrayEquals(["test1", 2.5], array, "push(): second element", true);
+		array.push("test3");
+		Tests.assertArrayEquals(["test1", 2.5, "test3"], array, "push(): third element", true);
+	
+		var names:Array = new Array();
+		for(var name:String in array)
+		{
+			names.push(name);
+		}
+		Tests.assertArrayEquals([0, 1, 2], names, "'in' keyword", true);
+		
+		var a:Array=[76, 12, "3" ];
+
+		a.sort();
+		Tests.assertArrayEquals(a, new Array(12, "3", 76), "sort(): normal sort", true);
+
+		a.sort(Array.NUMERIC);
+		Tests.assertArrayEquals(a, new Array("3", 12, 76), "sort(): numeric sort", true);
+
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

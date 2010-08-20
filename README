@@ -1,6 +1,6 @@
 INSTALLATION:
 To compile this software you need to install development packages for llvm-2.7,
-sdl, opengl, curl, zlib, libavcodec, ftgl, libglew, fontconfig.
+sdl, opengl, curl, zlib, libavcodec, ftgl, libglew, fontconfig, pcre.
 If sound is enabled (on by default), you will also need the development package
 for pulseaudio-libs.
 If the browser plugin is enabled (off by default), you will need the development
@@ -30,7 +30,7 @@ Tools->Add-ons->Plugins window.
 Lightspark registers itself as the plugin for application/x-shockwave-flash and
 for application/x-lightspark, so it should be recognisable in the about:plugins
 page. Its description string is "Shockwave Flash 10.0 r<current version>". The
-current version is now "r42".
+current version is now "r43".
 
 Firefox is not able to deal very well with multiple plugins for the same MIME
 type. If you only see a black box where a flash app should be try to remove any

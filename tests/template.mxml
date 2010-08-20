@@ -1,25 +1,26 @@
 <?xml version="1.0"?>
-<mx:Application name="lightspark_test_template"
+<!--
+NOTE: name attribute should be:
+lightspark_CLASSNAME_test or lightspark_FUNCTIONNAME_test for toplevel tests
+lightspark_NAMESPACE_CLASSNAME_test or lightspark_NAMESPACE_FUNCTIONNAME_test for non-toplevel tests
+(e.g.: lightspark_net_NetStream_test or lightspark_Array_test)
+-->
+<mx:Application name="lightspark_NAME_test"
 	xmlns:mx="http://www.adobe.com/2006/mxml"
 	layout="absolute"
 	applicationComplete="appComplete();"
 	backgroundColor="white">
 
 <mx:Script>
-<![CDATA[
-	private function appComplete():void {
-		rect.graphics.beginFill(0x80ff60);
-		rect.graphics.drawRect(30,0,150,100);
-		rect.graphics.endFill();
-
-		rect2.graphics.beginFill(0xff8060);
-		rect2.graphics.drawRect(50,60,170,120);
-		rect2.graphics.endFill();
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		Tests.report(visual, this.name);
 	}
-]]>
+	]]>
 </mx:Script>
 
-<mx:UIComponent id="rect" />
-<mx:UIComponent id="rect2" />
+<mx:UIComponent id="visual" />
 
 </mx:Application>

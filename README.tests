@@ -9,3 +9,21 @@ $FLEX_ROOT/frameworks/flex-config.xml
 
 To compile tests inside the tests/ directory use the following command:
 $FLEX_ROOT/bin/mxmlc -static-link-runtime-shared-libraries test.mxml -output test.swf
+
+
+NOTE: Use the ./tests script in tests/ to run the tests in an automated way.
+      Run "./tests --help" inside tests/ to see its usage.
+
+NOTE: Use template.mxml as a template for new testcases.
+
+NOTE: We've provided a simple Tests class which should be used where possible to test general behaviour of AS classes. See Tests.as for its usage.
+
+NOTE: Please use a naming scheme as follow:
+      For toplevel classes: tests/CLASSNAME_test.mxml (CLASSNAME is the exact name of the class/function)
+			For other classes: tests/NAMESPACE_CLASSNAME_test.mxml (NAMESPACE is for example "net" for "flash.net" classes/functions, e.g.: tests/net_NetStream_test.mxml)
+			Please group all tests for one class in one file.
+
+NOTE:	Tests that aren't suitable for testing with the Tests class should be put in tests/other. (e.g.: testing video playing, StageScaleMode testing etc...)
+      The naming schemes still apply to these testcases though.
+
+NOTE:	Tests for unimplemented features should be placed in tests/unimplemented.

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_is_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	import flash.display.DisplayObject;
+	import flash.display.Sprite;
+	import Tests;
+	private function appComplete():void
+	{
+		Tests.assertFalse(flash.display.Sprite is flash.display.DisplayObject, "'is' keyword: flash.display.Sprite is flash.display.DisplayObject");
+		Tests.assertTrue(this is flash.display.DisplayObject, "'is' keyword: this is flash.display.DisplayObject");
+
+		Tests.report(visual, name);
+	}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

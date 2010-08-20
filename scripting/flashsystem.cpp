@@ -145,17 +145,20 @@ void Security::sinit(Class_base* c)
 	c->setVariableByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain));
 	c->setVariableByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile));
 	c->setVariableByQName("showSettings","",Class<IFunction>::getFunction(showSettings));
+
+	sys->staticSecurityExactSettings = true;
+	sys->staticSecurityExactSettingsLocked = false;
 }
 
 ASFUNCTIONBODY(Security,_getExactSettings)
 {
-	return abstract_b(sys->getExactSecuritySettings());
+	return abstract_b(sys->staticSecurityExactSettings);
 }
 
 ASFUNCTIONBODY(Security,_setExactSettings)
 {
 	assert(args && argslen==1);
-	if(sys->getExactSecuritySettingsLocked())
+	if(sys->staticSecurityExactSettingsLocked)
 	{
 		throw UnsupportedException("SecurityError");
 	}
@@ -164,19 +167,19 @@ ASFUNCTIONBODY(Security,_setExactSettings)
 		throw UnsupportedException("ArgumentError");
 	}
 	//Boolean* i = static_cast<Boolean*>(args[0]);
-	sys->setExactSecuritySettings(Boolean_concrete(args[0]));
+	sys->staticSecurityExactSettings = Boolean_concrete(args[0]);
 	return NULL;
 }
 
 ASFUNCTIONBODY(Security,_getSandboxType)
 {
-	if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE)
+	if(sys->sandboxType == REMOTE)
 		return Class<ASString>::getInstanceS("remote");
-	else if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_TRUSTED)
+	else if(sys->sandboxType == LOCAL_TRUSTED)
 		return Class<ASString>::getInstanceS("localTrusted");
-	else if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_FILE)
+	else if(sys->sandboxType == LOCAL_WITH_FILE)
 		return Class<ASString>::getInstanceS("localWithFile");
-	else if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK)
+	else if(sys->sandboxType == LOCAL_WITH_NETWORK)
 		return Class<ASString>::getInstanceS("localWithNetwork");
 	assert(false);
 	return NULL;
@@ -203,5 +206,17 @@ ASFUNCTIONBODY(Security, loadPolicyFile)
 ASFUNCTIONBODY(Security, showSettings)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Security::showSettings");
+	return NULL;
+}
+
+ASFUNCTIONBODY(lightspark, fscommand)
+{
+	assert_and_throw(argslen >= 1 && argslen <= 2);
+	assert_and_throw(args[0]->getObjectType() == T_STRING);
+	tiny_string command = Class<ASString>::cast(args[0])->toString();
+	if(command == "quit")
+	{
+		sys->setShutdownFlag();
+	}
 	return NULL;
 }

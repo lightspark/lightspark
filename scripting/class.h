@@ -64,6 +64,8 @@ public:
 	{
 		tag=t;
 	}
+	//Closure stack
+	std::vector<ASObject*> class_scope;
 };
 
 template< class T>

@@ -1612,9 +1612,11 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
 	uint32_t i=passedToLocals;
+//	assert(mi->body->init_scope_depth==func_scope.size());
 	cc->scope_stack=func_scope;
 	for(unsigned int i=0;i<func_scope.size();i++)
 		func_scope[i]->incRef();
+	cc->initialScopeStack=func_scope.size();
 
 	if(bound && closure_this && !thisOverride)
 	{

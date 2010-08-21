@@ -1357,6 +1357,7 @@ void ABCVm::getLex(call_context* th, int n)
 
 	//Find out the current 'this', when looking up over it, we have to consider all of it
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
+	ASObject* target;
 	for(;it!=th->scope_stack.rend();it++)
 	{
 		if(*it==tl.cur_this)
@@ -1370,53 +1371,39 @@ void ABCVm::getLex(call_context* th, int n)
 		o=tmpo;
 		if(o)
 		{
-			//If we are getting a function object attach the the current scope
-			if(o->getObjectType()==T_FUNCTION)
-			{
-				LOG(LOG_CALLS,_("Attaching this to function ") << name);
-				IFunction* f=static_cast<IFunction*>(o)->bind(*it,-1);
-				o=f;
-			}
-			else if(o->getObjectType()==T_DEFINABLE)
-			{
-				LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
-				Definable* d=static_cast<Definable*>(o);
-				d->define(*it);
-				o=(*it)->getVariableByMultiname(*name);
-				LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
-			}
-			th->runtime_stack_push(o);
-			o->incRef();
-			return;
+			target=*it;
+			break;
 		}
 	}
 
 	if(o==NULL)
 	{
 		LOG(LOG_CALLS, _("NOT found, trying Global") );
-		ASObject* target;
 		o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
-		if(o)
-		{
-			if(o->getObjectType()==T_DEFINABLE)
-			{
-				LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
-				Definable* d=static_cast<Definable*>(o);
-				d->define(target);
-				o=target->getVariableByMultiname(*name);
-				LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
-			}
-			else if(o->getObjectType()==T_FUNCTION)
-				throw UnsupportedException("Functions are not yet gettable in getLex");
-		}
 		if(o==NULL)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,_("NOT found ") << name->name_s<< _(", pushing Undefined"));
 			o=new Undefined;
 		}
-		th->runtime_stack_push(o);
-		o->incRef();
 	}
+
+	//If we are getting a function object attach the the current scope
+	if(o->getObjectType()==T_FUNCTION)
+	{
+		LOG(LOG_CALLS,_("Attaching this to function ") << name);
+		IFunction* f=static_cast<IFunction*>(o)->bind(target,-1);
+		o=f;
+	}
+	else if(o->getObjectType()==T_DEFINABLE)
+	{
+		LOG(LOG_CALLS,_("Deferred definition of property ") << *name);
+		Definable* d=static_cast<Definable*>(o);
+		d->define(target);
+		o=target->getVariableByMultiname(*name);
+		LOG(LOG_CALLS,_("End of deferred definition of property ") << *name);
+	}
+	th->runtime_stack_push(o);
+	o->incRef();
 }
 
 void ABCVm::constructSuper(call_context* th, int m)
@@ -2220,7 +2207,10 @@ void ABCVm::newClass(call_context* th, int n)
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
 
 	assert_and_throw(mname->ns.size()==1);
-	Class_base* ret=new Class_inherit(QName(mname->name_s,mname->ns[0]));
+	Class_inherit* ret=new Class_inherit(QName(mname->name_s,mname->ns[0]));
+	ret->class_scope=th->scope_stack;
+	for(uint32_t i=0;i<ret->class_scope.size();i++)
+		ret->class_scope[i]->incRef();
 	ASObject* tmp=th->runtime_stack_pop();
 
 	assert_and_throw(th->context);
@@ -2423,7 +2413,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 
 ASObject* ABCVm::getScopeObject(call_context* th, int n)
 {
-	ASObject* ret=th->scope_stack[n];
+	ASObject* ret=th->scope_stack[n+th->initialScopeStack];
 	ret->incRef();
 	LOG(LOG_CALLS, _("getScopeObject: ") << ret );
 	return ret;

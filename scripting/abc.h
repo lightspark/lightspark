@@ -180,6 +180,7 @@ struct call_context
 	ABCContext* context;
 	int locals_size;
 	std::vector<ASObject*> scope_stack;
+	int initialScopeStack;
 	void runtime_stack_push(ASObject* s);
 	ASObject* runtime_stack_pop();
 	ASObject* runtime_stack_peek();

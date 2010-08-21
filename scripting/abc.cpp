@@ -1588,16 +1588,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			LOG(LOG_CALLS,_("Getter trait: ") << ns << _("::") << name << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			IFunction* f=Class<IFunction>::getSyntheticFunction(m);
+			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
-			Class_base* prot=NULL;
-			if(obj->getObjectType()==T_CLASS)
-				prot=static_cast<Class_base*>(obj);
-			else
-				prot=obj->getActualPrototype();
-			if(prot && t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
+			assert_and_throw(obj->getObjectType()==T_CLASS);
+			Class_inherit* prot=static_cast<Class_inherit*>(obj);
+			assert(prot);
+			if(t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
@@ -1620,26 +1618,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 			f->bindLevel(obj->getLevel());
 			obj->setGetterByQName(name,ns,f);
-
-/*			//Iterate to find a getter
-			Class_base* cur=prot->super;
-			while(cur)
-			{
-				int l=cur->max_level;
-				obj_var* var=cur->Variables.findObjVar(name,ns,l,false,true);
-				if(var)
-				{
-					assert_and_throw(t->kind&0x20);
-					if(var->getter)
-					{
-						//Ok, we are overriding this getter
-						assert_and_throw(var->getter->isOverridden()==false);
-						var->getter->override(f);
-						break;
-					}
-				}
-				cur=cur->super;
-			}*/
 			
 			LOG(LOG_TRACE,_("End Getter trait: ") << ns << _("::") << name);
 			break;
@@ -1654,12 +1632,10 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
-			Class_base* prot=NULL;
-			if(obj->getObjectType()==T_CLASS)
-				prot=static_cast<Class_base*>(obj);
-			else
-				prot=obj->getActualPrototype();
-			if(prot && t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
+			assert_and_throw(obj->getObjectType()==T_CLASS);
+			Class_base* prot=static_cast<Class_base*>(obj);
+			assert(prot);
+			if(t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
@@ -1683,26 +1659,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			f->bindLevel(obj->getLevel());
 			obj->setSetterByQName(name,ns,f);
 			
-/*			//Iterate to find a setter
-			Class_base* cur=prot->super;
-			while(cur)
-			{
-				int l=cur->max_level;
-				obj_var* var=cur->Variables.findObjVar(name,ns,l,false,true);
-				if(var)
-				{
-					assert_and_throw(t->kind&0x20);
-					if(var->setter)
-					{
-						//Ok, we are overriding this getter
-						assert_and_throw(var->setter->isOverridden()==false);
-						var->setter->override(f);
-						break;
-					}
-				}
-				cur=cur->super;
-			}*/
-			
 			LOG(LOG_TRACE,_("End Setter trait: ") << ns << _("::") << name);
 			break;
 		}
@@ -1711,16 +1667,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			LOG(LOG_CALLS,_("Method trait: ") << ns << _("::") << name << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
-			IFunction* f=Class<IFunction>::getSyntheticFunction(m);
+			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
 			//We have to override if there is a method with the same name,
 			//even if the namespace are different, if both are protected
-			Class_base* prot=NULL;
-			if(obj->getObjectType()==T_CLASS)
-				prot=static_cast<Class_base*>(obj);
-			else
-				prot=obj->getActualPrototype();
-			if(prot && t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
+			assert_and_throw(obj->getObjectType()==T_CLASS);
+			Class_inherit* prot=static_cast<Class_inherit*>(obj);
+			assert(prot);
+			if(t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
@@ -1741,29 +1695,11 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				}
 			}
 
-			//NOTE: it is legal to define function with the same name at different levels, handle this somehow
-/*			if(t->kind&0x20)
-			{
-				Class_base* cur=prot->super;
-				while(cur)
-				{
-					int l=cur->max_level;
-					obj_var* var=cur->Variables.findObjVar(name,ns,l,false,true);
-					if(var)
-					{
-						assert(var->var);
-						assert_and_throw(var->var->getObjectType()==T_FUNCTION);
-						IFunction* oldf=static_cast<IFunction*>(var->var);
-						//Ok, we are overriding this method
-						assert_and_throw(oldf->isOverridden()==false);
-						oldf->override(f);
-					}
-					cur=cur->super;
-				}
-			}*/
-
 			f->bindLevel(obj->getLevel());
 			obj->setVariableByQName(name,ns,f);
+			//Methods save inside the scope stack of the class
+			f->acquireScope(prot->class_scope);
+
 			LOG(LOG_TRACE,_("End Method trait: ") << ns << _("::") << name);
 			break;
 		}
@@ -1824,8 +1760,6 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ")<<name<<_(" type ")<<*type);
 				ASObject* previous_definition=obj->getVariableByQName(name,ns);
 				assert_and_throw(!previous_definition);
-				//if(previous_definition.obj)
-				//	assert_and_throw(previous_definition.level<obj->getLevel());
 
 				ASObject* ret;
 				if(deferred_initialization)

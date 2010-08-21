@@ -40,7 +40,7 @@ public:
 	ASObject* pop()
 	{
 		if(data.size()==0)
-			LOG(ERROR,"Empty stack");
+			LOG(ERROR,_("Empty stack"));
 		ASObject* ret=data.back();
 		data.pop_back(); 
 		return ret;

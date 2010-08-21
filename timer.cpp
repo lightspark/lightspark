@@ -25,6 +25,10 @@
 #include "timer.h"
 #include "compat.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 using namespace std;
 
@@ -161,7 +165,7 @@ void* TimerThread::timer_worker(TimerThread* th)
 		int err=errno;
 		if(err!=ETIMEDOUT)
 		{
-			LOG(LOG_ERROR,"Unexpected failure of sem_timedwait.. Trying to go on. errno=" << err);
+			LOG(LOG_ERROR,_("Unexpected failure of sem_timedwait.. Trying to go on. errno=") << err);
 			continue;
 		}
 

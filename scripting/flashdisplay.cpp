@@ -35,6 +35,11 @@
 #include <fstream>
 #include <limits>
 #include <cmath>
+
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -144,7 +149,7 @@ ASFUNCTIONBODY(Loader,load)
 	throw UnsupportedException("Loader::load");
 /*	if(args->at(0)->getClassName()!="URLRequest")
 	{
-		LOG(ERROR,"ArgumentError");
+		LOG(ERROR,_("ArgumentError"));
 		abort();
 	}*/
 	URLRequest* r=static_cast<URLRequest*>(args[0]);
@@ -190,7 +195,7 @@ void Loader::buildTraits(ASObject* o)
 
 void Loader::execute()
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Loader async execution " << url);
+	LOG(LOG_NOT_IMPLEMENTED,_("Loader async execution ") << url);
 	if(source==URL)
 	{
 		threadAbort();
@@ -486,7 +491,7 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 		return NULL;
 	if(args[1]->getObjectType()!=T_FUNCTION)
 	{
-		LOG(LOG_ERROR,"Not a function");
+		LOG(LOG_ERROR,_("Not a function"));
 		return NULL;
 	}
 	IFunction* f=static_cast<IFunction*>(args[1]);
@@ -499,13 +504,13 @@ ASFUNCTIONBODY(MovieClip,addFrameScript)
 
 ASFUNCTIONBODY(MovieClip,createEmptyMovieClip)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"createEmptyMovieClip");
+	LOG(LOG_NOT_IMPLEMENTED,_("createEmptyMovieClip"));
 	return new Undefined;
 /*	MovieClip* th=static_cast<MovieClip*>(obj);
 	if(th==NULL)
-		LOG(ERROR,"Not a valid MovieClip");
+		LOG(ERROR,_("Not a valid MovieClip"));
 
-	LOG(CALLS,"Called createEmptyMovieClip: " << args->args[0]->toString() << " " << args->args[1]->toString());
+	LOG(CALLS,_("Called createEmptyMovieClip: ") << args->args[0]->toString() << _(" ") << args->args[1]->toString());
 	MovieClip* ret=new MovieClip();
 
 	DisplayObject* t=new ASObjectWrapper(ret,args->args[1]->toInt());
@@ -518,7 +523,7 @@ ASFUNCTIONBODY(MovieClip,createEmptyMovieClip)
 
 ASFUNCTIONBODY(MovieClip,swapDepths)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Called swapDepths");
+	LOG(LOG_NOT_IMPLEMENTED,_("Called swapDepths"));
 	return NULL;
 }
 
@@ -595,7 +600,7 @@ void MovieClip::advanceFrame()
 		//If we have not yet loaded enough frames delay advancement
 		if(state.next_FP>=framesLoaded)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"Not enough frames loaded");
+			LOG(LOG_NOT_IMPLEMENTED,_("Not enough frames loaded"));
 			return;
 		}
 		//Before assigning the next_FP we initialize the frame

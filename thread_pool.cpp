@@ -24,6 +24,10 @@
 #include "logger.h"
 #include "swf.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
@@ -65,7 +69,7 @@ ThreadPool::~ThreadPool()
 	for(int i=0;i<NUM_THREADS;i++)
 	{
 		if(pthread_join(threads[i],NULL)!=0)
-			LOG(LOG_ERROR,"pthread_join failed in ~ThreadPool");
+			LOG(LOG_ERROR,_("pthread_join failed in ~ThreadPool"));
 	}
 
 	sem_destroy(&num_jobs);
@@ -105,7 +109,7 @@ void* ThreadPool::job_worker(void* t)
 		}
 		catch(LightsparkException& e)
 		{
-			LOG(LOG_ERROR,"Exception in ThreadPool " << e.what());
+			LOG(LOG_ERROR,_("Exception in ThreadPool ") << e.what());
 			sys->setError(e.cause);
 		}
 		thisJob=NULL;

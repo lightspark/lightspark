@@ -108,7 +108,7 @@ SET(ENABLE_LIBAVCODEC TRUE CACHE BOOL "Enable libavcodec and dependent functiona
 SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to install Firefox plugin to")
 IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
-		"Choose the type of build, options are: Debug Release RelWithDebInfo Profile Debian" FORCE)
+		"Choose the type of build, options are: Debug Release RelWithDebInfo Profile" FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
 # The library is searched in its private library directory
@@ -116,6 +116,7 @@ SET(CMAKE_SKIP_BUILD_RPATH FALSE)
 SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${PRIVATELIBDIR}")
 
 # Libraries we need
+INCLUDE(FindGettext REQUIRED)
 INCLUDE(FindLLVM REQUIRED)
 INCLUDE(FindSDL REQUIRED)
 INCLUDE(FindZLIB REQUIRED)
@@ -216,9 +217,8 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-vi
 
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
 SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
-SET(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O2 -DNDEBUG")
-SET(CMAKE_CXX_FLAGS_DEBIAN "-O2 -DNDEBUG")
 SET(CMAKE_CXX_FLAGS_LEANDEBUG "-g -O2")
 
 ADD_DEFINITIONS(-DDATADIR="${CMAKE_INSTALL_PREFIX}/share/lightspark" -DGNASH_PATH="${GNASH_EXE_PATH}")
@@ -339,3 +339,5 @@ IF(COMPILE_PLUGIN)
 	ADD_SUBDIRECTORY(plugin)
 ENDIF(COMPILE_PLUGIN)
 
+# generate locales for gettext
+GETTEXT_CREATE_TRANSLATIONS(lightspark.pot ALL po/pl.po)

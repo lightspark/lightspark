@@ -21,6 +21,10 @@
 #include <string.h>
 #include "sound.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 #ifdef ENABLE_SOUND
 using namespace lightspark;
 using namespace std;
@@ -250,7 +254,7 @@ void SoundManager::contextStatusCB(pa_context* context, SoundManager* th)
 		case PA_CONTEXT_FAILED:
 			th->noServer=true;
 			th->contextReady=true;
-			LOG(LOG_ERROR,"Connection to PulseAudio server failed");
+			LOG(LOG_ERROR,_("Connection to PulseAudio server failed"));
 			break;
 		default:
 			break;

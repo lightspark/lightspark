@@ -32,6 +32,10 @@
 #include <fontconfig/fontconfig.h>
 #endif
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 using namespace std;
 extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
@@ -53,7 +57,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),mainTex(false),tempTex(false),inputTex(false),
 	hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
-	LOG(LOG_NO_INFO,"RenderThread this=" << this);
+	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
 	m_sys=s;
 	sem_init(&render,0,0);
 	sem_init(&inputDone,0,0);
@@ -74,14 +78,14 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 
 	if (result != FcResultMatch)
 	{
-		LOG(LOG_ERROR,"Unable to find suitable Serif font");
+		LOG(LOG_ERROR,_("Unable to find suitable Serif font"));
 		throw RunTimeException("Unable to find Serif font");
 	}
 
 	FcPatternGetString(match, FC_FILE, 0, (FcChar8 **) &font);
 	fontPath = font;
 	FcPatternDestroy(match);
-	LOG(LOG_NO_INFO, "Font File is " << fontPath);
+	LOG(LOG_NO_INFO, _("Font File is ") << fontPath);
 #endif
 
 	if(e==SDL)
@@ -102,7 +106,7 @@ RenderThread::~RenderThread()
 	sem_destroy(&render);
 	sem_destroy(&inputDone);
 	delete[] interactive_buffer;
-	LOG(LOG_NO_INFO,"~RenderThread this=" << this);
+	LOG(LOG_NO_INFO,_("~RenderThread this=") << this);
 }
 
 void RenderThread::addResource(GLResource* res)
@@ -186,7 +190,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	Bool glx_present=glXQueryVersion(d,&a,&b);
 	if(!glx_present)
 	{
-		LOG(LOG_ERROR,"glX not present");
+		LOG(LOG_ERROR,_("glX not present"));
 		return NULL;
 	}
 	int attrib[10]={GLX_BUFFER_SIZE,24,GLX_DOUBLEBUFFER,True,None};
@@ -195,11 +199,11 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	{
 		attrib[2]=None;
 		fb=glXChooseFBConfig(d, 0, attrib, &a);
-		LOG(LOG_ERROR,"Falling back to no double buffering");
+		LOG(LOG_ERROR,_("Falling back to no double buffering"));
 	}
 	if(!fb)
 	{
-		LOG(LOG_ERROR,"Could not find any GLX configuration");
+		LOG(LOG_ERROR,_("Could not find any GLX configuration"));
 		::abort();
 	}
 	int i;
@@ -213,7 +217,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	if(i==a)
 	{
 		//No suitable id found
-		LOG(LOG_ERROR,"No suitable graphics configuration available");
+		LOG(LOG_ERROR,_("No suitable graphics configuration available"));
 		return NULL;
 	}
 	th->mFBConfig=fb[i];
@@ -224,7 +228,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	GLXWindow glxWin=p->window;
 	glXMakeCurrent(d, glxWin,th->mContext);
 	if(!glXIsDirect(d,th->mContext))
-		printf("Indirect!!\n");
+		cout << "Indirect!!" << endl;
 
 	th->commonGLInit(th->windowWidth, th->windowHeight);
 	th->commonGLResize(th->windowWidth, th->windowHeight);
@@ -234,7 +238,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	FTTextureFont font(th->fontPath.c_str());
 	if(font.Error())
 	{
-		LOG(LOG_ERROR,"Unable to load serif font");
+		LOG(LOG_ERROR,_("Unable to load serif font"));
 		throw RunTimeException("Unable to load font");
 	}
 	
@@ -255,7 +259,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				{
 					th->windowWidth=th->newWidth;
 					th->windowHeight=th->newHeight;
-					LOG(LOG_ERROR,"Window resize not supported in plugin");
+					LOG(LOG_ERROR,_("Window resize not supported in plugin"));
 				}
 				th->newWidth=0;
 				th->newHeight=0;
@@ -281,7 +285,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			}
 			
 			if(fakeRenderCount)
-				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
+				LOG(LOG_NO_INFO,_("Faking ") << fakeRenderCount << _(" renderings"));
 			if(th->m_sys->isShuttingDown())
 				break;
 
@@ -398,7 +402,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception in RenderThread " << e.what());
+		LOG(LOG_ERROR,_("Exception in RenderThread ") << e.what());
 		sys->setError(e.cause);
 	}
 	glDisable(GL_TEXTURE_2D);
@@ -424,7 +428,7 @@ bool RenderThread::loadShaderPrograms()
 	fs = dataFileRead("lightspark.frag");
 	if(fs==NULL)
 	{
-		LOG(LOG_ERROR,"Shader lightspark.frag not found");
+		LOG(LOG_ERROR,_("Shader lightspark.frag not found"));
 		throw RunTimeException("Fragment shader code not found");
 	}
 	assert(glShaderSource);
@@ -438,7 +442,7 @@ bool RenderThread::loadShaderPrograms()
 	glCompileShader(f);
 	assert(glGetShaderInfoLog);
 	glGetShaderInfoLog(f,1024,&a,str);
-	LOG(LOG_NO_INFO,"Fragment shader compilation " << str);
+	LOG(LOG_NO_INFO,_("Fragment shader compilation ") << str);
 
 	assert(glCreateProgram);
 	gpu_program = glCreateProgram();
@@ -461,7 +465,7 @@ bool RenderThread::loadShaderPrograms()
 	fs = dataFileRead("lightspark.vert");
 	if(fs==NULL)
 	{
-		LOG(LOG_ERROR,"Shader lightspark.vert not found");
+		LOG(LOG_ERROR,_("Shader lightspark.vert not found"));
 		throw RunTimeException("Vertex shader code not found");
 	}
 	glShaderSource(v, 1, &fs,NULL);
@@ -469,7 +473,7 @@ bool RenderThread::loadShaderPrograms()
 
 	glCompileShader(v);
 	glGetShaderInfoLog(v,1024,&a,str);
-	LOG(LOG_NO_INFO,"Vertex shader compilation " << str);
+	LOG(LOG_NO_INFO,_("Vertex shader compilation ") << str);
 
 	blitter_program = glCreateProgram();
 	glAttachShader(blitter_program,v);
@@ -510,13 +514,13 @@ void RenderThread::commonGLInit(int width, int height)
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
-		LOG(LOG_ERROR,"Cannot initialize GLEW");
+		LOG(LOG_ERROR,_("Cannot initialize GLEW"));
 		cout << glewGetErrorString(err) << endl;
 		::abort();
 	}
 	if(!GLEW_VERSION_2_0)
 	{
-		LOG(LOG_ERROR,"Video card does not support OpenGL 2.0... Aborting");
+		LOG(LOG_ERROR,_("Video card does not support OpenGL 2.0... Aborting"));
 		::abort();
 	}
 	if(GLEW_ARB_texture_non_power_of_two)
@@ -570,7 +574,7 @@ void RenderThread::commonGLInit(int width, int height)
 	}
 	else
 	{
-		LOG(LOG_ERROR,"Non enough color attachments available, input disabled");
+		LOG(LOG_ERROR,_("Non enough color attachments available, input disabled"));
 		inputDisabled=true;
 	}
 	
@@ -578,10 +582,10 @@ void RenderThread::commonGLInit(int width, int height)
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if(status != GL_FRAMEBUFFER_COMPLETE)
 	{
-		LOG(LOG_ERROR,"Incomplete FBO status " << status << "... Aborting");
+		LOG(LOG_ERROR,_("Incomplete FBO status ") << status << _("... Aborting"));
 		while(err!=GL_NO_ERROR)
 		{
-			LOG(LOG_ERROR,"GL errors during initialization: " << err);
+			LOG(LOG_ERROR,_("GL errors during initialization: ") << err);
 			err=glGetError();
 		}
 		::abort();
@@ -757,7 +761,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			}
 
 			if(fakeRenderCount)
-				LOG(LOG_NO_INFO,"Faking " << fakeRenderCount << " renderings");
+				LOG(LOG_NO_INFO,_("Faking ") << fakeRenderCount << _(" renderings"));
 
 			if(th->m_sys->isShuttingDown())
 				break;
@@ -891,7 +895,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception in RenderThread " << e.cause);
+		LOG(LOG_ERROR,_("Exception in RenderThread ") << e.cause);
 		sys->setError(e.cause);
 	}
 	th->commonGLDeinit();
@@ -906,7 +910,7 @@ void RenderThread::draw()
 	if(diff>1000)
 	{
 		time_s=time_d;
-		LOG(LOG_NO_INFO,"FPS: " << dec << frameCount);
+		LOG(LOG_NO_INFO,_("FPS: ") << dec << frameCount);
 		frameCount=0;
 		secsCount++;
 	}

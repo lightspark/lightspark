@@ -28,6 +28,11 @@
 #include <gdk/gdkkeysyms.h>
 #endif
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
+
 using namespace lightspark;
 using namespace std;
 extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
@@ -35,7 +40,7 @@ extern TLSDATA lightspark::SystemState* sys DLL_PUBLIC;
 InputThread::InputThread(SystemState* s,ENGINE e, void* param):m_sys(s),terminated(false),threaded(false),
 	mutexListeners("Input listeners"),mutexDragged("Input dragged"),curDragged(NULL),lastMouseDownTarget(NULL)
 {
-	LOG(LOG_NO_INFO,"Creating input thread");
+	LOG(LOG_NO_INFO,_("Creating input thread"));
 	if(e==SDL)
 	{
 		threaded=true;
@@ -186,7 +191,7 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_q:
 						th->m_sys->setShutdownFlag();
 						if(th->m_sys->currentVm)
-							LOG(LOG_CALLS,"We still miss " << sys->currentVm->getEventQueueSize() << " events");
+							LOG(LOG_CALLS,_("We still miss ") << sys->currentVm->getEventQueueSize() << _(" events"));
 						pthread_exit(0);
 						break;
 					case SDLK_s:
@@ -262,7 +267,7 @@ void* InputThread::sdl_worker(InputThread* th)
 			{
 				th->m_sys->setShutdownFlag();
 				if(th->m_sys->currentVm)
-					LOG(LOG_CALLS,"We still miss " << sys->currentVm->getEventQueueSize() << " events");
+					LOG(LOG_CALLS,_("We still miss ") << sys->currentVm->getEventQueueSize() << _(" events"));
 				pthread_exit(0);
 				break;
 			}

@@ -27,6 +27,10 @@
 #include "geometry.h"
 #include "backends/rendering.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -42,7 +46,7 @@ void GeomShape::Render(int x, int y) const
 {
 	if(outlines.empty())
 	{
-		LOG(LOG_TRACE,"No edges in this shape");
+		LOG(LOG_TRACE,_("No edges in this shape"));
 		return;
 	}
 
@@ -96,7 +100,7 @@ void GeomShape::Render(int x, int y) const
 
 	if(/*graphic.stroked ||*/ !filled && color)
 	{
-		//LOG(TRACE,"Line tracing");
+		//LOG(TRACE,_("Line tracing"));
 		if(!rt->materialOverride)
 			FILLSTYLE::fixedColor(0,0,0);
 		for(unsigned int i=0;i<outlines.size();i++)

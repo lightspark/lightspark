@@ -516,6 +516,7 @@ public:
 	virtual ~Array();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
+
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_push);
 	ASFUNCTION(_concat);
@@ -529,6 +530,7 @@ public:
 	ASFUNCTION(filter);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(_getLength);
+
 	ASObject* at(unsigned int index) const
 	{
 		if(index<data.size())

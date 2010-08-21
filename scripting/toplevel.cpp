@@ -36,6 +36,10 @@
 #include "class.h"
 #include "exceptions.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -83,22 +87,34 @@ void Array::sinit(Class_base* c)
 	c->setVariableByQName("RETURNINDEXEDARRAY","",abstract_d(RETURNINDEXEDARRAY));
 	c->setVariableByQName("UNIQUESORT","",abstract_d(UNIQUESORT));
 
-	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-
+	// properties
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 
-	c->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
-	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
-	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
-	c->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
-	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
-	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
-	c->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
-//	c->setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
+	// public functions
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
-	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	//c->setVariableByQName("every",AS3,Class<IFunction>::getFunction(every));
 	c->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
+	//c->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(forEach));
+	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
+	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
+	//c->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf));
+	//c->setVariableByQName("map",AS3,Class<IFunction>::getFunction(map));
+	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
+	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
+	//c->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(reverse));
+	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
+	//c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
+	//c->setVariableByQName("some",AS3,Class<IFunction>::getFunction(some));
+	c->setVariableByQName("sort",AS3,Class<IFunction>::getFunction(_sort));
+	//c->setVariableByQName("sortOn",AS3,Class<IFunction>::getFunction(sortOn));
 	c->setVariableByQName("splice",AS3,Class<IFunction>::getFunction(splice));
+	//c->setVariableByQName("toLocaleString",AS3,Class<IFunction>::getFunction(toLocaleString));
+	//c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(toString));
+	c->setVariableByQName("unshift",AS3,Class<IFunction>::getFunction(unshift));
+
+	// workaround, pop was encountered not in the AS3 namespace before, need to investigate it further
+	c->setVariableByQName("pop","",Class<IFunction>::getFunction(_pop));
 }
 
 void Array::buildTraits(ASObject* o)
@@ -112,12 +128,12 @@ ASFUNCTIONBODY(Array,_constructor)
 	if(argslen==1)
 	{
 		int size=args[0]->toInt();
-		LOG(LOG_CALLS,"Creating array of length " << size);
+		LOG(LOG_CALLS,_("Creating array of length ") << size);
 		th->resize(size);
 	}
 	else
 	{
-		LOG(LOG_CALLS,"Called Array constructor");
+		LOG(LOG_CALLS,_("Called Array constructor"));
 		th->resize(argslen);
 		for(unsigned int i=0;i<argslen;i++)
 		{
@@ -126,6 +142,51 @@ ASFUNCTIONBODY(Array,_constructor)
 		}
 	}
 	return NULL;
+}
+
+ASFUNCTIONBODY(Array,_concat)
+{
+	Array* th=static_cast<Array*>(obj);
+	Array* ret=Class<Array>::getInstanceS();
+	ret->data=th->data;
+	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
+	{
+		Array* tmp=Class<Array>::cast(args[0]);
+		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
+	}
+	else
+	{
+		//Insert the arguments in the array
+		ret->data.reserve(ret->data.size()+argslen);
+		for(unsigned int i=0;i<argslen;i++)
+			ret->push(args[i]);
+	}
+
+	//All the elements in the new array should be increffed, as args will be deleted and
+	//this array could die too
+	for(unsigned int i=0;i<ret->data.size();i++)
+	{
+		if(ret->data[i].type==DATA_OBJECT)
+			ret->data[i].data->incRef();
+	}
+	
+	return ret;
+}
+
+ASFUNCTIONBODY(Array,filter)
+{
+	//TODO: really implement
+	Array* th=static_cast<Array*>(obj);
+	//assert_and_throw(th->data.size()==0);
+	LOG(LOG_NOT_IMPLEMENTED,_("Array::filter STUB"));
+	Array* ret=Class<Array>::getInstanceS();
+	ret->data=th->data;
+	for(unsigned int i=0;i<ret->data.size();i++)
+	{
+		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
+			ret->data[i].data->incRef();
+	}
+	return ret;
 }
 
 ASFUNCTIONBODY(Array,_getLength)
@@ -211,50 +272,6 @@ ASFUNCTIONBODY(Array,indexOf)
 	return abstract_i(ret);
 }
 
-ASFUNCTIONBODY(Array,filter)
-{
-	//TODO: really implement
-	Array* th=static_cast<Array*>(obj);
-	//assert_and_throw(th->data.size()==0);
-	LOG(LOG_NOT_IMPLEMENTED,"Array::filter STUB");
-	Array* ret=Class<Array>::getInstanceS();
-	ret->data=th->data;
-	for(unsigned int i=0;i<ret->data.size();i++)
-	{
-		if(ret->data[i].type==DATA_OBJECT && ret->data[i].data)
-			ret->data[i].data->incRef();
-	}
-	return ret;
-}
-
-ASFUNCTIONBODY(Array,_concat)
-{
-	Array* th=static_cast<Array*>(obj);
-	Array* ret=Class<Array>::getInstanceS();
-	ret->data=th->data;
-	if(argslen==1 && args[0]->getObjectType()==T_ARRAY)
-	{
-		Array* tmp=Class<Array>::cast(args[0]);
-		ret->data.insert(ret->data.end(),tmp->data.begin(),tmp->data.end());
-	}
-	else
-	{
-		//Insert the arguments in the array
-		ret->data.reserve(ret->data.size()+argslen);
-		for(unsigned int i=0;i<argslen;i++)
-			ret->push(args[i]);
-	}
-
-	//All the elements in the new array should be increffed, as args will be deleted and
-	//this array could die too
-	for(unsigned int i=0;i<ret->data.size();i++)
-	{
-		if(ret->data[i].type==DATA_OBJECT)
-			ret->data[i].data->incRef();
-	}
-	
-	return ret;
-}
 
 ASFUNCTIONBODY(Array,_pop)
 {
@@ -375,7 +392,7 @@ ASFUNCTIONBODY(Array,sortOn)
 //	Array* th=static_cast<Array*>(obj);
 /*	if(th->data.size()>1)
 		throw UnsupportedException("Array::sort not completely implemented");
-	LOG(LOG_NOT_IMPLEMENTED,"Array::sort not really implemented");*/
+	LOG(LOG_NOT_IMPLEMENTED,_("Array::sort not really implemented"));*/
 	obj->incRef();
 	return obj;
 }
@@ -408,13 +425,13 @@ ASMovieClipLoader::ASMovieClipLoader()
 
 ASFUNCTIONBODY(ASMovieClipLoader,constructor)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Called MovieClipLoader constructor");
+	LOG(LOG_NOT_IMPLEMENTED,_("Called MovieClipLoader constructor"));
 	return NULL;
 }
 
 ASFUNCTIONBODY(ASMovieClipLoader,addListener)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Called MovieClipLoader::addListener");
+	LOG(LOG_NOT_IMPLEMENTED,_("Called MovieClipLoader::addListener"));
 	return NULL;
 }
 
@@ -426,7 +443,7 @@ ASXML::ASXML()
 
 ASFUNCTIONBODY(ASXML,constructor)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Called XML constructor");
+	LOG(LOG_NOT_IMPLEMENTED,_("Called XML constructor"));
 	return NULL;
 }
 
@@ -441,7 +458,7 @@ size_t ASXML::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 
 ASFUNCTIONBODY(ASXML,load)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Called ASXML::load " << args[0]->toString());
+	LOG(LOG_NOT_IMPLEMENTED,_("Called ASXML::load ") << args[0]->toString());
 	throw UnsupportedException("ASXML::load not completely implemented");
 }
 
@@ -1110,7 +1127,7 @@ Undefined::Undefined()
 
 ASFUNCTIONBODY(Undefined,call)
 {
-	LOG(LOG_CALLS,"Undefined function");
+	LOG(LOG_CALLS,_("Undefined function"));
 	return NULL;
 }
 
@@ -1391,7 +1408,7 @@ ASFUNCTIONBODY(Date,_constructor)
 
 ASFUNCTIONBODY(Date,getTimezoneOffset)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"getTimezoneOffset");
+	LOG(LOG_NOT_IMPLEMENTED,_("getTimezoneOffset"));
 	return abstract_d(120);
 }
 
@@ -1574,7 +1591,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	const int hit_threshold=10;
 	if(mi->body==NULL)
 	{
-//		LOG(LOG_NOT_IMPLEMENTED,"Not initialized function");
+//		LOG(LOG_NOT_IMPLEMENTED,_("Not initialized function"));
 		return NULL;
 	}
 
@@ -1601,7 +1618,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 
 	if(bound && closure_this && !thisOverride)
 	{
-		LOG(LOG_CALLS,"Calling with closure " << this);
+		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		obj=closure_this;
 	}
 
@@ -1687,7 +1704,7 @@ ASObject* Function::call(ASObject* obj, ASObject* const* args, uint32_t num_args
 	ASObject* ret;
 	if(bound && closure_this && !thisOverride)
 	{
-		LOG(LOG_CALLS,"Calling with closure " << this);
+		LOG(LOG_CALLS,_("Calling with closure ") << this);
 		obj->decRef();
 		obj=closure_this;
 		obj->incRef();
@@ -1706,8 +1723,8 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("E","",abstract_d(2.71828182845905));
 	c->setVariableByQName("LN10","",abstract_d(2.302585092994046));
 	c->setVariableByQName("LN2","",abstract_d(0.6931471805599453));
-	c->setVariableByQName("LOG10E","",abstract_d(0.4342944819032518));
-	c->setVariableByQName("LOG2E","",abstract_d(1.442695040888963387));
+	c->setVariableByQName(_("LOG10E"),"",abstract_d(0.4342944819032518));
+	c->setVariableByQName(_("LOG2E"),"",abstract_d(1.442695040888963387));
 	c->setVariableByQName("PI","",abstract_d(3.141592653589793));
 	c->setVariableByQName("SQRT1_2","",abstract_d(0.7071067811865476));
 	c->setVariableByQName("SQRT2","",abstract_d(1.4142135623730951));
@@ -1951,9 +1968,9 @@ ASFUNCTIONBODY(RegExp,exec)
 	pcrecpp::RE pcreRE(th->re,opt);
 	assert_and_throw(th->lastIndex==0);
 	const tiny_string& arg0=args[0]->toString();
-	LOG(LOG_CALLS,"re: " << th->re);
+	LOG(LOG_CALLS,_("re: ") << th->re);
 	int numberOfCaptures=pcreRE.NumberOfCapturingGroups();
-	LOG(LOG_CALLS,"capturing groups " << numberOfCaptures);
+	LOG(LOG_CALLS,_("capturing groups ") << numberOfCaptures);
 	assert_and_throw(numberOfCaptures!=-1);
 	//The array of captured groups
 	pcrecpp::Arg** captures=new pcrecpp::Arg*[numberOfCaptures];
@@ -2024,7 +2041,7 @@ ASFUNCTIONBODY(ASString,charAt)
 ASFUNCTIONBODY(ASString,charCodeAt)
 {
 	//TODO: should return utf16
-	LOG(LOG_CALLS,"ASString::charCodeAt not really implemented");
+	LOG(LOG_CALLS,_("ASString::charCodeAt not really implemented"));
 	ASString* th=static_cast<ASString*>(obj);
 	unsigned int index=args[0]->toInt();
 	assert_and_throw(index>=0 && index<th->data.size());
@@ -2087,7 +2104,7 @@ ASFUNCTIONBODY(ASString,fromCharCode)
 	assert_and_throw(argslen==1);
 	int ret=args[0]->toInt();
 	if(ret>127)
-		LOG(LOG_NOT_IMPLEMENTED,"Unicode not supported in String::fromCharCode");
+		LOG(LOG_NOT_IMPLEMENTED,_("Unicode not supported in String::fromCharCode"));
 	char buf[2] = { (char)ret, 0 };
 	return Class<ASString>::getInstanceS(buf);
 }
@@ -2191,7 +2208,7 @@ ASFUNCTIONBODY(ASError,getStackTrace)
 {
 	ASError* th=static_cast<ASError*>(obj);
 	ASString* ret=Class<ASString>::getInstanceS(th->toString(true));
-	LOG(LOG_NOT_IMPLEMENTED,"Error.getStackTrace not yet implemented.");
+	LOG(LOG_NOT_IMPLEMENTED,_("Error.getStackTrace not yet implemented."));
 	return ret;
 }
 
@@ -2538,7 +2555,7 @@ void Class_base::recursiveBuild(ASObject* target)
 	if(super)
 		super->recursiveBuild(target);
 
-	LOG(LOG_TRACE,"Building traits for " << class_name);
+	LOG(LOG_TRACE,_("Building traits for ") << class_name);
 	target->setLevel(max_level);
 	buildInstanceTraits(target);
 }
@@ -2556,7 +2573,7 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 		abort();
 		//We have to build the method traits
 		SyntheticFunction* sf=static_cast<SyntheticFunction*>(this);
-		LOG(LOG_CALLS,"Building method traits");
+		LOG(LOG_CALLS,_("Building method traits"));
 		for(int i=0;i<sf->mi->body->trait_count;i++)
 			sf->mi->context->buildTrait(this,&sf->mi->body->traits[i]);
 		sf->call(this,args,max_level);
@@ -2582,7 +2599,7 @@ void Class_base::handleConstruction(ASObject* target, ASObject* const* args, uns
 	assert_and_throw(max_level==target->getLevel());
 	if(constructor)
 	{
-		LOG(LOG_CALLS,"Calling Instance init " << class_name);
+		LOG(LOG_CALLS,_("Calling Instance init ") << class_name);
 		target->incRef();
 		ASObject* ret=constructor->call(target,args,argslen);
 		assert_and_throw(ret==NULL);
@@ -2602,7 +2619,7 @@ void Class_base::abandonObject(ASObject* ob)
 	set<ASObject>::size_type ret=referencedObjects.erase(ob);
 	if(ret!=1)
 	{
-		LOG(LOG_ERROR,"Failure in reference counting");
+		LOG(LOG_ERROR,_("Failure in reference counting"));
 	}
 }
 
@@ -2647,7 +2664,7 @@ void Class_inherit::buildInstanceTraits(ASObject* o) const
 {
 	assert_and_throw(class_index!=-1);
 	//The class is declared in the script and has an index
-	LOG(LOG_CALLS,"Building instance traits");
+	LOG(LOG_CALLS,_("Building instance traits"));
 
 	context->buildInstanceTraits(o,class_index);
 }
@@ -2720,7 +2737,7 @@ void Class_base::linkInterface(Class_base* c) const
 {
 	if(class_index==-1)
 	{
-		//LOG(LOG_NOT_IMPLEMENTED,"Linking of builtin interface " << class_name << " not supported");
+		//LOG(LOG_NOT_IMPLEMENTED,_("Linking of builtin interface ") << class_name << _(" not supported"));
 		return;
 	}
 	//Recursively link interfaces implemented by this interface
@@ -2738,7 +2755,7 @@ void Class_base::linkInterface(Class_base* c) const
 
 	if(constructor)
 	{
-		LOG(LOG_CALLS,"Calling interface init for " << class_name);
+		LOG(LOG_CALLS,_("Calling interface init for ") << class_name);
 		ASObject* ret=constructor->call(c,NULL,0);
 		assert_and_throw(ret==NULL);
 	}
@@ -2937,7 +2954,7 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 {
 	if(obj->getObjectType()==T_STRING)
 	{
-		LOG(LOG_CALLS,"String to bool");
+		LOG(LOG_CALLS,_("String to bool"));
 		const tiny_string& s=obj->toString();
 		if(s.len()==0)
 			return false;
@@ -2947,37 +2964,37 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 	else if(obj->getObjectType()==T_BOOLEAN)
 	{
 		Boolean* b=static_cast<Boolean*>(obj);
-		LOG(LOG_CALLS,"Boolean to bool " << b->val);
+		LOG(LOG_CALLS,_("Boolean to bool ") << b->val);
 		return b->val;
 	}
 	else if(obj->getObjectType()==T_OBJECT)
 	{
-		LOG(LOG_CALLS,"Object to bool");
+		LOG(LOG_CALLS,_("Object to bool"));
 		return true;
 	}
 	else if(obj->getObjectType()==T_CLASS)
 	{
-		LOG(LOG_CALLS,"Class to bool");
+		LOG(LOG_CALLS,_("Class to bool"));
 		return true;
 	}
 	else if(obj->getObjectType()==T_ARRAY)
 	{
-		LOG(LOG_CALLS,"Array to bool");
+		LOG(LOG_CALLS,_("Array to bool"));
 		return true;
 	}
 	else if(obj->getObjectType()==T_UNDEFINED)
 	{
-		LOG(LOG_CALLS,"Undefined to bool");
+		LOG(LOG_CALLS,_("Undefined to bool"));
 		return false;
 	}
 	else if(obj->getObjectType()==T_NULL)
 	{
-		LOG(LOG_CALLS,"Null to bool");
+		LOG(LOG_CALLS,_("Null to bool"));
 		return false;
 	}
 	else if(obj->getObjectType()==T_NUMBER)
 	{
-		LOG(LOG_CALLS,"Number to bool");
+		LOG(LOG_CALLS,_("Number to bool"));
 		double val=obj->toNumber();
 		if(val==0 || isnan(val))
 			return false;
@@ -2986,7 +3003,7 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 	}
 	else if(obj->getObjectType()==T_INTEGER)
 	{
-		LOG(LOG_CALLS,"Integer to bool");
+		LOG(LOG_CALLS,_("Integer to bool"));
 		int32_t val=obj->toInt();
 		if(val==0)
 			return false;
@@ -2995,7 +3012,7 @@ bool lightspark::Boolean_concrete(ASObject* obj)
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"Boolean conversion for type " << obj->getObjectType() << endl);
+		LOG(LOG_NOT_IMPLEMENTED,_("Boolean conversion for type ") << obj->getObjectType() << endl);
 		return false;
 	}
 }

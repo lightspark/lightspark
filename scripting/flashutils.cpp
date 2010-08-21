@@ -24,6 +24,10 @@
 #include "compat.h"
 #include <sstream>
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -316,21 +320,21 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 
 	stringToQName(tmp,name.name_s,name.ns[0].name);
 
-	LOG(LOG_CALLS,"Looking for definition of " << name);
+	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
 	ASObject* o=getGlobal()->getVariableAndTargetByMultiname(name,target);
 
 	//TODO: should raise an exception, for now just return undefined	
 	if(o==NULL)
 	{
-		LOG(LOG_ERROR,"Definition for '" << name << "' not found.");
+		LOG(LOG_ERROR,_("Definition for '") << name << _("' not found."));
 		return new Undefined;
 	}
 
 	//Check if the object has to be defined
 	if(o->getObjectType()==T_DEFINABLE)
 	{
-		LOG(LOG_CALLS,"We got an object not yet valid");
+		LOG(LOG_CALLS,_("We got an object not yet valid"));
 		Definable* d=static_cast<Definable*>(o);
 		d->define(target);
 		o=target->getVariableByMultiname(name);
@@ -338,7 +342,7 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 
 	assert_and_throw(o->getObjectType()==T_CLASS);
 
-	LOG(LOG_CALLS,"Getting definition for " << name);
+	LOG(LOG_CALLS,_("Getting definition for ") << name);
 	o->incRef();
 	return o;
 }
@@ -598,7 +602,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 	args[1]=o;
 	//We now suppress special handling
 	implEnable=false;
-	LOG(LOG_CALLS,"Proxy::setProperty");
+	LOG(LOG_CALLS,_("Proxy::setProperty"));
 	ASObject* ret=f->call(this,args,2);
 	assert_and_throw(ret==NULL);
 	implEnable=true;
@@ -625,7 +629,7 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, b
 	ASObject* arg=Class<ASString>::getInstanceS(name.name_s);
 	//We now suppress special handling
 	implEnable=false;
-	LOG(LOG_CALLS,"Proxy::getProperty");
+	LOG(LOG_CALLS,_("Proxy::getProperty"));
 	ASObject* ret=f->call(this,&arg,1);
 	assert_and_throw(ret);
 	implEnable=true;
@@ -635,7 +639,7 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, b
 bool Proxy::hasNext(unsigned int& index, bool& out)
 {
 	assert_and_throw(implEnable);
-	LOG(LOG_CALLS, "Proxy::hasNext");
+	LOG(LOG_CALLS, _("Proxy::hasNext"));
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	ASObject* o=getVariableByQName("nextNameIndex",flash_proxy,true);
 	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
@@ -653,7 +657,7 @@ bool Proxy::nextName(unsigned int index, ASObject*& out)
 {
 	assert(index>0);
 	assert_and_throw(implEnable);
-	LOG(LOG_CALLS, "Proxy::nextName");
+	LOG(LOG_CALLS, _("Proxy::nextName"));
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
 	ASObject* o=getVariableByQName("nextName",flash_proxy,true);
 	assert_and_throw(o && o->getObjectType()==T_FUNCTION);

@@ -27,6 +27,10 @@
 
 #include <iostream>
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 extern TLSDATA RenderThread* rt;
 
@@ -41,7 +45,7 @@ void lightspark::cleanGLErrors()
 		if(err!=GL_NO_ERROR)
 		{
 			glErrorCount++;
-			LOG(LOG_ERROR,"GL error "<< err);
+			LOG(LOG_ERROR,_("GL error ")<< err);
 		}
 		else
 			break;
@@ -49,7 +53,7 @@ void lightspark::cleanGLErrors()
 
 	if(glErrorCount)
 	{
-		LOG(LOG_ERROR,"Ignoring " << glErrorCount << " openGL errors");
+		LOG(LOG_ERROR,_("Ignoring ") << glErrorCount << _(" openGL errors"));
 	}
 #else
 	while(glGetError()!=GL_NO_ERROR);
@@ -128,7 +132,7 @@ void TextureBuffer::init()
 	assert(err!=GL_INVALID_OPERATION);
 	if(err==GL_INVALID_VALUE)
 	{
-		LOG(LOG_ERROR,"GL_INVALID_VALUE after glTexImage2D, width=" << allocWidth << " height=" << allocHeight);
+		LOG(LOG_ERROR,_("GL_INVALID_VALUE after glTexImage2D, width=") << allocWidth << _(" height=") << allocHeight);
 		throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::init");
 	}
 	
@@ -170,7 +174,7 @@ void TextureBuffer::init(uint32_t w, uint32_t h, GLenum f)
 	assert(err!=GL_INVALID_OPERATION);
 	if(err==GL_INVALID_VALUE)
 	{
-		LOG(LOG_ERROR,"GL_INVALID_VALUE after glTexImage2D, width=" << allocWidth << " height=" << allocHeight);
+		LOG(LOG_ERROR,_("GL_INVALID_VALUE after glTexImage2D, width=") << allocWidth << _(" height=") << allocHeight);
 		throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::init");
 	}
 	
@@ -188,14 +192,14 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 		if(w>allocWidth || h>allocHeight) //Destination texture should be reallocated
 		{
 			glBindTexture(GL_TEXTURE_2D,texId);
-			LOG(LOG_CALLS,"Reallocating texture to size " << w << 'x' << h);
+			LOG(LOG_CALLS,_("Reallocating texture to size ") << w << 'x' << h);
 			setAllocSize(w,h);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 			GLenum err=glGetError();
 			assert(err!=GL_INVALID_OPERATION);
 			if(err==GL_INVALID_VALUE)
 			{
-				LOG(LOG_ERROR,"GL_INVALID_VALUE after glTexImage2D, width=" << allocWidth << " height=" << allocHeight);
+				LOG(LOG_ERROR,_("GL_INVALID_VALUE after glTexImage2D, width=") << allocWidth << _(" height=") << allocHeight);
 				throw RunTimeException("GL_INVALID_VALUE in TextureBuffer::setBGRAData");
 			}
 		}

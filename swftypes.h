@@ -37,6 +37,11 @@
 #include <arpa/inet.h>
 #endif
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
+
 namespace lightspark
 {
 
@@ -104,7 +109,7 @@ public:
 			//Comment this assertion and uncomment the following lines to just crop the strings
 			//if(r.size()>4096)
 			//{
-			//	LOG(LOG_NO_INFO, "tiny_string::tiny_string(): std::string is too big for tiny_string, cropping: " << r.size() <<">"<<4096);
+			//	LOG(LOG_NO_INFO, _("tiny_string::tiny_string(): std::string is too big for tiny_string, cropping: ") << r.size() <<_(">")<<4096);
 			//	strcpy(buf,r.substr(0,4096).c_str());
 			//	return;
 			//}
@@ -142,7 +147,7 @@ public:
 			//Comment this assertion and uncomment the following lines to just crop the strings
 			//if(s.size()>4096)
 			//{
-			//	LOG(LOG_NO_INFO, "tiny_string::operator=(): std::string is too big for tiny_string, cropping: " << s.size() <<">"<<4096);
+			//	LOG(LOG_NO_INFO, _("tiny_string::operator=(): std::string is too big for tiny_string, cropping: ") << s.size() <<_(">")<<4096);
 			//	strcpy(buf,s.substr(0,4096).c_str());
 			//  return *this;
 			//}
@@ -600,7 +605,7 @@ public:
 	FB(int s,BitStream& stream):size(s)
 	{
 		if(s>32)
-			LOG(LOG_ERROR,"Fixed point bit field wider than 32 bit not supported");
+			LOG(LOG_ERROR,_("Fixed point bit field wider than 32 bit not supported"));
 		buf=stream.readBits(s);
 		if(buf>>(s-1)&1)
 		{
@@ -644,7 +649,7 @@ public:
 			i++;
 		}*/
 		if(s>32)
-			LOG(LOG_ERROR,"Unsigned bit field wider than 32 bit not supported");
+			LOG(LOG_ERROR,_("Unsigned bit field wider than 32 bit not supported"));
 		buf=stream.readBits(s);
 	}
 	operator int() const
@@ -662,7 +667,7 @@ public:
 	SB(int s,BitStream& stream):size(s)
 	{
 		if(s>32)
-			LOG(LOG_ERROR,"Signed bit field wider than 32 bit not supported");
+			LOG(LOG_ERROR,_("Signed bit field wider than 32 bit not supported"));
 		buf=stream.readBits(s);
 		if(buf>>(s-1)&1)
 		{

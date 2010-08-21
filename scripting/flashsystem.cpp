@@ -21,6 +21,10 @@
 #include "abc.h"
 #include "class.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 
 SET_NAMESPACE("flash.system");
@@ -82,7 +86,7 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 	stringToQName(tmp,name.name_s,name.ns[0].name);
 
-	LOG(LOG_CALLS,"Looking for definition of " << name);
+	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
 	ASObject* o=getGlobal()->getVariableAndTargetByMultiname(name,target);
 	if(o==NULL)
@@ -92,7 +96,7 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 		//Check if the object has to be defined
 		if(o->getObjectType()==T_DEFINABLE)
 		{
-			LOG(LOG_CALLS,"We got an object not yet valid");
+			LOG(LOG_CALLS,_("We got an object not yet valid"));
 			Definable* d=static_cast<Definable*>(o);
 			d->define(target);
 			o=target->getVariableByMultiname(name);
@@ -101,7 +105,7 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 		if(o->getObjectType()!=T_CLASS)
 			return abstract_b(false);
 
-		LOG(LOG_CALLS,"Found definition for " << name);
+		LOG(LOG_CALLS,_("Found definition for ") << name);
 		return abstract_b(true);
 	}
 }
@@ -117,7 +121,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	stringToQName(tmp,name.name_s,name.ns[0].name);
 
-	LOG(LOG_CALLS,"Looking for definition of " << name);
+	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;
 	ASObject* o=getGlobal()->getVariableAndTargetByMultiname(name,target);
 	assert_and_throw(o);
@@ -126,7 +130,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 	if(o->getObjectType()==T_DEFINABLE)
 	{
 		throw UnsupportedException("Defininable in ApplicationDomain::getDefinition");
-/*		LOG(LOG_CALLS,"We got an object not yet valid");
+/*		LOG(LOG_CALLS,_("We got an object not yet valid"));
 		Definable* d=static_cast<Definable*>(o.obj);
 		d->define(sys->currentVm->last_context->Global);
 		o=sys->currentVm->last_context->Global->getVariableByQName(name,ns,owner);*/
@@ -134,7 +138,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	assert(o->getObjectType()==T_CLASS);
 
-	LOG(LOG_CALLS,"Getting definition for " << name);
+	LOG(LOG_CALLS,_("Getting definition for ") << name);
 	return o;
 }
 
@@ -195,25 +199,25 @@ ASFUNCTIONBODY(Security,_getSandboxType)
 
 ASFUNCTIONBODY(Security, allowDomain)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Security::allowDomain");
+	LOG(LOG_NOT_IMPLEMENTED, _("Security::allowDomain"));
 	return NULL;
 }
 
 ASFUNCTIONBODY(Security, allowInsecureDomain)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Security::allowInsecureDomain");
+	LOG(LOG_NOT_IMPLEMENTED, _("Security::allowInsecureDomain"));
 	return NULL;
 }
 
 ASFUNCTIONBODY(Security, loadPolicyFile)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Security::loadPolicyFile");
+	LOG(LOG_NOT_IMPLEMENTED, _("Security::loadPolicyFile"));
 	return NULL;
 }
 
 ASFUNCTIONBODY(Security, showSettings)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Security::showSettings");
+	LOG(LOG_NOT_IMPLEMENTED, _("Security::showSettings"));
 	return NULL;
 }
 

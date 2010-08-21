@@ -1266,7 +1266,6 @@ void ABCContext::exec()
 #endif
 		LOG(LOG_CALLS, _("Building script traits: ") << scripts[i].trait_count );
 		SyntheticFunction* mf=Class<IFunction>::getSyntheticFunction(m);
-		mf->addToScope(global);
 
 		for(unsigned int j=0;j<scripts[i].trait_count;j++)
 			buildTrait(global,&scripts[i].traits[j],mf);
@@ -1286,7 +1285,6 @@ void ABCContext::exec()
 #ifndef NDEBUG
 		global->initialized=false;
 #endif
-	entry->addToScope(global);
 
 	LOG(LOG_CALLS, _("Building entry script traits: ") << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)

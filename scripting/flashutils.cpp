@@ -310,17 +310,20 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 {
 	assert_and_throw(args && argslen==1);
 	const tiny_string& tmp=args[0]->toString();
-	tiny_string name,ns;
+	multiname name;
+	name.name_type=multiname::NAME_STRING;
+	name.ns.push_back(nsNameAndKind("",0)); //TODO: set type
 
-	stringToQName(tmp,name,ns);
+	stringToQName(tmp,name.name_s,name.ns[0].name);
 
-	LOG(LOG_CALLS,"Looking for definition of " << ns << " :: " << name);
-	ASObject* o=getGlobal()->getVariableByQName(name,ns);
+	LOG(LOG_CALLS,"Looking for definition of " << name);
+	ASObject* target;
+	ASObject* o=getGlobal()->getVariableAndTargetByMultiname(name,target);
 
 	//TODO: should raise an exception, for now just return undefined	
 	if(o==NULL)
 	{
-		LOG(LOG_ERROR,"Definition for '" << ns << " :: " << name << "' not found.");
+		LOG(LOG_ERROR,"Definition for '" << name << "' not found.");
 		return new Undefined;
 	}
 
@@ -329,13 +332,13 @@ ASFUNCTIONBODY(lightspark,getDefinitionByName)
 	{
 		LOG(LOG_CALLS,"We got an object not yet valid");
 		Definable* d=static_cast<Definable*>(o);
-		d->define(getGlobal());
-		o=getGlobal()->getVariableByQName(name,ns);
+		d->define(target);
+		o=target->getVariableByMultiname(name);
 	}
 
 	assert_and_throw(o->getObjectType()==T_CLASS);
 
-	LOG(LOG_CALLS,"Getting definition for " << ns << " :: " << name);
+	LOG(LOG_CALLS,"Getting definition for " << name);
 	o->incRef();
 	return o;
 }

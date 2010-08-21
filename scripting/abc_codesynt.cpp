@@ -2786,13 +2786,14 @@ SyntheticFunction::synt_function method_info::synt_method()
 				bool staticallyResolved=false;
 				if(rtdata==0)
 				{
-					multiname* name=this->context->getMultiname(t,NULL);
-					if(getGlobal()->getVariableByMultiname(*name)!=NULL)
+					assert(false && "rewrite support for early binding");
+/*					multiname* name=this->context->getMultiname(t,NULL);
+					if(getGlobal()->getVariableAndTargetByMultiname(*name)!=NULL)
 					{
 						//Ok, let's push global at runtime
 						value=Builder.CreateCall(ex->FindFunctionNamed("getGlobalScope"));
 						staticallyResolved=true;
-					}
+					}*/
 				}
 
 				if(staticallyResolved==false)

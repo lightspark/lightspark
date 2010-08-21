@@ -2701,7 +2701,8 @@ const std::vector<Class_base*>& Class_base::getInterfaces() const
 		//Recursively get interfaces implemented by this interface
 		for(unsigned int i=0;i<interfaces.size();i++)
 		{
-			ASObject* interface_obj=getGlobal()->getVariableByMultiname(interfaces[i]);
+			ASObject* target;
+			ASObject* interface_obj=getGlobal()->getVariableAndTargetByMultiname(interfaces[i], target);
 			assert_and_throw(interface_obj && interface_obj->getObjectType()==T_CLASS);
 			Class_base* inter=static_cast<Class_base*>(interface_obj);
 
@@ -2881,6 +2882,39 @@ Class<IFunction>* Class<IFunction>::getClass()
 void GlobalObject::registerGlobalScope(ASObject* scope)
 {
 	globalScopes.push_back(scope);
+}
+
+ASObject* GlobalObject::getVariableByString(const std::string& str, ASObject*& target)
+{
+	size_t index=str.rfind('.');
+	multiname name;
+	name.name_type=multiname::NAME_STRING;
+	if(index==str.npos) //No dot
+	{
+		name.name_s=str;
+		name.ns.push_back(nsNameAndKind("",0)); //TODO: use ns kind
+	}
+	else
+	{
+		name.name_s=str.substr(index+1);
+		name.ns.push_back(nsNameAndKind(str.substr(0,index),0));
+	}
+	return getVariableAndTargetByMultiname(name, target);
+}
+
+ASObject* GlobalObject::getVariableAndTargetByMultiname(const multiname& name, ASObject*& target)
+{
+	ASObject* o=NULL;
+	for(uint32_t i=0;i<globalScopes.size();i++)
+	{
+		o=globalScopes[i]->getVariableByMultiname(name);
+		if(o)
+		{
+			target=globalScopes[i];
+			break;
+		}
+	}
+	return o;
 }
 
 /*ASObject* GlobalObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)

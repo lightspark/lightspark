@@ -550,12 +550,6 @@ void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_strin
 	Variables.initSlot(n,name,ns);
 }
 
-ASObject* ASObject::getVariableByString(const std::string& name)
-{
-	ASObject* ret=Variables.getVariableByString(name);
-	return ret;
-}
-
 //In all the getter function we first ask the interface, so that special handling (e.g. Array)
 //can be done
 intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
@@ -660,27 +654,6 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 			return ret;
 	}
 
-	return NULL;
-}
-
-ASObject* variables_map::getVariableByString(const std::string& name)
-{
-	//Slow linear lookup, should be avoided
-	var_iterator it=Variables.begin();
-	for(;it!=Variables.end();it++)
-	{
-		string cur(it->second.first.raw_buf());
-		if(!cur.empty())
-			cur+='.';
-		cur+=it->first.raw_buf();
-		if(cur==name)
-		{
-			if(it->second.second.getter)
-				throw UnsupportedException("Getters are not supported in getVariableByString"); 
-			return it->second.second.var;
-		}
-	}
-	
 	return NULL;
 }
 

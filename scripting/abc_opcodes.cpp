@@ -293,7 +293,6 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 			LOG(LOG_CALLS,"We got a function not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
-			assert_and_throw(obj==getGlobal());
 			o=obj->getVariableByMultiname(*name);
 		}
 
@@ -1331,7 +1330,6 @@ void ABCVm::getSuper(call_context* th, int n)
 			LOG(LOG_CALLS,"We got an object not yet valid");
 			Definable* d=static_cast<Definable*>(o);
 			d->define(obj);
-			assert_and_throw(obj==getGlobal());
 			o=obj->getVariableByMultiname(*name);
 		}
 		o->incRef();
@@ -1380,7 +1378,6 @@ void ABCVm::getLex(call_context* th, int n)
 				LOG(LOG_CALLS,"Deferred definition of property " << *name);
 				Definable* d=static_cast<Definable*>(o);
 				d->define(*it);
-				assert_and_throw(*it==getGlobal());
 				o=(*it)->getVariableByMultiname(*name);
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
@@ -1389,31 +1386,32 @@ void ABCVm::getLex(call_context* th, int n)
 			return;
 		}
 	}
+
 	if(o==NULL)
 	{
 		LOG(LOG_CALLS, "NOT found, trying Global" );
-		o=getGlobal()->getVariableByMultiname(*name);
+		ASObject* target;
+		o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 		if(o)
 		{
 			if(o->getObjectType()==T_DEFINABLE)
 			{
 				LOG(LOG_CALLS,"Deferred definition of property " << *name);
 				Definable* d=static_cast<Definable*>(o);
-				d->define(getGlobal());
-				o=getGlobal()->getVariableByMultiname(*name);
+				d->define(target);
+				o=target->getVariableByMultiname(*name);
 				LOG(LOG_CALLS,"End of deferred definition of property " << *name);
 			}
 			else if(o->getObjectType()==T_FUNCTION)
 				throw UnsupportedException("Functions are not yet gettable in getLex");
-
-			th->runtime_stack_push(o);
-			o->incRef();
 		}
-		else
+		if(o==NULL)
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"NOT found " << name->name_s<< ", pushing Undefined");
-			th->runtime_stack_push(new Undefined);
+			LOG(LOG_NOT_IMPLEMENTED, "NOT found, pushing Undefined");
+			o=new Undefined;
 		}
+		th->runtime_stack_push(o);
+		o->incRef();
 	}
 }
 
@@ -1476,7 +1474,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	if(o==NULL)
 	{
 		LOG(LOG_CALLS, "NOT found, pushing global" );
-		ret=getGlobal();
+		ret=th->scope_stack[0];
 	}
 
 	assert_and_throw(ret);
@@ -1512,22 +1510,10 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	if(o==NULL)
 	{
 		LOG(LOG_CALLS, "NOT found, trying Global" );
-		GlobalObject* global=getGlobal();
-		for(uint32_t i=0;i<global->globalScopes.size();i++)
-		{
-			o=global->globalScopes[i]->getVariableByMultiname(*name);
-			if(o)
-			{
-				ret=global->globalScopes[i];
-				break;
-			}
-		}
-		if(o==NULL) //Ask Global itself
-		{
-			o=global->getVariableByMultiname(*name);
-			if(o)
-				ret=global;
-		}
+		ASObject* target;
+		o=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+		if(o)
+			ret=target;
 		if(o==NULL)
 		{
 			LOG(LOG_NOT_IMPLEMENTED, "NOT found, pushing Undefined");
@@ -1754,7 +1740,8 @@ bool ABCVm::isType(ASObject* obj, multiname* name)
 {
 	LOG(LOG_CALLS, "isType " << *name);
 
-	ASObject* ret=getGlobal()->getVariableByMultiname(*name);
+	ASObject* target;
+	ASObject* ret=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 	if(!ret) //Could not retrieve type
 	{
 		LOG(LOG_ERROR,"Cannot retrieve type");
@@ -2287,7 +2274,8 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->addImplementedInterface(*name);
 
 		//Make the class valid if needed
-		ASObject* obj=getGlobal()->getVariableByMultiname(*name);
+		ASObject* target;
+		ASObject* obj=getGlobal()->getVariableAndTargetByMultiname(*name, target);
 
 		//Named only interfaces seems to be allowed 
 		if(obj==NULL)
@@ -2297,9 +2285,9 @@ void ABCVm::newClass(call_context* th, int n)
 		{
 			LOG(LOG_CALLS,"Class " << *name << " is not yet valid (as interface)");
 			Definable* d=static_cast<Definable*>(obj);
-			d->define(getGlobal());
+			d->define(target);
 			LOG(LOG_CALLS,"End of deferred init of class " << *name);
-			obj=getGlobal()->getVariableByMultiname(*name);
+			obj=target->getVariableByMultiname(*name);
 			assert_and_throw(obj);
 		}
 	}

@@ -340,4 +340,4 @@ IF(COMPILE_PLUGIN)
 ENDIF(COMPILE_PLUGIN)
 
 # generate locales for gettext
-GETTEXT_CREATE_TRANSLATIONS(lightspark.pot ALL po/pl.po)
+GETTEXT_CREATE_TRANSLATIONS(lightspark.pot ALL po/pl.po po/fr.po)

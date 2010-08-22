@@ -55,23 +55,23 @@ void PulsePlugin::start()
   pa_threaded_mainloop_unlock(mainLoop);
 }
 
-vector< string* > PulsePlugin::get_devicesList(DEVICE_TYPES desiredType)
+vector< string* > *PulsePlugin::get_devicesList(DEVICE_TYPES desiredType)
 {
   pa_threaded_mainloop_lock(mainLoop);
-  pa_threaded_mainloop_unlock(mainloop);
+  pa_threaded_mainloop_unlock(mainLoop);
 }
 
 void PulsePlugin::set_device(string desiredDevice, DEVICE_TYPES desiredType)
 {
   selectedPlaybackDevice = desiredDevice;
   pa_threaded_mainloop_lock(mainLoop);
-  pa_threaded_mainloop_unlock(mainloop);
+  pa_threaded_mainloop_unlock(mainLoop);
 }
 
 void PulsePlugin::generateDevicesList(std::vector< string* >* devicesList, DEVICE_TYPES deviceType)
 {
   pa_threaded_mainloop_lock(mainLoop);
-  pa_threaded_mainloop_unlock(mainloop);
+  pa_threaded_mainloop_unlock(mainLoop);
 
 }
 
@@ -308,7 +308,7 @@ void PulsePlugin::contextStatusCB(pa_context *context, PulsePlugin *th)
 		case PA_CONTEXT_TERMINATED:
 			th->noServer=true;
 			th->contextReady=false; //It should be false
-			stop(); //It should be stopped if the context can't be set
+			th->stop(); //It should be stopped if the context can't be set
 			LOG(LOG_ERROR,_("Connection to PulseAudio server failed"));
 			break;
 		default:

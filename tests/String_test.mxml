@@ -69,6 +69,19 @@
 		ret3 = str.split("");
 		Tests.assertArrayEquals(["s", "p", "l", "i", "t", "t", "a", "b", "l", "e"], ret3, "split(): empty string split", true);
 
+		//Search tests
+		str = new String("searchable");
+		var ret4:int = str.search("e");
+		Tests.assertEquals(1, ret4, "search(): normal string search");
+
+		re = new RegExp("[ea]")
+		ret4 = str.search(re);
+		Tests.assertEquals(1, ret4, "search(): regexp search");
+
+		re = new RegExp("[ea]", "g")
+		ret4 = str.search(re);
+		Tests.assertEquals(1, ret4, "search(): global regexp search");
+
 		Tests.report(visual, this.name);
 	}
 	private function func1():String

@@ -35,9 +35,13 @@ Abstract class for audio plugin implementation
 class IAudioPlugin : public IPlugin
 {
   protected:
+    enum DEVICE_TYPES { playback=0, capture};
     class AudioStream; //Early declaration, it will be implemented per plugin
-//    string audiobackend_name;
-    virtual void start() = 0;
+    string selectedPlaybackDevice;
+    string selectedCaptureDevice;
+    vector<string *> playbackDevicesList;
+    vector<string *> captureDevicesList;
+    virtual void generateDevicesList(vector<string *> *devicesList, DEVICE_TYPES deviceType) = 0; //Populates the devices lists
     vector<AudioStream*> streams;
     volatile bool contextReady;
     volatile bool noServer;
@@ -49,8 +53,9 @@ class IAudioPlugin : public IPlugin
 */
     virtual bool Is_Connected() = 0;
     virtual bool get_serverStatus() = 0;
-//    virtual PLUGIN_TYPES get_pluginType() = 0;
     virtual const string get_pluginName() = 0;
+    virtual vector<string *> *get_devicesList(DEVICE_TYPES desiredType) = 0;
+    virtual void set_device(string desiredDevice, DEVICE_TYPES desiredType) = 0;
     virtual bool Is_ContextReady() = 0;
     virtual bool Is_Stopped() = 0;
     virtual uint32_t createStream(lightspark::AudioDecoder *decoder) = 0;

@@ -17,6 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "libgen.h"
+
 #include <string>
 #include <pthread.h>
 #include <algorithm>
@@ -28,7 +30,6 @@
 #include "parsing/streams.h"
 #include "asobject.h"
 #include "scripting/class.h"
-#include "backends/netutils.h"
 #include "backends/rendering.h"
 
 #include "SDL.h"
@@ -189,10 +190,12 @@ void SystemState::setDownloadedPath(const tiny_string& p)
 	sem_post(&mutex);
 }
 
-void SystemState::setUrl(const tiny_string& url)
+void SystemState::setUrl(const tiny_string& u)
 {
-	loaderInfo->url=url;
-	loaderInfo->loaderURL=url;
+	url = u;
+
+	loaderInfo->url=u;
+	loaderInfo->loaderURL=u;
 }
 
 void SystemState::setCookies(const char* c)

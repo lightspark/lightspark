@@ -29,10 +29,12 @@
 
 #include <locale.h>
 #include <libintl.h>
+#include <libgen.h>
 #define _(STRING) gettext(STRING)
 
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
+
 
 
 Downloader* CurlDownloadManager::download(const tiny_string& u)

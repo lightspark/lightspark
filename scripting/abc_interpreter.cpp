@@ -23,6 +23,10 @@
 #include <string>
 #include <sstream>
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -394,14 +398,14 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				s24 t;
 				code >> t;
 				int defaultdest=here+t;
-				LOG(LOG_CALLS,"Switch default dest " << defaultdest);
+				LOG(LOG_CALLS,_("Switch default dest ") << defaultdest);
 				u30 count;
 				code >> count;
 				vector<s24> offsets(count+1);
 				for(unsigned int i=0;i<count+1;i++)
 				{
 					code >> offsets[i];
-					LOG(LOG_CALLS,"Switch dest " << i << ' ' << offsets[i]);
+					LOG(LOG_CALLS,_("Switch dest ") << i << ' ' << offsets[i]);
 				}
 
 				ASObject* index_obj=context->runtime_stack_pop();
@@ -626,14 +630,14 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			case 0x47:
 			{
 				//returnvoid
-				LOG(LOG_CALLS,"returnVoid");
+				LOG(LOG_CALLS,_("returnVoid"));
 				return NULL;
 			}
 			case 0x48:
 			{
 				//returnvalue
 				ASObject* ret=context->runtime_stack_pop();
-				LOG(LOG_CALLS,"returnValue " << ret);
+				LOG(LOG_CALLS,_("returnValue ") << ret);
 				return ret;
 			}
 			case 0x49:
@@ -770,7 +774,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				code >> i;
 				assert_and_throw(context->locals[i]);
 				context->locals[i]->incRef();
-				LOG(LOG_CALLS, "getLocal " << i << ": " << context->locals[i]->toString(true) );
+				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toString(true) );
 				context->runtime_stack_push(context->locals[i]);
 				break;
 			}
@@ -779,7 +783,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//setlocal
 				u30 i;
 				code >> i;
-				LOG(LOG_CALLS, "setLocal " << i );
+				LOG(LOG_CALLS, _("setLocal ") << i );
 				ASObject* obj=context->runtime_stack_pop();
 				assert_and_throw(obj);
 				if(context->locals[i])
@@ -790,7 +794,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			case 0x64:
 			{
 				//getglobalscope
-				context->runtime_stack_push(getGlobalScope());
+				context->runtime_stack_push(getGlobalScope(context));
 				break;
 			}
 			case 0x65:
@@ -1207,7 +1211,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 				//getlocal_n
 				int i=opcode&3;
 				assert_and_throw(context->locals[i]);
-				LOG(LOG_CALLS, "getLocal " << i << ": " << context->locals[i]->toString(true) );
+				LOG(LOG_CALLS, _("getLocal ") << i << _(": ") << context->locals[i]->toString(true) );
 				context->locals[i]->incRef();
 				context->runtime_stack_push(context->locals[i]);
 				break;
@@ -1219,7 +1223,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			{
 				//setlocal_n
 				int i=opcode&3;
-				LOG(LOG_CALLS, "setLocal " << i );
+				LOG(LOG_CALLS, _("setLocal ") << i );
 				ASObject* obj=context->runtime_stack_pop();
 				if(context->locals[i])
 					context->locals[i]->decRef();
@@ -1230,7 +1234,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			case 0xef:
 			{
 				//debug
-				LOG(LOG_CALLS, "debug" );
+				LOG(LOG_CALLS, _("debug") );
 				uint8_t debug_type;
 				u30 index;
 				uint8_t reg;
@@ -1244,7 +1248,7 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			case 0xf0:
 			{
 				//debugline
-				LOG(LOG_CALLS, "debugline" );
+				LOG(LOG_CALLS, _("debugline") );
 				u30 t;
 				code >> t;
 				break;
@@ -1252,14 +1256,14 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 			case 0xf1:
 			{
 				//debugfile
-				LOG(LOG_CALLS, "debugfile" );
+				LOG(LOG_CALLS, _("debugfile") );
 				u30 t;
 				code >> t;
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,"Not intepreted instruction @" << code.tellg());
-				LOG(LOG_ERROR,"dump " << hex << (unsigned int)opcode << dec);
+				LOG(LOG_ERROR,_("Not intepreted instruction @") << code.tellg());
+				LOG(LOG_ERROR,_("dump ") << hex << (unsigned int)opcode << dec);
 				throw ParseException("Not implemented instruction in interpreter");
 		}
 	}

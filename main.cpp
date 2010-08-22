@@ -35,6 +35,10 @@
 #undef main
 #endif
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -51,6 +55,10 @@ int main(int argc, char* argv[])
 	bool useInterpreter=true;
 	bool useJit=false;
 	LOG_LEVEL log_level=LOG_NOT_IMPLEMENTED;
+
+	setlocale(LC_ALL, "");
+	bindtextdomain("lightspark", "/usr/share/locale");
+	textdomain("lightspark");
 
 	for(int i=1;i<argc;i++)
 	{
@@ -173,7 +181,7 @@ int main(int argc, char* argv[])
 	//One of useInterpreter or useJit must be enabled
 	if(!(useInterpreter || useJit))
 	{
-		LOG(LOG_ERROR,"No execution model enabled");
+		LOG(LOG_ERROR,_("No execution model enabled"));
 		exit(-1);
 	}
 	sys->useInterpreter=useInterpreter;
@@ -191,11 +199,11 @@ int main(int argc, char* argv[])
 	if(sandboxType == Security::REMOTE || 
 			sandboxType == Security::LOCAL_WITH_NETWORK)
 	{
-		LOG(LOG_NO_INFO, "Running in remote sandbox");
+		LOG(LOG_NO_INFO, _("Running in remote sandbox"));
 		sys->downloadManager=new CurlDownloadManager();
 	}
 	else {
-		LOG(LOG_NO_INFO, "Running in local-with-filesystem sandbox");
+		LOG(LOG_NO_INFO, _("Running in local-with-filesystem sandbox"));
 		sys->downloadManager=new LocalDownloadManager();
 	}
 

@@ -23,6 +23,10 @@
 #include "parsing/flv.h"
 #include "scripting/flashsystem.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -435,7 +439,7 @@ void NetStream::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(NetStream,_constructor)
 {
-	LOG(LOG_CALLS,"NetStream constructor");
+	LOG(LOG_CALLS,_("NetStream constructor"));
 	assert_and_throw(argslen>=1 && argslen <=2);
 	assert_and_throw(args[0]->getPrototype()==Class<NetConnection>::getClass());
 
@@ -512,7 +516,7 @@ ASFUNCTIONBODY(NetStream,close)
 	NetStream* th=Class<NetStream>::cast(obj);
 	//The downloader is stopped in threadAbort
 	th->threadAbort();
-	LOG(LOG_CALLS, "NetStream::close called");
+	LOG(LOG_CALLS, _("NetStream::close called"));
 	return NULL;
 }
 
@@ -722,7 +726,7 @@ void NetStream::execute()
 						break;
 					}
 					default:
-						LOG(LOG_ERROR,"Unexpected tag type " << (int)TagType << " in FLV");
+						LOG(LOG_ERROR,_("Unexpected tag type ") << (int)TagType << _(" in FLV"));
 						threadAbort();
 				}
 				if(!tickStarted && isReady())
@@ -762,7 +766,7 @@ void NetStream::execute()
 	}
 	catch(exception& e)
 	{
-		LOG(LOG_ERROR, "Exception in reading: "<<e.what());
+		LOG(LOG_ERROR, _("Exception in reading: ")<<e.what());
 		waitForFlush=false; //added, because shouldn't it be false for any error?
 	}
 

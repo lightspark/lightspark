@@ -180,6 +180,7 @@ struct call_context
 	ABCContext* context;
 	int locals_size;
 	std::vector<ASObject*> scope_stack;
+	int initialScopeStack;
 	void runtime_stack_push(ASObject* s);
 	ASObject* runtime_stack_pop();
 	ASObject* runtime_stack_peek();
@@ -408,7 +409,7 @@ public:
 	std::vector<script_info> scripts;
 	u30 method_body_count;
 	std::vector<method_body_info> method_body;
-	void buildTrait(ASObject* obj, const traits_info* t, bool bind, IFunction* deferred_initialization=NULL);
+	void buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization=NULL);
 	void linkTrait(Class_base* obj, const traits_info* t);
 	void getOptionalConstant(const option_detail& opt);
 	multiname* getMultiname(unsigned int m, call_context* th);
@@ -564,7 +565,7 @@ private:
 	static uintptr_t increment(ASObject*);
 	static uintptr_t decrement(ASObject*);
 	static uintptr_t decrement_i(ASObject*);
-	static ASObject* getGlobalScope();
+	static ASObject* getGlobalScope(call_context* th);
 	static bool strictEquals(ASObject*,ASObject*);
 	//Utility
 	static void not_impl(int p);
@@ -600,7 +601,7 @@ private:
 	std::vector<thisAndLevel> method_this_stack;
 
 public:
-	ASObject* Global;
+	GlobalObject* Global;
 	Manager* int_manager;
 	Manager* number_manager;
 	llvm::ExecutionEngine* ex;
@@ -657,7 +658,7 @@ public:
 
 ASObject* undefinedFunction(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
-inline ASObject* getGlobal()
+inline GlobalObject* getGlobal()
 {
 	return sys->currentVm->Global;
 }

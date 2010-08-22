@@ -21,6 +21,10 @@
 #include "PulsePlugin.h"
 #include "../AudioPlugin.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 #ifdef PULSE_BACKEND
 using namespace lightspark;
 using namespace std;
@@ -305,7 +309,7 @@ void PulsePlugin::contextStatusCB(pa_context *context, PulsePlugin *th)
 			th->noServer=true;
 			th->contextReady=false; //It should be false
 			stop(); //It should be stopped if the context can't be set
-			LOG(LOG_ERROR,"Connection to PulseAudio server failed");
+			LOG(LOG_ERROR,_("Connection to PulseAudio server failed"));
 			break;
 		default:
 			break;

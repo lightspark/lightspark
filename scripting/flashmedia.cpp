@@ -22,6 +22,10 @@
 #include <iostream>
 #include "backends/rendering.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace lightspark;
 using namespace std;
 
@@ -41,7 +45,7 @@ void SoundTransform::sinit(Class_base* c)
 
 ASFUNCTIONBODY(SoundTransform,_constructor)
 {
-	LOG(LOG_CALLS,"SoundTransform constructor");
+	LOG(LOG_CALLS,_("SoundTransform constructor"));
 	return NULL;
 }
 

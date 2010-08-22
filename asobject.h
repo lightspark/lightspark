@@ -76,7 +76,6 @@ private:
 	}
 	void setSlot(unsigned int n,ASObject* o);
 	void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
-	ASObject* getVariableByString(const std::string& name);
 	int size() const
 	{
 		return Variables.size();
@@ -189,7 +188,6 @@ public:
 		if(o && o!=o2)
 			o->decRef();
 	}
-	virtual ASObject* getVariableByString(const std::string& name);
 	//The enableOverride parameter is set to false in setSuper, getSuper and callSuper
 	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);

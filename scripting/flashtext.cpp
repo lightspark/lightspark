@@ -20,6 +20,10 @@
 #include "flashtext.h"
 #include "class.h"
 
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 using namespace std;
 using namespace lightspark;
 
@@ -96,7 +100,7 @@ ASFUNCTIONBODY(TextField,_setHeight)
 void TextField::Render()
 {
 	//TODO: implement
-	LOG(LOG_NOT_IMPLEMENTED,"TextField::Render");
+	LOG(LOG_NOT_IMPLEMENTED,_("TextField::Render"));
 }
 
 void StyleSheet::sinit(Class_base* c)

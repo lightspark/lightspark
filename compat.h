@@ -35,6 +35,11 @@
 #define snprintf _snprintf
 #define isnan _isnan
 
+// gettext support
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 // No real functionality for now
 typedef int pid_t;
 

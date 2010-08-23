@@ -842,7 +842,7 @@ ASFUNCTIONBODY(ASString,search)
 			pcre_free(pcreRE);
 			return abstract_i(ret);
 		}
-		assert_and_throw(capturingGroups==0);
+		assert_and_throw(capturingGroups<10);
 		int ovector[30];
 		int offset=0;
 		//Global is nor used in search

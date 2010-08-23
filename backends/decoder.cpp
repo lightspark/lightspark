@@ -26,10 +26,6 @@
 #include "swf.h"
 #include "graphics.h"
 
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
-
 using namespace lightspark;
 using namespace std;
 

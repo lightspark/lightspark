@@ -252,6 +252,7 @@ SET(LIBSPARK_SOURCES
 		backends/graphics.cpp
 		backends/input.cpp
 		backends/netutils.cpp
+		backends/urlutils.cpp
 		backends/rendering.cpp
 		backends/sound.cpp
 		parsing/flv.cpp

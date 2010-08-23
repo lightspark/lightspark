@@ -28,20 +28,15 @@
 #include "parsing/streams.h"
 #include "asobject.h"
 #include "scripting/class.h"
-#include "backends/netutils.h"
 #include "backends/rendering.h"
 
 #include "SDL.h"
 #include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
-
-#include "compat.h"
 #endif
 
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
+#include "compat.h"
 
 #ifdef ENABLE_LIBAVCODEC
 extern "C" {
@@ -189,10 +184,12 @@ void SystemState::setDownloadedPath(const tiny_string& p)
 	sem_post(&mutex);
 }
 
-void SystemState::setUrl(const tiny_string& url)
+void SystemState::setUrl(const tiny_string& u)
 {
-	loaderInfo->url=url;
-	loaderInfo->loaderURL=url;
+	url = u;
+
+	loaderInfo->url=u;
+	loaderInfo->loaderURL=u;
 }
 
 void SystemState::setCookies(const char* c)
@@ -517,8 +514,9 @@ void SystemState::createEngines()
 		int file=mkstemp(cookiesFileName);
 		if(file!=-1)
 		{
-			write(file,"Set-Cookie: ", 12);
-			write(file,rawCookies.c_str(),rawCookies.size());
+			size_t res;
+			res = write(file,"Set-Cookie: ", 12);
+			res = write(file,rawCookies.c_str(),rawCookies.size());
 			close(file);
 			setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
 		}

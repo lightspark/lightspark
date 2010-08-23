@@ -21,10 +21,7 @@
 #include "scripting/class.h"
 #include "scripting/toplevel.h"
 #include <algorithm>
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
+#include "compat.h"
 
 using namespace lightspark;
 using namespace std;

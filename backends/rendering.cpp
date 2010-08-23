@@ -20,6 +20,7 @@
 #include "scripting/abc.h"
 #include "parsing/textfile.h"
 #include "rendering.h"
+#include "compat.h"
 #include <sstream>
 //#include "swf.h"
 
@@ -31,10 +32,6 @@
 #include <GL/glx.h>
 #include <fontconfig/fontconfig.h>
 #endif
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
 
 using namespace lightspark;
 using namespace std;

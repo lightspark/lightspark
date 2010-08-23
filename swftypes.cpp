@@ -31,10 +31,7 @@
 #include "backends/rendering.h"
 #include "scripting/class.h"
 #include "exceptions.h"
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
+#include "compat.h"
 
 using namespace std;
 using namespace lightspark;

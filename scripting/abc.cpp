@@ -43,10 +43,7 @@
 #include "flashxml.h"
 #include "class.h"
 #include "exceptions.h"
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
+#include "compat.h"
 
 using namespace std;
 using namespace lightspark;

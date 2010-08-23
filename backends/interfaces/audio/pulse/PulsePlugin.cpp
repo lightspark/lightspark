@@ -32,7 +32,6 @@ using namespace std;
 
 PulsePlugin::PulsePlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
 	    bool init_contextReady, bool init_noServer, bool init_stopped)
-//  : AudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
 {
   pluginType = init_Type;
   pluginName = init_Name;
@@ -69,7 +68,7 @@ void PulsePlugin::set_device(string desiredDevice, DEVICE_TYPES desiredType)
   pa_threaded_mainloop_unlock(mainLoop);
 }
 
-void PulsePlugin::generateDevicesList(std::vector< string* >* devicesList, DEVICE_TYPES deviceType)
+void PulsePlugin::generateDevicesList(std::vector< string* >* devicesList, DEVICE_TYPES desiredType)
 {
   pa_threaded_mainloop_lock(mainLoop);
   pa_threaded_mainloop_unlock(mainLoop);

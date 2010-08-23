@@ -20,6 +20,7 @@
 #include <iostream>
 #include "OpenALPlugin.h"
 #include "../AudioPlugin.h"
+#include "compat.h"
 
 #ifdef OPENAL_BACKEND
 using namespace lightspark;
@@ -27,7 +28,6 @@ using namespace std;
 
 OpenALPlugin::OpenALPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
 	    bool init_contextReady, bool init_noServer, bool init_stopped)
-//  : AudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
 {
   pluginType = init_Type;
   pluginName = init_Name;
@@ -285,12 +285,58 @@ void OpenALPlugin::contextStatusCB(pa_context *context, OpenALPlugin *th)
 			break;
 		case PA_CONTEXT_FAILED:
 			th->noServer=true;
-			th->contextReady=true;
-			LOG(LOG_ERROR,"Connection to PulseAudio server failed");
+			th->contextReady=false;
+			th->stop();
+			LOG(LOG_ERROR,"Connection to OpenAL server failed");
 			break;
 		default:
 			break;
 	}
+}
+
+void OpenALPlugin::generateDevicesList(vector< string* >* devicesList, DEVICE_TYPES desiredType)
+{
+  if (alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") == AL_TRUE) //Check if the extension if found
+  {
+    const ALCchar *devices;
+    if(desiredType == playback)
+    {
+      devices = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+    }
+    else if(desiredType == capture)
+    {
+      devices = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+    }
+
+    while() //Split the devices into a vector
+    {
+    }
+  }
+}
+
+vector< string* >* OpenALPlugin::get_devicesList(DEVICE_TYPES desiredType)
+{
+  if(desiredType == playback)
+  {
+    return playbackDevicesList;
+  }
+  else if(desiredType == capture)
+  {
+    return captureDevicesList;
+  }
+}
+
+void OpenALPlugin::set_device(string desiredDevice, DEVICE_TYPES desiredType)
+{
+  selectedPlaybackDevice = desiredDevice;
+  if(desiredType == playback)
+  {
+    
+  }
+  else if(desiredType == capture)
+  {
+    
+  }
 }
 
 OpenALPlugin::~OpenALPlugin()

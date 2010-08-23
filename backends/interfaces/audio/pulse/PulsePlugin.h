@@ -47,7 +47,7 @@ class PulsePlugin : public AudioPlugin
 	static void contextStatusCB(pa_context *context, PulsePlugin *th);
 	static void streamStatusCB(pa_stream *stream, AudioStream *th);
 	static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
-	void generateDevicesList(vector<string *> *devicesList, DEVICE_TYPES deviceType); //To populate the devices lists, devicesType must be playback or capture
+	void generateDevicesList(vector<string *> *devicesList, DEVICE_TYPES desiredType); //To populate the devices lists, devicesType must be playback or capture
 	void start();
 	vector<AudioStream*> streams;
   public:

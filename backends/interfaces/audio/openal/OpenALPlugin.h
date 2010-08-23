@@ -50,6 +50,7 @@ class OpenALPlugin : public AudioPlugin
 	static void contextStatusCB(pa_context *context, OpenALPlugin *th);
 	static void streamStatusCB(pa_stream *stream, AudioStream *th);
 	static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
+	void generateDevicesList(vector<string *> *devicesList, DEVICE_TYPES desiredType); //To populate the devices lists, devicesType must be playback or capture
 	void start();
 	vector<AudioStream*> streams;
   public:
@@ -61,6 +62,8 @@ class OpenALPlugin : public AudioPlugin
 	void freeStream(uint32_t id);
 	void fill(uint32_t id);
 	void stop();
+	vector<string *> *get_devicesList(DEVICE_TYPES desiredType);
+	void set_device(string desiredDevice, DEVICE_TYPES desiredType);
 	uint32_t getPlayedTime(uint32_t streamId);
 	~OpenALPlugin();
 };

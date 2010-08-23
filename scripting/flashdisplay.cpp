@@ -637,11 +637,15 @@ void MovieClip::bootstrap()
 
 void MovieClip::Render()
 {
+	number_t t1,t2,t3,t4;
+	bool notEmpty=boundsRect(t1,t2,t3,t4);
+	if(!notEmpty)
+		return;
+
 	if(alpha==0.0)
 		return;
 	if(!visible)
 		return;
-	assert_and_throw(graphics==NULL);
 
 	MatrixApplier ma(getMatrix());
 	//Save current frame, this may change during rendering
@@ -661,6 +665,17 @@ void MovieClip::Render()
 			(*j)->Render();
 	}
 
+	//Draw the dynamically added graphics, if any
+	if(graphics)
+	{
+		//Should clean only the bounds of the graphics
+		if(!isSimple())
+			rt->glAcquireTempBuffer(t1,t2,t3,t4);
+		graphics->Render();
+		if(!isSimple())
+			rt->glBlitTempBuffer(t1,t2,t3,t4);
+	}
+
 	ma.unapply();
 }
 
@@ -671,8 +686,6 @@ void MovieClip::inputRender()
 	if(!visible)
 		return;
 	InteractiveObject::RenderProloue();
-
-	assert_and_throw(graphics==NULL);
 
 	MatrixApplier ma(getMatrix());
 	//Save current frame, this may change during rendering
@@ -692,6 +705,8 @@ void MovieClip::inputRender()
 			(*j)->inputRender();
 	}
 
+	if(graphics)
+		graphics->Render();
 	ma.unapply();
 	InteractiveObject::RenderEpilogue();
 }
@@ -747,7 +762,7 @@ Vector2 MovieClip::debugRender(FTFont* font, bool deep)
 	return ret;
 }
 
-bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool MovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	bool valid=false;
 	{
@@ -814,15 +829,19 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 			break;
 		}
 	}
-	
-	if(valid)
+	return valid;
+}
+
+bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	bool ret=boundsRect(xmin,xmax,ymin,ymax);
+	if(ret)
 	{
 		//TODO: take rotation into account
 		getMatrix().multiply2D(xmin,ymin,xmin,ymin);
 		getMatrix().multiply2D(xmax,ymax,xmax,ymax);
-		return true;
 	}
-	return false;
+	return ret;
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),onStage(false),root(NULL),loaderInfo(NULL),

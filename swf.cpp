@@ -17,8 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "libgen.h"
-
 #include <string>
 #include <pthread.h>
 #include <algorithm>
@@ -520,8 +518,9 @@ void SystemState::createEngines()
 		int file=mkstemp(cookiesFileName);
 		if(file!=-1)
 		{
-			write(file,"Set-Cookie: ", 12);
-			write(file,rawCookies.c_str(),rawCookies.size());
+			size_t res;
+			res = write(file,"Set-Cookie: ", 12);
+			res = write(file,rawCookies.c_str(),rawCookies.size());
 			close(file);
 			setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
 		}

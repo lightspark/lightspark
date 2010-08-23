@@ -41,16 +41,11 @@ class IAudioPlugin : public IPlugin
     string selectedCaptureDevice;
     vector<string *> playbackDevicesList;
     vector<string *> captureDevicesList;
-    virtual void generateDevicesList(vector<string *> *devicesList, DEVICE_TYPES deviceType) = 0; //Populates the devices lists
     vector<AudioStream*> streams;
     volatile bool contextReady;
     volatile bool noServer;
     bool stopped;
   public:
-/*    IAudioPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "undefined",
-		 string init_audiobackend = "undefined", bool init_contextReady = false,
-		 bool init_noServer = false, bool init_stopped = false);
-*/
     virtual bool Is_Connected() = 0;
     virtual bool get_serverStatus() = 0;
     virtual const string get_pluginName() = 0;

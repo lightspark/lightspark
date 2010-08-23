@@ -24,6 +24,7 @@
 
 #include <locale.h>
 #include <libintl.h>
+//#include "../../../logger.h"
 #define _(STRING) gettext(STRING)
 
 #ifdef PULSE_BACKEND
@@ -57,8 +58,18 @@ void PulsePlugin::start()
 
 vector< string* > *PulsePlugin::get_devicesList(DEVICE_TYPES desiredType)
 {
-  pa_threaded_mainloop_lock(mainLoop);
-  pa_threaded_mainloop_unlock(mainLoop);
+  if(desiredType == playback)
+  {
+    return &playbackDevicesList;
+  }
+  else if(desiredType == capture)
+  {
+    return &captureDevicesList;
+  }
+  else
+  {
+    return NULL;
+  }
 }
 
 void PulsePlugin::set_device(string desiredDevice, DEVICE_TYPES desiredType)
@@ -71,8 +82,43 @@ void PulsePlugin::set_device(string desiredDevice, DEVICE_TYPES desiredType)
 void PulsePlugin::generateDevicesList(std::vector< string* >* devicesList, DEVICE_TYPES desiredType)
 {
   pa_threaded_mainloop_lock(mainLoop);
+  pa_context_get_sink_info_list(context, playbackListCB, &playbackDevicesList);
+  pa_context_get_source_info_list(context, captureListCB, &captureDevicesList);
   pa_threaded_mainloop_unlock(mainLoop);
 
+}
+
+void PulsePlugin::captureListCB(pa_context* context, const pa_source_info* list, int eol, void *th)
+{
+  PulsePlugin *oPlugin = (PulsePlugin *)th;
+  string deviceName(list->name);
+  if(!eol && list) //Devices found
+  {
+    oPlugin->addDeviceToList(&oPlugin->captureDevicesList, &deviceName);
+  }
+}
+
+void PulsePlugin::playbackListCB(pa_context* context, const pa_sink_info* list, int eol, void *th)
+{
+  PulsePlugin *oPlugin = (PulsePlugin *)th;
+  string deviceName(list->name);
+  if(!eol && list) //Devices found
+  {
+    oPlugin->addDeviceToList(&oPlugin->playbackDevicesList, &deviceName);
+  }
+}
+
+void PulsePlugin::addDeviceToList(vector< string* >* devicesList, string *deviceName)
+{
+  uint32_t index = devicesList->size(); //we want to add the plugin to the end of the list
+  if(devicesList->size() == (uint32_t)(index))
+  {
+    devicesList->push_back(new string(*deviceName));
+  }
+//  devicesList[index] = deviceName;
+#if defined DEBUG
+  cout << "This is the device " << index  << " named: " << devicesList[index] << endl;
+#endif
 }
 
 bool PulsePlugin::Is_Connected()
@@ -302,14 +348,15 @@ void PulsePlugin::contextStatusCB(pa_context *context, PulsePlugin *th)
 	switch(pa_context_get_state(context))
 	{
 		case PA_CONTEXT_READY:
+			th->noServer=false; //In case something went wrong and the context is not correctly set
 			th->contextReady=true;
 			break;
 		case PA_CONTEXT_FAILED:
 		case PA_CONTEXT_TERMINATED:
 			th->noServer=true;
-			th->contextReady=false; //It should be false
-			th->stop(); //It should be stopped if the context can't be set
-			LOG(LOG_ERROR,_("Connection to PulseAudio server failed"));
+			th->contextReady=false; //In case something went wrong and the context is not correctly set
+			th->stop(); //It should stop if the context can't be set
+//			LOG(LOG_ERROR,_("Connection to PulseAudio server failed"));
 			break;
 		default:
 			break;

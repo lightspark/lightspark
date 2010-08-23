@@ -22,6 +22,7 @@
 #include <iostream>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
+#include "../logger.h"
 
 //Needed or not with compat.h and compat.cpp?
 #if defined WIN32
@@ -61,27 +62,65 @@ AudioManager::AudioManager(PluginManager *sharedPluginManager)
 
 void AudioManager::fillPlugin(uint32_t id)
 {
-  oAudioPlugin->fill(id);
+  if(oAudioPlugin != NULL)
+  {
+    oAudioPlugin->fill(id);
+  }
+  else
+  {
+    LOG(LOG_ERROR,_("No audio plugin loaded"));
+  }
 }
 
 void AudioManager::freeStreamPlugin(uint32_t id)
 {
-  oAudioPlugin->freeStream(id);
+  if(oAudioPlugin != NULL)
+  {
+    oAudioPlugin->freeStream(id);
+  }
+  else
+  {
+    LOG(LOG_ERROR,_("No audio plugin loaded"));
+  }
 }
 
 uint32_t AudioManager::createStreamPlugin(AudioDecoder *decoder)
 {
-  return oAudioPlugin->createStream(decoder);
+  if(oAudioPlugin != NULL)
+  {
+    return oAudioPlugin->createStream(decoder);
+  }
+  else
+  {
+    LOG(LOG_ERROR,_("No audio plugin loaded"));
+    return -1;
+  }
 }
 
 uint32_t AudioManager::getPlayedTimePlugin(uint32_t streamId)
 {
-  return oAudioPlugin->getPlayedTime(streamId);
+  if(oAudioPlugin != NULL)
+  {
+    return oAudioPlugin->getPlayedTime(streamId);
+  }
+  else
+  {
+    LOG(LOG_ERROR,_("getPlayedTimePlugin: No audio plugin loaded"));
+    return 0;
+  }
 }
 
 bool AudioManager::isTimingAvailablePlugin() const
-{
-  return oAudioPlugin->isTimingAvailable();
+{ 
+  if(oAudioPlugin != NULL)
+  {
+    return oAudioPlugin->isTimingAvailable();
+  }
+  else
+  {
+    LOG(LOG_ERROR,_("isTimingAvailablePlugin: No audio plugin loaded"));
+    return false;
+  }
 }
 
 void AudioManager::set_audiobackend(string desired_backend)
@@ -115,18 +154,14 @@ void AudioManager::release_audioplugin()
 
 void AudioManager::load_audioplugin(string selected_backend)
 {
+  LOG(LOG_NO_INFO,_(((string)("the selected backend is: " + selected_backend)).c_str()));
   release_audioplugin();
   oAudioPlugin = static_cast<IAudioPlugin *>(pluginManager->get_plugin(selected_backend));
-#if defined DEBUG
-  if(oAudioPlugin != NULL)
+
+  if(oAudioPlugin == NULL)
   {
-  cout << "The following audio plugin has been loaded: " << oAudioPlugin->get_pluginName() << endl;
+    LOG(LOG_ERROR,_("Could not load the audiobackend"));
   }
-  else
-  {
-    cout << "The desired backend (" << selected_backend << ") could not be loaded." << endl;
-  }
-#endif
 }
 
 /**************************
@@ -140,7 +175,10 @@ AudioManager::~AudioManager()
 
 void AudioManager::stopPlugin()
 {
-  oAudioPlugin->stop();
+  if(oAudioPlugin != NULL)
+  {
+    oAudioPlugin->stop();
+  }
 }
 
 #endif

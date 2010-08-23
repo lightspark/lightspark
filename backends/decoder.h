@@ -166,7 +166,25 @@ public:
 };
 #endif
 
-class AudioDecoder: public Decoder
+class IAudioDecoder: public Decoder
+{
+  protected:
+    class FrameSamples; //Implemented per audiodecoder class
+    class FrameSamplesGenerator; //Implemented per audiodecoder class
+  public:
+    virtual uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
+    virtual bool hasDecodedFrames() const=0;
+    virtual uint32_t getFrontTime() const=0;
+    virtual uint32_t getBytesPerMSec() const=0;
+    virtual uint32_t copyFrame(int16_t* dest, uint32_t len)=0;
+    virtual void skipUntil(uint32_t time, uint32_t usecs)=0;
+    virtual void skipAll()=0;
+    virtual bool discardFrame()=0;
+    virtual void setFlushing()=0;
+    virtual ~IAudioDecoder(){};
+};
+
+class AudioDecoder: public IAudioDecoder
 {
 protected:
 	class FrameSamples

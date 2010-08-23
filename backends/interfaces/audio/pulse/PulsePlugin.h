@@ -37,7 +37,7 @@ class PulsePlugin : public AudioPlugin
 	public:
 	   enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
 	   pa_stream *stream;
-	   lightspark::AudioDecoder *decoder;
+	   lightspark::IAudioDecoder *decoder;
 	   PulsePlugin *manager;
 	   volatile STREAM_STATUS streamStatus;
 	   AudioStream(PulsePlugin *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
@@ -45,10 +45,13 @@ class PulsePlugin : public AudioPlugin
 	pa_threaded_mainloop *mainLoop;
 	pa_context *context;
 	static void contextStatusCB(pa_context *context, PulsePlugin *th);
+	void start();
+	static void playbackListCB(pa_context *context, const pa_sink_info *list, int eol, void *th);
+	static void captureListCB(pa_context *context, const pa_source_info *list, int eol, void *th);
+	void addDeviceToList(vector<string *> *devicesList, string *deviceName);
+	void generateDevicesList(vector<string *> *devicesList, DEVICE_TYPES desiredType); //To populate the devices lists, devicesType must be playback or capture
 	static void streamStatusCB(pa_stream *stream, AudioStream *th);
 	static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
-	void generateDevicesList(vector<string *> *devicesList, DEVICE_TYPES desiredType); //To populate the devices lists, devicesType must be playback or capture
-	void start();
 	vector<AudioStream*> streams;
   public:
 	PulsePlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "Pulse plugin output only",

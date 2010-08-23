@@ -23,6 +23,7 @@
 #include <list>
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
+#include "../logger.h"
 
 //Needed or not with compat.h and compat.cpp?
 #if defined WIN32
@@ -83,7 +84,7 @@ void PluginManager::findPlugins()
 
   if(!is_directory(plugins_folder))
   {
-    cout << "The plugins folder doesn't exists under " << plugins_folder << endl;
+    LOG(LOG_ERROR,_(((string)("The plugins folder doesn't exists under " + plugins_folder.string())).c_str()));
   }
   else
   {
@@ -104,9 +105,7 @@ void PluginManager::findPlugins()
 	    if (p_factory_function != NULL && p_cleanup_function != NULL) //Does it contain the LS IPlugin?
 	    {
 	      IPlugin *p_plugin = (*p_factory_function)(); //Instanciate the plugin
-	    #if defined DEBUG
-	      printf("Plugin %s for backend %d\n", p_plugin->get_pluginName(), p_plugin->get_backendName());
-	    #endif
+	      LOG(LOG_NO_INFO,_("A plugin was found. Adding it to the list."));
 	      addPluginToList(p_plugin, fullpath); //Add the plugin info to the audio plugins list
 	      
 	      (*p_cleanup_function)(p_plugin);
@@ -146,6 +145,7 @@ vector<string *> PluginManager::get_backendsList(PLUGIN_TYPES typeSearched)
 //get the desired plugin associated to the backend
 IPlugin *PluginManager::get_plugin(string desiredBackend)
 {
+  LOG(LOG_NO_INFO,_(((string)("get_plugin: " + desiredBackend)).c_str()));
   int32_t index = findPluginInList("", desiredBackend, "", NULL, NULL);
   if( index >= 0 )
   {
@@ -186,7 +186,7 @@ void PluginManager::addPluginToList(IPlugin *o_plugin, string pathToPlugin)
   }
   else
   {
-    index = 0;
+    index = (int32_t)(pluginsList.size()); //we want to add the plugin to the end of the list
     if(pluginsList.size() == (uint32_t)(index))
     {
       pluginsList.push_back(new PluginModule());
@@ -195,9 +195,7 @@ void PluginManager::addPluginToList(IPlugin *o_plugin, string pathToPlugin)
     pluginsList[index]->backendName = o_plugin->get_backendName();
     pluginsList[index]->pluginPath = pathToPlugin;
     pluginsList[index]->enabled = false;
-  #if defined DEBUG
-    cout << "This is the plugin " << index  << " added with backend: " << pluginsList[index]->backendName << endl;
-  #endif
+    LOG(LOG_NO_INFO,_(((string)("The plugin " + pluginsList[index]->pluginName + " was added with backend: " + pluginsList[index]->backendName)).c_str()));
   }
 }
 
@@ -245,6 +243,7 @@ int32_t PluginManager::findPluginInList(string desiredname, string desiredbacken
       return index;
     }
   }
+  LOG(LOG_ERROR,_("findPluginInList: no plugin found in list"));
   return -1;
 }
 

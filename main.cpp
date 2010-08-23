@@ -37,6 +37,7 @@
 
 #include <locale.h>
 #include <libintl.h>
+#include <unistd.h>
 #define _(STRING) gettext(STRING)
 
 using namespace std;
@@ -174,9 +175,21 @@ int main(int argc, char* argv[])
 	//NOTE: see SystemState declaration
 	sys=new SystemState(pt);
 
-	//Set a bit of SystemState using parameters
-	if(url)
+	//This setting allows qualifying filename-only paths to fully qualified paths
+	//When running in remote sandbox, set the root URL to the given parameter (if any)
+	if(url && sandboxType == Security::REMOTE)
 		sys->setUrl(url);
+	//When running in a local sandbox, set the root URL to the current working dir
+	else if(sandboxType != Security::REMOTE)
+	{
+		char * cwd = get_current_dir_name();
+		tiny_string cwdStr = tiny_string("file://") + tiny_string(cwd, true);
+		cwdStr += "/";
+		free(cwd);
+		sys->setUrl(cwdStr);
+	}
+	else
+		LOG(LOG_NO_INFO, "Warning: running in remote sandbox with no root URL set.");
 
 	//One of useInterpreter or useJit must be enabled
 	if(!(useInterpreter || useJit))

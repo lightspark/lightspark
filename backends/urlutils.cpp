@@ -66,7 +66,7 @@ URLInfo::URLInfo(const tiny_string& u, bool encoded)
 	if(protocol == "file")
 	{
 		pathPos = cursor;
-		if(pathPos == str.length()-1)
+		if(pathPos == str.length())
 			throw RunTimeException("URLInfo: invalid file:// url: no path");
 	}
 	else
@@ -111,10 +111,11 @@ URLInfo::URLInfo(const tiny_string& u, bool encoded)
 			pathDirectory = pathStr.substr(0, lastSlash+1);
 			pathFile = pathStr.substr(lastSlash+1);
 		}
+		//We only get here when parsing a file://abc URL
 		else
 		{
-			pathDirectory = path;
-			pathFile = "";
+			pathDirectory = "";
+			pathFile = path;
 		}
 	}
 	else
@@ -138,12 +139,16 @@ URLInfo::~URLInfo()
 tiny_string URLInfo::normalizePath(const tiny_string& u)
 {
 	std::string pathStr(u.raw_buf());
+
+	//Remove double slashes
 	size_t doubleSlash = pathStr.find("//");
 	while(doubleSlash != std::string::npos)
 	{
 		pathStr.replace(doubleSlash, 2, "/");
 		doubleSlash = pathStr.find("//");
 	}
+
+	//Parse all /../
 	size_t doubleDot = pathStr.find("/../");
 	size_t previousSlash;
 	while(doubleDot != std::string::npos)
@@ -161,11 +166,14 @@ tiny_string URLInfo::normalizePath(const tiny_string& u)
 		}
 		doubleDot = pathStr.find("/../");
 	}
-	if(pathStr.substr(pathStr.length()-3, 3) == "/..")
+
+	//Replace last /.. with one dir up
+	if(pathStr.length() >= 3 && pathStr.substr(pathStr.length()-3, 3) == "/..")
 	{
 		previousSlash = pathStr.rfind("/", pathStr.length()-4);
 		pathStr.replace(previousSlash, pathStr.length()-previousSlash+2, "/");
 	}
+
 	//Eliminate meaningless /./
 	size_t singleDot = pathStr.find("/./");
 	while(singleDot != std::string::npos)
@@ -177,6 +185,8 @@ tiny_string URLInfo::normalizePath(const tiny_string& u)
 
 	//Remove redundant last dot
 	if(pathStr.length() >= 2 && pathStr.substr(pathStr.length()-2, 2) == "/.")
+		pathStr.replace(pathStr.length()-1, 1, "");
+	if(pathStr.length() == 1 && pathStr.substr(pathStr.length()-1, 1) == ".")
 		pathStr.replace(pathStr.length()-1, 1, "");
 
 	return tiny_string(pathStr);
@@ -202,6 +212,7 @@ URLInfo URLInfo::getQualified(const tiny_string& u, bool encoded, const tiny_str
 		}
 		else
 			rootUrl = URLInfo(root);
+
 		qualified = std::string(rootUrl.getProtocol().raw_buf());
 		qualified += "://";
 		qualified += std::string(rootUrl.getHostname().raw_buf());

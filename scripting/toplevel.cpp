@@ -793,6 +793,7 @@ void ASString::sinit(Class_base* c)
 	c->setVariableByQName("replace",AS3,Class<IFunction>::getFunction(replace));
 	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(concat));
 	c->setVariableByQName("match",AS3,Class<IFunction>::getFunction(match));
+	c->setVariableByQName("search",AS3,Class<IFunction>::getFunction(search));
 	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	c->setVariableByQName("charCodeAt",AS3,Class<IFunction>::getFunction(charCodeAt));
 	c->setVariableByQName("charAt",AS3,Class<IFunction>::getFunction(charAt));
@@ -817,6 +818,23 @@ Array::~Array()
 				data[i].data->decRef();
 		}
 	}
+}
+
+ASFUNCTIONBODY(ASString,search)
+{
+	ASString* th=static_cast<ASString*>(obj);
+	int ret=-1;
+	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
+	{
+	}
+	else
+	{
+		const string& arg0=args[0]->toString().raw_buf();
+		size_t index=th->data.find(arg0);
+		if(index!=th->data.npos)
+			ret=index;
+	}
+	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(ASString,match)

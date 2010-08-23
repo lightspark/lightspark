@@ -21,17 +21,13 @@
 #include "input.h"
 #include "swf.h"
 #include "rendering.h"
+#include "compat.h"
 
 #include <SDL.h>
 
 #ifdef COMPILE_PLUGIN
 #include <gdk/gdkkeysyms.h>
 #endif
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
-
 
 using namespace lightspark;
 using namespace std;

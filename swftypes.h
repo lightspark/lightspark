@@ -37,11 +37,6 @@
 #include <arpa/inet.h>
 #endif
 
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
-
-
 namespace lightspark
 {
 

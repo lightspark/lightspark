@@ -23,10 +23,6 @@
 #include "logger.h"
 #include <vector>
 
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
-
 namespace lightspark
 {
 

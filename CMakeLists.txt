@@ -257,6 +257,7 @@ SET(LIBSPARK_SOURCES
   backends/input.cpp
   backends/netutils.cpp
   backends/pluginmanager.cpp
+  backends/urlutils.cpp
   backends/rendering.cpp
   parsing/flv.cpp
   parsing/streams.cpp
@@ -345,7 +346,7 @@ IF(COMPILE_PLUGIN)
 ENDIF(COMPILE_PLUGIN)
 
 # generate locales for gettext
-GETTEXT_CREATE_TRANSLATIONS(lightspark.pot ALL po/pl.po)
+GETTEXT_CREATE_TRANSLATIONS(lightspark.pot ALL po/pl.po po/fr.po)
 
 #Audio backend plugins
 IF(${AUDIO_BACKEND} MATCHES "pulse")

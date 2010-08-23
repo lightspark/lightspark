@@ -23,6 +23,11 @@
 //Define cross platform helpers
 // TODO: This should be reworked to use CMake feature detection where possible
 
+// gettext support
+#include <locale.h>
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <winsock2.h>
@@ -34,11 +39,6 @@
 #undef exception_info // Let's hope MS functions always use _exception_info
 #define snprintf _snprintf
 #define isnan _isnan
-
-// gettext support
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
 
 // No real functionality for now
 typedef int pid_t;

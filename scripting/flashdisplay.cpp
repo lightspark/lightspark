@@ -30,15 +30,12 @@
 #include "compat.h"
 #include "class.h"
 #include "backends/rendering.h"
+#include "compat.h"
 
 #include <GL/glew.h>
 #include <fstream>
 #include <limits>
 #include <cmath>
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
 
 using namespace std;
 using namespace lightspark;

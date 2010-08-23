@@ -213,8 +213,10 @@ private:
 	std::string rawCookies;
 	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
 
+	tiny_string url;
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
+	tiny_string& getUrl() DLL_PUBLIC { return url; };
 
 	//Interative analysis flags
 	bool showProfilingData;

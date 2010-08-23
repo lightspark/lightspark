@@ -24,12 +24,9 @@
 #include "logger.h"
 #include "exceptions.h"
 #include "backends/rendering.h"
+#include "compat.h"
 
 #include <iostream>
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
 
 using namespace lightspark;
 extern TLSDATA RenderThread* rt;

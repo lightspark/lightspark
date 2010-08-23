@@ -173,8 +173,8 @@ int main(int argc, char* argv[])
 	sys=new SystemState(pt);
 
 	//This setting allows qualifying filename-only paths to fully qualified paths
-	//When running in remote sandbox, set the root URL to the given parameter (if any)
-	if(url && sandboxType == Security::REMOTE)
+	//When the URL parameter is set, set the root URL to the given parameter
+	if(url)
 		sys->setUrl(url);
 #ifndef WIN32
 	//When running in a local sandbox, set the root URL to the current working dir

@@ -20,6 +20,7 @@
 #include <iostream>
 #include <string.h>
 #include "sound.h"
+#include "compat.h"
 
 #include <locale.h>
 #include <libintl.h>

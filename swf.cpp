@@ -34,13 +34,9 @@
 #include <GL/glew.h>
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
-
-#include "compat.h"
 #endif
 
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
+#include "compat.h"
 
 #ifdef ENABLE_LIBAVCODEC
 extern "C" {

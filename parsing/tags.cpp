@@ -30,10 +30,7 @@
 #include "logger.h"
 #include "frame.h"
 #include <GL/glew.h>
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
+#include "compat.h"
 
 #undef RGB
 

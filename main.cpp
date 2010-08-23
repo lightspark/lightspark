@@ -23,9 +23,11 @@
 #include "backends/netutils.h"
 #ifndef WIN32
 #include <sys/resource.h>
+#include <unistd.h>
 #endif
 #include <iostream>
 #include <fstream>
+#include "compat.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -34,11 +36,6 @@
 #ifdef WIN32
 #undef main
 #endif
-
-#include <locale.h>
-#include <libintl.h>
-#include <unistd.h>
-#define _(STRING) gettext(STRING)
 
 using namespace std;
 using namespace lightspark;
@@ -179,6 +176,7 @@ int main(int argc, char* argv[])
 	//When running in remote sandbox, set the root URL to the given parameter (if any)
 	if(url && sandboxType == Security::REMOTE)
 		sys->setUrl(url);
+#ifndef WIN32
 	//When running in a local sandbox, set the root URL to the current working dir
 	else if(sandboxType != Security::REMOTE)
 	{
@@ -188,8 +186,9 @@ int main(int argc, char* argv[])
 		free(cwd);
 		sys->setUrl(cwdStr);
 	}
+#endif
 	else
-		LOG(LOG_NO_INFO, "Warning: running in remote sandbox with no root URL set.");
+		LOG(LOG_NO_INFO, "Warning: running with no root URL set.");
 
 	//One of useInterpreter or useJit must be enabled
 	if(!(useInterpreter || useJit))

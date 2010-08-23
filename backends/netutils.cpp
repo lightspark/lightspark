@@ -27,11 +27,6 @@
 #include <curl/curl.h>
 #endif
 
-#include <locale.h>
-#include <libintl.h>
-#include <libgen.h>
-#define _(STRING) gettext(STRING)
-
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
 

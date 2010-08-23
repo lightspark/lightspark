@@ -60,6 +60,7 @@ REGISTER_CLASS_NAME(LineScaleMode);
 REGISTER_CLASS_NAME(StageScaleMode);
 REGISTER_CLASS_NAME(StageAlign);
 REGISTER_CLASS_NAME(Bitmap);
+REGISTER_CLASS_NAME(Matrix);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -2115,3 +2116,4 @@ bool Bitmap::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 {
 	return false;
 }
+

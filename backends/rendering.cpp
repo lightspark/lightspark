@@ -511,8 +511,7 @@ void RenderThread::commonGLInit(int width, int height)
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
-		LOG(LOG_ERROR,_("Cannot initialize GLEW"));
-		cout << glewGetErrorString(err) << endl;
+		LOG(LOG_ERROR,_("Cannot initialize GLEW: cause ") << glewGetErrorString(err));;
 		::abort();
 	}
 	if(!GLEW_VERSION_2_0)

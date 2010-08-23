@@ -23,6 +23,7 @@
 #include "backends/netutils.h"
 #ifndef WIN32
 #include <sys/resource.h>
+#include <unistd.h>
 #endif
 #include <iostream>
 #include <fstream>
@@ -171,9 +172,23 @@ int main(int argc, char* argv[])
 	//NOTE: see SystemState declaration
 	sys=new SystemState(pt);
 
-	//Set a bit of SystemState using parameters
+	//This setting allows qualifying filename-only paths to fully qualified paths
+	//When the URL parameter is set, set the root URL to the given parameter
 	if(url)
 		sys->setUrl(url);
+#ifndef WIN32
+	//When running in a local sandbox, set the root URL to the current working dir
+	else if(sandboxType != Security::REMOTE)
+	{
+		char * cwd = get_current_dir_name();
+		tiny_string cwdStr = tiny_string("file://") + tiny_string(cwd, true);
+		cwdStr += "/";
+		free(cwd);
+		sys->setUrl(cwdStr);
+	}
+#endif
+	else
+		LOG(LOG_NO_INFO, "Warning: running with no root URL set.");
 
 	//One of useInterpreter or useJit must be enabled
 	if(!(useInterpreter || useJit))

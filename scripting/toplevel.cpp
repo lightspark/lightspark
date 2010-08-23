@@ -1663,6 +1663,7 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	int realLevel=(closure_level!=-1)?closure_level:obj->getLevel();
 
 	call_context* cc=new call_context(mi,realLevel,args,passedToLocals);
+	cc->code=new stringstream(mi->body->code);
 	uint32_t i=passedToLocals;
 	cc->scope_stack=func_scope;
 	for(unsigned int i=0;i<func_scope.size();i++)
@@ -1730,13 +1731,46 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 	obj->setLevel(realLevel);
 
 	ASObject* ret;
-	if(val==NULL && sys->useInterpreter)
+
+	while (true)
 	{
-		//This is not an hot function, execute it using the intepreter
-		ret=ABCVm::executeFunction(this,cc);
+		try
+		{
+			if(val==NULL && sys->useInterpreter)
+			{
+				//This is not an hot function, execute it using the intepreter
+				ret=ABCVm::executeFunction(this,cc);
+			}
+			else
+				ret=val(cc);
+		}
+		catch (ASObject* obj) // Doesn't have to be an ASError at all.
+		{
+			unsigned int pos = cc->code->tellg();
+			bool no_handler = true;
+
+			LOG(LOG_TRACE, "got an " << obj->toString());
+			LOG(LOG_TRACE, "pos=" << pos);
+			for (unsigned int i=0;i<mi->body->exception_count;i++) {
+				exception_info exc=mi->body->exceptions[i];
+				multiname* name=mi->context->getMultiname(exc.exc_type, cc);
+				LOG(LOG_TRACE, "f=" << exc.from << " t=" << exc.to);
+				if (pos > exc.from && pos <= exc.to && ABCContext::isinstance(obj, name))
+				{
+					no_handler = false;
+					cc->code->seekg((uint32_t)exc.target);
+					cc->runtime_stack_clear();
+					cc->runtime_stack_push(obj);
+					cc->scope_stack.clear();
+					break;
+				}
+			}
+			if (no_handler)
+				throw obj;
+			continue;
+		}
+		break;
 	}
-	else
-		ret=val(cc);
 
 	//Now pop this context and reset the level correctly
 	tl=getVm()->popObjAndLevel();
@@ -2824,7 +2858,7 @@ void Class_base::linkInterface(Class_base* c) const
 bool Class_base::isSubClass(const Class_base* cls) const
 {
 	check();
-	if(cls==this)
+	if(cls==this || cls==Class<ASObject>::getClass())
 		return true;
 
 	//Now check the interfaces

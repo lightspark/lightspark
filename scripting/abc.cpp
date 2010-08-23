@@ -1190,6 +1190,12 @@ void call_context::runtime_stack_push(ASObject* s)
 	stack[stack_index++]=s;
 }
 
+void call_context::runtime_stack_clear()
+{
+	while(stack_index > 0)
+		stack[--stack_index]->decRef();
+}
+
 ASObject* call_context::runtime_stack_pop()
 {
 	if(stack_index==0)
@@ -1211,6 +1217,7 @@ ASObject* call_context::runtime_stack_peek()
 
 call_context::call_context(method_info* th, int level, ASObject* const* args, const unsigned int num_args)
 {
+	mi=th;
 	locals=new ASObject*[th->body->local_count+1];
 	locals_size=th->body->local_count+1;
 	memset(locals,0,sizeof(ASObject*)*locals_size);
@@ -1245,6 +1252,64 @@ call_context::~call_context()
 
 	for(unsigned int i=0;i<scope_stack.size();i++)
 		scope_stack[i]->decRef();
+}
+
+bool ABCContext::isinstance(ASObject* obj, multiname* name)
+{
+	LOG(LOG_CALLS, _("isinstance ") << *name);
+
+	ASObject* target;
+	ASObject* ret=getGlobal()->getVariableAndTargetByMultiname(*name, target);
+	if(!ret) //Could not retrieve type
+	{
+		LOG(LOG_ERROR,_("Cannot retrieve type"));
+		return false;
+	}
+
+	ASObject* type=ret;
+	bool real_ret=false;
+	Class_base* objc=NULL;
+	Class_base* c=NULL;
+	c=static_cast<Class_base*>(type);
+	//Special case numeric types
+	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
+	{
+		real_ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
+		LOG(LOG_CALLS,_("Numeric type is ") << ((real_ret)?"_(":")not _(") << ")subclass of " << c->class_name);
+		return real_ret;
+	}
+
+	if(obj->prototype)
+	{
+		assert_and_throw(type->getObjectType()==T_CLASS);
+
+		objc=obj->prototype;
+	}
+	else if(obj->getObjectType()==T_CLASS)
+	{
+		assert_and_throw(type->getObjectType()==T_CLASS);
+
+		//Special case for Class
+		if(c->class_name.name=="Class" && c->class_name.ns=="")
+			return true;
+		else
+			return false;
+	}
+	else
+	{
+		//Special cases
+		if(obj->getObjectType()==T_FUNCTION && type==Class_function::getClass())
+			return true;
+
+		real_ret=obj->getObjectType()==type->getObjectType();
+		LOG(LOG_CALLS,_("isType on non classed object ") << real_ret);
+		return real_ret;
+	}
+
+	real_ret=objc->isSubClass(c);
+	LOG(LOG_CALLS,_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"":_("not ")) 
+			<< "subclass of " << c->class_name);
+	return real_ret;
 }
 
 void ABCContext::exec()

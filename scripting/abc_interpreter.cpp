@@ -30,8 +30,8 @@ ASObject* ABCVm::executeFunction(SyntheticFunction* function, call_context* cont
 {
 	method_info* mi=function->mi;
 
-	int code_len=mi->body->code.size();
-	stringstream code(mi->body->code);
+	stringstream& code=*(context->code);
+	int code_len=code.str().length();
 
 	u8 opcode;
 

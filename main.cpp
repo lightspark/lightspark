@@ -26,6 +26,7 @@
 #endif
 #include <iostream>
 #include <fstream>
+#include "compat.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -34,10 +35,6 @@
 #ifdef WIN32
 #undef main
 #endif
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
 
 using namespace std;
 using namespace lightspark;

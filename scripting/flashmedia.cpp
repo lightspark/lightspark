@@ -19,12 +19,9 @@
 
 #include "flashmedia.h"
 #include "class.h"
+#include "compat.h"
 #include <iostream>
 #include "backends/rendering.h"
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
 
 using namespace lightspark;
 using namespace std;

@@ -24,10 +24,6 @@
 #include "logger.h"
 #include "swf.h"
 
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
-
 using namespace lightspark;
 
 extern TLSDATA SystemState* sys;

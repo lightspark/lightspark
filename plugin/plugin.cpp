@@ -19,16 +19,13 @@
 
 #include "plugin.h"
 #include "logger.h"
+#include "compat.h"
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define FAKE_MIME_TYPE  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
 #define FAKE_PLUGIN_NAME    "Lightspark player"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME";"FAKE_MIME_TYPE":swfls:"FAKE_PLUGIN_NAME
 #define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r423"
-
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
 
 using namespace std;
 

@@ -23,10 +23,6 @@
 #include "flashdisplay.h"
 #include "compat.h"
 
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
-
 using namespace std;
 using namespace lightspark;
 

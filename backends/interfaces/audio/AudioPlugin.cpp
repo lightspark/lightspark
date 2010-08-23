@@ -22,51 +22,50 @@
 
 using namespace lightspark;
 
-AudioPlugin::AudioPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
-			 bool init_contextReady, bool init_noServer, bool init_stopped)
-//: IAudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
+AudioPlugin::AudioPlugin ( PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
+                           bool init_contextReady, bool init_noServer, bool init_stopped )
 {
-  pluginType = init_Type;
-  pluginName = init_Name;
-  backendName = init_audiobackend;
-  contextReady = init_contextReady;
-  init_noServer = init_noServer;
-  stopped = init_stopped;
+        pluginType = init_Type;
+        pluginName = init_Name;
+        backendName = init_audiobackend;
+        contextReady = init_contextReady;
+        init_noServer = init_noServer;
+        stopped = init_stopped;
 }
 
 const string AudioPlugin::get_backendName()
 {
-  return backendName;
+        return backendName;
 }
 
 bool AudioPlugin::get_serverStatus()
 {
-  return noServer;
+        return noServer;
 }
 
 bool AudioPlugin::Is_ContextReady()
 {
-  return contextReady;
+        return contextReady;
 }
 
 bool AudioPlugin::Is_Stopped()
 {
-  return stopped;
+        return stopped;
 }
 
 const string AudioPlugin::get_pluginName()
 {
- return pluginName;
+        return pluginName;
 }
 
 const PLUGIN_TYPES AudioPlugin::get_pluginType()
 {
-  return pluginType;
+        return pluginType;
 }
 
 bool AudioPlugin::isTimingAvailable() const
 {
-  return noServer==false;
+        return noServer==false;
 }
 
 AudioPlugin::~AudioPlugin()

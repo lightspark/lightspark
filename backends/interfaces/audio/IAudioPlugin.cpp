@@ -19,17 +19,6 @@
 **************************************************************************/
 
 #include "IAudioPlugin.h"
-/*
-IAudioPlugin::IAudioPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
-			   bool init_contextReady, bool init_noServer, bool init_stopped)
-			   : IPlugin(init_Type, init_Name)
-{
-  audiobackend_name = init_audiobackend;
-  contextReady = init_contextReady;
-  noServer = init_noServer;
-  stopped = init_stopped;
-}
-*/
 
 IAudioPlugin::~IAudioPlugin()
 {

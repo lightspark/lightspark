@@ -26,10 +26,10 @@
 
 //Needed or not with compat.h and compat.cpp?
 #if defined WIN32
-  #include <windows.h>
+#include <windows.h>
 #else
-  #include <dlfcn.h>
-  #include <sys/types.h>
+#include <dlfcn.h>
+#include <sys/types.h>
 #endif
 
 #ifdef ENABLE_SOUND
@@ -50,118 +50,100 @@ Else
   Select and load the good audio plugin lib files
 *****************/
 
-AudioManager::AudioManager(PluginManager *sharedPluginManager)
+AudioManager::AudioManager ( PluginManager *sharedPluginManager )
 {
-  pluginManager = sharedPluginManager;
-  selectedAudioBackend = "";
-  oAudioPlugin = NULL;
-//string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
-  string DesiredAudio = "pulse";
-  set_audiobackend(DesiredAudio);
+        pluginManager = sharedPluginManager;
+        selectedAudioBackend = "";
+        oAudioPlugin = NULL;
+//	  string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
+        string DesiredAudio = "pulse";
+        set_audiobackend ( DesiredAudio );
 }
 
-void AudioManager::fillPlugin(uint32_t id)
+void AudioManager::fillPlugin ( uint32_t id )
 {
-  if(oAudioPlugin != NULL)
-  {
-    oAudioPlugin->fill(id);
-  }
-  else
-  {
-    LOG(LOG_ERROR,_("No audio plugin loaded"));
-  }
+        if ( oAudioPlugin != NULL ) {
+                oAudioPlugin->fill ( id );
+        } else {
+                LOG ( LOG_ERROR,_ ( "No audio plugin loaded" ) );
+        }
 }
 
-void AudioManager::freeStreamPlugin(uint32_t id)
+void AudioManager::freeStreamPlugin ( uint32_t id )
 {
-  if(oAudioPlugin != NULL)
-  {
-    oAudioPlugin->freeStream(id);
-  }
-  else
-  {
-    LOG(LOG_ERROR,_("No audio plugin loaded"));
-  }
+        if ( oAudioPlugin != NULL ) {
+                oAudioPlugin->freeStream ( id );
+        } else {
+                LOG ( LOG_ERROR,_ ( "No audio plugin loaded" ) );
+        }
 }
 
-uint32_t AudioManager::createStreamPlugin(AudioDecoder *decoder)
+uint32_t AudioManager::createStreamPlugin ( AudioDecoder *decoder )
 {
-  if(oAudioPlugin != NULL)
-  {
-    return oAudioPlugin->createStream(decoder);
-  }
-  else
-  {
-    LOG(LOG_ERROR,_("No audio plugin loaded"));
-    return -1;
-  }
+        if ( oAudioPlugin != NULL ) {
+                return oAudioPlugin->createStream ( decoder );
+        } else {
+                LOG ( LOG_ERROR,_ ( "No audio plugin loaded" ) );
+                return -1;
+        }
 }
 
-uint32_t AudioManager::getPlayedTimePlugin(uint32_t streamId)
+uint32_t AudioManager::getPlayedTimePlugin ( uint32_t streamId )
 {
-  if(oAudioPlugin != NULL)
-  {
-    return oAudioPlugin->getPlayedTime(streamId);
-  }
-  else
-  {
-    LOG(LOG_ERROR,_("getPlayedTimePlugin: No audio plugin loaded"));
-    return 0;
-  }
+        if ( oAudioPlugin != NULL ) {
+                return oAudioPlugin->getPlayedTime ( streamId );
+        } else {
+                LOG ( LOG_ERROR,_ ( "getPlayedTimePlugin: No audio plugin loaded" ) );
+                return 0;
+        }
 }
 
 bool AudioManager::isTimingAvailablePlugin() const
-{ 
-  if(oAudioPlugin != NULL)
-  {
-    return oAudioPlugin->isTimingAvailable();
-  }
-  else
-  {
-    LOG(LOG_ERROR,_("isTimingAvailablePlugin: No audio plugin loaded"));
-    return false;
-  }
+{
+        if ( oAudioPlugin != NULL ) {
+                return oAudioPlugin->isTimingAvailable();
+        } else {
+                LOG ( LOG_ERROR,_ ( "isTimingAvailablePlugin: No audio plugin loaded" ) );
+                return false;
+        }
 }
 
-void AudioManager::set_audiobackend(string desired_backend)
+void AudioManager::set_audiobackend ( string desired_backend )
 {
-  if(selectedAudioBackend != desired_backend)	//Load the desired backend only if it's not already loaded
-  {
-    load_audioplugin(desired_backend);
-    selectedAudioBackend = desired_backend;
-  }
+        if ( selectedAudioBackend != desired_backend ) {	//Load the desired backend only if it's not already loaded
+                load_audioplugin ( desired_backend );
+                selectedAudioBackend = desired_backend;
+        }
 }
 
 void AudioManager::get_audioBackendsList()
 {
-  audioplugins_list = pluginManager->get_backendsList(AUDIO);
+        audioplugins_list = pluginManager->get_backendsList ( AUDIO );
 }
 
 void AudioManager::refresh_audioplugins_list()
 {
-  audioplugins_list.clear();
-  get_audioBackendsList();
+        audioplugins_list.clear();
+        get_audioBackendsList();
 }
 
 void AudioManager::release_audioplugin()
 {
-  if(oAudioPlugin != NULL)
-  {
-    oAudioPlugin->stop();
-    pluginManager->release_plugin(oAudioPlugin);
-  }
+        if ( oAudioPlugin != NULL ) {
+                oAudioPlugin->stop();
+                pluginManager->release_plugin ( oAudioPlugin );
+        }
 }
 
-void AudioManager::load_audioplugin(string selected_backend)
+void AudioManager::load_audioplugin ( string selected_backend )
 {
-  LOG(LOG_NO_INFO,_(((string)("the selected backend is: " + selected_backend)).c_str()));
-  release_audioplugin();
-  oAudioPlugin = static_cast<IAudioPlugin *>(pluginManager->get_plugin(selected_backend));
+        LOG ( LOG_NO_INFO,_ ( ( ( string ) ( "the selected backend is: " + selected_backend ) ).c_str() ) );
+        release_audioplugin();
+        oAudioPlugin = static_cast<IAudioPlugin *> ( pluginManager->get_plugin ( selected_backend ) );
 
-  if(oAudioPlugin == NULL)
-  {
-    LOG(LOG_ERROR,_("Could not load the audiobackend"));
-  }
+        if ( oAudioPlugin == NULL ) {
+                LOG ( LOG_ERROR,_ ( "Could not load the audiobackend" ) );
+        }
 }
 
 /**************************
@@ -169,16 +151,15 @@ stop AudioManager
 ***************************/
 AudioManager::~AudioManager()
 {
-  release_audioplugin();
-  pluginManager = NULL;	//The plugin manager is not deleted since it's been created outside of the audio manager
+        release_audioplugin();
+        pluginManager = NULL;	//The plugin manager is not deleted since it's been created outside of the audio manager
 }
 
 void AudioManager::stopPlugin()
 {
-  if(oAudioPlugin != NULL)
-  {
-    oAudioPlugin->stop();
-  }
+        if ( oAudioPlugin != NULL ) {
+                oAudioPlugin->stop();
+        }
 }
 
 #endif

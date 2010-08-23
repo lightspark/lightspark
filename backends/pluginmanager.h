@@ -30,49 +30,49 @@ using namespace std;
 using namespace boost::filesystem;
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
-typedef IPlugin *(*PLUGIN_FACTORY)();
-typedef void (*PLUGIN_CLEANUP)(IPlugin *);
+typedef IPlugin * ( *PLUGIN_FACTORY ) ();
+typedef void ( *PLUGIN_CLEANUP ) ( IPlugin * );
 
 namespace lightspark
 {
 
 class PluginModule;
-  
+
 class PluginManager
 {
-  private:
-    vector<PluginModule *> pluginsList;
-    void findPlugins();
-    void addPluginToList(IPlugin *o_plugin, string pathToPlugin);
-    void removePluginFromList(string plugin_path);
-    int32_t findPluginInList(string desiredname = "", string desiredbackend = "", string desiredpath = "",
-			      HMODULE hdesiredLoadPlugin = NULL, IPlugin *o_desiredPlugin = NULL);
-    void loadPlugin(uint32_t desiredindex);
-    void unloadPlugin(uint32_t desiredIndex);
+private:
+        vector<PluginModule *> pluginsList;
+        void findPlugins();
+        void addPluginToList ( IPlugin *o_plugin, string pathToPlugin );
+        void removePluginFromList ( string plugin_path );
+        int32_t findPluginInList ( string desiredname = "", string desiredbackend = "", string desiredpath = "",
+                                   HMODULE hdesiredLoadPlugin = NULL, IPlugin *o_desiredPlugin = NULL );
+        void loadPlugin ( uint32_t desiredindex );
+        void unloadPlugin ( uint32_t desiredIndex );
 
-  public:
-    PluginManager();
-    vector<string *> get_backendsList(PLUGIN_TYPES typeSearched);
-    IPlugin *get_plugin(string desiredBackend);
-    void release_plugin(IPlugin *o_plugin);
-    ~PluginManager();
+public:
+        PluginManager();
+        vector<string *> get_backendsList ( PLUGIN_TYPES typeSearched );
+        IPlugin *get_plugin ( string desiredBackend );
+        void release_plugin ( IPlugin *o_plugin );
+        ~PluginManager();
 };
 
 class PluginModule
 {
-  friend class PluginManager;
-  protected:
-    string pluginName;		//plugin name
-    PLUGIN_TYPES pluginType;	//plugin type to be able to filter them
-    string backendName;	//backend (can be something like pulseaudio, opengl, ffmpeg)
-    string pluginPath;		//full path to the plugin file
-    bool enabled;		//should it be enabled (if the audio backend is present)?
-    HMODULE hLoadedPlugin;	//when loaded, handle to the plugin so we can unload it later
-    IPlugin *oLoadedPlugin;	//when instanciated, object to the class
+        friend class PluginManager;
+protected:
+        string pluginName;		//plugin name
+        PLUGIN_TYPES pluginType;	//plugin type to be able to filter them
+        string backendName;	//backend (can be something like pulseaudio, opengl, ffmpeg)
+        string pluginPath;		//full path to the plugin file
+        bool enabled;		//should it be enabled (if the audio backend is present)?
+        HMODULE hLoadedPlugin;	//when loaded, handle to the plugin so we can unload it later
+        IPlugin *oLoadedPlugin;	//when instanciated, object to the class
 
-  public:
-    PluginModule();
-    ~PluginModule();
+public:
+        PluginModule();
+        ~PluginModule();
 };
 
 }

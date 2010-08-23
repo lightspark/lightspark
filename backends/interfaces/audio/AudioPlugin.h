@@ -33,18 +33,18 @@ Abstract class for audio plugin implementation
 ***********************/
 class AudioPlugin : public IAudioPlugin
 {
-  public:
-    AudioPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "generic audio plugin",
-		string init_backend = "undefined", bool init_contextReady = false,
-		bool init_noServer = false, bool init_stopped = false);
-    const string get_backendName();
-    bool get_serverStatus();
-    const PLUGIN_TYPES get_pluginType();
-    const string get_pluginName();
-    bool Is_ContextReady();
-    bool Is_Stopped();
-    bool isTimingAvailable() const;
-    virtual ~AudioPlugin();
+public:
+        AudioPlugin ( PLUGIN_TYPES init_Type = AUDIO, string init_Name = "generic audio plugin",
+                      string init_backend = "undefined", bool init_contextReady = false,
+                      bool init_noServer = false, bool init_stopped = false );
+        const string get_backendName();
+        bool get_serverStatus();
+        const PLUGIN_TYPES get_pluginType();
+        const string get_pluginName();
+        bool Is_ContextReady();
+        bool Is_Stopped();
+        bool isTimingAvailable() const;
+        virtual ~AudioPlugin();
 };
 
 #endif

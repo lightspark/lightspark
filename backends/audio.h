@@ -34,35 +34,35 @@ using namespace std;
 using namespace boost::filesystem;
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
-typedef IPlugin *(*PLUGIN_FACTORY)();
-typedef void (*PLUGIN_CLEANUP)(IPlugin *);
+typedef IPlugin * ( *PLUGIN_FACTORY ) ();
+typedef void ( *PLUGIN_CLEANUP ) ( IPlugin * );
 
 namespace lightspark
 {
 
 class AudioManager
 {
-  private:
-    vector<string *>audioplugins_list;
-    IAudioPlugin *oAudioPlugin;
-    string selectedAudioBackend;
-    void load_audioplugin(string selected_backend);
-    void release_audioplugin();
-    PluginManager *pluginManager;
-    
+private:
+        vector<string *>audioplugins_list;
+        IAudioPlugin *oAudioPlugin;
+        string selectedAudioBackend;
+        void load_audioplugin ( string selected_backend );
+        void release_audioplugin();
+        PluginManager *pluginManager;
 
-  public:
-    AudioManager(PluginManager *sharePluginManager);
-    uint32_t createStreamPlugin(AudioDecoder *decoder);
-    void freeStreamPlugin(uint32_t id);
-    void fillPlugin(uint32_t id);
-    void stopPlugin();
-    bool isTimingAvailablePlugin() const;
-    uint32_t getPlayedTimePlugin(uint32_t streamId);
-    void set_audiobackend(string desired_backend);
-    void get_audioBackendsList();
-    void refresh_audioplugins_list();
-    ~AudioManager();
+
+public:
+        AudioManager ( PluginManager *sharePluginManager );
+        uint32_t createStreamPlugin ( AudioDecoder *decoder );
+        void freeStreamPlugin ( uint32_t id );
+        void fillPlugin ( uint32_t id );
+        void stopPlugin();
+        bool isTimingAvailablePlugin() const;
+        uint32_t getPlayedTimePlugin ( uint32_t streamId );
+        void set_audiobackend ( string desired_backend );
+        void get_audioBackendsList();
+        void refresh_audioplugins_list();
+        ~AudioManager();
 };
 
 };

@@ -32,7 +32,6 @@ enum PLUGIN_TYPES { UNDEFINED=0, AUDIO, VIDEO, DECODER, ENCODER };
 class IPlugin
 {
   public:
-//    IPlugin(PLUGIN_TYPES init_Type = UNDEFINED, string init_Name = "undefined");
     virtual const string get_pluginName() = 0;
     virtual const PLUGIN_TYPES get_pluginType() = 0;
     virtual const string get_backendName() = 0;

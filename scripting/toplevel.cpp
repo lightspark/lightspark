@@ -822,6 +822,38 @@ ASFUNCTIONBODY(ASString,search)
 	int ret=-1;
 	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
 	{
+		RegExp* re=static_cast<RegExp*>(args[0]);
+
+		const char* error;
+		int errorOffset;
+		int options=0;
+		if(re->ignoreCase)
+			options|=PCRE_CASELESS;
+		if(re->extended)
+			options|=PCRE_EXTENDED;
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &errorOffset,NULL);
+		if(error)
+			return abstract_i(ret);
+		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+		int capturingGroups;
+		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+		if(infoOk!=0)
+		{
+			pcre_free(pcreRE);
+			return abstract_i(ret);
+		}
+		assert_and_throw(capturingGroups==0);
+		int ovector[30];
+		int offset=0;
+		//Global is nor used in search
+		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
+		if(rc<=0)
+		{
+			//No matches or error
+			pcre_free(pcreRE);
+			return abstract_i(ret);
+		}
+		ret=ovector[0];
 	}
 	else
 	{

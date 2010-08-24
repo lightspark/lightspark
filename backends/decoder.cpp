@@ -25,11 +25,12 @@
 #include "platforms/fastpaths.h"
 #include "swf.h"
 #include "graphics.h"
+#include "backends/rendering.h"
 
 using namespace lightspark;
 using namespace std;
 
-extern TLSDATA SystemState* sys;
+extern TLSDATA RenderThread* rt;
 
 bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 {
@@ -45,15 +46,15 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 		return false;
 }
 
-bool VideoDecoder::resizeIfNeeded(TextureBuffer& tex)
+bool VideoDecoder::resizeIfNeeded(int& tex)
 {
 	if(!resizeGLBuffers)
 		return false;
 
-	//Request a sane alignment
+/*	//Request a sane alignment
 	tex.setRequestedAlignment(16,1);
 	//Initialize texture to video size
-	tex.resize(frameWidth, frameHeight);
+	tex.resize(frameWidth, frameHeight);*/
 	resizeGLBuffers=false;
 	return true;
 }
@@ -224,7 +225,7 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 	buffers.commitLast();
 }
 
-bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
+bool FFMpegVideoDecoder::copyFrameToTexture(int& tex)
 {
 	assert(isValid());
 	if(!initialized)
@@ -248,9 +249,9 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureBuffer& tex)
 	{
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
 		//Copy content of the pbo to the texture, 0 is the offset in the pbo
-		tex.setBGRAData((uint8_t*)curBufferOffset, alignedWidth, frameHeight);
+		rt->loadChunkBGRA(0, alignedWidth, frameHeight, (uint8_t*)curBufferOffset);
 		//Now texture width has become alignedWidth, reset it to the right value
-		tex.resize(frameWidth,frameHeight);
+		//tex.resize(frameWidth,frameHeight);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 		ret=true;
 	}

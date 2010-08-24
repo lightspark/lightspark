@@ -196,7 +196,7 @@ public:
 		@param tex the TextureBuffer to copy in
 		@return true if a new frame has been copied
 	*/
-	bool copyFrameToTexture(TextureBuffer& tex);
+	bool copyFrameToTexture(int& tex);
 	/**
 	  	Acquire the mutex to guarantee validity of data
 

@@ -66,17 +66,7 @@ void Video::buildTraits(ASObject* o)
 
 Video::~Video()
 {
-	if(rt)
-	{
-		rt->acquireResourceMutex();
-		rt->removeResource(&videoTexture);
-	}
-	videoTexture.shutdown();
-	if(rt)
-	{
-		rt->releaseResourceMutex();
-		sem_destroy(&mutex);
-	}
+	sem_destroy(&mutex);
 }
 
 void Video::inputRender()
@@ -107,8 +97,6 @@ void Video::Render()
 {
 	if(!initialized)
 	{
-		videoTexture.init(0,0,GL_LINEAR);
-		rt->addResource(&videoTexture);
 		initialized=true;
 	}
 
@@ -125,28 +113,14 @@ void Video::Render()
 		if(!isSimple())
 			rt->glAcquireTempBuffer(0,width,0,height);
 
-		bool frameReady=netStream->copyFrameToTexture(videoTexture);
-		videoTexture.bind();
-		videoTexture.setTexScale(rt->fragmentTexScaleUniform);
-
+		int puppa;
+		bool frameReady=netStream->copyFrameToTexture(puppa);
 		//Enable texture lookup and YUV to RGB conversion
 		if(frameReady)
 		{
 			glColor4f(0,0,0,1);
-			//width and height should not change now
-			glBegin(GL_QUADS);
-				glTexCoord2f(0,0);
-				glVertex2i(0,0);
-
-				glTexCoord2f(1,0);
-				glVertex2i(width,0);
-
-				glTexCoord2f(1,1);
-				glVertex2i(width,height);
-
-				glTexCoord2f(0,1);
-				glVertex2i(0,height);
-			glEnd();
+			//width and height will not change now
+			rt->renderTextured(0, videoWidth, videoHeight, 0, 0, width, height);
 		}
 
 		if(!isSimple())

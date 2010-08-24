@@ -49,10 +49,10 @@ void RenderThread::wait()
 	assert_and_throw(ret==0);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),inputNeeded(false),inputDisabled(false),
-	resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),tempBufferAcquired(false),
-	frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),mainTex(false),tempTex(false),inputTex(false),
-	hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),largeTextureId(0),largeTextureSize(0),inputNeeded(false),
+	inputDisabled(false),resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),
+	tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),mainTex(false),tempTex(false),
+	inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
 	m_sys=s;
@@ -539,6 +539,26 @@ void RenderThread::commonGLInit(int width, int height)
 
 	inputTex.init(width, height, GL_NEAREST);
 
+	//Set up the huge texture
+	glGenTextures(1,&largeTextureId);
+	assert(largeTextureId!=0);
+	assert(glGetError()!=GL_INVALID_OPERATION);
+	//If the previous call has not failed these should not fail (in specs, we trust)
+	glBindTexture(GL_TEXTURE_2D,largeTextureId);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+	//Get the maximum allowed texture size, up to 1024
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &largeTextureSize);
+	assert(largeTextureSize>0);
+	//Allocate the texture
+	while(glGetError()!=GL_NO_ERROR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
+	if(glGetError())
+	{
+		LOG(LOG_ERROR,_("Can't allocate large texture... Aborting"));
+		::abort();
+	}
+
 	//Set uniforms
 	cleanGLErrors();
 	glUseProgram(blitter_program);
@@ -919,3 +939,41 @@ void RenderThread::tick()
 	draw();
 }
 
+int RenderThread::allocateTexture(uint32_t w, uint32_t h)
+{
+	//TODO: implement
+	return 0;
+}
+
+void RenderThread::renderTextured(uint32_t chunk, uint32_t videoW, uint32_t videoH, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+{
+	assert(chunk==0);
+	glBindTexture(GL_TEXTURE_2D, largeTextureId);
+	//TODO: implement tiling
+	float texW=videoW;
+	texW/=largeTextureSize;
+	float texH=videoH;
+	texH/=largeTextureSize;
+	glBegin(GL_QUADS);
+		glTexCoord2f(0,0);
+		glVertex2i(x,y);
+
+		glTexCoord2f(texW,0);
+		glVertex2i(x+w,y);
+
+		glTexCoord2f(texW,texH);
+		glVertex2i(x+w,y+h);
+
+		glTexCoord2f(0,texH);
+		glVertex2i(x,y+h);
+	glEnd();
+}
+
+void RenderThread::loadChunkBGRA(uint32_t chunk, uint32_t w, uint32_t h, uint8_t* data)
+{
+	assert(w<=largeTextureSize && h<=largeTextureSize);
+	assert(chunk==0);
+	glBindTexture(GL_TEXTURE_2D, largeTextureId);
+	//Implemeny tiling
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, data);
+}

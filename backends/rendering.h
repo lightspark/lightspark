@@ -39,6 +39,8 @@ private:
 	void commonGLInit(int width, int height);
 	void commonGLResize(int width, int height);
 	void commonGLDeinit();
+	GLuint largeTextureId;
+	int largeTextureSize;
 	sem_t render;
 	sem_t inputDone;
 	bool inputNeeded;
@@ -98,6 +100,18 @@ public:
 		Release the resource mutex
 	*/
 	void releaseResourceMutex();
+	/**
+		Allocates a chunk from the shared texture
+	*/
+	int allocateTexture(uint32_t w, uint32_t h);
+	/**
+		Render a quad of given size using the given chunk
+	*/
+	void renderTextured(uint32_t chunk, uint32_t videoW, uint32_t videoH, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
+	/**
+		Load the given data in the given texture chunk
+	*/
+	void loadChunkBGRA(uint32_t chunk, uint32_t w, uint32_t h, uint8_t* data);
 
 	void requestInput();
 	void requestResize(uint32_t w, uint32_t h);

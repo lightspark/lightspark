@@ -864,7 +864,7 @@ double NetStream::getFrameRate()
 	return frameRate;
 }
 
-bool NetStream::copyFrameToTexture(TextureBuffer& tex)
+bool NetStream::copyFrameToTexture(int& tex)
 {
 	assert(isReady());
 	return videoDecoder->copyFrameToTexture(tex);

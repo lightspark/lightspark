@@ -37,8 +37,8 @@ class IAudioPlugin : public IPlugin
 protected:
         enum DEVICE_TYPES { playback=0, capture};
         class AudioStream; //Early declaration, it will be implemented per plugin
-        string selectedPlaybackDevice;
-        string selectedCaptureDevice;
+        string playbackDeviceName;
+        string captureDeviceName;
         vector<string *> playbackDevicesList;
         vector<string *> captureDevicesList;
         vector<AudioStream*> streams;

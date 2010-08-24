@@ -38,7 +38,7 @@ PulsePlugin::PulsePlugin ( PLUGIN_TYPES init_Type, string init_Name, string init
         pluginName = init_Name;
         backendName = init_audiobackend;
         contextReady = init_contextReady;
-        init_noServer = init_noServer;
+        noServer = init_noServer;
         stopped = init_stopped;
 
         start();
@@ -69,7 +69,7 @@ vector< string* > *PulsePlugin::get_devicesList ( DEVICE_TYPES desiredType )
 
 void PulsePlugin::set_device ( string desiredDevice, DEVICE_TYPES desiredType )
 {
-        selectedPlaybackDevice = desiredDevice;
+        playbackDeviceName = desiredDevice;
         pa_threaded_mainloop_lock ( mainLoop );
         pa_threaded_mainloop_unlock ( mainLoop );
 }
@@ -87,7 +87,7 @@ void PulsePlugin::captureListCB ( pa_context* context, const pa_source_info* lis
 {
         PulsePlugin *oPlugin = ( PulsePlugin * ) th;
         string deviceName ( list->name );
-        if ( !eol && list ) { //Devices found
+        if ( !eol && list ) { //Device found
                 oPlugin->addDeviceToList ( &oPlugin->captureDevicesList, &deviceName );
         }
 }
@@ -96,7 +96,7 @@ void PulsePlugin::playbackListCB ( pa_context* context, const pa_sink_info* list
 {
         PulsePlugin *oPlugin = ( PulsePlugin * ) th;
         string deviceName ( list->name );
-        if ( !eol && list ) { //Devices found
+        if ( !eol && list ) { //Device found
                 oPlugin->addDeviceToList ( &oPlugin->playbackDevicesList, &deviceName );
         }
 }

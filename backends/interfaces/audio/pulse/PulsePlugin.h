@@ -24,7 +24,7 @@
 #include <pulse/pulseaudio.h>
 #include "../AudioPlugin.h"
 #include "../../../decoder.h"
-#include "../../../compat.h"
+#include "../../../../compat.h"
 #include <iostream>
 
 using namespace std;
@@ -38,7 +38,7 @@ private:
         public:
                 enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
                 pa_stream *stream;
-                lightspark::IAudioDecoder *decoder;
+                lightspark::AudioDecoder *decoder;
                 PulsePlugin *manager;
                 volatile STREAM_STATUS streamStatus;
                 AudioStream ( PulsePlugin *m ) :stream ( NULL ),decoder ( NULL ),manager ( m ),streamStatus ( STREAM_STARTING ) {}
@@ -53,7 +53,7 @@ private:
         void generateDevicesList ( vector<string *> *devicesList, DEVICE_TYPES desiredType ); //To populate the devices lists, devicesType must be playback or capture
         static void streamStatusCB ( pa_stream *stream, AudioStream *th );
         static void streamWriteCB ( pa_stream *stream, size_t nbytes, AudioStream *th );
-        vector<AudioStream*> streams;
+        vector<AudioStream *> streams;
 public:
         PulsePlugin ( PLUGIN_TYPES init_Type = AUDIO, string init_Name = "Pulse plugin output only",
                       string init_audiobackend = "pulse", bool init_contextReady = false,

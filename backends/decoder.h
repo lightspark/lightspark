@@ -53,7 +53,7 @@ protected:
 public:
 	Decoder():status(PREINIT),flushing(false),flushed(0){}
 	virtual ~Decoder(){}
-	bool isValid() const
+	bool isValid() const DLL_PUBLIC
 	{
 		return status>=VALID;
 	}
@@ -166,25 +166,8 @@ public:
 };
 #endif
 
-class IAudioDecoder: public Decoder
-{
-  protected:
-    class FrameSamples; //Implemented per audiodecoder class
-    class FrameSamplesGenerator; //Implemented per audiodecoder class
-  public:
-    virtual uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
-    virtual bool hasDecodedFrames() const=0;
-    virtual uint32_t getFrontTime() const=0;
-    virtual uint32_t getBytesPerMSec() const=0;
-    virtual uint32_t copyFrame(int16_t* dest, uint32_t len)=0;
-    virtual void skipUntil(uint32_t time, uint32_t usecs)=0;
-    virtual void skipAll()=0;
-    virtual bool discardFrame()=0;
-    virtual void setFlushing()=0;
-    virtual ~IAudioDecoder(){};
-};
 
-class AudioDecoder: public IAudioDecoder
+class AudioDecoder: public Decoder
 {
 protected:
 	class FrameSamples
@@ -218,7 +201,7 @@ public:
 	AudioDecoder():sampleRate(0){}
 	virtual ~AudioDecoder(){};
 	virtual uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
-	bool hasDecodedFrames() const
+	bool hasDecodedFrames() const DLL_PUBLIC
 	{
 		return !samplesBuffer.isEmpty();
 	}
@@ -227,7 +210,7 @@ public:
 	{
 		return sampleRate*channelCount*2/1000;
 	}
-	uint32_t copyFrame(int16_t* dest, uint32_t len);
+	uint32_t copyFrame(int16_t* dest, uint32_t len) DLL_PUBLIC;
 	/**
 	  	Skip samples until the given time
 
@@ -238,7 +221,7 @@ public:
 	/**
 	  	Skip all the samples
 	*/
-	void skipAll();
+	void skipAll() DLL_PUBLIC;
 	bool discardFrame();
 	void setFlushing()
 	{

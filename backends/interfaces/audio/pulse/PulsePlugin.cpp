@@ -20,14 +20,13 @@
 
 #include <iostream>
 #include "PulsePlugin.h"
-#include "../AudioPlugin.h"
-#include "compat.h"
+#include "../../../../compat.h"
+#include "../../../decoder.h"
 
 #include <locale.h>
 #include <libintl.h>
 #define _(STRING) gettext(STRING)
 
-#ifdef PULSE_BACKEND
 using namespace lightspark;
 using namespace std;
 
@@ -363,4 +362,3 @@ extern "C" DLL_PUBLIC void release ( IPlugin *p_plugin )
         delete p_plugin;
 }
 
-#endif

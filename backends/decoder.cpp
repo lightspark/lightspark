@@ -178,20 +178,22 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 	av_init_packet(&pkt);
 	pkt.data=data;
 	pkt.size=datalen;
-	avcodec_decode_video2(codecContext, frameIn, &frameOk, &pkt);
+	int ret=avcodec_decode_video2(codecContext, frameIn, &frameOk, &pkt);
 #else
-	avcodec_decode_video(codecContext, frameIn, &frameOk, data, datalen);
+	int ret=avcodec_decode_video(codecContext, frameIn, &frameOk, data, datalen);
 #endif
-	if(frameOk==0)
-		throw RunTimeException("Cannot decode frame");
-	assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
+	assert_and_throw(ret==datalen);
+	if(frameOk)
+	{
+		assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
 
-	if(status==INIT && fillDataAndCheckValidity())
-		status=VALID;
+		if(status==INIT && fillDataAndCheckValidity())
+			status=VALID;
 
-	assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
+		assert(frameIn->pts==AV_NOPTS_VALUE || frameIn->pts==0);
 
-	copyFrameToBuffers(frameIn, time);
+		copyFrameToBuffers(frameIn, time);
+	}
 	return true;
 }
 

@@ -35,7 +35,7 @@ Abstract class for audio plugin implementation
 class IAudioPlugin : public IPlugin
 {
 protected:
-        enum DEVICE_TYPES { playback=0, capture};
+        enum DEVICE_TYPES { PLAYBACK=0, CAPTURE};
         class AudioStream; //Early declaration, it will be implemented per plugin
         string playbackDeviceName;
         string captureDeviceName;

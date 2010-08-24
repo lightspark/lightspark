@@ -58,9 +58,9 @@ void PulsePlugin::start()
 
 vector< string* > *PulsePlugin::get_devicesList ( DEVICE_TYPES desiredType )
 {
-        if ( desiredType == playback ) {
+        if ( desiredType == PLAYBACK ) {
                 return &playbackDevicesList;
-        } else if ( desiredType == capture ) {
+        } else if ( desiredType == CAPTURE ) {
                 return &captureDevicesList;
         } else {
                 return NULL;

@@ -36,15 +36,6 @@ uintptr_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
 	return i1&i2;
 }
 
-uintptr_t ABCVm::increment(ASObject* o)
-{
-	LOG(LOG_CALLS,_("increment"));
-
-	int n=o->toInt();
-	o->decRef();
-	return n+1;
-}
-
 uintptr_t ABCVm::bitAnd_oi(ASObject* val1, intptr_t val2)
 {
 	uintptr_t i1=val1->toUInt();
@@ -469,11 +460,11 @@ ASObject* ABCVm::getGlobalScope(call_context* th)
 	return ret;
 }
 
-uintptr_t ABCVm::decrement(ASObject* o)
+number_t ABCVm::decrement(ASObject* o)
 {
 	LOG(LOG_CALLS,_("decrement"));
 
-	int n=o->toInt();
+	number_t n=o->toNumber();
 	o->decRef();
 	return n-1;
 }
@@ -2123,6 +2114,15 @@ void ABCVm::getDescendants(call_context* th, int n)
 	}
 
 	th->runtime_stack_push(ret);*/
+}
+
+number_t ABCVm::increment(ASObject* o)
+{
+	LOG(LOG_CALLS,"increment");
+
+	number_t n=o->toNumber();
+	o->decRef();
+	return n+1;
 }
 
 uintptr_t ABCVm::increment_i(ASObject* o)

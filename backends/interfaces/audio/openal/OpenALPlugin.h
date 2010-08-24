@@ -26,7 +26,7 @@
 #include <AL/alc.h>
 #include "../AudioPlugin.h"
 #include "../../../decoder.h"
-#include "../../../compat.h"
+#include "../../../../compat.h"
 #include <iostream>
 
 using namespace std;
@@ -45,16 +45,18 @@ class OpenALPlugin : public AudioPlugin
 	  volatile STREAM_STATUS streamStatus;
 	  AudioStream(OpenALPlugin *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
 	};
-	pa_threaded_mainloop *mainLoop;
-	pa_context *context;
+	ALCcontext *context;
+	ALCdevice *playbackDevice;
+	ALCdevice *captureDevice;
 	static void contextStatusCB(pa_context *context, OpenALPlugin *th);
 	static void streamStatusCB(pa_stream *stream, AudioStream *th);
 	static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
+        void addDeviceToList ( vector<string *> *devicesList, string *deviceName );
 	void generateDevicesList(vector<string *> *devicesList, DEVICE_TYPES desiredType); //To populate the devices lists, devicesType must be playback or capture
 	void start();
 	vector<AudioStream*> streams;
   public:
-	OpenALPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "OpenAL plugin output only",
+	OpenALPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "OpenAL plugin",
 		    string init_audiobackend = "openal", bool init_contextReady = false,
 		    bool init_noServer = false, bool init_stopped = false);
 	uint32_t createStream(lightspark::AudioDecoder *decoder);

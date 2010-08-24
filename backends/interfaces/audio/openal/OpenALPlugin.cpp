@@ -17,45 +17,44 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <iostream>
 #include "OpenALPlugin.h"
-#include "../AudioPlugin.h"
-#include "compat.h"
 
-#ifdef OPENAL_BACKEND
 using namespace lightspark;
 using namespace std;
 
-OpenALPlugin::OpenALPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
-	    bool init_contextReady, bool init_noServer, bool init_stopped)
+OpenALPlugin::OpenALPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend, 
+			   bool init_contextReady, bool init_noServer, bool init_stopped): AudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
 {
-  pluginType = init_Type;
-  pluginName = init_Name;
-  backendName = init_audiobackend;
-  contextReady = init_contextReady;
-  init_noServer = init_noServer;
-  stopped = init_stopped;
-  
-  start();
+    pluginType = init_Type;
+    pluginName = init_Name;
+    backendName = init_audiobackend;
+    contextReady = init_contextReady;
+    noServer = init_noServer;
+    stopped = init_stopped;
+    pPlaybackDevice = NULL;
+    captureDevice = NULL;
+
+    start();
 }
 
 void OpenALPlugin::start()
 {
-/*
-  mainLoop = pa_threaded_mainloop_new();
-  pa_threaded_mainloop_start(mainLoop);
-  
-  pa_threaded_mainloop_lock(mainLoop);
-  context=pa_context_new(pa_threaded_mainloop_get_api(mainLoop),"Lightspark");
-  pa_context_set_state_callback(context, (pa_context_notify_cb_t)contextStatusCB, this);
-  pa_context_connect(context, NULL, PA_CONTEXT_NOFLAGS, NULL);
-  pa_threaded_mainloop_unlock(mainLoop);
-*/
+    /*
+    Generate lists (playback and captures)
+    Find info on selected devices in config file
+    open devices
+    create contexts and activate them
+    create buffers
+    create sources
+    Don't forget to check for errors
+    */
+    generateDevicesList(playbackDevicesList, PLAYBACK);
+    generateDevicesList(captureDevicesList, CAPTURE);
 }
 
 
 bool OpenALPlugin::Is_Connected()
-{
+{/*
   if(mainLoop == NULL)
   {
     return false;
@@ -64,10 +63,10 @@ bool OpenALPlugin::Is_Connected()
   {
     return true;
   }
-}
+*/}
 
 void OpenALPlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
-{
+{/*
 	if(pa_stream_get_state(stream)==PA_STREAM_READY)
 		th->streamStatus=AudioStream::STREAM_READY;
 	else if(pa_stream_get_state(stream)==PA_STREAM_TERMINATED)
@@ -75,10 +74,10 @@ void OpenALPlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
 		assert(stream==th->stream);
 		th->streamStatus=AudioStream::STREAM_DEAD;
 	}
-}
+*/}
 
 uint32_t OpenALPlugin::getPlayedTime(uint32_t id)
-{
+{/*
 	assert(streams[id-1]);
 	assert(noServer==false);
 
@@ -99,10 +98,10 @@ uint32_t OpenALPlugin::getPlayedTime(uint32_t id)
 
 	pa_threaded_mainloop_unlock(mainLoop);
 	return time/1000;
-}
+*/}
 
 void OpenALPlugin::fill(uint32_t id)
-{
+{/*
 	assert(streams[id-1]);
 	if(noServer==false)
 	{
@@ -149,10 +148,10 @@ void OpenALPlugin::fill(uint32_t id)
 		//Just skip all the contents
 		streams[id-1]->decoder->skipAll();
 	}
-}
+*/}
 
 void OpenALPlugin::streamWriteCB(pa_stream *stream, size_t askedData, AudioStream *th)
-{
+{/*
 	int16_t *dest;
 	//Get buffer size
 	size_t frameSize=askedData;
@@ -194,10 +193,10 @@ void OpenALPlugin::streamWriteCB(pa_stream *stream, size_t askedData, AudioStrea
 		delete[] dest;
 	}
 	pa_stream_cork(stream, 0, NULL, NULL); //Start the stream, just in case it's still stopped
-}
+*/}
 
 void OpenALPlugin::freeStream(uint32_t id)
-{
+{/*
 	pa_threaded_mainloop_lock(mainLoop);
 	AudioStream *s=streams[id-1];
 	assert(s);
@@ -215,25 +214,25 @@ void OpenALPlugin::freeStream(uint32_t id)
 		pa_stream_unref(s->stream);
 	pa_threaded_mainloop_unlock(mainLoop);
 	delete s;
-}
+*/}
 
 void overflow_notify()
 {
-	cout << "____overflow!!!!" << endl;
+    cout << "____overflow!!!!" << endl;
 }
 
 void underflow_notify()
 {
-	cout << "____underflow!!!!" << endl;
+    cout << "____underflow!!!!" << endl;
 }
 
 void started_notify()
 {
-	cout << "____started!!!!" << endl;
+    cout << "____started!!!!" << endl;
 }
 
 uint32_t OpenALPlugin::createStream(AudioDecoder *decoder)
-{
+{/*
 	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
 	uint32_t index=0;
@@ -264,7 +263,7 @@ uint32_t OpenALPlugin::createStream(AudioDecoder *decoder)
 		pa_stream_set_underflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)underflow_notify, NULL);
 		pa_stream_set_overflow_callback(streams[index]->stream, (pa_stream_notify_cb_t)overflow_notify, NULL);
 		pa_stream_set_started_callback(streams[index]->stream, (pa_stream_notify_cb_t)started_notify, NULL);
-		pa_stream_connect_playback(streams[index]->stream, NULL, &attrs, 
+		pa_stream_connect_playback(streams[index]->stream, NULL, &attrs,
 			(pa_stream_flags)(PA_STREAM_START_CORKED), NULL, NULL);
 	}
 	else
@@ -274,10 +273,10 @@ uint32_t OpenALPlugin::createStream(AudioDecoder *decoder)
 	}
 	pa_threaded_mainloop_unlock(mainLoop);
 	return index+1;
-}
+*/}
 
 void OpenALPlugin::contextStatusCB(pa_context *context, OpenALPlugin *th)
-{
+{/*
 	switch(pa_context_get_state(context))
 	{
 		case PA_CONTEXT_READY:
@@ -292,90 +291,126 @@ void OpenALPlugin::contextStatusCB(pa_context *context, OpenALPlugin *th)
 		default:
 			break;
 	}
-}
+*/}
 
 void OpenALPlugin::generateDevicesList(vector< string* >* devicesList, DEVICE_TYPES desiredType)
 {
-  if (alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") == AL_TRUE) //Check if the extension if found
-  {
-    const ALCchar *devices;
-    if(desiredType == playback)
+    if (alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") == AL_TRUE) //Check if the extension if found
     {
-      devices = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
-    }
-    else if(desiredType == capture)
-    {
-      devices = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
-    }
+        ALCchar *devices;
+        if (desiredType == PLAYBACK)
+        {
+            devices = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+        }
+        else if (desiredType == CAPTURE)
+        {
+            devices = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
+        }
 
-    while() //Split the devices into a vector
-    {
+        while () //Split the devices' name and add them to the device list
+        {
+            addDeviceToList(devicesList, deviceName);
+        }
     }
-  }
+}
+
+void OpenALPlugin::addDeviceToList(std::vector< string* >* devicesList, string* deviceName)
+{
+    uint32_t index = devicesList->size(); //we want to add the plugin to the end of the list
+    if ( devicesList->size() == ( uint32_t ) ( index ) ) {
+        devicesList->push_back ( new string ( *deviceName ) );
+    }
 }
 
 vector< string* >* OpenALPlugin::get_devicesList(DEVICE_TYPES desiredType)
 {
-  if(desiredType == playback)
-  {
-    return playbackDevicesList;
-  }
-  else if(desiredType == capture)
-  {
-    return captureDevicesList;
-  }
+    if (desiredType == PLAYBACK)
+    {
+        return playbackDevicesList;
+    }
+    else if (desiredType == CAPTURE)
+    {
+        return captureDevicesList;
+    }
 }
 
-void OpenALPlugin::set_device(string desiredDevice, DEVICE_TYPES desiredType)
+/**********************
+desiredDevice should be empty to use the default. Else, it should be the name of the device.
+When setting a device, we should check if there is a context active using the current device
+  If so, suspend it, unload previous device, load the new one, update the context and restart it
+**********************/
+void OpenALPlugin::set_device(string desiredDeviceName, DEVICE_TYPES desiredType, ALCdevice *pDevice)
 {
-  selectedPlaybackDevice = desiredDevice;
-  if(desiredType == playback)
-  {
-    
-  }
-  else if(desiredType == capture)
-  {
-    
-  }
+    ALCdevice *tmpDevice = NULL;
+
+    if ((desiredType == PLAYBACK) && (selectedPlaybackDevice != desiredDevice))
+    {
+        if (desiredDevice == "") //Find the default device
+        {
+            if (desiredType == PLAYBACK)
+            {
+                desiredDevice = desiredDevicealcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
+            }
+            else if (desiredType == CAPTURE)
+            {
+                desiredDevice = desiredDevicealcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER);
+            }
+        }
+
+        if ( tmpDevice = alcOpenDevice(desiredDevice.c_str()) ) //The device could be opened
+        {
+            if (pDevice != NULL) //Close the old device if opened
+            {
+                alcCloseDevice(pDevice);
+            }
+            pDevice = tmpDevice;
+            if (desiredType == PLAYBACK)
+            {
+                playbackDeviceName = tmpDevice;
+            }
+            else if (desiredType == CAPTURE)
+            {
+                captureDeviceName = tmpDevice;
+            }
+        }
+    }
 }
 
 OpenALPlugin::~OpenALPlugin()
 {
-  stop();
+    stop();
 }
 
 void OpenALPlugin::stop()
 {
-  if(!stopped)
-  {
-    stopped=true;
-    pa_threaded_mainloop_lock(mainLoop);
-    for(uint32_t i=0;i<streams.size();i++)
+    if (!stopped)
     {
-      if(streams[i])
-      {
-	  freeStream(i+1);
-      }
+        stopped=true;
+
+	// stop context
+	// delete sources
+	// delete buffers
+	// delete context
+	
+	
+	// close devices
+	if((playbackDevice != NULL) || (captureDevice != NULL))
+	{
+	  alcCloseDevice(playback);
+	  alcCloseDevice(capture);
+	}
     }
-    pa_context_disconnect(context);
-    pa_context_unref(context);
-    pa_threaded_mainloop_unlock(mainLoop);
-    pa_threaded_mainloop_stop(mainLoop);
-    pa_threaded_mainloop_free(mainLoop);
-  }
 }
 
 // Plugin factory function
 extern "C" DLL_PUBLIC IPlugin *create()
 {
-  return new OpenALPlugin();
+    return new OpenALPlugin();
 }
 
 // Plugin cleanup function
 extern "C" DLL_PUBLIC void release(IPlugin *p_plugin)
 {
-  //delete the previously created object
-  delete p_plugin;
+    //delete the previously created object
+    delete p_plugin;
 }
-
-#endif

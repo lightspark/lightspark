@@ -46,6 +46,7 @@ SET(OPENALPLUGIN_SOURCES OpenALPlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp 
 
 # liblightsparkpulseplugin.so target
 ADD_LIBRARY(openalplugin SHARED ${OPENALPLUGIN_SOURCES})
+TARGET_LINK_LIBRARIES(openalplugin spark) #Need to link some functions with the decoders
 TARGET_LINK_LIBRARIES(openalplugin ${OPENAL_LIBS_LIBRARIES} ${Boost_LIBRARIES})
 SET_TARGET_PROPERTIES(openalplugin PROPERTIES OUTPUT_NAME lightsparkopenalplugin)
 #SET_TARGET_PROPERTIES(openalplugin PROPERTIES VERSION "${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION}")

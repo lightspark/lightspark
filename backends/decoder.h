@@ -72,7 +72,7 @@ protected:
 	uint32_t frameWidth;
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);
-	bool resizeIfNeeded(int& tex);
+	bool resizeIfNeeded(TextureChunk& tex);
 	LS_VIDEO_CODEC videoCodec;
 public:
 	VideoDecoder():resizeGLBuffers(false),frameWidth(0),frameHeight(0),frameRate(0){}
@@ -83,7 +83,7 @@ public:
 	virtual void skipAll()=0;
 	//NOTE: the base implementation returns true if resizing of buffers should be done
 	//This should be called in every derived implementation
-	virtual bool copyFrameToTexture(int& tex)=0;
+	virtual bool copyFrameToTexture(TextureChunk& tex)=0;
 	uint32_t getWidth()
 	{
 		return frameWidth;
@@ -103,7 +103,7 @@ public:
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}
 	void skipAll(){}
-	bool copyFrameToTexture(int& tex){return false;}
+	bool copyFrameToTexture(TextureChunk& tex){return false;}
 	void setFlushing()
 	{
 		flushing=true;
@@ -156,7 +156,7 @@ public:
 	bool discardFrame();
 	void skipUntil(uint32_t time);
 	void skipAll();
-	bool copyFrameToTexture(int& tex);
+	bool copyFrameToTexture(TextureChunk& tex);
 	void setFlushing()
 	{
 		flushing=true;

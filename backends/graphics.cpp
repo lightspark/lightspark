@@ -311,3 +311,35 @@ void MatrixApplier::unapply()
 {
 	glPopMatrix();
 }
+
+TextureChunk::TextureChunk(uint32_t w, uint32_t h)
+{
+	width=w;
+	height=h;
+	uint32_t blocksW=(w+127)/128;
+	uint32_t blocksH=(h+127)/128;
+	chunks=new uint32_t[blocksW*blocksH];
+}
+
+TextureChunk::TextureChunk(const TextureChunk& r):width(r.width),height(r.height)
+{
+	uint32_t blocksW=(width+127)/128;
+	uint32_t blocksH=(height+127)/128;
+	chunks=new uint32_t[blocksW*blocksH];
+	memcpy(chunks, r.chunks, blocksW*blocksH*4);
+}
+
+TextureChunk& TextureChunk::operator=(const TextureChunk& r)
+{
+	width=r.width;
+	height=r.height;
+	uint32_t blocksW=(width+127)/128;
+	uint32_t blocksH=(height+127)/128;
+	chunks=new uint32_t[blocksW*blocksH];
+	memcpy(chunks, r.chunks, blocksW*blocksH*4);
+}
+
+TextureChunk::~TextureChunk()
+{
+	delete[] chunks;
+}

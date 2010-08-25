@@ -193,10 +193,10 @@ public:
 	  	copy the current frame to a texture
 
 		@pre lock on the object should be acquired and object should be ready
-		@param tex the TextureBuffer to copy in
+		@param tex the TextureChunk to copy in
 		@return true if a new frame has been copied
 	*/
-	bool copyFrameToTexture(int& tex);
+	bool copyFrameToTexture(TextureChunk& tex);
 	/**
 	  	Acquire the mutex to guarantee validity of data
 

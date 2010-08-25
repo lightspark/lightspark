@@ -146,5 +146,20 @@ public:
 	void unapply();
 };
 
+class TextureChunk
+{
+friend class RenderThread;
+private:
+	uint32_t* chunks;
+	TextureChunk(uint32_t w, uint32_t h);
+public:
+	TextureChunk():chunks(NULL){}
+	TextureChunk(const TextureChunk& r);
+	TextureChunk& operator=(const TextureChunk& r);
+	~TextureChunk();
+	uint32_t width;
+	uint32_t height;
+};
+
 };
 #endif

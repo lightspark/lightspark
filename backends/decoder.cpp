@@ -46,15 +46,13 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 		return false;
 }
 
-bool VideoDecoder::resizeIfNeeded(int& tex)
+bool VideoDecoder::resizeIfNeeded(TextureChunk& tex)
 {
 	if(!resizeGLBuffers)
 		return false;
 
-/*	//Request a sane alignment
-	tex.setRequestedAlignment(16,1);
-	//Initialize texture to video size
-	tex.resize(frameWidth, frameHeight);*/
+	//Chunks are at least aligned to 128, we need 16
+	assert(tex.width==frameWidth && tex.height==frameHeight);
 	resizeGLBuffers=false;
 	return true;
 }
@@ -225,7 +223,7 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 	buffers.commitLast();
 }
 
-bool FFMpegVideoDecoder::copyFrameToTexture(int& tex)
+bool FFMpegVideoDecoder::copyFrameToTexture(TextureChunk& tex)
 {
 	assert(isValid());
 	if(!initialized)
@@ -249,7 +247,7 @@ bool FFMpegVideoDecoder::copyFrameToTexture(int& tex)
 	{
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[curBuffer]);
 		//Copy content of the pbo to the texture, 0 is the offset in the pbo
-		rt->loadChunkBGRA(0, alignedWidth, frameHeight, (uint8_t*)curBufferOffset);
+		rt->loadChunkBGRA(tex, alignedWidth, frameHeight, (uint8_t*)curBufferOffset);
 		//Now texture width has become alignedWidth, reset it to the right value
 		//tex.resize(frameWidth,frameHeight);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);

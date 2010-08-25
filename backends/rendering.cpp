@@ -49,10 +49,10 @@ void RenderThread::wait()
 	assert_and_throw(ret==0);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),largeTextureId(0),largeTextureSize(0),inputNeeded(false),
-	inputDisabled(false),resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),
-	tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),mainTex(false),tempTex(false),
-	inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),largeTextureId(0),largeTextureSize(0),largeTextureBitmap(NULL),
+	inputNeeded(false),inputDisabled(false),resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),
+	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),mainTex(false),
+	tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
 	m_sys=s;
@@ -502,6 +502,8 @@ void RenderThread::commonGLDeinit()
 	mainTex.shutdown();
 	tempTex.shutdown();
 	inputTex.shutdown();
+	delete[] largeTextureBitmap;
+	glDeleteTextures(1,&largeTextureId);
 }
 
 void RenderThread::commonGLInit(int width, int height)
@@ -548,8 +550,10 @@ void RenderThread::commonGLInit(int width, int height)
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
 	//Get the maximum allowed texture size, up to 1024
-	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &largeTextureSize);
-	assert(largeTextureSize>0);
+	int maxTexSize;
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
+	assert(maxTexSize>0);
+	largeTextureSize=maxTexSize;
 	//Allocate the texture
 	while(glGetError()!=GL_NO_ERROR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, largeTextureSize, largeTextureSize, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
@@ -558,6 +562,10 @@ void RenderThread::commonGLInit(int width, int height)
 		LOG(LOG_ERROR,_("Can't allocate large texture... Aborting"));
 		::abort();
 	}
+	//Let's allocate the bitmap for the texture blocks, minumum block size is 128
+	uint32_t bitmapSize=(largeTextureSize/128)*(largeTextureSize/128)/8;
+	largeTextureBitmap=new uint8_t[bitmapSize];
+	memset(largeTextureBitmap,0,bitmapSize);
 
 	//Set uniforms
 	cleanGLErrors();
@@ -939,20 +947,65 @@ void RenderThread::tick()
 	draw();
 }
 
-int RenderThread::allocateTexture(uint32_t w, uint32_t h)
+TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 {
-	//TODO: implement
-	return 0;
+	//Find the number of blocks needed for the given w and h
+	uint32_t blocksW=(w+127)/128;
+	uint32_t blocksH=(h+127)/128;
+	if(compact)
+	{
+		//Find a contiguos set of blocks
+		uint32_t blockPerSide=largeTextureSize/128;
+		uint32_t bitmapSize=blockPerSide*blockPerSide;
+		uint32_t start;
+		for(start=0;start<bitmapSize;start++)
+		{
+			bool badRect=false;
+			for(uint32_t i=0;i<blocksH;i++)
+			{
+				for(uint32_t j=0;j<blocksW;j++)
+				{
+					uint32_t bitOffset=start+i*blockPerSide+j;
+					if(largeTextureBitmap[bitOffset/8]&(1<<(bitOffset%8)))
+					{
+						badRect=true;
+						break;
+					}
+				}
+				if(badRect)
+					break;
+			}
+			if(!badRect)
+				break;
+		}
+		assert_and_throw(start<bitmapSize); //TODO: defragment and try again
+		//Now set all those blocks are used
+		TextureChunk ret(w, h);
+		for(uint32_t i=0;i<blocksH;i++)
+		{
+			for(uint32_t j=0;j<blocksW;j++)
+			{
+				uint32_t bitOffset=start+i*blockPerSide+j;
+				largeTextureBitmap[bitOffset/8]|=1<<(bitOffset%8);
+				ret.chunks[i*blocksW+j]=bitOffset;
+			}
+		}
+		return ret;
+	}
+	else
+	{
+		//Allocate a sparse set of texture chunks
+		::abort();
+	}
 }
 
-void RenderThread::renderTextured(uint32_t chunk, uint32_t videoW, uint32_t videoH, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+void RenderThread::renderTextured(const TextureChunk& chunk, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
-	assert(chunk==0);
 	glBindTexture(GL_TEXTURE_2D, largeTextureId);
 	//TODO: implement tiling
-	float texW=videoW;
+	float texW=chunk.width;
 	texW/=largeTextureSize;
-	float texH=videoH;
+	float texH=chunk.height;
 	texH/=largeTextureSize;
 	glBegin(GL_QUADS);
 		glTexCoord2f(0,0);
@@ -969,11 +1022,10 @@ void RenderThread::renderTextured(uint32_t chunk, uint32_t videoW, uint32_t vide
 	glEnd();
 }
 
-void RenderThread::loadChunkBGRA(uint32_t chunk, uint32_t w, uint32_t h, uint8_t* data)
+void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
 {
 	assert(w<=largeTextureSize && h<=largeTextureSize);
-	assert(chunk==0);
 	glBindTexture(GL_TEXTURE_2D, largeTextureId);
-	//Implemeny tiling
+	//TODO: Implemeny tiling
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, data);
 }

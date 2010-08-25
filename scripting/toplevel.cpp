@@ -77,6 +77,8 @@ Array::Array()
 void Array::sinit(Class_base* c)
 {
 	// public constants
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE));
 	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING));
 	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC));
@@ -782,6 +784,8 @@ ASFUNCTIONBODY(ASString,_getLength)
 
 void ASString::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 	c->setVariableByQName("split",AS3,Class<IFunction>::getFunction(split));
@@ -1424,6 +1428,8 @@ Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisec
 
 void Date::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("getTimezoneOffset","",Class<IFunction>::getFunction(getTimezoneOffset));
 	c->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf));
@@ -1959,6 +1965,8 @@ RegExp::RegExp():global(false),ignoreCase(false),extended(false),lastIndex(0)
 
 void RegExp::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(exec));
 	c->setVariableByQName("test",AS3,Class<IFunction>::getFunction(test));
@@ -2315,6 +2323,8 @@ ASFUNCTIONBODY(ASError,_constructor)
 
 void ASError::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
 	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
@@ -2344,6 +2354,7 @@ void SecurityError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->max_level=c->super->max_level+1;
 }
 
@@ -2736,6 +2747,8 @@ Class_object* Class_object::getClass()
 
 void IFunction::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call));
 	c->setVariableByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply));
 }
@@ -2844,6 +2857,8 @@ tiny_string Class_base::getQualifiedClassName() const
 
 void ASQName::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 
@@ -2879,6 +2894,8 @@ ASFUNCTIONBODY(ASQName,_constructor)
 
 void Namespace::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 

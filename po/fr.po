@@ -7,14 +7,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Lightspark\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-08-22 16:28-0500\n"
+"POT-Creation-Date: 2010-08-20 22:28-0500\n"
 "PO-Revision-Date: 2010-08-22 17:26+0100\n"
 "Last-Translator: Emmanuel Andry <eandry@mandriva.org>\n"
 "Language-Team: \n"
-"Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Language: fr\n"
 "X-Poedit-Language: French\n"
 "X-Poedit-Country: FRANCE\n"
 
@@ -38,40 +38,29 @@ msgstr ""
 msgid "\tSealed"
 msgstr "\tScellé"
 
-#: asobject.cpp:734
-#: scripting/abc_codesynt.cpp:793
-#: scripting/abc_codesynt.cpp:2257
-#: scripting/abc.cpp:1498
-#: scripting/abc.cpp:1837
-#: scripting/abc_opcodes.cpp:1913
+#: asobject.cpp:734 scripting/abc_codesynt.cpp:793
+#: scripting/abc_codesynt.cpp:2257 scripting/abc.cpp:1498
+#: scripting/abc.cpp:1837 scripting/abc_opcodes.cpp:1913
 msgid " "
 msgstr " "
 
-#: scripting/abc.cpp:1403
-#: scripting/abc.cpp:1465
-#: scripting/abc.cpp:1568
-#: scripting/abc.cpp:1629
-#: scripting/abc.cpp:1691
+#: scripting/abc.cpp:1403 scripting/abc.cpp:1465 scripting/abc.cpp:1568
+#: scripting/abc.cpp:1629 scripting/abc.cpp:1691
 msgid " #"
 msgstr " #"
 
-#: scripting/flashsystem.cpp:86
-#: scripting/flashsystem.cpp:104
-#: scripting/flashsystem.cpp:117
-#: scripting/flashsystem.cpp:133
-#: scripting/flashutils.cpp:321
-#: scripting/flashutils.cpp:327
+#: scripting/flashsystem.cpp:86 scripting/flashsystem.cpp:104
+#: scripting/flashsystem.cpp:117 scripting/flashsystem.cpp:133
+#: scripting/flashutils.cpp:321 scripting/flashutils.cpp:327
 #: scripting/flashutils.cpp:342
 msgid " :: "
 msgstr " ::"
 
-#: swf.cpp:70
-#: swf.cpp:74
+#: swf.cpp:70 swf.cpp:74
 msgid " Length "
 msgstr "Durée"
 
-#: asobject.cpp:85
-#: asobject.cpp:168
+#: asobject.cpp:85 asobject.cpp:168
 msgid " and type "
 msgstr " et type"
 
@@ -79,8 +68,7 @@ msgstr " et type"
 msgid " at byte "
 msgstr " à l'octet"
 
-#: parsing/tags.cpp:55
-#: scripting/actions.cpp:409
+#: parsing/tags.cpp:55 scripting/actions.cpp:409
 msgid " bytes"
 msgstr " octets"
 
@@ -88,8 +76,7 @@ msgstr " octets"
 msgid " constants"
 msgstr " constantes"
 
-#: backends/input.cpp:194
-#: backends/input.cpp:270
+#: backends/input.cpp:194 backends/input.cpp:270
 msgid " events"
 msgstr " événements"
 
@@ -97,13 +84,11 @@ msgstr " événements"
 msgid " events missing before exit"
 msgstr " événements manquants avant la sortie"
 
-#: parsing/tags.cpp:227
-#: parsing/tags.cpp:232
+#: parsing/tags.cpp:227 parsing/tags.cpp:232
 msgid " expected: "
 msgstr " attendu :"
 
-#: backends/graphics.cpp:135
-#: backends/graphics.cpp:177
+#: backends/graphics.cpp:135 backends/graphics.cpp:177
 #: backends/graphics.cpp:202
 msgid " height="
 msgstr " hauteur="
@@ -116,8 +101,7 @@ msgstr " id"
 msgid " in FLV"
 msgstr " dans FLV"
 
-#: scripting/abc_opcodes.cpp:1799
-#: scripting/abc_opcodes.cpp:1862
+#: scripting/abc_opcodes.cpp:1799 scripting/abc_opcodes.cpp:1862
 #: scripting/abc_opcodes.cpp:1913
 msgid " is "
 msgstr " est"
@@ -130,8 +114,7 @@ msgstr " n'est pas encore valide"
 msgid " is not yet valid (as interface)"
 msgstr " n'est pas encore valide (comme interface)"
 
-#: parsing/tags.cpp:1367
-#: parsing/tags.cpp:1534
+#: parsing/tags.cpp:1367 parsing/tags.cpp:1534
 msgid " name "
 msgstr " nom"
 
@@ -147,8 +130,7 @@ msgstr " non supporté dans construct"
 msgid " of action data"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:362
-#: scripting/abc_opcodes.cpp:796
+#: scripting/abc_opcodes.cpp:362 scripting/abc_opcodes.cpp:796
 msgid " on obj "
 msgstr " sur objet"
 
@@ -164,8 +146,7 @@ msgstr " sur type"
 msgid " openGL errors"
 msgstr " erreurs openGL"
 
-#: backends/rendering.cpp:288
-#: backends/rendering.cpp:764
+#: backends/rendering.cpp:288 backends/rendering.cpp:764
 msgid " renderings"
 msgstr ""
 
@@ -185,9 +166,7 @@ msgstr ""
 msgid " to int"
 msgstr ""
 
-#: scripting/abc.cpp:1778
-#: scripting/abc.cpp:1798
-#: scripting/abc.cpp:1804
+#: scripting/abc.cpp:1778 scripting/abc.cpp:1798 scripting/abc.cpp:1804
 msgid " type "
 msgstr " type "
 
@@ -203,13 +182,11 @@ msgstr ""
 msgid " waited "
 msgstr " attendu"
 
-#: parsing/tags.cpp:55
-#: scripting/actions.cpp:409
+#: parsing/tags.cpp:55 scripting/actions.cpp:409
 msgid " with length "
 msgstr " de longueur"
 
-#: parsing/tags.cpp:1328
-#: parsing/tags.cpp:1495
+#: parsing/tags.cpp:1328 parsing/tags.cpp:1495
 msgid " with name "
 msgstr " de nom"
 
@@ -229,8 +206,7 @@ msgstr ""
 msgid ", password: "
 msgstr ", mot de passe : "
 
-#: scripting/abc_opcodes.cpp:1346
-#: scripting/abc_opcodes.cpp:1418
+#: scripting/abc_opcodes.cpp:1346 scripting/abc_opcodes.cpp:1418
 msgid ", pushing Undefined"
 msgstr ""
 
@@ -238,14 +214,11 @@ msgstr ""
 msgid ". Not binding"
 msgstr ""
 
-#: parsing/tags.cpp:227
-#: parsing/tags.cpp:232
+#: parsing/tags.cpp:227 parsing/tags.cpp:232
 msgid ". Size="
 msgstr ". Taille ="
 
-#: swftypes.cpp:670
-#: swftypes.cpp:702
-#: backends/rendering.cpp:585
+#: swftypes.cpp:670 swftypes.cpp:702 backends/rendering.cpp:585
 msgid "... Aborting"
 msgstr "... Annule"
 
@@ -253,34 +226,23 @@ msgstr "... Annule"
 msgid "0 not allowed"
 msgstr "0 non autorisé"
 
-#: scripting/abc_interpreter.cpp:777
-#: scripting/abc_interpreter.cpp:1214
+#: scripting/abc_interpreter.cpp:777 scripting/abc_interpreter.cpp:1214
 msgid ": "
 msgstr ":"
 
-#: scripting/abc.cpp:1403
-#: scripting/abc.cpp:1429
-#: scripting/abc.cpp:1434
-#: scripting/abc.cpp:1460
-#: scripting/abc.cpp:1465
-#: scripting/abc.cpp:1491
-#: scripting/abc.cpp:1561
-#: scripting/abc.cpp:1568
-#: scripting/abc.cpp:1624
-#: scripting/abc.cpp:1629
-#: scripting/abc.cpp:1686
-#: scripting/abc.cpp:1691
+#: scripting/abc.cpp:1403 scripting/abc.cpp:1429 scripting/abc.cpp:1434
+#: scripting/abc.cpp:1460 scripting/abc.cpp:1465 scripting/abc.cpp:1491
+#: scripting/abc.cpp:1561 scripting/abc.cpp:1568 scripting/abc.cpp:1624
+#: scripting/abc.cpp:1629 scripting/abc.cpp:1686 scripting/abc.cpp:1691
 #: scripting/abc.cpp:1747
 msgid "::"
 msgstr "::"
 
-#: scripting/abc_opcodes.cpp:1093
-#: scripting/abc_opcodes.cpp:1104
+#: scripting/abc_opcodes.cpp:1093 scripting/abc_opcodes.cpp:1104
 msgid "<<"
 msgstr "<<"
 
-#: scripting/abc_opcodes.cpp:1116
-#: scripting/abc_opcodes.cpp:1126
+#: scripting/abc_opcodes.cpp:1116 scripting/abc_opcodes.cpp:1126
 #: scripting/abc_opcodes.cpp:1135
 msgid ">>"
 msgstr ">>"
@@ -297,8 +259,7 @@ msgstr "Version d'ABCVm"
 msgid "ASString::charCodeAt not really implemented"
 msgstr ""
 
-#: scripting/actions.cpp:87
-#: scripting/actions.cpp:154
+#: scripting/actions.cpp:87 scripting/actions.cpp:154
 msgid "AVM1 not supported"
 msgstr "AVM1 non supporté"
 
@@ -346,8 +307,7 @@ msgstr ""
 msgid "ActionCloneSprite"
 msgstr ""
 
-#: scripting/actions.cpp:1401
-#: scripting/actions.h:267
+#: scripting/actions.cpp:1401 scripting/actions.h:267
 msgid "ActionConstantPool"
 msgstr ""
 
@@ -415,8 +375,7 @@ msgstr ""
 msgid "ActionGetVariable"
 msgstr ""
 
-#: scripting/actions.cpp:1412
-#: scripting/actions.h:287
+#: scripting/actions.cpp:1412 scripting/actions.h:287
 msgid "ActionGoToLabel"
 msgstr ""
 
@@ -556,8 +515,7 @@ msgstr ""
 msgid "ActionSubtract"
 msgstr ""
 
-#: scripting/actions.cpp:863
-#: scripting/actions.h:385
+#: scripting/actions.cpp:863 scripting/actions.h:385
 msgid "ActionToInteger"
 msgstr ""
 
@@ -605,8 +563,7 @@ msgstr ""
 msgid "Array::filter STUB"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:415
-#: scripting/abc_opcodes.cpp:1378
+#: scripting/abc_opcodes.cpp:415 scripting/abc_opcodes.cpp:1378
 msgid "Attaching this to function "
 msgstr ""
 
@@ -642,13 +599,11 @@ msgstr ""
 msgid "Building entry script traits: "
 msgstr ""
 
-#: scripting/abc.cpp:1067
-#: scripting/toplevel.cpp:2667
+#: scripting/abc.cpp:1067 scripting/toplevel.cpp:2667
 msgid "Building instance traits"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:654
-#: scripting/abc_opcodes.cpp:2027
+#: scripting/abc_opcodes.cpp:654 scripting/abc_opcodes.cpp:2027
 msgid "Building method traits"
 msgstr ""
 
@@ -666,7 +621,9 @@ msgstr ""
 
 #: backends/netutils.cpp:281
 msgid "CURL not enabled in this build. Downloader will always fail."
-msgstr "CURL non activé dans cette version compilée. Le téléchargement échouera toujours."
+msgstr ""
+"CURL non activé dans cette version compilée. Le téléchargement échouera "
+"toujours."
 
 #: scripting/toplevel.cpp:461
 msgid "Called ASXML::load "
@@ -704,8 +661,7 @@ msgstr ""
 msgid "Calling an undefined function"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:362
-#: scripting/abc_opcodes.cpp:796
+#: scripting/abc_opcodes.cpp:362 scripting/abc_opcodes.cpp:796
 #: scripting/abc_opcodes.cpp:1661
 msgid "Calling an undefined function "
 msgstr ""
@@ -714,9 +670,7 @@ msgstr ""
 msgid "Calling interface init for "
 msgstr ""
 
-#: asobject.cpp:605
-#: asobject.cpp:648
-#: asobject.cpp:894
+#: asobject.cpp:605 asobject.cpp:648 asobject.cpp:894
 msgid "Calling the getter"
 msgstr ""
 
@@ -724,18 +678,15 @@ msgstr ""
 msgid "Calling the getter on type "
 msgstr ""
 
-#: asobject.cpp:355
-#: asobject.cpp:388
+#: asobject.cpp:355 asobject.cpp:388
 msgid "Calling the setter"
 msgstr ""
 
-#: scripting/toplevel.cpp:1621
-#: scripting/toplevel.cpp:1707
+#: scripting/toplevel.cpp:1621 scripting/toplevel.cpp:1707
 msgid "Calling with closure "
 msgstr ""
 
-#: asobject.cpp:181
-#: asobject.cpp:188
+#: asobject.cpp:181 asobject.cpp:188
 msgid "Cannot convert object of type "
 msgstr ""
 
@@ -755,8 +706,7 @@ msgstr "Ne peut pas initialiser GLEW"
 msgid "Cannot retrieve type"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:793
-#: scripting/abc_codesynt.cpp:2257
+#: scripting/abc_codesynt.cpp:793 scripting/abc_codesynt.cpp:2257
 msgid "Case "
 msgstr ""
 
@@ -768,9 +718,7 @@ msgstr ""
 msgid "Child process creation failed, lightspark continues"
 msgstr "La création de l'enfant a échoué, lightspark continue"
 
-#: scripting/abc.cpp:908
-#: scripting/abc.cpp:1130
-#: scripting/abc.cpp:1136
+#: scripting/abc.cpp:908 scripting/abc.cpp:1130 scripting/abc.cpp:1136
 #: scripting/abc_opcodes.cpp:2289
 msgid "Class "
 msgstr ""
@@ -811,8 +759,7 @@ msgstr ""
 msgid "ConstantPool: Reading "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:623
-#: scripting/abc_opcodes.cpp:713
+#: scripting/abc_opcodes.cpp:623 scripting/abc_opcodes.cpp:713
 #: scripting/abc_opcodes.cpp:2010
 msgid "Constructing"
 msgstr ""
@@ -857,8 +804,7 @@ msgstr "Débogueur activé, mot de passe :"
 msgid "Debugger enabled, reserved: "
 msgstr "Débogueur activé, réservé :"
 
-#: scripting/abc_opcodes.cpp:1384
-#: scripting/abc_opcodes.cpp:1404
+#: scripting/abc_opcodes.cpp:1384 scripting/abc_opcodes.cpp:1404
 #: scripting/abc_opcodes.cpp:2003
 msgid "Deferred definition of property "
 msgstr ""
@@ -1003,23 +949,19 @@ msgstr ""
 msgid "EnableDebuggerTag Tag"
 msgstr ""
 
-#: scripting/abc.cpp:1460
-#: scripting/abc.cpp:1624
+#: scripting/abc.cpp:1460 scripting/abc.cpp:1624
 msgid "End Getter trait: "
 msgstr ""
 
-#: scripting/abc.cpp:1429
-#: scripting/abc.cpp:1747
+#: scripting/abc.cpp:1429 scripting/abc.cpp:1747
 msgid "End Method trait: "
 msgstr ""
 
-#: scripting/abc.cpp:1491
-#: scripting/abc.cpp:1686
+#: scripting/abc.cpp:1491 scripting/abc.cpp:1686
 msgid "End Setter trait: "
 msgstr ""
 
-#: scripting/actions.cpp:451
-#: scripting/actions.cpp:567
+#: scripting/actions.cpp:451 scripting/actions.cpp:567
 msgid "End action in function"
 msgstr ""
 
@@ -1047,10 +989,8 @@ msgstr ""
 msgid "End of callSuperVoid "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:356
-#: scripting/abc_opcodes.cpp:366
-#: scripting/abc_opcodes.cpp:830
-#: scripting/abc_opcodes.cpp:848
+#: scripting/abc_opcodes.cpp:356 scripting/abc_opcodes.cpp:366
+#: scripting/abc_opcodes.cpp:830 scripting/abc_opcodes.cpp:848
 msgid "End of calling "
 msgstr ""
 
@@ -1058,25 +998,20 @@ msgstr ""
 msgid "End of constructing"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:687
-#: scripting/abc_opcodes.cpp:2055
+#: scripting/abc_opcodes.cpp:687 scripting/abc_opcodes.cpp:2055
 msgid "End of constructing "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1389
-#: scripting/abc_opcodes.cpp:1408
+#: scripting/abc_opcodes.cpp:1389 scripting/abc_opcodes.cpp:1408
 #: scripting/abc_opcodes.cpp:2007
 msgid "End of deferred definition of property "
 msgstr ""
 
-#: scripting/abc.cpp:1139
-#: scripting/abc_opcodes.cpp:2292
+#: scripting/abc.cpp:1139 scripting/abc_opcodes.cpp:2292
 msgid "End of deferred init of class "
 msgstr ""
 
-#: asobject.cpp:612
-#: asobject.cpp:652
-#: asobject.cpp:899
+#: asobject.cpp:612 asobject.cpp:652 asobject.cpp:899
 msgid "End of getter"
 msgstr ""
 
@@ -1084,8 +1019,7 @@ msgstr ""
 msgid "End of parsing @ "
 msgstr ""
 
-#: asobject.cpp:366
-#: asobject.cpp:395
+#: asobject.cpp:366 asobject.cpp:395
 msgid "End of setter"
 msgstr ""
 
@@ -1109,8 +1043,7 @@ msgstr ""
 msgid "Error in VM "
 msgstr "Erreur dans la VM "
 
-#: parsing/tags.cpp:227
-#: parsing/tags.cpp:232
+#: parsing/tags.cpp:227 parsing/tags.cpp:232
 msgid "Error while reading tag "
 msgstr "Erreur lors de la lecture de la balise "
 
@@ -1126,8 +1059,7 @@ msgstr "Événement non trouvé"
 msgid "Exception in ParseThread "
 msgstr ""
 
-#: backends/rendering.cpp:405
-#: backends/rendering.cpp:898
+#: backends/rendering.cpp:405 backends/rendering.cpp:898
 msgid "Exception in RenderThread "
 msgstr ""
 
@@ -1215,8 +1147,7 @@ msgstr ""
 msgid "Exec: ActionPushDuplicate"
 msgstr ""
 
-#: scripting/actions.cpp:1019
-#: scripting/actions.cpp:1024
+#: scripting/actions.cpp:1019 scripting/actions.cpp:1024
 msgid "Exec: ActionStringAdd"
 msgstr ""
 
@@ -1276,8 +1207,7 @@ msgstr "FPS :"
 msgid "Failure in reference counting"
 msgstr ""
 
-#: backends/rendering.cpp:288
-#: backends/rendering.cpp:764
+#: backends/rendering.cpp:288 backends/rendering.cpp:764
 msgid "Faking "
 msgstr "Simule "
 
@@ -1293,8 +1223,7 @@ msgstr ""
 msgid "FileAttributesTag Tag"
 msgstr ""
 
-#: swftypes.cpp:291
-#: swftypes.cpp:307
+#: swftypes.cpp:291 swftypes.cpp:307
 msgid "Fill array extended not supported"
 msgstr ""
 
@@ -1338,8 +1267,7 @@ msgstr "Erreur GL"
 msgid "GL errors during initialization: "
 msgstr "Erreurs GL lors de l'initialisation :"
 
-#: backends/graphics.cpp:135
-#: backends/graphics.cpp:177
+#: backends/graphics.cpp:135 backends/graphics.cpp:177
 #: backends/graphics.cpp:202
 msgid "GL_INVALID_VALUE after glTexImage2D, width="
 msgstr ""
@@ -1360,13 +1288,11 @@ msgstr ""
 msgid "Getter not linkable"
 msgstr ""
 
-#: scripting/abc.cpp:1434
-#: scripting/abc.cpp:1568
+#: scripting/abc.cpp:1434 scripting/abc.cpp:1568
 msgid "Getter trait: "
 msgstr ""
 
-#: scripting/flashsystem.cpp:133
-#: scripting/flashutils.cpp:342
+#: scripting/flashsystem.cpp:133 scripting/flashutils.cpp:342
 msgid "Getting definition for "
 msgstr ""
 
@@ -1382,8 +1308,7 @@ msgstr ""
 msgid "Ignoring "
 msgstr "Ignore"
 
-#: scripting/abc_codesynt.cpp:689
-#: scripting/abc_codesynt.cpp:1600
+#: scripting/abc_codesynt.cpp:689 scripting/abc_codesynt.cpp:1600
 msgid "Ignoring at "
 msgstr ""
 
@@ -1431,8 +1356,7 @@ msgstr "Dernier script (Point d'entrée)"
 msgid "Less than comparison between type "
 msgstr ""
 
-#: swftypes.cpp:241
-#: swftypes.cpp:268
+#: swftypes.cpp:241 swftypes.cpp:268
 msgid "Line array extended not supported"
 msgstr ""
 
@@ -1456,8 +1380,7 @@ msgstr ""
 msgid "LocalDownloader::execute: reading local file: "
 msgstr ""
 
-#: scripting/flashsystem.cpp:86
-#: scripting/flashsystem.cpp:117
+#: scripting/flashsystem.cpp:86 scripting/flashsystem.cpp:117
 #: scripting/flashutils.cpp:321
 msgid "Looking for definition of "
 msgstr "Cherche la définition de "
@@ -1482,13 +1405,11 @@ msgstr "Méthode "
 msgid "Method not linkable"
 msgstr ""
 
-#: scripting/abc.cpp:1403
-#: scripting/abc.cpp:1691
+#: scripting/abc.cpp:1403 scripting/abc.cpp:1691
 msgid "Method trait: "
 msgstr ""
 
-#: parsing/tags.cpp:1336
-#: parsing/tags.cpp:1503
+#: parsing/tags.cpp:1336 parsing/tags.cpp:1503
 msgid "Moving of registered objects not really supported"
 msgstr ""
 
@@ -1496,12 +1417,8 @@ msgstr ""
 msgid "Multibyte not handled"
 msgstr "Multioctet non géré"
 
-#: scripting/abc.cpp:339
-#: scripting/abc.cpp:356
-#: scripting/abc.cpp:488
-#: scripting/abc.cpp:584
-#: scripting/abc.cpp:619
-#: scripting/abc.cpp:636
+#: scripting/abc.cpp:339 scripting/abc.cpp:356 scripting/abc.cpp:488
+#: scripting/abc.cpp:584 scripting/abc.cpp:619 scripting/abc.cpp:636
 #: scripting/abc.cpp:782
 msgid "Multiname to String not yet implemented for this kind "
 msgstr ""
@@ -1514,8 +1431,7 @@ msgstr ""
 msgid "Mutex "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1346
-#: scripting/abc_opcodes.cpp:1418
+#: scripting/abc_opcodes.cpp:1346 scripting/abc_opcodes.cpp:1418
 msgid "NOT found "
 msgstr "NON trouvé "
 
@@ -1527,8 +1443,7 @@ msgstr ""
 msgid "NOT found, pushing global"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1398
-#: scripting/abc_opcodes.cpp:1518
+#: scripting/abc_opcodes.cpp:1398 scripting/abc_opcodes.cpp:1518
 msgid "NOT found, trying Global"
 msgstr ""
 
@@ -1540,8 +1455,7 @@ msgstr ""
 msgid "NetStream::close called"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:680
-#: scripting/abc_codesynt.cpp:735
+#: scripting/abc_codesynt.cpp:680 scripting/abc_codesynt.cpp:735
 msgid "New block at "
 msgstr ""
 
@@ -1549,8 +1463,7 @@ msgstr ""
 msgid "Newstream for "
 msgstr ""
 
-#: scripting/abc.cpp:1397
-#: scripting/abc.cpp:1543
+#: scripting/abc.cpp:1397 scripting/abc.cpp:1543
 msgid "Next slot has flags "
 msgstr ""
 
@@ -1566,8 +1479,7 @@ msgstr "Pas de signature de fichier SWF trouvée"
 msgid "No edges in this shape"
 msgstr ""
 
-#: main.cpp:180
-#: tightspark.cpp:98
+#: main.cpp:180 tightspark.cpp:98
 msgid "No execution model enabled"
 msgstr ""
 
@@ -1603,8 +1515,7 @@ msgstr "Événement non géré"
 msgid "Not implemented action"
 msgstr "Action non implémentée"
 
-#: scripting/abc_codesynt.cpp:1360
-#: scripting/abc_codesynt.cpp:3931
+#: scripting/abc_codesynt.cpp:1360 scripting/abc_codesynt.cpp:3931
 msgid "Not implemented instruction @"
 msgstr "Instruction non implémentée @"
 
@@ -1616,15 +1527,12 @@ msgstr ""
 msgid "Not intepreted instruction @"
 msgstr "Instruction non interprétée @"
 
-#: scripting/actions.cpp:72
-#: scripting/actions.cpp:139
-#: scripting/actions.cpp:457
-#: scripting/actions.cpp:573
+#: scripting/actions.cpp:72 scripting/actions.cpp:139
+#: scripting/actions.cpp:457 scripting/actions.cpp:573
 msgid "Not supported action opcode"
 msgstr ""
 
-#: swftypes.cpp:670
-#: swftypes.cpp:702
+#: swftypes.cpp:670 swftypes.cpp:702
 msgid "Not supported fill style "
 msgstr "Type de remplissage non supporté"
 
@@ -1636,8 +1544,7 @@ msgstr ""
 msgid "Number to bool"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1765
-#: scripting/abc_opcodes.cpp:1819
+#: scripting/abc_opcodes.cpp:1765 scripting/abc_opcodes.cpp:1819
 #: scripting/abc_opcodes.cpp:1880
 msgid "Numeric type is "
 msgstr "Le type numérique est "
@@ -1654,8 +1561,7 @@ msgstr ""
 msgid "Object type "
 msgstr "Type d'objet"
 
-#: asobject.cpp:142
-#: asobject.cpp:164
+#: asobject.cpp:142 asobject.cpp:164
 msgid "Overloaded isEqual"
 msgstr ""
 
@@ -1679,8 +1585,7 @@ msgstr ""
 msgid "PlaceObject3"
 msgstr ""
 
-#: parsing/tags.cpp:1274
-#: parsing/tags.cpp:1441
+#: parsing/tags.cpp:1274 parsing/tags.cpp:1441
 msgid "Placing ID "
 msgstr ""
 
@@ -1688,8 +1593,7 @@ msgstr ""
 msgid "ProductInfoTag Tag"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:401
-#: scripting/abc_opcodes.cpp:405
+#: scripting/abc_opcodes.cpp:401 scripting/abc_opcodes.cpp:405
 msgid "Property not found "
 msgstr ""
 
@@ -1697,8 +1601,7 @@ msgstr ""
 msgid "Protect Tag"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:351
-#: scripting/abc_opcodes.cpp:824
+#: scripting/abc_opcodes.cpp:351 scripting/abc_opcodes.cpp:824
 msgid "Proxy::callProperty"
 msgstr ""
 
@@ -1770,8 +1673,7 @@ msgstr ""
 msgid "Reallocating texture to size "
 msgstr ""
 
-#: parsing/tags.cpp:1328
-#: parsing/tags.cpp:1495
+#: parsing/tags.cpp:1328 parsing/tags.cpp:1495
 msgid "Registering ID "
 msgstr ""
 
@@ -1835,8 +1737,7 @@ msgstr ""
 msgid "Setter not linkable"
 msgstr ""
 
-#: scripting/abc.cpp:1465
-#: scripting/abc.cpp:1629
+#: scripting/abc.cpp:1465 scripting/abc.cpp:1629
 msgid "Setter trait: "
 msgstr ""
 
@@ -1868,8 +1769,7 @@ msgstr ""
 msgid "Skipping "
 msgstr ""
 
-#: scripting/abc.cpp:1798
-#: scripting/abc.cpp:1804
+#: scripting/abc.cpp:1798 scripting/abc.cpp:1804
 msgid "Slot "
 msgstr "Emplacement "
 
@@ -1945,16 +1845,12 @@ msgstr ""
 msgid "TextField::Render"
 msgstr ""
 
-#: scripting/abc.cpp:1498
-#: scripting/abc.cpp:1837
+#: scripting/abc.cpp:1498 scripting/abc.cpp:1837
 msgid "Trait not supported "
 msgstr ""
 
-#: asobject.cpp:87
-#: asobject.cpp:170
-#: scripting/abc_opcodes.cpp:1799
-#: scripting/abc_opcodes.cpp:1862
-#: scripting/abc_opcodes.cpp:1913
+#: asobject.cpp:87 asobject.cpp:170 scripting/abc_opcodes.cpp:1799
+#: scripting/abc_opcodes.cpp:1862 scripting/abc_opcodes.cpp:1913
 msgid "Type "
 msgstr "Type "
 
@@ -2038,13 +1934,11 @@ msgstr "La carte graphique ne supporte pas OpenGL 2.0... Annulation"
 msgid "Video frame size "
 msgstr "Taille de cadre video"
 
-#: scripting/abc_opcodes.cpp:1622
-#: scripting/abc_opcodes.cpp:1706
+#: scripting/abc_opcodes.cpp:1622 scripting/abc_opcodes.cpp:1706
 msgid "We got a Undefined function"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:838
-#: scripting/abc_opcodes.cpp:842
+#: scripting/abc_opcodes.cpp:838 scripting/abc_opcodes.cpp:842
 msgid "We got a Undefined function "
 msgstr ""
 
@@ -2056,14 +1950,12 @@ msgstr ""
 msgid "We got a function not yet valid"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1335
-#: scripting/flashsystem.cpp:95
+#: scripting/abc_opcodes.cpp:1335 scripting/flashsystem.cpp:95
 #: scripting/flashutils.cpp:334
 msgid "We got an object not yet valid"
 msgstr ""
 
-#: backends/input.cpp:194
-#: backends/input.cpp:270
+#: backends/input.cpp:194 backends/input.cpp:270
 msgid "We still miss "
 msgstr ""
 
@@ -2079,15 +1971,12 @@ msgstr "Redimensionnement de fenêtre non supporté dans le greffon"
 msgid "["
 msgstr "["
 
-#: scripting/abc_opcodes.cpp:181
-#: scripting/abc_opcodes.cpp:186
+#: scripting/abc_opcodes.cpp:181 scripting/abc_opcodes.cpp:186
 msgid "]"
 msgstr "]"
 
-#: asobject.cpp:734
-#: scripting/abc_opcodes.cpp:934
-#: scripting/abc_opcodes.cpp:940
-#: scripting/abc_opcodes.cpp:946
+#: asobject.cpp:734 scripting/abc_opcodes.cpp:934
+#: scripting/abc_opcodes.cpp:940 scripting/abc_opcodes.cpp:946
 msgid "] "
 msgstr "] "
 
@@ -2095,8 +1984,7 @@ msgstr "] "
 msgid "] ("
 msgstr "] ("
 
-#: scripting/abc_opcodes.cpp:171
-#: scripting/abc_opcodes.cpp:191
+#: scripting/abc_opcodes.cpp:171 scripting/abc_opcodes.cpp:191
 msgid "] (int)= "
 msgstr "] (int)= "
 
@@ -2104,14 +1992,10 @@ msgstr "] (int)= "
 msgid "] = "
 msgstr "] = "
 
-#: scripting/abc_opcodes.cpp:961
-#: scripting/abc_opcodes.cpp:977
-#: scripting/abc_opcodes.cpp:986
-#: scripting/abc_opcodes.cpp:1008
-#: scripting/abc_opcodes.cpp:1016
-#: scripting/abc_opcodes.cpp:1025
-#: scripting/abc_opcodes.cpp:1052
-#: scripting/abc_opcodes.cpp:1060
+#: scripting/abc_opcodes.cpp:961 scripting/abc_opcodes.cpp:977
+#: scripting/abc_opcodes.cpp:986 scripting/abc_opcodes.cpp:1008
+#: scripting/abc_opcodes.cpp:1016 scripting/abc_opcodes.cpp:1025
+#: scripting/abc_opcodes.cpp:1052 scripting/abc_opcodes.cpp:1060
 #: scripting/abc_opcodes.cpp:1068
 msgid "add "
 msgstr ""
@@ -2132,8 +2016,7 @@ msgstr ""
 msgid "bitNot "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:254
-#: scripting/abc_opcodes.cpp:264
+#: scripting/abc_opcodes.cpp:254 scripting/abc_opcodes.cpp:264
 msgid "bitOr "
 msgstr ""
 
@@ -2217,8 +2100,7 @@ msgstr ""
 msgid "convert_u"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:788
-#: scripting/abc_codesynt.cpp:2252
+#: scripting/abc_codesynt.cpp:788 scripting/abc_codesynt.cpp:2252
 msgid "count "
 msgstr ""
 
@@ -2258,8 +2140,7 @@ msgstr ""
 msgid "decrement_i"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:785
-#: scripting/abc_codesynt.cpp:2249
+#: scripting/abc_codesynt.cpp:785 scripting/abc_codesynt.cpp:2249
 msgid "default "
 msgstr "défaut"
 
@@ -2275,8 +2156,7 @@ msgstr ""
 msgid "divide: HACK"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1363
-#: scripting/abc_codesynt.cpp:3934
+#: scripting/abc_codesynt.cpp:1363 scripting/abc_codesynt.cpp:3934
 #: scripting/abc_interpreter.cpp:1266
 msgid "dump "
 msgstr ""
@@ -2305,13 +2185,11 @@ msgstr ""
 msgid "getLex: "
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:777
-#: scripting/abc_interpreter.cpp:1214
+#: scripting/abc_interpreter.cpp:777 scripting/abc_interpreter.cpp:1214
 msgid "getLocal "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:171
-#: scripting/abc_opcodes.cpp:176
+#: scripting/abc_opcodes.cpp:171 scripting/abc_opcodes.cpp:176
 #: scripting/abc_opcodes.cpp:181
 msgid "getLocal["
 msgstr ""
@@ -2392,8 +2270,7 @@ msgstr ""
 msgid "ifLT_oi"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:545
-#: scripting/abc_opcodes.cpp:558
+#: scripting/abc_opcodes.cpp:545 scripting/abc_opcodes.cpp:558
 msgid "ifNE ("
 msgstr ""
 
@@ -2469,8 +2346,7 @@ msgstr ""
 msgid "kill "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1093
-#: scripting/abc_opcodes.cpp:1104
+#: scripting/abc_opcodes.cpp:1093 scripting/abc_opcodes.cpp:1104
 msgid "lShift "
 msgstr ""
 
@@ -2538,8 +2414,7 @@ msgstr ""
 msgid "nextValue"
 msgstr ""
 
-#: parsing/tags.cpp:1367
-#: parsing/tags.cpp:1534
+#: parsing/tags.cpp:1367 parsing/tags.cpp:1534
 msgid "no char to move at depth "
 msgstr ""
 
@@ -2559,18 +2434,12 @@ msgstr ""
 msgid "not taken"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:498
-#: scripting/abc_opcodes.cpp:509
-#: scripting/abc_opcodes.cpp:545
-#: scripting/abc_opcodes.cpp:558
-#: scripting/abc_opcodes.cpp:859
-#: scripting/abc_opcodes.cpp:1222
-#: scripting/abc_opcodes.cpp:1234
-#: scripting/abc_opcodes.cpp:1245
-#: scripting/abc_opcodes.cpp:1255
-#: scripting/abc_opcodes.cpp:1265
-#: scripting/abc_opcodes.cpp:1275
-#: scripting/abc_opcodes.cpp:1928
+#: scripting/abc_opcodes.cpp:498 scripting/abc_opcodes.cpp:509
+#: scripting/abc_opcodes.cpp:545 scripting/abc_opcodes.cpp:558
+#: scripting/abc_opcodes.cpp:859 scripting/abc_opcodes.cpp:1222
+#: scripting/abc_opcodes.cpp:1234 scripting/abc_opcodes.cpp:1245
+#: scripting/abc_opcodes.cpp:1255 scripting/abc_opcodes.cpp:1265
+#: scripting/abc_opcodes.cpp:1275 scripting/abc_opcodes.cpp:1928
 msgid "not taken)"
 msgstr ""
 
@@ -2578,8 +2447,7 @@ msgstr ""
 msgid "parsing s32"
 msgstr ""
 
-#: scripting/abc.cpp:1940
-#: scripting/abc.cpp:1944
+#: scripting/abc.cpp:1940 scripting/abc.cpp:1944
 msgid "parsing u30"
 msgstr ""
 
@@ -2671,13 +2539,11 @@ msgstr ""
 msgid "returnVoid"
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:786
-#: scripting/abc_interpreter.cpp:1226
+#: scripting/abc_interpreter.cpp:786 scripting/abc_interpreter.cpp:1226
 msgid "setLocal "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:186
-#: scripting/abc_opcodes.cpp:191
+#: scripting/abc_opcodes.cpp:186 scripting/abc_opcodes.cpp:191
 #: scripting/abc_opcodes.cpp:196
 msgid "setLocal["
 msgstr ""
@@ -2706,8 +2572,7 @@ msgstr ""
 msgid "subtract "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:902
-#: scripting/abc_opcodes.cpp:919
+#: scripting/abc_opcodes.cpp:902 scripting/abc_opcodes.cpp:919
 msgid "subtract: HACK"
 msgstr ""
 
@@ -3015,8 +2880,7 @@ msgstr ""
 msgid "synt lessthan"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:778
-#: scripting/abc_codesynt.cpp:2240
+#: scripting/abc_codesynt.cpp:778 scripting/abc_codesynt.cpp:2240
 msgid "synt lookupswitch"
 msgstr ""
 
@@ -3192,18 +3056,12 @@ msgstr ""
 msgid "taken"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:498
-#: scripting/abc_opcodes.cpp:509
-#: scripting/abc_opcodes.cpp:545
-#: scripting/abc_opcodes.cpp:558
-#: scripting/abc_opcodes.cpp:859
-#: scripting/abc_opcodes.cpp:1222
-#: scripting/abc_opcodes.cpp:1234
-#: scripting/abc_opcodes.cpp:1245
-#: scripting/abc_opcodes.cpp:1255
-#: scripting/abc_opcodes.cpp:1265
-#: scripting/abc_opcodes.cpp:1275
-#: scripting/abc_opcodes.cpp:1928
+#: scripting/abc_opcodes.cpp:498 scripting/abc_opcodes.cpp:509
+#: scripting/abc_opcodes.cpp:545 scripting/abc_opcodes.cpp:558
+#: scripting/abc_opcodes.cpp:859 scripting/abc_opcodes.cpp:1222
+#: scripting/abc_opcodes.cpp:1234 scripting/abc_opcodes.cpp:1245
+#: scripting/abc_opcodes.cpp:1255 scripting/abc_opcodes.cpp:1265
+#: scripting/abc_opcodes.cpp:1275 scripting/abc_opcodes.cpp:1928
 msgid "taken)"
 msgstr ""
 
@@ -3211,12 +3069,10 @@ msgstr ""
 msgid "typeOf"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1126
-#: scripting/abc_opcodes.cpp:1135
+#: scripting/abc_opcodes.cpp:1126 scripting/abc_opcodes.cpp:1135
 msgid "urShift "
 msgstr ""
 
 #: backends/rendering.cpp:109
 msgid "~RenderThread this="
 msgstr ""
-

@@ -77,6 +77,8 @@ Array::Array()
 void Array::sinit(Class_base* c)
 {
 	// public constants
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("CASEINSENSITIVE","",abstract_d(CASEINSENSITIVE));
 	c->setVariableByQName("DESCENDING","",abstract_d(DESCENDING));
 	c->setVariableByQName("NUMERIC","",abstract_d(NUMERIC));
@@ -782,6 +784,8 @@ ASFUNCTIONBODY(ASString,_getLength)
 
 void ASString::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 	c->setVariableByQName("split",AS3,Class<IFunction>::getFunction(split));
@@ -822,6 +826,38 @@ ASFUNCTIONBODY(ASString,search)
 	int ret=-1;
 	if(args[0]->getPrototype() && args[0]->getPrototype()==Class<RegExp>::getClass())
 	{
+		RegExp* re=static_cast<RegExp*>(args[0]);
+
+		const char* error;
+		int errorOffset;
+		int options=0;
+		if(re->ignoreCase)
+			options|=PCRE_CASELESS;
+		if(re->extended)
+			options|=PCRE_EXTENDED;
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &errorOffset,NULL);
+		if(error)
+			return abstract_i(ret);
+		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+		int capturingGroups;
+		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+		if(infoOk!=0)
+		{
+			pcre_free(pcreRE);
+			return abstract_i(ret);
+		}
+		assert_and_throw(capturingGroups<10);
+		int ovector[30];
+		int offset=0;
+		//Global is nor used in search
+		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
+		if(rc<=0)
+		{
+			//No matches or error
+			pcre_free(pcreRE);
+			return abstract_i(ret);
+		}
+		ret=ovector[0];
 	}
 	else
 	{
@@ -1392,6 +1428,8 @@ Date::Date():year(-1),month(-1),date(-1),hour(-1),minute(-1),second(-1),millisec
 
 void Date::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("getTimezoneOffset","",Class<IFunction>::getFunction(getTimezoneOffset));
 	c->setVariableByQName("valueOf","",Class<IFunction>::getFunction(valueOf));
@@ -1927,6 +1965,8 @@ RegExp::RegExp():global(false),ignoreCase(false),extended(false),lastIndex(0)
 
 void RegExp::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("exec",AS3,Class<IFunction>::getFunction(exec));
 	c->setVariableByQName("test",AS3,Class<IFunction>::getFunction(test));
@@ -2283,6 +2323,8 @@ ASFUNCTIONBODY(ASError,_constructor)
 
 void ASError::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
 	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
@@ -2312,6 +2354,7 @@ void SecurityError::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->max_level=c->super->max_level+1;
 }
 
@@ -2704,6 +2747,8 @@ Class_object* Class_object::getClass()
 
 void IFunction::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("call",AS3,Class<IFunction>::getFunction(IFunction::_call));
 	c->setVariableByQName("apply",AS3,Class<IFunction>::getFunction(IFunction::apply));
 }
@@ -2812,6 +2857,8 @@ tiny_string Class_base::getQualifiedClassName() const
 
 void ASQName::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 
@@ -2847,6 +2894,8 @@ ASFUNCTIONBODY(ASQName,_constructor)
 
 void Namespace::sinit(Class_base* c)
 {
+	c->super=Class<ASObject>::getClass();
+	c->max_level=c->super->max_level+1;
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 }
 

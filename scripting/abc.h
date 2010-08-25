@@ -562,8 +562,8 @@ private:
 	static ASObject* nextName(ASObject* index, ASObject* obj);
 	static ASObject* nextValue(ASObject* index, ASObject* obj);
 	static uintptr_t increment_i(ASObject*);
-	static uintptr_t increment(ASObject*);
-	static uintptr_t decrement(ASObject*);
+	static number_t increment(ASObject*);
+	static number_t decrement(ASObject*);
 	static uintptr_t decrement_i(ASObject*);
 	static ASObject* getGlobalScope(call_context* th);
 	static bool strictEquals(ASObject*,ASObject*);

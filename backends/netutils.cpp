@@ -311,8 +311,9 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 
 	if(strncmp(headerLine,"HTTP/1.1 ",9)==0) 
 	{
-		char* status = new char[3];
+		char* status = new char[4];
 		strncpy(status, headerLine+9, 3);
+		status[3]=0;
 		th->setRequestStatus(atoi(status));
 		delete[] status;
 		if(th->getRequestStatus()/100 == 4 || th->getRequestStatus()/100 == 5 || 

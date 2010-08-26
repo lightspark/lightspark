@@ -244,7 +244,7 @@ public:
 class ActionGetURL:public ActionTag
 {
 private:
-	STRING UrlString;
+	STRING URLString;
 	STRING TargetString;
 public:
 	ActionGetURL(std::istream& in);

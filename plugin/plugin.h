@@ -27,6 +27,7 @@
 #include "pluginbase.h"
 #include "parsing/streams.h"
 #include "backends/netutils.h"
+#include "backends/urlutils.h"
 #include <GL/glx.h>
 
 class NPDownloader;
@@ -40,6 +41,7 @@ public:
 	NPDownloadManager(NPP i);
 	~NPDownloadManager();
 	lightspark::Downloader* download(const lightspark::tiny_string& u);
+	lightspark::Downloader* download(const lightspark::URLInfo& u);
 	void destroy(lightspark::Downloader* d);
 };
 

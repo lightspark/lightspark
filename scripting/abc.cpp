@@ -175,6 +175,11 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("trace","",Class<IFunction>::getFunction(trace));
 	builtin->setVariableByQName("parseInt","",Class<IFunction>::getFunction(parseInt));
 	builtin->setVariableByQName("parseFloat","",Class<IFunction>::getFunction(parseFloat));
+	builtin->setVariableByQName("encodeURI","",Class<IFunction>::getFunction(encodeURI));
+	builtin->setVariableByQName("decodeURI","",Class<IFunction>::getFunction(decodeURI));
+	builtin->setVariableByQName("encodeURIComponent","",Class<IFunction>::getFunction(encodeURIComponent));
+	builtin->setVariableByQName("decodeURIComponent","",Class<IFunction>::getFunction(decodeURIComponent));
+	builtin->setVariableByQName("escape","",Class<IFunction>::getFunction(escape));
 	builtin->setVariableByQName("unescape","",Class<IFunction>::getFunction(unescape));
 	builtin->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 

@@ -175,20 +175,22 @@ int main(int argc, char* argv[])
 	//This setting allows qualifying filename-only paths to fully qualified paths
 	//When the URL parameter is set, set the root URL to the given parameter
 	if(url)
-		sys->setUrl(url);
+	{
+		sys->setURL(url);
+	}
 #ifndef WIN32
 	//When running in a local sandbox, set the root URL to the current working dir
 	else if(sandboxType != Security::REMOTE)
 	{
 		char * cwd = get_current_dir_name();
 		tiny_string cwdStr = tiny_string("file://") + tiny_string(cwd, true);
-		cwdStr += "/";
 		free(cwd);
-		sys->setUrl(cwdStr);
+		cwdStr += "/";
+		sys->setURL(cwdStr);
 	}
 #endif
 	else
-		LOG(LOG_NO_INFO, "Warning: running with no root URL set.");
+		LOG(LOG_NO_INFO, _("Warning: running with no root URL set."));
 
 	//One of useInterpreter or useJit must be enabled
 	if(!(useInterpreter || useJit))
@@ -207,17 +209,15 @@ int main(int argc, char* argv[])
 	sys->setParamsAndEngine(SDL, NULL);
 	sys->sandboxType = sandboxType;
 
-	//Security::LOCAL_TRUSTED should actually be able to use both local and network files
-	if(sandboxType == Security::REMOTE || 
-			sandboxType == Security::LOCAL_WITH_NETWORK)
-	{
+	sys->downloadManager=new StandaloneDownloadManager();
+	if(sandboxType == Security::REMOTE)
 		LOG(LOG_NO_INFO, _("Running in remote sandbox"));
-		sys->downloadManager=new CurlDownloadManager();
-	}
-	else {
+	else if(sandboxType == Security::LOCAL_WITH_NETWORK)
+		LOG(LOG_NO_INFO, _("Running in local-with-networking sandbox"));
+	else if(sandboxType == Security::LOCAL_WITH_FILE)
 		LOG(LOG_NO_INFO, _("Running in local-with-filesystem sandbox"));
-		sys->downloadManager=new LocalDownloadManager();
-	}
+	else if(sandboxType == Security::LOCAL_TRUSTED)
+		LOG(LOG_NO_INFO, _("Running in local-trusted sandbox"));
 
 	//Start the parser
 	sys->addJob(pt);

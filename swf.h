@@ -35,6 +35,7 @@
 #include "timer.h"
 #include "backends/graphics.h"
 #include "backends/sound.h"
+#include "backends/urlutils.h"
 
 #include "platforms/pluginutils.h"
 
@@ -212,10 +213,11 @@ private:
 	std::string rawCookies;
 	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
 
-	tiny_string url;
+	URLInfo url;
 public:
-	void setUrl(const tiny_string& url) DLL_PUBLIC;
-	tiny_string& getUrl() DLL_PUBLIC { return url; };
+	void setURL(const tiny_string& url) DLL_PUBLIC;
+	URLInfo& getURL() DLL_PUBLIC { return url; };
+	ENGINE getEngine() DLL_PUBLIC { return engine; };
 
 	//Interative analysis flags
 	bool showProfilingData;

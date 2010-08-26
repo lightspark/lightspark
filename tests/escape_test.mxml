@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_escape_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var decodedStr:String = "0189ABYZabyz@-_.*+/ {}=&";
+		var encodedStr:String = "0189ABYZabyz@-_.*+/%20%7B%7D%3D%26";
+		var lowerEncodedStr:String = "0189ABYZabyz@-_.*+/%20%7b%7d%3d%26";
+		Tests.assertEquals(encodedStr, escape(decodedStr), "escape(): standard escape");
+		Tests.assertEquals(decodedStr, unescape(encodedStr), "unescape(): standard unescape");
+		Tests.assertEquals(decodedStr, unescape(lowerEncodedStr), "unescape(): unescape lowercase encoded string");
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

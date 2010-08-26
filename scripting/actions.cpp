@@ -1359,7 +1359,7 @@ void ActionPush::Execute()
 
 ActionGetURL::ActionGetURL(std::istream& in)
 {
-	in >> UrlString >> TargetString;
+	in >> URLString >> TargetString;
 }
 
 ActionGetURL2::ActionGetURL2(std::istream& in)

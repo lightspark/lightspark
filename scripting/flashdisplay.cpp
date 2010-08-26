@@ -67,8 +67,8 @@ void LoaderInfo::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderUrl));
-	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getUrl));
+	c->setGetterByQName("loaderURL","",Class<IFunction>::getFunction(_getLoaderURL));
+	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getURL));
 	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
 	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
 	c->setGetterByQName("applicationDomain","",Class<IFunction>::getFunction(_getApplicationDomain));
@@ -87,7 +87,7 @@ ASFUNCTIONBODY(LoaderInfo,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(LoaderInfo,_getLoaderUrl)
+ASFUNCTIONBODY(LoaderInfo,_getLoaderURL)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	return Class<ASString>::getInstanceS(th->loaderURL);
@@ -100,7 +100,7 @@ ASFUNCTIONBODY(LoaderInfo,_getSharedEvents)
 	return th->sharedEvents;
 }
 
-ASFUNCTIONBODY(LoaderInfo,_getUrl)
+ASFUNCTIONBODY(LoaderInfo,_getURL)
 {
 	LoaderInfo* th=static_cast<LoaderInfo*>(obj);
 	return Class<ASString>::getInstanceS(th->url);

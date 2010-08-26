@@ -184,12 +184,15 @@ void SystemState::setDownloadedPath(const tiny_string& p)
 	sem_post(&mutex);
 }
 
-void SystemState::setUrl(const tiny_string& u)
+void SystemState::setURL(const tiny_string& u)
 {
-	url = u;
+	//We can use this "root system url" to implement security measures.
+	//It also allows loading files without specifying a fully qualified path.
+	//Note that for plugins, this url is NOT the page url, but it is the swf file url.
+	url = URLInfo(u);
 
-	loaderInfo->url=u;
-	loaderInfo->loaderURL=u;
+	loaderInfo->url=url.getParsedURL();
+	loaderInfo->loaderURL=url.getParsedURL();
 }
 
 void SystemState::setCookies(const char* c)

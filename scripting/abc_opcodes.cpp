@@ -1267,7 +1267,8 @@ bool ABCVm::ifNGE(ASObject* obj2, ASObject* obj1)
 
 void ABCVm::_throw(call_context* th)
 {
-	throw UnsupportedException("throw not implemented");
+	LOG(LOG_CALLS,_("throw"));
+	throw th->runtime_stack_pop();
 }
 
 void ABCVm::setSuper(call_context* th, int n)
@@ -1717,64 +1718,9 @@ void ABCVm::callSuperVoid(call_context* th, int n, int m)
 
 bool ABCVm::isType(ASObject* obj, multiname* name)
 {
-	LOG(LOG_CALLS, _("isType ") << *name);
-
-	ASObject* target;
-	ASObject* ret=getGlobal()->getVariableAndTargetByMultiname(*name, target);
-	if(!ret) //Could not retrieve type
-	{
-		LOG(LOG_ERROR,_("Cannot retrieve type"));
-		return false;
-	}
-
-	ASObject* type=ret;
-	bool real_ret=false;
-	Class_base* objc=NULL;
-	Class_base* c=NULL;
-	c=static_cast<Class_base*>(type);
-	//Special case numeric types
-	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
-	{
-		obj->decRef();
-		real_ret=(c==Class<Integer>::getClass() || c==Class<Number>::getClass() || c==Class<UInteger>::getClass());
-		LOG(LOG_CALLS,_("Numeric type is ") << ((real_ret)?"_(":")not _(") << ")subclass of " << c->class_name);
-		return real_ret;
-	}
-
-	if(obj->prototype)
-	{
-		assert_and_throw(type->getObjectType()==T_CLASS);
-
-		objc=obj->prototype;
-	}
-	else if(obj->getObjectType()==T_CLASS)
-	{
-		assert_and_throw(type->getObjectType()==T_CLASS);
-
-		//Special case for Class
-		obj->decRef();
-		if(c->class_name.name=="Class" && c->class_name.ns=="")
-			return true;
-		else
-			return false;
-	}
-	else
-	{
-		//Special cases
-		if(obj->getObjectType()==T_FUNCTION && type==Class_function::getClass())
-			return true;
-
-		real_ret=obj->getObjectType()==type->getObjectType();
-		LOG(LOG_CALLS,_("isType on non classed object ") << real_ret);
-		obj->decRef();
-		return real_ret;
-	}
-
-	real_ret=objc->isSubClass(c);
-	LOG(LOG_CALLS,_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"_(":")not ") 
-			<< "subclass of " << c->class_name);
+	bool ret = ABCContext::isinstance(obj, name);
 	obj->decRef();
-	return real_ret;
+	return ret;
 }
 
 bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
@@ -2425,8 +2371,12 @@ ASObject* ABCVm::pushString(call_context* th, int n)
 
 ASObject* ABCVm::newCatch(call_context* th, int n)
 {
-	LOG(LOG_NOT_IMPLEMENTED,_("newCatch ") << n);
-	return new Undefined;
+	ASObject* catchScope = new ASObject();
+	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exception_count);
+	multiname* name = th->context->getMultiname(th->mi->body->exceptions[n].var_name, th);
+	catchScope->setVariableByMultiname(*name, new Undefined);
+	catchScope->initSlot(1, name->name_s, name->ns[0].name);
+	return catchScope;
 }
 
 void ABCVm::newArray(call_context* th, int n)

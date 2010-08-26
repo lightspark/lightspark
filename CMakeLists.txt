@@ -346,7 +346,7 @@ IF(COMPILE_PLUGIN)
 ENDIF(COMPILE_PLUGIN)
 
 # generate locales for gettext
-GETTEXT_CREATE_TRANSLATIONS(lightspark.pot ALL po/pl.po po/fr.po)
+GETTEXT_CREATE_TRANSLATIONS(i18n/lightspark.pot ALL i18n/pl.po i18n/fr.po)
 
 #Audio backend plugins
 IF(${AUDIO_BACKEND} MATCHES "pulse")

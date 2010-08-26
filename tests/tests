@@ -2,6 +2,8 @@
 
 #Set you lightspark executable path here
 LIGHTSPARK="lightspark"
+#Set the default loglevel here
+LOGLEVEL="-l 0"
 #Set your MXMLC compiler path here
 MXMLC="mxmlc"
 #If you prefer no colors, you can permanently set the default here
@@ -67,7 +69,7 @@ if [ $COMPILE ]; then
 	echo $TESTS_SRC 1>&2;
 	echo "Compiler: $MXMLC" 1>&2;
 	for test in $TESTS_SRC; do
-		$MXMLC -static-link-runtime-shared-libraries $test;
+		$MXMLC -static-link-runtime-shared-libraries -compiler.omit-trace-statements=false $test;
 	done
 	if [ $QUIT ]; then
 		exit;

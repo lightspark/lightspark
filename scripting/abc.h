@@ -182,8 +182,11 @@ struct call_context
 	std::vector<ASObject*> scope_stack;
 	int initialScopeStack;
 	void runtime_stack_push(ASObject* s);
+	void runtime_stack_clear();
 	ASObject* runtime_stack_pop();
 	ASObject* runtime_stack_peek();
+	method_info* mi;
+	std::stringstream* code;
 	call_context(method_info* th, int l, ASObject* const* args, const unsigned int numArgs);
 	~call_context();
 };
@@ -338,10 +341,8 @@ struct script_info
 	std::vector<traits_info> traits;
 };
 
-class exception_info
+struct exception_info
 {
-friend std::istream& operator>>(std::istream& in, exception_info& v);
-private:
 	u30 from;
 	u30 to;
 	u30 target;
@@ -416,6 +417,8 @@ public:
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(std::istream& in) DLL_PUBLIC;
 	void exec();
+
+	static bool isinstance(ASObject* obj, multiname* name);
 };
 
 struct thisAndLevel
@@ -680,6 +683,7 @@ std::istream& operator>>(std::istream& in, ns_set_info& v);
 std::istream& operator>>(std::istream& in, multiname_info& v);
 std::istream& operator>>(std::istream& in, cpool_info& v);
 std::istream& operator>>(std::istream& in, method_info& v);
+std::istream& operator>>(std::istream& in, exception_info& v);
 std::istream& operator>>(std::istream& in, method_body_info& v);
 std::istream& operator>>(std::istream& in, instance_info& v);
 std::istream& operator>>(std::istream& in, traits_info& v);

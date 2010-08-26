@@ -52,6 +52,40 @@ void OpenALPlugin::start()
     generateDevicesList(captureDevicesList, CAPTURE);
 }
 
+const string OpenALPlugin::get_pluginName()
+{
+  return IPlugin::get_pluginName();
+}
+
+const PLUGIN_TYPES OpenALPlugin::get_pluginType()
+{
+  return IPlugin::get_pluginType();
+}
+
+const string OpenALPlugin::get_backendName()
+{
+  return IPlugin::get_backendName();
+}
+
+bool OpenALPlugin::get_serverStatus()
+{
+  return IAudioPlugin::get_serverStatus();
+}
+
+bool OpenALPlugin::Is_ContextReady()
+{
+  return IAudioPlugin::Is_ContextReady();
+}
+
+bool OpenALPlugin::Is_Stopped()
+{
+  return IAudioPlugin::Is_Stopped();
+}
+
+bool OpenALPlugin::isTimingAvailable() const
+{
+  return IAudioPlugin::isTimingAvailable();
+}
 
 bool OpenALPlugin::Is_Connected()
 {/*

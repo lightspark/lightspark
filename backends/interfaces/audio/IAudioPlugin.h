@@ -48,7 +48,6 @@ protected:
 public:
         virtual bool Is_Connected() = 0;
         virtual bool get_serverStatus() = 0;
-        virtual const string get_pluginName() = 0;
         virtual vector<string *> *get_devicesList ( DEVICE_TYPES desiredType ) = 0;
         virtual void set_device ( string desiredDevice, DEVICE_TYPES desiredType ) = 0;
         virtual bool Is_ContextReady() = 0;

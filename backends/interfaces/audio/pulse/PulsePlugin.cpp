@@ -55,6 +55,41 @@ void PulsePlugin::start()
         pa_threaded_mainloop_unlock ( mainLoop );
 }
 
+const std::string PulsePlugin::get_backendName()
+{
+  return IPlugin::get_backendName();
+}
+
+const PLUGIN_TYPES PulsePlugin::get_pluginType()
+{
+  return IPlugin::get_pluginType();
+}
+
+const std::string PulsePlugin::get_pluginName()
+{
+  return IPlugin::get_pluginName();
+}
+
+bool PulsePlugin::get_serverStatus()
+{
+  return IAudioPlugin::get_serverStatus();
+}
+
+bool PulsePlugin::Is_ContextReady()
+{
+  return IAudioPlugin::Is_ContextReady();
+}
+
+bool PulsePlugin::Is_Stopped()
+{
+  return IAudioPlugin::Is_Stopped();
+}
+
+bool PulsePlugin::isTimingAvailable() const
+{
+  return IAudioPlugin::isTimingAvailable();
+}
+
 vector< string* > *PulsePlugin::get_devicesList ( DEVICE_TYPES desiredType )
 {
         if ( desiredType == PLAYBACK ) {

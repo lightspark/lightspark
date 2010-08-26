@@ -20,8 +20,28 @@
 
 #include "IAudioPlugin.h"
 
+
+bool IAudioPlugin::get_serverStatus()
+{
+        return noServer;
+}
+
+bool IAudioPlugin::Is_ContextReady()
+{
+        return contextReady;
+}
+
+bool IAudioPlugin::Is_Stopped()
+{
+        return stopped;
+}
+
+bool IAudioPlugin::isTimingAvailable() const
+{
+        return noServer==false;
+}
+
 IAudioPlugin::~IAudioPlugin()
 {
 
 }
-

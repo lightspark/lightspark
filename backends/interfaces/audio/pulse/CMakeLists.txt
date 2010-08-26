@@ -42,7 +42,7 @@ if(!Boost_FOUND)
 endif(!Boost_FOUND)
 ADD_DEFINITIONS(-DPULSE_BACKEND=TRUE)
 
-SET(PULSEPLUGIN_SOURCES PulsePlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp ../AudioPlugin.cpp)
+SET(PULSEPLUGIN_SOURCES PulsePlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp)
 
 # liblightsparkpulseplugin.so target
 ADD_LIBRARY(pulseplugin SHARED ${PULSEPLUGIN_SOURCES})

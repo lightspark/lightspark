@@ -42,7 +42,7 @@ if(!Boost_FOUND)
 endif(!Boost_FOUND)
 ADD_DEFINITIONS(-DPULSE_BACKEND=TRUE)
 
-SET(OPENALPLUGIN_SOURCES OpenALPlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp ../AudioPlugin.cpp)
+SET(OPENALPLUGIN_SOURCES OpenALPlugin.cpp ../../IPlugin.cpp ../IAudioPlugin.cpp)
 
 # liblightsparkpulseplugin.so target
 ADD_LIBRARY(openalplugin SHARED ${OPENALPLUGIN_SOURCES})

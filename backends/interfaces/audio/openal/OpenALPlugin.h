@@ -24,7 +24,7 @@
 
 #include <AL/al.h>
 #include <AL/alc.h>
-#include "../AudioPlugin.h"
+#include "../IAudioPlugin.h"
 #include "../../../decoder.h"
 #include "../../../../compat.h"
 #include <iostream>
@@ -59,6 +59,13 @@ class OpenALPlugin : public AudioPlugin
 	OpenALPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "OpenAL plugin",
 		    string init_audiobackend = "openal", bool init_contextReady = false,
 		    bool init_noServer = false, bool init_stopped = false);
+        const string get_pluginName();
+        const PLUGIN_TYPES get_pluginType();
+        const string get_backendName();
+        bool get_serverStatus();
+        bool Is_ContextReady();
+        bool Is_Stopped();
+        bool isTimingAvailable() const;
 	uint32_t createStream(lightspark::AudioDecoder *decoder);
 	bool Is_Connected();
 	void freeStream(uint32_t id);

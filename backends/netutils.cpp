@@ -42,7 +42,7 @@ Downloader* StandaloneDownloadManager::download(const tiny_string& u)
 
 Downloader* StandaloneDownloadManager::download(const URLInfo& url)
 {
-	LOG(LOG_NO_INFO, "DownloadManager: STANDALONE");
+	LOG(LOG_NO_INFO, "DownloadManager: STANDALONE: '" << url.getParsedURL() << "'");
 	ThreadedDownloader* downloader;
 	if(url.getProtocol() == "file")
 	{

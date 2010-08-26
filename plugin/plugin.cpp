@@ -50,7 +50,7 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_strin
 
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url)
 {
-	LOG(LOG_NO_INFO, "DownloadManager: PLUGIN");
+	LOG(LOG_NO_INFO, "DownloadManager: PLUGIN: '" << url.getParsedURL() << "'");
 	//Register this download
 	NPDownloader* ret=new NPDownloader(instance, url.getParsedURL());
 	return ret;
@@ -365,6 +365,8 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	{
 		cerr << "via NPDownloader" << endl;
 		dl->setLen(stream->end);
+		//TODO: confirm that growing buffers are normal. This does fix a bug I found though. (timonvo)
+		dl->setAllowBufferRealloc(true);
 		*stype=NP_NORMAL;
 	}
 	else

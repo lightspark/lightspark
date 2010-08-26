@@ -547,7 +547,7 @@ void NetStream::tick()
 	if(audioStream && sys->audioManager->isTimingAvailablePlugin())
 	{
 		assert(audioDecoder);
-		streamTime=sys->audioManager->getPlayedTimePlugin(audioStream);
+		streamTime=audioStream->getPlayedTime();
 	}
 	else
 #endif

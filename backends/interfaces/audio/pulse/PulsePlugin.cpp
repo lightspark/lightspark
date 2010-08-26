@@ -100,58 +100,51 @@ void PulsePlugin::addDeviceToList ( vector< string* >* devicesList, string *devi
 	}
 }
 
-void PulsePlugin::streamStatusCB ( pa_stream *stream, AudioStream *th )
+void PulsePlugin::streamStatusCB ( pa_stream *stream, PulseAudioStream *th )
 {
 	if ( pa_stream_get_state ( stream ) == PA_STREAM_READY )
-		th->streamStatus = AudioStream::STREAM_READY;
+                th->streamStatus=PulseAudioStream::STREAM_READY;
 	else if ( pa_stream_get_state ( stream ) == PA_STREAM_TERMINATED )
 	{
 		assert ( stream == th->stream );
-		th->streamStatus = AudioStream::STREAM_DEAD;
+                th->streamStatus=PulseAudioStream::STREAM_DEAD;
 	}
 }
 
-uint32_t PulsePlugin::getPlayedTime ( AudioStream *audioStream )
+uint32_t PulseAudioStream::getPlayedTime ( )
 {
-	assert ( audioStream );
-	assert ( noServer == false );
-
-	if ( audioStream->streamStatus != AudioStream::STREAM_READY ) //The stream is not yet ready, delay upload
+        if ( streamStatus!=STREAM_READY ) //The stream is not yet ready, delay upload
 		return 0;
-	pa_stream* stream = audioStream->stream;
 
-	pa_threaded_mainloop_lock ( mainLoop );
+	manager->pulseLock();
 	//Request updated timing info
 	pa_operation* timeUpdate = pa_stream_update_timing_info ( stream, NULL, NULL );
-	pa_threaded_mainloop_unlock ( mainLoop );
+	manager->pulseUnlock();
 	while ( pa_operation_get_state ( timeUpdate ) != PA_OPERATION_DONE );
-	pa_threaded_mainloop_lock ( mainLoop );
+	manager->pulseLock();
 	pa_operation_unref ( timeUpdate );
 
 	pa_usec_t time;
-	pa_stream_get_time ( stream, &time );
+        pa_stream_get_time ( stream, &time );
 
-	pa_threaded_mainloop_unlock ( mainLoop );
+	manager->pulseUnlock();
 	return time / 1000;
 }
 
-void PulsePlugin::fill ( AudioStream *audioStream )
+void PulseAudioStream::fill ()
 {
-	assert ( audioStream );
-	if ( noServer == false )
-	{
-		if ( audioStream->streamStatus != AudioStream::STREAM_READY ) //The stream is not yet ready, delay upload
+	if (manager->serverAvailable()) {
+                if ( streamStatus!=PulseAudioStream::STREAM_READY ) //The stream is not yet ready, delay upload
+                        return;
+                if ( !decoder->hasDecodedFrames() ) //No decoded data available yet, delay upload
 			return;
-		pa_threaded_mainloop_lock ( mainLoop );
-		if ( !audioStream->decoder->hasDecodedFrames() ) //No decoded data available yet, delay upload
-			return;
-		pa_stream *stream = audioStream->stream;
+		manager->pulseLock();
 		int16_t *dest;
 		//Get buffer size
 		size_t frameSize = pa_stream_writable_size ( stream );
 		if ( frameSize == 0 ) //The server can't accept any data now
 		{
-			pa_threaded_mainloop_unlock ( mainLoop );
+			manager->pulseUnlock();
 			return;
 		}
 		//Write data until we have space on the server and we have data available
@@ -159,13 +152,12 @@ void PulsePlugin::fill ( AudioStream *audioStream )
 		pa_stream_begin_write ( stream, ( void** ) &dest, &frameSize );
 		do
 		{
-			uint32_t retSize = audioStream->decoder->copyFrame ( dest + ( totalWritten / 2 ), frameSize );
-			if ( retSize == 0 ) //There is no more data
-				break;
-			totalWritten += retSize;
-			frameSize -= retSize;
-		}
-		while ( frameSize );
+                        uint32_t retSize=decoder->copyFrame ( dest+ ( totalWritten/2 ), frameSize );
+                        if ( retSize==0 ) //There is no more data
+                                break;
+                        totalWritten+=retSize;
+                        frameSize-=retSize;
+                } while ( frameSize );
 
 		cout << "Filled " << totalWritten << endl;
 		if ( totalWritten )
@@ -176,16 +168,16 @@ void PulsePlugin::fill ( AudioStream *audioStream )
 		else
 			pa_stream_cancel_write ( stream );
 
-		pa_threaded_mainloop_unlock ( mainLoop );
+		manager->pulseUnlock();
 	}
 	else   //No sound server available
 	{
 		//Just skip all the contents
-		audioStream->decoder->skipAll();
+                decoder->skipAll();
 	}
 }
 
-void PulsePlugin::streamWriteCB ( pa_stream *stream, size_t askedData, AudioStream *th )
+void PulsePlugin::streamWriteCB ( pa_stream *stream, size_t askedData, PulseAudioStream *th )
 {
 	int16_t *dest;
 	//Get buffer size
@@ -233,8 +225,10 @@ void PulsePlugin::streamWriteCB ( pa_stream *stream, size_t askedData, AudioStre
 void PulsePlugin::freeStream ( AudioStream *audioStream )
 {
 	pa_threaded_mainloop_lock ( mainLoop );
-	AudioStream *s = audioStream;
-	assert ( s );
+        assert ( audioStream );
+
+	PulseAudioStream *s = static_cast<PulseAudioStream *>(stream);
+
 	if ( noServer == false )
 	{
 		pa_stream *toDelete = s->stream;
@@ -243,7 +237,7 @@ void PulsePlugin::freeStream ( AudioStream *audioStream )
 	//Do not delete the stream now, let's wait termination
 	audioStream = NULL;
 	pa_threaded_mainloop_unlock ( mainLoop );
-	while ( s->streamStatus != AudioStream::STREAM_DEAD );
+        while ( s->streamStatus!=PulseAudioStream::STREAM_DEAD );
 	pa_threaded_mainloop_lock ( mainLoop );
 	if ( s->stream )
 		pa_stream_unref ( s->stream );
@@ -268,7 +262,7 @@ void started_notify()
 
 AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 {
-	AudioStream *audioStream =NULL;
+	PulseAudioStream *audioStream =NULL;
 	while ( !contextReady );
 	pa_threaded_mainloop_lock ( mainLoop );
 	uint32_t index = 0;
@@ -309,7 +303,7 @@ AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 	else
 	{
 		//Create the stream as dead
-		audioStream->streamStatus = AudioStream::STREAM_DEAD;
+		audioStream->streamStatus = PulseAudioStream::STREAM_DEAD;
 	}
 	pa_threaded_mainloop_unlock ( mainLoop );
 	return audioStream;
@@ -358,6 +352,11 @@ void PulsePlugin::stop()
 		pa_threaded_mainloop_stop ( mainLoop );
 		pa_threaded_mainloop_free ( mainLoop );
 	}
+}
+
+bool PulsePlugin::isTimingAvailable() const
+{
+	return !noServer;
 }
 
 // Plugin factory function

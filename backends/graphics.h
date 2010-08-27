@@ -157,6 +157,7 @@ public:
 	TextureChunk(const TextureChunk& r);
 	TextureChunk& operator=(const TextureChunk& r);
 	~TextureChunk();
+	uint32_t getNumberOfChunks() const { return ((width+127)/128)*((height+127)/128); }
 	uint32_t width;
 	uint32_t height;
 };

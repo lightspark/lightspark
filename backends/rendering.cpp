@@ -952,11 +952,12 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 	//Find the number of blocks needed for the given w and h
 	uint32_t blocksW=(w+127)/128;
 	uint32_t blocksH=(h+127)/128;
+	TextureChunk ret(w, h);
+	uint32_t blockPerSide=largeTextureSize/128;
+	uint32_t bitmapSize=blockPerSide*blockPerSide;
 	if(compact)
 	{
 		//Find a contiguos set of blocks
-		uint32_t blockPerSide=largeTextureSize/128;
-		uint32_t bitmapSize=blockPerSide*blockPerSide;
 		uint32_t start;
 		for(start=0;start<bitmapSize;start++)
 		{
@@ -980,7 +981,6 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 		}
 		assert_and_throw(start<bitmapSize); //TODO: defragment and try again
 		//Now set all those blocks are used
-		TextureChunk ret(w, h);
 		for(uint32_t i=0;i<blocksH;i++)
 		{
 			for(uint32_t j=0;j<blocksW;j++)
@@ -990,13 +990,25 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 				ret.chunks[i*blocksW+j]=bitOffset;
 			}
 		}
-		return ret;
 	}
 	else
 	{
 		//Allocate a sparse set of texture chunks
-		::abort();
+		uint32_t found=0;
+		for(uint32_t i=0;i<bitmapSize;i++)
+		{
+			if((largeTextureBitmap[i/8]&(1<<(i%8)))==0)
+			{
+				largeTextureBitmap[i/8]|=1<<(i%8);
+				ret.chunks[found]=i;
+				found++;
+				if(found==(blocksW*blocksH))
+					break;
+			}
+		}
+		assert_and_throw(found==blocksW*blocksH);
 	}
+	return ret;
 }
 
 void RenderThread::renderTextured(const TextureChunk& chunk, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
@@ -1026,6 +1038,19 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 {
 	assert(w<=largeTextureSize && h<=largeTextureSize);
 	glBindTexture(GL_TEXTURE_2D, largeTextureId);
-	//TODO: Implemeny tiling
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, data);
+	//TODO: Detect continuos
+	uint32_t numberOfChunks=chunk.getNumberOfChunks();
+	uint32_t blocksPerSide=largeTextureSize/128;
+	uint32_t blocksW=(w+127)/128;
+	glPixelStorei(GL_UNPACK_ROW_LENGTH,w);
+	for(uint32_t i=0;i<numberOfChunks;i++)
+	{
+		glPixelStorei(GL_UNPACK_SKIP_ROWS,(i/blocksW)*128);
+		glPixelStorei(GL_UNPACK_SKIP_PIXELS,(i%blocksW)*128);
+		uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*128);
+		uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*128);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, 128, 128, GL_BGRA, GL_UNSIGNED_BYTE, data);
+	}
+	glPixelStorei(GL_UNPACK_SKIP_ROWS,0);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH,0);
 }

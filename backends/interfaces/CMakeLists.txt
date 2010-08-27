@@ -21,6 +21,4 @@
 
 include_directories(".")
 INCLUDE_DIRECTORIES("..")
-if(ENABLE_SOUND)
-  add_subdirectory(audio)
-endif(ENABLE_SOUND)
+add_subdirectory(audio)

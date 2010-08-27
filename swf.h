@@ -253,9 +253,8 @@ public:
 	ABCVm* currentVm;
 
 	PluginManager *pluginManager;
-#ifdef ENABLE_SOUND
 	AudioManager *audioManager;
-#endif
+
 	//Application starting time in milliseconds
 	uint64_t startTime;
 

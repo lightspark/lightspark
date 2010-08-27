@@ -28,7 +28,8 @@
 
 using namespace std;
 
-class AudioStream {
+class AudioStream
+{
 public:
 	virtual uint32_t getPlayedTime() = 0;
 	virtual void fill() = 0;
@@ -41,26 +42,27 @@ Abstract class for audio plugin implementation
 class IAudioPlugin : public IPlugin
 {
 protected:
-        string playbackDeviceName;
-        string captureDeviceName;
-        vector<string *> playbackDevicesList;
-        vector<string *> captureDevicesList;
-        vector<AudioStream*> streams;
-        volatile bool contextReady;
-        volatile bool noServer;
-        bool stopped;
+	string playbackDeviceName;
+	string captureDeviceName;
+	vector<string *> playbackDevicesList;
+	vector<string *> captureDevicesList;
+	vector<AudioStream *> streams;
+	volatile bool contextReady;
+	volatile bool noServer;
+	bool stopped;
+	IAudioPlugin(string plugin_name, string backend_name, bool init_stopped = false);
+
 public:
 	enum DEVICE_TYPES { PLAYBACK, CAPTURE };
-        virtual bool get_serverStatus();
-        virtual vector<string *> *get_devicesList ( DEVICE_TYPES desiredType );
-        virtual void set_device ( string desiredDevice, DEVICE_TYPES desiredType ) = 0;
-	virtual string get_device (DEVICE_TYPES desiredType);
-        virtual AudioStream *createStream ( lightspark::AudioDecoder *decoder ) = 0;
-        virtual void freeStream ( AudioStream *stream ) = 0;
-
+	virtual vector<string *> *get_devicesList ( DEVICE_TYPES desiredType );
+	virtual void set_device ( string desiredDevice, DEVICE_TYPES desiredType ) = 0;
+	virtual string get_device ( DEVICE_TYPES desiredType );
+	virtual AudioStream *createStream ( lightspark::AudioDecoder *decoder ) = 0;
+	virtual void freeStream ( AudioStream *stream ) = 0;
+	virtual bool isTimingAvailable() const = 0;
 	virtual void stop() = 0;
-
-	virtual ~AudioPlugin() { };
+	virtual ~IAudioPlugin();
 };
 
 #endif
+// kate: indent-mode cstyle; replace-tabs off; tab-width 2; 

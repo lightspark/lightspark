@@ -32,7 +32,6 @@
 #include <sys/types.h>
 #endif
 
-#ifdef ENABLE_SOUND
 using namespace lightspark;
 using namespace std;
 using namespace boost::filesystem;
@@ -142,5 +141,3 @@ void AudioManager::stopPlugin()
                 oAudioPlugin->stop();
         }
 }
-
-#endif

@@ -24,9 +24,10 @@
 using namespace std;
 
 
-bool IAudioPlugin::get_serverStatus()
+IAudioPlugin::IAudioPlugin ( string plugin_name, string backend_name, bool init_stopped ):
+	IPlugin(AUDIO, plugin_name, backend_name), stopped(init_stopped)
 {
-	return noServer;
+
 }
 
 string IAudioPlugin::get_device ( DEVICE_TYPES desiredType )
@@ -59,11 +60,6 @@ vector< string* > *IAudioPlugin::get_devicesList ( DEVICE_TYPES desiredType )
 	{
 		return NULL;
 	}
-}
-
-bool IAudioPlugin::isTimingAvailable() const
-{
-	return noServer == false;
 }
 
 IAudioPlugin::~IAudioPlugin()

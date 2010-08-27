@@ -543,14 +543,12 @@ void NetStream::tick()
 {
 	//Advance video and audio to current time, follow the audio stream time
 	//No mutex needed, ticking can happen only when stream is completely ready
-#ifdef ENABLE_SOUND
 	if(audioStream && sys->audioManager->isTimingAvailablePlugin())
 	{
 		assert(audioDecoder);
 		streamTime=audioStream->getPlayedTime();
 	}
 	else
-#endif
 	{
 		streamTime+=1000/frameRate;
 		audioDecoder->skipAll();
@@ -623,7 +621,7 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
-#ifdef ENABLE_SOUND
+
 						if(audioDecoder==NULL)
 						{
 							audioCodec=tag.SoundFormat;
@@ -664,7 +662,6 @@ void NetStream::execute()
 							//Adjust timing
 							decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
 						}
-#endif
 						break;
 					}
 					case 9:
@@ -786,12 +783,12 @@ void NetStream::execute()
 	tickStarted=false;
 	delete videoDecoder;
 	videoDecoder=NULL;
-#if ENABLE_SOUND
+
 	if(audioStream)
 		sys->audioManager->freeStreamPlugin(audioStream);
 	delete audioDecoder;
 	audioDecoder=NULL;
-#endif
+
 	sem_post(&mutex);
 }
 

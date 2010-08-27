@@ -20,7 +20,6 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
-#ifdef ENABLE_SOUND
 
 #include "compat.h"
 #include "decoder.h"
@@ -65,5 +64,4 @@ public:
 
 };
 
-#endif
 #endif

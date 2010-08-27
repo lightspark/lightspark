@@ -53,6 +53,7 @@ public:
         void set_device ( string desiredDevice, DEVICE_TYPES desiredType );
         AudioStream *createStream ( lightspark::AudioDecoder *decoder );
         void freeStream ( AudioStream *audioStream );
+	bool isTimingAvailable() const;
         void stop();
 
 

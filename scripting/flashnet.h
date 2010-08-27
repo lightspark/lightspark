@@ -27,6 +27,7 @@
 #include "backends/netutils.h"
 #include "timer.h"
 #include "backends/decoder.h"
+#include "backends/interfaces/audio/IAudioPlugin.h"
 
 namespace lightspark
 {
@@ -133,7 +134,7 @@ private:
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
 	LS_AUDIO_CODEC audioCodec;
-	uint32_t soundStreamId;
+	AudioStream *audioStream;
 	uint32_t streamTime;
 	sem_t mutex;
 	//IThreadJob interface for long jobs

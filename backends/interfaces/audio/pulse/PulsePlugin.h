@@ -33,16 +33,6 @@ using namespace std;
 class PulsePlugin : public IAudioPlugin
 {
 private:
-        class AudioStream
-        {
-        public:
-                enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
-                pa_stream *stream;
-                lightspark::AudioDecoder *decoder;
-                PulsePlugin *manager;
-                volatile STREAM_STATUS streamStatus;
-                AudioStream ( PulsePlugin *m ) :stream ( NULL ),decoder ( NULL ),manager ( m ),streamStatus ( STREAM_STARTING ) {}
-        };
         pa_threaded_mainloop *mainLoop;
         pa_context *context;
         static void contextStatusCB ( pa_context *context, PulsePlugin *th );
@@ -58,22 +48,24 @@ public:
         PulsePlugin ( PLUGIN_TYPES init_Type = AUDIO, string init_Name = "Pulse plugin output only",
                       string init_audiobackend = "pulse", bool init_contextReady = false,
                       bool init_noServer = false, bool init_stopped = false );
-        const string get_pluginName();
-        const PLUGIN_TYPES get_pluginType();
-        const string get_backendName();
-        bool get_serverStatus();
-        bool Is_ContextReady();
-        bool Is_Stopped();
-        bool isTimingAvailable() const;
-        uint32_t createStream ( lightspark::AudioDecoder *decoder );
-        bool Is_Connected();
-        void freeStream ( uint32_t id );
-        void fill ( uint32_t id );
-        void stop();
-        vector<string *> *get_devicesList ( DEVICE_TYPES desiredType );
         void set_device ( string desiredDevice, DEVICE_TYPES desiredType );
-        uint32_t getPlayedTime ( uint32_t streamId );
+        AudioStream *createStream ( lightspark::AudioDecoder *decoder );
+        void freeStream ( AudioStream *audioStream );
+        void fill ( AudioStream *audioStream );
+        void stop();
+        uint32_t getPlayedTime ( AudioStream *audioStream );
         ~PulsePlugin();
+};
+
+class AudioStream
+{
+public:
+	enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
+	pa_stream *stream;
+	lightspark::AudioDecoder *decoder;
+	PulsePlugin *manager;
+	volatile STREAM_STATUS streamStatus;
+	AudioStream ( PulsePlugin *m ) :stream ( NULL ),decoder ( NULL ),manager ( m ),streamStatus ( STREAM_STARTING ) {}
 };
 
 #endif

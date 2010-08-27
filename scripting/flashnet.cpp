@@ -397,7 +397,7 @@ ASFUNCTIONBODY(NetConnection,_getUri)
 		return new Undefined;
 }
 
-NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0),streamTime(0),paused(0)
+NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(0)
 {
 	sem_init(&mutex,0,1);
 }
@@ -544,10 +544,10 @@ void NetStream::tick()
 	//Advance video and audio to current time, follow the audio stream time
 	//No mutex needed, ticking can happen only when stream is completely ready
 #ifdef ENABLE_SOUND
-	if(soundStreamId && sys->audioManager->isTimingAvailablePlugin())
+	if(audioStream && sys->audioManager->isTimingAvailablePlugin())
 	{
 		assert(audioDecoder);
-		streamTime=sys->audioManager->getPlayedTimePlugin(soundStreamId);
+		streamTime=sys->audioManager->getPlayedTimePlugin(audioStream);
 	}
 	else
 #endif
@@ -653,14 +653,14 @@ void NetStream::execute()
 									throw RunTimeException("Unsupported SoundFormat");
 							}
 							if(audioDecoder->isValid())
-								soundStreamId=sys->audioManager->createStreamPlugin(audioDecoder);
+								audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
 						}
 						else
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
 							decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
-							if(soundStreamId==0 && audioDecoder->isValid())
-								soundStreamId=sys->audioManager->createStreamPlugin(audioDecoder);
+							if(audioStream==0 && audioDecoder->isValid())
+								audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
 							//Adjust timing
 							decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
 						}
@@ -787,8 +787,8 @@ void NetStream::execute()
 	delete videoDecoder;
 	videoDecoder=NULL;
 #if ENABLE_SOUND
-	if(soundStreamId)
-		sys->audioManager->freeStreamPlugin(soundStreamId);
+	if(audioStream)
+		sys->audioManager->freeStreamPlugin(audioStream);
 	delete audioDecoder;
 	audioDecoder=NULL;
 #endif

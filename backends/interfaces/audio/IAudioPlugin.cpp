@@ -19,26 +19,51 @@
 **************************************************************************/
 
 #include "IAudioPlugin.h"
+#include <iostream>
+
+using namespace std;
 
 
 bool IAudioPlugin::get_serverStatus()
 {
-        return noServer;
+	return noServer;
 }
 
-bool IAudioPlugin::Is_ContextReady()
+string IAudioPlugin::get_device ( DEVICE_TYPES desiredType )
 {
-        return contextReady;
+	if ( PLAYBACK )
+	{
+		return playbackDeviceName;
+	}
+	else if ( CAPTURE )
+	{
+		return captureDeviceName;
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
-bool IAudioPlugin::Is_Stopped()
+vector< string* > *IAudioPlugin::get_devicesList ( DEVICE_TYPES desiredType )
 {
-        return stopped;
+	if ( desiredType == PLAYBACK )
+	{
+		return &playbackDevicesList;
+	}
+	else if ( desiredType == CAPTURE )
+	{
+		return &captureDevicesList;
+	}
+	else
+	{
+		return NULL;
+	}
 }
 
 bool IAudioPlugin::isTimingAvailable() const
 {
-        return noServer==false;
+	return noServer == false;
 }
 
 IAudioPlugin::~IAudioPlugin()

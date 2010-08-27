@@ -29,6 +29,8 @@
 using namespace std;
 
 
+class AudioStream; //Early declaration, it will be implemented per plugin
+
 /**********************
 Abstract class for audio plugin implementation
 ***********************/
@@ -36,7 +38,6 @@ class IAudioPlugin : public IPlugin
 {
 protected:
         enum DEVICE_TYPES { PLAYBACK=0, CAPTURE};
-        class AudioStream; //Early declaration, it will be implemented per plugin
         string playbackDeviceName;
         string captureDeviceName;
         vector<string *> playbackDevicesList;
@@ -46,18 +47,16 @@ protected:
         volatile bool noServer;
         bool stopped;
 public:
-        virtual bool Is_Connected() = 0;
-        virtual bool get_serverStatus() = 0;
-        virtual vector<string *> *get_devicesList ( DEVICE_TYPES desiredType ) = 0;
+        virtual bool get_serverStatus();
+        virtual vector<string *> *get_devicesList ( DEVICE_TYPES desiredType );
         virtual void set_device ( string desiredDevice, DEVICE_TYPES desiredType ) = 0;
-        virtual bool Is_ContextReady() = 0;
-        virtual bool Is_Stopped() = 0;
-        virtual uint32_t createStream ( lightspark::AudioDecoder *decoder ) = 0;
-        virtual void freeStream ( uint32_t id ) = 0;
-        virtual void fill ( uint32_t id ) = 0;
+	virtual string get_device (DEVICE_TYPES desiredType);
+        virtual AudioStream *createStream ( lightspark::AudioDecoder *decoder ) = 0;
+        virtual void freeStream ( AudioStream *stream ) = 0;
+        virtual void fill ( AudioStream *stream ) = 0;
         virtual void stop() = 0;
-        virtual bool isTimingAvailable() const = 0;
-        virtual uint32_t getPlayedTime ( uint32_t streamId ) = 0; //Get the elapsed time in milliseconds for the stream streamId
+        virtual bool isTimingAvailable() const;
+        virtual uint32_t getPlayedTime ( AudioStream *stream ) = 0; //Get the elapsed time in milliseconds for the stream streamId
         virtual ~IAudioPlugin();
 };
 

@@ -22,8 +22,9 @@
 using namespace lightspark;
 using namespace std;
 
+
 OpenALPlugin::OpenALPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend, 
-			   bool init_contextReady, bool init_noServer, bool init_stopped): AudioPlugin(init_Type, init_Name, init_audiobackend, init_contextReady, init_noServer, init_stopped)
+			   bool init_contextReady, bool init_noServer, bool init_stopped)
 {
     pluginType = init_Type;
     pluginName = init_Name;
@@ -31,7 +32,7 @@ OpenALPlugin::OpenALPlugin(PLUGIN_TYPES init_Type, string init_Name, string init
     contextReady = init_contextReady;
     noServer = init_noServer;
     stopped = init_stopped;
-    pPlaybackDevice = NULL;
+    playbackDevice = NULL;
     captureDevice = NULL;
 
     start();
@@ -39,65 +40,60 @@ OpenALPlugin::OpenALPlugin(PLUGIN_TYPES init_Type, string init_Name, string init
 
 void OpenALPlugin::start()
 {
-    /*
-    Generate lists (playback and captures)
-    Find info on selected devices in config file
-    open devices
-    create contexts and activate them
-    create buffers
-    create sources
-    Don't forget to check for errors
-    */
-    generateDevicesList(playbackDevicesList, PLAYBACK);
-    generateDevicesList(captureDevicesList, CAPTURE);
+  /*
+  Generate lists (playback and captures)
+  Find info on selected devices in config file
+  open devices
+  create context and activate it
+  create buffers
+  create sources
+  Don't forget to check for errors
+  */
+  ALenum error;
+  
+  generateDevicesList(playbackDevicesList, PLAYBACK);
+  generateDevicesList(captureDevicesList, CAPTURE);
+  //getConfig() //To be implemented at a later time
+  
+  initPlayback(this);
+  initCapture(this);
 }
 
-const string OpenALPlugin::get_pluginName()
+void OpenALPlugin::initCapture(OpenALPlugin *th)
 {
-  return IPlugin::get_pluginName();
-}
-
-const PLUGIN_TYPES OpenALPlugin::get_pluginType()
-{
-  return IPlugin::get_pluginType();
-}
-
-const string OpenALPlugin::get_backendName()
-{
-  return IPlugin::get_backendName();
-}
-
-bool OpenALPlugin::get_serverStatus()
-{
-  return IAudioPlugin::get_serverStatus();
-}
-
-bool OpenALPlugin::Is_ContextReady()
-{
-  return IAudioPlugin::Is_ContextReady();
-}
-
-bool OpenALPlugin::Is_Stopped()
-{
-  return IAudioPlugin::Is_Stopped();
-}
-
-bool OpenALPlugin::isTimingAvailable() const
-{
-  return IAudioPlugin::isTimingAvailable();
-}
-
-bool OpenALPlugin::Is_Connected()
-{/*
-  if(mainLoop == NULL)
+  th->captureDevice = alcCaptureOpenDevice(NULL);	//NULL to be changed to the one from the config
+  
+  if()	//verify capture device could be opened
   {
-    return false;
   }
-  else
+}
+
+void OpenALPlugin::initPlayback(OpenALPlugin *th)
+{
+  th->playbackDevice = alcOpenDevice(NULL);	//NULL to be changed to the one from the config
+
+  if (th->playbackDevice) //verify playback device could be opened
   {
-    return true;
+    context = alcCreateContext(th->playbackDevice, NULL);
+    alcMakeContextCurrent(th->context);
   }
-*/}
+  
+  alGetError();	//Clearing error code
+  alGenBuffers(NUM_BUFFERS, th->pbBuffers);
+  if ((error = alGetError()) != AL_NO_ERROR)
+  {
+    cout << "alGenBuffers :" << error << endl;
+    return;
+  }
+
+  alGenSources(NUM_SOURCES, th->pbSources);
+  if ((error = alGetError()) != AL_NO_ERROR)
+  {
+    cout << "alGenSources :" << error << endl;
+    return;
+  }
+
+}
 
 void OpenALPlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
 {/*

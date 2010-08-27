@@ -17,10 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef OPENALSTREAM_H
-#define OPENALSTREAM_H
-
-#ifdef AUDIO_BACKEND
+#ifndef OPENALPLUGIN_H
+#define OPENALPLUGIN_H
 
 #include <AL/al.h>
 #include <AL/alc.h>
@@ -29,25 +27,22 @@
 #include "../../../../compat.h"
 #include <iostream>
 
+#define NUM_BUFFERS 4
+#define NUM_SOURCES 1
+
 using namespace std;
 
 
-class OpenALPlugin : public AudioPlugin 
+class OpenALPlugin : public IAudioPlugin 
 {
   private:
-	class AudioStream
-	{
-	public:
-	  enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
-	  pa_stream *stream;
-	  lightspark::AudioDecoder *decoder;
-	  OpenALPlugin *manager;
-	  volatile STREAM_STATUS streamStatus;
-	  AudioStream(OpenALPlugin *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
-	};
 	ALCcontext *context;
 	ALCdevice *playbackDevice;
 	ALCdevice *captureDevice;
+	ALuint	pbBuffers[NUM_BUFFERS];
+	ALuint	pbSources[NUM_SOURCES];
+	void initPlayback(OpenALPlugin *th);
+	void initCapture(OpenALPlugin *th);
 	static void contextStatusCB(pa_context *context, OpenALPlugin *th);
 	static void streamStatusCB(pa_stream *stream, AudioStream *th);
 	static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
@@ -59,22 +54,22 @@ class OpenALPlugin : public AudioPlugin
 	OpenALPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "OpenAL plugin",
 		    string init_audiobackend = "openal", bool init_contextReady = false,
 		    bool init_noServer = false, bool init_stopped = false);
-        const string get_pluginName();
-        const PLUGIN_TYPES get_pluginType();
-        const string get_backendName();
-        bool get_serverStatus();
-        bool Is_ContextReady();
-        bool Is_Stopped();
-        bool isTimingAvailable() const;
+	void set_device(string desiredDevice, DEVICE_TYPES desiredType);
 	uint32_t createStream(lightspark::AudioDecoder *decoder);
-	bool Is_Connected();
 	void freeStream(uint32_t id);
 	void fill(uint32_t id);
 	void stop();
-	vector<string *> *get_devicesList(DEVICE_TYPES desiredType);
-	void set_device(string desiredDevice, DEVICE_TYPES desiredType);
 	uint32_t getPlayedTime(uint32_t streamId);
 	~OpenALPlugin();
 };
 
-#endif
+class AudioStream
+{
+public:
+  enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
+  pa_stream *stream;
+  lightspark::AudioDecoder *decoder;
+  OpenALPlugin *manager;
+  volatile STREAM_STATUS streamStatus;
+  AudioStream(OpenALPlugin *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+};

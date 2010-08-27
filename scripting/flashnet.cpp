@@ -358,7 +358,7 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 		return new Undefined;
 }
 
-NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0),streamTime(0),paused(0)
+NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0),streamTime(0),paused(false),soundPaused(false),closed(true)
 {
 	sem_init(&mutex,0,1);
 }
@@ -426,6 +426,18 @@ ASFUNCTIONBODY(NetStream,_constructor)
 ASFUNCTIONBODY(NetStream,play)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
+
+	//Make sure the stream is restarted properly
+	if(th->closed)
+		th->closed = false;
+	else
+		//TODO: what should we do here: restart playing, just ignore or throw this exception? (timonvo)
+		throw RunTimeException("NetStream::play called without being closed first.");
+
+	//Reset the paused states
+	th->paused = false;
+	th->soundPaused = false;
+
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
 	th->url = sys->getURL().goToURL(arg0);
@@ -451,14 +463,14 @@ ASFUNCTIONBODY(NetStream,play)
 ASFUNCTIONBODY(NetStream,resume)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
-	th->paused = 0;
+	th->paused = false;
 	return NULL;
 }
 
 ASFUNCTIONBODY(NetStream,pause)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
-	th->paused = 1;
+	th->paused = true;
 	return NULL;
 }
 
@@ -466,20 +478,18 @@ ASFUNCTIONBODY(NetStream,togglePause)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
 	if(th->paused)
-	{
 		th->resume(obj, NULL, 0);
-	}
 	else
-	{
 		th->pause(obj, NULL, 0);
-	}
 	return NULL;
 }
 
 ASFUNCTIONBODY(NetStream,close)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
-	//The downloader is stopped in threadAbort
+	//TODO: set the time property to 0
+	
+	//Everything is stopped in threadAbort
 	th->threadAbort();
 	LOG(LOG_CALLS, _("NetStream::close called"));
 	return NULL;
@@ -509,6 +519,28 @@ NetStream::STREAM_TYPE NetStream::classifyStream(istream& s)
 //Tick is called from the timer thread, this happens only if a decoder is available
 void NetStream::tick()
 {
+	//Check if the stream is paused
+	if(paused)
+	{
+		//If sound is enabled, pause the sound stream too. This will stop all time from running.
+#if ENABLE_SOUND
+		if(!soundPaused)
+		{
+			sys->soundManager->pauseStream(soundStreamId);
+			soundPaused = true;
+		}
+#endif
+		return;
+	}
+	//If sound is enabled, and the stream is not paused anymore, resume the sound stream. This will restart time.
+#if ENABLE_SOUND
+	else if(soundPaused)
+	{
+		sys->soundManager->resumeStream(soundStreamId);
+		soundPaused = false;
+	}
+#endif
+
 	//Advance video and audio to current time, follow the audio stream time
 	//No mutex needed, ticking can happen only when stream is completely ready
 #ifdef ENABLE_SOUND
@@ -585,6 +617,9 @@ void NetStream::execute()
 			bool done=false;
 			do
 			{
+				//Check if threadAbort has been called, if so, stop this loop
+				if(closed)
+					done = true;
 				UI32 PreviousTagSize;
 				s >> PreviousTagSize;
 				PreviousTagSize.bswap();
@@ -752,6 +787,7 @@ void NetStream::execute()
 		videoDecoder->waitFlushed();
 	}
 
+	//Clean up everything for a possible re-run
 	sem_wait(&mutex);
 	sys->downloadManager->destroy(downloader);
 	downloader=NULL;
@@ -765,6 +801,7 @@ void NetStream::execute()
 	if(soundStreamId)
 		sys->soundManager->freeStream(soundStreamId);
 	delete audioDecoder;
+	soundStreamId = 0;
 	audioDecoder=NULL;
 #endif
 	sem_post(&mutex);
@@ -772,14 +809,25 @@ void NetStream::execute()
 
 void NetStream::threadAbort()
 {
+	//This will stop the rendering loop
+	closed = true;
+
 	sem_wait(&mutex);
 	if(downloader)
 		downloader->stop();
-	//Discard a frame, the decoder may be blocked on a full buffer
+
+	//Clear everything we have in buffers, discard all frames
 	if(videoDecoder)
-		videoDecoder->discardFrame();
+	{
+		videoDecoder->setFlushing();
+		videoDecoder->skipAll();
+	}
 	if(audioDecoder)
-		audioDecoder->discardFrame();
+	{
+		//Clear everything we have in buffers, discard all frames
+		audioDecoder->setFlushing();
+		audioDecoder->skipAll();
+	}
 	sem_post(&mutex);
 }
 

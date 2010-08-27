@@ -69,9 +69,44 @@ uint32_t SoundManager::getPlayedTime(uint32_t id)
 	pa_threaded_mainloop_unlock(mainLoop);
 	return time/1000;
 }
+bool SoundManager::streamPaused(uint32_t id)
+{
+	assert(streams[id-1]);
+	assert(noServer==false);
+
+	return pa_stream_is_corked(streams[id-1]->stream);
+}
+void SoundManager::pauseStream(uint32_t id)
+{
+	assert(streams[id-1]);
+	assert(noServer==false);
+
+	if(!streamPaused(id))
+	{
+		pa_stream* stream=streams[id-1]->stream;
+		//This will stop the stream's time from running
+		pa_stream_cork(stream, 1, NULL, NULL);
+		streams[id-1]->paused=true;
+	}
+}
+void SoundManager::resumeStream(uint32_t id)
+{
+	assert(streams[id-1]);
+	assert(noServer==false);
+
+	if(streamPaused(id))
+	{
+		pa_stream* stream=streams[id-1]->stream;
+		//This will restart time
+		pa_stream_cork(stream, 0, NULL, NULL);
+		streams[id-1]->paused=false;
+	}
+}
 
 void SoundManager::fill(uint32_t id)
 {
+	//TODO: I don't know what I should do with a paused stream here. (timonvo)
+	
 	assert(streams[id-1]);
 	if(noServer==false)
 	{
@@ -122,6 +157,10 @@ void SoundManager::fill(uint32_t id)
 
 void SoundManager::streamWriteCB(pa_stream* stream, size_t askedData, SoundStream* th)
 {
+	//If paused, don't do anything
+	if(th->paused)
+		return;
+
 	int16_t* dest;
 	//Get buffer size
 	size_t frameSize=askedData;
@@ -176,7 +215,7 @@ void SoundManager::freeStream(uint32_t id)
 		pa_stream_disconnect(toDelete);
 	}
 	//Do not delete the stream now, let's wait termination
-	streams[id-1]=NULL;
+	streams.erase(streams.begin()+id-1);
 	pa_threaded_mainloop_unlock(mainLoop);
 	while(s->streamStatus!=SoundStream::STREAM_DEAD);
 	pa_threaded_mainloop_lock(mainLoop);
@@ -205,16 +244,12 @@ uint32_t SoundManager::createStream(AudioDecoder* decoder)
 {
 	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
-	uint32_t index=0;
-	for(;index<streams.size();index++)
-	{
-		if(streams[index]==NULL)
-			break;
-	}
+	uint32_t index=streams.size();
+	//Create new SoundStream
+	streams.push_back(new SoundStream(this));
 	assert(decoder->isValid());
-	if(index==streams.size())
-		streams.push_back(new SoundStream(this));
 	streams[index]->decoder=decoder;
+
 	if(noServer==false)
 	{
 		pa_sample_spec ss;

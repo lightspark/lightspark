@@ -80,6 +80,7 @@ public:
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
 	virtual void skipUntil(uint32_t time)=0;
+	virtual void skipAll()=0;
 	//NOTE: the base implementation returns true if resizing of buffers should be done
 	//This should be called in every derived implementation
 	virtual bool copyFrameToTexture(TextureBuffer& tex)=0;
@@ -101,6 +102,7 @@ public:
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}
+	void skipAll(){}
 	bool copyFrameToTexture(TextureBuffer& tex){return false;}
 	void setFlushing()
 	{
@@ -153,6 +155,7 @@ public:
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time);
 	bool discardFrame();
 	void skipUntil(uint32_t time);
+	void skipAll();
 	bool copyFrameToTexture(TextureBuffer& tex);
 	void setFlushing()
 	{

@@ -40,7 +40,9 @@ private:
 		AudioDecoder* decoder;
 		SoundManager* manager;
 		volatile STREAM_STATUS streamStatus;
-		SoundStream(SoundManager* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+		//Indicates whether the stream is paused as a result of pauseStream being called
+		bool paused;
+		SoundStream(SoundManager* m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING),paused(false){}
 	};
 	pa_threaded_mainloop* mainLoop;
 	pa_context* context;
@@ -62,6 +64,14 @@ public:
 		Get the elapsed time in milliseconds for the stream streamId
 	*/
 	uint32_t getPlayedTime(uint32_t streamId);
+
+	//Is the stream paused? (corked)
+	bool streamPaused(uint32_t streamId);
+	//Pause the stream (stops time from running, cork)
+	void pauseStream(uint32_t streamId);
+	//Resume the stream (restart time, uncork)
+	void resumeStream(uint32_t streamId);
+
 	~SoundManager();
 };
 

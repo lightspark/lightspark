@@ -140,7 +140,15 @@ private:
 	//ITickJob interface to frame advance
 	void tick();
 	bool isReady() const;
+
+	//Indicates whether the NetStream is paused
 	bool paused;
+	//Indicates whether the SoundStream is paused yet
+	bool soundPaused;
+	//Indicates whether the NetStream has been closed/threadAborted. This is reset at every play() call.
+	//We initialize this value to true, so we can check that play() hasn't been called without being closed first.
+	bool closed;
+
 	enum CONNECTION_TYPE { CONNECT_TO_FMS=0, DIRECT_CONNECTIONS };
 	CONNECTION_TYPE peerID;
 public:

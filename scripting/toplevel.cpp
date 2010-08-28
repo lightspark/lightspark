@@ -19,7 +19,6 @@
 
 #include <list>
 #include <algorithm>
-//#include <libxml/parser.h>
 #include <pcrecpp.h>
 #include <pcre.h>
 #include <string.h>
@@ -42,10 +41,12 @@ using namespace lightspark;
 
 extern TLSDATA SystemState* sys;
 
+SET_NAMESPACE("");
+
 REGISTER_CLASS_NAME(Array);
-REGISTER_CLASS_NAME2(ASQName,"QName");
-REGISTER_CLASS_NAME2(IFunction,"Function");
-REGISTER_CLASS_NAME2(UInteger,"uint");
+REGISTER_CLASS_NAME2(ASQName,"QName","");
+REGISTER_CLASS_NAME2(IFunction,"Function","");
+REGISTER_CLASS_NAME2(UInteger,"uint","");
 REGISTER_CLASS_NAME(Boolean);
 REGISTER_CLASS_NAME(Integer);
 REGISTER_CLASS_NAME(Number);
@@ -54,7 +55,17 @@ REGISTER_CLASS_NAME(Date);
 REGISTER_CLASS_NAME(RegExp);
 REGISTER_CLASS_NAME(Math);
 REGISTER_CLASS_NAME(ASString);
-REGISTER_CLASS_NAME(ASError);
+REGISTER_CLASS_NAME2(ASError, "Error", "");
+REGISTER_CLASS_NAME(SecurityError);
+REGISTER_CLASS_NAME(ArgumentError);
+REGISTER_CLASS_NAME(DefinitionError);
+REGISTER_CLASS_NAME(EvalError);
+REGISTER_CLASS_NAME(RangeError);
+REGISTER_CLASS_NAME(ReferenceError);
+REGISTER_CLASS_NAME(SyntaxError);
+REGISTER_CLASS_NAME(TypeError);
+REGISTER_CLASS_NAME(URIError);
+REGISTER_CLASS_NAME(VerifyError);
 
 Array::Array()
 {
@@ -763,6 +774,7 @@ void ASString::sinit(Class_base* c)
 	c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
 	c->setVariableByQName("toLowerCase",AS3,Class<IFunction>::getFunction(toLowerCase));
 	c->setVariableByQName("toUpperCase",AS3,Class<IFunction>::getFunction(toUpperCase));
+	c->setVariableByQName("fromCharCode",AS3,Class<IFunction>::getFunction(fromCharCode));
 	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getLength));
 }
 
@@ -793,13 +805,13 @@ ASFUNCTIONBODY(ASString,match)
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
 		const char* error;
-		int offset;
+		int errorOffset;
 		int options=0;
 		if(re->ignoreCase)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &offset,NULL);
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &errorOffset,NULL);
 		if(error)
 			return new Null;
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -812,27 +824,25 @@ ASFUNCTIONBODY(ASString,match)
 		}
 		assert_and_throw(capturingGroups<10);
 		int ovector[30];
-		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), 0, 0, ovector, 30);
-		if(rc<=0)
+		int offset=0;
+		do
 		{
-			//No matches or error
-			pcre_free(pcreRE);
-			return new Null;
-		}
-		ret=Class<Array>::getInstanceS();
-		if(re->global)
-		{
-			do
+			int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
+			if(rc<=0)
 			{
-				int offset=ovector[1];
-				ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
-				rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 9);
+				//No matches or error
+				pcre_free(pcreRE);
+				if(ret==NULL)
+					return new Null;
+				else
+					return ret;
 			}
-			while(rc>0);
-		}
-		else
+			if(ret==NULL)
+				ret=Class<Array>::getInstanceS();
 			ret->push(Class<ASString>::getInstanceS(th->data.substr(ovector[0], ovector[1]-ovector[0])));
-		pcre_free(pcreRE);
+			offset=ovector[1];
+		}
+		while(re->global);
 	}
 	else
 	{
@@ -1387,13 +1397,57 @@ ASFUNCTIONBODY(Date,valueOf)
 	return abstract_d(th->toInt());
 }
 
+bool Date::getIsLeapYear(int year)
+{
+	return ( ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0) );
+}
+
+int Date::getDaysInMonth(int month, bool isLeapYear)
+{
+	enum { JANUARY = 1, FEBRUARY, MARCH, APRIL, MAY, JUNE, JULY, AUGUST, SEPTEMBER, OCTOBER, NOVEMBER, DECEMBER };
+
+	int days;
+
+	switch(month)
+	{
+	case FEBRUARY:
+		days = isLeapYear ? 29 : 28;
+		break;
+	case JANUARY:
+	case MARCH:
+	case MAY:
+	case JULY:
+	case AUGUST:
+	case OCTOBER:
+	case DECEMBER:
+		days = 31;
+		break;
+	case APRIL:
+	case JUNE:
+	case SEPTEMBER:
+	case NOVEMBER:
+		days = 30;
+		break;
+	default:
+		days = -1;
+	}
+
+	return days;
+}
+
 int Date::toInt()
 {
 	int ret=0;
-	//TODO: leap year
-	ret+=(year-1990)*365*24*3600*1000;
-	//TODO: month length
-	ret+=(month-1)*30*24*3600*1000;
+
+	ret+=((year-1990)*365 + ((year-1989)/4 - (year-1901)/100) + (year-1601)/400)*24*3600*1000;
+
+	bool isLeapYear;
+	for(int j = 1; j < month; j++)
+	{
+		isLeapYear = getIsLeapYear(year);
+		ret+=getDaysInMonth(j, isLeapYear)*24*3600*1000;
+	}
+
 	ret+=(date-1)*24*3600*1000;
 	ret+=hour*3600*1000;
 	ret+=minute*60*1000;
@@ -1637,6 +1691,18 @@ void Math::sinit(Class_base* c)
 	c->setVariableByQName("pow","",Class<IFunction>::getFunction(pow));
 }
 
+int Math::hexToInt(char c)
+{
+	if(c>='0' && c<='9')
+		return c-'0';
+	else if(c>='a' && c<='f')
+		return c-'a'+10;
+	else if(c>='A' && c<='F')
+		return c-'A'+10;
+	else
+		return -1;
+}
+
 ASFUNCTIONBODY(Math,atan2)
 {
 	double n1=args[0]->toNumber();
@@ -1675,7 +1741,7 @@ ASFUNCTIONBODY(Math,sin)
 ASFUNCTIONBODY(Math,abs)
 {
 	double n=args[0]->toNumber();
-	return abstract_d(::abs(n));
+	return abstract_d(::fabs(n));
 }
 
 ASFUNCTIONBODY(Math,ceil)
@@ -1930,57 +1996,97 @@ ASFUNCTIONBODY(ASString,toUpperCase)
 	return ret;
 }
 
+ASFUNCTIONBODY(ASString,fromCharCode)
+{
+	assert_and_throw(argslen==1);
+	int ret=args[0]->toInt();
+	if(ret>127)
+		LOG(LOG_NOT_IMPLEMENTED,"Unicode not supported in String::fromCharCode");
+	char buf[2] = { (char)ret, 0};
+	return Class<ASString>::getInstanceS(buf);
+}
+
 ASFUNCTIONBODY(ASString,replace)
 {
-	const ASString* th=static_cast<const ASString*>(obj);
+	ASString* th=static_cast<const ASString*>(obj);
+	enum REPLACE_TYPE { STRING=0, FUNC };
+	REPLACE_TYPE type=(args[1]->getObjectType()==T_FUNCTION)?FUNC:STRING;
 	ASString* ret=Class<ASString>::getInstanceS(th->data);
-	string replaceWith(args[1]->toString().raw_buf());
-	//We have to escape '\\' because that is interpreted by pcrecpp
-	int index=0;
-	do
+	assert_and_throw(argslen==2);
+
+	string replaceWith;
+	if(type==STRING)
 	{
-		index=replaceWith.find("\\",index);
-		if(index==-1) //No result
-			break;
-		replaceWith.replace(index,1,"\\\\");
-
-		//Increment index to jump over the added character
-		index+=2;
+		replaceWith=args[1]->toString().raw_buf();
+		//Look if special substitution are needed
+		assert_and_throw(replaceWith.find('$')==replaceWith.npos);
 	}
-	while(index<(int)ret->data.size());
-
-	assert_and_throw(argslen==2 && args[1]->getObjectType()==T_STRING);
 
 	if(args[0]->getPrototype()==Class<RegExp>::getClass())
 	{
 		RegExp* re=static_cast<RegExp*>(args[0]);
 
-		pcrecpp::RE_Options opt;
-		opt.set_caseless(re->ignoreCase);
-		opt.set_extended(re->extended);
-		pcrecpp::RE pcreRE(re->re,opt);
-		if(re->global)
-			pcreRE.GlobalReplace(replaceWith,&ret->data);
-		else
-			pcreRE.Replace(replaceWith,&ret->data);
-	}
-	else if(args[0]->getObjectType()==T_STRING)
-	{
-		ASString* s=static_cast<ASString*>(args[0]);
-		int index=0;
+		const char* error;
+		int errorOffset;
+		int options=0;
+		if(re->ignoreCase)
+			options|=PCRE_CASELESS;
+		if(re->extended)
+			options|=PCRE_EXTENDED;
+		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &errorOffset,NULL);
+		if(error)
+			return ret;
+		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
+		int capturingGroups;
+		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+		if(infoOk!=0)
+		{
+			pcre_free(pcreRE);
+			return ret;
+		}
+		assert_and_throw(capturingGroups<10);
+		int ovector[30];
+		int offset=0;
+		int retDiff=0;
 		do
 		{
-			index=ret->data.find(s->data,index);
-			if(index==-1) //No result
-				break;
-			ret->data.replace(index,s->data.size(),replaceWith);
-			index+=(replaceWith.size()-s->data.size());
-
+			int rc=pcre_exec(pcreRE, NULL, ret->data.c_str(), ret->data.size(), offset, 0, ovector, 30);
+			if(rc<=0)
+			{
+				//No matches or error
+				pcre_free(pcreRE);
+				return ret;
+			}
+			if(type==FUNC)
+			{
+				//Get the replace for this match
+				IFunction* f=static_cast<IFunction*>(args[1]);
+				ASObject* subargs[3+capturingGroups];
+				subargs[0]=Class<ASString>::getInstanceS(ret->data.substr(ovector[0],ovector[1]-ovector[0]));
+				for(int i=0;i<capturingGroups;i++)
+					subargs[i+1]=Class<ASString>::getInstanceS(ret->data.substr(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]));
+				subargs[capturingGroups+1]=abstract_i(ovector[0]-retDiff);
+				th->incRef();
+				subargs[capturingGroups+2]=th;
+				ASObject* ret=f->call(new Null, subargs, 3+capturingGroups);
+				replaceWith=ret->toString().raw_buf();
+				ret->decRef();
+			}
+			ret->data.replace(ovector[0],ovector[1]-ovector[0],replaceWith);
+			offset=ovector[0]+replaceWith.size();
+			retDiff+=replaceWith.size()-(ovector[1]-ovector[0]);
 		}
-		while(index<(int)ret->data.size());
+		while(re->global);
 	}
 	else
-		throw UnsupportedException("String::replace not completely implemented");
+	{
+		const tiny_string& s=args[0]->toString();
+		int index=ret->data.find(s.raw_buf(),0);
+		if(index==-1) //No result
+			return ret;
+		assert_and_throw(type==STRING);
+		ret->data.replace(index,s.len(),replaceWith);
+	}
 
 	return ret;
 }
@@ -2005,7 +2111,7 @@ ASFUNCTIONBODY(ASError,getStackTrace)
 
 tiny_string ASError::toString(bool debugMsg)
 {
-	return message.len() > 0 ? message : "Error";
+	return message.len() > 0 ? message : name;
 }
 
 ASFUNCTIONBODY(ASError,_getErrorID)
@@ -2039,24 +2145,261 @@ ASFUNCTIONBODY(ASError,_setMessage)
 ASFUNCTIONBODY(ASError,_getMessage)
 {
 	ASError* th=static_cast<ASError*>(obj);
-	return Class<ASString>::getInstanceS(th->message);
+	return Class<ASString>::getInstanceS(th->toString(false));
+}
+
+ASFUNCTIONBODY(ASError,_constructor)
+{
+	ASError* th=static_cast<ASError*>(obj);
+	assert_and_throw(argslen <= 2);
+	if(argslen >= 1)
+	{
+		th->message = args[0]->toString();
+	}
+	if(argslen == 2)
+	{
+		th->errorID = static_cast<Integer*>(args[0])->toInt();
+	}
+	return NULL;
 }
 
 void ASError::sinit(Class_base* c)
 {
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("getStackTrace",AS3,Class<IFunction>::getFunction(getStackTrace));
-	c->setGetterByQName("errorID",AS3,Class<IFunction>::getFunction(_getErrorID));
-	c->setGetterByQName("message",AS3,Class<IFunction>::getFunction(_getMessage));
-	c->setSetterByQName("message",AS3,Class<IFunction>::getFunction(_setMessage));
-	c->setGetterByQName("name",AS3,Class<IFunction>::getFunction(_getName));
-	c->setSetterByQName("name",AS3,Class<IFunction>::getFunction(_setName));
+	c->setVariableByQName("toString",AS3,Class<IFunction>::getFunction(_toString));
+	c->setGetterByQName("errorID","",Class<IFunction>::getFunction(_getErrorID));
+	c->setGetterByQName("message","",Class<IFunction>::getFunction(_getMessage));
+	c->setSetterByQName("message","",Class<IFunction>::getFunction(_setMessage));
+	c->setGetterByQName("name","",Class<IFunction>::getFunction(_getName));
+	c->setSetterByQName("name","",Class<IFunction>::getFunction(_setName));
 }
 
 void ASError::buildTraits(ASObject* o)
 {
 }
 
-Class_base::Class_base(const tiny_string& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
+ASFUNCTIONBODY(SecurityError,_constructor)
+{
+	assert(args && argslen<=1);
+	SecurityError* th=static_cast<SecurityError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void SecurityError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void SecurityError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(ArgumentError,_constructor)
+{
+	assert(args && argslen<=1);
+	ArgumentError* th=static_cast<ArgumentError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void ArgumentError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void ArgumentError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(DefinitionError,_constructor)
+{
+	assert(args && argslen<=1);
+	DefinitionError* th=static_cast<DefinitionError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void DefinitionError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void DefinitionError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(EvalError,_constructor)
+{
+	assert(args && argslen<=1);
+	EvalError* th=static_cast<EvalError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void EvalError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void EvalError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(RangeError,_constructor)
+{
+	assert(args && argslen<=1);
+	RangeError* th=static_cast<RangeError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void RangeError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void RangeError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(ReferenceError,_constructor)
+{
+	assert(args && argslen<=1);
+	ReferenceError* th=static_cast<ReferenceError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void ReferenceError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void ReferenceError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(SyntaxError,_constructor)
+{
+	assert(args && argslen<=1);
+	SyntaxError* th=static_cast<SyntaxError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void SyntaxError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void SyntaxError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(TypeError,_constructor)
+{
+	assert(args && argslen<=1);
+	TypeError* th=static_cast<TypeError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void TypeError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void TypeError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(URIError,_constructor)
+{
+	assert(args && argslen<=1);
+	URIError* th=static_cast<URIError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void URIError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void URIError::buildTraits(ASObject* o)
+{
+}
+
+ASFUNCTIONBODY(VerifyError,_constructor)
+{
+	assert(args && argslen<=1);
+	VerifyError* th=static_cast<VerifyError*>(obj);
+	if(argslen == 1)
+	{
+		th->message = args[0]->toString();
+	}
+	return NULL;
+}
+
+void VerifyError::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	c->super=Class<ASError>::getClass();
+	c->max_level=c->super->max_level+1;
+}
+
+void VerifyError::buildTraits(ASObject* o)
+{
+}
+
+Class_base::Class_base(const QName& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
 	context(NULL),class_name(name),class_index(-1),max_level(0)
 {
 	type=T_CLASS;
@@ -2099,7 +2442,7 @@ void Class_base::addImplementedInterface(Class_base* i)
 tiny_string Class_base::toString(bool debugMsg)
 {
 	tiny_string ret="[Class ";
-	ret+=class_name;
+	ret+=class_name.name;
 	ret+="]";
 	return ret;
 }
@@ -2227,12 +2570,12 @@ Class_object* Class_object::getClass()
 {
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
-	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Class");
+	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName("Class",""));
 	Class_object* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class_object();
-		sys->classes.insert(std::make_pair("Class",ret));
+		sys->classes.insert(std::make_pair(QName("Class",""),ret));
 	}
 	else
 		ret=static_cast<Class_object*>(it->second);
@@ -2251,12 +2594,12 @@ Class_function* Class_function::getClass()
 {
 	//We check if we are registered in the class map
 	//if not we register ourselves (see also Class<T>::getClass)
-	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find("Function");
+	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName("Function",""));
 	Class_function* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class_function();
-		sys->classes.insert(std::make_pair("Function",ret));
+		sys->classes.insert(std::make_pair(QName("Function",""),ret));
 	}
 	else
 		ret=static_cast<Class_function*>(it->second);
@@ -2335,8 +2678,9 @@ bool Class_base::isSubClass(const Class_base* cls) const
 
 tiny_string Class_base::getQualifiedClassName() const
 {
+	//TODO: use also the namespace
 	if(class_index==-1)
-		return class_name;
+		return class_name.name;
 	else
 	{
 		assert_and_throw(context);
@@ -2433,12 +2777,12 @@ bool UInteger::isEqual(ASObject* o)
 
 Class<IFunction>* Class<IFunction>::getClass()
 {
-	std::map<tiny_string, Class_base*>::iterator it=sys->classes.find(ClassName<IFunction>::name);
+	std::map<QName, Class_base*>::iterator it=sys->classes.find(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns));
 	Class<IFunction>* ret=NULL;
 	if(it==sys->classes.end()) //This class is not yet in the map, create it
 	{
 		ret=new Class<IFunction>;
-		sys->classes.insert(std::make_pair(ClassName<IFunction>::name,ret));
+		sys->classes.insert(std::make_pair(QName(ClassName<IFunction>::name,ClassName<IFunction>::ns),ret));
 		IFunction::sinit(ret);
 	}
 	else
@@ -2521,7 +2865,24 @@ ASFUNCTIONBODY(lightspark,parseInt)
 	if(args[0]->getObjectType()==T_UNDEFINED)
 		return new Undefined;
 	else
-		return abstract_i(atoi(args[0]->toString().raw_buf()));
+	{
+		const tiny_string& val=args[0]->toString();
+		const char* cur=val.raw_buf();
+		int ret=0;
+		if(strncmp(cur,"0x",2)==0) // Should be an exadecimal number
+		{
+			cur+=2;
+			while(*cur)
+			{
+				ret<<=4; //*16
+				ret+=Math::hexToInt(*cur);
+				cur++;
+			}
+		}
+		else
+			ret=atoi(cur);
+		return abstract_i(ret);
+	}
 }
 
 ASFUNCTIONBODY(lightspark,parseFloat)
@@ -2584,3 +2945,30 @@ ASFUNCTIONBODY(lightspark,unescape)
 	return Class<ASString>::getInstanceS(ret);
 }
 
+ASFUNCTIONBODY(lightspark,print)
+{
+	if(args[0]->getObjectType() == T_STRING) {
+		ASString* str = static_cast<ASString*>(args[0]);
+		cerr << str->data << endl;
+	}
+	else
+		cerr << args[0]->toString() << endl;
+	return NULL;
+}
+
+ASFUNCTIONBODY(lightspark,trace)
+{
+	for(intptr_t i = 0; i< argslen;i++)
+	{
+		if(args[i]->getObjectType() == T_STRING) {
+			ASString* str = static_cast<ASString*>(args[i]);
+			cerr << str->data;
+		}
+		else
+			cerr << args[i]->toString();
+		if(i > 0)
+			cerr << " ";
+	}
+	cerr << endl;
+	return NULL;
+}

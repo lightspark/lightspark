@@ -69,6 +69,11 @@ public:
 	const RECT& getFrameSize(){ return FrameSize; }
 };
 
+enum SECURITY_SANDBOXTYPE
+{ SECURITY_SANDBOX_REMOTE, SECURITY_SANDBOX_LOCAL_WITH_FILE, 
+	SECURITY_SANDBOX_LOCAL_WITH_NETWORK, SECURITY_SANDBOX_LOCAL_TRUSTED
+};
+
 //RootMovieClip is used as a ThreadJob for timed rendering purpose
 class RootMovieClip: public MovieClip, public ITickJob
 {
@@ -93,6 +98,7 @@ private:
 	tiny_string bindName;
 	Mutex mutexChildrenClips;
 	std::set<MovieClip*> childrenClips;
+	SECURITY_SANDBOXTYPE sandboxType;
 public:
 	RootMovieClip(LoaderInfo* li, bool isSys=false);
 	~RootMovieClip();
@@ -125,6 +131,9 @@ public:
 	void setVariableByString(const std::string& s, ASObject* o);*/
 	void registerChildClip(MovieClip* clip);
 	void unregisterChildClip(MovieClip* clip);
+
+	void setSandboxType(SECURITY_SANDBOXTYPE t) { sandboxType = t; }
+	SECURITY_SANDBOXTYPE getSandboxType() { return sandboxType; }
 };
 
 class ThreadProfile
@@ -205,8 +214,9 @@ private:
 	*/
 	std::string rawParameters;
 	std::string rawCookies;
-	static int hexToInt(char c);
 	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
+	bool exactSecuritySettings;
+	bool exactSecuritySettingsLocked;
 public:
 	void setUrl(const tiny_string& url) DLL_PUBLIC;
 
@@ -250,7 +260,7 @@ public:
 	uint64_t startTime;
 
 	//Class map
-	std::map<tiny_string, Class_base*> classes;
+	std::map<QName, Class_base*> classes;
 	bool finalizingDestruction;
 	std::vector<Tag*> tagsStorage;
 
@@ -276,6 +286,11 @@ public:
 
 	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };
 	SCALE_MODE scaleMode;
+
+	bool getExactSecuritySettings() {	return exactSecuritySettings;	}
+	void setExactSecuritySettings(bool t)	{ exactSecuritySettings = t; }
+	bool getExactSecuritySettingsLocked() {	return exactSecuritySettingsLocked;	}
+	void lockExactSecuritySettings(bool t)	{ exactSecuritySettings = true; }
 };
 
 class ParseThread: public IThreadJob

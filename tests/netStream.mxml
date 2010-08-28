@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_test_template"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	private var video:Video;
+	private var stream_ns:NetStream;
+	//This is the URL for HTTP pseudo-streaming. A sourceforge hardlink should be placed here later.
+	private var netVideoURL:String = "http://lightspark.sourceforge.net/bigbuckbunny.flv";
+	//This is the path for a local file. 
+	//This file will be selected if you run lightspark with the "-s local-with-filesystem" runtime switch.
+	private var localVideoPath:String = "bigbuckbunny.flv";
+	private function appComplete():void {
+		playRect.graphics.beginFill(0x80ff60);
+		playRect.graphics.drawRect(10,250,50,50);
+		playRect.graphics.endFill();
+
+		pauseRect.graphics.beginFill(0xff8060);
+		pauseRect.graphics.drawRect(70,250,20,50);
+		pauseRect.graphics.endFill();
+		pauseRect.graphics.beginFill(0xff8060);
+		pauseRect.graphics.drawRect(100,250,20,50);
+		pauseRect.graphics.endFill();
+
+		stopRect.graphics.beginFill(0x8060ff);
+		stopRect.graphics.drawRect(130,250,50,50);
+		stopRect.graphics.endFill();
+
+		seekRect.graphics.beginFill(0x6080ff);
+		seekRect.graphics.drawRect(190,250,50,50);
+		seekRect.graphics.endFill();
+		
+		playRect.addEventListener(MouseEvent.CLICK,playClick);
+		pauseRect.addEventListener(MouseEvent.CLICK,pauseClick);
+		stopRect.addEventListener(MouseEvent.CLICK,stopClick);
+		seekRect.addEventListener(MouseEvent.CLICK,seekClick);
+
+
+		//Created from instructions on:
+		//http://www.adobe.com/devnet/flashplayer/articles/hd_video_flash_player_03.html
+
+		var connect_nc:NetConnection = new NetConnection();
+		if(Security.sandboxType == Security.REMOTE || 
+			Security.sandboxType == Security.LOCAL_TRUSTED || 
+			Security.sandboxType == Security.LOCAL_WITH_NETWORK) 
+		{
+			trace("Running in remote sandbox: using HTTP pseudo-streaming");
+			connect_nc.connect(undefined); //Undefined = HTTP pseudo-streaming
+		}
+		else {
+			trace("Running in local sandbox: using local file");
+			connect_nc.connect(null); //Null parameter = local file
+		}	
+
+		stream_ns = new NetStream(connect_nc);
+		stream_ns.client = this; //Needed, otherwise will generate a compile warning
+
+		function netStatusHandler(p_evt:NetStatusEvent):void
+		{
+			if(p_evt.info.code == "NetStream.Play.FileStructureInvalid")
+			{
+				trace("File structure invalid");
+			}
+			else if(p_evt.info.code == "NetStream.Play.NoSupportedTrackFound")
+			{
+				trace("File doesn't contain supported tracks");
+			}
+		}
+
+		stream_ns.addEventListener(NetStatusEvent.NET_STATUS, netStatusHandler);
+
+		video = new Video();
+		addChild(video);
+		video.attachNetStream(stream_ns);
+		video.addEventListener(MouseEvent.CLICK,videoClick);
+
+	}
+	private function playClick(e:Event):void {
+		trace("Play button clicked");
+		if(Security.sandboxType == Security.REMOTE || 
+			Security.sandboxType == Security.LOCAL_TRUSTED || 
+			Security.sandboxType == Security.LOCAL_WITH_NETWORK)
+		{
+			trace("Running in remote sandbox: playing from HTTP");
+			stream_ns.play(netVideoURL);
+		}
+		else {
+			trace("Running in remote sandbox: playing local file");
+			stream_ns.play(localVideoPath);
+		}
+	}
+	private function pauseClick(e:Event):void {
+		trace("Pause button clicked");
+		stream_ns.togglePause();
+	}
+	private function stopClick(e:Event):void {
+		trace("Stop button clicked");
+		stream_ns.close();
+	}
+	private function seekClick(e:Event):void {
+		trace("Seek button clicked");
+	}
+	private function videoClick(e:Event):void {
+		trace("Video clicked");
+	}
+]]>
+</mx:Script>
+
+
+<mx:UIComponent id="playRect" />
+<mx:UIComponent id="pauseRect" />
+<mx:UIComponent id="stopRect" />
+<mx:UIComponent id="seekRect" />
+
+</mx:Application>
+

@@ -77,21 +77,30 @@ int textFileWrite(const char *fn, char *s)
 char *dataFileRead(const char *fn)
 {
 	char *ret;
-	char buf[PATH_MAX];
+	int max_path_len=0;
 	const char *paths[] = { 
 		".",
 		"..",
 		DATADIR,
 		"/usr/share/lightspark",
 	};
+	for(uint32_t i=0;i<sizeof(paths)/sizeof(const char*);i++)
+		max_path_len=imax(strlen(paths[i]),max_path_len);
+	max_path_len+=strlen(fn)+2;
+	char* buf=new char[max_path_len];
 
-	for (unsigned int i = 0; i < sizeof(paths)/sizeof(paths[0]); i++) {
-		sprintf(buf, "%s/%s", paths[i], fn);
+	for (unsigned int i = 0; i < sizeof(paths)/sizeof(paths[0]); i++)
+	{
+		snprintf(buf, max_path_len, "%s/%s", paths[i], fn);
 		ret = textFileRead(buf);
 		if (ret)
+		{
+			delete[] buf;
 			return ret;
+		}
 	}
 
+	delete[] buf;
 	return ret;
 }
 

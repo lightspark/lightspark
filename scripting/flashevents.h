@@ -103,6 +103,15 @@ public:
 	ASFUNCTION(_constructor);
 };
 
+class HTTPStatusEvent: public Event
+{
+public:
+	static void sinit(Class_base*);
+	static void buildTraits(ASObject* o)
+	{
+	}
+};
+
 class TextEvent: public Event
 {
 public:
@@ -260,7 +269,7 @@ friend class ABCVm;
 private:
 	IFunction* f;
 public:
-	FunctionEvent(IFunction* _f):Event("functionEvent"),f(_f){}
+	FunctionEvent(IFunction* _f):Event("FunctionEvent"),f(_f){}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return FUNCTION; }
 };

@@ -23,6 +23,8 @@
 
 using namespace lightspark;
 
+SET_NAMESPACE("flash.system");
+
 REGISTER_CLASS_NAME(ApplicationDomain);
 REGISTER_CLASS_NAME(Capabilities);
 REGISTER_CLASS_NAME(Security);
@@ -130,6 +132,76 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 void Security::sinit(Class_base* c)
 {
+	//Fully static class
 	c->setConstructor(NULL);
-	c->setVariableByQName("allowDomain","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setGetterByQName("exactSettings","",Class<IFunction>::getFunction(_getExactSettings));
+	c->setSetterByQName("exactSettings","",Class<IFunction>::getFunction(_setExactSettings));
+	c->setGetterByQName("sandboxType","",Class<IFunction>::getFunction(_getSandboxType));
+	c->setVariableByQName("LOCAL_TRUSTED","",Class<ASString>::getInstanceS("localTrusted"));
+	c->setVariableByQName("LOCAL_WITH_FILE","",Class<ASString>::getInstanceS("localWithFile"));
+	c->setVariableByQName("LOCAL_WITH_NETWORK","",Class<ASString>::getInstanceS("localWithNetwork"));
+	c->setVariableByQName("REMOTE","",Class<ASString>::getInstanceS("remote"));
+	c->setVariableByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain));
+	c->setVariableByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain));
+	c->setVariableByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile));
+	c->setVariableByQName("showSettings","",Class<IFunction>::getFunction(showSettings));
+}
+
+ASFUNCTIONBODY(Security,_getExactSettings)
+{
+	return abstract_b(sys->getExactSecuritySettings());
+}
+
+ASFUNCTIONBODY(Security,_setExactSettings)
+{
+	assert(args && argslen==1);
+	if(sys->getExactSecuritySettingsLocked())
+	{
+		throw UnsupportedException("SecurityError");
+	}
+	if(args[0]->getObjectType() != T_BOOLEAN)
+	{
+		throw UnsupportedException("ArgumentError");
+	}
+	//Boolean* i = static_cast<Boolean*>(args[0]);
+	sys->setExactSecuritySettings(Boolean_concrete(args[0]));
+	return NULL;
+}
+
+ASFUNCTIONBODY(Security,_getSandboxType)
+{
+	if(sys->getSandboxType() == SECURITY_SANDBOX_REMOTE)
+		return Class<ASString>::getInstanceS("remote");
+	else if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_TRUSTED)
+		return Class<ASString>::getInstanceS("localTrusted");
+	else if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_FILE)
+		return Class<ASString>::getInstanceS("localWithFile");
+	else if(sys->getSandboxType() == SECURITY_SANDBOX_LOCAL_WITH_NETWORK)
+		return Class<ASString>::getInstanceS("localWithNetwork");
+	assert(false);
+	return NULL;
+}
+
+ASFUNCTIONBODY(Security, allowDomain)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Security::allowDomain");
+	return NULL;
+}
+
+ASFUNCTIONBODY(Security, allowInsecureDomain)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Security::allowInsecureDomain");
+	return NULL;
+}
+
+ASFUNCTIONBODY(Security, loadPolicyFile)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Security::loadPolicyFile");
+	return NULL;
+}
+
+ASFUNCTIONBODY(Security, showSettings)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "Security::showSettings");
+	return NULL;
 }

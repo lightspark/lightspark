@@ -64,12 +64,12 @@ public:
 	Class_base* super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
-	tiny_string class_name;
+	QName class_name;
 	int class_index;
 	int max_level;
 	void handleConstruction(ASObject* target, ASObject* const* args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
-	Class_base(const tiny_string& name);
+	Class_base(const QName& name);
 	~Class_base();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true, ASObject* base=NULL)
@@ -126,7 +126,7 @@ public:
 class Class_object: public Class_base
 {
 private:
-	Class_object():Class_base("Class"){}
+	Class_object():Class_base(QName("Class","")){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		throw RunTimeException("Class_object::getInstance");
@@ -158,8 +158,8 @@ private:
 	}
 public:
 	//Class_function is both used as the prototype for each function and as the Function classs object
-	Class_function():Class_base("Function"),f(NULL),asprototype(NULL){}
-	Class_function(IFunction* _f, ASObject* _p):Class_base("Function"),f(_f),asprototype(_p){}
+	Class_function():Class_base(QName("Function","")),f(NULL),asprototype(NULL){}
+	Class_function(IFunction* _f, ASObject* _p):Class_base(QName("Function","")),f(_f),asprototype(_p){}
 	tiny_string class_name;
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL)
 	{
@@ -336,7 +336,7 @@ template<>
 class Class<IFunction>: public Class_base
 {
 private:
-	Class<IFunction>():Class_base("Function"){}
+	Class<IFunction>():Class_base(QName("Function","")){}
 	ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
 	{
 		throw UnsupportedException("Class<IFunction>::getInstance");
@@ -423,6 +423,7 @@ public:
 	ASFUNCTION(charAt);
 	ASFUNCTION(toLowerCase);
 	ASFUNCTION(toUpperCase);
+	ASFUNCTION(fromCharCode);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	tiny_string toString(bool debugMsg=false);
@@ -703,6 +704,8 @@ private:
 	int millisecond;
 	int32_t toInt();
 	Date();
+	bool getIsLeapYear(int year);
+	int getDaysInMonth(int month, bool isLeapYear);
 public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -752,6 +755,7 @@ public:
 	ASFUNCTION(_max);
 	ASFUNCTION(_min);
 	ASFUNCTION(pow);
+	static int hexToInt(char c);
 };
 
 class RegExp: public ASObject
@@ -777,12 +781,14 @@ public:
 class ASError: public ASObject
 {
 CLASSBUILDABLE(ASError);
-private:
+protected:
 	tiny_string message;
-	tiny_string name;
+private:
 	int errorID;
+	tiny_string name;
 public:
-	ASError(const tiny_string& error_message = "", int id = 0) : message(error_message), name("Error"), errorID(id) {}
+	ASError(const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error") : message(error_message), errorID(id), name(error_name){};
+	ASFUNCTION(_constructor);
 	ASFUNCTION(getStackTrace);
 	ASFUNCTION(_setName);
 	ASFUNCTION(_getName);
@@ -794,12 +800,114 @@ public:
 	static void buildTraits(ASObject* o);
 };
 
+class SecurityError: public ASError
+{
+CLASSBUILDABLE(SecurityError);
+public:
+	SecurityError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "SecurityError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class ArgumentError: public ASError
+{
+CLASSBUILDABLE(ArgumentError);
+public:
+	ArgumentError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "ArgumentError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class DefinitionError: public ASError
+{
+CLASSBUILDABLE(DefinitionError);
+public:
+	DefinitionError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "DefinitionError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class EvalError: public ASError
+{
+CLASSBUILDABLE(EvalError);
+public:
+	EvalError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "EvalError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class RangeError: public ASError
+{
+CLASSBUILDABLE(RangeError);
+public:
+	RangeError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "RangeError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class ReferenceError: public ASError
+{
+CLASSBUILDABLE(ReferenceError);
+public:
+	ReferenceError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "ReferenceError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class SyntaxError: public ASError
+{
+CLASSBUILDABLE(SyntaxError);
+public:
+	SyntaxError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "SyntaxError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class TypeError: public ASError
+{
+CLASSBUILDABLE(TypeError);
+public:
+	TypeError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "TypeError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class URIError: public ASError
+{
+CLASSBUILDABLE(URIError);
+public:
+	URIError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "URIError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
+class VerifyError: public ASError
+{
+CLASSBUILDABLE(VerifyError);
+public:
+	VerifyError(const tiny_string& error_message = "", int id = 0) : ASError(error_message, id, "VerifyError"){}
+	ASFUNCTION(_constructor);
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+};
+
 bool Boolean_concrete(ASObject* obj);
 ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* isFinite(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* print(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* trace(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 };
 
 #endif

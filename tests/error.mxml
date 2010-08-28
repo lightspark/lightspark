@@ -10,13 +10,232 @@
 	private function appComplete():void {
 		//http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/Error.html
 		var err:Error = new Error();
-		trace(err.toString());    // Error
-	
-		err = new Error("New Error Message");
-		trace(err.toString());    // Error: New Error Message
+		if(err.message == "Error")
+		{
+			trace("Default Error.message == 'Error' --> OK");
+		}
+		else
+		{
+			trace("Default Error.message != 'Error' but '", err.message, "' --> NOT OK!!!");
+		}
+		if(err.name == "Error")
+		{
+			trace("Error.name == 'Error' --> OK");
+		}
+		else
+		{
+			trace("Error.name != 'Error' but '", err.name, "' --> NOT OK!!!");
+		}
 
-		err.message = "Another New Error Message";
-		trace(err.toString());    // Error: Another New Error Message
+		err = new Error("a");
+		if(err.message == "a")
+		{
+			trace("Error(message:String) constructor works --> OK");
+		}
+		else
+		{
+			trace("Error(message:String) constructor does not work --> NOT OK!!!");
+		}
+
+		err.message = "b";
+		if(err.message == "b")
+		{
+			trace("Error.message setter works --> OK");
+		}
+		else
+		{
+			trace("Error.message setter does not work --> NOT OK!!!");
+		}
+
+		if(err.message == err.toString())
+		{
+			trace("Error.toString() == Error.message --> OK");
+		}
+		else
+		{
+			trace("Error.toString() != Error.message but '", err.toString(), "' --> NOT OK!!!");
+		}
+
+		var secErr:SecurityError = new SecurityError();
+		if(secErr.message == "SecurityError")
+		{
+			trace("Default SecurityError.message == 'SecurityError' --> OK");
+		}
+		else
+		{
+			trace("Default SecurityError.message != 'SecurityError' but '", secErr.message, "' --> NOT OK!!!");
+		}
+		if(secErr.name == "SecurityError")
+		{
+			trace("SecurityError.name == 'SecurityError' --> OK");
+		}
+		else
+		{
+			trace("SecurityError.name != 'SecurityError' but '", secErr.name, "' --> NOT OK!!!");
+		}
+
+		var argErr:ArgumentError = new ArgumentError();
+		if(argErr.message == "ArgumentError")
+		{
+			trace("Default ArgumentError.message == 'ArgumentError' --> OK");
+		}
+		else
+		{
+			trace("Default ArgumentError.message != 'ArgumentError' but '", argErr.message, "' --> NOT OK!!!");
+		}
+		if(argErr.name == "ArgumentError")
+		{
+			trace("ArgumentError.name == 'ArgumentError' --> OK");
+		}
+		else
+		{
+			trace("ArgumentError.name != 'ArgumentError' but '", argErr.name, "' --> NOT OK!!!");
+		}
+
+		var defErr:DefinitionError = new DefinitionError();
+		if(defErr.message == "DefinitionError")
+		{
+			trace("Default DefinitionError.message == 'DefinitionError' --> OK");
+		}
+		else
+		{
+			trace("Default DefinitionError.message != 'DefinitionError' but '", defErr.message, "' --> NOT OK!!!");
+		}
+		if(defErr.name == "DefinitionError")
+		{
+			trace("DefinitionError.name == 'DefinitionError' --> OK");
+		}
+		else
+		{
+			trace("DefinitionError.name != 'DefinitionError' but '", defErr.name, "' --> NOT OK!!!");
+		}
+
+		var evalErr:EvalError = new EvalError();
+		if(evalErr.message == "EvalError")
+		{
+			trace("Default EvalError.message == 'EvalError' --> OK");
+		}
+		else
+		{
+			trace("Default EvalError.message != 'EvalError' but '", evalErr.message, "' --> NOT OK!!!");
+		}
+		if(evalErr.name == "EvalError")
+		{
+			trace("EvalError.name == 'EvalError' --> OK");
+		}
+		else
+		{
+			trace("EvalError.name != 'EvalError' but '", evalErr.name, "' --> NOT OK!!!");
+		}
+
+		var rangeErr:RangeError = new RangeError();
+		if(rangeErr.message == "RangeError")
+		{
+			trace("Default RangeError.message == 'RangeError' --> OK");
+		}
+		else
+		{
+			trace("Default RangeError.message != 'RangeError' but '", rangeErr.message, "' --> NOT OK!!!");
+		}
+		if(rangeErr.name == "RangeError")
+		{
+			trace("RangeError.name == 'RangeError' --> OK");
+		}
+		else
+		{
+			trace("RangeError.name != 'RangeError' but '", rangeErr.name, "' --> NOT OK!!!");
+		}
+
+		var refErr:ReferenceError = new ReferenceError();
+		if(refErr.message == "ReferenceError")
+		{
+			trace("Default ReferenceError.message == 'ReferenceError' --> OK");
+		}
+		else
+		{
+			trace("Default ReferenceError.message != 'ReferenceError' but '", refErr.message, "' --> NOT OK!!!");
+		}
+		if(refErr.name == "ReferenceError")
+		{
+			trace("ReferenceError.name == 'ReferenceError' --> OK");
+		}
+		else
+		{
+			trace("ReferenceError.name != 'ReferenceError' but '", refErr.name, "' --> NOT OK!!!");
+		}
+
+		var syntaxErr:SyntaxError = new SyntaxError();
+		if(syntaxErr.message == "SyntaxError")
+		{
+			trace("Default SyntaxError.message == 'SyntaxError' --> OK");
+		}
+		else
+		{
+			trace("Default SyntaxError.message != 'SyntaxError' but '", syntaxErr.message, "' --> NOT OK!!!");
+		}
+		if(syntaxErr.name == "SyntaxError")
+		{
+			trace("SyntaxError.name == 'SyntaxError' --> OK");
+		}
+		else
+		{
+			trace("SyntaxError.name != 'SyntaxError' but '", syntaxErr.name, "' --> NOT OK!!!");
+		}
+
+		var typeErr:TypeError = new TypeError();
+		if(typeErr.message == "TypeError")
+		{
+			trace("Default TypeError.message == 'TypeError' --> OK");
+		}
+		else
+		{
+			trace("Default TypeError.message != 'TypeError' but '", typeErr.message, "' --> NOT OK!!!");
+		}
+		if(typeErr.name == "TypeError")
+		{
+			trace("TypeError.name == 'TypeError' --> OK");
+		}
+		else
+		{
+			trace("TypeError.name != 'TypeError' but '", typeErr.name, "' --> NOT OK!!!");
+		}
+
+		var verifyErr:VerifyError = new VerifyError();
+		if(verifyErr.message == "VerifyError")
+		{
+			trace("Default VerifyError.message == 'VerifyError' --> OK");
+		}
+		else
+		{
+			trace("Default VerifyError.message != 'VerifyError' but '", verifyErr.message, "' --> NOT OK!!!");
+		}
+		if(verifyErr.name == "VerifyError")
+		{
+			trace("VerifyError.name == 'VerifyError' --> OK");
+		}
+		else
+		{
+			trace("VerifyError.name != 'VerifyError' but '", verifyErr.name, "' --> NOT OK!!!");
+		}
+
+		var URIErr:URIError = new URIError();
+		if(URIErr.message == "URIError")
+		{
+			trace("Default URIError.message == 'URIError' --> OK");
+		}
+		else
+		{
+			trace("Default URIError.message != 'URIError' but '", URIErr.message, "' --> NOT OK!!!");
+		}
+		if(URIErr.name == "URIError")
+		{
+			trace("URIError.name == 'URIError' --> OK");
+		}
+		else
+		{
+			trace("URIError.name != 'URIError' but '", URIErr.name, "' --> NOT OK!!!");
+		}
+
 	}
 ]]>
 </mx:Script>

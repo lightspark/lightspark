@@ -1,5 +1,11 @@
-To compile tests inside the tests/ directory use the following command
+You can get the Flex 4 SDK at:
+http://opensource.adobe.com/wiki/display/flexsdk/Download+Flex+4
 
 Flex 4 SDK is assumed to be installed in $FLEX_ROOT
+Make sure that
+<omit-trace-statements>false</omit-trace-statements>
+is set to false in
+$FLEX_ROOT/frameworks/flex-config.xml
 
+To compile tests inside the tests/ directory use the following command:
 $FLEX_ROOT/bin/mxmlc -static-link-runtime-shared-libraries test.mxml -output test.swf

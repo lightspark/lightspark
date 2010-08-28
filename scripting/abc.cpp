@@ -124,12 +124,6 @@ void SymbolClassTag::execute(RootMovieClip* root)
 	}
 }
 
-ASFUNCTIONBODY(ABCVm,print)
-{
-	cerr << args[0]->toString() << endl;
-	return new Null;
-}
-
 void ABCVm::pushObjAndLevel(ASObject* o, int l)
 {
 	method_this_stack.push_back(thisAndLevel(o,l));
@@ -161,12 +155,22 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("QName","",Class<ASQName>::getClass());
 	Global->setVariableByQName("uint","",Class<UInteger>::getClass());
 	Global->setVariableByQName("Error","",Class<ASError>::getClass());
-	Global->setVariableByQName("XML","",Class<ASObject>::getClass("XML"));
-	Global->setVariableByQName("XMLList","",Class<ASObject>::getClass("XMLList"));
+	Global->setVariableByQName("SecurityError","",Class<SecurityError>::getClass());
+	Global->setVariableByQName("ArgumentError","",Class<ArgumentError>::getClass());
+	Global->setVariableByQName("DefinitionError","",Class<DefinitionError>::getClass());
+	Global->setVariableByQName("EvalError","",Class<EvalError>::getClass());
+	Global->setVariableByQName("RangeError","",Class<RangeError>::getClass());
+	Global->setVariableByQName("ReferenceError","",Class<ReferenceError>::getClass());
+	Global->setVariableByQName("SyntaxError","",Class<SyntaxError>::getClass());
+	Global->setVariableByQName("TypeError","",Class<TypeError>::getClass());
+	Global->setVariableByQName("URIError","",Class<URIError>::getClass());
+	Global->setVariableByQName("VerifyError","",Class<VerifyError>::getClass());
+	Global->setVariableByQName("XML","",Class<ASObject>::getClass(QName("XML","")));
+	Global->setVariableByQName("XMLList","",Class<ASObject>::getClass(QName("XMLList","")));
 	Global->setVariableByQName("int","",Class<Integer>::getClass());
 
 	Global->setVariableByQName("print","",Class<IFunction>::getFunction(print));
-	Global->setVariableByQName("trace","",Class<IFunction>::getFunction(print));
+	Global->setVariableByQName("trace","",Class<IFunction>::getFunction(trace));
 	Global->setVariableByQName("parseInt","",Class<IFunction>::getFunction(parseInt));
 	Global->setVariableByQName("parseFloat","",Class<IFunction>::getFunction(parseFloat));
 	Global->setVariableByQName("unescape","",Class<IFunction>::getFunction(unescape));
@@ -176,7 +180,7 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass());
 	Global->setVariableByQName("Loader","flash.display",Class<Loader>::getClass());
 	Global->setVariableByQName("LoaderInfo","flash.display",Class<LoaderInfo>::getClass());
-	Global->setVariableByQName("SimpleButton","flash.display",Class<ASObject>::getClass("SimpleButton"));
+	Global->setVariableByQName("SimpleButton","flash.display",Class<ASObject>::getClass(QName("SimpleButton","flash.display")));
 	Global->setVariableByQName("InteractiveObject","flash.display",Class<InteractiveObject>::getClass());
 	Global->setVariableByQName("DisplayObjectContainer","flash.display",Class<DisplayObjectContainer>::getClass());
 	Global->setVariableByQName("Sprite","flash.display",Class<Sprite>::getClass());
@@ -186,18 +190,18 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("LineScaleMode","flash.display",Class<LineScaleMode>::getClass());
 	Global->setVariableByQName("StageScaleMode","flash.display",Class<StageScaleMode>::getClass());
 	Global->setVariableByQName("StageAlign","flash.display",Class<StageAlign>::getClass());
-	Global->setVariableByQName("IBitmapDrawable","flash.display",Class<ASObject>::getClass("IBitmapDrawable"));
-	Global->setVariableByQName("BitmapData","flash.display",Class<ASObject>::getClass("BitmapData"));
+	Global->setVariableByQName("IBitmapDrawable","flash.display",Class<ASObject>::getClass(QName("IBitmapDrawable","flash.display")));
+	Global->setVariableByQName("BitmapData","flash.display",Class<ASObject>::getClass(QName("BitmapData","flash.display")));
 	Global->setVariableByQName("Bitmap","flash.display",Class<Bitmap>::getClass());
 
-	Global->setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass("DropShadowFilter"));
-	Global->setVariableByQName("BitmapFilter","flash.filters",Class<ASObject>::getClass("BitmapFilter"));
+	Global->setVariableByQName("DropShadowFilter","flash.filters",Class<ASObject>::getClass(QName("DropShadowFilter","flash.filters")));
+	Global->setVariableByQName("BitmapFilter","flash.filters",Class<ASObject>::getClass(QName("BitmapFilter","flash.filters")));
 
 	Global->setVariableByQName("Font","flash.text",Class<Font>::getClass());
 	Global->setVariableByQName("StyleSheet","flash.text",Class<StyleSheet>::getClass());
 	Global->setVariableByQName("TextField","flash.text",Class<TextField>::getClass());
-	Global->setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass("TextFieldType"));
-	Global->setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass("TextFormat"));
+	Global->setVariableByQName("TextFieldType","flash.text",Class<ASObject>::getClass(QName("TextFieldType","flash.text")));
+	Global->setVariableByQName("TextFormat","flash.text",Class<ASObject>::getClass(QName("TextFormat","flash.text")));
 
 	Global->setVariableByQName("XMLDocument","flash.xml",Class<XMLDocument>::getClass());
 
@@ -211,11 +215,11 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("getQualifiedSuperclassName","flash.utils",Class<IFunction>::getFunction(getQualifiedSuperclassName));
 	Global->setVariableByQName("getDefinitionByName","flash.utils",Class<IFunction>::getFunction(getDefinitionByName));
 	Global->setVariableByQName("getTimer","flash.utils",Class<IFunction>::getFunction(getTimer));
-	Global->setVariableByQName("IExternalizable","flash.utils",Class<ASObject>::getClass("IExternalizable"));
+	Global->setVariableByQName("IExternalizable","flash.utils",Class<ASObject>::getClass(QName("IExternalizable","flash.utils")));
 
 	Global->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());
 	Global->setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getClass());
-	Global->setVariableByQName("Matrix","flash.geom",Class<ASObject>::getClass("Matrix"));
+	Global->setVariableByQName("Matrix","flash.geom",Class<ASObject>::getClass(QName("Matrix","flash.geom")));
 	Global->setVariableByQName("Transform","flash.geom",Class<Transform>::getClass());
 	Global->setVariableByQName("Point","flash.geom",Class<Point>::getClass());
 
@@ -233,9 +237,10 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("IEventDispatcher","flash.events",Class<IEventDispatcher>::getClass());
 	Global->setVariableByQName("FocusEvent","flash.events",Class<FocusEvent>::getClass());
 	Global->setVariableByQName("NetStatusEvent","flash.events",Class<NetStatusEvent>::getClass());
+	Global->setVariableByQName("HTTPStatusEvent","flash.events",Class<HTTPStatusEvent>::getClass());
 	Global->setVariableByQName("KeyboardEvent","flash.events",Class<KeyboardEvent>::getClass());
 
-	Global->setVariableByQName("LocalConnection","flash.net",Class<ASObject>::getClass("LocalConnection"));
+	Global->setVariableByQName("LocalConnection","flash.net",Class<ASObject>::getClass(QName("LocalConnection","flash.net")));
 	Global->setVariableByQName("NetConnection","flash.net",Class<NetConnection>::getClass());
 	Global->setVariableByQName("NetStream","flash.net",Class<NetStream>::getClass());
 	Global->setVariableByQName("URLLoader","flash.net",Class<URLLoader>::getClass());
@@ -248,14 +253,14 @@ void ABCVm::registerClasses()
 	Global->setVariableByQName("Capabilities","flash.system",Class<Capabilities>::getClass());
 	Global->setVariableByQName("Security","flash.system",Class<Security>::getClass());
 	Global->setVariableByQName("ApplicationDomain","flash.system",Class<ApplicationDomain>::getClass());
-	Global->setVariableByQName("LoaderContext","flash.system",Class<ASObject>::getClass("LoaderContext"));
+	Global->setVariableByQName("LoaderContext","flash.system",Class<ASObject>::getClass(QName("LoaderContext","flash.system")));
 
 	Global->setVariableByQName("SoundTransform","flash.media",Class<SoundTransform>::getClass());
 	Global->setVariableByQName("Video","flash.media",Class<Video>::getClass());
 	Global->setVariableByQName("Sound","flash.media",Class<Sound>::getClass());
 
-	Global->setVariableByQName("ContextMenu","flash.ui",Class<ASObject>::getClass("ContextMenu"));
-	Global->setVariableByQName("ContextMenuItem","flash.ui",Class<ASObject>::getClass("ContextMenuItem"));
+	Global->setVariableByQName("ContextMenu","flash.ui",Class<ASObject>::getClass(QName("ContextMenu","flash.ui")));
+	Global->setVariableByQName("ContextMenuItem","flash.ui",Class<ASObject>::getClass(QName("ContextMenuItem","flash.ui")));
 
 	Global->setVariableByQName("isNaN","",Class<IFunction>::getFunction(isNaN));
 	Global->setVariableByQName("isFinite","",Class<IFunction>::getFunction(isFinite));
@@ -1038,13 +1043,13 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 				ev->sync();
 				break;
 			}
-			/*case FUNCTION:
+			case FUNCTION:
 			{
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second);
 				//We hope the method is binded
-				ev->f->call(NULL,NULL);
+				ev->f->call(NULL,NULL,0);
 				break;
-			}*/
+			}
 			case CONTEXT_INIT:
 			{
 				ABCContextInitEvent* ev=static_cast<ABCContextInitEvent*>(e.second);
@@ -1495,6 +1500,8 @@ ASObject* ABCContext::getConstant(int kind, int index)
 {
 	switch(kind)
 	{
+		case 0x00: //Undefined
+			return new Undefined;
 		case 0x01: //String
 			return Class<ASString>::getInstanceS(constant_pool.strings[index]);
 		case 0x03: //Int

@@ -167,6 +167,7 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	m_sys=new lightspark::SystemState(m_pt);
 	//As this is the plugin, enable fallback on Gnash for older clips
 	m_sys->enableGnashFallback();
+	m_sys->setSandboxType(lightspark::SECURITY_SANDBOX_REMOTE); //Needed for security reasons
 	//Find flashvars argument
 	for(int i=0;i<argc;i++)
 	{
@@ -229,7 +230,8 @@ const char * nsPluginInstance::getVersion()
 NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 {
   NPError err = NPERR_NO_ERROR;
-  switch (aVariable) {
+  switch (aVariable)
+	{
     case NPPVpluginNameString:
     case NPPVpluginDescriptionString:
     case NPPVpluginNeedsXEmbed:

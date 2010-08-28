@@ -145,7 +145,7 @@ void SystemState::staticDeinit()
 
 SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
-	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	useGnashFallback(false),exactSecuritySettings(true),exactSecuritySettingsLocked(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
 	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
@@ -184,18 +184,6 @@ void SystemState::setUrl(const tiny_string& url)
 {
 	loaderInfo->url=url;
 	loaderInfo->loaderURL=url;
-}
-
-int SystemState::hexToInt(char c)
-{
-	if(c>='0' && c<='9')
-		return c-'0';
-	else if(c>='a' && c<='f')
-		return c-'a'+10;
-	else if(c>='A' && c<='F')
-		return c-'A'+10;
-	else
-		return -1;
 }
 
 void SystemState::setCookies(const char* c)
@@ -239,8 +227,8 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 					break;
 				}
 
-				int t1=hexToInt(vars[j+1]);
-				int t2=hexToInt(vars[j+2]);
+				int t1=Math::hexToInt(vars[j+1]);
+				int t2=Math::hexToInt(vars[j+2]);
 				if(t1==-1 || t2==-1)
 				{
 					ok=false;
@@ -339,7 +327,7 @@ SystemState::~SystemState()
 	setPrototype(NULL);
 	
 	//Destroy the contents of all the classes
-	std::map<tiny_string, Class_base*>::iterator it=classes.begin();
+	std::map<QName, Class_base*>::iterator it=classes.begin();
 	for(;it!=classes.end();++it)
 		it->second->cleanUp();
 
@@ -570,7 +558,10 @@ void SystemState::createEngines()
 	}
 #else 
 	//COMPILE_PLUGIN not defined
-	throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
+	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
+	{
+		throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
+	}
 #endif
 
 	if(engine==GTKPLUG) //The engines must be created int the context of the main thread
@@ -942,7 +933,7 @@ void RootMovieClip::Render()
 void RootMovieClip::setFrameCount(int f)
 {
 	Locker l(mutexFrames);
-	totalFrames=f;
+	setTotalFrames(f);
 	state.max_FP=f;
 	//TODO, maybe the next is a regular assert
 	assert_and_throw(cur_frame==&frames.back());

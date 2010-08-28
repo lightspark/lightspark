@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_test_template"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import flash.system.Security;
+	import flash.system.Capabilities;
+	private function appComplete():void {
+		//http://www.adobe.com/livedocs/flash/9.0/ActionScriptLangRefV3/Security.html
+
+		//Check Security.exactSettings setter/getter
+		if(Security.exactSettings == true) { //Check default value == true
+			trace("Security.exactSettings default value == true --> OK");
+		}
+		else {
+			trace("Security.exactSettings default value != true --> NOT OK!!!");
+		}
+
+		Security.exactSettings = false;
+		if(Security.exactSettings == false) { //Check setting to false works
+			trace("Security.exactSettings == false --> OK");
+		}
+		else {
+			trace("Security.exactSettings != false --> NOT OK!!!");
+		}
+
+		Security.exactSettings = true;
+		if(Security.exactSettings == true) { //Check setting to true works
+			trace("Security.exactSettings == true --> OK");
+		}
+		else {
+			trace("Security.exactSettings != true --> NOT OK!!!");
+		}
+
+
+		//Check values of constants
+		if(Security.REMOTE == "remote")
+		{
+			trace("Security.REMOTE == 'remote' ---> OK");
+		}
+		else {
+			trace("Security.REMOTE != 'remote' ---> NOT OK!!!");
+		}
+
+		if(Security.LOCAL_WITH_FILE == "localWithFile")
+		{
+			trace("Security.LOCAL_WITH_FILE == 'localWithFile' ---> OK");
+		}
+		else {
+			trace("Security.LOCAL_WITH_FILE != 'localWithFile' ---> NOT OK!!!");
+		}
+
+		if(Security.LOCAL_WITH_NETWORK == "localWithNetwork")
+		{
+			trace("Security.LOCAL_WITH_NETWORK == 'localWithNetwork' ---> OK");
+		}
+		else {
+			trace("Security.LOCAL_WITH_NETWORK != 'localWithNetwork' ---> NOT OK!!!");
+		}
+
+		if(Security.LOCAL_TRUSTED == "localTrusted")
+		{
+			trace("Security.LOCAL_TRUSTED == 'localTrusted' ---> OK");
+		}
+		else {
+			trace("Security.LOCAL_TRUSTED != 'localTrusted' ---> NOT OK!!!");
+		}
+
+		//Show security sandbox type by color
+		var color:uint;
+		if(Security.sandboxType == Security.REMOTE) { //Red = remote
+			trace("Sandbox type: remote");
+			color = 0x800000;
+		}
+		else if(Security.sandboxType == Security.LOCAL_WITH_FILE) { //Green = local-with-filesystem
+			trace("Sandbox type: localWithFile");
+			color = 0x008000;
+		}
+		else if(Security.sandboxType == Security.LOCAL_WITH_NETWORK) { //Blue = local-with-network
+			trace("Sandbox type: localWithNetwork");
+			color = 0x000080;
+		}
+		else if(Security.sandboxType == Security.LOCAL_TRUSTED) { //Gray = local-trusted
+			trace("Sandbox type: localTrusted");
+			color = 0x808080;
+		}
+		
+		rect.graphics.beginFill(color);
+		rect.graphics.drawRect(30,0,150,100);
+		rect.graphics.endFill();
+
+	}
+]]>
+</mx:Script>
+<mx:UIComponent id="rect"/>
+
+</mx:Application>
+

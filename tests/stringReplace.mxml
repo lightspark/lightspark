@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_test_template"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	private function func1():String {
+		for(var i:int=0;i<arguments.length;i++)
+			trace(arguments[i]);
+		return "func";
+	}
+	private function appComplete():void {
+		rect.graphics.beginFill(0x80ff60);
+		rect.graphics.drawRect(30,0,150,100);
+		rect.graphics.endFill();
+
+		rect2.graphics.beginFill(0xff8060);
+		rect2.graphics.drawRect(50,60,170,120);
+		rect2.graphics.endFill();
+		var str:String=new String("replaceable");
+		trace("Replace using string");
+		var ret:String=str.replace("l","ll");
+		trace(ret);
+		var re:RegExp=new RegExp("[pb]l")
+		trace("Replacing using non global RegExp");
+		ret=str.replace(re,"ll");
+		trace(ret);
+		var re2:RegExp=new RegExp("[pb]l","g")
+		trace("Replacing using global RegExp and func");
+		ret=str.replace(re2,func1);
+		trace(ret);
+		var re3:RegExp=new RegExp("(([pb])l)","g")
+		trace("Replacing using global RegExp, func and capturing groups");
+		ret=str.replace(re3,func1);
+		trace(ret);
+	}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="rect" />
+<mx:UIComponent id="rect2" />
+
+</mx:Application>

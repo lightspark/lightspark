@@ -26,6 +26,8 @@
 using namespace std;
 using namespace lightspark;
 
+SET_NAMESPACE("flash.utils");
+
 REGISTER_CLASS_NAME(ByteArray);
 REGISTER_CLASS_NAME(Timer);
 REGISTER_CLASS_NAME(Dictionary);

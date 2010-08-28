@@ -38,6 +38,7 @@ private:
         pa_context *context;
         static void contextStatusCB ( pa_context *context, PulsePlugin *th );
         void start();
+        void stop();
         static void playbackListCB ( pa_context *context, const pa_sink_info *list, int eol, void *th );
         static void captureListCB ( pa_context *context, const pa_source_info *list, int eol, void *th );
         void addDeviceToList ( vector<string *> *devicesList, string *deviceName );
@@ -54,7 +55,6 @@ public:
         AudioStream *createStream ( lightspark::AudioDecoder *decoder );
         void freeStream ( AudioStream *audioStream );
 	bool isTimingAvailable() const;
-        void stop();
 
 
 	void pulseLock() {

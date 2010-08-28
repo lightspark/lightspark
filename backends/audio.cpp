@@ -110,7 +110,6 @@ void AudioManager::refresh_audioplugins_list()
 void AudioManager::release_audioplugin()
 {
         if ( oAudioPlugin != NULL ) {
-                oAudioPlugin->stop();
                 pluginManager->release_plugin ( oAudioPlugin );
         }
 }
@@ -133,11 +132,4 @@ AudioManager::~AudioManager()
 {
         release_audioplugin();
         pluginManager = NULL;	//The plugin manager is not deleted since it's been created outside of the audio manager
-}
-
-void AudioManager::stopPlugin()
-{
-        if ( oAudioPlugin != NULL ) {
-                oAudioPlugin->stop();
-        }
 }

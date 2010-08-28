@@ -54,7 +54,6 @@ public:
         AudioManager ( PluginManager *sharePluginManager );
         AudioStream *createStreamPlugin ( AudioDecoder *decoder );
         void freeStreamPlugin ( AudioStream *audioStream );
-        void stopPlugin();
         bool isTimingAvailablePlugin() const;
         void set_audiobackend ( string desired_backend );
         void get_audioBackendsList();

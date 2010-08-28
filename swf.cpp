@@ -322,6 +322,7 @@ SystemState::~SystemState()
 	//Kill our child process if any
 	if(childPid)
 	{
+		assert(childPid!=getpid());
 		kill_child(childPid);
 	}
 	//Delete the temporary cookies file
@@ -531,9 +532,16 @@ void SystemState::createEngines()
 		}
 		else
 			cookiesFileName[0]=0;
+		sigset_t oldset;
+		sigset_t set;
+		sigfillset(&set);
+		//Blocks all signal to avoid terminating while forking with the browser signal handlers on
+		pthread_sigmask(SIG_SETMASK, &set, &oldset);
 		childPid=fork();
 		if(childPid==-1)
 		{
+			//Restore handlers
+			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			LOG(LOG_ERROR,_("Child process creation failed, lightspark continues"));
 			childPid=0;
 		}
@@ -565,6 +573,10 @@ void SystemState::createEngines()
 				strdup(dumpedSWFPath.raw_buf()), //SWF file
 				NULL
 			};
+			//Avoid calling browser signal handler during the short time between enabling signals and execve
+			sigaction(SIGTERM, NULL, NULL);
+			//Restore handlers
+			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			execve(GNASH_PATH, args, environ);
 			//If we are are execve failed, print an error and die
 			LOG(LOG_ERROR,_("Execve failed, content will not be rendered"));
@@ -572,6 +584,8 @@ void SystemState::createEngines()
 		}
 		else //Parent process scope
 		{
+			//Restore handlers
+			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			sem_post(&mutex);
 			//Engines should not be started, stop everything
 			stopEngines();

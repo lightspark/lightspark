@@ -761,17 +761,22 @@ void NetStream::execute()
 	catch(exception& e)
 	{
 		LOG(LOG_ERROR, _("Exception in reading: ")<<e.what());
-		waitForFlush=false; //added, because shouldn't it be false for any error?
 	}
 
 	if(waitForFlush)
 	{
 		//Put the decoders in the flushing state and wait for the complete consumption of contents
-		audioDecoder->setFlushing();
-		videoDecoder->setFlushing();
+		if(audioDecoder)
+		{
+		  audioDecoder->setFlushing();
+		  audioDecoder->waitFlushed();
+		}
 		
-		audioDecoder->waitFlushed();
-		videoDecoder->waitFlushed();
+		if(videoDecoder)
+		{
+		  videoDecoder->setFlushing();
+		  videoDecoder->waitFlushed();
+		}
 	}
 
 	sem_wait(&mutex);

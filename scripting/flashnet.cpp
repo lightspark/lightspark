@@ -111,14 +111,14 @@ ASFUNCTIONBODY(URLLoader,load)
 	if(urlRequest->url.len() == 0)
 		throw UnsupportedException("TypeError");
 
-	th->url=sys->getURL().goToURL(urlRequest->url);
+	th->url=sys->getOrigin().goToURL(urlRequest->url);
 
 	//Network sandboxes can't access local files
 	if(th->url.getProtocol() == "file" &&
 			sys->sandboxType != Security::LOCAL_WITH_FILE && sys->sandboxType != Security::LOCAL_TRUSTED)
 		throw UnsupportedException("SecurityError: URLLoader::load: connect to local file");
 	//Local-with-filesystem sandbox can't access network
-	else if(sys->sandboxType == Security::LOCAL_WITH_FILE)
+	else if(th->url.getProtocol() != "file" && sys->sandboxType == Security::LOCAL_WITH_FILE)
 		throw UnsupportedException("SecurityError: URLLoader::load: connect to network");
 
 	//TODO: use domain policy files to check if domain access is allowed
@@ -153,7 +153,7 @@ void URLLoader::execute()
 
 	if(!downloader->hasFailed())
 	{
-		downloader->waitUntilDone();
+		downloader->wait();
 		istream s(downloader);
 		char buf[downloader->getLen()];
 		s.read(buf,downloader->getLen());
@@ -440,14 +440,14 @@ ASFUNCTIONBODY(NetStream,play)
 
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
-	th->url = sys->getURL().goToURL(arg0);
+	th->url = sys->getOrigin().goToURL(arg0);
 
 	if(sys->sandboxType == Security::LOCAL_WITH_FILE && th->url.getProtocol() != "file")
 		throw UnsupportedException("SecurityError: NetStream::play: connect to network from local-with-filesystem sandbox");
 	if(sys->sandboxType != Security::LOCAL_WITH_FILE && sys->sandboxType != Security::LOCAL_TRUSTED && 
 			th->url.getProtocol() == "file")
 		throw UnsupportedException("SecurityError: NetStream::play: connect to local file from network sandbox");
-	if(th->url.getProtocol() == "file" && !th->url.isSubOf(sys->getURL()))
+	if(th->url.getProtocol() == "file" && !th->url.isSubOf(sys->getOrigin()))
 		throw UnsupportedException("SecurityError: NetStream::play: not allowed to navigate up for local files");
 
 	//TODO: use domain policy files to check if domain access is allowed

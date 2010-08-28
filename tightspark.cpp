@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 	sys->useInterpreter=useInterpreter;
 	sys->useJit=useJit;
 
-	sys->setOrigin(fileNames[0]);
+	sys->setOrigin(tiny_string("file://") + tiny_string(fileNames[0]));
 
 #ifndef WIN32
 	struct rlimit rl;

@@ -176,7 +176,7 @@ int main(int argc, char* argv[])
 	//When the URL parameter is set, set the root URL to the given parameter
 	if(url)
 	{
-		sys->setURL(url);
+		sys->setOrigin(url, fileName);
 	}
 #ifndef WIN32
 	//When running in a local sandbox, set the root URL to the current working dir
@@ -186,11 +186,14 @@ int main(int argc, char* argv[])
 		tiny_string cwdStr = tiny_string("file://") + tiny_string(cwd, true);
 		free(cwd);
 		cwdStr += "/";
-		sys->setURL(cwdStr);
+		sys->setOrigin(cwdStr, fileName);
 	}
 #endif
 	else
-		LOG(LOG_NO_INFO, _("Warning: running with no root URL set."));
+	{
+		sys->setOrigin(tiny_string("file://") + tiny_string(fileName));
+		LOG(LOG_NO_INFO, _("Warning: running with no origin URL set."));
+	}
 
 	//One of useInterpreter or useJit must be enabled
 	if(!(useInterpreter || useJit))
@@ -202,8 +205,6 @@ int main(int argc, char* argv[])
 	sys->useJit=useJit;
 	if(paramsFileName)
 		sys->parseParametersFromFile(paramsFileName);
-
-	sys->setOrigin(fileName);
 	
 	SDL_Init ( SDL_INIT_VIDEO |SDL_INIT_EVENTTHREAD );
 	sys->setParamsAndEngine(SDL, NULL);

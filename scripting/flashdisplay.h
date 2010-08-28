@@ -230,7 +230,7 @@ public:
 
 class LoaderInfo: public EventDispatcher
 {
-friend class SystemState;
+friend class RootMovieClip;
 private:
 	uint32_t bytesLoaded;
 	uint32_t bytesTotal;

@@ -112,6 +112,23 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
+void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
+{
+	//We can use this origin to implement security measures.
+	//It also allows loading files without specifying a fully qualified path.
+	//Note that for plugins, this url is NOT the page url, but it is the swf file url.
+	origin = URLInfo(u);
+	//If this URL doesn't contain a filename, add the one passed as an argument (used in main.cpp)
+	if(origin.getPathFile() == "" && filename != "")
+		origin = origin.goToURL(filename);
+
+	if(loaderInfo)
+	{
+		loaderInfo->url=origin.getParsedURL();
+		loaderInfo->loaderURL=origin.getParsedURL();
+	}
+}
+
 void RootMovieClip::registerChildClip(MovieClip* clip)
 {
 	Locker l(mutexChildrenClips);
@@ -182,17 +199,6 @@ void SystemState::setDownloadedPath(const tiny_string& p)
 	if(waitingForDump)
 		fileDumpAvailable.signal();
 	sem_post(&mutex);
-}
-
-void SystemState::setURL(const tiny_string& u)
-{
-	//We can use this "root system url" to implement security measures.
-	//It also allows loading files without specifying a fully qualified path.
-	//Note that for plugins, this url is NOT the page url, but it is the swf file url.
-	url = URLInfo(u);
-
-	loaderInfo->url=url.getParsedURL();
-	loaderInfo->loaderURL=url.getParsedURL();
 }
 
 void SystemState::setCookies(const char* c)
@@ -552,7 +558,7 @@ void SystemState::createEngines()
 				strdup("-k"), //Height
 				bufHeight,
 				strdup("-u"), //SWF url
-				strdup(origin.raw_buf()),
+				strdup(origin.getParsedURL().raw_buf()),
 				strdup("-P"), //SWF parameters
 				strdup(params.c_str()),
 				strdup("-vv"),

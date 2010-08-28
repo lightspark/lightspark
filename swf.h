@@ -80,7 +80,7 @@ friend class ParseThread;
 protected:
 	sem_t mutex;
 	bool initialized;
-	tiny_string origin;
+	URLInfo origin;
 	void tick();
 private:
 	//Semaphore to wait for new frames to be available
@@ -121,8 +121,8 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);
 	void initialize();
-	void setOrigin(const tiny_string& o){origin=o;}
-	const tiny_string& getOrigin(){return origin;}
+	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
+	URLInfo& getOrigin() DLL_PUBLIC { return origin; };
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
@@ -216,7 +216,6 @@ private:
 	URLInfo url;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
-	URLInfo& getURL() DLL_PUBLIC { return url; };
 	ENGINE getEngine() DLL_PUBLIC { return engine; };
 
 	//Interative analysis flags

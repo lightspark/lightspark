@@ -37,7 +37,7 @@ StandaloneDownloadManager::StandaloneDownloadManager()
 
 Downloader* StandaloneDownloadManager::download(const tiny_string& u)
 {
-	return download(sys->getURL().goToURL(u));
+	return download(sys->getOrigin().goToURL(u));
 }
 
 Downloader* StandaloneDownloadManager::download(const URLInfo& url)
@@ -46,7 +46,7 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url)
 	ThreadedDownloader* downloader;
 	if(url.getProtocol() == "file")
 	{
-		LOG(LOG_NO_INFO, "DownloadManger: local file");
+		LOG(LOG_NO_INFO, "DownloadManager: local file");
 		downloader=new LocalDownloader(url.getPath());
 	}
 	else
@@ -76,7 +76,7 @@ Downloader::~Downloader()
 	sem_destroy(&terminated);
 }
 
-Downloader::Downloader():buffer(NULL),allowBufferRealloc(false),len(0),tail(0),waiting(false),failed(false)
+Downloader::Downloader():buffer(NULL),allowBufferRealloc(false),len(0),tail(0),waiting(false),failed(false),hasTerminated(false)
 {
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
@@ -160,15 +160,11 @@ void Downloader::stop()
 //Use this method to wait for the download to finish in downloadManager
 void Downloader::wait()
 {
-	sem_wait(&terminated);
-}
-
-//Use this method to wait for the download to finish in user code
-void Downloader::waitUntilDone()
-{
-	sem_wait(&terminated);
-	//Re-post terminated, so DownloadManager::destroy() and the likes still know we've terminated
-	sem_post(&terminated);
+	if(!hasTerminated)
+	{
+		sem_wait(&terminated);
+		hasTerminated = true;
+	}
 }
 
 Downloader::int_type Downloader::underflow()
@@ -372,18 +368,18 @@ void LocalDownloader::execute()
 			size_t buffSize = 8192;
 			char * buffer = new char[buffSize];
 
-			bool failed = 0;
+			bool readFailed = 0;
 			while(!file.eof())
 			{
 				if(file.fail() || hasFailed())
 				{
-					failed = 1;
+					readFailed = 1;
 					break;
 				}
 				file.read(buffer, buffSize);
 				append((uint8_t *) buffer, file.gcount());
 			}
-			if(failed)
+			if(readFailed)
 			{
 				LOG(LOG_ERROR, _("LocalDownloader::execute: reading from local file failed: ") << url.raw_buf());
 				setFailed();

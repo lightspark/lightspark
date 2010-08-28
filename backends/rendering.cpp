@@ -302,7 +302,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 					    -1,FTPoint(0,th->windowHeight/2));
 
 				stringstream errorMsg;
-				errorMsg << "SWF file: " << th->m_sys->getOrigin();
+				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
 				font.Render(errorMsg.str().c_str(),
 					    -1,FTPoint(0,th->windowHeight/2-20));
 					    
@@ -779,7 +779,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 						-1,FTPoint(0,th->windowHeight/2));
 
 				stringstream errorMsg;
-				errorMsg << "SWF file: " << th->m_sys->getOrigin();
+				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
 				font.Render(errorMsg.str().c_str(),
 						-1,FTPoint(0,th->windowHeight/2-20));
 					    

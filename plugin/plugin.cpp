@@ -36,7 +36,7 @@ TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
 
 NPDownloadManager::NPDownloadManager(NPP i):instance(i)
 {
-	 type = NPAPI;
+	type = NPAPI;
 }
 
 NPDownloadManager::~NPDownloadManager()
@@ -45,7 +45,7 @@ NPDownloadManager::~NPDownloadManager()
 
 lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& u)
 {
-	return download(sys->getURL().goToURL(u));
+	return download(sys->getOrigin().goToURL(u));
 }
 
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url)
@@ -358,8 +358,6 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
 
 	//If this is the first NewStream call, set the system root url.
-	if(m_sys->getURL().getURL() == "")
-		m_sys->setURL(stream->url);
 	//cout << stream->headers << endl;
 	if(dl)
 	{

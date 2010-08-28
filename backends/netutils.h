@@ -32,7 +32,7 @@ namespace lightspark
 
 class Downloader;
 
-class DLL_PUBLIC DownloadManager
+class DownloadManager
 {
 public:
 	virtual ~DownloadManager(){};
@@ -42,7 +42,6 @@ public:
 
 	enum MANAGERTYPE { NPAPI, STANDALONE };
 	MANAGERTYPE type;
-	MANAGERTYPE getType() { return type; }
 };
 
 class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
@@ -74,6 +73,7 @@ protected:
 	sem_t terminated;
 	void setFailed();
 	bool failed;
+	bool hasTerminated;
 public:
 	Downloader();
 	virtual ~Downloader();
@@ -81,7 +81,6 @@ public:
 	void append(uint8_t* buffer, uint32_t len);
 	void stop();
 	void wait();
-	void waitUntilDone();
 	bool hasFailed() { return failed; }
 	uint8_t* getBuffer()
 	{

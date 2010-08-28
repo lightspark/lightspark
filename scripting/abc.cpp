@@ -1070,7 +1070,16 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 			{
 				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
 				LOG(LOG_CALLS,_("Building instance traits"));
-				ev->_class->handleConstruction(ev->_obj,NULL,0,true);
+				try
+				{
+					ev->_class->handleConstruction(ev->_obj,NULL,0,true);
+				}
+				catch(LightsparkException& e)
+				{
+					//Sync anyway and rethrow
+					ev->sync();
+					throw;
+				}
 				ev->sync();
 				break;
 			}

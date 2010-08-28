@@ -24,7 +24,7 @@
 #include <llvm/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/Support/IRBuilder.h>
-#include <llvm/PassManagers.h> 
+#include <llvm/PassManager.h> 
 #include <llvm/LLVMContext.h>
 #include "parsing/tags.h"
 #include "frame.h"

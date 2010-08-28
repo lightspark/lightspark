@@ -30,31 +30,38 @@
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
 
-
-
-Downloader* CurlDownloadManager::download(const tiny_string& u)
+StandaloneDownloadManager::StandaloneDownloadManager()
 {
-	CurlDownloader* curlDownloader=new CurlDownloader(u);
-	sys->addJob(curlDownloader);
-	return curlDownloader;
+	type = STANDALONE;
 }
 
-void CurlDownloadManager::destroy(Downloader* d)
+Downloader* StandaloneDownloadManager::download(const tiny_string& u)
 {
-	d->wait();
-	delete d;
+	return download(sys->getURL().goToURL(u));
 }
 
-Downloader* LocalDownloadManager::download(const tiny_string& u)
+Downloader* StandaloneDownloadManager::download(const URLInfo& url)
 {
-	LocalDownloader* localDownloader=new LocalDownloader(u);
-	sys->addJob(localDownloader);
-	return localDownloader;
+	LOG(LOG_NO_INFO, "DownloadManager: STANDALONE: '" << url.getParsedURL() << "'");
+	ThreadedDownloader* downloader;
+	if(url.getProtocol() == "file")
+	{
+		LOG(LOG_NO_INFO, "DownloadManger: local file");
+		downloader=new LocalDownloader(url.getPath());
+	}
+	else
+	{
+		LOG(LOG_NO_INFO, "DownloadManager: remote file");
+		downloader=new CurlDownloader(url.getParsedURL());
+	}
+	sys->addJob(downloader);
+	return downloader;
 }
 
-void LocalDownloadManager::destroy(Downloader* d)
+void StandaloneDownloadManager::destroy(Downloader* d)
 {
-	d->wait();
+	if(!sys->isShuttingDown())
+		d->wait();
 	delete d;
 }
 
@@ -150,9 +157,18 @@ void Downloader::stop()
 	sem_post(&available);
 }
 
+//Use this method to wait for the download to finish in downloadManager
 void Downloader::wait()
 {
 	sem_wait(&terminated);
+}
+
+//Use this method to wait for the download to finish in user code
+void Downloader::waitUntilDone()
+{
+	sem_wait(&terminated);
+	//Re-post terminated, so DownloadManager::destroy() and the likes still know we've terminated
+	sem_post(&terminated);
 }
 
 Downloader::int_type Downloader::underflow()
@@ -216,21 +232,7 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 
 CurlDownloader::CurlDownloader(const tiny_string& u)
 {
-	//TODO: Url encode the string
-	std::string tmp2;
-	tmp2.reserve(u.len()*2);
-	for(int i=0;i<u.len();i++)
-	{
-		if(u[i]==' ')
-		{
-			char buf[4];
-			sprintf(buf,"%%%x",(unsigned char)u[i]);
-			tmp2+=buf;
-		}
-		else
-			tmp2.push_back(u[i]);
-	}
-	url=tmp2;
+	url=u;
 	requestStatus = 0;
 }
 
@@ -246,6 +248,7 @@ void CurlDownloader::execute()
 		setFailed();
 		return;
 	}
+	LOG(LOG_NO_INFO, _("CurlDownloader::execute: reading remote file: ") << url.raw_buf());
 #ifdef ENABLE_CURL
 	CURL *curl;
 	CURLcode res;
@@ -383,16 +386,16 @@ void LocalDownloader::execute()
 			}
 			if(failed)
 			{
-				setFailed();
 				LOG(LOG_ERROR, _("LocalDownloader::execute: reading from local file failed: ") << url.raw_buf());
+				setFailed();
 			}
 			file.close();
 			delete buffer;
 		}
 		else
 		{
-				setFailed();
-				LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
+			LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
+			setFailed();
 		}
 	}
 	sem_post(&(Downloader::terminated));

@@ -20,6 +20,7 @@
 #include "plugin.h"
 #include "logger.h"
 #include "compat.h"
+#include "backends/urlutils.h"
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define FAKE_MIME_TYPE  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
@@ -35,6 +36,7 @@ TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
 
 NPDownloadManager::NPDownloadManager(NPP i):instance(i)
 {
+	 type = NPAPI;
 }
 
 NPDownloadManager::~NPDownloadManager()
@@ -43,23 +45,14 @@ NPDownloadManager::~NPDownloadManager()
 
 lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& u)
 {
-	//TODO: Url encode the string
-	std::string tmp2;
-	tmp2.reserve(u.len()*2);
-	for(int i=0;i<u.len();i++)
-	{
-		if(u[i]==' ')
-		{
-			char buf[4];
-			sprintf(buf,"%%%x",(unsigned char)u[i]);
-			tmp2+=buf;
-		}
-		else
-			tmp2.push_back(u[i]);
-	}
-	lightspark::tiny_string url=tmp2.c_str();
+	return download(sys->getURL().goToURL(u));
+}
+
+lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url)
+{
+	LOG(LOG_NO_INFO, "DownloadManager: PLUGIN: '" << url.getParsedURL() << "'");
 	//Register this download
-	NPDownloader* ret=new NPDownloader(instance, url);
+	NPDownloader* ret=new NPDownloader(instance, url.getParsedURL());
 	return ret;
 }
 
@@ -84,7 +77,7 @@ void NPDownloader::terminate()
 void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
-	cerr << "Start download for " << th->url << endl;
+	cerr << _("Start download for ") << th->url << endl;
 	th->started=true;
 	NPError e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
 	if(e!=NPERR_NO_ERROR)
@@ -363,11 +356,17 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	//We have to cast the downloadanager to a NPDownloadManager
 	lightspark::Downloader* dl=(lightspark::Downloader*)stream->notifyData;
 	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
+
+	//If this is the first NewStream call, set the system root url.
+	if(m_sys->getURL().getURL() == "")
+		m_sys->setURL(stream->url);
 	//cout << stream->headers << endl;
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;
 		dl->setLen(stream->end);
+		//TODO: confirm that growing buffers are normal. This does fix a bug I found though. (timonvo)
+		dl->setAllowBufferRealloc(true);
 		*stype=NP_NORMAL;
 	}
 	else

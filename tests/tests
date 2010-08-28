@@ -3,7 +3,9 @@
 #Set you lightspark executable path here
 LIGHTSPARK="lightspark"
 #Set the default loglevel here
-LOGLEVEL="-l 0"
+LOGLEVEL="0"
+#Set the default root URL here
+ROOTURL="http://lightspark.sourceforge.net"
 #Set your MXMLC compiler path here
 MXMLC="mxmlc"
 #If you prefer no colors, you can permanently set the default here
@@ -14,7 +16,7 @@ TESTS=`ls -1 *swf 2> /dev/null`;
 
 while [ $# -ne 0 ]; do
 	if [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "-u" ] || [ $1 == "--usage" ]; then
-		echo "Usage: [-q|--quiet] [-nc|--no-colors] [-f|--failures] [-c|--compile] [-cq|--compile-quit] [-m|--mxmlc] [-e|--executable] [-d|--debug] [-l|--log-level level] [-t|--tests tests]";
+		echo "Usage: [-q|--quiet] [-nc|--no-colors] [-f|--failures] [-c|--compile] [-cq|--compile-quit] [-m|--mxmlc] [-e|--executable] [-d|--debug] [-l|--log-level level] [-u|--url url] [-t|--tests tests]";
 		echo "Parameter meanings:";
 		echo -e "\t-q|--quiet\t\tonly output reports";
 		echo -e "\t-nc|--no-colors\t\tdisable colorization (you can permanently set the default inside this script)";
@@ -51,14 +53,16 @@ while [ $# -ne 0 ]; do
 	elif [ $1 == "-d" ] || [ $1 == "--debug" ]; then
 		DEBUG=1
 	elif [ $1 == "-l" ] || [ $1 == "--log-level" ]; then
-		LOGLEVEL="-l $2"
+		LOGLEVEL="$2"
+		shift
+	elif [ $1 == "-u" ] || [ $1 == "--url" ]; then
+		ROOTURL="$2"
 		shift
 	elif [ $1 == "-t" ] || [ $1 == "--tests" ]; then
 		shift;
 		TESTS_SRC=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.mxml /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.mxml/g'`;
-		TESTS_SRC=`ls -1 $TESTS_SRC`;
-		TESTS=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.swf /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.swf/g'`;
-		TESTS=`ls -1 $TESTS`;
+		TESTS_SRC=`ls -1 $TESTS_SRC 2> /dev/null`;
+		TESTS=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
 		break;
 	fi;
 	shift;
@@ -112,9 +116,9 @@ for test in $TESTS; do
 	sleep 0.25;
 
 	if [ $DEBUG ]; then
-		lines=`$LIGHTSPARK $LOGLEVEL $test 2>&1`;
+		lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1`;
 	else
-		lines=`$LIGHTSPARK $LOGLEVEL $test 2>&1 >/dev/null`;
+		lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1 >/dev/null`;
 	fi
 
 	TESTCOUNT=`expr $TESTCOUNT + 1`;
@@ -153,7 +157,7 @@ for test in $TESTS; do
 			-e "s/^\(${ASSERTFAILEDCHAR}\) \(${ASSERTMSGBRACKETOPEN}.*${ASSERTMSGBRACKETCLOSE}\)$/${REDB}\1 ${RED}\2${CLEAR}/g" \
 			-e "s/\(${BARCHAR}*\)\(${FAILURESTITLE}\)\(.*\)/${REDB}\1\2\3${CLEAR}/" \
 			-e "s/\(${FAILEDASSERTIONTITLE}\):\(.*\)/${RED}\1:\2${CLEAR}/" \
-			-e "s/${INDENTPREFIX}\(${EXPECTEDTITLE}\|${ACTUALTITLE}\|${ARRAY1TITLE}\|${ARRAY2TITLE}\): \(.*\)/${INDENTPREFIX}${RED}\1: ${REDU}\2${CLEAR}/" \
+			-e "s/${INDENTPREFIX}\(${EXPECTEDTITLE}\|${ACTUALTITLE}\|${ARRAY1TITLE}\|${ARRAY2TITLE}\):\( \+\)\(.*\)/${INDENTPREFIX}${RED}\1:\2${REDU}\3${CLEAR}/" \
 			-e "s/^\(${BARCHAR}*\)$/${REDB}\1${CLEAR}/" \
 			-e "s/\(${FAILURETITLE}\) \(${FILEBRACKETOPEN}.*${FILEBRACKETCLOSE}\)/${REDB}\1 ${YELLOW}\2${CLEAR}/" \
 			-e "/${FAILEDASSERTIONTITLE}:.*/{

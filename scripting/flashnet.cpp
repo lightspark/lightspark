@@ -45,8 +45,8 @@ URLRequest::URLRequest()
 void URLRequest::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSetterByQName("url","",Class<IFunction>::getFunction(_setUrl));
-	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getUrl));
+	c->setSetterByQName("url","",Class<IFunction>::getFunction(_setURL));
+	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getURL));
 }
 
 void URLRequest::buildTraits(ASObject* o)
@@ -63,14 +63,14 @@ ASFUNCTIONBODY(URLRequest,_constructor)
 	return NULL;
 }
 
-ASFUNCTIONBODY(URLRequest,_setUrl)
+ASFUNCTIONBODY(URLRequest,_setURL)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj);
 	th->url=args[0]->toString();
 	return NULL;
 }
 
-ASFUNCTIONBODY(URLRequest,_getUrl)
+ASFUNCTIONBODY(URLRequest,_getURL)
 {
 	URLRequest* th=static_cast<URLRequest*>(obj);
 	return Class<ASString>::getInstanceS(th->url);
@@ -107,28 +107,23 @@ ASFUNCTIONBODY(URLLoader,load)
 	ASObject* arg=args[0];
 	assert_and_throw(arg->getPrototype()==Class<URLRequest>::getClass());
 	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
-	th->url=urlRequest->url;
 	//Check for URLRequest.url != null
-	if(th->url.len() == 0)
-	{
+	if(urlRequest->url.len() == 0)
 		throw UnsupportedException("TypeError");
-	}
 
-	if(th->url.substr(0, min(th->url.len(), 7)) == "file://")
-	{
-		th->isLocal = true;
-		if(sys->sandboxType == Security::LOCAL_WITH_NETWORK ||
-				sys->sandboxType == Security::REMOTE)
-		{
-			throw UnsupportedException("SecurityError: connect to local file");
-		}
-	}
-	else
-	{
-		th->isLocal = false;
-		if(sys->sandboxType == Security::LOCAL_WITH_FILE)
-			throw UnsupportedException("SecurityError: connect to network");
-	}
+	th->url=sys->getURL().goToURL(urlRequest->url);
+
+	//Network sandboxes can't access local files
+	if(th->url.getProtocol() == "file" &&
+			sys->sandboxType != Security::LOCAL_WITH_FILE && sys->sandboxType != Security::LOCAL_TRUSTED)
+		throw UnsupportedException("SecurityError: URLLoader::load: connect to local file");
+	//Local-with-filesystem sandbox can't access network
+	else if(sys->sandboxType == Security::LOCAL_WITH_FILE)
+		throw UnsupportedException("SecurityError: URLLoader::load: connect to network");
+
+	//TODO: use domain policy files to check if domain access is allowed
+	//TODO: should we disallow accessing local files in a directory above the current one like we do with NetStream.play?
+
 	ASObject* data=arg->getVariableByQName("data","");
 	if(data)
 	{
@@ -136,22 +131,13 @@ ASFUNCTIONBODY(URLLoader,load)
 			throw RunTimeException("Type mismatch in URLLoader::load");
 		else
 		{
-			const tiny_string& tmp=data->toString();
-			//TODO: Url encode the string
-			string tmp2;
-			tmp2.reserve(tmp.len()*2);
-			for(int i=0;i<tmp.len();i++)
-			{
-				if(tmp[i]==' ')
-				{
-					char buf[4];
-					sprintf(buf,"%%%x",(unsigned char)tmp[i]);
-					tmp2+=buf;
-				}
-				else
-					tmp2.push_back(tmp[i]);
-			}
-			th->url+=tmp2.c_str();
+			tiny_string newURL = th->url.getParsedURL();
+			if(th->url.getQuery() == "")
+				newURL += "?";
+			else
+				newURL += "&amp;";
+			newURL += data->toString();
+			th->url=th->url.goToURL(newURL);
 		}
 	}
 	assert_and_throw(th->dataFormat=="binary" || th->dataFormat=="text");
@@ -163,29 +149,24 @@ ASFUNCTIONBODY(URLLoader,load)
 void URLLoader::execute()
 {
 	//TODO: support httpStatus, progress, securityError, open events
-	if(isLocal)
-	{
-		tiny_string fileName = url.substr(7, url.len());
-		downloader=new LocalDownloader(fileName);
-		static_cast<LocalDownloader*>(downloader)->run();
-	}
-	else
-	{
-		downloader=new CurlDownloader(url);
-		static_cast<CurlDownloader*>(downloader)->run();
-	}
+	downloader=sys->downloadManager->download(url);
 
 	if(!downloader->hasFailed())
 	{
+		downloader->waitUntilDone();
+		istream s(downloader);
+		char buf[downloader->getLen()];
+		s.read(buf,downloader->getLen());
+		//TODO: test binary data format
 		if(dataFormat=="binary")
 		{
 			ByteArray* byteArray=Class<ByteArray>::getInstanceS();
-			byteArray->acquireBuffer(downloader->getBuffer(),downloader->getLen());
+			byteArray->acquireBuffer((uint8_t*) buf,downloader->getLen());
 			data=byteArray;
 		}
 		else if(dataFormat=="text")
 		{
-			data=Class<ASString>::getInstanceS((const char *)downloader->getBuffer(),
+			data=Class<ASString>::getInstanceS((const char *)buf,
 								downloader->getLen());
 		}
 		//Send a complete event for this object
@@ -197,12 +178,7 @@ void URLLoader::execute()
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
 	}
 
-	//Save the pointer locally
-	Downloader* tmp=downloader;
-	downloader=NULL;
-	while(executingAbort); //If threadAbort has been executed it may have stopped the downloader or not.
-				//If it has not been executed the downloader is now NULL
-	delete tmp;
+	sys->downloadManager->destroy(downloader);
 }
 
 void URLLoader::threadAbort()
@@ -255,7 +231,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableByQName("DEFAULT","",abstract_i(DEFAULT));
 };
 
-NetConnection::NetConnection():isFMS(false)
+NetConnection::NetConnection()
 {
 }
 
@@ -273,7 +249,7 @@ void NetConnection::sinit(Class_base* c)
 	c->setGetterByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding));
 	c->setSetterByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding));
 	c->setGetterByQName("protocol","",Class<IFunction>::getFunction(_getProtocol));
-	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getUri));
+	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getURI));
 }
 
 void NetConnection::buildTraits(ASObject* o)
@@ -295,36 +271,21 @@ ASFUNCTIONBODY(NetConnection,connect)
 	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 	{
 		th->_connected = false;
-		th->isFMS=false;
-		th->protocol = "";
 		//This seems strange:
 		//LOCAL_WITH_FILE may not use connect(), even if it tries to connect to a local file.
 		//I'm following the specification to the letter
 		if(sys->sandboxType == Security::LOCAL_WITH_FILE)
-		{
-			throw UnsupportedException("SecurityError: NetStream.connect from LOCAL_WITH_FILE sandbox");
-		}
+			throw UnsupportedException("SecurityError: NetConnection::connect from LOCAL_WITH_FILE sandbox");
 	}
 	//String argument means Flash Remoting/Flash Media Server
 	else
 	{
 		th->_connected = false;
-		th->isFMS=true;
 		ASString* command = static_cast<ASString*>(args[0]);
-		tiny_string commandStr = command->toString();
-		if(commandStr.substr(0, 7) == "rtmpte:")
-		{
-			th->protocol = commandStr.substr(0,6);
-		}
-		else if(commandStr.substr(0, 6) == "rtmpe:" || commandStr.substr(0, 6) == "rtmps:" ||
-				commandStr.substr(0, 6) == "rtmpt:" || commandStr.substr(0, 6) == "rtmfp:")
-		{
-			th->protocol = commandStr.substr(0,5);
-		}
-		else
-		{
-			th->protocol = commandStr.substr(0,4);
-		}
+		th->uri = URLInfo(command->toString());
+		
+		//TODO: use domain policy files to check if domain access is allowed
+
 		throw UnsupportedException("NetConnection::connect to FMS");
 	}
 
@@ -388,11 +349,11 @@ ASFUNCTIONBODY(NetConnection,_getProtocol)
 		throw UnsupportedException("ArgumentError: get NetConnection.protocol before connect");
 }
 
-ASFUNCTIONBODY(NetConnection,_getUri)
+ASFUNCTIONBODY(NetConnection,_getURI)
 {
 	NetConnection* th=Class<NetConnection>::cast(obj);
 	if(th->_connected)
-		return Class<ASString>::getInstanceS(th->uri);
+		return Class<ASString>::getInstanceS(th->uri.getURL());
 	else
 		return new Undefined;
 }
@@ -458,7 +419,7 @@ ASFUNCTIONBODY(NetStream,_constructor)
 			throw UnsupportedException("ArgumentError: NetStream constructor: peerID");
 	}
 
-	assert_and_throw(netConnection->isFMS==false);
+	assert_and_throw(netConnection->uri.getURL()=="");
 	return NULL;
 }
 
@@ -467,12 +428,19 @@ ASFUNCTIONBODY(NetStream,play)
 	NetStream* th=Class<NetStream>::cast(obj);
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
-	th->url = arg0;
+	th->url = sys->getURL().goToURL(arg0);
+
+	if(sys->sandboxType == Security::LOCAL_WITH_FILE && th->url.getProtocol() != "file")
+		throw UnsupportedException("SecurityError: NetStream::play: connect to network from local-with-filesystem sandbox");
+	if(sys->sandboxType != Security::LOCAL_WITH_FILE && sys->sandboxType != Security::LOCAL_TRUSTED && 
+			th->url.getProtocol() == "file")
+		throw UnsupportedException("SecurityError: NetStream::play: connect to local file from network sandbox");
+	if(th->url.getProtocol() == "file" && !th->url.isSubOf(sys->getURL()))
+		throw UnsupportedException("SecurityError: NetStream::play: not allowed to navigate up for local files");
+
+	//TODO: use domain policy files to check if domain access is allowed
+
 	assert_and_throw(th->downloader==NULL);
-	if(th->url.substr(0, min(th->url.len(), 7)) == "htt://")
-		th->isLocal = false;
-	else
-		th->isLocal = true;
 	th->downloader=sys->downloadManager->download(th->url);
 	th->streamTime=0;
 	th->incRef();
@@ -583,6 +551,14 @@ void NetStream::unlock()
 
 void NetStream::execute()
 {
+	if(downloader->hasFailed())
+	{
+		//TODO: find out what to do when a file specified as a play() argument isn't found.
+		throw RunTimeException("NetStream::execute(): file doesn't exist");
+	}
+
+	//The downloader hasn't failed yet at this point
+
 	//mutex access to downloader
 	istream s(downloader);
 	s.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
@@ -860,7 +836,7 @@ ASFUNCTIONBODY(URLVariables,_constructor)
 tiny_string URLVariables::toString(bool debugMsg)
 {
 	assert_and_throw(implEnable);
-	//Should urlencode
+	//URL encoding should already have been performed when the variables were passed
 	throw UnsupportedException("URLVariables::toString");
 	if(debugMsg)
 		return ASObject::toString(debugMsg);

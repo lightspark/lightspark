@@ -25,34 +25,36 @@
 #include <inttypes.h>
 #include "swftypes.h"
 #include "thread_pool.h"
+#include "backends/urlutils.h"
 
 namespace lightspark
 {
 
 class Downloader;
 
-class DownloadManager
+class DLL_PUBLIC DownloadManager
 {
 public:
+	virtual ~DownloadManager(){};
 	virtual Downloader* download(const tiny_string& u)=0;
+	virtual Downloader* download(const URLInfo& u)=0;
 	virtual void destroy(Downloader* d)=0;
-	virtual ~DownloadManager(){}
+
+	enum MANAGERTYPE { NPAPI, STANDALONE };
+	MANAGERTYPE type;
+	MANAGERTYPE getType() { return type; }
 };
 
-class DLL_PUBLIC CurlDownloadManager:public DownloadManager
+class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
 {
+private:
 public:
+	StandaloneDownloadManager();
+	~StandaloneDownloadManager(){}
 	Downloader* download(const tiny_string& u);
+	Downloader* download(const URLInfo& u);
 	void destroy(Downloader* d);
 };
-
-class DLL_PUBLIC LocalDownloadManager:public DownloadManager
-{
-public:
-	Downloader* download(const tiny_string& u);
-	void destroy(Downloader* d);
-};
-
 
 class DLL_PUBLIC Downloader: public std::streambuf
 {
@@ -79,6 +81,7 @@ public:
 	void append(uint8_t* buffer, uint32_t len);
 	void stop();
 	void wait();
+	void waitUntilDone();
 	bool hasFailed() { return failed; }
 	uint8_t* getBuffer()
 	{
@@ -98,8 +101,12 @@ public:
 	}
 };
 
+class ThreadedDownloader : public Downloader, public IThreadJob
+{
+};
+
 //CurlDownloader can be used as a thread job, standalone or as a streambuf
-class CurlDownloader: public Downloader, public IThreadJob
+class CurlDownloader: public ThreadedDownloader
 {
 private:
 	tiny_string url;
@@ -117,7 +124,7 @@ public:
 };
 
 //LocalDownloader can be used as a thread job, standalone or as a streambuf
-class LocalDownloader: public Downloader, public IThreadJob
+class LocalDownloader: public ThreadedDownloader
 {
 private:
 	tiny_string url;

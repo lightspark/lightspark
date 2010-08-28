@@ -21,42 +21,64 @@
 #define _URL_UTILS_H
 
 #include "compat.h"
+#include <string>
 #include <inttypes.h>
 #include "swftypes.h"
 
 namespace lightspark
 {
 
-class URLInfo
+class DLL_PUBLIC URLInfo
 {
 private:
-	tiny_string url;
-	tiny_string encodedUrl;
-	tiny_string protocol;
-	tiny_string hostname;
-	uint32_t port;
-	tiny_string path;
+	tiny_string url; //The URL space encoded
+	tiny_string parsedURL; //The URL normalized and space encoded
+	tiny_string protocol; //Part after
+	tiny_string hostname; //Part after :// after protocol
+	uint16_t port; //Part after first : after hostname
+	tiny_string path; //Part after first / after hostname
 	tiny_string pathDirectory;
 	tiny_string pathFile;
-	tiny_string query;
+	tiny_string query; //Part after first ?
+	tiny_string fragment; //Part after first #
 public:
 	URLInfo() {};
-	URLInfo(const tiny_string& u, bool encoded=false);
-	~URLInfo();
-	static URLInfo getQualified(const tiny_string& u, bool encoded=false, const tiny_string& root="");
-	tiny_string normalizePath(const tiny_string& u);
-	static tiny_string encode(const tiny_string& u);
-	static tiny_string decode(const tiny_string& u);
+	URLInfo(const tiny_string& u);
+	~URLInfo() {};
 
-	const tiny_string& getURL() { return url; };
-	const tiny_string& getEncodedURL() { return encodedUrl; };
-	const tiny_string& getProtocol() { return protocol; };
-	const tiny_string& getHostname() { return hostname; };
-	uint32_t getPort() { return port; };
-	const tiny_string& getPath() { return path; };
-	const tiny_string& getPathDirectory() { return pathDirectory; };
-	const tiny_string& getPathFile() { return pathFile; };
-	const tiny_string& getQuery() { return query; };
+	//Go to the specified URL, using the current URL as the root url for unqualified URLs
+	const URLInfo goToURL(const tiny_string& u) const;
+
+	//Check if the given URL is a sub-URL of the given URL
+	bool isSubOf(const tiny_string& u) const { return isSubOf(URLInfo(u)); };
+	bool isSubOf(const URLInfo& u) const;
+
+	//Remove extraneous slashes, .. and . from URLs
+	tiny_string normalizePath(const tiny_string& u);
+
+	//ENCODE_SPACES is used for safety, it can run over another ENCODING without corrupting data
+	enum ENCODING { ENCODE_SPACES, ENCODE_FORM, ENCODE_URI, ENCODE_URICOMPONENT, ENCODE_ESCAPE };
+	static tiny_string encode(const tiny_string& u, ENCODING type=ENCODE_URICOMPONENT)
+	{
+		return tiny_string(encode(std::string(u.raw_buf()), type));
+	};
+	static std::string encode(const std::string& u, ENCODING type=ENCODE_URICOMPONENT);
+	static tiny_string decode(const tiny_string& u, ENCODING type=ENCODE_URICOMPONENT)
+	{
+		return tiny_string(decode(std::string(u.raw_buf()), type));
+	};
+	static std::string decode(const std::string& u, ENCODING type=ENCODE_URICOMPONENT);
+
+	const tiny_string& getURL() const { return url; };
+	const tiny_string& getParsedURL() const { return parsedURL; };
+	const tiny_string& getProtocol() const { return protocol; };
+	const tiny_string& getHostname() const { return hostname; };
+	uint16_t getPort() const { return port; };
+	const tiny_string& getPath() const { return path; };
+	const tiny_string& getPathDirectory() const { return pathDirectory; };
+	const tiny_string& getPathFile() const { return pathFile; };
+	const tiny_string& getQuery() const { return query; };
+	const tiny_string& getFragment() const { return fragment; };
 };
 
 };

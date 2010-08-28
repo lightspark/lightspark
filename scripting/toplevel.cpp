@@ -35,6 +35,7 @@
 #include "compat.h"
 #include "class.h"
 #include "exceptions.h"
+#include "backends/urlutils.h"
 
 using namespace std;
 using namespace lightspark;
@@ -3185,19 +3186,82 @@ ASFUNCTIONBODY(lightspark,isFinite)
 		throw UnsupportedException("Weird argument for isNaN");
 }
 
+ASFUNCTIONBODY(lightspark,encodeURI)
+{
+	if(args[0]->getObjectType() == T_STRING)
+	{
+		ASString* th=static_cast<ASString*>(args[0]);
+		return Class<ASString>::getInstanceS(URLInfo::encode(th->data, URLInfo::ENCODE_URI));
+	}
+	else
+	{
+		return Class<ASString>::getInstanceS(URLInfo::encode(args[0]->toString(), URLInfo::ENCODE_URI));
+	}
+}
+
+ASFUNCTIONBODY(lightspark,decodeURI)
+{
+	if(args[0]->getObjectType() == T_STRING)
+	{
+		ASString* th=static_cast<ASString*>(args[0]);
+		return Class<ASString>::getInstanceS(URLInfo::decode(th->data, URLInfo::ENCODE_URI));
+	}
+	else
+	{
+		return Class<ASString>::getInstanceS(URLInfo::decode(args[0]->toString(), URLInfo::ENCODE_URI));
+	}
+}
+
+ASFUNCTIONBODY(lightspark,encodeURIComponent)
+{
+	if(args[0]->getObjectType() == T_STRING)
+	{
+		ASString* th=static_cast<ASString*>(args[0]);
+		return Class<ASString>::getInstanceS(URLInfo::encode(th->data, URLInfo::ENCODE_URICOMPONENT));
+	}
+	else
+	{
+		return Class<ASString>::getInstanceS(URLInfo::encode(args[0]->toString(), URLInfo::ENCODE_URICOMPONENT));
+	}
+}
+
+ASFUNCTIONBODY(lightspark,decodeURIComponent)
+{
+	if(args[0]->getObjectType() == T_STRING)
+	{
+		ASString* th=static_cast<ASString*>(args[0]);
+		return Class<ASString>::getInstanceS(URLInfo::decode(th->data, URLInfo::ENCODE_URICOMPONENT));
+	}
+	else
+	{
+		return Class<ASString>::getInstanceS(URLInfo::decode(args[0]->toString(), URLInfo::ENCODE_URICOMPONENT));
+	}
+}
+
+ASFUNCTIONBODY(lightspark,escape)
+{
+	if(args[0]->getObjectType() == T_STRING)
+	{
+		ASString* th=static_cast<ASString*>(args[0]);
+		return Class<ASString>::getInstanceS(URLInfo::encode(th->data, URLInfo::ENCODE_ESCAPE));
+	}
+	else
+	{
+		return Class<ASString>::getInstanceS(URLInfo::encode(args[0]->toString(), URLInfo::ENCODE_ESCAPE));
+	}
+}
+
 ASFUNCTIONBODY(lightspark,unescape)
 {
-	ASString* th=static_cast<ASString*>(args[0]);
-	string ret;
-	ret.reserve(th->data.size());
-	for(unsigned int i=0;i<th->data.size();i++)
+	if(args[0]->getObjectType() == T_STRING)
 	{
-		if(th->data[i]=='%')
-			throw UnsupportedException("Unescape not completely implemented");
-		else
-			ret.push_back(th->data[i]);
+		ASString* th=static_cast<ASString*>(args[0]);
+		return Class<ASString>::getInstanceS(URLInfo::decode(th->data, URLInfo::ENCODE_ESCAPE));
 	}
-	return Class<ASString>::getInstanceS(ret);
+	else
+	{
+		return Class<ASString>::getInstanceS(URLInfo::encode(args[0]->toString(), URLInfo::ENCODE_ESCAPE));
+	}
 }
 
 ASFUNCTIONBODY(lightspark,print)

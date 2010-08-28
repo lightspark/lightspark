@@ -92,12 +92,12 @@ package
 			else if(msg == null)
 			{
 				trace("F [" + (msg == null ? "assertEqualsDelta" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertEqualsDelta\n\tExpected: " + expected + "\n\tDelta: " + delta + "\n\tActual: " + actual);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertEqualsDelta\n\tExpected: " + expected + "\n\tDelta: " + delta + "\n\tActual:   " + actual);
 			}
 			else
 			{
 				trace("F [" + (msg == null ? "assertEqualsDelta" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: " + expected + "\n\tDelta: " + delta + "\n\tActual: " + actual);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: " + expected + "\n\tDelta: " + delta + "\n\tActual:   " + actual);
 			}
 		}
 		public static function assertEquals(expected:*, actual:*, msg:String=null, strict:Boolean=false):void
@@ -108,12 +108,12 @@ package
 			else if(msg == null)
 			{
 				trace("F [" + (msg == null ? "assertEquals" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertEquals\n\tExpected: " + expected + "\n\tActual: " + actual);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertEquals\n\tExpected: " + expected + "\n\tActual:   " + actual);
 			}
 			else
 			{
 				trace("F [" + (msg == null ? "assertEquals" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: " + expected + "\n\tActual: " + actual);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: " + expected + "\n\tActual:   " + actual);
 			}
 		}
 		public static function assertTrue(cond:*,msg:String=null, strict:Boolean=false):void
@@ -124,12 +124,12 @@ package
 			else if(msg == null)
 			{
 				trace("F [" + (msg == null ? "assertTrue" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertTrue\n\tExpected: true\n\tActual: " + cond);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertTrue\n\tExpected: true\n\tActual:   " + cond);
 			}
 			else
 			{
 				trace("F [" + (msg == null ? "assertTrue" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: true\n\tActual: " + cond);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: true\n\tActual:   " + cond);
 			}
 		}
 		public static function assertFalse(cond:*,msg:String=null, strict:Boolean=false):void
@@ -140,12 +140,12 @@ package
 			else if(msg == null)
 			{
 				trace("F [" + (msg == null ? "assertFalse" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertFalse\n\tExpected: false\n\tActual: " + cond);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertFalse\n\tExpected: false\n\tActual:   " + cond);
 			}
 			else
 			{
 				trace("F [" + (msg == null ? "assertFalse" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: false\n\tActual: " + cond);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: false\n\tActual:   " + cond);
 			}
 		}
 		public static function assertNull(obj:*, msg:String=null, strict:Boolean=false):void
@@ -156,12 +156,12 @@ package
 			else if(msg == null)
 			{
 				trace("F [" + (msg == null ? "assertNull" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertNull\n\tExpected: null\n\tActual: " + obj);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertNull\n\tExpected: null\n\tActual:   " + obj);
 			}
 			else
 			{
 				trace("F [" + (msg == null ? "assertNull" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: null\n\tActual: " + obj);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: null\n\tActual:   " + obj);
 			}
 		}
 		public static function assertNotNull(obj:*, msg:String=null, strict:Boolean=false):void
@@ -172,12 +172,12 @@ package
 			else if(msg == null)
 			{
 				trace("F [" + (msg == null ? "assertNotNull" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertNotNull\n\tExpected: not null\n\tActual: " + obj);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertNotNull\n\tExpected: not null\n\tActual:   " + obj);
 			}
 			else
 			{
 				trace("F [" + (msg == null ? "assertNotNull" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: not null\n\tActual: " + obj);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: not null\n\tActual:   " + obj);
 			}
 		}
 		public static function assertUndefined(obj:*, msg:String=null, strict:Boolean=false):void
@@ -188,12 +188,12 @@ package
 			else if(msg == null)
 			{
 				trace("F [" + (msg == null ? "assertUndefined" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertUndefined\n\tExpected: undefined\n\tActual: " + obj);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertUndefined\n\tExpected: undefined\n\tActual:   " + obj);
 			}
 			else
 			{
 				trace("F [" + (msg == null ? "assertUndefined" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: undefined\n\tActual: " + obj);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: undefined\n\tActual:   " + obj);
 			}
 		}
 		public static function assertNotUndefined(obj:*, msg:String=null, strict:Boolean=false):void
@@ -204,12 +204,12 @@ package
 			else if(msg == null)
 			{
 				trace("F [" + (msg == null ? "assertNotUndefined" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertNotUndefined\n\tExpected: not undefined\n\tActual: " + obj);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\tassertNotUndefined\n\tExpected: not undefined\n\tActual:   " + obj);
 			}
 			else
 			{
 				trace("F [" + (msg == null ? "assertNotUndefined" : msg) + "]");
-				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: not undefined\n\tActual: " + obj);
+				failures.push("Failed assertion:" + (strict ? " (strict)" : "") + "\n\t" + msg + "\n\tExpected: not undefined\n\tActual:   " + obj);
 			}
 		}
 		public static function assertDontReach(msg:String=null):void

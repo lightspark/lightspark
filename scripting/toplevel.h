@@ -924,6 +924,11 @@ ASObject* parseInt(ASObject* obj,ASObject* const* args, const unsigned int argsl
 ASObject* parseFloat(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* isNaN(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* isFinite(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* encodeURI(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* decodeURI(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* encodeURIComponent(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* decodeURIComponent(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* escape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* unescape(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* print(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 ASObject* trace(ASObject* obj,ASObject* const* args, const unsigned int argslen);

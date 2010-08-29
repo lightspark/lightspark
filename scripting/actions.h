@@ -60,7 +60,7 @@ public:
 	void Render();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
-		abort();
+		//abort();
 		return false;
 	}
 };
@@ -79,7 +79,7 @@ public:
 	void Render();
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
-		abort();
+		//abort();
 		return false;
 	}
 };

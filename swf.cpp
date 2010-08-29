@@ -578,7 +578,7 @@ void SystemState::createEngines()
 			//Restore handlers
 			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			execve(GNASH_PATH, args, environ);
-			//If we are are execve failed, print an error and die
+			//If we are here execve failed, print an error and die
 			LOG(LOG_ERROR,_("Execve failed, content will not be rendered"));
 			exit(0);
 		}

@@ -76,7 +76,7 @@ Downloader::~Downloader()
 	sem_destroy(&terminated);
 }
 
-Downloader::Downloader():buffer(NULL),allowBufferRealloc(false),len(0),tail(0),waiting(false),failed(false),hasTerminated(false)
+Downloader::Downloader():buffer(NULL),allowBufferRealloc(false),len(0),tail(0),waiting(false),failed(false),finished(false),hasTerminated(false)
 {
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
@@ -118,6 +118,17 @@ void Downloader::setFailed()
 		sem_post(&mutex);
 }
 
+//Notify possible waiters no more data is coming
+void Downloader::setFinished()
+{
+	sem_wait(&mutex);
+	finished=true;
+	if(waiting) //If we are waiting for some bytes, gives up and return EOF
+		sem_post(&available);
+	else
+		sem_post(&mutex);
+}
+
 void Downloader::append(uint8_t* buf, uint32_t added)
 {
 	if(added==0)
@@ -127,11 +138,14 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 		//Only grow the buffer when allowed
 		if(getAllowBufferRealloc())
 		{
-			LOG(LOG_NO_INFO, _("Downloaded file bigger than buffer: ") << 
-					tail+added << ">" << len << ", reallocating buffer.");
-			//TODO: Confirm whats best: allocate more memory at a time, at the risk of allocating too much
-			//			or allocate exactly the amount needed, at the risk of having to reallocate a lot
-			setLen(len+4096);
+			uint32_t newLength = len;
+			if((tail+added)-len > 4096)
+				newLength += ((tail+added)-len);
+			else
+				newLength += 4096;
+			LOG(LOG_NO_INFO, _("Downloaded file bigger than buffer (") << tail+added << ">" << len << 
+					"). Growing buffer to: " << newLength << ", grew by: " << (newLength-len));
+			setLen(newLength);
 		}
 		//The real data is longer than the provided Content-Length header
 		else
@@ -175,7 +189,7 @@ Downloader::int_type Downloader::underflow()
 
 	if((buffer+tail)==(uint8_t*)egptr()) //We have no more bytes
 	{
-		if(failed || (tail==len && len!=0))
+		if(failed || (tail==len && len!=0) || finished)
 		{
 			sem_post(&mutex);
 			return -1;
@@ -185,7 +199,8 @@ Downloader::int_type Downloader::underflow()
 			waiting=true;
 			sem_post(&mutex);
 			sem_wait(&available);
-			if(failed)
+			//We have finished or have failed, no more data processing should be done
+			if(failed || finished)
 			{
 				sem_post(&mutex);
 				return -1;
@@ -276,6 +291,8 @@ void CurlDownloader::execute()
 	setFailed();
 	LOG(LOG_ERROR,_("CURL not enabled in this build. Downloader will always fail."));
 #endif
+	//Notify the downloader no more data should be expected
+	setFinished();
 	sem_post(&(Downloader::terminated));
 }
 
@@ -394,6 +411,8 @@ void LocalDownloader::execute()
 			setFailed();
 		}
 	}
+	//Notify the downloader no more data should be expected
+	setFinished();
 	sem_post(&(Downloader::terminated));
 }
 

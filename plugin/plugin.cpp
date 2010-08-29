@@ -436,18 +436,22 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
+	lightspark::Downloader* dl=(lightspark::Downloader*)notifyData;
 	cout << "URLnotify " << url << endl;
+	//Notify our downloader of what happened
 	switch(reason)
 	{
 		case NPRES_DONE:
 			cout << "Done" <<endl;
+			dl->setFinished();
 			break;
 		case NPRES_USER_BREAK:
 			cout << "User Break" <<endl;
+			dl->setFailed();
 			break;
 		case NPRES_NETWORK_ERR:
 			cout << "Network Error" <<endl;
+			dl->setFailed();
 			break;
 	}
-	//TODO: should notify the Downloader if failing
 }

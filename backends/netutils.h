@@ -71,8 +71,8 @@ private:
 	sem_t available;
 protected:
 	sem_t terminated;
-	void setFailed();
 	bool failed;
+	bool finished;
 	bool hasTerminated;
 public:
 	Downloader();
@@ -81,7 +81,10 @@ public:
 	void append(uint8_t* buffer, uint32_t len);
 	void stop();
 	void wait();
+	void setFailed();
 	bool hasFailed() { return failed; }
+	bool hasFinished() { return finished; }
+	void setFinished();
 	uint8_t* getBuffer()
 	{
 		return buffer;

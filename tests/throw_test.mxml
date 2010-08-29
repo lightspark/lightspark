@@ -15,6 +15,7 @@
 		try
 		{
 			throw new Error();
+			Tests.assertDontReach("Error wasn't thrown")
 		}
 		catch(e:SecurityError)
 		{
@@ -24,7 +25,7 @@
 		{
 			Tests.assertTrue(true)
 		}
-		finally
+		catch(e:Object)
 		{
 			Tests.assertDontReach("Error wasn't caught")
 		}
@@ -37,7 +38,7 @@
 		{
 			Tests.assertTrue(true);
 		}
-		finally
+		catch(e:Object)
 		{
 			Tests.assertDontReach("SecurityError wasn't caught")
 		}
@@ -50,7 +51,7 @@
 		{
 			Tests.assertTrue(true);
 		}
-		finally
+		catch(e:Object)
 		{
 			Tests.assertDontReach("Error wasn't caught SecurityError")
 		}

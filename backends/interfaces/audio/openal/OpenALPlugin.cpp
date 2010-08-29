@@ -23,79 +23,79 @@ using namespace lightspark;
 using namespace std;
 
 
-OpenALPlugin::OpenALPlugin(PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend, 
-			   bool init_contextReady, bool init_noServer, bool init_stopped)
+OpenALPlugin::OpenALPlugin ( PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
+                             bool init_contextReady, bool init_noServer, bool init_stopped )
 {
-    pluginType = init_Type;
-    pluginName = init_Name;
-    backendName = init_audiobackend;
-    contextReady = init_contextReady;
-    noServer = init_noServer;
-    stopped = init_stopped;
-    playbackDevice = NULL;
-    captureDevice = NULL;
+	pluginType = init_Type;
+	pluginName = init_Name;
+	backendName = init_audiobackend;
+	contextReady = init_contextReady;
+	noServer = init_noServer;
+	stopped = init_stopped;
+	playbackDevice = NULL;
+	captureDevice = NULL;
 
-    start();
+	start();
 }
 
 void OpenALPlugin::start()
 {
-  /*
-  Generate lists (playback and captures)
-  Find info on selected devices in config file
-  open devices
-  create context and activate it
-  create buffers
-  create sources
-  Don't forget to check for errors
-  */
-  ALenum error;
-  
-  generateDevicesList(playbackDevicesList, PLAYBACK);
-  generateDevicesList(captureDevicesList, CAPTURE);
-  //getConfig() //To be implemented at a later time
-  
-  initPlayback(this);
-  initCapture(this);
+	/*
+	Generate lists (playback and captures)
+	Find info on selected devices in config file
+	open devices
+	create context and activate it
+	create buffers
+	create sources
+	Don't forget to check for errors
+	*/
+	ALenum error;
+
+	generateDevicesList ( playbackDevicesList, PLAYBACK );
+	generateDevicesList ( captureDevicesList, CAPTURE );
+	//getConfig() //To be implemented at a later time
+
+	initPlayback ( this );
+	initCapture ( this );
 }
 
-void OpenALPlugin::initCapture(OpenALPlugin *th)
+void OpenALPlugin::initCapture ( OpenALPlugin *th )
 {
-  th->captureDevice = alcCaptureOpenDevice(NULL);	//NULL to be changed to the one from the config
-  
-  if()	//verify capture device could be opened
-  {
-  }
+	th->captureDevice = alcCaptureOpenDevice ( NULL );	//NULL to be changed to the one from the config
+
+	if ()	//verify capture device could be opened
+	{
+	}
 }
 
-void OpenALPlugin::initPlayback(OpenALPlugin *th)
+void OpenALPlugin::initPlayback ( OpenALPlugin *th )
 {
-  th->playbackDevice = alcOpenDevice(NULL);	//NULL to be changed to the one from the config
+	th->playbackDevice = alcOpenDevice ( NULL );	//NULL to be changed to the one from the config
 
-  if (th->playbackDevice) //verify playback device could be opened
-  {
-    context = alcCreateContext(th->playbackDevice, NULL);
-    alcMakeContextCurrent(th->context);
-  }
-  
-  alGetError();	//Clearing error code
-  alGenBuffers(NUM_BUFFERS, th->pbBuffers);
-  if ((error = alGetError()) != AL_NO_ERROR)
-  {
-    cout << "alGenBuffers :" << error << endl;
-    return;
-  }
+	if ( th->playbackDevice ) //verify playback device could be opened
+	{
+		context = alcCreateContext ( th->playbackDevice, NULL );
+		alcMakeContextCurrent ( th->context );
+	}
 
-  alGenSources(NUM_SOURCES, th->pbSources);
-  if ((error = alGetError()) != AL_NO_ERROR)
-  {
-    cout << "alGenSources :" << error << endl;
-    return;
-  }
+	alGetError();	//Clearing error code
+	alGenBuffers ( NUM_BUFFERS, th->pbBuffers );
+	if ( ( error = alGetError() ) != AL_NO_ERROR )
+	{
+		cout << "alGenBuffers :" << error << endl;
+		return;
+	}
+
+	alGenSources ( NUM_SOURCES, th->pbSources );
+	if ( ( error = alGetError() ) != AL_NO_ERROR )
+	{
+		cout << "alGenSources :" << error << endl;
+		return;
+	}
 
 }
 
-void OpenALPlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
+void OpenALPlugin::streamStatusCB ( pa_stream *stream, AudioStream *th )
 {/*
 	if(pa_stream_get_state(stream)==PA_STREAM_READY)
 		th->streamStatus=AudioStream::STREAM_READY;
@@ -106,7 +106,7 @@ void OpenALPlugin::streamStatusCB(pa_stream *stream, AudioStream *th)
 	}
 */}
 
-uint32_t OpenALPlugin::getPlayedTime(uint32_t id)
+uint32_t OpenALPlugin::getPlayedTime ( uint32_t id )
 {/*
 	assert(streams[id-1]);
 	assert(noServer==false);
@@ -130,7 +130,7 @@ uint32_t OpenALPlugin::getPlayedTime(uint32_t id)
 	return time/1000;
 */}
 
-void OpenALPlugin::fill(uint32_t id)
+void OpenALPlugin::fill ( uint32_t id )
 {/*
 	assert(streams[id-1]);
 	if(noServer==false)
@@ -180,7 +180,7 @@ void OpenALPlugin::fill(uint32_t id)
 	}
 */}
 
-void OpenALPlugin::streamWriteCB(pa_stream *stream, size_t askedData, AudioStream *th)
+void OpenALPlugin::streamWriteCB ( pa_stream *stream, size_t askedData, AudioStream *th )
 {/*
 	int16_t *dest;
 	//Get buffer size
@@ -225,7 +225,7 @@ void OpenALPlugin::streamWriteCB(pa_stream *stream, size_t askedData, AudioStrea
 	pa_stream_cork(stream, 0, NULL, NULL); //Start the stream, just in case it's still stopped
 */}
 
-void OpenALPlugin::freeStream(uint32_t id)
+void OpenALPlugin::freeStream ( uint32_t id )
 {/*
 	pa_threaded_mainloop_lock(mainLoop);
 	AudioStream *s=streams[id-1];
@@ -248,20 +248,20 @@ void OpenALPlugin::freeStream(uint32_t id)
 
 void overflow_notify()
 {
-    cout << "____overflow!!!!" << endl;
+	cout << "____overflow!!!!" << endl;
 }
 
 void underflow_notify()
 {
-    cout << "____underflow!!!!" << endl;
+	cout << "____underflow!!!!" << endl;
 }
 
 void started_notify()
 {
-    cout << "____started!!!!" << endl;
+	cout << "____started!!!!" << endl;
 }
 
-uint32_t OpenALPlugin::createStream(AudioDecoder *decoder)
+uint32_t OpenALPlugin::createStream ( AudioDecoder *decoder )
 {/*
 	while(!contextReady);
 	pa_threaded_mainloop_lock(mainLoop);
@@ -305,7 +305,7 @@ uint32_t OpenALPlugin::createStream(AudioDecoder *decoder)
 	return index+1;
 */}
 
-void OpenALPlugin::contextStatusCB(pa_context *context, OpenALPlugin *th)
+void OpenALPlugin::contextStatusCB ( pa_context *context, OpenALPlugin *th )
 {/*
 	switch(pa_context_get_state(context))
 	{
@@ -323,45 +323,46 @@ void OpenALPlugin::contextStatusCB(pa_context *context, OpenALPlugin *th)
 	}
 */}
 
-void OpenALPlugin::generateDevicesList(vector< string* >* devicesList, DEVICE_TYPES desiredType)
+void OpenALPlugin::generateDevicesList ( vector< string* >* devicesList, DEVICE_TYPES desiredType )
 {
-    if (alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT") == AL_TRUE) //Check if the extension if found
-    {
-        ALCchar *devices;
-        if (desiredType == PLAYBACK)
-        {
-            devices = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
-        }
-        else if (desiredType == CAPTURE)
-        {
-            devices = alcGetString(NULL, ALC_CAPTURE_DEVICE_SPECIFIER);
-        }
+	if ( alcIsExtensionPresent ( NULL, "ALC_ENUMERATION_EXT" ) == AL_TRUE ) //Check if the extension if found
+	{
+		ALCchar *devices;
+		if ( desiredType == PLAYBACK )
+		{
+			devices = alcGetString ( NULL, ALC_DEVICE_SPECIFIER );
+		}
+		else if ( desiredType == CAPTURE )
+		{
+			devices = alcGetString ( NULL, ALC_CAPTURE_DEVICE_SPECIFIER );
+		}
 
-        while () //Split the devices' name and add them to the device list
-        {
-            addDeviceToList(devicesList, deviceName);
-        }
-    }
+		while () //Split the devices' name and add them to the device list
+		{
+			addDeviceToList ( devicesList, deviceName );
+		}
+	}
 }
 
-void OpenALPlugin::addDeviceToList(std::vector< string* >* devicesList, string* deviceName)
+void OpenALPlugin::addDeviceToList ( std::vector< string* >* devicesList, string* deviceName )
 {
-    uint32_t index = devicesList->size(); //we want to add the plugin to the end of the list
-    if ( devicesList->size() == ( uint32_t ) ( index ) ) {
-        devicesList->push_back ( new string ( *deviceName ) );
-    }
+	uint32_t index = devicesList->size(); //we want to add the plugin to the end of the list
+	if ( devicesList->size() == ( uint32_t ) ( index ) )
+	{
+		devicesList->push_back ( new string ( *deviceName ) );
+	}
 }
 
-vector< string* >* OpenALPlugin::get_devicesList(DEVICE_TYPES desiredType)
+vector< string* >* OpenALPlugin::get_devicesList ( DEVICE_TYPES desiredType )
 {
-    if (desiredType == PLAYBACK)
-    {
-        return playbackDevicesList;
-    }
-    else if (desiredType == CAPTURE)
-    {
-        return captureDevicesList;
-    }
+	if ( desiredType == PLAYBACK )
+	{
+		return playbackDevicesList;
+	}
+	else if ( desiredType == CAPTURE )
+	{
+		return captureDevicesList;
+	}
 }
 
 /**********************
@@ -369,78 +370,78 @@ desiredDevice should be empty to use the default. Else, it should be the name of
 When setting a device, we should check if there is a context active using the current device
   If so, suspend it, unload previous device, load the new one, update the context and restart it
 **********************/
-void OpenALPlugin::set_device(string desiredDeviceName, DEVICE_TYPES desiredType, ALCdevice *pDevice)
+void OpenALPlugin::set_device ( string desiredDeviceName, DEVICE_TYPES desiredType, ALCdevice *pDevice )
 {
-    ALCdevice *tmpDevice = NULL;
+	ALCdevice *tmpDevice = NULL;
 
-    if ((desiredType == PLAYBACK) && (selectedPlaybackDevice != desiredDevice))
-    {
-        if (desiredDevice == "") //Find the default device
-        {
-            if (desiredType == PLAYBACK)
-            {
-                desiredDevice = desiredDevicealcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
-            }
-            else if (desiredType == CAPTURE)
-            {
-                desiredDevice = desiredDevicealcGetString(NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER);
-            }
-        }
+	if ( ( desiredType == PLAYBACK ) && ( selectedPlaybackDevice != desiredDevice ) )
+	{
+		if ( desiredDevice == "" ) //Find the default device
+		{
+			if ( desiredType == PLAYBACK )
+			{
+				desiredDevice = desiredDevicealcGetString ( NULL, ALC_DEFAULT_DEVICE_SPECIFIER );
+			}
+			else if ( desiredType == CAPTURE )
+			{
+				desiredDevice = desiredDevicealcGetString ( NULL, ALC_CAPTURE_DEFAULT_DEVICE_SPECIFIER );
+			}
+		}
 
-        if ( tmpDevice = alcOpenDevice(desiredDevice.c_str()) ) //The device could be opened
-        {
-            if (pDevice != NULL) //Close the old device if opened
-            {
-                alcCloseDevice(pDevice);
-            }
-            pDevice = tmpDevice;
-            if (desiredType == PLAYBACK)
-            {
-                playbackDeviceName = tmpDevice;
-            }
-            else if (desiredType == CAPTURE)
-            {
-                captureDeviceName = tmpDevice;
-            }
-        }
-    }
+		if ( tmpDevice = alcOpenDevice ( desiredDevice.c_str() ) ) //The device could be opened
+		{
+			if ( pDevice != NULL ) //Close the old device if opened
+			{
+				alcCloseDevice ( pDevice );
+			}
+			pDevice = tmpDevice;
+			if ( desiredType == PLAYBACK )
+			{
+				playbackDeviceName = tmpDevice;
+			}
+			else if ( desiredType == CAPTURE )
+			{
+				captureDeviceName = tmpDevice;
+			}
+		}
+	}
 }
 
 OpenALPlugin::~OpenALPlugin()
 {
-    stop();
+	stop();
 }
 
 void OpenALPlugin::stop()
 {
-    if (!stopped)
-    {
-        stopped=true;
-
-	// stop context
-	// delete sources
-	// delete buffers
-	// delete context
-	
-	
-	// close devices
-	if((playbackDevice != NULL) || (captureDevice != NULL))
+	if ( !stopped )
 	{
-	  alcCloseDevice(playback);
-	  alcCloseDevice(capture);
+		stopped = true;
+
+		// stop context
+		// delete sources
+		// delete buffers
+		// delete context
+
+
+		// close devices
+		if ( ( playbackDevice != NULL ) || ( captureDevice != NULL ) )
+		{
+			alcCloseDevice ( playback );
+			alcCloseDevice ( capture );
+		}
 	}
-    }
 }
 
 // Plugin factory function
 extern "C" DLL_PUBLIC IPlugin *create()
 {
-    return new OpenALPlugin();
+	return new OpenALPlugin();
 }
 
 // Plugin cleanup function
-extern "C" DLL_PUBLIC void release(IPlugin *p_plugin)
+extern "C" DLL_PUBLIC void release ( IPlugin *p_plugin )
 {
-    //delete the previously created object
-    delete p_plugin;
+	//delete the previously created object
+	delete p_plugin;
 }

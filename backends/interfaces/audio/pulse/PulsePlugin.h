@@ -34,52 +34,55 @@ class PulseAudioStream;  //Early declaration
 class PulsePlugin : public IAudioPlugin
 {
 private:
-        pa_threaded_mainloop *mainLoop;
-        pa_context *context;
-        static void contextStatusCB ( pa_context *context, PulsePlugin *th );
-        void start();
-        void stop();
-        static void playbackListCB ( pa_context *context, const pa_sink_info *list, int eol, void *th );
-        static void captureListCB ( pa_context *context, const pa_source_info *list, int eol, void *th );
-        void addDeviceToList ( vector<string *> *devicesList, string *deviceName );
-        void generateDevicesList ( vector<string *> *devicesList, DEVICE_TYPES desiredType ); //To populate the devices lists, devicesType must be playback or capture
-        static void streamStatusCB ( pa_stream *stream, PulseAudioStream *th );
-        static void streamWriteCB ( pa_stream *stream, size_t nbytes, PulseAudioStream *th );
+	pa_threaded_mainloop *mainLoop;
+	pa_context *context;
+	static void contextStatusCB ( pa_context *context, PulsePlugin *th );
+	void start();
+	void stop();
+	static void playbackListCB ( pa_context *context, const pa_sink_info *list, int eol, void *th );
+	static void captureListCB ( pa_context *context, const pa_source_info *list, int eol, void *th );
+	void addDeviceToList ( vector<string *> *devicesList, string *deviceName );
+	void generateDevicesList ( vector<string *> *devicesList, DEVICE_TYPES desiredType ); //To populate the devices lists, devicesType must be playback or capture
+	static void streamStatusCB ( pa_stream *stream, PulseAudioStream *th );
+	static void streamWriteCB ( pa_stream *stream, size_t nbytes, PulseAudioStream *th );
 	bool contextReady;
 	bool noServer;
 public:
-        PulsePlugin ( PLUGIN_TYPES init_Type = AUDIO, string init_Name = "Pulse plugin output only",
-                      string init_audiobackend = "pulse", bool init_contextReady = false,
-                      bool init_noServer = false, bool init_stopped = false );
-        void set_device ( string desiredDevice, DEVICE_TYPES desiredType );
-        AudioStream *createStream ( lightspark::AudioDecoder *decoder );
-        void freeStream ( AudioStream *audioStream );
+	PulsePlugin ( PLUGIN_TYPES init_Type = AUDIO, string init_Name = "Pulse plugin output only",
+	              string init_audiobackend = "pulse", bool init_contextReady = false,
+	              bool init_noServer = false, bool init_stopped = false );
+	void set_device ( string desiredDevice, DEVICE_TYPES desiredType );
+	AudioStream *createStream ( lightspark::AudioDecoder *decoder );
+	void freeStream ( AudioStream *audioStream );
 	bool isTimingAvailable() const;
 
 
-	void pulseLock() {
+	void pulseLock()
+	{
 		pa_threaded_mainloop_lock ( mainLoop );
 	}
-	void pulseUnlock() {
+	void pulseUnlock()
+	{
 		pa_threaded_mainloop_unlock ( mainLoop );
 	}
 
-	bool serverAvailable() const {
+	bool serverAvailable() const
+	{
 		return !noServer;
 	}
 
-        ~PulsePlugin();
+	~PulsePlugin();
 };
 
 class PulseAudioStream: public AudioStream
 {
 public:
-	enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
+	enum STREAM_STATUS { STREAM_STARTING = 0, STREAM_READY = 1, STREAM_DEAD = 2 };
 	pa_stream *stream;
 	lightspark::AudioDecoder *decoder;
 	PulsePlugin *manager;
 	volatile STREAM_STATUS streamStatus;
-        PulseAudioStream ( PulsePlugin *m ) :stream ( NULL ),decoder ( NULL ),manager ( m ),streamStatus ( STREAM_STARTING ) {}
+	PulseAudioStream ( PulsePlugin *m ) : stream ( NULL ), decoder ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING ) {}
 
 	uint32_t getPlayedTime ();
 	void fill ();

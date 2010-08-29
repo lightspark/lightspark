@@ -33,43 +33,43 @@
 using namespace std;
 
 
-class OpenALPlugin : public IAudioPlugin 
+class OpenALPlugin : public IAudioPlugin
 {
-  private:
+private:
 	ALCcontext *context;
 	ALCdevice *playbackDevice;
 	ALCdevice *captureDevice;
 	ALuint	pbBuffers[NUM_BUFFERS];
 	ALuint	pbSources[NUM_SOURCES];
-	void initPlayback(OpenALPlugin *th);
-	void initCapture(OpenALPlugin *th);
-	static void contextStatusCB(pa_context *context, OpenALPlugin *th);
-	static void streamStatusCB(pa_stream *stream, AudioStream *th);
-	static void streamWriteCB(pa_stream *stream, size_t nbytes, AudioStream *th);
-        void addDeviceToList ( vector<string *> *devicesList, string *deviceName );
-	void generateDevicesList(vector<string *> *devicesList, DEVICE_TYPES desiredType); //To populate the devices lists, devicesType must be playback or capture
+	void initPlayback ( OpenALPlugin *th );
+	void initCapture ( OpenALPlugin *th );
+	static void contextStatusCB ( pa_context *context, OpenALPlugin *th );
+	static void streamStatusCB ( pa_stream *stream, AudioStream *th );
+	static void streamWriteCB ( pa_stream *stream, size_t nbytes, AudioStream *th );
+	void addDeviceToList ( vector<string *> *devicesList, string *deviceName );
+	void generateDevicesList ( vector<string *> *devicesList, DEVICE_TYPES desiredType ); //To populate the devices lists, devicesType must be playback or capture
 	void start();
 	vector<AudioStream*> streams;
-  public:
-	OpenALPlugin(PLUGIN_TYPES init_Type = AUDIO, string init_Name = "OpenAL plugin",
-		    string init_audiobackend = "openal", bool init_contextReady = false,
-		    bool init_noServer = false, bool init_stopped = false);
-	void set_device(string desiredDevice, DEVICE_TYPES desiredType);
-	uint32_t createStream(lightspark::AudioDecoder *decoder);
-	void freeStream(uint32_t id);
-	void fill(uint32_t id);
+public:
+	OpenALPlugin ( PLUGIN_TYPES init_Type = AUDIO, string init_Name = "OpenAL plugin",
+	               string init_audiobackend = "openal", bool init_contextReady = false,
+	               bool init_noServer = false, bool init_stopped = false );
+	void set_device ( string desiredDevice, DEVICE_TYPES desiredType );
+	uint32_t createStream ( lightspark::AudioDecoder *decoder );
+	void freeStream ( uint32_t id );
+	void fill ( uint32_t id );
 	void stop();
-	uint32_t getPlayedTime(uint32_t streamId);
+	uint32_t getPlayedTime ( uint32_t streamId );
 	~OpenALPlugin();
 };
 
 class AudioStream
 {
 public:
-  enum STREAM_STATUS { STREAM_STARTING=0, STREAM_READY=1, STREAM_DEAD=2 };
-  pa_stream *stream;
-  lightspark::AudioDecoder *decoder;
-  OpenALPlugin *manager;
-  volatile STREAM_STATUS streamStatus;
-  AudioStream(OpenALPlugin *m):stream(NULL),decoder(NULL),manager(m),streamStatus(STREAM_STARTING){}
+	enum STREAM_STATUS { STREAM_STARTING = 0, STREAM_READY = 1, STREAM_DEAD = 2 };
+	pa_stream *stream;
+	lightspark::AudioDecoder *decoder;
+	OpenALPlugin *manager;
+	volatile STREAM_STATUS streamStatus;
+	AudioStream ( OpenALPlugin *m ) : stream ( NULL ), decoder ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING ) {}
 };

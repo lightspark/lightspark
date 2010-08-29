@@ -32,7 +32,7 @@ using namespace std;
 
 PulsePlugin::PulsePlugin ( PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
                            bool init_contextReady, bool init_noServer, bool init_stopped ) :
-	IAudioPlugin ( init_Name, init_audiobackend, init_stopped )
+		IAudioPlugin ( init_Name, init_audiobackend, init_stopped )
 {
 	contextReady = init_contextReady;
 	noServer = init_noServer;
@@ -371,4 +371,3 @@ extern "C" DLL_PUBLIC void release ( IPlugin *p_plugin )
 	//delete the previously created object
 	delete p_plugin;
 }
-// kate: indent-mode cstyle; replace-tabs off; tab-width 2; 

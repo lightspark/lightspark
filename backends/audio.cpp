@@ -51,78 +51,90 @@ Else
 
 AudioManager::AudioManager ( PluginManager *sharedPluginManager )
 {
-        pluginManager = sharedPluginManager;
-        selectedAudioBackend = "";
-        oAudioPlugin = NULL;
+	pluginManager = sharedPluginManager;
+	selectedAudioBackend = "";
+	oAudioPlugin = NULL;
 //	  string DesiredAudio = get_audioConfig(); //Looks for the audio selected in the user's config
-        string DesiredAudio = "pulse";
-        set_audiobackend ( DesiredAudio );
+	string DesiredAudio = "pulse";
+	set_audiobackend ( DesiredAudio );
 }
 
 void AudioManager::freeStreamPlugin ( AudioStream *audioStream )
 {
-        if ( oAudioPlugin != NULL ) {
-                oAudioPlugin->freeStream ( audioStream );
-        } else {
-                LOG ( LOG_ERROR,_ ( "No audio plugin loaded" ) );
-        }
+	if ( oAudioPlugin != NULL )
+	{
+		oAudioPlugin->freeStream ( audioStream );
+	}
+	else
+	{
+		LOG ( LOG_ERROR, _ ( "No audio plugin loaded" ) );
+	}
 }
 
 AudioStream *AudioManager::createStreamPlugin ( AudioDecoder *decoder )
 {
-        if ( oAudioPlugin != NULL ) {
-                return oAudioPlugin->createStream ( decoder );
-        } else {
-                LOG ( LOG_ERROR,_ ( "No audio plugin loaded" ) );
-                return NULL;
-        }
+	if ( oAudioPlugin != NULL )
+	{
+		return oAudioPlugin->createStream ( decoder );
+	}
+	else
+	{
+		LOG ( LOG_ERROR, _ ( "No audio plugin loaded" ) );
+		return NULL;
+	}
 }
 
 bool AudioManager::isTimingAvailablePlugin() const
 {
-        if ( oAudioPlugin != NULL ) {
-                return oAudioPlugin->isTimingAvailable();
-        } else {
-                LOG ( LOG_ERROR,_ ( "isTimingAvailablePlugin: No audio plugin loaded" ) );
-                return false;
-        }
+	if ( oAudioPlugin != NULL )
+	{
+		return oAudioPlugin->isTimingAvailable();
+	}
+	else
+	{
+		LOG ( LOG_ERROR, _ ( "isTimingAvailablePlugin: No audio plugin loaded" ) );
+		return false;
+	}
 }
 
 void AudioManager::set_audiobackend ( string desired_backend )
 {
-        if ( selectedAudioBackend != desired_backend ) {	//Load the desired backend only if it's not already loaded
-                load_audioplugin ( desired_backend );
-                selectedAudioBackend = desired_backend;
-        }
+	if ( selectedAudioBackend != desired_backend )  	//Load the desired backend only if it's not already loaded
+	{
+		load_audioplugin ( desired_backend );
+		selectedAudioBackend = desired_backend;
+	}
 }
 
 void AudioManager::get_audioBackendsList()
 {
-        audioplugins_list = pluginManager->get_backendsList ( AUDIO );
+	audioplugins_list = pluginManager->get_backendsList ( AUDIO );
 }
 
 void AudioManager::refresh_audioplugins_list()
 {
-        audioplugins_list.clear();
-        get_audioBackendsList();
+	audioplugins_list.clear();
+	get_audioBackendsList();
 }
 
 void AudioManager::release_audioplugin()
 {
-        if ( oAudioPlugin != NULL ) {
-                pluginManager->release_plugin ( oAudioPlugin );
-        }
+	if ( oAudioPlugin != NULL )
+	{
+		pluginManager->release_plugin ( oAudioPlugin );
+	}
 }
 
 void AudioManager::load_audioplugin ( string selected_backend )
 {
-        LOG ( LOG_NO_INFO,_ ( ( ( string ) ( "the selected backend is: " + selected_backend ) ).c_str() ) );
-        release_audioplugin();
-        oAudioPlugin = static_cast<IAudioPlugin *> ( pluginManager->get_plugin ( selected_backend ) );
+	LOG ( LOG_NO_INFO, _ ( ( ( string ) ( "the selected backend is: " + selected_backend ) ).c_str() ) );
+	release_audioplugin();
+	oAudioPlugin = static_cast<IAudioPlugin *> ( pluginManager->get_plugin ( selected_backend ) );
 
-        if ( oAudioPlugin == NULL ) {
-                LOG ( LOG_ERROR,_ ( "Could not load the audiobackend" ) );
-        }
+	if ( oAudioPlugin == NULL )
+	{
+		LOG ( LOG_ERROR, _ ( "Could not load the audiobackend" ) );
+	}
 }
 
 /**************************
@@ -130,6 +142,6 @@ stop AudioManager
 ***************************/
 AudioManager::~AudioManager()
 {
-        release_audioplugin();
-        pluginManager = NULL;	//The plugin manager is not deleted since it's been created outside of the audio manager
+	release_audioplugin();
+	pluginManager = NULL;	//The plugin manager is not deleted since it's been created outside of the audio manager
 }

@@ -27,26 +27,26 @@
 
 using namespace std;
 
-enum PLUGIN_TYPES { UNDEFINED=0, AUDIO, VIDEO, DECODER, ENCODER };
+enum PLUGIN_TYPES { UNDEFINED = 0, AUDIO, VIDEO, DECODER, ENCODER };
 
 class IPlugin
 {
-  public:
-    virtual const string get_pluginName();
-    virtual const PLUGIN_TYPES get_pluginType();
-    virtual const string get_backendName();
-    virtual ~IPlugin();
-  protected:
-    PLUGIN_TYPES pluginType;	//type of plugin of PLUGIN_TYPES
-    string pluginName;		//name of the plugin
-    string backendName;		//backend supported by the plugin
-    IPlugin(PLUGIN_TYPES plugin_type, string plugin_name, string backend_name);
+public:
+	virtual const string get_pluginName();
+	virtual const PLUGIN_TYPES get_pluginType();
+	virtual const string get_backendName();
+	virtual ~IPlugin();
+protected:
+	PLUGIN_TYPES pluginType;	//type of plugin of PLUGIN_TYPES
+	string pluginName;		//name of the plugin
+	string backendName;		//backend supported by the plugin
+	IPlugin ( PLUGIN_TYPES plugin_type, string plugin_name, string backend_name );
 };
 
 /*************************
 Extern "C" functions that each plugin must implement in order to be recognized as a plugin by us.
 It allows us to share a common interface between plugins and the application.
- 
+
 Plugin factory function
 extern "C" IPlugin* create();
 

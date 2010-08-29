@@ -42,23 +42,23 @@ namespace lightspark
 class AudioManager
 {
 private:
-        vector<string *>audioplugins_list;
-        IAudioPlugin *oAudioPlugin;
-        string selectedAudioBackend;
-        void load_audioplugin ( string selected_backend );
-        void release_audioplugin();
-        PluginManager *pluginManager;
+	vector<string *>audioplugins_list;
+	IAudioPlugin *oAudioPlugin;
+	string selectedAudioBackend;
+	void load_audioplugin ( string selected_backend );
+	void release_audioplugin();
+	PluginManager *pluginManager;
 
 
 public:
-        AudioManager ( PluginManager *sharePluginManager );
-        AudioStream *createStreamPlugin ( AudioDecoder *decoder );
-        void freeStreamPlugin ( AudioStream *audioStream );
-        bool isTimingAvailablePlugin() const;
-        void set_audiobackend ( string desired_backend );
-        void get_audioBackendsList();
-        void refresh_audioplugins_list();
-        ~AudioManager();
+	AudioManager ( PluginManager *sharePluginManager );
+	AudioStream *createStreamPlugin ( AudioDecoder *decoder );
+	void freeStreamPlugin ( AudioStream *audioStream );
+	bool isTimingAvailablePlugin() const;
+	void set_audiobackend ( string desired_backend );
+	void get_audioBackendsList();
+	void refresh_audioplugins_list();
+	~AudioManager();
 };
 
 };

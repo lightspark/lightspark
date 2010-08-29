@@ -58,7 +58,7 @@ public:
 	virtual void set_device ( string desiredDevice, DEVICE_TYPES desiredType ) = 0;
 	virtual string get_device ( DEVICE_TYPES desiredType );
 	virtual AudioStream *createStream ( lightspark::AudioDecoder *decoder ) = 0;
-	virtual void freeStream ( AudioStream *stream ) = 0;
+	virtual void freeStream ( AudioStream *audioStream ) = 0;
 	virtual bool isTimingAvailable() const = 0;
 	virtual ~IAudioPlugin();
 };

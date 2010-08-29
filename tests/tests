@@ -12,7 +12,7 @@ MXMLC="mxmlc"
 COLORS=1;
 
 TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
-TESTS=`ls -1 *swf 2> /dev/null`;
+TESTS=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
 
 while [ $# -ne 0 ]; do
 	if [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "-u" ] || [ $1 == "--usage" ]; then

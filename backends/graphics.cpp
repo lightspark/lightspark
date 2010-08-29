@@ -337,6 +337,7 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 	uint32_t blocksH=(height+127)/128;
 	chunks=new uint32_t[blocksW*blocksH];
 	memcpy(chunks, r.chunks, blocksW*blocksH*4);
+	return *this;
 }
 
 TextureChunk::~TextureChunk()

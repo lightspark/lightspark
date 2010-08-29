@@ -1014,24 +1014,51 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 void RenderThread::renderTextured(const TextureChunk& chunk, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
 	glBindTexture(GL_TEXTURE_2D, largeTextureId);
-	//TODO: implement tiling
-	float texW=chunk.width;
-	texW/=largeTextureSize;
-	float texH=chunk.height;
-	texH/=largeTextureSize;
-	glBegin(GL_QUADS);
-		glTexCoord2f(0,0);
-		glVertex2i(x,y);
+	const uint32_t numberOfChunks=chunk.getNumberOfChunks();
+	const uint32_t blocksW=(chunk.width+127)/128;
+	const uint32_t blocksH=(chunk.height+127)/128;
+	const uint32_t blocksPerSide=largeTextureSize/128;
+	uint32_t startX, startY, endX, endY;
+	assert(numberOfChunks==blocksH*blocksW);
+	
+	uint32_t curChunk=0;
+	for(uint32_t i=0;i<blocksH;i++)
+	{
+		startY=h*i/blocksH;
+		endY=h*(i+1)/blocksH;
+		for(uint32_t j=0;j<blocksW;j++)
+		{
+			startX=w*j/blocksW;
+			endX=w*(j+1)/blocksW;
+			const uint32_t curChunkId=chunk.chunks[curChunk];
+			const uint32_t blockX=((curChunkId%blocksPerSide)*128);
+			const uint32_t blockY=((curChunkId/blocksPerSide)*128);
+			const uint32_t availX=min(int(chunk.width-j*128),128);
+			const uint32_t availY=min(int(chunk.height-i*128),128);
+			float startU=blockX;
+			startU/=largeTextureSize;
+			float startV=blockY;
+			startV/=largeTextureSize;
+			float endU=blockX+availX;
+			endU/=largeTextureSize;
+			float endV=blockY+availY;
+			endV/=largeTextureSize;
+			glBegin(GL_QUADS);
+				glTexCoord2f(startU,startV);
+				glVertex2i(x+startX,y+startY);
 
-		glTexCoord2f(texW,0);
-		glVertex2i(x+w,y);
+				glTexCoord2f(endU,startV);
+				glVertex2i(x+endX,y+startY);
 
-		glTexCoord2f(texW,texH);
-		glVertex2i(x+w,y+h);
+				glTexCoord2f(endU,endV);
+				glVertex2i(x+endX,y+endY);
 
-		glTexCoord2f(0,texH);
-		glVertex2i(x,y+h);
-	glEnd();
+				glTexCoord2f(startU,endV);
+				glVertex2i(x+startX,y+endY);
+			glEnd();
+			curChunk++;
+		}
+	}
 }
 
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
@@ -1039,18 +1066,25 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	assert(w<=largeTextureSize && h<=largeTextureSize);
 	glBindTexture(GL_TEXTURE_2D, largeTextureId);
 	//TODO: Detect continuos
-	uint32_t numberOfChunks=chunk.getNumberOfChunks();
-	uint32_t blocksPerSide=largeTextureSize/128;
-	uint32_t blocksW=(w+127)/128;
+	assert(w==chunk.width);
+	assert(h==chunk.height);
+	const uint32_t numberOfChunks=chunk.getNumberOfChunks();
+	const uint32_t blocksPerSide=largeTextureSize/128;
+	const uint32_t blocksW=(w+127)/128;
 	glPixelStorei(GL_UNPACK_ROW_LENGTH,w);
 	for(uint32_t i=0;i<numberOfChunks;i++)
 	{
-		glPixelStorei(GL_UNPACK_SKIP_ROWS,(i/blocksW)*128);
-		glPixelStorei(GL_UNPACK_SKIP_PIXELS,(i%blocksW)*128);
-		uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*128);
-		uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*128);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, 128, 128, GL_BGRA, GL_UNSIGNED_BYTE, data);
+		uint32_t curX=(i%blocksW)*128;
+		uint32_t curY=(i/blocksW)*128;
+		uint32_t sizeX=min(int(w-curX),128);
+		uint32_t sizeY=min(int(h-curY),128);
+		glPixelStorei(GL_UNPACK_SKIP_PIXELS,curX);
+		glPixelStorei(GL_UNPACK_SKIP_ROWS,curY);
+		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*128);
+		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*128);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_BYTE, data);
 	}
+	glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS,0);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH,0);
 }

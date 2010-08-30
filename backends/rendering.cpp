@@ -330,8 +330,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				
 				sys->Render();
 
-				glFlush();
-
 				//Now draw the input layer
 				if(!th->inputDisabled)
 				{
@@ -838,8 +836,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				
 				th->m_sys->Render();
 
-				glFlush();
-
 				//Now draw the input layer
 				if(!th->inputDisabled)
 				{
@@ -852,8 +848,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 					th->materialOverride=false;
 				}
 
-				glFlush();
-				glLoadIdentity();
 				//Now blit everything
 				glLoadIdentity();
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);

@@ -64,18 +64,19 @@ public:
 	}
 };
 
-class VideoDecoder: public Decoder
+class VideoDecoder: public Decoder, public ITextureUploadable
 {
 private:
 	bool resizeGLBuffers;
 protected:
+	volatile bool waitForFencing;
 	uint32_t frameWidth;
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);
 	bool resizeIfNeeded(TextureChunk& tex);
 	LS_VIDEO_CODEC videoCodec;
 public:
-	VideoDecoder():resizeGLBuffers(false),frameWidth(0),frameHeight(0),frameRate(0){}
+	VideoDecoder():resizeGLBuffers(false),waitForFencing(true),frameWidth(0),frameHeight(0),frameRate(0){}
 	virtual ~VideoDecoder(){}
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
@@ -93,6 +94,30 @@ public:
 		return frameHeight;
 	}
 	double frameRate;
+	/*
+		Useful to avoid destruction of the object while a pending upload is waiting
+	*/
+	void setWaitForFencing()
+	{
+		waitForFencing=true;
+	}
+	//ITextureUploadable interface
+	void sizeNeeded(uint32_t& w, uint32_t& h)
+	{
+		::abort();
+	}
+	void upload(uint8_t* data)
+	{
+		::abort();
+	}
+	const TextureChunk& getTexture() const
+	{
+		::abort();
+	}
+	void fence()
+	{
+		::abort();
+	}
 };
 
 class NullVideoDecoder: public VideoDecoder
@@ -144,7 +169,6 @@ private:
 	AVCodecContext* codecContext;
 	BlockingCircularQueue<YUVBuffer,80> buffers;
 	Mutex mutex;
-	bool initialized;
 	AVFrame* frameIn;
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t time);
 	void setSize(uint32_t w, uint32_t h);

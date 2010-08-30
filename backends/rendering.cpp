@@ -395,6 +395,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				glFlush();
 			}
 			profile->accountTime(chronometer.checkpoint());
+			th->renderNeeded=false;
 		}
 	}
 	catch(LightsparkException& e)
@@ -504,6 +505,8 @@ void RenderThread::commonGLDeinit()
 	inputTex.shutdown();
 	delete[] largeTextureBitmap;
 	glDeleteTextures(1,&largeTextureId);
+	glDeleteBuffers(2,pixelBuffers);
+	assert_and_throw(uploadJobs.empty());
 }
 
 void RenderThread::commonGLInit(int width, int height)
@@ -956,6 +959,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				glEnable(GL_BLEND);
 			}
 			profile->accountTime(chronometer.checkpoint());
+			th->renderNeeded=false;
 		}
 		glDisable(GL_TEXTURE_2D);
 	}
@@ -966,6 +970,13 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	}
 	th->commonGLDeinit();
 	return NULL;
+}
+
+void RenderThread::addUploadJob(ITextureUploadable* u)
+{
+	Locker l(mutexUploadJobs);
+	uploadJobs.push_back(u);
+	uploadNeeded=true;
 }
 
 ITextureUploadable* RenderThread::getUploadJob()

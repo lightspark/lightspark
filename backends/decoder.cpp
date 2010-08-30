@@ -79,7 +79,7 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):curBuffer(0),curBufferOffset(0),
-	codecContext(NULL),mutex("VideoDecoder"),initialized(false)
+	codecContext(NULL),mutex("VideoDecoder")
 {
 	//The tag is the header, initialize decoding
 	codecContext=avcodec_alloc_context();
@@ -226,16 +226,10 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 bool FFMpegVideoDecoder::copyFrameToTexture(TextureChunk& tex)
 {
 	assert(isValid());
-	if(!initialized)
-	{
-		glGenBuffers(2,videoBuffers);
-		initialized=true;
-	}
-
 	bool ret=false;
 	//Align width to 16 bytes (4 pixels), the alignment protocol is also respected when resizing texture
 	const uint32_t alignedWidth=(frameWidth+15)&0xfffffff0;
-	if(VideoDecoder::resizeIfNeeded(tex))
+/*	if(VideoDecoder::resizeIfNeeded(tex))
 	{
 		//Initialize both PBOs to video size, the width is aligned to 16, add some padding to ensure space to align the buffer
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, videoBuffers[0]);
@@ -277,7 +271,7 @@ bool FFMpegVideoDecoder::copyFrameToTexture(TextureChunk& tex)
 
 		curBufferOffset=alignedBuf-buf;
 		curBuffer=nextBuffer;
-	}
+	}*/
 	return ret;
 }
 

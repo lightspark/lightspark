@@ -23,6 +23,7 @@
 #include "parsing/flv.h"
 #include "scripting/flashsystem.h"
 #include "compat.h"
+#include "backends/rendering.h"
 
 using namespace std;
 using namespace lightspark;
@@ -556,6 +557,7 @@ void NetStream::tick()
 		audioDecoder->skipAll();
 	}
 	videoDecoder->skipUntil(streamTime);
+	sys->getRenderThread()->addUploadJob(videoDecoder);
 }
 
 bool NetStream::isReady() const

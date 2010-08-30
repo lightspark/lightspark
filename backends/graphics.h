@@ -164,8 +164,8 @@ public:
 
 class ITextureUploadable
 {
-private:
-	~ITextureUploadable();
+protected:
+	~ITextureUploadable(){}
 public:
 	virtual void sizeNeeded(uint32_t& w, uint32_t& h)=0;
 	/*

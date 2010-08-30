@@ -1449,6 +1449,15 @@ void ABCVm::Run(ABCVm* th)
 			th->m_sys->setError(e.cause);
 			bailOut=true;
 		}
+		catch(ASObject*& e)
+		{
+			if(e->getPrototype())
+				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->getPrototype()->class_name);
+			else
+				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
+			th->m_sys->setError(_("Unhandled ActionScript exception"));
+			bailOut=true;
+		}
 	}
 	if(th->m_sys->useJit)
 	{

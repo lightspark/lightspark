@@ -1015,26 +1015,24 @@ void RenderThread::renderTextured(const TextureChunk& chunk, uint32_t x, uint32_
 {
 	glBindTexture(GL_TEXTURE_2D, largeTextureId);
 	const uint32_t numberOfChunks=chunk.getNumberOfChunks();
-	const uint32_t blocksW=(chunk.width+127)/128;
-	const uint32_t blocksH=(chunk.height+127)/128;
 	const uint32_t blocksPerSide=largeTextureSize/128;
 	uint32_t startX, startY, endX, endY;
-	assert(numberOfChunks==blocksH*blocksW);
+	assert(numberOfChunks==((chunk.width+127)/128)*((chunk.height+127)/128));
 	
 	uint32_t curChunk=0;
-	for(uint32_t i=0;i<blocksH;i++)
+	for(uint32_t i=0;i<chunk.height;i+=128)
 	{
-		startY=h*i/blocksH;
-		endY=h*(i+1)/blocksH;
-		for(uint32_t j=0;j<blocksW;j++)
+		startY=h*i/chunk.height;
+		endY=min(h*(i+128)/chunk.height,h);
+		for(uint32_t j=0;j<chunk.width;j+=128)
 		{
-			startX=w*j/blocksW;
-			endX=w*(j+1)/blocksW;
+			startX=w*j/chunk.width;
+			endX=min(w*(j+128)/chunk.width,w);
 			const uint32_t curChunkId=chunk.chunks[curChunk];
 			const uint32_t blockX=((curChunkId%blocksPerSide)*128);
 			const uint32_t blockY=((curChunkId/blocksPerSide)*128);
-			const uint32_t availX=min(int(chunk.width-j*128),128);
-			const uint32_t availY=min(int(chunk.height-i*128),128);
+			const uint32_t availX=min(int(chunk.width-j),128);
+			const uint32_t availY=min(int(chunk.height-i),128);
 			float startU=blockX;
 			startU/=largeTextureSize;
 			float startV=blockY;

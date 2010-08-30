@@ -104,7 +104,7 @@ void Video::Render()
 		videoHeight=netStream->getVideoHeight();
 		if(!initialized)
 		{
-			videoTexture=rt->allocateTexture(videoWidth, videoHeight, false);
+			videoTexture=rt->allocateTexture(videoWidth, videoHeight, true);
 			initialized=true;
 		}
 

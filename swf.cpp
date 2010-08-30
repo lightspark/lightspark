@@ -117,15 +117,22 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 	//We can use this origin to implement security measures.
 	//It also allows loading files without specifying a fully qualified path.
 	//Note that for plugins, this url is NOT the page url, but it is the swf file url.
-	origin = URLInfo(u);
-	//If this URL doesn't contain a filename, add the one passed as an argument (used in main.cpp)
-	if(origin.getPathFile() == "" && filename != "")
-		origin = origin.goToURL(filename);
-
-	if(loaderInfo)
+	try
 	{
-		loaderInfo->url=origin.getParsedURL();
-		loaderInfo->loaderURL=origin.getParsedURL();
+		origin = URLInfo(u);
+		//If this URL doesn't contain a filename, add the one passed as an argument (used in main.cpp)
+		if(origin.getPathFile() == "" && filename != "")
+			origin = origin.goToURL(filename);
+
+		if(loaderInfo)
+		{
+			loaderInfo->url=origin.getParsedURL();
+			loaderInfo->loaderURL=origin.getParsedURL();
+		}
+	}
+	catch(RunTimeException e)
+	{
+		LOG(LOG_NO_INFO, "RootMovieClip::setOrigin: invalid URL: '" << u << "'");
 	}
 }
 

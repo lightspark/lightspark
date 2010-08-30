@@ -41,10 +41,17 @@ private:
 	tiny_string pathFile;
 	tiny_string query; //Part after first ?
 	tiny_string fragment; //Part after first #
+	bool valid;
+public:
+	enum INVALID_REASON { MISSING_PROTOCOL, MISSING_PATH, MISSING_HOSTNAME, INVALID_PORT };
+private:
+	INVALID_REASON invalidReason;
 public:
 	URLInfo() {};
 	URLInfo(const tiny_string& u);
 	~URLInfo() {};
+	bool isValid() const { return valid; }
+	INVALID_REASON getInvalidReason() const { return invalidReason; };
 
 	//Go to the specified URL, using the current URL as the root url for unqualified URLs
 	const URLInfo goToURL(const tiny_string& u) const;
@@ -70,7 +77,7 @@ public:
 	static std::string decode(const std::string& u, ENCODING type=ENCODE_URICOMPONENT);
 
 	const tiny_string& getURL() const { return url; };
-	const tiny_string& getParsedURL() const { return parsedURL; };
+	const tiny_string& getParsedURL() const { return valid ? parsedURL : url; };
 	const tiny_string& getProtocol() const { return protocol; };
 	const tiny_string& getHostname() const { return hostname; };
 	uint16_t getPort() const { return port; };

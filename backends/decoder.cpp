@@ -52,9 +52,15 @@ bool VideoDecoder::resizeIfNeeded(TextureChunk& tex)
 		return false;
 
 	//Chunks are at least aligned to 128, we need 16
-	assert(tex.width==frameWidth && tex.height==frameHeight);
+	assert_and_throw(tex.width==frameWidth && tex.height==frameHeight);
 	resizeGLBuffers=false;
 	return true;
+}
+
+void VideoDecoder::sizeNeeded(uint32_t& w, uint32_t& h)
+{
+	w=frameWidth;
+	h=frameHeight;
 }
 
 #ifdef ENABLE_LIBAVCODEC
@@ -223,12 +229,26 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 	buffers.commitLast();
 }
 
+void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h)
+{
+	if(buffers.isEmpty())
+		return;
+	assert_and_throw(w==frameWidth && h==frameHeight);
+	//At least a frame is available
+	YUVBuffer& cur=buffers.front();
+	//If the width is compatible with full aligned accesses use the aligned version of the packer
+	if(frameWidth%32==0)
+		fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
+	else
+		fastYUV420ChannelsToYUV0Buffer_SSE2Unaligned(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
+}
+
 bool FFMpegVideoDecoder::copyFrameToTexture(TextureChunk& tex)
 {
 	assert(isValid());
 	bool ret=false;
 	//Align width to 16 bytes (4 pixels), the alignment protocol is also respected when resizing texture
-	const uint32_t alignedWidth=(frameWidth+15)&0xfffffff0;
+	//const uint32_t alignedWidth=(frameWidth+15)&0xfffffff0;
 /*	if(VideoDecoder::resizeIfNeeded(tex))
 	{
 		//Initialize both PBOs to video size, the width is aligned to 16, add some padding to ensure space to align the buffer

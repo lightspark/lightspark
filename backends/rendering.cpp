@@ -821,7 +821,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 					uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
 					uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
 
-					u->upload(alignedBuf);
+					u->upload(alignedBuf, w, h);
 
 					glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -977,6 +977,7 @@ void RenderThread::addUploadJob(ITextureUploadable* u)
 	Locker l(mutexUploadJobs);
 	uploadJobs.push_back(u);
 	uploadNeeded=true;
+	sem_post(&event);
 }
 
 ITextureUploadable* RenderThread::getUploadJob()

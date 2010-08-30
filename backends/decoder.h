@@ -102,14 +102,7 @@ public:
 		waitForFencing=true;
 	}
 	//ITextureUploadable interface
-	void sizeNeeded(uint32_t& w, uint32_t& h)
-	{
-		::abort();
-	}
-	void upload(uint8_t* data)
-	{
-		::abort();
-	}
+	void sizeNeeded(uint32_t& w, uint32_t& h);
 	const TextureChunk& getTexture() const
 	{
 		::abort();
@@ -133,6 +126,8 @@ public:
 	{
 		flushing=true;
 	}
+	//ITextureUploadable interface
+	void upload(uint8_t* data, uint32_t w, uint32_t h);
 };
 
 #ifdef ENABLE_LIBAVCODEC
@@ -190,6 +185,8 @@ public:
 			flushed.signal();
 		}
 	}
+	//ITextureUploadable interface
+	void upload(uint8_t* data, uint32_t w, uint32_t h);
 };
 #endif
 

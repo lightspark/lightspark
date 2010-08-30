@@ -171,7 +171,7 @@ public:
 	/*
 		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
 	*/
-	virtual void upload(uint8_t* data)=0;
+	virtual void upload(uint8_t* data, uint32_t w, uint32_t h)=0;
 	virtual const TextureChunk& getTexture() const=0;
 	/*
 		Signal the completion of the upload to the texture

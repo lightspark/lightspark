@@ -31,6 +31,7 @@ using namespace lightspark;
 using namespace std;
 
 extern TLSDATA RenderThread* rt;
+extern TLSDATA SystemState* sys;
 
 bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 {
@@ -40,6 +41,7 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 		frameHeight=h;
 		LOG(LOG_NO_INFO,_("Video frame size ") << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
+		videoTexture=sys->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
 		return true;
 	}
 	else
@@ -61,6 +63,11 @@ void VideoDecoder::sizeNeeded(uint32_t& w, uint32_t& h)
 {
 	w=frameWidth;
 	h=frameHeight;
+}
+
+const TextureChunk& VideoDecoder::getTexture() const
+{
+	return videoTexture;
 }
 
 #ifdef ENABLE_LIBAVCODEC

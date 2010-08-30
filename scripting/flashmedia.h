@@ -52,7 +52,6 @@ private:
 	uint32_t width, height, videoWidth, videoHeight;
 	bool initialized;
 	NetStream* netStream;
-	TextureChunk videoTexture;
 public:
 	Video():width(320),height(240),videoWidth(0),videoHeight(0),initialized(false),netStream(NULL)
 	{

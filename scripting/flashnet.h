@@ -191,12 +191,12 @@ public:
 	double getFrameRate();
 	/**
 	  	copy the current frame to a texture
-
+TODODODODODO
 		@pre lock on the object should be acquired and object should be ready
 		@param tex the TextureChunk to copy in
 		@return true if a new frame has been copied
 	*/
-	bool copyFrameToTexture(TextureChunk& tex);
+	const TextureChunk& getTexture() const;
 	/**
 	  	Acquire the mutex to guarantee validity of data
 

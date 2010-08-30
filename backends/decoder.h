@@ -75,6 +75,7 @@ protected:
 	bool setSize(uint32_t w, uint32_t h);
 	bool resizeIfNeeded(TextureChunk& tex);
 	LS_VIDEO_CODEC videoCodec;
+	TextureChunk videoTexture;
 public:
 	VideoDecoder():resizeGLBuffers(false),waitForFencing(true),frameWidth(0),frameHeight(0),frameRate(0){}
 	virtual ~VideoDecoder(){}
@@ -103,10 +104,7 @@ public:
 	}
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h);
-	const TextureChunk& getTexture() const
-	{
-		::abort();
-	}
+	const TextureChunk& getTexture() const;
 	void fence()
 	{
 		::abort();

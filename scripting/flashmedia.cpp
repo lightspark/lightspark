@@ -102,25 +102,16 @@ void Video::Render()
 		//Get size
 		videoWidth=netStream->getVideoWidth();
 		videoHeight=netStream->getVideoHeight();
-		if(!initialized)
-		{
-			videoTexture=rt->allocateTexture(videoWidth, videoHeight, true);
-			initialized=true;
-		}
 
 		MatrixApplier ma(getMatrix());
 
 		if(!isSimple())
 			rt->glAcquireTempBuffer(0,width,0,height);
 
-		bool frameReady=netStream->copyFrameToTexture(videoTexture);
 		//Enable texture lookup and YUV to RGB conversion
-		if(frameReady)
-		{
-			glColor4f(0,0,0,1);
-			//width and height will not change now
-			rt->renderTextured(videoTexture, 0, 0, width, height);
-		}
+		glColor4f(0,0,0,1);
+		//width and height will not change now (the Video mutex is acquired)
+		rt->renderTextured(netStream->getTexture(), 0, 0, width, height);
 
 		if(!isSimple())
 			rt->glBlitTempBuffer(0,width,0,height);

@@ -866,10 +866,10 @@ double NetStream::getFrameRate()
 	return frameRate;
 }
 
-bool NetStream::copyFrameToTexture(TextureChunk& tex)
+const TextureChunk& NetStream::getTexture() const
 {
 	assert(isReady());
-	return videoDecoder->copyFrameToTexture(tex);
+	return videoDecoder->getTexture();
 }
 
 void URLVariables::sinit(Class_base* c)

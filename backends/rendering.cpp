@@ -50,10 +50,11 @@ void RenderThread::wait()
 }
 
 RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),currentPixelBuffer(0),currentPixelBufferOffset(0),
-	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),largeTextureId(0),largeTextureSize(0),largeTextureBitmap(NULL),renderNeeded(false),
-	uploadNeeded(false),inputNeeded(false),inputDisabled(false),resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),
-	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),mutexUploadJobs("Upload jobs"),
-	dataTex(false),mainTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
+	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),mutexLargeTexture("Large texture"),largeTextureId(0),largeTextureSize(0),
+	largeTextureBitmap(NULL),renderNeeded(false),uploadNeeded(false),inputNeeded(false),inputDisabled(false),resizeNeeded(false),newWidth(0),
+	newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),
+	mutexResources("GLResource Mutex"),mutexUploadJobs("Upload jobs"),dataTex(false),mainTex(false),tempTex(false),inputTex(false),
+	hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
 	m_sys=s;
@@ -1014,6 +1015,7 @@ void RenderThread::tick()
 
 TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 {
+	Locker l(mutexLargeTexture);
 	//Find the number of blocks needed for the given w and h
 	uint32_t blocksW=(w+127)/128;
 	uint32_t blocksH=(h+127)/128;

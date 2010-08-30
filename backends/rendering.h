@@ -46,6 +46,7 @@ private:
 	uint32_t pixelBufferHeight;
 	void resizePixelBuffers(uint32_t w, uint32_t h);
 	ITextureUploadable* prevUploadJob;
+	Mutex mutexLargeTexture;
 	GLuint largeTextureId;
 	uint32_t largeTextureSize;
 	uint8_t* largeTextureBitmap;

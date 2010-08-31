@@ -162,5 +162,22 @@ public:
 	uint32_t height;
 };
 
+class ITextureUploadable
+{
+private:
+	~ITextureUploadable();
+public:
+	virtual void sizeNeeded(uint32_t& w, uint32_t& h)=0;
+	/*
+		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
+	*/
+	virtual void upload(uint8_t* data)=0;
+	virtual const TextureChunk& getTexture() const=0;
+	/*
+		Signal the completion of the upload to the texture
+	*/
+	virtual void fence()=0;
+};
+
 };
 #endif

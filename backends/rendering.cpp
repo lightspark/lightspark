@@ -44,19 +44,20 @@ void RenderThread::wait()
 		return;
 	terminated=true;
 	//Signal potentially blocking semaphore
-	sem_post(&render);
+	sem_post(&event);
 	int ret=pthread_join(t,NULL);
 	assert_and_throw(ret==0);
 }
 
-RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),largeTextureId(0),largeTextureSize(0),largeTextureBitmap(NULL),
-	inputNeeded(false),inputDisabled(false),resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),
-	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),dataTex(false),mainTex(false),
-	tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
+RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),terminated(false),currentPixelBuffer(0),currentPixelBufferOffset(0),
+	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),largeTextureId(0),largeTextureSize(0),largeTextureBitmap(NULL),renderNeeded(false),
+	uploadNeeded(false),inputNeeded(false),inputDisabled(false),resizeNeeded(false),newWidth(0),newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),
+	interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),mutexResources("GLResource Mutex"),mutexUploadJobs("Upload jobs"),
+	dataTex(false),mainTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
 	m_sys=s;
-	sem_init(&render,0,0);
+	sem_init(&event,0,0);
 	sem_init(&inputDone,0,0);
 
 #ifdef WIN32
@@ -100,7 +101,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 RenderThread::~RenderThread()
 {
 	wait();
-	sem_destroy(&render);
+	sem_destroy(&event);
 	sem_destroy(&inputDone);
 	delete[] interactive_buffer;
 	LOG(LOG_NO_INFO,_("~RenderThread this=") << this);
@@ -129,7 +130,7 @@ void RenderThread::releaseResourceMutex()
 void RenderThread::requestInput()
 {
 	inputNeeded=true;
-	sem_post(&render);
+	sem_post(&event);
 	sem_wait(&inputDone);
 }
 
@@ -246,7 +247,9 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	{
 		while(1)
 		{
-			sem_wait(&th->render);
+			sem_wait(&th->event);
+			if(th->m_sys->isShuttingDown() || th->terminated)
+				break;
 			Chronometer chronometer;
 			
 			if(th->resizeNeeded)
@@ -262,6 +265,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				th->newHeight=0;
 				th->resizeNeeded=false;
 				th->commonGLResize(th->windowWidth, th->windowHeight);
+				continue;
 			}
 
 			if(th->inputNeeded)
@@ -274,7 +278,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 			//Before starting rendering, cleanup all the request arrived in the meantime
 			int fakeRenderCount=0;
-			while(sem_trywait(&th->render)==0)
+			while(sem_trywait(&th->event)==0)
 			{
 				if(th->m_sys->isShuttingDown())
 					break;
@@ -283,8 +287,6 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			
 			if(fakeRenderCount)
 				LOG(LOG_NO_INFO,_("Faking ") << fakeRenderCount << _(" renderings"));
-			if(th->m_sys->isShuttingDown())
-				break;
 
 			if(th->m_sys->isOnError())
 			{
@@ -565,6 +567,9 @@ void RenderThread::commonGLInit(int width, int height)
 	largeTextureBitmap=new uint8_t[bitmapSize];
 	memset(largeTextureBitmap,0,bitmapSize);
 
+	//Create the PBOs
+	glGenBuffers(2,pixelBuffers);
+
 	//Set uniforms
 	cleanGLErrors();
 	glUseProgram(blitter_program);
@@ -709,7 +714,16 @@ void RenderThread::requestResize(uint32_t w, uint32_t h)
 	newWidth=w;
 	newHeight=h;
 	resizeNeeded=true;
-	sem_post(&render);
+	sem_post(&event);
+}
+
+void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
+{
+	//Add enough room to realign to 16
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[0]);
+	glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*4+16, 0, GL_STREAM_DRAW);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[1]);
+	glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*4+16, 0, GL_STREAM_DRAW);
 }
 
 void* RenderThread::sdl_worker(RenderThread* th)
@@ -746,10 +760,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 		Chronometer chronometer;
 		while(1)
 		{
-			sem_wait(&th->render);
+			sem_wait(&th->event);
+			if(th->m_sys->isShuttingDown() || th->terminated)
+				break;
 			chronometer.checkpoint();
 
-			SDL_GL_SwapBuffers( );
 			if(th->resizeNeeded)
 			{
 				if(th->windowWidth!=th->newWidth ||
@@ -763,6 +778,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				th->newHeight=0;
 				th->resizeNeeded=false;
 				th->commonGLResize(th->windowWidth, th->windowHeight);
+				continue;
 			}
 
 			if(th->inputNeeded)
@@ -773,22 +789,54 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				sem_post(&th->inputDone);
 			}
 
-			//Before starting rendering, cleanup all the request arrived in the meantime
-			int fakeRenderCount=0;
-			while(sem_trywait(&th->render)==0)
+			if(th->prevUploadJob)
 			{
-				if(th->m_sys->isShuttingDown())
-					break;
-				fakeRenderCount++;
+				ITextureUploadable* u=th->prevUploadJob;
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[th->currentPixelBuffer]);
+				//Copy content of the pbo to the texture, 0 is the offset in the pbo
+				uint32_t w,h;
+				u->sizeNeeded(w,h);
+				th->loadChunkBGRA(u->getTexture(), w, h, (uint8_t*)th->currentPixelBufferOffset);
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+				u->fence();
+				th->prevUploadJob=NULL;
 			}
 
-			if(fakeRenderCount)
-				LOG(LOG_NO_INFO,_("Faking ") << fakeRenderCount << _(" renderings"));
+			if(th->uploadNeeded)
+			{
+				ITextureUploadable* u=th->getUploadJob();
+				if(u)
+				{
+					uint32_t w,h;
+					u->sizeNeeded(w,h);
+					if(w>th->pixelBufferWidth || h>th->pixelBufferHeight)
+						th->resizePixelBuffers(w,h);
+					//Increment and wrap current buffer index
+					unsigned int nextBuffer = (th->currentPixelBuffer + 1)%2;
 
-			if(th->m_sys->isShuttingDown())
-				break;
+					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[nextBuffer]);
+					uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+					uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
+
+					u->upload(alignedBuf);
+
+					glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+					th->currentPixelBufferOffset=alignedBuf-buf;
+					th->currentPixelBuffer=nextBuffer;
+					
+					th->prevUploadJob=u;
+					continue;
+				}
+				else if(!th->renderNeeded)
+					continue;
+			}
+
+			assert(th->renderNeeded);
+
 			SDL_PumpEvents();
-
+			SDL_GL_SwapBuffers( );
 			if(th->m_sys->isOnError())
 			{
 				glUseProgram(0);
@@ -920,9 +968,20 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	return NULL;
 }
 
+ITextureUploadable* RenderThread::getUploadJob()
+{
+	Locker l(mutexUploadJobs);
+	ITextureUploadable* ret=uploadJobs.front();
+	uploadJobs.pop_front();
+	return ret;
+}
+
 void RenderThread::draw()
 {
-	sem_post(&render);
+	if(renderNeeded) //A rendering is already queued
+		return;
+	renderNeeded=true;
+	sem_post(&event);
 	time_d = compat_get_current_time_ms();
 	uint64_t diff=time_d-time_s;
 	if(diff>1000)

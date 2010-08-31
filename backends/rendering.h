@@ -39,10 +39,21 @@ private:
 	void commonGLInit(int width, int height);
 	void commonGLResize(int width, int height);
 	void commonGLDeinit();
+	GLuint pixelBuffers[2];
+	uint32_t currentPixelBuffer;
+	uint32_t currentPixelBufferOffset;
+	uint32_t pixelBufferWidth;
+	uint32_t pixelBufferHeight;
+	void resizePixelBuffers(uint32_t w, uint32_t h);
+	ITextureUploadable* prevUploadJob;
 	GLuint largeTextureId;
 	uint32_t largeTextureSize;
 	uint8_t* largeTextureBitmap;
-	sem_t render;
+	//Possible events to be handled
+	//TODO: pad to avoid false sharing on the cache lines
+	bool renderNeeded;
+	bool uploadNeeded;
+	sem_t event;
 	sem_t inputDone;
 	bool inputNeeded;
 	bool inputDisabled;
@@ -72,6 +83,12 @@ private:
 	std::vector<float> idStack;
 	Mutex mutexResources;
 	std::set<GLResource*> managedResources;
+	Mutex mutexUploadJobs;
+	std::deque<ITextureUploadable*> uploadJobs;
+	/*
+		Utility to get a job to do
+	*/
+	ITextureUploadable* getUploadJob();
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
@@ -113,7 +130,10 @@ public:
 		Load the given data in the given texture chunk
 	*/
 	void loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data);
-
+	/**
+		Enqueue something to be uploaded to texture
+	*/
+	void addUploadJob(ITextureUploadable* u);
 	void requestInput();
 	void requestResize(uint32_t w, uint32_t h);
 	void pushId()

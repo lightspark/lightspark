@@ -25,7 +25,6 @@
 //#include "swf.h"
 
 #include <SDL.h>
-#include <FTGL/ftgl.h>
 
 #include <GL/glew.h>
 #ifndef WIN32
@@ -259,18 +258,51 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				sem_post(&th->inputDone);
 			}
 
-			//Before starting rendering, cleanup all the request arrived in the meantime
-			int fakeRenderCount=0;
-			while(sem_trywait(&th->event)==0)
+			if(th->prevUploadJob)
 			{
-				if(th->m_sys->isShuttingDown())
-					break;
-				fakeRenderCount++;
+				ITextureUploadable* u=th->prevUploadJob;
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[th->currentPixelBuffer]);
+				//Copy content of the pbo to the texture, 0 is the offset in the pbo
+				uint32_t w,h;
+				u->sizeNeeded(w,h);
+				th->loadChunkBGRA(u->getTexture(), w, h, (uint8_t*)th->currentPixelBufferOffset);
+				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+				u->fence();
+				th->prevUploadJob=NULL;
 			}
-			
-			if(fakeRenderCount)
-				LOG(LOG_NO_INFO,_("Faking ") << fakeRenderCount << _(" renderings"));
 
+			if(th->uploadNeeded)
+			{
+				ITextureUploadable* u=th->getUploadJob();
+				if(u)
+				{
+					uint32_t w,h;
+					u->sizeNeeded(w,h);
+					if(w>th->pixelBufferWidth || h>th->pixelBufferHeight)
+						th->resizePixelBuffers(w,h);
+					//Increment and wrap current buffer index
+					unsigned int nextBuffer = (th->currentPixelBuffer + 1)%2;
+
+					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[nextBuffer]);
+					uint8_t* buf=(uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER,GL_WRITE_ONLY);
+					uint8_t* alignedBuf=(uint8_t*)(uintptr_t((buf+15))&(~0xfL));
+
+					u->upload(alignedBuf, w, h);
+
+					glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+					th->currentPixelBufferOffset=alignedBuf-buf;
+					th->currentPixelBuffer=nextBuffer;
+					
+					th->prevUploadJob=u;
+					continue;
+				}
+				else if(!th->renderNeeded)
+					continue;
+			}
+
+			assert(th->renderNeeded);
 			if(th->m_sys->isOnError())
 			{
 				glUseProgram(0);
@@ -302,80 +334,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			else
 			{
 				glXSwapBuffers(d,glxWin);
-
-				//glBindFramebuffer(GL_FRAMEBUFFER, th->fboId);
-				//glDrawBuffer(GL_COLOR_ATTACHMENT0);
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glDrawBuffer(GL_BACK);
-
-				RGB bg=sys->getBackground();
-				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,0);
-				glClear(GL_COLOR_BUFFER_BIT);
-				glLoadIdentity();
-				glTranslatef(th->offsetX,th->offsetY,0);
-				glScalef(th->scaleX,th->scaleY,1);
-				
-				sys->Render();
-
-/*				//Now draw the input layer
-				if(!th->inputDisabled)
-				{
-					glDrawBuffer(GL_COLOR_ATTACHMENT2);
-					glClearColor(0,0,0,0);
-					glClear(GL_COLOR_BUFFER_BIT);
-
-					th->materialOverride=true;
-					th->m_sys->inputRender();
-					th->materialOverride=false;
-				}*/
-
-				glLoadIdentity();
-
-				//Now blit everything
-/*				glLoadIdentity();
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glDrawBuffer(GL_BACK);
-
-				glClearColor(0,0,0,1);
-				glClear(GL_COLOR_BUFFER_BIT);
-
-				TextureBuffer* curBuf=((th->m_sys->showInteractiveMap)?&th->inputTex:&th->mainTex);
-				curBuf->bind();
-				curBuf->setTexScale(th->fragmentTexScaleUniform);
-				glColor4f(0,0,1,0);
-				glBegin(GL_QUADS);
-					glTexCoord2f(0,1);
-					glVertex2i(0,0);
-					glTexCoord2f(1,1);
-					glVertex2i(th->windowWidth,0);
-					glTexCoord2f(1,0);
-					glVertex2i(th->windowWidth,th->windowHeight);
-					glTexCoord2f(0,0);
-					glVertex2i(0,th->windowHeight);
-				glEnd();*/
-
-				if(sys->showProfilingData)
-				{
-					glUseProgram(0);
-					glDisable(GL_TEXTURE_2D);
-
-					//Draw bars
-					glColor4f(0.7,0.7,0.7,0.7);
-					glBegin(GL_LINES);
-					for(int i=1;i<10;i++)
-					{
-						glVertex2i(0,(i*th->windowHeight/10));
-						glVertex2i(th->windowWidth,(i*th->windowHeight/10));
-					}
-					glEnd();
-				
-					list<ThreadProfile>::iterator it=sys->profilingData.begin();
-					for(;it!=sys->profilingData.end();it++)
-						it->plot(1000000/sys->getFrameRate(),&font);
-
-					glEnable(GL_TEXTURE_2D);
-					glUseProgram(th->gpu_program);
-				}
+				th->coreRendering(font, false);
 				//Call glFlush to offload work on the GPU
 				glFlush();
 			}
@@ -713,6 +672,99 @@ void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 	glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*4+16, 0, GL_STREAM_DRAW);
 }
 
+void RenderThread::coreRendering(FTFont& font, bool testMode)
+{
+	//Now draw the input layer
+	if(!inputDisabled)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+		glDrawBuffer(GL_COLOR_ATTACHMENT2);
+		glClearColor(0,0,0,0);
+		glClear(GL_COLOR_BUFFER_BIT);
+	
+		materialOverride=true;
+		m_sys->inputRender();
+		materialOverride=false;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_BACK);
+	//Clear the back buffer
+	RGB bg=sys->getBackground();
+	glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glLoadIdentity();
+
+	if(m_sys->showInteractiveMap)
+	{
+		inputTex.bind();
+		inputTex.setTexScale(fragmentTexScaleUniform);
+		glColor4f(0,0,1,0);
+
+		glBegin(GL_QUADS);
+			glTexCoord2f(0,1);
+			glVertex2i(0,0);
+			glTexCoord2f(1,1);
+			glVertex2i(windowWidth,0);
+			glTexCoord2f(1,0);
+			glVertex2i(windowWidth,windowHeight);
+			glTexCoord2f(0,0);
+			glVertex2i(0,windowHeight);
+		glEnd();
+	}
+	else
+	{
+		//scaleY is negated to adapt the flash and gl coordinates system
+		//An additional translation is added for the same reason
+		glTranslatef(offsetX,offsetY+windowHeight,0);
+		glScalef(scaleX,-scaleY,1);
+		glTranslatef(m_sys->xOffset,m_sys->yOffset,0);
+		
+		m_sys->Render();
+	}
+
+	if(testMode && m_sys->showDebug)
+	{
+		glLoadIdentity();
+		glUseProgram(0);
+		glDisable(GL_BLEND);
+		glDisable(GL_TEXTURE_2D);
+		if(selectedDebug)
+			selectedDebug->debugRender(&font, true);
+		else
+			m_sys->debugRender(&font, true);
+		glEnable(GL_TEXTURE_2D);
+		glEnable(GL_BLEND);
+		glUseProgram(gpu_program);
+	}
+
+	if(m_sys->showProfilingData)
+	{
+		glLoadIdentity();
+		glUseProgram(0);
+		glDisable(GL_TEXTURE_2D);
+		glColor3f(0,0,0);
+		char frameBuf[20];
+		snprintf(frameBuf,20,"Frame %u",m_sys->state.FP);
+		font.Render(frameBuf,-1,FTPoint(0,0));
+
+		//Draw bars
+		glColor4f(0.7,0.7,0.7,0.7);
+		glBegin(GL_LINES);
+		for(int i=1;i<10;i++)
+		{
+			glVertex2i(0,(i*windowHeight/10));
+			glVertex2i(windowWidth,(i*windowHeight/10));
+		}
+		glEnd();
+		
+		list<ThreadProfile>::iterator it=m_sys->profilingData.begin();
+		for(;it!=m_sys->profilingData.end();it++)
+			it->plot(1000000/m_sys->getFrameRate(),&font);
+		glEnable(GL_TEXTURE_2D);
+		glUseProgram(gpu_program);
+	}
+}
+
 void* RenderThread::sdl_worker(RenderThread* th)
 {
 	sys=th->m_sys;
@@ -823,7 +875,6 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			assert(th->renderNeeded);
 
 			SDL_PumpEvents();
-			SDL_GL_SwapBuffers( );
 			if(th->m_sys->isOnError())
 			{
 				glUseProgram(0);
@@ -856,95 +907,8 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			}
 			else
 			{
-				//Now draw the input layer
-				if(!th->inputDisabled)
-				{
-					glBindFramebuffer(GL_FRAMEBUFFER, th->fboId);
-					glDrawBuffer(GL_COLOR_ATTACHMENT2);
-					glClearColor(0,0,0,0);
-					glClear(GL_COLOR_BUFFER_BIT);
-				
-					th->materialOverride=true;
-					th->m_sys->inputRender();
-					th->materialOverride=false;
-				}
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-				glDrawBuffer(GL_BACK);
-				//Clear the back buffer
-				RGB bg=sys->getBackground();
-				glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-				glClear(GL_COLOR_BUFFER_BIT);
-				glLoadIdentity();
-
-				if(th->m_sys->showInteractiveMap)
-				{
-					th->inputTex.bind();
-					th->inputTex.setTexScale(th->fragmentTexScaleUniform);
-					glColor4f(0,0,1,0);
-
-					glBegin(GL_QUADS);
-						glTexCoord2f(0,1);
-						glVertex2i(0,0);
-						glTexCoord2f(1,1);
-						glVertex2i(th->windowWidth,0);
-						glTexCoord2f(1,0);
-						glVertex2i(th->windowWidth,th->windowHeight);
-						glTexCoord2f(0,0);
-						glVertex2i(0,th->windowHeight);
-					glEnd();
-				}
-				else
-				{
-					//scaleY is negated to adapt the flash and gl coordinates system
-					//An additional translation is added for the same reason
-					glTranslatef(th->offsetX,th->offsetY+th->windowHeight,0);
-					glScalef(th->scaleX,-th->scaleY,1);
-					glTranslatef(th->m_sys->xOffset,th->m_sys->yOffset,0);
-					
-					th->m_sys->Render();
-				}
-
-				if(th->m_sys->showDebug)
-				{
-					glLoadIdentity();
-					glUseProgram(0);
-					glDisable(GL_BLEND);
-					glDisable(GL_TEXTURE_2D);
-					if(th->selectedDebug)
-						th->selectedDebug->debugRender(&font, true);
-					else
-						th->m_sys->debugRender(&font, true);
-					glEnable(GL_TEXTURE_2D);
-					glEnable(GL_BLEND);
-					glUseProgram(th->gpu_program);
-				}
-
-				if(th->m_sys->showProfilingData)
-				{
-					glLoadIdentity();
-					glUseProgram(0);
-					glDisable(GL_TEXTURE_2D);
-					glColor3f(0,0,0);
-					char frameBuf[20];
-					snprintf(frameBuf,20,"Frame %u",th->m_sys->state.FP);
-					font.Render(frameBuf,-1,FTPoint(0,0));
-
-					//Draw bars
-					glColor4f(0.7,0.7,0.7,0.7);
-					glBegin(GL_LINES);
-					for(int i=1;i<10;i++)
-					{
-						glVertex2i(0,(i*th->windowHeight/10));
-						glVertex2i(th->windowWidth,(i*th->windowHeight/10));
-					}
-					glEnd();
-					
-					list<ThreadProfile>::iterator it=th->m_sys->profilingData.begin();
-					for(;it!=th->m_sys->profilingData.end();it++)
-						it->plot(1000000/sys->getFrameRate(),&font);
-					glEnable(GL_TEXTURE_2D);
-					glUseProgram(th->gpu_program);
-				}
+				SDL_GL_SwapBuffers( );
+				th->coreRendering(font, true);
 				//Call glFlush to offload work on the GPU
 				glFlush();
 			}

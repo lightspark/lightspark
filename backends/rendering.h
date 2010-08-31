@@ -21,6 +21,7 @@
 #define RENDERING_H
 
 #include "timer.h"
+#include <FTGL/ftgl.h>
 
 namespace lightspark
 {
@@ -88,6 +89,11 @@ private:
 		Utility to get a job to do
 	*/
 	ITextureUploadable* getUploadJob();
+	/*
+		Common code to handle the core of the rendering
+		@param testMode True if overlays can be displayed
+	*/
+	void coreRendering(FTFont& font, bool testMode);
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();

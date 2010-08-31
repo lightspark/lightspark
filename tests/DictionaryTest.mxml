@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_dictionary_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var dict:Dictionary = new Dictionary();
+		var o:Object = new Object();
+		
+		dict["foo"] = 5;
+		dict[o] = "muffins";
+		
+		Tests.assertEquals(dict["foo"], 5, "dict[\"foo\"] = 5", true);
+		Tests.assertEquals(dict[o], "muffins", "dict[Object]", true);
+		
+		delete dict["foo"];
+		
+		Tests.assertFalse(dict["foo"] == 5, "delete dict[\"key\"]");
+		
+		var dict2:Dictionary = new Dictionary();
+		dict2.weakKeys = true;
+		{
+			var a:Object = new Object();
+			dict[a] = "test";
+		}
+		
+		var n:int = 0;
+		for (var key:* in dict2)
+			n++;
+		
+		Tests.assertFalse(n == 1, "Dictionary.weakKeys");
+		
+		Tests.report(visual, name);
+	}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

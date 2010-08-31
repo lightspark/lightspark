@@ -52,7 +52,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),mutexLargeTexture("Large texture"),largeTextureId(0),largeTextureSize(0),
 	largeTextureBitmap(NULL),renderNeeded(false),uploadNeeded(false),inputNeeded(false),inputDisabled(false),resizeNeeded(false),newWidth(0),
 	newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),
-	mutexUploadJobs("Upload jobs"),dataTex(false),mainTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),
+	mutexUploadJobs("Upload jobs"),dataTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),
 	currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
@@ -120,7 +120,7 @@ void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ym
 	tempBufferAcquired=true;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-	glDrawBuffer(GL_COLOR_ATTACHMENT1);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	materialOverride=false;
 	
 	glColor4f(0,0,0,0); //No output is fairly ok to clear
@@ -442,7 +442,6 @@ void RenderThread::commonGLDeinit()
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	glDeleteFramebuffers(1,&rt->fboId);
 	dataTex.shutdown();
-	mainTex.shutdown();
 	tempTex.shutdown();
 	inputTex.shutdown();
 	delete[] largeTextureBitmap;
@@ -478,8 +477,6 @@ void RenderThread::commonGLInit(int width, int height)
 	//Viewport setup and interactive_buffer allocation is left for GLResize	
 
 	dataTex.init();
-
-	mainTex.init(width, height, GL_NEAREST);
 
 	tempTex.init(width, height, GL_NEAREST);
 
@@ -518,7 +515,7 @@ void RenderThread::commonGLInit(int width, int height)
 	cleanGLErrors();
 	glUseProgram(blitter_program);
 	int texScale=glGetUniformLocation(blitter_program,"texScale");
-	mainTex.setTexScale(texScale);
+	tempTex.setTexScale(texScale);
 	cleanGLErrors();
 
 	glUseProgram(gpu_program);
@@ -534,15 +531,12 @@ void RenderThread::commonGLInit(int width, int height)
 	// create a framebuffer object
 	glGenFramebuffers(1, &fboId);
 	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, mainTex.getId(), 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D, tempTex.getId(), 0);
 	//Verify if we have more than an attachment available (1 is guaranteed)
 	GLint numberOfAttachments=0;
 	glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &numberOfAttachments);
-	if(numberOfAttachments>=3)
-	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, tempTex.getId(), 0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2,GL_TEXTURE_2D, inputTex.getId(), 0);
-	}
+	if(numberOfAttachments>=2)
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,GL_TEXTURE_2D, inputTex.getId(), 0);
 	else
 	{
 		LOG(LOG_ERROR,_("Non enough color attachments available, input disabled"));
@@ -643,8 +637,6 @@ void RenderThread::commonGLResize(int w, int h)
 
 	glMatrixMode(GL_MODELVIEW);
 
-	mainTex.resize(windowWidth, windowHeight);
-
 	tempTex.resize(windowWidth, windowHeight);
 
 	inputTex.resize(windowWidth, windowHeight);
@@ -676,7 +668,7 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 	if(!inputDisabled)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-		glDrawBuffer(GL_COLOR_ATTACHMENT2);
+		glDrawBuffer(GL_COLOR_ATTACHMENT1);
 		glClearColor(0,0,0,0);
 		glClear(GL_COLOR_BUFFER_BIT);
 	

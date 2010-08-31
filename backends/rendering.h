@@ -136,7 +136,6 @@ public:
 	int blitter_program;
 	GLuint fboId;
 	TextureBuffer dataTex;
-	TextureBuffer mainTex;
 	TextureBuffer tempTex;
 	TextureBuffer inputTex;
 	uint32_t windowWidth;

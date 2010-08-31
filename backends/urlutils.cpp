@@ -38,10 +38,12 @@ URLInfo::URLInfo(const tiny_string& u)
 
 	std::string str = std::string(url.raw_buf());
 
+	valid = false;
+
 	//Check for :// marking that there is a protocol in this url
 	size_t colonPos = str.find("://");
 	if(colonPos == std::string::npos)
-		throw RunTimeException("URLInfo: invalid url: no :// in url");
+		invalidReason = MISSING_PROTOCOL;
 
 	protocol = str.substr(0, colonPos);
 
@@ -56,7 +58,7 @@ URLInfo::URLInfo(const tiny_string& u)
 	{
 		pathPos = cursor;
 		if(pathPos == str.length())
-			throw RunTimeException("URLInfo: invalid file:// url: no path");
+			invalidReason = MISSING_PATH;
 	}
 	else
 	{
@@ -77,7 +79,7 @@ URLInfo::URLInfo(const tiny_string& u)
 		fragmentPos = str.find("#", cursor);
 
 		if(portPos == hostnamePos || pathPos == hostnamePos || queryPos == hostnamePos)
-			throw RunTimeException("URLInfo: invalid url: no hostname");
+			invalidReason = MISSING_HOSTNAME;
 	}
 
 	//Parse the host string
@@ -90,7 +92,7 @@ URLInfo::URLInfo(const tiny_string& u)
 		portPos++;
 		std::istringstream i(str.substr(portPos, std::min(pathPos, str.length())-portPos));
 		if(!(i >> port))
-			throw RunTimeException("URLInfo: invalid port");
+			invalidReason = INVALID_PORT;
 	}
 
 	//Parse the path string
@@ -153,6 +155,8 @@ URLInfo::URLInfo(const tiny_string& u)
 		parsedURL += "#";
 		parsedURL += getFragment();
 	}
+
+	valid = true;
 }
 
 tiny_string URLInfo::normalizePath(const tiny_string& u)

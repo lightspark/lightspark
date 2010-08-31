@@ -69,6 +69,9 @@ class VideoDecoder: public Decoder, public ITextureUploadable
 private:
 	bool resizeGLBuffers;
 protected:
+	/*
+		Derived classes must spinwaits on this to become false before deleting
+	*/
 	volatile bool waitForFencing;
 	uint32_t frameWidth;
 	uint32_t frameHeight;
@@ -78,7 +81,7 @@ protected:
 	TextureChunk videoTexture;
 public:
 	VideoDecoder():resizeGLBuffers(false),waitForFencing(true),frameWidth(0),frameHeight(0),frameRate(0){}
-	virtual ~VideoDecoder(){}
+	virtual ~VideoDecoder(){};
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
 	virtual void skipUntil(uint32_t time)=0;
@@ -105,16 +108,14 @@ public:
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h);
 	const TextureChunk& getTexture() const;
-	void fence()
-	{
-		::abort();
-	}
+	void fence();
 };
 
 class NullVideoDecoder: public VideoDecoder
 {
 public:
 	NullVideoDecoder() {status=VALID;}
+	~NullVideoDecoder() { while(waitForFencing); }
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}
@@ -125,7 +126,9 @@ public:
 		flushing=true;
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h);
+	void upload(uint8_t* data, uint32_t w, uint32_t h)
+	{
+	}
 };
 
 #ifdef ENABLE_LIBAVCODEC

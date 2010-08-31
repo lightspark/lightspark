@@ -70,6 +70,11 @@ const TextureChunk& VideoDecoder::getTexture() const
 	return videoTexture;
 }
 
+void VideoDecoder::fence()
+{
+	waitForFencing=false;
+}
+
 #ifdef ENABLE_LIBAVCODEC
 bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 {
@@ -136,6 +141,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 
 FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
+	while(waitForFencing);
 	assert(codecContext);
 	av_free(codecContext);
 	av_free(frameIn);

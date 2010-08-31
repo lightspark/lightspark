@@ -175,6 +175,7 @@ public:
 	virtual const TextureChunk& getTexture() const=0;
 	/*
 		Signal the completion of the upload to the texture
+		NOTE: fence may be called on shutdown even if the upload has not happen, so be ready for this event
 	*/
 	virtual void fence()=0;
 };

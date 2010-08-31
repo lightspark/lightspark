@@ -498,6 +498,10 @@ float RenderThread::getIdAt(int x, int y)
 
 void RenderThread::commonGLDeinit()
 {
+	//Fence any object that is still waiting for upload
+	deque<ITextureUploadable*>::iterator it=uploadJobs.begin();
+	for(;it!=uploadJobs.end();it++)
+		(*it)->fence();
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	glDeleteFramebuffers(1,&rt->fboId);
 	dataTex.shutdown();
@@ -507,7 +511,6 @@ void RenderThread::commonGLDeinit()
 	delete[] largeTextureBitmap;
 	glDeleteTextures(1,&largeTextureId);
 	glDeleteBuffers(2,pixelBuffers);
-	assert_and_throw(uploadJobs.empty());
 }
 
 void RenderThread::commonGLInit(int width, int height)
@@ -984,6 +987,8 @@ void RenderThread::addUploadJob(ITextureUploadable* u)
 ITextureUploadable* RenderThread::getUploadJob()
 {
 	Locker l(mutexUploadJobs);
+	if(uploadJobs.empty())
+		return NULL;
 	ITextureUploadable* ret=uploadJobs.front();
 	uploadJobs.pop_front();
 	return ret;

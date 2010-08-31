@@ -116,14 +116,13 @@ void RenderThread::requestInput()
 
 void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
-	::abort();
 	assert(tempBufferAcquired==false);
 	tempBufferAcquired=true;
 
+	glBindFramebuffer(GL_FRAMEBUFFER, fboId);
 	glDrawBuffer(GL_COLOR_ATTACHMENT1);
 	materialOverride=false;
 	
-	glDisable(GL_BLEND);
 	glColor4f(0,0,0,0); //No output is fairly ok to clear
 	glBegin(GL_QUADS);
 		glVertex2f(xmin,ymin);
@@ -135,14 +134,13 @@ void RenderThread::glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ym
 
 void RenderThread::glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax)
 {
-	::abort();
 	assert(tempBufferAcquired==true);
 	tempBufferAcquired=false;
 
 	//Use the blittler program to blit only the used buffer
 	glUseProgram(blitter_program);
-	glEnable(GL_BLEND);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDrawBuffer(GL_BACK);
 
 	rt->tempTex.bind();
 	glBegin(GL_QUADS);

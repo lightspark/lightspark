@@ -30,17 +30,7 @@ namespace lightspark
 
 void cleanGLErrors();
 
-class GLResource
-{
-public:
-	/**
-		Should be used to cleanly destroy GL resources inside the render thread
-	*/
-	virtual void shutdown()=0;
-	virtual ~GLResource() {}
-};
-
-class TextureBuffer: public GLResource
+class TextureBuffer
 {
 private:
 	GLuint texId;

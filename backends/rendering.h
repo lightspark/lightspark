@@ -82,8 +82,6 @@ private:
 	int frameCount;
 	int secsCount;
 	std::vector<float> idStack;
-	Mutex mutexResources;
-	std::set<GLResource*> managedResources;
 	Mutex mutexUploadJobs;
 	std::deque<ITextureUploadable*> uploadJobs;
 	/*
@@ -99,26 +97,6 @@ public:
 	//The calling context MUST call this function with the transformation matrix ready
 	void glAcquireTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
 	void glBlitTempBuffer(number_t xmin, number_t xmax, number_t ymin, number_t ymax);
-	/**
-		Add a GLResource to the managed pool
-		@param res The GLResource to be manged
-		@pre running inside the renderthread OR the resourceMutex is acquired
-	*/
-	void addResource(GLResource* res);
-	/**
-		Remove a GLResource from the managed pool
-		@param res The GLResource to stop managing
-		@pre running inside the renderthread OR the resourceMutex is acquired
-	*/
-	void removeResource(GLResource* res);
-	/**
-		Acquire the resource mutex to do resource cleanup
-	*/
-	void acquireResourceMutex();
-	/**
-		Release the resource mutex
-	*/
-	void releaseResourceMutex();
 	/**
 		Allocates a chunk from the shared texture
 	*/

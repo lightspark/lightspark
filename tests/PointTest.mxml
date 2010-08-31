@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_point_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	import flash.geom.Point;
+	private function appComplete():void
+	{
+		
+		var point:Point = new Point();
+		Tests.assertEquals(0, point.x, "new Point().x == 0", false);
+		Tests.assertEquals(0, point.y, "new Point().y == 0", false);
+		
+		var point2:Point = new Point(6, 8);
+		Tests.assertEquals(6, point2.x, "new Point(6,8).x == 6", false);
+		Tests.assertEquals(8, point2.y, "new Point(6,8).y == 8", false);
+		
+		var point3:Point = Point.interpolate(point, point2, 0.5);
+		Tests.assertEquals(3, point3.x,"Point.interpolate (x)", false);
+		Tests.assertEquals(4, point3.y, "Point.interpolate (y)", false);
+		
+		Tests.assertEquals(10, Point.distance(point, point2), "Point.distance", false);
+		
+		var point4:Point = new Point(3, 2).add(point2);
+		Tests.assertEquals(9, point4.x, "Point.add (x)", false);
+		Tests.assertEquals(10, point4.y, "Point.add (y)", false);
+
+		var point5:Point = point4.clone();
+		Tests.assertTrue(point4.equals(point5), "Point.equals");
+		
+		var point6:Point = new Point(0, 5);
+		point6.normalize(1);
+		Tests.assertEquals(1, point6.y, "Point.normalize", false);
+		
+		var point7:Point = new Point(0, 0);
+		point7.offset(2, 3);
+		Tests.assertEquals(2, point7.x, "Point.offset (x)", false);
+		Tests.assertEquals(3, point7.y, "Point.offset (y)", false);
+		
+		Tests.report(visual, name);
+	}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>
+

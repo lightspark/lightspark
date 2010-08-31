@@ -190,11 +190,9 @@ public:
 	*/
 	double getFrameRate();
 	/**
-	  	copy the current frame to a texture
-TODODODODODO
+	  	Get the texture containing the current video Frame
 		@pre lock on the object should be acquired and object should be ready
-		@param tex the TextureChunk to copy in
-		@return true if a new frame has been copied
+		@return a TextureChunk ready to be blitted
 	*/
 	const TextureChunk& getTexture() const;
 	/**

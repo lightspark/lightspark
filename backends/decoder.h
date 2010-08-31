@@ -86,9 +86,6 @@ public:
 	virtual bool discardFrame()=0;
 	virtual void skipUntil(uint32_t time)=0;
 	virtual void skipAll()=0;
-	//NOTE: the base implementation returns true if resizing of buffers should be done
-	//This should be called in every derived implementation
-	virtual bool copyFrameToTexture(TextureChunk& tex)=0;
 	uint32_t getWidth()
 	{
 		return frameWidth;
@@ -120,7 +117,6 @@ public:
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}
 	void skipAll(){}
-	bool copyFrameToTexture(TextureChunk& tex){return false;}
 	void setFlushing()
 	{
 		flushing=true;
@@ -176,7 +172,6 @@ public:
 	bool discardFrame();
 	void skipUntil(uint32_t time);
 	void skipAll();
-	bool copyFrameToTexture(TextureChunk& tex);
 	void setFlushing()
 	{
 		flushing=true;

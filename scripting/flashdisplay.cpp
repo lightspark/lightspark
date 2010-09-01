@@ -1152,8 +1152,16 @@ ASFUNCTIONBODY(DisplayObject,_getBlendMode)
 
 ASFUNCTIONBODY(DisplayObject,localToGlobal)
 {
-	//DisplayObject* th=static_cast<DisplayObject*>(obj);
-	return new Undefined;
+	DisplayObject* th=static_cast<DisplayObject*>(obj);
+	assert_and_throw(argslen == 1);
+
+	Point* pt=static_cast<Point*>(args[0]);
+
+	number_t tempx, tempy;
+
+	th->getMatrix().multiply2D(pt->getX(), pt->getY(), tempx, tempy);
+
+	return Class<Point>::getInstanceS(tempx, tempy);
 }
 
 ASFUNCTIONBODY(DisplayObject,_setRotation)

@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include <streambuf>
+#include <fstream>
 #include <inttypes.h>
 #include "swftypes.h"
 #include "thread_pool.h"
@@ -36,8 +37,8 @@ class DownloadManager
 {
 public:
 	virtual ~DownloadManager(){};
-	virtual Downloader* download(const tiny_string& u)=0;
-	virtual Downloader* download(const URLInfo& u)=0;
+	virtual Downloader* download(const tiny_string& u, bool cached=false)=0;
+	virtual Downloader* download(const URLInfo& u, bool cached=false)=0;
 	virtual void destroy(Downloader* d)=0;
 
 	enum MANAGERTYPE { NPAPI, STANDALONE };
@@ -50,57 +51,93 @@ private:
 public:
 	StandaloneDownloadManager();
 	~StandaloneDownloadManager(){}
-	Downloader* download(const tiny_string& u);
-	Downloader* download(const URLInfo& u);
+	Downloader* download(const tiny_string& u, bool cached=false);
+	Downloader* download(const URLInfo& u, bool cached=false);
 	void destroy(Downloader* d);
 };
 
 class DLL_PUBLIC Downloader: public std::streambuf
 {
 private:
-	sem_t mutex;
-	uint8_t* buffer;
-	//Whether to allow reallocating of the buffer to grow it
-	bool allowBufferRealloc;
-	uint32_t len;
-	uint32_t tail;
-	bool waiting;
-	virtual int_type underflow();
-	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
-	virtual pos_type seekpos(pos_type, std::ios_base::openmode);
+	//Signals new bytes available for reading
 	sem_t available;
+
+	//Whether to allow dynamically growing the buffer
+	bool allowBufferRealloc;
+
+	//True if the file is cached to disk (default = false)
+	bool cached;	
+
+	bool waiting;
+	//Handles streambuf out-of-data events
+	virtual int_type underflow();
+	//Seeks to absolute position
+	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
+	//Seeks to relative position
+	virtual pos_type seekpos(pos_type, std::ios_base::openmode);
 protected:
+	sem_t mutex;
+	//Signals termination of the download
 	sem_t terminated;
-	bool failed;
-	bool finished;
+	//True if the download is terminated
 	bool hasTerminated;
+	//True if the download has failed at some point
+	bool failed;
+	//True if the download has finished downloading all data
+	bool finished;
+
+	//This will hold the whole download (non-cached) or a window into the download (cached)
+	uint8_t* buffer;
+
+	//File length (can change in certain cases, resulting in reallocation of the buffer (non-cached))
+	uint32_t len;
+	//Amount of data received yet
+	uint32_t tail;
+
+	//Cache filename
+	tiny_string cacheFileName;
+	//Cache fstream
+	std::fstream cache;
+	//Position of the cache buffer into the file
+	uint32_t cachePos;
+	//Size of data in the buffer
+	uint32_t cacheSize;
+	//Maximum size of the cache buffer
+	static const size_t cacheMaxSize = 8192;
+	//True if the cache file doesn't need to be deleted on destruction
+	bool keepCache;
 public:
 	Downloader();
 	virtual ~Downloader();
-	void setLen(uint32_t l);
+
+	//Set to true to enable disk-based caching
+	void setCached(bool c) { cached=c; }
+	bool isCached() { return cached; }
+
+	//Set to true to allow growing the buffer dynamically
+	void setAllowBufferRealloc(bool allow) { allowBufferRealloc = allow; }
+	bool getAllowBufferRealloc() { return allowBufferRealloc; }
+
+	//Append data to the internal buffer
 	void append(uint8_t* buffer, uint32_t len);
+
+	//Stop the download
 	void stop();
+	//Wait for the download to finish
 	void wait();
+
+	//Mark the download as failed
 	void setFailed();
 	bool hasFailed() { return failed; }
-	bool hasFinished() { return finished; }
+	//Mark the download as finished
 	void setFinished();
-	uint8_t* getBuffer()
-	{
-		return buffer;
-	}
-	bool getAllowBufferRealloc()
-	{
-		return allowBufferRealloc;
-	}
-	void setAllowBufferRealloc(bool allow)
-	{
-		allowBufferRealloc = allow;
-	}
-	uint32_t getLen()
-	{
-		return len;
-	}
+	bool hasFinished() { return finished; }
+
+	//Set the length of the downloaded file, can be called multiple times to accomodate a growing file
+	void setLen(uint32_t l);
+	uint32_t getLen() { return len; }
+	//Gets the amount of downloaded data
+	uint32_t getDataSize() { return tail; }
 };
 
 class ThreadedDownloader : public Downloader, public IThreadJob
@@ -135,6 +172,9 @@ private:
 	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 	void execute();
 	void threadAbort();
+	
+	//Size of the reading buffer
+	static const size_t bufSize = 8192;
 public:
 	LocalDownloader(const tiny_string& u);
 };

@@ -151,6 +151,8 @@ private:
 
 	enum CONNECTION_TYPE { CONNECT_TO_FMS=0, DIRECT_CONNECTIONS };
 	CONNECTION_TYPE peerID;
+
+	ASObject* client;
 public:
 	NetStream();
 	~NetStream();
@@ -166,6 +168,7 @@ public:
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getTime);
+	ASFUNCTION(_setClient);
 
 	//Interface for video
 	/**

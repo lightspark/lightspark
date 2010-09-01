@@ -405,10 +405,24 @@ void NetStream::sinit(Class_base* c)
 	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
 	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
 	c->setGetterByQName("time","",Class<IFunction>::getFunction(_getTime));
+	c->setSetterByQName("client","",Class<IFunction>::getFunction(_setClient));
 }
 
 void NetStream::buildTraits(ASObject* o)
 {
+}
+
+ASFUNCTIONBODY(NetStream,_setClient)
+{
+	assert_and_throw(argslen == 1);
+	if(args[0]->getObjectType() == T_NULL)
+		throw Class<TypeError>::getInstanceS();
+
+	NetStream* th=Class<NetStream>::cast(obj);
+
+	th->client = args[0];
+	th->client->incRef();
+	return NULL;
 }
 
 ASFUNCTIONBODY(NetStream,_constructor)
@@ -434,6 +448,8 @@ ASFUNCTIONBODY(NetStream,_constructor)
 		else
 			throw Class<ArgumentError>::getInstanceS("NetStream constructor: peerID");
 	}
+
+	th->client = th;
 
 	assert_and_throw(netConnection->uri.getURL()=="");
 	return NULL;
@@ -765,6 +781,21 @@ void NetStream::execute()
 				}
 				if(!tickStarted && isReady())
 				{
+					{
+						ASObject* callback = client->getVariableByQName("onMetaData", "");
+						if(callback->getObjectType() == T_FUNCTION)
+						{
+							ASObject* callbackArgs[1];
+							ASObject* metadata = Class<ASObject>::getInstanceS();
+							metadata->setVariableByQName("width", "", abstract_i(getVideoWidth()));
+							metadata->setVariableByQName("height", "", abstract_i(getVideoHeight()));
+							callbackArgs[0] = metadata;
+							client->incRef();
+							metadata->incRef();
+							static_cast<IFunction*>(callback)->call(client, callbackArgs, 1);
+						}
+					}
+
 					tickStarted=true;
 					if(frameRate==0)
 					{

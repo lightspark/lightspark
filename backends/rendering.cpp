@@ -239,7 +239,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		throw RunTimeException("Unable to load font");
 	}
 	
-	font.FaceSize(20);
+	font.FaceSize(12);
 
 	glEnable(GL_TEXTURE_2D);
 	try
@@ -712,7 +712,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	if(font.Error())
 		throw RunTimeException("Unable to load font");
 	
-	font.FaceSize(20);
+	font.FaceSize(12);
 	try
 	{
 		//Texturing must be enabled otherwise no tex coord will be sent to the shader

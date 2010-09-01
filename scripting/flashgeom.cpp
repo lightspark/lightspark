@@ -75,7 +75,7 @@ tiny_string Rectangle::toString(bool debugMsg)
 	char buf[512];
 	snprintf(buf,512,"(x=%f, y=%f, w=%f, h=%f)",x,y,width,height);
 	
-	return tiny_string(buf);
+	return tiny_string(buf, true);
 }
 
 const lightspark::RECT Rectangle::getRect() const
@@ -292,7 +292,7 @@ tiny_string Point::toString(bool debugMsg)
 	char buf[512];
 	snprintf(buf,512,"(a=%f, b=%f)",x,y);
 	
-	return tiny_string(buf);
+	return tiny_string(buf, true);
 }
 
 number_t Point::len() const
@@ -517,7 +517,7 @@ tiny_string Matrix::toString(bool debugMsg)
 	snprintf(buf,512,"(a=%f, b=%f, c=%f, d=%f, tx=%f, ty=%f)",
 		a, b, c, d, tx, ty);
 	
-	return tiny_string(buf);
+	return tiny_string(buf, true);
 }
 
 ASFUNCTIONBODY(Matrix,_get_a)

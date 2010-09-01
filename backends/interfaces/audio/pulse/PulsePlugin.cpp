@@ -300,12 +300,12 @@ void PulsePlugin::resumeStream(AudioStream *audioStream)
 
 void PulsePlugin::pulseLock()
 {
-	pulseLock();
+	pa_threaded_mainloop_lock(mainLoop);;
 }
 
 void PulsePlugin::pulseUnlock()
 {
-	pulseUnlock();
+	pa_threaded_mainloop_unlock(mainLoop);
 }
 
 bool PulsePlugin::serverAvailable() const

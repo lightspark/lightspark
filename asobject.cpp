@@ -72,7 +72,9 @@ TRISTATE ASObject::isLess(ASObject* r)
 		IFunction* f1=static_cast<IFunction*>(obj1);
 		IFunction* f2=static_cast<IFunction*>(obj2);
 
+		incRef();
 		ASObject* ret1=f1->call(this,NULL,0);
+		r->incRef();
 		ASObject* ret2=f2->call(r,NULL,0);
 
 		LOG(LOG_CALLS,_("Overloaded isLess"));
@@ -133,6 +135,8 @@ bool ASObject::isEqual(ASObject* r)
 		assert_and_throw(func_equals->getObjectType()==T_FUNCTION);
 		IFunction* func=static_cast<IFunction*>(func_equals);
 
+		incRef();
+		r->incRef();
 		ASObject* ret=func->call(this,&r,1);
 		assert_and_throw(ret->getObjectType()==T_BOOLEAN);
 
@@ -155,7 +159,9 @@ bool ASObject::isEqual(ASObject* r)
 		IFunction* f1=static_cast<IFunction*>(obj1);
 		IFunction* f2=static_cast<IFunction*>(obj2);
 
+		incRef();
 		ASObject* ret1=f1->call(this,NULL,0);
+		r->incRef();
 		ASObject* ret2=f2->call(r,NULL,0);
 
 		LOG(LOG_CALLS,_("Overloaded isEqual"));

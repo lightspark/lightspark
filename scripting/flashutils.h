@@ -102,6 +102,7 @@ public:
 		throw UnsupportedException("getVariableByQName not supported for Dictionary");
 		return NULL;
 	}
+	void getIteratorByMultiname(const multiname& name, std::map<ASObject*, ASObject*>::iterator& iter);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{

@@ -405,13 +405,13 @@ void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool
 void Dictionary::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(implEnable);
-	assert_and_throw(name.name_type==multiname::NAME_OBJECT);
-	map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
-	assert_and_throw(it!=data.end());
-
-	ASObject* ret=it->second;
-	ret->decRef();
-
+	
+	map<ASObject*, ASObject*>::iterator it;
+	getIteratorByMultiname(name, it);
+	
+	assert_and_throw(it != data.end());
+	
+	it->second->decRef();
 	data.erase(it);
 
 	//This is ugly, but at least we are sure that we own name_o
@@ -419,26 +419,22 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 	tmp->name_o=NULL;
 }
 
-ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+void Dictionary::getIteratorByMultiname(const multiname& name, map<ASObject*, ASObject*>::iterator& iter)
 {
-	assert_and_throw(!skip_impl);
 	assert_and_throw(implEnable);
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0 && name.ns[0].name=="");
-	ASObject* ret=NULL;
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
 		//From specs, then === operator compare references when working on generic objects
 		map<ASObject*,ASObject*>::iterator it=data.find(name.name_o);
-		if(it==data.end())
-			ret=new Undefined;
-		else
+		if(it != data.end())
 		{
-			ret=it->second;
-			ret->incRef();
+			iter = it;
 			//This is ugly, but at least we are sure that we own name_o
 			multiname* tmp=const_cast<multiname*>(&name);
 			tmp->name_o=NULL;
+			return;
 		}
 	}
 	else if(name.name_type==multiname::NAME_STRING)
@@ -453,14 +449,11 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 				if(name.name_s == s->data.c_str())
 				{
 					//Value found
-					ret=it->second;
-					ret->incRef();
-					return ret;
+					iter = it;
+					return;
 				}
 			}
 		}
-		//Value not found
-		ret=new Undefined;
 	}
 	else if(name.name_type==multiname::NAME_INT)
 	{
@@ -474,14 +467,11 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 				if(name.name_i == it->first->toNumber())
 				{
 					//Value found
-					ret=it->second;
-					ret->incRef();
-					return ret;
+					iter = it;
+					return;
 				}
 			}
 		}
-		//Value not found
-		ret=new Undefined;
 	}
 	else if(name.name_type==multiname::NAME_NUMBER)
 	{
@@ -495,21 +485,33 @@ ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_im
 				if(name.name_d == it->first->toNumber())
 				{
 					//Value found
-					ret=it->second;
-					ret->incRef();
-					return ret;
+					iter = it;
+					return;
 				}
 			}
 		}
-		//Value not found
-		ret=new Undefined;
 	}
 	else
 	{
 		throw UnsupportedException("Unsupported name kind on Dictionary::getVariableByMultiname");
 	}
+	iter = data.end();
+}
 
-	return ret;
+
+ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+{
+	assert_and_throw(!skip_impl);
+	assert_and_throw(implEnable);
+	
+	map<ASObject*, ASObject*>::iterator it;
+	getIteratorByMultiname(name, it);
+	
+	if (it == data.end())
+		return new Undefined;
+		
+	it->second->incRef();
+	return it->second;
 }
 
 bool Dictionary::hasNext(unsigned int& index, bool& out)

@@ -40,8 +40,8 @@ private:
 public:
 	NPDownloadManager(NPP i);
 	~NPDownloadManager();
-	lightspark::Downloader* download(const lightspark::tiny_string& u);
-	lightspark::Downloader* download(const lightspark::URLInfo& u);
+	lightspark::Downloader* download(const lightspark::tiny_string& u, bool cached=false);
+	lightspark::Downloader* download(const lightspark::URLInfo& u, bool cached=false);
 	void destroy(lightspark::Downloader* d);
 };
 

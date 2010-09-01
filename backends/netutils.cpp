@@ -35,14 +35,14 @@ StandaloneDownloadManager::StandaloneDownloadManager()
 	type = STANDALONE;
 }
 
-Downloader* StandaloneDownloadManager::download(const tiny_string& u)
+Downloader* StandaloneDownloadManager::download(const tiny_string& u, bool cached)
 {
-	return download(sys->getOrigin().goToURL(u));
+	return download(sys->getOrigin().goToURL(u), cached);
 }
 
-Downloader* StandaloneDownloadManager::download(const URLInfo& url)
+Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 {
-	LOG(LOG_NO_INFO, "DownloadManager: STANDALONE: '" << url.getParsedURL() << "'");
+	LOG(LOG_NO_INFO, "DownloadManager: STANDALONE: '" << url.getParsedURL() << "'" << (cached ? " - cached" : ""));
 	ThreadedDownloader* downloader;
 	if(url.getProtocol() == "file")
 	{
@@ -54,6 +54,7 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url)
 		LOG(LOG_NO_INFO, "DownloadManager: remote file");
 		downloader=new CurlDownloader(url.getParsedURL());
 	}
+	downloader->setCached(cached);
 	sys->addJob(downloader);
 	return downloader;
 }
@@ -67,6 +68,12 @@ void StandaloneDownloadManager::destroy(Downloader* d)
 
 Downloader::~Downloader()
 {
+	if(cached && cache.is_open())
+	{
+		cache.close();
+		if(!keepCache)
+			unlink(cacheFileName.raw_buf());
+	}
 	if(buffer != NULL)
 	{
 		free(buffer);
@@ -76,35 +83,26 @@ Downloader::~Downloader()
 	sem_destroy(&terminated);
 }
 
-Downloader::Downloader():buffer(NULL),allowBufferRealloc(false),len(0),tail(0),waiting(false),failed(false),finished(false),hasTerminated(false)
+Downloader::Downloader():allowBufferRealloc(false),cached(false),waiting(false),hasTerminated(false),failed(false),finished(false),buffer(NULL),len(0),tail(0),keepCache(false)
 {
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
 	sem_init(&terminated,0,0);
 }
 
-void Downloader::setLen(uint32_t l)
+void Downloader::stop()
 {
-	len=l;
-	//Create buffer
-	if(buffer == NULL)
+	failed=true;
+	sem_post(&available);
+}
+
+//Use this method to wait for the download to finish
+void Downloader::wait()
+{
+	if(!hasTerminated)
 	{
-		buffer= (uint8_t*) calloc(len, sizeof(uint8_t));
-		setg((char*)buffer,(char*)buffer,(char*)buffer);
-	}
-	//Realloc, only if allowed
-	else if(getAllowBufferRealloc())
-	{
-		//Remember the relative positions of the input pointers
-		intptr_t curPos = (intptr_t) (gptr()-eback());
-		intptr_t curLen = (intptr_t) (egptr()-eback());
-		buffer = (uint8_t*) realloc(buffer, len);
-		//Do some pointer arithmetic to point the input pointers to the right places in the new buffer
-		setg((char*)buffer,(char*)(buffer+curPos),(char*)(buffer+curLen));
-	}
-	else
-	{
-		assert_and_throw(buffer==NULL);
+		sem_wait(&terminated);
+		hasTerminated = true;
 	}
 }
 
@@ -129,10 +127,67 @@ void Downloader::setFinished()
 		sem_post(&mutex);
 }
 
+void Downloader::setLen(uint32_t l)
+{
+	len=l;
+	if(cached && !cache.is_open())
+	{
+		//Create a temporary file(name)
+		char* cacheFileNameC = new char[30];
+		strcpy(cacheFileNameC, "/tmp/lightsparkdownloadXXXXXX");
+		int fd = mkstemp(cacheFileNameC);
+		if(fd == -1)
+			throw RunTimeException(_("Downloader::setLen: cannot create temporary file"));
+		//We are using fstream to read/write to the cache, so we don't need this FD
+		close(fd);
+
+		//Save the temporary filename
+		cacheFileName = tiny_string(cacheFileNameC, true);
+		delete[] cacheFileNameC;
+		//Open the cache file
+		cache.open(cacheFileName.raw_buf(), std::fstream::in | std::fstream::out);
+		assert_and_throw(cache.is_open());
+		LOG(LOG_NO_INFO, _("Downloading to cache file: ") << cacheFileName);
+
+		//This buffer will be our "window" into the file
+		buffer= (uint8_t*) calloc(cacheMaxSize, sizeof(uint8_t));
+
+		//Our cache window starts at pos 0
+		cachePos = 0;
+		cacheSize = 0;
+		setg((char*)buffer,(char*)buffer,(char*)buffer);
+	}
+	else if(!cached)
+	{
+		//Create buffer
+		if(buffer == NULL)
+		{
+			LOG(LOG_NO_INFO, _("Downloading to memory"));
+			buffer= (uint8_t*) calloc(len, sizeof(uint8_t));
+			setg((char*)buffer,(char*)buffer,(char*)buffer);
+		}
+		//Realloc, only if allowed
+		else if(getAllowBufferRealloc())
+		{
+			//Remember the relative positions of the input pointers
+			intptr_t curPos = (intptr_t) (gptr()-eback());
+			intptr_t curLen = (intptr_t) (egptr()-eback());
+			buffer = (uint8_t*) realloc(buffer, len);
+			//Do some pointer arithmetic to point the input pointers to the right places in the new buffer
+			setg((char*)buffer,(char*)(buffer+curPos),(char*)(buffer+curLen));
+		}
+		else
+		{
+			assert_and_throw(buffer==NULL);
+		}
+	}
+}
+
 void Downloader::append(uint8_t* buf, uint32_t added)
 {
 	if(added==0)
 		return;
+
 	if((tail+added)>len)
 	{
 		//Only grow the buffer when allowed
@@ -144,17 +199,29 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 			else
 				newLength += 4096;
 			LOG(LOG_NO_INFO, _("Downloaded file bigger than buffer (") << tail+added << ">" << len << 
-					"). Growing buffer to: " << newLength << ", grew by: " << (newLength-len));
+					_("). Growing buffer to: ") << newLength << _(", grown by: ") << (newLength-len));
 			setLen(newLength);
 		}
 		//The real data is longer than the provided Content-Length header
 		else
 		{
-			throw RunTimeException("Downloaded file is too big");
+			throw RunTimeException(_("Downloaded file is too big"));
 		}
 	}
-	sem_wait(&mutex);
-	memcpy(buffer + tail,buf,added);
+
+	if(cached)
+	{
+		assert_and_throw(cache.is_open());
+		sem_wait(&mutex);
+		//Seek to where we last wrote data
+		cache.seekp(tail);
+		cache.write((char*) buf, added);
+	}
+	else
+	{
+		sem_wait(&mutex);
+		memcpy(buffer + tail,buf,added);
+	}
 	tail+=added;
 	if(waiting)
 	{
@@ -165,70 +232,135 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 		sem_post(&mutex);
 }
 
-void Downloader::stop()
-{
-	failed=true;
-	sem_post(&available);
-}
-
-//Use this method to wait for the download to finish in downloadManager
-void Downloader::wait()
-{
-	if(!hasTerminated)
-	{
-		sem_wait(&terminated);
-		hasTerminated = true;
-	}
-}
-
 Downloader::int_type Downloader::underflow()
 {
 	sem_wait(&mutex);
 	assert_and_throw(gptr()==egptr());
-	unsigned int firstIndex=tail;
 
-	if((buffer+tail)==(uint8_t*)egptr()) //We have no more bytes
+	unsigned int startTail=tail;
+	//There is no data to read yet OR we have read all available data
+	if(startTail==0 || (!cached && startTail==((uint8_t*)egptr()-buffer)) || (cached && startTail == cachePos+(((uint8_t*)egptr())-buffer)))
 	{
-		if(failed || (tail==len && len!=0) || finished)
+		//The download is failed, the end is reached or the download has finished
+		if(failed || (startTail==len && len!=0) || finished)
 		{
 			sem_post(&mutex);
-			return -1;
+			return EOF;
 		}
-		else //More bytes should follow
+		//We haven't reached the end of the download, more bytes should follow
+		else
 		{
-			waiting=true;
+			LOG(LOG_NO_INFO, _("Downloader::underflow: waiting for more bytes"));
+			waiting=true; //Indicate we are waiting for more bytes to be downloaded
 			sem_post(&mutex);
-			sem_wait(&available);
-			//We have finished or have failed, no more data processing should be done
-			if(failed || finished)
+			sem_wait(&available); //Wait for more bytes to be downloaded
+			
+			//Check if we haven't finished (and there wasn't any new data) or failed
+			if(failed || (finished && startTail==tail))
 			{
 				sem_post(&mutex);
-				return -1;
+				return EOF;
 			}
 		}
 	}
 
-	//The current pointer has to be saved
-	char* cur=gptr();
+	//We should have an initialized buffer here since there is some data
+	assert_and_throw(buffer != NULL);
+	char* begin;
+	char* cur;
+	char* end;
+	uint32_t index;
+	if(cached)
+	{
+		//We should have an open cache file here since there is some data
+		assert_and_throw(cache.is_open());
 
+		size_t newCacheSize = tail-(cachePos+cacheSize);
+		if(newCacheSize > cacheMaxSize)
+			newCacheSize = cacheMaxSize;
+
+		//Move the start of our new window to the end of our last window
+		cachePos = cachePos+cacheSize;
+		cacheSize = newCacheSize;
+		//Seek to the start of our new window
+		cache.seekg(cachePos);
+		//Read into our buffer window
+		cache.read((char*)buffer, cacheSize);
+		if(cache.fail())
+			LOG(LOG_ERROR, _("Downloader::underflow: reading from cache file failed"));
+
+		begin=(char*)buffer;
+		cur=(char*)buffer;
+		end=(char*)buffer+cacheSize;
+		index=0;
+	}
+	else
+	{
+		begin=(char*)buffer;
+		cur=gptr();
+		end=(char*)buffer+tail;
+		index=startTail;
+	}
+
+	//If we've failed, don't bother any more
 	if(failed)
 	{
 		sem_post(&mutex);
-		return -1;
+		return EOF;
 	}
 
-	//We have some bytes now, let's use them
-	setg((char*)buffer,cur,(char*)buffer+tail);
+	//Set our new iterators in the buffer (begin, cursor, end)
+	setg(begin, cur, end);
 	sem_post(&mutex);
 	//Cast to unsigned, otherwise 0xff would become eof
-	return (unsigned char)buffer[firstIndex];
+	return (unsigned char)buffer[index];
 }
 
 Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode mode)
 {
 	assert_and_throw(mode==std::ios_base::in);
 	sem_wait(&mutex);
-	setg((char*)buffer,(char*)buffer+pos,(char*)buffer+tail);
+	assert_and_throw(buffer != NULL);
+	if(cached)
+	{
+		assert_and_throw(cache.is_open());
+		//The requested position is inside our current window
+		if(pos >= cachePos && pos <= cachePos+cacheSize)
+		{
+			//Just move our cursor to the correct position in our window
+			setg((char*)buffer, (char*)buffer+pos-cachePos, (char*)buffer+cacheSize);
+		}
+		//The requested position is outside our current window
+		else if(pos <= tail)
+		{
+			cachePos = pos;
+			cacheSize = tail-pos;
+			if(cacheSize > cacheMaxSize)
+				cacheSize = cacheMaxSize;
+
+			//Seek to the requested position
+			cache.seekg(cachePos);
+			//Read into our window
+			cache.read((char*)buffer, cacheSize);
+			if(cache.fail())
+				LOG(LOG_ERROR, _("Downloader::seekpos: reading from cache file failed"));
+
+			//Our window starts at position pos
+			setg((char*) buffer, (char*) buffer, ((char*) buffer)+cacheSize);
+		}
+		//The requested position is bigger then our current amount of available data
+		else if(pos > tail)
+			return -1;
+	}
+	else
+	{
+		//The requested position is valid
+		if(pos <= tail)
+			setg((char*)buffer,(char*)buffer+pos,(char*)buffer+tail);
+		//The requested position is bigger then our current amount of available data
+		else
+			return -1;
+	}
 	sem_post(&mutex);
 	return pos;
 }
@@ -237,7 +369,12 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 {
 	assert_and_throw(mode==std::ios_base::in);
 	assert_and_throw(off==0);
-	pos_type ret=gptr()-eback();
+	assert_and_throw(buffer != NULL);
+
+	pos_type ret = gptr()-eback();
+	//Nothing special to do here, we only support offset==0 seeks
+	if(cached)
+		ret+=cachePos;
 	return ret;
 }
 
@@ -372,43 +509,84 @@ void LocalDownloader::execute()
 	}
 	else
 	{
-		std::ifstream file;
 		LOG(LOG_NO_INFO, _("LocalDownloader::execute: reading local file: ") << url.raw_buf());
-		file.open(url.raw_buf(), std::ifstream::in);
-
-		if(file.is_open())
+		//If the caching is selected, we override the normal behaviour and use the local file as the cache file
+		//This prevents unneeded copying of the file's data
+		if(isCached())
 		{
-			file.seekg(0, std::ios::end);
-			setLen(file.tellg());
-			file.seekg(0, std::ios::beg);
+			sem_wait(&mutex);
+			//Make sure we don't delete the local file afterwards
+			keepCache = true;
 
-			//TODO: Maybe this size should be a macro or something.
-			size_t buffSize = 8192;
-			char * buffer = new char[buffSize];
-
-			bool readFailed = 0;
-			while(!file.eof())
+			//Substitute the local file for the normal cache file
+			cacheFileName = url;
+			cache.open(cacheFileName.raw_buf(), std::fstream::in);
+			if(cache.is_open())
 			{
-				if(file.fail() || hasFailed())
-				{
-					readFailed = 1;
-					break;
-				}
-				file.read(buffer, buffSize);
-				append((uint8_t *) buffer, file.gcount());
+				LOG(LOG_NO_INFO, "Downloading from local file as cache: " << cacheFileName);
+
+				//This buffer will be our "window" into the file
+				buffer= (uint8_t*) calloc(cacheMaxSize, sizeof(uint8_t));
+
+				//Our cache window starts at pos 0
+				cachePos = 0;
+				cacheSize = 0;
+				setg((char*)buffer,(char*)buffer,(char*)buffer);
+
+				cache.seekg(0, std::ios::end);
+				//Report that we've downloaded everything already
+				len = cache.tellg();
+				tail = len;
+
+				sem_post(&mutex);
 			}
-			if(readFailed)
+			else
 			{
-				LOG(LOG_ERROR, _("LocalDownloader::execute: reading from local file failed: ") << url.raw_buf());
+				sem_post(&mutex);
 				setFailed();
+				LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
+				return;
 			}
-			file.close();
-			delete buffer;
 		}
-		else
-		{
-			LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
-			setFailed();
+		//Otherwise we follow the normal procedure
+		else {
+			std::ifstream file;
+			file.open(url.raw_buf(), std::ifstream::in);
+
+			if(file.is_open())
+			{
+				file.seekg(0, std::ios::end);
+				setLen(file.tellg());
+				file.seekg(0, std::ios::beg);
+
+				char * buffer = new char[bufSize];
+
+				bool readFailed = 0;
+				while(!file.eof())
+				{
+					if(file.fail() || hasFailed())
+					{
+						readFailed = 1;
+						break;
+					}
+					file.read(buffer, bufSize);
+					append((uint8_t *) buffer, file.gcount());
+				}
+				if(readFailed)
+				{
+					LOG(LOG_ERROR, _("LocalDownloader::execute: reading from local file failed: ") << url.raw_buf());
+					setFailed();
+					return;
+				}
+				file.close();
+				delete buffer;
+			}
+			else
+			{
+				LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
+				setFailed();
+				return;
+			}
 		}
 	}
 	//Notify the downloader no more data should be expected

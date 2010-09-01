@@ -30,31 +30,38 @@
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
 
-
-
-Downloader* CurlDownloadManager::download(const tiny_string& u)
+StandaloneDownloadManager::StandaloneDownloadManager()
 {
-	CurlDownloader* curlDownloader=new CurlDownloader(u);
-	sys->addJob(curlDownloader);
-	return curlDownloader;
+	type = STANDALONE;
 }
 
-void CurlDownloadManager::destroy(Downloader* d)
+Downloader* StandaloneDownloadManager::download(const tiny_string& u)
 {
-	d->wait();
-	delete d;
+	return download(sys->getOrigin().goToURL(u));
 }
 
-Downloader* LocalDownloadManager::download(const tiny_string& u)
+Downloader* StandaloneDownloadManager::download(const URLInfo& url)
 {
-	LocalDownloader* localDownloader=new LocalDownloader(u);
-	sys->addJob(localDownloader);
-	return localDownloader;
+	LOG(LOG_NO_INFO, "DownloadManager: STANDALONE: '" << url.getParsedURL() << "'");
+	ThreadedDownloader* downloader;
+	if(url.getProtocol() == "file")
+	{
+		LOG(LOG_NO_INFO, "DownloadManager: local file");
+		downloader=new LocalDownloader(url.getPath());
+	}
+	else
+	{
+		LOG(LOG_NO_INFO, "DownloadManager: remote file");
+		downloader=new CurlDownloader(url.getParsedURL());
+	}
+	sys->addJob(downloader);
+	return downloader;
 }
 
-void LocalDownloadManager::destroy(Downloader* d)
+void StandaloneDownloadManager::destroy(Downloader* d)
 {
-	d->wait();
+	if(!sys->isShuttingDown())
+		d->wait();
 	delete d;
 }
 
@@ -69,7 +76,7 @@ Downloader::~Downloader()
 	sem_destroy(&terminated);
 }
 
-Downloader::Downloader():buffer(NULL),allowBufferRealloc(false),len(0),tail(0),waiting(false),failed(false)
+Downloader::Downloader():buffer(NULL),allowBufferRealloc(false),len(0),tail(0),waiting(false),failed(false),finished(false),hasTerminated(false)
 {
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
@@ -111,6 +118,17 @@ void Downloader::setFailed()
 		sem_post(&mutex);
 }
 
+//Notify possible waiters no more data is coming
+void Downloader::setFinished()
+{
+	sem_wait(&mutex);
+	finished=true;
+	if(waiting) //If we are waiting for some bytes, gives up and return EOF
+		sem_post(&available);
+	else
+		sem_post(&mutex);
+}
+
 void Downloader::append(uint8_t* buf, uint32_t added)
 {
 	if(added==0)
@@ -120,11 +138,14 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 		//Only grow the buffer when allowed
 		if(getAllowBufferRealloc())
 		{
-			LOG(LOG_NO_INFO, _("Downloaded file bigger than buffer: ") << 
-					tail+added << ">" << len << ", reallocating buffer.");
-			//TODO: Confirm whats best: allocate more memory at a time, at the risk of allocating too much
-			//			or allocate exactly the amount needed, at the risk of having to reallocate a lot
-			setLen(len+4096);
+			uint32_t newLength = len;
+			if((tail+added)-len > 4096)
+				newLength += ((tail+added)-len);
+			else
+				newLength += 4096;
+			LOG(LOG_NO_INFO, _("Downloaded file bigger than buffer (") << tail+added << ">" << len << 
+					"). Growing buffer to: " << newLength << ", grew by: " << (newLength-len));
+			setLen(newLength);
 		}
 		//The real data is longer than the provided Content-Length header
 		else
@@ -150,9 +171,14 @@ void Downloader::stop()
 	sem_post(&available);
 }
 
+//Use this method to wait for the download to finish in downloadManager
 void Downloader::wait()
 {
-	sem_wait(&terminated);
+	if(!hasTerminated)
+	{
+		sem_wait(&terminated);
+		hasTerminated = true;
+	}
 }
 
 Downloader::int_type Downloader::underflow()
@@ -163,7 +189,7 @@ Downloader::int_type Downloader::underflow()
 
 	if((buffer+tail)==(uint8_t*)egptr()) //We have no more bytes
 	{
-		if(failed || (tail==len && len!=0))
+		if(failed || (tail==len && len!=0) || finished)
 		{
 			sem_post(&mutex);
 			return -1;
@@ -173,7 +199,8 @@ Downloader::int_type Downloader::underflow()
 			waiting=true;
 			sem_post(&mutex);
 			sem_wait(&available);
-			if(failed)
+			//We have finished or have failed, no more data processing should be done
+			if(failed || finished)
 			{
 				sem_post(&mutex);
 				return -1;
@@ -216,21 +243,7 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 
 CurlDownloader::CurlDownloader(const tiny_string& u)
 {
-	//TODO: Url encode the string
-	std::string tmp2;
-	tmp2.reserve(u.len()*2);
-	for(int i=0;i<u.len();i++)
-	{
-		if(u[i]==' ')
-		{
-			char buf[4];
-			sprintf(buf,"%%%x",(unsigned char)u[i]);
-			tmp2+=buf;
-		}
-		else
-			tmp2.push_back(u[i]);
-	}
-	url=tmp2;
+	url=u;
 	requestStatus = 0;
 }
 
@@ -246,6 +259,7 @@ void CurlDownloader::execute()
 		setFailed();
 		return;
 	}
+	LOG(LOG_NO_INFO, _("CurlDownloader::execute: reading remote file: ") << url.raw_buf());
 #ifdef ENABLE_CURL
 	CURL *curl;
 	CURLcode res;
@@ -277,6 +291,8 @@ void CurlDownloader::execute()
 	setFailed();
 	LOG(LOG_ERROR,_("CURL not enabled in this build. Downloader will always fail."));
 #endif
+	//Notify the downloader no more data should be expected
+	setFinished();
 	sem_post(&(Downloader::terminated));
 }
 
@@ -311,8 +327,9 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 
 	if(strncmp(headerLine,"HTTP/1.1 ",9)==0) 
 	{
-		char* status = new char[3];
+		char* status = new char[4];
 		strncpy(status, headerLine+9, 3);
+		status[3]=0;
 		th->setRequestStatus(atoi(status));
 		delete[] status;
 		if(th->getRequestStatus()/100 == 4 || th->getRequestStatus()/100 == 5 || 
@@ -369,31 +386,33 @@ void LocalDownloader::execute()
 			size_t buffSize = 8192;
 			char * buffer = new char[buffSize];
 
-			bool failed = 0;
+			bool readFailed = 0;
 			while(!file.eof())
 			{
 				if(file.fail() || hasFailed())
 				{
-					failed = 1;
+					readFailed = 1;
 					break;
 				}
 				file.read(buffer, buffSize);
 				append((uint8_t *) buffer, file.gcount());
 			}
-			if(failed)
+			if(readFailed)
 			{
-				setFailed();
 				LOG(LOG_ERROR, _("LocalDownloader::execute: reading from local file failed: ") << url.raw_buf());
+				setFailed();
 			}
 			file.close();
 			delete buffer;
 		}
 		else
 		{
-				setFailed();
-				LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
+			LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
+			setFailed();
 		}
 	}
+	//Notify the downloader no more data should be expected
+	setFinished();
 	sem_post(&(Downloader::terminated));
 }
 

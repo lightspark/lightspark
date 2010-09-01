@@ -30,7 +30,13 @@ using namespace std;
 
 class AudioStream
 {
-public:
+  protected:
+	AudioStream(lightspark::AudioDecoder *dec = NULL, bool initPause = false);
+
+  public:
+	lightspark::AudioDecoder *decoder;
+	bool pause;	//Indicates whether the stream is paused as a result of pauseStream being called
+	virtual bool paused() = 0;	//Is the stream paused? (corked)
 	virtual uint32_t getPlayedTime() = 0;
 	virtual void fill() = 0;
 	virtual ~AudioStream() {};
@@ -46,7 +52,8 @@ protected:
 	string captureDeviceName;
 	vector<string *> playbackDevicesList;
 	vector<string *> captureDevicesList;
-	vector<AudioStream *> streams;
+	list<AudioStream *> streams;
+	typedef list<AudioStream *>::iterator stream_iterator;
 	volatile bool contextReady;
 	volatile bool noServer;
 	bool stopped;
@@ -59,6 +66,8 @@ public:
 	virtual string get_device ( DEVICE_TYPES desiredType );
 	virtual AudioStream *createStream ( lightspark::AudioDecoder *decoder ) = 0;
 	virtual void freeStream ( AudioStream *audioStream ) = 0;
+	virtual void pauseStream( AudioStream *audioStream ) = 0;	//Pause the stream (stops time from running, cork)
+	virtual void resumeStream( AudioStream *audioStream ) = 0;	//Resume the stream (restart time, uncork)
 	virtual bool isTimingAvailable() const = 0;
 	virtual ~IAudioPlugin();
 };

@@ -12,11 +12,11 @@
 	private var localLoader:URLLoader;
 	
 	//This is the path for a local file. 
-	private var localFilePath:String = "file://test.data";
+	private var localFilePath:String = "test.data";
 	//Should contain "Local data\n"
 
 	//This shouldn't be allowed when we implement allowed domains, security policy files
-	private var remoteFilePath:String = "http://ls.localhost/test.data";
+	private var remoteFilePath:String = "http://lightspark.sourceforge.net/test.data";
 	//Should contain "Remote data\n"
 
 	private var received:uint = 0;

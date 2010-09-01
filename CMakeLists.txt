@@ -25,7 +25,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 PROJECT(LIGHTSPARK)
 SET(MAJOR_VERSION "0")
 SET(MINOR_VERSION "4")
-SET(PATCH_VERSION "3")
+SET(PATCH_VERSION "4")
 
 # GCC 4.4+ is required, GCC_VERSION macro taken from GCC manual
 INCLUDE(CheckCSourceCompiles)
@@ -157,8 +157,11 @@ IF(UNIX)
 ENDIF(UNIX)
 
 IF(ENABLE_LIBAVCODEC)
-  # Compatibility checks for ffmpeg deprecated functions
-  INCLUDE(FindFFMpeg REQUIRED)
+	pkg_check_modules(FFMPEG libavcodec)
+	IF(NOT(FFMPEG_FOUND))
+		INCLUDE(FindFFMpeg REQUIRED)
+	ENDIF(NOT(FFMPEG_FOUND))
+	# Compatibility checks for ffmpeg deprecated functions
   INCLUDE(CheckFunctionExists REQUIRED)
   SET(CMAKE_REQUIRED_FLAGS ${LIBAVCODEC_CFLAGS})
   SET(CMAKE_REQUIRED_INCLUDES ${FFMPEG_INCLUDE_DIRS})

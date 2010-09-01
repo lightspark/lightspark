@@ -20,12 +20,13 @@
 #include "plugin.h"
 #include "logger.h"
 #include "compat.h"
+#include "backends/urlutils.h"
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define FAKE_MIME_TYPE  "application/x-lightspark"
 #define PLUGIN_NAME    "Shockwave Flash"
 #define FAKE_PLUGIN_NAME    "Lightspark player"
 #define MIME_TYPES_DESCRIPTION  MIME_TYPES_HANDLED":swf:"PLUGIN_NAME";"FAKE_MIME_TYPE":swfls:"FAKE_PLUGIN_NAME
-#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r423"
+#define PLUGIN_DESCRIPTION "Shockwave Flash 10.0 r44"
 
 using namespace std;
 
@@ -35,6 +36,7 @@ TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
 
 NPDownloadManager::NPDownloadManager(NPP i):instance(i)
 {
+	type = NPAPI;
 }
 
 NPDownloadManager::~NPDownloadManager()
@@ -43,23 +45,14 @@ NPDownloadManager::~NPDownloadManager()
 
 lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& u)
 {
-	//TODO: Url encode the string
-	std::string tmp2;
-	tmp2.reserve(u.len()*2);
-	for(int i=0;i<u.len();i++)
-	{
-		if(u[i]==' ')
-		{
-			char buf[4];
-			sprintf(buf,"%%%x",(unsigned char)u[i]);
-			tmp2+=buf;
-		}
-		else
-			tmp2.push_back(u[i]);
-	}
-	lightspark::tiny_string url=tmp2.c_str();
+	return download(sys->getOrigin().goToURL(u));
+}
+
+lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url)
+{
+	LOG(LOG_NO_INFO, "DownloadManager: PLUGIN: '" << url.getParsedURL() << "'");
 	//Register this download
-	NPDownloader* ret=new NPDownloader(instance, url);
+	NPDownloader* ret=new NPDownloader(instance, url.getParsedURL());
 	return ret;
 }
 
@@ -84,7 +77,7 @@ void NPDownloader::terminate()
 void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
-	cerr << "Start download for " << th->url << endl;
+	cerr << _("Start download for ") << th->url << endl;
 	th->started=true;
 	NPError e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
 	if(e!=NPERR_NO_ERROR)
@@ -363,11 +356,15 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	//We have to cast the downloadanager to a NPDownloadManager
 	lightspark::Downloader* dl=(lightspark::Downloader*)stream->notifyData;
 	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
+
+	//If this is the first NewStream call, set the system root url.
 	//cout << stream->headers << endl;
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;
 		dl->setLen(stream->end);
+		//TODO: confirm that growing buffers are normal. This does fix a bug I found though. (timonvo)
+		dl->setAllowBufferRealloc(true);
 		*stype=NP_NORMAL;
 	}
 	else
@@ -439,18 +436,22 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
+	lightspark::Downloader* dl=(lightspark::Downloader*)notifyData;
 	cout << "URLnotify " << url << endl;
+	//Notify our downloader of what happened
 	switch(reason)
 	{
 		case NPRES_DONE:
 			cout << "Done" <<endl;
+			dl->setFinished();
 			break;
 		case NPRES_USER_BREAK:
 			cout << "User Break" <<endl;
+			dl->setFailed();
 			break;
 		case NPRES_NETWORK_ERR:
 			cout << "Network Error" <<endl;
+			dl->setFailed();
 			break;
 	}
-	//TODO: should notify the Downloader if failing
 }

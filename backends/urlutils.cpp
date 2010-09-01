@@ -21,6 +21,7 @@
 #include "urlutils.h"
 #include "compat.h"
 #include <string>
+#include <algorithm>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -31,25 +32,18 @@
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
 
-URLInfo::URLInfo(const tiny_string& u, bool encoded)
+URLInfo::URLInfo(const tiny_string& u)
 {
-	if(encoded)
-	{
-		encodedUrl = u;
-		url = decode(u);
-	}
-	else
-	{
-		url = u;
-		encodedUrl = encode(u);
-	}
+	url = u;
 
 	std::string str = std::string(url.raw_buf());
+
+	valid = false;
 
 	//Check for :// marking that there is a protocol in this url
 	size_t colonPos = str.find("://");
 	if(colonPos == std::string::npos)
-		throw RunTimeException("URLInfo: invalid url: no :// in url");
+		invalidReason = MISSING_PROTOCOL;
 
 	protocol = str.substr(0, colonPos);
 
@@ -57,16 +51,21 @@ URLInfo::URLInfo(const tiny_string& u, bool encoded)
 	size_t portPos = std::string::npos;
 	size_t pathPos = std::string::npos;
 	size_t queryPos = std::string::npos;
+	size_t fragmentPos = std::string::npos;
 	size_t cursor = hostnamePos;
 
 	if(protocol == "file")
 	{
 		pathPos = cursor;
 		if(pathPos == str.length())
-			throw RunTimeException("URLInfo: invalid file:// url: no path");
+			invalidReason = MISSING_PATH;
 	}
 	else
 	{
+		//URLEncode spaces by default. This is just a safety check.
+		//Full encoding should be performed BEFORE passing the url to URLInfo
+		url = encode(u, ENCODE_SPACES);
+
 		pathPos = str.find("/", cursor);
 		cursor = pathPos;
 
@@ -75,9 +74,12 @@ URLInfo::URLInfo(const tiny_string& u, bool encoded)
 			portPos = std::string::npos;
 
 		queryPos = str.find("?", cursor);
+		if(queryPos != std::string::npos)
+			cursor = queryPos;
+		fragmentPos = str.find("#", cursor);
 
 		if(portPos == hostnamePos || pathPos == hostnamePos || queryPos == hostnamePos)
-			throw RunTimeException("URLInfo: invalid url: no hostname");
+			invalidReason = MISSING_HOSTNAME;
 	}
 
 	//Parse the host string
@@ -90,16 +92,16 @@ URLInfo::URLInfo(const tiny_string& u, bool encoded)
 		portPos++;
 		std::istringstream i(str.substr(portPos, std::min(pathPos, str.length())-portPos));
 		if(!(i >> port))
-			throw RunTimeException("URLInfo: invalid port");
+			invalidReason = INVALID_PORT;
 	}
 
 	//Parse the path string
 	if(pathPos != std::string::npos)
 	{
-		path = normalizePath(tiny_string(str.substr(
-						pathPos, std::min(str.length(), queryPos)-pathPos
-						).c_str(), true).raw_buf());
-		std::string pathStr = std::string(path.raw_buf());
+		std::string pathStr = str.substr(pathPos, std::min(str.length(), queryPos)-pathPos);
+		path = tiny_string(pathStr);
+		path = normalizePath(path);
+		pathStr = std::string(path.raw_buf());
 
 		size_t lastSlash = pathStr.rfind("/");
 		if(lastSlash != std::string::npos)
@@ -126,10 +128,35 @@ URLInfo::URLInfo(const tiny_string& u, bool encoded)
 		query = str.substr(queryPos+1);
 	else
 		query = "";
-}
 
-URLInfo::~URLInfo()
-{
+	//Copy the query string
+	if(fragmentPos != std::string::npos && fragmentPos < str.length()-1)
+		fragment = str.substr(fragmentPos+1);
+	else
+		fragment = "";
+
+	//Create a new normalized and encoded string representation
+	parsedURL = getProtocol();
+	parsedURL += "://";
+	parsedURL += getHostname();
+	if(getPort() > 0)
+	{
+		parsedURL += ":";
+		parsedURL += tiny_string((int) getPort());
+	}
+	parsedURL += getPath();
+	if(query != "")
+	{
+		parsedURL += "?";
+		parsedURL += getQuery();
+	}
+	if(fragment != "")
+	{
+		parsedURL += "#";
+		parsedURL += getFragment();
+	}
+
+	valid = true;
 }
 
 tiny_string URLInfo::normalizePath(const tiny_string& u)
@@ -188,75 +215,158 @@ tiny_string URLInfo::normalizePath(const tiny_string& u)
 	return tiny_string(pathStr);
 }
 
-URLInfo URLInfo::getQualified(const tiny_string& u, bool encoded, const tiny_string& root)
+const URLInfo URLInfo::goToURL(const tiny_string& u) const
 {
-	std::string str;
-	if(encoded)
-		str = u.raw_buf();
-	else
-		str = URLInfo::encode(u).raw_buf();
-	//No protocol, treat this as an unqualified URL
-	if(str.find(":") == std::string::npos)
-	{
-		std::string qualified = std::string();
-		URLInfo rootUrl;
-		if(root == "")
-		{
-			if(sys->getUrl() == "")
-				throw RunTimeException("URLInfo::getQualified: no root url to qualify from");
-			rootUrl = URLInfo(sys->getUrl());
-		}
-		else
-			rootUrl = URLInfo(root);
+	std::string str = u.raw_buf();
 
-		qualified = std::string(rootUrl.getProtocol().raw_buf());
+	//No protocol, treat this as an unqualified URL
+	if(str.find("://") == std::string::npos)
+	{
+		tiny_string qualified;
+
+		qualified = getProtocol();
 		qualified += "://";
-		qualified += std::string(rootUrl.getHostname().raw_buf());
-		qualified += std::string(rootUrl.getPort() > 0 ? ":" + rootUrl.getPort() : "");
-		qualified += std::string(rootUrl.getPathDirectory().raw_buf());
+		qualified += getHostname();
+		if(getPort() > 0)
+		{
+			qualified += ":";
+			qualified += tiny_string((int) getPort());
+		}
+		qualified += getPathDirectory();
 		qualified += str;
-		return URLInfo(qualified.c_str(), true);
+		return URLInfo(qualified);
 	}
 	else //Protocol specified, treat this as a qualified URL
-	{
-		return URLInfo(u, encoded);
-	}
+		return URLInfo(u);
 }
 
-tiny_string URLInfo::encode(const tiny_string& u)
+bool URLInfo::isSubOf(const URLInfo& url) const
 {
-	//TODO: Fully URL encode the string
-	std::string tmp2;
-	tmp2.reserve(u.len()*2);
-	for(int i=0;i<u.len();i++)
-	{
-		if(u[i]==' ')
-		{
-			char buf[4];
-			sprintf(buf,"%%%x",(unsigned char)u[i]);
-			tmp2+=buf;
-		}
-		else
-			tmp2.push_back(u[i]);
-	}
-	return tiny_string(tmp2);
+	//Check if the beginning of the new pathDirectory equals the old pathDirectory
+	if(getPathDirectory().substr(0, url.getPathDirectory().len()) != url.getPathDirectory())
+		return false;
+	else
+		return true;
 }
 
-tiny_string URLInfo::decode(const tiny_string& u)
+std::string URLInfo::encode(const std::string& u, ENCODING type)
 {
-	//TODO: Fully URL decode the string
-	std::string tmp2;
-	tmp2.reserve(u.len()*2);
-	for(int i=0;i<u.len();i++)
+	std::string str;
+	//Worst case, we need to encode EVERY character: X --> %YZ
+	//Expect moderate density, assume we need to encode about half of all characters
+	str.reserve(u.length()*2);
+	char buf[4];
+	
+	for(size_t i=0;i<u.length();i++)
 	{
-		if(i+2 < u.len() && u[i]=='%' && u[i+1]=='2' && u[i+2]=='0')
+		if(type == ENCODE_SPACES)
 		{
-			tmp2.push_back(' ');
-			i+=2;
+			if(u[i] == ' ')
+				str += "%20";
+			else
+				str += u[i];
 		}
-		else
-			tmp2.push_back(u[i]);
+		else {
+			//A-Z, a-z or 0-9, all encoding types except encode spaces don't encode these characters
+			if((u[i] >= 0x41 && u[i] <= 0x5a) || (u[i] >= 0x61 && u[i] <= 0x7a) || (u[i] >= 0x30 && u[i] <= 0x39))
+				str += u[i];
+			//Additionally ENCODE_FORM doesn't decode: - _ . ~
+			else if(type == ENCODE_FORM && 
+					(u[i] == '-' || u[i] == '_' || u[i] == '.' || u[i] == '~'))
+				str += u[i];
+			//ENCODE_FORM encodes spaces as + instead of %20
+			else if(type == ENCODE_FORM && u[i] == ' ')
+				str += '+';
+			//Additionally ENCODE_URICOMPONENT and ENCODE_URI don't encode:
+			//- _ . ! ~ * ' ( )
+			else if((type == ENCODE_URI || ENCODE_URICOMPONENT) && 
+					(u[i] == '-' || u[i] == '_' || u[i] == '.' || u[i] == '!' || 
+					 u[i] == '~' || u[i] == '*' || u[i] == '\'' ||	u[i] == '(' || 
+					 u[i] == ')'))
+				str += u[i];
+			//Additionally ENCODE_URI doesn't encode:
+			//; / ? : @ & = + $ , # 
+			else if(type == ENCODE_URI && 
+						(u[i] == ';' || u[i] == '/' || u[i] == '?' || u[i] == ':' || 
+						 u[i] == '@' || u[i] == '&' || u[i] == '=' || u[i] == '+' || 
+						 u[i] == '$' || u[i] == ',' || u[i] == '#'))
+				str += u[i];
+			//Additionally ENCODE_ESCAPE doesn't encode:
+			//@ - _ . * + /
+			else if(type == ENCODE_ESCAPE && 
+						(u[i] == '@' || u[i] == '-' || u[i] == '_' || u[i] == '.' || 
+						 u[i] == '*' || u[i] == '+' || u[i] == '/'))
+				str += u[i];
+
+			else
+			{
+				sprintf(buf,"%%%X",(unsigned char)u[i]);
+				str += buf;
+			}
+		}
 	}
-	return tiny_string(tmp2);
+
+	return str;
+}
+
+std::string URLInfo::decode(const std::string& u, ENCODING type)
+{
+	std::string str;
+	//The string can only shrink
+	str.reserve(u.length());
+
+	std::string stringBuf;
+	stringBuf.reserve(3);
+
+	for(size_t i=0;i<u.length();i++)
+	{
+		if(i > u.length()-3 || u[i] != '%')
+			str += u[i];
+		else
+		{
+			stringBuf = u[i];
+			stringBuf += u[i+1];
+			stringBuf += u[i+2];
+			std::transform(stringBuf.begin(), stringBuf.end(), stringBuf.begin(), ::toupper);
+
+			//ENCODE_SPACES only decodes %20 to space
+			if(type == ENCODE_SPACES && stringBuf == "%20")
+				str += " ";
+			//ENCODE_SPACES doesn't decode other characters
+			else if(type == ENCODE_SPACES)
+			{
+				str += stringBuf;
+				i+=2;
+			}
+			//ENCODE_URI and ENCODE_URICOMPONENT don't decode:
+			//- _ . ! ~ * ' ( ) 
+			else if((type == ENCODE_URI || type == ENCODE_URICOMPONENT) && 
+					(stringBuf == "%2D" || stringBuf == "%5F" || stringBuf == "%2E" || stringBuf == "%21" ||
+					 stringBuf == "%7E" || stringBuf == "%2A" || stringBuf == "%27" || stringBuf == "%28" || 
+					 stringBuf == "%29"))
+			{
+				str += stringBuf;
+				i+=2;
+			}
+			//Additionally ENCODE_URI doesn't decode:
+			//; / ? : @ & = + $ , # 
+			else if(type == ENCODE_URI && 
+					(stringBuf == "%23" || stringBuf == "%24" || stringBuf == "%26" || stringBuf == "%2B" ||
+					 stringBuf == "%2C" || stringBuf == "%2F" || stringBuf == "%3A" || stringBuf == "%3B" ||
+					 stringBuf == "%3D" || stringBuf == "%3F" || stringBuf == "%40"))
+			{
+				str += stringBuf;
+				i+=2;
+			}
+			//All encoded characters that weren't excluded above are now decoded
+			else
+			{	
+				i++;
+				str += (unsigned char) strtoul(u.substr(i, 2).c_str(), NULL, 16);
+				i++;
+			}
+		}
+	}
+	return str;
 }
 

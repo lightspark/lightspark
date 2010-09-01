@@ -154,6 +154,11 @@ void FFMpegVideoDecoder::skipUntil(uint32_t time)
 		discardFrame();
 	}
 }
+void FFMpegVideoDecoder::skipAll()
+{
+	while(!buffers.isEmpty())
+		discardFrame();
+}
 
 bool FFMpegVideoDecoder::discardFrame()
 {

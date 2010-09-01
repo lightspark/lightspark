@@ -112,6 +112,23 @@ void RootMovieClip::bindToName(const tiny_string& n)
 	bindName=n;
 }
 
+void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
+{
+	//We can use this origin to implement security measures.
+	//It also allows loading files without specifying a fully qualified path.
+	//Note that for plugins, this url is NOT the page url, but it is the swf file url.
+	origin = URLInfo(u);
+	//If this URL doesn't contain a filename, add the one passed as an argument (used in main.cpp)
+	if(origin.getPathFile() == "" && filename != "")
+		origin = origin.goToURL(filename);
+
+	if(loaderInfo)
+	{
+		loaderInfo->url=origin.getParsedURL();
+		loaderInfo->loaderURL=origin.getParsedURL();
+	}
+}
+
 void RootMovieClip::registerChildClip(MovieClip* clip)
 {
 	Locker l(mutexChildrenClips);
@@ -182,14 +199,6 @@ void SystemState::setDownloadedPath(const tiny_string& p)
 	if(waitingForDump)
 		fileDumpAvailable.signal();
 	sem_post(&mutex);
-}
-
-void SystemState::setUrl(const tiny_string& u)
-{
-	url = u;
-
-	loaderInfo->url=u;
-	loaderInfo->loaderURL=u;
 }
 
 void SystemState::setCookies(const char* c)
@@ -314,6 +323,7 @@ SystemState::~SystemState()
 	//Kill our child process if any
 	if(childPid)
 	{
+		assert(childPid!=getpid());
 		kill_child(childPid);
 	}
 	//Delete the temporary cookies file
@@ -523,9 +533,16 @@ void SystemState::createEngines()
 		}
 		else
 			cookiesFileName[0]=0;
+		sigset_t oldset;
+		sigset_t set;
+		sigfillset(&set);
+		//Blocks all signal to avoid terminating while forking with the browser signal handlers on
+		pthread_sigmask(SIG_SETMASK, &set, &oldset);
 		childPid=fork();
 		if(childPid==-1)
 		{
+			//Restore handlers
+			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			LOG(LOG_ERROR,_("Child process creation failed, lightspark continues"));
 			childPid=0;
 		}
@@ -550,20 +567,26 @@ void SystemState::createEngines()
 				strdup("-k"), //Height
 				bufHeight,
 				strdup("-u"), //SWF url
-				strdup(origin.raw_buf()),
+				strdup(origin.getParsedURL().raw_buf()),
 				strdup("-P"), //SWF parameters
 				strdup(params.c_str()),
 				strdup("-vv"),
 				strdup(dumpedSWFPath.raw_buf()), //SWF file
 				NULL
 			};
+			//Avoid calling browser signal handler during the short time between enabling signals and execve
+			sigaction(SIGTERM, NULL, NULL);
+			//Restore handlers
+			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			execve(GNASH_PATH, args, environ);
-			//If we are are execve failed, print an error and die
+			//If we are here execve failed, print an error and die
 			LOG(LOG_ERROR,_("Execve failed, content will not be rendered"));
 			exit(0);
 		}
 		else //Parent process scope
 		{
+			//Restore handlers
+			pthread_sigmask(SIG_SETMASK, &oldset, NULL);
 			sem_post(&mutex);
 			//Engines should not be started, stop everything
 			stopEngines();

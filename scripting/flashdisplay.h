@@ -230,7 +230,7 @@ public:
 
 class LoaderInfo: public EventDispatcher
 {
-friend class SystemState;
+friend class RootMovieClip;
 private:
 	uint32_t bytesLoaded;
 	uint32_t bytesTotal;
@@ -245,8 +245,8 @@ public:
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(addEventListener);
-	ASFUNCTION(_getLoaderUrl);
-	ASFUNCTION(_getUrl);
+	ASFUNCTION(_getLoaderURL);
+	ASFUNCTION(_getURL);
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getApplicationDomain);

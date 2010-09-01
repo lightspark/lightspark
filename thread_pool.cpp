@@ -37,7 +37,11 @@ ThreadPool::ThreadPool(SystemState* s):stopFlag(false)
 	for(int i=0;i<NUM_THREADS;i++)
 	{
 		curJobs[i]=NULL;
+#ifndef NDEBUG
+		int ret=
+#endif
 		pthread_create(&threads[i],NULL,job_worker,this);
+		assert(ret==0);
 	}
 }
 

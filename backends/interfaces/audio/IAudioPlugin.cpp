@@ -66,3 +66,10 @@ IAudioPlugin::~IAudioPlugin()
 {
 
 }
+
+
+AudioStream::AudioStream ( lightspark::AudioDecoder* dec, bool initPause ):
+	decoder(NULL), pause(initPause)
+{
+
+}

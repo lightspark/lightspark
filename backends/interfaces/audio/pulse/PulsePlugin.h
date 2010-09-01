@@ -48,44 +48,34 @@ private:
 	bool contextReady;
 	bool noServer;
 public:
-	PulsePlugin ( PLUGIN_TYPES init_Type = AUDIO, string init_Name = "Pulse plugin output only",
-	              string init_audiobackend = "pulse", bool init_contextReady = false,
-	              bool init_noServer = false, bool init_stopped = false );
+	PulsePlugin ( string init_Name = "Pulse plugin output only", string init_audiobackend = "pulse",
+		      bool init_contextReady = false, bool init_noServer = false, bool init_stopped = false );
 	void set_device ( string desiredDevice, DEVICE_TYPES desiredType );
 	AudioStream *createStream ( lightspark::AudioDecoder *decoder );
 	void freeStream ( AudioStream *audioStream );
+	void pauseStream( AudioStream *audioStream );
+	void resumeStream( AudioStream *audioStream );
 	bool isTimingAvailable() const;
-
-
-	void pulseLock()
-	{
-		pa_threaded_mainloop_lock ( mainLoop );
-	}
-	void pulseUnlock()
-	{
-		pa_threaded_mainloop_unlock ( mainLoop );
-	}
-
-	bool serverAvailable() const
-	{
-		return !noServer;
-	}
-
+	void pulseLock();
+	void pulseUnlock();
+	bool serverAvailable() const;
 	~PulsePlugin();
 };
 
 class PulseAudioStream: public AudioStream
 {
-public:
+  public:
 	enum STREAM_STATUS { STREAM_STARTING = 0, STREAM_READY = 1, STREAM_DEAD = 2 };
+	PulseAudioStream ( PulsePlugin *m );
+	uint32_t getPlayedTime ();
+	bool paused();
+	void fill ();
+
+//  private:
 	pa_stream *stream;
-	lightspark::AudioDecoder *decoder;
 	PulsePlugin *manager;
 	volatile STREAM_STATUS streamStatus;
-	PulseAudioStream ( PulsePlugin *m ) : stream ( NULL ), decoder ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING ) {}
-
-	uint32_t getPlayedTime ();
-	void fill ();
+    
 };
 
 #endif

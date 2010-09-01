@@ -30,8 +30,8 @@
 using namespace lightspark;
 using namespace std;
 
-PulsePlugin::PulsePlugin ( PLUGIN_TYPES init_Type, string init_Name, string init_audiobackend,
-                           bool init_contextReady, bool init_noServer, bool init_stopped ) :
+PulsePlugin::PulsePlugin (string init_Name, string init_audiobackend, bool init_contextReady,
+			  bool init_noServer, bool init_stopped ) :
 		IAudioPlugin ( init_Name, init_audiobackend, init_stopped )
 {
 	contextReady = init_contextReady;
@@ -46,26 +46,40 @@ void PulsePlugin::start()
 	mainLoop = pa_threaded_mainloop_new();
 	pa_threaded_mainloop_start ( mainLoop );
 
-	pa_threaded_mainloop_lock ( mainLoop );
+	pulseLock();
 	context = pa_context_new ( pa_threaded_mainloop_get_api ( mainLoop ), "Lightspark" );
 	pa_context_set_state_callback ( context, ( pa_context_notify_cb_t ) contextStatusCB, this );
 	pa_context_connect ( context, NULL, PA_CONTEXT_NOFLAGS, NULL );
-	pa_threaded_mainloop_unlock ( mainLoop );
+	pulseUnlock();
 }
 
 void PulsePlugin::set_device ( string desiredDevice, DEVICE_TYPES desiredType )
 {
 	playbackDeviceName = desiredDevice;
-	pa_threaded_mainloop_lock ( mainLoop );
-	pa_threaded_mainloop_unlock ( mainLoop );
+	pulseLock();
+	if(desiredType == PLAYBACK)
+	{
+		//Add code to change playback device
+	}
+	else if(desiredType == CAPTURE)
+	{
+		//Add code to change capture device
+	}
+	pulseUnlock();
 }
 
-void PulsePlugin::generateDevicesList ( std::vector< string* >* devicesList, DEVICE_TYPES desiredType )
+void PulsePlugin::generateDevicesList ( vector< string* >* devicesList, DEVICE_TYPES desiredType )
 {
-	pa_threaded_mainloop_lock ( mainLoop );
-	pa_context_get_sink_info_list ( context, playbackListCB, &playbackDevicesList );
-	pa_context_get_source_info_list ( context, captureListCB, &captureDevicesList );
-	pa_threaded_mainloop_unlock ( mainLoop );
+	pulseLock();
+	if(desiredType == PLAYBACK)
+	{
+		pa_context_get_sink_info_list ( context, playbackListCB, &playbackDevicesList );
+	}
+	else if(desiredType == CAPTURE)
+	{
+		pa_context_get_source_info_list ( context, captureListCB, &captureDevicesList );
+	}
+	pulseUnlock();
 
 }
 
@@ -111,6 +125,12 @@ void PulsePlugin::streamStatusCB ( pa_stream *stream, PulseAudioStream *th )
 
 void PulsePlugin::streamWriteCB ( pa_stream *stream, size_t askedData, PulseAudioStream *th )
 {
+	//If paused, don't do anything
+	if(th->paused())
+	{
+	  return;
+	}
+	
 	int16_t *dest;
 	//Get buffer size
 	size_t frameSize = askedData;
@@ -161,7 +181,7 @@ bool PulsePlugin::isTimingAvailable() const
 
 void PulsePlugin::freeStream ( AudioStream *audioStream )
 {
-	pa_threaded_mainloop_lock ( mainLoop );
+	pulseLock();
 	assert ( audioStream );
 
 	PulseAudioStream *s = static_cast<PulseAudioStream *> ( audioStream );
@@ -171,14 +191,16 @@ void PulsePlugin::freeStream ( AudioStream *audioStream )
 		pa_stream *toDelete = s->stream;
 		pa_stream_disconnect ( toDelete );
 	}
-	//Do not delete the stream now, let's wait termination
+	//Do not delete the stream now, let's wait termination. However, removing it from the list.
+	streams.remove(s);
 	audioStream = NULL;
-	pa_threaded_mainloop_unlock ( mainLoop );
+
+	pulseUnlock();
 	while ( s->streamStatus != PulseAudioStream::STREAM_DEAD );
-	pa_threaded_mainloop_lock ( mainLoop );
+	pulseLock();
 	if ( s->stream )
 		pa_stream_unref ( s->stream );
-	pa_threaded_mainloop_unlock ( mainLoop );
+	pulseUnlock();
 	delete s;
 }
 
@@ -199,22 +221,12 @@ void started_notify()
 
 AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 {
-	PulseAudioStream *audioStream = NULL;
 	while ( !contextReady );
-	pa_threaded_mainloop_lock ( mainLoop );
-	uint32_t index = 0;
-	for ( ;index < streams.size();index++ )
-	{
-		if ( streams[index] == NULL )	//Reusing a stream pointer
-			break;
-	}
-	if ( index == streams.size() )	//Creating a new stream since the list is already full
-	{
-		streams.push_back ( new PulseAudioStream ( this ) );
-	}
-
-	audioStream = static_cast<PulseAudioStream *> ( streams[index] );
+	pulseLock();
 	assert ( decoder->isValid() );
+	PulseAudioStream *audioStream = new PulseAudioStream( this );
+	streams.push_back( audioStream );	//Create new SoundStream
+
 	audioStream->decoder = decoder;
 	if ( noServer == false )
 	{
@@ -229,8 +241,8 @@ AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 		attrs.fragsize = ( uint32_t ) - 1;
 		attrs.minreq = ( uint32_t ) - 1;
 		audioStream->stream = pa_stream_new ( context, "AudioStream", &ss, NULL );
-		pa_stream_set_state_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamStatusCB, streams[index] );
-		pa_stream_set_write_callback ( audioStream->stream, ( pa_stream_request_cb_t ) streamWriteCB, streams[index] );
+		pa_stream_set_state_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) streamStatusCB, audioStream );
+		pa_stream_set_write_callback ( audioStream->stream, ( pa_stream_request_cb_t ) streamWriteCB, audioStream );
 		pa_stream_set_underflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) underflow_notify, NULL );
 		pa_stream_set_overflow_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) overflow_notify, NULL );
 		pa_stream_set_started_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) started_notify, NULL );
@@ -242,7 +254,7 @@ AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 		//Create the stream as dead
 		audioStream->streamStatus = PulseAudioStream::STREAM_DEAD;
 	}
-	pa_threaded_mainloop_unlock ( mainLoop );
+	pulseUnlock();
 	return audioStream;
 }
 
@@ -264,6 +276,42 @@ void PulsePlugin::contextStatusCB ( pa_context *context, PulsePlugin *th )
 		break;
 	}
 }
+void PulsePlugin::pauseStream(AudioStream *audioStream)
+{
+	PulseAudioStream *pulseStream = NULL;
+	pulseStream = static_cast<PulseAudioStream *> ( audioStream );
+	if(!pulseStream->paused())
+	{
+		pa_stream_cork(pulseStream->stream, 1, NULL, NULL);	//This will stop the stream's time from running
+		pulseStream->pause=true;
+	}
+}
+
+void PulsePlugin::resumeStream(AudioStream *audioStream)
+{
+	PulseAudioStream *pulseStream = NULL;
+	pulseStream = static_cast<PulseAudioStream *> ( audioStream );
+	if(pulseStream->paused())
+	{
+		pa_stream_cork(pulseStream->stream, 0, NULL, NULL);	//This will restart time
+		pulseStream->pause=false;
+	}
+}
+
+void PulsePlugin::pulseLock()
+{
+	pulseLock();
+}
+
+void PulsePlugin::pulseUnlock()
+{
+	pulseUnlock();
+}
+
+bool PulsePlugin::serverAvailable() const
+{
+	return !noServer;
+}
 
 PulsePlugin::~PulsePlugin()
 {
@@ -275,20 +323,28 @@ void PulsePlugin::stop()
 	if ( !stopped )
 	{
 		stopped = true;
-		pa_threaded_mainloop_lock ( mainLoop );
-		for ( uint32_t i = 0;i < streams.size();i++ )
+		pulseLock();
+		for ( stream_iterator it = streams.begin();it != streams.end(); it++ )
 		{
-			if ( streams[i] )
-			{
-				freeStream ( streams[i] );
-			}
+			freeStream( *it );
 		}
 		pa_context_disconnect ( context );
 		pa_context_unref ( context );
-		pa_threaded_mainloop_unlock ( mainLoop );
+		pulseUnlock();
 		pa_threaded_mainloop_stop ( mainLoop );
 		pa_threaded_mainloop_free ( mainLoop );
 	}
+}
+
+
+
+/****************************
+Stream's functions
+****************************/
+PulseAudioStream::PulseAudioStream ( PulsePlugin* m )  : 
+	AudioStream(NULL, false), stream ( NULL ), manager ( m ), streamStatus ( STREAM_STARTING )
+{
+
 }
 
 uint32_t PulseAudioStream::getPlayedTime ( )
@@ -358,6 +414,12 @@ void PulseAudioStream::fill ()
 		decoder->skipAll();
 	}
 }
+
+bool PulseAudioStream::paused()
+{
+	return pa_stream_is_corked(stream);
+}
+
 
 // Plugin factory function
 extern "C" DLL_PUBLIC IPlugin *create()

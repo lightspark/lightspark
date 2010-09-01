@@ -131,6 +131,7 @@
 	{
 		trace("Stop button clicked");
 		stream_ns.close();
+		paused = false;
 	}
 	private function seekClick(e:Event):void
 	{

@@ -43,8 +43,8 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
-	ASFUNCTION(_getUrl);
-	ASFUNCTION(_setUrl);
+	ASFUNCTION(_getURL);
+	ASFUNCTION(_setURL);
 };
 
 class URLVariables: public ASObject
@@ -78,8 +78,7 @@ class URLLoader: public EventDispatcher, public IThreadJob
 {
 private:
 	tiny_string dataFormat;
-	tiny_string url;
-	bool isLocal;
+	URLInfo url;
 	ASObject* data;
 	Downloader* downloader;
 	volatile bool executingAbort;
@@ -103,10 +102,9 @@ private:
 	//Indicates whether the application is connected to a server through a persistent RMTP connection/HTTP server with Flash Remoting
 	bool _connected;
 	//The connection is to a flash media server
-	bool isFMS;
 	ObjectEncoding::ENCODING objectEncoding;
 	tiny_string protocol;
-	tiny_string uri;
+	URLInfo uri;
 public:
 	NetConnection();
 	static void sinit(Class_base*);
@@ -119,14 +117,14 @@ public:
 	ASFUNCTION(_getObjectEncoding);
 	ASFUNCTION(_setObjectEncoding);
 	ASFUNCTION(_getProtocol);
-	ASFUNCTION(_getUri);
+	ASFUNCTION(_getURI);
 };
 
 class NetStream: public EventDispatcher, public IThreadJob, public ITickJob
 {
 private:
 	enum STREAM_TYPE { FLV_STREAM=0 };
-	tiny_string url;
+	URLInfo url;
 	STREAM_TYPE classifyStream(std::istream& s);
 	double frameRate;
 	bool tickStarted;
@@ -143,10 +141,17 @@ private:
 	//ITickJob interface to frame advance
 	void tick();
 	bool isReady() const;
+
+	//Indicates whether the NetStream is paused
 	bool paused;
+//	//Indicates whether the SoundStream is paused yet
+//	bool audioPaused;
+	//Indicates whether the NetStream has been closed/threadAborted. This is reset at every play() call.
+	//We initialize this value to true, so we can check that play() hasn't been called without being closed first.
+	bool closed;
+
 	enum CONNECTION_TYPE { CONNECT_TO_FMS=0, DIRECT_CONNECTIONS };
 	CONNECTION_TYPE peerID;
-	bool isLocal;
 public:
 	NetStream();
 	~NetStream();

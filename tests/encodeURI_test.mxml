@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_escape_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private function appComplete():void
+	{
+		var decodedStr:String = "0189ABYZabyz;/?:@&=+$,#-_.!~*'() {}&";
+		var encodedStr:String = "0189ABYZabyz;/?:@&=+$,#-_.!~*'()%20%7B%7D&";
+		var lowerEncodedStr:String = "0189ABYZabyz;/?:@&=+$,#-_.!~*'()%20%7b%7d&";
+		Tests.assertEquals(encodedStr, encodeURI(decodedStr), "encodeURI(): standard encodeURI");
+		Tests.assertEquals(decodedStr, decodeURI(encodedStr), "deocdeURI(): standard decodeURI");
+		Tests.assertEquals(decodedStr, decodeURI(lowerEncodedStr), "decodeURI(): decode lowercase encoded string");
+
+		decodedStr = "0189ABYZabyz;/?:@&=+$,#-_.!~*'() {}&";
+		encodedStr = "0189ABYZabyz%3B%2F%3F%3A%40%26%3D%2B%24%2C%23-_.!~*'()%20%7B%7D%26";
+		lowerEncodedStr = "0189ABYZabyz%3b%2f%3f%3a%40%26%3d%2b%24%2c%23-_.!~*'()%20%7b%7d%26";
+		Tests.assertEquals(encodedStr, encodeURIComponent(decodedStr), "encodeURIComponent(): standard encodeURIComponent");
+		Tests.assertEquals(decodedStr, decodeURIComponent(encodedStr), "deocdeURIComponent(): standard decodeURIComponent");
+		Tests.assertEquals(decodedStr, decodeURIComponent(lowerEncodedStr), "decodeURIComponent(): decode lowercase encoded string");
+		Tests.report(visual, this.name);
+	}
+	]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

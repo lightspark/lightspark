@@ -544,7 +544,7 @@ typedef NPError	(* NP_LOADDS NPN_SetValueUPP)(NPP instance, NPPVariable variable
 #endif
 
 
-/* NPN_GetUrlNotify */
+/* NPN_GetURLNotify */
 
 #if _NPUPP_USE_UPP_
 
@@ -571,7 +571,7 @@ typedef NPError	(* NP_LOADDS NPN_GetURLNotifyUPP)(NPP instance, const char* url,
 #endif
 
 
-/* NPN_PostUrlNotify */
+/* NPN_PostURLNotify */
 
 #if _NPUPP_USE_UPP_
 
@@ -601,7 +601,7 @@ typedef NPError (* NP_LOADDS NPN_PostURLNotifyUPP)(NPP instance, const char* url
 #endif
 
 
-/* NPN_GetUrl */
+/* NPN_GetURL */
 
 #if _NPUPP_USE_UPP_
 typedef UniversalProcPtr NPN_GetURLUPP;
@@ -626,7 +626,7 @@ typedef NPError	(* NP_LOADDS NPN_GetURLUPP)(NPP instance, const char* url, const
 #endif
 
 
-/* NPN_PostUrl */
+/* NPN_PostURL */
 
 #if _NPUPP_USE_UPP_
 

@@ -175,6 +175,11 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("trace","",Class<IFunction>::getFunction(trace));
 	builtin->setVariableByQName("parseInt","",Class<IFunction>::getFunction(parseInt));
 	builtin->setVariableByQName("parseFloat","",Class<IFunction>::getFunction(parseFloat));
+	builtin->setVariableByQName("encodeURI","",Class<IFunction>::getFunction(encodeURI));
+	builtin->setVariableByQName("decodeURI","",Class<IFunction>::getFunction(decodeURI));
+	builtin->setVariableByQName("encodeURIComponent","",Class<IFunction>::getFunction(encodeURIComponent));
+	builtin->setVariableByQName("decodeURIComponent","",Class<IFunction>::getFunction(decodeURIComponent));
+	builtin->setVariableByQName("escape","",Class<IFunction>::getFunction(escape));
 	builtin->setVariableByQName("unescape","",Class<IFunction>::getFunction(unescape));
 	builtin->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 
@@ -1065,7 +1070,16 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 			{
 				ConstructObjectEvent* ev=static_cast<ConstructObjectEvent*>(e.second);
 				LOG(LOG_CALLS,_("Building instance traits"));
-				ev->_class->handleConstruction(ev->_obj,NULL,0,true);
+				try
+				{
+					ev->_class->handleConstruction(ev->_obj,NULL,0,true);
+				}
+				catch(LightsparkException& e)
+				{
+					//Sync anyway and rethrow
+					ev->sync();
+					throw;
+				}
 				ev->sync();
 				break;
 			}
@@ -1433,6 +1447,15 @@ void ABCVm::Run(ABCVm* th)
 		{
 			LOG(LOG_ERROR,_("Error in VM ") << e.cause);
 			th->m_sys->setError(e.cause);
+			bailOut=true;
+		}
+		catch(ASObject*& e)
+		{
+			if(e->getPrototype())
+				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->getPrototype()->class_name);
+			else
+				LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
+			th->m_sys->setError(_("Unhandled ActionScript exception"));
 			bailOut=true;
 		}
 	}

@@ -54,7 +54,10 @@ public:
 	}
 	const char* what() const throw()
 	{
-		return "Lightspark error";
+		if(cause.length() == 0)
+			return "Lightspark error";
+		else
+			return cause.c_str();
 	}
 };
 
@@ -66,7 +69,10 @@ public:
 	}
 	const char* what() const throw()
 	{
-		return "Lightspark unsupported operation";
+		if(cause.length() == 0)
+			return "Lightspark unsupported operation";
+		else
+			return cause.c_str();
 	}
 };
 
@@ -78,7 +84,10 @@ public:
 	}
 	const char* what() const throw()
 	{
-		return "Lightspark invalid file";
+		if(cause.length() == 0)
+			return "Lightspark invalid file";
+		else
+			return cause.c_str();
 	}
 };
 
@@ -90,7 +99,10 @@ public:
 	}
 	const char* what() const throw()
 	{
-		return "Lightspark hit an unexpected condition";
+		if(cause.length() == 0)
+			return "Lightspark hit an unexpected condition";
+		else
+			return cause.c_str();
 	}
 };
 

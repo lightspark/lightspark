@@ -36,6 +36,7 @@
 #include "backends/graphics.h"
 #include "backends/audio.h"
 #include "backends/pluginmanager.h"
+#include "backends/urlutils.h"
 
 #include "platforms/pluginutils.h"
 
@@ -80,7 +81,7 @@ friend class ParseThread;
 protected:
 	sem_t mutex;
 	bool initialized;
-	tiny_string origin;
+	URLInfo origin;
 	void tick();
 private:
 	//Semaphore to wait for new frames to be available
@@ -121,8 +122,8 @@ public:
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	void bindToName(const tiny_string& n);
 	void initialize();
-	void setOrigin(const tiny_string& o){origin=o;}
-	const tiny_string& getOrigin(){return origin;}
+	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
+	URLInfo& getOrigin() DLL_PUBLIC { return origin; };
 /*	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, ASObject* o);
@@ -213,10 +214,10 @@ private:
 	std::string rawCookies;
 	char cookiesFileName[32]; // "/tmp/lightsparkcookiesXXXXXX"
 
-	tiny_string url;
+	URLInfo url;
 public:
-	void setUrl(const tiny_string& url) DLL_PUBLIC;
-	tiny_string& getUrl() DLL_PUBLIC { return url; };
+	void setURL(const tiny_string& url) DLL_PUBLIC;
+	ENGINE getEngine() DLL_PUBLIC { return engine; };
 
 	//Interative analysis flags
 	bool showProfilingData;

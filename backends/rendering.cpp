@@ -239,7 +239,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 		throw RunTimeException("Unable to load font");
 	}
 	
-	font.FaceSize(20);
+	font.FaceSize(12);
 
 	glEnable(GL_TEXTURE_2D);
 	try
@@ -302,7 +302,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 					    -1,FTPoint(0,th->windowHeight/2));
 
 				stringstream errorMsg;
-				errorMsg << "SWF file: " << th->m_sys->getOrigin();
+				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
 				font.Render(errorMsg.str().c_str(),
 					    -1,FTPoint(0,th->windowHeight/2-20));
 					    
@@ -712,7 +712,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	if(font.Error())
 		throw RunTimeException("Unable to load font");
 	
-	font.FaceSize(20);
+	font.FaceSize(12);
 	try
 	{
 		//Texturing must be enabled otherwise no tex coord will be sent to the shader
@@ -779,7 +779,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 						-1,FTPoint(0,th->windowHeight/2));
 
 				stringstream errorMsg;
-				errorMsg << "SWF file: " << th->m_sys->getOrigin();
+				errorMsg << "SWF file: " << th->m_sys->getOrigin().getParsedURL();
 				font.Render(errorMsg.str().c_str(),
 						-1,FTPoint(0,th->windowHeight/2-20));
 					    

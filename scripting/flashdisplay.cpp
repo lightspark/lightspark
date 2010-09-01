@@ -942,11 +942,7 @@ bool DisplayObject::isSimple() const
 
 void DisplayObject::setRoot(RootMovieClip* r)
 {
-	if(root!=r)
-	{
-		assert_and_throw(root==NULL);
-		root=r;
-	}
+	root=r;
 }
 
 void DisplayObject::setOnStage(bool staged)

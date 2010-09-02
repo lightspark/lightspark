@@ -268,8 +268,13 @@ class FunctionEvent: public Event
 friend class ABCVm;
 private:
 	IFunction* f;
+	ASObject* obj;
+	ASObject** args;
+	uint32_t numArgs;
+	bool thisOverride;
 public:
-	FunctionEvent(IFunction* _f):Event("FunctionEvent"),f(_f){}
+	FunctionEvent(IFunction* _f, ASObject* _obj=NULL, ASObject** _args=NULL, uint32_t _numArgs=0, bool _thisOverride=false):
+		Event("FunctionEvent"),f(_f),obj(_obj),args(_args),numArgs(_numArgs),thisOverride(_thisOverride){}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return FUNCTION; }
 };

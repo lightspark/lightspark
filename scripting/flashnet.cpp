@@ -792,7 +792,7 @@ void NetStream::execute()
 							callbackArgs[0] = metadata;
 							client->incRef();
 							metadata->incRef();
-							static_cast<IFunction*>(callback)->call(client, callbackArgs, 1);
+							getVm()->addEvent(NULL,new FunctionEvent(static_cast<IFunction*>(callback), client, callbackArgs, 1));
 						}
 					}
 

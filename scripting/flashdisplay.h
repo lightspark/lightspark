@@ -47,7 +47,7 @@ private:
 	number_t rotation;
 	number_t sx,sy;
 	bool onStage;
-
+	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 protected:
 	MATRIX getMatrix() const;
 	void valFromMatrix();

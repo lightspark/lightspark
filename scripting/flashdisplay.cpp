@@ -940,6 +940,30 @@ bool DisplayObject::isSimple() const
 	return alpha==1.0;
 }
 
+/*void DisplayObject::invalidate()
+{
+	number_t xmin,xmax,ymin,ymax;
+	if(!getBounds(xmin,xmax,ymin,ymax))
+		return;
+	//As the transformation is arbitrary we have to check all the four vertices
+	number_t x1,y1;
+	localToGlobal(xmin,ymin,x1,y1);
+	number_t x2,y2;
+	localToGlobal(xmin,ymax,x2,y2);
+	number_t x3,y3;
+	localToGlobal(xmax,ymax,x3,y3);
+	number_t x4,y4;
+	localToGlobal(xmax,ymin,x4,y4);
+	//Now find out the minimum and maximu
+}*/
+
+void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
+{
+	getMatrix().multiply2D(xin, yin, xout, yout);
+	if(parent)
+		parent->localToGlobal(xout, yout, xout, yout);
+}
+
 void DisplayObject::setRoot(RootMovieClip* r)
 {
 	if(root!=r)

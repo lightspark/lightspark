@@ -183,6 +183,9 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("unescape","",Class<IFunction>::getFunction(unescape));
 	builtin->setVariableByQName("toString","",Class<IFunction>::getFunction(ASObject::_toString));
 
+	builtin->setVariableByQName("AccessibilityProperties","flash.accessibility",
+					Class<ASObject>::getClass(QName("AccessibilityProperties","flash.accessibility")));
+
 	builtin->setVariableByQName("MovieClip","flash.display",Class<MovieClip>::getClass());
 	builtin->setVariableByQName("DisplayObject","flash.display",Class<DisplayObject>::getClass());
 	builtin->setVariableByQName("Loader","flash.display",Class<Loader>::getClass());

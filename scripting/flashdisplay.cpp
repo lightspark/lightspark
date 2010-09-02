@@ -940,22 +940,37 @@ bool DisplayObject::isSimple() const
 	return alpha==1.0;
 }
 
-/*void DisplayObject::invalidate()
+void DisplayObject::invalidate()
 {
 	number_t xmin,xmax,ymin,ymax;
 	if(!getBounds(xmin,xmax,ymin,ymax))
 		return;
 	//As the transformation is arbitrary we have to check all the four vertices
-	number_t x1,y1;
-	localToGlobal(xmin,ymin,x1,y1);
+	number_t coords[8];
+	localToGlobal(xmin,ymin,coords[0],coords[1]);
 	number_t x2,y2;
-	localToGlobal(xmin,ymax,x2,y2);
+	localToGlobal(xmin,ymax,coords[2],coords[3]);
 	number_t x3,y3;
-	localToGlobal(xmax,ymax,x3,y3);
+	localToGlobal(xmax,ymax,coords[4],coords[5]);
 	number_t x4,y4;
-	localToGlobal(xmax,ymin,x4,y4);
-	//Now find out the minimum and maximu
-}*/
+	localToGlobal(xmax,ymin,coords[6],coords[7]);
+	//Now find out the minimum and maximum that represent the complete bounding rect
+	number_t minx=coords[6];
+	number_t maxx=coords[6];
+	number_t miny=coords[7];
+	number_t maxy=coords[7];
+	for(int i=0;i<6;i+=2)
+	{
+		if(coords[i]<minx)
+			minx=coords[i];
+		else if(coords[i]>maxx)
+			maxx=coords[i];
+		if(coords[i+1]<miny)
+			miny=coords[i+1];
+		else if(coords[i+1]>maxy)
+			maxy=coords[i+1];
+	}
+}
 
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
@@ -975,6 +990,9 @@ void DisplayObject::setRoot(RootMovieClip* r)
 
 void DisplayObject::setOnStage(bool staged)
 {
+	__asm__("int $3");
+	if(onStage==false)
+		invalidate();
 	if(staged!=onStage)
 	{
 		//Our stage condition changed, send event

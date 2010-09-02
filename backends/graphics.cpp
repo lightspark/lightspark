@@ -323,6 +323,7 @@ TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 
 TextureChunk::TextureChunk(const TextureChunk& r):width(r.width),height(r.height)
 {
+	assert(chunks==NULL);
 	uint32_t blocksW=(width+127)/128;
 	uint32_t blocksH=(height+127)/128;
 	chunks=new uint32_t[blocksW*blocksH];
@@ -331,6 +332,7 @@ TextureChunk::TextureChunk(const TextureChunk& r):width(r.width),height(r.height
 
 TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 {
+	assert(chunks==NULL);
 	width=r.width;
 	height=r.height;
 	uint32_t blocksW=(width+127)/128;

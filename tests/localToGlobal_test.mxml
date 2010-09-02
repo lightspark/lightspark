@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_is_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+import flash.display.Sprite;
+import flash.geom.Point;
+import flash.display.DisplayObject;
+import Tests;
+
+private function appComplete():void
+{
+	var square:Sprite = new Sprite();
+	square.graphics.beginFill(0xFFCC00);
+	square.graphics.drawRect(0, 0, 100, 100);
+	square.x = 100;
+	square.y = 200;
+
+	addChild(square);
+
+	var clickPoint:Point = new Point(square.x, square.y);
+	trace("display object coordinates:", clickPoint);
+	trace("stage coordinates:", square.localToGlobal(clickPoint));
+
+	Tests.assertEquals(square.localToGlobal(clickPoint), new Point(200, 400));
+	Tests.report(visual, name);
+}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

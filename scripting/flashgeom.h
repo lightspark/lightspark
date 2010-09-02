@@ -77,6 +77,8 @@ public:
 	ASFUNCTION(polar);
 	
 	number_t len() const;
+	number_t getX() { return x; };
+	number_t getY() { return y; };
 };
 
 class ColorTransform: public ASObject

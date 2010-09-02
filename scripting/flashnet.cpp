@@ -825,12 +825,14 @@ void NetStream::execute()
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	sys->removeJob(this);
 	tickStarted=false;
-	delete videoDecoder;
+	if(videoDecoder)
+		delete videoDecoder;
 	videoDecoder=NULL;
 #if ENABLE_SOUND
 	if(soundStreamId)
 		sys->soundManager->freeStream(soundStreamId);
-	delete audioDecoder;
+	if(audioDecoder)
+		delete audioDecoder;
 	soundStreamId = 0;
 	audioDecoder=NULL;
 #endif

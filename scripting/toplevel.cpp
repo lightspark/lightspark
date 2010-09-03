@@ -245,10 +245,13 @@ ASFUNCTIONBODY(Array,lastIndexOf)
 		i = args[1]->toInt();
 	}
 
+	DATA_TYPE dtype = th->data[i].type;
 	for(;i>=0;i--)
 	{
-		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		if(ABCVm::strictEqualImpl(th->data[i].data,arg0))
+		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
+		dtype = th->data[i].type;
+		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
+			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
 		{
 			ret=i;
 			break;
@@ -329,10 +332,13 @@ ASFUNCTIONBODY(Array,indexOf)
 		i = args[1]->toInt();
 	}
 
+	DATA_TYPE dtype = th->data[i].type;
 	for(;i<th->data.size();i++)
 	{
-		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		if(ABCVm::strictEqualImpl(th->data[i].data,arg0))
+		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
+		dtype = th->data[i].type;
+		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
+			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
 		{
 			ret=i;
 			break;

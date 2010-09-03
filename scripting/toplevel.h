@@ -533,6 +533,7 @@ public:
 	ASFUNCTION(_getLength);
 	ASFUNCTION(forEach);
 	ASFUNCTION(_reverse);
+	ASFUNCTION(lastIndexOf);
 
 	ASObject* at(unsigned int index) const
 	{

@@ -97,7 +97,7 @@ void Array::sinit(Class_base* c)
 	c->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(forEach));
 	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
-	//c->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf));
+	c->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf));
 	//c->setVariableByQName("map",AS3,Class<IFunction>::getFunction(map));
 	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
 	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
@@ -230,6 +230,31 @@ ASFUNCTIONBODY(Array, _reverse)
 	reverse(th->data.begin(), th->data.end());
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(Array,lastIndexOf)
+{
+	Array* th=static_cast<Array*>(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	int ret=-1;
+	ASObject* arg0=args[0];
+
+	int unsigned i = th->data.size()-1;
+	if(argslen == 2)
+	{
+		i = args[1]->toInt();
+	}
+
+	for(;i>=0;i--)
+	{
+		assert_and_throw(th->data[i].type==DATA_OBJECT);
+		if(ABCVm::strictEqualImpl(th->data[i].data,arg0))
+		{
+			ret=i;
+			break;
+		}
+	}
+	return abstract_i(ret);
 }
 
 ASFUNCTIONBODY(Array,shift)

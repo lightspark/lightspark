@@ -51,6 +51,10 @@
 		Tests.assertEquals(d.indexOf(2), 0, "indexOf() single parameter");
 		Tests.assertEquals(d.indexOf(2, 1), 2, "indexOf() two parameters");
 
+		var e:Array=[ 2, 1, 2, 3 ];
+		Tests.assertEquals(d.lastIndexOf(2), 2, "lastIndexOf() single parameter");
+		Tests.assertEquals(d.lastIndexOf(2, 1), 0, "lastIndexOf() two parameters");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

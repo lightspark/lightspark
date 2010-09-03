@@ -43,6 +43,10 @@
 		b.forEach(multiply3);
 		Tests.assertArrayEquals(b, new Array(3, 6, 9), "forEach()");
 
+		var c:Array=[ 1, 2, 3 ];
+		c.reverse();
+		Tests.assertArrayEquals(c, new Array(3, 2, 1), "reverse()");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

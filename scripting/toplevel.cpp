@@ -101,7 +101,7 @@ void Array::sinit(Class_base* c)
 	//c->setVariableByQName("map",AS3,Class<IFunction>::getFunction(map));
 	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
 	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
-	//c->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(reverse));
+	c->setVariableByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse));
 	c->setVariableByQName("shift",AS3,Class<IFunction>::getFunction(shift));
 	//c->setVariableByQName("slice",AS3,Class<IFunction>::getFunction(slice));
 	//c->setVariableByQName("some",AS3,Class<IFunction>::getFunction(some));
@@ -219,6 +219,15 @@ ASFUNCTIONBODY(Array,forEach)
 			f->call(args[1], params, 3);
 		}
 	}
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Array, _reverse)
+{
+	Array* th = static_cast<Array*>(obj);
+
+	reverse(th->data.begin(), th->data.end());
 
 	return NULL;
 }

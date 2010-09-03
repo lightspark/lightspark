@@ -97,7 +97,7 @@ void Array::sinit(Class_base* c)
 	c->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(forEach));
 	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
-	//c->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf));
+	c->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf));
 	//c->setVariableByQName("map",AS3,Class<IFunction>::getFunction(map));
 	c->setVariableByQName("pop",AS3,Class<IFunction>::getFunction(_pop));
 	c->setVariableByQName("push",AS3,Class<IFunction>::getFunction(_push));
@@ -232,6 +232,34 @@ ASFUNCTIONBODY(Array, _reverse)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Array,lastIndexOf)
+{
+	Array* th=static_cast<Array*>(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	int ret=-1;
+	ASObject* arg0=args[0];
+
+	int unsigned i = th->data.size()-1;
+	if(argslen == 2)
+	{
+		i = args[1]->toInt();
+	}
+
+	DATA_TYPE dtype = th->data[i].type;
+	for(;i>=0;i--)
+	{
+		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
+		dtype = th->data[i].type;
+		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
+			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
+		{
+			ret=i;
+			break;
+		}
+	}
+	return abstract_i(ret);
+}
+
 ASFUNCTIONBODY(Array,shift)
 {
 	Array* th=static_cast<Array*>(obj);
@@ -294,13 +322,23 @@ ASFUNCTIONBODY(Array,join)
 ASFUNCTIONBODY(Array,indexOf)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1);
+	assert_and_throw(argslen==1 || argslen==2);
 	int ret=-1;
 	ASObject* arg0=args[0];
-	for(unsigned int i=0;i<th->data.size();i++)
+
+	int unsigned i = 0;
+	if(argslen == 2)
 	{
-		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		if(ABCVm::strictEqualImpl(th->data[i].data,arg0))
+		i = args[1]->toInt();
+	}
+
+	DATA_TYPE dtype;
+	for(;i<th->data.size();i++)
+	{
+		dtype = th->data[i].type;
+		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
+		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
+			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
 		{
 			ret=i;
 			break;

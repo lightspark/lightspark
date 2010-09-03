@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include <istream>
+#include <map>
 #include "swftypes.h"
 #include "backends/decoder.h"
 
@@ -51,6 +52,7 @@ protected:
 	uint32_t timestamp;
 	uint32_t totalLen;
 public:
+	VideoTag() {};
 	VideoTag(std::istream& s);
 	uint32_t getDataSize() const { return dataSize; }
 	uint32_t getTotalLen() const { return totalLen; }
@@ -59,7 +61,11 @@ public:
 class ScriptDataTag: public VideoTag
 {
 public:
-	double frameRate;
+	//Metadatas
+	std::map<tiny_string, double> metadataDouble;
+	std::map<tiny_string, int> metadataInteger;
+	std::map<tiny_string, tiny_string> metadataString;
+	ScriptDataTag() {};
 	ScriptDataTag(std::istream& s);
 };
 
@@ -77,8 +83,7 @@ public:
 class ScriptECMAArray
 {
 public:
-	double frameRate;
-	ScriptECMAArray(std::istream& s);
+	ScriptECMAArray(std::istream& s, ScriptDataTag* tag);
 };
 
 class VideoDataTag: public VideoTag

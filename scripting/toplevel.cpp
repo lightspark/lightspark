@@ -772,7 +772,7 @@ ASString::ASString(const char* s, uint32_t len):data(s, len)
 ASFUNCTIONBODY(ASString,_constructor)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	if(args && args[0])
+	if(args && argslen==1)
 		th->data=args[0]->toString().raw_buf();
 	return NULL;
 }

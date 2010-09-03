@@ -531,6 +531,7 @@ public:
 	ASFUNCTION(filter);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(_getLength);
+	ASFUNCTION(forEach);
 
 	ASObject* at(unsigned int index) const
 	{

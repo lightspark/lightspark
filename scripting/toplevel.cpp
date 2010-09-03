@@ -94,7 +94,7 @@ void Array::sinit(Class_base* c)
 	c->setVariableByQName("concat",AS3,Class<IFunction>::getFunction(_concat));
 	//c->setVariableByQName("every",AS3,Class<IFunction>::getFunction(every));
 	c->setVariableByQName("filter",AS3,Class<IFunction>::getFunction(filter));
-	//c->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(forEach));
+	c->setVariableByQName("forEach",AS3,Class<IFunction>::getFunction(forEach));
 	c->setVariableByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf));
 	c->setVariableByQName("join",AS3,Class<IFunction>::getFunction(join));
 	//c->setVariableByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf));
@@ -192,6 +192,35 @@ ASFUNCTIONBODY(Array,_getLength)
 {
 	Array* th=static_cast<Array*>(obj);
 	return abstract_i(th->data.size());
+}
+
+ASFUNCTIONBODY(Array,forEach)
+{
+	assert_and_throw(argslen == 1 || argslen == 2);
+	Array* th=static_cast<Array*>(obj);
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[3];
+
+	for(unsigned int i=0; i < th->data.size(); i++)
+	{
+		params[0] = th->data[i].data;
+		th->data[i].data->incRef();
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		if( argslen == 1 )
+		{
+			f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			f->call(args[1], params, 3);
+		}
+	}
+
+	return NULL;
 }
 
 ASFUNCTIONBODY(Array,shift)

@@ -8,6 +8,11 @@
 <mx:Script>
 	<![CDATA[
 	import Tests;
+
+	private function multiply3(item:*, index:int, array:Array):void {
+		array[index] = item * 3;
+	}
+
 	private function appComplete():void
 	{
 		var array:Array = new Array();
@@ -33,6 +38,10 @@
 
 		a.sort(Array.NUMERIC);
 		Tests.assertArrayEquals(a, new Array("3", 12, 76), "sort(): numeric sort", true);
+
+		var b:Array=[ 1, 2, 3 ];
+		b.forEach(multiply3);
+		Tests.assertArrayEquals(b, new Array(3, 6, 9), "forEach()");
 
 		Tests.report(visual, this.name);
 	}

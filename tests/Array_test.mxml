@@ -47,6 +47,10 @@
 		c.reverse();
 		Tests.assertArrayEquals(c, new Array(3, 2, 1), "reverse()");
 
+		var d:Array=[ 2, 1, 2, 3 ];
+		Tests.assertEquals(d.indexOf(2), 0, "indexOf() single parameter");
+		Tests.assertEquals(d.indexOf(2, 1), 2, "indexOf() two parameters");
+
 		Tests.report(visual, this.name);
 	}
 	]]>

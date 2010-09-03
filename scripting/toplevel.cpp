@@ -294,10 +294,17 @@ ASFUNCTIONBODY(Array,join)
 ASFUNCTIONBODY(Array,indexOf)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1);
+	assert_and_throw(argslen==1 || argslen==2);
 	int ret=-1;
 	ASObject* arg0=args[0];
-	for(unsigned int i=0;i<th->data.size();i++)
+
+	int unsigned i = 0;
+	if(argslen == 2)
+	{
+		i = args[1]->toInt();
+	}
+
+	for(;i<th->data.size();i++)
 	{
 		assert_and_throw(th->data[i].type==DATA_OBJECT);
 		if(ABCVm::strictEqualImpl(th->data[i].data,arg0))

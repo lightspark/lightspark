@@ -332,11 +332,11 @@ ASFUNCTIONBODY(Array,indexOf)
 		i = args[1]->toInt();
 	}
 
-	DATA_TYPE dtype = th->data[i].type;
+	DATA_TYPE dtype;
 	for(;i<th->data.size();i++)
 	{
-		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
 		dtype = th->data[i].type;
+		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
 		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
 			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
 		{

@@ -369,12 +369,16 @@ public:
 	}
 };
 
+//Numbers taken from AVM2 specs
+enum NS_KIND { NAMESPACE=0x08, PACKAGE_NAMESPACE=0x16, PACKAGE_INTERNAL_NAMESPACE=0x17, PROTECTED_NAMESPACE=0x18, 
+			EXPLICIT_NAMESPACE=0x19, STATIC_PROTECTED_NAMESPACE=0x1A, PRIVATE_NAMESPACE=0x05 };
+
 struct nsNameAndKind
 {
 	tiny_string name;
-	int kind;
-	nsNameAndKind(const tiny_string& _name, int _kind):name(_name),kind(_kind){}
-	nsNameAndKind(const char* _name, int _kind):name(_name),kind(_kind){}
+	NS_KIND kind;
+	nsNameAndKind(const tiny_string& _name, NS_KIND _kind):name(_name),kind(_kind){}
+	nsNameAndKind(const char* _name, NS_KIND _kind):name(_name),kind(_kind){}
 	bool operator<(const nsNameAndKind& r) const
 	{
 		return name < r.name;

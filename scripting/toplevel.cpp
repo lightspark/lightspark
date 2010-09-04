@@ -3008,12 +3008,12 @@ ASObject* GlobalObject::getVariableByString(const std::string& str, ASObject*& t
 	if(index==str.npos) //No dot
 	{
 		name.name_s=str;
-		name.ns.push_back(nsNameAndKind("",0)); //TODO: use ns kind
+		name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: use ns kind
 	}
 	else
 	{
 		name.name_s=str.substr(index+1);
-		name.ns.push_back(nsNameAndKind(str.substr(0,index),0));
+		name.ns.push_back(nsNameAndKind(str.substr(0,index),NAMESPACE));
 	}
 	return getVariableAndTargetByMultiname(name, target);
 }

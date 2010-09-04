@@ -336,7 +336,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
+					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),(NS_KIND)(int)n->kind));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_d=rtd;
@@ -391,7 +391,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 			{
 				const namespace_info* n=&th->context->constant_pool.namespaces[m->ns];
 				assert_and_throw(n->name);
-				ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
+				ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),(NS_KIND)(int)n->kind));
 
 				ret->name_s=th->context->getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
@@ -404,7 +404,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
+					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),(NS_KIND)(int)n->kind));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_s=th->context->getString(m->name);
@@ -418,7 +418,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
+					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),(NS_KIND)(int)n->kind));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				if(rt1->getObjectType()==T_INTEGER)
@@ -468,7 +468,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				assert_and_throw(rt1->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(rt1);
 				//TODO: What is the right ns kind?
-				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
+				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
 				ret->name_type=multiname::NAME_STRING;
 				ret->name_s=th->context->getString(m->name);
 				rt1->decRef();
@@ -566,7 +566,7 @@ multiname* ABCContext::s_getMultiname(call_context* th, ASObject* rt1, int n)
 				assert_and_throw(rt1->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(rt1);
 				//TODO: What is the right ns kind?
-				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
+				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
 				rt1->decRef();
 				break;
 			}
@@ -616,7 +616,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uintptr_t rti, int n)
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&th->context->constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),n->kind));
+					ret->ns.push_back(nsNameAndKind(th->context->getString(n->name),(NS_KIND)(int)n->kind));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 				ret->name_i=rti;
@@ -670,9 +670,9 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 			{
 				const namespace_info* n=&constant_pool.namespaces[m->ns];
 				if(n->name)
-					ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
+					ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
 				else
-					ret->ns.push_back(nsNameAndKind("",n->kind));
+					ret->ns.push_back(nsNameAndKind("",(NS_KIND)(int)n->kind));
 
 				ret->name_s=getString(m->name);
 				ret->name_type=multiname::NAME_STRING;
@@ -685,7 +685,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
+					ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 
@@ -700,7 +700,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				for(unsigned int i=0;i<s->count;i++)
 				{
 					const namespace_info* n=&constant_pool.namespaces[s->ns[i]];
-					ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
+					ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
 				}
 				sort(ret->ns.begin(),ret->ns.end());
 
@@ -751,7 +751,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				assert_and_throw(n->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(n);
 				//TODO: What is the right ns kind?
-				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
+				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
 				ret->name_type=multiname::NAME_STRING;
 				ret->name_s=getString(m->name);
 				n->decRef();
@@ -763,7 +763,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				multiname_info* td=&constant_pool.multinames[m->type_definition];
 				//multiname_info* p=&constant_pool.multinames[m->param_types[0]];
 				const namespace_info* n=&constant_pool.namespaces[td->ns];
-				ret->ns.push_back(nsNameAndKind(getString(n->name),n->kind));
+				ret->ns.push_back(nsNameAndKind(getString(n->name),(NS_KIND)(int)n->kind));
 				ret->name_s=getString(td->name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
@@ -858,7 +858,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* th)
 				assert_and_throw(n->prototype==Class<Namespace>::getClass());
 				Namespace* tmpns=static_cast<Namespace*>(n);
 				//TODO: What is the right kind?
-				ret->ns.push_back(nsNameAndKind(tmpns->uri,0x08));
+				ret->ns.push_back(nsNameAndKind(tmpns->uri,NAMESPACE));
 				n->decRef();
 				break;
 			}

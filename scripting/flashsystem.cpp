@@ -79,7 +79,7 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 	multiname name;
 	name.name_type=multiname::NAME_STRING;
-	name.ns.push_back(nsNameAndKind("",0)); //TODO: set type
+	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
 	stringToQName(tmp,name.name_s,name.ns[0].name);
 
@@ -114,7 +114,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	multiname name;
 	name.name_type=multiname::NAME_STRING;
-	name.ns.push_back(nsNameAndKind("",0)); //TODO: set type
+	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
 	stringToQName(tmp,name.name_s,name.ns[0].name);
 

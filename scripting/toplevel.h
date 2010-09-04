@@ -38,7 +38,7 @@ struct call_context;
 class InterfaceClass: public ASObject
 {
 protected:
-	static void lookupAndLink(ASObject* o, const tiny_string& name, const tiny_string& interfaceNs);
+	static void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 };
 
 class Class_base: public ASObject

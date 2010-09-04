@@ -217,7 +217,7 @@ public:
 class IEventDispatcher: public InterfaceClass
 {
 public:
-	static void linkTraits(ASObject* o);
+	static void linkTraits(Class_base* c);
 };
 
 class EventDispatcher: public ASObject

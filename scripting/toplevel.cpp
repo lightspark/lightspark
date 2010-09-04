@@ -2944,12 +2944,12 @@ ASFUNCTIONBODY(Namespace,_constructor)
 	return NULL;
 }
 
-void InterfaceClass::lookupAndLink(ASObject* o, const tiny_string& name, const tiny_string& interfaceNs)
+void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
 {
-	ASObject* ret=o->getVariableByQName(name,"");
+	ASObject* ret=c->getVariableByQName(name,"");
 	assert_and_throw(ret);
 	ret->incRef();
-	o->setVariableByQName(name,interfaceNs,ret);
+	c->setVariableByQName(name,interfaceNs,ret);
 }
 
 void UInteger::sinit(Class_base* c)

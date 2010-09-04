@@ -47,12 +47,12 @@ REGISTER_CLASS_NAME(ErrorEvent);
 REGISTER_CLASS_NAME(SecurityErrorEvent);
 REGISTER_CLASS_NAME(AsyncErrorEvent);
 
-void IEventDispatcher::linkTraits(ASObject* o)
+void IEventDispatcher::linkTraits(Class_base* c)
 {
-	lookupAndLink(o,"addEventListener","flash.events:IEventDispatcher");
-	lookupAndLink(o,"removeEventListener","flash.events:IEventDispatcher");
-	lookupAndLink(o,"dispatchEvent","flash.events:IEventDispatcher");
-	lookupAndLink(o,"hasEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(c,"addEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(c,"removeEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(c,"dispatchEvent","flash.events:IEventDispatcher");
+	lookupAndLink(c,"hasEventListener","flash.events:IEventDispatcher");
 }
 
 Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NULL),bubbles(b)

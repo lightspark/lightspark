@@ -1637,13 +1637,9 @@ ASObject* ABCContext::getConstant(int kind, int index)
 
 void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization)
 {
-	const multiname* mname=getMultiname(t->name,NULL);
+	const multiname& mname=*getMultiname(t->name,NULL);
 	//Should be a Qname
-	assert_and_throw(mname->ns.size()==1);
-
-	const tiny_string& name=mname->name_s;
-	const tiny_string& ns=mname->ns[0].name;
-
+	assert_and_throw(mname.ns.size()==1 && mname.name_type==multiname::NAME_STRING);
 	if(t->kind>>4)
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 	switch(t->kind&0xf)
@@ -1651,7 +1647,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 		case traits_info::Class:
 		{
 			//Check if this already defined in upper levels
-			ASObject* tmpo=obj->getVariableByQName(name,ns,true);
+			ASObject* tmpo=obj->getVariableByMultiname(mname,true);
 			if(tmpo)
 				return;
 
@@ -1661,16 +1657,16 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			else
 				ret=new Undefined;
 
-			obj->setVariableByQName(name, ns, ret);
+			obj->setVariableByMultiname(mname, ret);
 			
-			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << ns << _("::") << name << _(" id ") << t->classi);
+			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << mname << _(" id ") << t->classi);
 			if(t->slot_id)
-				obj->initSlot(t->slot_id, name, ns);
+				obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(LOG_CALLS,_("Getter trait: ") << ns << _("::") << name << _(" #") << t->method);
+			LOG(LOG_CALLS,_("Getter trait: ") << mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
@@ -1680,7 +1676,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			assert_and_throw(obj->getObjectType()==T_CLASS);
 			Class_inherit* prot=static_cast<Class_inherit*>(obj);
 			assert(prot);
-			if(t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
+			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
@@ -1688,13 +1684,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				{
 					if(cur->use_protected)
 					{
-						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,false);
+						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false);
 						if(var)
 						{
 							assert(var->getter);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setGetterByQName(name,cur->protected_ns,f);
+							obj->setGetterByQName(mname.name_s,cur->protected_ns,f);
 						}
 					}
 					cur=cur->super;
@@ -1702,14 +1698,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setGetterByQName(name,ns,f);
+			obj->setGetterByQName(mname.name_s,mname.ns[0],f);
 			
-			LOG(LOG_TRACE,_("End Getter trait: ") << ns << _("::") << name);
+			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(LOG_CALLS,_("Setter trait: ") << ns << _("::") << name << _(" #") << t->method);
+			LOG(LOG_CALLS,_("Setter trait: ") << mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 
@@ -1720,7 +1716,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			assert_and_throw(obj->getObjectType()==T_CLASS);
 			Class_base* prot=static_cast<Class_base*>(obj);
 			assert(prot);
-			if(t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
+			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
@@ -1728,13 +1724,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				{
 					if(cur->use_protected)
 					{
-						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,false);
+						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false);
 						if(var)
 						{
 							assert(var->setter);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setSetterByQName(name,cur->protected_ns,f);
+							obj->setSetterByQName(mname.name_s,cur->protected_ns,f);
 						}
 					}
 					cur=cur->super;
@@ -1742,14 +1738,14 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setSetterByQName(name,ns,f);
+			obj->setSetterByQName(mname.name_s,mname.ns[0],f);
 			
-			LOG(LOG_TRACE,_("End Setter trait: ") << ns << _("::") << name);
+			LOG(LOG_TRACE,_("End Setter trait: ") << mname);
 			break;
 		}
 		case traits_info::Method:
 		{
-			LOG(LOG_CALLS,_("Method trait: ") << ns << _("::") << name << _(" #") << t->method);
+			LOG(LOG_CALLS,_("Method trait: ") << mname << _(" #") << t->method);
 			//syntetize method and create a new LLVM function object
 			method_info* m=&methods[t->method];
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
@@ -1759,7 +1755,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			assert_and_throw(obj->getObjectType()==T_CLASS);
 			Class_inherit* prot=static_cast<Class_inherit*>(obj);
 			assert(prot);
-			if(t->kind&0x20 && prot->use_protected && ns==prot->protected_ns)
+			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
 			{
 				//Walk the super chain and find variables to override
 				Class_base* cur=prot->super;
@@ -1767,13 +1763,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				{
 					if(cur->use_protected)
 					{
-						obj_var* var=cur->Variables.findObjVar(name,cur->protected_ns,false);
+						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false);
 						if(var)
 						{
 							assert(var->var);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setVariableByQName(name,cur->protected_ns,f);
+							obj->setVariableByQName(mname.name_s,cur->protected_ns.name,f);
 						}
 					}
 					cur=cur->super;
@@ -1781,17 +1777,17 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setVariableByQName(name,ns,f);
+			obj->setVariableByMultiname(mname,f);
 			//Methods save inside the scope stack of the class
 			f->acquireScope(prot->class_scope);
 
-			LOG(LOG_TRACE,_("End Method trait: ") << ns << _("::") << name);
+			LOG(LOG_TRACE,_("End Method trait: ") << mname);
 			break;
 		}
 		case traits_info::Const:
 		{
 			//Check if this already defined in upper levels
-			ASObject* tmpo=obj->getVariableByQName(name,ns,true);
+			ASObject* tmpo=obj->getVariableByMultiname(mname,true);
 			if(tmpo)
 				return;
 
@@ -1800,13 +1796,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			if(t->vindex)
 			{
 				ret=getConstant(t->vkind,t->vindex);
-				obj->setVariableByQName(name, ns, ret);
+				obj->setVariableByMultiname(mname, ret);
 				if(t->slot_id)
-					obj->initSlot(t->slot_id, name, ns);
+					obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name);
 			}
 			else
 			{
-				ret=obj->getVariableByQName(name,ns);
+				ret=obj->getVariableByMultiname(mname);
 				assert_and_throw(ret==NULL);
 				
 				if(deferred_initialization)
@@ -1814,17 +1810,17 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				else
 					ret=new Undefined;
 
-				obj->setVariableByQName(name, ns, ret);
+				obj->setVariableByMultiname(mname, ret);
 			}
-			LOG(LOG_CALLS,_("Const ")<<name<<_(" type ")<< *getMultiname(t->type_name,NULL));
+			LOG(LOG_CALLS,_("Const ") << mname <<_(" type ")<< *getMultiname(t->type_name,NULL));
 			if(t->slot_id)
-				obj->initSlot(t->slot_id, name,ns );
+				obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name );
 			break;
 		}
 		case traits_info::Slot:
 		{
 			//Check if this already defined in upper levels
-			ASObject* tmpo=obj->getVariableByQName(name,ns,true);
+			ASObject* tmpo=obj->getVariableByMultiname(mname,true);
 			if(tmpo)
 				return;
 
@@ -1832,18 +1828,18 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			if(t->vindex)
 			{
 				ASObject* ret=getConstant(t->vkind,t->vindex);
-				obj->setVariableByQName(name, ns, ret);
+				obj->setVariableByMultiname(mname, ret);
 				if(t->slot_id)
-					obj->initSlot(t->slot_id, name, ns);
+					obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name);
 
-				LOG(LOG_CALLS,_("Slot ") << t->slot_id << ' ' <<name<<_(" type ")<<*type);
+				LOG(LOG_CALLS,_("Slot ") << t->slot_id << ' ' << mname <<_(" type ")<<*type);
 				break;
 			}
 			else
 			{
 				//else fallthrough
-				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ")<<name<<_(" type ")<<*type);
-				ASObject* previous_definition=obj->getVariableByQName(name,ns);
+				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ")<< mname <<_(" type ")<<*type);
+				ASObject* previous_definition=obj->getVariableByMultiname(mname);
 				assert_and_throw(!previous_definition);
 
 				ASObject* ret;
@@ -1865,16 +1861,16 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 					else
 						ret=new Undefined;
 				}
-				obj->setVariableByQName(name, ns, ret);
+				obj->setVariableByMultiname(mname, ret);
 
 				if(t->slot_id)
-					obj->initSlot(t->slot_id, name,ns );
+					obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name);
 				break;
 			}
 		}
 		default:
-			LOG(LOG_ERROR,_("Trait not supported ") << name << _(" ") << t->kind);
-			obj->setVariableByQName(name, ns, new Undefined);
+			LOG(LOG_ERROR,_("Trait not supported ") << mname << _(" ") << t->kind);
+			obj->setVariableByMultiname(mname, new Undefined);
 	}
 }
 

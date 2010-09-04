@@ -719,7 +719,7 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
-		LOG(LOG_NO_INFO,_("[") << it->second.ns << _("] ")<< it->first << _(" ") << 
+		LOG(LOG_NO_INFO,_("[") << it->second.ns.name << _("] ")<< it->first << _(" ") << 
 			it->second.var.var << ' ' << it->second.var.setter << ' ' << it->second.var.getter);
 }
 

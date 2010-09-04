@@ -270,7 +270,7 @@ private:
 	IFunction* f;
 	ASObject* obj;
 	ASObject** args;
-	uint32_t numArgs;
+	unsigned int numArgs;
 	bool thisOverride;
 public:
 	FunctionEvent(IFunction* _f, ASObject* _obj=NULL, ASObject** _args=NULL, uint32_t _numArgs=0, bool _thisOverride=false);

@@ -552,7 +552,7 @@ FunctionEvent::FunctionEvent(IFunction* _f, ASObject* _obj, ASObject** _args, ui
 	uint32_t i;
 	for(i=0; i<numArgs; i++)
 	{
-		args[i] = _args[0];
+		args[i] = _args[i];
 	}
 }
 FunctionEvent::~FunctionEvent()

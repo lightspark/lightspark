@@ -225,6 +225,10 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("getQualifiedSuperclassName","flash.utils",Class<IFunction>::getFunction(getQualifiedSuperclassName));
 	builtin->setVariableByQName("getDefinitionByName","flash.utils",Class<IFunction>::getFunction(getDefinitionByName));
 	builtin->setVariableByQName("getTimer","flash.utils",Class<IFunction>::getFunction(getTimer));
+	builtin->setVariableByQName("setInterval","flash.utils",Class<IFunction>::getFunction(setInterval));
+	builtin->setVariableByQName("setTimeout","flash.utils",Class<IFunction>::getFunction(setTimeout));
+	builtin->setVariableByQName("clearInterval","flash.utils",Class<IFunction>::getFunction(clearInterval));
+	builtin->setVariableByQName("clearTimeout","flash.utils",Class<IFunction>::getFunction(clearTimeout));
 	builtin->setVariableByQName("IExternalizable","flash.utils",Class<ASObject>::getClass(QName("IExternalizable","flash.utils")));
 
 	builtin->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getClass());

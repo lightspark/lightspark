@@ -165,6 +165,44 @@ ASObject* getQualifiedClassName(ASObject*, ASObject* const* args, const unsigned
 ASObject* getQualifiedSuperclassName(ASObject*, ASObject* const* args, const unsigned int len);
 ASObject* getDefinitionByName(ASObject*, ASObject* const* args, const unsigned int len);
 ASObject* getTimer(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* setInterval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* setTimeout(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* clearInterval(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+ASObject* clearTimeout(ASObject* obj,ASObject* const* args, const unsigned int argslen);
+
+class IntervalRunner : public ITickJob, public EventDispatcher
+{
+public:
+	enum INTERVALTYPE { INTERVAL, TIMEOUT };
+private:
+	INTERVALTYPE type;
+	uint32_t id;
+	ASObject* callback;
+	ASObject** args;
+	const unsigned int argslen;
+	ASObject* obj;
+	uint32_t interval;
+public:
+	IntervalRunner(INTERVALTYPE _type, uint32_t _id, ASObject* _callback, ASObject** _args, const unsigned int _argslen, ASObject* _obj, const uint32_t _interval);
+	~IntervalRunner();
+	void tick();
+	INTERVALTYPE getType() { return type; }
+};
+
+class IntervalManager
+{
+private:
+	sem_t mutex;
+	std::map<uint32_t,IntervalRunner*> runners;
+	uint32_t currentID;
+public:
+	IntervalManager();
+	~IntervalManager();
+	uint32_t setInterval(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, const uint32_t interval);
+	uint32_t setTimeout(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, const uint32_t interval);
+	uint32_t getFreeID();
+	void clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE type, bool removeJob);
+};
 
 };
 

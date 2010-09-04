@@ -664,3 +664,179 @@ bool Proxy::nextName(unsigned int index, ASObject*& out)
 	out=f->call(this,&arg,1);
 	return true;
 }
+
+ASFUNCTIONBODY(lightspark,setInterval)
+{
+	assert_and_throw(argslen >= 2);
+	//incRef the function
+	args[0]->incRef();
+
+	//Build arguments array
+	ASObject* callbackArgs[argslen-2];
+	uint32_t i;
+	for(i=0; i<argslen-2; i++)
+	{
+		callbackArgs[i] = args[i+2];
+		//incRef all passed arguments
+		args[i+2]->incRef();
+	}
+
+	//Add interval through manager
+	uint32_t id = sys->intervalManager->setInterval(args[0], callbackArgs, argslen-2, new Null, args[1]->toInt());
+	return abstract_i(id);
+}
+
+ASFUNCTIONBODY(lightspark,setTimeout)
+{
+	assert_and_throw(argslen >= 2);
+	//incRef the function
+	args[0]->incRef();
+
+	//Build arguments array
+	ASObject* callbackArgs[argslen-2];
+	uint32_t i;
+	for(i=0; i<argslen-2; i++)
+	{
+		callbackArgs[i] = args[i+2];
+		//incRef all passed arguments
+		args[i+2]->incRef();
+	}
+
+	//Add timeout through manager
+	uint32_t id = sys->intervalManager->setTimeout(args[0], callbackArgs, argslen-2, new Null, args[1]->toInt());
+	return abstract_i(id);
+}
+
+ASFUNCTIONBODY(lightspark,clearInterval)
+{
+	assert_and_throw(argslen == 1);
+	sys->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::INTERVAL, true);
+	return NULL;
+}
+
+ASFUNCTIONBODY(lightspark,clearTimeout)
+{
+	assert_and_throw(argslen == 1);
+	sys->intervalManager->clearInterval(args[0]->toInt(), IntervalRunner::TIMEOUT, true);
+	return NULL;
+}
+
+IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id, ASObject* _callback, ASObject** _args, const unsigned int _argslen, 
+		ASObject* _obj, uint32_t _interval):
+	type(_type), id(_id), callback(_callback),argslen(_argslen),obj(_obj),interval(_interval)
+{
+	args = new ASObject*[argslen];
+	uint32_t i;
+	for(i=0; i<argslen; i++)
+	{
+		args[i] = _args[i];
+	}
+}
+
+IntervalRunner::~IntervalRunner()
+{
+	delete[] args;
+}
+
+void IntervalRunner::tick() 
+{
+	//incRef all arguments
+	uint32_t i;
+	for(i=0; i < argslen; i++)
+	{
+		args[i]->incRef();
+	}
+	//Incref the this object
+	obj->incRef();
+	FunctionEvent* event = new FunctionEvent(static_cast<IFunction*>(callback), obj, args, argslen);
+	getVm()->addEvent(NULL,event);
+	event->decRef();
+	if(type == TIMEOUT)
+	{
+		//TODO: IntervalRunner deletes itself. Is this allowed?
+		//Delete ourselves from the active intervals list
+		sys->intervalManager->clearInterval(id, TIMEOUT, false);
+		//No actions may be performed after this point
+	}
+}
+
+IntervalManager::IntervalManager() : currentID(0)
+{
+	sem_init(&mutex, 0, 1);
+}
+
+IntervalManager::~IntervalManager()
+{
+	//Run through all running intervals and remove their tickjob, delete their intervalRunner and erase their entry
+	std::map<uint32_t,IntervalRunner*>::iterator it = runners.begin();
+	for(; it != runners.end(); it++)
+	{
+		sys->removeJob((*it).second);
+		delete((*it).second);
+		runners.erase(it);
+	}
+	sem_destroy(&mutex);
+}
+
+uint32_t IntervalManager::setInterval(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, uint32_t interval)
+{
+	sem_wait(&mutex);
+
+	uint32_t id = getFreeID();
+	IntervalRunner* runner = new IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj, interval);
+
+	//Add runner as tickjob
+	sys->addTick(interval, runner);
+	//Add runner to map
+	runners[id] = runner;
+	//Increment currentID
+	currentID++;
+
+	sem_post(&mutex);
+	return currentID-1;
+}
+uint32_t IntervalManager::setTimeout(ASObject* callback, ASObject** args, const unsigned int argslen, ASObject* obj, uint32_t interval)
+{
+	sem_wait(&mutex);
+
+	uint32_t id = getFreeID();
+	IntervalRunner* runner = new IntervalRunner(IntervalRunner::TIMEOUT, id, callback, args, argslen, obj, interval);
+
+	//Add runner as waitjob
+	sys->addWait(interval, runner);
+	//Add runner to map
+	runners[id] = runner;
+	//increment currentID
+	currentID++;
+
+	sem_post(&mutex);
+	return currentID-1;
+}
+
+uint32_t IntervalManager::getFreeID()
+{
+	//At the first run every currentID will be available. But eventually the currentID will wrap around.
+	//Thats why we need to check if the currentID isn't used yet
+	while(runners.find(currentID) != runners.end())
+		currentID++;
+	return currentID;
+}
+
+void IntervalManager::clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE type, bool removeJob)
+{
+	sem_wait(&mutex);
+	
+	std::map<uint32_t,IntervalRunner*>::iterator it = runners.find(id);
+	//If the entry exists and the types match, remove its tickjob, delete its intervalRunner and erase their entry
+	if(it != runners.end() && (*it).second->getType() == type)
+	{
+		if(removeJob)
+		{
+			sys->removeJob((*it).second);
+		}
+		delete (*it).second;
+		runners.erase(it);
+	}
+
+	sem_post(&mutex);
+}

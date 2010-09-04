@@ -283,6 +283,7 @@ public:
 	static void staticDeinit() DLL_PUBLIC;
 
 	DownloadManager* downloadManager;
+	IntervalManager* intervalManager;
 
 	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };
 	SCALE_MODE scaleMode;

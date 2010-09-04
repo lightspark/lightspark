@@ -23,6 +23,7 @@
 #include "scripting/abc.h"
 #include "scripting/flashdisplay.h"
 #include "scripting/flashevents.h"
+#include "scripting/flashutils.h"
 #include "swf.h"
 #include "logger.h"
 #include "parsing/streams.h"
@@ -179,9 +180,9 @@ SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p)
 		parseThread->root=this;
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
-	
 	pluginManager = new PluginManager;
 	audioManager=new AudioManager(pluginManager);
+	intervalManager=new IntervalManager();
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
 	parent=stage;

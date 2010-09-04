@@ -98,7 +98,6 @@
 		addChild(video);
 		video.attachNetStream(stream_ns);
 		video.addEventListener(MouseEvent.CLICK,videoClick);
-
 	}
 	private function onMetaData(item:Object):void
 	{

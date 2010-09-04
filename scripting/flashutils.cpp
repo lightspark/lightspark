@@ -124,12 +124,12 @@ ASFUNCTIONBODY(ByteArray,readBytes)
 	return NULL;
 }
 
-ASObject* ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+ASObject* ByteArray::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(skip_impl || !Array::isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride,base);
+		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	assert_and_throw(index<len);
 	ASObject* ret=abstract_i(bytes[index]);
@@ -165,12 +165,12 @@ void ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& n
 	throw UnsupportedException("ByteArray::setVariableByQName not completely implemented");
 }
 
-void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
+void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,enableOverride,base);
+		return ASObject::setVariableByMultiname(name,o,base);
 
 	if(index>=len)
 	{
@@ -376,10 +376,10 @@ ASFUNCTIONBODY(Dictionary,_constructor)
 void Dictionary::setVariableByMultiname_i(const multiname& name, intptr_t value)
 {
 	assert_and_throw(implEnable);
-	Dictionary::setVariableByMultiname(name,abstract_i(value),true);
+	Dictionary::setVariableByMultiname(name,abstract_i(value));
 }
 
-void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
+void Dictionary::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
 {
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
@@ -419,7 +419,7 @@ void Dictionary::deleteVariableByMultiname(const multiname& name)
 	tmp->name_o=NULL;
 }
 
-ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+ASObject* Dictionary::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
 	assert_and_throw(!skip_impl);
 	assert_and_throw(implEnable);
@@ -570,12 +570,12 @@ void Proxy::sinit(Class_base* c)
 	c->setConstructor(NULL);
 }
 
-void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
+void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
 {
 	//If a variable named like this already exist, return that
 	if(hasPropertyByMultiname(name) || !implEnable)
 	{
-		ASObject::setVariableByMultiname(name,o,enableOverride,base);
+		ASObject::setVariableByMultiname(name,o,base);
 		return;
 	}
 
@@ -584,7 +584,7 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 
 	if(proxySetter==NULL)
 	{
-		ASObject::setVariableByMultiname(name,o,enableOverride);
+		ASObject::setVariableByMultiname(name,o);
 		return;
 	}
 
@@ -604,18 +604,18 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, bool enab
 	implEnable=true;
 }
 
-ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="" || hasPropertyByMultiname(name) || !implEnable || skip_impl)
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
+		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
 	ASObject* o=getVariableByQName("getProperty",flash_proxy,true);
 
 	if(o==NULL)
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
+		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	assert_and_throw(o->getObjectType()==T_FUNCTION);
 

@@ -519,18 +519,18 @@ intptr_t Array::getVariableByMultiname_i(const multiname& name)
 	return ASObject::getVariableByMultiname_i(name);
 }
 
-ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+ASObject* Array::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
 	if(skip_impl || !implEnable)
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
+		return ASObject::getVariableByMultiname(name,skip_impl,base);
 		
 	assert_and_throw(name.ns.size()>0);
 	if(name.ns[0].name!="")
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
+		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::getVariableByMultiname(name,skip_impl,enableOverride, base);
+		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	if(index<data.size())
 	{
@@ -620,12 +620,12 @@ bool Array::isValidMultiname(const multiname& name, unsigned int& index)
 	return true;
 }
 
-void Array::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
+void Array::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!isValidMultiname(name,index))
-		return ASObject::setVariableByMultiname(name,o,enableOverride,base);
+		return ASObject::setVariableByMultiname(name,o,base);
 
 	if(index>=data.capacity())
 	{
@@ -1575,7 +1575,7 @@ IFunction* Function::toFunction()
 	return this;
 }
 
-IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false),overriden_by(NULL)
+IFunction::IFunction():closure_this(NULL),closure_level(-1),bound(false)
 {
 	type=T_FUNCTION;
 }

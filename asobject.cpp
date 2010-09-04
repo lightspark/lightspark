@@ -330,7 +330,7 @@ obj_var* ASObject::findSettable(const multiname& name)
 	return ret;
 }
 
-void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base)
+void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
 {
 	check();
 
@@ -358,9 +358,6 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, bool e
 		LOG(LOG_CALLS,_("Calling the setter"));
 		//Overriding function is automatically done by using cur_level
 		IFunction* setter=obj->setter;
-		if(enableOverride)
-			setter=setter->getOverride();
-
 		//One argument can be passed without creating an array
 		ASObject* target=(base)?base:this;
 		target->incRef();
@@ -390,7 +387,7 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 		//Call the setter
 		LOG(LOG_CALLS,_("Calling the setter"));
 
-		IFunction* setter=obj->setter->getOverride();
+		IFunction* setter=obj->setter;
 		incRef();
 		//One argument can be passed without creating an array
 		ASObject* ret=setter->call(this,&o,1);
@@ -581,7 +578,7 @@ obj_var* ASObject::findGettable(const multiname& name)
 	return ret;
 }
 
-ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base)
+ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base)
 {
 	check();
 
@@ -602,8 +599,6 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 				LOG(LOG_CALLS,_("Calling the getter"));
 			}
 			IFunction* getter=obj->getter;
-			if(enableOverride)
-				getter=getter->getOverride();
 			target->incRef();
 			ASObject* ret=getter->call(target,NULL,0);
 			LOG(LOG_CALLS,_("End of getter"));
@@ -622,7 +617,7 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 	else if(prototype && getActualPrototype())
 	{
 		//It has not been found yet, ask the prototype
-		ASObject* ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,true,this);
+		ASObject* ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,this);
 		return ret;
 	}
 
@@ -643,7 +638,7 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 		{
 			//Call the getter
 			LOG(LOG_CALLS,_("Calling the getter"));
-			IFunction* getter=obj->getter->getOverride();
+			IFunction* getter=obj->getter;
 			incRef();
 			ASObject* ret=getter->call(this,NULL,0);
 			LOG(LOG_CALLS,_("End of getter"));
@@ -868,7 +863,7 @@ ASObject* ASObject::getValueAt(int index)
 	{
 		//Call the getter
 		LOG(LOG_CALLS,_("Calling the getter"));
-		IFunction* getter=obj->getter->getOverride();
+		IFunction* getter=obj->getter;
 		incRef();
 		ret=getter->call(this,NULL,0);
 		ret->fake_decRef();

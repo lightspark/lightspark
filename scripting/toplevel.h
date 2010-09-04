@@ -49,7 +49,7 @@ private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
 	bool use_protected;
-	tiny_string protected_ns;
+	nsNameAndKind protected_ns;
 	int _maxlevel()
 	{
 		return max_level;

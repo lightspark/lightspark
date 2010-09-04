@@ -1493,12 +1493,11 @@ void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 
 void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 {
-	const multiname* mname=getMultiname(t->name,NULL);
+	const multiname& mname=*getMultiname(t->name,NULL);
 	//Should be a Qname
-	assert_and_throw(mname->ns.size()==1);
+	assert_and_throw(mname.ns.size()==1 && mname.name_type==multiname::NAME_STRING);
 
-	const tiny_string& name=mname->name_s;
-	const tiny_string& ns=mname->ns[0].name;
+	const tiny_string& name=mname.name_s;
 	if(t->kind>>4)
 		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
 	switch(t->kind&0xf)
@@ -1506,7 +1505,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 		//Link the methods to the implementations
 		case traits_info::Method:
 		{
-			LOG(LOG_CALLS,_("Method trait: ") << ns << _("::") << name << _(" #") << t->method);
+			LOG(LOG_CALLS,_("Method trait: ") << mname << _(" #") << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -1515,7 +1514,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			Class_base* cur=c;
 			while(cur)
 			{
-				var=cur->Variables.findObjVar(name,"",false);
+				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false);
 				if(var)
 					break;
 				cur=cur->super;
@@ -1525,19 +1524,19 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				assert_and_throw(var->var);
 
 				var->var->incRef();
-				c->setVariableByQName(name,ns,var->var);
+				c->setVariableByMultiname(mname,var->var);
 			}
 			else
 			{
 				LOG(LOG_NOT_IMPLEMENTED,_("Method not linkable"));
 			}
 
-			LOG(LOG_TRACE,_("End Method trait: ") << ns << _("::") << name);
+			LOG(LOG_TRACE,_("End Method trait: ") << mname);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(LOG_CALLS,_("Getter trait: ") << ns << _("::") << name);
+			LOG(LOG_CALLS,_("Getter trait: ") << mname);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -1546,7 +1545,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			Class_base* cur=c;
 			while(cur)
 			{
-				var=cur->Variables.findObjVar(name,"",false);
+				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false);
 				if(var && var->getter)
 					break;
 				cur=cur->super;
@@ -1556,19 +1555,19 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				assert_and_throw(var->getter);
 
 				var->getter->incRef();
-				c->setGetterByQName(name,ns,var->getter);
+				c->setGetterByQName(name,mname.ns[0],var->getter);
 			}
 			else
 			{
 				LOG(LOG_NOT_IMPLEMENTED,_("Getter not linkable"));
 			}
 			
-			LOG(LOG_TRACE,_("End Getter trait: ") << ns << _("::") << name);
+			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(LOG_CALLS,_("Setter trait: ") << ns << _("::") << name << _(" #") << t->method);
+			LOG(LOG_CALLS,_("Setter trait: ") << mname << _(" #") << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -1577,7 +1576,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			Class_base* cur=c;
 			while(cur)
 			{
-				var=cur->Variables.findObjVar(name,"",false);
+				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false);
 				if(var && var->setter)
 					break;
 				cur=cur->super;
@@ -1587,14 +1586,14 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				assert_and_throw(var->setter);
 
 				var->setter->incRef();
-				c->setSetterByQName(name,ns,var->setter);
+				c->setSetterByQName(name,mname.ns[0],var->setter);
 			}
 			else
 			{
 				LOG(LOG_NOT_IMPLEMENTED,_("Setter not linkable"));
 			}
 			
-			LOG(LOG_TRACE,_("End Setter trait: ") << ns << _("::") << name);
+			LOG(LOG_TRACE,_("End Setter trait: ") << mname);
 			break;
 		}
 //		case traits_info::Class:

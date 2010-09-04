@@ -59,9 +59,9 @@ enum TRAIT_KIND { OWNED_TRAIT=0, BORROWED_TRAIT=1 };
 
 struct variable
 {
-	tiny_string ns;
+	nsNameAndKind ns;
 	obj_var var;
-	variable(const tiny_string& _ns):ns(_ns){}
+	variable(const nsNameAndKind& _ns):ns(_ns){}
 };
 
 class variables_map
@@ -76,7 +76,7 @@ private:
 	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
-	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create);
+	obj_var* findObjVar(const tiny_string& name, const nsNameAndKind& ns, bool create);
 	obj_var* findObjVar(const multiname& mname, bool create);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
@@ -205,7 +205,9 @@ public:
 	virtual void deleteVariableByMultiname(const multiname& name);
 	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o,bool skip_impl=false);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
+	void setGetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
+	void setSetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o);
 	bool hasPropertyByMultiname(const multiname& name);
 	bool hasPropertyByQName(const tiny_string& name, const tiny_string& ns);
 	ASObject* getSlot(unsigned int n)

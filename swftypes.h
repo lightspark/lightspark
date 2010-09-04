@@ -387,7 +387,10 @@ struct nsNameAndKind
 	{
 		return name < r;
 	}
-
+	bool operator==(const nsNameAndKind& r) const
+  	{
+		return /*kind==r.kind &&*/ name==r.name;
+  	}
 	//Automatic conversion to tiny_string is useful is multiname lookup
 	operator const tiny_string&() const
 	{

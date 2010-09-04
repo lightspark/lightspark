@@ -2595,8 +2595,8 @@ void VerifyError::buildTraits(ASObject* o)
 {
 }
 
-Class_base::Class_base(const QName& name):use_protected(false),constructor(NULL),referencedObjectsMutex("referencedObjects"),super(NULL),
-	context(NULL),class_name(name),class_index(-1),max_level(0)
+Class_base::Class_base(const QName& name):use_protected(false),protected_ns("",NAMESPACE),constructor(NULL),referencedObjectsMutex("referencedObjects"),
+	super(NULL),context(NULL),class_name(name),class_index(-1),max_level(0)
 {
 	type=T_CLASS;
 }

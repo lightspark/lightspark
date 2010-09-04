@@ -2184,7 +2184,8 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		ret->use_protected=true;
 		int ns=th->context->instances[n].protectedNs;
-		ret->protected_ns=th->context->getString(th->context->constant_pool.namespaces[ns].name);
+		const namespace_info& ns_info=th->context->constant_pool.namespaces[ns];
+		ret->protected_ns=nsNameAndKind(th->context->getString(ns_info.name),(NS_KIND)(int)ns_info.kind);
 	}
 
 	//Class objects also contains all the methods/getters/setters declared for instances

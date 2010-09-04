@@ -193,7 +193,7 @@ double ASObject::toNumber()
 	return 0;
 }
 
-obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, bool create)
+obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, bool create)
 {
 	const var_iterator ret_begin=Variables.lower_bound(n);
 	//This actually look for the first different name, if we accept also previous levels
@@ -220,14 +220,16 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, 
 bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns)
 {
 	check();
+	const nsNameAndKind tmpns(ns, NAMESPACE);
+	//TODO: check what happens with CLASS_TRAITS
 	//We look in all the object's levels
-	bool ret=(Variables.findObjVar(name, ns, false)!=NULL);
+	bool ret=(Variables.findObjVar(name, tmpns, false)!=NULL);
 	if(!ret) //Try the classes
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			ret=(cur->Variables.findObjVar(name, ns, false)!=NULL);
+			ret=(cur->Variables.findObjVar(name, tmpns, false)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;
@@ -255,7 +257,7 @@ bool ASObject::hasPropertyByMultiname(const multiname& name)
 	return ret;
 }
 
-void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+void ASObject::setGetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o)
 {
 	check();
 #ifndef NDEBUG
@@ -272,7 +274,12 @@ void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, 
 	obj->getter=o;
 }
 
-void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+{
+	setGetterByQName(name, nsNameAndKind(ns, NAMESPACE), o);
+}
+
+void ASObject::setSetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o)
 {
 	check();
 #ifndef NDEBUG
@@ -287,6 +294,11 @@ void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, 
 		return;
 	}
 	obj->setter=o;
+}
+
+void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+{
+	setSetterByQName(name, nsNameAndKind(ns, NAMESPACE), o);
 }
 
 void ASObject::deleteVariableByMultiname(const multiname& name)
@@ -376,11 +388,13 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl)
 {
+	//TODO: what about class traits
+	const nsNameAndKind tmpns(ns, NAMESPACE);
 	//NOTE: we assume that [gs]etSuper and setProperty correctly manipulate the cur_level
-	obj_var* obj=Variables.findObjVar(name,ns,false);
+	obj_var* obj=Variables.findObjVar(name,tmpns,false);
 
 	if(obj==NULL)
-		obj=Variables.findObjVar(name,ns,true);
+		obj=Variables.findObjVar(name,tmpns,true);
 
 	if(obj->setter)
 	{
@@ -430,7 +444,7 @@ void variables_map::killObjVar(const multiname& mname)
 	assert_and_throw(!mname.ns.empty());
 	for(unsigned int i=0;i<mname.ns.size();i++)
 	{
-		const tiny_string& ns=mname.ns[i].name;
+		const nsNameAndKind& ns=mname.ns[i];
 		var_iterator start=ret.first;
 		for(;start!=ret.second;start++)
 		{
@@ -489,10 +503,11 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 		{
 			//Hack, insert with empty name
 			//Here the object MUST exist
-			var_iterator inserted=Variables.insert(ret,make_pair(name, variable("") ) );
+			var_iterator inserted=Variables.insert(ret,make_pair(name, 
+						variable(nsNameAndKind("",NAMESPACE)) ) );
 			return &inserted->second.var;
 		}
-		var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0].name) ) );
+		var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0]) ) );
 		return &inserted->second.var;
 	}
 	else
@@ -629,8 +644,10 @@ ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_strin
 {
 	check();
 
+	//TODO: What about class traits
+	const nsNameAndKind tmpns(ns, NAMESPACE);
 	obj_var* obj=NULL;
-	obj=Variables.findObjVar(name,ns,false);
+	obj=Variables.findObjVar(name,tmpns,false);
 
 	if(obj!=NULL)
 	{
@@ -812,7 +829,7 @@ void variables_map::initSlot(unsigned int n, const tiny_string& name, const tiny
 		var_iterator start=ret.first;
 		for(;start!=ret.second;start++)
 		{
-			if(start->second.ns==ns)
+			if(start->second.ns.name==ns)
 			{
 				slots_vars[n-1]=start;
 				return;

@@ -55,6 +55,15 @@ struct obj_var
 	explicit obj_var(ASObject* v,IFunction* g,IFunction* s):var(v),setter(s),getter(g){}
 };
 
+enum TRAIT_KIND { OWNED_TRAIT=0, BORROWED_TRAIT=1 };
+
+struct variable
+{
+	tiny_string ns;
+	obj_var var;
+	variable(const tiny_string& _ns):ns(_ns){}
+};
+
 class variables_map
 {
 //ASObject knows how to use its variable_map
@@ -62,9 +71,9 @@ friend class ASObject;
 //ABCContext uses findObjVar when building and linking traits
 friend class ABCContext;
 private:
-	std::multimap<tiny_string,std::pair<tiny_string, obj_var> > Variables;
-	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
-	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::const_iterator const_var_iterator;
+	std::multimap<tiny_string,variable> Variables;
+	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
+	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
 	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create);
@@ -72,7 +81,7 @@ private:
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
-		return slots_vars[n-1]->second.second.var;
+		return slots_vars[n-1]->second.var.var;
 	}
 	void setSlot(unsigned int n,ASObject* o);
 	void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);

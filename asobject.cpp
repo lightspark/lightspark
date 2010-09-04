@@ -203,15 +203,15 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const tiny_string& ns, 
 	var_iterator ret=ret_begin;
 	for(;ret!=ret_end;ret++)
 	{
-		if(ret->second.first==ns)
-			return &ret->second.second;
+		if(ret->second.ns==ns)
+			return &ret->second.var;
 	}
 
 	//Name not present, insert it if we have to create it
 	if(create)
 	{
-		var_iterator inserted=Variables.insert(ret_begin,make_pair(n, make_pair(ns, obj_var() ) ) );
-		return &inserted->second.second;
+		var_iterator inserted=Variables.insert(ret_begin,make_pair(n, variable(ns) ) );
+		return &inserted->second.var;
 	}
 	else
 		return NULL;
@@ -434,7 +434,7 @@ void variables_map::killObjVar(const multiname& mname)
 		var_iterator start=ret.first;
 		for(;start!=ret.second;start++)
 		{
-			if(start->second.first==ns)
+			if(start->second.ns==ns)
 			{
 				Variables.erase(start);
 				return;
@@ -477,8 +477,8 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 		//Check if one the namespace is already present
 		assert_and_throw(!mname.ns.empty());
 		//We can use binary search, as the namespace are ordered
-		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.first))
-			return &ret->second.second;
+		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.ns))
+			return &ret->second.var;
 	}
 
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
@@ -489,11 +489,11 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create)
 		{
 			//Hack, insert with empty name
 			//Here the object MUST exist
-			var_iterator inserted=Variables.insert(ret,make_pair(name, make_pair("", obj_var() ) ) );
-			return &inserted->second.second;
+			var_iterator inserted=Variables.insert(ret,make_pair(name, variable("") ) );
+			return &inserted->second.var;
 		}
-		var_iterator inserted=Variables.insert(ret,make_pair(name, make_pair(mname.ns[0].name, obj_var() ) ) );
-		return &inserted->second.second;
+		var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0].name) ) );
+		return &inserted->second.var;
 	}
 	else
 		return NULL;
@@ -674,20 +674,20 @@ void ASObject::check() const
 			break;
 
 		//No double definition of a single variable should exist
-		if(it->first==next->first && it->second.first==next->second.first)
+		if(it->first==next->first && it->second.ns==next->second.ns)
 		{
-			if(it->second.second.var==NULL && next->second.second.var==NULL)
+			if(it->second.var.var==NULL && next->second.var.var==NULL)
 				continue;
 
-			if(it->second.second.var==NULL || next->second.second.var==NULL)
+			if(it->second.var.var==NULL || next->second.var.var==NULL)
 			{
 				cout << it->first << endl;
-				cout << it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter << endl;
-				cout << next->second.second.var << ' ' << next->second.second.setter << ' ' << next->second.second.getter << endl;
+				cout << it->second.var.var << ' ' << it->second.var.setter << ' ' << it->second.var.getter << endl;
+				cout << next->second.var.var << ' ' << next->second.var.setter << ' ' << next->second.var.getter << endl;
 				abort();
 			}
 
-			if(it->second.second.var->getObjectType()!=T_FUNCTION || next->second.second.var->getObjectType()!=T_FUNCTION)
+			if(it->second.var.var->getObjectType()!=T_FUNCTION || next->second.var.var->getObjectType()!=T_FUNCTION)
 			{
 				cout << it->first << endl;
 				abort();
@@ -702,8 +702,8 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
-		LOG(LOG_NO_INFO,_("[") << it->second.first << _("] ")<< it->first << _(" ") << 
-			it->second.second.var << ' ' << it->second.second.setter << ' ' << it->second.second.getter);
+		LOG(LOG_NO_INFO,_("[") << it->second.ns << _("] ")<< it->first << _(" ") << 
+			it->second.var.var << ' ' << it->second.var.setter << ' ' << it->second.var.getter);
 }
 
 variables_map::~variables_map()
@@ -718,12 +718,12 @@ void variables_map::destroyContents()
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
 	{
-		if(it->second.second.var)
-			it->second.second.var->decRef();
-		if(it->second.second.setter)
-			it->second.second.setter->decRef();
-		if(it->second.second.getter)
-			it->second.second.getter->decRef();
+		if(it->second.var.var)
+			it->second.var.var->decRef();
+		if(it->second.var.setter)
+			it->second.var.setter->decRef();
+		if(it->second.var.getter)
+			it->second.var.getter->decRef();
 	}
 	Variables.clear();
 }
@@ -812,7 +812,7 @@ void variables_map::initSlot(unsigned int n, const tiny_string& name, const tiny
 		var_iterator start=ret.first;
 		for(;start!=ret.second;start++)
 		{
-			if(start->second.first==ns)
+			if(start->second.ns==ns)
 			{
 				slots_vars[n-1]=start;
 				return;
@@ -829,10 +829,10 @@ void variables_map::setSlot(unsigned int n,ASObject* o)
 	if(n-1<slots_vars.size())
 	{
 		assert_and_throw(slots_vars[n-1]!=Variables.end());
-		if(slots_vars[n-1]->second.second.setter)
+		if(slots_vars[n-1]->second.var.setter)
 			throw UnsupportedException("setSlot has setters");
-		slots_vars[n-1]->second.second.var->decRef();
-		slots_vars[n-1]->second.second.var=o;
+		slots_vars[n-1]->second.var.var->decRef();
+		slots_vars[n-1]->second.var.var=o;
 	}
 	else
 		throw RunTimeException("setSlot out of bounds");
@@ -848,7 +848,7 @@ obj_var* variables_map::getValueAt(unsigned int index)
 		for(unsigned int i=0;i<index;i++)
 			it++;
 
-		return &it->second.second;
+		return &it->second.var;
 	}
 	else
 		throw RunTimeException("getValueAt out of bounds");

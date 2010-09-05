@@ -214,7 +214,6 @@ public:
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);
 	void setSetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
 	bool hasPropertyByMultiname(const multiname& name);
-	bool hasPropertyByQName(const tiny_string& name, const tiny_string& ns);
 	ASObject* getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);

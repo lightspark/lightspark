@@ -31,13 +31,13 @@ REGISTER_CLASS_NAME2(ASObject,"Object","");
 tiny_string ASObject::toString(bool debugMsg)
 {
 	check();
-	if(debugMsg==false && hasPropertyByQName("toString",""))
+	multiname toStringName;
+	toStringName.name_type=multiname::NAME_STRING;
+	toStringName.name_s="toString";
+	toStringName.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
+	if(debugMsg==false && hasPropertyByMultiname(toStringName))
 	{
-		multiname name;
-		name.name_type=multiname::NAME_STRING;
-		name.name_s="toString";
-		name.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
-		ASObject* obj_toString=getVariableByMultiname(name);
+		ASObject* obj_toString=getVariableByMultiname(toStringName);
 		if(obj_toString->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f_toString=static_cast<IFunction*>(obj_toString);
@@ -62,15 +62,15 @@ tiny_string ASObject::toString(bool debugMsg)
 TRISTATE ASObject::isLess(ASObject* r)
 {
 	check();
-	if(hasPropertyByQName("valueOf",""))
+	multiname valueOfName;
+	valueOfName.name_type=multiname::NAME_STRING;
+	valueOfName.name_s="valueOf";
+	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	if(hasPropertyByMultiname(valueOfName))
 	{
-		if(r->hasPropertyByQName("valueOf","")==false)
+		if(r->hasPropertyByMultiname(valueOfName)==false)
 			throw RunTimeException("Missing valueof for second operand");
 
-		multiname valueOfName;
-		valueOfName.name_type=multiname::NAME_STRING;
-		valueOfName.name_s="valueOf";
-		valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		ASObject* obj1=getVariableByMultiname(valueOfName);
 		ASObject* obj2=r->getVariableByMultiname(valueOfName);
 
@@ -134,12 +134,12 @@ bool ASObject::isEqual(ASObject* r)
 	if(r->getObjectType()==T_NULL || r->getObjectType()==T_UNDEFINED)
 		return false;
 
-	if(hasPropertyByQName("equals",""))
+	multiname equalsName;
+	equalsName.name_type=multiname::NAME_STRING;
+	equalsName.name_s="equals";
+	equalsName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	if(hasPropertyByMultiname(equalsName))
 	{
-		multiname equalsName;
-		equalsName.name_type=multiname::NAME_STRING;
-		equalsName.name_s="equals";
-		equalsName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		ASObject* func_equals=getVariableByMultiname(equalsName);
 
 		assert_and_throw(func_equals!=NULL);
@@ -156,16 +156,16 @@ bool ASObject::isEqual(ASObject* r)
 		return Boolean_concrete(ret);
 	}
 
-	//We can try to call valueOf (maybe equals) and compare that
-	if(hasPropertyByQName("valueOf",""))
+	//We can try to call valueOf and compare that
+	multiname valueOfName;
+	valueOfName.name_type=multiname::NAME_STRING;
+	valueOfName.name_s="valueOf";
+	valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	if(hasPropertyByMultiname(valueOfName))
 	{
-		if(r->hasPropertyByQName("valueOf","")==false)
+		if(r->hasPropertyByMultiname(valueOfName)==false)
 			throw RunTimeException("Not handled less comparison for objects");
 
-		multiname valueOfName;
-		valueOfName.name_type=multiname::NAME_STRING;
-		valueOfName.name_s="valueOf";
-		valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
 		ASObject* obj1=getVariableByMultiname(valueOfName);
 		ASObject* obj2=r->getVariableByMultiname(valueOfName);
 
@@ -231,27 +231,6 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns
 	}
 	else
 		return NULL;
-}
-
-bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns)
-{
-	check();
-	const nsNameAndKind tmpns(ns, NAMESPACE);
-	//TODO: check what happens with BORROWED_TRAITS
-	//We look in all the object's levels
-	bool ret=(Variables.findObjVar(name, tmpns, false, false)!=NULL);
-	if(!ret) //Try the classes
-	{
-		Class_base* cur=prototype;
-		while(cur)
-		{
-			ret=(cur->Variables.findObjVar(name, tmpns, false, false)!=NULL);
-			if(ret)
-				break;
-			cur=cur->super;
-		}
-	}
-	return ret;
 }
 
 bool ASObject::hasPropertyByMultiname(const multiname& name)
@@ -583,7 +562,11 @@ ASFUNCTIONBODY(ASObject,_toString)
 ASFUNCTIONBODY(ASObject,hasOwnProperty)
 {
 	assert_and_throw(argslen==1);
-	bool ret=obj->hasPropertyByQName(args[0]->toString(),"");
+	multiname name;
+	name.name_type=multiname::NAME_STRING;
+	name.name_s=args[0]->toString();
+	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	bool ret=obj->hasPropertyByMultiname(name);
 	return abstract_b(ret);
 }
 

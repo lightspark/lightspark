@@ -1889,7 +1889,11 @@ bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
 bool ABCVm::in(ASObject* val2, ASObject* val1)
 {
 	LOG(LOG_CALLS, _("in") );
-	bool ret=val2->hasPropertyByQName(val1->toString(),"");
+	multiname name;
+	name.name_type=multiname::NAME_STRING;
+	name.name_s=val1->toString();
+	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	bool ret=val2->hasPropertyByMultiname(name);
 	val1->decRef();
 	val2->decRef();
 	return ret;

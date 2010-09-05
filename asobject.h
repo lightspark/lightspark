@@ -70,6 +70,8 @@ class variables_map
 friend class ASObject;
 //ABCContext uses findObjVar when building and linking traits
 friend class ABCContext;
+//Useful when linking
+friend class InterfaceClass;
 private:
 	std::multimap<tiny_string,variable> Variables;
 	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
@@ -116,6 +118,7 @@ friend class Manager;
 friend class ABCVm;
 friend class ABCContext;
 friend class Class_base; //Needed for forced cleanup
+friend class InterfaceClass;
 friend class IFunction; //Needed for clone
 CLASSBUILDABLE(ASObject);
 protected:
@@ -199,7 +202,6 @@ public:
 	}
 	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
-	virtual ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	virtual void deleteVariableByMultiname(const multiname& name);

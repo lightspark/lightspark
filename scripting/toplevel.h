@@ -88,13 +88,6 @@ public:
 			ret=super->getVariableByMultiname(name);
 		return ret;*/
 	}
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
-	{
-		ASObject* ret=ASObject::getVariableByQName(name,ns,skip_impl);
-		if(ret==NULL && super)
-			ret=super->getVariableByQName(name,ns,skip_impl);
-		return ret;
-	}
 /*	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
 		abort();
@@ -176,13 +169,6 @@ public:
 		if(ret==NULL && super)
 			ret=super->getVariableByMultiname(name);
 		return ret;*/
-	}
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
-	{
-		ASObject* ret=Class_base::getVariableByQName(name,ns,skip_impl);
-		if(ret==NULL && asprototype)
-			ret=asprototype->getVariableByQName(name,ns,skip_impl);
-		return ret;
 	}
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{

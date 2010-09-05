@@ -126,7 +126,11 @@ ASFUNCTIONBODY(URLLoader,load)
 	//TODO: use domain policy files to check if domain access is allowed
 	//TODO: should we disallow accessing local files in a directory above the current one like we do with NetStream.play?
 
-	ASObject* data=arg->getVariableByQName("data","");
+	multiname dataName;
+	dataName.name_type=multiname::NAME_STRING;
+	dataName.name_s="data";
+	dataName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	ASObject* data=arg->getVariableByMultiname(dataName);
 	if(data)
 	{
 		if(data->getPrototype()==Class<URLVariables>::getClass())

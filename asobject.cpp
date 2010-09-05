@@ -33,7 +33,11 @@ tiny_string ASObject::toString(bool debugMsg)
 	check();
 	if(debugMsg==false && hasPropertyByQName("toString",""))
 	{
-		ASObject* obj_toString=getVariableByQName("toString","");
+		multiname name;
+		name.name_type=multiname::NAME_STRING;
+		name.name_s="toString";
+		name.ns.push_back(nsNameAndKind("",PACKAGE_NAMESPACE));
+		ASObject* obj_toString=getVariableByMultiname(name);
 		if(obj_toString->getObjectType()==T_FUNCTION)
 		{
 			IFunction* f_toString=static_cast<IFunction*>(obj_toString);
@@ -63,8 +67,12 @@ TRISTATE ASObject::isLess(ASObject* r)
 		if(r->hasPropertyByQName("valueOf","")==false)
 			throw RunTimeException("Missing valueof for second operand");
 
-		ASObject* obj1=getVariableByQName("valueOf","");
-		ASObject* obj2=r->getVariableByQName("valueOf","");
+		multiname valueOfName;
+		valueOfName.name_type=multiname::NAME_STRING;
+		valueOfName.name_s="valueOf";
+		valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		ASObject* obj1=getVariableByMultiname(valueOfName);
+		ASObject* obj2=r->getVariableByMultiname(valueOfName);
 
 		assert_and_throw(obj1!=NULL && obj2!=NULL);
 
@@ -128,7 +136,11 @@ bool ASObject::isEqual(ASObject* r)
 
 	if(hasPropertyByQName("equals",""))
 	{
-		ASObject* func_equals=getVariableByQName("equals","");
+		multiname equalsName;
+		equalsName.name_type=multiname::NAME_STRING;
+		equalsName.name_s="equals";
+		equalsName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		ASObject* func_equals=getVariableByMultiname(equalsName);
 
 		assert_and_throw(func_equals!=NULL);
 
@@ -150,8 +162,12 @@ bool ASObject::isEqual(ASObject* r)
 		if(r->hasPropertyByQName("valueOf","")==false)
 			throw RunTimeException("Not handled less comparison for objects");
 
-		ASObject* obj1=getVariableByQName("valueOf","");
-		ASObject* obj2=r->getVariableByQName("valueOf","");
+		multiname valueOfName;
+		valueOfName.name_type=multiname::NAME_STRING;
+		valueOfName.name_s="valueOf";
+		valueOfName.ns.push_back(nsNameAndKind("",NAMESPACE));
+		ASObject* obj1=getVariableByMultiname(valueOfName);
+		ASObject* obj2=r->getVariableByMultiname(valueOfName);
 
 		assert_and_throw(obj1!=NULL && obj2!=NULL);
 
@@ -637,42 +653,6 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 	}
 
 	//If it has not been found
-	return NULL;
-}
-
-ASObject* ASObject::getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl)
-{
-	check();
-
-	//TODO: What about class traits
-	const nsNameAndKind tmpns(ns, NAMESPACE);
-	obj_var* obj=NULL;
-	obj=Variables.findObjVar(name,tmpns,false);
-
-	if(obj!=NULL)
-	{
-		if(obj->getter)
-		{
-			//Call the getter
-			LOG(LOG_CALLS,_("Calling the getter"));
-			IFunction* getter=obj->getter;
-			incRef();
-			ASObject* ret=getter->call(this,NULL,0);
-			LOG(LOG_CALLS,_("End of getter"));
-			//The variable is already owned by the caller
-			ret->fake_decRef();
-			return ret;
-		}
-		else
-			return obj->var;
-	}
-	else if(prototype)
-	{
-		ASObject* ret=prototype->getVariableByQName(name,ns);
-		if(ret)
-			return ret;
-	}
-
 	return NULL;
 }
 

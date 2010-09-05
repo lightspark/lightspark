@@ -318,7 +318,11 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-			ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
+			multiname callPropertyName;
+			callPropertyName.name_type=multiname::NAME_STRING;
+			callPropertyName.name_s="callProperty";
+			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
 
 			if(o)
 			{
@@ -651,7 +655,11 @@ void ABCVm::construct(call_context* th, int m)
 					ret2->decRef();
 
 				//Let's see if an AS prototype has been defined on the function
-				ASObject* asp=sf->getVariableByQName("prototype","");
+				multiname prototypeName;
+				prototypeName.name_type=multiname::NAME_STRING;
+				prototypeName.name_s="prototype";
+				prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+				ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
 				if(asp)
 					asp->incRef();
 
@@ -792,7 +800,11 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-			ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
+			multiname callPropertyName;
+			callPropertyName.name_type=multiname::NAME_STRING;
+			callPropertyName.name_s="callProperty";
+			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
 			if(o)
 			{
 				assert_and_throw(o->getObjectType()==T_FUNCTION);
@@ -1958,7 +1970,11 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 				ret2->decRef();
 
 			//Let's see if an AS prototype has been defined on the function
-			ASObject* asp=sf->getVariableByQName("prototype","");
+			multiname prototypeName;
+			prototypeName.name_type=multiname::NAME_STRING;
+			prototypeName.name_s="prototype";
+			prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+			ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
 			if(asp)
 				asp->incRef();
 

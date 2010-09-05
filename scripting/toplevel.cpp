@@ -2946,10 +2946,19 @@ ASFUNCTIONBODY(Namespace,_constructor)
 
 void InterfaceClass::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
 {
-	ASObject* ret=c->getVariableByQName(name,"");
-	assert_and_throw(ret);
-	ret->incRef();
-	c->setVariableByQName(name,interfaceNs,ret);
+	obj_var* var=NULL;
+	Class_base* cur=c;
+	//Find the origin
+	while(cur)
+	{
+		var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false);
+		if(var)
+			break;
+		cur=cur->super;
+	}
+	assert_and_throw(var->var);
+	var->var->incRef();
+	c->setVariableByQName(name,interfaceNs,var->var);
 }
 
 void UInteger::sinit(Class_base* c)

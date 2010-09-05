@@ -134,13 +134,6 @@ public:
 	static void sinit(Class_base*);
 //	static void buildTraits(ASObject* o);
 //	ASFUNCTION(_constructor);
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
-	{
-		if(!implEnable || skip_impl)
-			return ASObject::getVariableByQName(name,ns,skip_impl);
-		throw RunTimeException("Proxy::getVariableByQName");
-		return NULL;
-	}
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{

@@ -580,7 +580,11 @@ void Proxy::setVariableByMultiname(const multiname& name, ASObject* o, ASObject*
 	}
 
 	//Check if there is a custom setter defined, skipping implementation to avoid recursive calls
-	ASObject* proxySetter=getVariableByQName("setProperty",flash_proxy,true);
+	multiname setPropertyName;
+	setPropertyName.name_type=multiname::NAME_STRING;
+	setPropertyName.name_s="setProperty";
+	setPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	ASObject* proxySetter=getVariableByMultiname(setPropertyName,true);
 
 	if(proxySetter==NULL)
 	{
@@ -612,7 +616,11 @@ ASObject* Proxy::getVariableByMultiname(const multiname& name, bool skip_impl, A
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
 
 	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
-	ASObject* o=getVariableByQName("getProperty",flash_proxy,true);
+	multiname getPropertyName;
+	getPropertyName.name_type=multiname::NAME_STRING;
+	getPropertyName.name_s="getProperty";
+	getPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	ASObject* o=getVariableByMultiname(getPropertyName,true);
 
 	if(o==NULL)
 		return ASObject::getVariableByMultiname(name,skip_impl,base);
@@ -637,7 +645,11 @@ bool Proxy::hasNext(unsigned int& index, bool& out)
 	assert_and_throw(implEnable);
 	LOG(LOG_CALLS, _("Proxy::hasNext"));
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
-	ASObject* o=getVariableByQName("nextNameIndex",flash_proxy,true);
+	multiname nextNameIndexName;
+	nextNameIndexName.name_type=multiname::NAME_STRING;
+	nextNameIndexName.name_s="nextNameIndex";
+	nextNameIndexName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	ASObject* o=getVariableByMultiname(nextNameIndexName,true);
 	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(o);
 	ASObject* arg=abstract_i(index);
@@ -655,7 +667,11 @@ bool Proxy::nextName(unsigned int index, ASObject*& out)
 	assert_and_throw(implEnable);
 	LOG(LOG_CALLS, _("Proxy::nextName"));
 	//Check if there is a custom enumerator, skipping implementation to avoid recursive calls
-	ASObject* o=getVariableByQName("nextName",flash_proxy,true);
+	multiname nextNameName;
+	nextNameName.name_type=multiname::NAME_STRING;
+	nextNameName.name_s="nextName";
+	nextNameName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+	ASObject* o=getVariableByMultiname(nextNameName,true);
 	assert_and_throw(o && o->getObjectType()==T_FUNCTION);
 	IFunction* f=static_cast<IFunction*>(o);
 	ASObject* arg=abstract_i(index);

@@ -133,7 +133,7 @@ void Downloader::setLen(uint32_t l)
 	if(cached && !cache.is_open())
 	{
 		//Create a temporary file(name)
-		char* cacheFileNameC = new char[30];
+		char cacheFileNameC[30];
 		strcpy(cacheFileNameC, "/tmp/lightsparkdownloadXXXXXX");
 		int fd = mkstemp(cacheFileNameC);
 		if(fd == -1)
@@ -143,7 +143,6 @@ void Downloader::setLen(uint32_t l)
 
 		//Save the temporary filename
 		cacheFileName = tiny_string(cacheFileNameC, true);
-		delete[] cacheFileNameC;
 		//Open the cache file
 		cache.open(cacheFileName.raw_buf(), std::fstream::in | std::fstream::out);
 		assert_and_throw(cache.is_open());
@@ -235,7 +234,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 Downloader::int_type Downloader::underflow()
 {
 	sem_wait(&mutex);
-	assert_and_throw(gptr()==egptr());
+	assert(gptr()==egptr());
 
 	unsigned int startTail=tail;
 	//There is no data to read yet OR we have read all available data

@@ -351,7 +351,6 @@ string nsPluginInstance::getPageURL() const
 	return ret;
 }
 
-
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
 	//We have to cast the downloadanager to a NPDownloadManager
@@ -431,13 +430,13 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 		dl->terminate();
 	}
 	else
-		LOG(LOG_NO_INFO, _("DestroyStream on main stream?"));
+		LOG(LOG_NO_INFO, _("DestroyStream on main stream"));
 	return NPERR_NO_ERROR;
 }
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
-	lightspark::Downloader* dl=(lightspark::Downloader*)notifyData;
+	NPDownloader* dl=(NPDownloader*)notifyData;
 	cout << "URLnotify " << url << endl;
 	//Notify our downloader of what happened
 	switch(reason)
@@ -449,10 +448,12 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 		case NPRES_USER_BREAK:
 			cout << "User Break" <<endl;
 			dl->setFailed();
+			dl->terminate();
 			break;
 		case NPRES_NETWORK_ERR:
 			cout << "Network Error" <<endl;
 			dl->setFailed();
+			dl->terminate();
 			break;
 	}
 }

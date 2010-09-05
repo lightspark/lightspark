@@ -178,7 +178,7 @@ public:
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
 	}
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false)
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 	{
 		throw UnsupportedException("Class_function::setVariableByQName");
 	}
@@ -539,7 +539,7 @@ public:
 	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	tiny_string toString(bool debugMsg=false);

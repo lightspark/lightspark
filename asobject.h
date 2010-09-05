@@ -205,7 +205,7 @@ public:
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	virtual void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	virtual void deleteVariableByMultiname(const multiname& name);
-	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o,bool skip_impl=false);
+	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
 	void setGetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o);
 	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);

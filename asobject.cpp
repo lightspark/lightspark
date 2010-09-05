@@ -402,7 +402,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 	}
 }
 
-void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl)
+void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	//TODO: what about class traits
 	const nsNameAndKind tmpns(ns, NAMESPACE);

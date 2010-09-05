@@ -672,13 +672,13 @@ bool Array::isValidQName(const tiny_string& name, const tiny_string& ns, unsigne
 	return true;
 }
 
-void Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl)
+void Array::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!isValidQName(name,ns,index))
 	{
-		ASObject::setVariableByQName(name,ns,o,skip_impl);
+		ASObject::setVariableByQName(name,ns,o);
 		return;
 	}
 

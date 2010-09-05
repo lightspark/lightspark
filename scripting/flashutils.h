@@ -63,7 +63,7 @@ public:
 	}
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	bool isEqual(ASObject* r);
@@ -108,7 +108,7 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Dictionary");
 	}
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false)
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("setVariableByQName not supported for Dictionary");
@@ -140,10 +140,10 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Proxy");
 	}
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false)
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 	{
-		if(!implEnable || skip_impl)
-			ASObject::setVariableByQName(name,ns,o,skip_impl);
+		if(!implEnable)
+			ASObject::setVariableByQName(name,ns,o);
 		else
 			throw RunTimeException("Proxy::setVariableByQName");
 	}

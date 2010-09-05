@@ -807,7 +807,11 @@ void NetStream::execute()
 				if(!tickStarted && isReady())
 				{
 					{
-						ASObject* callback = client->getVariableByQName("onMetaData", "");
+						multiname onMetaDataName;
+						onMetaDataName.name_type=multiname::NAME_STRING;
+						onMetaDataName.name_s="onMetaData";
+						onMetaDataName.ns.push_back(nsNameAndKind("",NAMESPACE));
+						ASObject* callback = client->getVariableByMultiname(onMetaDataName);
 						if(callback->getObjectType() == T_FUNCTION)
 						{
 							ASObject* callbackArgs[1];

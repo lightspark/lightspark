@@ -101,7 +101,7 @@ void Array::sinit(Class_base* c)
 	//c->setMethodByQName("map",AS3,Class<IFunction>::getFunction(map),true);
 	c->setMethodByQName("pop",AS3,Class<IFunction>::getFunction(_pop),true);
 	c->setMethodByQName("push",AS3,Class<IFunction>::getFunction(_push),true);
-	c->setMethodByQName("reverse",AS3,Class<IFunction>::getFunction(reverse),true);
+	c->setMethodByQName("reverse",AS3,Class<IFunction>::getFunction(_reverse),true);
 	c->setMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),true);
 	//c->setMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),true);
 	//c->setMethodByQName("some",AS3,Class<IFunction>::getFunction(some),true);

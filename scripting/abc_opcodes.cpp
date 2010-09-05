@@ -644,7 +644,7 @@ void ABCVm::construct(call_context* th, int m)
 #endif
 				LOG(LOG_CALLS,_("Building method traits"));
 				for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-					th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+					th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 #ifndef NDEBUG
 				ret->initialized=true;
 #endif
@@ -1959,7 +1959,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 #endif
 			LOG(LOG_CALLS,_("Building method traits"));
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 #ifndef NDEBUG
 			ret->initialized=true;
 #endif
@@ -2193,7 +2193,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 	LOG(LOG_CALLS,_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
-		th->context->buildTrait(ret,&th->context->classes[n].traits[i]);
+		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
 	//Add protected namespace if needed
 	if((th->context->instances[n].flags)&0x08)
@@ -2204,13 +2204,14 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->protected_ns=nsNameAndKind(th->context->getString(ns_info.name),(NS_KIND)(int)ns_info.kind);
 	}
 
+	LOG(LOG_CALLS,_("Adding immutable object traits to class"));
 	//Class objects also contains all the methods/getters/setters declared for instances
 	instance_info* cur=&th->context->instances[n];
 	for(unsigned int i=0;i<cur->trait_count;i++)
 	{
 		int kind=cur->traits[i].kind&0xf;
 		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
-			th->context->buildTrait(ret,&cur->traits[i]);
+			th->context->buildTrait(ret,&cur->traits[i],true);
 	}
 
 	//add Constructor the the class methods
@@ -2277,7 +2278,7 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 	act->initialized=false;
 #endif
 	for(unsigned int i=0;i<info->body->trait_count;i++)
-		th->context->buildTrait(act,&info->body->traits[i]);
+		th->context->buildTrait(act,&info->body->traits[i],false);
 #ifndef NDEBUG
 	act->initialized=true;
 #endif

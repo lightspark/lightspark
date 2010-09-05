@@ -209,7 +209,7 @@ double ASObject::toNumber()
 	return 0;
 }
 
-obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, bool create)
+obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns, bool create, bool borrowedMode)
 {
 	const var_iterator ret_begin=Variables.lower_bound(n);
 	//This actually look for the first different name, if we accept also previous levels
@@ -237,15 +237,15 @@ bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns
 {
 	check();
 	const nsNameAndKind tmpns(ns, NAMESPACE);
-	//TODO: check what happens with CLASS_TRAITS
+	//TODO: check what happens with BORROWED_TRAITS
 	//We look in all the object's levels
-	bool ret=(Variables.findObjVar(name, tmpns, false)!=NULL);
+	bool ret=(Variables.findObjVar(name, tmpns, false, false)!=NULL);
 	if(!ret) //Try the classes
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			ret=(cur->Variables.findObjVar(name, tmpns, false)!=NULL);
+			ret=(cur->Variables.findObjVar(name, tmpns, false, false)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;
@@ -257,14 +257,15 @@ bool ASObject::hasPropertyByQName(const tiny_string& name, const tiny_string& ns
 bool ASObject::hasPropertyByMultiname(const multiname& name)
 {
 	check();
+	//TODO: check what happens with BORROWED_TRAITS
 	//We look in all the object's levels
-	bool ret=(Variables.findObjVar(name, false)!=NULL);
+	bool ret=(Variables.findObjVar(name, false, false)!=NULL);
 	if(!ret) //Try the classes
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			ret=(cur->Variables.findObjVar(name, false)!=NULL);
+			ret=(cur->Variables.findObjVar(name, false, false)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;
@@ -273,14 +274,36 @@ bool ASObject::hasPropertyByMultiname(const multiname& name)
 	return ret;
 }
 
-void ASObject::setGetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o)
+void ASObject::setMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed)
 {
 	check();
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
 	assert(getObjectType()==T_CLASS);
-	obj_var* obj=Variables.findObjVar(name,ns,true);
+	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
+/*	if(obj->var!=NULL)
+	{
+		//This happens when interfaces are declared multiple times
+		assert_and_throw(o==obj->var);
+		return;
+	}*/
+	obj->var=o;
+}
+
+void ASObject::setMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed)
+{
+	setMethodByQName(name, nsNameAndKind(ns, NAMESPACE), o, isBorrowed);
+}
+
+void ASObject::setGetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed)
+{
+	check();
+#ifndef NDEBUG
+	assert(!initialized);
+#endif
+	assert(getObjectType()==T_CLASS);
+	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
 	if(obj->getter!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
@@ -290,19 +313,19 @@ void ASObject::setGetterByQName(const tiny_string& name, const nsNameAndKind& ns
 	obj->getter=o;
 }
 
-void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+void ASObject::setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed)
 {
-	setGetterByQName(name, nsNameAndKind(ns, NAMESPACE), o);
+	setGetterByQName(name, nsNameAndKind(ns, NAMESPACE), o, isBorrowed);
 }
 
-void ASObject::setSetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o)
+void ASObject::setSetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed)
 {
 	check();
 #ifndef NDEBUG
 	assert_and_throw(!initialized);
 #endif
 	assert(getObjectType()==T_CLASS);
-	obj_var* obj=Variables.findObjVar(name,ns,true);
+	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
 	if(obj->setter!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
@@ -312,21 +335,21 @@ void ASObject::setSetterByQName(const tiny_string& name, const nsNameAndKind& ns
 	obj->setter=o;
 }
 
-void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o)
+void ASObject::setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed)
 {
-	setSetterByQName(name, nsNameAndKind(ns, NAMESPACE), o);
+	setSetterByQName(name, nsNameAndKind(ns, NAMESPACE), o, isBorrowed);
 }
 
 void ASObject::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(ref_count>0);
 
-	obj_var* obj=Variables.findObjVar(name,false);
+	//TODO: check what happens with BORROWED_TRAITS
+	obj_var* obj=Variables.findObjVar(name,false,false);
 	if(obj==NULL)
 		return;
 
 	//Now dereference the values
-	obj=Variables.findObjVar(name,false);
 	if(obj->var)
 		obj->var->decRef();
 	if(obj->getter)
@@ -345,9 +368,9 @@ void ASObject::setVariableByMultiname_i(const multiname& name, intptr_t value)
 	setVariableByMultiname(name,abstract_i(value));
 }
 
-obj_var* ASObject::findSettable(const multiname& name)
+obj_var* ASObject::findSettable(const multiname& name, bool borrowedMode)
 {
-	obj_var* ret=Variables.findObjVar(name,false);
+	obj_var* ret=Variables.findObjVar(name,false,borrowedMode);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
@@ -363,22 +386,35 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 	check();
 
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualPrototype)
-	obj_var* obj=findSettable(name);
+	obj_var* obj=findSettable(name, false);
 
 	if(obj==NULL && prototype)
 	{
+		//Look for borrowed traits before
 		Class_base* cur=getActualPrototype();
 		while(cur)
 		{
 			//TODO: should be only findSetter
-			obj=cur->findSettable(name);
+			obj=cur->findSettable(name,true);
 			if(obj)
 				break;
 			cur=cur->super;
 		}
+		if(obj==NULL)
+		{
+			cur=getActualPrototype();
+			while(cur)
+			{
+				//TODO: should be only findSetter
+				obj=cur->findSettable(name, false);
+				if(obj)
+					break;
+				cur=cur->super;
+			}
+		}
 	}
 	if(obj==NULL)
-		obj=Variables.findObjVar(name,true);
+		obj=Variables.findObjVar(name,true,false);
 
 	if(obj->setter)
 	{
@@ -407,10 +443,10 @@ void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns
 	//TODO: what about class traits
 	const nsNameAndKind tmpns(ns, NAMESPACE);
 	//NOTE: we assume that [gs]etSuper and setProperty correctly manipulate the cur_level
-	obj_var* obj=Variables.findObjVar(name,tmpns,false);
+	obj_var* obj=Variables.findObjVar(name,tmpns,false,false);
 
 	if(obj==NULL)
-		obj=Variables.findObjVar(name,tmpns,true);
+		obj=Variables.findObjVar(name,tmpns,true,false);
 
 	if(obj->setter)
 	{
@@ -475,7 +511,7 @@ void variables_map::killObjVar(const multiname& mname)
 	throw RunTimeException("Variable to kill not found");
 }
 
-obj_var* variables_map::findObjVar(const multiname& mname, bool create)
+obj_var* variables_map::findObjVar(const multiname& mname, bool create, bool borrowedMode)
 {
 	tiny_string name;
 	switch(mname.name_type)
@@ -598,7 +634,7 @@ intptr_t ASObject::getVariableByMultiname_i(const multiname& name)
 
 obj_var* ASObject::findGettable(const multiname& name)
 {
-	obj_var* ret=Variables.findObjVar(name,false);
+	obj_var* ret=Variables.findObjVar(name,false,false);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -699,7 +735,7 @@ void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
 	for(;it!=Variables.end();it++)
-		LOG(LOG_NO_INFO,_("[") << it->second.ns.name << _("] ")<< it->first << _(" ") << 
+		LOG(LOG_NO_INFO, ((it->second.kind==OWNED_TRAIT)?"O: ":"B: ") <<  '[' << it->second.ns.name << "] "<< it->first << ' ' << 
 			it->second.var.var << ' ' << it->second.var.setter << ' ' << it->second.var.getter);
 }
 

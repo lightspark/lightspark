@@ -35,33 +35,33 @@ void Rectangle::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	IFunction* gleft=Class<IFunction>::getFunction(_getLeft);
-	c->setGetterByQName("left","",gleft);
+	c->setGetterByQName("left","",gleft,true);
 	gleft->incRef();
-	c->setGetterByQName("x","",gleft);
+	c->setGetterByQName("x","",gleft,true);
 	IFunction* sleft=Class<IFunction>::getFunction(_setLeft);
-	c->setSetterByQName("left","",sleft);
+	c->setSetterByQName("left","",sleft,true);
 	sleft->incRef();
-	c->setSetterByQName("x","",sleft);
-	c->setGetterByQName("right","",Class<IFunction>::getFunction(_getRight));
-	c->setSetterByQName("right","",Class<IFunction>::getFunction(_setRight));
-	c->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth));
-	c->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth));
+	c->setSetterByQName("x","",sleft,true);
+	c->setGetterByQName("right","",Class<IFunction>::getFunction(_getRight),true);
+	c->setSetterByQName("right","",Class<IFunction>::getFunction(_setRight),true);
+	c->setGetterByQName("width","",Class<IFunction>::getFunction(_getWidth),true);
+	c->setSetterByQName("width","",Class<IFunction>::getFunction(_setWidth),true);
 
 	IFunction* gtop=Class<IFunction>::getFunction(_getTop);
-	c->setGetterByQName("top","",gtop);
+	c->setGetterByQName("top","",gtop,true);
 	gtop->incRef();
-	c->setGetterByQName("y","",gtop);
+	c->setGetterByQName("y","",gtop,true);
 	IFunction* stop=Class<IFunction>::getFunction(_setTop);
-	c->setSetterByQName("top","",stop);
+	c->setSetterByQName("top","",stop,true);
 	stop->incRef();
-	c->setSetterByQName("y","",stop);
+	c->setSetterByQName("y","",stop,true);
 
-	c->setGetterByQName("bottom","",Class<IFunction>::getFunction(_getBottom));
-	c->setSetterByQName("bottom","",Class<IFunction>::getFunction(_setBottom));
-	c->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight));
-	c->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight));
+	c->setGetterByQName("bottom","",Class<IFunction>::getFunction(_getBottom),true);
+	c->setSetterByQName("bottom","",Class<IFunction>::getFunction(_setBottom),true);
+	c->setGetterByQName("height","",Class<IFunction>::getFunction(_getHeight),true);
+	c->setSetterByQName("height","",Class<IFunction>::getFunction(_setHeight),true);
 
-	c->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
+	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -265,20 +265,20 @@ ASFUNCTIONBODY(ColorTransform,getColor)
 void Point::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setGetterByQName("x","",Class<IFunction>::getFunction(_getX));
-	c->setGetterByQName("y","",Class<IFunction>::getFunction(_getY));
-	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getlength));
-	c->setSetterByQName("x","",Class<IFunction>::getFunction(_setX));
-	c->setSetterByQName("y","",Class<IFunction>::getFunction(_setY));
-	c->setVariableByQName("interpolate","",Class<IFunction>::getFunction(interpolate));
-	c->setVariableByQName("distance","",Class<IFunction>::getFunction(distance));
-	c->setVariableByQName("add","",Class<IFunction>::getFunction(add));
-	c->setVariableByQName("subtract","",Class<IFunction>::getFunction(subtract));
-	c->setVariableByQName("clone","",Class<IFunction>::getFunction(clone));
-	c->setVariableByQName("equals","",Class<IFunction>::getFunction(equals));
-	c->setVariableByQName("normalize","",Class<IFunction>::getFunction(normalize));
-	c->setVariableByQName("offset","",Class<IFunction>::getFunction(offset));
-	c->setVariableByQName("polar","",Class<IFunction>::getFunction(polar));
+	c->setGetterByQName("x","",Class<IFunction>::getFunction(_getX),true);
+	c->setGetterByQName("y","",Class<IFunction>::getFunction(_getY),true);
+	c->setGetterByQName("length","",Class<IFunction>::getFunction(_getlength),true);
+	c->setSetterByQName("x","",Class<IFunction>::getFunction(_setX),true);
+	c->setSetterByQName("y","",Class<IFunction>::getFunction(_setY),true);
+	c->setMethodByQName("interpolate","",Class<IFunction>::getFunction(interpolate),true);
+	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),true);
+	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
+	c->setMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),true);
+	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
+	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
+	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
+	c->setMethodByQName("offset","",Class<IFunction>::getFunction(offset),true);
+	c->setMethodByQName("polar","",Class<IFunction>::getFunction(polar),true);
 }
 
 void Point::buildTraits(ASObject* o)
@@ -446,7 +446,7 @@ void Transform::sinit(Class_base* c)
 {
 	//c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
-	c->setSetterByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction));
+	c->setSetterByQName("colorTransform","",Class<IFunction>::getFunction(undefinedFunction),true);
 }
 
 void Transform::buildTraits(ASObject* o)
@@ -458,25 +458,25 @@ void Matrix::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	
 	//Properties
-	c->setGetterByQName("a","",Class<IFunction>::getFunction(_get_a));
-	c->setGetterByQName("b","",Class<IFunction>::getFunction(_get_b));
-	c->setGetterByQName("c","",Class<IFunction>::getFunction(_get_c));
-	c->setGetterByQName("d","",Class<IFunction>::getFunction(_get_d));
-	c->setGetterByQName("tx","",Class<IFunction>::getFunction(_get_tx));
-	c->setGetterByQName("ty","",Class<IFunction>::getFunction(_get_ty));
+	c->setGetterByQName("a","",Class<IFunction>::getFunction(_get_a),true);
+	c->setGetterByQName("b","",Class<IFunction>::getFunction(_get_b),true);
+	c->setGetterByQName("c","",Class<IFunction>::getFunction(_get_c),true);
+	c->setGetterByQName("d","",Class<IFunction>::getFunction(_get_d),true);
+	c->setGetterByQName("tx","",Class<IFunction>::getFunction(_get_tx),true);
+	c->setGetterByQName("ty","",Class<IFunction>::getFunction(_get_ty),true);
 	
-	c->setSetterByQName("a","",Class<IFunction>::getFunction(_set_a));
-	c->setSetterByQName("b","",Class<IFunction>::getFunction(_set_b));
-	c->setSetterByQName("c","",Class<IFunction>::getFunction(_set_c));
-	c->setSetterByQName("d","",Class<IFunction>::getFunction(_set_d));
-	c->setSetterByQName("tx","",Class<IFunction>::getFunction(_set_tx));
-	c->setSetterByQName("ty","",Class<IFunction>::getFunction(_set_ty));
+	c->setSetterByQName("a","",Class<IFunction>::getFunction(_set_a),true);
+	c->setSetterByQName("b","",Class<IFunction>::getFunction(_set_b),true);
+	c->setSetterByQName("c","",Class<IFunction>::getFunction(_set_c),true);
+	c->setSetterByQName("d","",Class<IFunction>::getFunction(_set_d),true);
+	c->setSetterByQName("tx","",Class<IFunction>::getFunction(_set_tx),true);
+	c->setSetterByQName("ty","",Class<IFunction>::getFunction(_set_ty),true);
 	
 	//Methods 
-	c->setVariableByQName("identity","",Class<IFunction>::getFunction(identity));
-	c->setVariableByQName("rotate","",Class<IFunction>::getFunction(rotate));
-	c->setVariableByQName("scale","",Class<IFunction>::getFunction(scale));
-	c->setVariableByQName("translate","",Class<IFunction>::getFunction(translate));
+	c->setMethodByQName("identity","",Class<IFunction>::getFunction(identity),true);
+	c->setMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),true);
+	c->setMethodByQName("scale","",Class<IFunction>::getFunction(scale),true);
+	c->setMethodByQName("translate","",Class<IFunction>::getFunction(translate),true);
 }
 
 ASFUNCTIONBODY(Matrix,_constructor)

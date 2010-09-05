@@ -45,8 +45,8 @@ URLRequest::URLRequest()
 void URLRequest::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setSetterByQName("url","",Class<IFunction>::getFunction(_setURL));
-	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getURL));
+	c->setSetterByQName("url","",Class<IFunction>::getFunction(_setURL),true);
+	c->setGetterByQName("url","",Class<IFunction>::getFunction(_getURL),true);
 }
 
 void URLRequest::buildTraits(ASObject* o)
@@ -85,10 +85,10 @@ void URLLoader::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat));
-	c->setGetterByQName("data","",Class<IFunction>::getFunction(_getData));
-	c->setSetterByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat));
-	c->setVariableByQName("load","",Class<IFunction>::getFunction(load));
+	c->setGetterByQName("dataFormat","",Class<IFunction>::getFunction(_getDataFormat),true);
+	c->setGetterByQName("data","",Class<IFunction>::getFunction(_getData),true);
+	c->setSetterByQName("dataFormat","",Class<IFunction>::getFunction(_setDataFormat),true);
+	c->setMethodByQName("load","",Class<IFunction>::getFunction(load),true);
 }
 
 void URLLoader::buildTraits(ASObject* o)
@@ -261,15 +261,15 @@ void NetConnection::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setVariableByQName("connect","",Class<IFunction>::getFunction(connect));
-	c->setGetterByQName("connected","",Class<IFunction>::getFunction(_getConnected));
-	c->setGetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding));
-	c->setSetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding));
+	c->setMethodByQName("connect","",Class<IFunction>::getFunction(connect),true);
+	c->setGetterByQName("connected","",Class<IFunction>::getFunction(_getConnected),true);
+	c->setGetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_getDefaultObjectEncoding),true);
+	c->setSetterByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(_setDefaultObjectEncoding),true);
 	sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::DEFAULT;
-	c->setGetterByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding));
-	c->setSetterByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding));
-	c->setGetterByQName("protocol","",Class<IFunction>::getFunction(_getProtocol));
-	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getURI));
+	c->setGetterByQName("objectEncoding","",Class<IFunction>::getFunction(_getObjectEncoding),true);
+	c->setSetterByQName("objectEncoding","",Class<IFunction>::getFunction(_setObjectEncoding),true);
+	c->setGetterByQName("protocol","",Class<IFunction>::getFunction(_getProtocol),true);
+	c->setGetterByQName("uri","",Class<IFunction>::getFunction(_getURI),true);
 }
 
 void NetConnection::buildTraits(ASObject* o)
@@ -400,15 +400,15 @@ void NetStream::sinit(Class_base* c)
 	c->max_level=c->super->max_level+1;
 	c->setVariableByQName("CONNECT_TO_FMS","",Class<ASString>::getInstanceS("connectToFMS"));
 	c->setVariableByQName("DIRECT_CONNECTIONS","",Class<ASString>::getInstanceS("directConnections"));
-	c->setVariableByQName("play","",Class<IFunction>::getFunction(play));
-	c->setVariableByQName("resume","",Class<IFunction>::getFunction(resume));
-	c->setVariableByQName("pause","",Class<IFunction>::getFunction(pause));
-	c->setVariableByQName("togglePause","",Class<IFunction>::getFunction(togglePause));
-	c->setVariableByQName("close","",Class<IFunction>::getFunction(close));
-	c->setVariableByQName("seek","",Class<IFunction>::getFunction(seek));
-	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
-	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
-	c->setGetterByQName("time","",Class<IFunction>::getFunction(_getTime));
+	c->setMethodByQName("play","",Class<IFunction>::getFunction(play),true);
+	c->setMethodByQName("resume","",Class<IFunction>::getFunction(resume),true);
+	c->setMethodByQName("pause","",Class<IFunction>::getFunction(pause),true);
+	c->setMethodByQName("togglePause","",Class<IFunction>::getFunction(togglePause),true);
+	c->setMethodByQName("close","",Class<IFunction>::getFunction(close),true);
+	c->setMethodByQName("seek","",Class<IFunction>::getFunction(seek),true);
+	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),true);
+	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
+	c->setGetterByQName("time","",Class<IFunction>::getFunction(_getTime),true);
 }
 
 void NetStream::buildTraits(ASObject* o)

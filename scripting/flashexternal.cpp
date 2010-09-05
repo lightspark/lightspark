@@ -30,7 +30,7 @@ void ExternalInterface::sinit(Class_base* c)
 {
 /*	assert(c->constructor==NULL);
 	c->constructor=Class<IFunction>::getFunction(_constructor);*/
-	c->setGetterByQName("available","",Class<IFunction>::getFunction(_getAvailable));
+	c->setGetterByQName("available","",Class<IFunction>::getFunction(_getAvailable),true);
 }
 
 ASFUNCTIONBODY(ExternalInterface,_getAvailable)

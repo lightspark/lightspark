@@ -51,13 +51,13 @@ void Video::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth));
-	c->setGetterByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight));
-	c->setGetterByQName("width","",Class<IFunction>::getFunction(Video::_getWidth));
-	c->setSetterByQName("width","",Class<IFunction>::getFunction(Video::_setWidth));
-	c->setGetterByQName("height","",Class<IFunction>::getFunction(Video::_getHeight));
-	c->setSetterByQName("height","",Class<IFunction>::getFunction(Video::_setHeight));
-	c->setVariableByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream));
+	c->setGetterByQName("videoWidth","",Class<IFunction>::getFunction(_getVideoWidth),true);
+	c->setGetterByQName("videoHeight","",Class<IFunction>::getFunction(_getVideoHeight),true);
+	c->setGetterByQName("width","",Class<IFunction>::getFunction(Video::_getWidth),true);
+	c->setSetterByQName("width","",Class<IFunction>::getFunction(Video::_setWidth),true);
+	c->setGetterByQName("height","",Class<IFunction>::getFunction(Video::_getHeight),true);
+	c->setSetterByQName("height","",Class<IFunction>::getFunction(Video::_setHeight),true);
+	c->setMethodByQName("attachNetStream","",Class<IFunction>::getFunction(attachNetStream),true);
 }
 
 void Video::buildTraits(ASObject* o)

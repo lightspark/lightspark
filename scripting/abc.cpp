@@ -1347,7 +1347,7 @@ void ABCContext::exec()
 		SyntheticFunction* mf=Class<IFunction>::getSyntheticFunction(m);
 
 		for(unsigned int j=0;j<scripts[i].trait_count;j++)
-			buildTrait(global,&scripts[i].traits[j],mf);
+			buildTrait(global,&scripts[i].traits[j],false,mf);
 
 #ifndef NDEBUG
 		global->initialized=true;
@@ -1367,7 +1367,7 @@ void ABCContext::exec()
 
 	LOG(LOG_CALLS, _("Building entry script traits: ") << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
-		buildTrait(global,&scripts[i].traits[j]);
+		buildTrait(global,&scripts[i].traits[j],false);
 
 #ifndef NDEBUG
 		global->initialized=true;
@@ -1486,7 +1486,7 @@ void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 		if(kind==traits_info::Slot || kind==traits_info::Class ||
 			kind==traits_info::Function || kind==traits_info::Const)
 		{
-			buildTrait(obj,&instances[class_index].traits[i]);
+			buildTrait(obj,&instances[class_index].traits[i],false);
 		}
 	}
 }
@@ -1514,7 +1514,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			Class_base* cur=c;
 			while(cur)
 			{
-				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false);
+				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false,true);
 				if(var)
 					break;
 				cur=cur->super;
@@ -1545,7 +1545,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			Class_base* cur=c;
 			while(cur)
 			{
-				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false);
+				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false,true);
 				if(var && var->getter)
 					break;
 				cur=cur->super;
@@ -1555,7 +1555,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				assert_and_throw(var->getter);
 
 				var->getter->incRef();
-				c->setGetterByQName(name,mname.ns[0],var->getter);
+				c->setGetterByQName(name,mname.ns[0],var->getter,true);
 			}
 			else
 			{
@@ -1576,7 +1576,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			Class_base* cur=c;
 			while(cur)
 			{
-				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false);
+				var=cur->Variables.findObjVar(name,nsNameAndKind("",NAMESPACE),false,true);
 				if(var && var->setter)
 					break;
 				cur=cur->super;
@@ -1586,7 +1586,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				assert_and_throw(var->setter);
 
 				var->setter->incRef();
-				c->setSetterByQName(name,mname.ns[0],var->setter);
+				c->setSetterByQName(name,mname.ns[0],var->setter,true);
 			}
 			else
 			{
@@ -1635,7 +1635,7 @@ ASObject* ABCContext::getConstant(int kind, int index)
 	}
 }
 
-void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* deferred_initialization)
+void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed, IFunction* deferred_initialization)
 {
 	const multiname& mname=*getMultiname(t->name,NULL);
 	//Should be a Qname
@@ -1684,13 +1684,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				{
 					if(cur->use_protected)
 					{
-						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false);
+						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false,isBorrowed);
 						if(var)
 						{
 							assert(var->getter);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setGetterByQName(mname.name_s,cur->protected_ns,f);
+							obj->setGetterByQName(mname.name_s,cur->protected_ns,f,isBorrowed);
 						}
 					}
 					cur=cur->super;
@@ -1698,7 +1698,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setGetterByQName(mname.name_s,mname.ns[0],f);
+			obj->setGetterByQName(mname.name_s,mname.ns[0],f,isBorrowed);
 			
 			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
 			break;
@@ -1724,13 +1724,13 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				{
 					if(cur->use_protected)
 					{
-						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false);
+						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false,isBorrowed);
 						if(var)
 						{
 							assert(var->setter);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setSetterByQName(mname.name_s,cur->protected_ns,f);
+							obj->setSetterByQName(mname.name_s,cur->protected_ns,f,isBorrowed);
 						}
 					}
 					cur=cur->super;
@@ -1738,7 +1738,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setSetterByQName(mname.name_s,mname.ns[0],f);
+			obj->setSetterByQName(mname.name_s,mname.ns[0],f,isBorrowed);
 			
 			LOG(LOG_TRACE,_("End Setter trait: ") << mname);
 			break;
@@ -1763,7 +1763,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 				{
 					if(cur->use_protected)
 					{
-						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false);
+						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false,isBorrowed);
 						if(var)
 						{
 							assert(var->var);
@@ -1777,7 +1777,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, IFunction* defe
 			}
 
 			f->bindLevel(obj->getLevel());
-			obj->setVariableByMultiname(mname,f);
+			obj->setMethodByQName(mname.name_s,mname.ns[0],f,isBorrowed);
 			//Methods save inside the scope stack of the class
 			f->acquireScope(prot->class_scope);
 

@@ -419,7 +419,7 @@ void ASObject::setVariableByMultiname(const multiname& name, ASObject* o, ASObje
 
 void ASObject::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
 {
-	//TODO: what about class traits
+	//TODO: what about BORROWED traits
 	const nsNameAndKind tmpns(ns, NAMESPACE);
 	//NOTE: we assume that [gs]etSuper and setProperty correctly manipulate the cur_level
 	obj_var* obj=Variables.findObjVar(name,tmpns,false,false);
@@ -856,7 +856,7 @@ void variables_map::setSlot(unsigned int n,ASObject* o)
 
 obj_var* variables_map::getValueAt(unsigned int index)
 {
-	//TODO: CHECK behavious on overridden methods
+	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
 		var_iterator it=Variables.begin();

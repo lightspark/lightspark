@@ -1600,9 +1600,8 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 //		case traits_info::Const:
 //		case traits_info::Slot:
 		default:
-			LOG(LOG_ERROR,_("Trait not supported ") << name << _(" ") << t->kind);
+			LOG(LOG_ERROR,_("Trait not supported ") << mname << _(" ") << t->kind);
 			throw UnsupportedException("Trait not supported");
-			//obj->setVariableByQName(name, ns, new Undefined);
 	}
 }
 
@@ -1769,7 +1768,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 							assert(var->var);
 							//A superclass defined a protected method that we have to override.
 							f->incRef();
-							obj->setVariableByQName(mname.name_s,cur->protected_ns.name,f);
+							obj->setMethodByQName(mname.name_s,cur->protected_ns,f,isBorrowed);
 						}
 					}
 					cur=cur->super;
@@ -1838,7 +1837,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			else
 			{
 				//else fallthrough
-				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ")<< mname <<_(" type ")<<*type);
+				LOG(LOG_CALLS,_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << mname <<_(" type ")<<*type);
 				ASObject* previous_definition=obj->getVariableByMultiname(mname);
 				assert_and_throw(!previous_definition);
 

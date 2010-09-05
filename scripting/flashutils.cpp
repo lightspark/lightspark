@@ -148,23 +148,6 @@ intptr_t ByteArray::getVariableByMultiname_i(const multiname& name)
 	return bytes[index];
 }
 
-void ByteArray::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
-{
-	if(!implEnable)
-	{
-		ASObject::setVariableByQName(name,ns,o);
-		return;
-	}
-	
-	unsigned int index=0;
-	if(!Array::isValidQName(name,ns,index))
-	{
-		ASObject::setVariableByQName(name,ns,o);
-		return;
-	}
-	throw UnsupportedException("ByteArray::setVariableByQName not completely implemented");
-}
-
 void ByteArray::setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base)
 {
 	assert_and_throw(implEnable);

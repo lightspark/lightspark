@@ -595,13 +595,13 @@ ASFUNCTIONBODY(ASObject,_setPrototype)
 }*/
 
 
-void ASObject::initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns)
+void ASObject::initSlot(unsigned int n, const multiname& name)
 {
 	//Should be correct to use the level on the prototype chain
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
-	Variables.initSlot(n,name,ns);
+	Variables.initSlot(n,name.name_s,name.ns[0]);
 }
 
 //In all the getter function we first ask the interface, so that special handling (e.g. Array)
@@ -816,7 +816,7 @@ Class_base* ASObject::getActualPrototype() const
 	return ret;
 }
 
-void variables_map::initSlot(unsigned int n, const tiny_string& name, const tiny_string& ns)
+void variables_map::initSlot(unsigned int n, const tiny_string& name, const nsNameAndKind& ns)
 {
 	if(n>slots_vars.size())
 		slots_vars.resize(n,Variables.end());
@@ -828,7 +828,7 @@ void variables_map::initSlot(unsigned int n, const tiny_string& name, const tiny
 		var_iterator start=ret.first;
 		for(;start!=ret.second;start++)
 		{
-			if(start->second.ns.name==ns)
+			if(start->second.ns==ns)
 			{
 				slots_vars[n-1]=start;
 				return;

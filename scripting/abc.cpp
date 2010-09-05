@@ -1661,7 +1661,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			
 			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << mname << _(" id ") << t->classi);
 			if(t->slot_id)
-				obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name);
+				obj->initSlot(t->slot_id, mname);
 			break;
 		}
 		case traits_info::Getter:
@@ -1798,7 +1798,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ret=getConstant(t->vkind,t->vindex);
 				obj->setVariableByMultiname(mname, ret);
 				if(t->slot_id)
-					obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name);
+					obj->initSlot(t->slot_id, mname);
 			}
 			else
 			{
@@ -1814,7 +1814,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			}
 			LOG(LOG_CALLS,_("Const ") << mname <<_(" type ")<< *getMultiname(t->type_name,NULL));
 			if(t->slot_id)
-				obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name );
+				obj->initSlot(t->slot_id, mname);
 			break;
 		}
 		case traits_info::Slot:
@@ -1830,7 +1830,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				ASObject* ret=getConstant(t->vkind,t->vindex);
 				obj->setVariableByMultiname(mname, ret);
 				if(t->slot_id)
-					obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name);
+					obj->initSlot(t->slot_id, mname);
 
 				LOG(LOG_CALLS,_("Slot ") << t->slot_id << ' ' << mname <<_(" type ")<<*type);
 				break;
@@ -1864,7 +1864,7 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 				obj->setVariableByMultiname(mname, ret);
 
 				if(t->slot_id)
-					obj->initSlot(t->slot_id, mname.name_s, mname.ns[0].name);
+					obj->initSlot(t->slot_id, mname);
 				break;
 			}
 		}

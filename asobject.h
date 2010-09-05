@@ -87,7 +87,7 @@ private:
 		return slots_vars[n-1]->second.var.var;
 	}
 	void setSlot(unsigned int n,ASObject* o);
-	void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
+	void initSlot(unsigned int n,const tiny_string& name, const nsNameAndKind& ns);
 	int size() const
 	{
 		return Variables.size();
@@ -222,7 +222,7 @@ public:
 	{
 		Variables.setSlot(n,o);
 	}
-	void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
+	void initSlot(unsigned int n, const multiname& name);
 	virtual unsigned int numVariables();
 	tiny_string getNameAt(int i)
 	{

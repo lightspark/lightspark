@@ -443,7 +443,7 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	size_t added=size*nmemb;
-	if(th->getLen() == 0)
+	if(th->getLength() == 0)
 	{
 		//If the HTTP request doesn't contain a Content-Length header, allow growing the buffer
 		th->setAllowBufferRealloc(true);

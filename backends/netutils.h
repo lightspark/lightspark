@@ -135,9 +135,10 @@ public:
 
 	//Set the length of the downloaded file, can be called multiple times to accomodate a growing file
 	void setLen(uint32_t l);
-	uint32_t getLen() { return len; }
-	//Gets the amount of downloaded data
-	uint32_t getDataSize() { return tail; }
+	//Gets the total length of the downloaded file (may change)
+	uint32_t getLength() { return len; }
+	//Gets the length of downloaded data
+	uint32_t getReceivedLength() { return tail; }
 };
 
 class ThreadedDownloader : public Downloader, public IThreadJob

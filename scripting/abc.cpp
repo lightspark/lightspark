@@ -1060,7 +1060,7 @@ void ABCVm::handleEvent(pair<EventDispatcher*,Event*> e)
 			{
 				FunctionEvent* ev=static_cast<FunctionEvent*>(e.second);
 				//We hope the method is binded
-				ev->f->call(NULL,NULL,0);
+				ev->f->call(ev->obj,ev->args,ev->numArgs,ev->thisOverride);
 				break;
 			}
 			case CONTEXT_INIT:

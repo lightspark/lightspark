@@ -106,8 +106,7 @@ ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 	if(Type!=8)
 		throw ParseException("Unexpected type in FLV");
 
-	ScriptECMAArray ecmaArray(s);
-	frameRate=ecmaArray.frameRate;
+	ScriptECMAArray ecmaArray(s, this);
 	//Compute totalLen
 	unsigned int end=s.tellg();
 	totalLen=(end-start)+11;
@@ -130,7 +129,7 @@ ScriptDataString::ScriptDataString(std::istream& s)
 	delete[] buf;
 }
 
-ScriptECMAArray::ScriptECMAArray(std::istream& s):frameRate(0)
+ScriptECMAArray::ScriptECMAArray(std::istream& s, ScriptDataTag* tag)
 {
 	//numVar is an 'approximation' of array size
 	UI32 numVar;
@@ -154,22 +153,23 @@ ScriptECMAArray::ScriptECMAArray(std::istream& s):frameRate(0)
 				} tmp;
 				s.read((char*)&tmp.i,8);
 				tmp.i=be64toh(tmp.i);
-				//HACK, extract fps information
-				if(varName.getString()=="framerate")
-					frameRate=tmp.d;
+				tag->metadataDouble[varName.getString()] = tmp.d;
+				//cout << "FLV metadata double: " << varName.getString() << " = " << tmp.d << endl;
 				break;
 			}
-			case 1:
+			case 1: //integer
 			{
 				UI8 b;
 				s >> b;
-				//cout << (int)b << endl;
+				tag->metadataInteger[varName.getString()] = int(b);
+				//cout << "FLV metadata int: " << varName.getString() << " = " << (int)b << endl;
 				break;
 			}
-			case 2:
+			case 2: //string
 			{
 				ScriptDataString String(s);
-				//cout << String.getString() << endl;
+				tag->metadataString[varName.getString()] = String.getString();
+				//cout << "FLV metadata string: " << varName.getString() << " = " << String.getString() << endl;
 				break;
 			}
 			case 9: //End of array

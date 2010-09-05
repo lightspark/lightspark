@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <map>
 #include "abc.h"
 #include "flashnet.h"
 #include "class.h"
@@ -174,19 +175,19 @@ void URLLoader::execute()
 		if(!downloader->hasFailed())
 		{
 			istream s(downloader);
-			char buf[downloader->getLen()];
-			s.read(buf,downloader->getLen());
+			char buf[downloader->getLength()];
+			s.read(buf,downloader->getLength());
 			//TODO: test binary data format
 			if(dataFormat=="binary")
 			{
 				ByteArray* byteArray=Class<ByteArray>::getInstanceS();
-				byteArray->acquireBuffer((uint8_t*) buf,downloader->getLen());
+				byteArray->acquireBuffer((uint8_t*) buf,downloader->getLength());
 				data=byteArray;
 			}
 			else if(dataFormat=="text")
 			{
 				data=Class<ASString>::getInstanceS((const char *)buf,
-									downloader->getLen());
+									downloader->getLength());
 			}
 			//Send a complete event for this object
 			sys->currentVm->addEvent(this,Class<Event>::getInstanceS("complete"));
@@ -409,10 +410,25 @@ void NetStream::sinit(Class_base* c)
 	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),true);
 	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
 	c->setGetterByQName("time","",Class<IFunction>::getFunction(_getTime),true);
+	c->setGetterByQName("currentFPS","",Class<IFunction>::getFunction(_getCurrentFPS),true);
+	c->setSetterByQName("client","",Class<IFunction>::getFunction(_setClient),true);
 }
 
 void NetStream::buildTraits(ASObject* o)
 {
+}
+
+ASFUNCTIONBODY(NetStream,_setClient)
+{
+	assert_and_throw(argslen == 1);
+	if(args[0]->getObjectType() == T_NULL)
+		throw Class<TypeError>::getInstanceS();
+
+	NetStream* th=Class<NetStream>::cast(obj);
+
+	th->client = args[0];
+	th->client->incRef();
+	return NULL;
 }
 
 ASFUNCTIONBODY(NetStream,_constructor)
@@ -438,6 +454,8 @@ ASFUNCTIONBODY(NetStream,_constructor)
 		else
 			throw Class<ArgumentError>::getInstanceS("NetStream constructor: peerID");
 	}
+
+	th->client = th;
 
 	assert_and_throw(netConnection->uri.getURL()=="");
 	return NULL;
@@ -492,14 +510,26 @@ ASFUNCTIONBODY(NetStream,play)
 ASFUNCTIONBODY(NetStream,resume)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
-	th->paused = false;
+	if(th->paused)
+	{
+		th->paused = false;
+		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Unpause.Notify");
+		getVm()->addEvent(th, status);
+		status->decRef();
+	}
 	return NULL;
 }
 
 ASFUNCTIONBODY(NetStream,pause)
 {
 	NetStream* th=Class<NetStream>::cast(obj);
-	th->paused = true;
+	if(!th->paused)
+	{
+		th->paused = true;
+		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Pause.Notify");
+		getVm()->addEvent(th, status);
+		status->decRef();
+	}
 	return NULL;
 }
 
@@ -520,7 +550,12 @@ ASFUNCTIONBODY(NetStream,close)
 	
 	//Everything is stopped in threadAbort
 	if(!th->closed)
+	{
 		th->threadAbort();
+		Event* status=Class<NetStatusEvent>::getInstanceS("status", "NetStream.Play.Stop");
+		getVm()->addEvent(th, status);
+		status->decRef();
+	}
 	LOG(LOG_CALLS, _("NetStream::close called"));
 	return NULL;
 }
@@ -635,6 +670,7 @@ void NetStream::execute()
 	bool waitForFlush=true;
 	try
 	{
+		ScriptDataTag tag;
 		Chronometer chronometer;
 		STREAM_TYPE t=classifyStream(s);
 		if(t==FLV_STREAM)
@@ -755,12 +791,13 @@ void NetStream::execute()
 					}
 					case 18:
 					{
-						ScriptDataTag tag(s);
+						tag = ScriptDataTag(s);
 						prevSize=tag.getTotalLen();
 
 						//The frameRate of the container overrides the stream
-						if(tag.frameRate)
-							frameRate=tag.frameRate;
+						
+						if(tag.metadataDouble.find("framerate") != tag.metadataDouble.end())
+							frameRate=tag.metadataDouble["framerate"];
 						break;
 					}
 					default:
@@ -769,6 +806,41 @@ void NetStream::execute()
 				}
 				if(!tickStarted && isReady())
 				{
+					{
+						ASObject* callback = client->getVariableByQName("onMetaData", "");
+						if(callback->getObjectType() == T_FUNCTION)
+						{
+							ASObject* callbackArgs[1];
+							ASObject* metadata = Class<ASObject>::getInstanceS();
+							if(tag.metadataDouble.find("width") != tag.metadataDouble.end())
+								metadata->setVariableByQName("width", "", abstract_d(tag.metadataDouble["width"]));
+							else
+								metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()));
+							if(tag.metadataDouble.find("height") != tag.metadataDouble.end())
+								metadata->setVariableByQName("height", "", abstract_d(tag.metadataDouble["height"]));
+							else
+								metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()));
+
+							if(tag.metadataDouble.find("framerate") != tag.metadataDouble.end())
+								metadata->setVariableByQName("framerate", "", abstract_d(tag.metadataDouble["framerate"]));
+							if(tag.metadataDouble.find("duration") != tag.metadataDouble.end())
+								metadata->setVariableByQName("duration", "", abstract_d(tag.metadataDouble["duration"]));
+							if(tag.metadataInteger.find("canseekontime") != tag.metadataInteger.end())
+								metadata->setVariableByQName("canSeekToEnd", "", abstract_b(tag.metadataInteger["canseekontime"] == 1));
+
+							if(tag.metadataDouble.find("audiodatarate") != tag.metadataDouble.end())
+								metadata->setVariableByQName("audiodatarate", "", abstract_d(tag.metadataDouble["audiodatarate"]));
+							if(tag.metadataDouble.find("videodatarate") != tag.metadataDouble.end())
+								metadata->setVariableByQName("videodatarate", "", abstract_d(tag.metadataDouble["videodatarate"]));
+
+							//TODO: missing: audiocodecid (Number), cuePoints (Object[]), videocodecid (Number), custommetadata's
+							callbackArgs[0] = metadata;
+							client->incRef();
+							metadata->incRef();
+							getVm()->addEvent(NULL,new FunctionEvent(static_cast<IFunction*>(callback), client, callbackArgs, 1));
+						}
+					}
+
 					tickStarted=true;
 					if(frameRate==0)
 					{
@@ -869,17 +941,39 @@ void NetStream::threadAbort()
 
 ASFUNCTIONBODY(NetStream,_getBytesLoaded)
 {
-	return abstract_i(0);
+	NetStream* th=Class<NetStream>::cast(obj);
+	if(th->isReady())
+		return abstract_i(th->getReceivedLength());
+	else
+		return abstract_i(0);
 }
 
 ASFUNCTIONBODY(NetStream,_getBytesTotal)
 {
-	return abstract_i(100);
+	NetStream* th=Class<NetStream>::cast(obj);
+	if(th->isReady())
+		return abstract_i(th->getTotalLength());
+	else
+		return abstract_d(0);
 }
 
 ASFUNCTIONBODY(NetStream,_getTime)
 {
-	return abstract_d(0);
+	NetStream* th=Class<NetStream>::cast(obj);
+	if(th->isReady())
+		return abstract_d(th->getStreamTime()/1000.);
+	else
+		return abstract_d(0);
+}
+
+ASFUNCTIONBODY(NetStream,_getCurrentFPS)
+{
+	//TODO: provide real FPS (what really is displayed)
+	NetStream* th=Class<NetStream>::cast(obj);
+	if(th->isReady() && !th->paused)
+		return abstract_d(th->getFrameRate());
+	else
+		return abstract_d(0);
 }
 
 uint32_t NetStream::getVideoWidth() const
@@ -898,6 +992,24 @@ double NetStream::getFrameRate()
 {
 	assert(isReady());
 	return frameRate;
+}
+
+uint32_t NetStream::getStreamTime()
+{
+	assert(isReady());
+	return streamTime;
+}
+
+uint32_t NetStream::getReceivedLength()
+{
+	assert(isReady());
+	return downloader->getReceivedLength();
+}
+
+uint32_t NetStream::getTotalLength()
+{
+	assert(isReady());
+	return downloader->getLength();
 }
 
 bool NetStream::copyFrameToTexture(TextureBuffer& tex)

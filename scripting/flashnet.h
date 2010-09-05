@@ -151,6 +151,8 @@ private:
 
 	enum CONNECTION_TYPE { CONNECT_TO_FMS=0, DIRECT_CONNECTIONS };
 	CONNECTION_TYPE peerID;
+
+	ASObject* client;
 public:
 	NetStream();
 	~NetStream();
@@ -166,6 +168,8 @@ public:
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getTime);
+	ASFUNCTION(_getCurrentFPS);
+	ASFUNCTION(_setClient);
 
 	//Interface for video
 	/**
@@ -189,6 +193,27 @@ public:
 		@return the frame rate
 	*/
 	double getFrameRate();
+	/**
+	  	Get the stream time
+
+		@pre lock on the object should be acquired and object should be ready
+		@return the stream time
+	*/
+	uint32_t getStreamTime();
+	/**
+	  	Get the length of loaded data
+
+		@pre lock on the object should be acquired and object should be ready
+		@return the length of loaded data
+	*/
+	uint32_t getReceivedLength();
+	/**
+	  	Get the length of loaded data
+
+		@pre lock on the object should be acquired and object should be ready
+		@return the total length of the data
+	*/
+	uint32_t getTotalLength();
 	/**
 	  	copy the current frame to a texture
 

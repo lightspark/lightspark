@@ -15,6 +15,9 @@
 	//This file will be selected if you run lightspark with the "-s local-with-filesystem" runtime switch.
 	private var localVideoPath:String = "bigbuckbunny.flv";
 	private var paused:Boolean = false;
+
+	private var metadata:Object;
+	private var maxVideoHeight:uint = 240;
 	private function appComplete():void
 	{
 		playRect.graphics.beginFill(0x80ff60);
@@ -97,6 +100,26 @@
 		video.addEventListener(MouseEvent.CLICK,videoClick);
 
 	}
+	private function onMetaData(item:Object):void
+	{
+		if(item.height > maxVideoHeight)
+		{
+			video.height = maxVideoHeight;
+			video.width = maxVideoHeight/item.height*item.width;
+		}
+		else
+		{
+			video.height = item.height;
+			video.width = item.width;
+		}
+		metadata = item;
+		trace("Full metadata:");
+		var key:String;
+		for(key in item)
+		{
+			trace(key + ":", item[key]);
+		}
+	}
 	private function playClick(e:Event):void
 	{
 		trace("Play button clicked");
@@ -136,6 +159,12 @@
 	private function seekClick(e:Event):void
 	{
 		trace("Seek button clicked");
+		trace("");
+
+		trace("Time:", stream_ns.time, "/", metadata.duration, "(", ((stream_ns.time/metadata.duration)*100), "%) FPS:", stream_ns.currentFPS, "(", metadata.framerate, ")");
+		trace("Dimensions:", metadata.width, "x", metadata.height);
+		trace("Video data rate:", metadata.videodatarate, ", audio date rate:", metadata.audiodatarate);
+		trace("Loaded:", stream_ns.bytesLoaded, "/", stream_ns.bytesTotal, ", can seek to end:", metadata.canSeekToEnd);
 	}
 	private function videoClick(e:Event):void
 	{

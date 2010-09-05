@@ -1,0 +1,3076 @@
+# Polish translations for lightspark package
+# Polskie t³umaczenia dla pakietu lightspark.
+# Copyright (C) 2010 THE lightspark'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the lightspark package.
+#  <song6song@gmail>, 2010.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-08-20 22:28-0500\n"
+"PO-Revision-Date: 2010-08-20 23:03-0500\n"
+"Last-Translator:  <song6song@gmail.com>\n"
+"Language-Team: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: zh_CN\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: scripting/abc.cpp:925
+msgid "\t"
+msgstr ""
+
+#: scripting/abc.cpp:913
+msgid "\tFinal"
+msgstr "\t最终"
+
+#: scripting/abc.cpp:915
+msgid "\tInterface"
+msgstr "\t界面"
+
+#: scripting/abc.cpp:917
+msgid "\tProtectedNS "
+msgstr "\t已保护"
+
+#: scripting/abc.cpp:911
+msgid "\tSealed"
+msgstr "\t已封装"
+
+#: asobject.cpp:734 scripting/abc_codesynt.cpp:793
+#: scripting/abc_codesynt.cpp:2257 scripting/abc.cpp:1498
+#: scripting/abc.cpp:1837 scripting/abc_opcodes.cpp:1913
+msgid " "
+msgstr ""
+
+#: scripting/abc.cpp:1403 scripting/abc.cpp:1465 scripting/abc.cpp:1568
+#: scripting/abc.cpp:1629 scripting/abc.cpp:1691
+msgid " #"
+msgstr " #"
+
+#: scripting/flashsystem.cpp:86 scripting/flashsystem.cpp:104
+#: scripting/flashsystem.cpp:117 scripting/flashsystem.cpp:133
+#: scripting/flashutils.cpp:321 scripting/flashutils.cpp:327
+#: scripting/flashutils.cpp:342
+msgid " :: "
+msgstr " :: "
+
+#: swf.cpp:70 swf.cpp:74
+msgid " Length "
+msgstr "长度"
+
+#: asobject.cpp:85 asobject.cpp:168
+msgid " and type "
+msgstr "和类型"
+
+#: parsing/tags.cpp:55
+msgid " at byte "
+msgstr "于字节"
+
+#: parsing/tags.cpp:55 scripting/actions.cpp:409
+msgid " bytes"
+msgstr "字节"
+
+#: scripting/actions.cpp:1179
+msgid " constants"
+msgstr "常数"
+
+#: backends/input.cpp:194 backends/input.cpp:270
+msgid " events"
+msgstr "信号"
+
+#: scripting/abc.cpp:1340
+msgid " events missing before exit"
+msgstr "退出前信号丢失"
+
+#: parsing/tags.cpp:227 parsing/tags.cpp:232
+msgid " expected: "
+msgstr "预期："
+
+#: backends/graphics.cpp:135 backends/graphics.cpp:177
+#: backends/graphics.cpp:202
+msgid " height="
+msgstr "高度="
+
+#: scripting/abc.cpp:1561
+msgid " id "
+msgstr "代号"
+
+#: scripting/flashnet.cpp:729
+msgid " in FLV"
+msgstr "于FLV"
+
+#: scripting/abc_opcodes.cpp:1799 scripting/abc_opcodes.cpp:1862
+#: scripting/abc_opcodes.cpp:1913
+msgid " is "
+msgstr "是"
+
+#: scripting/abc.cpp:1136
+msgid " is not yet valid"
+msgstr "暂不支持"
+
+#: scripting/abc_opcodes.cpp:2289
+msgid " is not yet valid (as interface)"
+msgstr "暂不支持（该界面）"
+
+#: parsing/tags.cpp:1367 parsing/tags.cpp:1534
+msgid " name "
+msgstr "名称"
+
+#: scripting/abc.cpp:1130
+msgid " not found in global"
+msgstr "未在全局类型中发现"
+
+#: scripting/abc_opcodes.cpp:680
+msgid " not supported in construct"
+msgstr "在创建中不支持"
+
+#: swftypes.cpp:1090
+msgid " of action data"
+msgstr "操作数据"
+
+#: scripting/abc_opcodes.cpp:362 scripting/abc_opcodes.cpp:796
+msgid " on obj "
+msgstr "于对象"
+
+#: scripting/abc_opcodes.cpp:838
+msgid " on obj type "
+msgstr "于对象类型"
+
+#: scripting/abc_opcodes.cpp:401
+msgid " on type "
+msgstr "于类型"
+
+#: backends/graphics.cpp:56
+msgid " openGL errors"
+msgstr "openGL错误"
+
+#: backends/rendering.cpp:288 backends/rendering.cpp:764
+msgid " renderings"
+msgstr "绘图"
+
+#: scripting/abc_codesynt.cpp:1486
+msgid " should be intrinsic"
+msgstr "应该是内含函数"
+
+#: threading.cpp:77
+msgid " times"
+msgstr "编"
+
+#: asobject.cpp:188
+msgid " to float"
+msgstr "为浮点数"
+
+#: asobject.cpp:181
+msgid " to int"
+msgstr "为整数"
+
+#: scripting/abc.cpp:1778 scripting/abc.cpp:1798 scripting/abc.cpp:1804
+msgid " type "
+msgstr "类型"
+
+#: scripting/abc.cpp:1561
+msgid " type Class name "
+msgstr "类名"
+
+#: scripting/abc.cpp:1804
+msgid " vindex 0 "
+msgstr "vindex 0"
+
+#: threading.cpp:77
+msgid " waited "
+msgstr "已等待"
+
+#: parsing/tags.cpp:55 scripting/actions.cpp:409
+msgid " with length "
+msgstr "长"
+
+#: parsing/tags.cpp:1328 parsing/tags.cpp:1495
+msgid " with name "
+msgstr "名称"
+
+#: scripting/flashutils.cpp:327
+msgid "' not found."
+msgstr "未发现"
+
+#: scripting/abc_opcodes.cpp:176
+msgid ") "
+msgstr "）"
+
+#: parsing/tags.cpp:1818
+msgid ", ScriptTimeoutSeconds: "
+msgstr ""
+
+#: parsing/tags.cpp:1854
+msgid ", password: "
+msgstr "，口令： "
+
+#: scripting/abc_opcodes.cpp:1346 scripting/abc_opcodes.cpp:1418
+msgid ", pushing Undefined"
+msgstr ""
+
+#: scripting/abc.cpp:1122
+msgid ". Not binding"
+msgstr ""
+
+#: parsing/tags.cpp:227 parsing/tags.cpp:232
+msgid ". Size="
+msgstr "。大小="
+
+#: swftypes.cpp:670 swftypes.cpp:702 backends/rendering.cpp:585
+msgid "... Aborting"
+msgstr "…… 放弃"
+
+#: scripting/abc.cpp:2027
+msgid "0 not allowed"
+msgstr "不接受为0"
+
+#: scripting/abc_interpreter.cpp:777 scripting/abc_interpreter.cpp:1214
+msgid ": "
+msgstr "："
+
+#: scripting/abc.cpp:1403 scripting/abc.cpp:1429 scripting/abc.cpp:1434
+#: scripting/abc.cpp:1460 scripting/abc.cpp:1465 scripting/abc.cpp:1491
+#: scripting/abc.cpp:1561 scripting/abc.cpp:1568 scripting/abc.cpp:1624
+#: scripting/abc.cpp:1629 scripting/abc.cpp:1686 scripting/abc.cpp:1691
+#: scripting/abc.cpp:1747
+msgid "::"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1093 scripting/abc_opcodes.cpp:1104
+msgid "<<"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1116 scripting/abc_opcodes.cpp:1126
+#: scripting/abc_opcodes.cpp:1135
+msgid ">>"
+msgstr ""
+
+#: scripting/abc.cpp:81
+msgid "ABC Exec "
+msgstr "ABC执行文件"
+
+#: scripting/abc.cpp:887
+msgid "ABCVm version "
+msgstr "ABCVm 版本"
+
+#: scripting/toplevel.cpp:2044
+msgid "ASString::charCodeAt not really implemented"
+msgstr "ASString::charCodeAt 支持并未实现"
+
+#: scripting/actions.cpp:87 scripting/actions.cpp:154
+msgid "AVM1 not supported"
+msgstr "不支持AVM1"
+
+#: scripting/actions.h:315
+msgid "ActionAdd2"
+msgstr ""
+
+#: scripting/actions.h:602
+msgid "ActionAsciiToChar"
+msgstr ""
+
+#: scripting/actions.h:539
+msgid "ActionBitAnd"
+msgstr ""
+
+#: scripting/actions.h:560
+msgid "ActionBitLShift"
+msgstr ""
+
+#: scripting/actions.h:546
+msgid "ActionBitOr"
+msgstr ""
+
+#: scripting/actions.h:567
+msgid "ActionBitRShift"
+msgstr ""
+
+#: scripting/actions.h:553
+msgid "ActionBitXor"
+msgstr ""
+
+#: scripting/actions.h:406
+msgid "ActionCallFunction"
+msgstr ""
+
+#: scripting/actions.h:399
+msgid "ActionCallMethod"
+msgstr ""
+
+#: scripting/actions.h:532
+msgid "ActionCastOp"
+msgstr ""
+
+#: scripting/actions.h:413
+msgid "ActionCloneSprite"
+msgstr ""
+
+#: scripting/actions.cpp:1401 scripting/actions.h:267
+msgid "ActionConstantPool"
+msgstr ""
+
+#: scripting/actions.h:441
+msgid "ActionDecrement"
+msgstr ""
+
+#: scripting/actions.h:150
+msgid "ActionDefineFunction"
+msgstr ""
+
+#: scripting/actions.h:188
+msgid "ActionDefineFunction2"
+msgstr ""
+
+#: scripting/actions.h:357
+msgid "ActionDefineLocal"
+msgstr ""
+
+#: scripting/actions.h:462
+msgid "ActionDelete"
+msgstr ""
+
+#: scripting/actions.h:329
+msgid "ActionDivide"
+msgstr ""
+
+#: scripting/actions.h:483
+msgid "ActionEnumerate"
+msgstr ""
+
+#: scripting/actions.h:511
+msgid "ActionEnumerate2"
+msgstr ""
+
+#: scripting/actions.h:616
+msgid "ActionEquals2"
+msgstr ""
+
+#: scripting/actions.h:434
+msgid "ActionExtends"
+msgstr ""
+
+#: scripting/actions.h:114
+msgid "ActionGetMember"
+msgstr ""
+
+#: scripting/actions.h:343
+msgid "ActionGetProperty"
+msgstr ""
+
+#: scripting/actions.h:490
+msgid "ActionGetTime"
+msgstr ""
+
+#: scripting/actions.h:256
+msgid "ActionGetURL"
+msgstr ""
+
+#: scripting/actions.h:245
+msgid "ActionGetURL2"
+msgstr ""
+
+#: scripting/actions.h:651
+msgid "ActionGetVariable"
+msgstr ""
+
+#: scripting/actions.cpp:1412 scripting/actions.h:287
+msgid "ActionGoToLabel"
+msgstr ""
+
+#: scripting/actions.h:235
+msgid "ActionGotoFrame"
+msgstr ""
+
+#: scripting/actions.h:581
+msgid "ActionGreater"
+msgstr ""
+
+#: scripting/actions.h:225
+msgid "ActionIf"
+msgstr ""
+
+#: scripting/actions.h:427
+msgid "ActionImplementsOp"
+msgstr ""
+
+#: scripting/actions.h:574
+msgid "ActionIncrement"
+msgstr ""
+
+#: scripting/actions.h:469
+msgid "ActionInitArray"
+msgstr ""
+
+#: scripting/actions.h:448
+msgid "ActionInitObject"
+msgstr ""
+
+#: scripting/actions.h:497
+msgid "ActionInstanceOf"
+msgstr ""
+
+#: scripting/actions.h:205
+msgid "ActionJump"
+msgstr ""
+
+#: scripting/actions.cpp:1003
+msgid "ActionJump: "
+msgstr ""
+
+#: scripting/actions.h:595
+msgid "ActionLess2"
+msgstr ""
+
+#: scripting/actions.h:322
+msgid "ActionModulo"
+msgstr ""
+
+#: scripting/actions.h:364
+msgid "ActionMultiply"
+msgstr ""
+
+#: scripting/actions.h:455
+msgid "ActionNewMethod"
+msgstr ""
+
+#: scripting/actions.h:308
+msgid "ActionNewObject"
+msgstr ""
+
+#: scripting/actions.h:392
+msgid "ActionNot"
+msgstr ""
+
+#: scripting/actions.h:128
+msgid "ActionPlay"
+msgstr ""
+
+#: scripting/actions.h:378
+msgid "ActionPop"
+msgstr ""
+
+#: scripting/actions.cpp:1318
+msgid "ActionPush"
+msgstr ""
+
+#: scripting/actions.h:336
+msgid "ActionPushDuplicate"
+msgstr ""
+
+#: scripting/actions.h:350
+msgid "ActionReturn"
+msgstr ""
+
+#: scripting/actions.h:121
+msgid "ActionSetMember"
+msgstr ""
+
+#: scripting/actions.h:504
+msgid "ActionSetProperty"
+msgstr ""
+
+#: scripting/actions.h:277
+msgid "ActionSetTarget"
+msgstr ""
+
+#: scripting/actions.h:637
+msgid "ActionSetTarget2"
+msgstr ""
+
+#: scripting/actions.h:630
+msgid "ActionSetVariable"
+msgstr ""
+
+#: scripting/actions.h:135
+msgid "ActionStop"
+msgstr ""
+
+#: scripting/actions.h:667
+msgid "ActionStoreRegister"
+msgstr ""
+
+#: scripting/actions.h:609
+msgid "ActionStrictEquals"
+msgstr ""
+
+#: scripting/actions.h:294
+msgid "ActionStringAdd"
+msgstr ""
+
+#: scripting/actions.h:623
+msgid "ActionStringEquals"
+msgstr ""
+
+#: scripting/actions.h:301
+msgid "ActionStringExtract"
+msgstr ""
+
+#: scripting/actions.h:588
+msgid "ActionStringGreater"
+msgstr ""
+
+#: scripting/actions.h:371
+msgid "ActionSubtract"
+msgstr ""
+
+#: scripting/actions.cpp:863 scripting/actions.h:385
+msgid "ActionToInteger"
+msgstr ""
+
+#: scripting/actions.h:525
+msgid "ActionToNumber"
+msgstr ""
+
+#: scripting/actions.h:518
+msgid "ActionToString"
+msgstr ""
+
+#: scripting/actions.h:420
+msgid "ActionTrace"
+msgstr ""
+
+#: scripting/actions.h:476
+msgid "ActionTypeOf"
+msgstr ""
+
+#: scripting/actions.h:215
+msgid "ActionWith"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1038
+msgid "Add between integer and "
+msgstr "加法对于整数和"
+
+#: scripting/abc_opcodes.cpp:993
+msgid "Add between types "
+msgstr "加法对于类型"
+
+#: scripting/abc_opcodes.cpp:1081
+msgid "Add between types number and "
+msgstr "加法对于数和"
+
+#: asobject.cpp:117
+msgid "Add buildTraits for class "
+msgstr "添加buildTraits到类"
+
+#: scripting/toplevel.cpp:2928
+msgid "Array to bool"
+msgstr "组到逻辑"
+
+#: scripting/toplevel.cpp:181
+msgid "Array::filter STUB"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:415 scripting/abc_opcodes.cpp:1378
+msgid "Attaching this to function "
+msgstr "附加到函数"
+
+#: backends/decoder.cpp:448
+msgid "Audio channels "
+msgstr "音频声道"
+
+#: backends/decoder.cpp:440
+msgid "Audio sample rate "
+msgstr "音频采样率"
+
+#: scripting/abc.cpp:112
+msgid "Binding "
+msgstr "限定"
+
+#: scripting/abc.cpp:1037
+msgid "Binding of "
+msgstr "限定于"
+
+#: scripting/toplevel.cpp:2961
+msgid "Boolean conversion for type "
+msgstr "逻辑转换类型"
+
+#: scripting/toplevel.cpp:2913
+msgid "Boolean to bool "
+msgstr "Boolean到bool"
+
+#: scripting/abc_opcodes.cpp:2245
+msgid "Building class traits"
+msgstr "创建类属性"
+
+#: scripting/abc.cpp:1275
+msgid "Building entry script traits: "
+msgstr "创建入口脚本属性"
+
+#: scripting/abc.cpp:1067 scripting/toplevel.cpp:2667
+msgid "Building instance traits"
+msgstr "创建例程属性"
+
+#: scripting/abc_opcodes.cpp:654 scripting/abc_opcodes.cpp:2027
+msgid "Building method traits"
+msgstr "创建步骤属性"
+
+#: scripting/abc.cpp:1262
+msgid "Building script traits: "
+msgstr "创建脚本属性："
+
+#: scripting/toplevel.cpp:2558
+msgid "Building traits for "
+msgstr "创建属性给"
+
+#: parsing/tags_stub.cpp:103
+msgid "CSMTextSettingsTag"
+msgstr ""
+
+#: backends/netutils.cpp:281
+msgid "CURL not enabled in this build. Downloader will always fail."
+msgstr "本编译不含CURL支持，下载器将全部失败。"
+
+#: scripting/toplevel.cpp:461
+msgid "Called ASXML::load "
+msgstr "完成调用ASXML::load "
+
+#: scripting/toplevel.cpp:136
+msgid "Called Array constructor"
+msgstr "完成调用Array创建"
+
+#: scripting/toplevel.cpp:428
+msgid "Called MovieClipLoader constructor"
+msgstr "完成调用MovieClipLoader创建"
+
+#: scripting/toplevel.cpp:434
+msgid "Called MovieClipLoader::addListener"
+msgstr "完成调用MovieClipLoader::addListener"
+
+#: scripting/toplevel.cpp:446
+msgid "Called XML constructor"
+msgstr "完成调用XML创建"
+
+#: scripting/flashdisplay.cpp:526
+msgid "Called swapDepths"
+msgstr "完成调用swapDepths"
+
+#: scripting/abc_opcodes.cpp:2304
+msgid "Calling Class init "
+msgstr "调用类 初始化"
+
+#: scripting/toplevel.cpp:2602
+msgid "Calling Instance init "
+msgstr "调用类体初始化"
+
+#: scripting/abc_opcodes.cpp:1736
+msgid "Calling an undefined function"
+msgstr "调用未定义函数"
+
+#: scripting/abc_opcodes.cpp:362 scripting/abc_opcodes.cpp:796
+#: scripting/abc_opcodes.cpp:1661
+msgid "Calling an undefined function "
+msgstr "调用未定义函数"
+
+#: scripting/toplevel.cpp:2757
+msgid "Calling interface init for "
+msgstr "调用界面初始化for "
+
+#: asobject.cpp:605 asobject.cpp:648 asobject.cpp:894
+msgid "Calling the getter"
+msgstr "调用获取器"
+
+#: asobject.cpp:601
+msgid "Calling the getter on type "
+msgstr "调用the getter on type "
+
+#: asobject.cpp:355 asobject.cpp:388
+msgid "Calling the setter"
+msgstr "调用设置器"
+
+#: scripting/toplevel.cpp:1621 scripting/toplevel.cpp:1707
+msgid "Calling with closure "
+msgstr "调用with closure "
+
+#: asobject.cpp:181 asobject.cpp:188
+msgid "Cannot convert object of type "
+msgstr "不能转换对象类型"
+
+#: plugin/plugin.cpp:354
+msgid "Cannot handle UTF8 URLs"
+msgstr "不能处理UTF-8链接"
+
+#: scripting/abc_opcodes.cpp:599
+msgid "Cannot increment type "
+msgstr "不能递增类型"
+
+#: backends/rendering.cpp:517
+msgid "Cannot initialize GLEW"
+msgstr "不能初始化GLEW"
+
+#: scripting/abc_opcodes.cpp:1751
+msgid "Cannot retrieve type"
+msgstr "不能找到类型"
+
+#: scripting/abc_codesynt.cpp:793 scripting/abc_codesynt.cpp:2257
+msgid "Case "
+msgstr "大小字母"
+
+#: scripting/abc_opcodes.cpp:704
+msgid "Check"
+msgstr "检查"
+
+#: swf.cpp:530
+msgid "Child process creation failed, lightspark continues"
+msgstr "创建子进程失败，lightspark继续运行"
+
+#: scripting/abc.cpp:908 scripting/abc.cpp:1130 scripting/abc.cpp:1136
+#: scripting/abc_opcodes.cpp:2289
+msgid "Class "
+msgstr "类"
+
+#: scripting/abc.cpp:1561
+msgid "Class slot "
+msgstr "类slot "
+
+#: scripting/toplevel.cpp:2923
+msgid "Class to bool"
+msgstr "类到bool"
+
+#: scripting/actions.cpp:465
+msgid "CodeSize not consistent"
+msgstr "CodeSize不一致"
+
+#: scripting/actions.cpp:582
+msgid "CodeSize not consistent with file offset "
+msgstr "CodeSize和文件便宜不一致"
+
+#: swf.cpp:74
+msgid "Compressed SWF file: Version "
+msgstr "压缩SWF文件：版本"
+
+#: backends/sound.cpp:257
+msgid "Connection to PulseAudio server failed"
+msgstr "连接到PulseAudio服务器失败"
+
+#: scripting/abc.cpp:1778
+msgid "Const "
+msgstr ""
+
+#: scripting/abc.cpp:1527
+msgid "Constant kind "
+msgstr ""
+
+#: scripting/actions.cpp:1179
+msgid "ConstantPool: Reading "
+msgstr "ConstantPool：读取"
+
+#: scripting/abc_opcodes.cpp:623 scripting/abc_opcodes.cpp:713
+#: scripting/abc_opcodes.cpp:2010
+msgid "Constructing"
+msgstr "创建"
+
+#: scripting/abc.cpp:69
+msgid "Corrupted ABC data: missing "
+msgstr "损坏的ABC数据：缺失"
+
+#: backends/rendering.cpp:206
+msgid "Could not find any GLX configuration"
+msgstr "不能找到GLX配置"
+
+#: swf.cpp:609
+msgid "Creating VM"
+msgstr "创建VM"
+
+#: scripting/toplevel.cpp:131
+msgid "Creating array of length "
+msgstr "创建组长度为"
+
+#: backends/input.cpp:43
+msgid "Creating input thread"
+msgstr "创建输入线程"
+
+#: scripting/abc_opcodes.cpp:1440
+msgid "Cur prototype name "
+msgstr "Cur原型名称"
+
+#: parsing/tags.cpp:1823
+msgid "DebugIDTag Tag"
+msgstr "DebugIDTag标识"
+
+#: parsing/tags.cpp:1828
+msgid "DebugId "
+msgstr ""
+
+#: parsing/tags.cpp:1843
+msgid "Debugger enabled, password: "
+msgstr "启用调试器，密码："
+
+#: parsing/tags.cpp:1854
+msgid "Debugger enabled, reserved: "
+msgstr "启用调试器，保留："
+
+#: scripting/abc_opcodes.cpp:1384 scripting/abc_opcodes.cpp:1404
+#: scripting/abc_opcodes.cpp:2003
+msgid "Deferred definition of property "
+msgstr "延迟定义属性"
+
+#: parsing/tags.cpp:1760
+msgid "DefineBinaryDataTag"
+msgstr ""
+
+#: parsing/tags_stub.cpp:79
+msgid "DefineBitsJPEG2Tag Tag"
+msgstr "DefineBitsJPEG2Tag标识"
+
+#: parsing/tags.cpp:673
+msgid "DefineBitsLossless2Tag::Render"
+msgstr ""
+
+#: parsing/tags.cpp:1675
+msgid "DefineButton2Tag::Render"
+msgstr ""
+
+#: parsing/tags.cpp:269
+msgid "DefineEditTextTag ID "
+msgstr ""
+
+#: parsing/tags.cpp:310
+msgid "DefineEditTextTag: Render"
+msgstr ""
+
+#: parsing/tags.cpp:443
+msgid "DefineFont"
+msgstr ""
+
+#: parsing/tags.cpp:468
+msgid "DefineFont2"
+msgstr ""
+
+#: parsing/tags.cpp:557
+msgid "DefineFont3"
+msgstr ""
+
+#: parsing/tags_stub.cpp:73
+msgid "DefineFontAlignZonesTag Tag"
+msgstr "DefineFontAlignZonesTag标识"
+
+#: parsing/tags_stub.cpp:43
+msgid "DefineFontInfo Tag"
+msgstr "DefineFontInfo标识"
+
+#: parsing/tags_stub.cpp:67
+msgid "DefineFontNameTag Tag"
+msgstr "DefineFontNameTag标识"
+
+#: parsing/tags_stub.cpp:86
+msgid "DefineScalingGridTag Tag on ID "
+msgstr "DefineScalingGridTag标识于ID "
+
+#: parsing/tags_stub.cpp:97
+msgid "DefineSceneAndFrameLabelDataTag"
+msgstr ""
+
+#: parsing/tags.cpp:870
+msgid "DefineShape2Tag"
+msgstr ""
+
+#: parsing/tags.cpp:877
+msgid "DefineShape3Tag"
+msgstr ""
+
+#: parsing/tags.cpp:884
+msgid "DefineShape4Tag"
+msgstr ""
+
+#: parsing/tags.cpp:863
+msgid "DefineShapeTag"
+msgstr ""
+
+#: parsing/tags.cpp:1788
+msgid "DefineSound Tag"
+msgstr "DefineSound标识"
+
+#: parsing/tags.cpp:346
+msgid "DefineSprite ID: "
+msgstr ""
+
+#: parsing/tags.cpp:679
+msgid "DefineText ID "
+msgstr ""
+
+#: parsing/tags.cpp:753
+msgid "DefineText Render"
+msgstr ""
+
+#: parsing/tags.cpp:1733
+msgid "DefineVideoStreamTag"
+msgstr ""
+
+#: parsing/tags.cpp:1744
+msgid "DefineVideoStreamTag Render"
+msgstr "DefineVideoStreamTag绘图器"
+
+#: scripting/actions.cpp:437
+msgid "Defining function "
+msgstr "定义函数"
+
+#: scripting/actions.cpp:542
+msgid "Defining function2 "
+msgstr "定义函数2"
+
+#: scripting/flashutils.cpp:327
+msgid "Definition for '"
+msgstr "定义"
+
+#: plugin/plugin.cpp:439
+msgid "DestroyStream on main stream?"
+msgstr "DestroyStream于主流"
+
+#: scripting/abc.cpp:62
+msgid "DoABCTag Name: "
+msgstr "DoABCTag名称： "
+
+#: scripting/actions.cpp:58
+msgid "DoActionTag"
+msgstr ""
+
+#: scripting/actions.cpp:125
+msgid "DoInitActionTag"
+msgstr ""
+
+#: backends/netutils.cpp:126
+msgid "Downloaded file bigger than buffer: "
+msgstr "下载文件大过缓冲："
+
+#: scripting/abc.cpp:1205
+msgid "Empty stack"
+msgstr "空栈"
+
+#: parsing/tags.cpp:1848
+msgid "EnableDebugger2Tag Tag"
+msgstr "EnableDebugger2Tag标识"
+
+#: parsing/tags.cpp:1839
+msgid "EnableDebuggerTag Tag"
+msgstr "EnableDebuggerTag标识"
+
+#: scripting/abc.cpp:1460 scripting/abc.cpp:1624
+msgid "End Getter trait: "
+msgstr "尾Getter 属性： "
+
+#: scripting/abc.cpp:1429 scripting/abc.cpp:1747
+msgid "End Method trait: "
+msgstr "尾Method 属性： "
+
+#: scripting/abc.cpp:1491 scripting/abc.cpp:1686
+msgid "End Setter trait: "
+msgstr "尾Setter 属性： "
+
+#: scripting/actions.cpp:451 scripting/actions.cpp:567
+msgid "End action in function"
+msgstr "尾函数动作"
+
+#: scripting/abc_opcodes.cpp:2309
+msgid "End of Class init "
+msgstr "结束类 初始化"
+
+#: scripting/abc.cpp:1284
+msgid "End of Entry Point"
+msgstr "结束Entry Point"
+
+#: scripting/abc.cpp:1039
+msgid "End of binding of "
+msgstr "结束固定化"
+
+#: scripting/abc_opcodes.cpp:2390
+msgid "End of call "
+msgstr "结束调用"
+
+#: scripting/abc_opcodes.cpp:1664
+msgid "End of callSuper "
+msgstr "结束callSuper "
+
+#: scripting/abc_opcodes.cpp:1738
+msgid "End of callSuperVoid "
+msgstr "结束callSuperVoid "
+
+#: scripting/abc_opcodes.cpp:356 scripting/abc_opcodes.cpp:366
+#: scripting/abc_opcodes.cpp:830 scripting/abc_opcodes.cpp:848
+msgid "End of calling "
+msgstr "结束调用"
+
+#: scripting/abc_opcodes.cpp:719
+msgid "End of constructing"
+msgstr "结束创建"
+
+#: scripting/abc_opcodes.cpp:687 scripting/abc_opcodes.cpp:2055
+msgid "End of constructing "
+msgstr "结束创建"
+
+#: scripting/abc_opcodes.cpp:1389 scripting/abc_opcodes.cpp:1408
+#: scripting/abc_opcodes.cpp:2007
+msgid "End of deferred definition of property "
+msgstr "结束延迟定义属性
+
+#: scripting/abc.cpp:1139 scripting/abc_opcodes.cpp:2292
+msgid "End of deferred init of class "
+msgstr "结束延迟初始化类"
+
+#: asobject.cpp:612 asobject.cpp:652 asobject.cpp:899
+msgid "End of getter"
+msgstr "结束获取器"
+
+#: swf.cpp:830
+msgid "End of parsing @ "
+msgstr "结束解释@ "
+
+#: asobject.cpp:366 asobject.cpp:395
+msgid "End of setter"
+msgstr "结束设置器"
+
+#: scripting/abc_opcodes.cpp:1447
+msgid "End super construct "
+msgstr "尾super construct "
+
+#: parsing/tags.cpp:395
+msgid "EndDefineSprite ID: "
+msgstr ""
+
+#: parsing/tags.cpp:59
+msgid "EndTag at position "
+msgstr "EndTag于位置"
+
+#: asobject.cpp:168
+msgid "Equal comparison between type "
+msgstr "Equal comparison于类型"
+
+#: scripting/abc.cpp:1354
+msgid "Error in VM "
+msgstr "VM 错误"
+
+#: parsing/tags.cpp:227 parsing/tags.cpp:232
+msgid "Error while reading tag "
+msgstr "读取标识错误"
+
+#: scripting/toplevel.cpp:2211
+msgid "Error.getStackTrace not yet implemented."
+msgstr "Error.getStackTrace尚未实现"
+
+#: scripting/flashevents.cpp:327
+msgid "Event not found"
+msgstr ""
+
+#: swf.cpp:872
+msgid "Exception in ParseThread "
+msgstr "ParseThread 异常"
+
+#: backends/rendering.cpp:405 backends/rendering.cpp:898
+msgid "Exception in RenderThread "
+msgstr "RenderThread 异常"
+
+#: swf.cpp:1104
+msgid "Exception in RootMovieClip::tick "
+msgstr "RootMovieClip::tick 异常"
+
+#: thread_pool.cpp:112
+msgid "Exception in ThreadPool "
+msgstr "ThreadPool 异常"
+
+#: scripting/flashnet.cpp:769
+msgid "Exception in reading: "
+msgstr "reading: 异常"
+
+#: scripting/actions.cpp:705
+msgid "Exec: ActionBitAnd"
+msgstr ""
+
+#: scripting/actions.cpp:720
+msgid "Exec: ActionBitLShift"
+msgstr ""
+
+#: scripting/actions.cpp:710
+msgid "Exec: ActionBitOr"
+msgstr ""
+
+#: scripting/actions.cpp:725
+msgid "Exec: ActionBitRShift"
+msgstr ""
+
+#: scripting/actions.cpp:715
+msgid "Exec: ActionBitXor"
+msgstr ""
+
+#: scripting/actions.cpp:745
+msgid "Exec: ActionCastOp"
+msgstr ""
+
+#: scripting/actions.cpp:801
+msgid "Exec: ActionCloneSprite"
+msgstr ""
+
+#: scripting/actions.cpp:658
+msgid "Exec: ActionDecrement"
+msgstr ""
+
+#: scripting/actions.cpp:1009
+msgid "Exec: ActionDelete"
+msgstr ""
+
+#: scripting/actions.cpp:685
+msgid "Exec: ActionEnumerate"
+msgstr ""
+
+#: scripting/actions.cpp:730
+msgid "Exec: ActionEnumerate2"
+msgstr ""
+
+#: scripting/actions.cpp:690
+msgid "Exec: ActionGetTime"
+msgstr ""
+
+#: scripting/actions.cpp:700
+msgid "Exec: ActionImplementsOp"
+msgstr ""
+
+#: scripting/actions.cpp:1090
+msgid "Exec: ActionInitArray"
+msgstr ""
+
+#: scripting/actions.cpp:1095
+msgid "Exec: ActionInitObject"
+msgstr ""
+
+#: scripting/actions.cpp:695
+msgid "Exec: ActionInstanceOf"
+msgstr ""
+
+#: scripting/actions.cpp:1014
+msgid "Exec: ActionNewMethod"
+msgstr ""
+
+#: scripting/actions.cpp:590
+msgid "Exec: ActionPushDuplicate"
+msgstr ""
+
+#: scripting/actions.cpp:1019 scripting/actions.cpp:1024
+msgid "Exec: ActionStringAdd"
+msgstr ""
+
+#: scripting/actions.cpp:1100
+msgid "Exec: ActionStringEquals"
+msgstr ""
+
+#: scripting/actions.cpp:1029
+msgid "Exec: ActionStringExtract"
+msgstr ""
+
+#: scripting/actions.cpp:776
+msgid "Exec: ActionStringGreater"
+msgstr ""
+
+#: scripting/actions.cpp:740
+msgid "Exec: ActionToNumber"
+msgstr ""
+
+#: scripting/actions.cpp:735
+msgid "Exec: ActionToString"
+msgstr ""
+
+#: scripting/actions.cpp:1151
+msgid "Exec: ActionToggleQuality"
+msgstr ""
+
+#: scripting/actions.cpp:806
+msgid "Exec: ActionTrace"
+msgstr ""
+
+#: scripting/actions.cpp:680
+msgid "Exec: ActionTypeOf"
+msgstr ""
+
+#: scripting/actions.cpp:1323
+msgid "Exec: ActionWith"
+msgstr ""
+
+#: swf.cpp:563
+msgid "Execve failed, content will not be rendered"
+msgstr "execve错误，不会显示内容"
+
+#: scripting/actions.cpp:41
+msgid "ExportAssetsTag Tag"
+msgstr "ExportAssetsTag标识"
+
+#: parsing/flv.cpp:41
+msgid "FLV file: Version "
+msgstr "FLV文件：版本"
+
+#: backends/rendering.cpp:913
+msgid "FPS: "
+msgstr ""
+
+#: scripting/toplevel.cpp:2622
+msgid "Failure in reference counting"
+msgstr "引用错误计数"
+
+#: backends/rendering.cpp:288 backends/rendering.cpp:764
+msgid "Faking "
+msgstr "伪"
+
+#: backends/rendering.cpp:202
+msgid "Falling back to no double buffering"
+msgstr "回归到不用双缓冲"
+
+#: parsing/tags.cpp:171
+msgid "FileAttributes tag not in the beginning"
+msgstr "FileAttributes标识不在起始"
+
+#: parsing/tags.cpp:1771
+msgid "FileAttributesTag Tag"
+msgstr "FileAttributesTag标识"
+
+#: swftypes.cpp:291 swftypes.cpp:307
+msgid "Fill array extended not supported"
+msgstr "不支持填充扩展组"
+
+#: swftypes.h:608
+msgid "Fixed point bit field wider than 32 bit not supported"
+msgstr "不支持固定位域超过32位"
+
+#: scripting/abc.cpp:909
+msgid "Flags:"
+msgstr "指示："
+
+#: backends/rendering.cpp:88
+msgid "Font File is "
+msgstr "字体文件为"
+
+#: scripting/flashsystem.cpp:104
+msgid "Found definition for "
+msgstr "发现的定义"
+
+#: backends/rendering.cpp:445
+msgid "Fragment shader compilation "
+msgstr "碎片着色器编译"
+
+#: swf.cpp:811
+msgid "FrameRate "
+msgstr "帧速"
+
+#: scripting/abc_opcodes.cpp:2387
+msgid "Function not good "
+msgstr "函数不良"
+
+#: scripting/abc.cpp:2250
+msgid "Function Tag"
+msgstr "Function尚未实现"
+
+#: backends/graphics.cpp:48
+msgid "GL error "
+msgstr "GL错误"
+
+#: backends/rendering.cpp:588
+msgid "GL errors during initialization: "
+msgstr "GL初始化错误："
+
+#: backends/graphics.cpp:135 backends/graphics.cpp:177
+#: backends/graphics.cpp:202
+msgid "GL_INVALID_VALUE after glTexImage2D, width="
+msgstr "GL_INVALID_VALUE在glTexImage2D后, 宽度="
+
+#: scripting/actions.cpp:1371
+msgid "GetURL2"
+msgstr ""
+
+#: scripting/actions.cpp:1382
+msgid "GetURL2: exec"
+msgstr ""
+
+#: scripting/actions.cpp:1377
+msgid "GetURL: exec"
+msgstr ""
+
+#: scripting/abc.cpp:1457
+msgid "Getter not linkable"
+msgstr ""
+
+#: scripting/abc.cpp:1434 scripting/abc.cpp:1568
+msgid "Getter trait: "
+msgstr ""
+
+#: scripting/flashsystem.cpp:133 scripting/flashutils.cpp:342
+msgid "Getting definition for "
+msgstr "获取定义给"
+
+#: scripting/abc.cpp:961
+msgid "Global is "
+msgstr ""
+
+#: scripting/flashevents.cpp:376
+msgid "Handling event "
+msgstr ""
+
+#: backends/graphics.cpp:56
+msgid "Ignoring "
+msgstr "忽略"
+
+#: scripting/abc_codesynt.cpp:689 scripting/abc_codesynt.cpp:1600
+msgid "Ignoring at "
+msgstr "忽略"
+
+#: scripting/abc.cpp:922
+msgid "Implements"
+msgstr "实现"
+
+#: backends/rendering.cpp:585
+msgid "Incomplete FBO status "
+msgstr "不完全FBO status "
+
+#: parsing/tags.cpp:391
+msgid "Inconsistent frame count "
+msgstr "不一致frame count "
+
+#: scripting/toplevel.cpp:2952
+msgid "Integer to bool"
+msgstr "Integer到bool"
+
+#: swf.cpp:514
+msgid "Invoking gnash!"
+msgstr "调用gnash"
+
+#: threading.cpp:54
+msgid "Job terminated"
+msgstr "任务终止"
+
+#: scripting/toplevel.cpp:1726
+msgid "LOG10E"
+msgstr ""
+
+#: scripting/toplevel.cpp:1727
+msgid "LOG2E"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1573
+msgid "Last instruction before a new block was not a branch."
+msgstr "新块前最后指令不是分支"
+
+#: scripting/abc.cpp:1270
+msgid "Last script (Entry Point)"
+msgstr "最后脚本（入口）"
+
+#: asobject.cpp:85
+msgid "Less than comparison between type "
+msgstr "比较是否小于，类型"
+
+#: swftypes.cpp:241 swftypes.cpp:268
+msgid "Line array extended not supported"
+msgstr "不支持扩展行组"
+
+#: scripting/abc_opcodes.cpp:2209
+msgid "Linking with interface "
+msgstr "链接界面"
+
+#: scripting/flashdisplay.cpp:198
+msgid "Loader async execution "
+msgstr "异步执行加载器"
+
+#: backends/netutils.cpp:397
+msgid "LocalDownloader::execute: could not open local file: "
+msgstr "LocalDownloader::execute: 不能打开本地文件："
+
+#: backends/netutils.cpp:389
+msgid "LocalDownloader::execute: reading from local file failed: "
+msgstr "LocalDownloader::execute: 读取本地文件失败："
+
+#: backends/netutils.cpp:362
+msgid "LocalDownloader::execute: reading local file: "
+msgstr "LocalDownloader::execute: 读取本地文件："
+
+#: scripting/flashsystem.cpp:86 scripting/flashsystem.cpp:117
+#: scripting/flashutils.cpp:321
+msgid "Looking for definition of "
+msgstr "查找定义"
+
+#: parsing/tags.cpp:1818
+msgid "MaxRecusionDepth: "
+msgstr ""
+
+#: parsing/tags.cpp:1861
+msgid "MetaData: "
+msgstr ""
+
+#: parsing/tags.cpp:1859
+msgid "MetadataTag Tag"
+msgstr "MetadataTag标识"
+
+#: scripting/abc_codesynt.cpp:1486
+msgid "Method "
+msgstr "方法"
+
+#: scripting/abc.cpp:1426
+msgid "Method not linkable"
+msgstr "不可链接方法"
+
+#: scripting/abc.cpp:1403 scripting/abc.cpp:1691
+msgid "Method trait: "
+msgstr "方法属性"
+
+#: parsing/tags.cpp:1336 parsing/tags.cpp:1503
+msgid "Moving of registered objects not really supported"
+msgstr "并不支持移动注册对象"
+
+#: scripting/abc.cpp:1984
+msgid "Multibyte not handled"
+msgstr "Multibyte未能处理"
+
+#: scripting/abc.cpp:339 scripting/abc.cpp:356 scripting/abc.cpp:488
+#: scripting/abc.cpp:584 scripting/abc.cpp:619 scripting/abc.cpp:636
+#: scripting/abc.cpp:782
+msgid "Multiname to String not yet implemented for this kind "
+msgstr "本类中Multiname到String并未实现"
+
+#: scripting/abc.cpp:1122
+msgid "Multiple binding on "
+msgstr "多次固定于"
+
+#: threading.cpp:77
+msgid "Mutex "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1346 scripting/abc_opcodes.cpp:1418
+msgid "NOT found "
+msgstr "未发现 "
+
+#: scripting/abc_opcodes.cpp:1524
+msgid "NOT found, pushing Undefined"
+msgstr "未发现, 压入未定义"
+
+#: scripting/abc_opcodes.cpp:1482
+msgid "NOT found, pushing global"
+msgstr "未发现, 压入global"
+
+#: scripting/abc_opcodes.cpp:1398 scripting/abc_opcodes.cpp:1518
+msgid "NOT found, trying Global"
+msgstr "未发现, 尝试Global"
+
+#: scripting/flashnet.cpp:442
+msgid "NetStream Tag"
+msgstr "NetStream创建"
+
+#: scripting/flashnet.cpp:519
+msgid "NetStream::close called"
+msgstr "NetStream::close调用"
+
+#: scripting/abc_codesynt.cpp:680 scripting/abc_codesynt.cpp:735
+msgid "New block at "
+msgstr "新块于"
+
+#: plugin/plugin.cpp:368
+msgid "Newstream for "
+msgstr "Newstream给"
+
+#: scripting/abc.cpp:1397 scripting/abc.cpp:1543
+msgid "Next slot has flags "
+msgstr "下一条具有标记"
+
+#: parsing/flv.cpp:46
+msgid "No FLV file signature found"
+msgstr "没有FLV文件名"
+
+#: swf.cpp:78
+msgid "No SWF file signature found"
+msgstr "没有SWF文件标识"
+
+#: backends/geometry.cpp:49
+msgid "No edges in this shape"
+msgstr "该形状无边界"
+
+#: main.cpp:180 tightspark.cpp:98
+msgid "No execution model enabled"
+msgstr "没有允许任何执行模式"
+
+#: plugin/plugin.cpp:269
+msgid "No size in SetWindow"
+msgstr "SetWindow不含大小"
+
+#: swf.cpp:1065
+msgid "No such Id on dictionary "
+msgstr "字典中不含该Id"
+
+#: backends/rendering.cpp:220
+msgid "No suitable graphics configuration available"
+msgstr "没有合适图形配置可用"
+
+#: backends/rendering.cpp:577
+msgid "Non enough color attachments available, input disabled"
+msgstr "没有足够的颜色附件可用，禁止输入"
+
+#: scripting/flashdisplay.cpp:494
+msgid "Not a function"
+msgstr "不是函数"
+
+#: scripting/flashdisplay.cpp:603
+msgid "Not enough frames loaded"
+msgstr "没有导入足够多帧"
+
+#: scripting/flashevents.cpp:372
+msgid "Not handled event "
+msgstr "未处理事件"
+
+#: scripting/actions.h:644
+msgid "Not implemented action"
+msgstr "未实现动作"
+
+#: scripting/abc_codesynt.cpp:1360 scripting/abc_codesynt.cpp:3931
+msgid "Not implemented instruction @"
+msgstr "尚未实现指令@"
+
+#: scripting/flashevents.cpp:285
+msgid "Not implemented mode for addEventListener"
+msgstr "addEventListener有未实现的模式"
+
+#: scripting/abc_interpreter.cpp:1265
+msgid "Not intepreted instruction @"
+msgstr "未解释指令@"
+
+#: scripting/actions.cpp:72 scripting/actions.cpp:139
+#: scripting/actions.cpp:457 scripting/actions.cpp:573
+msgid "Not supported action opcode"
+msgstr "不支持动作opcode"
+
+#: swftypes.cpp:670 swftypes.cpp:702
+msgid "Not supported fill style "
+msgstr "不支持填充方式"
+
+#: scripting/toplevel.cpp:2938
+msgid "Null to bool"
+msgstr "Null到bool"
+
+#: scripting/toplevel.cpp:2943
+msgid "Number to bool"
+msgstr "Number到bool"
+
+#: scripting/abc_opcodes.cpp:1765 scripting/abc_opcodes.cpp:1819
+#: scripting/abc_opcodes.cpp:1880
+msgid "Numeric type is "
+msgstr "数值类型为"
+
+#: scripting/abc_opcodes.cpp:316
+msgid "Object"
+msgstr "对象"
+
+#: scripting/toplevel.cpp:2918
+msgid "Object to bool"
+msgstr "对象到bool"
+
+#: scripting/abc_opcodes.cpp:680
+msgid "Object type "
+msgstr "对象类型"
+
+#: asobject.cpp:142 asobject.cpp:164
+msgid "Overloaded isEqual"
+msgstr "重载isEqual"
+
+#: asobject.cpp:81
+msgid "Overloaded isLess"
+msgstr "重载isLess"
+
+#: swf.cpp:269
+msgid "Parameters file not found"
+msgstr "未发现参数文件"
+
+#: asobject.cpp:506
+msgid "Passthorugh of "
+msgstr "传递"
+
+#: parsing/tags.cpp:1376
+msgid "PlaceObject2"
+msgstr ""
+
+#: parsing/tags.cpp:1543
+msgid "PlaceObject3"
+msgstr ""
+
+#: parsing/tags.cpp:1274 parsing/tags.cpp:1441
+msgid "Placing ID "
+msgstr ""
+
+#: parsing/tags.cpp:1605
+msgid "ProductInfoTag Tag"
+msgstr "ProductInfoTag标识"
+
+#: scripting/abc_opcodes.cpp:401 scripting/abc_opcodes.cpp:405
+msgid "Property not found "
+msgstr "未发现属性"
+
+#: parsing/tags_stub.cpp:37
+msgid "Protect Tag"
+msgstr "Protect标识"
+
+#: scripting/abc_opcodes.cpp:351 scripting/abc_opcodes.cpp:824
+msgid "Proxy::callProperty"
+msgstr ""
+
+#: scripting/flashutils.cpp:629
+msgid "Proxy::getProperty"
+msgstr ""
+
+#: scripting/flashutils.cpp:639
+msgid "Proxy::hasNext"
+msgstr ""
+
+#: scripting/flashutils.cpp:657
+msgid "Proxy::nextName"
+msgstr ""
+
+#: scripting/flashutils.cpp:602
+msgid "Proxy::setProperty"
+msgstr ""
+
+#: scripting/actions.cpp:1308
+msgid "Push type: "
+msgstr ""
+
+#: scripting/actions.cpp:1266
+msgid "Push:  Read bool "
+msgstr "Push: 读取bool "
+
+#: scripting/actions.cpp:1294
+msgid "Push:  Read constant index "
+msgstr "Push: 读取constant index "
+
+#: scripting/actions.cpp:1275
+msgid "Push:  Read double "
+msgstr "Push: 读取double "
+
+#: scripting/actions.cpp:1235
+msgid "Push:  Read float "
+msgstr "Push: 读取float "
+
+#: scripting/actions.cpp:1284
+msgid "Push:  Read integer "
+msgstr "Push: 读取integer "
+
+#: scripting/actions.cpp:1304
+msgid "Push:  Read long constant index "
+msgstr "Push: 读取long constant index "
+
+#: scripting/actions.cpp:1257
+msgid "Push:  Read reg number "
+msgstr "Push: 读取reg number "
+
+#: scripting/actions.cpp:1226
+msgid "Push:  Read string "
+msgstr "Push: 读取string "
+
+#: scripting/actions.cpp:1241
+msgid "Push: null"
+msgstr ""
+
+#: scripting/actions.cpp:1247
+msgid "Push: undefined"
+msgstr ""
+
+#: parsing/tags.cpp:55
+msgid "Reading tag type: "
+msgstr "读入标识类型："
+
+#: backends/graphics.cpp:195
+msgid "Reallocating texture to size "
+msgstr "重新分配图形大小"
+
+#: parsing/tags.cpp:1328 parsing/tags.cpp:1495
+msgid "Registering ID "
+msgstr "组测ID"
+
+#: parsing/tags.cpp:242
+msgid "RemoveObject2 Depth: "
+msgstr "RemoveObject2深度："
+
+#: backends/rendering.cpp:60
+msgid "RenderThread this="
+msgstr ""
+
+#: scripting/abc.cpp:1176
+msgid "Requested invalid method"
+msgstr "请求无效方法"
+
+#: swftypes.cpp:398
+msgid "Reserved bits not so reserved"
+msgstr "保留未恰当保留位"
+
+#: swftypes.cpp:541
+msgid "Reverting to fixed function"
+msgstr "恢复固定函数"
+
+#: main.cpp:202
+msgid "Running in local-with-filesystem sandbox"
+msgstr "本地文件系统的沙盘中运行"
+
+#: main.cpp:198
+msgid "Running in remote sandbox"
+msgstr "远程沙盘中运行"
+
+#: parsing/tags.cpp:1614
+msgid "SWF Info:"
+msgstr "SWF信息："
+
+#: scripting/abc.cpp:1259
+msgid "Script N: "
+msgstr "脚本N："
+
+#: parsing/tags.cpp:1816
+msgid "ScriptLimitsTag Tag"
+msgstr "ScriptLimitsTag标识"
+
+#: scripting/flashsystem.cpp:194
+msgid "Security::allowDomain"
+msgstr ""
+
+#: scripting/flashsystem.cpp:200
+msgid "Security::allowInsecureDomain"
+msgstr ""
+
+#: scripting/flashsystem.cpp:206
+msgid "Security::loadPolicyFile"
+msgstr ""
+
+#: scripting/flashsystem.cpp:212
+msgid "Security::showSettings"
+msgstr ""
+
+#: scripting/abc.cpp:1488
+msgid "Setter not linkable"
+msgstr "不可链接的设置器"
+
+#: scripting/abc.cpp:1465 scripting/abc.cpp:1629
+msgid "Setter trait: "
+msgstr ""
+
+#: scripting/abc.cpp:1126
+msgid "Setting class name to "
+msgstr "设置类名为"
+
+#: backends/rendering.cpp:431
+msgid "Share lightspark.frag not found"
+msgstr "未发现lightspark.frag着色器"
+
+#: backends/rendering.cpp:468
+msgid "Share lightspark.vert not found"
+msgstr "未发现lightspark.vert着色器"
+
+#: parsing/tags.cpp:771
+msgid "Should be a FontTag"
+msgstr "应当为FontTag"
+
+#: parsing/tags.cpp:1227
+msgid "ShowFrame"
+msgstr "显示框"
+
+#: swftypes.h:670
+msgid "Signed bit field wider than 32 bit not supported"
+msgstr "不支持有符合位域超过32位"
+
+#: swftypes.cpp:1090
+msgid "Skipping "
+msgstr "跳过"
+
+#: scripting/abc.cpp:1798 scripting/abc.cpp:1804
+msgid "Slot "
+msgstr "条"
+
+#: parsing/tags_stub.cpp:91
+msgid "SoundStreamBlockTag"
+msgstr ""
+
+#: parsing/tags_stub.cpp:55
+msgid "SoundStreamHead Tag"
+msgstr "SoundStreamHead标识"
+
+#: parsing/tags_stub.cpp:61
+msgid "SoundStreamHead2 Tag"
+msgstr "SoundStreamHead2标识"
+
+#: scripting/flashmedia.cpp:48
+msgid "SoundTransform Tag"
+msgstr "SoundTransform创建"
+
+#: scripting/abc.cpp:1229
+msgid "Stack not clean at the end of function"
+msgstr "函数结束时未清空栈"
+
+#: parsing/tags_stub.cpp:49
+msgid "StartSound Tag"
+msgstr "StartSound标识"
+
+#: scripting/abc_codesynt.cpp:1578
+msgid "Starting block at "
+msgstr "开始块于"
+
+#: scripting/toplevel.cpp:2903
+msgid "String to bool"
+msgstr "String到bool"
+
+#: swftypes.cpp:624
+msgid "Style Tag"
+msgstr "Style尚未实现"
+
+#: scripting/abc.cpp:919
+msgid "Super "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1443
+msgid "Super prototype name "
+msgstr "超原型名称"
+
+#: scripting/abc_interpreter.cpp:401
+msgid "Switch default dest "
+msgstr "切换预设目标"
+
+#: scripting/abc_interpreter.cpp:408
+msgid "Switch dest "
+msgstr "切换目标"
+
+#: scripting/abc.cpp:96
+msgid "SymbolClassTag"
+msgstr ""
+
+#: scripting/abc.cpp:108
+msgid "SymbolClassTag Exec"
+msgstr ""
+
+#: parsing/tags.cpp:303
+msgid "Sync to variable name "
+msgstr "同步到可变名称"
+
+#: scripting/flashevents.cpp:123
+msgid "Target for event "
+msgstr "目标设给事件"
+
+#: scripting/flashtext.cpp:103
+msgid "TextField::Render"
+msgstr ""
+
+#: scripting/abc.cpp:1498 scripting/abc.cpp:1837
+msgid "Trait not supported "
+msgstr "不支持的属性"
+
+#: asobject.cpp:87 asobject.cpp:170 scripting/abc_opcodes.cpp:1799
+#: scripting/abc_opcodes.cpp:1862 scripting/abc_opcodes.cpp:1913
+msgid "Type "
+msgstr "类型"
+
+#: backends/rendering.cpp:81
+msgid "Unable to find suitable Serif font"
+msgstr "不能找到可用Serif字体"
+
+#: backends/rendering.cpp:241
+msgid "Unable to load serif font"
+msgstr "不能加载Serif字体"
+
+#: parsing/tags.cpp:378
+msgid "Unclassified tag inside Sprite?"
+msgstr "Sprite内未封装标识"
+
+#: swf.cpp:70
+msgid "Uncompressed SWF file: Version "
+msgstr "解压SWF文件：版本"
+
+#: scripting/toplevel.cpp:1130
+msgid "Undefined function"
+msgstr "未定义函数"
+
+#: scripting/toplevel.cpp:2933
+msgid "Undefined to bool"
+msgstr "未定义给bool"
+
+#: timer.cpp:168
+msgid "Unexpected failure of sem_timedwait.. Trying to go on. errno="
+msgstr "sem_timedwait..意外失败，尝试继续运行。出错号="
+
+#: scripting/abc.cpp:2164
+msgid "Unexpected kind "
+msgstr "意外类型"
+
+#: scripting/abc.cpp:2072
+msgid "Unexpected multiname kind "
+msgstr "意外多名称类型"
+
+#: scripting/abc.cpp:2096
+msgid "Unexpected options type"
+msgstr "意外选项类型"
+
+#: scripting/flashnet.cpp:729
+msgid "Unexpected tag type "
+msgstr "意外标识类型"
+
+#: scripting/toplevel.cpp:2107
+msgid "Unicode not supported in String::fromCharCode"
+msgstr "String::fromCharCode不支持Unicode"
+
+#: parsing/tags_stub.cpp:109
+msgid "Unimplemented Tag "
+msgstr "未实现标识"
+
+#: swftypes.h:652
+msgid "Unsigned bit field wider than 32 bit not supported"
+msgstr "不支持无符合位域超过32位"
+
+#: scripting/actions.cpp:409
+msgid "Unsupported ActionCode "
+msgstr "未支持的ActionCode "
+
+#: swftypes.cpp:910
+msgid "Unsupported Filter Id "
+msgstr "不支持Filter Id "
+
+#: parsing/tags.cpp:212
+msgid "Unsupported tag type "
+msgstr "不支持标识类型"
+
+#: backends/rendering.cpp:476
+msgid "Vertex shader compilation "
+msgstr "着色器编译"
+
+#: backends/rendering.cpp:523
+msgid "Video card does not support OpenGL 2.0... Aborting"
+msgstr "显卡不支持OpenGL 2.0. 放弃"
+
+#: backends/decoder.cpp:44
+msgid "Video frame size "
+msgstr "图像框大小"
+
+#: scripting/abc_opcodes.cpp:1622 scripting/abc_opcodes.cpp:1706
+msgid "We got a Undefined function"
+msgstr "发现未定义函数"
+
+#: scripting/abc_opcodes.cpp:838 scripting/abc_opcodes.cpp:842
+msgid "We got a Undefined function "
+msgstr "发现未定义函数"
+
+#: scripting/abc_opcodes.cpp:316
+msgid "We got a Undefined function on obj "
+msgstr "发现未定义函数于对象"
+
+#: scripting/abc_opcodes.cpp:297
+msgid "We got a function not yet valid"
+msgstr "发现尚无效函数"
+
+#: scripting/abc_opcodes.cpp:1335 scripting/flashsystem.cpp:95
+#: scripting/flashutils.cpp:334
+msgid "We got an object not yet valid"
+msgstr "发现尚无效对象"
+
+#: backends/input.cpp:194 backends/input.cpp:270
+msgid "We still miss "
+msgstr "尚缺"
+
+#: scripting/flashevents.cpp:296
+msgid "Weird event reregistration"
+msgstr "反常事件再记录"
+
+#: backends/rendering.cpp:262
+msgid "Window resize not supported in plugin"
+msgstr "插件不支持窗口缩放"
+
+#: asobject.cpp:734
+msgid "["
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:181 scripting/abc_opcodes.cpp:186
+msgid "]"
+msgstr ""
+
+#: asobject.cpp:734 scripting/abc_opcodes.cpp:934
+#: scripting/abc_opcodes.cpp:940 scripting/abc_opcodes.cpp:946
+msgid "] "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:176
+msgid "] ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:171 scripting/abc_opcodes.cpp:191
+msgid "] (int)= "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:196
+msgid "] = "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:961 scripting/abc_opcodes.cpp:977
+#: scripting/abc_opcodes.cpp:986 scripting/abc_opcodes.cpp:1008
+#: scripting/abc_opcodes.cpp:1016 scripting/abc_opcodes.cpp:1025
+#: scripting/abc_opcodes.cpp:1052 scripting/abc_opcodes.cpp:1060
+#: scripting/abc_opcodes.cpp:1068
+msgid "add "
+msgstr "加"
+
+#: scripting/abc_opcodes.cpp:1871
+msgid "asTypelate"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:56
+msgid "bitAnd_oi "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:38
+msgid "bitAnd_oo "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:235
+msgid "bitNot "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:254 scripting/abc_opcodes.cpp:264
+msgid "bitOr "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:245
+msgid "bitXor "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:755
+msgid "block analysis: branches"
+msgstr "块分析：分支"
+
+#: scripting/abc_codesynt.cpp:717
+msgid "block analysis: kill"
+msgstr "块分析：中止"
+
+#: scripting/abc_opcodes.cpp:2363
+msgid "call "
+msgstr "调用"
+
+#: scripting/abc_opcodes.cpp:761
+msgid "callPropVoid "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:275
+msgid "callProperty "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1594
+msgid "callSuper "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1677
+msgid "callSuperVoid "
+msgstr ""
+
+#: scripting/toplevel.cpp:1973
+msgid "capturing groups "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:161
+msgid "coerce "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:145
+msgid "coerce_a"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:155
+msgid "coerce_s"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:606
+msgid "construct "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:695
+msgid "constructGenericType "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1982
+msgid "constructProp "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1426
+msgid "constructSuper "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:99
+msgid "convert_b"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:86
+msgid "convert_d"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:115
+msgid "convert_i"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:107
+msgid "convert_u"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:788 scripting/abc_codesynt.cpp:2252
+msgid "count "
+msgstr "计数"
+
+#: scripting/flashdisplay.cpp:507
+msgid "createEmptyMovieClip"
+msgstr ""
+
+#: scripting/abc.cpp:876
+msgid "dMultiname to String not yet implemented for this kind "
+msgstr "dMultiname到String在本类中尚未实现"
+
+#: scripting/abc_interpreter.cpp:1237
+msgid "debug"
+msgstr "调试"
+
+#: scripting/abc_codesynt.cpp:41
+msgid "debug_d "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:46
+msgid "debug_i "
+msgstr ""
+
+#: scripting/abc_interpreter.cpp:1259
+msgid "debugfile"
+msgstr ""
+
+#: scripting/abc_interpreter.cpp:1251
+msgid "debugline"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:478
+msgid "decrement"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:487
+msgid "decrement_i"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:785 scripting/abc_codesynt.cpp:2249
+msgid "default "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2398
+msgid "deleteProperty "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:450
+msgid "divide "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:442
+msgid "divide: HACK"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1363 scripting/abc_codesynt.cpp:3934
+#: scripting/abc_interpreter.cpp:1266
+msgid "dump "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1196
+msgid "dup: DONE"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1150
+msgid "equals "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1494
+msgid "findPropStrict "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1457
+msgid "findProperty "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:471
+msgid "getGlobalScope: "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1356
+msgid "getLex: "
+msgstr ""
+
+#: scripting/abc_interpreter.cpp:777 scripting/abc_interpreter.cpp:1214
+msgid "getLocal "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:171 scripting/abc_opcodes.cpp:176
+#: scripting/abc_opcodes.cpp:181
+msgid "getLocal["
+msgstr ""
+
+#: scripting/abc.cpp:306
+msgid "getMultinameRTData not yet implemented for this kind "
+msgstr "getMultinameRTData在本类型中尚未实现"
+
+#: scripting/abc_opcodes.cpp:385
+msgid "getProperty "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:374
+msgid "getProperty_i "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2427
+msgid "getScopeObject: "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:216
+msgid "getSlot "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1311
+msgid "getSuper "
+msgstr ""
+
+#: scripting/toplevel.cpp:1411
+msgid "getTimezoneOffset"
+msgstr ""
+
+#: backends/rendering.cpp:193
+msgid "glX not present"
+msgstr "glX不存在"
+
+#: scripting/abc_opcodes.cpp:1547
+msgid "greaterEquals"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1536
+msgid "greaterThan"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2060
+msgid "hasNext2 "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1928
+msgid "ifEq ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1968
+msgid "ifFalse ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1265
+msgid "ifGE ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1222
+msgid "ifGT ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1245
+msgid "ifLE ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:509
+msgid "ifLT ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:533
+msgid "ifLT_io "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:518
+msgid "ifLT_oi"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:545 scripting/abc_opcodes.cpp:558
+msgid "ifNE ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1275
+msgid "ifNGE ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1234
+msgid "ifNGT ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1255
+msgid "ifNLE ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:498
+msgid "ifNLT ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1946
+msgid "ifStrictEq "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1952
+msgid "ifStrictNE"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:859
+msgid "ifTrue ("
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1958
+msgid "in"
+msgstr "于"
+
+#: scripting/abc_opcodes.cpp:591
+msgid "incLocal_i "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:44
+msgid "increment"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2146
+msgid "increment_i"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1573
+msgid "initProperty "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1746
+msgid "isType "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1793
+msgid "isType on non classed object"
+msgstr "isType于非类对象"
+
+#: scripting/abc_opcodes.cpp:1807
+msgid "isTypelate"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1855
+msgid "isTypelate on non classed object"
+msgstr "isTypelate于非类对象"
+
+#: scripting/abc_opcodes.cpp:853
+msgid "jump "
+msgstr "转跳"
+
+#: scripting/abc_opcodes.cpp:951
+msgid "kill "
+msgstr "中止"
+
+#: scripting/abc_opcodes.cpp:1093 scripting/abc_opcodes.cpp:1104
+msgid "lShift "
+msgstr "左移位"
+
+#: scripting/abc_opcodes.cpp:123
+msgid "label"
+msgstr "标记"
+
+#: scripting/abc_opcodes.cpp:1558
+msgid "lessEquals"
+msgstr "小于等于"
+
+#: scripting/abc_opcodes.cpp:2346
+msgid "lessThan"
+msgstr "小于"
+
+#: scripting/abc_opcodes.cpp:128
+msgid "lookupswitch"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:872
+msgid "modulo "
+msgstr "同余"
+
+#: scripting/abc_opcodes.cpp:585
+msgid "multiply "
+msgstr "乘"
+
+#: scripting/abc_opcodes.cpp:575
+msgid "multiply_oi "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:225
+msgid "negate"
+msgstr "取负"
+
+#: scripting/abc_opcodes.cpp:2321
+msgid "newActivation"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2446
+msgid "newArray "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2440
+msgid "newCatch "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2216
+msgid "newClass "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2410
+msgid "newFunction "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2115
+msgid "newObject "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2180
+msgid "nextName"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2155
+msgid "nextValue"
+msgstr ""
+
+#: parsing/tags.cpp:1367 parsing/tags.cpp:1534
+msgid "no char to move at depth "
+msgstr "没有字符可供移动于深度"
+
+#: scripting/abc_opcodes.cpp:1141
+msgid "not"
+msgstr "非"
+
+#: scripting/abc_opcodes.cpp:1913
+msgid "not "
+msgstr "非"
+
+#: scripting/abc.cpp:1183
+msgid "not implement opcode 0x"
+msgstr "不实现opcode 0x"
+
+#: scripting/abc_opcodes.cpp:1968
+msgid "not taken"
+msgstr "未接受"
+
+#: scripting/abc_opcodes.cpp:498 scripting/abc_opcodes.cpp:509
+#: scripting/abc_opcodes.cpp:545 scripting/abc_opcodes.cpp:558
+#: scripting/abc_opcodes.cpp:859 scripting/abc_opcodes.cpp:1222
+#: scripting/abc_opcodes.cpp:1234 scripting/abc_opcodes.cpp:1245
+#: scripting/abc_opcodes.cpp:1255 scripting/abc_opcodes.cpp:1265
+#: scripting/abc_opcodes.cpp:1275 scripting/abc_opcodes.cpp:1928
+msgid "not taken)"
+msgstr "未接受)"
+
+#: scripting/abc.cpp:1890
+msgid "parsing s32"
+msgstr "解释s32"
+
+#: scripting/abc.cpp:1940 scripting/abc.cpp:1944
+msgid "parsing u30"
+msgstr "解释u30"
+
+#: scripting/abc.cpp:1865
+msgid "parsing u32 "
+msgstr "解释u32 "
+
+#: scripting/abc_opcodes.cpp:166
+msgid "pop: DONE"
+msgstr "弹出：DONE"
+
+#: scripting/abc_opcodes.cpp:2339
+msgid "popScope"
+msgstr ""
+
+#: thread_pool.cpp:72
+msgid "pthread_join failed in ~ThreadPool"
+msgstr "pthread_join于~ThreadPool失败"
+
+#: scripting/abc.cpp:989
+msgid "pthread_join in ABCVm failed"
+msgstr "pthread_join于ABCVm失败 "
+
+#: scripting/abc_opcodes.cpp:566
+msgid "pushByte "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:946
+msgid "pushDouble ["
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1207
+msgid "pushFalse"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:940
+msgid "pushInt ["
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1213
+msgid "pushNaN"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:139
+msgid "pushNull"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:464
+msgid "pushScope "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:201
+msgid "pushShort "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2434
+msgid "pushString "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1201
+msgid "pushTrue"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:934
+msgid "pushUInt ["
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:133
+msgid "pushUndefined"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:457
+msgid "pushWith "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1116
+msgid "rShift "
+msgstr ""
+
+#: scripting/toplevel.cpp:1971
+msgid "re: "
+msgstr ""
+
+#: scripting/abc_interpreter.cpp:640
+msgid "returnValue "
+msgstr ""
+
+#: scripting/abc_interpreter.cpp:633
+msgid "returnVoid"
+msgstr ""
+
+#: scripting/abc_interpreter.cpp:786 scripting/abc_interpreter.cpp:1226
+msgid "setLocal "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:186 scripting/abc_opcodes.cpp:191
+#: scripting/abc_opcodes.cpp:196
+msgid "setLocal["
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:62
+msgid "setProperty "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:78
+msgid "setProperty_i "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:207
+msgid "setSlot "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1290
+msgid "setSuper "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1187
+msgid "strictEquals"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:927
+msgid "subtract "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:902 scripting/abc_opcodes.cpp:919
+msgid "subtract: HACK"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:893
+msgid "subtract_do "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:909
+msgid "subtract_io "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:882
+msgid "subtract_oi "
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:2316
+msgid "swap"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3290
+msgid "synt add"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3187
+msgid "synt astypelate"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3597
+msgid "synt bitand"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3273
+msgid "synt bitnot"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3630
+msgid "synt bitor"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3652
+msgid "synt bitxor"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2546
+msgid "synt call"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2582
+msgid "synt callproperty"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2696
+msgid "synt callpropvoid"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2568
+msgid "synt callsuper"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2683
+msgid "synt callsupervoid"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3142
+msgid "synt checkfilter"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3152
+msgid "synt coerce"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3163
+msgid "synt coerce_a"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3177
+msgid "synt coerce_s"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2557
+msgid "synt construct"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2709
+msgid "synt constructgenerictype"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2670
+msgid "synt constructprop"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2659
+msgid "synt constructsuper"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3128
+msgid "synt convert_b"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3113
+msgid "synt convert_d"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3083
+msgid "synt convert_i"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3077
+msgid "synt convert_s"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3098
+msgid "synt convert_u"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3903
+msgid "synt debug"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3925
+msgid "synt debugfile"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3917
+msgid "synt debugline"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3231
+msgid "synt decrement"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3794
+msgid "synt decrement_i"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3028
+msgid "synt deleteproperty"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3447
+msgid "synt divide"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2408
+msgid "synt dup"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3675
+msgid "synt equals"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2815
+msgid "synt findproperty"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2783
+msgid "synt findpropstrict"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2761
+msgid "synt getdescendants"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2952
+msgid "synt getglobalscope"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2827
+msgid "synt getlex"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2885
+msgid "synt getlocal"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3836
+msgid "synt getlocal_n "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2971
+msgid "synt getproperty"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2960
+msgid "synt getscopeobject"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3039
+msgid "synt getslot"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1634
+msgid "synt getsuper"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3741
+msgid "synt greaterequals"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3728
+msgid "synt greaterthan"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2501
+msgid "synt hasnext2"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1912
+msgid "synt ifeq"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1880
+msgid "synt iffalse "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2131
+msgid "synt ifge"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2097
+msgid "synt ifgt"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2059
+msgid "synt ifle"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2019
+msgid "synt iflt "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1969
+msgid "synt ifne "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1788
+msgid "synt ifnge"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1755
+msgid "synt ifngt"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1723
+msgid "synt ifnle"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1684
+msgid "synt ifnlt"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2165
+msgid "synt ifstricteq"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2197
+msgid "synt ifstrictne"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1841
+msgid "synt iftrue"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3765
+msgid "synt in"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3811
+msgid "synt inclocal_i"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3208
+msgid "synt increment"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3777
+msgid "synt increment_i"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3017
+msgid "synt initproperty"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3754
+msgid "synt istypelate"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1825
+msgid "synt jump "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1658
+msgid "synt kill "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1676
+msgid "synt label"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3715
+msgid "synt lessequals"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3702
+msgid "synt lessthan"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:778 scripting/abc_codesynt.cpp:2240
+msgid "synt lookupswitch"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3517
+msgid "synt lshift"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3477
+msgid "synt modulo"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3404
+msgid "synt multiply"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3198
+msgid "synt negate"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2742
+msgid "synt newactivation"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2731
+msgid "synt newarray"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2772
+msgid "synt newcatch"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2750
+msgid "synt newclass"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2535
+msgid "synt newfunction"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2720
+msgid "synt newobject"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2307
+msgid "synt nextname"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2336
+msgid "synt nextvalue"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3259
+msgid "synt not"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2397
+msgid "synt pop"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2299
+msgid "synt popscope"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2349
+msgid "synt pushbyte"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2476
+msgid "synt pushdouble"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2381
+msgid "synt pushfalse"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2444
+msgid "synt pushint"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2389
+msgid "synt pushnan"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2320
+msgid "synt pushnull"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2493
+msgid "synt pushscope"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2361
+msgid "synt pushshort"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2433
+msgid "synt pushstring"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2373
+msgid "synt pushtrue"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2460
+msgid "synt pushuint"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2328
+msgid "synt pushundefined"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2291
+msgid "synt pushwith"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2630
+msgid "synt returnvalue"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2608
+msgid "synt returnvoid"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3541
+msgid "synt rshift"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2931
+msgid "synt setlocal "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3881
+msgid "synt setlocal_n "
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2838
+msgid "synt setproperty"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3052
+msgid "synt setslot"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1645
+msgid "synt setsuper"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3692
+msgid "synt strictequals"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3351
+msgid "synt subtract"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:2421
+msgid "synt swap"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:1609
+msgid "synt throw"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3249
+msgid "synt typeof"
+msgstr ""
+
+#: scripting/abc_codesynt.cpp:3562
+msgid "synt urshift"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1968
+msgid "taken"
+msgstr "已接受"
+
+#: scripting/abc_opcodes.cpp:498 scripting/abc_opcodes.cpp:509
+#: scripting/abc_opcodes.cpp:545 scripting/abc_opcodes.cpp:558
+#: scripting/abc_opcodes.cpp:859 scripting/abc_opcodes.cpp:1222
+#: scripting/abc_opcodes.cpp:1234 scripting/abc_opcodes.cpp:1245
+#: scripting/abc_opcodes.cpp:1255 scripting/abc_opcodes.cpp:1265
+#: scripting/abc_opcodes.cpp:1275 scripting/abc_opcodes.cpp:1928
+msgid "taken)"
+msgstr "已接受）"
+
+#: scripting/abc_opcodes.cpp:726
+msgid "typeOf"
+msgstr ""
+
+#: scripting/abc_opcodes.cpp:1126 scripting/abc_opcodes.cpp:1135
+msgid "urShift "
+msgstr ""
+
+#: backends/rendering.cpp:109
+msgid "~RenderThread this="
+msgstr ""

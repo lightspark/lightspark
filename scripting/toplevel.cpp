@@ -94,14 +94,14 @@ void Array::sinit(Class_base* c)
 	c->setMethodByQName("concat",AS3,Class<IFunction>::getFunction(_concat),true);
 	//c->setMethodByQName("every",AS3,Class<IFunction>::getFunction(every),true);
 	c->setMethodByQName("filter",AS3,Class<IFunction>::getFunction(filter),true);
-	//c->setMethodByQName("forEach",AS3,Class<IFunction>::getFunction(forEach),true);
+	c->setMethodByQName("forEach",AS3,Class<IFunction>::getFunction(forEach),true);
 	c->setMethodByQName("indexOf",AS3,Class<IFunction>::getFunction(indexOf),true);
+	c->setMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),true);
 	c->setMethodByQName("join",AS3,Class<IFunction>::getFunction(join),true);
-	//c->setMethodByQName("lastIndexOf",AS3,Class<IFunction>::getFunction(lastIndexOf),true);
 	//c->setMethodByQName("map",AS3,Class<IFunction>::getFunction(map),true);
 	c->setMethodByQName("pop",AS3,Class<IFunction>::getFunction(_pop),true);
 	c->setMethodByQName("push",AS3,Class<IFunction>::getFunction(_push),true);
-	//c->setMethodByQName("reverse",AS3,Class<IFunction>::getFunction(reverse),true);
+	c->setMethodByQName("reverse",AS3,Class<IFunction>::getFunction(reverse),true);
 	c->setMethodByQName("shift",AS3,Class<IFunction>::getFunction(shift),true);
 	//c->setMethodByQName("slice",AS3,Class<IFunction>::getFunction(slice),true);
 	//c->setMethodByQName("some",AS3,Class<IFunction>::getFunction(some),true);
@@ -194,6 +194,72 @@ ASFUNCTIONBODY(Array,_getLength)
 	return abstract_i(th->data.size());
 }
 
+ASFUNCTIONBODY(Array,forEach)
+{
+	assert_and_throw(argslen == 1 || argslen == 2);
+	Array* th=static_cast<Array*>(obj);
+	IFunction* f = static_cast<IFunction*>(args[0]);
+	ASObject* params[3];
+
+	for(unsigned int i=0; i < th->data.size(); i++)
+	{
+		params[0] = th->data[i].data;
+		th->data[i].data->incRef();
+		params[1] = abstract_i(i);
+		params[2] = th;
+		th->incRef();
+
+		if( argslen == 1 )
+		{
+			f->call(new Null, params, 3);
+		}
+		else
+		{
+			args[1]->incRef();
+			f->call(args[1], params, 3);
+		}
+	}
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Array, _reverse)
+{
+	Array* th = static_cast<Array*>(obj);
+
+	reverse(th->data.begin(), th->data.end());
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Array,lastIndexOf)
+{
+	Array* th=static_cast<Array*>(obj);
+	assert_and_throw(argslen==1 || argslen==2);
+	int ret=-1;
+	ASObject* arg0=args[0];
+
+	int unsigned i = th->data.size()-1;
+	if(argslen == 2)
+	{
+		i = args[1]->toInt();
+	}
+
+	DATA_TYPE dtype = th->data[i].type;
+	for(;i>=0;i--)
+	{
+		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
+		dtype = th->data[i].type;
+		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
+			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
+		{
+			ret=i;
+			break;
+		}
+	}
+	return abstract_i(ret);
+}
+
 ASFUNCTIONBODY(Array,shift)
 {
 	Array* th=static_cast<Array*>(obj);
@@ -256,13 +322,23 @@ ASFUNCTIONBODY(Array,join)
 ASFUNCTIONBODY(Array,indexOf)
 {
 	Array* th=static_cast<Array*>(obj);
-	assert_and_throw(argslen==1);
+	assert_and_throw(argslen==1 || argslen==2);
 	int ret=-1;
 	ASObject* arg0=args[0];
-	for(unsigned int i=0;i<th->data.size();i++)
+
+	int unsigned i = 0;
+	if(argslen == 2)
 	{
-		assert_and_throw(th->data[i].type==DATA_OBJECT);
-		if(ABCVm::strictEqualImpl(th->data[i].data,arg0))
+		i = args[1]->toInt();
+	}
+
+	DATA_TYPE dtype;
+	for(;i<th->data.size();i++)
+	{
+		dtype = th->data[i].type;
+		assert_and_throw(dtype==DATA_OBJECT || dtype==DATA_INT);
+		if((dtype == DATA_OBJECT && ABCVm::strictEqualImpl(th->data[i].data,arg0)) ||
+			(dtype == DATA_INT && arg0->toInt() == th->data[i].data_i))
 		{
 			ret=i;
 			break;
@@ -700,7 +776,7 @@ ASString::ASString(const char* s, uint32_t len):data(s, len)
 ASFUNCTIONBODY(ASString,_constructor)
 {
 	ASString* th=static_cast<ASString*>(obj);
-	if(args && args[0])
+	if(args && argslen==1)
 		th->data=args[0]->toString().raw_buf();
 	return NULL;
 }

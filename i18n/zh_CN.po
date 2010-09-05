@@ -1003,7 +1003,7 @@ msgstr "结束创建"
 #: scripting/abc_opcodes.cpp:1389 scripting/abc_opcodes.cpp:1408
 #: scripting/abc_opcodes.cpp:2007
 msgid "End of deferred definition of property "
-msgstr "结束延迟定义属性
+msgstr "结束延迟定义属性"
 
 #: scripting/abc.cpp:1139 scripting/abc_opcodes.cpp:2292
 msgid "End of deferred init of class "

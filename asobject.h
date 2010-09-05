@@ -62,13 +62,15 @@ struct variable
 	nsNameAndKind ns;
 	obj_var var;
 	TRAIT_KIND kind;
-	variable(const nsNameAndKind& _ns, TRAIT_KIND _k=OWNED_TRAIT):ns(_ns),kind(_k){}
+	variable(const nsNameAndKind& _ns, TRAIT_KIND _k):ns(_ns),kind(_k){}
 };
 
 class variables_map
 {
 //ASObject knows how to use its variable_map
 friend class ASObject;
+//Class_base uses the internal data to handle borrowed variables
+friend class Class_base;
 //Useful when linking
 friend class InterfaceClass;
 //ABCContext uses findObjVar when building and linking traits

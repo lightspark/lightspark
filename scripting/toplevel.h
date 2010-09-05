@@ -72,6 +72,7 @@ public:
 	Class_base(const QName& name);
 	~Class_base();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
+	ASObject* getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL)
 	{
 		ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, base);

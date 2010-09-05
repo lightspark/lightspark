@@ -219,6 +219,10 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns
 	var_iterator ret=ret_begin;
 	for(;ret!=ret_end;ret++)
 	{
+		if(ret->second.kind==BORROWED_TRAIT && !borrowedMode)
+			continue;
+		else if(ret->second.kind==OWNED_TRAIT && borrowedMode)
+			continue;
 		if(ret->second.ns==ns)
 			return &ret->second.var;
 	}
@@ -226,7 +230,8 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns
 	//Name not present, insert it if we have to create it
 	if(create)
 	{
-		var_iterator inserted=Variables.insert(ret_begin,make_pair(n, variable(ns) ) );
+		//borrowedMode is used to create borrowed traits
+		var_iterator inserted=Variables.insert(ret_begin,make_pair(n, variable(ns, (borrowedMode)?BORROWED_TRAIT:OWNED_TRAIT) ) );
 		return &inserted->second.var;
 	}
 	else
@@ -236,20 +241,20 @@ obj_var* variables_map::findObjVar(const tiny_string& n, const nsNameAndKind& ns
 bool ASObject::hasPropertyByMultiname(const multiname& name)
 {
 	check();
-	//TODO: check what happens with BORROWED_TRAITS
 	//We look in all the object's levels
 	bool ret=(Variables.findObjVar(name, false, false)!=NULL);
-	if(!ret) //Try the classes
+	if(!ret) //Ask the prototype chain for borrowed traits
 	{
 		Class_base* cur=prototype;
 		while(cur)
 		{
-			ret=(cur->Variables.findObjVar(name, false, false)!=NULL);
+			ret=(cur->Variables.findObjVar(name, false, true)!=NULL);
 			if(ret)
 				break;
 			cur=cur->super;
 		}
 	}
+	//Must not ask for non borrowed traits as static class member are not valid
 	return ret;
 }
 
@@ -261,12 +266,12 @@ void ASObject::setMethodByQName(const tiny_string& name, const nsNameAndKind& ns
 #endif
 	assert(getObjectType()==T_CLASS);
 	obj_var* obj=Variables.findObjVar(name,ns,true,isBorrowed);
-/*	if(obj->var!=NULL)
+	if(obj->var!=NULL)
 	{
 		//This happens when interfaces are declared multiple times
 		assert_and_throw(o==obj->var);
 		return;
-	}*/
+	}
 	obj->var=o;
 }
 
@@ -323,7 +328,7 @@ void ASObject::deleteVariableByMultiname(const multiname& name)
 {
 	assert_and_throw(ref_count>0);
 
-	//TODO: check what happens with BORROWED_TRAITS
+	//Do not ask for borrowed traits in the protoype chain as those are undeletable
 	obj_var* obj=Variables.findObjVar(name,false,false);
 	if(obj==NULL)
 		return;
@@ -516,11 +521,15 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create, bool bor
 	//Otherwise we are just doing equal_range
 	const var_iterator ret_end=Variables.upper_bound(name);
 
+	assert_and_throw(!mname.ns.empty());
 	var_iterator ret=ret_begin;
 	for(;ret!=ret_end;ret++)
 	{
+		if(ret->second.kind==BORROWED_TRAIT && !borrowedMode)
+			continue;
+		else if(ret->second.kind==OWNED_TRAIT && borrowedMode)
+			continue;
 		//Check if one the namespace is already present
-		assert_and_throw(!mname.ns.empty());
 		//We can use binary search, as the namespace are ordered
 		if(binary_search(mname.ns.begin(),mname.ns.end(),ret->second.ns))
 			return &ret->second.var;
@@ -535,10 +544,10 @@ obj_var* variables_map::findObjVar(const multiname& mname, bool create, bool bor
 			//Hack, insert with empty name
 			//Here the object MUST exist
 			var_iterator inserted=Variables.insert(ret,make_pair(name, 
-						variable(nsNameAndKind("",NAMESPACE)) ) );
+						variable(nsNameAndKind("",NAMESPACE), (borrowedMode)?BORROWED_TRAIT:OWNED_TRAIT)));
 			return &inserted->second.var;
 		}
-		var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0]) ) );
+		var_iterator inserted=Variables.insert(ret,make_pair(name, variable(mname.ns[0], (borrowedMode)?BORROWED_TRAIT:OWNED_TRAIT)));
 		return &inserted->second.var;
 	}
 	else
@@ -666,8 +675,11 @@ ASObject* ASObject::getVariableByMultiname(const multiname& name, bool skip_impl
 	}
 	else if(prototype && getActualPrototype())
 	{
-		//It has not been found yet, ask the prototype
-		ASObject* ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,this);
+		//First of all see if the prototype chain contains some borrowed properties
+		ASObject* ret=getActualPrototype()->getBorrowedVariableByMultiname(name,skip_impl,this);
+  		//If it has not been found yet, ask the prototype
+		if(!ret)
+			ret=getActualPrototype()->getVariableByMultiname(name,skip_impl,this);
 		return ret;
 	}
 

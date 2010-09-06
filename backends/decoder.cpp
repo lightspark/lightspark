@@ -187,7 +187,7 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 #else
 	int ret=avcodec_decode_video(codecContext, frameIn, &frameOk, data, datalen);
 #endif
-	assert_and_throw(ret==datalen);
+	assert_and_throw(ret==(int)datalen);
 	if(frameOk)
 	{
 		assert(codecContext->pix_fmt==PIX_FMT_YUV420P);

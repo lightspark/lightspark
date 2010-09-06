@@ -133,12 +133,12 @@ public:
 	bool isEmpty() const { return empty; }
 	T& front()
 	{
-		assert(!empty);
+		assert(!this->empty);
 		return queue[bufferHead];
 	}
 	const T& front() const
 	{
-		assert(!empty);
+		assert(!this->empty);
 		return queue[bufferHead];
 	}
 	bool nonBlockingPopFront()

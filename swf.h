@@ -34,7 +34,8 @@
 #include "scripting/flashsystem.h"
 #include "timer.h"
 #include "backends/graphics.h"
-#include "backends/sound.h"
+#include "backends/audio.h"
+#include "backends/pluginmanager.h"
 #include "backends/urlutils.h"
 
 #include "platforms/pluginutils.h"
@@ -251,9 +252,10 @@ public:
 	
 	Stage* stage;
 	ABCVm* currentVm;
-#ifdef ENABLE_SOUND
-	SoundManager* soundManager;
-#endif
+
+	PluginManager *pluginManager;
+	AudioManager *audioManager;
+
 	//Application starting time in milliseconds
 	uint64_t startTime;
 

@@ -484,26 +484,21 @@ void Matrix::sinit(Class_base* c)
 
 ASFUNCTIONBODY(Matrix,_constructor)
 {
+	assert_and_throw(argslen <= 6);
 	ASObject::_constructor(obj,NULL,0);
 	
 	Matrix* th=static_cast<Matrix*>(obj);
 	
 	//Identity matrix
-	if(argslen!=6)
-	{
-		th->a = 1.0; th->c = 0.0; th->tx = 0.0;
-		th->b = 0.0; th->d = 1.0; th->ty = 0.0;
-	}
-	else
-	{
-		//Initialize from args
-		th->a = args[0]->toNumber();
-		th->b = args[0]->toNumber();
-		th->c = args[0]->toNumber();
-		th->d = args[0]->toNumber();
-		th->tx = args[0]->toNumber();
-		th->ty = args[0]->toNumber();
-	}
+	th->a = 1.0; th->c = 0.0; th->tx = 0.0;
+	th->b = 0.0; th->d = 1.0; th->ty = 0.0;
+	
+	if (argslen >= 1) th->a = args[0]->toNumber();
+	if (argslen >= 2) th->a = args[1]->toNumber();
+	if (argslen >= 3) th->a = args[2]->toNumber();
+	if (argslen >= 4) th->a = args[3]->toNumber();
+	if (argslen >= 5) th->a = args[4]->toNumber();
+	if (argslen == 6) th->a = args[5]->toNumber();
 
 	return NULL;
 }

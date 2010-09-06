@@ -327,7 +327,7 @@ std::string URLInfo::decode(const std::string& u, ENCODING type)
 			stringBuf = u[i];
 			stringBuf += u[i+1];
 			stringBuf += u[i+2];
-			std::transform(stringBuf.begin(), stringBuf.end(), stringBuf.begin(), toupper);
+			std::transform(stringBuf.begin(), stringBuf.end(), stringBuf.begin(), ::toupper);
 
 			//ENCODE_SPACES only decodes %20 to space
 			if(type == ENCODE_SPACES && stringBuf == "%20")

@@ -179,9 +179,9 @@ SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p)
 		parseThread->root=this;
 	threadPool=new ThreadPool(this);
 	timerThread=new TimerThread(this);
-#ifdef ENABLE_SOUND
-	soundManager=new SoundManager;
-#endif
+	
+	pluginManager = new PluginManager;
+	audioManager=new AudioManager(pluginManager);
 	loaderInfo=Class<LoaderInfo>::getInstanceS();
 	stage=Class<Stage>::getInstanceS();
 	parent=stage;
@@ -296,6 +296,11 @@ void SystemState::setParameters(ASObject* p)
 void SystemState::stopEngines()
 {
 	//Stops the thread that is parsing us
+	delete audioManager;
+	audioManager=NULL;
+	delete pluginManager;
+	pluginManager=NULL;
+	
 	if(parseThread)
 	{
 		parseThread->stop();
@@ -311,10 +316,6 @@ void SystemState::stopEngines()
 		currentVm->shutdown();
 	delete timerThread;
 	timerThread=NULL;
-#ifdef ENABLE_SOUND
-	delete soundManager;
-	soundManager=NULL;
-#endif
 }
 
 SystemState::~SystemState()

@@ -379,7 +379,8 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 		return new Undefined;
 }
 
-NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),soundStreamId(0),streamTime(0),paused(false),soundPaused(false),closed(true)
+//NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),audioPaused(false),closed(true)
+NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),closed(true)
 {
 	sem_init(&mutex,0,1);
 }
@@ -473,7 +474,7 @@ ASFUNCTIONBODY(NetStream,play)
 
 	//Reset the paused states
 	th->paused = false;
-	th->soundPaused = false;
+//	th->audioPaused = false;
 
 	assert_and_throw(argslen==1);
 	const tiny_string& arg0=args[0]->toString();
@@ -588,34 +589,31 @@ void NetStream::tick()
 	if(paused)
 	{
 		//If sound is enabled, pause the sound stream too. This will stop all time from running.
-#if ENABLE_SOUND
-		if(!soundPaused)
+//		if(!audioPaused)
+		if(!audioStream->paused())
 		{
-			sys->soundManager->pauseStream(soundStreamId);
-			soundPaused = true;
+			sys->audioManager->pauseStreamPlugin(audioStream);
+//			audioPaused = true;
 		}
-#endif
 		return;
 	}
+
 	//If sound is enabled, and the stream is not paused anymore, resume the sound stream. This will restart time.
-#if ENABLE_SOUND
-	else if(soundPaused)
+//	else if(audioPaused)
+	else if(audioStream->paused())
 	{
-		sys->soundManager->resumeStream(soundStreamId);
-		soundPaused = false;
+		sys->audioManager->resumeStreamPlugin(audioStream);
+//		audioPaused = false;
 	}
-#endif
 
 	//Advance video and audio to current time, follow the audio stream time
 	//No mutex needed, ticking can happen only when stream is completely ready
-#ifdef ENABLE_SOUND
-	if(soundStreamId && sys->soundManager->isTimingAvailable())
+	if(audioStream && sys->audioManager->isTimingAvailablePlugin())
 	{
 		assert(audioDecoder);
-		streamTime=sys->soundManager->getPlayedTime(soundStreamId);
+		streamTime=audioStream->getPlayedTime();
 	}
 	else
-#endif
 	{
 		streamTime+=1000/frameRate;
 		audioDecoder->skipAll();
@@ -700,7 +698,7 @@ void NetStream::execute()
 					{
 						AudioDataTag tag(s);
 						prevSize=tag.getTotalLen();
-#ifdef ENABLE_SOUND
+
 						if(audioDecoder==NULL)
 						{
 							audioCodec=tag.SoundFormat;
@@ -730,18 +728,17 @@ void NetStream::execute()
 									throw RunTimeException("Unsupported SoundFormat");
 							}
 							if(audioDecoder->isValid())
-								soundStreamId=sys->soundManager->createStream(audioDecoder);
+								audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
 						}
 						else
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
 							decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
-							if(soundStreamId==0 && audioDecoder->isValid())
-								soundStreamId=sys->soundManager->createStream(audioDecoder);
+							if(audioStream==0 && audioDecoder->isValid())
+								audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
 							//Adjust timing
 							decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
 						}
-#endif
 						break;
 					}
 					case 9:
@@ -812,7 +809,7 @@ void NetStream::execute()
 						onMetaDataName.name_s="onMetaData";
 						onMetaDataName.ns.push_back(nsNameAndKind("",NAMESPACE));
 						ASObject* callback = client->getVariableByMultiname(onMetaDataName);
-						if(callback->getObjectType() == T_FUNCTION)
+						if(callback && callback->getObjectType() == T_FUNCTION)
 						{
 							ASObject* callbackArgs[1];
 							ASObject* metadata = Class<ASObject>::getInstanceS();
@@ -908,14 +905,13 @@ void NetStream::execute()
 	if(videoDecoder)
 		delete videoDecoder;
 	videoDecoder=NULL;
-#if ENABLE_SOUND
-	if(soundStreamId)
-		sys->soundManager->freeStream(soundStreamId);
+	if(audioStream)
+		sys->audioManager->freeStreamPlugin(audioStream);
 	if(audioDecoder)
 		delete audioDecoder;
-	soundStreamId = 0;
+//	soundStreamId = 0;
 	audioDecoder=NULL;
-#endif
+
 	sem_post(&mutex);
 }
 

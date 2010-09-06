@@ -53,7 +53,7 @@ protected:
 public:
 	Decoder():status(PREINIT),flushing(false),flushed(0){}
 	virtual ~Decoder(){}
-	bool isValid() const
+	bool isValid() const DLL_PUBLIC
 	{
 		return status>=VALID;
 	}
@@ -169,6 +169,7 @@ public:
 };
 #endif
 
+
 class AudioDecoder: public Decoder
 {
 protected:
@@ -203,7 +204,7 @@ public:
 	AudioDecoder():sampleRate(0){}
 	virtual ~AudioDecoder(){};
 	virtual uint32_t decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
-	bool hasDecodedFrames() const
+	bool hasDecodedFrames() const DLL_PUBLIC
 	{
 		return !samplesBuffer.isEmpty();
 	}
@@ -212,7 +213,7 @@ public:
 	{
 		return sampleRate*channelCount*2/1000;
 	}
-	uint32_t copyFrame(int16_t* dest, uint32_t len);
+	uint32_t copyFrame(int16_t* dest, uint32_t len) DLL_PUBLIC;
 	/**
 	  	Skip samples until the given time
 
@@ -223,7 +224,7 @@ public:
 	/**
 	  	Skip all the samples
 	*/
-	void skipAll();
+	void skipAll() DLL_PUBLIC;
 	bool discardFrame();
 	void setFlushing()
 	{

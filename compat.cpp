@@ -17,9 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef WIN32
-#include <unistd.h>
-#include <time.h>
+#if defined WIN32
+  #include <windows.h>
+#else
+  #include <unistd.h>
+  #include <time.h>
+  #include <dlfcn.h>
 #include <sys/wait.h>
 #endif
 
@@ -60,6 +63,48 @@ uint64_t compat_msectiming()
 	clock_gettime(CLOCK_MONOTONIC,&t);
 	return (t.tv_sec*1000 + t.tv_nsec/1000000);
 #endif
+}
+
+HMODULE LoadLib(const string filename)
+{
+  HMODULE ret;
+#if defined WIN32
+    ret = LoadLibrary(filename.c_str());
+#else
+  dlerror(); //clearing any remaining error
+  ret = dlopen(filename.c_str(), RTLD_LAZY);
+  if(!ret)
+  {
+    cerr << "Cannot open plugin: " << dlerror() << endl;
+  }
+#endif
+  return ret;
+}
+
+void *ExtractLibContent(HMODULE hLib, string WhatToExtract)
+{
+  void *ret;
+#if defined WIN32
+  ret = GetProcAdress(hLib, WhatToExtract.c_str());
+#else
+  dlerror(); //clearing any remaining error
+  ret = dlsym(hLib, WhatToExtract.c_str());
+  if(!ret)
+  {
+    cerr << "Cannot load symbol: " << dlerror() << endl;
+  }
+#endif
+  return ret;
+}
+
+void CloseLib(HMODULE hLib)
+{
+  #if defined WIN32
+    FreeLibrary(hLib);
+  #else
+    dlclose(hLib);
+  #endif
+  hLib = NULL;
 }
 
 

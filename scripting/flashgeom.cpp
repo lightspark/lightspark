@@ -425,10 +425,9 @@ ASFUNCTIONBODY(Point,offset)
 	assert_and_throw(argslen==2);
 	number_t dx = args[0]->toNumber();
 	number_t dy = args[1]->toNumber();
-	Point* ret=Class<Point>::getInstanceS();
-	ret->x = th->x + dx;
-	ret->y = th->y + dy;
-	return ret;
+	th->x += dx;
+	th->y += dy;
+	return NULL;
 }
 
 ASFUNCTIONBODY(Point,polar)
@@ -479,6 +478,10 @@ void Matrix::sinit(Class_base* c)
 	c->setMethodByQName("translate","",Class<IFunction>::getFunction(translate),true);
 }
 
+/**
+ * NOTE: Many of these functions are wrong. They replace the current values instead of multiplying them out.
+ */
+
 ASFUNCTIONBODY(Matrix,_constructor)
 {
 	ASObject::_constructor(obj,NULL,0);
@@ -489,7 +492,7 @@ ASFUNCTIONBODY(Matrix,_constructor)
 	if(argslen!=6)
 	{
 		th->a = 1.0; th->c = 0.0; th->tx = 0.0;
-		th->b = 0.0; th->d = 0.0; th->ty = 0.0;
+		th->b = 0.0; th->d = 1.0; th->ty = 0.0;
 	}
 	else
 	{
@@ -610,7 +613,7 @@ ASFUNCTIONBODY(Matrix,identity)
 	assert_and_throw(argslen==0);
 	
 	th->a = 1.0; th->c = 0.0; th->tx = 0.0;
-	th->b = 0.0; th->d = 0.0; th->ty = 0.0;
+	th->b = 0.0; th->d = 1.0; th->ty = 0.0;
 		
 	return NULL;
 }
@@ -622,7 +625,7 @@ ASFUNCTIONBODY(Matrix,rotate)
 	double angle = args[0]->toNumber();
 	th->a = ::cos(angle); th->c = -::sin(angle); th->tx = 0.0;
 	th->b = ::sin(angle); th->d =  ::cos(angle); th->ty = 0.0;
-		
+
 	return NULL;
 }
 

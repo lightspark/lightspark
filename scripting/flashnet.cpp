@@ -812,7 +812,7 @@ void NetStream::execute()
 						onMetaDataName.name_s="onMetaData";
 						onMetaDataName.ns.push_back(nsNameAndKind("",NAMESPACE));
 						ASObject* callback = client->getVariableByMultiname(onMetaDataName);
-						if(callback->getObjectType() == T_FUNCTION)
+						if(callback && callback->getObjectType() == T_FUNCTION)
 						{
 							ASObject* callbackArgs[1];
 							ASObject* metadata = Class<ASObject>::getInstanceS();

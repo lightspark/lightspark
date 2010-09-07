@@ -188,8 +188,6 @@ SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p)
 	startTime=compat_msectiming();
 	
 	setPrototype(Class<MovieClip>::getClass());
-
-	setOnStage(true);
 }
 
 void SystemState::setDownloadedPath(const tiny_string& p)
@@ -616,6 +614,8 @@ void SystemState::createEngines()
 		if(renderRate)
 			startRenderTicks();
 	}
+	//Now that there is something to actually render the contents add the SystemState to the stage
+	setOnStage(true);
 	sem_post(&mutex);
 }
 

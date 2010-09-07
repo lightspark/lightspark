@@ -948,11 +948,8 @@ void DisplayObject::invalidate()
 	//As the transformation is arbitrary we have to check all the four vertices
 	number_t coords[8];
 	localToGlobal(xmin,ymin,coords[0],coords[1]);
-	number_t x2,y2;
 	localToGlobal(xmin,ymax,coords[2],coords[3]);
-	number_t x3,y3;
 	localToGlobal(xmax,ymax,coords[4],coords[5]);
-	number_t x4,y4;
 	localToGlobal(xmax,ymin,coords[6],coords[7]);
 	//Now find out the minimum and maximum that represent the complete bounding rect
 	number_t minx=coords[6];
@@ -970,6 +967,9 @@ void DisplayObject::invalidate()
 		else if(coords[i+1]>maxy)
 			maxy=coords[i+1];
 	}
+	//Allocate a texture for the given size
+	cachedTex=sys->getRenderThread()->allocateTexture(maxx-minx,maxy-miny,false);
+	
 }
 
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
@@ -990,6 +990,7 @@ void DisplayObject::setRoot(RootMovieClip* r)
 
 void DisplayObject::setOnStage(bool staged)
 {
+	//TODO: When removing from stage released the cachedTex
 	__asm__("int $3");
 	if(onStage==false)
 		invalidate();

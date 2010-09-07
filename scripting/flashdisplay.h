@@ -28,6 +28,7 @@
 #include "flashutils.h"
 #include "thread_pool.h"
 #include "backends/geometry.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {
@@ -49,6 +50,7 @@ private:
 	bool onStage;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 protected:
+	void invalidate();
 	MATRIX getMatrix() const;
 	void valFromMatrix();
 	RootMovieClip* root;
@@ -58,6 +60,7 @@ protected:
 	bool isSimple() const;
 	float alpha;
 	bool visible;
+	TextureChunk cachedTex;
 public:
 	int Depth;
 	tiny_string name;

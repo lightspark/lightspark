@@ -424,11 +424,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 {
 	if(stream->pdata)
-	{
 		cerr << "Destroy " << stream->pdata << endl;
-		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
-		dl->terminate();
-	}
 	else
 		LOG(LOG_NO_INFO, _("DestroyStream on main stream"));
 	return NPERR_NO_ERROR;
@@ -436,7 +432,7 @@ NPError nsPluginInstance::DestroyStream(NPStream *stream, NPError reason)
 
 void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyData)
 {
-	NPDownloader* dl=(NPDownloader*)notifyData;
+	NPDownloader* dl=static_cast<NPDownloader*>(notifyData);
 	cout << "URLnotify " << url << endl;
 	//Notify our downloader of what happened
 	switch(reason)
@@ -444,6 +440,7 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 		case NPRES_DONE:
 			cout << "Done" <<endl;
 			dl->setFinished();
+			dl->terminate();
 			break;
 		case NPRES_USER_BREAK:
 			cout << "User Break" <<endl;

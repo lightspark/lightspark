@@ -50,6 +50,12 @@ public:
 	ASFUNCTION(_setPosition);
 	ASFUNCTION(readBytes);
 
+	/**
+		Get ownership over the passed buffer
+		@param buf Pointer to the buffer to acquire, ownership and delete authority is acquired
+		@param bufLen Lenght of the buffer
+		@pre buf must be allocated using new[]
+	*/
 	void acquireBuffer(uint8_t* buf, int bufLen);
 	uint8_t* getBuffer(unsigned int size);
 

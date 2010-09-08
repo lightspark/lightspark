@@ -75,6 +75,8 @@ private:
 	virtual pos_type seekoff(off_type, std::ios_base::seekdir, std::ios_base::openmode);
 	//Seeks to relative position
 	virtual pos_type seekpos(pos_type, std::ios_base::openmode);
+	//Helper to get the current offset
+	pos_type getOffset() const;
 protected:
 	sem_t mutex;
 	//Signals termination of the download
@@ -91,7 +93,7 @@ protected:
 
 	//File length (can change in certain cases, resulting in reallocation of the buffer (non-cached))
 	uint32_t len;
-	//Amount of data received yet
+	//Amount of data already received
 	uint32_t tail;
 
 	//Cache filename

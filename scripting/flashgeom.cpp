@@ -493,12 +493,18 @@ ASFUNCTIONBODY(Matrix,_constructor)
 	th->a = 1.0; th->c = 0.0; th->tx = 0.0;
 	th->b = 0.0; th->d = 1.0; th->ty = 0.0;
 	
-	if (argslen >= 1) th->a = args[0]->toNumber();
-	if (argslen >= 2) th->a = args[1]->toNumber();
-	if (argslen >= 3) th->a = args[2]->toNumber();
-	if (argslen >= 4) th->a = args[3]->toNumber();
-	if (argslen >= 5) th->a = args[4]->toNumber();
-	if (argslen == 6) th->a = args[5]->toNumber();
+	if (argslen >= 1)
+		th->a = args[0]->toNumber();
+	if (argslen >= 2)
+		th->b = args[1]->toNumber();
+	if (argslen >= 3)
+		th->c = args[2]->toNumber();
+	if (argslen >= 4)
+		th->d = args[3]->toNumber();
+	if (argslen >= 5)
+		th->tx = args[4]->toNumber();
+	if (argslen == 6)
+		th->ty = args[5]->toNumber();
 
 	return NULL;
 }

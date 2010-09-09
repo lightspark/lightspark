@@ -379,8 +379,8 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 		return new Undefined;
 }
 
-//NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),audioPaused(false),closed(true)
-NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),paused(false),closed(true)
+NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),
+		paused(false),closed(true)
 {
 	sem_init(&mutex,0,1);
 }

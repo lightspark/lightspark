@@ -310,8 +310,8 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 					xmax=txmax;
 					ymin=tymin;
 					ymax=tymax;
+					ret=true;
 				}
-				ret=true;
 			}
 		}
 	}
@@ -324,7 +324,7 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 			{
 				xmin = imin(xmin,txmin);
 				xmax = imax(xmax,txmax);
-				ymin = imin(ymin,txmin);
+				ymin = imin(ymin,tymin);
 				ymax = imax(ymax,tymax);
 			}
 			else

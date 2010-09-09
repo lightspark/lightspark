@@ -83,11 +83,13 @@ Downloader::~Downloader()
 	sem_destroy(&terminated);
 }
 
-Downloader::Downloader():allowBufferRealloc(false),cached(false),waiting(false),hasTerminated(false),failed(false),finished(false),buffer(NULL),len(0),tail(0),keepCache(false)
+Downloader::Downloader():allowBufferRealloc(false),cached(false),waiting(false),hasTerminated(false),failed(false),finished(false),buffer(NULL),len(0),
+	tail(0),cachePos(0),cacheSize(0),keepCache(false)
 {
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
 	sem_init(&terminated,0,0);
+	setg(NULL,NULL,NULL);
 }
 
 void Downloader::stop()
@@ -129,6 +131,7 @@ void Downloader::setFinished()
 
 void Downloader::setLen(uint32_t l)
 {
+	sem_wait(&mutex);
 	len=l;
 	if(cached && !cache.is_open())
 	{
@@ -180,6 +183,7 @@ void Downloader::setLen(uint32_t l)
 			assert_and_throw(buffer==NULL);
 		}
 	}
+	sem_post(&mutex);
 }
 
 void Downloader::append(uint8_t* buf, uint32_t added)

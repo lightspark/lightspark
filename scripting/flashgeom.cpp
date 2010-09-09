@@ -425,10 +425,9 @@ ASFUNCTIONBODY(Point,offset)
 	assert_and_throw(argslen==2);
 	number_t dx = args[0]->toNumber();
 	number_t dy = args[1]->toNumber();
-	Point* ret=Class<Point>::getInstanceS();
-	ret->x = th->x + dx;
-	ret->y = th->y + dy;
-	return ret;
+	th->x += dx;
+	th->y += dy;
+	return NULL;
 }
 
 ASFUNCTIONBODY(Point,polar)
@@ -479,28 +478,27 @@ void Matrix::sinit(Class_base* c)
 	c->setMethodByQName("translate","",Class<IFunction>::getFunction(translate),true);
 }
 
+/**
+ * NOTE: Many of these functions are wrong. They replace the current values instead of multiplying them out.
+ */
+
 ASFUNCTIONBODY(Matrix,_constructor)
 {
+	assert_and_throw(argslen <= 6);
 	ASObject::_constructor(obj,NULL,0);
 	
 	Matrix* th=static_cast<Matrix*>(obj);
 	
 	//Identity matrix
-	if(argslen!=6)
-	{
-		th->a = 1.0; th->c = 0.0; th->tx = 0.0;
-		th->b = 0.0; th->d = 0.0; th->ty = 0.0;
-	}
-	else
-	{
-		//Initialize from args
-		th->a = args[0]->toNumber();
-		th->b = args[0]->toNumber();
-		th->c = args[0]->toNumber();
-		th->d = args[0]->toNumber();
-		th->tx = args[0]->toNumber();
-		th->ty = args[0]->toNumber();
-	}
+	th->a = 1.0; th->c = 0.0; th->tx = 0.0;
+	th->b = 0.0; th->d = 1.0; th->ty = 0.0;
+	
+	if (argslen >= 1) th->a = args[0]->toNumber();
+	if (argslen >= 2) th->a = args[1]->toNumber();
+	if (argslen >= 3) th->a = args[2]->toNumber();
+	if (argslen >= 4) th->a = args[3]->toNumber();
+	if (argslen >= 5) th->a = args[4]->toNumber();
+	if (argslen == 6) th->a = args[5]->toNumber();
 
 	return NULL;
 }
@@ -610,7 +608,7 @@ ASFUNCTIONBODY(Matrix,identity)
 	assert_and_throw(argslen==0);
 	
 	th->a = 1.0; th->c = 0.0; th->tx = 0.0;
-	th->b = 0.0; th->d = 0.0; th->ty = 0.0;
+	th->b = 0.0; th->d = 1.0; th->ty = 0.0;
 		
 	return NULL;
 }
@@ -622,7 +620,7 @@ ASFUNCTIONBODY(Matrix,rotate)
 	double angle = args[0]->toNumber();
 	th->a = ::cos(angle); th->c = -::sin(angle); th->tx = 0.0;
 	th->b = ::sin(angle); th->d =  ::cos(angle); th->ty = 0.0;
-		
+
 	return NULL;
 }
 

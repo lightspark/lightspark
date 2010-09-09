@@ -95,6 +95,7 @@ public:
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION(_constructor);
+	void getIteratorByMultiname(const multiname& name, std::map<ASObject*, ASObject*>::iterator& iter);
 	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name)
 	{

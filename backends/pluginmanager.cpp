@@ -22,7 +22,6 @@
 #include <iostream>
 #include <list>
 #include <boost/filesystem.hpp>
-#include <pcrecpp.h>
 #include <pcre.h>
 #include "../logger.h"
 #include "../exceptions.h"

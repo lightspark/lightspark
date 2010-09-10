@@ -1410,7 +1410,7 @@ TRISTATE Number::isLess(ASObject* o)
 tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];
-	snprintf(buf,20,"%g",val);
+	snprintf(buf,20,"%.18g",val);
 	return tiny_string(buf,true);
 }
 

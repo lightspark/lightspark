@@ -21,7 +21,6 @@
 #include "audio.h"
 #include <iostream>
 #include <boost/filesystem.hpp>
-#include <boost/regex.hpp>
 #include "../logger.h"
 
 //Needed or not with compat.h and compat.cpp?

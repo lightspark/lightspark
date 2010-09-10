@@ -854,7 +854,7 @@ ASFUNCTIONBODY(ASString,search)
 		assert_and_throw(capturingGroups<10);
 		int ovector[30];
 		int offset=0;
-		//Global is nor used in search
+		//Global is not used in search
 		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
 		if(rc<=0)
 		{

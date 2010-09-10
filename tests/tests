@@ -73,7 +73,7 @@ while [ $# -ne 0 ]; do
 		TESTS_SRC=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.mxml /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.mxml/g'`;
 		TESTS_SRC=`ls -1 $TESTS_SRC 2> /dev/null`;
 		TESTS=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
-		if [ $COMPILE ]; then
+		if [ $COMPILE -eq 1 ]; then
 			COMPILE_TESTS_SRC=$TESTS_SRC;
 		fi
 		break;
@@ -88,7 +88,7 @@ if [ ! $COMPILE -eq 1 ]; then
 		fi
 
 		testswf=`echo $test | sed 's/\.mxml\b/.swf/g'`;
-		if [ ! -e "$testswf" ] && [ "$test" -nt "$testswf" ]; then
+		if [ ! -e "$testswf" ] || [ "$test" -nt "$testswf" ]; then
 			echo "Test $test is outdated, recompiling"
 			COMPILE_TESTS_SRC="${COMPILE_TESTS_SRC}
 			${test}"

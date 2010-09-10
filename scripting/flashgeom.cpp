@@ -413,9 +413,8 @@ ASFUNCTIONBODY(Point,normalize)
 	assert_and_throw(argslen<2);
 	number_t thickness = argslen > 0 ? args[0]->toNumber() : 1.0;
 	number_t len = th->len();
-	//What if len == 0?
-	th->x = th->x * thickness / len;
-	th->y = th->y * thickness / len;
+	th->x = len == 0 ? 0 : th->x * thickness / len;
+	th->y = len == 0 ? 0 : th->y * thickness / len;
 	return NULL;
 }
 

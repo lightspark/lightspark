@@ -16,12 +16,20 @@
 		var ret:Array = str.match("mat");
 		Tests.assertArrayEquals(["mat"], ret, "match(): normal string match", true);
 		
-		var re:RegExp = new RegExp("ma*t|a[a-z]*e","")
+		var re:RegExp = new RegExp("m a* t | a[a-z]*e","x")
+		ret = str.match(re);
+		Tests.assertArrayEquals(["mat"], ret, "match(): non-global extended regexp match", true);
+		
+		re = new RegExp("MA*T|a[a-z]*e","i")
+		ret = str.match(re);
+		Tests.assertArrayEquals(["mat"], ret, "match(): non-global case-insensitive regexp match", true);
+		
+		re = new RegExp("ma*t|a[a-z]*e","")
 		ret = str.match(re);
 		Tests.assertArrayEquals(["mat"], ret, "match(): non-global regexp match", true);
 		
-		var re2:RegExp = new RegExp("ma*t|a[a-z]*e","g")
-		ret = str.match(re2);
+		re = new RegExp("ma*t|a[a-z]*e","g")
+		ret = str.match(re);
 		Tests.assertArrayEquals(["mat", "able", "mat"], ret, "match(): global regexp match", true);
 
 
@@ -30,20 +38,28 @@
 		var ret2:String = str.replace("l","ll");
 		Tests.assertEquals("repllaceable", ret2, "replace(): normal string replace with string", true);
 		
+		re = new RegExp("(p | b)l", "x")
+		ret2 = str.replace(re,"ll");
+		Tests.assertEquals("rellaceable", ret2, "replace(): non-global extended regexp replace with string", true);
+		
+		re = new RegExp("[PB]l", "i")
+		ret2 = str.replace(re,"ll");
+		Tests.assertEquals("rellaceable", ret2, "replace(): non-global case-insensetive regexp replace with string", true);
+		
 		re = new RegExp("[pb]l")
 		ret2 = str.replace(re,"ll");
 		Tests.assertEquals("rellaceable", ret2, "replace(): non-global regexp replace with string", true);
 
-		re2 = new RegExp("[pb]l","g")
+		re = new RegExp("[pb]l","g")
 		callbackArgs = new Array();
-		ret2 = str.replace(re2,func1);
+		ret2 = str.replace(re,func1);
 		Tests.assertEquals("refuncaceafunce", ret2, "replace(): non-global regexp replace with function", true);
 		Tests.assertArrayEquals([["pl", 2, "replaceable"], ["bl", 8, "replaceable"]], callbackArgs, 
 			"replace(): non-global regexp replace with function callback arguments", true);
 
-		var re3:RegExp = new RegExp("(([pb])l)","g");
+		re = new RegExp("(([pb])l)","g");
 		callbackArgs = new Array();
-		ret2 = str.replace(re3,func1);
+		ret2 = str.replace(re,func1);
 		Tests.assertEquals("refuncaceafunce", ret2, "replace(): non-global regexp replace with function", true);
 		Tests.assertArrayEquals([["pl","pl","p",2,"replaceable"],["bl","bl","b",8,"replaceable"]], callbackArgs,
 			"replace(): global regexp replace with capturing groups with function callback arguments", true);
@@ -53,6 +69,14 @@
 		str = new String("splittable");
 		var ret3:Array = str.split("l");
 		Tests.assertArrayEquals(["sp", "ittab", "e"], ret3, "split(): normal string split", true);
+		
+		re = new RegExp("pl | bl","x")
+		ret3 = str.split(re);
+		Tests.assertArrayEquals(["s", "itta", "e"], ret3, "split(): non capturing extended regexp split", true);
+		
+		re = new RegExp("[PB]l","i")
+		ret3 = str.split(re);
+		Tests.assertArrayEquals(["s", "itta", "e"], ret3, "split(): non capturing case-insensitive regexp split", true);
 		
 		re = new RegExp("[pb]l","")
 		ret3 = str.split(re);
@@ -73,6 +97,14 @@
 		str = new String("searchable");
 		var ret4:int = str.search("e");
 		Tests.assertEquals(1, ret4, "search(): normal string search");
+
+		re = new RegExp("e | a", "x")
+		ret4 = str.search(re);
+		Tests.assertEquals(1, ret4, "search(): extended regexp search");
+
+		re = new RegExp("[EA]", "i")
+		ret4 = str.search(re);
+		Tests.assertEquals(1, ret4, "search(): case-insensitive regexp search");
 
 		re = new RegExp("[ea]")
 		ret4 = str.search(re);

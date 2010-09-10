@@ -25,22 +25,20 @@
 #include <iostream>
 #include "../../compat.h"
 
-using namespace std;
-
 enum PLUGIN_TYPES { UNDEFINED = 0, AUDIO, VIDEO, DECODER, ENCODER };
 
 class IPlugin
 {
 public:
-	virtual const string get_pluginName();
+	virtual const std::string get_pluginName();
 	virtual const PLUGIN_TYPES get_pluginType();
-	virtual const string get_backendName();
+	virtual const std::string get_backendName();
 	virtual ~IPlugin();
 protected:
 	PLUGIN_TYPES pluginType;	//type of plugin of PLUGIN_TYPES
-	string pluginName;		//name of the plugin
-	string backendName;		//backend supported by the plugin
-	IPlugin ( PLUGIN_TYPES plugin_type, string plugin_name, string backend_name );
+	std::string pluginName;		//name of the plugin
+	std::string backendName;		//backend supported by the plugin
+	IPlugin ( PLUGIN_TYPES plugin_type, std::string plugin_name, std::string backend_name );
 };
 
 /*************************

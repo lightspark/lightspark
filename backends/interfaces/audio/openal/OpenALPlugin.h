@@ -30,9 +30,6 @@
 #define NUM_BUFFERS 4
 #define NUM_SOURCES 1
 
-using namespace std;
-
-
 class OpenALPlugin : public IAudioPlugin
 {
 private:
@@ -46,15 +43,15 @@ private:
 	static void contextStatusCB ( pa_context *context, OpenALPlugin *th );
 	static void streamStatusCB ( pa_stream *stream, AudioStream *th );
 	static void streamWriteCB ( pa_stream *stream, size_t nbytes, AudioStream *th );
-	void addDeviceToList ( vector<string *> *devicesList, string *deviceName );
-	void generateDevicesList ( vector<string *> *devicesList, DEVICE_TYPES desiredType ); //To populate the devices lists, devicesType must be playback or capture
+	void addDeviceToList ( std::vector<std::string *> *devicesList, std::string *deviceName );
+	void generateDevicesList ( std::vector<std::string *> *devicesList, DEVICE_TYPES desiredType ); //To populate the devices lists, devicesType must be playback or capture
 	void start();
-	vector<AudioStream*> streams;
+	std::vector<AudioStream*> streams;
 public:
-	OpenALPlugin ( PLUGIN_TYPES init_Type = AUDIO, string init_Name = "OpenAL plugin",
-	               string init_audiobackend = "openal", bool init_contextReady = false,
+	OpenALPlugin ( PLUGIN_TYPES init_Type = AUDIO, std::string init_Name = "OpenAL plugin",
+	               std::string init_audiobackend = "openal", bool init_contextReady = false,
 	               bool init_noServer = false, bool init_stopped = false );
-	void set_device ( string desiredDevice, DEVICE_TYPES desiredType );
+	void set_device ( std::string desiredDevice, DEVICE_TYPES desiredType );
 	uint32_t createStream ( lightspark::AudioDecoder *decoder );
 	void freeStream ( uint32_t id );
 	void fill ( uint32_t id );

@@ -27,8 +27,6 @@
 #include "../../../../compat.h"
 #include <iostream>
 
-using namespace std;
-
 class PulseAudioStream;  //Early declaration
 
 class PulsePlugin : public IAudioPlugin
@@ -41,16 +39,16 @@ private:
 	void stop();
 	static void playbackListCB ( pa_context *context, const pa_sink_info *list, int eol, void *th );
 	static void captureListCB ( pa_context *context, const pa_source_info *list, int eol, void *th );
-	void addDeviceToList ( vector<string *> *devicesList, string *deviceName );
-	void generateDevicesList ( vector<string *> *devicesList, DEVICE_TYPES desiredType ); //To populate the devices lists, devicesType must be playback or capture
+	void addDeviceToList ( std::vector<std::string *> *devicesList, std::string *deviceName );
+	void generateDevicesList ( std::vector<std::string *> *devicesList, DEVICE_TYPES desiredType ); //To populate the devices lists, devicesType must be playback or capture
 	static void streamStatusCB ( pa_stream *stream, PulseAudioStream *th );
 	static void streamWriteCB ( pa_stream *stream, size_t nbytes, PulseAudioStream *th );
 	bool contextReady;
 	bool noServer;
 public:
-	PulsePlugin ( string init_Name = "Pulse plugin output only", string init_audiobackend = "pulse",
+	PulsePlugin ( std::string init_Name = "Pulse plugin output only", std::string init_audiobackend = "pulse",
 		      bool init_contextReady = false, bool init_noServer = false, bool init_stopped = false );
-	void set_device ( string desiredDevice, DEVICE_TYPES desiredType );
+	void set_device ( std::string desiredDevice, DEVICE_TYPES desiredType );
 	AudioStream *createStream ( lightspark::AudioDecoder *decoder );
 	void freeStream ( AudioStream *audioStream );
 	void pauseStream( AudioStream *audioStream );

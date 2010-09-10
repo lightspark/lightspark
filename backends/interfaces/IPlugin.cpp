@@ -20,13 +20,13 @@
 
 #include "IPlugin.h"
 
-IPlugin::IPlugin ( PLUGIN_TYPES plugin_type, string plugin_name, string backend_name ) :
+IPlugin::IPlugin ( PLUGIN_TYPES plugin_type, std::string plugin_name, std::string backend_name ) :
 		pluginType ( plugin_type ), pluginName ( plugin_name ), backendName ( backend_name )
 {
 
 }
 
-const string IPlugin::get_pluginName()
+const std::string IPlugin::get_pluginName()
 {
 	return pluginName;
 }
@@ -36,7 +36,7 @@ const PLUGIN_TYPES IPlugin::get_pluginType()
 	return pluginType;
 }
 
-const string IPlugin::get_backendName()
+const std::string IPlugin::get_backendName()
 {
 	return backendName;
 }

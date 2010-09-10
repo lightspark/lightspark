@@ -83,8 +83,12 @@ done
 
 if [ ! $COMPILE -eq 1 ]; then
 	for test in $TESTS_SRC; do
-		estswf=`echo $test | sed 's/\.mxml\b/.swf/g'`;
-		if [ -e "$testswf" ] && [ "$test" -nt "$testswf" ]; then
+		if [ "$test" == "template.mxml" ]; then
+			continue;
+		fi
+
+		testswf=`echo $test | sed 's/\.mxml\b/.swf/g'`;
+		if [ ! -e "$testswf" ] && [ "$test" -nt "$testswf" ]; then
 			echo "Test $test is outdated, recompiling"
 			COMPILE_TESTS_SRC="${COMPILE_TESTS_SRC}
 			${test}"
@@ -98,16 +102,17 @@ if [ $COMPILE -eq 1 ]; then
 	echo $COMPILE_TESTS_SRC 1>&2;
 	echo "Compiler: $MXMLC" 1>&2;
 	for test in $COMPILE_TESTS_SRC; do
+		if [ "$test" == "template.mxml" ]; then
+			continue;
+		fi
+
 		$MXMLC -static-link-runtime-shared-libraries -compiler.omit-trace-statements=false $test;
 	done
-	if [ $QUIT ]; then
+	if [ $QUIT -eq 1 ]; then
 		exit;
 	fi
 	echo -e "\n" 1>&2;
 fi
-
-echo -n "Running tests: " 1>&2;
-echo $TESTS 1>&2;
 
 FAILURECOUNT=0; SUCCESSCOUNT=0; TESTCOUNT=0;
 
@@ -138,6 +143,10 @@ INFOPREFIX='\[INFO\]';
 CURLPREFIX='CURL header';
 INDENTPREFIX='\t';
 for test in $TESTS; do
+	if [ "$test" == "template.swf" ]; then
+		continue;
+	fi
+
 	if [ ! -e $test ]; then
 		continue;
 	fi

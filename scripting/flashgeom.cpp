@@ -71,6 +71,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setSetterByQName("topLeft","",Class<IFunction>::getFunction(_setTopLeft),true);
 
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
+	c->setMethodByQName("contains","",Class<IFunction>::getFunction(contains),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -255,6 +256,17 @@ ASFUNCTIONBODY(Rectangle,clone)
 	ret->width=th->width;
 	ret->height=th->height;
 	return ret;
+}
+
+ASFUNCTIONBODY(Rectangle,contains)
+{
+	assert_and_throw(argslen == 2);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	number_t x = args[0]->toNumber();
+	number_t y = args[1]->toNumber();
+
+	return abstract_b( th->x <= x && x <= th->x + th->width
+						&& th->y <= y && y <= th->y + th->height );
 }
 
 void ColorTransform::sinit(Class_base* c)

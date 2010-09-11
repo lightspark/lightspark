@@ -33,6 +33,7 @@ public:
 	number_t x,y,width,height;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	const RECT getRect() const;
 
 	// properties
 	ASFUNCTION(_getBottom);
@@ -51,13 +52,15 @@ public:
 	ASFUNCTION(_setTop);
 	ASFUNCTION(_getTopLeft);
 	ASFUNCTION(_setTopLeft);
-
-	tiny_string toString(bool debugMsg=false);
-	ASFUNCTION(_constructor);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
+
+	// methods
+	ASFUNCTION(_constructor);
 	ASFUNCTION(clone);
-	const RECT getRect() const;
+	ASFUNCTION(contains);
+
+	tiny_string toString(bool debugMsg=false);
 };
 
 class Point: public ASObject

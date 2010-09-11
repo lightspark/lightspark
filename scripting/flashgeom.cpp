@@ -80,6 +80,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setMethodByQName("intersection","",Class<IFunction>::getFunction(intersection),true);
 	c->setMethodByQName("intersects","",Class<IFunction>::getFunction(intersects),true);
 	c->setMethodByQName("isEmpty","",Class<IFunction>::getFunction(isEmpty),true);
+	c->setMethodByQName("offset","",Class<IFunction>::getFunction(offset),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -394,6 +395,17 @@ ASFUNCTIONBODY(Rectangle,isEmpty)
 	Rectangle* th = static_cast<Rectangle*>(obj);
 
 	return abstract_b( th->width <= 0 || th->height <= 0 );
+}
+
+ASFUNCTIONBODY(Rectangle,offset)
+{
+	assert_and_throw(argslen == 2);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+
+	th->x += args[0]->toNumber();
+	th->y += args[1]->toNumber();
+
+	return NULL;
 }
 
 void ColorTransform::sinit(Class_base* c)

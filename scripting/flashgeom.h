@@ -47,13 +47,15 @@ public:
 	ASFUNCTION(_setRight);
 	ASFUNCTION(_getSize);
 	ASFUNCTION(_setSize);
+	ASFUNCTION(_getTop);
+	ASFUNCTION(_setTop);
+	ASFUNCTION(_getTopLeft);
+	ASFUNCTION(_setTopLeft);
 
 	tiny_string toString(bool debugMsg=false);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
-	ASFUNCTION(_getTop);
-	ASFUNCTION(_setTop);
 	ASFUNCTION(clone);
 	const RECT getRect() const;
 };

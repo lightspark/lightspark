@@ -72,6 +72,7 @@ void Rectangle::sinit(Class_base* c)
 
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("contains","",Class<IFunction>::getFunction(contains),true);
+	c->setMethodByQName("containsPoint","",Class<IFunction>::getFunction(containsPoint),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -264,6 +265,18 @@ ASFUNCTIONBODY(Rectangle,contains)
 	Rectangle* th = static_cast<Rectangle*>(obj);
 	number_t x = args[0]->toNumber();
 	number_t y = args[1]->toNumber();
+
+	return abstract_b( th->x <= x && x <= th->x + th->width
+						&& th->y <= y && y <= th->y + th->height );
+}
+
+ASFUNCTIONBODY(Rectangle,containsPoint)
+{
+	assert_and_throw(argslen == 1);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	Point* br = static_cast<Point*>(args[0]);
+	number_t x = br->getX();
+	number_t y = br->getY();
 
 	return abstract_b( th->x <= x && x <= th->x + th->width
 						&& th->y <= y && y <= th->y + th->height );

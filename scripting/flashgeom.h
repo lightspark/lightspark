@@ -59,6 +59,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(clone);
 	ASFUNCTION(contains);
+	ASFUNCTION(containsPoint);
 
 	tiny_string toString(bool debugMsg=false);
 };

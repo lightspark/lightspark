@@ -77,6 +77,8 @@ void Rectangle::sinit(Class_base* c)
 	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
 	c->setMethodByQName("inflate","",Class<IFunction>::getFunction(inflate),true);
 	c->setMethodByQName("inflatePoint","",Class<IFunction>::getFunction(inflatePoint),true);
+	c->setMethodByQName("intersection","",Class<IFunction>::getFunction(intersection),true);
+	c->setMethodByQName("intersects","",Class<IFunction>::getFunction(intersects),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -290,11 +292,10 @@ ASFUNCTIONBODY(Rectangle,containsRect)
 {
 	assert_and_throw(argslen == 1);
 	Rectangle* th = static_cast<Rectangle*>(obj);
-	Rectangle* temp = static_cast<Rectangle*>(args[0]);
-	const RECT cr = temp->getRect();
+	Rectangle* cr = static_cast<Rectangle*>(args[0]);
 
-	return abstract_b( th->x <= cr.Xmin && cr.Xmax <= th->x + th->width
-						&& th->y <= cr.Ymin && cr.Ymax <= th->y + th->height );
+	return abstract_b( th->x <= cr->x && cr->x + cr->width <= th->x + th->width
+						&& th->y <= cr->y && cr->y + cr->height <= th->y + th->height );
 }
 
 ASFUNCTIONBODY(Rectangle,equals)
@@ -336,6 +337,54 @@ ASFUNCTIONBODY(Rectangle,inflatePoint)
 	th->height += 2 * dy;
 
 	return NULL;
+}
+
+// TODO: IMPLEMENT THIS
+ASFUNCTIONBODY(Rectangle,intersection)
+{
+	assert_and_throw(argslen == 1);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	Rectangle* ti = static_cast<Rectangle*>(args[0]);
+	Rectangle* ret = Class<Rectangle>::getInstanceS();
+
+	Rectangle* minp = ti;
+	Rectangle* maxp = th;
+
+	if ( th->x <= ti->x && th->y <= ti->y )
+	{
+		minp = th;
+		maxp = ti;
+	}
+
+	// check if the rectangles don't intersect
+	if ( !( maxp->x <= minp->x + minp->width && maxp->y <= minp->y + minp->height ) )
+	{
+		ret->x = 0;
+		ret->y = 0;
+		ret->width = 0;
+		ret->height = 0;
+		return ret;
+	}
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Rectangle,intersects)
+{
+	assert_and_throw(argslen == 1);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	Rectangle* ti = static_cast<Rectangle*>(args[0]);
+
+	Rectangle* minp = ti;
+	Rectangle* maxp = th;
+
+	if ( th->x <= ti->x && th->y <= ti->y )
+	{
+		minp = th;
+		maxp = ti;
+	}
+
+	return abstract_b( maxp->x <= minp->x + minp->width && maxp->y <= minp->y + minp->height );
 }
 
 void ColorTransform::sinit(Class_base* c)

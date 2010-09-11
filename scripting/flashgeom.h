@@ -64,6 +64,8 @@ public:
 	ASFUNCTION(equals);
 	ASFUNCTION(inflate);
 	ASFUNCTION(inflatePoint);
+	ASFUNCTION(intersection);
+	ASFUNCTION(intersects);
 
 	tiny_string toString(bool debugMsg=false);
 };

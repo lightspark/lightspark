@@ -351,14 +351,6 @@ ASFUNCTIONBODY(Rectangle,intersection)
 	Rectangle* ti = static_cast<Rectangle*>(args[0]);
 	Rectangle* ret = Class<Rectangle>::getInstanceS();
 
-	Rectangle* minp = ti;
-	Rectangle* maxp = th;
-
-	if ( th->x <= ti->x && th->y <= ti->y )
-	{
-		minp = th;
-		maxp = ti;
-	}
 	number_t thtop = th->y;
 	number_t thleft = th->x;
 	number_t thright = th->x + th->width;
@@ -369,8 +361,8 @@ ASFUNCTIONBODY(Rectangle,intersection)
 	number_t tiright = ti->x + ti->width;
 	number_t tibottom = ti->y + ti->height;
 
-	if ( (thtop > tibottom || thright < tileft ||
-						thbottom < titop || thleft > tiright) )
+	if ( thtop > tibottom || thright < tileft ||
+						thbottom < titop || thleft > tiright )
 	{
 		// rectangles don't intersect
 		ret->x = 0;
@@ -379,6 +371,31 @@ ASFUNCTIONBODY(Rectangle,intersection)
 		ret->height = 0;
 		return ret;
 	}
+
+	Rectangle* leftmost = ti;
+	Rectangle* rightmost = th;
+
+	// find left most
+	if ( thleft < tileft )
+	{
+		leftmost = th;
+		rightmost = ti;
+	}
+
+	Rectangle* topmost = ti;
+	Rectangle* bottommost = th;
+
+	// find top most
+	if ( thtop < titop )
+	{
+		topmost = th;
+		bottommost = ti;
+	}
+
+	ret->x = rightmost->x;
+	ret->width = min(leftmost->x + leftmost->width, rightmost->x + rightmost->width) - rightmost->x;
+	ret->y = bottommost->y;
+	ret->height = min(topmost->y + topmost->height, bottommost->y + bottommost->height) - bottommost->y;
 
 	return ret;
 }

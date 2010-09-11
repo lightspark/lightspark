@@ -60,6 +60,7 @@ public:
 	ASFUNCTION(clone);
 	ASFUNCTION(contains);
 	ASFUNCTION(containsPoint);
+	ASFUNCTION(containsRect);
 
 	tiny_string toString(bool debugMsg=false);
 };

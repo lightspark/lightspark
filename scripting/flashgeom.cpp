@@ -297,10 +297,10 @@ ASFUNCTIONBODY(Rectangle,equals)
 {
 	assert_and_throw(argslen == 1);
 	Rectangle* th = static_cast<Rectangle*>(obj);
-	Rectangle* cr = static_cast<Rectangle*>(args[0]);
+	Rectangle* co = static_cast<Rectangle*>(args[0]);
 
-	return abstract_b( th->x <= cr->Xmin && cr->Xmax <= th->x + th->width
-						&& th->y <= cr->Ymin && cr->Ymax <= th->y + th->height );
+	return abstract_b( th->x == co->x && th->width == co->width
+						&& th->y == co->y && th->height == co->height );
 }
 
 void ColorTransform::sinit(Class_base* c)

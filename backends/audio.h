@@ -24,13 +24,10 @@
 #include "compat.h"
 #include "decoder.h"
 #include <iostream>
-#include <boost/filesystem.hpp>
 
 #include "pluginmanager.h"
 #include "interfaces/audio/IAudioPlugin.h"
 
-using namespace std;
-using namespace boost::filesystem;
 
 //convenience typedef for the pointers to the 2 functions we expect to find in the plugin libraries
 typedef IPlugin * ( *PLUGIN_FACTORY ) ();
@@ -42,10 +39,10 @@ namespace lightspark
 class AudioManager
 {
 private:
-	vector<string *>audioplugins_list;
+	std::vector<std::string *>audioplugins_list;
 	IAudioPlugin *oAudioPlugin;
-	string selectedAudioBackend;
-	void load_audioplugin ( string selected_backend );
+	std::string selectedAudioBackend;
+	void load_audioplugin ( std::string selected_backend );
 	void release_audioplugin();
 	PluginManager *pluginManager;
 
@@ -57,7 +54,7 @@ public:
 	bool isTimingAvailablePlugin() const;
 	void pauseStreamPlugin( AudioStream *audioStream );	//Pause the stream (stops time from running, cork)
 	void resumeStreamPlugin( AudioStream *audioStream );	//Resume the stream (restart time, uncork)
-	void set_audiobackend ( string desired_backend );
+	void set_audiobackend ( std::string desired_backend );
 	void get_audioBackendsList();
 	void refresh_audioplugins_list();
 	~AudioManager();

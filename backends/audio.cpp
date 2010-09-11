@@ -16,12 +16,9 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
-#define BOOST_FILESYSTEM_NO_DEPRECATED
 
 #include "audio.h"
 #include <iostream>
-#include <boost/filesystem.hpp>
-#include <boost/regex.hpp>
 #include "../logger.h"
 
 //Needed or not with compat.h and compat.cpp?
@@ -34,8 +31,6 @@
 
 using namespace lightspark;
 using namespace std;
-using namespace boost::filesystem;
-using namespace boost;
 
 
 /****************

@@ -22,8 +22,9 @@
 #include <iostream>
 #include <list>
 #include <boost/filesystem.hpp>
-#include <boost/regex.hpp>
+#include <pcre.h>
 #include "../logger.h"
+#include "../exceptions.h"
 
 //Needed or not with compat.h and compat.cpp?
 #if defined WIN32
@@ -36,8 +37,6 @@
 using namespace lightspark;
 using namespace std;
 using namespace boost::filesystem;
-using namespace boost;
-
 
 PluginManager::PluginManager()
 {
@@ -55,7 +54,15 @@ void PluginManager::findPlugins()
 	string froot ( PRIVATELIBDIR ), fplugins ( "/plugins/" ); //LS should always look in the plugins folder, nowhere else
 	const path plugins_folder = froot + fplugins;
 	const string pattern ( "liblightspark+[A-Za-z]+plugin.so" );
-	regex file_pattern ( pattern ); //pattern of ls plugins
+
+	//Stuff used by/for pcre
+	const char* patternError;
+	int patternErrorOffset;
+	pcre* file_pattern = pcre_compile ( pattern.c_str(), 0, &patternError, &patternErrorOffset, NULL );
+	if(patternError)
+		throw RunTimeException("PluginManager::findPlugins(): can't compile file_pattern");
+	//We don't expect any captured substrings, so 3 ints should be enough
+	int patternOvector[3];
 
 #if defined DEBUG
 	cout << "Looking for plugins under " << plugins_folder << " for pattern " << pattern << endl;
@@ -72,7 +79,8 @@ void PluginManager::findPlugins()
 			if ( is_regular_file ( itr.status() ) )   //Is it a real file? This will remove symlink
 			{
 				string leaf_name = itr->path().filename();
-				if ( regex_match ( leaf_name, file_pattern ) )   // Does it answer to the desired pattern?
+				int rc=pcre_exec(file_pattern, NULL, leaf_name.c_str(), leaf_name.length(), 0, 0, patternOvector, 3);
+				if ( rc > 0 )   // Does it answer to the desired pattern?
 				{
 					string fullpath = plugins_folder.directory_string() + leaf_name;
 					//Try to load the file and see if it's an audio plugin
@@ -99,6 +107,7 @@ void PluginManager::findPlugins()
 			}
 		}
 	}
+	pcre_free(file_pattern);
 }
 
 //return a list of backends  of the appropriated PLUGIN_TYPES
@@ -230,7 +239,7 @@ int32_t PluginManager::findPluginInList ( string desiredname, string desiredback
 //Takes care to load and instanciate anything related to the plugin
 void PluginManager::loadPlugin ( uint32_t desiredindex )
 {
-	if ( pluginsList[desiredindex]->hLoadedPlugin = LoadLib ( pluginsList[desiredindex]->pluginPath ) )
+	if (( pluginsList[desiredindex]->hLoadedPlugin = LoadLib ( pluginsList[desiredindex]->pluginPath ) ))
 	{
 		PLUGIN_FACTORY p_factory_function = ( PLUGIN_FACTORY ) ExtractLibContent ( pluginsList[desiredindex]->hLoadedPlugin, "create" );
 		if ( p_factory_function != NULL )   //Does it contain the LS IPlugin?

@@ -113,7 +113,6 @@ void aligned_free(void *mem);
 #endif
 
 #include <iostream>
-using namespace std;
 
 #if defined _WIN32 || defined __CYGWIN__
 // No DLLs, for now
@@ -135,9 +134,9 @@ using namespace std;
 /***********
 Used for compatibility for loading library between Windows and POSIX
 ************/
-HMODULE LoadLib(const string filename);
+HMODULE LoadLib(const std::string filename);
 
-void *ExtractLibContent(HMODULE hLib, string WhatToExtract);
+void *ExtractLibContent(HMODULE hLib, std::string WhatToExtract);
 
 void CloseLib(HMODULE hLib);
 /*****************/

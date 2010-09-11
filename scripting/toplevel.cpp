@@ -840,7 +840,7 @@ ASFUNCTIONBODY(ASString,search)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &errorOffset,NULL);
+		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &errorOffset,NULL);
 		if(error)
 			return abstract_i(ret);
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -854,7 +854,7 @@ ASFUNCTIONBODY(ASString,search)
 		assert_and_throw(capturingGroups<10);
 		int ovector[30];
 		int offset=0;
-		//Global is nor used in search
+		//Global is not used in search
 		int rc=pcre_exec(pcreRE, NULL, th->data.c_str(), th->data.size(), offset, 0, ovector, 30);
 		if(rc<=0)
 		{
@@ -891,7 +891,7 @@ ASFUNCTIONBODY(ASString,match)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &errorOffset,NULL);
+		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &errorOffset,NULL);
 		if(error)
 			return new Null;
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -956,7 +956,7 @@ ASFUNCTIONBODY(ASString,split)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &offset,NULL);
+		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &offset,NULL);
 		if(error)
 			return ret;
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3
@@ -1410,7 +1410,7 @@ TRISTATE Number::isLess(ASObject* o)
 tiny_string Number::toString(bool debugMsg)
 {
 	char buf[20];
-	snprintf(buf,20,"%g",val);
+	snprintf(buf,20,"%.18g",val);
 	return tiny_string(buf,true);
 }
 
@@ -2232,7 +2232,7 @@ ASFUNCTIONBODY(ASString,replace)
 			options|=PCRE_CASELESS;
 		if(re->extended)
 			options|=PCRE_EXTENDED;
-		pcre* pcreRE=pcre_compile(re->re.c_str(), 0, &error, &errorOffset,NULL);
+		pcre* pcreRE=pcre_compile(re->re.c_str(), options, &error, &errorOffset,NULL);
 		if(error)
 			return ret;
 		//Verify that 30 for ovector is ok, it must be at least (captGroups+1)*3

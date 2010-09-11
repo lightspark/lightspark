@@ -51,6 +51,22 @@
 		seekRect.graphics.lineTo(215, 300);
 		seekRect.graphics.lineTo(215, 250);
 		seekRect.graphics.endFill();
+
+		progressBorderRect.graphics.beginFill(0x000000);
+		progressBorderRect.graphics.moveTo(18,318);
+		progressBorderRect.graphics.lineTo(472,318);
+		progressBorderRect.graphics.lineTo(472,337);
+		progressBorderRect.graphics.lineTo(18,337);
+		progressBorderRect.graphics.lineTo(18,319);
+		progressBorderRect.graphics.endFill();
+
+		downloadProgressBorderRect.graphics.beginFill(0x000000);
+		downloadProgressBorderRect.graphics.moveTo(18,338);
+		downloadProgressBorderRect.graphics.lineTo(472,338);
+		downloadProgressBorderRect.graphics.lineTo(472,357);
+		downloadProgressBorderRect.graphics.lineTo(18,357);
+		downloadProgressBorderRect.graphics.lineTo(18,339);
+		downloadProgressBorderRect.graphics.endFill();
 		
 		playRect.addEventListener(MouseEvent.CLICK,playClick);
 		pauseRect.addEventListener(MouseEvent.CLICK,pauseClick);
@@ -119,6 +135,15 @@
 			trace(key + ":", item[key]);
 		}
 	}
+	private function statusInfo():void
+	{
+		progressRect.graphics.beginFill(0x800000);
+		progressRect.graphics.drawRect(20,320,450*(stream_ns.time/metadata.duration),15);
+		progressRect.graphics.endFill();
+		downloadProgressRect.graphics.beginFill(0x000080);
+		downloadProgressRect.graphics.drawRect(20,340,450*(stream_ns.bytesLoaded/stream_ns.bytesTotal),15);
+		downloadProgressRect.graphics.endFill();
+	}
 	private function playClick(e:Event):void
 	{
 		trace("Play button clicked");
@@ -133,6 +158,8 @@
 			trace("Running in remote sandbox: playing local file");
 			stream_ns.play(localVideoPath);
 		}
+
+		setInterval(statusInfo, 1000);
 	}
 	private function pauseClick(e:Event):void
 	{
@@ -158,12 +185,6 @@
 	private function seekClick(e:Event):void
 	{
 		trace("Seek button clicked");
-		trace("");
-
-		trace("Time:", stream_ns.time, "/", metadata.duration, "(", ((stream_ns.time/metadata.duration)*100), "%) FPS:", stream_ns.currentFPS, "(", metadata.framerate, ")");
-		trace("Dimensions:", metadata.width, "x", metadata.height);
-		trace("Video data rate:", metadata.videodatarate, ", audio date rate:", metadata.audiodatarate);
-		trace("Loaded:", stream_ns.bytesLoaded, "/", stream_ns.bytesTotal, ", can seek to end:", metadata.canSeekToEnd);
 	}
 	private function videoClick(e:Event):void
 	{
@@ -177,6 +198,10 @@
 <mx:UIComponent id="pauseRect" />
 <mx:UIComponent id="stopRect" />
 <mx:UIComponent id="seekRect" />
+<mx:UIComponent id="progressBorderRect" />
+<mx:UIComponent id="progressRect" />
+<mx:UIComponent id="downloadProgressBorderRect" />
+<mx:UIComponent id="downloadProgressRect" />
 
 </mx:Application>
 

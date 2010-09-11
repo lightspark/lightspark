@@ -26,8 +26,6 @@
 #include "../IPlugin.h"
 #include <iostream>
 
-using namespace std;
-
 class AudioStream
 {
   protected:
@@ -48,22 +46,22 @@ Abstract class for audio plugin implementation
 class IAudioPlugin : public IPlugin
 {
 protected:
-	string playbackDeviceName;
-	string captureDeviceName;
-	vector<string *> playbackDevicesList;
-	vector<string *> captureDevicesList;
-	list<AudioStream *> streams;
-	typedef list<AudioStream *>::iterator stream_iterator;
+	std::string playbackDeviceName;
+	std::string captureDeviceName;
+	std::vector<std::string *> playbackDevicesList;
+	std::vector<std::string *> captureDevicesList;
+	std::list<AudioStream *> streams;
+	typedef std::list<AudioStream *>::iterator stream_iterator;
 	volatile bool contextReady;
 	volatile bool noServer;
 	bool stopped;
-	IAudioPlugin ( string plugin_name, string backend_name, bool init_stopped = false );
+	IAudioPlugin ( std::string plugin_name, std::string backend_name, bool init_stopped = false );
 
 public:
 	enum DEVICE_TYPES { PLAYBACK, CAPTURE };
-	virtual vector<string *> *get_devicesList ( DEVICE_TYPES desiredType );
-	virtual void set_device ( string desiredDevice, DEVICE_TYPES desiredType ) = 0;
-	virtual string get_device ( DEVICE_TYPES desiredType );
+	virtual std::vector<std::string *> *get_devicesList ( DEVICE_TYPES desiredType );
+	virtual void set_device ( std::string desiredDevice, DEVICE_TYPES desiredType ) = 0;
+	virtual std::string get_device ( DEVICE_TYPES desiredType );
 	virtual AudioStream *createStream ( lightspark::AudioDecoder *decoder ) = 0;
 	virtual void freeStream ( AudioStream *audioStream ) = 0;
 	virtual void pauseStream( AudioStream *audioStream ) = 0;	//Pause the stream (stops time from running, cork)

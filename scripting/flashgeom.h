@@ -33,6 +33,12 @@ public:
 	number_t x,y,width,height;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+
+	ASFUNCTION(_getBottom);
+	ASFUNCTION(_setBottom);
+	ASFUNCTION(_getBottomRight);
+	ASFUNCTION(_setBottomRight);
+
 	tiny_string toString(bool debugMsg=false);
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getLeft);
@@ -43,8 +49,6 @@ public:
 	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getTop);
 	ASFUNCTION(_setTop);
-	ASFUNCTION(_getBottom);
-	ASFUNCTION(_setBottom);
 	ASFUNCTION(_getHeight);
 	ASFUNCTION(_setHeight);
 	ASFUNCTION(clone);

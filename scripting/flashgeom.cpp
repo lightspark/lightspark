@@ -766,6 +766,7 @@ void Matrix::sinit(Class_base* c)
 	c->setSetterByQName("ty","",Class<IFunction>::getFunction(_set_ty),true);
 	
 	//Methods 
+	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("identity","",Class<IFunction>::getFunction(identity),true);
 	c->setMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),true);
 	c->setMethodByQName("scale","",Class<IFunction>::getFunction(scale),true);
@@ -900,6 +901,20 @@ ASFUNCTIONBODY(Matrix,_set_ty)
 	assert_and_throw(argslen==1);
 	th->ty = args[0]->toNumber();
 	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,clone)
+{
+	assert_and_throw(argslen==0);
+
+	Matrix* th=static_cast<Matrix*>(obj);
+	Matrix* ret=Class<Matrix>::getInstanceS();
+	Matrix* th=static_cast<Matrix*>(obj);
+	
+	ret->a = th->a; ret->c = th->c; ret->tx = th->tx;
+	ret->b = th->b; ret->d = th->d; ret->ty = th->ty;
+		
+	return ret;
 }
 
 ASFUNCTIONBODY(Matrix,identity)

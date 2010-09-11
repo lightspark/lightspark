@@ -126,8 +126,8 @@ public:
 
 class Matrix: public ASObject
 {
-	number_t a, b, c, d, tx, ty;
 public:
+	number_t a, b, c, d, tx, ty;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	
@@ -137,6 +137,7 @@ public:
 	ASFUNCTION(_constructor);
 	
 	//Methods
+	ASFUNCTION(clone);
 	ASFUNCTION(identity);
 	ASFUNCTION(rotate);
 	ASFUNCTION(scale);

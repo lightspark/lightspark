@@ -83,6 +83,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setMethodByQName("offset","",Class<IFunction>::getFunction(offset),true);
 	c->setMethodByQName("offsetPoint","",Class<IFunction>::getFunction(offsetPoint),true);
 	c->setMethodByQName("setEmpty","",Class<IFunction>::getFunction(setEmpty),true);
+	c->setMethodByQName("union","",Class<IFunction>::getFunction(_union),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -433,6 +434,31 @@ ASFUNCTIONBODY(Rectangle,setEmpty)
 	th->height = 0;
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(Rectangle,_union)
+{
+	assert_and_throw(argslen == 1);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	Rectangle* ti = static_cast<Rectangle*>(args[0]);
+	Rectangle* ret = Class<Rectangle>::getInstanceS();
+
+	ret->x = th->x;
+	ret->y = th->y;
+	ret->width = th->width;
+	ret->height = th->height;
+
+	if ( ti->width == 0 || ti->height == 0 )
+	{
+		return ret;
+	}
+
+	ret->x = min(th->x, ti->x);
+	ret->y = min(th->y, ti->y);
+	ret->width = max(th->width, ti->width);
+	ret->height = max(th->height, ti->height);
+
+	return ret;
 }
 
 void ColorTransform::sinit(Class_base* c)

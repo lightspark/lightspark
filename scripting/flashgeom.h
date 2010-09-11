@@ -70,8 +70,8 @@ public:
 	ASFUNCTION(offset);
 	ASFUNCTION(offsetPoint);
 	ASFUNCTION(setEmpty);
-
 	tiny_string toString(bool debugMsg=false);
+	ASFUNCTION(_union);
 };
 
 class Point: public ASObject

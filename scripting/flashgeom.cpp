@@ -64,6 +64,9 @@ void Rectangle::sinit(Class_base* c)
 	c->setGetterByQName("bottomRight","",Class<IFunction>::getFunction(_getBottomRight),true);
 	c->setSetterByQName("bottomRight","",Class<IFunction>::getFunction(_setBottomRight),true);
 
+	c->setGetterByQName("size","",Class<IFunction>::getFunction(_getSize),true);
+	c->setSetterByQName("size","",Class<IFunction>::getFunction(_setSize),true);
+
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 }
 
@@ -187,6 +190,24 @@ ASFUNCTIONBODY(Rectangle,_setBottomRight)
 	Point* br = static_cast<Point*>(args[0]);
 	th->width = br->getX() - th->x;
 	th->height = br->getY() - th->y;
+	return NULL;
+}
+
+ASFUNCTIONBODY(Rectangle,_getSize)
+{
+	assert_and_throw(argslen==0);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	Point* ret = Class<Point>::getInstanceS(th->width, th->height);
+	return ret;
+}
+
+ASFUNCTIONBODY(Rectangle,_setSize)
+{
+	assert_and_throw(argslen == 1);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	Point* br = static_cast<Point*>(args[0]);
+	th->width = br->getX();
+	th->height = br->getY();
 	return NULL;
 }
 

@@ -34,23 +34,26 @@ public:
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 
+	// properties
 	ASFUNCTION(_getBottom);
 	ASFUNCTION(_setBottom);
 	ASFUNCTION(_getBottomRight);
 	ASFUNCTION(_setBottomRight);
-
-	tiny_string toString(bool debugMsg=false);
-	ASFUNCTION(_constructor);
+	ASFUNCTION(_getHeight);
+	ASFUNCTION(_setHeight);
 	ASFUNCTION(_getLeft);
 	ASFUNCTION(_setLeft);
 	ASFUNCTION(_getRight);
 	ASFUNCTION(_setRight);
+	ASFUNCTION(_getSize);
+	ASFUNCTION(_setSize);
+
+	tiny_string toString(bool debugMsg=false);
+	ASFUNCTION(_constructor);
 	ASFUNCTION(_getWidth);
 	ASFUNCTION(_setWidth);
 	ASFUNCTION(_getTop);
 	ASFUNCTION(_setTop);
-	ASFUNCTION(_getHeight);
-	ASFUNCTION(_setHeight);
 	ASFUNCTION(clone);
 	const RECT getRect() const;
 };

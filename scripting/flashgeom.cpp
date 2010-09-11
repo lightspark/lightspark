@@ -79,6 +79,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setMethodByQName("inflatePoint","",Class<IFunction>::getFunction(inflatePoint),true);
 	c->setMethodByQName("intersection","",Class<IFunction>::getFunction(intersection),true);
 	c->setMethodByQName("intersects","",Class<IFunction>::getFunction(intersects),true);
+	c->setMethodByQName("isEmpty","",Class<IFunction>::getFunction(isEmpty),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -385,6 +386,14 @@ ASFUNCTIONBODY(Rectangle,intersects)
 	}
 
 	return abstract_b( maxp->x <= minp->x + minp->width && maxp->y <= minp->y + minp->height );
+}
+
+ASFUNCTIONBODY(Rectangle,isEmpty)
+{
+	assert_and_throw(argslen == 0);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+
+	return abstract_b( th->width <= 0 || th->height <= 0 );
 }
 
 void ColorTransform::sinit(Class_base* c)

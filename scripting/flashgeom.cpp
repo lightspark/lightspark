@@ -74,6 +74,8 @@ void Rectangle::sinit(Class_base* c)
 	c->setMethodByQName("contains","",Class<IFunction>::getFunction(contains),true);
 	c->setMethodByQName("containsPoint","",Class<IFunction>::getFunction(containsPoint),true);
 	c->setMethodByQName("containsRect","",Class<IFunction>::getFunction(containsRect),true);
+	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
+	c->setMethodByQName("inflate","",Class<IFunction>::getFunction(inflate),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -302,6 +304,21 @@ ASFUNCTIONBODY(Rectangle,equals)
 
 	return abstract_b( th->x == co->x && th->width == co->width
 						&& th->y == co->y && th->height == co->height );
+}
+
+ASFUNCTIONBODY(Rectangle,inflate)
+{
+	assert_and_throw(argslen == 2);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	number_t dx = args[0]->toNumber();
+	number_t dy = args[1]->toNumber();
+
+	th->x -= dx;
+	th->width += 2 * dx;
+	th->y -= dy;
+	th->height += 2 * dy;
+
+	return NULL;
 }
 
 void ColorTransform::sinit(Class_base* c)

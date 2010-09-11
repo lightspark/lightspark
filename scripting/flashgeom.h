@@ -140,6 +140,7 @@ public:
 	ASFUNCTION(clone);
 	ASFUNCTION(concat);
 	ASFUNCTION(identity);
+	ASFUNCTION(invert);
 	ASFUNCTION(rotate);
 	ASFUNCTION(scale);
 	ASFUNCTION(translate);

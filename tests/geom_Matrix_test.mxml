@@ -39,6 +39,11 @@
 		mat4.translate(4, 2);
 		Tests.assertTrue(mat4.tx == 4 && mat4.ty == 2, "Matrix.translate");
 
+		var mati1:Matrix = new Matrix(1, 4, 2, 5, 0, 0);
+		var mati2:Matrix = mati1.clone();
+		mati2.invert();
+		Tests.assertEquals(mati1.concat(mati2), new Matrix(1, 0, 0, 1, 0, 0), "matrix.invert");
+
 		Tests.report(visual, this.name);
 	}
 ]]>

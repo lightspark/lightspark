@@ -1,5 +1,8 @@
 lightspark: An open source flash player implementation
 
+Version 0.4.4.2:
+	* Pluginized architecture for audio backends
+
 Version 0.4.4.1:
 	* Disk based caching for downloads
 	* Fixes a crash when using flashblock

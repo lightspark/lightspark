@@ -134,7 +134,7 @@ ELSE(WIN32)
   INCLUDE(FindThreads REQUIRED)
 ENDIF(WIN32)
 
-find_package(Boost COMPONENTS filesystem system regex REQUIRED)
+find_package(Boost COMPONENTS filesystem system REQUIRED)
 if(Boost_FOUND)
   INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 ENDIF(Boost_FOUND)

@@ -968,7 +968,10 @@ void DisplayObject::invalidate()
 			maxy=coords[i+1];
 	}
 	//Allocate a texture for the given size
-	cachedTex=sys->getRenderThread()->allocateTexture(maxx-minx,maxy-miny,false);
+	const uint32_t texWidth=maxx-minx;
+	const uint32_t texHeight=maxy-miny;
+	if(texWidth && texHeight)
+		cachedTex=sys->getRenderThread()->allocateTexture(texWidth,texHeight,false);
 	
 }
 
@@ -991,7 +994,6 @@ void DisplayObject::setRoot(RootMovieClip* r)
 void DisplayObject::setOnStage(bool staged)
 {
 	//TODO: When removing from stage released the cachedTex
-	__asm__("int $3");
 	if(onStage==false)
 		invalidate();
 	if(staged!=onStage)

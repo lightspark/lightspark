@@ -94,6 +94,7 @@ private:
 		@param testMode True if overlays can be displayed
 	*/
 	void coreRendering(FTFont& font, bool testMode);
+	Semaphore initialized;
 public:
 	RenderThread(SystemState* s,ENGINE e, void* param=NULL);
 	~RenderThread();
@@ -129,6 +130,10 @@ public:
 	{
 		currentId=idStack.back();
 		idStack.pop_back();
+	}
+	void waitForInitialization()
+	{
+		initialized.wait();
 	}
 
 	//OpenGL programs

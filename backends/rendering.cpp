@@ -52,7 +52,7 @@ RenderThread::RenderThread(SystemState* s,ENGINE e,void* params):m_sys(s),termin
 	pixelBufferWidth(0),pixelBufferHeight(0),prevUploadJob(NULL),mutexLargeTexture("Large texture"),largeTextureId(0),largeTextureSize(0),
 	largeTextureBitmap(NULL),renderNeeded(false),uploadNeeded(false),inputNeeded(false),inputDisabled(false),resizeNeeded(false),newWidth(0),
 	newHeight(0),scaleX(1),scaleY(1),offsetX(0),offsetY(0),interactive_buffer(NULL),tempBufferAcquired(false),frameCount(0),secsCount(0),
-	mutexUploadJobs("Upload jobs"),dataTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),
+	mutexUploadJobs("Upload jobs"),initialized(0),dataTex(false),tempTex(false),inputTex(false),hasNPOTTextures(false),selectedDebug(NULL),
 	currentId(0),materialOverride(false)
 {
 	LOG(LOG_NO_INFO,_("RenderThread this=") << this);
@@ -158,6 +158,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	sys=th->m_sys;
 	rt=th;
 	NPAPI_params* p=th->npapi_params;
+	SemaphoreLighter lighter(th->initialized);
 
 	th->windowWidth=p->width;
 	th->windowHeight=p->height;
@@ -210,6 +211,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 
 	th->commonGLInit(th->windowWidth, th->windowHeight);
 	th->commonGLResize(th->windowWidth, th->windowHeight);
+	lighter.light();
 	
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
@@ -759,6 +761,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 {
 	sys=th->m_sys;
 	rt=th;
+	SemaphoreLighter lighter(th->initialized);
 	RECT size=sys->getFrameSize();
 	int initialWidth=size.Xmax/20;
 	int initialHeight=size.Ymax/20;
@@ -774,6 +777,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 	SDL_SetVideoMode(th->windowWidth, th->windowHeight, 24, SDL_OPENGL|SDL_RESIZABLE);
 	th->commonGLInit(th->windowWidth, th->windowHeight);
 	th->commonGLResize(th->windowWidth, th->windowHeight);
+	lighter.light();
 
 	ThreadProfile* profile=sys->allocateProfiler(RGB(200,0,0));
 	profile->setTag("Render");
@@ -960,6 +964,7 @@ void RenderThread::tick()
 
 TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 {
+	assert(w && h);
 	Locker l(mutexLargeTexture);
 	//Find the number of blocks needed for the given w and h
 	uint32_t blocksW=(w+127)/128;

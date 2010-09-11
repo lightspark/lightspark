@@ -143,7 +143,7 @@ private:
 	uint32_t* chunks;
 	TextureChunk(uint32_t w, uint32_t h);
 public:
-	TextureChunk():chunks(NULL){}
+	TextureChunk():chunks(NULL),width(0),height(0){}
 	TextureChunk(const TextureChunk& r);
 	TextureChunk& operator=(const TextureChunk& r);
 	~TextureChunk();

@@ -316,18 +316,21 @@ TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 {
 	width=w;
 	height=h;
-	uint32_t blocksW=(w+127)/128;
-	uint32_t blocksH=(h+127)/128;
+	if(w==0 || h==0)
+	{
+		chunks=NULL;
+		return;
+	}
+	const uint32_t blocksW=(w+127)/128;
+	const uint32_t blocksH=(h+127)/128;
 	chunks=new uint32_t[blocksW*blocksH];
 }
 
-TextureChunk::TextureChunk(const TextureChunk& r):width(r.width),height(r.height)
+TextureChunk::TextureChunk(const TextureChunk& r):chunks(NULL),width(r.width),height(r.height)
 {
 	assert(chunks==NULL);
-	uint32_t blocksW=(width+127)/128;
-	uint32_t blocksH=(height+127)/128;
-	chunks=new uint32_t[blocksW*blocksH];
-	memcpy(chunks, r.chunks, blocksW*blocksH*4);
+	assert(width==0 && height==0);
+	return;
 }
 
 TextureChunk& TextureChunk::operator=(const TextureChunk& r)

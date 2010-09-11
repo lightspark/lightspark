@@ -178,7 +178,7 @@ private:
 	float renderRate;
 	bool error;
 	bool shutdown;
-	RenderThread* renderThread;
+	RenderThread* volatile renderThread;
 	InputThread* inputThread;
 	NPAPI_params npapiParams;
 	ENGINE engine;

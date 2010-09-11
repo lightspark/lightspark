@@ -614,6 +614,8 @@ void SystemState::createEngines()
 		if(renderRate)
 			startRenderTicks();
 	}
+	while(!renderThread);
+	renderThread->waitForInitialization();
 	//Now that there is something to actually render the contents add the SystemState to the stage
 	setOnStage(true);
 	sem_post(&mutex);

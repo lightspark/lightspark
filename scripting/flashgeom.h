@@ -61,6 +61,7 @@ public:
 	ASFUNCTION(contains);
 	ASFUNCTION(containsPoint);
 	ASFUNCTION(containsRect);
+	ASFUNCTION(equals);
 
 	tiny_string toString(bool debugMsg=false);
 };

@@ -287,6 +287,16 @@ ASFUNCTIONBODY(Rectangle,containsRect)
 {
 	assert_and_throw(argslen == 1);
 	Rectangle* th = static_cast<Rectangle*>(obj);
+	Rectangle* cr = static_cast<Rectangle*>(args[0]);
+
+	return abstract_b( th->x <= cr->Xmin && cr->Xmax <= th->x + th->width
+						&& th->y <= cr->Ymin && cr->Ymax <= th->y + th->height );
+}
+
+ASFUNCTIONBODY(Rectangle,equals)
+{
+	assert_and_throw(argslen == 1);
+	Rectangle* th = static_cast<Rectangle*>(obj);
 	Point* cr = static_cast<Rectangle*>(args[0]);
 
 	return abstract_b( th->x <= cr->Xmin && cr->Xmax <= th->x + th->width

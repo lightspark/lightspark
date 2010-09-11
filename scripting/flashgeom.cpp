@@ -344,7 +344,6 @@ ASFUNCTIONBODY(Rectangle,inflatePoint)
 	return NULL;
 }
 
-// TODO: IMPLEMENT THIS
 ASFUNCTIONBODY(Rectangle,intersection)
 {
 	assert_and_throw(argslen == 1);
@@ -360,10 +359,20 @@ ASFUNCTIONBODY(Rectangle,intersection)
 		minp = th;
 		maxp = ti;
 	}
+	number_t thtop = th->y;
+	number_t thleft = th->x;
+	number_t thright = th->x + th->width;
+	number_t thbottom = th->y + th->height;
 
-	// check if the rectangles don't intersect
-	if ( !( maxp->x <= minp->x + minp->width && maxp->y <= minp->y + minp->height ) )
+	number_t titop = ti->y;
+	number_t tileft = ti->x;
+	number_t tiright = ti->x + ti->width;
+	number_t tibottom = ti->y + ti->height;
+
+	if ( (thtop > tibottom || thright < tileft ||
+						thbottom < titop || thleft > tiright) )
 	{
+		// rectangles don't intersect
 		ret->x = 0;
 		ret->y = 0;
 		ret->width = 0;
@@ -371,7 +380,7 @@ ASFUNCTIONBODY(Rectangle,intersection)
 		return ret;
 	}
 
-	return NULL;
+	return ret;
 }
 
 ASFUNCTIONBODY(Rectangle,intersects)

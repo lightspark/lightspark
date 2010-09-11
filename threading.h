@@ -80,6 +80,26 @@ public:
 	bool try_wait();
 };
 
+class SemaphoreLighter
+{
+private:
+	Semaphore& _s;
+	bool lighted;
+public:
+	SemaphoreLighter(Semaphore& s):_s(s),lighted(false){}
+	~SemaphoreLighter()
+	{
+		if(!lighted)
+			_s.signal();
+	}
+	void light()
+	{
+		assert(!lighted);
+		_s.signal();
+		lighted=true;
+	}
+};
+
 class Locker
 {
 private:

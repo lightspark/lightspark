@@ -166,7 +166,7 @@ void SystemState::staticDeinit()
 
 SystemState::SystemState(ParseThread* p):RootMovieClip(NULL,true),parseThread(p),renderRate(0),error(false),shutdown(false),
 	renderThread(NULL),inputThread(NULL),engine(NONE),fileDumpAvailable(0),waitingForDump(false),vmVersion(VMNONE),childPid(0),
-	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),xOffset(0),yOffset(0),currentVm(NULL),
+	useGnashFallback(false),showProfilingData(false),showInteractiveMap(false),showDebug(false),currentVm(NULL),
 	finalizingDestruction(false),useInterpreter(true),useJit(false),downloadManager(NULL),scaleMode(SHOW_ALL)
 {
 	cookiesFileName[0]=0;
@@ -587,13 +587,15 @@ void SystemState::createEngines()
 			sem_post(&mutex);
 			//Engines should not be started, stop everything
 			stopEngines();
+			sem_post(&mutex);
 			return;
-		}
+			}
 	}
 #else 
 	//COMPILE_PLUGIN not defined
 	if(useGnashFallback && engine==GTKPLUG && vmVersion!=AVM2)
 	{
+		sem_post(&mutex);
 		throw new UnsupportedException("GNASH fallback not available when not built with COMPILE_PLUGIN");
 	}
 #endif
@@ -603,6 +605,7 @@ void SystemState::createEngines()
 #ifdef COMPILE_PLUGIN
 		npapiParams.helper(npapiParams.helperArg, (helper_t)delayedCreation, this);
 #else
+		sem_post(&mutex);
 		throw new UnsupportedException("Plugin engine not available when not built with COMPILE_PLUGIN");
 #endif
 	}
@@ -614,11 +617,11 @@ void SystemState::createEngines()
 		if(renderRate)
 			startRenderTicks();
 	}
+	sem_post(&mutex);
 	while(!renderThread);
 	renderThread->waitForInitialization();
 	//Now that there is something to actually render the contents add the SystemState to the stage
 	setOnStage(true);
-	sem_post(&mutex);
 }
 
 void SystemState::needsAVM2(bool n)

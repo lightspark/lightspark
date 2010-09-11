@@ -247,6 +247,8 @@ void RemoveObject2Tag::execute(MovieClip* parent, list <pair<PlaceInfo, DisplayO
 	{
 		if(it->second->Depth==Depth)
 		{
+			it->second->parent=NULL;
+			it->second->setRoot(NULL);
 			it->second->decRef();
 			ls.erase(it);
 			break;
@@ -984,17 +986,18 @@ void DefineShapeTag::Render()
 	}
 
 	MatrixApplier ma(getMatrix());
-	glScalef(0.05,0.05,1);
+	defaultRender();
+//	glScalef(0.05,0.05,1);
 
 	if(!isSimple())
 		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 
-	std::vector < GeomShape >::iterator it=cached.begin();
+/*	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 	{
 		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
 		it->Render();
-	}
+	}*/
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
@@ -1315,6 +1318,8 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 				(ls.begin(),ls.end(),Depth,list_orderer());
 			//As we are inserting the object in the list we need to incref it
 			toAdd->incRef();
+			toAdd->parent=parent;
+			toAdd->setRoot(parent->getRoot());
 			ls.insert(it,make_pair(infos,toAdd));
 		}
 	}
@@ -1353,10 +1358,14 @@ void PlaceObject2Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 			}
 			else
 			{
+				it->second->parent=NULL;
+				it->second->setRoot(NULL);
 				it->second->decRef();
 				ls.erase(it);
 				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
 				toAdd->incRef();
+				toAdd->parent=parent;
+				toAdd->setRoot(parent->getRoot());
 				ls.insert(it,make_pair(infos,toAdd));
 			}
 		}
@@ -1482,6 +1491,8 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 				(ls.begin(),ls.end(),Depth,list_orderer());
 			//As we are inserting the object in the list we need to incref it
 			toAdd->incRef();
+			toAdd->parent=parent;
+			toAdd->setRoot(parent->getRoot());
 			ls.insert(it,make_pair(infos,toAdd));
 		}
 	}
@@ -1524,6 +1535,8 @@ void PlaceObject3Tag::execute(MovieClip* parent, list < pair< PlaceInfo, Display
 				ls.erase(it);
 				list<pair<PlaceInfo, DisplayObject*> >::iterator it=lower_bound(ls.begin(),ls.end(),Depth,list_orderer());
 				toAdd->incRef();
+				toAdd->parent=parent;
+				toAdd->setRoot(parent->getRoot());
 				ls.insert(it,make_pair(infos,toAdd));
 			}
 		}

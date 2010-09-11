@@ -305,6 +305,11 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			assert(th->renderNeeded);
 			if(th->m_sys->isOnError())
 			{
+				glMatrixMode(GL_PROJECTION);
+				glLoadIdentity();
+				glOrtho(0,th->windowWidth,0,th->windowHeight,-100,0);
+				glMatrixMode(GL_MODELVIEW);
+				glLoadIdentity();
 				glUseProgram(0);
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -636,6 +641,10 @@ void RenderThread::commonGLResize(int w, int h)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0,windowWidth,0,windowHeight,-100,0);
+	//scaleY is negated to adapt the flash and gl coordinates system
+	//An additional translation is added for the same reason
+	glTranslatef(offsetX,offsetY+windowHeight,0);
+	glScalef(scaleX,-scaleY,1);
 
 	glMatrixMode(GL_MODELVIEW);
 
@@ -704,15 +713,7 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 		glEnd();
 	}
 	else
-	{
-		//scaleY is negated to adapt the flash and gl coordinates system
-		//An additional translation is added for the same reason
-		glTranslatef(offsetX,offsetY+windowHeight,0);
-		glScalef(scaleX,-scaleY,1);
-		glTranslatef(m_sys->xOffset,m_sys->yOffset,0);
-		
 		m_sys->Render();
-	}
 
 	if(testMode && m_sys->showDebug)
 	{
@@ -871,11 +872,16 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			SDL_PumpEvents();
 			if(th->m_sys->isOnError())
 			{
+				glMatrixMode(GL_PROJECTION);
+				glLoadIdentity();
+				glOrtho(0,th->windowWidth,0,th->windowHeight,-100,0);
+				glMatrixMode(GL_MODELVIEW);
+				glLoadIdentity();
+
 				glUseProgram(0);
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 				glDrawBuffer(GL_BACK);
-				glLoadIdentity();
 
 				glClearColor(0,0,0,1);
 				glClear(GL_COLOR_BUFFER_BIT);

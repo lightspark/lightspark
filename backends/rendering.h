@@ -28,6 +28,7 @@ namespace lightspark
 
 class RenderThread: public ITickJob
 {
+friend class DisplayObject;
 private:
 	SystemState* m_sys;
 	pthread_t t;

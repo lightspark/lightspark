@@ -61,6 +61,7 @@ protected:
 	float alpha;
 	bool visible;
 	TextureChunk cachedTex;
+	void defaultRender() const;
 public:
 	int Depth;
 	tiny_string name;
@@ -354,7 +355,7 @@ public:
 	* * \param deep Flag to enable propagation of the debugRender to children */
 	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	void check()
+	void check() const
 	{
 		assert_and_throw(frames.size()==framesLoaded);
 	}

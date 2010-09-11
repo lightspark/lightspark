@@ -193,18 +193,6 @@ void* InputThread::sdl_worker(InputThread* th)
 					case SDLK_s:
 						th->m_sys->state.stop_FP=true;
 						break;
-					case SDLK_DOWN:
-						th->m_sys->yOffset-=10;
-						break;
-					case SDLK_UP:
-						th->m_sys->yOffset+=10;
-						break;
-					case SDLK_LEFT:
-						th->m_sys->xOffset-=10;
-						break;
-					case SDLK_RIGHT:
-						th->m_sys->xOffset+=10;
-						break;
 					//Ignore any other keystrokes
 					default:
 						break;

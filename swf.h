@@ -222,8 +222,6 @@ public:
 	bool showProfilingData;
 	bool showInteractiveMap;
 	bool showDebug;
-	int xOffset;
-	int yOffset;
 	
 	std::string errorCause;
 	void setError(const std::string& c);

@@ -68,6 +68,8 @@ public:
 	ASFUNCTION(intersects);
 	ASFUNCTION(isEmpty);
 	ASFUNCTION(offset);
+	ASFUNCTION(offsetPoint);
+	ASFUNCTION(setEmpty);
 
 	tiny_string toString(bool debugMsg=false);
 };

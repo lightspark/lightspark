@@ -81,6 +81,8 @@ void Rectangle::sinit(Class_base* c)
 	c->setMethodByQName("intersects","",Class<IFunction>::getFunction(intersects),true);
 	c->setMethodByQName("isEmpty","",Class<IFunction>::getFunction(isEmpty),true);
 	c->setMethodByQName("offset","",Class<IFunction>::getFunction(offset),true);
+	c->setMethodByQName("offsetPoint","",Class<IFunction>::getFunction(offsetPoint),true);
+	c->setMethodByQName("setEmpty","",Class<IFunction>::getFunction(setEmpty),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -404,6 +406,31 @@ ASFUNCTIONBODY(Rectangle,offset)
 
 	th->x += args[0]->toNumber();
 	th->y += args[1]->toNumber();
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Rectangle,offsetPoint)
+{
+	assert_and_throw(argslen == 1);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	Point* po = static_cast<Point*>(args[0]);
+
+	th->x += po->getX();
+	th->y += po->getY();
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Rectangle,setEmpty)
+{
+	assert_and_throw(argslen == 0);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+
+	th->x = 0;
+	th->y = 0;
+	th->width = 0;
+	th->height = 0;
 
 	return NULL;
 }

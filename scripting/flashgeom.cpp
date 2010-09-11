@@ -910,7 +910,6 @@ ASFUNCTIONBODY(Matrix,clone)
 
 	Matrix* th=static_cast<Matrix*>(obj);
 	Matrix* ret=Class<Matrix>::getInstanceS();
-	Matrix* th=static_cast<Matrix*>(obj);
 	
 	ret->a = th->a; ret->c = th->c; ret->tx = th->tx;
 	ret->b = th->b; ret->d = th->d; ret->ty = th->ty;

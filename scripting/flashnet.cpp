@@ -589,21 +589,17 @@ void NetStream::tick()
 	if(paused)
 	{
 		//If sound is enabled, pause the sound stream too. This will stop all time from running.
-//		if(!audioPaused)
-		if(!audioStream->paused())
+		if(audioStream && audioStream->isValid() && !audioStream->paused())
 		{
 			sys->audioManager->pauseStreamPlugin(audioStream);
-//			audioPaused = true;
 		}
 		return;
 	}
 
 	//If sound is enabled, and the stream is not paused anymore, resume the sound stream. This will restart time.
-//	else if(audioPaused)
-	else if(audioStream->paused())
+	else if(audioStream && audioStream->isValid() && audioStream->paused())
 	{
 		sys->audioManager->resumeStreamPlugin(audioStream);
-//		audioPaused = false;
 	}
 
 	//Advance video and audio to current time, follow the audio stream time
@@ -909,9 +905,9 @@ void NetStream::execute()
 	videoDecoder=NULL;
 	if(audioStream)
 		sys->audioManager->freeStreamPlugin(audioStream);
+	audioStream=NULL;
 	if(audioDecoder)
 		delete audioDecoder;
-//	soundStreamId = 0;
 	audioDecoder=NULL;
 
 	sem_post(&mutex);

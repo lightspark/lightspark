@@ -176,7 +176,7 @@ void PulsePlugin::streamWriteCB ( pa_stream *stream, size_t askedData, PulseAudi
 
 bool PulsePlugin::isTimingAvailable() const
 {
-	return !noServer;
+	return serverAvailable();
 }
 
 void PulsePlugin::freeStream ( AudioStream *audioStream )
@@ -186,7 +186,7 @@ void PulsePlugin::freeStream ( AudioStream *audioStream )
 
 	PulseAudioStream *s = static_cast<PulseAudioStream *> ( audioStream );
 
-	if ( noServer == false )
+	if ( serverAvailable() )
 	{
 		pa_stream *toDelete = s->stream;
 		pa_stream_disconnect ( toDelete );
@@ -221,15 +221,15 @@ void started_notify()
 
 AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 {
-	while ( !contextReady );
-	pulseLock();
-	assert ( decoder->isValid() );
 	PulseAudioStream *audioStream = new PulseAudioStream( this );
 	streams.push_back( audioStream );	//Create new SoundStream
-
-	audioStream->decoder = decoder;
-	if ( noServer == false )
+	if ( serverAvailable() )
 	{
+		while ( !contextReady );
+		pulseLock();
+		assert ( decoder->isValid() );
+
+		audioStream->decoder = decoder;
 		pa_sample_spec ss;
 		ss.format = PA_SAMPLE_S16LE;
 		ss.rate = decoder->sampleRate;
@@ -248,13 +248,13 @@ AudioStream *PulsePlugin::createStream ( AudioDecoder *decoder )
 		pa_stream_set_started_callback ( audioStream->stream, ( pa_stream_notify_cb_t ) started_notify, NULL );
 		pa_stream_connect_playback ( audioStream->stream, NULL, &attrs,
 		                             ( pa_stream_flags ) ( PA_STREAM_START_CORKED ), NULL, NULL );
+		pulseUnlock();
 	}
 	else
 	{
 		//Create the stream as dead
 		audioStream->streamStatus = PulseAudioStream::STREAM_DEAD;
 	}
-	pulseUnlock();
 	return audioStream;
 }
 
@@ -271,6 +271,7 @@ void PulsePlugin::contextStatusCB ( pa_context *context, PulsePlugin *th )
 		th->noServer = true;
 		th->contextReady = false; //In case something went wrong and the context is not correctly set
 		th->stop(); //It should stop if the context can't be set
+		LOG(LOG_ERROR,_("Connection to PulseAudio server failed"));
 		break;
 	default:
 		break;
@@ -280,7 +281,7 @@ void PulsePlugin::pauseStream(AudioStream *audioStream)
 {
 	PulseAudioStream *pulseStream = NULL;
 	pulseStream = static_cast<PulseAudioStream *> ( audioStream );
-	if(!pulseStream->paused())
+	if(pulseStream->isValid() && !pulseStream->paused())
 	{
 		pa_stream_cork(pulseStream->stream, 1, NULL, NULL);	//This will stop the stream's time from running
 		pulseStream->pause=true;
@@ -291,7 +292,7 @@ void PulsePlugin::resumeStream(AudioStream *audioStream)
 {
 	PulseAudioStream *pulseStream = NULL;
 	pulseStream = static_cast<PulseAudioStream *> ( audioStream );
-	if(pulseStream->paused())
+	if(pulseStream->isValid() && pulseStream->paused())
 	{
 		pa_stream_cork(pulseStream->stream, 0, NULL, NULL);	//This will restart time
 		pulseStream->pause=false;
@@ -323,16 +324,19 @@ void PulsePlugin::stop()
 	if ( !stopped )
 	{
 		stopped = true;
-		pulseLock();
 		for ( stream_iterator it = streams.begin();it != streams.end(); it++ )
 		{
 			freeStream( *it );
 		}
-		pa_context_disconnect ( context );
-		pa_context_unref ( context );
-		pulseUnlock();
-		pa_threaded_mainloop_stop ( mainLoop );
-		pa_threaded_mainloop_free ( mainLoop );
+		if(serverAvailable())
+		{
+			pulseLock();
+			pa_context_disconnect ( context );
+			pa_context_unref ( context );
+			pulseUnlock();
+			pa_threaded_mainloop_stop ( mainLoop );
+			pa_threaded_mainloop_free ( mainLoop );
+		}
 	}
 }
 
@@ -369,7 +373,7 @@ uint32_t PulseAudioStream::getPlayedTime ( )
 
 void PulseAudioStream::fill ()
 {
-	if ( manager->serverAvailable() )
+	if ( isValid() )
 	{
 		if ( streamStatus != PulseAudioStream::STREAM_READY ) //The stream is not yet ready, delay upload
 			return;
@@ -417,7 +421,13 @@ void PulseAudioStream::fill ()
 
 bool PulseAudioStream::paused()
 {
+	assert_and_throw(isValid());
 	return pa_stream_is_corked(stream);
+}
+
+bool PulseAudioStream::isValid()
+{
+	return streamStatus != STREAM_DEAD;
 }
 
 

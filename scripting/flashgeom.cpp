@@ -483,8 +483,8 @@ ASFUNCTIONBODY(Rectangle,_union)
 
 	ret->x = min(th->x, ti->x);
 	ret->y = min(th->y, ti->y);
-	ret->width = max(th->width, ti->width);
-	ret->height = max(th->height, ti->height);
+	ret->width = max(th->x + th->width, ti->x + ti->width);
+	ret->height = max(th->y + th->height, ti->y + ti->height);
 
 	return ret;
 }

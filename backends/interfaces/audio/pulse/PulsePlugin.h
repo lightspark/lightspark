@@ -67,6 +67,7 @@ class PulseAudioStream: public AudioStream
 	PulseAudioStream ( PulsePlugin *m );
 	uint32_t getPlayedTime ();
 	bool paused();
+	bool isValid();
 	void fill ();
 
 //  private:

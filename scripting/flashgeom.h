@@ -33,22 +33,45 @@ public:
 	number_t x,y,width,height;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	tiny_string toString(bool debugMsg=false);
-	ASFUNCTION(_constructor);
+	const RECT getRect() const;
+
+	// properties
+	ASFUNCTION(_getBottom);
+	ASFUNCTION(_setBottom);
+	ASFUNCTION(_getBottomRight);
+	ASFUNCTION(_setBottomRight);
+	ASFUNCTION(_getHeight);
+	ASFUNCTION(_setHeight);
 	ASFUNCTION(_getLeft);
 	ASFUNCTION(_setLeft);
 	ASFUNCTION(_getRight);
 	ASFUNCTION(_setRight);
-	ASFUNCTION(_getWidth);
-	ASFUNCTION(_setWidth);
+	ASFUNCTION(_getSize);
+	ASFUNCTION(_setSize);
 	ASFUNCTION(_getTop);
 	ASFUNCTION(_setTop);
-	ASFUNCTION(_getBottom);
-	ASFUNCTION(_setBottom);
-	ASFUNCTION(_getHeight);
-	ASFUNCTION(_setHeight);
+	ASFUNCTION(_getTopLeft);
+	ASFUNCTION(_setTopLeft);
+	ASFUNCTION(_getWidth);
+	ASFUNCTION(_setWidth);
+
+	// methods
+	ASFUNCTION(_constructor);
 	ASFUNCTION(clone);
-	const RECT getRect() const;
+	ASFUNCTION(contains);
+	ASFUNCTION(containsPoint);
+	ASFUNCTION(containsRect);
+	ASFUNCTION(equals);
+	ASFUNCTION(inflate);
+	ASFUNCTION(inflatePoint);
+	ASFUNCTION(intersection);
+	ASFUNCTION(intersects);
+	ASFUNCTION(isEmpty);
+	ASFUNCTION(offset);
+	ASFUNCTION(offsetPoint);
+	ASFUNCTION(setEmpty);
+	tiny_string toString(bool debugMsg=false);
+	ASFUNCTION(_union);
 };
 
 class Point: public ASObject
@@ -103,8 +126,8 @@ public:
 
 class Matrix: public ASObject
 {
-	number_t a, b, c, d, tx, ty;
 public:
+	number_t a, b, c, d, tx, ty;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	
@@ -114,6 +137,8 @@ public:
 	ASFUNCTION(_constructor);
 	
 	//Methods
+	ASFUNCTION(clone);
+	ASFUNCTION(concat);
 	ASFUNCTION(identity);
 	ASFUNCTION(rotate);
 	ASFUNCTION(scale);

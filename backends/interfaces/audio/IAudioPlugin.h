@@ -35,6 +35,7 @@ class AudioStream
 	lightspark::AudioDecoder *decoder;
 	bool pause;	//Indicates whether the stream is paused as a result of pauseStream being called
 	virtual bool paused() = 0;	//Is the stream paused? (corked)
+	virtual bool isValid() = 0; //Is the stream alive, fully working?
 	virtual uint32_t getPlayedTime() = 0;
 	virtual void fill() = 0;
 	virtual ~AudioStream() {};

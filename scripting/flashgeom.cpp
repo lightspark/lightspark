@@ -380,16 +380,18 @@ ASFUNCTIONBODY(Rectangle,intersects)
 	Rectangle* th = static_cast<Rectangle*>(obj);
 	Rectangle* ti = static_cast<Rectangle*>(args[0]);
 
-	Rectangle* minp = ti;
-	Rectangle* maxp = th;
+	number_t thtop = th->y;
+	number_t thleft = th->x;
+	number_t thright = th->x + th->width;
+	number_t thbottom = th->y + th->height;
 
-	if ( th->x <= ti->x && th->y <= ti->y )
-	{
-		minp = th;
-		maxp = ti;
-	}
+	number_t titop = ti->y;
+	number_t tileft = ti->x;
+	number_t tiright = ti->x + ti->width;
+	number_t tibottom = ti->y + ti->height;
 
-	return abstract_b( maxp->x <= minp->x + minp->width && maxp->y <= minp->y + minp->height );
+	return abstract_b( !(thtop > tibottom || thright < tileft ||
+						thbottom < titop || thleft > tiright) );
 }
 
 ASFUNCTIONBODY(Rectangle,isEmpty)

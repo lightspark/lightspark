@@ -23,10 +23,8 @@ private function appComplete():void
 	addChild(square);
 
 	var clickPoint:Point = new Point(square.x, square.y);
-	trace("display object coordinates:", clickPoint);
-	trace("stage coordinates:", square.localToGlobal(clickPoint));
 
-	Tests.assertEquals(square.localToGlobal(clickPoint), new Point(200, 400));
+	Tests.assertEquals(square.localToGlobal(clickPoint), new Point(200, 400), "localToGlobal()");
 	Tests.report(visual, name);
 }
 ]]>

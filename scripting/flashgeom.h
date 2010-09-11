@@ -138,6 +138,7 @@ public:
 	
 	//Methods
 	ASFUNCTION(clone);
+	ASFUNCTION(concat);
 	ASFUNCTION(identity);
 	ASFUNCTION(rotate);
 	ASFUNCTION(scale);

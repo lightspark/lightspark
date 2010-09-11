@@ -944,8 +944,8 @@ bool RootMovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 	RECT f=getFrameSize();
 	xmin=0;
 	ymin=0;
-	xmax=f.Xmax;
-	ymax=f.Ymax;
+	xmax=f.Xmax/20;
+	ymax=f.Ymax/20;
 	return true;
 }
 

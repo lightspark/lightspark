@@ -119,7 +119,7 @@ private:
 	public:
 		uint8_t* ch[3];
 		uint32_t time;
-		YUVBuffer(){ch[0]=NULL;ch[1]=NULL;ch[2]=NULL;}
+		YUVBuffer():time(0){ch[0]=NULL;ch[1]=NULL;ch[2]=NULL;}
 		~YUVBuffer()
 		{
 			if(ch[0])

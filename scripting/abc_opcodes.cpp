@@ -135,7 +135,8 @@ void ABCVm::coerce_a()
 
 ASObject* ABCVm::checkfilter(ASObject* o)
 {
-	throw UnsupportedException("checkfilter not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"checkfilter");
+	return o;
 }
 
 ASObject* ABCVm::coerce_s(ASObject* o)
@@ -2068,18 +2069,11 @@ void ABCVm::newObject(call_context* th, int n)
 
 void ABCVm::getDescendants(call_context* th, int n)
 {
-	throw UnsupportedException("getDescendants not supported");
-/*	LOG(LOG_CALLS,_("newObject ") << n);
-	ASObject* ret=new ASObject;
-	for(int i=0;i<n;i++)
-	{
-		ASObject* value=th->runtime_stack_pop();
-		ASObject* name=th->runtime_stack_pop();
-		ret->setVariableByQName(name->toString(),"",value);
-		name->decRef();
-	}
-
-	th->runtime_stack_push(ret);*/
+	multiname* name=th->context->getMultiname(n,th);
+	LOG(LOG_NOT_IMPLEMENTED,"getDescendants " << *name);
+	ASObject* obj=th->runtime_stack_pop();
+	obj->decRef();
+	th->runtime_stack_push(new Undefined);
 }
 
 number_t ABCVm::increment(ASObject* o)

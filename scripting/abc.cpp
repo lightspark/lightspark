@@ -1371,7 +1371,7 @@ void ABCContext::exec()
 
 	LOG(LOG_CALLS, _("Building entry script traits: ") << scripts[i].trait_count );
 	for(unsigned int j=0;j<scripts[i].trait_count;j++)
-		buildTrait(global,&scripts[i].traits[j],false);
+		buildTrait(global,&scripts[i].traits[j],false,entry);
 
 #ifndef NDEBUG
 		global->initialized=true;
@@ -1753,36 +1753,47 @@ void ABCContext::buildTrait(ASObject* obj, const traits_info* t, bool isBorrowed
 			method_info* m=&methods[t->method];
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(m);
 
-			//We have to override if there is a method with the same name,
-			//even if the namespace are different, if both are protected
-			assert_and_throw(obj->getObjectType()==T_CLASS);
-			Class_inherit* prot=static_cast<Class_inherit*>(obj);
-			assert(prot);
-			if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
+			if(obj->getObjectType()==T_CLASS)
 			{
-				//Walk the super chain and find variables to override
-				Class_base* cur=prot->super;
-				while(cur)
-				{
-					if(cur->use_protected)
-					{
-						obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false,isBorrowed);
-						if(var)
-						{
-							assert(var->var);
-							//A superclass defined a protected method that we have to override.
-							f->incRef();
-							obj->setMethodByQName(mname.name_s,cur->protected_ns,f,isBorrowed);
-						}
-					}
-					cur=cur->super;
-				}
-			}
+				//Class method
 
+				//We have to override if there is a method with the same name,
+				//even if the namespace are different, if both are protected
+				Class_inherit* prot=static_cast<Class_inherit*>(obj);
+				assert(prot);
+				if(t->kind&0x20 && prot->use_protected && mname.ns[0]==prot->protected_ns)
+				{
+					//Walk the super chain and find variables to override
+					Class_base* cur=prot->super;
+					while(cur)
+					{
+						if(cur->use_protected)
+						{
+							obj_var* var=cur->Variables.findObjVar(mname.name_s,cur->protected_ns,false,isBorrowed);
+							if(var)
+							{
+								assert(var->var);
+								//A superclass defined a protected method that we have to override.
+								f->incRef();
+								obj->setMethodByQName(mname.name_s,cur->protected_ns,f,isBorrowed);
+							}
+						}
+						cur=cur->super;
+					}
+				}
+				//Methods save inside the scope stack of the class
+				f->acquireScope(prot->class_scope);
+			}
+			else if(deferred_initialization)
+			{
+				//Script method
+				f->addToScope(obj);
+			}
+			else //TODO: transform in a simple assert
+				assert_and_throw(obj->getObjectType()==T_CLASS || deferred_initialization);
+			
 			f->bindLevel(obj->getLevel());
 			obj->setMethodByQName(mname.name_s,mname.ns[0],f,isBorrowed);
-			//Methods save inside the scope stack of the class
-			f->acquireScope(prot->class_scope);
 
 			LOG(LOG_TRACE,_("End Method trait: ") << mname);
 			break;

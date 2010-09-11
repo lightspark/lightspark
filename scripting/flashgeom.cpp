@@ -76,6 +76,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setMethodByQName("containsRect","",Class<IFunction>::getFunction(containsRect),true);
 	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
 	c->setMethodByQName("inflate","",Class<IFunction>::getFunction(inflate),true);
+	c->setMethodByQName("inflatePoint","",Class<IFunction>::getFunction(inflatePoint),true);
 }
 
 void Rectangle::buildTraits(ASObject* o)
@@ -312,6 +313,22 @@ ASFUNCTIONBODY(Rectangle,inflate)
 	Rectangle* th = static_cast<Rectangle*>(obj);
 	number_t dx = args[0]->toNumber();
 	number_t dy = args[1]->toNumber();
+
+	th->x -= dx;
+	th->width += 2 * dx;
+	th->y -= dy;
+	th->height += 2 * dy;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Rectangle,inflatePoint)
+{
+	assert_and_throw(argslen == 1);
+	Rectangle* th = static_cast<Rectangle*>(obj);
+	Point* po = static_cast<Point*>(args[0]);
+	number_t dx = po->getX();
+	number_t dy = po->getY();
 
 	th->x -= dx;
 	th->width += 2 * dx;

@@ -167,7 +167,21 @@ public:
 		Signal the completion of the upload to the texture
 		NOTE: fence may be called on shutdown even if the upload has not happen, so be ready for this event
 	*/
-	virtual void fence()=0;
+	virtual void uploadFence()=0;
+};
+
+class CairoRenderer: public ITextureUploadable
+{
+protected:
+	~CairoRenderer(){}
+private:
+	const TextureChunk& tex;
+public:
+	CairoRenderer(const TextureChunk& _t):tex(_t){}
+	void sizeNeeded(uint32_t& w, uint32_t& h);
+	void upload(uint8_t* data, uint32_t w, uint32_t h);
+	const TextureChunk& getTexture() const;
+	void uploadFence();
 };
 
 };

@@ -72,7 +72,7 @@ protected:
 	/*
 		Derived classes must spinwaits on this to become false before deleting
 	*/
-	volatile bool waitForFencing;
+	ATOMIC_INT32(fenceCount);
 	uint32_t frameWidth;
 	uint32_t frameHeight;
 	bool setSize(uint32_t w, uint32_t h);
@@ -80,7 +80,7 @@ protected:
 	LS_VIDEO_CODEC videoCodec;
 	TextureChunk videoTexture;
 public:
-	VideoDecoder():resizeGLBuffers(false),waitForFencing(true),frameWidth(0),frameHeight(0),frameRate(0){}
+	VideoDecoder():resizeGLBuffers(false),fenceCount(0),frameWidth(0),frameHeight(0),frameRate(0){}
 	virtual ~VideoDecoder(){};
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
@@ -98,21 +98,21 @@ public:
 	/*
 		Useful to avoid destruction of the object while a pending upload is waiting
 	*/
-	void setWaitForFencing()
+	void waitForFencing()
 	{
-		waitForFencing=true;
+		ATOMIC_INCREMENT(fenceCount);
 	}
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h);
 	const TextureChunk& getTexture() const;
-	void fence();
+	void uploadFence();
 };
 
 class NullVideoDecoder: public VideoDecoder
 {
 public:
 	NullVideoDecoder() {status=VALID;}
-	~NullVideoDecoder() { while(waitForFencing); }
+	~NullVideoDecoder() { while(fenceCount); }
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time){return false;}
 	bool discardFrame(){return false;}
 	void skipUntil(uint32_t time){}

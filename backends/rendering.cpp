@@ -267,7 +267,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 				u->sizeNeeded(w,h);
 				th->loadChunkBGRA(u->getTexture(), w, h, (uint8_t*)th->currentPixelBufferOffset);
 				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-				u->fence();
+				u->uploadFence();
 				th->prevUploadJob=NULL;
 			}
 
@@ -445,7 +445,7 @@ void RenderThread::commonGLDeinit()
 	//Fence any object that is still waiting for upload
 	deque<ITextureUploadable*>::iterator it=uploadJobs.begin();
 	for(;it!=uploadJobs.end();it++)
-		(*it)->fence();
+		(*it)->uploadFence();
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
 	glDeleteFramebuffers(1,&rt->fboId);
 	dataTex.shutdown();
@@ -832,7 +832,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 				u->sizeNeeded(w,h);
 				th->loadChunkBGRA(u->getTexture(), w, h, (uint8_t*)th->currentPixelBufferOffset);
 				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-				u->fence();
+				u->uploadFence();
 				th->prevUploadJob=NULL;
 			}
 

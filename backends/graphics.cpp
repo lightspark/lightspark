@@ -349,3 +349,23 @@ TextureChunk::~TextureChunk()
 {
 	delete[] chunks;
 }
+
+void CairoRenderer::sizeNeeded(uint32_t& w, uint32_t& h)
+{
+	::abort();
+}
+
+void CairoRenderer::upload(uint8_t* data, uint32_t w, uint32_t h)
+{
+	::abort();
+}
+
+const TextureChunk& CairoRenderer::getTexture() const
+{
+	::abort();
+}
+
+void CairoRenderer::uploadFence()
+{
+	::abort();
+}

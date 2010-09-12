@@ -25,6 +25,7 @@
 #include "exceptions.h"
 #include "backends/rendering.h"
 #include "compat.h"
+#include <cairo.h>
 
 #include <iostream>
 
@@ -374,10 +375,23 @@ void CairoRenderer::uploadFence()
 
 void CairoRenderer::execute()
 {
-	//Allocate a new surface
-	surface=new uint8_t[tex.width*tex.height*4];
-	for(uint32_t i=0;i<tex.width*tex.height*4;i++)
-		surface[i]=i;
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, tex.width);
+	assert(cairoWidthStride==tex.width*4);
+	surface=new uint8_t[cairoWidthStride*tex.height];
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(surface, CAIRO_FORMAT_ARGB32, tex.width, tex.height, cairoWidthStride);
+	cairo_t* cr=cairo_create(cairoSurface);
+
+	cairo_set_source_rgba(cr, 0, 0, 0, 0);
+	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+	cairo_paint (cr);
+
+	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+	cairo_rectangle (cr, 0, 0, tex.width/4, tex.height/4);
+	cairo_set_source_rgba (cr, 1, 0, 0, 1);
+	cairo_fill (cr);
+
+	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
 }
 
 void CairoRenderer::threadAbort()

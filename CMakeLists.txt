@@ -362,3 +362,18 @@ ENDIF(${AUDIO_BACKEND} MATCHES "alsa")
 IF(${AUDIO_BACKEND} MATCHES "openal")
   ADD_SUBDIRECTORY(backends/interfaces/audio/openal)
 ENDIF(${AUDIO_BACKEND} MATCHES "openal")
+
+#Install icons and desktop file
+if(UNIX)
+  FOREACH(i 16 20 22 24 32 36 48 64 72 96 128 192 256 )
+    INSTALL(FILES media/lightspark-ico-${i}x${i}.png
+            DESTINATION ${DATADIR}/icons/hicolor/${i}x${i}/apps
+            RENAME lightspark.png
+           )
+  ENDFOREACH(i)
+  INSTALL(FILES media/lightspark-ico.svg
+          DESTINATION ${DATADIR}/icons/hicolor/scalable/apps
+          RENAME lightspark.svg
+         )
+  INSTALL(FILES media/lightspark.desktop DESTINATION ${DATADIR}/applications )
+endif(UNIX)

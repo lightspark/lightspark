@@ -33,7 +33,7 @@ REGISTER_CLASS_NAME(Security);
 void Capabilities::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
-	c->setGetterByQName("language","",Class<IFunction>::getFunction(_getLanguage));
+	c->setGetterByQName("language","",Class<IFunction>::getFunction(_getLanguage),true);
 	c->setVariableByQName("version","",Class<ASString>::getInstanceS("UNIX 10,0,0,0"));
 }
 
@@ -52,10 +52,10 @@ void ApplicationDomain::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	//Static
-	c->setGetterByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain));
+	c->setGetterByQName("currentDomain","",Class<IFunction>::getFunction(_getCurrentDomain),false);
 	//Instance
-	c->setVariableByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition));
-	c->setVariableByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition));
+	c->setMethodByQName("hasDefinition","",Class<IFunction>::getFunction(hasDefinition),true);
+	c->setMethodByQName("getDefinition","",Class<IFunction>::getFunction(getDefinition),true);
 }
 
 void ApplicationDomain::buildTraits(ASObject* o)
@@ -79,7 +79,7 @@ ASFUNCTIONBODY(ApplicationDomain,hasDefinition)
 
 	multiname name;
 	name.name_type=multiname::NAME_STRING;
-	name.ns.push_back(nsNameAndKind("",0)); //TODO: set type
+	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
 	stringToQName(tmp,name.name_s,name.ns[0].name);
 
@@ -114,7 +114,7 @@ ASFUNCTIONBODY(ApplicationDomain,getDefinition)
 
 	multiname name;
 	name.name_type=multiname::NAME_STRING;
-	name.ns.push_back(nsNameAndKind("",0)); //TODO: set type
+	name.ns.push_back(nsNameAndKind("",NAMESPACE)); //TODO: set type
 
 	stringToQName(tmp,name.name_s,name.ns[0].name);
 
@@ -143,17 +143,17 @@ void Security::sinit(Class_base* c)
 {
 	//Fully static class
 	c->setConstructor(NULL);
-	c->setGetterByQName("exactSettings","",Class<IFunction>::getFunction(_getExactSettings));
-	c->setSetterByQName("exactSettings","",Class<IFunction>::getFunction(_setExactSettings));
-	c->setGetterByQName("sandboxType","",Class<IFunction>::getFunction(_getSandboxType));
+	c->setGetterByQName("exactSettings","",Class<IFunction>::getFunction(_getExactSettings),false);
+	c->setSetterByQName("exactSettings","",Class<IFunction>::getFunction(_setExactSettings),false);
+	c->setGetterByQName("sandboxType","",Class<IFunction>::getFunction(_getSandboxType),false);
 	c->setVariableByQName("LOCAL_TRUSTED","",Class<ASString>::getInstanceS("localTrusted"));
 	c->setVariableByQName("LOCAL_WITH_FILE","",Class<ASString>::getInstanceS("localWithFile"));
 	c->setVariableByQName("LOCAL_WITH_NETWORK","",Class<ASString>::getInstanceS("localWithNetwork"));
 	c->setVariableByQName("REMOTE","",Class<ASString>::getInstanceS("remote"));
-	c->setVariableByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain));
-	c->setVariableByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain));
-	c->setVariableByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile));
-	c->setVariableByQName("showSettings","",Class<IFunction>::getFunction(showSettings));
+	c->setMethodByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain),false);
+	c->setMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),false);
+	c->setMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile),false);
+	c->setMethodByQName("showSettings","",Class<IFunction>::getFunction(showSettings),false);
 
 	sys->staticSecurityExactSettings = true;
 	sys->staticSecurityExactSettingsLocked = false;

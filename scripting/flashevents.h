@@ -217,7 +217,7 @@ public:
 class IEventDispatcher: public InterfaceClass
 {
 public:
-	static void linkTraits(ASObject* o);
+	static void linkTraits(Class_base* c);
 };
 
 class EventDispatcher: public ASObject
@@ -268,8 +268,13 @@ class FunctionEvent: public Event
 friend class ABCVm;
 private:
 	IFunction* f;
+	ASObject* obj;
+	ASObject** args;
+	unsigned int numArgs;
+	bool thisOverride;
 public:
-	FunctionEvent(IFunction* _f):Event("FunctionEvent"),f(_f){}
+	FunctionEvent(IFunction* _f, ASObject* _obj=NULL, ASObject** _args=NULL, uint32_t _numArgs=0, bool _thisOverride=false);
+	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() { return FUNCTION; }
 };

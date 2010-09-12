@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<mx:Application name="lightspark_matrix_test"
+<mx:Application name="lightspark_geom_Matrix_test"
 	xmlns:mx="http://www.adobe.com/2006/mxml"
 	layout="absolute"
 	applicationComplete="appComplete();"
@@ -15,6 +15,14 @@
 		var mat:Matrix = new Matrix();
 		Tests.assertTrue(mat.a == 1 && mat.b == 0 && mat.c == 0 && mat.d == 1, "new Matrix()");
 		
+		var matc:Matrix = mat.clone();
+		Tests.assertTrue(mat.a == matc.a && mat.b == matc.b && mat.c == matc.c && mat.d == matc.d && mat.tx == matc.tx && mat.ty == matc.ty, "matrix.clone");
+
+		var matm1:Matrix = new Matrix(1, 4, 2, 5, 3, 5);
+		var matm2:Matrix = new Matrix(2, 4, 5, 7, 9, 11);
+		var matm3:Matrix = new Matrix(39, 78, 51, 106, 3, 5);
+		Tests.assertEquals(matm1.concat(matm2), matm3, "matrix.concat");
+
 		mat.a = 50; mat.b = 60; mat.c = 5; mat.d = 100;
 		mat.identity();
 		Tests.assertTrue(mat.a == 1 && mat.b == 0 && mat.c == 0 && mat.d == 1, "Matrix.identity");
@@ -30,7 +38,7 @@
 		var mat4:Matrix = new Matrix();
 		mat4.translate(4, 2);
 		Tests.assertTrue(mat4.tx == 4 && mat4.ty == 2, "Matrix.translate");
-		
+
 		Tests.report(visual, this.name);
 	}
 ]]>

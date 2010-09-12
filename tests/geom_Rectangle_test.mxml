@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_geom_Point_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+<![CDATA[
+	import flash.geom.Rectangle;
+	import flash.geom.Point;
+
+	private function appComplete():void
+	{
+		
+		var rect:Rectangle = new Rectangle(0, 0, 10, 10);
+
+		Tests.assertEquals(rect.clone(), rect, "rectangle.clone");
+		
+		Tests.assertTrue(rect.contains(1, 1), "rectangle.contains")
+
+		var point:Point = new Point(1, 1);
+		Tests.assertTrue(rect.containsPoint(point), "rectangle.containsPoint")
+
+		var rect2:Rectangle = new Rectangle(1, 1, 9, 9);
+		Tests.assertTrue(rect.containsRect(rect2), "rectangle.containsRect")
+
+		Tests.assertTrue(rect.equals(new Rectangle(0, 0, 10, 10)), "rectangle.equals")
+
+		var rectinflated:Rectangle = new Rectangle(0, 0, 11, 11);
+		rect2.inflate(1, 1);
+		Tests.assertEquals(rect2, rectinflated, "rectangle.inflate");
+
+		var rect3:Rectangle = new Rectangle(1, 1, 9, 9);
+		rect3.inflatePoint(new Point(1, 1));
+		Tests.assertEquals(rect3, rectinflated, "rectangle.inflatePoint");
+
+		var rect4:Rectangle = new Rectangle(5, 5, 10, 10);
+		Tests.assertEquals(rect.intersection(rect4), new Rectangle(5, 5, 5, 5), "rectangle.intersection");
+
+		Tests.assertTrue(rect.intersects(rect4), "rectangle.intersects")
+
+		Tests.assertFalse(rect.isEmpty(), "rectangle.isEmpty")
+
+		var rect5:Rectangle = new Rectangle(-1, -1, 10, 10);
+		rect5.offset(1, 1);
+		Tests.assertEquals(rect5, rect, "rectangle.offset");
+
+		var rect6:Rectangle = new Rectangle(-1, -1, 10, 10);
+		var point2:Point = new Point(1, 1);
+		rect6.offsetPoint(point2);
+		Tests.assertEquals(rect6, rect, "rectangle.offsetPoint");
+
+		rect6.setEmpty();
+		Tests.assertTrue(rect6.isEmpty(), "rectangle.setEmpty")
+
+		var rect9:Rectangle = new Rectangle(0, 0, 10, 10);
+		Tests.assertEquals(rect9.toString(), "(x=0, y=0, w=10, h=10)", "rectangle.toString");
+
+		var rect7:Rectangle = new Rectangle(0, 0, 10, 10);
+		var rect8:Rectangle = new Rectangle(10, 10, 10, 10);
+		Tests.assertEquals(rect7.union(rect8), new Rectangle(0, 0, 20, 20), "rectangle.union");
+
+		Tests.report(visual, name);
+	}
+]]>
+</mx:Script>
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>
+

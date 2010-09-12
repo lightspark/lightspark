@@ -416,10 +416,6 @@ ActionTag* ACTIONRECORDHEADER::createTag(std::istream& in)
 	return t;
 }
 
-RunState::RunState():FP(0),next_FP(0),stop_FP(0)
-{
-}
-
 void ActionStop::Execute()
 {
 	/*LOG(LOG_CALLS,_("ActionStop"));

@@ -27,6 +27,7 @@
 #include "backends/netutils.h"
 #include "timer.h"
 #include "backends/decoder.h"
+#include "backends/interfaces/audio/IAudioPlugin.h"
 
 namespace lightspark
 {
@@ -131,7 +132,7 @@ private:
 	VideoDecoder* videoDecoder;
 	AudioDecoder* audioDecoder;
 	LS_AUDIO_CODEC audioCodec;
-	uint32_t soundStreamId;
+	AudioStream *audioStream;
 	uint32_t streamTime;
 	sem_t mutex;
 	//IThreadJob interface for long jobs
@@ -143,14 +144,16 @@ private:
 
 	//Indicates whether the NetStream is paused
 	bool paused;
-	//Indicates whether the SoundStream is paused yet
-	bool soundPaused;
+//	//Indicates whether the SoundStream is paused yet
+//	bool audioPaused;
 	//Indicates whether the NetStream has been closed/threadAborted. This is reset at every play() call.
 	//We initialize this value to true, so we can check that play() hasn't been called without being closed first.
 	bool closed;
 
 	enum CONNECTION_TYPE { CONNECT_TO_FMS=0, DIRECT_CONNECTIONS };
 	CONNECTION_TYPE peerID;
+
+	ASObject* client;
 public:
 	NetStream();
 	~NetStream();
@@ -166,6 +169,8 @@ public:
 	ASFUNCTION(_getBytesLoaded);
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getTime);
+	ASFUNCTION(_getCurrentFPS);
+	ASFUNCTION(_setClient);
 
 	//Interface for video
 	/**
@@ -195,6 +200,27 @@ public:
 		@return a TextureChunk ready to be blitted
 	*/
 	const TextureChunk& getTexture() const;
+	/**
+	  	Get the stream time
+
+		@pre lock on the object should be acquired and object should be ready
+		@return the stream time
+	*/
+	uint32_t getStreamTime();
+	/**
+	  	Get the length of loaded data
+
+		@pre lock on the object should be acquired and object should be ready
+		@return the length of loaded data
+	*/
+	uint32_t getReceivedLength();
+	/**
+	  	Get the length of loaded data
+
+		@pre lock on the object should be acquired and object should be ready
+		@return the total length of the data
+	*/
+	uint32_t getTotalLength();
 	/**
 	  	Acquire the mutex to guarantee validity of data
 

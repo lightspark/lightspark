@@ -112,6 +112,8 @@ void aligned_free(void *mem);
 #include <endian.h>
 #endif
 
+#include <iostream>
+
 #if defined _WIN32 || defined __CYGWIN__
 // No DLLs, for now
 #   define DLL_PUBLIC
@@ -124,6 +126,20 @@ void aligned_free(void *mem);
 		#error GCC version less than 4
 	#endif
 #endif
+
+#ifndef WIN32
+  #define HMODULE void *
+#endif
+
+/***********
+Used for compatibility for loading library between Windows and POSIX
+************/
+HMODULE LoadLib(const std::string filename);
+
+void *ExtractLibContent(HMODULE hLib, std::string WhatToExtract);
+
+void CloseLib(HMODULE hLib);
+/*****************/
 
 inline int imin(int a, int b)
 {

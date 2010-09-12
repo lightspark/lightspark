@@ -55,27 +55,41 @@ struct obj_var
 	explicit obj_var(ASObject* v,IFunction* g,IFunction* s):var(v),setter(s),getter(g){}
 };
 
+enum TRAIT_KIND { OWNED_TRAIT=0, BORROWED_TRAIT=1 };
+
+struct variable
+{
+	nsNameAndKind ns;
+	obj_var var;
+	TRAIT_KIND kind;
+	variable(const nsNameAndKind& _ns, TRAIT_KIND _k):ns(_ns),kind(_k){}
+};
+
 class variables_map
 {
 //ASObject knows how to use its variable_map
 friend class ASObject;
+//Class_base uses the internal data to handle borrowed variables
+friend class Class_base;
+//Useful when linking
+friend class InterfaceClass;
 //ABCContext uses findObjVar when building and linking traits
 friend class ABCContext;
 private:
-	std::multimap<tiny_string,std::pair<tiny_string, obj_var> > Variables;
-	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::iterator var_iterator;
-	typedef std::multimap<tiny_string,std::pair<tiny_string, obj_var> >::const_iterator const_var_iterator;
+	std::multimap<tiny_string,variable> Variables;
+	typedef std::multimap<tiny_string,variable>::iterator var_iterator;
+	typedef std::multimap<tiny_string,variable>::const_iterator const_var_iterator;
 	std::vector<var_iterator> slots_vars;
 	//When findObjVar is invoked with create=true the pointer returned is garanteed to be valid
-	obj_var* findObjVar(const tiny_string& name, const tiny_string& ns, bool create);
-	obj_var* findObjVar(const multiname& mname, bool create);
+	obj_var* findObjVar(const tiny_string& name, const nsNameAndKind& ns, bool create, bool borrowedMode);
+	obj_var* findObjVar(const multiname& mname, bool create, bool borrowedMode);
 	void killObjVar(const multiname& mname);
 	ASObject* getSlot(unsigned int n)
 	{
-		return slots_vars[n-1]->second.second.var;
+		return slots_vars[n-1]->second.var.var;
 	}
 	void setSlot(unsigned int n,ASObject* o);
-	void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
+	void initSlot(unsigned int n,const tiny_string& name, const nsNameAndKind& ns);
 	int size() const
 	{
 		return Variables.size();
@@ -107,6 +121,7 @@ friend class Manager;
 friend class ABCVm;
 friend class ABCContext;
 friend class Class_base; //Needed for forced cleanup
+friend class InterfaceClass;
 friend class IFunction; //Needed for clone
 CLASSBUILDABLE(ASObject);
 protected:
@@ -124,7 +139,7 @@ private:
 	virtual int _maxlevel();
 	Class_base* prototype;
 	obj_var* findGettable(const multiname& name) DLL_LOCAL;
-	obj_var* findSettable(const multiname& name) DLL_LOCAL;
+	obj_var* findSettable(const multiname& name, bool borrowedMode) DLL_LOCAL;
 
 public:
 #ifndef NDEBUG
@@ -188,18 +203,20 @@ public:
 		if(o && o!=o2)
 			o->decRef();
 	}
-	//The enableOverride parameter is set to false in setSuper, getSuper and callSuper
-	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL);
+	virtual ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL);
 	virtual intptr_t getVariableByMultiname_i(const multiname& name);
-	virtual ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
 	virtual void setVariableByMultiname_i(const multiname& name, intptr_t value);
-	virtual void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
+	virtual void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	virtual void deleteVariableByMultiname(const multiname& name);
-	virtual void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o,bool skip_impl=false);
-	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
-	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o);
+	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
+	//NOTE: the isBorrowed flasg is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
+	void setMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);
+	void setMethodByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
+	void setGetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);
+	void setGetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
+	void setSetterByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, bool isBorrowed);
+	void setSetterByQName(const tiny_string& name, const nsNameAndKind& ns, IFunction* o, bool isBorrowed);
 	bool hasPropertyByMultiname(const multiname& name);
-	bool hasPropertyByQName(const tiny_string& name, const tiny_string& ns);
 	ASObject* getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);
@@ -208,7 +225,7 @@ public:
 	{
 		Variables.setSlot(n,o);
 	}
-	void initSlot(unsigned int n,const tiny_string& name, const tiny_string& ns);
+	void initSlot(unsigned int n, const multiname& name);
 	virtual unsigned int numVariables();
 	tiny_string getNameAt(int i)
 	{

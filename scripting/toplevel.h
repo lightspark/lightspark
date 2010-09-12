@@ -38,7 +38,7 @@ struct call_context;
 class InterfaceClass: public ASObject
 {
 protected:
-	static void lookupAndLink(ASObject* o, const tiny_string& name, const tiny_string& interfaceNs);
+	static void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
 };
 
 class Class_base: public ASObject
@@ -49,7 +49,7 @@ private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
 	bool use_protected;
-	tiny_string protected_ns;
+	nsNameAndKind protected_ns;
 	int _maxlevel()
 	{
 		return max_level;
@@ -72,11 +72,12 @@ public:
 	Class_base(const QName& name);
 	~Class_base();
 	virtual ASObject* getInstance(bool construct, ASObject* const* args, const unsigned int argslen)=0;
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride=true, ASObject* base=NULL)
+	ASObject* getBorrowedVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL)
 	{
-		ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, enableOverride, base);
+		ASObject* ret=ASObject::getVariableByMultiname(name, skip_impl, base);
 		if(ret==NULL && super)
-			ret=super->getVariableByMultiname(name, skip_impl, enableOverride, base);
+			ret=super->getVariableByMultiname(name, skip_impl, base);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -87,13 +88,6 @@ public:
 		if(==NULL && super)
 			ret=super->getVariableByMultiname(name);
 		return ret;*/
-	}
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
-	{
-		ASObject* ret=ASObject::getVariableByQName(name,ns,skip_impl);
-		if(ret==NULL && super)
-			ret=super->getVariableByQName(name,ns,skip_impl);
-		return ret;
 	}
 /*	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
@@ -161,11 +155,11 @@ public:
 	Class_function():Class_base(QName("Function","")),f(NULL),asprototype(NULL){}
 	Class_function(IFunction* _f, ASObject* _p):Class_base(QName("Function","")),f(_f),asprototype(_p){}
 	tiny_string class_name;
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, bool enableOverride=true, ASObject* base=NULL)
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl=false, ASObject* base=NULL)
 	{
-		ASObject* ret=Class_base::getVariableByMultiname(name,skip_impl, enableOverride, base);
+		ASObject* ret=Class_base::getVariableByMultiname(name,skip_impl, base);
 		if(ret==NULL && asprototype)
-			ret=asprototype->getVariableByMultiname(name,skip_impl, enableOverride, base);
+			ret=asprototype->getVariableByMultiname(name,skip_impl, base);
 		return ret;
 	}
 	intptr_t getVariableByMultiname_i(const multiname& name)
@@ -177,24 +171,13 @@ public:
 			ret=super->getVariableByMultiname(name);
 		return ret;*/
 	}
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false)
-	{
-		ASObject* ret=Class_base::getVariableByQName(name,ns,skip_impl);
-		if(ret==NULL && asprototype)
-			ret=asprototype->getVariableByQName(name,ns,skip_impl);
-		return ret;
-	}
 	void setVariableByMultiname_i(const multiname& name, intptr_t value)
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname_i");
 	}
-	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride, ASObject* base=NULL)
+	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL)
 	{
 		throw UnsupportedException("Class_function::setVariableByMultiname");
-	}
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false)
-	{
-		throw UnsupportedException("Class_function::setVariableByQName");
 	}
 	static Class_function* getClass();
 };
@@ -208,7 +191,6 @@ protected:
 	ASObject* closure_this;
 	int closure_level;
 	bool bound;
-	IFunction* overriden_by;
 public:
 	ASFUNCTION(apply);
 	ASFUNCTION(_call);
@@ -246,23 +228,6 @@ public:
 	void bindLevel(int l)
 	{
 		closure_level=l;
-	}
-	void override(IFunction* f)
-	{
-		overriden_by=f;
-	}
-	IFunction* getOverride()
-	{
-		//Get the last override
-		IFunction* cur=overriden_by;
-		if(cur==NULL)
-			return this;
-		else
-			return cur->getOverride();
-	}
-	bool isOverridden() const
-	{
-		return overriden_by!=NULL;
 	}
 	static void sinit(Class_base* c);
 };
@@ -531,6 +496,9 @@ public:
 	ASFUNCTION(filter);
 	ASFUNCTION(indexOf);
 	ASFUNCTION(_getLength);
+	ASFUNCTION(forEach);
+	ASFUNCTION(_reverse);
+	ASFUNCTION(lastIndexOf);
 
 	ASObject* at(unsigned int index) const
 	{
@@ -568,11 +536,9 @@ public:
 	{
 		data.resize(n);
 	}
-	ASObject* getVariableByQName(const tiny_string& name, const tiny_string& ns, bool skip_impl=false);
-	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, bool enableOverride, ASObject* base=NULL);
+	ASObject* getVariableByMultiname(const multiname& name, bool skip_impl, ASObject* base=NULL);
 	intptr_t getVariableByMultiname_i(const multiname& name);
-	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, bool skip_impl=false);
-	void setVariableByMultiname(const multiname& name, ASObject* o, bool enableOverride=true, ASObject* base=NULL);
+	void setVariableByMultiname(const multiname& name, ASObject* o, ASObject* base=NULL);
 	void setVariableByMultiname_i(const multiname& name, intptr_t value);
 	tiny_string toString(bool debugMsg=false);
 	bool isEqual(ASObject* r);

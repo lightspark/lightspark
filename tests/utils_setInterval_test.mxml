@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<mx:Application name="lightspark_utils_setInterval_test"
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	layout="absolute"
+	applicationComplete="appComplete();"
+	backgroundColor="white">
+
+<mx:Script>
+	<![CDATA[
+	import Tests;
+	private var intervalCount:int = 0;
+	private var intervalID:uint;
+	private var timeoutID:uint;
+	private var argument1:*
+	private var argument2:*
+	private function appComplete():void
+	{
+		intervalID = setInterval(intervalCountFunc, 100); //This will be called 3 times and then cleared
+		timeoutID = setTimeout(dontReachTimeoutFunc, 500); //This will be cleared before it is called
+		setTimeout(clearTimeoutFunc, 400, "argument 1", "argument 2");
+		setTimeout(reportTimeoutFunc, 700); //This will print the test report
+	}
+	private function intervalCountFunc():void
+	{
+		intervalCount++;
+	}
+	private function dontReachTimeoutFunc():void
+	{
+		Tests.assertDontReach("setTimeout(): dontReachTimeoutFunc: reached");
+	}
+	private function clearTimeoutFunc(arg1:*, arg2:*):void
+	{
+		Tests.assertEquals("argument 1", arg1, "setTimeout(): clearTimeoutFunc: argument 1");
+		Tests.assertEquals("argument 2", arg2, "setTimeout(): clearTimeoutFunc: argument 2");
+
+		Tests.assertTrue(true, "setTimeout(): clearTimeoutFunc: reached");
+
+		//Clear the interval
+		clearInterval(intervalID);
+		//Clear the not-to-reach timeout
+		clearTimeout(timeoutID);
+	}
+	private function reportTimeoutFunc():void
+	{
+		Tests.assertEquals(4, intervalCount, "setInterval(): intervalCountFunc(): called 4 times", true);
+		Tests.assertTrue(true, "setTimeout(): reportTimeoutFunc(): reached");
+		Tests.report(visual, this.name)
+	}
+	]]>
+</mx:Script>
+
+
+<mx:UIComponent id="visual" />
+
+</mx:Application>

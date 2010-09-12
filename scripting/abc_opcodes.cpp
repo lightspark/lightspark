@@ -135,7 +135,8 @@ void ABCVm::coerce_a()
 
 ASObject* ABCVm::checkfilter(ASObject* o)
 {
-	throw UnsupportedException("checkfilter not implemented");
+	LOG(LOG_NOT_IMPLEMENTED,"checkfilter");
+	return o;
 }
 
 ASObject* ABCVm::coerce_s(ASObject* o)
@@ -291,7 +292,7 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		//If o is already a function call it
 		if(o->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o)->getOverride();
+			IFunction* f=static_cast<IFunction*>(o);
 			//Methods has to be runned with their own class this
 			//The owner has to be increffed
 			obj->incRef();
@@ -318,7 +319,11 @@ void ABCVm::callProperty(call_context* th, int n, int m)
 		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-			ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
+			multiname callPropertyName;
+			callPropertyName.name_type=multiname::NAME_STRING;
+			callPropertyName.name_s="callProperty";
+			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
 
 			if(o)
 			{
@@ -640,7 +645,7 @@ void ABCVm::construct(call_context* th, int m)
 #endif
 				LOG(LOG_CALLS,_("Building method traits"));
 				for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-					th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+					th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 #ifndef NDEBUG
 				ret->initialized=true;
 #endif
@@ -651,7 +656,11 @@ void ABCVm::construct(call_context* th, int m)
 					ret2->decRef();
 
 				//Let's see if an AS prototype has been defined on the function
-				ASObject* asp=sf->getVariableByQName("prototype","");
+				multiname prototypeName;
+				prototypeName.name_type=multiname::NAME_STRING;
+				prototypeName.name_s="prototype";
+				prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+				ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
 				if(asp)
 					asp->incRef();
 
@@ -771,7 +780,7 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		//If o is already a function call it, otherwise find the Call method
 		if(o->getObjectType()==T_FUNCTION)
 		{
-			IFunction* f=static_cast<IFunction*>(o)->getOverride();
+			IFunction* f=static_cast<IFunction*>(o);
 			obj->incRef();
 
 			ASObject* ret=f->call(obj,args,m);
@@ -792,7 +801,11 @@ void ABCVm::callPropVoid(call_context* th, int n, int m)
 		if(obj->prototype && obj->prototype->isSubClass(Class<Proxy>::getClass()))
 		{
 			//Check if there is a custom caller defined, skipping implementation to avoid recursive calls
-			ASObject* o=obj->getVariableByQName("callProperty",flash_proxy,true);
+			multiname callPropertyName;
+			callPropertyName.name_type=multiname::NAME_STRING;
+			callPropertyName.name_s="callProperty";
+			callPropertyName.ns.push_back(nsNameAndKind(flash_proxy,NAMESPACE));
+			ASObject* o=obj->getVariableByMultiname(callPropertyName,true);
 			if(o)
 			{
 				assert_and_throw(o->getObjectType()==T_FUNCTION);
@@ -1877,7 +1890,11 @@ bool ABCVm::ifStrictNE(ASObject* obj2, ASObject* obj1)
 bool ABCVm::in(ASObject* val2, ASObject* val1)
 {
 	LOG(LOG_CALLS, _("in") );
-	bool ret=val2->hasPropertyByQName(val1->toString(),"");
+	multiname name;
+	name.name_type=multiname::NAME_STRING;
+	name.name_s=val1->toString();
+	name.ns.push_back(nsNameAndKind("",NAMESPACE));
+	bool ret=val2->hasPropertyByMultiname(name);
 	val1->decRef();
 	val2->decRef();
 	return ret;
@@ -1947,7 +1964,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 #endif
 			LOG(LOG_CALLS,_("Building method traits"));
 			for(unsigned int i=0;i<sf->mi->body->trait_count;i++)
-				th->context->buildTrait(ret,&sf->mi->body->traits[i]);
+				th->context->buildTrait(ret,&sf->mi->body->traits[i],false);
 #ifndef NDEBUG
 			ret->initialized=true;
 #endif
@@ -1958,7 +1975,11 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 				ret2->decRef();
 
 			//Let's see if an AS prototype has been defined on the function
-			ASObject* asp=sf->getVariableByQName("prototype","");
+			multiname prototypeName;
+			prototypeName.name_type=multiname::NAME_STRING;
+			prototypeName.name_s="prototype";
+			prototypeName.ns.push_back(nsNameAndKind("",NAMESPACE));
+			ASObject* asp=sf->getVariableByMultiname(prototypeName,true);
 			if(asp)
 				asp->incRef();
 
@@ -2048,18 +2069,11 @@ void ABCVm::newObject(call_context* th, int n)
 
 void ABCVm::getDescendants(call_context* th, int n)
 {
-	throw UnsupportedException("getDescendants not supported");
-/*	LOG(LOG_CALLS,_("newObject ") << n);
-	ASObject* ret=new ASObject;
-	for(int i=0;i<n;i++)
-	{
-		ASObject* value=th->runtime_stack_pop();
-		ASObject* name=th->runtime_stack_pop();
-		ret->setVariableByQName(name->toString(),"",value);
-		name->decRef();
-	}
-
-	th->runtime_stack_push(ret);*/
+	multiname* name=th->context->getMultiname(n,th);
+	LOG(LOG_NOT_IMPLEMENTED,"getDescendants " << *name);
+	ASObject* obj=th->runtime_stack_pop();
+	obj->decRef();
+	th->runtime_stack_push(new Undefined);
 }
 
 number_t ABCVm::increment(ASObject* o)
@@ -2150,7 +2164,7 @@ void ABCVm::newClass(call_context* th, int n)
 	const multiname* mname=th->context->getMultiname(name_index,NULL);
 
 	assert_and_throw(mname->ns.size()==1);
-	Class_inherit* ret=new Class_inherit(QName(mname->name_s,mname->ns[0]));
+	Class_inherit* ret=new Class_inherit(QName(mname->name_s,mname->ns[0].name));
 	ret->class_scope=th->scope_stack;
 	for(uint32_t i=0;i<ret->class_scope.size();i++)
 		ret->class_scope[i]->incRef();
@@ -2177,23 +2191,25 @@ void ABCVm::newClass(call_context* th, int n)
 
 	LOG(LOG_CALLS,_("Building class traits"));
 	for(unsigned int i=0;i<th->context->classes[n].trait_count;i++)
-		th->context->buildTrait(ret,&th->context->classes[n].traits[i]);
+		th->context->buildTrait(ret,&th->context->classes[n].traits[i],false);
 
 	//Add protected namespace if needed
 	if((th->context->instances[n].flags)&0x08)
 	{
 		ret->use_protected=true;
 		int ns=th->context->instances[n].protectedNs;
-		ret->protected_ns=th->context->getString(th->context->constant_pool.namespaces[ns].name);
+		const namespace_info& ns_info=th->context->constant_pool.namespaces[ns];
+		ret->protected_ns=nsNameAndKind(th->context->getString(ns_info.name),(NS_KIND)(int)ns_info.kind);
 	}
 
+	LOG(LOG_CALLS,_("Adding immutable object traits to class"));
 	//Class objects also contains all the methods/getters/setters declared for instances
 	instance_info* cur=&th->context->instances[n];
 	for(unsigned int i=0;i<cur->trait_count;i++)
 	{
 		int kind=cur->traits[i].kind&0xf;
 		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
-			th->context->buildTrait(ret,&cur->traits[i]);
+			th->context->buildTrait(ret,&cur->traits[i],true);
 	}
 
 	//add Constructor the the class methods
@@ -2260,7 +2276,7 @@ ASObject* ABCVm::newActivation(call_context* th,method_info* info)
 	act->initialized=false;
 #endif
 	for(unsigned int i=0;i<info->body->trait_count;i++)
-		th->context->buildTrait(act,&info->body->traits[i]);
+		th->context->buildTrait(act,&info->body->traits[i],false);
 #ifndef NDEBUG
 	act->initialized=true;
 #endif
@@ -2375,7 +2391,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exception_count);
 	multiname* name = th->context->getMultiname(th->mi->body->exceptions[n].var_name, th);
 	catchScope->setVariableByMultiname(*name, new Undefined);
-	catchScope->initSlot(1, name->name_s, name->ns[0].name);
+	catchScope->initSlot(1, *name);
 	return catchScope;
 }
 

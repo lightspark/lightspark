@@ -34,7 +34,8 @@
 #include "scripting/flashsystem.h"
 #include "timer.h"
 #include "backends/graphics.h"
-#include "backends/sound.h"
+#include "backends/audio.h"
+#include "backends/pluginmanager.h"
 #include "backends/urlutils.h"
 
 #include "platforms/pluginutils.h"
@@ -249,9 +250,10 @@ public:
 	
 	Stage* stage;
 	ABCVm* currentVm;
-#ifdef ENABLE_SOUND
-	SoundManager* soundManager;
-#endif
+
+	PluginManager *pluginManager;
+	AudioManager *audioManager;
+
 	//Application starting time in milliseconds
 	uint64_t startTime;
 
@@ -279,6 +281,7 @@ public:
 	static void staticDeinit() DLL_PUBLIC;
 
 	DownloadManager* downloadManager;
+	IntervalManager* intervalManager;
 
 	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };
 	SCALE_MODE scaleMode;

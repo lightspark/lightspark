@@ -12,11 +12,18 @@ MXMLC="mxmlc"
 COLORS=1;
 
 TESTS_SRC=`ls -1 *mxml 2> /dev/null`;
+COMPILE_TESTS_SRC="";
 TESTS=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
+
+QUIET=0;
+FAILURES=0;
+COMPILE=0;
+QUIT=0;
+DEBUG=0;
 
 while [ $# -ne 0 ]; do
 	if [ $1 == "-h" ] || [ $1 == "--help" ] || [ $1 == "-u" ] || [ $1 == "--usage" ]; then
-		echo "Usage: [-q|--quiet] [-nc|--no-colors] [-f|--failures] [-c|--compile] [-cq|--compile-quit] [-m|--mxmlc] [-e|--executable] [-d|--debug] [-l|--log-level level] [-u|--url url] [-t|--tests tests]";
+		echo "Usage: [-q|--quiet] [-nc|--no-colors] [-f|--failures] [-c|--compile] [-cq|--compile-quit] [-m|--mxmlc] [-e|--executable] [-d|--debug] [-l|--log-level level] [-u|--url url] [-t|--tests tests|tests]";
 		echo "Parameter meanings:";
 		echo -e "\t-q|--quiet\t\tonly output reports";
 		echo -e "\t-nc|--no-colors\t\tdisable colorization (you can permanently set the default inside this script)";
@@ -37,6 +44,7 @@ while [ $# -ne 0 ]; do
 		QUIET=1;
 	elif [ $1 == "-nc" ] || [ $1 == "--no-colors" ]; then
 		COLORS=0;
+		echo "Colors: ${COLORS}"
 	elif [ $1 == "-f" ] || [ $1 == "--failures" ]; then
 		FAILURES=1;
 	elif [ $1 == "-c" ] || [ $1 == "--compile" ]; then
@@ -58,31 +66,53 @@ while [ $# -ne 0 ]; do
 	elif [ $1 == "-u" ] || [ $1 == "--url" ]; then
 		ROOTURL="$2"
 		shift
-	elif [ $1 == "-t" ] || [ $1 == "--tests" ]; then
-		shift;
+	else
+		if [ $1 == "-t" ] || [ $1 == "--tests" ]; then
+			shift;
+		fi
 		TESTS_SRC=`echo $@ | sed 's/\(\.\|\.swf\|\.mxml\)  */.mxml /g' | sed 's/\(\.\|\.swf\|\.mxml\)$/.mxml/g'`;
 		TESTS_SRC=`ls -1 $TESTS_SRC 2> /dev/null`;
 		TESTS=`echo $TESTS_SRC | sed 's/\.mxml\b/.swf/g'`;
+		if [ $COMPILE -eq 1 ]; then
+			COMPILE_TESTS_SRC=$TESTS_SRC;
+		fi
 		break;
 	fi;
 	shift;
 done
 
-if [ $COMPILE ]; then
-	echo -n "Compiling: " 1>&2;
-	echo $TESTS_SRC 1>&2;
-	echo "Compiler: $MXMLC" 1>&2;
+if [ ! $COMPILE -eq 1 ]; then
 	for test in $TESTS_SRC; do
+		if [ "$test" == "template.mxml" ]; then
+			continue;
+		fi
+
+		testswf=`echo $test | sed 's/\.mxml\b/.swf/g'`;
+		if [ ! -e "$testswf" ] || [ "$test" -nt "$testswf" ]; then
+			echo "Test $test is outdated, recompiling"
+			COMPILE_TESTS_SRC="${COMPILE_TESTS_SRC}
+			${test}"
+			COMPILE=1
+		fi
+	done
+fi
+
+if [ $COMPILE -eq 1 ]; then
+	echo -n "Compiling: " 1>&2;
+	echo $COMPILE_TESTS_SRC 1>&2;
+	echo "Compiler: $MXMLC" 1>&2;
+	for test in $COMPILE_TESTS_SRC; do
+		if [ "$test" == "template.mxml" ]; then
+			continue;
+		fi
+
 		$MXMLC -static-link-runtime-shared-libraries -compiler.omit-trace-statements=false $test;
 	done
-	if [ $QUIT ]; then
+	if [ $QUIT -eq 1 ]; then
 		exit;
 	fi
 	echo -e "\n" 1>&2;
 fi
-
-echo -n "Running tests: " 1>&2;
-echo $TESTS 1>&2;
 
 FAILURECOUNT=0; SUCCESSCOUNT=0; TESTCOUNT=0;
 
@@ -113,9 +143,16 @@ INFOPREFIX='\[INFO\]';
 CURLPREFIX='CURL header';
 INDENTPREFIX='\t';
 for test in $TESTS; do
+	if [ "$test" == "template.swf" ]; then
+		continue;
+	fi
+
+	if [ ! -e $test ]; then
+		continue;
+	fi
 	sleep 0.25;
 
-	if [ $DEBUG ]; then
+	if [ $DEBUG -eq 1 ]; then
 		lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1`;
 	else
 		lines=`$LIGHTSPARK -u $ROOTURL -l $LOGLEVEL $test 2>&1 >/dev/null`;
@@ -128,13 +165,13 @@ for test in $TESTS; do
 		SUCCESSCOUNT=`expr $SUCCESSCOUNT + 1`;
 	fi
 
-	if [ $QUIET ]; then
+	if [ $QUIET -eq 1 ]; then
 		lines=`echo "$lines" |
 			sed -n -e "/${BARCHAR}*\(${NOFAILURESTITLE}\|${FAILURESTITLE}\)${BARCHAR}*/,/${SUCCESSTITLE}.*\|${FAILURETITLE}.*/p"
 			`
 	fi
 	
-	if [ $FAILURES ]; then
+	if [ $FAILURES -eq 1 ]; then
 		lines=`echo "$lines" |
 			sed -n -e "/${BARCHAR}*\(${FAILURESTITLE}\)${BARCHAR}*/,/${FAILURETITLE}.*/p" \
 				-e "/^${ASSERTFAILEDCHAR} ${ASSERTMSGBRACKETOPEN}.*$/p" \
@@ -146,7 +183,7 @@ for test in $TESTS; do
 		continue;
 	fi
 
-	if [ $COLORS ]; then
+	if [ $COLORS -eq 1 ]; then
 		lines=`echo "$lines" | sed \
 			-e "s/^\(${INFOPREFIX}\)\(.*\)$/${BLUE}\1${PURPLEB}\2${CLEAR}/" \
 			-e "s/^\(${CURLPREFIX}\)\(.*\)$/${PINK}\1${PINK}\2${CLEAR}/" \
@@ -179,7 +216,7 @@ for test in $TESTS; do
 	echo -e "$lines\n";
 done
 
-if [ $COLORS ]; then
+if [ $COLORS -eq 1 ]; then
 	echo -e "Tests run: $TESTCOUNT, \e[1;32m$SUCCESSCOUNT successful\e[0m and \e[1;31m$FAILURECOUNT failed\e[0m" 1>&2
 else
 	echo -e "Tests run: $TESTCOUNT, $SUCCESSCOUNT successful and $FAILURECOUNT failed" 1>&2

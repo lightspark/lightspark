@@ -47,12 +47,12 @@ REGISTER_CLASS_NAME(ErrorEvent);
 REGISTER_CLASS_NAME(SecurityErrorEvent);
 REGISTER_CLASS_NAME(AsyncErrorEvent);
 
-void IEventDispatcher::linkTraits(ASObject* o)
+void IEventDispatcher::linkTraits(Class_base* c)
 {
-	lookupAndLink(o,"addEventListener","flash.events:IEventDispatcher");
-	lookupAndLink(o,"removeEventListener","flash.events:IEventDispatcher");
-	lookupAndLink(o,"dispatchEvent","flash.events:IEventDispatcher");
-	lookupAndLink(o,"hasEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(c,"addEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(c,"removeEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(c,"dispatchEvent","flash.events:IEventDispatcher");
+	lookupAndLink(c,"hasEventListener","flash.events:IEventDispatcher");
 }
 
 Event::Event(const tiny_string& t, bool b):type(t),target(NULL),currentTarget(NULL),bubbles(b)
@@ -87,8 +87,8 @@ void Event::sinit(Class_base* c)
 	c->setVariableByQName("TAB_ENABLED_CHANGE","",Class<ASString>::getInstanceS("tabEnabledChange"));
 	c->setVariableByQName("TAB_INDEX_CHANGE","",Class<ASString>::getInstanceS("tabIndexChange"));
 
-	c->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget));
-	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType));
+	c->setGetterByQName("target","",Class<IFunction>::getFunction(_getTarget),true);
+	c->setGetterByQName("type","",Class<IFunction>::getFunction(_getType),true);
 }
 
 void Event::buildTraits(ASObject* o)
@@ -100,6 +100,11 @@ ASFUNCTIONBODY(Event,_constructor)
 	Event* th=static_cast<Event*>(obj);
 	if(argslen>=1)
 	{
+		if(args[0]->getObjectType()==T_UNDEFINED)
+		{
+			LOG(LOG_NOT_IMPLEMENTED,"HACK: undefined type passed to Event constructor");
+			return NULL;
+		}
 		assert_and_throw(args[0]->getObjectType()==T_STRING);
 		th->type=args[0]->toString();
 	}
@@ -162,8 +167,8 @@ void ProgressEvent::sinit(Class_base* c)
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
 	c->setVariableByQName("PROGRESS","",Class<ASString>::getInstanceS("progress"));
 
-	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded));
-	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal));
+	c->setGetterByQName("bytesLoaded","",Class<IFunction>::getFunction(_getBytesLoaded),true);
+	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
 }
 
 void ProgressEvent::buildTraits(ASObject* o)
@@ -244,10 +249,10 @@ void EventDispatcher::sinit(Class_base* c)
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 
-	c->setVariableByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener));
-	c->setVariableByQName("hasEventListener","",Class<IFunction>::getFunction(_hasEventListener));
-	c->setVariableByQName("removeEventListener","",Class<IFunction>::getFunction(removeEventListener));
-	c->setVariableByQName("dispatchEvent","",Class<IFunction>::getFunction(dispatchEvent));
+	c->setMethodByQName("addEventListener","",Class<IFunction>::getFunction(addEventListener),true);
+	c->setMethodByQName("hasEventListener","",Class<IFunction>::getFunction(_hasEventListener),true);
+	c->setMethodByQName("removeEventListener","",Class<IFunction>::getFunction(removeEventListener),true);
+	c->setMethodByQName("dispatchEvent","",Class<IFunction>::getFunction(dispatchEvent),true);
 
 	IEventDispatcher::linkTraits(c);
 }
@@ -266,6 +271,11 @@ void EventDispatcher::dumpHandlers()
 ASFUNCTIONBODY(EventDispatcher,addEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
+	if(args[0]->getObjectType()==T_UNDEFINED)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"HACK: undefined event type passed to addEventListener");
+		return NULL;
+	}
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
 
@@ -312,6 +322,11 @@ ASFUNCTIONBODY(EventDispatcher,_hasEventListener)
 ASFUNCTIONBODY(EventDispatcher,removeEventListener)
 {
 	EventDispatcher* th=static_cast<EventDispatcher*>(obj);
+	if(args[0]->getObjectType()==T_UNDEFINED)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"HACK: undefined event type passed to addEventListener");
+		return NULL;
+	}
 	if(args[0]->getObjectType()!=T_STRING || args[1]->getObjectType()!=T_FUNCTION)
 		throw RunTimeException("Type mismatch in EventDispatcher::removeEventListener");
 
@@ -545,3 +560,17 @@ void HTTPStatusEvent::sinit(Class_base* c)
 	c->setVariableByQName("HTTP_STATUS","",Class<ASString>::getInstanceS("httpStatus"));
 }
 
+FunctionEvent::FunctionEvent(IFunction* _f, ASObject* _obj, ASObject** _args, uint32_t _numArgs, bool _thisOverride):
+		Event("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs),thisOverride(_thisOverride)
+{
+	args = new ASObject*[numArgs];
+	uint32_t i;
+	for(i=0; i<numArgs; i++)
+	{
+		args[i] = _args[i];
+	}
+}
+FunctionEvent::~FunctionEvent()
+{
+	delete[] args;
+}

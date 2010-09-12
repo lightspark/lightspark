@@ -8,3070 +8,3061 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-08-20 22:28-0500\n"
+"POT-Creation-Date: 2010-08-24 23:48-0500\n"
 "PO-Revision-Date: 2010-08-20 23:03-0500\n"
 "Last-Translator:  <gostrc@gmail.com>\n"
 "Language-Team: Polish\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=ISO-8859-2\n"
+"Content-Type: teplain; charset=ISO-8859-2\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Language: pl\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
 
-#: scripting/abc.cpp:925
+#: ../scripting/abc.cpp:925
 msgid "\t"
 msgstr ""
 
-#: scripting/abc.cpp:913
+#: ../scripting/abc.cpp:913
 msgid "\tFinal"
 msgstr ""
 
-#: scripting/abc.cpp:915
+#: ../scripting/abc.cpp:915
 msgid "\tInterface"
 msgstr ""
 
-#: scripting/abc.cpp:917
+#: ../scripting/abc.cpp:917
 msgid "\tProtectedNS "
 msgstr ""
 
-#: scripting/abc.cpp:911
+#: ../scripting/abc.cpp:911
 msgid "\tSealed"
 msgstr ""
 
-#: asobject.cpp:734 scripting/abc_codesynt.cpp:793
-#: scripting/abc_codesynt.cpp:2257 scripting/abc.cpp:1498
-#: scripting/abc.cpp:1837 scripting/abc_opcodes.cpp:1913
+#: ../asobject.cpp:704 ../scripting/abc_codesynt.cpp:789
+#: ../scripting/abc_codesynt.cpp:2253 ../scripting/abc.cpp:1513
+#: ../scripting/abc.cpp:1786 ../scripting/abc_opcodes.cpp:1888
 msgid " "
 msgstr ""
 
-#: scripting/abc.cpp:1403 scripting/abc.cpp:1465 scripting/abc.cpp:1568
-#: scripting/abc.cpp:1629 scripting/abc.cpp:1691
+#: ../scripting/abc.cpp:1418 ../scripting/abc.cpp:1480
+#: ../scripting/abc.cpp:1583 ../scripting/abc.cpp:1622
+#: ../scripting/abc.cpp:1662
 msgid " #"
 msgstr ""
 
-#: scripting/flashsystem.cpp:86 scripting/flashsystem.cpp:104
-#: scripting/flashsystem.cpp:117 scripting/flashsystem.cpp:133
-#: scripting/flashutils.cpp:321 scripting/flashutils.cpp:327
-#: scripting/flashutils.cpp:342
-msgid " :: "
-msgstr ""
-
-#: swf.cpp:70 swf.cpp:74
+#: ../swf.cpp:65 ../swf.cpp:69
 msgid " Length "
 msgstr ""
 
-#: asobject.cpp:85 asobject.cpp:168
+#: ../asobject.cpp:82 ../asobject.cpp:165
 msgid " and type "
 msgstr ""
 
-#: parsing/tags.cpp:55
+#: ../parsing/tags.cpp:52
 msgid " at byte "
 msgstr ""
 
-#: parsing/tags.cpp:55 scripting/actions.cpp:409
+#: ../parsing/tags.cpp:52 ../scripting/actions.cpp:405
 msgid " bytes"
 msgstr ""
 
-#: scripting/actions.cpp:1179
+#: ../scripting/actions.cpp:1175
 msgid " constants"
 msgstr ""
 
-#: backends/input.cpp:194 backends/input.cpp:270
+#: ../backends/input.cpp:190 ../backends/input.cpp:266
 msgid " events"
 msgstr ""
 
-#: scripting/abc.cpp:1340
+#: ../scripting/abc.cpp:1355
 msgid " events missing before exit"
 msgstr ""
 
-#: parsing/tags.cpp:227 parsing/tags.cpp:232
+#: ../parsing/tags.cpp:224 ../parsing/tags.cpp:229
 msgid " expected: "
 msgstr ""
 
-#: backends/graphics.cpp:135 backends/graphics.cpp:177
-#: backends/graphics.cpp:202
+#: ../backends/graphics.cpp:132 ../backends/graphics.cpp:174
+#: ../backends/graphics.cpp:199
 msgid " height="
 msgstr ""
 
-#: scripting/abc.cpp:1561
+#: ../scripting/abc.cpp:1576
 msgid " id "
 msgstr ""
 
-#: scripting/flashnet.cpp:729
+#: ../scripting/flashnet.cpp:726
 msgid " in FLV"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1799 scripting/abc_opcodes.cpp:1862
-#: scripting/abc_opcodes.cpp:1913
+#: ../scripting/abc_opcodes.cpp:1774 ../scripting/abc_opcodes.cpp:1837
+#: ../scripting/abc_opcodes.cpp:1888
 msgid " is "
 msgstr ""
 
-#: scripting/abc.cpp:1136
+#: ../scripting/abc.cpp:1137
 msgid " is not yet valid"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2289
+#: ../scripting/abc_opcodes.cpp:2277
 msgid " is not yet valid (as interface)"
 msgstr ""
 
-#: parsing/tags.cpp:1367 parsing/tags.cpp:1534
+#: ../parsing/tags.cpp:1364 ../parsing/tags.cpp:1531
 msgid " name "
 msgstr ""
 
-#: scripting/abc.cpp:1130
+#: ../scripting/abc.cpp:1131
 msgid " not found in global"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:680
+#: ../scripting/abc_opcodes.cpp:667
 msgid " not supported in construct"
 msgstr ""
 
-#: swftypes.cpp:1090
+#: ../swftypes.cpp:1087
 msgid " of action data"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:362 scripting/abc_opcodes.cpp:796
+#: ../scripting/abc_opcodes.cpp:349 ../scripting/abc_opcodes.cpp:783
 msgid " on obj "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:838
+#: ../scripting/abc_opcodes.cpp:825
 msgid " on obj type "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:401
+#: ../scripting/abc_opcodes.cpp:388
 msgid " on type "
 msgstr ""
 
-#: backends/graphics.cpp:56
+#: ../backends/graphics.cpp:53
 msgid " openGL errors"
 msgstr ""
 
-#: backends/rendering.cpp:288 backends/rendering.cpp:764
+#: ../backends/rendering.cpp:285 ../backends/rendering.cpp:760
 msgid " renderings"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1486
+#: ../scripting/abc_codesynt.cpp:1482
 msgid " should be intrinsic"
 msgstr ""
 
-#: threading.cpp:77
+#: ../threading.cpp:74
 msgid " times"
 msgstr ""
 
-#: asobject.cpp:188
+#: ../asobject.cpp:185
 msgid " to float"
 msgstr ""
 
-#: asobject.cpp:181
+#: ../asobject.cpp:178
 msgid " to int"
 msgstr ""
 
-#: scripting/abc.cpp:1778 scripting/abc.cpp:1798 scripting/abc.cpp:1804
+#: ../scripting/abc.cpp:1729 ../scripting/abc.cpp:1749
+#: ../scripting/abc.cpp:1755
 msgid " type "
 msgstr ""
 
-#: scripting/abc.cpp:1561
+#: ../scripting/abc.cpp:1576
 msgid " type Class name "
 msgstr ""
 
-#: scripting/abc.cpp:1804
+#: ../scripting/abc.cpp:1755
 msgid " vindex 0 "
 msgstr ""
 
-#: threading.cpp:77
+#: ../threading.cpp:74
 msgid " waited "
 msgstr ""
 
-#: parsing/tags.cpp:55 scripting/actions.cpp:409
+#: ../parsing/tags.cpp:52 ../scripting/actions.cpp:405
 msgid " with length "
 msgstr ""
 
-#: parsing/tags.cpp:1328 parsing/tags.cpp:1495
+#: ../parsing/tags.cpp:1325 ../parsing/tags.cpp:1492
 msgid " with name "
 msgstr ""
 
-#: scripting/flashutils.cpp:327
+#: ../scripting/flashutils.cpp:326
 msgid "' not found."
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:176
+#: ../scripting/abc_opcodes.cpp:164
 msgid ") "
 msgstr ""
 
-#: parsing/tags.cpp:1818
+#: ../parsing/tags.cpp:1815
 msgid ", ScriptTimeoutSeconds: "
 msgstr ""
 
-#: parsing/tags.cpp:1854
+#: ../parsing/tags.cpp:1851
 msgid ", password: "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1346 scripting/abc_opcodes.cpp:1418
+#: ../scripting/abc_opcodes.cpp:1332 ../scripting/abc_opcodes.cpp:1373
 msgid ", pushing Undefined"
 msgstr ""
 
-#: scripting/abc.cpp:1122
+#: ../scripting/abc.cpp:1122
 msgid ". Not binding"
 msgstr ""
 
-#: parsing/tags.cpp:227 parsing/tags.cpp:232
+#: ../parsing/tags.cpp:224 ../parsing/tags.cpp:229
 msgid ". Size="
 msgstr ""
 
-#: swftypes.cpp:670 swftypes.cpp:702 backends/rendering.cpp:585
+#: ../swftypes.cpp:667 ../swftypes.cpp:699 ../backends/rendering.cpp:581
 msgid "... Aborting"
 msgstr ""
 
-#: scripting/abc.cpp:2027
+#: ../scripting/abc.cpp:1976
 msgid "0 not allowed"
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:777 scripting/abc_interpreter.cpp:1214
+#: ../scripting/abc_interpreter.cpp:773 ../scripting/abc_interpreter.cpp:1210
 msgid ": "
 msgstr ""
 
-#: scripting/abc.cpp:1403 scripting/abc.cpp:1429 scripting/abc.cpp:1434
-#: scripting/abc.cpp:1460 scripting/abc.cpp:1465 scripting/abc.cpp:1491
-#: scripting/abc.cpp:1561 scripting/abc.cpp:1568 scripting/abc.cpp:1624
-#: scripting/abc.cpp:1629 scripting/abc.cpp:1686 scripting/abc.cpp:1691
-#: scripting/abc.cpp:1747
+#: ../scripting/abc.cpp:1418 ../scripting/abc.cpp:1444
+#: ../scripting/abc.cpp:1449 ../scripting/abc.cpp:1475
+#: ../scripting/abc.cpp:1480 ../scripting/abc.cpp:1506
+#: ../scripting/abc.cpp:1576 ../scripting/abc.cpp:1583
+#: ../scripting/abc.cpp:1617 ../scripting/abc.cpp:1622
+#: ../scripting/abc.cpp:1657 ../scripting/abc.cpp:1662
+#: ../scripting/abc.cpp:1698
 msgid "::"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1093 scripting/abc_opcodes.cpp:1104
+#: ../scripting/abc_opcodes.cpp:1080 ../scripting/abc_opcodes.cpp:1091
 msgid "<<"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1116 scripting/abc_opcodes.cpp:1126
-#: scripting/abc_opcodes.cpp:1135
+#: ../scripting/abc_opcodes.cpp:1103 ../scripting/abc_opcodes.cpp:1113
+#: ../scripting/abc_opcodes.cpp:1122
 msgid ">>"
 msgstr ""
 
-#: scripting/abc.cpp:81
+#: ../scripting/abc.cpp:78
 msgid "ABC Exec "
 msgstr ""
 
-#: scripting/abc.cpp:887
+#: ../scripting/abc.cpp:887
 msgid "ABCVm version "
 msgstr ""
 
-#: scripting/toplevel.cpp:2044
+#: ../scripting/toplevel.cpp:2099
 msgid "ASString::charCodeAt not really implemented"
 msgstr ""
 
-#: scripting/actions.cpp:87 scripting/actions.cpp:154
+#: ../scripting/actions.cpp:83 ../scripting/actions.cpp:150
 msgid "AVM1 not supported"
 msgstr ""
 
-#: scripting/actions.h:315
+#: ../scripting/actions.h:311
 msgid "ActionAdd2"
 msgstr ""
 
-#: scripting/actions.h:602
+#: ../scripting/actions.h:598
 msgid "ActionAsciiToChar"
 msgstr ""
 
-#: scripting/actions.h:539
+#: ../scripting/actions.h:535
 msgid "ActionBitAnd"
 msgstr ""
 
-#: scripting/actions.h:560
+#: ../scripting/actions.h:556
 msgid "ActionBitLShift"
 msgstr ""
 
-#: scripting/actions.h:546
+#: ../scripting/actions.h:542
 msgid "ActionBitOr"
 msgstr ""
 
-#: scripting/actions.h:567
+#: ../scripting/actions.h:563
 msgid "ActionBitRShift"
 msgstr ""
 
-#: scripting/actions.h:553
+#: ../scripting/actions.h:549
 msgid "ActionBitXor"
 msgstr ""
 
-#: scripting/actions.h:406
+#: ../scripting/actions.h:402
 msgid "ActionCallFunction"
 msgstr ""
 
-#: scripting/actions.h:399
+#: ../scripting/actions.h:395
 msgid "ActionCallMethod"
 msgstr ""
 
-#: scripting/actions.h:532
+#: ../scripting/actions.h:528
 msgid "ActionCastOp"
 msgstr ""
 
-#: scripting/actions.h:413
+#: ../scripting/actions.h:409
 msgid "ActionCloneSprite"
 msgstr ""
 
-#: scripting/actions.cpp:1401 scripting/actions.h:267
+#: ../scripting/actions.cpp:1397 ../scripting/actions.h:263
 msgid "ActionConstantPool"
 msgstr ""
 
-#: scripting/actions.h:441
+#: ../scripting/actions.h:437
 msgid "ActionDecrement"
 msgstr ""
 
-#: scripting/actions.h:150
+#: ../scripting/actions.h:146
 msgid "ActionDefineFunction"
 msgstr ""
 
-#: scripting/actions.h:188
+#: ../scripting/actions.h:184
 msgid "ActionDefineFunction2"
 msgstr ""
 
-#: scripting/actions.h:357
+#: ../scripting/actions.h:353
 msgid "ActionDefineLocal"
 msgstr ""
 
-#: scripting/actions.h:462
+#: ../scripting/actions.h:458
 msgid "ActionDelete"
 msgstr ""
 
-#: scripting/actions.h:329
+#: ../scripting/actions.h:325
 msgid "ActionDivide"
 msgstr ""
 
-#: scripting/actions.h:483
+#: ../scripting/actions.h:479
 msgid "ActionEnumerate"
 msgstr ""
 
-#: scripting/actions.h:511
+#: ../scripting/actions.h:507
 msgid "ActionEnumerate2"
 msgstr ""
 
-#: scripting/actions.h:616
+#: ../scripting/actions.h:612
 msgid "ActionEquals2"
 msgstr ""
 
-#: scripting/actions.h:434
+#: ../scripting/actions.h:430
 msgid "ActionExtends"
 msgstr ""
 
-#: scripting/actions.h:114
+#: ../scripting/actions.h:110
 msgid "ActionGetMember"
 msgstr ""
 
-#: scripting/actions.h:343
+#: ../scripting/actions.h:339
 msgid "ActionGetProperty"
 msgstr ""
 
-#: scripting/actions.h:490
+#: ../scripting/actions.h:486
 msgid "ActionGetTime"
 msgstr ""
 
-#: scripting/actions.h:256
+#: ../scripting/actions.h:252
 msgid "ActionGetURL"
 msgstr ""
 
-#: scripting/actions.h:245
+#: ../scripting/actions.h:241
 msgid "ActionGetURL2"
 msgstr ""
 
-#: scripting/actions.h:651
+#: ../scripting/actions.h:647
 msgid "ActionGetVariable"
 msgstr ""
 
-#: scripting/actions.cpp:1412 scripting/actions.h:287
+#: ../scripting/actions.cpp:1408 ../scripting/actions.h:283
 msgid "ActionGoToLabel"
 msgstr ""
 
-#: scripting/actions.h:235
+#: ../scripting/actions.h:231
 msgid "ActionGotoFrame"
 msgstr ""
 
-#: scripting/actions.h:581
+#: ../scripting/actions.h:577
 msgid "ActionGreater"
 msgstr ""
 
-#: scripting/actions.h:225
+#: ../scripting/actions.h:221
 msgid "ActionIf"
 msgstr ""
 
-#: scripting/actions.h:427
+#: ../scripting/actions.h:423
 msgid "ActionImplementsOp"
 msgstr ""
 
-#: scripting/actions.h:574
+#: ../scripting/actions.h:570
 msgid "ActionIncrement"
 msgstr ""
 
-#: scripting/actions.h:469
+#: ../scripting/actions.h:465
 msgid "ActionInitArray"
 msgstr ""
 
-#: scripting/actions.h:448
+#: ../scripting/actions.h:444
 msgid "ActionInitObject"
 msgstr ""
 
-#: scripting/actions.h:497
+#: ../scripting/actions.h:493
 msgid "ActionInstanceOf"
 msgstr ""
 
-#: scripting/actions.h:205
+#: ../scripting/actions.h:201
 msgid "ActionJump"
 msgstr ""
 
-#: scripting/actions.cpp:1003
+#: ../scripting/actions.cpp:999
 msgid "ActionJump: "
 msgstr ""
 
-#: scripting/actions.h:595
+#: ../scripting/actions.h:591
 msgid "ActionLess2"
 msgstr ""
 
-#: scripting/actions.h:322
+#: ../scripting/actions.h:318
 msgid "ActionModulo"
 msgstr ""
 
-#: scripting/actions.h:364
+#: ../scripting/actions.h:360
 msgid "ActionMultiply"
 msgstr ""
 
-#: scripting/actions.h:455
+#: ../scripting/actions.h:451
 msgid "ActionNewMethod"
 msgstr ""
 
-#: scripting/actions.h:308
+#: ../scripting/actions.h:304
 msgid "ActionNewObject"
 msgstr ""
 
-#: scripting/actions.h:392
+#: ../scripting/actions.h:388
 msgid "ActionNot"
 msgstr ""
 
-#: scripting/actions.h:128
+#: ../scripting/actions.h:124
 msgid "ActionPlay"
 msgstr ""
 
-#: scripting/actions.h:378
+#: ../scripting/actions.h:374
 msgid "ActionPop"
 msgstr ""
 
-#: scripting/actions.cpp:1318
+#: ../scripting/actions.cpp:1314
 msgid "ActionPush"
 msgstr ""
 
-#: scripting/actions.h:336
+#: ../scripting/actions.h:332
 msgid "ActionPushDuplicate"
 msgstr ""
 
-#: scripting/actions.h:350
+#: ../scripting/actions.h:346
 msgid "ActionReturn"
 msgstr ""
 
-#: scripting/actions.h:121
+#: ../scripting/actions.h:117
 msgid "ActionSetMember"
 msgstr ""
 
-#: scripting/actions.h:504
+#: ../scripting/actions.h:500
 msgid "ActionSetProperty"
 msgstr ""
 
-#: scripting/actions.h:277
+#: ../scripting/actions.h:273
 msgid "ActionSetTarget"
 msgstr ""
 
-#: scripting/actions.h:637
+#: ../scripting/actions.h:633
 msgid "ActionSetTarget2"
 msgstr ""
 
-#: scripting/actions.h:630
+#: ../scripting/actions.h:626
 msgid "ActionSetVariable"
 msgstr ""
 
-#: scripting/actions.h:135
+#: ../scripting/actions.h:131
 msgid "ActionStop"
 msgstr ""
 
-#: scripting/actions.h:667
+#: ../scripting/actions.h:663
 msgid "ActionStoreRegister"
 msgstr ""
 
-#: scripting/actions.h:609
+#: ../scripting/actions.h:605
 msgid "ActionStrictEquals"
 msgstr ""
 
-#: scripting/actions.h:294
+#: ../scripting/actions.h:290
 msgid "ActionStringAdd"
 msgstr ""
 
-#: scripting/actions.h:623
+#: ../scripting/actions.h:619
 msgid "ActionStringEquals"
 msgstr ""
 
-#: scripting/actions.h:301
+#: ../scripting/actions.h:297
 msgid "ActionStringExtract"
 msgstr ""
 
-#: scripting/actions.h:588
+#: ../scripting/actions.h:584
 msgid "ActionStringGreater"
 msgstr ""
 
-#: scripting/actions.h:371
+#: ../scripting/actions.h:367
 msgid "ActionSubtract"
 msgstr ""
 
-#: scripting/actions.cpp:863 scripting/actions.h:385
+#: ../scripting/actions.cpp:859 ../scripting/actions.h:381
 msgid "ActionToInteger"
 msgstr ""
 
-#: scripting/actions.h:525
+#: ../scripting/actions.h:521
 msgid "ActionToNumber"
 msgstr ""
 
-#: scripting/actions.h:518
+#: ../scripting/actions.h:514
 msgid "ActionToString"
 msgstr ""
 
-#: scripting/actions.h:420
+#: ../scripting/actions.h:416
 msgid "ActionTrace"
 msgstr ""
 
-#: scripting/actions.h:476
+#: ../scripting/actions.h:472
 msgid "ActionTypeOf"
 msgstr ""
 
-#: scripting/actions.h:215
+#: ../scripting/actions.h:211
 msgid "ActionWith"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1038
+#: ../scripting/abc_opcodes.cpp:1025
 msgid "Add between integer and "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:993
+#: ../scripting/abc_opcodes.cpp:980
 msgid "Add between types "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1081
+#: ../scripting/abc_opcodes.cpp:1068
 msgid "Add between types number and "
 msgstr ""
 
-#: asobject.cpp:117
+#: ../asobject.cpp:114
 msgid "Add buildTraits for class "
 msgstr ""
 
-#: scripting/toplevel.cpp:2928
+#: ../scripting/toplevel.cpp:3046
 msgid "Array to bool"
 msgstr ""
 
-#: scripting/toplevel.cpp:181
+#: ../scripting/toplevel.cpp:179
 msgid "Array::filter STUB"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:415 scripting/abc_opcodes.cpp:1378
+#: ../scripting/abc_opcodes.cpp:402 ../scripting/abc_opcodes.cpp:1381
 msgid "Attaching this to function "
 msgstr ""
 
-#: backends/decoder.cpp:448
+#: ../backends/decoder.cpp:446
 msgid "Audio channels "
 msgstr ""
 
-#: backends/decoder.cpp:440
+#: ../backends/decoder.cpp:438
 msgid "Audio sample rate "
 msgstr ""
 
-#: scripting/abc.cpp:112
+#: ../scripting/abc.cpp:109
 msgid "Binding "
 msgstr ""
 
-#: scripting/abc.cpp:1037
+#: ../scripting/abc.cpp:1037
 msgid "Binding of "
 msgstr ""
 
-#: scripting/toplevel.cpp:2961
+#: ../scripting/toplevel.cpp:3079
 msgid "Boolean conversion for type "
 msgstr ""
 
-#: scripting/toplevel.cpp:2913
+#: ../scripting/toplevel.cpp:3031
 msgid "Boolean to bool "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2245
+#: ../scripting/abc_opcodes.cpp:2232
 msgid "Building class traits"
 msgstr ""
 
-#: scripting/abc.cpp:1275
+#: ../scripting/abc.cpp:1286
 msgid "Building entry script traits: "
 msgstr ""
 
-#: scripting/abc.cpp:1067 scripting/toplevel.cpp:2667
+#: ../scripting/abc.cpp:1067 ../scripting/toplevel.cpp:2725
 msgid "Building instance traits"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:654 scripting/abc_opcodes.cpp:2027
+#: ../scripting/abc_opcodes.cpp:641 ../scripting/abc_opcodes.cpp:2002
 msgid "Building method traits"
 msgstr ""
 
-#: scripting/abc.cpp:1262
+#: ../scripting/abc.cpp:1264
 msgid "Building script traits: "
 msgstr ""
 
-#: scripting/toplevel.cpp:2558
+#: ../scripting/toplevel.cpp:2616
 msgid "Building traits for "
 msgstr ""
 
-#: parsing/tags_stub.cpp:103
+#: ../parsing/tags_stub.cpp:100
 msgid "CSMTextSettingsTag"
 msgstr ""
 
-#: backends/netutils.cpp:281
+#: ../backends/netutils.cpp:278
 msgid "CURL not enabled in this build. Downloader will always fail."
 msgstr ""
 
-#: scripting/toplevel.cpp:461
+#: ../scripting/toplevel.cpp:459
 msgid "Called ASXML::load "
 msgstr ""
 
-#: scripting/toplevel.cpp:136
+#: ../scripting/toplevel.cpp:134
 msgid "Called Array constructor"
 msgstr ""
 
-#: scripting/toplevel.cpp:428
+#: ../scripting/toplevel.cpp:426
 msgid "Called MovieClipLoader constructor"
 msgstr ""
 
-#: scripting/toplevel.cpp:434
+#: ../scripting/toplevel.cpp:432
 msgid "Called MovieClipLoader::addListener"
 msgstr ""
 
-#: scripting/toplevel.cpp:446
+#: ../scripting/toplevel.cpp:444
 msgid "Called XML constructor"
 msgstr ""
 
-#: scripting/flashdisplay.cpp:526
+#: ../scripting/flashdisplay.cpp:524
 msgid "Called swapDepths"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2304
+#: ../scripting/abc_opcodes.cpp:2292
 msgid "Calling Class init "
 msgstr ""
 
-#: scripting/toplevel.cpp:2602
+#: ../scripting/toplevel.cpp:2660
 msgid "Calling Instance init "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1736
+#: ../scripting/abc_opcodes.cpp:1710
 msgid "Calling an undefined function"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:362 scripting/abc_opcodes.cpp:796
-#: scripting/abc_opcodes.cpp:1661
+#: ../scripting/abc_opcodes.cpp:349 ../scripting/abc_opcodes.cpp:783
+#: ../scripting/abc_opcodes.cpp:1635
 msgid "Calling an undefined function "
 msgstr ""
 
-#: scripting/toplevel.cpp:2757
+#: ../scripting/toplevel.cpp:2818
 msgid "Calling interface init for "
 msgstr ""
 
-#: asobject.cpp:605 asobject.cpp:648 asobject.cpp:894
+#: ../asobject.cpp:596 ../asobject.cpp:639 ../asobject.cpp:864
 msgid "Calling the getter"
 msgstr ""
 
-#: asobject.cpp:601
+#: ../asobject.cpp:592
 msgid "Calling the getter on type "
 msgstr ""
 
-#: asobject.cpp:355 asobject.cpp:388
+#: ../asobject.cpp:352 ../asobject.cpp:385
 msgid "Calling the setter"
 msgstr ""
 
-#: scripting/toplevel.cpp:1621 scripting/toplevel.cpp:1707
+#: ../scripting/toplevel.cpp:1674 ../scripting/toplevel.cpp:1760
 msgid "Calling with closure "
 msgstr ""
 
-#: asobject.cpp:181 asobject.cpp:188
+#: ../asobject.cpp:178 ../asobject.cpp:185
 msgid "Cannot convert object of type "
 msgstr ""
 
-#: plugin/plugin.cpp:354
+#: ../plugin/plugin.cpp:351
 msgid "Cannot handle UTF8 URLs"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:599
+#: ../scripting/abc_opcodes.cpp:586
 msgid "Cannot increment type "
 msgstr ""
 
-#: backends/rendering.cpp:517
-msgid "Cannot initialize GLEW"
+#: ../backends/rendering.cpp:514
+msgid "Cannot initialize GLEW: cause "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1751
+#: ../scripting/abc_opcodes.cpp:1726
 msgid "Cannot retrieve type"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:793 scripting/abc_codesynt.cpp:2257
+#: ../scripting/abc_codesynt.cpp:789 ../scripting/abc_codesynt.cpp:2253
 msgid "Case "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:704
+#: ../scripting/abc_opcodes.cpp:691
 msgid "Check"
 msgstr ""
 
-#: swf.cpp:530
+#: ../swf.cpp:528
 msgid "Child process creation failed, lightspark continues"
 msgstr ""
 
-#: scripting/abc.cpp:908 scripting/abc.cpp:1130 scripting/abc.cpp:1136
-#: scripting/abc_opcodes.cpp:2289
+#: ../scripting/abc.cpp:908 ../scripting/abc.cpp:1131
+#: ../scripting/abc.cpp:1137 ../scripting/abc_opcodes.cpp:2277
 msgid "Class "
 msgstr ""
 
-#: scripting/abc.cpp:1561
+#: ../scripting/abc.cpp:1576
 msgid "Class slot "
 msgstr ""
 
-#: scripting/toplevel.cpp:2923
+#: ../scripting/toplevel.cpp:3041
 msgid "Class to bool"
 msgstr ""
 
-#: scripting/actions.cpp:465
+#: ../scripting/actions.cpp:461
 msgid "CodeSize not consistent"
 msgstr ""
 
-#: scripting/actions.cpp:582
+#: ../scripting/actions.cpp:578
 msgid "CodeSize not consistent with file offset "
 msgstr ""
 
-#: swf.cpp:74
+#: ../swf.cpp:69
 msgid "Compressed SWF file: Version "
 msgstr ""
 
-#: backends/sound.cpp:257
+#: ../backends/sound.cpp:258
 msgid "Connection to PulseAudio server failed"
 msgstr ""
 
-#: scripting/abc.cpp:1778
+#: ../scripting/abc.cpp:1729
 msgid "Const "
 msgstr ""
 
-#: scripting/abc.cpp:1527
+#: ../scripting/abc.cpp:1542
 msgid "Constant kind "
 msgstr ""
 
-#: scripting/actions.cpp:1179
+#: ../scripting/actions.cpp:1175
 msgid "ConstantPool: Reading "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:623 scripting/abc_opcodes.cpp:713
-#: scripting/abc_opcodes.cpp:2010
+#: ../scripting/abc_opcodes.cpp:610 ../scripting/abc_opcodes.cpp:700
+#: ../scripting/abc_opcodes.cpp:1985
 msgid "Constructing"
 msgstr ""
 
-#: scripting/abc.cpp:69
+#: ../scripting/abc.cpp:66
 msgid "Corrupted ABC data: missing "
 msgstr ""
 
-#: backends/rendering.cpp:206
+#: ../backends/rendering.cpp:203
 msgid "Could not find any GLX configuration"
 msgstr ""
 
-#: swf.cpp:609
+#: ../swf.cpp:607
 msgid "Creating VM"
 msgstr ""
 
-#: scripting/toplevel.cpp:131
+#: ../scripting/toplevel.cpp:129
 msgid "Creating array of length "
 msgstr ""
 
-#: backends/input.cpp:43
+#: ../backends/input.cpp:39
 msgid "Creating input thread"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1440
+#: ../scripting/abc_opcodes.cpp:1413
 msgid "Cur prototype name "
 msgstr ""
 
-#: parsing/tags.cpp:1823
+#: ../parsing/tags.cpp:1820
 msgid "DebugIDTag Tag"
 msgstr ""
 
-#: parsing/tags.cpp:1828
+#: ../parsing/tags.cpp:1825
 msgid "DebugId "
 msgstr ""
 
-#: parsing/tags.cpp:1843
+#: ../parsing/tags.cpp:1840
 msgid "Debugger enabled, password: "
 msgstr ""
 
-#: parsing/tags.cpp:1854
+#: ../parsing/tags.cpp:1851
 msgid "Debugger enabled, reserved: "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1384 scripting/abc_opcodes.cpp:1404
-#: scripting/abc_opcodes.cpp:2003
+#: ../scripting/abc_opcodes.cpp:1387 ../scripting/abc_opcodes.cpp:1978
 msgid "Deferred definition of property "
 msgstr ""
 
-#: parsing/tags.cpp:1760
+#: ../parsing/tags.cpp:1757
 msgid "DefineBinaryDataTag"
 msgstr ""
 
-#: parsing/tags_stub.cpp:79
+#: ../parsing/tags_stub.cpp:76
 msgid "DefineBitsJPEG2Tag Tag"
 msgstr ""
 
-#: parsing/tags.cpp:673
+#: ../parsing/tags.cpp:670
 msgid "DefineBitsLossless2Tag::Render"
 msgstr ""
 
-#: parsing/tags.cpp:1675
+#: ../parsing/tags.cpp:1672
 msgid "DefineButton2Tag::Render"
 msgstr ""
 
-#: parsing/tags.cpp:269
+#: ../parsing/tags.cpp:266
 msgid "DefineEditTextTag ID "
 msgstr ""
 
-#: parsing/tags.cpp:310
+#: ../parsing/tags.cpp:307
 msgid "DefineEditTextTag: Render"
 msgstr ""
 
-#: parsing/tags.cpp:443
+#: ../parsing/tags.cpp:440
 msgid "DefineFont"
 msgstr ""
 
-#: parsing/tags.cpp:468
+#: ../parsing/tags.cpp:465
 msgid "DefineFont2"
 msgstr ""
 
-#: parsing/tags.cpp:557
+#: ../parsing/tags.cpp:554
 msgid "DefineFont3"
 msgstr ""
 
-#: parsing/tags_stub.cpp:73
+#: ../parsing/tags_stub.cpp:70
 msgid "DefineFontAlignZonesTag Tag"
 msgstr ""
 
-#: parsing/tags_stub.cpp:43
+#: ../parsing/tags_stub.cpp:40
 msgid "DefineFontInfo Tag"
 msgstr ""
 
-#: parsing/tags_stub.cpp:67
+#: ../parsing/tags_stub.cpp:64
 msgid "DefineFontNameTag Tag"
 msgstr ""
 
-#: parsing/tags_stub.cpp:86
+#: ../parsing/tags_stub.cpp:83
 msgid "DefineScalingGridTag Tag on ID "
 msgstr ""
 
-#: parsing/tags_stub.cpp:97
+#: ../parsing/tags_stub.cpp:94
 msgid "DefineSceneAndFrameLabelDataTag"
 msgstr ""
 
-#: parsing/tags.cpp:870
+#: ../parsing/tags.cpp:867
 msgid "DefineShape2Tag"
 msgstr ""
 
-#: parsing/tags.cpp:877
+#: ../parsing/tags.cpp:874
 msgid "DefineShape3Tag"
 msgstr ""
 
-#: parsing/tags.cpp:884
+#: ../parsing/tags.cpp:881
 msgid "DefineShape4Tag"
 msgstr ""
 
-#: parsing/tags.cpp:863
+#: ../parsing/tags.cpp:860
 msgid "DefineShapeTag"
 msgstr ""
 
-#: parsing/tags.cpp:1788
+#: ../parsing/tags.cpp:1785
 msgid "DefineSound Tag"
 msgstr ""
 
-#: parsing/tags.cpp:346
+#: ../parsing/tags.cpp:343
 msgid "DefineSprite ID: "
 msgstr ""
 
-#: parsing/tags.cpp:679
+#: ../parsing/tags.cpp:676
 msgid "DefineText ID "
 msgstr ""
 
-#: parsing/tags.cpp:753
+#: ../parsing/tags.cpp:750
 msgid "DefineText Render"
 msgstr ""
 
-#: parsing/tags.cpp:1733
+#: ../parsing/tags.cpp:1730
 msgid "DefineVideoStreamTag"
 msgstr ""
 
-#: parsing/tags.cpp:1744
+#: ../parsing/tags.cpp:1741
 msgid "DefineVideoStreamTag Render"
 msgstr ""
 
-#: scripting/actions.cpp:437
+#: ../scripting/actions.cpp:433
 msgid "Defining function "
 msgstr ""
 
-#: scripting/actions.cpp:542
+#: ../scripting/actions.cpp:538
 msgid "Defining function2 "
 msgstr ""
 
-#: scripting/flashutils.cpp:327
+#: ../scripting/flashutils.cpp:326
 msgid "Definition for '"
 msgstr ""
 
-#: plugin/plugin.cpp:439
+#: ../plugin/plugin.cpp:436
 msgid "DestroyStream on main stream?"
 msgstr ""
 
-#: scripting/abc.cpp:62
+#: ../scripting/abc.cpp:59
 msgid "DoABCTag Name: "
 msgstr ""
 
-#: scripting/actions.cpp:58
+#: ../scripting/actions.cpp:54
 msgid "DoActionTag"
 msgstr ""
 
-#: scripting/actions.cpp:125
+#: ../scripting/actions.cpp:121
 msgid "DoInitActionTag"
 msgstr ""
 
-#: backends/netutils.cpp:126
+#: ../backends/netutils.cpp:123
 msgid "Downloaded file bigger than buffer: "
 msgstr ""
 
-#: scripting/abc.cpp:1205
+#: ../scripting/abc.cpp:1206
 msgid "Empty stack"
 msgstr ""
 
-#: parsing/tags.cpp:1848
+#: ../parsing/tags.cpp:1845
 msgid "EnableDebugger2Tag Tag"
 msgstr ""
 
-#: parsing/tags.cpp:1839
+#: ../parsing/tags.cpp:1836
 msgid "EnableDebuggerTag Tag"
 msgstr ""
 
-#: scripting/abc.cpp:1460 scripting/abc.cpp:1624
+#: ../scripting/abc.cpp:1475 ../scripting/abc.cpp:1617
 msgid "End Getter trait: "
 msgstr ""
 
-#: scripting/abc.cpp:1429 scripting/abc.cpp:1747
+#: ../scripting/abc.cpp:1444 ../scripting/abc.cpp:1698
 msgid "End Method trait: "
 msgstr ""
 
-#: scripting/abc.cpp:1491 scripting/abc.cpp:1686
+#: ../scripting/abc.cpp:1506 ../scripting/abc.cpp:1657
 msgid "End Setter trait: "
 msgstr ""
 
-#: scripting/actions.cpp:451 scripting/actions.cpp:567
+#: ../scripting/actions.cpp:447 ../scripting/actions.cpp:563
 msgid "End action in function"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2309
+#: ../scripting/abc_opcodes.cpp:2297
 msgid "End of Class init "
 msgstr ""
 
-#: scripting/abc.cpp:1284
+#: ../scripting/abc.cpp:1299
 msgid "End of Entry Point"
 msgstr ""
 
-#: scripting/abc.cpp:1039
+#: ../scripting/abc.cpp:1039
 msgid "End of binding of "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2390
+#: ../scripting/abc_opcodes.cpp:2378
 msgid "End of call "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1664
+#: ../scripting/abc_opcodes.cpp:1638
 msgid "End of callSuper "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1738
+#: ../scripting/abc_opcodes.cpp:1712
 msgid "End of callSuperVoid "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:356 scripting/abc_opcodes.cpp:366
-#: scripting/abc_opcodes.cpp:830 scripting/abc_opcodes.cpp:848
+#: ../scripting/abc_opcodes.cpp:343 ../scripting/abc_opcodes.cpp:353
+#: ../scripting/abc_opcodes.cpp:817 ../scripting/abc_opcodes.cpp:835
 msgid "End of calling "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:719
+#: ../scripting/abc_opcodes.cpp:706
 msgid "End of constructing"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:687 scripting/abc_opcodes.cpp:2055
+#: ../scripting/abc_opcodes.cpp:674 ../scripting/abc_opcodes.cpp:2030
 msgid "End of constructing "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1389 scripting/abc_opcodes.cpp:1408
-#: scripting/abc_opcodes.cpp:2007
+#: ../scripting/abc_opcodes.cpp:1391 ../scripting/abc_opcodes.cpp:1982
 msgid "End of deferred definition of property "
 msgstr ""
 
-#: scripting/abc.cpp:1139 scripting/abc_opcodes.cpp:2292
+#: ../scripting/abc.cpp:1140 ../scripting/abc_opcodes.cpp:2280
 msgid "End of deferred init of class "
 msgstr ""
 
-#: asobject.cpp:612 asobject.cpp:652 asobject.cpp:899
+#: ../asobject.cpp:603 ../asobject.cpp:643 ../asobject.cpp:869
 msgid "End of getter"
 msgstr ""
 
-#: swf.cpp:830
+#: ../swf.cpp:828
 msgid "End of parsing @ "
 msgstr ""
 
-#: asobject.cpp:366 asobject.cpp:395
+#: ../asobject.cpp:363 ../asobject.cpp:392
 msgid "End of setter"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1447
+#: ../scripting/abc_opcodes.cpp:1420
 msgid "End super construct "
 msgstr ""
 
-#: parsing/tags.cpp:395
+#: ../parsing/tags.cpp:392
 msgid "EndDefineSprite ID: "
 msgstr ""
 
-#: parsing/tags.cpp:59
+#: ../parsing/tags.cpp:56
 msgid "EndTag at position "
 msgstr ""
 
-#: asobject.cpp:168
+#: ../asobject.cpp:165
 msgid "Equal comparison between type "
 msgstr ""
 
-#: scripting/abc.cpp:1354
+#: ../scripting/abc.cpp:1369
 msgid "Error in VM "
 msgstr ""
 
-#: parsing/tags.cpp:227 parsing/tags.cpp:232
+#: ../parsing/tags.cpp:224 ../parsing/tags.cpp:229
 msgid "Error while reading tag "
 msgstr ""
 
-#: scripting/toplevel.cpp:2211
+#: ../scripting/toplevel.cpp:2266
 msgid "Error.getStackTrace not yet implemented."
 msgstr ""
 
-#: scripting/flashevents.cpp:327
+#: ../scripting/flashevents.cpp:323
 msgid "Event not found"
 msgstr ""
 
-#: swf.cpp:872
+#: ../swf.cpp:870
 msgid "Exception in ParseThread "
 msgstr ""
 
-#: backends/rendering.cpp:405 backends/rendering.cpp:898
+#: ../backends/rendering.cpp:402 ../backends/rendering.cpp:894
 msgid "Exception in RenderThread "
 msgstr ""
 
-#: swf.cpp:1104
+#: ../swf.cpp:1102
 msgid "Exception in RootMovieClip::tick "
 msgstr ""
 
-#: thread_pool.cpp:112
+#: ../thread_pool.cpp:108
 msgid "Exception in ThreadPool "
 msgstr ""
 
-#: scripting/flashnet.cpp:769
+#: ../scripting/flashnet.cpp:766
 msgid "Exception in reading: "
 msgstr ""
 
-#: scripting/actions.cpp:705
+#: ../scripting/actions.cpp:701
 msgid "Exec: ActionBitAnd"
 msgstr ""
 
-#: scripting/actions.cpp:720
+#: ../scripting/actions.cpp:716
 msgid "Exec: ActionBitLShift"
 msgstr ""
 
-#: scripting/actions.cpp:710
+#: ../scripting/actions.cpp:706
 msgid "Exec: ActionBitOr"
 msgstr ""
 
-#: scripting/actions.cpp:725
+#: ../scripting/actions.cpp:721
 msgid "Exec: ActionBitRShift"
 msgstr ""
 
-#: scripting/actions.cpp:715
+#: ../scripting/actions.cpp:711
 msgid "Exec: ActionBitXor"
 msgstr ""
 
-#: scripting/actions.cpp:745
+#: ../scripting/actions.cpp:741
 msgid "Exec: ActionCastOp"
 msgstr ""
 
-#: scripting/actions.cpp:801
+#: ../scripting/actions.cpp:797
 msgid "Exec: ActionCloneSprite"
 msgstr ""
 
-#: scripting/actions.cpp:658
+#: ../scripting/actions.cpp:654
 msgid "Exec: ActionDecrement"
 msgstr ""
 
-#: scripting/actions.cpp:1009
+#: ../scripting/actions.cpp:1005
 msgid "Exec: ActionDelete"
 msgstr ""
 
-#: scripting/actions.cpp:685
+#: ../scripting/actions.cpp:681
 msgid "Exec: ActionEnumerate"
 msgstr ""
 
-#: scripting/actions.cpp:730
+#: ../scripting/actions.cpp:726
 msgid "Exec: ActionEnumerate2"
 msgstr ""
 
-#: scripting/actions.cpp:690
+#: ../scripting/actions.cpp:686
 msgid "Exec: ActionGetTime"
 msgstr ""
 
-#: scripting/actions.cpp:700
+#: ../scripting/actions.cpp:696
 msgid "Exec: ActionImplementsOp"
 msgstr ""
 
-#: scripting/actions.cpp:1090
+#: ../scripting/actions.cpp:1086
 msgid "Exec: ActionInitArray"
 msgstr ""
 
-#: scripting/actions.cpp:1095
+#: ../scripting/actions.cpp:1091
 msgid "Exec: ActionInitObject"
 msgstr ""
 
-#: scripting/actions.cpp:695
+#: ../scripting/actions.cpp:691
 msgid "Exec: ActionInstanceOf"
 msgstr ""
 
-#: scripting/actions.cpp:1014
+#: ../scripting/actions.cpp:1010
 msgid "Exec: ActionNewMethod"
 msgstr ""
 
-#: scripting/actions.cpp:590
+#: ../scripting/actions.cpp:586
 msgid "Exec: ActionPushDuplicate"
 msgstr ""
 
-#: scripting/actions.cpp:1019 scripting/actions.cpp:1024
+#: ../scripting/actions.cpp:1015 ../scripting/actions.cpp:1020
 msgid "Exec: ActionStringAdd"
 msgstr ""
 
-#: scripting/actions.cpp:1100
+#: ../scripting/actions.cpp:1096
 msgid "Exec: ActionStringEquals"
 msgstr ""
 
-#: scripting/actions.cpp:1029
+#: ../scripting/actions.cpp:1025
 msgid "Exec: ActionStringExtract"
 msgstr ""
 
-#: scripting/actions.cpp:776
+#: ../scripting/actions.cpp:772
 msgid "Exec: ActionStringGreater"
 msgstr ""
 
-#: scripting/actions.cpp:740
+#: ../scripting/actions.cpp:736
 msgid "Exec: ActionToNumber"
 msgstr ""
 
-#: scripting/actions.cpp:735
+#: ../scripting/actions.cpp:731
 msgid "Exec: ActionToString"
 msgstr ""
 
-#: scripting/actions.cpp:1151
+#: ../scripting/actions.cpp:1147
 msgid "Exec: ActionToggleQuality"
 msgstr ""
 
-#: scripting/actions.cpp:806
+#: ../scripting/actions.cpp:802
 msgid "Exec: ActionTrace"
 msgstr ""
 
-#: scripting/actions.cpp:680
+#: ../scripting/actions.cpp:676
 msgid "Exec: ActionTypeOf"
 msgstr ""
 
-#: scripting/actions.cpp:1323
+#: ../scripting/actions.cpp:1319
 msgid "Exec: ActionWith"
 msgstr ""
 
-#: swf.cpp:563
+#: ../swf.cpp:561
 msgid "Execve failed, content will not be rendered"
 msgstr ""
 
-#: scripting/actions.cpp:41
+#: ../scripting/actions.cpp:37
 msgid "ExportAssetsTag Tag"
 msgstr ""
 
-#: parsing/flv.cpp:41
+#: ../parsing/flv.cpp:38
 msgid "FLV file: Version "
 msgstr ""
 
-#: backends/rendering.cpp:913
+#: ../backends/rendering.cpp:909
 msgid "FPS: "
 msgstr ""
 
-#: scripting/toplevel.cpp:2622
+#: ../scripting/toplevel.cpp:2680
 msgid "Failure in reference counting"
 msgstr ""
 
-#: backends/rendering.cpp:288 backends/rendering.cpp:764
+#: ../backends/rendering.cpp:285 ../backends/rendering.cpp:760
 msgid "Faking "
 msgstr ""
 
-#: backends/rendering.cpp:202
+#: ../backends/rendering.cpp:199
 msgid "Falling back to no double buffering"
 msgstr ""
 
-#: parsing/tags.cpp:171
+#: ../parsing/tags.cpp:168
 msgid "FileAttributes tag not in the beginning"
 msgstr ""
 
-#: parsing/tags.cpp:1771
+#: ../parsing/tags.cpp:1768
 msgid "FileAttributesTag Tag"
 msgstr ""
 
-#: swftypes.cpp:291 swftypes.cpp:307
+#: ../swftypes.cpp:288 ../swftypes.cpp:304
 msgid "Fill array extended not supported"
 msgstr ""
 
-#: swftypes.h:608
+#: ../swftypes.h:603
 msgid "Fixed point bit field wider than 32 bit not supported"
 msgstr ""
 
-#: scripting/abc.cpp:909
+#: ../scripting/abc.cpp:909
 msgid "Flags:"
 msgstr ""
 
-#: backends/rendering.cpp:88
+#: ../backends/rendering.cpp:85
 msgid "Font File is "
 msgstr ""
 
-#: scripting/flashsystem.cpp:104
+#: ../scripting/flashsystem.cpp:105
 msgid "Found definition for "
 msgstr ""
 
-#: backends/rendering.cpp:445
+#: ../backends/rendering.cpp:442
 msgid "Fragment shader compilation "
 msgstr ""
 
-#: swf.cpp:811
+#: ../swf.cpp:809
 msgid "FrameRate "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2387
+#: ../scripting/abc_opcodes.cpp:2375
 msgid "Function not good "
 msgstr ""
 
-#: scripting/abc.cpp:2250
+#: ../scripting/abc.cpp:2199
 msgid "Function not implemented"
 msgstr ""
 
-#: backends/graphics.cpp:48
+#: ../backends/graphics.cpp:45
 msgid "GL error "
 msgstr ""
 
-#: backends/rendering.cpp:588
+#: ../backends/rendering.cpp:584
 msgid "GL errors during initialization: "
 msgstr ""
 
-#: backends/graphics.cpp:135 backends/graphics.cpp:177
-#: backends/graphics.cpp:202
+#: ../backends/graphics.cpp:132 ../backends/graphics.cpp:174
+#: ../backends/graphics.cpp:199
 msgid "GL_INVALID_VALUE after glTexImage2D, width="
 msgstr ""
 
-#: scripting/actions.cpp:1371
+#: ../scripting/actions.cpp:1367
 msgid "GetURL2"
 msgstr ""
 
-#: scripting/actions.cpp:1382
+#: ../scripting/actions.cpp:1378
 msgid "GetURL2: exec"
 msgstr ""
 
-#: scripting/actions.cpp:1377
+#: ../scripting/actions.cpp:1373
 msgid "GetURL: exec"
 msgstr ""
 
-#: scripting/abc.cpp:1457
+#: ../scripting/abc.cpp:1472
 msgid "Getter not linkable"
 msgstr ""
 
-#: scripting/abc.cpp:1434 scripting/abc.cpp:1568
+#: ../scripting/abc.cpp:1449 ../scripting/abc.cpp:1583
 msgid "Getter trait: "
 msgstr ""
 
-#: scripting/flashsystem.cpp:133 scripting/flashutils.cpp:342
+#: ../scripting/flashsystem.cpp:138 ../scripting/flashutils.cpp:341
 msgid "Getting definition for "
 msgstr ""
 
-#: scripting/abc.cpp:961
+#: ../scripting/abc.cpp:961
 msgid "Global is "
 msgstr ""
 
-#: scripting/flashevents.cpp:376
+#: ../scripting/flashevents.cpp:372
 msgid "Handling event "
 msgstr ""
 
-#: backends/graphics.cpp:56
+#: ../backends/graphics.cpp:53
 msgid "Ignoring "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:689 scripting/abc_codesynt.cpp:1600
+#: ../scripting/abc_codesynt.cpp:685 ../scripting/abc_codesynt.cpp:1596
 msgid "Ignoring at "
 msgstr ""
 
-#: scripting/abc.cpp:922
+#: ../scripting/abc.cpp:922
 msgid "Implements"
 msgstr ""
 
-#: backends/rendering.cpp:585
+#: ../backends/rendering.cpp:581
 msgid "Incomplete FBO status "
 msgstr ""
 
-#: parsing/tags.cpp:391
+#: ../parsing/tags.cpp:388
 msgid "Inconsistent frame count "
 msgstr ""
 
-#: scripting/toplevel.cpp:2952
+#: ../scripting/toplevel.cpp:3070
 msgid "Integer to bool"
 msgstr ""
 
-#: swf.cpp:514
+#: ../swf.cpp:511
 msgid "Invoking gnash!"
 msgstr ""
 
-#: threading.cpp:54
+#: ../threading.cpp:51
 msgid "Job terminated"
 msgstr ""
 
-#: scripting/toplevel.cpp:1726
+#: ../scripting/toplevel.cpp:1779
 msgid "LOG10E"
 msgstr ""
 
-#: scripting/toplevel.cpp:1727
+#: ../scripting/toplevel.cpp:1780
 msgid "LOG2E"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1573
+#: ../scripting/abc_codesynt.cpp:1569
 msgid "Last instruction before a new block was not a branch."
 msgstr ""
 
-#: scripting/abc.cpp:1270
+#: ../scripting/abc.cpp:1277
 msgid "Last script (Entry Point)"
 msgstr ""
 
-#: asobject.cpp:85
+#: ../asobject.cpp:82
 msgid "Less than comparison between type "
 msgstr ""
 
-#: swftypes.cpp:241 swftypes.cpp:268
+#: ../swftypes.cpp:238 ../swftypes.cpp:265
 msgid "Line array extended not supported"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2209
+#: ../scripting/abc_opcodes.cpp:2193
 msgid "Linking with interface "
 msgstr ""
 
-#: scripting/flashdisplay.cpp:198
+#: ../scripting/flashdisplay.cpp:196
 msgid "Loader async execution "
 msgstr ""
 
-#: backends/netutils.cpp:397
+#: ../backends/netutils.cpp:394
 msgid "LocalDownloader::execute: could not open local file: "
 msgstr ""
 
-#: backends/netutils.cpp:389
+#: ../backends/netutils.cpp:386
 msgid "LocalDownloader::execute: reading from local file failed: "
 msgstr ""
 
-#: backends/netutils.cpp:362
+#: ../backends/netutils.cpp:359
 msgid "LocalDownloader::execute: reading local file: "
 msgstr ""
 
-#: scripting/flashsystem.cpp:86 scripting/flashsystem.cpp:117
-#: scripting/flashutils.cpp:321
+#: ../scripting/flashsystem.cpp:86 ../scripting/flashsystem.cpp:121
+#: ../scripting/flashutils.cpp:319
 msgid "Looking for definition of "
 msgstr ""
 
-#: parsing/tags.cpp:1818
+#: ../parsing/tags.cpp:1815
 msgid "MaxRecusionDepth: "
 msgstr ""
 
-#: parsing/tags.cpp:1861
+#: ../parsing/tags.cpp:1858
 msgid "MetaData: "
 msgstr ""
 
-#: parsing/tags.cpp:1859
+#: ../parsing/tags.cpp:1856
 msgid "MetadataTag Tag"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1486
+#: ../scripting/abc_codesynt.cpp:1482
 msgid "Method "
 msgstr ""
 
-#: scripting/abc.cpp:1426
+#: ../scripting/abc.cpp:1441
 msgid "Method not linkable"
 msgstr ""
 
-#: scripting/abc.cpp:1403 scripting/abc.cpp:1691
+#: ../scripting/abc.cpp:1418 ../scripting/abc.cpp:1662
 msgid "Method trait: "
 msgstr ""
 
-#: parsing/tags.cpp:1336 parsing/tags.cpp:1503
+#: ../parsing/tags.cpp:1333 ../parsing/tags.cpp:1500
 msgid "Moving of registered objects not really supported"
 msgstr ""
 
-#: scripting/abc.cpp:1984
+#: ../scripting/abc.cpp:1933
 msgid "Multibyte not handled"
 msgstr ""
 
-#: scripting/abc.cpp:339 scripting/abc.cpp:356 scripting/abc.cpp:488
-#: scripting/abc.cpp:584 scripting/abc.cpp:619 scripting/abc.cpp:636
-#: scripting/abc.cpp:782
+#: ../scripting/abc.cpp:339 ../scripting/abc.cpp:356 ../scripting/abc.cpp:488
+#: ../scripting/abc.cpp:584 ../scripting/abc.cpp:619 ../scripting/abc.cpp:636
+#: ../scripting/abc.cpp:782
 msgid "Multiname to String not yet implemented for this kind "
 msgstr ""
 
-#: scripting/abc.cpp:1122
+#: ../scripting/abc.cpp:1122
 msgid "Multiple binding on "
 msgstr ""
 
-#: threading.cpp:77
+#: ../threading.cpp:74
 msgid "Mutex "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1346 scripting/abc_opcodes.cpp:1418
+#: ../scripting/abc_opcodes.cpp:1332 ../scripting/abc_opcodes.cpp:1373
 msgid "NOT found "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1524
+#: ../scripting/abc_opcodes.cpp:1498
 msgid "NOT found, pushing Undefined"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1482
+#: ../scripting/abc_opcodes.cpp:1455
 msgid "NOT found, pushing global"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1398 scripting/abc_opcodes.cpp:1518
+#: ../scripting/abc_opcodes.cpp:1369 ../scripting/abc_opcodes.cpp:1491
 msgid "NOT found, trying Global"
 msgstr ""
 
-#: scripting/flashnet.cpp:442
+#: ../scripting/flashnet.cpp:439
 msgid "NetStream constructor"
 msgstr ""
 
-#: scripting/flashnet.cpp:519
+#: ../scripting/flashnet.cpp:516
 msgid "NetStream::close called"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:680 scripting/abc_codesynt.cpp:735
+#: ../scripting/abc_codesynt.cpp:676 ../scripting/abc_codesynt.cpp:731
 msgid "New block at "
 msgstr ""
 
-#: plugin/plugin.cpp:368
+#: ../plugin/plugin.cpp:365
 msgid "Newstream for "
 msgstr ""
 
-#: scripting/abc.cpp:1397 scripting/abc.cpp:1543
+#: ../scripting/abc.cpp:1412 ../scripting/abc.cpp:1558
 msgid "Next slot has flags "
 msgstr ""
 
-#: parsing/flv.cpp:46
+#: ../parsing/flv.cpp:43
 msgid "No FLV file signature found"
 msgstr ""
 
-#: swf.cpp:78
+#: ../swf.cpp:73
 msgid "No SWF file signature found"
 msgstr ""
 
-#: backends/geometry.cpp:49
+#: ../backends/geometry.cpp:46
 msgid "No edges in this shape"
 msgstr ""
 
-#: main.cpp:180 tightspark.cpp:98
+#: ../main.cpp:196 ../tightspark.cpp:94
 msgid "No execution model enabled"
 msgstr ""
 
-#: plugin/plugin.cpp:269
+#: ../plugin/plugin.cpp:266
 msgid "No size in SetWindow"
 msgstr ""
 
-#: swf.cpp:1065
+#: ../swf.cpp:1063
 msgid "No such Id on dictionary "
 msgstr ""
 
-#: backends/rendering.cpp:220
+#: ../backends/rendering.cpp:217
 msgid "No suitable graphics configuration available"
 msgstr ""
 
-#: backends/rendering.cpp:577
+#: ../backends/rendering.cpp:573
 msgid "Non enough color attachments available, input disabled"
 msgstr ""
 
-#: scripting/flashdisplay.cpp:494
+#: ../scripting/flashdisplay.cpp:492
 msgid "Not a function"
 msgstr ""
 
-#: scripting/flashdisplay.cpp:603
+#: ../scripting/flashdisplay.cpp:601
 msgid "Not enough frames loaded"
 msgstr ""
 
-#: scripting/flashevents.cpp:372
+#: ../scripting/flashevents.cpp:368
 msgid "Not handled event "
 msgstr ""
 
-#: scripting/actions.h:644
+#: ../scripting/actions.h:640
 msgid "Not implemented action"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1360 scripting/abc_codesynt.cpp:3931
+#: ../scripting/abc_codesynt.cpp:1356 ../scripting/abc_codesynt.cpp:3928
 msgid "Not implemented instruction @"
 msgstr ""
 
-#: scripting/flashevents.cpp:285
+#: ../scripting/flashevents.cpp:281
 msgid "Not implemented mode for addEventListener"
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:1265
+#: ../scripting/abc_interpreter.cpp:1261
 msgid "Not intepreted instruction @"
 msgstr ""
 
-#: scripting/actions.cpp:72 scripting/actions.cpp:139
-#: scripting/actions.cpp:457 scripting/actions.cpp:573
+#: ../scripting/actions.cpp:68 ../scripting/actions.cpp:135
+#: ../scripting/actions.cpp:453 ../scripting/actions.cpp:569
 msgid "Not supported action opcode"
 msgstr ""
 
-#: swftypes.cpp:670 swftypes.cpp:702
+#: ../swftypes.cpp:667 ../swftypes.cpp:699
 msgid "Not supported fill style "
 msgstr ""
 
-#: scripting/toplevel.cpp:2938
+#: ../scripting/toplevel.cpp:3056
 msgid "Null to bool"
 msgstr ""
 
-#: scripting/toplevel.cpp:2943
+#: ../scripting/toplevel.cpp:3061
 msgid "Number to bool"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1765 scripting/abc_opcodes.cpp:1819
-#: scripting/abc_opcodes.cpp:1880
+#: ../scripting/abc_opcodes.cpp:1740 ../scripting/abc_opcodes.cpp:1794
+#: ../scripting/abc_opcodes.cpp:1855
 msgid "Numeric type is "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:316
+#: ../scripting/abc_opcodes.cpp:303
 msgid "Object"
 msgstr ""
 
-#: scripting/toplevel.cpp:2918
+#: ../scripting/toplevel.cpp:3036
 msgid "Object to bool"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:680
+#: ../scripting/abc_opcodes.cpp:667
 msgid "Object type "
 msgstr ""
 
-#: asobject.cpp:142 asobject.cpp:164
+#: ../asobject.cpp:139 ../asobject.cpp:161
 msgid "Overloaded isEqual"
 msgstr ""
 
-#: asobject.cpp:81
+#: ../asobject.cpp:78
 msgid "Overloaded isLess"
 msgstr ""
 
-#: swf.cpp:269
+#: ../swf.cpp:266
 msgid "Parameters file not found"
 msgstr ""
 
-#: asobject.cpp:506
+#: ../asobject.cpp:503
 msgid "Passthorugh of "
 msgstr ""
 
-#: parsing/tags.cpp:1376
+#: ../parsing/tags.cpp:1373
 msgid "PlaceObject2"
 msgstr ""
 
-#: parsing/tags.cpp:1543
+#: ../parsing/tags.cpp:1540
 msgid "PlaceObject3"
 msgstr ""
 
-#: parsing/tags.cpp:1274 parsing/tags.cpp:1441
+#: ../parsing/tags.cpp:1271 ../parsing/tags.cpp:1438
 msgid "Placing ID "
 msgstr ""
 
-#: parsing/tags.cpp:1605
+#: ../parsing/tags.cpp:1602
 msgid "ProductInfoTag Tag"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:401 scripting/abc_opcodes.cpp:405
+#: ../scripting/abc_opcodes.cpp:388 ../scripting/abc_opcodes.cpp:392
 msgid "Property not found "
 msgstr ""
 
-#: parsing/tags_stub.cpp:37
+#: ../parsing/tags_stub.cpp:34
 msgid "Protect Tag"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:351 scripting/abc_opcodes.cpp:824
+#: ../scripting/abc_opcodes.cpp:338 ../scripting/abc_opcodes.cpp:811
 msgid "Proxy::callProperty"
 msgstr ""
 
-#: scripting/flashutils.cpp:629
+#: ../scripting/flashutils.cpp:628
 msgid "Proxy::getProperty"
 msgstr ""
 
-#: scripting/flashutils.cpp:639
+#: ../scripting/flashutils.cpp:638
 msgid "Proxy::hasNext"
 msgstr ""
 
-#: scripting/flashutils.cpp:657
+#: ../scripting/flashutils.cpp:656
 msgid "Proxy::nextName"
 msgstr ""
 
-#: scripting/flashutils.cpp:602
+#: ../scripting/flashutils.cpp:601
 msgid "Proxy::setProperty"
 msgstr ""
 
-#: scripting/actions.cpp:1308
+#: ../scripting/actions.cpp:1304
 msgid "Push type: "
 msgstr ""
 
-#: scripting/actions.cpp:1266
+#: ../scripting/actions.cpp:1262
 msgid "Push: Read bool "
 msgstr ""
 
-#: scripting/actions.cpp:1294
+#: ../scripting/actions.cpp:1290
 msgid "Push: Read constant index "
 msgstr ""
 
-#: scripting/actions.cpp:1275
+#: ../scripting/actions.cpp:1271
 msgid "Push: Read double "
 msgstr ""
 
-#: scripting/actions.cpp:1235
+#: ../scripting/actions.cpp:1231
 msgid "Push: Read float "
 msgstr ""
 
-#: scripting/actions.cpp:1284
+#: ../scripting/actions.cpp:1280
 msgid "Push: Read integer "
 msgstr ""
 
-#: scripting/actions.cpp:1304
+#: ../scripting/actions.cpp:1300
 msgid "Push: Read long constant index "
 msgstr ""
 
-#: scripting/actions.cpp:1257
+#: ../scripting/actions.cpp:1253
 msgid "Push: Read reg number "
 msgstr ""
 
-#: scripting/actions.cpp:1226
+#: ../scripting/actions.cpp:1222
 msgid "Push: Read string "
 msgstr ""
 
-#: scripting/actions.cpp:1241
+#: ../scripting/actions.cpp:1237
 msgid "Push: null"
 msgstr ""
 
-#: scripting/actions.cpp:1247
+#: ../scripting/actions.cpp:1243
 msgid "Push: undefined"
 msgstr ""
 
-#: parsing/tags.cpp:55
+#: ../parsing/tags.cpp:52
 msgid "Reading tag type: "
 msgstr ""
 
-#: backends/graphics.cpp:195
+#: ../backends/graphics.cpp:192
 msgid "Reallocating texture to size "
 msgstr ""
 
-#: parsing/tags.cpp:1328 parsing/tags.cpp:1495
+#: ../parsing/tags.cpp:1325 ../parsing/tags.cpp:1492
 msgid "Registering ID "
 msgstr ""
 
-#: parsing/tags.cpp:242
+#: ../parsing/tags.cpp:239
 msgid "RemoveObject2 Depth: "
 msgstr ""
 
-#: backends/rendering.cpp:60
+#: ../backends/rendering.cpp:57
 msgid "RenderThread this="
 msgstr ""
 
-#: scripting/abc.cpp:1176
+#: ../scripting/abc.cpp:1177
 msgid "Requested invalid method"
 msgstr ""
 
-#: swftypes.cpp:398
+#: ../swftypes.cpp:395
 msgid "Reserved bits not so reserved"
 msgstr ""
 
-#: swftypes.cpp:541
+#: ../swftypes.cpp:538
 msgid "Reverting to fixed function"
 msgstr ""
 
-#: main.cpp:202
+#: ../main.cpp:218
 msgid "Running in local-with-filesystem sandbox"
 msgstr ""
 
-#: main.cpp:198
+#: ../main.cpp:214
 msgid "Running in remote sandbox"
 msgstr ""
 
-#: parsing/tags.cpp:1614
+#: ../parsing/tags.cpp:1611
 msgid "SWF Info:"
 msgstr ""
 
-#: scripting/abc.cpp:1259
+#: ../scripting/abc.cpp:1256
 msgid "Script N: "
 msgstr ""
 
-#: parsing/tags.cpp:1816
+#: ../parsing/tags.cpp:1813
 msgid "ScriptLimitsTag Tag"
 msgstr ""
 
-#: scripting/flashsystem.cpp:194
+#: ../scripting/flashsystem.cpp:199
 msgid "Security::allowDomain"
 msgstr ""
 
-#: scripting/flashsystem.cpp:200
+#: ../scripting/flashsystem.cpp:205
 msgid "Security::allowInsecureDomain"
 msgstr ""
 
-#: scripting/flashsystem.cpp:206
+#: ../scripting/flashsystem.cpp:211
 msgid "Security::loadPolicyFile"
 msgstr ""
 
-#: scripting/flashsystem.cpp:212
+#: ../scripting/flashsystem.cpp:217
 msgid "Security::showSettings"
 msgstr ""
 
-#: scripting/abc.cpp:1488
+#: ../scripting/abc.cpp:1503
 msgid "Setter not linkable"
 msgstr ""
 
-#: scripting/abc.cpp:1465 scripting/abc.cpp:1629
+#: ../scripting/abc.cpp:1480 ../scripting/abc.cpp:1622
 msgid "Setter trait: "
 msgstr ""
 
-#: scripting/abc.cpp:1126
+#: ../scripting/abc.cpp:1126
 msgid "Setting class name to "
 msgstr ""
 
-#: backends/rendering.cpp:431
+#: ../backends/rendering.cpp:428
 msgid "Shader lightspark.frag not found"
 msgstr ""
 
-#: backends/rendering.cpp:468
+#: ../backends/rendering.cpp:465
 msgid "Shader lightspark.vert not found"
 msgstr ""
 
-#: parsing/tags.cpp:771
+#: ../parsing/tags.cpp:768
 msgid "Should be a FontTag"
 msgstr ""
 
-#: parsing/tags.cpp:1227
+#: ../parsing/tags.cpp:1224
 msgid "ShowFrame"
 msgstr ""
 
-#: swftypes.h:670
+#: ../swftypes.h:665
 msgid "Signed bit field wider than 32 bit not supported"
 msgstr ""
 
-#: swftypes.cpp:1090
+#: ../swftypes.cpp:1087
 msgid "Skipping "
 msgstr ""
 
-#: scripting/abc.cpp:1798 scripting/abc.cpp:1804
+#: ../scripting/abc.cpp:1749 ../scripting/abc.cpp:1755
 msgid "Slot "
 msgstr ""
 
-#: parsing/tags_stub.cpp:91
+#: ../parsing/tags_stub.cpp:88
 msgid "SoundStreamBlockTag"
 msgstr ""
 
-#: parsing/tags_stub.cpp:55
+#: ../parsing/tags_stub.cpp:52
 msgid "SoundStreamHead Tag"
 msgstr ""
 
-#: parsing/tags_stub.cpp:61
+#: ../parsing/tags_stub.cpp:58
 msgid "SoundStreamHead2 Tag"
 msgstr ""
 
-#: scripting/flashmedia.cpp:48
+#: ../scripting/flashmedia.cpp:45
 msgid "SoundTransform constructor"
 msgstr ""
 
-#: scripting/abc.cpp:1229
+#: ../scripting/abc.cpp:1230
 msgid "Stack not clean at the end of function"
 msgstr ""
 
-#: parsing/tags_stub.cpp:49
+#: ../parsing/tags_stub.cpp:46
 msgid "StartSound Tag"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1578
+#: ../scripting/abc_codesynt.cpp:1574
 msgid "Starting block at "
 msgstr ""
 
-#: scripting/toplevel.cpp:2903
+#: ../scripting/toplevel.cpp:3021
 msgid "String to bool"
 msgstr ""
 
-#: swftypes.cpp:624
+#: ../swftypes.cpp:621
 msgid "Style not implemented"
 msgstr ""
 
-#: scripting/abc.cpp:919
+#: ../scripting/abc.cpp:919
 msgid "Super "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1443
+#: ../scripting/abc_opcodes.cpp:1416
 msgid "Super prototype name "
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:401
+#: ../scripting/abc_interpreter.cpp:397
 msgid "Switch default dest "
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:408
+#: ../scripting/abc_interpreter.cpp:404
 msgid "Switch dest "
 msgstr ""
 
-#: scripting/abc.cpp:96
+#: ../scripting/abc.cpp:93
 msgid "SymbolClassTag"
 msgstr ""
 
-#: scripting/abc.cpp:108
+#: ../scripting/abc.cpp:105
 msgid "SymbolClassTag Exec"
 msgstr ""
 
-#: parsing/tags.cpp:303
+#: ../parsing/tags.cpp:300
 msgid "Sync to variable name "
 msgstr ""
 
-#: scripting/flashevents.cpp:123
+#: ../scripting/flashevents.cpp:119
 msgid "Target for event "
 msgstr ""
 
-#: scripting/flashtext.cpp:103
+#: ../scripting/flashtext.cpp:100
 msgid "TextField::Render"
 msgstr ""
 
-#: scripting/abc.cpp:1498 scripting/abc.cpp:1837
+#: ../scripting/abc.cpp:1513 ../scripting/abc.cpp:1786
 msgid "Trait not supported "
 msgstr ""
 
-#: asobject.cpp:87 asobject.cpp:170 scripting/abc_opcodes.cpp:1799
-#: scripting/abc_opcodes.cpp:1862 scripting/abc_opcodes.cpp:1913
+#: ../asobject.cpp:84 ../asobject.cpp:167 ../scripting/abc_opcodes.cpp:1774
+#: ../scripting/abc_opcodes.cpp:1837 ../scripting/abc_opcodes.cpp:1888
 msgid "Type "
 msgstr ""
 
-#: backends/rendering.cpp:81
+#: ../backends/rendering.cpp:78
 msgid "Unable to find suitable Serif font"
 msgstr ""
 
-#: backends/rendering.cpp:241
+#: ../backends/rendering.cpp:238
 msgid "Unable to load serif font"
 msgstr ""
 
-#: parsing/tags.cpp:378
+#: ../parsing/tags.cpp:375
 msgid "Unclassified tag inside Sprite?"
 msgstr ""
 
-#: swf.cpp:70
+#: ../swf.cpp:65
 msgid "Uncompressed SWF file: Version "
 msgstr ""
 
-#: scripting/toplevel.cpp:1130
+#: ../scripting/toplevel.cpp:1180
 msgid "Undefined function"
 msgstr ""
 
-#: scripting/toplevel.cpp:2933
+#: ../scripting/toplevel.cpp:3051
 msgid "Undefined to bool"
 msgstr ""
 
-#: timer.cpp:168
+#: ../timer.cpp:164
 msgid "Unexpected failure of sem_timedwait.. Trying to go on. errno="
 msgstr ""
 
-#: scripting/abc.cpp:2164
+#: ../scripting/abc.cpp:2113
 msgid "Unexpected kind "
 msgstr ""
 
-#: scripting/abc.cpp:2072
+#: ../scripting/abc.cpp:2021
 msgid "Unexpected multiname kind "
 msgstr ""
 
-#: scripting/abc.cpp:2096
+#: ../scripting/abc.cpp:2045
 msgid "Unexpected options type"
 msgstr ""
 
-#: scripting/flashnet.cpp:729
+#: ../scripting/flashnet.cpp:726
 msgid "Unexpected tag type "
 msgstr ""
 
-#: scripting/toplevel.cpp:2107
+#: ../scripting/toplevel.cpp:2162
 msgid "Unicode not supported in String::fromCharCode"
 msgstr ""
 
-#: parsing/tags_stub.cpp:109
+#: ../parsing/tags_stub.cpp:106
 msgid "Unimplemented Tag "
 msgstr ""
 
-#: swftypes.h:652
+#: ../swftypes.h:647
 msgid "Unsigned bit field wider than 32 bit not supported"
 msgstr ""
 
-#: scripting/actions.cpp:409
+#: ../scripting/actions.cpp:405
 msgid "Unsupported ActionCode "
 msgstr ""
 
-#: swftypes.cpp:910
+#: ../swftypes.cpp:907
 msgid "Unsupported Filter Id "
 msgstr ""
 
-#: parsing/tags.cpp:212
+#: ../parsing/tags.cpp:209
 msgid "Unsupported tag type "
 msgstr ""
 
-#: backends/rendering.cpp:476
+#: ../backends/rendering.cpp:473
 msgid "Vertex shader compilation "
 msgstr ""
 
-#: backends/rendering.cpp:523
+#: ../backends/rendering.cpp:519
 msgid "Video card does not support OpenGL 2.0... Aborting"
 msgstr ""
 
-#: backends/decoder.cpp:44
+#: ../backends/decoder.cpp:40
 msgid "Video frame size "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1622 scripting/abc_opcodes.cpp:1706
+#: ../scripting/abc_opcodes.cpp:1596 ../scripting/abc_opcodes.cpp:1680
 msgid "We got a Undefined function"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:838 scripting/abc_opcodes.cpp:842
+#: ../scripting/abc_opcodes.cpp:825 ../scripting/abc_opcodes.cpp:829
 msgid "We got a Undefined function "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:316
+#: ../scripting/abc_opcodes.cpp:303
 msgid "We got a Undefined function on obj "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:297
+#: ../scripting/abc_opcodes.cpp:285
 msgid "We got a function not yet valid"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1335 scripting/flashsystem.cpp:95
-#: scripting/flashutils.cpp:334
+#: ../scripting/abc_opcodes.cpp:1322 ../scripting/flashsystem.cpp:96
+#: ../scripting/flashutils.cpp:333
 msgid "We got an object not yet valid"
 msgstr ""
 
-#: backends/input.cpp:194 backends/input.cpp:270
+#: ../backends/input.cpp:190 ../backends/input.cpp:266
 msgid "We still miss "
 msgstr ""
 
-#: scripting/flashevents.cpp:296
+#: ../scripting/flashevents.cpp:292
 msgid "Weird event reregistration"
 msgstr ""
 
-#: backends/rendering.cpp:262
+#: ../backends/rendering.cpp:259
 msgid "Window resize not supported in plugin"
 msgstr ""
 
-#: asobject.cpp:734
+#: ../asobject.cpp:704
 msgid "["
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:181 scripting/abc_opcodes.cpp:186
+#: ../scripting/abc_opcodes.cpp:169 ../scripting/abc_opcodes.cpp:174
 msgid "]"
 msgstr ""
 
-#: asobject.cpp:734 scripting/abc_opcodes.cpp:934
-#: scripting/abc_opcodes.cpp:940 scripting/abc_opcodes.cpp:946
+#: ../asobject.cpp:704 ../scripting/abc_opcodes.cpp:921
+#: ../scripting/abc_opcodes.cpp:927 ../scripting/abc_opcodes.cpp:933
 msgid "] "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:176
+#: ../scripting/abc_opcodes.cpp:164
 msgid "] ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:171 scripting/abc_opcodes.cpp:191
+#: ../scripting/abc_opcodes.cpp:159 ../scripting/abc_opcodes.cpp:179
 msgid "] (int)= "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:196
+#: ../scripting/abc_opcodes.cpp:184
 msgid "] = "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:961 scripting/abc_opcodes.cpp:977
-#: scripting/abc_opcodes.cpp:986 scripting/abc_opcodes.cpp:1008
-#: scripting/abc_opcodes.cpp:1016 scripting/abc_opcodes.cpp:1025
-#: scripting/abc_opcodes.cpp:1052 scripting/abc_opcodes.cpp:1060
-#: scripting/abc_opcodes.cpp:1068
+#: ../scripting/abc_opcodes.cpp:948 ../scripting/abc_opcodes.cpp:964
+#: ../scripting/abc_opcodes.cpp:973 ../scripting/abc_opcodes.cpp:995
+#: ../scripting/abc_opcodes.cpp:1003 ../scripting/abc_opcodes.cpp:1012
+#: ../scripting/abc_opcodes.cpp:1039 ../scripting/abc_opcodes.cpp:1047
+#: ../scripting/abc_opcodes.cpp:1055
 msgid "add "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1871
+#: ../scripting/abc_opcodes.cpp:1846
 msgid "asTypelate"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:56
+#: ../scripting/abc_opcodes.cpp:44
 msgid "bitAnd_oi "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:38
+#: ../scripting/abc_opcodes.cpp:35
 msgid "bitAnd_oo "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:235
+#: ../scripting/abc_opcodes.cpp:223
 msgid "bitNot "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:254 scripting/abc_opcodes.cpp:264
+#: ../scripting/abc_opcodes.cpp:242 ../scripting/abc_opcodes.cpp:252
 msgid "bitOr "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:245
+#: ../scripting/abc_opcodes.cpp:233
 msgid "bitXor "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:755
+#: ../scripting/abc_codesynt.cpp:751
 msgid "block analysis: branches"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:717
+#: ../scripting/abc_codesynt.cpp:713
 msgid "block analysis: kill"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2363
+#: ../scripting/abc_opcodes.cpp:2351
 msgid "call "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:761
+#: ../scripting/abc_opcodes.cpp:748
 msgid "callPropVoid "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:275
+#: ../scripting/abc_opcodes.cpp:263
 msgid "callProperty "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1594
+#: ../scripting/abc_opcodes.cpp:1568
 msgid "callSuper "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1677
+#: ../scripting/abc_opcodes.cpp:1651
 msgid "callSuperVoid "
 msgstr ""
 
-#: scripting/toplevel.cpp:1973
+#: ../scripting/toplevel.cpp:2028
 msgid "capturing groups "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:161
+#: ../scripting/abc_opcodes.cpp:149
 msgid "coerce "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:145
+#: ../scripting/abc_opcodes.cpp:133
 msgid "coerce_a"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:155
+#: ../scripting/abc_opcodes.cpp:143
 msgid "coerce_s"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:606
+#: ../scripting/abc_opcodes.cpp:593
 msgid "construct "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:695
+#: ../scripting/abc_opcodes.cpp:682
 msgid "constructGenericType "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1982
+#: ../scripting/abc_opcodes.cpp:1957
 msgid "constructProp "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1426
+#: ../scripting/abc_opcodes.cpp:1399
 msgid "constructSuper "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:99
+#: ../scripting/abc_opcodes.cpp:87
 msgid "convert_b"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:86
+#: ../scripting/abc_opcodes.cpp:74
 msgid "convert_d"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:115
+#: ../scripting/abc_opcodes.cpp:103
 msgid "convert_i"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:107
+#: ../scripting/abc_opcodes.cpp:95
 msgid "convert_u"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:788 scripting/abc_codesynt.cpp:2252
+#: ../scripting/abc_codesynt.cpp:784 ../scripting/abc_codesynt.cpp:2248
 msgid "count "
 msgstr ""
 
-#: scripting/flashdisplay.cpp:507
+#: ../scripting/flashdisplay.cpp:505
 msgid "createEmptyMovieClip"
 msgstr ""
 
-#: scripting/abc.cpp:876
+#: ../scripting/abc.cpp:876
 msgid "dMultiname to String not yet implemented for this kind "
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:1237
+#: ../scripting/abc_interpreter.cpp:1233
 msgid "debug"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:41
+#: ../scripting/abc_codesynt.cpp:37
 msgid "debug_d "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:46
+#: ../scripting/abc_codesynt.cpp:42
 msgid "debug_i "
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:1259
+#: ../scripting/abc_interpreter.cpp:1255
 msgid "debugfile"
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:1251
+#: ../scripting/abc_interpreter.cpp:1247
 msgid "debugline"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:478
+#: ../scripting/abc_opcodes.cpp:465
 msgid "decrement"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:487
+#: ../scripting/abc_opcodes.cpp:474
 msgid "decrement_i"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:785 scripting/abc_codesynt.cpp:2249
+#: ../scripting/abc_codesynt.cpp:781 ../scripting/abc_codesynt.cpp:2245
 msgid "default "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2398
+#: ../scripting/abc_opcodes.cpp:2386
 msgid "deleteProperty "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:450
+#: ../scripting/abc_opcodes.cpp:437
 msgid "divide "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:442
+#: ../scripting/abc_opcodes.cpp:429
 msgid "divide: HACK"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1363 scripting/abc_codesynt.cpp:3934
-#: scripting/abc_interpreter.cpp:1266
+#: ../scripting/abc_codesynt.cpp:1359 ../scripting/abc_codesynt.cpp:3931
+#: ../scripting/abc_interpreter.cpp:1262
 msgid "dump "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1196
+#: ../scripting/abc_opcodes.cpp:1183
 msgid "dup: DONE"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1150
+#: ../scripting/abc_opcodes.cpp:1137
 msgid "equals "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1494
+#: ../scripting/abc_opcodes.cpp:1467
 msgid "findPropStrict "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1457
+#: ../scripting/abc_opcodes.cpp:1430
 msgid "findProperty "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:471
+#: ../scripting/abc_opcodes.cpp:458
 msgid "getGlobalScope: "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1356
+#: ../scripting/abc_opcodes.cpp:1342
 msgid "getLex: "
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:777 scripting/abc_interpreter.cpp:1214
+#: ../scripting/abc_interpreter.cpp:773 ../scripting/abc_interpreter.cpp:1210
 msgid "getLocal "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:171 scripting/abc_opcodes.cpp:176
-#: scripting/abc_opcodes.cpp:181
+#: ../scripting/abc_opcodes.cpp:159 ../scripting/abc_opcodes.cpp:164
+#: ../scripting/abc_opcodes.cpp:169
 msgid "getLocal["
 msgstr ""
 
-#: scripting/abc.cpp:306
+#: ../scripting/abc.cpp:306
 msgid "getMultinameRTData not yet implemented for this kind "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:385
+#: ../scripting/abc_opcodes.cpp:372
 msgid "getProperty "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:374
+#: ../scripting/abc_opcodes.cpp:361
 msgid "getProperty_i "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2427
+#: ../scripting/abc_opcodes.cpp:2415
 msgid "getScopeObject: "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:216
+#: ../scripting/abc_opcodes.cpp:204
 msgid "getSlot "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1311
+#: ../scripting/abc_opcodes.cpp:1298
 msgid "getSuper "
 msgstr ""
 
-#: scripting/toplevel.cpp:1411
+#: ../scripting/toplevel.cpp:1463
 msgid "getTimezoneOffset"
 msgstr ""
 
-#: backends/rendering.cpp:193
+#: ../backends/rendering.cpp:190
 msgid "glX not present"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1547
+#: ../scripting/abc_opcodes.cpp:1521
 msgid "greaterEquals"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1536
+#: ../scripting/abc_opcodes.cpp:1510
 msgid "greaterThan"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2060
+#: ../scripting/abc_opcodes.cpp:2035
 msgid "hasNext2 "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1928
+#: ../scripting/abc_opcodes.cpp:1903
 msgid "ifEq ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1968
+#: ../scripting/abc_opcodes.cpp:1943
 msgid "ifFalse ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1265
+#: ../scripting/abc_opcodes.cpp:1252
 msgid "ifGE ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1222
+#: ../scripting/abc_opcodes.cpp:1209
 msgid "ifGT ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1245
+#: ../scripting/abc_opcodes.cpp:1232
 msgid "ifLE ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:509
+#: ../scripting/abc_opcodes.cpp:496
 msgid "ifLT ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:533
+#: ../scripting/abc_opcodes.cpp:520
 msgid "ifLT_io "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:518
+#: ../scripting/abc_opcodes.cpp:505
 msgid "ifLT_oi"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:545 scripting/abc_opcodes.cpp:558
+#: ../scripting/abc_opcodes.cpp:532 ../scripting/abc_opcodes.cpp:545
 msgid "ifNE ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1275
+#: ../scripting/abc_opcodes.cpp:1262
 msgid "ifNGE ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1234
+#: ../scripting/abc_opcodes.cpp:1221
 msgid "ifNGT ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1255
+#: ../scripting/abc_opcodes.cpp:1242
 msgid "ifNLE ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:498
+#: ../scripting/abc_opcodes.cpp:485
 msgid "ifNLT ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1946
+#: ../scripting/abc_opcodes.cpp:1921
 msgid "ifStrictEq "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1952
+#: ../scripting/abc_opcodes.cpp:1927
 msgid "ifStrictNE"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:859
+#: ../scripting/abc_opcodes.cpp:846
 msgid "ifTrue ("
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1958
+#: ../scripting/abc_opcodes.cpp:1933
 msgid "in"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:591
+#: ../scripting/abc_opcodes.cpp:578
 msgid "incLocal_i "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:44
-msgid "increment"
-msgstr ""
-
-#: scripting/abc_opcodes.cpp:2146
+#: ../scripting/abc_opcodes.cpp:2130
 msgid "increment_i"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1573
+#: ../scripting/abc_opcodes.cpp:1547
 msgid "initProperty "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1746
+#: ../scripting/abc_opcodes.cpp:1720
 msgid "isType "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1793
+#: ../scripting/abc_opcodes.cpp:1768
 msgid "isType on non classed object "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1807
+#: ../scripting/abc_opcodes.cpp:1782
 msgid "isTypelate"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1855
+#: ../scripting/abc_opcodes.cpp:1830
 msgid "isTypelate on non classed object "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:853
+#: ../scripting/abc_opcodes.cpp:840
 msgid "jump "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:951
+#: ../scripting/abc_opcodes.cpp:938
 msgid "kill "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1093 scripting/abc_opcodes.cpp:1104
+#: ../scripting/abc_opcodes.cpp:1080 ../scripting/abc_opcodes.cpp:1091
 msgid "lShift "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:123
+#: ../scripting/abc_opcodes.cpp:111
 msgid "label"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1558
+#: ../scripting/abc_opcodes.cpp:1532
 msgid "lessEquals"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2346
+#: ../scripting/abc_opcodes.cpp:2334
 msgid "lessThan"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:128
+#: ../scripting/abc_opcodes.cpp:116
 msgid "lookupswitch"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:872
+#: ../scripting/abc_opcodes.cpp:859
 msgid "modulo "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:585
+#: ../scripting/abc_opcodes.cpp:572
 msgid "multiply "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:575
+#: ../scripting/abc_opcodes.cpp:562
 msgid "multiply_oi "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:225
+#: ../scripting/abc_opcodes.cpp:213
 msgid "negate"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2321
+#: ../scripting/abc_opcodes.cpp:2309
 msgid "newActivation"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2446
+#: ../scripting/abc_opcodes.cpp:2434
 msgid "newArray "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2440
+#: ../scripting/abc_opcodes.cpp:2428
 msgid "newCatch "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2216
+#: ../scripting/abc_opcodes.cpp:2200
 msgid "newClass "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2410
+#: ../scripting/abc_opcodes.cpp:2398
 msgid "newFunction "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2115
+#: ../scripting/abc_opcodes.cpp:2090
 msgid "newObject "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2180
+#: ../scripting/abc_opcodes.cpp:2164
 msgid "nextName"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2155
+#: ../scripting/abc_opcodes.cpp:2139
 msgid "nextValue"
 msgstr ""
 
-#: parsing/tags.cpp:1367 parsing/tags.cpp:1534
+#: ../parsing/tags.cpp:1364 ../parsing/tags.cpp:1531
 msgid "no char to move at depth "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1141
+#: ../scripting/abc_opcodes.cpp:1128
 msgid "not"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1913
+#: ../scripting/abc_opcodes.cpp:1888
 msgid "not "
 msgstr ""
 
-#: scripting/abc.cpp:1183
+#: ../scripting/abc.cpp:1184
 msgid "not implement opcode 0x"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1968
+#: ../scripting/abc_opcodes.cpp:1943
 msgid "not taken"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:498 scripting/abc_opcodes.cpp:509
-#: scripting/abc_opcodes.cpp:545 scripting/abc_opcodes.cpp:558
-#: scripting/abc_opcodes.cpp:859 scripting/abc_opcodes.cpp:1222
-#: scripting/abc_opcodes.cpp:1234 scripting/abc_opcodes.cpp:1245
-#: scripting/abc_opcodes.cpp:1255 scripting/abc_opcodes.cpp:1265
-#: scripting/abc_opcodes.cpp:1275 scripting/abc_opcodes.cpp:1928
+#: ../scripting/abc_opcodes.cpp:485 ../scripting/abc_opcodes.cpp:496
+#: ../scripting/abc_opcodes.cpp:532 ../scripting/abc_opcodes.cpp:545
+#: ../scripting/abc_opcodes.cpp:846 ../scripting/abc_opcodes.cpp:1209
+#: ../scripting/abc_opcodes.cpp:1221 ../scripting/abc_opcodes.cpp:1232
+#: ../scripting/abc_opcodes.cpp:1242 ../scripting/abc_opcodes.cpp:1252
+#: ../scripting/abc_opcodes.cpp:1262 ../scripting/abc_opcodes.cpp:1903
 msgid "not taken)"
 msgstr ""
 
-#: scripting/abc.cpp:1890
+#: ../scripting/abc.cpp:1839
 msgid "parsing s32"
 msgstr ""
 
-#: scripting/abc.cpp:1940 scripting/abc.cpp:1944
+#: ../scripting/abc.cpp:1889 ../scripting/abc.cpp:1893
 msgid "parsing u30"
 msgstr ""
 
-#: scripting/abc.cpp:1865
+#: ../scripting/abc.cpp:1814
 msgid "parsing u32 "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:166
+#: ../scripting/abc_opcodes.cpp:154
 msgid "pop: DONE"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2339
+#: ../scripting/abc_opcodes.cpp:2327
 msgid "popScope"
 msgstr ""
 
-#: thread_pool.cpp:72
+#: ../thread_pool.cpp:68
 msgid "pthread_join failed in ~ThreadPool"
 msgstr ""
 
-#: scripting/abc.cpp:989
+#: ../scripting/abc.cpp:989
 msgid "pthread_join in ABCVm failed"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:566
+#: ../scripting/abc_opcodes.cpp:553
 msgid "pushByte "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:946
+#: ../scripting/abc_opcodes.cpp:933
 msgid "pushDouble ["
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1207
+#: ../scripting/abc_opcodes.cpp:1194
 msgid "pushFalse"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:940
+#: ../scripting/abc_opcodes.cpp:927
 msgid "pushInt ["
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1213
+#: ../scripting/abc_opcodes.cpp:1200
 msgid "pushNaN"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:139
+#: ../scripting/abc_opcodes.cpp:127
 msgid "pushNull"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:464
+#: ../scripting/abc_opcodes.cpp:451
 msgid "pushScope "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:201
+#: ../scripting/abc_opcodes.cpp:189
 msgid "pushShort "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2434
+#: ../scripting/abc_opcodes.cpp:2422
 msgid "pushString "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1201
+#: ../scripting/abc_opcodes.cpp:1188
 msgid "pushTrue"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:934
+#: ../scripting/abc_opcodes.cpp:921
 msgid "pushUInt ["
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:133
+#: ../scripting/abc_opcodes.cpp:121
 msgid "pushUndefined"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:457
+#: ../scripting/abc_opcodes.cpp:444
 msgid "pushWith "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1116
+#: ../scripting/abc_opcodes.cpp:1103
 msgid "rShift "
 msgstr ""
 
-#: scripting/toplevel.cpp:1971
+#: ../scripting/toplevel.cpp:2026
 msgid "re: "
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:640
+#: ../scripting/abc_interpreter.cpp:636
 msgid "returnValue "
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:633
+#: ../scripting/abc_interpreter.cpp:629
 msgid "returnVoid"
 msgstr ""
 
-#: scripting/abc_interpreter.cpp:786 scripting/abc_interpreter.cpp:1226
+#: ../scripting/abc_interpreter.cpp:782 ../scripting/abc_interpreter.cpp:1222
 msgid "setLocal "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:186 scripting/abc_opcodes.cpp:191
-#: scripting/abc_opcodes.cpp:196
+#: ../scripting/abc_opcodes.cpp:174 ../scripting/abc_opcodes.cpp:179
+#: ../scripting/abc_opcodes.cpp:184
 msgid "setLocal["
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:62
+#: ../scripting/abc_opcodes.cpp:50
 msgid "setProperty "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:78
+#: ../scripting/abc_opcodes.cpp:66
 msgid "setProperty_i "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:207
+#: ../scripting/abc_opcodes.cpp:195
 msgid "setSlot "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1290
+#: ../scripting/abc_opcodes.cpp:1277
 msgid "setSuper "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1187
+#: ../scripting/abc_opcodes.cpp:1174
 msgid "strictEquals"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:927
+#: ../scripting/abc_opcodes.cpp:914
 msgid "subtract "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:902 scripting/abc_opcodes.cpp:919
+#: ../scripting/abc_opcodes.cpp:889 ../scripting/abc_opcodes.cpp:906
 msgid "subtract: HACK"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:893
+#: ../scripting/abc_opcodes.cpp:880
 msgid "subtract_do "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:909
+#: ../scripting/abc_opcodes.cpp:896
 msgid "subtract_io "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:882
+#: ../scripting/abc_opcodes.cpp:869
 msgid "subtract_oi "
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:2316
+#: ../scripting/abc_opcodes.cpp:2304
 msgid "swap"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3290
+#: ../scripting/abc_codesynt.cpp:3287
 msgid "synt add"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3187
+#: ../scripting/abc_codesynt.cpp:3184
 msgid "synt astypelate"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3597
+#: ../scripting/abc_codesynt.cpp:3594
 msgid "synt bitand"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3273
+#: ../scripting/abc_codesynt.cpp:3270
 msgid "synt bitnot"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3630
+#: ../scripting/abc_codesynt.cpp:3627
 msgid "synt bitor"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3652
+#: ../scripting/abc_codesynt.cpp:3649
 msgid "synt bitxor"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2546
+#: ../scripting/abc_codesynt.cpp:2542
 msgid "synt call"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2582
+#: ../scripting/abc_codesynt.cpp:2578
 msgid "synt callproperty"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2696
+#: ../scripting/abc_codesynt.cpp:2692
 msgid "synt callpropvoid"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2568
+#: ../scripting/abc_codesynt.cpp:2564
 msgid "synt callsuper"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2683
+#: ../scripting/abc_codesynt.cpp:2679
 msgid "synt callsupervoid"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3142
+#: ../scripting/abc_codesynt.cpp:3139
 msgid "synt checkfilter"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3152
+#: ../scripting/abc_codesynt.cpp:3149
 msgid "synt coerce"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3163
+#: ../scripting/abc_codesynt.cpp:3160
 msgid "synt coerce_a"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3177
+#: ../scripting/abc_codesynt.cpp:3174
 msgid "synt coerce_s"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2557
+#: ../scripting/abc_codesynt.cpp:2553
 msgid "synt construct"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2709
+#: ../scripting/abc_codesynt.cpp:2705
 msgid "synt constructgenerictype"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2670
+#: ../scripting/abc_codesynt.cpp:2666
 msgid "synt constructprop"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2659
+#: ../scripting/abc_codesynt.cpp:2655
 msgid "synt constructsuper"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3128
+#: ../scripting/abc_codesynt.cpp:3125
 msgid "synt convert_b"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3113
+#: ../scripting/abc_codesynt.cpp:3110
 msgid "synt convert_d"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3083
+#: ../scripting/abc_codesynt.cpp:3080
 msgid "synt convert_i"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3077
+#: ../scripting/abc_codesynt.cpp:3074
 msgid "synt convert_s"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3098
+#: ../scripting/abc_codesynt.cpp:3095
 msgid "synt convert_u"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3903
+#: ../scripting/abc_codesynt.cpp:3900
 msgid "synt debug"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3925
+#: ../scripting/abc_codesynt.cpp:3922
 msgid "synt debugfile"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3917
+#: ../scripting/abc_codesynt.cpp:3914
 msgid "synt debugline"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3231
+#: ../scripting/abc_codesynt.cpp:3228
 msgid "synt decrement"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3794
+#: ../scripting/abc_codesynt.cpp:3791
 msgid "synt decrement_i"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3028
+#: ../scripting/abc_codesynt.cpp:3025
 msgid "synt deleteproperty"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3447
+#: ../scripting/abc_codesynt.cpp:3444
 msgid "synt divide"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2408
+#: ../scripting/abc_codesynt.cpp:2404
 msgid "synt dup"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3675
+#: ../scripting/abc_codesynt.cpp:3672
 msgid "synt equals"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2815
+#: ../scripting/abc_codesynt.cpp:2812
 msgid "synt findproperty"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2783
+#: ../scripting/abc_codesynt.cpp:2779
 msgid "synt findpropstrict"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2761
+#: ../scripting/abc_codesynt.cpp:2757
 msgid "synt getdescendants"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2952
+#: ../scripting/abc_codesynt.cpp:2949
 msgid "synt getglobalscope"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2827
+#: ../scripting/abc_codesynt.cpp:2824
 msgid "synt getlex"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2885
+#: ../scripting/abc_codesynt.cpp:2882
 msgid "synt getlocal"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3836
+#: ../scripting/abc_codesynt.cpp:3833
 msgid "synt getlocal_n "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2971
+#: ../scripting/abc_codesynt.cpp:2968
 msgid "synt getproperty"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2960
+#: ../scripting/abc_codesynt.cpp:2957
 msgid "synt getscopeobject"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3039
+#: ../scripting/abc_codesynt.cpp:3036
 msgid "synt getslot"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1634
+#: ../scripting/abc_codesynt.cpp:1630
 msgid "synt getsuper"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3741
+#: ../scripting/abc_codesynt.cpp:3738
 msgid "synt greaterequals"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3728
+#: ../scripting/abc_codesynt.cpp:3725
 msgid "synt greaterthan"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2501
+#: ../scripting/abc_codesynt.cpp:2497
 msgid "synt hasnext2"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1912
+#: ../scripting/abc_codesynt.cpp:1908
 msgid "synt ifeq"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1880
+#: ../scripting/abc_codesynt.cpp:1876
 msgid "synt iffalse "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2131
+#: ../scripting/abc_codesynt.cpp:2127
 msgid "synt ifge"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2097
+#: ../scripting/abc_codesynt.cpp:2093
 msgid "synt ifgt"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2059
+#: ../scripting/abc_codesynt.cpp:2055
 msgid "synt ifle"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2019
+#: ../scripting/abc_codesynt.cpp:2015
 msgid "synt iflt "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1969
+#: ../scripting/abc_codesynt.cpp:1965
 msgid "synt ifne "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1788
+#: ../scripting/abc_codesynt.cpp:1784
 msgid "synt ifnge"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1755
+#: ../scripting/abc_codesynt.cpp:1751
 msgid "synt ifngt"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1723
+#: ../scripting/abc_codesynt.cpp:1719
 msgid "synt ifnle"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1684
+#: ../scripting/abc_codesynt.cpp:1680
 msgid "synt ifnlt"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2165
+#: ../scripting/abc_codesynt.cpp:2161
 msgid "synt ifstricteq"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2197
+#: ../scripting/abc_codesynt.cpp:2193
 msgid "synt ifstrictne"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1841
+#: ../scripting/abc_codesynt.cpp:1837
 msgid "synt iftrue"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3765
+#: ../scripting/abc_codesynt.cpp:3762
 msgid "synt in"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3811
+#: ../scripting/abc_codesynt.cpp:3808
 msgid "synt inclocal_i"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3208
+#: ../scripting/abc_codesynt.cpp:3205
 msgid "synt increment"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3777
+#: ../scripting/abc_codesynt.cpp:3774
 msgid "synt increment_i"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3017
+#: ../scripting/abc_codesynt.cpp:3014
 msgid "synt initproperty"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3754
+#: ../scripting/abc_codesynt.cpp:3751
 msgid "synt istypelate"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1825
+#: ../scripting/abc_codesynt.cpp:1821
 msgid "synt jump "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1658
+#: ../scripting/abc_codesynt.cpp:1654
 msgid "synt kill "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1676
+#: ../scripting/abc_codesynt.cpp:1672
 msgid "synt label"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3715
+#: ../scripting/abc_codesynt.cpp:3712
 msgid "synt lessequals"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3702
+#: ../scripting/abc_codesynt.cpp:3699
 msgid "synt lessthan"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:778 scripting/abc_codesynt.cpp:2240
+#: ../scripting/abc_codesynt.cpp:774 ../scripting/abc_codesynt.cpp:2236
 msgid "synt lookupswitch"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3517
+#: ../scripting/abc_codesynt.cpp:3514
 msgid "synt lshift"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3477
+#: ../scripting/abc_codesynt.cpp:3474
 msgid "synt modulo"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3404
+#: ../scripting/abc_codesynt.cpp:3401
 msgid "synt multiply"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3198
+#: ../scripting/abc_codesynt.cpp:3195
 msgid "synt negate"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2742
+#: ../scripting/abc_codesynt.cpp:2738
 msgid "synt newactivation"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2731
+#: ../scripting/abc_codesynt.cpp:2727
 msgid "synt newarray"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2772
+#: ../scripting/abc_codesynt.cpp:2768
 msgid "synt newcatch"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2750
+#: ../scripting/abc_codesynt.cpp:2746
 msgid "synt newclass"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2535
+#: ../scripting/abc_codesynt.cpp:2531
 msgid "synt newfunction"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2720
+#: ../scripting/abc_codesynt.cpp:2716
 msgid "synt newobject"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2307
+#: ../scripting/abc_codesynt.cpp:2303
 msgid "synt nextname"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2336
+#: ../scripting/abc_codesynt.cpp:2332
 msgid "synt nextvalue"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3259
+#: ../scripting/abc_codesynt.cpp:3256
 msgid "synt not"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2397
+#: ../scripting/abc_codesynt.cpp:2393
 msgid "synt pop"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2299
+#: ../scripting/abc_codesynt.cpp:2295
 msgid "synt popscope"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2349
+#: ../scripting/abc_codesynt.cpp:2345
 msgid "synt pushbyte"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2476
+#: ../scripting/abc_codesynt.cpp:2472
 msgid "synt pushdouble"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2381
+#: ../scripting/abc_codesynt.cpp:2377
 msgid "synt pushfalse"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2444
+#: ../scripting/abc_codesynt.cpp:2440
 msgid "synt pushint"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2389
+#: ../scripting/abc_codesynt.cpp:2385
 msgid "synt pushnan"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2320
+#: ../scripting/abc_codesynt.cpp:2316
 msgid "synt pushnull"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2493
+#: ../scripting/abc_codesynt.cpp:2489
 msgid "synt pushscope"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2361
+#: ../scripting/abc_codesynt.cpp:2357
 msgid "synt pushshort"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2433
+#: ../scripting/abc_codesynt.cpp:2429
 msgid "synt pushstring"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2373
+#: ../scripting/abc_codesynt.cpp:2369
 msgid "synt pushtrue"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2460
+#: ../scripting/abc_codesynt.cpp:2456
 msgid "synt pushuint"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2328
+#: ../scripting/abc_codesynt.cpp:2324
 msgid "synt pushundefined"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2291
+#: ../scripting/abc_codesynt.cpp:2287
 msgid "synt pushwith"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2630
+#: ../scripting/abc_codesynt.cpp:2626
 msgid "synt returnvalue"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2608
+#: ../scripting/abc_codesynt.cpp:2604
 msgid "synt returnvoid"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3541
+#: ../scripting/abc_codesynt.cpp:3538
 msgid "synt rshift"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2931
+#: ../scripting/abc_codesynt.cpp:2928
 msgid "synt setlocal "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3881
+#: ../scripting/abc_codesynt.cpp:3878
 msgid "synt setlocal_n "
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2838
+#: ../scripting/abc_codesynt.cpp:2835
 msgid "synt setproperty"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3052
+#: ../scripting/abc_codesynt.cpp:3049
 msgid "synt setslot"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1645
+#: ../scripting/abc_codesynt.cpp:1641
 msgid "synt setsuper"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3692
+#: ../scripting/abc_codesynt.cpp:3689
 msgid "synt strictequals"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3351
+#: ../scripting/abc_codesynt.cpp:3348
 msgid "synt subtract"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:2421
+#: ../scripting/abc_codesynt.cpp:2417
 msgid "synt swap"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:1609
+#: ../scripting/abc_codesynt.cpp:1605
 msgid "synt throw"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3249
+#: ../scripting/abc_codesynt.cpp:3246
 msgid "synt typeof"
 msgstr ""
 
-#: scripting/abc_codesynt.cpp:3562
+#: ../scripting/abc_codesynt.cpp:3559
 msgid "synt urshift"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1968
+#: ../scripting/abc_opcodes.cpp:1943
 msgid "taken"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:498 scripting/abc_opcodes.cpp:509
-#: scripting/abc_opcodes.cpp:545 scripting/abc_opcodes.cpp:558
-#: scripting/abc_opcodes.cpp:859 scripting/abc_opcodes.cpp:1222
-#: scripting/abc_opcodes.cpp:1234 scripting/abc_opcodes.cpp:1245
-#: scripting/abc_opcodes.cpp:1255 scripting/abc_opcodes.cpp:1265
-#: scripting/abc_opcodes.cpp:1275 scripting/abc_opcodes.cpp:1928
+#: ../scripting/abc_opcodes.cpp:485 ../scripting/abc_opcodes.cpp:496
+#: ../scripting/abc_opcodes.cpp:532 ../scripting/abc_opcodes.cpp:545
+#: ../scripting/abc_opcodes.cpp:846 ../scripting/abc_opcodes.cpp:1209
+#: ../scripting/abc_opcodes.cpp:1221 ../scripting/abc_opcodes.cpp:1232
+#: ../scripting/abc_opcodes.cpp:1242 ../scripting/abc_opcodes.cpp:1252
+#: ../scripting/abc_opcodes.cpp:1262 ../scripting/abc_opcodes.cpp:1903
 msgid "taken)"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:726
+#: ../scripting/abc_opcodes.cpp:713
 msgid "typeOf"
 msgstr ""
 
-#: scripting/abc_opcodes.cpp:1126 scripting/abc_opcodes.cpp:1135
+#: ../scripting/abc_opcodes.cpp:1113 ../scripting/abc_opcodes.cpp:1122
 msgid "urShift "
 msgstr ""
 
-#: backends/rendering.cpp:109
+#: ../backends/rendering.cpp:106
 msgid "~RenderThread this="
 msgstr ""

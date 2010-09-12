@@ -34,7 +34,7 @@ void lightspark::Font::sinit(Class_base* c)
 {
 //	c->constructor=Class<IFunction>::getFunction(_constructor);
 	c->setConstructor(NULL);
-	c->setVariableByQName("enumerateFonts","",Class<IFunction>::getFunction(enumerateFonts));
+	c->setMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(enumerateFonts),true);
 }
 
 ASFUNCTIONBODY(lightspark::Font,enumerateFonts)
@@ -47,10 +47,10 @@ void TextField::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<DisplayObject>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth));
-	c->setSetterByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth));
-	c->setGetterByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight));
-	c->setSetterByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight));
+	c->setGetterByQName("width","",Class<IFunction>::getFunction(TextField::_getWidth),true);
+	c->setSetterByQName("width","",Class<IFunction>::getFunction(TextField::_setWidth),true);
+	c->setGetterByQName("height","",Class<IFunction>::getFunction(TextField::_getHeight),true);
+	c->setSetterByQName("height","",Class<IFunction>::getFunction(TextField::_setHeight),true);
 }
 
 void TextField::buildTraits(ASObject* o)
@@ -105,8 +105,8 @@ void StyleSheet::sinit(Class_base* c)
 	c->setConstructor(NULL);
 	c->super=Class<EventDispatcher>::getClass();
 	c->max_level=c->super->max_level+1;
-	c->setGetterByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames));
-	c->setVariableByQName("setStyle","",Class<IFunction>::getFunction(setStyle));
+	c->setGetterByQName("styleNames","",Class<IFunction>::getFunction(_getStyleNames),true);
+	c->setMethodByQName("setStyle","",Class<IFunction>::getFunction(setStyle),true);
 }
 
 void StyleSheet::buildTraits(ASObject* o)

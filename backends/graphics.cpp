@@ -30,6 +30,7 @@
 
 using namespace lightspark;
 extern TLSDATA RenderThread* rt;
+extern TLSDATA SystemState* sys;
 
 void lightspark::cleanGLErrors()
 {
@@ -358,8 +359,7 @@ void CairoRenderer::sizeNeeded(uint32_t& w, uint32_t& h)
 
 void CairoRenderer::upload(uint8_t* data, uint32_t w, uint32_t h)
 {
-	for(uint32_t i=0;i<w*h*4;i++)
-		data[i]=i;
+	memcpy(data,surface,w*h*4);
 }
 
 const TextureChunk& CairoRenderer::getTexture() const
@@ -370,4 +370,22 @@ const TextureChunk& CairoRenderer::getTexture() const
 void CairoRenderer::uploadFence()
 {
 	delete this;
+}
+
+void CairoRenderer::execute()
+{
+	//Allocate a new surface
+	surface=new uint8_t[tex.width*tex.height*4];
+	for(uint32_t i=0;i<tex.width*tex.height*4;i++)
+		surface[i]=i;
+}
+
+void CairoRenderer::threadAbort()
+{
+	//Nothing special to be done
+}
+
+void CairoRenderer::jobFence()
+{
+	sys->getRenderThread()->addUploadJob(this);
 }

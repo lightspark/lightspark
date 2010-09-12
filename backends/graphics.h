@@ -24,6 +24,7 @@
 #include <GL/glew.h>
 #include <vector>
 #include "swftypes.h"
+#include "threading.h"
 
 namespace lightspark
 {
@@ -170,18 +171,24 @@ public:
 	virtual void uploadFence()=0;
 };
 
-class CairoRenderer: public ITextureUploadable
+class CairoRenderer: public ITextureUploadable, public IThreadJob
 {
 protected:
-	~CairoRenderer(){}
+	~CairoRenderer(){delete[] surface;}
 private:
 	const TextureChunk& tex;
+	uint8_t* surface;
 public:
-	CairoRenderer(const TextureChunk& _t):tex(_t){}
+	CairoRenderer(const TextureChunk& _t):tex(_t),surface(NULL){}
+	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h);
 	void upload(uint8_t* data, uint32_t w, uint32_t h);
 	const TextureChunk& getTexture() const;
 	void uploadFence();
+	//IThreadJob interface
+	void execute();
+	void threadAbort();
+	void jobFence();
 };
 
 };

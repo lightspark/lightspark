@@ -1041,7 +1041,7 @@ void DisplayObject::invalidate()
 	if(cachedTexWidth && cachedTexHeight)
 		cachedTex=sys->getRenderThread()->allocateTexture(cachedTexWidth,cachedTexHeight,false);
 	CairoRenderer* r=new CairoRenderer(cachedTex);
-	sys->getRenderThread()->addUploadJob(r);
+	sys->addJob(r);
 }
 
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const

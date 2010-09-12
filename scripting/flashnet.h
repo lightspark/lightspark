@@ -84,6 +84,7 @@ private:
 	volatile bool executingAbort;
 	void execute();
 	void threadAbort();
+	void jobFence();
 public:
 	URLLoader();
 	static void sinit(Class_base*);
@@ -138,6 +139,7 @@ private:
 	//IThreadJob interface for long jobs
 	void execute();
 	void threadAbort();
+	void jobFence();
 	//ITickJob interface to frame advance
 	void tick();
 	bool isReady() const;

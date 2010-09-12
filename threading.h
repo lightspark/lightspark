@@ -57,6 +57,7 @@ protected:
 	bool aborting;
 	virtual void execute()=0;
 	virtual void threadAbort()=0;
+	virtual void jobFence()=0;
 public:
 	IThreadJob();
 	virtual ~IThreadJob();

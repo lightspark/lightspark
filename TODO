@@ -1,7 +1,6 @@
 Official TODO Queue:
 -) Clipping
 -) Onor sandboxing
--) Onor framerate
 -) Onor script limits
 -) Implement ScalingGrid for correct positioning of some objects
 -) Implement gradient mapping
@@ -11,5 +10,4 @@ Official TODO Queue:
 -) handle private methods, which should be getted on the same level
 -) Add Named Objects to frames and not to clips
 -) Conditional scaling of FontGlyph based on version
--) Add a finally interface to Jobs so they may decRef themselves
 -) Avoid primitive objects in Dictionary

@@ -170,6 +170,7 @@ private:
 		}
 		void execute();
 		void threadAbort();
+		void jobFence(){}
 	};
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
@@ -303,6 +304,7 @@ private:
 	bool isEnded;
 	void execute();
 	void threadAbort();
+	void jobFence() {};
 public:
 	RootMovieClip* root;
 	int version;

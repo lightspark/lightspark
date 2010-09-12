@@ -160,10 +160,16 @@ ASFUNCTIONBODY(URLLoader,load)
 		//Don't cache our downloaded files
 		th->downloader=sys->downloadManager->download(th->url, false);
 
+		//To be decreffed in jobFence
 		th->incRef();
 		sys->addJob(th);
 	}
 	return NULL;
+}
+
+void URLLoader::jobFence()
+{
+	decRef();
 }
 
 void URLLoader::execute()
@@ -503,10 +509,16 @@ ASFUNCTIONBODY(NetStream,play)
 		//Cache our downloaded files
 		th->downloader=sys->downloadManager->download(th->url, true);
 		th->streamTime=0;
+		//To be decreffed in jobFence
 		th->incRef();
 		sys->addJob(th);
 	}
 	return NULL;
+}
+
+void NetStream::jobFence()
+{
+	decRef();
 }
 
 ASFUNCTIONBODY(NetStream,resume)

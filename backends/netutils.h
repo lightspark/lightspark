@@ -145,6 +145,8 @@ public:
 
 class ThreadedDownloader : public Downloader, public IThreadJob
 {
+public:
+	void jobFence(){}
 };
 
 //CurlDownloader can be used as a thread job, standalone or as a streambuf

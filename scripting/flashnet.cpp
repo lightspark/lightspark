@@ -645,6 +645,7 @@ void NetStream::execute()
 	if(downloader->hasFailed())
 	{
 		sys->currentVm->addEvent(this,Class<Event>::getInstanceS("ioError"));
+		sys->downloadManager->destroy(downloader);
 		return;
 	}
 

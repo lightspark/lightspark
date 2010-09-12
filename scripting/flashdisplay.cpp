@@ -875,7 +875,7 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),onStage(false),root(NULL),loaderInfo(NULL),
-	alpha(1.0),visible(true),cachedTexMinX(0),cachedTexMaxX(0),cachedTexMinY(0),cachedTexMaxY(0),parent(NULL)
+	alpha(1.0),visible(true),cachedTexX(0),cachedTexY(0),cachedTexWidth(0),cachedTexHeight(0),parent(NULL)
 {
 }
 
@@ -976,7 +976,7 @@ void DisplayObject::defaultRender() const
 	count%=5;
 	glPushMatrix();
 	glLoadIdentity();
-	switch(count)
+/*	switch(count)
 	{
 		case 0:
 			FILLSTYLE::fixedColor(0.5,0.5,0.5);
@@ -993,13 +993,15 @@ void DisplayObject::defaultRender() const
 		case 4:
 			FILLSTYLE::fixedColor(0.5,1,1);
 			break;
-	}
-	glBegin(GL_QUADS);
+	}*/
+	glColor4f(0,0,1,0);
+	rt->renderTextured(cachedTex, cachedTexX, cachedTexY, cachedTexWidth, cachedTexHeight);
+	/*glBegin(GL_QUADS);
 		glVertex2i(cachedTexMinX,cachedTexMinY);
 		glVertex2i(cachedTexMaxX,cachedTexMinY);
 		glVertex2i(cachedTexMaxX,cachedTexMaxY);
 		glVertex2i(cachedTexMinX,cachedTexMaxY);
-	glEnd();
+	glEnd();*/
 	glPopMatrix();
 }
 
@@ -1032,15 +1034,14 @@ void DisplayObject::invalidate()
 	}
 	//__asm__("int $3");
 	//Allocate a texture for the given size
-	cachedTexMinX=minx;
-	cachedTexMaxX=maxx;
-	cachedTexMinY=miny;
-	cachedTexMaxY=maxy;
-	const uint32_t texWidth=maxx-minx;
-	const uint32_t texHeight=maxy-miny;
-	if(texWidth && texHeight)
-		cachedTex=sys->getRenderThread()->allocateTexture(texWidth,texHeight,false);
-	
+	cachedTexX=minx;
+	cachedTexY=miny;
+	cachedTexWidth=maxx-minx;
+	cachedTexHeight=maxy-miny;
+	if(cachedTexWidth && cachedTexHeight)
+		cachedTex=sys->getRenderThread()->allocateTexture(cachedTexWidth,cachedTexHeight,false);
+	CairoRenderer* r=new CairoRenderer(cachedTex);
+	sys->getRenderThread()->addUploadJob(r);
 }
 
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
@@ -1058,7 +1059,7 @@ void DisplayObject::setRoot(RootMovieClip* r)
 void DisplayObject::setOnStage(bool staged)
 {
 	//TODO: When removing from stage released the cachedTex
-	if(onStage==false)
+	if(onStage==false && staged==true)
 		invalidate();
 	if(staged!=onStage)
 	{

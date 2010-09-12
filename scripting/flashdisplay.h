@@ -61,10 +61,10 @@ protected:
 	float alpha;
 	bool visible;
 	TextureChunk cachedTex;
-	uint32_t cachedTexMinX;
-	uint32_t cachedTexMaxX;
-	uint32_t cachedTexMinY;
-	uint32_t cachedTexMaxY;
+	uint32_t cachedTexX;
+	uint32_t cachedTexY;
+	uint32_t cachedTexWidth;
+	uint32_t cachedTexHeight;
 	void defaultRender() const;
 public:
 	int Depth;

@@ -305,11 +305,9 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 			assert(th->renderNeeded);
 			if(th->m_sys->isOnError())
 			{
-				glMatrixMode(GL_PROJECTION);
 				glLoadIdentity();
-				glOrtho(0,th->windowWidth,0,th->windowHeight,-100,0);
-				glMatrixMode(GL_MODELVIEW);
-				glLoadIdentity();
+				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
+				glTranslatef(-th->offsetX,(th->offsetY+th->windowHeight)*(-1.0f),0);
 				glUseProgram(0);
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -718,6 +716,8 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 	if(testMode && m_sys->showDebug)
 	{
 		glLoadIdentity();
+		glScalef(1.0f/scaleX,-1.0f/scaleY,1);
+		glTranslatef(-offsetX,(offsetY+windowHeight)*(-1.0f),0);
 		glUseProgram(0);
 		glDisable(GL_BLEND);
 		glDisable(GL_TEXTURE_2D);
@@ -733,6 +733,8 @@ void RenderThread::coreRendering(FTFont& font, bool testMode)
 	if(m_sys->showProfilingData)
 	{
 		glLoadIdentity();
+		glScalef(1.0f/scaleX,-1.0f/scaleY,1);
+		glTranslatef(-offsetX,(offsetY+windowHeight)*(-1.0f),0);
 		glUseProgram(0);
 		glDisable(GL_TEXTURE_2D);
 		glColor3f(0,0,0);
@@ -872,12 +874,9 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			SDL_PumpEvents();
 			if(th->m_sys->isOnError())
 			{
-				glMatrixMode(GL_PROJECTION);
 				glLoadIdentity();
-				glOrtho(0,th->windowWidth,0,th->windowHeight,-100,0);
-				glMatrixMode(GL_MODELVIEW);
-				glLoadIdentity();
-
+				glScalef(1.0f/th->scaleX,-1.0f/th->scaleY,1);
+				glTranslatef(-th->offsetX,(th->offsetY+th->windowHeight)*(-1.0f),0);
 				glUseProgram(0);
 
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);

@@ -352,20 +352,22 @@ TextureChunk::~TextureChunk()
 
 void CairoRenderer::sizeNeeded(uint32_t& w, uint32_t& h)
 {
-	::abort();
+	w=tex.width;
+	h=tex.height;
 }
 
 void CairoRenderer::upload(uint8_t* data, uint32_t w, uint32_t h)
 {
-	::abort();
+	for(uint32_t i=0;i<w*h*4;i++)
+		data[i]=i;
 }
 
 const TextureChunk& CairoRenderer::getTexture() const
 {
-	::abort();
+	return tex;
 }
 
 void CairoRenderer::uploadFence()
 {
-	::abort();
+	delete this;
 }

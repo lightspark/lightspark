@@ -385,10 +385,7 @@ public:
 	virtual int getId(){ return ButtonId; }
 	virtual void Render();
 	virtual Vector2 debugRender(FTFont* font, bool deep);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		throw UnsupportedException("DefineButton2Tag::getBounds");
-	}
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	virtual void handleEvent(Event*);
 
 	ASObject* instance() const;

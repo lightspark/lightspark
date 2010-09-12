@@ -616,6 +616,21 @@ void MovieClip::advanceFrame()
 
 }
 
+void MovieClip::setOnStage(bool staged)
+{
+	if(staged!=onStage)
+	{
+		DisplayObjectContainer::setOnStage(staged);
+		//Now notify all the objects in all frames
+		for(uint32_t i=0;i<frames.size();i++)
+		{
+			list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
+			for(;it!=frames[i].displayList.end();it++)
+				it->second->setOnStage(staged);
+		}
+	}
+}
+
 void MovieClip::setRoot(RootMovieClip* r)
 {
 	if(r==root)
@@ -623,6 +638,13 @@ void MovieClip::setRoot(RootMovieClip* r)
 	if(root)
 		root->unregisterChildClip(this);
 	DisplayObjectContainer::setRoot(r);
+	//Now notify all the objects in all frames
+	for(uint32_t i=0;i<frames.size();i++)
+	{
+		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
+		for(;it!=frames[i].displayList.end();it++)
+			it->second->setRoot(root);
+	}
 	if(root)
 		root->registerChildClip(this);
 }
@@ -846,7 +868,7 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),onStage(false),root(NULL),loaderInfo(NULL),
-	alpha(1.0),visible(true),parent(NULL)
+	alpha(1.0),visible(true),cachedTexMinX(0),cachedTexMaxX(0),cachedTexMinY(0),cachedTexMaxY(0),parent(NULL)
 {
 }
 
@@ -945,33 +967,6 @@ void DisplayObject::defaultRender() const
 	static int count=0;
 	count++;
 	count%=5;
-
-	number_t xmin,xmax,ymin,ymax;
-	if(!getBounds(xmin,xmax,ymin,ymax))
-		return;
-	//As the transformation is arbitrary we have to check all the four vertices
-	number_t coords[8];
-	localToGlobal(xmin,ymin,coords[0],coords[1]);
-	localToGlobal(xmin,ymax,coords[2],coords[3]);
-	localToGlobal(xmax,ymax,coords[4],coords[5]);
-	localToGlobal(xmax,ymin,coords[6],coords[7]);
-	//Now find out the minimum and maximum that represent the complete bounding rect
-	number_t minx=coords[6];
-	number_t maxx=coords[6];
-	number_t miny=coords[7];
-	number_t maxy=coords[7];
-	for(int i=0;i<6;i+=2)
-	{
-		if(coords[i]<minx)
-			minx=coords[i];
-		else if(coords[i]>maxx)
-			maxx=coords[i];
-		if(coords[i+1]<miny)
-			miny=coords[i+1];
-		else if(coords[i+1]>maxy)
-			maxy=coords[i+1];
-	}
-	//TODO: cache the values
 	glPushMatrix();
 	glLoadIdentity();
 	switch(count)
@@ -993,10 +988,10 @@ void DisplayObject::defaultRender() const
 			break;
 	}
 	glBegin(GL_QUADS);
-		glVertex2i(minx,miny);
-		glVertex2i(maxx,miny);
-		glVertex2i(maxx,maxy);
-		glVertex2i(minx,maxy);
+		glVertex2i(cachedTexMinX,cachedTexMinY);
+		glVertex2i(cachedTexMaxX,cachedTexMinY);
+		glVertex2i(cachedTexMaxX,cachedTexMaxY);
+		glVertex2i(cachedTexMinX,cachedTexMaxY);
 	glEnd();
 	glPopMatrix();
 }
@@ -1028,7 +1023,12 @@ void DisplayObject::invalidate()
 		else if(coords[i+1]>maxy)
 			maxy=coords[i+1];
 	}
+	//__asm__("int $3");
 	//Allocate a texture for the given size
+	cachedTexMinX=minx;
+	cachedTexMaxX=maxx;
+	cachedTexMinY=miny;
+	cachedTexMaxY=maxy;
 	const uint32_t texWidth=maxx-minx;
 	const uint32_t texHeight=maxy-miny;
 	if(texWidth && texHeight)

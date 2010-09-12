@@ -47,12 +47,12 @@ private:
 	number_t tx,ty;
 	number_t rotation;
 	number_t sx,sy;
-	bool onStage;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 protected:
 	void invalidate();
 	MATRIX getMatrix() const;
 	void valFromMatrix();
+	bool onStage;
 	RootMovieClip* root;
 	LoaderInfo* loaderInfo;
 	int computeWidth();
@@ -61,6 +61,10 @@ protected:
 	float alpha;
 	bool visible;
 	TextureChunk cachedTex;
+	uint32_t cachedTexMinX;
+	uint32_t cachedTexMaxX;
+	uint32_t cachedTexMinY;
+	uint32_t cachedTexMaxY;
 	void defaultRender() const;
 public:
 	int Depth;
@@ -349,6 +353,7 @@ public:
 	void Render();
 	void inputRender();
 	void setRoot(RootMovieClip* r);
+	void setOnStage(bool staged);
 	
 	/*! \brief Should be run with the default fragment/vertex program on
 	* * \param font An FT font used for debug messages

@@ -1738,6 +1738,11 @@ Vector2 DefineButton2Tag::debugRender(FTFont* font, bool deep)
 	return Vector2(100,100);
 }
 
+bool DefineButton2Tag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	return false;
+}
+
 DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in):DictionaryTag(h)
 {
 	LOG(LOG_NO_INFO,_("DefineVideoStreamTag"));

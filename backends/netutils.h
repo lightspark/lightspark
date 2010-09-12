@@ -64,7 +64,6 @@ private:
 
 	//Whether to allow dynamically growing the buffer
 	bool allowBufferRealloc;
-
 	//True if the file is cached to disk (default = false)
 	bool cached;	
 
@@ -79,6 +78,7 @@ private:
 	pos_type getOffset() const;
 protected:
 	sem_t mutex;
+	sem_t cacheOpen;
 	//Signals termination of the download
 	sem_t terminated;
 	//True if the download is terminated
@@ -108,12 +108,12 @@ protected:
 	static const size_t cacheMaxSize = 8192;
 	//True if the cache file doesn't need to be deleted on destruction
 	bool keepCache;
+	//Wait for cache to be opened
+	void waitForCache();
 public:
-	Downloader();
+	Downloader(bool cached);
 	virtual ~Downloader();
 
-	//Set to true to enable disk-based caching
-	void setCached(bool c) { cached=c; }
 	bool isCached() { return cached; }
 
 	//Set to true to allow growing the buffer dynamically
@@ -145,6 +145,8 @@ public:
 
 class ThreadedDownloader : public Downloader, public IThreadJob
 {
+public:
+	ThreadedDownloader(bool cached):Downloader(cached){}
 };
 
 //CurlDownloader can be used as a thread job, standalone or as a streambuf
@@ -162,7 +164,7 @@ private:
 public:
 	uint32_t getRequestStatus() { return requestStatus; }
 	void setRequestStatus(uint32_t status) { requestStatus = status; }
-	CurlDownloader(const tiny_string& u);
+	CurlDownloader(bool cached, const tiny_string& u);
 };
 
 //LocalDownloader can be used as a thread job, standalone or as a streambuf
@@ -179,7 +181,7 @@ private:
 	//Size of the reading buffer
 	static const size_t bufSize = 8192;
 public:
-	LocalDownloader(const tiny_string& u);
+	LocalDownloader(bool cached, const tiny_string& u);
 };
 
 };

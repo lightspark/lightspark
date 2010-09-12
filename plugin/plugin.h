@@ -53,7 +53,7 @@ private:
 	static void dlStartCallback(void* th);
 public:
 	bool started;
-	NPDownloader(NPP i, const lightspark::tiny_string& u);
+	NPDownloader(bool cached, NPP i, const lightspark::tiny_string& u);
 	void terminate();
 };
 

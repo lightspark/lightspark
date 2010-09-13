@@ -951,6 +951,25 @@ void DefineMorphShapeTag::Render()
 	glPopMatrix();*/
 }
 
+void DefineShapeTag::computeCached()
+{
+	if(cached.size()==0)
+	{
+		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
+
+		for(unsigned int i=0;i<cached.size();i++)
+			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
+	}
+}
+
+void DefineShapeTag::invalidate()
+{
+	allocateCacheTexture();
+	computeCached();
+	CairoRenderer* r=new CairoRenderer(cachedTex, cached, this, cachedTexX, cachedTexY);
+	sys->addJob(r);
+}
+
 void DefineShapeTag::inputRender()
 {
 	if(alpha==0)
@@ -961,12 +980,12 @@ void DefineShapeTag::inputRender()
 	MatrixApplier ma(getMatrix());
 	glScalef(0.05,0.05,1);
 
-	std::vector < GeomShape >::iterator it=cached.begin();
+/*	std::vector < GeomShape >::iterator it=cached.begin();
 	for(;it!=cached.end();it++)
 	{
 		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
 		it->Render();
-	}
+	}*/
 	ma.unapply();
 }
 
@@ -976,14 +995,6 @@ void DefineShapeTag::Render()
 		return;
 	if(!visible)
 		return;
-
-	if(cached.size()==0)
-	{
-		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
-
-		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
-	}
 
 	MatrixApplier ma(getMatrix());
 	defaultRender();

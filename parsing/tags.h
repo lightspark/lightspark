@@ -96,6 +96,9 @@ public:
 
 class DefineShapeTag: public DictionaryTag, public DisplayObject
 {
+private:
+	void computeCached();
+	void invalidate();
 protected:
 	UI16 ShapeId;
 	RECT ShapeBounds;
@@ -521,10 +524,10 @@ private:
 	std::vector<GlyphShape> cached;
 public:
 	DefineTextTag(RECORDHEADER h, std::istream& in);
-	virtual int getId(){ return CharacterId; }
-	virtual void Render();
-	virtual void inputRender();
-	virtual Vector2 debugRender(FTFont* font, bool deep);
+	int getId(){ return CharacterId; }
+	void Render();
+	void inputRender();
+	Vector2 debugRender(FTFont* font, bool deep);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{
 		getMatrix().multiply2D(TextBounds.Xmin/20,TextBounds.Ymin/20,xmin,ymin);

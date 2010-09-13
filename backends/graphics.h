@@ -25,9 +25,12 @@
 #include <vector>
 #include "swftypes.h"
 #include "threading.h"
+#include <cairo.h>
 
 namespace lightspark
 {
+
+class DisplayObject;
 
 void cleanGLErrors();
 
@@ -177,9 +180,15 @@ protected:
 	~CairoRenderer(){delete[] surface;}
 private:
 	const TextureChunk& tex;
+	const std::vector<GeomShape>& shapes;
+	DisplayObject* obj;
+	uint32_t xOffset;
+	uint32_t yOffset;
 	uint8_t* surface;
+	static void recursiveApplyMatrix(cairo_t* cr, DisplayObject* o);
 public:
-	CairoRenderer(const TextureChunk& _t):tex(_t),surface(NULL){}
+	CairoRenderer(const TextureChunk& _t, const std::vector<GeomShape>& _s,DisplayObject* _o, uint32_t _x, uint32_t _y):
+		tex(_t),shapes(_s),obj(_o),xOffset(_x),yOffset(_y),surface(NULL){}
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h);
 	void upload(uint8_t* data, uint32_t w, uint32_t h);

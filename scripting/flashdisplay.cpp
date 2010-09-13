@@ -1005,7 +1005,7 @@ void DisplayObject::defaultRender() const
 	glPopMatrix();
 }
 
-void DisplayObject::invalidate()
+void DisplayObject::allocateCacheTexture()
 {
 	number_t xmin,xmax,ymin,ymax;
 	if(!getBounds(xmin,xmax,ymin,ymax))
@@ -1032,7 +1032,6 @@ void DisplayObject::invalidate()
 		else if(coords[i+1]>maxy)
 			maxy=coords[i+1];
 	}
-	//__asm__("int $3");
 	//Allocate a texture for the given size
 	cachedTexX=minx;
 	cachedTexY=miny;
@@ -1040,8 +1039,11 @@ void DisplayObject::invalidate()
 	cachedTexHeight=maxy-miny;
 	if(cachedTexWidth && cachedTexHeight)
 		cachedTex=sys->getRenderThread()->allocateTexture(cachedTexWidth,cachedTexHeight,false);
-	CairoRenderer* r=new CairoRenderer(cachedTex);
-	sys->addJob(r);
+}
+
+void DisplayObject::invalidate()
+{
+	allocateCacheTexture();
 }
 
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const

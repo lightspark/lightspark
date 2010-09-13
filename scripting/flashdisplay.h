@@ -49,8 +49,8 @@ private:
 	number_t sx,sy;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 protected:
-	void invalidate();
-	MATRIX getMatrix() const;
+	void allocateCacheTexture();
+	virtual void invalidate();
 	void valFromMatrix();
 	bool onStage;
 	RootMovieClip* root;
@@ -77,6 +77,7 @@ public:
 	DisplayObjectContainer* parent;
 	DisplayObject();
 	~DisplayObject();
+	MATRIX getMatrix() const;
 	virtual void Render()
 	{
 		throw RunTimeException("DisplayObject::Render");

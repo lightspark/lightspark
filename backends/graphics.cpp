@@ -25,7 +25,6 @@
 #include "exceptions.h"
 #include "backends/rendering.h"
 #include "compat.h"
-#include <cairo.h>
 
 #include <iostream>
 
@@ -373,6 +372,21 @@ void CairoRenderer::uploadFence()
 	delete this;
 }
 
+void CairoRenderer::recursiveApplyMatrix(cairo_t* cr, DisplayObject* o)
+{
+	if(o->parent)
+		recursiveApplyMatrix(cr, o->parent);
+	cairo_matrix_t mat;
+	const MATRIX& m=o->getMatrix();
+	mat.xx=m.ScaleX;
+	mat.xy=m.RotateSkew0;
+	mat.yx=m.RotateSkew1;
+	mat.yy=m.ScaleY;
+	mat.x0=m.TranslateX;
+	mat.y0=m.TranslateY;
+	cairo_transform(cr, &mat);
+}
+
 void CairoRenderer::execute()
 {
 	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, tex.width);
@@ -383,12 +397,26 @@ void CairoRenderer::execute()
 
 	cairo_set_source_rgba(cr, 0, 0, 0, 0);
 	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-	cairo_paint (cr);
+	cairo_paint(cr);
+
+	cairo_translate(cr, xOffset*(-1.0f), yOffset*(-1.0f));
+	recursiveApplyMatrix(cr, obj);
 
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-	cairo_rectangle (cr, 0, 0, tex.width/4, tex.height/4);
-	cairo_set_source_rgba (cr, 1, 0, 0, 1);
-	cairo_fill (cr);
+	cairo_set_source_rgba (cr, 0, 1, 0, 1);
+	cairo_scale(cr, 0.05, 0.05);
+	for(uint32_t i=0;i<shapes.size();i++)
+	{
+		for(uint32_t k=0;k<shapes[i].outlines.size();k++)
+		{
+			if(shapes[i].outlines[k].empty())
+				continue;
+			cairo_move_to(cr, shapes[i].outlines[k][0].x, shapes[i].outlines[k][0].y);
+			for(uint32_t j=1;j<shapes[i].outlines[k].size();j++)
+				cairo_line_to(cr, shapes[i].outlines[k][j].x, shapes[i].outlines[k][j].y);
+		}
+	}
+	cairo_stroke(cr);
 
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);

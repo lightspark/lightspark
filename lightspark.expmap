@@ -6,11 +6,6 @@ global:
 		*zlib_file_filter*;
 		*zlib_filter*;
 		*sync_stream*;
-		*lightspark::DownloadManager*;
-		*lightspark::StandaloneDownloadManager*;
-		*lightspark::NPDownloadManager*;
-		*lightspark::Downloader*;
-		*lightspark::IntervalManager*;
 		*lightspark::Class_base*;
 		*lightspark::Event*;
 		rt;

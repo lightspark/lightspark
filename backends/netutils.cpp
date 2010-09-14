@@ -134,6 +134,8 @@ void Downloader::setFinished()
 {
 	sem_wait(&mutex);
 	finished=true;
+	//Set the final length
+	len = tail;
 	if(waiting) //If we are waiting for some bytes, gives up and return EOF
 		sem_post(&available);
 	else

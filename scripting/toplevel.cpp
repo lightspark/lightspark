@@ -2387,7 +2387,7 @@ void ASError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(SecurityError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	SecurityError* th=static_cast<SecurityError*>(obj);
 	if(argslen == 1)
 	{
@@ -2410,7 +2410,7 @@ void SecurityError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(ArgumentError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	ArgumentError* th=static_cast<ArgumentError*>(obj);
 	if(argslen == 1)
 	{
@@ -2432,7 +2432,7 @@ void ArgumentError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(DefinitionError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	DefinitionError* th=static_cast<DefinitionError*>(obj);
 	if(argslen == 1)
 	{
@@ -2454,7 +2454,7 @@ void DefinitionError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(EvalError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	EvalError* th=static_cast<EvalError*>(obj);
 	if(argslen == 1)
 	{
@@ -2476,7 +2476,7 @@ void EvalError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(RangeError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	RangeError* th=static_cast<RangeError*>(obj);
 	if(argslen == 1)
 	{
@@ -2498,7 +2498,7 @@ void RangeError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(ReferenceError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	ReferenceError* th=static_cast<ReferenceError*>(obj);
 	if(argslen == 1)
 	{
@@ -2520,7 +2520,7 @@ void ReferenceError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(SyntaxError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	SyntaxError* th=static_cast<SyntaxError*>(obj);
 	if(argslen == 1)
 	{
@@ -2542,7 +2542,7 @@ void SyntaxError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(TypeError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	TypeError* th=static_cast<TypeError*>(obj);
 	if(argslen == 1)
 	{
@@ -2564,7 +2564,7 @@ void TypeError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(URIError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	URIError* th=static_cast<URIError*>(obj);
 	if(argslen == 1)
 	{
@@ -2586,7 +2586,7 @@ void URIError::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY(VerifyError,_constructor)
 {
-	assert(args && argslen<=1);
+	assert(argslen<=1);
 	VerifyError* th=static_cast<VerifyError*>(obj);
 	if(argslen == 1)
 	{

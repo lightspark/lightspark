@@ -25,9 +25,6 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
-#ifdef ENABLE_CURL
-#include <curl/curl.h>
-#endif
 
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
@@ -45,7 +42,9 @@ URLInfo::URLInfo(const tiny_string& u)
 	if(colonPos == std::string::npos)
 		invalidReason = MISSING_PROTOCOL;
 
-	protocol = str.substr(0, colonPos);
+	std::string protocolStr = str.substr(0, colonPos);
+	std::transform(protocolStr.begin(), protocolStr.end(), protocolStr.begin(), ::tolower);
+	protocol = protocolStr;
 
 	size_t hostnamePos = colonPos+3;
 	size_t portPos = std::string::npos;
@@ -83,7 +82,9 @@ URLInfo::URLInfo(const tiny_string& u)
 	}
 
 	//Parse the host string
-	hostname = str.substr(hostnamePos, std::min(std::min(pathPos, portPos), queryPos)-hostnamePos);
+	std::string hostnameStr = str.substr(hostnamePos, std::min(std::min(pathPos, portPos), queryPos)-hostnamePos);
+	std::transform(hostnameStr.begin(), hostnameStr.end(), hostnameStr.begin(), ::tolower);
+	hostname = hostnameStr;
 
 	port = 0;
 	//Check if the port after ':' is not empty
@@ -243,10 +244,54 @@ const URLInfo URLInfo::goToURL(const tiny_string& u) const
 bool URLInfo::isSubOf(const URLInfo& url) const
 {
 	//Check if the beginning of the new pathDirectory equals the old pathDirectory
-	if(getPathDirectory().substr(0, url.getPathDirectory().len()) != url.getPathDirectory())
+	if(getProtocol() != url.getProtocol())
+		return false;
+	else if(getHostname() != url.getHostname())
+		return false;
+	else if(!isSubPathOf(url))
 		return false;
 	else
 		return true;
+}
+bool URLInfo::isSubPathOf(const tiny_string& parent, const tiny_string& child)
+{
+	return child.substr(0, parent.len()) == parent;
+}
+bool URLInfo::isSubDomainOf(const tiny_string& parent, const tiny_string& child)
+{
+	std::string parentStr = std::string(parent.raw_buf());
+	std::transform(parentStr.begin(), parentStr.end(), parentStr.begin(), ::tolower);
+	std::string childStr = std::string(child.raw_buf());
+	std::transform(childStr.begin(), childStr.end(), childStr.begin(), ::tolower);
+	return childStr.substr(0, parentStr.length()) == parentStr;
+}
+bool URLInfo::matchesDomain(const tiny_string& expression, const tiny_string& subject)
+{
+	std::string expressionStr = std::string(expression.raw_buf());
+	std::transform(expressionStr.begin(), expressionStr.end(), expressionStr.begin(), ::tolower);
+	std::string subjectStr = std::string(subject.raw_buf());
+	std::transform(subjectStr.begin(), subjectStr.end(), subjectStr.begin(), ::tolower);
+	//'*' matches everything
+	if(expressionStr == "*")
+		return true;
+	//'*.somedomain.tld' matches 'somedomain.tld' and every subdomain of 'somedomain.tld'
+	else if(expressionStr.substr(0,2) == "*.")
+	{
+		//Check if subjectStr == 'somedomain.tld'
+		if(subjectStr == expressionStr.substr(2, expressionStr.length()-2))
+			return true;
+		//Check if subjectStr == 'somesubdomain.somedomain.tld'
+		else if(subjectStr.length() >= expressionStr.length() && 
+				subjectStr.substr(subjectStr.length()-expressionStr.length()+1, expressionStr.length()-1) == 
+				expressionStr.substr(1, expressionStr.length()-1))
+			return true;
+	}
+	//No wildcard detected in a valid place, just literally match domains
+	else if(subjectStr == expressionStr)
+		return true;
+
+	//No positive matches found, so return false
+	return false;
 }
 
 std::string URLInfo::encode(const std::string& u, ENCODING type)

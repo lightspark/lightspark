@@ -161,7 +161,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	m_sys=new lightspark::SystemState(m_pt);
 	//As this is the plugin, enable fallback on Gnash for older clips
 	m_sys->enableGnashFallback();
-	m_sys->sandboxType = lightspark::Security::REMOTE; //Needed for security reasons
+	//Files running in the plugin have REMOTE sandbox
+	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
 	//Find flashvars argument
 	for(int i=0;i<argc;i++)
 	{

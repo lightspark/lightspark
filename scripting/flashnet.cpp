@@ -116,16 +116,26 @@ ASFUNCTIONBODY(URLLoader,load)
 
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
 	if(th->url.getProtocol() == "file" &&
-			sys->sandboxType != Security::LOCAL_WITH_FILE && sys->sandboxType != Security::LOCAL_TRUSTED)
-		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: connect to local file");
+			sys->securityManager->getSandboxType() != SecurityManager::LOCAL_WITH_FILE &&
+			sys->securityManager->getSandboxType() != SecurityManager::LOCAL_TRUSTED)
+		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
+				"connect to local file");
 	//Local-with-filesystem sandbox can't access network
-	else if(th->url.getProtocol() != "file" && sys->sandboxType == Security::LOCAL_WITH_FILE)
-		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: connect to network");
+	else if(th->url.getProtocol() != "file" &&
+			sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
+				"connect to network");
 
 	//TODO: support the right events (like SecurityErrorEvent)
 
-	//TODO: use domain policy files to check if domain access is allowed
-	//TODO: should we disallow accessing local files in a directory above the current one like we do with NetStream.play?
+	if(sys->securityManager->evaluateURL(th->url) != SecurityManager::ALLOWED)
+	{
+		//TODO: find correct way of handling this case (SecurityErrorEvent in this case)
+		throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
+	}
+
+	//TODO: should we disallow accessing local files in a directory above 
+	//the current one like we do with NetStream.play?
 
 	multiname dataName;
 	dataName.name_type=multiname::NAME_STRING;
@@ -135,7 +145,8 @@ ASFUNCTIONBODY(URLLoader,load)
 	if(data)
 	{
 		if(data->getPrototype()==Class<URLVariables>::getClass())
-			throw RunTimeException("Type mismatch in URLLoader::load parameter: URLVariables instead of URLRequest");
+			throw RunTimeException("Type mismatch in URLLoader::load parameter: "
+					"URLVariables instead of URLRequest");
 		else
 		{
 			tiny_string newURL = th->url.getParsedURL();
@@ -295,8 +306,9 @@ ASFUNCTIONBODY(NetConnection,connect)
 		//This seems strange:
 		//LOCAL_WITH_FILE may not use connect(), even if it tries to connect to a local file.
 		//I'm following the specification to the letter
-		if(sys->sandboxType == Security::LOCAL_WITH_FILE)
-			throw Class<SecurityError>::getInstanceS("NetConnection::connect from LOCAL_WITH_FILE sandbox");
+		if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+			throw Class<SecurityError>::getInstanceS("SecurityError: NetConnection::connect "
+					"from LOCAL_WITH_FILE sandbox");
 	}
 	//String argument means Flash Remoting/Flash Media Server
 	else
@@ -305,7 +317,11 @@ ASFUNCTIONBODY(NetConnection,connect)
 		ASString* command = static_cast<ASString*>(args[0]);
 		th->uri = URLInfo(command->toString());
 		
-		//TODO: use domain policy files to check if domain access is allowed
+		if(sys->securityManager->evaluateURL(th->uri) != SecurityManager::ALLOWED)
+		{
+			//TODO: find correct way of handling this case
+			throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
+		}
 
 		throw UnsupportedException("NetConnection::connect to FMS");
 	}
@@ -379,7 +395,8 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 		return new Undefined;
 }
 
-NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),
+NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),
+	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),
 		paused(false),closed(true)
 {
 	sem_init(&mutex,0,1);
@@ -480,15 +497,24 @@ ASFUNCTIONBODY(NetStream,play)
 	const tiny_string& arg0=args[0]->toString();
 	th->url = sys->getOrigin().goToURL(arg0);
 
-	if(sys->sandboxType == Security::LOCAL_WITH_FILE && th->url.getProtocol() != "file")
-		throw Class<SecurityError>::getInstanceS("NetStream::play: connect to network from local-with-filesystem sandbox");
-	if(sys->sandboxType != Security::LOCAL_WITH_FILE && sys->sandboxType != Security::LOCAL_TRUSTED && 
+	if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE &&
+			th->url.getProtocol() != "file")
+		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
+				"connect to network from local-with-filesystem sandbox");
+	if(sys->securityManager->getSandboxType() != SecurityManager::LOCAL_WITH_FILE &&
+			sys->securityManager->getSandboxType() != SecurityManager::LOCAL_TRUSTED && 
 			th->url.getProtocol() == "file")
-		throw Class<SecurityError>::getInstanceS("NetStream::play: connect to local file from network sandbox");
+		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
+				"connect to local file from network sandbox");
 	if(th->url.getProtocol() == "file" && !th->url.isSubOf(sys->getOrigin()))
-		throw Class<SecurityError>::getInstanceS("NetStream::play: not allowed to navigate up for local files");
+		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
+				"not allowed to navigate up for local files");
 
-	//TODO: use domain policy files to check if domain access is allowed
+	if(sys->securityManager->evaluateURL(th->url) != SecurityManager::ALLOWED)
+	{
+		//TODO: find correct way of handling this case
+		throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
+	}
 
 	assert_and_throw(th->downloader==NULL);
 	
@@ -596,7 +622,8 @@ void NetStream::tick()
 		return;
 	}
 
-	//If sound is enabled, and the stream is not paused anymore, resume the sound stream. This will restart time.
+	//If sound is enabled, and the stream is not paused anymore, resume the sound stream.
+	//This will restart time.
 	else if(audioStream && audioStream->isValid() && audioStream->paused())
 	{
 		sys->audioManager->resumeStreamPlugin(audioStream);
@@ -717,7 +744,8 @@ void NetStream::execute()
 #else
 									audioDecoder=new NullAudioDecoder();
 #endif
-									decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
+									decodedAudioBytes+=
+										audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
 									//Adjust timing
 									decodedTime=decodedAudioBytes/audioDecoder->getBytesPerMSec();
 									break;
@@ -730,7 +758,8 @@ void NetStream::execute()
 						else
 						{
 							assert_and_throw(audioCodec==tag.SoundFormat);
-							decodedAudioBytes+=audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
+							decodedAudioBytes+=
+								audioDecoder->decodeData(tag.packetData,tag.packetLen,decodedTime);
 							if(audioStream==0 && audioDecoder->isValid())
 								audioStream=sys->audioManager->createStreamPlugin(audioDecoder);
 							//Adjust timing
@@ -752,7 +781,8 @@ void NetStream::execute()
 							{
 								//The tag is the header, initialize decoding
 #ifdef ENABLE_LIBAVCODEC
-								videoDecoder=new FFMpegVideoDecoder(tag.codec,tag.packetData,tag.packetLen, frameRate);
+								videoDecoder=
+									new FFMpegVideoDecoder(tag.codec,tag.packetData,tag.packetLen, frameRate);
 #else
 								videoDecoder=new NullVideoDecoder();
 #endif
@@ -811,31 +841,40 @@ void NetStream::execute()
 							ASObject* callbackArgs[1];
 							ASObject* metadata = Class<ASObject>::getInstanceS();
 							if(tag.metadataDouble.find("width") != tag.metadataDouble.end())
-								metadata->setVariableByQName("width", "", abstract_d(tag.metadataDouble["width"]));
+								metadata->setVariableByQName("width", "", 
+										abstract_d(tag.metadataDouble["width"]));
 							else
 								metadata->setVariableByQName("width", "", abstract_d(getVideoWidth()));
 							if(tag.metadataDouble.find("height") != tag.metadataDouble.end())
-								metadata->setVariableByQName("height", "", abstract_d(tag.metadataDouble["height"]));
+								metadata->setVariableByQName("height", "", 
+										abstract_d(tag.metadataDouble["height"]));
 							else
 								metadata->setVariableByQName("height", "", abstract_d(getVideoHeight()));
 
 							if(tag.metadataDouble.find("framerate") != tag.metadataDouble.end())
-								metadata->setVariableByQName("framerate", "", abstract_d(tag.metadataDouble["framerate"]));
+								metadata->setVariableByQName("framerate", "", 
+										abstract_d(tag.metadataDouble["framerate"]));
 							if(tag.metadataDouble.find("duration") != tag.metadataDouble.end())
-								metadata->setVariableByQName("duration", "", abstract_d(tag.metadataDouble["duration"]));
+								metadata->setVariableByQName("duration", "", 
+										abstract_d(tag.metadataDouble["duration"]));
 							if(tag.metadataInteger.find("canseekontime") != tag.metadataInteger.end())
-								metadata->setVariableByQName("canSeekToEnd", "", abstract_b(tag.metadataInteger["canseekontime"] == 1));
+								metadata->setVariableByQName("canSeekToEnd", "", 
+										abstract_b(tag.metadataInteger["canseekontime"] == 1));
 
 							if(tag.metadataDouble.find("audiodatarate") != tag.metadataDouble.end())
-								metadata->setVariableByQName("audiodatarate", "", abstract_d(tag.metadataDouble["audiodatarate"]));
+								metadata->setVariableByQName("audiodatarate", "", 
+										abstract_d(tag.metadataDouble["audiodatarate"]));
 							if(tag.metadataDouble.find("videodatarate") != tag.metadataDouble.end())
-								metadata->setVariableByQName("videodatarate", "", abstract_d(tag.metadataDouble["videodatarate"]));
+								metadata->setVariableByQName("videodatarate", "", 
+										abstract_d(tag.metadataDouble["videodatarate"]));
 
-							//TODO: missing: audiocodecid (Number), cuePoints (Object[]), videocodecid (Number), custommetadata's
+							//TODO: missing: audiocodecid (Number), cuePoints (Object[]), 
+							//videocodecid (Number), custommetadata's
 							callbackArgs[0] = metadata;
 							client->incRef();
 							metadata->incRef();
-							FunctionEvent* event = new FunctionEvent(static_cast<IFunction*>(callback), client, callbackArgs, 1);
+							FunctionEvent* event = 
+								new FunctionEvent(static_cast<IFunction*>(callback), client, callbackArgs, 1);
 							getVm()->addEvent(NULL,event);
 							event->decRef();
 						}
@@ -877,7 +916,6 @@ void NetStream::execute()
 	catch(exception& e)
 	{
 		LOG(LOG_ERROR, _("Exception in reading: ")<<e.what());
-		LOG(LOG_ERROR, "Failbit: " << ((s.rdstate() & istream::failbit) != 0) << ", badbit: " << ((s.rdstate() & istream::badbit) != 0));
 	}
 	if(waitForFlush)
 	{

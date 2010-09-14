@@ -17,10 +17,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <libxml++/libxml++.h>
+#include <libxml++/parsers/textreader.h>
+
 #include "flashsystem.h"
 #include "abc.h"
 #include "class.h"
 #include "compat.h"
+
+#include <istream>
 
 using namespace lightspark;
 
@@ -155,40 +160,34 @@ void Security::sinit(Class_base* c)
 	c->setMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile),false);
 	c->setMethodByQName("showSettings","",Class<IFunction>::getFunction(showSettings),false);
 
-	sys->staticSecurityExactSettings = true;
-	sys->staticSecurityExactSettingsLocked = false;
+	sys->securityManager->setExactSettings(true, false);
 }
 
 ASFUNCTIONBODY(Security,_getExactSettings)
 {
-	return abstract_b(sys->staticSecurityExactSettings);
+	return abstract_b(sys->securityManager->getExactSettings());
 }
 
 ASFUNCTIONBODY(Security,_setExactSettings)
 {
 	assert(args && argslen==1);
-	if(sys->staticSecurityExactSettingsLocked)
+	if(sys->securityManager->getExactSettingsLocked())
 	{
-		throw UnsupportedException("SecurityError");
+		throw Class<SecurityError>::getInstanceS("SecurityError: Security.exactSettings already set");
 	}
-	if(args[0]->getObjectType() != T_BOOLEAN)
-	{
-		throw UnsupportedException("ArgumentError");
-	}
-	//Boolean* i = static_cast<Boolean*>(args[0]);
-	sys->staticSecurityExactSettings = Boolean_concrete(args[0]);
+	sys->securityManager->setExactSettings(Boolean_concrete(args[0]));
 	return NULL;
 }
 
 ASFUNCTIONBODY(Security,_getSandboxType)
 {
-	if(sys->sandboxType == REMOTE)
+	if(sys->securityManager->getSandboxType() == SecurityManager::REMOTE)
 		return Class<ASString>::getInstanceS("remote");
-	else if(sys->sandboxType == LOCAL_TRUSTED)
+	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_TRUSTED)
 		return Class<ASString>::getInstanceS("localTrusted");
-	else if(sys->sandboxType == LOCAL_WITH_FILE)
+	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
 		return Class<ASString>::getInstanceS("localWithFile");
-	else if(sys->sandboxType == LOCAL_WITH_NETWORK)
+	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_NETWORK)
 		return Class<ASString>::getInstanceS("localWithNetwork");
 	assert(false);
 	return NULL;
@@ -209,6 +208,9 @@ ASFUNCTIONBODY(Security, allowInsecureDomain)
 ASFUNCTIONBODY(Security, loadPolicyFile)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("Security::loadPolicyFile"));
+	assert_and_throw(argslen == 1);
+	assert(args[0]->getObjectType() == T_STRING);
+	sys->securityManager->addPolicyFile(sys->getOrigin().goToURL(args[0]->toString()));
 	return NULL;
 }
 

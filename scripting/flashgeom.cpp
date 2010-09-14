@@ -775,10 +775,6 @@ void Matrix::sinit(Class_base* c)
 	c->setMethodByQName("translate","",Class<IFunction>::getFunction(translate),true);
 }
 
-/**
- * NOTE: Many of these functions are wrong. They replace the current values instead of multiplying them out.
- */
-
 ASFUNCTIONBODY(Matrix,_constructor)
 {
 	assert_and_throw(argslen <= 6);
@@ -983,10 +979,14 @@ ASFUNCTIONBODY(Matrix,invert)
 	return NULL;
 }
 
+/**
+ * NOTE: Many of these functions are wrong. They replace the current values instead of multiplying them out.
+ */
+
 ASFUNCTIONBODY(Matrix,rotate)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
 	assert_and_throw(argslen==1);
+	Matrix* th=static_cast<Matrix*>(obj);
 	double angle = args[0]->toNumber();
 	th->a = ::cos(angle); th->c = -::sin(angle); th->tx = 0.0;
 	th->b = ::sin(angle); th->d =  ::cos(angle); th->ty = 0.0;
@@ -996,8 +996,8 @@ ASFUNCTIONBODY(Matrix,rotate)
 
 ASFUNCTIONBODY(Matrix,scale)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
 	assert_and_throw(argslen==2);
+	Matrix* th=static_cast<Matrix*>(obj);
 	double sx = args[0]->toNumber();
 	double sy = args[1]->toNumber();
 	th->a = sx;   th->c = 0.0; th->tx = 0.0;
@@ -1008,8 +1008,8 @@ ASFUNCTIONBODY(Matrix,scale)
 
 ASFUNCTIONBODY(Matrix,translate)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
 	assert_and_throw(argslen==2);
+	Matrix* th=static_cast<Matrix*>(obj);
 	double dx = args[0]->toNumber();
 	double dy = args[1]->toNumber();
 	th->tx += dx;

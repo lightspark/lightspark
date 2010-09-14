@@ -29,6 +29,12 @@
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
 
+std::ostream& lightspark::operator<<(std::ostream& s, const URLInfo& u)
+{
+	s << u.getParsedURL();
+	return s;
+}
+
 URLInfo::URLInfo(const tiny_string& u)
 {
 	url = u;
@@ -233,7 +239,8 @@ const URLInfo URLInfo::goToURL(const tiny_string& u) const
 			qualified += ":";
 			qualified += tiny_string((int) getPort());
 		}
-		qualified += getPathDirectory();
+		if(str.substr(0,1) != "/")
+			qualified += getPathDirectory();
 		qualified += str;
 		return URLInfo(qualified);
 	}
@@ -414,4 +421,3 @@ std::string URLInfo::decode(const std::string& u, ENCODING type)
 	}
 	return str;
 }
-

@@ -144,8 +144,6 @@ private:
 
 	//Indicates whether the NetStream is paused
 	bool paused;
-//	//Indicates whether the SoundStream is paused yet
-//	bool audioPaused;
 	//Indicates whether the NetStream has been closed/threadAborted. This is reset at every play() call.
 	//We initialize this value to true, so we can check that play() hasn't been called without being closed first.
 	bool closed;
@@ -154,6 +152,7 @@ private:
 	CONNECTION_TYPE peerID;
 
 	ASObject* client;
+	bool checkPolicyFile;
 public:
 	NetStream();
 	~NetStream();
@@ -171,6 +170,8 @@ public:
 	ASFUNCTION(_getTime);
 	ASFUNCTION(_getCurrentFPS);
 	ASFUNCTION(_setClient);
+	ASFUNCTION(_setCheckPolicyFile);
+	ASFUNCTION(_getCheckPolicyFile);
 
 	//Interface for video
 	/**

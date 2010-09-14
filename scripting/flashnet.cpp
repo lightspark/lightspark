@@ -397,7 +397,7 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 
 NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),
 	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),
-		paused(false),closed(true)
+		paused(false),closed(true),checkPolicyFile(false)
 {
 	sem_init(&mutex,0,1);
 }
@@ -430,6 +430,8 @@ void NetStream::sinit(Class_base* c)
 	c->setGetterByQName("time","",Class<IFunction>::getFunction(_getTime),true);
 	c->setGetterByQName("currentFPS","",Class<IFunction>::getFunction(_getCurrentFPS),true);
 	c->setSetterByQName("client","",Class<IFunction>::getFunction(_setClient),true);
+	c->setGetterByQName("checkPolicyFile","",Class<IFunction>::getFunction(_getCheckPolicyFile),true);
+	c->setSetterByQName("checkPolicyFile","",Class<IFunction>::getFunction(_setCheckPolicyFile),true);
 }
 
 void NetStream::buildTraits(ASObject* o)
@@ -446,6 +448,25 @@ ASFUNCTIONBODY(NetStream,_setClient)
 
 	th->client = args[0];
 	th->client->incRef();
+	return NULL;
+}
+
+ASFUNCTIONBODY(NetStream,_getCheckPolicyFile)
+{
+	assert_and_throw(argslen == 1);
+	
+	NetStream* th=Class<NetStream>::cast(obj);
+
+	return abstract_b(th->checkPolicyFile);
+}
+
+ASFUNCTIONBODY(NetStream,_setCheckPolicyFile)
+{
+	assert_and_throw(argslen == 1);
+	
+	NetStream* th=Class<NetStream>::cast(obj);
+
+	th->checkPolicyFile = Boolean_concrete(args[0]);
 	return NULL;
 }
 
@@ -510,7 +531,7 @@ ASFUNCTIONBODY(NetStream,play)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
 				"not allowed to navigate up for local files");
 
-	if(sys->securityManager->evaluateURL(th->url) != SecurityManager::ALLOWED)
+	if(th->checkPolicyFile && sys->securityManager->evaluateURL(th->url) != SecurityManager::ALLOWED)
 	{
 		//TODO: find correct way of handling this case
 		throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");

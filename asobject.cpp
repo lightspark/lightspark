@@ -558,7 +558,7 @@ ASFUNCTIONBODY(ASObject,generator)
 {
 	//By default we assume it's a passtrough cast
 	assert_and_throw(argslen==1);
-	LOG(LOG_CALLS,_("Passthorugh of ") << args[0]);
+	LOG(LOG_CALLS,_("Passthrough of ") << args[0]);
 	args[0]->incRef();
 	return args[0];
 }

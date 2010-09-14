@@ -59,7 +59,19 @@
 		rect.graphics.drawRect(30,0,150,100);
 		rect.graphics.endFill();
 
-		Security.loadPolicyFile("http://ls.localhost/crossdomain.xml");
+		Security.loadPolicyFile("http://ls.localhost/sub/crossdomain.xml");
+
+		try
+		{
+			var localLoader:URLLoader = new URLLoader();
+			localLoader.addEventListener(IOErrorEvent.IO_ERROR, function():void {});
+			localLoader.addEventListener(Event.COMPLETE, function():void {});
+			localLoader.load(new URLRequest("http://ls.localhost/sub/test.data"));
+		}
+		catch(e:SecurityError)
+		{
+			Tests.info("SecurityError");
+		}
 
 		Tests.report(visual, this.name);
 	}

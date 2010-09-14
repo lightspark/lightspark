@@ -70,15 +70,15 @@ public:
 	bool getExactSettings() const { return exactSettings; }
 	bool getExactSettingsLocked() const { return exactSettingsLocked; }
 	
-	enum EVALUATIONRESULT { ALLOWED, DISALLOWED, DISALLOWED_SANDOX, DISALLOWED_CROSSDOMAIN_POLICY };
-	EVALUATIONRESULT evaluateURL(const tiny_string& url) { return evaluateURL(URLInfo(url)); }
-	EVALUATIONRESULT evaluateURL(const URLInfo& url);
+	enum EVALUATIONRESULT { ALLOWED, DISALLOWED_SANDOX, DISALLOWED_CROSSDOMAIN_POLICY };
+	EVALUATIONRESULT evaluateURL(const tiny_string& url, bool loadPendingFiles=true) 
+	{ return evaluateURL(URLInfo(url), loadPendingFiles); }
+	EVALUATIONRESULT evaluateURL(const URLInfo& url, bool loadPendingFiles=true);
 };
 
 class PolicySiteControl;
 class PolicyAllowAccessFrom;
 class PolicyAllowHTTPRequestHeadersFrom;
-class PolicyAllowAccessFromIdentity;
 //TODO: add support for FTP, SOCKET policy files
 class PolicyFile
 {
@@ -102,7 +102,6 @@ private:
 	PolicySiteControl* siteControl;
 	std::vector<PolicyAllowAccessFrom*> allowAccessFrom;
 	std::vector<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
-	std::vector<PolicyAllowAccessFromIdentity*> allowAccessFromIdentity;
 public:
 	//URL constructor, only for HTTP currently
 	PolicyFile(const tiny_string& _url);
@@ -122,9 +121,9 @@ public:
 	const PolicySiteControl* getSiteControl() const { return siteControl ;}
 
 	//Is access to the policy file URL allowed by this policy file?
-	bool allowsAccessFrom(const URLInfo& url);
+	bool allowsAccessFrom(const URLInfo& url, const URLInfo& to);
 	//Is this request header allowed by this policy file for the given URL?
-	bool allowsHTTPRequestHeaderFrom(const URLInfo& u, const tiny_string& header);
+	bool allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo& to, const tiny_string& header);
 };
 
 //Site-wide declarations for master policy file
@@ -137,7 +136,8 @@ public:
 		BY_CONTENT_TYPE, //Only policy files served with 'Content-Type: text/x-cross-domain-policy' are allowed (only for HTTP)
 		BY_FTP_FILENAME, //Only policy files with 'crossdomain.xml' as filename are allowed (only for FTP)
 		MASTER_ONLY, //Only this master policy file is allowed (default for HTTP/HTTPS/FTP)
-		NONE //No policy files are allowed, including this master policy file
+		NONE, //No policy files are allowed, including this master policy file
+		NONE_THIS_RESPONSE //Don't use this policy file, provided as a HTTP header only (TODO: support this type)
 	};
 private:
 	PolicyFile* file;
@@ -178,9 +178,8 @@ private:
 	std::string domain; //Required
 	std::vector<PortRange*> toPorts; //Only used for SOCKET policy files, required
 	bool secure; //Only used for SOCKET & HTTPS, optional, default: SOCKET=false, HTTPS=true
-	bool secureSpecified; //Specifies whether the default value should be used
 public:
-	PolicyAllowAccessFrom(PolicyFile* _file, const std::string _domain, const std::string _toPorts, bool _secure, bool _secureSpecified);
+	PolicyAllowAccessFrom(PolicyFile* _file, const std::string _domain, const std::string _toPorts, bool _secure, bool secureSpecified);
 	~PolicyAllowAccessFrom();
 	const std::string& getDomain() const { return domain; }
 	size_t getToPortsLength() const { return toPorts.size(); }
@@ -199,9 +198,8 @@ private:
 	std::string domain; //Required
 	std::vector<std::string*> headers; //Required
 	bool secure; //Only used for HTTPS, optional, default=true
-	bool secureSpecified; //Specifies whether the default value should be used
 public:
-	PolicyAllowHTTPRequestHeadersFrom(PolicyFile* _file, const std::string _domain, const std::string _headers, bool _secure, bool _secureSpecified);
+	PolicyAllowHTTPRequestHeadersFrom(PolicyFile* _file, const std::string _domain, const std::string _headers, bool _secure, bool secureSpecified);
 	~PolicyAllowHTTPRequestHeadersFrom();
 	const std::string getDomain() const { return domain; }
 	size_t getHeadersLength() const { return headers.size(); }
@@ -210,21 +208,6 @@ public:
 
 	//Does this entry allow a given request header for a given URL?
 	bool allowsHTTPRequestHeaderFrom(const URLInfo& url, const tiny_string& header) const;
-};
-
-//Permit access by documents identified by (only for generic)
-class PolicyAllowAccessFromIdentity
-{
-public:
-	enum FINGERPRINTALGORITHM { SHA1 };
-private:
-	PolicyFile* file;
-	std::string fingerprint;
-	FINGERPRINTALGORITHM fingerprintAlgorithm;
-public:
-	PolicyAllowAccessFromIdentity(PolicyFile* _file, const std::string _fingerprint, const std::string _fingerprintAlgorithm);
-	const std::string& getFingerprint() const { return fingerprint; }
-	FINGERPRINTALGORITHM getFingerprintAlgorithm() const { return fingerprintAlgorithm; }
 };
 
 }

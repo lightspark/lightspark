@@ -8,6 +8,7 @@ global:
 		*sync_stream*;
 		*lightspark::Class_base*;
 		*lightspark::Event*;
+		*lightspark::Downloader*;
 		rt;
 		sys;
 		pt;

@@ -42,7 +42,7 @@ SecurityManager::~SecurityManager()
 }
 
 //Currently only HTTP(S) is supported
-SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& url)
+SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& url, bool loadPendingFiles)
 {
 	LOG(LOG_NO_INFO, "Evaluating URL for cross domain policies: " << url.getParsedURL());
 	//The URL has exactly the same domain name as the origin, always allowed
@@ -52,50 +52,56 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& ur
 		return ALLOWED;
 	}
 
-	LOG(LOG_NO_INFO, "Checking master x-domain policy file");
+	LOG(LOG_NO_INFO, "Checking master x-domain policy file, loading pending: " << loadPendingFiles);
 	URLInfo masterURL = url.goToURL("/crossdomain.xml");
 	//The domain doesn't exactly match the domain of the origin, so lets check the master policy file first
 	//Get or create the master policy file object
 	PolicyFile* master = getPolicyFileByURL(masterURL);
 	if(master == NULL)
 		master = addPolicyFile(masterURL);
-	//Master defines no policy files are allowed at all
-	if(master->getSiteControl()->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
+	if(loadPendingFiles)
+		master->load();
+	if(master->isLoaded())
 	{
-		LOG(LOG_NO_INFO, "Master policy file disallows policy files, disallowing");
-		return DISALLOWED_CROSSDOMAIN_POLICY;
-	}
-	//Master is invalid AND only master policy files are allowed (by default)
-	if(!master->isValid() && master->getSiteControl()->getPermittedCrossDomainPolicies() == PolicySiteControl::MASTER_ONLY)
-	{
-		LOG(LOG_NO_INFO, "Master policy file is invalid and allows master policy files only, disallowing");
-		return DISALLOWED_CROSSDOMAIN_POLICY;
-	}
-	
-	//Master is valid and it specifies only the master policy file is allowed
-	if(master->getSiteControl()->getPermittedCrossDomainPolicies() == PolicySiteControl::MASTER_ONLY)
-	{
+		//Master defines no policy files are allowed at all
+		if(master->getSiteControl()->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
+		{
+			LOG(LOG_NO_INFO, "Master policy file disallows policy files, disallowing");
+			return DISALLOWED_CROSSDOMAIN_POLICY;
+		}
+		//Master is invalid AND only master policy files are allowed (by default)
+		if(!master->isValid() && master->getSiteControl()->getPermittedCrossDomainPolicies() == PolicySiteControl::MASTER_ONLY)
+		{
+			LOG(LOG_NO_INFO, "Master policy file is invalid and allows master policy files only, disallowing");
+			return DISALLOWED_CROSSDOMAIN_POLICY;
+		}
+		
 		LOG(LOG_NO_INFO, "Master policy file is valid and allows master policy files only, checking against origin:\n" << 
 				sys->getOrigin().getParsedURL());
-		if(master->allowsAccessFrom(sys->getOrigin()))
+		if(master->allowsAccessFrom(sys->getOrigin(), url))
 		{
 			LOG(LOG_NO_INFO, "Master policy file allowed access, allowing");
 			return ALLOWED;
 		}
-		else
+		//Non-master policy files are allowed (/subdir/crossdomain.xml, loadPolicyFile())
+		//These can further by restricted by content-type and ftp filename.
+		//Lets check the other policy files.
+		if(master->getSiteControl()->getPermittedCrossDomainPolicies() != PolicySiteControl::MASTER_ONLY)
 		{
-			LOG(LOG_NO_INFO, "Master policy file disallowed access, disallowing");
-			return DISALLOWED_CROSSDOMAIN_POLICY;
+			for(std::vector<PolicyFile*>::iterator i = policyFiles.begin(); i != policyFiles.end(); ++i)
+			{
+				if(loadPendingFiles)
+					(*i)->load();
+				if((*i)->isLoaded() && (*i)->allowsAccessFrom(sys->getOrigin(), url))
+				{
+					LOG(LOG_NO_INFO, "Non-master policy file allowed access, allowing");
+					return ALLOWED;
+				}
+			}
 		}
 	}
-	//Non-master policy files are allowed (/subdir/crossdomain.xml, loadPolicyFile())
-	//These can further by restricted by content-type and ftp filename.
-	else
-	{
-		//TODO: don't forget to check isSubOf() so that policy files are applicable
-	}
 
-	return DISALLOWED;
+	return DISALLOWED_CROSSDOMAIN_POLICY;
 }
 
 PolicyFile* SecurityManager::addPolicyFile(const tiny_string& url)
@@ -103,8 +109,6 @@ PolicyFile* SecurityManager::addPolicyFile(const tiny_string& url)
 	PolicyFile* file = new PolicyFile(url);
 	if(file->isValid())
 		policyFiles.push_back(file);
-	//DEBUG
-	file->load();
 	return file;
 }
 
@@ -145,9 +149,6 @@ PolicyFile::~PolicyFile()
 		delete (*i);
 	for(std::vector<PolicyAllowHTTPRequestHeadersFrom*>::iterator i = allowHTTPRequestHeadersFrom.begin();
 			i != allowHTTPRequestHeadersFrom.end(); ++i)
-		delete (*i);
-	for(std::vector<PolicyAllowAccessFromIdentity*>::iterator i = allowAccessFromIdentity.begin();
-			i != allowAccessFromIdentity.end(); ++i)
 		delete (*i);
 }
 
@@ -204,6 +205,7 @@ void PolicyFile::load()
 	//We've checked the master file to see of we need to ignore this file. (not the case)
 	//Now let's parse this file.
 	
+	//TODO: disallow cross-domain redirect for policy files
 	//No caching needed for this download, we don't expect very big files
 	Downloader* downloader=sys->downloadManager->download(url, false);
 	//Wait until the file is fetched
@@ -227,7 +229,6 @@ void PolicyFile::load()
 		std::string tagName;
 		std::string attrValue;
 		int attrCount;
-		bool inRootTag = false;
 		std::string domain;
 		std::string toPorts;
 		std::string headers;
@@ -237,19 +238,20 @@ void PolicyFile::load()
 		std::string fingerprintAlgorithm;
 		while(xml.read())
 		{
-			if(xml.get_depth() == 0 && inRootTag) continue; //Root tag found, no need to handle depth 0 elements
-			if(xml.get_depth() > 1) continue; //We won't find elements with depth > 1
-
 			tagName = xml.get_name();
-			if(xml.get_depth() == 0)
-			{
-				if(tagName == "cross-domain-policy")
-					inRootTag = true;
-				else
-					inRootTag = false;
+			//We only handle elements
+			if(xml.get_node_type() != xmlpp::TextReader::Element)
 				continue;
+
+			//Some reasons for marking this file as invalid (extraneous content)
+			if(xml.get_depth() > 1 || xml.has_value() || (xml.get_depth() == 0 && tagName != "cross-domain-policy"))
+			{
+				valid = false;
+				break;
 			}
-			if(!inRootTag) continue;
+
+			if(xml.get_depth() == 0 && tagName == "cross-domain-policy")
+				continue;
 
 			//We are inside the cross-domain-policy tag so lets handle elements.
 			attrCount = xml.get_attribute_count();
@@ -310,15 +312,6 @@ void PolicyFile::load()
 				if(domain != "" && headers != "")
 					allowHTTPRequestHeadersFrom.push_back(new PolicyAllowHTTPRequestHeadersFrom(this, domain, headers, secure, secureSpecified));
 			}
-			//Handle the allow-access-from-identity element if the element has attributes and if the policy file type is GENERIC
-			else if(tagName == "allow-access-from-identity" && attrCount == 2 && type == GENERIC)
-			{
-				fingerprint = xml.get_attribute("fingerprint");
-				fingerprintAlgorithm = xml.get_attribute("fingerprint-algorithm");
-				//We found the required attributes, now lets add the object
-				if(fingerprint != "" && fingerprintAlgorithm != "")
-					allowAccessFromIdentity.push_back(new PolicyAllowAccessFromIdentity(this, fingerprint, fingerprintAlgorithm));
-			}
 		}
 		if(siteControl == NULL) //Set siteControl to the default value
 			siteControl = new PolicySiteControl(this, "");
@@ -335,8 +328,12 @@ void PolicyFile::load()
 }
 
 //TODO: support SOCKET specific method
-bool PolicyFile::allowsAccessFrom(const URLInfo& u)
+bool PolicyFile::allowsAccessFrom(const URLInfo& u, const URLInfo& to)
 {
+	//This policy file doesn't apply to the given URL
+	if(!isMaster() && !to.isSubOf(url))
+		return false;
+
 	load();
 	if(!isValid() || isIgnored())
 		return false;
@@ -353,13 +350,13 @@ bool PolicyFile::allowsAccessFrom(const URLInfo& u)
 	return false;
 }
 
-bool PolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& u, const tiny_string& header)
+bool PolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo& to, const tiny_string& header)
 {
 	//Only used for HTTP(S)
 	if(type != HTTP && type != HTTPS) return true;
 
 	//This policy file doesn't apply to the given URL
-	if(!u.isSubOf(url))
+	if(!isMaster() && !to.isSubOf(url))
 		return false;
 
 	load();
@@ -398,8 +395,8 @@ PolicySiteControl::PolicySiteControl(PolicyFile* _file, const std::string _permi
 }
 
 PolicyAllowAccessFrom::PolicyAllowAccessFrom(PolicyFile* _file, const std::string _domain, const std::string _toPorts, 
-		bool _secure, bool _secureSpecified):
-	file(_file),domain(_domain),secure(_secure), secureSpecified(_secureSpecified)
+		bool _secure, bool secureSpecified):
+	file(_file),domain(_domain),secure(_secure)
 {
 	if(!secureSpecified)
 	{
@@ -473,6 +470,8 @@ PolicyAllowAccessFrom::~PolicyAllowAccessFrom()
 bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url) const
 {
 	//Check if domains match
+	//TODO: resolve domain names using DNS before checking for a match?
+	//See section 1.5.9 in specification
 	if(!URLInfo::matchesDomain(domain, url.getHostname()))
 		return false;
 
@@ -486,8 +485,8 @@ bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url) const
 }
 
 PolicyAllowHTTPRequestHeadersFrom::PolicyAllowHTTPRequestHeadersFrom(PolicyFile* _file, const std::string _domain, 
-		const std::string _headers, bool _secure, bool _secureSpecified):
-	file(_file),domain(_domain),secure(_secure),secureSpecified(_secureSpecified)
+		const std::string _headers, bool _secure, bool secureSpecified):
+	file(_file),domain(_domain),secure(_secure)
 {
 	if(!secureSpecified)
 	{
@@ -545,10 +544,4 @@ bool PolicyAllowHTTPRequestHeadersFrom::allowsHTTPRequestHeaderFrom(const URLInf
 		return false;
 	
 	return true;
-}
-
-PolicyAllowAccessFromIdentity::PolicyAllowAccessFromIdentity(PolicyFile* _file, 
-		const std::string _fingerprint, const std::string _fingerprintAlgorithm):
-	file(_file),fingerprint(_fingerprint),fingerprintAlgorithm(SHA1)
-{
 }

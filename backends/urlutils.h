@@ -21,6 +21,7 @@
 #define _URL_UTILS_H
 
 #include "compat.h"
+#include <iostream>
 #include <string>
 #include <inttypes.h>
 #include "swftypes.h"
@@ -30,6 +31,7 @@ namespace lightspark
 
 class DLL_PUBLIC URLInfo
 {
+	friend std::ostream& operator<<(std::ostream& s, const URLInfo& u);
 private:
 	tiny_string url; //The URL space encoded
 	tiny_string parsedURL; //The URL normalized and space encoded

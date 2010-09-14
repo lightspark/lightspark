@@ -1017,10 +1017,6 @@ ASFUNCTIONBODY(Matrix,rotate)
 	return NULL;
 }
 
-/**
- * NOTE: The following functions are wrong. They replace the current values instead of multiplying them out.
- */
-
 ASFUNCTIONBODY(Matrix,scale)
 {
 	assert_and_throw(argslen==2);
@@ -1028,8 +1024,10 @@ ASFUNCTIONBODY(Matrix,scale)
 	number_t sx = args[0]->toNumber();
 	number_t sy = args[1]->toNumber();
 
-	th->a = sx;   th->c = 0.0; th->tx = 0.0;
-	th->b = 0.0;  th->d = sy;  th->ty = 0.0;
+	th->a *= sx;
+	th->b *= sx;
+	th->c *= sy;
+	th->d *= sy;
 		
 	return NULL;
 }

@@ -43,7 +43,7 @@ class DisplayObject: public EventDispatcher
 friend class DisplayObjectContainer;
 private:
 	MATRIX Matrix;
-	bool useMatrix;
+	ACQUIRE_RELEASE_FLAG(useMatrix);
 	number_t tx,ty;
 	number_t rotation;
 	number_t sx,sy;
@@ -66,6 +66,7 @@ protected:
 	uint32_t cachedTexWidth;
 	uint32_t cachedTexHeight;
 	void defaultRender() const;
+	DisplayObject(const DisplayObject& d);
 public:
 	int Depth;
 	tiny_string name;

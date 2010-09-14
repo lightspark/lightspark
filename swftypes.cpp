@@ -165,10 +165,16 @@ void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yo
 	yout=xin*RotateSkew0 + yin*ScaleY + TranslateY;
 }
 
-void MATRIX::getTranslation(int& x, int& y) const
+MATRIX Matrix::multiplyMatrix(const MATRIX& r)
 {
-	x=TranslateX;
-	y=TranslateY;
+	MATRIX ret;
+	ret.ScaleX=ScaleX*r.ScaleX + RotateSkew1*RotateSkew0;
+	ret.RotateSkew1=ScaleX*r.RotateSkew1 + RotateSkew1*r.ScaleY;
+	ret.RotateSkew0=RotateSkew0*r.ScaleX + ScaleY*r.RotateSkew0;
+	ret.ScaleY=RotateSkew0*r.RotateSkew1 + ScaleY*r.ScaleY;
+	ret.TranslateX=ScaleX*r.TranslateX + RotateSkew1*r.TranslateY + TranslateX;
+	ret.TranslateY=RotateSkew0*r.TranslateX + ScaleY*r.TranslateY + TranslateY;
+	return ret;
 }
 
 std::ostream& operator<<(std::ostream& s, const MATRIX& r)

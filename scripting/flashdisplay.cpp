@@ -60,7 +60,6 @@ REGISTER_CLASS_NAME(LineScaleMode);
 REGISTER_CLASS_NAME(StageScaleMode);
 REGISTER_CLASS_NAME(StageAlign);
 REGISTER_CLASS_NAME(Bitmap);
-REGISTER_CLASS_NAME(Matrix);
 
 void LoaderInfo::sinit(Class_base* c)
 {
@@ -877,17 +876,20 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),onStage(false),root(NULL),loaderInfo(NULL),
 	alpha(1.0),visible(true),cachedTexX(0),cachedTexY(0),cachedTexWidth(0),cachedTexHeight(0),parent(NULL)
 {
+	pthread_spin_init(&MatrixSpinlock, 0);
 }
 
 DisplayObject::DisplayObject(const DisplayObject& d):useMatrix(true),tx(d.tx),ty(d.ty),rotation(d.rotation),sx(d.sx),sy(d.sy),onStage(false),
 	root(NULL),loaderInfo(NULL),alpha(d.alpha),visible(d.visible),parent(NULL)
 {
+	pthread_spin_init(&MatrixSpinlock, 0);
 }
 
 DisplayObject::~DisplayObject()
 {
 	if(loaderInfo && !sys->finalizingDestruction)
 		loaderInfo->decRef();
+	pthread_spin_destroy(&MatrixSpinlock);
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -939,14 +941,20 @@ void DisplayObject::buildTraits(ASObject* o)
 
 void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 {
+	pthread_spin_lock(&MatrixSpinlock);
 	Matrix=m;
+	pthread_spin_unlock(&MatrixSpinlock);
 }
 
 MATRIX DisplayObject::getMatrix() const
 {
 	MATRIX ret;
 	if(ACQUIRE_READ(useMatrix))
+	{
+		pthread_spin_lock(&MatrixSpinlock);
 		ret=Matrix;
+		pthread_spin_unlock(&MatrixSpinlock);
+	}
 	else
 	{
 		ret.TranslateX=tx;
@@ -962,10 +970,12 @@ MATRIX DisplayObject::getMatrix() const
 void DisplayObject::valFromMatrix()
 {
 	assert(useMatrix);
+	pthread_spin_lock(&MatrixSpinlock);
 	tx=Matrix.TranslateX;
 	ty=Matrix.TranslateY;
 	sx=Matrix.ScaleX;
 	sy=Matrix.ScaleY;
+	pthread_spin_unlock(&MatrixSpinlock);
 }
 
 bool DisplayObject::isSimple() const

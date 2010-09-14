@@ -42,6 +42,7 @@ class DisplayObject: public EventDispatcher
 {
 friend class DisplayObjectContainer;
 private:
+	mutable pthread_spinlock_t MatrixSpinlock;
 	MATRIX Matrix;
 	ACQUIRE_RELEASE_FLAG(useMatrix);
 	number_t tx,ty;

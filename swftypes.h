@@ -693,17 +693,17 @@ class MATRIX
 	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
 	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
 public:
-	float ScaleX;
-	float ScaleY;
-	float RotateSkew0;
-	float RotateSkew1;
+	number_t ScaleX;
+	number_t ScaleY;
+	number_t RotateSkew0;
+	number_t RotateSkew1;
 	int TranslateX;
 	int TranslateY;
 public:
 	MATRIX():ScaleX(1),ScaleY(1),RotateSkew0(0),RotateSkew1(0),TranslateX(0),TranslateY(0){}
 	void get4DMatrix(float matrix[16]) const;
-	void getTranslation(int& x, int& y) const;
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	MATRIX multiplyMatrix(const MATRIX& r) const;
 };
 
 class GRADRECORD

@@ -379,8 +379,8 @@ void CairoRenderer::recursiveApplyMatrix(cairo_t* cr, DisplayObject* o)
 	cairo_matrix_t mat;
 	const MATRIX& m=o->getMatrix();
 	mat.xx=m.ScaleX;
-	mat.xy=m.RotateSkew0;
-	mat.yx=m.RotateSkew1;
+	mat.xy=m.RotateSkew1;
+	mat.yx=m.RotateSkew0;
 	mat.yy=m.ScaleY;
 	mat.x0=m.TranslateX;
 	mat.y0=m.TranslateY;

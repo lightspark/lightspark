@@ -997,27 +997,37 @@ ASFUNCTIONBODY(Matrix,translate)
 	return NULL;
 }
 
-/**
- * NOTE: The following functions are wrong. They replace the current values instead of multiplying them out.
- */
-
 ASFUNCTIONBODY(Matrix,rotate)
 {
 	assert_and_throw(argslen==1);
 	Matrix* th=static_cast<Matrix*>(obj);
-	double angle = args[0]->toNumber();
-	th->a = ::cos(angle); th->c = -::sin(angle); th->tx = 0.0;
-	th->b = ::sin(angle); th->d =  ::cos(angle); th->ty = 0.0;
+	number_t angle = args[0]->toNumber();
+	number_t ta, tb, tc, td;
+
+	ta = th->a * cos(angle) + th->c * sin(angle);
+	tb = th->b * cos(angle) + th->d * sin(angle);
+	tc = th->c * cos(angle) - th->a * sin(angle);
+	td = th->d * cos(angle) - th->b * sin(angle);
+
+	th->a = ta;
+	th->b = tb;
+	th->c = tc;
+	th->d = td;
 
 	return NULL;
 }
+
+/**
+ * NOTE: The following functions are wrong. They replace the current values instead of multiplying them out.
+ */
 
 ASFUNCTIONBODY(Matrix,scale)
 {
 	assert_and_throw(argslen==2);
 	Matrix* th=static_cast<Matrix*>(obj);
-	double sx = args[0]->toNumber();
-	double sy = args[1]->toNumber();
+	number_t sx = args[0]->toNumber();
+	number_t sy = args[1]->toNumber();
+
 	th->a = sx;   th->c = 0.0; th->tx = 0.0;
 	th->b = 0.0;  th->d = sy;  th->ty = 0.0;
 		

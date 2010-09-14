@@ -979,8 +979,26 @@ ASFUNCTIONBODY(Matrix,invert)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Matrix,translate)
+{
+	assert_and_throw(argslen==2);
+	Matrix* th=static_cast<Matrix*>(obj);
+	number_t dx = args[0]->toNumber();
+	number_t dy = args[1]->toNumber();
+
+	number_t ttx, tty;
+
+	ttx = th->a * dx + th->c * dy + th->tx;
+	tty = th->b * dx + th->d * dy + th->ty;
+
+	th->tx = ttx;
+	th->ty = tty;
+
+	return NULL;
+}
+
 /**
- * NOTE: Many of these functions are wrong. They replace the current values instead of multiplying them out.
+ * NOTE: The following functions are wrong. They replace the current values instead of multiplying them out.
  */
 
 ASFUNCTIONBODY(Matrix,rotate)
@@ -1002,18 +1020,6 @@ ASFUNCTIONBODY(Matrix,scale)
 	double sy = args[1]->toNumber();
 	th->a = sx;   th->c = 0.0; th->tx = 0.0;
 	th->b = 0.0;  th->d = sy;  th->ty = 0.0;
-		
-	return NULL;
-}
-
-ASFUNCTIONBODY(Matrix,translate)
-{
-	assert_and_throw(argslen==2);
-	Matrix* th=static_cast<Matrix*>(obj);
-	double dx = args[0]->toNumber();
-	double dy = args[1]->toNumber();
-	th->tx += dx;
-	th->ty += dy;
 		
 	return NULL;
 }

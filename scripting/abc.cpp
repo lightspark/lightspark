@@ -1208,6 +1208,8 @@ void ABCVm::not_impl(int n)
 
 void call_context::runtime_stack_push(ASObject* s)
 {
+	if(stack_index>=mi->body->max_stack)
+		throw RunTimeException("Stack overflow");
 	stack[stack_index++]=s;
 }
 

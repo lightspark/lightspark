@@ -1295,7 +1295,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	//We modify the cur_level of obj
 	obj->decLevel();
 
-	obj->setVariableByMultiname(*name, value, false);
+	obj->setVariableByMultiname(*name, value);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
@@ -1321,7 +1321,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	obj->decLevel();
 
 	//Should we skip implementation? I think it's reasonable
-	ASObject* o=obj->getVariableByMultiname(*name, true, false);
+	ASObject* o=obj->getVariableByMultiname(*name, true);
 
 	tl=getVm()->getCurObjAndLevel();
 	//What if using [sg]etSuper not on this??
@@ -1587,7 +1587,7 @@ void ABCVm::callSuper(call_context* th, int n, int m)
 	obj->decLevel();
 
 	//We should skip the special implementation of get
-	ASObject* o=obj->getVariableByMultiname(*name, true, false);
+	ASObject* o=obj->getVariableByMultiname(*name, true);
 
 	//And the reset it using the stack
 	thisAndLevel tl=getVm()->getCurObjAndLevel();

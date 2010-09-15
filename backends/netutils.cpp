@@ -47,14 +47,13 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 	if(url.getProtocol() == "file")
 	{
 		LOG(LOG_NO_INFO, "DownloadManager: local file");
-		downloader=new LocalDownloader(url.getPath());
+		downloader=new LocalDownloader(cached, url.getPath());
 	}
 	else
 	{
 		LOG(LOG_NO_INFO, "DownloadManager: remote file");
-		downloader=new CurlDownloader(url.getParsedURL());
+		downloader=new CurlDownloader(cached, url.getParsedURL());
 	}
-	downloader->setCached(cached);
 	sys->addJob(downloader);
 	return downloader;
 }
@@ -68,10 +67,11 @@ void StandaloneDownloadManager::destroy(Downloader* d)
 
 Downloader::~Downloader()
 {
-	if(cached && cache.is_open())
+	if(cached)
 	{
-		cache.close();
-		if(!keepCache)
+		if(cache.is_open())
+			cache.close();
+		if(!keepCache && cacheFileName != "")
 			unlink(cacheFileName.raw_buf());
 	}
 	if(buffer != NULL)
@@ -81,14 +81,16 @@ Downloader::~Downloader()
 	sem_destroy(&available);
 	sem_destroy(&mutex);
 	sem_destroy(&terminated);
+	sem_destroy(&cacheOpen);
 }
 
-Downloader::Downloader():allowBufferRealloc(false),cached(false),waiting(false),hasTerminated(false),failed(false),finished(false),buffer(NULL),len(0),
+Downloader::Downloader(bool _cached):allowBufferRealloc(false),cached(_cached),waiting(false),hasTerminated(false),failed(false),finished(false),buffer(NULL),len(0),
 	tail(0),cachePos(0),cacheSize(0),keepCache(false)
 {
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
 	sem_init(&terminated,0,0);
+	sem_init(&cacheOpen,0,0);
 	setg(NULL,NULL,NULL);
 }
 
@@ -105,6 +107,15 @@ void Downloader::wait()
 	{
 		sem_wait(&terminated);
 		hasTerminated = true;
+	}
+}
+void Downloader::waitForCache()
+{
+	if(!cache.is_open())
+	{
+		sem_post(&mutex);
+		sem_wait(&cacheOpen);
+		sem_wait(&mutex);
 	}
 }
 
@@ -158,6 +169,7 @@ void Downloader::setLen(uint32_t l)
 		cachePos = 0;
 		cacheSize = 0;
 		setg((char*)buffer,(char*)buffer,(char*)buffer);
+		sem_post(&cacheOpen);
 	}
 	else if(!cached)
 	{
@@ -191,6 +203,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 	if(added==0)
 		return;
 
+	sem_wait(&mutex);
 	if((tail+added)>len)
 	{
 		//Only grow the buffer when allowed
@@ -203,26 +216,27 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 				newLength += 4096;
 			LOG(LOG_NO_INFO, _("Downloaded file bigger than buffer (") << tail+added << ">" << len << 
 					_("). Growing buffer to: ") << newLength << _(", grown by: ") << (newLength-len));
+			sem_post(&mutex);
 			setLen(newLength);
+			sem_wait(&mutex);
 		}
 		//The real data is longer than the provided Content-Length header
 		else
 		{
+			sem_post(&mutex);
 			throw RunTimeException(_("Downloaded file is too big"));
 		}
 	}
 
 	if(cached)
 	{
-		assert_and_throw(cache.is_open());
-		sem_wait(&mutex);
+		waitForCache();
 		//Seek to where we last wrote data
 		cache.seekp(tail);
 		cache.write((char*) buf, added);
 	}
 	else
 	{
-		sem_wait(&mutex);
 		memcpy(buffer + tail,buf,added);
 	}
 	tail+=added;
@@ -276,8 +290,7 @@ Downloader::int_type Downloader::underflow()
 	uint32_t index;
 	if(cached)
 	{
-		//We should have an open cache file here since there is some data
-		assert_and_throw(cache.is_open());
+		waitForCache();
 
 		size_t newCacheSize = tail-(cachePos+cacheSize);
 		if(newCacheSize > cacheMaxSize)
@@ -327,7 +340,7 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 	assert_and_throw(buffer != NULL);
 	if(cached)
 	{
-		assert_and_throw(cache.is_open());
+		waitForCache();
 		//The requested position is inside our current window
 		if(pos >= cachePos && pos <= cachePos+cacheSize)
 		{
@@ -388,10 +401,8 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 	return ret;
 }
 
-CurlDownloader::CurlDownloader(const tiny_string& u)
+CurlDownloader::CurlDownloader(bool cached, const tiny_string& u):ThreadedDownloader(cached), url(u),requestStatus(0)
 {
-	url=u;
-	requestStatus = 0;
 }
 
 void CurlDownloader::threadAbort()
@@ -501,7 +512,7 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 	return size*nmemb;
 }
 
-LocalDownloader::LocalDownloader(const tiny_string& u) : url(u)
+LocalDownloader::LocalDownloader(bool cached, const tiny_string& u): ThreadedDownloader(cached),url(u)
 {
 }
 

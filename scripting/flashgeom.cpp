@@ -769,14 +769,11 @@ void Matrix::sinit(Class_base* c)
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
 	c->setMethodByQName("identity","",Class<IFunction>::getFunction(identity),true);
+	c->setMethodByQName("invert","",Class<IFunction>::getFunction(invert),true);
 	c->setMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),true);
 	c->setMethodByQName("scale","",Class<IFunction>::getFunction(scale),true);
 	c->setMethodByQName("translate","",Class<IFunction>::getFunction(translate),true);
 }
-
-/**
- * NOTE: Many of these functions are wrong. They replace the current values instead of multiplying them out.
- */
 
 ASFUNCTIONBODY(Matrix,_constructor)
 {
@@ -950,37 +947,87 @@ ASFUNCTIONBODY(Matrix,identity)
 	return NULL;
 }
 
+ASFUNCTIONBODY(Matrix,invert)
+{
+	assert_and_throw(argslen==0);
+	Matrix* th=static_cast<Matrix*>(obj);
+	
+	number_t ta, tb, tc, td, ttx, tty;
+	number_t Z;
+
+	Z = th->a * th->d - th->b * th-> c;
+	ta = th->d;
+	ta /= Z;
+	tc = -(th->c);
+	tc /= Z;
+	ttx = th->c * th->ty + th->d * th->tx;
+	ttx /= Z;
+	tb = -(th->b);
+	tb /= Z;
+	td = th->a;
+	td /= Z;
+	tty = th->b * th->tx - th->a * th->ty;
+	tty /= Z;
+
+	th->a = ta;
+	th->b = tb;
+	th->c = tc;
+	th->d = td;
+	th->tx = ttx;
+	th->ty = tty;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,translate)
+{
+	assert_and_throw(argslen==2);
+	Matrix* th=static_cast<Matrix*>(obj);
+	number_t dx = args[0]->toNumber();
+	number_t dy = args[1]->toNumber();
+
+	number_t ttx, tty;
+
+	ttx = th->a * dx + th->c * dy + th->tx;
+	tty = th->b * dx + th->d * dy + th->ty;
+
+	th->tx = ttx;
+	th->ty = tty;
+
+	return NULL;
+}
+
 ASFUNCTIONBODY(Matrix,rotate)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
 	assert_and_throw(argslen==1);
-	double angle = args[0]->toNumber();
-	th->a = ::cos(angle); th->c = -::sin(angle); th->tx = 0.0;
-	th->b = ::sin(angle); th->d =  ::cos(angle); th->ty = 0.0;
+	Matrix* th=static_cast<Matrix*>(obj);
+	number_t angle = args[0]->toNumber();
+	number_t ta, tb, tc, td;
+
+	ta = th->a * cos(angle) + th->c * sin(angle);
+	tb = th->b * cos(angle) + th->d * sin(angle);
+	tc = th->c * cos(angle) - th->a * sin(angle);
+	td = th->d * cos(angle) - th->b * sin(angle);
+
+	th->a = ta;
+	th->b = tb;
+	th->c = tc;
+	th->d = td;
 
 	return NULL;
 }
 
 ASFUNCTIONBODY(Matrix,scale)
 {
-	Matrix* th=static_cast<Matrix*>(obj);
 	assert_and_throw(argslen==2);
-	double sx = args[0]->toNumber();
-	double sy = args[1]->toNumber();
-	th->a = sx;   th->c = 0.0; th->tx = 0.0;
-	th->b = 0.0;  th->d = sy;  th->ty = 0.0;
-		
-	return NULL;
-}
+	Matrix* th=static_cast<Matrix*>(obj);
+	number_t sx = args[0]->toNumber();
+	number_t sy = args[1]->toNumber();
 
-ASFUNCTIONBODY(Matrix,translate)
-{
-	Matrix* th=static_cast<Matrix*>(obj);
-	assert_and_throw(argslen==2);
-	double dx = args[0]->toNumber();
-	double dy = args[1]->toNumber();
-	th->tx += dx;
-	th->ty += dy;
+	th->a *= sx;
+	th->b *= sx;
+	th->c *= sy;
+	th->d *= sy;
 		
 	return NULL;
 }

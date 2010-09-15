@@ -52,8 +52,7 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 {
 	LOG(LOG_NO_INFO, "DownloadManager: PLUGIN: '" << url.getParsedURL() << "'");
 	//Register this download
-	NPDownloader* downloader=new NPDownloader(instance, url.getParsedURL());
-	downloader->setCached(cached);
+	NPDownloader* downloader=new NPDownloader(cached, instance, url.getParsedURL());
 	return downloader;
 }
 
@@ -65,7 +64,7 @@ void NPDownloadManager::destroy(lightspark::Downloader* d)
 	delete d;
 }
 
-NPDownloader::NPDownloader(NPP i, const lightspark::tiny_string& u):instance(i),url(u),started(false)
+NPDownloader::NPDownloader(bool cached, NPP i, const lightspark::tiny_string& u):Downloader(cached),instance(i),url(u),started(false)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }

@@ -165,7 +165,7 @@ void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yo
 	yout=xin*RotateSkew0 + yin*ScaleY + TranslateY;
 }
 
-MATRIX Matrix::multiplyMatrix(const MATRIX& r)
+MATRIX MATRIX::multiplyMatrix(const MATRIX& r) const
 {
 	MATRIX ret;
 	ret.ScaleX=ScaleX*r.ScaleX + RotateSkew1*RotateSkew0;

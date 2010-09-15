@@ -71,6 +71,7 @@
 		catch(e:SecurityError)
 		{
 			Tests.info("SecurityError");
+			Tests.info(e);
 		}
 
 		Tests.report(visual, this.name);

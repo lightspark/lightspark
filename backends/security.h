@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <string>
 #include <vector>
+#include <map>
 #include <inttypes.h>
 #include "swftypes.h"
 
@@ -30,14 +31,17 @@ namespace lightspark
 {
 
 class PolicyFile;
+class URLPolicyFile;
 
 class SecurityManager
 {
 public:
 	enum SANDBOXTYPE { REMOTE, LOCAL_WITH_FILE, LOCAL_WITH_NETWORK, LOCAL_TRUSTED };
 private:
-	//List of added policy files (note: not necessarily loaded)
-	std::vector<PolicyFile*> policyFiles;
+	//Map (by domain) of vectors of pending policy files
+	std::map<tiny_string, std::vector<URLPolicyFile*>> pendingURLPolicyFiles;
+	//Map (by domain) of vectors of loaded policy files
+	std::map<tiny_string, std::vector<URLPolicyFile*>> loadedURLPolicyFiles;
 
 	//Security sandbox type
 	SANDBOXTYPE sandboxType;
@@ -48,13 +52,16 @@ private:
 public:
 	SecurityManager();
 	~SecurityManager();
-	//Add a policy file located at url (only for HTTP)
-	PolicyFile* addPolicyFile(const URLInfo& url) { return addPolicyFile(url.getParsedURL()); }
-	PolicyFile* addPolicyFile(const tiny_string& url);
-	//Get the policy file object (if any) for the policy file at url (only for HTTP)
-	PolicyFile* getPolicyFileByURL(const tiny_string& url) const { return getPolicyFileByURL(URLInfo(url)); }
-	PolicyFile* getPolicyFileByURL(const URLInfo& url) const;
-	//TODO: handle FTP, socket policy files
+
+	//Add a policy file located at url, will decide what type of policy file it is.
+	PolicyFile* addPolicyFile(const tiny_string& url) { return addPolicyFile(URLInfo(url)); }
+	PolicyFile* addPolicyFile(const URLInfo& url);
+	//Add an URL policy file located at url
+	URLPolicyFile* addURLPolicyFile(const URLInfo& url);
+	//Get the URL policy file object (if any) for the URL policy file at url
+	URLPolicyFile* getURLPolicyFileByURL(const URLInfo& url);
+
+	void markPolicyFileLoaded(const URLPolicyFile* file);
 	
 	//Set the sandbox type
 	void setSandboxType(SANDBOXTYPE type) { sandboxType = type; }
@@ -71,25 +78,28 @@ public:
 	bool getExactSettingsLocked() const { return exactSettingsLocked; }
 	
 	enum EVALUATIONRESULT { ALLOWED, DISALLOWED_SANDOX, DISALLOWED_CROSSDOMAIN_POLICY };
+	//Checks URL policy files
 	EVALUATIONRESULT evaluateURL(const tiny_string& url, bool loadPendingFiles=true) 
 	{ return evaluateURL(URLInfo(url), loadPendingFiles); }
 	EVALUATIONRESULT evaluateURL(const URLInfo& url, bool loadPendingFiles=true);
+
+	//TODO: add evaluateSocketConnection() for SOCKET policy files
 };
 
 class PolicySiteControl;
 class PolicyAllowAccessFrom;
 class PolicyAllowHTTPRequestHeadersFrom;
-//TODO: add support for FTP, SOCKET policy files
+//TODO: add support for SOCKET policy files
 class PolicyFile
 {
 public:
-	enum POLICYFILETYPE { GENERIC, HTTP, HTTPS, FTP, SOCKET };
-private:
+	enum TYPE { URL, SOCKET };
+protected:
 	URLInfo url;
-	POLICYFILETYPE type;
+	TYPE type;
 
 	//Is this PolicyFile object valid?
-	//Reason for invalidness can be: incorrect URL, download failed
+	//Reason for invalidness can be: incorrect URL, download failed (in case of URLPolicyFiles)
 	bool valid;
 	//Ignore this object?
 	//Reason for ignoring can be: master policy file doesn't allow other/any policy files
@@ -101,24 +111,42 @@ private:
 
 	PolicySiteControl* siteControl;
 	std::vector<PolicyAllowAccessFrom*> allowAccessFrom;
-	std::vector<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
 public:
-	//URL constructor, only for HTTP currently
-	PolicyFile(const tiny_string& _url);
-	//TODO: handle FTP, socket policy files
-	~PolicyFile();
+	PolicyFile(URLInfo _url, TYPE _type);
+	virtual ~PolicyFile();
+
 	const URLInfo& getURL() const { return url; }
-	POLICYFILETYPE getType() const { return type; }
+	TYPE getType() const { return type; }
 	bool isValid() const { return valid; }
 	bool isIgnored() const { return ignore; }
 	bool isMaster() const { return master; }
 	bool isLoaded() const { return loaded; }
-	//Get the master policy file controlling this one
-	PolicyFile* getMasterPolicyFile();
 	//Load and parse the policy file
-	void load();
+	virtual void load()=0;
+
+	//Get the master policy file controlling this one
+	virtual PolicyFile* getMasterPolicyFile()=0;
 
 	const PolicySiteControl* getSiteControl() const { return siteControl ;}
+};
+
+class URLPolicyFile : public PolicyFile
+{
+public:
+	enum SUBTYPE { HTTP, HTTPS, FTP };
+private:
+	SUBTYPE subtype;
+
+	std::vector<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
+public:
+	URLPolicyFile(const URLInfo& _url);
+	~URLPolicyFile();
+	SUBTYPE getSubtype() const { return subtype; }
+
+	//Load and parse the policy file
+	void load();
+	//Get the master policy file controlling this one
+	URLPolicyFile* getMasterPolicyFile();
 
 	//Is access to the policy file URL allowed by this policy file?
 	bool allowsAccessFrom(const URLInfo& url, const URLInfo& to);
@@ -194,12 +222,12 @@ public:
 class PolicyAllowHTTPRequestHeadersFrom
 {
 private:
-	PolicyFile* file;
+	URLPolicyFile* file;
 	std::string domain; //Required
 	std::vector<std::string*> headers; //Required
 	bool secure; //Only used for HTTPS, optional, default=true
 public:
-	PolicyAllowHTTPRequestHeadersFrom(PolicyFile* _file, const std::string _domain, const std::string _headers, bool _secure, bool secureSpecified);
+	PolicyAllowHTTPRequestHeadersFrom(URLPolicyFile* _file, const std::string _domain, const std::string _headers, bool _secure, bool secureSpecified);
 	~PolicyAllowHTTPRequestHeadersFrom();
 	const std::string getDomain() const { return domain; }
 	size_t getHeadersLength() const { return headers.size(); }

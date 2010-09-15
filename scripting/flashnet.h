@@ -169,9 +169,10 @@ public:
 	ASFUNCTION(_getBytesTotal);
 	ASFUNCTION(_getTime);
 	ASFUNCTION(_getCurrentFPS);
+	ASFUNCTION(_getClient);
 	ASFUNCTION(_setClient);
-	ASFUNCTION(_setCheckPolicyFile);
 	ASFUNCTION(_getCheckPolicyFile);
+	ASFUNCTION(_setCheckPolicyFile);
 
 	//Interface for video
 	/**

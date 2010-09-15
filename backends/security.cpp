@@ -17,8 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <libxml++/libxml++.h>
-#include <libxml++/parsers/textreader.h>
+#include "parsing/crossdomainpolicy.h"
 
 #include "swf.h"
 #include "compat.h"
@@ -36,150 +35,300 @@ SecurityManager::SecurityManager():
 
 SecurityManager::~SecurityManager()
 {
-	for(std::vector<PolicyFile*>::iterator i = policyFiles.begin(); 
-			i != policyFiles.end(); ++i)
-		delete (*i);
+	std::map<tiny_string,std::vector<URLPolicyFile*>>::iterator i = pendingURLPolicyFiles.begin();
+	std::vector<URLPolicyFile*>::iterator j;
+	for(; i != pendingURLPolicyFiles.end(); ++i)
+	{
+		for(j = (*i).second.begin(); j != (*i).second.end(); ++j)
+			delete (*j);
+		(*i).second.clear();
+	}
+
+	pendingURLPolicyFiles.clear();
+	i = loadedURLPolicyFiles.begin();
+	for(;i != loadedURLPolicyFiles.end(); ++i)
+	{
+		for(j = (*i).second.begin(); j != (*i).second.end(); ++j)
+			delete (*j);
+		(*i).second.clear();
+	}
+	loadedURLPolicyFiles.clear();
 }
 
-//Currently only HTTP(S) is supported
+//Check URL policy files
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& url, bool loadPendingFiles)
 {
-	LOG(LOG_NO_INFO, "Evaluating URL for cross domain policies: " << url.getParsedURL());
+	LOG(LOG_NO_INFO, "SECURITY: Evaluating URL for cross domain policies: \nURL: " << url
+			<< "\nOrigin: " << sys->getOrigin());
 	//The URL has exactly the same domain name as the origin, always allowed
 	if(url.getHostname() == sys->getOrigin().getHostname())
 	{
-		LOG(LOG_NO_INFO, "Same hostname as origin, allowing");
+		LOG(LOG_NO_INFO, "SECURITY: Same hostname as origin, allowing");
 		return ALLOWED;
 	}
 
-	LOG(LOG_NO_INFO, "Checking master x-domain policy file, loading pending: " << loadPendingFiles);
+	LOG(LOG_NO_INFO, "SECURITY: Checking master x-domain policy file, loading pending: " << loadPendingFiles);
 	URLInfo masterURL = url.goToURL("/crossdomain.xml");
 	//The domain doesn't exactly match the domain of the origin, so lets check the master policy file first
 	//Get or create the master policy file object
-	PolicyFile* master = getPolicyFileByURL(masterURL);
+	URLPolicyFile* master = getURLPolicyFileByURL(masterURL);
 	if(master == NULL)
-		master = addPolicyFile(masterURL);
+	{
+		LOG(LOG_NO_INFO, "SECURITY: No master policy file found, trying to add one");
+		master = addURLPolicyFile(masterURL);
+	}
 	if(loadPendingFiles)
+	{
+		LOG(LOG_NO_INFO, "SECURITY: Loading of pending files is allowed, loading master policy file");
 		master->load();
+	}
+	else
+	{
+		LOG(LOG_NO_INFO, "SECURITY: Loading of pending files is NOT allowed, not loading master policy file");
+	}
+	//Check if the master policy file is loaded. If another user-added relevant policy file is already loaded, 
+	//it's master will have already been loaded too (to check if it is allowed).
+	//So IF any relevant policy file is loaded already, then the master will be too.
 	if(master->isLoaded())
 	{
+		LOG(LOG_NO_INFO, "SECURITY: Master policy file is loaded");
 		//Master defines no policy files are allowed at all
 		if(master->getSiteControl()->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
 		{
-			LOG(LOG_NO_INFO, "Master policy file disallows policy files, disallowing");
+			LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: Master policy file disallows policy files");
 			return DISALLOWED_CROSSDOMAIN_POLICY;
 		}
 		//Master is invalid AND only master policy files are allowed (by default)
 		if(!master->isValid() && master->getSiteControl()->getPermittedCrossDomainPolicies() == PolicySiteControl::MASTER_ONLY)
 		{
-			LOG(LOG_NO_INFO, "Master policy file is invalid and allows master policy files only, disallowing");
+			LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: Master policy file is invalid and allows master policy files only");
 			return DISALLOWED_CROSSDOMAIN_POLICY;
 		}
 		
-		LOG(LOG_NO_INFO, "Master policy file is valid and allows master policy files only, checking against origin:\n" << 
-				sys->getOrigin().getParsedURL());
+		LOG(LOG_NO_INFO, "SECURITY: Master policy file is valid and allows master policy files only, checking if origin has access:\n" << 
+				sys->getOrigin());
 		if(master->allowsAccessFrom(sys->getOrigin(), url))
 		{
-			LOG(LOG_NO_INFO, "Master policy file allowed access, allowing");
+			LOG(LOG_NO_INFO, "SECURITY: ALLOWED: Master policy file allowed access");
 			return ALLOWED;
 		}
-		//Non-master policy files are allowed (/subdir/crossdomain.xml, loadPolicyFile())
+		//Non-master policy files are allowed (/subdir/crossdomain.xml, loaded URLPolicyFile())
 		//These can further by restricted by content-type and ftp filename.
-		//Lets check the other policy files.
+		//Lets check the loaded policy files first
 		if(master->getSiteControl()->getPermittedCrossDomainPolicies() != PolicySiteControl::MASTER_ONLY)
 		{
-			for(std::vector<PolicyFile*>::iterator i = policyFiles.begin(); i != policyFiles.end(); ++i)
+			if(loadedURLPolicyFiles.count(url.getHostname()) == 1)
 			{
-				if(loadPendingFiles)
-					(*i)->load();
-				if((*i)->isLoaded() && (*i)->allowsAccessFrom(sys->getOrigin(), url))
+				LOG(LOG_NO_INFO, "SECURITY: Master policy file allows non-master policy files, checking already loaded ones (" <<
+						loadedURLPolicyFiles[url.getHostname()].size() << ")");
+				std::vector<URLPolicyFile*>::const_iterator i = loadedURLPolicyFiles[url.getHostname()].begin();
+				for(;i != loadedURLPolicyFiles[url.getHostname()].end(); ++i)
 				{
-					LOG(LOG_NO_INFO, "Non-master policy file allowed access, allowing");
-					return ALLOWED;
+					if((*i)->allowsAccessFrom(sys->getOrigin(), url))
+					{
+						LOG(LOG_NO_INFO, "SECURITY: ALLOWED: Already loaded non-master policy file allowed access");
+						return ALLOWED;
+					}
 				}
+			}
+			//And check the pending policy files next (if we are allowed to)
+			if(pendingURLPolicyFiles.count(url.getHostname()) == 1 && loadPendingFiles)
+			{
+				LOG(LOG_NO_INFO, "SECURITY: Loading of pending files is allowed, checking and loading pending non-master policy files (" <<
+						pendingURLPolicyFiles[url.getHostname()].size() << ")");
+				std::vector<URLPolicyFile*>::iterator i = pendingURLPolicyFiles[url.getHostname()].begin();
+				while(i != pendingURLPolicyFiles[url.getHostname()].end())
+				{
+					//NOTE: load() will change pendingURLPolicyFiles (it will move the policy file to the loaded list)
+					(*i)->load();
+					if((*i)->allowsAccessFrom(sys->getOrigin(), url))
+					{
+						LOG(LOG_NO_INFO, "SECURITY: ALLOWED: Pending non-master policy file allowed access");
+						return ALLOWED;
+					}
+				}
+			}
+			else
+			{
+				LOG(LOG_NO_INFO, "SECURITY: Loading of pending files is NOT allowed or there are no pending files");
 			}
 		}
 	}
+	else
+	{
+		LOG(LOG_NO_INFO, "SECURITY: Master policy file isn't loaded");
+	}
 
+	LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: No policy file explicitly allowed access");
 	return DISALLOWED_CROSSDOMAIN_POLICY;
 }
 
-PolicyFile* SecurityManager::addPolicyFile(const tiny_string& url)
+PolicyFile* SecurityManager::addPolicyFile(const URLInfo& url)
 {
-	PolicyFile* file = new PolicyFile(url);
+	LOG(LOG_NO_INFO, "SECURITY: Trying to add policy file, classifying URL: " << url);
+	if(url.getProtocol() == "http" || url.getProtocol() == "https" || url.getProtocol() == "ftp")
+	{
+		LOG(LOG_NO_INFO, "SECURITY: Classified policy file URL, policy file type = URL");
+		return addURLPolicyFile(url);
+	}
+	else if(url.getProtocol() == "xmlsocket")
+	{
+		LOG(LOG_NO_INFO, "SECURITY: Classified policy file URL, policy file type = SOCKET");
+		LOG(LOG_NOT_IMPLEMENTED, "SECURITY: SocketPolicFile not implemented yet!");
+		//return addSocketPolicyFile(url);
+		return NULL;
+	}
+	else
+	{
+		LOG(LOG_NO_INFO, "SECURITY: Couldn't classify policy file URL, return NULL");
+		return NULL;
+	}
+}
+
+URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
+{
+	LOG(LOG_NO_INFO, "SECURITY: Trying to add URL policy file: " << url);
+	URLPolicyFile* file = new URLPolicyFile(url);
 	if(file->isValid())
-		policyFiles.push_back(file);
+	{
+		LOG(LOG_NO_INFO, "SECURITY: URL policy file is valid, adding to URL policy file list");
+		//Policy files get added to pending files list
+		pendingURLPolicyFiles[url.getHostname()].push_back(file);
+	}
 	return file;
 }
 
-PolicyFile* SecurityManager::getPolicyFileByURL(const URLInfo& url) const
+URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
 {
-	PolicyFile* file;
-	for(std::vector<PolicyFile*>::const_iterator i = policyFiles.begin(); 
-			i != policyFiles.end(); ++i)
+	URLPolicyFile* file;
+	LOG(LOG_NO_INFO, "SECURITY: Searching for URL policy file in lists, at url:\n" << url);
+
+	LOG(LOG_NO_INFO, "SECURITY: Searching for URL policy file in loaded list");
+	std::vector<URLPolicyFile*> vec;
+	//Check the loaded URL policy files first
+	if(loadedURLPolicyFiles.count(url.getHostname()) == 1)
 	{
-		file = (*i);
-		if(file->getURL() == url)
-			return file;
+		LOG(LOG_NO_INFO, "SECURITY: URL policy file domain has entry in loaded list");
+		vec = loadedURLPolicyFiles[url.getHostname()];
+		std::vector<URLPolicyFile*>::const_iterator i = vec.begin();
+		for(;i != vec.end(); ++i)
+		{
+			file = (*i);
+			if(file->getURL() == url)
+			{
+				LOG(LOG_NO_INFO, "SECURITY: URL policy file found in loaded list");
+				return file;
+			}
+		}
 	}
+	LOG(LOG_NO_INFO, "SECURITY: Searching for URL policy file in pending list");
+	//Check the pending URL policy files next
+	if(pendingURLPolicyFiles.count(url.getHostname()) == 1)
+	{
+		LOG(LOG_NO_INFO, "SECURITY: URL policy file domain has entry in pending list");
+		vec = pendingURLPolicyFiles[url.getHostname()];
+		std::vector<URLPolicyFile*>::const_iterator i = vec.begin();
+		for(;i != vec.end(); ++i)
+		{
+			file = (*i);
+			if(file->getURL() == url)
+			{
+				LOG(LOG_NO_INFO, "SECURITY: URL policy file found in pending list");
+				return file;
+			}
+		}
+	}
+	LOG(LOG_NO_INFO, "SECURITY: No such URL policy file found in lists");
 	return NULL;
 }
 
-PolicyFile::PolicyFile(const tiny_string& _url):
-	url(_url),type(GENERIC),valid(url.isValid()),ignore(false),
+void SecurityManager::markPolicyFileLoaded(const URLPolicyFile* file)
+{
+	if(pendingURLPolicyFiles.count(file->getURL().getHostname()) == 1)
+	{
+		std::vector<URLPolicyFile*>::iterator i = pendingURLPolicyFiles[file->getURL().getHostname()].begin();
+		for(;i != pendingURLPolicyFiles[file->getURL().getHostname()].end(); ++i)
+		{
+			if((*i) == file)
+			{
+				loadedURLPolicyFiles[file->getURL().getHostname()].push_back((*i));
+				pendingURLPolicyFiles[file->getURL().getHostname()].erase(i);
+				break;
+			}
+		}
+	}
+}
+
+PolicyFile::PolicyFile(URLInfo _url, TYPE _type):
+	url(_url),type(_type),valid(false),ignore(false),
 	master(false),loaded(false),siteControl(NULL)
 {
-	if(url.getProtocol() == "http")
-		type = HTTP;
-	else if(url.getProtocol() == "https")
-		type = HTTPS;
-	else if(url.getProtocol() == "ftp")
-		type = FTP;
-	
-	if((type == HTTP || type == HTTPS || type == FTP) || url.getPath() == "/crossdomain.xml")
-		master = true;
-
-	//TODO: support other types of policy files
-	//Socket policy files don't use an URL, but send a <policy-file-request/> to xmlsocket://domain:843
 }
 PolicyFile::~PolicyFile()
 {
 	for(std::vector<PolicyAllowAccessFrom*>::iterator i = allowAccessFrom.begin(); 
 			i != allowAccessFrom.end(); ++i)
 		delete (*i);
+	allowAccessFrom.clear();
+}
+
+URLPolicyFile::URLPolicyFile(const URLInfo& _url):
+	PolicyFile(_url, URL)
+{
+	if(url.isValid())
+		valid = true;
+
+	if(url.getProtocol() == "http")
+		subtype = HTTP;
+	else if(url.getProtocol() == "https")
+		subtype = HTTPS;
+	else if(url.getProtocol() == "ftp")
+		subtype = FTP;
+	
+	if((subtype == HTTP || subtype == HTTPS || subtype == FTP) && url.getPath() == "/crossdomain.xml")
+	{
+		master = true;
+	}
+}
+URLPolicyFile::~URLPolicyFile()
+{
 	for(std::vector<PolicyAllowHTTPRequestHeadersFrom*>::iterator i = allowHTTPRequestHeadersFrom.begin();
 			i != allowHTTPRequestHeadersFrom.end(); ++i)
 		delete (*i);
+	allowHTTPRequestHeadersFrom.clear();
 }
 
-PolicyFile* PolicyFile::getMasterPolicyFile()
+URLPolicyFile* URLPolicyFile::getMasterPolicyFile()
 {
-	//TODO: handle FTP, SOCKET policy files
-	if(isMaster() && isValid()) return this;
-	PolicyFile* file = sys->securityManager->getPolicyFileByURL(url.goToURL("/crossdomain.xml"));
+	if(isMaster())
+		return this;
+
+	URLPolicyFile* file = sys->securityManager->getURLPolicyFileByURL(url.goToURL("/crossdomain.xml"));
 	if(file == NULL)
 	{
-		file = sys->securityManager->addPolicyFile(url.goToURL("/crossdomain.xml"));
+		file = sys->securityManager->addURLPolicyFile(url.goToURL("/crossdomain.xml"));
 	}
 	return file;
 }
 
 //TODO: support download timeout handling
-void PolicyFile::load()
+void URLPolicyFile::load()
 {
-	//Invalid PolicyFile, ignore this call
+	//Invalid URLPolicyFile, ignore this call
 	if(!isValid()) return;
 	//Already loaded, no action needed
 	if(isLoaded()) return;
 	//We only try loading once, if something goes wrong, valid will be set to 'invalid'
 	loaded = true;
+	//Move this policy file to the loaded list in securityManager
+	sys->securityManager->markPolicyFileLoaded(this);
 
 	LOG(LOG_NO_INFO, "Loading cross domain policy file: " << url.getParsedURL());
 
 	//Check if this file is allowed/ignored by the master policy file
 	if(!isMaster())
 	{
-		PolicyFile* master = getMasterPolicyFile();
+		URLPolicyFile* master = getMasterPolicyFile();
 		//Load master policy file if not loaded yet
 		master->load();
 		//Master policy file found and valid and has a site-control entry
@@ -193,7 +342,7 @@ void PolicyFile::load()
 				return;
 			}
 			//Only for FTP: by-ftp-filename
-			else if(type == FTP && permittedPolicies == PolicySiteControl::BY_FTP_FILENAME && url.getPathFile() != "crossdomain.xml")
+			else if(subtype == FTP && permittedPolicies == PolicySiteControl::BY_FTP_FILENAME && url.getPathFile() != "crossdomain.xml")
 			{
 				ignore = true;
 				return;
@@ -224,100 +373,55 @@ void PolicyFile::load()
 		LOG(LOG_NO_INFO, "Loaded policy file: length: " << downloader->getLength() << "B\n" << strbuf);
 		//DEBUGGING: end
 		
-		xmlpp::TextReader xml(buf, downloader->getLength());
-		//Ease-of-use variables
-		std::string tagName;
-		std::string attrValue;
-		int attrCount;
-		std::string domain;
-		std::string toPorts;
-		std::string headers;
-		bool secure;
-		bool secureSpecified;
-		std::string fingerprint;
-		std::string fingerprintAlgorithm;
-		while(xml.read())
+		CrossDomainPolicy::POLICYFILESUBTYPE parserSubtype;
+		if(subtype == HTTP)
+			parserSubtype = CrossDomainPolicy::HTTP;
+		else if(subtype == HTTPS)
+			parserSubtype = CrossDomainPolicy::HTTPS;
+		else if(subtype == FTP)
+			parserSubtype = CrossDomainPolicy::FTP;
+		CrossDomainPolicy parser(buf, downloader->getLength(), CrossDomainPolicy::URL, parserSubtype, isMaster());
+		CrossDomainPolicy::ELEMENTTYPE elementType = parser.getNextElement();
+		while(elementType != CrossDomainPolicy::END_OF_FILE && elementType != CrossDomainPolicy::INVALID_FILE)
 		{
-			tagName = xml.get_name();
-			//We only handle elements
-			if(xml.get_node_type() != xmlpp::TextReader::Element)
-				continue;
-
-			//Some reasons for marking this file as invalid (extraneous content)
-			if(xml.get_depth() > 1 || xml.has_value() || (xml.get_depth() == 0 && tagName != "cross-domain-policy"))
+			if(elementType == CrossDomainPolicy::SITE_CONTROL)
 			{
-				valid = false;
-				break;
+				siteControl = new PolicySiteControl(this, parser.getPermittedCrossDomainPolicies());
+				//No more parsing is needed if this site-control entry specifies that no policy files are allowed
+				if(isMaster() && siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
+					break;
+			}
+			else if(elementType == CrossDomainPolicy::ALLOW_ACCESS_FROM)
+			{
+				//URL policy files don't use to-ports
+				allowAccessFrom.push_back(new PolicyAllowAccessFrom(this, parser.getDomain(), "", parser.getSecure(), parser.getSecureSpecified()));
+			}
+			else if(elementType == CrossDomainPolicy::ALLOW_HTTP_REQUEST_HEADERS_FROM)
+			{
+				allowHTTPRequestHeadersFrom.push_back(new PolicyAllowHTTPRequestHeadersFrom(this, 
+							parser.getDomain(), parser.getHeaders(), parser.getSecure(), parser.getSecureSpecified()));
 			}
 
-			if(xml.get_depth() == 0 && tagName == "cross-domain-policy")
-				continue;
-
-			//We are inside the cross-domain-policy tag so lets handle elements.
-			attrCount = xml.get_attribute_count();
-			//Handle the first site-control element, if this is a master file and if the element has attributes
-			if(tagName == "site-control" && siteControl == NULL && isMaster() && attrCount == 1)
-			{
-				attrValue = xml.get_attribute("permitted-cross-domain-policies");
-				//Find the required attribute and set the siteControl variable
-				if(attrValue != "")
-				{
-					siteControl = new PolicySiteControl(this, attrValue);
-					//No more parsing is needed if this site-control entry specifies that no policy files are allowed
-					if(isMaster() && siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
-						break;
-				}
-			}
-			//Handle the allow-access-from element if the element has attributes
-			else if(tagName == "allow-access-from" && xml.get_attribute_count() >= 1 && attrCount <= 3)
-			{
-				domain = xml.get_attribute("domain");
-				toPorts = xml.get_attribute("to-ports");
-				secure = false;
-				secureSpecified = false;
-				if(xml.get_attribute("secure") == "0")
-				{
-					secure = false;
-					secureSpecified = true;
-				}
-				else if(xml.get_attribute("secure") == "1")
-				{
-					secure = true;
-					secureSpecified = true;
-				}
-				//We found the required attribute, now lets add the object
-				if(domain != "" && (type == HTTP || type == HTTPS))
-					allowAccessFrom.push_back(new PolicyAllowAccessFrom(this, domain, toPorts, secure, secureSpecified));
-				else if(domain != "" && toPorts != "" && type == SOCKET)
-					allowAccessFrom.push_back(new PolicyAllowAccessFrom(this, domain, toPorts, secure, secureSpecified));
-			}
-			//Handle the allow-http-request-headers-from element if the element has attributes and if the policy file type is HTTP(S)
-			else if(tagName == "allow-http-request-headers-from" && attrCount >= 2 && attrCount <= 3 && (type == HTTP || type == HTTPS))
-			{
-				domain = xml.get_attribute("domain");
-				headers = xml.get_attribute("headers");
-				secure = false;
-				secureSpecified = false;
-				if(xml.get_attribute("secure") == "0")
-				{
-					secure = false;
-					secureSpecified = true;
-				}
-				else if(xml.get_attribute("secure") == "1")
-				{
-					secure = true;
-					secureSpecified = true;
-				}
-				//We found the required attributes, now lets add the object
-				if(domain != "" && headers != "")
-					allowHTTPRequestHeadersFrom.push_back(new PolicyAllowHTTPRequestHeadersFrom(this, domain, headers, secure, secureSpecified));
-			}
+			elementType = parser.getNextElement();
 		}
-		if(siteControl == NULL) //Set siteControl to the default value
-			siteControl = new PolicySiteControl(this, "");
 
-		if(isMaster() && siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
-			ignore = true;
+		if(elementType == CrossDomainPolicy::INVALID_FILE)
+			valid = false;
+
+		if(isMaster())
+		{
+			//Set siteControl to the default value if it isn't set before and we are a master file
+			if(siteControl == NULL)
+				siteControl = new PolicySiteControl(this, "");
+
+			//Ignore this file if the site control policy is "none"
+			if(siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
+				ignore = true;
+			if((subtype == HTTP || subtype == HTTPS) && siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::BY_FTP_FILENAME)
+				valid = false;
+			else if(subtype == FTP && siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::BY_CONTENT_TYPE)
+				valid = false;
+		}
 	}
 	else
 	{
@@ -327,14 +431,19 @@ void PolicyFile::load()
 	sys->downloadManager->destroy(downloader);
 }
 
-//TODO: support SOCKET specific method
-bool PolicyFile::allowsAccessFrom(const URLInfo& u, const URLInfo& to)
+bool URLPolicyFile::allowsAccessFrom(const URLInfo& u, const URLInfo& to)
 {
 	//This policy file doesn't apply to the given URL
 	if(!isMaster() && !to.isSubOf(url))
 		return false;
 
+	//Check if the file is invalid or ignored even before loading
+	if(!isValid() || isIgnored())
+		return false;
+
 	load();
+
+	//Check if the file is invalid or ignored after loading
 	if(!isValid() || isIgnored())
 		return false;
 
@@ -350,10 +459,10 @@ bool PolicyFile::allowsAccessFrom(const URLInfo& u, const URLInfo& to)
 	return false;
 }
 
-bool PolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo& to, const tiny_string& header)
+bool URLPolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo& to, const tiny_string& header)
 {
 	//Only used for HTTP(S)
-	if(type != HTTP && type != HTTPS) return true;
+	if(subtype != HTTP && subtype != HTTPS) return true;
 
 	//This policy file doesn't apply to the given URL
 	if(!isMaster() && !to.isSubOf(url))
@@ -388,7 +497,7 @@ PolicySiteControl::PolicySiteControl(PolicyFile* _file, const std::string _permi
 		permittedCrossDomainPolicies = MASTER_ONLY;
 	else if(_permittedCrossDomainPolicies == "none")
 		permittedCrossDomainPolicies = NONE;
-	else if(file->getType() == PolicyFile::SOCKET) //Default for SOCKET
+	else if(file->getType() == URLPolicyFile::SOCKET) //Default for SOCKET
 		permittedCrossDomainPolicies = ALL;
 	else //Default for everything except SOCKET
 		permittedCrossDomainPolicies = MASTER_ONLY;
@@ -400,7 +509,7 @@ PolicyAllowAccessFrom::PolicyAllowAccessFrom(PolicyFile* _file, const std::strin
 {
 	if(!secureSpecified)
 	{
-		if(file->getType() == PolicyFile::HTTPS)
+		if(file->getType() == PolicyFile::URL && dynamic_cast<URLPolicyFile*>(file)->getSubtype() == URLPolicyFile::HTTPS)
 			secure = true;
 		if(file->getType() == PolicyFile::SOCKET)
 			secure = false;
@@ -465,6 +574,7 @@ PolicyAllowAccessFrom::~PolicyAllowAccessFrom()
 {
 	for(std::vector<PortRange*>::iterator i = toPorts.begin(); i != toPorts.end(); ++i)
 		delete (*i);
+	toPorts.clear();
 }
 
 bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url) const
@@ -476,7 +586,9 @@ bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url) const
 		return false;
 
 	//Check if the requesting URL is secure, if needed
-	if(file->getType() == PolicyFile::HTTPS && secure && url.getProtocol() != "https")
+	if(file->getType() == PolicyFile::URL && 
+			dynamic_cast<URLPolicyFile*>(file)->getSubtype() == URLPolicyFile::HTTPS && 
+			secure && url.getProtocol() != "https")
 		return false;
 	
 	//TODO: add check for to-ports and secure for SOCKET type policy files
@@ -484,13 +596,13 @@ bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url) const
 	return true;
 }
 
-PolicyAllowHTTPRequestHeadersFrom::PolicyAllowHTTPRequestHeadersFrom(PolicyFile* _file, const std::string _domain, 
+PolicyAllowHTTPRequestHeadersFrom::PolicyAllowHTTPRequestHeadersFrom(URLPolicyFile* _file, const std::string _domain, 
 		const std::string _headers, bool _secure, bool secureSpecified):
 	file(_file),domain(_domain),secure(_secure)
 {
 	if(!secureSpecified)
 	{
-		if(file->getType() == PolicyFile::HTTPS)
+		if(file->getSubtype() == URLPolicyFile::HTTPS)
 			secure = true;
 	}
 	if(_headers.length() == 0 || _headers == "*")
@@ -515,11 +627,12 @@ PolicyAllowHTTPRequestHeadersFrom::~PolicyAllowHTTPRequestHeadersFrom()
 	for(std::vector<std::string*>::iterator i = headers.begin();
 			i != headers.end(); ++i)
 		delete (*i);
+	headers.clear();
 }
 
 bool PolicyAllowHTTPRequestHeadersFrom::allowsHTTPRequestHeaderFrom(const URLInfo& url, const tiny_string& header) const
 {
-	if(file->getType() != PolicyFile::HTTP && file->getType() != PolicyFile::HTTPS)
+	if(file->getSubtype() != URLPolicyFile::HTTP && file->getSubtype() != URLPolicyFile::HTTPS)
 		return false;
 
 	//TODO: handle default allowed request headers
@@ -540,7 +653,7 @@ bool PolicyAllowHTTPRequestHeadersFrom::allowsHTTPRequestHeaderFrom(const URLInf
 		return false;
 
 	//Check if the requesting URL is secure, if needed
-	if(file->getType() == PolicyFile::HTTPS && secure && url.getProtocol() != "https")
+	if(file->getSubtype() == URLPolicyFile::HTTPS && secure && url.getProtocol() != "https")
 		return false;
 	
 	return true;

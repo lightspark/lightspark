@@ -429,6 +429,7 @@ void NetStream::sinit(Class_base* c)
 	c->setGetterByQName("bytesTotal","",Class<IFunction>::getFunction(_getBytesTotal),true);
 	c->setGetterByQName("time","",Class<IFunction>::getFunction(_getTime),true);
 	c->setGetterByQName("currentFPS","",Class<IFunction>::getFunction(_getCurrentFPS),true);
+	c->setGetterByQName("client","",Class<IFunction>::getFunction(_getClient),true);
 	c->setSetterByQName("client","",Class<IFunction>::getFunction(_setClient),true);
 	c->setGetterByQName("checkPolicyFile","",Class<IFunction>::getFunction(_getCheckPolicyFile),true);
 	c->setSetterByQName("checkPolicyFile","",Class<IFunction>::getFunction(_setCheckPolicyFile),true);
@@ -436,6 +437,13 @@ void NetStream::sinit(Class_base* c)
 
 void NetStream::buildTraits(ASObject* o)
 {
+}
+
+ASFUNCTIONBODY(NetStream,_getClient)
+{
+	NetStream* th=Class<NetStream>::cast(obj);
+
+	return th->client;
 }
 
 ASFUNCTIONBODY(NetStream,_setClient)
@@ -453,8 +461,6 @@ ASFUNCTIONBODY(NetStream,_setClient)
 
 ASFUNCTIONBODY(NetStream,_getCheckPolicyFile)
 {
-	assert_and_throw(argslen == 1);
-	
 	NetStream* th=Class<NetStream>::cast(obj);
 
 	return abstract_b(th->checkPolicyFile);
@@ -467,6 +473,7 @@ ASFUNCTIONBODY(NetStream,_setCheckPolicyFile)
 	NetStream* th=Class<NetStream>::cast(obj);
 
 	th->checkPolicyFile = Boolean_concrete(args[0]);
+	LOG(LOG_NO_INFO, "setCheckPolicyFile called: " << th->checkPolicyFile);
 	return NULL;
 }
 
@@ -531,7 +538,10 @@ ASFUNCTIONBODY(NetStream,play)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
 				"not allowed to navigate up for local files");
 
-	if(th->checkPolicyFile && sys->securityManager->evaluateURL(th->url) != SecurityManager::ALLOWED)
+	//Not using checkPolicyFile because it seems this prevents youtube from working.
+	//Am I missing something here? Youtube doesn't seem to set checkPolicyFile to true NOR does it call loadPolicyFile.
+	//if(sys->securityManager->evaluateURL(th->url, th->checkPolicyFile) != SecurityManager::ALLOWED)
+	if(sys->securityManager->evaluateURL(th->url, true) != SecurityManager::ALLOWED)
 	{
 		//TODO: find correct way of handling this case
 		throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");

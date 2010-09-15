@@ -2317,11 +2317,6 @@ tiny_string ASError::toString(bool debugMsg)
 {
 	return message.len() > 0 ? message : name;
 }
-ASFUNCTIONBODY(ASError,_toString)
-{
-	ASError* th=static_cast<ASError*>(obj);
-	return Class<ASString>::getInstanceS(th->toString(false));
-}
 
 ASFUNCTIONBODY(ASError,_getErrorID)
 {

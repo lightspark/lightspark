@@ -268,6 +268,7 @@ SET(LIBSPARK_SOURCES
   backends/rendering.cpp
   backends/security.cpp
   backends/urlutils.cpp
+  parsing/crossdomainpolicy.cpp
   parsing/flv.cpp
   parsing/streams.cpp
   parsing/tags.cpp

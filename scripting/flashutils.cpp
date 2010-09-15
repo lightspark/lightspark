@@ -769,7 +769,7 @@ IntervalManager::~IntervalManager()
 {
 	//Run through all running intervals and remove their tickjob, delete their intervalRunner and erase their entry
 	std::map<uint32_t,IntervalRunner*>::iterator it = runners.begin();
-	for(; it != runners.end(); it++)
+	while(it != runners.end())
 	{
 		sys->removeJob((*it).second);
 		delete((*it).second);
@@ -817,7 +817,7 @@ uint32_t IntervalManager::getFreeID()
 {
 	//At the first run every currentID will be available. But eventually the currentID will wrap around.
 	//Thats why we need to check if the currentID isn't used yet
-	while(runners.find(currentID) != runners.end())
+	while(runners.count(currentID) != 0)
 		currentID++;
 	return currentID;
 }

@@ -372,21 +372,6 @@ void CairoRenderer::uploadFence()
 	delete this;
 }
 
-void CairoRenderer::recursiveApplyMatrix(cairo_t* cr, DisplayObject* o)
-{
-	if(o->parent)
-		recursiveApplyMatrix(cr, o->parent);
-	cairo_matrix_t mat;
-	const MATRIX& m=o->getMatrix();
-	mat.xx=m.ScaleX;
-	mat.xy=m.RotateSkew1;
-	mat.yx=m.RotateSkew0;
-	mat.yy=m.ScaleY;
-	mat.x0=m.TranslateX;
-	mat.y0=m.TranslateY;
-	cairo_transform(cr, &mat);
-}
-
 void CairoRenderer::execute()
 {
 	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, tex.width);
@@ -399,8 +384,14 @@ void CairoRenderer::execute()
 	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 	cairo_paint(cr);
 
-	cairo_translate(cr, xOffset*(-1.0f), yOffset*(-1.0f));
-	recursiveApplyMatrix(cr, obj);
+	cairo_matrix_t mat;
+	mat.xx=matrix.ScaleX;
+	mat.xy=matrix.RotateSkew1;
+	mat.yx=matrix.RotateSkew0;
+	mat.yy=matrix.ScaleY;
+	mat.x0=matrix.TranslateX-xOffset;
+	mat.y0=matrix.TranslateY-yOffset;
+	cairo_transform(cr, &mat);
 
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgba (cr, 0, 1, 0, 1);

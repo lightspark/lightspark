@@ -966,7 +966,7 @@ void DefineShapeTag::invalidate()
 {
 	allocateCacheTexture();
 	computeCached();
-	CairoRenderer* r=new CairoRenderer(cachedTex, cached, this, cachedTexX, cachedTexY);
+	CairoRenderer* r=new CairoRenderer(cachedTex, cached, getConcatenatedMatrix(), cachedTexX, cachedTexY);
 	sys->addJob(r);
 }
 

@@ -202,6 +202,33 @@ public:
 
 };
 
+/*template<class T>
+class Snapshot
+{
+friend class ShapshotReader<T>;
+friend class ShapshotWriter<T>;
+private:
+	T current[];
+public:
+	const T& operator&()
+	{
+		if(READ_ACQUIRE(flag))
+		return snapshot;
+	}
+};
+
+template<class T>
+class SnapshotReader
+{
+private:
+	const T& s;
+public:
+	SnapshotReader(const Snapshot<T>& _s):s(_s)
+	{
+		
+	}
+};*/
+
 };
 
 extern TLSDATA lightspark::IThreadJob* thisJob;

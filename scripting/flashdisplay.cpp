@@ -946,6 +946,14 @@ void DisplayObject::setMatrix(const lightspark::MATRIX& m)
 	pthread_spin_unlock(&MatrixSpinlock);
 }
 
+MATRIX DisplayObject::getConcatenatedMatrix() const
+{
+	if(parent)
+		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
+	else
+		return getMatrix();
+}
+
 MATRIX DisplayObject::getMatrix() const
 {
 	MATRIX ret;

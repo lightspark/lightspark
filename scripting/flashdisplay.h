@@ -68,6 +68,7 @@ protected:
 	uint32_t cachedTexHeight;
 	void defaultRender() const;
 	DisplayObject(const DisplayObject& d);
+	MATRIX getConcatenatedMatrix() const;
 public:
 	int Depth;
 	tiny_string name;

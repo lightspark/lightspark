@@ -1766,10 +1766,10 @@ ASObject* SyntheticFunction::call(ASObject* obj, ASObject* const* args, uint32_t
 					cc->code->seekg((uint32_t)exc.target);
 					cc->runtime_stack_clear();
 					cc->runtime_stack_push(obj);
-					assert_and_throw(cc->initialScopeStack<=cc->scope_stack.size());
-					for(uint32_t i=cc->initialScopeStack;i<cc->scope_stack.size();i++)
+					for(uint32_t i=0;i<cc->scope_stack.size();i++)
 						cc->scope_stack[i]->decRef();
-					cc->scope_stack.resize(cc->initialScopeStack);
+					cc->scope_stack.clear();
+					cc->initialScopeStack=0;
 					break;
 				}
 			}

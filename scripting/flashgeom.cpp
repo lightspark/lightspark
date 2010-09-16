@@ -773,6 +773,7 @@ void Matrix::sinit(Class_base* c)
 	c->setMethodByQName("invert","",Class<IFunction>::getFunction(invert),true);
 	c->setMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),true);
 	c->setMethodByQName("scale","",Class<IFunction>::getFunction(scale),true);
+	c->setMethodByQName("transformPoint","",Class<IFunction>::getFunction(transformPoint),true);
 	c->setMethodByQName("translate","",Class<IFunction>::getFunction(translate),true);
 }
 
@@ -1063,4 +1064,16 @@ ASFUNCTIONBODY(Matrix,createBox)
 	th->ty = tty;
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,transformPoint)
+{
+	assert_and_throw(argslen==1);
+	Matrix* th=static_cast<Matrix*>(obj);
+	Point* pt=static_cast<Point*>(args[0]);
+
+	number_t ttx = th->a * pt->getX() + th->c * pt->getY() + th->tx;
+	number_t tty = th->b * pt->getX() + th->d * pt->getY() + th->ty;
+
+	return Class<Point>::getInstanceS(ttx, tty);
 }

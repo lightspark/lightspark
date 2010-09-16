@@ -146,7 +146,7 @@ public:
 	ASFUNCTION(invert);
 	ASFUNCTION(rotate);
 	ASFUNCTION(scale);
-	//ASFUNCTION(transformPoint);
+	ASFUNCTION(transformPoint);
 	ASFUNCTION(translate);
 	
 	//Properties

@@ -1121,7 +1121,6 @@ ASFUNCTIONBODY(Vector3D,_constructor)
 	
 	Vector3D * th=static_cast<Vector3D*>(obj);
 	
-	//Identity matrix
 	th->w = 0;
 	th->x = 0;
 	th->y = 0;

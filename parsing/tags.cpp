@@ -900,12 +900,6 @@ DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in):Dicti
 		ignore(in,dest-in.tellg());
 }
 
-std::ostream& operator<<(std::ostream& s, const Vector2& p)
-{
-	s << "{ "<< p.x << ',' << p.y << " }" << std::endl;
-	return s;
-}
-
 ASObject* DefineMorphShapeTag::instance() const
 {
 	DefineMorphShapeTag* ret=new DefineMorphShapeTag(*this);
@@ -953,20 +947,15 @@ void DefineMorphShapeTag::Render()
 
 void DefineShapeTag::computeCached()
 {
-	if(cached.size()==0)
-	{
-		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cached);
-
-		for(unsigned int i=0;i<cached.size();i++)
-			cached[i].BuildFromEdges(&Shapes.FillStyles.FillStyles);
-	}
+	if(cachedTokens.size()==0)
+		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cachedTokens);
 }
 
 void DefineShapeTag::invalidate()
 {
 	allocateCacheTexture();
 	computeCached();
-	CairoRenderer* r=new CairoRenderer(cachedTex, cached, getConcatenatedMatrix(), cachedTexX, cachedTexY);
+	CairoRenderer* r=new CairoRenderer(cachedTex, cachedTokens, getConcatenatedMatrix(), cachedTexX, cachedTexY);
 	sys->addJob(r);
 }
 
@@ -1068,7 +1057,7 @@ Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes */
 
-void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& shapeRecords, vector<GeomShape>& shapes)
+void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& shapeRecords, vector<GeomToken>& tokens)
 {
 	int startX=0;
 	int startY=0;
@@ -1090,9 +1079,9 @@ void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& sha
 				Vector2 p2(startX,startY);
 				
 				if(color0)
-					shapesBuilder.extendOutlineForColor(color0,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
 				if(color1)
-					shapesBuilder.extendOutlineForColor(color1,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
 			}
 			else
 			{
@@ -1106,13 +1095,13 @@ void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& sha
 
 				if(color0)
 				{
-					shapesBuilder.extendOutlineForColor(color0,p1,p2);
-					shapesBuilder.extendOutlineForColor(color0,p2,p3);
+					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(color0,p2,p3);
 				}
 				if(color1)
 				{
-					shapesBuilder.extendOutlineForColor(color1,p1,p2);
-					shapesBuilder.extendOutlineForColor(color1,p2,p3);
+					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(color1,p2,p3);
 				}
 			}
 		}
@@ -1139,16 +1128,16 @@ void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& sha
 		}
 	}
 
-	shapesBuilder.outputShapes(shapes);
+	shapesBuilder.outputTokens(tokens);
 }
 
 void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 {
-	SHAPE& shape=GlyphShapeTable[glyph];
-	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
+//	SHAPE& shape=GlyphShapeTable[glyph];
+//	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
-	for(unsigned int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(NULL);
+/*	for(unsigned int i=0;i<s.size();i++)
+		s[i].BuildFromEdges(NULL);*/
 
 	//Should check fill state
 
@@ -1184,11 +1173,11 @@ void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 
 void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 {
-	SHAPE& shape=GlyphShapeTable[glyph];
-	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
+	//SHAPE& shape=GlyphShapeTable[glyph];
+	//FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
-	for(unsigned int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(NULL);
+	/*for(unsigned int i=0;i<s.size();i++)
+		s[i].BuildFromEdges(NULL);*/
 
 	//Should check fill state
 
@@ -1224,11 +1213,11 @@ void DefineFont2Tag::genGlyphShape(vector<GeomShape>& s, int glyph)
 
 void DefineFontTag::genGlyphShape(vector<GeomShape>& s,int glyph)
 {
-	SHAPE& shape=GlyphShapeTable[glyph];
+	/*SHAPE& shape=GlyphShapeTable[glyph];
 	FromShaperecordListToShapeVector(shape.ShapeRecords,s);
 
 	for(unsigned int i=0;i<s.size();i++)
-		s[i].BuildFromEdges(NULL);
+		s[i].BuildFromEdges(NULL);*/
 
 	//Should check fill state
 }

@@ -384,6 +384,7 @@ void CairoRenderer::execute()
 	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 	cairo_paint(cr);
 
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 	cairo_matrix_t mat;
 	mat.xx=matrix.ScaleX;
 	mat.xy=matrix.RotateSkew1;
@@ -394,20 +395,49 @@ void CairoRenderer::execute()
 	cairo_transform(cr, &mat);
 
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-	cairo_set_source_rgba (cr, 0, 1, 0, 1);
 	cairo_scale(cr, 0.05, 0.05);
-	for(uint32_t i=0;i<shapes.size();i++)
+	bool empty=true;
+	for(uint32_t i=0;i<tokens.size();i++)
 	{
-		for(uint32_t k=0;k<shapes[i].outlines.size();k++)
+		switch(tokens[i].type)
 		{
-			if(shapes[i].outlines[k].empty())
-				continue;
-			cairo_move_to(cr, shapes[i].outlines[k][0].x, shapes[i].outlines[k][0].y);
-			for(uint32_t j=1;j<shapes[i].outlines[k].size();j++)
-				cairo_line_to(cr, shapes[i].outlines[k][j].x, shapes[i].outlines[k][j].y);
+			case STRAIGHT:
+				cairo_line_to(cr, tokens[i].p1.x, tokens[i].p1.y);
+				empty=false;
+				break;
+			case MOVE:
+				cairo_move_to(cr, tokens[i].p1.x, tokens[i].p1.y);
+				break;	
+			case SET_FILL:
+				if(!empty)
+				{
+					cairo_fill(cr);
+					empty=true;
+				}
+				if(tokens[i].color==0)
+					cairo_set_source_rgba (cr, 1, 0, 0, 1);
+				else if(tokens[i].color==1)
+					cairo_set_source_rgba (cr, 0, 1, 0, 1);
+				else if(tokens[i].color==2)
+					cairo_set_source_rgba (cr, 0, 0, 1, 1);
+				else if(tokens[i].color==3)
+					cairo_set_source_rgba (cr, 0, 1, 1, 1);
+				else if(tokens[i].color==4)
+					cairo_set_source_rgba (cr, 1, 1, 0, 1);
+				else if(tokens[i].color==5)
+					cairo_set_source_rgba (cr, 1, 0, 1, 1);
+				else if(tokens[i].color==6)
+					cairo_set_source_rgba (cr, 0, 0, 0, 1);
+				else
+					cairo_set_source_rgba (cr, 0, 0, 0, 1);
+				break;
+			default:
+				::abort();
 		}
 	}
-	cairo_stroke(cr);
+
+	if(!empty)
+		cairo_fill(cr);
 
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);

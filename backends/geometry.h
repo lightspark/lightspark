@@ -45,6 +45,18 @@ public:
 	int dot(const Vector2& r) const { return x*r.x+y*r.y;}
 };
 
+enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE, MOVE, SET_FILL, SET_STROKE };
+
+class GeomToken
+{
+public:
+	GEOM_TOKEN_TYPE type;
+	Vector2 p1;
+	unsigned int color;
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p){}
+	GeomToken(GEOM_TOKEN_TYPE _t, unsigned int _c):type(_t),p1(0,0),color(_c){}
+};
+
 #include "packed_begin.h"
 struct arrayElem
 {
@@ -89,12 +101,18 @@ public:
 class ShapesBuilder
 {
 private:
-	std::map< unsigned int, std::vector< std::vector<Vector2> > > shapesMap;
+	std::map< Vector2, unsigned int > verticesMap;
+	std::map< unsigned int, std::vector< std::vector<unsigned int> > > filledShapesMap;
+	std::map< unsigned int, std::vector< std::vector<unsigned int> > > strokeShapesMap;
 	void joinOutlines();
-	static bool isOutlineEmpty(const std::vector<Vector2>& outline);
+	static bool isOutlineEmpty(const std::vector<unsigned int>& outline);
+	static void extendOutlineForColor(std::map< unsigned int, std::vector< std::vector<Vector2> > >& map);
+	const Vector2& getVertex(unsigned int index);
 public:
-	void extendOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2);
+	void extendFilledOutlineForColor(unsigned int fillColor, const Vector2& v1, const Vector2& v2);
+	void extendStrokeOutlineForColor(unsigned int stroke, const Vector2& v1, const Vector2& v2);
 	void outputShapes(std::vector<GeomShape>& shapes);
+	void outputTokens(std::vector<GeomToken>& tokens);
 	void clear();
 };
 
@@ -104,6 +122,8 @@ public:
 	GlyphShape(const GeomShape& g, int i):GeomShape(g),id(i){}
 	int id;
 };
+
+std::ostream& operator<<(std::ostream& s, const Vector2& p);
 
 };
 

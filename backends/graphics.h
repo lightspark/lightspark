@@ -26,6 +26,7 @@
 #include "swftypes.h"
 #include "threading.h"
 #include <cairo.h>
+#include "backends/geometry.h"
 
 namespace lightspark
 {
@@ -180,14 +181,14 @@ protected:
 	~CairoRenderer(){delete[] surface;}
 private:
 	const TextureChunk& tex;
-	const std::vector<GeomShape>& shapes;
+	const std::vector<GeomToken>& tokens;
 	MATRIX matrix;
 	uint32_t xOffset;
 	uint32_t yOffset;
 	uint8_t* surface;
 public:
-	CairoRenderer(const TextureChunk& _t, const std::vector<GeomShape>& _s, const MATRIX& _m, uint32_t _x, uint32_t _y):
-		tex(_t),shapes(_s),matrix(_m),xOffset(_x),yOffset(_y),surface(NULL){}
+	CairoRenderer(const TextureChunk& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, uint32_t _x, uint32_t _y):
+		tex(_t),tokens(_g),matrix(_m),xOffset(_x),yOffset(_y),surface(NULL){}
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h);
 	void upload(uint8_t* data, uint32_t w, uint32_t h);

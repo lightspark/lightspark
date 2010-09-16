@@ -2124,7 +2124,7 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	if(th->styles.size())
 	{
 		Locker locker(th->builderMutex);
-		th->builder.extendOutlineForColor(th->styles.size(),Vector2(th->curX,th->curY),Vector2(x,y));
+		th->builder.extendFilledOutlineForColor(th->styles.size(),Vector2(th->curX,th->curY),Vector2(x,y));
 		th->validGeometry=false;
 	}
 
@@ -2152,10 +2152,10 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	if(th->styles.size())
 	{
 		Locker locker(th->builderMutex);
-		th->builder.extendOutlineForColor(th->styles.size(),a,b);
-		th->builder.extendOutlineForColor(th->styles.size(),b,c);
-		th->builder.extendOutlineForColor(th->styles.size(),c,d);
-		th->builder.extendOutlineForColor(th->styles.size(),d,a);
+		th->builder.extendFilledOutlineForColor(th->styles.size(),a,b);
+		th->builder.extendFilledOutlineForColor(th->styles.size(),b,c);
+		th->builder.extendFilledOutlineForColor(th->styles.size(),c,d);
+		th->builder.extendFilledOutlineForColor(th->styles.size(),d,a);
 		th->validGeometry=false;
 	}
 	return NULL;
@@ -2180,10 +2180,10 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	if(th->styles.size())
 	{
 		Locker locker(th->builderMutex);
-		th->builder.extendOutlineForColor(th->styles.size(),a,b);
-		th->builder.extendOutlineForColor(th->styles.size(),b,c);
-		th->builder.extendOutlineForColor(th->styles.size(),c,d);
-		th->builder.extendOutlineForColor(th->styles.size(),d,a);
+		th->builder.extendFilledOutlineForColor(th->styles.size(),a,b);
+		th->builder.extendFilledOutlineForColor(th->styles.size(),b,c);
+		th->builder.extendFilledOutlineForColor(th->styles.size(),c,d);
+		th->builder.extendFilledOutlineForColor(th->styles.size(),d,a);
 		th->validGeometry=false;
 	}
 	return NULL;

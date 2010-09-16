@@ -139,7 +139,7 @@ public:
 	//Methods
 	ASFUNCTION(clone);
 	ASFUNCTION(concat);
-	//ASFUNCTION(createBox);
+	ASFUNCTION(createBox);
 	//ASFUNCTION(createGradientBox);
 	//ASFUNCTION(deltaTransformPoint);
 	ASFUNCTION(identity);

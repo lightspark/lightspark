@@ -768,6 +768,7 @@ void Matrix::sinit(Class_base* c)
 	//Methods 
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
+	c->setMethodByQName("createBox","",Class<IFunction>::getFunction(createBox),true);
 	c->setMethodByQName("identity","",Class<IFunction>::getFunction(identity),true);
 	c->setMethodByQName("invert","",Class<IFunction>::getFunction(invert),true);
 	c->setMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),true);
@@ -1029,5 +1030,37 @@ ASFUNCTIONBODY(Matrix,scale)
 	th->c *= sy;
 	th->d *= sy;
 		
+	return NULL;
+}
+
+ASFUNCTIONBODY(Matrix,createBox)
+{
+	assert_and_throw(argslen>=2 && argslen <= 5);
+	Matrix* th=static_cast<Matrix*>(obj);
+	number_t scaleX = args[0]->toNumber();
+	number_t scaleY = args[1]->toNumber();
+	number_t angle = 0;
+	if ( argslen > 2 ) angle = args[2]->toNumber();
+	number_t translateX = 0;
+	if ( argslen > 3 ) translateX = args[3]->toNumber();
+	number_t translateY = 0;
+	if ( argslen > 4 ) translateY = args[4]->toNumber();
+
+	number_t ta, tb, tc, td, ttx, tty;
+
+	ta = scaleX * cos(angle);
+	tb = scaleX * sin(angle);
+	tc = -scaleY * sin(angle);
+	td = scaleY * cos(angle);
+	ttx = translateX * scaleX * cos(angle) - translateY * scaleY * sin(angle);
+	tty = translateX * scaleX * sin(angle) + translateY * scaleY * cos(angle);
+
+	th->a = ta;
+	th->b = tb;
+	th->c = tc;
+	th->d = td;
+	th->tx = ttx;
+	th->ty = tty;
+
 	return NULL;
 }

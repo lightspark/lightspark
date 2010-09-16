@@ -123,7 +123,6 @@ public:
 	static void buildTraits(ASObject* o);
 };
 
-
 class Matrix: public ASObject
 {
 public:
@@ -162,6 +161,35 @@ public:
 	ASFUNCTION(_set_d);
 	ASFUNCTION(_set_tx);
 	ASFUNCTION(_set_ty);
+};
+
+class Vector3D: public ASObject
+{
+public:
+	number_t w, x, y, z;
+	static void sinit(Class_base* c);
+	static void buildTraits(ASObject* o);
+	
+	//Overloads
+	tiny_string toString(bool debugMsg=false);
+	
+	ASFUNCTION(_constructor);
+	
+	//Methods
+	ASFUNCTION(clone);
+	
+	//Properties
+	ASFUNCTION(_get_w);
+	ASFUNCTION(_get_x);
+	ASFUNCTION(_get_y);
+	ASFUNCTION(_get_z);
+	ASFUNCTION(_get_length);
+	ASFUNCTION(_get_lengthSquared);
+
+	ASFUNCTION(_set_w);
+	ASFUNCTION(_set_x);
+	ASFUNCTION(_set_y);
+	ASFUNCTION(_set_z);
 };
 
 };

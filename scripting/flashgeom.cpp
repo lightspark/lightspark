@@ -29,6 +29,8 @@ SET_NAMESPACE("flash.geom");
 REGISTER_CLASS_NAME(Transform);
 REGISTER_CLASS_NAME(ColorTransform);
 REGISTER_CLASS_NAME(Point);
+//REGISTER_CLASS_NAME(Matrix);
+REGISTER_CLASS_NAME(Vector3D);
 REGISTER_CLASS_NAME2(lightspark::Rectangle,"Rectangle","flash.geom");
 
 void Rectangle::sinit(Class_base* c)
@@ -1089,4 +1091,159 @@ ASFUNCTIONBODY(Matrix,deltaTransformPoint)
 	number_t tty = th->b * pt->getX() + th->d * pt->getY();
 
 	return Class<Point>::getInstanceS(ttx, tty);
+}
+
+void Vector3D::sinit(Class_base* c)
+{
+	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+	
+	//Properties
+	c->setGetterByQName("w","",Class<IFunction>::getFunction(_get_w),true);
+	c->setGetterByQName("x","",Class<IFunction>::getFunction(_get_x),true);
+	c->setGetterByQName("y","",Class<IFunction>::getFunction(_get_y),true);
+	c->setGetterByQName("z","",Class<IFunction>::getFunction(_get_z),true);
+	c->setGetterByQName("length","",Class<IFunction>::getFunction(_get_length),true);
+	c->setGetterByQName("lengthSquared","",Class<IFunction>::getFunction(_get_lengthSquared),true);
+	
+	c->setSetterByQName("w","",Class<IFunction>::getFunction(_set_w),true);
+	c->setSetterByQName("x","",Class<IFunction>::getFunction(_set_x),true);
+	c->setSetterByQName("y","",Class<IFunction>::getFunction(_set_y),true);
+	c->setSetterByQName("z","",Class<IFunction>::getFunction(_set_z),true);
+	
+	//Methods 
+	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
+}
+
+ASFUNCTIONBODY(Vector3D,_constructor)
+{
+	assert_and_throw(argslen <= 4);
+	ASObject::_constructor(obj,NULL,0);
+	
+	Vector3D * th=static_cast<Vector3D*>(obj);
+	
+	//Identity matrix
+	th->w = 0;
+	th->x = 0;
+	th->y = 0;
+	th->z = 0;
+	
+	if (argslen >= 1)
+		th->x = args[0]->toNumber();
+	if (argslen >= 2)
+		th->y = args[1]->toNumber();
+	if (argslen >= 3)
+		th->z = args[2]->toNumber();
+	if (argslen == 4)
+		th->w = args[3]->toNumber();
+
+	return NULL;
+}
+
+void Vector3D::buildTraits(ASObject* o)
+{
+}
+
+tiny_string Vector3D::toString(bool debugMsg)
+{
+	assert_and_throw(implEnable);
+	
+	char buf[512];
+	snprintf(buf,512,"(x=%f, y=%f, z=%f)", x, y, z);
+	
+	return tiny_string(buf, true);
+}
+
+ASFUNCTIONBODY(Vector3D,_get_w)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->w);
+}
+
+ASFUNCTIONBODY(Vector3D,_set_w)
+{
+	assert_and_throw(argslen==1);
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	th->w = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,_get_x)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->x);
+}
+
+ASFUNCTIONBODY(Vector3D,_set_x)
+{
+	assert_and_throw(argslen==1);
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	th->x = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,_get_y)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->y);
+}
+
+ASFUNCTIONBODY(Vector3D,_set_y)
+{
+	assert_and_throw(argslen==1);
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	th->y = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,_get_z)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->z);
+}
+
+ASFUNCTIONBODY(Vector3D,_set_z)
+{
+	assert_and_throw(argslen==1);
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	th->z = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,_get_length)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
+}
+
+ASFUNCTIONBODY(Vector3D,_get_lengthSquared)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	return abstract_d(th->x * th->x + th->y * th->y + th->z * th->z);
+}
+
+ASFUNCTIONBODY(Vector3D,clone)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* ret=Class<Vector3D>::getInstanceS();
+
+	ret->w = th->w;
+	ret->x = th->x;
+	ret->y = th->y;
+	ret->z = th->z;
+
+	return ret;
 }

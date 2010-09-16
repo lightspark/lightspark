@@ -141,7 +141,7 @@ public:
 	ASFUNCTION(concat);
 	ASFUNCTION(createBox);
 	//ASFUNCTION(createGradientBox);
-	//ASFUNCTION(deltaTransformPoint);
+	ASFUNCTION(deltaTransformPoint);
 	ASFUNCTION(identity);
 	ASFUNCTION(invert);
 	ASFUNCTION(rotate);

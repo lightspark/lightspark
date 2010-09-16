@@ -769,6 +769,7 @@ void Matrix::sinit(Class_base* c)
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
 	c->setMethodByQName("createBox","",Class<IFunction>::getFunction(createBox),true);
+	c->setMethodByQName("deltaTransformPoint","",Class<IFunction>::getFunction(deltaTransformPoint),true);
 	c->setMethodByQName("identity","",Class<IFunction>::getFunction(identity),true);
 	c->setMethodByQName("invert","",Class<IFunction>::getFunction(invert),true);
 	c->setMethodByQName("rotate","",Class<IFunction>::getFunction(rotate),true);
@@ -1074,6 +1075,18 @@ ASFUNCTIONBODY(Matrix,transformPoint)
 
 	number_t ttx = th->a * pt->getX() + th->c * pt->getY() + th->tx;
 	number_t tty = th->b * pt->getX() + th->d * pt->getY() + th->ty;
+
+	return Class<Point>::getInstanceS(ttx, tty);
+}
+
+ASFUNCTIONBODY(Matrix,deltaTransformPoint)
+{
+	assert_and_throw(argslen==1);
+	Matrix* th=static_cast<Matrix*>(obj);
+	Point* pt=static_cast<Point*>(args[0]);
+
+	number_t ttx = th->a * pt->getX() + th->c * pt->getY();
+	number_t tty = th->b * pt->getX() + th->d * pt->getY();
 
 	return Class<Point>::getInstanceS(ttx, tty);
 }

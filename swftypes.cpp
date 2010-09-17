@@ -577,8 +577,10 @@ void FILLSTYLE::fixedColor(float r, float g, float b)
 
 std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 {
-	s >> v.FillStyleType;
-	if(v.FillStyleType==0x00)
+	UI8 tmp;
+	s >> tmp;
+	v.FillStyleType=(FILL_STYLE_TYPE)(int)tmp;
+	if(v.FillStyleType==SOLID_FILL)
 	{
 		if(v.version==1 || v.version==2)
 		{
@@ -589,17 +591,18 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 		else
 			s >> v.Color;
 	}
-	else if(v.FillStyleType==0x10 || v.FillStyleType==0x12 || v.FillStyleType==0x13)
+	else if(v.FillStyleType==LINEAR_GRADIENT || v.FillStyleType==RADIAL_GRADIENT || v.FillStyleType==FOCAL_RADIAL_GRADIENT)
 	{
 		s >> v.GradientMatrix;
 		v.Gradient.version=v.version;
 		v.FocalGradient.version=v.version;
-		if(v.FillStyleType==0x13)
+		if(v.FillStyleType==FOCAL_RADIAL_GRADIENT)
 			s >> v.FocalGradient;
 		else
 			s >> v.Gradient;
 	}
-	else if(v.FillStyleType==0x41 || v.FillStyleType==0x42 || v.FillStyleType==0x43)
+	else if(v.FillStyleType==REPEATING_BITMAP || v.FillStyleType==CLIPPED_BITMAP || v.FillStyleType==NON_SMOOTHED_REPEATING_BITMAP || 
+			v.FillStyleType==NON_SMOOTHED_CLIPPED_BITMAP)
 	{
 		s >> v.BitmapId >> v.BitmapMatrix;
 	}
@@ -614,7 +617,9 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 
 std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 {
-	s >> v.FillStyleType;
+	UI8 tmp;
+	s >> tmp;
+	v.FillStyleType=(FILL_STYLE_TYPE)(int)tmp;
 	if(v.FillStyleType==0x00)
 	{
 		s >> v.StartColor >> v.EndColor;

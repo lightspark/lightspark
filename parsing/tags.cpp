@@ -701,7 +701,7 @@ void DefineTextTag::inputRender()
 
 	//Build a fake FILLSTYLEs
 	FILLSTYLE f;
-	f.FillStyleType=0x00;
+	f.FillStyleType=SOLID_FILL;
 	f.Color=it->TextColor;
 	MatrixApplier ma(getMatrix());
 	ma.concat(TextMatrix);
@@ -790,7 +790,7 @@ void DefineTextTag::Render()
 
 	//Build a fake FILLSTYLEs
 	FILLSTYLE f;
-	f.FillStyleType=0x00;
+	f.FillStyleType=SOLID_FILL;
 	f.Color=it->TextColor;
 	MatrixApplier ma(getMatrix());
 	ma.concat(TextMatrix);

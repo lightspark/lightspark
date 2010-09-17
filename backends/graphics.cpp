@@ -414,17 +414,20 @@ void CairoRenderer::execute()
 				cairo_move_to(cr, tokens[i].p1.x, tokens[i].p1.y);
 				break;	
 			case SET_FILL:
-			{
 				if(!empty)
 				{
 					cairo_fill(cr);
 					empty=true;
 				}
 				assert(tokens[i].style);
-				const RGBA& color=tokens[i].style->Color;
-				cairo_set_source_rgba (cr, color.rf(), color.gf(), color.bf(), color.af());
+				if(tokens[i].style->FillStyleType==SOLID_FILL)
+				{
+					const RGBA& color=tokens[i].style->Color;
+					cairo_set_source_rgba (cr, color.rf(), color.gf(), color.bf(), color.af());
+				}
+				else
+					::abort();
 				break;
-			}
 			default:
 				::abort();
 		}

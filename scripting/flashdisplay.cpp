@@ -2193,7 +2193,7 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	th->styles.push_back(FILLSTYLE());
-	th->styles.back().FillStyleType=0x00;
+	th->styles.back().FillStyleType=SOLID_FILL;
 	uint32_t color=0;
 	uint8_t alpha=255;
 	if(argslen>=2) //Colors
@@ -2211,7 +2211,7 @@ ASFUNCTIONBODY(Graphics,beginFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	th->styles.push_back(FILLSTYLE());
-	th->styles.back().FillStyleType=0x00;
+	th->styles.back().FillStyleType=SOLID_FILL;
 	uint32_t color=0;
 	uint8_t alpha=255;
 	if(argslen>=1)

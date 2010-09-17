@@ -23,6 +23,8 @@
 #include "compat.h"
 #include <streambuf>
 #include <fstream>
+#include <vector>
+#include <map>
 #include <inttypes.h>
 #include "swftypes.h"
 #include "thread_pool.h"
@@ -110,6 +112,8 @@ protected:
 	bool keepCache;
 	//Wait for cache to be opened
 	void waitForCache();
+
+	std::map<tiny_string, tiny_string> headers;
 public:
 	Downloader(bool cached);
 	virtual ~Downloader();
@@ -141,6 +145,15 @@ public:
 	uint32_t getLength() { return len; }
 	//Gets the length of downloaded data
 	uint32_t getReceivedLength() { return tail; }
+
+	size_t getHeaderCount() { return headers.size(); }
+	void setHeader(tiny_string name, tiny_string value) { headers[name] = value; }
+	tiny_string getHeader(const char* header) { return getHeader(tiny_string(header)); }
+	tiny_string getHeader(tiny_string header) { return headers[header]; }
+	std::map<tiny_string, tiny_string>::iterator getHeadersBegin()
+	{ return headers.begin(); }
+	std::map<tiny_string, tiny_string>::iterator getHeadersEnd()
+	{ return headers.end(); }
 };
 
 class ThreadedDownloader : public Downloader, public IThreadJob

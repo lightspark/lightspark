@@ -91,7 +91,17 @@
 		{
 			trace("Running in local-with-filesystem sandbox: NetConnection.connect not allowed. This test should fail.");
 		}
-		connect_nc.connect(null); //Undefined = HTTP pseudo-streaming
+		try
+		{
+			connect_nc.connect(null); //Undefined = HTTP pseudo-streaming
+		}
+		catch(e:SecurityError)
+		{
+			if(Security.sandboxType == Security.LOCAL_WITH_FILE)
+				trace("NetConnection.connect not allowed in local-with-filesystem sandbox.");
+			else
+				trace("NetConnection.connect allowed in non-local-with-filesystem sandbox, but SecurityError thrown.");
+		}
 
 		stream_ns = new NetStream(connect_nc);
 		stream_ns.client = this; //Needed, otherwise will generate a compile warning
@@ -147,16 +157,24 @@
 	private function playClick(e:Event):void
 	{
 		trace("Play button clicked");
-		if(Security.sandboxType == Security.REMOTE || 
-			Security.sandboxType == Security.LOCAL_WITH_NETWORK)
+		try
 		{
-			trace("Running in remote sandbox: playing from HTTP");
-			stream_ns.play(netVideoURL);
+			if(Security.sandboxType == Security.REMOTE || 
+				Security.sandboxType == Security.LOCAL_WITH_NETWORK)
+			{
+				trace("Running in remote sandbox: playing from HTTP");
+				stream_ns.play(netVideoURL);
+			}
+			else
+			{
+				trace("Running in remote sandbox: playing local file");
+				stream_ns.play(localVideoPath);
+			}
 		}
-		else
+		catch(e:SecurityError)
 		{
-			trace("Running in remote sandbox: playing local file");
-			stream_ns.play(localVideoPath);
+			trace("NetStream.play: SecurityError thrown");
+			trace(e.toString());
 		}
 
 		setInterval(statusInfo, 1000);

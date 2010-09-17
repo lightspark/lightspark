@@ -114,24 +114,29 @@ ASFUNCTIONBODY(URLLoader,load)
 
 	th->url=sys->getOrigin().goToURL(urlRequest->url);
 
+	//TODO: support the right events (like SecurityErrorEvent)
+	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
+	SecurityManager::EVALUATIONRESULT evaluationResult = 
+		sys->securityManager->evaluateURL(th->url, true,
+			~(SecurityManager::LOCAL_WITH_FILE),
+			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
+			true);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
-	if(th->url.getProtocol() == "file" &&
-			sys->securityManager->getSandboxType() != SecurityManager::LOCAL_WITH_FILE &&
-			sys->securityManager->getSandboxType() != SecurityManager::LOCAL_TRUSTED)
-		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
-				"connect to local file");
-	//Local-with-filesystem sandbox can't access network
-	else if(th->url.getProtocol() != "file" &&
-			sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+	if(evaluationResult == SecurityManager::DISALLOWED_REMOTE_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
 				"connect to network");
-
-	//TODO: support the right events (like SecurityErrorEvent)
-
-	if(sys->securityManager->evaluateURL(th->url) != SecurityManager::ALLOWED)
+	//Local-with-filesystem sandbox can't access network
+	else if(evaluationResult == SecurityManager::DISALLOWED_LOCAL_SANDBOX)
+		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
+				"connect to local file");
+	else if(evaluationResult == SecurityManager::DISALLOWED_RESTRICT_LOCAL_DIRECTORY)
+		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
+				"not allowed to navigate up for local files");
+	else if(evaluationResult == SecurityManager::DISALLOWED_CROSSDOMAIN_POLICY)
 	{
 		//TODO: find correct way of handling this case (SecurityErrorEvent in this case)
-		throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
+		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
+				"connection to domain not allowed by securityManager");
 	}
 
 	//TODO: should we disallow accessing local files in a directory above 
@@ -183,6 +188,11 @@ void URLLoader::execute()
 	if(!downloader->hasFailed())
 	{
 		downloader->wait();
+		std::map<tiny_string, tiny_string>::iterator it = downloader->getHeadersBegin();
+		for(; it != downloader->getHeadersEnd(); it++)
+		{
+			LOG(LOG_NO_INFO, "HEADER: '" << (*it).first << "': '" << (*it).second << "'");
+		}
 		if(!downloader->hasFailed())
 		{
 			istream s(downloader);
@@ -299,16 +309,17 @@ ASFUNCTIONBODY(NetConnection,connect)
 	NetConnection* th=Class<NetConnection>::cast(obj);
 	//This takes 1 required parameter and an unspecified number of optional parameters
 	assert_and_throw(argslen>0);
+
+	//This seems strange:
+	//LOCAL_WITH_FILE may not use connect(), even if it tries to connect to a local file.
+	//I'm following the specification to the letter
+	if(sys->securityManager->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE))
+		throw Class<SecurityError>::getInstanceS("SecurityError: NetConnection::connect "
+				"from LOCAL_WITH_FILE sandbox");
 	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.
 	if(args[0]->getObjectType()==T_NULL || args[0]->getObjectType()==T_UNDEFINED)
 	{
 		th->_connected = false;
-		//This seems strange:
-		//LOCAL_WITH_FILE may not use connect(), even if it tries to connect to a local file.
-		//I'm following the specification to the letter
-		if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
-			throw Class<SecurityError>::getInstanceS("SecurityError: NetConnection::connect "
-					"from LOCAL_WITH_FILE sandbox");
 	}
 	//String argument means Flash Remoting/Flash Media Server
 	else
@@ -317,7 +328,7 @@ ASFUNCTIONBODY(NetConnection,connect)
 		ASString* command = static_cast<ASString*>(args[0]);
 		th->uri = URLInfo(command->toString());
 		
-		if(sys->securityManager->evaluateURL(th->uri) != SecurityManager::ALLOWED)
+		if(sys->securityManager->evaluatePoliciesURL(th->uri, true) != SecurityManager::ALLOWED)
 		{
 			//TODO: find correct way of handling this case
 			throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
@@ -397,7 +408,7 @@ ASFUNCTIONBODY(NetConnection,_getURI)
 
 NetStream::NetStream():frameRate(0),tickStarted(false),downloader(NULL),
 	videoDecoder(NULL),audioDecoder(NULL),audioStream(NULL),streamTime(0),
-		paused(false),closed(true),checkPolicyFile(false)
+		paused(false),closed(true),checkPolicyFile(false),rawAccessAllowed(false)
 {
 	sem_init(&mutex,0,1);
 }
@@ -473,7 +484,6 @@ ASFUNCTIONBODY(NetStream,_setCheckPolicyFile)
 	NetStream* th=Class<NetStream>::cast(obj);
 
 	th->checkPolicyFile = Boolean_concrete(args[0]);
-	LOG(LOG_NO_INFO, "setCheckPolicyFile called: " << th->checkPolicyFile);
 	return NULL;
 }
 
@@ -525,27 +535,26 @@ ASFUNCTIONBODY(NetStream,play)
 	const tiny_string& arg0=args[0]->toString();
 	th->url = sys->getOrigin().goToURL(arg0);
 
-	if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE &&
-			th->url.getProtocol() != "file")
+	//checkPolicyFile only applies to per-pixel access, loading and playing is always allowed.
+	//So there is no need to disallow playing if policy files disallow it.
+	//We do need to check if per-pixel access is allowed.
+	SecurityManager::EVALUATIONRESULT evaluationResult = 
+		sys->securityManager->evaluateURL(th->url, th->checkPolicyFile, 
+			~(SecurityManager::LOCAL_WITH_FILE),
+			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
+			true); //Check for navigating up in local directories (not allowed)
+	if(evaluationResult == SecurityManager::DISALLOWED_REMOTE_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
-				"connect to network from local-with-filesystem sandbox");
-	if(sys->securityManager->getSandboxType() != SecurityManager::LOCAL_WITH_FILE &&
-			sys->securityManager->getSandboxType() != SecurityManager::LOCAL_TRUSTED && 
-			th->url.getProtocol() == "file")
+				"connect to network");
+	//Local-with-filesystem sandbox can't access network
+	else if(evaluationResult == SecurityManager::DISALLOWED_LOCAL_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
-				"connect to local file from network sandbox");
-	if(th->url.getProtocol() == "file" && !th->url.isSubOf(sys->getOrigin()))
+				"connect to local file");
+	else if(evaluationResult == SecurityManager::DISALLOWED_RESTRICT_LOCAL_DIRECTORY)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
 				"not allowed to navigate up for local files");
-
-	//Not using checkPolicyFile because it seems this prevents youtube from working.
-	//Am I missing something here? Youtube doesn't seem to set checkPolicyFile to true NOR does it call loadPolicyFile.
-	//if(sys->securityManager->evaluateURL(th->url, th->checkPolicyFile) != SecurityManager::ALLOWED)
-	if(sys->securityManager->evaluateURL(th->url, true) != SecurityManager::ALLOWED)
-	{
-		//TODO: find correct way of handling this case
-		throw Class<SecurityError>::getInstanceS("SecurityError: connection to domain not allowed by securityManager");
-	}
+	else if(evaluationResult == SecurityManager::DISALLOWED_CROSSDOMAIN_POLICY)
+		th->rawAccessAllowed = true;
 
 	assert_and_throw(th->downloader==NULL);
 	
@@ -1120,3 +1129,75 @@ tiny_string URLVariables::toString(bool debugMsg)
 	return ret;
 }
 
+ASFUNCTIONBODY(lightspark,sendToURL)
+{
+	assert_and_throw(argslen == 1);
+	ASObject* arg=args[0];
+	assert_and_throw(arg->getPrototype()==Class<URLRequest>::getClass());
+	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
+	//Check for URLRequest.url != null
+	if(urlRequest->getURL().len() == 0)
+		throw Class<TypeError>::getInstanceS();
+
+	URLInfo url=sys->getOrigin().goToURL(urlRequest->getURL());
+
+	//TODO: support the right events (like SecurityErrorEvent)
+	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
+	SecurityManager::EVALUATIONRESULT evaluationResult = 
+		sys->securityManager->evaluateURL(url, true,
+			~(SecurityManager::LOCAL_WITH_FILE),
+			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
+			true);
+	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
+	if(evaluationResult == SecurityManager::DISALLOWED_REMOTE_SANDBOX)
+		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
+				"connect to network");
+	//Local-with-filesystem sandbox can't access network
+	else if(evaluationResult == SecurityManager::DISALLOWED_LOCAL_SANDBOX)
+		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
+				"connect to local file");
+	else if(evaluationResult == SecurityManager::DISALLOWED_RESTRICT_LOCAL_DIRECTORY)
+		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
+				"not allowed to navigate up for local files");
+	else if(evaluationResult == SecurityManager::DISALLOWED_CROSSDOMAIN_POLICY)
+	{
+		//TODO: find correct way of handling this case (SecurityErrorEvent in this case)
+		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
+				"connection to domain not allowed by securityManager");
+	}
+
+	//TODO: should we disallow accessing local files in a directory above 
+	//the current one like we do with NetStream.play?
+
+	multiname dataName;
+	dataName.name_type=multiname::NAME_STRING;
+	dataName.name_s="data";
+	dataName.ns.push_back(nsNameAndKind("",NAMESPACE));
+	ASObject* data=arg->getVariableByMultiname(dataName);
+	if(data)
+	{
+		if(data->getPrototype()==Class<URLVariables>::getClass())
+			throw RunTimeException("Type mismatch in sendToURL parameter: "
+					"URLVariables instead of URLRequest");
+		else
+		{
+			tiny_string newURL = url.getParsedURL();
+			if(url.getQuery() == "")
+				newURL += "?";
+			else
+				newURL += "&amp;";
+			newURL += data->toString();
+			url=url.goToURL(newURL);
+		}
+	}
+	
+	if(url.isValid())
+	{
+		//Don't cache our downloaded files
+		Downloader* downloader=sys->downloadManager->download(url, false);
+		//TODO: make the download asynchronous instead of waiting for an unused response
+		downloader->wait();
+		sys->downloadManager->destroy(downloader);
+	}
+	return NULL;
+}

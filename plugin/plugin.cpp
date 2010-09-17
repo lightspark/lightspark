@@ -20,6 +20,8 @@
 #include "plugin.h"
 #include "logger.h"
 #include "compat.h"
+#include <string>
+#include <algorithm>
 #include "backends/urlutils.h"
 #define MIME_TYPES_HANDLED  "application/x-shockwave-flash"
 #define FAKE_MIME_TYPE  "application/x-lightspark"
@@ -357,8 +359,6 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	lightspark::Downloader* dl=(lightspark::Downloader*)stream->notifyData;
 	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
 
-	//If this is the first NewStream call, set the system root url.
-	//cout << stream->headers << endl;
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;
@@ -366,6 +366,37 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 		//TODO: confirm that growing buffers are normal. This does fix a bug I found though. (timonvo)
 		dl->setAllowBufferRealloc(true);
 		*stype=NP_NORMAL;
+
+		if(stream->headers != NULL)
+		{
+			std::string headersStr(stream->headers);
+			size_t cursor = 0;
+			size_t newLinePos = headersStr.find("\n");
+			std::string headerLineStr;
+			std::string headerName;
+			std::string headerValue;
+			size_t colonPos;
+			while(newLinePos != std::string::npos)
+			{
+				if(headersStr[cursor] == '\n')
+					cursor++;
+				headerLineStr = headersStr.substr(cursor, newLinePos-cursor);
+				colonPos = headerLineStr.find(":");
+				if(colonPos != std::string::npos)
+				{
+					headerName = headerLineStr.substr(0, colonPos);
+					if(headerLineStr.substr(colonPos+1, 1) == " ")
+						headerValue = headerLineStr.substr(colonPos+2, headerLineStr.length()-colonPos-1);
+					else
+						headerValue = headerLineStr.substr(colonPos+1, headerLineStr.length()-colonPos);
+					std::transform(headerName.begin(), headerName.end(), headerName.begin(), ::tolower);
+					std::transform(headerValue.begin(), headerValue.end(), headerValue.begin(), ::tolower);
+					dl->setHeader(lightspark::tiny_string(headerName), lightspark::tiny_string(headerValue));
+				}
+				cursor = newLinePos;
+				newLinePos = headersStr.find("\n", cursor+1);
+			}
+		}
 	}
 	else
 	{

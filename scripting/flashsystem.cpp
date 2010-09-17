@@ -151,10 +151,14 @@ void Security::sinit(Class_base* c)
 	c->setGetterByQName("exactSettings","",Class<IFunction>::getFunction(_getExactSettings),false);
 	c->setSetterByQName("exactSettings","",Class<IFunction>::getFunction(_setExactSettings),false);
 	c->setGetterByQName("sandboxType","",Class<IFunction>::getFunction(_getSandboxType),false);
-	c->setVariableByQName("LOCAL_TRUSTED","",Class<ASString>::getInstanceS("localTrusted"));
-	c->setVariableByQName("LOCAL_WITH_FILE","",Class<ASString>::getInstanceS("localWithFile"));
-	c->setVariableByQName("LOCAL_WITH_NETWORK","",Class<ASString>::getInstanceS("localWithNetwork"));
-	c->setVariableByQName("REMOTE","",Class<ASString>::getInstanceS("remote"));
+	c->setVariableByQName("LOCAL_TRUSTED","",
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED)));
+	c->setVariableByQName("LOCAL_WITH_FILE","",
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE)));
+	c->setVariableByQName("LOCAL_WITH_NETWORK","",
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK)));
+	c->setVariableByQName("REMOTE","",
+			Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::REMOTE)));
 	c->setMethodByQName("allowDomain","",Class<IFunction>::getFunction(allowDomain),false);
 	c->setMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(allowInsecureDomain),false);
 	c->setMethodByQName("loadPolicyFile","",Class<IFunction>::getFunction(loadPolicyFile),false);
@@ -182,13 +186,13 @@ ASFUNCTIONBODY(Security,_setExactSettings)
 ASFUNCTIONBODY(Security,_getSandboxType)
 {
 	if(sys->securityManager->getSandboxType() == SecurityManager::REMOTE)
-		return Class<ASString>::getInstanceS("remote");
+		return Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::REMOTE));
 	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_TRUSTED)
-		return Class<ASString>::getInstanceS("localTrusted");
+		return Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED));
 	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
-		return Class<ASString>::getInstanceS("localWithFile");
+		return Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE));
 	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_NETWORK)
-		return Class<ASString>::getInstanceS("localWithNetwork");
+		return Class<ASString>::getInstanceS(sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK));
 	assert(false);
 	return NULL;
 }
@@ -208,6 +212,7 @@ ASFUNCTIONBODY(Security, allowInsecureDomain)
 ASFUNCTIONBODY(Security, loadPolicyFile)
 {
 	LOG(LOG_NO_INFO, "Loading policy file: " << sys->getOrigin().goToURL(args[0]->toString()));
+	sys->securityManager->addPolicyFile(sys->getOrigin().goToURL(args[0]->toString()));
 	assert_and_throw(argslen == 1);
 	return NULL;
 }

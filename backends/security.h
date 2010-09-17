@@ -36,8 +36,11 @@ class URLPolicyFile;
 class SecurityManager
 {
 public:
-	enum SANDBOXTYPE { REMOTE, LOCAL_WITH_FILE, LOCAL_WITH_NETWORK, LOCAL_TRUSTED };
+	enum SANDBOXTYPE { REMOTE=1, LOCAL_WITH_FILE=2, LOCAL_WITH_NETWORK=4, LOCAL_TRUSTED=8 };
 private:
+	const char* sandboxNames[4];
+	const char* sandboxTitles[4];
+
 	//Map (by domain) of vectors of pending policy files
 	std::map<tiny_string, std::vector<URLPolicyFile*>> pendingURLPolicyFiles;
 	//Map (by domain) of vectors of loaded policy files
@@ -66,6 +69,24 @@ public:
 	//Set the sandbox type
 	void setSandboxType(SANDBOXTYPE type) { sandboxType = type; }
 	SANDBOXTYPE getSandboxType() const { return sandboxType; }
+	const char* getSandboxName() const { return getSandboxName(sandboxType); }
+	const char* getSandboxName(SANDBOXTYPE type) const 
+	{
+		if(type == REMOTE) return sandboxNames[0];
+		else if(type == LOCAL_WITH_FILE) return sandboxNames[1];
+		else if(type == LOCAL_WITH_NETWORK) return sandboxNames[2];
+		else if(type == LOCAL_TRUSTED) return sandboxNames[3];
+		return NULL;
+	}
+	const char* getSandboxTitle() const { return getSandboxTitle(sandboxType); }
+	const char* getSandboxTitle(SANDBOXTYPE type) const
+	{
+		if(type == REMOTE) return sandboxTitles[0];
+		else if(type == LOCAL_WITH_FILE) return sandboxTitles[1];
+		else if(type == LOCAL_WITH_NETWORK) return sandboxTitles[2];
+		else if(type == LOCAL_TRUSTED) return sandboxTitles[3];
+		return NULL;
+	}
 	//Set exactSettings
 	void setExactSettings(bool settings, bool locked=true)
 	{ 
@@ -77,11 +98,32 @@ public:
 	bool getExactSettings() const { return exactSettings; }
 	bool getExactSettingsLocked() const { return exactSettingsLocked; }
 	
-	enum EVALUATIONRESULT { ALLOWED, DISALLOWED_SANDOX, DISALLOWED_CROSSDOMAIN_POLICY };
+	//Evaluates whether the current sandbox is in the allowed sandboxes
+	bool evaluateSandbox(int allowedSandboxes)
+	{ return evaluateSandbox(sandboxType, allowedSandboxes); }
+	bool evaluateSandbox(SANDBOXTYPE sandbox, int allowedSandboxes);
+
+	//The possible results for the URL evaluation methods below
+	enum EVALUATIONRESULT { ALLOWED, DISALLOWED_RESTRICT_LOCAL_DIRECTORY,
+		DISALLOWED_REMOTE_SANDBOX, 	DISALLOWED_LOCAL_SANDBOX, DISALLOWED_CROSSDOMAIN_POLICY };
+	
+	//Evaluates an URL by checking allowed sandboxes and checking URL policy files
+	EVALUATIONRESULT evaluateURL(const tiny_string& url, bool loadPendingPolicies, 
+			int allowedSandboxesRemote, int allowedSandboxesLocal, bool restrictLocalDirectory)
+	{
+		return evaluateURL(URLInfo(url), loadPendingPolicies,
+			allowedSandboxesRemote, allowedSandboxesLocal);
+	}
+	EVALUATIONRESULT evaluateURL(const URLInfo& url, bool loadPendingPolicies, 
+			int allowedSandboxesRemote, int allowedSandboxesLocal, bool restrictLocalDirectory=true);
+	
+	//Evaluates an URL by checking if the type of URL (local/remote) matches the allowed sandboxes
+	EVALUATIONRESULT evaluateSandboxURL(const URLInfo& url,
+			int allowedSandboxesRemote, int allowedSandboxesLocal);
+	//Evaluates a (local) URL by checking if it points to a subdirectory of the origin
+	EVALUATIONRESULT evaluateLocalDirectoryURL(const URLInfo& url);
 	//Checks URL policy files
-	EVALUATIONRESULT evaluateURL(const tiny_string& url, bool loadPendingFiles=true) 
-	{ return evaluateURL(URLInfo(url), loadPendingFiles); }
-	EVALUATIONRESULT evaluateURL(const URLInfo& url, bool loadPendingFiles=true);
+	EVALUATIONRESULT evaluatePoliciesURL(const URLInfo& url, bool loadPendingPolicies);
 
 	//TODO: add evaluateSocketConnection() for SOCKET policy files
 };

@@ -45,6 +45,7 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getURL);
 	ASFUNCTION(_setURL);
+	const tiny_string& getURL() { return url; }
 };
 
 class URLVariables: public ASObject
@@ -153,6 +154,7 @@ private:
 
 	ASObject* client;
 	bool checkPolicyFile;
+	bool rawAccessAllowed;
 public:
 	NetStream();
 	~NetStream();
@@ -238,6 +240,8 @@ public:
 	*/
 	void unlock();
 };
+
+ASObject* sendToURL(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 
 };
 

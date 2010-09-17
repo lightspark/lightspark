@@ -254,6 +254,7 @@ void ABCVm::registerClasses()
 	builtin->setVariableByQName("HTTPStatusEvent","flash.events",Class<HTTPStatusEvent>::getClass());
 	builtin->setVariableByQName("KeyboardEvent","flash.events",Class<KeyboardEvent>::getClass());
 
+	builtin->setVariableByQName("sendToURL","flash.net",Class<IFunction>::getFunction(sendToURL));
 	builtin->setVariableByQName("LocalConnection","flash.net",Class<ASObject>::getClass(QName("LocalConnection","flash.net")));
 	builtin->setVariableByQName("NetConnection","flash.net",Class<NetConnection>::getClass());
 	builtin->setVariableByQName("NetStream","flash.net",Class<NetStream>::getClass());

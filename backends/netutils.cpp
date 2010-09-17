@@ -21,6 +21,7 @@
 #include "netutils.h"
 #include "compat.h"
 #include <string>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
 #ifdef ENABLE_CURL
@@ -483,7 +484,7 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	char* headerLine=(char*)buffer;
 
-	std::cerr << "CURL header: " << headerLine;
+	//std::cerr << "CURL header: " << headerLine;
 
 	if(strncmp(headerLine,"HTTP/1.1 ",9)==0) 
 	{
@@ -502,13 +503,32 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 		else if(th->getRequestStatus()/100 == 3); //HTTP redirect
 		else if(th->getRequestStatus()/100 == 2); //HTTP OK
 	}
-	else if(strncmp(headerLine,"Content-Length: ",16)==0)
+	else
 	{
-		//Now read the length and allocate the byteArray
-		//Only read the length when we're not redirecting
-		if(th->getRequestStatus()/100 != 3)
+		std::string headerLineStr(headerLine);
+		headerLineStr = headerLineStr.substr(0, headerLineStr.find("\r\n"));
+		headerLineStr = headerLineStr.substr(0, headerLineStr.find("\n"));
+		size_t colonPos = headerLineStr.find(":");
+		if(colonPos != std::string::npos)
 		{
-			th->setLen(atoi(headerLine+16));
+			std::string headerName = headerLineStr.substr(0, colonPos);
+			std::string headerValue;
+			if(headerLineStr.substr(colonPos+1, 1) == " ")
+				headerValue = headerLineStr.substr(colonPos+2, headerLineStr.length()-colonPos-1);
+			else
+				headerValue = headerLineStr.substr(colonPos+1, headerLineStr.length()-colonPos);
+			std::transform(headerName.begin(), headerName.end(), headerName.begin(), ::tolower);
+			std::transform(headerValue.begin(), headerValue.end(), headerValue.begin(), ::tolower);
+			th->setHeader(tiny_string(headerName), tiny_string(headerValue));
+			if(headerName == "Content-Length")
+			{
+				//Now read the length and allocate the byteArray
+				//Only read the length when we're not redirecting
+				if(th->getRequestStatus()/100 != 3)
+				{
+					th->setLen(atoi(headerValue.c_str()));
+				}
+			}
 		}
 	}
 	return size*nmemb;

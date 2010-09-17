@@ -177,6 +177,7 @@ public:
 	
 	//Methods
 	ASFUNCTION(add);
+	ASFUNCTION(angleBetween);
 	ASFUNCTION(clone);
 	
 	//Properties

@@ -1112,6 +1112,7 @@ void Vector3D::sinit(Class_base* c)
 	
 	//Methods 
 	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
+	c->setMethodByQName("angleBetween","",Class<IFunction>::getFunction(angleBetween),true);
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 }
 
@@ -1262,4 +1263,19 @@ ASFUNCTIONBODY(Vector3D,add)
 	ret->z = th->z + vc->z;
 
 	return ret;
+}
+
+ASFUNCTIONBODY(Vector3D,angleBetween)
+{
+	assert_and_throw(argslen==2);
+
+	Vector3D* vc1=static_cast<Vector3D*>(args[0]);
+	Vector3D* vc2=static_cast<Vector3D*>(args[1]);
+
+	number_t angle = vc1->x * vc2->x + vc1->y * vc2->y + vc1->z * vc2->z;
+	angle /= sqrt(vc1->x * vc1->x + vc1->y * vc1->y + vc1->z * vc1->z);
+	angle /= sqrt(vc2->x * vc2->x + vc2->y * vc2->y + vc2->z * vc2->z);
+	angle = acos(angle);
+
+	return abstract_d(angle);
 }

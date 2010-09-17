@@ -1119,6 +1119,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),true);
 	c->setMethodByQName("dotProduct","",Class<IFunction>::getFunction(dotProduct),true);
 	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
+	c->setMethodByQName("incrementBy","",Class<IFunction>::getFunction(incrementBy),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1355,4 +1356,18 @@ ASFUNCTIONBODY(Vector3D,equals)
 	}
 
 	return abstract_b(th->x == vc->x &&  th->y == vc->y && th->z == vc->z && allfour ? th->w == vc->w : true);
+}
+
+ASFUNCTIONBODY(Vector3D,incrementBy)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+
+	th->x += vc->x;
+	th->y += vc->y;
+	th->z += vc->z;
+
+	return NULL;
 }

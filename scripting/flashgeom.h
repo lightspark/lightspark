@@ -184,6 +184,7 @@ public:
 	ASFUNCTION(distance);
 	ASFUNCTION(dotProduct);
 	ASFUNCTION(equals);
+	ASFUNCTION(incrementBy);
 	
 	//Properties
 	ASFUNCTION(_get_w);

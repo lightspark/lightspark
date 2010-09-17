@@ -1111,6 +1111,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setSetterByQName("z","",Class<IFunction>::getFunction(_set_z),true);
 	
 	//Methods 
+	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 }
 
@@ -1243,6 +1244,22 @@ ASFUNCTIONBODY(Vector3D,clone)
 	ret->x = th->x;
 	ret->y = th->y;
 	ret->z = th->z;
+
+	return ret;
+}
+
+ASFUNCTIONBODY(Vector3D,add)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* ret=Class<Vector3D>::getInstanceS();
+
+	ret->w = th->w + vc->w;
+	ret->x = th->x + vc->x;
+	ret->y = th->y + vc->y;
+	ret->z = th->z + vc->z;
 
 	return ret;
 }

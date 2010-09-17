@@ -176,6 +176,7 @@ public:
 	ASFUNCTION(_constructor);
 	
 	//Methods
+	ASFUNCTION(add);
 	ASFUNCTION(clone);
 	
 	//Properties

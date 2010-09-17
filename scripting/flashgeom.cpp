@@ -1121,6 +1121,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
 	c->setMethodByQName("incrementBy","",Class<IFunction>::getFunction(incrementBy),true);
 	c->setMethodByQName("nearEquals","",Class<IFunction>::getFunction(nearEquals),true);
+	c->setMethodByQName("negate","",Class<IFunction>::getFunction(negate),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1395,4 +1396,17 @@ ASFUNCTIONBODY(Vector3D,nearEquals)
 	dw = allfour ? (th->w - vc->w) < tolerance : true;
 
 	return abstract_b(dx && dy && dz && dw);
+}
+
+ASFUNCTIONBODY(Vector3D,negate)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+
+	th->x = -th->x;
+	th->y = -th->y;
+	th->z = -th->z;
+
+	return NULL;
 }

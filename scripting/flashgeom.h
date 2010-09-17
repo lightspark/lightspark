@@ -186,6 +186,7 @@ public:
 	ASFUNCTION(equals);
 	ASFUNCTION(incrementBy);
 	ASFUNCTION(nearEquals);
+	ASFUNCTION(negate);
 	
 	//Properties
 	ASFUNCTION(_get_w);

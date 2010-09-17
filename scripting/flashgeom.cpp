@@ -1115,6 +1115,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("angleBetween","",Class<IFunction>::getFunction(angleBetween),true);
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
 	c->setMethodByQName("crossProduct","",Class<IFunction>::getFunction(crossProduct),true);
+	c->setMethodByQName("decrementBy","",Class<IFunction>::getFunction(decrementBy),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1294,4 +1295,18 @@ ASFUNCTIONBODY(Vector3D,crossProduct)
 	ret->z = th->x * vc->y - th->y * vc->x;
 
 	return ret;
+}
+
+ASFUNCTIONBODY(Vector3D,decrementBy)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+
+	th->x -= vc->x;
+	th->y -= vc->y;
+	th->z -= vc->z;
+
+	return NULL;
 }

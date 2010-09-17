@@ -180,6 +180,7 @@ public:
 	ASFUNCTION(angleBetween);
 	ASFUNCTION(clone);
 	ASFUNCTION(crossProduct);
+	ASFUNCTION(decrementBy);
 	
 	//Properties
 	ASFUNCTION(_get_w);

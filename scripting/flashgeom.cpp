@@ -1125,6 +1125,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
 	c->setMethodByQName("project","",Class<IFunction>::getFunction(project),true);
 	c->setMethodByQName("scaleBy","",Class<IFunction>::getFunction(scaleBy),true);
+	c->setMethodByQName("subtract","",Class<IFunction>::getFunction(subtract),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1268,7 +1269,6 @@ ASFUNCTIONBODY(Vector3D,add)
 	Vector3D* vc=static_cast<Vector3D*>(args[0]);
 	Vector3D* ret=Class<Vector3D>::getInstanceS();
 
-	ret->w = th->w + vc->w;
 	ret->x = th->x + vc->x;
 	ret->y = th->y + vc->y;
 	ret->z = th->z + vc->z;
@@ -1454,4 +1454,19 @@ ASFUNCTIONBODY(Vector3D,scaleBy)
 	th->z *= scale;
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,subtract)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* ret=Class<Vector3D>::getInstanceS();
+
+	ret->x = th->x - vc->x;
+	ret->y = th->y - vc->y;
+	ret->z = th->z - vc->z;
+
+	return ret;
 }

@@ -1122,6 +1122,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("incrementBy","",Class<IFunction>::getFunction(incrementBy),true);
 	c->setMethodByQName("nearEquals","",Class<IFunction>::getFunction(nearEquals),true);
 	c->setMethodByQName("negate","",Class<IFunction>::getFunction(negate),true);
+	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1407,6 +1408,21 @@ ASFUNCTIONBODY(Vector3D,negate)
 	th->x = -th->x;
 	th->y = -th->y;
 	th->z = -th->z;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,normalize)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+
+	number_t len = sqrt(th->x * th->x + th->y * th->y + th->z * th->z);
+
+	th->x /= len;
+	th->y /= len;
+	th->z /= len;
 
 	return NULL;
 }

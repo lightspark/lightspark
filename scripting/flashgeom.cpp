@@ -1120,6 +1120,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("dotProduct","",Class<IFunction>::getFunction(dotProduct),true);
 	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
 	c->setMethodByQName("incrementBy","",Class<IFunction>::getFunction(incrementBy),true);
+	c->setMethodByQName("nearEquals","",Class<IFunction>::getFunction(nearEquals),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1370,4 +1371,28 @@ ASFUNCTIONBODY(Vector3D,incrementBy)
 	th->z += vc->z;
 
 	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,nearEquals)
+{
+	assert_and_throw(argslen==2 && argslen==3);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	number_t tolerance = args[1]->toNumber();
+	int32_t allfour = 0;
+
+	if (argslen == 3 )
+	{
+		Boolean* af=static_cast<Boolean*>(args[2]);
+		allfour = af->toInt();
+	}
+
+	bool dx, dy, dz, dw;
+	dx = (th->x - vc->x) < tolerance;
+	dy = (th->y - vc->y) < tolerance;
+	dz = (th->z - vc->z) < tolerance;
+	dw = allfour ? (th->w - vc->w) < tolerance : true;
+
+	return abstract_b(dx && dy && dz && dw);
 }

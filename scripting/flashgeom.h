@@ -185,6 +185,7 @@ public:
 	ASFUNCTION(dotProduct);
 	ASFUNCTION(equals);
 	ASFUNCTION(incrementBy);
+	ASFUNCTION(nearEquals);
 	
 	//Properties
 	ASFUNCTION(_get_w);

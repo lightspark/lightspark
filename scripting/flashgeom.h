@@ -189,6 +189,7 @@ public:
 	ASFUNCTION(negate);
 	ASFUNCTION(normalize);
 	ASFUNCTION(project);
+	ASFUNCTION(scaleBy);
 	
 	//Properties
 	ASFUNCTION(_get_w);

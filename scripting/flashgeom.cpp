@@ -1124,6 +1124,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("negate","",Class<IFunction>::getFunction(negate),true);
 	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
 	c->setMethodByQName("project","",Class<IFunction>::getFunction(project),true);
+	c->setMethodByQName("scaleBy","",Class<IFunction>::getFunction(scaleBy),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1437,6 +1438,20 @@ ASFUNCTIONBODY(Vector3D,project)
 	th->x /= th->w;
 	th->y /= th->w;
 	th->z /= th->w;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,scaleBy)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	number_t scale = args[0]->toNumber();
+
+	th->x *= scale;
+	th->y *= scale;
+	th->z *= scale;
 
 	return NULL;
 }

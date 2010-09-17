@@ -188,6 +188,7 @@ public:
 	ASFUNCTION(nearEquals);
 	ASFUNCTION(negate);
 	ASFUNCTION(normalize);
+	ASFUNCTION(project);
 	
 	//Properties
 	ASFUNCTION(_get_w);

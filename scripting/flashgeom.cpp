@@ -1123,6 +1123,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("nearEquals","",Class<IFunction>::getFunction(nearEquals),true);
 	c->setMethodByQName("negate","",Class<IFunction>::getFunction(negate),true);
 	c->setMethodByQName("normalize","",Class<IFunction>::getFunction(normalize),true);
+	c->setMethodByQName("project","",Class<IFunction>::getFunction(project),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1423,6 +1424,19 @@ ASFUNCTIONBODY(Vector3D,normalize)
 	th->x /= len;
 	th->y /= len;
 	th->z /= len;
+
+	return NULL;
+}
+
+ASFUNCTIONBODY(Vector3D,project)
+{
+	assert_and_throw(argslen==0);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+
+	th->x /= th->w;
+	th->y /= th->w;
+	th->z /= th->w;
 
 	return NULL;
 }

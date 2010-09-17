@@ -114,6 +114,28 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(setColor);
 	ASFUNCTION(getColor);
+
+	ASFUNCTION(getRedMultiplier);
+	ASFUNCTION(setRedMultiplier);
+	ASFUNCTION(getGreenMultiplier);
+	ASFUNCTION(setGreenMultiplier);
+	ASFUNCTION(getBlueMultiplier);
+	ASFUNCTION(setBlueMultiplier);
+	ASFUNCTION(getAlphaMultiplier);
+	ASFUNCTION(setAlphaMultiplier);
+
+	ASFUNCTION(getRedOffset);
+	ASFUNCTION(setRedOffset);
+	ASFUNCTION(getGreenOffset);
+	ASFUNCTION(setGreenOffset);
+	ASFUNCTION(getBlueOffset);
+	ASFUNCTION(setBlueOffset);
+	ASFUNCTION(getAlphaOffset);
+	ASFUNCTION(setAlphaOffset);
+
+	ASFUNCTION(concat);
+
+	tiny_string toString(bool debugMsg=false);
 };
 
 class Transform: public ASObject

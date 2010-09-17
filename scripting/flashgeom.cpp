@@ -494,6 +494,31 @@ ASFUNCTIONBODY(Rectangle,_union)
 void ColorTransform::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+
+	// properties
+	c->setGetterByQName("color","",Class<IFunction>::getFunction(getColor),true);
+	c->setSetterByQName("color","",Class<IFunction>::getFunction(setColor),true);
+
+	c->setGetterByQName("redMultiplier","",Class<IFunction>::getFunction(getRedMultiplier),true);
+	c->setSetterByQName("redMultiplier","",Class<IFunction>::getFunction(setRedMultiplier),true);
+	c->setGetterByQName("greenMultiplier","",Class<IFunction>::getFunction(getGreenMultiplier),true);
+	c->setSetterByQName("greenMultiplier","",Class<IFunction>::getFunction(setGreenMultiplier),true);
+	c->setGetterByQName("blueMultiplier","",Class<IFunction>::getFunction(getBlueMultiplier),true);
+	c->setSetterByQName("blueMultiplier","",Class<IFunction>::getFunction(setBlueMultiplier),true);
+	c->setGetterByQName("alphaMultiplier","",Class<IFunction>::getFunction(getAlphaMultiplier),true);
+	c->setSetterByQName("alphaMultiplier","",Class<IFunction>::getFunction(setAlphaMultiplier),true);
+
+	c->setGetterByQName("redOffset","",Class<IFunction>::getFunction(getRedOffset),true);
+	c->setSetterByQName("redOffset","",Class<IFunction>::getFunction(setRedOffset),true);
+	c->setGetterByQName("greenOffset","",Class<IFunction>::getFunction(getGreenOffset),true);
+	c->setSetterByQName("greenOffset","",Class<IFunction>::getFunction(setGreenOffset),true);
+	c->setGetterByQName("blueOffset","",Class<IFunction>::getFunction(getBlueOffset),true);
+	c->setSetterByQName("blueOffset","",Class<IFunction>::getFunction(setBlueOffset),true);
+	c->setGetterByQName("alphaOffset","",Class<IFunction>::getFunction(getAlphaOffset),true);
+	c->setSetterByQName("alphaOffset","",Class<IFunction>::getFunction(setAlphaOffset),true);
+
+	// methods
+	c->setMethodByQName("concat","",Class<IFunction>::getFunction(concat),true);
 }
 
 ASFUNCTIONBODY(ColorTransform,_constructor)
@@ -555,8 +580,158 @@ ASFUNCTIONBODY(ColorTransform,setColor)
 
 ASFUNCTIONBODY(ColorTransform,getColor)
 {
-	assert_and_throw(false && "getColor not implemented");
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+
+	int ao, ro, go, bo;
+	ao = static_cast<int>(th->alphaOffset) & 0xff;
+	ro = static_cast<int>(th->redOffset) & 0xff;
+	go = static_cast<int>(th->greenOffset) & 0xff;
+	bo = static_cast<int>(th->blueOffset) & 0xff;
+
+	number_t color = (ao<<24) | (ro<<16) | (go<<8) | bo;
+
+	return abstract_d(color);
+}
+
+ASFUNCTIONBODY(ColorTransform,getRedMultiplier)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->redMultiplier);
+}
+
+ASFUNCTIONBODY(ColorTransform,setRedMultiplier)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->redMultiplier = args[0]->toNumber();
 	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getGreenMultiplier)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->greenMultiplier);
+}
+
+ASFUNCTIONBODY(ColorTransform,setGreenMultiplier)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->greenMultiplier = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getBlueMultiplier)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->blueMultiplier);
+}
+
+ASFUNCTIONBODY(ColorTransform,setBlueMultiplier)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->blueMultiplier = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getAlphaMultiplier)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->alphaMultiplier);
+}
+
+ASFUNCTIONBODY(ColorTransform,setAlphaMultiplier)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->alphaMultiplier = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getRedOffset)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->redOffset);
+}
+
+ASFUNCTIONBODY(ColorTransform,setRedOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->redOffset = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getGreenOffset)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->greenOffset);
+}
+
+ASFUNCTIONBODY(ColorTransform,setGreenOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->greenOffset = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getBlueOffset)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->blueOffset);
+}
+
+ASFUNCTIONBODY(ColorTransform,setBlueOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->blueOffset = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,getAlphaOffset)
+{
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	return abstract_d(th->alphaOffset);
+}
+
+ASFUNCTIONBODY(ColorTransform,setAlphaOffset)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	th->alphaOffset = args[0]->toNumber();
+	return NULL;
+}
+
+ASFUNCTIONBODY(ColorTransform,concat)
+{
+	assert_and_throw(argslen==1);
+	ColorTransform* th=static_cast<ColorTransform*>(obj);
+	ColorTransform* ct=static_cast<ColorTransform*>(args[0]);
+
+	th->redMultiplier *= ct->redMultiplier;
+	th->redOffset = th->redOffset * ct->redMultiplier + ct->redOffset;
+	th->greenMultiplier *= ct->greenMultiplier;
+	th->greenOffset = th->greenOffset * ct->greenMultiplier + ct->greenOffset;
+	th->blueMultiplier *= ct->blueMultiplier;
+	th->blueOffset = th->blueOffset * ct->blueMultiplier + ct->blueOffset;
+	th->alphaMultiplier *= ct->alphaMultiplier;
+	th->alphaOffset = th->alphaOffset * ct->alphaMultiplier + ct->alphaOffset;
+
+	return NULL;
+}
+
+tiny_string ColorTransform::toString(bool debugMsg)
+{
+	assert_and_throw(implEnable);
+	
+	char buf[1024];
+	snprintf(buf,1024,"(redOffset=%f, redMultiplier=%f, greenOffset=%f, greenMultiplier=%f blueOffset=%f blueMultiplier=%f alphaOffset=%f, alphaMultiplier=%f)", redOffset, redMultiplier, greenOffset, greenMultiplier, blueOffset, blueMultiplier, alphaOffset, alphaMultiplier);
+	
+	return tiny_string(buf, true);
 }
 
 void Point::sinit(Class_base* c)

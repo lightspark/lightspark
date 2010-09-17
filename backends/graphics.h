@@ -186,6 +186,7 @@ private:
 	uint32_t xOffset;
 	uint32_t yOffset;
 	uint8_t* surface;
+	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
 public:
 	CairoRenderer(Shepherd* _o, const TextureChunk& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, uint32_t _x, uint32_t _y):
 		Sheep(_o),tex(_t),tokens(_g),matrix(_m),xOffset(_x),yOffset(_y),surface(NULL){}

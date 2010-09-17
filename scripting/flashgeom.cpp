@@ -1114,6 +1114,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
 	c->setMethodByQName("angleBetween","",Class<IFunction>::getFunction(angleBetween),true);
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);
+	c->setMethodByQName("crossProduct","",Class<IFunction>::getFunction(crossProduct),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1278,4 +1279,19 @@ ASFUNCTIONBODY(Vector3D,angleBetween)
 	angle = acos(angle);
 
 	return abstract_d(angle);
+}
+
+ASFUNCTIONBODY(Vector3D,crossProduct)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	Vector3D* ret=Class<Vector3D>::getInstanceS();
+
+	ret->x = th->y * vc->z - th->z * vc->y;
+	ret->y = th->z * vc->x - th->x * vc->z;
+	ret->z = th->x * vc->y - th->y * vc->x;
+
+	return ret;
 }

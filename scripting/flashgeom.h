@@ -179,6 +179,7 @@ public:
 	ASFUNCTION(add);
 	ASFUNCTION(angleBetween);
 	ASFUNCTION(clone);
+	ASFUNCTION(crossProduct);
 	
 	//Properties
 	ASFUNCTION(_get_w);

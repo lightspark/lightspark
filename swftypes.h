@@ -493,6 +493,30 @@ public:
 		Alpha=255;
 		return *this;
 	}
+	float rf() const
+	{
+		float ret=Red;
+		ret/=255;
+		return ret;
+	}
+	float gf() const
+	{
+		float ret=Green;
+		ret/=255;
+		return ret;
+	}
+	float bf() const
+	{
+		float ret=Blue;
+		ret/=255;
+		return ret;
+	}
+	float af() const
+	{
+		float ret=Alpha;
+		ret/=255;
+		return ret;
+	}
 };
 
 typedef UI8 LANGCODE;
@@ -747,15 +771,7 @@ class MORPHFILLSTYLE;
 
 class FILLSTYLE
 {
-	friend std::istream& operator>>(std::istream& s, FILLSTYLEARRAY& v);
-	friend std::istream& operator>>(std::istream& s, FILLSTYLE& v);
-	friend std::istream& operator>>(std::istream& s, MORPHFILLSTYLE& v);
-	friend class DefineTextTag;
-	friend class DefineShape2Tag;
-	friend class DefineShape3Tag;
-	friend class GeomShape;
-	friend class Graphics;
-private:
+public:
 	int version;
 	UI8 FillStyleType;
 	RGBA Color;
@@ -764,11 +780,8 @@ private:
 	FOCALGRADIENT FocalGradient;
 	UI16 BitmapId;
 	MATRIX BitmapMatrix;
-
-public:
 	virtual void setFragmentProgram() const;
 	static void fixedColor(float r, float g, float b);
-	virtual void setVertexData(arrayElem* elem);
 	virtual ~FILLSTYLE(){}
 };
 
@@ -891,8 +904,6 @@ public:
 	int32_t AnchorDeltaX;
 	int32_t AnchorDeltaY;
 
-//	SHAPERECORD():TypeFlag(false),StateNewStyles(false),StateLineStyle(false),StateFillStyle1(false),StateFillStyle0(false),
-//		StateMoveTo(false),MoveDeltaX(0),MoveDeltaY(0),DeltaX(0),DeltaY(0){};
 	SHAPERECORD(SHAPE* p,BitStream& bs);
 };
 

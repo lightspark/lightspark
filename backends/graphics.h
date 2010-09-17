@@ -175,7 +175,7 @@ public:
 	virtual void uploadFence()=0;
 };
 
-class CairoRenderer: public ITextureUploadable, public IThreadJob
+class CairoRenderer: public ITextureUploadable, public IThreadJob, public Sheep
 {
 protected:
 	~CairoRenderer(){delete[] surface;}
@@ -187,8 +187,8 @@ private:
 	uint32_t yOffset;
 	uint8_t* surface;
 public:
-	CairoRenderer(const TextureChunk& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, uint32_t _x, uint32_t _y):
-		tex(_t),tokens(_g),matrix(_m),xOffset(_x),yOffset(_y),surface(NULL){}
+	CairoRenderer(Shepherd* _o, const TextureChunk& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, uint32_t _x, uint32_t _y):
+		Sheep(_o),tex(_t),tokens(_g),matrix(_m),xOffset(_x),yOffset(_y),surface(NULL){}
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h);
 	void upload(uint8_t* data, uint32_t w, uint32_t h);

@@ -247,6 +247,7 @@ bool ShapesBuilder::isOutlineEmpty(const std::vector< unsigned int >& outline)
 void ShapesBuilder::clear()
 {
 	filledShapesMap.clear();
+	strokeShapesMap.clear();
 }
 
 void ShapesBuilder::joinOutlines()
@@ -338,21 +339,6 @@ void ShapesBuilder::extendFilledOutlineForColor(unsigned int color, const Vector
 	outlinesForColor.back().push_back(v2Index);
 }
 
-void ShapesBuilder::outputShapes(vector< GeomShape >& shapes)
-{
-	//Let's join shape pieces together
-	joinOutlines();
-
-//	map< unsigned int, vector< vector<unsigned int> > >::iterator it=shapesMap.begin();
-
-/*	for(;it!=shapesMap.end();it++)
-	{
-		shapes.push_back(GeomShape());
-		shapes.back().outlines.swap(it->second);
-		shapes.back().color=it->first;
-	}*/
-}
-
 const Vector2& ShapesBuilder::getVertex(unsigned int index)
 {
 	//Linear lookup
@@ -365,7 +351,7 @@ const Vector2& ShapesBuilder::getVertex(unsigned int index)
 	::abort();
 }
 
-void ShapesBuilder::outputTokens(vector< GeomToken >& tokens)
+void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles, vector< GeomToken >& tokens)
 {
 	joinOutlines();
 	//Try to greedily condense as much as possible the output
@@ -374,8 +360,16 @@ void ShapesBuilder::outputTokens(vector< GeomToken >& tokens)
 	for(;it!=filledShapesMap.end();it++)
 	{
 		assert(!it->second.empty());
+		//Find the style given the index
+		std::list<FILLSTYLE>::const_iterator stylesIt=styles.begin();
+		assert(it->first);
+		for(unsigned int i=0;i<it->first-1;i++)
+		{
+			stylesIt++;
+			assert(stylesIt!=styles.end());
+		}
 		//Set the fill style
-		tokens.emplace_back(SET_FILL,it->first);
+		tokens.emplace_back(SET_FILL,&(*stylesIt));
 		vector<vector<unsigned int> >& outlinesForColor=it->second;
 		for(unsigned int i=0;i<outlinesForColor.size();i++)
 		{

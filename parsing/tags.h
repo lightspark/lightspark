@@ -39,7 +39,7 @@ namespace lightspark
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,END_TAG};
 
 void ignore(std::istream& i, int count);
-void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomToken>& tokens);
+void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomToken>& tokens, const std::list<FILLSTYLE>& fillStyles);
 
 class Tag
 {
@@ -76,7 +76,6 @@ class DictionaryTag: public Tag
 {
 protected:
 	std::vector<GeomToken> cachedTokens;
-	std::vector<GeomShape> cached;
 public:
 	Class_base* bindedTo;
 	RootMovieClip* loadedFrom;

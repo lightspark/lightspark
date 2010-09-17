@@ -52,19 +52,10 @@ class GeomToken
 public:
 	GEOM_TOKEN_TYPE type;
 	Vector2 p1;
-	unsigned int color;
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p){}
-	GeomToken(GEOM_TOKEN_TYPE _t, unsigned int _c):type(_t),p1(0,0),color(_c){}
+	const FILLSTYLE* style;
+	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):type(_t),p1(_p),style(NULL){}
+	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE* _f):type(_t),p1(0,0),style(_f){}
 };
-
-#include "packed_begin.h"
-struct arrayElem
-{
-	GLint coord[2];
-	GLfloat colors[3];
-	GLfloat texcoord[4];
-} PACKED;
-#include "packed_end.h"
 
 class GeomShape
 {
@@ -82,10 +73,9 @@ private:
 	std::vector<Vector2*> tmpVertices;
 	void SetStyles(const std::list<FILLSTYLE>* styles);
 	const FILLSTYLE* style;
-	arrayElem* varray;
 	bool hasFill;
 public:
-	GeomShape():curTessTarget(0),style(NULL),varray(NULL),hasFill(false),color(0){}
+	GeomShape():curTessTarget(0),style(NULL),hasFill(false),color(0){}
 	std::vector<Vector2> triangles;
 	std::vector<std::vector<Vector2> > triangle_strips;
 	std::vector<std::vector<Vector2> > triangle_fans;
@@ -111,8 +101,12 @@ private:
 public:
 	void extendFilledOutlineForColor(unsigned int fillColor, const Vector2& v1, const Vector2& v2);
 	void extendStrokeOutlineForColor(unsigned int stroke, const Vector2& v1, const Vector2& v2);
-	void outputShapes(std::vector<GeomShape>& shapes);
-	void outputTokens(std::vector<GeomToken>& tokens);
+	/**
+		Generate a sequence of cachable tokens that defines the geomtries
+		@param styles This list is supposed to survive until as long as the returned tokens array
+		@param tokens A vector that will be filled with tokens
+	*/
+	void outputTokens(const std::list<FILLSTYLE>& styles, std::vector<GeomToken>& tokens);
 	void clear();
 };
 

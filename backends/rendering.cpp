@@ -829,7 +829,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 			{
 				ITextureUploadable* u=th->prevUploadJob;
 				glBindBuffer(GL_PIXEL_UNPACK_BUFFER, th->pixelBuffers[th->currentPixelBuffer]);
-				//Copy content of the pbo to the texture, 0 is the offset in the pbo
+				//Copy content of the pbo to the texture, currentPixelBufferOffset is the offset in the pbo
 				uint32_t w,h;
 				u->sizeNeeded(w,h);
 				th->loadChunkBGRA(u->getTexture(), w, h, (uint8_t*)th->currentPixelBufferOffset);

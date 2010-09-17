@@ -2048,9 +2048,9 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 		validGeometry=true;
 		Locker locker(builderMutex);
 		geometry.clear();
-		builder.outputShapes(geometry);
+		/*builder.outputShapes(geometry);
 		for(unsigned int i=0;i<geometry.size();i++)
-			geometry[i].BuildFromEdges(&styles);
+			geometry[i].BuildFromEdges(&styles);*/
 	}
 	if(geometry.size()==0)
 		return false;
@@ -2239,9 +2239,9 @@ void Graphics::Render()
 		Locker locker(builderMutex);
 		cout << "Generating geometry" << endl;
 		geometry.clear();
-		builder.outputShapes(geometry);
+		/*builder.outputShapes(geometry);
 		for(unsigned int i=0;i<geometry.size();i++)
-			geometry[i].BuildFromEdges(&styles);
+			geometry[i].BuildFromEdges(&styles);*/
 	}
 
 	for(unsigned int i=0;i<geometry.size();i++)

@@ -359,7 +359,8 @@ void CairoRenderer::sizeNeeded(uint32_t& w, uint32_t& h)
 
 void CairoRenderer::upload(uint8_t* data, uint32_t w, uint32_t h)
 {
-	memcpy(data,surface,w*h*4);
+	if(surface)
+		memcpy(data,surface,w*h*4);
 }
 
 const TextureChunk& CairoRenderer::getTexture() const
@@ -369,11 +370,15 @@ const TextureChunk& CairoRenderer::getTexture() const
 
 void CairoRenderer::uploadFence()
 {
+	if(surface)
+		Sheep::unlockOwner();
 	delete this;
 }
 
 void CairoRenderer::execute()
 {
+	if(!Sheep::lockOwner())
+		return;
 	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, tex.width);
 	assert(cairoWidthStride==tex.width*4);
 	surface=new uint8_t[cairoWidthStride*tex.height];
@@ -409,28 +414,17 @@ void CairoRenderer::execute()
 				cairo_move_to(cr, tokens[i].p1.x, tokens[i].p1.y);
 				break;	
 			case SET_FILL:
+			{
 				if(!empty)
 				{
 					cairo_fill(cr);
 					empty=true;
 				}
-				if(tokens[i].color==0)
-					cairo_set_source_rgba (cr, 1, 0, 0, 1);
-				else if(tokens[i].color==1)
-					cairo_set_source_rgba (cr, 0, 1, 0, 1);
-				else if(tokens[i].color==2)
-					cairo_set_source_rgba (cr, 0, 0, 1, 1);
-				else if(tokens[i].color==3)
-					cairo_set_source_rgba (cr, 0, 1, 1, 1);
-				else if(tokens[i].color==4)
-					cairo_set_source_rgba (cr, 1, 1, 0, 1);
-				else if(tokens[i].color==5)
-					cairo_set_source_rgba (cr, 1, 0, 1, 1);
-				else if(tokens[i].color==6)
-					cairo_set_source_rgba (cr, 0, 0, 0, 1);
-				else
-					cairo_set_source_rgba (cr, 0, 0, 0, 1);
+				assert(tokens[i].style);
+				const RGBA& color=tokens[i].style->Color;
+				cairo_set_source_rgba (cr, color.rf(), color.gf(), color.bf(), color.af());
 				break;
+			}
 			default:
 				::abort();
 		}

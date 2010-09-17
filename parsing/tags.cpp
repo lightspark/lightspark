@@ -948,14 +948,16 @@ void DefineMorphShapeTag::Render()
 void DefineShapeTag::computeCached()
 {
 	if(cachedTokens.size()==0)
-		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cachedTokens);
+	{
+		FromShaperecordListToShapeVector(Shapes.ShapeRecords,cachedTokens,Shapes.FillStyles.FillStyles);
+	}
 }
 
 void DefineShapeTag::invalidate()
 {
 	allocateCacheTexture();
 	computeCached();
-	CairoRenderer* r=new CairoRenderer(cachedTex, cachedTokens, getConcatenatedMatrix(), cachedTexX, cachedTexY);
+	CairoRenderer* r=new CairoRenderer(&shepherd,cachedTex, cachedTokens, getConcatenatedMatrix(), cachedTexX, cachedTexY);
 	sys->addJob(r);
 }
 
@@ -1057,7 +1059,8 @@ Vector2 DefineShape3Tag::debugRender(FTFont* font, bool deep)
 * * \param cur SHAPERECORD list head
 * * \param shapes a vector to be populated with the shapes */
 
-void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& shapeRecords, vector<GeomToken>& tokens)
+void lightspark::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords, std::vector<GeomToken>& tokens,
+	const std::list<FILLSTYLE>& fillStyles)
 {
 	int startX=0;
 	int startY=0;
@@ -1128,7 +1131,7 @@ void lightspark::FromShaperecordListToShapeVector(const vector<SHAPERECORD>& sha
 		}
 	}
 
-	shapesBuilder.outputTokens(tokens);
+	shapesBuilder.outputTokens(fillStyles, tokens);
 }
 
 void DefineFont3Tag::genGlyphShape(vector<GeomShape>& s, int glyph)

@@ -61,6 +61,8 @@ protected:
 	bool isSimple() const;
 	float alpha;
 	bool visible;
+	//Data to handle async rendering
+	Shepherd shepherd;
 	TextureChunk cachedTex;
 	uint32_t cachedTexX;
 	uint32_t cachedTexY;

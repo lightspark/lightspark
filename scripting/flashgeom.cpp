@@ -1118,6 +1118,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("decrementBy","",Class<IFunction>::getFunction(decrementBy),true);
 	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),true);
 	c->setMethodByQName("dotProduct","",Class<IFunction>::getFunction(dotProduct),true);
+	c->setMethodByQName("equals","",Class<IFunction>::getFunction(equals),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1337,4 +1338,21 @@ ASFUNCTIONBODY(Vector3D,dotProduct)
 	Vector3D* vc=static_cast<Vector3D*>(args[0]);
 
 	return abstract_d(th->x * vc->x + th->y * vc->y + th->z * vc->z);
+}
+
+ASFUNCTIONBODY(Vector3D,equals)
+{
+	assert_and_throw(argslen==1 || argslen==2);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+	int32_t allfour = 0;
+
+	if ( argslen == 2 )
+	{
+		Boolean* af=static_cast<Boolean*>(args[1]);
+		allfour = af->toInt();
+	}
+
+	return abstract_b(th->x == vc->x &&  th->y == vc->y && th->z == vc->z && allfour ? th->w == vc->w : true);
 }

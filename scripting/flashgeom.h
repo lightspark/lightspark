@@ -183,6 +183,7 @@ public:
 	ASFUNCTION(decrementBy);
 	ASFUNCTION(distance);
 	ASFUNCTION(dotProduct);
+	ASFUNCTION(equals);
 	
 	//Properties
 	ASFUNCTION(_get_w);

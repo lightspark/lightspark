@@ -1117,6 +1117,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setMethodByQName("crossProduct","",Class<IFunction>::getFunction(crossProduct),true);
 	c->setMethodByQName("decrementBy","",Class<IFunction>::getFunction(decrementBy),true);
 	c->setMethodByQName("distance","",Class<IFunction>::getFunction(distance),true);
+	c->setMethodByQName("dotProduct","",Class<IFunction>::getFunction(dotProduct),true);
 }
 
 ASFUNCTIONBODY(Vector3D,_constructor)
@@ -1319,11 +1320,21 @@ ASFUNCTIONBODY(Vector3D,distance)
 	Vector3D* vc1=static_cast<Vector3D*>(args[0]);
 	Vector3D* vc2=static_cast<Vector3D*>(args[1]);
 
-	number_t dx, dy, dt, dist;
+	number_t dx, dy, dz, dist;
 	dx = vc1->x - vc2->x;
 	dy = vc1->y - vc2->y;
 	dz = vc1->z - vc2->z;
 	dist = sqrt(dx * dx + dy * dy + dz * dz);
 
 	return abstract_d(dist);
+}
+
+ASFUNCTIONBODY(Vector3D,dotProduct)
+{
+	assert_and_throw(argslen==1);
+
+	Vector3D* th=static_cast<Vector3D*>(obj);
+	Vector3D* vc=static_cast<Vector3D*>(args[0]);
+
+	return abstract_d(th->x * vc->x + th->y * vc->y + th->z * vc->z);
 }

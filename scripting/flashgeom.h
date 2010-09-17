@@ -182,6 +182,7 @@ public:
 	ASFUNCTION(crossProduct);
 	ASFUNCTION(decrementBy);
 	ASFUNCTION(distance);
+	ASFUNCTION(dotProduct);
 	
 	//Properties
 	ASFUNCTION(_get_w);

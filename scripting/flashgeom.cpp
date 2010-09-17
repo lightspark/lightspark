@@ -1096,8 +1096,19 @@ ASFUNCTIONBODY(Matrix,deltaTransformPoint)
 void Vector3D::sinit(Class_base* c)
 {
 	c->setConstructor(Class<IFunction>::getFunction(_constructor));
+
+	// constants
+	Vector3D* tx = Class<Vector3D>::getInstanceS();
+	tx->x = 1;
+	c->setVariableByQName("X_AXIS","", tx);
+	Vector3D* ty = Class<Vector3D>::getInstanceS();
+	ty->y = 1;
+	c->setVariableByQName("Y_AXIS","", ty);
+	Vector3D* tz = Class<Vector3D>::getInstanceS();
+	tz->z = 1;
+	c->setVariableByQName("Z_AXIS","", tz);
 	
-	//Properties
+	// properties
 	c->setGetterByQName("w","",Class<IFunction>::getFunction(_get_w),true);
 	c->setGetterByQName("x","",Class<IFunction>::getFunction(_get_x),true);
 	c->setGetterByQName("y","",Class<IFunction>::getFunction(_get_y),true);
@@ -1110,7 +1121,7 @@ void Vector3D::sinit(Class_base* c)
 	c->setSetterByQName("y","",Class<IFunction>::getFunction(_set_y),true);
 	c->setSetterByQName("z","",Class<IFunction>::getFunction(_set_z),true);
 	
-	//Methods 
+	// methods 
 	c->setMethodByQName("add","",Class<IFunction>::getFunction(add),true);
 	c->setMethodByQName("angleBetween","",Class<IFunction>::getFunction(angleBetween),true);
 	c->setMethodByQName("clone","",Class<IFunction>::getFunction(clone),true);

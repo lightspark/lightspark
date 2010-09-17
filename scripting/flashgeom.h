@@ -181,6 +181,7 @@ public:
 	ASFUNCTION(clone);
 	ASFUNCTION(crossProduct);
 	ASFUNCTION(decrementBy);
+	ASFUNCTION(distance);
 	
 	//Properties
 	ASFUNCTION(_get_w);

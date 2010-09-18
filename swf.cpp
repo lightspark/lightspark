@@ -677,7 +677,7 @@ void SystemState::tick()
 	RootMovieClip::tick();
  	sem_wait(&mutex);
 	list<ThreadProfile>::iterator it=profilingData.begin();
-	for(;it!=profilingData.end();it++)
+	for(;it!=profilingData.end();++it)
 		it->tick();
 	sem_post(&mutex);
 	//Enter frame should be sent to the stage too
@@ -1084,7 +1084,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 {
 	sem_wait(&mutex);
 	list< DictionaryTag*>::iterator it = dictionary.begin();
-	for(;it!=dictionary.end();it++)
+	for(;it!=dictionary.end();++it)
 	{
 		if((*it)->getId()==id)
 			break;

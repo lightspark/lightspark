@@ -2625,7 +2625,7 @@ Class_base::~Class_base()
 	{
 		cout << "Class " << class_name << " references " << referencedObjects.size() << endl;
 		set<ASObject*>::iterator it=referencedObjects.begin();
-		for(;it!=referencedObjects.end();it++)
+		for(;it!=referencedObjects.end();++it)
 			delete *it;
 	}
 	

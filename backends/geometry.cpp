@@ -104,7 +104,7 @@ void GeomShape::Render(int x, int y) const
 		{
 			std::vector<Vector2>::const_iterator it=outlines[i].begin();
 			glBegin(GL_LINE_STRIP);
-			for(;it!=outlines[i].end();it++)
+			for(;it!=outlines[i].end();++it)
 				glVertex2i(it->x+x,it->y+y);
 			glEnd();
 		}
@@ -122,7 +122,7 @@ void GeomShape::SetStyles(const std::list<FILLSTYLE>* styles)
 		//Simulate array access :-(
 		list<FILLSTYLE>::const_iterator it=styles->begin();
 		for(unsigned int i=0;i<(color-1);i++)
-			it++;
+			++it;
 		style=&(*it);
 	}
 }
@@ -253,7 +253,7 @@ void ShapesBuilder::clear()
 void ShapesBuilder::joinOutlines()
 {
 	map< unsigned int, vector< vector<Vector2> > >::iterator it=shapesMap.begin();
-	for(;it!=shapesMap.end();it++)
+	for(;it!=shapesMap.end();++it)
 	{
 		vector< vector<Vector2> >& outlinesForColor=it->second;
 		//Repack outlines of the same color, avoiding excessive copying
@@ -327,7 +327,7 @@ void ShapesBuilder::outputShapes(vector< GeomShape >& shapes)
 
 	map< unsigned int, vector< vector<Vector2> > >::iterator it=shapesMap.begin();
 
-	for(;it!=shapesMap.end();it++)
+	for(;it!=shapesMap.end();++it)
 	{
 		shapes.push_back(GeomShape());
 		shapes.back().outlines.swap(it->second);

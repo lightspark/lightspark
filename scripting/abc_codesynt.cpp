@@ -1366,7 +1366,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 		{
 			stop=true;
 			map<unsigned int,block_info>::iterator bit=blocks.begin();
-			for(;bit!=blocks.end();bit++)
+			for(;bit!=blocks.end();++bit)
 			{
 				block_info& cur=bit->second;
 				std::vector<bool> new_reset(body->local_count,false);
@@ -1376,7 +1376,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 						new_reset[i]=true;
 				}
 				set<block_info*>::iterator seq=cur.seqs.begin();
-				for(;seq!=cur.seqs.end();seq++)
+				for(;seq!=cur.seqs.end();++seq)
 				{
 					for(unsigned int i=0;i<body->local_count;i++)
 					{
@@ -1403,7 +1403,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 		//We can now search for locals that can be saved
 		//If every predecessor blocks agree with the type of a local we pass it over
 		map<unsigned int,block_info>::iterator bit=blocks.begin();
-		for(;bit!=blocks.end();bit++)
+		for(;bit!=blocks.end();++bit)
 		{
 			block_info& cur=bit->second;
 			vector<STACK_TYPE> new_start;
@@ -1413,7 +1413,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 				set<block_info*>::iterator pred=cur.preds.begin();
 				new_start=(*pred)->locals;
 				pred++;
-				for(;pred!=cur.preds.end();pred++)
+				for(;pred!=cur.preds.end();++pred)
 				{
 					for(unsigned int j=0;j<(*pred)->locals.size();j++)
 					{
@@ -1441,7 +1441,7 @@ void method_info::doAnalysis(std::map<unsigned int,block_info>& blocks, llvm::IR
 	}
 
 	map<unsigned int, block_info>::iterator bit=blocks.begin();
-	for(;bit!=blocks.end();bit++)
+	for(;bit!=blocks.end();++bit)
 	{
 		block_info& cur=bit->second;
 		cur.locals_start_obj.resize(cur.locals_start.size(),NULL);
@@ -3940,7 +3940,7 @@ SyntheticFunction::synt_function method_info::synt_method()
 	}
 
 	map<unsigned int,block_info>::iterator it2=blocks.begin();
-	for(;it2!=blocks.end();it2++)
+	for(;it2!=blocks.end();++it2)
 	{
 		if(it2->second.BB->getTerminator()==NULL)
 		{

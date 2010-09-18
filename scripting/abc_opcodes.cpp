@@ -1360,7 +1360,7 @@ void ABCVm::getLex(call_context* th, int n)
 	//Find out the current 'this', when looking up over it, we have to consider all of it
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 	ASObject* target;
-	for(;it!=th->scope_stack.rend();it++)
+	for(;it!=th->scope_stack.rend();++it)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
@@ -1447,7 +1447,7 @@ ASObject* ABCVm::findProperty(call_context* th, int n)
 	ASObject* o=NULL;
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
-	for(;it!=th->scope_stack.rend();it++)
+	for(;it!=th->scope_stack.rend();++it)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();
@@ -1485,7 +1485,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, int n)
 	ASObject* ret=NULL;
 	thisAndLevel tl=getVm()->getCurObjAndLevel();
 
-	for(;it!=th->scope_stack.rend();it++)
+	for(;it!=th->scope_stack.rend();++it)
 	{
 		if(*it==tl.cur_this)
 			tl.cur_this->resetLevel();

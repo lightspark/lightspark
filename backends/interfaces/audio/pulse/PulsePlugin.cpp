@@ -324,7 +324,7 @@ void PulsePlugin::stop()
 	if ( !stopped )
 	{
 		stopped = true;
-		for ( stream_iterator it = streams.begin();it != streams.end(); it++ )
+		for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
 		{
 			freeStream( *it );
 		}

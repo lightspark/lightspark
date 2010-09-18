@@ -385,7 +385,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 					glEnd();
 				
 					list<ThreadProfile>::iterator it=sys->profilingData.begin();
-					for(;it!=sys->profilingData.end();it++)
+					for(;it!=sys->profilingData.end();++it)
 						it->plot(1000000/sys->getFrameRate(),&font);
 
 					glEnable(GL_TEXTURE_2D);
@@ -405,7 +405,7 @@ void* RenderThread::gtkplug_worker(RenderThread* th)
 	glDisable(GL_TEXTURE_2D);
 	//Before destroying the context shutdown all the GLResources
 	set<GLResource*>::const_iterator it=th->managedResources.begin();
-	for(;it!=th->managedResources.end();it++)
+	for(;it!=th->managedResources.end();++it)
 		(*it)->shutdown();
 	th->commonGLDeinit();
 	glXMakeCurrent(d,None,NULL);
@@ -877,7 +877,7 @@ void* RenderThread::sdl_worker(RenderThread* th)
 					glEnd();
 					
 					list<ThreadProfile>::iterator it=th->m_sys->profilingData.begin();
-					for(;it!=th->m_sys->profilingData.end();it++)
+					for(;it!=th->m_sys->profilingData.end();++it)
 						it->plot(1000000/sys->getFrameRate(),&font);
 				}
 				//Call glFlush to offload work on the GPU

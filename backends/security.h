@@ -38,6 +38,8 @@ class SecurityManager
 public:
 	enum SANDBOXTYPE { REMOTE=1, LOCAL_WITH_FILE=2, LOCAL_WITH_NETWORK=4, LOCAL_TRUSTED=8 };
 private:
+	sem_t mutex;
+
 	const char* sandboxNames[4];
 	const char* sandboxTitles[4];
 
@@ -137,6 +139,8 @@ class PolicyFile
 public:
 	enum TYPE { URL, SOCKET };
 protected:
+	sem_t mutex;
+
 	URLInfo url;
 	TYPE type;
 
@@ -187,9 +191,8 @@ public:
 	const URLInfo& getOriginalURL() const { return originalURL; }
 	SUBTYPE getSubtype() const { return subtype; }
 
-	bool isMaster() { return isMaster(false); }
 	//If strict is true, the policy will be loaded first to see if it isn't redirected
-	bool isMaster(bool strict);
+	bool isMaster();
 	//Load and parse the policy file
 	void load();
 	//Get the master policy file controlling this one

@@ -63,7 +63,6 @@ void StandaloneDownloadManager::destroy(Downloader* d)
 {
 	if(!sys->isShuttingDown())
 		d->wait();
-	LOG(LOG_NO_INFO, "deleted downloader");
 	delete d;
 }
 

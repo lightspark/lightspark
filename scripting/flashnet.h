@@ -36,6 +36,7 @@ class URLRequest: public ASObject
 {
 friend class Loader;
 friend class URLLoader;
+friend ASObject* sendToURL(ASObject* obj,ASObject* const* args, const unsigned int argslen);
 private:
 	tiny_string url;
 public:
@@ -45,7 +46,6 @@ public:
 	ASFUNCTION(_constructor);
 	ASFUNCTION(_getURL);
 	ASFUNCTION(_setURL);
-	const tiny_string& getURL() { return url; }
 };
 
 class URLVariables: public ASObject

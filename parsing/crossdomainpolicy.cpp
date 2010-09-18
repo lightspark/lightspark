@@ -78,12 +78,13 @@ CrossDomainPolicy::ELEMENTTYPE CrossDomainPolicy::getNextElement()
 				toPorts = xml.get_attribute("to-ports");
 				secure = false;
 				secureSpecified = false;
-				if(xml.get_attribute("secure") == "0")
+				LOG(LOG_NO_INFO, "allow-access-from, sec attr: " << xml.get_attribute("secure"));
+				if(xml.get_attribute("secure") == "false")
 				{
 					secure = false;
 					secureSpecified = true;
 				}
-				else if(xml.get_attribute("secure") == "1")
+				else if(xml.get_attribute("secure") == "true")
 				{
 					secure = true;
 					secureSpecified = true;
@@ -108,12 +109,12 @@ CrossDomainPolicy::ELEMENTTYPE CrossDomainPolicy::getNextElement()
 				headers = xml.get_attribute("headers");
 				secure = false;
 				secureSpecified = false;
-				if(xml.get_attribute("secure") == "0")
+				if(xml.get_attribute("secure") == "false")
 				{
 					secure = false;
 					secureSpecified = true;
 				}
-				else if(xml.get_attribute("secure") == "1")
+				else if(xml.get_attribute("secure") == "true")
 				{
 					secure = true;
 					secureSpecified = true;

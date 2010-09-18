@@ -122,17 +122,17 @@ ASFUNCTIONBODY(URLLoader,load)
 			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 			true);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
-	if(evaluationResult == SecurityManager::DISALLOWED_REMOTE_SANDBOX)
+	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
 				"connect to network");
 	//Local-with-filesystem sandbox can't access network
-	else if(evaluationResult == SecurityManager::DISALLOWED_LOCAL_SANDBOX)
+	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
 				"connect to local file");
-	else if(evaluationResult == SecurityManager::DISALLOWED_RESTRICT_LOCAL_DIRECTORY)
+	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
 		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
 				"not allowed to navigate up for local files");
-	else if(evaluationResult == SecurityManager::DISALLOWED_CROSSDOMAIN_POLICY)
+	else if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 	{
 		//TODO: find correct way of handling this case (SecurityErrorEvent in this case)
 		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
@@ -188,11 +188,6 @@ void URLLoader::execute()
 	if(!downloader->hasFailed())
 	{
 		downloader->wait();
-		std::map<tiny_string, tiny_string>::iterator it = downloader->getHeadersBegin();
-		for(; it != downloader->getHeadersEnd(); it++)
-		{
-			LOG(LOG_NO_INFO, "HEADER: '" << (*it).first << "': '" << (*it).second << "'");
-		}
 		if(!downloader->hasFailed())
 		{
 			istream s(downloader);
@@ -543,17 +538,17 @@ ASFUNCTIONBODY(NetStream,play)
 			~(SecurityManager::LOCAL_WITH_FILE),
 			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 			true); //Check for navigating up in local directories (not allowed)
-	if(evaluationResult == SecurityManager::DISALLOWED_REMOTE_SANDBOX)
+	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
 				"connect to network");
 	//Local-with-filesystem sandbox can't access network
-	else if(evaluationResult == SecurityManager::DISALLOWED_LOCAL_SANDBOX)
+	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
 				"connect to local file");
-	else if(evaluationResult == SecurityManager::DISALLOWED_RESTRICT_LOCAL_DIRECTORY)
+	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
 				"not allowed to navigate up for local files");
-	else if(evaluationResult == SecurityManager::DISALLOWED_CROSSDOMAIN_POLICY)
+	else if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		th->rawAccessAllowed = true;
 
 	assert_and_throw(th->downloader==NULL);
@@ -1136,10 +1131,10 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	assert_and_throw(arg->getPrototype()==Class<URLRequest>::getClass());
 	URLRequest* urlRequest=static_cast<URLRequest*>(arg);
 	//Check for URLRequest.url != null
-	if(urlRequest->getURL().len() == 0)
+	if(urlRequest->url.len() == 0)
 		throw Class<TypeError>::getInstanceS();
 
-	URLInfo url=sys->getOrigin().goToURL(urlRequest->getURL());
+	URLInfo url=sys->getOrigin().goToURL(urlRequest->url);
 
 	//TODO: support the right events (like SecurityErrorEvent)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
@@ -1149,17 +1144,17 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 			SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 			true);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
-	if(evaluationResult == SecurityManager::DISALLOWED_REMOTE_SANDBOX)
+	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
 				"connect to network");
 	//Local-with-filesystem sandbox can't access network
-	else if(evaluationResult == SecurityManager::DISALLOWED_LOCAL_SANDBOX)
+	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
 				"connect to local file");
-	else if(evaluationResult == SecurityManager::DISALLOWED_RESTRICT_LOCAL_DIRECTORY)
+	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
 		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
 				"not allowed to navigate up for local files");
-	else if(evaluationResult == SecurityManager::DISALLOWED_CROSSDOMAIN_POLICY)
+	else if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 	{
 		//TODO: find correct way of handling this case (SecurityErrorEvent in this case)
 		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "

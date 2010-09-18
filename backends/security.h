@@ -42,9 +42,9 @@ private:
 	const char* sandboxTitles[4];
 
 	//Map (by domain) of vectors of pending policy files
-	std::map<tiny_string, std::vector<URLPolicyFile*>> pendingURLPolicyFiles;
+	std::multimap<tiny_string, URLPolicyFile*> pendingURLPolicyFiles;
 	//Map (by domain) of vectors of loaded policy files
-	std::map<tiny_string, std::vector<URLPolicyFile*>> loadedURLPolicyFiles;
+	std::multimap<tiny_string, URLPolicyFile*> loadedURLPolicyFiles;
 
 	//Security sandbox type
 	SANDBOXTYPE sandboxType;
@@ -64,7 +64,7 @@ public:
 	//Get the URL policy file object (if any) for the URL policy file at url
 	URLPolicyFile* getURLPolicyFileByURL(const URLInfo& url);
 
-	void markPolicyFileLoaded(const URLPolicyFile* file);
+	void loadPolicyFile(URLPolicyFile* file);
 	
 	//Set the sandbox type
 	void setSandboxType(SANDBOXTYPE type) { sandboxType = type; }
@@ -104,8 +104,8 @@ public:
 	bool evaluateSandbox(SANDBOXTYPE sandbox, int allowedSandboxes);
 
 	//The possible results for the URL evaluation methods below
-	enum EVALUATIONRESULT { ALLOWED, DISALLOWED_RESTRICT_LOCAL_DIRECTORY,
-		DISALLOWED_REMOTE_SANDBOX, 	DISALLOWED_LOCAL_SANDBOX, DISALLOWED_CROSSDOMAIN_POLICY };
+	enum EVALUATIONRESULT { ALLOWED, NA_RESTRICT_LOCAL_DIRECTORY,
+		NA_REMOTE_SANDBOX, 	NA_LOCAL_SANDBOX, NA_CROSSDOMAIN_POLICY };
 	
 	//Evaluates an URL by checking allowed sandboxes and checking URL policy files
 	EVALUATIONRESULT evaluateURL(const tiny_string& url, bool loadPendingPolicies, 
@@ -146,8 +146,6 @@ protected:
 	//Ignore this object?
 	//Reason for ignoring can be: master policy file doesn't allow other/any policy files
 	bool ignore;
-	//Is this a master file
-	bool master;
 	//Is this file loaded and parsed yet?
 	bool loaded;
 
@@ -159,9 +157,10 @@ public:
 
 	const URLInfo& getURL() const { return url; }
 	TYPE getType() const { return type; }
+
 	bool isValid() const { return valid; }
 	bool isIgnored() const { return ignore; }
-	bool isMaster() const { return master; }
+	virtual bool isMaster()=0;
 	bool isLoaded() const { return loaded; }
 	//Load and parse the policy file
 	virtual void load()=0;
@@ -177,14 +176,20 @@ class URLPolicyFile : public PolicyFile
 public:
 	enum SUBTYPE { HTTP, HTTPS, FTP };
 private:
+	URLInfo originalURL;
 	SUBTYPE subtype;
 
 	std::vector<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
 public:
 	URLPolicyFile(const URLInfo& _url);
 	~URLPolicyFile();
+
+	const URLInfo& getOriginalURL() const { return originalURL; }
 	SUBTYPE getSubtype() const { return subtype; }
 
+	bool isMaster() { return isMaster(false); }
+	//If strict is true, the policy will be loaded first to see if it isn't redirected
+	bool isMaster(bool strict);
 	//Load and parse the policy file
 	void load();
 	//Get the master policy file controlling this one

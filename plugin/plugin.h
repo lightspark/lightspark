@@ -49,11 +49,10 @@ class NPDownloader: public lightspark::Downloader
 {
 private:
 	NPP instance;
-	lightspark::tiny_string url;
 	static void dlStartCallback(void* th);
 public:
 	bool started;
-	NPDownloader(bool cached, NPP i, const lightspark::tiny_string& u);
+	NPDownloader(const lightspark::tiny_string& url, bool cached, NPP i);
 	void terminate();
 };
 

@@ -49,7 +49,6 @@ public:
 
 class DLL_PUBLIC StandaloneDownloadManager:public DownloadManager
 {
-private:
 public:
 	StandaloneDownloadManager();
 	~StandaloneDownloadManager(){}
@@ -64,8 +63,6 @@ private:
 	//Signals new bytes available for reading
 	sem_t available;
 
-	//Whether to allow dynamically growing the buffer
-	bool allowBufferRealloc;
 	//True if the file is cached to disk (default = false)
 	bool cached;	
 
@@ -79,6 +76,7 @@ private:
 	//Helper to get the current offset
 	pos_type getOffset() const;
 protected:
+	tiny_string url;
 	sem_t mutex;
 	sem_t cacheOpen;
 	//Signals termination of the download
@@ -90,6 +88,8 @@ protected:
 	//True if the download has finished downloading all data
 	bool finished;
 
+	//Whether to allow dynamically growing the buffer
+	bool allowBufferRealloc;
 	//This will hold the whole download (non-cached) or a window into the download (cached)
 	uint8_t* buffer;
 
@@ -113,10 +113,15 @@ protected:
 	//Wait for cache to be opened
 	void waitForCache();
 
+	bool redirected;
+	tiny_string originalURL;
+	uint32_t requestStatus;
 	std::map<tiny_string, tiny_string> headers;
 public:
-	Downloader(bool cached);
+	Downloader(const tiny_string& _url, bool _cached);
 	virtual ~Downloader();
+
+	const tiny_string& getURL() { return url; }
 
 	bool isCached() { return cached; }
 
@@ -146,45 +151,51 @@ public:
 	//Gets the length of downloaded data
 	uint32_t getReceivedLength() { return tail; }
 
+	void parseHeaders(const char* headers, bool setLength);
+	void parseHeader(std::string header, bool setLength);
 	size_t getHeaderCount() { return headers.size(); }
-	void setHeader(tiny_string name, tiny_string value) { headers[name] = value; }
+	//void setHeader(tiny_string name, tiny_string value) { headers[name] = value; }
 	tiny_string getHeader(const char* header) { return getHeader(tiny_string(header)); }
 	tiny_string getHeader(tiny_string header) { return headers[header]; }
 	std::map<tiny_string, tiny_string>::iterator getHeadersBegin()
 	{ return headers.begin(); }
 	std::map<tiny_string, tiny_string>::iterator getHeadersEnd()
 	{ return headers.end(); }
+	
+	void setRedirected(const tiny_string& newURL)
+	{
+		redirected = true;
+		url = newURL;
+	}
+	bool isRedirected() { return redirected; }
+	const tiny_string& getOriginalURL() { return originalURL; }
+	uint32_t getRequestStatus() { return requestStatus; }
+	//void setRequestStatus(uint32_t status) { requestStatus = status; }
 };
 
 class ThreadedDownloader : public Downloader, public IThreadJob
 {
 public:
-	ThreadedDownloader(bool cached):Downloader(cached){}
+	ThreadedDownloader(const tiny_string& url, bool cached):Downloader(url, cached){};
 };
 
 //CurlDownloader can be used as a thread job, standalone or as a streambuf
 class CurlDownloader: public ThreadedDownloader
 {
 private:
-	tiny_string url;
-	//Used to detect redirects, we'll need this later anyway (e.g.: HTTPStatusEvent)
-	uint32_t requestStatus;
 	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
 	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
 	void execute();
 	void threadAbort();
 public:
-	uint32_t getRequestStatus() { return requestStatus; }
-	void setRequestStatus(uint32_t status) { requestStatus = status; }
-	CurlDownloader(bool cached, const tiny_string& u);
+	CurlDownloader(const tiny_string& url, bool cached);
 };
 
 //LocalDownloader can be used as a thread job, standalone or as a streambuf
 class LocalDownloader: public ThreadedDownloader
 {
 private:
-	tiny_string url;
 	static size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp);
 	static size_t write_header(void *buffer, size_t size, size_t nmemb, void *userp);
 	static int progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow);
@@ -194,7 +205,7 @@ private:
 	//Size of the reading buffer
 	static const size_t bufSize = 8192;
 public:
-	LocalDownloader(bool cached, const tiny_string& u);
+	LocalDownloader(const tiny_string& url, bool cached);
 };
 
 };

@@ -52,9 +52,9 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_strin
 
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached)
 {
-	LOG(LOG_NO_INFO, "DownloadManager: PLUGIN: '" << url.getParsedURL() << "'");
+	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << "'" << (cached ? _(" - cached") : ""));
 	//Register this download
-	NPDownloader* downloader=new NPDownloader(cached, instance, url.getParsedURL());
+	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cached, instance);
 	return downloader;
 }
 
@@ -66,7 +66,7 @@ void NPDownloadManager::destroy(lightspark::Downloader* d)
 	delete d;
 }
 
-NPDownloader::NPDownloader(bool cached, NPP i, const lightspark::tiny_string& u):Downloader(cached),instance(i),url(u),started(false)
+NPDownloader::NPDownloader(const lightspark::tiny_string& url, bool cached, NPP i):Downloader(url, cached),instance(i),started(false)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
@@ -367,35 +367,15 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 		dl->setAllowBufferRealloc(true);
 		*stype=NP_NORMAL;
 
-		if(stream->headers != NULL)
+		if(strcmp(stream->url, dl->getURL().raw_buf()) != 0)
 		{
-			std::string headersStr(stream->headers);
-			size_t cursor = 0;
-			size_t newLinePos = headersStr.find("\n");
-			std::string headerLineStr;
-			std::string headerName;
-			std::string headerValue;
-			size_t colonPos;
-			while(newLinePos != std::string::npos)
-			{
-				if(headersStr[cursor] == '\n')
-					cursor++;
-				headerLineStr = headersStr.substr(cursor, newLinePos-cursor);
-				colonPos = headerLineStr.find(":");
-				if(colonPos != std::string::npos)
-				{
-					headerName = headerLineStr.substr(0, colonPos);
-					if(headerLineStr.substr(colonPos+1, 1) == " ")
-						headerValue = headerLineStr.substr(colonPos+2, headerLineStr.length()-colonPos-1);
-					else
-						headerValue = headerLineStr.substr(colonPos+1, headerLineStr.length()-colonPos);
-					std::transform(headerName.begin(), headerName.end(), headerName.begin(), ::tolower);
-					std::transform(headerValue.begin(), headerValue.end(), headerValue.begin(), ::tolower);
-					dl->setHeader(lightspark::tiny_string(headerName), lightspark::tiny_string(headerValue));
-				}
-				cursor = newLinePos;
-				newLinePos = headersStr.find("\n", cursor+1);
-			}
+			LOG(LOG_NO_INFO, _("NET: PLUGIN: redirect detected"));
+			dl->setRedirected(lightspark::tiny_string(stream->url));
+		}
+		if(NP_VERSION_MINOR >= NPVERS_HAS_RESPONSE_HEADERS)
+		{
+			//We've already got the length of the download, no need to set it from the headers
+			dl->parseHeaders(stream->headers, false);
 		}
 	}
 	else

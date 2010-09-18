@@ -43,17 +43,17 @@ Downloader* StandaloneDownloadManager::download(const tiny_string& u, bool cache
 
 Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 {
-	LOG(LOG_NO_INFO, "DownloadManager: STANDALONE: '" << url.getParsedURL() << "'" << (cached ? " - cached" : ""));
+	LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager::download '") << url.getParsedURL() << "'" << (cached ? _(" - cached") : ""));
 	ThreadedDownloader* downloader;
 	if(url.getProtocol() == "file")
 	{
-		LOG(LOG_NO_INFO, "DownloadManager: local file");
-		downloader=new LocalDownloader(cached, url.getPath());
+		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: local file"));
+		downloader=new LocalDownloader(url.getPath(), cached);
 	}
 	else
 	{
-		LOG(LOG_NO_INFO, "DownloadManager: remote file");
-		downloader=new CurlDownloader(cached, url.getParsedURL());
+		LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager: remote file"));
+		downloader=new CurlDownloader(url.getParsedURL(), cached);
 	}
 	sys->addJob(downloader);
 	return downloader;
@@ -63,6 +63,7 @@ void StandaloneDownloadManager::destroy(Downloader* d)
 {
 	if(!sys->isShuttingDown())
 		d->wait();
+	LOG(LOG_NO_INFO, "deleted downloader");
 	delete d;
 }
 
@@ -85,8 +86,10 @@ Downloader::~Downloader()
 	sem_destroy(&cacheOpen);
 }
 
-Downloader::Downloader(bool _cached):allowBufferRealloc(false),cached(_cached),waiting(false),hasTerminated(false),failed(false),finished(false),buffer(NULL),len(0),
-	tail(0),cachePos(0),cacheSize(0),keepCache(false)
+Downloader::Downloader(const tiny_string& _url, bool _cached):
+	cached(_cached),waiting(false),url(_url),hasTerminated(false),failed(false),finished(false),
+	allowBufferRealloc(false),buffer(NULL),len(0),tail(0),cachePos(0),cacheSize(0),keepCache(false),
+	redirected(false),originalURL(url),requestStatus(0)
 {
 	sem_init(&available,0,0);
 	sem_init(&mutex,0,1);
@@ -163,7 +166,7 @@ void Downloader::setLen(uint32_t l)
 		//Open the cache file
 		cache.open(cacheFileName.raw_buf(), std::fstream::in | std::fstream::out);
 		assert_and_throw(cache.is_open());
-		LOG(LOG_NO_INFO, _("Downloading to cache file: ") << cacheFileName);
+		LOG(LOG_NO_INFO, _("NET: Downloading to cache file: ") << cacheFileName);
 
 		//This buffer will be our "window" into the file
 		buffer= (uint8_t*) calloc(cacheMaxSize, sizeof(uint8_t));
@@ -179,7 +182,7 @@ void Downloader::setLen(uint32_t l)
 		//Create buffer
 		if(buffer == NULL)
 		{
-			LOG(LOG_NO_INFO, _("Downloading to memory"));
+			LOG(LOG_NO_INFO, _("NET: Downloading to memory"));
 			buffer= (uint8_t*) calloc(len, sizeof(uint8_t));
 			setg((char*)buffer,(char*)buffer,(char*)buffer);
 		}
@@ -217,7 +220,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
 				newLength += ((tail+added)-len);
 			else
 				newLength += 4096;
-			LOG(LOG_NO_INFO, _("Downloaded file bigger than buffer (") << tail+added << ">" << len << 
+			LOG(LOG_NO_INFO, _("NET: Downloaded file bigger than buffer (") << tail+added << ">" << len << 
 					_("). Growing buffer to: ") << newLength << _(", grown by: ") << (newLength-len));
 			sem_post(&mutex);
 			setLen(newLength);
@@ -271,7 +274,7 @@ Downloader::int_type Downloader::underflow()
 		//We haven't reached the end of the download, more bytes should follow
 		else
 		{
-			LOG(LOG_NO_INFO, _("Downloader::underflow: waiting for more bytes"));
+			LOG(LOG_NO_INFO, _("NET: Downloader::underflow: waiting for more bytes"));
 			waiting=true; //Indicate we are waiting for more bytes to be downloaded
 			sem_post(&mutex);
 			sem_wait(&available); //Wait for more bytes to be downloaded
@@ -307,7 +310,7 @@ Downloader::int_type Downloader::underflow()
 		//Read into our buffer window
 		cache.read((char*)buffer, cacheSize);
 		if(cache.fail())
-			LOG(LOG_ERROR, _("Downloader::underflow: reading from cache file failed"));
+			LOG(LOG_ERROR, _("NET: Downloader::underflow: reading from cache file failed"));
 
 		begin=(char*)buffer;
 		cur=(char*)buffer;
@@ -363,7 +366,7 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 			//Read into our window
 			cache.read((char*)buffer, cacheSize);
 			if(cache.fail())
-				LOG(LOG_ERROR, _("Downloader::seekpos: reading from cache file failed"));
+				LOG(LOG_ERROR, _("NET: Downloader::seekpos: reading from cache file failed"));
 
 			//Our window starts at position pos
 			setg((char*) buffer, (char*) buffer, ((char*) buffer)+cacheSize);
@@ -404,7 +407,77 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 	return ret;
 }
 
-CurlDownloader::CurlDownloader(bool cached, const tiny_string& u):ThreadedDownloader(cached), url(u),requestStatus(0)
+void Downloader::parseHeaders(const char* headers, bool setLength)
+{
+	if(headers == NULL)
+		return;
+
+	std::string headersStr(headers);
+	size_t cursor = 0;
+	size_t newLinePos = headersStr.find("\n");
+	while(newLinePos != std::string::npos)
+	{
+		if(headersStr[cursor] == '\n')
+			cursor++;
+		parseHeader(headersStr.substr(cursor, newLinePos-cursor), setLength);
+		cursor = newLinePos;
+		newLinePos = headersStr.find("\n", cursor+1);
+	}
+}
+void Downloader::parseHeader(std::string header, bool setLength)
+{
+	if(header.substr(0, 9) == "HTTP/1.1 " || header.substr(0, 9) == "HTTP/1.0") 
+	{
+		std::string status = header.substr(9, 3);
+		requestStatus = atoi(status.c_str());
+		//HTTP error or server error or proxy error, let's fail
+		//TODO: shouldn't we fetch the data anyway
+		if(getRequestStatus()/100 == 4 || 
+				getRequestStatus()/100 == 5 || 
+				getRequestStatus()/100 == 6)
+		{
+			LOG(LOG_NO_INFO, "FAILED");
+			setFailed();
+		}
+		else if(getRequestStatus()/100 == 3); //HTTP redirect
+		else if(getRequestStatus()/100 == 2); //HTTP OK
+	}
+	else
+	{
+		std::string headerName;
+		std::string headerValue;
+		size_t colonPos;
+		colonPos = header.find(":");
+		if(colonPos != std::string::npos)
+		{
+			headerName = header.substr(0, colonPos);
+			if(header.substr(colonPos+1, 1) == " ")
+				headerValue = header.substr(colonPos+2, header.length()-colonPos-1);
+			else
+				headerValue = header.substr(colonPos+1, header.length()-colonPos);
+
+			std::transform(headerName.begin(), headerName.end(), headerName.begin(), ::tolower);
+			//std::transform(headerValue.begin(), headerValue.end(), headerValue.begin(), ::tolower);
+			headers[tiny_string(headerName)] = tiny_string(headerValue);
+
+			//Set the new real URL when we are being redirected
+			if(getRequestStatus()/100 == 3 && headerName == "location")
+			{
+				LOG(LOG_NO_INFO, _("NET: redirect detected"));
+				setRedirected(URLInfo(url).goToURL(tiny_string(headerValue)).getParsedURL());
+			}
+			if(headerName == "content-length")
+			{
+				//Now read the length and allocate the byteArray
+				//Only read the length when we're not redirecting
+				if(getRequestStatus()/100 != 3)
+					setLen(atoi(headerValue.c_str()));
+			}
+		}
+	}
+}
+
+CurlDownloader::CurlDownloader(const tiny_string& url, bool cached):ThreadedDownloader(url, cached)
 {
 }
 
@@ -420,7 +493,7 @@ void CurlDownloader::execute()
 		setFailed();
 		return;
 	}
-	LOG(LOG_NO_INFO, _("CurlDownloader::execute: reading remote file: ") << url.raw_buf());
+	LOG(LOG_NO_INFO, _("NET: CurlDownloader::execute: reading remote file: ") << url.raw_buf());
 #ifdef ENABLE_CURL
 	CURL *curl;
 	CURLcode res;
@@ -429,6 +502,14 @@ void CurlDownloader::execute()
 	{
 		std::cout << url << std::endl;
 		curl_easy_setopt(curl, CURLOPT_URL, url.raw_buf());
+		//Needed for thread-safety reasons.
+		//This makes CURL not respect DNS resolving timeouts.
+		//TODO: openssl needs locking callbacks. We should implement these.
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+		//ALlow self-signed and incorrect certificates.
+		//TODO: decide if we should allow them.
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
 		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);
@@ -450,7 +531,7 @@ void CurlDownloader::execute()
 #else
 	//ENABLE_CURL not defined
 	setFailed();
-	LOG(LOG_ERROR,_("CURL not enabled in this build. Downloader will always fail."));
+	LOG(LOG_ERROR,_("NET: CURL not enabled in this build. Downloader will always fail."));
 #endif
 	//Notify the downloader no more data should be expected
 	setFinished();
@@ -470,7 +551,7 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 	if(th->getLength() == 0)
 	{
 		//If the HTTP request doesn't contain a Content-Length header, allow growing the buffer
-		th->setAllowBufferRealloc(true);
+		th->allowBufferRealloc = true;
 	}
 	if(th->getRequestStatus() != 3)
 	{
@@ -482,59 +563,18 @@ size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void 
 size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, void *userp)
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
-	char* headerLine=(char*)buffer;
 
-	//std::cerr << "CURL header: " << headerLine;
+	std::string header((char*) buffer);
+	header = header.substr(0, header.find("\r\n"));
+	header = header.substr(0, header.find("\n"));
+	//We haven't set the length of the download uet, so set it from the headers
+	th->parseHeader(header, true);
 
-	if(strncmp(headerLine,"HTTP/1.1 ",9)==0) 
-	{
-		char* status = new char[4];
-		strncpy(status, headerLine+9, 3);
-		status[3]=0;
-		th->setRequestStatus(atoi(status));
-		delete[] status;
-		if(th->getRequestStatus()/100 == 4 || th->getRequestStatus()/100 == 5 || 
-				th->getRequestStatus()/100 == 6)
-		//HTTP error or server error or proxy error, let's fail
-		//TODO: don't we need to return the data anyway?
-		{
-			th->setFailed();
-		}
-		else if(th->getRequestStatus()/100 == 3); //HTTP redirect
-		else if(th->getRequestStatus()/100 == 2); //HTTP OK
-	}
-	else
-	{
-		std::string headerLineStr(headerLine);
-		headerLineStr = headerLineStr.substr(0, headerLineStr.find("\r\n"));
-		headerLineStr = headerLineStr.substr(0, headerLineStr.find("\n"));
-		size_t colonPos = headerLineStr.find(":");
-		if(colonPos != std::string::npos)
-		{
-			std::string headerName = headerLineStr.substr(0, colonPos);
-			std::string headerValue;
-			if(headerLineStr.substr(colonPos+1, 1) == " ")
-				headerValue = headerLineStr.substr(colonPos+2, headerLineStr.length()-colonPos-1);
-			else
-				headerValue = headerLineStr.substr(colonPos+1, headerLineStr.length()-colonPos);
-			std::transform(headerName.begin(), headerName.end(), headerName.begin(), ::tolower);
-			std::transform(headerValue.begin(), headerValue.end(), headerValue.begin(), ::tolower);
-			th->setHeader(tiny_string(headerName), tiny_string(headerValue));
-			if(headerName == "Content-Length")
-			{
-				//Now read the length and allocate the byteArray
-				//Only read the length when we're not redirecting
-				if(th->getRequestStatus()/100 != 3)
-				{
-					th->setLen(atoi(headerValue.c_str()));
-				}
-			}
-		}
-	}
+	//std::cerr << "CURL header: " << header << std::endl;
 	return size*nmemb;
 }
 
-LocalDownloader::LocalDownloader(bool cached, const tiny_string& u): ThreadedDownloader(cached),url(u)
+LocalDownloader::LocalDownloader(const tiny_string& url, bool cached):ThreadedDownloader(url, cached)
 {
 }
 
@@ -552,7 +592,7 @@ void LocalDownloader::execute()
 	}
 	else
 	{
-		LOG(LOG_NO_INFO, _("LocalDownloader::execute: reading local file: ") << url.raw_buf());
+		LOG(LOG_NO_INFO, _("NET: LocalDownloader::execute: reading local file: ") << url.raw_buf());
 		//If the caching is selected, we override the normal behaviour and use the local file as the cache file
 		//This prevents unneeded copying of the file's data
 		if(isCached())
@@ -566,7 +606,7 @@ void LocalDownloader::execute()
 			cache.open(cacheFileName.raw_buf(), std::fstream::in);
 			if(cache.is_open())
 			{
-				LOG(LOG_NO_INFO, "Downloading from local file as cache: " << cacheFileName);
+				LOG(LOG_NO_INFO, _("NET: Downloading from local file as cache: ") << cacheFileName);
 
 				//This buffer will be our "window" into the file
 				buffer= (uint8_t*) calloc(cacheMaxSize, sizeof(uint8_t));
@@ -587,7 +627,7 @@ void LocalDownloader::execute()
 			{
 				sem_post(&mutex);
 				setFailed();
-				LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
+				LOG(LOG_ERROR, _("NET: LocalDownloader::execute: could not open local file: ") << url.raw_buf());
 				return;
 			}
 		}
@@ -617,7 +657,7 @@ void LocalDownloader::execute()
 				}
 				if(readFailed)
 				{
-					LOG(LOG_ERROR, _("LocalDownloader::execute: reading from local file failed: ") << url.raw_buf());
+					LOG(LOG_ERROR, _("NET: LocalDownloader::execute: reading from local file failed: ") << url.raw_buf());
 					setFailed();
 					return;
 				}
@@ -626,7 +666,7 @@ void LocalDownloader::execute()
 			}
 			else
 			{
-				LOG(LOG_ERROR, _("LocalDownloader::execute: could not open local file: ") << url.raw_buf());
+				LOG(LOG_ERROR, _("NET: LocalDownloader::execute: could not open local file: ") << url.raw_buf());
 				setFailed();
 				return;
 			}

@@ -622,6 +622,18 @@ void MovieClip::advanceFrame()
 
 }
 
+void MovieClip::invalidate()
+{
+	DisplayObjectContainer::invalidate();
+	//Now invalidate all the objects in all frames
+	for(uint32_t i=0;i<frames.size();i++)
+	{
+		list<std::pair<PlaceInfo, DisplayObject*> >::const_iterator it=frames[i].displayList.begin();
+		for(;it!=frames[i].displayList.end();it++)
+			it->second->invalidate();
+	}
+}
+
 void MovieClip::setOnStage(bool staged)
 {
 	if(staged!=onStage)
@@ -1061,12 +1073,14 @@ void DisplayObject::allocateCacheTexture()
 	cachedTexWidth=maxx-minx;
 	cachedTexHeight=maxy-miny;
 	if(cachedTexWidth && cachedTexHeight)
-		cachedTex=sys->getRenderThread()->allocateTexture(cachedTexWidth,cachedTexHeight,false);
+	{
+		if(!cachedTex.resizeIfLargeEnough(cachedTexWidth, cachedTexHeight))
+			cachedTex=sys->getRenderThread()->allocateTexture(cachedTexWidth,cachedTexHeight,false);
+	}
 }
 
 void DisplayObject::invalidate()
 {
-	allocateCacheTexture();
 }
 
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
@@ -1314,6 +1328,8 @@ ASFUNCTIONBODY(DisplayObject,_setRotation)
 		RELEASE_WRITE(th->useMatrix,false);
 	}
 	th->rotation=val;
+	if(th->onStage)
+		th->invalidate();
 	return NULL;
 }
 
@@ -1586,6 +1602,14 @@ ASFUNCTIONBODY(DisplayObjectContainer,_getNumChildren)
 {
 	DisplayObjectContainer* th=static_cast<DisplayObjectContainer*>(obj);
 	return abstract_i(th->dynamicDisplayList.size());
+}
+
+void DisplayObjectContainer::invalidate()
+{
+	Locker l(mutexDisplayList);
+	list<DisplayObject*>::const_iterator it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();it++)
+		(*it)->invalidate();
 }
 
 void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index)

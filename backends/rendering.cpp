@@ -669,6 +669,9 @@ void RenderThread::resizePixelBuffers(uint32_t w, uint32_t h)
 	glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*4+16, 0, GL_STREAM_DRAW);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBuffers[1]);
 	glBufferData(GL_PIXEL_UNPACK_BUFFER, w*h*4+16, 0, GL_STREAM_DRAW);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+	pixelBufferWidth=w;
+	pixelBufferHeight=h;
 }
 
 void RenderThread::coreRendering(FTFont& font, bool testMode)
@@ -967,6 +970,19 @@ void RenderThread::tick()
 	draw();
 }
 
+void RenderThread::releaseTexture(const TextureChunk& chunk)
+{
+	uint32_t blocksW=(chunk.width+127)/128;
+	uint32_t blocksH=(chunk.height+127)/128;
+	uint32_t numberOfBlocks=blocksW*blocksH;
+	for(uint32_t i=0;i<numberOfBlocks;i++)
+	{
+		uint32_t bitOffset=chunk.chunks[i];
+		assert(largeTextureBitmap[bitOffset/8]&(1<<(bitOffset%8)));
+		largeTextureBitmap[bitOffset/8]^=(1<<(bitOffset%8));
+	}
+}
+
 TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 {
 	assert(w && h);
@@ -1028,6 +1044,7 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 					break;
 			}
 		}
+		assert(found==blocksW*blocksH);
 		assert_and_throw(found==blocksW*blocksH);
 	}
 	return ret;
@@ -1102,7 +1119,9 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		glPixelStorei(GL_UNPACK_SKIP_ROWS,curY);
 		const uint32_t blockX=((chunk.chunks[i]%blocksPerSide)*128);
 		const uint32_t blockY=((chunk.chunks[i]/blocksPerSide)*128);
+		while(glGetError()!=GL_NO_ERROR);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, blockX, blockY, sizeX, sizeY, GL_BGRA, GL_UNSIGNED_BYTE, data);
+		assert(glGetError()!=GL_INVALID_OPERATION);
 	}
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS,0);

@@ -192,6 +192,7 @@ void TextureBuffer::resize(uint32_t w, uint32_t h)
 			glBindTexture(GL_TEXTURE_2D,texId);
 			LOG(LOG_CALLS,_("Reallocating texture to size ") << w << 'x' << h);
 			setAllocSize(w,h);
+			while(glGetError()!=GL_NO_ERROR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, allocWidth, allocHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, 0);
 			GLenum err=glGetError();
 			assert(err!=GL_INVALID_OPERATION);
@@ -349,6 +350,19 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 TextureChunk::~TextureChunk()
 {
 	delete[] chunks;
+}
+
+bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
+{
+	const uint32_t blocksW=(width+127)/128;
+	const uint32_t blocksH=(height+127)/128;
+	if(w<=blocksW*128 && h<=blocksH*128)
+	{
+		width=w;
+		height=h;
+		return true;
+	}
+	return false;
 }
 
 void CairoRenderer::sizeNeeded(uint32_t& w, uint32_t& h)

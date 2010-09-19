@@ -51,7 +51,6 @@ private:
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 protected:
 	void allocateCacheTexture();
-	virtual void invalidate();
 	void valFromMatrix();
 	bool onStage;
 	RootMovieClip* root;
@@ -83,6 +82,7 @@ public:
 	DisplayObject();
 	~DisplayObject();
 	MATRIX getMatrix() const;
+	virtual void invalidate();
 	virtual void Render()
 	{
 		throw RunTimeException("DisplayObject::Render");
@@ -160,6 +160,7 @@ private:
 	void _addChildAt(DisplayObject* child, unsigned int index);
 	bool _contains(DisplayObject* d);
 protected:
+	void invalidate();
 	//This is shared between RenderThread and VM
 	std::list < DisplayObject* > dynamicDisplayList;
 	//The lock should only be taken when doing write operations
@@ -332,6 +333,7 @@ protected:
 	std::list<std::pair<PlaceInfo, DisplayObject*> > displayList;
 	Frame* cur_frame;
 	void bootstrap();
+	void invalidate();
 	std::vector<IFunction*> frameScripts;
 public:
 	std::vector<Frame> frames;

@@ -110,6 +110,10 @@ public:
 	*/
 	TextureChunk allocateTexture(uint32_t w, uint32_t h, bool compact);
 	/**
+		Release texture
+	*/
+	void releaseTexture(const TextureChunk& chunk);
+	/**
 		Render a quad of given size using the given chunk
 	*/
 	void renderTextured(const TextureChunk& chunk, uint32_t x, uint32_t y, uint32_t w, uint32_t h);

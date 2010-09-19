@@ -78,7 +78,6 @@ CrossDomainPolicy::ELEMENTTYPE CrossDomainPolicy::getNextElement()
 				toPorts = xml.get_attribute("to-ports");
 				secure = false;
 				secureSpecified = false;
-				LOG(LOG_NO_INFO, "allow-access-from, sec attr: " << xml.get_attribute("secure"));
 				if(xml.get_attribute("secure") == "false")
 				{
 					secure = false;

@@ -22,6 +22,7 @@
 #include "compat.h"
 #include <string>
 #include <algorithm>
+#include <ctype.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -279,7 +280,7 @@ bool URLInfo::matchesDomain(const tiny_string& expression, const tiny_string& su
 	std::string subjectStr = std::string(subject.raw_buf());
 	std::transform(subjectStr.begin(), subjectStr.end(), subjectStr.begin(), ::tolower);
 	//'*' matches everything
-	if(expressionStr == "*")
+	if(expressionStr == "*" || expressionStr == subjectStr)
 		return true;
 	//'*.somedomain.tld' matches 'somedomain.tld' and every subdomain of 'somedomain.tld'
 	else if(expressionStr.substr(0,2) == "*.")
@@ -293,9 +294,6 @@ bool URLInfo::matchesDomain(const tiny_string& expression, const tiny_string& su
 				expressionStr.substr(1, expressionStr.length()-1))
 			return true;
 	}
-	//No wildcard detected in a valid place, just literally match domains
-	else if(subjectStr == expressionStr)
-		return true;
 
 	//No positive matches found, so return false
 	return false;

@@ -129,6 +129,9 @@ ASFUNCTIONBODY(URLLoader,load)
 	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
 				"connect to local file");
+	else if(evaluationResult == SecurityManager::NA_PORT)
+		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
+				"connect to restricted port");
 	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
 		throw Class<SecurityError>::getInstanceS("SecurityError: URLLoader::load: "
 				"not allowed to navigate up for local files");
@@ -545,6 +548,9 @@ ASFUNCTIONBODY(NetStream,play)
 	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
 				"connect to local file");
+	else if(evaluationResult == SecurityManager::NA_PORT)
+		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
+				"connect to restricted port");
 	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
 		throw Class<SecurityError>::getInstanceS("SecurityError: NetStream::play: "
 				"not allowed to navigate up for local files");
@@ -1151,6 +1157,9 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
 		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
 				"connect to local file");
+	else if(evaluationResult == SecurityManager::NA_PORT)
+		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
+				"connect to restricted port");
 	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
 		throw Class<SecurityError>::getInstanceS("SecurityError: sendToURL: "
 				"not allowed to navigate up for local files");

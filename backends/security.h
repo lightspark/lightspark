@@ -105,9 +105,16 @@ public:
 	{ return evaluateSandbox(sandboxType, allowedSandboxes); }
 	bool evaluateSandbox(SANDBOXTYPE sandbox, int allowedSandboxes);
 
+	//Search for and loads (if allowed) policy files which should be checked
+	//(used by evaluatePoliciesURL & evaluateHeader)
+	//Master policy file is first-in-line and should be checked first
+	std::vector<URLPolicyFile*>* searchURLPolicyFiles(const URLInfo& url,
+			bool loadPendingPolicies);
+
 	//The possible results for the URL evaluation methods below
 	enum EVALUATIONRESULT { ALLOWED, NA_RESTRICT_LOCAL_DIRECTORY,
-		NA_REMOTE_SANDBOX, 	NA_LOCAL_SANDBOX, NA_CROSSDOMAIN_POLICY };
+		NA_REMOTE_SANDBOX, 	NA_LOCAL_SANDBOX, NA_CROSSDOMAIN_POLICY,
+		NA_HEADER, NA_PORT };
 	
 	//Evaluates an URL by checking allowed sandboxes and checking URL policy files
 	EVALUATIONRESULT evaluateURL(const tiny_string& url, bool loadPendingPolicies, 
@@ -122,12 +129,20 @@ public:
 	//Evaluates an URL by checking if the type of URL (local/remote) matches the allowed sandboxes
 	EVALUATIONRESULT evaluateSandboxURL(const URLInfo& url,
 			int allowedSandboxesRemote, int allowedSandboxesLocal);
+	//Checks for restricted ports
+	EVALUATIONRESULT evaluatePortURL(const URLInfo& url);
 	//Evaluates a (local) URL by checking if it points to a subdirectory of the origin
 	EVALUATIONRESULT evaluateLocalDirectoryURL(const URLInfo& url);
 	//Checks URL policy files
 	EVALUATIONRESULT evaluatePoliciesURL(const URLInfo& url, bool loadPendingPolicies);
 
 	//TODO: add evaluateSocketConnection() for SOCKET policy files
+	
+	//Check for restricted headers and policy files explicitly allowing certain headers
+	EVALUATIONRESULT evaluateHeader(const tiny_string& url, const tiny_string& header,
+			bool loadPendingPolicies) { return evaluateHeader(URLInfo(url), header, loadPendingPolicies); }
+	EVALUATIONRESULT evaluateHeader(const URLInfo& url, const tiny_string& header,
+			bool loadPendingPolicies);
 };
 
 class PolicySiteControl;
@@ -201,7 +216,7 @@ public:
 	//Is access to the policy file URL allowed by this policy file?
 	bool allowsAccessFrom(const URLInfo& url, const URLInfo& to);
 	//Is this request header allowed by this policy file for the given URL?
-	bool allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo& to, const tiny_string& header);
+	bool allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo& to, const std::string& header);
 };
 
 //Site-wide declarations for master policy file
@@ -281,11 +296,12 @@ public:
 	~PolicyAllowHTTPRequestHeadersFrom();
 	const std::string getDomain() const { return domain; }
 	size_t getHeadersLength() const { return headers.size(); }
-	std::string const* getHeader(size_t index) const { return headers[index]; }
+	std::vector<std::string*>::const_iterator getHeadersBegin() const { return headers.begin(); }
+	std::vector<std::string*>::const_iterator getHeadersEnd() const { return headers.end(); }
 	bool getSecure() const { return secure; }
 
 	//Does this entry allow a given request header for a given URL?
-	bool allowsHTTPRequestHeaderFrom(const URLInfo& url, const tiny_string& header) const;
+	bool allowsHTTPRequestHeaderFrom(const URLInfo& url, const std::string& header) const;
 };
 
 }

@@ -22,6 +22,7 @@
 #include "compat.h"
 #include <string>
 #include <algorithm>
+#include <ctype.h>
 #include <iostream>
 #include <fstream>
 #ifdef ENABLE_CURL
@@ -43,7 +44,8 @@ Downloader* StandaloneDownloadManager::download(const tiny_string& u, bool cache
 
 Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 {
-	LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager::download '") << url.getParsedURL() << "'" << (cached ? _(" - cached") : ""));
+	LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager::download '") << url.getParsedURL()
+			<< "'" << (cached ? _(" - cached") : ""));
 	ThreadedDownloader* downloader;
 	if(url.getProtocol() == "file")
 	{

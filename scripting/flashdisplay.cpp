@@ -153,6 +153,7 @@ ASFUNCTIONBODY(Loader,load)
 	URLRequest* r=static_cast<URLRequest*>(args[0]);
 	th->url=r->url;
 	th->source=URL;
+	//To be decreffed in jobFence
 	th->incRef();
 	sys->addJob(th);
 	return NULL;
@@ -171,10 +172,16 @@ ASFUNCTIONBODY(Loader,loadBytes)
 	{
 		th->loading=true;
 		th->source=BYTES;
+		//To be decreffed in jobFence
 		th->incRef();
 		sys->addJob(th);
 	}
 	return NULL;
+}
+
+void Loader::jobFence()
+{
+	decRef();
 }
 
 void Loader::sinit(Class_base* c)

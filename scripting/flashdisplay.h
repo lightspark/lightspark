@@ -267,6 +267,7 @@ private:
 	LoaderInfo* contentLoaderInfo;
 	void execute();
 	void threadAbort();
+	void jobFence();
 public:
 	Loader():local_root(NULL),loading(false),loaded(false),content(NULL)
 	{

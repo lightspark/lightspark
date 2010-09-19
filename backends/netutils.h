@@ -177,6 +177,7 @@ class ThreadedDownloader : public Downloader, public IThreadJob
 {
 public:
 	ThreadedDownloader(const tiny_string& url, bool cached):Downloader(url, cached){};
+	void jobFence(){}
 };
 
 //CurlDownloader can be used as a thread job, standalone or as a streambuf

@@ -955,10 +955,46 @@ void DefineShapeTag::computeCached()
 
 void DefineShapeTag::invalidate()
 {
-	allocateCacheTexture();
+	uint32_t x,y,width,height;
+	computeDeviceBounds(x,y,width,height);
 	computeCached();
-	CairoRenderer* r=new CairoRenderer(&shepherd,cachedTex, cachedTokens, getConcatenatedMatrix(), cachedTexX, cachedTexY);
+	CairoRenderer* r=new CairoRenderer(&shepherd, cachedSurface, cachedTokens, getConcatenatedMatrix(), x, y, width, height);
 	sys->addJob(r);
+}
+
+bool DefineShapeTag::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	//Apply transformation with the current matrix
+	int a=ShapeBounds.Xmin;
+	int b=ShapeBounds.Ymin;
+	int c=ShapeBounds.Xmax;
+	int d=ShapeBounds.Ymax;
+	if(a<0)
+		a-=19;
+	else
+		a+=19;
+	a/=20;
+	if(b<0)
+		b-=19;
+	else
+		b+=19;
+	b/=20;
+	if(c<0)
+		c-=19;
+	else
+		c+=19;
+	c/=20;
+	if(d<0)
+		d-=19;
+	else
+		d+=19;
+	d/=20;
+	getMatrix().multiply2D(a,b,xmin,ymin);
+	getMatrix().multiply2D(c,d,xmax,ymax);
+	//getMatrix().multiply2D(ShapeBounds.Xmin/20,ShapeBounds.Ymin/20,xmin,ymin);
+	//getMatrix().multiply2D(ShapeBounds.Xmax/20,ShapeBounds.Ymax/20,xmax,ymax);
+	//TODO: adapt for rotation
+	return true;
 }
 
 void DefineShapeTag::inputRender()

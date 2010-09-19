@@ -50,7 +50,7 @@ private:
 	number_t sx,sy;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 protected:
-	void allocateCacheTexture();
+	void computeDeviceBounds(uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const;
 	void valFromMatrix();
 	bool onStage;
 	RootMovieClip* root;
@@ -62,11 +62,7 @@ protected:
 	bool visible;
 	//Data to handle async rendering
 	Shepherd shepherd;
-	TextureChunk cachedTex;
-	uint32_t cachedTexX;
-	uint32_t cachedTexY;
-	uint32_t cachedTexWidth;
-	uint32_t cachedTexHeight;
+	CachedSurface cachedSurface;
 	void defaultRender() const;
 	DisplayObject(const DisplayObject& d);
 	MATRIX getConcatenatedMatrix() const;

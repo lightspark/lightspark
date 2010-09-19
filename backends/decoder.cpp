@@ -59,13 +59,13 @@ bool VideoDecoder::resizeIfNeeded(TextureChunk& tex)
 	return true;
 }
 
-void VideoDecoder::sizeNeeded(uint32_t& w, uint32_t& h)
+void VideoDecoder::sizeNeeded(uint32_t& w, uint32_t& h) const
 {
 	w=frameWidth;
 	h=frameHeight;
 }
 
-const TextureChunk& VideoDecoder::getTexture() const
+const TextureChunk& VideoDecoder::getTexture()
 {
 	return videoTexture;
 }
@@ -243,13 +243,13 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 	buffers.commitLast();
 }
 
-void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h)
+void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h) const
 {
 	if(buffers.isEmpty())
 		return;
 	assert_and_throw(w==frameWidth && h==frameHeight);
 	//At least a frame is available
-	YUVBuffer& cur=buffers.front();
+	const YUVBuffer& cur=buffers.front();
 	//If the width is compatible with full aligned accesses use the aligned version of the packer
 	if(frameWidth%32==0)
 		fastYUV420ChannelsToYUV0Buffer_SSE2Aligned(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);

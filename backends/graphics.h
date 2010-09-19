@@ -158,17 +158,26 @@ public:
 	uint32_t height;
 };
 
+class CachedSurface
+{
+public:
+	CachedSurface():xOffset(0),yOffset(0){}
+	TextureChunk tex;
+	uint32_t xOffset;
+	uint32_t yOffset;
+};
+
 class ITextureUploadable
 {
 protected:
 	~ITextureUploadable(){}
 public:
-	virtual void sizeNeeded(uint32_t& w, uint32_t& h)=0;
+	virtual void sizeNeeded(uint32_t& w, uint32_t& h) const=0;
 	/*
 		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
 	*/
-	virtual void upload(uint8_t* data, uint32_t w, uint32_t h)=0;
-	virtual const TextureChunk& getTexture() const=0;
+	virtual void upload(uint8_t* data, uint32_t w, uint32_t h) const=0;
+	virtual const TextureChunk& getTexture()=0;
 	/*
 		Signal the completion of the upload to the texture
 		NOTE: fence may be called on shutdown even if the upload has not happen, so be ready for this event
@@ -179,22 +188,28 @@ public:
 class CairoRenderer: public ITextureUploadable, public IThreadJob, public Sheep
 {
 protected:
-	~CairoRenderer(){delete[] surface;}
+	~CairoRenderer(){delete[] surfaceBytes;}
 private:
-	const TextureChunk& tex;
+	/**
+		The target texture for the rendering, must be non const as the operation will update the size
+	*/
+	CachedSurface& surface;
 	const std::vector<GeomToken>& tokens;
 	MATRIX matrix;
 	uint32_t xOffset;
 	uint32_t yOffset;
-	uint8_t* surface;
+	uint32_t width;
+	uint32_t height;
+	uint8_t* surfaceBytes;
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
 public:
-	CairoRenderer(Shepherd* _o, const TextureChunk& _t, const std::vector<GeomToken>& _g, const MATRIX& _m, uint32_t _x, uint32_t _y):
-		Sheep(_o),tex(_t),tokens(_g),matrix(_m),xOffset(_x),yOffset(_y),surface(NULL){}
+	CairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, 
+		const MATRIX& _m, uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):
+			Sheep(_o),surface(_t),tokens(_g),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),surfaceBytes(NULL){}
 	//ITextureUploadable interface
-	void sizeNeeded(uint32_t& w, uint32_t& h);
-	void upload(uint8_t* data, uint32_t w, uint32_t h);
-	const TextureChunk& getTexture() const;
+	void sizeNeeded(uint32_t& w, uint32_t& h) const;
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
+	const TextureChunk& getTexture();
 	void uploadFence();
 	//IThreadJob interface
 	void execute();

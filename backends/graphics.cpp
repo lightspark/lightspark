@@ -365,26 +365,32 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	return false;
 }
 
-void CairoRenderer::sizeNeeded(uint32_t& w, uint32_t& h)
+void CairoRenderer::sizeNeeded(uint32_t& w, uint32_t& h) const
 {
-	w=tex.width;
-	h=tex.height;
+	w=width;
+	h=height;
 }
 
-void CairoRenderer::upload(uint8_t* data, uint32_t w, uint32_t h)
+void CairoRenderer::upload(uint8_t* data, uint32_t w, uint32_t h) const
 {
-	if(surface)
-		memcpy(data,surface,w*h*4);
+	if(surfaceBytes)
+		memcpy(data,surfaceBytes,w*h*4);
 }
 
-const TextureChunk& CairoRenderer::getTexture() const
+const TextureChunk& CairoRenderer::getTexture()
 {
-	return tex;
+	//Verify that the texture is large enough
+	assert(width && height);
+	if(!surface.tex.resizeIfLargeEnough(width, height))
+		surface.tex=sys->getRenderThread()->allocateTexture(width, height,false);
+	surface.xOffset=xOffset;
+	surface.yOffset=yOffset;
+	return surface.tex;
 }
 
 void CairoRenderer::uploadFence()
 {
-	if(surface)
+	if(surfaceBytes)
 		Sheep::unlockOwner();
 	delete this;
 }
@@ -405,10 +411,10 @@ void CairoRenderer::execute()
 {
 	if(!Sheep::lockOwner())
 		return;
-	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, tex.width);
-	assert(cairoWidthStride==tex.width*4);
-	surface=new uint8_t[cairoWidthStride*tex.height];
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(surface, CAIRO_FORMAT_ARGB32, tex.width, tex.height, cairoWidthStride);
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	assert(cairoWidthStride==width*4);
+	surfaceBytes=new uint8_t[cairoWidthStride*height];
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(surfaceBytes, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
 	cairo_t* cr=cairo_create(cairoSurface);
 
 	cairo_set_source_rgba(cr, 0, 0, 0, 0);

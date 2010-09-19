@@ -886,7 +886,7 @@ bool MovieClip::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number
 }
 
 DisplayObject::DisplayObject():useMatrix(true),tx(0),ty(0),rotation(0),sx(1),sy(1),onStage(false),root(NULL),loaderInfo(NULL),
-	alpha(1.0),visible(true),cachedTexX(0),cachedTexY(0),cachedTexWidth(0),cachedTexHeight(0),parent(NULL)
+	alpha(1.0),visible(true),parent(NULL)
 {
 	pthread_spin_init(&MatrixSpinlock, 0);
 }
@@ -1011,36 +1011,12 @@ void DisplayObject::defaultRender() const
 	count%=5;
 	glPushMatrix();
 	glLoadIdentity();
-/*	switch(count)
-	{
-		case 0:
-			FILLSTYLE::fixedColor(0.5,0.5,0.5);
-			break;
-		case 1:
-			FILLSTYLE::fixedColor(1,0.5,0.5);
-			break;
-		case 2:
-			FILLSTYLE::fixedColor(0.5,1,0.5);
-			break;
-		case 3:
-			FILLSTYLE::fixedColor(0.5,0.5,1);
-			break;
-		case 4:
-			FILLSTYLE::fixedColor(0.5,1,1);
-			break;
-	}*/
 	glColor4f(0,0,1,0);
-	rt->renderTextured(cachedTex, cachedTexX, cachedTexY, cachedTexWidth, cachedTexHeight);
-	/*glBegin(GL_QUADS);
-		glVertex2i(cachedTexMinX,cachedTexMinY);
-		glVertex2i(cachedTexMaxX,cachedTexMinY);
-		glVertex2i(cachedTexMaxX,cachedTexMaxY);
-		glVertex2i(cachedTexMinX,cachedTexMaxY);
-	glEnd();*/
+	rt->renderTextured(cachedSurface.tex, cachedSurface.xOffset, cachedSurface.yOffset, cachedSurface.tex.width, cachedSurface.tex.height);
 	glPopMatrix();
 }
 
-void DisplayObject::allocateCacheTexture()
+void DisplayObject::computeDeviceBounds(uint32_t& outXMin, uint32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight) const
 {
 	number_t xmin,xmax,ymin,ymax;
 	if(!getBounds(xmin,xmax,ymin,ymax))
@@ -1067,16 +1043,10 @@ void DisplayObject::allocateCacheTexture()
 		else if(coords[i+1]>maxy)
 			maxy=coords[i+1];
 	}
-	//Allocate a texture for the given size
-	cachedTexX=minx;
-	cachedTexY=miny;
-	cachedTexWidth=maxx-minx;
-	cachedTexHeight=maxy-miny;
-	if(cachedTexWidth && cachedTexHeight)
-	{
-		if(!cachedTex.resizeIfLargeEnough(cachedTexWidth, cachedTexHeight))
-			cachedTex=sys->getRenderThread()->allocateTexture(cachedTexWidth,cachedTexHeight,false);
-	}
+	outXMin=minx;
+	outYMin=miny;
+	outWidth=ceil(maxx-minx);
+	outHeight=ceil(maxy-miny);
 }
 
 void DisplayObject::invalidate()

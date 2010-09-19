@@ -103,8 +103,8 @@ public:
 		ATOMIC_INCREMENT(fenceCount);
 	}
 	//ITextureUploadable interface
-	void sizeNeeded(uint32_t& w, uint32_t& h);
-	const TextureChunk& getTexture() const;
+	void sizeNeeded(uint32_t& w, uint32_t& h) const;
+	const TextureChunk& getTexture();
 	void uploadFence();
 };
 
@@ -122,7 +122,7 @@ public:
 		flushing=true;
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h)
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const
 	{
 	}
 };
@@ -182,7 +182,7 @@ public:
 		}
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h);
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
 };
 #endif
 

@@ -441,7 +441,6 @@ void Downloader::parseHeader(std::string header, bool setLength)
 				getRequestStatus()/100 == 5 || 
 				getRequestStatus()/100 == 6)
 		{
-			LOG(LOG_NO_INFO, "FAILED");
 			setFailed();
 		}
 		else if(getRequestStatus()/100 == 3); //HTTP redirect
@@ -505,7 +504,6 @@ void CurlDownloader::execute()
 	curl = curl_easy_init();
 	if(curl)
 	{
-		std::cout << url << std::endl;
 		curl_easy_setopt(curl, CURLOPT_URL, url.raw_buf());
 		//Needed for thread-safety reasons.
 		//This makes CURL not respect DNS resolving timeouts.
@@ -573,6 +571,7 @@ size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, voi
 	header = header.substr(0, header.find("\r\n"));
 	header = header.substr(0, header.find("\n"));
 	//We haven't set the length of the download uet, so set it from the headers
+	LOG(LOG_NO_INFO, "parsing header: " << header);
 	th->parseHeader(header, true);
 
 	//std::cerr << "CURL header: " << header << std::endl;

@@ -219,13 +219,16 @@ void URLLoader::execute()
 	}
 
 	sys->downloadManager->destroy(downloader);
+	downloader = NULL;
 }
 
 void URLLoader::threadAbort()
 {
 	executingAbort=true;
-	if(downloader)
+	if(downloader != NULL)
+	{
 		downloader->stop();
+	}
 	executingAbort=false;
 }
 

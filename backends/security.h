@@ -32,6 +32,15 @@ namespace lightspark
 
 class PolicyFile;
 class URLPolicyFile;
+typedef std::vector<URLPolicyFile*> URLPolicyFileList;
+typedef std::vector<URLPolicyFile*>::iterator URLPolicyFileListIt;
+typedef std::vector<URLPolicyFile*>::const_iterator URLPolicyFileListConstIt;
+typedef std::pair<tiny_string, URLPolicyFile*> URLPolicyFilePair;
+typedef std::multimap<tiny_string, URLPolicyFile*> URLPolicyFileMap;
+typedef std::multimap<tiny_string, URLPolicyFile*>::iterator URLPolicyFileMapIt;
+typedef std::multimap<tiny_string, URLPolicyFile*>::const_iterator URLPolicyFileMapConstIt;
+typedef std::pair<URLPolicyFileMapIt, URLPolicyFileMapIt> URLPolicyFileMapItPair;
+typedef std::pair<URLPolicyFileMapConstIt, URLPolicyFileMapConstIt> URLPolicyFileMapConstItPair;
 
 class SecurityManager
 {
@@ -44,9 +53,9 @@ private:
 	const char* sandboxTitles[4];
 
 	//Map (by domain) of vectors of pending policy files
-	std::multimap<tiny_string, URLPolicyFile*> pendingURLPolicyFiles;
+	URLPolicyFileMap pendingURLPFiles;
 	//Map (by domain) of vectors of loaded policy files
-	std::multimap<tiny_string, URLPolicyFile*> loadedURLPolicyFiles;
+	URLPolicyFileMap loadedURLPFiles;
 
 	//Security sandbox type
 	SANDBOXTYPE sandboxType;
@@ -108,7 +117,7 @@ public:
 	//Search for and loads (if allowed) policy files which should be checked
 	//(used by evaluatePoliciesURL & evaluateHeader)
 	//Master policy file is first-in-line and should be checked first
-	std::vector<URLPolicyFile*>* searchURLPolicyFiles(const URLInfo& url,
+	URLPolicyFileList* searchURLPolicyFiles(const URLInfo& url,
 			bool loadPendingPolicies);
 
 	//The possible results for the URL evaluation methods below
@@ -224,7 +233,7 @@ public:
 class PolicySiteControl
 {
 public:
-	enum METAPOLICYTYPE { 
+	enum METAPOLICY { 
 		ALL, //All types of policy files are allowed (default for SOCKET)
 		BY_CONTENT_TYPE, //Only policy files served with 'Content-Type: text/x-cross-domain-policy' are allowed (only for HTTP)
 		BY_FTP_FILENAME, //Only policy files with 'crossdomain.xml' as filename are allowed (only for FTP)
@@ -234,10 +243,10 @@ public:
 	};
 private:
 	PolicyFile* file;
-	METAPOLICYTYPE permittedCrossDomainPolicies; //Required
+	METAPOLICY permittedPolicies; //Required
 public:
-	PolicySiteControl(PolicyFile* _file, const std::string _permittedCrossDomainPolicies="");
-	METAPOLICYTYPE getPermittedCrossDomainPolicies() const { return permittedCrossDomainPolicies; }
+	PolicySiteControl(PolicyFile* _file, const std::string _permittedPolicies="");
+	METAPOLICY getPermittedPolicies() const { return permittedPolicies; }
 };
 
 class PortRange

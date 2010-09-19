@@ -63,9 +63,13 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 
 void StandaloneDownloadManager::destroy(Downloader* d)
 {
-	if(!sys->isShuttingDown())
-		d->wait();
-	delete d;
+	if(d != NULL)
+	{
+		if(!sys->isShuttingDown())
+			d->wait();
+		delete d;
+		d = NULL;
+	}
 }
 
 Downloader::~Downloader()

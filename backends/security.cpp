@@ -37,58 +37,54 @@ SecurityManager::SecurityManager():
 {
 	sandboxNames = {"remote","localWithFile","localWithNetwork","localTrusted"};
 	sandboxTitles = {"remote","local-with-filesystem","local-with-networking","local-trusted"};
+
 	sem_init(&mutex,0,1);
+	//== Lock initialized
 }
 
 SecurityManager::~SecurityManager()
 {
-	multimap<tiny_string, URLPolicyFile*>::iterator i = pendingURLPolicyFiles.begin();
-	for(; i != pendingURLPolicyFiles.end(); ++i)
-	{
+	sem_wait(&mutex);
+	//-- Lock acquired
+	
+	URLPolicyFileMapIt i = pendingURLPFiles.begin();
+	for(; i != pendingURLPFiles.end(); ++i)
 		delete (*i).second;
-	}
-	pendingURLPolicyFiles.clear();
-	i = loadedURLPolicyFiles.begin();
 
-	for(;i != loadedURLPolicyFiles.end(); ++i)
-	{
+	i = loadedURLPFiles.begin();
+	for(;i != loadedURLPFiles.end(); ++i)
 		delete (*i).second;
-	}
-	loadedURLPolicyFiles.clear();
+	
+	//== Destroy lock
 	sem_destroy(&mutex);
 }
 
 PolicyFile* SecurityManager::addPolicyFile(const URLInfo& url)
 {
-	LOG(LOG_NO_INFO, "SECURITY: Trying to add policy file, classifying URL: " << url);
 	if(url.getProtocol() == "http" || url.getProtocol() == "https" || url.getProtocol() == "ftp")
-	{
-		LOG(LOG_NO_INFO, "SECURITY: Classified policy file URL, policy file type = URL");
 		return addURLPolicyFile(url);
-	}
 	else if(url.getProtocol() == "xmlsocket")
 	{
-		LOG(LOG_NO_INFO, "SECURITY: Classified policy file URL, policy file type = SOCKET");
 		LOG(LOG_NOT_IMPLEMENTED, "SECURITY: SocketPolicFile not implemented yet!");
-		//return addSocketPolicyFile(url);
 		return NULL;
 	}
-
-	LOG(LOG_NO_INFO, "SECURITY: Couldn't classify policy file URL, returning NULL");
 	return NULL;
 }
 
 URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
 {
 	sem_wait(&mutex);
-	LOG(LOG_NO_INFO, "SECURITY: Trying to add URL policy file: " << url);
+	//-- Lock acquired
+	
 	URLPolicyFile* file = new URLPolicyFile(url);
 	if(file->isValid())
 	{
-		LOG(LOG_NO_INFO, "SECURITY: URL policy file is valid, adding to URL policy file list");
-		//Policy files get added to pending files list
-		pendingURLPolicyFiles.insert(pair<tiny_string, URLPolicyFile*>(url.getHostname(), file));
+		LOG(LOG_NO_INFO, "SECURITY: Added URL policy file is valid, "
+				"adding to URL policy file list (" << url << ")");
+		pendingURLPFiles.insert(URLPolicyFilePair(url.getHostname(), file));
 	}
+	
+	//++ Release lock
 	sem_post(&mutex);
 	return file;
 }
@@ -96,39 +92,40 @@ URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
 URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
 {
 	sem_wait(&mutex);
-	LOG(LOG_NO_INFO, "SECURITY: Searching for URL policy file in lists, at url:\n" << url);
+	//-- Lock acquired
 
-	pair<multimap<tiny_string, URLPolicyFile*>::const_iterator, 
-		multimap<tiny_string, URLPolicyFile*>::const_iterator> range = 
-			loadedURLPolicyFiles.equal_range(url.getHostname());
-	multimap<tiny_string, URLPolicyFile*>::const_iterator i = range.first;
+	URLPolicyFileMapConstItPair range = loadedURLPFiles.equal_range(url.getHostname());
+	URLPolicyFileMapConstIt i = range.first;
 
-	LOG(LOG_NO_INFO, "SECURITY: Searching for URL policy file in loaded list");
 	//Check the loaded URL policy files first
 	for(;i != range.second; ++i)
 	{
 		if((*i).second->getOriginalURL() == url)
 		{
-			LOG(LOG_NO_INFO, "SECURITY: URL policy file found in loaded list");
+			LOG(LOG_NO_INFO, "SECURITY: URL policy file found in loaded list (" << url << ")");
+
+			//++ Release lock
 			sem_post(&mutex);
 			return (*i).second;
 		}
 	}
 
-	LOG(LOG_NO_INFO, "SECURITY: Searching for URL policy file in pending list");
 	//Check the pending URL policy files next
-	range = pendingURLPolicyFiles.equal_range(url.getHostname());
+	range = pendingURLPFiles.equal_range(url.getHostname());
 	i = range.first;
 	for(;i != range.second; ++i)
 	{
 		if((*i).second->getOriginalURL() == url)
 		{
-			LOG(LOG_NO_INFO, "SECURITY: URL policy file found in pending list");
+			LOG(LOG_NO_INFO, "SECURITY: URL policy file found in pending list (" << url << ")");
+
+			//++ Release lock
 			sem_post(&mutex);
 			return (*i).second;
 		}
 	}
-	LOG(LOG_NO_INFO, "SECURITY: No such URL policy file found in lists");
+
+	//++ Release lock
 	sem_post(&mutex);
 	return NULL;
 }
@@ -136,62 +133,46 @@ URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
 void SecurityManager::loadPolicyFile(URLPolicyFile* file)
 {
 	sem_wait(&mutex);
-	LOG(LOG_NO_INFO, "SECURITY: Loading policy file");
-	if(pendingURLPolicyFiles.count(file->getURL().getHostname()) > 0)
+	//-- Lock acquired
+
+	if(pendingURLPFiles.count(file->getURL().getHostname()) > 0)
 	{
+		LOG(LOG_NO_INFO, "SECURITY: Loading policy file (" << file->getURL() << ")");
 		file->load();
-		pair<multimap<tiny_string, URLPolicyFile*>::iterator,
-			multimap<tiny_string, URLPolicyFile*>::iterator> range = 
-			pendingURLPolicyFiles.equal_range(file->getURL().getHostname());
-		multimap<tiny_string, URLPolicyFile*>::iterator i = range.first;
+
+		URLPolicyFileMapItPair range = pendingURLPFiles.equal_range(file->getURL().getHostname());
+		URLPolicyFileMapIt i = range.first;
 		for(;i != range.second; ++i)
 		{
 			if((*i).second == file)
 			{
-				loadedURLPolicyFiles.insert(pair<tiny_string, URLPolicyFile*>(file->getURL().getHostname(),
-							(*i).second));
-				pendingURLPolicyFiles.erase(i);
+				loadedURLPFiles.insert(URLPolicyFilePair(file->getURL().getHostname(), (*i).second));
+				pendingURLPFiles.erase(i);
 				break;
 			}
 		}
 	}
+
+	//++ Release lock
 	sem_post(&mutex);
 }
 
-vector<URLPolicyFile*>* SecurityManager::searchURLPolicyFiles(const URLInfo& url,
-		bool loadPendingPolicies)
+URLPolicyFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loadPendingPolicies)
 {
-	sem_wait(&mutex);
-
-	vector<URLPolicyFile*>* result = new vector<URLPolicyFile*>;
-
-	LOG(LOG_NO_INFO, "SECURITY: Searching for applicable URL policy files, "
-			"loading pending policies allowed=" << loadPendingPolicies);
-
-	LOG(LOG_NO_INFO, "SECURITY: Searching for master policy files");
-	URLInfo masterURL = url.goToURL("/crossdomain.xml");
+	URLPolicyFileList* result = new URLPolicyFileList;
 
 	//Get or create the master policy file object
-	sem_post(&mutex);
+	URLInfo masterURL = url.goToURL("/crossdomain.xml");
 	URLPolicyFile* master = getURLPolicyFileByURL(masterURL);
-	sem_wait(&mutex);
+
 	if(master == NULL)
-	{
-		LOG(LOG_NO_INFO, "SECURITY: No master policy file found, trying to add one");
-		sem_post(&mutex);
 		master = addURLPolicyFile(masterURL);
-		sem_wait(&mutex);
-	}
+
 	if(loadPendingPolicies)
-	{
-		LOG(LOG_NO_INFO, "SECURITY: Loading of pending files is allowed, loading master policy file");
-		sem_post(&mutex);
 		sys->securityManager->loadPolicyFile(master);
-		sem_wait(&mutex);
-	}
-	else
-		LOG(LOG_NO_INFO, "SECURITY: Loading of pending files is NOT allowed, not loading "
-				"master policy file");
+
+	sem_wait(&mutex);
+	//-- Lock acquired
 
 	//Check if the master policy file is loaded.
 	//If another user-added relevant policy file is already loaded, 
@@ -199,30 +180,29 @@ vector<URLPolicyFile*>* SecurityManager::searchURLPolicyFiles(const URLInfo& url
 	//So IF any relevant policy file is loaded already, then the master will be too.
 	if(master->isLoaded() && master->isValid())
 	{
-		LOG(LOG_NO_INFO, "SECURITY: Master policy file is loaded");
+		LOG(LOG_NO_INFO, "SECURITY: Master policy file is loaded and valid (" << url << ")");
 
+		PolicySiteControl::METAPOLICY siteControl = master->getSiteControl()->getPermittedPolicies();
 		//Master defines no policy files are allowed at all
-		if(master->getSiteControl()->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
+		if(siteControl == PolicySiteControl::NONE)
 		{
 			LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: Master policy file disallows policy files");
+
+			//++ Release lock
 			sem_post(&mutex);
 			return NULL;
 		}
 
 		result->push_back(master);
 
-		//Non-master policy files are allowed (/subdir/crossdomain.xml, loaded URLPolicyFile())
-		//These can further by restricted by content-type and ftp filename.
-		//Lets check the loaded policy files first
-		if(master->getSiteControl()->getPermittedCrossDomainPolicies() != PolicySiteControl::MASTER_ONLY)
+		//Non-master policy files are allowed
+		if(siteControl != PolicySiteControl::MASTER_ONLY)
 		{
-			LOG(LOG_NO_INFO, "SECURITY: Master policy file allows non-master policy files, "
-					"searching for already loaded ones (" << loadedURLPolicyFiles.count(url.getHostname()) << ")");
+			LOG(LOG_NO_INFO, "SECURITY: Searching for loaded non-master policy files (" <<
+					loadedURLPFiles.count(url.getHostname()) << ")");
 
-			pair<multimap<tiny_string, URLPolicyFile*>::const_iterator, 
-				multimap<tiny_string, URLPolicyFile*>::const_iterator> range = 
-					loadedURLPolicyFiles.equal_range(url.getHostname());
-			multimap<tiny_string, URLPolicyFile*>::const_iterator i = range.first;
+			URLPolicyFileMapConstItPair range = loadedURLPFiles.equal_range(url.getHostname());
+			URLPolicyFileMapConstIt i = range.first;
 			for(;i != range.second; ++i)
 			{
 				if((*i).second == master)
@@ -234,26 +214,26 @@ vector<URLPolicyFile*>* SecurityManager::searchURLPolicyFiles(const URLInfo& url
 			if(loadPendingPolicies)
 			{
 				LOG(LOG_NO_INFO, "SECURITY: Searching for and loading pending non-master policy files (" <<
-						pendingURLPolicyFiles.count(url.getHostname()) << ")");
-				range = pendingURLPolicyFiles.equal_range(url.getHostname());
+						pendingURLPFiles.count(url.getHostname()) << ")");
+
+				range = pendingURLPFiles.equal_range(url.getHostname());
 				i = range.first;
 				for(; i != range.second; ++i)
 				{
-					//NOTE: load() will change pendingURLPolicyFiles
-					//(it will move the policy file to the loaded list)
+					//++ Release lock
 					sem_post(&mutex);
+					//NOTE: loadPolicyFile() will change pendingURLPFiles, erasing & moving to loadURLPFiles
 					sys->securityManager->loadPolicyFile((*i).second);
 					sem_wait(&mutex);
+					//-- Lock acquired
+
 					result->push_back((*i).second);
 				}
 			}
-			else
-				LOG(LOG_NO_INFO, "SECURITY: Loading of pending files is NOT allowed");
 		}
 	}
-	else
-		LOG(LOG_NO_INFO, "SECURITY: Master policy file isn't loaded or isn't valid");
 
+	//++ Release lock
 	sem_post(&mutex);
 	return result;
 }
@@ -267,15 +247,18 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& ur
 		bool loadPendingPolicies,	int allowedSandboxesRemote, int allowedSandboxesLocal,
 		bool restrictLocalDirectory)
 {
+	//Check the sandbox first
 	EVALUATIONRESULT sandboxResult =
 		evaluateSandboxURL(url, allowedSandboxesRemote, allowedSandboxesLocal);
 	if(sandboxResult != ALLOWED)
 		return sandboxResult;
 
+	//Check if the URL points to a restricted port
 	EVALUATIONRESULT portResult = evaluatePortURL(url);
 	if(portResult != ALLOWED)
 		return portResult;
 
+	//If requested, make sure local URLs are restricted to the local directory
 	if(restrictLocalDirectory)
 	{
 		EVALUATIONRESULT restrictLocalDirResult = evaluateLocalDirectoryURL(url);
@@ -283,12 +266,15 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& ur
 			return restrictLocalDirResult;
 	}
 
+	//Finally, check policy files
 	EVALUATIONRESULT policiesResult = evaluatePoliciesURL(url, loadPendingPolicies);
 	if(policiesResult != ALLOWED)
 		return policiesResult;
 
+	//All checks passed, so we allow the URL connection
 	return ALLOWED;
 }
+
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSandboxURL(const URLInfo& url, 
 		int allowedSandboxesRemote, int allowedSandboxesLocal)
 {
@@ -298,12 +284,15 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSandboxURL(const URLI
 	//The URL is local and the current sandbox doesn't match the allowed sandboxes for local URLs
 	if(url.getProtocol() == "file" && (~allowedSandboxesLocal) & sandboxType)
 		return NA_LOCAL_SANDBOX;
+
 	return ALLOWED;
 }
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateLocalDirectoryURL(const URLInfo& url)
 {
+	//The URL is local and points to a directory above the origin
 	if(url.getProtocol() == "file" && !url.isSubOf(sys->getOrigin()))
 		return NA_RESTRICT_LOCAL_DIRECTORY;
+
 	return ALLOWED;
 }
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePortURL(const URLInfo& url)
@@ -332,42 +321,45 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePortURL(const URLInfo
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URLInfo& url,
 		bool loadPendingPolicies)
 {
-	sem_wait(&mutex);
-	LOG(LOG_NO_INFO, "SECURITY: Evaluating URL for cross domain policies: \nURL: " << url
-			<< "\nOrigin: " << sys->getOrigin());
+	LOG(LOG_NO_INFO, "SECURITY: Evaluating URL for cross domain policies: \n"
+			"SECURITY: URL: " << url << "\nSECURITY: Origin: " << sys->getOrigin());
+
 	//The URL has exactly the same domain name as the origin, always allowed
 	if(url.getProtocol() == sys->getOrigin().getProtocol() &&
 			url.getHostname() == sys->getOrigin().getHostname())
 	{
 		LOG(LOG_NO_INFO, "SECURITY: Same hostname as origin, allowing");
-		sem_post(&mutex);
 		return ALLOWED;
 	}
 
-	sem_post(&mutex);
 	//Search for the policy files to check
-	vector<URLPolicyFile*>* files = searchURLPolicyFiles(url, loadPendingPolicies);
+	URLPolicyFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
+	
 	sem_wait(&mutex);
+	//-- Lock acquired
+
 	//Check the policy files
 	if(files != NULL)
 	{
-		vector<URLPolicyFile*>::const_iterator it = files->begin();
+		URLPolicyFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
 			if((*it)->allowsAccessFrom(sys->getOrigin(), url))
 			{
-				LOG(LOG_NO_INFO, "SECURITY: ALLOWED: A policy file allowed access");
+				LOG(LOG_NO_INFO, "SECURITY: ALLOWED: A policy file explicitly allowed access");
 				delete files;
+
+				//++ Release lock
 				sem_post(&mutex);
 				return ALLOWED;
 			}
 		}
 	}
-	else
-		LOG(LOG_NO_INFO, "SECURITY: No policy files to check");
 
 	LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: No policy file explicitly allowed access");
 	delete files;
+
+	//++ Release lock
 	sem_post(&mutex);
 	return NA_CROSSDOMAIN_POLICY;
 }
@@ -375,9 +367,8 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo& url,
 		const tiny_string& header, bool loadPendingPolicies)
 {
-	sem_wait(&mutex);
-	LOG(LOG_NO_INFO, "SECURITY: Evaluating header for cross domain policies: " << header << 
-			"\nURL: " << url << "\nOrigin: " << sys->getOrigin());
+	LOG(LOG_NO_INFO, "SECURITY: Evaluating header for cross domain policies: '" << header << 
+			"'\nSECURITY: URL: " << url << "\nSECURITY: Origin: " << sys->getOrigin());
 
 	string headerStrLower(header.raw_buf());
 	transform(headerStrLower.begin(), headerStrLower.end(), headerStrLower.begin(), ::tolower);
@@ -402,8 +393,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 			headerStr == "uri" && headerStr == "user-agent" && headerStr == "vary" && headerStr == "via" &&
 			headerStr == "warning" && headerStr == "www-authenticate" && headerStr == "x-flash-version")
 	{
-		sem_post(&mutex);
-		LOG(LOG_NO_INFO, "SECURITY: Header is restricted, disallowing");
+		LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: Header is restricted");
 		return NA_HEADER;
 	}
 
@@ -411,35 +401,38 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 	if(url.getProtocol() == sys->getOrigin().getProtocol() &&
 			url.getHostname() == sys->getOrigin().getHostname())
 	{
-		LOG(LOG_NO_INFO, "SECURITY: Same hostname as origin, allowing");
-		sem_post(&mutex);
+		LOG(LOG_NO_INFO, "SECURITY: ALLOWED: Same hostname as origin");
 		return ALLOWED;
 	}
 
-	sem_post(&mutex);
 	//Search for the policy files to check
-	vector<URLPolicyFile*>* files = searchURLPolicyFiles(url, loadPendingPolicies);
+	URLPolicyFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
+	
 	sem_wait(&mutex);
+	//-- Lock acquired
+
 	//Check the policy files
 	if(files != NULL)
 	{
-		vector<URLPolicyFile*>::const_iterator it = files->begin();
+		URLPolicyFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
 			if((*it)->allowsHTTPRequestHeaderFrom(sys->getOrigin(), url, headerStrLower))
 			{
-				LOG(LOG_NO_INFO, "SECURITY: ALLOWED: A policy file allowed the header");
+				LOG(LOG_NO_INFO, "SECURITY: ALLOWED: A policy file explicitly allowed the header");
 				delete files;
+
+				//++ Release lock
 				sem_post(&mutex);
 				return ALLOWED;
 			}
 		}
 	}
-	else
-		LOG(LOG_NO_INFO, "SECURITY: No policy files to check");
 
 	LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: No policy file explicitly allowed the header");
 	delete files;
+
+	//++ Release lock
 	sem_post(&mutex);
 	return NA_CROSSDOMAIN_POLICY;
 }
@@ -449,13 +442,18 @@ PolicyFile::PolicyFile(URLInfo _url, TYPE _type):
 	loaded(false),siteControl(NULL)
 {
 	sem_init(&mutex,0,1);
+	//== Lock initialized
 }
 PolicyFile::~PolicyFile()
 {
+	sem_wait(&mutex);
+	//-- Lock acquired
+	
 	for(vector<PolicyAllowAccessFrom*>::iterator i = allowAccessFrom.begin(); 
 			i != allowAccessFrom.end(); ++i)
 		delete (*i);
-	allowAccessFrom.clear();
+
+	//== Destroy lock
 	sem_destroy(&mutex);
 }
 
@@ -474,22 +472,35 @@ URLPolicyFile::URLPolicyFile(const URLInfo& _url):
 }
 URLPolicyFile::~URLPolicyFile()
 {
+	sem_wait(&mutex);
+	//-- Lock acquired
+
 	for(vector<PolicyAllowHTTPRequestHeadersFrom*>::iterator i = allowHTTPRequestHeadersFrom.begin();
 			i != allowHTTPRequestHeadersFrom.end(); ++i)
 		delete (*i);
-	allowHTTPRequestHeadersFrom.clear();
+
+	//++ Release lock
+	sem_post(&mutex);
 }
 
 URLPolicyFile* URLPolicyFile::getMasterPolicyFile()
 {
+	sem_wait(&mutex);
+	//-- Lock acquired
+
 	if(isMaster())
+	{
+		//++ Release lock
+		sem_post(&mutex);
 		return this;
+	}
 
 	URLPolicyFile* file = sys->securityManager->getURLPolicyFileByURL(url.goToURL("/crossdomain.xml"));
 	if(file == NULL)
-	{
 		file = sys->securityManager->addURLPolicyFile(url.goToURL("/crossdomain.xml"));
-	}
+
+	//++ Release lock
+	sem_post(&mutex);
 	return file;
 }
 
@@ -502,17 +513,16 @@ bool URLPolicyFile::isMaster()
 void URLPolicyFile::load()
 {
 	//Invalid URLPolicyFile or already loaded, ignore this call
-	if(!isValid() || isLoaded()) return;
-	sem_wait(&mutex);
-
+	if(!isValid() || isLoaded())
+		return;
 	//We only try loading once, if something goes wrong, valid will be set to 'invalid'
 	loaded = true;
 
-	LOG(LOG_NO_INFO, "SECURITY: Loading cross domain policy file: " << url.getParsedURL());
-
-	sem_post(&mutex);
 	URLPolicyFile* master = getMasterPolicyFile();
+
 	sem_wait(&mutex);
+	//-- Lock acquired
+
 	//Check if this file is allowed/ignored by the master policy file
 	if(!isMaster())
 	{
@@ -521,11 +531,9 @@ void URLPolicyFile::load()
 		//Master policy file found and valid and has a site-control entry
 		if(master->isValid() && master->getSiteControl() != NULL)
 		{
-			PolicySiteControl::METAPOLICYTYPE permittedPolicies = 
-				master->getSiteControl()->getPermittedCrossDomainPolicies();
+			PolicySiteControl::METAPOLICY permittedPolicies = master->getSiteControl()->getPermittedPolicies();
 			//For all types: master-only, none
-			if(permittedPolicies == PolicySiteControl::MASTER_ONLY ||
-					permittedPolicies == PolicySiteControl::NONE)
+			if(permittedPolicies == PolicySiteControl::MASTER_ONLY ||	permittedPolicies == PolicySiteControl::NONE)
 				ignore = true;
 			//Only for FTP: by-ftp-filename
 			else if(subtype == FTP && permittedPolicies == PolicySiteControl::BY_FTP_FILENAME && 
@@ -534,17 +542,17 @@ void URLPolicyFile::load()
 		}
 	}
 
-
 	//No caching needed for this download, we don't expect very big files
 	Downloader* downloader=sys->downloadManager->download(url, false);
-	//Wait until the file is fetched
+
+	//Wait until the file is fetched, only if we are not shutting down
 	if(!sys->isShuttingDown())
 		downloader->wait();
 	else
 		valid = false;
 
-	//If files are redirected, we use the new URL as the policy's URL
-	if(downloader->isRedirected())
+	//If files are redirected, we use the new URL as the file's URL
+	if(isValid() && downloader->isRedirected())
 	{
 		URLInfo newURL(downloader->getURL());
 		if(url.getHostname() != newURL.getHostname())
@@ -553,13 +561,13 @@ void URLPolicyFile::load()
 			valid = false;
 		}
 		url = newURL;
-		LOG(LOG_NO_INFO, "SECURITY: Policy file was redirected, has failed: " << downloader->hasFailed());
+		LOG(LOG_NO_INFO, "SECURITY: Policy file was redirected");
 	}
 
 	//Policy files must have on of the following content-types to be valid:
 	//text/*, application/xml or application/xhtml+xml
 	tiny_string contentType = downloader->getHeader("content-type");
-	if((subtype == HTTP || subtype == HTTPS) && 
+	if(isValid() && (subtype == HTTP || subtype == HTTPS) && 
 			contentType.substr(0, 5) != "text/" &&
 			contentType != "application/xml" &&
 			contentType != "application/xhtml+xml")
@@ -570,43 +578,29 @@ void URLPolicyFile::load()
 
 	//One more check from the master file: see if the content-type is OK 
 	//if site-control specifies by-content-type
-	if(!isMaster())
+	if(isValid() && !isMaster())
 	{
-		//Master policy file found and valid and has a site-control entry
-		if(master->isValid() && master->getSiteControl() != NULL)
+		//If the site-control policy of the master policy file is by-content-type, only policy files with
+		//content-type = text/x-cross-domain-policy are allowed.
+		if(master->isValid() && master->getSiteControl() != NULL &&
+				(subtype == HTTP || subtype == HTTPS) &&
+				master->getSiteControl()->getPermittedPolicies() == PolicySiteControl::BY_CONTENT_TYPE &&
+				contentType != "text/x-cross-domain-policy")
 		{
-			//If the site-control policy of the master policy file is by-content-type, only policy files with
-			//content-type = text/x-cross-domain-policy are allowed.
-			PolicySiteControl::METAPOLICYTYPE permittedPolicies =
-				master->getSiteControl()->getPermittedCrossDomainPolicies();
-			if((subtype == HTTP || subtype == HTTPS) &&
-					permittedPolicies == PolicySiteControl::BY_CONTENT_TYPE && 
-					contentType != "text/x-cross-domain-policy")
-			{
-				LOG(LOG_NO_INFO, "SECURITY: Policy file content-type isn't strict, marking invalid");
-				ignore = true;
-			}
+			LOG(LOG_NO_INFO, "SECURITY: Policy file content-type isn't strict, marking invalid");
+			ignore = true;
 		}
 	}
 
 	//We've checked the master file to see of we need to ignore this file. (not the case)
-	//Now let's parse this file.
-
-	if(isValid() && !isIgnored() && !downloader->hasFailed())
+	//Now let's parse this file. A HTTP 404 results in a failed download.
+	if(isValid() && !isIgnored() && !downloader->hasFailed() && !sys->isShuttingDown())
 	{
 		istream s(downloader);
 		size_t bufLength = downloader->getLength();
 		uint8_t* buf=new uint8_t[bufLength];
 		//TODO: avoid this useless copy
 		s.read((char*)buf,bufLength);
-
-		//DEBUGGING
-		//char strbuf[downloader->getLength()+1];
-		//strncpy(strbuf, (const char*) buf, downloader->getLength());
-		//strbuf[downloader->getLength()] = '\0';
-		//LOG(LOG_NO_INFO, "Loaded policy file: length: " <<
-		//		downloader->getLength() << "B\n" << strbuf);
-		//DEBUGGING: end
 
 		//We're done with the downloader, lets destroy ASAP
 		sys->downloadManager->destroy(downloader);
@@ -619,18 +613,17 @@ void URLPolicyFile::load()
 		else if(subtype == FTP)
 			parserSubtype = CrossDomainPolicy::FTP;
 		CrossDomainPolicy parser(buf, bufLength, CrossDomainPolicy::URL, parserSubtype, isMaster());
-		CrossDomainPolicy::ELEMENTTYPE elementType = parser.getNextElement();
+		CrossDomainPolicy::ELEMENT elementType = parser.getNextElement();
 
-		while(elementType != CrossDomainPolicy::END_OF_FILE &&
-				elementType != CrossDomainPolicy::INVALID_FILE)
+		while(elementType != CrossDomainPolicy::END && elementType != CrossDomainPolicy::INVALID)
 		{
 			if(elementType == CrossDomainPolicy::SITE_CONTROL)
 			{
-				siteControl = new PolicySiteControl(this, parser.getPermittedCrossDomainPolicies());
+				siteControl = new PolicySiteControl(this, parser.getPermittedPolicies());
 				//No more parsing is needed if this site-control entry specifies that
 				//no policy files are allowed
 				if(isMaster() &&
-						siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
+						siteControl->getPermittedPolicies() == PolicySiteControl::NONE)
 					break;
 			}
 			else if(elementType == CrossDomainPolicy::ALLOW_ACCESS_FROM)
@@ -645,24 +638,26 @@ void URLPolicyFile::load()
 			elementType = parser.getNextElement();
 		}
 
-		if(elementType == CrossDomainPolicy::INVALID_FILE)
+		//The last element was INVALID
+		if(elementType == CrossDomainPolicy::INVALID)
 			valid = false;
 
 		if(isMaster())
 		{
-			LOG(LOG_NO_INFO, "SECURITY: Loaded master file");
 			//Set siteControl to the default value if it isn't set before and we are a master file
 			if(siteControl == NULL)
 				siteControl = new PolicySiteControl(this, "");
 
 			//Ignore this file if the site control policy is "none"
-			if(siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::NONE)
+			if(siteControl->getPermittedPolicies() == PolicySiteControl::NONE)
 				ignore = true;
+			//by-ftp-filename only applies to FTP
 			if((subtype == HTTP || subtype == HTTPS) && 
-					siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::BY_FTP_FILENAME)
+					siteControl->getPermittedPolicies() == PolicySiteControl::BY_FTP_FILENAME)
 				valid = false;
+			//by-content-type only applies to HTTP(S)
 			else if(subtype == FTP && 
-					siteControl->getPermittedCrossDomainPolicies() == PolicySiteControl::BY_CONTENT_TYPE)
+					siteControl->getPermittedPolicies() == PolicySiteControl::BY_CONTENT_TYPE)
 				valid = false;
 		}
 	}
@@ -672,6 +667,8 @@ void URLPolicyFile::load()
 		valid = false;
 		sys->downloadManager->destroy(downloader);
 	}
+
+	//++ Release lock
 	sem_post(&mutex);
 }
 
@@ -689,13 +686,11 @@ bool URLPolicyFile::allowsAccessFrom(const URLInfo& u, const URLInfo& to)
 	if(!isValid() || isIgnored())
 		return false;
 
-	PolicyAllowAccessFrom* access;
-	for(vector<PolicyAllowAccessFrom*>::const_iterator i = allowAccessFrom.begin(); 
-			i != allowAccessFrom.end(); ++i)
+	vector<PolicyAllowAccessFrom*>::const_iterator i = allowAccessFrom.begin();
+	for(; i != allowAccessFrom.end(); ++i)
 	{
-		access = (*i);
 		//This allow-access-from entry applies to our domain AND it allows our domain
-		if(access->allowsAccessFrom(u))
+		if((*i)->allowsAccessFrom(u))
 			return true;
 	}
 	return false;
@@ -719,9 +714,8 @@ bool URLPolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo&
 	if(!isValid() || isIgnored())
 		return false;
 
-	for(vector<PolicyAllowHTTPRequestHeadersFrom*>::const_iterator i = 
-			allowHTTPRequestHeadersFrom.begin();
-			i != allowHTTPRequestHeadersFrom.end(); ++i)
+	vector<PolicyAllowHTTPRequestHeadersFrom*>::const_iterator i = allowHTTPRequestHeadersFrom.begin();
+	for(; i != allowHTTPRequestHeadersFrom.end(); ++i)
 	{
 		if((*i)->allowsHTTPRequestHeaderFrom(u, header))
 			return true;
@@ -729,23 +723,23 @@ bool URLPolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo&
 	return false;
 }
 
-PolicySiteControl::PolicySiteControl(PolicyFile* _file, const string _permittedCrossDomainPolicies):
+PolicySiteControl::PolicySiteControl(PolicyFile* _file, const string _permittedPolicies):
 	file(_file)
 {
-	if(_permittedCrossDomainPolicies == "all")
-		permittedCrossDomainPolicies = ALL;
-	else if(_permittedCrossDomainPolicies == "by-content-type")
-		permittedCrossDomainPolicies = BY_CONTENT_TYPE;
-	else if(_permittedCrossDomainPolicies == "by-ftp-filename")
-		permittedCrossDomainPolicies = BY_FTP_FILENAME;
-	else if(_permittedCrossDomainPolicies == "master-only")
-		permittedCrossDomainPolicies = MASTER_ONLY;
-	else if(_permittedCrossDomainPolicies == "none")
-		permittedCrossDomainPolicies = NONE;
+	if(_permittedPolicies == "all")
+		permittedPolicies = ALL;
+	else if(_permittedPolicies == "by-content-type")
+		permittedPolicies = BY_CONTENT_TYPE;
+	else if(_permittedPolicies == "by-ftp-filename")
+		permittedPolicies = BY_FTP_FILENAME;
+	else if(_permittedPolicies == "master-only")
+		permittedPolicies = MASTER_ONLY;
+	else if(_permittedPolicies == "none")
+		permittedPolicies = NONE;
 	else if(file->getType() == PolicyFile::SOCKET) //Default for SOCKET
-		permittedCrossDomainPolicies = ALL;
+		permittedPolicies = ALL;
 	else //Default for everything except SOCKET
-		permittedCrossDomainPolicies = MASTER_ONLY;
+		permittedPolicies = MASTER_ONLY;
 }
 
 PolicyAllowAccessFrom::PolicyAllowAccessFrom(PolicyFile* _file, const string _domain,
@@ -760,11 +754,10 @@ PolicyAllowAccessFrom::PolicyAllowAccessFrom(PolicyFile* _file, const string _do
 		if(file->getType() == PolicyFile::SOCKET)
 			secure = false;
 	}
+
 	//Set the default value
 	if(_toPorts.length() == 0 || _toPorts == "*")
-	{
 		toPorts.push_back(new PortRange(0, 0, false, true));
-	}
 	else
 	{
 		string ports = _toPorts;
@@ -825,9 +818,10 @@ PolicyAllowAccessFrom::~PolicyAllowAccessFrom()
 
 bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url) const
 {
-	//Check if domains match
 	//TODO: resolve domain names using DNS before checking for a match?
 	//See section 1.5.9 in specification
+	
+	//Check if domains match
 	if(!URLInfo::matchesDomain(domain, url.getHostname()))
 		return false;
 
@@ -846,15 +840,11 @@ PolicyAllowHTTPRequestHeadersFrom::PolicyAllowHTTPRequestHeadersFrom(URLPolicyFi
 		const string _domain, const string _headers, bool _secure, bool secureSpecified):
 	file(_file),domain(_domain),secure(_secure)
 {
-	if(!secureSpecified)
-	{
-		if(file->getSubtype() == URLPolicyFile::HTTPS)
+	if(!secureSpecified && file->getSubtype() == URLPolicyFile::HTTPS)
 			secure = true;
-	}
+
 	if(_headers.length() == 0 || _headers == "*")
-	{
 		headers.push_back(new string("*"));
-	}
 	else {
 		string headersStr = _headers;
 		size_t cursor = 0;
@@ -871,8 +861,7 @@ PolicyAllowHTTPRequestHeadersFrom::PolicyAllowHTTPRequestHeadersFrom(URLPolicyFi
 
 PolicyAllowHTTPRequestHeadersFrom::~PolicyAllowHTTPRequestHeadersFrom()
 {
-	for(vector<string*>::iterator i = headers.begin();
-			i != headers.end(); ++i)
+	for(vector<string*>::iterator i = headers.begin(); i != headers.end(); ++i)
 		delete (*i);
 	headers.clear();
 }

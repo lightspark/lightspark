@@ -29,7 +29,7 @@ CrossDomainPolicy::CrossDomainPolicy(const unsigned char* buffer, size_t length,
 {
 }
 
-CrossDomainPolicy::ELEMENTTYPE CrossDomainPolicy::getNextElement()
+CrossDomainPolicy::ELEMENT CrossDomainPolicy::getNextElement()
 {
 	while(xml.read())
 	{
@@ -44,7 +44,7 @@ CrossDomainPolicy::ELEMENTTYPE CrossDomainPolicy::getNextElement()
 		//Some reasons for marking this file as invalid (extraneous content)
 		if(depth > 1 || xml.has_value() || (depth == 0 && tagName != "cross-domain-policy"))
 		{
-			return INVALID_FILE;
+			return INVALID;
 		}
 
 		//The root element doesn't need handling
@@ -59,15 +59,15 @@ CrossDomainPolicy::ELEMENTTYPE CrossDomainPolicy::getNextElement()
 			if(!siteControlFound && master && attrCount == 1)
 			{
 				siteControlFound = true;
-				permittedCrossDomainPolicies = xml.get_attribute("permitted-cross-domain-policies");
+				permittedPolicies = xml.get_attribute("permitted-cross-domain-policies");
 				//Found the required attribute, passing control
-				if(permittedCrossDomainPolicies != "")
+				if(permittedPolicies != "")
 					return SITE_CONTROL;
 				else
-					return INVALID_FILE;
+					return INVALID;
 			}
 			else
-				return INVALID_FILE;
+				return INVALID;
 		}
 		//Handle the allow-access-from element if the element has attributes
 		else if(tagName == "allow-access-from")
@@ -94,10 +94,10 @@ CrossDomainPolicy::ELEMENTTYPE CrossDomainPolicy::getNextElement()
 				else if(type == SOCKET && domain != "" && toPorts != "")
 					return ALLOW_ACCESS_FROM;
 				else
-					return INVALID_FILE;
+					return INVALID;
 			}
 			else
-				return INVALID_FILE;
+				return INVALID;
 		}
 		//Handle the allow-http-request-headers-from element if the element has attributes and if the policy file type is HTTP(S)
 		else if(tagName == "allow-http-request-headers-from")
@@ -122,11 +122,11 @@ CrossDomainPolicy::ELEMENTTYPE CrossDomainPolicy::getNextElement()
 				if(domain != "" && headers != "")
 					return ALLOW_HTTP_REQUEST_HEADERS_FROM;
 				else
-					return INVALID_FILE;
+					return INVALID;
 			}
 			else
-				return INVALID_FILE;
+				return INVALID;
 		}
 	}
-	return END_OF_FILE;
+	return END;
 }

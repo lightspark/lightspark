@@ -50,7 +50,7 @@ namespace lightspark
 
 		//Parsed element attributes
 		//site-control
-		std::string permittedCrossDomainPolicies;
+		std::string permittedPolicies;
 		//allow-access-from & allow-http-request-headers-from
 		std::string domain;
 		bool secure;
@@ -61,10 +61,10 @@ namespace lightspark
 		std::string headers;
 	public:
 		CrossDomainPolicy(const unsigned char* buffer, size_t length, POLICYFILETYPE _type, POLICYFILESUBTYPE _subtype, bool _master);
-		enum ELEMENTTYPE { END_OF_FILE, INVALID_FILE, SITE_CONTROL, ALLOW_ACCESS_FROM, ALLOW_HTTP_REQUEST_HEADERS_FROM };
-		ELEMENTTYPE getNextElement();
+		enum ELEMENT { END, INVALID, SITE_CONTROL, ALLOW_ACCESS_FROM, ALLOW_HTTP_REQUEST_HEADERS_FROM };
+		ELEMENT getNextElement();
 		//site-control
-		const std::string& getPermittedCrossDomainPolicies() const { return permittedCrossDomainPolicies; }
+		const std::string& getPermittedPolicies() const { return permittedPolicies; }
 		//allow-access-from & allow-http-request-headers-from
 		const std::string& getDomain() const { return domain; }
 		bool getSecure() { return secure; };

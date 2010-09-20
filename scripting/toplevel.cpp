@@ -2791,36 +2791,6 @@ void Class_base::cleanUp()
 	}
 }
 
-ASObject* Class_inherit::getInstance(bool construct, ASObject* const* args, const unsigned int argslen)
-{
-	ASObject* ret=NULL;
-	if(tag)
-	{
-		ret=tag->instance();
-		assert_and_throw(ret);
-	}
-	else
-	{
-		assert_and_throw(super);
-		//Our super should not construct, we are going to do it ourselves
-		ret=super->getInstance(false,NULL,0);
-	}
-	//We override the prototype
-	ret->setPrototype(this);
-	if(construct)
-		handleConstruction(ret,args,argslen,true);
-	return ret;
-}
-
-void Class_inherit::buildInstanceTraits(ASObject* o) const
-{
-	assert_and_throw(class_index!=-1);
-	//The class is declared in the script and has an index
-	LOG(LOG_CALLS,_("Building instance traits"));
-
-	context->buildInstanceTraits(o,class_index);
-}
-
 Class_object* Class_object::getClass()
 {
 	//We check if we are registered in the class map

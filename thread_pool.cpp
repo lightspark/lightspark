@@ -64,6 +64,11 @@ ThreadPool::~ThreadPool()
 		if(curJobs[i])
 			curJobs[i]->stop();
 	}
+	//Fence all the non executed jobs
+	std::deque<IThreadJob*>::iterator it=jobs.begin();
+	for(;it!=jobs.end();it++)
+		(*it)->jobFence();
+	jobs.clear();
 	sem_post(&mutex);
 
 	for(int i=0;i<NUM_THREADS;i++)

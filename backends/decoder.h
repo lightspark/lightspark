@@ -98,10 +98,7 @@ public:
 	/*
 		Useful to avoid destruction of the object while a pending upload is waiting
 	*/
-	void waitForFencing()
-	{
-		ATOMIC_INCREMENT(fenceCount);
-	}
+	void waitForFencing();
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;
 	const TextureChunk& getTexture();

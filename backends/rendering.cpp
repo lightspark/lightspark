@@ -441,7 +441,10 @@ float RenderThread::getIdAt(int x, int y)
 void RenderThread::commonGLDeinit()
 {
 	//Fence any object that is still waiting for upload
+	Locker l(mutexUploadJobs);
 	deque<ITextureUploadable*>::iterator it=uploadJobs.begin();
+	if(prevUploadJob)
+		prevUploadJob->uploadFence();
 	for(;it!=uploadJobs.end();it++)
 		(*it)->uploadFence();
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
@@ -931,6 +934,11 @@ void* RenderThread::sdl_worker(RenderThread* th)
 void RenderThread::addUploadJob(ITextureUploadable* u)
 {
 	Locker l(mutexUploadJobs);
+	if(m_sys->isShuttingDown() || terminated)
+	{
+		u->uploadFence();
+		return;
+	}
 	uploadJobs.push_back(u);
 	uploadNeeded=true;
 	sem_post(&event);

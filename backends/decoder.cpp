@@ -76,6 +76,11 @@ void VideoDecoder::uploadFence()
 	ATOMIC_DECREMENT(fenceCount);
 }
 
+void VideoDecoder::waitForFencing()
+{
+	ATOMIC_INCREMENT(fenceCount);
+}
+
 #ifdef ENABLE_LIBAVCODEC
 bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 {

@@ -628,6 +628,8 @@ void NetStream::tick()
 		audioDecoder->skipAll();
 	}
 	videoDecoder->skipUntil(streamTime);
+	//The next line ensures that the downloader will not be destroyed before the upload jobs are fenced
+	videoDecoder->waitForFencing();
 	sys->getRenderThread()->addUploadJob(videoDecoder);
 }
 

@@ -449,11 +449,7 @@ void CairoRenderer::execute()
 					cairo_fill(cr);
 					empty=true;
 				}
-				if(pattern)
-				{
-					std::cout << cairo_pattern_get_reference_count(pattern) << std::endl;
-					__asm__("int $3");
-				}
+				//NOTE: Destruction of the pattern happens internally by refcounting
 				assert(tokens[i].style);
 				const FILLSTYLE* style=tokens[i].style;
 				if(style->FillStyleType==SOLID_FILL)

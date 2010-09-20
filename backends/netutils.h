@@ -145,8 +145,13 @@ public:
 
 class ThreadedDownloader : public Downloader, public IThreadJob
 {
+private:
+	ACQUIRE_RELEASE_FLAG(fenceState);
 public:
-	void jobFence(){}
+	ThreadedDownloader():fenceState(false){}
+	void enableFencingWaiting();
+	void jobFence();
+	void waitFencing();
 };
 
 //CurlDownloader can be used as a thread job, standalone or as a streambuf

@@ -55,6 +55,7 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 		downloader=new CurlDownloader(url.getParsedURL());
 	}
 	downloader->setCached(cached);
+	downloader->enableFencingWaiting();
 	sys->addJob(downloader);
 	return downloader;
 }
@@ -63,7 +64,10 @@ void StandaloneDownloadManager::destroy(Downloader* d)
 {
 	if(!sys->isShuttingDown())
 		d->wait();
-	delete d;
+	//NOTE: the following static cast should be safe. we now the type of created objects
+	ThreadedDownloader* thd=static_cast<ThreadedDownloader*>(d);
+	thd->waitFencing();
+	delete thd;
 }
 
 Downloader::~Downloader()
@@ -392,6 +396,21 @@ CurlDownloader::CurlDownloader(const tiny_string& u)
 {
 	url=u;
 	requestStatus = 0;
+}
+
+void ThreadedDownloader::enableFencingWaiting()
+{
+	RELEASE_WRITE(fenceState,true);
+}
+
+void ThreadedDownloader::jobFence()
+{
+	RELEASE_WRITE(fenceState,false);
+}
+
+void ThreadedDownloader::waitFencing()
+{
+	while(fenceState);
 }
 
 void CurlDownloader::threadAbort()

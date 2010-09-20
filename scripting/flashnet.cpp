@@ -196,7 +196,7 @@ void URLLoader::execute()
 
 	if(!downloader->hasFailed())
 	{
-		downloader->wait();
+		downloader->waitForTermination();
 		if(!downloader->hasFailed())
 		{
 			istream s(downloader);
@@ -1215,7 +1215,7 @@ ASFUNCTIONBODY(lightspark,sendToURL)
 		//Don't cache our downloaded files
 		Downloader* downloader=sys->downloadManager->download(url, false);
 		//TODO: make the download asynchronous instead of waiting for an unused response
-		downloader->wait();
+		downloader->waitForTermination();
 		sys->downloadManager->destroy(downloader);
 	}
 	return NULL;

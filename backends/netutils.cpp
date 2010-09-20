@@ -32,16 +32,40 @@
 using namespace lightspark;
 extern TLSDATA SystemState* sys;
 
+/**
+ * \brief Standalone download manager constructor.
+ *
+ * The standalone download manager produces \c ThreadedDownloader-type \c Downloaders.
+ * It should only be used in the standalone version of LS.
+ */
 StandaloneDownloadManager::StandaloneDownloadManager()
 {
 	type = STANDALONE;
 }
 
-Downloader* StandaloneDownloadManager::download(const tiny_string& u, bool cached)
+/**
+ * \brief Create a Downloader for an URL.
+ *
+ * Returns a pointer to a newly created \c Downloader for the given URL.
+ * \param[in] url The URL (as a \c tiny_string) the \c Downloader is requested for
+ * \param[in] cached Whether or not to disk-cache the download (default=false)
+ * \return A pointer to a newly created \c Downloader for the given URL.
+ * \see destroy
+ */
+Downloader* StandaloneDownloadManager::download(const tiny_string& url, bool cached)
 {
-	return download(sys->getOrigin().goToURL(u), cached);
+	return download(sys->getOrigin().goToURL(url), cached);
 }
 
+/**
+ * \brief Create a Downloader for an URL.
+ *
+ * Returns a pointer to a newly created \c Downloader for the given URL.
+ * \param[in] url The URL (as a \c URLInfo) the \c Downloader is requested for
+ * \param[in] cached Whether or not to disk-cache the download (default=false)
+ * \return A pointer to a newly created \c Downloader for the given URL.
+ * \see destroy
+ */
 Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 {
 	LOG(LOG_NO_INFO, _("NET: STANDALONE: DownloadManager::download '") << url.getParsedURL()
@@ -61,232 +85,503 @@ Downloader* StandaloneDownloadManager::download(const URLInfo& url, bool cached)
 	return downloader;
 }
 
-void StandaloneDownloadManager::destroy(Downloader* d)
+/**
+ * \brief Destroy a Downloader.
+ *
+ * Destroy a given \c Downloader.
+ * The \c Downloader should be created using \c StandaloneDownloadManager::download.
+ * \param downloader A pointer to the \c Downloader to be destroyed.
+ * \see download
+ */
+void StandaloneDownloadManager::destroy(Downloader* downloader)
 {
-	if(d != NULL)
-	{
-		if(!sys->isShuttingDown())
-			d->wait();
-		delete d;
-		d = NULL;
-	}
+	delete downloader;
+}
+
+/**
+ * \protected
+ * \brief Downloader constructor.
+ *
+ * Constructor for the Downloader class. Can only be called from derived classes.
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] _cached Whether or not to cache this download.
+ */
+Downloader::Downloader(const tiny_string& _url, bool _cached):
+	cacheHasOpened(false),hasTerminated(false),                   //LOCKING
+	waitingForCache(false),waitingForData(false),waitingForTermination(false), //STATUS
+	forceStop(true),failed(false),finished(false),                //FLAGS
+	url(_url),originalURL(url),                                   //PROPERTIES
+	buffer(NULL),                                                 //BUFFERING
+	cached(_cached),cachePos(0),cacheSize(0),keepCache(false),    //CACHING
+	length(0),receivedLength(0),                                  //DOWNLOADED DATA
+	redirected(false),requestStatus(0)                            //HTTP REDIR, STATUS & HEADERS
+{
+	sem_init(&mutex,0,1);
+	//== Lock initialized 
+
+	sem_init(&cacheOpened,0,0);
+	//== Initialize cacheOpened signal
+	sem_init(&dataAvailable,0,0);
+	//== Initialize dataAvailable signal
+
+	sem_init(&terminated,0,0);
+	//== Initialize terminated signal
+
+	setg(NULL,NULL,NULL);
 }
 
 Downloader::~Downloader()
 {
+	if(!sys->isShuttingDown())
+		waitForTermination();
+
+	sem_wait(&mutex);
+	//-- Lock acquired
+
 	if(cached)
 	{
 		if(cache.is_open())
 			cache.close();
-		if(!keepCache && cacheFileName != "")
-			unlink(cacheFileName.raw_buf());
+		if(!keepCache && cacheFilename != "")
+			unlink(cacheFilename.raw_buf());
 	}
 	if(buffer != NULL)
 	{
 		free(buffer);
 	}
-	sem_destroy(&available);
-	sem_destroy(&mutex);
+
+	//== Destroy terminated signal
 	sem_destroy(&terminated);
-	sem_destroy(&cacheOpen);
+
+	//== Destroy dataAvailable signal
+	sem_destroy(&dataAvailable);
+	//== Destroy cacheOpened signal 
+	sem_destroy(&cacheOpened);
+
+	//== Destroy lock
+	sem_destroy(&mutex);
 }
 
-Downloader::Downloader(const tiny_string& _url, bool _cached):
-	cached(_cached),waiting(false),url(_url),hasTerminated(false),failed(false),finished(false),
-	allowBufferRealloc(false),buffer(NULL),len(0),tail(0),cachePos(0),cacheSize(0),keepCache(false),
-	redirected(false),originalURL(url),requestStatus(0)
-{
-	sem_init(&available,0,0);
-	sem_init(&mutex,0,1);
-	sem_init(&terminated,0,0);
-	sem_init(&cacheOpen,0,0);
-	setg(NULL,NULL,NULL);
-}
-
-void Downloader::stop()
-{
-	failed=true;
-	sem_post(&available);
-}
-
-//Use this method to wait for the download to finish
-void Downloader::wait()
-{
-	if(!hasTerminated)
-	{
-		sem_wait(&terminated);
-		hasTerminated = true;
-	}
-}
-void Downloader::waitForCache()
-{
-	if(!cache.is_open())
-	{
-		sem_post(&mutex);
-		sem_wait(&cacheOpen);
-		sem_wait(&mutex);
-	}
-}
-
+/**
+ * \protected
+ * \brief Marks the downloader as failed
+ *
+ * Sets the \c failed and finished flag to \c true, sets the final length and 
+ * signals \c dataAvailable if it is being waited for
+ * Waits for the mutex at start and releases the mutex when finished
+ * \post \c failed == true & finished == true
+ * \post \c length == receivedLength
+ * \post Signals \c dataAvailable if it is being waited for (waitingForData == true). 
+ * \post Signals \c terminated
+ */
 void Downloader::setFailed()
 {
-	sem_wait(&mutex);
 	failed=true;
-	if(waiting) //If we are waiting for some bytes, gives up and return EOF
-		sem_post(&available);
-	else
-		sem_post(&mutex);
+	finished = true;
+	//Set the final length
+	length = receivedLength;
+
+	//If we are waiting for data to become available, signal dataAvailable
+	if(waitingForData)
+	{
+		waitingForData = false;
+		//++ Signal dataAvailable
+		sem_post(&dataAvailable);
+	}
 }
 
-//Notify possible waiters no more data is coming
+/**
+ * \protected
+ * \brief Marks the downloader as finished
+ *
+ * Marks the downloader as finished, sets the final length and 
+ * signals \c dataAvailable if it is being waited for.
+ * Waits for the mutex at start and releases the mutex when finished
+ * \post finished == true
+ * \post length == receivedLength
+ * \post Signals \c dataAvailable if it is being waited for (waitingForData == true).
+ * \post Signals \c terminated
+ */
 void Downloader::setFinished()
 {
-	sem_wait(&mutex);
 	finished=true;
 	//Set the final length
-	len = tail;
-	if(waiting) //If we are waiting for some bytes, gives up and return EOF
-		sem_post(&available);
-	else
-		sem_post(&mutex);
+	length = receivedLength;
+
+	//If we are waiting for data to become available, signal dataAvailable
+	if(waitingForData)
+	{
+		waitingForData = false;
+		//++ Signal dataAvailable
+		sem_post(&dataAvailable);
+	}
+
+	waitingForTermination = false;
+	//++ Signal terminated
+	sem_post(&terminated);
 }
 
-void Downloader::setLen(uint32_t l)
+/**
+ * \brief Forces the download to stop
+ *
+ * Sets the \c failed and finished flag to \c true, sets the final length and signals \c dataAvailable
+ * \post \c failed == true & finished == true
+ * \post \c length == receivedLength
+ * \post \c dataAvailable is signalled
+ * \post Signals \c terminated
+ */
+void Downloader::stop()
+{
+	failed = true;
+	finished = true;
+	length = receivedLength;
+
+	waitingForData = false;
+	//++ Signal dataAvailable
+	sem_post(&dataAvailable);
+
+	waitingForTermination = false;
+	//++ Signal terminated
+	sem_post(&terminated);
+}
+
+/**
+ * \brief Wait for the cache file to be opened
+ *
+ * If \c !cacheHasOpened: wait for the \c cacheOpened signal and set \c cacheHasOpened to \c true
+ * Waits for the mutex at start and releases the mutex when finished
+ * \post \c cacheOpened signals has been handled
+ * \post \c cacheHasOpened = true
+ */
+void Downloader::waitForCache()
 {
 	sem_wait(&mutex);
-	len=l;
-	if(cached && !cache.is_open())
+	//-- Lock acquired
+	if(!cacheHasOpened)
 	{
-		//Create a temporary file(name)
-		char cacheFileNameC[30];
-		strcpy(cacheFileNameC, "/tmp/lightsparkdownloadXXXXXX");
-		int fd = mkstemp(cacheFileNameC);
-		if(fd == -1)
-			throw RunTimeException(_("Downloader::setLen: cannot create temporary file"));
-		//We are using fstream to read/write to the cache, so we don't need this FD
-		close(fd);
+		waitingForCache = true;
+		//++ Release lock
+		sem_post(&mutex);
 
-		//Save the temporary filename
-		cacheFileName = tiny_string(cacheFileNameC, true);
-		//Open the cache file
-		cache.open(cacheFileName.raw_buf(), std::fstream::in | std::fstream::out);
-		assert_and_throw(cache.is_open());
-		LOG(LOG_NO_INFO, _("NET: Downloading to cache file: ") << cacheFileName);
+		sem_wait(&cacheOpened);
+		//-- CacheOpen signalled
 
-		//This buffer will be our "window" into the file
-		buffer= (uint8_t*) calloc(cacheMaxSize, sizeof(uint8_t));
-
-		//Our cache window starts at pos 0
-		cachePos = 0;
-		cacheSize = 0;
-		setg((char*)buffer,(char*)buffer,(char*)buffer);
-		sem_post(&cacheOpen);
+		sem_wait(&mutex);
+		//-- Lock acquired
+		cacheHasOpened = true;
 	}
-	else if(!cached)
-	{
-		//Create buffer
-		if(buffer == NULL)
-		{
-			LOG(LOG_NO_INFO, _("NET: Downloading to memory"));
-			buffer= (uint8_t*) calloc(len, sizeof(uint8_t));
-			setg((char*)buffer,(char*)buffer,(char*)buffer);
-		}
-		//Realloc, only if allowed
-		else if(getAllowBufferRealloc())
-		{
-			//Remember the relative positions of the input pointers
-			intptr_t curPos = (intptr_t) (gptr()-eback());
-			intptr_t curLen = (intptr_t) (egptr()-eback());
-			buffer = (uint8_t*) realloc(buffer, len);
-			//Do some pointer arithmetic to point the input pointers to the right places in the new buffer
-			setg((char*)buffer,(char*)(buffer+curPos),(char*)(buffer+curLen));
-		}
-		else
-		{
-			assert_and_throw(buffer==NULL);
-		}
-	}
+
+	//++ Release lock
 	sem_post(&mutex);
 }
 
+/**
+ * \brief Wait for data to become available
+ *
+ * Wait for data to become available.
+ * Waits for the mutex at start and releases the mutex when finished
+ * \post \c dataAvailable signal has been handled
+ */
+void Downloader::waitForData()
+{
+	sem_wait(&mutex);
+	//-- Lock acquired
+	waitingForData = true;
+	//++ Release lock
+	sem_post(&mutex);
+
+	sem_wait(&dataAvailable);
+	//-- Terminated signalled
+}
+
+/**
+ * \brief Wait for termination of the downloader
+ *
+ * If \c !hasTerminated: wait for the \c terminated signal and set \c hasTerminated to \c true
+ * Waits for the mutex at start and releases the mutex when finished
+ * \post \c terminated signal has been handled
+ * \post \c hasTerminated = true
+ */
+void Downloader::waitForTermination()
+{
+	sem_wait(&mutex);
+	//-- Lock acquired
+	if(!hasTerminated)
+	{
+		waitingForTermination = true;
+		//++ Release lock
+		sem_post(&mutex);
+
+		sem_wait(&terminated);
+		//-- Terminated signalled
+
+		sem_wait(&mutex);
+		//-- Lock acquired
+		hasTerminated = true;
+	}
+	//++ Release lock
+	sem_post(&mutex);
+}
+
+/**
+ * \protected
+ * \brief (Re)allocates the buffer
+ *
+ * (Re)allocates the buffer to a given size
+ * Waits for mutex at start and releases mutex when finished
+ * \post \c buffer is (re)allocated
+ */
+void Downloader::allocateBuffer(size_t size)
+{
+	sem_wait(&mutex);
+	//-- Lock acquired
+	
+	//Create buffer
+	if(buffer == NULL)
+	{
+
+		buffer= (uint8_t*) calloc(size, sizeof(uint8_t));
+		setg((char*)buffer,(char*)buffer,(char*)buffer);
+	}
+	//If the buffer already exists, reallocate
+	else
+	{
+		//Remember the relative positions of the input pointers
+		intptr_t curPos = (intptr_t) (gptr()-eback());
+		intptr_t curLen = (intptr_t) (egptr()-eback());
+		buffer = (uint8_t*) realloc(buffer, size);
+		//Do some pointer arithmetic to point the input pointers to the right places in the new buffer
+		setg((char*)buffer,(char*)(buffer+curPos),(char*)(buffer+curLen));
+	}
+
+	//++ Release lock
+	sem_post(&mutex);
+}
+
+/**
+ * \protected
+ * \brief Creates & opens a temporary cache file
+ *
+ * Creates a temporary cache file in /tmp and calls \c openExistingCache() with that file.
+ * Waits for mutex at start and releases mutex when finished
+ * \throw RunTimeException Temporary file could not be created
+ * \throw RunTimeException Called when the downloader isn't cached or when the cache is already open
+ * \see openExistingCache
+ */
+void Downloader::openCache()
+{
+	sem_wait(&mutex);
+	//-- Lock acquired
+
+	//Only act if the downloader is cached and the cache hasn't been opened yet
+	if(cached && !cache.is_open())
+	{
+		//Create a temporary file(name)
+		char cacheFilenameC[] = "/tmp/lightsparkdownloadXXXXXX";
+		//char cacheFilenameC[30] = "/tmp/lightsparkdownloadXXXXXX";
+		//strcpy(cacheFilenameC, "/tmp/lightsparkdownloadXXXXXX");
+		int fd = mkstemp(cacheFilenameC);
+		if(fd == -1)
+			throw RunTimeException(_("Downloader::openCache: cannot create temporary file"));
+		//We are using fstream to read/write to the cache, so we don't need this FD
+		close(fd);
+
+		//++ Release lock
+		sem_post(&mutex);
+		//Let the openExistingCache function handle the rest
+		openExistingCache(tiny_string(cacheFilenameC, true));
+	}
+	else
+		throw RunTimeException(_("Downloader::openCache: downloader isn't cached or called twice"));
+}
+
+/**
+ * \protected
+ * \brief Opens an existing cache file
+ *
+ * Opens an existing cache file, allocates the buffer and signals \c cacheOpened.
+ * Waits for mutex at start and releases mutex when finished
+ * \post \c cacheFilename is set
+ * \post \c cache file is opened
+ * \post \c buffer is initialized
+ * \post \c cacheOpened is signalled
+ * \throw RunTimeException File could not be opened
+ * \throw RunTimeException Called when the downloader isn't cached or when the cache is already open
+ * \see allocateBuffer
+ */
+void Downloader::openExistingCache(tiny_string filename)
+{
+	sem_wait(&mutex);
+	//-- Lock acquired
+
+	//Only act if the downloader is cached and the cache hasn't been opened yet
+	if(cached && !cache.is_open())
+	{
+		//Save the filename
+		cacheFilename = filename;
+
+		//Open the cache file
+		cache.open(cacheFilename.raw_buf(), std::fstream::in | std::fstream::out);
+		if(!cache.is_open())
+			throw RunTimeException(_("Downloader::openCache: cannot open temporary cache file"));
+
+		//++ Release lock
+		sem_post(&mutex);
+		allocateBuffer(cacheMaxSize);
+		sem_wait(&mutex);
+		//-- Lock acquired
+
+		LOG(LOG_NO_INFO, _("NET: Downloading to cache file: ") << cacheFilename);
+
+		//++ Signal cacheOpened
+		sem_post(&cacheOpened);
+	}
+	else
+		throw RunTimeException(_("Downloader::openCache: downloader isn't cached or called twice"));
+
+	//++ Release lock
+	sem_post(&mutex);
+}
+
+/**
+ * \protected
+ * \brief Set the expected length of the download
+ *
+ * Sets the expected length of the download.
+ * Can be called multiple times if the length isn't known up front (reallocating the buffer on the fly).
+ * Waits for mutex at start and releases mutex when finished
+ * \post \c buffer is (re)allocated 
+ */
+void Downloader::setLength(uint32_t _length)
+{
+	sem_wait(&mutex);
+	//-- Lock acquired
+
+	//Set the length
+	length=_length;
+
+	//The first call to this function should open the cache
+	if(cached)
+	{
+		if(!cache.is_open())
+		{
+			//++ Release lock
+			sem_post(&mutex);
+
+			openCache();
+		}
+		else
+			//++ Release lock
+			sem_post(&mutex);
+	}
+	else
+	{
+		if(buffer == NULL)
+			LOG(LOG_NO_INFO, _("NET: Downloading to memory"));
+		//++ Release lock
+		sem_post(&mutex);
+
+		allocateBuffer(length);
+	}
+}
+
+/**
+ * \protected
+ * \brief Appends data to the buffer
+ *
+ * Appends a given amount of received data to the buffer/cache.
+ * This method will grow the expected length of the download on-the-fly as needed.
+ * So when \c length == 0 this call will call \c setLength(added)
+ * Waits for mutex at start and releases mutex when finished
+ * \post \c buffer/cache contains the added data
+ * \post \c length = \c receivedLength + \c added
+ * \see setLength
+ */
 void Downloader::append(uint8_t* buf, uint32_t added)
 {
 	if(added==0)
 		return;
 
 	sem_wait(&mutex);
-	if((tail+added)>len)
+	//-- Lock acquired
+
+	//If the added data would overflow the buffer, grow it
+	if((receivedLength+added)>length)
 	{
-		//Only grow the buffer when allowed
-		if(getAllowBufferRealloc())
-		{
-			uint32_t newLength = len;
-			if((tail+added)-len > 4096)
-				newLength += ((tail+added)-len);
-			else
-				newLength += 4096;
-			LOG(LOG_NO_INFO, _("NET: Downloaded file bigger than buffer (") << tail+added << ">" << len << 
-					_("). Growing buffer to: ") << newLength << _(", grown by: ") << (newLength-len));
-			sem_post(&mutex);
-			setLen(newLength);
-			sem_wait(&mutex);
-		}
-		//The real data is longer than the provided Content-Length header
+		uint32_t newLength;
+		if((receivedLength+added)-length > bufferMinGrowth)
+			newLength = receivedLength + added;
 		else
-		{
-			sem_post(&mutex);
-			throw RunTimeException(_("Downloaded file is too big"));
-		}
+			newLength = receivedLength + bufferMinGrowth;
+
+		//++ Release lock
+		sem_post(&mutex);
+		setLength(newLength);
+		sem_wait(&mutex);
+		//-- Lock acquired
 	}
 
 	if(cached)
 	{
-		waitForCache();
 		//Seek to where we last wrote data
-		cache.seekp(tail);
+		cache.seekp(receivedLength);
 		cache.write((char*) buf, added);
 	}
 	else
+		memcpy(buffer+receivedLength, buf, added);
+
+	receivedLength += added;
+
+	if(waitingForData)
 	{
-		memcpy(buffer + tail,buf,added);
+		waitingForData = false;
+		//++ Signal dataAvailable
+		sem_post(&dataAvailable);
 	}
-	tail+=added;
-	if(waiting)
-	{
-		waiting=false;
-		sem_post(&available);
-	}
-	else
-		sem_post(&mutex);
+
+	//++ Release lock
+	sem_post(&mutex);
 }
 
+/**
+ * \private
+ * \brief Called by the streambuf API
+ *
+ * Called by the streambuf API when there is no more data to read.
+ * \throw RunTimeException Cache file could not be read
+ */
 Downloader::int_type Downloader::underflow()
 {
 	sem_wait(&mutex);
+	//-- Lock acquired
+
 	assert(gptr()==egptr());
-	const unsigned int startOff=getOffset();
-	const unsigned int startTail=tail;
-	assert(startOff<=startTail);
+	const unsigned int startOffset=getOffset();
+	const unsigned int startReceivedLength=receivedLength;
+	assert(startOffset<=startReceivedLength);
 	//If we have read all available data
-	if(startTail==startOff)
+	if(startReceivedLength==startOffset)
 	{
-		//The download is failed, the end is reached or the download has finished
-		if(failed || (startTail==len && len!=0) || finished)
+		//The download has failed, has finished or the end is reached
+		if(failed || finished || (startReceivedLength==length && length!=0))
 		{
+			//++ Release lock
 			sem_post(&mutex);
 			return EOF;
 		}
 		//We haven't reached the end of the download, more bytes should follow
 		else
 		{
-			LOG(LOG_NO_INFO, _("NET: Downloader::underflow: waiting for more bytes"));
-			waiting=true; //Indicate we are waiting for more bytes to be downloaded
+			//++ Release lock
 			sem_post(&mutex);
-			sem_wait(&available); //Wait for more bytes to be downloaded
+			waitForData();
+			sem_wait(&mutex);
+			//-- Lock acquired
 			
-			//Check if we haven't finished (and there wasn't any new data) or failed
-			if(failed || (finished && startTail==tail))
+			//Check if we haven't failed or finished (and there wasn't any new data)
+			if(failed || (finished && startReceivedLength==receivedLength))
 			{
+				//++ Release lock
 				sem_post(&mutex);
 				return EOF;
 			}
@@ -295,15 +590,22 @@ Downloader::int_type Downloader::underflow()
 
 	//We should have an initialized buffer here since there is some data
 	assert_and_throw(buffer != NULL);
+	//Temporary pointers to new streambuf read positions
 	char* begin;
 	char* cur;
 	char* end;
+	//Index in the buffer pointing to the data to be returned
 	uint32_t index;
+
 	if(cached)
 	{
+		//++ Release lock
+		sem_post(&mutex);
 		waitForCache();
+		sem_wait(&mutex);
+		//-- Lock acquired
 
-		size_t newCacheSize = tail-(cachePos+cacheSize);
+		size_t newCacheSize = receivedLength-(cachePos+cacheSize);
 		if(newCacheSize > cacheMaxSize)
 			newCacheSize = cacheMaxSize;
 
@@ -315,7 +617,7 @@ Downloader::int_type Downloader::underflow()
 		//Read into our buffer window
 		cache.read((char*)buffer, cacheSize);
 		if(cache.fail())
-			LOG(LOG_ERROR, _("NET: Downloader::underflow: reading from cache file failed"));
+			throw RunTimeException(_("Downloader::underflow: reading from cache file failed"));
 
 		begin=(char*)buffer;
 		cur=(char*)buffer;
@@ -326,32 +628,52 @@ Downloader::int_type Downloader::underflow()
 	{
 		begin=(char*)buffer;
 		cur=gptr();
-		end=(char*)buffer+tail;
-		index=startOff;
+		end=(char*)buffer+receivedLength;
+		index=startOffset;
 	}
 
 	//If we've failed, don't bother any more
 	if(failed)
 	{
+		//++ Release lock
 		sem_post(&mutex);
 		return EOF;
 	}
 
 	//Set our new iterators in the buffer (begin, cursor, end)
 	setg(begin, cur, end);
+
+	//++ Release lock
 	sem_post(&mutex);
+
+
 	//Cast to unsigned, otherwise 0xff would become eof
 	return (unsigned char)buffer[index];
 }
 
+/**
+ * \private
+ * \brief Called by the streambuf API
+ *
+ * Called by the streambuf API to seek to an absolute position
+ * \throw RunTimeException Cache file could not be read
+ */
 Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode mode)
 {
 	assert_and_throw(mode==std::ios_base::in);
+
 	sem_wait(&mutex);
+	//-- Lock acquired
+	
 	assert_and_throw(buffer != NULL);
 	if(cached)
 	{
+		//++ Release lock
+		sem_post(&mutex);
 		waitForCache();
+		sem_wait(&mutex);
+		//-- Lock acquired
+
 		//The requested position is inside our current window
 		if(pos >= cachePos && pos <= cachePos+cacheSize)
 		{
@@ -359,10 +681,10 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 			setg((char*)buffer, (char*)buffer+pos-cachePos, (char*)buffer+cacheSize);
 		}
 		//The requested position is outside our current window
-		else if(pos <= tail)
+		else if(pos <= receivedLength)
 		{
 			cachePos = pos;
-			cacheSize = tail-pos;
+			cacheSize = receivedLength-pos;
 			if(cacheSize > cacheMaxSize)
 				cacheSize = cacheMaxSize;
 
@@ -371,28 +693,39 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 			//Read into our window
 			cache.read((char*)buffer, cacheSize);
 			if(cache.fail())
-				LOG(LOG_ERROR, _("NET: Downloader::seekpos: reading from cache file failed"));
+				throw RunTimeException(_("Downloader::seekpos: reading from cache file failed"));
 
 			//Our window starts at position pos
 			setg((char*) buffer, (char*) buffer, ((char*) buffer)+cacheSize);
 		}
 		//The requested position is bigger then our current amount of available data
-		else if(pos > tail)
+		else if(pos > receivedLength)
 			return -1;
 	}
 	else
 	{
 		//The requested position is valid
-		if(pos <= tail)
-			setg((char*)buffer,(char*)buffer+pos,(char*)buffer+tail);
+		if(pos <= receivedLength)
+			setg((char*)buffer,(char*)buffer+pos,(char*)buffer+receivedLength);
 		//The requested position is bigger then our current amount of available data
 		else
 			return -1;
 	}
+
+	//++ Release lock
 	sem_post(&mutex);
 	return pos;
 }
 
+/**
+ * \private
+ * \brief Get the position of the read cursor in the (virtual) downloaded data
+ *
+ * Get the position of the read cursor in the (virtual) downloaded data.
+ * If downloading to memory this method returns the position of the read cursor in the buffer.
+ * If downloading to a cache file, this method returns the position of the read cursor in the buffer
+ * + the position of the buffer window into the cache file.
+ */
 Downloader::pos_type Downloader::getOffset() const
 {
 	pos_type ret = gptr()-eback();
@@ -401,6 +734,13 @@ Downloader::pos_type Downloader::getOffset() const
 	return ret;
 }
 
+/**
+ * \private
+ * \brief Called by the streambuf API
+ *
+ * Called by the streambuf API to seek to a relative position
+ * The only supported case is offset==0.
+ */
 Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode mode)
 {
 	assert_and_throw(mode==std::ios_base::in);
@@ -412,7 +752,16 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 	return ret;
 }
 
-void Downloader::parseHeaders(const char* headers, bool setLength)
+/**
+ * \protected
+ * \brief Parse a string of multiple headers.
+ *
+ * Parses a string of multiple headers.
+ * Header lines are expected to be seperated by \n
+ * Calls \c parseHeader on every individual header.
+ * \see parseHeader
+ */
+void Downloader::parseHeaders(const char* headers, bool _setLength)
 {
 	if(headers == NULL)
 		return;
@@ -424,12 +773,20 @@ void Downloader::parseHeaders(const char* headers, bool setLength)
 	{
 		if(headersStr[cursor] == '\n')
 			cursor++;
-		parseHeader(headersStr.substr(cursor, newLinePos-cursor), setLength);
+		parseHeader(headersStr.substr(cursor, newLinePos-cursor), _setLength);
 		cursor = newLinePos;
 		newLinePos = headersStr.find("\n", cursor+1);
 	}
 }
-void Downloader::parseHeader(std::string header, bool setLength)
+
+/**
+ * \protected
+ * \brief Parse a string containing a single header.
+ *
+ * Parse a string containing a single header.
+ * The header line is not expected to contain a newline character.
+ */
+void Downloader::parseHeader(std::string header, bool _setLength)
 {
 	if(header.substr(0, 9) == "HTTP/1.1 " || header.substr(0, 9) == "HTTP/1.0") 
 	{
@@ -475,21 +832,78 @@ void Downloader::parseHeader(std::string header, bool setLength)
 				//Now read the length and allocate the byteArray
 				//Only read the length when we're not redirecting
 				if(getRequestStatus()/100 != 3)
-					setLen(atoi(headerValue.c_str()));
+					setLength(atoi(headerValue.c_str()));
 			}
 		}
 	}
 }
 
-CurlDownloader::CurlDownloader(const tiny_string& url, bool cached):ThreadedDownloader(url, cached)
+/**
+ * \protected
+ * \brief Constructor for the ThreadedDownloader class.
+ *
+ * Constructor for the ThreadedDownloader class. Can only be called from derived classes.
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] _cached Whether or not to cache this download.
+ */
+ThreadedDownloader::ThreadedDownloader(const tiny_string& url, bool cached):
+	Downloader(url, cached)
+{
+	sem_init(&fenced, 0, 0);
+	//== Fenced signal initialized
+}
+
+/**
+ * \brief Destructor for the ThreadedDownloader class.
+ *
+ * Waits for the \c fenced signal.
+ * \post \c fenced signalled was handled
+ */
+ThreadedDownloader::~ThreadedDownloader()
+{
+	sem_wait(&fenced);
+	//-- Fenced signalled
+}
+
+/**
+ * \private
+ * \brief The jobFence for ThreadedDownloader.
+ *
+ * This is the very last thing \c ThreadPool does with the \c ThreadedDownloader.
+ * Signals \c fenced.
+ * \post \c fenced signalled
+ */
+void ThreadedDownloader::jobFence()
+{
+	//++ Signal fenced
+	sem_post(&fenced);
+}
+
+/**
+ * \brief Constructor for the CurlDownloader class.
+ *
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] _cached Whether or not to cache this download.
+ */
+CurlDownloader::CurlDownloader(const tiny_string& _url, bool _cached):ThreadedDownloader(_url, _cached)
 {
 }
 
+/**
+ * \private
+ * \brief Called by \c IThreadJob::stop to abort this thread.
+ * Calls \c Downloader::stop.
+ * \see Downloader::stop
+ */
 void CurlDownloader::threadAbort()
 {
 	Downloader::stop();
 }
 
+/**
+ * \private
+ * \brief Called by \c ThreadPool to start executing this thread
+ */
 void CurlDownloader::execute()
 {
 	if(url.len()==0)
@@ -526,67 +940,104 @@ void CurlDownloader::execute()
 		//curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		res = curl_easy_perform(curl);
 		if(res!=0)
+		{
 			setFailed();
+			return;
+		}
 		curl_easy_cleanup(curl);
 	}
 	else
+	{
 		setFailed();
+		return;
+	}
 #else
 	//ENABLE_CURL not defined
-	setFailed();
 	LOG(LOG_ERROR,_("NET: CURL not enabled in this build. Downloader will always fail."));
+	setFailed();
+	return;
 #endif
 	//Notify the downloader no more data should be expected
 	setFinished();
-	sem_post(&(Downloader::terminated));
 }
 
+/**
+ * \private
+ * \brief Progress callback for CURL
+ *
+ * Gets called by CURL to report progress. Can be used to signal CURL to stop downloading.
+ */
 int CurlDownloader::progress_callback(void *clientp, double dltotal, double dlnow, double ultotal, double ulnow)
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(clientp);
 	return th->aborting || th->failed;
 }
 
+/**
+ * \private
+ * \brief Data callback for CURL
+ *
+ * Gets called by CURL when data is available to handle.
+ * \see Downloader::append
+ */
 size_t CurlDownloader::write_data(void *buffer, size_t size, size_t nmemb, void *userp)
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 	size_t added=size*nmemb;
-	if(th->getLength() == 0)
-	{
-		//If the HTTP request doesn't contain a Content-Length header, allow growing the buffer
-		th->allowBufferRealloc = true;
-	}
-	if(th->getRequestStatus() != 3)
-	{
+	if(th->getRequestStatus()/100 != 3)
 		th->append((uint8_t*)buffer,added);
-	}
 	return added;
 }
 
+/**
+ * \private
+ * \brief Header callback for CURL
+ *
+ * Gets called by CURL when a header needs to be handled.
+ * \see Downloader::parseHeader
+ */
 size_t CurlDownloader::write_header(void *buffer, size_t size, size_t nmemb, void *userp)
 {
 	CurlDownloader* th=static_cast<CurlDownloader*>(userp);
 
 	std::string header((char*) buffer);
+	//Strip newlines
 	header = header.substr(0, header.find("\r\n"));
 	header = header.substr(0, header.find("\n"));
 	//We haven't set the length of the download uet, so set it from the headers
-	LOG(LOG_NO_INFO, "parsing header: " << header);
 	th->parseHeader(header, true);
 
 	//std::cerr << "CURL header: " << header << std::endl;
 	return size*nmemb;
 }
 
-LocalDownloader::LocalDownloader(const tiny_string& url, bool cached):ThreadedDownloader(url, cached)
+/**
+ * \brief Constructor for the LocalDownloader class
+ *
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] _cached Whether or not to cache this download.
+ */
+LocalDownloader::LocalDownloader(const tiny_string& _url, bool _cached):ThreadedDownloader(_url, _cached)
 {
 }
 
+/**
+ * \private
+ * \brief Called by \c IThreadJob::stop to abort this thread.
+ * Calls \c Downloader::stop.
+ * \see Downloader::stop
+ */
 void LocalDownloader::threadAbort()
 {
 	Downloader::stop();
 }
 
+/**
+ * \private
+ * \brief Called by \c ThreadPool to start executing this thread
+ * \see Downloader::append
+ * \see Downloader::openExistingCache
+ */
 void LocalDownloader::execute()
 {
 	if(url.len()==0)
@@ -602,38 +1053,24 @@ void LocalDownloader::execute()
 		if(isCached())
 		{
 			sem_wait(&mutex);
+			//-- Lock acquired
+
 			//Make sure we don't delete the local file afterwards
 			keepCache = true;
 
-			//Substitute the local file for the normal cache file
-			cacheFileName = url;
-			cache.open(cacheFileName.raw_buf(), std::fstream::in);
-			if(cache.is_open())
-			{
-				LOG(LOG_NO_INFO, _("NET: Downloading from local file as cache: ") << cacheFileName);
+			//++ Release lock
+			sem_post(&mutex);
+			openExistingCache(url);
+			sem_wait(&mutex);
+			//-- Lock acquired
 
-				//This buffer will be our "window" into the file
-				buffer= (uint8_t*) calloc(cacheMaxSize, sizeof(uint8_t));
+			cache.seekg(0, std::ios::end);
+			//Report that we've downloaded everything already
+			length = cache.tellg();
+			receivedLength = length;
 
-				//Our cache window starts at pos 0
-				cachePos = 0;
-				cacheSize = 0;
-				setg((char*)buffer,(char*)buffer,(char*)buffer);
-
-				cache.seekg(0, std::ios::end);
-				//Report that we've downloaded everything already
-				len = cache.tellg();
-				tail = len;
-
-				sem_post(&mutex);
-			}
-			else
-			{
-				sem_post(&mutex);
-				setFailed();
-				LOG(LOG_ERROR, _("NET: LocalDownloader::execute: could not open local file: ") << url.raw_buf());
-				return;
-			}
+			//++ Release lock
+			sem_post(&mutex);
 		}
 		//Otherwise we follow the normal procedure
 		else {
@@ -643,10 +1080,10 @@ void LocalDownloader::execute()
 			if(file.is_open())
 			{
 				file.seekg(0, std::ios::end);
-				setLen(file.tellg());
+				setLength(file.tellg());
 				file.seekg(0, std::ios::beg);
 
-				char * buffer = new char[bufSize];
+				char buffer[bufSize];
 
 				bool readFailed = 0;
 				while(!file.eof())
@@ -666,7 +1103,6 @@ void LocalDownloader::execute()
 					return;
 				}
 				file.close();
-				delete buffer;
 			}
 			else
 			{
@@ -678,6 +1114,4 @@ void LocalDownloader::execute()
 	}
 	//Notify the downloader no more data should be expected
 	setFinished();
-	sem_post(&(Downloader::terminated));
 }
-

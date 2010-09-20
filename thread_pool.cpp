@@ -117,9 +117,13 @@ void* ThreadPool::job_worker(void* t)
 		sem_wait(&th->mutex);
 		myJob->executing=false;
 		th->curJobs[index]=NULL;
-		myJob->jobFence();
 		if(myJob->destroyMe)
+		{
+			myJob->jobFence();
 			delete myJob;
+		}
+		else
+			myJob->jobFence();
 		sem_post(&th->mutex);
 	}
 	return NULL;

@@ -36,20 +36,48 @@ TLSDATA DLL_PUBLIC lightspark::SystemState* sys=NULL;
 TLSDATA DLL_PUBLIC lightspark::RenderThread* rt=NULL;
 TLSDATA DLL_PUBLIC lightspark::ParseThread* pt=NULL;
 
-NPDownloadManager::NPDownloadManager(NPP i):instance(i)
+/**
+ * \brief Constructor for NPDownloadManager
+ *
+ * The NPAPI download manager produces \c NPDownloader-type \c Downloaders.
+ * It should only be used in the plugin version of LS.
+ * \param[in] _instance An \c NPP object representing the plugin
+ */
+NPDownloadManager::NPDownloadManager(NPP _instance):instance(_instance)
 {
 	type = NPAPI;
 }
 
+/**
+ * \brief Destructor for NPDownloaderManager
+ */
 NPDownloadManager::~NPDownloadManager()
 {
 }
 
-lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& u, bool cached)
+/**
+ * \brief Create a Downloader for an URL.
+ *
+ * Returns a pointer to a newly created \c Downloader for the given URL.
+ * \param[in] url The URL (as a \c tiny_string) the \c Downloader is requested for
+ * \param[in] cached Whether or not to disk-cache the download (default=false)
+ * \return A pointer to a newly created \c Downloader for the given URL.
+ * \see destroy
+ */
+lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& url, bool cached)
 {
-	return download(sys->getOrigin().goToURL(u), cached);
+	return download(sys->getOrigin().goToURL(url), cached);
 }
 
+/**
+ * \brief Create a Downloader for an URL.
+ *
+ * Returns a pointer to a newly created Downloader for the given URL.
+ * \param[in] url The URL (as a \c URLInfo) the \c Downloader is requested for
+ * \param[in] cached Whether or not to disk-cache the download (default=false)
+ * \return A pointer to a newly created \c Downloader for the given URL.
+ * \see destroy
+ */
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached)
 {
 	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << "'" << (cached ? _(" - cached") : ""));
@@ -58,24 +86,38 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 	return downloader;
 }
 
-void NPDownloadManager::destroy(lightspark::Downloader* d)
+/**
+ * \brief Destroy a Downloader.
+ *
+ * Destroy a given \c Downloader.
+ * The Downloader should be created using \c NPDownloadManager::download.
+ * \param downloader A pointer to the \c Downloader to be destroyed.
+ * \see download
+ */
+void NPDownloadManager::destroy(lightspark::Downloader* downloader)
 {
-	//First of all, wait for termination
-	if(!sys->isShuttingDown())
-		d->wait();
-	delete d;
+	delete downloader;
 }
 
-NPDownloader::NPDownloader(const lightspark::tiny_string& url, bool cached, NPP i):Downloader(url, cached),instance(i),started(false)
+/**
+ * \brief Constructor for the NPDownloader class
+ *
+ * \param[in] _url The URL for the Downloader.
+ * \param[in] _cached Whether or not to cache this download.
+ */
+NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NPP _instance):
+	Downloader(_url, _cached),instance(_instance),started(false)
 {
 	NPN_PluginThreadAsyncCall(instance, dlStartCallback, this);
 }
 
-void NPDownloader::terminate()
-{
-	sem_post(&terminated);
-}
-
+/**
+ * \private
+ * \brief Callback to start the download.
+ *
+ * Gets called by NPN_PluginThreadAsyncCall to start the download in a new thread.
+ * \param t \c this pointer to the \c NPDownloader object
+ */
 void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
@@ -355,16 +397,14 @@ string nsPluginInstance::getPageURL() const
 
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
-	//We have to cast the downloadanager to a NPDownloadManager
-	lightspark::Downloader* dl=(lightspark::Downloader*)stream->notifyData;
+	NPDownloader* dl=static_cast<NPDownloader*>(stream->notifyData);
 	LOG(LOG_NO_INFO,_("Newstream for ") << stream->url);
 
 	if(dl)
 	{
 		cerr << "via NPDownloader" << endl;
-		dl->setLen(stream->end);
+		dl->setLength(stream->end);
 		//TODO: confirm that growing buffers are normal. This does fix a bug I found though. (timonvo)
-		dl->setAllowBufferRealloc(true);
 		*stype=NP_NORMAL;
 
 		if(strcmp(stream->url, dl->getURL().raw_buf()) != 0)
@@ -422,7 +462,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 {
 	if(stream->pdata)
 	{
-		lightspark::Downloader* dl=static_cast<lightspark::Downloader*>(stream->pdata);
+		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 		if(dl->hasFailed())
 			return -1;
 		dl->append((uint8_t*)buffer,len);
@@ -451,17 +491,14 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 		case NPRES_DONE:
 			cout << "Done" <<endl;
 			dl->setFinished();
-			dl->terminate();
 			break;
 		case NPRES_USER_BREAK:
 			cout << "User Break" <<endl;
 			dl->setFailed();
-			dl->terminate();
 			break;
 		case NPRES_NETWORK_ERR:
 			cout << "Network Error" <<endl;
 			dl->setFailed();
-			dl->terminate();
 			break;
 	}
 }

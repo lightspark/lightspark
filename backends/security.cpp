@@ -547,7 +547,7 @@ void URLPolicyFile::load()
 
 	//Wait until the file is fetched, only if we are not shutting down
 	if(!sys->isShuttingDown())
-		downloader->wait();
+		downloader->waitForTermination();
 	else
 		valid = false;
 

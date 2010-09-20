@@ -88,7 +88,12 @@ void* ThreadPool::job_worker(void* t)
 		if(pthread_equal(th->threads[index],pthread_self()))
 			break;
 	}
+	ThreadProfile* profile=sys->allocateProfiler(RGB(200,200,0));
+	char buf[16];
+	snprintf(buf,16,"Thread %u",index);
+	profile->setTag(buf);
 
+	Chronometer chronometer;
 	while(1)
 	{
 		sem_wait(&th->num_jobs);
@@ -103,6 +108,7 @@ void* ThreadPool::job_worker(void* t)
 
 		assert(thisJob==NULL);
 		thisJob=myJob;
+		chronometer.checkpoint();
 		try
 		{
 			myJob->run();
@@ -112,6 +118,7 @@ void* ThreadPool::job_worker(void* t)
 			LOG(LOG_ERROR,_("Exception in ThreadPool ") << e.what());
 			sys->setError(e.cause);
 		}
+		profile->accountTime(chronometer.checkpoint());
 		thisJob=NULL;
 
 		sem_wait(&th->mutex);

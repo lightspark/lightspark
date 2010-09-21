@@ -957,6 +957,8 @@ void DefineShapeTag::invalidate()
 {
 	uint32_t x,y,width,height;
 	computeDeviceBounds(x,y,width,height);
+	if(width==0 || height==0)
+		return;
 	computeCached();
 	CairoRenderer* r=new CairoRenderer(&shepherd, cachedSurface, cachedTokens, getConcatenatedMatrix(), x, y, width, height);
 	sys->addJob(r);

@@ -380,7 +380,6 @@ void CairoRenderer::upload(uint8_t* data, uint32_t w, uint32_t h) const
 const TextureChunk& CairoRenderer::getTexture()
 {
 	//Verify that the texture is large enough
-	assert(width && height);
 	if(!surface.tex.resizeIfLargeEnough(width, height))
 		surface.tex=sys->getRenderThread()->allocateTexture(width, height,false);
 	surface.xOffset=xOffset;

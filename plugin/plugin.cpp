@@ -100,7 +100,6 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, bool _cached, NP
 }
 
 /**
- * \private
  * \brief Callback to start the download.
  *
  * Gets called by NPN_PluginThreadAsyncCall to start the download in a new thread.

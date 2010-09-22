@@ -32,6 +32,9 @@ using namespace lightspark;
 using namespace std;
 extern TLSDATA SystemState* sys;
 
+/**
+ * \brief SecurityManager constructor
+ */
 SecurityManager::SecurityManager():
 	sandboxType(REMOTE),exactSettings(true),exactSettingsLocked(false)
 {
@@ -42,6 +45,11 @@ SecurityManager::SecurityManager():
 	//== Lock initialized
 }
 
+/**
+ * \brief SecurityManager destructor
+ *
+ * SecurityManager destructor. Acquires mutex before proceeding.
+ */
 SecurityManager::~SecurityManager()
 {
 	sem_wait(&mutex);
@@ -59,6 +67,15 @@ SecurityManager::~SecurityManager()
 	sem_destroy(&mutex);
 }
 
+/**
+ * \brief Add policy file at the given URL
+ *
+ * Adds a policy file at the given URL to list of managed policy files.
+ * Classifies the URL first and then decides whether to call \c addURLPolicyFile() 
+ * (the currently only supported type)
+ * \param url The URL where the policy file resides
+ * \return A pointer to the newly created PolicyFile object or NULL if the URL is of an unsupported type
+ */
 PolicyFile* SecurityManager::addPolicyFile(const URLInfo& url)
 {
 	if(url.getProtocol() == "http" || url.getProtocol() == "https" || url.getProtocol() == "ftp")
@@ -71,6 +88,15 @@ PolicyFile* SecurityManager::addPolicyFile(const URLInfo& url)
 	return NULL;
 }
 
+/**
+ * \brief Add an URL policy file at the given URL
+ *
+ * Adds an URL policy file at the given URL to the list of managed URL policy files.
+ * Policy files aren't loaded when adding, this is delayed until the policy file is actually needed.
+ * Waits for mutex at start and releases mutex when finished
+ * \param url The URL where the URL policy file resides
+ * \return A pointer to the newly created URLPolicyFile object
+ */
 URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
 {
 	sem_wait(&mutex);
@@ -89,6 +115,15 @@ URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
 	return file;
 }
 
+/**
+ * \brief Search for an URL policy file object in lists
+ *
+ * Searches for an URL policy file object in the lists of managed URL policy files by URL.
+ * Returns NULL when such an object could not be found.
+ * Waits for mutex at start and releases mutex when finished
+ * \param url The URL where the URL policy file object would reside.
+ * \return The found URL policy file object or NULL
+ */
 URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
 {
 	sem_wait(&mutex);
@@ -130,6 +165,14 @@ URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
 	return NULL;
 }
 
+/**
+ * \brief Load a given URL policy file object
+ *
+ * Loads a given URL policy file object (if it isn't loaded yet).
+ * This moves the object from the pending URL policy files list to the loaded URL policy files list.
+ * Waits for mutex at start and releases mutex when finished
+ * \param file A pointer to the URL policy file object to load.
+ */
 void SecurityManager::loadPolicyFile(URLPolicyFile* file)
 {
 	sem_wait(&mutex);
@@ -157,6 +200,18 @@ void SecurityManager::loadPolicyFile(URLPolicyFile* file)
 	sem_post(&mutex);
 }
 
+/**
+ * \brief Search for URL policy files relevant to a given URL
+ *
+ * Searches the loaded URL policy file list for URL policy files that are relevant to a given URL.
+ * If \c loadPendingPolicies is true, it search the pending URL policy files list next, 
+ * loading every relative policy file.
+ * Waits for mutex at start and releases mutex when finished
+ * \param url The URL that will be evaluated using the relevant policy files.
+ * \param loadPendingPolicies Whether or not to load (and thus check) pending URL policy files.
+ * \return An pointer to a newly created URLPFileList containing the relevant policy files.
+ *         This list needs to be deleted after use.
+ */
 URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loadPendingPolicies)
 {
 	URLPFileList* result = new URLPFileList;
@@ -238,11 +293,39 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
 	return result;
 }
 
+/**
+ * \brief Checks if a given sandbox is in the given allowed sandboxes
+ *
+ * \param sandbox The sandbox to check
+ * \param allowedSandboxes A bitwise expression of allowed sandboxes.
+ * \return \c true if the sandbox is allowed, \c false if not
+ */
 bool SecurityManager::evaluateSandbox(SANDBOXTYPE sandbox, int allowedSandboxes)
 {
 	return (allowedSandboxes & sandbox) != 0;
 }
 
+/**
+ * \brief Evaluates an URL to see if it is allowed by the various security features.
+ *
+ * This first checks if the current sandbox is allowed access to the URL.
+ * Next the port is checked to see if isn't restricted.
+ * Then, if requested, the URL is checked to see if it doesn't point to a resource 
+ * above the current directory in the directory hierarchy (only applicable to local URLs).
+ * And finally the URL policy files are checked to see if they allow the player 
+ * to access the given URL.
+ * \param url The URL to evaluate
+ * \param loadPendingPolicies Whether or not to load pending policy files while checking
+ * \param allowedSandboxesRemote The sandboxes that are allowed to access remote URLs in this case.
+ *                               Can be a bitwise expression of sandboxes.
+ * \param allowedSandboxesLocal The sandboxes that are allowed to access local URLs in this case.
+ *                              Can be a bitwise expression of sandboxes.
+ * \return \c ALLOWED if the URL is allowed or one of \c NA_*, where * is the reason for not allowing.
+ * \see SecurityManager::evaluateSandboxURL()
+ * \see SecurityManager::evaluatePortURL()
+ * \see SecurityManager::evaluateLocalDirectoryURL()
+ * \see SecurityManager::evaluatePoliciesURL()
+ */
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& url,
 		bool loadPendingPolicies,	int allowedSandboxesRemote, int allowedSandboxesLocal,
 		bool restrictLocalDirectory)
@@ -275,6 +358,16 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateURL(const URLInfo& ur
 	return ALLOWED;
 }
 
+/**
+ * \brief Checks if the current sandbox is allowed access to the given URL.
+ * 
+ * \param url The URL to evaluate the sandbox against
+ * \param allowedSandboxesRemote The sandboxes that are allowed to access remote URLs in this case.
+ *                               Can be a bitwise expression of sandboxes.
+ * \param allowedSandboxesLocal The sandboxes that are allowed to access local URLs in this case.
+ *                              Can be a bitwise expression of sandboxes.
+ * \return \c ALLOWED if allowed or otherwise \c NA_REMOTE_SANDBOX/NA_LOCAL_SANDBOX depending on the reason.
+ */
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSandboxURL(const URLInfo& url, 
 		int allowedSandboxesRemote, int allowedSandboxesLocal)
 {
@@ -287,6 +380,14 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSandboxURL(const URLI
 
 	return ALLOWED;
 }
+
+/**
+ * \brief Checks if the URL doesn't point to a resource higher up the directory hierarchy than 
+ * the current directory
+ *
+ * \param url The URL to evaluate
+ * \return \c ALLOWED if allowed or otherwise \c NA_RESTRICT_LOCAL_DIRECTORY
+ */
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateLocalDirectoryURL(const URLInfo& url)
 {
 	//The URL is local and points to a directory above the origin
@@ -295,6 +396,13 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateLocalDirectoryURL(con
 
 	return ALLOWED;
 }
+
+/**
+ * \brief Checks if the port in the given URL isn't restricted, depending on the protocol of the URL
+ *
+ * \param url The URL to evaluate
+ * \return \c ALLOWED if allowed or otherwise \c NA_PORT
+ */
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePortURL(const URLInfo& url)
 {
 	if(url.getProtocol() == "http" || url.getProtocol() == "https")
@@ -317,7 +425,14 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePortURL(const URLInfo
 	return ALLOWED;
 }
 
-//Check URL policy files
+/**
+ * \brief Checks URL policy files to see if the player is allowed access to the given UR
+ *
+ * Waits for mutex at start and releases mutex when finished
+ * \param url The URL to evaluate
+ * \param loadPendingPolicies Whether to load (and thus check) pending policies before evaluating
+ * \return \c ALLOWED if allowed or otherwise \c NA_CROSSDOMAIN_POLICY
+ */
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URLInfo& url,
 		bool loadPendingPolicies)
 {
@@ -364,6 +479,16 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 	return NA_CROSSDOMAIN_POLICY;
 }
 
+/**
+ * \brief Checks URL policy files to see if the player is allowed to send a given request header 
+ * as part of a request for the given URL
+ *
+ * Waits for mutex at start and releases mutex when finished
+ * \param url The URL of the request to which the request header belongs
+ * \param header The request header to evaluate
+ * \param loadPendingPolicies Whether or not to load (and thus check) pending policy files
+ * \return \c ALLOWED if allowed or otherwise \c NA_HEADER
+ */
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo& url,
 		const tiny_string& header, bool loadPendingPolicies)
 {
@@ -437,6 +562,13 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 	return NA_CROSSDOMAIN_POLICY;
 }
 
+/**
+ * \brief Constructor for PolicyFile
+ *
+ * PolicyFile is an abstract base class so this method can only be called from a derived class.
+ * \param _url The URL where this policy file resides
+ * \param _type The type of policy file (URL or SOCKET)
+ */
 PolicyFile::PolicyFile(URLInfo _url, TYPE _type):
 	url(_url),type(_type),valid(false),ignore(false),
 	loaded(false),siteControl(NULL)
@@ -444,6 +576,14 @@ PolicyFile::PolicyFile(URLInfo _url, TYPE _type):
 	sem_init(&mutex,0,1);
 	//== Lock initialized
 }
+
+/**
+ * \brief Destructor for PolicyFile.
+ *
+ * Can only be called from SecurityManager.
+ * Waits for mutex before proceeding.
+ * \see SecurityManager
+ */
 PolicyFile::~PolicyFile()
 {
 	sem_wait(&mutex);
@@ -457,6 +597,13 @@ PolicyFile::~PolicyFile()
 	sem_destroy(&mutex);
 }
 
+/**
+ * \brief Constructor for URLPolicyFile
+ *
+ * Can only be called from SecurityManager
+ * \param _url The URL where this URL policy file resides
+ * \see SecurityManager::addURLPolicyFile()
+ */
 URLPolicyFile::URLPolicyFile(const URLInfo& _url):
 	PolicyFile(_url, URL),originalURL(_url)
 {
@@ -470,6 +617,14 @@ URLPolicyFile::URLPolicyFile(const URLInfo& _url):
 	else if(url.getProtocol() == "ftp")
 		subtype = FTP;
 }
+
+/**
+ * \brief Destructor for URLPolicyFile
+ *
+ * Can only be called from SecurityManager.
+ * Waits for mutex at start and releases mutex when finished
+ * \see SecurityManager
+ */
 URLPolicyFile::~URLPolicyFile()
 {
 	sem_wait(&mutex);
@@ -483,6 +638,14 @@ URLPolicyFile::~URLPolicyFile()
 	sem_post(&mutex);
 }
 
+/**
+ * \brief Gets the master URL policy file controlling this URL policy file
+ *
+ * Searches for the master policy file in the list of managed policy files.
+ * If it isn't found, the master policy file gets added.
+ * Waits for mutex at start and releases mutex when finished
+ * \return The master policy file controlling this policy file.
+ */
 URLPolicyFile* URLPolicyFile::getMasterPolicyFile()
 {
 	sem_wait(&mutex);
@@ -504,14 +667,27 @@ URLPolicyFile* URLPolicyFile::getMasterPolicyFile()
 	return file;
 }
 
+/**
+ * \brief Checks whether this URL policy file is a master policy file
+ *
+ * \return \c true if this policy file is a master policy file, otherwise \c false
+ */
 bool URLPolicyFile::isMaster()
 {
 	return url.getPath() == "/crossdomain.xml";
 }
 
-//TODO: support download timeout handling
+/**
+ * \brief Loads and parses an URLPolicy file
+ *
+ * Can only be called from within SecurityManager
+ * Waits for mutex at start and releases mutex when finished
+ * \see SecurityManager::loadURLPolicyFile()
+ */
 void URLPolicyFile::load()
 {
+	//TODO: support download timeout handling
+	
 	//Invalid URLPolicyFile or already loaded, ignore this call
 	if(!isValid() || isLoaded())
 		return;
@@ -671,7 +847,14 @@ void URLPolicyFile::load()
 	sem_post(&mutex);
 }
 
-bool URLPolicyFile::allowsAccessFrom(const URLInfo& u, const URLInfo& to)
+/**
+ * \brief Checks whether this policy file allows the given URL access
+ *
+ * \param url The URL to check if it is allowed by the policy file
+ * \param to The URL that is being requested by a resource at \c url
+ * \return \c true if allowed, otherwise \c false
+ */
+bool URLPolicyFile::allowsAccessFrom(const URLInfo& url, const URLInfo& to)
 {
 	//File must be loaded
 	if(!isLoaded())
@@ -689,13 +872,21 @@ bool URLPolicyFile::allowsAccessFrom(const URLInfo& u, const URLInfo& to)
 	for(; i != allowAccessFrom.end(); ++i)
 	{
 		//This allow-access-from entry applies to our domain AND it allows our domain
-		if((*i)->allowsAccessFrom(u))
+		if((*i)->allowsAccessFrom(url))
 			return true;
 	}
 	return false;
 }
 
-bool URLPolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo& to, const string& header)
+/**
+ * \brief Checks whether this policy file allowed the given URL to send a given request header
+ *
+ * \param url The URL to check if it is allowed by the policy file to send the given header
+ * \param to The URL of the request to which the request header belongs
+ * \param header The request header which needs to be checked if it is allowed
+ * \return \c true if allowed, otherwise \c false
+ */
+bool URLPolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& url, const URLInfo& to, const string& header)
 {
 	//File must be loaded
 	if(!isLoaded())
@@ -716,12 +907,20 @@ bool URLPolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo&
 	list<PolicyAllowHTTPRequestHeadersFrom*>::const_iterator i = allowHTTPRequestHeadersFrom.begin();
 	for(; i != allowHTTPRequestHeadersFrom.end(); ++i)
 	{
-		if((*i)->allowsHTTPRequestHeaderFrom(u, header))
+		if((*i)->allowsHTTPRequestHeaderFrom(url, header))
 			return true;
 	}
 	return false;
 }
 
+/**
+ * \brief Constructor for the PolicySiteControl class
+ *
+ * Can only be called from within PolicyFile.
+ * \param _file The policy file this entry belongs to
+ * \param _permittedPolicies The value of the permitted-cross-domain-policies attribute.
+ * \see URLPolicyFile::load()
+ */
 PolicySiteControl::PolicySiteControl(PolicyFile* _file, const string _permittedPolicies):
 	file(_file)
 {
@@ -741,6 +940,17 @@ PolicySiteControl::PolicySiteControl(PolicyFile* _file, const string _permittedP
 		permittedPolicies = MASTER_ONLY;
 }
 
+/**
+ * \brief Constructor for the PolicyAllowAccessFrom class
+ *
+ * Can only be called from within PolicyFile.
+ * \param _file The policy file this entry belongs to
+ * \param _domain The value of the domain attribute
+ * \param _toPorts The value of the to-ports attribute
+ * \param _secure The value of the secure attribute
+ * \param secureSpecified Whether or not the secure attribute was present
+ * \see URLPolicyFile::load()
+ */
 PolicyAllowAccessFrom::PolicyAllowAccessFrom(PolicyFile* _file, const string _domain,
 		const string _toPorts, bool _secure, bool secureSpecified):
 	file(_file),domain(_domain),secure(_secure)
@@ -808,6 +1018,12 @@ PolicyAllowAccessFrom::PolicyAllowAccessFrom(PolicyFile* _file, const string _do
 	}
 }
 
+/**
+ * \brief Destructor for the PolicyAllowsAccessFrom class
+ *
+ * Can only be called from within PolicyFile.
+ * \see PolicyFile
+ */
 PolicyAllowAccessFrom::~PolicyAllowAccessFrom()
 {
 	for(list<PortRange*>::iterator i = toPorts.begin(); i != toPorts.end(); ++i)
@@ -815,10 +1031,18 @@ PolicyAllowAccessFrom::~PolicyAllowAccessFrom()
 	toPorts.clear();
 }
 
+/**
+ * \brief Checks if the entry allows access from the given URL
+ *
+ * \param url The URL to check this entry against
+ * \return \c true if this entry allows the given URL access, otherwise \c false
+ */
 bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url) const
 {
 	//TODO: resolve domain names using DNS before checking for a match?
 	//See section 1.5.9 in specification
+
+	//TODO: add check for to-ports and secure for SOCKET type policy files
 	
 	//Check if domains match
 	if(!URLInfo::matchesDomain(domain, url.getHostname()))
@@ -830,11 +1054,20 @@ bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url) const
 			secure && url.getProtocol() != "https")
 		return false;
 
-	//TODO: add check for to-ports and secure for SOCKET type policy files
-
 	return true;
 }
 
+/**
+ * \brief Constructor for the PolicyAllowHTTPRequestHeadersFrom class
+ *
+ * Can only be called from within PolicyFile.
+ * \param _file The policy file this entry belongs to
+ * \param _domain The value of the domain attribute
+ * \param _headers The value of the header attribute
+ * \param _secure The value of the secure attribute
+ * \param secureSpecified Whether or not the secure attribute was present
+ * \see URLPolicyFile::load()
+ */
 PolicyAllowHTTPRequestHeadersFrom::PolicyAllowHTTPRequestHeadersFrom(URLPolicyFile* _file,
 		const string _domain, const string _headers, bool _secure, bool secureSpecified):
 	file(_file),domain(_domain),secure(_secure)
@@ -858,6 +1091,12 @@ PolicyAllowHTTPRequestHeadersFrom::PolicyAllowHTTPRequestHeadersFrom(URLPolicyFi
 	}
 }
 
+/**
+ * \brief Destructor for the PolicyAllowHTTPRequestHeadersFrom class
+ *
+ * Can only be called from within PolicyFile.
+ * \see PolicyFile
+ */
 PolicyAllowHTTPRequestHeadersFrom::~PolicyAllowHTTPRequestHeadersFrom()
 {
 	for(list<string*>::iterator i = headers.begin(); i != headers.end(); ++i)
@@ -865,6 +1104,13 @@ PolicyAllowHTTPRequestHeadersFrom::~PolicyAllowHTTPRequestHeadersFrom()
 	headers.clear();
 }
 
+/**
+ * \brief Checks if the entry allows a given request header from a given URL
+ *
+ * \param url The URL to check this entry against
+ * \param header The header to check this entry against
+ * \return \c true if this entry allows the given URL to send the given request header, otherwise \c false
+ */
 bool PolicyAllowHTTPRequestHeadersFrom::allowsHTTPRequestHeaderFrom(const URLInfo& url,
 		const string& header) const
 {

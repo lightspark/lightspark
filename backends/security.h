@@ -122,8 +122,8 @@ public:
 
 	//The possible results for the URL evaluation methods below
 	enum EVALUATIONRESULT { ALLOWED, NA_RESTRICT_LOCAL_DIRECTORY,
-		NA_REMOTE_SANDBOX, 	NA_LOCAL_SANDBOX, NA_CROSSDOMAIN_POLICY,
-		NA_HEADER, NA_PORT };
+		NA_REMOTE_SANDBOX, 	NA_LOCAL_SANDBOX,
+		NA_CROSSDOMAIN_POLICY, NA_PORT, NA_HEADER };
 	
 	//Evaluates an URL by checking allowed sandboxes and checking URL policy files
 	EVALUATIONRESULT evaluateURL(const tiny_string& url, bool loadPendingPolicies, 
@@ -160,9 +160,12 @@ class PolicyAllowHTTPRequestHeadersFrom;
 //TODO: add support for SOCKET policy files
 class PolicyFile
 {
+	friend class SecurityManager;
 public:
 	enum TYPE { URL, SOCKET };
 protected:
+	PolicyFile(URLInfo _url, TYPE _type);
+	virtual ~PolicyFile();
 	sem_t mutex;
 
 	URLInfo url;
@@ -176,12 +179,12 @@ protected:
 	bool ignore;
 	//Is this file loaded and parsed yet?
 	bool loaded;
+	//Load and parse the policy file
+	virtual void load()=0;
 
 	PolicySiteControl* siteControl;
 	std::list<PolicyAllowAccessFrom*> allowAccessFrom;
 public:
-	PolicyFile(URLInfo _url, TYPE _type);
-	virtual ~PolicyFile();
 
 	const URLInfo& getURL() const { return url; }
 	TYPE getType() const { return type; }
@@ -190,8 +193,6 @@ public:
 	bool isIgnored() const { return ignore; }
 	virtual bool isMaster()=0;
 	bool isLoaded() const { return loaded; }
-	//Load and parse the policy file
-	virtual void load()=0;
 
 	//Get the master policy file controlling this one
 	virtual PolicyFile* getMasterPolicyFile()=0;
@@ -201,6 +202,7 @@ public:
 
 class URLPolicyFile : public PolicyFile
 {
+	friend class SecurityManager;
 public:
 	enum SUBTYPE { HTTP, HTTPS, FTP };
 private:
@@ -208,17 +210,18 @@ private:
 	SUBTYPE subtype;
 
 	std::list<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
-public:
+protected:
 	URLPolicyFile(const URLInfo& _url);
 	~URLPolicyFile();
+	//Load and parse the policy file
+	void load();
+public:
 
 	const URLInfo& getOriginalURL() const { return originalURL; }
 	SUBTYPE getSubtype() const { return subtype; }
 
 	//If strict is true, the policy will be loaded first to see if it isn't redirected
 	bool isMaster();
-	//Load and parse the policy file
-	void load();
 	//Get the master policy file controlling this one
 	URLPolicyFile* getMasterPolicyFile();
 
@@ -232,6 +235,8 @@ public:
 //Only valid inside master policy files
 class PolicySiteControl
 {
+	friend class PolicyFile;
+	friend class URLPolicyFile;
 public:
 	enum METAPOLICY { 
 		ALL, //All types of policy files are allowed (default for SOCKET)
@@ -244,8 +249,9 @@ public:
 private:
 	PolicyFile* file;
 	METAPOLICY permittedPolicies; //Required
-public:
+protected:
 	PolicySiteControl(PolicyFile* _file, const std::string _permittedPolicies="");
+public:
 	METAPOLICY getPermittedPolicies() const { return permittedPolicies; }
 };
 
@@ -275,14 +281,17 @@ public:
 //Permit access by documents from specified domains
 class PolicyAllowAccessFrom
 {
+	friend class PolicyFile;
+	friend class URLPolicyFile;
 private:
 	PolicyFile* file;
 	std::string domain; //Required
 	std::list<PortRange*> toPorts; //Only used for SOCKET policy files, required
 	bool secure; //Only used for SOCKET & HTTPS, optional, default: SOCKET=false, HTTPS=true
-public:
+protected:
 	PolicyAllowAccessFrom(PolicyFile* _file, const std::string _domain, const std::string _toPorts, bool _secure, bool secureSpecified);
 	~PolicyAllowAccessFrom();
+public:
 	const std::string& getDomain() const { return domain; }
 	size_t getToPortsLength() const { return toPorts.size(); }
 	std::list<PortRange*>::const_iterator getToPortsBegin() const { return toPorts.begin(); }
@@ -296,14 +305,17 @@ public:
 //Permit HTTP request header sending (only for HTTP)
 class PolicyAllowHTTPRequestHeadersFrom
 {
+	friend class PolicyFile;
+	friend class URLPolicyFile;
 private:
 	URLPolicyFile* file;
 	std::string domain; //Required
 	std::list<std::string*> headers; //Required
 	bool secure; //Only used for HTTPS, optional, default=true
-public:
+protected:
 	PolicyAllowHTTPRequestHeadersFrom(URLPolicyFile* _file, const std::string _domain, const std::string _headers, bool _secure, bool secureSpecified);
 	~PolicyAllowHTTPRequestHeadersFrom();
+public:
 	const std::string getDomain() const { return domain; }
 	size_t getHeadersLength() const { return headers.size(); }
 	std::list<std::string*>::const_iterator getHeadersBegin() const { return headers.begin(); }

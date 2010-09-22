@@ -47,7 +47,7 @@ SecurityManager::~SecurityManager()
 	sem_wait(&mutex);
 	//-- Lock acquired
 	
-	URLPolicyFileMapIt i = pendingURLPFiles.begin();
+	URLPFileMapIt i = pendingURLPFiles.begin();
 	for(; i != pendingURLPFiles.end(); ++i)
 		delete (*i).second;
 
@@ -81,7 +81,7 @@ URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
 	{
 		LOG(LOG_NO_INFO, "SECURITY: Added URL policy file is valid, "
 				"adding to URL policy file list (" << url << ")");
-		pendingURLPFiles.insert(URLPolicyFilePair(url.getHostname(), file));
+		pendingURLPFiles.insert(URLPFilePair(url.getHostname(), file));
 	}
 	
 	//++ Release lock
@@ -94,8 +94,8 @@ URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
 	sem_wait(&mutex);
 	//-- Lock acquired
 
-	URLPolicyFileMapConstItPair range = loadedURLPFiles.equal_range(url.getHostname());
-	URLPolicyFileMapConstIt i = range.first;
+	URLPFileMapConstItPair range = loadedURLPFiles.equal_range(url.getHostname());
+	URLPFileMapConstIt i = range.first;
 
 	//Check the loaded URL policy files first
 	for(;i != range.second; ++i)
@@ -140,13 +140,13 @@ void SecurityManager::loadPolicyFile(URLPolicyFile* file)
 		LOG(LOG_NO_INFO, "SECURITY: Loading policy file (" << file->getURL() << ")");
 		file->load();
 
-		URLPolicyFileMapItPair range = pendingURLPFiles.equal_range(file->getURL().getHostname());
-		URLPolicyFileMapIt i = range.first;
+		URLPFileMapItPair range = pendingURLPFiles.equal_range(file->getURL().getHostname());
+		URLPFileMapIt i = range.first;
 		for(;i != range.second; ++i)
 		{
 			if((*i).second == file)
 			{
-				loadedURLPFiles.insert(URLPolicyFilePair(file->getURL().getHostname(), (*i).second));
+				loadedURLPFiles.insert(URLPFilePair(file->getURL().getHostname(), (*i).second));
 				pendingURLPFiles.erase(i);
 				break;
 			}
@@ -157,9 +157,9 @@ void SecurityManager::loadPolicyFile(URLPolicyFile* file)
 	sem_post(&mutex);
 }
 
-URLPolicyFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loadPendingPolicies)
+URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loadPendingPolicies)
 {
-	URLPolicyFileList* result = new URLPolicyFileList;
+	URLPFileList* result = new URLPFileList;
 
 	//Get or create the master policy file object
 	URLInfo masterURL = url.goToURL("/crossdomain.xml");
@@ -201,8 +201,8 @@ URLPolicyFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, boo
 			LOG(LOG_NO_INFO, "SECURITY: Searching for loaded non-master policy files (" <<
 					loadedURLPFiles.count(url.getHostname()) << ")");
 
-			URLPolicyFileMapConstItPair range = loadedURLPFiles.equal_range(url.getHostname());
-			URLPolicyFileMapConstIt i = range.first;
+			URLPFileMapConstItPair range = loadedURLPFiles.equal_range(url.getHostname());
+			URLPFileMapConstIt i = range.first;
 			for(;i != range.second; ++i)
 			{
 				if((*i).second == master)
@@ -333,7 +333,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 	}
 
 	//Search for the policy files to check
-	URLPolicyFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
+	URLPFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
 	
 	sem_wait(&mutex);
 	//-- Lock acquired
@@ -341,7 +341,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 	//Check the policy files
 	if(files != NULL)
 	{
-		URLPolicyFileListConstIt it = files->begin();
+		URLPFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
 			if((*it)->allowsAccessFrom(sys->getOrigin(), url))
@@ -406,7 +406,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 	}
 
 	//Search for the policy files to check
-	URLPolicyFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
+	URLPFileList* files = searchURLPolicyFiles(url, loadPendingPolicies);
 	
 	sem_wait(&mutex);
 	//-- Lock acquired
@@ -414,7 +414,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 	//Check the policy files
 	if(files != NULL)
 	{
-		URLPolicyFileListConstIt it = files->begin();
+		URLPFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
 			if((*it)->allowsHTTPRequestHeaderFrom(sys->getOrigin(), url, headerStrLower))

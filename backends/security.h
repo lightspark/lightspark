@@ -32,15 +32,15 @@ namespace lightspark
 
 class PolicyFile;
 class URLPolicyFile;
-typedef std::list<URLPolicyFile*> URLPolicyFileList;
-typedef std::list<URLPolicyFile*>::iterator URLPolicyFileListIt;
-typedef std::list<URLPolicyFile*>::const_iterator URLPolicyFileListConstIt;
-typedef std::pair<tiny_string, URLPolicyFile*> URLPolicyFilePair;
-typedef std::multimap<tiny_string, URLPolicyFile*> URLPolicyFileMap;
-typedef std::multimap<tiny_string, URLPolicyFile*>::iterator URLPolicyFileMapIt;
-typedef std::multimap<tiny_string, URLPolicyFile*>::const_iterator URLPolicyFileMapConstIt;
-typedef std::pair<URLPolicyFileMapIt, URLPolicyFileMapIt> URLPolicyFileMapItPair;
-typedef std::pair<URLPolicyFileMapConstIt, URLPolicyFileMapConstIt> URLPolicyFileMapConstItPair;
+typedef std::list<URLPolicyFile*> URLPFileList;
+typedef std::list<URLPolicyFile*>::iterator URLPFileListIt;
+typedef std::list<URLPolicyFile*>::const_iterator URLPFileListConstIt;
+typedef std::pair<tiny_string, URLPolicyFile*> URLPFilePair;
+typedef std::multimap<tiny_string, URLPolicyFile*> URLPFileMap;
+typedef std::multimap<tiny_string, URLPolicyFile*>::iterator URLPFileMapIt;
+typedef std::multimap<tiny_string, URLPolicyFile*>::const_iterator URLPFileMapConstIt;
+typedef std::pair<URLPFileMapIt, URLPFileMapIt> URLPFileMapItPair;
+typedef std::pair<URLPFileMapConstIt, URLPFileMapConstIt> URLPFileMapConstItPair;
 
 class SecurityManager
 {
@@ -53,9 +53,9 @@ private:
 	const char* sandboxTitles[4];
 
 	//Multimap (by domain) of pending policy files
-	URLPolicyFileMap pendingURLPFiles;
+	URLPFileMap pendingURLPFiles;
 	//Multimap (by domain) of loaded policy files
-	URLPolicyFileMap loadedURLPFiles;
+	URLPFileMap loadedURLPFiles;
 
 	//Security sandbox type
 	SANDBOXTYPE sandboxType;
@@ -117,7 +117,7 @@ public:
 	//Search for and loads (if allowed) policy files which should be checked
 	//(used by evaluatePoliciesURL & evaluateHeader)
 	//Master policy file is first-in-line and should be checked first
-	URLPolicyFileList* searchURLPolicyFiles(const URLInfo& url,
+	URLPFileList* searchURLPolicyFiles(const URLInfo& url,
 			bool loadPendingPolicies);
 
 	//The possible results for the URL evaluation methods below

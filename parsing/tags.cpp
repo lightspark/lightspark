@@ -1026,22 +1026,13 @@ void DefineShapeTag::Render()
 		return;
 
 	MatrixApplier ma(getMatrix());
-	defaultRender();
-//	glScalef(0.05,0.05,1);
-
 	if(!isSimple())
 		rt->glAcquireTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
 
-/*	std::vector < GeomShape >::iterator it=cached.begin();
-	for(;it!=cached.end();it++)
-	{
-		assert_and_throw(it->color <= Shapes.FillStyles.FillStyleCount);
-		it->Render();
-	}*/
+	defaultRender();
 
 	if(!isSimple())
 		rt->glBlitTempBuffer(ShapeBounds.Xmin,ShapeBounds.Xmax,ShapeBounds.Ymin,ShapeBounds.Ymax);
-
 	ma.unapply();
 }
 

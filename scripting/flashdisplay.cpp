@@ -1006,9 +1006,6 @@ bool DisplayObject::isSimple() const
 
 void DisplayObject::defaultRender() const
 {
-	static int count=0;
-	count++;
-	count%=5;
 	glPushMatrix();
 	glLoadIdentity();
 	glColor4f(0,0,1,0);
@@ -1181,6 +1178,8 @@ ASFUNCTIONBODY(DisplayObject,_setX)
 		RELEASE_WRITE(th->useMatrix,false);
 	}
 	th->tx=val;
+	if(th->onStage)
+		th->invalidate();
 	return NULL;
 }
 
@@ -1204,6 +1203,8 @@ ASFUNCTIONBODY(DisplayObject,_setY)
 		RELEASE_WRITE(th->useMatrix,false);
 	}
 	th->ty=val;
+	if(th->onStage)
+		th->invalidate();
 	return NULL;
 }
 
@@ -1408,6 +1409,8 @@ ASFUNCTIONBODY(DisplayObject,_setWidth)
 		}
 		th->sx=newscale;
 	}
+	if(th->onStage)
+		th->invalidate();
 	return NULL;
 }
 
@@ -1438,6 +1441,8 @@ ASFUNCTIONBODY(DisplayObject,_setHeight)
 		}
 		th->sy=newscale;
 	}
+	if(th->onStage)
+		th->invalidate();
 	return NULL;
 }
 

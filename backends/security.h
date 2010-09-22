@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include <string>
-#include <vector>
+#include <list>
 #include <map>
 #include <inttypes.h>
 #include "swftypes.h"
@@ -32,9 +32,9 @@ namespace lightspark
 
 class PolicyFile;
 class URLPolicyFile;
-typedef std::vector<URLPolicyFile*> URLPolicyFileList;
-typedef std::vector<URLPolicyFile*>::iterator URLPolicyFileListIt;
-typedef std::vector<URLPolicyFile*>::const_iterator URLPolicyFileListConstIt;
+typedef std::list<URLPolicyFile*> URLPolicyFileList;
+typedef std::list<URLPolicyFile*>::iterator URLPolicyFileListIt;
+typedef std::list<URLPolicyFile*>::const_iterator URLPolicyFileListConstIt;
 typedef std::pair<tiny_string, URLPolicyFile*> URLPolicyFilePair;
 typedef std::multimap<tiny_string, URLPolicyFile*> URLPolicyFileMap;
 typedef std::multimap<tiny_string, URLPolicyFile*>::iterator URLPolicyFileMapIt;
@@ -52,9 +52,9 @@ private:
 	const char* sandboxNames[4];
 	const char* sandboxTitles[4];
 
-	//Map (by domain) of vectors of pending policy files
+	//Multimap (by domain) of pending policy files
 	URLPolicyFileMap pendingURLPFiles;
-	//Map (by domain) of vectors of loaded policy files
+	//Multimap (by domain) of loaded policy files
 	URLPolicyFileMap loadedURLPFiles;
 
 	//Security sandbox type
@@ -178,7 +178,7 @@ protected:
 	bool loaded;
 
 	PolicySiteControl* siteControl;
-	std::vector<PolicyAllowAccessFrom*> allowAccessFrom;
+	std::list<PolicyAllowAccessFrom*> allowAccessFrom;
 public:
 	PolicyFile(URLInfo _url, TYPE _type);
 	virtual ~PolicyFile();
@@ -207,7 +207,7 @@ private:
 	URLInfo originalURL;
 	SUBTYPE subtype;
 
-	std::vector<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
+	std::list<PolicyAllowHTTPRequestHeadersFrom*> allowHTTPRequestHeadersFrom;
 public:
 	URLPolicyFile(const URLInfo& _url);
 	~URLPolicyFile();
@@ -278,14 +278,15 @@ class PolicyAllowAccessFrom
 private:
 	PolicyFile* file;
 	std::string domain; //Required
-	std::vector<PortRange*> toPorts; //Only used for SOCKET policy files, required
+	std::list<PortRange*> toPorts; //Only used for SOCKET policy files, required
 	bool secure; //Only used for SOCKET & HTTPS, optional, default: SOCKET=false, HTTPS=true
 public:
 	PolicyAllowAccessFrom(PolicyFile* _file, const std::string _domain, const std::string _toPorts, bool _secure, bool secureSpecified);
 	~PolicyAllowAccessFrom();
 	const std::string& getDomain() const { return domain; }
 	size_t getToPortsLength() const { return toPorts.size(); }
-	PortRange const* getToPort(size_t index) const { return toPorts[index]; }
+	std::list<PortRange*>::const_iterator getToPortsBegin() const { return toPorts.begin(); }
+	std::list<PortRange*>::const_iterator getToPortsEnd() const { return toPorts.end(); }
 	bool getSecure() const { return secure; }
 
 	//Does this entry allow a given URL?
@@ -298,15 +299,15 @@ class PolicyAllowHTTPRequestHeadersFrom
 private:
 	URLPolicyFile* file;
 	std::string domain; //Required
-	std::vector<std::string*> headers; //Required
+	std::list<std::string*> headers; //Required
 	bool secure; //Only used for HTTPS, optional, default=true
 public:
 	PolicyAllowHTTPRequestHeadersFrom(URLPolicyFile* _file, const std::string _domain, const std::string _headers, bool _secure, bool secureSpecified);
 	~PolicyAllowHTTPRequestHeadersFrom();
 	const std::string getDomain() const { return domain; }
 	size_t getHeadersLength() const { return headers.size(); }
-	std::vector<std::string*>::const_iterator getHeadersBegin() const { return headers.begin(); }
-	std::vector<std::string*>::const_iterator getHeadersEnd() const { return headers.end(); }
+	std::list<std::string*>::const_iterator getHeadersBegin() const { return headers.begin(); }
+	std::list<std::string*>::const_iterator getHeadersEnd() const { return headers.end(); }
 	bool getSecure() const { return secure; }
 
 	//Does this entry allow a given request header for a given URL?

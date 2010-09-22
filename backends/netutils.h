@@ -23,7 +23,7 @@
 #include "compat.h"
 #include <streambuf>
 #include <fstream>
-#include <vector>
+#include <list>
 #include <map>
 #include <inttypes.h>
 #include "swftypes.h"
@@ -35,13 +35,28 @@ namespace lightspark
 
 class Downloader;
 
-class DownloadManager
+class DLL_PUBLIC DownloadManager
 {
+private:
+	std::list<Downloader*> downloaders;
+protected:
+	void addDownloader(Downloader* downloader) { downloaders.push_back(downloader); }
+	bool removeDownloader(Downloader* downloader) {
+		for(std::list<Downloader*>::iterator it=downloaders.begin(); it!=downloaders.end(); ++it)
+		{
+			if((*it) == downloader)
+			{
+				downloaders.erase(it);
+				return true;
+			}
+		}
+		return false;
+	}
 public:
-	virtual ~DownloadManager(){};
+	virtual ~DownloadManager();
 	virtual Downloader* download(const tiny_string& url, bool cached=false)=0;
 	virtual Downloader* download(const URLInfo& url, bool cached=false)=0;
-	virtual void destroy(Downloader* downloader)=0;
+	virtual void destroy(Downloader* downloader);
 
 	enum MANAGERTYPE { NPAPI, STANDALONE };
 	MANAGERTYPE type;
@@ -54,11 +69,11 @@ public:
 	~StandaloneDownloadManager(){}
 	Downloader* download(const tiny_string& url, bool cached=false);
 	Downloader* download(const URLInfo& url, bool cached=false);
-	void destroy(Downloader* downloader);
 };
 
 class DLL_PUBLIC Downloader: public std::streambuf
 {
+	friend class DownloadManager;
 private:
 	//Handles streambuf out-of-data events
 	virtual int_type underflow();
@@ -69,7 +84,10 @@ private:
 	//Helper to get the current offset
 	pos_type getOffset() const;
 protected:
+	//Abstract base class, can't be constructed
 	Downloader(const tiny_string& _url, bool _cached);
+	//This class can only get destroyed by DownloadManager
+	virtual ~Downloader();
 
 	//-- LOCKING
 	//Provides internal mutual exclusing
@@ -158,7 +176,6 @@ protected:
 	void parseHeaders(const char* headers, bool _setLength);
 	void parseHeader(std::string header, bool _setLength);
 public:
-	virtual ~Downloader();
 
 	//Stop the download
 	void stop();
@@ -204,8 +221,9 @@ private:
 	sem_t fenced;
 	void jobFence();
 protected:
+	//Abstract base class, can not be constructed
 	ThreadedDownloader(const tiny_string& url, bool cached);
-public:
+	//This class can only get destroyed by DownloadManager
 	virtual ~ThreadedDownloader();
 };
 

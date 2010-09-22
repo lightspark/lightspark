@@ -449,7 +449,7 @@ PolicyFile::~PolicyFile()
 	sem_wait(&mutex);
 	//-- Lock acquired
 	
-	for(vector<PolicyAllowAccessFrom*>::iterator i = allowAccessFrom.begin(); 
+	for(list<PolicyAllowAccessFrom*>::iterator i = allowAccessFrom.begin(); 
 			i != allowAccessFrom.end(); ++i)
 		delete (*i);
 
@@ -475,7 +475,7 @@ URLPolicyFile::~URLPolicyFile()
 	sem_wait(&mutex);
 	//-- Lock acquired
 
-	for(vector<PolicyAllowHTTPRequestHeadersFrom*>::iterator i = allowHTTPRequestHeadersFrom.begin();
+	for(list<PolicyAllowHTTPRequestHeadersFrom*>::iterator i = allowHTTPRequestHeadersFrom.begin();
 			i != allowHTTPRequestHeadersFrom.end(); ++i)
 		delete (*i);
 
@@ -545,10 +545,9 @@ void URLPolicyFile::load()
 	//No caching needed for this download, we don't expect very big files
 	Downloader* downloader=sys->downloadManager->download(url, false);
 
-	//Wait until the file is fetched, only if we are not shutting down
-	if(!sys->isShuttingDown())
-		downloader->waitForTermination();
-	else
+	//Wait until the file is fetched
+	downloader->waitForTermination();
+	if(downloader->hasFailed())
 		valid = false;
 
 	//If files are redirected, we use the new URL as the file's URL
@@ -594,7 +593,7 @@ void URLPolicyFile::load()
 
 	//We've checked the master file to see of we need to ignore this file. (not the case)
 	//Now let's parse this file. A HTTP 404 results in a failed download.
-	if(isValid() && !isIgnored() && !downloader->hasFailed() && !sys->isShuttingDown())
+	if(isValid() && !isIgnored())
 	{
 		istream s(downloader);
 		size_t bufLength = downloader->getLength();
@@ -686,7 +685,7 @@ bool URLPolicyFile::allowsAccessFrom(const URLInfo& u, const URLInfo& to)
 	if(!isValid() || isIgnored())
 		return false;
 
-	vector<PolicyAllowAccessFrom*>::const_iterator i = allowAccessFrom.begin();
+	list<PolicyAllowAccessFrom*>::const_iterator i = allowAccessFrom.begin();
 	for(; i != allowAccessFrom.end(); ++i)
 	{
 		//This allow-access-from entry applies to our domain AND it allows our domain
@@ -714,7 +713,7 @@ bool URLPolicyFile::allowsHTTPRequestHeaderFrom(const URLInfo& u, const URLInfo&
 	if(!isValid() || isIgnored())
 		return false;
 
-	vector<PolicyAllowHTTPRequestHeadersFrom*>::const_iterator i = allowHTTPRequestHeadersFrom.begin();
+	list<PolicyAllowHTTPRequestHeadersFrom*>::const_iterator i = allowHTTPRequestHeadersFrom.begin();
 	for(; i != allowHTTPRequestHeadersFrom.end(); ++i)
 	{
 		if((*i)->allowsHTTPRequestHeaderFrom(u, header))
@@ -811,7 +810,7 @@ PolicyAllowAccessFrom::PolicyAllowAccessFrom(PolicyFile* _file, const string _do
 
 PolicyAllowAccessFrom::~PolicyAllowAccessFrom()
 {
-	for(vector<PortRange*>::iterator i = toPorts.begin(); i != toPorts.end(); ++i)
+	for(list<PortRange*>::iterator i = toPorts.begin(); i != toPorts.end(); ++i)
 		delete (*i);
 	toPorts.clear();
 }
@@ -861,7 +860,7 @@ PolicyAllowHTTPRequestHeadersFrom::PolicyAllowHTTPRequestHeadersFrom(URLPolicyFi
 
 PolicyAllowHTTPRequestHeadersFrom::~PolicyAllowHTTPRequestHeadersFrom()
 {
-	for(vector<string*>::iterator i = headers.begin(); i != headers.end(); ++i)
+	for(list<string*>::iterator i = headers.begin(); i != headers.end(); ++i)
 		delete (*i);
 	headers.clear();
 }
@@ -884,7 +883,7 @@ bool PolicyAllowHTTPRequestHeadersFrom::allowsHTTPRequestHeaderFrom(const URLInf
 	//Check if the header is explicitly allowed
 	bool headerFound = false;
 	string expression;
-	for(vector<string*>::const_iterator i = headers.begin();
+	for(list<string*>::const_iterator i = headers.begin();
 			i != headers.end(); ++i)
 	{
 		expression = (**i);

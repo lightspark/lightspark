@@ -42,7 +42,6 @@ public:
 	~NPDownloadManager();
 	lightspark::Downloader* download(const lightspark::tiny_string& url, bool cached=false);
 	lightspark::Downloader* download(const lightspark::URLInfo& url, bool cached=false);
-	void destroy(lightspark::Downloader* downloader);
 };
 
 class nsPluginInstance;

@@ -2623,7 +2623,7 @@ Class_base::~Class_base()
 	//Destroy all the object reference by us
 	if(!referencedObjects.empty())
 	{
-		cout << "Class " << class_name << " references " << referencedObjects.size() << endl;
+		//cout << "Class " << class_name << " references " << referencedObjects.size() << endl;
 		set<ASObject*>::iterator it=referencedObjects.begin();
 		for(;it!=referencedObjects.end();++it)
 			delete *it;

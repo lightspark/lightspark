@@ -62,7 +62,7 @@ NPDownloadManager::~NPDownloadManager()
  * \param[in] url The URL (as a \c tiny_string) the \c Downloader is requested for
  * \param[in] cached Whether or not to disk-cache the download (default=false)
  * \return A pointer to a newly created \c Downloader for the given URL.
- * \see destroy
+ * \see DownloadManager::destroy()
  */
 lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_string& url, bool cached)
 {
@@ -76,27 +76,15 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::tiny_strin
  * \param[in] url The URL (as a \c URLInfo) the \c Downloader is requested for
  * \param[in] cached Whether or not to disk-cache the download (default=false)
  * \return A pointer to a newly created \c Downloader for the given URL.
- * \see destroy
+ * \see DownloadManager::destroy()
  */
 lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& url, bool cached)
 {
-	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << "'" << (cached ? _(" - cached") : ""));
+	LOG(LOG_NO_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
+			"'" << (cached ? _(" - cached") : ""));
 	//Register this download
 	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cached, instance);
 	return downloader;
-}
-
-/**
- * \brief Destroy a Downloader.
- *
- * Destroy a given \c Downloader.
- * The Downloader should be created using \c NPDownloadManager::download.
- * \param downloader A pointer to the \c Downloader to be destroyed.
- * \see download
- */
-void NPDownloadManager::destroy(lightspark::Downloader* downloader)
-{
-	delete downloader;
 }
 
 /**

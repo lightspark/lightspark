@@ -9,6 +9,7 @@ global:
 		*lightspark::Class_base*;
 		*lightspark::Event*;
 		*lightspark::Downloader*;
+		*lightspark::DownloadManager*;
 		rt;
 		sys;
 		pt;

@@ -1070,7 +1070,7 @@ bool Array::nextValue(unsigned int index, ASObject*& out)
 		out->fake_decRef();
 	}
 	else
-		throw UnsupportedException("Unexpeted data type");
+		throw UnsupportedException("Unexpected data type");
 	return true;
 }
 
@@ -2623,7 +2623,7 @@ Class_base::~Class_base()
 	//Destroy all the object reference by us
 	if(!referencedObjects.empty())
 	{
-		//cout << "Class " << class_name << " references " << referencedObjects.size() << endl;
+		LOG(LOG_CALLS, "Class " << class_name << " references " << referencedObjects.size());
 		set<ASObject*>::iterator it=referencedObjects.begin();
 		for(;it!=referencedObjects.end();++it)
 			delete *it;

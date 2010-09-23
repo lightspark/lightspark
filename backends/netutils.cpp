@@ -391,6 +391,7 @@ Downloader::pos_type Downloader::getOffset() const
  * Sets the \c failed and finished flag to \c true, sets the final length and 
  * signals \c dataAvailable if it is being waited for.
  * It also signals \c terminated to mark the end of the download.
+ * A download should finish be either calling \c setFailed() or \c setFinished(), not both.
  * \post \c failed == \c true & \c finished == \c true
  * \post \c length == \c receivedLength
  * \post Signals \c dataAvailable if it is being waited for (\c waitingForData == \c true). 
@@ -423,6 +424,7 @@ void Downloader::setFailed()
  * Marks the downloader as finished, sets the final length and 
  * signals \c dataAvailable if it is being waited for.
  * It also signals \c terminated to mark the end of the download.
+ * A download should finish be either calling \c setFailed() or \c setFinished(), not both.
  * \post \c finished == \ctrue
  * \post \c length == \c receivedLength
  * \post Signals \c dataAvailable if it is being waited for (\c waitingForData == true).

@@ -81,10 +81,7 @@ PolicyFile* SecurityManager::addPolicyFile(const URLInfo& url)
 	if(url.getProtocol() == "http" || url.getProtocol() == "https" || url.getProtocol() == "ftp")
 		return addURLPolicyFile(url);
 	else if(url.getProtocol() == "xmlsocket")
-	{
-		LOG(LOG_NOT_IMPLEMENTED, "SECURITY: SocketPolicFile not implemented yet!");
-		return NULL;
-	}
+		LOG(LOG_NOT_IMPLEMENTED, _("SECURITY: SocketPolicFile not implemented yet!"));
 	return NULL;
 }
 
@@ -105,8 +102,8 @@ URLPolicyFile* SecurityManager::addURLPolicyFile(const URLInfo& url)
 	URLPolicyFile* file = new URLPolicyFile(url);
 	if(file->isValid())
 	{
-		LOG(LOG_NO_INFO, "SECURITY: Added URL policy file is valid, "
-				"adding to URL policy file list (" << url << ")");
+		LOG(LOG_NO_INFO, 
+				_("SECURITY: Added URL policy file is valid, adding to URL policy file list (") << url << ")");
 		pendingURLPFiles.insert(URLPFilePair(url.getHostname(), file));
 	}
 	
@@ -137,7 +134,7 @@ URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
 	{
 		if((*i).second->getOriginalURL() == url)
 		{
-			LOG(LOG_NO_INFO, "SECURITY: URL policy file found in loaded list (" << url << ")");
+			LOG(LOG_NO_INFO, _("SECURITY: URL policy file found in loaded list (") << url << ")");
 
 			//++ Release lock
 			sem_post(&mutex);
@@ -152,7 +149,7 @@ URLPolicyFile* SecurityManager::getURLPolicyFileByURL(const URLInfo& url)
 	{
 		if((*i).second->getOriginalURL() == url)
 		{
-			LOG(LOG_NO_INFO, "SECURITY: URL policy file found in pending list (" << url << ")");
+			LOG(LOG_NO_INFO, _("SECURITY: URL policy file found in pending list (") << url << ")");
 
 			//++ Release lock
 			sem_post(&mutex);
@@ -180,7 +177,7 @@ void SecurityManager::loadPolicyFile(URLPolicyFile* file)
 
 	if(pendingURLPFiles.count(file->getURL().getHostname()) > 0)
 	{
-		LOG(LOG_NO_INFO, "SECURITY: Loading policy file (" << file->getURL() << ")");
+		LOG(LOG_NO_INFO, _("SECURITY: Loading policy file (") << file->getURL() << ")");
 		file->load();
 
 		URLPFileMapItPair range = pendingURLPFiles.equal_range(file->getURL().getHostname());
@@ -235,13 +232,13 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
 	//So IF any relevant policy file is loaded already, then the master will be too.
 	if(master->isLoaded() && master->isValid())
 	{
-		LOG(LOG_NO_INFO, "SECURITY: Master policy file is loaded and valid (" << url << ")");
+		LOG(LOG_NO_INFO, _("SECURITY: Master policy file is loaded and valid (") << url << ")");
 
 		PolicySiteControl::METAPOLICY siteControl = master->getSiteControl()->getPermittedPolicies();
 		//Master defines no policy files are allowed at all
 		if(siteControl == PolicySiteControl::NONE)
 		{
-			LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: Master policy file disallows policy files");
+			LOG(LOG_NO_INFO, _("SECURITY: DISALLOWED: Master policy file disallows policy files"));
 
 			//++ Release lock
 			sem_post(&mutex);
@@ -253,7 +250,7 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
 		//Non-master policy files are allowed
 		if(siteControl != PolicySiteControl::MASTER_ONLY)
 		{
-			LOG(LOG_NO_INFO, "SECURITY: Searching for loaded non-master policy files (" <<
+			LOG(LOG_NO_INFO, _("SECURITY: Searching for loaded non-master policy files (") <<
 					loadedURLPFiles.count(url.getHostname()) << ")");
 
 			URLPFileMapConstItPair range = loadedURLPFiles.equal_range(url.getHostname());
@@ -268,7 +265,7 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
 			//And check the pending policy files next (if we are allowed to)
 			if(loadPendingPolicies)
 			{
-				LOG(LOG_NO_INFO, "SECURITY: Searching for and loading pending non-master policy files (" <<
+				LOG(LOG_NO_INFO, _("SECURITY: Searching for and loading pending non-master policy files (") <<
 						pendingURLPFiles.count(url.getHostname()) << ")");
 
 				range = pendingURLPFiles.equal_range(url.getHostname());
@@ -436,14 +433,19 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePortURL(const URLInfo
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URLInfo& url,
 		bool loadPendingPolicies)
 {
-	LOG(LOG_NO_INFO, "SECURITY: Evaluating URL for cross domain policies: \n"
-			"SECURITY: URL: " << url << "\nSECURITY: Origin: " << sys->getOrigin());
+	//This check doesn't apply to local files
+	if(url.getProtocol() == "file" && sys->getOrigin().getProtocol() == "file")
+		return ALLOWED;
+
+	LOG(LOG_NO_INFO, _("SECURITY: Evaluating URL for cross domain policies:"));
+	LOG(LOG_NO_INFO, _("SECURITY: --> URL:    ") << url);
+	LOG(LOG_NO_INFO, _("SECURITY: --> Origin: ") << sys->getOrigin());
 
 	//The URL has exactly the same domain name as the origin, always allowed
 	if(url.getProtocol() == sys->getOrigin().getProtocol() &&
 			url.getHostname() == sys->getOrigin().getHostname())
 	{
-		LOG(LOG_NO_INFO, "SECURITY: Same hostname as origin, allowing");
+		LOG(LOG_NO_INFO, _("SECURITY: Same hostname as origin, allowing"));
 		return ALLOWED;
 	}
 
@@ -461,7 +463,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 		{
 			if((*it)->allowsAccessFrom(sys->getOrigin(), url))
 			{
-				LOG(LOG_NO_INFO, "SECURITY: ALLOWED: A policy file explicitly allowed access");
+				LOG(LOG_NO_INFO, _("SECURITY: ALLOWED: A policy file explicitly allowed access"));
 				delete files;
 
 				//++ Release lock
@@ -471,7 +473,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 		}
 	}
 
-	LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: No policy file explicitly allowed access");
+	LOG(LOG_NO_INFO, _("SECURITY: DISALLOWED: No policy file explicitly allowed access"));
 	delete files;
 
 	//++ Release lock
@@ -492,8 +494,13 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo& url,
 		const tiny_string& header, bool loadPendingPolicies)
 {
-	LOG(LOG_NO_INFO, "SECURITY: Evaluating header for cross domain policies: '" << header << 
-			"'\nSECURITY: URL: " << url << "\nSECURITY: Origin: " << sys->getOrigin());
+	//This check doesn't apply to local files
+	if(url.getProtocol() == "file" && sys->getOrigin().getProtocol() == "file")
+		return ALLOWED;
+
+	LOG(LOG_NO_INFO, _("SECURITY: Evaluating header for cross domain policies ('") << header << "'):");
+	LOG(LOG_NO_INFO, _("SECURITY: --> URL: ") << url);
+	LOG(LOG_NO_INFO, _("SECURITY: --> Origin: ") << sys->getOrigin());
 
 	string headerStrLower(header.raw_buf());
 	transform(headerStrLower.begin(), headerStrLower.end(), headerStrLower.begin(), ::tolower);
@@ -518,7 +525,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 			headerStr == "uri" && headerStr == "user-agent" && headerStr == "vary" && headerStr == "via" &&
 			headerStr == "warning" && headerStr == "www-authenticate" && headerStr == "x-flash-version")
 	{
-		LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: Header is restricted");
+		LOG(LOG_NO_INFO, _("SECURITY: DISALLOWED: Header is restricted"));
 		return NA_HEADER;
 	}
 
@@ -526,7 +533,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 	if(url.getProtocol() == sys->getOrigin().getProtocol() &&
 			url.getHostname() == sys->getOrigin().getHostname())
 	{
-		LOG(LOG_NO_INFO, "SECURITY: ALLOWED: Same hostname as origin");
+		LOG(LOG_NO_INFO, _("SECURITY: ALLOWED: Same hostname as origin"));
 		return ALLOWED;
 	}
 
@@ -544,7 +551,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 		{
 			if((*it)->allowsHTTPRequestHeaderFrom(sys->getOrigin(), url, headerStrLower))
 			{
-				LOG(LOG_NO_INFO, "SECURITY: ALLOWED: A policy file explicitly allowed the header");
+				LOG(LOG_NO_INFO, _("SECURITY: ALLOWED: A policy file explicitly allowed the header"));
 				delete files;
 
 				//++ Release lock
@@ -554,7 +561,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateHeader(const URLInfo&
 		}
 	}
 
-	LOG(LOG_NO_INFO, "SECURITY: DISALLOWED: No policy file explicitly allowed the header");
+	LOG(LOG_NO_INFO, _("SECURITY: DISALLOWED: No policy file explicitly allowed the header"));
 	delete files;
 
 	//++ Release lock
@@ -732,11 +739,11 @@ void URLPolicyFile::load()
 		URLInfo newURL(downloader->getURL());
 		if(url.getHostname() != newURL.getHostname())
 		{
-			LOG(LOG_NO_INFO, "SECURITY: Policy file was redirected to other domain, marking invalid");
+			LOG(LOG_NO_INFO, _("SECURITY: Policy file was redirected to other domain, marking invalid"));
 			valid = false;
 		}
 		url = newURL;
-		LOG(LOG_NO_INFO, "SECURITY: Policy file was redirected");
+		LOG(LOG_NO_INFO, _("SECURITY: Policy file was redirected"));
 	}
 
 	//Policy files must have on of the following content-types to be valid:
@@ -747,7 +754,7 @@ void URLPolicyFile::load()
 			contentType != "application/xml" &&
 			contentType != "application/xhtml+xml")
 	{
-		LOG(LOG_NO_INFO, "SECURITY: Policy file has an invalid content-type, marking invalid");
+		LOG(LOG_NO_INFO, _("SECURITY: Policy file has an invalid content-type, marking invalid"));
 		valid = false;
 	}
 
@@ -762,7 +769,7 @@ void URLPolicyFile::load()
 				master->getSiteControl()->getPermittedPolicies() == PolicySiteControl::BY_CONTENT_TYPE &&
 				contentType != "text/x-cross-domain-policy")
 		{
-			LOG(LOG_NO_INFO, "SECURITY: Policy file content-type isn't strict, marking invalid");
+			LOG(LOG_NO_INFO, _("SECURITY: Policy file content-type isn't strict, marking invalid"));
 			ignore = true;
 		}
 	}

@@ -692,12 +692,12 @@ void Downloader::append(uint8_t* buf, uint32_t added)
  * Calls \c parseHeader on every individual header.
  * \see Downloader::parseHeader()
  */
-void Downloader::parseHeaders(const char* headers, bool _setLength)
+void Downloader::parseHeaders(const char* _headers, bool _setLength)
 {
-	if(headers == NULL)
+	if(_headers == NULL)
 		return;
 
-	std::string headersStr(headers);
+	std::string headersStr(_headers);
 	size_t cursor = 0;
 	size_t newLinePos = headersStr.find("\n");
 	while(newLinePos != std::string::npos)
@@ -715,9 +715,13 @@ void Downloader::parseHeaders(const char* headers, bool _setLength)
  *
  * Parse a string containing a single header.
  * The header line is not expected to contain a newline character.
+ * Waits for mutex at start and releases mutex when finished.
  */
 void Downloader::parseHeader(std::string header, bool _setLength)
 {
+	sem_wait(&mutex);
+	//-- Lock acquired
+
 	if(header.substr(0, 9) == "HTTP/1.1 " || header.substr(0, 9) == "HTTP/1.0") 
 	{
 		std::string status = header.substr(9, 3);
@@ -749,7 +753,7 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 
 			std::transform(headerName.begin(), headerName.end(), headerName.begin(), ::tolower);
 			//std::transform(headerValue.begin(), headerValue.end(), headerValue.begin(), ::tolower);
-			headers[tiny_string(headerName)] = tiny_string(headerValue);
+			headers.insert(std::make_pair(tiny_string(headerName), tiny_string(headerValue)));
 
 			//Set the new real URL when we are being redirected
 			if(getRequestStatus()/100 == 3 && headerName == "location")
@@ -762,10 +766,18 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 				//Now read the length and allocate the byteArray
 				//Only read the length when we're not redirecting
 				if(getRequestStatus()/100 != 3)
+				{
+					//++ Release lock
+					sem_post(&mutex);
 					setLength(atoi(headerValue.c_str()));
+					return;
+				}
 			}
 		}
 	}
+
+	//++ Release lock
+	sem_post(&mutex);
 }
 
 /**

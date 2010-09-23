@@ -787,7 +787,7 @@ void URLPolicyFile::load()
 		//We're done with the downloader, lets destroy ASAP
 		sys->downloadManager->destroy(downloader);
 
-		CrossDomainPolicy::POLICYFILESUBTYPE parserSubtype;
+		CrossDomainPolicy::POLICYFILESUBTYPE parserSubtype = CrossDomainPolicy::NONE;
 		if(subtype == HTTP)
 			parserSubtype = CrossDomainPolicy::HTTP;
 		else if(subtype == HTTPS)

@@ -187,16 +187,13 @@ class Graphics: public ASObject
 {
 private:
 	//builder and geometry are used by RenderThread and ABCVm
-	mutable Mutex builderMutex;
-	mutable ShapesBuilder builder;
-	mutable Mutex geometryMutex;
-	mutable bool validGeometry;
-	mutable std::vector<GeomShape> geometry;
+	Mutex tokensMutex;
+	std::vector<GeomToken> tokens;
 	//We need a list to preserve pointers
 	std::list<FILLSTYLE> styles; 
 	int curX, curY;
 public:
-	Graphics():builderMutex("builderMutex"),geometryMutex("geometryMutex"),validGeometry(false),curX(0),curY(0)
+	Graphics():tokensMutex("tokensMutex"),curX(0),curY(0)
 	{
 	}
 	static void sinit(Class_base* c);

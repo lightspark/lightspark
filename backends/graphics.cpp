@@ -406,7 +406,7 @@ cairo_matrix_t CairoRenderer::MATRIXToCairo(const MATRIX& matrix)
 	return ret;
 }
 
-void CairoRenderer::execute()
+void StaticCairoRenderer::execute()
 {
 	if(!Sheep::lockOwner())
 		return;

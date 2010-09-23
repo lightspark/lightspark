@@ -2040,16 +2040,17 @@ void Graphics::buildTraits(ASObject* o)
 
 bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	Locker locker2(geometryMutex);
+	::abort();
+/*	Locker locker2(geometryMutex);
 	//If the geometry has been modified we have to generate it again
 	if(!validGeometry)
 	{
 		validGeometry=true;
 		Locker locker(builderMutex);
 		geometry.clear();
-		/*builder.outputShapes(geometry);
+		builder.outputShapes(geometry);
 		for(unsigned int i=0;i<geometry.size();i++)
-			geometry[i].BuildFromEdges(&styles);*/
+			geometry[i].BuildFromEdges(&styles);
 	}
 	if(geometry.size()==0)
 		return false;
@@ -2081,7 +2082,7 @@ bool Graphics::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_
 			}
 		}
 	}
-	return initialized;
+	return initialized;*/
 }
 
 ASFUNCTIONBODY(Graphics,_constructor)
@@ -2093,9 +2094,8 @@ ASFUNCTIONBODY(Graphics,clear)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
 	{
-		Locker locker(th->builderMutex);
-		th->builder.clear();
-		th->validGeometry=false;
+		Locker locker(th->tokensMutex);
+		th->tokens.clear();
 	}
 	th->styles.clear();
 	return NULL;
@@ -2108,6 +2108,12 @@ ASFUNCTIONBODY(Graphics,moveTo)
 
 	th->curX=args[0]->toInt();
 	th->curY=args[1]->toInt();
+	//TODO: support line styles to avoid this
+	if(!th->styles.empty())
+	{
+		Locker locker(th->tokensMutex);
+		th->tokens.emplace_back(MOVE, Vector2(th->curX, th->curY));
+	}
 	return NULL;
 }
 
@@ -2120,11 +2126,10 @@ ASFUNCTIONBODY(Graphics,lineTo)
 	int y=args[1]->toInt();
 
 	//TODO: support line styles to avoid this
-	if(th->styles.size())
+	if(!th->styles.empty())
 	{
-		Locker locker(th->builderMutex);
-		th->builder.extendFilledOutlineForColor(th->styles.size(),Vector2(th->curX,th->curY),Vector2(x,y));
-		th->validGeometry=false;
+		Locker locker(th->tokensMutex);
+		th->tokens.emplace_back(STRAIGHT, Vector2(x, y));
 	}
 
 	th->curX=x;
@@ -2148,14 +2153,14 @@ ASFUNCTIONBODY(Graphics,drawCircle)
 	const Vector2 d(x-radius,y+radius);
 
 	//TODO: support line styles to avoid this
-	if(th->styles.size())
+	if(!th->styles.empty())
 	{
-		Locker locker(th->builderMutex);
-		th->builder.extendFilledOutlineForColor(th->styles.size(),a,b);
-		th->builder.extendFilledOutlineForColor(th->styles.size(),b,c);
-		th->builder.extendFilledOutlineForColor(th->styles.size(),c,d);
-		th->builder.extendFilledOutlineForColor(th->styles.size(),d,a);
-		th->validGeometry=false;
+		Locker locker(th->tokensMutex);
+		th->tokens.emplace_back(MOVE, a);
+		th->tokens.emplace_back(STRAIGHT, b);
+		th->tokens.emplace_back(STRAIGHT, c);
+		th->tokens.emplace_back(STRAIGHT, d);
+		th->tokens.emplace_back(STRAIGHT, a);
 	}
 	return NULL;
 }
@@ -2176,14 +2181,14 @@ ASFUNCTIONBODY(Graphics,drawRect)
 	const Vector2 d(x,y+height);
 
 	//TODO: support line styles to avoid this
-	if(th->styles.size())
+	if(!th->styles.empty())
 	{
-		Locker locker(th->builderMutex);
-		th->builder.extendFilledOutlineForColor(th->styles.size(),a,b);
-		th->builder.extendFilledOutlineForColor(th->styles.size(),b,c);
-		th->builder.extendFilledOutlineForColor(th->styles.size(),c,d);
-		th->builder.extendFilledOutlineForColor(th->styles.size(),d,a);
-		th->validGeometry=false;
+		Locker locker(th->tokensMutex);
+		th->tokens.emplace_back(MOVE, a);
+		th->tokens.emplace_back(STRAIGHT, b);
+		th->tokens.emplace_back(STRAIGHT, c);
+		th->tokens.emplace_back(STRAIGHT, d);
+		th->tokens.emplace_back(STRAIGHT, a);
 	}
 	return NULL;
 }
@@ -2191,8 +2196,6 @@ ASFUNCTIONBODY(Graphics,drawRect)
 ASFUNCTIONBODY(Graphics,beginGradientFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	th->styles.push_back(FILLSTYLE());
-	th->styles.back().FillStyleType=SOLID_FILL;
 	uint32_t color=0;
 	uint8_t alpha=255;
 	if(argslen>=2) //Colors
@@ -2202,14 +2205,18 @@ ASFUNCTIONBODY(Graphics,beginGradientFill)
 		assert_and_throw(ar->size()>=1);
 		color=ar->at(0)->toUInt();
 	}
+	Locker locker(th->tokensMutex);
+	th->styles.emplace_back(FILLSTYLE());
+	th->styles.back().FillStyleType=SOLID_FILL;
 	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
+	th->tokens.emplace_back(SET_FILL, &th->styles.back());
 	return NULL;
 }
 
 ASFUNCTIONBODY(Graphics,beginFill)
 {
 	Graphics* th=static_cast<Graphics*>(obj);
-	th->styles.push_back(FILLSTYLE());
+	th->styles.emplace_back(FILLSTYLE());
 	th->styles.back().FillStyleType=SOLID_FILL;
 	uint32_t color=0;
 	uint8_t alpha=255;
@@ -2218,6 +2225,11 @@ ASFUNCTIONBODY(Graphics,beginFill)
 	if(argslen>=2)
 		alpha=(uint8_t(args[1]->toNumber()*0xff));
 	th->styles.back().Color=RGBA((color>>16)&0xff,(color>>8)&0xff,color&0xff,alpha);
+	Locker locker(th->tokensMutex);
+	th->styles.emplace_back(FILLSTYLE());
+	th->styles.back().FillStyleType=SOLID_FILL;
+	th->styles.back().Color=RGBA(color&0xff,(color>>8)&0xff,(color>>16)&0xff,alpha);
+	th->tokens.emplace_back(SET_FILL, &th->styles.back());
 	return NULL;
 }
 
@@ -2230,7 +2242,8 @@ ASFUNCTIONBODY(Graphics,endFill)
 
 void Graphics::Render()
 {
-	Locker locker2(geometryMutex);
+	::abort();
+/*	Locker locker2(geometryMutex);
 	//If the geometry has been modified we have to generate it again
 	if(!validGeometry)
 	{
@@ -2238,13 +2251,13 @@ void Graphics::Render()
 		Locker locker(builderMutex);
 		cout << "Generating geometry" << endl;
 		geometry.clear();
-		/*builder.outputShapes(geometry);
+		builder.outputShapes(geometry);
 		for(unsigned int i=0;i<geometry.size();i++)
-			geometry[i].BuildFromEdges(&styles);*/
+			geometry[i].BuildFromEdges(&styles);
 	}
 
 	for(unsigned int i=0;i<geometry.size();i++)
-		geometry[i].Render();
+		geometry[i].Render();*/
 }
 
 void LineScaleMode::sinit(Class_base* c)

@@ -185,16 +185,17 @@ public:
 	virtual void uploadFence()=0;
 };
 
+/**
+	The base class for render jobs based on cairo
+*/
 class CairoRenderer: public ITextureUploadable, public IThreadJob, public Sheep
 {
 protected:
 	~CairoRenderer(){delete[] surfaceBytes;}
-private:
 	/**
 		The target texture for the rendering, must be non const as the operation will update the size
 	*/
 	CachedSurface& surface;
-	const std::vector<GeomToken>& tokens;
 	MATRIX matrix;
 	uint32_t xOffset;
 	uint32_t yOffset;
@@ -203,18 +204,30 @@ private:
 	uint8_t* surfaceBytes;
 	static cairo_matrix_t MATRIXToCairo(const MATRIX& matrix);
 public:
-	CairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g, 
-		const MATRIX& _m, uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):
-			Sheep(_o),surface(_t),tokens(_g),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),surfaceBytes(NULL){}
+	CairoRenderer(Shepherd* _o, CachedSurface& _t, const MATRIX& _m, uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):
+			Sheep(_o),surface(_t),matrix(_m),xOffset(_x),yOffset(_y),width(_w),height(_h),surfaceBytes(NULL){}
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;
 	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
 	const TextureChunk& getTexture();
 	void uploadFence();
 	//IThreadJob interface
-	void execute();
 	void threadAbort();
 	void jobFence();
+};
+
+/**
+	A renderer that works on static sets of tokens (e.g.) They will not change once started
+*/
+class StaticCairoRenderer: public CairoRenderer
+{
+protected:
+	const std::vector<GeomToken>& tokens;
+public:
+	StaticCairoRenderer(Shepherd* _o, CachedSurface& _t, const std::vector<GeomToken>& _g,const MATRIX& _m, 
+				uint32_t _x, uint32_t _y, uint32_t _w, uint32_t _h):CairoRenderer(_o, _t, _m, _x, _y, _w, _h),tokens(_g){}
+	//IThreadJob
+	void execute();
 };
 
 };

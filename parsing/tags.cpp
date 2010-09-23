@@ -960,7 +960,7 @@ void DefineShapeTag::invalidate()
 	if(width==0 || height==0)
 		return;
 	computeCached();
-	CairoRenderer* r=new CairoRenderer(&shepherd, cachedSurface, cachedTokens, getConcatenatedMatrix(), x, y, width, height);
+	StaticCairoRenderer* r=new StaticCairoRenderer(&shepherd, cachedSurface, cachedTokens, getConcatenatedMatrix(), x, y, width, height);
 	sys->addJob(r);
 }
 

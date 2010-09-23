@@ -16,7 +16,7 @@
 	//Should contain "Local data\n"
 
 	//This shouldn't be allowed when we implement allowed domains, security policy files
-	private var remoteFilePath:String = "https://launchpad.net/+help/home-page-staging-help.html";
+	private var remoteFilePath:String = "http://lightspark.sourceforge.net/test.data";
 	//Should contain "Remote data\n"
 
 	private var received:uint = 0;
@@ -46,8 +46,8 @@
 		}
 		catch(e:SecurityError)
 		{
-			Tests.info(e.toString());
 			Tests.assertDontReach("SecurityError thrown");
+			Tests.info("Error:", e.toString());
 			Tests.report(visual, this.name);
 		}
 	}

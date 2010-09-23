@@ -148,6 +148,8 @@ Downloader::Downloader(const tiny_string& _url, bool _cached):
  * \brief Downloader destructor.
  *
  * Destructor for the Downloader class. Can only be called from derived/friend classes (DownloadManager)
+ * Calls \c waitForTermination() and waits for the mutex before proceeding.
+ * \see Downloader::waitForTermination()
  */
 Downloader::~Downloader()
 {
@@ -184,6 +186,7 @@ Downloader::~Downloader()
  * \brief Called by the streambuf API
  *
  * Called by the streambuf API when there is no more data to read.
+ * Waits for the mutex at start and releases the mutex when finished.
  * \throw RunTimeException Cache file could not be read
  */
 Downloader::int_type Downloader::underflow()
@@ -291,6 +294,7 @@ Downloader::int_type Downloader::underflow()
  * \brief Called by the streambuf API
  *
  * Called by the streambuf API to seek to an absolute position
+ * Waits for the mutex at start and releases the mutex when finished.
  * \throw RunTimeException Cache file could not be read
  */
 Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode mode)
@@ -335,7 +339,11 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 		}
 		//The requested position is bigger then our current amount of available data
 		else if(pos > receivedLength)
+		{
+			//++ Release lock
+			sem_post(&mutex);
 			return -1;
+		}
 	}
 	else
 	{
@@ -344,7 +352,11 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
 			setg((char*)buffer,(char*)buffer+pos,(char*)buffer+receivedLength);
 		//The requested position is bigger then our current amount of available data
 		else
+		{
+			//++ Release lock
+			sem_post(&mutex);
 			return -1;
+		}
 	}
 
 	//++ Release lock
@@ -357,6 +369,7 @@ Downloader::pos_type Downloader::seekpos(pos_type pos, std::ios_base::openmode m
  *
  * Called by the streambuf API to seek to a relative position
  * The only supported case is offset==0.
+ * Waits for the mutex at start and releases the mutex when finished.
  */
 Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir dir, std::ios_base::openmode mode)
 {
@@ -364,8 +377,14 @@ Downloader::pos_type Downloader::seekoff(off_type off, std::ios_base::seekdir di
 	assert_and_throw(off==0);
 	assert_and_throw(buffer != NULL);
 
+	sem_wait(&mutex);
+	//-- Lock acquired
+
 	//Nothing special to do here, we only support offset==0 seeks
 	pos_type ret=getOffset();
+
+	//++ Release lock
+	sem_post(&mutex);
 	return ret;
 }
 
@@ -454,7 +473,7 @@ void Downloader::setFinished()
  * \brief (Re)allocates the buffer
  *
  * (Re)allocates the buffer to a given size
- * Waits for mutex at start and releases mutex when finished
+ * Waits for mutex at start and releases mutex when finished.
  * \post \c buffer is (re)allocated
  */
 void Downloader::allocateBuffer(size_t size)
@@ -488,7 +507,7 @@ void Downloader::allocateBuffer(size_t size)
  * \brief Creates & opens a temporary cache file
  *
  * Creates a temporary cache file in /tmp and calls \c openExistingCache() with that file.
- * Waits for mutex at start and releases mutex when finished
+ * Waits for mutex at start and releases mutex when finished.
  * \throw RunTimeException Temporary file could not be created
  * \throw RunTimeException Called when the downloader isn't cached or when the cache is already open
  * \see Downloader::openExistingCache()
@@ -524,7 +543,7 @@ void Downloader::openCache()
  * \brief Opens an existing cache file
  *
  * Opens an existing cache file, allocates the buffer and signals \c cacheOpened.
- * Waits for mutex at start and releases mutex when finished
+ * Waits for mutex at start and releases mutex when finished.
  * \post \c cacheFilename is set
  * \post \c cache file is opened
  * \post \c buffer is initialized
@@ -572,7 +591,7 @@ void Downloader::openExistingCache(tiny_string filename)
  *
  * Sets the expected length of the download.
  * Can be called multiple times if the length isn't known up front (reallocating the buffer on the fly).
- * Waits for mutex at start and releases mutex when finished
+ * Waits for mutex at start and releases mutex when finished.
  * \post \c buffer is (re)allocated 
  */
 void Downloader::setLength(uint32_t _length)
@@ -614,7 +633,7 @@ void Downloader::setLength(uint32_t _length)
  * Appends a given amount of received data to the buffer/cache.
  * This method will grow the expected length of the download on-the-fly as needed.
  * So when \c length == 0 this call will call \c setLength(added)
- * Waits for mutex at start and releases mutex when finished
+ * Waits for mutex at start and releases mutex when finished.
  * \post \c buffer/cache contains the added data
  * \post \c length = \c receivedLength + \c added
  * \see Downloader::setLength()
@@ -778,7 +797,7 @@ void Downloader::stop()
  * \brief Wait for the cache file to be opened
  *
  * If \c !cacheHasOpened: wait for the \c cacheOpened signal and set \c cacheHasOpened to \c true
- * Waits for the mutex at start and releases the mutex when finished
+ * Waits for the mutex at start and releases the mutex when finished.
  * \post \c cacheOpened signals has been handled
  * \post \c cacheHasOpened = true
  */
@@ -799,7 +818,6 @@ void Downloader::waitForCache()
 		//-- Lock acquired
 		cacheHasOpened = true;
 	}
-
 	//++ Release lock
 	sem_post(&mutex);
 }
@@ -808,7 +826,7 @@ void Downloader::waitForCache()
  * \brief Wait for data to become available
  *
  * Wait for data to become available.
- * Waits for the mutex at start and releases the mutex when finished
+ * Waits for the mutex at start and releases the mutex when finished.
  * \post \c dataAvailable signal has been handled
  */
 void Downloader::waitForData()
@@ -828,7 +846,7 @@ void Downloader::waitForData()
  *
  * If \c sys->isShuttingDown(), calls \c setFailed() and returns.
  * Otherwise if \c !hasTerminated: wait for the \c terminated signal and set \c hasTerminated to \c true
- * Waits for the mutex at start and releases the mutex when finished
+ * Waits for the mutex at start and releases the mutex when finished.
  * \post \c terminated signal has been handled
  * \post \c hasTerminated = true
  */
@@ -836,7 +854,6 @@ void Downloader::waitForTermination()
 {
 	sem_wait(&mutex);
 	//-- Lock acquired
-
 	if(sys->isShuttingDown())
 	{
 		setFailed();
@@ -1050,6 +1067,7 @@ void LocalDownloader::threadAbort()
 
 /**
  * \brief Called by \c ThreadPool to start executing this thread
+ * Waits for the mutex at start and releases the mutex when finished when the download is cached.
  * \see Downloader::append()
  * \see Downloader::openExistingCache()
  */

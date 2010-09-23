@@ -1336,6 +1336,8 @@ tiny_string Integer::toString(bool debugMsg)
 
 void Integer::sinit(Class_base* c)
 {
+	c->setVariableByQName("MAX_VALUE","",new Integer(2147483647));
+	c->setVariableByQName("MIN_VALUE","",new Integer(-2147483648));
 	c->super=Class<ASObject>::getClass();
 	c->max_level=c->super->max_level+1;
 }
